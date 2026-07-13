@@ -42,6 +42,21 @@ describe('transformFreightItems', () => {
     expect(result[0].quantity).toBe(10)
   })
 
+  it('preserves the persisted outbound item id as the freight source id', () => {
+    const result = transformFreightItems({
+      outboundNo: 'OB2024002',
+      items: [
+        {
+          id: '308251467645452291',
+          materialId: '308251467645452292',
+        },
+      ],
+    })
+
+    expect(result[0].id).toMatch(/^freight-item-/)
+    expect(result[0].sourceSalesOutboundItemId).toBe('308251467645452291')
+  })
+
   it('falls back materialName to brand when explicit name is empty', () => {
     const result = transformFreightItems({
       outboundNo: 'OB2024002',

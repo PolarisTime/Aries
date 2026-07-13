@@ -1,9 +1,5 @@
 import type { Page } from '@playwright/test'
-import {
-  fetchCollection,
-  pickSearchTerm,
-  primeApiKeySession,
-} from './support/api-key'
+import { fetchCollection, primeApiKeySession } from './support/api-key'
 import { expect, test } from './support/test'
 
 interface BusinessActionRoute {
@@ -91,6 +87,24 @@ function searchInput(page: Page, route: BusinessActionRoute) {
     .first()
 }
 
+function businessTableBody(page: Page) {
+  return page.locator('.ant-table-tbody:visible').first()
+}
+
+async function visibleRowSearchTerm(page: Page) {
+  const firstRow = businessTableBody(page)
+    .locator('tr:not(.ant-table-measure-row)')
+    .filter({ has: page.locator('td') })
+    .first()
+  if (!(await firstRow.isVisible().catch(() => false))) {
+    return ''
+  }
+
+  const firstCell = firstRow.locator('td').first()
+  const value = (await firstCell.innerText()).trim()
+  return value === '暂无数据' ? '' : value
+}
+
 async function gotoBusinessRoute(page: Page, path: string) {
   const loginUrlPattern = /\/login(?:\?|$)/
 
@@ -110,12 +124,10 @@ async function expectBusinessPageLoaded(
   route: BusinessActionRoute,
 ) {
   await expect(page).toHaveURL(new RegExp(`${route.path}(?:\\?|$)`))
-  await expect(
-    page.getByRole('button', { name: route.title, exact: true }),
-  ).toBeVisible()
+  await expect(page.locator('form[aria-label="筛选条件"]')).toBeVisible()
   await expect(searchInput(page, route)).toBeVisible()
   await expect(createButton(page)).toBeVisible()
-  await expect(page.locator('table').first()).toBeVisible()
+  await expect(businessTableBody(page)).toBeVisible()
 }
 
 async function closeWorkspaceOverlay(page: Page) {
@@ -156,17 +168,15 @@ async function applySearch(page: Page, input: ReturnType<typeof searchInput>) {
 }
 
 async function openExistingEditor(page: Page, title: string) {
-  const editButton = page
-    .locator('table')
-    .getByRole('button', { name: '编辑' })
-    .first()
+  const tableBody = businessTableBody(page)
+  const editButton = tableBody.getByRole('button', { name: '编辑' }).first()
 
   if ((await editButton.count()) > 0) {
     await expect(editButton).toBeVisible()
     await editButton.click()
   } else {
-    const firstRow = page
-      .locator('tbody tr:not(.ant-table-measure-row)')
+    const firstRow = tableBody
+      .locator('tr:not(.ant-table-measure-row)')
       .filter({ has: page.locator('td') })
       .first()
     await expect(firstRow).toBeVisible()
@@ -175,9 +185,9 @@ async function openExistingEditor(page: Page, title: string) {
 
   const overlay = page.locator('.workspace-overlay-panel').last()
   await expect(overlay).toBeVisible()
-  await expect(overlay.locator('.workspace-overlay-title')).toContainText(
-    `编辑 — ${title}`,
-  )
+  const overlayTitle = overlay.locator('.workspace-overlay-title')
+  await expect(overlayTitle).toContainText(title)
+  await expect(overlayTitle).toHaveText(/编辑|详情/)
 }
 
 test.describe('business editor action smoke', () => {
@@ -190,8 +200,6 @@ test.describe('business editor action smoke', () => {
       page,
       assertNoFatalUiErrors,
     }) => {
-      const collection = await fetchCollection(page.request, route.apiPath)
-
       await gotoBusinessRoute(page, route.path)
       await expectBusinessPageLoaded(page, route)
 
@@ -209,14 +217,12 @@ test.describe('business editor action smoke', () => {
       const keywordInput = searchInput(page, route)
       let searchTerm = ''
 
-      if (collection.ok && collection.records.length > 0) {
-        searchTerm = pickSearchTerm(collection.records[0], route.searchKeys)
-        if (searchTerm) {
-          await keywordInput.fill(searchTerm)
-          await applySearch(page, keywordInput)
-          await expect(page.locator('table')).toContainText(searchTerm)
-        }
-
+      const visibleTerm = await visibleRowSearchTerm(page)
+      if (visibleTerm) {
+        searchTerm = visibleTerm
+        await keywordInput.fill(searchTerm)
+        await applySearch(page, keywordInput)
+        await expect(businessTableBody(page)).toContainText(searchTerm)
         await openExistingEditor(page, route.title)
         await closeWorkspaceOverlay(page)
       }
@@ -258,6 +264,10 @@ test.describe('business editor action smoke', () => {
       .locator('tbody tr:not(.ant-table-measure-row)')
       .filter({ hasText: /PO\d+|\d{12,}/ })
       .first()
+    if (!(await firstRow.isVisible().catch(() => false))) {
+      test.skip(true, '隔离库没有可导入的采购订单候选')
+      return
+    }
     await expect(firstRow).toBeVisible()
     const parentText = (await firstRow.innerText()).trim()
     const parentNo = parentText.match(/PO\d+|\d{12,}/)?.[0] || ''
@@ -290,7 +300,7 @@ test.describe('business editor action smoke', () => {
       await expectBusinessPageLoaded(page, route)
 
       const attachButton = page
-        .locator('table')
+        .locator('.ant-table-tbody:visible')
         .getByRole('button', { name: /附件/ })
         .first()
       if ((await attachButton.count()) === 0) {

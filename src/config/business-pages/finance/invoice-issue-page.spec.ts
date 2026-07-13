@@ -12,19 +12,45 @@ describe('invoiceIssuePageConfig', () => {
     expect(invoiceIssuePageConfig.saveFields?.lineItem).toEqual(
       expect.arrayContaining(['materialId', 'warehouseId']),
     )
+    expect(invoiceIssuePageConfig.saveFields?.scalar).toEqual(
+      expect.arrayContaining(['customerId', 'projectId']),
+    )
+    expect(
+      invoiceIssuePageConfig.formFields?.map((field) => field.key),
+    ).toEqual(expect.arrayContaining(['customerId', 'projectId']))
+    expect(
+      invoiceIssuePageConfig.formFields?.map((field) => field.key),
+    ).not.toEqual(expect.arrayContaining(['customerName', 'projectName']))
+    expect(
+      invoiceIssuePageConfig.formFields?.find(
+        (field) => field.key === 'customerId',
+      ),
+    ).toMatchObject({ type: 'select', required: true })
+    expect(
+      invoiceIssuePageConfig.formFields?.find(
+        (field) => field.key === 'projectId',
+      ),
+    ).toMatchObject({ type: 'select', required: true })
+    expect(invoiceIssuePageConfig.saveFields?.scalar).toEqual(
+      expect.arrayContaining(['customerName', 'projectName']),
+    )
     expect(invoiceIssuePageConfig.buildOverview).toBeTypeOf('function')
   })
 
   describe('parentImport', () => {
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
+        customerId: '700520000000000001',
         customerName: '客户A',
+        projectId: '700520000000000002',
         projectName: '项目X',
         settlementCompanyId: 8,
         settlementCompanyName: '主体B',
       } as any)
       expect(draft).toEqual({
+        customerId: '700520000000000001',
         customerName: '客户A',
+        projectId: '700520000000000002',
         projectName: '项目X',
         settlementCompanyId: 8,
         settlementCompanyName: '主体B',
@@ -37,6 +63,20 @@ describe('invoiceIssuePageConfig', () => {
       expect(draft.projectName).toBe('')
       expect(draft.settlementCompanyId).toBeUndefined()
       expect(draft.settlementCompanyName).toBe('')
+    })
+
+    it('mapParentToDraft normalizes IDs while retaining name snapshots', () => {
+      const draft = pi.mapParentToDraft!({
+        customerId: 700520000000000001n,
+        customerName: ' 客户A ',
+        projectId: 700520000000000002n,
+        projectName: ' 项目X ',
+      } as any)
+
+      expect(draft.customerId).toBe('700520000000000001')
+      expect(draft.projectId).toBe('700520000000000002')
+      expect(draft.customerName).toBe('客户A')
+      expect(draft.projectName).toBe('项目X')
     })
 
     it('validateParentImport rejects mismatched settlement company', () => {
@@ -54,6 +94,46 @@ describe('invoiceIssuePageConfig', () => {
         currentRecord: { customerName: '客户A' },
         currentItems: [],
         parentRecord: { customerName: '客户B' },
+      } as any)
+
+      expect(result).toBe('只能选择同一客户的销售订单生成开票单')
+    })
+
+    it('validateParentImport compares stable identities before snapshot names', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: {
+          customerId: '700520000000000001',
+          customerName: '旧客户快照',
+          projectId: '700520000000000002',
+          projectName: '旧项目快照',
+        },
+        currentItems: [],
+        parentRecord: {
+          customerId: 700520000000000001n,
+          customerName: '客户A',
+          projectId: 700520000000000002n,
+          projectName: '项目A',
+        },
+      } as any)
+
+      expect(result).toBeNull()
+    })
+
+    it('validateParentImport rejects stable ID mismatches even when names match', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: {
+          customerId: '700520000000000001',
+          customerName: '客户A',
+          projectId: '700520000000000002',
+          projectName: '项目A',
+        },
+        currentItems: [],
+        parentRecord: {
+          customerId: '700520000000000003',
+          customerName: '客户A',
+          projectId: '700520000000000002',
+          projectName: '项目A',
+        },
       } as any)
 
       expect(result).toBe('只能选择同一客户的销售订单生成开票单')

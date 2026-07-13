@@ -205,27 +205,27 @@ export const businessRoutes: BusinessRouteManifest[] = [
 ]
 
 export const systemRoutes: SystemRouteManifest[] = [
-  { path: '/system-parameters', title: '通用设置', marker: '系统开关' },
-  { path: '/general-setting', title: '通用设置', marker: '系统开关' },
+  { path: '/system-parameters', title: '系统参数', marker: '基础参数' },
+  { path: '/general-setting', title: '基础参数', marker: '系统开关' },
   {
     path: '/company-setting',
     title: '结算主体管理',
     marker: '结算主体名称',
   },
   { path: '/number-rules', title: '单号规则', marker: '模块' },
-  { path: '/security-center', title: '会话管理', marker: '登录名' },
-  { path: '/access-control', title: '访问控制', marker: '用户账户' },
+  { path: '/security-center', title: '安全中心', marker: '有效会话' },
+  { path: '/access-control', title: '权限管理', marker: '用户账户' },
   {
     path: '/database',
     title: '数据库管理',
     marker: 'PostgreSQL',
   },
-  { path: '/session', title: '会话管理', marker: '登录名' },
+  { path: '/session', title: '会话管理', marker: '有效会话' },
   {
     path: '/api-key',
     title: 'API Key 管理',
     marker: '生成 API Key',
   },
-  { path: '/security-key', title: '安全密钥管理', marker: 'JWT 密钥最后轮换' },
+  { path: '/security-key', title: '安全密钥管理', marker: 'JWT 主密钥' },
   { path: '/print-template', title: '打印模板', marker: '新建模板' },
 ]

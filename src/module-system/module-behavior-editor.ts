@@ -176,6 +176,11 @@ const settlementCompanySnapshotModules = [
   'receipt',
   'invoice-issue',
 ]
+const customerProjectSnapshotModules = new Set([
+  'sales-order',
+  'receipt',
+  'invoice-issue',
+])
 
 for (const key of settlementCompanySnapshotModules) {
   registerModuleBehavior(key, {
@@ -188,7 +193,7 @@ for (const key of settlementCompanySnapshotModules) {
       }
 
       if (
-        (key === 'sales-order' || key === 'receipt') &&
+        customerProjectSnapshotModules.has(key) &&
         ctx.changedKeys.has('customerId')
       ) {
         const customer = findCustomerOption(editorForm.customerId)
@@ -206,7 +211,7 @@ for (const key of settlementCompanySnapshotModules) {
       }
 
       if (
-        (key === 'sales-order' || key === 'receipt') &&
+        customerProjectSnapshotModules.has(key) &&
         ctx.changedKeys.has('projectId')
       ) {
         const project = findProjectOption(
@@ -221,7 +226,7 @@ for (const key of settlementCompanySnapshotModules) {
       }
 
       if (
-        (key === 'sales-order' || key === 'receipt') &&
+        customerProjectSnapshotModules.has(key) &&
         (ctx.changedKeys.has('customerId') || ctx.changedKeys.has('projectId'))
       ) {
         return
@@ -232,6 +237,10 @@ for (const key of settlementCompanySnapshotModules) {
         ctx.changedKeys.has('carrierName')
       ) {
         const carrier = findCarrierOption(editorForm.carrierName)
+        const carrierName = asString(carrier?.carrierName).trim()
+        if (carrierName) {
+          editorForm.carrierName = carrierName
+        }
         editorForm.carrierCode = asString(carrier?.carrierCode).trim()
         if (key === 'freight-bill') {
           applyDefaultSettlementCompany(editorForm, carrier)

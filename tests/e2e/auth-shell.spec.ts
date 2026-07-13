@@ -70,20 +70,41 @@ test.describe('auth and shell', () => {
     await expect(dialog).not.toBeVisible()
     await expect
       .poll(async () =>
-        page.evaluate(() => ({
-          fontSize: document.documentElement.style
-            .getPropertyValue('--app-font-size')
-            .trim(),
-          settings: localStorage.getItem('aries-personal-settings'),
-        })),
+        page.evaluate(() => {
+          const rawSettings = localStorage.getItem('aries-personal-settings')
+          let persistedSettings: unknown
+          try {
+            persistedSettings = rawSettings ? JSON.parse(rawSettings) : null
+          } catch {
+            persistedSettings = null
+          }
+
+          if (
+            persistedSettings &&
+            typeof persistedSettings === 'object' &&
+            'state' in persistedSettings &&
+            persistedSettings.state &&
+            typeof persistedSettings.state === 'object' &&
+            'settings' in persistedSettings.state
+          ) {
+            persistedSettings = persistedSettings.state.settings
+          }
+
+          return {
+            fontSize: document.documentElement.style
+              .getPropertyValue('--app-font-size')
+              .trim(),
+            settings: persistedSettings,
+          }
+        }),
       )
       .toEqual({
         fontSize: '16px',
-        settings: JSON.stringify({
+        settings: {
           fontSize: 16,
           layoutMode: 'top',
           themeMode: 'system',
-        }),
+        },
       })
 
     await openUserMenu(page)

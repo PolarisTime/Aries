@@ -23,7 +23,15 @@ export function hasImportableQuantity(
   record: ModuleRecord,
 ) {
   const items = Array.isArray(record.items) ? record.items : []
-  if (hasPositiveQuantity(record.importableQuantity)) {
+  if (
+    record.importableQuantity !== undefined &&
+    record.importableQuantity !== null
+  ) {
+    return hasPositiveQuantity(record.importableQuantity)
+  }
+  // List endpoints return summary rows without loading line items. Keep those
+  // rows selectable so the detail resolver can load the authoritative quantity.
+  if (!Array.isArray(record.items)) {
     return true
   }
   if (items.length === 0) {

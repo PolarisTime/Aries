@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { type APIRequestContext, expect, type Page } from '@playwright/test'
+import { E2E_LOGIN_NAME, E2E_LOGIN_PASSWORD } from './e2e-credentials'
 
 const STORAGE_KEYS = {
   token: 'aries-token',
@@ -21,10 +22,6 @@ const E2E_BACKEND_MODE =
   process.env.E2E_BACKEND_MODE === 'mock' ? 'mock' : 'real'
 const IS_REAL_BACKEND = E2E_BACKEND_MODE === 'real'
 const API_KEY = String(process.env.E2E_API_KEY || '').trim()
-const LOGIN_NAME = String(process.env.E2E_LOGIN_NAME || 'sakura').trim()
-const LOGIN_PASSWORD = String(
-  process.env.E2E_LOGIN_PASSWORD || '97143658',
-).trim()
 const LOGIN_MAX_RETRIES = 5
 const LOGIN_RETRY_DELAYS_MS = [0, 2_000, 5_000, 10_000, 15_000] as const
 const E2E_API_PATHS_BY_MODULE: Record<string, string> = {
@@ -164,6 +161,7 @@ interface ApiCollectionPayload<T> {
   data?:
     | T[]
     | {
+        content?: T[]
         rows?: T[]
         records?: T[]
       }
@@ -195,9 +193,10 @@ interface LoginPayload {
   }
 }
 
-interface BrowserSession {
+export interface BrowserSession {
   accessToken: string
   expiresIn: number
+  accessTokenExpiresAt?: number
   user: ApiLoginUser
   refreshCookie?: {
     name: string
@@ -207,8 +206,13 @@ interface BrowserSession {
 }
 
 let cachedSessionPromise: Promise<BrowserSession> | null = null
+let passwordSessionPromises = new WeakMap<
+  APIRequestContext,
+  Promise<BrowserSession>
+>()
 type RequestHeaders = Record<string, string>
 const EMPTY_RECORDS: Array<Record<string, unknown>> = []
+const REFRESH_COOKIE_NAME = 'leo_refresh_token'
 
 export function resolveE2eApiPath(apiPath: string) {
   return E2E_API_PATHS_BY_MODULE[apiPath] || apiPath
@@ -243,6 +247,7 @@ function readCachedSessionFromDisk() {
       fs.readFileSync(SESSION_CACHE_FILE, 'utf8'),
     ) as BrowserSession & { cachedAt?: number }
     const tokenExpiresAt =
+      Number(parsed.accessTokenExpiresAt || 0) ||
       Number(parsed.cachedAt || 0) + Number(parsed.expiresIn || 0) * 1000
     if (
       !parsed.accessToken ||
@@ -271,6 +276,10 @@ function writeCachedSessionToDisk(session: BrowserSession) {
 
 export function clearCachedAuthSession() {
   cachedSessionPromise = null
+  passwordSessionPromises = new WeakMap<
+    APIRequestContext,
+    Promise<BrowserSession>
+  >()
   if (fs.existsSync(SESSION_CACHE_FILE)) {
     fs.rmSync(SESSION_CACHE_FILE, { force: true })
   }
@@ -278,7 +287,7 @@ export function clearCachedAuthSession() {
 
 function parseSetCookie(
   setCookieHeader: string | null,
-  cookieName = 'leo_refresh_token',
+  cookieName = REFRESH_COOKIE_NAME,
 ) {
   if (!setCookieHeader) {
     return null
@@ -318,9 +327,12 @@ function requireApiKey() {
 }
 
 function requireLoginCredentials() {
-  expect(LOGIN_NAME, '缺少 E2E_LOGIN_NAME，无法执行真实登录 e2e').toBeTruthy()
   expect(
-    LOGIN_PASSWORD,
+    E2E_LOGIN_NAME,
+    '缺少 E2E_LOGIN_NAME，无法执行真实登录 e2e',
+  ).toBeTruthy()
+  expect(
+    E2E_LOGIN_PASSWORD,
     '缺少 E2E_LOGIN_PASSWORD，无法执行真实登录 e2e',
   ).toBeTruthy()
 }
@@ -346,6 +358,7 @@ function buildMockBrowserSession(): BrowserSession {
   return {
     accessToken: 'leo_mock_api_key_token',
     expiresIn: 1_800,
+    accessTokenExpiresAt: Date.now() + 1_800_000,
     user: {
       id: 'mock-user',
       loginName: 'mock-api-key-user',
@@ -388,7 +401,7 @@ async function loadPermissionCatalog(
     ? buildAuthorizationHeaders(accessToken)
     : buildApiKeyHeaders()
 
-  const response = await request.get(`${API_BASE_URL}/permission/catalog`, {
+  const response = await request.get(`${API_BASE_URL}/permissions/catalog`, {
     headers,
   })
 
@@ -437,6 +450,7 @@ async function createApiKeySession(
   return {
     accessToken: requireApiKey(),
     expiresIn: 1_800,
+    accessTokenExpiresAt: Date.now() + 1_800_000,
     user: {
       id: `api-key:${loginName}`,
       loginName,
@@ -467,8 +481,8 @@ async function createPasswordSession(
 
     const response = await request.post(`${API_BASE_URL}/auth/login`, {
       data: {
-        loginName: LOGIN_NAME,
-        password: LOGIN_PASSWORD,
+        loginName: E2E_LOGIN_NAME,
+        password: E2E_LOGIN_PASSWORD,
       },
       headers: {
         'Content-Type': 'application/json',
@@ -514,6 +528,10 @@ async function createPasswordSession(
       accessToken,
       expiresIn:
         Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 1_800,
+      accessTokenExpiresAt:
+        Date.now() +
+        (Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 1_800) *
+          1000,
       user: {
         ...user,
         permissions: currentPermissions,
@@ -538,27 +556,51 @@ async function createBrowserSession(
     return buildMockBrowserSession()
   }
 
-  const diskSession = readCachedSessionFromDisk()
-  if (diskSession) {
-    return diskSession
-  }
-
   if (API_KEY) {
+    const diskSession = readCachedSessionFromDisk()
+    if (diskSession) {
+      return diskSession
+    }
+
     const session = await createApiKeySession(request)
     writeCachedSessionToDisk(session)
     return session
   }
 
-  const session = await createPasswordSession(request)
-  writeCachedSessionToDisk(session)
-  return session
+  // Password refresh tokens rotate and are bound to a browser context. Never
+  // reuse them through the process-wide or disk cache used by API Key tests.
+  return createPasswordSession(request)
 }
 
 export async function clearBrowserSession(page: Page) {
+  passwordSessionPromises.delete(page.request)
   await page.context().clearCookies()
 }
 
+export async function getPasswordSession(request: APIRequestContext) {
+  const existing = passwordSessionPromises.get(request)
+  if (existing) {
+    const session = await existing
+    const expiresAt = Number(session.accessTokenExpiresAt || 0)
+    if (!expiresAt || expiresAt > Date.now() + 60_000) {
+      return session
+    }
+    passwordSessionPromises.delete(request)
+  }
+
+  const sessionPromise = createPasswordSession(request).catch((error) => {
+    passwordSessionPromises.delete(request)
+    throw error
+  })
+  passwordSessionPromises.set(request, sessionPromise)
+  return sessionPromise
+}
+
 export async function getApiKeySession(request: APIRequestContext) {
+  if (IS_REAL_BACKEND && !API_KEY) {
+    return getPasswordSession(request)
+  }
+
   if (!cachedSessionPromise) {
     cachedSessionPromise = createBrowserSession(request).catch((error) => {
       cachedSessionPromise = null
@@ -568,12 +610,30 @@ export async function getApiKeySession(request: APIRequestContext) {
   return cachedSessionPromise
 }
 
-function updateCachedSession(session: BrowserSession) {
+function updateCachedSession(
+  request: APIRequestContext,
+  session: BrowserSession,
+) {
+  if (IS_REAL_BACKEND && !API_KEY) {
+    passwordSessionPromises.set(request, Promise.resolve(session))
+    return
+  }
+
   cachedSessionPromise = Promise.resolve(session)
   writeCachedSessionToDisk(session)
 }
 
 async function syncSessionFromPage(page: Page, fallback: BrowserSession) {
+  const currentRefreshCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === REFRESH_COOKIE_NAME,
+  )
+  const refreshCookie = currentRefreshCookie
+    ? {
+        name: currentRefreshCookie.name,
+        value: currentRefreshCookie.value,
+        path: currentRefreshCookie.path || '/',
+      }
+    : undefined
   const pageSession = await page.evaluate((storageKeys) => {
     const token = localStorage.getItem(storageKeys.token)
     const tokenExpiresAt = localStorage.getItem(storageKeys.tokenExpiresAt)
@@ -587,7 +647,10 @@ async function syncSessionFromPage(page: Page, fallback: BrowserSession) {
   }, STORAGE_KEYS)
 
   if (!pageSession.token) {
-    return fallback
+    return {
+      ...fallback,
+      refreshCookie,
+    } satisfies BrowserSession
   }
 
   let user = fallback.user
@@ -600,16 +663,19 @@ async function syncSessionFromPage(page: Page, fallback: BrowserSession) {
   }
 
   const expiresAt = Number(pageSession.tokenExpiresAt || 0)
-  const expiresIn =
-    Number.isFinite(expiresAt) && expiresAt > Date.now()
-      ? Math.max(60, Math.floor((expiresAt - Date.now()) / 1000))
-      : fallback.expiresIn
+  const hasValidExpiresAt = Number.isFinite(expiresAt) && expiresAt > Date.now()
+  const expiresIn = hasValidExpiresAt
+    ? Math.max(1, Math.ceil((expiresAt - Date.now()) / 1000))
+    : fallback.expiresIn
 
   return {
     accessToken: pageSession.token,
     expiresIn,
+    accessTokenExpiresAt: hasValidExpiresAt
+      ? expiresAt
+      : fallback.accessTokenExpiresAt,
     user,
-    refreshCookie: fallback.refreshCookie,
+    refreshCookie,
   } satisfies BrowserSession
 }
 
@@ -628,12 +694,18 @@ async function applyBrowserSession(page: Page, session: BrowserSession) {
     ])
   }
 
+  const accessTokenExpiresAt =
+    Number(session.accessTokenExpiresAt || 0) ||
+    Date.now() + session.expiresIn * 1000
+
   await page.goto('about:blank')
   await page.context().addInitScript(
-    ({ storageKeys, token, user, expiresIn }) => {
-      const expiresAt = String(Date.now() + expiresIn * 1000)
+    ({ storageKeys, token, user, accessTokenExpiresAt }) => {
       localStorage.setItem(storageKeys.token, token)
-      localStorage.setItem(storageKeys.tokenExpiresAt, expiresAt)
+      localStorage.setItem(
+        storageKeys.tokenExpiresAt,
+        String(accessTokenExpiresAt),
+      )
       localStorage.setItem(storageKeys.user, JSON.stringify(user))
       localStorage.setItem(storageKeys.authPersistence, 'local')
       localStorage.setItem('leo-locale', 'zh-CN')
@@ -646,15 +718,17 @@ async function applyBrowserSession(page: Page, session: BrowserSession) {
       storageKeys: STORAGE_KEYS,
       token: session.accessToken,
       user: session.user,
-      expiresIn: session.expiresIn,
+      accessTokenExpiresAt,
     },
   )
   await page.goto(APP_BASE_URL, { waitUntil: 'domcontentloaded' })
   await page.evaluate(
-    ({ storageKeys, token, user, expiresIn }) => {
-      const expiresAt = String(Date.now() + expiresIn * 1000)
+    ({ storageKeys, token, user, accessTokenExpiresAt }) => {
       localStorage.setItem(storageKeys.token, token)
-      localStorage.setItem(storageKeys.tokenExpiresAt, expiresAt)
+      localStorage.setItem(
+        storageKeys.tokenExpiresAt,
+        String(accessTokenExpiresAt),
+      )
       localStorage.setItem(storageKeys.user, JSON.stringify(user))
       localStorage.setItem(storageKeys.authPersistence, 'local')
       localStorage.setItem('leo-locale', 'zh-CN')
@@ -667,7 +741,7 @@ async function applyBrowserSession(page: Page, session: BrowserSession) {
       storageKeys: STORAGE_KEYS,
       token: session.accessToken,
       user: session.user,
-      expiresIn: session.expiresIn,
+      accessTokenExpiresAt,
     },
   )
 }
@@ -687,7 +761,7 @@ export async function primeApiKeySession(page: Page) {
   }
 
   session = await syncSessionFromPage(page, session)
-  updateCachedSession(session)
+  updateCachedSession(page.request, session)
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
 
   return session
@@ -746,11 +820,13 @@ export async function fetchCollection(
   const data = payload.data
   const records = Array.isArray(data)
     ? data
-    : Array.isArray(data?.rows)
-      ? data.rows
-      : Array.isArray(data?.records)
-        ? data.records
-        : []
+    : Array.isArray(data?.content)
+      ? data.content
+      : Array.isArray(data?.rows)
+        ? data.rows
+        : Array.isArray(data?.records)
+          ? data.records
+          : []
 
   return {
     ok: true,

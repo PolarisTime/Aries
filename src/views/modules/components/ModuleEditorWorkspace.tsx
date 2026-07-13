@@ -184,7 +184,10 @@ export function ModuleEditorWorkspace({
   const canAddManualItemsForCurrentRecord =
     canAddManualItems && !parentImportedItemEditLocked
   const canImportParentItems =
-    Boolean(config.parentImport) && canManageCurrentItems
+    Boolean(config.parentImport) &&
+    canSave &&
+    !lineItemsLocked &&
+    !parentImportedItemEditLocked
   const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
   const useFinanceEditorLayout = FINANCE_DOCUMENT_MODULES.has(moduleKey)
   const {

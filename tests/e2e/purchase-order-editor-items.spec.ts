@@ -1,87 +1,134 @@
-import type { Page } from '@playwright/test'
+import {
+  e2eApiUrl,
+  getCurrentAccessToken,
+  loginAsE2eUser,
+} from './support/business-e2e'
 import { expect, test } from './support/test'
 
-const API_BASE_URL = 'http://127.0.0.1:11211/api'
 const APP_BASE_URL = 'http://127.0.0.1:3100'
 
-async function loginAsTest9(page: Page) {
-  const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
-    data: {
-      loginName: 'test9',
-      password: '123456',
-    },
-  })
-  expect(response.ok()).toBeTruthy()
-
-  const payload = (await response.json()) as {
-    code: number
-    data?: {
-      accessToken?: string
-      expiresIn?: string | number
-      user?: Record<string, unknown>
-    }
-  }
-  expect(payload.code).toBe(0)
-
-  const accessToken = String(payload.data?.accessToken || '')
-  const user = payload.data?.user || null
-  const expiresIn = Number(payload.data?.expiresIn || 1800)
-
-  await page.addInitScript(
-    ({
-      token,
-      currentUser,
-      ttl,
-    }: {
-      token: string
-      currentUser: unknown
-      ttl: number
-    }) => {
-      const expiresAt = String(Date.now() + ttl * 1000)
-      localStorage.setItem('aries-token', token)
-      localStorage.setItem('aries-token-expires-at', expiresAt)
-      localStorage.setItem('aries-user', JSON.stringify(currentUser))
-      localStorage.setItem('aries-auth-persistence', 'local')
-      localStorage.setItem('leo-locale', 'zh-CN')
-    },
-    {
-      token: accessToken,
-      currentUser: user,
-      ttl: Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 1800,
-    },
-  )
-
-  await page.goto(`${APP_BASE_URL}/purchase-order`, {
-    waitUntil: 'networkidle',
-  })
+interface PurchaseOrderRecord {
+  id?: string
+  orderNo?: string
+  items?: Array<Record<string, unknown>>
 }
 
 test('purchase order editor loads detail items from detail api', async ({
   page,
 }) => {
   test.setTimeout(60_000)
-  await loginAsTest9(page)
+  await loginAsE2eUser(page)
+  const token = await getCurrentAccessToken(page)
+  const headers = { Authorization: `Bearer ${token}` }
 
-  await page.getByPlaceholder('输入采购订单号').fill('PO-API-1778336854')
-  await page.getByRole('button', { name: /查询/ }).click()
+  const listResponse = await page.request.get(
+    e2eApiUrl('purchase-order', '?page=0&size=50'),
+    { headers },
+  )
+  expect(listResponse.ok(), '读取采购订单列表失败').toBeTruthy()
+  const listPayload = (await listResponse.json()) as {
+    code: number
+    data?: {
+      content?: PurchaseOrderRecord[]
+      records?: PurchaseOrderRecord[]
+      rows?: PurchaseOrderRecord[]
+    }
+  }
+  expect(listPayload.code).toBe(0)
+  const records =
+    listPayload.data?.content ||
+    listPayload.data?.records ||
+    listPayload.data?.rows ||
+    []
+
+  let target: PurchaseOrderRecord | null = null
+  for (const record of records) {
+    const id = String(record.id || '').trim()
+    const orderNo = String(record.orderNo || '').trim()
+    if (!id || !orderNo) {
+      continue
+    }
+
+    const detailResponse = await page.request.get(
+      e2eApiUrl('purchase-order', id),
+      { headers },
+    )
+    if (!detailResponse.ok()) {
+      continue
+    }
+    const detailPayload = (await detailResponse.json()) as {
+      code: number
+      data?: PurchaseOrderRecord
+    }
+    if (
+      detailPayload.code === 0 &&
+      Array.isArray(detailPayload.data?.items) &&
+      detailPayload.data.items.length > 0
+    ) {
+      target = detailPayload.data
+      break
+    }
+  }
+
+  test.skip(!target, '真实后端没有含明细的采购订单')
+  expect(target).toBeTruthy()
+  if (!target) {
+    return
+  }
+
+  const targetId = String(target.id || '')
+  const targetOrderNo = String(target.orderNo || '')
+  const targetItems = target.items || []
+  await page.goto(`${APP_BASE_URL}/purchase-order`, {
+    waitUntil: 'networkidle',
+  })
+
+  const orderNoInput = page.getByPlaceholder('输入采购订单号')
+  await orderNoInput.fill(targetOrderNo)
+  const queryButton = page.getByRole('button', { name: /查\s*询/ })
+  if (
+    (await queryButton.count()) > 0 &&
+    (await queryButton.first().isVisible())
+  ) {
+    await queryButton.first().click()
+  } else {
+    await orderNoInput.press('Enter')
+  }
 
   const row = page
     .locator('tbody tr:not(.ant-table-measure-row)')
-    .filter({ hasText: 'PO-API-1778336854' })
+    .filter({ hasText: targetOrderNo })
     .first()
   await expect(row).toBeVisible()
+  const detailRequest = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      response.url().endsWith(`/purchase-orders/${targetId}`) &&
+      response.ok(),
+  )
   await row.dblclick()
+  await detailRequest
 
   const overlay = page.locator('.workspace-overlay-panel').last()
   await expect(overlay).toBeVisible()
+  const detailRows = overlay.locator(
+    '.module-detail-table tbody tr:not(.ant-table-measure-row)',
+  )
+  await expect(detailRows).toHaveCount(targetItems.length)
 
-  await expect(
-    overlay.locator(
-      '.module-detail-table tbody tr:not(.ant-table-measure-row)',
-    ),
-  ).toHaveCount(1)
-  await expect(
-    overlay.locator('input[value="HZ-YG-PL8"]').first(),
-  ).toBeVisible()
-  await expect(overlay.locator('.module-detail-table')).toContainText('永钢')
+  const firstItem = targetItems[0] || {}
+  const snapshotValues = [
+    firstItem.brand,
+    firstItem.category,
+    firstItem.material,
+    firstItem.spec,
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+  expect(snapshotValues.length, '采购订单明细缺少商品快照字段').toBeGreaterThan(
+    0,
+  )
+  for (const value of snapshotValues) {
+    await expect(overlay.locator('.module-detail-table')).toContainText(value)
+  }
 })

@@ -16,6 +16,7 @@ import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
   saveBusinessModule,
+  updateBusinessModuleStatus,
 } from '@/api/business'
 import {
   fetchSettlementCompanyOptions,
@@ -962,8 +963,9 @@ export function useModuleEditorWorkspace({
         })
       }
 
+      const validatedFields = await form.validateFields()
       const validatedValues = applyAuthoritativePrimaryNo(
-        await form.validateFields(),
+        { ...form.getFieldsValue(true), ...validatedFields },
         config.primaryNoKey,
         effectiveAuthoritativePrimaryNo,
       )
@@ -1074,16 +1076,48 @@ export function useModuleEditorWorkspace({
       })
 
       if (audit && editorAuditTarget) {
-        draftRecord[editorAuditTarget.key] = editorAuditTarget.value
+        const submittedStatus = asString(
+          draftRecord[editorAuditTarget.key],
+        ).trim()
+        if (submittedStatus === editorAuditTarget.value) {
+          const existingStatus = asString(
+            record?.[editorAuditTarget.key],
+          ).trim()
+          const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
+          const draftStatus =
+            existingStatus && existingStatus !== editorAuditTarget.value
+              ? existingStatus
+              : typeof defaultStatus === 'string'
+                ? defaultStatus.trim()
+                : ''
+          if (draftStatus) {
+            draftRecord[editorAuditTarget.key] = draftStatus
+          } else {
+            delete draftRecord[editorAuditTarget.key]
+          }
+        }
       }
 
       const savedResult = await saveBusinessModule(moduleKey, draftRecord)
+      let savedRecord = savedResult.data
+      if (audit && editorAuditTarget) {
+        const savedId = String(savedRecord?.id || draftRecord.id || '').trim()
+        if (!savedId) {
+          throw new Error('保存成功但未返回单据 ID，无法完成审核')
+        }
+        const statusResult = await updateBusinessModuleStatus(
+          moduleKey,
+          savedId,
+          editorAuditTarget.value,
+        )
+        savedRecord = statusResult.data || savedRecord
+      }
       const preallocatedIdWarning = buildPreallocatedIdWarning({
         isEdit,
         snowflakeBusinessNoEnabled,
         primaryNoKey: config.primaryNoKey,
         draftRecord,
-        savedRecord: savedResult.data,
+        savedRecord,
       })
       if (userKey) {
         removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
@@ -1092,13 +1126,13 @@ export function useModuleEditorWorkspace({
         setSaveResult({
           status: 'warning',
           message: preallocatedIdWarning.content,
-          record: savedResult.data,
+          record: savedRecord,
         })
       } else {
         setSaveResult({
           status: 'success',
           message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
-          record: savedResult.data,
+          record: savedRecord,
         })
       }
       onSaved()

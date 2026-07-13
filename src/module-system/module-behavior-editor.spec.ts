@@ -175,6 +175,50 @@ describe('module-behavior-editor', () => {
     expect(form.projectName).toBe('项目A')
   })
 
+  it('invoice-issue snapshots stable customer and project identities', () => {
+    findCustomerOptionMock.mockReturnValue({
+      id: '700520000000000001',
+      customerCode: 'C001',
+      customerName: '客户A',
+      defaultSettlementCompanyId: '9',
+      defaultSettlementCompanyName: '主体A',
+    })
+    const form = {
+      customerId: '700520000000000001',
+      customerName: '旧客户',
+      projectId: '700520000000000002',
+      projectName: '旧项目',
+    } as Record<string, unknown>
+    const syncEditorForm = getSyncEditorForm('invoice-issue')
+
+    syncEditorForm(form, { changedKeys: new Set(['customerId']) })
+
+    expect(form).toMatchObject({
+      customerId: '700520000000000001',
+      customerCode: 'C001',
+      customerName: '客户A',
+      projectId: '',
+      projectName: '',
+      settlementCompanyId: '9',
+      settlementCompanyName: '主体A',
+    })
+
+    findProjectOptionMock.mockReturnValue({
+      id: '700520000000000002',
+      customerId: '700520000000000001',
+      projectCode: 'P001',
+      projectName: '项目A',
+    })
+    form.projectId = '700520000000000002'
+    syncEditorForm(form, { changedKeys: new Set(['projectId']) })
+
+    expect(findProjectOptionMock).toHaveBeenCalledWith(
+      '700520000000000002',
+      '700520000000000001',
+    )
+    expect(form.projectName).toBe('项目A')
+  })
+
   it('receipt atomically snapshots customer identity and clears dependent identity', () => {
     findCustomerOptionMock.mockReturnValue({
       id: '1',
@@ -336,16 +380,21 @@ describe('module-behavior-editor', () => {
   it('freight-bill uses the selected carrier default settlement company', () => {
     findCarrierOptionMock.mockReturnValue({
       carrierCode: ' WL-001 ',
+      carrierName: '物流甲',
       defaultSettlementCompanyId: 10,
       defaultSettlementCompanyName: '主体B',
     })
-    const form = { carrierName: '物流甲' } as Record<string, unknown>
+    const form = { carrierName: '700520000000000001' } as Record<
+      string,
+      unknown
+    >
 
     getSyncEditorForm('freight-bill')(form, {
       changedKeys: new Set(['carrierName']),
     })
 
-    expect(findCarrierOptionMock).toHaveBeenCalledWith('物流甲')
+    expect(findCarrierOptionMock).toHaveBeenCalledWith('700520000000000001')
+    expect(form.carrierName).toBe('物流甲')
     expect(form.carrierCode).toBe('WL-001')
     expect(form.settlementCompanyId).toBe('10')
     expect(form.settlementCompanyName).toBe('主体B')

@@ -19,9 +19,9 @@ describe('module-parent-selector-utils', () => {
       expect(hasImportableQuantity('purchase-order', record)).toBe(true)
     })
 
-    it('returns false when items is not an array', () => {
+    it('keeps summary rows without loaded items for detail resolution', () => {
       const record = { id: '1' } as any
-      expect(hasImportableQuantity('purchase-order', record)).toBe(false)
+      expect(hasImportableQuantity('purchase-order', record)).toBe(true)
     })
 
     it('allows sales-order list rows without items because details are loaded before import', () => {
@@ -282,10 +282,10 @@ describe('module-parent-selector-utils', () => {
       expect(result).toHaveLength(0)
     })
 
-    it('handles records with no items for purchase-order', () => {
+    it('keeps summary records with no items for detail resolution', () => {
       const records = [{ id: '1', status: '已审核' }]
       const result = filterImportableParentRecords('purchase-order', records)
-      expect(result).toHaveLength(0)
+      expect(result).toHaveLength(1)
     })
 
     it('keeps audited purchase-order import candidates with positive importableQuantity', () => {

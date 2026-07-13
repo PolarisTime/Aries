@@ -10,7 +10,9 @@ test.describe('global search coverage', () => {
 
     await primeApiKeySession(page)
     await page.goto('/dashboard')
-    await expect(page.getByText('业务流程总览')).toBeVisible()
+    await expect(
+      page.getByText('业务流程', { exact: true }).first(),
+    ).toBeVisible()
 
     if (!collection.ok || collection.records.length === 0) {
       await expect(
@@ -42,7 +44,7 @@ test.describe('global search coverage', () => {
     const overlay = page.locator('.workspace-overlay-panel').last()
     await expect(overlay).toBeVisible()
     await expect(overlay.locator('.workspace-overlay-title')).toContainText(
-      '记录详情',
+      '采购订单详情',
     )
     await assertNoFatalUiErrors()
   })

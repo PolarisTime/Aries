@@ -57,10 +57,14 @@ test.describe('dashboard backend contract', () => {
 
     const dashboardPayload = payloads[0] as ApiPayload<{
       loginName?: string
-      serverTime?: string
+      serverTime?: string | number
     }>
     expect(dashboardPayload.data?.loginName).toEqual(expect.any(String))
-    expect(dashboardPayload.data?.serverTime).toEqual(expect.any(String))
+    const serverTime = dashboardPayload.data?.serverTime
+    expect(
+      typeof serverTime === 'string' ||
+        (typeof serverTime === 'number' && Number.isFinite(serverTime)),
+    ).toBe(true)
 
     for (const [index, payload] of payloads.slice(1).entries()) {
       const path = startupApiPaths[index + 1]

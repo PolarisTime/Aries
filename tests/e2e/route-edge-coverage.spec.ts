@@ -82,6 +82,40 @@ async function mockRouteEdgeApis(page: import('@playwright/test').Page) {
       )
     }
 
+    if (apiPath === '/runtime-config') {
+      return route.fulfill(
+        jsonResponse({
+          code: 0,
+          data: {
+            ui: {
+              defaultPageSize: 20,
+              showSnowflakeId: true,
+              watermark: {
+                enabled: false,
+                content: '',
+                fontSize: 18,
+                color: 'rgba(0,0,0,0.08)',
+                rotate: -22,
+                density: 200,
+              },
+            },
+            business: {
+              defaultTaxRate: 0.13,
+              statement: {
+                customerReceiptAmountZero: false,
+                supplierFullPayment: false,
+              },
+              businessNo: { useSnowflakeId: true },
+            },
+            features: {
+              weightOnlyPurchaseInbound: false,
+              weightOnlySalesOutbound: false,
+            },
+          },
+        }),
+      )
+    }
+
     if (apiPath === '/ledger-adjustments') {
       return route.fulfill(
         jsonResponse({
@@ -134,12 +168,11 @@ test.describe('route edge coverage', () => {
     await page.goto('/ledger-adjustment')
 
     await expect(page).toHaveURL(/\/ledger-adjustment(?:\?|$)/)
-    await expect(page.getByRole('main').first()).toContainText(
-      /adjustmentNo|台账调整单/,
-    )
-    await expect(page.getByRole('main').first()).toContainText(
-      /搜索关键词|Keyword/,
-    )
+    await expect(page.locator('form[aria-label="筛选条件"]')).toBeVisible()
+    await expect(
+      page.getByRole('columnheader', { name: '调整单号' }),
+    ).toBeVisible()
+    await expect(page.locator('table').first()).toBeVisible()
     await assertNoFatalUiErrors()
   })
 
@@ -197,7 +230,7 @@ test.describe('route edge coverage', () => {
       /无法连接到服务器|Cannot Connect to Server/,
     )
     await expect(
-      page.getByRole('button', { name: /重试|Retry/i }),
+      page.getByRole('button', { name: /重\s*试|Retry/i }),
     ).toBeVisible()
     await assertNoFatalUiErrors()
   })
@@ -211,9 +244,8 @@ test.describe('route edge coverage', () => {
     await page.goto(dashboardRoute.path)
 
     await expect(page).toHaveURL(/\/dashboard(?:\?|$)/)
-    await expect(page.getByRole('main').first()).toContainText(
-      /Steel Trading Business Platform|工作台/,
-    )
+    await expect(page.locator('.dashboard-workplace-header')).toBeVisible()
+    await expect(page.getByText(/业务流程|Business Flow/).first()).toBeVisible()
     await assertNoFatalUiErrors()
   })
 })

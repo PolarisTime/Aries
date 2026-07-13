@@ -1,15 +1,23 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { e2eApiUrl } from './support/api-key'
 import {
+  completePurchaseInboundFromOrder,
+  detailRowSpinbuttonByColumn,
+  fillDateInput,
   fillOrReadFormField,
   fillPurchaseOrderLineItem,
   formField,
+  importParentByKeyword,
+  loginAsE2eUser,
+  openCreateEditor,
+  openCreateOverlay,
+  saveAndAuditOverlay,
+  selectAntOption,
+  setSpinbuttonValue,
   waitForFirstDetailRow,
 } from './support/business-e2e'
+import { E2E_LOGIN_NAME } from './support/e2e-credentials'
 import { expect, test } from './support/test'
-
-const API_BASE_URL = 'http://127.0.0.1:11211/api'
-const APP_BASE_URL = 'http://127.0.0.1:3100'
 
 function buildSuffix() {
   return `${Date.now()}${Math.floor(Math.random() * 1000)}`
@@ -41,41 +49,141 @@ function compareRecordIds(left: { id?: string }, right: { id?: string }) {
   return leftId > rightId ? -1 : 1
 }
 
-async function loginAsTest9(page: Page) {
-  const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
-    data: { loginName: 'test9', password: '123456' },
-  })
-  expect(response.ok()).toBeTruthy()
-  const payload = (await response.json()) as {
-    code: number
-    data?: {
-      accessToken?: string
-      expiresIn?: string | number
-      user?: Record<string, unknown>
-    }
-  }
-  expect(payload.code).toBe(0)
-  await page.addInitScript(
-    ({ token, currentUser, ttl }) => {
-      const expiresAt = String(Date.now() + ttl * 1000)
-      localStorage.setItem('aries-token', token)
-      localStorage.setItem('aries-token-expires-at', expiresAt)
-      localStorage.setItem('aries-user', JSON.stringify(currentUser))
-      localStorage.setItem('aries-auth-persistence', 'local')
-      localStorage.setItem('leo-locale', 'zh-CN')
-      sessionStorage.removeItem('aries-token')
-      sessionStorage.removeItem('aries-token-expires-at')
-      sessionStorage.removeItem('aries-user')
-      sessionStorage.removeItem('aries-auth-persistence')
-    },
-    {
-      token: String(payload.data?.accessToken || ''),
-      currentUser: payload.data?.user || null,
-      ttl: Number(payload.data?.expiresIn || 1800),
-    },
+interface CustomerProjectIdentity {
+  customerId: string
+  customerName: string
+  projectId: string
+  projectName: string
+}
+
+interface PurchaseMasterIdentity {
+  supplierId: string
+  supplierLabel: string
+  warehouseId: string
+  warehouseLabel: string
+}
+
+async function loadCustomerProjectIdentity(
+  page: Page,
+  token: string,
+): Promise<CustomerProjectIdentity> {
+  const headers = { Authorization: `Bearer ${token}` }
+  const customerResponse = await page.request.get(
+    e2eApiUrl('customer', 'options'),
+    { headers },
   )
-  await page.goto(`${APP_BASE_URL}/dashboard`, { waitUntil: 'networkidle' })
-  await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
+  expect(customerResponse.ok(), '读取客户选项失败').toBeTruthy()
+  const customerPayload = (await customerResponse.json()) as {
+    code: number
+    data?: Array<{
+      id?: string
+      customerName?: string
+    }>
+  }
+  expect(customerPayload.code).toBe(0)
+  const customer = customerPayload.data?.find(
+    (item) =>
+      String(item.id || '').trim() && String(item.customerName || '').trim(),
+  )
+  expect(customer, '真实后端没有可用客户').toBeTruthy()
+  if (!customer) {
+    throw new Error('真实后端没有可用客户')
+  }
+
+  const customerId = String(customer.id || '').trim()
+  const projectResponse = await page.request.get(
+    e2eApiUrl(
+      'projects',
+      `options?customerId=${encodeURIComponent(customerId)}`,
+    ),
+    { headers },
+  )
+  expect(projectResponse.ok(), '读取客户项目选项失败').toBeTruthy()
+  const projectPayload = (await projectResponse.json()) as {
+    code: number
+    data?: Array<{
+      id?: string
+      customerId?: string
+      projectName?: string
+    }>
+  }
+  expect(projectPayload.code).toBe(0)
+  const project = projectPayload.data?.find(
+    (item) =>
+      String(item.id || '').trim() &&
+      String(item.customerId || '').trim() === customerId &&
+      String(item.projectName || '').trim(),
+  )
+  expect(project, '真实后端没有当前客户可用的项目').toBeTruthy()
+  if (!project) {
+    throw new Error('真实后端没有当前客户可用的项目')
+  }
+
+  return {
+    customerId,
+    customerName: String(customer.customerName || '').trim(),
+    projectId: String(project.id || '').trim(),
+    projectName: String(project.projectName || '').trim(),
+  }
+}
+
+async function loadPurchaseMasterIdentity(
+  page: Page,
+  token: string,
+): Promise<PurchaseMasterIdentity> {
+  const headers = { Authorization: `Bearer ${token}` }
+  const [supplierResponse, warehouseResponse] = await Promise.all([
+    page.request.get(e2eApiUrl('supplier', 'options'), { headers }),
+    page.request.get(e2eApiUrl('warehouse', 'options'), { headers }),
+  ])
+  expect(supplierResponse.ok(), '读取供应商选项失败').toBeTruthy()
+  expect(warehouseResponse.ok(), '读取仓库选项失败').toBeTruthy()
+
+  const supplierPayload = (await supplierResponse.json()) as {
+    code: number
+    data?: Array<{
+      id?: string
+      value?: string
+      label?: string
+      supplierName?: string
+    }>
+  }
+  const warehousePayload = (await warehouseResponse.json()) as {
+    code: number
+    data?: Array<{
+      id?: string
+      value?: string
+      label?: string
+      warehouseName?: string
+    }>
+  }
+  expect(supplierPayload.code).toBe(0)
+  expect(warehousePayload.code).toBe(0)
+
+  const supplier = supplierPayload.data?.find(
+    (item) =>
+      String(item.id || item.value || '').trim() &&
+      String(item.label || item.supplierName || '').trim(),
+  )
+  const warehouse = warehousePayload.data?.find(
+    (item) =>
+      String(item.id || item.value || '').trim() &&
+      String(item.label || item.warehouseName || '').trim(),
+  )
+  expect(supplier, '真实后端没有可用供应商').toBeTruthy()
+  expect(warehouse, '真实后端没有可用仓库').toBeTruthy()
+  if (!supplier || !warehouse) {
+    throw new Error('真实后端缺少采购链所需的供应商或仓库')
+  }
+
+  return {
+    supplierId: String(supplier.id || supplier.value || '').trim(),
+    supplierLabel: String(supplier.label || supplier.supplierName || '').trim(),
+    warehouseId: String(warehouse.id || warehouse.value || '').trim(),
+    warehouseLabel: String(
+      warehouse.label || warehouse.warehouseName || '',
+    ).trim(),
+  }
 }
 
 async function getCurrentAccessToken(page: Page) {
@@ -86,152 +194,12 @@ async function getCurrentAccessToken(page: Page) {
   return token
 }
 
-async function openCreateOverlay(page: Page) {
-  const beforeCount = await page.locator('.workspace-overlay-panel').count()
-  await page.getByRole('button', { name: /新建|新增/ }).click()
-  const overlay = page.locator('.workspace-overlay-panel').nth(beforeCount)
-  await expect(overlay).toBeVisible()
-  return overlay
-}
-
-async function selectAntOption(target: Locator, optionText?: string) {
-  await target.click()
-  const dropdown = target.page().locator('.ant-select-dropdown:visible').last()
-  await expect(dropdown).toBeVisible()
-  if (optionText) {
-    const input = target.locator('input').last()
-    if ((await input.count()) > 0) {
-      await input.fill(optionText)
-    }
-    const matchedOption = dropdown
-      .locator('.ant-select-item-option')
-      .filter({ hasText: optionText })
-      .first()
-    await expect(matchedOption).toBeVisible()
-    await matchedOption.click()
-    return
-  }
-  const firstOption = dropdown
-    .locator('.ant-select-item-option:not(.ant-select-item-option-disabled)')
-    .first()
-  await expect(firstOption).toBeVisible()
-  await firstOption.click()
-}
-
-async function fillDateInput(target: Locator, value: string) {
-  await target.fill(value)
-  await target.press('Enter')
-}
-
-async function setSpinbuttonValue(target: Locator, value: string) {
-  await target.click()
-  await target.press('ControlOrMeta+A')
-  await target.pressSequentially(value)
-  await target.press('Enter')
-  await target.blur()
-}
-
-async function waitForSaveOutcome(
+async function createPurchaseSalesCompletedChain(
   page: Page,
-  overlay: Locator,
-  expectedNo?: string,
+  suffix: string,
+  identity: CustomerProjectIdentity,
+  purchaseMaster: PurchaseMasterIdentity,
 ) {
-  const rowInList = expectedNo
-    ? page
-        .locator('tbody tr:not(.ant-table-measure-row)')
-        .filter({ hasText: expectedNo })
-        .first()
-    : null
-  const successMessage = page.locator('.ant-message-notice').filter({
-    hasText: /创建成功|更新成功|保存成功|对账单已生成/,
-  })
-  const errorMessage = page.locator('.ant-message-error').last()
-  const validationErrors = overlay.locator('.ant-form-item-explain-error')
-  const saveResultText = page.getByText(
-    /保存成功|创建成功|更新成功|对账单已生成/,
-  )
-
-  await expect
-    .poll(
-      async () => {
-        if (
-          (await errorMessage.count()) > 0 &&
-          (await errorMessage.isVisible())
-        ) {
-          const text = (await errorMessage.textContent())?.trim()
-          return text ? `error:${text}` : 'error'
-        }
-        if ((await validationErrors.count()) > 0) {
-          const firstError = validationErrors.first()
-          if (await firstError.isVisible()) {
-            const text = (await firstError.textContent())?.trim()
-            return text ? `validation:${text}` : 'validation'
-          }
-        }
-        if ((await successMessage.count()) > 0) return 'message'
-        if (
-          await saveResultText
-            .last()
-            .isVisible()
-            .catch(() => false)
-        ) {
-          return 'result'
-        }
-        if (
-          rowInList &&
-          (await rowInList.count()) > 0 &&
-          (await rowInList.isVisible())
-        )
-          return 'row'
-        if (!(await overlay.isVisible().catch(() => false))) return 'closed'
-        return 'pending'
-      },
-      { timeout: 20_000, intervals: [200, 500, 1000] },
-    )
-    .not.toBe('pending')
-}
-
-async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
-  await overlay
-    .locator('button.overlay-action-button')
-    .filter({ hasText: /^保存$/ })
-    .click()
-  await waitForSaveOutcome(page, overlay, expectedNo)
-}
-
-async function saveAndAuditOverlay(
-  page: Page,
-  overlay: Locator,
-  expectedNo?: string,
-) {
-  await overlay
-    .locator('button.overlay-action-button')
-    .filter({ hasText: /^保存并审核$/ })
-    .click()
-  await waitForSaveOutcome(page, overlay, expectedNo)
-}
-
-async function importParentByKeyword(
-  page: Page,
-  overlay: Locator,
-  buttonName: string,
-  keyword: string,
-) {
-  const beforeCount = await page.locator('.workspace-overlay-panel').count()
-  await overlay.getByRole('button', { name: buttonName }).click()
-  const selector = page.locator('.workspace-overlay-panel').nth(beforeCount)
-  await expect(selector).toBeVisible()
-  await selector.getByPlaceholder('搜索单据号...').fill(keyword)
-  await selector.getByPlaceholder('搜索单据号...').press('Enter')
-  const row = selector
-    .locator('tbody tr:not(.ant-table-measure-row)')
-    .filter({ hasText: keyword })
-    .first()
-  await expect(row).toBeVisible()
-  await row.click()
-}
-
-async function createPurchaseSalesCompletedChain(page: Page, suffix: string) {
   const orderDate = isoToday()
   const deliveryDate = isoNextDay()
   let purchaseOrderNo = `PO-CS-${suffix}`
@@ -241,8 +209,8 @@ async function createPurchaseSalesCompletedChain(page: Page, suffix: string) {
   await page.goto('/purchase-order')
   const purchaseOrderOverlay = await openCreateOverlay(page)
   await selectAntOption(
-    formField(purchaseOrderOverlay, 'supplierName'),
-    '益海（浙江）物联网科技有限公司',
+    formField(purchaseOrderOverlay, 'supplierId'),
+    purchaseMaster.supplierLabel,
   )
   purchaseOrderNo = await fillOrReadFormField(
     formField(purchaseOrderOverlay, 'orderNo'),
@@ -250,8 +218,10 @@ async function createPurchaseSalesCompletedChain(page: Page, suffix: string) {
   )
   await fillDateInput(formField(purchaseOrderOverlay, 'orderDate'), orderDate)
   const purchaseOrderRow = await waitForFirstDetailRow(purchaseOrderOverlay)
-  await fillPurchaseOrderLineItem(purchaseOrderRow)
-  await saveOverlay(page, purchaseOrderOverlay, purchaseOrderNo)
+  await fillPurchaseOrderLineItem(purchaseOrderRow, {
+    warehouseName: purchaseMaster.warehouseLabel,
+  })
+  await saveAndAuditOverlay(page, purchaseOrderOverlay, purchaseOrderNo)
 
   await page.goto('/sales-order')
   const salesOrderOverlay = await openCreateOverlay(page)
@@ -260,12 +230,12 @@ async function createPurchaseSalesCompletedChain(page: Page, suffix: string) {
     salesOrderNo,
   )
   await selectAntOption(
-    formField(salesOrderOverlay, 'customerName'),
-    '浙江大东吴杭萧绿建科技有限公司',
+    formField(salesOrderOverlay, 'customerId'),
+    identity.customerName,
   )
   await selectAntOption(
-    formField(salesOrderOverlay, 'projectName'),
-    '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
+    formField(salesOrderOverlay, 'projectId'),
+    identity.projectName,
   )
   await fillDateInput(
     formField(salesOrderOverlay, 'deliveryDate'),
@@ -279,14 +249,15 @@ async function createPurchaseSalesCompletedChain(page: Page, suffix: string) {
   )
   const salesOrderRow = await waitForFirstDetailRow(salesOrderOverlay)
   await setSpinbuttonValue(
-    salesOrderRow.locator('input[role="spinbutton"]').nth(0),
-    '6',
+    await detailRowSpinbuttonByColumn(salesOrderRow, '数量'),
+    '10',
   )
   await setSpinbuttonValue(
-    salesOrderRow.locator('input[role="spinbutton"]').nth(1),
+    await detailRowSpinbuttonByColumn(salesOrderRow, '单价'),
     '3600',
   )
-  await saveOverlay(page, salesOrderOverlay, salesOrderNo)
+  await saveAndAuditOverlay(page, salesOrderOverlay, salesOrderNo)
+  await completePurchaseInboundFromOrder(page, purchaseOrderNo, orderDate)
 
   await page.goto('/sales-outbound')
   const salesOutboundOverlay = await openCreateOverlay(page)
@@ -314,13 +285,21 @@ test('creates customer statement and receipt from completed sales flow', async (
   assertNoFatalUiErrors,
 }) => {
   test.setTimeout(240_000)
-  await loginAsTest9(page)
+  await loginAsE2eUser(page)
+  const token = await getCurrentAccessToken(page)
+  const identity = await loadCustomerProjectIdentity(page, token)
+  const purchaseMaster = await loadPurchaseMasterIdentity(page, token)
 
   const suffix = buildSuffix()
   let receiptNo = `RC-CS-${suffix}`
 
   const { salesOrderNo, deliveryDate } =
-    await createPurchaseSalesCompletedChain(page, suffix)
+    await createPurchaseSalesCompletedChain(
+      page,
+      suffix,
+      identity,
+      purchaseMaster,
+    )
 
   const fetchSalesOrderId = async () => {
     const token = await getCurrentAccessToken(page)
@@ -354,43 +333,113 @@ test('creates customer statement and receipt from completed sales flow', async (
     .not.toBe('')
 
   const salesOrderId = await fetchSalesOrderId()
-  const currentToken = await getCurrentAccessToken(page)
-
-  const salesOrderDetailRes = await page.request.get(
-    e2eApiUrl('sales-order', salesOrderId),
-    { headers: { Authorization: `Bearer ${currentToken}` } },
-  )
-  const salesOrderDetailJson = (await salesOrderDetailRes.json()) as {
-    code: number
-    data?: { status?: string; deliveryDate?: string }
+  const fetchSalesOrderDetail = async () => {
+    const currentToken = await getCurrentAccessToken(page)
+    const response = await page.request.get(
+      e2eApiUrl('sales-order', salesOrderId),
+      { headers: { Authorization: `Bearer ${currentToken}` } },
+    )
+    const json = (await response.json()) as {
+      code: number
+      data?: {
+        status?: string
+        deliveryDate?: string
+        customerId?: string
+        projectId?: string
+      }
+    }
+    expect(json.code).toBe(0)
+    return json.data
   }
-  expect(salesOrderDetailJson.code).toBe(0)
-  expect(['待完善', '完成销售']).toContain(
-    String(salesOrderDetailJson.data?.status || ''),
+
+  await expect
+    .poll(async () => String((await fetchSalesOrderDetail())?.status || ''), {
+      timeout: 20_000,
+      intervals: [500, 1000, 2000],
+    })
+    .toBe('交付核定')
+
+  await page.goto('/sales-order')
+  await page
+    .locator('form.module-filter-toolbar button[aria-expanded="false"]')
+    .click()
+  const deliveryDateRange = page.locator('.ant-picker-range').first()
+  await deliveryDateRange.hover()
+  await deliveryDateRange.locator('.ant-picker-clear').click()
+  await expect(page.locator('#module-filter-deliverydate-start')).toHaveValue(
+    '',
   )
-  const actualDeliveryDate = String(
-    salesOrderDetailJson.data?.deliveryDate || deliveryDate,
-  )
+  await expect(page.locator('#module-filter-deliverydate-end')).toHaveValue('')
+
+  const salesOrderKeyword = page.locator('input[name="keyword"]').first()
+  await expect(salesOrderKeyword).toBeVisible()
+  const salesOrderListResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return (
+      response.request().method() === 'GET' &&
+      url.pathname === '/api/sales-orders' &&
+      url.searchParams.get('keyword') === salesOrderNo &&
+      !url.searchParams.has('startDate') &&
+      !url.searchParams.has('endDate')
+    )
+  })
+  await salesOrderKeyword.fill(salesOrderNo)
+  await salesOrderKeyword.press('Enter')
+  expect((await salesOrderListResponse).ok()).toBeTruthy()
+  const salesOrderRow = page
+    .locator('tbody tr:not(.ant-table-measure-row)')
+    .filter({ hasText: salesOrderNo })
+    .first()
+  await expect(salesOrderRow).toBeVisible()
+  await salesOrderRow.click()
+  const confirmDelivery = page.getByRole('button', {
+    name: '确认无需调整',
+  })
+  await expect(confirmDelivery).toBeVisible()
+  await confirmDelivery.click()
+
+  await expect
+    .poll(async () => String((await fetchSalesOrderDetail())?.status || ''), {
+      timeout: 20_000,
+      intervals: [500, 1000, 2000],
+    })
+    .toBe('完成销售')
+
+  const salesOrderDetail = await fetchSalesOrderDetail()
+  expect(String(salesOrderDetail?.customerId || '')).toBe(identity.customerId)
+  expect(String(salesOrderDetail?.projectId || '')).toBe(identity.projectId)
+  const actualDeliveryDate = deliveryDate
 
   await page.goto('/customer-statement')
-  await page.getByRole('button', { name: '生成对账单' }).click()
-  const statementModal = page.getByRole('dialog', { name: '生成客户对账单' })
-  await expect(statementModal).toBeVisible()
-  await selectAntOption(
-    statementModal.locator('.ant-select').first(),
-    '浙江大东吴杭萧绿建科技有限公司',
+  const statementOverlay = await openCreateEditor(page, '生成对账单')
+  const statementNo = await fillOrReadFormField(
+    formField(statementOverlay, 'statementNo'),
+    `KHDZ-CS-${suffix}`,
   )
-  const rangeInputs = statementModal.locator('.ant-picker-input input')
-  await fillDateInput(rangeInputs.nth(0), actualDeliveryDate)
-  await fillDateInput(rangeInputs.nth(1), actualDeliveryDate)
-  await statementModal.getByRole('button', { name: '生成对账单' }).click()
+  await selectAntOption(
+    formField(statementOverlay, 'customerId'),
+    identity.customerName,
+  )
+  await selectAntOption(
+    formField(statementOverlay, 'projectId'),
+    identity.projectName,
+  )
+  await importParentByKeyword(
+    page,
+    statementOverlay,
+    '选择销售订单生成明细',
+    salesOrderNo,
+    true,
+  )
+  await waitForFirstDetailRow(statementOverlay)
+  await saveAndAuditOverlay(page, statementOverlay, statementNo)
 
   const fetchCustomerStatementByKeyword = async () => {
     const currentToken = await getCurrentAccessToken(page)
     const customerStatementSearch = await page.request.get(
       e2eApiUrl(
         'customer-statement',
-        `search?keyword=${encodeURIComponent(salesOrderNo)}&limit=10`,
+        `search?keyword=${encodeURIComponent(statementNo)}&limit=10`,
       ),
       { headers: { Authorization: `Bearer ${currentToken}` } },
     )
@@ -402,7 +451,10 @@ test('creates customer statement and receipt from completed sales flow', async (
           statementNo?: string
           closingAmount?: number
           customerName?: string
+          customerId?: string
           projectName?: string
+          projectId?: string
+          status?: string
         }>
       }
     expect(customerStatementSearchJson.code).toBe(0)
@@ -425,6 +477,9 @@ test('creates customer statement and receipt from completed sales flow', async (
   expect(statement).toBeTruthy()
   const statementId = String(statement?.id || '')
   expect(statementId).toBeTruthy()
+  expect(String(statement?.status || '')).toBe('已确认')
+  expect(String(statement?.customerId || '')).toBe(identity.customerId)
+  expect(String(statement?.projectId || '')).toBe(identity.projectId)
 
   await page.goto('/receipt')
   const receiptOverlay = await openCreateOverlay(page)
@@ -433,14 +488,15 @@ test('creates customer statement and receipt from completed sales flow', async (
     receiptNo,
   )
   await selectAntOption(
-    formField(receiptOverlay, 'customerName'),
-    String(statement?.customerName || '浙江大东吴杭萧绿建科技有限公司'),
-  )
-  await formField(receiptOverlay, 'projectName').fill(
-    String(statement?.projectName || ''),
+    formField(receiptOverlay, 'customerId'),
+    identity.customerName,
   )
   await selectAntOption(
-    formField(receiptOverlay, 'sourceStatementId'),
+    formField(receiptOverlay, 'projectId'),
+    identity.projectName,
+  )
+  await selectAntOption(
+    formField(receiptOverlay, 'sourceCustomerStatementId'),
     String(statement?.statementNo || ''),
   )
   await fillDateInput(
@@ -451,9 +507,9 @@ test('creates customer statement and receipt from completed sales flow', async (
   await formField(receiptOverlay, 'amount').fill(
     String(Number(statement?.closingAmount || 0).toFixed(2)),
   )
-  await selectAntOption(formField(receiptOverlay, 'status'), '已收款')
-  await formField(receiptOverlay, 'operatorName').fill('test9')
-  await saveOverlay(page, receiptOverlay, receiptNo)
+  await selectAntOption(formField(receiptOverlay, 'status'), '草稿')
+  await formField(receiptOverlay, 'operatorName').fill(E2E_LOGIN_NAME)
+  await saveAndAuditOverlay(page, receiptOverlay, receiptNo)
 
   const latestToken = await getCurrentAccessToken(page)
   const receiptSearch = await page.request.get(
@@ -480,20 +536,23 @@ test('creates customer statement and receipt from completed sales flow', async (
     data?: {
       receiptNo?: string
       status?: string
-      sourceStatementId?: string | number | null
+      sourceCustomerStatementId?: string | number | null
       amount?: number
       items?: Array<{
         allocatedAmount?: number
-        sourceStatementId?: string | number
+        sourceCustomerStatementId?: string | number
       }>
     }
   }
   expect(receiptDetailJson.code).toBe(0)
   expect(String(receiptDetailJson.data?.receiptNo || '')).toBe(receiptNo)
   expect(String(receiptDetailJson.data?.status || '')).toBe('已收款')
-  expect(String(receiptDetailJson.data?.sourceStatementId || '')).toBe(
+  expect(String(receiptDetailJson.data?.sourceCustomerStatementId || '')).toBe(
     statementId,
   )
+  expect(
+    String(receiptDetailJson.data?.items?.[0]?.sourceCustomerStatementId || ''),
+  ).toBe(statementId)
   expect(Number(receiptDetailJson.data?.amount || 0)).toBeGreaterThan(0)
   expect(
     Number(receiptDetailJson.data?.items?.[0]?.allocatedAmount || 0),
@@ -510,6 +569,7 @@ test('creates customer statement and receipt from completed sales flow', async (
         receiptAmount?: number
         closingAmount?: number
         salesAmount?: number
+        status?: string
       }
     }
   expect(refreshedStatementDetailJson.code).toBe(0)
@@ -520,6 +580,7 @@ test('creates customer statement and receipt from completed sales flow', async (
   expect(
     Number(refreshedStatementDetailJson.data?.salesAmount || 0),
   ).toBeGreaterThan(0)
+  expect(String(refreshedStatementDetailJson.data?.status || '')).toBe('已确认')
 
   await assertNoFatalUiErrors()
 })

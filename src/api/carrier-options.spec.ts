@@ -300,6 +300,18 @@ describe('carrier-options', () => {
       expect(findCarrierOption('承运商A')).toBe(carrier)
     })
 
+    it('finds snowflake-backed carrier by its stable display name', () => {
+      const carrier = {
+        id: '700520000000000002',
+        value: '700520000000000002',
+        label: '700520000000000002 / 承运商A',
+        carrierName: '承运商A',
+      }
+      getMock.mockReturnValue([carrier])
+
+      expect(findCarrierOption('承运商A')).toBe(carrier)
+    })
+
     it('trims whitespace from carrier name for matching', () => {
       const carrier = { value: '承运商A', label: '承运商A' }
       getMock.mockReturnValue([carrier])

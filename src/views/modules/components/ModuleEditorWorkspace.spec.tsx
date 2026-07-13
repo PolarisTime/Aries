@@ -977,6 +977,37 @@ describe('ModuleEditorWorkspace', () => {
     expect(screen.getByTestId('items-section')).toBeTruthy()
   })
 
+  it('allows parent import when line item editing is read only', () => {
+    moduleEditorCapabilityMocks.useModuleEditorCapabilities.mockReturnValue({
+      canAddManualEditorItems: false,
+      canManageEditorItems: false,
+      canSaveAndAuditCurrentEditor: true,
+      editorAuditTarget: 'audit',
+    })
+    const configWithParent = {
+      ...defaultProps.config,
+      parentImport: {
+        parentModuleKey: 'purchase-inbound',
+        parentFieldKey: 'sourceInboundNos',
+        label: 'Purchase Inbound',
+      },
+      itemColumns: [{ dataIndex: 'sourceNo', title: 'Source No', width: 100 }],
+    }
+
+    render(
+      <ModuleEditorWorkspace
+        {...defaultProps}
+        config={configWithParent}
+        moduleKey="supplier-statement"
+      />,
+    )
+
+    expect(screen.getByTestId('items-section')).toHaveAttribute(
+      'data-import-parent-items',
+      'true',
+    )
+  })
+
   it('renders save result with empty formField value', () => {
     mockUseModuleEditorWorkspace.mockReturnValueOnce({
       ...mockUseModuleEditorWorkspace(),

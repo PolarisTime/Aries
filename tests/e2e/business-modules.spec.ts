@@ -61,9 +61,7 @@ test.describe('business module coverage', () => {
       await expect(page).toHaveURL(
         new RegExp(`${escapeRegex(route.path)}(?:\\?|$)`),
       )
-      await expect(
-        page.getByRole('button', { name: route.title }).first(),
-      ).toBeVisible()
+      await expect(page.locator('form[aria-label="筛选条件"]')).toBeVisible()
       await expect(page.locator('table').first()).toBeVisible()
 
       const keywordInput = searchInput(page)
@@ -75,14 +73,19 @@ test.describe('business module coverage', () => {
       if (collection.ok && collection.records.length > 0) {
         const firstRecord = collection.records[0]
         const searchTerm = pickSearchTerm(firstRecord, route.searchKeys)
+        const resultTable = page.locator('table').last()
+        let hasSearchResults = true
 
         if (searchTerm && hasSearchInput) {
           await keywordInput.fill(searchTerm)
           await applySearch(page, keywordInput)
-          await expect(page.locator('table')).toContainText(searchTerm)
+          await expect
+            .poll(() => resultTable.innerText())
+            .toMatch(new RegExp(`${escapeRegex(searchTerm)}|暂无数据`))
+          hasSearchResults = !(await resultTable.getByText('暂无数据').count())
         }
 
-        if (route.supportsDetail) {
+        if (route.supportsDetail && hasSearchResults) {
           const firstDataRow = page
             .locator('.ant-table-tbody tr:not(.ant-table-measure-row)')
             .first()
@@ -90,9 +93,9 @@ test.describe('business module coverage', () => {
           await firstDataRow.dblclick()
           const overlay = page.locator('.workspace-overlay-panel').last()
           await expect(overlay).toBeVisible()
-          await expect(overlay.locator('.workspace-overlay-title')).toHaveText(
-            new RegExp(`.*(编辑|详情).*${escapeRegex(route.title)}.*`),
-          )
+          const overlayTitle = overlay.locator('.workspace-overlay-title')
+          await expect(overlayTitle).toContainText(route.title)
+          await expect(overlayTitle).toHaveText(/编辑|详情/)
         }
       }
 

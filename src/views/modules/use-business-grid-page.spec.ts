@@ -68,6 +68,10 @@ const mocks = vi.hoisted(() => ({
   useModuleToolbarActions: vi.fn(),
 }))
 
+const attachmentCountsResponse = {
+  data: { moduleKey: 'purchase-inbound', counts: { '1': 2, '2': 0 } },
+}
+
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mocks.navigate,
 }))
@@ -177,9 +181,9 @@ describe('useBusinessGridPage', () => {
     })
     mocks.can.mockReturnValue(false)
     mocks.getBehaviorValue.mockReturnValue(null)
-    mocks.fetchAttachmentCounts.mockResolvedValue({
-      data: { moduleKey: 'purchase-inbound', counts: { '1': 2, '2': 0 } },
-    })
+    mocks.fetchAttachmentCounts.mockReturnValue(
+      new Promise<never>(() => undefined),
+    )
     mocks.updateBusinessModuleStatus.mockResolvedValue({
       message: '状态更新成功',
     })
@@ -335,7 +339,19 @@ describe('useBusinessGridPage', () => {
     )
   })
 
+  it('keeps unrelated attachment count requests pending', async () => {
+    renderHook(() => useBusinessGridPage(props()))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mocks.fetchAttachmentCounts).toHaveBeenCalledTimes(1)
+    expect(mocks.useModuleRecordActions).toHaveBeenCalledTimes(1)
+  })
+
   it('loads attachment counts for current page records and passes them to row actions', async () => {
+    mocks.fetchAttachmentCounts.mockResolvedValue(attachmentCountsResponse)
     renderHook(() => useBusinessGridPage(props()))
 
     await waitFor(() => {
@@ -754,6 +770,7 @@ describe('useBusinessGridPage', () => {
   })
 
   it('clears hidden selections when applying, searching or resetting filters', async () => {
+    mocks.fetchAttachmentCounts.mockResolvedValue(attachmentCountsResponse)
     const { result } = renderHook(() => useBusinessGridPage(props()))
     await waitFor(() => {
       expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
@@ -783,6 +800,7 @@ describe('useBusinessGridPage', () => {
   })
 
   it('wires explicit row editing through the record action builder', async () => {
+    mocks.fetchAttachmentCounts.mockResolvedValue(attachmentCountsResponse)
     renderHook(() => useBusinessGridPage(props()))
     await waitFor(() => {
       expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
@@ -856,16 +874,18 @@ describe('useBusinessGridPage', () => {
   it('exposes delegated actions', () => {
     const { result } = renderHook(() => useBusinessGridPage(props()))
 
-    result.current.handleAction('exportRows')
-    result.current.applyFilters({ status: '草稿' })
-    result.current.handleSearch()
-    result.current.handleReset()
-    result.current.updateFilter('keyword', '钢材')
-    result.current.setFilters({ keyword: '钢材' })
-    result.current.setSubmittedFilters({ keyword: '钢材' })
-    result.current.refreshModuleQueries()
-    result.current.toggleColumn('projectName')
-    result.current.onColumnOrderChange(['projectName'])
+    act(() => {
+      result.current.handleAction('exportRows')
+      result.current.applyFilters({ status: '草稿' })
+      result.current.handleSearch()
+      result.current.handleReset()
+      result.current.updateFilter('keyword', '钢材')
+      result.current.setFilters({ keyword: '钢材' })
+      result.current.setSubmittedFilters({ keyword: '钢材' })
+      result.current.refreshModuleQueries()
+      result.current.toggleColumn('projectName')
+      result.current.onColumnOrderChange(['projectName'])
+    })
 
     expect(mocks.handleAction).toHaveBeenCalledWith('exportRows')
     expect(mocks.applyFilters).toHaveBeenCalledWith({ status: '草稿' })

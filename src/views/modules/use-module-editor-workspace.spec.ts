@@ -7,6 +7,7 @@ import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
   saveBusinessModule,
+  updateBusinessModuleStatus,
 } from '@/api/business'
 import {
   fetchSettlementCompanyOptions,
@@ -70,6 +71,9 @@ vi.mock('@/api/business', () => ({
   saveBusinessModule: vi
     .fn()
     .mockResolvedValue({ data: { id: 'saved-1', orderNo: 'ORD-001' } }),
+  updateBusinessModuleStatus: vi.fn().mockResolvedValue({
+    data: { id: 'saved-1', orderNo: 'ORD-001', status: '已审核' },
+  }),
 }))
 
 vi.mock('@/api/company-settings', () => ({
@@ -293,6 +297,9 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(listAllBusinessModuleRows).mockResolvedValue([])
     vi.mocked(saveBusinessModule).mockResolvedValue({
       data: { id: 'saved-1', orderNo: 'ORD-001' },
+    })
+    vi.mocked(updateBusinessModuleStatus).mockResolvedValue({
+      data: { id: 'saved-1', orderNo: 'ORD-001', status: '已审核' },
     })
     vi.mocked(modal.confirm).mockReset()
     vi.mocked(modal.info).mockReset()
@@ -1263,6 +1270,39 @@ describe('useModuleEditorWorkspace', () => {
     )
   })
 
+  it('keeps derived unregistered identity snapshots when saving a new document', async () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({
+      orderNo: 'PO-001',
+      supplierId: '700520000000000001',
+      supplierCode: 'SUP-001',
+      supplierName: '供应商甲',
+    })
+    form.validateFields.mockResolvedValue({
+      orderNo: 'PO-001',
+      supplierId: '700520000000000001',
+    })
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      moduleKey: 'purchase-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'purchase-order',
+      expect.objectContaining({
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
+        supplierName: '供应商甲',
+      }),
+    )
+  })
+
   it('keeps successful snowflake saves quiet when the preallocated id is preserved', async () => {
     enableSnowflakeBusinessNo()
     vi.mocked(saveBusinessModule).mockResolvedValueOnce({
@@ -2187,14 +2227,32 @@ describe('useModuleEditorWorkspace', () => {
     expect(saveBusinessModule).not.toHaveBeenCalled()
   })
 
-  it('applies audit target after confirmation when saving with audit', async () => {
+  it('saves a draft before applying the audit target through the status endpoint', async () => {
     vi.mocked(modal.confirm).mockImplementation(
       ({ onOk }: { onOk: () => void }) => {
         onOk()
       },
     )
+    vi.mocked(getBehaviorValue).mockImplementation((_moduleKey, key) =>
+      key === 'defaultStatus' ? '草稿' : undefined,
+    )
+    vi.mocked(updateBusinessModuleStatus).mockResolvedValueOnce({
+      data: { id: 'saved-1', orderNo: 'ORD-001', status: '已审核' },
+    })
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      id: 'fv',
+      orderNo: 'ORD-001',
+      status: '已审核',
+    })
+    form.getFieldsValue.mockReturnValue({
+      id: 'fv',
+      orderNo: 'ORD-001',
+      status: '已审核',
+    })
     const { result } = renderWorkspace({
       open: false,
+      form,
       config: cfg({ primaryNoKey: '' }),
       editorAuditTarget: { key: 'status', value: '已审核' },
     })
@@ -2206,7 +2264,18 @@ describe('useModuleEditorWorkspace', () => {
     expect(modal.confirm).toHaveBeenCalled()
     expect(saveBusinessModule).toHaveBeenCalledWith(
       'test-module',
-      expect.objectContaining({ status: '已审核' }),
+      expect.objectContaining({ status: '草稿' }),
+    )
+    expect(updateBusinessModuleStatus).toHaveBeenCalledWith(
+      'test-module',
+      'saved-1',
+      '已审核',
+    )
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        record: { id: 'saved-1', orderNo: 'ORD-001', status: '已审核' },
+      }),
     )
   })
 

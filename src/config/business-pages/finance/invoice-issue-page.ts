@@ -1,9 +1,12 @@
 import i18next from 'i18next'
+import { getCustomerOptions as getCustomerIdentityOptions } from '@/api/customer-options'
 import {
   buildValueOptions,
-  customerOptions,
+  getCustomerOptions,
+  getCustomerProjectOptions,
   getSettlementCompanyOptions,
 } from '@/constants/module-options'
+import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
@@ -16,6 +19,41 @@ import {
   compactInvoiceIssueItemColumns,
   statusMap,
 } from '../shared/shared'
+
+function getCustomerNameFilterOptions() {
+  return getCustomerIdentityOptions().map((option) => ({
+    label: option.label,
+    value: option.customerName,
+  }))
+}
+
+function entityIdOf(value: unknown, field: string) {
+  return parseOptionalEntityId(
+    typeof value === 'bigint' ? value.toString() : value,
+    field,
+  )
+}
+
+function hasPartyIdentityMismatch(
+  currentId: unknown,
+  parentId: unknown,
+  currentName: unknown,
+  parentName: unknown,
+) {
+  const normalizedCurrentId = entityIdOf(currentId, 'partyId')
+  const normalizedParentId = entityIdOf(parentId, 'partyId')
+  if (normalizedCurrentId && normalizedParentId) {
+    return normalizedCurrentId !== normalizedParentId
+  }
+
+  const normalizedCurrentName = asString(currentName).trim()
+  const normalizedParentName = asString(parentName).trim()
+  return Boolean(
+    normalizedCurrentName &&
+      normalizedParentName &&
+      normalizedCurrentName !== normalizedParentName,
+  )
+}
 
 export const invoiceIssuePageConfig: ModulePageConfig = {
   key: 'invoice-issue',
@@ -35,7 +73,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       key: 'customerName',
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
-      options: customerOptions,
+      options: getCustomerNameFilterOptions,
     },
     {
       key: 'status',
@@ -214,18 +252,19 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: i18next.t('modules.pages.invoiceIssue.customer'),
       type: 'select',
       required: true,
-      options: customerOptions,
+      options: getCustomerOptions,
       row: 1,
     },
     {
-      key: 'projectName',
+      key: 'projectId',
       label: i18next.t('modules.pages.invoiceIssue.project'),
-      type: 'input',
+      type: 'select',
       required: true,
+      options: getCustomerProjectOptions,
       row: 2,
     },
     {
@@ -314,23 +353,36 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.invoiceIssue.importSalesOrderItems'),
     mapParentToDraft: (parentRecord) => ({
-      customerName: parentRecord.customerName || '',
-      projectName: parentRecord.projectName || '',
+      customerId: entityIdOf(
+        parentRecord.customerId,
+        'parentRecord.customerId',
+      ),
+      customerName: asString(parentRecord.customerName).trim(),
+      projectId: entityIdOf(parentRecord.projectId, 'parentRecord.projectId'),
+      projectName: asString(parentRecord.projectName).trim(),
       settlementCompanyId: parentRecord.settlementCompanyId,
-      settlementCompanyName: parentRecord.settlementCompanyName || '',
+      settlementCompanyName: asString(
+        parentRecord.settlementCompanyName,
+      ).trim(),
     }),
     validateParentImport: ({ currentRecord, parentRecord }) => {
       if (
-        asString(currentRecord.customerName).trim() &&
-        asString(currentRecord.customerName).trim() !==
-          asString(parentRecord.customerName).trim()
+        hasPartyIdentityMismatch(
+          currentRecord.customerId,
+          parentRecord.customerId,
+          currentRecord.customerName,
+          parentRecord.customerName,
+        )
       ) {
         return '只能选择同一客户的销售订单生成开票单'
       }
       if (
-        asString(currentRecord.projectName).trim() &&
-        asString(currentRecord.projectName).trim() !==
-          asString(parentRecord.projectName).trim()
+        hasPartyIdentityMismatch(
+          currentRecord.projectId,
+          parentRecord.projectId,
+          currentRecord.projectName,
+          parentRecord.projectName,
+        )
       ) {
         return '只能选择同一项目的销售订单生成开票单'
       }
@@ -363,7 +415,9 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       'issueNo',
       'invoiceNo',
       'sourceSalesOrderNos',
+      'customerId',
       'customerName',
+      'projectId',
       'projectName',
       'settlementCompanyId',
       'settlementCompanyName',

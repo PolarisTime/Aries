@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { E2E_LOGIN_NAME, E2E_LOGIN_PASSWORD } from './support/e2e-credentials'
 import { expect, test } from './support/test'
 
 const API_BASE_URL = 'http://127.0.0.1:11211/api'
@@ -25,9 +26,12 @@ function isoNextDay() {
   return `${year}-${month}-${day}`
 }
 
-async function loginAsTest9(page: Page) {
+async function loginAsE2eUser(page: Page) {
   const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
-    data: { loginName: 'test9', password: '123456' },
+    data: {
+      loginName: E2E_LOGIN_NAME,
+      password: E2E_LOGIN_PASSWORD,
+    },
   })
   const payload = (await response.json()) as {
     code: number
@@ -143,7 +147,7 @@ async function waitForSaveOutcome(
 
 test('debug sales outbound save result', async ({ page }) => {
   test.setTimeout(150_000)
-  await loginAsTest9(page)
+  await loginAsE2eUser(page)
 
   const suffix = buildSuffix()
   const orderDate = isoToday()

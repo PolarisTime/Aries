@@ -84,7 +84,8 @@ export function findCarrierOption(value: unknown): CarrierOption | undefined {
     .find(
       (option) =>
         String(option.id ?? '').trim() === normalizedValue ||
-        String(option.value).trim() === normalizedValue,
+        String(option.value).trim() === normalizedValue ||
+        String(option.carrierName ?? '').trim() === normalizedValue,
     )
 }
 
