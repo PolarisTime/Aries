@@ -1,3 +1,4 @@
+import dayjs, { type Dayjs } from 'dayjs'
 import type { LoginUser } from '@/shared/schemas'
 import { normalizeEntityIds, parseEntityId } from '@/types/entity-id'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
@@ -7,6 +8,7 @@ const DRAFT_VERSION = 2
 const DRAFT_TTL_MS = 24 * 60 * 60 * 1000
 const MAX_DRAFT_STRING_LENGTH = 64 * 1024
 const MAX_DRAFT_STORAGE_BYTES = 512 * 1024
+const DRAFT_DATE_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSS'
 const SENSITIVE_DRAFT_KEY_PATTERN =
   /(password|token|secret|credential|attachmentContent|fileContent|base64|dataUrl)/i
 const TEMPORARY_LINE_ITEM_ID_PATTERN = /^line-.+$/
@@ -40,12 +42,64 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function serializeLegacyDayjsValue(value: Dayjs): string | undefined {
+  if (
+    typeof value.isValid === 'function' &&
+    typeof value.format === 'function'
+  ) {
+    return value.isValid() ? value.format(DRAFT_DATE_FORMAT) : undefined
+  }
+
+  const parts = value as unknown as Record<string, unknown>
+  const dateParts = [
+    parts.$y,
+    parts.$M,
+    parts.$D,
+    parts.$H ?? 0,
+    parts.$m ?? 0,
+    parts.$s ?? 0,
+    parts.$ms ?? 0,
+  ].map(Number)
+  if (!dateParts.every(Number.isInteger)) {
+    return undefined
+  }
+
+  const [year, month, date, hour, minute, second, millisecond] = dateParts
+  const restored = new Date(
+    year,
+    month,
+    date,
+    hour,
+    minute,
+    second,
+    millisecond,
+  )
+  if (
+    restored.getFullYear() !== year ||
+    restored.getMonth() !== month ||
+    restored.getDate() !== date ||
+    restored.getHours() !== hour ||
+    restored.getMinutes() !== minute ||
+    restored.getSeconds() !== second ||
+    restored.getMilliseconds() !== millisecond
+  ) {
+    return undefined
+  }
+  return dayjs(restored).format(DRAFT_DATE_FORMAT)
+}
+
 function sanitizeDraftValue(value: unknown, key = ''): unknown {
   if (SENSITIVE_DRAFT_KEY_PATTERN.test(key)) {
     return undefined
   }
   if (typeof value === 'string') {
     return value.length <= MAX_DRAFT_STRING_LENGTH ? value : undefined
+  }
+  if (dayjs.isDayjs(value)) {
+    return serializeLegacyDayjsValue(value)
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value.toISOString()
   }
   if (Array.isArray(value)) {
     return value
@@ -115,13 +169,18 @@ function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
     return null
   }
 
+  const sanitizedValues = sanitizeDraftRecord(value.values as ModuleRecord)
+  const sanitizedItems = (value.items as ModuleLineItem[]).map(
+    (item) => sanitizeDraftRecord(item) as ModuleLineItem,
+  )
+
   return {
     version: DRAFT_VERSION,
     userKey: value.userKey,
     moduleKey: value.moduleKey,
     recordId: value.recordId,
-    values: normalizeDraftRecordValues(value.values as ModuleRecord),
-    items: normalizeDraftLineItems(value.items as ModuleLineItem[]),
+    values: normalizeDraftRecordValues(sanitizedValues),
+    items: normalizeDraftLineItems(sanitizedItems),
     authoritativePrimaryNo:
       typeof value.authoritativePrimaryNo === 'string'
         ? value.authoritativePrimaryNo

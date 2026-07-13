@@ -61,7 +61,7 @@ describe('warehouse-options', () => {
       {
         id: '42',
         value: '42',
-        label: 'WH-001 / 一号仓',
+        label: '一号仓',
         warehouseCode: 'WH-001',
         warehouseName: '一号仓',
       },

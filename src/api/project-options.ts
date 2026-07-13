@@ -50,12 +50,7 @@ export function normalizeProjectOptions(
       customerId,
       projectCode,
       projectName,
-      label:
-        projectCode && projectName
-          ? `${projectCode} / ${projectName}`
-          : projectName
-            ? `${projectName} / #${id}`
-            : `#${id}`,
+      label: projectName || `#${id}`,
       ...(customerCode ? { customerCode } : {}),
       ...(projectNameAbbr ? { projectNameAbbr } : {}),
     }

@@ -42,7 +42,7 @@ describe('customer-options stable identity', () => {
       {
         id: '308251467645452289',
         value: '308251467645452289',
-        label: 'C001 / 客户A',
+        label: '客户A',
         customerCode: 'C001',
         customerName: '客户A',
       },

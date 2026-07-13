@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildModuleEditorDraftSnapshot,
@@ -39,6 +40,63 @@ describe('module-editor-draft-storage', () => {
       snapshot,
     )
     expect(snapshot.version).toBe(2)
+  })
+
+  it('serializes Dayjs form values without clone-less Dayjs markers', () => {
+    const snapshot = buildModuleEditorDraftSnapshot({
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: {
+        id: '',
+        deliveryDate: dayjs('2026-07-13 09:08:07.006'),
+      },
+      items: [],
+      authoritativePrimaryNo: '',
+      now: 1000,
+    })
+
+    writeModuleEditorDraft(snapshot)
+
+    const restored = readModuleEditorDraft('user-1', 'sales-order', 'new', 1000)
+    expect(restored?.values.deliveryDate).toBe('2026-07-13T09:08:07.006')
+    expect(dayjs.isDayjs(restored?.values.deliveryDate)).toBe(false)
+  })
+
+  it('repairs Dayjs-shaped values written by the legacy v2 serializer', () => {
+    localStorage.setItem(
+      'aries-module-editor-draft:user-1:sales-order:new',
+      JSON.stringify({
+        version: 2,
+        userKey: 'user-1',
+        moduleKey: 'sales-order',
+        recordId: 'new',
+        values: {
+          id: '',
+          deliveryDate: {
+            $L: 'zh-cn',
+            $d: {},
+            $y: 2026,
+            $M: 6,
+            $D: 13,
+            $W: 1,
+            $H: 9,
+            $m: 8,
+            $s: 7,
+            $ms: 6,
+            $x: {},
+            $isDayjsObject: true,
+          },
+        },
+        items: [],
+        authoritativePrimaryNo: '',
+        updatedAt: 1000,
+      }),
+    )
+
+    const restored = readModuleEditorDraft('user-1', 'sales-order', 'new', 1000)
+    expect(restored?.values.deliveryDate).toBe('2026-07-13T09:08:07.006')
+    expect(dayjs.isDayjs(restored?.values.deliveryDate)).toBe(false)
   })
 
   it('preserves draft UI ids and exact entity ids across nested identity paths', () => {

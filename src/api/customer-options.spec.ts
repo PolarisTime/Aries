@@ -35,7 +35,7 @@ import {
 const customerA = {
   id: '101',
   value: '101',
-  label: 'C001 / 客户A',
+  label: '客户A',
   customerCode: 'C001',
   customerName: '客户A',
 }

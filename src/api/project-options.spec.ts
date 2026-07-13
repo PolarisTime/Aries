@@ -44,7 +44,7 @@ describe('project-options', () => {
         customerId: '308251467645452289',
         projectCode: 'P001',
         projectName: '同名项目',
-        label: 'P001 / 同名项目',
+        label: '同名项目',
       },
     ])
   })

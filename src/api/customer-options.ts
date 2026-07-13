@@ -29,15 +29,8 @@ export function normalizeText(value: unknown): string {
   return asString(value).trim()
 }
 
-function customerLabel(
-  id: EntityId,
-  customerCode: string,
-  customerName: string,
-): string {
-  if (customerCode && customerName) {
-    return `${customerCode} / ${customerName}`
-  }
-  return customerName ? `${customerName} / #${id}` : `#${id}`
+function customerLabel(id: EntityId, customerName: string): string {
+  return customerName || `#${id}`
 }
 
 export function normalizeCustomerRows(
@@ -55,7 +48,7 @@ export function normalizeCustomerRows(
     return {
       id,
       value: id,
-      label: customerLabel(id, customerCode, customerName),
+      label: customerLabel(id, customerName),
       customerCode,
       customerName,
       ...(defaultSettlementCompanyId ? { defaultSettlementCompanyId } : {}),

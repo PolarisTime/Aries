@@ -20,27 +20,30 @@ export type CarrierOption = {
 export function normalizeCarrierOptions(
   options: CarrierOption[],
 ): CarrierOption[] {
-  return options.map((option, index) => ({
-    ...option,
-    id: parseOptionalEntityId(option.id, `carriers[${index}].id`),
-    carrierCode:
-      option.carrierCode == null
-        ? undefined
-        : String(option.carrierCode).trim(),
-    carrierName: String(option.carrierName || option.value || '').trim(),
-    label: String(option.label || ''),
-    value: String(option.value || ''),
-    vehiclePlates: Array.isArray(option.vehiclePlates)
-      ? option.vehiclePlates.flatMap((plate) => {
-          const v = String(plate || '').trim()
-          return v ? [v] : []
-        })
-      : [],
-    defaultSettlementCompanyId: parseOptionalEntityId(
-      option.defaultSettlementCompanyId,
-      `carriers[${index}].defaultSettlementCompanyId`,
-    ),
-  }))
+  return options.map((option, index) => {
+    const carrierName = String(option.carrierName || option.value || '').trim()
+    return {
+      ...option,
+      id: parseOptionalEntityId(option.id, `carriers[${index}].id`),
+      carrierCode:
+        option.carrierCode == null
+          ? undefined
+          : String(option.carrierCode).trim(),
+      carrierName,
+      label: carrierName || String(option.label || '').trim(),
+      value: String(option.value || ''),
+      vehiclePlates: Array.isArray(option.vehiclePlates)
+        ? option.vehiclePlates.flatMap((plate) => {
+            const v = String(plate || '').trim()
+            return v ? [v] : []
+          })
+        : [],
+      defaultSettlementCompanyId: parseOptionalEntityId(
+        option.defaultSettlementCompanyId,
+        `carriers[${index}].defaultSettlementCompanyId`,
+      ),
+    }
+  })
 }
 
 const cached = createQueryCachedOptions<CarrierOption>({
@@ -59,7 +62,6 @@ export function getCarrierOptions(): CarrierOption[] {
 export function getCarrierEntityOptions(): CarrierOption[] {
   return cached.get().flatMap((option) => {
     const id = option.id
-    const carrierCode = String(option.carrierCode ?? '').trim()
     const carrierName = String(option.carrierName ?? option.value).trim()
     if (!id || !carrierName) return []
     return [
@@ -68,9 +70,7 @@ export function getCarrierEntityOptions(): CarrierOption[] {
         id,
         carrierName,
         value: id,
-        label: carrierCode
-          ? `${carrierCode} / ${carrierName}`
-          : `${carrierName} / #${id}`,
+        label: carrierName,
       },
     ]
   })

@@ -21,15 +21,8 @@ type RawSupplierOption = {
   label?: unknown
 }
 
-function buildSupplierLabel(
-  id: EntityId,
-  supplierCode: string,
-  supplierName: string,
-): string {
-  if (supplierCode && supplierName) {
-    return `${supplierCode} / ${supplierName}`
-  }
-  return supplierName ? `${supplierName} / #${id}` : `#${id}`
+function buildSupplierLabel(id: EntityId, supplierName: string): string {
+  return supplierName || `#${id}`
 }
 
 export function normalizeSupplierOptions(
@@ -50,7 +43,7 @@ export function normalizeSupplierOptions(
       supplierCode,
       supplierName,
       value: id,
-      label: buildSupplierLabel(id, supplierCode, supplierName),
+      label: buildSupplierLabel(id, supplierName),
     }
   })
 }

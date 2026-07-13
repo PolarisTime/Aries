@@ -72,7 +72,7 @@ describe('carrier-options', () => {
         expect.objectContaining({
           id: '700520000000000002',
           value: '700520000000000002',
-          label: 'CAR-001 / 承运商A',
+          label: '承运商A',
         }),
       ])
       expect(findCarrierOption('700520000000000002')?.carrierCode).toBe(
@@ -164,6 +164,20 @@ describe('carrier-options', () => {
   })
 
   describe('normalizeCarrierOptions', () => {
+    it('uses the carrier name as the visible option label', () => {
+      const result = normalizeCarrierOptions([
+        {
+          id: '700520000000000002',
+          carrierCode: 'CAR-001',
+          carrierName: '承运商A',
+          value: '承运商A',
+          label: 'CAR-001 / 承运商A',
+        },
+      ])
+
+      expect(result[0].label).toBe('承运商A')
+    })
+
     it('preserves and trims the stable carrier code', () => {
       const result = normalizeCarrierOptions([
         {
@@ -225,11 +239,11 @@ describe('carrier-options', () => {
       expect(result[0].id).toBeUndefined()
     })
 
-    it('falls back to empty string for falsy label', () => {
+    it('uses the carrier value as the visible label when label is missing', () => {
       const result = normalizeCarrierOptions([
         { value: 'v', label: null as any },
       ])
-      expect(result[0].label).toBe('')
+      expect(result[0].label).toBe('v')
     })
 
     it('falls back to empty string for falsy value', () => {

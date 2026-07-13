@@ -36,12 +36,13 @@ export function normalizeWarehouseOptions(
       }
     }
 
+    const warehouseName = asString(option.warehouseName).trim()
     return {
       id,
       value: id,
-      label: asString(option.label).trim(),
+      label: warehouseName || asString(option.label).trim() || `#${id}`,
       warehouseCode: asString(option.warehouseCode).trim(),
-      warehouseName: asString(option.warehouseName).trim(),
+      warehouseName,
     }
   })
 }

@@ -154,7 +154,7 @@ describe('supplier-options', () => {
         supplierCode: 'SUP-001',
         supplierName: '供应商甲',
         value: '123',
-        label: 'SUP-001 / 供应商甲',
+        label: '供应商甲',
       })
     })
 
@@ -196,7 +196,7 @@ describe('supplier-options', () => {
       expect(result[0]).toMatchObject({
         supplierName: '供应商显示名',
         value: '1',
-        label: '供应商显示名 / #1',
+        label: '供应商显示名',
       })
     })
 
