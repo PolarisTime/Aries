@@ -1,3 +1,27 @@
+# [2.3.0](https://github.com/PolarisTime/Aries/compare/v2.2.0...v2.3.0) (2026-07-13)
+
+
+### Bug Fixes
+
+* **api:** 后端离线时统一跳转错误页 ([ce4fe8b](https://github.com/PolarisTime/Aries/commit/ce4fe8bba059f1512e2d6285865f245e3a599dc1))
+* **react:** 完善编辑草稿保存与恢复逻辑 ([3a3c1f8](https://github.com/PolarisTime/Aries/commit/3a3c1f8ab357f2bacdfd60feaff8399599db6427))
+* **ui:** 恢复业务列表交互与分页展示 ([8941a3e](https://github.com/PolarisTime/Aries/commit/8941a3e8b6cc58a17abf91389ea30b5a9bbef69b))
+
+
+### Features
+
+* **auth:** 重设计登录与初始化引导界面 ([e92fa88](https://github.com/PolarisTime/Aries/commit/e92fa885dacbd99bd1463fdc607afbf96a838c81))
+* **frontend:** 统一业务单据交互并补齐退款与预付款流程 ([f18132d](https://github.com/PolarisTime/Aries/commit/f18132de8b979e7e08d8af0072fc0d3828e0be78))
+* **identity:** 完成前端稳定身份链路收口 ([ac7b7ba](https://github.com/PolarisTime/Aries/commit/ac7b7ba1af6f16828ac5728f4aec389afe276649))
+* **identity:** 收口前端稳定身份业务链 ([9542a25](https://github.com/PolarisTime/Aries/commit/9542a25fc31b12b659a901f65fb4b5594d012d51))
+* **layout:** 重构工作台与编辑任务导航 ([3d2ed06](https://github.com/PolarisTime/Aries/commit/3d2ed066e00318e99af0d39d4105bdcd3256cf83))
+* **react:** 统一业务结果页与列表交互 ([9d4af0d](https://github.com/PolarisTime/Aries/commit/9d4af0d7bd7af9f9233171aff9cdf9de60b88c13))
+* **react:** 重做财务工作台交互与布局 ([8307a37](https://github.com/PolarisTime/Aries/commit/8307a37a4828950103e31e2067b6b736e3382e48))
+* **sales:** 新增交付核定操作界面 ([4f669aa](https://github.com/PolarisTime/Aries/commit/4f669aaf30e2340a9dea592b23ec9ea6be6ea128))
+* **table:** 优化列表选中与命令区交互 ([e8bf232](https://github.com/PolarisTime/Aries/commit/e8bf232e28fffc07560b2ec9ca8bff885f002e99))
+* **table:** 补充业务列表追溯列 ([bee707f](https://github.com/PolarisTime/Aries/commit/bee707f63a4fc7a4b0ece12f61719b3b0dc4e95c))
+* **ui:** 优化业务列表交互与分页信息 ([8ae23a1](https://github.com/PolarisTime/Aries/commit/8ae23a10ac669ff45d410e50598ce30189b8dc2b))
+
 # [2.2.0](https://github.com/PolarisTime/Aries/compare/v2.1.3...v2.2.0) (2026-07-10)
 
 
