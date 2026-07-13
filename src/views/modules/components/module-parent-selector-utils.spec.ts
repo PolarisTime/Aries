@@ -2,12 +2,49 @@ import { describe, expect, it } from 'vitest'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import {
+  compactParentSelectorFilters,
   filterImportableParentRecords,
   hasImportableQuantity,
+  mergeParentSelectorFilters,
   resolveSelectedParentRows,
 } from '@/views/modules/components/module-parent-selector-utils'
 
 describe('module-parent-selector-utils', () => {
+  describe('parent selector filters', () => {
+    it('removes undefined, null, blank strings, and empty arrays', () => {
+      expect(
+        compactParentSelectorFilters({
+          undefinedValue: undefined,
+          nullValue: null,
+          blankValue: '   ',
+          emptyArray: [],
+          keyword: ' PO-001 ',
+          zero: 0,
+          enabled: false,
+          ids: ['1'],
+        }),
+      ).toEqual({
+        keyword: ' PO-001 ',
+        zero: 0,
+        enabled: false,
+        ids: ['1'],
+      })
+    })
+
+    it('does not let empty fixed filters overwrite submitted filters', () => {
+      expect(
+        mergeParentSelectorFilters(
+          { supplierId: 'supplier-1', keyword: 'PO-001' },
+          { supplierId: undefined, keyword: ' ', currentRecordId: '99' },
+        ),
+      ).toEqual({
+        supplierId: 'supplier-1',
+        keyword: 'PO-001',
+        currentRecordId: '99',
+      })
+    })
+  })
+
   describe('hasImportableQuantity', () => {
     it('returns false when no items', () => {
       const record = { id: '1', items: [] }
@@ -296,6 +333,54 @@ describe('module-parent-selector-utils', () => {
       const result = filterImportableParentRecords('purchase-order', records)
       expect(result).toHaveLength(1)
       expect(result[0].id).toBe('1')
+    })
+
+    it('trusts dedicated server candidate statuses while retaining positive quantity checks', () => {
+      const records = [
+        {
+          id: 'completed',
+          status: DOCUMENT_STATUS.PURCHASE_COMPLETED,
+          importableQuantity: 3,
+        },
+        {
+          id: 'empty',
+          status: DOCUMENT_STATUS.PURCHASE_COMPLETED,
+          importableQuantity: 0,
+        },
+      ]
+
+      expect(
+        filterImportableParentRecords(
+          'purchase-order',
+          records,
+          undefined,
+          'purchase-order-import',
+        ).map((record) => record.id),
+      ).toEqual(['completed'])
+    })
+
+    it('keeps invoice candidates returned by the server when adjusted items remain', () => {
+      const records = [
+        {
+          id: 'completed',
+          status: DOCUMENT_STATUS.SALES_COMPLETED,
+          items: [{ id: 'item-1', remainingQuantity: 2 }],
+        },
+        {
+          id: 'empty',
+          status: DOCUMENT_STATUS.SALES_COMPLETED,
+          items: [{ id: 'item-2', remainingQuantity: 0 }],
+        },
+      ]
+
+      expect(
+        filterImportableParentRecords(
+          'sales-order',
+          records,
+          undefined,
+          'invoice-issue-source',
+        ).map((record) => record.id),
+      ).toEqual(['completed'])
     })
   })
 

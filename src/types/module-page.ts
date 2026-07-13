@@ -87,7 +87,12 @@ export interface ModuleParentImportDefinition {
     | 'purchase-refund-source'
     | 'freight-bill-import'
     | 'sales-order-outbound-import'
-  candidateUsage?: 'purchase-inbound' | 'sales-order'
+    | 'invoice-issue-source'
+    | 'invoice-receipt-source'
+  candidateUsage?:
+    | 'purchase-inbound'
+    | 'sales-order'
+    | 'purchase-contract'
   hiddenSelectorColumnKeys?: string[]
   visibleWhen?: (currentRecord: ModuleRecordInput) => boolean
   resolveParentRecord?: (parentRecord: ModuleRecord) => Promise<ModuleRecord>

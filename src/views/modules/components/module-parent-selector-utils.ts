@@ -1,5 +1,6 @@
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleParentImportDefinition,
   ModuleRecord,
@@ -12,6 +13,27 @@ export type ParentSelectorColumn = {
 
 const AUDITED_STATUS = '已审核'
 const SALES_COMPLETED_STATUS = '完成销售'
+
+export function compactParentSelectorFilters(filters: SearchParams) {
+  return Object.fromEntries(
+    Object.entries(filters).filter(([, value]) => {
+      if (value === undefined || value === null) return false
+      if (typeof value === 'string') return value.trim().length > 0
+      if (Array.isArray(value)) return value.length > 0
+      return true
+    }),
+  )
+}
+
+export function mergeParentSelectorFilters(
+  submittedFilters: SearchParams,
+  fixedFilters: SearchParams,
+) {
+  return {
+    ...compactParentSelectorFilters(submittedFilters),
+    ...compactParentSelectorFilters(fixedFilters),
+  }
+}
 
 function hasPositiveQuantity(value: unknown) {
   const quantity = Number(value)
@@ -74,6 +96,15 @@ export function filterImportableParentRecords(
         status === DOCUMENT_STATUS.AUDITED ||
         status === DOCUMENT_STATUS.PURCHASE_COMPLETED
       )
+    }
+    if (
+      candidateQueryType === 'purchase-order-import' ||
+      candidateQueryType === 'purchase-refund-source' ||
+      candidateQueryType === 'sales-order-outbound-import' ||
+      candidateQueryType === 'invoice-issue-source' ||
+      candidateQueryType === 'invoice-receipt-source'
+    ) {
+      return hasImportableQuantity(parentModuleKey, record)
     }
     if (
       candidateStatementModuleKey === 'supplier-statement' &&
