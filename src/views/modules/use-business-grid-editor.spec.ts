@@ -105,13 +105,17 @@ describe('useBusinessGridEditor', () => {
 
   it('opens editor for a new record and resets stale lock state', async () => {
     useLockBehavior()
-    listAllBusinessModuleRowsMock.mockResolvedValue([{ id: 'locked-row' }])
+    listAllBusinessModuleRowsMock.mockResolvedValue([
+      { id: 'locked-row', salesOrderNo: 'SO-001' },
+    ])
     const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
 
     await act(async () => {
       await result.current.openEditor({ id: '1', orderNo: 'SO-001' })
     })
-    expect(result.current.editorLockRelatedRows).toEqual([{ id: 'locked-row' }])
+    expect(result.current.editorLockRelatedRows).toEqual([
+      { id: 'locked-row', salesOrderNo: 'SO-001' },
+    ])
 
     await act(async () => {
       await result.current.openEditor(null)
@@ -125,7 +129,9 @@ describe('useBusinessGridEditor', () => {
 
   it('closes editor and clears current record and related rows', async () => {
     useLockBehavior()
-    listAllBusinessModuleRowsMock.mockResolvedValue([{ id: 'locked-row' }])
+    listAllBusinessModuleRowsMock.mockResolvedValue([
+      { id: 'locked-row', salesOrderNo: 'SO-001' },
+    ])
     const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
 
     await act(async () => {
@@ -143,7 +149,9 @@ describe('useBusinessGridEditor', () => {
 
   it('clears lock rows after save while keeping the editor open record', async () => {
     useLockBehavior()
-    listAllBusinessModuleRowsMock.mockResolvedValue([{ id: 'locked-row' }])
+    listAllBusinessModuleRowsMock.mockResolvedValue([
+      { id: 'locked-row', salesOrderNo: 'SO-001' },
+    ])
     const record = { id: '1', orderNo: 'SO-001' }
     const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
 
@@ -162,7 +170,7 @@ describe('useBusinessGridEditor', () => {
 
   it('loads lock related rows by configured source fields and trims target value', async () => {
     useLockBehavior()
-    const relatedRows = [{ id: 'source-row' }]
+    const relatedRows = [{ id: 'source-row', salesOrderNo: 'SO-001' }]
     listAllBusinessModuleRowsMock.mockResolvedValue(relatedRows)
     const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
 
@@ -177,11 +185,27 @@ describe('useBusinessGridEditor', () => {
     expect(result.current.editorLockRelatedRows).toEqual(relatedRows)
   })
 
+  it('ignores rows that do not reference the current record when resolving editor locks', async () => {
+    useLockBehavior()
+    const rows = [
+      { id: 'related-row', salesOrderNo: ' SO-001 ', status: '已审核' },
+      { id: 'unrelated-row', salesOrderNo: 'SO-002', status: '已审核' },
+    ]
+    listAllBusinessModuleRowsMock.mockResolvedValue(rows)
+    const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
+
+    await act(async () => {
+      await result.current.openEditor({ id: '1', orderNo: 'SO-001' })
+    })
+
+    expect(result.current.editorLockRelatedRows).toEqual([rows[0]])
+  })
+
   it('ignores deleted lock related rows when opening editor', async () => {
     useLockBehavior()
     const rows = [
-      { id: 'active-row', status: '已审核' },
-      { id: 'deleted-row', status: '已审核' },
+      { id: 'active-row', salesOrderNo: 'SO-001', status: '已审核' },
+      { id: 'deleted-row', salesOrderNo: 'SO-001', status: '已审核' },
     ]
     listAllBusinessModuleRowsMock.mockResolvedValue(rows)
     isDeletedModuleRecordMock.mockImplementation((row) => row === rows[1])

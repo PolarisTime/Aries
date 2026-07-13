@@ -86,7 +86,11 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     const rows = await listAllBusinessModuleRows(lineItemLockSourceModule, {
       [lineItemLockSourceField]: targetValue,
     })
-    return rows.filter((row) => !isDeletedModuleRecord(row))
+    return rows.filter(
+      (row) =>
+        !isDeletedModuleRecord(row) &&
+        asString(row[lineItemLockSourceField]).trim() === targetValue,
+    )
   }
 
   const resolveEditorRecord = async (record: ModuleRecord) => {
