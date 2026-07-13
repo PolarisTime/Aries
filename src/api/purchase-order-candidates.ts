@@ -10,6 +10,7 @@ import { asString } from '@/utils/type-narrowing'
 export type PurchaseOrderImportCandidateUsage =
   | 'purchase-inbound'
   | 'sales-order'
+  | 'purchase-contract'
 
 export async function listPurchaseOrderImportCandidatePage(
   usage: PurchaseOrderImportCandidateUsage,
