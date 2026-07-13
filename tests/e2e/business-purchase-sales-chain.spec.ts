@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { e2eApiUrl } from './support/api-key'
 import {
+  confirmSalesOrderDelivery,
   detailRowSpinbuttonByColumn,
   fillDateInput,
   fillOrReadFormField,
@@ -251,21 +252,39 @@ test.describe('purchase to sales chain', () => {
     const salesOrderId = String(salesOrderSearchJson.data?.[0]?.id || '')
     expect(salesOrderId).toBeTruthy()
 
-    const salesOrderDetailRes = await page.request.get(
-      e2eApiUrl('sales-order', salesOrderId),
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    const fetchSalesOrderStatus = async () => {
+      const response = await page.request.get(
+        e2eApiUrl('sales-order', salesOrderId),
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    )
-    expect(salesOrderDetailRes.ok()).toBeTruthy()
-    const salesOrderDetailJson = (await salesOrderDetailRes.json()) as {
-      code: number
-      data?: { status?: string }
+      )
+      expect(response.ok()).toBeTruthy()
+      const payload = (await response.json()) as {
+        code: number
+        data?: { status?: string }
+      }
+      expect(payload.code).toBe(0)
+      return String(payload.data?.status || '')
     }
-    expect(salesOrderDetailJson.code).toBe(0)
-    expect(String(salesOrderDetailJson.data?.status || '')).toBe('交付核定')
+
+    await expect
+      .poll(fetchSalesOrderStatus, {
+        timeout: 20_000,
+        intervals: [500, 1000, 2000],
+      })
+      .toBe('交付核定')
+
+    await confirmSalesOrderDelivery(page, salesOrderNo)
+
+    await expect
+      .poll(fetchSalesOrderStatus, {
+        timeout: 20_000,
+        intervals: [500, 1000, 2000],
+      })
+      .toBe('完成销售')
 
     await assertNoFatalUiErrors()
   })

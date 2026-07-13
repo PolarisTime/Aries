@@ -534,6 +534,57 @@ export async function saveAndAuditOverlay(
   await waitForSaveOutcome(page, overlay, saveResultCountBefore, expectedNo)
 }
 
+export async function confirmSalesOrderDelivery(
+  page: Page,
+  salesOrderNo: string,
+) {
+  await page.goto('/sales-order')
+  const collapsedFilter = page.locator(
+    'form.module-filter-toolbar button[aria-expanded="false"]',
+  )
+  if ((await collapsedFilter.count()) > 0) {
+    await collapsedFilter.first().click()
+  }
+
+  const deliveryDateRange = page.locator('.ant-picker-range').first()
+  if (await deliveryDateRange.isVisible().catch(() => false)) {
+    await deliveryDateRange.hover()
+    const clearButton = deliveryDateRange.locator('.ant-picker-clear')
+    if (await clearButton.isVisible().catch(() => false)) {
+      await clearButton.click()
+    }
+  }
+
+  const keyword = page.locator('input[name="keyword"]').first()
+  await expect(keyword).toBeVisible()
+  const listResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return (
+      response.request().method() === 'GET' &&
+      url.pathname === '/api/sales-orders' &&
+      url.searchParams.get('keyword') === salesOrderNo &&
+      !url.searchParams.has('startDate') &&
+      !url.searchParams.has('endDate')
+    )
+  })
+  await keyword.fill(salesOrderNo)
+  await keyword.press('Enter')
+  expect((await listResponse).ok()).toBeTruthy()
+
+  const row = page
+    .locator('tbody tr:not(.ant-table-measure-row)')
+    .filter({ hasText: salesOrderNo })
+    .first()
+  await expect(row).toBeVisible()
+  await row.click()
+
+  const confirmDelivery = page.getByRole('button', {
+    name: '确认无需调整',
+  })
+  await expect(confirmDelivery).toBeVisible()
+  await confirmDelivery.click()
+}
+
 export async function importParentByKeyword(
   page: Page,
   overlay: Locator,

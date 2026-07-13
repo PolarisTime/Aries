@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { e2eApiUrl } from './support/api-key'
 import {
   completePurchaseInboundFromOrder,
+  confirmSalesOrderDelivery,
   detailRowSpinbuttonByColumn,
   fillDateInput,
   fillOrReadFormField,
@@ -359,44 +360,7 @@ test('creates customer statement and receipt from completed sales flow', async (
     })
     .toBe('交付核定')
 
-  await page.goto('/sales-order')
-  await page
-    .locator('form.module-filter-toolbar button[aria-expanded="false"]')
-    .click()
-  const deliveryDateRange = page.locator('.ant-picker-range').first()
-  await deliveryDateRange.hover()
-  await deliveryDateRange.locator('.ant-picker-clear').click()
-  await expect(page.locator('#module-filter-deliverydate-start')).toHaveValue(
-    '',
-  )
-  await expect(page.locator('#module-filter-deliverydate-end')).toHaveValue('')
-
-  const salesOrderKeyword = page.locator('input[name="keyword"]').first()
-  await expect(salesOrderKeyword).toBeVisible()
-  const salesOrderListResponse = page.waitForResponse((response) => {
-    const url = new URL(response.url())
-    return (
-      response.request().method() === 'GET' &&
-      url.pathname === '/api/sales-orders' &&
-      url.searchParams.get('keyword') === salesOrderNo &&
-      !url.searchParams.has('startDate') &&
-      !url.searchParams.has('endDate')
-    )
-  })
-  await salesOrderKeyword.fill(salesOrderNo)
-  await salesOrderKeyword.press('Enter')
-  expect((await salesOrderListResponse).ok()).toBeTruthy()
-  const salesOrderRow = page
-    .locator('tbody tr:not(.ant-table-measure-row)')
-    .filter({ hasText: salesOrderNo })
-    .first()
-  await expect(salesOrderRow).toBeVisible()
-  await salesOrderRow.click()
-  const confirmDelivery = page.getByRole('button', {
-    name: '确认无需调整',
-  })
-  await expect(confirmDelivery).toBeVisible()
-  await confirmDelivery.click()
+  await confirmSalesOrderDelivery(page, salesOrderNo)
 
   await expect
     .poll(async () => String((await fetchSalesOrderDetail())?.status || ''), {
