@@ -4,12 +4,6 @@ import type { ApiResponse } from '@/types/api'
 import type { EntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 
-interface PurchaseOrderCompletionResult {
-  purchaseOrderId: string | number
-  purchaseOrderNo: string
-  status: string
-}
-
 interface SalesOutboundCommandResult {
   id: string | number
   outboundNo: string
@@ -59,28 +53,6 @@ export interface PurchaseInboundImportBatchResult {
     itemCount: number
     status: string
   }>
-}
-
-export async function completePurchaseOrder(id: string) {
-  return assertApiSuccess(
-    await http.post<ApiResponse<PurchaseOrderCompletionResult>>(
-      `/purchase-orders/${encodeURIComponent(id)}/complete`,
-      null,
-      withIdempotencyKey(),
-    ),
-    '完成采购失败',
-  )
-}
-
-export async function reopenPurchaseOrder(id: string) {
-  return assertApiSuccess(
-    await http.post<ApiResponse<unknown>>(
-      `/purchase-orders/${encodeURIComponent(id)}/reopen`,
-      null,
-      withIdempotencyKey(),
-    ),
-    '撤销完成采购失败',
-  )
 }
 
 export async function auditPurchaseInbound(

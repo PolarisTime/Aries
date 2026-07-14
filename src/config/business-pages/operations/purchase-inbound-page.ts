@@ -8,13 +8,8 @@ import {
   buildValueOptions,
   getSettlementCompanyOptions,
   getSupplierOptions,
-  isPurchaseWeighRequiredCategory,
 } from '@/constants/module-options'
-import type {
-  ModuleLineItem,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
+import type { ModulePageConfig } from '@/types/module-page'
 import { modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -25,68 +20,9 @@ import {
 import {
   actionSet,
   buildAmountWeightOverview,
-  cloneLineItems,
   compactPurchaseInboundItemColumns,
   statusMap,
 } from '../shared/shared'
-
-function remainingInboundQuantity(item: ModuleLineItem) {
-  const quantity = Number(item.remainingQuantity ?? item.quantity)
-  return Number.isFinite(quantity) && quantity > 0 ? quantity : 0
-}
-
-function purchaseInboundGroupKey(item: ModuleLineItem) {
-  const warehouseId = asString(item.warehouseId).trim()
-  const warehouseName = asString(item.warehouseName).trim()
-  const warehouseKey = warehouseId
-    ? `id:${warehouseId}`
-    : `name:${warehouseName}`
-  const settlementMode = isPurchaseWeighRequiredCategory(item.category)
-    ? '过磅'
-    : '理算'
-  return `${warehouseKey}|${settlementMode}`
-}
-
-function selectPurchaseInboundImportGroup(parentRecord: ModuleRecord) {
-  const remainingItems = Array.isArray(parentRecord.items)
-    ? parentRecord.items.filter((item) => remainingInboundQuantity(item) > 0)
-    : []
-  const firstGroupKey = remainingItems[0]
-    ? purchaseInboundGroupKey(remainingItems[0])
-    : ''
-  return firstGroupKey
-    ? remainingItems.filter(
-        (item) => purchaseInboundGroupKey(item) === firstGroupKey,
-      )
-    : []
-}
-
-function toPurchaseInboundItem(item: ModuleLineItem) {
-  const quantity = remainingInboundQuantity(item)
-  const pieceWeightTon = Number(item.pieceWeightTon || 0)
-  const unitPrice = Number(item.unitPrice || 0)
-  const theoreticalWeightTon = Number((quantity * pieceWeightTon).toFixed(8))
-  const settlementMode = isPurchaseWeighRequiredCategory(item.category)
-    ? '过磅'
-    : '理算'
-
-  return {
-    ...item,
-    quantity,
-    maxImportQuantity: quantity,
-    sourcePurchaseOrderItemId: item.id,
-    _sourcePieceWeightTon: item.pieceWeightTon,
-    _lockedSalesWeightTon: item.lockedSalesWeightTon,
-    settlementMode,
-    weightTon: theoreticalWeightTon,
-    actualWeightTon: undefined,
-    actualPieceWeightTon: undefined,
-    weighWeightTon: undefined,
-    weightAdjustmentTon: undefined,
-    weightAdjustmentAmount: undefined,
-    amount: Number((theoreticalWeightTon * unitPrice).toFixed(2)),
-  }
-}
 
 export const purchaseInboundsPageConfig: ModulePageConfig = {
   key: 'purchase-inbound',
@@ -412,48 +348,6 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
         message: `批次 ${batch.batchNo} 已生成 ${batch.inbounds.length} 张采购入库草稿`,
       }
     },
-    validateParentImport: ({ currentParentNos, parentRecord }) => {
-      const parentNo = asString(parentRecord.orderNo).trim()
-      if (currentParentNos.length && !currentParentNos.includes(parentNo)) {
-        return '一张采购入库单只能导入一张采购订单'
-      }
-      const groupItems = selectPurchaseInboundImportGroup(parentRecord)
-      if (!groupItems.length) {
-        return '所选采购订单没有可入库的剩余明细'
-      }
-      if (groupItems.some((item) => !asString(item.id).trim())) {
-        return '采购订单存在缺少稳定来源ID的明细，无法导入'
-      }
-      if (groupItems.some((item) => !asString(item.warehouseId).trim())) {
-        return '采购订单明细缺少仓库ID，无法导入'
-      }
-      return null
-    },
-    mapParentToDraft: (parentRecord) => {
-      const firstGroupItem = selectPurchaseInboundImportGroup(parentRecord)[0]
-      return {
-        purchaseOrderNo: parentRecord.orderNo || '',
-        supplierId: parentRecord.supplierId,
-        supplierCode: parentRecord.supplierCode || '',
-        supplierName: parentRecord.supplierName || '',
-        settlementCompanyId: parentRecord.settlementCompanyId,
-        settlementCompanyName: parentRecord.settlementCompanyName || '',
-        warehouseId: firstGroupItem?.warehouseId,
-        warehouseName: firstGroupItem?.warehouseName || '',
-        settlementMode: firstGroupItem
-          ? isPurchaseWeighRequiredCategory(firstGroupItem.category)
-            ? '过磅'
-            : '理算'
-          : '',
-      }
-    },
-    transformItems: (parentRecord) =>
-      cloneLineItems(
-        selectPurchaseInboundImportGroup(parentRecord).map(
-          toPurchaseInboundItem,
-        ),
-        'purchase-inbound-item',
-      ),
   },
   itemColumns: compactPurchaseInboundItemColumns,
   data: [],

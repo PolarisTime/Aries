@@ -289,7 +289,7 @@ function buildEditableColumnRender({
 
       if (isNumberEditorColumn(key)) {
         const precision = getEditorItemPrecision(key)
-        const min = getEditorItemMin(key)
+        const min = getEditorItemMin(key, config.key)
         const hideControls = [
           'quantity',
           'pieceWeightTon',

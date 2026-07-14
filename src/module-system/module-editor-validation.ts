@@ -33,6 +33,13 @@ function getLineItemValidationMessages(
         }),
       )
     }
+    if (moduleKey === 'purchase-order' && Number(item.quantity || 0) < 1) {
+      messages.push(
+        i18next.t('modules.validation.purchaseOrderQuantityMinimum', {
+          row: index + 1,
+        }),
+      )
+    }
     if (moduleKey === 'purchase-inbound') {
       if (!asString(item.sourcePurchaseOrderItemId).trim()) {
         messages.push(

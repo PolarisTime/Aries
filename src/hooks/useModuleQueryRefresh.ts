@@ -11,6 +11,8 @@ export function useModuleQueryRefresh(moduleKey: string) {
 
   const refreshModuleQueries = async () => {
     const masterOptionQueryKey = getMasterOptionQueryKey(moduleKey)
+    const relatedModuleKeys =
+      moduleKey === 'purchase-inbound' ? ['purchase-order'] : []
     const tasks = [
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.businessGrid(moduleKey),
@@ -24,6 +26,14 @@ export function useModuleQueryRefresh(moduleKey: string) {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.statementLinkOptionsBase,
       }),
+      ...relatedModuleKeys.flatMap((relatedModuleKey) => [
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.businessGrid(relatedModuleKey),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.businessGridAll(relatedModuleKey),
+        }),
+      ]),
     ]
 
     if (masterOptionQueryKey) {

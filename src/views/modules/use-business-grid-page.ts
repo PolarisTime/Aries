@@ -489,7 +489,6 @@ export function useBusinessGridPage({
     useDocumentFlowCommands({
       moduleKey,
       selectedRecords,
-      canAuditPurchaseOrder: canAuditRecord,
       canCreateSalesOutbound: can('sales-outbound', 'create'),
       refreshCurrentModule: refreshModuleQueries,
       clearSelection,

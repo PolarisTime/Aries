@@ -1006,6 +1006,7 @@ export const zhCN: MessageSchema = {
         '第{{row}}行过磅重量小于已锁定销售重量{{locked}}吨，请修改过磅重量，或先反审核销售出库/销售订单后再保存',
       purchaseInboundSourceRequired: '第{{row}}行缺少来源采购订单明细',
       purchaseInboundWarehouseRequired: '第{{row}}行缺少来源仓库ID',
+      purchaseOrderQuantityMinimum: '第{{row}}行数量必须至少为1个数量单位',
       purchaseInboundQuantityPositive: '第{{row}}行入库数量必须大于0',
       purchaseInboundMixedWarehouse: '一张采购入库单不能包含不同仓库的明细',
       purchaseInboundMixedSettlementMode:

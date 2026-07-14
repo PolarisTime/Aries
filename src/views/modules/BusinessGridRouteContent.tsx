@@ -100,7 +100,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const canSaveEditorRecord = state.editRecord
     ? state.canUpdateRecord &&
       !isDocumentFlowRecordEditLocked(moduleKey, state.editRecord)
-    : state.canCreateRecord && state.config.allowManualCreate !== false
+    : state.canCreateRecord &&
+      state.config.allowManualCreate !== false &&
+      !state.config.parentImport?.executeParentImport
 
   return (
     <div key={moduleKey} className="page-stack module-page-stack">

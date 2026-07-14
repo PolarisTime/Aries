@@ -198,9 +198,15 @@ export function getEditorItemPrecision(columnKey: string) {
   return 0
 }
 
-export function getEditorItemMin(columnKey: string) {
+export function getEditorItemMin(columnKey: string, moduleKey?: string) {
   if (['weightAdjustmentTon', 'weightAdjustmentAmount'].includes(columnKey)) {
     return undefined
+  }
+  if (
+    columnKey === 'quantity' &&
+    (moduleKey === 'purchase-order' || moduleKey === 'purchase-inbound')
+  ) {
+    return 1
   }
   if (isNumberEditorColumn(columnKey)) {
     return 0

@@ -1036,6 +1036,8 @@ export const enUS: MessageSchema = {
         'Row {{row}}: source purchase order item is required',
       purchaseInboundWarehouseRequired:
         'Row {{row}}: source warehouse ID is required',
+      purchaseOrderQuantityMinimum:
+        'Row {{row}}: quantity must be at least one quantity unit',
       purchaseInboundQuantityPositive:
         'Row {{row}}: inbound quantity must be greater than zero',
       purchaseInboundMixedWarehouse:

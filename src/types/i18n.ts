@@ -981,6 +981,7 @@ export interface MessageSchema {
       lockedSalesWeightExceeded: string
       purchaseInboundSourceRequired: string
       purchaseInboundWarehouseRequired: string
+      purchaseOrderQuantityMinimum: string
       purchaseInboundQuantityPositive: string
       purchaseInboundMixedWarehouse: string
       purchaseInboundMixedSettlementMode: string

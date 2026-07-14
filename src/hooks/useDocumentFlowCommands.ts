@@ -1,24 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import {
-  completePurchaseOrder,
-  createSalesOutboundFromFreightBill,
-  reopenPurchaseOrder,
-} from '@/api/document-flow-commands'
+import { createSalesOutboundFromFreightBill } from '@/api/document-flow-commands'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleActionDefinition, ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 
-type DocumentFlowCommand =
-  | 'complete-purchase'
-  | 'reopen-purchase'
-  | 'create-sales-outbound'
+type DocumentFlowCommand = 'create-sales-outbound'
 
 interface Props {
   moduleKey: string
   selectedRecords: ModuleRecord[]
-  canAuditPurchaseOrder: boolean
   canCreateSalesOutbound: boolean
   refreshCurrentModule: () => Promise<void>
   clearSelection: () => void
@@ -40,7 +32,6 @@ function commandErrorMessage(error: unknown, fallback: string) {
 export function useDocumentFlowCommands({
   moduleKey,
   selectedRecords,
-  canAuditPurchaseOrder,
   canCreateSalesOutbound,
   refreshCurrentModule,
   clearSelection,
@@ -53,37 +44,6 @@ export function useDocumentFlowCommands({
   const selectedStatus = asString(selectedRecord?.status).trim()
 
   const command = (() => {
-    if (
-      moduleKey === 'purchase-order' &&
-      canAuditPurchaseOrder &&
-      selectedRecord &&
-      selectedStatus === '已审核'
-    ) {
-      return {
-        key: 'complete-purchase',
-        label: '完成采购',
-        confirmTitle: '确认完成采购',
-        confirmContent:
-          '系统将按当前已审核入库结果完成采购，未入库数量不再继续履约。完成后，采购数量与来源关系将被锁定。',
-        execute: (record) => completePurchaseOrder(String(record.id)),
-        refreshModules: ['purchase-inbound'],
-      } satisfies CommandDefinition
-    }
-    if (
-      moduleKey === 'purchase-order' &&
-      canAuditPurchaseOrder &&
-      selectedRecord &&
-      selectedStatus === '完成采购'
-    ) {
-      return {
-        key: 'reopen-purchase',
-        label: '撤销完成采购',
-        confirmTitle: '确认撤销完成采购',
-        confirmContent: '仅当没有后续受限单据时可以撤销完成采购。',
-        execute: (record) => reopenPurchaseOrder(String(record.id)),
-        refreshModules: ['purchase-inbound'],
-      } satisfies CommandDefinition
-    }
     if (
       moduleKey === 'freight-bill' &&
       canCreateSalesOutbound &&
