@@ -1,0 +1,168 @@
+import { describe, expect, it } from 'vitest'
+import { freightOperationsPageConfigs } from './freight-operations'
+
+describe('freightOperationsPageConfigs', () => {
+  const config = freightOperationsPageConfigs['freight-bill']
+
+  it('has required top-level fields', () => {
+    expect(config.key).toBe('freight-bill')
+    expect(config.title).toBeTruthy()
+    expect(config.primaryNoKey).toBe('billNo')
+    expect(Array.isArray(config.actions)).toBe(true)
+    expect(config.actions).toHaveLength(2)
+    expect(Array.isArray(config.filters)).toBe(true)
+    expect(Array.isArray(config.columns)).toBe(true)
+    expect(Array.isArray(config.detailFields)).toBe(true)
+    expect(Array.isArray(config.formFields)).toBe(true)
+    expect(config.saveFields?.lineItem).toEqual(
+      expect.arrayContaining(['materialId', 'warehouseId']),
+    )
+    expect(config.buildOverview).toBeTypeOf('function')
+  })
+
+  it('shows audit status in list columns', () => {
+    const statusColumn = config.columns.find(
+      (column) => column.dataIndex === 'status',
+    )
+
+    expect(statusColumn).toMatchObject({
+      type: 'status',
+      align: 'center',
+      width: 110,
+    })
+    expect(config.columns.map((column) => column.dataIndex)).toContain('status')
+  })
+
+  it('keeps operational filters visible and moves secondary filters to row two', () => {
+    const primaryFilterKeys = ['keyword', 'carrierName', 'status']
+    const secondaryFilterKeys = ['settlementCompanyId', 'billTime']
+
+    expect(
+      config
+        .filters!.filter((filter) => filter.row == null)
+        .map((filter) => filter.key),
+    ).toEqual(primaryFilterKeys)
+    for (const key of primaryFilterKeys) {
+      expect(
+        config.filters!.find((filter) => filter.key === key)?.row,
+      ).toBeUndefined()
+    }
+    expect(
+      config
+        .filters!.filter((filter) => filter.row === 2)
+        .map((filter) => filter.key),
+    ).toEqual(secondaryFilterKeys)
+    for (const key of secondaryFilterKeys) {
+      expect(config.filters!.find((filter) => filter.key === key)?.row).toBe(2)
+    }
+  })
+
+  it('shows the source document number and vehicle while keeping party context optional', () => {
+    const columnKeys = config.columns.map((column) => column.dataIndex)
+
+    expect(columnKeys).toEqual(
+      expect.arrayContaining([
+        'sourceSalesOutboundNo',
+        'vehiclePlate',
+        'customerName',
+        'projectName',
+        'settlementCompanyName',
+      ]),
+    )
+    expect(config.defaultHiddenColumnKeys).not.toContain(
+      'sourceSalesOutboundNo',
+    )
+    expect(config.defaultHiddenColumnKeys).not.toContain('vehiclePlate')
+    expect(config.defaultHiddenColumnKeys).toEqual([
+      'carrierCode',
+      'customerName',
+      'projectName',
+      'settlementCompanyName',
+      'unitPrice',
+      'remark',
+    ])
+  })
+
+  it('snapshots the stable carrier code across list, detail and editor config', () => {
+    expect(config.columns.map((column) => column.dataIndex)).toContain(
+      'carrierCode',
+    )
+    expect(config.detailFields.map((field) => field.key)).toContain(
+      'carrierCode',
+    )
+    expect(
+      config.formFields.find((field) => field.key === 'carrierCode'),
+    ).toMatchObject({
+      type: 'input',
+      disabled: true,
+    })
+    expect(config.saveFields?.scalar).toContain('carrierCode')
+  })
+
+  it('has parentImport configuration', () => {
+    const pi = config.parentImport
+    expect(pi?.parentModuleKey).toBe('sales-order')
+    expect(pi?.candidateQueryType).toBe('sales-order-freight-import')
+    expect(pi?.enforceUniqueRelation).toBe(true)
+    expect(pi?.allowMultipleSelection).toBe(false)
+    expect(
+      pi?.buildParentFilters?.({
+        id: '700520000000000099',
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+      }),
+    ).toEqual({
+      customerId: '700520000000000001',
+      projectId: '700520000000000002',
+      currentRecordId: '700520000000000099',
+    })
+    expect(pi?.hiddenSelectorColumnKeys).toContain('status')
+
+    const validation = pi?.validateBeforeOpen?.({ carrierName: '' })
+    expect(validation).toBe('请先选择物流商，再导入销售订单')
+
+    const noValidation = pi?.validateBeforeOpen?.({ carrierName: '物流A' })
+    expect(noValidation).toBeNull()
+  })
+
+  it('imports exactly one authoritative sales order', () => {
+    expect(config.parentImport?.allowMultipleSelection).toBe(false)
+    expect(config.parentImport?.validateParentImport).toBeUndefined()
+  })
+
+  it('parentImport mapParentToDraft returns default values', () => {
+    const draft = config.parentImport?.mapParentToDraft?.({
+      id: '700520000000000003',
+      customerId: '700520000000000001',
+      customerName: '客户A',
+      projectId: '700520000000000002',
+      projectName: '项目X',
+    })
+    expect(draft?.sourceSalesOrderId).toBe('700520000000000003')
+    expect(draft?.customerId).toBe('700520000000000001')
+    expect(draft?.customerName).toBe('客户A')
+    expect(draft?.projectId).toBe('700520000000000002')
+    expect(draft?.projectName).toBe('项目X')
+  })
+
+  it('parentImport mapParentToDraft fills empty defaults', () => {
+    const draft = config.parentImport?.mapParentToDraft?.({})
+    expect(draft).toEqual({
+      sourceSalesOrderId: undefined,
+      customerId: undefined,
+      customerName: '',
+      projectId: undefined,
+      projectName: '',
+    })
+  })
+
+  it('builds freight overview', () => {
+    const overview = config.buildOverview?.([
+      { totalFreight: 100, totalWeight: 2 },
+      { totalFreight: 50, totalWeight: 3 },
+    ])
+
+    expect(overview).toBeDefined()
+    expect(overview?.length).toBeGreaterThan(0)
+  })
+})

@@ -10,6 +10,7 @@
       "!!**/test-results",
       "!!**/coverage-report",
       "!!**/.playwright",
+      "!!**/archive",
       "!!**/src/components.d.ts",
       "!!**/.git",
       "!!**/node_modules",
@@ -57,38 +58,11 @@
   },
   "overrides": [
     {
-      "includes": [
-        "src/config/antd-locale.ts",
-        "src/config/antd-locale.spec.ts"
-      ],
+      "includes": ["src/config/antd-locale.ts"],
       "linter": {
         "rules": {
           "suspicious": {
             "noTemplateCurlyInString": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["**/*.spec.ts", "**/*.spec.tsx", "**/__tests__/**"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noExplicitAny": "off",
-            "noArrayIndexKey": "off"
-          },
-          "complexity": {
-            "noBannedTypes": "off"
-          },
-          "correctness": {
-            "noUnusedFunctionParameters": "off",
-            "noUnusedVariables": "off",
-            "noPrecisionLoss": "off",
-            "useHookAtTopLevel": "off"
-          },
-          "a11y": {
-            "useButtonType": "off",
-            "useAltText": "off"
           }
         }
       }
