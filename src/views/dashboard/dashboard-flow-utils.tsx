@@ -71,13 +71,6 @@ export function buildWorkflowSections(
       description: t('common.purchaseChainDesc'),
       nodes: [
         {
-          key: 'purchase-contract',
-          title: t('dashboard.flow.purchaseContract.title'),
-          path: '/purchase-contract',
-          icon: ProfileOutlined,
-          hint: t('dashboard.flow.purchaseContract.hint'),
-        },
-        {
           key: 'purchase-order',
           title: t('dashboard.flow.purchaseOrder.title'),
           path: '/purchase-order',
@@ -112,13 +105,6 @@ export function buildWorkflowSections(
       title: t('common.salesChain'),
       description: t('common.salesChainDesc'),
       nodes: [
-        {
-          key: 'sales-contract',
-          title: t('dashboard.flow.salesContract.title'),
-          path: '/sales-contract',
-          icon: FileDoneOutlined,
-          hint: t('dashboard.flow.salesContract.hint'),
-        },
         {
           key: 'sales-order',
           title: t('dashboard.flow.salesOrder.title'),

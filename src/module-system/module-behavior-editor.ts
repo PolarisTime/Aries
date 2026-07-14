@@ -5,12 +5,10 @@ import { findCustomerOption } from '@/api/customer-options'
 import { findProjectOption } from '@/api/project-options'
 import { findSupplierOption } from '@/api/supplier-options'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
-import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
 const currentDateTime = () => dayjs()
 const currentDate = () => dayjs().startOf('day')
-const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')
 
 function findSettlementCompanyName(id: unknown, fallback = '') {
   const normalizedId = asString(id).trim()
@@ -278,61 +276,6 @@ registerModuleBehavior('sales-outbound', {
   parentImportedEditableFields: ['outboundDate', 'remark'],
   parentImportedItemEditableColumns: ['actualWeightTon', 'weighWeightTon'],
 })
-registerModuleBehavior('purchase-contract', {
-  defaultOperatorField: 'buyerName',
-  readonlyLineItems: true,
-})
-registerModuleBehavior('purchase-contract', {
-  resolveReadonlyEditorFields(record) {
-    return asString(record.sourcePurchaseOrderNos).trim() ? ['supplierId'] : []
-  },
-  defaultDraftValues: () => {
-    const signDate = currentDateTime()
-    return {
-      signDate,
-      effectiveDate: signDate,
-      expireDate: addOneYear(signDate),
-    }
-  },
-  syncEditorForm(editorForm, ctx) {
-    if (ctx.changedKeys.has('supplierId')) {
-      snapshotSupplierIdentity(editorForm)
-    }
-
-    const signDateValue = editorForm.signDate
-    const signDate = dayjs.isDayjs(signDateValue)
-      ? signDateValue
-      : parseDateTimeValue(signDateValue)
-    if (!signDate?.isValid()) {
-      return
-    }
-
-    const shouldFollowSignDate =
-      ctx.changedKeys.has('signDate') ||
-      (!editorForm.effectiveDate && !editorForm.expireDate)
-
-    const effectiveDateValue = editorForm.effectiveDate
-    const effectiveDate = dayjs.isDayjs(effectiveDateValue)
-      ? effectiveDateValue
-      : parseDateTimeValue(effectiveDateValue)
-    if (
-      shouldFollowSignDate ||
-      !effectiveDateValue ||
-      !effectiveDate?.isValid()
-    ) {
-      editorForm.effectiveDate = signDate
-    }
-
-    const expireDateValue = editorForm.expireDate
-    const expireDate = dayjs.isDayjs(expireDateValue)
-      ? expireDateValue
-      : parseDateTimeValue(expireDateValue)
-    if (shouldFollowSignDate || !expireDateValue || !expireDate?.isValid()) {
-      editorForm.expireDate = addOneYear(signDate)
-    }
-  },
-})
-
 const operatorNameModules = ['receipt', 'payment', 'ledger-adjustment']
 
 for (const key of operatorNameModules) {

@@ -106,36 +106,4 @@ export const operationModuleEndpointContracts: Record<
       },
     },
   },
-  'purchase-contract': {
-    path: '/purchase-contracts',
-    nativeFilterKeys: [
-      'keyword',
-      'supplierName',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      signDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
-  'sales-contract': {
-    path: '/sales-contracts',
-    nativeFilterKeys: [
-      'keyword',
-      'customerName',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      signDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
 }

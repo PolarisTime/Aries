@@ -7,8 +7,6 @@ const lineItemModules = [
   'sales-outbound',
   'freight-bill',
   'freight-statement',
-  'purchase-contract',
-  'sales-contract',
 ]
 
 for (const key of lineItemModules) {
@@ -20,8 +18,6 @@ const amountModules = [
   'purchase-inbound',
   'sales-order',
   'sales-outbound',
-  'purchase-contract',
-  'sales-contract',
 ]
 
 for (const key of amountModules) {

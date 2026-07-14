@@ -11,8 +11,6 @@ const allowedPrintTemplateTargetKeys = [
   'sales-order',
   'sales-outbound',
   'freight-bill',
-  'purchase-contract',
-  'sales-contract',
   'supplier-statement',
   'customer-statement',
   'freight-statement',

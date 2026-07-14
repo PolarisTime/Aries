@@ -355,14 +355,6 @@ export const operationLogModuleOptions = [
         value: '物流单',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.purchaseContract'),
-        value: '采购合同',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.salesContract'),
-        value: '销售合同',
-      },
-      {
         label: i18next.t('modules.pages.operationLogOptions.supplierStatement'),
         value: '供应商对账单',
       },

@@ -31,7 +31,6 @@ const COMPUTED_FIELD_KEYS = new Set([
 const REQUIRED_SUPPLIER_ID_MODULES = new Set([
   'purchase-order',
   'purchase-inbound',
-  'purchase-contract',
   'supplier-statement',
 ])
 

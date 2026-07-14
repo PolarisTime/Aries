@@ -108,10 +108,6 @@ export interface MessageSchema {
         title: string
         hint: string
       }
-      purchaseContract: {
-        title: string
-        hint: string
-      }
       purchaseOrder: {
         title: string
         hint: string
@@ -125,10 +121,6 @@ export interface MessageSchema {
         hint: string
       }
       payment: {
-        title: string
-        hint: string
-      }
-      salesContract: {
         title: string
         hint: string
       }
@@ -1074,41 +1066,6 @@ export interface MessageSchema {
         categoryCount: string
         enabled: string
       }
-      purchaseContract: {
-        purchaseContract: string
-        purchaseContractPlaceholder: string
-        signDate: string
-        contractNo: string
-        relatedPurchaseOrder: string
-        supplier: string
-        effectiveDate: string
-        expireDate: string
-        buyer: string
-        totalWeight: string
-        totalAmount: string
-        status: string
-        remark: string
-        importFromParent: string
-        purchaseOrder: string
-        importPurchaseOrderItems: string
-        purchaseContractDesc: string
-      }
-      salesContract: {
-        salesContract: string
-        salesContractPlaceholder: string
-        signDate: string
-        contractNo: string
-        customerName: string
-        projectName: string
-        effectiveDate: string
-        expireDate: string
-        salesperson: string
-        totalWeight: string
-        totalAmount: string
-        status: string
-        remark: string
-        salesContractDesc: string
-      }
       payment: {
         payment: string
         createPayment: string
@@ -1554,8 +1511,6 @@ export interface MessageSchema {
         salesOrder: string
         salesOutbound: string
         freightBill: string
-        purchaseContract: string
-        salesContract: string
         supplierStatement: string
         customerStatement: string
         freightStatement: string
@@ -1706,16 +1661,6 @@ export interface MessageSchema {
       directPrint: string
       noPermission: string
       noExtraLogic: string
-    }
-    contractActions: {
-      startExecution: string
-      revertToDraft: string
-      sign: string
-      unsign: string
-      archive: string
-      archiveConfirmTitle: string
-      archiveConfirmContent: string
-      statusUpdated: string
     }
     recordActions: {
       view: string

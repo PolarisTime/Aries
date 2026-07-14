@@ -40,12 +40,6 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
   'freight-bill': async () =>
     (await import('@/config/business-pages/freight-operations'))
       .freightOperationsPageConfigs,
-  'purchase-contract': async () =>
-    (await import('@/config/business-pages/contract-operations'))
-      .contractOperationsPageConfigs,
-  'sales-contract': async () =>
-    (await import('@/config/business-pages/contract-operations'))
-      .contractOperationsPageConfigs,
   'supplier-statement': async () =>
     (await import('@/config/business-pages/statement-pages'))
       .statementPageConfigs,

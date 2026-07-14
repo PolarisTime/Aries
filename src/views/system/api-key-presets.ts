@@ -39,8 +39,6 @@ const BUSINESS_RESOURCE_CODES = [
   'sales-order',
   'sales-outbound',
   'freight-bill',
-  'purchase-contract',
-  'sales-contract',
   'inventory-report',
   'io-report',
   'supplier-statement',

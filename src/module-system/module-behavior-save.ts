@@ -6,8 +6,6 @@ const lineItemPayloadModules = [
   'sales-order',
   'sales-outbound',
   'freight-bill',
-  'purchase-contract',
-  'sales-contract',
   'supplier-statement',
   'customer-statement',
   'freight-statement',
@@ -24,8 +22,6 @@ const extraScalarFieldsMap: Record<string, string[]> = {
   'purchase-order': ['buyerName'],
   'sales-order': ['salesName'],
   'sales-outbound': ['salesName'],
-  'purchase-contract': ['buyerName'],
-  'sales-contract': ['salesName'],
 }
 
 for (const [key, fields] of Object.entries(extraScalarFieldsMap)) {

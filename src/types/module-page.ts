@@ -88,7 +88,7 @@ export interface ModuleParentImportDefinition {
     | 'sales-order-freight-import'
     | 'freight-bill-import'
     | 'sales-order-outbound-import'
-  candidateUsage?: 'purchase-inbound' | 'sales-order' | 'purchase-contract'
+  candidateUsage?: 'purchase-inbound' | 'sales-order'
   hiddenSelectorColumnKeys?: string[]
   visibleWhen?: (currentRecord: ModuleRecordInput) => boolean
   resolveParentSelector?: (currentRecord: ModuleRecord) => {
