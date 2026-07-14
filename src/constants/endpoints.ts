@@ -65,10 +65,9 @@ export const ENDPOINTS = {
   // Dashboard (pure action → singular)
   DASHBOARD_SUMMARY: '/dashboard/summary',
 
-  // Finance document flow (aggregate query)
-  PURCHASE_FINANCE_DOCUMENT_FLOW: '/purchase-finance/document-flow',
-  PURCHASE_FINANCE_DOCUMENT_FLOW_EXPORT:
-    '/purchase-finance/document-flow/export',
+  // Cash ledger (aggregate read model)
+  CASH_LEDGER: '/cash-ledger',
+  CASH_LEDGER_EXPORT: '/cash-ledger/export',
 
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
@@ -113,9 +112,6 @@ export const ENDPOINTS = {
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_FREIGHT_IMPORT_CANDIDATES:
     '/sales-orders/freight-import-candidates',
-  INVOICE_ISSUE_SOURCE_CANDIDATES: '/invoice-issues/source-candidates',
-  INVOICE_RECEIPT_SOURCE_CANDIDATES: '/invoice-receipts/source-candidates',
-
   // Departments (sub-resource option lists → plural collection)
   DEPARTMENTS_OPTIONS: '/departments/options',
 

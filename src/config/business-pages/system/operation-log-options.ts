@@ -383,20 +383,6 @@ export const operationLogModuleOptions = [
         value: '付款单',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.invoiceReceipt'),
-        value: '收票单',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.invoiceIssue'),
-        value: '开票单',
-      },
-      {
-        label: i18next.t(
-          'modules.pages.operationLogOptions.pendingInvoiceReceiptReport',
-        ),
-        value: '未收票报表',
-      },
-      {
         label: i18next.t('modules.pages.operationLogOptions.ioReport'),
         value: '出入库报表',
       },

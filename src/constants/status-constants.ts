@@ -45,8 +45,6 @@ export const DOCUMENT_STATUS = {
   DRAFT: '草稿',
   UNAUDITED: '未审核',
   AUDITED: '已审核',
-  INVOICED_RECEIVED: '已收票',
-  INVOICED_ISSUED: '已开票',
   PURCHASE_COMPLETED: '完成采购',
   SALES_COMPLETED: '完成销售',
   INBOUND_COMPLETED: '完成入库',

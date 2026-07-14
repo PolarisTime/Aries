@@ -83,12 +83,6 @@ export function trimEditorItemsForModule(
     return nonEmptyItems
   }
 
-  if (strategy === 'positiveWeightOrAmount') {
-    return nonEmptyItems.filter(
-      (item) => Number(item.weightTon || 0) > 0 || Number(item.amount || 0) > 0,
-    )
-  }
-
   return nonEmptyItems
 }
 

@@ -43,7 +43,6 @@ interface ConfirmationDraft {
 }
 
 interface AuditOptionsDraft {
-  closePurchaseOrder: boolean
   confirmations: Record<string, ConfirmationDraft>
 }
 
@@ -180,7 +179,6 @@ function buildAuditInput(
     }
   })
   return {
-    closePurchaseOrder: draft.closePurchaseOrder,
     overToleranceConfirmations,
   }
 }
@@ -203,7 +201,7 @@ function PurchaseInboundAuditOptions({ lines, onChange }: Props) {
           ...patch,
         },
       }
-      onChange({ closePurchaseOrder: false, confirmations: next })
+      onChange({ confirmations: next })
       return next
     })
   }
@@ -293,7 +291,6 @@ export async function requestPurchaseInboundAuditInput(
     latestCategoryOptions,
   )
   let draft: AuditOptionsDraft = {
-    closePurchaseOrder: false,
     confirmations: {},
   }
 

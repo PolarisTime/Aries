@@ -173,9 +173,8 @@ const settlementCompanySnapshotModules = [
   'supplier-statement',
   'customer-statement',
   'freight-statement',
-  'invoice-issue',
 ]
-const customerProjectSnapshotModules = new Set(['sales-order', 'invoice-issue'])
+const customerProjectSnapshotModules = new Set(['sales-order'])
 
 for (const key of settlementCompanySnapshotModules) {
   registerModuleBehavior(key, {
@@ -334,14 +333,7 @@ registerModuleBehavior('purchase-contract', {
   },
 })
 
-const operatorNameModules = [
-  'receipt',
-  'payment',
-  'cash-reversal',
-  'invoice-receipt',
-  'invoice-issue',
-  'ledger-adjustment',
-]
+const operatorNameModules = ['receipt', 'payment', 'ledger-adjustment']
 
 for (const key of operatorNameModules) {
   registerModuleBehavior(key, { defaultOperatorField: 'operatorName' })
@@ -421,14 +413,6 @@ registerModuleBehavior('receipt', {
   },
 })
 
-registerModuleBehavior('invoice-receipt', {
-  syncEditorForm(editorForm, ctx) {
-    if (ctx.changedKeys.has('supplierId')) {
-      snapshotSupplierIdentity(editorForm)
-    }
-  },
-})
-
 registerModuleBehavior('payment', {
   clearLineItemsOnFieldChange: ['paymentPurpose'],
   syncEditorForm(editorForm, ctx) {
@@ -486,40 +470,6 @@ registerModuleBehavior('payment', {
   },
 })
 
-registerModuleBehavior('cash-reversal', {
-  defaultDraftValues: () => ({
-    sourceType: '付款单',
-    reversalDate: currentDate(),
-  }),
-  normalizeEditorRecord(record) {
-    const originalPaymentId = asString(record.originalPaymentId).trim()
-    const originalReceiptId = asString(record.originalReceiptId).trim()
-    return {
-      ...record,
-      sourceType: originalPaymentId ? '付款单' : '收款单',
-      sourceDocumentNo:
-        asString(record.sourceDocumentNo).trim() ||
-        originalPaymentId ||
-        originalReceiptId,
-    }
-  },
-  syncEditorForm(editorForm, ctx) {
-    if (!ctx.changedKeys.has('sourceType')) {
-      return
-    }
-    editorForm.sourceDocumentNo = ''
-    editorForm.originalPaymentId = ''
-    editorForm.originalReceiptId = ''
-    editorForm.counterpartyType = ''
-    editorForm.counterpartyId = ''
-    editorForm.counterpartyCode = ''
-    editorForm.counterpartyName = ''
-    editorForm.settlementCompanyId = ''
-    editorForm.settlementCompanyName = ''
-    editorForm.amount = 0
-  },
-})
-
 registerModuleBehavior('ledger-adjustment', {
   defaultDraftValues: () => ({ adjustmentDate: currentDate() }),
   syncEditorForm(editorForm, ctx) {
@@ -572,15 +522,6 @@ registerModuleBehavior('purchase-order', {
   lineItemTrimStrategy: 'purchaseOrderBlank',
 })
 
-const positiveLineItemModules = ['invoice-receipt', 'invoice-issue']
-
-for (const key of positiveLineItemModules) {
-  registerModuleBehavior(key, {
-    lineItemTrimStrategy: 'positiveWeightOrAmount',
-  })
-}
-
-registerModuleBehavior('invoice-issue', { allowsManualLineItems: false })
 registerModuleBehavior('freight-bill', {
   allowsManualLineItems: false,
   readonlyLineItems: true,
@@ -611,8 +552,6 @@ registerModuleBehavior('freight-bill', {
   statementLinkType: 'freight',
 })
 
-registerModuleBehavior('invoice-receipt', { supportsInvoiceSync: true })
-registerModuleBehavior('invoice-issue', { supportsInvoiceSync: true })
 registerModuleBehavior('sales-order', { supportsFreightPickup: true })
 registerModuleBehavior('material', { supportsMaterialImport: true })
 

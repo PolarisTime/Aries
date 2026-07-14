@@ -4,18 +4,6 @@ export const reportModuleEndpointContracts: Record<
   string,
   ModuleEndpointConfig
 > = {
-  'pending-invoice-receipt-report': {
-    path: '/pending-invoice-receipt-report',
-    readOnly: true,
-    sortDirectionParam: 'sortDirection',
-    nativeFilterKeys: ['keyword', 'supplierName', 'startDate', 'endDate'],
-    dateRangeMapping: {
-      orderDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
   'inventory-report': {
     path: '/inventory-report',
     readOnly: true,

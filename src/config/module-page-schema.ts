@@ -356,21 +356,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       ],
     },
   },
-  'cash-reversal': {
-    saveFields: {
-      scalar: [
-        'reversalNo',
-        'originalPaymentId',
-        'originalReceiptId',
-        'reversalDate',
-        'amount',
-        'reason',
-        'status',
-        'operatorName',
-        'remark',
-      ],
-    },
-  },
   'ledger-adjustment': {
     saveFields: {
       scalar: [
@@ -622,56 +607,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'weightTon',
         'warehouseId',
         'warehouseName',
-      ],
-    },
-  },
-  'invoice-receipt': {
-    filters: [
-      { key: 'supplierId', label: '供应商名称', type: 'select' },
-      { key: 'status', label: '单据状态', type: 'select' },
-      { key: 'invoiceDate', label: '发票日期', type: 'dateRange' },
-    ],
-    saveFields: {
-      scalar: [
-        'receiveNo',
-        'invoiceNo',
-        'sourcePurchaseOrderNos',
-        'supplierId',
-        'supplierCode',
-        'supplierName',
-        'invoiceTitle',
-        'invoiceDate',
-        'invoiceType',
-        'amount',
-        'taxRate',
-        'taxAmount',
-        'status',
-        'operatorName',
-        'remark',
-      ],
-    },
-  },
-  'invoice-issue': {
-    saveFields: {
-      scalar: [
-        'issueNo',
-        'invoiceNo',
-        'sourceSalesOrderNos',
-        'customerId',
-        'customerName',
-        'projectId',
-        'projectName',
-        'settlementCompanyId',
-        'settlementCompanyName',
-        'invoiceDate',
-        'invoiceType',
-        'targetAmount',
-        'amount',
-        'taxRate',
-        'taxAmount',
-        'status',
-        'operatorName',
-        'remark',
       ],
     },
   },

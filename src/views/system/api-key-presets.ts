@@ -43,16 +43,12 @@ const BUSINESS_RESOURCE_CODES = [
   'sales-contract',
   'inventory-report',
   'io-report',
-  'pending-invoice-receipt-report',
   'supplier-statement',
   'customer-statement',
   'freight-statement',
   'receipt',
   'payment',
-  'invoice-receipt',
-  'invoice-issue',
-  'cash-reversal',
-  'receivable-payable',
+  'cash-ledger',
 ]
 
 const API_KEY_PRESET_DEFINITIONS: ApiKeyPresetDefinition[] = [
@@ -97,9 +93,6 @@ const API_KEY_PRESET_DEFINITIONS: ApiKeyPresetDefinition[] = [
       'freight-statement',
       'receipt',
       'payment',
-      'invoice-receipt',
-      'invoice-issue',
-      'cash-reversal',
     ],
     actionCodes: ['read', 'create', 'update', 'audit', 'export', 'print'],
   },

@@ -48,9 +48,6 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
 const FINANCE_DOCUMENT_MODULES = new Set([
   'receipt',
   'payment',
-  'cash-reversal',
-  'invoice-receipt',
-  'invoice-issue',
   'ledger-adjustment',
 ])
 
@@ -62,8 +59,6 @@ function isFinanceOrTradeModule(key: string) {
     key === 'sales-outbound' ||
     key === 'receipt' ||
     key === 'payment' ||
-    key === 'invoice-issue' ||
-    key === 'invoice-receipt' ||
     key === 'customer-statement' ||
     key === 'supplier-statement' ||
     key === 'freight-statement'

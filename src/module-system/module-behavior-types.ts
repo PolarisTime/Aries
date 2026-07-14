@@ -47,10 +47,9 @@ export interface ModuleBehaviorConfig {
   lockedLineItemsNotice?: string
   allowsManualLineItems?: boolean
   readonlyLineItems?: boolean
-  lineItemTrimStrategy?: 'purchaseOrderBlank' | 'positiveWeightOrAmount'
+  lineItemTrimStrategy?: 'purchaseOrderBlank'
   supportsParentImport?: boolean
   supportsStatements?: boolean
-  supportsInvoiceSync?: boolean
   supportsFreightPickup?: boolean
   supportsMaterialImport?: boolean
   statementLinkType?: 'supplier' | 'customer' | 'freight'

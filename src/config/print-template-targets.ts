@@ -18,8 +18,6 @@ const allowedPrintTemplateTargetKeys = [
   'freight-statement',
   'receipt',
   'payment',
-  'invoice-receipt',
-  'invoice-issue',
 ] as const
 
 export const printTemplateTargetOptions: PrintTemplateTargetOption[] =

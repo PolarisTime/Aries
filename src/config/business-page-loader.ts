@@ -59,21 +59,10 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
   payment: async () =>
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
-  'cash-reversal': async () =>
-    (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
-  'invoice-receipt': async () =>
-    (await import('@/config/business-pages/invoice-pages')).invoicePageConfigs,
-  'invoice-issue': async () =>
-    (await import('@/config/business-pages/invoice-pages')).invoicePageConfigs,
-  'receivable-payable': async () =>
-    (await import('@/config/business-pages/balance-pages')).balancePageConfigs,
   'inventory-report': async () =>
     (await import('@/config/business-pages/finance-report-pages'))
       .financeReportPageConfigs,
   'io-report': async () =>
-    (await import('@/config/business-pages/finance-report-pages'))
-      .financeReportPageConfigs,
-  'pending-invoice-receipt-report': async () =>
     (await import('@/config/business-pages/finance-report-pages'))
       .financeReportPageConfigs,
   'general-setting': async () =>

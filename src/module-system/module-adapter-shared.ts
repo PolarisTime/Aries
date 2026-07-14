@@ -14,8 +14,6 @@ const primaryNoFallbackKeys = [
   'statementNo',
   'receiptNo',
   'paymentNo',
-  'receiveNo',
-  'issueNo',
   'materialCode',
   'categoryCode',
   'supplierCode',
@@ -87,9 +85,6 @@ export function generatePrimaryNo(
     'freight-statement': 'WDZ',
     receipts: 'SK',
     payments: 'FK',
-    'cash-reversal': 'CR',
-    'invoice-receipt': 'SP',
-    'invoice-issue': 'KP',
     'ledger-adjustment': 'LA',
   }
 

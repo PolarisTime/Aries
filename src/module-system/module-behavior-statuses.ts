@@ -9,8 +9,6 @@ const lineItemModules = [
   'freight-statement',
   'purchase-contract',
   'sales-contract',
-  'invoice-receipt',
-  'invoice-issue',
 ]
 
 for (const key of lineItemModules) {
@@ -41,9 +39,6 @@ const draftStatusModules: Record<string, string> = {
   'customer-statement': '待确认',
   receipt: '草稿',
   payment: '草稿',
-  'cash-reversal': '草稿',
-  'invoice-receipt': '草稿',
-  'invoice-issue': '草稿',
   'ledger-adjustment': '草稿',
 }
 
@@ -74,9 +69,6 @@ registerModuleBehavior('purchase-inbound', {
 
 registerModuleBehavior('receipt', { auditStatus: '已审核' })
 registerModuleBehavior('payment', { auditStatus: '已审核' })
-registerModuleBehavior('cash-reversal', { auditStatus: '已审核' })
-registerModuleBehavior('invoice-receipt', { auditStatus: '已收票' })
-registerModuleBehavior('invoice-issue', { auditStatus: '已开票' })
 registerModuleBehavior('ledger-adjustment', { auditStatus: '已审核' })
 registerModuleBehavior('supplier-statement', { auditStatus: '已确认' })
 registerModuleBehavior('customer-statement', { auditStatus: '已确认' })
@@ -92,8 +84,6 @@ export const protectedEditStatuses = new Set([
   '已付款',
   '已收款',
   '已签署',
-  '已开票',
-  '已收票',
   '已归档',
 ])
 
@@ -108,7 +98,5 @@ export const protectedDeleteStatuses = new Set([
   '已付款',
   '已收款',
   '已签署',
-  '已开票',
-  '已收票',
   '已归档',
 ])

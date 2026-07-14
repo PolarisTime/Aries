@@ -21,8 +21,6 @@ const WEIGHT_ONLY_AMOUNT_COLUMN_KEYS = new Set([
   'weightAdjustmentAmount',
 ])
 
-const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipt', 'invoice-issue'])
-
 function filterWeightOnlyItemColumns(
   columns?: ModuleColumnDefinition[],
 ): ModuleColumnDefinition[] | undefined {
@@ -176,12 +174,9 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
 
   const showSnowflakeId = runtimeConfig?.ui.showSnowflakeId ?? false
 
-  const supportsInvoiceAssist = INVOICE_ASSIST_MODULE_KEYS.has(moduleKey)
-
   return {
     config,
     showSnowflakeId,
-    supportsInvoiceAssist,
     isLoading: moduleConfigLoading || runtimeConfigLoading,
   }
 }

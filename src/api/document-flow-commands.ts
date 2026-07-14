@@ -17,7 +17,6 @@ interface SalesOutboundCommandResult {
 }
 
 export interface PurchaseInboundAuditCommandInput {
-  closePurchaseOrder: boolean
   overToleranceConfirmations: Array<{
     inboundItemId: EntityId
     reasonCode: string
@@ -27,11 +26,6 @@ export interface PurchaseInboundAuditCommandInput {
 
 export interface PurchaseInboundAuditCommandResult {
   purchaseInbound: ModuleRecord
-  purchaseOrderCompletion?: {
-    purchaseOrderId: EntityId
-    purchaseOrderNo: string
-    status: string
-  } | null
 }
 
 export interface PurchaseInboundSplitPreviewResult {

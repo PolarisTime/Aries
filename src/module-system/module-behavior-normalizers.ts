@@ -151,21 +151,3 @@ registerModuleBehavior('customer-statement', {
     record.closingAmount = Number(Number(record.salesAmount || 0).toFixed(2))
   },
 })
-
-registerModuleBehavior('invoice-receipt', {
-  normalizeDraftRecord(record, items, ctx) {
-    if (items.length) {
-      record.amount = Number(ctx.sumLineItemsBy(items, 'amount').toFixed(2))
-      record.sourcePurchaseOrderNos = collectUniqueSourceNos(items)
-    }
-  },
-})
-
-registerModuleBehavior('invoice-issue', {
-  normalizeDraftRecord(record, items, ctx) {
-    if (items.length) {
-      record.amount = Number(ctx.sumLineItemsBy(items, 'amount').toFixed(2))
-      record.sourceSalesOrderNos = collectUniqueSourceNos(items)
-    }
-  },
-})

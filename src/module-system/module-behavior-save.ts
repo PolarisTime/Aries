@@ -11,8 +11,6 @@ const lineItemPayloadModules = [
   'supplier-statement',
   'customer-statement',
   'freight-statement',
-  'invoice-receipt',
-  'invoice-issue',
   'receipt',
   'payment',
 ]

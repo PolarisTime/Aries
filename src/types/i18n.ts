@@ -672,9 +672,6 @@ export interface MessageSchema {
       approved: string
       paid: string
       received: string
-      invoiceReceived: string
-      invoiceIssued: string
-      invoiceNotReceived: string
       partialInbound: string
       partialOutbound: string
       partialSettled: string
@@ -927,8 +924,6 @@ export interface MessageSchema {
         draft: string
         unaudited: string
         audited: string
-        invoiceReceived: string
-        invoiceIssued: string
         purchaseComplete: string
         salesComplete: string
         inboundComplete: string
@@ -1423,96 +1418,6 @@ export interface MessageSchema {
         settlementMonthly: string
         settlementCredit: string
       }
-      invoiceIssue: {
-        invoiceIssue: string
-        createInvoiceIssue: string
-        invoiceDate: string
-        issueNo: string
-        relatedSalesOrder: string
-        invoiceNo: string
-        customer: string
-        project: string
-        invoiceType: string
-        amount: string
-        taxAmount: string
-        status: string
-        operator: string
-        remark: string
-        importFromSalesOrders: string
-        targetAmount: string
-        taxRate: string
-        parentSalesOrder: string
-        importSalesOrderItems: string
-        invoiceIssueDesc: string
-      }
-      invoiceReceipt: {
-        invoiceReceipt: string
-        createInvoiceReceipt: string
-        invoiceDate: string
-        receiveNo: string
-        relatedPurchaseOrder: string
-        invoiceNo: string
-        supplier: string
-        invoiceTitle: string
-        invoiceType: string
-        amount: string
-        taxAmount: string
-        status: string
-        operator: string
-        remark: string
-        importFromPurchaseOrders: string
-        taxRate: string
-        parentPurchaseOrder: string
-        importPurchaseOrderItems: string
-        invoiceReceiptDesc: string
-      }
-      balance: {
-        receivablePayable: string
-        exportBalance: string
-        direction: string
-        receivable: string
-        payable: string
-        counterpartyType: string
-        customer: string
-        supplier: string
-        carrier: string
-        counterparty: string
-        counterpartyCode: string
-        allBalances: string
-        settlementStatus: string
-        reconciliationStatus: string
-        open: string
-        closed: string
-        unreconciled: string
-        reconciled: string
-        recognizedAmount: string
-        settledAmount: string
-        balanceAmount: string
-        days0To30Amount: string
-        days31To60Amount: string
-        days61To90Amount: string
-        daysOver90Amount: string
-        entryCount: string
-        status: string
-        remark: string
-        entryRole: string
-        recognitionEntry: string
-        settlementEntry: string
-        sourceType: string
-        documentNo: string
-        sourceNo: string
-        project: string
-        accountingDate: string
-        dueDate: string
-        debitAmount: string
-        creditAmount: string
-        entryBalanceAmount: string
-        ageDays: string
-        counterpartyCount: string
-        receivableBalance: string
-        payableBalance: string
-        balanceDesc: string
-      }
       ioReport: {
         ioReport: string
         export: string
@@ -1568,34 +1473,6 @@ export interface MessageSchema {
         currentStockOnly: string
         includeOutbound: string
         inventoryReportDesc: string
-      }
-      pendingInvoiceReceiptReport: {
-        pendingInvoiceReceiptReport: string
-        export: string
-        keyword: string
-        pendingInvoicePlaceholder: string
-        purchaseDate: string
-        purchaseOrderNo: string
-        supplier: string
-        invoiceTitle: string
-        materialCode: string
-        brand: string
-        material: string
-        category: string
-        spec: string
-        length: string
-        orderQty: string
-        qtyUnit: string
-        orderWeight: string
-        receivedWeight: string
-        pendingWeight: string
-        unitPrice: string
-        orderAmount: string
-        receivedAmount: string
-        pendingAmount: string
-        status: string
-        pendingItemCount: string
-        pendingInvoiceDesc: string
       }
       operationLog: {
         operationLog: string
@@ -1683,9 +1560,6 @@ export interface MessageSchema {
         freightStatement: string
         receipt: string
         payment: string
-        invoiceReceipt: string
-        invoiceIssue: string
-        pendingInvoiceReceiptReport: string
         ioReport: string
         inventoryReport: string
       }

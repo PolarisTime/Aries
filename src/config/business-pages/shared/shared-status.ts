@@ -45,15 +45,6 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
   未签署: { text: i18next.t('modules.status.unsigned'), color: 'warning' },
   已收款: { text: i18next.t('modules.status.received'), color: 'success' },
   已付款: { text: i18next.t('modules.status.paid'), color: 'success' },
-  已收票: {
-    text: i18next.t('modules.status.invoiceReceived'),
-    color: 'success',
-  },
-  已开票: { text: i18next.t('modules.status.invoiceIssued'), color: 'success' },
-  未收票: {
-    text: i18next.t('modules.status.invoiceNotReceived'),
-    color: 'warning',
-  },
   部分结清: {
     text: i18next.t('modules.status.partialSettled'),
     color: 'processing',

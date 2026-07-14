@@ -220,9 +220,9 @@ const viewLoaders: Record<
     import('@/views/system/DatabaseBackupView').then((m) => ({
       default: m.DatabaseBackupView,
     })),
-  'purchase-finance-flow': () =>
-    import('@/views/finance/PurchaseFinanceFlowView').then((m) => ({
-      default: m.PurchaseFinanceFlowView,
+  'cash-ledger': () =>
+    import('@/views/finance/CashLedgerView').then((m) => ({
+      default: m.CashLedgerView,
     })),
 }
 

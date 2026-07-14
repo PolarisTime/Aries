@@ -74,29 +74,3 @@ export const compactBatchSupplierStatementItemColumns = applyCompactItemLayout(
   compactTradeItemWidthMap,
   ['piecesPerBundle'],
 )
-
-export const compactInvoiceReceiptItemColumns = applyCompactItemLayout(
-  [
-    {
-      title: i18next.t('modules.columns.purchaseOrderNo'),
-      dataIndex: 'sourceNo',
-      width: 160,
-    },
-    ...purchaseItemColumns,
-  ],
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
-
-export const compactInvoiceIssueItemColumns = applyCompactItemLayout(
-  [
-    {
-      title: i18next.t('modules.columns.salesOrderNo'),
-      dataIndex: 'sourceNo',
-      width: 160,
-    },
-    ...purchaseItemColumns,
-  ],
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)

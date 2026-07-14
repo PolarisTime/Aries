@@ -5,10 +5,6 @@ import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
-import {
-  listInvoiceIssueSourceCandidatePage,
-  listInvoiceReceiptSourceCandidatePage,
-} from '@/api/invoice-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
 import {
   listPurchaseOrderImportCandidatePage,
@@ -127,14 +123,6 @@ export function getOverlayStatusMap() {
       color: 'processing',
       text: i18next.t('modules.parentSelector.status.audited'),
     },
-    [DOCUMENT_STATUS.INVOICED_RECEIVED]: {
-      color: 'success',
-      text: i18next.t('modules.parentSelector.status.invoiceReceived'),
-    },
-    [DOCUMENT_STATUS.INVOICED_ISSUED]: {
-      color: 'success',
-      text: i18next.t('modules.parentSelector.status.invoiceIssued'),
-    },
     [DOCUMENT_STATUS.PURCHASE_COMPLETED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.purchaseComplete'),
@@ -156,60 +144,6 @@ export function getOverlayStatusMap() {
 
 function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
   return {
-    payment: [
-      { dataIndex: 'paymentNo', title: '付款单号', width: 180 },
-      { dataIndex: 'counterpartyName', title: '供应商', width: 180 },
-      {
-        dataIndex: 'settlementCompanyName',
-        title: '结算主体',
-        width: 170,
-      },
-      {
-        dataIndex: 'paymentDate',
-        title: '付款日期',
-        width: 120,
-        type: 'date',
-      },
-      {
-        dataIndex: 'amount',
-        title: '付款金额',
-        width: 120,
-        type: 'amount',
-      },
-      {
-        dataIndex: 'status',
-        title: i18next.t('modules.parentSelector.column.status'),
-        width: 110,
-        type: 'status',
-      },
-    ],
-    receipt: [
-      { dataIndex: 'receiptNo', title: '收款单号', width: 180 },
-      { dataIndex: 'counterpartyName', title: '供应商', width: 180 },
-      {
-        dataIndex: 'settlementCompanyName',
-        title: '结算主体',
-        width: 170,
-      },
-      {
-        dataIndex: 'receiptDate',
-        title: '收款日期',
-        width: 120,
-        type: 'date',
-      },
-      {
-        dataIndex: 'amount',
-        title: '收款金额',
-        width: 120,
-        type: 'amount',
-      },
-      {
-        dataIndex: 'status',
-        title: i18next.t('modules.parentSelector.column.status'),
-        width: 110,
-        type: 'status',
-      },
-    ],
     'purchase-order': [
       {
         dataIndex: 'orderNo',
@@ -501,12 +435,6 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'sales-order-freight-import') {
     return 'sales-order-freight-import'
   }
-  if (candidateQueryType === 'invoice-issue-source') {
-    return 'invoice-issue-source'
-  }
-  if (candidateQueryType === 'invoice-receipt-source') {
-    return 'invoice-receipt-source'
-  }
   return candidateStatementModuleKey || parentModuleKey
 }
 
@@ -758,20 +686,6 @@ export function useModuleParentSelectorOverlay({
       }
       if (candidateQueryType === 'sales-order-freight-import') {
         return listSalesOrderFreightImportCandidatePage(
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
-          Math.max(page - 1, 0),
-          pageSize,
-        )
-      }
-      if (candidateQueryType === 'invoice-issue-source') {
-        return listInvoiceIssueSourceCandidatePage(
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
-          Math.max(page - 1, 0),
-          pageSize,
-        )
-      }
-      if (candidateQueryType === 'invoice-receipt-source') {
-        return listInvoiceReceiptSourceCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,

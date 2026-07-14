@@ -89,55 +89,6 @@ export const financeModuleEndpointContracts: Record<
       },
     },
   },
-  'cash-reversal': {
-    path: '/cash-reversals',
-    nativeFilterKeys: [
-      'keyword',
-      'settlementCompanyId',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      reversalDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
-  'invoice-receipt': {
-    path: '/invoice-receipts',
-    nativeFilterKeys: [
-      'keyword',
-      'supplierName',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      invoiceDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
-  'invoice-issue': {
-    path: '/invoice-issues',
-    nativeFilterKeys: [
-      'keyword',
-      'customerName',
-      'settlementCompanyId',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      invoiceDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
   'ledger-adjustment': {
     path: '/ledger-adjustments',
     nativeFilterKeys: [
@@ -155,18 +106,5 @@ export const financeModuleEndpointContracts: Record<
         endKey: 'endDate',
       },
     },
-  },
-  'receivable-payable': {
-    path: '/receivable-payables',
-    readOnly: true,
-    supportsDetail: true,
-    sortDirectionParam: 'sortDirection',
-    nativeFilterKeys: [
-      'keyword',
-      'direction',
-      'counterpartyType',
-      'reconciliationStatus',
-      'status',
-    ],
   },
 }

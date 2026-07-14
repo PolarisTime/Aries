@@ -71,9 +71,6 @@ const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
   'freight-statement',
   'receipt',
   'payment',
-  'cash-reversal',
-  'invoice-receipt',
-  'invoice-issue',
   'ledger-adjustment',
 ])
 
@@ -426,17 +423,8 @@ function syncEditorFormValues(args: {
   items: ModuleLineItem[]
   sumLineItemsBy: (nextItems: ModuleLineItem[], key: string) => number
   changedValues?: FormChangedValues
-  defaultTaxRate: number
 }) {
-  const {
-    config,
-    form,
-    moduleKey,
-    items,
-    sumLineItemsBy,
-    changedValues,
-    defaultTaxRate,
-  } = args
+  const { config, form, moduleKey, items, sumLineItemsBy, changedValues } = args
   const currentValues = form.getFieldsValue(true)
   const changedKeys = new Set(Object.keys(changedValues || {}))
   const nextValues = syncDerivedEditorFormValuesForModule({
@@ -446,12 +434,6 @@ function syncEditorFormValues(args: {
     sumLineItemsBy,
     changedKeys,
   })
-  if (moduleKey === 'invoice-receipt' || moduleKey === 'invoice-issue') {
-    nextValues.taxRate = defaultTaxRate
-    nextValues.taxAmount = Number(
-      (Number(nextValues.amount || 0) * defaultTaxRate).toFixed(2),
-    )
-  }
   form.setFieldsValue(normalizeRecordForEditor(config, nextValues))
 }
 
@@ -560,7 +542,6 @@ export function useModuleEditorWorkspace({
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
   const { data: runtimeConfig } = useRuntimeConfig()
-  const defaultTaxRate = runtimeConfig?.business.defaultTaxRate ?? 0.13
   const snowflakeBusinessNoEnabled =
     runtimeConfig?.business.businessNo.useSnowflakeId ?? false
 
@@ -740,7 +721,6 @@ export function useModuleEditorWorkspace({
       items: nextItems,
       sumLineItemsBy,
       changedValues: effectiveChangedValues,
-      defaultTaxRate,
     })
   }
 
@@ -1134,7 +1114,6 @@ export function useModuleEditorWorkspace({
         items: nextItems,
         sumLineItemsBy,
         changedValues: nextValues,
-        defaultTaxRate,
       })
       dispatchWorkspaceState({ items: nextItems })
       setParentSelectorSessionKey(null)
@@ -1192,7 +1171,6 @@ export function useModuleEditorWorkspace({
         moduleKey,
         items: nextItems,
         sumLineItemsBy,
-        defaultTaxRate,
       })
     }
   }
@@ -1210,7 +1188,6 @@ export function useModuleEditorWorkspace({
         moduleKey,
         items: resolvedItems,
         sumLineItemsBy,
-        defaultTaxRate,
       })
     }
   }

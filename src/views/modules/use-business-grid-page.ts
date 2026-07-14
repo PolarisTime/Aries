@@ -292,7 +292,6 @@ export function useBusinessGridPage({
   )
   const shouldUseDetailAction = Boolean(
     detailRoutePath ||
-      moduleKey === 'receivable-payable' ||
       config?.detailActionLabel ||
       (config?.readOnly && config.detailFields.length > 0),
   )

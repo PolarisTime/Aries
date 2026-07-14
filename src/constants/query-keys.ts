@@ -14,18 +14,17 @@ export const QUERY_KEYS = {
   backendInfo: ['backend-info'] as const,
 
   // Finance
-  purchaseFinanceFlow: (query: {
+  cashLedger: (query: {
     settlementCompanyId: string
-    supplierId: string
-    documentType?: string
-    status?: string
     startDate?: string
     endDate?: string
-    materialKeyword?: string
-    purchaseOrderId?: string
+    counterpartyType?: string
+    counterpartyId?: string
+    flowType?: string
+    keyword?: string
     page: number
     size: number
-  }) => ['purchase-finance-flow', query] as const,
+  }) => ['cash-ledger', query] as const,
 
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
