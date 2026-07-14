@@ -9,7 +9,6 @@ import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
-  buildSupplierStatementDraftData,
 } from '@/module-system/module-adapter-statement-drafts'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
@@ -17,7 +16,7 @@ import type { ModuleRecord } from '@/types/module-page'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { asString } from '@/utils/type-narrowing'
 
-type StatementType = 'supplier' | 'customer' | 'freight'
+type StatementType = 'customer' | 'freight'
 
 interface Props {
   refreshModuleQueries: () => Promise<void>
@@ -38,8 +37,6 @@ export function useBusinessGridStatementActions({
   const { data: runtimeConfig } = useRuntimeConfig()
   const customerReceiptZero =
     runtimeConfig?.business.statement.customerReceiptAmountZero ?? false
-  const supplierFullPayment =
-    runtimeConfig?.business.statement.supplierFullPayment ?? false
 
   const handleStatementGenerate = async (
     type: StatementType,
@@ -48,28 +45,14 @@ export function useBusinessGridStatementActions({
     endDate: string,
     counterpartyId?: EntityId,
   ) => {
-    const identityField =
-      type === 'supplier'
-        ? 'supplierId'
-        : type === 'customer'
-          ? 'customerId'
-          : 'carrierId'
+    const identityField = type === 'customer' ? 'customerId' : 'carrierId'
     const normalizedCounterpartyId = parseEntityId(
       counterpartyId,
       identityField,
     )
     const statementModuleKey =
-      type === 'supplier'
-        ? 'supplier-statement'
-        : type === 'customer'
-          ? 'customer-statement'
-          : 'freight-statement'
-    const sourceModuleKey =
-      type === 'supplier'
-        ? 'purchase-inbound'
-        : type === 'customer'
-          ? 'sales-order'
-          : 'freight-bill'
+      type === 'customer' ? 'customer-statement' : 'freight-statement'
+    const sourceModuleKey = type === 'customer' ? 'sales-order' : 'freight-bill'
     const candidateRows = await listAllStatementCandidates(
       statementModuleKey,
       '',
@@ -82,11 +65,7 @@ export function useBusinessGridStatementActions({
     )
     const filteredCandidates = candidateRows.filter((candidate) => {
       const dateField =
-        type === 'supplier'
-          ? candidate.inboundDate
-          : type === 'customer'
-            ? candidate.deliveryDate
-            : candidate.billTime
+        type === 'customer' ? candidate.deliveryDate : candidate.billTime
       const currentDate = asString(dateField)
 
       if (!currentDate || currentDate < startDate || currentDate > endDate) {
@@ -152,27 +131,6 @@ export function useBusinessGridStatementActions({
           })
         }),
       )
-    } else if (type === 'supplier') {
-      const buildLineItemId = buildDraftLineItemId('draft-supplier')
-      const draft = buildSupplierStatementDraftData({
-        baseDraft: {
-          id: '',
-          statementNo: await generateBusinessPrimaryNo('supplier-statement'),
-          status: '待确认',
-          remark: '',
-        },
-        sourceInbounds: sourceRecords,
-        payments: [],
-        today: endDate,
-        statementPeriod,
-        defaultFullPayment: supplierFullPayment,
-        cloneLineItems,
-        buildLineItemId,
-      })
-      await saveBusinessModule('supplier-statement', {
-        ...draft,
-        remark: '',
-      })
     } else {
       const buildLineItemId = buildDraftLineItemId('draft-freight')
       const draft = buildFreightStatementDraftData({

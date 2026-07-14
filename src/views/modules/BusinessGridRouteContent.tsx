@@ -94,7 +94,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     !state.config.readOnly &&
     state.config.allowManualCreate !== false &&
     state.canCreateRecord &&
-    moduleKey !== 'supplier-statement' &&
     moduleKey !== 'customer-statement' &&
     moduleKey !== 'freight-statement'
   const canSaveEditorRecord = state.editRecord
@@ -207,7 +206,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         detailOpen={state.detailOpen}
         detailRecord={state.detailRecord}
         detailLoading={state.detailLoading}
-        supplierStatementOpen={state.overlays.supplierStatementOpen}
         customerStatementOpen={state.overlays.customerStatementOpen}
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
@@ -226,24 +224,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         }}
         onCloseDetail={state.closeDetail}
         onCloseAttachment={state.overlays.closeAttachment}
-        onCloseSupplierStatement={state.overlays.closeSupplierStatement}
         onCloseCustomerStatement={state.overlays.closeCustomerStatement}
         onCloseFreightStatement={state.overlays.closeFreightStatement}
         onCloseFreightPickup={state.overlays.closeFreightPickup}
-        onGenerateSupplierStatement={(
-          counterpartyName,
-          start,
-          end,
-          counterpartyId,
-        ) =>
-          state.handleStatementGenerate(
-            'supplier',
-            counterpartyName,
-            start,
-            end,
-            counterpartyId,
-          )
-        }
         onGenerateCustomerStatement={(
           counterpartyName,
           start,

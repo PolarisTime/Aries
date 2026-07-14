@@ -104,12 +104,6 @@ export function filterImportableParentRecords(
       return hasImportableQuantity(parentModuleKey, record)
     }
     if (
-      candidateStatementModuleKey === 'supplier-statement' &&
-      parentModuleKey === 'purchase-inbound'
-    ) {
-      return asString(record.status) === DOCUMENT_STATUS.INBOUND_COMPLETED
-    }
-    if (
       candidateStatementModuleKey === 'customer-statement' &&
       parentModuleKey === 'sales-order'
     ) {

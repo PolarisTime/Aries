@@ -23,7 +23,6 @@ interface Handlers {
   openFreightPickupList: () => void
   openFreightStatementGenerator: () => void
   openFreightSummary: () => Promise<void>
-  openSupplierStatementGenerator: () => void
 }
 
 interface Props {
@@ -146,9 +145,6 @@ export function useModuleToolbarActions({
         isMaterialModule,
       })
     ) {
-      case 'openSupplierStatementGenerator':
-        handlers.openSupplierStatementGenerator()
-        return
       case 'openCustomerStatementGenerator':
         handlers.openCustomerStatementGenerator()
         return

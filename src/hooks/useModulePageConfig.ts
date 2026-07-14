@@ -66,15 +66,6 @@ function useStatementLinkCatalog(enabled: boolean) {
     gcTime: 5 * 60_000,
   })
 
-  const { data: supplierStatements = [] } = useQuery({
-    queryKey: QUERY_KEYS.statementLinkOptions('supplier-statement'),
-    queryFn: () => listAllBusinessModuleRows('supplier-statement', {}),
-    enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
-  })
-
   const { data: freightStatements = [] } = useQuery({
     queryKey: QUERY_KEYS.statementLinkOptions('freight-statement'),
     queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
@@ -86,7 +77,6 @@ function useStatementLinkCatalog(enabled: boolean) {
 
   return {
     customerStatements,
-    supplierStatements,
     freightStatements,
   } satisfies StatementLinkCatalog
 }
@@ -106,9 +96,7 @@ function decorateStatementLinkConfig(
       const isStatementSourceField =
         (moduleKey === 'receipt' &&
           field.key === 'sourceCustomerStatementId') ||
-        (moduleKey === 'payment' &&
-          (field.key === 'sourceSupplierStatementId' ||
-            field.key === 'sourceFreightStatementId'))
+        (moduleKey === 'payment' && field.key === 'sourceFreightStatementId')
       if (!isStatementSourceField) {
         return field
       }

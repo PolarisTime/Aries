@@ -36,9 +36,6 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER: i18next.t(
     'system.generalSettingsUtils.helpCustomerStatementZero',
   ),
-  SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE: i18next.t(
-    'system.generalSettingsUtils.helpSupplierStatementFull',
-  ),
   SYS_OPERATION_LOG_RECORD_ALL_WRITE: i18next.t(
     'system.generalSettingsUtils.helpOperationLogAllWrite',
   ),

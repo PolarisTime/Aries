@@ -119,10 +119,6 @@ export const enUS: MessageSchema = {
         title: 'Purchase Inbound',
         hint: 'Confirm inbound quantity and weight',
       },
-      supplierStatement: {
-        title: 'Supplier Statement',
-        hint: 'Summarize purchase payables',
-      },
       payment: {
         title: 'Payment',
         hint: 'Complete payment registration',
@@ -835,20 +831,6 @@ export const enUS: MessageSchema = {
       inputRequired: 'Please enter {{label}}',
       selectRequired: 'Please select {{label}}',
     },
-    pieceWeight: {
-      brand: 'Brand',
-      material: 'Material',
-      spec: 'Spec',
-      length: 'Length',
-      quantity: 'Qty',
-      detailTitle: '{{count}} pcs / {{weight}} ton',
-      detailTitleFallback: 'Piece Details',
-      loading: 'Loading...',
-      noData: 'No Data',
-      ton: 'ton',
-      relatedOrderNo: 'Related Order',
-      loadFailed: 'Failed to load piece weights',
-    },
     print: {
       noTemplate: 'No templates available',
       preview: 'Print Preview',
@@ -1240,22 +1222,6 @@ export const enUS: MessageSchema = {
         remark: 'remark',
         customerStatementDesc: 'customerStatementDesc',
       },
-      supplierStatement: {
-        supplierStatement: 'supplierStatement',
-        generateStatement: 'generateStatement',
-        period: 'period',
-        statementNo: 'statementNo',
-        supplier: 'supplier',
-        supplierCode: 'supplierCode',
-        startDate: 'startDate',
-        endDate: 'endDate',
-        purchaseAmount: 'purchaseAmount',
-        paymentAmount: 'paymentAmount',
-        closingBalance: 'closingBalance',
-        status: 'status',
-        remark: 'remark',
-        supplierStatementDesc: 'supplierStatementDesc',
-      },
       freightStatement: {
         freightStatement: 'Freight Statements',
         generateFreightStatement: 'Generate freight statement',
@@ -1588,7 +1554,6 @@ export const enUS: MessageSchema = {
         salesOrder: 'Sales Orders',
         salesOutbound: 'Sales Outbound',
         freightBill: 'Freight Bills',
-        supplierStatement: 'Supplier Statements',
         customerStatement: 'Customer Statements',
         freightStatement: 'Freight Statements',
         receipt: 'Receipts',
@@ -2627,8 +2592,6 @@ export const enUS: MessageSchema = {
         'When enabled, the sales outbound page switches to weight view, hiding amount and unit price fields.',
       helpCustomerStatementZero:
         'When enabled, customer statement drafts default to zero received amount; ending balance equals total sales order amount.',
-      helpSupplierStatementFull:
-        'When enabled, supplier statement drafts default payment amount to total purchase document amount.',
       helpOperationLogAllWrite:
         'When enabled, normal write operations are automatically logged by create, edit, delete, audit, export, print.',
       helpOperationLogDetailed:

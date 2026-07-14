@@ -116,10 +116,6 @@ export interface MessageSchema {
         title: string
         hint: string
       }
-      supplierStatement: {
-        title: string
-        hint: string
-      }
       payment: {
         title: string
         hint: string
@@ -792,20 +788,6 @@ export interface MessageSchema {
       inputRequired: string
       selectRequired: string
     }
-    pieceWeight: {
-      brand: string
-      material: string
-      spec: string
-      length: string
-      quantity: string
-      detailTitle: string
-      detailTitleFallback: string
-      loading: string
-      noData: string
-      ton: string
-      relatedOrderNo: string
-      loadFailed: string
-    }
     print: {
       noTemplate: string
       preview: string
@@ -1173,22 +1155,6 @@ export interface MessageSchema {
         remark: string
         customerStatementDesc: string
       }
-      supplierStatement: {
-        supplierStatement: string
-        generateStatement: string
-        period: string
-        statementNo: string
-        supplier: string
-        supplierCode: string
-        startDate: string
-        endDate: string
-        purchaseAmount: string
-        paymentAmount: string
-        closingBalance: string
-        status: string
-        remark: string
-        supplierStatementDesc: string
-      }
       freightStatement: {
         freightStatement: string
         generateFreightStatement: string
@@ -1511,7 +1477,6 @@ export interface MessageSchema {
         salesOrder: string
         salesOutbound: string
         freightBill: string
-        supplierStatement: string
         customerStatement: string
         freightStatement: string
         receipt: string
@@ -2478,7 +2443,6 @@ export interface MessageSchema {
       helpWeightOnlyPurchase: string
       helpWeightOnlySales: string
       helpCustomerStatementZero: string
-      helpSupplierStatementFull: string
       helpOperationLogAllWrite: string
       helpOperationLogDetailed: string
       helpOperationLogAuth: string

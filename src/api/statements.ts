@@ -28,10 +28,7 @@ export function normalizeRecord(raw: RawApiRecord): ModuleRecord {
   return { ...normalized, id, items }
 }
 
-type StatementModuleKey =
-  | 'supplier-statement'
-  | 'customer-statement'
-  | 'freight-statement'
+type StatementModuleKey = 'customer-statement' | 'freight-statement'
 
 async function listStatementCandidates(
   statementModuleKey: StatementModuleKey,

@@ -4,7 +4,6 @@ import type { ModuleRecord } from '@/types/module-page'
 export function useBusinessGridOverlays() {
   const [attachOpen, setAttachOpen] = useState(false)
   const [attachRecordId, setAttachRecordId] = useState('')
-  const [supplierStatementOpen, setSupplierStatementOpen] = useState(false)
   const [customerStatementOpen, setCustomerStatementOpen] = useState(false)
   const [freightStatementOpen, setFreightStatementOpen] = useState(false)
   const [freightPickupOpen, setFreightPickupOpen] = useState(false)
@@ -25,14 +24,11 @@ export function useBusinessGridOverlays() {
   return {
     attachOpen,
     attachRecordId,
-    supplierStatementOpen,
     customerStatementOpen,
     freightStatementOpen,
     freightPickupOpen,
     openAttachment,
     closeAttachment,
-    openSupplierStatement: () => setSupplierStatementOpen(true),
-    closeSupplierStatement: () => setSupplierStatementOpen(false),
     openCustomerStatement: () => setCustomerStatementOpen(true),
     closeCustomerStatement: () => setCustomerStatementOpen(false),
     openFreightStatement: () => setFreightStatementOpen(true),

@@ -85,13 +85,6 @@ export function buildWorkflowSections(
           hint: t('dashboard.flow.purchaseInbound.hint'),
         },
         {
-          key: 'supplier-statement',
-          title: t('dashboard.flow.supplierStatement.title'),
-          path: '/supplier-statement',
-          icon: FileSearchOutlined,
-          hint: t('dashboard.flow.supplierStatement.hint'),
-        },
-        {
           key: 'payment',
           title: t('dashboard.flow.payment.title'),
           path: '/payment',

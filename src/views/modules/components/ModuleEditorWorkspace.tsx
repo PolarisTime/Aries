@@ -60,7 +60,6 @@ function isFinanceOrTradeModule(key: string) {
     key === 'receipt' ||
     key === 'payment' ||
     key === 'customer-statement' ||
-    key === 'supplier-statement' ||
     key === 'freight-statement'
   )
 }

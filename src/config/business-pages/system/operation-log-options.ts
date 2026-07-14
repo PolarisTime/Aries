@@ -355,10 +355,6 @@ export const operationLogModuleOptions = [
         value: '物流单',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.supplierStatement'),
-        value: '供应商对账单',
-      },
-      {
         label: i18next.t('modules.pages.operationLogOptions.customerStatement'),
         value: '客户对账单',
       },

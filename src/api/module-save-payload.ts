@@ -31,7 +31,6 @@ const COMPUTED_FIELD_KEYS = new Set([
 const REQUIRED_SUPPLIER_ID_MODULES = new Set([
   'purchase-order',
   'purchase-inbound',
-  'supplier-statement',
 ])
 
 function assertRequiredStableIdentities(
@@ -280,26 +279,17 @@ function assertTypedAllocationSource(
     return
   }
 
-  const sourceSupplierStatementId = parseOptionalEntityId(
-    item.sourceSupplierStatementId,
-    `items[${index}].sourceSupplierStatementId`,
-  )
   const sourceFreightStatementId = parseOptionalEntityId(
     item.sourceFreightStatementId,
     `items[${index}].sourceFreightStatementId`,
   )
-  if (
-    Boolean(sourceSupplierStatementId) === Boolean(sourceFreightStatementId)
-  ) {
-    throw new Error(`items[${index}] 核销对账单来源必须且只能填写一种`)
+  if (!sourceFreightStatementId) {
+    throw new Error(`items[${index}].sourceFreightStatementId 核销来源不能为空`)
   }
 }
 
 function buildSingleAllocation(
-  sourceKey:
-    | 'sourceCustomerStatementId'
-    | 'sourceSupplierStatementId'
-    | 'sourceFreightStatementId',
+  sourceKey: 'sourceCustomerStatementId' | 'sourceFreightStatementId',
   sourceId: string,
   amount: unknown,
 ): Record<string, unknown> {
@@ -353,38 +343,17 @@ function resolveLineItemsForSave(
     return []
   }
 
-  const sourceSupplierStatementId = parseOptionalEntityId(
-    record.sourceSupplierStatementId,
-    'sourceSupplierStatementId',
-  )
   const sourceFreightStatementId = parseOptionalEntityId(
     record.sourceFreightStatementId,
     'sourceFreightStatementId',
   )
-  if (sourceSupplierStatementId && sourceFreightStatementId) {
-    throw new Error('付款核销对账单来源必须且只能填写一种')
-  }
   if (existingItems.length > 1) {
     return existingItems
-  }
-  if (sourceSupplierStatementId) {
-    return [
-      {
-        ...existingItem,
-        sourceFreightStatementId: undefined,
-        ...buildSingleAllocation(
-          'sourceSupplierStatementId',
-          sourceSupplierStatementId,
-          record.amount ?? existingItems[0]?.allocatedAmount,
-        ),
-      },
-    ]
   }
   if (sourceFreightStatementId) {
     return [
       {
         ...existingItem,
-        sourceSupplierStatementId: undefined,
         ...buildSingleAllocation(
           'sourceFreightStatementId',
           sourceFreightStatementId,

@@ -405,9 +405,6 @@ export function useBusinessGridPage({
         overlays.openFreightStatement()
       },
       openFreightSummary,
-      openSupplierStatementGenerator: () => {
-        overlays.openSupplierStatement()
-      },
     },
   })
 

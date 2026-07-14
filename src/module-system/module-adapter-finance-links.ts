@@ -20,7 +20,6 @@ interface CounterpartyStatementOptionArgs {
 
 export interface StatementLinkCatalog {
   customerStatements: ModuleRecord[]
-  supplierStatements: ModuleRecord[]
   freightStatements: ModuleRecord[]
 }
 
@@ -100,30 +99,6 @@ export function buildCustomerStatementOptions(
     }))
 }
 
-function buildSupplierStatementOptions(
-  statements: ModuleRecord[],
-  args: CounterpartyStatementOptionArgs = {},
-) {
-  const counterpartyId = normalizeId(args.counterpartyId)
-
-  return [...statements]
-    .filter(
-      (record) =>
-        normalizeId(record.id) !== null &&
-        keepCurrentOrOpenBalance(
-          record,
-          'closingAmount',
-          args.currentStatementId,
-        ) &&
-        matchesIdentity(record.supplierId, counterpartyId),
-    )
-    .sort(compareStatements)
-    .map<ModuleFormFieldOption>((record) => ({
-      value: normalizeId(record.id)!,
-      label: `${asString(record.statementNo)} | ${asString(record.supplierName)} | 待付 ${formatAmountLabel(record.closingAmount)}`,
-    }))
-}
-
 function buildFreightStatementOptions(
   statements: ModuleRecord[],
   args: CounterpartyStatementOptionArgs = {},
@@ -177,13 +152,6 @@ export function buildStatementLinkOptions(
 
   const counterpartyType = normalizeText(form?.counterpartyType)
   const counterpartyId = normalizeId(form?.counterpartyId) ?? undefined
-
-  if (counterpartyType === '供应商') {
-    return buildSupplierStatementOptions(catalog.supplierStatements, {
-      currentStatementId: normalizeId(form?.sourceSupplierStatementId),
-      counterpartyId,
-    })
-  }
 
   if (counterpartyType === '物流商') {
     return buildFreightStatementOptions(catalog.freightStatements, {

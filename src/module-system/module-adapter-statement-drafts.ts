@@ -3,7 +3,6 @@ import type {
   CustomerStatementDraftOptions,
   FreightStatementDraftOptions,
   StatementPeriod,
-  SupplierStatementDraftOptions,
 } from '@/module-system/module-adapter-statement-types'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
@@ -18,6 +17,10 @@ function resolveStatementPeriod(
     startDate: statementPeriod?.startDate || fallbackStartDate,
     endDate: statementPeriod?.endDate || fallbackEndDate,
   }
+}
+
+function roundAmount(value: number) {
+  return Number(value.toFixed(2))
 }
 
 function sumLineItemAmounts(
@@ -37,25 +40,6 @@ function sumLineItemAmounts(
       )
     )
   }, 0)
-}
-
-function roundAmount(value: number) {
-  return Number(value.toFixed(2))
-}
-
-function normalizeAmount(value: unknown) {
-  const amount = Number(value)
-  return Number.isFinite(amount) ? amount : 0
-}
-
-function sumRecordAmounts(records: ModuleRecord[]) {
-  return roundAmount(
-    records.reduce((sum, record) => sum + normalizeAmount(record.amount), 0),
-  )
-}
-
-function capSettlementAmount(amount: number, totalAmount: number) {
-  return roundAmount(Math.min(Math.max(amount, 0), Math.max(totalAmount, 0)))
 }
 
 function resolveBatchEntityId(
@@ -89,94 +73,6 @@ function resolveBatchEntityId(
 
 function optionalEntityId(value: unknown, field: string) {
   return parseOptionalEntityId(value, field)
-}
-
-function resolveSupplierIdentity(sourceInbounds: ModuleRecord[]) {
-  if (!sourceInbounds.length) {
-    return undefined
-  }
-
-  const supplierId = parseEntityId(
-    sourceInbounds[0].supplierId,
-    'sourceInbounds[0].supplierId',
-  )
-  sourceInbounds.forEach((record, index) => {
-    const currentId = parseEntityId(
-      record.supplierId,
-      `sourceInbounds[${index}].supplierId`,
-    )
-    if (currentId !== supplierId) {
-      throw new Error(`sourceInbounds[${index}].supplierId 与首单不一致`)
-    }
-  })
-
-  const firstInbound = sourceInbounds[0]
-  return {
-    supplierId,
-    supplierCode: asString(firstInbound.supplierCode).trim(),
-    supplierName: asString(firstInbound.supplierName).trim(),
-  }
-}
-
-export function buildSupplierStatementDraftData({
-  baseDraft,
-  sourceInbounds,
-  payments,
-  today,
-  statementPeriod,
-  defaultFullPayment,
-  cloneLineItems,
-  buildLineItemId,
-}: SupplierStatementDraftOptions) {
-  const sortedInbounds = structuredClone(sourceInbounds)
-  sortedInbounds.sort(
-    (left, right) =>
-      new Date(asString(left.inboundDate)).getTime() -
-      new Date(asString(right.inboundDate)).getTime(),
-  )
-
-  const supplierIdentity = resolveSupplierIdentity(sortedInbounds)
-  const sourceInboundNos = sortedInbounds
-    .flatMap((record) => {
-      const v = asString(record.inboundNo)
-      return v ? [v] : []
-    })
-    .join(', ')
-  const { startDate, endDate } = resolveStatementPeriod(
-    statementPeriod,
-    String(sortedInbounds[0]?.inboundDate || today),
-    String(sortedInbounds[sortedInbounds.length - 1]?.inboundDate || today),
-  )
-  const statementItems: ModuleLineItem[] = sortedInbounds.flatMap((record) =>
-    cloneLineItems(record.items).map((item) => ({
-      ...item,
-      id: buildLineItemId(),
-      sourceNo: record.inboundNo || '',
-      sourceInboundItemId: item.id,
-    })),
-  )
-  const purchaseAmount = Number(
-    sumLineItemAmounts(sortedInbounds, cloneLineItems).toFixed(2),
-  )
-  const paymentAmount = capSettlementAmount(
-    defaultFullPayment ? purchaseAmount : sumRecordAmounts(payments),
-    purchaseAmount,
-  )
-
-  return {
-    ...baseDraft,
-    supplierId: supplierIdentity?.supplierId || baseDraft.supplierId,
-    supplierCode: supplierIdentity?.supplierCode || '',
-    supplierName: supplierIdentity?.supplierName || '',
-    startDate,
-    endDate,
-    purchaseAmount,
-    paymentAmount,
-    closingAmount: roundAmount(purchaseAmount - paymentAmount),
-    sourceInboundNos,
-    remark: `由采购入库单 ${sourceInboundNos} 生成`,
-    items: statementItems,
-  }
 }
 
 export function buildCustomerStatementDraftData({

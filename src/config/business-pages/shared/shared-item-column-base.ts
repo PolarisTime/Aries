@@ -253,9 +253,3 @@ export const purchaseInboundItemColumns = insertColumnsAfter(
   'weightTon',
   purchaseInboundSettlementColumns,
 )
-
-export const batchSupplierStatementItemColumns = insertColumnsAfter(
-  batchOrderItemColumns,
-  'weightTon',
-  purchaseWeighColumns,
-)

@@ -52,11 +52,11 @@ function usesDirectCounterparty(form?: ModuleRecordInput) {
 }
 
 function locksCounterpartyType(form?: ModuleRecordInput) {
-  return isPurchasePrepayment(form) || isSupplierPayment(form)
-}
-
-function isSupplierStatementSettlement(form?: ModuleRecordInput) {
-  return isStatementSettlement(form) && form?.counterpartyType === '供应商'
+  return (
+    isStatementSettlement(form) ||
+    isPurchasePrepayment(form) ||
+    isSupplierPayment(form)
+  )
 }
 
 function isFreightStatementSettlement(form?: ModuleRecordInput) {
@@ -64,7 +64,7 @@ function isFreightStatementSettlement(form?: ModuleRecordInput) {
 }
 
 function getCounterpartyOptions(form?: ModuleRecordInput) {
-  return !isSupplierPayment(form) && form?.counterpartyType === '物流商'
+  return isStatementSettlement(form)
     ? getCarrierEntityOptions()
     : getSupplierEntityOptions()
 }
@@ -231,11 +231,6 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       label: i18next.t('modules.pages.payment.relatedStatement'),
-      key: 'sourceSupplierStatementId',
-      row: 1,
-    },
-    {
-      label: i18next.t('modules.pages.payment.relatedStatement'),
       key: 'sourceFreightStatementId',
       row: 1,
     },
@@ -312,6 +307,7 @@ export const paymentsPageConfig: ModulePageConfig = {
         { label: i18next.t('modules.pages.payment.carrier'), value: '物流商' },
       ],
       disabledWhen: locksCounterpartyType,
+      defaultValue: '物流商',
       row: 1,
     },
     {
@@ -354,15 +350,6 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'input',
       disabled: true,
       visibleWhen: usesDirectCounterparty,
-      preserve: false,
-      row: 1,
-    },
-    {
-      key: 'sourceSupplierStatementId',
-      label: i18next.t('modules.pages.payment.relatedStatement'),
-      type: 'select',
-      required: true,
-      visibleWhen: isSupplierStatementSettlement,
       preserve: false,
       row: 1,
     },

@@ -29,7 +29,6 @@ interface Props {
   detailOpen: boolean
   detailRecord: ModuleRecord | null
   detailLoading: boolean
-  supplierStatementOpen: boolean
   customerStatementOpen: boolean
   freightStatementOpen: boolean
   freightPickupOpen: boolean
@@ -43,16 +42,9 @@ interface Props {
   onSaved: () => void
   onCloseDetail: () => void
   onCloseAttachment: () => void
-  onCloseSupplierStatement: () => void
   onCloseCustomerStatement: () => void
   onCloseFreightStatement: () => void
   onCloseFreightPickup: () => void
-  onGenerateSupplierStatement: (
-    counterpartyName: string,
-    startDate: string,
-    endDate: string,
-    counterpartyId?: EntityId,
-  ) => Promise<void>
   onGenerateCustomerStatement: (
     counterpartyName: string,
     startDate: string,
@@ -78,7 +70,6 @@ export function BusinessGridOverlays({
   detailOpen,
   detailRecord,
   detailLoading,
-  supplierStatementOpen,
   customerStatementOpen,
   freightStatementOpen,
   freightPickupOpen,
@@ -92,11 +83,9 @@ export function BusinessGridOverlays({
   onSaved,
   onCloseDetail,
   onCloseAttachment,
-  onCloseSupplierStatement,
   onCloseCustomerStatement,
   onCloseFreightStatement,
   onCloseFreightPickup,
-  onGenerateSupplierStatement,
   onGenerateCustomerStatement,
   onGenerateFreightStatement,
 }: Props) {
@@ -138,15 +127,6 @@ export function BusinessGridOverlays({
         />
       ) : null}
 
-      {supplierStatementOpen ? (
-        <ModuleStatementGenerator
-          open={supplierStatementOpen}
-          statementType="supplier"
-          selectedRows={selectedRows}
-          onClose={onCloseSupplierStatement}
-          onGenerate={onGenerateSupplierStatement}
-        />
-      ) : null}
       {customerStatementOpen ? (
         <ModuleStatementGenerator
           open={customerStatementOpen}

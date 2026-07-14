@@ -64,7 +64,6 @@ const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
   'sales-order',
   'sales-outbound',
   'freight-bill',
-  'supplier-statement',
   'customer-statement',
   'freight-statement',
   'receipt',
@@ -179,26 +178,12 @@ function hydrateFinanceStatementSource(
     return
   }
 
-  if (
-    !record.sourceSupplierStatementId &&
-    firstItem.sourceSupplierStatementId
-  ) {
-    record.sourceSupplierStatementId = firstItem.sourceSupplierStatementId
-  }
   if (!record.sourceFreightStatementId && firstItem.sourceFreightStatementId) {
     record.sourceFreightStatementId = firstItem.sourceFreightStatementId
   }
 
-  if (
-    !record.sourceSupplierStatementId &&
-    !record.sourceFreightStatementId &&
-    firstItem.sourceStatementId
-  ) {
-    const targetField =
-      record.counterpartyType === '物流商'
-        ? 'sourceFreightStatementId'
-        : 'sourceSupplierStatementId'
-    record[targetField] = firstItem.sourceStatementId
+  if (!record.sourceFreightStatementId && firstItem.sourceStatementId) {
+    record.sourceFreightStatementId = firstItem.sourceStatementId
   }
 }
 

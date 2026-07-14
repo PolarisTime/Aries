@@ -88,7 +88,6 @@ function resolveCounterpartyIdentity(type: unknown, id: unknown) {
 }
 
 function clearStatementSources(editorForm: Record<string, unknown>) {
-  editorForm.sourceSupplierStatementId = ''
   editorForm.sourceFreightStatementId = ''
 }
 
@@ -168,7 +167,6 @@ const settlementCompanySnapshotModules = [
   'sales-order',
   'sales-outbound',
   'freight-bill',
-  'supplier-statement',
   'customer-statement',
   'freight-statement',
 ]
@@ -177,10 +175,7 @@ const customerProjectSnapshotModules = new Set(['sales-order'])
 for (const key of settlementCompanySnapshotModules) {
   registerModuleBehavior(key, {
     syncEditorForm(editorForm, ctx) {
-      if (
-        (key === 'purchase-inbound' || key === 'supplier-statement') &&
-        ctx.changedKeys.has('supplierId')
-      ) {
+      if (key === 'purchase-inbound' && ctx.changedKeys.has('supplierId')) {
         snapshotSupplierIdentity(editorForm)
       }
 
@@ -372,6 +367,8 @@ registerModuleBehavior('payment', {
       editorForm.settlementCompanyName = ''
       if (purpose === 'PURCHASE_PREPAYMENT' || purpose === 'SUPPLIER_PAYMENT') {
         editorForm.counterpartyType = '供应商'
+      } else {
+        editorForm.counterpartyType = '物流商'
       }
       return
     }
@@ -396,19 +393,6 @@ registerModuleBehavior('payment', {
         asString(editorForm.settlementCompanyName),
       )
       return
-    }
-
-    if (
-      ctx.changedKeys.has('sourceSupplierStatementId') &&
-      editorForm.sourceSupplierStatementId
-    ) {
-      editorForm.sourceFreightStatementId = ''
-    }
-    if (
-      ctx.changedKeys.has('sourceFreightStatementId') &&
-      editorForm.sourceFreightStatementId
-    ) {
-      editorForm.sourceSupplierStatementId = ''
     }
   },
 })
@@ -473,18 +457,13 @@ registerModuleBehavior('freight-statement', {
   allowsManualLineItems: false,
   readonlyLineItems: true,
 })
-registerModuleBehavior('supplier-statement', {
-  allowsManualLineItems: false,
-  readonlyLineItems: true,
-})
 registerModuleBehavior('customer-statement', {
   allowsManualLineItems: false,
   readonlyLineItems: true,
 })
 
 registerModuleBehavior('purchase-inbound', {
-  supportsStatements: true,
-  statementLinkType: 'supplier',
+  supportsStatements: false,
 })
 registerModuleBehavior('sales-order', {
   supportsStatements: true,

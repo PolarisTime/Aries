@@ -12,11 +12,8 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
-import { asString } from '@/utils/type-narrowing'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
-import { PieceWeightPopover } from './PieceWeightPopover'
-import { resolvePieceWeightLookupSource } from './piece-weight-source'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -50,34 +47,11 @@ export function ModuleRecordDetailOverlay({
       key: column.dataIndex,
       width: column.width,
       align: 'center',
-      render:
-        column.dataIndex === 'weightTon'
-          ? (value: unknown, record: ModuleLineItem) => {
-              const lookupSource = resolvePieceWeightLookupSource(
-                config.key,
-                record,
-              )
-              return (
-                <PieceWeightPopover
-                  itemId={record.id}
-                  weightTon={asString(value)}
-                  category={
-                    typeof record.category === 'string'
-                      ? record.category
-                      : undefined
-                  }
-                  inboundItemId={lookupSource.inboundItemId}
-                  purchaseOrderItemId={lookupSource.purchaseOrderItemId}
-                  salesOrderItemId={lookupSource.salesOrderItemId}
-                  allowItemIdFallback={config.key !== 'inventory-report'}
-                />
-              )
-            }
-          : (value: unknown, record: ModuleLineItem) =>
-              column.dataIndex === 'pieceWeightTon' &&
-              shouldDisplayPieceWeightAsDash(record)
-                ? '-'
-                : formatCellValue(value, column.type),
+      render: (value: unknown, record: ModuleLineItem) =>
+        column.dataIndex === 'pieceWeightTon' &&
+        shouldDisplayPieceWeightAsDash(record)
+          ? '-'
+          : formatCellValue(value, column.type),
     }))
   const detailFields = config.detailFields || []
   const colSpan = Math.max(

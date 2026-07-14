@@ -71,7 +71,6 @@ export interface OssCorsConfigurePayload {
 
 export interface StatementGeneratorRules {
   customerStatementReceiptAmountZero: boolean
-  supplierStatementFullPayment: boolean
 }
 
 export function listSystemSettings() {
@@ -140,9 +139,6 @@ export async function getStatementGeneratorRules(): Promise<StatementGeneratorRu
   return {
     customerStatementReceiptAmountZero: Boolean(
       response.data?.customerStatementReceiptAmountZero,
-    ),
-    supplierStatementFullPayment: Boolean(
-      response.data?.supplierStatementFullPayment,
     ),
   }
 }

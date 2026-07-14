@@ -1,7 +1,6 @@
 import i18next from 'i18next'
 import {
   batchOrderItemColumns,
-  batchSupplierStatementItemColumns,
   orderItemColumns,
   purchaseInboundItemColumns,
   purchaseItemColumns,
@@ -57,19 +56,6 @@ export const compactBatchCustomerStatementItemColumns = applyCompactItemLayout(
       width: 160,
     },
     ...batchOrderItemColumns,
-  ],
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
-
-export const compactBatchSupplierStatementItemColumns = applyCompactItemLayout(
-  [
-    {
-      title: i18next.t('modules.columns.inboundNo'),
-      dataIndex: 'sourceNo',
-      width: 160,
-    },
-    ...batchSupplierStatementItemColumns,
   ],
   compactTradeItemWidthMap,
   ['piecesPerBundle'],

@@ -106,29 +106,6 @@ registerModuleBehavior('freight-statement', {
   },
 })
 
-registerModuleBehavior('supplier-statement', {
-  normalizeDraftRecord(record, items, ctx) {
-    if (items.length) {
-      record.purchaseAmount = Number(
-        ctx.sumLineItemsBy(items, 'amount').toFixed(2),
-      )
-      record.sourceInboundNos = collectUniqueSourceNos(items)
-      const sourceDates = items
-        .flatMap((item) => {
-          const sourceDate = asString(item._parentBillTime).trim()
-          return sourceDate ? [sourceDate] : []
-        })
-        .toSorted()
-      if (sourceDates.length) {
-        record.startDate = sourceDates[0]
-        record.endDate = sourceDates[sourceDates.length - 1]
-      }
-    }
-    record.paymentAmount = Number(record.paymentAmount || 0)
-    record.closingAmount = Number(Number(record.purchaseAmount || 0).toFixed(2))
-  },
-})
-
 registerModuleBehavior('customer-statement', {
   normalizeDraftRecord(record, items, ctx) {
     if (items.length) {

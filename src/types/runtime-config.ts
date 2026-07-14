@@ -15,7 +15,6 @@ export interface RuntimeUiConfig {
 
 export interface RuntimeStatementConfig {
   customerReceiptAmountZero: boolean
-  supplierFullPayment: boolean
 }
 
 export interface RuntimeBusinessNoConfig {

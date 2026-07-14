@@ -41,7 +41,6 @@ const BUSINESS_RESOURCE_CODES = [
   'freight-bill',
   'inventory-report',
   'io-report',
-  'supplier-statement',
   'customer-statement',
   'freight-statement',
   'receipt',
@@ -86,7 +85,6 @@ const API_KEY_PRESET_DEFINITIONS: ApiKeyPresetDefinition[] = [
     descriptionKey: 'system.apiKeyPresets.financeReconcileDesc',
     usageScope: '业务接口',
     resourceCodes: [
-      'supplier-statement',
       'customer-statement',
       'freight-statement',
       'receipt',

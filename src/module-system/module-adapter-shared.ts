@@ -78,7 +78,6 @@ export function generatePrimaryNo(
     'sales-order': 'XS',
     'sales-outbound': 'CK',
     'freight-bill': 'W',
-    'supplier-statement': 'GYDZ',
     'customer-statement': 'KHDZ',
     'freight-statement': 'WDZ',
     receipts: 'SK',

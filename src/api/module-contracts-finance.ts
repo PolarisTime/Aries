@@ -4,22 +4,6 @@ export const financeModuleEndpointContracts: Record<
   string,
   ModuleEndpointConfig
 > = {
-  'supplier-statement': {
-    path: '/supplier-statements',
-    nativeFilterKeys: [
-      'keyword',
-      'supplierId',
-      'supplierName',
-      'settlementCompanyId',
-      'status',
-    ],
-    dateRangeMapping: {
-      endDate: {
-        startKey: 'periodStart',
-        endKey: 'periodEnd',
-      },
-    },
-  },
   'customer-statement': {
     path: '/customer-statements',
     nativeFilterKeys: [

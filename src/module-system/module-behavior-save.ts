@@ -6,7 +6,6 @@ const lineItemPayloadModules = [
   'sales-order',
   'sales-outbound',
   'freight-bill',
-  'supplier-statement',
   'customer-statement',
   'freight-statement',
   'receipt',

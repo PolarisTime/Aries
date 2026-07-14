@@ -44,10 +44,7 @@ export interface ModuleParentSelectorOverlayContentProps {
   parentModuleKey: string
   parentDisplayFieldKey?: string
   allowMultipleSelection?: boolean
-  candidateStatementModuleKey?:
-    | 'supplier-statement'
-    | 'customer-statement'
-    | 'freight-statement'
+  candidateStatementModuleKey?: 'customer-statement' | 'freight-statement'
   candidateQueryType?: ModuleParentImportDefinition['candidateQueryType']
   candidateUsage?: ModuleParentImportDefinition['candidateUsage']
   hiddenSelectorColumnKeys?: ModuleParentImportDefinition['hiddenSelectorColumnKeys']

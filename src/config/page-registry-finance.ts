@@ -2,16 +2,6 @@ import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const financePageDefinitions: AppPageDefinition[] = [
   {
-    key: 'supplier-statement',
-    title: '供应商对账单',
-    menuKey: '/supplier-statement',
-    view: 'business-grid',
-    icon: 'FileSearchOutlined',
-    menuParent: 'statements',
-    moduleKey: 'supplier-statement',
-    searchable: true,
-  },
-  {
     key: 'customer-statement',
     title: '客户对账单',
     menuKey: '/customer-statement',

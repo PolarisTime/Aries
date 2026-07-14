@@ -8,7 +8,6 @@ import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 
 export type ModuleActionKind =
-  | 'openSupplierStatementGenerator'
   | 'openCustomerStatementGenerator'
   | 'openFreightStatementGenerator'
   | 'openCreateEditor'

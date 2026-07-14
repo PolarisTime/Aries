@@ -119,10 +119,6 @@ export const zhCN: MessageSchema = {
         title: '采购入库',
         hint: '确认入库数量重量',
       },
-      supplierStatement: {
-        title: '供应商对账单',
-        hint: '汇总采购应付',
-      },
       payment: {
         title: '付款单',
         hint: '完成付款登记',
@@ -812,20 +808,6 @@ export const zhCN: MessageSchema = {
       inputRequired: '请输入{{label}}',
       selectRequired: '请选择{{label}}',
     },
-    pieceWeight: {
-      brand: '品牌',
-      material: '材质',
-      spec: '规格',
-      length: '长度',
-      quantity: '数量',
-      detailTitle: '{{count}}件 / {{weight}}吨',
-      detailTitleFallback: '逐件明细',
-      loading: '加载中...',
-      noData: '暂无数据',
-      ton: '吨',
-      relatedOrderNo: '关联单号',
-      loadFailed: '加载逐件重量失败',
-    },
     print: {
       noTemplate: '无可用模板',
       preview: '打印预览',
@@ -1206,23 +1188,6 @@ export const zhCN: MessageSchema = {
         customerStatementDesc:
           '客户对账单按已完成销售的销售订单明细口径组织，生成后保留来源订单行，便于逐项核对销售数量、单价和金额。',
       },
-      supplierStatement: {
-        supplierStatement: '供应商对账单',
-        generateStatement: '生成对账单',
-        period: '账期',
-        statementNo: '对账单号',
-        supplier: '供应商',
-        supplierCode: '供应商编码',
-        startDate: '开始日期',
-        endDate: '结束日期',
-        purchaseAmount: '采购金额',
-        paymentAmount: '付款金额',
-        closingBalance: '期末余额',
-        status: '状态',
-        remark: '备注',
-        supplierStatementDesc:
-          '供应商对账单按已审核采购入库明细口径组织，生成后保留来源入库行，便于逐项核对采购数量、单价和金额。',
-      },
       freightStatement: {
         freightStatement: '物流对账单',
         generateFreightStatement: '生成物流对账单',
@@ -1557,7 +1522,6 @@ export const zhCN: MessageSchema = {
         salesOrder: '销售订单',
         salesOutbound: '销售出库',
         freightBill: '物流单',
-        supplierStatement: '供应商对账单',
         customerStatement: '客户对账单',
         freightStatement: '物流对账单',
         receipt: '收款单',
@@ -2562,8 +2526,6 @@ export const zhCN: MessageSchema = {
         '启用后，销售出库页面切换到重量视图，隐藏金额和单价字段。',
       helpCustomerStatementZero:
         '启用后，生成客户对账单草稿时默认收款金额为 0，期末余额等于所选销售订单总金额。',
-      helpSupplierStatementFull:
-        '启用后，生成供应商对账单草稿时默认付款金额等于所选采购单据总金额。',
       helpOperationLogAllWrite:
         '启用后，普通写操作会按新增、编辑、删除、审核、导出、打印自动记录。',
       helpOperationLogDetailed: '启用后，会按照下方勾选项自动记录页面层操作。',
