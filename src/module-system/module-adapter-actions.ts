@@ -168,18 +168,34 @@ export function buildEditorAuditTarget(
   statusOptions: string[],
   currentStatus?: string,
 ) {
+  const normalizedCurrentStatus = asString(currentStatus).trim()
+  const configuredAuditSources = getBehaviorValue(
+    moduleKey,
+    'auditSourceStatuses',
+  )
+  const auditSourceStatuses = Array.isArray(configuredAuditSources)
+    ? normalizeOptions(configuredAuditSources)
+    : []
+  if (
+    normalizedCurrentStatus &&
+    auditSourceStatuses.length > 0 &&
+    !auditSourceStatuses.includes(normalizedCurrentStatus)
+  ) {
+    return null
+  }
+
   const auditStatus = getBehaviorValue(moduleKey, 'auditStatus')
   if (typeof auditStatus === 'string') {
-    if (currentStatus === auditStatus) return null
+    if (normalizedCurrentStatus === auditStatus) return null
     return { key: 'status', value: auditStatus }
   }
 
   if (statusOptions.includes('已审核')) {
-    if (currentStatus === '已审核') return null
+    if (normalizedCurrentStatus === '已审核') return null
     return { key: 'status', value: '已审核' }
   }
   if (statusOptions.includes('已核准')) {
-    if (currentStatus === '已核准') return null
+    if (normalizedCurrentStatus === '已核准') return null
     return { key: 'status', value: '已核准' }
   }
 

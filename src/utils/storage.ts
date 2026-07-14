@@ -14,6 +14,21 @@ export type AuthPersistenceMode = 'local' | 'session'
 
 let accessToken = ''
 
+const LEGACY_MODULE_EDITOR_DRAFT_STORAGE_PREFIX = 'aries-module-editor-draft:'
+
+export function clearLegacyModuleEditorDraftStorage() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+    const key = localStorage.key(index)
+    if (key?.startsWith(LEGACY_MODULE_EDITOR_DRAFT_STORAGE_PREFIX)) {
+      localStorage.removeItem(key)
+    }
+  }
+}
+
 function getStorage(mode: AuthPersistenceMode) {
   return mode === 'session' ? sessionStorage : localStorage
 }

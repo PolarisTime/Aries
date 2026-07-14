@@ -65,6 +65,11 @@ export const ENDPOINTS = {
   // Dashboard (pure action → singular)
   DASHBOARD_SUMMARY: '/dashboard/summary',
 
+  // Finance document flow (aggregate query)
+  PURCHASE_FINANCE_DOCUMENT_FLOW: '/purchase-finance/document-flow',
+  PURCHASE_FINANCE_DOCUMENT_FLOW_EXPORT:
+    '/purchase-finance/document-flow/export',
+
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
 
@@ -102,13 +107,12 @@ export const ENDPOINTS = {
 
   // Import candidate collections
   PURCHASE_ORDER_IMPORT_CANDIDATES: '/purchase-orders/import-candidates',
+  PURCHASE_INBOUND_IMPORT_BATCHES: '/purchase-inbound-import-batches',
   PURCHASE_ORDER_PREPAYMENT_CANDIDATES:
     '/purchase-orders/prepayment-candidates',
-  FREIGHT_BILL_IMPORT_CANDIDATES: '/freight-bills/import-candidates',
-  SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
-    '/sales-orders/outbound-import-candidates',
-  PURCHASE_REFUND_SOURCE_CANDIDATES: '/purchase-refunds/source-candidates',
-  PURCHASE_REFUND_PREVIEW: '/purchase-refunds/preview',
+  SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
+  SALES_ORDER_FREIGHT_IMPORT_CANDIDATES:
+    '/sales-orders/freight-import-candidates',
   INVOICE_ISSUE_SOURCE_CANDIDATES: '/invoice-issues/source-candidates',
   INVOICE_RECEIPT_SOURCE_CANDIDATES: '/invoice-receipts/source-candidates',
 

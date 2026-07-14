@@ -12,20 +12,19 @@ import {
   OUTBOUND_NO_FILTER_LABEL,
 } from '../shared/filter-labels'
 import {
-  actionSet,
   buildAmountWeightOverview,
-  cloneLineItems,
   compactPurchaseItemColumns,
   statusMap,
 } from '../shared/shared'
 
 export const salesOutboundsPageConfig: ModulePageConfig = {
   key: 'sales-outbound',
+  allowManualCreate: false,
   title: i18next.t('modules.pages.salesOutbound.title'),
   kicker: 'Sales',
   description: i18next.t('modules.pages.salesOutbound.description'),
   primaryNoKey: 'outboundNo',
-  actions: actionSet,
+  actions: [],
   filters: [
     {
       key: 'keyword',
@@ -255,36 +254,6 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
   ],
-  parentImport: {
-    parentModuleKey: 'sales-order',
-    label: i18next.t('modules.pages.salesOutbound.parentImportLabel'),
-    parentFieldKey: 'salesOrderNo',
-    parentDisplayFieldKey: 'orderNo',
-    candidateQueryType: 'sales-order-outbound-import',
-    buttonText: i18next.t('modules.pages.salesOutbound.parentImportButton'),
-    buildParentFilters: (currentRecord) => ({
-      currentRecordId: currentRecord.id,
-      status: '已审核',
-    }),
-    hiddenSelectorColumnKeys: ['status'],
-    mapParentToDraft: (parentRecord) => ({
-      customerName: parentRecord.customerName || '',
-      projectName: parentRecord.projectName || '',
-      settlementCompanyId: parentRecord.settlementCompanyId,
-      settlementCompanyName: parentRecord.settlementCompanyName || '',
-    }),
-    transformItems: (parentRecord) =>
-      cloneLineItems(
-        Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => ({
-              ...item,
-              sourceNo: parentRecord.orderNo || '',
-              sourceSalesOrderItemId: item.id,
-            }))
-          : [],
-        'sales-outbound-item',
-      ),
-  },
   itemColumns: compactPurchaseItemColumns,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),

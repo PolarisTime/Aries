@@ -40,10 +40,6 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
     path: '/purchase-inbound',
   },
   'sales-order': {
-    labelKey: 'modules.nextModule.createSalesOutbound',
-    path: '/sales-outbound',
-  },
-  'sales-outbound': {
     labelKey: 'modules.nextModule.createFreightBill',
     path: '/freight-bill',
   },
@@ -52,7 +48,7 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
 const FINANCE_DOCUMENT_MODULES = new Set([
   'receipt',
   'payment',
-  'supplier-refund-receipt',
+  'cash-reversal',
   'invoice-receipt',
   'invoice-issue',
   'ledger-adjustment',
@@ -134,7 +130,9 @@ export function ModuleEditorWorkspace({
     items,
     openParentSelector,
     parentImporting,
+    parentSelectorDisplayFieldKey,
     parentSelectorFilters,
+    parentSelectorModuleKey,
     parentSelectorOpen,
     authoritativePrimaryNo,
     saveResult,
@@ -280,7 +278,9 @@ export function ModuleEditorWorkspace({
           items={items}
           selectedItemIds={selectedItemIds}
           parentImporting={parentImporting}
+          parentSelectorDisplayFieldKey={parentSelectorDisplayFieldKey}
           parentSelectorFilters={parentSelectorFilters}
+          parentSelectorModuleKey={parentSelectorModuleKey}
           parentSelectorOpen={parentSelectorOpen}
           itemColumns={itemColumns}
           itemColumnOrder={itemColumnOrder}

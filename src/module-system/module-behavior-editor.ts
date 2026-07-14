@@ -173,14 +173,9 @@ const settlementCompanySnapshotModules = [
   'supplier-statement',
   'customer-statement',
   'freight-statement',
-  'receipt',
   'invoice-issue',
 ]
-const customerProjectSnapshotModules = new Set([
-  'sales-order',
-  'receipt',
-  'invoice-issue',
-])
+const customerProjectSnapshotModules = new Set(['sales-order', 'invoice-issue'])
 
 for (const key of settlementCompanySnapshotModules) {
   registerModuleBehavior(key, {
@@ -204,9 +199,6 @@ for (const key of settlementCompanySnapshotModules) {
           editorForm.projectId = ''
           editorForm.projectName = ''
         }
-        if (key === 'receipt') {
-          editorForm.sourceCustomerStatementId = ''
-        }
         applyDefaultSettlementCompany(editorForm, customer)
       }
 
@@ -220,9 +212,6 @@ for (const key of settlementCompanySnapshotModules) {
         )
         editorForm.projectId = asString(project?.id)
         editorForm.projectName = asString(project?.projectName).trim()
-        if (key === 'receipt') {
-          editorForm.sourceCustomerStatementId = ''
-        }
       }
 
       if (
@@ -259,8 +248,8 @@ for (const key of settlementCompanySnapshotModules) {
 }
 
 registerModuleBehavior('purchase-inbound', {
-  defaultOperatorField: 'buyerName',
   defaultDraftValues: () => ({ inboundDate: currentDateTime() }),
+  allowsManualLineItems: false,
   resolveReadonlyEditorFields(record) {
     return asString(record.purchaseOrderNo).trim()
       ? ['supplierId', 'settlementCompanyId']
@@ -268,7 +257,6 @@ registerModuleBehavior('purchase-inbound', {
   },
   readonlyItemColumns: [
     'warehouseName',
-    'quantity',
     'weightTon',
     'unitPrice',
     'settlementMode',
@@ -277,12 +265,19 @@ registerModuleBehavior('purchase-inbound', {
 })
 registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
 registerModuleBehavior('sales-order', {
-  defaultDraftValues: () => ({ deliveryDate: currentDateTime() }),
+  defaultDraftValues: () => ({
+    deliveryDate: currentDateTime(),
+    salesMode: 'NORMAL',
+  }),
+  clearLineItemsOnFieldChange: ['salesMode'],
+  clearEditorFieldsOnFieldChange: {
+    salesMode: ['purchaseInboundNo', 'purchaseOrderNo'],
+  },
 })
 registerModuleBehavior('sales-outbound', {
   defaultDraftValues: () => ({ outboundDate: currentDateTime() }),
   parentImportedEditableFields: ['outboundDate', 'remark'],
-  parentImportedItemEditableColumns: ['quantity'],
+  parentImportedItemEditableColumns: ['actualWeightTon', 'weighWeightTon'],
 })
 registerModuleBehavior('purchase-contract', {
   defaultOperatorField: 'buyerName',
@@ -342,8 +337,7 @@ registerModuleBehavior('purchase-contract', {
 const operatorNameModules = [
   'receipt',
   'payment',
-  'purchase-refund',
-  'supplier-refund-receipt',
+  'cash-reversal',
   'invoice-receipt',
   'invoice-issue',
   'ledger-adjustment',
@@ -353,14 +347,78 @@ for (const key of operatorNameModules) {
   registerModuleBehavior(key, { defaultOperatorField: 'operatorName' })
 }
 
-registerModuleBehavior('purchase-refund', {
-  defaultDraftValues: () => ({ refundDate: currentDate() }),
-  allowsManualLineItems: false,
-  readonlyLineItems: true,
-})
+const SUPPLIER_RECEIPT_PURPOSES = new Set([
+  'SUPPLIER_PREPAYMENT_REFUND',
+  'SUPPLIER_OTHER_RECEIPT',
+])
 
-registerModuleBehavior('supplier-refund-receipt', {
-  defaultDraftValues: () => ({ receiptDate: currentDate() }),
+function isSupplierReceiptPurpose(value: unknown) {
+  return SUPPLIER_RECEIPT_PURPOSES.has(asString(value).trim())
+}
+
+registerModuleBehavior('receipt', {
+  defaultDraftValues: () => ({
+    receiptDate: currentDate(),
+    receiptPurpose: 'CUSTOMER_STATEMENT_SETTLEMENT',
+    counterpartyType: '客户',
+  }),
+  clearLineItemsOnFieldChange: ['receiptPurpose'],
+  syncEditorForm(editorForm, ctx) {
+    const supplierReceipt = isSupplierReceiptPurpose(editorForm.receiptPurpose)
+
+    if (ctx.changedKeys.has('receiptPurpose')) {
+      editorForm.counterpartyType = supplierReceipt ? '供应商' : '客户'
+      editorForm.sourceCustomerStatementId = ''
+      editorForm.items = []
+      clearCounterpartyIdentity(editorForm)
+      editorForm.customerId = ''
+      editorForm.customerCode = ''
+      editorForm.customerName = ''
+      editorForm.projectId = ''
+      editorForm.projectName = ''
+      editorForm.settlementCompanyId = ''
+      editorForm.settlementCompanyName = ''
+      return
+    }
+
+    if (supplierReceipt && ctx.changedKeys.has('counterpartyId')) {
+      snapshotCounterpartyIdentity(editorForm)
+      return
+    }
+
+    if (!supplierReceipt && ctx.changedKeys.has('customerId')) {
+      const customer = findCustomerOption(editorForm.customerId)
+      editorForm.customerId = asString(customer?.id)
+      editorForm.customerCode = asString(customer?.customerCode).trim()
+      editorForm.customerName = asString(customer?.customerName).trim()
+      editorForm.counterpartyId = editorForm.customerId
+      editorForm.counterpartyCode = editorForm.customerCode
+      editorForm.counterpartyName = editorForm.customerName
+      editorForm.projectId = ''
+      editorForm.projectName = ''
+      editorForm.sourceCustomerStatementId = ''
+      applyDefaultSettlementCompany(editorForm, customer)
+      return
+    }
+
+    if (!supplierReceipt && ctx.changedKeys.has('projectId')) {
+      const project = findProjectOption(
+        editorForm.projectId,
+        editorForm.customerId,
+      )
+      editorForm.projectId = asString(project?.id)
+      editorForm.projectName = asString(project?.projectName).trim()
+      editorForm.sourceCustomerStatementId = ''
+      return
+    }
+
+    if (ctx.changedKeys.has('settlementCompanyId')) {
+      editorForm.settlementCompanyName = findSettlementCompanyName(
+        editorForm.settlementCompanyId,
+        asString(editorForm.settlementCompanyName),
+      )
+    }
+  },
 })
 
 registerModuleBehavior('invoice-receipt', {
@@ -372,7 +430,25 @@ registerModuleBehavior('invoice-receipt', {
 })
 
 registerModuleBehavior('payment', {
+  clearLineItemsOnFieldChange: ['paymentPurpose'],
   syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('paymentPurpose')) {
+      const purpose = asString(editorForm.paymentPurpose).trim()
+      clearStatementSources(editorForm)
+      editorForm.sourcePurchaseOrderId = ''
+      editorForm.purchaseOrderNo = ''
+      editorForm.supplierCode = ''
+      editorForm.supplierName = ''
+      editorForm.items = []
+      clearCounterpartyIdentity(editorForm)
+      editorForm.settlementCompanyId = ''
+      editorForm.settlementCompanyName = ''
+      if (purpose === 'PURCHASE_PREPAYMENT' || purpose === 'SUPPLIER_PAYMENT') {
+        editorForm.counterpartyType = '供应商'
+      }
+      return
+    }
+
     if (ctx.changedKeys.has('counterpartyType')) {
       clearStatementSources(editorForm)
       if (!ctx.changedKeys.has('counterpartyId')) {
@@ -384,6 +460,14 @@ registerModuleBehavior('payment', {
     if (ctx.changedKeys.has('counterpartyId')) {
       snapshotCounterpartyIdentity(editorForm)
       clearStatementSources(editorForm)
+      return
+    }
+
+    if (ctx.changedKeys.has('settlementCompanyId')) {
+      editorForm.settlementCompanyName = findSettlementCompanyName(
+        editorForm.settlementCompanyId,
+        asString(editorForm.settlementCompanyName),
+      )
       return
     }
 
@@ -399,6 +483,40 @@ registerModuleBehavior('payment', {
     ) {
       editorForm.sourceSupplierStatementId = ''
     }
+  },
+})
+
+registerModuleBehavior('cash-reversal', {
+  defaultDraftValues: () => ({
+    sourceType: '付款单',
+    reversalDate: currentDate(),
+  }),
+  normalizeEditorRecord(record) {
+    const originalPaymentId = asString(record.originalPaymentId).trim()
+    const originalReceiptId = asString(record.originalReceiptId).trim()
+    return {
+      ...record,
+      sourceType: originalPaymentId ? '付款单' : '收款单',
+      sourceDocumentNo:
+        asString(record.sourceDocumentNo).trim() ||
+        originalPaymentId ||
+        originalReceiptId,
+    }
+  },
+  syncEditorForm(editorForm, ctx) {
+    if (!ctx.changedKeys.has('sourceType')) {
+      return
+    }
+    editorForm.sourceDocumentNo = ''
+    editorForm.originalPaymentId = ''
+    editorForm.originalReceiptId = ''
+    editorForm.counterpartyType = ''
+    editorForm.counterpartyId = ''
+    editorForm.counterpartyCode = ''
+    editorForm.counterpartyName = ''
+    editorForm.settlementCompanyId = ''
+    editorForm.settlementCompanyName = ''
+    editorForm.amount = 0
   },
 })
 

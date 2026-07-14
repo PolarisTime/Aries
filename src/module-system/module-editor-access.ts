@@ -8,6 +8,16 @@ import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
+function resolveParentImportFieldKey(
+  moduleKey: string,
+  parentFieldKey: string | undefined,
+) {
+  return (
+    parentFieldKey ||
+    (moduleKey === 'sales-outbound' ? 'sourceFreightBillId' : undefined)
+  )
+}
+
 export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
   const lockedStatuses = getBehaviorValue(moduleKey, 'lineItemLockStatuses')
   if (!lockedStatuses?.length) {
@@ -96,6 +106,11 @@ export function isEditorFieldDisabledForModule(
   record?: ModuleRecord,
   authoritativePrimaryNo?: string,
 ) {
+  const effectiveParentFieldKey = resolveParentImportFieldKey(
+    moduleKey,
+    parentFieldKey,
+  )
+
   if (!canSaveCurrentEditor) {
     return true
   }
@@ -108,7 +123,7 @@ export function isEditorFieldDisabledForModule(
     return true
   }
 
-  if (parentFieldKey && fieldKey === parentFieldKey) {
+  if (effectiveParentFieldKey && fieldKey === effectiveParentFieldKey) {
     return true
   }
 
@@ -117,10 +132,10 @@ export function isEditorFieldDisabledForModule(
     'parentImportedEditableFields',
   )
   if (
-    parentFieldKey &&
+    effectiveParentFieldKey &&
     record &&
     parentImportedEditableFields?.length &&
-    asString(record[parentFieldKey]).trim()
+    asString(record[effectiveParentFieldKey]).trim()
   ) {
     return !parentImportedEditableFields.includes(fieldKey)
   }
@@ -234,7 +249,11 @@ export function isParentImportedEditorLocked(
   record: ModuleRecord | undefined,
   parentFieldKey: string | undefined,
 ) {
-  if (!hasParentImportValue(record, parentFieldKey)) {
+  const effectiveParentFieldKey = resolveParentImportFieldKey(
+    moduleKey,
+    parentFieldKey,
+  )
+  if (!hasParentImportValue(record, effectiveParentFieldKey)) {
     return false
   }
 

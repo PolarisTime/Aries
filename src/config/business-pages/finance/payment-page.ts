@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import { getCarrierEntityOptions } from '@/api/carrier-options'
 import { getSupplierEntityOptions } from '@/api/supplier-options'
+import { getSettlementCompanyOptions } from '@/constants/module-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { asNumber } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
@@ -8,6 +9,7 @@ import { buildFinanceOverview, statusMap } from '../shared/shared'
 
 const STATEMENT_SETTLEMENT = 'STATEMENT_SETTLEMENT'
 const PURCHASE_PREPAYMENT = 'PURCHASE_PREPAYMENT'
+const SUPPLIER_PAYMENT = 'SUPPLIER_PAYMENT'
 const PAYMENT_PURPOSE_OPTIONS = [
   {
     label: i18next.t('modules.pages.payment.statementSettlement'),
@@ -16,6 +18,10 @@ const PAYMENT_PURPOSE_OPTIONS = [
   {
     label: i18next.t('modules.pages.payment.purchasePrepayment'),
     value: PURCHASE_PREPAYMENT,
+  },
+  {
+    label: '供应商总额付款',
+    value: SUPPLIER_PAYMENT,
   },
 ]
 
@@ -37,6 +43,18 @@ function isStatementSettlement(form?: ModuleRecordInput) {
   return !form?.paymentPurpose || form.paymentPurpose === STATEMENT_SETTLEMENT
 }
 
+function isSupplierPayment(form?: ModuleRecordInput) {
+  return form?.paymentPurpose === SUPPLIER_PAYMENT
+}
+
+function usesDirectCounterparty(form?: ModuleRecordInput) {
+  return isStatementSettlement(form) || isSupplierPayment(form)
+}
+
+function locksCounterpartyType(form?: ModuleRecordInput) {
+  return isPurchasePrepayment(form) || isSupplierPayment(form)
+}
+
 function isSupplierStatementSettlement(form?: ModuleRecordInput) {
   return isStatementSettlement(form) && form?.counterpartyType === '供应商'
 }
@@ -46,7 +64,7 @@ function isFreightStatementSettlement(form?: ModuleRecordInput) {
 }
 
 function getCounterpartyOptions(form?: ModuleRecordInput) {
-  return form?.counterpartyType === '物流商'
+  return !isSupplierPayment(form) && form?.counterpartyType === '物流商'
     ? getCarrierEntityOptions()
     : getSupplierEntityOptions()
 }
@@ -96,7 +114,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'select',
       options: [
         { label: i18next.t('modules.pages.payment.draft'), value: '草稿' },
-        { label: i18next.t('modules.pages.payment.paid'), value: '已付款' },
+        { label: '已审核', value: '已审核' },
       ],
     },
     {
@@ -293,7 +311,7 @@ export const paymentsPageConfig: ModulePageConfig = {
         { label: i18next.t('modules.pages.payment.supplier'), value: '供应商' },
         { label: i18next.t('modules.pages.payment.carrier'), value: '物流商' },
       ],
-      disabledWhen: isPurchasePrepayment,
+      disabledWhen: locksCounterpartyType,
       row: 1,
     },
     {
@@ -316,7 +334,7 @@ export const paymentsPageConfig: ModulePageConfig = {
         suppliers: true,
         carriers: true,
       },
-      visibleWhen: isStatementSettlement,
+      visibleWhen: usesDirectCounterparty,
       preserve: false,
       row: 1,
     },
@@ -326,7 +344,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       disabled: true,
-      visibleWhen: isStatementSettlement,
+      visibleWhen: usesDirectCounterparty,
       preserve: false,
       row: 1,
     },
@@ -335,7 +353,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.payment.counterpartyCode'),
       type: 'input',
       disabled: true,
-      visibleWhen: isStatementSettlement,
+      visibleWhen: usesDirectCounterparty,
       preserve: false,
       row: 1,
     },
@@ -398,9 +416,13 @@ export const paymentsPageConfig: ModulePageConfig = {
     {
       key: 'settlementCompanyId',
       label: i18next.t('modules.pages.payment.settlementCompanyId'),
-      type: 'input',
-      disabled: true,
-      visibleWhen: isPurchasePrepayment,
+      type: 'select',
+      required: true,
+      options: getSettlementCompanyOptions,
+      masterOptionRequirements: { settlementCompanies: true },
+      disabledWhen: isPurchasePrepayment,
+      visibleWhen: (form) =>
+        isPurchasePrepayment(form) || isSupplierPayment(form),
       preserve: false,
       row: 3,
     },
@@ -409,7 +431,8 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.payment.settlementCompany'),
       type: 'input',
       disabled: true,
-      visibleWhen: isPurchasePrepayment,
+      visibleWhen: (form) =>
+        isPurchasePrepayment(form) || isSupplierPayment(form),
       preserve: false,
       row: 3,
     },
@@ -443,7 +466,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.payment.amount'),
       type: 'number',
       required: true,
-      min: 0,
+      min: 0.01,
       precision: 2,
       defaultValue: 0,
       row: 2,
@@ -455,7 +478,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       defaultValue: '草稿',
       options: [
         { label: i18next.t('modules.pages.payment.draft'), value: '草稿' },
-        { label: i18next.t('modules.pages.payment.paid'), value: '已付款' },
+        { label: '已审核', value: '已审核' },
       ],
       row: 2,
     },

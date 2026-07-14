@@ -71,16 +71,15 @@ export function useModuleRecordActions({
     }
     if (
       moduleKey === 'sales-order' &&
+      record.status === '交付核定' &&
       onStatusChange &&
       can(resource, 'audit')
     ) {
-      if (record.status === '交付核定') {
-        items.push({
-          key: 'confirm-delivery-verification',
-          label: t('hooks.recordActions.confirmDeliveryVerification'),
-          onClick: () => onStatusChange(record, '完成销售'),
-        })
-      }
+      items.push({
+        key: 'confirm-delivery-verification',
+        label: t('hooks.recordActions.confirmDeliveryVerification'),
+        onClick: () => onStatusChange(record, '完成销售'),
+      })
     }
     if (can(resource, 'read') || can(resource, 'update')) {
       const attachmentLabel = t('hooks.recordActions.attachment')

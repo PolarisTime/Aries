@@ -692,7 +692,6 @@ export const enUS: MessageSchema = {
     },
     status: {
       draft: 'Draft',
-      preOutbound: 'Pre Outbound',
       unaudited: 'Unaudited',
       audited: 'Audited',
       executing: 'Executing',
@@ -870,12 +869,14 @@ export const enUS: MessageSchema = {
       jobTitle: 'Print Job',
       currentModule: 'Current Module',
       selectedRecords: '{{count}} document(s) selected',
+      currentSettlementCompany: 'Settlement company',
       selectTemplate: 'Print Template',
       printOptions: 'Print Options',
       exportXlsx: 'Export Print Excel',
       hideUnitPrice: 'Hide unit price',
       hideRemark: 'Hide document remark',
       enableBrandOverride: 'Replace print brand',
+      enableItemSelection: 'Select print items',
       brandOverrideTo: 'Replace with',
       brandOverridePlaceholder: 'Leave blank to keep original',
       noBrands: 'No brands found in selected documents',
@@ -889,6 +890,7 @@ export const enUS: MessageSchema = {
       itemCategory: 'Category',
       itemMaterial: 'Material',
       itemSpec: 'Spec',
+      itemLength: 'Length',
       itemQuantity: 'Qty',
       itemPieceWeight: 'Piece Wt.',
       itemWeight: 'Total Wt.',
@@ -971,7 +973,6 @@ export const enUS: MessageSchema = {
       paginationTotal: 'Total {{count}}',
       status: {
         draft: 'Draft',
-        preOutbound: 'Pre Outbound',
         unaudited: 'Unaudited',
         audited: 'Audited',
         invoiceReceived: 'Invoice Received',
@@ -1028,11 +1029,6 @@ export const enUS: MessageSchema = {
       preallocatedNoUpdatedContent:
         'The pre-allocated number on this page was {{expected}}, but the system saved with actual number {{actual}}. Please use the actual saved number.',
       currentUserFallback: 'Current User',
-      recoverDraftTitle: 'Unsaved Draft Found',
-      recoverDraftContent:
-        'The last editing session did not end normally. Restore the locally saved draft?',
-      recoverDraftOk: 'Restore Draft',
-      recoverDraftCancel: 'Discard Draft',
     },
     validation: {
       maxImportExceeded: 'Row {{row}}: import quantity cannot exceed {{max}}',
@@ -1041,6 +1037,18 @@ export const enUS: MessageSchema = {
       weighWeightRequired: 'Please enter the weigh weight for row {{row}}',
       lockedSalesWeightExceeded:
         'Row {{row}}: weigh weight is lower than locked sales weight {{locked}} ton. Please adjust the weigh weight, or reverse-audit the sales outbound/order before saving.',
+      purchaseInboundSourceRequired:
+        'Row {{row}}: source purchase order item is required',
+      purchaseInboundWarehouseRequired:
+        'Row {{row}}: source warehouse ID is required',
+      purchaseInboundQuantityPositive:
+        'Row {{row}}: inbound quantity must be greater than zero',
+      purchaseInboundMixedWarehouse:
+        'A purchase inbound cannot contain items from different warehouses',
+      purchaseInboundMixedSettlementMode:
+        'A purchase inbound cannot mix weigh and theoretical settlement items',
+      purchaseInboundMixedSource:
+        'A purchase inbound can reference only one purchase order',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',
       fieldRequired: 'Please enter {{label}}',
       minOneItem: 'Please add at least one line item',
@@ -1173,28 +1181,6 @@ export const enUS: MessageSchema = {
         paymentPurpose: 'Payment purpose',
         statementSettlement: 'Statement settlement',
         purchasePrepayment: 'Purchase prepayment',
-        allocatePrepayment: 'Allocate prepayment',
-        supplierStatement: 'Supplier statement',
-        allocationAmount: 'Allocated amount',
-        addAllocation: 'Add allocation',
-        paymentAmount: 'Payment amount',
-        allocatedAmount: 'Allocated',
-        remainingAmount: 'Unallocated',
-        noAllocations: 'No allocations',
-        allocationSaved: 'Prepayment allocations saved',
-        allocationLoadFailed: 'Failed to load prepayment allocations',
-        allocationSaveFailed: 'Failed to save prepayment allocations',
-        statementAvailableOption: '{{statementNo}} (Available {{amount}})',
-        statementSelectionRequired:
-          'Select a supplier statement for row {{lineNumber}}',
-        positiveAllocationRequired:
-          'Allocation amount on row {{lineNumber}} must be greater than zero',
-        statementAllocationExceeded:
-          'Allocation amount on row {{lineNumber}} exceeds the statement availability',
-        duplicateStatementAllocation:
-          'A supplier statement cannot be allocated twice',
-        paymentAllocationExceeded:
-          'Total allocation cannot exceed the payment amount',
         supplier: 'Supplier',
         carrier: 'Carrier',
         draft: 'Draft',
@@ -1222,30 +1208,6 @@ export const enUS: MessageSchema = {
         cash: 'Cash',
         paymentDesc:
           'Payments support statement settlement and purchase prepayment. Purchase prepayments import authoritative supplier and settlement snapshots from purchase orders.',
-      },
-      supplierRefundReceipt: {
-        title: 'Supplier refund receipts',
-        create: 'Create supplier refund receipt',
-        description:
-          'Record supplier refunds against audited purchase refunds, including partial receipts.',
-        refundReceiptNo: 'Refund receipt no.',
-        purchaseRefundId: 'Purchase refund ID',
-        supplierCode: 'Supplier code',
-        supplierName: 'Supplier name',
-        settlementCompany: 'Settlement company',
-        receiptDate: 'Receipt date',
-        receiptMethod: 'Receipt method',
-        amount: 'Received amount',
-        status: 'Status',
-        draft: 'Draft',
-        received: 'Received',
-        operator: 'Operator',
-        remark: 'Remark',
-        bankTransfer: 'Bank transfer',
-        bankAcceptance: 'Bank acceptance',
-        cash: 'Cash',
-        parentPurchaseRefund: 'Purchase refund',
-        selectPurchaseRefund: 'Select purchase refund',
       },
       receipt: {
         receipt: 'receipt',
@@ -1386,7 +1348,7 @@ export const enUS: MessageSchema = {
         remark: 'Remark',
         importFromParent: 'Import from parent document',
         parentSalesOutbound: 'Sales outbound',
-        importParentSalesOutbound: 'Import sales outbound items',
+        importParentSalesOutbound: 'Import parent sales order',
         freightBillDesc:
           'Manage carrier, vehicle, outbound source, shipment weight, and freight charges in one document flow.',
       },
@@ -1481,22 +1443,6 @@ export const enUS: MessageSchema = {
         colDeliveryDate: 'Delivery Date',
         parentImportLabel: 'Purchase Order',
         parentImportButton: 'Import PO Items',
-      },
-      purchaseRefund: {
-        title: 'Purchase Refunds',
-        description:
-          'Record supplier refunds for the difference between the original purchase order basis and audited inbound receipts.',
-        placeholderRefundNo: 'Enter refund or purchase order number',
-        refundNo: 'Refund No',
-        purchaseOrderNo: 'PO Number',
-        supplierCode: 'Supplier Code',
-        supplier: 'Supplier',
-        settlementCompany: 'Settlement Entity',
-        refundDate: 'Refund Date',
-        totalQuantity: 'Refund Quantity',
-        operator: 'Operator',
-        parentPurchaseOrder: 'Purchase Order',
-        importPurchaseOrder: 'Import Purchase Refund Difference',
       },
       purchaseInbound: {
         title: 'Purchase Inbounds',

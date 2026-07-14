@@ -42,24 +42,6 @@ export const operationModuleEndpointContracts: Record<
       },
     },
   },
-  'purchase-refund': {
-    path: '/purchase-refunds',
-    nativeFilterKeys: [
-      'keyword',
-      'supplierId',
-      'supplierName',
-      'settlementCompanyId',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      refundDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
   'sales-order': {
     path: '/sales-orders',
     nativeFilterKeys: [

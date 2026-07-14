@@ -9,7 +9,7 @@ import { router } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { useSetupStore } from '@/stores/setupStore'
-import { installClientAutosaveFlushListeners } from '@/utils/client-autosave-registry'
+import { clearLegacyModuleEditorDraftStorage } from '@/utils/storage'
 import { initWebVitals } from '@/utils/web-vitals'
 import '@/i18n'
 import '@/styles/variables.css'
@@ -42,7 +42,7 @@ function StartupShell() {
   )
 }
 
-installClientAutosaveFlushListeners()
+clearLegacyModuleEditorDraftStorage()
 
 async function bootstrap() {
   const rootElement = document.getElementById('app')

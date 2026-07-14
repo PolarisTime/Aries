@@ -654,7 +654,6 @@ export interface MessageSchema {
     }
     status: {
       draft: string
-      preOutbound: string
       unaudited: string
       audited: string
       executing: string
@@ -827,12 +826,14 @@ export interface MessageSchema {
       jobTitle: string
       currentModule: string
       selectedRecords: string
+      currentSettlementCompany: string
       selectTemplate: string
       printOptions: string
       exportXlsx: string
       hideUnitPrice: string
       hideRemark: string
       enableBrandOverride: string
+      enableItemSelection: string
       brandOverrideTo: string
       brandOverridePlaceholder: string
       noBrands: string
@@ -846,6 +847,7 @@ export interface MessageSchema {
       itemCategory: string
       itemMaterial: string
       itemSpec: string
+      itemLength: string
       itemQuantity: string
       itemPieceWeight: string
       itemWeight: string
@@ -923,7 +925,6 @@ export interface MessageSchema {
       paginationTotal: string
       status: {
         draft: string
-        preOutbound: string
         unaudited: string
         audited: string
         invoiceReceived: string
@@ -977,16 +978,18 @@ export interface MessageSchema {
       preallocatedNoUpdatedTitle: string
       preallocatedNoUpdatedContent: string
       currentUserFallback: string
-      recoverDraftTitle: string
-      recoverDraftContent: string
-      recoverDraftOk: string
-      recoverDraftCancel: string
     }
     validation: {
       maxImportExceeded: string
       weighRequired: string
       weighWeightRequired: string
       lockedSalesWeightExceeded: string
+      purchaseInboundSourceRequired: string
+      purchaseInboundWarehouseRequired: string
+      purchaseInboundQuantityPositive: string
+      purchaseInboundMixedWarehouse: string
+      purchaseInboundMixedSettlementMode: string
+      purchaseInboundMixedSource: string
       lineItemRequired: string
       fieldRequired: string
       minOneItem: string
@@ -1117,23 +1120,6 @@ export interface MessageSchema {
         paymentPurpose: string
         statementSettlement: string
         purchasePrepayment: string
-        allocatePrepayment: string
-        supplierStatement: string
-        allocationAmount: string
-        addAllocation: string
-        paymentAmount: string
-        allocatedAmount: string
-        remainingAmount: string
-        noAllocations: string
-        allocationSaved: string
-        allocationLoadFailed: string
-        allocationSaveFailed: string
-        statementAvailableOption: string
-        statementSelectionRequired: string
-        positiveAllocationRequired: string
-        statementAllocationExceeded: string
-        duplicateStatementAllocation: string
-        paymentAllocationExceeded: string
         supplier: string
         carrier: string
         draft: string
@@ -1160,29 +1146,6 @@ export interface MessageSchema {
         bankAcceptance: string
         cash: string
         paymentDesc: string
-      }
-      supplierRefundReceipt: {
-        title: string
-        create: string
-        description: string
-        refundReceiptNo: string
-        purchaseRefundId: string
-        supplierCode: string
-        supplierName: string
-        settlementCompany: string
-        receiptDate: string
-        receiptMethod: string
-        amount: string
-        status: string
-        draft: string
-        received: string
-        operator: string
-        remark: string
-        bankTransfer: string
-        bankAcceptance: string
-        cash: string
-        parentPurchaseRefund: string
-        selectPurchaseRefund: string
       }
       receipt: {
         receipt: string
@@ -1408,21 +1371,6 @@ export interface MessageSchema {
         colDeliveryDate: string
         parentImportLabel: string
         parentImportButton: string
-      }
-      purchaseRefund: {
-        title: string
-        description: string
-        placeholderRefundNo: string
-        refundNo: string
-        purchaseOrderNo: string
-        supplierCode: string
-        supplier: string
-        settlementCompany: string
-        refundDate: string
-        totalQuantity: string
-        operator: string
-        parentPurchaseOrder: string
-        importPurchaseOrder: string
       }
       purchaseInbound: {
         title: string
@@ -1883,6 +1831,16 @@ export interface MessageSchema {
       directPrint: string
       noPermission: string
       noExtraLogic: string
+    }
+    contractActions: {
+      startExecution: string
+      revertToDraft: string
+      sign: string
+      unsign: string
+      archive: string
+      archiveConfirmTitle: string
+      archiveConfirmContent: string
+      statusUpdated: string
     }
     recordActions: {
       view: string

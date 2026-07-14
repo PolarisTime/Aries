@@ -3,6 +3,7 @@ import { Empty } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
+import { isDocumentFlowRecordEditLocked } from '@/module-system/module-record-guards'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
@@ -65,7 +66,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     }
     if (
       state.canUpdateRecord &&
-      !isEditBlockedByStatus(record.status, moduleKey)
+      !isEditBlockedByStatus(record.status, moduleKey) &&
+      !isDocumentFlowRecordEditLocked(moduleKey, record)
     ) {
       void state.openEditor(record)
       return
@@ -87,6 +89,18 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
       type: 'single',
     })
   }
+
+  const canCreateRecord =
+    !state.config.readOnly &&
+    state.config.allowManualCreate !== false &&
+    state.canCreateRecord &&
+    moduleKey !== 'supplier-statement' &&
+    moduleKey !== 'customer-statement' &&
+    moduleKey !== 'freight-statement'
+  const canSaveEditorRecord = state.editRecord
+    ? state.canUpdateRecord &&
+      !isDocumentFlowRecordEditLocked(moduleKey, state.editRecord)
+    : state.canCreateRecord && state.config.allowManualCreate !== false
 
   return (
     <div key={moduleKey} className="page-stack module-page-stack">
@@ -114,7 +128,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onApplyFilters={state.applyFilters}
         onReset={state.handleReset}
         onCreate={() => {
-          void state.openEditor(null)
+          if (canCreateRecord) {
+            void state.openEditor(null)
+          }
         }}
         onExport={() => {
           void state.handleExport()
@@ -127,13 +143,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onColumnOrderChange={state.onColumnOrderChange}
         onRowClick={toggleRecordSelection}
         onRowDoubleClick={openRecordEditor}
-        canCreate={
-          !state.config.readOnly &&
-          state.canCreateRecord &&
-          moduleKey !== 'supplier-statement' &&
-          moduleKey !== 'customer-statement' &&
-          moduleKey !== 'freight-statement'
-        }
+        canCreate={canCreateRecord}
         canExport={state.canExportData}
         toolbarActions={state.visibleToolbarActions}
         onAction={(action) => {
@@ -200,12 +210,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
         freightPickupRecords={state.overlays.freightPickupRecords}
-        prepaymentAllocationOpen={state.overlays.prepaymentAllocationOpen}
-        prepaymentAllocationPayment={state.overlays.prepaymentAllocationPayment}
         selectedRows={state.selectedRows}
-        canSave={
-          state.editRecord ? state.canUpdateRecord : state.canCreateRecord
-        }
+        canSave={canSaveEditorRecord}
         canAudit={state.canAuditRecord}
         lineItemsLocked={state.editorLineItemsLocked}
         lockedLineItemsNotice={
@@ -222,11 +228,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onCloseCustomerStatement={state.overlays.closeCustomerStatement}
         onCloseFreightStatement={state.overlays.closeFreightStatement}
         onCloseFreightPickup={state.overlays.closeFreightPickup}
-        onClosePrepaymentAllocation={state.overlays.closePrepaymentAllocation}
-        onPrepaymentAllocationSaved={async () => {
-          state.clearSelection()
-          await state.refreshModuleQueries()
-        }}
         onGenerateSupplierStatement={(
           counterpartyName,
           start,

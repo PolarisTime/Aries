@@ -3,10 +3,8 @@ import i18next from 'i18next'
 import {
   type Dispatch,
   type SetStateAction,
-  useCallback,
   useEffect,
   useReducer,
-  useRef,
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +20,7 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
+import { auditPurchaseInbound } from '@/api/document-flow-commands'
 import { readRequestError } from '@/api/request-errors'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
@@ -38,35 +37,26 @@ import {
 import {
   buildOccupiedParentMap,
   buildParentImportState,
+  resolveParentImportDefinition,
 } from '@/module-system/module-adapter-parent-import'
 import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
 } from '@/module-system/module-adapter-shared'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import { requestPurchaseInboundAuditInput } from '@/module-system/purchase-inbound-audit-options'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
   ModulePageConfig,
+  ModuleParentImportDefinition,
   ModuleRecord,
 } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
-import {
-  type ClientAutosaveReason,
-  registerClientAutosaveHandler,
-} from '@/utils/client-autosave-registry'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
 import { asString } from '@/utils/type-narrowing'
-import {
-  buildModuleEditorDraftSnapshot,
-  getModuleEditorDraftRecordId,
-  readModuleEditorDraft,
-  removeModuleEditorDraft,
-  resolveModuleEditorDraftUserKey,
-  writeModuleEditorDraft,
-} from '@/views/modules/module-editor-draft-storage'
 
 const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
   'purchase-order',
@@ -81,12 +71,11 @@ const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
   'freight-statement',
   'receipt',
   'payment',
+  'cash-reversal',
   'invoice-receipt',
   'invoice-issue',
   'ledger-adjustment',
 ])
-
-const EDITOR_DRAFT_DEBOUNCE_MS = 500
 
 function sumLineItemsBy(nextItems: ModuleLineItem[], key: string) {
   return nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
@@ -529,23 +518,6 @@ function buildPreallocatedIdWarning(args: {
   }
 }
 
-function showPreOutboundGuidanceIfNeeded(
-  moduleKey: string,
-  errorMessage: string,
-) {
-  if (
-    moduleKey !== 'sales-outbound' ||
-    !errorMessage.includes('来源采购明细尚未完成采购入库')
-  ) {
-    return
-  }
-  modal.info({
-    title: '请改用预出库流程',
-    content: errorMessage,
-    okText: '知道了',
-  })
-}
-
 export function useModuleEditorWorkspace({
   open,
   config,
@@ -563,6 +535,8 @@ export function useModuleEditorWorkspace({
   >(null)
   const [parentSelectorFilters, setParentSelectorFilters] =
     useState<SearchParams>({})
+  const [parentSelectorDefinition, setParentSelectorDefinition] =
+    useState<ModuleParentImportDefinition | null>(null)
   const [parentImporting, setParentImporting] = useState(false)
   const [workspaceState, dispatchWorkspaceState] = useReducer(
     editorWorkspaceReducer,
@@ -583,8 +557,6 @@ export function useModuleEditorWorkspace({
   } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
-  const userKey = resolveModuleEditorDraftUserKey(getStoredUser())
-  const draftRecordId = getModuleEditorDraftRecordId(record)
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
   const { data: runtimeConfig } = useRuntimeConfig()
@@ -598,75 +570,6 @@ export function useModuleEditorWorkspace({
     }
 
     let active = true
-    const applyStoredDraft = (
-      storedDraft: NonNullable<ReturnType<typeof readModuleEditorDraft>>,
-    ) => {
-      if (!active) {
-        return
-      }
-      const restoredValues = normalizeRecordForEditor(
-        config,
-        storedDraft.values,
-      )
-      const restoredItems = normalizeLineItemsForEditor(storedDraft.items)
-
-      if (!record && config.primaryNoKey && snowflakeBusinessNoEnabled) {
-        const primaryNoKey = asString(config.primaryNoKey)
-        form.setFieldsValue({
-          ...restoredValues,
-          _preallocatedId: '',
-          [primaryNoKey]: '',
-        })
-        dispatchWorkspaceState({
-          items: restoredItems,
-          primaryNoLoading: true,
-          authoritativePrimaryNo: '',
-        })
-        void allocateBusinessPrimaryNo(moduleKey)
-          .then(({ generatedNo, generatedId }) => {
-            if (!active) {
-              return
-            }
-            form.setFieldsValue({
-              ...restoredValues,
-              _preallocatedId: generatedId || '',
-              [primaryNoKey]: generatedNo,
-            })
-            dispatchWorkspaceState({
-              authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
-                moduleKey,
-                config.primaryNoKey,
-              )
-                ? generatedNo
-                : '',
-            })
-          })
-          .catch((err) => {
-            if (!active) {
-              return
-            }
-            message.error(
-              err instanceof Error
-                ? err.message
-                : t('common.preallocateNoFailed'),
-            )
-          })
-          .finally(() => {
-            if (active) {
-              dispatchWorkspaceState({ primaryNoLoading: false })
-            }
-          })
-        return
-      }
-
-      form.setFieldsValue(restoredValues)
-      dispatchWorkspaceState({
-        items: restoredItems,
-        primaryNoLoading: false,
-        authoritativePrimaryNo: storedDraft.authoritativePrimaryNo,
-      })
-    }
-
     const initializeEditor = () => {
       if (!active) {
         return
@@ -785,28 +688,6 @@ export function useModuleEditorWorkspace({
       }
     }
 
-    const storedDraft = userKey
-      ? readModuleEditorDraft(userKey, moduleKey, draftRecordId)
-      : null
-    if (storedDraft) {
-      modal.confirm({
-        title: t('modules.editorWorkspace.recoverDraftTitle'),
-        content: t('modules.editorWorkspace.recoverDraftContent'),
-        okText: t('modules.editorWorkspace.recoverDraftOk'),
-        cancelText: t('modules.editorWorkspace.recoverDraftCancel'),
-        onOk: () => applyStoredDraft(storedDraft),
-        onCancel: () => {
-          if (userKey) {
-            removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
-          }
-          initializeEditor()
-        },
-      })
-      return () => {
-        active = false
-      }
-    }
-
     initializeEditor()
 
     return () => {
@@ -816,120 +697,12 @@ export function useModuleEditorWorkspace({
     autoInsertBlankItemOnCreate,
     config,
     form,
-    draftRecordId,
     moduleKey,
     open,
     record,
     snowflakeBusinessNoEnabled,
     t,
-    userKey,
   ])
-
-  const draftDirtyRef = useRef(false)
-
-  const writeCurrentDraftSnapshot = useCallback(
-    (reason?: ClientAutosaveReason, nextItems?: ModuleLineItem[]) => {
-      void reason
-      if (!userKey || !draftDirtyRef.current) {
-        return
-      }
-
-      const effectiveAuthoritativePrimaryNo =
-        authoritativePrimaryNo ||
-        getAuthoritativePrimaryNo(moduleKey, config.primaryNoKey, record)
-      const currentValues = applyAuthoritativePrimaryNo(
-        { ...form.getFieldsValue(true) },
-        config.primaryNoKey,
-        effectiveAuthoritativePrimaryNo,
-      )
-
-      try {
-        writeModuleEditorDraft(
-          buildModuleEditorDraftSnapshot({
-            userKey,
-            moduleKey,
-            recordId: draftRecordId,
-            values: currentValues,
-            items: nextItems || items,
-            authoritativePrimaryNo: effectiveAuthoritativePrimaryNo,
-          }),
-        )
-        draftDirtyRef.current = false
-      } catch {
-        // 本地草稿是兜底能力，写入失败不应阻断用户编辑。
-      }
-    },
-    [
-      authoritativePrimaryNo,
-      config.primaryNoKey,
-      draftRecordId,
-      form,
-      items,
-      moduleKey,
-      record,
-      userKey,
-    ],
-  )
-
-  const draftWriteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingDraftItemsRef = useRef<ModuleLineItem[] | undefined>(undefined)
-  const draftWriterRef = useRef(writeCurrentDraftSnapshot)
-  draftWriterRef.current = writeCurrentDraftSnapshot
-  const editorOpenRef = useRef(open)
-  editorOpenRef.current = open
-
-  const flushScheduledDraft = useCallback((reason?: ClientAutosaveReason) => {
-    if (draftWriteTimerRef.current) {
-      clearTimeout(draftWriteTimerRef.current)
-      draftWriteTimerRef.current = null
-    }
-    const pendingItems = pendingDraftItemsRef.current
-    pendingDraftItemsRef.current = undefined
-    if (!editorOpenRef.current) {
-      return
-    }
-    draftWriterRef.current(reason, pendingItems)
-  }, [])
-
-  const scheduleDraftWrite = useCallback(
-    (nextItems?: ModuleLineItem[]) => {
-      if (!userKey) {
-        return
-      }
-      draftDirtyRef.current = true
-      pendingDraftItemsRef.current = nextItems
-      if (draftWriteTimerRef.current) {
-        clearTimeout(draftWriteTimerRef.current)
-      }
-      draftWriteTimerRef.current = setTimeout(() => {
-        flushScheduledDraft('editor-change')
-      }, EDITOR_DRAFT_DEBOUNCE_MS)
-    },
-    [flushScheduledDraft, userKey],
-  )
-
-  const flushScheduledDraftRef = useRef(flushScheduledDraft)
-  flushScheduledDraftRef.current = flushScheduledDraft
-
-  useEffect(() => {
-    if (!open || !userKey) {
-      return
-    }
-    const activeDraftWriter = draftWriterRef.current
-    const unregister = registerClientAutosaveHandler((reason) => {
-      flushScheduledDraftRef.current(reason)
-    })
-    return () => {
-      if (draftWriteTimerRef.current) {
-        clearTimeout(draftWriteTimerRef.current)
-        draftWriteTimerRef.current = null
-      }
-      const pendingItems = pendingDraftItemsRef.current
-      pendingDraftItemsRef.current = undefined
-      activeDraftWriter('pagehide', pendingItems)
-      unregister()
-    }
-  }, [open, userKey])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {
     if (!open) {
@@ -938,19 +711,43 @@ export function useModuleEditorWorkspace({
     if (!Object.keys(changedValues).length) {
       return
     }
+    const changedKeys = new Set(Object.keys(changedValues))
+    if (config.parentImport?.resolveParentSelector) {
+      setParentSelectorSessionKey(null)
+      setParentSelectorDefinition(null)
+    }
+    const effectiveChangedValues = { ...changedValues }
+    const clearEditorFields = getBehaviorValue(
+      moduleKey,
+      'clearEditorFieldsOnFieldChange',
+    )
+    for (const changedKey of changedKeys) {
+      for (const fieldKey of clearEditorFields?.[changedKey] || []) {
+        effectiveChangedValues[fieldKey] = ''
+      }
+    }
+    const shouldClearLineItems = (
+      getBehaviorValue(moduleKey, 'clearLineItemsOnFieldChange') || []
+    ).some((fieldKey) => changedKeys.has(fieldKey))
+    const nextItems = shouldClearLineItems ? [] : items
+    if (shouldClearLineItems && items.length) {
+      dispatchWorkspaceState({ items: [] })
+    }
     syncEditorFormValues({
       config,
       form,
       moduleKey,
-      items,
+      items: nextItems,
       sumLineItemsBy,
-      changedValues,
+      changedValues: effectiveChangedValues,
       defaultTaxRate,
     })
-    scheduleDraftWrite()
   }
 
   const handleSave = async (audit = false) => {
+    let purchaseInboundDraftSavedForAudit = false
+    let purchaseInboundAuditCancelled = false
+    let purchaseInboundSavedRecord: ModuleRecord | undefined
     try {
       if (primaryNoLoading) {
         message.warning(t('common.primaryNoGenerating'))
@@ -1038,7 +835,7 @@ export function useModuleEditorWorkspace({
         if (!confirmed) return
       }
 
-      if (audit && editorAuditTarget) {
+      if (audit && editorAuditTarget && moduleKey !== 'purchase-inbound') {
         const confirmed = await new Promise<boolean>((resolve) => {
           modal.confirm({
             title: t('common.saveAndAudit'),
@@ -1109,12 +906,34 @@ export function useModuleEditorWorkspace({
         if (!savedId) {
           throw new Error('保存成功但未返回单据 ID，无法完成审核')
         }
-        const statusResult = await updateBusinessModuleStatus(
-          moduleKey,
-          savedId,
-          editorAuditTarget.value,
-        )
-        savedRecord = statusResult.data || savedRecord
+        if (moduleKey === 'purchase-inbound') {
+          purchaseInboundDraftSavedForAudit = true
+          const detailResult = await getBusinessModuleDetail(
+            'purchase-inbound',
+            savedId,
+          )
+          purchaseInboundSavedRecord = detailResult.data
+          const auditInput = await requestPurchaseInboundAuditInput(
+            detailResult.data,
+          )
+          if (auditInput) {
+            const auditResult = await auditPurchaseInbound(savedId, auditInput)
+            if (!auditResult.data?.purchaseInbound) {
+              throw new Error('审核成功但未返回采购入库结果')
+            }
+            savedRecord = auditResult.data.purchaseInbound
+          } else {
+            purchaseInboundAuditCancelled = true
+            savedRecord = detailResult.data
+          }
+        } else {
+          const statusResult = await updateBusinessModuleStatus(
+            moduleKey,
+            savedId,
+            editorAuditTarget.value,
+          )
+          savedRecord = statusResult.data || savedRecord
+        }
       }
       const preallocatedIdWarning = buildPreallocatedIdWarning({
         isEdit,
@@ -1123,16 +942,15 @@ export function useModuleEditorWorkspace({
         draftRecord,
         savedRecord,
       })
-      draftDirtyRef.current = false
-      if (draftWriteTimerRef.current) {
-        clearTimeout(draftWriteTimerRef.current)
-        draftWriteTimerRef.current = null
-      }
-      pendingDraftItemsRef.current = undefined
-      if (userKey) {
-        removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
-      }
-      if (preallocatedIdWarning) {
+      if (purchaseInboundAuditCancelled) {
+        setSaveResult({
+          status: 'warning',
+          message: preallocatedIdWarning
+            ? `草稿已保存，审核已取消。${preallocatedIdWarning.content}`
+            : '草稿已保存，审核已取消',
+          record: savedRecord,
+        })
+      } else if (preallocatedIdWarning) {
         setSaveResult({
           status: 'warning',
           message: preallocatedIdWarning.content,
@@ -1161,13 +979,18 @@ export function useModuleEditorWorkspace({
         // Form 已内联展示校验错误，不重复提示
       } else if (err instanceof Error) {
         const { code, traceId } = readRequestError(err)
-        const errorMessage = err.message || t('common.saveFailed')
-        showPreOutboundGuidanceIfNeeded(moduleKey, errorMessage)
+        const baseErrorMessage = err.message || t('common.saveFailed')
+        const errorMessage = purchaseInboundDraftSavedForAudit
+          ? `草稿已保存，审核未完成：${baseErrorMessage}`
+          : baseErrorMessage
         setSaveResult({
           status: 'error',
           message: errorMessage,
           traceId,
           ...(code !== undefined ? { errorCode: code } : {}),
+          ...(purchaseInboundSavedRecord
+            ? { record: purchaseInboundSavedRecord }
+            : {}),
         })
       } else {
         setSaveResult({
@@ -1185,9 +1008,6 @@ export function useModuleEditorWorkspace({
     }
 
     setSaving(true)
-    if (userKey) {
-      removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
-    }
     try {
       await refreshModuleQueries()
       setSaveResult(null)
@@ -1202,7 +1022,14 @@ export function useModuleEditorWorkspace({
   }
 
   const handleImportParentRecord = async (selectedRecords: ModuleRecord[]) => {
-    const parentImportConfig = config.parentImport
+    const parentImportConfig =
+      parentSelectorDefinition ||
+      (config.parentImport
+        ? resolveParentImportDefinition(
+            config.parentImport,
+            form.getFieldsValue(true),
+          )
+        : undefined)
     if (!parentImportConfig) {
       return
     }
@@ -1227,6 +1054,31 @@ export function useModuleEditorWorkspace({
               ).data,
         })),
       )
+
+      if (parentImportConfig.executeParentImport) {
+        if (parentDetails.length !== 1) {
+          throw new Error('服务端批次导入一次只能选择一张上级单据')
+        }
+        const executionResult = await parentImportConfig.executeParentImport({
+          currentRecord: form.getFieldsValue(true),
+          parentRecord: parentDetails[0].data,
+        })
+        setParentSelectorSessionKey(null)
+        setParentSelectorDefinition(null)
+        if (executionResult.cancelled) {
+          setParentImporting(false)
+          return
+        }
+        message.success(
+          executionResult.message ||
+            t('common.importParentSuccessSimple', { itemCount: 0 }),
+        )
+        onSaved()
+        await refreshModuleQueries()
+        setParentImporting(false)
+        onClose()
+        return
+      }
 
       let nextValues = form.getFieldsValue(true)
       let nextItems = items
@@ -1285,8 +1137,8 @@ export function useModuleEditorWorkspace({
         defaultTaxRate,
       })
       dispatchWorkspaceState({ items: nextItems })
-      scheduleDraftWrite(nextItems)
       setParentSelectorSessionKey(null)
+      setParentSelectorDefinition(null)
       message.success(
         importedParentCount > 1
           ? t('common.importParentSuccess', {
@@ -1318,9 +1170,14 @@ export function useModuleEditorWorkspace({
       message.warning(validationError)
       return
     }
+    const effectiveParentImportConfig = resolveParentImportDefinition(
+      parentImportConfig,
+      currentValues,
+    )
     const nextParentFilters =
-      parentImportConfig.buildParentFilters?.(currentValues) || {}
+      effectiveParentImportConfig.buildParentFilters?.(currentValues) || {}
     setParentSelectorFilters(nextParentFilters)
+    setParentSelectorDefinition(effectiveParentImportConfig)
     setParentSelectorSessionKey(editorSessionKey)
   }
 
@@ -1338,7 +1195,6 @@ export function useModuleEditorWorkspace({
         defaultTaxRate,
       })
     }
-    scheduleDraftWrite(nextItems)
   }
 
   const updateItems: Dispatch<SetStateAction<ModuleLineItem[]>> = (
@@ -1357,12 +1213,14 @@ export function useModuleEditorWorkspace({
         defaultTaxRate,
       })
     }
-    scheduleDraftWrite(resolvedItems)
   }
 
   return {
     addItem,
-    closeParentSelector: () => setParentSelectorSessionKey(null),
+    closeParentSelector: () => {
+      setParentSelectorSessionKey(null)
+      setParentSelectorDefinition(null)
+    },
     handleImportParentRecord,
     handleSave,
     isEdit,
@@ -1370,7 +1228,13 @@ export function useModuleEditorWorkspace({
     openParentSelector,
     parentImporting,
     parentSelectorFilters,
+    parentSelectorModuleKey:
+      parentSelectorDefinition?.parentModuleKey ||
+      config.parentImport?.parentModuleKey,
     parentSelectorOpen,
+    parentSelectorDisplayFieldKey:
+      parentSelectorDefinition?.parentDisplayFieldKey ||
+      config.parentImport?.parentDisplayFieldKey,
     primaryNoLoading,
     authoritativePrimaryNo,
     saveResult,
@@ -1379,6 +1243,5 @@ export function useModuleEditorWorkspace({
     saving,
     setItems: updateItems,
     handleFormValuesChange,
-    flushEditorDraft: flushScheduledDraft,
   }
 }

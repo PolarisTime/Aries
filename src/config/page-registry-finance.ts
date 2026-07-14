@@ -1,5 +1,3 @@
-// TODO: remove @ts-nocheck — fix AuditOutlined icon type to match AppIconKey
-// @ts-nocheck
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const financePageDefinitions: AppPageDefinition[] = [
@@ -54,13 +52,13 @@ export const financePageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
-    key: 'supplier-refund-receipt',
-    title: '供应商退款到账单',
-    menuKey: '/supplier-refund-receipt',
+    key: 'cash-reversal',
+    title: '资金冲销单',
+    menuKey: '/cash-reversal',
     view: 'business-grid',
     icon: 'RollbackOutlined',
     menuParent: 'finance',
-    moduleKey: 'supplier-refund-receipt',
+    moduleKey: 'cash-reversal',
     searchable: true,
   },
   {
@@ -84,17 +82,6 @@ export const financePageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
-    key: 'ledger-adjustment',
-    title: '台账调整单',
-    menuKey: '/ledger-adjustment',
-    view: 'business-grid',
-    // @ts-expect-error icon type mismatch
-    icon: 'AuditOutlined',
-    menuParent: 'finance',
-    moduleKey: 'ledger-adjustment',
-    searchable: true,
-  },
-  {
     key: 'pending-invoice-receipt-report',
     title: '未收票报表',
     menuKey: '/pending-invoice-receipt-report',
@@ -111,5 +98,15 @@ export const financePageDefinitions: AppPageDefinition[] = [
     icon: 'CalculatorOutlined',
     menuParent: 'finance',
     moduleKey: 'receivable-payable',
+  },
+  {
+    key: 'purchase-finance-flow',
+    title: '采购财务单据流',
+    menuKey: '/purchase-finance-flow',
+    view: 'purchase-finance-flow',
+    icon: 'TableOutlined',
+    menuParent: 'finance',
+    resourceKey: 'receivable-payable',
+    accessResources: ['receivable-payable'],
   },
 ]

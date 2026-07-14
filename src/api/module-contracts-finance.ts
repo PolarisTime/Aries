@@ -60,6 +60,7 @@ export const financeModuleEndpointContracts: Record<
     nativeFilterKeys: [
       'keyword',
       'customerName',
+      'counterpartyType',
       'settlementCompanyId',
       'status',
       'startDate',
@@ -88,18 +89,17 @@ export const financeModuleEndpointContracts: Record<
       },
     },
   },
-  'supplier-refund-receipt': {
-    path: '/supplier-refund-receipts',
+  'cash-reversal': {
+    path: '/cash-reversals',
     nativeFilterKeys: [
       'keyword',
-      'supplierName',
       'settlementCompanyId',
       'status',
       'startDate',
       'endDate',
     ],
     dateRangeMapping: {
-      receiptDate: {
+      reversalDate: {
         startKey: 'startDate',
         endKey: 'endDate',
       },

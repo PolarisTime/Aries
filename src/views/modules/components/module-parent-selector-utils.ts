@@ -87,6 +87,17 @@ export function filterImportableParentRecords(
     if (isDeletedModuleRecord(record)) {
       return false
     }
+    if (candidateQueryType === 'cash-reversal-source') {
+      const counterpartyType = asString(
+        record.counterpartyType || record.businessType,
+      ).trim()
+      return (
+        asString(record.status).trim() === AUDITED_STATUS &&
+        counterpartyType === '供应商' &&
+        Boolean(record.counterpartyId) &&
+        Boolean(record.settlementCompanyId)
+      )
+    }
     if (
       candidateQueryType === 'purchase-prepayment' &&
       parentModuleKey === 'purchase-order'
@@ -99,8 +110,7 @@ export function filterImportableParentRecords(
     }
     if (
       candidateQueryType === 'purchase-order-import' ||
-      candidateQueryType === 'purchase-refund-source' ||
-      candidateQueryType === 'sales-order-outbound-import' ||
+      candidateQueryType === 'sales-order-freight-import' ||
       candidateQueryType === 'invoice-issue-source' ||
       candidateQueryType === 'invoice-receipt-source'
     ) {

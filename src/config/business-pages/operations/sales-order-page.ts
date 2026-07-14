@@ -101,6 +101,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 160,
     },
     {
+      title: '销售模式',
+      dataIndex: 'salesMode',
+      width: 100,
+      render: (value) => (value === 'PRESALE' ? '预售' : '正常销售'),
+    },
+    {
       title: i18next.t('modules.pages.salesOrder.colProjectName'),
       dataIndex: 'projectName',
       width: 180,
@@ -196,6 +202,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      label: '销售模式',
+      key: 'salesMode',
+      row: 1,
+    },
+    {
       label: i18next.t('modules.pages.salesOrder.colSalesName'),
       key: 'salesName',
       row: 1,
@@ -260,6 +271,17 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      key: 'salesMode',
+      label: '销售模式',
+      type: 'select',
+      required: true,
+      options: buildValueOptions('NORMAL', 'PRESALE').map((option) => ({
+        ...option,
+        label: option.value === 'PRESALE' ? '预售' : '正常销售',
+      })),
+      row: 1,
+    },
+    {
       key: 'salesName',
       label: i18next.t('modules.pages.salesOrder.colSalesName'),
       type: 'input',
@@ -311,23 +333,43 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     parentFieldKey: 'purchaseOrderNo',
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.salesOrder.parentImportButton'),
-    remainingQuantityKey: 'salesRemainingQuantity',
-    candidateQueryType: 'purchase-order-import',
-    candidateUsage: 'sales-order',
+    remainingQuantityKey: 'remainingQuantity',
+    candidateQueryType: 'sales-order-purchase-source',
     buildParentFilters: (currentRecord) => ({
-      currentRecordId: currentRecord.id,
+      currentSalesOrderId: currentRecord.id,
+      salesMode: currentRecord.salesMode,
     }),
+    validateBeforeOpen: (currentRecord) =>
+      currentRecord.salesMode === 'NORMAL' ||
+      currentRecord.salesMode === 'PRESALE'
+        ? null
+        : '请先选择销售模式，再导入采购来源',
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
-      purchaseOrderNo: parentRecord.orderNo || '',
+      purchaseOrderNo:
+        parentRecord.purchaseOrderNo || parentRecord.orderNo || '',
+      purchaseInboundNo:
+        parentRecord.salesMode === 'NORMAL'
+          ? [
+              ...new Set(
+                (Array.isArray(parentRecord.items) ? parentRecord.items : [])
+                  .map((item) =>
+                    typeof item.inboundNo === 'string'
+                      ? item.inboundNo.trim()
+                      : '',
+                  )
+                  .filter(Boolean),
+              ),
+            ].join(', ')
+          : '',
     }),
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)
           ? parentRecord.items.map((item) => {
               const rawRemainingQuantity = Number(
-                item.salesRemainingQuantity ??
-                  item.remainingQuantity ??
+                item.remainingQuantity ??
+                  item.salesRemainingQuantity ??
                   item.quantity ??
                   0,
               )
@@ -363,7 +405,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
                       )
               return {
                 ...item,
-                sourcePurchaseOrderItemId: item.id,
+                sourceInboundItemId:
+                  parentRecord.salesMode === 'NORMAL'
+                    ? (item.sourceInboundItemId ?? item.id)
+                    : undefined,
+                sourcePurchaseOrderItemId:
+                  parentRecord.salesMode === 'PRESALE'
+                    ? (item.sourcePurchaseOrderItemId ?? item.id)
+                    : undefined,
                 pieceWeightTon,
                 remainingQuantity,
                 remainingWeightTon,

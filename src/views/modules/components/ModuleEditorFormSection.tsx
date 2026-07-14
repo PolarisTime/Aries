@@ -94,7 +94,7 @@ export function ModuleEditorFormSection({
             {t('modules.editorForm.documentInfo')}
           </Typography.Title>
         </div>
-        {showActions ? (
+        {showActions || parentImportVisible ? (
           <div className="editor-form-actions">
             {parentImportVisible ? (
               <Button
@@ -112,13 +112,15 @@ export function ModuleEditorFormSection({
                   })}
               </Button>
             ) : null}
-            <EditorFooterActions
-              canSave={canSave}
-              canAudit={canAudit}
-              saving={saving}
-              onCancel={onCancel}
-              onSave={onSave}
-            />
+            {showActions ? (
+              <EditorFooterActions
+                canSave={canSave}
+                canAudit={canAudit}
+                saving={saving}
+                onCancel={onCancel}
+                onSave={onSave}
+              />
+            ) : null}
           </div>
         ) : null}
       </div>

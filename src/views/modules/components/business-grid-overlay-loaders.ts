@@ -22,13 +22,6 @@ export const loadModuleRecordDetailOverlay = () =>
     }),
   )
 
-export const loadPaymentPrepaymentAllocationModal = () =>
-  import('@/views/modules/components/PaymentPrepaymentAllocationModal').then(
-    (module) => ({
-      default: module.PaymentPrepaymentAllocationModal,
-    }),
-  )
-
 export const loadModuleStatementGenerator = () =>
   import('@/views/modules/components/ModuleStatementGenerator').then(
     (module) => ({

@@ -3,7 +3,6 @@ import { registerModuleBehavior } from '@/module-system/module-behavior-registry
 const lineItemModules = [
   'purchase-order',
   'purchase-inbound',
-  'purchase-refund',
   'sales-order',
   'sales-outbound',
   'freight-bill',
@@ -34,7 +33,6 @@ for (const key of amountModules) {
 const draftStatusModules: Record<string, string> = {
   'purchase-order': '草稿',
   'purchase-inbound': '草稿',
-  'purchase-refund': '草稿',
   'sales-order': '草稿',
   'sales-outbound': '草稿',
   'freight-bill': '未审核',
@@ -43,7 +41,7 @@ const draftStatusModules: Record<string, string> = {
   'customer-statement': '待确认',
   receipt: '草稿',
   payment: '草稿',
-  'supplier-refund-receipt': '草稿',
+  'cash-reversal': '草稿',
   'invoice-receipt': '草稿',
   'invoice-issue': '草稿',
   'ledger-adjustment': '草稿',
@@ -56,7 +54,6 @@ for (const [key, status] of Object.entries(draftStatusModules)) {
 const approvedStatusModules = [
   'purchase-order',
   'purchase-inbound',
-  'purchase-refund',
   'sales-order',
   'sales-outbound',
   'freight-bill',
@@ -67,20 +64,17 @@ for (const key of approvedStatusModules) {
   registerModuleBehavior(key, { auditStatus: '已审核' })
 }
 
-registerModuleBehavior('sales-outbound', {
-  auditSourceStatuses: ['草稿', '预出库'],
+registerModuleBehavior('sales-order', {
+  auditSourceStatuses: ['草稿'],
 })
 
-registerModuleBehavior('purchase-order', {
-  reverseAuditTargetsByStatus: { 完成采购: '已审核' },
-})
 registerModuleBehavior('purchase-inbound', {
   reverseAuditTargetsByStatus: { 完成入库: '草稿' },
 })
 
-registerModuleBehavior('receipt', { auditStatus: '已收款' })
-registerModuleBehavior('payment', { auditStatus: '已付款' })
-registerModuleBehavior('supplier-refund-receipt', { auditStatus: '已收款' })
+registerModuleBehavior('receipt', { auditStatus: '已审核' })
+registerModuleBehavior('payment', { auditStatus: '已审核' })
+registerModuleBehavior('cash-reversal', { auditStatus: '已审核' })
 registerModuleBehavior('invoice-receipt', { auditStatus: '已收票' })
 registerModuleBehavior('invoice-issue', { auditStatus: '已开票' })
 registerModuleBehavior('ledger-adjustment', { auditStatus: '已审核' })

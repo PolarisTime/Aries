@@ -5,10 +5,12 @@ import {
   fetchAttachmentCounts,
   updateBusinessModuleStatus,
 } from '@/api/business'
+import { completeSalesOrder } from '@/api/document-flow-commands'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
+import { useDocumentFlowCommands } from '@/hooks/useDocumentFlowCommands'
 import { useExcelExport } from '@/hooks/useExcelExport'
 import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
 import {
@@ -32,6 +34,10 @@ import {
   getBehaviorValue,
   isEditBlockedByStatus,
 } from '@/module-system/module-behavior-registry'
+import {
+  hasGeneratedSalesOutbound,
+  isDocumentFlowRecordEditLocked,
+} from '@/module-system/module-record-guards'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -323,6 +329,22 @@ export function useBusinessGridPage({
     record: ModuleRecord,
     status: string,
   ) => {
+    if (moduleKey === 'sales-order' && status === '完成销售') {
+      modal.confirm({
+        title: '确认完成销售',
+        content:
+          '完成销售后将按最终交付结果进入结算，请确认销售出库和实际重量已经核定。',
+        okText: '完成销售',
+        cancelText: '取消',
+        maskClosable: false,
+        onOk: async () => {
+          const response = await completeSalesOrder(String(record.id))
+          message.success(response.message || '完成销售成功')
+          await refreshModuleQueries()
+        },
+      })
+      return
+    }
     const response = await updateBusinessModuleStatus(
       moduleKey,
       String(record.id),
@@ -363,11 +385,29 @@ export function useBusinessGridPage({
     onEdit: (record) => {
       void openEditor(record)
     },
-    canEditRecord: (record) => !isEditBlockedByStatus(record.status, moduleKey),
+    canEditRecord: (record) =>
+      !isEditBlockedByStatus(record.status, moduleKey) &&
+      !isDocumentFlowRecordEditLocked(moduleKey, record),
     onStatusChange: (record, status) => {
       void handleSalesOrderStatusChange(record, status)
     },
   })
+  const selectedRecords = Object.values(selectedRowMap)
+  const canUseSelectedBulkAuditActions =
+    canUseBulkAuditActions &&
+    selectedRecords.some(
+      (record) =>
+        !(
+          moduleKey === 'purchase-order' &&
+          asString(record.status).trim() === '完成采购'
+        ),
+    )
+  const canUseSelectedBulkDeleteActions =
+    canUseBulkDeleteActions &&
+    selectedRecords.some(
+      (record) =>
+        !(moduleKey === 'freight-bill' && hasGeneratedSalesOutbound(record)),
+    )
 
   const {
     handlePrintSelectedRecords,
@@ -399,8 +439,8 @@ export function useBusinessGridPage({
     formFields,
     isMaterialModule: false,
     selectedRowCount: selectedRowKeys.length,
-    canUseBulkAuditActions,
-    canUseBulkDeleteActions,
+    canUseBulkAuditActions: canUseSelectedBulkAuditActions,
+    canUseBulkDeleteActions: canUseSelectedBulkDeleteActions,
     hasAnyModuleAction: (codes) =>
       codes.some((code) => {
         if (code === 'create') return canCreateRecord
@@ -446,8 +486,15 @@ export function useBusinessGridPage({
     },
   })
 
-  const selectedRecords = Object.values(selectedRowMap)
-  const selectedSalesOrders = selectedRecords
+  const { action: documentFlowAction, handleAction: handleDocumentFlowAction } =
+    useDocumentFlowCommands({
+      moduleKey,
+      selectedRecords,
+      canAuditPurchaseOrder: canAuditRecord,
+      canCreateSalesOutbound: can('sales-outbound', 'create'),
+      refreshCurrentModule: refreshModuleQueries,
+      clearSelection,
+    })
   const selectedContract =
     CONTRACT_MODULE_KEYS.has(moduleKey) && selectedRecords.length === 1
       ? selectedRecords[0]
@@ -466,41 +513,16 @@ export function useBusinessGridPage({
       danger: action.danger,
       disabled: action.disabled,
     }))
-  const reopenDeliveryVerificationAction: ModuleActionDefinition | null =
-    moduleKey === 'sales-order' &&
-    canAuditRecord &&
-    selectedSalesOrders.length === 1 &&
-    selectedSalesOrders[0]?.status === '完成销售'
-      ? {
-          key: 'reopen-delivery-verification',
-          label: i18next.t('hooks.recordActions.reopenDeliveryVerification'),
-          type: 'default',
-        }
-      : null
-  const selectedPrepayment =
-    selectedRecords.length === 1 &&
-    selectedRecords[0]?.paymentPurpose === 'PURCHASE_PREPAYMENT' &&
-    selectedRecords[0]?.status === '已付款'
-      ? selectedRecords[0]
-      : null
-  const prepaymentAllocationAction: ModuleActionDefinition | null =
-    moduleKey === 'payment' && canUpdateRecord && selectedPrepayment
-      ? {
-          key: 'allocate-purchase-prepayment',
-          label: i18next.t('modules.pages.payment.allocatePrepayment'),
-          type: 'default',
-        }
-      : null
   const visibleToolbarActions = [
     ...baseVisibleToolbarActions,
     ...contractStatusActions,
     ...selectedRecordToolbarActions,
-    ...(reopenDeliveryVerificationAction
-      ? [reopenDeliveryVerificationAction]
-      : []),
-    ...(prepaymentAllocationAction ? [prepaymentAllocationAction] : []),
+    ...(documentFlowAction ? [documentFlowAction] : []),
   ]
   const handleAction = async (action: ModuleActionDefinition) => {
+    if (handleDocumentFlowAction(action.key)) {
+      return
+    }
     const contractStatusAction = contractStatusActions.find(
       (candidate) => candidate.key === action.key,
     )
@@ -532,19 +554,6 @@ export function useBusinessGridPage({
     )
     if (selectedRecordAction) {
       selectedRecordAction.onClick()
-      return
-    }
-    if (action.key === 'allocate-purchase-prepayment') {
-      if (!canUpdateRecord || !selectedPrepayment) return
-      overlays.openPrepaymentAllocation(selectedPrepayment)
-      return
-    }
-    if (action.key === 'reopen-delivery-verification') {
-      const selectedOrder = selectedSalesOrders[0]
-      if (!selectedOrder || selectedOrder.status !== '完成销售') {
-        return
-      }
-      await handleSalesOrderStatusChange(selectedOrder, '交付核定')
       return
     }
     await handleToolbarAction(action)

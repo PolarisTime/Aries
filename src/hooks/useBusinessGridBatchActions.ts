@@ -1,13 +1,17 @@
 import { useTranslation } from 'react-i18next'
 import {
   deleteBusinessModule,
+  getBusinessModuleDetail,
   updateBusinessModuleStatus,
 } from '@/api/business'
+import { auditPurchaseInbound } from '@/api/document-flow-commands'
 import {
   canAuditFromStatus,
   resolveReverseAuditTargetForStatus,
 } from '@/module-system/module-adapter-actions'
 import { isDeleteBlockedByStatus } from '@/module-system/module-behavior-registry'
+import { hasGeneratedSalesOutbound } from '@/module-system/module-record-guards'
+import { requestPurchaseInboundAuditInput } from '@/module-system/purchase-inbound-audit-options'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 
@@ -44,6 +48,51 @@ export function useBusinessGridBatchActions({
     }
     if (!listAuditTarget) {
       message.warning(t('hooks.batchActions.noBatchAuditStatus'))
+      return
+    }
+
+    if (moduleKey === 'purchase-inbound') {
+      if (selectedRowKeys.length !== 1 || selectedRows.length !== 1) {
+        message.warning('采购入库审核一次只能选择一张单据')
+        return
+      }
+      const selectedRecord = selectedRows[0]
+      if (
+        !canAuditFromStatus(
+          selectedRecord.status,
+          listAuditTarget,
+          listReverseAuditTarget,
+          listAuditSourceStatuses,
+        )
+      ) {
+        message.warning(t('hooks.batchActions.auditNotSupported'))
+        return
+      }
+      void (async () => {
+        try {
+          const recordId = String(selectedRecord.id || '').trim()
+          if (!recordId) {
+            throw new Error('采购入库缺少稳定 ID，无法审核')
+          }
+          const detailResult = await getBusinessModuleDetail(
+            'purchase-inbound',
+            recordId,
+          )
+          const auditInput = await requestPurchaseInboundAuditInput(
+            detailResult.data,
+          )
+          if (!auditInput) {
+            return
+          }
+          await auditPurchaseInbound(recordId, auditInput)
+          message.success('采购入库审核成功')
+          await refreshAndClearSelection()
+        } catch (error) {
+          message.error(
+            error instanceof Error ? error.message : '采购入库审核失败',
+          )
+        }
+      })()
       return
     }
 
@@ -138,7 +187,11 @@ export function useBusinessGridBatchActions({
     }
 
     const selected = selectedRows
-    const eligible = selected.filter((r) => !isDeleteBlockedByStatus(r.status))
+    const eligible = selected.filter(
+      (record) =>
+        !isDeleteBlockedByStatus(record.status, moduleKey) &&
+        !(moduleKey === 'freight-bill' && hasGeneratedSalesOutbound(record)),
+    )
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {

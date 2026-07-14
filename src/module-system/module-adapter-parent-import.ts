@@ -15,6 +15,14 @@ const SOURCE_PARENT_ITEM_ID_FIELDS = [
   'sourceSalesOrderItemId',
 ] as const
 
+export function resolveParentImportDefinition(
+  definition: ModuleParentImportDefinition,
+  currentRecord: ModuleRecord,
+): ModuleParentImportDefinition {
+  const resolved = definition.resolveParentSelector?.(currentRecord)
+  return resolved ? { ...definition, ...resolved } : definition
+}
+
 function getSourceParentItemId(item: ModuleLineItem): string {
   for (const field of SOURCE_PARENT_ITEM_ID_FIELDS) {
     const id = parseOptionalEntityId(item[field], field)

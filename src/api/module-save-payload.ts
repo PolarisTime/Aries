@@ -34,7 +34,6 @@ const REQUIRED_SUPPLIER_ID_MODULES = new Set([
   'purchase-contract',
   'invoice-receipt',
   'supplier-statement',
-  'supplier-refund-receipt',
 ])
 
 function assertRequiredStableIdentities(
@@ -320,6 +319,12 @@ function resolveLineItemsForSave(
   const existingItem = existingItems[0] ?? { id: '' }
 
   if (moduleKey === 'receipt') {
+    if (
+      record.receiptPurpose === 'SUPPLIER_PREPAYMENT_REFUND' ||
+      record.receiptPurpose === 'SUPPLIER_OTHER_RECEIPT'
+    ) {
+      return []
+    }
     const sourceCustomerStatementId = parseOptionalEntityId(
       record.sourceCustomerStatementId,
       'sourceCustomerStatementId',
@@ -341,6 +346,13 @@ function resolveLineItemsForSave(
 
   if (moduleKey !== 'payment') {
     return existingItems
+  }
+
+  if (
+    record.paymentPurpose === 'SUPPLIER_PAYMENT' ||
+    record.paymentPurpose === 'PURCHASE_PREPAYMENT'
+  ) {
+    return []
   }
 
   const sourceSupplierStatementId = parseOptionalEntityId(

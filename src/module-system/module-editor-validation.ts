@@ -34,6 +34,27 @@ function getLineItemValidationMessages(
       )
     }
     if (moduleKey === 'purchase-inbound') {
+      if (!asString(item.sourcePurchaseOrderItemId).trim()) {
+        messages.push(
+          i18next.t('modules.validation.purchaseInboundSourceRequired', {
+            row: index + 1,
+          }),
+        )
+      }
+      if (!asString(item.warehouseId).trim()) {
+        messages.push(
+          i18next.t('modules.validation.purchaseInboundWarehouseRequired', {
+            row: index + 1,
+          }),
+        )
+      }
+      if (Number(item.quantity || 0) <= 0) {
+        messages.push(
+          i18next.t('modules.validation.purchaseInboundQuantityPositive', {
+            row: index + 1,
+          }),
+        )
+      }
       const isWeighSettlement = asString(item.settlementMode).trim() === '过磅'
       if (
         isPurchaseWeighRequiredCategory(item.category) &&
@@ -81,6 +102,33 @@ function getLineItemValidationMessages(
           }),
         )
       }
+    }
+  }
+
+  if (moduleKey === 'purchase-inbound') {
+    const warehouseIds = new Set(
+      items.map((item) => asString(item.warehouseId).trim()).filter(Boolean),
+    )
+    if (warehouseIds.size > 1) {
+      messages.push(
+        i18next.t('modules.validation.purchaseInboundMixedWarehouse'),
+      )
+    }
+    const settlementModes = new Set(
+      items.map((item) => asString(item.settlementMode).trim()).filter(Boolean),
+    )
+    if (settlementModes.size > 1) {
+      messages.push(
+        i18next.t('modules.validation.purchaseInboundMixedSettlementMode'),
+      )
+    }
+    const parentRelationIds = new Set(
+      items
+        .map((item) => asString(item._parentRelationId).trim())
+        .filter(Boolean),
+    )
+    if (parentRelationIds.size > 1) {
+      messages.push(i18next.t('modules.validation.purchaseInboundMixedSource'))
     }
   }
 

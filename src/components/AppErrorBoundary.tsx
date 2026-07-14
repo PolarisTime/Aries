@@ -3,7 +3,6 @@ import i18next from 'i18next'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
 import { AppResult } from '@/components/AppResult'
-import { flushClientAutosaveHandlers } from '@/utils/client-autosave-registry'
 
 interface Props {
   children: ReactNode
@@ -37,7 +36,6 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    flushClientAutosaveHandlers('error-boundary')
     console.error('[AppErrorBoundary]', error, info.componentStack)
   }
 

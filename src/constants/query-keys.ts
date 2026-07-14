@@ -13,6 +13,20 @@ export const QUERY_KEYS = {
   dashboardSummary: ['dashboard-summary'] as const,
   backendInfo: ['backend-info'] as const,
 
+  // Finance
+  purchaseFinanceFlow: (query: {
+    settlementCompanyId: string
+    supplierId: string
+    documentType?: string
+    status?: string
+    startDate?: string
+    endDate?: string
+    materialKeyword?: string
+    purchaseOrderId?: string
+    page: number
+    size: number
+  }) => ['purchase-finance-flow', query] as const,
+
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
   businessGridAll: (moduleKey: string) =>

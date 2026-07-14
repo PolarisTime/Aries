@@ -20,7 +20,9 @@ interface Props {
   items: ModuleLineItem[]
   selectedItemIds: string[]
   parentImporting: boolean
+  parentSelectorDisplayFieldKey?: string
   parentSelectorFilters: SearchParams
+  parentSelectorModuleKey?: string
   parentSelectorOpen: boolean
   itemColumns: TableColumnsType<ModuleLineItem>
   itemColumnOrder: string[]
@@ -50,7 +52,9 @@ export function ModuleEditorItemsSection({
   items,
   selectedItemIds,
   parentImporting,
+  parentSelectorDisplayFieldKey,
   parentSelectorFilters,
+  parentSelectorModuleKey,
   parentSelectorOpen,
   itemColumns,
   itemColumnOrder,
@@ -75,8 +79,13 @@ export function ModuleEditorItemsSection({
   const parentSelector = config.parentImport ? (
     <ModuleParentSelectorOverlay
       open={parentSelectorOpen}
-      parentModuleKey={config.parentImport.parentModuleKey}
-      parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
+      parentModuleKey={
+        parentSelectorModuleKey || config.parentImport.parentModuleKey
+      }
+      parentDisplayFieldKey={
+        parentSelectorDisplayFieldKey ||
+        config.parentImport.parentDisplayFieldKey
+      }
       allowMultipleSelection={config.parentImport.allowMultipleSelection}
       candidateStatementModuleKey={
         config.parentImport.candidateStatementModuleKey

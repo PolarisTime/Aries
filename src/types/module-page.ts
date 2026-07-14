@@ -84,15 +84,31 @@ export interface ModuleParentImportDefinition {
   candidateQueryType?:
     | 'purchase-order-import'
     | 'purchase-prepayment'
-    | 'purchase-refund-source'
+    | 'sales-order-purchase-source'
+    | 'sales-order-freight-import'
     | 'freight-bill-import'
     | 'sales-order-outbound-import'
     | 'invoice-issue-source'
     | 'invoice-receipt-source'
+    | 'cash-reversal-source'
   candidateUsage?: 'purchase-inbound' | 'sales-order' | 'purchase-contract'
   hiddenSelectorColumnKeys?: string[]
   visibleWhen?: (currentRecord: ModuleRecordInput) => boolean
+  resolveParentSelector?: (currentRecord: ModuleRecord) => {
+    parentModuleKey: string
+    parentDisplayFieldKey: string
+  }
+  requiredSourceItemIdField?:
+    | 'sourcePurchaseOrderItemId'
+    | 'sourceSalesOrderItemId'
   resolveParentRecord?: (parentRecord: ModuleRecord) => Promise<ModuleRecord>
+  executeParentImport?: (args: {
+    currentRecord: ModuleRecord
+    parentRecord: ModuleRecord
+  }) => Promise<{
+    cancelled?: boolean
+    message?: string
+  }>
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
   validateParentImport?: (args: {
@@ -111,6 +127,7 @@ export interface ModulePageConfig {
   primaryNoKey?: string
   hidePageHeader?: boolean
   readOnly?: boolean
+  allowManualCreate?: boolean
   filters: ModuleFilterDefinition[]
   quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]

@@ -32,12 +32,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     if (!userKey) {
       return
     }
-    const mode =
-      record && moduleKey === 'sales-order' && record.status === '交付核定'
-        ? 'reconfirm'
-        : record
-          ? 'edit'
-          : 'create'
+    const mode = record ? 'edit' : 'create'
     const recordId = String(record?.id || 'new')
     const primaryNo = String(
       record?.[config.primaryNoKey || 'orderNo'] || '',
@@ -116,6 +111,9 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   }
 
   const openEditor = async (record: ModuleRecord | null) => {
+    if (!record && config.allowManualCreate === false) {
+      return
+    }
     registerEditorTask(record)
     if (!record) {
       openVersionRef.current += 1
@@ -156,6 +154,10 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     }
     state.consumeResume(task.key)
     if (task.mode === 'create') {
+      if (config.allowManualCreate === false) {
+        state.close(task.key)
+        return
+      }
       await openEditor(null)
       return
     }

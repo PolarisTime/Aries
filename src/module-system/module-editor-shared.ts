@@ -15,6 +15,7 @@ export const DERIVED_READONLY_ITEM_COLUMN_KEYS = new Set([
   'pieceWeightTon',
   'piecesPerBundle',
   'weightTon',
+  'actualWeightTon',
   'weightAdjustmentTon',
   'weightAdjustmentAmount',
   'amount',

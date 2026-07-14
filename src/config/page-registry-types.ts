@@ -14,6 +14,7 @@ export type RouteViewKey =
   | 'api-key'
   | 'security-key'
   | 'database-backup'
+  | 'purchase-finance-flow'
 
 export interface AppPageDefinition {
   key: string

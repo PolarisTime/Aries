@@ -20,6 +20,7 @@ export interface PrintRecordItem {
   settlementMode?: string
   material: string
   spec: string
+  length: string
   quantity: string
   pieceWeightTon: string
   weightTon: string
@@ -32,6 +33,7 @@ export interface SalesOrderPrintXlsxOptions {
   hideRemark?: boolean
   brandOverridesByItemId?: Record<string, string>
   itemOrder?: string[]
+  selectedItemIds?: string[]
 }
 
 export interface ExportSalesOrderPrintXlsxPayload {

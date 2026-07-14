@@ -24,7 +24,6 @@ for (const key of lineItemPayloadModules) {
 const extraScalarFieldsMap: Record<string, string[]> = {
   'freight-statement': ['attachment'],
   'purchase-order': ['buyerName'],
-  'purchase-inbound': ['buyerName'],
   'sales-order': ['salesName'],
   'sales-outbound': ['salesName'],
   'purchase-contract': ['buyerName'],

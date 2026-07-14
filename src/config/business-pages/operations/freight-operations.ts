@@ -14,9 +14,9 @@ import {
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
   buildAmountWeightOverview,
+  cloneLineItems,
   compactFreightItemColumns,
   statusMap,
-  transformFreightItems,
 } from '../shared/shared'
 
 export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
@@ -90,7 +90,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       },
       {
         title: i18next.t('modules.pages.freightOperations.relatedOutbound'),
-        dataIndex: 'outboundNo',
+        dataIndex: 'sourceSalesOutboundNo',
         width: 160,
       },
       {
@@ -178,7 +178,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       },
       {
         label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
-        key: 'outboundNo',
+        key: 'sourceSalesOutboundNo',
+      },
+      {
+        label: '来源销售订单 ID',
+        key: 'sourceSalesOrderId',
       },
       {
         label: i18next.t('modules.pages.freightOperations.carrier'),
@@ -243,13 +247,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
-        key: 'outboundNo',
-        label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
+        key: 'sourceSalesOrderId',
+        label: '来源销售订单 ID',
         type: 'input',
         disabled: true,
-        placeholder: i18next.t(
-          'modules.pages.freightOperations.importFromParent',
-        ),
+        placeholder: '导入销售订单后自动带入',
         row: 1,
       },
       {
@@ -308,6 +310,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     saveFields: {
       scalar: [
         'billNo',
+        'sourceSalesOrderId',
         'carrierCode',
         'carrierName',
         'settlementCompanyId',
@@ -322,7 +325,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       ],
       lineItem: [
         'sourceNo',
-        'sourceSalesOutboundItemId',
+        'sourceSalesOrderItemId',
         'settlementCompanyId',
         'settlementCompanyName',
         'customerName',
@@ -346,34 +349,45 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       ],
     },
     parentImport: {
-      parentModuleKey: 'sales-outbound',
-      label: i18next.t('modules.pages.freightOperations.parentSalesOutbound'),
-      parentFieldKey: 'outboundNo',
-      parentDisplayFieldKey: 'outboundNo',
-      candidateQueryType: 'freight-bill-import',
+      parentModuleKey: 'sales-order',
+      label: '来源销售订单',
+      parentFieldKey: 'sourceSalesOrderId',
+      parentDisplayFieldKey: 'orderNo',
+      candidateQueryType: 'sales-order-freight-import',
       buttonText: i18next.t(
         'modules.pages.freightOperations.importParentSalesOutbound',
       ),
       enforceUniqueRelation: true,
-      allowMultipleSelection: true,
+      allowMultipleSelection: false,
       buildParentFilters: (currentRecord) => ({
         customerId: currentRecord.customerId,
         projectId: currentRecord.projectId,
         currentRecordId: currentRecord.id,
-        status: '已审核',
       }),
       hiddenSelectorColumnKeys: ['status'],
       validateBeforeOpen: (currentRecord) =>
         asString(currentRecord.carrierName).trim()
           ? null
-          : '请先选择物流商，再导入销售出库单',
+          : '请先选择物流商，再导入销售订单',
       mapParentToDraft: (parentRecord) => ({
+        sourceSalesOrderId: parentRecord.id,
         customerId: parentRecord.customerId,
         customerName: parentRecord.customerName || '',
         projectId: parentRecord.projectId,
         projectName: parentRecord.projectName || '',
       }),
-      transformItems: transformFreightItems,
+      transformItems: (parentRecord) =>
+        cloneLineItems(
+          Array.isArray(parentRecord.items)
+            ? parentRecord.items.map((item) => ({
+                ...item,
+                sourceNo: parentRecord.orderNo || '',
+                sourceSalesOrderItemId: item.id,
+                sourceSalesOutboundItemId: undefined,
+              }))
+            : [],
+          'freight-bill-item',
+        ),
     },
     itemColumns: compactFreightItemColumns,
     data: [],

@@ -51,7 +51,7 @@ const BUSINESS_RESOURCE_CODES = [
   'payment',
   'invoice-receipt',
   'invoice-issue',
-  'ledger-adjustment',
+  'cash-reversal',
   'receivable-payable',
 ]
 
@@ -99,7 +99,7 @@ const API_KEY_PRESET_DEFINITIONS: ApiKeyPresetDefinition[] = [
       'payment',
       'invoice-receipt',
       'invoice-issue',
-      'ledger-adjustment',
+      'cash-reversal',
     ],
     actionCodes: ['read', 'create', 'update', 'audit', 'export', 'print'],
   },

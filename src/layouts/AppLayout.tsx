@@ -427,7 +427,7 @@ export function AppLayout() {
             if (task?.status === 'dirty' || task?.status === 'error') {
               modal.confirm({
                 title: '关闭编辑任务',
-                content: '未保存内容已保留为草稿，可稍后从草稿恢复。',
+                content: '关闭后未保存的修改将丢失，确定继续吗？',
                 okText: '关闭',
                 cancelText: t('common.cancel'),
                 onOk: () => {

@@ -75,7 +75,10 @@ export function useModuleToolbarActions({
 
   const bulkToolbarActions = (() => {
     const actions: ModuleActionDefinition[] = []
-    if (canUseBulkAuditActions && selectedRowCount > 0) {
+    const auditSelectionSupported =
+      selectedRowCount > 0 &&
+      (moduleKey !== 'purchase-inbound' || selectedRowCount === 1)
+    if (canUseBulkAuditActions && auditSelectionSupported) {
       actions.push(
         { label: t('hooks.toolbarActions.audit'), type: 'default' },
         {

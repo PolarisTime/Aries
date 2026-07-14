@@ -16,6 +16,21 @@ import {
   compactPurchaseItemColumns,
   statusMap,
 } from '../shared/shared'
+import { insertColumnsAfter } from '../shared/shared-item-column-utils'
+
+const purchaseOrderItemColumns = insertColumnsAfter(
+  compactPurchaseItemColumns,
+  'weightTon',
+  [
+    {
+      title: i18next.t('modules.columns.weighWeight'),
+      dataIndex: 'actualWeightTon',
+      width: 96,
+      align: 'center',
+      type: 'weight',
+    },
+  ],
+)
 
 export const purchaseOrdersPageConfig: ModulePageConfig = {
   key: 'purchase-order',
@@ -220,7 +235,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       colSpan: 6,
     },
   ],
-  itemColumns: compactPurchaseItemColumns,
+  itemColumns: purchaseOrderItemColumns,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

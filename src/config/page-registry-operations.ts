@@ -22,16 +22,6 @@ export const operationPageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
-    key: 'purchase-refund',
-    title: '采购退款单',
-    menuKey: '/purchase-refund',
-    view: 'business-grid',
-    icon: 'FileSyncOutlined',
-    menuParent: 'purchase',
-    moduleKey: 'purchase-refund',
-    searchable: true,
-  },
-  {
     key: 'sales-order',
     title: '销售订单',
     menuKey: '/sales-order',

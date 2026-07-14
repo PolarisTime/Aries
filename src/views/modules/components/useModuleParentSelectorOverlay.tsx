@@ -5,7 +5,6 @@ import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
-import { listFreightBillImportCandidatePage } from '@/api/freight-bill-candidates'
 import {
   listInvoiceIssueSourceCandidatePage,
   listInvoiceReceiptSourceCandidatePage,
@@ -14,9 +13,11 @@ import { getModuleConfig } from '@/api/module-contracts'
 import {
   listPurchaseOrderImportCandidatePage,
   listPurchaseOrderPrepaymentCandidatePage,
-  listPurchaseRefundSourceCandidatePage,
 } from '@/api/purchase-order-candidates'
-import { listSalesOrderOutboundImportCandidatePage } from '@/api/sales-order-candidates'
+import {
+  listSalesOrderFreightImportCandidatePage,
+  listSalesOrderPurchaseSourceCandidatePage,
+} from '@/api/sales-order-candidates'
 import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
@@ -118,10 +119,6 @@ export function getOverlayStatusMap() {
       color: 'default',
       text: i18next.t('modules.parentSelector.status.draft'),
     },
-    [DOCUMENT_STATUS.PRE_OUTBOUND]: {
-      color: 'warning',
-      text: i18next.t('modules.parentSelector.status.preOutbound'),
-    },
     [DOCUMENT_STATUS.UNAUDITED]: {
       color: 'default',
       text: i18next.t('modules.parentSelector.status.unaudited'),
@@ -159,6 +156,60 @@ export function getOverlayStatusMap() {
 
 function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
   return {
+    payment: [
+      { dataIndex: 'paymentNo', title: '付款单号', width: 180 },
+      { dataIndex: 'counterpartyName', title: '供应商', width: 180 },
+      {
+        dataIndex: 'settlementCompanyName',
+        title: '结算主体',
+        width: 170,
+      },
+      {
+        dataIndex: 'paymentDate',
+        title: '付款日期',
+        width: 120,
+        type: 'date',
+      },
+      {
+        dataIndex: 'amount',
+        title: '付款金额',
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+    receipt: [
+      { dataIndex: 'receiptNo', title: '收款单号', width: 180 },
+      { dataIndex: 'counterpartyName', title: '供应商', width: 180 },
+      {
+        dataIndex: 'settlementCompanyName',
+        title: '结算主体',
+        width: 170,
+      },
+      {
+        dataIndex: 'receiptDate',
+        title: '收款日期',
+        width: 120,
+        type: 'date',
+      },
+      {
+        dataIndex: 'amount',
+        title: '收款金额',
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
     'purchase-order': [
       {
         dataIndex: 'orderNo',
@@ -444,14 +495,11 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'purchase-prepayment') {
     return 'purchase-prepayment'
   }
-  if (candidateQueryType === 'purchase-refund-source') {
-    return 'purchase-refund-source'
+  if (candidateQueryType === 'sales-order-purchase-source') {
+    return 'sales-order-purchase-source'
   }
-  if (candidateQueryType === 'freight-bill-import') {
-    return 'freight-bill-import'
-  }
-  if (candidateQueryType === 'sales-order-outbound-import') {
-    return 'sales-order-outbound-import'
+  if (candidateQueryType === 'sales-order-freight-import') {
+    return 'sales-order-freight-import'
   }
   if (candidateQueryType === 'invoice-issue-source') {
     return 'invoice-issue-source'
@@ -701,22 +749,15 @@ export function useModuleParentSelectorOverlay({
           pageSize,
         )
       }
-      if (candidateQueryType === 'purchase-refund-source') {
-        return listPurchaseRefundSourceCandidatePage(
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+      if (candidateQueryType === 'sales-order-purchase-source') {
+        return listSalesOrderPurchaseSourceCandidatePage(
+          effectiveSubmittedFilters,
           Math.max(page - 1, 0),
           pageSize,
         )
       }
-      if (candidateQueryType === 'freight-bill-import') {
-        return listFreightBillImportCandidatePage(
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
-          Math.max(page - 1, 0),
-          pageSize,
-        )
-      }
-      if (candidateQueryType === 'sales-order-outbound-import') {
-        return listSalesOrderOutboundImportCandidatePage(
+      if (candidateQueryType === 'sales-order-freight-import') {
+        return listSalesOrderFreightImportCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,
