@@ -1,3 +1,26 @@
+# [3.0.0](https://github.com/PolarisTime/Aries/compare/v2.4.0...v3.0.0) (2026-07-15)
+
+
+* feat(finance)!: 重构财务为资金流水模式 ([678cb2a](https://github.com/PolarisTime/Aries/commit/678cb2a5e7251013438bffc1a08bfbf07aed2962))
+* feat(order-flow)!: 重构采购销售物流及财务交互 ([3afb321](https://github.com/PolarisTime/Aries/commit/3afb32123fae0176816f9bf645cce9221dac2cbb))
+
+
+### Bug Fixes
+
+* **editor:** 修复保存后重复提示未保存草稿 ([13aae37](https://github.com/PolarisTime/Aries/commit/13aae37c40849383c5b7055dbc492fcd51027652))
+* **system:** 修复系统参数加载失败误显示为空 ([d258a41](https://github.com/PolarisTime/Aries/commit/d258a4104a782d5eb307f5c8f63c886f3f16ebc2))
+
+
+### Features
+
+* **contract:** 完善合同状态操作与终态保护 ([2ff52f3](https://github.com/PolarisTime/Aries/commit/2ff52f3d2ae37c9b84f35f706402fb570177456f))
+
+
+### BREAKING CHANGES
+
+* 删除旧财务辅助单据页面，原应收应付页面替换为资金流水。
+* 移除采购退款单、供应商退款到账及本地草稿接口，调整采购完成和财务单据交互契约。
+
 # [2.4.0](https://github.com/PolarisTime/Aries/compare/v2.3.5...v2.4.0) (2026-07-13)
 
 
