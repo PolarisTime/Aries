@@ -1,5 +1,6 @@
 import { Alert } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppProPage } from '@/components/AppProPage'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { ApiKeyCreateModal } from '@/views/system/ApiKeyCreateModal'
@@ -9,10 +10,12 @@ import { useApiKeyManagementState } from '@/views/system/useApiKeyManagementStat
 
 interface ApiKeyManagementViewProps {
   active?: boolean
+  embedded?: boolean
 }
 
 export function ApiKeyManagementView({
   active = true,
+  embedded = false,
 }: ApiKeyManagementViewProps) {
   const { t } = useTranslation()
   const isPageVisible = usePageVisibility()
@@ -53,7 +56,7 @@ export function ApiKeyManagementView({
     userOptions,
   } = useApiKeyManagementState(queryEnabled)
 
-  return (
+  const content = (
     <div className="page-stack">
       <ApiKeyUsageAlert />
 
@@ -67,6 +70,7 @@ export function ApiKeyManagementView({
       )}
 
       <ApiKeyListCard
+        title={embedded ? t('system.apiKeyList.title') : undefined}
         keyword={keyword}
         filterUserId={filterUserId}
         statusFilter={statusFilter}
@@ -138,4 +142,10 @@ export function ApiKeyManagementView({
       ) : null}
     </div>
   )
+
+  if (embedded) {
+    return content
+  }
+
+  return <AppProPage title={t('system.apiKey.title')}>{content}</AppProPage>
 }

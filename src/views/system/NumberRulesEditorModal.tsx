@@ -1,5 +1,12 @@
+import {
+  ProForm,
+  ProFormDigit,
+  ProFormSelect,
+  ProFormText,
+  ProFormTextArea,
+} from '@ant-design/pro-components/es/form'
 import type { FormInstance } from 'antd'
-import { Col, Form, Input, Row, Select, Typography } from 'antd'
+import { Col, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import {
@@ -54,66 +61,64 @@ export function NumberRulesEditorModal({
       confirmLoading={saving}
       width={600}
     >
-      <Form form={form} layout="vertical">
+      <ProForm form={form} layout="vertical" submitter={false}>
         {kind === 'number-rule' ? (
           <>
-            <Form.Item
+            <ProFormText
               name="settingCode"
               label={t('system.numberRules.settingCode')}
-            >
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
+              disabled
+            />
+            <ProFormText
               name="settingName"
               label={t('system.numberRules.settingName')}
-            >
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
+              disabled
+            />
+            <ProFormText
               name="billName"
               label={t('system.numberRules.billNameLabel')}
-            >
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
+              disabled
+            />
+            <ProFormText
               name="prefix"
               label={t('system.numberRules.prefix')}
               required
-            >
-              <Input placeholder={t('system.numberRules.prefixPlaceholder')} />
-            </Form.Item>
+              placeholder={t('system.numberRules.prefixPlaceholder')}
+            />
             <Row gutter={[16, 0]}>
               <Col xs={24} sm={8}>
-                <Form.Item
+                <ProFormSelect
                   name="dateRule"
                   label={t('system.numberRules.dateRule')}
-                >
-                  <Select options={DATE_RULE_OPTIONS} />
-                </Form.Item>
+                  options={DATE_RULE_OPTIONS}
+                />
               </Col>
               <Col xs={24} sm={8}>
-                <Form.Item
+                <ProFormDigit
                   name="serialLength"
                   label={t('system.numberRules.serialLength')}
-                >
-                  <Input type="number" min={1} max={10} />
-                </Form.Item>
+                  min={1}
+                  max={10}
+                />
               </Col>
               <Col xs={24} sm={8}>
-                <Form.Item
+                <ProFormSelect
                   name="resetRule"
                   label={t('system.numberRules.resetRule')}
-                >
-                  <Select options={RESET_RULE_OPTIONS} />
-                </Form.Item>
+                  options={RESET_RULE_OPTIONS}
+                />
               </Col>
             </Row>
-            <Form.Item name="status" label={t('common.status')}>
-              <Select options={NUMBER_RULE_STATUS_OPTIONS} />
-            </Form.Item>
-            <Form.Item name="remark" label={t('common.remark')}>
-              <Input.TextArea rows={2} />
-            </Form.Item>
+            <ProFormSelect
+              name="status"
+              label={t('common.status')}
+              options={NUMBER_RULE_STATUS_OPTIONS}
+            />
+            <ProFormTextArea
+              name="remark"
+              label={t('common.remark')}
+              fieldProps={{ rows: 2 }}
+            />
             <Typography.Text type="secondary">
               {t('system.numberRules.sampleNoPrefix')}
               {numberRulePreview}
@@ -121,46 +126,49 @@ export function NumberRulesEditorModal({
           </>
         ) : (
           <>
-            <Form.Item
+            <ProFormText
               name="moduleKey"
               label={t('system.numberRules.moduleCode')}
-            >
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
+              disabled
+            />
+            <ProFormText
               name="moduleName"
               label={t('system.numberRules.moduleName')}
-            >
-              <Input disabled />
-            </Form.Item>
-            <Form.Item name="ruleCode" label={t('system.numberRules.ruleCode')}>
-              <Input disabled />
-            </Form.Item>
-            <Form.Item name="ruleName" label={t('system.numberRules.ruleName')}>
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
+              disabled
+            />
+            <ProFormText
+              name="ruleCode"
+              label={t('system.numberRules.ruleCode')}
+              disabled
+            />
+            <ProFormText
+              name="ruleName"
+              label={t('system.numberRules.ruleName')}
+              disabled
+            />
+            <ProFormText
               name="renamePattern"
               label={t('system.numberRules.renamePattern')}
               required
-            >
-              <Input
-                placeholder={t('system.numberRules.renamePatternPlaceholder')}
-              />
-            </Form.Item>
-            <Form.Item name="status" label={t('common.status')}>
-              <Select options={NUMBER_RULE_STATUS_OPTIONS} />
-            </Form.Item>
-            <Form.Item name="remark" label={t('common.remark')}>
-              <Input.TextArea rows={2} />
-            </Form.Item>
+              placeholder={t('system.numberRules.renamePatternPlaceholder')}
+            />
+            <ProFormSelect
+              name="status"
+              label={t('common.status')}
+              options={NUMBER_RULE_STATUS_OPTIONS}
+            />
+            <ProFormTextArea
+              name="remark"
+              label={t('common.remark')}
+              fieldProps={{ rows: 2 }}
+            />
             <Typography.Text type="secondary">
               {t('system.numberRules.sampleFileNamePrefix')}
               {uploadRulePreview || '--'}
             </Typography.Text>
           </>
         )}
-      </Form>
+      </ProForm>
     </FormModal>
   )
 }

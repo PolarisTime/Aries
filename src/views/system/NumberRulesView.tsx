@@ -7,6 +7,7 @@ import {
   saveSystemSetting,
   updateSystemUploadRule,
 } from '@/api/system-settings'
+import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STATUS } from '@/constants/status-constants'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
@@ -41,7 +42,11 @@ const numberRulesInitialState: NumberRulesState = {
   saving: false,
 }
 
-export function NumberRulesView() {
+interface NumberRulesViewProps {
+  embedded?: boolean
+}
+
+export function NumberRulesView({ embedded = false }: NumberRulesViewProps) {
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
@@ -155,7 +160,7 @@ export function NumberRulesView() {
     }
   }
 
-  return (
+  const content = (
     <div className="page-stack settings-section-page">
       {isError ? (
         <SystemSettingsLoadError
@@ -164,6 +169,7 @@ export function NumberRulesView() {
         />
       ) : (
         <NumberRulesTableCard
+          title={embedded ? t('system.numberRules.title') : undefined}
           keyword={keyword}
           statusFilter={statusFilter}
           rows={rows}
@@ -192,5 +198,13 @@ export function NumberRulesView() {
         />
       ) : null}
     </div>
+  )
+
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <AppProPage title={t('system.numberRules.title')}>{content}</AppProPage>
   )
 }

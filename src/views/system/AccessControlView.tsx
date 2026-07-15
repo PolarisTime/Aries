@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { Empty, Tabs, Typography } from 'antd'
+import { Empty, Tabs } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AppProPage } from '@/components/AppProPage'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
@@ -89,12 +90,16 @@ export function AccessControlView() {
 
   if (tabItems.length === 0) {
     return (
-      <div className="page-stack">
+      <AppProPage
+        className="access-control-page"
+        title={t('system.accessControl.title')}
+        description={t('system.accessControl.description')}
+      >
         <Empty
           description={t('system.accessControl.noModules')}
           className="mt-120"
         />
-      </div>
+      </AppProPage>
     )
   }
 
@@ -124,24 +129,22 @@ export function AccessControlView() {
   })()
 
   return (
-    <div className="page-stack settings-tabbed-page access-control-page">
-      <header className="settings-page-header">
-        <Typography.Title level={3}>
-          {t('system.accessControl.title')}
-        </Typography.Title>
-        <Typography.Paragraph type="secondary">
-          {t('system.accessControl.description')}
-        </Typography.Paragraph>
-      </header>
-      <Tabs
-        className="settings-navigation-tabs"
-        activeKey={activeTab}
-        onChange={handleTabChange}
-        items={tabItems}
-        size="large"
-        tabBarStyle={{ marginBottom: 0 }}
-      />
-      <div className="settings-page-content">{activeContent}</div>
-    </div>
+    <AppProPage
+      className="access-control-page"
+      title={t('system.accessControl.title')}
+      description={t('system.accessControl.description')}
+    >
+      <div className="page-stack settings-tabbed-page">
+        <Tabs
+          className="settings-navigation-tabs"
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabItems}
+          size="large"
+          tabBarStyle={{ marginBottom: 0 }}
+        />
+        <div className="settings-page-content">{activeContent}</div>
+      </div>
+    </AppProPage>
   )
 }

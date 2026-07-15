@@ -1,16 +1,11 @@
-import type { FormInstance } from 'antd'
 import {
-  Alert,
-  Button,
-  Checkbox,
-  Form,
-  Input,
-  InputNumber,
-  Radio,
-  Select,
-  Space,
-  Typography,
-} from 'antd'
+  ProForm,
+  ProFormDigit,
+  ProFormSelect,
+  ProFormText,
+} from '@ant-design/pro-components/es/form'
+import type { FormInstance } from 'antd'
+import { Alert, Button, Checkbox, Form, Radio, Space, Typography } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -93,28 +88,30 @@ export function ApiKeyCreateModal({
       width={920}
     >
       {!generatedKey ? (
-        <Form form={form} layout="vertical">
-          <Form.Item name="userId" label={t('system.apiKey.userId')} required>
-            <Select
-              showSearch={{
-                filterOption: (input, option) =>
-                  String(option?.label || '')
-                    .toLowerCase()
-                    .includes(input.toLowerCase()),
-              }}
-              placeholder={t('system.userAccount.searchPlaceholder')}
-              options={userOptions.map((item) => ({
-                label: `${getApiKeyUserDisplayName(item)}${item.mobile ? ` / ${item.mobile}` : ''}`,
-                value: String(item.id || ''),
-              }))}
-            />
-          </Form.Item>
-          <Form.Item name="keyName" label={t('system.apiKey.keyName')} required>
-            <Input
-              placeholder={t('system.apiKey.keyNamePlaceholder')}
-              maxLength={64}
-            />
-          </Form.Item>
+        <ProForm form={form} layout="vertical" submitter={false}>
+          <ProFormSelect
+            name="userId"
+            label={t('system.apiKey.userId')}
+            required
+            showSearch={{
+              filterOption: (input, option) =>
+                String(option?.label || '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase()),
+            }}
+            placeholder={t('system.userAccount.searchPlaceholder')}
+            options={userOptions.map((item) => ({
+              label: `${getApiKeyUserDisplayName(item)}${item.mobile ? ` / ${item.mobile}` : ''}`,
+              value: String(item.id || ''),
+            }))}
+          />
+          <ProFormText
+            name="keyName"
+            label={t('system.apiKey.keyName')}
+            required
+            placeholder={t('system.apiKey.keyNamePlaceholder')}
+            fieldProps={{ maxLength: 64 }}
+          />
           <Form.Item name="presetKey" label={t('system.apiKey.presetTemplate')}>
             <Radio.Group
               className="w-full"
@@ -147,13 +144,13 @@ export function ApiKeyCreateModal({
               </div>
             </Radio.Group>
           </Form.Item>
-          <Form.Item
+          <ProFormSelect
             name="usageScope"
             label={t('system.apiKey.usageScope')}
             required
-          >
-            <Select options={usageScopeOptions} onChange={markCustom} />
-          </Form.Item>
+            options={usageScopeOptions}
+            onChange={markCustom}
+          />
           <Form.Item
             name="allowedResources"
             label={t('system.apiKey.allowedResources')}
@@ -193,14 +190,14 @@ export function ApiKeyCreateModal({
               </Space>
             </Checkbox.Group>
           </Form.Item>
-          <Form.Item name="expireDays" label={t('system.apiKey.expireDays')}>
-            <InputNumber
-              placeholder={t('system.apiKey.expireDaysPlaceholder')}
-              className="w-full"
-              min={1}
-              max={3650}
-            />
-          </Form.Item>
+          <ProFormDigit
+            name="expireDays"
+            label={t('system.apiKey.expireDays')}
+            placeholder={t('system.apiKey.expireDaysPlaceholder')}
+            min={1}
+            max={3650}
+            fieldProps={{ className: 'w-full' }}
+          />
           <div className="text-right">
             <Space>
               <Button onClick={onClose}>{t('common.cancel')}</Button>
@@ -214,7 +211,7 @@ export function ApiKeyCreateModal({
               </Button>
             </Space>
           </div>
-        </Form>
+        </ProForm>
       ) : (
         <>
           <Alert

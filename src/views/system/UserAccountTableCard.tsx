@@ -4,7 +4,9 @@ import {
   EyeOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
-import { Card, Select, Table } from 'antd'
+import type { ProColumns } from '@ant-design/pro-components/es/table'
+import { ProTable } from '@ant-design/pro-components/es/table'
+import { Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
@@ -63,7 +65,7 @@ export function UserAccountTableCard({
   onPageChange,
 }: Props) {
   const { t } = useTranslation()
-  const columns = [
+  const columns: ProColumns<UserAccountRecord>[] = [
     {
       title: t('system.userAccountTable.colOperation'),
       key: 'action',
@@ -118,35 +120,35 @@ export function UserAccountTableCard({
       dataIndex: 'departmentName',
       title: t('system.userAccountTable.colDepartment'),
       width: 140,
-      render: (value: string) => value || '--',
+      render: (_dom, record) => record.departmentName || '--',
     },
     {
       dataIndex: 'mobile',
       title: t('system.userAccountTable.colMobile'),
       width: 140,
-      render: (value: string) => value || '--',
+      render: (_dom, record) => record.mobile || '--',
     },
     {
       dataIndex: 'roleNames',
       title: t('system.userAccountTable.colRoles'),
       width: 220,
-      render: (names: string[]) =>
-        Array.isArray(names) ? names.join('、') : '--',
+      render: (_dom, record) =>
+        Array.isArray(record.roleNames) ? record.roleNames.join('、') : '--',
     },
     {
       dataIndex: 'dataScope',
       title: t('system.userAccountTable.colDataScope'),
       width: 120,
-      render: (value: string) => value || '--',
+      render: (_dom, record) => record.dataScope || '--',
     },
     {
       dataIndex: 'totpEnabled',
       title: t('system.userAccountTable.colTotpStatus'),
       width: 110,
       align: 'center' as const,
-      render: (value: boolean) => (
+      render: (_dom, record) => (
         <StatusTag
-          status={value ? 'enabled' : 'disabled'}
+          status={record.totpEnabled ? 'enabled' : 'disabled'}
           statusMap={{
             enabled: {
               color: getTotpColor(true),
@@ -165,11 +167,14 @@ export function UserAccountTableCard({
       title: t('system.userAccountTable.colStatus'),
       width: 100,
       align: 'center' as const,
-      render: (value: string) => (
+      render: (_dom, record) => (
         <StatusTag
-          status={value}
+          status={record.status}
           statusMap={{
-            [value]: { color: getStatusColor(value), label: value },
+            [record.status]: {
+              color: getStatusColor(record.status),
+              label: record.status,
+            },
           }}
         />
       ),
@@ -178,15 +183,25 @@ export function UserAccountTableCard({
       dataIndex: 'lastLoginDate',
       title: t('system.userAccountTable.colLastLogin'),
       width: 180,
-      render: (value: unknown) => formatDateTime(value, '--'),
+      render: (_dom, record) => formatDateTime(record.lastLoginDate, '--'),
     },
   ]
   return (
-    <Card
-      className="system-list-card"
-      title={t('system.userAccountTable.title')}
-      extra={
+    <ProTable<UserAccountRecord>
+      rowKey="id"
+      columns={columns}
+      dataSource={users}
+      loading={loading}
+      size="middle"
+      scroll={{ x: 1400 }}
+      search={false}
+      options={false}
+      headerTitle={t('system.userAccountTable.title')}
+      cardBordered
+      cardProps={{ className: 'system-list-card' }}
+      toolBarRender={() => [
         <SystemTableToolbar
+          key="user-account-toolbar"
           keyword={keyword}
           keywordPlaceholder={t('system.userAccountTable.searchPlaceholder')}
           onKeywordChange={onKeywordChange}
@@ -202,24 +217,15 @@ export function UserAccountTableCard({
             onChange={onStatusFilterChange}
             options={enabledStatusOptions}
           />
-        </SystemTableToolbar>
-      }
-    >
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={users}
-        loading={loading}
-        size="middle"
-        scroll={{ x: 1400 }}
-        pagination={createPaginationConfig({
-          current: currentPage,
-          pageSize,
-          total: totalElements,
-          onChange: onPageChange,
-          t,
-        })}
-      />
-    </Card>
+        </SystemTableToolbar>,
+      ]}
+      pagination={createPaginationConfig({
+        current: currentPage,
+        pageSize,
+        total: totalElements,
+        onChange: onPageChange,
+        t,
+      })}
+    />
   )
 }

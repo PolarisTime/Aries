@@ -3,9 +3,10 @@ import {
   SafetyCertificateOutlined,
   UserSwitchOutlined,
 } from '@ant-design/icons'
-import { Tabs, Typography } from 'antd'
+import { Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AppProPage } from '@/components/AppProPage'
 import { ApiKeyManagementView } from '@/views/system/ApiKeyManagementView'
 import { SecurityKeyManagementView } from '@/views/system/SecurityKeyManagementView'
 import { SessionManagementView } from '@/views/system/SessionManagementView'
@@ -22,13 +23,17 @@ export function SecurityCenterView(): React.JSX.Element {
         key: 'sessions',
         label: t('system.securityCenter.sessionsTab'),
         icon: <UserSwitchOutlined aria-hidden />,
-        children: <SessionManagementView active={activeKey === 'sessions'} />,
+        children: (
+          <SessionManagementView active={activeKey === 'sessions'} embedded />
+        ),
       },
       {
         key: 'api-keys',
         label: t('system.securityCenter.apiKeysTab'),
         icon: <KeyOutlined aria-hidden />,
-        children: <ApiKeyManagementView active={activeKey === 'api-keys'} />,
+        children: (
+          <ApiKeyManagementView active={activeKey === 'api-keys'} embedded />
+        ),
       },
       {
         key: 'security-keys',
@@ -43,26 +48,24 @@ export function SecurityCenterView(): React.JSX.Element {
   )
 
   return (
-    <div className="page-stack settings-tabbed-page security-center-page">
-      <header className="settings-page-header">
-        <Typography.Title level={3}>
-          {t('system.securityCenter.title')}
-        </Typography.Title>
-        <Typography.Paragraph type="secondary">
-          {t('system.securityCenter.description')}
-        </Typography.Paragraph>
-      </header>
-      <Tabs
-        className="settings-standard-tabs"
-        classNames={{
-          body: 'settings-standard-tabs-body',
-          content: 'settings-standard-tabs-content',
-        }}
-        activeKey={activeKey}
-        items={items}
-        size="large"
-        onChange={(key) => setActiveKey(key as SecurityCenterTabKey)}
-      />
-    </div>
+    <AppProPage
+      className="security-center-page"
+      title={t('system.securityCenter.title')}
+      description={t('system.securityCenter.description')}
+    >
+      <div className="page-stack settings-tabbed-page">
+        <Tabs
+          className="settings-standard-tabs"
+          classNames={{
+            body: 'settings-standard-tabs-body',
+            content: 'settings-standard-tabs-content',
+          }}
+          activeKey={activeKey}
+          items={items}
+          size="large"
+          onChange={(key) => setActiveKey(key as SecurityCenterTabKey)}
+        />
+      </div>
+    </AppProPage>
   )
 }

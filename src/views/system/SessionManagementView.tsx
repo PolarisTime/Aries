@@ -1,14 +1,19 @@
+import { useTranslation } from 'react-i18next'
+import { AppProPage } from '@/components/AppProPage'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { SessionManagementCard } from '@/views/system/SessionManagementCard'
 import { useSessionManagementState } from '@/views/system/useSessionManagementState'
 
 interface SessionManagementViewProps {
   active?: boolean
+  embedded?: boolean
 }
 
 export function SessionManagementView({
   active = true,
+  embedded = false,
 }: SessionManagementViewProps) {
+  const { t } = useTranslation()
   const isPageVisible = usePageVisibility()
   const {
     canEdit,
@@ -27,9 +32,10 @@ export function SessionManagementView({
     totalElements,
   } = useSessionManagementState(active && isPageVisible)
 
-  return (
+  const content = (
     <div className="page-stack">
       <SessionManagementCard
+        title={embedded ? t('system.session.title') : undefined}
         canEdit={canEdit}
         columns={columns}
         currentPage={currentPage}
@@ -53,4 +59,10 @@ export function SessionManagementView({
       />
     </div>
   )
+
+  if (embedded) {
+    return content
+  }
+
+  return <AppProPage title={t('system.session.title')}>{content}</AppProPage>
 }

@@ -1,5 +1,5 @@
+import { ProTable } from '@ant-design/pro-components/es/table'
 import { useNavigate } from '@tanstack/react-router'
-import { Card, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type {
   ApiKeyActionOption,
@@ -12,6 +12,7 @@ import { ApiKeyListToolbar } from '@/views/system/ApiKeyListToolbar'
 import { buildApiKeyListColumns } from '@/views/system/api-key-list-columns'
 
 interface Props {
+  title?: string
   keyword: string
   filterUserId?: string
   statusFilter?: string
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export function ApiKeyListCard({
+  title,
   keyword,
   filterUserId,
   statusFilter,
@@ -77,11 +79,21 @@ export function ApiKeyListCard({
   })
 
   return (
-    <Card
-      className="system-list-card"
-      title={t('system.apiKeyList.title')}
-      extra={
+    <ProTable<ApiKeyRecord>
+      rowKey="id"
+      columns={columns}
+      dataSource={keys}
+      loading={loading}
+      size="middle"
+      scroll={{ x: 1800 }}
+      search={false}
+      options={false}
+      headerTitle={title}
+      cardBordered
+      cardProps={{ className: 'system-list-card' }}
+      toolBarRender={() => [
         <ApiKeyListToolbar
+          key="api-key-toolbar"
           keyword={keyword}
           filterUserId={filterUserId}
           statusFilter={statusFilter}
@@ -96,24 +108,15 @@ export function ApiKeyListCard({
           onUsageScopeFilterChange={onUsageScopeFilterChange}
           onRefresh={onRefresh}
           onCreate={onCreate}
-        />
-      }
-    >
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={keys}
-        loading={loading}
-        size="middle"
-        scroll={{ x: 1800 }}
-        pagination={createPaginationConfig({
-          current: currentPage,
-          pageSize,
-          total: totalElements,
-          onChange: onPageChange,
-          t,
-        })}
-      />
-    </Card>
+        />,
+      ]}
+      pagination={createPaginationConfig({
+        current: currentPage,
+        pageSize,
+        total: totalElements,
+        onChange: onPageChange,
+        t,
+      })}
+    />
   )
 }

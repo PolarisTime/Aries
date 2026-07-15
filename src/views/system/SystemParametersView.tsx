@@ -29,7 +29,7 @@ export function SystemParametersView(): React.JSX.Element {
         key: 'number-rules',
         label: t('system.systemParameters.numberRulesTab'),
         icon: <NumberOutlined aria-hidden />,
-        children: <NumberRulesView />,
+        children: <NumberRulesView embedded />,
       },
       {
         key: 'oss',

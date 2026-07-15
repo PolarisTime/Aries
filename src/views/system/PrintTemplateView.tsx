@@ -1,5 +1,5 @@
-import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppProPage } from '@/components/AppProPage'
 import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModal'
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
@@ -28,41 +28,39 @@ export function PrintTemplateView() {
   }
 
   return (
-    <div className="page-stack settings-standard-page print-template-page">
-      <header className="settings-page-header">
-        <Typography.Title level={3}>
-          {t('system.printTemplate.title')}
-        </Typography.Title>
-        <Typography.Paragraph type="secondary">
-          {t('system.printTemplate.description')}
-        </Typography.Paragraph>
-      </header>
-      <PrintTemplateTableCard
-        selectedBillType={view.selectedBillType}
-        activeTemplateId={view.activeTemplateId}
-        templates={view.templates}
-        loading={view.isLoading}
-        canCreate={view.canCreate}
-        canEdit={view.canEdit}
-        canDelete={view.canDelete}
-        uploadPending={view.uploadPending}
-        onBillTypeChange={view.setSelectedBillType}
-        onRefresh={view.refresh}
-        onCreate={view.openCreate}
-        onPreview={view.openPreview}
-        onEdit={view.openEdit}
-        onCopy={view.handleCopy}
-        onUploadJson={view.handleUploadJson}
-        onDelete={view.handleDelete}
-        onActiveChange={view.setActiveTemplateId}
-      />
-      {view.previewOpen ? (
-        <PrintTemplatePreviewModal
-          open={view.previewOpen}
-          template={view.previewTemplate}
-          onClose={() => view.setPreviewOpen(false)}
+    <AppProPage
+      className="print-template-page"
+      title={t('system.printTemplate.title')}
+      description={t('system.printTemplate.description')}
+    >
+      <div className="page-stack settings-standard-page">
+        <PrintTemplateTableCard
+          selectedBillType={view.selectedBillType}
+          activeTemplateId={view.activeTemplateId}
+          templates={view.templates}
+          loading={view.isLoading}
+          canCreate={view.canCreate}
+          canEdit={view.canEdit}
+          canDelete={view.canDelete}
+          uploadPending={view.uploadPending}
+          onBillTypeChange={view.setSelectedBillType}
+          onRefresh={view.refresh}
+          onCreate={view.openCreate}
+          onPreview={view.openPreview}
+          onEdit={view.openEdit}
+          onCopy={view.handleCopy}
+          onUploadJson={view.handleUploadJson}
+          onDelete={view.handleDelete}
+          onActiveChange={view.setActiveTemplateId}
         />
-      ) : null}
-    </div>
+        {view.previewOpen ? (
+          <PrintTemplatePreviewModal
+            open={view.previewOpen}
+            template={view.previewTemplate}
+            onClose={() => view.setPreviewOpen(false)}
+          />
+        ) : null}
+      </div>
+    </AppProPage>
   )
 }

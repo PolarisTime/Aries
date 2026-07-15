@@ -1,6 +1,6 @@
 import { StopOutlined } from '@ant-design/icons'
+import type { ProColumns } from '@ant-design/pro-components/es/table'
 import { Tooltip, Typography } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
 import type { RefreshTokenRecord } from '@/api/session-management'
 import { StatusTag } from '@/components/StatusTag'
@@ -86,7 +86,7 @@ export function buildSessionTableColumns({
   canEdit,
   onRevoke,
   t,
-}: SessionColumnsOptions): ColumnsType<RefreshTokenRecord> {
+}: SessionColumnsOptions): ProColumns<RefreshTokenRecord>[] {
   return [
     {
       title: t('common.operation'),
@@ -113,7 +113,7 @@ export function buildSessionTableColumns({
       title: t('system.session.tokenId'),
       width: 180,
       ellipsis: true,
-      render: (value: unknown) => renderCompactCopyText(value, 22),
+      render: (_dom, record) => renderCompactCopyText(record.tokenId, 22),
     },
     {
       dataIndex: 'loginName',
@@ -135,25 +135,25 @@ export function buildSessionTableColumns({
       title: t('system.session.deviceInfo'),
       width: 240,
       ellipsis: true,
-      render: (value: unknown) => renderCompactCopyText(value, 42),
+      render: (_dom, record) => renderCompactCopyText(record.deviceInfo, 42),
     },
     {
       dataIndex: 'createdAt',
       title: t('common.createdAt'),
       width: 170,
-      render: (value: unknown) => formatDateTime(value, '--'),
+      render: (_dom, record) => formatDateTime(record.createdAt, '--'),
     },
     {
       dataIndex: 'lastActiveAt',
       title: t('system.session.lastActive'),
       width: 170,
-      render: (value: unknown) => formatDateTime(value, '--'),
+      render: (_dom, record) => formatDateTime(record.lastActiveAt, '--'),
     },
     {
       dataIndex: 'expiresAt',
       title: t('system.session.expiresAt'),
       width: 170,
-      render: (value: unknown) => formatDateTime(value, '--'),
+      render: (_dom, record) => formatDateTime(record.expiresAt, '--'),
     },
     {
       title: t('system.session.onlineStatus'),
@@ -181,13 +181,13 @@ export function buildSessionTableColumns({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value: unknown) => (
+      render: (_dom, record) => (
         <StatusTag
-          status={asString(value) || 'unknown'}
+          status={asString(record.status) || 'unknown'}
           statusMap={{
-            [asString(value) || 'unknown']: {
-              color: getSessionStatusColor(value),
-              label: getSessionStatusLabel(value, t),
+            [asString(record.status) || 'unknown']: {
+              color: getSessionStatusColor(record.status),
+              label: getSessionStatusLabel(record.status, t),
             },
           }}
         />

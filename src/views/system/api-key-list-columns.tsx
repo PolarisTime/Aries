@@ -1,5 +1,5 @@
 import { EyeOutlined, StopOutlined } from '@ant-design/icons'
-import type { TableColumnsType } from 'antd'
+import type { ProColumns } from '@ant-design/pro-components/es/table'
 import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import type {
@@ -58,7 +58,7 @@ export function buildApiKeyListColumns({
   resourceOptions,
   onView,
   onRevoke,
-}: Options): TableColumnsType<ApiKeyRecord> {
+}: Options): ProColumns<ApiKeyRecord>[] {
   return [
     {
       title: i18next.t('system.apiKeyColumns.colOperation'),
@@ -101,7 +101,8 @@ export function buildApiKeyListColumns({
       title: i18next.t('system.apiKeyColumns.colAllowedResources'),
       width: 150,
       ellipsis: true,
-      render: (value: string[]) => {
+      render: (_dom, record) => {
+        const value = record.allowedResources
         const fullText = getApiKeyAllowedResourceText(value, resourceOptions)
         return renderApiKeyScopeSummary({
           count: value?.length || 0,
@@ -116,7 +117,8 @@ export function buildApiKeyListColumns({
       title: i18next.t('system.apiKeyColumns.colAllowedActions'),
       width: 140,
       ellipsis: true,
-      render: (value: string[]) => {
+      render: (_dom, record) => {
+        const value = record.allowedActions
         const fullText = getApiKeyAllowedActionText(value, actionOptions)
         return renderApiKeyScopeSummary({
           count: value?.length || 0,
@@ -150,34 +152,37 @@ export function buildApiKeyListColumns({
       dataIndex: 'createdAt',
       title: i18next.t('system.apiKeyColumns.colCreatedAt'),
       width: 180,
-      render: (value: unknown) => formatDateTime(value, '--'),
+      render: (_dom, record) => formatDateTime(record.createdAt, '--'),
     },
     {
       dataIndex: 'expiresAt',
       title: i18next.t('system.apiKeyColumns.colExpiresAt'),
       width: 180,
-      render: (value: unknown) =>
-        value == null || value === ''
+      render: (_dom, record) =>
+        record.expiresAt == null || record.expiresAt === ''
           ? i18next.t('system.apiKeyColumns.neverExpires')
-          : formatDateTime(value, '--'),
+          : formatDateTime(record.expiresAt, '--'),
     },
     {
       dataIndex: 'lastUsedAt',
       title: i18next.t('system.apiKeyColumns.colLastUsed'),
       width: 180,
-      render: (value: unknown) => formatDateTime(value, '--'),
+      render: (_dom, record) => formatDateTime(record.lastUsedAt, '--'),
     },
     {
       dataIndex: 'status',
       title: i18next.t('system.apiKeyColumns.colStatus'),
       width: 110,
       align: 'center',
-      render: (value: string) => (
+      render: (_dom, record) => (
         <StatusTag
-          status={value}
+          status={record.status}
           statusMap={{
             ...API_KEY_STATUS_MAP,
-            [value]: { color: getApiKeyStatusColor(value), label: value },
+            [record.status]: {
+              color: getApiKeyStatusColor(record.status),
+              label: record.status,
+            },
           }}
         />
       ),

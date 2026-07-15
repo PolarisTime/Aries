@@ -1,6 +1,7 @@
 import { EditOutlined } from '@ant-design/icons'
-import { Card, Select, Table, Typography } from 'antd'
-import type { TableProps } from 'antd/es/table'
+import type { ProColumns } from '@ant-design/pro-components/es/table'
+import { ProTable } from '@ant-design/pro-components/es/table'
+import { Card, Select, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
@@ -16,6 +17,7 @@ import {
 } from '@/views/system/number-rules-view-utils'
 
 interface Props {
+  title?: string
   keyword: string
   statusFilter?: string
   rows: ModuleRecord[]
@@ -46,6 +48,7 @@ function NumberRuleStatusTag({ value }: { value: string }) {
 }
 
 export function NumberRulesTableCard({
+  title,
   keyword,
   statusFilter,
   numberRuleRows,
@@ -75,7 +78,7 @@ export function NumberRulesTableCard({
       ]}
     />
   )
-  const numberRuleColumns: TableProps<ModuleRecord>['columns'] = [
+  const numberRuleColumns: ProColumns<ModuleRecord>[] = [
     {
       title: t('common.operation'),
       key: 'action',
@@ -127,10 +130,12 @@ export function NumberRulesTableCard({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value) => <NumberRuleStatusTag value={asString(value)} />,
+      render: (_dom, record) => (
+        <NumberRuleStatusTag value={asString(record.status)} />
+      ),
     },
   ]
-  const uploadRuleColumns: TableProps<ModuleRecord>['columns'] = [
+  const uploadRuleColumns: ProColumns<ModuleRecord>[] = [
     {
       title: t('common.operation'),
       key: 'action',
@@ -163,13 +168,15 @@ export function NumberRulesTableCard({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value) => <NumberRuleStatusTag value={asString(value)} />,
+      render: (_dom, record) => (
+        <NumberRuleStatusTag value={asString(record.status)} />
+      ),
     },
   ]
   return (
     <Card
       className="system-list-card"
-      title={t('system.numberRules.title')}
+      title={title}
       extra={
         <SystemTableToolbar
           keyword={keyword}
@@ -192,12 +199,16 @@ export function NumberRulesTableCard({
       <Typography.Title level={5}>
         {t('system.numberRules.documentRules')}
       </Typography.Title>
-      <Table
+      <ProTable<ModuleRecord>
         rowKey="id"
         columns={numberRuleColumns}
         dataSource={numberRuleRows}
         loading={loading}
         size="small"
+        search={false}
+        options={false}
+        cardProps={false}
+        toolBarRender={false}
         pagination={false}
         scroll={{ x: 1300 }}
         className="mb-6"
@@ -205,12 +216,16 @@ export function NumberRulesTableCard({
       <Typography.Title level={5}>
         {t('system.numberRules.uploadRules')}
       </Typography.Title>
-      <Table
+      <ProTable<ModuleRecord>
         rowKey="id"
         columns={uploadRuleColumns}
         dataSource={uploadRuleRows}
         loading={loading}
         size="small"
+        search={false}
+        options={false}
+        cardProps={false}
+        toolBarRender={false}
         pagination={false}
         scroll={{ x: 970 }}
       />
