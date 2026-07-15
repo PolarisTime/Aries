@@ -39,10 +39,6 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
     labelKey: 'modules.nextModule.createPurchaseInbound',
     path: '/purchase-inbound',
   },
-  'sales-order': {
-    labelKey: 'modules.nextModule.createFreightBill',
-    path: '/freight-bill',
-  },
 }
 
 const FINANCE_DOCUMENT_MODULES = new Set([

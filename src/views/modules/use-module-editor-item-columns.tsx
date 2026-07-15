@@ -228,6 +228,8 @@ export function useModuleEditorItemColumns({
     if (canManageItems) {
       cols.push(
         ...buildModuleEditorManagementColumns({
+          draggable:
+            moduleKey !== 'freight-statement' && moduleKey !== 'freight-bill',
           items,
           selectedItemIds,
           onSelectAll,

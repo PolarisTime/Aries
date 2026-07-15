@@ -5,6 +5,7 @@ import {
   getSettlementCompanyOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -57,8 +58,8 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'select',
         options: [
           {
-            label: i18next.t('modules.pages.freightOperations.unaudited'),
-            value: '未审核',
+            label: '草稿',
+            value: '草稿',
           },
           {
             label: i18next.t('modules.pages.freightOperations.audited'),
@@ -100,16 +101,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.freightOperations.vehiclePlate'),
         dataIndex: 'vehiclePlate',
         width: 120,
-      },
-      {
-        title: i18next.t('modules.pages.freightOperations.customerName'),
-        dataIndex: 'customerName',
-        width: 140,
-      },
-      {
-        title: i18next.t('modules.pages.freightOperations.projectName'),
-        dataIndex: 'projectName',
-        width: 180,
       },
       {
         title: SETTLEMENT_COMPANY_LABEL,
@@ -158,8 +149,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     defaultHiddenColumnKeys: [
       'carrierCode',
-      'customerName',
-      'projectName',
       'settlementCompanyName',
       'unitPrice',
       'remark',
@@ -184,14 +173,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
         key: 'vehiclePlate',
-      },
-      {
-        label: i18next.t('modules.pages.freightOperations.customerName'),
-        key: 'customerName',
-      },
-      {
-        label: i18next.t('modules.pages.freightOperations.projectName'),
-        key: 'projectName',
       },
       {
         label: i18next.t('modules.pages.freightOperations.documentDate'),
@@ -251,6 +232,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: SETTLEMENT_COMPANY_LABEL,
         type: 'select',
         options: getSettlementCompanyOptions,
+        disabled: true,
         row: 1,
       },
       {
@@ -264,20 +246,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         key: 'billTime',
         label: i18next.t('modules.pages.freightOperations.documentDate'),
         type: 'date',
-        required: true,
-        row: 2,
-      },
-      {
-        key: 'customerName',
-        label: i18next.t('modules.pages.freightOperations.customerName'),
-        type: 'input',
-        required: true,
-        row: 2,
-      },
-      {
-        key: 'projectName',
-        label: i18next.t('modules.pages.freightOperations.projectName'),
-        type: 'input',
         required: true,
         row: 2,
       },
@@ -301,13 +269,12 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     saveFields: {
       scalar: [
         'billNo',
+        'carrierId',
         'carrierCode',
         'carrierName',
         'settlementCompanyId',
         'settlementCompanyName',
         'vehiclePlate',
-        'customerName',
-        'projectName',
         'billTime',
         'unitPrice',
         'status',
@@ -315,9 +282,12 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       ],
       lineItem: [
         'sourceNo',
+        'sourceSalesOrderItemId',
         'settlementCompanyId',
         'settlementCompanyName',
+        'customerId',
         'customerName',
+        'projectId',
         'projectName',
         'materialId',
         'materialCode',
@@ -337,10 +307,46 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         'warehouseName',
       ],
     },
+    parentImport: {
+      parentModuleKey: 'sales-order',
+      label: '销售订单',
+      parentFieldKey: 'sourceOrderNos',
+      parentDisplayFieldKey: 'orderNo',
+      buttonText: '选择销售订单导入全部明细',
+      candidateQueryType: 'freight-sales-order-import',
+      allowMultipleSelection: true,
+      replaceUnlinkedItemsOnFirstImport: true,
+      enforceUniqueRelation: true,
+      requiredSourceItemIdField: 'sourceSalesOrderItemId',
+      buildParentFilters: (currentRecord) => ({
+        currentRecordId: currentRecord.id || undefined,
+      }),
+      validateBeforeOpen: (currentRecord) =>
+        asString(currentRecord.carrierName).trim()
+          ? null
+          : '请先选择物流商，再选择销售订单',
+      validateParentImport: ({ parentRecord }) => {
+        const allowedStatuses = new Set(['已审核', '交付核定', '完成销售'])
+        return allowedStatuses.has(asString(parentRecord.status).trim())
+          ? null
+          : '只能导入已审核、交付核定或完成销售的销售订单'
+      },
+      transformItems: (parentRecord) => {
+        const sourceNo = asString(parentRecord.orderNo).trim()
+        return (
+          Array.isArray(parentRecord.items) ? parentRecord.items : []
+        ).map((item, index) => ({
+          ...item,
+          id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
+          sourceNo,
+          sourceSalesOrderItemId: item.id,
+        }))
+      },
+    },
     itemColumns: compactFreightItemColumns,
     data: [],
     buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
     statusMap,
-    rowHighlightStatuses: ['未审核'],
+    rowHighlightStatuses: ['草稿'],
   },
 }

@@ -42,6 +42,7 @@ interface EditableRenderOptions {
 }
 
 interface ManagementColumnOptions {
+  draggable?: boolean
   items: ModuleLineItem[]
   selectedItemIds: string[]
   onSelectAll: (checked: boolean) => void
@@ -323,6 +324,7 @@ function buildEditableColumnRender({
 }
 
 export function buildModuleEditorManagementColumns({
+  draggable = true,
   items,
   selectedItemIds,
   onSelectAll,
@@ -362,13 +364,19 @@ export function buildModuleEditorManagementColumns({
       align: 'center',
       render: (_: unknown, record: ModuleLineItem, index: number) => (
         <span
-          draggable
-          onDragStart={(event) => onDragStart(record.id, event)}
-          onDragOver={(event) => onDragOver(record.id, event)}
-          onDragEnd={onDragEnd}
-          className="cursor-grab"
+          draggable={draggable}
+          onDragStart={
+            draggable ? (event) => onDragStart(record.id, event) : undefined
+          }
+          onDragOver={
+            draggable ? (event) => onDragOver(record.id, event) : undefined
+          }
+          onDragEnd={draggable ? onDragEnd : undefined}
+          className={draggable ? 'cursor-grab' : undefined}
         >
-          <MenuOutlined className="mr-4 opacity-45 text-xs" />
+          {draggable ? (
+            <MenuOutlined className="mr-4 opacity-45 text-xs" />
+          ) : null}
           {index + 1}
         </span>
       ),

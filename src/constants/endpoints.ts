@@ -112,6 +112,7 @@ export const ENDPOINTS = {
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',
+  FREIGHT_BILL_SALES_ORDER_CANDIDATES: '/freight-bills/sales-order-candidates',
   // Departments (sub-resource option lists → plural collection)
   DEPARTMENTS_OPTIONS: '/departments/options',
 

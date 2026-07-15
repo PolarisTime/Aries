@@ -101,6 +101,19 @@ export function filterImportableParentRecords(
       return hasImportableQuantity(parentModuleKey, record)
     }
     if (
+      candidateQueryType === 'freight-sales-order-import' &&
+      parentModuleKey === 'sales-order'
+    ) {
+      const status = asString(record.status).trim()
+      return (
+        (status === AUDITED_STATUS ||
+          status === '交付核定' ||
+          status === SALES_COMPLETED_STATUS) &&
+        Array.isArray(record.items) &&
+        record.items.length > 0
+      )
+    }
+    if (
       candidateStatementModuleKey === 'customer-statement' &&
       parentModuleKey === 'sales-order'
     ) {

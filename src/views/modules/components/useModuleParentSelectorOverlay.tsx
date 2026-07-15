@@ -5,6 +5,7 @@ import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
+import { listFreightSalesOrderCandidatePage } from '@/api/freight-bill-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
 import {
   listPurchaseOrderImportCandidatePage,
@@ -432,6 +433,9 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'sales-order-outbound-import') {
     return 'sales-order-outbound-import'
   }
+  if (candidateQueryType === 'freight-sales-order-import') {
+    return 'freight-sales-order-import'
+  }
   return candidateStatementModuleKey || parentModuleKey
 }
 
@@ -684,6 +688,13 @@ export function useModuleParentSelectorOverlay({
       if (candidateQueryType === 'sales-order-outbound-import') {
         return listSalesOrderOutboundImportCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      if (candidateQueryType === 'freight-sales-order-import') {
+        return listFreightSalesOrderCandidatePage(
+          effectiveSubmittedFilters,
           Math.max(page - 1, 0),
           pageSize,
         )

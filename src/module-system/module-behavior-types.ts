@@ -35,6 +35,7 @@ export interface ModuleBehaviorConfig {
   readonlyEditorFields?: string[]
   parentImportedEditableFields?: string[]
   parentImportedItemEditableColumns?: string[]
+  lockParentImportOnlyWhenPersisted?: boolean
   clearLineItemsOnFieldChange?: string[]
   clearEditorFieldsOnFieldChange?: Record<string, string[]>
   resolveReadonlyEditorFields?: (record: ModuleRecord) => string[]
@@ -50,7 +51,6 @@ export interface ModuleBehaviorConfig {
   lineItemTrimStrategy?: 'purchaseOrderBlank'
   supportsParentImport?: boolean
   supportsStatements?: boolean
-  supportsFreightPickup?: boolean
   supportsMaterialImport?: boolean
   statementLinkType?: 'supplier' | 'customer' | 'freight'
   normalizeDraftRecord?: (

@@ -109,6 +109,51 @@ export async function saveBusinessModule(
   }
 }
 
+export async function saveAndAuditBusinessModule(
+  moduleKey: string,
+  record: ModuleRecord,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  if (endpointConfig.readOnly) {
+    throw new Error('当前模块不支持保存并审核')
+  }
+
+  const payload = await serializeBusinessRecordForSave(moduleKey, record)
+  const preallocatedId =
+    typeof record._preallocatedId === 'string'
+      ? record._preallocatedId.trim()
+      : ''
+  const hasId = Boolean(record.id)
+  const response = assertApiSuccess(
+    hasId
+      ? await http.put<ApiResponse<RawApiRecord>>(
+          `${endpointConfig.path}/${encodeURIComponent(String(record.id))}/save-and-audit`,
+          payload,
+          withIdempotencyKey(),
+        )
+      : await http.post<ApiResponse<RawApiRecord>>(
+          `${endpointConfig.path}/save-and-audit`,
+          payload,
+          withIdempotencyKey(
+            preallocatedId
+              ? {
+                  headers: {
+                    'X-Business-Module-Key': moduleKey,
+                    'X-Preallocated-Id': preallocatedId,
+                  },
+                }
+              : undefined,
+          ),
+        ),
+  )
+
+  return {
+    code: response.code,
+    message: response.message,
+    data: response.data ? normalizeRecord(response.data) : undefined,
+  }
+}
+
 export async function deleteBusinessModule(moduleKey: string, id: string) {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {

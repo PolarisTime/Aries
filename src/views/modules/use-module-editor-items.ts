@@ -30,12 +30,41 @@ export function useModuleEditorItems({
     handleDragStart,
     handleSelectAll,
     handleSelectItem,
-    removeSelectedItems,
+    removeSelectedItems: removeSelectedItemsDirectly,
     selectedItemIds,
   } = useModuleEditorItemInteractions({
     items,
     setItems,
   })
+  const removeSelectedItems = () => {
+    if (moduleKey !== 'freight-statement' && moduleKey !== 'freight-bill') {
+      removeSelectedItemsDirectly()
+      return
+    }
+    const selectedIds = new Set(selectedItemIds)
+    const sourceGroupKey = (item: ModuleLineItem) => {
+      if (moduleKey === 'freight-statement') {
+        return item.sourceFreightBillId == null
+          ? ''
+          : String(item.sourceFreightBillId)
+      }
+      return String(item._parentRelationId || item.sourceNo || '')
+    }
+    const selectedSourceIds = new Set(
+      items
+        .filter((item) => selectedIds.has(item.id))
+        .map(sourceGroupKey)
+        .filter(Boolean),
+    )
+    setItems((current) =>
+      current.filter((item) => {
+        if (selectedIds.has(item.id)) return false
+        const groupKey = sourceGroupKey(item)
+        return !groupKey || !selectedSourceIds.has(groupKey)
+      }),
+    )
+    clearSelectedItems()
+  }
   const {
     itemColumns,
     itemColumnOrder,

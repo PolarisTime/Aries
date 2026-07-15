@@ -74,6 +74,7 @@ export interface ModuleParentImportDefinition {
   buttonText?: string
   enforceUniqueRelation?: boolean
   allowMultipleSelection?: boolean
+  replaceUnlinkedItemsOnFirstImport?: boolean
   candidateStatementModuleKey?: 'customer-statement' | 'freight-statement'
   buildParentFilters?: (currentRecord: ModuleRecord) => Record<string, unknown>
   validateBeforeOpen?: (currentRecord: ModuleRecord) => string | null
@@ -82,6 +83,7 @@ export interface ModuleParentImportDefinition {
     | 'purchase-order-import'
     | 'purchase-prepayment'
     | 'sales-order-purchase-source'
+    | 'freight-sales-order-import'
     | 'freight-bill-import'
     | 'sales-order-outbound-import'
   candidateUsage?: 'purchase-inbound' | 'sales-order'

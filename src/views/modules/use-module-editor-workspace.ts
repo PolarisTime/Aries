@@ -13,6 +13,7 @@ import {
   generateBusinessPrimaryNo,
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
+  saveAndAuditBusinessModule,
   saveBusinessModule,
   updateBusinessModuleStatus,
 } from '@/api/business'
@@ -862,9 +863,15 @@ export function useModuleEditorWorkspace({
         }
       }
 
-      const savedResult = await saveBusinessModule(moduleKey, draftRecord)
+      const usesAtomicSaveAndAudit =
+        audit &&
+        editorAuditTarget != null &&
+        (moduleKey === 'freight-bill' || moduleKey === 'freight-statement')
+      const savedResult = usesAtomicSaveAndAudit
+        ? await saveAndAuditBusinessModule(moduleKey, draftRecord)
+        : await saveBusinessModule(moduleKey, draftRecord)
       let savedRecord = savedResult.data
-      if (audit && editorAuditTarget) {
+      if (audit && editorAuditTarget && !usesAtomicSaveAndAudit) {
         const savedId = String(savedRecord?.id || draftRecord.id || '').trim()
         if (!savedId) {
           throw new Error('保存成功但未返回单据 ID，无法完成审核')

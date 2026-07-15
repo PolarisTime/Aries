@@ -5,11 +5,7 @@ import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import {
-  AUDIT_STATUS_LABEL,
-  CARRIER_NAME_LABEL,
-  SIGN_STATUS_LABEL,
-} from '../shared/filter-labels'
+import { AUDIT_STATUS_LABEL, CARRIER_NAME_LABEL } from '../shared/filter-labels'
 import {
   SETTLEMENT_COMPANY_LABEL,
   validateSameSettlementCompany,
@@ -63,27 +59,12 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: [
         {
-          label: i18next.t('modules.pages.freightStatement.pendingAudit'),
-          value: '待审核',
+          label: '草稿',
+          value: '草稿',
         },
         {
           label: i18next.t('modules.pages.freightStatement.audited'),
           value: '已审核',
-        },
-      ],
-    },
-    {
-      key: 'signStatus',
-      label: SIGN_STATUS_LABEL,
-      type: 'select',
-      options: [
-        {
-          label: i18next.t('modules.pages.freightStatement.unsigned'),
-          value: '未签署',
-        },
-        {
-          label: i18next.t('modules.pages.freightStatement.signed'),
-          value: '已签署',
         },
       ],
     },
@@ -162,13 +143,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
     {
-      title: i18next.t('modules.pages.freightStatement.signStatus'),
-      dataIndex: 'signStatus',
-      width: 110,
-      type: 'status',
-      align: 'center',
-    },
-    {
       title: i18next.t('modules.columns.remark'),
       dataIndex: 'remark',
       width: 180,
@@ -223,11 +197,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'status',
     },
     {
-      label: i18next.t('modules.pages.freightStatement.signStatus'),
-      key: 'signStatus',
-      type: 'status',
-    },
-    {
       label: i18next.t('modules.pages.freightStatement.attachment'),
       key: 'attachment',
     },
@@ -251,6 +220,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       required: true,
       options: getCarrierEntityOptions,
       masterOptionRequirements: { carriers: true },
+      disabled: true,
       row: 1,
     },
     {
@@ -265,6 +235,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: SETTLEMENT_COMPANY_LABEL,
       type: 'select',
       options: getSettlementCompanyOptions,
+      disabled: true,
       row: 1,
     },
     {
@@ -272,6 +243,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.freightStatement.startDate'),
       type: 'date',
       required: true,
+      disabled: true,
       row: 1,
     },
     {
@@ -279,6 +251,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.freightStatement.endDate'),
       type: 'date',
       required: true,
+      disabled: true,
       row: 1,
     },
     {
@@ -289,6 +262,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       min: 0,
       precision: INTERNAL_WEIGHT_PRECISION,
       defaultValue: 0,
+      disabled: true,
       row: 2,
     },
     {
@@ -299,38 +273,23 @@ export const freightStatementPageConfig: ModulePageConfig = {
       min: 0,
       precision: 2,
       defaultValue: 0,
+      disabled: true,
       row: 2,
     },
     {
       key: 'status',
       label: i18next.t('modules.pages.freightStatement.auditStatus'),
       type: 'select',
-      defaultValue: '待审核',
+      defaultValue: '草稿',
+      disabled: true,
       options: [
         {
-          label: i18next.t('modules.pages.freightStatement.pendingAudit'),
-          value: '待审核',
+          label: '草稿',
+          value: '草稿',
         },
         {
           label: i18next.t('modules.pages.freightStatement.audited'),
           value: '已审核',
-        },
-      ],
-      row: 2,
-    },
-    {
-      key: 'signStatus',
-      label: i18next.t('modules.pages.freightStatement.signStatus'),
-      type: 'select',
-      defaultValue: '未签署',
-      options: [
-        {
-          label: i18next.t('modules.pages.freightStatement.unsigned'),
-          value: '未签署',
-        },
-        {
-          label: i18next.t('modules.pages.freightStatement.signed'),
-          value: '已签署',
         },
       ],
       row: 2,
@@ -346,7 +305,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
   saveFields: {
     scalar: [
       'statementNo',
-      'sourceBillNos',
       'carrierId',
       'carrierCode',
       'carrierName',
@@ -359,7 +317,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
       'paidAmount',
       'unpaidAmount',
       'status',
-      'signStatus',
       'attachment',
       'remark',
     ],
@@ -406,10 +363,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
       settlementCompanyId: currentRecord.settlementCompanyId,
       status: '已审核',
     }),
-    validateBeforeOpen: (currentRecord) =>
-      entityIdOf(currentRecord.carrierId, 'carrierId')
-        ? null
-        : '请先选择物流商，再选择物流单',
     mapParentToDraft: (parentRecord) => ({
       carrierId: entityIdOf(parentRecord.carrierId, 'carrierId'),
       carrierCode: asString(parentRecord.carrierCode).trim(),
@@ -419,8 +372,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       startDate: parentRecord.billTime || '',
       endDate: parentRecord.billTime || '',
       paidAmount: 0,
-      status: '待审核',
-      signStatus: '未签署',
+      status: '草稿',
     }),
     validateParentImport: ({ currentRecord, parentRecord }) => {
       if (asString(parentRecord.status).trim() !== '已审核') {
@@ -434,14 +386,16 @@ export const freightStatementPageConfig: ModulePageConfig = {
         parentRecord.carrierId,
         'parentRecord.carrierId',
       )
-      if (!currentCarrierId || currentCarrierId !== parentCarrierId) {
+      if (currentCarrierId && currentCarrierId !== parentCarrierId) {
         return '只能选择同一物流商的物流单生成物流对账单'
       }
-      const settlementCompanyError = validateSameSettlementCompany(
-        currentRecord,
-        parentRecord,
-        '只能选择同一结算主体的物流单生成物流对账单',
-      )
+      const settlementCompanyError = currentRecord.settlementCompanyId
+        ? validateSameSettlementCompany(
+            currentRecord,
+            parentRecord,
+            '只能选择同一结算主体的物流单生成物流对账单',
+          )
+        : null
       if (settlementCompanyError) {
         return settlementCompanyError
       }
@@ -480,5 +434,5 @@ export const freightStatementPageConfig: ModulePageConfig = {
   buildOverview: (rows) =>
     buildStatementOverview(rows, 'totalFreight', 'paidAmount', 'unpaidAmount'),
   statusMap,
-  rowHighlightStatuses: ['待审核', '未签署'],
+  rowHighlightStatuses: ['草稿'],
 }

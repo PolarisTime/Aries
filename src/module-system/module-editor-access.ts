@@ -122,9 +122,13 @@ export function isEditorFieldDisabledForModule(
     moduleKey,
     'parentImportedEditableFields',
   )
+  const parentImportLockApplies =
+    getBehaviorValue(moduleKey, 'lockParentImportOnlyWhenPersisted') !== true ||
+    Boolean(record?.id)
   if (
     effectiveParentFieldKey &&
     record &&
+    parentImportLockApplies &&
     parentImportedEditableFields?.length &&
     asString(record[effectiveParentFieldKey]).trim()
   ) {
@@ -242,6 +246,13 @@ export function isParentImportedEditorLocked(
 ) {
   const effectiveParentFieldKey = resolveParentImportFieldKey(parentFieldKey)
   if (!hasParentImportValue(record, effectiveParentFieldKey)) {
+    return false
+  }
+
+  if (
+    getBehaviorValue(moduleKey, 'lockParentImportOnlyWhenPersisted') === true &&
+    !record?.id
+  ) {
     return false
   }
 

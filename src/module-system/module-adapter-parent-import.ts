@@ -130,9 +130,16 @@ export function buildParentImportState(options: {
   const parentNo = String(
     asString(parentRecord[parentImportConfig.parentDisplayFieldKey]),
   )
-  const effectiveCurrentItems = currentItems.filter(
+  const normalizedCurrentItems = currentItems.filter(
     (item) => !isEmptyDraftLineItem(item),
   )
+  const replaceUnlinkedItems =
+    parentImportConfig.replaceUnlinkedItemsOnFirstImport === true &&
+    currentParentNos.length === 0 &&
+    normalizedCurrentItems.every((item) => !getSourceParentItemId(item))
+  const effectiveCurrentItems = replaceUnlinkedItems
+    ? []
+    : normalizedCurrentItems
   const hasPersistedRelationIds = effectiveCurrentItems.some((item) =>
     Boolean(resolvePersistedParentRelationId(item)),
   )

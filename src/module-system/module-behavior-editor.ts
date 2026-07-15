@@ -443,12 +443,70 @@ registerModuleBehavior('purchase-order', {
 })
 
 registerModuleBehavior('freight-bill', {
+  defaultDraftValues: () => ({ billTime: currentDate() }),
   allowsManualLineItems: false,
-  readonlyLineItems: true,
+  lockParentImportOnlyWhenPersisted: true,
+  readonlyItemColumns: [
+    'sourceNo',
+    'materialCode',
+    'materialName',
+    'spec',
+    'material',
+    'customerName',
+    'projectName',
+    'brand',
+    'category',
+    'length',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'piecesPerBundle',
+    'batchNo',
+    'weightTon',
+    'warehouseName',
+  ],
+  parentImportedEditableFields: [
+    'vehiclePlate',
+    'billTime',
+    'unitPrice',
+    'remark',
+  ],
+  resolveReadonlyEditorFields(record) {
+    if (record.id && !asString(record.sourceOrderNos).trim()) {
+      return [
+        'carrierName',
+        'carrierCode',
+        'settlementCompanyId',
+        'vehiclePlate',
+        'billTime',
+        'unitPrice',
+        'remark',
+      ]
+    }
+    return []
+  },
 })
 registerModuleBehavior('freight-statement', {
   allowsManualLineItems: false,
-  readonlyLineItems: true,
+  readonlyItemColumns: [
+    'sourceNo',
+    'materialCode',
+    'materialName',
+    'spec',
+    'material',
+    'customerName',
+    'projectName',
+    'brand',
+    'category',
+    'length',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'piecesPerBundle',
+    'batchNo',
+    'weightTon',
+    'warehouseName',
+  ],
 })
 registerModuleBehavior('customer-statement', {
   allowsManualLineItems: false,
@@ -467,7 +525,6 @@ registerModuleBehavior('freight-bill', {
   statementLinkType: 'freight',
 })
 
-registerModuleBehavior('sales-order', { supportsFreightPickup: true })
 registerModuleBehavior('material', { supportsMaterialImport: true })
 
 registerModuleBehavior('department', { isSettingsModule: true })

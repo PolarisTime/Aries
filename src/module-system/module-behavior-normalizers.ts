@@ -5,39 +5,20 @@ import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 registerModuleBehavior('freight-bill', {
+  normalizeEditorRecord(record) {
+    const sourceOrderNos = collectUniqueSourceNos(
+      (Array.isArray(record.items) ? record.items : []).filter(
+        (item) => item.sourceSalesOrderItemId != null,
+      ),
+    )
+    return { ...record, sourceOrderNos }
+  },
   normalizeDraftRecord(record, items, ctx) {
-    const firstSourceItem = items.find((item) => asString(item.sourceNo).trim())
-    const customerNames = Array.from(
-      new Set(
-        items.flatMap((item) => {
-          const name = asString(item.customerName).trim()
-          return name ? [name] : []
-        }),
-      ),
+    const sourceNos = collectUniqueSourceNos(
+      items.filter((item) => item.sourceSalesOrderItemId != null),
     )
-    const projectNames = Array.from(
-      new Set(
-        items.flatMap((item) => {
-          const name = asString(item.projectName).trim()
-          return name ? [name] : []
-        }),
-      ),
-    )
-    const sourceNos = collectUniqueSourceNos(items)
     if (sourceNos) {
-      record.outboundNo = sourceNos
-    } else if (!record.outboundNo && firstSourceItem) {
-      record.outboundNo = firstSourceItem.sourceNo
-    }
-    if (customerNames.length > 1) {
-      record.customerName = '多客户'
-    } else if (customerNames.length === 1) {
-      record.customerName = customerNames[0]
-    }
-    if (projectNames.length > 1) {
-      record.projectName = '多项目'
-    } else if (projectNames.length === 1) {
-      record.projectName = projectNames[0]
+      record.sourceOrderNos = sourceNos
     }
     record.totalWeight = Number(
       ctx.sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
@@ -51,6 +32,14 @@ registerModuleBehavior('freight-bill', {
 })
 
 registerModuleBehavior('freight-statement', {
+  normalizeEditorRecord(record) {
+    const sourceBillNos = collectUniqueSourceNos(
+      (Array.isArray(record.items) ? record.items : []).filter(
+        (item) => item.sourceFreightBillItemId != null,
+      ),
+    )
+    return { ...record, sourceBillNos }
+  },
   normalizeDraftRecord(record, items, ctx) {
     const sourceBillNos = collectUniqueSourceNos(items)
     if (sourceBillNos) {

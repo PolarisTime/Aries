@@ -30,7 +30,6 @@ export const financeModuleEndpointContracts: Record<
       'carrierName',
       'settlementCompanyId',
       'status',
-      'signStatus',
     ],
     dateRangeMapping: {
       endDate: {
