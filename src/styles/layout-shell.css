@@ -1133,20 +1133,6 @@
   scrollbar-gutter: stable;
 }
 
-.system-parameters-header {
-  flex: 0 0 auto;
-  min-width: 0;
-  padding: 4px 0 8px;
-}
-
-.system-parameters-header > .ant-typography {
-  margin: 0;
-}
-
-.system-parameters-header > .ant-typography + .ant-typography {
-  margin-top: 4px;
-}
-
 .system-parameters-tabs {
   display: flex;
   flex: 1 1 auto;

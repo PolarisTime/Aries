@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
@@ -117,6 +118,14 @@ function shouldKeepInitialHtmlPreload(dep: string) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const gitCommit = resolveGitCommit()
+  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN?.trim()
+  const sentryOrg = process.env.SENTRY_ORG?.trim()
+  const sentryProject = process.env.SENTRY_PROJECT?.trim()
+  const uploadSentrySourceMaps = Boolean(
+    mode === 'production' && sentryAuthToken && sentryOrg && sentryProject,
+  )
+  const sentryRelease = `aries@${appVersion}+${gitCommit}`
 
   return {
     plugins: [
@@ -126,6 +135,20 @@ export default defineConfig(({ mode }) => {
         },
       }),
       tailwindcss(),
+      ...(uploadSentrySourceMaps
+        ? [
+            sentryVitePlugin({
+              authToken: sentryAuthToken,
+              org: sentryOrg,
+              project: sentryProject,
+              release: { name: sentryRelease },
+              sourcemaps: {
+                filesToDeleteAfterUpload: 'dist/**/*.map',
+              },
+              telemetry: false,
+            }),
+          ]
+        : []),
     ],
     resolve: {
       alias: {
@@ -137,7 +160,7 @@ export default defineConfig(({ mode }) => {
       __APP_BUILD_TIME__: JSON.stringify(
         process.env.VITE_APP_BUILD_TIME || formatLocalDateTime(new Date()),
       ),
-      __APP_COMMIT__: JSON.stringify(resolveGitCommit()),
+      __APP_COMMIT__: JSON.stringify(gitCommit),
     },
     server: {
       host: '0.0.0.0',
@@ -172,6 +195,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'esnext',
+      sourcemap: uploadSentrySourceMaps ? 'hidden' : false,
       cssMinify: 'lightningcss',
       chunkSizeWarningLimit: 900,
       modulePreload: {
@@ -256,6 +280,10 @@ export default defineConfig(({ mode }) => {
 
                   if (pkg === 'antd') {
                     return resolveAntdChunkName(moduleId)
+                  }
+
+                  if (pkg === '@ant-design/pro-components') {
+                    return null
                   }
 
                   if (pkg?.startsWith('@ant-design/')) {

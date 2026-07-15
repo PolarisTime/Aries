@@ -3,6 +3,7 @@ import i18next from 'i18next'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
 import { AppResult } from '@/components/AppResult'
+import { captureFrontendException } from '@/observability/sentry'
 
 interface Props {
   children: ReactNode
@@ -37,6 +38,7 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[AppErrorBoundary]', error, info.componentStack)
+    captureFrontendException(error, { componentStack: info.componentStack })
   }
 
   handleReset = () => {

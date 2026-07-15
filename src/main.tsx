@@ -5,10 +5,12 @@ import { createRoot } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/client'
 import { getInitialSetupStatus } from '@/api/setup'
 import { queryClient } from '@/lib/query-client'
+import { initializeErrorMonitoring } from '@/observability/sentry'
 import { router } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { useSetupStore } from '@/stores/setupStore'
+import { logger } from '@/utils/logger'
 import { clearLegacyModuleEditorDraftStorage } from '@/utils/storage'
 import { initWebVitals } from '@/utils/web-vitals'
 import '@/i18n'
@@ -43,6 +45,7 @@ function StartupShell() {
 }
 
 clearLegacyModuleEditorDraftStorage()
+initializeErrorMonitoring()
 
 async function bootstrap() {
   const rootElement = document.getElementById('app')
@@ -81,4 +84,6 @@ async function bootstrap() {
   root.render(<App />)
 }
 
-void bootstrap()
+void bootstrap().catch((error: unknown) => {
+  logger.error('Application bootstrap failed', error)
+})

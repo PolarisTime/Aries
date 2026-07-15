@@ -1,0 +1,22 @@
+.app-pro-page.ant-pro-page-container {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-pro-page > .ant-page-header {
+  flex: 0 0 auto;
+}
+
+.app-pro-page > .ant-pro-grid-content,
+.app-pro-page > .ant-pro-grid-content > .ant-pro-grid-content-children,
+.app-pro-page .ant-pro-page-container-children-container {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}

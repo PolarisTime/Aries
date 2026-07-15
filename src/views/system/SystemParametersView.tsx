@@ -3,9 +3,10 @@ import {
   ControlOutlined,
   NumberOutlined,
 } from '@ant-design/icons'
-import { Tabs, Typography } from 'antd'
+import { Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AppProPage } from '@/components/AppProPage'
 import { GeneralSettingsView } from '@/views/system/GeneralSettingsView'
 import { NumberRulesView } from '@/views/system/NumberRulesView'
 import { OssSettingsView } from '@/views/system/OssSettingsView'
@@ -41,15 +42,11 @@ export function SystemParametersView(): React.JSX.Element {
   )
 
   return (
-    <div className="page-stack system-parameters-page">
-      <header className="system-parameters-header">
-        <Typography.Title level={3}>
-          {t('system.systemParameters.title')}
-        </Typography.Title>
-        <Typography.Paragraph type="secondary">
-          {t('system.systemParameters.description')}
-        </Typography.Paragraph>
-      </header>
+    <AppProPage
+      className="system-parameters-page"
+      title={t('system.systemParameters.title')}
+      description={t('system.systemParameters.description')}
+    >
       <Tabs
         className="system-parameters-tabs"
         classNames={{
@@ -61,6 +58,6 @@ export function SystemParametersView(): React.JSX.Element {
         size="large"
         onChange={(key) => setActiveKey(key as SystemParametersTabKey)}
       />
-    </div>
+    </AppProPage>
   )
 }
