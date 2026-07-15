@@ -216,10 +216,6 @@ const viewLoaders: Record<
     import('@/views/system/SecurityKeyManagementView').then((m) => ({
       default: m.SecurityKeyManagementView,
     })),
-  'database-backup': () =>
-    import('@/views/system/DatabaseBackupView').then((m) => ({
-      default: m.DatabaseBackupView,
-    })),
   'cash-ledger': () =>
     import('@/views/finance/CashLedgerView').then((m) => ({
       default: m.CashLedgerView,

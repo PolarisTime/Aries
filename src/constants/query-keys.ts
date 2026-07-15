@@ -43,10 +43,6 @@ export const QUERY_KEYS = {
   businessGridOverlayPreload: (name: string) =>
     ['business-grid-overlay-preload', name] as const,
 
-  // Database
-  databaseStatus: ['database-status'] as const,
-  databaseMonitoring: ['database-monitoring', 'readonly-v2'] as const,
-
   // Master data
   masterOptions: {
     carrier: ['master-options', 'carrier'] as const,

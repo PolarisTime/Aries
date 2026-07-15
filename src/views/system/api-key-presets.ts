@@ -97,7 +97,7 @@ const API_KEY_PRESET_DEFINITIONS: ApiKeyPresetDefinition[] = [
     labelKey: 'system.apiKeyPresets.systemAudit',
     descriptionKey: 'system.apiKeyPresets.systemAuditDesc',
     usageScope: '全部接口',
-    resourceCodes: ['operation-log', 'database', 'session', 'api-key'],
+    resourceCodes: ['operation-log', 'session', 'api-key'],
     actionCodes: ['read'],
   },
 ]

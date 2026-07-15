@@ -13,7 +13,6 @@ export type RouteViewKey =
   | 'session'
   | 'api-key'
   | 'security-key'
-  | 'database-backup'
   | 'cash-ledger'
 
 export interface AppPageDefinition {

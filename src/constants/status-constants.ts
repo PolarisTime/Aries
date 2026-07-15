@@ -29,17 +29,6 @@ export const SETTLEMENT_TYPE = {
   PAYMENT: '付款',
 } as const
 
-// 数据库监控状态
-export const DB_MONITORING_STATUS = {
-  NORMAL: '正常',
-  UNKNOWN: '未知',
-  PG_STAT_NOT_ENABLED: '未启用 pg_stat_statements',
-  NEED_VACUUM: '需 VACUUM',
-  ATTENTION: '关注',
-  NEED_ANALYZE: '需 ANALYZE',
-  CLEAN: '干净',
-} as const
-
 // 业务单据状态
 export const DOCUMENT_STATUS = {
   DRAFT: '草稿',

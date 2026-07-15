@@ -60,15 +60,6 @@
     "deleteSubjectConfirm": "确定删除该结算主体吗？已被客户、物流商或采购订单引用的主体不可删除。",
     "activeSubjects": "正常主体"
   },
-  "database": {
-    "title": "数据库管理",
-    "exportTask": "导出备份",
-    "importBackup": "导入数据库备份",
-    "verifyAndImport": "验证并导入",
-    "selectFile": "选择备份文件",
-    "noFile": "未选择文件",
-    "downloadLink": "下载链接已生成"
-  },
   "role": {
     "newRole": "新增角色",
     "editRole": "编辑角色",

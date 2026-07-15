@@ -72,10 +72,6 @@ export const ENDPOINTS = {
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
 
-  // Database (business entity → plural)
-  DATABASE_STATUS: '/system/databases/status',
-  DATABASE_MONITORING: '/system/databases/monitoring',
-
   // Security keys (business entity → plural)
   SECURITY_KEYS: '/system/security-keys',
   OSS_SETTINGS: '/system/oss-settings',

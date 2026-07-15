@@ -605,7 +605,6 @@ export interface MessageSchema {
     adminAccountInitFailed: string
     companyInitFailed: string
     importResponseValidationFailed: string
-    loadDatabaseStatusFailed: string
     queryStatementCandidatesFailed: string
     loginExpiring: string
     loginExpiringDescription: string
@@ -1982,11 +1981,6 @@ export interface MessageSchema {
       statusNormal: string
       statusDisabled: string
     }
-    database: {
-      title: string
-      description: string
-      refreshStatus: string
-    }
     twoFactor: {
       title: string
       enabled: string
@@ -2105,122 +2099,6 @@ export interface MessageSchema {
       pendingTaxNo: string
       settlementBanks: string
       unitSuffix: string
-    }
-    databaseMonitor: {
-      noData: string
-      sectionTitle: string
-      sectionDesc: string
-      refresh: string
-      overviewTab: string
-      tableHealthTab: string
-      indexHealthTab: string
-      slowSqlTab: string
-      redisTab: string
-      pgDiagnostics: string
-      pgUnavailable: string
-      unknown: string
-      pgStatNotEnabled: string
-      metricConnection: string
-      metricActiveRatio: string
-      metricLockWait: string
-      metricBlockedSessions: string
-      metricLongTx: string
-      metricLongest: string
-      metricCacheHit: string
-      metricTxRollback: string
-      metricRollbackRate: string
-      metricDeadlock: string
-      metricTempFiles: string
-      metricTempWrite: string
-      metricFromPgStat: string
-      metricUptime: string
-      metricLongestQuery: string
-      healthSummary: string
-      tuningSettings: string
-      connectionLimit: string
-      currentConnections: string
-      hikariPool: string
-      leakDetection: string
-      statementTimeout: string
-      idleTxTimeout: string
-      lockTimeout: string
-      trackIoTiming: string
-      sharedBuffers: string
-      effectiveCache: string
-      workMem: string
-      maintenanceWorkMem: string
-      maxWal: string
-      checkpointTimeout: string
-      pgStatTrack: string
-      activeSessions: string
-      idleInTxSessions: string
-      lockWait: string
-      blocked: string
-      longTx: string
-      longest: string
-      currentActivity: string
-      tableHealth: string
-      colTable: string
-      colDeadTupleRate: string
-      colDeadTuples: string
-      colAutovacuum: string
-      unknownStatus: string
-      colVacuumThreshold: string
-      colPendingAnalyze: string
-      colSeqScan: string
-      colCache: string
-      colLastVacuum: string
-      colVacuumInterval: string
-      colAdvice: string
-      noTableHealth: string
-      indexHealth: string
-      colIndex: string
-      colSize: string
-      colScans: string
-      colStatus: string
-      valid: string
-      invalid: string
-      noIndexHealth: string
-      slowSqlSummary: string
-      colCalls: string
-      colTotalMs: string
-      colAvgMs: string
-      colRows: string
-      colCacheHitPct: string
-      noSlowSql: string
-      redisMemUsage: string
-      peak: string
-      redisMemLimit: string
-      notSet: string
-      fragRatio: string
-      realtimeOps: string
-      totalCommands: string
-      hitRate: string
-      clients: string
-      blockedClients: string
-      rejectedConn: string
-      keyExpired: string
-      evicted: string
-      expired: string
-      persistence: string
-      aofNotEnabled: string
-      redisMonitor: string
-    }
-    databaseStatus: {
-      serviceOverview: string
-      serviceOverviewDesc: string
-      dbSize: string
-      tableCount: string
-      activeConnections: string
-      address: string
-      database: string
-      startTime: string
-      memUsage: string
-      keyCount: string
-      hitRate: string
-      uptime: string
-      clientConnections: string
-      connectionCount: string
     }
     generalSettingsEditor: {
       editTitle: string
