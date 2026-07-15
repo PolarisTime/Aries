@@ -11,7 +11,7 @@ import {
   listPurchaseOrderPrepaymentCandidatePage,
 } from '@/api/purchase-order-candidates'
 import {
-  listSalesOrderFreightImportCandidatePage,
+  listSalesOrderOutboundImportCandidatePage,
   listSalesOrderPurchaseSourceCandidatePage,
 } from '@/api/sales-order-candidates'
 import { listStatementCandidatePage } from '@/api/statements'
@@ -429,8 +429,8 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'sales-order-purchase-source') {
     return 'sales-order-purchase-source'
   }
-  if (candidateQueryType === 'sales-order-freight-import') {
-    return 'sales-order-freight-import'
+  if (candidateQueryType === 'sales-order-outbound-import') {
+    return 'sales-order-outbound-import'
   }
   return candidateStatementModuleKey || parentModuleKey
 }
@@ -681,8 +681,8 @@ export function useModuleParentSelectorOverlay({
           pageSize,
         )
       }
-      if (candidateQueryType === 'sales-order-freight-import') {
-        return listSalesOrderFreightImportCandidatePage(
+      if (candidateQueryType === 'sales-order-outbound-import') {
+        return listSalesOrderOutboundImportCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,

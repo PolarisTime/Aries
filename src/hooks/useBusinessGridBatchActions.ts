@@ -10,7 +10,6 @@ import {
   resolveReverseAuditTargetForStatus,
 } from '@/module-system/module-adapter-actions'
 import { isDeleteBlockedByStatus } from '@/module-system/module-behavior-registry'
-import { hasGeneratedSalesOutbound } from '@/module-system/module-record-guards'
 import { requestPurchaseInboundAuditInput } from '@/module-system/purchase-inbound-audit-options'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
@@ -188,9 +187,7 @@ export function useBusinessGridBatchActions({
 
     const selected = selectedRows
     const eligible = selected.filter(
-      (record) =>
-        !isDeleteBlockedByStatus(record.status, moduleKey) &&
-        !(moduleKey === 'freight-bill' && hasGeneratedSalesOutbound(record)),
+      (record) => !isDeleteBlockedByStatus(record.status, moduleKey),
     )
     const skippedCount = selected.length - eligible.length
 

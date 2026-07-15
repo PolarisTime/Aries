@@ -56,6 +56,7 @@ for (const key of approvedStatusModules) {
 
 registerModuleBehavior('sales-order', {
   auditSourceStatuses: ['草稿'],
+  reverseAuditTargetsByStatus: { 完成销售: '交付核定' },
 })
 
 registerModuleBehavior('purchase-inbound', {

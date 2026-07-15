@@ -9,7 +9,6 @@ import { parseParentRelationNos } from './module-adapter-shared'
 
 const SOURCE_PARENT_ITEM_ID_FIELDS = [
   'sourceFreightBillItemId',
-  'sourceSalesOutboundItemId',
   'sourceInboundItemId',
   'sourcePurchaseOrderItemId',
   'sourceSalesOrderItemId',

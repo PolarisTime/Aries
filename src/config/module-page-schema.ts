@@ -152,7 +152,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'orderNo',
         'purchaseInboundNo',
         'purchaseOrderNo',
-        'salesMode',
         'customerId',
         'customerCode',
         'customerName',
@@ -210,7 +209,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'outboundNo',
         'salesOrderNo',
-        'sourceFreightBillId',
         'customerName',
         'projectName',
         'settlementCompanyId',
@@ -261,7 +259,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     saveFields: {
       scalar: [
         'billNo',
-        'sourceSalesOrderId',
         'carrierCode',
         'carrierName',
         'settlementCompanyId',
@@ -276,7 +273,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       ],
       lineItem: [
         'sourceNo',
-        'sourceSalesOrderItemId',
         'settlementCompanyId',
         'settlementCompanyName',
         'customerName',
@@ -457,7 +453,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       ],
       lineItem: [
         'sourceNo',
-        'sourceSalesOutboundItemId',
         'sourceFreightBillId',
         'sourceFreightBillItemId',
         'settlementCompanyId',

@@ -87,10 +87,7 @@ export const ENTITY_ID_FIELDS = new Set([
   'sourceInboundItemId',
   'sourcePurchaseOrderId',
   'sourcePurchaseOrderItemId',
-  'sourceSalesOrderId',
   'sourceSalesOrderItemId',
-  'sourceSalesOutboundId',
-  'sourceSalesOutboundItemId',
   'sourceStatementId',
   'sourceSupplierStatementId',
   'supplierId',
@@ -105,7 +102,6 @@ export const ENTITY_ID_ARRAY_FIELDS = new Set([
   'sourceDocumentIds',
   'sourceItemIds',
   'sourcePurchaseOrderIds',
-  'sourceSalesOrderIds',
 ])
 
 function childPath(parent: string, key: string): string {

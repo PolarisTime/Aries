@@ -62,7 +62,6 @@ export const moduleRecordSchema = z.looseObject({
   counterpartyId: snowflakeIdSchema.optional(),
   settlementCompanyId: snowflakeIdSchema.optional(),
   sourcePurchaseOrderId: snowflakeIdSchema.optional(),
-  sourceSalesOrderId: snowflakeIdSchema.optional(),
   sourceCustomerStatementId: snowflakeIdSchema.optional(),
   sourceSupplierStatementId: snowflakeIdSchema.optional(),
   sourceFreightStatementId: snowflakeIdSchema.optional(),

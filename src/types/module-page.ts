@@ -82,7 +82,6 @@ export interface ModuleParentImportDefinition {
     | 'purchase-order-import'
     | 'purchase-prepayment'
     | 'sales-order-purchase-source'
-    | 'sales-order-freight-import'
     | 'freight-bill-import'
     | 'sales-order-outbound-import'
   candidateUsage?: 'purchase-inbound' | 'sales-order'

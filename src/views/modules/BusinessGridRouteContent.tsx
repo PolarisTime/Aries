@@ -3,7 +3,6 @@ import { Empty } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
-import { isDocumentFlowRecordEditLocked } from '@/module-system/module-record-guards'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
@@ -66,8 +65,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     }
     if (
       state.canUpdateRecord &&
-      !isEditBlockedByStatus(record.status, moduleKey) &&
-      !isDocumentFlowRecordEditLocked(moduleKey, record)
+      !isEditBlockedByStatus(record.status, moduleKey)
     ) {
       void state.openEditor(record)
       return
@@ -97,8 +95,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     moduleKey !== 'customer-statement' &&
     moduleKey !== 'freight-statement'
   const canSaveEditorRecord = state.editRecord
-    ? state.canUpdateRecord &&
-      !isDocumentFlowRecordEditLocked(moduleKey, state.editRecord)
+    ? state.canUpdateRecord
     : state.canCreateRecord &&
       state.config.allowManualCreate !== false &&
       !state.config.parentImport?.executeParentImport

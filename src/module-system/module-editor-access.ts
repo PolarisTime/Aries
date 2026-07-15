@@ -8,14 +8,8 @@ import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
-function resolveParentImportFieldKey(
-  moduleKey: string,
-  parentFieldKey: string | undefined,
-) {
-  return (
-    parentFieldKey ||
-    (moduleKey === 'sales-outbound' ? 'sourceFreightBillId' : undefined)
-  )
+function resolveParentImportFieldKey(parentFieldKey: string | undefined) {
+  return parentFieldKey
 }
 
 export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
@@ -106,10 +100,7 @@ export function isEditorFieldDisabledForModule(
   record?: ModuleRecord,
   authoritativePrimaryNo?: string,
 ) {
-  const effectiveParentFieldKey = resolveParentImportFieldKey(
-    moduleKey,
-    parentFieldKey,
-  )
+  const effectiveParentFieldKey = resolveParentImportFieldKey(parentFieldKey)
 
   if (!canSaveCurrentEditor) {
     return true
@@ -249,10 +240,7 @@ export function isParentImportedEditorLocked(
   record: ModuleRecord | undefined,
   parentFieldKey: string | undefined,
 ) {
-  const effectiveParentFieldKey = resolveParentImportFieldKey(
-    moduleKey,
-    parentFieldKey,
-  )
+  const effectiveParentFieldKey = resolveParentImportFieldKey(parentFieldKey)
   if (!hasParentImportValue(record, effectiveParentFieldKey)) {
     return false
   }

@@ -170,7 +170,6 @@ const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'amount' },
   { key: 'sourcePurchaseOrderItemId' },
   { key: 'sourceSalesOrderItemId' },
-  { key: 'sourceSalesOutboundItemId' },
   { key: 'sourceInboundItemId' },
   { key: 'sourceNo' },
   { key: 'settlementCompanyId' },

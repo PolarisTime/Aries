@@ -97,10 +97,7 @@ export function filterImportableParentRecords(
         status === DOCUMENT_STATUS.PURCHASE_COMPLETED
       )
     }
-    if (
-      candidateQueryType === 'purchase-order-import' ||
-      candidateQueryType === 'sales-order-freight-import'
-    ) {
+    if (candidateQueryType === 'purchase-order-import') {
       return hasImportableQuantity(parentModuleKey, record)
     }
     if (

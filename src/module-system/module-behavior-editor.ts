@@ -257,14 +257,7 @@ registerModuleBehavior('purchase-inbound', {
 })
 registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
 registerModuleBehavior('sales-order', {
-  defaultDraftValues: () => ({
-    deliveryDate: currentDateTime(),
-    salesMode: 'NORMAL',
-  }),
-  clearLineItemsOnFieldChange: ['salesMode'],
-  clearEditorFieldsOnFieldChange: {
-    salesMode: ['purchaseInboundNo', 'purchaseOrderNo'],
-  },
+  defaultDraftValues: () => ({ deliveryDate: currentDateTime() }),
 })
 registerModuleBehavior('sales-outbound', {
   defaultDraftValues: () => ({ outboundDate: currentDateTime() }),

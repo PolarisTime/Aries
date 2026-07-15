@@ -7,28 +7,24 @@ import type { RawPagePayload, SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-export async function listSalesOrderFreightImportCandidatePage(
+export async function listSalesOrderOutboundImportCandidatePage(
   filters: SearchParams,
   page: number,
   size: number,
 ): Promise<TableResponse<ModuleRecord>> {
-  const { currentRecordId, ...candidateFilters } = filters
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      ENDPOINTS.SALES_ORDER_FREIGHT_IMPORT_CANDIDATES,
+      ENDPOINTS.SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES,
       {
         params: {
-          ...candidateFilters,
-          ...(currentRecordId == null
-            ? {}
-            : { currentFreightBillId: currentRecordId }),
+          ...filters,
           keyword: asString(filters.keyword).trim(),
           page,
           size,
         },
       },
     ),
-    '查询销售订单物流导入候选失败',
+    '查询销售订单出库导入候选失败',
   )
 
   return {
@@ -45,7 +41,7 @@ export async function listSalesOrderPurchaseSourceCandidatePage(
   page: number,
   size: number,
 ): Promise<TableResponse<ModuleRecord>> {
-  const { currentSalesOrderId, salesMode, ...candidateFilters } = filters
+  const { currentSalesOrderId, ...candidateFilters } = filters
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
       ENDPOINTS.SALES_ORDER_PURCHASE_SOURCE_CANDIDATES,
@@ -53,7 +49,6 @@ export async function listSalesOrderPurchaseSourceCandidatePage(
         params: {
           ...candidateFilters,
           currentSalesOrderId,
-          salesMode,
           keyword: asString(filters.keyword).trim(),
           page,
           size,

@@ -9,7 +9,6 @@ import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
-import { useDocumentFlowCommands } from '@/hooks/useDocumentFlowCommands'
 import { useExcelExport } from '@/hooks/useExcelExport'
 import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
 import {
@@ -33,10 +32,6 @@ import {
   getBehaviorValue,
   isEditBlockedByStatus,
 } from '@/module-system/module-behavior-registry'
-import {
-  hasGeneratedSalesOutbound,
-  isDocumentFlowRecordEditLocked,
-} from '@/module-system/module-record-guards'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -310,9 +305,7 @@ export function useBusinessGridPage({
     onEdit: (record) => {
       void openEditor(record)
     },
-    canEditRecord: (record) =>
-      !isEditBlockedByStatus(record.status, moduleKey) &&
-      !isDocumentFlowRecordEditLocked(moduleKey, record),
+    canEditRecord: (record) => !isEditBlockedByStatus(record.status, moduleKey),
     onStatusChange: (record, status) => {
       void handleSalesOrderStatusChange(record, status)
     },
@@ -327,12 +320,7 @@ export function useBusinessGridPage({
           asString(record.status).trim() === '完成采购'
         ),
     )
-  const canUseSelectedBulkDeleteActions =
-    canUseBulkDeleteActions &&
-    selectedRecords.some(
-      (record) =>
-        !(moduleKey === 'freight-bill' && hasGeneratedSalesOutbound(record)),
-    )
+  const canUseSelectedBulkDeleteActions = canUseBulkDeleteActions
 
   const {
     handlePrintSelectedRecords,
@@ -408,14 +396,6 @@ export function useBusinessGridPage({
     },
   })
 
-  const { action: documentFlowAction, handleAction: handleDocumentFlowAction } =
-    useDocumentFlowCommands({
-      moduleKey,
-      selectedRecords,
-      canCreateSalesOutbound: can('sales-outbound', 'create'),
-      refreshCurrentModule: refreshModuleQueries,
-      clearSelection,
-    })
   const selectedRecordActions =
     selectedRecords.length === 1 ? buildActions(selectedRecords[0]) : []
   const selectedRecordToolbarActions: ModuleActionDefinition[] =
@@ -429,12 +409,8 @@ export function useBusinessGridPage({
   const visibleToolbarActions = [
     ...baseVisibleToolbarActions,
     ...selectedRecordToolbarActions,
-    ...(documentFlowAction ? [documentFlowAction] : []),
   ]
   const handleAction = async (action: ModuleActionDefinition) => {
-    if (handleDocumentFlowAction(action.key)) {
-      return
-    }
     const selectedRecordAction = selectedRecordActions.find(
       (candidate) => candidate.key === action.key,
     )

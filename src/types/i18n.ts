@@ -1193,14 +1193,10 @@ export interface MessageSchema {
         totalWeight: string
         unitPrice: string
         totalFreight: string
-        relatedOutbound: string
         customerName: string
         projectName: string
         auditStatus: string
         remark: string
-        importFromParent: string
-        parentSalesOutbound: string
-        importParentSalesOutbound: string
         freightBillDesc: string
       }
       carrier: {

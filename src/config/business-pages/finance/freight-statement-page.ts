@@ -365,7 +365,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
     ],
     lineItem: [
       'sourceNo',
-      'sourceSalesOutboundItemId',
       'sourceFreightBillId',
       'sourceFreightBillItemId',
       'settlementCompanyId',

@@ -4,12 +4,6 @@ import type { ApiResponse } from '@/types/api'
 import type { EntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 
-interface SalesOutboundCommandResult {
-  id: string | number
-  outboundNo: string
-  status: string
-}
-
 export interface PurchaseInboundAuditCommandInput {
   overToleranceConfirmations: Array<{
     inboundItemId: EntityId
@@ -100,16 +94,5 @@ export async function createPurchaseInboundImportBatch(
       withIdempotencyKey(),
     ),
     '采购入库拆分草稿创建失败',
-  )
-}
-
-export async function createSalesOutboundFromFreightBill(id: string) {
-  return assertApiSuccess(
-    await http.post<ApiResponse<SalesOutboundCommandResult>>(
-      `/freight-bills/${encodeURIComponent(id)}/sales-outbound`,
-      null,
-      withIdempotencyKey(),
-    ),
-    '生成销售出库失败',
   )
 }

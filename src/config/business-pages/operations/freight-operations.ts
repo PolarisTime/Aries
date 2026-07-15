@@ -5,7 +5,6 @@ import {
   getSettlementCompanyOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -14,7 +13,6 @@ import {
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
   buildAmountWeightOverview,
-  cloneLineItems,
   compactFreightItemColumns,
   statusMap,
 } from '../shared/shared'
@@ -86,11 +84,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         title: i18next.t('modules.pages.freightOperations.freightBillNo'),
         dataIndex: 'billNo',
-        width: 160,
-      },
-      {
-        title: i18next.t('modules.pages.freightOperations.relatedOutbound'),
-        dataIndex: 'sourceSalesOutboundNo',
         width: 160,
       },
       {
@@ -177,14 +170,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         key: 'billNo',
       },
       {
-        label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
-        key: 'sourceSalesOutboundNo',
-      },
-      {
-        label: '来源销售订单 ID',
-        key: 'sourceSalesOrderId',
-      },
-      {
         label: i18next.t('modules.pages.freightOperations.carrier'),
         key: 'carrierName',
       },
@@ -247,14 +232,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
-        key: 'sourceSalesOrderId',
-        label: '来源销售订单 ID',
-        type: 'input',
-        disabled: true,
-        placeholder: '导入销售订单后自动带入',
-        row: 1,
-      },
-      {
         key: 'carrierName',
         label: i18next.t('modules.pages.freightOperations.carrier'),
         type: 'select',
@@ -291,6 +268,20 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 2,
       },
       {
+        key: 'customerName',
+        label: i18next.t('modules.pages.freightOperations.customerName'),
+        type: 'input',
+        required: true,
+        row: 2,
+      },
+      {
+        key: 'projectName',
+        label: i18next.t('modules.pages.freightOperations.projectName'),
+        type: 'input',
+        required: true,
+        row: 2,
+      },
+      {
         key: 'unitPrice',
         label: i18next.t('modules.pages.freightOperations.unitPrice'),
         type: 'number',
@@ -310,7 +301,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     saveFields: {
       scalar: [
         'billNo',
-        'sourceSalesOrderId',
         'carrierCode',
         'carrierName',
         'settlementCompanyId',
@@ -325,7 +315,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       ],
       lineItem: [
         'sourceNo',
-        'sourceSalesOrderItemId',
         'settlementCompanyId',
         'settlementCompanyName',
         'customerName',
@@ -347,47 +336,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         'warehouseId',
         'warehouseName',
       ],
-    },
-    parentImport: {
-      parentModuleKey: 'sales-order',
-      label: '来源销售订单',
-      parentFieldKey: 'sourceSalesOrderId',
-      parentDisplayFieldKey: 'orderNo',
-      candidateQueryType: 'sales-order-freight-import',
-      buttonText: i18next.t(
-        'modules.pages.freightOperations.importParentSalesOutbound',
-      ),
-      enforceUniqueRelation: true,
-      allowMultipleSelection: false,
-      buildParentFilters: (currentRecord) => ({
-        customerId: currentRecord.customerId,
-        projectId: currentRecord.projectId,
-        currentRecordId: currentRecord.id,
-      }),
-      hiddenSelectorColumnKeys: ['status'],
-      validateBeforeOpen: (currentRecord) =>
-        asString(currentRecord.carrierName).trim()
-          ? null
-          : '请先选择物流商，再导入销售订单',
-      mapParentToDraft: (parentRecord) => ({
-        sourceSalesOrderId: parentRecord.id,
-        customerId: parentRecord.customerId,
-        customerName: parentRecord.customerName || '',
-        projectId: parentRecord.projectId,
-        projectName: parentRecord.projectName || '',
-      }),
-      transformItems: (parentRecord) =>
-        cloneLineItems(
-          Array.isArray(parentRecord.items)
-            ? parentRecord.items.map((item) => ({
-                ...item,
-                sourceNo: parentRecord.orderNo || '',
-                sourceSalesOrderItemId: item.id,
-                sourceSalesOutboundItemId: undefined,
-              }))
-            : [],
-          'freight-bill-item',
-        ),
     },
     itemColumns: compactFreightItemColumns,
     data: [],

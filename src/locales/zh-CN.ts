@@ -281,7 +281,7 @@ export const zhCN: MessageSchema = {
     noPermission: '暂无操作权限',
     importParentFailed: '导入上级单据失败',
     logisticsChain: '物流协同',
-    logisticsChainDesc: '物流相关单据可独立流转，也能嵌入采购和销售业务链路。',
+    logisticsChainDesc: '物流相关单据独立流转，并继续支持物流对账。',
     pleaseSelectWith: '请先选择{{label}}',
     importParentSuccess:
       '已导入 {{parentCount}} 张上级单据，共 {{itemCount}} 条明细',
@@ -1227,16 +1227,12 @@ export const zhCN: MessageSchema = {
         totalWeight: '总重量（吨）',
         unitPrice: '单价',
         totalFreight: '总运费',
-        relatedOutbound: '关联出库单',
         customerName: '客户名称',
         projectName: '项目名称',
         auditStatus: '审核状态',
         remark: '备注',
-        importFromParent: '通过上级单据导入',
-        parentSalesOutbound: '上级销售出库单',
-        importParentSalesOutbound: '导入上级销售订单',
         freightBillDesc:
-          '物流单页面按现版逻辑建立在销售出库之上，支持关联出库单、自动计算总重量和总运费，并继续流向物流对账。',
+          '物流单独立维护物流商、客户、项目、运输明细，并继续流向物流对账。',
       },
       carrier: {
         title: '物流方资料',

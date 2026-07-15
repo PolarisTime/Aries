@@ -1261,16 +1261,12 @@ export const enUS: MessageSchema = {
         totalWeight: 'Total weight (t)',
         unitPrice: 'Unit price',
         totalFreight: 'Total freight',
-        relatedOutbound: 'Related outbound',
         customerName: 'Customer',
         projectName: 'Project',
         auditStatus: 'Audit status',
         remark: 'Remark',
-        importFromParent: 'Import from parent document',
-        parentSalesOutbound: 'Sales outbound',
-        importParentSalesOutbound: 'Import parent sales order',
         freightBillDesc:
-          'Manage carrier, vehicle, outbound source, shipment weight, and freight charges in one document flow.',
+          'Manage carriers, customers, projects, shipment details, and freight charges independently.',
       },
       carrier: {
         title: 'Carriers',
