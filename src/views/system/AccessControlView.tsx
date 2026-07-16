@@ -4,7 +4,7 @@ import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import type { AppPageDefinition } from '@/config/page-registry'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 type TabKey = 'users' | 'roles' | 'permissions'
@@ -36,7 +36,9 @@ export function AccessControlView() {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
-  const permissionStore = usePermissionStore()
+  const { canRead: canViewUsers } = useResourcePermissions('user-account')
+  const { canRead: canViewRoles } = useResourcePermissions('role')
+  const { canRead: canViewPermissions } = useResourcePermissions('permission')
 
   const permPageDef: AppPageDefinition = {
     key: 'permission',
@@ -48,10 +50,6 @@ export function AccessControlView() {
     moduleKey: 'permission',
     resourceKey: 'permission',
   }
-
-  const canViewUsers = permissionStore.can('user-account', 'read')
-  const canViewRoles = permissionStore.can('role', 'read')
-  const canViewPermissions = permissionStore.can('permission', 'read')
 
   const tabItems: Array<{
     key: TabKey

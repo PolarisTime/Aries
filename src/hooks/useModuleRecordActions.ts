@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
@@ -29,8 +30,8 @@ export function useModuleRecordActions({
   detailActionLabel,
 }: Props) {
   const { t } = useTranslation()
-  const can = usePermissionStore((s) => s.can)
   const resource = resourceKey || moduleKey
+  const { can } = useResourcePermissions(resource)
 
   const resolveAttachmentCount = (record: ModuleRecord) => {
     const mappedCount = attachmentCounts[String(record.id)]
@@ -48,24 +49,22 @@ export function useModuleRecordActions({
 
   const buildActions = (record: ModuleRecord): ActionItem[] => {
     const items: ActionItem[] = []
-    if (onDetail && can(resource, 'read')) {
+    if (onDetail && can('read')) {
       items.push({
         key: 'detail',
         label: detailActionLabel || t('hooks.recordActions.view'),
+        icon: resolveModuleActionIcon(detailActionLabel || '查看'),
         onClick: () => onDetail(record),
       })
     }
     if (isReadOnly) {
       return items
     }
-    if (
-      onEdit &&
-      can(resource, 'update') &&
-      (canEditRecord?.(record) ?? true)
-    ) {
+    if (onEdit && can('update') && (canEditRecord?.(record) ?? true)) {
       items.push({
         key: 'edit',
         label: t('hooks.recordActions.edit'),
+        icon: resolveModuleActionIcon('编辑'),
         onClick: () => onEdit(record),
       })
     }
@@ -73,15 +72,16 @@ export function useModuleRecordActions({
       moduleKey === 'sales-order' &&
       record.status === '交付核定' &&
       onStatusChange &&
-      can(resource, 'audit')
+      can('audit')
     ) {
       items.push({
         key: 'confirm-delivery-verification',
         label: t('hooks.recordActions.confirmDeliveryVerification'),
+        icon: resolveModuleActionIcon('审核'),
         onClick: () => onStatusChange(record, '完成销售'),
       })
     }
-    if (can(resource, 'read') || can(resource, 'update')) {
+    if (can('read') || can('update')) {
       const attachmentLabel = t('hooks.recordActions.attachment')
       const attachmentCount = resolveAttachmentCount(record)
       items.push({
@@ -90,6 +90,7 @@ export function useModuleRecordActions({
           attachmentCount > 0
             ? `${attachmentLabel}(${attachmentCount})`
             : attachmentLabel,
+        icon: resolveModuleActionIcon('附件'),
         onClick: () => onAttach(record),
       })
     }

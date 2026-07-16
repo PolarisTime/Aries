@@ -18,7 +18,7 @@ import { assertApiSuccess, http } from '@/api/client'
 import { StatusTag } from '@/components/StatusTag'
 import { TableActions } from '@/components/TableActions'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 
 interface RawRateLimitRule {
   id: string
@@ -56,7 +56,7 @@ export function RateLimitRulesCard() {
     METHOD: t('system.rateLimit.typeMethod'),
     API_KEY: t('system.rateLimit.typeApiKey'),
   }
-  const can = usePermissionStore((s) => s.can)
+  const { canRead } = useResourcePermissions('general-setting')
   const queryClient = useQueryClient()
   const [editingRule, setEditingRule] = useState<RateLimitRule | null>(null)
   const [typeFilter, setTypeFilter] = useState<string | undefined>()
@@ -91,7 +91,7 @@ export function RateLimitRulesCard() {
     },
   })
 
-  if (!can('general-setting', 'read')) return null
+  if (!canRead) return null
 
   const typeOptions = Object.entries(TYPE_LABEL).map(([value, label]) => ({
     value,

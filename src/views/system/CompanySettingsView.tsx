@@ -38,8 +38,8 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { SETTLEMENT_TYPE, STATUS } from '@/constants/status-constants'
 import { useRequestError } from '@/hooks/useRequestError'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { validateForm } from '@/lib/antd-form'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -816,11 +816,12 @@ function CompanySettingsForm({
 
 export function CompanySettingsView() {
   const queryClient = useQueryClient()
-  const permissionStore = usePermissionStore()
-  const canView = permissionStore.can('company-setting', 'read')
-  const canCreate = permissionStore.can('company-setting', 'create')
-  const canSave = permissionStore.can('company-setting', 'update')
-  const canDelete = permissionStore.can('company-setting', 'delete')
+  const {
+    canRead: canView,
+    canCreate,
+    canUpdate: canSave,
+    canDelete,
+  } = useResourcePermissions('company-setting')
   const [selectedId, setSelectedId] = useState('')
 
   const { data: companies = [], isLoading } = useQuery({

@@ -1,7 +1,6 @@
 import { Button, Divider, Popconfirm } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 export interface ActionItem {
   key: string
@@ -44,7 +43,7 @@ export function TableActions({ items, maxVisible }: Props) {
                 type="link"
                 danger={item.danger}
                 disabled={item.disabled}
-                icon={item.icon ?? resolveModuleActionIcon(item.label)}
+                icon={item.icon}
                 className="table-action-btn"
                 size="small"
               >
@@ -56,7 +55,7 @@ export function TableActions({ items, maxVisible }: Props) {
               type="link"
               danger={item.danger}
               disabled={item.disabled}
-              icon={item.icon ?? resolveModuleActionIcon(item.label)}
+              icon={item.icon}
               onClick={item.onClick}
               className={`table-action-btn ${item.danger ? 'table-action-danger' : ''} ${item.disabled ? 'table-action-disabled' : ''}`}
               size="small"

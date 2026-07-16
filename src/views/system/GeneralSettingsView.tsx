@@ -5,9 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STATUS } from '@/constants/status-constants'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
@@ -31,6 +30,7 @@ import {
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
 import { RateLimitRulesCard } from '@/views/system/RateLimitRulesCard'
 import { SystemSettingsLoadError } from '@/views/system/SystemSettingsLoadError'
+import { useSystemSettingsRefresh } from '@/views/system/useSystemSettingsRefresh'
 
 interface GeneralSettingsState {
   keyword: string
@@ -53,8 +53,7 @@ const generalSettingsInitialState: GeneralSettingsState = {
 export function GeneralSettingsView() {
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
-  const canEdit = permissionStore.can('general-setting', 'update')
+  const { canUpdate: canEdit } = useResourcePermissions('general-setting')
 
   const [state, setState] = useReducer(
     (prev: GeneralSettingsState, patch: Partial<GeneralSettingsState>) => ({
@@ -87,7 +86,7 @@ export function GeneralSettingsView() {
   const basicSettingRows = filteredRows.filter(isNumericSetting)
   const switchRows = filteredRows.filter(isToggleSetting)
 
-  const refresh = useRefreshQuery(QUERY_KEYS.generalSetting)
+  const refresh = useSystemSettingsRefresh()
 
   const openEditor = (record: ModuleRecord) => {
     if (!canEdit) {

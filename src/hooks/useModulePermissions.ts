@@ -1,4 +1,4 @@
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 
 interface Props {
   moduleKey: string
@@ -6,19 +6,23 @@ interface Props {
 }
 
 export function useModulePermissions({ moduleKey, resourceKey }: Props) {
-  const can = usePermissionStore((s) => s.can)
-
   const resolvedResource = resourceKey || moduleKey
+  const {
+    canRead: canViewRecords,
+    canCreate: canCreateRecord,
+    canUpdate: canUpdateRecord,
+    canDelete: canDeleteRecord,
+    can,
+  } = useResourcePermissions(resolvedResource)
 
   return {
-    canViewRecords: can(resolvedResource, 'read'),
-    canCreateRecord: can(resolvedResource, 'create'),
-    canUpdateRecord: can(resolvedResource, 'update'),
-    canDeleteRecord: can(resolvedResource, 'delete'),
-    canExportData: can(resolvedResource, 'export'),
-    canAuditRecord: can(resolvedResource, 'audit'),
-    canPrintRecord: can(resolvedResource, 'print'),
+    canViewRecords,
+    canCreateRecord,
+    canUpdateRecord,
+    canDeleteRecord,
+    canExportData: can('export'),
+    canAuditRecord: can('audit'),
+    canPrintRecord: can('print'),
     can,
-    resolvedResource,
   }
 }

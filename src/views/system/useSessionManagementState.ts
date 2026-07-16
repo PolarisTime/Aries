@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getRefreshTokenSummary,
@@ -9,8 +9,9 @@ import {
   revokeRefreshToken,
 } from '@/api/session-management'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useKeywordPaginationState } from '@/hooks/useKeywordPaginationState'
 import { useRequestError } from '@/hooks/useRequestError'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { message, modal } from '@/utils/antd-app'
 import { buildSessionTableColumns } from '@/views/system/session-management-view-utils'
 
@@ -18,12 +19,16 @@ export function useSessionManagementState(enabled = true) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
-  const canEdit = permissionStore.can('session', 'update')
+  const { canUpdate: canEdit } = useResourcePermissions('session')
 
-  const [keyword, setKeyword] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const {
+    keyword,
+    currentPage,
+    pageSize,
+    setKeyword,
+    resetPage,
+    handlePageChange,
+  } = useKeywordPaginationState()
 
   const refreshSessionData = () => {
     void queryClient.invalidateQueries({
@@ -138,9 +143,9 @@ export function useSessionManagementState(enabled = true) {
     keyword,
     pageSize,
     refreshSessionData,
-    setCurrentPage,
+    resetPage,
+    handlePageChange,
     setKeyword,
-    setPageSize,
     summary,
     tokens,
     totalElements,

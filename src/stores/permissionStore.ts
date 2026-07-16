@@ -61,6 +61,25 @@ interface PermissionState {
   clearPermissions: () => void
 }
 
+export function hasPermission(
+  permissionMap: Record<string, Set<string>>,
+  resource: string,
+  action: string,
+): boolean {
+  const normalizedAction = normalizeAction(action)
+  const candidates = [
+    normalizePermissionKey(resource),
+    normalizePermissionKey(resolveResourceKey(resource)),
+  ].filter(Boolean)
+
+  return candidates.some((candidate) => {
+    const actions = permissionMap[candidate]
+    if (!actions) return false
+    if (actions.has('*')) return true
+    return actions.has(normalizedAction)
+  })
+}
+
 export const usePermissionStore = create<PermissionState>((set, get) => ({
   permissionMap: {},
   dataScopes: {},
@@ -85,20 +104,8 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     get().clearPermissions()
   },
 
-  can: (resource, action) => {
-    const normalizedAction = normalizeAction(action)
-    const candidates = [
-      normalizePermissionKey(resource),
-      normalizePermissionKey(resolveResourceKey(resource)),
-    ].filter(Boolean)
-
-    return candidates.some((candidate) => {
-      const actions = get().permissionMap[candidate]
-      if (!actions) return false
-      if (actions.has('*')) return true
-      return actions.has(normalizedAction)
-    })
-  },
+  can: (resource, action) =>
+    hasPermission(get().permissionMap, resource, action),
 
   canAny: (resource, actions) => {
     return actions.some((action) => get().can(resource, action))

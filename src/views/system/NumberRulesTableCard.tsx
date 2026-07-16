@@ -1,8 +1,8 @@
 import { EditOutlined } from '@ant-design/icons'
 import type { ProColumns } from '@ant-design/pro-components/es/table'
-import { ProTable } from '@ant-design/pro-components/es/table'
 import { Card, Select, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppProTable } from '@/components/AppProTable'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { TableActions } from '@/components/TableActions'
@@ -199,14 +199,12 @@ export function NumberRulesTableCard({
       <Typography.Title level={5}>
         {t('system.numberRules.documentRules')}
       </Typography.Title>
-      <ProTable<ModuleRecord>
+      <AppProTable<ModuleRecord>
         rowKey="id"
         columns={numberRuleColumns}
         dataSource={numberRuleRows}
         loading={loading}
         size="small"
-        search={false}
-        options={false}
         cardProps={false}
         toolBarRender={false}
         pagination={false}
@@ -216,14 +214,12 @@ export function NumberRulesTableCard({
       <Typography.Title level={5}>
         {t('system.numberRules.uploadRules')}
       </Typography.Title>
-      <ProTable<ModuleRecord>
+      <AppProTable<ModuleRecord>
         rowKey="id"
         columns={uploadRuleColumns}
         dataSource={uploadRuleRows}
         loading={loading}
         size="small"
-        search={false}
-        options={false}
         cardProps={false}
         toolBarRender={false}
         pagination={false}

@@ -32,7 +32,7 @@ import {
   testOssStorage,
 } from '@/api/system-settings'
 import { useRequestError } from '@/hooks/useRequestError'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { message } from '@/utils/antd-app'
 import {
   getOssProviderEndpointPlaceholder,
@@ -75,7 +75,7 @@ export function OssSettingsView(): React.JSX.Element {
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const queryClient = useQueryClient()
-  const canSave = usePermissionStore().can('general-setting', 'update')
+  const { canUpdate: canSave } = useResourcePermissions('general-setting')
   const [form] = Form.useForm<OssSettingsFormValues>()
   const [operationResult, setOperationResult] =
     useState<OssOperationResult | null>(null)

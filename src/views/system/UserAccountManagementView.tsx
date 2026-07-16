@@ -2,10 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { deleteUserAccount } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { useActivePageEnabled } from '@/hooks/useActivePageEnabled'
 import { useRequestError } from '@/hooks/useRequestError'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type { UserAccountRecord } from '@/shared/schemas'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
 import { UserAccountCreateResultModal } from '@/views/system/UserAccountCreateResultModal'
 import { UserAccountDetailModal } from '@/views/system/UserAccountDetailModal'
@@ -31,15 +31,15 @@ export function UserAccountManagementView({
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
-
-  const canCreate = permissionStore.can('user-account', 'create')
-  const canEdit = permissionStore.can('user-account', 'update')
-  const canDelete = permissionStore.can('user-account', 'delete')
-  const canViewRoleCatalog = permissionStore.can('role', 'read')
-  const canViewDepartmentCatalog = permissionStore.can('department', 'read')
-  const isPageVisible = usePageVisibility()
-  const queryEnabled = active && isPageVisible
+  const {
+    canCreate,
+    canUpdate: canEdit,
+    canDelete,
+  } = useResourcePermissions('user-account')
+  const { canRead: canViewRoleCatalog } = useResourcePermissions('role')
+  const { canRead: canViewDepartmentCatalog } =
+    useResourcePermissions('department')
+  const queryEnabled = useActivePageEnabled(active)
 
   const {
     keyword,

@@ -11,6 +11,7 @@ interface Props {
   children: ReactNode
   className?: string
   description?: ReactNode
+  embedded?: boolean
   title: ReactNode
 }
 
@@ -18,8 +19,13 @@ export function AppProPage({
   children,
   className,
   description,
+  embedded = false,
   title,
 }: Props): React.JSX.Element {
+  if (embedded) {
+    return <>{children}</>
+  }
+
   const rootClassName = ['app-pro-page', className].filter(Boolean).join(' ')
 
   return (

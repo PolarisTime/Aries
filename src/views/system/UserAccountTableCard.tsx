@@ -5,9 +5,9 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import type { ProColumns } from '@ant-design/pro-components/es/table'
-import { ProTable } from '@ant-design/pro-components/es/table'
 import { Select } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppProTable } from '@/components/AppProTable'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { TableActions } from '@/components/TableActions'
@@ -187,18 +187,13 @@ export function UserAccountTableCard({
     },
   ]
   return (
-    <ProTable<UserAccountRecord>
+    <AppProTable<UserAccountRecord>
       rowKey="id"
       columns={columns}
       dataSource={users}
       loading={loading}
-      size="middle"
       scroll={{ x: 1400 }}
-      search={false}
-      options={false}
       headerTitle={t('system.userAccountTable.title')}
-      cardBordered
-      cardProps={{ className: 'system-list-card' }}
       toolBarRender={() => [
         <SystemTableToolbar
           key="user-account-toolbar"

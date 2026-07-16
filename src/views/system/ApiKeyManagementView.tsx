@@ -2,7 +2,7 @@ import { Alert } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
-import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { useActivePageEnabled } from '@/hooks/useActivePageEnabled'
 import { ApiKeyCreateModal } from '@/views/system/ApiKeyCreateModal'
 import { ApiKeyListCard } from '@/views/system/ApiKeyListCard'
 import { ApiKeyUsageAlert } from '@/views/system/ApiKeyUsageAlert'
@@ -18,8 +18,7 @@ export function ApiKeyManagementView({
   embedded = false,
 }: ApiKeyManagementViewProps) {
   const { t } = useTranslation()
-  const isPageVisible = usePageVisibility()
-  const queryEnabled = active && isPageVisible
+  const queryEnabled = useActivePageEnabled(active)
   const {
     actionOptions,
     canCreate,
@@ -31,6 +30,7 @@ export function ApiKeyManagementView({
     generatedKey,
     handleGenerate,
     handleGenerateWithTotp,
+    handlePageChange,
     handleRevoke,
     isCurrentUserTotpDisabled,
     isLoading,
@@ -39,13 +39,12 @@ export function ApiKeyManagementView({
     openGenerateModal,
     pageSize,
     refreshApiKeys,
+    resetPage,
     resourceOptions,
-    setCurrentPage,
     setFilterUserId,
     setGenerateModalOpen,
     setGeneratedKey,
     setKeyword,
-    setPageSize,
     setStatusFilter,
     setTotpModalOpen,
     setUsageScopeFilter,
@@ -88,28 +87,25 @@ export function ApiKeyManagementView({
         actionOptions={actionOptions}
         onKeywordChange={setKeyword}
         onSearch={() => {
-          setCurrentPage(1)
+          resetPage()
           refreshApiKeys()
         }}
         onFilterUserChange={(value) => {
           setFilterUserId(value)
-          setCurrentPage(1)
+          resetPage()
         }}
         onStatusFilterChange={(value) => {
           setStatusFilter(value)
-          setCurrentPage(1)
+          resetPage()
         }}
         onUsageScopeFilterChange={(value) => {
           setUsageScopeFilter(value)
-          setCurrentPage(1)
+          resetPage()
         }}
         onRefresh={refreshApiKeys}
         onCreate={openGenerateModal}
         onRevoke={handleRevoke}
-        onPageChange={(page, size) => {
-          setCurrentPage(page)
-          setPageSize(size)
-        }}
+        onPageChange={handlePageChange}
       />
 
       {generateModalOpen ? (
@@ -143,9 +139,9 @@ export function ApiKeyManagementView({
     </div>
   )
 
-  if (embedded) {
-    return content
-  }
-
-  return <AppProPage title={t('system.apiKey.title')}>{content}</AppProPage>
+  return (
+    <AppProPage embedded={embedded} title={t('system.apiKey.title')}>
+      {content}
+    </AppProPage>
+  )
 }

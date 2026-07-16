@@ -13,9 +13,10 @@ import {
   revokeApiKey,
 } from '@/api/api-keys'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useKeywordPaginationState } from '@/hooks/useKeywordPaginationState'
 import { useRequestError } from '@/hooks/useRequestError'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { useAuthStore } from '@/stores/authStore'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 
@@ -39,14 +40,19 @@ export function useApiKeyManagementState(enabled = true) {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
   const authStore = useAuthStore()
 
-  const canCreate = permissionStore.can('api-key', 'create')
-  const canEdit = permissionStore.can('api-key', 'update')
+  const { canCreate, canUpdate: canEdit } = useResourcePermissions('api-key')
   const isCurrentUserTotpDisabled = authStore.user?.totpEnabled === false
 
-  const [keyword, setKeyword] = useState('')
+  const {
+    keyword,
+    currentPage,
+    pageSize,
+    setKeyword,
+    resetPage,
+    handlePageChange,
+  } = useKeywordPaginationState()
   const [filterUserId, setFilterUserId] = useState<string | undefined>(
     undefined,
   )
@@ -56,8 +62,6 @@ export function useApiKeyManagementState(enabled = true) {
   const [usageScopeFilter, setUsageScopeFilter] = useState<string | undefined>(
     undefined,
   )
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
   const [generateModalOpen, setGenerateModalOpen] = useState(false)
   const [generatedKey, setGeneratedKey] = useState<string | null>(null)
   const [totpModalOpen, setTotpModalOpen] = useState(false)
@@ -242,12 +246,12 @@ export function useApiKeyManagementState(enabled = true) {
     pageSize,
     refreshApiKeys,
     resourceOptions,
-    setCurrentPage,
+    resetPage,
+    handlePageChange,
     setFilterUserId,
     setGenerateModalOpen,
     setGeneratedKey,
     setKeyword,
-    setPageSize,
     setStatusFilter,
     setTotpModalOpen,
     setUsageScopeFilter,

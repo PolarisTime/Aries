@@ -1,4 +1,3 @@
-import { ProTable } from '@ant-design/pro-components/es/table'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -7,6 +6,7 @@ import type {
   ApiKeyResourceOption,
   ApiKeyUserOption,
 } from '@/api/api-keys'
+import { AppProTable } from '@/components/AppProTable'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { ApiKeyListToolbar } from '@/views/system/ApiKeyListToolbar'
 import { buildApiKeyListColumns } from '@/views/system/api-key-list-columns'
@@ -79,18 +79,13 @@ export function ApiKeyListCard({
   })
 
   return (
-    <ProTable<ApiKeyRecord>
+    <AppProTable<ApiKeyRecord>
       rowKey="id"
       columns={columns}
       dataSource={keys}
       loading={loading}
-      size="middle"
       scroll={{ x: 1800 }}
-      search={false}
-      options={false}
       headerTitle={title}
-      cardBordered
-      cardProps={{ className: 'system-list-card' }}
       toolBarRender={() => [
         <ApiKeyListToolbar
           key="api-key-toolbar"

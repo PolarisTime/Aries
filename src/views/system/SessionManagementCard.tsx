@@ -1,12 +1,12 @@
 import { DeleteOutlined } from '@ant-design/icons'
 import type { ProColumns } from '@ant-design/pro-components/es/table'
-import { ProTable } from '@ant-design/pro-components/es/table'
 import { Button, Col, Row, Statistic } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type {
   RefreshTokenRecord,
   RefreshTokenSummaryData,
 } from '@/api/session-management'
+import { AppProTable } from '@/components/AppProTable'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 
@@ -47,18 +47,13 @@ export function SessionManagementCard({
 }: Props) {
   const { t } = useTranslation()
   return (
-    <ProTable<RefreshTokenRecord>
+    <AppProTable<RefreshTokenRecord>
       rowKey="id"
       columns={columns}
       dataSource={tokens}
       loading={isLoading}
-      size="middle"
       scroll={{ x: 1400 }}
-      search={false}
-      options={false}
       headerTitle={title}
-      cardBordered
-      cardProps={{ className: 'system-list-card' }}
       toolBarRender={() => [
         <SystemTableToolbar
           key="session-toolbar"

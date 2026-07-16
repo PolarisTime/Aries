@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
-import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { useActivePageEnabled } from '@/hooks/useActivePageEnabled'
 import { SessionManagementCard } from '@/views/system/SessionManagementCard'
 import { useSessionManagementState } from '@/views/system/useSessionManagementState'
 
@@ -14,23 +14,23 @@ export function SessionManagementView({
   embedded = false,
 }: SessionManagementViewProps) {
   const { t } = useTranslation()
-  const isPageVisible = usePageVisibility()
+  const queryEnabled = useActivePageEnabled(active)
   const {
     canEdit,
     columns,
     currentPage,
+    handlePageChange,
     handleRevokeAll,
     isLoading,
     keyword,
     pageSize,
     refreshSessionData,
-    setCurrentPage,
+    resetPage,
     setKeyword,
-    setPageSize,
     summary,
     tokens,
     totalElements,
-  } = useSessionManagementState(active && isPageVisible)
+  } = useSessionManagementState(queryEnabled)
 
   const content = (
     <div className="page-stack">
@@ -47,22 +47,19 @@ export function SessionManagementView({
         totalElements={totalElements}
         onKeywordChange={setKeyword}
         onSearch={() => {
-          setCurrentPage(1)
+          resetPage()
           refreshSessionData()
         }}
         onRefresh={refreshSessionData}
         onRevokeAll={handleRevokeAll}
-        onPageChange={(page, size) => {
-          setCurrentPage(page)
-          setPageSize(size)
-        }}
+        onPageChange={handlePageChange}
       />
     </div>
   )
 
-  if (embedded) {
-    return content
-  }
-
-  return <AppProPage title={t('system.session.title')}>{content}</AppProPage>
+  return (
+    <AppProPage embedded={embedded} title={t('system.session.title')}>
+      {content}
+    </AppProPage>
+  )
 }

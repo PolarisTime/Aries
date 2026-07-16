@@ -1,6 +1,6 @@
 import { Col, Row } from 'antd'
-import { usePageVisibility } from '@/hooks/usePageVisibility'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useActivePageEnabled } from '@/hooks/useActivePageEnabled'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { RoleActionEditorModal } from '@/views/system/RoleActionEditorModal'
 import { RoleActionPermissionCard } from '@/views/system/RoleActionPermissionCard'
 import { RoleActionRoleListCard } from '@/views/system/RoleActionRoleListCard'
@@ -13,12 +13,13 @@ interface RoleActionEditorProps {
 }
 
 export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
-  const permissionStore = usePermissionStore()
-  const canCreateRole = permissionStore.can('role', 'create')
-  const canEditRole = permissionStore.can('role', 'update')
-  const canEditPermissions = permissionStore.can('role', 'manage_permissions')
-  const isPageVisible = usePageVisibility()
-  const queryEnabled = active && isPageVisible
+  const {
+    canCreate: canCreateRole,
+    canUpdate: canEditRole,
+    can,
+  } = useResourcePermissions('role')
+  const canEditPermissions = can('manage_permissions')
+  const queryEnabled = useActivePageEnabled(active)
 
   const { roles } = useRoleSettingsList(queryEnabled)
   const {

@@ -16,11 +16,11 @@ import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type {
   PrintTemplateRecord,
   SavePrintTemplatePayload,
 } from '@/shared/schemas'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
 
@@ -77,10 +77,11 @@ export function usePrintTemplateView() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
-  const canCreate = permissionStore.can('print-template', 'create')
-  const canEdit = permissionStore.can('print-template', 'update')
-  const canDelete = permissionStore.can('print-template', 'delete')
+  const {
+    canCreate,
+    canUpdate: canEdit,
+    canDelete,
+  } = useResourcePermissions('print-template')
   const [state, setState] = useReducer(
     (prev: PrintTemplateState, patch: Partial<PrintTemplateState>) => ({
       ...prev,

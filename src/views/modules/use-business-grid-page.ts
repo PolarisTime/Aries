@@ -93,7 +93,6 @@ export function useBusinessGridPage({
     canAuditRecord,
     canPrintRecord,
     can,
-    resolvedResource,
     // react-doctor: intentional callback, not event handler
   } = useModulePermissions({ moduleKey, resourceKey: pageDef.resourceKey })
   const canUseListExport = pageDef.menuParent === 'master' && canExportData
@@ -363,7 +362,7 @@ export function useBusinessGridPage({
         if (code === 'export') return canExportData
         if (code === 'print') return canPrintRecord
         if (code === 'manage_permissions') {
-          return can(resolvedResource, 'manage_permissions')
+          return can('manage_permissions')
         }
         return false
       }),

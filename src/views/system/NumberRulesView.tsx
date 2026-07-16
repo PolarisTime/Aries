@@ -10,9 +10,8 @@ import {
 import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STATUS } from '@/constants/status-constants'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
-import { usePermissionStore } from '@/stores/permissionStore'
+import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
@@ -25,6 +24,7 @@ import {
   type NumberRuleEditorKind,
 } from '@/views/system/number-rules-view-utils'
 import { SystemSettingsLoadError } from '@/views/system/SystemSettingsLoadError'
+import { useSystemSettingsRefresh } from '@/views/system/useSystemSettingsRefresh'
 
 interface NumberRulesState {
   keyword: string
@@ -49,8 +49,7 @@ interface NumberRulesViewProps {
 export function NumberRulesView({ embedded = false }: NumberRulesViewProps) {
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
-  const canEdit = permissionStore.can('general-setting', 'update')
+  const { canUpdate: canEdit } = useResourcePermissions('general-setting')
 
   const [state, setState] = useReducer(
     (prev: NumberRulesState, patch: Partial<NumberRulesState>) => ({
@@ -84,7 +83,7 @@ export function NumberRulesView({ embedded = false }: NumberRulesViewProps) {
   const numberRuleRows = filteredRows.filter(isNumberRule)
   const uploadRuleRows = filteredRows.filter(isUploadRule)
 
-  const refresh = useRefreshQuery(QUERY_KEYS.numberRules)
+  const refresh = useSystemSettingsRefresh()
 
   const openNumberRuleEditor = (record: ModuleRecord) => {
     if (!canEdit) {
@@ -200,11 +199,9 @@ export function NumberRulesView({ embedded = false }: NumberRulesViewProps) {
     </div>
   )
 
-  if (embedded) {
-    return content
-  }
-
   return (
-    <AppProPage title={t('system.numberRules.title')}>{content}</AppProPage>
+    <AppProPage embedded={embedded} title={t('system.numberRules.title')}>
+      {content}
+    </AppProPage>
   )
 }

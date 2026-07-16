@@ -5,15 +5,21 @@ import {
   type UserAccountListParams,
 } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useKeywordPaginationState } from '@/hooks/useKeywordPaginationState'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 
 export function useUserAccountListState(enabled = true) {
-  const [keyword, setKeyword] = useState('')
+  const {
+    keyword,
+    currentPage,
+    pageSize,
+    setKeyword,
+    resetPage,
+    handlePageChange,
+  } = useKeywordPaginationState()
   const [statusFilter, setStatusFilter] = useState<string | undefined>(
     undefined,
   )
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: QUERY_KEYS.userAccount(
@@ -40,18 +46,13 @@ export function useUserAccountListState(enabled = true) {
   const refresh = useRefreshQuery(QUERY_KEYS.userAccountBase)
 
   const handleSearch = () => {
-    setCurrentPage(1)
+    resetPage()
     refresh()
   }
 
   const handleStatusFilterChange = (value?: string) => {
     setStatusFilter(value)
-    setCurrentPage(1)
-  }
-
-  const handlePageChange = (page: number, size: number) => {
-    setCurrentPage(page)
-    setPageSize(size)
+    resetPage()
   }
 
   return {

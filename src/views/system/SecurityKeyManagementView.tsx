@@ -26,7 +26,7 @@ import {
   type SecurityKeyOverview,
 } from '@/api/security-keys'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
-import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { useActivePageEnabled } from '@/hooks/useActivePageEnabled'
 import { message, modal } from '@/utils/antd-app'
 import { formatDateTime } from '@/utils/formatters'
 
@@ -157,7 +157,7 @@ export function SecurityKeyManagementView({
   const queryClient = useQueryClient()
   const [totpOpen, setTotpOpen] = useState(false)
   const [rotateType, setRotateType] = useState<RotateType>('jwt')
-  const isPageVisible = usePageVisibility()
+  const queryEnabled = useActivePageEnabled(active)
 
   const {
     data: keys,
@@ -167,7 +167,7 @@ export function SecurityKeyManagementView({
   } = useQuery({
     queryKey: SECURITY_KEY_QUERY_KEY,
     queryFn: getSecurityKeyOverview,
-    enabled: active && isPageVisible,
+    enabled: queryEnabled,
   })
   const overview = keys?.data
   const keyItems = [overview?.jwt, overview?.totp].filter(
