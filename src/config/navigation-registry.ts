@@ -6,7 +6,6 @@ export type AppIconKey =
   | 'ApartmentOutlined'
   | 'HomeOutlined'
   | 'AppstoreOutlined'
-  | 'BarChartOutlined'
   | 'BankOutlined'
   | 'CalculatorOutlined'
   | 'CarOutlined'
@@ -25,7 +24,6 @@ export type AppIconKey =
   | 'ShopOutlined'
   | 'ShoppingCartOutlined'
   | 'SwapOutlined'
-  | 'TableOutlined'
   | 'TagsOutlined'
   | 'TeamOutlined'
   | 'UserOutlined'
@@ -37,7 +35,6 @@ export type MenuGroupKey =
   | 'sales'
   | 'freight'
   | 'contracts'
-  | 'reports'
   | 'statements'
   | 'finance'
   | 'system'
@@ -54,7 +51,6 @@ export const menuGroupOrder: MenuGroupKey[] = [
   'sales',
   'freight',
   'contracts',
-  'reports',
   'statements',
   'finance',
   'system',
@@ -85,11 +81,6 @@ export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
     key: 'contracts',
     title: i18next.t('navigation.contracts'),
     icon: 'FileTextOutlined',
-  },
-  reports: {
-    key: 'reports',
-    title: i18next.t('navigation.reports'),
-    icon: 'TableOutlined',
   },
   statements: {
     key: 'statements',

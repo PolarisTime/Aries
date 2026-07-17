@@ -50,12 +50,6 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
   payment: async () =>
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
-  'inventory-report': async () =>
-    (await import('@/config/business-pages/finance-report-pages'))
-      .financeReportPageConfigs,
-  'io-report': async () =>
-    (await import('@/config/business-pages/finance-report-pages'))
-      .financeReportPageConfigs,
   'general-setting': async () =>
     (await import('@/config/business-pages/system-core-pages'))
       .systemCorePageConfigs,

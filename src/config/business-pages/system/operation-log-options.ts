@@ -271,14 +271,6 @@ export const operationLogModuleOptions = [
         label: i18next.t('modules.pages.operationLogOptions.payment'),
         value: '付款单',
       },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.ioReport'),
-        value: '出入库报表',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.inventoryReport'),
-        value: '库存报表',
-      },
     ],
   },
 ]

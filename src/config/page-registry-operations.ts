@@ -51,22 +51,4 @@ export const operationPageDefinitions: AppPageDefinition[] = [
     moduleKey: 'freight-bill',
     searchable: true,
   },
-  {
-    key: 'inventory-report',
-    title: '商品库存报表',
-    menuKey: '/inventory-report',
-    view: 'business-grid',
-    icon: 'BarChartOutlined',
-    menuParent: 'reports',
-    moduleKey: 'inventory-report',
-  },
-  {
-    key: 'io-report',
-    title: '出入库报表',
-    menuKey: '/io-report',
-    view: 'business-grid',
-    icon: 'SwapOutlined',
-    menuParent: 'reports',
-    moduleKey: 'io-report',
-  },
 ]
