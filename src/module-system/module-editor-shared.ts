@@ -55,13 +55,13 @@ function buildModuleLineItemId() {
   return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-// 前端雪花 ID，与后端 SnowflakeIdGenerator 保持相同 epoch
+// 采购订单批号由前端生成，与后端 SnowflakeIdGenerator 保持相同 epoch
 const SNOWFLAKE_EPOCH = 1704038400000n
 const SNOWFLAKE_WORKER_ID = BigInt(Math.floor(Math.random() * 1024))
 let snowflakeSequence = 0n
 let snowflakeLastTimestamp = -1n
 
-export function generatePlaceholderBatchNo(): string {
+export function generateBatchNo(): string {
   let timestamp = BigInt(Date.now())
   if (timestamp === snowflakeLastTimestamp) {
     snowflakeSequence = (snowflakeSequence + 1n) & 4095n

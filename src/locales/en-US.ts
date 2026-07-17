@@ -900,10 +900,7 @@ export const enUS = {
         pieceWeightTon: 'pieceWeightTon',
         pcsPerBundle: 'pcsPerBundle',
         unitPrice: 'unitPrice',
-        batchMgmt: 'batchMgmt',
         remark: 'remark',
-        enabled: 'enabled',
-        closed: 'closed',
         materialCount: 'materialCount',
         calculated: 'calculated',
         weighed: 'weighed',
@@ -1936,8 +1933,6 @@ export const enUS = {
         'When enabled, the sales outbound page switches to weight view, hiding amount and unit price fields.',
       helpCustomerStatementZero:
         'When enabled, customer statement drafts default to zero received amount; ending balance equals total sales order amount.',
-      helpForceBatchManagement:
-        'When enabled, all inbound and outbound detail lines are treated as batch-managed, overriding the material-level batch switch. Missing batch numbers are filled only when auto generation is enabled.',
       helpHideAuditedRecords:
         'When enabled, business list pagination defaults to hiding documents with the checked statuses below.',
       actionQuery: 'Query',

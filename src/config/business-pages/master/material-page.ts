@@ -98,11 +98,6 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'amount',
     },
     {
-      title: i18next.t('modules.pages.material.batchMgmt'),
-      dataIndex: 'batchNoEnabled',
-      width: 110,
-    },
-    {
       title: i18next.t('modules.pages.material.remark'),
       dataIndex: 'remark',
       width: 180,
@@ -112,7 +107,6 @@ export const materialsPageConfig: ModulePageConfig = {
     'pieceWeightTon',
     'piecesPerBundle',
     'unitPrice',
-    'batchNoEnabled',
     'remark',
   ],
   detailFields: [
@@ -141,10 +135,6 @@ export const materialsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.material.unitPrice'),
       key: 'unitPrice',
       type: 'amount',
-    },
-    {
-      label: i18next.t('modules.pages.material.batchMgmt'),
-      key: 'batchNoEnabled',
     },
     { label: i18next.t('modules.pages.material.remark'), key: 'remark' },
   ],
@@ -234,17 +224,6 @@ export const materialsPageConfig: ModulePageConfig = {
       min: 0,
       precision: 2,
       defaultValue: 0,
-      row: 3,
-    },
-    {
-      key: 'batchNoEnabled',
-      label: i18next.t('modules.pages.material.batchMgmt'),
-      type: 'select',
-      defaultValue: true,
-      options: [
-        { label: i18next.t('modules.pages.material.enabled'), value: true },
-        { label: i18next.t('modules.pages.material.closed'), value: false },
-      ],
       row: 3,
     },
     {

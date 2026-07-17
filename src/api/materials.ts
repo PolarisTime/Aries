@@ -19,7 +19,6 @@ export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
   pieceWeightTon?: number
   piecesPerBundle?: number
   unitPrice?: number
-  batchNoEnabled?: boolean
   remark?: string
 }
 

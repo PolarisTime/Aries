@@ -19,9 +19,6 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER: i18next.t(
     'system.generalSettingsUtils.helpCustomerStatementZero',
   ),
-  SYS_FORCE_BATCH_MANAGEMENT: i18next.t(
-    'system.generalSettingsUtils.helpForceBatchManagement',
-  ),
   UI_HIDE_AUDITED_LIST_RECORDS: i18next.t(
     'system.generalSettingsUtils.helpHideAuditedRecords',
   ),

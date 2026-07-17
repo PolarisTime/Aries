@@ -7,7 +7,7 @@ import { recalculateEditorLineItem } from './module-editor-line-item-calculation
 import {
   buildDefaultEditorLineItem,
   type EditorItemDragPosition,
-  generatePlaceholderBatchNo,
+  generateBatchNo,
   hasEditorValue,
   inferQuantityUnit,
   toRoundedNumber,
@@ -149,7 +149,7 @@ export function applyMaterialToEditorLineItem(
   item.length = materialRecord.length || ''
   item.unit = materialRecord.unit || '吨'
   if (!item.batchNo && moduleKey === 'purchase-order') {
-    item.batchNo = generatePlaceholderBatchNo()
+    item.batchNo = generateBatchNo()
   }
   item.quantityUnit = inferQuantityUnit(materialRecord)
   item.pieceWeightTon = toRoundedNumber(

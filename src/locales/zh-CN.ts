@@ -873,10 +873,7 @@ export const zhCN = {
         pieceWeightTon: '件重/吨',
         pcsPerBundle: '每件支数',
         unitPrice: '单价',
-        batchMgmt: '批号管理',
         remark: '备注',
-        enabled: '启用',
-        closed: '关闭',
         materialCount: '商品数',
         calculated: '理算品类',
         weighed: '过磅品类',
@@ -1881,8 +1878,6 @@ export const zhCN = {
         '启用后，销售出库页面切换到重量视图，隐藏金额和单价字段。',
       helpCustomerStatementZero:
         '启用后，生成客户对账单草稿时默认收款金额为 0，期末余额等于所选销售订单总金额。',
-      helpForceBatchManagement:
-        '启用后，所有出入库明细都按批号管理处理，会覆盖商品资料中的批号启用开关；未填写批号时将按批号自动生成开关决定是否补齐。',
       helpHideAuditedRecords:
         '启用后，业务列表分页查询默认不显示下方多选中所勾选状态的单据。',
       actionQuery: '查询',
