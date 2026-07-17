@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { http } from '@/api/client'
 import type { RoleRecord } from '@/api/role-actions'
 import { FormModal } from '@/components/FormModal'
-import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
+import { roleTypeValues } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { asString } from '@/utils/type-narrowing'
 
@@ -103,14 +103,6 @@ export function RoleActionEditorModal({
         <Form.Item name="roleType" label={t('system.roleEditor.roleType')}>
           <Select
             options={roleTypeValues.map((value) => ({ label: value, value }))}
-          />
-        </Form.Item>
-        <Form.Item name="dataScope" label={t('system.roleEditor.dataScope')}>
-          <Select
-            options={roleDataScopeValues.map((value) => ({
-              label: value,
-              value,
-            }))}
           />
         </Form.Item>
         <Form.Item name="remark" label={t('system.roleEditor.remark')}>

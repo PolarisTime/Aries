@@ -4,11 +4,7 @@ import i18next from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createRole, type RoleRecord, updateRole } from '@/api/role-actions'
-import {
-  enabledStatusValues,
-  roleDataScopeValues,
-  roleTypeValues,
-} from '@/constants/module-options'
+import { enabledStatusValues, roleTypeValues } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import { message, modal } from '@/utils/antd-app'
@@ -23,7 +19,6 @@ type RoleFormValues = {
   roleCode?: string
   roleName?: string
   roleType?: string
-  dataScope?: string
   remark?: string | null
 }
 
@@ -50,7 +45,6 @@ export function useRoleEditor({
         roleName: role.roleName,
         roleCode: role.roleCode,
         roleType: role.roleType,
-        dataScope: role.dataScope,
         remark: role.remark || '',
       })
     } else {
@@ -62,7 +56,6 @@ export function useRoleEditor({
       roleForm.resetFields()
       roleForm.setFieldsValue({
         roleType: roleTypeValues[1],
-        dataScope: roleDataScopeValues[0],
       })
     }
     setRoleModalOpen(true)

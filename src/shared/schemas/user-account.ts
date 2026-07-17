@@ -9,7 +9,6 @@ const userAccountRecordSchema = z.object({
   departmentName: z.string().nullable(),
   roleNames: z.array(z.string()),
   roleIds: z.array(z.union([z.string(), z.number()])).optional(),
-  dataScope: z.string().nullable(),
   permissionSummary: z.string().nullable(),
   lastLoginDate: z.string().nullable(),
   status: z.string(),
@@ -25,7 +24,6 @@ export const userAccountFormPayloadSchema = z.object({
   mobile: z.string(),
   departmentId: z.string().nullable().optional(),
   roleIds: z.array(z.string()),
-  dataScope: z.string(),
   permissionSummary: z.string(),
   status: z.string(),
   remark: z.string(),
@@ -69,7 +67,6 @@ export const roleOptionRecordSchema = z.object({
   roleName: z.string(),
   roleCode: z.string(),
   status: z.string().optional(),
-  dataScope: z.string().optional(),
   permissionSummary: z.string().optional(),
 })
 export type RoleOptionRecord = z.infer<typeof roleOptionRecordSchema>

@@ -18,8 +18,6 @@ import {
 } from '@/constants/module-options'
 import { getFormString } from '@/lib/antd-form'
 import type { DepartmentOptionRecord, RoleOptionRecord } from '@/shared/schemas'
-import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
-import { buildFormControlId } from '@/utils/form-control-id'
 
 type EditorMode = 'create' | 'edit'
 const EMPTY_ROLE_CONFLICTS: Record<string, string[]> = {}
@@ -37,7 +35,6 @@ interface Props {
   roleOptions: RoleOptionRecord[]
   selectedRoleIds: string[]
   roleConflicts?: Record<string, string[]>
-  selectedRoleDataScope: string
   selectedRoleSummaries: string[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
   onSave: () => void
@@ -56,7 +53,6 @@ export function UserAccountEditorModal({
   roleOptions,
   selectedRoleIds,
   roleConflicts = EMPTY_ROLE_CONFLICTS,
-  selectedRoleDataScope,
   selectedRoleSummaries,
   onCheckLoginName,
   onSave,
@@ -64,10 +60,6 @@ export function UserAccountEditorModal({
 }: Props) {
   const { t } = useTranslation()
   const isCreate = mode === 'create'
-  const roleDataScopeId = buildFormControlId(
-    'user-account-editor',
-    'data-scope',
-  )
   return (
     <FormModal
       title={
@@ -212,7 +204,7 @@ export function UserAccountEditorModal({
               {t('system.userAccountEditor.permConfig')}
             </div>
             <Row gutter={[24, 0]}>
-              <Col xs={24} md={isCreate ? 12 : 16}>
+              <Col xs={24} md={isCreate ? 18 : 24}>
                 <Form.Item
                   name="roleIds"
                   label={t('system.userAccountEditor.roles')}
@@ -242,21 +234,6 @@ export function UserAccountEditorModal({
                         disabled: isDisabled || conflictWith != null,
                       }
                     })}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={isCreate ? 6 : 8}>
-                <Form.Item
-                  {...buildLabeledFormItemProps({
-                    label: t('system.userAccountEditor.roleDataScope'),
-                    htmlFor: roleDataScopeId,
-                  })}
-                >
-                  <Input
-                    id={roleDataScopeId}
-                    name="role-data-scope"
-                    value={selectedRoleDataScope}
-                    disabled
                   />
                 </Form.Item>
               </Col>

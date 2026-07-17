@@ -1516,13 +1516,11 @@ export interface MessageSchema {
         module: string
         permissionType: string
         action: string
-        dataScope: string
         resourceKey: string
         status: string
         remark: string
         menuPermission: string
         buttonPermission: string
-        dataPermission: string
         view: string
         create: string
         edit: string
@@ -1910,7 +1908,6 @@ export interface MessageSchema {
       department: string
       mobile: string
       roleNames: string
-      dataScope: string
       twoFactorStatus: string
       lastLogin: string
       enabled: string
@@ -1939,7 +1936,6 @@ export interface MessageSchema {
       colDepartment: string
       colMobile: string
       colRoles: string
-      colDataScope: string
       colTotpStatus: string
       totpEnabled: string
       totpDisabled: string
@@ -2239,7 +2235,6 @@ export interface MessageSchema {
       userName: string
       mobile: string
       department: string
-      dataScope: string
       roles: string
       permSummary: string
       status: string
@@ -2271,7 +2266,6 @@ export interface MessageSchema {
       roles: string
       rolesPlaceholder: string
       roleConflict: string
-      roleDataScope: string
       status2: string
       statusPlaceholder2: string
       permSummary: string

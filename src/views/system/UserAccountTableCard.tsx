@@ -136,12 +136,6 @@ export function UserAccountTableCard({
         Array.isArray(record.roleNames) ? record.roleNames.join('、') : '--',
     },
     {
-      dataIndex: 'dataScope',
-      title: t('system.userAccountTable.colDataScope'),
-      width: 120,
-      render: (_dom, record) => record.dataScope || '--',
-    },
-    {
       dataIndex: 'totpEnabled',
       title: t('system.userAccountTable.colTotpStatus'),
       width: 110,

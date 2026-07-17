@@ -67,7 +67,7 @@ export function useUserAccountEditor({
     canViewDepartmentCatalog,
     enabled: enabled && editorOpen,
   })
-  const { selectedRoleDataScope, selectedRoleIds, selectedRoleSummaries } =
+  const { selectedRoleIds, selectedRoleSummaries } =
     useUserAccountEditorRoleState({ form, roleOptions })
 
   const startEditorSession = (targetId: string | null): EditorSession => {
@@ -161,7 +161,6 @@ export function useUserAccountEditor({
       mobile: record.mobile || '',
       departmentId: record.departmentId ?? null,
       roleIds: [...(record.roleIds || [])].map(String),
-      dataScope: record.dataScope || defaultValues.dataScope,
       permissionSummary: record.permissionSummary || '',
       status: record.status || defaultValues.status,
       remark: record.remark || '',
@@ -305,7 +304,6 @@ export function useUserAccountEditor({
             mobile: values.mobile?.trim() || '',
             departmentId: values.departmentId ?? null,
             roleIds: [...(values.roleIds || [])].map(String),
-            dataScope: selectedRoleDataScope,
             permissionSummary: values.permissionSummary?.trim() || '',
             status: values.status,
             remark: values.remark?.trim() || '',
@@ -342,7 +340,6 @@ export function useUserAccountEditor({
     departmentOptions,
     roleOptions,
     selectedRoleIds,
-    selectedRoleDataScope,
     selectedRoleSummaries,
     createResultOpen,
     createResult,

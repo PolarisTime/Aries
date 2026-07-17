@@ -11,7 +11,6 @@ export interface RoleRecord {
   roleCode: string
   roleName: string
   roleType: string
-  dataScope: string
   status: string
   userCount: number
   remark: string | null
@@ -76,7 +75,6 @@ type RolePayload = {
   roleCode?: string
   roleName?: string
   roleType?: string
-  dataScope?: string
   status?: string
   remark?: string
 }

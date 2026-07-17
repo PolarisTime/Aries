@@ -29,9 +29,6 @@ const resourcePermissionSchema = z.object({
 })
 export type ResourcePermission = z.infer<typeof resourcePermissionSchema>
 
-export const dataScopeSchema = z.enum(['all', 'department', 'self', 'custom'])
-export type DataScope = z.infer<typeof dataScopeSchema>
-
 const loginUserSchema = z.object({
   id: z.union([z.number(), z.string()]),
   loginName: z.string(),
@@ -40,7 +37,6 @@ const loginUserSchema = z.object({
   totpEnabled: z.boolean().optional(),
   forceTotpSetup: z.boolean().optional(),
   permissions: z.array(resourcePermissionSchema).optional(),
-  dataScopes: z.record(z.string(), z.string()).optional(),
 })
 export type LoginUser = z.infer<typeof loginUserSchema>
 

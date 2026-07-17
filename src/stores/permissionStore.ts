@@ -49,11 +49,7 @@ function buildPermissionMap(items: ResourcePermission[] | null | undefined) {
 
 interface PermissionState {
   permissionMap: Record<string, Set<string>>
-  dataScopes: Record<string, string>
-  setPermissions: (
-    items: ResourcePermission[],
-    dataScopes?: Record<string, string>,
-  ) => void
+  setPermissions: (items: ResourcePermission[]) => void
   syncFromUser: (user: LoginUser | null | undefined) => void
   can: (resource: string, action: string) => boolean
   canAny: (resource: string, actions: string[]) => boolean
@@ -82,23 +78,16 @@ export function hasPermission(
 
 export const usePermissionStore = create<PermissionState>((set, get) => ({
   permissionMap: {},
-  dataScopes: {},
 
-  setPermissions: (items, dataScopes = {}) => {
+  setPermissions: (items) => {
     set({
       permissionMap: buildPermissionMap(items),
-      dataScopes: Object.fromEntries(
-        Object.entries(dataScopes).map(([resource, scope]) => [
-          normalizePermissionKey(resolveResourceKey(resource) || resource),
-          scope,
-        ]),
-      ),
     })
   },
 
   syncFromUser: (user) => {
     if (user && Array.isArray(user.permissions)) {
-      get().setPermissions(user.permissions, user.dataScopes || {})
+      get().setPermissions(user.permissions)
       return
     }
     get().clearPermissions()
@@ -116,7 +105,7 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
   },
 
   clearPermissions: () => {
-    set({ permissionMap: {}, dataScopes: {} })
+    set({ permissionMap: {} })
   },
 }))
 

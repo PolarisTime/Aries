@@ -11,49 +11,6 @@ export function getUserAccountTotpColor(enabled: boolean) {
   return enabled ? 'processing' : 'default'
 }
 
-function normalizeUserAccountDataScopeLabel(value: string | null | undefined) {
-  const normalized = String(value || '').trim()
-  if (normalized === '全部数据' || normalized === '全部') return '全部数据'
-  if (normalized === '本部门') return '本部门'
-  return '本人'
-}
-
-function getUserAccountDataScopeRank(value: string) {
-  switch (normalizeUserAccountDataScopeLabel(value)) {
-    case '全部数据':
-      return 3
-    case '本部门':
-      return 2
-    default:
-      return 1
-  }
-}
-
-export function buildSelectedRoleDataScope(
-  selectedRoleIds: string[],
-  roleOptions: RoleOptionRecord[],
-  currentDataScope?: string,
-) {
-  const selectedRoles = roleOptions.filter((role) =>
-    selectedRoleIds.includes(String(role.id)),
-  )
-  if (!selectedRoles.length) {
-    return selectedRoleIds.length
-      ? normalizeUserAccountDataScopeLabel(currentDataScope)
-      : '本人'
-  }
-  return selectedRoles
-    .map((role) => normalizeUserAccountDataScopeLabel(role.dataScope))
-    .reduce(
-      (effective, current) =>
-        getUserAccountDataScopeRank(current) >
-        getUserAccountDataScopeRank(effective)
-          ? current
-          : effective,
-      '本人',
-    )
-}
-
 export function buildSelectedRoleSummaries(
   selectedRoleIds: string[],
   roleOptions: RoleOptionRecord[],
@@ -75,7 +32,6 @@ export function buildDefaultUserAccountFormValues() {
     mobile: '',
     departmentId: null,
     roleIds: [],
-    dataScope: '本人',
     permissionSummary: '',
     status: enabledStatusValues[0],
     remark: '',

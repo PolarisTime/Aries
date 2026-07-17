@@ -45,9 +45,6 @@ export function UserAccountDetailModal({
             <Descriptions.Item label={t('system.userAccountDetail.department')}>
               {record.departmentName || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.dataScope')}>
-              {record.dataScope || '--'}
-            </Descriptions.Item>
             <Descriptions.Item
               label={t('system.userAccountDetail.roles')}
               span="filled"

@@ -1,8 +1,5 @@
 import i18next from 'i18next'
-import {
-  enabledStatusOptions,
-  userAccountDataScopeOptions,
-} from '@/constants/module-options'
+import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
@@ -66,11 +63,6 @@ export const permissionManagementPageConfig: ModulePageConfig = {
       width: 120,
     },
     {
-      title: i18next.t('modules.pages.systemPermissionManagement.dataScope'),
-      dataIndex: 'scopeName',
-      width: 120,
-    },
-    {
       title: i18next.t('modules.pages.systemPermissionManagement.resourceKey'),
       dataIndex: 'resourceKey',
       width: 180,
@@ -114,10 +106,6 @@ export const permissionManagementPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.systemPermissionManagement.action'),
       key: 'actionName',
-    },
-    {
-      label: i18next.t('modules.pages.systemPermissionManagement.dataScope'),
-      key: 'scopeName',
     },
     {
       label: i18next.t('modules.pages.systemPermissionManagement.resourceKey'),
@@ -180,12 +168,6 @@ export const permissionManagementPageConfig: ModulePageConfig = {
           ),
           value: '按钮权限',
         },
-        {
-          label: i18next.t(
-            'modules.pages.systemPermissionManagement.dataPermission',
-          ),
-          value: '数据权限',
-        },
       ],
     },
     {
@@ -222,22 +204,6 @@ export const permissionManagementPageConfig: ModulePageConfig = {
         {
           label: i18next.t('modules.pages.systemPermissionManagement.print'),
           value: '打印',
-        },
-      ],
-    },
-    {
-      key: 'scopeName',
-      label: i18next.t('modules.pages.systemPermissionManagement.dataScope'),
-      type: 'select',
-      required: true,
-      row: 2,
-      options: [
-        ...userAccountDataScopeOptions,
-        {
-          label: i18next.t(
-            'modules.pages.systemPermissionManagement.customScope',
-          ),
-          value: '自定义范围',
         },
       ],
     },

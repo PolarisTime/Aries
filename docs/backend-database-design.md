@@ -794,7 +794,6 @@
 - `module_name`
 - `permission_type`
 - `action_name`
-- `scope_name`
 - `resource_key`
 - `status`
 - `remark`
@@ -809,7 +808,6 @@
 - `role_code`
 - `role_name`
 - `role_type`
-- `data_scope`
 - `permission_count`
 - `permission_summary`
 - `user_count`
@@ -827,7 +825,6 @@
 - `password_hash`
 - `user_name`
 - `mobile`
-- `data_scope`
 - `permission_summary`
 - `last_login_date`
 - `status`

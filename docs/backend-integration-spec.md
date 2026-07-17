@@ -842,7 +842,6 @@ YYYY + 前缀 + 6位流水
   - `moduleName`
   - `permissionType`
   - `actionName`
-  - `scopeName`
   - `resourceKey`
   - `status`
   - `remark`
@@ -860,7 +859,6 @@ YYYY + 前缀 + 6位流水
   - `userName`
   - `mobile`
   - `roleNames`
-  - `dataScope`
   - `permissionSummary`
   - `lastLoginDate`
   - `status`
@@ -879,7 +877,6 @@ YYYY + 前缀 + 6位流水
   - `roleCode`
   - `roleName`
   - `roleType`
-  - `dataScope`
   - `permissionCodes`
   - `permissionSummary`
   - `userCount`

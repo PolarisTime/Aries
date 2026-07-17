@@ -9,7 +9,6 @@ export type {
 // ── 认证 ────────────────────────────────────────────────
 export type {
   CaptchaData,
-  DataScope,
   Login2faPayload,
   LoginPayload,
   LoginResponseData,

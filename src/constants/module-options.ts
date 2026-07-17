@@ -16,18 +16,6 @@ export const enabledStatusOptions = createOptionList(enabledStatusValues)
 const statementStatusValues = ['待确认', '已确认'] as const
 export const statementStatusOptions = createOptionList(statementStatusValues)
 
-const userAccountDataScopeValues = [
-  '全部数据',
-  '全部',
-  '本部门',
-  '本人',
-] as const
-export const userAccountDataScopeOptions = createOptionList(
-  userAccountDataScopeValues,
-)
-
-export const roleDataScopeValues = userAccountDataScopeValues
-
 export const roleTypeValues = [
   '平台角色',
   '系统角色',
