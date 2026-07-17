@@ -2236,15 +2236,6 @@ export const enUS: MessageSchema = {
       settingCode: 'Setting Code',
       settingName: 'Setting Name',
       billScope: 'Bill Scope',
-      watermarkColor: 'Watermark Color',
-      watermarkContent: 'Watermark Content',
-      maxChars: 'Max {{count}} characters',
-      magicVars: 'Magic Variables:',
-      autoReplace: ': auto-replaced during frontend rendering',
-      watermarkNewlineHint:
-        '; each line is rendered as a separate watermark line.',
-      watermarkFontSize: 'Watermark Font Size',
-      watermarkDensity: 'Watermark Density',
       currentValue: 'Current Value',
       enabledStatus: 'Enabled Status',
       switchEnabled: 'Enabled',
@@ -2277,7 +2268,6 @@ export const enUS: MessageSchema = {
       systemSwitchesTitle: 'System Switches',
       groupTax: 'Tax Configuration',
       groupPagination: 'Pagination Configuration',
-      groupWatermark: 'Watermark Configuration',
       groupSession: 'Session Security Configuration',
       groupOther: 'Other Configuration',
     },
@@ -2477,8 +2467,6 @@ export const enUS: MessageSchema = {
         'When enabled, new business documents pre-allocate a real snowflake ID and use it directly as the document number.',
       helpLoginCaptcha:
         'When enabled, a captcha is required during login for brute-force protection.',
-      helpAttachmentWatermark:
-        'When enabled, non-admin users get automatic tiled watermarks (username + time) when downloading or previewing image/PDF attachments.',
       actionQuery: 'Query',
       actionDetail: 'View',
       actionCreate: 'Create',

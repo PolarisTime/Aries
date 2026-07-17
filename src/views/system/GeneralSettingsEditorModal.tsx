@@ -1,13 +1,5 @@
 import type { FormInstance } from 'antd'
-import {
-  ColorPicker,
-  Form,
-  Input,
-  Select,
-  Space,
-  Switch,
-  Typography,
-} from 'antd'
+import { Form, Input, Select, Space, Switch, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import type { ModuleRecord } from '@/types/module-page'
@@ -18,12 +10,7 @@ import {
   isDefaultListPageSizeSetting,
   isDefaultTaxRateSetting,
   isNumericSetting,
-  isWatermarkContentSetting,
-  isWatermarkPropSetting,
   SYSTEM_SWITCH_HELP_TEXT,
-  WATERMARK_COLOR_CODE,
-  WATERMARK_DENSITY_CODE,
-  WATERMARK_FONT_SIZE_CODE,
 } from '@/views/system/general-settings-view-utils'
 
 interface Props {
@@ -33,30 +20,6 @@ interface Props {
   saving: boolean
   onSave: () => void
   onClose: () => void
-}
-
-function WatermarkColorInput({
-  value,
-  onChange,
-}: {
-  value?: string
-  onChange?: (value: string) => void
-}) {
-  return (
-    <Space.Compact className="w-full">
-      <ColorPicker
-        format="rgb"
-        value={value || undefined}
-        onChange={(_, hex) => onChange?.(hex)}
-      />
-      <Input
-        value={value ?? ''}
-        onChange={(event) => onChange?.(event.target.value)}
-        placeholder="rgba(0,0,0,0.08)"
-        maxLength={50}
-      />
-    </Space.Compact>
-  )
 }
 
 function NumericInputWithAddon({
@@ -117,104 +80,19 @@ export function GeneralSettingsEditorModal({
             <Input disabled />
           </Form.Item>
           {isNumericSetting(record) ? (
-            isWatermarkContentSetting(record) ? (
-              <Form.Item
-                name="numericValue"
-                label={
-                  asString(record.settingCode) === WATERMARK_COLOR_CODE
-                    ? t('system.generalSettingsEditor.watermarkColor')
-                    : t('system.generalSettingsEditor.watermarkContent')
-                }
-                rules={[
-                  {
-                    max:
-                      asString(record.settingCode) === WATERMARK_COLOR_CODE
-                        ? 50
-                        : 64,
-                    message: t('system.generalSettingsEditor.maxChars', {
-                      count:
-                        asString(record.settingCode) === WATERMARK_COLOR_CODE
-                          ? 50
-                          : 64,
-                    }),
-                  },
-                ]}
-                extra={
-                  asString(record.settingCode) ===
-                  WATERMARK_COLOR_CODE ? null : (
-                    <Typography.Text type="secondary" className="text-xs">
-                      {t('system.generalSettingsEditor.magicVars')}{' '}
-                      <Typography.Text code className="text-xs">
-                        {'{username}'}
-                      </Typography.Text>{' '}
-                      <Typography.Text code className="text-xs">
-                        {'{time}'}
-                      </Typography.Text>{' '}
-                      <Typography.Text code className="text-xs">
-                        {'{date}'}
-                      </Typography.Text>{' '}
-                      {t('system.generalSettingsEditor.autoReplace')}
-                      {t('system.generalSettingsEditor.watermarkNewlineHint')}
-                    </Typography.Text>
-                  )
-                }
-              >
-                {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
-                  <WatermarkColorInput />
-                ) : (
-                  <Input.TextArea rows={4} maxLength={64} showCount />
-                )}
-              </Form.Item>
-            ) : (
-              <Form.Item
-                name="numericValue"
-                label={
-                  asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE
-                    ? t('system.generalSettingsEditor.watermarkFontSize')
-                    : asString(record.settingCode) === WATERMARK_DENSITY_CODE
-                      ? t('system.generalSettingsEditor.watermarkDensity')
-                      : t('system.generalSettingsEditor.currentValue')
-                }
-                required
-              >
-                {isDefaultTaxRateSetting(record) ? (
-                  <NumericInputWithAddon
-                    addon="%"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                  />
-                ) : isDefaultListPageSizeSetting(record) ? (
-                  <Input type="number" min={1} max={200} step={1} />
-                ) : isWatermarkPropSetting(record) ? (
-                  asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE ? (
-                    <NumericInputWithAddon
-                      addon="px"
-                      min={8}
-                      max={72}
-                      step={1}
-                    />
-                  ) : asString(record.settingCode) ===
-                    WATERMARK_DENSITY_CODE ? (
-                    <NumericInputWithAddon
-                      addon="px"
-                      min={50}
-                      max={400}
-                      step={10}
-                    />
-                  ) : (
-                    <NumericInputWithAddon
-                      addon="°"
-                      min={-90}
-                      max={90}
-                      step={1}
-                    />
-                  )
-                ) : (
-                  <Input type="number" min={0} />
-                )}
-              </Form.Item>
-            )
+            <Form.Item
+              name="numericValue"
+              label={t('system.generalSettingsEditor.currentValue')}
+              required
+            >
+              {isDefaultTaxRateSetting(record) ? (
+                <NumericInputWithAddon addon="%" min={0} max={1} step={0.01} />
+              ) : isDefaultListPageSizeSetting(record) ? (
+                <Input type="number" min={1} max={200} step={1} />
+              ) : (
+                <Input type="number" min={0} />
+              )}
+            </Form.Item>
           ) : (
             <>
               <Form.Item

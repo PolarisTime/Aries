@@ -2102,14 +2102,6 @@ export interface MessageSchema {
       settingCode: string
       settingName: string
       billScope: string
-      watermarkColor: string
-      watermarkContent: string
-      maxChars: string
-      magicVars: string
-      autoReplace: string
-      watermarkNewlineHint: string
-      watermarkFontSize: string
-      watermarkDensity: string
       currentValue: string
       enabledStatus: string
       switchEnabled: string
@@ -2141,7 +2133,6 @@ export interface MessageSchema {
       systemSwitchesTitle: string
       groupTax: string
       groupPagination: string
-      groupWatermark: string
       groupSession: string
       groupOther: string
     }
@@ -2321,7 +2312,6 @@ export interface MessageSchema {
       helpShowSnowflakeId: string
       helpUseSnowflakeAsBusinessNo: string
       helpLoginCaptcha: string
-      helpAttachmentWatermark: string
       actionQuery: string
       actionDetail: string
       actionCreate: string

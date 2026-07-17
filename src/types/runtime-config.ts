@@ -1,16 +1,6 @@
-export interface RuntimeWatermarkConfig {
-  enabled: boolean
-  content: string
-  fontSize: number
-  color: string
-  rotate: number
-  density: number
-}
-
 export interface RuntimeUiConfig {
   defaultPageSize: number
   showSnowflakeId: boolean
-  watermark: RuntimeWatermarkConfig
 }
 
 export interface RuntimeStatementConfig {

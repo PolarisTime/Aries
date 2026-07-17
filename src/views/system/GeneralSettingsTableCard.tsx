@@ -11,7 +11,7 @@ import {
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
 
-type BasicGroupKey = 'tax' | 'pagination' | 'watermark' | 'session' | 'other'
+type BasicGroupKey = 'tax' | 'pagination' | 'session' | 'other'
 
 interface Props {
   keyword: string
@@ -38,7 +38,6 @@ interface BasicSettingGroup {
 const BASIC_GROUP_ORDER: BasicGroupKey[] = [
   'tax',
   'pagination',
-  'watermark',
   'session',
   'other',
 ]
@@ -54,7 +53,6 @@ function resolveBasicGroupKey(record: ModuleRecord): BasicGroupKey {
   ) {
     return 'pagination'
   }
-  if (code.startsWith('SYS_WATERMARK_')) return 'watermark'
   if (code === 'SYS_MAX_CONCURRENT_SESSIONS') return 'session'
   return 'other'
 }
@@ -84,7 +82,6 @@ export function GeneralSettingsTableCard({
   const groupTitles: Record<BasicGroupKey, string> = {
     tax: t('system.generalSettingsTable.groupTax'),
     pagination: t('system.generalSettingsTable.groupPagination'),
-    watermark: t('system.generalSettingsTable.groupWatermark'),
     session: t('system.generalSettingsTable.groupSession'),
     other: t('system.generalSettingsTable.groupOther'),
   }

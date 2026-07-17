@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
-import { Layout, Menu, Watermark } from 'antd'
+import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,7 +24,6 @@ import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
 import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
 import { useAppLayoutSessionGuards } from '@/layouts/useAppLayoutSessionGuards'
-import { useAppWatermark } from '@/layouts/useAppWatermark'
 import { useBackendStatus } from '@/layouts/useBackendStatus'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 import {
@@ -153,13 +152,6 @@ function PersonalSettingsHost({
       onThemeModeChange={onThemeModeChange}
     />
   )
-}
-
-function hasWatermarkContent(content: string | string[] | undefined) {
-  if (Array.isArray(content)) {
-    return content.some((line) => line.trim())
-  }
-  return Boolean(content?.trim())
 }
 
 export function AppLayout() {
@@ -326,7 +318,6 @@ export function AppLayout() {
     isTopNavigationLayout,
   })
 
-  const wm = useAppWatermark(currentUserLoginName)
   const layoutShell = (
     <Layout className={rootClassName} style={shellFontStyle}>
       <div className="leo-page-loader" />
@@ -458,22 +449,5 @@ export function AppLayout() {
     </Layout>
   )
 
-  const watermarkedLayout =
-    wm.enabled && hasWatermarkContent(wm.text) ? (
-      <Watermark
-        content={wm.text}
-        font={{ fontSize: wm.fontSize, color: wm.color }}
-        rotate={wm.rotate}
-        gap={[wm.density, wm.density]}
-        width={wm.width}
-        height={wm.height}
-        className="min-h-[100dvh]"
-      >
-        {layoutShell}
-      </Watermark>
-    ) : (
-      layoutShell
-    )
-
-  return <AppAntdProvider>{watermarkedLayout}</AppAntdProvider>
+  return <AppAntdProvider>{layoutShell}</AppAntdProvider>
 }

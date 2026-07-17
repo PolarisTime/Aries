@@ -1,6 +1,4 @@
-import { Typography } from 'antd'
 import i18next from 'i18next'
-import { createElement } from 'react'
 import { STATUS } from '@/constants/status-constants'
 import {
   DEFAULT_LIST_PAGE_SIZE_SETTING_CODE,
@@ -11,11 +9,6 @@ import { asString } from '@/utils/type-narrowing'
 
 const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
-const WATERMARK_CONTENT_CODE = 'SYS_WATERMARK_CONTENT'
-export const WATERMARK_FONT_SIZE_CODE = 'SYS_WATERMARK_FONT_SIZE'
-const WATERMARK_ROTATE_CODE = 'SYS_WATERMARK_ROTATE'
-export const WATERMARK_COLOR_CODE = 'SYS_WATERMARK_COLOR'
-export const WATERMARK_DENSITY_CODE = 'SYS_WATERMARK_DENSITY'
 export const DETAILED_OPERATION_LOG_SETTING_CODE =
   'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS'
 const HIDE_AUDITED_LIST_RECORDS_SETTING_CODE = 'UI_HIDE_AUDITED_LIST_RECORDS'
@@ -64,9 +57,6 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
     'system.generalSettingsUtils.helpUseSnowflakeAsBusinessNo',
   ),
   SYS_LOGIN_CAPTCHA: i18next.t('system.generalSettingsUtils.helpLoginCaptcha'),
-  SYS_ATTACHMENT_WATERMARK_ENABLED: i18next.t(
-    'system.generalSettingsUtils.helpAttachmentWatermark',
-  ),
 }
 
 export const DETAILED_OPERATION_ACTION_OPTIONS = [
@@ -190,20 +180,6 @@ export function isDefaultListPageSizeSetting(record: ModuleRecord) {
   )
 }
 
-export function isWatermarkContentSetting(record: ModuleRecord) {
-  const code = asString(record.settingCode).trim()
-  return code === WATERMARK_CONTENT_CODE || code === WATERMARK_COLOR_CODE
-}
-
-export function isWatermarkPropSetting(record: ModuleRecord) {
-  const code = asString(record.settingCode).trim()
-  return (
-    code === WATERMARK_FONT_SIZE_CODE ||
-    code === WATERMARK_ROTATE_CODE ||
-    code === WATERMARK_DENSITY_CODE
-  )
-}
-
 export function isDetailedOperationLogSetting(record: ModuleRecord) {
   return (
     asString(record.settingCode).trim() === DETAILED_OPERATION_LOG_SETTING_CODE
@@ -221,9 +197,7 @@ export function isNumericSetting(record: ModuleRecord) {
   return (
     isDefaultTaxRateSetting(record) ||
     isMaxConcurrentSetting(record) ||
-    isDefaultListPageSizeSetting(record) ||
-    isWatermarkPropSetting(record) ||
-    isWatermarkContentSetting(record)
+    isDefaultListPageSizeSetting(record)
   )
 }
 
@@ -251,13 +225,6 @@ export function formatSettingValue(record: ModuleRecord) {
   }
   if (isMaxConcurrentSetting(record)) {
     return asString(record.sampleNo)
-  }
-  if (asString(record.settingCode).trim() === WATERMARK_CONTENT_CODE) {
-    return createElement(
-      Typography.Text,
-      { className: 'whitespace-pre-line' },
-      asString(record.sampleNo),
-    )
   }
   return asString(record.sampleNo)
 }

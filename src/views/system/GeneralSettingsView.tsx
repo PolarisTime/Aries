@@ -21,8 +21,6 @@ import {
   isHideAuditedListRecordsSetting,
   isNumericSetting,
   isToggleSetting,
-  isWatermarkContentSetting,
-  isWatermarkPropSetting,
   matchesGeneralSettingKeyword,
   resolveDetailedOperationActionValues,
   resolveHideAuditedStatusValues,
@@ -100,11 +98,9 @@ export function GeneralSettingsView() {
       billName: record.billName,
       remark: record.remark,
       enabled: asString(record.status) === STATUS.NORMAL,
-      numericValue: isWatermarkContentSetting(record)
-        ? asString(record.sampleNo)
-        : isWatermarkPropSetting(record) || isDefaultTaxRateSetting(record)
-          ? Number(record.sampleNo || 0.13)
-          : Number(record.sampleNo || 0),
+      numericValue: isDefaultTaxRateSetting(record)
+        ? Number(record.sampleNo || 0.13)
+        : Number(record.sampleNo || 0),
       selectedActions: isDetailedOperationLogSetting(record)
         ? resolveDetailedOperationActionValues(record.sampleNo)
         : isHideAuditedListRecordsSetting(record)
@@ -147,9 +143,7 @@ export function GeneralSettingsView() {
       const isNumeric = isNumericSetting(record)
       const isToggle = !isNumeric
       let sampleNo = ''
-      if (isWatermarkContentSetting(record)) {
-        sampleNo = String(values.numericValue || '').trim()
-      } else if (isNumeric) {
+      if (isNumeric) {
         sampleNo = String(values.numericValue || 0)
       } else {
         const selectedActions = Array.isArray(values.selectedActions)
