@@ -83,7 +83,7 @@ export function UserAccountTableCard({
               label: t('system.userAccountTable.delete'),
               icon: <DeleteOutlined />,
               danger: true,
-              visible: canDelete && record.loginName !== 'admin',
+              visible: canDelete,
               onClick: () => onDelete(record),
             },
           ]}

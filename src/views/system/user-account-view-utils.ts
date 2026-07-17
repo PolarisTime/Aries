@@ -28,7 +28,6 @@ export function buildDefaultUserAccountFormValues() {
     mobile: '',
     departmentId: null,
     roleIds: [],
-    permissionSummary: '',
     status: enabledStatusValues[0],
     remark: '',
   }

@@ -55,9 +55,6 @@ export const QUERY_KEYS = {
     warehouse: ['master-options', 'warehouse'] as const,
   },
 
-  // Role templates
-  roleTemplates: ['role-templates'] as const,
-
   // Auth / Users
   userAccount: (
     page: number,

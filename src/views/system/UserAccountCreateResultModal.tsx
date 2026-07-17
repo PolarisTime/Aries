@@ -18,8 +18,8 @@ export function UserAccountCreateResultModal({
   onClose,
 }: Props) {
   const { t } = useTranslation()
-  const loginName = result?.user?.loginName || result?.loginName || ''
-  const initialPassword = result?.initialPassword || result?.password || ''
+  const loginName = result?.user.loginName || ''
+  const initialPassword = result?.initialPassword || ''
 
   return (
     <FormModal
@@ -68,13 +68,13 @@ export function UserAccountCreateResultModal({
             <div className="text-secondary text-xs">
               {t('system.userAccount.department')}
             </div>
-            <div>{result.user?.departmentName || '--'}</div>
+            <div>{result.user.departmentName || '--'}</div>
           </div>
           <div className="mb-4">
             <div className="text-secondary text-xs">
               {t('system.userAccount.roleNames')}
             </div>
-            <div>{result.user?.roleNames?.join('、') || '--'}</div>
+            <div>{result.user.roleNames.join('、') || '--'}</div>
           </div>
           <Typography.Text type="warning">
             {t('system.userAccount.savePasswordHint')}

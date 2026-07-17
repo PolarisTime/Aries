@@ -18,9 +18,9 @@ import {
 } from '@/constants/module-options'
 import { getFormString } from '@/lib/antd-form'
 import type { DepartmentOptionRecord, RoleOptionRecord } from '@/shared/schemas'
+import { useAuthStore } from '@/stores/authStore'
 
 type EditorMode = 'create' | 'edit'
-const EMPTY_ROLE_CONFLICTS: Record<string, string[]> = {}
 
 interface Props {
   open: boolean
@@ -34,7 +34,6 @@ interface Props {
   departmentOptions: DepartmentOptionRecord[]
   roleOptions: RoleOptionRecord[]
   selectedRoleIds: string[]
-  roleConflicts?: Record<string, string[]>
   selectedRoleSummaries: string[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
   onSave: () => void
@@ -52,7 +51,6 @@ export function UserAccountEditorModal({
   departmentOptions,
   roleOptions,
   selectedRoleIds,
-  roleConflicts = EMPTY_ROLE_CONFLICTS,
   selectedRoleSummaries,
   onCheckLoginName,
   onSave,
@@ -60,6 +58,19 @@ export function UserAccountEditorModal({
 }: Props) {
   const { t } = useTranslation()
   const isCreate = mode === 'create'
+  const currentUserId = useAuthStore((state) => state.user?.id)
+  const isEditingOwnAccount =
+    mode === 'edit' &&
+    editingId != null &&
+    String(currentUserId ?? '') === String(editingId)
+  const roleOptionsById = new Map(
+    roleOptions.map((role) => [String(role.id), role]),
+  )
+  const selectedRoleConflictIds = new Set(
+    selectedRoleIds.flatMap((roleId) =>
+      (roleOptionsById.get(roleId)?.conflictRoleIds || []).map(String),
+    ),
+  )
   return (
     <FormModal
       title={
@@ -84,7 +95,11 @@ export function UserAccountEditorModal({
                 <Form.Item
                   name="loginName"
                   label={t('system.userAccountEditor.loginName')}
-                  required
+                  rules={[
+                    { required: true, whitespace: true },
+                    { max: 64 },
+                    { pattern: /^[A-Za-z0-9_.@-]+$/ },
+                  ]}
                   hasFeedback
                   validateStatus={
                     loginNameChecking
@@ -122,7 +137,7 @@ export function UserAccountEditorModal({
                 <Form.Item
                   name="userName"
                   label={t('system.userAccountEditor.userName')}
-                  required
+                  rules={[{ required: true, whitespace: true }, { max: 64 }]}
                 >
                   <Input
                     placeholder={t(
@@ -138,6 +153,7 @@ export function UserAccountEditorModal({
                 <Form.Item
                   name="mobile"
                   label={t('system.userAccountEditor.mobile')}
+                  rules={[{ max: 32 }, { pattern: /^$|^1\d{10}$/ }]}
                 >
                   <Input
                     placeholder={t(
@@ -153,6 +169,7 @@ export function UserAccountEditorModal({
                     name="password"
                     label={t('system.userAccountEditor.initialPassword')}
                     extra={t('system.userAccountEditor.passwordHint')}
+                    rules={[{ max: 128 }]}
                   >
                     <Input.Password
                       placeholder={t(
@@ -183,7 +200,7 @@ export function UserAccountEditorModal({
                 <Form.Item
                   name="departmentId"
                   label={t('system.userAccountEditor.department')}
-                  required
+                  rules={[{ required: true }]}
                 >
                   <Select
                     showSearch={{ optionFilterProp: 'label' }}
@@ -208,7 +225,11 @@ export function UserAccountEditorModal({
                 <Form.Item
                   name="roleIds"
                   label={t('system.userAccountEditor.roles')}
-                  required
+                  extra={
+                    isEditingOwnAccount
+                      ? t('system.userAccountEditor.ownRolesLocked')
+                      : undefined
+                  }
                   getValueFromEvent={(ids: (string | number)[]) =>
                     ids?.map(String)
                   }
@@ -217,21 +238,24 @@ export function UserAccountEditorModal({
                     mode="multiple"
                     placeholder={t('system.userAccountEditor.rolesPlaceholder')}
                     maxTagCount={5}
+                    disabled={isEditingOwnAccount}
                     options={roleOptions.map((role) => {
                       const roleId = String(role.id)
+                      const isSelected = selectedRoleIds.includes(roleId)
                       const isDisabled =
-                        role.status === enabledStatusValues[1] &&
-                        !selectedRoleIds.includes(roleId)
-                      const conflictWith = selectedRoleIds.find((sid) =>
-                        roleConflicts?.[sid]?.includes(roleId),
-                      )
+                        role.status === enabledStatusValues[1] && !isSelected
+                      const hasConflict =
+                        !isSelected && selectedRoleConflictIds.has(roleId)
+                      const isUnassignable =
+                        !isSelected && role.assignable === false
                       return {
-                        label:
-                          conflictWith != null
-                            ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
+                        label: hasConflict
+                          ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
+                          : isUnassignable
+                            ? `${role.roleName} (${t('common.noPermission')})`
                             : role.roleName,
                         value: roleId,
-                        disabled: isDisabled || conflictWith != null,
+                        disabled: isDisabled || hasConflict || isUnassignable,
                       }
                     })}
                   />
@@ -276,9 +300,11 @@ export function UserAccountEditorModal({
             <Form.Item
               name="remark"
               label={t('system.userAccountEditor.remark')}
+              rules={[{ max: 255 }]}
             >
               <Input.TextArea
                 rows={2}
+                maxLength={255}
                 placeholder={t('system.userAccountEditor.remarkPlaceholder')}
               />
             </Form.Item>

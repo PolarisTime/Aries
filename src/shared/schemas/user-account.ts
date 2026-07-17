@@ -21,9 +21,8 @@ export const userAccountFormPayloadSchema = z.object({
   password: z.string().optional(),
   userName: z.string().min(1),
   mobile: z.string(),
-  departmentId: z.string().nullable().optional(),
-  roleIds: z.array(z.string()),
-  permissionSummary: z.string(),
+  departmentId: z.string(),
+  roleIds: z.array(z.string()).optional(),
   status: z.string(),
   remark: z.string(),
 })
@@ -32,10 +31,8 @@ export type UserAccountFormPayload = z.infer<
 >
 
 export const userAccountCreateResultSchema = z.object({
-  user: userAccountRecordSchema.optional(),
-  loginName: z.string(),
-  initialPassword: z.string().optional(),
-  password: z.string(),
+  user: userAccountRecordSchema,
+  initialPassword: z.string(),
 })
 export type UserAccountCreateResult = z.infer<
   typeof userAccountCreateResultSchema
@@ -59,7 +56,9 @@ export const roleOptionRecordSchema = z.object({
   id: z.union([z.string(), z.number()]),
   roleName: z.string(),
   roleCode: z.string(),
-  status: z.string().optional(),
-  permissionSummary: z.string().optional(),
+  status: z.string(),
+  permissionSummary: z.string(),
+  conflictRoleIds: z.array(z.union([z.string(), z.number()])),
+  assignable: z.boolean(),
 })
 export type RoleOptionRecord = z.infer<typeof roleOptionRecordSchema>

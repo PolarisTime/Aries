@@ -32,6 +32,7 @@ interface Props {
   permissionActions: {
     editable: boolean
     saving: boolean
+    blocked: boolean
   }
   onSelectAll: () => void
   onDeselectAll: () => void
@@ -42,6 +43,7 @@ interface Props {
   isActionSelected: (menuCode: string, action: string) => boolean
   onToggleAllMenuActions: (menu: MenuNode) => void
   onToggleAction: (menuCode: string, action: string) => void
+  isActionEditable: (menuCode: string, action: string) => boolean
   actionLabels: Record<string, string>
 }
 
@@ -61,6 +63,7 @@ export function RoleActionPermissionCard({
   isActionSelected,
   onToggleAllMenuActions,
   onToggleAction,
+  isActionEditable,
   actionLabels,
 }: Props) {
   const { t } = useTranslation()
@@ -133,6 +136,14 @@ export function RoleActionPermissionCard({
     >
       {selectedRoleInfo ? (
         <div>
+          {permissionActions.blocked && (
+            <Alert
+              type="warning"
+              showIcon
+              className="mb-4"
+              title={t('system.rolePermissions.noEditPermission')}
+            />
+          )}
           <Alert
             type="info"
             showIcon
@@ -163,7 +174,11 @@ export function RoleActionPermissionCard({
                               <Checkbox
                                 checked={isMenuChecked(child.menuCode)}
                                 indeterminate={isMenuPartiallyChecked(child)}
-                                disabled={!permissionActions.editable}
+                                disabled={
+                                  !child.actions.some((action) =>
+                                    isActionEditable(child.menuCode, action),
+                                  )
+                                }
                                 onChange={() => onToggleAllMenuActions(child)}
                               >
                                 <Typography.Text strong>
@@ -179,7 +194,9 @@ export function RoleActionPermissionCard({
                                     child.menuCode,
                                     action,
                                   )}
-                                  disabled={!permissionActions.editable}
+                                  disabled={
+                                    !isActionEditable(child.menuCode, action)
+                                  }
                                   onChange={() =>
                                     onToggleAction(child.menuCode, action)
                                   }

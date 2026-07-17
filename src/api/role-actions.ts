@@ -14,6 +14,10 @@ export interface RoleRecord {
   status: string
   userCount: number
   remark: string | null
+  permissionCodes: string[]
+  permissionSummary: string
+  conflictRoleIds: Array<string | number>
+  assignable: boolean
 }
 export interface RolePermissionRecord {
   resource: string
@@ -71,17 +75,17 @@ export async function updateRoleActions(
     getApiMessage('saveRolePermissionsFailed'),
   )
 }
-type RolePayload = {
-  roleCode?: string
-  roleName?: string
-  roleType?: string
-  status?: string
+export type RolePayload = {
+  roleCode: string
+  roleName: string
+  roleType: string
+  status: string
   remark?: string
 }
 
 export async function updateRole(id: string, payload: RolePayload) {
   return assertApiSuccess(
-    await http.put<RoleResponse<null>>(
+    await http.put<RoleResponse<RoleRecord>>(
       `${ENDPOINTS.ROLE_SETTINGS}/${id}`,
       payload,
     ),

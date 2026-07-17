@@ -28,8 +28,6 @@ import { useUserAccountEditorCatalogs } from '@/views/system/useUserAccountEdito
 import { useUserAccountEditorRoleState } from '@/views/system/useUserAccountEditorRoleState'
 
 interface UseUserAccountEditorOptions {
-  canViewRoleCatalog: boolean
-  canViewDepartmentCatalog: boolean
   enabled?: boolean
 }
 
@@ -39,8 +37,6 @@ interface EditorSession {
 }
 
 export function useUserAccountEditor({
-  canViewRoleCatalog,
-  canViewDepartmentCatalog,
   enabled = true,
 }: UseUserAccountEditorOptions) {
   const queryClient = useQueryClient()
@@ -50,6 +46,7 @@ export function useUserAccountEditor({
     targetId: null,
   })
   const detailAbortControllerRef = useRef<AbortController | null>(null)
+  const initialRoleIdsRef = useRef<string[]>([])
   const loginNameRequestVersionRef = useRef(0)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorMode, setEditorMode] = useState<UserAccountEditorMode>('create')
@@ -63,8 +60,6 @@ export function useUserAccountEditor({
     useState<UserAccountCreateResult | null>(null)
   const [form] = Form.useForm<UserAccountEditorFormValues>()
   const { departmentOptions, roleOptions } = useUserAccountEditorCatalogs({
-    canViewRoleCatalog,
-    canViewDepartmentCatalog,
     enabled: enabled && editorOpen,
   })
   const { selectedRoleIds, selectedRoleSummaries } =
@@ -143,6 +138,7 @@ export function useUserAccountEditor({
   })
 
   const resetEditorForm = () => {
+    initialRoleIdsRef.current = []
     setEditingId(null)
     form.resetFields()
     form.setFieldsValue(buildDefaultUserAccountFormValues())
@@ -153,6 +149,8 @@ export function useUserAccountEditor({
   const defaultValues = buildDefaultUserAccountFormValues()
 
   const fillEditorForm = (record: UserAccountRecord) => {
+    const roleIds = [...(record.roleIds || [])].map(String)
+    initialRoleIdsRef.current = [...new Set(roleIds)].sort()
     setEditingId(record.id)
     form.setFieldsValue({
       loginName: record.loginName || '',
@@ -160,8 +158,7 @@ export function useUserAccountEditor({
       userName: record.userName || '',
       mobile: record.mobile || '',
       departmentId: record.departmentId ?? null,
-      roleIds: [...(record.roleIds || [])].map(String),
-      permissionSummary: record.permissionSummary || '',
+      roleIds,
       status: record.status || defaultValues.status,
       remark: record.remark || '',
     })
@@ -295,6 +292,28 @@ export function useUserAccountEditor({
           message.warning(validationResult.message)
         }
         if (validationIsCurrent && validationResult.available) {
+          const roleIds = [
+            ...new Set((values.roleIds || []).map(String)),
+          ].sort()
+          const roleIdsChanged =
+            mode === 'create' ||
+            roleIds.length !== initialRoleIdsRef.current.length ||
+            roleIds.some(
+              (roleId, index) => roleId !== initialRoleIdsRef.current[index],
+            )
+          const includesUnassignableRole = roleIds.some(
+            (roleId) =>
+              roleOptions.find((role) => String(role.id) === roleId)
+                ?.assignable === false,
+          )
+          if (roleIdsChanged && includesUnassignableRole) {
+            message.warning(
+              i18next.t(
+                'system.userAccountEditorHook.roleSelectionOutOfBounds',
+              ),
+            )
+            return
+          }
           const payload: UserAccountFormPayload = {
             loginName: values.loginName.trim(),
             ...(mode === 'create' && values.password?.trim()
@@ -302,9 +321,8 @@ export function useUserAccountEditor({
               : {}),
             userName: values.userName.trim(),
             mobile: values.mobile?.trim() || '',
-            departmentId: values.departmentId ?? null,
-            roleIds: [...(values.roleIds || [])].map(String),
-            permissionSummary: values.permissionSummary?.trim() || '',
+            departmentId: String(values.departmentId),
+            ...(roleIdsChanged ? { roleIds } : {}),
             status: values.status,
             remark: values.remark?.trim() || '',
           }

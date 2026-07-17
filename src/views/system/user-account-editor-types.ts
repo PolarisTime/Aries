@@ -5,7 +5,6 @@ export interface UserAccountEditorFormValues {
   mobile: string
   departmentId: string | null
   roleIds: string[]
-  permissionSummary: string
   status: string
   remark: string
 }

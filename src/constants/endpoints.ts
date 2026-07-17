@@ -30,6 +30,7 @@ export const ENDPOINTS = {
 
   // Roles (business entity → plural)
   ROLE_SETTINGS: '/role-settings',
+  ROLE_SETTINGS_OPTIONS: '/role-settings/options',
   ROLE_PERMISSION_OPTIONS: '/role-settings/permission-options',
 
   // System menus (sub-resource tree → singular action)

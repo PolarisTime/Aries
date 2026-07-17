@@ -1,8 +1,6 @@
 import i18next from 'i18next'
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { buildMasterOverview, statusMap } from '../shared/shared'
-import { masterStatusFilter } from '../shared/shared-filters'
 
 export const permissionManagementPageConfig: ModulePageConfig = {
   key: 'permission',
@@ -12,13 +10,6 @@ export const permissionManagementPageConfig: ModulePageConfig = {
     'modules.pages.systemPermissionManagement.accessControlDesc',
   ),
   readOnly: true,
-  actions: [
-    {
-      key: 'export',
-      label: i18next.t('modules.pages.systemPermissionManagement.export'),
-      type: 'primary',
-    },
-  ],
   filters: [
     {
       key: 'keyword',
@@ -28,7 +19,6 @@ export const permissionManagementPageConfig: ModulePageConfig = {
         'modules.pages.systemPermissionManagement.permissionPlaceholder',
       ),
     },
-    { ...masterStatusFilter },
   ],
   columns: [
     {
@@ -121,117 +111,7 @@ export const permissionManagementPageConfig: ModulePageConfig = {
       key: 'remark',
     },
   ],
-  formFields: [
-    {
-      key: 'permissionCode',
-      label: i18next.t(
-        'modules.pages.systemPermissionManagement.permissionCode',
-      ),
-      type: 'input',
-      required: true,
-      row: 1,
-    },
-    {
-      key: 'permissionName',
-      label: i18next.t(
-        'modules.pages.systemPermissionManagement.permissionName',
-      ),
-      type: 'input',
-      required: true,
-      row: 1,
-    },
-    {
-      key: 'moduleName',
-      label: i18next.t('modules.pages.systemPermissionManagement.module'),
-      type: 'input',
-      required: true,
-      row: 1,
-    },
-    {
-      key: 'permissionType',
-      label: i18next.t(
-        'modules.pages.systemPermissionManagement.permissionType',
-      ),
-      type: 'select',
-      required: true,
-      row: 1,
-      options: [
-        {
-          label: i18next.t(
-            'modules.pages.systemPermissionManagement.menuPermission',
-          ),
-          value: '菜单权限',
-        },
-        {
-          label: i18next.t(
-            'modules.pages.systemPermissionManagement.buttonPermission',
-          ),
-          value: '按钮权限',
-        },
-      ],
-    },
-    {
-      key: 'actionName',
-      label: i18next.t('modules.pages.systemPermissionManagement.action'),
-      type: 'select',
-      required: true,
-      row: 2,
-      options: [
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.view'),
-          value: '查看',
-        },
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.create'),
-          value: '新增',
-        },
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.edit'),
-          value: '编辑',
-        },
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.delete'),
-          value: '删除',
-        },
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.audit'),
-          value: '审核',
-        },
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.export'),
-          value: '导出',
-        },
-        {
-          label: i18next.t('modules.pages.systemPermissionManagement.print'),
-          value: '打印',
-        },
-      ],
-    },
-    {
-      key: 'resourceKey',
-      label: i18next.t('modules.pages.systemPermissionManagement.resourceKey'),
-      type: 'input',
-      required: true,
-      row: 2,
-    },
-    {
-      key: 'status',
-      label: i18next.t('modules.pages.systemPermissionManagement.status'),
-      type: 'select',
-      defaultValue: '正常',
-      options: enabledStatusOptions,
-      row: 2,
-    },
-    {
-      key: 'remark',
-      label: i18next.t('modules.pages.systemPermissionManagement.remark'),
-      type: 'textarea',
-      row: 3,
-      fullRow: true,
-    },
-  ],
   data: [],
   buildOverview: (rows) => buildMasterOverview(rows),
   statusMap,
-  rowHighlightStatuses: ['禁用'],
 }

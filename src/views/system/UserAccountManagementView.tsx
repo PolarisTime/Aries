@@ -31,9 +31,6 @@ export function UserAccountManagementView({
     canUpdate: canEdit,
     canDelete,
   } = useResourcePermissions('user-account')
-  const { canRead: canViewRoleCatalog } = useResourcePermissions('role')
-  const { canRead: canViewDepartmentCatalog } =
-    useResourcePermissions('department')
   const queryEnabled = useActivePageEnabled(active)
 
   const {
@@ -73,8 +70,6 @@ export function UserAccountManagementView({
     closeEditor,
     closeCreateResult,
   } = useUserAccountEditor({
-    canViewRoleCatalog,
-    canViewDepartmentCatalog,
     enabled: queryEnabled,
   })
 

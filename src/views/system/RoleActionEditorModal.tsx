@@ -1,13 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
 import type { FormInstance } from 'antd'
-import { Form, Input, Select, Typography } from 'antd'
+import { Form, Input, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { http } from '@/api/client'
 import type { RoleRecord } from '@/api/role-actions'
 import { FormModal } from '@/components/FormModal'
-import { roleTypeValues } from '@/constants/module-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { asString } from '@/utils/type-narrowing'
+import {
+  enabledStatusOptions,
+  roleTypeValues,
+} from '@/constants/module-options'
 
 interface Props {
   open: boolean
@@ -16,12 +15,6 @@ interface Props {
   saving: boolean
   onSave: () => void
   onClose: () => void
-  onApplyTemplate?: (templateName: string) => void
-}
-
-interface RoleTemplate {
-  name: string
-  description: string
 }
 
 export function RoleActionEditorModal({
@@ -31,20 +24,9 @@ export function RoleActionEditorModal({
   saving,
   onSave,
   onClose,
-  onApplyTemplate,
 }: Props) {
   const { t } = useTranslation()
-  const { data: templates = [] } = useQuery<RoleTemplate[]>({
-    queryKey: QUERY_KEYS.roleTemplates,
-    queryFn: async () => {
-      const resp = await http.get<{ data?: RoleTemplate[] } | RoleTemplate[]>(
-        '/role-settings/templates',
-      )
-      return Array.isArray(resp) ? resp : (resp.data ?? [])
-    },
-    enabled: open && !editingRole,
-    staleTime: 10 * 60 * 1000,
-  })
+  const isAdminRole = editingRole?.roleCode.trim().toUpperCase() === 'ADMIN'
 
   return (
     <FormModal
@@ -61,54 +43,56 @@ export function RoleActionEditorModal({
       cancelText={t('system.roleEditor.cancel')}
     >
       <Form form={form} layout="vertical">
-        {!editingRole && templates.length > 0 ? (
-          <Form.Item label={t('system.roleEditor.permTemplate')}>
-            <Select
-              placeholder={t('system.roleEditor.templatePlaceholder')}
-              allowClear
-              options={templates.map((t) => ({
-                label: `${t.name} — ${t.description}`,
-                value: t.name,
-              }))}
-              onChange={(name) => {
-                if (name && onApplyTemplate) onApplyTemplate(asString(name))
-              }}
-            />
-            <Typography.Text type="secondary" className="text-xs">
-              {t('system.roleEditor.templateHint')}
-            </Typography.Text>
-          </Form.Item>
-        ) : null}
         <Form.Item
           name="roleName"
           label={t('system.roleEditor.roleName')}
-          required
+          rules={[{ required: true, whitespace: true }, { max: 128 }]}
         >
           <Input
             placeholder={t('system.roleEditor.roleNamePlaceholder')}
-            maxLength={64}
+            maxLength={128}
           />
         </Form.Item>
         <Form.Item
           name="roleCode"
           label={t('system.roleEditor.roleCode')}
-          required
+          rules={[
+            { required: true, whitespace: true },
+            { max: 64 },
+            { pattern: /^[A-Za-z0-9_-]+$/ },
+          ]}
         >
           <Input
             placeholder={t('system.roleEditor.roleCodePlaceholder')}
             maxLength={64}
-            disabled={!!editingRole}
+            disabled={isAdminRole}
           />
         </Form.Item>
-        <Form.Item name="roleType" label={t('system.roleEditor.roleType')}>
+        <Form.Item
+          name="roleType"
+          label={t('system.roleEditor.roleType')}
+          rules={[{ required: true }]}
+        >
           <Select
             options={roleTypeValues.map((value) => ({ label: value, value }))}
           />
         </Form.Item>
-        <Form.Item name="remark" label={t('system.roleEditor.remark')}>
+        <Form.Item
+          name="status"
+          label={t('common.status')}
+          rules={[{ required: true }]}
+        >
+          <Select options={enabledStatusOptions} disabled={isAdminRole} />
+        </Form.Item>
+        <Form.Item
+          name="remark"
+          label={t('system.roleEditor.remark')}
+          rules={[{ max: 255 }]}
+        >
           <Input.TextArea
             placeholder={t('system.roleEditor.remarkPlaceholder')}
             rows={3}
+            maxLength={255}
           />
         </Form.Item>
       </Form>

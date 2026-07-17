@@ -3,7 +3,13 @@ import { Form } from 'antd'
 import i18next from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createRole, type RoleRecord, updateRole } from '@/api/role-actions'
+import {
+  createRole,
+  deleteRole,
+  type RolePayload,
+  type RoleRecord,
+  updateRole,
+} from '@/api/role-actions'
 import { enabledStatusValues, roleTypeValues } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
@@ -12,19 +18,24 @@ import { message, modal } from '@/utils/antd-app'
 type UseRoleEditorOptions = {
   canCreateRole: boolean
   canEditRole: boolean
+  canDeleteRole: boolean
+  canManagePermissions: boolean
   onCreatedRoleSelect: (role: RoleRecord) => void
 }
 
 type RoleFormValues = {
-  roleCode?: string
-  roleName?: string
-  roleType?: string
+  roleCode: string
+  roleName: string
+  roleType: string
+  status: string
   remark?: string | null
 }
 
 export function useRoleEditor({
   canCreateRole,
   canEditRole,
+  canDeleteRole,
+  canManagePermissions,
   onCreatedRoleSelect,
 }: UseRoleEditorOptions) {
   const { t } = useTranslation()
@@ -32,7 +43,7 @@ export function useRoleEditor({
   const { showError } = useRequestError()
   const [roleModalOpen, setRoleModalOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<RoleRecord | null>(null)
-  const [roleForm] = Form.useForm()
+  const [roleForm] = Form.useForm<RoleFormValues>()
 
   const openRoleForm = (mode: 'create' | 'edit', role?: RoleRecord) => {
     if (mode === 'edit' && role) {
@@ -45,6 +56,7 @@ export function useRoleEditor({
         roleName: role.roleName,
         roleCode: role.roleCode,
         roleType: role.roleType,
+        status: role.status,
         remark: role.remark || '',
       })
     } else {
@@ -56,6 +68,7 @@ export function useRoleEditor({
       roleForm.resetFields()
       roleForm.setFieldsValue({
         roleType: roleTypeValues[1],
+        status: enabledStatusValues[0],
       })
     }
     setRoleModalOpen(true)
@@ -65,10 +78,9 @@ export function useRoleEditor({
     mutationFn: async (
       values: RoleFormValues,
     ): Promise<{ mode: 'edit' } | { mode: 'create'; data: RoleRecord }> => {
-      const payload = {
+      const payload: RolePayload = {
         ...values,
         remark: values.remark || undefined,
-        status: editingRole?.status || enabledStatusValues[0],
       }
       if (editingRole) {
         await updateRole(editingRole.id, payload)
@@ -79,12 +91,16 @@ export function useRoleEditor({
     },
     onSuccess: async (result) => {
       setRoleModalOpen(false)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleOptions }),
+      ])
 
       if (result.mode === 'create' && result.data) {
-        void queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.roleSettings,
-        })
         message.success(t('common.addSuccess'))
+        if (!canManagePermissions) {
+          return
+        }
         modal.confirm({
           title: t('common.addSuccess'),
           content: i18next.t('system.roleEditorHook.createConfirmContent'),
@@ -97,11 +113,43 @@ export function useRoleEditor({
         return
       }
 
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings })
       message.success(t('common.editSuccess'))
     },
     onError: (error: Error) => showError(error, t('common.saveFailed')),
   })
+
+  const deleteRoleMutation = useMutation({
+    mutationFn: deleteRole,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleOptions }),
+      ])
+      message.success(t('common.deleteSuccess'))
+    },
+    onError: (error: Error) => showError(error, t('api.deleteFailed')),
+  })
+
+  const requestDeleteRole = (role: RoleRecord) => {
+    if (!canDeleteRole) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    if (role.roleCode.trim().toUpperCase() === 'ADMIN') {
+      message.warning(i18next.t('system.roleEditorHook.adminRoleProtected'))
+      return
+    }
+    modal.confirm({
+      title: t('common.delete'),
+      content: i18next.t('system.roleEditorHook.deleteConfirm', {
+        roleName: role.roleName,
+      }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => deleteRoleMutation.mutateAsync(role.id),
+    })
+  }
 
   const handleSaveRole = async () => {
     const rawValues = roleForm.getFieldsValue()
@@ -122,7 +170,11 @@ export function useRoleEditor({
     editingRole,
     roleForm,
     savePending: saveRoleMutation.isPending,
+    deletingRoleId: deleteRoleMutation.isPending
+      ? String(deleteRoleMutation.variables)
+      : null,
     openRoleForm,
+    requestDeleteRole,
     handleSaveRole,
     closeRoleModal: () => setRoleModalOpen(false),
   }

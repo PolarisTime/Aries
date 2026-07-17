@@ -11,21 +11,12 @@ export const ROLE_ACTION_LABELS: Record<string, string> = {
   audit: i18next.t('system.roleActionUtils.actionAudit'),
   export: i18next.t('system.roleActionUtils.actionExport'),
   print: i18next.t('system.roleActionUtils.actionPrint'),
+  view_deleted: i18next.t('system.roleActionUtils.actionViewDeleted'),
+  write: i18next.t('system.roleActionUtils.actionWrite'),
   manage_permissions: i18next.t(
     'system.roleActionUtils.actionManagePermissions',
   ),
 }
-
-export const ALL_ROLE_ACTIONS = [
-  'read',
-  'create',
-  'update',
-  'delete',
-  'audit',
-  'export',
-  'print',
-  'manage_permissions',
-] as const
 
 export interface FlattenedRoleMenu {
   menuCode: string
@@ -81,12 +72,9 @@ export function buildRoleMatrixData(
       resource: menu.resource,
       actions: menu.actions,
     }
-    const menuActionsSet = new Set(menu.actions)
     let count = 0
-    for (const action of ALL_ROLE_ACTIONS) {
-      const supported = menuActionsSet.has(action)
-      const checked =
-        supported && selectedActions.has(`${menu.resource}:${action}`)
+    for (const action of menu.actions) {
+      const checked = selectedActions.has(`${menu.resource}:${action}`)
       row[action] = checked
       if (checked) count += 1
     }

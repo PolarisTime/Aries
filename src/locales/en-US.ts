@@ -1917,6 +1917,7 @@ export const enUS = {
       permConfig: 'Permission Configuration',
       roles: 'Roles',
       rolesPlaceholder: 'Select roles',
+      ownRolesLocked: 'You cannot change the roles of your own account',
       roleConflict: '(conflict)',
       status2: 'Status',
       statusPlaceholder2: 'Select status',
@@ -1966,6 +1967,8 @@ export const enUS = {
       actionAudit: 'Audit',
       actionExport: 'Export',
       actionPrint: 'Print',
+      actionViewDeleted: 'View Deleted Documents',
+      actionWrite: 'Write',
       actionManagePermissions: 'Manage Permissions',
     },
     rolePermissions: {
@@ -1975,11 +1978,26 @@ export const enUS = {
       colMenuName: 'Menu Name',
       colAuthorized: 'Authorized',
     },
+    roleEditor: {
+      editTitle: 'Edit Role',
+      createTitle: 'Create Role',
+      save: 'Save',
+      cancel: 'Cancel',
+      roleName: 'Role Name',
+      roleNamePlaceholder: 'Enter role name',
+      roleCode: 'Role Code',
+      roleCodePlaceholder: 'Enter role code',
+      roleType: 'Role Type',
+      remark: 'Remark',
+      remarkPlaceholder: 'Enter remark',
+    },
     roleEditorHook: {
       createConfirmContent: 'Role created. Configure permissions now?',
       goConfigure: 'Configure',
       configureLater: 'Later',
       fillNameAndCode: 'Please fill in role name and code',
+      deleteConfirm: 'Delete role “{{roleName}}”?',
+      adminRoleProtected: 'The system administrator role cannot be deleted',
     },
     userAccountEditorHook: {
       saveSuccess: 'Saved successfully',
@@ -1987,6 +2005,8 @@ export const enUS = {
       saveFailed: 'Save failed',
       checkLoginNameFailed: 'Failed to check login name',
       loadDetailFailed: 'Failed to load user detail',
+      roleSelectionOutOfBounds:
+        'You cannot retain or grant roles beyond your own permissions',
     },
   },
   print: {

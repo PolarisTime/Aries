@@ -93,15 +93,10 @@ export async function deleteUserAccount(id: string) {
 }
 
 export async function listRoleOptions() {
-  const response = await http.get<ApiResponse<PageResponse<RoleOptionRecord>>>(
-    ENDPOINTS.ROLE_SETTINGS,
-    {
-      params: { page: 0, size: 200 },
-    },
+  const response = await http.get<ApiResponse<RoleOptionRecord[]>>(
+    ENDPOINTS.ROLE_SETTINGS_OPTIONS,
   )
-  return pageContent(
-    assertApiSuccess(response, getApiMessage('loadRolesFailed')).data,
-  )
+  return assertApiSuccess(response, getApiMessage('loadRolesFailed')).data || []
 }
 
 export async function listDepartmentOptions() {

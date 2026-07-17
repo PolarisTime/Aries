@@ -13,10 +13,10 @@ import {
 } from '@/api/role-actions'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
+import { hasPermission, usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
 import { asArray, asString } from '@/utils/type-narrowing'
 import {
-  ALL_ROLE_ACTIONS,
   buildNormalizedRoleActionSet,
   buildRoleMatrixData,
   flattenRoleActionMenus,
@@ -38,6 +38,7 @@ export function useRoleActionPermissions({
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const queryClient = useQueryClient()
+  const permissionMap = usePermissionStore((state) => state.permissionMap)
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
   const [selectedActions, setSelectedActions] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
@@ -45,10 +46,16 @@ export function useRoleActionPermissions({
   const { data: menuTree = [] } = useQuery({
     queryKey: QUERY_KEYS.rolePermissionOptions,
     queryFn: listSystemMenus,
-    enabled: enabled && canEditPermissions,
+    enabled,
   })
 
   const selectedRoleInfo = roles.find((role) => role.id === selectedRoleId)
+  const canEditSelectedRolePermissions = Boolean(
+    canEditPermissions &&
+      selectedRoleInfo &&
+      selectedRoleInfo.roleCode.trim().toUpperCase() !== 'ADMIN' &&
+      selectedRoleInfo.assignable !== false,
+  )
 
   const flatMenus = flattenRoleActionMenus(menuTree)
 
@@ -59,6 +66,14 @@ export function useRoleActionPermissions({
     }
     return map
   })()
+
+  const canGrantAction = (resource: string, action: string) =>
+    hasPermission(permissionMap, resource, action)
+
+  const isActionEditable = (menuCode: string, action: string) => {
+    const resource = menuResourceLookup.get(menuCode) || menuCode
+    return canEditSelectedRolePermissions && canGrantAction(resource, action)
+  }
 
   const matrixData = buildRoleMatrixData(flatMenus, selectedActions)
 
@@ -85,8 +100,14 @@ export function useRoleActionPermissions({
 
   const isMenuFullyChecked = (menu: MenuNode) => {
     const resource = menu.resourceCode || menu.menuCode
-    return menu.actions.every((action) =>
-      selectedActions.has(`${resource}:${action}`),
+    const relevantActions = canEditSelectedRolePermissions
+      ? menu.actions.filter((action) => canGrantAction(resource, action))
+      : menu.actions
+    return (
+      relevantActions.length > 0 &&
+      relevantActions.every((action) =>
+        selectedActions.has(`${resource}:${action}`),
+      )
     )
   }
 
@@ -94,7 +115,7 @@ export function useRoleActionPermissions({
     isMenuChecked(menu.menuCode) && !isMenuFullyChecked(menu)
 
   const toggleAction = (menuCode: string, action: string) => {
-    if (!canEditPermissions) {
+    if (!isActionEditable(menuCode, action)) {
       message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
@@ -112,16 +133,19 @@ export function useRoleActionPermissions({
   }
 
   const toggleAllMenuActions = (menu: MenuNode) => {
-    if (!canEditPermissions) {
+    if (!canEditSelectedRolePermissions) {
       message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
     const next = new Set(selectedActions)
     const resource = menu.resourceCode || menu.menuCode
-    const allChecked = menu.actions.every((action) =>
+    const editableActions = menu.actions.filter((action) =>
+      canGrantAction(resource, action),
+    )
+    const allChecked = editableActions.every((action) =>
       next.has(`${resource}:${action}`),
     )
-    for (const action of menu.actions) {
+    for (const action of editableActions) {
       const key = `${resource}:${action}`
       if (allChecked) next.delete(key)
       else next.add(key)
@@ -130,21 +154,23 @@ export function useRoleActionPermissions({
   }
 
   const selectAll = () => {
-    if (!canEditPermissions) {
+    if (!canEditSelectedRolePermissions) {
       message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
     const next = new Set<string>()
     for (const menu of flatMenus) {
       for (const action of menu.actions) {
-        next.add(`${menu.resource}:${action}`)
+        if (canGrantAction(menu.resource, action)) {
+          next.add(`${menu.resource}:${action}`)
+        }
       }
     }
     setSelectedActions(next)
   }
 
   const deselectAll = () => {
-    if (!canEditPermissions) {
+    if (!canEditSelectedRolePermissions) {
       message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
@@ -163,7 +189,10 @@ export function useRoleActionPermissions({
     onSuccess: () => {
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.rolePermissionOptions,
+        queryKey: QUERY_KEYS.roleSettings,
+      })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.roleOptions,
       })
     },
     onError: (error: Error) =>
@@ -181,10 +210,7 @@ export function useRoleActionPermissions({
     ]
 
     const allMenuActionsSet = new Set(flatMenus.flatMap((m) => m.actions))
-    for (const action of ALL_ROLE_ACTIONS) {
-      if (!allMenuActionsSet.has(action)) {
-        continue
-      }
+    for (const action of allMenuActionsSet) {
       columns.push({
         dataIndex: action,
         title: ROLE_ACTION_LABELS[action] || action,
@@ -198,7 +224,10 @@ export function useRoleActionPermissions({
           return (
             <Checkbox
               checked={Boolean(checked)}
-              disabled={!canEditPermissions}
+              disabled={
+                !canEditSelectedRolePermissions ||
+                !canGrantAction(asString(record.resource), action)
+              }
               onChange={() => toggleAction(asString(record.menuCode), action)}
             />
           )
@@ -219,6 +248,7 @@ export function useRoleActionPermissions({
   return {
     selectedRoleId,
     selectedRoleInfo,
+    canEditSelectedRolePermissions,
     viewMode,
     setViewMode,
     menuTree,
@@ -234,6 +264,7 @@ export function useRoleActionPermissions({
     isActionSelected,
     toggleAllMenuActions,
     toggleAction,
+    isActionEditable,
     actionLabels: ROLE_ACTION_LABELS,
   }
 }

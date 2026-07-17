@@ -16,6 +16,7 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
   const {
     canCreate: canCreateRole,
     canUpdate: canEditRole,
+    canDelete: canDeleteRole,
     can,
   } = useResourcePermissions('role')
   const canEditPermissions = can('manage_permissions')
@@ -25,6 +26,7 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
   const {
     selectedRoleId,
     selectedRoleInfo,
+    canEditSelectedRolePermissions,
     viewMode,
     setViewMode,
     menuTree,
@@ -40,6 +42,7 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
     isActionSelected,
     toggleAllMenuActions,
     toggleAction,
+    isActionEditable,
     actionLabels,
   } = useRoleActionPermissions({
     roles,
@@ -52,12 +55,16 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
     editingRole,
     roleForm,
     savePending: roleSavePending,
+    deletingRoleId,
     openRoleForm,
+    requestDeleteRole,
     handleSaveRole,
     closeRoleModal,
   } = useRoleEditor({
     canCreateRole,
     canEditRole,
+    canDeleteRole,
+    canManagePermissions: canEditPermissions,
     onCreatedRoleSelect: (role) => {
       void selectRole(role)
     },
@@ -71,7 +78,12 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
             roles={roles}
             selectedRoleId={selectedRoleId}
             canCreateRole={canCreateRole}
+            canEditRole={canEditRole}
+            canDeleteRole={canDeleteRole}
+            deletingRoleId={deletingRoleId}
             onCreate={() => openRoleForm('create')}
+            onEdit={(role) => openRoleForm('edit', role)}
+            onDelete={requestDeleteRole}
             onSelectRole={(role) => {
               void selectRole(role)
             }}
@@ -86,8 +98,9 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
             matrixColumns={matrixColumns}
             matrixData={matrixData}
             permissionActions={{
-              editable: canEditPermissions,
+              editable: canEditSelectedRolePermissions,
               saving: savePending,
+              blocked: canEditPermissions && !canEditSelectedRolePermissions,
             }}
             onSelectAll={selectAll}
             onDeselectAll={deselectAll}
@@ -98,6 +111,7 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
             isActionSelected={isActionSelected}
             onToggleAllMenuActions={toggleAllMenuActions}
             onToggleAction={toggleAction}
+            isActionEditable={isActionEditable}
             actionLabels={actionLabels}
           />
         </Col>
