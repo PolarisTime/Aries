@@ -150,7 +150,7 @@ export function useUserAccountEditor({
 
   const fillEditorForm = (record: UserAccountRecord) => {
     const roleIds = [...(record.roleIds || [])].map(String)
-    initialRoleIdsRef.current = [...new Set(roleIds)].sort()
+    initialRoleIdsRef.current = [...new Set(roleIds)].toSorted()
     setEditingId(record.id)
     form.setFieldsValue({
       loginName: record.loginName || '',
@@ -294,7 +294,7 @@ export function useUserAccountEditor({
         if (validationIsCurrent && validationResult.available) {
           const roleIds = [
             ...new Set((values.roleIds || []).map(String)),
-          ].sort()
+          ].toSorted()
           const roleIdsChanged =
             mode === 'create' ||
             roleIds.length !== initialRoleIdsRef.current.length ||

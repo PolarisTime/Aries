@@ -38,9 +38,9 @@ interface Props {
   onDeselectAll: () => void
   onViewModeChange: (value: 'list' | 'matrix') => void
   onSave: () => void
-  isMenuChecked: (menuCode: string) => boolean
-  isMenuPartiallyChecked: (menu: MenuNode) => boolean
-  isActionSelected: (menuCode: string, action: string) => boolean
+  getMenuChecked: (menuCode: string) => boolean
+  getMenuPartiallyChecked: (menu: MenuNode) => boolean
+  getActionSelected: (menuCode: string, action: string) => boolean
   onToggleAllMenuActions: (menu: MenuNode) => void
   onToggleAction: (menuCode: string, action: string) => void
   isActionEditable: (menuCode: string, action: string) => boolean
@@ -58,9 +58,9 @@ export function RoleActionPermissionCard({
   onDeselectAll,
   onViewModeChange,
   onSave,
-  isMenuChecked,
-  isMenuPartiallyChecked,
-  isActionSelected,
+  getMenuChecked,
+  getMenuPartiallyChecked,
+  getActionSelected,
   onToggleAllMenuActions,
   onToggleAction,
   isActionEditable,
@@ -172,8 +172,8 @@ export function RoleActionPermissionCard({
                           >
                             <div className="w-160 flex-shrink-0">
                               <Checkbox
-                                checked={isMenuChecked(child.menuCode)}
-                                indeterminate={isMenuPartiallyChecked(child)}
+                                checked={getMenuChecked(child.menuCode)}
+                                indeterminate={getMenuPartiallyChecked(child)}
                                 disabled={
                                   !child.actions.some((action) =>
                                     isActionEditable(child.menuCode, action),
@@ -190,7 +190,7 @@ export function RoleActionPermissionCard({
                               {child.actions.map((action) => (
                                 <Checkbox
                                   key={action}
-                                  checked={isActionSelected(
+                                  checked={getActionSelected(
                                     child.menuCode,
                                     action,
                                   )}

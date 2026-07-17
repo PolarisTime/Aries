@@ -89,9 +89,9 @@ export function useRoleEditor({
       const response = await createRole(payload)
       return { mode: 'create', data: response.data }
     },
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       setRoleModalOpen(false)
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings }),
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleOptions }),
       ])
