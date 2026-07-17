@@ -11,7 +11,7 @@ import {
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
 
-type BasicGroupKey = 'tax' | 'pagination' | 'session' | 'other'
+type BasicGroupKey = 'tax' | 'pagination' | 'other'
 
 interface Props {
   keyword: string
@@ -35,12 +35,7 @@ interface BasicSettingGroup {
   rows: ModuleRecord[]
 }
 
-const BASIC_GROUP_ORDER: BasicGroupKey[] = [
-  'tax',
-  'pagination',
-  'session',
-  'other',
-]
+const BASIC_GROUP_ORDER: BasicGroupKey[] = ['tax', 'pagination', 'other']
 
 function resolveBasicGroupKey(record: ModuleRecord): BasicGroupKey {
   const code = asString(record.settingCode).trim()
@@ -53,7 +48,6 @@ function resolveBasicGroupKey(record: ModuleRecord): BasicGroupKey {
   ) {
     return 'pagination'
   }
-  if (code === 'SYS_MAX_CONCURRENT_SESSIONS') return 'session'
   return 'other'
 }
 
@@ -82,7 +76,6 @@ export function GeneralSettingsTableCard({
   const groupTitles: Record<BasicGroupKey, string> = {
     tax: t('system.generalSettingsTable.groupTax'),
     pagination: t('system.generalSettingsTable.groupPagination'),
-    session: t('system.generalSettingsTable.groupSession'),
     other: t('system.generalSettingsTable.groupOther'),
   }
   const basicGroups = BASIC_GROUP_ORDER.map((key) => ({

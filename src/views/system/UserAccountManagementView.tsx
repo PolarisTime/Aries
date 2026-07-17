@@ -11,15 +11,10 @@ import { UserAccountCreateResultModal } from '@/views/system/UserAccountCreateRe
 import { UserAccountDetailModal } from '@/views/system/UserAccountDetailModal'
 import { UserAccountEditorModal } from '@/views/system/UserAccountEditorModal'
 import { UserAccountTableCard } from '@/views/system/UserAccountTableCard'
-import { UserAccountTwoFactorModal } from '@/views/system/UserAccountTwoFactorModal'
-import {
-  getUserAccountStatusColor,
-  getUserAccountTotpColor,
-} from '@/views/system/user-account-view-utils'
+import { getUserAccountStatusColor } from '@/views/system/user-account-view-utils'
 import { useUserAccountDetail } from '@/views/system/useUserAccountDetail'
 import { useUserAccountEditor } from '@/views/system/useUserAccountEditor'
 import { useUserAccountListState } from '@/views/system/useUserAccountListState'
-import { useUserAccountTwoFactor } from '@/views/system/useUserAccountTwoFactor'
 
 interface UserAccountManagementViewProps {
   active?: boolean
@@ -91,23 +86,6 @@ export function UserAccountManagementView({
     closeDetailModal,
   } = useUserAccountDetail()
 
-  const {
-    twoFaOpen,
-    twoFaLoading,
-    twoFaRecord,
-    twoFaSetup,
-    twoFaCode,
-    twoFaSetupLoading,
-    twoFaEnableLoading,
-    twoFaDisableLoading,
-    setTwoFaCode,
-    open2faModal,
-    handleGenerate2fa,
-    handleEnable2fa,
-    handleDisable2fa,
-    close2faModal,
-  } = useUserAccountTwoFactor()
-
   const deleteMutation = useMutation({
     mutationFn: deleteUserAccount,
     onSuccess: () => {
@@ -155,7 +133,6 @@ export function UserAccountManagementView({
         canEdit={canEdit}
         canDelete={canDelete}
         getStatusColor={getUserAccountStatusColor}
-        getTotpColor={getUserAccountTotpColor}
         onKeywordChange={setKeyword}
         onSearch={handleSearch}
         onStatusFilterChange={handleStatusFilterChange}
@@ -166,9 +143,6 @@ export function UserAccountManagementView({
         }}
         onEdit={(record) => {
           void openEditModal(record)
-        }}
-        onManage2fa={(record) => {
-          void open2faModal(record)
         }}
         onDelete={handleDelete}
         onPageChange={handlePageChange}
@@ -204,7 +178,6 @@ export function UserAccountManagementView({
           loading={detailLoading}
           record={detailRecord}
           getStatusColor={getUserAccountStatusColor}
-          getTotpColor={getUserAccountTotpColor}
           onClose={closeDetailModal}
         />
       ) : null}
@@ -217,28 +190,6 @@ export function UserAccountManagementView({
             void copyText(value, label)
           }}
           onClose={closeCreateResult}
-        />
-      ) : null}
-
-      {twoFaOpen ? (
-        <UserAccountTwoFactorModal
-          open={twoFaOpen}
-          loading={twoFaLoading}
-          record={twoFaRecord}
-          setup={twoFaSetup}
-          code={twoFaCode}
-          setupLoading={twoFaSetupLoading}
-          enableLoading={twoFaEnableLoading}
-          disableLoading={twoFaDisableLoading}
-          onCodeChange={setTwoFaCode}
-          onGenerate={() => {
-            void handleGenerate2fa()
-          }}
-          onEnable={() => {
-            void handleEnable2fa()
-          }}
-          onDisable={handleDisable2fa}
-          onClose={close2faModal}
         />
       ) : null}
     </div>

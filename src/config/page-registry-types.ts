@@ -4,15 +4,10 @@ export type RouteViewKey =
   | 'dashboard'
   | 'business-grid'
   | 'system-parameters'
-  | 'number-rules'
   | 'general-setting'
   | 'company-setting'
   | 'print-template'
   | 'access-control'
-  | 'security-center'
-  | 'session'
-  | 'api-key'
-  | 'security-key'
   | 'cash-ledger'
 
 export interface AppPageDefinition {

@@ -4,11 +4,6 @@ import { asString } from '@/utils/type-narrowing'
 
 const operationLogActionOptions = [
   {
-    label: i18next.t('modules.pages.operationLogOptions.query'),
-    value: '查询',
-  },
-  { label: i18next.t('modules.pages.operationLogOptions.view'), value: '查看' },
-  {
     label: i18next.t('modules.pages.operationLogOptions.create'),
     value: '新增',
   },
@@ -51,36 +46,8 @@ const operationLogActionOptions = [
     value: '修改密码',
   },
   {
-    label: i18next.t('modules.pages.operationLogOptions.generate2faKey'),
-    value: '生成2FA密钥',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.enable2fa'),
-    value: '启用2FA',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.disable2fa'),
-    value: '禁用2FA',
-  },
-  {
     label: i18next.t('modules.pages.operationLogOptions.editPermissions'),
     value: '编辑权限',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.generateApiKey'),
-    value: '生成 API Key',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.disableApiKey'),
-    value: '禁用 API Key',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.rotateJwtKey'),
-    value: '轮转JWT主密钥',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.rotate2faKey'),
-    value: '轮转2FA主密钥',
   },
   {
     label: i18next.t('modules.pages.operationLogOptions.exportBackup'),
@@ -89,10 +56,6 @@ const operationLogActionOptions = [
   {
     label: i18next.t('modules.pages.operationLogOptions.importBackup'),
     value: '导入备份',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.editUploadRule'),
-    value: '编辑上传命名规则',
   },
   {
     label: i18next.t('modules.pages.operationLogOptions.uploadAttachment'),
@@ -123,18 +86,6 @@ const operationLogActionOptionsByModule: Record<
       label: i18next.t('modules.pages.operationLogOptions.changePassword'),
       value: '修改密码',
     },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.generate2faKey'),
-      value: '生成2FA密钥',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.enable2fa'),
-      value: '启用2FA',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.disable2fa'),
-      value: '禁用2FA',
-    },
   ],
   用户账户: [
     {
@@ -148,18 +99,6 @@ const operationLogActionOptionsByModule: Record<
     {
       label: i18next.t('modules.pages.operationLogOptions.delete'),
       value: '删除',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.generate2faKey'),
-      value: '生成2FA密钥',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.enable2fa'),
-      value: '启用2FA',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.disable2fa'),
-      value: '禁用2FA',
     },
   ],
   角色权限配置: [
@@ -198,26 +137,6 @@ const operationLogActionOptionsByModule: Record<
       value: '编辑权限',
     },
   ],
-  'API Key 管理': [
-    {
-      label: i18next.t('modules.pages.operationLogOptions.generateApiKey'),
-      value: '生成 API Key',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.disableApiKey'),
-      value: '禁用 API Key',
-    },
-  ],
-  安全密钥管理: [
-    {
-      label: i18next.t('modules.pages.operationLogOptions.rotateJwtKey'),
-      value: '轮转JWT主密钥',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.rotate2faKey'),
-      value: '轮转2FA主密钥',
-    },
-  ],
   数据库管理: [
     {
       label: i18next.t('modules.pages.operationLogOptions.exportBackup'),
@@ -232,12 +151,6 @@ const operationLogActionOptionsByModule: Record<
     {
       label: i18next.t('modules.pages.operationLogOptions.save'),
       value: '保存',
-    },
-  ],
-  单号规则: [
-    {
-      label: i18next.t('modules.pages.operationLogOptions.editUploadRule'),
-      value: '编辑上传命名规则',
     },
   ],
   附件管理: [
@@ -269,10 +182,6 @@ export const operationLogModuleOptions = [
         value: '通用设置',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.apiKeyManagement'),
-        value: 'API Key 管理',
-      },
-      {
         label: i18next.t('modules.pages.operationLogOptions.database'),
         value: '数据库管理',
       },
@@ -300,14 +209,6 @@ export const operationLogModuleOptions = [
       {
         label: i18next.t('modules.pages.operationLogOptions.operationLog'),
         value: '操作日志',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.sessionManagement'),
-        value: '会话管理',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.securityKeys'),
-        value: '安全密钥管理',
       },
     ],
   },

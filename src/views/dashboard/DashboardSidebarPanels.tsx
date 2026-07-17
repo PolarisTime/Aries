@@ -1,5 +1,4 @@
-import { SafetyOutlined } from '@ant-design/icons'
-import { Card, Descriptions, Tag } from 'antd'
+import { Card, Descriptions } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/dashboard'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
@@ -14,7 +13,6 @@ export function DashboardSidebarPanels({
   summary,
 }: DashboardSidebarPanelsProps) {
   const { t } = useTranslation()
-  const mfaEnabled = Boolean(summary?.totpEnabled)
   const systemItems = [
     {
       key: 'modules',
@@ -72,15 +70,6 @@ export function DashboardSidebarPanels({
               <strong>{item.value}</strong>
             </div>
           ))}
-        </div>
-        <div className="dashboard-system-security">
-          <SafetyOutlined />
-          <span>{t('dashboard.info.mfaStatus')}</span>
-          <Tag color={mfaEnabled ? 'success' : 'warning'} variant="filled">
-            {mfaEnabled
-              ? t('dashboard.values.enabled')
-              : t('dashboard.values.disabled')}
-          </Tag>
         </div>
       </Card>
     </div>

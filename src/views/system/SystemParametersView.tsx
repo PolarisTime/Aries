@@ -1,17 +1,12 @@
-import {
-  CloudServerOutlined,
-  ControlOutlined,
-  NumberOutlined,
-} from '@ant-design/icons'
+import { CloudServerOutlined, ControlOutlined } from '@ant-design/icons'
 import { Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import { GeneralSettingsView } from '@/views/system/GeneralSettingsView'
-import { NumberRulesView } from '@/views/system/NumberRulesView'
 import { OssSettingsView } from '@/views/system/OssSettingsView'
 
-type SystemParametersTabKey = 'general' | 'number-rules' | 'oss'
+type SystemParametersTabKey = 'general' | 'oss'
 
 export function SystemParametersView(): React.JSX.Element {
   const { t } = useTranslation()
@@ -24,12 +19,6 @@ export function SystemParametersView(): React.JSX.Element {
         label: t('system.systemParameters.generalTab'),
         icon: <ControlOutlined aria-hidden />,
         children: <GeneralSettingsView />,
-      },
-      {
-        key: 'number-rules',
-        label: t('system.systemParameters.numberRulesTab'),
-        icon: <NumberOutlined aria-hidden />,
-        children: <NumberRulesView embedded />,
       },
       {
         key: 'oss',

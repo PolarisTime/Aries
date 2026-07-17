@@ -1,7 +1,6 @@
 import { t } from 'i18next'
-import type { MessageSchema } from '@/types/i18n'
 
-type ApiMessageKey = keyof MessageSchema['api']
+type ApiMessageKey = keyof typeof import('@/locales/zh-CN').zhCN.api
 
 export function getApiMessage(key: ApiMessageKey): string {
   return t(`api.${key}`)

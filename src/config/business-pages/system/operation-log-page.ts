@@ -71,10 +71,7 @@ export const operationLogsPageConfig: ModulePageConfig = {
       key: 'authType',
       label: i18next.t('modules.pages.operationLog.authType'),
       type: 'select',
-      options: [
-        { label: 'WEB', value: 'WEB' },
-        { label: 'API_KEY', value: 'API_KEY' },
-      ],
+      options: [{ label: 'WEB', value: 'WEB' }],
     },
     {
       key: 'operationTime',

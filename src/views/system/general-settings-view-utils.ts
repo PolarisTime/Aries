@@ -8,17 +8,11 @@ import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
-const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
-export const DETAILED_OPERATION_LOG_SETTING_CODE =
-  'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS'
 const HIDE_AUDITED_LIST_RECORDS_SETTING_CODE = 'UI_HIDE_AUDITED_LIST_RECORDS'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE: i18next.t(
     'system.generalSettingsUtils.helpDefaultTaxRate',
-  ),
-  SYS_MAX_CONCURRENT_SESSIONS: i18next.t(
-    'system.generalSettingsUtils.helpMaxConcurrentSessions',
   ),
   UI_WEIGHT_ONLY_PURCHASE_INBOUNDS: i18next.t(
     'system.generalSettingsUtils.helpWeightOnlyPurchase',
@@ -29,69 +23,13 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER: i18next.t(
     'system.generalSettingsUtils.helpCustomerStatementZero',
   ),
-  SYS_OPERATION_LOG_RECORD_ALL_WRITE: i18next.t(
-    'system.generalSettingsUtils.helpOperationLogAllWrite',
-  ),
-  SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS: i18next.t(
-    'system.generalSettingsUtils.helpOperationLogDetailed',
-  ),
-  SYS_OPERATION_LOG_RECORD_AUTH_EVENTS: i18next.t(
-    'system.generalSettingsUtils.helpOperationLogAuth',
-  ),
-  SYS_FORCE_USER_TOTP_ON_FIRST_LOGIN: i18next.t(
-    'system.generalSettingsUtils.helpForceTotpOnFirstLogin',
-  ),
-  SYS_BATCH_NO_AUTO_GENERATE: i18next.t(
-    'system.generalSettingsUtils.helpBatchNoAutoGenerate',
-  ),
   SYS_FORCE_BATCH_MANAGEMENT: i18next.t(
     'system.generalSettingsUtils.helpForceBatchManagement',
   ),
   UI_HIDE_AUDITED_LIST_RECORDS: i18next.t(
     'system.generalSettingsUtils.helpHideAuditedRecords',
   ),
-  UI_SHOW_SNOWFLAKE_ID: i18next.t(
-    'system.generalSettingsUtils.helpShowSnowflakeId',
-  ),
-  SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO: i18next.t(
-    'system.generalSettingsUtils.helpUseSnowflakeAsBusinessNo',
-  ),
-  SYS_LOGIN_CAPTCHA: i18next.t('system.generalSettingsUtils.helpLoginCaptcha'),
 }
-
-export const DETAILED_OPERATION_ACTION_OPTIONS = [
-  {
-    label: i18next.t('system.generalSettingsUtils.actionQuery'),
-    value: 'QUERY',
-  },
-  {
-    label: i18next.t('system.generalSettingsUtils.actionDetail'),
-    value: 'DETAIL',
-  },
-  {
-    label: i18next.t('system.generalSettingsUtils.actionCreate'),
-    value: 'CREATE',
-  },
-  { label: i18next.t('system.generalSettingsUtils.actionEdit'), value: 'EDIT' },
-  {
-    label: i18next.t('system.generalSettingsUtils.actionDelete'),
-    value: 'DELETE',
-  },
-  {
-    label: i18next.t('system.generalSettingsUtils.actionAudit'),
-    value: 'AUDIT',
-  },
-  {
-    label: i18next.t('system.generalSettingsUtils.actionExport'),
-    value: 'EXPORT',
-  },
-  {
-    label: i18next.t('system.generalSettingsUtils.actionPrint'),
-    value: 'PRINT',
-  },
-]
-export const DETAILED_OPERATION_ACTION_VALUES =
-  DETAILED_OPERATION_ACTION_OPTIONS.map((option) => option.value)
 
 export const HIDE_AUDITED_STATUS_OPTIONS = [
   {
@@ -158,31 +96,17 @@ export function buildSystemSettingPayload(
     id: record.id,
     settingCode: record.settingCode,
     settingName: record.settingName,
-    billName: record.billName,
-    prefix: record.prefix || 'SYS',
-    dateRule: record.dateRule || 'NONE',
-    serialLength: record.serialLength || 1,
-    resetRule: record.resetRule || 'NEVER',
-    sampleNo: record.sampleNo || 'ON',
+    settingGroup: record.settingGroup,
+    settingValue: record.settingValue || 'ON',
     status: asString(record.status) || STATUS.NORMAL,
     remark: record.remark,
     ...patch,
   }
 }
 
-function isMaxConcurrentSetting(record: ModuleRecord) {
-  return asString(record.settingCode).trim() === MAX_CONCURRENT_SESSIONS_CODE
-}
-
 export function isDefaultListPageSizeSetting(record: ModuleRecord) {
   return (
     asString(record.settingCode).trim() === DEFAULT_LIST_PAGE_SIZE_SETTING_CODE
-  )
-}
-
-export function isDetailedOperationLogSetting(record: ModuleRecord) {
-  return (
-    asString(record.settingCode).trim() === DETAILED_OPERATION_LOG_SETTING_CODE
   )
 }
 
@@ -194,11 +118,12 @@ export function isHideAuditedListRecordsSetting(record: ModuleRecord) {
 }
 
 export function isNumericSetting(record: ModuleRecord) {
-  return (
-    isDefaultTaxRateSetting(record) ||
-    isMaxConcurrentSetting(record) ||
-    isDefaultListPageSizeSetting(record)
-  )
+  return isDefaultTaxRateSetting(record) || isDefaultListPageSizeSetting(record)
+}
+
+export function isSystemSwitch(record: ModuleRecord) {
+  const settingCode = asString(record.settingCode)
+  return settingCode.startsWith('UI_') || settingCode.startsWith('SYS_')
 }
 
 // isToggleSetting re-exported from @/module-system/settings-constants
@@ -213,38 +138,27 @@ export function matchesGeneralSettingKeyword(
   return [
     record.settingCode,
     record.settingName,
-    record.billName,
+    record.settingGroup,
     record.remark,
   ].some((item) => asString(item).toLowerCase().includes(normalized))
 }
 
 export function formatSettingValue(record: ModuleRecord) {
   if (isDefaultTaxRateSetting(record)) {
-    const value = Number(record.sampleNo || 0)
+    const value = Number(record.settingValue || 0)
     return value ? `${(value * 100).toFixed(0)}%` : '13%'
   }
-  if (isMaxConcurrentSetting(record)) {
-    return asString(record.sampleNo)
-  }
-  return asString(record.sampleNo)
+  return asString(record.settingValue)
 }
 
-export function resolveDetailedOperationActionValues(sampleNo: unknown) {
-  const selected = resolveOptionValues(
-    sampleNo,
-    DETAILED_OPERATION_ACTION_VALUES,
-  )
-  return selected.length > 0 ? selected : DETAILED_OPERATION_ACTION_VALUES
-}
-
-export function resolveHideAuditedStatusValues(sampleNo: unknown) {
-  const selected = resolveOptionValues(sampleNo, HIDE_AUDITED_STATUS_VALUES)
+export function resolveHideAuditedStatusValues(settingValue: unknown) {
+  const selected = resolveOptionValues(settingValue, HIDE_AUDITED_STATUS_VALUES)
   return selected.length > 0 ? selected : ['已审核']
 }
 
-function resolveOptionValues(sampleNo: unknown, allowedValues: string[]) {
+function resolveOptionValues(settingValue: unknown, allowedValues: string[]) {
   const allowed = new Set(allowedValues)
-  return asString(sampleNo)
+  return asString(settingValue)
     .split(',')
     .map((item) => item.trim())
     .filter((item) => allowed.has(item))
@@ -252,6 +166,6 @@ function resolveOptionValues(sampleNo: unknown, allowedValues: string[]) {
 
 export function resolveDefaultTaxRateValue(rows: ModuleRecord[] | undefined) {
   const matched = rows?.find(isDefaultTaxRateSetting)
-  const value = Number(matched?.sampleNo || 0)
+  const value = Number(matched?.settingValue || 0)
   return Number.isFinite(value) && value > 0 ? value : 0
 }

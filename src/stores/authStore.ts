@@ -6,7 +6,6 @@ import {
   clearUserQueryCacheOnIdentityChange,
 } from '@/lib/auth-query-cache'
 import type {
-  Login2faPayload,
   LoginPayload,
   LoginResponseData,
   LoginUser,
@@ -26,32 +25,13 @@ async function loadAuthApi() {
   return import('@/api/auth')
 }
 
-interface LoginStep2 {
-  requires2fa: true
-  tempToken: string
-}
-
-interface LoginStep1Result {
-  requires2fa: false
-  accessToken: string
-  user: LoginUser
-  expiresIn: number
-}
-
-type LoginResult = LoginStep1Result | LoginStep2
-
-function isStep2(data: LoginResult): data is LoginStep2 {
-  return data.requires2fa === true
-}
-
 interface AuthState {
   token: string
   user: LoginUser | null
   isAuthenticated: boolean
   authReady: boolean
   hydrate: () => void
-  signIn: (payload: LoginPayload) => Promise<LoginResult>
-  verify2fa: (payload: Login2faPayload) => Promise<LoginResponseData>
+  signIn: (payload: LoginPayload) => Promise<LoginResponseData>
   signOut: () => Promise<void>
   restoreSession: () => Promise<boolean>
 }
@@ -90,47 +70,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (response.code !== ERROR_CODE.SUCCESS) {
       throw new Error(response.message || i18next.t('auth.error.loginFailed'))
     }
-    const data = response.data as LoginResult
-    if (isStep2(data)) {
-      if (!data.tempToken)
-        throw new Error(i18next.t('auth.error.missing2faToken'))
-      return { requires2fa: true, tempToken: data.tempToken }
-    }
-    if (!data.accessToken || !data.user) {
-      throw new Error(i18next.t('auth.error.missingTokenOrUser'))
-    }
-    await clearUserQueryCacheOnIdentityChange(get().user, data.user)
-    persistSession(
-      data.user,
-      data.accessToken,
-      data.expiresIn,
-      payload.remember !== false,
-    )
-    set({
-      token: data.accessToken,
-      user: data.user,
-      isAuthenticated: true,
-      authReady: true,
-    })
-    return {
-      requires2fa: false,
-      accessToken: data.accessToken,
-      user: data.user,
-      expiresIn: data.expiresIn,
-    }
-  },
-
-  verify2fa: async (payload: Login2faPayload) => {
-    const { login2fa } = await loadAuthApi()
-    const response = await login2fa(payload)
-    if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(
-        response.message || i18next.t('auth.error.verify2faFailed'),
-      )
-    }
     const data = response.data
     if (!data.accessToken || !data.user) {
-      throw new Error(i18next.t('auth.error.missing2faResponseTokenOrUser'))
+      throw new Error(i18next.t('auth.error.missingTokenOrUser'))
     }
     await clearUserQueryCacheOnIdentityChange(get().user, data.user)
     persistSession(

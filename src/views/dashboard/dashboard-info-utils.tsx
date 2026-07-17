@@ -40,14 +40,6 @@ export function buildDashboardInfoItems(
       icon: ShopOutlined,
     },
     {
-      key: 'totpEnabled',
-      label: t('dashboard.info.mfaStatus'),
-      value: summary?.totpEnabled
-        ? t('dashboard.values.enabled')
-        : t('dashboard.values.disabled'),
-      icon: SafetyOutlined,
-    },
-    {
       key: 'lastLoginAt',
       label: t('dashboard.info.lastLogin'),
       value: formatDateTime(summary?.lastLoginAt),

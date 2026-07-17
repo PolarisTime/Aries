@@ -4,8 +4,6 @@ import type {
   InitialSetupCompanyPayload,
   InitialSetupStatus,
   InitialSetupSubmitResponse,
-  InitialSetupTotpPayload,
-  InitialSetupTotpResult,
 } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
@@ -20,18 +18,6 @@ export async function getInitialSetupStatus() {
     ENDPOINTS.SETUP_STATUS,
   )
   return assertApiSuccess(response, getApiMessage('getInitStatusFailed'))
-}
-
-export async function setupInitialAdmin2fa(
-  payload: InitialSetupTotpPayload,
-  setupToken: string,
-) {
-  const response = await http.post<ApiResponse<InitialSetupTotpResult>>(
-    ENDPOINTS.SETUP_ADMIN_2FA,
-    payload,
-    setupTokenHeaders(setupToken),
-  )
-  return assertApiSuccess(response, getApiMessage('generateAdmin2faFailed'))
 }
 
 export async function submitInitialAdmin(

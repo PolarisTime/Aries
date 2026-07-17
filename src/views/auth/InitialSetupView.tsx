@@ -19,15 +19,12 @@ export function InitialSetupView() {
     checking,
     currentStep,
     form,
-    handleGenerateTotp,
     handleSubmitAdmin,
     handleSubmitCompany,
     loadingAdmin,
     loadingCompany,
-    loadingTotp,
     setCurrentStep,
     status,
-    totpSetup,
   } = useInitialSetupState()
 
   if (checking) {
@@ -107,12 +104,7 @@ export function InitialSetupView() {
             </Form.Item>
             {currentStep === 'admin' ? (
               <InitialSetupAdminForm
-                totpSetup={totpSetup}
-                loadingTotp={loadingTotp}
                 loadingAdmin={loadingAdmin}
-                onGenerateTotp={() => {
-                  void handleGenerateTotp()
-                }}
                 onSubmitAdmin={() => {
                   void handleSubmitAdmin()
                 }}

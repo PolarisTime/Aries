@@ -23,11 +23,5 @@ export function requestHadAuthorization(
   config: RetryableRequestConfig | undefined,
 ) {
   const authorization = getRequestHeader(config, 'Authorization')
-  const legacyToken = getRequestHeader(config, 'X-Access-Token')
-  const apiKey = getRequestHeader(config, 'X-API-Key')
-  return Boolean(authorization.trim() || legacyToken.trim() || apiKey.trim())
-}
-
-export function requestUsesApiKey(config: RetryableRequestConfig | undefined) {
-  return Boolean(getRequestHeader(config, 'X-API-Key').trim())
+  return Boolean(authorization.trim())
 }

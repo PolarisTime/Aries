@@ -1,9 +1,4 @@
-import {
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons'
 import type { ProColumns } from '@ant-design/pro-components/es/table'
 import { Select } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -28,7 +23,6 @@ interface Props {
   canEdit: boolean
   canDelete: boolean
   getStatusColor: (value: string) => string
-  getTotpColor: (enabled: boolean) => string
   onKeywordChange: (value: string) => void
   onSearch: () => void
   onStatusFilterChange: (value?: string) => void
@@ -36,7 +30,6 @@ interface Props {
   onCreate: () => void
   onView: (record: UserAccountRecord) => void
   onEdit: (record: UserAccountRecord) => void
-  onManage2fa: (record: UserAccountRecord) => void
   onDelete: (record: UserAccountRecord) => void
   onPageChange: (page: number, pageSize: number) => void
 }
@@ -52,7 +45,6 @@ export function UserAccountTableCard({
   canEdit,
   canDelete,
   getStatusColor,
-  getTotpColor,
   onKeywordChange,
   onSearch,
   onStatusFilterChange,
@@ -60,7 +52,6 @@ export function UserAccountTableCard({
   onCreate,
   onView,
   onEdit,
-  onManage2fa,
   onDelete,
   onPageChange,
 }: Props) {
@@ -86,13 +77,6 @@ export function UserAccountTableCard({
               icon: <EditOutlined />,
               visible: canEdit,
               onClick: () => onEdit(record),
-            },
-            {
-              key: '2fa',
-              label: '2FA',
-              icon: <SafetyCertificateOutlined />,
-              visible: canEdit,
-              onClick: () => onManage2fa(record),
             },
             {
               key: 'delete',
@@ -134,27 +118,6 @@ export function UserAccountTableCard({
       width: 220,
       render: (_dom, record) =>
         Array.isArray(record.roleNames) ? record.roleNames.join('、') : '--',
-    },
-    {
-      dataIndex: 'totpEnabled',
-      title: t('system.userAccountTable.colTotpStatus'),
-      width: 110,
-      align: 'center' as const,
-      render: (_dom, record) => (
-        <StatusTag
-          status={record.totpEnabled ? 'enabled' : 'disabled'}
-          statusMap={{
-            enabled: {
-              color: getTotpColor(true),
-              label: t('system.userAccountTable.totpEnabled'),
-            },
-            disabled: {
-              color: getTotpColor(false),
-              label: t('system.userAccountTable.totpDisabled'),
-            },
-          }}
-        />
-      ),
     },
     {
       dataIndex: 'status',

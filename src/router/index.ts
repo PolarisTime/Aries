@@ -140,21 +140,6 @@ const setupRoute = createRoute({
   ),
 })
 
-const setup2faRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/setup-2fa',
-  component: lazy(() =>
-    import('@/views/auth/SetupTwoFactorView').then((m) => ({
-      default: m.SetupTwoFactorView,
-    })),
-  ),
-  beforeLoad: () => {
-    if (!useAuthStore.getState().isAuthenticated)
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/login' })
-  },
-})
-
 const authenticatedLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authenticated-layout',
@@ -180,10 +165,6 @@ const viewLoaders: Record<
     import('@/views/system/SystemParametersView').then((m) => ({
       default: m.SystemParametersView,
     })),
-  'number-rules': () =>
-    import('@/views/system/NumberRulesView').then((m) => ({
-      default: m.NumberRulesView,
-    })),
   'general-setting': () =>
     import('@/views/system/GeneralSettingsView').then((m) => ({
       default: m.GeneralSettingsView,
@@ -196,25 +177,9 @@ const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
-  session: () =>
-    import('@/views/system/SessionManagementView').then((m) => ({
-      default: m.SessionManagementView,
-    })),
-  'api-key': () =>
-    import('@/views/system/ApiKeyManagementView').then((m) => ({
-      default: m.ApiKeyManagementView,
-    })),
   'access-control': () =>
     import('@/views/system/AccessControlView').then((m) => ({
       default: m.AccessControlView,
-    })),
-  'security-center': () =>
-    import('@/views/system/SecurityCenterView').then((m) => ({
-      default: m.SecurityCenterView,
-    })),
-  'security-key': () =>
-    import('@/views/system/SecurityKeyManagementView').then((m) => ({
-      default: m.SecurityKeyManagementView,
     })),
   'cash-ledger': () =>
     import('@/views/finance/CashLedgerView').then((m) => ({
@@ -284,22 +249,6 @@ const moduleRoutes = appPageDefinitions.map((def) => {
   })
 })
 
-const apiKeyDetailRoute = createRoute({
-  getParentRoute: () => authenticatedLayoutRoute,
-  path: '/api-key/$id',
-  component: lazy(() =>
-    import('@/views/system/ApiKeyDetailView').then((m) => ({
-      default: m.ApiKeyDetailView,
-    })),
-  ),
-  beforeLoad: () => {
-    if (!usePermissionStore.getState().can('api-key', 'read')) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: '/' })
-    }
-  },
-})
-
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -323,10 +272,9 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   setupRoute,
-  setup2faRoute,
   serverErrorRoute,
   notFoundRoute,
-  authenticatedLayoutRoute.addChildren([...moduleRoutes, apiKeyDetailRoute]),
+  authenticatedLayoutRoute.addChildren(moduleRoutes),
 ])
 
 export const router = createRouter({

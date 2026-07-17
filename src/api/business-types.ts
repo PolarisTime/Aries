@@ -1,27 +1,3 @@
-export interface UploadRulePayload {
-  renamePattern: string
-  status: string
-  remark?: string
-}
-
-interface NumberRuleGenerateRecord {
-  moduleKey: string
-  generatedNo: string
-  generatedId?: string | null
-}
-
-export interface UploadRuleRecord {
-  id: string
-  moduleKey: string
-  moduleName: string
-  ruleCode: string
-  ruleName: string
-  renamePattern: string
-  status: string
-  remark?: string
-  previewFileName?: string
-}
-
 export interface AttachmentRecord {
   id: string
   name: string
@@ -88,5 +64,3 @@ export interface LeoPageData<T> {
   first?: boolean
   last?: boolean
 }
-
-export type { NumberRuleGenerateRecord }

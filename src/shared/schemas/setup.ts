@@ -17,21 +17,6 @@ export type InitialSetupAdminPayload = z.infer<
   typeof initialSetupAdminPayloadSchema
 >
 
-export const initialSetupTotpPayloadSchema = z.object({
-  loginName: z.string(),
-})
-export type InitialSetupTotpPayload = z.infer<
-  typeof initialSetupTotpPayloadSchema
->
-
-export const initialSetupTotpResultSchema = z.object({
-  qrCodeBase64: z.string(),
-  secret: z.string(),
-})
-export type InitialSetupTotpResult = z.infer<
-  typeof initialSetupTotpResultSchema
->
-
 export const initialSetupCompanyPayloadSchema = z.object({
   companyName: z.string().min(1),
   taxNo: z.string().optional(),
@@ -46,8 +31,6 @@ export type InitialSetupCompanyPayload = z.infer<
 
 export type InitialSetupAdminSubmitPayload = {
   admin: InitialSetupAdminPayload
-  totpSecret?: string
-  totpCode?: string
 }
 
 export type InitialSetupResult = InitialSetupStatus

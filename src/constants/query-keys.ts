@@ -7,7 +7,6 @@ export const QUERY_KEYS = {
   runtimeConfig: ['runtime-config'] as const,
   companySetting: ['company-setting'] as const,
   companySettings: ['company-settings'] as const,
-  numberRules: ['number-rules'] as const,
 
   // Dashboard
   dashboardSummary: ['dashboard-summary'] as const,
@@ -59,22 +58,7 @@ export const QUERY_KEYS = {
   // Role templates
   roleTemplates: ['role-templates'] as const,
 
-  // Rate limit rules
-  rateLimitRules: ['rate-limit-rules'] as const,
-
   // Auth / Users
-  apiKeys: ['api-keys'] as const,
-  apiKeyList: (
-    page: number,
-    size: number,
-    keyword: string,
-    userId: string | undefined,
-    status: string | undefined,
-    scope: string | undefined,
-  ) => ['api-keys', page, size, keyword, userId, status, scope] as const,
-  apiKeyActionOptions: ['api-key-action-options'] as const,
-  apiKeyResourceOptions: ['api-key-resource-options'] as const,
-  apiKeyUserOptions: ['api-key-user-options'] as const,
   userAccount: (
     page: number,
     size: number,
@@ -86,12 +70,6 @@ export const QUERY_KEYS = {
   roleSettings: ['role-settings'] as const,
   rolePermissionOptions: ['role-permission-options'] as const,
   departmentOptions: ['department-options'] as const,
-
-  // Sessions
-  refreshTokens: (page: number, size: number, keyword: string) =>
-    ['refresh-tokens', page, size, keyword] as const,
-  refreshTokensBase: ['refresh-tokens'] as const,
-  refreshTokensSummary: ['refresh-tokens-summary'] as const,
 
   // Statements
   statementLinkOptionsBase: ['statement-link-options'] as const,

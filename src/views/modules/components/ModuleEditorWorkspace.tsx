@@ -254,6 +254,7 @@ export function ModuleEditorWorkspace({
             lockedLineItemsNotice={lockedLineItemsNotice}
             parentImporting={parentImporting}
             authoritativePrimaryNo={authoritativePrimaryNo}
+            isEdit={isEdit}
             layoutVariant={useFinanceEditorLayout ? 'finance' : 'default'}
             onCancel={onClose}
             onOpenParentSelector={openParentSelector}

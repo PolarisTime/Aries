@@ -1,6 +1,7 @@
 import { ImportOutlined } from '@ant-design/icons'
 import { Alert, Button, Col, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
 import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
 import { groupFieldsByRow } from '@/module-system/module-field-layout'
 import { isModuleFormFieldVisible } from '@/module-system/module-form-field-visibility'
@@ -22,6 +23,7 @@ interface Props {
   lockedLineItemsNotice: string
   parentImporting: boolean
   authoritativePrimaryNo?: string
+  isEdit: boolean
   layoutVariant?: 'default' | 'finance'
   onCancel: () => void
   onOpenParentSelector: () => void
@@ -53,6 +55,7 @@ export function ModuleEditorFormSection({
   lockedLineItemsNotice,
   parentImporting,
   authoritativePrimaryNo,
+  isEdit,
   layoutVariant = 'default',
   onCancel,
   onOpenParentSelector,
@@ -62,8 +65,14 @@ export function ModuleEditorFormSection({
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
   const formFieldRows = groupFieldsByRow(
-    (config.formFields || []).filter((field) =>
-      isModuleFormFieldVisible(field, formValues),
+    (config.formFields || []).filter(
+      (field) =>
+        isModuleFormFieldVisible(field, formValues) &&
+        !(
+          !isEdit &&
+          field.key === config.primaryNoKey &&
+          usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
+        ),
     ),
   )
   const parentImportVisible = Boolean(
@@ -85,9 +94,6 @@ export function ModuleEditorFormSection({
           className="mb-12"
         />
       ) : null}
-      <Form.Item name="_preallocatedId" hidden initialValue="">
-        <input aria-label="Preallocated ID" />
-      </Form.Item>
       <div className="editor-form-head">
         <div className="editor-form-title-block">
           <Typography.Title level={5} className="m-0">

@@ -1,56 +1,3 @@
-import type { LoginUser } from '@/shared/schemas'
-
-const TOTP_SESSION_KEY = 'aries-totp-session'
-
-export interface SavedTotpSession {
-  token: string
-  deadline: number
-  loginName: string
-  remember: boolean
-}
-
-export function saveTotpSession(
-  token: string,
-  deadline: number,
-  loginName: string,
-  remember: boolean,
-): void {
-  sessionStorage.setItem(
-    TOTP_SESSION_KEY,
-    JSON.stringify({ token, deadline, loginName, remember }),
-  )
-}
-
-export function clearTotpSession(): void {
-  sessionStorage.removeItem(TOTP_SESSION_KEY)
-}
-
-export function restoreTotpSession(): SavedTotpSession | null {
-  try {
-    const raw = sessionStorage.getItem(TOTP_SESSION_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    if (
-      parsed &&
-      typeof parsed.token === 'string' &&
-      typeof parsed.deadline === 'number' &&
-      typeof parsed.loginName === 'string' &&
-      Date.now() < parsed.deadline
-    ) {
-      return {
-        token: parsed.token,
-        deadline: parsed.deadline,
-        loginName: parsed.loginName,
-        remember: parsed.remember === true,
-      }
-    }
-  } catch {
-    // ignore malformed session data
-  }
-  sessionStorage.removeItem(TOTP_SESSION_KEY)
-  return null
-}
-
 function sanitizeRedirectPath(candidate: string): string {
   if (!candidate.startsWith('/') || /^https?:\/\//i.test(candidate)) {
     return '/dashboard'
@@ -66,18 +13,6 @@ function getRedirectTarget(): string {
   return sanitizeRedirectPath(params.get('redirect') || '/dashboard')
 }
 
-export function requiresForcedTotpSetup(
-  user: LoginUser | null | undefined,
-): boolean {
-  return Boolean(user?.forceTotpSetup && user?.totpEnabled !== true)
-}
-
-export function buildPostLoginTarget(
-  user: LoginUser | null | undefined,
-): string {
-  const redirect = getRedirectTarget()
-  if (requiresForcedTotpSetup(user)) {
-    return `/setup-2fa?redirect=${encodeURIComponent(redirect)}`
-  }
-  return redirect
+export function buildPostLoginTarget(): string {
+  return getRedirectTarget()
 }

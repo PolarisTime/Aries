@@ -11,7 +11,6 @@ export interface DashboardSummary {
   moduleCount: number
   actionCount: number
   activeSessionCount: number
-  totpEnabled: boolean
   lastLoginAt: string | null
   serverTime: string
   materialCount: number

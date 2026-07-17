@@ -13,7 +13,6 @@ const userAccountRecordSchema = z.object({
   lastLoginDate: z.string().nullable(),
   status: z.string(),
   remark: z.string().nullable(),
-  totpEnabled: z.boolean(),
 })
 export type UserAccountRecord = z.infer<typeof userAccountRecordSchema>
 
@@ -37,12 +36,6 @@ export const userAccountCreateResultSchema = z.object({
   loginName: z.string(),
   initialPassword: z.string().optional(),
   password: z.string(),
-  totpSetup: z
-    .object({
-      qrCodeBase64: z.string(),
-      secret: z.string(),
-    })
-    .optional(),
 })
 export type UserAccountCreateResult = z.infer<
   typeof userAccountCreateResultSchema

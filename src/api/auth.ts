@@ -1,13 +1,7 @@
 import type { AxiosResponse } from 'axios'
 import { assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type {
-  CaptchaData,
-  Login2faPayload,
-  LoginPayload,
-  LoginResponseData,
-  LoginResult,
-} from '@/shared/schemas'
+import type { LoginPayload, LoginResponseData } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
 import {
@@ -29,26 +23,11 @@ export type BackendInfo = {
 
 export function login(
   payload: LoginPayload,
-): Promise<ApiResponse<LoginResult>> {
-  return http.post<ApiResponse<LoginResult>>(ENDPOINTS.AUTH_LOGIN, {
+): Promise<ApiResponse<LoginResponseData>> {
+  return http.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_LOGIN, {
     loginName: payload.loginName,
     password: payload.password,
-    captchaId: payload.captchaId,
-    captchaCode: payload.captchaCode,
   })
-}
-
-export function fetchCaptcha(): Promise<ApiResponse<CaptchaData>> {
-  return http.get<ApiResponse<CaptchaData>>(ENDPOINTS.AUTH_CAPTCHA)
-}
-
-export function login2fa(
-  payload: Login2faPayload,
-): Promise<ApiResponse<LoginResponseData>> {
-  return http.post<ApiResponse<LoginResponseData>>(
-    ENDPOINTS.AUTH_LOGIN_2FA,
-    payload,
-  )
 }
 
 export function logout(): Promise<unknown> {
@@ -73,16 +52,6 @@ export async function refreshSession(): Promise<LoginResponseData> {
     )
   }
   return response.data.data
-}
-
-export function pingAuth(): Promise<ApiResponse<string>> {
-  return http.get<ApiResponse<string>>(ENDPOINTS.AUTH_PING)
-}
-
-export async function checkAuthPing(): Promise<boolean> {
-  const response = await pingAuth()
-  assertApiSuccess(response, getApiMessage('authServiceUnavailable'))
-  return true
 }
 
 export async function fetchBackendHealth(): Promise<HealthResponse> {

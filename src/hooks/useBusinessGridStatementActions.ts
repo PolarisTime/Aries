@@ -1,9 +1,5 @@
 import i18next from 'i18next'
-import {
-  generateBusinessPrimaryNo,
-  getBusinessModuleDetail,
-  saveBusinessModule,
-} from '@/api/business'
+import { getBusinessModuleDetail, saveBusinessModule } from '@/api/business'
 import { listAllStatementCandidates } from '@/api/statements'
 import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
@@ -113,8 +109,7 @@ export function useBusinessGridStatementActions({
           const draft = buildCustomerStatementDraftData({
             baseDraft: {
               id: '',
-              statementNo:
-                await generateBusinessPrimaryNo('customer-statement'),
+              statementNo: '',
               status: '待确认',
               remark: '',
             },
@@ -136,7 +131,7 @@ export function useBusinessGridStatementActions({
       const draft = buildFreightStatementDraftData({
         baseDraft: {
           id: '',
-          statementNo: await generateBusinessPrimaryNo('freight-statement'),
+          statementNo: '',
           remark: '',
         },
         sourceBills: sourceRecords,

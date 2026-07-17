@@ -3,8 +3,6 @@ export type {
   InitialSetupAdminPayload,
   InitialSetupCompanyPayload,
   InitialSetupStatus,
-  InitialSetupTotpPayload,
-  InitialSetupTotpResult,
 } from '@/shared/schemas'
 
 import type {
@@ -14,8 +12,6 @@ import type {
 
 export type InitialSetupAdminSubmitPayload = {
   admin: InitialSetupAdminPayload
-  totpSecret?: string
-  totpCode?: string
 }
 
 export type InitialSetupResult = InitialSetupStatus

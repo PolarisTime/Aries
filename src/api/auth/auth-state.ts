@@ -8,7 +8,6 @@ import type { LoginResponseData } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
 import { message } from '@/utils/antd-app'
 import { getApiMessage } from '@/utils/api-messages'
-import { isApiKeyToken } from '@/utils/auth-token'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
 import {
   clearStoredUser,
@@ -219,22 +218,10 @@ export function retryWithToken(request: {
   }
   const h = request.headers
   if (typeof (h as { set?: SetHeaderFn }).set === 'function') {
-    if (isApiKeyToken(latestToken)) {
-      ;(h as AxiosHeaders).delete?.('Authorization')
-      ;(h as { set: SetHeaderFn }).set('X-API-Key', latestToken)
-    } else {
-      ;(h as AxiosHeaders).delete?.('X-API-Key')
-      ;(h as { set: SetHeaderFn }).set('Authorization', `Bearer ${latestToken}`)
-    }
+    ;(h as { set: SetHeaderFn }).set('Authorization', `Bearer ${latestToken}`)
   } else {
     const merged = { ...(h as Record<string, string | undefined>) }
-    if (isApiKeyToken(latestToken)) {
-      delete merged.Authorization
-      merged['X-API-Key'] = latestToken
-    } else {
-      delete merged['X-API-Key']
-      merged.Authorization = `Bearer ${latestToken}`
-    }
+    merged.Authorization = `Bearer ${latestToken}`
     request.headers = new AxiosHeaders(merged as Record<string, string>)
   }
 }

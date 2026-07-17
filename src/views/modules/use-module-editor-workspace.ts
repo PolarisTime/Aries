@@ -9,8 +9,6 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  allocateBusinessPrimaryNo,
-  generateBusinessPrimaryNo,
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
   saveAndAuditBusinessModule,
@@ -25,7 +23,7 @@ import { auditPurchaseInbound } from '@/api/document-flow-commands'
 import { readRequestError } from '@/api/request-errors'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
-import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
+import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
 import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
@@ -59,19 +57,6 @@ import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
 import { asString } from '@/utils/type-narrowing'
 
-const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
-  'purchase-order',
-  'purchase-inbound',
-  'sales-order',
-  'sales-outbound',
-  'freight-bill',
-  'customer-statement',
-  'freight-statement',
-  'receipt',
-  'payment',
-  'ledger-adjustment',
-])
-
 function sumLineItemsBy(nextItems: ModuleLineItem[], key: string) {
   return nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 }
@@ -83,7 +68,6 @@ interface AuditTarget {
 
 interface EditorWorkspaceState {
   items: ModuleLineItem[]
-  primaryNoLoading: boolean
   authoritativePrimaryNo: string
 }
 
@@ -311,15 +295,6 @@ function normalizeOptionalString(value: unknown) {
   return asString(value).trim()
 }
 
-function shouldUseAuthoritativePrimaryNo(
-  moduleKey: string,
-  primaryNoKey?: string,
-) {
-  return Boolean(
-    primaryNoKey && SYSTEM_GENERATED_PRIMARY_NO_MODULES.has(moduleKey),
-  )
-}
-
 function getAuthoritativePrimaryNo(
   moduleKey: string,
   primaryNoKey: string | undefined,
@@ -328,7 +303,7 @@ function getAuthoritativePrimaryNo(
   if (
     !record ||
     !primaryNoKey ||
-    !shouldUseAuthoritativePrimaryNo(moduleKey, primaryNoKey)
+    !usesSnowflakeBusinessNo(moduleKey, primaryNoKey)
   ) {
     return ''
   }
@@ -421,69 +396,6 @@ function syncEditorFormValues(args: {
   form.setFieldsValue(normalizeRecordForEditor(config, nextValues))
 }
 
-function buildPreallocatedIdWarning(args: {
-  isEdit: boolean
-  snowflakeBusinessNoEnabled: boolean
-  primaryNoKey?: string
-  draftRecord: ModuleRecord
-  savedRecord?: ModuleRecord
-}) {
-  const {
-    isEdit,
-    snowflakeBusinessNoEnabled,
-    primaryNoKey,
-    draftRecord,
-    savedRecord,
-  } = args
-
-  if (isEdit || !snowflakeBusinessNoEnabled || !primaryNoKey) {
-    return null
-  }
-
-  const expectedPreallocatedId = normalizeOptionalString(
-    draftRecord._preallocatedId,
-  )
-  const expectedPrimaryNo = normalizeOptionalString(draftRecord[primaryNoKey])
-  const actualPrimaryNo = savedRecord
-    ? normalizeOptionalString(
-        getModuleRecordPrimaryNo(savedRecord, primaryNoKey),
-      )
-    : ''
-  const actualId = savedRecord ? normalizeOptionalString(savedRecord.id) : ''
-
-  if (!expectedPreallocatedId) {
-    return {
-      title: i18next.t('modules.editorWorkspace.preallocatedNoMismatchTitle'),
-      content:
-        actualPrimaryNo || actualId
-          ? i18next.t('modules.editorWorkspace.preallocatedNoMismatchContent', {
-              primaryNo: actualPrimaryNo || actualId,
-            })
-          : i18next.t(
-              'modules.editorWorkspace.preallocatedNoMismatchContentNoNo',
-            ),
-    }
-  }
-
-  const expectedIdentityNo = expectedPrimaryNo || expectedPreallocatedId
-  const primaryNoMismatch =
-    Boolean(actualPrimaryNo) && actualPrimaryNo !== expectedIdentityNo
-  const entityIdMismatch =
-    Boolean(actualId) && actualId !== expectedPreallocatedId
-
-  if (!primaryNoMismatch && !entityIdMismatch) {
-    return null
-  }
-
-  return {
-    title: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedTitle'),
-    content: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedContent', {
-      expected: expectedIdentityNo,
-      actual: actualPrimaryNo || actualId,
-    }),
-  }
-}
-
 export function useModuleEditorWorkspace({
   open,
   config,
@@ -508,11 +420,10 @@ export function useModuleEditorWorkspace({
     editorWorkspaceReducer,
     {
       items: [],
-      primaryNoLoading: false,
       authoritativePrimaryNo: '',
     },
   )
-  const { items, primaryNoLoading, authoritativePrimaryNo } = workspaceState
+  const { items, authoritativePrimaryNo } = workspaceState
   const { t } = useTranslation()
   const [saveResult, setSaveResult] = useState<{
     status: 'success' | 'error' | 'warning'
@@ -525,10 +436,6 @@ export function useModuleEditorWorkspace({
   const isEdit = !!record
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
-  const { data: runtimeConfig } = useRuntimeConfig()
-  const snowflakeBusinessNoEnabled =
-    runtimeConfig?.business.businessNo.useSnowflakeId ?? false
-
   useEffect(() => {
     if (!open) {
       return
@@ -549,7 +456,6 @@ export function useModuleEditorWorkspace({
         form.setFieldsValue(normalizeRecordForEditor(config, record))
         dispatchWorkspaceState({
           items: normalizeLineItemsForEditor(record.items || []),
-          primaryNoLoading: false,
           authoritativePrimaryNo: nextAuthoritativePrimaryNo,
         })
         return
@@ -568,89 +474,10 @@ export function useModuleEditorWorkspace({
       const draftItems = autoInsertBlankItemOnCreate
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]
         : []
-      if (config.primaryNoKey) {
-        dispatchWorkspaceState({
-          items: draftItems,
-          primaryNoLoading: true,
-          authoritativePrimaryNo: '',
-        })
-        if (snowflakeBusinessNoEnabled) {
-          void allocateBusinessPrimaryNo(moduleKey)
-            .then(({ generatedNo, generatedId }) => {
-              if (!active) {
-                return
-              }
-              form.setFieldsValue({
-                ...defaultDraft,
-                _preallocatedId: generatedId || '',
-                [asString(config.primaryNoKey)]: generatedNo,
-              })
-              dispatchWorkspaceState({
-                authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
-                  moduleKey,
-                  config.primaryNoKey,
-                )
-                  ? generatedNo
-                  : '',
-              })
-            })
-            .catch((err) => {
-              if (!active) {
-                return
-              }
-              message.error(
-                err instanceof Error
-                  ? err.message
-                  : t('common.preallocateNoFailed'),
-              )
-            })
-            .finally(() => {
-              if (active) {
-                dispatchWorkspaceState({ primaryNoLoading: false })
-              }
-            })
-        } else {
-          void generateBusinessPrimaryNo(moduleKey)
-            .then((generatedNo) => {
-              if (!active) {
-                return
-              }
-              form.setFieldsValue({
-                ...defaultDraft,
-                [asString(config.primaryNoKey)]: generatedNo,
-              })
-              dispatchWorkspaceState({
-                authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
-                  moduleKey,
-                  config.primaryNoKey,
-                )
-                  ? generatedNo
-                  : '',
-              })
-            })
-            .catch((err) => {
-              if (!active) {
-                return
-              }
-              message.error(
-                err instanceof Error
-                  ? err.message
-                  : t('common.generateNoFailed'),
-              )
-            })
-            .finally(() => {
-              if (active) {
-                dispatchWorkspaceState({ primaryNoLoading: false })
-              }
-            })
-        }
-      } else {
-        dispatchWorkspaceState({
-          items: draftItems,
-          primaryNoLoading: false,
-          authoritativePrimaryNo: '',
-        })
-      }
+      dispatchWorkspaceState({
+        items: draftItems,
+        authoritativePrimaryNo: '',
+      })
     }
 
     initializeEditor()
@@ -658,16 +485,7 @@ export function useModuleEditorWorkspace({
     return () => {
       active = false
     }
-  }, [
-    autoInsertBlankItemOnCreate,
-    config,
-    form,
-    moduleKey,
-    open,
-    record,
-    snowflakeBusinessNoEnabled,
-    t,
-  ])
+  }, [autoInsertBlankItemOnCreate, config, form, moduleKey, open, record])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {
     if (!open) {
@@ -713,11 +531,6 @@ export function useModuleEditorWorkspace({
     let purchaseInboundAuditCancelled = false
     let purchaseInboundSavedRecord: ModuleRecord | undefined
     try {
-      if (primaryNoLoading) {
-        message.warning(t('common.primaryNoGenerating'))
-        return
-      }
-
       const effectiveAuthoritativePrimaryNo =
         authoritativePrimaryNo ||
         getAuthoritativePrimaryNo(moduleKey, config.primaryNoKey, record)
@@ -764,7 +577,8 @@ export function useModuleEditorWorkspace({
         items: trimmedItems,
         itemCount: trimmedItems.length,
         skipRequiredFieldKeys:
-          snowflakeBusinessNoEnabled && config.primaryNoKey
+          config.primaryNoKey &&
+          usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
             ? [config.primaryNoKey]
             : [],
         parentImportConfig: config.parentImport,
@@ -818,10 +632,6 @@ export function useModuleEditorWorkspace({
         ...(record || {}),
         ...values,
         id: record?.id || '',
-        _preallocatedId:
-          !record && snowflakeBusinessNoEnabled
-            ? asString(values._preallocatedId)
-            : undefined,
         items: trimmedItems,
       }
       applyAuthoritativePrimaryNo(
@@ -905,25 +715,10 @@ export function useModuleEditorWorkspace({
           savedRecord = statusResult.data || savedRecord
         }
       }
-      const preallocatedIdWarning = buildPreallocatedIdWarning({
-        isEdit,
-        snowflakeBusinessNoEnabled,
-        primaryNoKey: config.primaryNoKey,
-        draftRecord,
-        savedRecord,
-      })
       if (purchaseInboundAuditCancelled) {
         setSaveResult({
           status: 'warning',
-          message: preallocatedIdWarning
-            ? `草稿已保存，审核已取消。${preallocatedIdWarning.content}`
-            : '草稿已保存，审核已取消',
-          record: savedRecord,
-        })
-      } else if (preallocatedIdWarning) {
-        setSaveResult({
-          status: 'warning',
-          message: preallocatedIdWarning.content,
+          message: '草稿已保存，审核已取消',
           record: savedRecord,
         })
       } else {
@@ -1202,7 +997,6 @@ export function useModuleEditorWorkspace({
     parentSelectorDisplayFieldKey:
       parentSelectorDefinition?.parentDisplayFieldKey ||
       config.parentImport?.parentDisplayFieldKey,
-    primaryNoLoading,
     authoritativePrimaryNo,
     saveResult,
     clearSaveResult: () => setSaveResult(null),

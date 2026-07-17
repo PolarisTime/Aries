@@ -9,7 +9,6 @@ interface Props {
   loading: boolean
   record: UserAccountRecord | null
   getStatusColor: (value: string) => string
-  getTotpColor: (enabled: boolean) => string
   onClose: () => void
 }
 
@@ -18,7 +17,6 @@ export function UserAccountDetailModal({
   loading,
   record,
   getStatusColor,
-  getTotpColor,
   onClose,
 }: Props) {
   const { t } = useTranslation()
@@ -64,21 +62,6 @@ export function UserAccountDetailModal({
                   [record.status]: {
                     color: getStatusColor(record.status),
                     label: record.status,
-                  },
-                }}
-              />
-            </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.totpStatus')}>
-              <StatusTag
-                status={record.totpEnabled ? 'enabled' : 'disabled'}
-                statusMap={{
-                  enabled: {
-                    color: getTotpColor(true),
-                    label: t('system.userAccountDetail.totpEnabled'),
-                  },
-                  disabled: {
-                    color: getTotpColor(false),
-                    label: t('system.userAccountDetail.totpDisabled'),
                   },
                 }}
               />

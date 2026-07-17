@@ -3,11 +3,8 @@ import type {
   AttachmentBindingCountRecord,
   AttachmentBindingRecord,
   AttachmentDirectUploadPrepareRecord,
-  UploadRulePayload,
-  UploadRuleRecord,
 } from '@/api/business-types'
 import { http } from '@/api/client'
-import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type { RawApiRecord } from '@/types/api-raw'
 
@@ -341,19 +338,4 @@ function normalizeRecordIds(recordIds: Array<string | number>) {
       }),
     ),
   ]
-}
-
-export async function updatePageUploadRule(
-  moduleKey: string,
-  payload: UploadRulePayload,
-) {
-  return http.put<ApiResponse<UploadRuleRecord>>(
-    ENDPOINTS.UPLOAD_RULE,
-    payload,
-    {
-      params: {
-        moduleKey,
-      },
-    },
-  )
 }

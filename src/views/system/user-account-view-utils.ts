@@ -7,10 +7,6 @@ export function getUserAccountStatusColor(value: string) {
   return value === enabledStatusValues[0] ? 'green' : 'red'
 }
 
-export function getUserAccountTotpColor(enabled: boolean) {
-  return enabled ? 'processing' : 'default'
-}
-
 export function buildSelectedRoleSummaries(
   selectedRoleIds: string[],
   roleOptions: RoleOptionRecord[],

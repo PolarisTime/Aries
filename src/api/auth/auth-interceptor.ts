@@ -6,7 +6,6 @@ import {
 } from '@/api/request-errors'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { message } from '@/utils/antd-app'
-import { isApiKeyToken } from '@/utils/auth-token'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
 import { navigateToServerErrorPage } from '@/utils/server-error-navigation'
 import { getToken } from '@/utils/storage'
@@ -118,7 +117,6 @@ function isBackendUnavailableError(error: unknown): boolean {
 const PUBLIC_ENDPOINTS = [
   ENDPOINTS.SETUP_STATUS,
   ENDPOINTS.SETUP_INITIALIZE,
-  ENDPOINTS.SETUP_ADMIN_2FA,
   ENDPOINTS.SETUP_ADMIN,
   ENDPOINTS.SETUP_COMPANY,
   ENDPOINTS.HEALTH,
@@ -146,31 +144,14 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     const shouldSkipAuth =
       publicEndpoint ||
       isExactAuthEndpoint(url, '/auth/login') ||
-      isExactAuthEndpoint(url, '/auth/login-2fa') ||
       isExactAuthEndpoint(url, '/auth/refresh')
 
     if (token && !shouldSkipAuth) {
       resetAuthFailureHandling()
-      if (isApiKeyToken(token)) {
-        config.headers.delete?.('Authorization')
-        config.headers.set?.('X-API-Key', token)
-        if (!config.headers.set) {
-          ;(
-            config.headers as Record<string, string | undefined>
-          ).Authorization = undefined
-          ;(config.headers as Record<string, string | undefined>)['X-API-Key'] =
-            token
-        }
-      } else {
-        config.headers.delete?.('X-API-Key')
-        config.headers.set?.('Authorization', `Bearer ${token}`)
-        if (!config.headers.set) {
-          ;(config.headers as Record<string, string | undefined>)['X-API-Key'] =
-            undefined
-          ;(
-            config.headers as Record<string, string | undefined>
-          ).Authorization = `Bearer ${token}`
-        }
+      config.headers.set?.('Authorization', `Bearer ${token}`)
+      if (!config.headers.set) {
+        ;(config.headers as Record<string, string | undefined>).Authorization =
+          `Bearer ${token}`
       }
     }
 
@@ -195,7 +176,6 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       const url = String(originalRequest?.url || '')
       const isAuthRequest =
         isExactAuthEndpoint(url, '/auth/login') ||
-        isExactAuthEndpoint(url, '/auth/login-2fa') ||
         isExactAuthEndpoint(url, '/auth/logout') ||
         isExactAuthEndpoint(url, '/auth/refresh')
       const publicEndpoint = isPublicEndpoint(url)

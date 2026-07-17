@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
-import { requestHadAuthorization, requestUsesApiKey } from './header-utils'
+import { requestHadAuthorization } from './header-utils'
 import type { RetryableRequestConfig } from './types'
 
 function isAnonymousForbidden(
@@ -48,10 +48,6 @@ export function shouldTriggerRefresh(
   originalRequest: RetryableRequestConfig | undefined,
 ) {
   if (isAuthRequest || !originalRequest || originalRequest._retry) {
-    return false
-  }
-
-  if (requestUsesApiKey(originalRequest)) {
     return false
   }
 

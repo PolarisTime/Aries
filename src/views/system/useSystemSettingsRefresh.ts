@@ -3,7 +3,6 @@ import { useInvalidateQueries } from '@/hooks/useInvalidateQueries'
 
 const SYSTEM_SETTINGS_QUERY_KEYS = [
   QUERY_KEYS.generalSetting,
-  QUERY_KEYS.numberRules,
   QUERY_KEYS.runtimeConfig,
 ] as const
 

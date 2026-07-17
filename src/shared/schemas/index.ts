@@ -1,22 +1,17 @@
 /** @file-dynamic-ref:barrel — 公共 API 入口，对下游消费者暴露类型契约 */
 // ── API 契约 ────────────────────────────────────────────
 export type {
-  BusinessNoResult,
   DocumentStatus,
   EnabledStatus,
   SettlementCompanyOption,
 } from './api'
 // ── 认证 ────────────────────────────────────────────────
 export type {
-  CaptchaData,
-  Login2faPayload,
   LoginPayload,
   LoginResponseData,
   LoginResult,
-  LoginStep1Response,
   LoginUser,
   ResourcePermission,
-  TotpSetupResponse,
 } from './auth'
 // ── 物料 / 打印模板 / 初始化 ────────────────────────────
 export type {
@@ -48,8 +43,6 @@ export type {
   InitialSetupResult,
   InitialSetupStatus,
   InitialSetupSubmitResponse,
-  InitialSetupTotpPayload,
-  InitialSetupTotpResult,
 } from './setup'
 // ── 用户账户 ────────────────────────────────────────────
 export type {

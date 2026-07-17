@@ -36,18 +36,8 @@ export function PersonalSettingsModal({
   const { t } = useTranslation()
   const [tab, setTab] = useState('display')
   const user = useAuthStore((state) => state.user)
-  const {
-    handleChangePassword,
-    handleEnableTotp,
-    handleSetupTotp,
-    pwForm,
-    pwSaving,
-    totpCode,
-    totpEnabling,
-    totpLoading,
-    totpSetup,
-    setTotpCode,
-  } = usePersonalSecuritySettings({ open, tab })
+  const { handleChangePassword, pwForm, pwSaving } =
+    usePersonalSecuritySettings({ open, tab })
 
   return (
     <Modal
@@ -84,19 +74,8 @@ export function PersonalSettingsModal({
           user={user}
           pwForm={pwForm}
           pwSaving={pwSaving}
-          totpLoading={totpLoading}
-          totpSetup={totpSetup}
-          totpCode={totpCode}
-          totpEnabling={totpEnabling}
           onChangePassword={(values) => {
             void handleChangePassword(values)
-          }}
-          onSetupTotp={() => {
-            void handleSetupTotp()
-          }}
-          onSetTotpCode={setTotpCode}
-          onEnableTotp={() => {
-            void handleEnableTotp()
           }}
         />
       )}

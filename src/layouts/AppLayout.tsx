@@ -8,7 +8,6 @@ import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
-import { useAuthHeartbeat } from '@/hooks/useAuthHeartbeat'
 import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
 import {
@@ -255,15 +254,12 @@ export function AppLayout() {
       : appTitle
   }, [routePageContext.title])
 
-  useAuthHeartbeat()
-
   useAuthRefreshTimer(handleRefreshSession)
   useAppLayoutSessionGuards({
     locationPathname: location.pathname,
     navigate,
     authReady,
     token,
-    user,
   })
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {

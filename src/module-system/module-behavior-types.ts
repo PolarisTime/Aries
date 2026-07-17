@@ -69,7 +69,6 @@ export interface ModuleBehaviorConfig {
   supportsStatementLinking?: 'receipt' | 'payment'
   showRoleLink?: boolean
   isSettingsModule?: boolean
-  hasUploadRuleExpandedRow?: boolean
   alertActionLink?: { text: string; to: string }
   permissionCodesByActionKey?: Record<string, string[]>
   detailRoutePath?: string

@@ -1,5 +1,5 @@
 import { UserOutlined } from '@ant-design/icons'
-import { Avatar, Statistic, Tag } from 'antd'
+import { Avatar, Statistic } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/dashboard'
 
@@ -17,7 +17,6 @@ export function DashboardWorkplaceHeader({
   const userName = summary?.userName || '—'
   const roleName = summary?.roleName || t('dashboard.info.unassigned')
   const loginName = summary?.loginName || '—'
-  const mfaEnabled = Boolean(summary?.totpEnabled)
   const metricItems = [
     {
       key: 'visibleMenus',
@@ -59,11 +58,6 @@ export function DashboardWorkplaceHeader({
             </span>
           </div>
           <div className="dashboard-workplace-status">
-            <Tag color={mfaEnabled ? 'success' : 'warning'} variant="filled">
-              {mfaEnabled
-                ? t('dashboard.values.enabled')
-                : t('dashboard.values.disabled')}
-            </Tag>
             <span>
               {t('dashboard.fields.serverTime')} {animatedServerTime}
             </span>

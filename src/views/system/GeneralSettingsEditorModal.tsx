@@ -5,7 +5,6 @@ import { FormModal } from '@/components/FormModal'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
-  DETAILED_OPERATION_ACTION_OPTIONS,
   HIDE_AUDITED_STATUS_OPTIONS,
   isDefaultListPageSizeSetting,
   isDefaultTaxRateSetting,
@@ -74,8 +73,8 @@ export function GeneralSettingsEditorModal({
             <Input disabled />
           </Form.Item>
           <Form.Item
-            name="billName"
-            label={t('system.generalSettingsEditor.billScope')}
+            name="settingGroup"
+            label={t('system.generalSettingsEditor.settingGroup')}
           >
             <Input disabled />
           </Form.Item>
@@ -109,18 +108,6 @@ export function GeneralSettingsEditorModal({
                   )}
                 />
               </Form.Item>
-              {asString(record.settingCode) ===
-                'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS' && (
-                <Form.Item
-                  name="selectedActions"
-                  label={t('system.generalSettingsEditor.recordedActions')}
-                >
-                  <Select
-                    mode="multiple"
-                    options={DETAILED_OPERATION_ACTION_OPTIONS}
-                  />
-                </Form.Item>
-              )}
               {asString(record.settingCode) ===
                 'UI_HIDE_AUDITED_LIST_RECORDS' && (
                 <Form.Item

@@ -14,19 +14,15 @@ import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditor
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
 import {
   buildSystemSettingPayload,
-  DETAILED_OPERATION_ACTION_VALUES,
   HIDE_AUDITED_STATUS_VALUES,
   isDefaultTaxRateSetting,
-  isDetailedOperationLogSetting,
   isHideAuditedListRecordsSetting,
   isNumericSetting,
+  isSystemSwitch,
   isToggleSetting,
   matchesGeneralSettingKeyword,
-  resolveDetailedOperationActionValues,
   resolveHideAuditedStatusValues,
 } from '@/views/system/general-settings-view-utils'
-import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
-import { RateLimitRulesCard } from '@/views/system/RateLimitRulesCard'
 import { SystemSettingsLoadError } from '@/views/system/SystemSettingsLoadError'
 import { useSystemSettingsRefresh } from '@/views/system/useSystemSettingsRefresh'
 
@@ -95,17 +91,15 @@ export function GeneralSettingsView() {
     form.setFieldsValue({
       settingCode: record.settingCode,
       settingName: record.settingName,
-      billName: record.billName,
+      settingGroup: record.settingGroup,
       remark: record.remark,
       enabled: asString(record.status) === STATUS.NORMAL,
       numericValue: isDefaultTaxRateSetting(record)
-        ? Number(record.sampleNo || 0.13)
-        : Number(record.sampleNo || 0),
-      selectedActions: isDetailedOperationLogSetting(record)
-        ? resolveDetailedOperationActionValues(record.sampleNo)
-        : isHideAuditedListRecordsSetting(record)
-          ? resolveHideAuditedStatusValues(record.sampleNo)
-          : asString(record.sampleNo).split(',').filter(Boolean),
+        ? Number(record.settingValue || 0.13)
+        : Number(record.settingValue || 0),
+      selectedActions: isHideAuditedListRecordsSetting(record)
+        ? resolveHideAuditedStatusValues(record.settingValue)
+        : asString(record.settingValue).split(',').filter(Boolean),
     })
     setState({ editorOpen: true })
   }
@@ -119,7 +113,7 @@ export function GeneralSettingsView() {
     try {
       await saveSystemSetting(
         buildSystemSettingPayload(record, {
-          sampleNo: record.sampleNo || 'ON',
+          settingValue: record.settingValue || 'ON',
           status: nextStatus,
         }),
       )
@@ -142,49 +136,34 @@ export function GeneralSettingsView() {
       const values = await form.validateFields()
       const isNumeric = isNumericSetting(record)
       const isToggle = !isNumeric
-      let sampleNo = ''
+      let settingValue = ''
       if (isNumeric) {
-        sampleNo = String(values.numericValue || 0)
+        settingValue = String(values.numericValue || 0)
       } else {
         const selectedActions = Array.isArray(values.selectedActions)
           ? values.selectedActions
           : []
         if (
-          isDetailedOperationLogSetting(record) &&
-          selectedActions.length === 0
-        ) {
-          message.warning(
-            t('system.generalSettingsEditor.selectActionRequired'),
-          )
-          setState({ saving: false })
-          return
-        }
-        if (
-          isDetailedOperationLogSetting(record) &&
-          selectedActions.length === DETAILED_OPERATION_ACTION_VALUES.length
-        ) {
-          sampleNo = DETAILED_OPERATION_ACTION_VALUES.join(',')
-        } else if (
           isHideAuditedListRecordsSetting(record) &&
           selectedActions.length === HIDE_AUDITED_STATUS_VALUES.length
         ) {
-          sampleNo = HIDE_AUDITED_STATUS_VALUES.join(',')
+          settingValue = HIDE_AUDITED_STATUS_VALUES.join(',')
         } else {
-          sampleNo = selectedActions.join(',')
+          settingValue = selectedActions.join(',')
         }
       }
       await saveSystemSetting(
         buildSystemSettingPayload(record, {
           settingCode: values.settingCode,
           settingName: values.settingName,
-          billName: values.billName,
+          settingGroup: values.settingGroup,
           remark: values.remark,
           status: isToggle
             ? values.enabled
               ? STATUS.NORMAL
               : STATUS.DISABLED
             : asString(record.status) || STATUS.NORMAL,
-          sampleNo: sampleNo || 'ON',
+          settingValue: settingValue || 'ON',
         }),
       )
       message.success(t('common.saveSuccess'))
@@ -222,8 +201,6 @@ export function GeneralSettingsView() {
           }}
         />
       )}
-
-      <RateLimitRulesCard />
 
       {editorOpen && editingRecord ? (
         <GeneralSettingsEditorModal

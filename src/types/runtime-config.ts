@@ -7,14 +7,9 @@ export interface RuntimeStatementConfig {
   customerReceiptAmountZero: boolean
 }
 
-export interface RuntimeBusinessNoConfig {
-  useSnowflakeId: boolean
-}
-
 export interface RuntimeBusinessConfig {
   defaultTaxRate: number
   statement: RuntimeStatementConfig
-  businessNo: RuntimeBusinessNoConfig
 }
 
 export interface RuntimeFeatureConfig {

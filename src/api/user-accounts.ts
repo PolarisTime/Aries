@@ -3,7 +3,6 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import type {
   DepartmentOptionRecord,
   RoleOptionRecord,
-  TotpSetupResponse,
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountLoginNameAvailability,
@@ -91,30 +90,6 @@ export async function updateUserAccount(
 export async function deleteUserAccount(id: string) {
   const response = await http.delete<ApiResponse<null>>(buildUserAccountUrl(id))
   return assertApiSuccess(response, getApiMessage('deleteUserFailed'))
-}
-
-export async function setupUserAccount2fa(id: string) {
-  const response = await http.post<ApiResponse<TotpSetupResponse>>(
-    `${buildUserAccountUrl(id)}/2fa/setup`,
-  )
-  return assertApiSuccess(response, getApiMessage('generate2faQrCodeFailed'))
-}
-
-export async function enableUserAccount2fa(id: string, totpCode: string) {
-  const response = await http.post<ApiResponse<UserAccountRecord>>(
-    `${buildUserAccountUrl(id)}/2fa/enable`,
-    { totpCode },
-  )
-  return assertApiSuccess(response, getApiMessage('enable2faFailed'))
-}
-
-export async function disableUserAccount2fa(id: string, totpCode: string) {
-  const response = await http.post<ApiResponse<UserAccountRecord>>(
-    `${buildUserAccountUrl(id)}/2fa/disable`,
-    null,
-    { headers: { 'X-TOTP-Code': totpCode.trim() } },
-  )
-  return assertApiSuccess(response, getApiMessage('disable2faFailed'))
 }
 
 export async function listRoleOptions() {

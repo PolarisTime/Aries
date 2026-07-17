@@ -21,7 +21,7 @@ function normalizePath(pathname: string) {
 
 export function resolveRoutePageContext(
   pathname: string,
-  t: TFunction,
+  _t: TFunction,
 ): RoutePageContext {
   const normalizedPath = normalizePath(pathname)
   const matchedDefinition = pageDefinitionByPath.get(normalizedPath)
@@ -31,14 +31,6 @@ export function resolveRoutePageContext(
       activeMenuKey:
         matchedDefinition.activeMenuKey || matchedDefinition.menuKey,
       openPageKey: matchedDefinition.openPageKey || matchedDefinition.menuKey,
-    }
-  }
-
-  if (normalizedPath.startsWith('/api-key/')) {
-    return {
-      title: t('layouts.routePage.apiKeyDetail'),
-      activeMenuKey: '/security-center',
-      openPageKey: '/security-center',
     }
   }
 

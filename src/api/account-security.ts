@@ -1,21 +1,11 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { TotpSetupResponse } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
 
 export interface ChangeOwnPasswordPayload {
   currentPassword: string
   newPassword: string
-}
-
-export interface CurrentUserSecurityState {
-  id: number | string
-  loginName: string
-  userName: string
-  totpEnabled: boolean
-  forceTotpSetup?: boolean
-  forbidDisable2fa?: boolean
 }
 
 export async function changeOwnPassword(
@@ -26,21 +16,4 @@ export async function changeOwnPassword(
     payload,
   )
   return assertApiSuccess(response, getApiMessage('changePasswordFailed'))
-}
-
-export async function setupOwn2fa(): Promise<ApiResponse<TotpSetupResponse>> {
-  const response = await http.post<ApiResponse<TotpSetupResponse>>(
-    ENDPOINTS.ACCOUNT_2FA_SETUP,
-  )
-  return assertApiSuccess(response, getApiMessage('generate2faQrCodeFailed'))
-}
-
-export async function enableOwn2fa(
-  totpCode: string,
-): Promise<ApiResponse<CurrentUserSecurityState>> {
-  const response = await http.post<ApiResponse<CurrentUserSecurityState>>(
-    ENDPOINTS.ACCOUNT_2FA_ENABLE,
-    { totpCode },
-  )
-  return assertApiSuccess(response, getApiMessage('enable2faFailed'))
 }

@@ -1554,10 +1554,6 @@
   margin-bottom: 0;
 }
 
-.rate-limit-toolbar {
-  justify-content: flex-end;
-}
-
 @media (max-width: 960px) {
   .system-list-card > .ant-card-head .ant-card-head-wrapper {
     align-items: stretch;
@@ -1591,15 +1587,6 @@
   .system-table-toolbar .ant-select {
     flex: 1 1 160px;
     min-width: 0;
-  }
-
-  .rate-limit-toolbar {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .rate-limit-toolbar .ant-select {
-    flex: 1 1 180px;
   }
 }
 
@@ -1682,11 +1669,6 @@
   .general-settings-config-value {
     max-width: 100%;
     text-align: left;
-  }
-
-  .rate-limit-toolbar > .ant-btn {
-    flex: 1 1 auto;
-    justify-content: center;
   }
 }
 

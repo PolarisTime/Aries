@@ -1,9 +1,4 @@
-import {
-  listAllBusinessModuleRows,
-  saveBusinessModule,
-  updatePageUploadRule,
-} from '@/api/business'
-import type { UploadRulePayload } from '@/api/business-types'
+import { listAllBusinessModuleRows, saveBusinessModule } from '@/api/business'
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
@@ -79,10 +74,6 @@ export function listSystemSettings() {
 
 export function saveSystemSetting(record: ModuleRecord) {
   return saveBusinessModule(MODULE_KEY, record)
-}
-
-export function updateSystemUploadRule(record: UploadRulePayload) {
-  return updatePageUploadRule(MODULE_KEY, record)
 }
 
 export async function getOssSetting(): Promise<OssSetting> {

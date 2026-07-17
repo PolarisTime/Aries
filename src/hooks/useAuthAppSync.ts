@@ -9,7 +9,6 @@ import { loadPermissionCatalog } from '@/constants/resource-permissions'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { useSystemMenuStore } from '@/stores/systemMenuStore'
-import { isApiKeyToken } from '@/utils/auth-token'
 import { logger } from '@/utils/logger'
 
 type IdleCallbackHandle = number
@@ -73,7 +72,7 @@ export function useAuthAppSync() {
   }, [authReady, clearPermissions, syncFromUser, user])
 
   useEffect(() => {
-    if (!authReady || !token || !user || isApiKeyToken(token)) {
+    if (!authReady || !token || !user) {
       clearMenus()
       return
     }

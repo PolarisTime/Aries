@@ -2,10 +2,6 @@ import { z } from 'zod'
 
 // ── API 响应 Schema（工厂函数，类型附在旁边便于泛型引用） ──
 
-/** 统一 API 响应 */
-export const businessNoResultSchema = z.object({})
-export type BusinessNoResult = z.infer<typeof businessNoResultSchema>
-
 // ── 可复用字段 Schema（Zod 对象，可 .extend() / .merge()） ──
 
 /** 物料信息字段 */

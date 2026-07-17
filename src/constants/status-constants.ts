@@ -9,19 +9,6 @@ export const STATUS = {
   DISABLED: '禁用',
 } as const
 
-// API Key 状态
-export const API_KEY_STATUS = {
-  VALID: '有效',
-  EXPIRED: '已过期',
-  DISABLED: '已禁用',
-} as const
-
-// 会话状态
-export const SESSION_STATUS = {
-  VALID: '有效',
-  DISABLED: '已禁用',
-} as const
-
 // 结算账户类型
 export const SETTLEMENT_TYPE = {
   GENERAL: '通用',

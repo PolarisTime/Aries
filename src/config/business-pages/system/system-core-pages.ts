@@ -32,35 +32,13 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         width: 180,
       },
       {
-        title: i18next.t('modules.pages.systemCore.billName'),
-        dataIndex: 'billName',
+        title: i18next.t('modules.pages.systemCore.settingGroup'),
+        dataIndex: 'settingGroup',
         width: 140,
       },
       {
-        title: i18next.t('modules.pages.systemCore.prefix'),
-        dataIndex: 'prefix',
-        width: 90,
-      },
-      {
-        title: i18next.t('modules.pages.systemCore.dateRule'),
-        dataIndex: 'dateRule',
-        width: 120,
-      },
-      {
-        title: i18next.t('modules.pages.systemCore.serialLength'),
-        dataIndex: 'serialLength',
-        width: 100,
-        align: 'right',
-        type: 'count',
-      },
-      {
-        title: i18next.t('modules.pages.systemCore.resetRule'),
-        dataIndex: 'resetRule',
-        width: 110,
-      },
-      {
-        title: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
-        dataIndex: 'sampleNo',
+        title: i18next.t('modules.pages.systemCore.settingValue'),
+        dataIndex: 'settingValue',
         width: 170,
       },
       {
@@ -86,26 +64,12 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         key: 'settingName',
       },
       {
-        label: i18next.t('modules.pages.systemCore.billName'),
-        key: 'billName',
-      },
-      { label: i18next.t('modules.pages.systemCore.prefix'), key: 'prefix' },
-      {
-        label: i18next.t('modules.pages.systemCore.dateRule'),
-        key: 'dateRule',
+        label: i18next.t('modules.pages.systemCore.settingGroup'),
+        key: 'settingGroup',
       },
       {
-        label: i18next.t('modules.pages.systemCore.serialLength'),
-        key: 'serialLength',
-        type: 'count',
-      },
-      {
-        label: i18next.t('modules.pages.systemCore.resetRule'),
-        key: 'resetRule',
-      },
-      {
-        label: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
-        key: 'sampleNo',
+        label: i18next.t('modules.pages.systemCore.settingValue'),
+        key: 'settingValue',
       },
       {
         label: i18next.t('modules.pages.systemCore.status'),
@@ -130,67 +94,17 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
-        key: 'billName',
-        label: i18next.t('modules.pages.systemCore.billName'),
+        key: 'settingGroup',
+        label: i18next.t('modules.pages.systemCore.settingGroup'),
         type: 'input',
         required: true,
         row: 1,
       },
       {
-        key: 'prefix',
-        label: i18next.t('modules.pages.systemCore.prefix'),
+        key: 'settingValue',
+        label: i18next.t('modules.pages.systemCore.settingValue'),
         type: 'input',
         required: true,
-        row: 1,
-      },
-      {
-        key: 'dateRule',
-        label: i18next.t('modules.pages.systemCore.dateRule'),
-        type: 'select',
-        required: true,
-        row: 2,
-        options: [
-          { label: 'YYYY', value: 'YYYY' },
-          { label: 'YYYYMM', value: 'YYYYMM' },
-        ],
-      },
-      {
-        key: 'serialLength',
-        label: i18next.t('modules.pages.systemCore.serialLength'),
-        type: 'number',
-        required: true,
-        min: 1,
-        precision: 0,
-        defaultValue: 6,
-        row: 2,
-      },
-      {
-        key: 'resetRule',
-        label: i18next.t('modules.pages.systemCore.resetRule'),
-        type: 'select',
-        required: true,
-        row: 2,
-        options: [
-          {
-            label: i18next.t('modules.pages.systemCore.yearly'),
-            value: '按年重置',
-          },
-          {
-            label: i18next.t('modules.pages.systemCore.monthly'),
-            value: '按月重置',
-          },
-          {
-            label: i18next.t('modules.pages.systemCore.never'),
-            value: '永不重置',
-          },
-        ],
-      },
-      {
-        key: 'sampleNo',
-        label: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
-        type: 'input',
-        required: true,
-        placeholder: i18next.t('modules.pages.systemCore.sampleForNumberRules'),
         row: 2,
       },
       {
@@ -212,11 +126,11 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
     data: [],
     buildOverview: (rows) => [
       {
-        label: i18next.t('modules.pages.systemCore.ruleCount'),
+        label: i18next.t('modules.pages.systemCore.settingCount'),
         value: formatInteger(rows.length),
       },
       {
-        label: i18next.t('modules.pages.systemCore.enabledRuleCount'),
+        label: i18next.t('modules.pages.systemCore.enabledSettingCount'),
         value: formatInteger(
           rows.filter((row) => row.status === '正常').length,
         ),
