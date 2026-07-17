@@ -7,13 +7,9 @@ import {
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 const HIDE_AUDITED_LIST_RECORDS_SETTING_CODE = 'UI_HIDE_AUDITED_LIST_RECORDS'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
-  SYS_DEFAULT_TAX_RATE: i18next.t(
-    'system.generalSettingsUtils.helpDefaultTaxRate',
-  ),
   UI_WEIGHT_ONLY_PURCHASE_INBOUNDS: i18next.t(
     'system.generalSettingsUtils.helpWeightOnlyPurchase',
   ),
@@ -84,10 +80,6 @@ export const GENERAL_SETTING_STATUS_OPTIONS = [
   },
 ]
 
-export function isDefaultTaxRateSetting(record: ModuleRecord) {
-  return asString(record.settingCode).trim() === DEFAULT_TAX_RATE_SETTING_CODE
-}
-
 export function buildSystemSettingPayload(
   record: ModuleRecord,
   patch: Partial<ModuleRecord>,
@@ -118,7 +110,7 @@ export function isHideAuditedListRecordsSetting(record: ModuleRecord) {
 }
 
 export function isNumericSetting(record: ModuleRecord) {
-  return isDefaultTaxRateSetting(record) || isDefaultListPageSizeSetting(record)
+  return isDefaultListPageSizeSetting(record)
 }
 
 export function isSystemSwitch(record: ModuleRecord) {
@@ -144,10 +136,6 @@ export function matchesGeneralSettingKeyword(
 }
 
 export function formatSettingValue(record: ModuleRecord) {
-  if (isDefaultTaxRateSetting(record)) {
-    const value = Number(record.settingValue || 0)
-    return value ? `${(value * 100).toFixed(0)}%` : '13%'
-  }
   return asString(record.settingValue)
 }
 
@@ -162,10 +150,4 @@ function resolveOptionValues(settingValue: unknown, allowedValues: string[]) {
     .split(',')
     .map((item) => item.trim())
     .filter((item) => allowed.has(item))
-}
-
-export function resolveDefaultTaxRateValue(rows: ModuleRecord[] | undefined) {
-  const matched = rows?.find(isDefaultTaxRateSetting)
-  const value = Number(matched?.settingValue || 0)
-  return Number.isFinite(value) && value > 0 ? value : 0
 }

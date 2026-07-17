@@ -22,7 +22,6 @@ export const initialSetupCompanyPayloadSchema = z.object({
   taxNo: z.string().optional(),
   bankName: z.string().optional(),
   bankAccount: z.string().optional(),
-  taxRate: z.union([z.string(), z.number()]).optional(),
   remark: z.string().optional(),
 })
 export type InitialSetupCompanyPayload = z.infer<

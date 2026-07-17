@@ -377,7 +377,6 @@ export const enUS = {
         bankAccountLabel: 'Bank Account',
         bankAccountRequired: 'Please enter bank account',
         bankAccountPlaceholder: 'Bank account',
-        taxRateLabel: 'Tax Rate',
         remarkLabel: 'Remark',
         back: 'Previous',
         submit: 'Finish Initialization',
@@ -1386,7 +1385,7 @@ export const enUS = {
         companyName: 'Settlement Entity Name',
         taxNo: 'Tax No',
         generalSettingDesc:
-          'Maintain shared business parameters such as the default tax rate.',
+          'Maintain shared UI parameters and business toggles.',
         companyInfoDesc:
           'Maintain settlement entity names, tax numbers, and bank accounts for customers, carriers, purchase orders, and finance pages.',
       },
@@ -1638,7 +1637,7 @@ export const enUS = {
       duplicateBankAccount: 'Duplicate bank account: {{account}}',
       countUnit: '{{count}} items',
       lockedByOobe:
-        'Maintain settlement entity profile and bank information here. Default tax rate has been moved to General Settings, and customers, carriers, and purchase orders can reference the corresponding entity.',
+        'Maintain settlement entity profile and bank information here. Customers, carriers, and purchase orders can reference the corresponding entity.',
       noViewPermission:
         'Current account does not have settlement entity view permission.',
       settlementInfo: 'Settlement Information',
@@ -1882,7 +1881,6 @@ export const enUS = {
       currentEnabled: 'Currently Enabled',
       basicParamsTitle: 'Basic Parameters',
       systemSwitchesTitle: 'System Switches',
-      groupTax: 'Tax Configuration',
       groupPagination: 'Pagination Configuration',
       groupOther: 'Other Configuration',
     },
@@ -1991,8 +1989,6 @@ export const enUS = {
       remarkPlaceholder: 'Enter remark',
     },
     generalSettingsUtils: {
-      helpDefaultTaxRate:
-        'Used for default invoice tax rate and automatic tax calculation. New invoice drafts will use this value after modification.',
       helpWeightOnlyPurchase:
         'When enabled, the purchase inbound page switches to weight view, hiding amount and unit price fields.',
       helpWeightOnlySales:

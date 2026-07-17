@@ -1,5 +1,5 @@
 import { BankOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, InputNumber, Space } from 'antd'
+import { Alert, Button, Form, Input, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
@@ -81,18 +81,6 @@ export function InitialSetupCompanyForm({
         <Input
           placeholder={t('auth.initialsetup.company.bankAccountPlaceholder')}
         />
-      </Form.Item>
-      <Form.Item
-        name="taxRate"
-        label={t('auth.initialsetup.company.taxRateLabel')}
-        rules={[
-          {
-            required: true,
-            message: t('auth.initialsetup.company.taxRateRequired'),
-          },
-        ]}
-      >
-        <InputNumber min={0} max={1} step={0.01} className="w-full" />
       </Form.Item>
       <Form.Item
         name="remark"

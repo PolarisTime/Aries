@@ -1,13 +1,11 @@
 import type { FormInstance } from 'antd'
-import { Form, Input, Select, Space, Switch, Typography } from 'antd'
+import { Form, Input, Select, Switch, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
   HIDE_AUDITED_STATUS_OPTIONS,
-  isDefaultListPageSizeSetting,
-  isDefaultTaxRateSetting,
   isNumericSetting,
   SYSTEM_SWITCH_HELP_TEXT,
 } from '@/views/system/general-settings-view-utils'
@@ -19,25 +17,6 @@ interface Props {
   saving: boolean
   onSave: () => void
   onClose: () => void
-}
-
-function NumericInputWithAddon({
-  addon,
-  max,
-  min,
-  step,
-}: {
-  addon: string
-  max?: number
-  min?: number
-  step?: number
-}) {
-  return (
-    <Space.Compact className="w-full">
-      <Input type="number" min={min} max={max} step={step} />
-      <Space.Addon>{addon}</Space.Addon>
-    </Space.Compact>
-  )
 }
 
 export function GeneralSettingsEditorModal({
@@ -84,13 +63,7 @@ export function GeneralSettingsEditorModal({
               label={t('system.generalSettingsEditor.currentValue')}
               required
             >
-              {isDefaultTaxRateSetting(record) ? (
-                <NumericInputWithAddon addon="%" min={0} max={1} step={0.01} />
-              ) : isDefaultListPageSizeSetting(record) ? (
-                <Input type="number" min={1} max={200} step={1} />
-              ) : (
-                <Input type="number" min={0} />
-              )}
+              <Input type="number" min={1} max={200} step={1} />
             </Form.Item>
           ) : (
             <>

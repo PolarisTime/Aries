@@ -367,7 +367,6 @@ export const zhCN = {
         bankAccountLabel: '银行账号',
         bankAccountRequired: '请输入银行账号',
         bankAccountPlaceholder: '银行账号',
-        taxRateLabel: '税率',
         remarkLabel: '备注',
         back: '上一步',
         submit: '完成初始化',
@@ -1360,7 +1359,7 @@ export const zhCN = {
         companyPlaceholder: '结算主体名称 / 税号 / 银行 / 账号',
         companyName: '结算主体名称',
         taxNo: '税号',
-        generalSettingDesc: '通用设置集中维护默认税率等业务参数。',
+        generalSettingDesc: '通用设置集中维护界面参数与业务开关。',
         companyInfoDesc:
           '结算主体管理集中维护主体名称、税号与多个结算银行信息，供客户、物流商、采购订单和财务页面统一引用。',
       },
@@ -1594,7 +1593,7 @@ export const zhCN = {
       duplicateBankAccount: '银行账号重复：{{account}}',
       countUnit: '{{count}} 个',
       lockedByOobe:
-        '本页用于维护结算主体基础信息和结算银行信息；默认税率已迁移到"通用设置"，客户、物流商和采购订单可引用对应主体。',
+        '本页用于维护结算主体基础信息和结算银行信息，客户、物流商和采购订单可引用对应主体。',
       noViewPermission: '当前账号没有结算主体查看权限。',
       settlementInfo: '结算信息',
       addBank: '新增银行',
@@ -1829,7 +1828,6 @@ export const zhCN = {
       currentEnabled: '当前启用',
       basicParamsTitle: '基础参数',
       systemSwitchesTitle: '系统开关',
-      groupTax: '财税配置',
       groupPagination: '分页配置',
       groupOther: '其他配置',
     },
@@ -1937,8 +1935,6 @@ export const zhCN = {
       remarkPlaceholder: '请输入备注',
     },
     generalSettingsUtils: {
-      helpDefaultTaxRate:
-        '用于发票默认税率与税额自动计算，修改后新开票草稿会使用该值。',
       helpWeightOnlyPurchase:
         '启用后，采购入库页面切换到重量视图，隐藏金额和单价字段。',
       helpWeightOnlySales:

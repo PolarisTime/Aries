@@ -11,7 +11,7 @@ import {
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
 
-type BasicGroupKey = 'tax' | 'pagination' | 'other'
+type BasicGroupKey = 'pagination' | 'other'
 
 interface Props {
   keyword: string
@@ -35,12 +35,11 @@ interface BasicSettingGroup {
   rows: ModuleRecord[]
 }
 
-const BASIC_GROUP_ORDER: BasicGroupKey[] = ['tax', 'pagination', 'other']
+const BASIC_GROUP_ORDER: BasicGroupKey[] = ['pagination', 'other']
 
 function resolveBasicGroupKey(record: ModuleRecord): BasicGroupKey {
   const code = asString(record.settingCode).trim()
   const name = asString(record.settingName)
-  if (code === 'SYS_DEFAULT_TAX_RATE') return 'tax'
   if (
     code === 'UI_DEFAULT_LIST_PAGE_SIZE' ||
     code === 'SYS_DEFAULT_LIST_PAGE_SIZE' ||
@@ -74,7 +73,6 @@ export function GeneralSettingsTableCard({
     (row) => asString(row.status) === STATUS.NORMAL,
   ).length
   const groupTitles: Record<BasicGroupKey, string> = {
-    tax: t('system.generalSettingsTable.groupTax'),
     pagination: t('system.generalSettingsTable.groupPagination'),
     other: t('system.generalSettingsTable.groupOther'),
   }

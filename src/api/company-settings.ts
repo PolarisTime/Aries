@@ -4,7 +4,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import { getApiMessage } from '@/utils/api-messages'
-import { asId, asNumber, asString } from '@/utils/type-narrowing'
+import { asId, asString } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
   id?: string | number
@@ -22,7 +22,6 @@ export interface CompanySettingProfile {
   taxNo: string
   bankName?: string
   bankAccount?: string
-  taxRate?: number
   settlementAccounts: CompanySettlementAccount[]
   status: string
   remark?: string
@@ -65,7 +64,6 @@ export type RawCompanyProfile = {
   taxNo?: string
   bankName?: string
   bankAccount?: string
-  taxRate?: number
   settlementAccounts?: RawSettlementAccount[]
   status?: string
   remark?: string
@@ -110,7 +108,6 @@ export function normalizeProfile(
     taxNo: asString(raw.taxNo),
     bankName: raw.bankName ? asString(raw.bankName) : undefined,
     bankAccount: raw.bankAccount ? asString(raw.bankAccount) : undefined,
-    taxRate: raw.taxRate ? asNumber(raw.taxRate) : undefined,
     settlementAccounts: Array.isArray(raw.settlementAccounts)
       ? raw.settlementAccounts.map((item) => ({
           id: item.id == null ? '' : asString(item.id),

@@ -15,7 +15,6 @@ import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCar
 import {
   buildSystemSettingPayload,
   HIDE_AUDITED_STATUS_VALUES,
-  isDefaultTaxRateSetting,
   isHideAuditedListRecordsSetting,
   isNumericSetting,
   isSystemSwitch,
@@ -94,9 +93,7 @@ export function GeneralSettingsView() {
       settingGroup: record.settingGroup,
       remark: record.remark,
       enabled: asString(record.status) === STATUS.NORMAL,
-      numericValue: isDefaultTaxRateSetting(record)
-        ? Number(record.settingValue || 0.13)
-        : Number(record.settingValue || 0),
+      numericValue: Number(record.settingValue || 0),
       selectedActions: isHideAuditedListRecordsSetting(record)
         ? resolveHideAuditedStatusValues(record.settingValue)
         : asString(record.settingValue).split(',').filter(Boolean),

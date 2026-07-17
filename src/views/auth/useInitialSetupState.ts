@@ -28,7 +28,6 @@ type CompanyFormValues = {
   taxNo: string
   bankName: string
   bankAccount: string
-  taxRate: number
   remark: string
 }
 
@@ -200,7 +199,6 @@ export function useInitialSetupState() {
           taxNo: values.taxNo.trim(),
           bankName: values.bankName.trim(),
           bankAccount: values.bankAccount.trim(),
-          taxRate: values.taxRate || 0.13,
           remark: values.remark?.trim() || '',
         },
         setupToken,

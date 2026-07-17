@@ -79,7 +79,6 @@ export function InitialSetupView() {
             layout="vertical"
             initialValues={{
               adminUserName: t('auth.initialsetup.defaultAdminUserName'),
-              taxRate: 0.13,
             }}
           >
             <Form.Item

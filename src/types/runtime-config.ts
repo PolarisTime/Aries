@@ -8,7 +8,6 @@ export interface RuntimeStatementConfig {
 }
 
 export interface RuntimeBusinessConfig {
-  defaultTaxRate: number
   statement: RuntimeStatementConfig
 }
 
