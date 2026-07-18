@@ -12,6 +12,7 @@ export const materialImportResultSchema = z.object({
   successCount: z.number(),
   createdCount: z.number(),
   updatedCount: z.number(),
+  skippedCount: z.number(),
   failedCount: z.number(),
   failures: z.array(materialImportFailureSchema),
 })

@@ -856,7 +856,7 @@ export const zhCN = {
         templateDownloadFailed: '商品资料模板下载失败',
         importFailed: '商品资料导入失败',
         importSuccessSummary:
-          '导入完成：总行数 {{totalRows}}，成功 {{successCount}}，新增 {{createdCount}}，更新 {{updatedCount}}，失败 {{failedCount}}',
+          '导入完成：总行数 {{totalRows}}，成功 {{successCount}}，新增 {{createdCount}}，更新 {{updatedCount}}，跳过 {{skippedCount}}，失败 {{failedCount}}',
       },
       materialCategories: {
         materialCategory: '商品类别',

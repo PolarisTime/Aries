@@ -46,6 +46,7 @@ export interface MaterialImportResult {
   successCount: number
   createdCount: number
   updatedCount: number
+  skippedCount: number
   failCount: number
   errors: MaterialImportError[]
   successRows?: unknown[]

@@ -61,6 +61,7 @@ export function MaterialImportActions({
           successCount: result.successCount,
           createdCount: result.createdCount,
           updatedCount: result.updatedCount,
+          skippedCount: result.skippedCount,
           failedCount: result.failCount,
         }),
       )

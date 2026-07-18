@@ -879,7 +879,7 @@ export const enUS = {
         templateDownloadFailed: 'Failed to download material template',
         importFailed: 'Failed to import materials',
         importSuccessSummary:
-          'Import completed: {{totalRows}} total, {{successCount}} succeeded, {{createdCount}} created, {{updatedCount}} updated, {{failedCount}} failed',
+          'Import completed: {{totalRows}} total, {{successCount}} succeeded, {{createdCount}} created, {{updatedCount}} updated, {{skippedCount}} skipped, {{failedCount}} failed',
       },
       materialCategories: {
         materialCategory: 'materialCategory',
