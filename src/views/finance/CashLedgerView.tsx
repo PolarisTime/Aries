@@ -16,7 +16,7 @@ import {
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   type CashLedgerFilter,
   type CashLedgerFlowType,
@@ -27,12 +27,11 @@ import {
   getCashLedger,
 } from '@/api/cash-ledger'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
-
-const DEFAULT_PAGE_SIZE = 20
 
 const COUNTERPARTY_TYPE_OPTIONS = ['客户', '供应商', '物流商'].map((value) => ({
   value,
@@ -71,6 +70,7 @@ function displayText(value: unknown) {
 }
 
 export function CashLedgerView() {
+  const defaultPageSize = useDefaultPageSize()
   const [settlementCompanyId, setSettlementCompanyId] = useState<EntityId>()
   const [startDate, setStartDate] = useState<string>()
   const [endDate, setEndDate] = useState<string>()
@@ -80,7 +80,11 @@ export function CashLedgerView() {
   const [keywordInput, setKeywordInput] = useState('')
   const [keyword, setKeyword] = useState<string>()
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(defaultPageSize)
+  useEffect(() => {
+    setPage(1)
+    setPageSize(defaultPageSize)
+  }, [defaultPageSize])
   const { formatCellValue } = useModuleDisplaySupport()
   const {
     settlementCompanies,

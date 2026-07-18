@@ -5,10 +5,12 @@ import {
   type UserAccountListParams,
 } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useKeywordPaginationState } from '@/hooks/useKeywordPaginationState'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 
 export function useUserAccountListState(enabled = true) {
+  const defaultPageSize = useDefaultPageSize()
   const {
     keyword,
     currentPage,
@@ -16,7 +18,7 @@ export function useUserAccountListState(enabled = true) {
     setKeyword,
     resetPage,
     handlePageChange,
-  } = useKeywordPaginationState()
+  } = useKeywordPaginationState({ defaultPageSize })
   const [statusFilter, setStatusFilter] = useState<string | undefined>(
     undefined,
   )

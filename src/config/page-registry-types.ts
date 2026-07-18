@@ -3,8 +3,6 @@ import type { AppIconKey, MenuGroupKey } from '@/config/navigation-registry'
 export type RouteViewKey =
   | 'dashboard'
   | 'business-grid'
-  | 'system-parameters'
-  | 'general-setting'
   | 'company-setting'
   | 'print-template'
   | 'user-account'

@@ -45,21 +45,16 @@ export const ENDPOINTS = {
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
 
-  OSS_SETTINGS: '/system/oss-settings',
-
   // Print templates (business entity → plural)
   PRINT_TEMPLATES: '/print-templates',
 
   // Setup (pure actions → singular)
   SETUP_STATUS: '/setup/status',
-  SETUP_INITIALIZE: '/setup/initialize',
   SETUP_ADMIN: '/setup/admin',
-  SETUP_COMPANY: '/setup/company',
 
   // Attachments (business entity → plural) & General settings (business entity → plural)
   ATTACHMENTS_UPLOAD: '/attachments/upload',
   ATTACHMENTS_BINDINGS: '/attachments/bindings',
-  STATEMENT_GENERATOR_RULE: '/general-settings/statement-generator-rule',
 
   // Materials (pure actions → singular)
   MATERIALS_IMPORT: '/materials/import',

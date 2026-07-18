@@ -124,10 +124,6 @@ export const operationLogModuleOptions = [
         value: '用户账户',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.generalSettings'),
-        value: '通用设置',
-      },
-      {
         label: i18next.t('modules.pages.operationLogOptions.database'),
         value: '数据库管理',
       },

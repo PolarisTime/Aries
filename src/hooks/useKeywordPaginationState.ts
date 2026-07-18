@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface KeywordPaginationOptions {
   defaultPageSize?: number
@@ -16,11 +16,16 @@ interface KeywordPaginationState {
 }
 
 export function useKeywordPaginationState({
-  defaultPageSize = 20,
+  defaultPageSize = 30,
 }: KeywordPaginationOptions = {}): KeywordPaginationState {
   const [keyword, setKeyword] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(defaultPageSize)
+
+  useEffect(() => {
+    setCurrentPage(1)
+    setPageSize(defaultPageSize)
+  }, [defaultPageSize])
 
   const resetPage = useCallback(() => setCurrentPage(1), [])
   const handlePageChange = useCallback((page: number, nextPageSize: number) => {

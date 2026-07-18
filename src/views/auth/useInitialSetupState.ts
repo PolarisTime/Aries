@@ -2,17 +2,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { Form } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  getInitialSetupStatus,
-  submitInitialAdmin,
-  submitInitialCompany,
-} from '@/api/setup'
+import { getInitialSetupStatus, submitInitialAdmin } from '@/api/setup'
 import type { InitialSetupStatus } from '@/shared/schemas'
 import { useSetupStore } from '@/stores/setupStore'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
-
-export type SetupStep = 'admin' | 'company'
 
 export const SETUP_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}=?$/
 
@@ -21,14 +15,6 @@ type AdminFormValues = {
   adminPassword: string
   adminConfirmPassword: string
   adminUserName: string
-}
-
-type CompanyFormValues = {
-  companyName: string
-  taxNo: string
-  bankName: string
-  bankAccount: string
-  remark: string
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -40,10 +26,7 @@ export function useInitialSetupState() {
   const navigate = useNavigate()
   const [checking, setChecking] = useState(true)
   const [status, setStatus] = useState<InitialSetupStatus | null>(null)
-  const [currentStep, setCurrentStep] = useState<SetupStep>('admin')
-  const [adminCompleted, setAdminCompleted] = useState(false)
   const [loadingAdmin, setLoadingAdmin] = useState(false)
-  const [loadingCompany, setLoadingCompany] = useState(false)
   const [form] = Form.useForm()
 
   const getValidSetupToken = (): string | null => {
@@ -59,32 +42,6 @@ export function useInitialSetupState() {
     return setupToken
   }
 
-  const loadStatus = async () => {
-    try {
-      const res = await getInitialSetupStatus()
-      const s = res.data
-      setStatus(s)
-      useSetupStore.getState().setStatus(s)
-      if (s.adminConfigured && !s.companyConfigured) {
-        setAdminCompleted(true)
-        setCurrentStep('company')
-      } else if (!s.adminConfigured) {
-        setAdminCompleted(false)
-        setCurrentStep('admin')
-      }
-      if (!s.setupRequired) {
-        message.info(t('auth.initialsetup.alreadyCompletedRedirect'))
-        setTimeout(() => {
-          void navigate({ to: '/login' })
-        }, 1500)
-      }
-      setChecking(false)
-    } catch {
-      message.error(t('auth.initialsetup.loadStatusFailed'))
-      setChecking(false)
-    }
-  }
-
   useEffect(() => {
     let active = true
     let redirectTimer: ReturnType<typeof setTimeout> | null = null
@@ -98,13 +55,6 @@ export function useInitialSetupState() {
         const s = res.data
         setStatus(s)
         useSetupStore.getState().setStatus(s)
-        if (s.adminConfigured && !s.companyConfigured) {
-          setAdminCompleted(true)
-          setCurrentStep('company')
-        } else if (!s.adminConfigured) {
-          setAdminCompleted(false)
-          setCurrentStep('admin')
-        }
         if (!s.setupRequired) {
           message.info(t('auth.initialsetup.alreadyCompletedRedirect'))
           redirectTimer = setTimeout(() => {
@@ -166,67 +116,22 @@ export function useInitialSetupState() {
         setupToken,
       )
       message.success(res.message || t('auth.initialsetup.adminCreateSuccess'))
-      setAdminCompleted(true)
-      setCurrentStep('company')
-      void loadStatus()
-      setLoadingAdmin(false)
-    } catch (error) {
-      message.error(
-        getErrorMessage(error, t('auth.initialsetup.operationFailed')),
-      )
-      setLoadingAdmin(false)
-    }
-  }
-
-  const handleSubmitCompany = async () => {
-    const setupToken = getValidSetupToken()
-    if (!setupToken) {
-      return
-    }
-    try {
-      const values = (await form.validateFields([
-        'setupToken',
-        'companyName',
-        'taxNo',
-        'bankName',
-        'bankAccount',
-      ])) as unknown as CompanyFormValues
-
-      setLoadingCompany(true)
-      const res = await submitInitialCompany(
-        {
-          companyName: values.companyName.trim(),
-          taxNo: values.taxNo.trim(),
-          bankName: values.bankName.trim(),
-          bankAccount: values.bankAccount.trim(),
-          remark: values.remark?.trim() || '',
-        },
-        setupToken,
-      )
-      message.success(
-        res.message || t('auth.initialsetup.companyCreateSuccess'),
-      )
       useSetupStore.getState().setStatus({ setupRequired: false })
       void navigate({ to: '/login' })
-      setLoadingCompany(false)
     } catch (error) {
       message.error(
         getErrorMessage(error, t('auth.initialsetup.operationFailed')),
       )
-      setLoadingCompany(false)
+    } finally {
+      setLoadingAdmin(false)
     }
   }
 
   return {
-    adminCompleted,
     checking,
-    currentStep,
     form,
     handleSubmitAdmin,
-    handleSubmitCompany,
     loadingAdmin,
-    loadingCompany,
-    setCurrentStep,
     status,
   }
 }

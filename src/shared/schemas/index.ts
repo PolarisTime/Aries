@@ -38,10 +38,8 @@ export type {
 export type {
   InitialSetupAdminPayload,
   InitialSetupAdminSubmitPayload,
-  InitialSetupCompanyPayload,
   InitialSetupResult,
   InitialSetupStatus,
-  InitialSetupSubmitResponse,
 } from './setup'
 // ── 用户账户 ────────────────────────────────────────────
 export type {

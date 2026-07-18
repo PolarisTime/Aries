@@ -3,7 +3,6 @@
 
 export const QUERY_KEYS = {
   // Settings
-  generalSetting: ['general-setting'] as const,
   runtimeConfig: ['runtime-config'] as const,
   companySetting: ['company-setting'] as const,
   companySettings: ['company-settings'] as const,
@@ -29,8 +28,6 @@ export const QUERY_KEYS = {
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
   businessGridAll: (moduleKey: string) =>
     ['business-grid-all', moduleKey] as const,
-  businessGridPage: (moduleKey: string) =>
-    ['business-grid', moduleKey, {}, 1, 20, '', ''] as const,
   businessGridList: (
     moduleKey: string,
     filters: Record<string, unknown>,

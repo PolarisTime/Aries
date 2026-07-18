@@ -1,9 +1,7 @@
 import { ENDPOINTS } from '@/constants/endpoints'
 import type {
   InitialSetupAdminSubmitPayload,
-  InitialSetupCompanyPayload,
   InitialSetupStatus,
-  InitialSetupSubmitResponse,
 } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
@@ -24,22 +22,10 @@ export async function submitInitialAdmin(
   payload: InitialSetupAdminSubmitPayload,
   setupToken: string,
 ) {
-  const response = await http.post<ApiResponse<InitialSetupSubmitResponse>>(
+  const response = await http.post<ApiResponse<string>>(
     ENDPOINTS.SETUP_ADMIN,
     payload,
     setupTokenHeaders(setupToken),
   )
   return assertApiSuccess(response, getApiMessage('adminAccountInitFailed'))
-}
-
-export async function submitInitialCompany(
-  payload: InitialSetupCompanyPayload,
-  setupToken: string,
-) {
-  const response = await http.post<ApiResponse<InitialSetupSubmitResponse>>(
-    ENDPOINTS.SETUP_COMPANY,
-    payload,
-    setupTokenHeaders(setupToken),
-  )
-  return assertApiSuccess(response, getApiMessage('companyInitFailed'))
 }

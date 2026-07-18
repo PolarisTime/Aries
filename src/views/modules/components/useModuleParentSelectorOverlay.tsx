@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
@@ -20,6 +20,7 @@ import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import {
   getDisplayStatus,
@@ -78,7 +79,7 @@ interface ParentSelectorState {
 }
 
 export const EMPTY_FIXED_FILTERS: SearchParams = {}
-export const DEFAULT_PAGE_SIZE = 15
+export const DEFAULT_PAGE_SIZE = 30
 
 export type ParentSelectorTranslator = (
   key: string,
@@ -604,6 +605,7 @@ export function useModuleParentSelectorOverlay({
   const { t } = useTranslation()
   const effectiveTitle = title ?? t('modules.parentSelector.title')
   const { formatCellValue } = useModuleDisplaySupport()
+  const defaultPageSize = useDefaultPageSize()
   const [state, setState] = useReducer(
     (prev: ParentSelectorState, patch: Partial<ParentSelectorState>) => ({
       ...prev,
@@ -611,6 +613,9 @@ export function useModuleParentSelectorOverlay({
     }),
     parentSelectorInitialState,
   )
+  useEffect(() => {
+    setState({ page: 1, pageSize: defaultPageSize })
+  }, [defaultPageSize])
   const {
     draftFilters,
     submittedFilters,

@@ -1,12 +1,11 @@
 import { KeyOutlined } from '@ant-design/icons'
-import { Card, Flex, Form, Input, Space, Spin, Steps, Typography } from 'antd'
+import { Card, Flex, Form, Input, Space, Spin, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppResult } from '@/components/AppResult'
 import { appTitle } from '@/utils/env'
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
 import { InitialSetupAdminForm } from '@/views/auth/InitialSetupAdminForm'
-import { InitialSetupCompanyForm } from '@/views/auth/InitialSetupCompanyForm'
 import {
   SETUP_TOKEN_PATTERN,
   useInitialSetupState,
@@ -14,18 +13,8 @@ import {
 
 export function InitialSetupView() {
   const { t } = useTranslation()
-  const {
-    adminCompleted,
-    checking,
-    currentStep,
-    form,
-    handleSubmitAdmin,
-    handleSubmitCompany,
-    loadingAdmin,
-    loadingCompany,
-    setCurrentStep,
-    status,
-  } = useInitialSetupState()
+  const { checking, form, handleSubmitAdmin, loadingAdmin, status } =
+    useInitialSetupState()
 
   if (checking) {
     return (
@@ -54,7 +43,7 @@ export function InitialSetupView() {
   return (
     <AuthPageShell>
       <Card
-        className="login-form-card initial-setup-card initial-setup-workspace"
+        className="login-form-card initial-setup-workspace"
         variant="outlined"
       >
         <Space orientation="vertical" size="large" className="w-full">
@@ -66,14 +55,6 @@ export function InitialSetupView() {
               {t('auth.initialsetup.guideTitle')}
             </Typography.Text>
           </Space>
-          <Steps
-            current={currentStep === 'admin' ? 0 : 1}
-            items={[
-              { title: t('auth.initialsetup.adminStep') },
-              { title: t('auth.initialsetup.companyStep') },
-            ]}
-            className="mb-2 initial-setup-progress"
-          />
           <Form
             form={form}
             layout="vertical"
@@ -101,23 +82,12 @@ export function InitialSetupView() {
                 autoComplete="off"
               />
             </Form.Item>
-            {currentStep === 'admin' ? (
-              <InitialSetupAdminForm
-                loadingAdmin={loadingAdmin}
-                onSubmitAdmin={() => {
-                  void handleSubmitAdmin()
-                }}
-              />
-            ) : (
-              <InitialSetupCompanyForm
-                adminCompleted={adminCompleted}
-                loadingCompany={loadingCompany}
-                onBack={() => setCurrentStep('admin')}
-                onSubmitCompany={() => {
-                  void handleSubmitCompany()
-                }}
-              />
-            )}
+            <InitialSetupAdminForm
+              loadingAdmin={loadingAdmin}
+              onSubmitAdmin={() => {
+                void handleSubmitAdmin()
+              }}
+            />
           </Form>
         </Space>
       </Card>

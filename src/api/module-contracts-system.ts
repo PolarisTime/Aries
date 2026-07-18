@@ -4,10 +4,6 @@ export const systemModuleEndpointContracts: Record<
   string,
   ModuleEndpointConfig
 > = {
-  'general-setting': {
-    path: '/general-settings',
-    nativeFilterKeys: ['keyword', 'status'],
-  },
   'operation-log': {
     path: '/operation-logs',
     readOnly: true,

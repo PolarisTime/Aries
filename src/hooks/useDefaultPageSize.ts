@@ -1,6 +1,6 @@
 import { useRuntimeConfig } from './useRuntimeConfig'
 
-const DEFAULT_SIZE = 20
+const DEFAULT_SIZE = 30
 
 export function useDefaultPageSize() {
   const { data: runtimeConfig } = useRuntimeConfig()

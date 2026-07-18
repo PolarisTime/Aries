@@ -68,7 +68,7 @@ export function ModuleTablePagination({
           responsive
           showLessItems
           showSizeChanger
-          pageSizeOptions={['10', '20', '50', '100']}
+          pageSizeOptions={['10', '20', '30', '50', '100']}
           locale={PAGINATION_LOCALE}
           onChange={onPageChange}
         />

@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import { lazy } from 'react'
 import { listBusinessModule } from '@/api/business-listing'
+import { getRuntimeConfig } from '@/api/runtime-config'
 import { getInitialSetupStatus } from '@/api/setup'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import {
@@ -157,14 +158,6 @@ const viewLoaders: Record<
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
     })),
-  'system-parameters': () =>
-    import('@/views/system/SystemParametersView').then((m) => ({
-      default: m.SystemParametersView,
-    })),
-  'general-setting': () =>
-    import('@/views/system/GeneralSettingsView').then((m) => ({
-      default: m.GeneralSettingsView,
-    })),
   'company-setting': () =>
     import('@/views/system/CompanySettingsView').then((m) => ({
       default: m.CompanySettingsView,
@@ -199,13 +192,24 @@ const moduleRoutes = appPageDefinitions.map((def) => {
             const config = await loadBusinessPageConfig(moduleKey)
 
             try {
+              const runtimeConfig = await queryClient.ensureQueryData({
+                queryKey: QUERY_KEYS.runtimeConfig,
+                queryFn: getRuntimeConfig,
+                staleTime: 30_000,
+              })
+              const pageSize = runtimeConfig.ui.defaultPageSize
               await queryClient.ensureQueryData({
-                queryKey: QUERY_KEYS.businessGridPage(moduleKey),
+                queryKey: QUERY_KEYS.businessGridList(
+                  moduleKey,
+                  {},
+                  1,
+                  pageSize,
+                ),
                 queryFn: ({ signal }) =>
                   listBusinessModule(
                     moduleKey,
                     {},
-                    { currentPage: 1, pageSize: 20 },
+                    { currentPage: 1, pageSize },
                     { signal },
                   ),
                 staleTime: 60_000,
