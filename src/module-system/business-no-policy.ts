@@ -9,6 +9,14 @@ const SNOWFLAKE_BUSINESS_NO_MODULES = new Set([
   'receipt',
   'payment',
   'ledger-adjustment',
+  'customer',
+  'supplier',
+  'carrier',
+  'warehouse',
+  'material',
+  'material-categories',
+  'department',
+  'project',
 ])
 
 export function usesSnowflakeBusinessNo(
