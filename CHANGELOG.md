@@ -1,3 +1,18 @@
+# [5.0.0](https://github.com/PolarisTime/Aries/compare/v4.1.0...v5.0.0) (2026-07-18)
+
+
+* refactor(purchase)!: 简化采购入库编辑流程 ([a7f058f](https://github.com/PolarisTime/Aries/commit/a7f058f19a39940ad3968e881fdd57f45d3bd1ce))
+
+
+### Features
+
+* **layout:** 优化编辑工作区标签栏 ([4895e05](https://github.com/PolarisTime/Aries/commit/4895e05be0b8f2076f0b3a6a38389984945a1c83))
+
+
+### BREAKING CHANGES
+
+* 移除采购入库拆分批次、超差原因审核和逐件重量前端接口。
+
 # [4.1.0](https://github.com/PolarisTime/Aries/compare/v4.0.0...v4.1.0) (2026-07-18)
 
 
