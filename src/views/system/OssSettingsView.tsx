@@ -32,7 +32,6 @@ import {
   testOssStorage,
 } from '@/api/system-settings'
 import { useRequestError } from '@/hooks/useRequestError'
-import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { message } from '@/utils/antd-app'
 import {
   getOssProviderEndpointPlaceholder,
@@ -75,7 +74,6 @@ export function OssSettingsView(): React.JSX.Element {
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const queryClient = useQueryClient()
-  const { canUpdate: canSave } = useResourcePermissions('general-setting')
   const [form] = Form.useForm<OssSettingsFormValues>()
   const [operationResult, setOperationResult] =
     useState<OssOperationResult | null>(null)
@@ -346,7 +344,6 @@ export function OssSettingsView(): React.JSX.Element {
                 htmlType="button"
                 icon={<ThunderboltOutlined aria-hidden />}
                 loading={testStorageMutation.isPending}
-                disabled={!canSave}
                 onClick={() => {
                   testStorageMutation.mutate(
                     toPayload(form.getFieldsValue(true)),
@@ -359,7 +356,7 @@ export function OssSettingsView(): React.JSX.Element {
                 htmlType="button"
                 icon={<SettingOutlined aria-hidden />}
                 loading={configureCorsMutation.isPending}
-                disabled={!canSave || !isS3Mode}
+                disabled={!isS3Mode}
                 onClick={() => {
                   configureCorsMutation.mutate({
                     setting: toPayload(form.getFieldsValue(true)),
@@ -375,7 +372,6 @@ export function OssSettingsView(): React.JSX.Element {
                 htmlType="submit"
                 icon={<SaveOutlined aria-hidden />}
                 loading={saveMutation.isPending}
-                disabled={!canSave}
               >
                 {t('common.save')}
               </Button>

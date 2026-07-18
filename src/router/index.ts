@@ -18,10 +18,6 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/authStore'
-import {
-  checkAccessResources,
-  usePermissionStore,
-} from '@/stores/permissionStore'
 import { useSetupStore } from '@/stores/setupStore'
 import {
   getServerErrorReturnPath,
@@ -177,9 +173,9 @@ const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
-  'access-control': () =>
-    import('@/views/system/AccessControlView').then((m) => ({
-      default: m.AccessControlView,
+  'user-account': () =>
+    import('@/views/system/UserAccountManagementView').then((m) => ({
+      default: m.UserAccountManagementView,
     })),
   'cash-ledger': () =>
     import('@/views/finance/CashLedgerView').then((m) => ({
@@ -200,52 +196,27 @@ const moduleRoutes = appPageDefinitions.map((def) => {
       def.view === 'business-grid' && def.moduleKey
         ? async () => {
             const moduleKey = asString(def.moduleKey)
-            const resourceKey = def.resourceKey || moduleKey
-            const canView = usePermissionStore
-              .getState()
-              .can(resourceKey, 'read')
-
             const config = await loadBusinessPageConfig(moduleKey)
 
-            if (canView) {
-              try {
-                await queryClient.ensureQueryData({
-                  queryKey: QUERY_KEYS.businessGridPage(moduleKey),
-                  queryFn: ({ signal }) =>
-                    listBusinessModule(
-                      moduleKey,
-                      {},
-                      { currentPage: 1, pageSize: 20 },
-                      { signal },
-                    ),
-                  staleTime: 60_000,
-                })
-              } catch {
-                // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
-              }
+            try {
+              await queryClient.ensureQueryData({
+                queryKey: QUERY_KEYS.businessGridPage(moduleKey),
+                queryFn: ({ signal }) =>
+                  listBusinessModule(
+                    moduleKey,
+                    {},
+                    { currentPage: 1, pageSize: 20 },
+                    { signal },
+                  ),
+                staleTime: 60_000,
+              })
+            } catch {
+              // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
             }
 
             return config
           }
         : undefined,
-    beforeLoad: () => {
-      if (def.view === 'dashboard') return
-      const store = usePermissionStore.getState()
-      if (
-        Array.isArray(def.accessResources) &&
-        def.accessResources.length > 0
-      ) {
-        if (!checkAccessResources(def.accessResources, store.can)) {
-          // eslint-disable-next-line @typescript-eslint/only-throw-error
-          throw redirect({ to: '/' })
-        }
-        return
-      }
-      if (!store.can(def.resourceKey || def.key, 'read')) {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw redirect({ to: '/' })
-      }
-    },
   })
 })
 

@@ -15,7 +15,6 @@ export function DashboardWorkplaceHeader({
   const { t } = useTranslation()
   const companyName = summary?.companyName || t('common.brandSubtitle')
   const userName = summary?.userName || '—'
-  const roleName = summary?.roleName || t('dashboard.info.unassigned')
   const loginName = summary?.loginName || '—'
   const metricItems = [
     {
@@ -24,9 +23,9 @@ export function DashboardWorkplaceHeader({
       value: summary?.visibleMenuCount ?? 0,
     },
     {
-      key: 'actionPermissions',
-      title: t('dashboard.info.actionPermissions'),
-      value: summary?.actionCount ?? 0,
+      key: 'modules',
+      title: t('dashboard.info.modules'),
+      value: summary?.moduleCount ?? 0,
     },
     {
       key: 'activeSessions',
@@ -49,9 +48,6 @@ export function DashboardWorkplaceHeader({
           <div className="dashboard-workplace-meta">
             <span>
               {t('dashboard.info.userName')}：{userName}
-            </span>
-            <span>
-              {t('dashboard.info.roleName')}：{roleName}
             </span>
             <span>
               {t('dashboard.info.loginName')}：{loginName}

@@ -1,11 +1,7 @@
-import { Modal, Tabs } from 'antd'
-import { useState } from 'react'
+import { Modal } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
-import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
-import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
-import { useAuthStore } from '@/stores/authStore'
 import type { ThemeMode } from '@/utils/storage'
 
 interface Props {
@@ -34,10 +30,6 @@ export function PersonalSettingsModal({
   onThemeModeChange,
 }: Props) {
   const { t } = useTranslation()
-  const [tab, setTab] = useState('display')
-  const user = useAuthStore((state) => state.user)
-  const { handleChangePassword, pwForm, pwSaving } =
-    usePersonalSecuritySettings({ open, tab })
 
   return (
     <Modal
@@ -49,36 +41,16 @@ export function PersonalSettingsModal({
       width={720}
       mask={{ closable: false }}
     >
-      <Tabs
-        activeKey={tab}
-        onChange={setTab}
-        items={[
-          { key: 'display', label: t('layouts.personalSettings.displayTab') },
-          { key: 'security', label: t('layouts.personalSettings.securityTab') },
-        ]}
+      <PersonalSettingsDisplayTab
+        fontSize={fontSize}
+        layoutMode={layoutMode}
+        themeMode={themeMode}
+        onFontSizeChange={onFontSizeChange}
+        onLayoutModeChange={onLayoutModeChange}
+        onThemeModeChange={onThemeModeChange}
+        onResetDisplay={onResetDisplay}
+        onSaveDisplay={onSaveDisplay}
       />
-
-      {tab === 'display' ? (
-        <PersonalSettingsDisplayTab
-          fontSize={fontSize}
-          layoutMode={layoutMode}
-          themeMode={themeMode}
-          onFontSizeChange={onFontSizeChange}
-          onLayoutModeChange={onLayoutModeChange}
-          onThemeModeChange={onThemeModeChange}
-          onResetDisplay={onResetDisplay}
-          onSaveDisplay={onSaveDisplay}
-        />
-      ) : (
-        <PersonalSettingsSecurityTab
-          user={user}
-          pwForm={pwForm}
-          pwSaving={pwSaving}
-          onChangePassword={(values) => {
-            void handleChangePassword(values)
-          }}
-        />
-      )}
     </Modal>
   )
 }

@@ -19,9 +19,6 @@ interface Props {
   totalElements: number
   users: UserAccountRecord[]
   loading: boolean
-  canCreate: boolean
-  canEdit: boolean
-  canDelete: boolean
   getStatusColor: (value: string) => string
   onKeywordChange: (value: string) => void
   onSearch: () => void
@@ -41,9 +38,6 @@ export function UserAccountTableCard({
   totalElements,
   users,
   loading,
-  canCreate,
-  canEdit,
-  canDelete,
   getStatusColor,
   onKeywordChange,
   onSearch,
@@ -75,7 +69,6 @@ export function UserAccountTableCard({
               key: 'edit',
               label: t('system.userAccountTable.edit'),
               icon: <EditOutlined />,
-              visible: canEdit,
               onClick: () => onEdit(record),
             },
             {
@@ -83,7 +76,6 @@ export function UserAccountTableCard({
               label: t('system.userAccountTable.delete'),
               icon: <DeleteOutlined />,
               danger: true,
-              visible: canDelete,
               onClick: () => onDelete(record),
             },
           ]}
@@ -111,13 +103,6 @@ export function UserAccountTableCard({
       title: t('system.userAccountTable.colMobile'),
       width: 140,
       render: (_dom, record) => record.mobile || '--',
-    },
-    {
-      dataIndex: 'roleNames',
-      title: t('system.userAccountTable.colRoles'),
-      width: 220,
-      render: (_dom, record) =>
-        Array.isArray(record.roleNames) ? record.roleNames.join('、') : '--',
     },
     {
       dataIndex: 'status',
@@ -149,7 +134,7 @@ export function UserAccountTableCard({
       columns={columns}
       dataSource={users}
       loading={loading}
-      scroll={{ x: 1400 }}
+      scroll={{ x: 1100 }}
       headerTitle={t('system.userAccountTable.title')}
       toolBarRender={() => [
         <SystemTableToolbar
@@ -159,7 +144,7 @@ export function UserAccountTableCard({
           onKeywordChange={onKeywordChange}
           onSearch={onSearch}
           onRefresh={onRefresh}
-          onCreate={canCreate ? onCreate : undefined}
+          onCreate={onCreate}
         >
           <Select
             allowClear

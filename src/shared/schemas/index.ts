@@ -11,7 +11,6 @@ export type {
   LoginResponseData,
   LoginResult,
   LoginUser,
-  ResourcePermission,
 } from './auth'
 // ── 物料 / 打印模板 / 初始化 ────────────────────────────
 export type {
@@ -47,7 +46,6 @@ export type {
 // ── 用户账户 ────────────────────────────────────────────
 export type {
   DepartmentOptionRecord,
-  RoleOptionRecord,
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountLoginNameAvailability,

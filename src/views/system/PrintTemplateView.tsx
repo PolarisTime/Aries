@@ -39,9 +39,6 @@ export function PrintTemplateView() {
           activeTemplateId={view.activeTemplateId}
           templates={view.templates}
           loading={view.isLoading}
-          canCreate={view.canCreate}
-          canEdit={view.canEdit}
-          canDelete={view.canDelete}
           uploadPending={view.uploadPending}
           onBillTypeChange={view.setSelectedBillType}
           onRefresh={view.refresh}

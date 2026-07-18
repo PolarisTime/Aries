@@ -23,11 +23,6 @@ interface BuildLayoutMenuOptions {
   menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition>
   menuGroupOrder: MenuGroupKey[]
   systemMenuTree: MenuNode[]
-  userCanAccessEntry: (entry: AppPageDefinition) => boolean
-  userCanAccessMenuCode: (
-    resourceCode: string | null,
-    menuCode: string,
-  ) => boolean
 }
 
 function resolveEntryPath(entry: AppPageDefinition) {
@@ -45,15 +40,12 @@ function buildStaticFallbackMenuTree(
   options: BuildLayoutMenuOptions,
 ): LayoutMenuEntry[] {
   const topLevelMenuEntries = options.appPageDefinitions.filter(
-    (entry) =>
-      !entry.menuParent &&
-      !entry.hiddenInMenu &&
-      options.userCanAccessEntry(entry),
+    (entry) => !entry.menuParent && !entry.hiddenInMenu,
   )
   const menuGroups = options.menuGroupOrder.flatMap((groupKey) => {
     const items = options
       .getMenuEntriesByGroup(groupKey)
-      .filter((entry) => options.userCanAccessEntry(entry))
+      .filter((entry) => !entry.hiddenInMenu)
     return items.length > 0
       ? [{ ...options.menuGroupDefinitions[groupKey], items }]
       : []
@@ -92,11 +84,9 @@ function buildLayoutMenuEntry(
     .map((child) => buildLayoutMenuEntry(child, options))
     .filter((child): child is LayoutMenuEntry => child != null)
 
-  const canAccessCurrent = matchedPage
-    ? !matchedPage.hiddenInMenu && options.userCanAccessEntry(matchedPage)
-    : options.userCanAccessMenuCode(node.resourceCode, node.menuCode)
+  const canShowCurrent = matchedPage ? !matchedPage.hiddenInMenu : true
 
-  if (!canAccessCurrent && children.length === 0) {
+  if (!canShowCurrent && children.length === 0) {
     return null
   }
 
@@ -117,7 +107,7 @@ function menuTreeContainsPath(nodes: LayoutMenuEntry[], path: string): boolean {
   )
 }
 
-function appendAliasEntries(
+function appendMissingPageEntries(
   nodes: LayoutMenuEntry[],
   options: BuildLayoutMenuOptions,
 ) {
@@ -127,13 +117,7 @@ function appendAliasEntries(
   }))
 
   const aliasEntries = options.appPageDefinitions.filter(
-    (entry) =>
-      !entry.hiddenInMenu &&
-      options.userCanAccessEntry(entry) &&
-      ((Array.isArray(entry.accessMenuKeys) &&
-        entry.accessMenuKeys.length > 0) ||
-        (Array.isArray(entry.accessResources) &&
-          entry.accessResources.length > 0)),
+    (entry) => !entry.hiddenInMenu,
   )
 
   aliasEntries.forEach((entry) => {
@@ -173,7 +157,7 @@ export function buildVisibleLayoutMenuEntries(options: BuildLayoutMenuOptions) {
     return buildStaticFallbackMenuTree(options)
   }
 
-  return appendAliasEntries(
+  return appendMissingPageEntries(
     options.systemMenuTree
       .map((node) => buildLayoutMenuEntry(node, options))
       .filter((node): node is LayoutMenuEntry => node != null),

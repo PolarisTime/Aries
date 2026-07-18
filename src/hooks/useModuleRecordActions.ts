@@ -1,12 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
-import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
   moduleKey: string
-  resourceKey?: string
   isReadOnly?: boolean
   attachmentCounts?: Record<string, number>
   onAttach: (record: ModuleRecord) => void
@@ -19,7 +17,6 @@ interface Props {
 
 export function useModuleRecordActions({
   moduleKey,
-  resourceKey,
   isReadOnly = false,
   attachmentCounts = {},
   onAttach,
@@ -30,8 +27,6 @@ export function useModuleRecordActions({
   detailActionLabel,
 }: Props) {
   const { t } = useTranslation()
-  const resource = resourceKey || moduleKey
-  const { can } = useResourcePermissions(resource)
 
   const resolveAttachmentCount = (record: ModuleRecord) => {
     const mappedCount = attachmentCounts[String(record.id)]
@@ -49,7 +44,7 @@ export function useModuleRecordActions({
 
   const buildActions = (record: ModuleRecord): ActionItem[] => {
     const items: ActionItem[] = []
-    if (onDetail && can('read')) {
+    if (onDetail) {
       items.push({
         key: 'detail',
         label: detailActionLabel || t('hooks.recordActions.view'),
@@ -60,7 +55,7 @@ export function useModuleRecordActions({
     if (isReadOnly) {
       return items
     }
-    if (onEdit && can('update') && (canEditRecord?.(record) ?? true)) {
+    if (onEdit && (canEditRecord?.(record) ?? true)) {
       items.push({
         key: 'edit',
         label: t('hooks.recordActions.edit'),
@@ -71,8 +66,7 @@ export function useModuleRecordActions({
     if (
       moduleKey === 'sales-order' &&
       record.status === '交付核定' &&
-      onStatusChange &&
-      can('audit')
+      onStatusChange
     ) {
       items.push({
         key: 'confirm-delivery-verification',
@@ -81,7 +75,7 @@ export function useModuleRecordActions({
         onClick: () => onStatusChange(record, '完成销售'),
       })
     }
-    if (can('read') || can('update')) {
+    {
       const attachmentLabel = t('hooks.recordActions.attachment')
       const attachmentCount = resolveAttachmentCount(record)
       items.push({

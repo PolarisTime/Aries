@@ -9,7 +9,6 @@ import {
   updateAttachmentBindings,
   uploadAttachment,
 } from '@/api/business'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import { asString } from '@/utils/type-narrowing'
@@ -22,7 +21,6 @@ import {
 interface UseModuleAttachmentModalParams {
   open: boolean
   moduleKey: string
-  resourceKey?: string
   recordId: string
 }
 
@@ -64,12 +62,9 @@ async function fetchAttachmentList(moduleKey: string, recordId: string) {
 export function useModuleAttachmentModal({
   open,
   moduleKey,
-  resourceKey,
   recordId,
 }: UseModuleAttachmentModalParams) {
   const { t } = useTranslation()
-  const can = usePermissionStore((state) => state.can)
-  const resolvedResource = resourceKey || moduleKey
   const [state, setState] = useReducer(
     (prev: AttachmentModalState, patch: AttachmentModalPatch) => ({
       ...prev,
@@ -91,9 +86,6 @@ export function useModuleAttachmentModal({
   } = state
   const pasteZoneRef = useRef<HTMLDivElement | null>(null)
   const objectUrlRef = useRef<Set<string>>(new Set())
-  const canCreateAttachment = can(resolvedResource, 'update')
-  const canDeleteAttachment = can(resolvedResource, 'delete')
-
   const createTrackedObjectUrl = useCallback((blob: Blob) => {
     const objectUrl = URL.createObjectURL(blob)
     objectUrlRef.current.add(objectUrl)
@@ -380,7 +372,7 @@ export function useModuleAttachmentModal({
         .map((item) => item.getAsFile())
         .filter((file): file is File => Boolean(file))
 
-      if (!canCreateAttachment || !files.length) {
+      if (!files.length) {
         return
       }
 
@@ -396,7 +388,7 @@ export function useModuleAttachmentModal({
     return () => {
       window.removeEventListener('paste', handlePaste)
     }
-  }, [canCreateAttachment, open, uploadAndBindAttachment])
+  }, [open, uploadAndBindAttachment])
 
   useEffect(() => {
     return () => {
@@ -406,8 +398,6 @@ export function useModuleAttachmentModal({
 
   return {
     attachments,
-    canCreateAttachment,
-    canDeleteAttachment,
     handleDelete,
     handleDownload,
     handleImagePreviewChange,

@@ -276,7 +276,7 @@ export function ModuleEditorWorkspace({
           itemColumns={itemColumns}
           itemColumnOrder={itemColumnOrder}
           visibleItemColumnKeys={visibleItemColumnKeys}
-          permissions={{
+          capabilities={{
             addManualItems: canAddManualItemsForCurrentRecord,
             importParentItems: canImportParentItems,
             save: canSave,

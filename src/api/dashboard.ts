@@ -6,10 +6,8 @@ export interface DashboardSummary {
   companyName: string | null
   userName: string
   loginName: string
-  roleName: string | null
   visibleMenuCount: number
   moduleCount: number
-  actionCount: number
   activeSessionCount: number
   lastLoginAt: string | null
   serverTime: string

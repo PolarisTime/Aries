@@ -27,7 +27,7 @@ interface Props {
   itemColumns: TableColumnsType<ModuleLineItem>
   itemColumnOrder: string[]
   visibleItemColumnKeys: string[]
-  permissions: {
+  capabilities: {
     addManualItems: boolean
     importParentItems: boolean
     save: boolean
@@ -59,7 +59,7 @@ export function ModuleEditorItemsSection({
   itemColumns,
   itemColumnOrder,
   visibleItemColumnKeys,
-  permissions,
+  capabilities,
   saving,
   showFooterActions = true,
   onAddItem,
@@ -114,7 +114,7 @@ export function ModuleEditorItemsSection({
           itemColumns={config.itemColumns}
           actions={
             <>
-              {permissions.addManualItems && (
+              {capabilities.addManualItems && (
                 <Button
                   type="primary"
                   className="overlay-action-button"
@@ -124,7 +124,7 @@ export function ModuleEditorItemsSection({
                   {t('modules.itemsSection.addItem')}
                 </Button>
               )}
-              {permissions.importParentItems && (
+              {capabilities.importParentItems && (
                 <Button
                   className="overlay-action-button"
                   icon={<ImportOutlined />}
@@ -161,8 +161,8 @@ export function ModuleEditorItemsSection({
               )}
               {showFooterActions ? (
                 <EditorFooterActions
-                  canSave={permissions.save}
-                  canAudit={permissions.audit}
+                  canSave={capabilities.save}
+                  canAudit={capabilities.audit}
                   saving={saving}
                   onCancel={onCancel}
                   onSave={onSave}

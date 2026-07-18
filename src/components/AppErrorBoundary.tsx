@@ -95,7 +95,7 @@ function getStatus(error: Error): '403' | '500' | 'error' {
 }
 
 function getMessage(error: Error, status: string): string {
-  if (status === '403') return i18next.t('errorBoundary.noPermission')
+  if (status === '403') return i18next.t('errorBoundary.accessDenied')
   if (status === '500') return i18next.t('errorBoundary.serverBusy')
   const msg = error.message
   if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))

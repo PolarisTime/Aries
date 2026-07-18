@@ -5,9 +5,7 @@ import { reloadCustomerOptions } from '@/api/customer-options'
 import { reloadMaterialCategories } from '@/api/material-categories'
 import { reloadSupplierOptions } from '@/api/supplier-options'
 import { reloadWarehouseOptions } from '@/api/warehouse-options'
-import { loadPermissionCatalog } from '@/constants/resource-permissions'
 import { useAuthStore } from '@/stores/authStore'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { useSystemMenuStore } from '@/stores/systemMenuStore'
 import { logger } from '@/utils/logger'
 
@@ -50,26 +48,8 @@ export function useAuthAppSync() {
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const authReady = useAuthStore((state) => state.authReady)
-  const syncFromUser = usePermissionStore((state) => state.syncFromUser)
-  const clearPermissions = usePermissionStore((state) => state.clearPermissions)
   const loadMenus = useSystemMenuStore((state) => state.loadMenus)
   const clearMenus = useSystemMenuStore((state) => state.clearMenus)
-
-  useEffect(() => {
-    if (user) {
-      syncFromUser(user)
-      if (
-        authReady &&
-        usePermissionStore.getState().can('permission', 'read')
-      ) {
-        return runWhenIdle(() => {
-          void loadPermissionCatalog()
-        })
-      }
-      return
-    }
-    clearPermissions()
-  }, [authReady, clearPermissions, syncFromUser, user])
 
   useEffect(() => {
     if (!authReady || !token || !user) {

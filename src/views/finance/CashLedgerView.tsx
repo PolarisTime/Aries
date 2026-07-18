@@ -29,7 +29,6 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import { usePermissionStore } from '@/stores/permissionStore'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
 
@@ -72,7 +71,6 @@ function displayText(value: unknown) {
 }
 
 export function CashLedgerView() {
-  const can = usePermissionStore((state) => state.can)
   const [settlementCompanyId, setSettlementCompanyId] = useState<EntityId>()
   const [startDate, setStartDate] = useState<string>()
   const [endDate, setEndDate] = useState<string>()
@@ -97,7 +95,6 @@ export function CashLedgerView() {
     carriers: counterpartyType === '物流商',
   })
   const queryEnabled = Boolean(settlementCompanyId)
-  const canExport = can('cash-ledger', 'export')
 
   const counterpartyOptions = useMemo(() => {
     if (counterpartyType === '客户') {
@@ -289,14 +286,13 @@ export function CashLedgerView() {
             </div>
           </div>
           <div className="cash-ledger-actions">
-            <Tooltip title={canExport ? '导出当前筛选结果' : '无导出权限'}>
+            <Tooltip title="导出当前筛选结果">
               <span>
                 <Button
                   icon={<DownloadOutlined />}
                   loading={exportMutation.isPending}
                   disabled={
                     !queryEnabled ||
-                    !canExport ||
                     ledgerQuery.isFetching ||
                     exportMutation.isPending
                   }

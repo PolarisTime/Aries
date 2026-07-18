@@ -62,12 +62,6 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
   department: async () =>
     (await import('@/config/business-pages/system-organization-pages'))
       .systemOrganizationPageConfigs,
-  'system-permission-management': async () =>
-    (await import('@/config/business-pages/system-access-pages'))
-      .systemAccessPageConfigs,
-  permission: async () =>
-    (await import('@/config/business-pages/system-access-pages'))
-      .systemAccessPageConfigs,
 }
 
 const loadedConfigCache = new Map<string, ModulePageConfig>()

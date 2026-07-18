@@ -21,7 +21,6 @@ interface Props {
   switchRows: ModuleRecord[]
   loading: boolean
   toggling: boolean
-  canEdit: boolean
   onKeywordChange: (value: string) => void
   onStatusFilterChange: (value?: string) => void
   onRefresh: () => void
@@ -61,7 +60,6 @@ export function GeneralSettingsTableCard({
   switchRows,
   loading,
   toggling,
-  canEdit,
   onKeywordChange,
   onStatusFilterChange,
   onRefresh,
@@ -154,7 +152,6 @@ export function GeneralSettingsTableCard({
                             <Button
                               type="text"
                               className="general-settings-value-button"
-                              disabled={!canEdit}
                               aria-label={`${t('system.generalSettingsTable.edit')} ${settingName}`}
                               onClick={() => onEdit(record)}
                             >
@@ -211,7 +208,6 @@ export function GeneralSettingsTableCard({
                   <Switch
                     checked={enabled}
                     loading={toggling}
-                    disabled={!canEdit}
                     aria-label={`${settingName} ${stateText}`}
                     onChange={() => onToggle(record)}
                   />
@@ -233,7 +229,6 @@ export function GeneralSettingsTableCard({
                       type="text"
                       size="small"
                       icon={<EditOutlined />}
-                      disabled={!canEdit}
                       aria-label={`${t('system.generalSettingsTable.edit')} ${settingName}`}
                       onClick={() => onEdit(record)}
                     />

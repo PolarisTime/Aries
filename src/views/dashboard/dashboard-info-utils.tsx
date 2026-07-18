@@ -1,5 +1,4 @@
 import {
-  ApartmentOutlined,
   ClockCircleOutlined,
   SafetyOutlined,
   ShopOutlined,
@@ -26,12 +25,6 @@ export function buildDashboardInfoItems(
       label: t('dashboard.info.loginName'),
       value: summary?.loginName || '—',
       icon: SafetyOutlined,
-    },
-    {
-      key: 'roleName',
-      label: t('dashboard.info.roleName'),
-      value: summary?.roleName || t('dashboard.info.unassigned'),
-      icon: ApartmentOutlined,
     },
     {
       key: 'companyName',

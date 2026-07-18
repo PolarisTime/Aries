@@ -15,18 +15,7 @@ export type ModuleActionKind =
   | 'exportRows'
   | 'openFreightPickupList'
   | 'openFreightSummary'
-  | 'navigateToRoleActionEditor'
   | 'none'
-
-export type PermissionActionCode =
-  | 'read'
-  | 'create'
-  | 'update'
-  | 'delete'
-  | 'audit'
-  | 'export'
-  | 'print'
-  | 'manage_permissions'
 
 export function resolveModuleActionKind(options: {
   moduleKey: string
@@ -69,83 +58,6 @@ export function resolveModuleActionKind(options: {
   }
 
   return 'none'
-}
-
-export function resolveModuleActionPermissionCodes(options: {
-  moduleKey?: string
-  actionKey?: string
-  actionLabel: string
-}): PermissionActionCode[] {
-  const { moduleKey, actionKey, actionLabel } = options
-
-  if (moduleKey && actionKey) {
-    const permissionCodesByActionKey = getBehaviorValue(
-      moduleKey,
-      'permissionCodesByActionKey',
-    ) as Record<string, PermissionActionCode[]> | undefined
-    const mappedByKey = permissionCodesByActionKey?.[actionKey]
-    if (mappedByKey?.length) {
-      return mappedByKey
-    }
-  }
-
-  if (actionLabel === '配置权限') {
-    return ['manage_permissions']
-  }
-
-  if (actionLabel === '页面上传命名规则') {
-    return ['update']
-  }
-
-  if (actionLabel === '生成提货清单') {
-    return ['export']
-  }
-
-  if (actionLabel === '模板下载') {
-    return ['export']
-  }
-
-  if (actionLabel === '确认' || actionLabel === '反确认') {
-    return ['audit']
-  }
-
-  if (actionLabel === '核准' || actionLabel === '反核准') {
-    return ['audit']
-  }
-
-  if (actionLabel.includes('导出')) {
-    return ['export']
-  }
-
-  if (actionLabel.includes('打印')) {
-    return ['print']
-  }
-
-  if (actionLabel.includes('删除')) {
-    return ['delete']
-  }
-
-  if (actionLabel.includes('审核')) {
-    return ['audit']
-  }
-
-  if (actionLabel.includes('编辑') || actionLabel.includes('附件')) {
-    return ['update']
-  }
-
-  if (actionLabel.includes('导入')) {
-    return ['create', 'update']
-  }
-
-  if (actionLabel.includes('新增') || actionLabel.includes('生成')) {
-    return ['create']
-  }
-
-  if (actionLabel.includes('查看')) {
-    return ['read']
-  }
-
-  return ['read']
 }
 
 export function resolveStatusChangeActionLabel(

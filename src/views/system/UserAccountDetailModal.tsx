@@ -43,18 +43,6 @@ export function UserAccountDetailModal({
             <Descriptions.Item label={t('system.userAccountDetail.department')}>
               {record.departmentName || '--'}
             </Descriptions.Item>
-            <Descriptions.Item
-              label={t('system.userAccountDetail.roles')}
-              span="filled"
-            >
-              {record.roleNames?.length ? record.roleNames.join('、') : '--'}
-            </Descriptions.Item>
-            <Descriptions.Item
-              label={t('system.userAccountDetail.permSummary')}
-              span="filled"
-            >
-              {record.permissionSummary || '--'}
-            </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.status')}>
               <StatusTag
                 status={record.status}

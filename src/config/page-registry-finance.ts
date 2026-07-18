@@ -48,7 +48,5 @@ export const financePageDefinitions: AppPageDefinition[] = [
     view: 'cash-ledger',
     icon: 'AccountBookOutlined',
     menuParent: 'finance',
-    resourceKey: 'cash-ledger',
-    accessResources: ['cash-ledger'],
   },
 ]

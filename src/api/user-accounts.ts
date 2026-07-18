@@ -2,7 +2,6 @@ import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type {
   DepartmentOptionRecord,
-  RoleOptionRecord,
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountLoginNameAvailability,
@@ -90,13 +89,6 @@ export async function updateUserAccount(
 export async function deleteUserAccount(id: string) {
   const response = await http.delete<ApiResponse<null>>(buildUserAccountUrl(id))
   return assertApiSuccess(response, getApiMessage('deleteUserFailed'))
-}
-
-export async function listRoleOptions() {
-  const response = await http.get<ApiResponse<RoleOptionRecord[]>>(
-    ENDPOINTS.ROLE_SETTINGS_OPTIONS,
-  )
-  return assertApiSuccess(response, getApiMessage('loadRolesFailed')).data || []
 }
 
 export async function listDepartmentOptions() {

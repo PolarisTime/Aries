@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { deleteUserAccount } from '@/api/user-accounts'
+import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { useActivePageEnabled } from '@/hooks/useActivePageEnabled'
 import { useRequestError } from '@/hooks/useRequestError'
-import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type { UserAccountRecord } from '@/shared/schemas'
 import { message, modal } from '@/utils/antd-app'
 import { UserAccountCreateResultModal } from '@/views/system/UserAccountCreateResultModal'
@@ -16,22 +15,10 @@ import { useUserAccountDetail } from '@/views/system/useUserAccountDetail'
 import { useUserAccountEditor } from '@/views/system/useUserAccountEditor'
 import { useUserAccountListState } from '@/views/system/useUserAccountListState'
 
-interface UserAccountManagementViewProps {
-  active?: boolean
-}
-
-export function UserAccountManagementView({
-  active = true,
-}: UserAccountManagementViewProps) {
+export function UserAccountManagementView() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const {
-    canCreate,
-    canUpdate: canEdit,
-    canDelete,
-  } = useResourcePermissions('user-account')
-  const queryEnabled = useActivePageEnabled(active)
 
   const {
     keyword,
@@ -46,7 +33,7 @@ export function UserAccountManagementView({
     handleStatusFilterChange,
     handlePageChange,
     refresh,
-  } = useUserAccountListState(queryEnabled)
+  } = useUserAccountListState()
 
   const {
     form,
@@ -57,9 +44,6 @@ export function UserAccountManagementView({
     loginNameValidationMessage,
     loginNameChecking,
     departmentOptions,
-    roleOptions,
-    selectedRoleIds,
-    selectedRoleSummaries,
     createResultOpen,
     createResult,
     savePending,
@@ -69,9 +53,7 @@ export function UserAccountManagementView({
     handleSave,
     closeEditor,
     closeCreateResult,
-  } = useUserAccountEditor({
-    enabled: queryEnabled,
-  })
+  } = useUserAccountEditor()
 
   const {
     detailOpen,
@@ -115,78 +97,74 @@ export function UserAccountManagementView({
   }
 
   return (
-    <div className="page-stack">
-      <UserAccountTableCard
-        keyword={keyword}
-        statusFilter={statusFilter}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalElements={totalElements}
-        users={users}
-        loading={isLoading}
-        canCreate={canCreate}
-        canEdit={canEdit}
-        canDelete={canDelete}
-        getStatusColor={getUserAccountStatusColor}
-        onKeywordChange={setKeyword}
-        onSearch={handleSearch}
-        onStatusFilterChange={handleStatusFilterChange}
-        onRefresh={refresh}
-        onCreate={openCreateModal}
-        onView={(record) => {
-          void openDetailModal(record)
-        }}
-        onEdit={(record) => {
-          void openEditModal(record)
-        }}
-        onDelete={handleDelete}
-        onPageChange={handlePageChange}
-      />
-
-      {editorOpen ? (
-        <UserAccountEditorModal
-          open={editorOpen}
-          mode={editorMode}
-          loading={editorLoading}
-          saving={savePending}
-          form={form}
-          editingId={editingId}
-          loginNameValidationMessage={loginNameValidationMessage}
-          loginNameChecking={loginNameChecking}
-          departmentOptions={departmentOptions}
-          roleOptions={roleOptions}
-          selectedRoleIds={selectedRoleIds}
-          selectedRoleSummaries={selectedRoleSummaries}
-          onCheckLoginName={(loginName, excludeUserId) => {
-            void runLoginNameCheck(loginName, excludeUserId)
-          }}
-          onSave={() => {
-            void handleSave()
-          }}
-          onClose={closeEditor}
-        />
-      ) : null}
-
-      {detailOpen ? (
-        <UserAccountDetailModal
-          open={detailOpen}
-          loading={detailLoading}
-          record={detailRecord}
+    <AppProPage title={t('system.userAccountTable.title')}>
+      <div className="page-stack">
+        <UserAccountTableCard
+          keyword={keyword}
+          statusFilter={statusFilter}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalElements={totalElements}
+          users={users}
+          loading={isLoading}
           getStatusColor={getUserAccountStatusColor}
-          onClose={closeDetailModal}
-        />
-      ) : null}
-
-      {createResultOpen ? (
-        <UserAccountCreateResultModal
-          open={createResultOpen}
-          result={createResult}
-          onCopy={(value, label) => {
-            void copyText(value, label)
+          onKeywordChange={setKeyword}
+          onSearch={handleSearch}
+          onStatusFilterChange={handleStatusFilterChange}
+          onRefresh={refresh}
+          onCreate={openCreateModal}
+          onView={(record) => {
+            void openDetailModal(record)
           }}
-          onClose={closeCreateResult}
+          onEdit={(record) => {
+            void openEditModal(record)
+          }}
+          onDelete={handleDelete}
+          onPageChange={handlePageChange}
         />
-      ) : null}
-    </div>
+
+        {editorOpen ? (
+          <UserAccountEditorModal
+            open={editorOpen}
+            mode={editorMode}
+            loading={editorLoading}
+            saving={savePending}
+            form={form}
+            editingId={editingId}
+            loginNameValidationMessage={loginNameValidationMessage}
+            loginNameChecking={loginNameChecking}
+            departmentOptions={departmentOptions}
+            onCheckLoginName={(loginName, excludeUserId) => {
+              void runLoginNameCheck(loginName, excludeUserId)
+            }}
+            onSave={() => {
+              void handleSave()
+            }}
+            onClose={closeEditor}
+          />
+        ) : null}
+
+        {detailOpen ? (
+          <UserAccountDetailModal
+            open={detailOpen}
+            loading={detailLoading}
+            record={detailRecord}
+            getStatusColor={getUserAccountStatusColor}
+            onClose={closeDetailModal}
+          />
+        ) : null}
+
+        {createResultOpen ? (
+          <UserAccountCreateResultModal
+            open={createResultOpen}
+            result={createResult}
+            onCopy={(value, label) => {
+              void copyText(value, label)
+            }}
+            onClose={closeCreateResult}
+          />
+        ) : null}
+      </div>
+    </AppProPage>
   )
 }

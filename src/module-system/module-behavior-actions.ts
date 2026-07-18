@@ -25,17 +25,3 @@ registerModuleBehavior('freight-bill', {
     生成提货清单: 'openFreightPickupList',
   },
 })
-
-registerModuleBehavior('freight-bill', {
-  permissionCodesByActionKey: {
-    create_freight_bill: ['create'],
-    generate_pickup_list: ['export'],
-  },
-})
-
-registerModuleBehavior('freight-statement', {
-  permissionCodesByActionKey: {
-    generate_freight_statement: ['create'],
-    view_freight_summary: ['read'],
-  },
-})

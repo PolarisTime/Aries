@@ -1,24 +1,10 @@
 import type { FormInstance } from 'antd'
-import {
-  Col,
-  Form,
-  Input,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-} from 'antd'
+import { Col, Form, Input, Row, Select, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
-import {
-  enabledStatusOptions,
-  enabledStatusValues,
-} from '@/constants/module-options'
+import { enabledStatusOptions } from '@/constants/module-options'
 import { getFormString } from '@/lib/antd-form'
-import type { DepartmentOptionRecord, RoleOptionRecord } from '@/shared/schemas'
-import { useAuthStore } from '@/stores/authStore'
+import type { DepartmentOptionRecord } from '@/shared/schemas'
 
 type EditorMode = 'create' | 'edit'
 
@@ -32,9 +18,6 @@ interface Props {
   loginNameValidationMessage: string
   loginNameChecking: boolean
   departmentOptions: DepartmentOptionRecord[]
-  roleOptions: RoleOptionRecord[]
-  selectedRoleIds: string[]
-  selectedRoleSummaries: string[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
   onSave: () => void
   onClose: () => void
@@ -49,28 +32,12 @@ export function UserAccountEditorModal({
   loginNameValidationMessage,
   loginNameChecking,
   departmentOptions,
-  roleOptions,
-  selectedRoleIds,
-  selectedRoleSummaries,
   onCheckLoginName,
   onSave,
   onClose,
 }: Props) {
   const { t } = useTranslation()
   const isCreate = mode === 'create'
-  const currentUserId = useAuthStore((state) => state.user?.id)
-  const isEditingOwnAccount =
-    mode === 'edit' &&
-    editingId != null &&
-    String(currentUserId ?? '') === String(editingId)
-  const roleOptionsById = new Map(
-    roleOptions.map((role) => [String(role.id), role]),
-  )
-  const selectedRoleConflictIds = new Set(
-    selectedRoleIds.flatMap((roleId) =>
-      (roleOptionsById.get(roleId)?.conflictRoleIds || []).map(String),
-    ),
-  )
   return (
     <FormModal
       title={
@@ -214,62 +181,15 @@ export function UserAccountEditorModal({
                   />
                 </Form.Item>
               </Col>
-            </Row>
-          </div>
-          <div className="form-section">
-            <div className="form-section-title">
-              {t('system.userAccountEditor.permConfig')}
-            </div>
-            <Row gutter={[24, 0]}>
-              <Col xs={24} md={isCreate ? 18 : 24}>
-                <Form.Item
-                  name="roleIds"
-                  label={t('system.userAccountEditor.roles')}
-                  extra={
-                    isEditingOwnAccount
-                      ? t('system.userAccountEditor.ownRolesLocked')
-                      : undefined
-                  }
-                  getValueFromEvent={(ids: (string | number)[]) =>
-                    ids?.map(String)
-                  }
-                >
-                  <Select
-                    mode="multiple"
-                    placeholder={t('system.userAccountEditor.rolesPlaceholder')}
-                    maxTagCount={5}
-                    disabled={isEditingOwnAccount}
-                    options={roleOptions.map((role) => {
-                      const roleId = String(role.id)
-                      const isSelected = selectedRoleIds.includes(roleId)
-                      const isDisabled =
-                        role.status === enabledStatusValues[1] && !isSelected
-                      const hasConflict =
-                        !isSelected && selectedRoleConflictIds.has(roleId)
-                      const isUnassignable =
-                        !isSelected && role.assignable === false
-                      return {
-                        label: hasConflict
-                          ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
-                          : isUnassignable
-                            ? `${role.roleName} (${t('common.noPermission')})`
-                            : role.roleName,
-                        value: roleId,
-                        disabled: isDisabled || hasConflict || isUnassignable,
-                      }
-                    })}
-                  />
-                </Form.Item>
-              </Col>
               {isCreate && (
-                <Col xs={24} md={6}>
+                <Col xs={24} sm={12}>
                   <Form.Item
                     name="status"
-                    label={t('system.userAccountEditor.status2')}
+                    label={t('system.userAccountEditor.status')}
                   >
                     <Select
                       placeholder={t(
-                        'system.userAccountEditor.statusPlaceholder2',
+                        'system.userAccountEditor.statusPlaceholder',
                       )}
                       options={enabledStatusOptions}
                     />
@@ -277,21 +197,6 @@ export function UserAccountEditorModal({
                 </Col>
               )}
             </Row>
-            <Form.Item label={t('system.userAccountEditor.permSummary')}>
-              {selectedRoleSummaries.length > 0 ? (
-                <Space wrap>
-                  {selectedRoleSummaries.map((summary) => (
-                    <Tag key={summary} color="blue">
-                      {summary}
-                    </Tag>
-                  ))}
-                </Space>
-              ) : (
-                <Typography.Text type="secondary">
-                  {t('system.userAccountEditor.permSummaryHint')}
-                </Typography.Text>
-              )}
-            </Form.Item>
           </div>
           <div className="form-section">
             <div className="form-section-title">

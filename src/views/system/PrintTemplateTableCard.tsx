@@ -38,9 +38,6 @@ interface Props {
   activeTemplateId?: string
   templates: PrintTemplateRecord[]
   loading: boolean
-  canCreate: boolean
-  canEdit: boolean
-  canDelete: boolean
   uploadPending: boolean
   onBillTypeChange: (value: string) => void
   onRefresh: () => void
@@ -99,9 +96,6 @@ function PrintTemplateSyncTag({
 
 interface PrintTemplateActionsProps {
   record: PrintTemplateRecord
-  canCreate: boolean
-  canEdit: boolean
-  canDelete: boolean
   uploadPending: boolean
   labels: {
     copy: string
@@ -120,9 +114,6 @@ interface PrintTemplateActionsProps {
 
 function PrintTemplateActions({
   record,
-  canCreate,
-  canEdit,
-  canDelete,
   uploadPending,
   labels,
   onCopy,
@@ -131,8 +122,8 @@ function PrintTemplateActions({
   onPreview,
   onUploadJson,
 }: PrintTemplateActionsProps) {
-  const canUploadJson = canEdit && record.templateType === 'PDF_FORM'
-  const canEditRecord = canEdit && record.syncMode !== 'FILE'
+  const canUploadJson = record.templateType === 'PDF_FORM'
+  const canEditRecord = record.syncMode !== 'FILE'
 
   return (
     <Space size={4}>
@@ -147,32 +138,28 @@ function PrintTemplateActions({
           }}
         />
       </Tooltip>
-      {canEdit && (
-        <Tooltip title={canEditRecord ? labels.edit : labels.editHint}>
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            disabled={!canEditRecord}
-            onClick={(event) => {
-              event.stopPropagation()
-              onEdit(record)
-            }}
-          />
-        </Tooltip>
-      )}
+      <Tooltip title={canEditRecord ? labels.edit : labels.editHint}>
+        <Button
+          type="text"
+          size="small"
+          icon={<EditOutlined />}
+          disabled={!canEditRecord}
+          onClick={(event) => {
+            event.stopPropagation()
+            onEdit(record)
+          }}
+        />
+      </Tooltip>
       <Dropdown
         trigger={['click']}
         menu={{
           items: [
-            canCreate
-              ? {
-                  key: 'copy',
-                  icon: <CopyOutlined />,
-                  label: labels.copy,
-                  onClick: () => onCopy(record),
-                }
-              : null,
+            {
+              key: 'copy',
+              icon: <CopyOutlined />,
+              label: labels.copy,
+              onClick: () => onCopy(record),
+            },
             canUploadJson
               ? {
                   key: 'upload',
@@ -195,15 +182,13 @@ function PrintTemplateActions({
                   disabled: uploadPending,
                 }
               : null,
-            canDelete
-              ? {
-                  key: 'delete',
-                  danger: true,
-                  icon: <DeleteOutlined />,
-                  label: labels.delete,
-                  onClick: () => onDelete(record),
-                }
-              : null,
+            {
+              key: 'delete',
+              danger: true,
+              icon: <DeleteOutlined />,
+              label: labels.delete,
+              onClick: () => onDelete(record),
+            },
           ].filter(Boolean),
         }}
       >
@@ -223,9 +208,6 @@ export function PrintTemplateTableCard({
   activeTemplateId,
   templates,
   loading,
-  canCreate,
-  canEdit,
-  canDelete,
   uploadPending,
   onBillTypeChange,
   onRefresh,
@@ -263,7 +245,7 @@ export function PrintTemplateTableCard({
   })()
 
   const canEditRecord = (record: PrintTemplateRecord) =>
-    canEdit && record.syncMode !== 'FILE'
+    record.syncMode !== 'FILE'
   const statusMap = {
     active: {
       color: 'green',
@@ -301,11 +283,9 @@ export function PrintTemplateTableCard({
             <Button icon={<ReloadOutlined />} onClick={onRefresh}>
               {t('common.refresh')}
             </Button>
-            {canCreate && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-                {t('system.printTemplate.newTemplate')}
-              </Button>
-            )}
+            <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+              {t('system.printTemplate.newTemplate')}
+            </Button>
           </Space>
         }
       >
@@ -372,9 +352,6 @@ export function PrintTemplateTableCard({
                         </button>
                         <PrintTemplateActions
                           record={record}
-                          canCreate={canCreate}
-                          canEdit={canEdit}
-                          canDelete={canDelete}
                           uploadPending={uploadPending}
                           labels={actionLabels}
                           onCopy={onCopy}
@@ -412,15 +389,13 @@ export function PrintTemplateTableCard({
                       >
                         {t('system.printTemplate.preview')}
                       </Button>
-                      {canEdit && (
-                        <Button
-                          icon={<EditOutlined />}
-                          disabled={!canEditRecord(activeTemplate)}
-                          onClick={() => onEdit(activeTemplate)}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                      )}
+                      <Button
+                        icon={<EditOutlined />}
+                        disabled={!canEditRecord(activeTemplate)}
+                        onClick={() => onEdit(activeTemplate)}
+                      >
+                        {t('common.edit')}
+                      </Button>
                     </Space>
                   }
                 >

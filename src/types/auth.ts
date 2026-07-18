@@ -3,7 +3,6 @@ export type {
   LoginPayload,
   LoginResponseData,
   LoginUser,
-  ResourcePermission,
 } from '@/shared/schemas'
 
 import type { LoginResponseData } from '@/shared/schemas'

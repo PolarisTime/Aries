@@ -30,7 +30,6 @@ import {
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { useSystemMenuStore } from '@/stores/systemMenuStore'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
@@ -163,7 +162,6 @@ export function AppLayout() {
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const signOut = useAuthStore((state) => state.signOut)
-  const can = usePermissionStore((state) => state.can)
   const menus = useSystemMenuStore((state) => state.menus)
 
   const [collapsed, setCollapsed] = useState(false)
@@ -207,7 +205,6 @@ export function AppLayout() {
     resolveMenuPath,
   } = useAppLayoutMenuState({
     activeMenuKey: routePageContext.activeMenuKey,
-    can,
     collapsed,
     menus,
   })
@@ -241,10 +238,6 @@ export function AppLayout() {
     handleSelect: handleGlobalSearchSelect,
     handleSubmit: handleGlobalSearchSubmit,
   } = useGlobalSearchSupport({
-    canAccessModule: (moduleKey: string) => {
-      const resourceKey = getPageDefinition(moduleKey)?.resourceKey || moduleKey
-      return can(resourceKey, 'read')
-    },
     onJump: handleJumpToSearchResult,
   })
 

@@ -16,13 +16,6 @@ export const enabledStatusOptions = createOptionList(enabledStatusValues)
 const statementStatusValues = ['待确认', '已确认'] as const
 export const statementStatusOptions = createOptionList(statementStatusValues)
 
-export const roleTypeValues = [
-  '平台角色',
-  '系统角色',
-  '业务角色',
-  '财务角色',
-] as const
-
 export function buildValueOptions(...values: string[]) {
   return createOptionList(values)
 }

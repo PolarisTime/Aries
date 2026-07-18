@@ -7,7 +7,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import {
-  Alert,
   Button,
   Card,
   Col,
@@ -38,7 +37,6 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { SETTLEMENT_TYPE, STATUS } from '@/constants/status-constants'
 import { useRequestError } from '@/hooks/useRequestError'
-import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import { validateForm } from '@/lib/antd-form'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
@@ -116,7 +114,6 @@ function buildPayload(values: CompanySettingFormValues) {
 
 interface CompanySettingsPageHeaderProps {
   loading: boolean
-  canSave: boolean
   saving: boolean
   onRefresh: () => void
   onSave: () => void
@@ -124,7 +121,6 @@ interface CompanySettingsPageHeaderProps {
 
 function CompanySettingsPageHeader({
   loading,
-  canSave,
   saving,
   onRefresh,
   onSave,
@@ -150,16 +146,14 @@ function CompanySettingsPageHeader({
         <Button loading={loading} icon={<ReloadOutlined />} onClick={onRefresh}>
           {t('common.refresh')}
         </Button>
-        {canSave ? (
-          <Button
-            type="primary"
-            loading={saving}
-            icon={<SaveOutlined />}
-            onClick={onSave}
-          >
-            {t('common.save')}
-          </Button>
-        ) : null}
+        <Button
+          type="primary"
+          loading={saving}
+          icon={<SaveOutlined />}
+          onClick={onSave}
+        >
+          {t('common.save')}
+        </Button>
       </Space>
     </Flex>
   )
@@ -168,8 +162,6 @@ function CompanySettingsPageHeader({
 interface CompanySubjectListProps {
   companies: CompanySettingProfile[]
   selectedId: string
-  canCreate: boolean
-  canDelete: boolean
   deletingId: string | null
   onCreate: () => void
   onDelete: (id: string) => void
@@ -179,8 +171,6 @@ interface CompanySubjectListProps {
 function CompanySubjectList({
   companies,
   selectedId,
-  canCreate,
-  canDelete,
   deletingId,
   onCreate,
   onDelete,
@@ -193,16 +183,14 @@ function CompanySubjectList({
       className="company-subject-selector-card"
       title={t('system.company.subjectList')}
       extra={
-        canCreate ? (
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={onCreate}
-          >
-            {t('system.company.addSubject')}
-          </Button>
-        ) : null
+        <Button
+          type="primary"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={onCreate}
+        >
+          {t('system.company.addSubject')}
+        </Button>
       }
     >
       {companies.length > 0 ? (
@@ -217,30 +205,26 @@ function CompanySubjectList({
               <List.Item
                 className={`company-subject-selector-item${active ? ' is-active' : ''}`}
                 key={item.id}
-                actions={
-                  canDelete
-                    ? [
-                        <Popconfirm
-                          key="delete"
-                          title={t('system.company.deleteSubject')}
-                          description={t('system.company.deleteSubjectConfirm')}
-                          okText={t('common.confirm')}
-                          cancelText={t('common.cancel')}
-                          onConfirm={() => onDelete(item.id)}
-                        >
-                          <Button
-                            danger
-                            type="text"
-                            size="small"
-                            loading={deletingId === item.id}
-                            icon={<DeleteOutlined />}
-                            aria-label={t('system.company.deleteSubject')}
-                            onClick={(event) => event.stopPropagation()}
-                          />
-                        </Popconfirm>,
-                      ]
-                    : undefined
-                }
+                actions={[
+                  <Popconfirm
+                    key="delete"
+                    title={t('system.company.deleteSubject')}
+                    description={t('system.company.deleteSubjectConfirm')}
+                    okText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    onConfirm={() => onDelete(item.id)}
+                  >
+                    <Button
+                      danger
+                      type="text"
+                      size="small"
+                      loading={deletingId === item.id}
+                      icon={<DeleteOutlined />}
+                      aria-label={t('system.company.deleteSubject')}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </Popconfirm>,
+                ]}
               >
                 <button
                   type="button"
@@ -279,7 +263,7 @@ function CompanySubjectList({
   )
 }
 
-function SubjectProfileFields({ canSave }: { canSave: boolean }) {
+function SubjectProfileFields() {
   const { t } = useTranslation()
   return (
     <Row gutter={[16, 0]}>
@@ -297,7 +281,6 @@ function SubjectProfileFields({ canSave }: { canSave: boolean }) {
         >
           <Input
             allowClear
-            disabled={!canSave}
             placeholder={t('system.companySubject.companyNamePlaceholder')}
           />
         </Form.Item>
@@ -316,7 +299,6 @@ function SubjectProfileFields({ canSave }: { canSave: boolean }) {
         >
           <Input
             allowClear
-            disabled={!canSave}
             placeholder={t('system.companySubject.taxNoPlaceholder')}
           />
         </Form.Item>
@@ -333,7 +315,6 @@ function SubjectProfileFields({ canSave }: { canSave: boolean }) {
           ]}
         >
           <Select
-            disabled={!canSave}
             options={[
               {
                 label: t('system.companySubject.statusNormal'),
@@ -351,7 +332,7 @@ function SubjectProfileFields({ canSave }: { canSave: boolean }) {
   )
 }
 
-function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
+function SettlementAccountsTable() {
   const { t } = useTranslation()
   return (
     <Form.List name="settlementAccounts">
@@ -372,7 +353,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
                 >
                   <Input
                     allowClear
-                    disabled={!canSave}
                     placeholder={t('system.company.accountNamePlaceholder')}
                   />
                 </Form.Item>
@@ -389,7 +369,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
                 className="company-settings-table-form-item"
               >
                 <Select
-                  disabled={!canSave}
                   options={[
                     {
                       label: t('system.company.usageGeneral'),
@@ -419,7 +398,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
               >
                 <Input
                   allowClear
-                  disabled={!canSave}
                   placeholder={t('system.company.bankNamePlaceholder')}
                 />
               </Form.Item>
@@ -436,7 +414,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
               >
                 <Input
                   allowClear
-                  disabled={!canSave}
                   placeholder={t('system.company.bankAccountPlaceholder')}
                 />
               </Form.Item>
@@ -452,7 +429,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
                 className="company-settings-table-form-item"
               >
                 <Select
-                  disabled={!canSave}
                   options={[
                     {
                       label: t('system.company.statusNormal'),
@@ -478,7 +454,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
               >
                 <Input
                   allowClear
-                  disabled={!canSave}
                   placeholder={t('system.company.remarkPlaceholder')}
                 />
               </Form.Item>
@@ -495,7 +470,6 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
                 danger
                 type="text"
                 size="small"
-                disabled={!canSave}
                 icon={<DeleteOutlined />}
                 onClick={() => remove(field.name)}
               />
@@ -519,15 +493,13 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     description={t('system.company.noSettlementAccounts')}
                   >
-                    {canSave ? (
-                      <Button
-                        size="small"
-                        icon={<PlusOutlined />}
-                        onClick={() => add(createEmptySettlementAccount())}
-                      >
-                        {t('system.company.addBank')}
-                      </Button>
-                    ) : null}
+                    <Button
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => add(createEmptySettlementAccount())}
+                    >
+                      {t('system.company.addBank')}
+                    </Button>
                   </Empty>
                 ),
               }}
@@ -539,13 +511,12 @@ function SettlementAccountsTable({ canSave }: { canSave: boolean }) {
   )
 }
 
-function CompanyRemarkField({ canSave }: { canSave: boolean }) {
+function CompanyRemarkField() {
   const { t } = useTranslation()
   return (
     <Form.Item name="remark" className="mb-0">
       <Input.TextArea
         allowClear
-        disabled={!canSave}
         rows={5}
         placeholder={t('system.company.subjectRemarkPlaceholder')}
       />
@@ -554,12 +525,6 @@ function CompanyRemarkField({ canSave }: { canSave: boolean }) {
 }
 
 interface CompanySettingsFormProps {
-  permissions: {
-    view: boolean
-    create: boolean
-    save: boolean
-    delete: boolean
-  }
   companies: CompanySettingProfile[]
   isLoading: boolean
   selectedId: string
@@ -570,7 +535,6 @@ interface CompanySettingsFormProps {
 }
 
 function CompanySettingsForm({
-  permissions,
   companies,
   isLoading,
   selectedId,
@@ -588,7 +552,6 @@ function CompanySettingsForm({
     [companies, selectedId],
   )
   const isDraft = selectedId === 'new'
-  const canEditCurrent = isDraft ? permissions.create : permissions.save
   const initialValues = useMemo(
     () => buildCompanySettingFormValues(selectedProfile),
     [selectedProfile],
@@ -653,11 +616,6 @@ function CompanySettingsForm({
   })
 
   const handleSave = async () => {
-    if (!canEditCurrent) {
-      message.warning(t('common.noPermission'))
-      return
-    }
-
     try {
       const values = await validateForm<CompanySettingFormValues>(form)
       const settlementAccounts = normalizeSubmittedSettlementAccounts(
@@ -687,12 +645,12 @@ function CompanySettingsForm({
     {
       key: 'profile',
       label: t('system.companySubject.sectionTitle'),
-      children: <SubjectProfileFields canSave={canEditCurrent} />,
+      children: <SubjectProfileFields />,
     },
     {
       key: 'banks',
       label: t('system.company.settlementBanks'),
-      extra: canEditCurrent ? (
+      extra: (
         <Button
           type="link"
           size="small"
@@ -704,13 +662,13 @@ function CompanySettingsForm({
         >
           {t('system.company.addBank')}
         </Button>
-      ) : null,
-      children: <SettlementAccountsTable canSave={canEditCurrent} />,
+      ),
+      children: <SettlementAccountsTable />,
     },
     {
       key: 'remark',
       label: t('system.company.supplementNote'),
-      children: <CompanyRemarkField canSave={canEditCurrent} />,
+      children: <CompanyRemarkField />,
     },
   ]
 
@@ -718,22 +676,12 @@ function CompanySettingsForm({
     <div className="company-settings-page">
       <CompanySettingsPageHeader
         loading={isLoading}
-        canSave={Boolean(selectedId) && canEditCurrent}
         saving={saveMutation.isPending}
         onRefresh={onRefresh}
         onSave={() => {
           void handleSave()
         }}
       />
-
-      {!permissions.view ? (
-        <Alert
-          type="warning"
-          showIcon
-          title={t('common.noPermission')}
-          description={t('system.company.noViewPermission')}
-        />
-      ) : null}
 
       {isLoading ? (
         <Card>
@@ -745,8 +693,6 @@ function CompanySettingsForm({
             <CompanySubjectList
               companies={companies}
               selectedId={selectedId}
-              canCreate={permissions.create}
-              canDelete={permissions.delete}
               deletingId={
                 deleteMutation.isPending
                   ? String(deleteMutation.variables ?? '')
@@ -778,7 +724,6 @@ function CompanySettingsForm({
                     <Button
                       type="primary"
                       loading={saveMutation.isPending}
-                      disabled={!canEditCurrent}
                       icon={<SaveOutlined />}
                       onClick={() => {
                         void handleSave()
@@ -795,15 +740,13 @@ function CompanySettingsForm({
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={t('system.company.noSubjects')}
                 >
-                  {permissions.create ? (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={onCreateDraft}
-                    >
-                      {t('system.company.addSubject')}
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={onCreateDraft}
+                  >
+                    {t('system.company.addSubject')}
+                  </Button>
                 </Empty>
               </Card>
             )}
@@ -816,24 +759,14 @@ function CompanySettingsForm({
 
 export function CompanySettingsView() {
   const queryClient = useQueryClient()
-  const {
-    canRead: canView,
-    canCreate,
-    canUpdate: canSave,
-    canDelete,
-  } = useResourcePermissions('company-setting')
   const [selectedId, setSelectedId] = useState('')
 
   const { data: companies = [], isLoading } = useQuery({
     queryKey: QUERY_KEYS.companySettings,
     queryFn: listCompanySettings,
-    enabled: canView,
   })
 
   const effectiveSelectedId = useMemo(() => {
-    if (!canView) {
-      return ''
-    }
     if (selectedId === 'new') {
       return selectedId
     }
@@ -841,16 +774,10 @@ export function CompanySettingsView() {
       return selectedId
     }
     return companies[0]?.id ?? ''
-  }, [canView, companies, selectedId])
+  }, [companies, selectedId])
 
   return (
     <CompanySettingsForm
-      permissions={{
-        view: canView,
-        create: canCreate,
-        save: canSave,
-        delete: canDelete,
-      }}
       companies={companies}
       isLoading={isLoading}
       selectedId={effectiveSelectedId}

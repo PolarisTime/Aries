@@ -67,9 +67,7 @@ export interface ModuleBehaviorConfig {
   extraScalarFields?: string[]
   includeAttachmentIds?: boolean
   supportsStatementLinking?: 'receipt' | 'payment'
-  showRoleLink?: boolean
   isSettingsModule?: boolean
   alertActionLink?: { text: string; to: string }
-  permissionCodesByActionKey?: Record<string, string[]>
   detailRoutePath?: string
 }

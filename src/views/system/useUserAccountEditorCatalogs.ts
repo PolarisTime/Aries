@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listDepartmentOptions, listRoleOptions } from '@/api/user-accounts'
+import { listDepartmentOptions } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
 
 interface Props {
@@ -7,12 +7,6 @@ interface Props {
 }
 
 export function useUserAccountEditorCatalogs({ enabled = true }: Props) {
-  const { data: roleOptions = [] } = useQuery({
-    queryKey: QUERY_KEYS.roleOptions,
-    queryFn: listRoleOptions,
-    enabled,
-  })
-
   const { data: departmentOptions = [] } = useQuery({
     queryKey: QUERY_KEYS.departmentOptions,
     queryFn: listDepartmentOptions,
@@ -21,6 +15,5 @@ export function useUserAccountEditorCatalogs({ enabled = true }: Props) {
 
   return {
     departmentOptions,
-    roleOptions,
   }
 }

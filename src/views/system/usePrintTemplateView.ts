@@ -16,7 +16,6 @@ import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
-import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type {
   PrintTemplateRecord,
   SavePrintTemplatePayload,
@@ -77,11 +76,6 @@ export function usePrintTemplateView() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const {
-    canCreate,
-    canUpdate: canEdit,
-    canDelete,
-  } = useResourcePermissions('print-template')
   const [state, setState] = useReducer(
     (prev: PrintTemplateState, patch: Partial<PrintTemplateState>) => ({
       ...prev,
@@ -173,10 +167,6 @@ export function usePrintTemplateView() {
   const refresh = useRefreshQuery(QUERY_KEYS.printTemplate)
 
   const openCreate = () => {
-    if (!canCreate) {
-      message.warning(t('common.noPermission'))
-      return
-    }
     form.resetFields()
     form.setFieldsValue({
       billType: selectedBillType,
@@ -199,10 +189,6 @@ export function usePrintTemplateView() {
   }
 
   const openEdit = (record: PrintTemplateRecord) => {
-    if (!canEdit) {
-      message.warning(t('common.noPermission'))
-      return
-    }
     if (record.syncMode === 'FILE') {
       message.warning(t('system.printTemplate.fileManagedEditHint'))
       return
@@ -234,10 +220,6 @@ export function usePrintTemplateView() {
   }
 
   const handleCopy = (record: PrintTemplateRecord) => {
-    if (!canCreate) {
-      message.warning(t('common.noPermission'))
-      return
-    }
     form.setFieldsValue({
       billType: record.billType || selectedBillType,
       templateName: buildPrintTemplateCopyName(record),
@@ -260,10 +242,6 @@ export function usePrintTemplateView() {
   }
 
   const handleDelete = (record: PrintTemplateRecord) => {
-    if (!canDelete) {
-      message.warning(t('common.noPermission'))
-      return
-    }
     modal.confirm({
       title: t('system.printTemplate.deleteTemplate'),
       content: t('system.printTemplate.deleteContent', {
@@ -281,10 +259,6 @@ export function usePrintTemplateView() {
   }
 
   const handleUploadJson = (record: PrintTemplateRecord, file: File) => {
-    if (!canEdit) {
-      message.warning(t('common.noPermission'))
-      return
-    }
     if (record.templateType !== 'PDF_FORM') {
       message.warning(t('system.printTemplate.uploadPdfFormOnly'))
       return
@@ -344,9 +318,6 @@ export function usePrintTemplateView() {
 
   return {
     activeTemplateId,
-    canCreate,
-    canDelete,
-    canEdit,
     editorOpen,
     form,
     handleCopy,

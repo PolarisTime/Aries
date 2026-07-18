@@ -1,9 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  type PermissionActionCode,
-  resolveModuleActionKind,
-  resolveModuleActionPermissionCodes,
-} from '@/module-system/module-adapter-actions'
+import { resolveModuleActionKind } from '@/module-system/module-adapter-actions'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,
@@ -17,7 +13,6 @@ interface Handlers {
   handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
-  navigateToRoleActionEditor: () => void
   openCreateEditor: () => Promise<void>
   openCustomerStatementGenerator: () => void
   openFreightPickupList: () => void
@@ -33,7 +28,6 @@ interface Props {
   selectedRowCount: number
   canUseBulkAuditActions: boolean
   canUseBulkDeleteActions: boolean
-  hasAnyModuleAction: (actionCodes: PermissionActionCode[]) => boolean
   handlers: Handlers
 }
 
@@ -49,19 +43,9 @@ export function useModuleToolbarActions({
   selectedRowCount,
   canUseBulkAuditActions,
   canUseBulkDeleteActions,
-  hasAnyModuleAction,
   handlers,
 }: Props) {
   const { t } = useTranslation()
-
-  const canUseAction = (action: ModuleActionDefinition) =>
-    hasAnyModuleAction(
-      resolveModuleActionPermissionCodes({
-        moduleKey,
-        actionKey: action.key,
-        actionLabel: action.label,
-      }),
-    )
 
   const bulkDeleteAction: ModuleActionDefinition | null =
     canUseBulkDeleteActions && selectedRowCount > 0
@@ -101,9 +85,6 @@ export function useModuleToolbarActions({
     }
     orderedActions.push(...bulkToolbarActions, ...remainingActions)
     return orderedActions.flatMap((action) => {
-      if (!canUseAction(action)) {
-        return []
-      }
       if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
         return []
       }
@@ -112,13 +93,6 @@ export function useModuleToolbarActions({
   })() satisfies ModuleActionDefinition[]
 
   const handleAction = async (action: ModuleActionDefinition) => {
-    if (!canUseAction(action)) {
-      message.warning(
-        t('hooks.toolbarActions.noPermission', { label: action.label }),
-      )
-      return
-    }
-
     const auditLabel = t('hooks.toolbarActions.audit')
     const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
     const deleteLabel = t('hooks.toolbarActions.delete')
@@ -166,9 +140,6 @@ export function useModuleToolbarActions({
       case 'openFreightSummary':
         await handlers.openFreightSummary()
         return
-      case 'navigateToRoleActionEditor':
-        handlers.navigateToRoleActionEditor()
-        return
       default:
         message.info(
           t('hooks.toolbarActions.noExtraLogic', { label: action.label }),
@@ -177,7 +148,6 @@ export function useModuleToolbarActions({
   }
 
   return {
-    canUseAction,
     handleAction,
     visibleToolbarActions,
   }

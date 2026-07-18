@@ -529,9 +529,3 @@ registerModuleBehavior('material', { supportsMaterialImport: true })
 
 registerModuleBehavior('department', { isSettingsModule: true })
 registerModuleBehavior('general-setting', { isSettingsModule: true })
-registerModuleBehavior('permission', {
-  alertActionLink: {
-    text: '前往角色权限配置 →',
-    to: '/access-control?tab=roles',
-  },
-})

@@ -23,11 +23,10 @@ export interface GlobalSearchSourceRecord {
   matchedByTrackId: boolean
 }
 
-interface AccessibleGlobalSearchOptions {
+interface GlobalSearchOptions {
   keyword: string
   moduleKeys: string[]
   pageConfigs: Record<string, ModulePageMeta>
-  canAccessModule: (moduleKey: string) => boolean
   searchModule: (
     moduleKey: string,
     keyword: string,
@@ -108,19 +107,14 @@ function getGlobalSearchRecordKey(record: ModuleRecord, primaryNoKey?: string) {
   return String(record.id || asString(record[primaryNoKey || 'id']))
 }
 
-export async function searchAccessibleModules(
-  options: AccessibleGlobalSearchOptions,
-) {
+export async function searchModules(options: GlobalSearchOptions) {
   const normalizedKeyword = options.keyword.trim()
   if (!normalizedKeyword) {
     return []
   }
 
-  const accessibleModuleKeys = options.moduleKeys.filter((moduleKey) =>
-    options.canAccessModule(moduleKey),
-  )
   const responseList = await Promise.all(
-    accessibleModuleKeys.map(async (moduleKey) => {
+    options.moduleKeys.map(async (moduleKey) => {
       try {
         const config = options.pageConfigs[moduleKey]
         if (!config) {

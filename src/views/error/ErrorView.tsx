@@ -76,7 +76,7 @@ function getErrorMessage(
   status: string,
   t: (key: string) => string,
 ): string {
-  if (status === '403') return t('error.noPermission')
+  if (status === '403') return t('error.accessDenied')
   if (status === '500') return t('error.serverBusy')
   if (error instanceof Error) {
     const msg = error.message

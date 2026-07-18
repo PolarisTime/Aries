@@ -42,14 +42,6 @@ const operationLogActionOptions = [
   },
   { label: i18next.t('modules.pages.operationLogOptions.save'), value: '保存' },
   {
-    label: i18next.t('modules.pages.operationLogOptions.changePassword'),
-    value: '修改密码',
-  },
-  {
-    label: i18next.t('modules.pages.operationLogOptions.editPermissions'),
-    value: '编辑权限',
-  },
-  {
     label: i18next.t('modules.pages.operationLogOptions.exportBackup'),
     value: '导出备份',
   },
@@ -81,12 +73,6 @@ const operationLogActionOptionsByModule: Record<
       value: '退出登录',
     },
   ],
-  个人设置: [
-    {
-      label: i18next.t('modules.pages.operationLogOptions.changePassword'),
-      value: '修改密码',
-    },
-  ],
   用户账户: [
     {
       label: i18next.t('modules.pages.operationLogOptions.create'),
@@ -99,42 +85,6 @@ const operationLogActionOptionsByModule: Record<
     {
       label: i18next.t('modules.pages.operationLogOptions.delete'),
       value: '删除',
-    },
-  ],
-  角色权限配置: [
-    {
-      label: i18next.t('modules.pages.operationLogOptions.create'),
-      value: '新增',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.edit'),
-      value: '编辑',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.delete'),
-      value: '删除',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.editPermissions'),
-      value: '编辑权限',
-    },
-  ],
-  角色设置: [
-    {
-      label: i18next.t('modules.pages.operationLogOptions.create'),
-      value: '新增',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.edit'),
-      value: '编辑',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.delete'),
-      value: '删除',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.editPermissions'),
-      value: '编辑权限',
     },
   ],
   数据库管理: [
@@ -174,10 +124,6 @@ export const operationLogModuleOptions = [
         value: '用户账户',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.rolePermissions'),
-        value: '角色权限配置',
-      },
-      {
         label: i18next.t('modules.pages.operationLogOptions.generalSettings'),
         value: '通用设置',
       },
@@ -193,14 +139,6 @@ export const operationLogModuleOptions = [
       {
         label: i18next.t('modules.pages.operationLogOptions.companyInfo'),
         value: '公司信息',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.accessControl'),
-        value: '权限管理',
-      },
-      {
-        label: i18next.t('modules.pages.operationLogOptions.rolePermissions'),
-        value: '角色权限配置',
       },
       {
         label: i18next.t('modules.pages.operationLogOptions.printTemplates'),

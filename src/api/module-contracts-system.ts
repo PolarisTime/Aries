@@ -28,11 +28,6 @@ export const systemModuleEndpointContracts: Record<
       },
     },
   },
-  permission: {
-    path: '/permissions',
-    readOnly: true,
-    nativeFilterKeys: ['keyword'],
-  },
   department: {
     path: '/departments',
     nativeFilterKeys: ['keyword', 'status'],

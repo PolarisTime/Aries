@@ -7,7 +7,6 @@ import { useModuleAttachmentModal } from './useModuleAttachmentModal'
 interface Props {
   open: boolean
   moduleKey: string
-  resourceKey?: string
   recordId: string
   onClose: () => void
 }
@@ -15,14 +14,12 @@ interface Props {
 export function ModuleAttachmentModal({
   open,
   moduleKey,
-  resourceKey,
   recordId,
   onClose,
 }: Props) {
   const modal = useModuleAttachmentModal({
     open,
     moduleKey,
-    resourceKey,
     recordId,
   })
 
@@ -36,7 +33,6 @@ export function ModuleAttachmentModal({
       afterOpenChange={modal.handleModalOpenChange}
     >
       <AttachmentUploadZone
-        canCreateAttachment={modal.canCreateAttachment}
         uploading={modal.uploading}
         uploadFileName={modal.uploadFileName}
         uploadProgress={modal.uploadProgress}
@@ -47,7 +43,6 @@ export function ModuleAttachmentModal({
       <Spin spinning={modal.loading}>
         <AttachmentList
           attachments={modal.attachments}
-          canDeleteAttachment={modal.canDeleteAttachment}
           onDelete={(id) => {
             void modal.handleDelete(id)
           }}

@@ -70,12 +70,6 @@ export function UserAccountCreateResultModal({
             </div>
             <div>{result.user.departmentName || '--'}</div>
           </div>
-          <div className="mb-4">
-            <div className="text-secondary text-xs">
-              {t('system.userAccount.roleNames')}
-            </div>
-            <div>{result.user.roleNames.join('、') || '--'}</div>
-          </div>
           <Typography.Text type="warning">
             {t('system.userAccount.savePasswordHint')}
           </Typography.Text>

@@ -7,18 +7,10 @@ export const loginPayloadSchema = z.object({
 })
 export type LoginPayload = z.infer<typeof loginPayloadSchema>
 
-const resourcePermissionSchema = z.object({
-  resource: z.string(),
-  actions: z.array(z.string()),
-})
-export type ResourcePermission = z.infer<typeof resourcePermissionSchema>
-
 const loginUserSchema = z.object({
   id: z.union([z.number(), z.string()]),
   loginName: z.string(),
   userName: z.string().optional(),
-  roleName: z.string().optional(),
-  permissions: z.array(resourcePermissionSchema).optional(),
 })
 export type LoginUser = z.infer<typeof loginUserSchema>
 

@@ -6,7 +6,6 @@ import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STATUS } from '@/constants/status-constants'
 import { useRequestError } from '@/hooks/useRequestError'
-import { useResourcePermissions } from '@/hooks/useResourcePermissions'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
@@ -46,8 +45,6 @@ const generalSettingsInitialState: GeneralSettingsState = {
 export function GeneralSettingsView() {
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const { canUpdate: canEdit } = useResourcePermissions('general-setting')
-
   const [state, setState] = useReducer(
     (prev: GeneralSettingsState, patch: Partial<GeneralSettingsState>) => ({
       ...prev,
@@ -82,10 +79,6 @@ export function GeneralSettingsView() {
   const refresh = useSystemSettingsRefresh()
 
   const openEditor = (record: ModuleRecord) => {
-    if (!canEdit) {
-      message.warning(t('common.noPermission'))
-      return
-    }
     setState({ editingRecord: record })
     form.setFieldsValue({
       settingCode: record.settingCode,
@@ -187,7 +180,6 @@ export function GeneralSettingsView() {
           basicSettingRows={basicSettingRows}
           switchRows={switchRows}
           loading={isLoading}
-          canEdit={canEdit}
           toggling={toggling}
           onKeywordChange={(value) => setState({ keyword: value })}
           onStatusFilterChange={(value) => setState({ statusFilter: value })}

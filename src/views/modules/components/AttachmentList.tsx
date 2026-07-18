@@ -17,7 +17,6 @@ import {
 
 interface AttachmentListProps {
   attachments: AttachmentRecord[]
-  canDeleteAttachment: boolean
   onDelete: (id: string) => void
   onDownload: (attachment: AttachmentRecord) => Promise<void>
   onOpenImagePreview: (attachment: AttachmentRecord) => Promise<void>
@@ -27,7 +26,6 @@ interface AttachmentListProps {
 
 export function AttachmentList({
   attachments,
-  canDeleteAttachment,
   onDelete,
   onDownload,
   onOpenImagePreview,
@@ -112,17 +110,15 @@ export function AttachmentList({
                   void onDownload(item)
                 }}
               />
-              {canDeleteAttachment ? (
-                <Button
-                  key="delete"
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => {
-                    onDelete(item.id)
-                  }}
-                />
-              ) : null}
+              <Button
+                key="delete"
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  onDelete(item.id)
+                }}
+              />
             </Space>
           </Flex>
         </Card>

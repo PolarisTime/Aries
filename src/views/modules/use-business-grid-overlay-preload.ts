@@ -8,22 +8,16 @@ import {
 } from '@/views/modules/components/business-grid-overlay-loaders'
 
 interface Options {
-  canUpdateRecord: boolean
-  canViewRecords: boolean
   config?: ModulePageConfig | null
 }
 
-export function useBusinessGridOverlayPreload({
-  canUpdateRecord,
-  canViewRecords,
-  config,
-}: Options) {
+export function useBusinessGridOverlayPreload({ config }: Options) {
   const idleReady = useIdleActivation(Boolean(config), 2000)
 
   useQuery({
     queryKey: QUERY_KEYS.businessGridOverlayPreload('editor-workspace'),
     queryFn: loadModuleEditorWorkspace,
-    enabled: Boolean(config && !config.readOnly && canUpdateRecord),
+    enabled: Boolean(config && !config.readOnly),
     staleTime: Infinity,
     gcTime: Infinity,
   })
@@ -31,7 +25,7 @@ export function useBusinessGridOverlayPreload({
   useQuery({
     queryKey: QUERY_KEYS.businessGridOverlayPreload('record-detail-overlay'),
     queryFn: loadModuleRecordDetailOverlay,
-    enabled: Boolean(idleReady && config && canViewRecords),
+    enabled: Boolean(idleReady && config),
     staleTime: Infinity,
     gcTime: Infinity,
   })

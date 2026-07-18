@@ -24,7 +24,6 @@ const COMPUTED_FIELD_KEYS = new Set([
   'totalFreight',
   'taxAmount',
   'amount',
-  'permissionSummary',
   'userCount',
 ])
 

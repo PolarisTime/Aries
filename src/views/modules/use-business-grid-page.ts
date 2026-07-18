@@ -22,7 +22,6 @@ import {
   useModuleFilters,
 } from '@/hooks/useModuleFilters'
 import { useModulePageConfig } from '@/hooks/useModulePageConfig'
-import { useModulePermissions } from '@/hooks/useModulePermissions'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
@@ -84,18 +83,12 @@ export function useBusinessGridPage({
 }: Props) {
   const { config } = useModulePageConfig({ moduleKey, initialConfig })
   const resolvedConfig = config || EMPTY_CONFIG
-  const {
-    canViewRecords,
-    canCreateRecord,
-    canUpdateRecord,
-    canDeleteRecord,
-    canExportData,
-    canAuditRecord,
-    canPrintRecord,
-    can,
-    // react-doctor: intentional callback, not event handler
-  } = useModulePermissions({ moduleKey, resourceKey: pageDef.resourceKey })
-  const canUseListExport = pageDef.menuParent === 'master' && canExportData
+  const canCreateRecord = !resolvedConfig.readOnly
+  const canUpdateRecord = !resolvedConfig.readOnly
+  const canDeleteRecord = !resolvedConfig.readOnly
+  const canAuditRecord = !resolvedConfig.readOnly
+  const canPrintRecord = true
+  const canUseListExport = pageDef.menuParent === 'master'
   const toolbarConfig = canUseListExport
     ? resolvedConfig
     : withoutListExportActions(resolvedConfig)
@@ -141,7 +134,7 @@ export function useBusinessGridPage({
       // react-doctor: intentional callback, not event handler
       filters: submittedFilters,
       // react-doctor: intentional callback, not event handler
-      enabled: canViewRecords,
+      enabled: true,
       // react-doctor: intentional callback, not event handler
       currentPage,
       // react-doctor: intentional callback, not event handler
@@ -175,7 +168,7 @@ export function useBusinessGridPage({
 
   useEffect(() => {
     const recordIds = recordIdsKey.split(',').filter(Boolean)
-    if (!canViewRecords || !recordIds.length) {
+    if (!recordIds.length) {
       setAttachmentCounts({})
       return
     }
@@ -196,7 +189,7 @@ export function useBusinessGridPage({
     return () => {
       cancelled = true
     }
-  }, [canViewRecords, moduleKey, recordIdsKey])
+  }, [moduleKey, recordIdsKey])
 
   const clearSelection = () => {
     setSelectedRowKeys([])
@@ -291,7 +284,6 @@ export function useBusinessGridPage({
 
   const { buildActions } = useModuleRecordActions({
     moduleKey,
-    resourceKey: pageDef.resourceKey,
     isReadOnly: Boolean(config?.readOnly),
     attachmentCounts,
     onAttach: overlays.openAttachment,
@@ -353,19 +345,6 @@ export function useBusinessGridPage({
     selectedRowCount: selectedRowKeys.length,
     canUseBulkAuditActions: canUseSelectedBulkAuditActions,
     canUseBulkDeleteActions: canUseSelectedBulkDeleteActions,
-    hasAnyModuleAction: (codes) =>
-      codes.some((code) => {
-        if (code === 'create') return canCreateRecord
-        if (code === 'update') return canUpdateRecord
-        if (code === 'delete') return canDeleteRecord
-        if (code === 'audit') return canAuditRecord
-        if (code === 'export') return canExportData
-        if (code === 'print') return canPrintRecord
-        if (code === 'manage_permissions') {
-          return can('manage_permissions')
-        }
-        return false
-      }),
     handlers: {
       exportMaterialRows: async () => {
         await handleExport()
@@ -376,9 +355,6 @@ export function useBusinessGridPage({
       handleSelectedAuditRecords,
       handleSelectedDeleteRecords,
       handleSelectedReverseAuditRecords,
-      navigateToRoleActionEditor: () => {
-        window.location.href = '/access-control?tab=roles'
-      },
       openCreateEditor: async () => {
         await openEditor(null)
       },
@@ -444,7 +420,6 @@ export function useBusinessGridPage({
     canCreateRecord,
     canExportData: canUseListExport,
     canUpdateRecord,
-    canViewRecords,
     clearSelection,
     closeDetail,
     columnVisibleKeys,

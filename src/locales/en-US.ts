@@ -1,7 +1,7 @@
 export const enUS = {
   errorBoundary: {
     retry: 'Retry',
-    noPermission: 'Sorry, you do not have permission to access this page',
+    accessDenied: 'Access denied',
     serverBusy: 'Server is busy, please try again later',
     networkError: 'Network connection error',
     timeout: 'Request timed out',
@@ -9,7 +9,7 @@ export const enUS = {
   },
   result: {
     '403': {
-      subTitle: 'Sorry, you do not have permission to access this page',
+      subTitle: 'Access denied',
     },
     '404': {
       subTitle: 'Sorry, the page you visited does not exist',
@@ -154,14 +154,11 @@ export const enUS = {
     info: {
       userName: 'Current User',
       loginName: 'Login Account',
-      roleName: 'Role',
-      unassigned: 'Unassigned',
       companyName: 'Company',
       lastLogin: 'Last Login',
       accountInfo: 'Account Info',
       systemOverview: 'System Overview',
       activeSessions: 'Active Sessions',
-      actionPermissions: 'Action Permissions',
     },
     cards: {
       currentUser: 'Current User',
@@ -170,8 +167,8 @@ export const enUS = {
       lastLogin: 'Last Login',
     },
     notes: {
-      currentUser: 'Shows the signed-in account and role.',
-      modules: 'Counts accessible modules from current permissions.',
+      currentUser: 'Shows the signed-in account.',
+      modules: 'Counts enabled business modules.',
       sessions:
         'Real-time active refresh-token sessions for the current account.',
       lastLogin: 'Latest successful login time.',
@@ -190,9 +187,7 @@ export const enUS = {
     },
     fields: {
       company: 'Company',
-      role: 'Role',
       loginName: 'Login',
-      actions: 'Granted Actions',
       visibleMenus: 'Visible Menus',
       serverTime: 'Server Time',
       apiState: 'API Status',
@@ -274,7 +269,6 @@ export const enUS = {
       'From contracts and orders, through outbound and reconciliation, to receipt.',
     prevPage: 'Previous',
     nextPage: 'Next',
-    noPermission: 'No permission',
     importParentFailed: 'Failed to import parent document',
     logisticsChain: 'Logistics',
     logisticsChainDesc:
@@ -317,19 +311,6 @@ export const enUS = {
       passwordPlaceholder: 'Enter password',
       remember: 'Remember sign-in state',
       submit: 'Sign In',
-    },
-    personalsecurity: {
-      accountTitle: 'Current account: {{displayName}} ({{loginName}})',
-      currentPassword: 'Current Password',
-      currentPasswordRequired: 'Please enter current password',
-      newPassword: 'New Password',
-      newPasswordRequired: 'At least 6 characters',
-      passwordHint:
-        'Changing your password ends this session. Sign in again immediately with the new password.',
-      updatePassword: 'Update Password',
-      passwordSuccess:
-        'Password updated. Sign in again immediately with the new password.',
-      passwordFailed: 'Update failed',
     },
     initialsetup: {
       checking: 'Checking initialization status...',
@@ -410,7 +391,6 @@ export const enUS = {
     updateSuccess: 'Updated successfully',
     operationSuccess: 'Operation successful',
     operationFailed: 'Operation failed',
-    noPermission: 'No permission',
     readOnly: 'Read-only mode',
   },
   attachment: {
@@ -420,7 +400,6 @@ export const enUS = {
     download: 'Download',
     delete: 'Delete',
     uploadSuccess: 'Upload successful',
-    noPermission: 'No attachment permission',
     notSupported: 'Preview not supported',
   },
   api: {
@@ -444,12 +423,6 @@ export const enUS = {
     backendServiceUnavailable: 'Backend service unavailable',
     responseValidationFailed: 'Response data validation failed',
     pageDataValidationFailed: 'Page data validation failed',
-    loadPermissionOptionsFailed: 'Failed to load permission options',
-    loadRolesFailed: 'Failed to load roles',
-    loadRolePermissionsFailed: 'Failed to load role permissions',
-    saveRolePermissionsFailed: 'Failed to save role permissions',
-    updateRoleFailed: 'Failed to update role',
-    createRoleFailed: 'Failed to create role',
     loadMenusFailed: 'Failed to load menus',
     loadAccountColumnSettingsFailed: 'Failed to load account column settings',
     saveAccountColumnSettingsFailed: 'Failed to save account column settings',
@@ -457,7 +430,6 @@ export const enUS = {
       'Result incomplete: client filter limit reached. Please narrow your filters or contact admin to enable server-side filtering.',
     loadCompanyInfoFailed: 'Failed to load settlement entity info',
     saveCompanyInfoFailed: 'Failed to save settlement entity info',
-    changePasswordFailed: 'Failed to change password',
     loadUsersFailed: 'Failed to load users',
     loadUserDetailFailed: 'Failed to load user detail',
     checkLoginNameFailed: 'Failed to check login name',
@@ -483,7 +455,7 @@ export const enUS = {
         'Network connection failed, please check if the service is available',
       timeout: 'Request timed out, please try again later',
       sessionExpired: 'Login session expired, please sign in again',
-      forbidden: 'No permission to perform this action',
+      forbidden: 'Access denied',
       notFound: 'Requested endpoint does not exist',
       requestFailed: 'Request failed, please try again later',
       missingRequiredField: 'Missing required field: {{fieldName}}',
@@ -620,8 +592,6 @@ export const enUS = {
       upload: 'Upload',
       uploadHint:
         'Click to upload, or paste images/files directly in this area',
-      noPermissionHint:
-        'No upload permission. You can view and download existing attachments.',
       noPreviewUrl: 'No preview URL available',
       noDownloadUrl: 'No download URL available',
       previewFailed: 'Preview failed',
@@ -1274,20 +1244,16 @@ export const enUS = {
         logout: 'Logout',
         execute: 'Execute',
         save: 'Save',
-        changePassword: 'Change Password',
-        editPermissions: 'Edit Permissions',
         exportBackup: 'Export Backup',
         importBackup: 'Import Backup',
         uploadAttachment: 'Upload Attachment',
         common: 'Common',
         authentication: 'Authentication',
         userAccounts: 'User Accounts',
-        rolePermissions: 'Role Permissions',
         generalSettings: 'General Settings',
         database: 'Database Management',
         system: 'System',
         companyInfo: 'Settlement Entity Management',
-        accessControl: 'Access Control',
         printTemplates: 'Print Templates',
         operationLog: 'Operation Logs',
         business: 'Business',
@@ -1326,32 +1292,6 @@ export const enUS = {
           'Maintain shared UI parameters and business toggles.',
         companyInfoDesc:
           'Maintain settlement entity names, tax numbers, and bank accounts for customers, carriers, purchase orders, and finance pages.',
-      },
-      systemPermissionManagement: {
-        accessControl: 'Access Control',
-        export: 'Export',
-        keyword: 'Keyword',
-        permissionPlaceholder:
-          'Permission code / Permission name / Resource key',
-        permissionCode: 'Permission Code',
-        permissionName: 'Permission Name',
-        module: 'Module',
-        permissionType: 'Permission Type',
-        action: 'Action',
-        resourceKey: 'Resource Key',
-        status: 'Status',
-        remark: 'Remark',
-        menuPermission: 'Menu Permission',
-        buttonPermission: 'Button Permission',
-        view: 'View',
-        create: 'Create',
-        edit: 'Edit',
-        delete: 'Delete',
-        audit: 'Audit',
-        print: 'Print',
-        customScope: 'Custom Scope',
-        accessControlDesc:
-          'Centralized permission directory for modules, actions, data scopes and resource keys.',
       },
       systemOrganization: {
         department: 'department',
@@ -1457,7 +1397,6 @@ export const enUS = {
       reverseAudit: 'Reverse Audit',
       printPreview: 'Print Preview',
       directPrint: 'Direct Print',
-      noPermission: 'No permission for {{label}}',
       noExtraLogic: '{{label}} has no additional handling logic.',
     },
     recordActions: {
@@ -1509,8 +1448,6 @@ export const enUS = {
     },
     personalSettings: {
       title: 'Personal Settings',
-      displayTab: 'Display',
-      securityTab: 'Account Security',
     },
     settings: {
       systemFont: 'System Font',
@@ -1576,8 +1513,6 @@ export const enUS = {
       countUnit: '{{count}} items',
       lockedByOobe:
         'Maintain settlement entity profile and bank information here. Customers, carriers, and purchase orders can reference the corresponding entity.',
-      noViewPermission:
-        'Current account does not have settlement entity view permission.',
       settlementInfo: 'Settlement Information',
       addBank: 'Add Bank',
       noSettlementAccounts:
@@ -1647,7 +1582,6 @@ export const enUS = {
       userName: 'User Name',
       department: 'Department',
       mobile: 'Mobile',
-      roleNames: 'Roles',
       lastLogin: 'Last Login',
       enabled: 'Enabled',
       notEnabled: 'Not Enabled',
@@ -1676,7 +1610,6 @@ export const enUS = {
       colUserName: 'User Name',
       colDepartment: 'Department',
       colMobile: 'Mobile',
-      colRoles: 'Roles',
       colStatus: 'Status',
       colLastLogin: 'Last Login',
     },
@@ -1751,16 +1684,6 @@ export const enUS = {
       testFailed: 'OSS storage test failed',
       corsSuccess: 'OSS CORS configured',
       corsFailed: 'OSS CORS configuration failed',
-    },
-    accessControl: {
-      title: 'Access Control',
-      description:
-        "Manage user accounts, role action permissions, and the permission catalog. Changes affect the corresponding users' access scope.",
-      tabUsers: 'User Accounts',
-      tabRoles: 'Role Permissions',
-      tabPermissions: 'Permission Directory',
-      noModules:
-        'No available modules, please contact admin to assign permissions',
     },
     companyHeader: {
       title: 'Settlement Entity Management',
@@ -1864,34 +1787,12 @@ export const enUS = {
       billType: 'Bill Type: ',
       emptyTemplate: '(Empty Template)',
     },
-    rolePermission: {
-      permConfig: 'Permission Configuration',
-      selectRole: 'Please select a role',
-      selectAll: 'Select All',
-      deselectAll: 'Deselect All',
-      listView: 'List',
-      matrixView: 'Matrix',
-      savePerm: 'Save Permissions',
-      attachmentPermTitle: 'Attachment Permission Note',
-      attachmentPermDesc:
-        'Attachments do not have separate permissions; they follow the corresponding module permissions: view permission allows viewing and downloading, edit permission allows uploading, delete permission allows deleting.',
-      selectRoleHint:
-        'Please select a role from the left to configure permissions',
-    },
-    roleList: {
-      title: 'Role List',
-      create: 'Create',
-      userCount: 'Users',
-      noRoles: 'No roles',
-    },
     userAccountDetail: {
       title: 'User Detail',
       loginName: 'Login Name',
       userName: 'User Name',
       mobile: 'Mobile',
       department: 'Department',
-      roles: 'Roles',
-      permSummary: 'Permission Summary',
       status: 'Status',
       lastLogin: 'Last Login',
       remark: 'Remark',
@@ -1914,15 +1815,6 @@ export const enUS = {
       statusPlaceholder: 'Select status',
       department: 'Department',
       departmentPlaceholder: 'Select department',
-      permConfig: 'Permission Configuration',
-      roles: 'Roles',
-      rolesPlaceholder: 'Select roles',
-      ownRolesLocked: 'You cannot change the roles of your own account',
-      roleConflict: '(conflict)',
-      status2: 'Status',
-      statusPlaceholder2: 'Select status',
-      permSummary: 'Permission Summary',
-      permSummaryHint: 'Permission summary appears after roles are selected',
       supplementInfo: 'Additional Info',
       remark: 'Remark',
       remarkPlaceholder: 'Enter remark',
@@ -1959,54 +1851,12 @@ export const enUS = {
     printTemplateUtils: {
       copySuffix: '(Copy)',
     },
-    roleActionUtils: {
-      actionRead: 'View',
-      actionCreate: 'Create',
-      actionUpdate: 'Edit',
-      actionDelete: 'Delete',
-      actionAudit: 'Audit',
-      actionExport: 'Export',
-      actionPrint: 'Print',
-      actionViewDeleted: 'View Deleted Documents',
-      actionWrite: 'Write',
-      actionManagePermissions: 'Manage Permissions',
-    },
-    rolePermissions: {
-      loadFailed: 'Failed to load role permissions',
-      noEditPermission: 'No permission configuration edit permission',
-      saveFailed: 'Save failed',
-      colMenuName: 'Menu Name',
-      colAuthorized: 'Authorized',
-    },
-    roleEditor: {
-      editTitle: 'Edit Role',
-      createTitle: 'Create Role',
-      save: 'Save',
-      cancel: 'Cancel',
-      roleName: 'Role Name',
-      roleNamePlaceholder: 'Enter role name',
-      roleCode: 'Role Code',
-      roleCodePlaceholder: 'Enter role code',
-      roleType: 'Role Type',
-      remark: 'Remark',
-      remarkPlaceholder: 'Enter remark',
-    },
-    roleEditorHook: {
-      createConfirmContent: 'Role created. Configure permissions now?',
-      goConfigure: 'Configure',
-      configureLater: 'Later',
-      fillNameAndCode: 'Please fill in role name and code',
-      deleteConfirm: 'Delete role “{{roleName}}”?',
-      adminRoleProtected: 'The system administrator role cannot be deleted',
-    },
     userAccountEditorHook: {
       saveSuccess: 'Saved successfully',
       loginNameExists: 'Login name already exists',
       saveFailed: 'Save failed',
       checkLoginNameFailed: 'Failed to check login name',
       loadDetailFailed: 'Failed to load user detail',
-      roleSelectionOutOfBounds:
-        'You cannot retain or grant roles beyond your own permissions',
     },
   },
   print: {
@@ -2018,7 +1868,7 @@ export const enUS = {
   },
   error: {
     retry: 'Retry',
-    noPermission: 'Sorry, you do not have permission to access this page',
+    accessDenied: 'Access denied',
     serverBusy: 'Server is busy, please try again later',
     networkError: 'Network connection error, please check your network',
     requestTimeout: 'Request timed out, please try again later',

@@ -8,7 +8,6 @@ import { queryClient } from '@/lib/query-client'
 import { initializeErrorMonitoring } from '@/observability/sentry'
 import { router } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
-import { usePermissionStore } from '@/stores/permissionStore'
 import { useSetupStore } from '@/stores/setupStore'
 import { logger } from '@/utils/logger'
 import { clearLegacyModuleEditorDraftStorage } from '@/utils/storage'
@@ -72,9 +71,6 @@ async function bootstrap() {
       : Promise.resolve(false),
     getInitialSetupStatus().catch(() => null),
   ])
-
-  // 同步权限
-  usePermissionStore.getState().syncFromUser(useAuthStore.getState().user)
 
   // 缓存 setup 状态
   if (setupResult.status === 'fulfilled' && setupResult.value) {

@@ -7,9 +7,6 @@ const userAccountRecordSchema = z.object({
   mobile: z.string().nullable(),
   departmentId: z.string().nullable(),
   departmentName: z.string().nullable(),
-  roleNames: z.array(z.string()),
-  roleIds: z.array(z.union([z.string(), z.number()])).optional(),
-  permissionSummary: z.string().nullable(),
   lastLoginDate: z.string().nullable(),
   status: z.string(),
   remark: z.string().nullable(),
@@ -22,7 +19,6 @@ export const userAccountFormPayloadSchema = z.object({
   userName: z.string().min(1),
   mobile: z.string(),
   departmentId: z.string(),
-  roleIds: z.array(z.string()).optional(),
   status: z.string(),
   remark: z.string(),
 })
@@ -51,14 +47,3 @@ export const departmentOptionRecordSchema = z.object({
 export type DepartmentOptionRecord = z.infer<
   typeof departmentOptionRecordSchema
 >
-
-export const roleOptionRecordSchema = z.object({
-  id: z.union([z.string(), z.number()]),
-  roleName: z.string(),
-  roleCode: z.string(),
-  status: z.string(),
-  permissionSummary: z.string(),
-  conflictRoleIds: z.array(z.union([z.string(), z.number()])),
-  assignable: z.boolean(),
-})
-export type RoleOptionRecord = z.infer<typeof roleOptionRecordSchema>

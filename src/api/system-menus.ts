@@ -10,8 +10,6 @@ export interface MenuNode {
   icon: string | null
   sortOrder: number
   menuType: string
-  resourceCode: string | null
-  actions: string[]
   children: MenuNode[]
 }
 
@@ -29,8 +27,6 @@ interface RawMenuNode {
   icon?: string | null
   sortOrder?: number
   menuType?: string
-  resourceCode?: string | null
-  actions?: string[]
   children?: RawMenuNode[]
   code?: string
   title?: string
@@ -51,8 +47,6 @@ function normalizeMenuNode(
     icon: node.icon ?? null,
     sortOrder: typeof node.sortOrder === 'number' ? node.sortOrder : 0,
     menuType: String(node.menuType || 'MENU'),
-    resourceCode: node.resourceCode ?? null,
-    actions: Array.isArray(node.actions) ? node.actions.map(String) : [],
     children: Array.isArray(node.children)
       ? node.children.map((child) => normalizeMenuNode(child, menuCode))
       : [],

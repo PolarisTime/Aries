@@ -25,8 +25,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const state = useBusinessGridPage({ moduleKey, pageDef, initialConfig })
 
   useBusinessGridOverlayPreload({
-    canUpdateRecord: state.canUpdateRecord,
-    canViewRecords: state.canViewRecords,
     config: state.config,
   })
 
@@ -53,9 +51,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   }
 
   const openRecordDetail = (record: ModuleRecord) => {
-    if (state.canViewRecords) {
-      void state.openDetail(record)
-    }
+    void state.openDetail(record)
   }
 
   const openRecordEditor = (record: ModuleRecord) => {
@@ -63,10 +59,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
       openRecordDetail(record)
       return
     }
-    if (
-      state.canUpdateRecord &&
-      !isEditBlockedByStatus(record.status, moduleKey)
-    ) {
+    if (!isEditBlockedByStatus(record.status, moduleKey)) {
       void state.openEditor(record)
       return
     }
@@ -91,12 +84,11 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const canCreateRecord =
     !state.config.readOnly &&
     state.config.allowManualCreate !== false &&
-    state.canCreateRecord &&
     moduleKey !== 'customer-statement' &&
     moduleKey !== 'freight-statement'
   const canSaveEditorRecord = state.editRecord
-    ? state.canUpdateRecord
-    : state.canCreateRecord &&
+    ? !state.config.readOnly
+    : !state.config.readOnly &&
       state.config.allowManualCreate !== false &&
       !state.config.parentImport?.executeParentImport
 
@@ -194,7 +186,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
 
       <BusinessGridOverlays
         moduleKey={moduleKey}
-        resourceKey={pageDef.resourceKey}
         config={state.config}
         editRecord={state.editRecord}
         editorOpen={state.editorOpen}

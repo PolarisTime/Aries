@@ -3,7 +3,6 @@ import { Button, Progress, Typography, Upload } from 'antd'
 import type { RefObject } from 'react'
 
 interface AttachmentUploadZoneProps {
-  canCreateAttachment: boolean
   uploading: boolean
   uploadFileName: string
   uploadProgress: number
@@ -13,7 +12,6 @@ interface AttachmentUploadZoneProps {
 }
 
 export function AttachmentUploadZone({
-  canCreateAttachment,
   uploading,
   uploadFileName,
   uploadProgress,
@@ -23,19 +21,17 @@ export function AttachmentUploadZone({
 }: AttachmentUploadZoneProps) {
   return (
     <div ref={pasteZoneRef} className="module-attachment-upload-shell">
-      {canCreateAttachment ? (
-        <Upload
-          beforeUpload={(f) => {
-            void onUpload(f)
-            return false
-          }}
-          showUploadList={false}
-        >
-          <Button icon={<UploadOutlined />} loading={uploading}>
-            {t('modules.attachment.upload')}
-          </Button>
-        </Upload>
-      ) : null}
+      <Upload
+        beforeUpload={(f) => {
+          void onUpload(f)
+          return false
+        }}
+        showUploadList={false}
+      >
+        <Button icon={<UploadOutlined />} loading={uploading}>
+          {t('modules.attachment.upload')}
+        </Button>
+      </Upload>
       <Typography.Text
         type="secondary"
         className="module-attachment-upload-hint"
@@ -45,9 +41,7 @@ export function AttachmentUploadZone({
               fileName: uploadFileName,
               percent: uploadProgress,
             })
-          : canCreateAttachment
-            ? t('modules.attachment.uploadHint')
-            : t('modules.attachment.noPermissionHint')}
+          : t('modules.attachment.uploadHint')}
       </Typography.Text>
       {uploading ? (
         <Progress

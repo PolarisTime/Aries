@@ -3,7 +3,7 @@
  * Single source of truth for all REST endpoint paths.
  *
  * Convention:
- *   - Business entity resources → plural (e.g. /role-settings)
+ *   - Business entity resources → plural
  *   - Pure action endpoints → singular (e.g. /login, /refresh, /export, /import)
  *   - URL all lowercase, multi-word separated by hyphens
  *   - Strict RESTful style, no verb paths (/get, /list, /add, /update, /del)
@@ -17,21 +17,10 @@ export const ENDPOINTS = {
   AUTH_REFRESH: '/auth/refresh',
   AUTH_LOGOUT: '/auth/logout',
 
-  // Account security (pure actions → singular)
-  ACCOUNT_PASSWORD: '/account/security/password',
-
   // User accounts (business entity → plural)
   USER_ACCOUNTS: '/user-accounts',
   USER_ACCOUNTS_LOGIN_NAME_CHECK: '/user-accounts/login-name-availability',
   USER_ACCOUNT_PREFERENCES: '/user-accounts/preference',
-
-  // Permissions (business entity → plural)
-  PERMISSION_CATALOG: '/permissions/catalog',
-
-  // Roles (business entity → plural)
-  ROLE_SETTINGS: '/role-settings',
-  ROLE_SETTINGS_OPTIONS: '/role-settings/options',
-  ROLE_PERMISSION_OPTIONS: '/role-settings/permission-options',
 
   // System menus (sub-resource tree → singular action)
   SYSTEM_MENUS_TREE: '/system/menu/tree',

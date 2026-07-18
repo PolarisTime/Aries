@@ -20,7 +20,6 @@ const ModuleStatementGenerator = lazy(loadModuleStatementGenerator)
 
 interface Props {
   moduleKey: string
-  resourceKey?: string
   config: ModulePageConfig
   editRecord: ModuleRecord | null
   editorOpen: boolean
@@ -61,7 +60,6 @@ interface Props {
 
 export function BusinessGridOverlays({
   moduleKey,
-  resourceKey,
   config,
   editRecord,
   editorOpen,
@@ -121,7 +119,6 @@ export function BusinessGridOverlays({
         <ModuleAttachmentModal
           open={attachOpen}
           moduleKey={moduleKey}
-          resourceKey={resourceKey}
           recordId={attachRecordId}
           onClose={onCloseAttachment}
         />

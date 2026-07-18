@@ -6,7 +6,7 @@ import { getSearchableModuleKeys } from '@/config/page-registry'
 import {
   buildGlobalSearchSummary,
   type GlobalSearchResult,
-  searchAccessibleModules,
+  searchModules,
 } from '@/layouts/global-search'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -17,7 +17,6 @@ interface ModuleSearchResponse {
 }
 
 interface UseGlobalSearchSupportOptions {
-  canAccessModule: (moduleKey: string) => boolean
   onJump: (result: GlobalSearchResult) => void
   moduleKeys?: string[]
   pageConfigs?: Record<string, ModulePageMeta>
@@ -73,14 +72,12 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
     try {
       const moduleKeys = options.moduleKeys || getSearchableModuleKeys()
-      const accessibleModuleKeys = moduleKeys.filter(options.canAccessModule)
       const searchTask =
         options.searchModule || options.lookupRecordById
-          ? searchAccessibleModules({
+          ? searchModules({
               keyword: normalizedKeyword,
               moduleKeys,
               pageConfigs: options.pageConfigs || modulePageMetaMap,
-              canAccessModule: options.canAccessModule,
               searchModule:
                 options.searchModule ||
                 (() => Promise.resolve({ data: { rows: [] } })),
@@ -89,7 +86,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
             })
           : searchGlobalDocuments(
               normalizedKeyword,
-              accessibleModuleKeys,
+              moduleKeys,
               controller.signal,
             )
 
