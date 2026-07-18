@@ -15,11 +15,12 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useReducer } from 'react'
 import {
   type FinanceBalance,
   type FinanceDirection,
   type FinanceOverviewQuery,
+  type FinanceOverviewSummary,
   getFinanceOverview,
 } from '@/api/finance-overview'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -40,6 +41,46 @@ const PAYABLE_COUNTERPARTY_OPTIONS = [
   { label: '物流商', value: '物流商' },
 ]
 
+interface FinanceOverviewState {
+  settlementCompanyId?: EntityId
+  asOfDate: string
+  direction: FinanceDirection
+  counterpartyType?: string
+  keywordInput: string
+  keyword?: string
+  onlyOpen: boolean
+  page: number
+  pageSize?: number
+}
+
+interface FinanceOverviewAction {
+  type: 'update'
+  values: Partial<FinanceOverviewState>
+}
+
+interface SummaryItem {
+  key: string
+  label: string
+  value?: number
+}
+
+function createInitialState(): FinanceOverviewState {
+  return {
+    asOfDate: dayjs().format('YYYY-MM-DD'),
+    direction: 'RECEIVABLE',
+    keywordInput: '',
+    onlyOpen: false,
+    page: 1,
+  }
+}
+
+function financeOverviewReducer(
+  state: FinanceOverviewState,
+  action: FinanceOverviewAction,
+): FinanceOverviewState {
+  return action.type === 'update' ? { ...state, ...action.values } : state
+}
+
 function requestErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message.trim()
     ? error.message
@@ -51,55 +92,142 @@ function displayText(value: unknown): string {
   return text || '--'
 }
 
+function buildSummaryItems(
+  direction: FinanceDirection,
+  summary?: FinanceOverviewSummary,
+): SummaryItem[] {
+  if (direction === 'RECEIVABLE') {
+    return [
+      { key: 'recognized', label: '应收', value: summary?.receivableAmount },
+      { key: 'settled', label: '已收', value: summary?.receivedAmount },
+      { key: 'outstanding', label: '未收', value: summary?.unreceivedAmount },
+      { key: 'advance', label: '预收', value: summary?.advanceReceiptAmount },
+    ]
+  }
+  return [
+    { key: 'recognized', label: '应付', value: summary?.payableAmount },
+    { key: 'settled', label: '已付', value: summary?.paidAmount },
+    { key: 'outstanding', label: '未付', value: summary?.unpaidAmount },
+    { key: 'advance', label: '预付', value: summary?.advancePaymentAmount },
+  ]
+}
+
+function buildBalanceColumns(
+  direction: FinanceDirection,
+  formatAmount: (value: number | undefined) => string,
+): TableColumnsType<FinanceBalance> {
+  return [
+    {
+      title: '往来类型',
+      dataIndex: 'counterpartyType',
+      width: 100,
+      fixed: 'left',
+    },
+    {
+      title: '往来方编码',
+      dataIndex: 'counterpartyCode',
+      width: 150,
+      render: displayText,
+    },
+    {
+      title: '往来方',
+      dataIndex: 'counterpartyName',
+      width: 220,
+      ellipsis: true,
+      render: displayText,
+    },
+    {
+      title: direction === 'RECEIVABLE' ? '应收' : '应付',
+      dataIndex: 'recognizedAmount',
+      width: 150,
+      align: 'right',
+      render: formatAmount,
+    },
+    {
+      title: direction === 'RECEIVABLE' ? '已收' : '已付',
+      dataIndex: 'settledAmount',
+      width: 150,
+      align: 'right',
+      render: formatAmount,
+    },
+    {
+      title: direction === 'RECEIVABLE' ? '未收' : '未付',
+      dataIndex: 'outstandingAmount',
+      width: 150,
+      align: 'right',
+      render: formatAmount,
+    },
+    {
+      title: direction === 'RECEIVABLE' ? '预收' : '预付',
+      dataIndex: 'advanceAmount',
+      width: 150,
+      align: 'right',
+      render: formatAmount,
+    },
+    {
+      title: '结算主体',
+      dataIndex: 'settlementCompanyName',
+      width: 180,
+      ellipsis: true,
+      render: displayText,
+    },
+  ]
+}
+
+function FinanceOverviewSummarySection({ items }: { items: SummaryItem[] }) {
+  return (
+    <section className="finance-overview-summary">
+      {items.map((item) => (
+        <div
+          key={item.key}
+          className={`finance-overview-metric finance-overview-metric--${item.key}`}
+        >
+          <Statistic
+            title={item.label}
+            value={item.value ?? 0}
+            precision={2}
+            prefix="¥"
+          />
+        </div>
+      ))}
+    </section>
+  )
+}
+
 export function FinanceOverviewView() {
   const defaultPageSize = useDefaultPageSize()
   const { formatCellValue } = useModuleDisplaySupport()
-  const [settlementCompanyId, setSettlementCompanyId] = useState<EntityId>()
-  const [asOfDate, setAsOfDate] = useState(dayjs().format('YYYY-MM-DD'))
-  const [direction, setDirection] = useState<FinanceDirection>('RECEIVABLE')
-  const [counterpartyType, setCounterpartyType] = useState<string>()
-  const [keywordInput, setKeywordInput] = useState('')
-  const [keyword, setKeyword] = useState<string>()
-  const [onlyOpen, setOnlyOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(defaultPageSize)
+  const [state, dispatch] = useReducer(
+    financeOverviewReducer,
+    undefined,
+    createInitialState,
+  )
   const { settlementCompanies, isLoading: optionsLoading } = useMasterOptions({
     settlementCompanies: true,
   })
-
-  useEffect(() => {
-    setPage(1)
-    setPageSize(defaultPageSize)
-  }, [defaultPageSize])
-
-  useEffect(() => {
-    if (!settlementCompanyId && settlementCompanies[0]?.value) {
-      setSettlementCompanyId(String(settlementCompanies[0].value))
-    }
-  }, [settlementCompanies, settlementCompanyId])
+  const defaultSettlementCompanyId = settlementCompanies[0]?.value
+  const settlementCompanyId =
+    state.settlementCompanyId ||
+    (defaultSettlementCompanyId
+      ? String(defaultSettlementCompanyId)
+      : undefined)
+  const pageSize = state.pageSize ?? defaultPageSize
 
   const queryParams = useMemo<FinanceOverviewQuery>(
     () => ({
       settlementCompanyId: settlementCompanyId || '',
-      asOfDate,
-      direction,
+      asOfDate: state.asOfDate,
+      direction: state.direction,
       counterpartyType:
-        direction === 'PAYABLE' ? counterpartyType || undefined : '客户',
-      keyword,
-      onlyOpen,
-      page: page - 1,
+        state.direction === 'PAYABLE'
+          ? state.counterpartyType || undefined
+          : '客户',
+      keyword: state.keyword,
+      onlyOpen: state.onlyOpen,
+      page: state.page - 1,
       size: pageSize,
     }),
-    [
-      asOfDate,
-      counterpartyType,
-      direction,
-      keyword,
-      onlyOpen,
-      page,
-      pageSize,
-      settlementCompanyId,
-    ],
+    [settlementCompanyId, state, pageSize],
   )
   const queryEnabled = Boolean(settlementCompanyId)
   const overviewQuery = useQuery({
@@ -108,13 +236,6 @@ export function FinanceOverviewView() {
     enabled: queryEnabled,
     placeholderData: keepPreviousData,
   })
-
-  const commitKeyword = (value: string): void => {
-    const normalized = value.trim()
-    setKeywordInput(value)
-    setKeyword(normalized || undefined)
-    setPage(1)
-  }
 
   const handleRefresh = async (): Promise<void> => {
     const result = await overviewQuery.refetch()
@@ -128,101 +249,28 @@ export function FinanceOverviewView() {
       value == null ? '--' : formatCellValue(value, 'amount'),
     [formatCellValue],
   )
-
-  const summary = overviewQuery.data?.summary
-  const summaryItems =
-    direction === 'RECEIVABLE'
-      ? [
-          {
-            key: 'recognized',
-            label: '应收',
-            value: summary?.receivableAmount,
-          },
-          { key: 'settled', label: '已收', value: summary?.receivedAmount },
-          {
-            key: 'outstanding',
-            label: '未收',
-            value: summary?.unreceivedAmount,
-          },
-          {
-            key: 'advance',
-            label: '预收',
-            value: summary?.advanceReceiptAmount,
-          },
-        ]
-      : [
-          { key: 'recognized', label: '应付', value: summary?.payableAmount },
-          { key: 'settled', label: '已付', value: summary?.paidAmount },
-          { key: 'outstanding', label: '未付', value: summary?.unpaidAmount },
-          {
-            key: 'advance',
-            label: '预付',
-            value: summary?.advancePaymentAmount,
-          },
-        ]
-
-  const columns = useMemo<TableColumnsType<FinanceBalance>>(
-    () => [
-      {
-        title: '往来类型',
-        dataIndex: 'counterpartyType',
-        width: 100,
-        fixed: 'left',
-      },
-      {
-        title: '往来方编码',
-        dataIndex: 'counterpartyCode',
-        width: 150,
-        render: displayText,
-      },
-      {
-        title: '往来方',
-        dataIndex: 'counterpartyName',
-        width: 220,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: direction === 'RECEIVABLE' ? '应收' : '应付',
-        dataIndex: 'recognizedAmount',
-        width: 150,
-        align: 'right',
-        render: formatAmount,
-      },
-      {
-        title: direction === 'RECEIVABLE' ? '已收' : '已付',
-        dataIndex: 'settledAmount',
-        width: 150,
-        align: 'right',
-        render: formatAmount,
-      },
-      {
-        title: direction === 'RECEIVABLE' ? '未收' : '未付',
-        dataIndex: 'outstandingAmount',
-        width: 150,
-        align: 'right',
-        render: formatAmount,
-      },
-      {
-        title: direction === 'RECEIVABLE' ? '预收' : '预付',
-        dataIndex: 'advanceAmount',
-        width: 150,
-        align: 'right',
-        render: formatAmount,
-      },
-      {
-        title: '结算主体',
-        dataIndex: 'settlementCompanyName',
-        width: 180,
-        ellipsis: true,
-        render: displayText,
-      },
-    ],
-    [direction, formatAmount],
+  const columns = useMemo(
+    () => buildBalanceColumns(state.direction, formatAmount),
+    [state.direction, formatAmount],
   )
-
+  const summaryItems = buildSummaryItems(
+    state.direction,
+    overviewQuery.data?.summary,
+  )
   const rows = overviewQuery.data?.balances.content || []
   const total = overviewQuery.data?.balances.totalElements || 0
+
+  const commitKeyword = (value: string): void => {
+    const normalized = value.trim()
+    dispatch({
+      type: 'update',
+      values: {
+        keywordInput: value,
+        keyword: normalized || undefined,
+        page: 1,
+      },
+    })
+  }
 
   return (
     <div className="module-page-stack finance-overview-page">
@@ -248,12 +296,17 @@ export function FinanceOverviewView() {
         <section className="finance-overview-toolbar">
           <Segmented
             aria-label="财务方向"
-            value={direction}
+            value={state.direction}
             options={DIRECTION_OPTIONS}
             onChange={(value) => {
-              setDirection(value as FinanceDirection)
-              setCounterpartyType(undefined)
-              setPage(1)
+              dispatch({
+                type: 'update',
+                values: {
+                  direction: value as FinanceDirection,
+                  counterpartyType: undefined,
+                  page: 1,
+                },
+              })
             }}
           />
           <div className="finance-overview-filter">
@@ -267,8 +320,13 @@ export function FinanceOverviewView() {
               showSearch={{ optionFilterProp: 'label' }}
               placeholder="请选择结算主体"
               onChange={(value) => {
-                setSettlementCompanyId(value ? String(value) : undefined)
-                setPage(1)
+                dispatch({
+                  type: 'update',
+                  values: {
+                    settlementCompanyId: value ? String(value) : undefined,
+                    page: 1,
+                  },
+                })
               }}
             />
           </div>
@@ -276,24 +334,33 @@ export function FinanceOverviewView() {
             <Typography.Text type="secondary">截止日期</Typography.Text>
             <DatePicker
               aria-label="截止日期"
-              value={dayjs(asOfDate)}
+              value={dayjs(state.asOfDate)}
               allowClear={false}
               onChange={(value) => {
-                if (value) setAsOfDate(value.format('YYYY-MM-DD'))
-                setPage(1)
+                if (value) {
+                  dispatch({
+                    type: 'update',
+                    values: { asOfDate: value.format('YYYY-MM-DD'), page: 1 },
+                  })
+                }
               }}
             />
           </div>
-          {direction === 'PAYABLE' ? (
+          {state.direction === 'PAYABLE' ? (
             <div className="finance-overview-filter">
               <Typography.Text type="secondary">往来类型</Typography.Text>
               <Select
                 aria-label="往来类型"
-                value={counterpartyType || ''}
+                value={state.counterpartyType || ''}
                 options={PAYABLE_COUNTERPARTY_OPTIONS}
                 onChange={(value) => {
-                  setCounterpartyType(value || undefined)
-                  setPage(1)
+                  dispatch({
+                    type: 'update',
+                    values: {
+                      counterpartyType: value || undefined,
+                      page: 1,
+                    },
+                  })
                 }}
               />
             </div>
@@ -302,13 +369,19 @@ export function FinanceOverviewView() {
             <Typography.Text type="secondary">往来方</Typography.Text>
             <Input
               aria-label="往来方"
-              value={keywordInput}
+              value={state.keywordInput}
               allowClear
               placeholder="名称、编码或ID"
               onChange={(event) => {
                 const value = event.target.value
-                setKeywordInput(value)
-                if (!value) commitKeyword('')
+                if (!value) {
+                  commitKeyword('')
+                  return
+                }
+                dispatch({
+                  type: 'update',
+                  values: { keywordInput: value },
+                })
               }}
               onBlur={(event) => commitKeyword(event.target.value)}
               onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
@@ -316,14 +389,16 @@ export function FinanceOverviewView() {
           </div>
           <Segmented
             aria-label="余额范围"
-            value={onlyOpen ? 'open' : 'all'}
+            value={state.onlyOpen ? 'open' : 'all'}
             options={[
               { label: '全部', value: 'all' },
               { label: '有余额', value: 'open' },
             ]}
             onChange={(value) => {
-              setOnlyOpen(value === 'open')
-              setPage(1)
+              dispatch({
+                type: 'update',
+                values: { onlyOpen: value === 'open', page: 1 },
+              })
             }}
           />
         </section>
@@ -337,21 +412,7 @@ export function FinanceOverviewView() {
           />
         ) : null}
 
-        <section className="finance-overview-summary">
-          {summaryItems.map((item) => (
-            <div
-              key={item.key}
-              className={`finance-overview-metric finance-overview-metric--${item.key}`}
-            >
-              <Statistic
-                title={item.label}
-                value={item.value ?? 0}
-                precision={2}
-                prefix="¥"
-              />
-            </div>
-          ))}
-        </section>
+        <FinanceOverviewSummarySection items={summaryItems} />
 
         <section className="finance-overview-table">
           <Table
@@ -362,27 +423,27 @@ export function FinanceOverviewView() {
             loading={queryEnabled && overviewQuery.isFetching}
             scroll={{ x: 1250, y: 'calc(100vh - 410px)' }}
             locale={{
-              emptyText: queryEnabled ? (
+              emptyText: (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="暂无往来余额"
-                />
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="请选择结算主体"
+                  description={queryEnabled ? '暂无往来余额' : '请选择结算主体'}
                 />
               ),
             }}
             pagination={{
-              current: page,
+              current: state.page,
               pageSize,
               total,
               showSizeChanger: true,
               showTotal: (count) => `共 ${count} 条`,
               onChange: (nextPage, nextPageSize) => {
-                setPage(nextPageSize === pageSize ? nextPage : 1)
-                setPageSize(nextPageSize)
+                dispatch({
+                  type: 'update',
+                  values: {
+                    page: nextPageSize === pageSize ? nextPage : 1,
+                    pageSize: nextPageSize,
+                  },
+                })
               },
             }}
           />
