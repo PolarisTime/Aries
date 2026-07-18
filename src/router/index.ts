@@ -170,6 +170,10 @@ const viewLoaders: Record<
     import('@/views/system/UserAccountManagementView').then((m) => ({
       default: m.UserAccountManagementView,
     })),
+  'finance-overview': () =>
+    import('@/views/finance/FinanceOverviewView').then((m) => ({
+      default: m.FinanceOverviewView,
+    })),
   'cash-ledger': () =>
     import('@/views/finance/CashLedgerView').then((m) => ({
       default: m.CashLedgerView,

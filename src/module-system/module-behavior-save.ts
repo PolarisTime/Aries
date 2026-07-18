@@ -8,8 +8,6 @@ const lineItemPayloadModules = [
   'freight-bill',
   'customer-statement',
   'freight-statement',
-  'receipt',
-  'payment',
 ]
 
 for (const key of lineItemPayloadModules) {
@@ -28,5 +26,3 @@ for (const [key, fields] of Object.entries(extraScalarFieldsMap)) {
 }
 
 registerModuleBehavior('freight-statement', { includeAttachmentIds: true })
-registerModuleBehavior('receipt', { supportsStatementLinking: 'receipt' })
-registerModuleBehavior('payment', { supportsStatementLinking: 'payment' })

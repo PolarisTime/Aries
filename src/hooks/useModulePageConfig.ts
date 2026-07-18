@@ -1,17 +1,11 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { listAllBusinessModuleRows } from '@/api/business'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import {
-  buildStatementLinkOptions,
-  type StatementLinkCatalog,
-} from '@/module-system/module-adapter-finance-links'
 import type {
   ModuleColumnDefinition,
   ModulePageConfig,
   ModuleRecord,
-  ModuleRecordInput,
 } from '@/types/module-page'
 import { useRuntimeConfig } from './useRuntimeConfig'
 
@@ -56,59 +50,6 @@ interface Props {
   initialConfig?: ModulePageConfig
 }
 
-function useStatementLinkCatalog(enabled: boolean) {
-  const { data: customerStatements = [] } = useQuery({
-    queryKey: QUERY_KEYS.statementLinkOptions('customer-statement'),
-    queryFn: () => listAllBusinessModuleRows('customer-statement', {}),
-    enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
-  })
-
-  const { data: freightStatements = [] } = useQuery({
-    queryKey: QUERY_KEYS.statementLinkOptions('freight-statement'),
-    queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
-    enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
-  })
-
-  return {
-    customerStatements,
-    freightStatements,
-  } satisfies StatementLinkCatalog
-}
-
-function decorateStatementLinkConfig(
-  baseConfig: ModulePageConfig,
-  moduleKey: string,
-  catalog: StatementLinkCatalog,
-): ModulePageConfig {
-  if (moduleKey !== 'receipt' && moduleKey !== 'payment') {
-    return baseConfig
-  }
-
-  return {
-    ...baseConfig,
-    formFields: (baseConfig.formFields || []).map((field) => {
-      const isStatementSourceField =
-        (moduleKey === 'receipt' &&
-          field.key === 'sourceCustomerStatementId') ||
-        (moduleKey === 'payment' && field.key === 'sourceFreightStatementId')
-      if (!isStatementSourceField) {
-        return field
-      }
-      return {
-        ...field,
-        options: (form?: ModuleRecordInput) =>
-          buildStatementLinkOptions(moduleKey, form, catalog),
-      }
-    }),
-  }
-}
-
 function isWeightOnlyViewEnabled(
   moduleKey: string,
   runtimeConfig: ReturnType<typeof useRuntimeConfig>['data'],
@@ -126,9 +67,6 @@ function isWeightOnlyViewEnabled(
 }
 
 export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
-  const needsStatementLinkCatalog =
-    moduleKey === 'receipt' || moduleKey === 'payment'
-
   const { data: moduleConfig, isLoading: moduleConfigLoading } = useQuery({
     queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
     queryFn: () => loadBusinessPageConfig(moduleKey),
@@ -138,10 +76,6 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
 
   const { data: runtimeConfig, isLoading: runtimeConfigLoading } =
     useRuntimeConfig()
-
-  const statementLinkCatalog = useStatementLinkCatalog(
-    needsStatementLinkCatalog,
-  )
 
   const config = (() => {
     const found = moduleConfig
@@ -153,11 +87,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
       ? buildWeightOnlyViewConfig(found)
       : found
 
-    return decorateStatementLinkConfig(
-      baseConfig,
-      moduleKey,
-      statementLinkCatalog,
-    )
+    return baseConfig
   })() satisfies ModulePageConfig | undefined
 
   const showSnowflakeId = runtimeConfig?.ui.showSnowflakeId ?? false

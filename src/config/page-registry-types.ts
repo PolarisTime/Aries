@@ -6,6 +6,7 @@ export type RouteViewKey =
   | 'company-setting'
   | 'print-template'
   | 'user-account'
+  | 'finance-overview'
   | 'cash-ledger'
 
 export interface AppPageDefinition {

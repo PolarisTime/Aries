@@ -41,6 +41,7 @@ export const ENDPOINTS = {
   // Cash ledger (aggregate read model)
   CASH_LEDGER: '/cash-ledger',
   CASH_LEDGER_EXPORT: '/cash-ledger/export',
+  FINANCE_OVERVIEW: '/finance/overview',
 
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',

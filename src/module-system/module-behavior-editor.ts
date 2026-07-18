@@ -270,27 +270,18 @@ for (const key of operatorNameModules) {
   registerModuleBehavior(key, { defaultOperatorField: 'operatorName' })
 }
 
-const SUPPLIER_RECEIPT_PURPOSES = new Set([
-  'SUPPLIER_PREPAYMENT_REFUND',
-  'SUPPLIER_OTHER_RECEIPT',
-])
-
-function isSupplierReceiptPurpose(value: unknown) {
-  return SUPPLIER_RECEIPT_PURPOSES.has(asString(value).trim())
-}
-
 registerModuleBehavior('receipt', {
   defaultDraftValues: () => ({
     receiptDate: currentDate(),
     receiptPurpose: 'CUSTOMER_STATEMENT_SETTLEMENT',
     counterpartyType: '客户',
   }),
-  clearLineItemsOnFieldChange: ['receiptPurpose'],
   syncEditorForm(editorForm, ctx) {
-    const supplierReceipt = isSupplierReceiptPurpose(editorForm.receiptPurpose)
-
-    if (ctx.changedKeys.has('receiptPurpose')) {
-      editorForm.counterpartyType = supplierReceipt ? '供应商' : '客户'
+    if (ctx.changedKeys.has('counterpartyType')) {
+      editorForm.receiptPurpose =
+        editorForm.counterpartyType === '供应商'
+          ? 'SUPPLIER_OTHER_RECEIPT'
+          : 'CUSTOMER_STATEMENT_SETTLEMENT'
       editorForm.sourceCustomerStatementId = ''
       editorForm.items = []
       clearCounterpartyIdentity(editorForm)
@@ -304,34 +295,24 @@ registerModuleBehavior('receipt', {
       return
     }
 
-    if (supplierReceipt && ctx.changedKeys.has('counterpartyId')) {
+    if (ctx.changedKeys.has('counterpartyId')) {
       snapshotCounterpartyIdentity(editorForm)
-      return
-    }
-
-    if (!supplierReceipt && ctx.changedKeys.has('customerId')) {
-      const customer = findCustomerOption(editorForm.customerId)
-      editorForm.customerId = asString(customer?.id)
-      editorForm.customerCode = asString(customer?.customerCode).trim()
-      editorForm.customerName = asString(customer?.customerName).trim()
-      editorForm.counterpartyId = editorForm.customerId
-      editorForm.counterpartyCode = editorForm.customerCode
-      editorForm.counterpartyName = editorForm.customerName
       editorForm.projectId = ''
       editorForm.projectName = ''
       editorForm.sourceCustomerStatementId = ''
-      applyDefaultSettlementCompany(editorForm, customer)
-      return
-    }
-
-    if (!supplierReceipt && ctx.changedKeys.has('projectId')) {
-      const project = findProjectOption(
-        editorForm.projectId,
-        editorForm.customerId,
-      )
-      editorForm.projectId = asString(project?.id)
-      editorForm.projectName = asString(project?.projectName).trim()
-      editorForm.sourceCustomerStatementId = ''
+      if (editorForm.counterpartyType === '客户') {
+        editorForm.customerId = editorForm.counterpartyId
+        editorForm.customerCode = editorForm.counterpartyCode
+        editorForm.customerName = editorForm.counterpartyName
+        applyDefaultSettlementCompany(
+          editorForm,
+          findCustomerOption(editorForm.counterpartyId),
+        )
+      } else {
+        editorForm.customerId = ''
+        editorForm.customerCode = ''
+        editorForm.customerName = ''
+      }
       return
     }
 
@@ -345,10 +326,14 @@ registerModuleBehavior('receipt', {
 })
 
 registerModuleBehavior('payment', {
-  clearLineItemsOnFieldChange: ['paymentPurpose'],
+  defaultDraftValues: () => ({
+    paymentDate: currentDate(),
+    paymentPurpose: 'SUPPLIER_PAYMENT',
+    counterpartyType: '供应商',
+  }),
   syncEditorForm(editorForm, ctx) {
-    if (ctx.changedKeys.has('paymentPurpose')) {
-      const purpose = asString(editorForm.paymentPurpose).trim()
+    if (ctx.changedKeys.has('counterpartyType')) {
+      editorForm.paymentPurpose = 'SUPPLIER_PAYMENT'
       clearStatementSources(editorForm)
       editorForm.sourcePurchaseOrderId = ''
       editorForm.purchaseOrderNo = ''
@@ -358,20 +343,7 @@ registerModuleBehavior('payment', {
       clearCounterpartyIdentity(editorForm)
       editorForm.settlementCompanyId = ''
       editorForm.settlementCompanyName = ''
-      if (purpose === 'PURCHASE_PREPAYMENT' || purpose === 'SUPPLIER_PAYMENT') {
-        editorForm.counterpartyType = '供应商'
-      } else {
-        editorForm.counterpartyType = '物流商'
-      }
       return
-    }
-
-    if (ctx.changedKeys.has('counterpartyType')) {
-      clearStatementSources(editorForm)
-      if (!ctx.changedKeys.has('counterpartyId')) {
-        clearCounterpartyIdentity(editorForm)
-        return
-      }
     }
 
     if (ctx.changedKeys.has('counterpartyId')) {

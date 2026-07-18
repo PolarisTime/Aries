@@ -10,6 +10,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
     menuParent: 'statements',
     moduleKey: 'customer-statement',
     searchable: true,
+    hiddenInMenu: true,
   },
   {
     key: 'freight-statement',
@@ -20,6 +21,15 @@ export const financePageDefinitions: AppPageDefinition[] = [
     menuParent: 'statements',
     moduleKey: 'freight-statement',
     searchable: true,
+    hiddenInMenu: true,
+  },
+  {
+    key: 'finance-overview',
+    title: '财务概览',
+    menuKey: '/finance-overview',
+    view: 'finance-overview',
+    icon: 'CalculatorOutlined',
+    menuParent: 'finance',
   },
   {
     key: 'receipt',
@@ -48,5 +58,6 @@ export const financePageDefinitions: AppPageDefinition[] = [
     view: 'cash-ledger',
     icon: 'AccountBookOutlined',
     menuParent: 'finance',
+    hiddenInMenu: true,
   },
 ]

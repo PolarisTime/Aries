@@ -1317,6 +1317,82 @@
   overflow-y: hidden;
 }
 
+.finance-overview-page {
+  min-width: 0;
+}
+
+.finance-overview-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  background: var(--theme-surface);
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.finance-overview-toolbar > .ant-segmented {
+  flex: 0 0 auto;
+  margin-bottom: 1px;
+}
+
+.finance-overview-filter {
+  display: grid;
+  flex: 0 0 190px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.finance-overview-filter--date {
+  flex-basis: 150px;
+}
+
+.finance-overview-filter--keyword {
+  flex-basis: 220px;
+}
+
+.finance-overview-filter > .ant-select,
+.finance-overview-filter > .ant-picker,
+.finance-overview-filter > .ant-input-affix-wrapper {
+  width: 100%;
+}
+
+.finance-overview-summary {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.finance-overview-metric {
+  min-width: 0;
+  padding: 14px 16px;
+  border-inline-end: 1px solid var(--theme-border-subtle);
+}
+
+.finance-overview-metric:last-child {
+  border-inline-end: 0;
+}
+
+.finance-overview-metric .ant-statistic-content {
+  overflow: hidden;
+  font-size: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finance-overview-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 16px 16px;
+  overflow: hidden;
+}
+
+.finance-overview-table .ant-table-wrapper {
+  height: 100%;
+}
+
 .cash-ledger-page {
   min-width: 0;
 }
@@ -1369,6 +1445,45 @@
 }
 
 @media (max-width: 767px) {
+  .finance-overview-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    max-height: min(46vh, 360px);
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .finance-overview-toolbar > .ant-segmented,
+  .finance-overview-filter {
+    width: 100%;
+  }
+
+  .finance-overview-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-overview-metric {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--theme-border-subtle);
+  }
+
+  .finance-overview-metric:nth-child(2n) {
+    border-inline-end: 0;
+  }
+
+  .finance-overview-metric:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .finance-overview-metric .ant-statistic-content {
+    font-size: 18px;
+  }
+
+  .finance-overview-table {
+    padding: 0 8px 8px;
+  }
+
   .cash-ledger-filters {
     grid-template-columns: 1fr;
   }

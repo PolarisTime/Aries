@@ -23,6 +23,16 @@ export const QUERY_KEYS = {
     page: number
     size: number
   }) => ['cash-ledger', query] as const,
+  financeOverview: (query: {
+    settlementCompanyId: string
+    asOfDate: string
+    direction: string
+    counterpartyType?: string
+    keyword?: string
+    onlyOpen?: boolean
+    page: number
+    size: number
+  }) => ['finance-overview', query] as const,
 
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
