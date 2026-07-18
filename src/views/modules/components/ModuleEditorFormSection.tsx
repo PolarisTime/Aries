@@ -16,6 +16,7 @@ interface Props {
   config: ModulePageConfig
   moduleKey: string
   canSave: boolean
+  canImportParentItems: boolean
   canAudit: boolean
   saving: boolean
   showActions: boolean
@@ -48,6 +49,7 @@ export function ModuleEditorFormSection({
   config,
   moduleKey,
   canSave,
+  canImportParentItems,
   canAudit,
   saving,
   showActions,
@@ -107,7 +109,7 @@ export function ModuleEditorFormSection({
                 htmlType="button"
                 icon={<ImportOutlined />}
                 loading={parentImporting}
-                disabled={!canSave}
+                disabled={!canImportParentItems}
                 onClick={onOpenParentSelector}
               >
                 {config.parentImport?.buttonText ||

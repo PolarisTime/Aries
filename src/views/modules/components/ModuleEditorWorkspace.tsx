@@ -173,7 +173,8 @@ export function ModuleEditorWorkspace({
     canAddManualItems && !parentImportedItemEditLocked
   const canImportParentItems =
     Boolean(config.parentImport) &&
-    canSave &&
+    !config.readOnly &&
+    (config.parentImport?.executeParentImport ? !isEdit : canSave) &&
     !lineItemsLocked &&
     !parentImportedItemEditLocked
   const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
@@ -247,6 +248,7 @@ export function ModuleEditorWorkspace({
             config={config}
             moduleKey={moduleKey}
             canSave={canSave}
+            canImportParentItems={canImportParentItems}
             canAudit={canSaveAndAuditInEditor}
             saving={saving}
             showActions={!useFinanceEditorLayout && !config.itemColumns?.length}
