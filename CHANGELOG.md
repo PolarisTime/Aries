@@ -1,3 +1,15 @@
+# [4.1.0](https://github.com/PolarisTime/Aries/compare/v4.0.0...v4.1.0) (2026-07-18)
+
+
+### Bug Fixes
+
+* **finance:** 消除财务概览级联渲染 ([20cb116](https://github.com/PolarisTime/Aries/commit/20cb116203dc03efa7b8627be8878507cf12ac88))
+
+
+### Features
+
+* **finance:** 新增财务概览并简化收付款页面 ([2afc999](https://github.com/PolarisTime/Aries/commit/2afc999b3a35efd4910f68b15e013c801ef2bc90))
+
 # [4.0.0](https://github.com/PolarisTime/Aries/compare/v3.0.0...v4.0.0) (2026-07-18)
 
 
