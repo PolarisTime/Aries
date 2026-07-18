@@ -754,18 +754,18 @@
 }
 
 .editor-workspace-tabs-antd.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
-  height: calc(var(--app-tabs-height) - 8px);
-  margin: 4px 4px 4px 0;
-  padding: 0 10px;
+  height: 100%;
+  margin: 0 2px 0 0;
+  padding: 0 12px;
   color: var(--theme-text-muted);
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--ant-border-radius) var(--ant-border-radius) 0 0;
+  border: 0;
+  border-radius: 0;
   transition:
     color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out),
     background-color var(--ant-motion-duration-fast)
     var(--ant-motion-ease-in-out),
-    border-color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out);
+    box-shadow var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out);
 }
 
 .editor-workspace-tabs-antd.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab:hover {
@@ -776,9 +776,8 @@
 .editor-workspace-tabs-antd.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
   color: var(--theme-primary);
   background: var(--theme-surface);
-  border-color: var(--theme-card-border);
-  border-bottom-color: var(--theme-surface);
-  box-shadow: inset 0 2px 0 var(--theme-primary);
+  border-color: transparent;
+  box-shadow: inset 0 -2px 0 var(--theme-primary);
 }
 
 .editor-workspace-tabs-antd .ant-tabs-tab-btn {
@@ -795,7 +794,7 @@
 .editor-task-tab-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   overflow: hidden;
   line-height: calc(var(--app-tabs-height) - 10px);
@@ -820,6 +819,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.editor-task-tab-separator {
+  flex: 0 0 auto;
+  color: var(--theme-text-muted-light);
+}
+
 .editor-workspace-tabs-antd .ant-tabs-tab-active .editor-task-tab-record {
   color: var(--theme-primary);
 }
@@ -841,6 +845,19 @@
   margin-left: 4px;
   color: var(--theme-text-muted-light);
   border-radius: var(--ant-border-radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out),
+    background-color var(--ant-motion-duration-fast)
+    var(--ant-motion-ease-in-out),
+    opacity var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out);
+}
+
+.editor-workspace-tabs-antd .ant-tabs-tab:hover .ant-tabs-tab-remove,
+.editor-workspace-tabs-antd .ant-tabs-tab:focus-within .ant-tabs-tab-remove {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .editor-workspace-tabs-antd .ant-tabs-tab-remove:hover {
@@ -851,35 +868,38 @@
 .editor-workspace-tabs-antd .ant-tabs-nav-more {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 32px;
   height: calc(var(--app-tabs-height) - 8px);
   margin-block: 4px;
-  padding-inline: 10px;
+  padding-inline: 0;
   color: var(--theme-text-muted);
-  background: var(--theme-surface);
-  border: 1px solid var(--theme-card-border);
+  background: transparent;
+  border: 0;
   border-radius: var(--ant-border-radius);
 }
 
 .editor-workspace-tabs-antd .ant-tabs-nav-more:hover {
   color: var(--theme-primary);
-  border-color: var(--theme-highlight-border);
+  background: var(--theme-surface-hover);
 }
 
 .editor-workspace-tabs-antd .ant-tabs-extra-content {
   display: flex;
   align-items: center;
   height: 100%;
-  padding-right: 4px;
+  padding: 0 6px;
 }
 
 .editor-task-switcher.ant-btn {
-  height: calc(var(--app-tabs-height) - 8px);
-  margin: 4px 0;
-  padding-inline: 10px 14px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
   color: var(--theme-text-muted);
   background: transparent;
   border-color: transparent;
-  border-radius: var(--ant-border-radius) var(--ant-border-radius) 0 0;
+  border-radius: var(--ant-border-radius);
   box-shadow: none;
 }
 
@@ -892,6 +912,16 @@
 .editor-task-switcher.ant-btn:focus-visible {
   outline: 2px solid var(--theme-primary);
   outline-offset: -2px;
+}
+
+.editor-task-switcher-badge .ant-badge-count {
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 4px;
+  font-size: 10px;
+  line-height: 16px;
+  background: var(--theme-primary);
+  box-shadow: 0 0 0 1px var(--theme-surface);
 }
 
 .editor-task-drawer .ant-drawer-body {
@@ -1502,15 +1532,6 @@
 @media (max-width: 720px) {
   .editor-task-tab-label {
     max-width: 150px;
-  }
-
-  .editor-task-switcher.ant-btn {
-    width: 30px;
-    padding-inline: 0;
-  }
-
-  .editor-task-switcher-label {
-    display: none;
   }
 
   .page-workspace-stack,

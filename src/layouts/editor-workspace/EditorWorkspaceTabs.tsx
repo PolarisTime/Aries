@@ -9,7 +9,7 @@ import {
   UnorderedListOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
-import { Badge, Button, Dropdown, Tabs } from 'antd'
+import { Badge, Button, Dropdown, Tabs, Tooltip } from 'antd'
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -154,9 +154,17 @@ export const EditorWorkspaceTabs = ({
                 <>
                   <span className="editor-task-tab-module">{moduleTitle}</span>
                   {recordLabel ? (
-                    <span className="editor-task-tab-record">
-                      {recordLabel}
-                    </span>
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="editor-task-tab-separator"
+                      >
+                        ·
+                      </span>
+                      <span className="editor-task-tab-record">
+                        {recordLabel}
+                      </span>
+                    </>
                   ) : null}
                 </>
               ) : (
@@ -200,22 +208,31 @@ export const EditorWorkspaceTabs = ({
         size="small"
         tabBarExtraContent={{
           left: (
-            <Badge count={tasks.length} overflowCount={99} size="small">
-              <Button
-                aria-label={t('layouts.editorTasks.openAllTasks', {
-                  count: tasks.length,
-                })}
-                className="editor-task-switcher"
-                icon={<UnorderedListOutlined />}
+            <Tooltip
+              title={t('layouts.editorTasks.openAllTasks', {
+                count: tasks.length,
+              })}
+            >
+              <Badge
+                className="editor-task-switcher-badge"
+                count={tasks.length}
+                offset={[-2, 2]}
+                overflowCount={99}
                 size="small"
-                type="text"
-                onClick={() => setDrawerOpen(true)}
               >
-                <span className="editor-task-switcher-label">
-                  {t('layouts.editorTasks.allTasks')}
-                </span>
-              </Button>
-            </Badge>
+                <Button
+                  aria-label={t('layouts.editorTasks.openAllTasks', {
+                    count: tasks.length,
+                  })}
+                  className="editor-task-switcher"
+                  icon={<UnorderedListOutlined />}
+                  shape="circle"
+                  size="small"
+                  type="text"
+                  onClick={() => setDrawerOpen(true)}
+                />
+              </Badge>
+            </Tooltip>
           ),
         }}
         type="editable-card"
