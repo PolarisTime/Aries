@@ -15,12 +15,19 @@ export interface EditorTaskIdentity {
   recordId: string
 }
 
+export interface EditorTaskDisplayMeta {
+  moduleTitle: string
+  recordLabel: string
+}
+
 export interface EditorTask extends EditorTaskIdentity {
   key: string
   path: string
   title: string
+  displayMeta?: EditorTaskDisplayMeta
   status: EditorTaskStatus
   updatedAt: number
+  lastActivatedAt: number
   closable: boolean
 }
 
@@ -28,6 +35,7 @@ export interface EditorTaskMigration {
   mode: EditorTaskMode
   recordId: string
   title: string
+  displayMeta?: EditorTaskDisplayMeta
   status: EditorTaskStatus
   updatedAt: number
 }

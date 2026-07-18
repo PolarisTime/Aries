@@ -66,7 +66,6 @@ export const ENDPOINTS = {
 
   // Import candidate collections
   PURCHASE_ORDER_IMPORT_CANDIDATES: '/purchase-orders/import-candidates',
-  PURCHASE_INBOUND_IMPORT_BATCHES: '/purchase-inbound-import-batches',
   PURCHASE_ORDER_PREPAYMENT_CANDIDATES:
     '/purchase-orders/prepayment-candidates',
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',

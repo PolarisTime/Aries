@@ -50,8 +50,6 @@ export interface ModuleFormFieldOption {
   settlementCompanyId?: string | number
   settlementCompanyName?: string
   purchaseWeighRequired?: boolean
-  purchaseWeighOverTolerancePercent?: number
-  purchaseWeighUnderTolerancePercent?: number
 }
 
 export type ModuleFormFieldOptionResolver = (

@@ -19,7 +19,6 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
-import { auditPurchaseInbound } from '@/api/document-flow-commands'
 import { readRequestError } from '@/api/request-errors'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
@@ -43,7 +42,6 @@ import {
   parseParentRelationNos,
 } from '@/module-system/module-adapter-shared'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import { requestPurchaseInboundAuditInput } from '@/module-system/purchase-inbound-audit-options'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
@@ -527,9 +525,6 @@ export function useModuleEditorWorkspace({
   }
 
   const handleSave = async (audit = false) => {
-    let purchaseInboundDraftSavedForAudit = false
-    let purchaseInboundAuditCancelled = false
-    let purchaseInboundSavedRecord: ModuleRecord | undefined
     try {
       const effectiveAuthoritativePrimaryNo =
         authoritativePrimaryNo ||
@@ -613,7 +608,7 @@ export function useModuleEditorWorkspace({
         if (!confirmed) return
       }
 
-      if (audit && editorAuditTarget && moduleKey !== 'purchase-inbound') {
+      if (audit && editorAuditTarget) {
         const confirmed = await new Promise<boolean>((resolve) => {
           modal.confirm({
             title: t('common.saveAndAudit'),
@@ -686,48 +681,18 @@ export function useModuleEditorWorkspace({
         if (!savedId) {
           throw new Error('保存成功但未返回单据 ID，无法完成审核')
         }
-        if (moduleKey === 'purchase-inbound') {
-          purchaseInboundDraftSavedForAudit = true
-          const detailResult = await getBusinessModuleDetail(
-            'purchase-inbound',
-            savedId,
-          )
-          purchaseInboundSavedRecord = detailResult.data
-          const auditInput = await requestPurchaseInboundAuditInput(
-            detailResult.data,
-          )
-          if (auditInput) {
-            const auditResult = await auditPurchaseInbound(savedId, auditInput)
-            if (!auditResult.data?.purchaseInbound) {
-              throw new Error('审核成功但未返回采购入库结果')
-            }
-            savedRecord = auditResult.data.purchaseInbound
-          } else {
-            purchaseInboundAuditCancelled = true
-            savedRecord = detailResult.data
-          }
-        } else {
-          const statusResult = await updateBusinessModuleStatus(
-            moduleKey,
-            savedId,
-            editorAuditTarget.value,
-          )
-          savedRecord = statusResult.data || savedRecord
-        }
+        const statusResult = await updateBusinessModuleStatus(
+          moduleKey,
+          savedId,
+          editorAuditTarget.value,
+        )
+        savedRecord = statusResult.data || savedRecord
       }
-      if (purchaseInboundAuditCancelled) {
-        setSaveResult({
-          status: 'warning',
-          message: '草稿已保存，审核已取消',
-          record: savedRecord,
-        })
-      } else {
-        setSaveResult({
-          status: 'success',
-          message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
-          record: savedRecord,
-        })
-      }
+      setSaveResult({
+        status: 'success',
+        message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
+        record: savedRecord,
+      })
       onSaved()
       try {
         await refreshModuleQueries()
@@ -745,17 +710,11 @@ export function useModuleEditorWorkspace({
       } else if (err instanceof Error) {
         const { code, traceId } = readRequestError(err)
         const baseErrorMessage = err.message || t('common.saveFailed')
-        const errorMessage = purchaseInboundDraftSavedForAudit
-          ? `草稿已保存，审核未完成：${baseErrorMessage}`
-          : baseErrorMessage
         setSaveResult({
           status: 'error',
-          message: errorMessage,
+          message: baseErrorMessage,
           traceId,
           ...(code !== undefined ? { errorCode: code } : {}),
-          ...(purchaseInboundSavedRecord
-            ? { record: purchaseInboundSavedRecord }
-            : {}),
         })
       } else {
         setSaveResult({
@@ -819,31 +778,6 @@ export function useModuleEditorWorkspace({
               ).data,
         })),
       )
-
-      if (parentImportConfig.executeParentImport) {
-        if (parentDetails.length !== 1) {
-          throw new Error('服务端批次导入一次只能选择一张上级单据')
-        }
-        const executionResult = await parentImportConfig.executeParentImport({
-          currentRecord: form.getFieldsValue(true),
-          parentRecord: parentDetails[0].data,
-        })
-        setParentSelectorSessionKey(null)
-        setParentSelectorDefinition(null)
-        if (executionResult.cancelled) {
-          setParentImporting(false)
-          return
-        }
-        message.success(
-          executionResult.message ||
-            t('common.importParentSuccessSimple', { itemCount: 0 }),
-        )
-        onSaved()
-        await refreshModuleQueries()
-        setParentImporting(false)
-        onClose()
-        return
-      }
 
       let nextValues = form.getFieldsValue(true)
       let nextItems = items

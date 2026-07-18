@@ -48,8 +48,13 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
       title: record
         ? `${config.title}${primaryNo ? ` ${primaryNo}` : ''}`
         : `新建${config.title}`,
+      displayMeta: {
+        moduleTitle: config.title,
+        recordLabel: record ? primaryNo || recordId : '新建',
+      },
       status: 'clean',
       updatedAt: Date.now(),
+      lastActivatedAt: Date.now(),
       closable: true,
     })
   }

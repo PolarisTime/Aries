@@ -6,6 +6,15 @@ import type {
 
 const normalizeIdentityPart = (value: string): string => value.trim()
 
+export const getEditorTaskLastActivatedAt = (task: EditorTask): number =>
+  Number.isFinite(task.lastActivatedAt) ? task.lastActivatedAt : task.updatedAt
+
+export const sortEditorTasksByRecent = (tasks: EditorTask[]): EditorTask[] =>
+  [...tasks].sort(
+    (left, right) =>
+      getEditorTaskLastActivatedAt(right) - getEditorTaskLastActivatedAt(left),
+  )
+
 export const buildEditorTaskKey = (identity: EditorTaskIdentity): string => {
   const userKey = normalizeIdentityPart(identity.userKey)
   const moduleKey = normalizeIdentityPart(identity.moduleKey)

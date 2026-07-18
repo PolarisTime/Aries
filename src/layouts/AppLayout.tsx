@@ -293,6 +293,57 @@ export function AppLayout() {
   const currentUserEditorTasks = editorTasks.filter(
     (task) => task.userKey === currentUserKey,
   )
+  const currentUserActiveEditorTaskKey = currentUserEditorTasks.some(
+    (task) => task.key === activeEditorTaskKey,
+  )
+    ? activeEditorTaskKey
+    : null
+
+  const handleActivateEditorTask = (key: string) => {
+    const task = editorTaskStore
+      .getState()
+      .tasks.find((item) => item.key === key && item.userKey === currentUserKey)
+    if (!task || !editorTaskStore.getState().requestResume(key)) {
+      return
+    }
+    void navigate({ to: task.path as '/' })
+  }
+
+  const handleCloseEditorTasks = (keys: string[]) => {
+    const requestedKeys = new Set(keys)
+    const tasks = editorTaskStore
+      .getState()
+      .tasks.filter(
+        (task) =>
+          requestedKeys.has(task.key) &&
+          task.userKey === currentUserKey &&
+          task.closable &&
+          task.status !== 'saving',
+      )
+    if (!tasks.length) {
+      return
+    }
+
+    const unsafeTaskCount = tasks.filter(
+      (task) => task.status === 'dirty' || task.status === 'error',
+    ).length
+    const closeTasks = () => {
+      editorTaskStore.getState().closeMany(tasks.map((task) => task.key))
+    }
+    if (unsafeTaskCount > 0) {
+      modal.confirm({
+        title: t('layouts.editorTasks.closeConfirmTitle'),
+        content: t('layouts.editorTasks.closeConfirmContent', {
+          count: unsafeTaskCount,
+        }),
+        okText: t('layouts.editorTasks.close'),
+        cancelText: t('common.cancel'),
+        onOk: closeTasks,
+      })
+      return
+    }
+    closeTasks()
+  }
   const clockDisplay = buildClockDisplay(clock)
   const {
     fixedWidthStyle,
@@ -388,36 +439,11 @@ export function AppLayout() {
         </Header>
 
         <EditorWorkspaceTabs
-          activeKey={activeEditorTaskKey}
+          activeKey={currentUserActiveEditorTaskKey}
           tasks={currentUserEditorTasks}
           style={{ ...fixedWidthStyle, ...shellFontStyle }}
-          onActivate={(key) => {
-            const task = editorTaskStore
-              .getState()
-              .tasks.find((item) => item.key === key)
-            if (!task || !editorTaskStore.getState().requestResume(key)) {
-              return
-            }
-            void navigate({ to: task.path as '/' })
-          }}
-          onClose={(key) => {
-            const task = editorTaskStore
-              .getState()
-              .tasks.find((item) => item.key === key)
-            if (task?.status === 'dirty' || task?.status === 'error') {
-              modal.confirm({
-                title: '关闭编辑任务',
-                content: '关闭后未保存的修改将丢失，确定继续吗？',
-                okText: '关闭',
-                cancelText: t('common.cancel'),
-                onOk: () => {
-                  editorTaskStore.getState().close(key)
-                },
-              })
-              return
-            }
-            editorTaskStore.getState().close(key)
-          }}
+          onActivate={handleActivateEditorTask}
+          onCloseTasks={handleCloseEditorTasks}
         />
 
         <AppContentOutlet openPageKey={routePageContext.openPageKey} />

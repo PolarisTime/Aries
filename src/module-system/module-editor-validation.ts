@@ -82,23 +82,6 @@ function getLineItemValidationMessages(
           }),
         )
       }
-      const lockedSalesWeightTon = Number(item._lockedSalesWeightTon || 0)
-      const weighWeightTon = Number(item.weighWeightTon || 0)
-      if (
-        isWeighSettlement &&
-        Number.isFinite(lockedSalesWeightTon) &&
-        lockedSalesWeightTon > 0 &&
-        Number.isFinite(weighWeightTon) &&
-        weighWeightTon > 0 &&
-        weighWeightTon < lockedSalesWeightTon
-      ) {
-        messages.push(
-          i18next.t('modules.validation.lockedSalesWeightExceeded', {
-            row: index + 1,
-            locked: lockedSalesWeightTon,
-          }),
-        )
-      }
     }
     for (const column of requiredColumns) {
       if (!hasEditorValue(item[column.dataIndex])) {

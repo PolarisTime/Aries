@@ -1,5 +1,4 @@
-import { ImportOutlined } from '@ant-design/icons'
-import { Alert, Button, Col, Form, Row, Typography } from 'antd'
+import { Alert, Col, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
 import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
@@ -16,18 +15,15 @@ interface Props {
   config: ModulePageConfig
   moduleKey: string
   canSave: boolean
-  canImportParentItems: boolean
   canAudit: boolean
   saving: boolean
   showActions: boolean
   lineItemsLocked: boolean
   lockedLineItemsNotice: string
-  parentImporting: boolean
   authoritativePrimaryNo?: string
   isEdit: boolean
   layoutVariant?: 'default' | 'finance'
   onCancel: () => void
-  onOpenParentSelector: () => void
   onSave: (audit: boolean) => void
 }
 
@@ -49,18 +45,15 @@ export function ModuleEditorFormSection({
   config,
   moduleKey,
   canSave,
-  canImportParentItems,
   canAudit,
   saving,
   showActions,
   lineItemsLocked,
   lockedLineItemsNotice,
-  parentImporting,
   authoritativePrimaryNo,
   isEdit,
   layoutVariant = 'default',
   onCancel,
-  onOpenParentSelector,
   onSave,
 }: Props) {
   const { t } = useTranslation()
@@ -77,11 +70,6 @@ export function ModuleEditorFormSection({
         ),
     ),
   )
-  const parentImportVisible = Boolean(
-    config.parentImport &&
-      (config.parentImport.visibleWhen?.(formValues) ?? true),
-  )
-
   if (!formFieldRows.length) {
     return null
   }
@@ -102,33 +90,15 @@ export function ModuleEditorFormSection({
             {t('modules.editorForm.documentInfo')}
           </Typography.Title>
         </div>
-        {showActions || parentImportVisible ? (
+        {showActions ? (
           <div className="editor-form-actions">
-            {parentImportVisible ? (
-              <Button
-                htmlType="button"
-                icon={<ImportOutlined />}
-                loading={parentImporting}
-                disabled={!canImportParentItems}
-                onClick={onOpenParentSelector}
-              >
-                {config.parentImport?.buttonText ||
-                  t('modules.itemsSection.importItems', {
-                    label:
-                      config.parentImport?.label ||
-                      t('modules.itemsSection.parentDoc'),
-                  })}
-              </Button>
-            ) : null}
-            {showActions ? (
-              <EditorFooterActions
-                canSave={canSave}
-                canAudit={canAudit}
-                saving={saving}
-                onCancel={onCancel}
-                onSave={onSave}
-              />
-            ) : null}
+            <EditorFooterActions
+              canSave={canSave}
+              canAudit={canAudit}
+              saving={saving}
+              onCancel={onCancel}
+              onSave={onSave}
+            />
           </div>
         ) : null}
       </div>

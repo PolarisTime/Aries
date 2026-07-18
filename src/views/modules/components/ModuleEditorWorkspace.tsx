@@ -162,7 +162,7 @@ export function ModuleEditorWorkspace({
       editorTaskStore.getState().updateStatus(activeTask.key, 'clean')
     }
   }, [moduleKey, saveResult?.status, saving])
-  const editorFormValues = form.getFieldsValue(true)
+  const editorFormValues = Form.useWatch([], form) || {}
   const parentImportedItemEditLocked = isParentImportedEditorLocked(
     moduleKey,
     editorFormValues,
@@ -174,9 +174,13 @@ export function ModuleEditorWorkspace({
   const canImportParentItems =
     Boolean(config.parentImport) &&
     !config.readOnly &&
-    (config.parentImport?.executeParentImport ? !isEdit : canSave) &&
+    canSave &&
     !lineItemsLocked &&
     !parentImportedItemEditLocked
+  const parentImportVisible = Boolean(
+    config.parentImport &&
+      (config.parentImport.visibleWhen?.(editorFormValues) ?? true),
+  )
   const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
   const useFinanceEditorLayout = FINANCE_DOCUMENT_MODULES.has(moduleKey)
   const {
@@ -248,18 +252,15 @@ export function ModuleEditorWorkspace({
             config={config}
             moduleKey={moduleKey}
             canSave={canSave}
-            canImportParentItems={canImportParentItems}
             canAudit={canSaveAndAuditInEditor}
             saving={saving}
             showActions={!useFinanceEditorLayout && !config.itemColumns?.length}
             lineItemsLocked={lineItemsLocked}
             lockedLineItemsNotice={lockedLineItemsNotice}
-            parentImporting={parentImporting}
             authoritativePrimaryNo={authoritativePrimaryNo}
             isEdit={isEdit}
             layoutVariant={useFinanceEditorLayout ? 'finance' : 'default'}
             onCancel={onClose}
-            onOpenParentSelector={openParentSelector}
             onSave={(audit) => {
               void handleSave(audit)
             }}
@@ -270,6 +271,7 @@ export function ModuleEditorWorkspace({
           config={config}
           items={items}
           selectedItemIds={selectedItemIds}
+          parentImportVisible={parentImportVisible}
           parentImporting={parentImporting}
           parentSelectorDisplayFieldKey={parentSelectorDisplayFieldKey}
           parentSelectorFilters={parentSelectorFilters}

@@ -1,6 +1,9 @@
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { createStore } from 'zustand/vanilla'
-import { upsertEditorTask } from '@/layouts/editor-workspace/editor-task-model'
+import {
+  sortEditorTasksByRecent,
+  upsertEditorTask,
+} from '@/layouts/editor-workspace/editor-task-model'
 import type {
   EditorTask,
   EditorTaskStatus,
@@ -18,6 +21,7 @@ interface EditorTaskState {
     updatedAt?: number,
   ) => void
   close: (key: string) => boolean
+  closeMany: (keys: string[]) => number
   requestResume: (key: string) => boolean
   consumeResume: (key: string) => boolean
   clearUser: (userKey: string) => void
@@ -31,8 +35,12 @@ export const editorTaskStore = createStore<EditorTaskState>()(
       activeKey: null,
       resumeKey: null,
       open: (task) => {
+        const lastActivatedAt = Date.now()
         set((state) => ({
-          tasks: upsertEditorTask(state.tasks, task),
+          tasks: upsertEditorTask(state.tasks, {
+            ...task,
+            lastActivatedAt,
+          }),
           activeKey: task.key,
         }))
       },
@@ -40,7 +48,13 @@ export const editorTaskStore = createStore<EditorTaskState>()(
         if (!get().tasks.some((task) => task.key === key)) {
           return false
         }
-        set({ activeKey: key })
+        const lastActivatedAt = Date.now()
+        set((state) => ({
+          activeKey: key,
+          tasks: state.tasks.map((task) =>
+            task.key === key ? { ...task, lastActivatedAt } : task,
+          ),
+        }))
         return true
       },
       updateStatus: (key, status, updatedAt = Date.now()) => {
@@ -51,32 +65,49 @@ export const editorTaskStore = createStore<EditorTaskState>()(
         }))
       },
       close: (key) => {
+        return get().closeMany([key]) > 0
+      },
+      closeMany: (keys) => {
         const state = get()
-        const closingIndex = state.tasks.findIndex((task) => task.key === key)
-        if (
-          closingIndex < 0 ||
-          state.tasks[closingIndex]?.status === 'saving'
-        ) {
-          return false
+        const requestedKeys = new Set(keys)
+        const closingTasks = state.tasks.filter(
+          (task) =>
+            requestedKeys.has(task.key) &&
+            task.closable &&
+            task.status !== 'saving',
+        )
+        if (!closingTasks.length) {
+          return 0
         }
 
-        const tasks = state.tasks.filter((task) => task.key !== key)
-        const fallbackTask =
-          tasks[Math.max(0, closingIndex - 1)] ?? tasks.at(-1)
+        const closingKeys = new Set(closingTasks.map((task) => task.key))
+        const tasks = state.tasks.filter((task) => !closingKeys.has(task.key))
+        const activeTask = closingTasks.find(
+          (task) => task.key === state.activeKey,
+        )
+        const fallbackTask = activeTask
+          ? sortEditorTasksByRecent(
+              tasks.filter((task) => task.userKey === activeTask.userKey),
+            )[0]
+          : undefined
         set({
           tasks,
-          activeKey:
-            state.activeKey === key
-              ? (fallbackTask?.key ?? null)
-              : state.activeKey,
+          activeKey: activeTask ? (fallbackTask?.key ?? null) : state.activeKey,
         })
-        return true
+        return closingTasks.length
       },
       requestResume: (key) => {
         if (!get().tasks.some((task) => task.key === key)) {
           return false
         }
-        set({ activeKey: key, resumeKey: key })
+        const lastActivatedAt = Date.now()
+        set((state) => ({
+          activeKey: key,
+          resumeKey: key,
+          tasks: state.tasks.map((task) =>
+            task.key === key ? { ...task, lastActivatedAt } : task,
+          ),
+        }))
         return true
       },
       consumeResume: (key) => {
@@ -89,10 +120,12 @@ export const editorTaskStore = createStore<EditorTaskState>()(
       clearUser: (userKey) => {
         set((state) => {
           const tasks = state.tasks.filter((task) => task.userKey !== userKey)
-          const activeTask = tasks.find((task) => task.key === state.activeKey)
+          const activeTaskRemoved = state.tasks.some(
+            (task) => task.key === state.activeKey && task.userKey === userKey,
+          )
           return {
             tasks,
-            activeKey: activeTask?.key ?? tasks.at(-1)?.key ?? null,
+            activeKey: activeTaskRemoved ? null : state.activeKey,
           }
         })
       },

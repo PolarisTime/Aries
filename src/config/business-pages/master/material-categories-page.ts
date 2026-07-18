@@ -46,18 +46,6 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       type: 'boolean',
     },
     {
-      title: i18next.t('modules.pages.materialCategories.overTolerance'),
-      dataIndex: 'purchaseWeighOverTolerancePercent',
-      width: 120,
-      align: 'right',
-    },
-    {
-      title: i18next.t('modules.pages.materialCategories.underTolerance'),
-      dataIndex: 'purchaseWeighUnderTolerancePercent',
-      width: 120,
-      align: 'right',
-    },
-    {
       title: i18next.t('modules.pages.materialCategories.status'),
       dataIndex: 'status',
       width: 100,
@@ -70,11 +58,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       width: 200,
     },
   ],
-  defaultHiddenColumnKeys: [
-    'purchaseWeighOverTolerancePercent',
-    'purchaseWeighUnderTolerancePercent',
-    'remark',
-  ],
+  defaultHiddenColumnKeys: ['remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.materialCategories.categoryCode'),
@@ -91,14 +75,6 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
       key: 'purchaseWeighRequired',
-    },
-    {
-      label: i18next.t('modules.pages.materialCategories.overTolerance'),
-      key: 'purchaseWeighOverTolerancePercent',
-    },
-    {
-      label: i18next.t('modules.pages.materialCategories.underTolerance'),
-      key: 'purchaseWeighUnderTolerancePercent',
     },
     {
       label: i18next.t('modules.pages.materialCategories.status'),
@@ -151,28 +127,6 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
           value: false,
         },
       ],
-    },
-    {
-      key: 'purchaseWeighOverTolerancePercent',
-      label: i18next.t('modules.pages.materialCategories.overTolerance'),
-      type: 'number',
-      required: true,
-      min: 0,
-      precision: 2,
-      step: 0.5,
-      defaultValue: 5,
-      row: 2,
-    },
-    {
-      key: 'purchaseWeighUnderTolerancePercent',
-      label: i18next.t('modules.pages.materialCategories.underTolerance'),
-      type: 'number',
-      required: true,
-      min: 0,
-      precision: 2,
-      step: 0.5,
-      defaultValue: 5,
-      row: 2,
     },
     {
       key: 'status',

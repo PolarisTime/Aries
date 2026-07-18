@@ -97,13 +97,6 @@ export interface ModuleParentImportDefinition {
     | 'sourcePurchaseOrderItemId'
     | 'sourceSalesOrderItemId'
   resolveParentRecord?: (parentRecord: ModuleRecord) => Promise<ModuleRecord>
-  executeParentImport?: (args: {
-    currentRecord: ModuleRecord
-    parentRecord: ModuleRecord
-  }) => Promise<{
-    cancelled?: boolean
-    message?: string
-  }>
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
   validateParentImport?: (args: {

@@ -1,67 +1,6 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { withIdempotencyKey } from '@/api/idempotency'
 import type { ApiResponse } from '@/types/api'
-import type { EntityId } from '@/types/entity-id'
-import type { ModuleRecord } from '@/types/module-page'
-
-export interface PurchaseInboundAuditCommandInput {
-  overToleranceConfirmations: Array<{
-    inboundItemId: EntityId
-    reasonCode: string
-    remark?: string
-  }>
-}
-
-export interface PurchaseInboundAuditCommandResult {
-  purchaseInbound: ModuleRecord
-}
-
-export interface PurchaseInboundSplitPreviewResult {
-  sourcePurchaseOrderId: string | number
-  sourcePurchaseOrderNo: string
-  importAllowed: boolean
-  blockingReason?: string | null
-  expectedDraftCount: number
-  groups: Array<{
-    warehouseId: string | number
-    warehouseName: string
-    settlementMode: string
-    totalQuantity: number
-    totalTheoreticalWeightTon: number
-    totalAmount: number
-    items: Array<{ sourcePurchaseOrderItemId: string | number }>
-  }>
-}
-
-export interface PurchaseInboundImportBatchResult {
-  id: string | number
-  batchNo: string
-  sourcePurchaseOrderId: string | number
-  sourcePurchaseOrderNo: string
-  inbounds: Array<{
-    id: string | number
-    inboundNo: string
-    warehouseId: string | number
-    warehouseName: string
-    settlementMode: string
-    itemCount: number
-    status: string
-  }>
-}
-
-export async function auditPurchaseInbound(
-  id: string,
-  input: PurchaseInboundAuditCommandInput,
-) {
-  return assertApiSuccess(
-    await http.post<ApiResponse<PurchaseInboundAuditCommandResult>>(
-      `/purchase-inbounds/${encodeURIComponent(id)}/audit`,
-      input,
-      withIdempotencyKey(),
-    ),
-    '审核采购入库失败',
-  )
-}
 
 export async function completeSalesOrder(id: string) {
   return assertApiSuccess(
@@ -71,28 +10,5 @@ export async function completeSalesOrder(id: string) {
       withIdempotencyKey(),
     ),
     '完成销售失败',
-  )
-}
-
-export async function previewPurchaseInboundSplit(id: string) {
-  return assertApiSuccess(
-    await http.get<ApiResponse<PurchaseInboundSplitPreviewResult>>(
-      `/purchase-orders/${encodeURIComponent(id)}/inbound-split-preview`,
-    ),
-    '采购入库拆分预览失败',
-  )
-}
-
-export async function createPurchaseInboundImportBatch(
-  id: string,
-  input: { inboundDate: string; remark?: string },
-) {
-  return assertApiSuccess(
-    await http.post<ApiResponse<PurchaseInboundImportBatchResult>>(
-      `/purchase-orders/${encodeURIComponent(id)}/inbound-import-batches`,
-      input,
-      withIdempotencyKey(),
-    ),
-    '采购入库拆分草稿创建失败',
   )
 }

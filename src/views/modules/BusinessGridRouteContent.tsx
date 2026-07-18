@@ -88,9 +88,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     moduleKey !== 'freight-statement'
   const canSaveEditorRecord = state.editRecord
     ? !state.config.readOnly
-    : !state.config.readOnly &&
-      state.config.allowManualCreate !== false &&
-      !state.config.parentImport?.executeParentImport
+    : !state.config.readOnly && state.config.allowManualCreate !== false
 
   return (
     <div key={moduleKey} className="page-stack module-page-stack">

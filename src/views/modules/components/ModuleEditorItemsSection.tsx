@@ -19,6 +19,7 @@ interface Props {
   config: ModulePageConfig
   items: ModuleLineItem[]
   selectedItemIds: string[]
+  parentImportVisible: boolean
   parentImporting: boolean
   parentSelectorDisplayFieldKey?: string
   parentSelectorFilters: SearchParams
@@ -51,6 +52,7 @@ export function ModuleEditorItemsSection({
   config,
   items,
   selectedItemIds,
+  parentImportVisible,
   parentImporting,
   parentSelectorDisplayFieldKey,
   parentSelectorFilters,
@@ -124,11 +126,12 @@ export function ModuleEditorItemsSection({
                   {t('modules.itemsSection.addItem')}
                 </Button>
               )}
-              {capabilities.importParentItems && (
+              {parentImportVisible && (
                 <Button
                   className="overlay-action-button"
                   icon={<ImportOutlined />}
                   loading={parentImporting}
+                  disabled={!capabilities.importParentItems}
                   onClick={onOpenParentSelector}
                 >
                   {config.parentImport?.buttonText ||

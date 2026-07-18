@@ -1,17 +1,12 @@
-import dayjs from 'dayjs'
 import i18next from 'i18next'
-import {
-  createPurchaseInboundImportBatch,
-  previewPurchaseInboundSplit,
-} from '@/api/document-flow-commands'
 import {
   buildValueOptions,
   getSettlementCompanyOptions,
   getSupplierOptions,
+  isPurchaseWeighRequiredCategory,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { modal } from '@/utils/antd-app'
-import { asString } from '@/utils/type-narrowing'
+import { cloneLineItems } from '@/utils/clone-utils'
 import {
   BILL_STATUS_LABEL,
   INBOUND_NO_FILTER_LABEL,
@@ -288,66 +283,59 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'purchase-inbound',
     allowMultipleSelection: false,
+    remainingQuantityKey: 'remainingQuantity',
     buildParentFilters: (currentRecord) => ({
       supplierId: currentRecord.supplierId,
       currentRecordId: currentRecord.id,
     }),
     hiddenSelectorColumnKeys: ['status'],
-    executeParentImport: async ({ currentRecord, parentRecord }) => {
-      const sourcePurchaseOrderId = asString(parentRecord.id).trim()
-      if (!sourcePurchaseOrderId) {
-        throw new Error('采购订单缺少稳定ID，无法导入')
-      }
-      const previewResult = await previewPurchaseInboundSplit(
-        sourcePurchaseOrderId,
-      )
-      const preview = previewResult.data
-      if (!preview?.importAllowed) {
-        throw new Error(
-          preview?.blockingReason || '采购订单当前不能导入采购入库',
-        )
-      }
-      const groupSummary = preview.groups
-        .map(
-          (group) =>
-            `${group.warehouseName} / ${group.settlementMode}：${group.items.length} 行、${group.totalQuantity} 件`,
-        )
-        .join('；')
-      const confirmed = await new Promise<boolean>((resolve) => {
-        modal.confirm({
-          title: `确认生成 ${preview.expectedDraftCount} 张采购入库草稿`,
-          content: groupSummary,
-          okText: '生成草稿',
-          cancelText: '取消',
-          maskClosable: false,
-          onOk: () => resolve(true),
-          onCancel: () => resolve(false),
-        })
-      })
-      if (!confirmed) {
-        return { cancelled: true }
-      }
-      const inboundDateValue = currentRecord.inboundDate
-      const inboundDate = dayjs.isDayjs(inboundDateValue)
-        ? inboundDateValue.format('YYYY-MM-DD')
-        : dayjs(asString(inboundDateValue)).isValid()
-          ? dayjs(asString(inboundDateValue)).format('YYYY-MM-DD')
-          : dayjs().format('YYYY-MM-DD')
-      const batchResult = await createPurchaseInboundImportBatch(
-        sourcePurchaseOrderId,
-        {
-          inboundDate,
-          remark: asString(currentRecord.remark).trim() || undefined,
-        },
-      )
-      const batch = batchResult.data
-      if (!batch) {
-        throw new Error('采购入库拆分草稿创建成功但未返回批次结果')
-      }
+    mapParentToDraft: (parentRecord) => {
+      const sourceItems = Array.isArray(parentRecord.items)
+        ? parentRecord.items
+        : []
+      const firstItem = sourceItems[0]
       return {
-        message: `批次 ${batch.batchNo} 已生成 ${batch.inbounds.length} 张采购入库草稿`,
+        purchaseOrderNo: parentRecord.orderNo || '',
+        supplierId: parentRecord.supplierId,
+        supplierCode: parentRecord.supplierCode || '',
+        supplierName: parentRecord.supplierName || '',
+        settlementCompanyId: parentRecord.settlementCompanyId,
+        settlementCompanyName: parentRecord.settlementCompanyName || '',
+        warehouseId: firstItem?.warehouseId,
+        warehouseName: firstItem?.warehouseName || '',
+        settlementMode: isPurchaseWeighRequiredCategory(firstItem?.category)
+          ? '过磅'
+          : '理算',
       }
     },
+    transformItems: (parentRecord) =>
+      cloneLineItems(
+        Array.isArray(parentRecord.items)
+          ? parentRecord.items.map((item) => {
+              const quantity = Number(
+                item.remainingQuantity ?? item.quantity ?? 0,
+              )
+              const pieceWeightTon = Number(item.pieceWeightTon || 0)
+              const unitPrice = Number(item.unitPrice || 0)
+              const weightTon = Number((quantity * pieceWeightTon).toFixed(8))
+              return {
+                ...item,
+                sourceNo: parentRecord.orderNo || '',
+                sourcePurchaseOrderItemId: item.id,
+                settlementMode: isPurchaseWeighRequiredCategory(item.category)
+                  ? '过磅'
+                  : '理算',
+                quantity,
+                weightTon,
+                weighWeightTon: undefined,
+                weightAdjustmentTon: 0,
+                weightAdjustmentAmount: 0,
+                amount: Number((weightTon * unitPrice).toFixed(2)),
+              }
+            })
+          : [],
+        'purchase-inbound-item',
+      ),
   },
   itemColumns: compactPurchaseInboundItemColumns,
   data: [],

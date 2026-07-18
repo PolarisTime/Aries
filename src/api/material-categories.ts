@@ -6,8 +6,6 @@ export type MaterialCategoryOption = {
   value: string
   label: string
   purchaseWeighRequired?: boolean
-  purchaseWeighOverTolerancePercent?: number
-  purchaseWeighUnderTolerancePercent?: number
 }
 
 const cached = createQueryCachedOptions<MaterialCategoryOption>({
