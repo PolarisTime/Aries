@@ -1,3 +1,41 @@
+# [4.0.0](https://github.com/PolarisTime/Aries/compare/v3.0.0...v4.0.0) (2026-07-18)
+
+
+* refactor(batch)!: 固定批号管理并自动生成采购批号 ([9221006](https://github.com/PolarisTime/Aries/commit/92210061d103cdd8e200d1ce0cd73c89e7d77b9e))
+* refactor(frontend)!: 移除权限与安全中心功能 ([b98edb5](https://github.com/PolarisTime/Aries/commit/b98edb5389f0f6e908f887cfc71173c30c7c9885))
+* refactor(report)!: 移除报表模块 ([8687910](https://github.com/PolarisTime/Aries/commit/8687910a3df6d049fa770f6876d0a1f4acacbaa4))
+* refactor(security)!: 全量切换纯 RBAC 并移除安全设置 ([51b281e](https://github.com/PolarisTime/Aries/commit/51b281eaa3689b2026c875ebc2a3126b707ecd11))
+* refactor(security)!: 移除数据范围配置与前端契约 ([c890c78](https://github.com/PolarisTime/Aries/commit/c890c78ba94182b795f77a914624f01039fdd1bd))
+* refactor(settings)!: 移除设置页面与公司初始化引导 ([a02df45](https://github.com/PolarisTime/Aries/commit/a02df45995157ee5aee47794615f9ed4c129cece))
+* refactor(settings)!: 移除默认税率 ([f08833f](https://github.com/PolarisTime/Aries/commit/f08833f09ba371fdf586c748f362d83306d1ddce))
+* refactor(system)!: 移除数据库管理界面 ([25e18bb](https://github.com/PolarisTime/Aries/commit/25e18bbfbbd1314db3fbae26e03decf90c3f16b3))
+
+
+### Bug Fixes
+
+* **access-control:** 对齐权限管理页面与后端契约 ([c4bd70b](https://github.com/PolarisTime/Aries/commit/c4bd70b59bd18228cd499374575b8ca4d6679f76))
+* **editor:** 修正上级单据导入按钮状态 ([07a5fe5](https://github.com/PolarisTime/Aries/commit/07a5fe5b3cc1beaa69695c2eb91083310971960b))
+* **material:** 展示商品导入跳过数量 ([8041216](https://github.com/PolarisTime/Aries/commit/80412163e582945d12b87676562e018c287f3cbb))
+
+
+### Features
+
+* **frontend:** 完成 ProComponents 分阶段改造 ([2079dd8](https://github.com/PolarisTime/Aries/commit/2079dd8331f97dce7a1321d077ac520f25017680))
+* **frontend:** 接入 ProComponents 与前端可观测性 ([212562d](https://github.com/PolarisTime/Aries/commit/212562d0ac09d969cb58874f7a99e6477803ebff))
+* **logistics:** 迁移物流单与物流对账交互 ([78e5021](https://github.com/PolarisTime/Aries/commit/78e50214f9c49b75b0d332528a97b132b5167916))
+
+
+### BREAKING CHANGES
+
+* 删除动态设置页面及 OOBE 公司初始化流程，旧页面路由和公司初始化接口不再可用。
+* 前端删除 RBAC 权限状态、角色权限管理、访问控制和账户安全页面，仅保留身份认证流程。
+* 商品资料不再展示或提交 batchNoEnabled。
+* 移除 inventory-report 与 io-report 前端页面和相关导航入口。
+* 首次初始化、公司资料和运行时配置不再包含 taxRate/defaultTaxRate 字段。
+* 移除旧安全中心、API Key、动态编号及限流配置接口。
+* 前端不再读取或提交 dataScope/dataScopes 字段，角色与用户管理界面不再支持数据范围配置。
+* 前端不再提供数据库管理入口及相关操作。
+
 # [3.0.0](https://github.com/PolarisTime/Aries/compare/v2.4.0...v3.0.0) (2026-07-15)
 
 
