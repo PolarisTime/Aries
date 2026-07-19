@@ -70,7 +70,6 @@ export const QUERY_KEYS = {
     statusFilter: string | undefined,
   ) => ['user-account', page, size, keyword, statusFilter] as const,
   userAccountBase: ['user-account'] as const,
-  departmentOptions: ['department-options'] as const,
 
   // Statements
   statementLinkOptionsBase: ['statement-link-options'] as const,

@@ -93,12 +93,6 @@ export function UserAccountTableCard({
       width: 140,
     },
     {
-      dataIndex: 'departmentName',
-      title: t('system.userAccountTable.colDepartment'),
-      width: 140,
-      render: (_dom, record) => record.departmentName || '--',
-    },
-    {
       dataIndex: 'mobile',
       title: t('system.userAccountTable.colMobile'),
       width: 140,

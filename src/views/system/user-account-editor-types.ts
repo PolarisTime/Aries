@@ -3,7 +3,6 @@ export interface UserAccountEditorFormValues {
   password: string
   userName: string
   mobile: string
-  departmentId: string | null
   status: string
   remark: string
 }

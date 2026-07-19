@@ -24,12 +24,4 @@ export const systemModuleEndpointContracts: Record<
       },
     },
   },
-  department: {
-    path: '/departments',
-    nativeFilterKeys: ['keyword', 'status'],
-  },
-  departments: {
-    path: '/departments',
-    nativeFilterKeys: ['keyword', 'status'],
-  },
 }

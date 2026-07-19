@@ -65,6 +65,7 @@ export function ModuleEditorFormSection({
         isModuleFormFieldVisible(field, formValues) &&
         !(
           !isEdit &&
+          !config.showGeneratedPrimaryNoOnCreate &&
           field.key === config.primaryNoKey &&
           usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
         ),

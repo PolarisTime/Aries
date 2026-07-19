@@ -64,12 +64,6 @@ export function UserAccountCreateResultModal({
               {t('system.userAccount.copyPassword')}
             </Button>
           </div>
-          <div className="mb-12">
-            <div className="text-secondary text-xs">
-              {t('system.userAccount.department')}
-            </div>
-            <div>{result.user.departmentName || '--'}</div>
-          </div>
           <Typography.Text type="warning">
             {t('system.userAccount.savePasswordHint')}
           </Typography.Text>

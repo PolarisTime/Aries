@@ -113,6 +113,8 @@ export interface ModulePageConfig {
   kicker: string
   description: string
   primaryNoKey?: string
+  /** 新建时显示由服务端签发的只读主编号。 */
+  showGeneratedPrimaryNoOnCreate?: boolean
   hidePageHeader?: boolean
   readOnly?: boolean
   allowManualCreate?: boolean

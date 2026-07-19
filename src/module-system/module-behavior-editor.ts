@@ -498,5 +498,3 @@ registerModuleBehavior('freight-bill', {
 })
 
 registerModuleBehavior('material', { supportsMaterialImport: true })
-
-registerModuleBehavior('department', { isSettingsModule: true })

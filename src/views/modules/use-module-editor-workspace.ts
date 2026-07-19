@@ -19,6 +19,7 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
+import { fetchGeneratedMasterDataCode } from '@/api/master-data-codes'
 import { readRequestError } from '@/api/request-errors'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
@@ -468,6 +469,26 @@ export function useModuleEditorWorkspace({
         getCurrentOperatorName(),
       )
       form.setFieldsValue(defaultDraft)
+      if (config.showGeneratedPrimaryNoOnCreate && config.primaryNoKey) {
+        const primaryNoKey = config.primaryNoKey
+        void fetchGeneratedMasterDataCode(moduleKey)
+          .then((generatedCode) => {
+            if (!active) {
+              return
+            }
+            form.setFieldsValue({ [primaryNoKey]: generatedCode })
+          })
+          .catch(() => {
+            if (!active) {
+              return
+            }
+            message.error(
+              i18next.t(
+                'modules.editorWorkspace.masterDataCodeGenerationFailed',
+              ),
+            )
+          })
+      }
       applyPurchaseOrderDefaultSettlementCompany(moduleKey, form, () => active)
       const draftItems = autoInsertBlankItemOnCreate
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]

@@ -18,7 +18,6 @@ const primaryNoFallbackKeys = [
   'customerCode',
   'carrierCode',
   'warehouseCode',
-  'departmentCode',
 ]
 
 export function parseParentRelationNos(value: unknown) {

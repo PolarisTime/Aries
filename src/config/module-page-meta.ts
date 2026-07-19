@@ -24,7 +24,6 @@ const primaryNoKeyMap: Record<string, string> = {
   receipt: 'receiptNo',
   payment: 'paymentNo',
   'ledger-adjustment': 'adjustmentNo',
-  department: 'departmentCode',
 }
 
 export const modulePageMetaMap: Record<string, ModulePageMeta> =

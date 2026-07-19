@@ -12,7 +12,6 @@ export function buildDefaultUserAccountFormValues() {
     password: '',
     userName: '',
     mobile: '',
-    departmentId: null,
     status: enabledStatusValues[0],
     remark: '',
   }

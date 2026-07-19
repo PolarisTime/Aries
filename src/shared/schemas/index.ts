@@ -43,7 +43,6 @@ export type {
 } from './setup'
 // ── 用户账户 ────────────────────────────────────────────
 export type {
-  DepartmentOptionRecord,
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountLoginNameAvailability,

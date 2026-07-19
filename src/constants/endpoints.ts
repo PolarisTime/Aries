@@ -64,6 +64,9 @@ export const ENDPOINTS = {
   MATERIALS_SEARCH: '/materials/search',
   MATERIAL_GRADES: '/materials/grades',
 
+  // Master data code issuances
+  MASTER_DATA_CODE_ISSUANCES: '/master-data/code-issuances',
+
   // Import candidate collections
   PURCHASE_ORDER_IMPORT_CANDIDATES: '/purchase-orders/import-candidates',
   PURCHASE_ORDER_PREPAYMENT_CANDIDATES:
@@ -72,9 +75,6 @@ export const ENDPOINTS = {
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',
   FREIGHT_BILL_SALES_ORDER_CANDIDATES: '/freight-bills/sales-order-candidates',
-  // Departments (sub-resource option lists → plural collection)
-  DEPARTMENTS_OPTIONS: '/departments/options',
-
   // Master data option lists (business entities → plural)
   WAREHOUSES_OPTIONS: '/warehouses/options',
   CUSTOMERS_OPTIONS: '/customers/options',

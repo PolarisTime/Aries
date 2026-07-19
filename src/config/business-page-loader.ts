@@ -56,9 +56,6 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
   'operation-log': async () =>
     (await import('@/config/business-pages/system-audit-pages'))
       .systemAuditPageConfigs,
-  department: async () =>
-    (await import('@/config/business-pages/system-organization-pages'))
-      .systemOrganizationPageConfigs,
 }
 
 const loadedConfigCache = new Map<string, ModulePageConfig>()

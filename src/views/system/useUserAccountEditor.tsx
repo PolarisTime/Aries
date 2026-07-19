@@ -24,20 +24,13 @@ import {
   buildDefaultUserAccountFormValues,
   type UserAccountEditorMode,
 } from '@/views/system/user-account-view-utils'
-import { useUserAccountEditorCatalogs } from '@/views/system/useUserAccountEditorCatalogs'
-
-interface UseUserAccountEditorOptions {
-  enabled?: boolean
-}
 
 interface EditorSession {
   version: number
   targetId: string | null
 }
 
-export function useUserAccountEditor({
-  enabled = true,
-}: UseUserAccountEditorOptions = {}) {
+export function useUserAccountEditor() {
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const editorSessionRef = useRef<EditorSession>({
@@ -57,10 +50,6 @@ export function useUserAccountEditor({
   const [createResult, setCreateResult] =
     useState<UserAccountCreateResult | null>(null)
   const [form] = Form.useForm<UserAccountEditorFormValues>()
-  const { departmentOptions } = useUserAccountEditorCatalogs({
-    enabled: enabled && editorOpen,
-  })
-
   const startEditorSession = (targetId: string | null): EditorSession => {
     detailAbortControllerRef.current?.abort()
     detailAbortControllerRef.current = null
@@ -150,7 +139,6 @@ export function useUserAccountEditor({
       password: '',
       userName: record.userName || '',
       mobile: record.mobile || '',
-      departmentId: record.departmentId ?? null,
       status: record.status || defaultValues.status,
       remark: record.remark || '',
     })
@@ -291,7 +279,6 @@ export function useUserAccountEditor({
               : {}),
             userName: values.userName.trim(),
             mobile: values.mobile?.trim() || '',
-            departmentId: String(values.departmentId),
             status: values.status,
             remark: values.remark?.trim() || '',
           }
@@ -324,7 +311,6 @@ export function useUserAccountEditor({
     editingId,
     loginNameValidationMessage,
     loginNameChecking,
-    departmentOptions,
     createResultOpen,
     createResult,
     savePending: saveMutation.isPending,

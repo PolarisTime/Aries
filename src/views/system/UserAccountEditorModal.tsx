@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { getFormString } from '@/lib/antd-form'
-import type { DepartmentOptionRecord } from '@/shared/schemas'
 
 type EditorMode = 'create' | 'edit'
 
@@ -17,7 +16,6 @@ interface Props {
   editingId: string | null
   loginNameValidationMessage: string
   loginNameChecking: boolean
-  departmentOptions: DepartmentOptionRecord[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
   onSave: () => void
   onClose: () => void
@@ -31,7 +29,6 @@ export function UserAccountEditorModal({
   editingId,
   loginNameValidationMessage,
   loginNameChecking,
-  departmentOptions,
   onCheckLoginName,
   onSave,
   onClose,
@@ -163,24 +160,6 @@ export function UserAccountEditorModal({
               )}
             </Row>
             <Row gutter={[24, 0]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="departmentId"
-                  label={t('system.userAccountEditor.department')}
-                  rules={[{ required: true }]}
-                >
-                  <Select
-                    showSearch={{ optionFilterProp: 'label' }}
-                    placeholder={t(
-                      'system.userAccountEditor.departmentPlaceholder',
-                    )}
-                    options={departmentOptions.map((department) => ({
-                      label: department.departmentName,
-                      value: String(department.id || ''),
-                    }))}
-                  />
-                </Form.Item>
-              </Col>
               {isCreate && (
                 <Col xs={24} sm={12}>
                   <Form.Item

@@ -15,7 +15,6 @@ const SNOWFLAKE_BUSINESS_NO_MODULES = new Set([
   'warehouse',
   'material',
   'material-categories',
-  'department',
   'project',
 ])
 

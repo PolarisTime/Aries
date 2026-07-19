@@ -5,8 +5,6 @@ const userAccountRecordSchema = z.object({
   loginName: z.string(),
   userName: z.string(),
   mobile: z.string().nullable(),
-  departmentId: z.string().nullable(),
-  departmentName: z.string().nullable(),
   lastLoginDate: z.string().nullable(),
   status: z.string(),
   remark: z.string().nullable(),
@@ -18,7 +16,6 @@ export const userAccountFormPayloadSchema = z.object({
   password: z.string().optional(),
   userName: z.string().min(1),
   mobile: z.string(),
-  departmentId: z.string(),
   status: z.string(),
   remark: z.string(),
 })
@@ -38,12 +35,3 @@ export type UserAccountLoginNameAvailability = {
   available: boolean
   message?: string
 }
-
-export const departmentOptionRecordSchema = z.object({
-  id: z.union([z.string(), z.number()]),
-  departmentCode: z.string().optional(),
-  departmentName: z.string(),
-})
-export type DepartmentOptionRecord = z.infer<
-  typeof departmentOptionRecordSchema
->

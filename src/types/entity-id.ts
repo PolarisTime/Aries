@@ -65,7 +65,6 @@ export const ENTITY_ID_FIELDS = new Set([
   'counterpartyId',
   'customerId',
   'defaultSettlementCompanyId',
-  'departmentId',
   'materialCategoryId',
   'materialId',
   'operatorId',

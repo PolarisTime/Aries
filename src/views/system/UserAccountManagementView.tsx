@@ -43,7 +43,6 @@ export function UserAccountManagementView() {
     editingId,
     loginNameValidationMessage,
     loginNameChecking,
-    departmentOptions,
     createResultOpen,
     createResult,
     savePending,
@@ -133,7 +132,6 @@ export function UserAccountManagementView() {
             editingId={editingId}
             loginNameValidationMessage={loginNameValidationMessage}
             loginNameChecking={loginNameChecking}
-            departmentOptions={departmentOptions}
             onCheckLoginName={(loginName, excludeUserId) => {
               void runLoginNameCheck(loginName, excludeUserId)
             }}

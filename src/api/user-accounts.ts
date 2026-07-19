@@ -1,7 +1,6 @@
 import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type {
-  DepartmentOptionRecord,
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountLoginNameAvailability,
@@ -89,19 +88,4 @@ export async function updateUserAccount(
 export async function deleteUserAccount(id: string) {
   const response = await http.delete<ApiResponse<null>>(buildUserAccountUrl(id))
   return assertApiSuccess(response, getApiMessage('deleteUserFailed'))
-}
-
-export async function listDepartmentOptions() {
-  const response = await http.get<ApiResponse<DepartmentOptionRecord[]>>(
-    ENDPOINTS.DEPARTMENTS_OPTIONS,
-  )
-  return (
-    assertApiSuccess(response, getApiMessage('loadDepartmentsFailed')).data ||
-    []
-  ).map((item) => ({
-    ...item,
-    id: String(item.id || ''),
-    departmentCode: String(item.departmentCode || ''),
-    departmentName: String(item.departmentName || ''),
-  }))
 }
