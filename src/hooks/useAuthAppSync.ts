@@ -5,6 +5,7 @@ import { reloadCustomerOptions } from '@/api/customer-options'
 import { reloadMaterialCategories } from '@/api/material-categories'
 import { reloadSupplierOptions } from '@/api/supplier-options'
 import { reloadWarehouseOptions } from '@/api/warehouse-options'
+import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { useAuthStore } from '@/stores/authStore'
 import { useSystemMenuStore } from '@/stores/systemMenuStore'
 import { logger } from '@/utils/logger'
@@ -50,6 +51,16 @@ export function useAuthAppSync() {
   const authReady = useAuthStore((state) => state.authReady)
   const loadMenus = useSystemMenuStore((state) => state.loadMenus)
   const clearMenus = useSystemMenuStore((state) => state.clearMenus)
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      useAuthStore.getState().syncFromStorage()
+    }
+    window.addEventListener(AUTH_STATE_CHANGED_EVENT, syncAuthState)
+    return () => {
+      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, syncAuthState)
+    }
+  }, [])
 
   useEffect(() => {
     if (!authReady || !token || !user) {

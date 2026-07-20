@@ -239,6 +239,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       label: '结算主体',
       type: 'select',
       options: getSettlementCompanyOptions,
+      disabled: true,
       row: 2,
     },
     {

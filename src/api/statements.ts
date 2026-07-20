@@ -36,6 +36,7 @@ async function listStatementCandidates(
   page = 0,
   size = 200,
   filters: SearchParams = {},
+  signal?: AbortSignal,
 ) {
   const endpointConfig = getModuleConfig(statementModuleKey)
   const { currentRecordId, ...candidateFilters } = filters
@@ -54,6 +55,7 @@ async function listStatementCandidates(
           page,
           size,
         },
+        signal,
       },
     ),
     getApiMessage('queryStatementCandidatesFailed'),
@@ -70,6 +72,7 @@ export async function listAllStatementCandidates(
   keyword = '',
   pageSize = 200,
   filters: SearchParams = {},
+  signal?: AbortSignal,
 ) {
   const rows: ModuleRecord[] = []
   let page = 0
@@ -81,6 +84,7 @@ export async function listAllStatementCandidates(
       page,
       pageSize,
       filters,
+      signal,
     )
     if (page === 0) total = current.total
     rows.push(...current.rows)
@@ -95,6 +99,7 @@ export async function listStatementCandidatePage(
   filters: SearchParams,
   page: number,
   size: number,
+  signal?: AbortSignal,
 ): Promise<TableResponse<ModuleRecord>> {
   const current = await listStatementCandidates(
     statementModuleKey,
@@ -102,6 +107,7 @@ export async function listStatementCandidatePage(
     page,
     size,
     filters,
+    signal,
   )
   return {
     code: 0,

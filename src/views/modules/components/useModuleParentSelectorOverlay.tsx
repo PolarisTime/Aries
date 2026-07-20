@@ -4,9 +4,13 @@ import i18next from 'i18next'
 import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
-import { buildFilterParams } from '@/api/business-listing-filtering'
+import { buildFilterParamsFromContract } from '@/api/business-listing-filtering'
 import { listFreightSalesOrderCandidatePage } from '@/api/freight-bill-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
+import {
+  getParentCandidateFilterContract,
+  type ParentCandidateFilterContract,
+} from '@/api/parent-candidate-contracts'
 import { listPurchaseOrderInboundImportCandidatePage } from '@/api/purchase-order-candidates'
 import {
   listSalesOrderOutboundImportCandidatePage,
@@ -437,9 +441,10 @@ function buildOverlayFilterConfig(
   parentModuleKey: string,
   pageConfig: ModulePageConfig,
   fixedFilters: SearchParams,
-  usesDedicatedCandidateEndpoint: boolean,
+  candidateFilterContract?: ParentCandidateFilterContract,
 ): ModulePageConfig {
-  const endpointConfig = getModuleConfig(parentModuleKey)
+  const endpointConfig =
+    candidateFilterContract || getModuleConfig(parentModuleKey)
   const nativeFilterKeys = new Set(endpointConfig.nativeFilterKeys || [])
   const dateRangeKeys = new Set(
     Object.keys(endpointConfig.dateRangeMapping || {}),
@@ -449,9 +454,6 @@ function buildOverlayFilterConfig(
   )
 
   const supportedFilters = pageConfig.filters.filter((filter) => {
-    if (usesDedicatedCandidateEndpoint && filter.key === 'status') {
-      return false
-    }
     if (fixedFilterKeys.has(filter.key)) {
       return false
     }
@@ -629,6 +631,17 @@ export function useModuleParentSelectorOverlay({
     submittedFilters,
     effectiveFixedFilters,
   )
+  const dedicatedCandidateSource =
+    candidateQueryType || candidateStatementModuleKey
+  const candidateFilterContract = dedicatedCandidateSource
+    ? getParentCandidateFilterContract(dedicatedCandidateSource)
+    : undefined
+  const dedicatedCandidateFilters = candidateFilterContract
+    ? buildFilterParamsFromContract(
+        candidateFilterContract,
+        effectiveSubmittedFilters,
+      )
+    : undefined
 
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: QUERY_KEYS.parentSelectorConfig(parentModuleKey),
@@ -641,7 +654,7 @@ export function useModuleParentSelectorOverlay({
         parentModuleKey,
         parentPageConfig,
         effectiveFixedFilters,
-        Boolean(candidateStatementModuleKey || candidateQueryType),
+        candidateFilterContract,
       )
     : undefined
 
@@ -660,37 +673,42 @@ export function useModuleParentSelectorOverlay({
       if (candidateStatementModuleKey) {
         return listStatementCandidatePage(
           candidateStatementModuleKey,
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          dedicatedCandidateFilters || {},
           Math.max(page - 1, 0),
           pageSize,
+          signal,
         )
       }
       if (candidateQueryType === 'purchase-order-import') {
         return listPurchaseOrderInboundImportCandidatePage(
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          dedicatedCandidateFilters || {},
           Math.max(page - 1, 0),
           pageSize,
+          signal,
         )
       }
       if (candidateQueryType === 'sales-order-purchase-source') {
         return listSalesOrderPurchaseSourceCandidatePage(
-          effectiveSubmittedFilters,
+          dedicatedCandidateFilters || {},
           Math.max(page - 1, 0),
           pageSize,
+          signal,
         )
       }
       if (candidateQueryType === 'sales-order-outbound-import') {
         return listSalesOrderOutboundImportCandidatePage(
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          dedicatedCandidateFilters || {},
           Math.max(page - 1, 0),
           pageSize,
+          signal,
         )
       }
       if (candidateQueryType === 'freight-sales-order-import') {
         return listFreightSalesOrderCandidatePage(
-          effectiveSubmittedFilters,
+          dedicatedCandidateFilters || {},
           Math.max(page - 1, 0),
           pageSize,
+          signal,
         )
       }
       return listBusinessModule(

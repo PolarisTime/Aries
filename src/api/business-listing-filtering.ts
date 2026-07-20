@@ -24,7 +24,10 @@ export function hasValue(value: unknown) {
 }
 
 export function isServerFilterKey(
-  endpointConfig: ModuleEndpointConfig,
+  endpointConfig: Pick<
+    ModuleEndpointConfig,
+    'nativeFilterKeys' | 'dateRangeMapping'
+  >,
   key: string,
 ) {
   return Boolean(
@@ -40,7 +43,16 @@ export function shouldClientFilter(moduleKey: string, search: SearchParams) {
 }
 
 export function buildFilterParams(moduleKey: string, search: SearchParams) {
-  const endpointConfig = getModuleConfig(moduleKey)
+  return buildFilterParamsFromContract(getModuleConfig(moduleKey), search)
+}
+
+export function buildFilterParamsFromContract(
+  endpointConfig: Pick<
+    ModuleEndpointConfig,
+    'nativeFilterKeys' | 'dateRangeMapping'
+  >,
+  search: SearchParams,
+) {
   const params: Record<string, QueryValue> = {}
 
   Object.entries(search).forEach(([key, value]) => {

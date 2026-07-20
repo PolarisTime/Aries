@@ -1,14 +1,10 @@
-import type { AxiosResponse } from 'axios'
 import { assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { LoginPayload, LoginResponseData } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
-import {
-  isRefreshTokenReuseConflict,
-  waitForRefreshTokenReuseRetry,
-} from './auth/auth-state'
-import { authHttp, http } from './client'
+import { refreshAccessToken } from './auth/auth-state'
+import { http } from './client'
 
 export type HealthResponse = {
   status: string
@@ -35,23 +31,7 @@ export function logout(): Promise<unknown> {
 }
 
 export async function refreshSession(): Promise<LoginResponseData> {
-  let response: AxiosResponse<ApiResponse<LoginResponseData>>
-  try {
-    response = await authHttp.post<ApiResponse<LoginResponseData>>(
-      ENDPOINTS.AUTH_REFRESH,
-      {},
-    )
-  } catch (error) {
-    if (!isRefreshTokenReuseConflict(error)) {
-      throw error
-    }
-    await waitForRefreshTokenReuseRetry()
-    response = await authHttp.post<ApiResponse<LoginResponseData>>(
-      ENDPOINTS.AUTH_REFRESH,
-      {},
-    )
-  }
-  return response.data.data
+  return refreshAccessToken()
 }
 
 export async function fetchBackendHealth(): Promise<HealthResponse> {

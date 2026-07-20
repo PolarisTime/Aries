@@ -10,6 +10,7 @@ import { message } from '@/utils/antd-app'
 import { getApiMessage } from '@/utils/api-messages'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
 import {
+  type AuthPersistenceMode,
   clearStoredUser,
   clearToken,
   clearTokenExpiresAt,
@@ -20,6 +21,7 @@ import {
 } from '@/utils/storage'
 
 let authFailureHandled = false
+let authSessionEpoch = 0
 
 const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
@@ -27,6 +29,25 @@ const REFRESH_WARNED_KEY = 'aries-refresh-warned'
 const REFRESH_REUSE_RETRY_DELAY_MS = 250
 
 let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+export class AuthSessionSupersededError extends Error {
+  constructor() {
+    super('登录状态已变更，已忽略过期刷新结果')
+    this.name = 'AuthSessionSupersededError'
+  }
+}
+
+export function isAuthSessionSupersededError(
+  error: unknown,
+): error is AuthSessionSupersededError {
+  return error instanceof AuthSessionSupersededError
+}
+
+function assertAuthSessionCurrent(epoch: number) {
+  if (epoch !== authSessionEpoch) {
+    throw new AuthSessionSupersededError()
+  }
+}
 
 export function isRefreshTokenReuseConflict(error: unknown) {
   if (!axios.isAxiosError(error)) {
@@ -51,22 +72,26 @@ function notifyAuthStateChanged() {
   }
 }
 
-function clearAuthState() {
+export function clearAuthSession() {
+  authSessionEpoch += 1
   clearToken()
   clearStoredUser()
   clearTokenExpiresAt()
   cancelPreRefresh()
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(REFRESH_EXPIRES_AT_KEY)
+    localStorage.removeItem(REFRESH_WARNED_KEY)
+  }
   notifyAuthStateChanged()
 }
 
-function applyTokenResponse(data: LoginResponseData) {
+export function applyAuthSession(
+  data: LoginResponseData,
+  mode: AuthPersistenceMode = getAuthPersistenceMode(),
+) {
+  authSessionEpoch += 1
   authFailureHandled = false
-  setAuthSession(
-    data.user,
-    data.accessToken,
-    data.expiresIn,
-    getAuthPersistenceMode(),
-  )
+  setAuthSession(data.user, data.accessToken, data.expiresIn, mode)
   if (data.refreshExpiresIn) {
     const expiresAt = Date.now() + data.refreshExpiresIn * 1000
     if (typeof window !== 'undefined') {
@@ -85,7 +110,7 @@ export function handleAuthFailure(messageText: string) {
   }
 
   authFailureHandled = true
-  clearAuthState()
+  clearAuthSession()
   message.error(messageText)
   redirectToLogin()
 }
@@ -126,6 +151,10 @@ function schedulePreRefresh(delayMs?: number) {
   )
 }
 
+export function scheduleAuthRefresh() {
+  schedulePreRefresh()
+}
+
 function cancelPreRefresh() {
   if (preRefreshTimer !== null) {
     clearTimeout(preRefreshTimer)
@@ -145,29 +174,17 @@ function computePreRefreshDelay(): number {
 }
 
 async function executePreRefresh() {
-  const existing = getRefreshPromise()
-  if (existing) {
-    await existing
-    return
-  }
-
-  let myPromise: Promise<void> | null = null
   try {
-    myPromise = refreshAccessToken()
-    setRefreshPromise(myPromise)
-    await myPromise
+    await refreshAccessToken()
   } catch {
     // silent fail: next real 401 will trigger passive refresh
-  } finally {
-    if (myPromise !== null && getRefreshPromise() === myPromise) {
-      setRefreshPromise(null)
-    }
   }
 }
 
-let refreshPromise: Promise<void> | null = null
+let refreshPromise: Promise<LoginResponseData> | null = null
 
-export async function refreshAccessToken() {
+async function requestTokenRefresh(): Promise<LoginResponseData> {
+  const requestEpoch = authSessionEpoch
   let response: AxiosResponse<ApiResponse<LoginResponseData>>
   try {
     response = await authHttp.post<ApiResponse<LoginResponseData>>(
@@ -179,6 +196,7 @@ export async function refreshAccessToken() {
       throw error
     }
     await waitForRefreshTokenReuseRetry()
+    assertAuthSessionCurrent(requestEpoch)
     response = await authHttp.post<ApiResponse<LoginResponseData>>(
       ENDPOINTS.AUTH_REFRESH,
       {},
@@ -196,15 +214,24 @@ export async function refreshAccessToken() {
     throw new Error(payload.message || getApiMessage('loginStatusExpired'))
   }
 
-  applyTokenResponse(payload.data)
+  assertAuthSessionCurrent(requestEpoch)
+  applyAuthSession(payload.data)
+  return payload.data
 }
 
-export function getRefreshPromise(): Promise<void> | null {
-  return refreshPromise
-}
+export function refreshAccessToken(): Promise<LoginResponseData> {
+  if (refreshPromise) {
+    return refreshPromise
+  }
 
-export function setRefreshPromise(promise: Promise<void> | null) {
-  refreshPromise = promise
+  const pending = requestTokenRefresh()
+  const tracked = pending.finally(() => {
+    if (refreshPromise === tracked) {
+      refreshPromise = null
+    }
+  })
+  refreshPromise = tracked
+  return tracked
 }
 
 type SetHeaderFn = (name: string, value: string) => void

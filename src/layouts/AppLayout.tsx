@@ -8,7 +8,6 @@ import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
-import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
 import {
   buildAppLayoutStyles,
@@ -36,10 +35,6 @@ import { appTitle } from '@/utils/env'
 import type { ThemeMode } from '@/utils/storage'
 
 const { Header, Sider, Content } = Layout
-
-function handleRefreshSession() {
-  void useAuthStore.getState().restoreSession()
-}
 
 type SideNavigationProps = {
   collapsed: boolean
@@ -247,7 +242,6 @@ export function AppLayout() {
       : appTitle
   }, [routePageContext.title])
 
-  useAuthRefreshTimer(handleRefreshSession)
   useAppLayoutSessionGuards({
     locationPathname: location.pathname,
     navigate,

@@ -327,6 +327,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
           : '请先选择物流商，再选择销售订单',
       transformItems: (parentRecord) => {
         const sourceNo = asString(parentRecord.orderNo).trim()
+        const customerName = asString(parentRecord.customerName).trim()
+        const projectName = asString(parentRecord.projectName).trim()
+        const settlementCompanyName = asString(
+          parentRecord.settlementCompanyName,
+        ).trim()
         return (
           Array.isArray(parentRecord.items) ? parentRecord.items : []
         ).map((item, index) => ({
@@ -334,6 +339,15 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
           id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
           sourceNo,
           sourceSalesOrderItemId: item.id,
+          customerId: parentRecord.customerId,
+          customerName,
+          projectId: parentRecord.projectId,
+          projectName,
+          settlementCompanyId:
+            item.settlementCompanyId ?? parentRecord.settlementCompanyId,
+          settlementCompanyName:
+            asString(item.settlementCompanyName).trim() ||
+            settlementCompanyName,
         }))
       },
     },

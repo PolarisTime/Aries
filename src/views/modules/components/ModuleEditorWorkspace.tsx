@@ -469,6 +469,16 @@ function SaveResultOverlay({
   ]
   const freightItemColumns = [
     {
+      title: t('modules.columns.customerName'),
+      dataIndex: 'customerName',
+      ellipsis: true,
+    },
+    {
+      title: t('modules.columns.projectName'),
+      dataIndex: 'projectName',
+      ellipsis: true,
+    },
+    {
       title: t('modules.itemColumns.warehouseName'),
       dataIndex: 'warehouseName',
       ellipsis: true,

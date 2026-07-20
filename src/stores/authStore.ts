@@ -1,5 +1,10 @@
 import i18next from 'i18next'
 import { create } from 'zustand'
+import {
+  applyAuthSession,
+  clearAuthSession,
+  scheduleAuthRefresh,
+} from '@/api/auth/auth-state'
 import { ERROR_CODE } from '@/constants/error-codes'
 import {
   clearUserQueryCache,
@@ -12,13 +17,9 @@ import type {
 } from '@/shared/schemas'
 import {
   type AuthPersistenceMode,
-  clearStoredUser,
-  clearToken,
-  getAuthPersistenceMode,
   getStoredUser,
   getToken,
   getTokenExpiresAt,
-  setAuthSession,
 } from '@/utils/storage'
 
 async function loadAuthApi() {
@@ -31,20 +32,21 @@ interface AuthState {
   isAuthenticated: boolean
   authReady: boolean
   hydrate: () => void
+  syncFromStorage: () => void
   signIn: (payload: LoginPayload) => Promise<LoginResponseData>
   signOut: () => Promise<void>
   restoreSession: () => Promise<boolean>
 }
 
-function persistSession(
-  user: LoginUser,
-  token: string,
-  expiresIn: number,
-  remember: boolean,
-) {
-  const mode: AuthPersistenceMode = remember ? 'local' : 'session'
-  window.sessionStorage.removeItem('aries-logged-out')
-  setAuthSession(user, token, expiresIn, mode)
+function readStoredAuthState(authReady: boolean) {
+  const token = getToken() || ''
+  const user = getStoredUser()
+  return {
+    token,
+    user,
+    isAuthenticated: Boolean(token || user),
+    authReady,
+  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -54,14 +56,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   authReady: false,
 
   hydrate: () => {
-    const nextToken = getToken() || ''
-    const nextUser = getStoredUser()
-    set({
-      token: nextToken,
-      user: nextUser,
-      isAuthenticated: Boolean(nextToken || nextUser),
-      authReady: false,
-    })
+    set(readStoredAuthState(false))
+  },
+
+  syncFromStorage: () => {
+    set(readStoredAuthState(true))
   },
 
   signIn: async (payload: LoginPayload) => {
@@ -75,12 +74,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw new Error(i18next.t('auth.error.missingTokenOrUser'))
     }
     await clearUserQueryCacheOnIdentityChange(get().user, data.user)
-    persistSession(
-      data.user,
-      data.accessToken,
-      data.expiresIn,
-      payload.remember !== false,
-    )
+    const mode: AuthPersistenceMode =
+      payload.remember === false ? 'session' : 'local'
+    window.sessionStorage.removeItem('aries-logged-out')
+    applyAuthSession(data, mode)
     set({
       token: data.accessToken,
       user: data.user,
@@ -98,8 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       /* non-critical */
     }
-    clearToken()
-    clearStoredUser()
+    clearAuthSession()
     set({ token: '', user: null, isAuthenticated: false, authReady: true })
   },
 
@@ -107,8 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get()
     // 无本地用户数据 → 未登录，静默跳过
     if (!user) {
-      clearToken()
-      clearStoredUser()
+      clearAuthSession()
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
@@ -118,12 +113,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!data.accessToken || !data.user)
         throw new Error(i18next.t('auth.error.sessionRestoreFailed'))
       await clearUserQueryCacheOnIdentityChange(user, data.user)
-      persistSession(
-        data.user,
-        data.accessToken,
-        data.expiresIn,
-        getAuthPersistenceMode() === 'local',
-      )
       set({
         token: data.accessToken,
         user: data.user,
@@ -140,6 +129,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         fallbackUser &&
         (!tokenExpiresAt || tokenExpiresAt > Date.now())
       ) {
+        scheduleAuthRefresh()
         set({
           token: fallbackToken,
           user: fallbackUser,
@@ -150,8 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // refresh token 已过期且无可用 access token → 清除登录态
-      clearToken()
-      clearStoredUser()
+      clearAuthSession()
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }

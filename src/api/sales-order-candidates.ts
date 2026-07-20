@@ -11,6 +11,7 @@ export async function listSalesOrderOutboundImportCandidatePage(
   filters: SearchParams,
   page: number,
   size: number,
+  signal?: AbortSignal,
 ): Promise<TableResponse<ModuleRecord>> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
@@ -22,6 +23,7 @@ export async function listSalesOrderOutboundImportCandidatePage(
           page,
           size,
         },
+        signal,
       },
     ),
     '查询销售订单出库导入候选失败',
@@ -40,6 +42,7 @@ export async function listSalesOrderPurchaseSourceCandidatePage(
   filters: SearchParams,
   page: number,
   size: number,
+  signal?: AbortSignal,
 ): Promise<TableResponse<ModuleRecord>> {
   const { currentSalesOrderId, ...candidateFilters } = filters
   const response = assertApiSuccess(
@@ -53,6 +56,7 @@ export async function listSalesOrderPurchaseSourceCandidatePage(
           page,
           size,
         },
+        signal,
       },
     ),
     '查询销售订单采购来源候选失败',

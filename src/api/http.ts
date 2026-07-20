@@ -1,6 +1,10 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { apiBaseUrl } from '@/utils/env'
 
+export type ApiRequestConfig = AxiosRequestConfig & {
+  suppressGlobalErrorStatuses?: readonly number[]
+}
+
 const defaultConfig = {
   baseURL: apiBaseUrl,
   timeout: 30_000,
@@ -15,31 +19,31 @@ export const authHttp = axios.create(defaultConfig)
 // This wrapper provides correctly-typed methods that reflect the interceptor behavior.
 function createApiClient(instance: AxiosInstance) {
   return {
-    get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    get<T = unknown>(url: string, config?: ApiRequestConfig): Promise<T> {
       return instance.get(url, config)
     },
     post<T = unknown>(
       url: string,
       data?: unknown,
-      config?: AxiosRequestConfig,
+      config?: ApiRequestConfig,
     ): Promise<T> {
       return instance.post(url, data, config)
     },
     put<T = unknown>(
       url: string,
       data?: unknown,
-      config?: AxiosRequestConfig,
+      config?: ApiRequestConfig,
     ): Promise<T> {
       return instance.put(url, data, config)
     },
     patch<T = unknown>(
       url: string,
       data?: unknown,
-      config?: AxiosRequestConfig,
+      config?: ApiRequestConfig,
     ): Promise<T> {
       return instance.patch(url, data, config)
     },
-    delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    delete<T = unknown>(url: string, config?: ApiRequestConfig): Promise<T> {
       return instance.delete(url, config)
     },
     get instance() {

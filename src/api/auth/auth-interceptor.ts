@@ -11,12 +11,11 @@ import { navigateToServerErrorPage } from '@/utils/server-error-navigation'
 import { getToken } from '@/utils/storage'
 import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
 import {
-  getRefreshPromise,
   handleAuthFailure,
+  isAuthSessionSupersededError,
   refreshAccessToken,
   resetAuthFailureHandling,
   retryWithToken,
-  setRefreshPromise,
 } from './auth-state'
 import { normalizeErrorMessage } from './error-messages'
 import type { RetryableRequestConfig } from './types'
@@ -202,22 +201,16 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         try {
           const retryRequest = originalRequest as RetryableRequestConfig
           retryRequest._retry = true
-          let current = getRefreshPromise()
-          if (!current) {
-            current = refreshAccessToken()
-            setRefreshPromise(current)
-          }
-          try {
-            await current
-          } finally {
-            if (getRefreshPromise() === current) {
-              setRefreshPromise(null)
-            }
-          }
+          await refreshAccessToken()
 
           retryWithToken(retryRequest)
           return http(retryRequest)
         } catch (refreshError) {
+          if (isAuthSessionSupersededError(refreshError)) {
+            markHandledRequestError(error)
+            markHandledRequestError(refreshError)
+            return Promise.reject(refreshError)
+          }
           const refreshStatus = axios.isAxiosError(refreshError)
             ? refreshError.response?.status
             : undefined
@@ -257,7 +250,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       ) {
         markHandledRequestError(error)
         handleAuthFailure(description)
-      } else {
+      } else if (
+        !originalRequest?.suppressGlobalErrorStatuses?.includes(Number(status))
+      ) {
         markHandledRequestError(error)
         message.error(description)
       }

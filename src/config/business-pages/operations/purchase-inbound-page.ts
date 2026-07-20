@@ -236,6 +236,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       label: '结算主体',
       type: 'select',
       options: getSettlementCompanyOptions,
+      disabled: true,
       row: 2,
     },
     {

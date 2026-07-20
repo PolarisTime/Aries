@@ -113,5 +113,5 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
 export const compactFreightItemColumns = applyCompactItemLayout(
   freightItemColumns,
   compactFreightItemWidthMap,
-  ['projectName', 'brand', 'category', 'piecesPerBundle', 'batchNo'],
+  ['brand', 'category', 'piecesPerBundle', 'batchNo'],
 )

@@ -11,6 +11,7 @@ export async function listFreightSalesOrderCandidatePage(
   filters: SearchParams,
   page: number,
   size: number,
+  signal?: AbortSignal,
 ): Promise<TableResponse<ModuleRecord>> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
@@ -22,6 +23,7 @@ export async function listFreightSalesOrderCandidatePage(
           page,
           size,
         },
+        signal,
       },
     ),
     '查询物流单销售订单来源失败',

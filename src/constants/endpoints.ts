@@ -70,6 +70,7 @@ export const ENDPOINTS = {
   // Import candidate collections
   PURCHASE_ORDER_INBOUND_IMPORT_CANDIDATES:
     '/purchase-orders/inbound-import-candidates',
+  PURCHASE_ORDER_IMPORT_CANDIDATES_LEGACY: '/purchase-orders/import-candidates',
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',
