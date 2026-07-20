@@ -3,6 +3,7 @@ import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
   getSettlementCompanyOptions,
+  withDeletedDocumentStatus,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -56,7 +57,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         key: 'status',
         label: AUDIT_STATUS_LABEL,
         type: 'select',
-        options: [
+        options: withDeletedDocumentStatus([
           {
             label: '草稿',
             value: '草稿',
@@ -65,7 +66,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
             label: i18next.t('modules.pages.freightOperations.audited'),
             value: '已审核',
           },
-        ],
+        ]),
       },
       {
         key: 'settlementCompanyId',
@@ -339,6 +340,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
           id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
           sourceNo,
           sourceSalesOrderItemId: item.id,
+          materialName: asString(item.brand).trim(),
           customerId: parentRecord.customerId,
           customerName,
           projectId: parentRecord.projectId,

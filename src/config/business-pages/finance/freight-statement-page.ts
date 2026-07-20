@@ -1,6 +1,9 @@
 import i18next from 'i18next'
 import { getCarrierEntityOptions } from '@/api/carrier-options'
-import { getSettlementCompanyOptions } from '@/constants/module-options'
+import {
+  getSettlementCompanyOptions,
+  withDeletedDocumentStatus,
+} from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -57,7 +60,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       key: 'status',
       label: AUDIT_STATUS_LABEL,
       type: 'select',
-      options: [
+      options: withDeletedDocumentStatus([
         {
           label: '草稿',
           value: '草稿',
@@ -66,7 +69,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
           label: i18next.t('modules.pages.freightStatement.audited'),
           value: '已审核',
         },
-      ],
+      ]),
     },
     {
       key: 'endDate',

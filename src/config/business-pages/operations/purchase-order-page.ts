@@ -1,6 +1,6 @@
 import i18next from 'i18next'
 import {
-  buildValueOptions,
+  buildDocumentStatusOptions,
   getSettlementCompanyOptions,
   getSupplierOptions,
 } from '@/constants/module-options'
@@ -63,7 +63,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: buildValueOptions('草稿', '已审核', '完成采购'),
+      options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
     },
     {
       key: 'orderDate',

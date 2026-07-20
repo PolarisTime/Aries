@@ -5,6 +5,7 @@ import {
   getCustomerOptions,
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
+  withDeletedDocumentStatus,
 } from '@/constants/module-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
@@ -129,7 +130,7 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: adjustmentStatusOptions,
+      options: withDeletedDocumentStatus(adjustmentStatusOptions),
     },
     {
       key: 'adjustmentDate',

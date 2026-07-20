@@ -3,6 +3,7 @@ import { getSupplierEntityOptions } from '@/api/supplier-options'
 import {
   getCustomerOptions,
   getSettlementCompanyOptions,
+  withDeletedDocumentStatus,
 } from '@/constants/module-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
@@ -34,10 +35,10 @@ export const receiptsPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: [
+      options: withDeletedDocumentStatus([
         { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
         { label: '已审核', value: '已审核' },
-      ],
+      ]),
     },
     {
       key: 'settlementCompanyId',

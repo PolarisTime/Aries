@@ -4,6 +4,7 @@ import {
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
   statementStatusOptions,
+  withDeletedDocumentStatus,
 } from '@/constants/module-options'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -61,7 +62,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: statementStatusOptions,
+      options: withDeletedDocumentStatus(statementStatusOptions),
     },
     {
       key: 'endDate',

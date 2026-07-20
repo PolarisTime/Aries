@@ -16,8 +16,23 @@ export const enabledStatusOptions = createOptionList(enabledStatusValues)
 const statementStatusValues = ['待确认', '已确认'] as const
 export const statementStatusOptions = createOptionList(statementStatusValues)
 
+const deletedDocumentStatusOption = {
+  label: '已删除',
+  value: '已删除',
+} as const
+
 export function buildValueOptions(...values: string[]) {
   return createOptionList(values)
+}
+
+export function withDeletedDocumentStatus<
+  T extends { label: string; value: string },
+>(options: readonly T[]) {
+  return [...options, deletedDocumentStatusOption]
+}
+
+export function buildDocumentStatusOptions(...values: string[]) {
+  return withDeletedDocumentStatus(createOptionList(values))
 }
 
 // Re-export API-backed option resolvers for backward compatibility.

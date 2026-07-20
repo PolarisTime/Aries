@@ -1,6 +1,6 @@
 import i18next from 'i18next'
 import {
-  buildValueOptions,
+  buildDocumentStatusOptions,
   getCustomerOptions,
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
@@ -46,7 +46,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: buildValueOptions('草稿', '已审核'),
+      options: buildDocumentStatusOptions('草稿', '已审核'),
     },
     {
       key: 'productKeyword',

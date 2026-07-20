@@ -1,7 +1,10 @@
 import i18next from 'i18next'
 import { getCarrierEntityOptions } from '@/api/carrier-options'
 import { getSupplierEntityOptions } from '@/api/supplier-options'
-import { getSettlementCompanyOptions } from '@/constants/module-options'
+import {
+  getSettlementCompanyOptions,
+  withDeletedDocumentStatus,
+} from '@/constants/module-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { buildFinanceOverview, statusMap } from '../shared/shared'
@@ -39,10 +42,10 @@ export const paymentsPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: [
+      options: withDeletedDocumentStatus([
         { label: i18next.t('modules.pages.payment.draft'), value: '草稿' },
         { label: '已审核', value: '已审核' },
-      ],
+      ]),
     },
     {
       key: 'paymentDate',

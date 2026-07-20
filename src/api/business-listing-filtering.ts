@@ -4,6 +4,7 @@ import {
   type ModuleEndpointConfig,
 } from '@/api/module-contracts'
 import { getModulePageSchema } from '@/config/module-page-schema'
+import { getDisplayStatus } from '@/module-system/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleFilterDefinition, ModuleRecord } from '@/types/module-page'
 import type { ListQueryOptions } from '@/utils/list'
@@ -149,6 +150,9 @@ export function applyFilterDefinition(
   }
 
   if (filter.type === 'select') {
+    if (filter.key === 'status') {
+      return getDisplayStatus(record) === asString(rawValue)
+    }
     return safe(record).str(filter.key) === asString(rawValue)
   }
 
