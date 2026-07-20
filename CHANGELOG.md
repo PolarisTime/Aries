@@ -1,3 +1,10 @@
+## [7.0.2](https://github.com/PolarisTime/Aries/compare/v7.0.1...v7.0.2) (2026-07-20)
+
+
+### Bug Fixes
+
+* **document:** 增加已删除单据状态筛选 ([cbaf8b4](https://github.com/PolarisTime/Aries/commit/cbaf8b40aa8f7b6d2281164cdd2772bda3649058))
+
 ## [7.0.1](https://github.com/PolarisTime/Aries/compare/v7.0.0...v7.0.1) (2026-07-20)
 
 
