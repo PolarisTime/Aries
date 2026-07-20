@@ -1,3 +1,10 @@
+## [7.0.1](https://github.com/PolarisTime/Aries/compare/v7.0.0...v7.0.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* **frontend:** 修复候选筛选与认证刷新竞态 ([d673184](https://github.com/PolarisTime/Aries/commit/d67318451d9c9e5dcbd0e433f706ba6a07265149))
+
 # [7.0.0](https://github.com/PolarisTime/Aries/compare/v6.0.0...v7.0.0) (2026-07-20)
 
 
