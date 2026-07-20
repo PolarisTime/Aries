@@ -1,3 +1,13 @@
+# [6.0.0](https://github.com/PolarisTime/Aries/compare/v5.0.0...v6.0.0) (2026-07-20)
+
+
+* refactor(master)!: 统一基础资料编码展示并移除部门入口 ([d60f217](https://github.com/PolarisTime/Aries/commit/d60f217de3a9f86791b9a4a72a9ae103f95e8c53))
+
+
+### BREAKING CHANGES
+
+* 基础资料编码不再允许手工录入；部门管理入口与用户部门字段已移除。
+
 # [5.0.0](https://github.com/PolarisTime/Aries/compare/v4.1.0...v5.0.0) (2026-07-18)
 
 
