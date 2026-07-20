@@ -1,3 +1,13 @@
+# [7.0.0](https://github.com/PolarisTime/Aries/compare/v6.0.0...v7.0.0) (2026-07-20)
+
+
+* fix(import)!: 统一上级单据候选准入逻辑 ([22eb122](https://github.com/PolarisTime/Aries/commit/22eb122fb3c757e2e8103092e11dcbcaecc9867c))
+
+
+### BREAKING CHANGES
+
+* 前端改用 /purchase-orders/inbound-import-candidates，不再支持采购预付款候选和旧 usage 参数。
+
 # [6.0.0](https://github.com/PolarisTime/Aries/compare/v5.0.0...v6.0.0) (2026-07-20)
 
 
