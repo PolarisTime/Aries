@@ -1,4 +1,3 @@
-import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -12,7 +11,6 @@ export type ParentSelectorColumn = {
 }
 
 const AUDITED_STATUS = '已审核'
-const SALES_COMPLETED_STATUS = '完成销售'
 
 export function compactParentSelectorFilters(filters: SearchParams) {
   return Object.fromEntries(
@@ -83,47 +81,15 @@ export function filterImportableParentRecords(
   candidateStatementModuleKey?: string,
   candidateQueryType?: ModuleParentImportDefinition['candidateQueryType'],
 ) {
+  const usesDedicatedCandidateEndpoint = Boolean(
+    candidateStatementModuleKey || candidateQueryType,
+  )
   return records.filter((record) => {
     if (isDeletedModuleRecord(record)) {
       return false
     }
-    if (
-      candidateQueryType === 'purchase-prepayment' &&
-      parentModuleKey === 'purchase-order'
-    ) {
-      const status = asString(record.status)
-      return (
-        status === DOCUMENT_STATUS.AUDITED ||
-        status === DOCUMENT_STATUS.PURCHASE_COMPLETED
-      )
-    }
-    if (candidateQueryType === 'purchase-order-import') {
-      return hasImportableQuantity(parentModuleKey, record)
-    }
-    if (
-      candidateQueryType === 'freight-sales-order-import' &&
-      parentModuleKey === 'sales-order'
-    ) {
-      const status = asString(record.status).trim()
-      return (
-        (status === AUDITED_STATUS ||
-          status === '交付核定' ||
-          status === SALES_COMPLETED_STATUS) &&
-        Array.isArray(record.items) &&
-        record.items.length > 0
-      )
-    }
-    if (
-      candidateStatementModuleKey === 'customer-statement' &&
-      parentModuleKey === 'sales-order'
-    ) {
-      return asString(record.status) === SALES_COMPLETED_STATUS
-    }
-    if (
-      candidateStatementModuleKey === 'freight-statement' &&
-      parentModuleKey === 'freight-bill'
-    ) {
-      return asString(record.status) === AUDITED_STATUS
+    if (usesDedicatedCandidateEndpoint) {
+      return true
     }
     if (
       parentModuleKey === 'purchase-order' ||

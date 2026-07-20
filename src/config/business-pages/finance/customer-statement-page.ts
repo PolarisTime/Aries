@@ -345,7 +345,6 @@ export const customerStatementPageConfig: ModulePageConfig = {
       projectId: entityIdOf(currentRecord.projectId, 'projectId'),
       currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
       settlementCompanyId: currentRecord.settlementCompanyId,
-      status: '完成销售',
     }),
     validateBeforeOpen: (currentRecord) =>
       entityIdOf(currentRecord.customerId, 'customerId')
@@ -365,9 +364,6 @@ export const customerStatementPageConfig: ModulePageConfig = {
       status: '待确认',
     }),
     validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
-      if (asString(parentRecord.status).trim() !== '完成销售') {
-        return '只能选择完成销售的销售订单生成客户对账单'
-      }
       const currentCustomerId = entityIdOf(
         currentRecord.customerId,
         'currentRecord.customerId',

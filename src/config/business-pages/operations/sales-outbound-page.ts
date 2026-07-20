@@ -264,7 +264,6 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     buttonText: i18next.t('modules.pages.salesOutbound.parentImportButton'),
     buildParentFilters: (currentRecord) => ({
       currentRecordId: currentRecord.id,
-      status: '已审核',
     }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({

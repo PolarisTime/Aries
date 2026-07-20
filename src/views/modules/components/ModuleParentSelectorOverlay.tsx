@@ -328,7 +328,6 @@ export function ModuleParentSelectorOverlay({
   allowMultipleSelection = false,
   candidateStatementModuleKey,
   candidateQueryType,
-  candidateUsage,
   hiddenSelectorColumnKeys,
   fixedFilters = EMPTY_FIXED_FILTERS,
   title,
@@ -345,7 +344,6 @@ export function ModuleParentSelectorOverlay({
       allowMultipleSelection={allowMultipleSelection}
       candidateStatementModuleKey={candidateStatementModuleKey}
       candidateQueryType={candidateQueryType}
-      candidateUsage={candidateUsage}
       hiddenSelectorColumnKeys={hiddenSelectorColumnKeys}
       fixedFilters={fixedFilters}
       title={title}

@@ -313,6 +313,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     buttonText: i18next.t('modules.pages.salesOrder.parentImportButton'),
     remainingQuantityKey: 'remainingQuantity',
     candidateQueryType: 'sales-order-purchase-source',
+    useCandidateSnapshot: true,
     buildParentFilters: (currentRecord) => ({
       currentSalesOrderId: currentRecord.id,
     }),

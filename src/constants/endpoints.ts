@@ -68,9 +68,8 @@ export const ENDPOINTS = {
   MASTER_DATA_CODE_ISSUANCES: '/master-data/code-issuances',
 
   // Import candidate collections
-  PURCHASE_ORDER_IMPORT_CANDIDATES: '/purchase-orders/import-candidates',
-  PURCHASE_ORDER_PREPAYMENT_CANDIDATES:
-    '/purchase-orders/prepayment-candidates',
+  PURCHASE_ORDER_INBOUND_IMPORT_CANDIDATES:
+    '/purchase-orders/inbound-import-candidates',
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',

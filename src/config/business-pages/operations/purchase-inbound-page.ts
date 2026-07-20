@@ -281,7 +281,6 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
     candidateQueryType: 'purchase-order-import',
-    candidateUsage: 'purchase-inbound',
     allowMultipleSelection: false,
     remainingQuantityKey: 'remainingQuantity',
     buildParentFilters: (currentRecord) => ({

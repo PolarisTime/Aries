@@ -789,8 +789,8 @@ export function useModuleEditorWorkspace({
     try {
       const parentDetails = await Promise.all(
         selectedRecords.map(async (selectedRecord) => ({
-          data: parentImportConfig.resolveParentRecord
-            ? await parentImportConfig.resolveParentRecord(selectedRecord)
+          data: parentImportConfig.useCandidateSnapshot
+            ? selectedRecord
             : (
                 await getBusinessModuleDetail(
                   parentImportConfig.parentModuleKey,

@@ -1071,7 +1071,7 @@ export const zhCN = {
       purchaseOrder: {
         title: '采购订单',
         description:
-          '采购订单按供应商、订单日期和商品明细管理，支持从采购合同导入并自动汇总重量和金额。',
+          '采购订单按供应商、订单日期和商品明细管理，并自动汇总重量和金额。',
         placeholderOrderNo: '输入采购订单号',
         filterOrderDate: '订单日期',
         colOrderNo: '订单编号',

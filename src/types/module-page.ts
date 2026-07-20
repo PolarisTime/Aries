@@ -81,12 +81,10 @@ export interface ModuleParentImportDefinition {
   remainingQuantityKey?: string
   candidateQueryType?:
     | 'purchase-order-import'
-    | 'purchase-prepayment'
     | 'sales-order-purchase-source'
     | 'freight-sales-order-import'
-    | 'freight-bill-import'
     | 'sales-order-outbound-import'
-  candidateUsage?: 'purchase-inbound' | 'sales-order'
+  useCandidateSnapshot?: boolean
   hiddenSelectorColumnKeys?: string[]
   visibleWhen?: (currentRecord: ModuleRecordInput) => boolean
   resolveParentSelector?: (currentRecord: ModuleRecord) => {
@@ -96,7 +94,6 @@ export interface ModuleParentImportDefinition {
   requiredSourceItemIdField?:
     | 'sourcePurchaseOrderItemId'
     | 'sourceSalesOrderItemId'
-  resolveParentRecord?: (parentRecord: ModuleRecord) => Promise<ModuleRecord>
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
   validateParentImport?: (args: {

@@ -7,10 +7,7 @@ import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
 import { listFreightSalesOrderCandidatePage } from '@/api/freight-bill-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
-import {
-  listPurchaseOrderImportCandidatePage,
-  listPurchaseOrderPrepaymentCandidatePage,
-} from '@/api/purchase-order-candidates'
+import { listPurchaseOrderInboundImportCandidatePage } from '@/api/purchase-order-candidates'
 import {
   listSalesOrderOutboundImportCandidatePage,
   listSalesOrderPurchaseSourceCandidatePage,
@@ -48,7 +45,6 @@ export interface ModuleParentSelectorOverlayContentProps {
   allowMultipleSelection?: boolean
   candidateStatementModuleKey?: 'customer-statement' | 'freight-statement'
   candidateQueryType?: ModuleParentImportDefinition['candidateQueryType']
-  candidateUsage?: ModuleParentImportDefinition['candidateUsage']
   hiddenSelectorColumnKeys?: ModuleParentImportDefinition['hiddenSelectorColumnKeys']
   fixedFilters?: SearchParams
   title?: string
@@ -425,9 +421,6 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'purchase-order-import') {
     return 'purchase-order-import'
   }
-  if (candidateQueryType === 'purchase-prepayment') {
-    return 'purchase-prepayment'
-  }
   if (candidateQueryType === 'sales-order-purchase-source') {
     return 'sales-order-purchase-source'
   }
@@ -444,6 +437,7 @@ function buildOverlayFilterConfig(
   parentModuleKey: string,
   pageConfig: ModulePageConfig,
   fixedFilters: SearchParams,
+  usesDedicatedCandidateEndpoint: boolean,
 ): ModulePageConfig {
   const endpointConfig = getModuleConfig(parentModuleKey)
   const nativeFilterKeys = new Set(endpointConfig.nativeFilterKeys || [])
@@ -455,6 +449,9 @@ function buildOverlayFilterConfig(
   )
 
   const supportedFilters = pageConfig.filters.filter((filter) => {
+    if (usesDedicatedCandidateEndpoint && filter.key === 'status') {
+      return false
+    }
     if (fixedFilterKeys.has(filter.key)) {
       return false
     }
@@ -595,7 +592,6 @@ export function useModuleParentSelectorOverlay({
   allowMultipleSelection = false,
   candidateStatementModuleKey,
   candidateQueryType,
-  candidateUsage,
   hiddenSelectorColumnKeys,
   fixedFilters = EMPTY_FIXED_FILTERS,
   title,
@@ -645,6 +641,7 @@ export function useModuleParentSelectorOverlay({
         parentModuleKey,
         parentPageConfig,
         effectiveFixedFilters,
+        Boolean(candidateStatementModuleKey || candidateQueryType),
       )
     : undefined
 
@@ -669,15 +666,7 @@ export function useModuleParentSelectorOverlay({
         )
       }
       if (candidateQueryType === 'purchase-order-import') {
-        return listPurchaseOrderImportCandidatePage(
-          candidateUsage || 'purchase-inbound',
-          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
-          Math.max(page - 1, 0),
-          pageSize,
-        )
-      }
-      if (candidateQueryType === 'purchase-prepayment') {
-        return listPurchaseOrderPrepaymentCandidatePage(
+        return listPurchaseOrderInboundImportCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,

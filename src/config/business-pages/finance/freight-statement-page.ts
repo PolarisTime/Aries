@@ -361,7 +361,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
       carrierId: entityIdOf(currentRecord.carrierId, 'carrierId'),
       currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
       settlementCompanyId: currentRecord.settlementCompanyId,
-      status: '已审核',
     }),
     mapParentToDraft: (parentRecord) => ({
       carrierId: entityIdOf(parentRecord.carrierId, 'carrierId'),
@@ -375,9 +374,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
       status: '草稿',
     }),
     validateParentImport: ({ currentRecord, parentRecord }) => {
-      if (asString(parentRecord.status).trim() !== '已审核') {
-        return '只能选择已审核的物流单生成物流对账单'
-      }
       const currentCarrierId = entityIdOf(
         currentRecord.carrierId,
         'currentRecord.carrierId',

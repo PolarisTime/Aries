@@ -325,12 +325,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         asString(currentRecord.carrierName).trim()
           ? null
           : '请先选择物流商，再选择销售订单',
-      validateParentImport: ({ parentRecord }) => {
-        const allowedStatuses = new Set(['已审核', '交付核定', '完成销售'])
-        return allowedStatuses.has(asString(parentRecord.status).trim())
-          ? null
-          : '只能导入已审核、交付核定或完成销售的销售订单'
-      },
       transformItems: (parentRecord) => {
         const sourceNo = asString(parentRecord.orderNo).trim()
         return (
