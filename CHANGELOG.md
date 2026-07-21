@@ -1,3 +1,10 @@
+## [7.0.3](https://github.com/PolarisTime/Aries/compare/v7.0.2...v7.0.3) (2026-07-21)
+
+
+### Bug Fixes
+
+* **purchase:** 允许采购入库混合理算与过磅 ([336ab0c](https://github.com/PolarisTime/Aries/commit/336ab0cf7d2c64a1a25ba3733ebaa8ca9a2ea5dc))
+
 ## [7.0.2](https://github.com/PolarisTime/Aries/compare/v7.0.1...v7.0.2) (2026-07-20)
 
 
