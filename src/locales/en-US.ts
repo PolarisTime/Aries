@@ -787,8 +787,6 @@ export const enUS = {
         'Row {{row}}: inbound quantity must be greater than zero',
       purchaseInboundMixedWarehouse:
         'A purchase inbound cannot contain items from different warehouses',
-      purchaseInboundMixedSettlementMode:
-        'A purchase inbound cannot mix weigh and theoretical settlement items',
       purchaseInboundMixedSource:
         'A purchase inbound can reference only one purchase order',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',

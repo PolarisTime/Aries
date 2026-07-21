@@ -764,8 +764,6 @@ export const zhCN = {
       purchaseOrderQuantityMinimum: '第{{row}}行数量必须至少为1个数量单位',
       purchaseInboundQuantityPositive: '第{{row}}行入库数量必须大于0',
       purchaseInboundMixedWarehouse: '一张采购入库单不能包含不同仓库的明细',
-      purchaseInboundMixedSettlementMode:
-        '一张采购入库单不能混合过磅明细和理算明细',
       purchaseInboundMixedSource: '一张采购入库单只能关联一张采购订单',
       lineItemRequired: '请填写第{{row}}行{{label}}',
       fieldRequired: '请填写{{label}}',

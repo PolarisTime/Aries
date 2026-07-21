@@ -104,14 +104,6 @@ function getLineItemValidationMessages(
         i18next.t('modules.validation.purchaseInboundMixedWarehouse'),
       )
     }
-    const settlementModes = new Set(
-      items.map((item) => asString(item.settlementMode).trim()).filter(Boolean),
-    )
-    if (settlementModes.size > 1) {
-      messages.push(
-        i18next.t('modules.validation.purchaseInboundMixedSettlementMode'),
-      )
-    }
     const parentRelationIds = new Set(
       items
         .map((item) => asString(item._parentRelationId).trim())
