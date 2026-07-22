@@ -1,3 +1,10 @@
+# [7.1.0](https://github.com/PolarisTime/Aries/compare/v7.0.5...v7.1.0) (2026-07-22)
+
+
+### Features
+
+* **print:** 使用后端导出文件名 ([8c070f5](https://github.com/PolarisTime/Aries/commit/8c070f56433ed0388ac7d1410f6ed8b0a4ff2eb9))
+
 ## [7.0.5](https://github.com/PolarisTime/Aries/compare/v7.0.4...v7.0.5) (2026-07-22)
 
 
