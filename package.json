@@ -4,11 +4,6 @@
   "version": "7.2.0",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "overrides": {
-      "semver": "^7.7.4"
-    }
-  },
   "scripts": {
     "env:dev": "bash scripts/env/dev.sh",
     "env:prod": "bash scripts/env/prod.sh",

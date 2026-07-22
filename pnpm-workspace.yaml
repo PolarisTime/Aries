@@ -1,6 +1,9 @@
 packages:
   - tools/typescript-toolchain
 
+overrides:
+  semver: ^7.7.4
+
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - deslop-js
