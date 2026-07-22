@@ -1,16 +1,67 @@
+import { z } from 'zod'
+import { parseApiContract } from '@/api/api-contract'
 import {
+  apiDelete,
+  apiGet,
+  apiPost,
+  apiPut,
   assertApiSuccess,
-  http,
-  restDelete,
-  restGet,
-  restPost,
-  restPut,
+  downloadPostResponse,
 } from '@/api/client'
-import type {
-  PrintTemplateRecord,
-  PrintTemplateResponse,
-  SavePrintTemplatePayload,
-} from '@/shared/schemas'
+import type { SavePrintTemplatePayload } from '@/shared/schemas'
+import {
+  printTemplateRecordSchema,
+  printTemplateResponseSchema,
+  savePrintTemplatePayloadSchema,
+} from '@/shared/schemas/print-template'
+
+const printRecordItemSchema = z.object({
+  id: z.string(),
+  recordId: z.string(),
+  brand: z.string(),
+  category: z.string(),
+  settlementMode: z.string().optional(),
+  material: z.string(),
+  spec: z.string(),
+  length: z.string(),
+  quantity: z.string(),
+  pieceWeightTon: z.string(),
+  weightTon: z.string(),
+  unitPrice: z.string(),
+  amount: z.string(),
+})
+
+const printTemplateListResponseSchema = printTemplateResponseSchema(
+  z.array(printTemplateRecordSchema),
+)
+const printRecordItemsResponseSchema = printTemplateResponseSchema(
+  z.array(printRecordItemSchema),
+)
+const printOutputBaseSchema = z.object({
+  templateName: z.string().optional(),
+  templateType: z.string().optional(),
+  data: z.record(z.string(), z.string()).optional(),
+  items: z.array(z.record(z.string(), z.string())).optional(),
+})
+const printOutputSchema = z.discriminatedUnion('kind', [
+  printOutputBaseSchema.extend({
+    kind: z.literal('PDF'),
+    contentType: z.string().optional(),
+    fileName: z.string().optional(),
+    pdfBase64: z.string(),
+  }),
+  printOutputBaseSchema.extend({
+    kind: z.literal('LODOP_SCRIPT'),
+    templateHtml: z.string(),
+  }),
+])
+const printRecordResponseSchema = printTemplateResponseSchema(printOutputSchema)
+const printTemplateItemResponseSchema = printTemplateResponseSchema(
+  printTemplateRecordSchema,
+)
+const printTemplateDeleteResponseSchema = printTemplateResponseSchema(
+  z.string(),
+)
 
 export interface PrintRecordItem {
   id: string
@@ -67,25 +118,29 @@ function defaultEngineForTemplateType(
 }
 
 export function listPrintTemplates(billType: string) {
-  return restGet<PrintTemplateResponse<PrintTemplateRecord[]>>(
-    '/print-templates',
-    {
-      billType,
-    },
-  )
+  return apiGet('/print-templates', printTemplateListResponseSchema, {
+    params: { billType },
+  })
 }
 
-export function listPrintRecordBrands(moduleKey: string, recordIds: string[]) {
-  return restPost<PrintTemplateResponse<string[]>>('/print/brands', {
+export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
+  return apiPost('/print/items', printRecordItemsResponseSchema, {
     moduleKey,
     recordIds,
   })
 }
 
-export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
-  return restPost<PrintTemplateResponse<PrintRecordItem[]>>('/print/items', {
+export function renderPrintRecord(
+  templateId: string,
+  moduleKey: string,
+  recordId: string,
+  printOptions?: unknown,
+) {
+  return apiPost('/print/record', printRecordResponseSchema, {
+    templateId,
     moduleKey,
-    recordIds,
+    recordId,
+    ...(printOptions ? { printOptions } : {}),
   })
 }
 
@@ -93,7 +148,7 @@ export async function exportSalesOrderPrintXlsx(
   recordId: string,
   payload: ExportSalesOrderPrintXlsxPayload = {},
 ): Promise<SalesOrderPrintXlsxDownload> {
-  const response = await http.postResponse<Blob>(
+  const response = await downloadPostResponse(
     `/sales-orders/${encodeURIComponent(recordId)}/print-xlsx`,
     payload,
     {
@@ -109,35 +164,41 @@ export async function exportSalesOrderPrintXlsx(
 }
 
 export function savePrintTemplate(payload: SavePrintTemplatePayload) {
-  const templateType = payload.templateType || 'COORD'
+  const validatedPayload = parseApiContract(
+    savePrintTemplatePayloadSchema,
+    payload,
+    '保存打印模板请求',
+  )
+  const templateType = validatedPayload.templateType || 'COORD'
   const requestBody = {
-    billType: payload.billType,
-    templateName: payload.templateName,
-    templateCode: payload.templateCode,
-    templateHtml: payload.templateHtml || '',
+    billType: validatedPayload.billType,
+    templateName: validatedPayload.templateName,
+    templateCode: validatedPayload.templateCode,
+    templateHtml: validatedPayload.templateHtml || '',
     templateType,
-    engine: payload.engine || defaultEngineForTemplateType(templateType),
-    assetRef: templateType === 'PDF_FORM' ? payload.assetRef : undefined,
-    settlementCompanyId: payload.settlementCompanyId,
-    settlementCompanyName: payload.settlementCompanyName,
-    versionNo: payload.versionNo || 1,
-    status: payload.status || 'ACTIVE',
+    engine:
+      validatedPayload.engine || defaultEngineForTemplateType(templateType),
+    assetRef:
+      templateType === 'PDF_FORM' ? validatedPayload.assetRef : undefined,
+    settlementCompanyId: validatedPayload.settlementCompanyId,
+    settlementCompanyName: validatedPayload.settlementCompanyName,
+    versionNo: validatedPayload.versionNo || 1,
+    status: validatedPayload.status || 'ACTIVE',
   }
 
-  return payload.id
-    ? restPut<PrintTemplateResponse<PrintTemplateRecord>>(
-        `/print-templates/${encodeURIComponent(payload.id)}`,
+  return validatedPayload.id
+    ? apiPut(
+        `/print-templates/${encodeURIComponent(validatedPayload.id)}`,
+        printTemplateItemResponseSchema,
         requestBody,
       )
-    : restPost<PrintTemplateResponse<PrintTemplateRecord>>(
-        '/print-templates',
-        requestBody,
-      )
+    : apiPost('/print-templates', printTemplateItemResponseSchema, requestBody)
 }
 
 export function deletePrintTemplate(id: string) {
-  return restDelete<PrintTemplateResponse<string>>(
+  return apiDelete(
     `/print-templates/${encodeURIComponent(id)}`,
+    printTemplateDeleteResponseSchema,
   )
 }
 
@@ -145,8 +206,9 @@ export async function uploadPrintTemplateJson(id: string, file: File) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await http.post<PrintTemplateResponse<PrintTemplateRecord>>(
+  const response = await apiPost(
     `/print-templates/${encodeURIComponent(id)}/upload-json`,
+    printTemplateItemResponseSchema,
     formData,
     {
       headers: { 'Content-Type': 'multipart/form-data' },

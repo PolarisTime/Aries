@@ -8,10 +8,8 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { AppVersionFooter } from '@/layouts/AppVersionFooter'
-import {
-  DashboardSidebarPanels,
-  DashboardWorkplaceHeader,
-} from '@/views/dashboard/DashboardInfoPanels'
+import { DashboardSidebarPanels } from '@/views/dashboard/DashboardSidebarPanels'
+import { DashboardWorkplaceHeader } from '@/views/dashboard/DashboardWorkplaceHeader'
 import { buildDashboardInfoItems } from '@/views/dashboard/dashboard-info-utils'
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
 

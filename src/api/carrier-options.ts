@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
@@ -17,8 +18,30 @@ export type CarrierOption = {
   defaultSettlementCompanyName?: string
 }
 
+type RawCarrierOption = {
+  id?: unknown
+  carrierCode?: unknown
+  carrierName?: unknown
+  value?: unknown
+  label?: unknown
+  vehiclePlates?: unknown
+  defaultSettlementCompanyId?: unknown
+  defaultSettlementCompanyName?: unknown
+}
+
+const rawCarrierOptionSchema = z.object({
+  id: z.unknown().optional(),
+  carrierCode: z.unknown().optional(),
+  carrierName: z.unknown().optional(),
+  value: z.unknown().optional(),
+  label: z.unknown().optional(),
+  vehiclePlates: z.unknown().optional(),
+  defaultSettlementCompanyId: z.unknown().optional(),
+  defaultSettlementCompanyName: z.unknown().optional(),
+})
+
 export function normalizeCarrierOptions(
-  options: CarrierOption[],
+  options: RawCarrierOption[],
 ): CarrierOption[] {
   return options.map((option, index) => {
     const carrierName = String(option.carrierName || option.value || '').trim()
@@ -33,7 +56,7 @@ export function normalizeCarrierOptions(
       label: carrierName || String(option.label || '').trim(),
       value: String(option.value || ''),
       vehiclePlates: Array.isArray(option.vehiclePlates)
-        ? option.vehiclePlates.flatMap((plate) => {
+        ? option.vehiclePlates.flatMap((plate: unknown) => {
             const v = String(plate || '').trim()
             return v ? [v] : []
           })
@@ -42,13 +65,16 @@ export function normalizeCarrierOptions(
         option.defaultSettlementCompanyId,
         `carriers[${index}].defaultSettlementCompanyId`,
       ),
+      defaultSettlementCompanyName:
+        asString(option.defaultSettlementCompanyName).trim() || undefined,
     }
   })
 }
 
-const cached = createQueryCachedOptions<CarrierOption>({
+const cached = createQueryCachedOptions<CarrierOption, RawCarrierOption>({
   endpoint: ENDPOINTS.CARRIERS_OPTIONS,
   queryKey: QUERY_KEYS.masterOptions.carrier,
+  itemSchema: rawCarrierOptionSchema,
   normalizer: normalizeCarrierOptions,
 })
 

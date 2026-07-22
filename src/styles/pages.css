@@ -188,13 +188,6 @@
   }
 }
 
-@media (max-width: 1080px) {
-  .dashboard-panels-grid,
-  .dashboard-flow-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 960px) {
   :root {
     --app-control-height: 36px;
@@ -257,15 +250,10 @@
     align-items: flex-start;
   }
 
-  .dashboard-flow-section {
-    padding: 14px;
-  }
-
   .dashboard-flow-chain {
     gap: 8px;
   }
 
-  .dashboard-flow-chain-item,
   .dashboard-flow-node {
     width: 100%;
   }
@@ -433,20 +421,6 @@
   border-radius: var(--ant-border-radius);
 }
 
-.auth-setup-highlight-list {
-  width: 100%;
-}
-
-.auth-setup-highlight {
-  width: 100%;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--theme-border-subtle);
-}
-
-.auth-setup-highlight:last-child {
-  border-bottom: 0;
-}
-
 .login-skeleton-card {
   display: flex;
   align-items: center;
@@ -584,12 +558,6 @@
 .login-submit-btn {
   height: 40px;
   font-size: 14px;
-  font-weight: 400;
-  border-radius: 6px;
-}
-
-.login-secondary-btn {
-  height: 40px;
   font-weight: 400;
   border-radius: 6px;
 }

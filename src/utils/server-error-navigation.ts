@@ -21,7 +21,7 @@ function getPathname(path: string): string {
   return path.split(/[?#]/, 1)[0]
 }
 
-export function isSafeServerErrorRetryPath(path: unknown): path is string {
+function isSafeServerErrorRetryPath(path: unknown): path is string {
   if (typeof path !== 'string') return false
   const trimmed = path.trim()
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return false

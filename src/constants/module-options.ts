@@ -21,10 +21,6 @@ const deletedDocumentStatusOption = {
   value: '已删除',
 } as const
 
-export function buildValueOptions(...values: string[]) {
-  return createOptionList(values)
-}
-
 export function withDeletedDocumentStatus<
   T extends { label: string; value: string },
 >(options: readonly T[]) {

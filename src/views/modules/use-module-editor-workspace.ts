@@ -147,11 +147,6 @@ function hydrateFinanceStatementSource(
   moduleKey: string,
   record: ModuleRecord,
 ) {
-  if (moduleKey === 'ledger-adjustment') {
-    record.customerId =
-      record.counterpartyType === '客户' ? record.counterpartyId : undefined
-  }
-
   const firstItem = Array.isArray(record.items) ? record.items[0] : undefined
   if (!firstItem) {
     return

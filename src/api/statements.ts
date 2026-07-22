@@ -1,12 +1,9 @@
-import { assertApiSuccess, http } from '@/api/client'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
 import { pageContent, pageTotalElements } from '@/api/page-contract'
-import type { ApiResponse, TableResponse } from '@/types/api'
-import type {
-  RawApiRecord,
-  RawPagePayload,
-  SearchParams,
-} from '@/types/api-raw'
+import { rawPageResponseSchema } from '@/shared/schemas/api'
+import type { TableResponse } from '@/types/api'
+import type { RawApiRecord, SearchParams } from '@/types/api-raw'
 import {
   normalizeEntityIds,
   parseEntityId,
@@ -45,19 +42,16 @@ async function listStatementCandidates(
     'currentRecordId',
   )
   const response = assertApiSuccess(
-    await http.get<ApiResponse<RawPagePayload>>(
-      `${endpointConfig.path}/candidates`,
-      {
-        params: {
-          ...candidateFilters,
-          ...(currentStatementId ? { currentStatementId } : {}),
-          keyword: keyword.trim(),
-          page,
-          size,
-        },
-        signal,
+    await apiGet(`${endpointConfig.path}/candidates`, rawPageResponseSchema, {
+      params: {
+        ...candidateFilters,
+        ...(currentStatementId ? { currentStatementId } : {}),
+        keyword: keyword.trim(),
+        page,
+        size,
       },
-    ),
+      signal,
+    }),
     getApiMessage('queryStatementCandidatesFailed'),
   )
   const content = pageContent(response.data)

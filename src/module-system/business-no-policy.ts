@@ -8,7 +8,6 @@ const SNOWFLAKE_BUSINESS_NO_MODULES = new Set([
   'freight-statement',
   'receipt',
   'payment',
-  'ledger-adjustment',
   'customer',
   'supplier',
   'carrier',

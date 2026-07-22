@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
@@ -20,6 +21,14 @@ type RawSupplierOption = {
   value?: unknown
   label?: unknown
 }
+
+const rawSupplierOptionSchema = z.object({
+  id: z.unknown().optional(),
+  supplierCode: z.unknown().optional(),
+  supplierName: z.unknown().optional(),
+  value: z.unknown().optional(),
+  label: z.unknown().optional(),
+})
 
 function buildSupplierLabel(id: EntityId, supplierName: string): string {
   return supplierName || `#${id}`
@@ -62,22 +71,10 @@ export function getSupplierEntityOptions(): SupplierOption[] {
   return cached.get()
 }
 
-export function getSupplierNameFilterOptions() {
-  return [
-    ...new Set(cached.get().map((option) => option.supplierName)),
-  ].flatMap((supplierName) =>
-    supplierName ? [{ value: supplierName, label: supplierName }] : [],
-  )
-}
-
-/** @deprecated 供应商身份选择统一使用雪花 ID。 */
-export function getSupplierIdentityOptions(): SupplierOption[] {
-  return getSupplierEntityOptions()
-}
-
 const cached = createQueryCachedOptions<SupplierOption, RawSupplierOption>({
   endpoint: ENDPOINTS.SUPPLIERS_OPTIONS,
   queryKey: QUERY_KEYS.masterOptions.supplier,
+  itemSchema: rawSupplierOptionSchema,
   normalizer: normalizeSupplierOptions,
 })
 

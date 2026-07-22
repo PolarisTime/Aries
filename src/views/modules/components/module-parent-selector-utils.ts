@@ -38,10 +38,7 @@ function hasPositiveQuantity(value: unknown) {
   return Number.isFinite(quantity) && quantity > 0
 }
 
-export function hasImportableQuantity(
-  parentModuleKey: string,
-  record: ModuleRecord,
-) {
+function hasImportableQuantity(parentModuleKey: string, record: ModuleRecord) {
   const items = Array.isArray(record.items) ? record.items : []
   if (
     record.importableQuantity !== undefined &&

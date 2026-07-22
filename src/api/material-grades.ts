@@ -1,6 +1,6 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import { http } from './client'
+import { stringArrayResponseSchema } from '@/shared/schemas/api'
+import { apiGet } from './client'
 
 export interface MaterialGradeOption {
   value: string
@@ -12,8 +12,9 @@ let cachedGrades: MaterialGradeOption[] | null = null
 export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
   if (cachedGrades) return cachedGrades
   try {
-    const response = await http.get<ApiResponse<string[]>>(
+    const response = await apiGet(
       ENDPOINTS.MATERIAL_GRADES,
+      stringArrayResponseSchema,
     )
     const list = response.data || []
     cachedGrades = list.map((v) => ({ value: v, label: v }))
@@ -21,9 +22,4 @@ export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
   } catch {
     return []
   }
-}
-
-export async function reloadMaterialGrades(): Promise<MaterialGradeOption[]> {
-  cachedGrades = null
-  return fetchMaterialGrades()
 }

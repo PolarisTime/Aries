@@ -1,5 +1,7 @@
-import { assertApiSuccess, http } from '@/api/client'
+import { z } from 'zod'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { apiResponseSchema } from '@/shared/schemas/api'
 import { getApiMessage } from '@/utils/api-messages'
 
 export interface MenuNode {
@@ -11,12 +13,6 @@ export interface MenuNode {
   sortOrder: number
   menuType: string
   children: MenuNode[]
-}
-
-interface MenuResponse<T> {
-  code: number
-  message?: string
-  data: T
 }
 
 interface RawMenuNode {
@@ -33,6 +29,25 @@ interface RawMenuNode {
   parentId?: number | null
   path?: string | null
 }
+
+const rawMenuNodeSchema: z.ZodType<RawMenuNode> = z.lazy(() =>
+  z.object({
+    menuCode: z.string().optional(),
+    menuName: z.string().optional(),
+    parentCode: z.string().nullable().optional(),
+    routePath: z.string().nullable().optional(),
+    icon: z.string().nullable().optional(),
+    sortOrder: z.number().optional(),
+    menuType: z.string().optional(),
+    children: z.array(rawMenuNodeSchema).optional(),
+    code: z.string().optional(),
+    title: z.string().optional(),
+    parentId: z.number().nullable().optional(),
+    path: z.string().nullable().optional(),
+  }),
+)
+
+const menuResponseSchema = apiResponseSchema(z.array(rawMenuNodeSchema))
 
 function normalizeMenuNode(
   node: RawMenuNode,
@@ -55,7 +70,7 @@ function normalizeMenuNode(
 
 export async function listSystemMenus() {
   const response = assertApiSuccess(
-    await http.get<MenuResponse<RawMenuNode[]>>(ENDPOINTS.SYSTEM_MENUS_TREE),
+    await apiGet(ENDPOINTS.SYSTEM_MENUS_TREE, menuResponseSchema),
     getApiMessage('loadMenusFailed'),
   )
   return Array.isArray(response.data)

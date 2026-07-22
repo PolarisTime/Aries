@@ -1,6 +1,7 @@
-import { assertApiSuccess, http } from '@/api/client'
+import { z } from 'zod'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema, rawPageSchema } from '@/shared/schemas/api'
 import { type EntityId, parseEntityId } from '@/types/entity-id'
 import { asArray, asNumber, asString } from '@/utils/type-narrowing'
 
@@ -57,6 +58,39 @@ export interface FinanceOverviewPage {
 }
 
 type RawRecord = Record<string, unknown>
+
+const decimalSchema = z.union([z.number(), z.string()])
+const responseIdSchema = z.union([z.string(), z.number()])
+const financeOverviewSummarySchema = z.looseObject({
+  receivableAmount: decimalSchema,
+  receivedAmount: decimalSchema,
+  unreceivedAmount: decimalSchema,
+  advanceReceiptAmount: decimalSchema,
+  payableAmount: decimalSchema,
+  paidAmount: decimalSchema,
+  unpaidAmount: decimalSchema,
+  advancePaymentAmount: decimalSchema,
+})
+const financeBalanceSchema = z.looseObject({
+  direction: z.string(),
+  counterpartyType: z.string(),
+  counterpartyId: responseIdSchema,
+  counterpartyCode: z.string().nullish(),
+  counterpartyName: z.string(),
+  settlementCompanyId: responseIdSchema,
+  settlementCompanyName: z.string(),
+  recognizedAmount: decimalSchema,
+  settledAmount: decimalSchema,
+  outstandingAmount: decimalSchema,
+  advanceAmount: decimalSchema,
+})
+const financeOverviewResponseSchema = apiResponseSchema(
+  z.looseObject({
+    asOfDate: z.string(),
+    summary: financeOverviewSummarySchema,
+    balances: rawPageSchema(financeBalanceSchema),
+  }),
+)
 
 function normalizeSummary(raw: RawRecord = {}): FinanceOverviewSummary {
   return {
@@ -139,7 +173,7 @@ export async function getFinanceOverview(
   signal?: AbortSignal,
 ): Promise<FinanceOverviewPage> {
   const response = assertApiSuccess(
-    await http.get<ApiResponse<RawRecord>>(ENDPOINTS.FINANCE_OVERVIEW, {
+    await apiGet(ENDPOINTS.FINANCE_OVERVIEW, financeOverviewResponseSchema, {
       params: normalizeQuery(query),
       signal,
     }),

@@ -12,7 +12,7 @@ export function computeTableBodyScrollY(
   )
 }
 
-export function parseTableColumnWidth(width: unknown) {
+function parseTableColumnWidth(width: unknown) {
   if (typeof width === 'number' && Number.isFinite(width)) return width
   if (typeof width === 'string') {
     const parsed = Number.parseInt(width, 10)

@@ -14,15 +14,6 @@ export interface GlobalSearchResult {
   matchedByTrackId: boolean
 }
 
-export interface GlobalSearchSourceRecord {
-  moduleKey: string
-  title: string
-  trackId: string
-  primaryNo: string
-  summary: string
-  matchedByTrackId: boolean
-}
-
 interface GlobalSearchOptions {
   keyword: string
   moduleKeys: string[]
@@ -51,30 +42,6 @@ export function buildGlobalSearchSummary(record: ModuleRecord) {
     .map((item) => String(item))
     .slice(0, 3)
     .join(' / ')
-}
-
-export function isLikelyTrackId(value: string) {
-  return /^\d{12,}$/.test(value.trim())
-}
-
-export function normalizeGlobalSearchResult(source: GlobalSearchSourceRecord) {
-  const primaryNo = String(source.primaryNo || source.trackId || '')
-  const trackId = String(source.trackId || '')
-  const summary = String(source.summary || '')
-  const matchedByTrackId = Boolean(source.matchedByTrackId)
-  const idText =
-    matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
-
-  return {
-    value: `${source.moduleKey}::${primaryNo || trackId}`,
-    label: `${source.title} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
-    moduleKey: source.moduleKey,
-    title: source.title,
-    trackId,
-    primaryNo,
-    summary,
-    matchedByTrackId,
-  } satisfies GlobalSearchResult
 }
 
 function buildGlobalSearchResult(

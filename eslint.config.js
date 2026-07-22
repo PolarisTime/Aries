@@ -1,8 +1,8 @@
+import tseslint from '@aries/typescript-toolchain'
 import js from '@eslint/js'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
-import tseslint from 'typescript-eslint'
 
 const nonProjectServiceFiles = [
   'src/api/idempotency.ts',
@@ -172,6 +172,22 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
+  // 底层 Axios 实例仅允许公共 API 客户端和认证刷新链路使用。
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/api/client.ts', 'src/api/auth/auth-state.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[source.value=/http$/]',
+          message:
+            '业务代码必须通过带 Zod schema 的 apiGet/apiPost 等公共方法访问 JSON API',
+        },
+      ],
     },
   },
 )

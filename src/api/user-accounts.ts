@@ -1,27 +1,31 @@
+import { parseApiContract } from '@/api/api-contract'
 import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type {
-  UserAccountCreateResult,
-  UserAccountFormPayload,
-  UserAccountLoginNameAvailability,
-  UserAccountRecord,
-} from '@/shared/schemas'
-import type { ApiResponse } from '@/types/api'
+import type { UserAccountFormPayload } from '@/shared/schemas'
+import {
+  apiResponseSchema,
+  nullResponseSchema,
+  rawPageSchema,
+} from '@/shared/schemas/api'
+import {
+  userAccountCreateResultSchema,
+  userAccountFormPayloadSchema,
+  userAccountLoginNameAvailabilitySchema,
+  userAccountRecordSchema,
+} from '@/shared/schemas/user-account'
 import { getApiMessage } from '@/utils/api-messages'
-import { assertApiSuccess, http } from './client'
+import { apiDelete, apiGet, apiPost, apiPut, assertApiSuccess } from './client'
 
-interface PageResponse<T> {
-  content?: T[]
-  records?: T[]
-  currentPage?: number
-  page?: number
-  pageSize?: number
-  size?: number
-  totalElements: number
-  totalPages: number
-  first?: boolean
-  last?: boolean
-}
+const userAccountResponseSchema = apiResponseSchema(userAccountRecordSchema)
+const userAccountPageResponseSchema = apiResponseSchema(
+  rawPageSchema(userAccountRecordSchema),
+)
+const loginNameAvailabilityResponseSchema = apiResponseSchema(
+  userAccountLoginNameAvailabilitySchema,
+)
+const userAccountCreateResponseSchema = apiResponseSchema(
+  userAccountCreateResultSchema,
+)
 
 export interface UserAccountListParams {
   page: number
@@ -30,15 +34,16 @@ export interface UserAccountListParams {
   status?: string
 }
 
-export function buildUserAccountUrl(id?: string) {
+function buildUserAccountUrl(id?: string) {
   return id != null
     ? `${ENDPOINTS.USER_ACCOUNTS}/${id}`
     : ENDPOINTS.USER_ACCOUNTS
 }
 
 export async function listUserAccounts(params: UserAccountListParams) {
-  const response = await http.get<ApiResponse<PageResponse<UserAccountRecord>>>(
+  const response = await apiGet(
     ENDPOINTS.USER_ACCOUNTS,
+    userAccountPageResponseSchema,
     { params },
   )
   const data = assertApiSuccess(response, getApiMessage('loadUsersFailed')).data
@@ -47,10 +52,10 @@ export async function listUserAccounts(params: UserAccountListParams) {
 
 export async function getUserAccountDetail(id: string, signal?: AbortSignal) {
   const response = signal
-    ? await http.get<ApiResponse<UserAccountRecord>>(buildUserAccountUrl(id), {
+    ? await apiGet(buildUserAccountUrl(id), userAccountResponseSchema, {
         signal,
       })
-    : await http.get<ApiResponse<UserAccountRecord>>(buildUserAccountUrl(id))
+    : await apiGet(buildUserAccountUrl(id), userAccountResponseSchema)
   return assertApiSuccess(response, getApiMessage('loadUserDetailFailed')).data
 }
 
@@ -58,18 +63,26 @@ export async function checkUserAccountLoginName(
   loginName: string,
   excludeUserId?: string,
 ) {
-  const response = await http.get<
-    ApiResponse<UserAccountLoginNameAvailability>
-  >(ENDPOINTS.USER_ACCOUNTS_LOGIN_NAME_CHECK, {
-    params: { loginName, excludeUserId },
-  })
+  const response = await apiGet(
+    ENDPOINTS.USER_ACCOUNTS_LOGIN_NAME_CHECK,
+    loginNameAvailabilityResponseSchema,
+    {
+      params: { loginName, excludeUserId },
+    },
+  )
   return assertApiSuccess(response, getApiMessage('checkLoginNameFailed')).data
 }
 
 export async function createUserAccount(payload: UserAccountFormPayload) {
-  const response = await http.post<ApiResponse<UserAccountCreateResult>>(
-    ENDPOINTS.USER_ACCOUNTS,
+  const validatedPayload = parseApiContract(
+    userAccountFormPayloadSchema,
     payload,
+    '创建账号请求',
+  )
+  const response = await apiPost(
+    ENDPOINTS.USER_ACCOUNTS,
+    userAccountCreateResponseSchema,
+    validatedPayload,
   )
   return assertApiSuccess(response, getApiMessage('createUserFailed'))
 }
@@ -78,14 +91,20 @@ export async function updateUserAccount(
   id: string,
   payload: UserAccountFormPayload,
 ) {
-  const response = await http.put<ApiResponse<UserAccountRecord>>(
-    buildUserAccountUrl(id),
+  const validatedPayload = parseApiContract(
+    userAccountFormPayloadSchema,
     payload,
+    '更新账号请求',
+  )
+  const response = await apiPut(
+    buildUserAccountUrl(id),
+    userAccountResponseSchema,
+    validatedPayload,
   )
   return assertApiSuccess(response, getApiMessage('saveUserFailed'))
 }
 
 export async function deleteUserAccount(id: string) {
-  const response = await http.delete<ApiResponse<null>>(buildUserAccountUrl(id))
+  const response = await apiDelete(buildUserAccountUrl(id), nullResponseSchema)
   return assertApiSuccess(response, getApiMessage('deleteUserFailed'))
 }

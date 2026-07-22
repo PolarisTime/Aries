@@ -10,8 +10,6 @@
  *   // 旧: const qty = Number(record.quantity || 0)
  *   // 新: const qty = asNumber(record.quantity)
  */
-import type { z } from 'zod'
-
 // ── 基础类型收窄 ──────────────────────────────────────
 
 /** 安全转为 string。非字符串/数字/布尔/大整数原语 → '' */
@@ -38,60 +36,22 @@ export function asNumber(value: unknown): number {
   return 0
 }
 
-/** 安全转为 boolean */
-function asBoolean(value: unknown): boolean {
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'string') return value === 'true' || value === '1'
-  if (typeof value === 'number') return value !== 0
-  return false
-}
-
 /** 安全转为数组。非数组 → [] */
 export function asArray<T = unknown>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : []
-}
-
-/** 安全转为日期字符串 (YYYY-MM-DD)。无效日期 → '' */
-
-// ── Schema 辅助 ───────────────────────────────────────
-
-/** Zod Schema 安全解析，失败返回默认值 */
-function parseOrDefault<T>(
-  schema: z.ZodType<T>,
-  value: unknown,
-  fallback: T,
-): T {
-  const r = schema.safeParse(value)
-  return r.success ? r.data : fallback
 }
 
 // ── Record 安全访问器 ──────────────────────────────────
 
 /**
  * 从 Record<string, unknown> 安全读取字段。
- * 用法：safe(record).str('name') / safe(record).num('qty')
+ * 用法：safe(record).str('name')
  */
 export function safe(record: Record<string, unknown> | null | undefined) {
   const src = record ?? {}
   return {
     str(key: string, fallback = '') {
       return key in src ? asString(src[key]) : fallback
-    },
-    num(key: string, fallback = 0) {
-      return key in src ? asNumber(src[key]) : fallback
-    },
-    bool(key: string, fallback = false) {
-      return key in src ? asBoolean(src[key]) : fallback
-    },
-    arr<T = unknown>(key: string, fallback: T[] = []) {
-      return key in src ? asArray<T>(src[key]) : fallback
-    },
-    get<T>(key: string, schema: z.ZodType<T>, fallback: T): T {
-      if (!(key in src)) return fallback
-      return parseOrDefault(schema, src[key], fallback)
-    },
-    raw(key: string): unknown {
-      return src[key]
     },
   }
 }

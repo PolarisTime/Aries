@@ -114,13 +114,6 @@ export function materialGradeOptions() {
   return _gradeOptions
 }
 
-export function replaceMaterialGradeOptions(
-  options: ReturnType<typeof createOptionList>,
-) {
-  _gradeOptions = options.length > 0 ? options : materialGradeFallbackOptions
-  gradeOptionsLoading = false
-}
-
 // ── Supplier ───────────────────────────────────────────────────────────────────
 
 const supplierFallbackOptions: ReturnType<typeof createOptionList> = []

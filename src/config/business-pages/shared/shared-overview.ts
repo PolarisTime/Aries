@@ -2,9 +2,9 @@ import i18next from 'i18next'
 import type { ModuleOverviewItem, ModuleRecord } from '@/types/module-page'
 import { formatAmount, formatInteger, formatWeight } from '@/utils/formatters'
 
-export { formatAmount, formatInteger, formatWeight }
+export { formatInteger }
 
-export function sumBy(rows: ModuleRecord[], key: string) {
+function sumBy(rows: ModuleRecord[], key: string) {
   return rows.reduce((sum, row) => sum + Number(row[key] || 0), 0)
 }
 

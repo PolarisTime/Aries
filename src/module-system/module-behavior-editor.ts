@@ -264,7 +264,7 @@ registerModuleBehavior('sales-outbound', {
   parentImportedEditableFields: ['outboundDate', 'remark'],
   parentImportedItemEditableColumns: ['actualWeightTon', 'weighWeightTon'],
 })
-const operatorNameModules = ['receipt', 'payment', 'ledger-adjustment']
+const operatorNameModules = ['receipt', 'payment']
 
 for (const key of operatorNameModules) {
   registerModuleBehavior(key, { defaultOperatorField: 'operatorName' })
@@ -358,54 +358,6 @@ registerModuleBehavior('payment', {
         asString(editorForm.settlementCompanyName),
       )
       return
-    }
-  },
-})
-
-registerModuleBehavior('ledger-adjustment', {
-  defaultDraftValues: () => ({ adjustmentDate: currentDate() }),
-  syncEditorForm(editorForm, ctx) {
-    if (ctx.changedKeys.has('settlementCompanyId')) {
-      editorForm.settlementCompanyName = findSettlementCompanyName(
-        editorForm.settlementCompanyId,
-        asString(editorForm.settlementCompanyName),
-      )
-    }
-
-    if (ctx.changedKeys.has('counterpartyType')) {
-      if (!ctx.changedKeys.has('counterpartyId')) {
-        clearCounterpartyIdentity(editorForm)
-        editorForm.customerId = ''
-        editorForm.projectId = ''
-        editorForm.projectName = ''
-        return
-      }
-    }
-
-    if (ctx.changedKeys.has('counterpartyId')) {
-      snapshotCounterpartyIdentity(editorForm)
-      editorForm.customerId =
-        editorForm.counterpartyType === '客户' ? editorForm.counterpartyId : ''
-      if (editorForm.counterpartyType !== '客户') {
-        editorForm.projectId = ''
-        editorForm.projectName = ''
-      }
-      return
-    }
-
-    if (ctx.changedKeys.has('projectId')) {
-      const project =
-        editorForm.counterpartyType === '客户'
-          ? findProjectOption(editorForm.projectId, editorForm.counterpartyId)
-          : undefined
-      editorForm.projectId = asString(project?.id)
-      editorForm.projectName = asString(project?.projectName).trim()
-      return
-    }
-
-    if (ctx.changedKeys.has('counterpartyName')) {
-      editorForm.counterpartyId = ''
-      editorForm.counterpartyCode = ''
     }
   },
 })

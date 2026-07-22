@@ -1,6 +1,7 @@
-import { assertApiSuccess, http } from '@/api/client'
+import { z } from 'zod'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -20,6 +21,16 @@ type RawWarehouseRecommendation = {
 }
 
 const RECOMMENDATION_BATCH_SIZE = 200
+const warehouseRecommendationResponseSchema = apiResponseSchema(
+  z.array(
+    z.object({
+      materialId: z.union([z.string(), z.number()]),
+      warehouseId: z.union([z.string(), z.number()]),
+      warehouseCode: z.string(),
+      warehouseName: z.string(),
+    }),
+  ),
+)
 
 function normalizeRecommendation(
   recommendation: RawWarehouseRecommendation,
@@ -62,13 +73,15 @@ export async function fetchPurchaseOrderWarehouseRecommendations(
 
   const batchRows = await Promise.all(
     batches.map(async (batch) => {
-      const rawResponse = await http.get<
-        ApiResponse<RawWarehouseRecommendation[]>
-      >(ENDPOINTS.PURCHASE_ORDER_WAREHOUSE_RECOMMENDATIONS, {
-        params: { supplierId, materialIds: batch },
-        paramsSerializer: { indexes: null },
-        signal,
-      })
+      const rawResponse = await apiGet(
+        ENDPOINTS.PURCHASE_ORDER_WAREHOUSE_RECOMMENDATIONS,
+        warehouseRecommendationResponseSchema,
+        {
+          params: { supplierId, materialIds: batch },
+          paramsSerializer: { indexes: null },
+          signal,
+        },
+      )
       return assertApiSuccess(rawResponse, '查询采购仓库推荐失败').data
     }),
   )

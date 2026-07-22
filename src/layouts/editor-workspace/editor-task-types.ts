@@ -30,12 +30,3 @@ export interface EditorTask extends EditorTaskIdentity {
   lastActivatedAt: number
   closable: boolean
 }
-
-export interface EditorTaskMigration {
-  mode: EditorTaskMode
-  recordId: string
-  title: string
-  displayMeta?: EditorTaskDisplayMeta
-  status: EditorTaskStatus
-  updatedAt: number
-}

@@ -1,7 +1,6 @@
 import type { AxiosRequestConfig } from 'axios'
 import { normalizeRows } from '@/api/business-normalizers'
-import type { LeoPageData } from '@/api/business-types'
-import { http } from '@/api/client'
+import { apiGet } from '@/api/client'
 import { getModuleConfig, type QueryValue } from '@/api/module-contracts'
 import {
   pageContent,
@@ -10,8 +9,8 @@ import {
   pageTotalElements,
   pageTotalPages,
 } from '@/api/page-contract'
-import type { ApiResponse } from '@/types/api'
-import type { RawApiRecord, SearchParams } from '@/types/api-raw'
+import { rawPageResponseSchema } from '@/shared/schemas/api'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   FULL_SCAN_PAGE_SIZE,
@@ -29,23 +28,20 @@ export async function fetchModulePage(
   fields?: string[],
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
-  const response = await http.get<ApiResponse<LeoPageData<RawApiRecord>>>(
-    endpointConfig.path,
-    {
-      ...config,
-      params: {
-        ...params,
-        page,
-        size,
-        ...(fields?.length
-          ? {
-              [endpointConfig.fieldsParam || 'fields']: fields.join(','),
-            }
-          : {}),
-        ...(config?.params as SearchParams | undefined),
-      },
+  const response = await apiGet(endpointConfig.path, rawPageResponseSchema, {
+    ...config,
+    params: {
+      ...params,
+      page,
+      size,
+      ...(fields?.length
+        ? {
+            [endpointConfig.fieldsParam || 'fields']: fields.join(','),
+          }
+        : {}),
+      ...(config?.params as SearchParams | undefined),
     },
-  )
+  })
 
   return {
     rows: normalizeRows(pageContent(response.data)),

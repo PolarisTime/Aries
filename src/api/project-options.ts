@@ -1,8 +1,9 @@
-import { http } from '@/api/client'
+import { z } from 'zod'
+import { apiGet } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleRecordInput } from '@/types/module-page'
@@ -30,9 +31,22 @@ type RawProjectOption = {
   projectNameAbbr?: unknown
 }
 
-export function normalizeProjectOptions(
-  rows: RawProjectOption[],
-): ProjectOption[] {
+const projectOptionsResponseSchema = apiResponseSchema(
+  z.array(
+    z.object({
+      id: z.unknown().optional(),
+      value: z.unknown().optional(),
+      label: z.unknown().optional(),
+      customerId: z.unknown().optional(),
+      customerCode: z.unknown().optional(),
+      projectCode: z.unknown().optional(),
+      projectName: z.unknown().optional(),
+      projectNameAbbr: z.unknown().optional(),
+    }),
+  ),
+)
+
+function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
   return rows.map((row, index) => {
     const id = parseEntityId(row.id, `projects[${index}].project.id`)
     const customerId = parseEntityId(
@@ -61,8 +75,9 @@ export async function fetchProjectOptions(
   customerId: EntityId,
 ): Promise<ProjectOption[]> {
   const normalizedCustomerId = parseEntityId(customerId, 'customerId')
-  const response = await http.get<ApiResponse<RawProjectOption[]>>(
+  const response = await apiGet(
     ENDPOINTS.PROJECTS_OPTIONS,
+    projectOptionsResponseSchema,
     { params: { customerId: normalizedCustomerId } },
   )
   return normalizeProjectOptions(response.data || [])

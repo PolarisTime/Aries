@@ -72,23 +72,4 @@ export const financeModuleEndpointContracts: Record<
       },
     },
   },
-  'ledger-adjustment': {
-    path: '/ledger-adjustments',
-    readOnly: true,
-    nativeFilterKeys: [
-      'keyword',
-      'direction',
-      'counterpartyType',
-      'settlementCompanyId',
-      'status',
-      'startDate',
-      'endDate',
-    ],
-    dateRangeMapping: {
-      adjustmentDate: {
-        startKey: 'startDate',
-        endKey: 'endDate',
-      },
-    },
-  },
 }

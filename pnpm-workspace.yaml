@@ -1,3 +1,6 @@
+packages:
+  - tools/typescript-toolchain
+
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - deslop-js

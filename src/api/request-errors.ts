@@ -43,21 +43,6 @@ export function readRequestError(error: unknown): RequestErrorMetadata {
   }
 }
 
-/** 判断 Error 是否携带由请求层保留的结构化元数据。 */
-export function isRequestError(error: unknown): error is RequestError {
-  if (!(error instanceof Error)) {
-    return false
-  }
-
-  const metadata = readRequestError(error)
-  return (
-    metadata.status !== undefined ||
-    metadata.code !== undefined ||
-    metadata.traceId !== undefined ||
-    metadata.handled
-  )
-}
-
 /** 将 error 标记为已处理，避免重复弹窗 */
 export function markHandledRequestError(error: unknown): void {
   if (error && typeof error === 'object') {

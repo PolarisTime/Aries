@@ -2,7 +2,6 @@ import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import type {
   EditorTask,
   EditorTaskIdentity,
-  EditorTaskMigration,
 } from '@/layouts/editor-workspace/editor-task-types'
 
 const normalizeIdentityPart = (value: string): string => value.trim()
@@ -46,28 +45,4 @@ export const upsertEditorTask = (
   }
 
   return tasks.map((item, index) => (index === existingIndex ? task : item))
-}
-
-export const migrateEditorTask = (
-  tasks: EditorTask[],
-  sourceKey: string,
-  migration: EditorTaskMigration,
-): EditorTask[] => {
-  const sourceTask = tasks.find((item) => item.key === sourceKey)
-  if (!sourceTask) {
-    return tasks
-  }
-
-  const migratedTask: EditorTask = {
-    ...sourceTask,
-    ...migration,
-    key: buildEditorTaskKey({
-      userKey: sourceTask.userKey,
-      moduleKey: sourceTask.moduleKey,
-      mode: migration.mode,
-      recordId: migration.recordId,
-    }),
-  }
-  const withoutSource = tasks.filter((item) => item.key !== sourceKey)
-  return upsertEditorTask(withoutSource, migratedTask)
 }

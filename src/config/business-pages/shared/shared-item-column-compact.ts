@@ -1,7 +1,6 @@
 import i18next from 'i18next'
 import {
   batchOrderItemColumns,
-  orderItemColumns,
   purchaseInboundItemColumns,
   purchaseItemColumns,
 } from './shared-item-column-base'
@@ -29,12 +28,6 @@ const compactTradeItemWidthMap: Record<string, number> = {
   unitPrice: 86,
   amount: 90,
 }
-
-export const compactOrderItemColumns = applyCompactItemLayout(
-  orderItemColumns,
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
 
 export const compactPurchaseItemColumns = applyCompactItemLayout(
   purchaseItemColumns,

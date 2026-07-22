@@ -1,6 +1,7 @@
-import { assertApiSuccess, http } from '@/api/client'
+import { z } from 'zod'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema } from '@/shared/schemas/api'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { asString } from '@/utils/type-narrowing'
 
@@ -13,9 +14,20 @@ export interface GlobalSearchResponse {
   matchedByTrackId?: boolean
 }
 
-export function toGlobalSearchResult(
-  item: GlobalSearchResponse,
-): GlobalSearchResult {
+const globalSearchResponseSchema = apiResponseSchema(
+  z.array(
+    z.object({
+      moduleKey: z.string().optional(),
+      title: z.string().optional(),
+      trackId: z.union([z.string(), z.number()]).optional(),
+      primaryNo: z.union([z.string(), z.number()]).optional(),
+      summary: z.string().optional(),
+      matchedByTrackId: z.boolean().optional(),
+    }),
+  ),
+)
+
+function toGlobalSearchResult(item: GlobalSearchResponse): GlobalSearchResult {
   const moduleKey = asString(item.moduleKey)
   const trackId = asString(item.trackId)
   const primaryNo = asString(item.primaryNo || item.trackId)
@@ -44,17 +56,14 @@ export async function searchGlobalDocuments(
   signal?: AbortSignal,
 ): Promise<GlobalSearchResult[]> {
   const response = assertApiSuccess(
-    await http.get<ApiResponse<GlobalSearchResponse[]>>(
-      ENDPOINTS.GLOBAL_SEARCH,
-      {
-        signal,
-        params: {
-          keyword,
-          limit: 20,
-          moduleKeys: moduleKeys.join(','),
-        },
+    await apiGet(ENDPOINTS.GLOBAL_SEARCH, globalSearchResponseSchema, {
+      signal,
+      params: {
+        keyword,
+        limit: 20,
+        moduleKeys: moduleKeys.join(','),
       },
-    ),
+    }),
     '全局搜索失败',
   )
 

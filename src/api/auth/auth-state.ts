@@ -1,11 +1,13 @@
-import axios, { AxiosHeaders, type AxiosResponse } from 'axios'
+import axios, { AxiosHeaders } from 'axios'
+import { parseApiContract } from '@/api/api-contract'
 import { authHttp } from '@/api/http'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
 import type { LoginResponseData } from '@/shared/schemas'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema } from '@/shared/schemas/api'
+import { loginResponseDataSchema } from '@/shared/schemas/auth'
 import { message } from '@/utils/antd-app'
 import { getApiMessage } from '@/utils/api-messages'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
@@ -27,6 +29,7 @@ const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
 const REFRESH_WARNED_KEY = 'aries-refresh-warned'
 const REFRESH_REUSE_RETRY_DELAY_MS = 250
+const refreshResponseSchema = apiResponseSchema(loginResponseDataSchema)
 
 let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -183,26 +186,28 @@ async function executePreRefresh() {
 
 let refreshPromise: Promise<LoginResponseData> | null = null
 
+async function postTokenRefresh() {
+  const response = await authHttp.post<unknown>(ENDPOINTS.AUTH_REFRESH, {})
+  return parseApiContract(
+    refreshResponseSchema,
+    response.data,
+    `POST ${ENDPOINTS.AUTH_REFRESH}`,
+  )
+}
+
 async function requestTokenRefresh(): Promise<LoginResponseData> {
   const requestEpoch = authSessionEpoch
-  let response: AxiosResponse<ApiResponse<LoginResponseData>>
+  let payload: Awaited<ReturnType<typeof postTokenRefresh>>
   try {
-    response = await authHttp.post<ApiResponse<LoginResponseData>>(
-      ENDPOINTS.AUTH_REFRESH,
-      {},
-    )
+    payload = await postTokenRefresh()
   } catch (error) {
     if (!isRefreshTokenReuseConflict(error)) {
       throw error
     }
     await waitForRefreshTokenReuseRetry()
     assertAuthSessionCurrent(requestEpoch)
-    response = await authHttp.post<ApiResponse<LoginResponseData>>(
-      ENDPOINTS.AUTH_REFRESH,
-      {},
-    )
+    payload = await postTokenRefresh()
   }
-  const payload = response.data
 
   if (payload.code !== ERROR_CODE.SUCCESS) {
     throw new Error(

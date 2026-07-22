@@ -4,9 +4,9 @@ import {
   type RawAxiosRequestHeaders,
 } from 'axios'
 
-export const IDEMPOTENCY_HEADER = 'X-Idempotency-Key'
+const IDEMPOTENCY_HEADER = 'X-Idempotency-Key'
 
-export function createIdempotencyKey() {
+function createIdempotencyKey() {
   if (
     typeof crypto !== 'undefined' &&
     typeof crypto.randomUUID === 'function'

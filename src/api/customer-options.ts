@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
@@ -25,7 +26,17 @@ type RawCustomerOption = {
   defaultSettlementCompanyName?: unknown
 }
 
-export function normalizeText(value: unknown): string {
+const rawCustomerOptionSchema = z.object({
+  id: z.unknown().optional(),
+  value: z.unknown().optional(),
+  label: z.unknown().optional(),
+  customerCode: z.unknown().optional(),
+  customerName: z.unknown().optional(),
+  defaultSettlementCompanyId: z.unknown().optional(),
+  defaultSettlementCompanyName: z.unknown().optional(),
+})
+
+function normalizeText(value: unknown): string {
   return asString(value).trim()
 }
 
@@ -66,6 +77,7 @@ export function normalizeCustomerRows(
 const cached = createQueryCachedOptions<CustomerOption, RawCustomerOption>({
   endpoint: ENDPOINTS.CUSTOMERS_OPTIONS,
   queryKey: QUERY_KEYS.masterOptions.customer,
+  itemSchema: rawCustomerOptionSchema,
   normalizer: normalizeCustomerRows,
 })
 
@@ -90,13 +102,6 @@ export function findCustomerOption(
     return undefined
   }
   return cached.get().find((row) => row.id === normalizedId)
-}
-
-/** @deprecated 使用 getCustomerOptions；保留导出以兼容既有插件。 */
-export function uniqueCustomerNameOptions(
-  rows: CustomerOption[],
-): CustomerOption[] {
-  return [...rows]
 }
 
 export { getCustomerProjectOptions } from './project-options'

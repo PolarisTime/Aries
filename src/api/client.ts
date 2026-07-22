@@ -1,10 +1,10 @@
-export { authHttp, http } from './http'
-
+import type { AxiosResponse } from 'axios'
+import type { output, ZodType } from 'zod'
 import { ERROR_CODE } from '@/constants/error-codes'
-import type { SearchParams } from '@/types/api-raw'
 import { getApiMessage } from '@/utils/api-messages'
+import { parseApiContract } from './api-contract'
 import { setupAuthInterceptors } from './auth/auth-interceptor'
-import { http } from './http'
+import { type ApiRequestConfig, http } from './http'
 
 let authInterceptorsInitialized = false
 
@@ -17,7 +17,7 @@ export function ensureApiClientSetup() {
   authInterceptorsInitialized = true
 }
 
-export function isSuccessCode(code: unknown) {
+function isSuccessCode(code: unknown) {
   return Number(code) === ERROR_CODE.SUCCESS
 }
 
@@ -37,18 +37,95 @@ export function assertApiSuccess<
   return response
 }
 
-export function restGet<T>(url: string, params?: SearchParams): Promise<T> {
-  return http.get<T>(url, { params })
+async function parseRequest<Schema extends ZodType>(
+  request: Promise<unknown>,
+  schema: Schema,
+  context: string,
+): Promise<output<Schema>> {
+  return parseApiContract(schema, await request, context)
 }
 
-export function restPost<T>(url: string, data?: SearchParams): Promise<T> {
-  return http.post<T>(url, data)
+export function apiGet<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  config?: ApiRequestConfig,
+): Promise<output<Schema>> {
+  return parseRequest(http.get<unknown>(url, config), schema, `GET ${url}`)
 }
 
-export function restPut<T>(url: string, data?: SearchParams): Promise<T> {
-  return http.put<T>(url, data)
+export function apiPost<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<output<Schema>> {
+  return parseRequest(
+    http.post<unknown>(url, data, config),
+    schema,
+    `POST ${url}`,
+  )
 }
 
-export function restDelete<T>(url: string, params?: SearchParams): Promise<T> {
-  return http.delete<T>(url, { params })
+export function apiPut<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<output<Schema>> {
+  return parseRequest(
+    http.put<unknown>(url, data, config),
+    schema,
+    `PUT ${url}`,
+  )
+}
+
+export function apiPatch<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<output<Schema>> {
+  return parseRequest(
+    http.patch<unknown>(url, data, config),
+    schema,
+    `PATCH ${url}`,
+  )
+}
+
+export function apiDelete<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  config?: ApiRequestConfig,
+): Promise<output<Schema>> {
+  return parseRequest(
+    http.delete<unknown>(url, config),
+    schema,
+    `DELETE ${url}`,
+  )
+}
+
+export function downloadGet(
+  url: string,
+  config?: ApiRequestConfig,
+): Promise<Blob> {
+  return http.get<Blob>(url, { ...config, responseType: 'blob' })
+}
+
+export function downloadPost(
+  url: string,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<Blob> {
+  return http.post<Blob>(url, data, { ...config, responseType: 'blob' })
+}
+
+export function downloadPostResponse(
+  url: string,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<AxiosResponse<Blob>> {
+  return http.postResponse<Blob>(url, data, {
+    ...config,
+    responseType: 'blob',
+  })
 }

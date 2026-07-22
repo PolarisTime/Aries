@@ -134,20 +134,6 @@ const personalSettingsStorage: PersistStorage<
   },
 }
 
-export function getStoredPersonalSettings(): PersonalSettings | null {
-  const raw = localStorage.getItem(STORAGE_KEYS.personalSettings)
-  if (!raw) {
-    return null
-  }
-
-  try {
-    return readPersistedPersonalSettings(JSON.parse(raw))
-  } catch {
-    localStorage.removeItem(STORAGE_KEYS.personalSettings)
-    return null
-  }
-}
-
 export const useUiSettingsStore = create<UiSettingsState>()(
   persist(
     (set, get) => ({

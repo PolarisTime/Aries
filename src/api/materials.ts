@@ -1,10 +1,34 @@
+import { z } from 'zod'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { downloadBlob } from '@/utils/download'
-import { assertApiSuccess, http } from './client'
+import { apiGet, apiPost, assertApiSuccess, downloadGet } from './client'
+
+const materialSearchResponseSchema = apiResponseSchema(
+  z.array(z.looseObject({ id: z.unknown().optional() })),
+)
+
+const materialImportResponseSchema = apiResponseSchema(
+  z.object({
+    totalRows: z.number(),
+    successCount: z.number(),
+    createdCount: z.number(),
+    updatedCount: z.number(),
+    skippedCount: z.number(),
+    failCount: z.number(),
+    errors: z.array(
+      z.object({
+        row: z.number(),
+        field: z.string(),
+        message: z.string(),
+      }),
+    ),
+    successRows: z.array(z.unknown()).optional(),
+  }),
+)
 
 export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
   id: EntityId
@@ -26,7 +50,7 @@ type RawMaterialSearchResponse = Omit<MaterialSearchResponse, 'id'> & {
   id?: unknown
 }
 
-export function normalizeMaterialSearchRows(
+function normalizeMaterialSearchRows(
   rows: RawMaterialSearchResponse[],
 ): MaterialSearchResponse[] {
   return rows.map((row, index) => ({
@@ -56,8 +80,9 @@ export async function fetchMaterialSearch(
   keyword = '',
   limit = 200,
 ): Promise<MaterialSearchResponse[]> {
-  const response = await http.get<ApiResponse<RawMaterialSearchResponse[]>>(
+  const response = await apiGet(
     ENDPOINTS.MATERIALS_SEARCH,
+    materialSearchResponseSchema,
     {
       params: {
         keyword,
@@ -74,9 +99,7 @@ export async function fetchMaterialSearch(
 }
 
 export async function downloadMaterialImportTemplate() {
-  const blob = await http.get<Blob>(ENDPOINTS.MATERIALS_TEMPLATE, {
-    responseType: 'blob',
-  })
+  const blob = await downloadGet(ENDPOINTS.MATERIALS_TEMPLATE)
   downloadBlob(blob, '商品资料导入模板.xlsx')
 }
 
@@ -84,8 +107,9 @@ export async function importMaterialFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await http.post<ApiResponse<MaterialImportResult>>(
+  const response = await apiPost(
     ENDPOINTS.MATERIALS_IMPORT,
+    materialImportResponseSchema,
     formData,
   )
 

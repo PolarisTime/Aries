@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
@@ -20,6 +21,14 @@ type RawWarehouseOption = {
   warehouseCode?: unknown
   warehouseName?: unknown
 }
+
+const rawWarehouseOptionSchema = z.object({
+  id: z.unknown().optional(),
+  value: z.unknown().optional(),
+  label: z.unknown().optional(),
+  warehouseCode: z.unknown().optional(),
+  warehouseName: z.unknown().optional(),
+})
 
 export function normalizeWarehouseOptions(
   options: RawWarehouseOption[],
@@ -50,6 +59,7 @@ export function normalizeWarehouseOptions(
 const cached = createQueryCachedOptions<WarehouseOption, RawWarehouseOption>({
   endpoint: ENDPOINTS.WAREHOUSES_OPTIONS,
   queryKey: QUERY_KEYS.masterOptions.warehouse,
+  itemSchema: rawWarehouseOptionSchema,
   normalizer: normalizeWarehouseOptions,
 })
 

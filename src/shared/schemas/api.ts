@@ -1,62 +1,66 @@
 import { z } from 'zod'
 
-// ── API 响应 Schema（工厂函数，类型附在旁边便于泛型引用） ──
+const rawRecordSchema = z.record(z.string(), z.unknown())
 
-// ── 可复用字段 Schema（Zod 对象，可 .extend() / .merge()） ──
+export const rawPageSchema = <ItemSchema extends z.ZodType>(
+  itemSchema: ItemSchema,
+) =>
+  z.looseObject({
+    content: z.array(itemSchema).optional(),
+    records: z.array(itemSchema).optional(),
+    totalElements: z.number(),
+    totalPages: z.number().optional(),
+    currentPage: z.number().optional(),
+    page: z.number().optional(),
+    pageSize: z.number().optional(),
+    size: z.number().optional(),
+    first: z.boolean().optional(),
+    last: z.boolean().optional(),
+    hasMore: z.boolean().optional(),
+  })
 
-/** 物料信息字段 */
-export const materialInfoSchema = z.object({
-  materialCode: z.string().optional(),
-  brand: z.string().optional(),
-  category: z.string().optional(),
-  material: z.string().optional(),
-  spec: z.string().optional(),
-  length: z.string().optional(),
-  unit: z.string().optional(),
-})
+export const apiResponseSchema = <DataSchema extends z.ZodType>(
+  dataSchema: DataSchema,
+) =>
+  z.object({
+    code: z.number(),
+    data: dataSchema,
+    message: z.string().optional(),
+    traceId: z.string().optional(),
+  })
 
-/** 重量/价格字段 */
-export const weightPriceSchema = z.object({
-  quantity: z.union([z.string(), z.number()]).optional(),
-  quantityUnit: z.string().optional(),
-  pieceWeightTon: z.union([z.string(), z.number()]).optional(),
-  piecesPerBundle: z.union([z.string(), z.number()]).optional(),
-  weightTon: z.union([z.string(), z.number()]).optional(),
-  unitPrice: z.union([z.string(), z.number()]).optional(),
-  amount: z.union([z.string(), z.number()]).optional(),
-})
+export const rawRecordResponseSchema = apiResponseSchema(rawRecordSchema)
+export const rawPageResponseSchema = apiResponseSchema(
+  rawPageSchema(rawRecordSchema),
+)
+export const nullResponseSchema = apiResponseSchema(z.null().optional())
+export const stringResponseSchema = apiResponseSchema(z.string())
+export const stringArrayResponseSchema = apiResponseSchema(z.array(z.string()))
 
-// ── 枚举 / 常量 Schema ──────────────────────────────────
+export type DocumentStatus =
+  | '草稿'
+  | '已审核'
+  | '未审核'
+  | '已完成'
+  | '完成采购'
+  | '完成入库'
+  | '完成销售'
+  | '部分入库'
+  | '部分出库'
+  | '已签署'
+  | '未签署'
+  | '待确认'
+  | '已确认'
+  | '待审核'
+  | '已收款'
+  | '已付款'
+  | '执行中'
+  | '已归档'
+  | '正常'
+  | '禁用'
+  | '部分结清'
 
-/** 单据状态枚举 */
-export const documentStatusSchema = z.enum([
-  '草稿',
-  '已审核',
-  '未审核',
-  '已完成',
-  '完成采购',
-  '完成入库',
-  '完成销售',
-  '部分入库',
-  '部分出库',
-  '已签署',
-  '未签署',
-  '待确认',
-  '已确认',
-  '待审核',
-  '已收款',
-  '已付款',
-  '执行中',
-  '已归档',
-  '正常',
-  '禁用',
-  '部分结清',
-])
-export type DocumentStatus = z.infer<typeof documentStatusSchema>
-
-/** 启用/禁用状态 */
-export const enabledStatusSchema = z.enum(['正常', '禁用'])
-export type EnabledStatus = z.infer<typeof enabledStatusSchema>
+export type EnabledStatus = '正常' | '禁用'
 
 /** 结算主体下拉选项 */
 export interface SettlementCompanyOption {

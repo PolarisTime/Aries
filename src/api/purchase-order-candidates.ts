@@ -1,10 +1,11 @@
 import { normalizeRows } from '@/api/business-normalizers'
-import { assertApiSuccess, http } from '@/api/client'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { pageContent, pageTotalElements } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { HTTP_STATUS } from '@/constants/http-status'
-import type { ApiResponse, TableResponse } from '@/types/api'
-import type { RawPagePayload, SearchParams } from '@/types/api-raw'
+import { rawPageResponseSchema } from '@/shared/schemas/api'
+import type { TableResponse } from '@/types/api'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { readRequestError } from './request-errors'
@@ -17,7 +18,7 @@ async function requestInboundImportCandidatePage(
   signal?: AbortSignal,
   suppressGlobalErrorStatuses?: readonly number[],
 ) {
-  return http.get<ApiResponse<RawPagePayload>>(endpoint, {
+  return apiGet(endpoint, rawPageResponseSchema, {
     params: {
       ...filters,
       keyword: asString(filters.keyword).trim(),
@@ -35,7 +36,7 @@ export async function listPurchaseOrderInboundImportCandidatePage(
   size: number,
   signal?: AbortSignal,
 ): Promise<TableResponse<ModuleRecord>> {
-  let rawResponse: ApiResponse<RawPagePayload>
+  let rawResponse: Awaited<ReturnType<typeof requestInboundImportCandidatePage>>
   try {
     rawResponse = await requestInboundImportCandidatePage(
       ENDPOINTS.PURCHASE_ORDER_INBOUND_IMPORT_CANDIDATES,

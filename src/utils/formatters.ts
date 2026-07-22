@@ -69,14 +69,6 @@ export function parseDateTimeValue(value: unknown): Dayjs | null {
   return parsed.isValid() ? parsed : null
 }
 
-export function toDateTimeMillis(value: unknown): number | null {
-  const parsed = parseDateTimeValue(value)
-  if (!parsed) {
-    return null
-  }
-  return parsed.valueOf()
-}
-
 export function formatDate(value: unknown, fallback = '—'): string {
   const parsed = parseDateTimeValue(value)
   return parsed ? parsed.format(DATE_FORMAT) : getDateFallback(value, fallback)

@@ -161,6 +161,3 @@ export const editorTaskStore = createStore<EditorTaskState>()(
     },
   ),
 )
-
-export const getEditorTasksForUser = (userKey: string): EditorTask[] =>
-  editorTaskStore.getState().tasks.filter((task) => task.userKey === userKey)

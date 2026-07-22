@@ -145,7 +145,7 @@ export function buildEditorAuditTarget(
   return null
 }
 
-export function buildReverseAuditTarget(
+function buildReverseAuditTarget(
   moduleKey: string,
   statusOptions: string[],
   preferredStatus?: unknown,
@@ -255,7 +255,7 @@ export function canAuditFromStatus(
   )
 }
 
-export function canReverseAuditFromStatus(
+function canReverseAuditFromStatus(
   currentStatus: unknown,
   auditTarget?: { value: string } | null,
   reverseAuditTarget?: { value: string } | null,

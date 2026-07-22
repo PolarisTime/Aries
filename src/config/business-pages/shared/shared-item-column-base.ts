@@ -68,49 +68,6 @@ const materialInfoColumns: ModuleColumnDefinition[] = [
   },
 ]
 
-export const orderItemColumns: ModuleColumnDefinition[] = [
-  ...materialInfoColumns.slice(0, 7),
-  {
-    title: i18next.t('modules.columns.quantity'),
-    dataIndex: 'quantity',
-    width: 76,
-    align: 'center',
-    type: 'count',
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.quantityUnit'),
-    dataIndex: 'quantityUnit',
-    width: 64,
-    align: 'center',
-  },
-  ...materialInfoColumns.slice(7),
-  {
-    title: i18next.t('modules.columns.weightTon'),
-    dataIndex: 'weightTon',
-    width: 108,
-    align: 'center',
-    type: 'weight',
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.unitPrice'),
-    dataIndex: 'unitPrice',
-    width: 88,
-    align: 'center',
-    type: 'amount',
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.amount'),
-    dataIndex: 'amount',
-    width: 92,
-    align: 'center',
-    type: 'amount',
-    required: true,
-  },
-]
-
 export const batchOrderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
   {

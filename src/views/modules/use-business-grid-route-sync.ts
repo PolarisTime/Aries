@@ -38,7 +38,7 @@ function getRawSearchString(fallbackSearchStr: string) {
   return fallbackSearchStr
 }
 
-export function resolveAutoOpenDetailTarget({
+function resolveAutoOpenDetailTarget({
   config,
   records,
   searchStr,

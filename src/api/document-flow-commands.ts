@@ -1,15 +1,15 @@
 import { normalizeRecord } from '@/api/business-normalizers'
-import { assertApiSuccess, http } from '@/api/client'
+import { apiPost, apiPut, assertApiSuccess } from '@/api/client'
 import { withIdempotencyKey } from '@/api/idempotency'
 import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
-import type { ApiResponse } from '@/types/api'
-import type { RawApiRecord } from '@/types/api-raw'
+import { rawRecordResponseSchema } from '@/shared/schemas/api'
 import type { ModuleRecord } from '@/types/module-page'
 
 export async function completeSalesOrder(id: string) {
   return assertApiSuccess(
-    await http.post<ApiResponse<ModuleRecord>>(
+    await apiPost(
       `/sales-orders/${encodeURIComponent(id)}/complete`,
+      rawRecordResponseSchema,
       null,
       withIdempotencyKey(),
     ),
@@ -25,8 +25,9 @@ export async function saveAndCompleteSalesOrder(record: ModuleRecord) {
 
   const payload = await serializeBusinessRecordForSave('sales-order', record)
   const response = assertApiSuccess(
-    await http.put<ApiResponse<RawApiRecord>>(
+    await apiPut(
       `/sales-orders/${encodeURIComponent(id)}/save-and-complete`,
+      rawRecordResponseSchema,
       payload,
       withIdempotencyKey(),
     ),

@@ -25,9 +25,3 @@ export const DOCUMENT_STATUS = {
   SALES_COMPLETED: '完成销售',
   INBOUND_COMPLETED: '完成入库',
 } as const
-
-// 物料类型
-export const MATERIAL_TYPE = {
-  COIL_REBAR: '盘螺',
-  WIRE_ROD: '线材',
-} as const

@@ -1,10 +1,11 @@
-import { http } from '@/api/client'
+import { type ZodType, z } from 'zod'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { queryClient } from '@/lib/query-client'
-import type { ApiResponse } from '@/types/api'
 
 export type QueryCachedOptionsConfig<T, TRaw = T> = {
   endpoint: string
   queryKey: readonly unknown[]
+  itemSchema: ZodType<TRaw>
   normalizer?: (data: TRaw[]) => T[]
   staleTime?: number
 }
@@ -19,13 +20,24 @@ const MASTER_OPTION_STALE_TIME = 300_000
 
 export function createQueryCachedOptions<T, TRaw = T>({
   endpoint,
+  itemSchema,
   normalizer,
   queryKey,
   staleTime = MASTER_OPTION_STALE_TIME,
 }: QueryCachedOptionsConfig<T, TRaw>): QueryCachedOptionsReturn<T> {
+  const responseSchema = z.object({
+    code: z.number(),
+    data: z.array(itemSchema),
+    message: z.string().optional(),
+    traceId: z.string().optional(),
+  })
+
   const fetchOptions = async (): Promise<T[]> => {
-    const response = await http.get<ApiResponse<TRaw[]>>(endpoint)
-    const data = response.data || []
+    const response = assertApiSuccess(
+      await apiGet(endpoint, responseSchema),
+      '加载下拉选项失败',
+    )
+    const data = response.data
     return normalizer ? normalizer(data) : (data as unknown as T[])
   }
 

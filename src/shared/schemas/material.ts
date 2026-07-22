@@ -1,19 +1,15 @@
-import { z } from 'zod'
+export interface MaterialImportFailure {
+  rowNumber: number
+  materialCode: string
+  reason: string
+}
 
-const materialImportFailureSchema = z.object({
-  rowNumber: z.number(),
-  materialCode: z.string(),
-  reason: z.string(),
-})
-export type MaterialImportFailure = z.infer<typeof materialImportFailureSchema>
-
-export const materialImportResultSchema = z.object({
-  totalRows: z.number(),
-  successCount: z.number(),
-  createdCount: z.number(),
-  updatedCount: z.number(),
-  skippedCount: z.number(),
-  failedCount: z.number(),
-  failures: z.array(materialImportFailureSchema),
-})
-export type MaterialImportResult = z.infer<typeof materialImportResultSchema>
+export interface MaterialImportResult {
+  totalRows: number
+  successCount: number
+  createdCount: number
+  updatedCount: number
+  skippedCount: number
+  failedCount: number
+  failures: MaterialImportFailure[]
+}

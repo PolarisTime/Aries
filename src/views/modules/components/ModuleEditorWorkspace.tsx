@@ -42,11 +42,7 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
   },
 }
 
-const FINANCE_DOCUMENT_MODULES = new Set([
-  'receipt',
-  'payment',
-  'ledger-adjustment',
-])
+const FINANCE_DOCUMENT_MODULES = new Set(['receipt', 'payment'])
 
 function isFinanceOrTradeModule(key: string) {
   return (

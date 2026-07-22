@@ -14,13 +14,7 @@ import {
   reportClientFilterFallback,
   reportUnpaginatedRowFetch,
 } from '@/api/business-listing-warnings'
-import { normalizeRows } from '@/api/business-normalizers'
-import { http, isSuccessCode } from '@/api/client'
-import { getModuleConfig } from '@/api/module-contracts'
-import type { ApiResponse } from '@/types/api'
-import type { RawApiRecord, SearchParams } from '@/types/api-raw'
-import type { ModuleRecord } from '@/types/module-page'
-import { getApiMessage } from '@/utils/api-messages'
+import type { SearchParams } from '@/types/api-raw'
 import type { ListQueryOptions } from '@/utils/list'
 
 export async function listBusinessModule(
@@ -63,61 +57,6 @@ export async function listBusinessModule(
     false,
     current.hasMore,
   )
-}
-
-export async function searchBusinessModule(
-  moduleKey: string,
-  keyword = '',
-  limit = 100,
-  config?: AxiosRequestConfig,
-): Promise<ModuleRecord[]> {
-  const endpointConfig = getModuleConfig(moduleKey)
-  if (endpointConfig.readOnly) {
-    return []
-  }
-
-  const normalizedKeyword = keyword.trim()
-  const maxSize = Math.min(limit, 500)
-
-  if (endpointConfig.supportsSearch !== false) {
-    try {
-      const response = await http.get<ApiResponse<RawApiRecord[]>>(
-        `${endpointConfig.path}/search`,
-        {
-          ...config,
-          params: {
-            keyword: normalizedKeyword,
-            limit: maxSize,
-            ...(config?.params as SearchParams | undefined),
-          },
-        },
-      )
-      if (isSuccessCode(response.code) && Array.isArray(response.data)) {
-        return normalizeRows(response.data)
-      }
-    } catch {
-      if (endpointConfig.supportsSearch === true) {
-        throw new Error(
-          `${getApiMessage('loadSearchResultsFailed')}: ${moduleKey}`,
-        )
-      }
-    }
-  }
-
-  const page = await fetchModulePage(
-    moduleKey,
-    buildQueryParams(
-      moduleKey,
-      { keyword: normalizedKeyword },
-      { currentPage: 1, pageSize: maxSize },
-      false,
-    ),
-    0,
-    maxSize,
-    config,
-    undefined,
-  )
-  return page.rows
 }
 
 export async function listAllBusinessModuleRows(

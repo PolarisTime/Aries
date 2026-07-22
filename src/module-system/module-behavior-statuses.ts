@@ -34,7 +34,6 @@ const draftStatusModules: Record<string, string> = {
   'customer-statement': '待确认',
   receipt: '草稿',
   payment: '草稿',
-  'ledger-adjustment': '草稿',
 }
 
 for (const [key, status] of Object.entries(draftStatusModules)) {
@@ -73,7 +72,6 @@ registerModuleBehavior('payment', {
   auditSourceStatuses: ['草稿'],
   supportsReverseAudit: false,
 })
-registerModuleBehavior('ledger-adjustment', { auditStatus: '已审核' })
 registerModuleBehavior('customer-statement', { auditStatus: '已确认' })
 
 export const protectedEditStatuses = new Set([

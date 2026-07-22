@@ -1,6 +1,7 @@
-import { assertApiSuccess, http } from '@/api/client'
+import { z } from 'zod'
+import { apiGet, assertApiSuccess, downloadGet } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
+import { apiResponseSchema, rawPageSchema } from '@/shared/schemas/api'
 import {
   type EntityId,
   parseEntityId,
@@ -67,6 +68,36 @@ export interface CashLedgerPage {
 }
 
 type RawRecord = Record<string, unknown>
+
+const decimalSchema = z.union([z.number(), z.string()])
+const responseIdSchema = z.union([z.string(), z.number()])
+const cashLedgerSummarySchema = z.looseObject({
+  openingBalance: decimalSchema,
+  periodIncome: decimalSchema,
+  periodExpense: decimalSchema,
+  closingBalance: decimalSchema,
+})
+const cashLedgerLineSchema = z.looseObject({
+  businessDate: z.string(),
+  flowType: z.string(),
+  documentId: responseIdSchema,
+  documentNo: z.string(),
+  counterpartyType: z.string(),
+  counterpartyId: responseIdSchema.nullish(),
+  counterpartyName: z.string().nullish(),
+  purpose: z.string().nullish(),
+  incomeAmount: decimalSchema,
+  expenseAmount: decimalSchema,
+  runningBalance: decimalSchema,
+  operatorName: z.string().nullish(),
+  remark: z.string().nullish(),
+})
+const cashLedgerResponseSchema = apiResponseSchema(
+  z.looseObject({
+    summary: cashLedgerSummarySchema,
+    page: rawPageSchema(cashLedgerLineSchema),
+  }),
+)
 
 function normalizeSummary(raw: RawRecord = {}): CashLedgerSummary {
   return {
@@ -150,7 +181,7 @@ export async function getCashLedger(
   signal?: AbortSignal,
 ): Promise<CashLedgerPage> {
   const response = assertApiSuccess(
-    await http.get<ApiResponse<RawRecord>>(ENDPOINTS.CASH_LEDGER, {
+    await apiGet(ENDPOINTS.CASH_LEDGER, cashLedgerResponseSchema, {
       params: {
         ...normalizeFilter(query),
         page: Math.max(Math.trunc(query.page), 0),
@@ -166,9 +197,8 @@ export async function getCashLedger(
 export async function exportCashLedger(
   filter: CashLedgerFilter,
 ): Promise<void> {
-  const blob = await http.get<Blob>(ENDPOINTS.CASH_LEDGER_EXPORT, {
+  const blob = await downloadGet(ENDPOINTS.CASH_LEDGER_EXPORT, {
     params: normalizeFilter(filter),
-    responseType: 'blob',
   })
   downloadBlob(blob, '资金流水.xlsx')
 }

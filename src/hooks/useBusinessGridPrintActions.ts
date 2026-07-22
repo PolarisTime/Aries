@@ -1,10 +1,11 @@
 import axios from 'axios'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import { assertApiSuccess, http } from '@/api/client'
+import { assertApiSuccess } from '@/api/client'
 import {
   exportSalesOrderPrintXlsx,
   listPrintTemplates,
+  renderPrintRecord,
   type SalesOrderPrintXlsxOptions,
 } from '@/api/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
@@ -13,10 +14,7 @@ import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
-import {
-  type PrintOutputResponse,
-  runPrintOutputs,
-} from '@/utils/print-output-runner'
+import { runPrintOutputs } from '@/utils/print-output-runner'
 import { filterPrintTemplatesBySettlementCompany } from '@/utils/print-template-settlement'
 
 interface Props {
@@ -186,16 +184,7 @@ export function useBusinessGridPrintActions({
     try {
       const results = await Promise.all(
         selectedRowKeys.map((recordId) =>
-          http.post<{
-            code: number
-            data: PrintOutputResponse
-            message?: string
-          }>('/print/record', {
-            templateId: template.id,
-            moduleKey,
-            recordId,
-            ...(printOptions ? { printOptions } : {}),
-          }),
+          renderPrintRecord(template.id, moduleKey, recordId, printOptions),
         ),
       )
       for (const r of results) {

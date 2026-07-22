@@ -1,10 +1,19 @@
 import { normalizeRecord } from '@/api/business-normalizers'
-import { assertApiSuccess, http } from '@/api/client'
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+  assertApiSuccess,
+} from '@/api/client'
 import { withIdempotencyKey } from '@/api/idempotency'
 import { getModuleConfig } from '@/api/module-contracts'
 import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
-import type { ApiResponse } from '@/types/api'
-import type { RawApiRecord } from '@/types/api-raw'
+import {
+  nullResponseSchema,
+  rawRecordResponseSchema,
+} from '@/shared/schemas/api'
 import type { ModuleRecord } from '@/types/module-page'
 
 export async function getBusinessModuleDetail(moduleKey: string, id: string) {
@@ -14,8 +23,9 @@ export async function getBusinessModuleDetail(moduleKey: string, id: string) {
   }
 
   const response = assertApiSuccess(
-    await http.get<ApiResponse<RawApiRecord>>(
+    await apiGet(
       `${endpointConfig.path}/${encodeURIComponent(id)}`,
+      rawRecordResponseSchema,
     ),
   )
 
@@ -39,13 +49,15 @@ export async function saveBusinessModule(
   const hasId = Boolean(record.id)
   const response = assertApiSuccess(
     hasId
-      ? await http.put<ApiResponse<RawApiRecord>>(
+      ? await apiPut(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
+          rawRecordResponseSchema,
           payload,
           withIdempotencyKey(),
         )
-      : await http.post<ApiResponse<RawApiRecord>>(
+      : await apiPost(
           endpointConfig.path,
+          rawRecordResponseSchema,
           payload,
           withIdempotencyKey(),
         ),
@@ -71,13 +83,15 @@ export async function saveAndAuditBusinessModule(
   const hasId = Boolean(record.id)
   const response = assertApiSuccess(
     hasId
-      ? await http.put<ApiResponse<RawApiRecord>>(
+      ? await apiPut(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}/save-and-audit`,
+          rawRecordResponseSchema,
           payload,
           withIdempotencyKey(),
         )
-      : await http.post<ApiResponse<RawApiRecord>>(
+      : await apiPost(
           `${endpointConfig.path}/save-and-audit`,
+          rawRecordResponseSchema,
           payload,
           withIdempotencyKey(),
         ),
@@ -96,8 +110,9 @@ export async function deleteBusinessModule(moduleKey: string, id: string) {
     throw new Error('当前模块不支持删除')
   }
 
-  return http.delete<ApiResponse<null>>(
+  return apiDelete(
     `${endpointConfig.path}/${encodeURIComponent(id)}`,
+    nullResponseSchema,
     withIdempotencyKey(),
   )
 }
@@ -113,8 +128,9 @@ export async function updateBusinessModuleStatus(
   }
 
   const response = assertApiSuccess(
-    await http.patch<ApiResponse<RawApiRecord>>(
+    await apiPatch(
       `${endpointConfig.path}/${encodeURIComponent(id)}/status`,
+      rawRecordResponseSchema,
       { status },
       withIdempotencyKey(),
     ),

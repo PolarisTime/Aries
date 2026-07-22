@@ -3,33 +3,32 @@ import { z } from 'zod'
 const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
 const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
 const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
-const printTemplateSyncModeSchema = z.enum(['MANUAL', 'FILE'])
 const responseIdSchema = z
   .union([z.string(), z.number().int().positive()])
-  .transform((value) => String(value))
+  .transform(String)
 
 export const printTemplateRecordSchema = z.object({
   id: responseIdSchema,
   templateName: z.string(),
-  templateCode: z.string().optional().nullable(),
+  templateCode: z.string().nullish(),
   templateHtml: z.string(),
   templateType: printTemplateTypeSchema.optional(),
-  engine: printTemplateEngineSchema.optional().nullable(),
-  assetRef: z.string().optional().nullable(),
-  settlementCompanyId: responseIdSchema.optional().nullable(),
-  settlementCompanyName: z.string().optional().nullable(),
-  versionNo: z.number().int().positive().optional().nullable(),
-  status: printTemplateStatusSchema.optional().nullable(),
-  syncMode: printTemplateSyncModeSchema.optional().nullable(),
-  sourceRef: z.string().optional().nullable(),
-  sourceChecksum: z.string().optional().nullable(),
+  engine: printTemplateEngineSchema.nullish(),
+  assetRef: z.string().nullish(),
+  settlementCompanyId: responseIdSchema.nullish(),
+  settlementCompanyName: z.string().nullish(),
+  versionNo: z.number().int().positive().nullish(),
+  status: printTemplateStatusSchema.nullish(),
+  syncMode: z.enum(['MANUAL', 'FILE']).nullish(),
+  sourceRef: z.string().nullish(),
+  sourceChecksum: z.string().nullish(),
   source: z.enum(['db', 'file']).optional(),
   fileName: z.string().optional(),
   billType: z.string().optional(),
   createTime: z.string().optional(),
   updateTime: z.string().optional(),
 })
-export type PrintTemplateRecord = z.infer<typeof printTemplateRecordSchema>
+export type PrintTemplateRecord = z.output<typeof printTemplateRecordSchema>
 
 export const savePrintTemplatePayloadSchema = z
   .object({
@@ -46,17 +45,19 @@ export const savePrintTemplatePayloadSchema = z
     versionNo: z.number().int().positive().optional(),
     status: printTemplateStatusSchema.optional(),
   })
-  .superRefine((payload, ctx) => {
-    const templateType = payload.templateType || 'COORD'
-    if (templateType !== 'PDF_FORM' && !payload.templateHtml?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+  .superRefine((payload, context) => {
+    if (
+      (payload.templateType ?? 'COORD') !== 'PDF_FORM' &&
+      !payload.templateHtml?.trim()
+    ) {
+      context.addIssue({
+        code: 'custom',
         path: ['templateHtml'],
         message: 'templateHtml is required',
       })
     }
   })
-export type SavePrintTemplatePayload = z.infer<
+export type SavePrintTemplatePayload = z.input<
   typeof savePrintTemplatePayloadSchema
 >
 
@@ -67,3 +68,12 @@ export type PrintTemplateResponse<T> = {
   message?: string
   data: T
 }
+
+export const printTemplateResponseSchema = <Schema extends z.ZodType>(
+  dataSchema: Schema,
+) =>
+  z.object({
+    code: z.number().optional(),
+    message: z.string().optional(),
+    data: dataSchema,
+  })

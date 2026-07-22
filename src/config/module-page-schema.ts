@@ -335,29 +335,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       ],
     },
   },
-  'ledger-adjustment': {
-    saveFields: {
-      scalar: [
-        'adjustmentNo',
-        'direction',
-        'counterpartyType',
-        'counterpartyId',
-        'counterpartyCode',
-        'counterpartyName',
-        'settlementCompanyId',
-        'settlementCompanyName',
-        'projectId',
-        'projectName',
-        'adjustmentDate',
-        'amount',
-        'adjustmentType',
-        'effect',
-        'status',
-        'operatorName',
-        'remark',
-      ],
-    },
-  },
   'customer-statement': {
     filters: [
       { key: 'customerId', label: '客户名称', type: 'select' },
