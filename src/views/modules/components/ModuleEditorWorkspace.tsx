@@ -216,6 +216,7 @@ export function ModuleEditorWorkspace({
     visibleItemColumnKeys,
   } = useModuleEditorItems({
     moduleKey,
+    supplierId: editorFormValues.supplierId,
     config,
     items,
     setItems,

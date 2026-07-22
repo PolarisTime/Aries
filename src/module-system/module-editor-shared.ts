@@ -84,7 +84,7 @@ export function generateBatchNo(): string {
 
 export function buildDefaultEditorLineItem(
   itemId = buildModuleLineItemId(),
-  _moduleKey?: string,
+  moduleKey?: string,
 ): ModuleLineItem {
   return {
     id: itemId,
@@ -99,7 +99,7 @@ export function buildDefaultEditorLineItem(
     quantityUnit: '件',
     pieceWeightTon: 0,
     piecesPerBundle: 0,
-    quantity: 0,
+    quantity: moduleKey === 'purchase-order' ? 1 : 0,
     weightTon: 0,
     weightAdjustmentTon: 0,
     weightAdjustmentAmount: 0,

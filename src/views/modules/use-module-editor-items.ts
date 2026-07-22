@@ -4,6 +4,7 @@ import { useModuleEditorItemInteractions } from '@/views/modules/use-module-edit
 
 interface Props {
   moduleKey: string
+  supplierId?: unknown
   config: ModulePageConfig
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
@@ -22,6 +23,7 @@ export function useModuleEditorItems({
   canEditItemColumns,
   parentImportedItemEditLocked,
   moduleKey,
+  supplierId,
 }: Props) {
   const {
     clearSelectedItems,
@@ -73,6 +75,7 @@ export function useModuleEditorItems({
     visibleItemColumnKeys,
   } = useModuleEditorItemColumns({
     moduleKey,
+    supplierId,
     config,
     items,
     setItems,

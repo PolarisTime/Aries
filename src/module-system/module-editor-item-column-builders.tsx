@@ -52,6 +52,45 @@ interface ManagementColumnOptions {
   onDragEnd: () => void
 }
 
+const NUMBER_COLUMN_DATA_ATTRIBUTE = 'data-module-editor-number-column'
+
+function handleNumberCellTab(
+  event: React.KeyboardEvent<HTMLInputElement>,
+  columnKey: string,
+) {
+  if (event.key !== 'Tab' || event.shiftKey || event.nativeEvent.isComposing) {
+    return
+  }
+
+  const currentRow = event.currentTarget.closest('tr')
+  const tableBody = currentRow?.parentElement
+  if (!currentRow || !tableBody) {
+    return
+  }
+
+  const rows = Array.from(tableBody.children)
+  const currentRowIndex = rows.indexOf(currentRow)
+  const columnSelector = `.module-editor-number-input input[${NUMBER_COLUMN_DATA_ATTRIBUTE}="${columnKey}"]:not(:disabled)`
+
+  for (const row of rows.slice(currentRowIndex + 1)) {
+    const nextInput = row.querySelector<HTMLInputElement>(columnSelector)
+    if (!nextInput) {
+      continue
+    }
+
+    event.preventDefault()
+    requestAnimationFrame(() => {
+      if (!nextInput.isConnected || nextInput.disabled) {
+        return
+      }
+      nextInput.focus({ preventScroll: true })
+      nextInput.select()
+      nextInput.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    })
+    return
+  }
+}
+
 function renderReadOnlyValue(
   value: unknown,
   type: string | undefined,
@@ -257,9 +296,11 @@ function buildEditableColumnRender({
           <InputNumber
             value={asNumber(value)}
             className="w-full module-editor-number-input"
+            data-module-editor-number-column={key}
             min={0}
             precision={3}
             controls={false}
+            onKeyDown={(event) => handleNumberCellTab(event, key)}
             onChange={(nextValue) =>
               handleItemNumberChange(record.id, key, nextValue)
             }
@@ -302,9 +343,11 @@ function buildEditableColumnRender({
           <InputNumber
             value={asNumber(value)}
             className="w-full module-editor-number-input"
+            data-module-editor-number-column={key}
             min={min}
             precision={precision}
             controls={!hideControls}
+            onKeyDown={(event) => handleNumberCellTab(event, key)}
             onChange={(nextValue) =>
               handleItemNumberChange(record.id, key, nextValue)
             }

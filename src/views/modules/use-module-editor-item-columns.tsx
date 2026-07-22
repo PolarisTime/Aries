@@ -16,9 +16,11 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { buildPinyinSearchTokens } from '@/utils/pinyin-search'
+import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
 
 interface Props {
   moduleKey: string
+  supplierId?: unknown
   config: ModulePageConfig
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
@@ -87,6 +89,7 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
 
 export function useModuleEditorItemColumns({
   moduleKey,
+  supplierId,
   config,
   items,
   setItems,
@@ -123,7 +126,14 @@ export function useModuleEditorItemColumns({
     handleMaterialSelect,
     handleSettlementModeChange,
     handleWarehouseSelect,
-  } = useModuleEditorItemColumnHandlers({ setItems })
+  } = useModuleEditorItemColumnHandlers({ moduleKey, setItems })
+  usePurchaseOrderWarehouseRecommendations({
+    enabled:
+      moduleKey === 'purchase-order' && canEditItemColumns && !lineItemsLocked,
+    supplierId,
+    items,
+    setItems,
+  })
 
   const isItemColumnEditable = (columnKey: string, record?: ModuleLineItem) =>
     isEditorItemColumnEditableForModule(

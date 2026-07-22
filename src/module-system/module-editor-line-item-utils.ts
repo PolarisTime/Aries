@@ -25,6 +25,19 @@ function isBlankLike(value: unknown) {
   return !hasEditorValue(value)
 }
 
+function isDefaultOrZeroNumericValue(value: unknown, defaultValue: unknown) {
+  if (isZeroLike(value)) {
+    return true
+  }
+  const numericValue = Number(value)
+  const numericDefault = Number(defaultValue)
+  return (
+    Number.isFinite(numericValue) &&
+    Number.isFinite(numericDefault) &&
+    numericValue === numericDefault
+  )
+}
+
 function isPersistedLineItem(item: ModuleLineItem) {
   const rawId = item.id as unknown
 
@@ -35,8 +48,8 @@ function isPersistedLineItem(item: ModuleLineItem) {
   return /^\d+$/.test(normalizedId)
 }
 
-function isEmptyDraftLineItem(item: ModuleLineItem) {
-  const defaultItem = buildDefaultEditorLineItem('')
+function isEmptyDraftLineItem(item: ModuleLineItem, moduleKey: string) {
+  const defaultItem = buildDefaultEditorLineItem('', moduleKey)
   const unit = asString(item.unit).trim()
   const quantityUnit = asString(item.quantityUnit).trim()
 
@@ -61,7 +74,7 @@ function isEmptyDraftLineItem(item: ModuleLineItem) {
     isBlankLike(item.settlementMode) &&
     (!unit || unit === defaultItem.unit) &&
     (!quantityUnit || quantityUnit === defaultItem.quantityUnit) &&
-    isZeroLike(item.quantity) &&
+    isDefaultOrZeroNumericValue(item.quantity, defaultItem.quantity) &&
     isZeroLike(item.pieceWeightTon) &&
     isZeroLike(item.piecesPerBundle) &&
     isZeroLike(item.weightTon) &&
@@ -77,7 +90,9 @@ export function trimEditorItemsForModule(
   moduleKey: string,
   items: ModuleLineItem[],
 ) {
-  const nonEmptyItems = items.filter((item) => !isEmptyDraftLineItem(item))
+  const nonEmptyItems = items.filter(
+    (item) => !isEmptyDraftLineItem(item, moduleKey),
+  )
   const strategy = getBehaviorValue(moduleKey, 'lineItemTrimStrategy')
   if (strategy === 'purchaseOrderBlank') {
     return nonEmptyItems

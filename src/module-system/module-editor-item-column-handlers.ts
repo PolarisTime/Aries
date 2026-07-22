@@ -1,9 +1,11 @@
 import type { WarehouseOption } from '@/api/warehouse-options'
 import { recalculateEditorLineItem } from '@/module-system/module-adapter-editor'
+import { markManualWarehouseSelection } from '@/module-system/module-editor-warehouse-recommendation'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
+  moduleKey: string
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
 }
 
@@ -12,7 +14,10 @@ type MaterialDraftApplicator = (
   materialRecord?: ModuleRecord | null,
 ) => ModuleLineItem
 
-export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
+export function useModuleEditorItemColumnHandlers({
+  moduleKey,
+  setItems,
+}: Props) {
   const handleItemNumberChange = (
     itemId: string,
     key: string,
@@ -74,11 +79,17 @@ export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
-          ? {
-              ...item,
-              warehouseId: warehouseId || undefined,
-              warehouseName: warehouse?.warehouseName || '',
-            }
+          ? moduleKey === 'purchase-order'
+            ? markManualWarehouseSelection({
+                ...item,
+                warehouseId: warehouseId || undefined,
+                warehouseName: warehouse?.warehouseName || '',
+              })
+            : {
+                ...item,
+                warehouseId: warehouseId || undefined,
+                warehouseName: warehouse?.warehouseName || '',
+              }
           : item,
       ),
     )
