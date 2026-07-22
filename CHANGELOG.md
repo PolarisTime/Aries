@@ -1,3 +1,10 @@
+## [7.0.5](https://github.com/PolarisTime/Aries/compare/v7.0.4...v7.0.5) (2026-07-22)
+
+
+### Bug Fixes
+
+* **workflow:** 统一单据审核与核定交互 ([dadcb4e](https://github.com/PolarisTime/Aries/commit/dadcb4efa642fb0d75822588538fabcb96f5aa0b))
+
 ## [7.0.4](https://github.com/PolarisTime/Aries/compare/v7.0.3...v7.0.4) (2026-07-22)
 
 
