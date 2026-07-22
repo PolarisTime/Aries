@@ -5,7 +5,7 @@ const MAX_SIGNED_LONG_ID = 9_223_372_036_854_775_807n
 const AUDIT_ACTOR_ID_PATTERN = /^(0|[1-9]\d*)$/
 
 /** 审计主体 ID 不符合前端传输契约时抛出的错误。 */
-export class AuditActorIdContractError extends Error {
+class AuditActorIdContractError extends Error {
   readonly field: string
 
   constructor(field: string) {

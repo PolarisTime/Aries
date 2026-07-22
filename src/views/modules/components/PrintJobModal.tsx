@@ -591,7 +591,10 @@ function PrintItemSection({
           <span title={settlementCompanyName}>{settlementCompanyName}</span>
         </Typography.Text>
       </div>
-      <div className="mt-8 max-h-[320px] overflow-auto rounded border border-gray-200 bg-gray-50">
+      <div
+        className="mt-8 overflow-auto rounded border border-gray-200 bg-gray-50"
+        style={{ maxHeight: brandOverrideEnabled ? 376 : 320 }}
+      >
         {printItems.length ? (
           <div className="divide-y divide-gray-200">
             <div

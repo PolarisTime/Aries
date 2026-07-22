@@ -1,3 +1,4 @@
+import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import type {
   EditorTask,
   EditorTaskIdentity,
@@ -6,7 +7,15 @@ import type {
 
 const normalizeIdentityPart = (value: string): string => value.trim()
 
-export const getEditorTaskLastActivatedAt = (task: EditorTask): number =>
+export const resolveEditorTaskPath = (
+  moduleKey: string,
+  fallbackPath: string,
+): string => {
+  const page = getPageDefinition(moduleKey)
+  return page ? `/${getPageRoutePath(page)}` : fallbackPath
+}
+
+const getEditorTaskLastActivatedAt = (task: EditorTask): number =>
   Number.isFinite(task.lastActivatedAt) ? task.lastActivatedAt : task.updatedAt
 
 export const sortEditorTasksByRecent = (tasks: EditorTask[]): EditorTask[] =>

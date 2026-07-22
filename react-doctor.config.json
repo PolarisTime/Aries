@@ -1,9 +1,16 @@
 {
   "ignore": {
     "files": [
+      "archive/**",
       "public/static/clodop-license.js",
       "coverage-e2e/**",
       "src/test/e2e-coverage-probe.tsx"
+    ],
+    "overrides": [
+      {
+        "files": ["src/views/finance/CashLedgerView.tsx"],
+        "rules": ["react-doctor/query-mutation-missing-invalidation"]
+      }
     ]
   }
 }

@@ -37,15 +37,16 @@ const isSavedTask = (task: EditorTask): boolean =>
   task.status === 'saved' ||
   task.status === 'readonly'
 
-const renderTaskStatus = (
-  task: EditorTask,
-  labels: Record<'dirty' | 'saving' | 'error' | 'readonly', string>,
-): ReactNode => {
+interface TaskStatusProps {
+  task: EditorTask
+  labels: Record<'dirty' | 'saving' | 'error' | 'readonly', string>
+}
+
+const TaskStatus = ({ task, labels }: TaskStatusProps): ReactNode => {
   if (task.status === 'dirty') {
     return (
-      <span
+      <output
         className="editor-task-status is-dirty"
-        role="status"
         aria-label={labels.dirty}
       />
     )
@@ -148,7 +149,7 @@ export const EditorWorkspaceTabs = ({
           trigger={['contextMenu']}
         >
           <span className="editor-task-tab-label" title={task.title}>
-            {renderTaskStatus(task, statusLabels)}
+            <TaskStatus task={task} labels={statusLabels} />
             <span className="editor-task-tab-title">
               {moduleTitle ? (
                 <>

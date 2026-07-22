@@ -1,10 +1,13 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
 } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
-import { buildEditorTaskKey } from '@/layouts/editor-workspace/editor-task-model'
+import {
+  buildEditorTaskKey,
+  resolveEditorTaskPath,
+} from '@/layouts/editor-workspace/editor-task-model'
 import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
@@ -44,7 +47,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
       moduleKey,
       mode,
       recordId,
-      path: window.location.pathname,
+      path: resolveEditorTaskPath(moduleKey, window.location.pathname),
       title: record
         ? `${config.title}${primaryNo ? ` ${primaryNo}` : ''}`
         : `新建${config.title}`,
@@ -151,16 +154,28 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     }
   }
 
+  const closeEditor = useCallback(() => {
+    openVersionRef.current += 1
+    setEditorOpen(false)
+    setEditRecord(null)
+    setEditorLockRelatedRows([])
+    setEditorLockLoading(false)
+  }, [])
+
   const resumeEditorTask = useEffectEvent(async () => {
     const state = editorTaskStore.getState()
     const task = state.tasks.find((item) => item.key === state.resumeKey)
     if (!task || task.moduleKey !== moduleKey) {
       return
     }
+    const version = ++openVersionRef.current
     state.consumeResume(task.key)
     if (task.mode === 'create') {
       if (config.allowManualCreate === false) {
         state.close(task.key)
+        return
+      }
+      if (editorTaskStore.getState().activeKey !== task.key) {
         return
       }
       await openEditor(null)
@@ -168,9 +183,19 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     }
     try {
       const detail = await getBusinessModuleDetail(moduleKey, task.recordId)
+      const currentState = editorTaskStore.getState()
+      if (
+        version !== openVersionRef.current ||
+        currentState.activeKey !== task.key ||
+        !currentState.tasks.some((item) => item.key === task.key)
+      ) {
+        return
+      }
       await openEditor(detail.data)
     } catch {
-      editorTaskStore.getState().updateStatus(task.key, 'error')
+      if (version === openVersionRef.current) {
+        editorTaskStore.getState().updateStatus(task.key, 'error')
+      }
     }
   })
 
@@ -183,14 +208,18 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
       if (state.resumeKey && state.resumeKey !== previousState.resumeKey) {
         resumePendingTask()
       }
+      const previousActiveTask = previousState.tasks.find(
+        (task) => task.key === previousState.activeKey,
+      )
+      if (
+        state.activeKey === null &&
+        previousActiveTask?.moduleKey === moduleKey &&
+        !state.tasks.some((task) => task.key === previousActiveTask.key)
+      ) {
+        closeEditor()
+      }
     })
-  }, [])
-
-  const closeEditor = () => {
-    setEditorOpen(false)
-    setEditRecord(null)
-    setEditorLockRelatedRows([])
-  }
+  }, [closeEditor, moduleKey])
 
   const handleSaved = () => {
     setEditorLockRelatedRows([])

@@ -1,4 +1,4 @@
-import { message as messageApi, Modal as modalApi } from 'antd'
+import { message as messageApi } from 'antd'
 import type AntdApp from 'antd/es/app'
 
 type AntdAppApi = ReturnType<typeof AntdApp.useApp>
@@ -62,15 +62,9 @@ export const message = {
 }
 
 export const modal = {
-  confirm: (...args: ModMethod) =>
-    callMethod(getModalApi(), 'confirm', args) ?? modalApi.confirm(...args),
-  info: (...args: ModMethod) =>
-    callMethod(getModalApi(), 'info', args) ?? modalApi.info(...args),
-  success: (...args: ModMethod) =>
-    callMethod(getModalApi(), 'success', args) ?? modalApi.success(...args),
-  warning: (...args: ModMethod) =>
-    callMethod(getModalApi(), 'warning', args) ?? modalApi.warning(...args),
-  error: (...args: ModMethod) =>
-    callMethod(getModalApi(), 'error', args) ?? modalApi.error(...args),
-  destroyAll: () => modalApi.destroyAll(),
+  confirm: (...args: ModMethod) => callMethod(getModalApi(), 'confirm', args),
+  info: (...args: ModMethod) => callMethod(getModalApi(), 'info', args),
+  success: (...args: ModMethod) => callMethod(getModalApi(), 'success', args),
+  warning: (...args: ModMethod) => callMethod(getModalApi(), 'warning', args),
+  error: (...args: ModMethod) => callMethod(getModalApi(), 'error', args),
 }

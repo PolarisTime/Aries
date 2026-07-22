@@ -97,7 +97,7 @@ function normalizeBalance(raw: RawRecord, index: number): FinanceBalance {
   }
 }
 
-export function normalizeFinanceOverview(
+function normalizeFinanceOverview(
   raw: RawRecord | null | undefined,
 ): FinanceOverviewPage {
   const source = raw || {}
@@ -109,9 +109,9 @@ export function normalizeFinanceOverview(
       content: asArray<RawRecord>(rawBalances.content).map(normalizeBalance),
       totalElements: asNumber(rawBalances.totalElements),
       totalPages: asNumber(rawBalances.totalPages),
-      currentPage: asNumber(rawBalances.currentPage),
-      pageSize: asNumber(rawBalances.pageSize),
-      hasMore: rawBalances.hasMore === true,
+      currentPage: asNumber(rawBalances.currentPage ?? rawBalances.page),
+      pageSize: asNumber(rawBalances.pageSize ?? rawBalances.size),
+      hasMore: (rawBalances.hasMore ?? rawBalances.hasNext) === true,
     },
   }
 }

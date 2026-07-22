@@ -104,7 +104,7 @@ function normalizeLine(raw: RawRecord, index: number): CashLedgerLine {
   }
 }
 
-export function normalizeCashLedgerPage(
+function normalizeCashLedgerPage(
   raw: RawRecord | null | undefined,
 ): CashLedgerPage {
   const source = raw || {}
@@ -115,9 +115,9 @@ export function normalizeCashLedgerPage(
       content: asArray<RawRecord>(rawPage.content).map(normalizeLine),
       totalElements: asNumber(rawPage.totalElements),
       totalPages: asNumber(rawPage.totalPages),
-      page: asNumber(rawPage.page),
-      size: asNumber(rawPage.size),
-      hasNext: rawPage.hasNext === true,
+      page: asNumber(rawPage.currentPage ?? rawPage.page),
+      size: asNumber(rawPage.pageSize ?? rawPage.size),
+      hasNext: (rawPage.hasMore ?? rawPage.hasNext) === true,
     },
   }
 }

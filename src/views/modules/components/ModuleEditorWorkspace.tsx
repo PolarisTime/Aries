@@ -87,6 +87,7 @@ export function ModuleEditorWorkspace({
     ? statusField.options.map((option) => String(option.value))
     : []
   const canEditLineItems = Boolean(config.itemColumns?.length)
+  // oxlint-disable react-doctor/no-event-handler -- These are capability inputs, not event handlers.
   const {
     canAddManualEditorItems,
     canManageEditorItems,
@@ -105,10 +106,12 @@ export function ModuleEditorWorkspace({
     isReadOnly: Boolean(config.readOnly),
     resolveModuleStatusOptions: () => statusOptions,
   })
+  // oxlint-enable react-doctor/no-event-handler
 
   const canManageItems = canManageEditorItems
   const canEditItemColumns = canSave && Boolean(config.itemColumns?.length)
   const canAddManualItems = canAddManualEditorItems
+  // oxlint-disable react-doctor/no-event-handler -- These callbacks configure the editor hook; no effect is acting as a UI event.
   const {
     addItem,
     clearSaveResult,
@@ -141,6 +144,7 @@ export function ModuleEditorWorkspace({
     autoInsertBlankItemOnCreate:
       Boolean(config.itemColumns?.length) && canAddManualItems,
   })
+  // oxlint-enable react-doctor/no-event-handler
 
   useEffect(() => {
     const activeKey = editorTaskStore.getState().activeKey
@@ -251,19 +255,20 @@ export function ModuleEditorWorkspace({
           <ModuleEditorFormSection
             config={config}
             moduleKey={moduleKey}
-            canSave={canSave}
-            canAudit={canSaveAndAuditInEditor}
-            saving={saving}
-            showActions={!useFinanceEditorLayout && !config.itemColumns?.length}
-            lineItemsLocked={lineItemsLocked}
+            actions={{
+              canSave,
+              canAudit: canSaveAndAuditInEditor,
+              saving,
+              visible: !useFinanceEditorLayout && !config.itemColumns?.length,
+              onCancel: onClose,
+              onSave: (audit) => {
+                void handleSave(audit)
+              },
+            }}
+            editorState={{ isEdit, lineItemsLocked }}
             lockedLineItemsNotice={lockedLineItemsNotice}
             authoritativePrimaryNo={authoritativePrimaryNo}
-            isEdit={isEdit}
             layoutVariant={useFinanceEditorLayout ? 'finance' : 'default'}
-            onCancel={onClose}
-            onSave={(audit) => {
-              void handleSave(audit)
-            }}
           />
         </Form>
 

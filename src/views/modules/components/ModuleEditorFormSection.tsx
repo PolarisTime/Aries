@@ -14,17 +14,21 @@ import { FormFieldRenderer } from './FormFieldRenderer'
 interface Props {
   config: ModulePageConfig
   moduleKey: string
-  canSave: boolean
-  canAudit: boolean
-  saving: boolean
-  showActions: boolean
-  lineItemsLocked: boolean
+  actions: {
+    canSave: boolean
+    canAudit: boolean
+    saving: boolean
+    visible: boolean
+    onCancel: () => void
+    onSave: (audit: boolean) => void
+  }
+  editorState: {
+    isEdit: boolean
+    lineItemsLocked: boolean
+  }
   lockedLineItemsNotice: string
   authoritativePrimaryNo?: string
-  isEdit: boolean
   layoutVariant?: 'default' | 'finance'
-  onCancel: () => void
-  onSave: (audit: boolean) => void
 }
 
 function getFieldSpan(
@@ -44,17 +48,11 @@ function getFieldSpan(
 export function ModuleEditorFormSection({
   config,
   moduleKey,
-  canSave,
-  canAudit,
-  saving,
-  showActions,
-  lineItemsLocked,
+  actions,
+  editorState,
   lockedLineItemsNotice,
   authoritativePrimaryNo,
-  isEdit,
   layoutVariant = 'default',
-  onCancel,
-  onSave,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
@@ -64,7 +62,7 @@ export function ModuleEditorFormSection({
       (field) =>
         isModuleFormFieldVisible(field, formValues) &&
         !(
-          !isEdit &&
+          !editorState.isEdit &&
           !config.showGeneratedPrimaryNoOnCreate &&
           field.key === config.primaryNoKey &&
           usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
@@ -91,14 +89,14 @@ export function ModuleEditorFormSection({
             {t('modules.editorForm.documentInfo')}
           </Typography.Title>
         </div>
-        {showActions ? (
+        {actions.visible ? (
           <div className="editor-form-actions">
             <EditorFooterActions
-              canSave={canSave}
-              canAudit={canAudit}
-              saving={saving}
-              onCancel={onCancel}
-              onSave={onSave}
+              canSave={actions.canSave}
+              canAudit={actions.canAudit}
+              saving={actions.saving}
+              onCancel={actions.onCancel}
+              onSave={actions.onSave}
             />
           </div>
         ) : null}
@@ -122,8 +120,8 @@ export function ModuleEditorFormSection({
                   moduleKey,
                   field.key,
                   Boolean(field.disabled || field.disabledWhen?.(formValues)),
-                  canSave,
-                  lineItemsLocked,
+                  actions.canSave,
+                  editorState.lineItemsLocked,
                   config.primaryNoKey,
                   config.parentImport?.parentFieldKey,
                   formValues,

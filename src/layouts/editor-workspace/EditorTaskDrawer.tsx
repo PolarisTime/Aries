@@ -1,6 +1,6 @@
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
 import { Button, Drawer, Empty, Input, Segmented, Tooltip } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { sortEditorTasksByRecent } from '@/layouts/editor-workspace/editor-task-model'
 import type {
@@ -67,12 +67,6 @@ export const EditorTaskDrawer = ({
   const { t } = useTranslation()
   const [keyword, setKeyword] = useState('')
   const [filter, setFilter] = useState<TaskFilter>('all')
-
-  useEffect(() => {
-    if (open && tasks.length === 0) {
-      onOpenChange(false)
-    }
-  }, [onOpenChange, open, tasks.length])
 
   const visibleTasks = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLocaleLowerCase()

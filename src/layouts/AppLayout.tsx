@@ -15,6 +15,7 @@ import {
   buildClockDisplay,
 } from '@/layouts/app-layout-utils'
 import { EditorWorkspaceTabs } from '@/layouts/editor-workspace/EditorWorkspaceTabs'
+import { resolveEditorTaskPath } from '@/layouts/editor-workspace/editor-task-model'
 import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
@@ -145,6 +146,82 @@ function PersonalSettingsHost({
       onThemeModeChange={onThemeModeChange}
     />
   )
+}
+
+function useEditorTaskNavigation(currentUserKey: string) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+
+  const activateEditorTask = (key: string) => {
+    const task = editorTaskStore
+      .getState()
+      .tasks.find((item) => item.key === key && item.userKey === currentUserKey)
+    if (!task || !editorTaskStore.getState().requestResume(key)) {
+      return
+    }
+    void navigate({
+      to: resolveEditorTaskPath(task.moduleKey, task.path) as '/',
+    })
+  }
+
+  const closeEditorTasks = (keys: string[]) => {
+    const requestedKeys = new Set(keys)
+    const tasks = editorTaskStore
+      .getState()
+      .tasks.filter(
+        (task) =>
+          requestedKeys.has(task.key) &&
+          task.userKey === currentUserKey &&
+          task.closable &&
+          task.status !== 'saving',
+      )
+    if (!tasks.length) {
+      return
+    }
+
+    const unsafeTaskCount = tasks.filter(
+      (task) => task.status === 'dirty' || task.status === 'error',
+    ).length
+    const closeTasks = () => {
+      const state = editorTaskStore.getState()
+      const closesActiveTask = tasks.some(
+        (task) => task.key === state.activeKey,
+      )
+      const closedCount = state.closeMany(tasks.map((task) => task.key))
+      if (!closesActiveTask || closedCount === 0) {
+        return
+      }
+
+      const nextState = editorTaskStore.getState()
+      const fallbackTask = nextState.tasks.find(
+        (task) =>
+          task.key === nextState.activeKey && task.userKey === currentUserKey,
+      )
+      if (fallbackTask) {
+        void navigate({
+          to: resolveEditorTaskPath(
+            fallbackTask.moduleKey,
+            fallbackTask.path,
+          ) as '/',
+        })
+      }
+    }
+    if (unsafeTaskCount > 0) {
+      modal.confirm({
+        title: t('layouts.editorTasks.closeConfirmTitle'),
+        content: t('layouts.editorTasks.closeConfirmContent', {
+          count: unsafeTaskCount,
+        }),
+        okText: t('layouts.editorTasks.close'),
+        cancelText: t('common.cancel'),
+        onOk: closeTasks,
+      })
+      return
+    }
+    closeTasks()
+  }
+
+  return { activateEditorTask, closeEditorTasks }
 }
 
 export function AppLayout() {
@@ -292,52 +369,8 @@ export function AppLayout() {
   )
     ? activeEditorTaskKey
     : null
-
-  const handleActivateEditorTask = (key: string) => {
-    const task = editorTaskStore
-      .getState()
-      .tasks.find((item) => item.key === key && item.userKey === currentUserKey)
-    if (!task || !editorTaskStore.getState().requestResume(key)) {
-      return
-    }
-    void navigate({ to: task.path as '/' })
-  }
-
-  const handleCloseEditorTasks = (keys: string[]) => {
-    const requestedKeys = new Set(keys)
-    const tasks = editorTaskStore
-      .getState()
-      .tasks.filter(
-        (task) =>
-          requestedKeys.has(task.key) &&
-          task.userKey === currentUserKey &&
-          task.closable &&
-          task.status !== 'saving',
-      )
-    if (!tasks.length) {
-      return
-    }
-
-    const unsafeTaskCount = tasks.filter(
-      (task) => task.status === 'dirty' || task.status === 'error',
-    ).length
-    const closeTasks = () => {
-      editorTaskStore.getState().closeMany(tasks.map((task) => task.key))
-    }
-    if (unsafeTaskCount > 0) {
-      modal.confirm({
-        title: t('layouts.editorTasks.closeConfirmTitle'),
-        content: t('layouts.editorTasks.closeConfirmContent', {
-          count: unsafeTaskCount,
-        }),
-        okText: t('layouts.editorTasks.close'),
-        cancelText: t('common.cancel'),
-        onOk: closeTasks,
-      })
-      return
-    }
-    closeTasks()
-  }
+  const { activateEditorTask, closeEditorTasks } =
+    useEditorTaskNavigation(currentUserKey)
   const clockDisplay = buildClockDisplay(clock)
   const {
     fixedWidthStyle,
@@ -436,8 +469,8 @@ export function AppLayout() {
           activeKey={currentUserActiveEditorTaskKey}
           tasks={currentUserEditorTasks}
           style={{ ...fixedWidthStyle, ...shellFontStyle }}
-          onActivate={handleActivateEditorTask}
-          onCloseTasks={handleCloseEditorTasks}
+          onActivate={activateEditorTask}
+          onCloseTasks={closeEditorTasks}
         />
 
         <AppContentOutlet openPageKey={routePageContext.openPageKey} />

@@ -5,7 +5,7 @@ function normalizedText(value: unknown) {
   return value == null ? '' : String(value).trim()
 }
 
-export function matchesPrintTemplateSettlementCompany(
+function matchesPrintTemplateSettlementCompany(
   template: PrintTemplateRecord,
   record?: ModuleRecord,
 ) {

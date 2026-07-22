@@ -9,6 +9,7 @@ import {
   Empty,
   Input,
   Select,
+  type SelectProps,
   Table,
   type TableColumnsType,
   Tooltip,
@@ -16,7 +17,7 @@ import {
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useState } from 'react'
+import { type Dispatch, useMemo, useReducer } from 'react'
 import {
   type CashLedgerFilter,
   type CashLedgerFlowType,
@@ -69,136 +70,136 @@ function displayText(value: unknown) {
   return text || '--'
 }
 
-export function CashLedgerView() {
-  const defaultPageSize = useDefaultPageSize()
-  const [settlementCompanyId, setSettlementCompanyId] = useState<EntityId>()
-  const [startDate, setStartDate] = useState<string>()
-  const [endDate, setEndDate] = useState<string>()
-  const [counterpartyType, setCounterpartyType] = useState<string>()
-  const [counterpartyId, setCounterpartyId] = useState<EntityId>()
-  const [flowType, setFlowType] = useState<CashLedgerFlowType>()
-  const [keywordInput, setKeywordInput] = useState('')
-  const [keyword, setKeyword] = useState<string>()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(defaultPageSize)
-  useEffect(() => {
-    setPage(1)
-    setPageSize(defaultPageSize)
-  }, [defaultPageSize])
-  const { formatCellValue } = useModuleDisplaySupport()
-  const {
-    settlementCompanies,
-    customers,
-    suppliers,
-    carriers,
-    isLoading: optionsLoading,
-  } = useMasterOptions({
-    settlementCompanies: true,
-    customers: counterpartyType === '客户',
-    suppliers: counterpartyType === '供应商',
-    carriers: counterpartyType === '物流商',
-  })
-  const queryEnabled = Boolean(settlementCompanyId)
+interface CashLedgerState {
+  observedDefaultPageSize: number
+  settlementCompanyId?: EntityId
+  startDate?: string
+  endDate?: string
+  counterpartyType?: string
+  counterpartyId?: EntityId
+  flowType?: CashLedgerFlowType
+  keywordInput: string
+  keyword?: string
+  page: number
+  pageSizeOverride?: number
+}
 
-  const counterpartyOptions = useMemo(() => {
-    if (counterpartyType === '客户') {
-      return customers.map(({ id, label }) => ({ value: id, label }))
-    }
-    if (counterpartyType === '供应商') {
-      return suppliers.map(({ id, label }) => ({ value: id, label }))
-    }
-    if (counterpartyType === '物流商') {
-      return carriers.flatMap(({ id, label }) =>
-        id ? [{ value: id, label }] : [],
-      )
-    }
-    return []
-  }, [carriers, counterpartyType, customers, suppliers])
+type CashLedgerAction =
+  | { type: 'settlement-company-changed'; value?: EntityId }
+  | { type: 'date-range-changed'; startDate?: string; endDate?: string }
+  | { type: 'counterparty-type-changed'; value?: string }
+  | { type: 'counterparty-changed'; value?: EntityId }
+  | { type: 'flow-type-changed'; value?: CashLedgerFlowType }
+  | { type: 'keyword-input-changed'; value: string }
+  | { type: 'keyword-committed'; value: string }
+  | { type: 'pagination-changed'; page: number; pageSize: number }
+  | { type: 'default-page-size-changed'; value: number }
 
-  const ledgerFilter = useMemo<CashLedgerFilter>(
-    () => ({
-      settlementCompanyId: settlementCompanyId || '',
-      startDate,
-      endDate,
-      counterpartyType,
-      counterpartyId,
-      flowType,
-      keyword,
-    }),
-    [
-      counterpartyId,
-      counterpartyType,
-      endDate,
-      flowType,
-      keyword,
-      settlementCompanyId,
-      startDate,
-    ],
-  )
-  const ledgerQueryParams = useMemo<CashLedgerQuery>(
-    () => ({ ...ledgerFilter, page: page - 1, size: pageSize }),
-    [ledgerFilter, page, pageSize],
-  )
-  const dateRangeValue = useMemo<[Dayjs, Dayjs] | null>(
-    () => (startDate && endDate ? [dayjs(startDate), dayjs(endDate)] : null),
-    [endDate, startDate],
-  )
-  const ledgerQuery = useQuery({
-    queryKey: QUERY_KEYS.cashLedger(ledgerQueryParams),
-    queryFn: ({ signal }) => getCashLedger(ledgerQueryParams, signal),
-    enabled: queryEnabled,
-    placeholderData: keepPreviousData,
-  })
-  const exportMutation = useMutation({
-    mutationFn: exportCashLedger,
-    onSuccess: () => message.success('资金流水已导出'),
-    onError: (error) =>
-      message.error(requestErrorMessage(error, '导出资金流水失败')),
-  })
-
-  const commitKeyword = (value: string) => {
-    const normalized = value.trim()
-    setKeywordInput(value)
-    setKeyword(normalized || undefined)
-    setPage(1)
+function createInitialLedgerState(defaultPageSize: number): CashLedgerState {
+  return {
+    keywordInput: '',
+    observedDefaultPageSize: defaultPageSize,
+    page: 1,
   }
+}
 
-  const handleRefresh = async () => {
-    const result = await ledgerQuery.refetch()
-    if (result.isError) {
-      message.error(requestErrorMessage(result.error, '刷新资金流水失败'))
+function cashLedgerReducer(
+  state: CashLedgerState,
+  action: CashLedgerAction,
+): CashLedgerState {
+  switch (action.type) {
+    case 'settlement-company-changed':
+      return { ...state, settlementCompanyId: action.value, page: 1 }
+    case 'date-range-changed':
+      return {
+        ...state,
+        startDate: action.startDate,
+        endDate: action.endDate,
+        page: 1,
+      }
+    case 'counterparty-type-changed':
+      return {
+        ...state,
+        counterpartyType: action.value,
+        counterpartyId: undefined,
+        page: 1,
+      }
+    case 'counterparty-changed':
+      return { ...state, counterpartyId: action.value, page: 1 }
+    case 'flow-type-changed':
+      return { ...state, flowType: action.value, page: 1 }
+    case 'keyword-input-changed':
+      return action.value
+        ? { ...state, keywordInput: action.value }
+        : { ...state, keywordInput: '', keyword: undefined, page: 1 }
+    case 'keyword-committed': {
+      const normalized = action.value.trim()
+      return {
+        ...state,
+        keywordInput: action.value,
+        keyword: normalized || undefined,
+        page: 1,
+      }
     }
+    case 'pagination-changed':
+      return {
+        ...state,
+        page: action.page,
+        pageSizeOverride: action.pageSize,
+      }
+    case 'default-page-size-changed':
+      return {
+        ...state,
+        observedDefaultPageSize: action.value,
+        page: 1,
+        pageSizeOverride: undefined,
+      }
   }
+}
 
-  const formatAmount = (value: number | undefined) =>
-    value == null ? '--' : formatCellValue(value, 'amount')
+type FormatCellValue = ReturnType<
+  typeof useModuleDisplaySupport
+>['formatCellValue']
 
-  const summaryItems = (
-    summary: CashLedgerSummary,
-  ): DescriptionsProps['items'] => [
+function formatAmount(
+  formatCellValue: FormatCellValue,
+  value: number | undefined,
+) {
+  return value == null ? '--' : formatCellValue(value, 'amount')
+}
+
+function buildSummaryItems(
+  summary: CashLedgerSummary,
+  formatCellValue: FormatCellValue,
+): DescriptionsProps['items'] {
+  return [
     {
       key: 'openingBalance',
       label: '期初余额',
-      children: formatAmount(summary.openingBalance),
+      children: formatAmount(formatCellValue, summary.openingBalance),
     },
     {
       key: 'periodIncome',
       label: '期间收入',
-      children: formatAmount(summary.periodIncome),
+      children: formatAmount(formatCellValue, summary.periodIncome),
     },
     {
       key: 'periodExpense',
       label: '期间支出',
-      children: formatAmount(summary.periodExpense),
+      children: formatAmount(formatCellValue, summary.periodExpense),
     },
     {
       key: 'closingBalance',
       label: '期末余额',
-      children: formatAmount(summary.closingBalance),
+      children: formatAmount(formatCellValue, summary.closingBalance),
     },
   ]
+}
 
-  const columns: TableColumnsType<CashLedgerLine> = [
+function buildColumns(
+  formatCellValue: FormatCellValue,
+): TableColumnsType<CashLedgerLine> {
+  return [
     {
       title: '业务日期',
       dataIndex: 'businessDate',
@@ -244,21 +245,21 @@ export function CashLedgerView() {
       dataIndex: 'incomeAmount',
       width: 130,
       align: 'right',
-      render: formatAmount,
+      render: (value) => formatAmount(formatCellValue, value),
     },
     {
       title: '支出',
       dataIndex: 'expenseAmount',
       width: 130,
       align: 'right',
-      render: formatAmount,
+      render: (value) => formatAmount(formatCellValue, value),
     },
     {
       title: '累计余额',
       dataIndex: 'runningBalance',
       width: 140,
       align: 'right',
-      render: formatAmount,
+      render: (value) => formatAmount(formatCellValue, value),
     },
     {
       title: '经办人',
@@ -274,10 +275,34 @@ export function CashLedgerView() {
       render: displayText,
     },
   ]
+}
 
-  const visibleData = queryEnabled ? ledgerQuery.data : undefined
-  const rows = visibleData?.page.content || []
-  const total = visibleData?.page.totalElements || 0
+interface CashLedgerWorkspaceModel {
+  columns: TableColumnsType<CashLedgerLine>
+  counterpartyOptions: SelectProps['options']
+  dispatch: Dispatch<CashLedgerAction>
+  error: unknown
+  exportPending: boolean
+  formatCellValue: FormatCellValue
+  isError: boolean
+  isFetching: boolean
+  onExport: () => void
+  onRefresh: () => void
+  optionsLoading: boolean
+  pageSize: number
+  queryEnabled: boolean
+  rows: CashLedgerLine[]
+  settlementCompanies: SelectProps['options']
+  state: CashLedgerState
+  summary?: CashLedgerSummary
+  total: number
+}
+
+function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
+  const dateRangeValue: [Dayjs, Dayjs] | null =
+    model.state.startDate && model.state.endDate
+      ? [dayjs(model.state.startDate), dayjs(model.state.endDate)]
+      : null
 
   return (
     <div className="module-page-stack cash-ledger-page">
@@ -294,13 +319,13 @@ export function CashLedgerView() {
               <span>
                 <Button
                   icon={<DownloadOutlined />}
-                  loading={exportMutation.isPending}
+                  loading={model.exportPending}
                   disabled={
-                    !queryEnabled ||
-                    ledgerQuery.isFetching ||
-                    exportMutation.isPending
+                    !model.queryEnabled ||
+                    model.isFetching ||
+                    model.exportPending
                   }
-                  onClick={() => exportMutation.mutate(ledgerFilter)}
+                  onClick={model.onExport}
                 >
                   导出
                 </Button>
@@ -311,13 +336,13 @@ export function CashLedgerView() {
                 <Button
                   aria-label="刷新资金流水"
                   icon={<ReloadOutlined />}
-                  loading={ledgerQuery.isFetching}
+                  loading={model.isFetching}
                   disabled={
-                    !queryEnabled ||
-                    exportMutation.isPending ||
-                    ledgerQuery.isFetching
+                    !model.queryEnabled ||
+                    model.exportPending ||
+                    model.isFetching
                   }
-                  onClick={() => void handleRefresh()}
+                  onClick={model.onRefresh}
                 />
               </span>
             </Tooltip>
@@ -330,14 +355,16 @@ export function CashLedgerView() {
             <Select
               aria-label="结算主体"
               aria-required="true"
-              value={settlementCompanyId}
-              options={settlementCompanies}
-              loading={optionsLoading}
+              value={model.state.settlementCompanyId}
+              options={model.settlementCompanies}
+              loading={model.optionsLoading}
               showSearch={{ optionFilterProp: 'label' }}
               placeholder="请选择结算主体"
               onChange={(value) => {
-                setSettlementCompanyId(value ? String(value) : undefined)
-                setPage(1)
+                model.dispatch({
+                  type: 'settlement-company-changed',
+                  value: value ? String(value) : undefined,
+                })
               }}
             />
           </div>
@@ -347,9 +374,11 @@ export function CashLedgerView() {
               aria-label="业务日期"
               value={dateRangeValue}
               onChange={(_, dateStrings) => {
-                setStartDate(dateStrings[0] || undefined)
-                setEndDate(dateStrings[1] || undefined)
-                setPage(1)
+                model.dispatch({
+                  type: 'date-range-changed',
+                  startDate: dateStrings[0] || undefined,
+                  endDate: dateStrings[1] || undefined,
+                })
               }}
             />
           </div>
@@ -357,14 +386,15 @@ export function CashLedgerView() {
             <Typography.Text type="secondary">往来方类型</Typography.Text>
             <Select
               aria-label="往来方类型"
-              value={counterpartyType}
+              value={model.state.counterpartyType}
               options={COUNTERPARTY_TYPE_OPTIONS}
               allowClear
               placeholder="全部往来方类型"
               onChange={(value) => {
-                setCounterpartyType(value)
-                setCounterpartyId(undefined)
-                setPage(1)
+                model.dispatch({
+                  type: 'counterparty-type-changed',
+                  value,
+                })
               }}
             />
           </div>
@@ -372,16 +402,20 @@ export function CashLedgerView() {
             <Typography.Text type="secondary">往来方</Typography.Text>
             <Select
               aria-label="往来方"
-              value={counterpartyId}
-              options={counterpartyOptions}
-              loading={optionsLoading}
-              disabled={!counterpartyType}
+              value={model.state.counterpartyId}
+              options={model.counterpartyOptions}
+              loading={model.optionsLoading}
+              disabled={!model.state.counterpartyType}
               showSearch={{ optionFilterProp: 'label' }}
               allowClear
-              placeholder={counterpartyType ? '全部往来方' : '先选择类型'}
+              placeholder={
+                model.state.counterpartyType ? '全部往来方' : '先选择类型'
+              }
               onChange={(value) => {
-                setCounterpartyId(value ? String(value) : undefined)
-                setPage(1)
+                model.dispatch({
+                  type: 'counterparty-changed',
+                  value: value ? String(value) : undefined,
+                })
               }}
             />
           </div>
@@ -389,13 +423,12 @@ export function CashLedgerView() {
             <Typography.Text type="secondary">流水类型</Typography.Text>
             <Select
               aria-label="流水类型"
-              value={flowType}
+              value={model.state.flowType}
               options={FLOW_TYPE_OPTIONS}
               allowClear
               placeholder="全部流水类型"
               onChange={(value) => {
-                setFlowType(value)
-                setPage(1)
+                model.dispatch({ type: 'flow-type-changed', value })
               }}
             />
           </div>
@@ -403,36 +436,47 @@ export function CashLedgerView() {
             <Typography.Text type="secondary">关键字</Typography.Text>
             <Input
               aria-label="关键字"
-              value={keywordInput}
+              value={model.state.keywordInput}
               allowClear
               placeholder="单号、往来方、用途、经办人或备注"
               onChange={(event) => {
-                const value = event.target.value
-                setKeywordInput(value)
-                if (!value) commitKeyword('')
+                model.dispatch({
+                  type: 'keyword-input-changed',
+                  value: event.target.value,
+                })
               }}
-              onBlur={(event) => commitKeyword(event.target.value)}
-              onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
+              onBlur={(event) =>
+                model.dispatch({
+                  type: 'keyword-committed',
+                  value: event.target.value,
+                })
+              }
+              onPressEnter={(event) =>
+                model.dispatch({
+                  type: 'keyword-committed',
+                  value: event.currentTarget.value,
+                })
+              }
             />
           </div>
         </section>
 
-        {ledgerQuery.isError ? (
+        {model.isError ? (
           <Alert
             type="error"
             showIcon
             title="加载资金流水失败"
-            description={requestErrorMessage(ledgerQuery.error, '请稍后重试')}
+            description={requestErrorMessage(model.error, '请稍后重试')}
           />
         ) : null}
 
-        {visibleData ? (
+        {model.summary ? (
           <section className="cash-ledger-summary">
             <Descriptions
               size="small"
               bordered
               column={{ xs: 2, md: 4 }}
-              items={summaryItems(visibleData.summary)}
+              items={buildSummaryItems(model.summary, model.formatCellValue)}
             />
           </section>
         ) : null}
@@ -441,12 +485,12 @@ export function CashLedgerView() {
           <Table
             rowKey="key"
             size="small"
-            columns={columns}
-            dataSource={rows}
-            loading={queryEnabled && ledgerQuery.isFetching}
+            columns={model.columns}
+            dataSource={model.rows}
+            loading={model.queryEnabled && model.isFetching}
             scroll={{ x: 1530, y: 'calc(100vh - 410px)' }}
             locale={{
-              emptyText: queryEnabled ? (
+              emptyText: model.queryEnabled ? (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description="暂无资金流水"
@@ -459,19 +503,132 @@ export function CashLedgerView() {
               ),
             }}
             pagination={{
-              current: page,
-              pageSize,
-              total,
+              current: model.state.page,
+              pageSize: model.pageSize,
+              total: model.total,
               showSizeChanger: true,
               showTotal: (count) => `共 ${count} 条`,
               onChange: (nextPage, nextPageSize) => {
-                setPage(nextPageSize === pageSize ? nextPage : 1)
-                setPageSize(nextPageSize)
+                model.dispatch({
+                  type: 'pagination-changed',
+                  page: nextPageSize === model.pageSize ? nextPage : 1,
+                  pageSize: nextPageSize,
+                })
               },
             }}
           />
         </section>
       </div>
     </div>
+  )
+}
+
+export function CashLedgerView() {
+  const defaultPageSize = useDefaultPageSize()
+  const [state, dispatch] = useReducer(
+    cashLedgerReducer,
+    defaultPageSize,
+    createInitialLedgerState,
+  )
+  if (state.observedDefaultPageSize !== defaultPageSize) {
+    dispatch({ type: 'default-page-size-changed', value: defaultPageSize })
+  }
+  const pageSize = state.pageSizeOverride ?? defaultPageSize
+  const { formatCellValue } = useModuleDisplaySupport()
+  const {
+    settlementCompanies,
+    customers,
+    suppliers,
+    carriers,
+    isLoading: optionsLoading,
+  } = useMasterOptions({
+    settlementCompanies: true,
+    customers: state.counterpartyType === '客户',
+    suppliers: state.counterpartyType === '供应商',
+    carriers: state.counterpartyType === '物流商',
+  })
+  const queryEnabled = Boolean(state.settlementCompanyId)
+  const counterpartyOptions = useMemo(() => {
+    if (state.counterpartyType === '客户') {
+      return customers.map(({ id, label }) => ({ value: id, label }))
+    }
+    if (state.counterpartyType === '供应商') {
+      return suppliers.map(({ id, label }) => ({ value: id, label }))
+    }
+    if (state.counterpartyType === '物流商') {
+      return carriers.flatMap(({ id, label }) =>
+        id ? [{ value: id, label }] : [],
+      )
+    }
+    return []
+  }, [carriers, customers, state.counterpartyType, suppliers])
+  const ledgerFilter = useMemo<CashLedgerFilter>(
+    () => ({
+      settlementCompanyId: state.settlementCompanyId || '',
+      startDate: state.startDate,
+      endDate: state.endDate,
+      counterpartyType: state.counterpartyType,
+      counterpartyId: state.counterpartyId,
+      flowType: state.flowType,
+      keyword: state.keyword,
+    }),
+    [
+      state.counterpartyId,
+      state.counterpartyType,
+      state.endDate,
+      state.flowType,
+      state.keyword,
+      state.settlementCompanyId,
+      state.startDate,
+    ],
+  )
+  const ledgerQueryParams = useMemo<CashLedgerQuery>(
+    () => ({ ...ledgerFilter, page: state.page - 1, size: pageSize }),
+    [ledgerFilter, pageSize, state.page],
+  )
+  const ledgerQuery = useQuery({
+    queryKey: QUERY_KEYS.cashLedger(ledgerQueryParams),
+    queryFn: ({ signal }) => getCashLedger(ledgerQueryParams, signal),
+    enabled: queryEnabled,
+    placeholderData: keepPreviousData,
+  })
+  const exportMutation = useMutation({
+    mutationFn: exportCashLedger,
+    onSuccess: () => message.success('资金流水已导出'),
+    onError: (error) =>
+      message.error(requestErrorMessage(error, '导出资金流水失败')),
+  })
+  const visibleData = queryEnabled ? ledgerQuery.data : undefined
+
+  const handleRefresh = async () => {
+    const result = await ledgerQuery.refetch()
+    if (result.isError) {
+      message.error(requestErrorMessage(result.error, '刷新资金流水失败'))
+    }
+  }
+
+  return (
+    <CashLedgerWorkspace
+      model={{
+        columns: buildColumns(formatCellValue),
+        counterpartyOptions,
+        dispatch,
+        error: ledgerQuery.error,
+        exportPending: exportMutation.isPending,
+        formatCellValue,
+        isError: ledgerQuery.isError,
+        isFetching: ledgerQuery.isFetching,
+        onExport: () => exportMutation.mutate(ledgerFilter),
+        onRefresh: () => void handleRefresh(),
+        optionsLoading,
+        pageSize,
+        queryEnabled,
+        rows: visibleData?.page.content || [],
+        settlementCompanies,
+        state,
+        summary: visibleData?.summary,
+        total: visibleData?.page.totalElements || 0,
+      }}
+    />
   )
 }

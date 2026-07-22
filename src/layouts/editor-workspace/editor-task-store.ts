@@ -90,9 +90,20 @@ export const editorTaskStore = createStore<EditorTaskState>()(
               tasks.filter((task) => task.userKey === activeTask.userKey),
             )[0]
           : undefined
+        const fallbackKey = fallbackTask?.key ?? null
+        const lastActivatedAt = Date.now()
         set({
-          tasks,
-          activeKey: activeTask ? (fallbackTask?.key ?? null) : state.activeKey,
+          tasks: fallbackTask
+            ? tasks.map((task) =>
+                task.key === fallbackKey ? { ...task, lastActivatedAt } : task,
+              )
+            : tasks,
+          activeKey: activeTask ? fallbackKey : state.activeKey,
+          resumeKey: activeTask
+            ? fallbackKey
+            : state.resumeKey && closingKeys.has(state.resumeKey)
+              ? null
+              : state.resumeKey,
         })
         return closingTasks.length
       },
@@ -126,6 +137,14 @@ export const editorTaskStore = createStore<EditorTaskState>()(
           return {
             tasks,
             activeKey: activeTaskRemoved ? null : state.activeKey,
+            resumeKey:
+              state.resumeKey &&
+              state.tasks.some(
+                (task) =>
+                  task.key === state.resumeKey && task.userKey === userKey,
+              )
+                ? null
+                : state.resumeKey,
           }
         })
       },
