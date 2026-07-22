@@ -40,6 +40,24 @@ export interface ExportSalesOrderPrintXlsxPayload {
   printOptions?: SalesOrderPrintXlsxOptions
 }
 
+export interface SalesOrderPrintXlsxDownload {
+  blob: Blob
+  fileName?: string
+}
+
+function contentDispositionFileName(value: unknown) {
+  const header = value == null ? '' : String(value)
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header)?.[1]
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.replace(/^"|"$/g, ''))
+    } catch {
+      // Continue with the plain filename parameter.
+    }
+  }
+  return /filename\s*=\s*"([^"]+)"/i.exec(header)?.[1]
+}
+
 function defaultEngineForTemplateType(
   templateType: SavePrintTemplatePayload['templateType'],
 ) {
@@ -71,17 +89,23 @@ export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
   })
 }
 
-export function exportSalesOrderPrintXlsx(
+export async function exportSalesOrderPrintXlsx(
   recordId: string,
   payload: ExportSalesOrderPrintXlsxPayload = {},
-) {
-  return http.post<Blob>(
+): Promise<SalesOrderPrintXlsxDownload> {
+  const response = await http.postResponse<Blob>(
     `/sales-orders/${encodeURIComponent(recordId)}/print-xlsx`,
     payload,
     {
       responseType: 'blob',
     },
   )
+  return {
+    blob: response.data,
+    fileName: contentDispositionFileName(
+      response.headers['content-disposition'],
+    ),
+  }
 }
 
 export function savePrintTemplate(payload: SavePrintTemplatePayload) {

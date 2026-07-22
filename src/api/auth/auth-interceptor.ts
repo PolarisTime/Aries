@@ -158,7 +158,10 @@ export function setupAuthInterceptors(http: AxiosInstance) {
   http.interceptors.response.use(
     (response) => {
       guardedInstance.__leoBackendOfflineNavigationStarted = false
-      return response.data
+      return (response.config as { returnFullResponse?: boolean })
+        .returnFullResponse
+        ? response
+        : response.data
     },
     async (error) => {
       if (isCanceledRequestError(error)) {

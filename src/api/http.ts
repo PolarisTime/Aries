@@ -1,8 +1,13 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from 'axios'
 import { apiBaseUrl } from '@/utils/env'
 
 export type ApiRequestConfig = AxiosRequestConfig & {
   suppressGlobalErrorStatuses?: readonly number[]
+  returnFullResponse?: boolean
 }
 
 const defaultConfig = {
@@ -28,6 +33,17 @@ function createApiClient(instance: AxiosInstance) {
       config?: ApiRequestConfig,
     ): Promise<T> {
       return instance.post(url, data, config)
+    },
+    postResponse<T = unknown>(
+      url: string,
+      data?: unknown,
+      config?: ApiRequestConfig,
+    ): Promise<AxiosResponse<T>> {
+      const fullResponseConfig: ApiRequestConfig = {
+        ...config,
+        returnFullResponse: true,
+      }
+      return instance.post(url, data, fullResponseConfig)
     },
     put<T = unknown>(
       url: string,

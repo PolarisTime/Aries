@@ -141,16 +141,13 @@ export function useBusinessGridPrintActions({
 
     try {
       const recordId = selectedRowKeys[0]
-      const blob = await exportSalesOrderPrintXlsx(
+      const download = await exportSalesOrderPrintXlsx(
         recordId,
         printOptions ? { printOptions } : {},
       )
-      const selectedRow = selectedRows.find(
-        (row) => String(row.id) === recordId,
-      )
       downloadBlob(
-        blob,
-        normalizeXlsxFileName(selectedRow?.orderNo || recordId),
+        download.blob,
+        normalizeXlsxFileName(download.fileName || recordId),
       )
     } catch (err) {
       message.error(
