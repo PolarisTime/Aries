@@ -1,3 +1,10 @@
+# [7.2.0](https://github.com/PolarisTime/Aries/compare/v7.1.0...v7.2.0) (2026-07-22)
+
+
+### Features
+
+* **purchase:** 优化采购订单明细录入 ([a4bed90](https://github.com/PolarisTime/Aries/commit/a4bed909ada1c956cbe2173f8fb3d0b095da354e))
+
 # [7.1.0](https://github.com/PolarisTime/Aries/compare/v7.0.5...v7.1.0) (2026-07-22)
 
 
