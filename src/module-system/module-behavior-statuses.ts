@@ -63,8 +63,16 @@ registerModuleBehavior('purchase-inbound', {
   reverseAuditTargetsByStatus: { 完成入库: '草稿' },
 })
 
-registerModuleBehavior('receipt', { auditStatus: '已审核' })
-registerModuleBehavior('payment', { auditStatus: '已审核' })
+registerModuleBehavior('receipt', {
+  auditStatus: '已审核',
+  auditSourceStatuses: ['草稿'],
+  supportsReverseAudit: false,
+})
+registerModuleBehavior('payment', {
+  auditStatus: '已审核',
+  auditSourceStatuses: ['草稿'],
+  supportsReverseAudit: false,
+})
 registerModuleBehavior('ledger-adjustment', { auditStatus: '已审核' })
 registerModuleBehavior('customer-statement', { auditStatus: '已确认' })
 

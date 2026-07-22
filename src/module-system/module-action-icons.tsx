@@ -58,7 +58,16 @@ export function resolveModuleActionIcon(label: string): ReactNode | undefined {
   if (label.includes('删除')) {
     return <DeleteOutlined />
   }
-  if (label.includes('审核')) {
+  if (
+    label.includes('审核') ||
+    label.includes('确认') ||
+    label.includes('核准') ||
+    label.includes('核定') ||
+    label.includes('Audit') ||
+    label.includes('Confirm') ||
+    label.includes('Appro') ||
+    label.includes('Verification')
+  ) {
     return <AuditOutlined />
   }
   if (label.includes('打印')) {

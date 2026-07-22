@@ -13,17 +13,21 @@ import {
   listAllBusinessModuleRows,
   saveAndAuditBusinessModule,
   saveBusinessModule,
-  updateBusinessModuleStatus,
 } from '@/api/business'
 import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
+import { saveAndCompleteSalesOrder } from '@/api/document-flow-commands'
 import { fetchGeneratedMasterDataCode } from '@/api/master-data-codes'
 import { readRequestError } from '@/api/request-errors'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
+import {
+  resolveStatusChangeActionLabelKey,
+  type StatusChangeActionKind,
+} from '@/module-system/module-adapter-actions'
 import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
@@ -84,6 +88,7 @@ interface Props {
   config: ModulePageConfig
   record: ModuleRecord | null
   moduleKey: string
+  editorAuditActionKind: StatusChangeActionKind | null
   editorAuditTarget: AuditTarget | null
   form: WorkspaceFormApi
   onClose: () => void
@@ -400,6 +405,7 @@ export function useModuleEditorWorkspace({
   config,
   record,
   moduleKey,
+  editorAuditActionKind,
   editorAuditTarget,
   form,
   onClose,
@@ -546,6 +552,10 @@ export function useModuleEditorWorkspace({
   }
 
   const handleSave = async (audit = false) => {
+    const confirmDeliveryVerification =
+      audit &&
+      moduleKey === 'sales-order' &&
+      asString(record?.status).trim() === '交付核定'
     try {
       const effectiveAuthoritativePrimaryNo =
         authoritativePrimaryNo ||
@@ -629,12 +639,28 @@ export function useModuleEditorWorkspace({
         if (!confirmed) return
       }
 
-      if (audit && editorAuditTarget) {
+      if (confirmDeliveryVerification || (audit && editorAuditTarget)) {
+        const statusActionLabel = t(
+          resolveStatusChangeActionLabelKey(editorAuditActionKind || 'audit'),
+        )
         const confirmed = await new Promise<boolean>((resolve) => {
           modal.confirm({
-            title: t('common.saveAndAudit'),
-            content: t('common.auditConfirm'),
-            okText: t('common.confirmAudit'),
+            title: confirmDeliveryVerification
+              ? t('modules.editorFooter.confirmDeliveryVerification')
+              : t('modules.editorFooter.saveAndAction', {
+                  action: statusActionLabel,
+                }),
+            content: confirmDeliveryVerification
+              ? t('modules.editorFooter.confirmDeliveryVerificationContent')
+              : t('modules.editorFooter.statusActionConfirm', {
+                  action: statusActionLabel,
+                  targetStatus: editorAuditTarget?.value || '',
+                }),
+            okText: confirmDeliveryVerification
+              ? t('modules.editorFooter.confirmDeliveryVerification')
+              : t('modules.editorFooter.confirmStatusAction', {
+                  action: statusActionLabel,
+                }),
             cancelText: t('common.cancel'),
             onOk: () => resolve(true),
             onCancel: () => resolve(false),
@@ -666,7 +692,7 @@ export function useModuleEditorWorkspace({
         formFields: config.formFields,
       })
 
-      if (audit && editorAuditTarget) {
+      if (audit && editorAuditTarget && !confirmDeliveryVerification) {
         const submittedStatus = asString(
           draftRecord[editorAuditTarget.key],
         ).trim()
@@ -689,29 +715,18 @@ export function useModuleEditorWorkspace({
         }
       }
 
-      const usesAtomicSaveAndAudit =
-        audit &&
-        editorAuditTarget != null &&
-        (moduleKey === 'freight-bill' || moduleKey === 'freight-statement')
-      const savedResult = usesAtomicSaveAndAudit
-        ? await saveAndAuditBusinessModule(moduleKey, draftRecord)
-        : await saveBusinessModule(moduleKey, draftRecord)
-      let savedRecord = savedResult.data
-      if (audit && editorAuditTarget && !usesAtomicSaveAndAudit) {
-        const savedId = String(savedRecord?.id || draftRecord.id || '').trim()
-        if (!savedId) {
-          throw new Error('保存成功但未返回单据 ID，无法完成审核')
-        }
-        const statusResult = await updateBusinessModuleStatus(
-          moduleKey,
-          savedId,
-          editorAuditTarget.value,
-        )
-        savedRecord = statusResult.data || savedRecord
-      }
+      const usesAtomicSaveAndAudit = audit && editorAuditTarget != null
+      const savedResult = confirmDeliveryVerification
+        ? await saveAndCompleteSalesOrder(draftRecord)
+        : usesAtomicSaveAndAudit
+          ? await saveAndAuditBusinessModule(moduleKey, draftRecord)
+          : await saveBusinessModule(moduleKey, draftRecord)
+      const savedRecord = savedResult.data
       setSaveResult({
         status: 'success',
-        message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
+        message:
+          savedResult.message ||
+          (isEdit ? t('common.editSuccess') : t('common.addSuccess')),
         record: savedRecord,
       })
       onSaved()

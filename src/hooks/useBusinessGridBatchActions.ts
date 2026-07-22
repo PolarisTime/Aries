@@ -6,8 +6,11 @@ import {
 import {
   canAuditFromStatus,
   resolveReverseAuditTargetForStatus,
+  resolveStatusChangeActionLabelKey,
+  type StatusChangeActionKind,
 } from '@/module-system/module-adapter-actions'
-import { isDeleteBlockedByStatus } from '@/module-system/module-behavior-registry'
+import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
+import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 
@@ -23,6 +26,8 @@ interface Props {
   listAuditTarget: AuditTarget | null
   listReverseAuditTarget: AuditTarget | null
   listAuditSourceStatuses?: string[]
+  listAuditActionKind: StatusChangeActionKind | null
+  listReverseAuditActionKind: StatusChangeActionKind | null
   refreshAndClearSelection: () => Promise<void>
 }
 
@@ -33,39 +38,51 @@ export function useBusinessGridBatchActions({
   listAuditTarget,
   listReverseAuditTarget,
   listAuditSourceStatuses,
+  listAuditActionKind,
+  listReverseAuditActionKind,
   refreshAndClearSelection,
 }: Props) {
   const { t } = useTranslation()
 
   const handleSelectedAuditRecords = () => {
+    const actionLabel = t(
+      resolveStatusChangeActionLabelKey(listAuditActionKind || 'audit'),
+    )
     if (!selectedRowKeys.length) {
       message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
     }
     if (!listAuditTarget) {
-      message.warning(t('hooks.batchActions.noBatchAuditStatus'))
+      message.warning(
+        t('hooks.batchActions.noBatchStatus', { action: actionLabel }),
+      )
       return
     }
 
     const selected = selectedRows
-    const eligible = selected.filter((record) =>
-      canAuditFromStatus(
-        record.status,
-        listAuditTarget,
-        listReverseAuditTarget,
-        listAuditSourceStatuses,
-      ),
+    const eligible = selected.filter(
+      (record) =>
+        !isDeletedModuleRecord(record) &&
+        canAuditFromStatus(
+          record.status,
+          listAuditTarget,
+          listReverseAuditTarget,
+          listAuditSourceStatuses,
+        ),
     )
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
-      message.warning(t('hooks.batchActions.auditNotSupported'))
+      message.warning(
+        t('hooks.batchActions.actionNotSupported', { action: actionLabel }),
+      )
       return
     }
 
     modal.confirm({
-      title: t('hooks.batchActions.batchAudit'),
-      content: t('hooks.batchActions.batchAuditConfirm', {
+      title: t('hooks.batchActions.batchAction', { action: actionLabel }),
+      content: t('hooks.batchActions.batchActionConfirm', {
+        action: actionLabel,
         count: eligible.length,
         skippedPart:
           skippedCount > 0
@@ -94,14 +111,17 @@ export function useBusinessGridBatchActions({
               firstError =
                 result.reason instanceof Error
                   ? result.reason.message
-                  : t('hooks.batchActions.auditFailed')
+                  : t('hooks.batchActions.actionFailed', {
+                      action: actionLabel,
+                    })
             }
           }
         }
 
         if (failedCount > 0) {
           message.warning(
-            t('hooks.batchActions.auditCompletedWithFailures', {
+            t('hooks.batchActions.actionCompletedWithFailures', {
+              action: actionLabel,
               successCount,
               failedCount,
               skippedPart:
@@ -115,7 +135,8 @@ export function useBusinessGridBatchActions({
           )
         } else {
           message.success(
-            t('hooks.batchActions.auditSuccess', {
+            t('hooks.batchActions.actionSuccess', {
+              action: actionLabel,
               successCount,
               skippedPart:
                 skippedCount > 0
@@ -139,7 +160,7 @@ export function useBusinessGridBatchActions({
 
     const selected = selectedRows
     const eligible = selected.filter(
-      (record) => !isDeleteBlockedByStatus(record.status, moduleKey),
+      (record) => resolveModuleRecordCapabilities(record, moduleKey).canDelete,
     )
     const skippedCount = selected.length - eligible.length
 
@@ -214,17 +235,27 @@ export function useBusinessGridBatchActions({
   }
 
   const handleSelectedReverseAuditRecords = () => {
+    const actionLabel = t(
+      resolveStatusChangeActionLabelKey(
+        listReverseAuditActionKind || 'reverseAudit',
+      ),
+    )
     if (!selectedRowKeys.length) {
       message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
     }
     if (!listReverseAuditTarget) {
-      message.warning(t('hooks.batchActions.noBatchReverseAuditStatus'))
+      message.warning(
+        t('hooks.batchActions.noBatchStatus', { action: actionLabel }),
+      )
       return
     }
 
     const selected = selectedRows
     const eligible = selected.flatMap((record) => {
+      if (isDeletedModuleRecord(record)) {
+        return []
+      }
       const targetStatus = resolveReverseAuditTargetForStatus(
         moduleKey,
         record.status,
@@ -236,13 +267,16 @@ export function useBusinessGridBatchActions({
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
-      message.warning(t('hooks.batchActions.reverseAuditNotSupported'))
+      message.warning(
+        t('hooks.batchActions.actionNotSupported', { action: actionLabel }),
+      )
       return
     }
 
     modal.confirm({
-      title: t('hooks.batchActions.batchReverseAudit'),
-      content: t('hooks.batchActions.batchReverseAuditConfirm', {
+      title: t('hooks.batchActions.batchAction', { action: actionLabel }),
+      content: t('hooks.batchActions.batchActionConfirm', {
+        action: actionLabel,
         count: eligible.length,
         skippedPart:
           skippedCount > 0
@@ -271,14 +305,17 @@ export function useBusinessGridBatchActions({
               firstError =
                 result.reason instanceof Error
                   ? result.reason.message
-                  : t('hooks.batchActions.reverseAuditFailed')
+                  : t('hooks.batchActions.actionFailed', {
+                      action: actionLabel,
+                    })
             }
           }
         }
 
         if (failedCount > 0) {
           message.warning(
-            t('hooks.batchActions.reverseAuditCompletedWithFailures', {
+            t('hooks.batchActions.actionCompletedWithFailures', {
+              action: actionLabel,
               successCount,
               failedCount,
               skippedPart:
@@ -292,7 +329,8 @@ export function useBusinessGridBatchActions({
           )
         } else {
           message.success(
-            t('hooks.batchActions.reverseAuditSuccess', {
+            t('hooks.batchActions.actionSuccess', {
+              action: actionLabel,
               successCount,
               skippedPart:
                 skippedCount > 0

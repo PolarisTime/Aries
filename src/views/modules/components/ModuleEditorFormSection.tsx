@@ -14,6 +14,7 @@ import { FormFieldRenderer } from './FormFieldRenderer'
 interface Props {
   config: ModulePageConfig
   moduleKey: string
+  auditLabel?: string
   actions: {
     canSave: boolean
     canAudit: boolean
@@ -48,6 +49,7 @@ function getFieldSpan(
 export function ModuleEditorFormSection({
   config,
   moduleKey,
+  auditLabel,
   actions,
   editorState,
   lockedLineItemsNotice,
@@ -94,6 +96,7 @@ export function ModuleEditorFormSection({
             <EditorFooterActions
               canSave={actions.canSave}
               canAudit={actions.canAudit}
+              auditLabel={auditLabel}
               saving={actions.saving}
               onCancel={actions.onCancel}
               onSave={actions.onSave}

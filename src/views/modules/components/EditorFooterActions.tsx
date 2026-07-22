@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 interface Props {
   canSave: boolean
   canAudit: boolean
+  auditLabel?: string
   saving: boolean
   onCancel: () => void
   onSave: (audit: boolean) => void
@@ -13,6 +14,7 @@ interface Props {
 export function EditorFooterActions({
   canSave,
   canAudit,
+  auditLabel,
   saving,
   onCancel,
   onSave,
@@ -46,7 +48,7 @@ export function EditorFooterActions({
           loading={saving}
           onClick={() => onSave(true)}
         >
-          {t('modules.editorFooter.saveAndAudit')}
+          {auditLabel ?? t('modules.editorFooter.saveAndAudit')}
         </Button>
       )}
     </Space>

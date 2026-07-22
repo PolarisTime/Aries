@@ -485,6 +485,15 @@ export const enUS = {
       failed: 'Failed',
       deleted: 'Deleted',
     },
+    statusActions: {
+      audit: 'Audit',
+      reverseAudit: 'Reverse Audit',
+      confirm: 'Confirm',
+      reverseConfirm: 'Reverse Confirmation',
+      approve: 'Approve',
+      reverseApprove: 'Reverse Approval',
+      reopenDeliveryVerification: 'Reopen Verification',
+    },
     editor: {
       edit: 'Edit',
       create: 'Create',
@@ -696,6 +705,13 @@ export const enUS = {
       cancel: 'Cancel',
       save: 'Save',
       saveAndAudit: 'Save & Audit',
+      saveAndAction: 'Save & {{action}}',
+      statusActionConfirm:
+        'This action will change the document status to {{targetStatus}} and lock further editing. Continue with {{action}}?',
+      confirmStatusAction: 'Confirm {{action}}',
+      confirmDeliveryVerification: 'Confirm Verification',
+      confirmDeliveryVerificationContent:
+        'After confirmation, the sales order will be completed and settled using the final delivery results. Confirm that the outbound delivery and actual weight have been verified.',
     },
     itemsSummary: {
       rowCount: 'Rows',
@@ -1280,21 +1296,21 @@ export const enUS = {
   hooks: {
     batchActions: {
       pleaseSelectRecords: 'Please select records first',
-      noBatchAuditStatus:
-        'Batch audit status is not configured for this module',
-      auditNotSupported:
-        'Selected records are in a status that does not support audit',
-      batchAudit: 'Batch Audit',
-      batchAuditConfirm:
-        'Confirm audit for {{count}} selected record(s)?{{skippedPart}}',
+      noBatchStatus:
+        'Batch {{action}} status is not configured for this module',
+      actionNotSupported:
+        'Selected records are in a status that does not support {{action}}',
+      batchAction: 'Batch {{action}}',
+      batchActionConfirm:
+        'Apply {{action}} to {{count}} selected record(s)?{{skippedPart}}',
+      actionFailed: '{{action}} failed',
+      actionCompletedWithFailures:
+        '{{action}} completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
+      actionSuccess:
+        '{{action}} succeeded for {{successCount}} record(s){{skippedPart}}',
       skippedPart:
         ' {{count}} record(s) will be skipped due to unsupported status.',
-      auditFailed: 'Audit failed',
-      auditCompletedWithFailures:
-        'Audit completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
       skippedCount: ', {{count}} skipped',
-      auditSuccess:
-        'Audit succeeded for {{successCount}} record(s){{skippedPart}}',
       deleteNotSupported:
         'Selected records are in a status that does not support deletion',
       batchDelete: 'Batch Delete',
@@ -1305,18 +1321,6 @@ export const enUS = {
         'Deletion completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
       deleteSuccess:
         'Deletion succeeded for {{successCount}} record(s){{skippedPart}}',
-      noBatchReverseAuditStatus:
-        'Batch reverse audit status is not configured for this module',
-      reverseAuditNotSupported:
-        'Selected records are in a status that does not support reverse audit',
-      batchReverseAudit: 'Batch Reverse Audit',
-      batchReverseAuditConfirm:
-        'Confirm reverse audit for {{count}} selected record(s)?{{skippedPart}}',
-      reverseAuditFailed: 'Reverse audit failed',
-      reverseAuditCompletedWithFailures:
-        'Reverse audit completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
-      reverseAuditSuccess:
-        'Reverse audit succeeded for {{successCount}} record(s){{skippedPart}}',
     },
     printActions: {
       selectPrintTemplate: 'Select Print Template',
@@ -1342,8 +1346,6 @@ export const enUS = {
     },
     toolbarActions: {
       delete: 'Delete',
-      audit: 'Audit',
-      reverseAudit: 'Reverse Audit',
       printPreview: 'Print Preview',
       directPrint: 'Direct Print',
       noExtraLogic: '{{label}} has no additional handling logic.',
@@ -1355,7 +1357,7 @@ export const enUS = {
       audit: 'Audit',
       reverseAudit: 'Reverse Audit',
       reopenDeliveryVerification: 'Reopen Verification',
-      confirmDeliveryVerification: 'Confirm Without Changes',
+      confirmDeliveryVerification: 'Confirm Verification',
     },
     requestError: {
       requestFailed: 'Request failed',

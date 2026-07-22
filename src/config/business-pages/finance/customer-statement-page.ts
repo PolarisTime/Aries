@@ -279,6 +279,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: '待确认',
       options: statementStatusOptions,
+      disabled: true,
       row: 2,
     },
     {

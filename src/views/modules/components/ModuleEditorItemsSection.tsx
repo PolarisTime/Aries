@@ -34,6 +34,7 @@ interface Props {
     save: boolean
     audit: boolean
   }
+  auditLabel?: string
   saving: boolean
   showFooterActions?: boolean
   onAddItem: () => void
@@ -62,6 +63,7 @@ export function ModuleEditorItemsSection({
   itemColumnOrder,
   visibleItemColumnKeys,
   capabilities,
+  auditLabel,
   saving,
   showFooterActions = true,
   onAddItem,
@@ -165,6 +167,7 @@ export function ModuleEditorItemsSection({
                 <EditorFooterActions
                   canSave={capabilities.save}
                   canAudit={capabilities.audit}
+                  auditLabel={auditLabel}
                   saving={saving}
                   onCancel={onCancel}
                   onSave={onSave}

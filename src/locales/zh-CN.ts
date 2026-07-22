@@ -475,6 +475,15 @@ export const zhCN = {
       failed: '失败',
       deleted: '已删除',
     },
+    statusActions: {
+      audit: '审核',
+      reverseAudit: '反审核',
+      confirm: '确认',
+      reverseConfirm: '反确认',
+      approve: '核准',
+      reverseApprove: '反核准',
+      reopenDeliveryVerification: '重新核定',
+    },
     editor: {
       edit: '编辑',
       create: '新建',
@@ -679,6 +688,13 @@ export const zhCN = {
       cancel: '取消',
       save: '保存',
       saveAndAudit: '保存并审核',
+      saveAndAction: '保存并{{action}}',
+      statusActionConfirm:
+        '{{action}}后单据状态将变更为{{targetStatus}}，且不可再编辑。确定继续？',
+      confirmStatusAction: '确定{{action}}',
+      confirmDeliveryVerification: '确认核定',
+      confirmDeliveryVerificationContent:
+        '确认核定后销售订单将进入完成销售状态，并按最终交付结果进入结算。请确认销售出库和实际重量已经核定。',
     },
     itemsSummary: {
       rowCount: '行数',
@@ -1258,16 +1274,17 @@ export const zhCN = {
   hooks: {
     batchActions: {
       pleaseSelectRecords: '请先选择记录',
-      noBatchAuditStatus: '当前模块未配置批量审核状态',
-      auditNotSupported: '勾选单据当前状态不支持审核',
-      batchAudit: '批量审核',
-      batchAuditConfirm: '确定审核选中的 {{count}} 条记录吗？{{skippedPart}}',
+      noBatchStatus: '当前模块未配置批量{{action}}状态',
+      actionNotSupported: '勾选单据当前状态不支持{{action}}',
+      batchAction: '批量{{action}}',
+      batchActionConfirm:
+        '确定对选中的 {{count}} 条记录执行{{action}}吗？{{skippedPart}}',
+      actionFailed: '{{action}}失败',
+      actionCompletedWithFailures:
+        '{{action}}完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
+      actionSuccess: '{{action}}成功 {{successCount}} 条{{skippedPart}}',
       skippedPart: '另有 {{count}} 条因状态不支持将跳过。',
-      auditFailed: '审核失败',
-      auditCompletedWithFailures:
-        '审核完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
       skippedCount: '，跳过 {{count}} 条',
-      auditSuccess: '审核成功 {{successCount}} 条{{skippedPart}}',
       deleteNotSupported: '勾选单据当前状态不支持删除',
       batchDelete: '批量删除',
       batchDeleteConfirm:
@@ -1276,15 +1293,6 @@ export const zhCN = {
       deleteCompletedWithFailures:
         '删除完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
       deleteSuccess: '删除成功 {{successCount}} 条{{skippedPart}}',
-      noBatchReverseAuditStatus: '当前模块未配置批量反审核状态',
-      reverseAuditNotSupported: '勾选单据当前状态不支持反审核',
-      batchReverseAudit: '批量反审核',
-      batchReverseAuditConfirm:
-        '确定反审核选中的 {{count}} 条记录吗？{{skippedPart}}',
-      reverseAuditFailed: '反审核失败',
-      reverseAuditCompletedWithFailures:
-        '反审核完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
-      reverseAuditSuccess: '反审核成功 {{successCount}} 条{{skippedPart}}',
     },
     printActions: {
       selectPrintTemplate: '选择打印模板',
@@ -1308,8 +1316,6 @@ export const zhCN = {
     },
     toolbarActions: {
       delete: '删除',
-      audit: '审核',
-      reverseAudit: '反审核',
       printPreview: '打印预览',
       directPrint: '直接打印',
       noExtraLogic: '{{label}} 当前没有额外处理逻辑。',
@@ -1321,7 +1327,7 @@ export const zhCN = {
       audit: '审核',
       reverseAudit: '反审核',
       reopenDeliveryVerification: '重新核定',
-      confirmDeliveryVerification: '确认无需调整',
+      confirmDeliveryVerification: '确认核定',
     },
     requestError: {
       requestFailed: '请求失败',

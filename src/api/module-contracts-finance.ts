@@ -74,6 +74,7 @@ export const financeModuleEndpointContracts: Record<
   },
   'ledger-adjustment': {
     path: '/ledger-adjustments',
+    readOnly: true,
     nativeFilterKeys: [
       'keyword',
       'direction',

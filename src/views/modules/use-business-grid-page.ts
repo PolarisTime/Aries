@@ -26,11 +26,15 @@ import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
-import { resolveStatusOptions } from '@/module-system/module-adapter-actions'
 import {
-  getBehaviorValue,
-  isEditBlockedByStatus,
-} from '@/module-system/module-behavior-registry'
+  canAuditFromStatus,
+  resolveReverseAuditTargetForStatus,
+  resolveStatusChangeActionKind,
+  resolveStatusOptions,
+} from '@/module-system/module-adapter-actions'
+import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
+import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -228,11 +232,14 @@ export function useBusinessGridPage({
   const formFields = config?.formFields || []
   const statusFields = [...formFields, ...(config?.filters || [])]
   const {
-    canUseBulkAuditActions,
+    canUseBulkAuditAction,
+    canUseBulkReverseAuditAction,
     canUseBulkDeleteActions,
     canUseBulkPrintActions,
     lineItemsLocked: editorLineItemsLocked,
+    listAuditActionKind,
     listAuditTarget,
+    listReverseAuditActionKind,
     listReverseAuditTarget,
     listAuditSourceStatuses,
   } = useModuleEditorCapabilities({
@@ -296,22 +303,49 @@ export function useBusinessGridPage({
     onEdit: (record) => {
       void openEditor(record)
     },
-    canEditRecord: (record) => !isEditBlockedByStatus(record.status, moduleKey),
+    canEditRecord: (record) =>
+      resolveModuleRecordCapabilities(record, moduleKey).canEdit,
     onStatusChange: (record, status) => {
       void handleSalesOrderStatusChange(record, status)
     },
   })
   const selectedRecords = Object.values(selectedRowMap)
-  const canUseSelectedBulkAuditActions =
-    canUseBulkAuditActions &&
+  const canUseSelectedBulkAuditAction =
+    canUseBulkAuditAction &&
     selectedRecords.some(
       (record) =>
-        !(
-          moduleKey === 'purchase-order' &&
-          asString(record.status).trim() === '完成采购'
+        !isDeletedModuleRecord(record) &&
+        canAuditFromStatus(
+          record.status,
+          listAuditTarget,
+          listReverseAuditTarget,
+          listAuditSourceStatuses,
         ),
     )
-  const canUseSelectedBulkDeleteActions = canUseBulkDeleteActions
+  const selectedReverseAuditTargets = selectedRecords.flatMap((record) => {
+    if (isDeletedModuleRecord(record)) return []
+    const targetStatus = resolveReverseAuditTargetForStatus(
+      moduleKey,
+      record.status,
+      listAuditTarget,
+      listReverseAuditTarget,
+    )
+    return targetStatus ? [targetStatus] : []
+  })
+  const hasSingleReverseAuditTarget = selectedReverseAuditTargets.every(
+    (targetStatus) => targetStatus === selectedReverseAuditTargets[0],
+  )
+  const effectiveListReverseAuditActionKind =
+    selectedReverseAuditTargets.length > 0 && hasSingleReverseAuditTarget
+      ? resolveStatusChangeActionKind(selectedReverseAuditTargets[0], true)
+      : listReverseAuditActionKind
+  const canUseSelectedBulkReverseAuditAction =
+    canUseBulkReverseAuditAction && selectedReverseAuditTargets.length > 0
+  const canUseSelectedBulkDeleteActions =
+    canUseBulkDeleteActions &&
+    selectedRecords.some(
+      (record) => resolveModuleRecordCapabilities(record, moduleKey).canDelete,
+    )
 
   const {
     handlePrintSelectedRecords,
@@ -329,6 +363,8 @@ export function useBusinessGridPage({
     listAuditTarget,
     listReverseAuditTarget,
     listAuditSourceStatuses,
+    listAuditActionKind,
+    listReverseAuditActionKind: effectiveListReverseAuditActionKind,
     refreshModuleQueries,
     clearSelection,
     formatCellValue,
@@ -343,8 +379,11 @@ export function useBusinessGridPage({
     formFields,
     isMaterialModule: false,
     selectedRowCount: selectedRowKeys.length,
-    canUseBulkAuditActions: canUseSelectedBulkAuditActions,
+    canUseBulkAuditAction: canUseSelectedBulkAuditAction,
+    canUseBulkReverseAuditAction: canUseSelectedBulkReverseAuditAction,
     canUseBulkDeleteActions: canUseSelectedBulkDeleteActions,
+    listAuditActionKind,
+    listReverseAuditActionKind: effectiveListReverseAuditActionKind,
     handlers: {
       exportMaterialRows: async () => {
         await handleExport()

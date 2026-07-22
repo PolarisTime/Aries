@@ -65,7 +65,7 @@ export function ModuleTableToolbar({
           }
           return (
             <Button
-              key={action.label}
+              key={action.key || action.label}
               type={action.type === 'primary' ? 'primary' : 'default'}
               danger={action.danger}
               disabled={action.disabled}

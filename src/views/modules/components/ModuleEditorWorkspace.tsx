@@ -12,6 +12,7 @@ import {
 } from '@/hooks/useMasterOptions'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
 import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
+import { resolveStatusChangeActionLabelKey } from '@/module-system/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
@@ -86,18 +87,23 @@ export function ModuleEditorWorkspace({
   const statusOptions = Array.isArray(statusField?.options)
     ? statusField.options.map((option) => String(option.value))
     : []
+  const currentStatus = String(record?.status || '').trim()
+  const isSalesOrderDeliveryVerification =
+    moduleKey === 'sales-order' && currentStatus === '交付核定'
   const canEditLineItems = Boolean(config.itemColumns?.length)
   // oxlint-disable react-doctor/no-event-handler -- These are capability inputs, not event handlers.
   const {
     canAddManualEditorItems,
     canManageEditorItems,
     canSaveAndAuditCurrentEditor,
+    editorAuditActionKind,
     editorAuditTarget,
   } = useModuleEditorCapabilities({
     moduleKey,
     formFields,
     lineItemLockRelatedRows: [],
     lineItemsLockedOverride: lineItemsLocked,
+    currentStatus: currentStatus || undefined,
     canEditLineItems,
     canSaveCurrentEditor: canSave,
     canAuditRecords: canAudit,
@@ -108,6 +114,15 @@ export function ModuleEditorWorkspace({
   })
   // oxlint-enable react-doctor/no-event-handler
 
+  const canConfirmDeliveryVerification =
+    isSalesOrderDeliveryVerification && canSave && canAudit
+  const editorAuditLabel = canConfirmDeliveryVerification
+    ? t('modules.editorFooter.confirmDeliveryVerification')
+    : t('modules.editorFooter.saveAndAction', {
+        action: t(
+          resolveStatusChangeActionLabelKey(editorAuditActionKind || 'audit'),
+        ),
+      })
   const canManageItems = canManageEditorItems
   const canEditItemColumns = canSave && Boolean(config.itemColumns?.length)
   const canAddManualItems = canAddManualEditorItems
@@ -137,6 +152,7 @@ export function ModuleEditorWorkspace({
     config,
     record,
     moduleKey,
+    editorAuditActionKind,
     editorAuditTarget,
     form,
     onClose,
@@ -185,7 +201,8 @@ export function ModuleEditorWorkspace({
     config.parentImport &&
       (config.parentImport.visibleWhen?.(editorFormValues) ?? true),
   )
-  const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
+  const canSaveAndAuditInEditor =
+    canSaveAndAuditCurrentEditor || canConfirmDeliveryVerification
   const useFinanceEditorLayout = FINANCE_DOCUMENT_MODULES.has(moduleKey)
   const {
     clearSelectedItems,
@@ -227,6 +244,7 @@ export function ModuleEditorWorkspace({
             <EditorFooterActions
               canSave={canSave}
               canAudit={canSaveAndAuditInEditor}
+              auditLabel={editorAuditLabel}
               saving={saving}
               onCancel={onClose}
               onSave={(audit) => {
@@ -255,6 +273,7 @@ export function ModuleEditorWorkspace({
           <ModuleEditorFormSection
             config={config}
             moduleKey={moduleKey}
+            auditLabel={editorAuditLabel}
             actions={{
               canSave,
               canAudit: canSaveAndAuditInEditor,
@@ -291,6 +310,7 @@ export function ModuleEditorWorkspace({
             save: canSave,
             audit: canSaveAndAuditInEditor,
           }}
+          auditLabel={editorAuditLabel}
           saving={saving}
           showFooterActions={!useFinanceEditorLayout}
           onAddItem={addItem}

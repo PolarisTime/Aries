@@ -17,6 +17,29 @@ export type ModuleActionKind =
   | 'openFreightSummary'
   | 'none'
 
+export type StatusChangeActionKind =
+  | 'audit'
+  | 'reverseAudit'
+  | 'confirm'
+  | 'reverseConfirm'
+  | 'approve'
+  | 'reverseApprove'
+  | 'reopenDeliveryVerification'
+
+const statusChangeActionLabelKeys = {
+  audit: 'modules.statusActions.audit',
+  reverseAudit: 'modules.statusActions.reverseAudit',
+  confirm: 'modules.statusActions.confirm',
+  reverseConfirm: 'modules.statusActions.reverseConfirm',
+  approve: 'modules.statusActions.approve',
+  reverseApprove: 'modules.statusActions.reverseApprove',
+  reopenDeliveryVerification:
+    'modules.statusActions.reopenDeliveryVerification',
+} as const satisfies Record<StatusChangeActionKind, string>
+
+export type StatusChangeActionLabelKey =
+  (typeof statusChangeActionLabelKeys)[StatusChangeActionKind]
+
 export function resolveModuleActionKind(options: {
   moduleKey: string
   actionKey?: string
@@ -60,18 +83,27 @@ export function resolveModuleActionKind(options: {
   return 'none'
 }
 
-export function resolveStatusChangeActionLabel(
+export function resolveStatusChangeActionKind(
   targetValue: unknown,
   reverse = false,
-) {
+): StatusChangeActionKind {
   const normalizedTarget = String(targetValue ?? '').trim()
   if (normalizedTarget === '已确认' || normalizedTarget === '待确认') {
-    return reverse ? '反确认' : '确认'
+    return reverse ? 'reverseConfirm' : 'confirm'
   }
   if (normalizedTarget === '已核准' || normalizedTarget === '未核准') {
-    return reverse ? '反核准' : '核准'
+    return reverse ? 'reverseApprove' : 'approve'
   }
-  return reverse ? '反审核' : '审核'
+  if (reverse && normalizedTarget === '交付核定') {
+    return 'reopenDeliveryVerification'
+  }
+  return reverse ? 'reverseAudit' : 'audit'
+}
+
+export function resolveStatusChangeActionLabelKey(
+  actionKind: StatusChangeActionKind,
+): StatusChangeActionLabelKey {
+  return statusChangeActionLabelKeys[actionKind]
 }
 
 export function buildEditorAuditTarget(
@@ -118,6 +150,10 @@ export function buildReverseAuditTarget(
   statusOptions: string[],
   preferredStatus?: unknown,
 ) {
+  if (getBehaviorValue(moduleKey, 'supportsReverseAudit') === false) {
+    return null
+  }
+
   const preferred = asString(preferredStatus).trim()
   if (preferred && statusOptions.includes(preferred)) {
     return { key: 'status', value: preferred }
@@ -236,6 +272,10 @@ export function resolveReverseAuditTargetForStatus(
   auditTarget?: { value: string } | null,
   reverseAuditTarget?: { value: string } | null,
 ): string | null {
+  if (getBehaviorValue(moduleKey, 'supportsReverseAudit') === false) {
+    return null
+  }
+
   const status = asString(currentStatus).trim()
   const configuredTargets = getBehaviorValue(
     moduleKey,

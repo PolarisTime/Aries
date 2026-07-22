@@ -2,7 +2,7 @@ import { useLocation } from '@tanstack/react-router'
 import { Empty } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
-import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
+import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
@@ -59,7 +59,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
       openRecordDetail(record)
       return
     }
-    if (!isEditBlockedByStatus(record.status, moduleKey)) {
+    if (resolveModuleRecordCapabilities(record, moduleKey).canEdit) {
       void state.openEditor(record)
       return
     }
@@ -87,7 +87,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     moduleKey !== 'customer-statement' &&
     moduleKey !== 'freight-statement'
   const canSaveEditorRecord = state.editRecord
-    ? !state.config.readOnly
+    ? !state.config.readOnly &&
+      resolveModuleRecordCapabilities(state.editRecord, moduleKey).canEdit
     : !state.config.readOnly && state.config.allowManualCreate !== false
 
   return (

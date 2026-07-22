@@ -1,5 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import { resolveModuleActionKind } from '@/module-system/module-adapter-actions'
+import {
+  resolveModuleActionKind,
+  resolveStatusChangeActionLabelKey,
+  type StatusChangeActionKind,
+} from '@/module-system/module-adapter-actions'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,
@@ -26,10 +30,17 @@ interface Props {
   formFields: ModuleFormFieldDefinition[]
   isMaterialModule: boolean
   selectedRowCount: number
-  canUseBulkAuditActions: boolean
+  canUseBulkAuditAction: boolean
+  canUseBulkReverseAuditAction: boolean
   canUseBulkDeleteActions: boolean
+  listAuditActionKind: StatusChangeActionKind | null
+  listReverseAuditActionKind: StatusChangeActionKind | null
   handlers: Handlers
 }
+
+const BULK_DELETE_ACTION_KEY = 'bulk_delete'
+const BULK_AUDIT_ACTION_KEY = 'bulk_audit'
+const BULK_REVERSE_AUDIT_ACTION_KEY = 'bulk_reverse_audit'
 
 function isCreateToolbarAction(action: ModuleActionDefinition) {
   return action.key === 'create' || action.key?.startsWith('create_')
@@ -41,8 +52,11 @@ export function useModuleToolbarActions({
   formFields,
   isMaterialModule,
   selectedRowCount,
-  canUseBulkAuditActions,
+  canUseBulkAuditAction,
+  canUseBulkReverseAuditAction,
   canUseBulkDeleteActions,
+  listAuditActionKind,
+  listReverseAuditActionKind,
   handlers,
 }: Props) {
   const { t } = useTranslation()
@@ -50,6 +64,7 @@ export function useModuleToolbarActions({
   const bulkDeleteAction: ModuleActionDefinition | null =
     canUseBulkDeleteActions && selectedRowCount > 0
       ? {
+          key: BULK_DELETE_ACTION_KEY,
           label: t('hooks.toolbarActions.delete'),
           type: 'default',
           danger: true,
@@ -61,14 +76,27 @@ export function useModuleToolbarActions({
     const auditSelectionSupported =
       selectedRowCount > 0 &&
       (moduleKey !== 'purchase-inbound' || selectedRowCount === 1)
-    if (canUseBulkAuditActions && auditSelectionSupported) {
-      actions.push(
-        { label: t('hooks.toolbarActions.audit'), type: 'default' },
-        {
-          label: t('hooks.toolbarActions.reverseAudit'),
-          type: 'default',
-        },
-      )
+    if (
+      canUseBulkAuditAction &&
+      auditSelectionSupported &&
+      listAuditActionKind
+    ) {
+      actions.push({
+        key: BULK_AUDIT_ACTION_KEY,
+        label: t(resolveStatusChangeActionLabelKey(listAuditActionKind)),
+        type: 'default',
+      })
+    }
+    if (
+      canUseBulkReverseAuditAction &&
+      auditSelectionSupported &&
+      listReverseAuditActionKind
+    ) {
+      actions.push({
+        key: BULK_REVERSE_AUDIT_ACTION_KEY,
+        label: t(resolveStatusChangeActionLabelKey(listReverseAuditActionKind)),
+        type: 'default',
+      })
     }
     return actions
   })() satisfies ModuleActionDefinition[]
@@ -93,21 +121,16 @@ export function useModuleToolbarActions({
   })() satisfies ModuleActionDefinition[]
 
   const handleAction = async (action: ModuleActionDefinition) => {
-    const auditLabel = t('hooks.toolbarActions.audit')
-    const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
-    const deleteLabel = t('hooks.toolbarActions.delete')
-
-    if (action.label === auditLabel) {
-      handlers.handleSelectedAuditRecords()
-      return
-    }
-    if (action.label === reverseAuditLabel) {
-      handlers.handleSelectedReverseAuditRecords()
-      return
-    }
-    if (action.label === deleteLabel) {
-      handlers.handleSelectedDeleteRecords()
-      return
+    switch (action.key) {
+      case BULK_AUDIT_ACTION_KEY:
+        handlers.handleSelectedAuditRecords()
+        return
+      case BULK_REVERSE_AUDIT_ACTION_KEY:
+        handlers.handleSelectedReverseAuditRecords()
+        return
+      case BULK_DELETE_ACTION_KEY:
+        handlers.handleSelectedDeleteRecords()
+        return
     }
 
     switch (

@@ -1,6 +1,7 @@
 import {
   buildEditorAuditTarget,
   buildListAuditTargets,
+  resolveStatusChangeActionKind,
   resolveStatusOptions,
 } from '@/module-system/module-adapter-actions'
 import {
@@ -86,15 +87,24 @@ export function useModuleEditorCapabilities({
     preferredStatus: listPreferredStatus,
   })
 
-  const canUseBulkAuditActions =
-    !isReadOnly &&
-    canAuditRecords &&
-    Boolean(listAuditTarget && listReverseAuditTarget)
+  const canUseBulkAuditAction =
+    !isReadOnly && canAuditRecords && Boolean(listAuditTarget)
+  const canUseBulkReverseAuditAction =
+    !isReadOnly && canAuditRecords && Boolean(listReverseAuditTarget)
   const canUseBulkPrintActions = canPrintRecords
   const canUseBulkDeleteActions = !isReadOnly && canDeleteRecords
   const canAuditEditor = Boolean(editorAuditTarget)
   const canSaveAndAuditCurrentEditor =
     canSaveCurrentEditor && canAuditRecords && canAuditEditor
+  const editorAuditActionKind = editorAuditTarget
+    ? resolveStatusChangeActionKind(editorAuditTarget.value)
+    : null
+  const listAuditActionKind = listAuditTarget
+    ? resolveStatusChangeActionKind(listAuditTarget.value)
+    : null
+  const listReverseAuditActionKind = listReverseAuditTarget
+    ? resolveStatusChangeActionKind(listReverseAuditTarget.value, true)
+    : null
 
   const canManageEditorItems = canManageEditorLineItems(
     moduleKey,
@@ -114,12 +124,16 @@ export function useModuleEditorCapabilities({
     canAuditEditor,
     canManageEditorItems,
     canSaveAndAuditCurrentEditor,
-    canUseBulkAuditActions,
+    canUseBulkAuditAction,
+    canUseBulkReverseAuditAction,
     canUseBulkDeleteActions,
     canUseBulkPrintActions,
+    editorAuditActionKind,
     editorAuditTarget,
     lineItemsLocked,
+    listAuditActionKind,
     listAuditTarget,
+    listReverseAuditActionKind,
     listReverseAuditTarget,
     listAuditSourceStatuses,
     listStatusOptions,

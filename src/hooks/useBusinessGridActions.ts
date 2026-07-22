@@ -5,6 +5,7 @@ import {
 import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightActions'
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
 import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
+import type { StatusChangeActionKind } from '@/module-system/module-adapter-actions'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -16,6 +17,8 @@ interface Props {
   listAuditTarget: AuditTarget | null
   listReverseAuditTarget: AuditTarget | null
   listAuditSourceStatuses?: string[]
+  listAuditActionKind: StatusChangeActionKind | null
+  listReverseAuditActionKind: StatusChangeActionKind | null
   refreshModuleQueries: () => Promise<void>
   clearSelection: () => void
   formatCellValue: (value: unknown, columnType?: string) => string
@@ -29,6 +32,8 @@ export function useBusinessGridActions({
   listAuditTarget,
   listReverseAuditTarget,
   listAuditSourceStatuses,
+  listAuditActionKind,
+  listReverseAuditActionKind,
   refreshModuleQueries,
   clearSelection,
   formatCellValue,
@@ -56,6 +61,8 @@ export function useBusinessGridActions({
     listAuditTarget,
     listReverseAuditTarget,
     listAuditSourceStatuses,
+    listAuditActionKind,
+    listReverseAuditActionKind,
     refreshAndClearSelection,
   })
 

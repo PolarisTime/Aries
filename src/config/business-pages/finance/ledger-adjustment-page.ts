@@ -100,13 +100,7 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
   kicker: 'Finance',
   description: i18next.t('modules.pages.ledgerAdjustment.ledgerAdjustmentDesc'),
   primaryNoKey: 'adjustmentNo',
-  actions: [
-    {
-      key: 'create_ledger_adjustment',
-      label: i18next.t('modules.pages.ledgerAdjustment.createAdjustment'),
-      type: 'primary',
-    },
-  ],
+  readOnly: true,
   filters: [
     {
       key: 'direction',

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
+import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
@@ -66,6 +67,7 @@ export function useModuleRecordActions({
     if (
       moduleKey === 'sales-order' &&
       record.status === '交付核定' &&
+      !isDeletedModuleRecord(record) &&
       onStatusChange
     ) {
       items.push({
