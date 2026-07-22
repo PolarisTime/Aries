@@ -1,3 +1,10 @@
+## [7.0.4](https://github.com/PolarisTime/Aries/compare/v7.0.3...v7.0.4) (2026-07-22)
+
+
+### Bug Fixes
+
+* **frontend:** 修复编辑任务切换与页面状态同步 ([45aa5de](https://github.com/PolarisTime/Aries/commit/45aa5de1f8cbe199d95bafe4a75abba6da3b1a07))
+
 ## [7.0.3](https://github.com/PolarisTime/Aries/compare/v7.0.2...v7.0.3) (2026-07-21)
 
 
