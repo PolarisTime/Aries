@@ -43,10 +43,13 @@
 前端当前认证接口如下：
 
 - `POST /auth/login`
-- `POST /auth/login-2fa`
 - `POST /auth/refresh`
 - `POST /auth/logout`
-- `GET /auth/ping`
+- `GET /account`
+- `PUT /account`
+- `PUT /account/password`
+- `GET /account/preferences`
+- `PUT /account/preferences`
 
 请求头：
 
@@ -56,85 +59,40 @@
 
 ```json
 {
-  "loginName": "admin",
+  "loginName": "operator",
   "password": "明文或前端当前处理后的密码"
 }
 ```
 
-登录第一步返回分两种：
-
-1. 不需要 2FA，直接返回 token：
+登录成功后返回访问令牌和当前唯一账号的基础信息：
 
 ```json
 {
   "code": 0,
   "data": {
     "accessToken": "access-token",
-    "refreshToken": "refresh-token",
     "tokenType": "Bearer",
     "expiresIn": 7200,
+    "refreshExpiresIn": 604800,
     "user": {
       "id": "1914876201459236001",
-      "loginName": "admin",
-      "userName": "系统管理员",
-      "roleName": "系统管理员",
-      "menuCodes": ["dashboard", "materials"],
-      "actionMap": {
-        "materials": ["VIEW", "CREATE", "EDIT"]
-      }
+      "loginName": "operator",
+      "userName": "操作员"
     }
   }
 }
 ```
 
-2. 需要 2FA，只返回临时令牌：
+刷新令牌只通过 `HttpOnly` Cookie 传递，刷新与退出请求体均可为空。系统为单人模式，
+不返回角色、权限、菜单或 2FA 字段；前端导航完全由静态页面注册表生成。
 
-```json
-{
-  "code": 0,
-  "data": {
-    "requires2fa": true,
-    "tempToken": "temp-token"
-  }
-}
-```
+首次初始化接口：
 
-第二步验证接口：
+- `GET /setup/status`
+- `POST /setup/account`
 
-- `POST /auth/login-2fa`
-
-```json
-{
-  "tempToken": "temp-token",
-  "totpCode": "123456"
-}
-```
-
-刷新登录态：
-
-- `POST /auth/refresh`
-
-```json
-{
-  "refreshToken": "refresh-token"
-}
-```
-
-退出登录：
-
-- `POST /auth/logout`
-
-```json
-{
-  "refreshToken": "refresh-token"
-}
-```
-
-权限与菜单补充接口：
-
-- `GET /system/menus/tree`
-
-该接口返回当前用户可见菜单树及动作列表，前端导航应优先以该接口为准。
+初始化状态字段为 `setupRequired` 和 `accountConfigured`。初始化写请求必须携带
+`X-Setup-Token`，账号创建完成后接口自动禁用。
 
 ### 3.2 统一业务模块接口
 
@@ -161,9 +119,6 @@
 - `payments -> /payments`
 - `general-settings -> /general-settings`
 - `operation-logs -> /operation-logs`
-- `permission-management -> /permission-management`
-- `user-accounts -> /user-accounts`
-- `role-settings -> /role-settings`
 - `inventory-report -> /inventory-report`
 - `io-report -> /io-report`
 - `receivables-payables -> /receivables-payables`
@@ -179,7 +134,6 @@
 只读模块：
 
 - `operation-logs`
-- `permission-management`
 - `inventory-report`
 - `io-report`
 - `receivables-payables`
@@ -351,14 +305,12 @@ YYYY + 前缀 + 6位流水
 
 ### 5.5 系统设置
 
-| moduleKey               | 页面     | 主单号字段       |
-| ----------------------- | -------- | ---------------- |
-| `general-settings`      | 通用设置 | `settingCode`    |
-| `operation-logs`        | 操作日志 | `logNo`          |
-| `permission-management` | 权限管理 | `permissionCode` |
-| `user-accounts`         | 用户账户 | `loginName`      |
-| `role-settings`         | 角色设置 | `roleCode`       |
-| `ops-support`           | 运维支持 | `ticketNo`       |
+| moduleKey          | 页面     | 主单号字段    |
+| ------------------ | -------- | ------------- |
+| `general-settings` | 通用设置 | `settingCode` |
+| `operation-logs`   | 操作日志 | `logNo`       |
+| `account`          | 个人账号 | `loginName`   |
+| `ops-support`      | 运维支持 | `ticketNo`    |
 
 ## 6. 各模块字段要求
 
@@ -827,72 +779,35 @@ YYYY + 前缀 + 6位流水
 - 当前前端页面为只读查询页，不提供新增、编辑、删除。
 - 后端必须在以下系统模块写操作成功或失败时自动落库操作日志：
   - `general-settings`
-  - `permission-management`
-  - `user-accounts`
-  - `role-settings`
+  - `account`
   - `print-templates`
-- `businessNo` 建议保存被操作对象主键或主业务编码，例如 `settingCode`、`permissionCode`、`loginName`、`roleCode`、模板编号。
+- `businessNo` 建议保存被操作对象主键或主业务编码，例如 `settingCode`、`loginName`、模板编号。
 
-### 6.23 权限管理 `permission-management`
+### 6.23 个人账号 `account`
 
-- 保存字段：
-  - `id`
-  - `permissionCode`
-  - `permissionName`
-  - `moduleName`
-  - `permissionType`
-  - `actionName`
-  - `resourceKey`
-  - `status`
-  - `remark`
-
-说明：
-
-- 当前页面按 RBAC 思路设计，已切换到真实后端接口对接。
-
-### 6.24 用户账户 `user-accounts`
-
-- 保存字段：
+- 查询返回字段：
   - `id`
   - `loginName`
-  - `password`（仅新增时可选传）
   - `userName`
   - `mobile`
-  - `roleNames`
-  - `permissionSummary`
   - `lastLoginDate`
-  - `status`
   - `remark`
+- 资料更新字段：
+  - `userName`
+  - `mobile`
+  - `remark`
+- 密码更新字段：
+  - `currentPassword`
+  - `newPassword`
 
 说明：
 
-- `roleNames` 当前前端是多选数组。
-- 后端可返回数组，前端能显示。
-- 新增用户时前端可直接传 `password`；若未传，则后端回退到 `leo.auth.user.default-password`。
+- 当前账号资源由 JWT 认证主体确定，接口不接受外部账号 ID。
+- 系统只允许一个未删除账号，不提供账号列表、新增账号、角色或权限配置接口。
+- 修改密码后递增凭据版本并撤销现有刷新会话，前端应重新登录。
+- 页面偏好通过 `/account/preferences` 读写，存放在当前账号的 `preferencesJson` 中。
 
-### 6.25 角色设置 `role-settings`
-
-- 保存字段：
-  - `id`
-  - `roleCode`
-  - `roleName`
-  - `roleType`
-  - `permissionCodes`
-  - `permissionSummary`
-  - `userCount`
-  - `status`
-  - `remark`
-- 列表补充字段：
-  - `permissionCount`
-
-说明：
-
-- `permissionCodes` 当前前端是多选数组。
-- 建议后端保存后同时回写：
-  - `permissionSummary`
-  - `permissionCount`
-
-### 6.26 运维支持 `ops-support`
+### 6.24 运维支持 `ops-support`
 
 - 保存字段：
   - `id`
@@ -1081,7 +996,7 @@ YYYY + 前缀 + 6位流水
 6. 三类对账单
 7. 收款单、付款单、应收应付
 8. 合同管理
-9. 通用设置、操作日志、RBAC、运维支持
+9. 通用设置、个人账号、操作日志、运维支持
 10. 打印模板
 
 ## 10. 与旧文档的关系

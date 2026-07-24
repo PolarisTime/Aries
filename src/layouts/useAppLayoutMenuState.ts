@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import type { MenuNode } from '@/api/system-menus'
-import { isKnownAppIconKey } from '@/config/app-icons'
 import {
   buildMenuEntriesByGroup,
   menuGroupDefinitions,
   menuGroupOrder,
 } from '@/config/navigation-registry'
-import { appPageDefinitions, getPageDefinition } from '@/config/page-registry'
+import { appPageDefinitions } from '@/config/page-registry'
 import { buildVisibleLayoutMenuEntries } from '@/layouts/layout-menu'
 import {
   buildMenuPathMap,
@@ -20,20 +18,15 @@ const menuEntriesByGroup = buildMenuEntriesByGroup(appPageDefinitions)
 interface Options {
   activeMenuKey: string
   collapsed: boolean
-  menus: MenuNode[]
 }
 
 export function useAppLayoutMenuState(options: Options) {
   const [manualSiderOpenKeys, setManualSiderOpenKeys] = useState<string[]>([])
   const visibleMenuEntries = buildVisibleLayoutMenuEntries({
     appPageDefinitions,
-    defaultIcon: 'AppstoreOutlined',
     getMenuEntriesByGroup: (groupKey) => menuEntriesByGroup.get(groupKey) || [],
-    getPageDefinition,
-    isKnownIconKey: isKnownAppIconKey,
     menuGroupDefinitions,
     menuGroupOrder,
-    systemMenuTree: options.menus,
   })
 
   const menuPathByKey = buildMenuPathMap(visibleMenuEntries)

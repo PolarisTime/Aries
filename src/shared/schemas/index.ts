@@ -12,6 +12,12 @@ export type {
   LoginResult,
   LoginUser,
 } from './auth'
+// ── 当前账号 ────────────────────────────────────────────
+export type {
+  CurrentAccount,
+  CurrentAccountUpdate,
+  PasswordChange,
+} from './current-account'
 // ── 物料 / 打印模板 / 初始化 ────────────────────────────
 export type {
   MaterialImportFailure,
@@ -27,24 +33,15 @@ export type {
   SalesOrderItem,
   SalesOutboundItem,
 } from './module-record'
-
 export type {
   PrintActionMode,
   PrintTemplateRecord,
   PrintTemplateResponse,
   SavePrintTemplatePayload,
 } from './print-template'
-
 export type {
-  InitialSetupAdminPayload,
-  InitialSetupAdminSubmitPayload,
+  InitialSetupAccountPayload,
+  InitialSetupAccountSubmitPayload,
   InitialSetupResult,
   InitialSetupStatus,
 } from './setup'
-// ── 用户账户 ────────────────────────────────────────────
-export type {
-  UserAccountCreateResult,
-  UserAccountFormPayload,
-  UserAccountLoginNameAvailability,
-  UserAccountRecord,
-} from './user-account'

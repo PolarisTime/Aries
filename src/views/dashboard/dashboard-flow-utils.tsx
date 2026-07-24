@@ -13,13 +13,9 @@ import {
   TeamOutlined,
 } from '@ant-design/icons'
 import type { TFunction } from 'i18next'
-import type { DashboardSummary } from '@/api/dashboard'
 import type { WorkflowSection } from '@/views/dashboard/dashboard-view-types'
 
-export function buildWorkflowSections(
-  t: TFunction,
-  summary?: DashboardSummary,
-): WorkflowSection[] {
+export function buildWorkflowSections(t: TFunction): WorkflowSection[] {
   return [
     {
       key: 'master',
@@ -32,9 +28,6 @@ export function buildWorkflowSections(
           path: '/material',
           icon: DatabaseOutlined,
           hint: t('dashboard.flow.material.hint'),
-          metric: t('dashboard.flow.material.metric', {
-            count: summary?.materialCount ?? 0,
-          }),
         },
         {
           key: 'supplier',
@@ -42,9 +35,6 @@ export function buildWorkflowSections(
           path: '/supplier',
           icon: ShopOutlined,
           hint: t('dashboard.flow.supplier.hint'),
-          metric: t('dashboard.flow.supplier.metric', {
-            count: summary?.supplierCount ?? 0,
-          }),
         },
         {
           key: 'customer',
@@ -52,9 +42,6 @@ export function buildWorkflowSections(
           path: '/customer',
           icon: TeamOutlined,
           hint: t('dashboard.flow.customer.hint'),
-          metric: t('dashboard.flow.customer.metric', {
-            count: summary?.customerCount ?? 0,
-          }),
         },
         {
           key: 'warehouse',

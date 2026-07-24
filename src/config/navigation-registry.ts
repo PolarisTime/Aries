@@ -19,7 +19,6 @@ export type AppIconKey =
   | 'PrinterOutlined'
   | 'ProfileOutlined'
   | 'RollbackOutlined'
-  | 'SafetyCertificateOutlined'
   | 'SettingOutlined'
   | 'ShopOutlined'
   | 'ShoppingCartOutlined'

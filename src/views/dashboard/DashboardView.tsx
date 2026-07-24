@@ -60,7 +60,7 @@ export function DashboardView() {
                   />
                 }
               >
-                <LazyDashboardFlowCard navigate={navigate} summary={summary} />
+                <LazyDashboardFlowCard navigate={navigate} />
               </Suspense>
             ) : (
               <div className="dashboard-flow-card-placeholder" aria-hidden />
@@ -68,7 +68,7 @@ export function DashboardView() {
           </main>
 
           <aside className="dashboard-workplace-sidebar dashboard-context-region">
-            <DashboardSidebarPanels infoItems={infoItems} summary={summary} />
+            <DashboardSidebarPanels infoItems={infoItems} />
           </aside>
         </div>
       </section>

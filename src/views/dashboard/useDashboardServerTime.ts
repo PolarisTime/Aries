@@ -1,19 +1,20 @@
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { parseDateTimeValue } from '@/utils/formatters'
 
-function formatServerTime(serverTime?: string | null) {
-  if (!serverTime) {
+function formatServerTime(serverTime?: string | number | null) {
+  if (serverTime == null || serverTime === '') {
     return '—'
   }
-  const parsed = dayjs(serverTime)
-  if (!parsed.isValid()) {
-    return serverTime
+  const parsed = parseDateTimeValue(serverTime)
+  if (!parsed) {
+    return String(serverTime)
   }
   return parsed.format('YYYY-MM-DD HH:mm:ss')
 }
 
-export function useDashboardServerTime(serverTime?: string | null) {
+export function useDashboardServerTime(serverTime?: string | number | null) {
   const [tickingServerTime, setTickingServerTime] = useState({
     source: '',
     value: '',
@@ -25,8 +26,8 @@ export function useDashboardServerTime(serverTime?: string | null) {
       : formatServerTime(serverTime)
 
   useEffect(() => {
-    const parsed = dayjs(serverTime)
-    if (!parsed.isValid()) {
+    const parsed = parseDateTimeValue(serverTime)
+    if (!parsed) {
       return
     }
 

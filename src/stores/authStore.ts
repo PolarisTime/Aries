@@ -20,6 +20,7 @@ import {
   getStoredUser,
   getToken,
   getTokenExpiresAt,
+  setStoredUser,
 } from '@/utils/storage'
 
 async function loadAuthApi() {
@@ -36,6 +37,7 @@ interface AuthState {
   signIn: (payload: LoginPayload) => Promise<LoginResponseData>
   signOut: () => Promise<void>
   restoreSession: () => Promise<boolean>
+  updateUserProfile: (userName: string) => void
 }
 
 function readStoredAuthState(authReady: boolean) {
@@ -144,5 +146,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
+  },
+
+  updateUserProfile: (userName: string) => {
+    const user = get().user
+    if (!user) {
+      return
+    }
+    const updatedUser = { ...user, userName }
+    setStoredUser(updatedUser)
+    set({ user: updatedUser })
   },
 }))

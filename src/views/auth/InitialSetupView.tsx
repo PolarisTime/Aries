@@ -5,7 +5,7 @@ import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppResult } from '@/components/AppResult'
 import { appTitle } from '@/utils/env'
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
-import { InitialSetupAdminForm } from '@/views/auth/InitialSetupAdminForm'
+import { InitialSetupAccountForm } from '@/views/auth/InitialSetupAccountForm'
 import {
   SETUP_TOKEN_PATTERN,
   useInitialSetupState,
@@ -13,7 +13,7 @@ import {
 
 export function InitialSetupView() {
   const { t } = useTranslation()
-  const { checking, form, handleSubmitAdmin, loadingAdmin, status } =
+  const { checking, form, handleSubmitAccount, loadingAccount, status } =
     useInitialSetupState()
 
   if (checking) {
@@ -59,7 +59,7 @@ export function InitialSetupView() {
             form={form}
             layout="vertical"
             initialValues={{
-              adminUserName: t('auth.initialsetup.defaultAdminUserName'),
+              accountUserName: t('auth.initialsetup.defaultAccountUserName'),
             }}
           >
             <Form.Item
@@ -82,10 +82,10 @@ export function InitialSetupView() {
                 autoComplete="off"
               />
             </Form.Item>
-            <InitialSetupAdminForm
-              loadingAdmin={loadingAdmin}
-              onSubmitAdmin={() => {
-                void handleSubmitAdmin()
+            <InitialSetupAccountForm
+              loadingAccount={loadingAccount}
+              onSubmitAccount={() => {
+                void handleSubmitAccount()
               }}
             />
           </Form>

@@ -1,17 +1,15 @@
 import type { NavigateFn } from '@tanstack/react-router'
 import { Card } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
 
 interface Props {
   navigate: NavigateFn
-  summary?: DashboardSummary
 }
 
-export function DashboardFlowCard({ navigate, summary }: Props) {
+export function DashboardFlowCard({ navigate }: Props) {
   const { t } = useTranslation()
-  const workflowSections = buildWorkflowSections(t, summary)
+  const workflowSections = buildWorkflowSections(t)
 
   return (
     <Card
@@ -50,7 +48,6 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                       <span className="dashboard-flow-node-copy">
                         <strong>{node.title}</strong>
                         <small>{node.hint}</small>
-                        {node.metric ? <em>{node.metric}</em> : null}
                       </span>
                     </button>
                     {index < section.nodes.length - 1 ? (

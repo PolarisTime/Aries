@@ -5,7 +5,7 @@ export type RouteViewKey =
   | 'business-grid'
   | 'company-setting'
   | 'print-template'
-  | 'user-account'
+  | 'account'
   | 'finance-overview'
   | 'cash-ledger'
 

@@ -59,7 +59,7 @@ const operationLogActionOptionsByModule: Record<
   string,
   ReadonlyArray<{ label: string; value: string }>
 > = {
-  认证授权: [
+  身份认证: [
     {
       label: i18next.t('modules.pages.operationLogOptions.login'),
       value: '登录',
@@ -72,19 +72,15 @@ const operationLogActionOptionsByModule: Record<
       label: i18next.t('modules.pages.operationLogOptions.logout'),
       value: '退出登录',
     },
-  ],
-  用户账户: [
     {
-      label: i18next.t('modules.pages.operationLogOptions.create'),
-      value: '新增',
+      label: i18next.t('modules.pages.operationLogOptions.changePassword'),
+      value: '修改密码',
     },
+  ],
+  个人账号: [
     {
       label: i18next.t('modules.pages.operationLogOptions.edit'),
       value: '编辑',
-    },
-    {
-      label: i18next.t('modules.pages.operationLogOptions.delete'),
-      value: '删除',
     },
   ],
   数据库管理: [
@@ -117,11 +113,11 @@ export const operationLogModuleOptions = [
     options: [
       {
         label: i18next.t('modules.pages.operationLogOptions.authentication'),
-        value: '认证授权',
+        value: '身份认证',
       },
       {
-        label: i18next.t('modules.pages.operationLogOptions.userAccounts'),
-        value: '用户账户',
+        label: i18next.t('modules.pages.operationLogOptions.currentAccount'),
+        value: '个人账号',
       },
       {
         label: i18next.t('modules.pages.operationLogOptions.database'),

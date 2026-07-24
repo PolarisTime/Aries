@@ -62,14 +62,8 @@ export const QUERY_KEYS = {
     warehouse: ['master-options', 'warehouse'] as const,
   },
 
-  // Auth / Users
-  userAccount: (
-    page: number,
-    size: number,
-    keyword: string,
-    statusFilter: string | undefined,
-  ) => ['user-account', page, size, keyword, statusFilter] as const,
-  userAccountBase: ['user-account'] as const,
+  // Auth / Account
+  currentAccount: ['current-account'] as const,
 
   // Statements
   statementLinkOptionsBase: ['statement-link-options'] as const,

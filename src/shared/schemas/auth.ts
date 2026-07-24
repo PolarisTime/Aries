@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { responsePositiveIntegerSchema } from './api'
 
 export const loginPayloadSchema = z.object({
   loginName: z.string().min(1),
@@ -17,8 +18,8 @@ export type LoginUser = z.output<typeof loginUserSchema>
 export const loginResponseDataSchema = z.object({
   accessToken: z.string().min(1),
   tokenType: z.string(),
-  expiresIn: z.number().positive(),
-  refreshExpiresIn: z.number().positive().optional(),
+  expiresIn: responsePositiveIntegerSchema,
+  refreshExpiresIn: responsePositiveIntegerSchema.optional(),
   user: loginUserSchema,
 })
 export type LoginResponseData = z.output<typeof loginResponseDataSchema>

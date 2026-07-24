@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import i18next from 'i18next'
-import { createRoot } from 'react-dom/client'
+import { createRoot, type Root } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/client'
 import { getInitialSetupStatus } from '@/api/setup'
 import { queryClient } from '@/lib/query-client'
@@ -43,13 +43,36 @@ function StartupShell() {
   )
 }
 
+type AppRootCache = {
+  element: HTMLElement
+  root: Root
+}
+
+type RuntimeGlobals = typeof globalThis & {
+  __leoAppRoot?: AppRootCache
+}
+
+function getAppRoot(element: HTMLElement): Root {
+  const runtime = globalThis as RuntimeGlobals
+  const cached = runtime.__leoAppRoot
+
+  if (cached?.element === element) {
+    return cached.root
+  }
+
+  cached?.root.unmount()
+  const root = createRoot(element)
+  runtime.__leoAppRoot = { element, root }
+  return root
+}
+
 clearLegacyModuleEditorDraftStorage()
 initializeErrorMonitoring()
 
 async function bootstrap() {
   const rootElement = document.getElementById('app')
   if (!rootElement) throw new Error('Root element not found')
-  const root = createRoot(rootElement)
+  const root = getAppRoot(rootElement)
   root.render(<StartupShell />)
 
   ensureApiClientSetup()

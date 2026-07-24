@@ -28,7 +28,7 @@ export const operationLogsPageConfig: ModulePageConfig = {
     {
       key: 'auth',
       label: i18next.t('modules.pages.operationLog.authentication'),
-      values: { moduleName: '认证授权' },
+      values: { moduleName: '身份认证' },
     },
   ],
   filters: [

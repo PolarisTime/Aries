@@ -7,8 +7,6 @@ import { reloadSupplierOptions } from '@/api/supplier-options'
 import { reloadWarehouseOptions } from '@/api/warehouse-options'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { useAuthStore } from '@/stores/authStore'
-import { useSystemMenuStore } from '@/stores/systemMenuStore'
-import { logger } from '@/utils/logger'
 
 type IdleCallbackHandle = number
 type IdleDeadlineLike = {
@@ -49,8 +47,6 @@ export function useAuthAppSync() {
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const authReady = useAuthStore((state) => state.authReady)
-  const loadMenus = useSystemMenuStore((state) => state.loadMenus)
-  const clearMenus = useSystemMenuStore((state) => state.clearMenus)
 
   useEffect(() => {
     const syncAuthState = () => {
@@ -61,22 +57,6 @@ export function useAuthAppSync() {
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, syncAuthState)
     }
   }, [])
-
-  useEffect(() => {
-    if (!authReady || !token || !user) {
-      clearMenus()
-      return
-    }
-
-    return runWhenIdle(() => {
-      void loadMenus().catch((err) => {
-        logger.warn(
-          'Failed to load dynamic menus, falling back to local registry',
-          err,
-        )
-      })
-    })
-  }, [authReady, clearMenus, loadMenus, token, user])
 
   useEffect(() => {
     if (!authReady || !token || !user) {

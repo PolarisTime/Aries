@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Form } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getInitialSetupStatus, submitInitialAdmin } from '@/api/setup'
+import { getInitialSetupStatus, submitInitialAccount } from '@/api/setup'
 import type { InitialSetupStatus } from '@/shared/schemas'
 import { useSetupStore } from '@/stores/setupStore'
 import { message } from '@/utils/antd-app'
@@ -10,11 +10,11 @@ import { asString } from '@/utils/type-narrowing'
 
 export const SETUP_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}=?$/
 
-type AdminFormValues = {
-  adminLoginName: string
-  adminPassword: string
-  adminConfirmPassword: string
-  adminUserName: string
+type AccountFormValues = {
+  accountLoginName: string
+  accountPassword: string
+  accountConfirmPassword: string
+  accountUserName: string
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -26,7 +26,7 @@ export function useInitialSetupState() {
   const navigate = useNavigate()
   const [checking, setChecking] = useState(true)
   const [status, setStatus] = useState<InitialSetupStatus | null>(null)
-  const [loadingAdmin, setLoadingAdmin] = useState(false)
+  const [loadingAccount, setLoadingAccount] = useState(false)
   const [form] = Form.useForm()
 
   const getValidSetupToken = (): string | null => {
@@ -83,7 +83,7 @@ export function useInitialSetupState() {
     }
   }, [navigate, t])
 
-  const handleSubmitAdmin = async () => {
+  const handleSubmitAccount = async () => {
     const setupToken = getValidSetupToken()
     if (!setupToken) {
       return
@@ -91,31 +91,33 @@ export function useInitialSetupState() {
     try {
       const values = (await form.validateFields([
         'setupToken',
-        'adminLoginName',
-        'adminPassword',
-        'adminConfirmPassword',
-        'adminUserName',
-      ])) as unknown as AdminFormValues
+        'accountLoginName',
+        'accountPassword',
+        'accountConfirmPassword',
+        'accountUserName',
+      ])) as unknown as AccountFormValues
 
-      if (values.adminPassword !== values.adminConfirmPassword) {
+      if (values.accountPassword !== values.accountConfirmPassword) {
         message.error(t('auth.initialsetup.passwordMismatch'))
         return
       }
-      setLoadingAdmin(true)
-      const res = await submitInitialAdmin(
+      setLoadingAccount(true)
+      const res = await submitInitialAccount(
         {
-          admin: {
-            loginName: values.adminLoginName.trim(),
-            password: values.adminPassword,
+          account: {
+            loginName: values.accountLoginName.trim(),
+            password: values.accountPassword,
             userName: (
-              values.adminUserName ||
-              t('auth.initialsetup.defaultAdminUserName')
+              values.accountUserName ||
+              t('auth.initialsetup.defaultAccountUserName')
             ).trim(),
           },
         },
         setupToken,
       )
-      message.success(res.message || t('auth.initialsetup.adminCreateSuccess'))
+      message.success(
+        res.message || t('auth.initialsetup.accountCreateSuccess'),
+      )
       useSetupStore.getState().setStatus({ setupRequired: false })
       void navigate({ to: '/login' })
     } catch (error) {
@@ -123,15 +125,15 @@ export function useInitialSetupState() {
         getErrorMessage(error, t('auth.initialsetup.operationFailed')),
       )
     } finally {
-      setLoadingAdmin(false)
+      setLoadingAccount(false)
     }
   }
 
   return {
     checking,
     form,
-    handleSubmitAdmin,
-    loadingAdmin,
+    handleSubmitAccount,
+    loadingAccount,
     status,
   }
 }

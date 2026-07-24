@@ -11,7 +11,6 @@ interface WorkflowNode {
   path: string
   icon: ComponentType<DashboardIconProps>
   hint: string
-  metric?: string
 }
 
 export interface WorkflowSection {

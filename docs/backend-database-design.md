@@ -762,61 +762,11 @@
 
 结构同销售订单明细。
 
-## 12. 系统设置与 RBAC 表
+## 12. 单账号认证与操作日志
 
-### 12.1 单号规则 `sys_no_rule`
+### 12.1 当前账号 `sys_user`
 
-对应前端模块：`general-settings`
-
-字段：
-
-- `id`
-- `setting_code`
-- `setting_name`
-- `bill_name`
-- `prefix`
-- `date_rule`
-- `serial_length`
-- `reset_rule`
-- `sample_no`
-- `status`
-- `remark`
-
-### 12.2 权限表 `sys_permission`
-
-对应前端模块：`permission-management`
-
-字段：
-
-- `id`
-- `permission_code`
-- `permission_name`
-- `module_name`
-- `permission_type`
-- `action_name`
-- `resource_key`
-- `status`
-- `remark`
-
-### 12.3 角色表 `sys_role`
-
-对应前端模块：`role-settings`
-
-字段：
-
-- `id`
-- `role_code`
-- `role_name`
-- `role_type`
-- `permission_count`
-- `permission_summary`
-- `user_count`
-- `status`
-- `remark`
-
-### 12.4 用户表 `sys_user`
-
-对应前端模块：`user-accounts`
+对应前端模块：`account`
 
 字段：
 
@@ -825,36 +775,47 @@
 - `password_hash`
 - `user_name`
 - `mobile`
-- `permission_summary`
 - `last_login_date`
 - `status`
+- `preferences_json`
+- `credential_version`
+- `version`
 - `remark`
+- 通用审计字段
 
-### 12.5 用户角色关系 `sys_user_role`
+约束：
+
+- `login_name` 唯一。
+- `uk_sys_user_single_active` 保证全库最多一个 `deleted_flag = false` 的账号。
+- `chk_sys_user_active_status` 保证未删除账号状态只能是 `NORMAL`。
+- 密码变更时递增 `credential_version`，使旧访问令牌和刷新会话失效。
+
+### 12.2 刷新会话 `auth_refresh_token`
 
 字段：
 
 - `id`
 - `user_id`
-- `role_id`
+- `token_id`
+- `token_hash`
+- `previous_token_hash`
+- `previous_token_valid_until`
+- `expires_at`
+- `revoked_at`
+- `revoke_reason`
+- `login_ip`
+- `device_info`
+- `credential_version`
+- 通用审计字段
 
-唯一索引：
+约束与索引：
 
-- `uk_user_role(user_id, role_id)`
+- `token_id`、`token_hash` 唯一。
+- `user_id` 外键指向 `sys_user.id`，删除策略为 `RESTRICT`。
+- 活动会话按 `user_id`、`expires_at` 建部分索引。
+- 数据库只保存刷新令牌哈希，原始令牌通过 `HttpOnly` Cookie 传输。
 
-### 12.6 角色权限关系 `sys_role_permission`
-
-字段：
-
-- `id`
-- `role_id`
-- `permission_id`
-
-唯一索引：
-
-- `uk_role_permission(role_id, permission_id)`
-
-### 12.7 操作日志 `sys_operation_log`
+### 12.3 操作日志 `sys_operation_log`
 
 对应前端模块：`operation-logs`
 
@@ -965,14 +926,11 @@
 26. `ct_purchase_contract_item`
 27. `ct_sales_contract`
 28. `ct_sales_contract_item`
-29. `sys_no_rule`
-30. `sys_permission`
-31. `sys_role`
-32. `sys_user`
-33. `sys_user_role`
-34. `sys_role_permission`
-35. `ops_ticket`
-36. `print_template`
+29. `sys_user`
+30. `auth_refresh_token`
+31. `sys_operation_log`
+32. `ops_ticket`
+33. `print_template`
 
 ## 16. 下一步建议
 

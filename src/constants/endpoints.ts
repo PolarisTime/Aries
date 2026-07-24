@@ -17,13 +17,10 @@ export const ENDPOINTS = {
   AUTH_REFRESH: '/auth/refresh',
   AUTH_LOGOUT: '/auth/logout',
 
-  // User accounts (business entity → plural)
-  USER_ACCOUNTS: '/user-accounts',
-  USER_ACCOUNTS_LOGIN_NAME_CHECK: '/user-accounts/login-name-availability',
-  USER_ACCOUNT_PREFERENCES: '/user-accounts/preference',
-
-  // System menus (sub-resource tree → singular action)
-  SYSTEM_MENUS_TREE: '/system/menu/tree',
+  // Current account (the single authenticated account)
+  ACCOUNT: '/account',
+  ACCOUNT_PASSWORD: '/account/password',
+  ACCOUNT_PREFERENCES: '/account/preferences',
 
   // Company settings (business entity → plural)
   COMPANY_SETTINGS: '/company-settings',
@@ -51,7 +48,7 @@ export const ENDPOINTS = {
 
   // Setup (pure actions → singular)
   SETUP_STATUS: '/setup/status',
-  SETUP_ADMIN: '/setup/admin',
+  SETUP_ACCOUNT: '/setup/account',
 
   // Attachments (business entity → plural) & General settings (business entity → plural)
   ATTACHMENTS_UPLOAD: '/attachments/upload',

@@ -19,7 +19,7 @@ const userColumnSettingsResponseSchema = apiResponseSchema(
 
 export async function getUserColumnSettings() {
   const response = await apiGet(
-    ENDPOINTS.USER_ACCOUNT_PREFERENCES,
+    ENDPOINTS.ACCOUNT_PREFERENCES,
     userColumnSettingsResponseSchema,
   )
   return assertApiSuccess(
@@ -32,7 +32,7 @@ export async function saveUserColumnSettings(
   payload: UserColumnSettingsPayload,
 ) {
   const response = await apiPut(
-    ENDPOINTS.USER_ACCOUNT_PREFERENCES,
+    ENDPOINTS.ACCOUNT_PREFERENCES,
     userColumnSettingsResponseSchema,
     payload,
   )

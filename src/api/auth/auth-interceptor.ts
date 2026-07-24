@@ -115,7 +115,7 @@ function isBackendUnavailableError(error: unknown): boolean {
 
 const PUBLIC_ENDPOINTS = [
   ENDPOINTS.SETUP_STATUS,
-  ENDPOINTS.SETUP_ADMIN,
+  ENDPOINTS.SETUP_ACCOUNT,
   ENDPOINTS.HEALTH,
   ENDPOINTS.VERSION,
 ]

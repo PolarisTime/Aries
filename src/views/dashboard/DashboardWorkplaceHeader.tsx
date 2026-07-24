@@ -18,19 +18,19 @@ export function DashboardWorkplaceHeader({
   const loginName = summary?.loginName || '—'
   const metricItems = [
     {
-      key: 'visibleMenus',
-      title: t('dashboard.fields.visibleMenus'),
-      value: summary?.visibleMenuCount ?? 0,
+      key: 'materials',
+      title: t('dashboard.flow.material.title'),
+      value: summary?.materialCount ?? 0,
     },
     {
-      key: 'modules',
-      title: t('dashboard.info.modules'),
-      value: summary?.moduleCount ?? 0,
+      key: 'suppliers',
+      title: t('dashboard.flow.supplier.title'),
+      value: summary?.supplierCount ?? 0,
     },
     {
-      key: 'activeSessions',
-      title: t('dashboard.info.activeSessions'),
-      value: summary?.activeSessionCount ?? 0,
+      key: 'customers',
+      title: t('dashboard.flow.customer.title'),
+      value: summary?.customerCount ?? 0,
     },
   ]
 

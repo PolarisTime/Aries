@@ -151,6 +151,16 @@ export function clearStoredUser() {
   clearStorageItem(STORAGE_KEYS.user)
 }
 
+export function setStoredUser(user: LoginUser) {
+  if (typeof window === 'undefined') {
+    return
+  }
+  getStorage(resolvePersistenceMode()).setItem(
+    STORAGE_KEYS.user,
+    JSON.stringify(user),
+  )
+}
+
 export function setAuthSession(
   user: LoginUser,
   token: string,

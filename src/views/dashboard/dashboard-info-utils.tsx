@@ -1,5 +1,6 @@
 import {
   ClockCircleOutlined,
+  LaptopOutlined,
   SafetyOutlined,
   ShopOutlined,
   UserOutlined,
@@ -37,6 +38,12 @@ export function buildDashboardInfoItems(
       label: t('dashboard.info.lastLogin'),
       value: formatDateTime(summary?.lastLoginAt),
       icon: ClockCircleOutlined,
+    },
+    {
+      key: 'activeSessionCount',
+      label: t('dashboard.info.activeSessions'),
+      value: String(summary?.activeSessionCount ?? 0),
+      icon: LaptopOutlined,
     },
   ]
 }

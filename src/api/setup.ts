@@ -1,8 +1,8 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { InitialSetupAdminSubmitPayload } from '@/shared/schemas'
+import type { InitialSetupAccountSubmitPayload } from '@/shared/schemas'
 import { apiResponseSchema, stringResponseSchema } from '@/shared/schemas/api'
 import {
-  initialSetupAdminSubmitPayloadSchema,
+  initialSetupAccountSubmitPayloadSchema,
   initialSetupStatusSchema,
 } from '@/shared/schemas/setup'
 import { getApiMessage } from '@/utils/api-messages'
@@ -25,20 +25,20 @@ export async function getInitialSetupStatus() {
   return assertApiSuccess(response, getApiMessage('getInitStatusFailed'))
 }
 
-export async function submitInitialAdmin(
-  payload: InitialSetupAdminSubmitPayload,
+export async function submitInitialAccount(
+  payload: InitialSetupAccountSubmitPayload,
   setupToken: string,
 ) {
   const validatedPayload = parseApiContract(
-    initialSetupAdminSubmitPayloadSchema,
+    initialSetupAccountSubmitPayloadSchema,
     payload,
-    '初始化管理员请求',
+    '初始化账号请求',
   )
   const response = await apiPost(
-    ENDPOINTS.SETUP_ADMIN,
+    ENDPOINTS.SETUP_ACCOUNT,
     stringResponseSchema,
     validatedPayload,
     setupTokenHeaders(setupToken),
   )
-  return assertApiSuccess(response, getApiMessage('adminAccountInitFailed'))
+  return assertApiSuccess(response, getApiMessage('accountInitFailed'))
 }

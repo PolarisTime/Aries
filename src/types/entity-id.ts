@@ -74,7 +74,6 @@ export const ENTITY_ID_FIELDS = new Set([
   'purchaseOrderId',
   'purchaseOrderItemId',
   'recordId',
-  'roleId',
   'salesOrderId',
   'salesOrderItemId',
   'settlementCompanyId',

@@ -166,9 +166,9 @@ const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
-  'user-account': () =>
-    import('@/views/system/UserAccountManagementView').then((m) => ({
-      default: m.UserAccountManagementView,
+  account: () =>
+    import('@/views/system/AccountView').then((m) => ({
+      default: m.AccountView,
     })),
   'finance-overview': () =>
     import('@/views/finance/FinanceOverviewView').then((m) => ({

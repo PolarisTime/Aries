@@ -14,7 +14,7 @@ export function DashboardSkeleton() {
           </div>
         </div>
         <div className="dashboard-workplace-stats">
-          {['menus', 'actions', 'sessions'].map((key) => (
+          {['materials', 'suppliers', 'customers'].map((key) => (
             <div
               key={`skeleton-stat-${key}`}
               className="dashboard-workplace-stat"
@@ -63,14 +63,8 @@ export function DashboardSkeleton() {
                 <div className="dashboard-skeleton-block dashboard-skeleton-line" />
                 <div className="dashboard-skeleton-block dashboard-skeleton-line" />
                 <div className="dashboard-skeleton-block dashboard-skeleton-line" />
-              </div>
-            </div>
-            <div className="dashboard-skeleton-panel">
-              <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
-              <div className="dashboard-skeleton-list">
-                <div className="dashboard-skeleton-block dashboard-skeleton-stat" />
-                <div className="dashboard-skeleton-block dashboard-skeleton-stat" />
-                <div className="dashboard-skeleton-block dashboard-skeleton-stat" />
+                <div className="dashboard-skeleton-block dashboard-skeleton-line" />
+                <div className="dashboard-skeleton-block dashboard-skeleton-line" />
               </div>
             </div>
           </div>

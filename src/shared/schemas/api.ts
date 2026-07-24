@@ -1,5 +1,31 @@
 import { z } from 'zod'
 
+const integerStringSchema = z
+  .string()
+  .trim()
+  .regex(/^-?\d+$/)
+  .transform(Number)
+
+/** 后端 Jackson 将 Long 输出为字符串，边界层统一归一化为安全整数。 */
+export const responseIntegerSchema = z.union([
+  z.number().int().safe(),
+  integerStringSchema.pipe(z.number().int().safe()),
+])
+
+export const responsePositiveIntegerSchema = responseIntegerSchema.pipe(
+  z.number().int().positive(),
+)
+
+export const responseNonNegativeIntegerSchema = responseIntegerSchema.pipe(
+  z.number().int().nonnegative(),
+)
+
+/** LocalDate/LocalDateTime 可能是 ISO 字符串或 epoch 毫秒。 */
+export const responseDateTimeSchema = z.union([
+  z.string().min(1),
+  z.number().int(),
+])
+
 const rawRecordSchema = z.record(z.string(), z.unknown())
 
 export const rawPageSchema = <ItemSchema extends z.ZodType>(
@@ -8,12 +34,12 @@ export const rawPageSchema = <ItemSchema extends z.ZodType>(
   z.looseObject({
     content: z.array(itemSchema).optional(),
     records: z.array(itemSchema).optional(),
-    totalElements: z.number(),
-    totalPages: z.number().optional(),
-    currentPage: z.number().optional(),
-    page: z.number().optional(),
-    pageSize: z.number().optional(),
-    size: z.number().optional(),
+    totalElements: responseNonNegativeIntegerSchema,
+    totalPages: responseNonNegativeIntegerSchema.optional(),
+    currentPage: responseNonNegativeIntegerSchema.optional(),
+    page: responseNonNegativeIntegerSchema.optional(),
+    pageSize: responseNonNegativeIntegerSchema.optional(),
+    size: responseNonNegativeIntegerSchema.optional(),
     first: z.boolean().optional(),
     last: z.boolean().optional(),
     hasMore: z.boolean().optional(),
