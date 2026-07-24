@@ -92,6 +92,7 @@ interface Props {
   editorAuditTarget: AuditTarget | null
   form: WorkspaceFormApi
   onClose: () => void
+  onDirty: () => void
   onSaved: () => void
   autoInsertBlankItemOnCreate: boolean
 }
@@ -404,6 +405,7 @@ export function useModuleEditorWorkspace({
   editorAuditTarget,
   form,
   onClose,
+  onDirty,
   onSaved,
   autoInsertBlankItemOnCreate,
 }: Props) {
@@ -514,6 +516,7 @@ export function useModuleEditorWorkspace({
     if (!Object.keys(changedValues).length) {
       return
     }
+    onDirty()
     const changedKeys = new Set(Object.keys(changedValues))
     if (config.parentImport?.resolveParentSelector) {
       setParentSelectorSessionKey(null)
@@ -865,6 +868,7 @@ export function useModuleEditorWorkspace({
         sumLineItemsBy,
         changedValues: nextValues,
       })
+      onDirty()
       dispatchWorkspaceState({ items: nextItems })
       setParentSelectorSessionKey(null)
       setParentSelectorDefinition(null)
@@ -913,6 +917,7 @@ export function useModuleEditorWorkspace({
   const addItem = () => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
     const nextItems = [...items, newItem]
+    onDirty()
     dispatchWorkspaceState({ items: nextItems })
     if (open && config.itemColumns?.length) {
       syncEditorFormValues({
@@ -930,6 +935,10 @@ export function useModuleEditorWorkspace({
   ) => {
     const resolvedItems =
       typeof nextItems === 'function' ? nextItems(items) : nextItems
+    if (resolvedItems === items) {
+      return
+    }
+    onDirty()
     dispatchWorkspaceState({ items: resolvedItems })
     if (open && config.itemColumns?.length) {
       syncEditorFormValues({

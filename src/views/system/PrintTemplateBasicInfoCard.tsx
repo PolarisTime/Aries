@@ -1,15 +1,16 @@
 import { FileTextOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
-import { Card, Col, Form, Input, Row, Select, Space } from 'antd'
+import { Card, Col, Form, Input, InputNumber, Row, Select, Space } from 'antd'
 import type { SettlementCompanyOption } from '@/api/company-settings'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import {
   defaultEngineForTemplateType,
   findSettlementCompanyOption,
+  type PrintTemplateEditorFormValues,
 } from '@/views/system/print-template-editor-utils'
 
 interface PrintTemplateBasicInfoCardProps {
-  form: FormInstance
+  form: FormInstance<PrintTemplateEditorFormValues>
   settlementCompanyOptions: SettlementCompanyOption[]
   t: (key: string) => string
 }
@@ -30,20 +31,20 @@ export function PrintTemplateBasicInfoCard({
       }
     >
       <Row gutter={[16, 0]}>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="billType"
             label={t('system.printTemplateEditor.billType')}
-            required
+            rules={[{ required: true }]}
           >
             <Select options={printTemplateTargetOptions} />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="templateName"
             label={t('system.printTemplateEditor.templateName')}
-            required
+            rules={[{ required: true, whitespace: true }, { max: 64 }]}
           >
             <Input
               placeholder={t(
@@ -53,10 +54,11 @@ export function PrintTemplateBasicInfoCard({
             />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="templateCode"
             label={t('system.printTemplateEditor.templateCode')}
+            rules={[{ max: 96 }]}
           >
             <Input
               placeholder={t(
@@ -66,11 +68,11 @@ export function PrintTemplateBasicInfoCard({
             />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="templateType"
             label={t('system.printTemplateEditor.templateType')}
-            required
+            rules={[{ required: true }]}
           >
             <Select
               onChange={(value) =>
@@ -92,11 +94,11 @@ export function PrintTemplateBasicInfoCard({
             />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="engine"
             label={t('system.printTemplateEditor.engine')}
-            required
+            rules={[{ required: true }]}
           >
             <Select
               disabled
@@ -113,10 +115,11 @@ export function PrintTemplateBasicInfoCard({
             />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="assetRef"
             label={t('system.printTemplateEditor.assetRef')}
+            rules={[{ max: 255 }]}
           >
             <Input
               placeholder={t('system.printTemplateEditor.assetRefPlaceholder')}
@@ -124,7 +127,7 @@ export function PrintTemplateBasicInfoCard({
             />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="settlementCompanyId"
             label={t('system.printTemplateEditor.settlementCompany')}
@@ -156,19 +159,20 @@ export function PrintTemplateBasicInfoCard({
             <Input />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="versionNo"
             label={t('system.printTemplateEditor.versionNo')}
+            rules={[{ type: 'integer', min: 1 }]}
           >
-            <Input type="number" min={1} />
+            <InputNumber min={1} precision={0} className="w-full" />
           </Form.Item>
         </Col>
-        <Col xs={24} md={12}>
+        <Col span={12}>
           <Form.Item
             name="status"
             label={t('system.printTemplateEditor.status')}
-            required
+            rules={[{ required: true }]}
           >
             <Select
               options={[

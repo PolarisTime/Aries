@@ -60,7 +60,7 @@ export function AttachmentPreviewLayers({
         open={pdfPreviewOpen}
         onCancel={onPdfPreviewClose}
         footer={null}
-        width="90%"
+        width={1104}
         className="modal-top-20"
         destroyOnHidden
       >

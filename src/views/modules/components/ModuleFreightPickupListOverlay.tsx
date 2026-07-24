@@ -195,7 +195,7 @@ export function ModuleFreightPickupListOverlay({
       open={open}
       onClose={onClose}
       variant="workspace"
-      width="min(94vw, 1120px)"
+      width={1120}
       className="workspace-overlay-panel--fit-content"
       zIndex={1050}
     >

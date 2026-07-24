@@ -1,5 +1,8 @@
+import { ReloadOutlined } from '@ant-design/icons'
+import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
+import { AppResult } from '@/components/AppResult'
 import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModal'
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
@@ -15,14 +18,13 @@ export function PrintTemplateView() {
         open={view.editorOpen}
         editing={Boolean(view.activeTemplateId)}
         form={view.form}
-        templateHtml={view.templateHtml}
         settlementCompanyOptions={view.settlementCompanyOptions}
         saving={view.savePending}
-        onTemplateHtmlChange={view.setTemplateHtml}
+        onFormValuesChange={view.setEditorDirty}
         onSave={() => {
           void view.handleSave()
         }}
-        onClose={() => view.setEditorOpen(false)}
+        onClose={view.requestEditorClose}
       />
     )
   }
@@ -34,22 +36,41 @@ export function PrintTemplateView() {
       description={t('system.printTemplate.description')}
     >
       <div className="page-stack settings-standard-page">
-        <PrintTemplateTableCard
-          selectedBillType={view.selectedBillType}
-          activeTemplateId={view.activeTemplateId}
-          templates={view.templates}
-          loading={view.isLoading}
-          uploadPending={view.uploadPending}
-          onBillTypeChange={view.setSelectedBillType}
-          onRefresh={view.refresh}
-          onCreate={view.openCreate}
-          onPreview={view.openPreview}
-          onEdit={view.openEdit}
-          onCopy={view.handleCopy}
-          onUploadJson={view.handleUploadJson}
-          onDelete={view.handleDelete}
-          onActiveChange={view.setActiveTemplateId}
-        />
+        {view.isQueryError ? (
+          <AppResult
+            status="error"
+            title={t('system.printTemplate.loadFailed')}
+            subTitle={t('result.error.subTitle')}
+            extra={
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                loading={view.isFetching}
+                onClick={view.refresh}
+              >
+                {t('error.retry')}
+              </Button>
+            }
+          />
+        ) : (
+          <PrintTemplateTableCard
+            selectedBillType={view.selectedBillType}
+            activeTemplateId={view.activeTemplateId}
+            templates={view.templates}
+            loading={view.isLoading}
+            refreshing={view.isFetching}
+            uploadPending={view.uploadPending}
+            onBillTypeChange={view.setSelectedBillType}
+            onRefresh={view.refresh}
+            onCreate={view.openCreate}
+            onPreview={view.openPreview}
+            onEdit={view.openEdit}
+            onCopy={view.handleCopy}
+            onUploadJson={view.handleUploadJson}
+            onDelete={view.handleDelete}
+            onActiveChange={view.setActiveTemplateId}
+          />
+        )}
         {view.previewOpen ? (
           <PrintTemplatePreviewModal
             open={view.previewOpen}

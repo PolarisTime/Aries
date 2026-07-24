@@ -211,6 +211,9 @@ export const zhCN = {
     editSuccess: '编辑成功',
     deleteSuccess: '删除成功',
     deleteConfirm: '确定删除？',
+    unsavedChangesTitle: '存在未保存的修改',
+    unsavedChangesContent: '当前修改尚未保存，继续操作将丢失这些修改。',
+    discardChanges: '放弃修改',
     columnSettings: '列设置',
     saveAndAudit: '保存并审核',
     auditConfirm: '审核后单据状态将变更为已审核，且不可再编辑。确定继续？',
@@ -244,6 +247,22 @@ export const zhCN = {
     importParentSuccessSimple: '已导入 {{itemCount}} 条明细',
     disabled: '已禁用',
     batchDelete: '批量删除',
+  },
+  finance: {
+    filters: {
+      advanced: '高级筛选',
+    },
+    overview: {
+      title: '财务概览',
+      description: '汇总应收、应付及往来方余额，支持按结算主体和截止日期查询。',
+      refreshAria: '刷新财务概览',
+    },
+    cashLedger: {
+      title: '资金流水',
+      description: '查询结算主体的收付款流水及期间余额变化。',
+      exportFiltered: '导出当前筛选结果',
+      refreshAria: '刷新资金流水',
+    },
   },
   auth: {
     login: '登录',
@@ -539,7 +558,12 @@ export const zhCN = {
       uploadingProgress: '正在上传 {{fileName}}，已完成 {{percent}}%',
       unbindSuccess: '解除绑定成功',
       deleteFailed: '删除失败',
+      loadFailed: '附件加载失败',
       noAttachments: '暂无附件',
+      preview: '预览附件',
+      download: '下载附件',
+      unbind: '解除绑定',
+      unbindConfirm: '确定解除该附件与当前单据的绑定吗？',
       pdfPreview: 'PDF 预览',
     },
     filter: {
@@ -1367,6 +1391,7 @@ export const zhCN = {
   system: {
     company: {
       title: '结算主体管理',
+      loadFailed: '结算主体加载失败',
       saveSuccess: '结算主体信息已保存',
       enterpriseMode: '主体维护',
       singleEnterprise: '支持多结算主体',
@@ -1379,6 +1404,8 @@ export const zhCN = {
       deleteSubject: '删除结算主体',
       deleteSubjectConfirm:
         '确定删除该结算主体吗？已被客户、物流商或采购订单引用的主体不可删除。',
+      deleteSubjectDirtyConfirm:
+        '当前结算主体包含未保存的修改。删除后这些修改将丢失；已被业务数据引用的主体仍无法删除。确定继续吗？',
       activeSubjects: '正常主体',
       atLeastOneSettlementAccount: '结算账户为可选信息',
       inputAccountName: '请输入第 {{index}} 个结算账户的账户名称',
@@ -1406,6 +1433,7 @@ export const zhCN = {
     },
     printTemplate: {
       title: '打印模板',
+      loadFailed: '打印模板加载失败',
       description:
         '按单据类型和结算主体维护打印模板，支持预览、复制及文件同步。',
       newTemplate: '新建模板',

@@ -135,7 +135,7 @@ const customerFallbackOptions: ReturnType<typeof createOptionList> = []
 
 const _customerOptions = customerFallbackOptions
 
-export function customerOptions() {
+function customerOptions() {
   const dynamic = apiGetCustomerOptions()
   return dynamic.length > 0 ? dynamic : _customerOptions
 }

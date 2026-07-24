@@ -111,12 +111,7 @@ export function ModuleEditorFormSection({
           className="editor-form-row"
         >
           {fieldRow.map((field: ModuleFormFieldDefinition) => (
-            <Col
-              key={field.key}
-              xs={24}
-              sm={12}
-              lg={getFieldSpan(field, layoutVariant)}
-            >
+            <Col key={field.key} span={getFieldSpan(field, layoutVariant)}>
               <FormFieldRenderer
                 field={field}
                 disabled={isEditorFieldDisabledForModule(

@@ -143,7 +143,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           disabled={disabledValue}
           min={field.min}
-          precision={field.precision || 2}
+          precision={field.precision ?? 2}
           step={field.step}
           controls={field.controls}
           className="w-full"

@@ -1,4 +1,11 @@
-import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
+import {
+  ClearOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+  UpOutlined,
+} from '@ant-design/icons'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import {
   Alert,
@@ -17,7 +24,8 @@ import {
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { type Dispatch, useMemo, useReducer } from 'react'
+import { type Dispatch, useMemo, useReducer, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type CashLedgerFilter,
   type CashLedgerFlowType,
@@ -27,6 +35,7 @@ import {
   exportCashLedger,
   getCashLedger,
 } from '@/api/cash-ledger'
+import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
@@ -94,6 +103,7 @@ type CashLedgerAction =
   | { type: 'keyword-committed'; value: string }
   | { type: 'pagination-changed'; page: number; pageSize: number }
   | { type: 'default-page-size-changed'; value: number }
+  | { type: 'reset-filters' }
 
 function createInitialLedgerState(defaultPageSize: number): CashLedgerState {
   return {
@@ -153,6 +163,13 @@ function cashLedgerReducer(
         observedDefaultPageSize: action.value,
         page: 1,
         pageSizeOverride: undefined,
+      }
+    case 'reset-filters':
+      return {
+        keywordInput: '',
+        observedDefaultPageSize: state.observedDefaultPageSize,
+        page: 1,
+        pageSizeOverride: state.pageSizeOverride,
       }
   }
 }
@@ -299,227 +316,254 @@ interface CashLedgerWorkspaceModel {
 }
 
 function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
+  const { t } = useTranslation()
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
   const dateRangeValue: [Dayjs, Dayjs] | null =
     model.state.startDate && model.state.endDate
       ? [dayjs(model.state.startDate), dayjs(model.state.endDate)]
       : null
 
   return (
-    <div className="module-page-stack cash-ledger-page">
-      <div className="module-grid-workspace">
-        <header className="module-workspace-header">
-          <div className="module-workspace-heading">
-            <div className="module-workspace-title-row">
-              <span className="module-workspace-kicker">Finance</span>
-              <h1 className="module-workspace-title">资金流水</h1>
-            </div>
-          </div>
-          <div className="cash-ledger-actions">
-            <Tooltip title="导出当前筛选结果">
-              <span>
-                <Button
-                  icon={<DownloadOutlined />}
-                  loading={model.exportPending}
-                  disabled={
-                    !model.queryEnabled ||
-                    model.isFetching ||
-                    model.exportPending
-                  }
-                  onClick={model.onExport}
-                >
-                  导出
-                </Button>
-              </span>
-            </Tooltip>
-            <Tooltip title="刷新">
-              <span>
-                <Button
-                  aria-label="刷新资金流水"
-                  icon={<ReloadOutlined />}
-                  loading={model.isFetching}
-                  disabled={
-                    !model.queryEnabled ||
-                    model.exportPending ||
-                    model.isFetching
-                  }
-                  onClick={model.onRefresh}
+    <AppProPage
+      className="cash-ledger-pro-page"
+      description={t('finance.cashLedger.description')}
+      extra={
+        <div className="cash-ledger-actions">
+          <Tooltip title={t('finance.cashLedger.exportFiltered')}>
+            <span>
+              <Button
+                icon={<DownloadOutlined />}
+                loading={model.exportPending}
+                disabled={
+                  !model.queryEnabled || model.isFetching || model.exportPending
+                }
+                onClick={model.onExport}
+              >
+                {t('common.export')}
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title={t('common.refresh')}>
+            <span>
+              <Button
+                aria-label={t('finance.cashLedger.refreshAria')}
+                icon={<ReloadOutlined />}
+                loading={model.isFetching}
+                disabled={
+                  !model.queryEnabled || model.exportPending || model.isFetching
+                }
+                onClick={model.onRefresh}
+              />
+            </span>
+          </Tooltip>
+        </div>
+      }
+      title={t('finance.cashLedger.title')}
+    >
+      <div className="module-page-stack cash-ledger-page">
+        <div className="module-grid-workspace">
+          <section className="finance-filter-shell cash-ledger-filters">
+            <div className="finance-filter-primary-row cash-ledger-primary-row">
+              <div className="cash-ledger-filter">
+                <Typography.Text type="secondary">结算主体</Typography.Text>
+                <Select
+                  aria-label="结算主体"
+                  aria-required="true"
+                  value={model.state.settlementCompanyId}
+                  options={model.settlementCompanies}
+                  loading={model.optionsLoading}
+                  showSearch={{ optionFilterProp: 'label' }}
+                  placeholder="请选择结算主体"
+                  onChange={(value) => {
+                    model.dispatch({
+                      type: 'settlement-company-changed',
+                      value: value ? String(value) : undefined,
+                    })
+                  }}
                 />
-              </span>
-            </Tooltip>
-          </div>
-        </header>
+              </div>
+              <div className="cash-ledger-filter">
+                <Typography.Text type="secondary">业务日期</Typography.Text>
+                <DatePicker.RangePicker
+                  aria-label="业务日期"
+                  value={dateRangeValue}
+                  onChange={(_, dateStrings) => {
+                    model.dispatch({
+                      type: 'date-range-changed',
+                      startDate: dateStrings[0] || undefined,
+                      endDate: dateStrings[1] || undefined,
+                    })
+                  }}
+                />
+              </div>
+              <div className="cash-ledger-filter">
+                <Typography.Text type="secondary">关键字</Typography.Text>
+                <Input
+                  aria-label="关键字"
+                  value={model.state.keywordInput}
+                  allowClear
+                  placeholder="单号、往来方、用途、经办人或备注"
+                  onChange={(event) => {
+                    model.dispatch({
+                      type: 'keyword-input-changed',
+                      value: event.target.value,
+                    })
+                  }}
+                  onBlur={(event) =>
+                    model.dispatch({
+                      type: 'keyword-committed',
+                      value: event.target.value,
+                    })
+                  }
+                  onPressEnter={(event) =>
+                    model.dispatch({
+                      type: 'keyword-committed',
+                      value: event.currentTarget.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="finance-filter-actions">
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={() => {
+                    model.dispatch({ type: 'reset-filters' })
+                    setAdvancedFiltersOpen(false)
+                  }}
+                >
+                  {t('common.reset')}
+                </Button>
+                <Button
+                  aria-controls="cash-ledger-advanced-filters"
+                  aria-expanded={advancedFiltersOpen}
+                  icon={<FilterOutlined />}
+                  onClick={() => setAdvancedFiltersOpen((open) => !open)}
+                >
+                  {t('finance.filters.advanced')}
+                  {advancedFiltersOpen ? <UpOutlined /> : <DownOutlined />}
+                </Button>
+              </div>
+            </div>
 
-        <section className="cash-ledger-filters">
-          <div className="cash-ledger-filter">
-            <Typography.Text type="secondary">结算主体</Typography.Text>
-            <Select
-              aria-label="结算主体"
-              aria-required="true"
-              value={model.state.settlementCompanyId}
-              options={model.settlementCompanies}
-              loading={model.optionsLoading}
-              showSearch={{ optionFilterProp: 'label' }}
-              placeholder="请选择结算主体"
-              onChange={(value) => {
-                model.dispatch({
-                  type: 'settlement-company-changed',
-                  value: value ? String(value) : undefined,
-                })
-              }}
-            />
-          </div>
-          <div className="cash-ledger-filter">
-            <Typography.Text type="secondary">业务日期</Typography.Text>
-            <DatePicker.RangePicker
-              aria-label="业务日期"
-              value={dateRangeValue}
-              onChange={(_, dateStrings) => {
-                model.dispatch({
-                  type: 'date-range-changed',
-                  startDate: dateStrings[0] || undefined,
-                  endDate: dateStrings[1] || undefined,
-                })
-              }}
-            />
-          </div>
-          <div className="cash-ledger-filter">
-            <Typography.Text type="secondary">往来方类型</Typography.Text>
-            <Select
-              aria-label="往来方类型"
-              value={model.state.counterpartyType}
-              options={COUNTERPARTY_TYPE_OPTIONS}
-              allowClear
-              placeholder="全部往来方类型"
-              onChange={(value) => {
-                model.dispatch({
-                  type: 'counterparty-type-changed',
-                  value,
-                })
-              }}
-            />
-          </div>
-          <div className="cash-ledger-filter">
-            <Typography.Text type="secondary">往来方</Typography.Text>
-            <Select
-              aria-label="往来方"
-              value={model.state.counterpartyId}
-              options={model.counterpartyOptions}
-              loading={model.optionsLoading}
-              disabled={!model.state.counterpartyType}
-              showSearch={{ optionFilterProp: 'label' }}
-              allowClear
-              placeholder={
-                model.state.counterpartyType ? '全部往来方' : '先选择类型'
-              }
-              onChange={(value) => {
-                model.dispatch({
-                  type: 'counterparty-changed',
-                  value: value ? String(value) : undefined,
-                })
-              }}
-            />
-          </div>
-          <div className="cash-ledger-filter">
-            <Typography.Text type="secondary">流水类型</Typography.Text>
-            <Select
-              aria-label="流水类型"
-              value={model.state.flowType}
-              options={FLOW_TYPE_OPTIONS}
-              allowClear
-              placeholder="全部流水类型"
-              onChange={(value) => {
-                model.dispatch({ type: 'flow-type-changed', value })
-              }}
-            />
-          </div>
-          <div className="cash-ledger-filter">
-            <Typography.Text type="secondary">关键字</Typography.Text>
-            <Input
-              aria-label="关键字"
-              value={model.state.keywordInput}
-              allowClear
-              placeholder="单号、往来方、用途、经办人或备注"
-              onChange={(event) => {
-                model.dispatch({
-                  type: 'keyword-input-changed',
-                  value: event.target.value,
-                })
-              }}
-              onBlur={(event) =>
-                model.dispatch({
-                  type: 'keyword-committed',
-                  value: event.target.value,
-                })
-              }
-              onPressEnter={(event) =>
-                model.dispatch({
-                  type: 'keyword-committed',
-                  value: event.currentTarget.value,
-                })
-              }
-            />
-          </div>
-        </section>
+            {advancedFiltersOpen ? (
+              <div
+                className="finance-filter-advanced-row"
+                id="cash-ledger-advanced-filters"
+              >
+                <div className="cash-ledger-filter">
+                  <Typography.Text type="secondary">往来方类型</Typography.Text>
+                  <Select
+                    aria-label="往来方类型"
+                    value={model.state.counterpartyType}
+                    options={COUNTERPARTY_TYPE_OPTIONS}
+                    allowClear
+                    placeholder="全部往来方类型"
+                    onChange={(value) => {
+                      model.dispatch({
+                        type: 'counterparty-type-changed',
+                        value,
+                      })
+                    }}
+                  />
+                </div>
+                <div className="cash-ledger-filter">
+                  <Typography.Text type="secondary">往来方</Typography.Text>
+                  <Select
+                    aria-label="往来方"
+                    value={model.state.counterpartyId}
+                    options={model.counterpartyOptions}
+                    loading={model.optionsLoading}
+                    disabled={!model.state.counterpartyType}
+                    showSearch={{ optionFilterProp: 'label' }}
+                    allowClear
+                    placeholder={
+                      model.state.counterpartyType ? '全部往来方' : '先选择类型'
+                    }
+                    onChange={(value) => {
+                      model.dispatch({
+                        type: 'counterparty-changed',
+                        value: value ? String(value) : undefined,
+                      })
+                    }}
+                  />
+                </div>
+                <div className="cash-ledger-filter">
+                  <Typography.Text type="secondary">流水类型</Typography.Text>
+                  <Select
+                    aria-label="流水类型"
+                    value={model.state.flowType}
+                    options={FLOW_TYPE_OPTIONS}
+                    allowClear
+                    placeholder="全部流水类型"
+                    onChange={(value) => {
+                      model.dispatch({ type: 'flow-type-changed', value })
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </section>
 
-        {model.isError ? (
-          <Alert
-            type="error"
-            showIcon
-            title="加载资金流水失败"
-            description={requestErrorMessage(model.error, '请稍后重试')}
-          />
-        ) : null}
+          {model.isError ? (
+            <Alert
+              type="error"
+              showIcon
+              title="加载资金流水失败"
+              description={requestErrorMessage(model.error, '请稍后重试')}
+            />
+          ) : null}
 
-        {model.summary ? (
-          <section className="cash-ledger-summary">
-            <Descriptions
+          {model.summary ? (
+            <section className="cash-ledger-summary">
+              <Descriptions
+                size="small"
+                bordered
+                column={4}
+                items={buildSummaryItems(model.summary, model.formatCellValue)}
+              />
+            </section>
+          ) : null}
+
+          <section className="cash-ledger-table">
+            <Table
+              rowKey="key"
               size="small"
-              bordered
-              column={{ xs: 2, md: 4 }}
-              items={buildSummaryItems(model.summary, model.formatCellValue)}
+              columns={model.columns}
+              dataSource={model.rows}
+              loading={model.queryEnabled && model.isFetching}
+              scroll={{ x: 1530, y: 'calc(100vh - 410px)' }}
+              locale={{
+                emptyText: model.queryEnabled ? (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="暂无资金流水"
+                  />
+                ) : (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="请选择结算主体"
+                  />
+                ),
+              }}
+              pagination={{
+                current: model.state.page,
+                pageSize: model.pageSize,
+                total: model.total,
+                showSizeChanger: true,
+                showTotal: (count) => `共 ${count} 条`,
+                onChange: (nextPage, nextPageSize) => {
+                  model.dispatch({
+                    type: 'pagination-changed',
+                    page: nextPageSize === model.pageSize ? nextPage : 1,
+                    pageSize: nextPageSize,
+                  })
+                },
+              }}
             />
           </section>
-        ) : null}
-
-        <section className="cash-ledger-table">
-          <Table
-            rowKey="key"
-            size="small"
-            columns={model.columns}
-            dataSource={model.rows}
-            loading={model.queryEnabled && model.isFetching}
-            scroll={{ x: 1530, y: 'calc(100vh - 410px)' }}
-            locale={{
-              emptyText: model.queryEnabled ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="暂无资金流水"
-                />
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="请选择结算主体"
-                />
-              ),
-            }}
-            pagination={{
-              current: model.state.page,
-              pageSize: model.pageSize,
-              total: model.total,
-              showSizeChanger: true,
-              showTotal: (count) => `共 ${count} 条`,
-              onChange: (nextPage, nextPageSize) => {
-                model.dispatch({
-                  type: 'pagination-changed',
-                  page: nextPageSize === model.pageSize ? nextPage : 1,
-                  pageSize: nextPageSize,
-                })
-              },
-            }}
-          />
-        </section>
+        </div>
       </div>
-    </div>
+    </AppProPage>
   )
 }
 

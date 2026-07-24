@@ -49,13 +49,6 @@ export function ModuleItemsPanel({
           ) : null}
         </div>
       </div>
-      {hasSummary ? (
-        <EditorItemsSummary
-          items={items}
-          showAmount={showAmountSummary}
-          className="editor-items-summary-mobile"
-        />
-      ) : null}
       {children}
     </div>
   )

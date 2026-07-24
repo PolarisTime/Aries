@@ -7,7 +7,7 @@ const integerStringSchema = z
   .transform(Number)
 
 /** 后端 Jackson 将 Long 输出为字符串，边界层统一归一化为安全整数。 */
-export const responseIntegerSchema = z.union([
+const responseIntegerSchema = z.union([
   z.number().int().safe(),
   integerStringSchema.pipe(z.number().int().safe()),
 ])

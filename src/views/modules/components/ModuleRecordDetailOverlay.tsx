@@ -1,6 +1,8 @@
+import { ReloadOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { Button, Col, Empty, Flex, Row, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppResult } from '@/components/AppResult'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
@@ -21,8 +23,20 @@ interface Props {
   config: ModulePageConfig
   record: ModuleRecord | null
   loading: boolean
+  error: unknown
   canPrint?: boolean
   onClose: () => void
+  onRetry: () => void
+}
+
+function getDetailErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim()
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error.trim()
+  }
+  return fallback
 }
 
 export function ModuleRecordDetailOverlay({
@@ -30,8 +44,10 @@ export function ModuleRecordDetailOverlay({
   config,
   record,
   loading,
+  error,
   canPrint = false,
   onClose,
+  onRetry,
 }: Props) {
   const { t } = useTranslation()
   const { formatCellValue } = useModuleDisplaySupport()
@@ -73,6 +89,18 @@ export function ModuleRecordDetailOverlay({
         <Flex justify="center" align="center" className="py-64">
           <Spin />
         </Flex>
+      ) : error != null ? (
+        <AppResult
+          className="app-result--workspace"
+          status="error"
+          title={t('api.loadFailed')}
+          subTitle={getDetailErrorMessage(error, t('result.error.subTitle'))}
+          extra={
+            <Button type="primary" icon={<ReloadOutlined />} onClick={onRetry}>
+              {t('errorBoundary.retry')}
+            </Button>
+          }
+        />
       ) : !record ? (
         <Empty description={t('modules.detail.noData')} />
       ) : (
@@ -85,12 +113,7 @@ export function ModuleRecordDetailOverlay({
                 )
                 const fieldType = colDef?.type || field.type
                 return (
-                  <Col
-                    key={field.key}
-                    xs={field.fullRow ? 24 : 24}
-                    sm={field.fullRow ? 24 : 12}
-                    lg={field.fullRow ? 24 : colSpan}
-                  >
+                  <Col key={field.key} span={field.fullRow ? 24 : colSpan}>
                     <div className="bill-detail-item">
                       <span className="bill-detail-label">
                         {padLabel(field.label)}

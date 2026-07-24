@@ -132,18 +132,25 @@ export function useBusinessGridPage({
     setCurrentPage: (page: number) => setCurrentPage(page),
   })
 
-  const { records, total, isLoading, isFetching, warningMessage } =
-    useInfiniteBusinessItems({
-      moduleKey,
-      // react-doctor: intentional callback, not event handler
-      filters: submittedFilters,
-      // react-doctor: intentional callback, not event handler
-      enabled: true,
-      // react-doctor: intentional callback, not event handler
-      currentPage,
-      // react-doctor: intentional callback, not event handler
-      pageSize,
-    })
+  const {
+    records,
+    total,
+    isLoading,
+    isFetching,
+    errorMessage: listErrorMessage,
+    hasError: listHasError,
+    retry: retryList,
+  } = useInfiniteBusinessItems({
+    moduleKey,
+    // react-doctor: intentional callback, not event handler
+    filters: submittedFilters,
+    // react-doctor: intentional callback, not event handler
+    enabled: true,
+    // react-doctor: intentional callback, not event handler
+    currentPage,
+    // react-doctor: intentional callback, not event handler
+    pageSize,
+  })
   const recordIdsKey = records.map((record) => record.id).join(',')
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
@@ -153,8 +160,15 @@ export function useBusinessGridPage({
     if (!canUseListExport) return
     await exportModuleRows(submittedFilters)
   }
-  const { detailOpen, detailRecord, detailLoading, openDetail, closeDetail } =
-    useDetailSupport({ moduleKey, config: resolvedConfig })
+  const {
+    detailOpen,
+    detailRecord,
+    detailLoading,
+    detailError,
+    openDetail,
+    retryDetail,
+    closeDetail,
+  } = useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
     editRecord,
     editorLockLoading,
@@ -468,6 +482,7 @@ export function useBusinessGridPage({
     currentPage,
     defaultFilters,
     detailLoading,
+    detailError,
     detailOpen,
     detailRecord,
     editRecord,
@@ -485,6 +500,8 @@ export function useBusinessGridPage({
     handleStatementGenerate,
     isFetching,
     isLoading,
+    listErrorMessage,
+    listHasError,
     lockedLineItemsNotice,
     openDetail,
     openEditor,
@@ -495,6 +512,8 @@ export function useBusinessGridPage({
     setCurrentPage,
     setPageSize,
     refreshModuleQueries,
+    retryDetail,
+    retryList,
     rowSelection,
     selectedRowKeys,
     selectedRows: Object.values(selectedRowMap),
@@ -507,7 +526,6 @@ export function useBusinessGridPage({
     toggleColumn,
     updateFilter,
     visibleToolbarActions,
-    warningMessage,
     getRowClassName,
     closeEditor,
     canUseBulkPrintActions,

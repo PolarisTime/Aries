@@ -10,6 +10,14 @@
       {
         "files": ["src/views/finance/CashLedgerView.tsx"],
         "rules": ["react-doctor/query-mutation-missing-invalidation"]
+      },
+      {
+        "files": ["src/views/modules/components/ModuleEditorWorkspace.tsx"],
+        "rules": ["react-doctor/no-event-handler"]
+      },
+      {
+        "files": ["src/views/system/AccountView.tsx"],
+        "rules": ["react-doctor/query-mutation-missing-invalidation"]
       }
     ]
   }

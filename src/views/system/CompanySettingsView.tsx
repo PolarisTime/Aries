@@ -12,11 +12,9 @@ import {
   Col,
   Collapse,
   Empty,
-  Flex,
   Form,
   Input,
   List,
-  Popconfirm,
   Row,
   Select,
   Skeleton,
@@ -25,7 +23,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type CompanySettingProfile,
@@ -34,11 +32,13 @@ import {
   listCompanySettings,
   updateCompanySetting,
 } from '@/api/company-settings'
+import { AppProPage } from '@/components/AppProPage'
+import { AppResult } from '@/components/AppResult'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { SETTLEMENT_TYPE, STATUS } from '@/constants/status-constants'
 import { useRequestError } from '@/hooks/useRequestError'
 import { validateForm } from '@/lib/antd-form'
-import { message } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import {
   createEmptySettlementAccount,
@@ -55,6 +55,8 @@ type CompanySettingFormValues = {
   settlementAccounts: SettlementAccountFormRow[]
   [key: string]: unknown
 }
+
+const EMPTY_COMPANY_SETTINGS: CompanySettingProfile[] = []
 
 function buildCompanySettingFormValues(
   profile: CompanySettingProfile | null,
@@ -112,40 +114,28 @@ function buildPayload(values: CompanySettingFormValues) {
   }
 }
 
-interface CompanySettingsPageHeaderProps {
+interface CompanySettingsPageActionsProps {
+  canSave: boolean
   loading: boolean
   saving: boolean
   onRefresh: () => void
   onSave: () => void
 }
 
-function CompanySettingsPageHeader({
+function CompanySettingsPageActions({
+  canSave,
   loading,
   saving,
   onRefresh,
   onSave,
-}: CompanySettingsPageHeaderProps) {
+}: CompanySettingsPageActionsProps) {
   const { t } = useTranslation()
   return (
-    <Flex
-      className="company-settings-page-header"
-      align="center"
-      justify="space-between"
-      gap={12}
-      wrap="wrap"
-    >
-      <div className="company-settings-page-title">
-        <Typography.Title level={4} className="m-0">
-          {t('system.companyHeader.title')}
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          {t('system.companyHeader.description')}
-        </Typography.Text>
-      </div>
-      <Space size={8} wrap>
-        <Button loading={loading} icon={<ReloadOutlined />} onClick={onRefresh}>
-          {t('common.refresh')}
-        </Button>
+    <Space size={8} wrap>
+      <Button loading={loading} icon={<ReloadOutlined />} onClick={onRefresh}>
+        {t('common.refresh')}
+      </Button>
+      {canSave ? (
         <Button
           type="primary"
           loading={saving}
@@ -154,8 +144,29 @@ function CompanySettingsPageHeader({
         >
           {t('common.save')}
         </Button>
-      </Space>
-    </Flex>
+      ) : null}
+    </Space>
+  )
+}
+
+interface CompanySettingsPageShellProps {
+  children: React.ReactNode
+  extra?: React.ReactNode
+}
+
+function CompanySettingsPageShell({
+  children,
+  extra,
+}: CompanySettingsPageShellProps) {
+  const { t } = useTranslation()
+  return (
+    <AppProPage
+      title={t('system.companyHeader.title')}
+      description={t('system.companyHeader.description')}
+      extra={extra}
+    >
+      <div className="settings-standard-page">{children}</div>
+    </AppProPage>
   )
 }
 
@@ -183,12 +194,7 @@ function CompanySubjectList({
       className="company-subject-selector-card"
       title={t('system.company.subjectList')}
       extra={
-        <Button
-          type="primary"
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={onCreate}
-        >
+        <Button size="small" icon={<PlusOutlined />} onClick={onCreate}>
           {t('system.company.addSubject')}
         </Button>
       }
@@ -206,24 +212,19 @@ function CompanySubjectList({
                 className={`company-subject-selector-item${active ? ' is-active' : ''}`}
                 key={item.id}
                 actions={[
-                  <Popconfirm
+                  <Button
                     key="delete"
-                    title={t('system.company.deleteSubject')}
-                    description={t('system.company.deleteSubjectConfirm')}
-                    okText={t('common.confirm')}
-                    cancelText={t('common.cancel')}
-                    onConfirm={() => onDelete(item.id)}
-                  >
-                    <Button
-                      danger
-                      type="text"
-                      size="small"
-                      loading={deletingId === item.id}
-                      icon={<DeleteOutlined />}
-                      aria-label={t('system.company.deleteSubject')}
-                      onClick={(event) => event.stopPropagation()}
-                    />
-                  </Popconfirm>,
+                    danger
+                    type="text"
+                    size="small"
+                    loading={deletingId === item.id}
+                    icon={<DeleteOutlined />}
+                    aria-label={t('system.company.deleteSubject')}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onDelete(item.id)
+                    }}
+                  />,
                 ]}
               >
                 <button
@@ -267,7 +268,7 @@ function SubjectProfileFields() {
   const { t } = useTranslation()
   return (
     <Row gutter={[16, 0]}>
-      <Col xs={24} md={12}>
+      <Col span={12}>
         <Form.Item
           name="companyName"
           label={t('system.companySubject.companyName')}
@@ -285,7 +286,7 @@ function SubjectProfileFields() {
           />
         </Form.Item>
       </Col>
-      <Col xs={24} md={12}>
+      <Col span={12}>
         <Form.Item
           name="taxNo"
           label={t('system.companySubject.taxNo')}
@@ -303,7 +304,7 @@ function SubjectProfileFields() {
           />
         </Form.Item>
       </Col>
-      <Col xs={24} md={12}>
+      <Col span={12}>
         <Form.Item
           name="status"
           label={t('system.companySubject.status')}
@@ -332,7 +333,7 @@ function SubjectProfileFields() {
   )
 }
 
-function SettlementAccountsTable() {
+function SettlementAccountsTable({ onChange }: { onChange: () => void }) {
   const { t } = useTranslation()
   return (
     <Form.List name="settlementAccounts">
@@ -471,7 +472,11 @@ function SettlementAccountsTable() {
                 type="text"
                 size="small"
                 icon={<DeleteOutlined />}
-                onClick={() => remove(field.name)}
+                aria-label={t('common.delete')}
+                onClick={() => {
+                  remove(field.name)
+                  onChange()
+                }}
               />
             ),
           },
@@ -496,7 +501,10 @@ function SettlementAccountsTable() {
                     <Button
                       size="small"
                       icon={<PlusOutlined />}
-                      onClick={() => add(createEmptySettlementAccount())}
+                      onClick={() => {
+                        add(createEmptySettlementAccount())
+                        onChange()
+                      }}
                     >
                       {t('system.company.addBank')}
                     </Button>
@@ -526,7 +534,7 @@ function CompanyRemarkField() {
 
 interface CompanySettingsFormProps {
   companies: CompanySettingProfile[]
-  isLoading: boolean
+  isFetching: boolean
   selectedId: string
   onRefresh: () => void
   onSelect: (id: string) => void
@@ -536,7 +544,7 @@ interface CompanySettingsFormProps {
 
 function CompanySettingsForm({
   companies,
-  isLoading,
+  isFetching,
   selectedId,
   onRefresh,
   onSelect,
@@ -547,6 +555,13 @@ function CompanySettingsForm({
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const [form] = Form.useForm<CompanySettingFormValues>()
+  const isDirtyRef = useRef(false)
+  const markDirty = () => {
+    isDirtyRef.current = true
+  }
+  const clearDirty = () => {
+    isDirtyRef.current = false
+  }
   const selectedProfile = useMemo(
     () => companies.find((item) => item.id === selectedId) ?? null,
     [companies, selectedId],
@@ -558,6 +573,8 @@ function CompanySettingsForm({
   )
 
   useEffect(() => {
+    if (isDirtyRef.current) return
+    form.resetFields()
     form.setFieldsValue(initialValues)
   }, [form, initialValues])
 
@@ -567,6 +584,7 @@ function CompanySettingsForm({
       ...(Array.isArray(current) ? current : []),
       createEmptySettlementAccount(),
     ])
+    markDirty()
   }
 
   const saveMutation = useMutation({
@@ -578,6 +596,18 @@ function CompanySettingsForm({
     },
     onSuccess: (data) => {
       message.success(t('common.saveSuccess'))
+      clearDirty()
+      if (data) {
+        queryClient.setQueryData<CompanySettingProfile[]>(
+          QUERY_KEYS.companySettings,
+          (current = []) => {
+            const exists = current.some((item) => item.id === data.id)
+            return exists
+              ? current.map((item) => (item.id === data.id ? data : item))
+              : [...current, data]
+          },
+        )
+      }
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.companySettings,
       })
@@ -598,6 +628,13 @@ function CompanySettingsForm({
     mutationFn: deleteCompanySetting,
     onSuccess: (_, deletedId) => {
       message.success(t('common.deleteSuccess'))
+      const remainingCompanies = companies.filter(
+        (item) => item.id !== deletedId,
+      )
+      queryClient.setQueryData<CompanySettingProfile[]>(
+        QUERY_KEYS.companySettings,
+        remainingCompanies,
+      )
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.companySettings,
       })
@@ -608,11 +645,12 @@ function CompanySettingsForm({
         queryKey: QUERY_KEYS.masterOptions.settlementCompany,
       })
       if (selectedId === deletedId) {
-        const next = companies.find((item) => item.id !== deletedId)
+        clearDirty()
+        const next = remainingCompanies[0]
         onSelectSaved(next?.id ?? '')
       }
     },
-    onError: (err: Error) => showError(err, t('common.deleteConfirm')),
+    onError: (err: Error) => showError(err, t('api.deleteFailed')),
   })
 
   const handleSave = async () => {
@@ -641,6 +679,58 @@ function CompanySettingsForm({
     }
   }
 
+  const confirmDiscardChanges = (onConfirm: () => void) => {
+    if (!isDirtyRef.current) {
+      onConfirm()
+      return
+    }
+    modal.confirm({
+      title: t('common.unsavedChangesTitle'),
+      content: t('common.unsavedChangesContent'),
+      okText: t('common.discardChanges'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => {
+        clearDirty()
+        onConfirm()
+      },
+    })
+  }
+
+  const handleSelect = (id: string) => {
+    if (id === selectedId) return
+    confirmDiscardChanges(() => onSelect(id))
+  }
+
+  const handleCreateDraft = () => {
+    if (isDraft) return
+    confirmDiscardChanges(onCreateDraft)
+  }
+
+  const handleDelete = (id: string) => {
+    const deletesCurrentDirtyDraft = id === selectedId && isDirtyRef.current
+    modal.confirm({
+      title: t('system.company.deleteSubject'),
+      content: deletesCurrentDirtyDraft
+        ? t('system.company.deleteSubjectDirtyConfirm')
+        : t('system.company.deleteSubjectConfirm'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        await deleteMutation.mutateAsync(id)
+      },
+    })
+  }
+
+  const handleRefresh = () => {
+    confirmDiscardChanges(() => {
+      form.resetFields()
+      form.setFieldsValue(initialValues)
+      onRefresh()
+    })
+  }
+
   const collapseItems = [
     {
       key: 'profile',
@@ -663,7 +753,7 @@ function CompanySettingsForm({
           {t('system.company.addBank')}
         </Button>
       ),
-      children: <SettlementAccountsTable />,
+      children: <SettlementAccountsTable onChange={markDirty} />,
     },
     {
       key: 'remark',
@@ -673,23 +763,22 @@ function CompanySettingsForm({
   ]
 
   return (
-    <div className="company-settings-page">
-      <CompanySettingsPageHeader
-        loading={isLoading}
-        saving={saveMutation.isPending}
-        onRefresh={onRefresh}
-        onSave={() => {
-          void handleSave()
-        }}
-      />
-
-      {isLoading ? (
-        <Card>
-          <Skeleton active />
-        </Card>
-      ) : (
+    <CompanySettingsPageShell
+      extra={
+        <CompanySettingsPageActions
+          canSave={Boolean(selectedId)}
+          loading={isFetching}
+          saving={saveMutation.isPending}
+          onRefresh={handleRefresh}
+          onSave={() => {
+            void handleSave()
+          }}
+        />
+      }
+    >
+      <div className="company-settings-page">
         <Row gutter={[12, 12]} align="top">
-          <Col xs={24} lg={7} xl={6} xxl={5}>
+          <Col span={6}>
             <CompanySubjectList
               companies={companies}
               selectedId={selectedId}
@@ -698,18 +787,19 @@ function CompanySettingsForm({
                   ? String(deleteMutation.variables ?? '')
                   : null
               }
-              onCreate={onCreateDraft}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              onSelect={onSelect}
+              onCreate={handleCreateDraft}
+              onDelete={handleDelete}
+              onSelect={handleSelect}
             />
           </Col>
-          <Col xs={24} lg={17} xl={18} xxl={19}>
+          <Col span={18}>
             {selectedId ? (
               <Form
                 key={selectedId}
                 form={form}
                 layout="vertical"
                 initialValues={initialValues}
+                onValuesChange={markDirty}
               >
                 <Card className="company-settings-editor-card" size="small">
                   <Collapse
@@ -717,21 +807,6 @@ function CompanySettingsForm({
                     size="small"
                     items={collapseItems}
                   />
-                  <Flex
-                    className="company-settings-footer-actions"
-                    justify="flex-end"
-                  >
-                    <Button
-                      type="primary"
-                      loading={saveMutation.isPending}
-                      icon={<SaveOutlined />}
-                      onClick={() => {
-                        void handleSave()
-                      }}
-                    >
-                      {t('common.save')}
-                    </Button>
-                  </Flex>
                 </Card>
               </Form>
             ) : (
@@ -743,7 +818,7 @@ function CompanySettingsForm({
                   <Button
                     type="primary"
                     icon={<PlusOutlined />}
-                    onClick={onCreateDraft}
+                    onClick={handleCreateDraft}
                   >
                     {t('system.company.addSubject')}
                   </Button>
@@ -752,19 +827,21 @@ function CompanySettingsForm({
             )}
           </Col>
         </Row>
-      )}
-    </div>
+      </div>
+    </CompanySettingsPageShell>
   )
 }
 
 export function CompanySettingsView() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState('')
 
-  const { data: companies = [], isLoading } = useQuery({
+  const companyQuery = useQuery({
     queryKey: QUERY_KEYS.companySettings,
     queryFn: listCompanySettings,
   })
+  const companies = companyQuery.data ?? EMPTY_COMPANY_SETTINGS
 
   const effectiveSelectedId = useMemo(() => {
     if (selectedId === 'new') {
@@ -776,10 +853,42 @@ export function CompanySettingsView() {
     return companies[0]?.id ?? ''
   }, [companies, selectedId])
 
+  if (companyQuery.isPending) {
+    return (
+      <CompanySettingsPageShell>
+        <Skeleton active paragraph={{ rows: 10 }} />
+      </CompanySettingsPageShell>
+    )
+  }
+
+  if (companyQuery.isError) {
+    return (
+      <CompanySettingsPageShell>
+        <AppResult
+          status="error"
+          title={t('system.company.loadFailed')}
+          subTitle={t('result.error.subTitle')}
+          extra={
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              loading={companyQuery.isFetching}
+              onClick={() => {
+                void companyQuery.refetch()
+              }}
+            >
+              {t('error.retry')}
+            </Button>
+          }
+        />
+      </CompanySettingsPageShell>
+    )
+  }
+
   return (
     <CompanySettingsForm
       companies={companies}
-      isLoading={isLoading}
+      isFetching={companyQuery.isFetching}
       selectedId={effectiveSelectedId}
       onRefresh={() => {
         void queryClient.invalidateQueries({

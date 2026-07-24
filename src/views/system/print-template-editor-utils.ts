@@ -1,5 +1,20 @@
 import type { SettlementCompanyOption } from '@/api/company-settings'
 
+export interface PrintTemplateEditorFormValues {
+  id?: string
+  billType: string
+  templateName: string
+  templateCode?: string
+  templateHtml?: string
+  templateType: 'COORD' | 'PDF_FORM'
+  engine: 'LODOP' | 'PDF_FORM'
+  assetRef?: string
+  settlementCompanyId?: string
+  settlementCompanyName?: string
+  versionNo?: number
+  status: 'ACTIVE' | 'DISABLED'
+}
+
 export const commonFields = [
   'billNo',
   'orderNo',
@@ -65,7 +80,9 @@ export const layoutFields = [
   'footerDateTop',
 ]
 
-export function defaultEngineForTemplateType(templateType: string) {
+export function defaultEngineForTemplateType(
+  templateType: string | undefined,
+): PrintTemplateEditorFormValues['engine'] {
   if (templateType === 'COORD') return 'LODOP'
   if (templateType === 'PDF_FORM') return 'PDF_FORM'
   return 'LODOP'

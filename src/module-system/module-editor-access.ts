@@ -232,7 +232,7 @@ export function isEditorItemColumnEditableForModule(
   return true
 }
 
-export function hasParentImportValue(
+function hasParentImportValue(
   record: ModuleRecord | undefined,
   parentFieldKey: string | undefined,
 ) {

@@ -29,7 +29,7 @@ export function AuthPageShell({ children, hero }: Props) {
       </Typography.Text>
       <div className="auth-page-brand-rule" aria-hidden="true" />
       <Typography.Text className="auth-page-brand-note">
-        安全、清晰地连接采购、销售、仓储与财务流程
+        {t('auth.loginview.heroSubtitle')}
       </Typography.Text>
     </div>
   )

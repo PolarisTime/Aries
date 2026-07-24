@@ -1,10 +1,18 @@
 /* Ant Design deep overrides — cannot be done with Tailwind utilities */
 
-html,
+html {
+  height: 100%;
+  min-height: 100%;
+  min-width: var(--app-desktop-min-width);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 body,
 #app {
   height: 100%;
   min-height: 100%;
+  min-width: var(--app-desktop-min-width);
   overflow: hidden;
 }
 
@@ -27,11 +35,13 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: var(--app-desktop-min-width);
   padding: 24px;
 }
 
 .ant-modal-root .ant-modal {
   top: auto;
+  max-width: none !important;
   padding-bottom: 0;
   margin: 0;
 }

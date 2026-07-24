@@ -47,7 +47,7 @@ export function AppTopNavigationHeader({
         <button
           type="button"
           className="app-top-brand"
-          aria-label="工作台"
+          aria-label={t('modules.openPages.workbench')}
           onClick={onDashboardClick}
         >
           <span className="app-top-brand-mark">{topBrandMark}</span>
@@ -104,7 +104,9 @@ export function AppTopNavigationHeader({
             <button
               type="button"
               className="app-top-user-trigger"
-              aria-label={currentUserName || currentUserLoginName || '用户菜单'}
+              aria-label={t('layouts.userMenu.openFor', {
+                name: currentUserName || currentUserLoginName,
+              })}
             >
               <span className="app-top-user-avatar">
                 {currentUserName.trim().charAt(0).toUpperCase() || 'U'}

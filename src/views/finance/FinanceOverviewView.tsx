@@ -1,4 +1,10 @@
-import { ReloadOutlined } from '@ant-design/icons'
+import {
+  ClearOutlined,
+  DownOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+  UpOutlined,
+} from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   Alert,
@@ -15,7 +21,8 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import { useCallback, useMemo, useReducer } from 'react'
+import { useCallback, useMemo, useReducer, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type FinanceBalance,
   type FinanceDirection,
@@ -23,6 +30,7 @@ import {
   type FinanceOverviewSummary,
   getFinanceOverview,
 } from '@/api/finance-overview'
+import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
@@ -53,10 +61,12 @@ interface FinanceOverviewState {
   pageSize?: number
 }
 
-interface FinanceOverviewAction {
-  type: 'update'
-  values: Partial<FinanceOverviewState>
-}
+type FinanceOverviewAction =
+  | {
+      type: 'update'
+      values: Partial<FinanceOverviewState>
+    }
+  | { type: 'reset-filters' }
 
 interface SummaryItem {
   key: string
@@ -78,7 +88,10 @@ function financeOverviewReducer(
   state: FinanceOverviewState,
   action: FinanceOverviewAction,
 ): FinanceOverviewState {
-  return action.type === 'update' ? { ...state, ...action.values } : state
+  if (action.type === 'reset-filters') {
+    return { ...createInitialState(), pageSize: state.pageSize }
+  }
+  return { ...state, ...action.values }
 }
 
 function requestErrorMessage(error: unknown, fallback: string): string {
@@ -195,6 +208,7 @@ function FinanceOverviewSummarySection({ items }: { items: SummaryItem[] }) {
 }
 
 export function FinanceOverviewView() {
+  const { t } = useTranslation()
   const defaultPageSize = useDefaultPageSize()
   const { formatCellValue } = useModuleDisplaySupport()
   const [state, dispatch] = useReducer(
@@ -202,6 +216,7 @@ export function FinanceOverviewView() {
     undefined,
     createInitialState,
   )
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
   const { settlementCompanies, isLoading: optionsLoading } = useMasterOptions({
     settlementCompanies: true,
   })
@@ -273,182 +288,218 @@ export function FinanceOverviewView() {
   }
 
   return (
-    <div className="module-page-stack finance-overview-page">
-      <div className="module-grid-workspace">
-        <header className="module-workspace-header">
-          <div className="module-workspace-heading">
-            <div className="module-workspace-title-row">
-              <span className="module-workspace-kicker">Finance</span>
-              <h1 className="module-workspace-title">财务概览</h1>
-            </div>
-          </div>
-          <Tooltip title="刷新">
-            <Button
-              aria-label="刷新财务概览"
-              icon={<ReloadOutlined />}
-              loading={overviewQuery.isFetching}
-              disabled={!queryEnabled || overviewQuery.isFetching}
-              onClick={() => void handleRefresh()}
-            />
-          </Tooltip>
-        </header>
-
-        <section className="finance-overview-toolbar">
-          <Segmented
-            aria-label="财务方向"
-            value={state.direction}
-            options={DIRECTION_OPTIONS}
-            onChange={(value) => {
-              dispatch({
-                type: 'update',
-                values: {
-                  direction: value as FinanceDirection,
-                  counterpartyType: undefined,
-                  page: 1,
-                },
-              })
-            }}
+    <AppProPage
+      className="finance-overview-pro-page"
+      description={t('finance.overview.description')}
+      extra={
+        <Tooltip title={t('common.refresh')}>
+          <Button
+            aria-label={t('finance.overview.refreshAria')}
+            icon={<ReloadOutlined />}
+            loading={overviewQuery.isFetching}
+            disabled={!queryEnabled || overviewQuery.isFetching}
+            onClick={() => void handleRefresh()}
           />
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">结算主体</Typography.Text>
-            <Select
-              aria-label="结算主体"
-              aria-required="true"
-              value={settlementCompanyId}
-              options={settlementCompanies}
-              loading={optionsLoading}
-              showSearch={{ optionFilterProp: 'label' }}
-              placeholder="请选择结算主体"
-              onChange={(value) => {
-                dispatch({
-                  type: 'update',
-                  values: {
-                    settlementCompanyId: value ? String(value) : undefined,
-                    page: 1,
-                  },
-                })
-              }}
-            />
-          </div>
-          <div className="finance-overview-filter finance-overview-filter--date">
-            <Typography.Text type="secondary">截止日期</Typography.Text>
-            <DatePicker
-              aria-label="截止日期"
-              value={dayjs(state.asOfDate)}
-              allowClear={false}
-              onChange={(value) => {
-                if (value) {
-                  dispatch({
-                    type: 'update',
-                    values: { asOfDate: value.format('YYYY-MM-DD'), page: 1 },
-                  })
-                }
-              }}
-            />
-          </div>
-          {state.direction === 'PAYABLE' ? (
-            <div className="finance-overview-filter">
-              <Typography.Text type="secondary">往来类型</Typography.Text>
-              <Select
-                aria-label="往来类型"
-                value={state.counterpartyType || ''}
-                options={PAYABLE_COUNTERPARTY_OPTIONS}
+        </Tooltip>
+      }
+      title={t('finance.overview.title')}
+    >
+      <div className="module-page-stack finance-overview-page">
+        <div className="module-grid-workspace">
+          <section className="finance-filter-shell finance-overview-toolbar">
+            <div className="finance-filter-primary-row finance-overview-primary-row">
+              <Segmented
+                aria-label="财务方向"
+                value={state.direction}
+                options={DIRECTION_OPTIONS}
                 onChange={(value) => {
                   dispatch({
                     type: 'update',
                     values: {
-                      counterpartyType: value || undefined,
+                      direction: value as FinanceDirection,
+                      counterpartyType: undefined,
                       page: 1,
                     },
                   })
                 }}
               />
-            </div>
-          ) : null}
-          <div className="finance-overview-filter finance-overview-filter--keyword">
-            <Typography.Text type="secondary">往来方</Typography.Text>
-            <Input
-              aria-label="往来方"
-              value={state.keywordInput}
-              allowClear
-              placeholder="名称、编码或ID"
-              onChange={(event) => {
-                const value = event.target.value
-                if (!value) {
-                  commitKeyword('')
-                  return
-                }
-                dispatch({
-                  type: 'update',
-                  values: { keywordInput: value },
-                })
-              }}
-              onBlur={(event) => commitKeyword(event.target.value)}
-              onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
-            />
-          </div>
-          <Segmented
-            aria-label="余额范围"
-            value={state.onlyOpen ? 'open' : 'all'}
-            options={[
-              { label: '全部', value: 'all' },
-              { label: '有余额', value: 'open' },
-            ]}
-            onChange={(value) => {
-              dispatch({
-                type: 'update',
-                values: { onlyOpen: value === 'open', page: 1 },
-              })
-            }}
-          />
-        </section>
-
-        {overviewQuery.isError ? (
-          <Alert
-            type="error"
-            showIcon
-            title="加载财务概览失败"
-            description={requestErrorMessage(overviewQuery.error, '请稍后重试')}
-          />
-        ) : null}
-
-        <FinanceOverviewSummarySection items={summaryItems} />
-
-        <section className="finance-overview-table">
-          <Table
-            rowKey="key"
-            size="small"
-            columns={columns}
-            dataSource={rows}
-            loading={queryEnabled && overviewQuery.isFetching}
-            scroll={{ x: 1250, y: 'calc(100vh - 410px)' }}
-            locale={{
-              emptyText: (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={queryEnabled ? '暂无往来余额' : '请选择结算主体'}
+              <div className="finance-overview-filter">
+                <Typography.Text type="secondary">结算主体</Typography.Text>
+                <Select
+                  aria-label="结算主体"
+                  aria-required="true"
+                  value={settlementCompanyId}
+                  options={settlementCompanies}
+                  loading={optionsLoading}
+                  showSearch={{ optionFilterProp: 'label' }}
+                  placeholder="请选择结算主体"
+                  onChange={(value) => {
+                    dispatch({
+                      type: 'update',
+                      values: {
+                        settlementCompanyId: value ? String(value) : undefined,
+                        page: 1,
+                      },
+                    })
+                  }}
                 />
-              ),
-            }}
-            pagination={{
-              current: state.page,
-              pageSize,
-              total,
-              showSizeChanger: true,
-              showTotal: (count) => `共 ${count} 条`,
-              onChange: (nextPage, nextPageSize) => {
-                dispatch({
-                  type: 'update',
-                  values: {
-                    page: nextPageSize === pageSize ? nextPage : 1,
-                    pageSize: nextPageSize,
-                  },
-                })
-              },
-            }}
-          />
-        </section>
+              </div>
+              <div className="finance-overview-filter finance-overview-filter--date">
+                <Typography.Text type="secondary">截止日期</Typography.Text>
+                <DatePicker
+                  aria-label="截止日期"
+                  value={dayjs(state.asOfDate)}
+                  allowClear={false}
+                  onChange={(value) => {
+                    if (value) {
+                      dispatch({
+                        type: 'update',
+                        values: {
+                          asOfDate: value.format('YYYY-MM-DD'),
+                          page: 1,
+                        },
+                      })
+                    }
+                  }}
+                />
+              </div>
+              <Segmented
+                aria-label="余额范围"
+                value={state.onlyOpen ? 'open' : 'all'}
+                options={[
+                  { label: '全部', value: 'all' },
+                  { label: '有余额', value: 'open' },
+                ]}
+                onChange={(value) => {
+                  dispatch({
+                    type: 'update',
+                    values: { onlyOpen: value === 'open', page: 1 },
+                  })
+                }}
+              />
+              <div className="finance-filter-actions">
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={() => dispatch({ type: 'reset-filters' })}
+                >
+                  {t('common.reset')}
+                </Button>
+                <Button
+                  aria-controls="finance-overview-advanced-filters"
+                  aria-expanded={advancedFiltersOpen}
+                  icon={<FilterOutlined />}
+                  onClick={() => setAdvancedFiltersOpen((open) => !open)}
+                >
+                  {t('finance.filters.advanced')}
+                  {advancedFiltersOpen ? <UpOutlined /> : <DownOutlined />}
+                </Button>
+              </div>
+            </div>
+
+            {advancedFiltersOpen ? (
+              <div
+                className="finance-filter-advanced-row"
+                id="finance-overview-advanced-filters"
+              >
+                {state.direction === 'PAYABLE' ? (
+                  <div className="finance-overview-filter">
+                    <Typography.Text type="secondary">往来类型</Typography.Text>
+                    <Select
+                      aria-label="往来类型"
+                      value={state.counterpartyType || ''}
+                      options={PAYABLE_COUNTERPARTY_OPTIONS}
+                      onChange={(value) => {
+                        dispatch({
+                          type: 'update',
+                          values: {
+                            counterpartyType: value || undefined,
+                            page: 1,
+                          },
+                        })
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <div className="finance-overview-filter finance-overview-filter--keyword">
+                  <Typography.Text type="secondary">往来方</Typography.Text>
+                  <Input
+                    aria-label="往来方"
+                    value={state.keywordInput}
+                    allowClear
+                    placeholder="名称、编码或ID"
+                    onChange={(event) => {
+                      const value = event.target.value
+                      if (!value) {
+                        commitKeyword('')
+                        return
+                      }
+                      dispatch({
+                        type: 'update',
+                        values: { keywordInput: value },
+                      })
+                    }}
+                    onBlur={(event) => commitKeyword(event.target.value)}
+                    onPressEnter={(event) =>
+                      commitKeyword(event.currentTarget.value)
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          {overviewQuery.isError ? (
+            <Alert
+              type="error"
+              showIcon
+              title="加载财务概览失败"
+              description={requestErrorMessage(
+                overviewQuery.error,
+                '请稍后重试',
+              )}
+            />
+          ) : null}
+
+          <FinanceOverviewSummarySection items={summaryItems} />
+
+          <section className="finance-overview-table">
+            <Table
+              rowKey="key"
+              size="small"
+              columns={columns}
+              dataSource={rows}
+              loading={queryEnabled && overviewQuery.isFetching}
+              scroll={{ x: 1250, y: 'calc(100vh - 410px)' }}
+              locale={{
+                emptyText: (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      queryEnabled ? '暂无往来余额' : '请选择结算主体'
+                    }
+                  />
+                ),
+              }}
+              pagination={{
+                current: state.page,
+                pageSize,
+                total,
+                showSizeChanger: true,
+                showTotal: (count) => `共 ${count} 条`,
+                onChange: (nextPage, nextPageSize) => {
+                  dispatch({
+                    type: 'update',
+                    values: {
+                      page: nextPageSize === pageSize ? nextPage : 1,
+                      pageSize: nextPageSize,
+                    },
+                  })
+                },
+              }}
+            />
+          </section>
+        </div>
       </div>
-    </div>
+    </AppProPage>
   )
 }

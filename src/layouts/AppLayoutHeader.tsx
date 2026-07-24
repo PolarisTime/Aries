@@ -35,7 +35,6 @@ interface SideNavigationHeaderProps extends SharedHeaderProps {
   collapsed: boolean
   kind: 'side'
   onToggleCollapsed: () => void
-  title: string
 }
 
 type AppLayoutHeaderProps = TopNavigationHeaderProps | SideNavigationHeaderProps

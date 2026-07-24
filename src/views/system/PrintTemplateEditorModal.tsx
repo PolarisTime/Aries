@@ -1,21 +1,22 @@
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
-import { Button, Card, Col, Divider, Form, Row, Space } from 'antd'
+import { Button, Col, Flex, Form, Row, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { SettlementCompanyOption } from '@/api/company-settings'
+import { AppProPage } from '@/components/AppProPage'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { PrintTemplateBasicInfoCard } from '@/views/system/PrintTemplateBasicInfoCard'
 import { PrintTemplateContentCard } from '@/views/system/PrintTemplateContentCard'
 import { PrintTemplateHelpPanel } from '@/views/system/PrintTemplateHelpPanel'
+import type { PrintTemplateEditorFormValues } from '@/views/system/print-template-editor-utils'
 
 interface Props {
   open: boolean
   editing: boolean
-  form: FormInstance
-  templateHtml: string
+  form: FormInstance<PrintTemplateEditorFormValues>
   settlementCompanyOptions: SettlementCompanyOption[]
   saving: boolean
-  onTemplateHtmlChange: (value: string) => void
+  onFormValuesChange: () => void
   onSave: () => void
   onClose: () => void
 }
@@ -24,10 +25,9 @@ export function PrintTemplateEditorModal({
   open,
   editing,
   form,
-  templateHtml,
   settlementCompanyOptions,
   saving,
-  onTemplateHtmlChange,
+  onFormValuesChange,
   onSave,
   onClose,
 }: Props) {
@@ -40,24 +40,32 @@ export function PrintTemplateEditorModal({
   if (!open) return null
 
   return (
-    <div className="page-stack">
-      <Card
-        title={
+    <AppProPage
+      title={
+        editing
+          ? t('system.printTemplateEditor.editTitle')
+          : t('system.printTemplateEditor.createTitle')
+      }
+    >
+      <div className="page-stack settings-standard-page">
+        <Flex
+          className="settings-page-header"
+          align="center"
+          justify="space-between"
+          gap={16}
+        >
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            disabled={saving}
+            onClick={onClose}
+          >
+            {t('common.back')}
+          </Button>
           <Space>
-            <Button type="text" icon={<ArrowLeftOutlined />} onClick={onClose}>
-              {t('common.back')}
+            <Button disabled={saving} onClick={onClose}>
+              {t('common.cancel')}
             </Button>
-            <Divider orientation="vertical" />
-            <span>
-              {editing
-                ? t('system.printTemplateEditor.editTitle')
-                : t('system.printTemplateEditor.createTitle')}
-            </span>
-          </Space>
-        }
-        extra={
-          <Space>
-            <Button onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               type="primary"
               icon={<SaveOutlined />}
@@ -67,29 +75,32 @@ export function PrintTemplateEditorModal({
               {t('common.save')}
             </Button>
           </Space>
-        }
-      >
-        <Form form={form} layout="vertical">
+        </Flex>
+        <Form
+          form={form}
+          layout="vertical"
+          scrollToFirstError={{ focus: true }}
+          onValuesChange={onFormValuesChange}
+        >
           <Row gutter={[16, 0]}>
-            <Col xs={24} lg={16}>
+            <Col span={16}>
               <PrintTemplateBasicInfoCard
                 form={form}
                 settlementCompanyOptions={settlementCompanyOptions}
                 t={t}
               />
               <PrintTemplateContentCard
-                templateHtml={templateHtml}
+                form={form}
                 templateHtmlId={templateHtmlId}
-                onTemplateHtmlChange={onTemplateHtmlChange}
                 t={t}
               />
             </Col>
-            <Col xs={24} lg={8}>
+            <Col span={8}>
               <PrintTemplateHelpPanel t={t} />
             </Col>
           </Row>
         </Form>
-      </Card>
-    </div>
+      </div>
+    </AppProPage>
   )
 }

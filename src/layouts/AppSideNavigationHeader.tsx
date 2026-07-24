@@ -24,7 +24,6 @@ interface Props {
   onToggleCollapsed: () => void
   search: LayoutHeaderSearchProps
   shellFontStyle: CSSProperties
-  title: string
   userMenu: MenuProps
 }
 
@@ -36,7 +35,6 @@ export function AppSideNavigationHeader({
   onToggleCollapsed,
   search,
   shellFontStyle,
-  title,
   userMenu,
 }: Props) {
   const { t } = useTranslation()
@@ -44,17 +42,18 @@ export function AppSideNavigationHeader({
 
   return (
     <div className="app-header-bar">
-      <button type="button" className="app-trigger" onClick={onToggleCollapsed}>
+      <button
+        type="button"
+        className="app-trigger"
+        aria-label={
+          collapsed
+            ? t('layouts.sideNav.expandNavigation')
+            : t('layouts.sideNav.collapseNavigation')
+        }
+        onClick={onToggleCollapsed}
+      >
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
       </button>
-
-      <div className="header-page-meta">
-        <div className="header-page-title">{title}</div>
-        <div className="header-page-desc">
-          {t('layouts.sideNav.breadcrumbPrefix')}
-          {title}
-        </div>
-      </div>
 
       <LazyAppHeaderSearch className="header-global-search" {...search} />
 
@@ -71,6 +70,7 @@ export function AppSideNavigationHeader({
         <span className="action">
           <Dropdown menu={userMenu} trigger={['click']}>
             <Button
+              aria-label={t('layouts.userMenu.open')}
               type="text"
               className="app-user-settings-trigger"
               icon={<SettingOutlined />}

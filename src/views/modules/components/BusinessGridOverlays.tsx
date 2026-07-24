@@ -28,6 +28,7 @@ interface Props {
   detailOpen: boolean
   detailRecord: ModuleRecord | null
   detailLoading: boolean
+  detailError: unknown
   customerStatementOpen: boolean
   freightStatementOpen: boolean
   freightPickupOpen: boolean
@@ -40,6 +41,7 @@ interface Props {
   onCloseEditor: () => void
   onSaved: () => void
   onCloseDetail: () => void
+  onRetryDetail: () => void
   onCloseAttachment: () => void
   onCloseCustomerStatement: () => void
   onCloseFreightStatement: () => void
@@ -68,6 +70,7 @@ export function BusinessGridOverlays({
   detailOpen,
   detailRecord,
   detailLoading,
+  detailError,
   customerStatementOpen,
   freightStatementOpen,
   freightPickupOpen,
@@ -80,6 +83,7 @@ export function BusinessGridOverlays({
   onCloseEditor,
   onSaved,
   onCloseDetail,
+  onRetryDetail,
   onCloseAttachment,
   onCloseCustomerStatement,
   onCloseFreightStatement,
@@ -110,8 +114,10 @@ export function BusinessGridOverlays({
           config={config}
           record={detailRecord}
           loading={detailLoading}
+          error={detailError}
           canPrint={false}
           onClose={onCloseDetail}
+          onRetry={onRetryDetail}
         />
       ) : null}
 

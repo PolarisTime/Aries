@@ -25,13 +25,14 @@ export function EditorFooterActions({
       <Button
         className="overlay-action-button"
         icon={<CloseOutlined />}
+        disabled={saving}
         onClick={onCancel}
       >
         {t('modules.editorFooter.cancel')}
       </Button>
       {canSave && (
         <Button
-          type="primary"
+          type={canAudit ? 'default' : 'primary'}
           className="overlay-action-button"
           icon={<SaveOutlined />}
           loading={saving}

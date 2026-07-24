@@ -211,6 +211,10 @@ export const enUS = {
     editSuccess: 'Updated Successfully',
     deleteSuccess: 'Deleted Successfully',
     deleteConfirm: 'Confirm Delete?',
+    unsavedChangesTitle: 'Unsaved Changes',
+    unsavedChangesContent:
+      'Your changes have not been saved. Continuing will discard them.',
+    discardChanges: 'Discard Changes',
     columnSettings: 'Column Settings',
     saveAndAudit: 'Save & Audit',
     auditConfirm:
@@ -249,6 +253,24 @@ export const enUS = {
     importParentSuccessSimple: 'Imported {{itemCount}} line item(s)',
     disabled: 'Disabled',
     batchDelete: 'Batch Delete',
+  },
+  finance: {
+    filters: {
+      advanced: 'Advanced Filters',
+    },
+    overview: {
+      title: 'Finance Overview',
+      description:
+        'Review receivables, payables, and counterparty balances by settlement entity and date.',
+      refreshAria: 'Refresh finance overview',
+    },
+    cashLedger: {
+      title: 'Cash Ledger',
+      description:
+        'Review payment flows and period balance changes for a settlement entity.',
+      exportFiltered: 'Export filtered results',
+      refreshAria: 'Refresh cash ledger',
+    },
   },
   auth: {
     login: 'Sign In',
@@ -552,7 +574,13 @@ export const enUS = {
       uploadingProgress: 'Uploading {{fileName}}, {{percent}}% complete',
       unbindSuccess: 'Unbound successfully',
       deleteFailed: 'Delete failed',
+      loadFailed: 'Failed to load attachments',
       noAttachments: 'No attachments',
+      preview: 'Preview attachment',
+      download: 'Download attachment',
+      unbind: 'Unbind attachment',
+      unbindConfirm:
+        'Are you sure you want to unbind this attachment from the current document?',
       pdfPreview: 'PDF Preview',
     },
     filter: {
@@ -1399,6 +1427,7 @@ export const enUS = {
   system: {
     company: {
       title: 'Settlement Entity Management',
+      loadFailed: 'Failed to load settlement entities',
       saveSuccess: 'Settlement entity information saved',
       enterpriseMode: 'Entity Maintenance',
       singleEnterprise: 'Multiple Settlement Entities',
@@ -1411,6 +1440,8 @@ export const enUS = {
       deleteSubject: 'Delete Settlement Entity',
       deleteSubjectConfirm:
         'Delete this settlement entity? Entities referenced by customers, carriers, or purchase orders cannot be deleted.',
+      deleteSubjectDirtyConfirm:
+        'This settlement entity has unsaved changes. Deleting it will discard those changes, and entities referenced by business data still cannot be deleted. Continue?',
       activeSubjects: 'Active Entities',
       atLeastOneSettlementAccount: 'Settlement accounts are optional',
       inputAccountName:
@@ -1442,6 +1473,7 @@ export const enUS = {
     },
     printTemplate: {
       title: 'Print Templates',
+      loadFailed: 'Failed to load print templates',
       description:
         'Manage print templates by document type and settlement company, with preview, copy, and file synchronization support.',
       newTemplate: 'New Template',

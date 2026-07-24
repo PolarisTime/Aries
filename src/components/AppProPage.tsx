@@ -11,7 +11,7 @@ interface Props {
   children: ReactNode
   className?: string
   description?: ReactNode
-  embedded?: boolean
+  extra?: ReactNode
   title: ReactNode
 }
 
@@ -19,13 +19,9 @@ export function AppProPage({
   children,
   className,
   description,
-  embedded = false,
+  extra,
   title,
 }: Props): React.JSX.Element {
-  if (embedded) {
-    return <>{children}</>
-  }
-
   const rootClassName = ['app-pro-page', className].filter(Boolean).join(' ')
 
   return (
@@ -33,6 +29,7 @@ export function AppProPage({
       breadcrumbRender={false}
       className={rootClassName}
       content={description}
+      extra={extra}
       title={title}
       token={pageContainerToken}
     >

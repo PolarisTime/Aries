@@ -43,12 +43,15 @@ export function ModuleAttachmentModal({
       <Spin spinning={modal.loading}>
         <AttachmentList
           attachments={modal.attachments}
-          onDelete={(id) => {
-            void modal.handleDelete(id)
-          }}
+          loadError={modal.loadError}
+          loading={modal.loading}
+          onDelete={modal.handleDelete}
           onDownload={modal.handleDownload}
           onOpenImagePreview={modal.openImagePreview}
           onOpenPdfPreview={modal.openPdfPreview}
+          onRetry={() => {
+            void modal.retryAttachments()
+          }}
           t={modal.t}
         />
       </Spin>

@@ -19,7 +19,7 @@ export function useInfiniteBusinessItems({
   currentPage,
   pageSize,
 }: Props) {
-  const { data, error, isFetching, isLoading } = useQuery({
+  const { data, error, isFetching, isLoading, refetch } = useQuery({
     queryKey: QUERY_KEYS.businessGridList(
       moduleKey,
       filters,
@@ -41,18 +41,25 @@ export function useInfiniteBusinessItems({
     placeholderData: keepPreviousData,
   })
 
-  const records: ModuleRecord[] = data?.data?.rows ?? []
-  const total = data?.data?.total ?? 0
   const responseCode = Number(data?.code ?? 0)
-  const warningMessage = responseCode === 0 ? '' : String(data?.message || '')
+  const hasError = error != null || responseCode !== 0
+  const errorMessage =
+    error instanceof Error && error.message.trim()
+      ? error.message.trim()
+      : responseCode !== 0
+        ? String(data?.message || '').trim()
+        : ''
+  const records: ModuleRecord[] = hasError ? [] : (data?.data?.rows ?? [])
+  const total = hasError ? 0 : (data?.data?.total ?? 0)
 
   return {
     records,
     total,
     responseCode,
-    warningMessage,
+    errorMessage,
+    hasError,
     isLoading,
     isFetching,
-    error,
+    retry: refetch,
   }
 }

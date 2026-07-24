@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --app-desktop-min-width: 1200px;
   --app-font-size: 14px;
   --app-control-height: 36px;
   --app-control-height-sm: 28px;
@@ -74,7 +75,7 @@
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: var(--app-desktop-min-width);
   background: var(--theme-shell-bg);
   color: var(--text-primary);
   font-size: var(--app-font-size);

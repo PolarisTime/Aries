@@ -438,7 +438,6 @@ export function AppLayout() {
               kind="side"
               collapsed={collapsed}
               onToggleCollapsed={() => setCollapsed((value) => !value)}
-              title={routePageContext.title}
               backendOnline={backendOnline}
               shellFontStyle={shellFontStyle}
               clockDisplay={clockDisplay}

@@ -1,20 +1,22 @@
 import { CodeOutlined } from '@ant-design/icons'
+import type { FormInstance } from 'antd'
 import { Card, Form, Input, Space, Typography } from 'antd'
-import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
+import type { PrintTemplateEditorFormValues } from '@/views/system/print-template-editor-utils'
 
 interface PrintTemplateContentCardProps {
-  templateHtml: string
+  form: FormInstance<PrintTemplateEditorFormValues>
   templateHtmlId: string
-  onTemplateHtmlChange: (value: string) => void
   t: (key: string) => string
 }
 
 export function PrintTemplateContentCard({
-  templateHtml,
+  form,
   templateHtmlId,
-  onTemplateHtmlChange,
   t,
 }: PrintTemplateContentCardProps) {
+  const templateType = Form.useWatch('templateType', form)
+  const templateContentRequired = templateType !== 'PDF_FORM'
+
   return (
     <Card
       size="small"
@@ -27,18 +29,30 @@ export function PrintTemplateContentCard({
       }
     >
       <Form.Item
-        {...buildLabeledFormItemProps({
-          label: t('system.printTemplateEditor.templateContent'),
-          htmlFor: templateHtmlId,
-        })}
-        required
+        name="templateHtml"
+        dependencies={['templateType']}
+        label={t('system.printTemplateEditor.templateContent')}
+        htmlFor={templateHtmlId}
+        required={templateContentRequired}
+        rules={[
+          {
+            validator: (_, value: unknown) => {
+              if (
+                !templateContentRequired ||
+                (typeof value === 'string' && value.trim())
+              ) {
+                return Promise.resolve()
+              }
+              return Promise.reject(
+                new Error(t('system.printTemplate.inputTemplateContent')),
+              )
+            },
+          },
+        ]}
         className="mb-8"
       >
         <Input.TextArea
           id={templateHtmlId}
-          name="template-html"
-          value={templateHtml}
-          onChange={(event) => onTemplateHtmlChange(event.target.value)}
           rows={22}
           placeholder={t(
             'system.printTemplateEditor.templateContentPlaceholder',

@@ -10,7 +10,7 @@ function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
 }
 
-export const enabledStatusValues = ['正常', '禁用'] as const
+const enabledStatusValues = ['正常', '禁用'] as const
 export const enabledStatusOptions = createOptionList(enabledStatusValues)
 
 const statementStatusValues = ['待确认', '已确认'] as const
@@ -35,7 +35,6 @@ export function buildDocumentStatusOptions(...values: string[]) {
 // All existing imports from '@/constants/module-options' continue to work.
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- intentional barrel for backward compat
 export {
-  customerOptions,
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
   getCustomerOptions,

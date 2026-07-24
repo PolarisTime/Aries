@@ -345,12 +345,9 @@ ProComponents 本轮主要压缩页面外壳、卡片、工具栏和字段样板
 
 本轮在不改变 Vite、TanStack Router、TanStack Query 和 Zustand 边界的前提下，新增以下公共能力：
 
-- `AppProTable`：统一关闭内置搜索和设置入口、列表卡片样式及默认密度，保留完整 `ProTableProps` 透传。
 - `AppProPage embedded`：独立路由与设置页嵌入模式使用同一页面组件，不再由业务页面重复判断是否渲染 `PageContainer`。
 - `useResourcePermissions`：统一资源级 CRUD 权限订阅，并支持领域自定义动作。
 - `useActivePageEnabled`：统一活动页签与浏览器可见性的查询启用条件。
-- `useKeywordPaginationState`：统一关键词、当前页、页容量和翻页状态，不介入领域筛选或远端查询。
-- `useInvalidateQueries`：只负责按查询键失效缓存；系统设置之间的联动刷新下沉到 `useSystemSettingsRefresh`。
 
 公共层边界同步调整：
 
@@ -358,4 +355,4 @@ ProComponents 本轮主要压缩页面外壳、卡片、工具栏和字段样板
 - `StatusTag` 不再硬编码中文 ERP 状态，只解析调用方传入的状态元数据和通用颜色别名。
 - 业务模块的权限 Hook 组合 `useResourcePermissions`，避免只订阅稳定的 `can` 函数而错过权限数据更新。
 
-`AppProTable` 当前覆盖 API Key、会话、用户账号和编号规则的 5 个表格实例。打印模板、动态行项目和单据工作区仍保持领域组件，不纳入全局配置化页面模板。
+打印模板、动态行项目和单据工作区保持领域组件，不纳入全局配置化页面模板。

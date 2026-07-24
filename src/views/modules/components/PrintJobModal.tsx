@@ -930,7 +930,7 @@ export function PrintJobModal({
           {t('modules.print.jobTitle')}
         </div>
       }
-      width="92vw"
+      width={1104}
     >
       <div className="space-y-4 text-base">
         <PrintJobHeader

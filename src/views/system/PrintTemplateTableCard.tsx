@@ -15,6 +15,7 @@ import {
   Descriptions,
   Dropdown,
   Empty,
+  Flex,
   Input,
   Select,
   Space,
@@ -38,6 +39,7 @@ interface Props {
   activeTemplateId?: string
   templates: PrintTemplateRecord[]
   loading: boolean
+  refreshing: boolean
   uploadPending: boolean
   onBillTypeChange: (value: string) => void
   onRefresh: () => void
@@ -102,6 +104,7 @@ interface PrintTemplateActionsProps {
     delete: string
     edit: string
     editHint: string
+    more: string
     preview: string
     uploadJson: string
   }
@@ -132,6 +135,7 @@ function PrintTemplateActions({
           type="text"
           size="small"
           icon={<EyeOutlined />}
+          aria-label={labels.preview}
           onClick={(event) => {
             event.stopPropagation()
             onPreview(record)
@@ -143,6 +147,7 @@ function PrintTemplateActions({
           type="text"
           size="small"
           icon={<EditOutlined />}
+          aria-label={labels.edit}
           disabled={!canEditRecord}
           onClick={(event) => {
             event.stopPropagation()
@@ -196,6 +201,7 @@ function PrintTemplateActions({
           type="text"
           size="small"
           icon={<MoreOutlined />}
+          aria-label={labels.more}
           onClick={(event) => event.stopPropagation()}
         />
       </Dropdown>
@@ -208,6 +214,7 @@ export function PrintTemplateTableCard({
   activeTemplateId,
   templates,
   loading,
+  refreshing,
   uploadPending,
   onBillTypeChange,
   onRefresh,
@@ -261,6 +268,7 @@ export function PrintTemplateTableCard({
     delete: t('common.delete'),
     edit: t('common.edit'),
     editHint: t('system.printTemplate.fileManagedEditHint'),
+    more: t('common.more'),
     preview: t('system.printTemplate.preview'),
     uploadJson: t('system.printTemplate.uploadJson'),
   }
@@ -270,210 +278,202 @@ export function PrintTemplateTableCard({
   }
   return (
     <div className="print-template-workbench">
-      <Card
-        title={t('system.printTemplate.title')}
-        extra={
-          <Space wrap>
-            <Select
-              value={selectedBillType}
-              onChange={onBillTypeChange}
-              className="w-240"
-              options={printTemplateTargetOptions}
-            />
-            <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-              {t('common.refresh')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-              {t('system.printTemplate.newTemplate')}
-            </Button>
-          </Space>
-        }
-      >
-        <div className="print-template-shell">
-          <div className="print-template-list-pane">
-            <Input.Search
-              id="print-template-search"
-              name="print-template-search"
-              allowClear
-              value={keyword}
-              placeholder={t('system.printTemplate.searchPlaceholder')}
-              onChange={(event) => setKeyword(event.target.value)}
-              className="mb-12"
-            />
-            <Spin spinning={loading}>
-              <div className="print-template-list">
-                {filteredTemplates.length > 0 ? (
-                  filteredTemplates.map((record) => {
-                    const active = activeTemplate?.id === record.id
-                    return (
-                      <div
-                        key={record.id}
-                        className={`print-template-list-item ${
-                          active ? 'is-active' : ''
-                        }`}
+      <Flex className="mb-16" align="center" justify="flex-end">
+        <Space wrap>
+          <Select
+            value={selectedBillType}
+            onChange={onBillTypeChange}
+            className="w-240"
+            options={printTemplateTargetOptions}
+          />
+          <Button
+            icon={<ReloadOutlined />}
+            loading={refreshing}
+            onClick={onRefresh}
+          >
+            {t('common.refresh')}
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+            {t('system.printTemplate.newTemplate')}
+          </Button>
+        </Space>
+      </Flex>
+      <div className="print-template-shell">
+        <div className="print-template-list-pane">
+          <Input.Search
+            id="print-template-search"
+            name="print-template-search"
+            allowClear
+            value={keyword}
+            placeholder={t('system.printTemplate.searchPlaceholder')}
+            onChange={(event) => setKeyword(event.target.value)}
+            className="mb-12"
+          />
+          <Spin spinning={loading}>
+            <div className="print-template-list">
+              {filteredTemplates.length > 0 ? (
+                filteredTemplates.map((record) => {
+                  const active = activeTemplate?.id === record.id
+                  return (
+                    <div
+                      key={record.id}
+                      className={`print-template-list-item ${
+                        active ? 'is-active' : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="print-template-list-main"
+                        aria-pressed={active}
+                        onClick={() => onActiveChange(record.id)}
                       >
-                        <button
-                          type="button"
-                          className="print-template-list-main"
-                          aria-pressed={active}
-                          onClick={() => onActiveChange(record.id)}
-                        >
-                          <div className="flex items-center gap-8">
-                            <Typography.Text strong className="truncate">
-                              {record.templateName}
-                            </Typography.Text>
-                          </div>
-                          <div className="mt-8 flex flex-wrap gap-4">
-                            <Tag color="processing">
-                              {templateTypeLabel(record)}
-                            </Tag>
-                            <PrintTemplateStatusTag
-                              record={record}
-                              statusMap={statusMap}
-                            />
-                            <PrintTemplateSyncTag
-                              record={record}
-                              fileLabel={syncLabels.file}
-                              manualLabel={syncLabels.manual}
-                            />
-                            <Tag>
-                              {settlementCompanyLabel(
-                                record,
-                                t('system.printTemplate.unassignedCompany'),
-                              )}
-                            </Tag>
-                          </div>
-                          <Typography.Text
-                            type="secondary"
-                            className="mt-8 block truncate"
-                          >
-                            {record.templateCode || t('common.noData')}
+                        <div className="flex items-center gap-8">
+                          <Typography.Text strong className="truncate">
+                            {record.templateName}
                           </Typography.Text>
-                        </button>
-                        <PrintTemplateActions
-                          record={record}
-                          uploadPending={uploadPending}
-                          labels={actionLabels}
-                          onCopy={onCopy}
-                          onDelete={onDelete}
-                          onEdit={onEdit}
-                          onPreview={onPreview}
-                          onUploadJson={onUploadJson}
-                        />
-                      </div>
-                    )
-                  })
-                ) : (
-                  <Empty description={t('system.printTemplate.emptyList')} />
-                )}
-              </div>
-            </Spin>
-          </div>
-
-          <div className="print-template-detail-pane">
-            {activeTemplate ? (
-              <Space orientation="vertical" size={16} className="w-full">
-                <Card
-                  size="small"
-                  title={
-                    <Space>
-                      <FileTextOutlined />
-                      <span>{activeTemplate.templateName}</span>
-                    </Space>
-                  }
-                  extra={
-                    <Space>
-                      <Button
-                        icon={<EyeOutlined />}
-                        onClick={() => onPreview(activeTemplate)}
-                      >
-                        {t('system.printTemplate.preview')}
-                      </Button>
-                      <Button
-                        icon={<EditOutlined />}
-                        disabled={!canEditRecord(activeTemplate)}
-                        onClick={() => onEdit(activeTemplate)}
-                      >
-                        {t('common.edit')}
-                      </Button>
-                    </Space>
-                  }
-                >
-                  <Descriptions size="small" column={{ xs: 1, md: 2 }} bordered>
-                    <Descriptions.Item
-                      label={t('system.printTemplate.billType')}
-                    >
-                      {getPrintTemplateBillTypeLabel(
-                        activeTemplate.billType || selectedBillType,
-                      )}
-                    </Descriptions.Item>
-                    <Descriptions.Item
-                      label={t('system.printTemplate.templateType')}
-                    >
-                      <Tag color="processing">
-                        {templateTypeLabel(activeTemplate)}
-                      </Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label={t('system.printTemplate.engine')}>
-                      {activeTemplate.engine || '--'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label={t('system.printTemplate.status')}>
-                      <PrintTemplateStatusTag
-                        record={activeTemplate}
-                        statusMap={statusMap}
+                        </div>
+                        <div className="mt-8 flex flex-wrap gap-4">
+                          <Tag color="processing">
+                            {templateTypeLabel(record)}
+                          </Tag>
+                          <PrintTemplateStatusTag
+                            record={record}
+                            statusMap={statusMap}
+                          />
+                          <PrintTemplateSyncTag
+                            record={record}
+                            fileLabel={syncLabels.file}
+                            manualLabel={syncLabels.manual}
+                          />
+                          <Tag>
+                            {settlementCompanyLabel(
+                              record,
+                              t('system.printTemplate.unassignedCompany'),
+                            )}
+                          </Tag>
+                        </div>
+                        <Typography.Text
+                          type="secondary"
+                          className="mt-8 block truncate"
+                        >
+                          {record.templateCode || t('common.noData')}
+                        </Typography.Text>
+                      </button>
+                      <PrintTemplateActions
+                        record={record}
+                        uploadPending={uploadPending}
+                        labels={actionLabels}
+                        onCopy={onCopy}
+                        onDelete={onDelete}
+                        onEdit={onEdit}
+                        onPreview={onPreview}
+                        onUploadJson={onUploadJson}
                       />
-                    </Descriptions.Item>
-                    <Descriptions.Item
-                      label={t('system.printTemplate.syncMode')}
-                    >
-                      <PrintTemplateSyncTag
-                        record={activeTemplate}
-                        fileLabel={syncLabels.file}
-                        manualLabel={syncLabels.manual}
-                      />
-                    </Descriptions.Item>
-                    <Descriptions.Item
-                      label={t('system.printTemplate.sourceRef')}
-                    >
-                      {activeTemplate.sourceRef || '--'}
-                    </Descriptions.Item>
-                    <Descriptions.Item
-                      label={t('system.printTemplate.assetRef')}
-                    >
-                      {activeTemplate.assetRef || '--'}
-                    </Descriptions.Item>
-                    <Descriptions.Item
-                      label={t('system.printTemplate.settlementCompany')}
-                    >
-                      {settlementCompanyLabel(
-                        activeTemplate,
-                        t('system.printTemplate.unassignedCompany'),
-                      )}
-                    </Descriptions.Item>
-                    <Descriptions.Item label={t('common.updatedAt')}>
-                      {formatDateTime(activeTemplate.updateTime, '--')}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-
-                <Card
-                  size="small"
-                  title={t('system.printTemplate.templateContent')}
-                >
-                  <pre className="print-template-preview-code">
-                    {activeTemplate.templateHtml ||
-                      t('system.printTemplatePreview.emptyTemplate')}
-                  </pre>
-                </Card>
-              </Space>
-            ) : (
-              <Card className="h-full">
+                    </div>
+                  )
+                })
+              ) : (
                 <Empty description={t('system.printTemplate.emptyList')} />
-              </Card>
-            )}
-          </div>
+              )}
+            </div>
+          </Spin>
         </div>
-      </Card>
+
+        <div className="print-template-detail-pane">
+          {activeTemplate ? (
+            <Space orientation="vertical" size={16} className="w-full">
+              <Card
+                size="small"
+                title={
+                  <Space>
+                    <FileTextOutlined />
+                    <span>{activeTemplate.templateName}</span>
+                  </Space>
+                }
+                extra={
+                  <Space>
+                    <Button
+                      icon={<EyeOutlined />}
+                      onClick={() => onPreview(activeTemplate)}
+                    >
+                      {t('system.printTemplate.preview')}
+                    </Button>
+                    <Button
+                      icon={<EditOutlined />}
+                      disabled={!canEditRecord(activeTemplate)}
+                      onClick={() => onEdit(activeTemplate)}
+                    >
+                      {t('common.edit')}
+                    </Button>
+                  </Space>
+                }
+              >
+                <Descriptions size="small" column={2} bordered>
+                  <Descriptions.Item label={t('system.printTemplate.billType')}>
+                    {getPrintTemplateBillTypeLabel(
+                      activeTemplate.billType || selectedBillType,
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={t('system.printTemplate.templateType')}
+                  >
+                    <Tag color="processing">
+                      {templateTypeLabel(activeTemplate)}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('system.printTemplate.engine')}>
+                    {activeTemplate.engine || '--'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('system.printTemplate.status')}>
+                    <PrintTemplateStatusTag
+                      record={activeTemplate}
+                      statusMap={statusMap}
+                    />
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('system.printTemplate.syncMode')}>
+                    <PrintTemplateSyncTag
+                      record={activeTemplate}
+                      fileLabel={syncLabels.file}
+                      manualLabel={syncLabels.manual}
+                    />
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={t('system.printTemplate.sourceRef')}
+                  >
+                    {activeTemplate.sourceRef || '--'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('system.printTemplate.assetRef')}>
+                    {activeTemplate.assetRef || '--'}
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={t('system.printTemplate.settlementCompany')}
+                  >
+                    {settlementCompanyLabel(
+                      activeTemplate,
+                      t('system.printTemplate.unassignedCompany'),
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('common.updatedAt')}>
+                    {formatDateTime(activeTemplate.updateTime, '--')}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              <Card
+                size="small"
+                title={t('system.printTemplate.templateContent')}
+              >
+                <pre className="print-template-preview-code">
+                  {activeTemplate.templateHtml ||
+                    t('system.printTemplatePreview.emptyTemplate')}
+                </pre>
+              </Card>
+            </Space>
+          ) : (
+            <Empty description={t('system.printTemplate.emptyList')} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }

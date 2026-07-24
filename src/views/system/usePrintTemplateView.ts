@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Form } from 'antd'
-import { useReducer } from 'react'
+import { useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { assertApiSuccess } from '@/api/client'
 import {
   fetchSettlementCompanyOptions,
   type SettlementCompanyOption,
@@ -14,23 +15,26 @@ import {
 } from '@/api/print-template'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import type {
   PrintTemplateRecord,
   SavePrintTemplatePayload,
 } from '@/shared/schemas'
 import { message, modal } from '@/utils/antd-app'
+import {
+  defaultEngineForTemplateType,
+  type PrintTemplateEditorFormValues,
+} from '@/views/system/print-template-editor-utils'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
 
 interface PrintTemplateState {
   selectedBillType: string
   activeTemplateId: string | undefined
   editingBillType: string | undefined
+  editorDirty: boolean
   editorOpen: boolean
   previewOpen: boolean
   previewTemplate: PrintTemplateRecord | null
-  templateHtml: string
 }
 
 type SavePrintTemplateMutationPayload = SavePrintTemplatePayload & {
@@ -41,16 +45,10 @@ const printTemplateInitialState: PrintTemplateState = {
   selectedBillType: printTemplateTargetOptions[0]?.value || 'purchase-order',
   activeTemplateId: undefined,
   editingBillType: undefined,
+  editorDirty: false,
   editorOpen: false,
   previewOpen: false,
   previewTemplate: null,
-  templateHtml: '',
-}
-
-function defaultEngineForTemplateType(templateType: string | undefined) {
-  if (templateType === 'COORD') return 'LODOP'
-  if (templateType === 'PDF_FORM') return 'PDF_FORM'
-  return 'LODOP'
 }
 
 function normalizedOptionalText(value: unknown) {
@@ -87,16 +85,21 @@ export function usePrintTemplateView() {
     selectedBillType,
     activeTemplateId,
     editingBillType,
+    editorDirty,
     editorOpen,
     previewOpen,
     previewTemplate,
-    templateHtml,
   } = state
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<PrintTemplateEditorFormValues>()
+  const editorCloseConfirmOpenRef = useRef(false)
 
-  const { data: templatesResponse, isLoading } = useQuery({
+  const templatesQuery = useQuery({
     queryKey: QUERY_KEYS.printTemplateByType(selectedBillType),
-    queryFn: () => listPrintTemplates(selectedBillType),
+    queryFn: async () =>
+      assertApiSuccess(
+        await listPrintTemplates(selectedBillType),
+        t('system.printTemplate.loadFailed'),
+      ),
   })
   const { data: settlementCompanyOptions = [] } = useQuery<
     SettlementCompanyOption[]
@@ -104,13 +107,16 @@ export function usePrintTemplateView() {
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
     queryFn: fetchSettlementCompanyOptions,
   })
-  const templates = templatesResponse?.data || []
+  const templates = templatesQuery.data?.data || []
 
   const saveMutation = useMutation({
     mutationFn: ({
       previousBillType: _previousBillType,
       ...payload
-    }: SavePrintTemplateMutationPayload) => savePrintTemplate(payload),
+    }: SavePrintTemplateMutationPayload) =>
+      savePrintTemplate(payload).then((response) =>
+        assertApiSuccess(response, t('api.saveFailed')),
+      ),
     onSuccess: (_data, variables) => {
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
@@ -131,13 +137,15 @@ export function usePrintTemplateView() {
           queryKey: QUERY_KEYS.printTemplateByType(variables.previousBillType),
         })
       }
-      setState({ editorOpen: false })
+      setState({ editorDirty: false, editorOpen: false })
     },
     onError: (error: Error) => showError(error, t('api.saveFailed')),
   })
   const deleteMutation = useMutation({
     mutationFn: ({ id }: { id: string; billType?: string }) =>
-      deletePrintTemplate(id),
+      deletePrintTemplate(id).then((response) =>
+        assertApiSuccess(response, t('api.deleteFailed')),
+      ),
     onSuccess: (_data, variables) => {
       message.success(t('common.deleteSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
@@ -164,7 +172,13 @@ export function usePrintTemplateView() {
     onError: (error: Error) =>
       showError(error, t('system.printTemplate.uploadJsonFailed')),
   })
-  const refresh = useRefreshQuery(QUERY_KEYS.printTemplate)
+  const refresh = () => {
+    void templatesQuery.refetch()
+  }
+
+  const selectBillType = (value: string) => {
+    setState({ activeTemplateId: undefined, selectedBillType: value })
+  }
 
   const openCreate = () => {
     form.resetFields()
@@ -177,13 +191,14 @@ export function usePrintTemplateView() {
       assetRef: '',
       settlementCompanyId: undefined,
       settlementCompanyName: '',
+      templateHtml: '',
       versionNo: 1,
       status: 'ACTIVE',
     })
     setState({
-      templateHtml: '',
       activeTemplateId: undefined,
       editingBillType: undefined,
+      editorDirty: false,
       editorOpen: true,
     })
   }
@@ -193,6 +208,7 @@ export function usePrintTemplateView() {
       message.warning(t('system.printTemplate.fileManagedEditHint'))
       return
     }
+    form.resetFields()
     form.setFieldsValue({
       id: record.id,
       billType: record.billType || selectedBillType,
@@ -204,13 +220,14 @@ export function usePrintTemplateView() {
       assetRef: record.assetRef || '',
       settlementCompanyId: record.settlementCompanyId || undefined,
       settlementCompanyName: record.settlementCompanyName || '',
+      templateHtml: record.templateHtml || '',
       versionNo: record.versionNo || 1,
       status: record.status || 'ACTIVE',
     })
     setState({
-      templateHtml: record.templateHtml || '',
       activeTemplateId: record.id,
       editingBillType: record.billType || selectedBillType,
+      editorDirty: false,
       editorOpen: true,
     })
   }
@@ -220,6 +237,7 @@ export function usePrintTemplateView() {
   }
 
   const handleCopy = (record: PrintTemplateRecord) => {
+    form.resetFields()
     form.setFieldsValue({
       billType: record.billType || selectedBillType,
       templateName: buildPrintTemplateCopyName(record),
@@ -230,13 +248,14 @@ export function usePrintTemplateView() {
       assetRef: record.assetRef || '',
       settlementCompanyId: record.settlementCompanyId || undefined,
       settlementCompanyName: record.settlementCompanyName || '',
+      templateHtml: record.templateHtml || '',
       versionNo: record.versionNo || 1,
       status: 'ACTIVE',
     })
     setState({
-      templateHtml: record.templateHtml || '',
       activeTemplateId: undefined,
       editingBillType: undefined,
+      editorDirty: false,
       editorOpen: true,
     })
   }
@@ -282,16 +301,12 @@ export function usePrintTemplateView() {
     try {
       const values = await form.validateFields()
       const templateType = values.templateType || 'COORD'
-      const normalizedTemplateHtml = templateHtml.trim()
+      const normalizedTemplateHtml = values.templateHtml?.trim() || ''
       const normalizedAssetRef = values.assetRef?.trim?.() || ''
       const normalizedSettlementCompanyId = normalizeSettlementCompanyId(
         values.settlementCompanyId,
         Array.isArray(settlementCompanyOptions) ? settlementCompanyOptions : [],
       )
-      if (templateType !== 'PDF_FORM' && !normalizedTemplateHtml) {
-        message.warning(t('system.printTemplate.inputTemplateContent'))
-        return
-      }
       saveMutation.mutate({
         id: activeTemplateId || undefined,
         billType: values.billType,
@@ -305,7 +320,7 @@ export function usePrintTemplateView() {
         settlementCompanyName: normalizedOptionalText(
           values.settlementCompanyName,
         ),
-        versionNo: Number(values.versionNo || 1),
+        versionNo: values.versionNo || 1,
         status: values.status || 'ACTIVE',
         ...(editingBillType && editingBillType !== values.billType
           ? { previousBillType: editingBillType }
@@ -316,6 +331,30 @@ export function usePrintTemplateView() {
     }
   }
 
+  const closeEditor = () => {
+    setState({ editorDirty: false, editorOpen: false })
+  }
+
+  const requestEditorClose = () => {
+    if (saveMutation.isPending || editorCloseConfirmOpenRef.current) return
+    if (!editorDirty) {
+      closeEditor()
+      return
+    }
+    editorCloseConfirmOpenRef.current = true
+    modal.confirm({
+      title: t('common.unsavedChangesTitle'),
+      content: t('common.unsavedChangesContent'),
+      okText: t('common.discardChanges'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: closeEditor,
+      afterClose: () => {
+        editorCloseConfirmOpenRef.current = false
+      },
+    })
+  }
+
   return {
     activeTemplateId,
     editorOpen,
@@ -324,25 +363,25 @@ export function usePrintTemplateView() {
     handleDelete,
     handleSave,
     handleUploadJson,
-    isLoading,
+    isFetching: templatesQuery.isFetching,
+    isLoading: templatesQuery.isPending,
+    isQueryError: templatesQuery.isError,
     openCreate,
     openEdit,
     openPreview,
     previewOpen,
     previewTemplate,
+    requestEditorClose,
     refresh,
     savePending: saveMutation.isPending,
     selectedBillType,
     settlementCompanyOptions,
-    templateHtml,
     templates,
     uploadPending: uploadMutation.isPending,
     setActiveTemplateId: (value: string | undefined) =>
       setState({ activeTemplateId: value }),
-    setEditorOpen: (value: boolean) => setState({ editorOpen: value }),
+    setEditorDirty: () => setState({ editorDirty: true }),
     setPreviewOpen: (value: boolean) => setState({ previewOpen: value }),
-    setSelectedBillType: (value: string) =>
-      setState({ selectedBillType: value }),
-    setTemplateHtml: (value: string) => setState({ templateHtml: value }),
+    setSelectedBillType: selectBillType,
   }
 }

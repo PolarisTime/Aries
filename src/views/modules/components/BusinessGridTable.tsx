@@ -108,7 +108,7 @@ export function BusinessGridTable({
   const scrollX = computeTableScrollX({
     columnWidths: visibleColumns.map((col) => col.width),
     containerWidth: shellWidth,
-    selectionColumnWidth: 0,
+    selectionColumnWidth: rowSelection ? 32 : 0,
   })
 
   const scroll = buildTableScrollConfig({
@@ -152,8 +152,7 @@ export function BusinessGridTable({
 
   const onRow = (record: ModuleRecord) => ({
     tabIndex: 0,
-    'aria-keyshortcuts': 'Enter',
-    title: 'Enter 打开单据',
+    'aria-keyshortcuts': rowSelection ? 'Enter Space' : 'Enter',
     ...(selectedRowKeys
       ? { 'aria-selected': selectedRowKeys.includes(String(record.id)) }
       : {}),
@@ -179,6 +178,12 @@ export function BusinessGridTable({
         event.preventDefault()
         clearPendingRowClick()
         onRowDoubleClick(record)
+        return
+      }
+      if (event.key === ' ' && rowSelection) {
+        event.preventDefault()
+        clearPendingRowClick()
+        onRowClick(record)
       }
     },
   })
@@ -200,6 +205,7 @@ export function BusinessGridTable({
         loading={loading}
         columns={visibleColumns}
         dataSource={dataSource}
+        rowSelection={rowSelection}
         virtual={isVirtual}
         tableLayout="fixed"
         pagination={false}

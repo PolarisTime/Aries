@@ -154,7 +154,7 @@ export function AccountView(): React.JSX.Element {
                 className="account-form"
               >
                 <Row gutter={[24, 0]}>
-                  <Col xs={24} md={12}>
+                  <Col span={12}>
                     <Form.Item label={t('system.account.loginName')}>
                       <Input
                         value={accountQuery.data?.loginName ?? ''}
@@ -162,7 +162,7 @@ export function AccountView(): React.JSX.Element {
                       />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} md={12}>
+                  <Col span={12}>
                     <Form.Item
                       name="userName"
                       label={t('system.account.userName')}
@@ -176,7 +176,7 @@ export function AccountView(): React.JSX.Element {
                   </Col>
                 </Row>
                 <Row gutter={[24, 0]}>
-                  <Col xs={24} md={12}>
+                  <Col span={12}>
                     <Form.Item
                       name="mobile"
                       label={t('system.account.mobile')}
@@ -185,7 +185,7 @@ export function AccountView(): React.JSX.Element {
                       <Input maxLength={32} />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} md={12}>
+                  <Col span={12}>
                     <Form.Item
                       name="remark"
                       label={t('system.account.remark')}
@@ -220,7 +220,7 @@ export function AccountView(): React.JSX.Element {
                 className="account-form"
               >
                 <Row gutter={[24, 0]}>
-                  <Col xs={24} md={8}>
+                  <Col span={8}>
                     <Form.Item
                       name="currentPassword"
                       label={t('system.account.currentPassword')}
@@ -229,7 +229,7 @@ export function AccountView(): React.JSX.Element {
                       <Input.Password autoComplete="current-password" />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} md={8}>
+                  <Col span={8}>
                     <Form.Item
                       name="newPassword"
                       label={t('system.account.newPassword')}
@@ -238,7 +238,7 @@ export function AccountView(): React.JSX.Element {
                       <Input.Password autoComplete="new-password" />
                     </Form.Item>
                   </Col>
-                  <Col xs={24} md={8}>
+                  <Col span={8}>
                     <Form.Item
                       name="confirmPassword"
                       label={t('system.account.confirmPassword')}

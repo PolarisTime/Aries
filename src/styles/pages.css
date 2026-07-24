@@ -178,91 +178,6 @@
   }
 }
 
-@media (max-width: 1180px) {
-  .app-shell-top-nav .header-global-search-top {
-    display: none;
-  }
-
-  .app-top-menu-shell {
-    padding: 0 4px;
-  }
-}
-
-@media (max-width: 960px) {
-  :root {
-    --app-control-height: 36px;
-  }
-
-  .header-global-search {
-    width: auto;
-    min-width: 0;
-    margin-left: 0;
-    flex: 1 1 auto;
-  }
-
-  .user-wrapper {
-    margin-left: 0;
-  }
-
-  .editor-form-head,
-  .editor-items-head,
-  .editor-items-actions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .editor-items-summary-inline {
-    display: none;
-  }
-
-  .editor-items-summary-mobile {
-    display: inline-flex;
-    margin-bottom: 12px;
-  }
-}
-
-@media (max-width: 720px) {
-  :root {
-    --app-content-padding: 0px;
-  }
-
-  .header-page-meta,
-  .user-wrapper .action-tag,
-  .user-wrapper .user-name {
-    display: none;
-  }
-
-  .app-top-nav-left {
-    gap: 8px;
-  }
-
-  .app-top-nav-right {
-    gap: 6px;
-  }
-
-  .app-top-header-meta,
-  .app-top-user-copy {
-    display: none;
-  }
-
-  .personal-setting-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .dashboard-flow-chain {
-    gap: 8px;
-  }
-
-  .dashboard-flow-node {
-    width: 100%;
-  }
-
-  .dashboard-flow-arrow {
-    display: none;
-  }
-}
-
 .auth-page-shell {
   min-height: 100vh;
   background: var(--theme-card-bg);
@@ -378,7 +293,7 @@
   max-width: 480px;
   margin: 0 0 16px;
   color: var(--theme-header-text);
-  font-size: clamp(32px, 4vw, 48px);
+  font-size: 48px;
   line-height: 1.18;
 }
 
@@ -430,61 +345,6 @@
 
 .login-form-card .ant-card-body {
   padding: 24px;
-}
-
-@media (max-width: 900px) {
-  .auth-page-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-page-visual {
-    min-height: auto;
-    padding: 24px;
-  }
-
-  .auth-page-visual-orbit,
-  .auth-page-visual::after,
-  .auth-page-brand-rule,
-  .auth-page-brand-note {
-    display: none;
-  }
-
-  .auth-page-brand-lockup {
-    margin-bottom: 12px;
-  }
-
-  .auth-page-brand-title.ant-typography {
-    margin-bottom: 4px;
-    font-size: 24px;
-  }
-
-  .auth-page-brand-subtitle.ant-typography {
-    font-size: 14px;
-    line-height: 22px;
-  }
-
-  .auth-page-content {
-    min-height: auto;
-    padding: 32px 20px;
-  }
-}
-
-@media (max-width: 520px) {
-  .auth-page-visual {
-    padding: 20px;
-  }
-
-  .auth-page-product-label.ant-typography {
-    display: none;
-  }
-
-  .auth-page-brand-title.ant-typography {
-    font-size: 20px;
-  }
-
-  .initial-setup-workspace .ant-card-body {
-    padding: 20px;
-  }
 }
 
 .login-skeleton-form {
@@ -634,10 +494,4 @@
   background: var(--ant-color-fill-quaternary);
   border: 1px solid var(--theme-card-border);
   border-radius: var(--ant-border-radius);
-}
-
-@media (max-width: 1100px) {
-  .print-template-shell {
-    grid-template-columns: 1fr;
-  }
 }

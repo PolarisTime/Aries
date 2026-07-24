@@ -126,7 +126,7 @@ export const EditorTaskDrawer = ({
         </div>
       }
       open={open}
-      size="min(440px, calc(100vw - 16px))"
+      size={440}
       title={t('layouts.editorTasks.drawerTitle', { count: tasks.length })}
       onClose={() => onOpenChange(false)}
     >

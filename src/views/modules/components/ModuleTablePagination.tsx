@@ -65,7 +65,6 @@ export function ModuleTablePagination({
           pageSize={pageSize}
           total={total}
           size="small"
-          responsive
           showLessItems
           showSizeChanger
           pageSizeOptions={['10', '20', '30', '50', '100']}

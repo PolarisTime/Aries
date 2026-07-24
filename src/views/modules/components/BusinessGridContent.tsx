@@ -1,6 +1,8 @@
-import { Alert } from 'antd'
+import { ReloadOutlined } from '@ant-design/icons'
+import { Alert, Button } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
@@ -20,13 +22,14 @@ interface Props {
   defaultFilters: SearchParams
   submittedFilters: SearchParams
   loading: boolean
+  hasLoadError: boolean
+  loadErrorMessage: string
   exporting: boolean
   records: ModuleRecord[]
   selectedRows: ModuleRecord[]
   total: number
   currentPage: number
   pageSize: number
-  warningMessage: string
   columnVisibleKeys: string[]
   columnOrder: string[]
   columns: ColumnsType<ModuleRecord>
@@ -38,6 +41,7 @@ interface Props {
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
+  onRetry: () => void
   onClearSelection: () => void
   onToggleColumn: (key: string) => void
   onColumnOrderChange: (order: string[]) => void
@@ -59,13 +63,14 @@ export function BusinessGridContent({
   defaultFilters,
   submittedFilters,
   loading,
+  hasLoadError,
+  loadErrorMessage,
   exporting,
   records,
   selectedRows,
   total,
   currentPage,
   pageSize,
-  warningMessage,
   columnVisibleKeys,
   columnOrder,
   columns,
@@ -77,6 +82,7 @@ export function BusinessGridContent({
   onCreate,
   onExport,
   onRefresh,
+  onRetry,
   onClearSelection,
   onToggleColumn,
   onColumnOrderChange,
@@ -90,6 +96,7 @@ export function BusinessGridContent({
   selectedCount,
   printDropdown,
 }: Props) {
+  const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
   const overviewItems = config.buildOverview(
     selectedRows.length ? selectedRows : records,
@@ -139,35 +146,48 @@ export function BusinessGridContent({
         />
       </div>
 
-      {warningMessage ? (
+      {hasLoadError ? (
         <Alert
-          type="warning"
+          type="error"
           showIcon
-          title={warningMessage}
+          title={loadErrorMessage || t('api.loadFailed')}
           className="module-grid-warning"
+          action={
+            <Button
+              size="small"
+              type="primary"
+              icon={<ReloadOutlined />}
+              loading={loading}
+              onClick={onRetry}
+            >
+              {t('errorBoundary.retry')}
+            </Button>
+          }
         />
-      ) : null}
+      ) : (
+        <>
+          <BusinessGridTable
+            key={moduleKey}
+            moduleKey={moduleKey}
+            columns={columns}
+            dataSource={records}
+            loading={loading}
+            rowSelection={rowSelection}
+            rowClassName={rowClassName}
+            onRowClick={onRowClick}
+            onRowDoubleClick={onRowDoubleClick}
+          />
 
-      <BusinessGridTable
-        key={moduleKey}
-        moduleKey={moduleKey}
-        columns={columns}
-        dataSource={records}
-        loading={loading}
-        rowSelection={rowSelection}
-        rowClassName={rowClassName}
-        onRowClick={onRowClick}
-        onRowDoubleClick={onRowDoubleClick}
-      />
-
-      <ModuleTablePagination
-        total={total}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        currentItemCount={records.length}
-        overviewItems={overviewItems}
-        onPageChange={onPageChange}
-      />
+          <ModuleTablePagination
+            total={total}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            currentItemCount={records.length}
+            overviewItems={overviewItems}
+            onPageChange={onPageChange}
+          />
+        </>
+      )}
     </section>
   )
 }

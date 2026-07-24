@@ -277,7 +277,6 @@
 
 ### 4.3 搜索与筛选控件缺少可访问名称
 
-- `src/components/SystemTableToolbar.tsx:45-56` 的 `Input.Search` 只有 `id`、`name` 和 placeholder。
 - `src/views/system/ApiKeyListToolbar.tsx:61-93` 的多个 Select 也仅依赖 placeholder。
 - `src/views/system/ApiKeyListToolbar.spec.tsx:24-89` 的测试 Mock 额外添加了生产代码不存在的 `aria-label`，掩盖了真实缺陷。
 

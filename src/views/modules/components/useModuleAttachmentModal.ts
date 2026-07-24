@@ -9,6 +9,7 @@ import {
   updateAttachmentBindings,
   uploadAttachment,
 } from '@/api/business'
+import { assertApiSuccess } from '@/api/client'
 import { message } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import { asString } from '@/utils/type-narrowing'
@@ -26,6 +27,7 @@ interface UseModuleAttachmentModalParams {
 
 interface AttachmentModalState {
   attachments: AttachmentRecord[]
+  loadError: string
   loading: boolean
   uploading: boolean
   uploadFileName: string
@@ -39,6 +41,7 @@ interface AttachmentModalState {
 
 const attachmentModalInitialState: AttachmentModalState = {
   attachments: [],
+  loadError: '',
   loading: false,
   uploading: false,
   uploadFileName: '',
@@ -55,8 +58,10 @@ type AttachmentModalPatch =
   | ((prev: AttachmentModalState) => Partial<AttachmentModalState>)
 
 async function fetchAttachmentList(moduleKey: string, recordId: string) {
-  const res = await getAttachmentBindings(moduleKey, recordId)
-  return res.data?.attachments || []
+  const response = assertApiSuccess(
+    await getAttachmentBindings(moduleKey, recordId),
+  )
+  return response.data.attachments
 }
 
 export function useModuleAttachmentModal({
@@ -74,6 +79,7 @@ export function useModuleAttachmentModal({
   )
   const {
     attachments,
+    loadError,
     loading,
     uploading,
     uploadFileName,
@@ -86,6 +92,7 @@ export function useModuleAttachmentModal({
   } = state
   const pasteZoneRef = useRef<HTMLDivElement | null>(null)
   const objectUrlRef = useRef<Set<string>>(new Set())
+  const attachmentRequestIdRef = useRef(0)
   const createTrackedObjectUrl = useCallback((blob: Blob) => {
     const objectUrl = URL.createObjectURL(blob)
     objectUrlRef.current.add(objectUrl)
@@ -148,29 +155,44 @@ export function useModuleAttachmentModal({
 
   const fetchAttachments = useCallback(async () => {
     if (!recordId) return
-    setState({ loading: true })
+    const requestId = ++attachmentRequestIdRef.current
+    setState({ loadError: '', loading: true })
     try {
+      const nextAttachments = await fetchAttachmentList(moduleKey, recordId)
+      if (requestId !== attachmentRequestIdRef.current) return
       setState({
-        attachments: await fetchAttachmentList(moduleKey, recordId),
+        attachments: nextAttachments,
+        loadError: '',
         loading: false,
         previewUrlByAttachmentId: {},
       })
-    } catch {
-      /* ignore */
-      setState({ loading: false })
+    } catch (error) {
+      if (requestId !== attachmentRequestIdRef.current) return
+      setState({
+        attachments: [],
+        loadError:
+          error instanceof Error
+            ? error.message
+            : t('modules.attachment.loadFailed'),
+        loading: false,
+      })
     }
-  }, [moduleKey, recordId])
+  }, [moduleKey, recordId, t])
 
   const bindAttachment = useCallback(
     async (attachmentId: string) => {
-      const latestBindings = await getAttachmentBindings(moduleKey, recordId)
-      const latestAttachmentIds = (latestBindings.data?.attachments || []).map(
+      const latestBindings = assertApiSuccess(
+        await getAttachmentBindings(moduleKey, recordId),
+      )
+      const latestAttachmentIds = latestBindings.data.attachments.map(
         (item) => item.id,
       )
-      await updateAttachmentBindings(moduleKey, recordId, [
-        ...latestAttachmentIds,
-        attachmentId,
-      ])
+      assertApiSuccess(
+        await updateAttachmentBindings(moduleKey, recordId, [
+          ...latestAttachmentIds,
+          attachmentId,
+        ]),
+      )
     },
     [moduleKey, recordId],
   )
@@ -183,15 +205,12 @@ export function useModuleAttachmentModal({
         uploadProgress: 0,
       })
       try {
-        const uploadRes = await uploadAttachment(
-          file,
-          moduleKey,
-          'PAGE_UPLOAD',
-          {
+        const uploadRes = assertApiSuccess(
+          await uploadAttachment(file, moduleKey, 'PAGE_UPLOAD', {
             onProgress: (percent) => {
               setState({ uploadProgress: percent })
             },
-          },
+          }),
         )
         const attachmentId = asString(uploadRes.data?.id).trim()
         if (!attachmentId) {
@@ -297,11 +316,13 @@ export function useModuleAttachmentModal({
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        await updateAttachmentBindings(
-          moduleKey,
-          recordId,
-          attachments.flatMap((item) =>
-            String(item.id) !== id ? [item.id] : [],
+        assertApiSuccess(
+          await updateAttachmentBindings(
+            moduleKey,
+            recordId,
+            attachments.flatMap((item) =>
+              String(item.id) !== id ? [item.id] : [],
+            ),
           ),
         )
         message.success(t('modules.attachment.unbindSuccess'))
@@ -312,31 +333,32 @@ export function useModuleAttachmentModal({
             ? err.message
             : t('modules.attachment.deleteFailed'),
         )
+        throw err
       }
     },
     [attachments, fetchAttachments, moduleKey, recordId, t],
   )
 
   const clearPreviewState = useCallback(() => {
+    attachmentRequestIdRef.current += 1
     setState({
+      attachments: [],
+      loading: false,
       previewOpen: false,
       previewSource: '',
       previewUrlByAttachmentId: {},
       pdfPreviewOpen: false,
       pdfPreviewUrl: '',
+      loadError: '',
     })
     revokeTrackedObjectUrls()
   }, [revokeTrackedObjectUrls])
 
   const handleModalOpenChange = useCallback(
     (visible: boolean) => {
-      if (visible) {
-        void fetchAttachments()
-        return
-      }
-      clearPreviewState()
+      if (!visible) clearPreviewState()
     },
-    [clearPreviewState, fetchAttachments],
+    [clearPreviewState],
   )
 
   const handlePdfPreviewClose = useCallback(() => {
@@ -355,6 +377,12 @@ export function useModuleAttachmentModal({
     },
     [previewSource],
   )
+
+  useEffect(() => {
+    if (!open) return
+    clearPreviewState()
+    void fetchAttachments()
+  }, [clearPreviewState, fetchAttachments, open])
 
   useEffect(() => {
     if (!open) {
@@ -404,6 +432,7 @@ export function useModuleAttachmentModal({
     handleModalOpenChange,
     handlePdfPreviewClose,
     imageAttachments: attachments.filter(isImageAttachment),
+    loadError,
     loading,
     openImagePreview,
     openPdfPreview,
@@ -413,6 +442,7 @@ export function useModuleAttachmentModal({
     previewOpen,
     previewSource,
     previewUrlByAttachmentId,
+    retryAttachments: fetchAttachments,
     t,
     uploadAndBindAttachment,
     uploading,

@@ -1,7 +1,7 @@
 import { ArrowRightOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
@@ -15,6 +15,7 @@ import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { modal } from '@/utils/antd-app'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { EditorFooterActions } from './EditorFooterActions'
@@ -71,6 +72,72 @@ export function ModuleEditorWorkspace({
 }: Props) {
   const { t } = useTranslation()
   const [form] = Form.useForm()
+  const editorDirtyRef = useRef(false)
+  const closeConfirmationOpenRef = useRef(false)
+  const resolveCurrentEditorTask = () => {
+    const state = editorTaskStore.getState()
+    return state.tasks.find(
+      (task) => task.key === state.activeKey && task.moduleKey === moduleKey,
+    )
+  }
+  const markEditorDirty = () => {
+    editorDirtyRef.current = true
+    const task = resolveCurrentEditorTask()
+    if (task && task.status !== 'saving') {
+      editorTaskStore.getState().updateStatus(task.key, 'dirty')
+    }
+  }
+  const finishAndCloseEditor = () => {
+    const task = resolveCurrentEditorTask()
+    if (task) {
+      if (task.status === 'saving') {
+        editorTaskStore.getState().updateStatus(task.key, 'clean')
+      }
+      editorTaskStore.getState().close(task.key)
+    }
+    editorDirtyRef.current = false
+    onClose()
+  }
+  const closeEditor = () => {
+    const task = resolveCurrentEditorTask()
+    if (task?.status === 'saving') {
+      return
+    }
+    if (task) {
+      editorTaskStore.getState().close(task.key)
+    }
+    editorDirtyRef.current = false
+    onClose()
+  }
+  const requestCloseEditor = () => {
+    const task = resolveCurrentEditorTask()
+    if (task?.status === 'saving') {
+      return
+    }
+    const hasUnsafeChanges =
+      editorDirtyRef.current ||
+      task?.status === 'dirty' ||
+      task?.status === 'error'
+    if (!hasUnsafeChanges) {
+      closeEditor()
+      return
+    }
+    if (closeConfirmationOpenRef.current) {
+      return
+    }
+    closeConfirmationOpenRef.current = true
+    modal.confirm({
+      title: t('layouts.editorTasks.closeConfirmTitle'),
+      content: t('layouts.editorTasks.closeConfirmContent', { count: 1 }),
+      okText: t('layouts.editorTasks.close'),
+      cancelText: t('common.cancel'),
+      maskClosable: false,
+      onOk: closeEditor,
+      afterClose: () => {
+        closeConfirmationOpenRef.current = false
+      },
+    })
+  }
   const watchedCustomerId = Form.useWatch('customerId', form)
   const customerId =
     typeof watchedCustomerId === 'string' && watchedCustomerId
@@ -151,7 +218,8 @@ export function ModuleEditorWorkspace({
     editorAuditActionKind,
     editorAuditTarget,
     form,
-    onClose,
+    onClose: finishAndCloseEditor,
+    onDirty: markEditorDirty,
     onSaved,
     autoInsertBlankItemOnCreate:
       Boolean(config.itemColumns?.length) && canAddManualItems,
@@ -175,6 +243,7 @@ export function ModuleEditorWorkspace({
       return
     }
     if (saveResult?.status === 'success') {
+      editorDirtyRef.current = false
       editorTaskStore.getState().updateStatus(activeTask.key, 'clean')
     }
   }, [moduleKey, saveResult?.status, saving])
@@ -230,7 +299,7 @@ export function ModuleEditorWorkspace({
           mode: isEdit ? t('modules.editor.edit') : t('modules.editor.create'),
           title: config.title,
         })}
-        onClose={onClose}
+        onClose={requestCloseEditor}
         className={
           useFinanceEditorLayout
             ? 'workspace-overlay-panel--finance-editor'
@@ -243,7 +312,7 @@ export function ModuleEditorWorkspace({
               canAudit={canSaveAndAuditInEditor}
               auditLabel={editorAuditLabel}
               saving={saving}
-              onCancel={onClose}
+              onCancel={requestCloseEditor}
               onSave={(audit) => {
                 void handleSave(audit)
               }}
@@ -260,10 +329,6 @@ export function ModuleEditorWorkspace({
             useFinanceEditorLayout ? ' editor-form-shell--finance' : ''
           }`}
           onValuesChange={(changedValues) => {
-            const activeKey = editorTaskStore.getState().activeKey
-            if (activeKey) {
-              editorTaskStore.getState().updateStatus(activeKey, 'dirty')
-            }
             handleFormValuesChange(changedValues)
           }}
         >
@@ -276,7 +341,7 @@ export function ModuleEditorWorkspace({
               canAudit: canSaveAndAuditInEditor,
               saving,
               visible: !useFinanceEditorLayout && !config.itemColumns?.length,
-              onCancel: onClose,
+              onCancel: requestCloseEditor,
               onSave: (audit) => {
                 void handleSave(audit)
               },
@@ -311,7 +376,7 @@ export function ModuleEditorWorkspace({
           saving={saving}
           showFooterActions={!useFinanceEditorLayout}
           onAddItem={addItem}
-          onCancel={onClose}
+          onCancel={requestCloseEditor}
           onSave={(audit) => {
             void handleSave(audit)
           }}
@@ -336,7 +401,7 @@ export function ModuleEditorWorkspace({
           resolvingConflict={saving}
           onClear={() => {
             clearSaveResult()
-            if (saveResult.status !== 'error') onClose()
+            if (saveResult.status !== 'error') finishAndCloseEditor()
           }}
           onResolveConflict={() => {
             void reloadAfterConflict()
