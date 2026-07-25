@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { responseDateTimeSchema } from './api'
 
 const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
 const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
@@ -25,8 +26,8 @@ export const printTemplateRecordSchema = z.object({
   source: z.enum(['db', 'file']).optional(),
   fileName: z.string().optional(),
   billType: z.string().optional(),
-  createTime: z.string().optional(),
-  updateTime: z.string().optional(),
+  createTime: responseDateTimeSchema.optional(),
+  updateTime: responseDateTimeSchema.optional(),
 })
 export type PrintTemplateRecord = z.output<typeof printTemplateRecordSchema>
 
