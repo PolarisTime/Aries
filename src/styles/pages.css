@@ -116,8 +116,6 @@
   :root {
     --app-control-height: 34px;
     --app-header-height: 56px;
-    --app-tabs-height: 36px;
-    --app-tab-card-height: 32px;
     --app-content-padding: 0px;
     --app-card-body-padding: 10px;
   }

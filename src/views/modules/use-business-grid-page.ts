@@ -185,6 +185,10 @@ export function useBusinessGridPage({
   })
 
   useEffect(() => {
+    if (resolvedConfig.readOnly) {
+      setAttachmentCounts({})
+      return
+    }
     const recordIds = recordIdsKey.split(',').filter(Boolean)
     if (!recordIds.length) {
       setAttachmentCounts({})
@@ -207,7 +211,7 @@ export function useBusinessGridPage({
     return () => {
       cancelled = true
     }
-  }, [moduleKey, recordIdsKey])
+  }, [moduleKey, recordIdsKey, resolvedConfig.readOnly])
 
   const clearSelection = () => {
     setSelectedRowKeys([])

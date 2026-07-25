@@ -1,7 +1,10 @@
 import axios, { AxiosHeaders } from 'axios'
 import { parseApiContract } from '@/api/api-contract'
 import { authHttp } from '@/api/http'
-import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
+import {
+  AUTH_SESSION_CLEARED_EVENT,
+  AUTH_STATE_CHANGED_EVENT,
+} from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
@@ -84,6 +87,9 @@ export function clearAuthSession() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(REFRESH_EXPIRES_AT_KEY)
     localStorage.removeItem(REFRESH_WARNED_KEY)
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_SESSION_CLEARED_EVENT))
   }
   notifyAuthStateChanged()
 }

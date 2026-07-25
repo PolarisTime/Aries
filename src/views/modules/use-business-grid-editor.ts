@@ -1,17 +1,11 @@
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
 } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
-import {
-  buildEditorTaskKey,
-  resolveEditorTaskPath,
-} from '@/layouts/editor-workspace/editor-task-model'
-import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
-import { useAuthStore } from '@/stores/authStore'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -28,39 +22,6 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   >([])
   const [editorLockLoading, setEditorLockLoading] = useState(false)
   const openVersionRef = useRef(0)
-
-  const registerEditorTask = (record: ModuleRecord | null) => {
-    const user = useAuthStore.getState().user
-    const userKey = String(user?.id || user?.loginName || '').trim()
-    if (!userKey) {
-      return
-    }
-    const mode = record ? 'edit' : 'create'
-    const recordId = String(record?.id || 'new')
-    const primaryNo = String(
-      record?.[config.primaryNoKey || 'orderNo'] || '',
-    ).trim()
-    const key = buildEditorTaskKey({ userKey, moduleKey, mode, recordId })
-    editorTaskStore.getState().open({
-      key,
-      userKey,
-      moduleKey,
-      mode,
-      recordId,
-      path: resolveEditorTaskPath(moduleKey, window.location.pathname),
-      title: record
-        ? `${config.title}${primaryNo ? ` ${primaryNo}` : ''}`
-        : `新建${config.title}`,
-      displayMeta: {
-        moduleTitle: config.title,
-        recordLabel: record ? primaryNo || recordId : '新建',
-      },
-      status: 'clean',
-      updatedAt: Date.now(),
-      lastActivatedAt: Date.now(),
-      closable: true,
-    })
-  }
 
   const lineItemLockSourceModule = String(
     getBehaviorValue(moduleKey, 'lineItemLockSourceModule') || '',
@@ -122,7 +83,6 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     if (!record && config.allowManualCreate === false) {
       return
     }
-    registerEditorTask(record)
     if (!record) {
       openVersionRef.current += 1
       setEditorLockRelatedRows([])
@@ -161,65 +121,6 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     setEditorLockRelatedRows([])
     setEditorLockLoading(false)
   }, [])
-
-  const resumeEditorTask = useEffectEvent(async () => {
-    const state = editorTaskStore.getState()
-    const task = state.tasks.find((item) => item.key === state.resumeKey)
-    if (!task || task.moduleKey !== moduleKey) {
-      return
-    }
-    const version = ++openVersionRef.current
-    state.consumeResume(task.key)
-    if (task.mode === 'create') {
-      if (config.allowManualCreate === false) {
-        state.close(task.key)
-        return
-      }
-      if (editorTaskStore.getState().activeKey !== task.key) {
-        return
-      }
-      await openEditor(null)
-      return
-    }
-    try {
-      const detail = await getBusinessModuleDetail(moduleKey, task.recordId)
-      const currentState = editorTaskStore.getState()
-      if (
-        version !== openVersionRef.current ||
-        currentState.activeKey !== task.key ||
-        !currentState.tasks.some((item) => item.key === task.key)
-      ) {
-        return
-      }
-      await openEditor(detail.data)
-    } catch {
-      if (version === openVersionRef.current) {
-        editorTaskStore.getState().updateStatus(task.key, 'error')
-      }
-    }
-  })
-
-  useEffect(() => {
-    const resumePendingTask = () => {
-      void resumeEditorTask()
-    }
-    resumePendingTask()
-    return editorTaskStore.subscribe((state, previousState) => {
-      if (state.resumeKey && state.resumeKey !== previousState.resumeKey) {
-        resumePendingTask()
-      }
-      const previousActiveTask = previousState.tasks.find(
-        (task) => task.key === previousState.activeKey,
-      )
-      if (
-        state.activeKey === null &&
-        previousActiveTask?.moduleKey === moduleKey &&
-        !state.tasks.some((task) => task.key === previousActiveTask.key)
-      ) {
-        closeEditor()
-      }
-    })
-  }, [closeEditor, moduleKey])
 
   const handleSaved = () => {
     setEditorLockRelatedRows([])

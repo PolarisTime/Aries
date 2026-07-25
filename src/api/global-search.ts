@@ -2,14 +2,15 @@ import { z } from 'zod'
 import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { apiResponseSchema } from '@/shared/schemas/api'
+import { parseOptionalEntityId } from '@/types/entity-id'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { asString } from '@/utils/type-narrowing'
 
 export interface GlobalSearchResponse {
   moduleKey?: string
   title?: string
-  trackId?: string | number
-  primaryNo?: string | number
+  trackId?: string
+  primaryNo?: string
   summary?: string
   matchedByTrackId?: boolean
 }
@@ -19,8 +20,8 @@ const globalSearchResponseSchema = apiResponseSchema(
     z.object({
       moduleKey: z.string().optional(),
       title: z.string().optional(),
-      trackId: z.union([z.string(), z.number()]).optional(),
-      primaryNo: z.union([z.string(), z.number()]).optional(),
+      trackId: z.string().optional(),
+      primaryNo: z.string().optional(),
       summary: z.string().optional(),
       matchedByTrackId: z.boolean().optional(),
     }),
@@ -29,7 +30,8 @@ const globalSearchResponseSchema = apiResponseSchema(
 
 function toGlobalSearchResult(item: GlobalSearchResponse): GlobalSearchResult {
   const moduleKey = asString(item.moduleKey)
-  const trackId = asString(item.trackId)
+  const trackId =
+    parseOptionalEntityId(item.trackId, 'globalSearch.trackId') || ''
   const primaryNo = asString(item.primaryNo || item.trackId)
   const title = asString(item.title || moduleKey)
   const summary = asString(item.summary)

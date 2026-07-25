@@ -6,7 +6,7 @@ import {
 
 const IDEMPOTENCY_HEADER = 'X-Idempotency-Key'
 
-function createIdempotencyKey() {
+export function createIdempotencyKey(): string {
   if (
     typeof crypto !== 'undefined' &&
     typeof crypto.randomUUID === 'function'
@@ -35,11 +35,13 @@ function cloneRequestHeaders(
 
 export function withIdempotencyKey(
   config?: AxiosRequestConfig,
+  idempotencyKey?: string,
 ): AxiosRequestConfig {
   const headers = cloneRequestHeaders(config?.headers)
 
   if (!headers[IDEMPOTENCY_HEADER]) {
-    headers[IDEMPOTENCY_HEADER] = createIdempotencyKey()
+    headers[IDEMPOTENCY_HEADER] =
+      idempotencyKey?.trim() || createIdempotencyKey()
   }
 
   return {

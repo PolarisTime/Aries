@@ -215,6 +215,9 @@ export const enUS = {
     unsavedChangesContent:
       'Your changes have not been saved. Continuing will discard them.',
     discardChanges: 'Discard Changes',
+    saveInProgressTitle: 'Saving',
+    saveInProgressContent:
+      'This document is being saved. Wait for it to finish before leaving.',
     columnSettings: 'Column Settings',
     saveAndAudit: 'Save & Audit',
     auditConfirm:
@@ -1354,37 +1357,6 @@ export const enUS = {
     },
     personalSettings: {
       title: 'Personal Settings',
-    },
-    editorTasks: {
-      allTasks: 'All Tasks',
-      openAllTasks: 'View all {{count}} editing tasks',
-      moreOverflowTasks: 'More editing tasks',
-      drawerTitle: 'Editing Tasks ({{count}})',
-      searchPlaceholder: 'Search module, document, or record ID',
-      empty: 'No editing tasks match the current filters',
-      lastVisited: 'Last visited {{time}}',
-      close: 'Close',
-      closeTask: 'Close {{title}}',
-      closeCurrent: 'Close Current',
-      closeOthers: 'Close Others',
-      closeSaved: 'Close Saved',
-      closeAll: 'Close All',
-      closeConfirmTitle: 'Close Editing Tasks',
-      closeConfirmContent:
-        '{{count}} task(s) contain unsaved changes or content that failed to save. Closing them will discard those changes. Continue?',
-      filter: {
-        all: 'All',
-        dirty: 'Unsaved',
-        error: 'Failed',
-        readonly: 'Read-only',
-      },
-      status: {
-        saved: 'Saved',
-        dirty: 'Unsaved',
-        saving: 'Saving',
-        error: 'Save failed',
-        readonly: 'Read-only',
-      },
     },
     settings: {
       systemFont: 'System Font',

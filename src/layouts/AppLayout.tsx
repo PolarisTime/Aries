@@ -3,7 +3,6 @@ import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useStore } from 'zustand'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
@@ -14,9 +13,7 @@ import {
   buildAppLayoutUserInfo,
   buildClockDisplay,
 } from '@/layouts/app-layout-utils'
-import { EditorWorkspaceTabs } from '@/layouts/editor-workspace/EditorWorkspaceTabs'
-import { resolveEditorTaskPath } from '@/layouts/editor-workspace/editor-task-model'
-import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
+import { EditorSessionGuard } from '@/layouts/editor-session/EditorSessionGuard'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
@@ -147,82 +144,6 @@ function PersonalSettingsHost({
   )
 }
 
-function useEditorTaskNavigation(currentUserKey: string) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-
-  const activateEditorTask = (key: string) => {
-    const task = editorTaskStore
-      .getState()
-      .tasks.find((item) => item.key === key && item.userKey === currentUserKey)
-    if (!task || !editorTaskStore.getState().requestResume(key)) {
-      return
-    }
-    void navigate({
-      to: resolveEditorTaskPath(task.moduleKey, task.path) as '/',
-    })
-  }
-
-  const closeEditorTasks = (keys: string[]) => {
-    const requestedKeys = new Set(keys)
-    const tasks = editorTaskStore
-      .getState()
-      .tasks.filter(
-        (task) =>
-          requestedKeys.has(task.key) &&
-          task.userKey === currentUserKey &&
-          task.closable &&
-          task.status !== 'saving',
-      )
-    if (!tasks.length) {
-      return
-    }
-
-    const unsafeTaskCount = tasks.filter(
-      (task) => task.status === 'dirty' || task.status === 'error',
-    ).length
-    const closeTasks = () => {
-      const state = editorTaskStore.getState()
-      const closesActiveTask = tasks.some(
-        (task) => task.key === state.activeKey,
-      )
-      const closedCount = state.closeMany(tasks.map((task) => task.key))
-      if (!closesActiveTask || closedCount === 0) {
-        return
-      }
-
-      const nextState = editorTaskStore.getState()
-      const fallbackTask = nextState.tasks.find(
-        (task) =>
-          task.key === nextState.activeKey && task.userKey === currentUserKey,
-      )
-      if (fallbackTask) {
-        void navigate({
-          to: resolveEditorTaskPath(
-            fallbackTask.moduleKey,
-            fallbackTask.path,
-          ) as '/',
-        })
-      }
-    }
-    if (unsafeTaskCount > 0) {
-      modal.confirm({
-        title: t('layouts.editorTasks.closeConfirmTitle'),
-        content: t('layouts.editorTasks.closeConfirmContent', {
-          count: unsafeTaskCount,
-        }),
-        okText: t('layouts.editorTasks.close'),
-        cancelText: t('common.cancel'),
-        onOk: closeTasks,
-      })
-      return
-    }
-    closeTasks()
-  }
-
-  return { activateEditorTask, closeEditorTasks }
-}
-
 export function AppLayout() {
   useAuthAppSync()
 
@@ -259,12 +180,6 @@ export function AppLayout() {
   } = usePersonalSettings()
 
   const isTopNavigationLayout = appliedLayoutMode === 'top'
-
-  const editorTasks = useStore(editorTaskStore, (state) => state.tasks)
-  const activeEditorTaskKey = useStore(
-    editorTaskStore,
-    (state) => state.activeKey,
-  )
 
   const {
     sideMenuItems,
@@ -357,17 +272,6 @@ export function AppLayout() {
     t,
     user,
   )
-  const currentUserKey = String(user?.id || user?.loginName || '').trim()
-  const currentUserEditorTasks = editorTasks.filter(
-    (task) => task.userKey === currentUserKey,
-  )
-  const currentUserActiveEditorTaskKey = currentUserEditorTasks.some(
-    (task) => task.key === activeEditorTaskKey,
-  )
-    ? activeEditorTaskKey
-    : null
-  const { activateEditorTask, closeEditorTasks } =
-    useEditorTaskNavigation(currentUserKey)
   const clockDisplay = buildClockDisplay(clock)
   const {
     fixedWidthStyle,
@@ -400,7 +304,7 @@ export function AppLayout() {
       ) : null}
 
       <Layout
-        className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}${currentUserEditorTasks.length ? ' leo-main-with-editor-tabs' : ' leo-main-without-editor-tabs'}`}
+        className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}`}
         style={mainStyle}
       >
         <Header className={headerClassName} style={fixedWidthStyle}>
@@ -461,14 +365,6 @@ export function AppLayout() {
           )}
         </Header>
 
-        <EditorWorkspaceTabs
-          activeKey={currentUserActiveEditorTaskKey}
-          tasks={currentUserEditorTasks}
-          style={{ ...fixedWidthStyle, ...shellFontStyle }}
-          onActivate={activateEditorTask}
-          onCloseTasks={closeEditorTasks}
-        />
-
         <AppContentOutlet openPageKey={routePageContext.openPageKey} />
       </Layout>
 
@@ -487,5 +383,9 @@ export function AppLayout() {
     </Layout>
   )
 
-  return <AppAntdProvider>{layoutShell}</AppAntdProvider>
+  return (
+    <AppAntdProvider>
+      <EditorSessionGuard>{layoutShell}</EditorSessionGuard>
+    </AppAntdProvider>
+  )
 }

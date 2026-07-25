@@ -1,7 +1,7 @@
 import { ArrowRightOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
@@ -11,11 +11,10 @@ import {
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
-import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
+import { useEditorSession } from '@/layouts/editor-session/EditorSessionGuard'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { modal } from '@/utils/antd-app'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { EditorFooterActions } from './EditorFooterActions'
@@ -72,72 +71,16 @@ export function ModuleEditorWorkspace({
 }: Props) {
   const { t } = useTranslation()
   const [form] = Form.useForm()
-  const editorDirtyRef = useRef(false)
-  const closeConfirmationOpenRef = useRef(false)
-  const resolveCurrentEditorTask = () => {
-    const state = editorTaskStore.getState()
-    return state.tasks.find(
-      (task) => task.key === state.activeKey && task.moduleKey === moduleKey,
-    )
-  }
-  const markEditorDirty = () => {
-    editorDirtyRef.current = true
-    const task = resolveCurrentEditorTask()
-    if (task && task.status !== 'saving') {
-      editorTaskStore.getState().updateStatus(task.key, 'dirty')
-    }
-  }
-  const finishAndCloseEditor = () => {
-    const task = resolveCurrentEditorTask()
-    if (task) {
-      if (task.status === 'saving') {
-        editorTaskStore.getState().updateStatus(task.key, 'clean')
-      }
-      editorTaskStore.getState().close(task.key)
-    }
-    editorDirtyRef.current = false
+  const { beginSession, endSession, requestClose, setSessionStatus } =
+    useEditorSession()
+  const wasSavingRef = useRef(false)
+  const markEditorDirty = useCallback(() => {
+    setSessionStatus('dirty')
+  }, [setSessionStatus])
+  const finishAndCloseEditor = useCallback(() => {
+    endSession()
     onClose()
-  }
-  const closeEditor = () => {
-    const task = resolveCurrentEditorTask()
-    if (task?.status === 'saving') {
-      return
-    }
-    if (task) {
-      editorTaskStore.getState().close(task.key)
-    }
-    editorDirtyRef.current = false
-    onClose()
-  }
-  const requestCloseEditor = () => {
-    const task = resolveCurrentEditorTask()
-    if (task?.status === 'saving') {
-      return
-    }
-    const hasUnsafeChanges =
-      editorDirtyRef.current ||
-      task?.status === 'dirty' ||
-      task?.status === 'error'
-    if (!hasUnsafeChanges) {
-      closeEditor()
-      return
-    }
-    if (closeConfirmationOpenRef.current) {
-      return
-    }
-    closeConfirmationOpenRef.current = true
-    modal.confirm({
-      title: t('layouts.editorTasks.closeConfirmTitle'),
-      content: t('layouts.editorTasks.closeConfirmContent', { count: 1 }),
-      okText: t('layouts.editorTasks.close'),
-      cancelText: t('common.cancel'),
-      maskClosable: false,
-      onOk: closeEditor,
-      afterClose: () => {
-        closeConfirmationOpenRef.current = false
-      },
-    })
-  }
+  }, [endSession, onClose])
   const watchedCustomerId = Form.useWatch('customerId', form)
   const customerId =
     typeof watchedCustomerId === 'string' && watchedCustomerId
@@ -227,26 +170,53 @@ export function ModuleEditorWorkspace({
   // oxlint-enable react-doctor/no-event-handler
 
   useEffect(() => {
-    const activeKey = editorTaskStore.getState().activeKey
-    const activeTask = editorTaskStore
-      .getState()
-      .tasks.find((task) => task.key === activeKey)
-    if (!activeTask || activeTask.moduleKey !== moduleKey) {
+    if (!open) {
+      return
+    }
+    beginSession({
+      moduleKey,
+      mode: record ? 'edit' : 'create',
+      ...(record?.id ? { recordId: String(record.id) } : {}),
+    })
+    return endSession
+  }, [beginSession, endSession, moduleKey, open, record])
+
+  useEffect(() => {
+    if (!open) {
       return
     }
     if (saving) {
-      editorTaskStore.getState().updateStatus(activeTask.key, 'saving')
-      return
-    }
-    if (saveResult?.status === 'error') {
-      editorTaskStore.getState().updateStatus(activeTask.key, 'error')
+      wasSavingRef.current = true
+      setSessionStatus('submitting')
       return
     }
     if (saveResult?.status === 'success') {
-      editorDirtyRef.current = false
-      editorTaskStore.getState().updateStatus(activeTask.key, 'clean')
+      wasSavingRef.current = false
+      setSessionStatus('clean')
+      return
     }
-  }, [moduleKey, saveResult?.status, saving])
+    if (
+      saveResult?.status === 'error' &&
+      saveResult.errorCode === ERROR_CODE.CONCURRENT_MODIFICATION
+    ) {
+      wasSavingRef.current = false
+      setSessionStatus('conflict')
+      return
+    }
+    if (saveResult?.status === 'error') {
+      wasSavingRef.current = false
+      setSessionStatus('dirty')
+      return
+    }
+    if (wasSavingRef.current) {
+      wasSavingRef.current = false
+      setSessionStatus('dirty')
+    }
+  }, [open, saveResult, saving, setSessionStatus])
+
+  const requestCloseEditor = useCallback(() => {
+    requestClose(onClose)
+  }, [onClose, requestClose])
   const editorFormValues = Form.useWatch([], form) || {}
   const parentImportedItemEditLocked = isParentImportedEditorLocked(
     moduleKey,
@@ -285,9 +255,9 @@ export function ModuleEditorWorkspace({
     config,
     items,
     setItems,
-    canManageItems: canManageCurrentItems,
+    canManageItems: canManageCurrentItems && !saving,
     lineItemsLocked,
-    canEditItemColumns,
+    canEditItemColumns: canEditItemColumns && !saving,
     parentImportedItemEditLocked,
   })
 

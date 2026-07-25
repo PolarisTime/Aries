@@ -17,7 +17,10 @@ export async function completeSalesOrder(id: string) {
   )
 }
 
-export async function saveAndCompleteSalesOrder(record: ModuleRecord) {
+export async function saveAndCompleteSalesOrder(
+  record: ModuleRecord,
+  idempotencyKey?: string,
+) {
   const id = String(record.id || '').trim()
   if (!id) {
     throw new Error('销售订单 ID 不能为空')
@@ -29,7 +32,7 @@ export async function saveAndCompleteSalesOrder(record: ModuleRecord) {
       `/sales-orders/${encodeURIComponent(id)}/save-and-complete`,
       rawRecordResponseSchema,
       payload,
-      withIdempotencyKey(),
+      withIdempotencyKey(undefined, idempotencyKey),
     ),
     '确认核定失败',
   )

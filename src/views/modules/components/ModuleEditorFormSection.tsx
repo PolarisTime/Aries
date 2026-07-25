@@ -118,7 +118,7 @@ export function ModuleEditorFormSection({
                   moduleKey,
                   field.key,
                   Boolean(field.disabled || field.disabledWhen?.(formValues)),
-                  actions.canSave,
+                  actions.canSave && !actions.saving,
                   editorState.lineItemsLocked,
                   config.primaryNoKey,
                   config.parentImport?.parentFieldKey,

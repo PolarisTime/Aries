@@ -39,6 +39,7 @@ export async function getBusinessModuleDetail(moduleKey: string, id: string) {
 export async function saveBusinessModule(
   moduleKey: string,
   record: ModuleRecord,
+  idempotencyKey?: string,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
@@ -53,13 +54,13 @@ export async function saveBusinessModule(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
           rawRecordResponseSchema,
           payload,
-          withIdempotencyKey(),
+          withIdempotencyKey(undefined, idempotencyKey),
         )
       : await apiPost(
           endpointConfig.path,
           rawRecordResponseSchema,
           payload,
-          withIdempotencyKey(),
+          withIdempotencyKey(undefined, idempotencyKey),
         ),
   )
 
@@ -73,6 +74,7 @@ export async function saveBusinessModule(
 export async function saveAndAuditBusinessModule(
   moduleKey: string,
   record: ModuleRecord,
+  idempotencyKey?: string,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
@@ -87,13 +89,13 @@ export async function saveAndAuditBusinessModule(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}/save-and-audit`,
           rawRecordResponseSchema,
           payload,
-          withIdempotencyKey(),
+          withIdempotencyKey(undefined, idempotencyKey),
         )
       : await apiPost(
           `${endpointConfig.path}/save-and-audit`,
           rawRecordResponseSchema,
           payload,
-          withIdempotencyKey(),
+          withIdempotencyKey(undefined, idempotencyKey),
         ),
   )
 

@@ -122,6 +122,7 @@ export function ModuleEditorItemsSection({
                   type="primary"
                   className="overlay-action-button"
                   icon={<PlusOutlined />}
+                  disabled={saving}
                   onClick={onAddItem}
                 >
                   {t('modules.itemsSection.addItem')}
@@ -132,7 +133,7 @@ export function ModuleEditorItemsSection({
                   className="overlay-action-button"
                   icon={<ImportOutlined />}
                   loading={parentImporting}
-                  disabled={!capabilities.importParentItems}
+                  disabled={saving || !capabilities.importParentItems}
                   onClick={onOpenParentSelector}
                 >
                   {config.parentImport?.buttonText ||
@@ -157,6 +158,7 @@ export function ModuleEditorItemsSection({
                   danger
                   className="overlay-action-button"
                   icon={<DeleteOutlined />}
+                  disabled={saving}
                   onClick={onRemoveSelectedItems}
                 >
                   {t('modules.itemsSection.deleteSelected')} (

@@ -5,6 +5,7 @@ import {
   type SetStateAction,
   useEffect,
   useReducer,
+  useRef,
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +20,7 @@ import {
   getCompanySettingProfile,
 } from '@/api/company-settings'
 import { saveAndCompleteSalesOrder } from '@/api/document-flow-commands'
+import { createIdempotencyKey } from '@/api/idempotency'
 import { fetchGeneratedMasterDataCode } from '@/api/master-data-codes'
 import { readRequestError } from '@/api/request-errors'
 import { ERROR_CODE } from '@/constants/error-codes'
@@ -72,6 +74,15 @@ interface AuditTarget {
 interface EditorWorkspaceState {
   items: ModuleLineItem[]
   authoritativePrimaryNo: string
+}
+
+type SubmissionAction = 'save' | 'save-and-audit' | 'save-and-complete'
+
+interface SubmissionState {
+  action: SubmissionAction | null
+  idempotencyKey: string | null
+  inFlight: boolean
+  sessionKey: string | null
 }
 
 interface WorkspaceFormApi {
@@ -375,6 +386,20 @@ function editorWorkspaceReducer(
   return { ...state, ...patch }
 }
 
+function invalidateSubmissionIntent(
+  state: SubmissionState,
+  expectedIdempotencyKey?: string,
+) {
+  if (
+    expectedIdempotencyKey &&
+    state.idempotencyKey !== expectedIdempotencyKey
+  ) {
+    return
+  }
+  state.action = null
+  state.idempotencyKey = null
+}
+
 function syncEditorFormValues(args: {
   config: ModulePageConfig
   form: WorkspaceFormApi
@@ -410,6 +435,12 @@ export function useModuleEditorWorkspace({
   autoInsertBlankItemOnCreate,
 }: Props) {
   const [saving, setSaving] = useState(false)
+  const submissionRef = useRef<SubmissionState>({
+    action: null,
+    idempotencyKey: null,
+    inFlight: false,
+    sessionKey: null,
+  })
   const [parentSelectorSessionKey, setParentSelectorSessionKey] = useState<
     string | null
   >(null)
@@ -439,6 +470,11 @@ export function useModuleEditorWorkspace({
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
   useEffect(() => {
+    const submission = submissionRef.current
+    if (submission.sessionKey !== editorSessionKey) {
+      invalidateSubmissionIntent(submission)
+      submission.sessionKey = editorSessionKey
+    }
     if (!open) {
       return
     }
@@ -507,7 +543,15 @@ export function useModuleEditorWorkspace({
     return () => {
       active = false
     }
-  }, [autoInsertBlankItemOnCreate, config, form, moduleKey, open, record])
+  }, [
+    autoInsertBlankItemOnCreate,
+    config,
+    editorSessionKey,
+    form,
+    moduleKey,
+    open,
+    record,
+  ])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {
     if (!open) {
@@ -516,6 +560,7 @@ export function useModuleEditorWorkspace({
     if (!Object.keys(changedValues).length) {
       return
     }
+    invalidateSubmissionIntent(submissionRef.current)
     onDirty()
     const changedKeys = new Set(Object.keys(changedValues))
     if (config.parentImport?.resolveParentSelector) {
@@ -554,6 +599,24 @@ export function useModuleEditorWorkspace({
       audit &&
       moduleKey === 'sales-order' &&
       asString(record?.status).trim() === '交付核定'
+    const submissionAction: SubmissionAction = confirmDeliveryVerification
+      ? 'save-and-complete'
+      : audit && editorAuditTarget
+        ? 'save-and-audit'
+        : 'save'
+    const submission = submissionRef.current
+    if (submission.inFlight) {
+      return
+    }
+    if (submission.action !== submissionAction || !submission.idempotencyKey) {
+      submission.action = submissionAction
+      submission.idempotencyKey = createIdempotencyKey()
+    }
+    const idempotencyKey = submission.idempotencyKey
+    submission.inFlight = true
+    setSaving(true)
+    let mutationAttempted = false
+
     try {
       const effectiveAuthoritativePrimaryNo =
         authoritativePrimaryNo ||
@@ -613,6 +676,7 @@ export function useModuleEditorWorkspace({
       })
       if (validationMessage) {
         message.warning(validationMessage)
+        invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
         return
       }
 
@@ -634,7 +698,10 @@ export function useModuleEditorWorkspace({
             onCancel: () => resolve(false),
           })
         })
-        if (!confirmed) return
+        if (!confirmed) {
+          invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+          return
+        }
       }
 
       if (confirmDeliveryVerification || (audit && editorAuditTarget)) {
@@ -664,10 +731,12 @@ export function useModuleEditorWorkspace({
             onCancel: () => resolve(false),
           })
         })
-        if (!confirmed) return
+        if (!confirmed) {
+          invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+          return
+        }
       }
 
-      setSaving(true)
       const draftRecord: ModuleRecord = {
         ...(record || {}),
         ...values,
@@ -714,20 +783,18 @@ export function useModuleEditorWorkspace({
       }
 
       const usesAtomicSaveAndAudit = audit && editorAuditTarget != null
+      mutationAttempted = true
       const savedResult = confirmDeliveryVerification
-        ? await saveAndCompleteSalesOrder(draftRecord)
+        ? await saveAndCompleteSalesOrder(draftRecord, idempotencyKey)
         : usesAtomicSaveAndAudit
-          ? await saveAndAuditBusinessModule(moduleKey, draftRecord)
-          : await saveBusinessModule(moduleKey, draftRecord)
+          ? await saveAndAuditBusinessModule(
+              moduleKey,
+              draftRecord,
+              idempotencyKey,
+            )
+          : await saveBusinessModule(moduleKey, draftRecord, idempotencyKey)
+      invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
       const savedRecord = savedResult.data
-      setSaveResult({
-        status: 'success',
-        message:
-          savedResult.message ||
-          (isEdit ? t('common.editSuccess') : t('common.addSuccess')),
-        record: savedRecord,
-      })
-      onSaved()
       try {
         await refreshModuleQueries()
       } catch (refreshError) {
@@ -737,8 +804,18 @@ export function useModuleEditorWorkspace({
             : t('common.loadFailed'),
         )
       }
-      setSaving(false)
+      onSaved()
+      setSaveResult({
+        status: 'success',
+        message:
+          savedResult.message ||
+          (isEdit ? t('common.editSuccess') : t('common.addSuccess')),
+        record: savedRecord,
+      })
     } catch (err) {
+      if (!mutationAttempted) {
+        invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+      }
       if (isAntdFormValidationError(err)) {
         // Form 已内联展示校验错误，不重复提示
       } else if (err instanceof Error) {
@@ -756,6 +833,8 @@ export function useModuleEditorWorkspace({
           message: t('common.saveFailedRetry'),
         })
       }
+    } finally {
+      submissionRef.current.inFlight = false
       setSaving(false)
     }
   }
@@ -868,6 +947,7 @@ export function useModuleEditorWorkspace({
         sumLineItemsBy,
         changedValues: nextValues,
       })
+      invalidateSubmissionIntent(submissionRef.current)
       onDirty()
       dispatchWorkspaceState({ items: nextItems })
       setParentSelectorSessionKey(null)
@@ -917,6 +997,7 @@ export function useModuleEditorWorkspace({
   const addItem = () => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
     const nextItems = [...items, newItem]
+    invalidateSubmissionIntent(submissionRef.current)
     onDirty()
     dispatchWorkspaceState({ items: nextItems })
     if (open && config.itemColumns?.length) {
@@ -938,6 +1019,7 @@ export function useModuleEditorWorkspace({
     if (resolvedItems === items) {
       return
     }
+    invalidateSubmissionIntent(submissionRef.current)
     onDirty()
     dispatchWorkspaceState({ items: resolvedItems })
     if (open && config.itemColumns?.length) {
