@@ -2,8 +2,8 @@ import { useBlocker } from '@tanstack/react-router'
 import {
   createContext,
   type ReactNode,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -62,11 +62,14 @@ export function EditorSessionGuard({ children }: Props) {
   }, [commitSession])
 
   useEffect(() => {
-    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, endSession)
-    return () => {
-      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, endSession)
+    const clearEditorSession = () => {
+      commitSession(null)
     }
-  }, [endSession])
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, clearEditorSession)
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, clearEditorSession)
+    }
+  }, [commitSession])
 
   const setSessionStatus = useCallback(
     (status: EditorSessionStatus) => {
@@ -193,7 +196,7 @@ export function EditorSessionGuard({ children }: Props) {
 }
 
 export function useEditorSession(): EditorSessionController {
-  const controller = useContext(EditorSessionContext)
+  const controller = use(EditorSessionContext)
   if (!controller) {
     throw new Error('useEditorSession must be used within EditorSessionGuard')
   }

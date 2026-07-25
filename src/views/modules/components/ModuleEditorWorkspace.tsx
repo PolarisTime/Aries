@@ -11,7 +11,10 @@ import {
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
-import { useEditorSession } from '@/layouts/editor-session/EditorSessionGuard'
+import {
+  type EditorSessionStatus,
+  useEditorSession,
+} from '@/layouts/editor-session/EditorSessionGuard'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -57,6 +60,80 @@ function isFinanceOrTradeModule(key: string) {
   )
 }
 
+function useEditorSessionActions(onClose: () => void) {
+  const { endSession, requestClose, setSessionStatus } = useEditorSession()
+  const markEditorDirty = useCallback(() => {
+    setSessionStatus('dirty')
+  }, [setSessionStatus])
+  const finishAndCloseEditor = useCallback(() => {
+    endSession()
+    onClose()
+  }, [endSession, onClose])
+  const requestCloseEditor = useCallback(() => {
+    requestClose(onClose)
+  }, [onClose, requestClose])
+
+  return { finishAndCloseEditor, markEditorDirty, requestCloseEditor }
+}
+
+interface EditorSessionLifecycleOptions {
+  open: boolean
+  moduleKey: string
+  isEdit: boolean
+  recordId?: string
+  saving: boolean
+  saveStatus?: 'success' | 'error' | 'warning'
+  saveErrorCode?: number
+}
+
+function useEditorSessionLifecycle({
+  open,
+  moduleKey,
+  isEdit,
+  recordId,
+  saving,
+  saveStatus,
+  saveErrorCode,
+}: EditorSessionLifecycleOptions) {
+  const { beginSession, endSession, setSessionStatus } = useEditorSession()
+  const wasSavingRef = useRef(false)
+
+  useEffect(() => {
+    if (!open) return
+    beginSession({
+      moduleKey,
+      mode: isEdit ? 'edit' : 'create',
+      ...(recordId ? { recordId } : {}),
+    })
+    return endSession
+  }, [beginSession, endSession, isEdit, moduleKey, open, recordId])
+
+  useEffect(() => {
+    if (!open) return
+    let nextStatus: EditorSessionStatus | null = null
+    if (saving) {
+      wasSavingRef.current = true
+      nextStatus = 'submitting'
+    } else if (saveStatus === 'success') {
+      wasSavingRef.current = false
+      nextStatus = 'clean'
+    } else if (
+      saveStatus === 'error' &&
+      saveErrorCode === ERROR_CODE.CONCURRENT_MODIFICATION
+    ) {
+      wasSavingRef.current = false
+      nextStatus = 'conflict'
+    } else if (saveStatus === 'error') {
+      wasSavingRef.current = false
+      nextStatus = 'dirty'
+    } else if (wasSavingRef.current) {
+      wasSavingRef.current = false
+      nextStatus = 'dirty'
+    }
+    if (nextStatus) setSessionStatus(nextStatus)
+  }, [open, saveErrorCode, saveStatus, saving, setSessionStatus])
+}
+
 export function ModuleEditorWorkspace({
   open,
   config,
@@ -71,16 +148,8 @@ export function ModuleEditorWorkspace({
 }: Props) {
   const { t } = useTranslation()
   const [form] = Form.useForm()
-  const { beginSession, endSession, requestClose, setSessionStatus } =
-    useEditorSession()
-  const wasSavingRef = useRef(false)
-  const markEditorDirty = useCallback(() => {
-    setSessionStatus('dirty')
-  }, [setSessionStatus])
-  const finishAndCloseEditor = useCallback(() => {
-    endSession()
-    onClose()
-  }, [endSession, onClose])
+  const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
+    useEditorSessionActions(onClose)
   const watchedCustomerId = Form.useWatch('customerId', form)
   const customerId =
     typeof watchedCustomerId === 'string' && watchedCustomerId
@@ -169,54 +238,15 @@ export function ModuleEditorWorkspace({
   })
   // oxlint-enable react-doctor/no-event-handler
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    beginSession({
-      moduleKey,
-      mode: record ? 'edit' : 'create',
-      ...(record?.id ? { recordId: String(record.id) } : {}),
-    })
-    return endSession
-  }, [beginSession, endSession, moduleKey, open, record])
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    if (saving) {
-      wasSavingRef.current = true
-      setSessionStatus('submitting')
-      return
-    }
-    if (saveResult?.status === 'success') {
-      wasSavingRef.current = false
-      setSessionStatus('clean')
-      return
-    }
-    if (
-      saveResult?.status === 'error' &&
-      saveResult.errorCode === ERROR_CODE.CONCURRENT_MODIFICATION
-    ) {
-      wasSavingRef.current = false
-      setSessionStatus('conflict')
-      return
-    }
-    if (saveResult?.status === 'error') {
-      wasSavingRef.current = false
-      setSessionStatus('dirty')
-      return
-    }
-    if (wasSavingRef.current) {
-      wasSavingRef.current = false
-      setSessionStatus('dirty')
-    }
-  }, [open, saveResult, saving, setSessionStatus])
-
-  const requestCloseEditor = useCallback(() => {
-    requestClose(onClose)
-  }, [onClose, requestClose])
+  useEditorSessionLifecycle({
+    open,
+    moduleKey,
+    isEdit,
+    ...(record?.id ? { recordId: String(record.id) } : {}),
+    saving,
+    saveStatus: saveResult?.status,
+    saveErrorCode: saveResult?.errorCode,
+  })
   const editorFormValues = Form.useWatch([], form) || {}
   const parentImportedItemEditLocked = isParentImportedEditorLocked(
     moduleKey,
