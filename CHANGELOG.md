@@ -1,3 +1,10 @@
+## [8.0.1](https://github.com/PolarisTime/Aries/compare/v8.0.0...v8.0.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **frontend:** 修复客户项目联动和打印模板加载 ([a904342](https://github.com/PolarisTime/Aries/commit/a9043428d319c48bb95c20d471ae157546a6c58b))
+
 # [8.0.0](https://github.com/PolarisTime/Aries/compare/v7.2.0...v8.0.0) (2026-07-25)
 
 
