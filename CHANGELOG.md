@@ -1,3 +1,10 @@
+## [8.0.2](https://github.com/PolarisTime/Aries/compare/v8.0.1...v8.0.2) (2026-07-25)
+
+
+### Bug Fixes
+
+* **sales-order:** 扩展默认交货日期筛选范围 ([19e66d9](https://github.com/PolarisTime/Aries/commit/19e66d9d3542650cd051b0d8c24cc2fa0cd1794c))
+
 ## [8.0.1](https://github.com/PolarisTime/Aries/compare/v8.0.0...v8.0.1) (2026-07-25)
 
 
