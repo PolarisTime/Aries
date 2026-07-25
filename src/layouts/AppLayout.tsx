@@ -14,7 +14,6 @@ import {
   buildClockDisplay,
 } from '@/layouts/app-layout-utils'
 import { EditorSessionGuard } from '@/layouts/editor-session/EditorSessionGuard'
-import type { GlobalSearchResult } from '@/layouts/global-search'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
@@ -27,6 +26,7 @@ import {
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
+import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
 import type { ThemeMode } from '@/utils/storage'

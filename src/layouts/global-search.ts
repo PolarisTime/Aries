@@ -1,18 +1,11 @@
 import { uniqBy } from 'es-toolkit'
 import type { ModulePageMeta } from '@/config/module-page-meta'
+import type {
+  GlobalSearchResult,
+  ModuleSearchResponse,
+} from '@/types/global-search'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-
-export interface GlobalSearchResult {
-  value: string
-  label: string
-  moduleKey: string
-  title: string
-  trackId: string
-  primaryNo: string
-  summary: string
-  matchedByTrackId: boolean
-}
 
 interface GlobalSearchOptions {
   keyword: string
@@ -21,12 +14,7 @@ interface GlobalSearchOptions {
   searchModule: (
     moduleKey: string,
     keyword: string,
-    // biome-ignore lint/suspicious/noExplicitAny: in-progress type migration
-  ) => Promise<any>
-  lookupRecordById?: (
-    moduleKey: string,
-    id: string,
-  ) => Promise<ModuleRecord | null>
+  ) => Promise<ModuleSearchResponse>
   buildSummary: (record: ModuleRecord) => string
 }
 
@@ -50,7 +38,7 @@ function buildGlobalSearchResult(
   record: ModuleRecord,
   keyword: string,
   buildSummary: (record: ModuleRecord) => string,
-) {
+): GlobalSearchResult {
   const trackId = String(record.id || '')
   const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
   const summary = buildSummary(record)
@@ -96,18 +84,8 @@ export async function searchModules(options: GlobalSearchOptions) {
           )
           rows.push(...(response.data?.rows || []))
         } catch {
-          // A failed keyword search should not block direct trackId lookup below.
+          // A failed module search should not block results from other modules.
         }
-
-        // TODO: re-enable lookupRecordById when trackId matching rules are finalized
-        // if (options.lookupRecordById) {
-        //   try {
-        //     const record = await options.lookupRecordById(moduleKey, normalizedKeyword)
-        //     if (record) rows.push(record)
-        //   } catch {
-        //     // A snowflake id belongs to at most one module; misses in other modules are expected.
-        //   }
-        // }
 
         const deduped = uniqBy(
           rows.filter((record) => {

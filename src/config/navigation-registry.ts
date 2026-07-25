@@ -3,7 +3,6 @@ import type { AppPageDefinition } from '@/config/page-registry'
 
 export type AppIconKey =
   | 'AccountBookOutlined'
-  | 'ApartmentOutlined'
   | 'HomeOutlined'
   | 'AppstoreOutlined'
   | 'BankOutlined'
@@ -33,7 +32,6 @@ export type MenuGroupKey =
   | 'purchase'
   | 'sales'
   | 'freight'
-  | 'contracts'
   | 'statements'
   | 'finance'
   | 'system'
@@ -49,7 +47,6 @@ export const menuGroupOrder: MenuGroupKey[] = [
   'purchase',
   'sales',
   'freight',
-  'contracts',
   'statements',
   'finance',
   'system',
@@ -75,11 +72,6 @@ export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
     key: 'freight',
     title: i18next.t('navigation.freight'),
     icon: 'CarOutlined',
-  },
-  contracts: {
-    key: 'contracts',
-    title: i18next.t('navigation.contracts'),
-    icon: 'FileTextOutlined',
   },
   statements: {
     key: 'statements',

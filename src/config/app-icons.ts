@@ -1,6 +1,5 @@
 import {
   AccountBookOutlined,
-  ApartmentOutlined,
   AppstoreOutlined,
   BankOutlined,
   CalculatorOutlined,
@@ -30,7 +29,6 @@ import type { AppIconKey } from '@/config/navigation-registry'
 
 const appIconMap: Record<AppIconKey, ComponentType> = {
   AccountBookOutlined,
-  ApartmentOutlined,
   AppstoreOutlined,
   BankOutlined,
   CalculatorOutlined,

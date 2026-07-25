@@ -15,12 +15,6 @@ dist-ssr/
 .claude/
 .agents/
 temppic/
-test-results/
-coverage/
-coverage-e2e/
-coverage-report/
-playwright-report/
-.playwright/
 .tmp-browser/
 .local-browser/
 

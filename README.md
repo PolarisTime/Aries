@@ -13,8 +13,8 @@ Aries 是 Leo ERP 的 React 前端工作台，基于 `Vite 8 + React 19 + TypeSc
 - Zustand
 - Day.js
 - Biome
-- Vitest
-- Playwright
+- ESLint
+- React Doctor
 
 ## 本地开发
 
@@ -57,24 +57,12 @@ pnpm lint
 pnpm lint:fix
 pnpm format
 pnpm typecheck
-pnpm test:unit
 pnpm build-only
-pnpm test:e2e
+pnpm exec react-doctor . --full --no-score
 pnpm release:dry-run
 ```
 
-默认 E2E 套件不包含 `debug-*.spec.ts` 和 `*-debug.spec.ts` 诊断脚本。
-如需运行依赖登录态的 E2E 套件，请通过环境变量注入测试账号：
-
-```bash
-E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm test:e2e
-```
-
-如需运行诊断脚本，请显式启用 debug 项目：
-
-```bash
-E2E_INCLUDE_DEBUG=1 E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm exec playwright test --project=debug-chromium
-```
+自动化测试已归档在 `archive/tests/`，当前活动工程不维护或运行测试套件。
 
 ## 环境变量
 
@@ -88,7 +76,7 @@ E2E_INCLUDE_DEBUG=1 E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pn
 
 ## 工程约定
 
-- 使用 `Biome` 统一处理 lint 和 format，不再单独使用 ESLint / Prettier。
+- 使用 `Biome` 与 `ESLint` 执行静态检查，使用 `Biome` 统一格式化。
 - 使用 `TanStack Query` 管理服务端状态与缓存。
 - 不引入 `ant-design-pro` 脚手架，不切换到 `Umi`。
 - 如需 Pro 风格组件，只局部引入 `@ant-design/pro-components`。
@@ -103,12 +91,12 @@ E2E_INCLUDE_DEBUG=1 E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pn
 ## 提交前检查
 
 1. 确认 `.env.local` 未被跟踪。
-2. 确认测试或调试代码没有写死真实账号、密码、API Key。
+2. 确认本地环境文件没有写死真实账号、密码、API Key。
 3. 运行以下检查：
 
 ```bash
 pnpm lint
 pnpm typecheck
-pnpm test:unit
 pnpm build-only
+pnpm exec react-doctor . --full --no-score
 ```

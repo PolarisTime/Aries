@@ -5,16 +5,13 @@ import { modulePageMetaMap } from '@/config/module-page-meta'
 import { getSearchableModuleKeys } from '@/config/page-registry'
 import {
   buildGlobalSearchSummary,
-  type GlobalSearchResult,
   searchModules,
 } from '@/layouts/global-search'
+import type {
+  GlobalSearchResult,
+  ModuleSearchResponse,
+} from '@/types/global-search'
 import type { ModuleRecord } from '@/types/module-page'
-
-interface ModuleSearchResponse {
-  data?: {
-    rows?: ModuleRecord[]
-  }
-}
 
 interface UseGlobalSearchSupportOptions {
   onJump: (result: GlobalSearchResult) => void
@@ -24,10 +21,6 @@ interface UseGlobalSearchSupportOptions {
     moduleKey: string,
     keyword: string,
   ) => Promise<ModuleSearchResponse>
-  lookupRecordById?: (
-    moduleKey: string,
-    id: string,
-  ) => Promise<ModuleRecord | null>
   buildSummary?: (record: ModuleRecord) => string
 }
 
@@ -72,23 +65,20 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
     try {
       const moduleKeys = options.moduleKeys || getSearchableModuleKeys()
-      const searchTask =
-        options.searchModule || options.lookupRecordById
-          ? searchModules({
-              keyword: normalizedKeyword,
-              moduleKeys,
-              pageConfigs: options.pageConfigs || modulePageMetaMap,
-              searchModule:
-                options.searchModule ||
-                (() => Promise.resolve({ data: { rows: [] } })),
-              lookupRecordById: options.lookupRecordById,
-              buildSummary: options.buildSummary || buildGlobalSearchSummary,
-            })
-          : searchGlobalDocuments(
-              normalizedKeyword,
-              moduleKeys,
-              controller.signal,
-            )
+      const searchModule = options.searchModule
+      const searchTask = searchModule
+        ? searchModules({
+            keyword: normalizedKeyword,
+            moduleKeys,
+            pageConfigs: options.pageConfigs || modulePageMetaMap,
+            searchModule,
+            buildSummary: options.buildSummary || buildGlobalSearchSummary,
+          })
+        : searchGlobalDocuments(
+            normalizedKeyword,
+            moduleKeys,
+            controller.signal,
+          )
 
       return searchTask.then((merged) => {
         if (currentRequestId !== requestIdRef.current) {

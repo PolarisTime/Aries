@@ -4,17 +4,10 @@
     "includes": [
       "**",
       "!!**/dist",
-      "!!**/coverage",
-      "!!**/coverage-e2e",
-      "!!**/playwright-report",
-      "!!**/test-results",
-      "!!**/coverage-report",
-      "!!**/.playwright",
       "!!**/archive",
       "!!**/src/components.d.ts",
       "!!**/.git",
-      "!!**/node_modules",
-      "!!**/debug-height-chain.js"
+      "!!**/node_modules"
     ]
   },
   "formatter": {

@@ -243,11 +243,6 @@ export default defineConfig(({ mode }) => {
                 priority: 60,
               },
               {
-                name: 'spreadsheet',
-                test: /node_modules[\\/]xlsx[\\/]/,
-                priority: 60,
-              },
-              {
                 name: 'vendor-zustand',
                 test: /node_modules[\\/]zustand[\\/]/,
                 priority: 50,

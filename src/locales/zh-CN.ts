@@ -1549,7 +1549,6 @@ export const zhCN = {
     purchase: '采购',
     sales: '销售',
     freight: '物流',
-    contracts: '合同',
     statements: '对账',
     finance: '财务',
     system: '设置',

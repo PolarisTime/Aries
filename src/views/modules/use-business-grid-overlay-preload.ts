@@ -17,7 +17,7 @@ export function useBusinessGridOverlayPreload({ config }: Options) {
   useQuery({
     queryKey: QUERY_KEYS.businessGridOverlayPreload('editor-workspace'),
     queryFn: loadModuleEditorWorkspace,
-    enabled: Boolean(config && !config.readOnly),
+    enabled: Boolean(idleReady && config && !config.readOnly),
     staleTime: Infinity,
     gcTime: Infinity,
   })

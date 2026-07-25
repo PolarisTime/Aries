@@ -4,6 +4,7 @@ import {
   listAllBusinessModuleRows,
 } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
+import { useRequestError } from '@/hooks/useRequestError'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function useBusinessGridEditor({ moduleKey, config }: Props) {
+  const { showError } = useRequestError()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editRecord, setEditRecord] = useState<ModuleRecord | null>(null)
   const [editorLockRelatedRows, setEditorLockRelatedRows] = useState<
@@ -105,7 +107,10 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
       setEditorLockRelatedRows(lockRelatedRows)
       setEditRecord(resolvedRecord)
       setEditorOpen(true)
-    } catch {
+    } catch (error) {
+      if (version === openVersionRef.current) {
+        showError(error)
+      }
       return
     } finally {
       if (version === openVersionRef.current) {

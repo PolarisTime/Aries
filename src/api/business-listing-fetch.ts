@@ -1,6 +1,6 @@
 import type { AxiosRequestConfig } from 'axios'
 import { normalizeRows } from '@/api/business-normalizers'
-import { apiGet } from '@/api/client'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { getModuleConfig, type QueryValue } from '@/api/module-contracts'
 import {
   pageContent,
@@ -28,20 +28,23 @@ export async function fetchModulePage(
   fields?: string[],
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
-  const response = await apiGet(endpointConfig.path, rawPageResponseSchema, {
-    ...config,
-    params: {
-      ...params,
-      page,
-      size,
-      ...(fields?.length
-        ? {
-            [endpointConfig.fieldsParam || 'fields']: fields.join(','),
-          }
-        : {}),
-      ...(config?.params as SearchParams | undefined),
-    },
-  })
+  const response = assertApiSuccess(
+    await apiGet(endpointConfig.path, rawPageResponseSchema, {
+      ...config,
+      params: {
+        ...params,
+        page,
+        size,
+        ...(fields?.length
+          ? {
+              [endpointConfig.fieldsParam || 'fields']: fields.join(','),
+            }
+          : {}),
+        ...(config?.params as SearchParams | undefined),
+      },
+    }),
+    '查询业务列表失败',
+  )
 
   return {
     rows: normalizeRows(pageContent(response.data)),

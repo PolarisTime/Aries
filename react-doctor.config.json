@@ -1,11 +1,6 @@
 {
   "ignore": {
-    "files": [
-      "archive/**",
-      "public/static/clodop-license.js",
-      "coverage-e2e/**",
-      "src/test/e2e-coverage-probe.tsx"
-    ],
+    "files": ["archive/**", "public/static/clodop-license.js"],
     "overrides": [
       {
         "files": ["src/views/finance/CashLedgerView.tsx"],

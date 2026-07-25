@@ -1592,7 +1592,6 @@ export const enUS = {
     purchase: 'Purchase',
     sales: 'Sales',
     freight: 'Freight',
-    contracts: 'Contracts',
     statements: 'Statements',
     finance: 'Finance',
     system: 'System',

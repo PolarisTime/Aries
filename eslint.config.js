@@ -4,26 +4,9 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 
-const nonProjectServiceFiles = [
-  'src/api/idempotency.ts',
-  'src/api/module-save-payload.ts',
-  'src/api/system-settings.ts',
-  'src/layouts/global-search.ts',
-  'src/config/page-registry-finance.ts',
-]
-
 export default tseslint.config(
   {
-    ignores: [
-      'dist',
-      'coverage',
-      'coverage-e2e',
-      'playwright-report',
-      'test-results',
-      'archive',
-      'node_modules',
-      'src/utils/clodop.ts',
-    ],
+    ignores: ['dist', 'archive', 'node_modules', 'src/utils/clodop.ts'],
   },
 
   // ── 全项目严格规则 ───────────────────────────────────
@@ -78,17 +61,6 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-    },
-  },
-
-  // ── tsconfig.app.json 明确排除的测试/兼容文件 ───────────
-  {
-    extends: [tseslint.configs.disableTypeChecked],
-    files: nonProjectServiceFiles,
-    languageOptions: {
-      parserOptions: {
-        projectService: false,
-      },
     },
   },
 
@@ -157,21 +129,6 @@ export default tseslint.config(
           ],
         },
       ],
-    },
-  },
-
-  // ── 历史兼容桥接文件 ─────────────────────────────────
-  {
-    files: [
-      'src/api/idempotency.ts',
-      'src/api/module-save-payload.ts',
-      'src/api/system-settings.ts',
-      'src/config/page-registry-finance.ts',
-      'src/layouts/global-search.ts',
-    ],
-    rules: {
-      '@typescript-eslint/ban-ts-comment': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { apiGet } from '@/api/client'
+import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
@@ -75,10 +75,11 @@ export async function fetchProjectOptions(
   customerId: EntityId,
 ): Promise<ProjectOption[]> {
   const normalizedCustomerId = parseEntityId(customerId, 'customerId')
-  const response = await apiGet(
-    ENDPOINTS.PROJECTS_OPTIONS,
-    projectOptionsResponseSchema,
-    { params: { customerId: normalizedCustomerId } },
+  const response = assertApiSuccess(
+    await apiGet(ENDPOINTS.PROJECTS_OPTIONS, projectOptionsResponseSchema, {
+      params: { customerId: normalizedCustomerId },
+    }),
+    '查询项目选项失败',
   )
   return normalizeProjectOptions(response.data || [])
 }

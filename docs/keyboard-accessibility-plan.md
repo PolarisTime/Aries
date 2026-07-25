@@ -39,7 +39,7 @@ antd lint "./src" --only a11y --format json
 | `WorkspaceOverlay` | 支持遮罩点击和 Esc 关闭 | 缺少 dialog 语义、焦点陷阱、初始焦点和焦点恢复 |
 | `ColumnSettingsPopover` | 已引入 `KeyboardSensor` | 拖拽句柄为 `span`，可聚焦和可访问名称不完整 |
 | `PrintJobModal` | 拖拽句柄已是 `button` | 缺少 `sortableKeyboardCoordinates` 和更具体的拖拽名称 |
-| 样式 | 少量组件有 focus 样式 | 表格行、页签、overlay 焦点可视态不统一 |
+| 样式 | 少量组件有 focus 样式 | 表格行、overlay 焦点可视态不统一 |
 
 ## 3. 交互规范
 
@@ -49,7 +49,6 @@ antd lint "./src" --only a11y --format json
 | 父单据选择表格 | `Tab` 聚焦行；多选时 `Space` / `Enter` 切换选择；单选时 `Enter` 导入 |
 | 工作区弹层 | 打开后聚焦首个可操作元素，`Esc` 关闭顶层弹层，关闭后焦点回到触发元素 |
 | 弹层内部 | `Tab` / `Shift+Tab` 不逃出当前弹层 |
-| 页签 | 保留按钮结构和关闭按钮，补齐焦点样式 |
 | 列设置排序 | 拖拽句柄可聚焦，`Space` 抓取或释放，方向键排序 |
 | 打印明细排序 | 保留按钮句柄，补充键盘坐标 getter 和可访问名称 |
 | 搜索与筛选 | 保留 `Enter` 查询，确保输入框或外层容器有可见焦点 |
@@ -61,7 +60,6 @@ antd lint "./src" --only a11y --format json
 目标文件：
 
 - `src/views/modules/components/BusinessGridTable.tsx`
-- `src/views/modules/components/BusinessGridTable.spec.ts`
 - `src/styles/module-table.css`
 
 实施要点：
@@ -87,7 +85,6 @@ antd lint "./src" --only a11y --format json
 目标文件：
 
 - `src/views/modules/components/ModuleParentSelectorOverlay.tsx`
-- `src/views/modules/components/ModuleParentSelectorOverlay.spec.ts`
 - `src/styles/workspace-overlay.css`
 
 实施要点：
@@ -112,7 +109,6 @@ antd lint "./src" --only a11y --format json
 目标文件：
 
 - `src/views/modules/components/WorkspaceOverlay.tsx`
-- `src/views/modules/components/WorkspaceOverlay.spec.tsx`
 - `src/styles/workspace-overlay.css`
 
 实施要点：
@@ -149,7 +145,6 @@ antd lint "./src" --only a11y --format json
 
 - 为可聚焦表格行增加 `:focus-visible` 样式。
 - 为 `.workspace-overlay-close:focus-visible` 增加统一样式。
-- 为 `.open-page-strip-trigger:focus-visible` 和 `.open-page-strip-close:focus-visible` 增加统一样式。
 - 搜索输入当前移除了 `outline`，需要通过 `:focus-within` 在外层容器补可见焦点。
 - 焦点样式优先使用现有主题变量，例如 `--theme-highlight-border`、`--theme-primary`。
 
@@ -161,10 +156,7 @@ antd lint "./src" --only a11y --format json
 
 ### 4.5 P1：列设置排序键盘完善
 
-目标文件：
-
-- `src/views/modules/components/ColumnSettingsPopover.tsx`
-- `src/views/modules/components/ColumnSettingsPopover.spec.tsx`
+目标文件：`src/views/modules/components/ColumnSettingsPopover.tsx`
 
 实施要点：
 
@@ -184,10 +176,7 @@ antd lint "./src" --only a11y --format json
 
 ### 4.6 P1：打印明细排序键盘完善
 
-目标文件：
-
-- `src/views/modules/components/PrintJobModal.tsx`
-- `src/views/modules/components/PrintJobModal.spec.tsx`
+目标文件：`src/views/modules/components/PrintJobModal.tsx`
 
 实施要点：
 
@@ -203,45 +192,27 @@ antd lint "./src" --only a11y --format json
 - 拖拽按钮名称可区分不同行。
 - 品牌替换输入框焦点不受拖拽句柄影响。
 
-## 5. 测试计划
+## 5. 验证计划
 
-### 5.1 单元测试
-
-优先补共享组件单测：
-
-| 文件 | 覆盖点 |
-| --- | --- |
-| `BusinessGridTable.spec.ts` | `Space` 调用选中，`Enter` 调用打开，行内按钮/复选框不触发行操作 |
-| `ModuleParentSelectorOverlay.spec.ts` | 单选 `Enter` 导入，多选 `Space` / `Enter` 切换 |
-| `WorkspaceOverlay.spec.tsx` | dialog 语义、初始焦点、焦点循环、Esc 关闭、焦点恢复 |
-| `ColumnSettingsPopover.spec.tsx` | 拖拽句柄为按钮，有可访问名称 |
-| `PrintJobModal.spec.tsx` | 拖拽句柄名称包含行信息 |
-
-### 5.2 E2E 测试
-
-新增最小键盘冒烟测试：
+仓库测试文件政策禁止在活动目录维护单元测试或 E2E 测试。历史用例保留在
+`archive/tests/`，不作为当前质量门禁。每批改动使用静态检查并完成以下手工键盘冒烟：
 
 - 登录后进入业务页。
 - `Tab` 聚焦到首个数据行。
 - `Space` 选中行，断言选中计数变化。
 - `Enter` 打开详情或编辑 overlay。
 - `Esc` 关闭 overlay。
-- 断言焦点回到触发区域或合理的业务上下文。
+- 确认焦点回到触发区域或合理的业务上下文。
 
-注意：
-
-- mock 模式当前业务集合返回空数据，适合验证导航、弹层和空状态。
-- 行级 E2E 更适合真实后端数据，或者通过组件单测 mock antd Table 完成。
-
-### 5.3 推荐验证命令
+推荐验证命令：
 
 ```bash
-pnpm test:unit
-E2E_BACKEND_MODE=mock pnpm test:e2e -- auth-shell.spec.ts
-E2E_BACKEND_MODE=real pnpm test:e2e -- business-modules.spec.ts
+pnpm lint
+pnpm typecheck
+pnpm build-only
+pnpm exec react-doctor . --full --no-score
+antd lint ./src --only a11y --format json
 ```
-
-如果只验证修改范围，优先运行对应单测文件，再补一次完整 `pnpm test:unit`。
 
 ## 6. 风险与约束
 
@@ -261,7 +232,7 @@ E2E_BACKEND_MODE=real pnpm test:e2e -- business-modules.spec.ts
 - `BusinessGridTable` 行键盘支持
 - `ModuleParentSelectorOverlay` 行键盘支持
 - 表格行 focus-visible 样式
-- 对应单测
+- 静态检查与手工键盘验证
 
 预估：0.5 到 1 天。
 
@@ -272,8 +243,7 @@ E2E_BACKEND_MODE=real pnpm test:e2e -- business-modules.spec.ts
 - `WorkspaceOverlay` dialog 语义
 - 初始焦点、焦点陷阱、Esc、焦点恢复
 - overlay focus-visible 样式
-- 对应单测
-- 一条 E2E 冒烟
+- 静态检查与手工键盘验证
 
 预估：0.5 到 1 天。
 
@@ -283,8 +253,8 @@ E2E_BACKEND_MODE=real pnpm test:e2e -- business-modules.spec.ts
 
 - `ColumnSettingsPopover` 键盘排序完善
 - `PrintJobModal` 键盘排序完善
-- 页签和搜索框焦点样式收口
-- 对应单测
+- 搜索框焦点样式收口
+- 静态检查与手工键盘验证
 
 预估：0.5 到 1 天。
 
@@ -300,8 +270,8 @@ E2E_BACKEND_MODE=real pnpm test:e2e -- business-modules.spec.ts
 - [ ] 列设置排序句柄可聚焦且有明确名称。
 - [ ] 打印排序句柄可聚焦且有明确名称。
 - [ ] 所有新增键盘入口都有清晰焦点样式。
-- [ ] 单元测试覆盖核心键盘路径。
-- [ ] 至少一条 E2E 冒烟覆盖 overlay 键盘闭环。
+- [ ] 静态检查、类型检查与生产构建通过。
+- [ ] 手工键盘冒烟覆盖 overlay 打开、焦点循环、关闭与焦点恢复闭环。
 
 ## 9. 原则应用
 

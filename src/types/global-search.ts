@@ -1,3 +1,5 @@
+import type { ModuleRecord } from '@/types/module-page'
+
 export interface GlobalSearchResult {
   value: string
   label: string
@@ -7,4 +9,10 @@ export interface GlobalSearchResult {
   primaryNo: string
   summary: string
   matchedByTrackId: boolean
+}
+
+export interface ModuleSearchResponse {
+  data?: {
+    rows?: ModuleRecord[]
+  }
 }
