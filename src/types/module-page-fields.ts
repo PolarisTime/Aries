@@ -72,6 +72,11 @@ export interface ModuleFilterDefinition {
   label: string
   type: ModuleFilterType
   placeholder?: string
+  /** 仅用于日期范围筛选；未配置时默认最近一个月至今天。 */
+  defaultDateRange?: {
+    monthsBefore?: number
+    monthsAfter?: number
+  }
   clientSearchKeys?: string[]
   clientSearchLineItemKeys?: string[]
   options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
