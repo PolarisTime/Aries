@@ -1,3 +1,18 @@
+# [8.0.0](https://github.com/PolarisTime/Aries/compare/v7.2.0...v8.0.0) (2026-07-25)
+
+
+* refactor(frontend)!: 移除导航标签并统一编辑会话 ([e469f4b](https://github.com/PolarisTime/Aries/commit/e469f4b07c490f5efcf71b6d2133930c796f1256))
+
+
+### Bug Fixes
+
+* **build:** 统一 Node 版本并迁移 pnpm 配置 ([3b71d0c](https://github.com/PolarisTime/Aries/commit/3b71d0c2a92d64465dc0459bd47c59e1045d37e9))
+
+
+### BREAKING CHANGES
+
+* 移除导航标签栏、编辑任务抽屉及其本地持久化状态。
+
 # [7.2.0](https://github.com/PolarisTime/Aries/compare/v7.1.0...v7.2.0) (2026-07-22)
 
 
