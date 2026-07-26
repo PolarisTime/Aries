@@ -1,3 +1,10 @@
+## [8.1.1](https://github.com/PolarisTime/Aries/compare/v8.1.0...v8.1.1) (2026-07-26)
+
+
+### Bug Fixes
+
+* **frontend:** 修复业务筛选与身份字段契约 ([f25c521](https://github.com/PolarisTime/Aries/commit/f25c521556d1bdc9947416912b82e52d45b8ea7a))
+
 # [8.1.0](https://github.com/PolarisTime/Aries/compare/v8.0.2...v8.1.0) (2026-07-26)
 
 
