@@ -3,8 +3,7 @@
 // must use master-data APIs so stale hardcoded names cannot be saved.
 //
 // This file contains PURE data only — no API imports, no mutable runtime state.
-// API-backed option resolvers have been moved to src/api/option-resolvers.ts
-// and are re-exported below for backward compatibility.
+// Query-backed option resolvers are re-exported below for backward compatibility.
 
 function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
@@ -31,9 +30,8 @@ export function buildDocumentStatusOptions(...values: string[]) {
   return withDeletedDocumentStatus(createOptionList(values))
 }
 
-// Re-export API-backed option resolvers for backward compatibility.
+// Re-export Query-backed option resolvers for backward compatibility.
 // All existing imports from '@/constants/module-options' continue to work.
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- intentional barrel for backward compat
 export {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -46,4 +44,4 @@ export {
   isPurchaseWeighRequiredCategory,
   materialCategoryOptions,
   materialGradeOptions,
-} from '@/api/option-resolvers'
+} from '@/module-system/module-option-resolvers'

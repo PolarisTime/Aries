@@ -1,8 +1,9 @@
-import { normalizeRows } from '@/api/business-normalizers'
 import { apiGet, assertApiSuccess } from '@/api/client'
-import { pageContent, pageTotalElements } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { rawPageResponseSchema } from '@/shared/schemas/api'
+import {
+  salesOrderOutboundCandidatePageResponseSchema,
+  salesOrderSourceCandidatePageResponseSchema,
+} from '@/shared/schemas/module-record'
 import type { TableResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -17,7 +18,7 @@ export async function listSalesOrderOutboundImportCandidatePage(
   const response = assertApiSuccess(
     await apiGet(
       ENDPOINTS.SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES,
-      rawPageResponseSchema,
+      salesOrderOutboundCandidatePageResponseSchema,
       {
         params: {
           ...filters,
@@ -34,8 +35,8 @@ export async function listSalesOrderOutboundImportCandidatePage(
   return {
     code: 0,
     data: {
-      rows: normalizeRows(pageContent(response.data)),
-      total: pageTotalElements(response.data),
+      rows: response.data.content,
+      total: response.data.totalElements,
     },
   }
 }
@@ -50,7 +51,7 @@ export async function listSalesOrderPurchaseSourceCandidatePage(
   const response = assertApiSuccess(
     await apiGet(
       ENDPOINTS.SALES_ORDER_PURCHASE_SOURCE_CANDIDATES,
-      rawPageResponseSchema,
+      salesOrderSourceCandidatePageResponseSchema,
       {
         params: {
           ...candidateFilters,
@@ -68,8 +69,8 @@ export async function listSalesOrderPurchaseSourceCandidatePage(
   return {
     code: 0,
     data: {
-      rows: normalizeRows(pageContent(response.data)),
-      total: pageTotalElements(response.data),
+      rows: response.data.content,
+      total: response.data.totalElements,
     },
   }
 }

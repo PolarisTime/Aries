@@ -358,7 +358,6 @@ export const freightStatementPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'billNo',
     candidateStatementModuleKey: 'freight-statement',
     buttonText: '选择物流单生成明细',
-    enforceUniqueRelation: true,
     allowMultipleSelection: true,
     buildParentFilters: (currentRecord) => ({
       carrierId: entityIdOf(currentRecord.carrierId, 'carrierId'),

@@ -1,9 +1,7 @@
 import type { ModuleEndpointConfig } from '@/api/module-contract-types'
+import type { ModuleKey } from '@/module-system/module-key'
 
-export const masterModuleEndpointContracts: Record<
-  string,
-  ModuleEndpointConfig
-> = {
+export const masterModuleEndpointContracts = {
   material: {
     path: '/materials',
     supportsSearch: true,
@@ -38,4 +36,4 @@ export const masterModuleEndpointContracts: Record<
     path: '/company-settings',
     nativeFilterKeys: ['keyword', 'status'],
   },
-}
+} satisfies Partial<Record<ModuleKey, ModuleEndpointConfig>>

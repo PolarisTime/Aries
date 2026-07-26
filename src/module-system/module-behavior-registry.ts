@@ -1,28 +1,37 @@
-/** @file-dynamic-ref:registry — 模块行为注册表，通过 side-effect import 和字符串 key 动态调用 */
 import { asString } from '@/utils/type-narrowing'
 /**
  * Centralized registry for per-module behavioral configuration.
  * Replaces scattered Record<string, X> maps across multiple adapter files.
  */
 
-import { moduleBehaviorRegistry } from '@/module-system/module-behavior-registry-core'
+import { contributeActionBehaviors } from '@/module-system/module-behavior-actions'
+import { contributeEditorBehaviors } from '@/module-system/module-behavior-editor'
+import { contributeNormalizerBehaviors } from '@/module-system/module-behavior-normalizers'
+import { assembleModuleBehaviors } from '@/module-system/module-behavior-registry-core'
+import { contributeSaveBehaviors } from '@/module-system/module-behavior-save'
 import {
+  contributeStatusBehaviors,
   protectedDeleteStatuses,
   protectedEditStatuses,
 } from '@/module-system/module-behavior-statuses'
 import type { ModuleBehaviorConfig } from '@/module-system/module-behavior-types'
-import '@/module-system/module-behavior-actions'
-import '@/module-system/module-behavior-editor'
-import '@/module-system/module-behavior-normalizers'
-import '@/module-system/module-behavior-save'
-import '@/module-system/module-behavior-statuses'
+import { isModuleKey } from '@/module-system/module-key'
 
 export type { ModuleBehaviorConfig } from '@/module-system/module-behavior-types'
+
+const moduleBehaviorRegistry = assembleModuleBehaviors(
+  contributeActionBehaviors,
+  contributeEditorBehaviors,
+  contributeNormalizerBehaviors,
+  contributeSaveBehaviors,
+  contributeStatusBehaviors,
+)
 
 export function hasBehavior(
   moduleKey: string,
   flag: keyof ModuleBehaviorConfig,
 ): boolean {
+  if (!isModuleKey(moduleKey)) return false
   const config = moduleBehaviorRegistry.get(moduleKey)
   if (!config) return false
   return Boolean(config[flag])
@@ -32,6 +41,7 @@ export function getBehaviorValue<K extends keyof ModuleBehaviorConfig>(
   moduleKey: string,
   flag: K,
 ): ModuleBehaviorConfig[K] | undefined {
+  if (!isModuleKey(moduleKey)) return undefined
   return moduleBehaviorRegistry.get(moduleKey)?.[flag]
 }
 

@@ -9,25 +9,61 @@ import {
 } from '@/api/client'
 import { withIdempotencyKey } from '@/api/idempotency'
 import { getModuleConfig } from '@/api/module-contracts'
-import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
+import { toSaveRequest } from '@/api/module-save-payload'
 import {
   nullResponseSchema,
   rawRecordResponseSchema,
 } from '@/shared/schemas/api'
-import type { ModuleRecord } from '@/types/module-page'
+import {
+  getMainFlowDetailResponseSchema,
+  type MainFlowModuleKey,
+  parseMainFlowStatus,
+} from '@/shared/schemas/module-record'
+import type { ApiResponse } from '@/types/api'
+import type {
+  LegacyModuleRecord,
+  LegacyModuleRecordInput,
+  MainFlowDetailRecord,
+  MainFlowEditorDraft,
+  ModuleDetailRecordFor,
+  ModuleEditorDraftFor,
+} from '@/types/module-record'
 
-export async function getBusinessModuleDetail(moduleKey: string, id: string) {
+type BusinessModuleSaveRecord =
+  | LegacyModuleRecordInput
+  | MainFlowEditorDraft<MainFlowModuleKey>
+
+export function getBusinessModuleDetail<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  id: string,
+): Promise<ApiResponse<MainFlowDetailRecord<Key>>>
+export function getBusinessModuleDetail<Key extends string>(
+  moduleKey: Key,
+  id: string,
+): Promise<ApiResponse<ModuleDetailRecordFor<Key>>>
+export async function getBusinessModuleDetail(
+  moduleKey: string,
+  id: string,
+): Promise<ApiResponse<LegacyModuleRecord>> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly && !endpointConfig.supportsDetail) {
     throw new Error('当前模块不支持详情接口')
   }
 
-  const response = assertApiSuccess(
-    await apiGet(
-      `${endpointConfig.path}/${encodeURIComponent(id)}`,
-      rawRecordResponseSchema,
-    ),
-  )
+  const path = `${endpointConfig.path}/${encodeURIComponent(id)}`
+  const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
+  if (mainFlowResponseSchema) {
+    const response = assertApiSuccess(
+      await apiGet(path, mainFlowResponseSchema),
+    )
+    return {
+      code: response.code,
+      message: response.message,
+      data: response.data,
+    }
+  }
+
+  const response = assertApiSuccess(await apiGet(path, rawRecordResponseSchema))
 
   return {
     code: response.code,
@@ -36,32 +72,50 @@ export async function getBusinessModuleDetail(moduleKey: string, id: string) {
   }
 }
 
+export function saveBusinessModule<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  record: MainFlowEditorDraft<Key>,
+  idempotencyKey?: string,
+): Promise<ApiResponse<MainFlowDetailRecord<Key> | undefined>>
+export function saveBusinessModule<Key extends string>(
+  moduleKey: Key,
+  record: ModuleEditorDraftFor<Key>,
+  idempotencyKey?: string,
+): Promise<ApiResponse<ModuleDetailRecordFor<Key> | undefined>>
 export async function saveBusinessModule(
   moduleKey: string,
-  record: ModuleRecord,
+  record: BusinessModuleSaveRecord,
   idempotencyKey?: string,
-) {
+): Promise<ApiResponse<LegacyModuleRecord | undefined>> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
     throw new Error('当前模块不支持保存')
   }
 
-  const payload = await serializeBusinessRecordForSave(moduleKey, record)
+  const payload = await toSaveRequest(moduleKey, record)
   const hasId = Boolean(record.id)
+  const path = hasId
+    ? `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`
+    : endpointConfig.path
+  const requestConfig = withIdempotencyKey(undefined, idempotencyKey)
+  const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
+  if (mainFlowResponseSchema) {
+    const response = assertApiSuccess(
+      hasId
+        ? await apiPut(path, mainFlowResponseSchema, payload, requestConfig)
+        : await apiPost(path, mainFlowResponseSchema, payload, requestConfig),
+    )
+    return {
+      code: response.code,
+      message: response.message,
+      data: response.data,
+    }
+  }
+
   const response = assertApiSuccess(
     hasId
-      ? await apiPut(
-          `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
-          rawRecordResponseSchema,
-          payload,
-          withIdempotencyKey(undefined, idempotencyKey),
-        )
-      : await apiPost(
-          endpointConfig.path,
-          rawRecordResponseSchema,
-          payload,
-          withIdempotencyKey(undefined, idempotencyKey),
-        ),
+      ? await apiPut(path, rawRecordResponseSchema, payload, requestConfig)
+      : await apiPost(path, rawRecordResponseSchema, payload, requestConfig),
   )
 
   return {
@@ -71,32 +125,50 @@ export async function saveBusinessModule(
   }
 }
 
+export function saveAndAuditBusinessModule<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  record: MainFlowEditorDraft<Key>,
+  idempotencyKey?: string,
+): Promise<ApiResponse<MainFlowDetailRecord<Key> | undefined>>
+export function saveAndAuditBusinessModule<Key extends string>(
+  moduleKey: Key,
+  record: ModuleEditorDraftFor<Key>,
+  idempotencyKey?: string,
+): Promise<ApiResponse<ModuleDetailRecordFor<Key> | undefined>>
 export async function saveAndAuditBusinessModule(
   moduleKey: string,
-  record: ModuleRecord,
+  record: BusinessModuleSaveRecord,
   idempotencyKey?: string,
-) {
+): Promise<ApiResponse<LegacyModuleRecord | undefined>> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
     throw new Error('当前模块不支持保存并审核')
   }
 
-  const payload = await serializeBusinessRecordForSave(moduleKey, record)
+  const payload = await toSaveRequest(moduleKey, record)
   const hasId = Boolean(record.id)
+  const path = hasId
+    ? `${endpointConfig.path}/${encodeURIComponent(String(record.id))}/save-and-audit`
+    : `${endpointConfig.path}/save-and-audit`
+  const requestConfig = withIdempotencyKey(undefined, idempotencyKey)
+  const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
+  if (mainFlowResponseSchema) {
+    const response = assertApiSuccess(
+      hasId
+        ? await apiPut(path, mainFlowResponseSchema, payload, requestConfig)
+        : await apiPost(path, mainFlowResponseSchema, payload, requestConfig),
+    )
+    return {
+      code: response.code,
+      message: response.message,
+      data: response.data,
+    }
+  }
+
   const response = assertApiSuccess(
     hasId
-      ? await apiPut(
-          `${endpointConfig.path}/${encodeURIComponent(String(record.id))}/save-and-audit`,
-          rawRecordResponseSchema,
-          payload,
-          withIdempotencyKey(undefined, idempotencyKey),
-        )
-      : await apiPost(
-          `${endpointConfig.path}/save-and-audit`,
-          rawRecordResponseSchema,
-          payload,
-          withIdempotencyKey(undefined, idempotencyKey),
-        ),
+      ? await apiPut(path, rawRecordResponseSchema, payload, requestConfig)
+      : await apiPost(path, rawRecordResponseSchema, payload, requestConfig),
   )
 
   return {
@@ -119,23 +191,43 @@ export async function deleteBusinessModule(moduleKey: string, id: string) {
   )
 }
 
+export function updateBusinessModuleStatus<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  id: string,
+  status: string,
+): Promise<ApiResponse<MainFlowDetailRecord<Key> | undefined>>
+export function updateBusinessModuleStatus<Key extends string>(
+  moduleKey: Key,
+  id: string,
+  status: string,
+): Promise<ApiResponse<ModuleDetailRecordFor<Key> | undefined>>
 export async function updateBusinessModuleStatus(
   moduleKey: string,
   id: string,
   status: string,
-) {
+): Promise<ApiResponse<LegacyModuleRecord | undefined>> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
     throw new Error('当前模块不支持状态变更')
   }
 
+  const path = `${endpointConfig.path}/${encodeURIComponent(id)}/status`
+  const payload = { status: parseMainFlowStatus(moduleKey, status) }
+  const requestConfig = withIdempotencyKey()
+  const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
+  if (mainFlowResponseSchema) {
+    const response = assertApiSuccess(
+      await apiPatch(path, mainFlowResponseSchema, payload, requestConfig),
+    )
+    return {
+      code: response.code,
+      message: response.message,
+      data: response.data,
+    }
+  }
+
   const response = assertApiSuccess(
-    await apiPatch(
-      `${endpointConfig.path}/${encodeURIComponent(id)}/status`,
-      rawRecordResponseSchema,
-      { status },
-      withIdempotencyKey(),
-    ),
+    await apiPatch(path, rawRecordResponseSchema, payload, requestConfig),
   )
 
   return {

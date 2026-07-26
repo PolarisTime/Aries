@@ -4,11 +4,9 @@ import type {
   ModuleColumnDefinition,
   ModuleFormFieldDefinition,
   ModuleLineItem,
-  ModuleParentImportDefinition,
-  ModuleRecord,
+  ModuleRecordInput,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { parseParentRelationNos } from './module-adapter-shared'
 import { hasEditorValue } from './module-editor-shared'
 import { isModuleFormFieldVisible } from './module-form-field-visibility'
 
@@ -119,16 +117,13 @@ function getLineItemValidationMessages(
 
 export function getEditorValidationMessage(options: {
   fields: ModuleFormFieldDefinition[]
-  editorForm: ModuleRecord
+  editorForm: ModuleRecordInput
   moduleKey?: string
   hasItemColumns: boolean
   itemColumns?: ModuleColumnDefinition[]
   items?: ModuleLineItem[]
   itemCount: number
   skipRequiredFieldKeys?: string[]
-  parentImportConfig?: ModuleParentImportDefinition
-  occupiedParentMap: Record<string, ModuleRecord>
-  getPrimaryNo: (record: ModuleRecord) => string
   collectAll?: boolean
 }) {
   const {
@@ -139,9 +134,6 @@ export function getEditorValidationMessage(options: {
     items = [],
     itemCount,
     skipRequiredFieldKeys = [],
-    parentImportConfig,
-    occupiedParentMap,
-    getPrimaryNo,
     collectAll = false,
   } = options
 
@@ -180,24 +172,6 @@ export function getEditorValidationMessage(options: {
     if (itemMessages.length) {
       if (!collectAll) return itemMessages[0]
       allErrors.push(...itemMessages)
-    }
-  }
-
-  if (parentImportConfig?.enforceUniqueRelation) {
-    const parentNos = parseParentRelationNos(
-      editorForm[parentImportConfig.parentFieldKey],
-    )
-    for (const parentNo of parentNos) {
-      if (occupiedParentMap[parentNo]) {
-        const occupiedPrimaryNo = getPrimaryNo(occupiedParentMap[parentNo])
-        const msg = i18next.t('modules.validation.parentRelationOccupied', {
-          parentLabel: parentImportConfig.label,
-          parentNo,
-          occupiedNo: occupiedPrimaryNo,
-        })
-        if (!collectAll) return msg
-        allErrors.push(msg)
-      }
     }
   }
 

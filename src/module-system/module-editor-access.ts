@@ -3,6 +3,7 @@ import type {
   ModuleFormFieldDefinition,
   ModuleLineItem,
   ModuleRecord,
+  ModuleRecordInput,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
@@ -42,7 +43,7 @@ export function canManageEditorLineItems(
 
 export function applyModuleDefaultEditorDraft(
   moduleKey: string,
-  draft: ModuleRecord,
+  draft: ModuleRecordInput,
   currentOperatorName: string,
 ) {
   const defaultDraftValues = getBehaviorValue(moduleKey, 'defaultDraftValues')
@@ -73,7 +74,7 @@ export function applyModuleDefaultEditorDraft(
 }
 
 export function applyFormFieldDefaultDraftValues(
-  draft: ModuleRecord,
+  draft: ModuleRecordInput,
   fields: ModuleFormFieldDefinition[] = [],
 ) {
   for (const field of fields) {
@@ -233,7 +234,7 @@ export function isEditorItemColumnEditableForModule(
 }
 
 function hasParentImportValue(
-  record: ModuleRecord | undefined,
+  record: ModuleRecordInput | undefined,
   parentFieldKey: string | undefined,
 ) {
   return Boolean(parentFieldKey && asString(record?.[parentFieldKey]).trim())
@@ -241,7 +242,7 @@ function hasParentImportValue(
 
 export function isParentImportedEditorLocked(
   moduleKey: string,
-  record: ModuleRecord | undefined,
+  record: ModuleRecordInput | undefined,
   parentFieldKey: string | undefined,
 ) {
   const effectiveParentFieldKey = resolveParentImportFieldKey(parentFieldKey)

@@ -6,16 +6,32 @@ import {
   hasBehavior,
 } from '@/module-system/module-behavior-registry'
 import {
+  type MainFlowModuleKey,
+  type ModuleSaveRequestMap,
+  parseMainFlowSaveRequest,
+} from '@/shared/schemas/module-record'
+import type { EntityId } from '@/types/entity-id'
+import {
   ENTITY_ID_FIELDS,
   parseEntityId,
   parseOptionalEntityId,
 } from '@/types/entity-id'
-import type {
-  ModuleLineItem,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
+import type { ModulePageConfig } from '@/types/module-page'
+import type { MainFlowEditorDraft } from '@/types/module-record'
 import { logger } from '@/utils/logger'
+
+interface SerializableLineItem {
+  id?: EntityId
+}
+
+interface SerializableBusinessRecord {
+  id?: EntityId
+  items?: SerializableLineItem[]
+}
+
+function getDynamicFields(value: object): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value))
+}
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([
@@ -34,10 +50,11 @@ const REQUIRED_SUPPLIER_ID_MODULES = new Set([
 
 function assertRequiredStableIdentities(
   moduleKey: string,
-  record: ModuleRecord,
+  record: SerializableBusinessRecord,
 ) {
+  const fields = getDynamicFields(record)
   if (REQUIRED_SUPPLIER_ID_MODULES.has(moduleKey)) {
-    parseEntityId(record.supplierId, `${moduleKey}.supplierId`)
+    parseEntityId(fields.supplierId, `${moduleKey}.supplierId`)
   }
 }
 
@@ -97,10 +114,14 @@ function toArray<T>(value: T[] | undefined) {
   return Array.isArray(value) ? value : []
 }
 
-function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
+function pickDefinedFields(
+  record: SerializableBusinessRecord,
+  fields: readonly string[],
+) {
+  const dynamicFields = getDynamicFields(record)
   const next: Record<string, unknown> = {}
   for (const field of fields) {
-    const value = record[field]
+    const value = dynamicFields[field]
     if (value !== undefined) {
       next[field] = serializeFieldValue(field, value)
     }
@@ -221,10 +242,11 @@ function getCachedLineItemFields(
 }
 
 function serializeLineItem(
-  item: ModuleLineItem,
+  item: SerializableLineItem,
   moduleKey: string,
   lineItemFields: readonly LineItemFieldSpec[],
 ) {
+  const dynamicFields = getDynamicFields(item)
   const persistedId = toPersistedLineItemId(item.id)
   const result: Record<string, unknown> = {}
   if (persistedId) {
@@ -234,7 +256,7 @@ function serializeLineItem(
     if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbound') {
       continue
     }
-    const value = item[field.key]
+    const value = dynamicFields[field.key]
     if (value !== undefined) {
       const serializedValue = field.numeric
         ? serializeNumericField(field.key, value)
@@ -257,12 +279,13 @@ function serializeNumericField(field: string, value: unknown) {
 
 function assertTypedAllocationSource(
   moduleKey: string,
-  item: ModuleLineItem,
+  item: SerializableLineItem,
   index: number,
 ) {
+  const fields = getDynamicFields(item)
   if (moduleKey === 'receipt') {
     const sourceCustomerStatementId = parseOptionalEntityId(
-      item.sourceCustomerStatementId,
+      fields.sourceCustomerStatementId,
       `items[${index}].sourceCustomerStatementId`,
     )
     if (!sourceCustomerStatementId) {
@@ -278,7 +301,7 @@ function assertTypedAllocationSource(
   }
 
   const sourceFreightStatementId = parseOptionalEntityId(
-    item.sourceFreightStatementId,
+    fields.sourceFreightStatementId,
     `items[${index}].sourceFreightStatementId`,
   )
   if (!sourceFreightStatementId) {
@@ -299,20 +322,24 @@ function buildSingleAllocation(
 
 function resolveLineItemsForSave(
   moduleKey: string,
-  record: ModuleRecord,
-): ModuleLineItem[] {
+  record: SerializableBusinessRecord,
+): SerializableLineItem[] {
+  const fields = getDynamicFields(record)
   const existingItems = toArray(record.items)
   const existingItem = existingItems[0] ?? { id: '' }
+  const firstItemFields = existingItems[0]
+    ? getDynamicFields(existingItems[0])
+    : {}
 
   if (moduleKey === 'receipt') {
     if (
-      record.receiptPurpose === 'SUPPLIER_PREPAYMENT_REFUND' ||
-      record.receiptPurpose === 'SUPPLIER_OTHER_RECEIPT'
+      fields.receiptPurpose === 'SUPPLIER_PREPAYMENT_REFUND' ||
+      fields.receiptPurpose === 'SUPPLIER_OTHER_RECEIPT'
     ) {
       return []
     }
     const sourceCustomerStatementId = parseOptionalEntityId(
-      record.sourceCustomerStatementId,
+      fields.sourceCustomerStatementId,
       'sourceCustomerStatementId',
     )
     if (!sourceCustomerStatementId || existingItems.length > 1) {
@@ -324,7 +351,7 @@ function resolveLineItemsForSave(
         ...buildSingleAllocation(
           'sourceCustomerStatementId',
           sourceCustomerStatementId,
-          record.amount ?? existingItems[0]?.allocatedAmount,
+          fields.amount ?? firstItemFields.allocatedAmount,
         ),
       },
     ]
@@ -335,14 +362,14 @@ function resolveLineItemsForSave(
   }
 
   if (
-    record.paymentPurpose === 'SUPPLIER_PAYMENT' ||
-    record.paymentPurpose === 'PURCHASE_PREPAYMENT'
+    fields.paymentPurpose === 'SUPPLIER_PAYMENT' ||
+    fields.paymentPurpose === 'PURCHASE_PREPAYMENT'
   ) {
     return []
   }
 
   const sourceFreightStatementId = parseOptionalEntityId(
-    record.sourceFreightStatementId,
+    fields.sourceFreightStatementId,
     'sourceFreightStatementId',
   )
   if (existingItems.length > 1) {
@@ -355,7 +382,7 @@ function resolveLineItemsForSave(
         ...buildSingleAllocation(
           'sourceFreightStatementId',
           sourceFreightStatementId,
-          record.amount ?? existingItems[0]?.allocatedAmount,
+          fields.amount ?? firstItemFields.allocatedAmount,
         ),
       },
     ]
@@ -365,15 +392,16 @@ function resolveLineItemsForSave(
 
 export function serializeBusinessRecordForSave(
   moduleKey: string,
-  record: ModuleRecord,
+  record: SerializableBusinessRecord,
 ) {
   return serializeBusinessRecordForSaveAsync(moduleKey, record)
 }
 
 async function serializeBusinessRecordForSaveAsync(
   moduleKey: string,
-  record: ModuleRecord,
+  record: SerializableBusinessRecord,
 ) {
+  const dynamicFields = getDynamicFields(record)
   assertRequiredStableIdentities(moduleKey, record)
   const scalarFields = await getScalarFields(moduleKey)
   const payload = pickDefinedFields(record, scalarFields)
@@ -384,7 +412,7 @@ async function serializeBusinessRecordForSaveAsync(
       if (key === 'id' || key === 'items' || key === 'attachmentIds') {
         continue
       }
-      if (record[key] !== undefined && !scalarFieldSet.has(key)) {
+      if (dynamicFields[key] !== undefined && !scalarFieldSet.has(key)) {
         logger.warn(
           `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`,
         )
@@ -394,9 +422,9 @@ async function serializeBusinessRecordForSaveAsync(
 
   if (
     hasBehavior(moduleKey, 'includeAttachmentIds') &&
-    Array.isArray(record.attachmentIds)
+    Array.isArray(dynamicFields.attachmentIds)
   ) {
-    payload.attachmentIds = record.attachmentIds.map((id, index) =>
+    payload.attachmentIds = dynamicFields.attachmentIds.map((id, index) =>
       parseEntityId(id, `attachmentIds[${index}]`),
     )
   }
@@ -412,4 +440,22 @@ async function serializeBusinessRecordForSaveAsync(
   }
 
   return payload
+}
+
+export function toSaveRequest<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  record: MainFlowEditorDraft<Key>,
+): Promise<ModuleSaveRequestMap[Key]>
+export function toSaveRequest(
+  moduleKey: string,
+  record: SerializableBusinessRecord,
+): Promise<unknown>
+export async function toSaveRequest(
+  moduleKey: string,
+  record: SerializableBusinessRecord,
+) {
+  return parseMainFlowSaveRequest(
+    moduleKey,
+    await serializeBusinessRecordForSave(moduleKey, record),
+  )
 }

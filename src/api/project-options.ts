@@ -1,12 +1,9 @@
 import { z } from 'zod'
 import { apiGet, assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { queryClient } from '@/lib/query-client'
 import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
-import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
-import type { ModuleRecordInput } from '@/types/module-page'
+import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
 
 export type ProjectOption = {
@@ -82,46 +79,4 @@ export async function fetchProjectOptions(
     '查询项目选项失败',
   )
   return normalizeProjectOptions(response.data || [])
-}
-
-function optionalId(value: unknown, field: string): EntityId | undefined {
-  try {
-    return parseOptionalEntityId(value, field)
-  } catch {
-    return undefined
-  }
-}
-
-export function getCustomerProjectOptions(
-  form?: ModuleRecordInput,
-): ProjectOption[] {
-  const customerIdentity =
-    form?.customerId ??
-    (asString(form?.counterpartyType).trim() === '客户'
-      ? form?.counterpartyId
-      : undefined)
-  const customerId = optionalId(customerIdentity, 'customerId')
-  if (!customerId) {
-    return []
-  }
-  return (
-    queryClient.getQueryData<ProjectOption[]>(
-      QUERY_KEYS.masterOptions.project(customerId),
-    ) || []
-  )
-}
-
-export function findProjectOption(
-  projectId: unknown,
-  customerId: unknown,
-): ProjectOption | undefined {
-  const normalizedProjectId = optionalId(projectId, 'projectId')
-  const normalizedCustomerId = optionalId(customerId, 'customerId')
-  if (!normalizedProjectId || !normalizedCustomerId) {
-    return undefined
-  }
-  return getCustomerProjectOptions({ customerId: normalizedCustomerId }).find(
-    (row) =>
-      row.id === normalizedProjectId && row.customerId === normalizedCustomerId,
-  )
 }

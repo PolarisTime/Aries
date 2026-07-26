@@ -33,6 +33,7 @@ import {
   resolveStatusOptions,
 } from '@/module-system/module-adapter-actions'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import type { ModuleKey } from '@/module-system/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type {
@@ -47,21 +48,23 @@ import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overl
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
 
 interface Props {
-  moduleKey: string
+  moduleKey: ModuleKey
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
 }
 
-const EMPTY_CONFIG: ModulePageConfig = {
-  key: '',
-  title: '',
-  kicker: '',
-  description: '',
-  filters: [],
-  columns: [],
-  detailFields: [],
-  data: [],
-  buildOverview: () => [],
+function createEmptyConfig(moduleKey: ModuleKey): ModulePageConfig {
+  return {
+    key: moduleKey,
+    title: '',
+    kicker: '',
+    description: '',
+    filters: [],
+    columns: [],
+    detailFields: [],
+    data: [],
+    buildOverview: () => [],
+  }
 }
 
 function isListExportAction(action: ModuleActionDefinition) {
@@ -86,7 +89,8 @@ export function useBusinessGridPage({
   initialConfig,
 }: Props) {
   const { config } = useModulePageConfig({ moduleKey, initialConfig })
-  const resolvedConfig = config || EMPTY_CONFIG
+  const emptyConfig = useMemo(() => createEmptyConfig(moduleKey), [moduleKey])
+  const resolvedConfig = config || emptyConfig
   const canCreateRecord = !resolvedConfig.readOnly
   const canUpdateRecord = !resolvedConfig.readOnly
   const canDeleteRecord = !resolvedConfig.readOnly
@@ -116,8 +120,6 @@ export function useBusinessGridPage({
     config?.filters || [],
   )
 
-  useMasterOptions(listOptionRequirements)
-
   const {
     filters,
     submittedFilters,
@@ -131,6 +133,8 @@ export function useBusinessGridPage({
     defaultFilters,
     setCurrentPage: (page: number) => setCurrentPage(page),
   })
+  const listCustomerId = asString(filters.customerId).trim() || undefined
+  useMasterOptions(listOptionRequirements, true, listCustomerId)
 
   const {
     records,

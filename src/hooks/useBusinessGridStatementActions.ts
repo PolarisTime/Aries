@@ -9,6 +9,7 @@ import {
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
+import type { MainFlowDetailRecord } from '@/types/module-record'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { asString } from '@/utils/type-narrowing'
 
@@ -16,6 +17,24 @@ type StatementType = 'customer' | 'freight'
 
 interface Props {
   refreshModuleQueries: () => Promise<void>
+}
+
+interface StatementSourceRecord {
+  id: EntityId
+  items?: { id: EntityId }[]
+}
+
+function toLegacyStatementSource(record: StatementSourceRecord): ModuleRecord {
+  const fields = Object.fromEntries(Object.entries(record))
+  const items = record.items?.map((item) => ({
+    ...Object.fromEntries(Object.entries(item)),
+    id: item.id,
+  }))
+  return {
+    ...fields,
+    id: record.id,
+    ...(items ? { items } : {}),
+  }
 }
 
 function buildDraftLineItemId(prefix: string) {
@@ -48,7 +67,6 @@ export function useBusinessGridStatementActions({
     )
     const statementModuleKey =
       type === 'customer' ? 'customer-statement' : 'freight-statement'
-    const sourceModuleKey = type === 'customer' ? 'sales-order' : 'freight-bill'
     const candidateRows = await listAllStatementCandidates(
       statementModuleKey,
       '',
@@ -80,16 +98,19 @@ export function useBusinessGridStatementActions({
       throw new Error(i18next.t('hooks.statement.noCandidateDocuments'))
     }
 
-    const detailedRecords = await Promise.all(
-      filteredCandidates.map((candidate) =>
-        getBusinessModuleDetail(sourceModuleKey, String(candidate.id)),
-      ),
-    )
-    const sourceRecords = detailedRecords.map((detail) => detail.data)
     const statementPeriod = { startDate, endDate }
 
     if (type === 'customer') {
-      const recordsByProject = new Map<EntityId, ModuleRecord[]>()
+      const detailedRecords = await Promise.all(
+        filteredCandidates.map((candidate) =>
+          getBusinessModuleDetail('sales-order', String(candidate.id)),
+        ),
+      )
+      const sourceRecords = detailedRecords.map((detail) => detail.data)
+      const recordsByProject = new Map<
+        EntityId,
+        MainFlowDetailRecord<'sales-order'>[]
+      >()
 
       for (const record of sourceRecords) {
         const projectId = parseEntityId(
@@ -113,7 +134,7 @@ export function useBusinessGridStatementActions({
               status: '待确认',
               remark: '',
             },
-            sourceOrders: projectRecords,
+            sourceOrders: projectRecords.map(toLegacyStatementSource),
             today: endDate,
             statementPeriod,
             defaultReceiptAmountZero: customerReceiptZero,
@@ -127,6 +148,12 @@ export function useBusinessGridStatementActions({
         }),
       )
     } else {
+      const detailedRecords = await Promise.all(
+        filteredCandidates.map((candidate) =>
+          getBusinessModuleDetail('freight-bill', String(candidate.id)),
+        ),
+      )
+      const sourceRecords = detailedRecords.map((detail) => detail.data)
       const buildLineItemId = buildDraftLineItemId('draft-freight')
       const draft = buildFreightStatementDraftData({
         baseDraft: {
@@ -134,7 +161,7 @@ export function useBusinessGridStatementActions({
           statementNo: '',
           remark: '',
         },
-        sourceBills: sourceRecords,
+        sourceBills: sourceRecords.map(toLegacyStatementSource),
         today: endDate,
         statementPeriod,
         cloneLineItems,

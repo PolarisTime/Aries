@@ -39,7 +39,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: ORDER_NO_FILTER_LABEL,
       type: 'input',
       placeholder: i18next.t('modules.pages.salesOrder.placeholderOrderNo'),
-      clientSearchKeys: ['orderNo'],
     },
     {
       key: 'customerId',
@@ -65,12 +64,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       placeholder: i18next.t(
         'modules.pages.salesOrder.placeholderProductKeyword',
       ),
-      clientSearchLineItemKeys: [
-        'materialCode',
-        'materialName',
-        'material',
-        'spec',
-      ],
       row: 2,
     },
     {

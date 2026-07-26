@@ -1,24 +1,36 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { listBusinessModule } from '@/api/business-listing'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import type { ModuleKey } from '@/module-system/module-key'
 import type { SearchParams } from '@/types/api-raw'
-import type { ModuleRecord } from '@/types/module-page'
+import type { ModuleListRecordFor } from '@/types/module-record'
 
-interface Props {
-  moduleKey: string
+interface Props<Key extends ModuleKey> {
+  moduleKey: Key
   filters: SearchParams
   enabled: boolean
   currentPage: number
   pageSize: number
 }
 
-export function useInfiniteBusinessItems({
+interface BusinessItemsResult<RecordType> {
+  records: RecordType[]
+  total: number
+  responseCode: number
+  errorMessage: string
+  hasError: boolean
+  isLoading: boolean
+  isFetching: boolean
+  retry: ReturnType<typeof useQuery>['refetch']
+}
+
+export function useInfiniteBusinessItems<Key extends ModuleKey>({
   moduleKey,
   filters,
   enabled,
   currentPage,
   pageSize,
-}: Props) {
+}: Props<Key>): BusinessItemsResult<ModuleListRecordFor<Key>> {
   const { data, error, isFetching, isLoading, refetch } = useQuery({
     queryKey: QUERY_KEYS.businessGridList(
       moduleKey,
@@ -30,10 +42,7 @@ export function useInfiniteBusinessItems({
       listBusinessModule(
         moduleKey,
         filters,
-        {
-          currentPage,
-          pageSize,
-        },
+        { currentPage, pageSize },
         { signal },
       ),
     enabled: enabled && !!moduleKey,
@@ -49,7 +58,9 @@ export function useInfiniteBusinessItems({
       : responseCode !== 0
         ? String(data?.message || '').trim()
         : ''
-  const records: ModuleRecord[] = hasError ? [] : (data?.data?.rows ?? [])
+  const records: ModuleListRecordFor<Key>[] = hasError
+    ? []
+    : (data?.data?.rows ?? [])
   const total = hasError ? 0 : (data?.data?.total ?? 0)
 
   return {

@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react'
+import type { ModuleKey } from '@/module-system/module-key'
 import type { EntityId } from '@/types/entity-id'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import {
   loadModuleAttachmentModal,
   loadModuleEditorWorkspace,
@@ -18,10 +20,10 @@ const ModuleFreightPickupListOverlay = lazy(loadModuleFreightPickupListOverlay)
 const ModuleRecordDetailOverlay = lazy(loadModuleRecordDetailOverlay)
 const ModuleStatementGenerator = lazy(loadModuleStatementGenerator)
 
-interface Props {
-  moduleKey: string
+interface Props<Key extends ModuleKey> {
+  moduleKey: Key
   config: ModulePageConfig
-  editRecord: ModuleRecord | null
+  editRecord: PersistedModuleEditorDraftFor<Key> | null
   editorOpen: boolean
   attachOpen: boolean
   attachRecordId: string
@@ -60,7 +62,7 @@ interface Props {
   ) => Promise<void>
 }
 
-export function BusinessGridOverlays({
+export function BusinessGridOverlays<Key extends ModuleKey>({
   moduleKey,
   config,
   editRecord,
@@ -90,7 +92,7 @@ export function BusinessGridOverlays({
   onCloseFreightPickup,
   onGenerateCustomerStatement,
   onGenerateFreightStatement,
-}: Props) {
+}: Props<Key>) {
   return (
     <Suspense fallback={<OverlayLazyFallback />}>
       {editorOpen ? (

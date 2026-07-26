@@ -3,19 +3,9 @@ import {
   enabledStatusOptions,
   getSettlementCompanyOptions,
 } from '@/constants/module-options'
-import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
-import {
-  normalizeCarrierDraftRecord,
-  normalizeCarrierEditorRecord,
-} from './carrier-vehicle-adapter'
-
-registerModuleBehavior('carrier', {
-  normalizeEditorRecord: normalizeCarrierEditorRecord,
-  normalizeDraftRecord: normalizeCarrierDraftRecord,
-})
 
 export const carriersPageConfig: ModulePageConfig = {
   key: 'carrier',

@@ -126,5 +126,3 @@ export function findCustomerOption(
   }
   return cached.get().find((row) => row.id === normalizedId)
 }
-
-export { getCustomerProjectOptions } from './project-options'

@@ -1,22 +1,38 @@
 import type { AxiosRequestConfig } from 'axios'
+import { fetchModulePage } from '@/api/business-listing-fetch'
 import {
-  fetchAllModuleRows,
-  fetchModulePage,
-} from '@/api/business-listing-fetch'
-import {
-  applyClientFilters,
+  buildFilterParams,
   buildQueryParams,
-  paginateRows,
-  shouldClientFilter,
+  getUnsupportedFilterKeys,
 } from '@/api/business-listing-filtering'
 import { buildTableResponse } from '@/api/business-listing-response'
-import {
-  reportClientFilterFallback,
-  reportUnpaginatedRowFetch,
-} from '@/api/business-listing-warnings'
+import type { MainFlowModuleKey } from '@/shared/schemas/module-record'
+import type { TableResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
+import type {
+  LegacyModuleRecord,
+  MainFlowListRecord,
+  ModuleListRecordFor,
+} from '@/types/module-record'
 import type { ListQueryOptions } from '@/utils/list'
+import { asString } from '@/utils/type-narrowing'
 
+const SERVER_MATCH_PAGE_SIZE = 100
+
+export function listBusinessModule<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  search: SearchParams,
+  options: ListQueryOptions,
+  config?: AxiosRequestConfig,
+  fields?: string[],
+): Promise<TableResponse<MainFlowListRecord<Key>>>
+export function listBusinessModule<Key extends string>(
+  moduleKey: Key,
+  search: SearchParams,
+  options: ListQueryOptions,
+  config?: AxiosRequestConfig,
+  fields?: string[],
+): Promise<TableResponse<ModuleListRecordFor<Key>>>
 export async function listBusinessModule(
   moduleKey: string,
   search: SearchParams,
@@ -24,25 +40,14 @@ export async function listBusinessModule(
   config?: AxiosRequestConfig,
   fields?: string[],
 ) {
-  const useClientFilter = shouldClientFilter(moduleKey, search)
-  if (useClientFilter) {
-    reportClientFilterFallback(moduleKey, search)
-    const { rows: fetchedRows, truncated } = await fetchAllModuleRows(
-      moduleKey,
-      search,
-      true,
-      config,
-      fields,
-    )
-    const filteredRows = applyClientFilters(moduleKey, fetchedRows, search)
-    return buildTableResponse(
-      paginateRows(filteredRows, options),
-      filteredRows.length,
-      truncated,
+  const unsupportedKeys = getUnsupportedFilterKeys(moduleKey, search)
+  if (unsupportedKeys.length) {
+    throw new Error(
+      `${moduleKey} 不支持服务端过滤字段：${unsupportedKeys.join(', ')}`,
     )
   }
 
-  const params = buildQueryParams(moduleKey, search, options, false)
+  const params = buildQueryParams(moduleKey, search, options)
   const current = await fetchModulePage(
     moduleKey,
     params,
@@ -54,22 +59,55 @@ export async function listBusinessModule(
   return buildTableResponse(
     current.rows,
     current.totalElements,
-    false,
     current.hasMore,
   )
 }
 
-export async function listAllBusinessModuleRows(
+export function findServerFilteredBusinessModuleRow<
+  Key extends MainFlowModuleKey,
+>(
+  moduleKey: Key,
+  search: SearchParams,
+  exactField: string,
+  exactValue: string,
+): Promise<MainFlowListRecord<Key> | undefined>
+export function findServerFilteredBusinessModuleRow<Key extends string>(
+  moduleKey: Key,
+  search: SearchParams,
+  exactField: string,
+  exactValue: string,
+): Promise<ModuleListRecordFor<Key> | undefined>
+export async function findServerFilteredBusinessModuleRow(
   moduleKey: string,
   search: SearchParams,
-) {
-  const useClientFilter = shouldClientFilter(moduleKey, search)
-  if (useClientFilter) {
-    reportClientFilterFallback(moduleKey, search)
+  exactField: string,
+  exactValue: string,
+): Promise<LegacyModuleRecord | undefined> {
+  const unsupportedKeys = getUnsupportedFilterKeys(moduleKey, search)
+  if (unsupportedKeys.length) {
+    throw new Error(
+      `${moduleKey} 不支持服务端过滤字段：${unsupportedKeys.join(', ')}`,
+    )
   }
-  const { rows: fetchedRows } = await fetchAllModuleRows(moduleKey, search)
-  reportUnpaginatedRowFetch(moduleKey, fetchedRows.length)
-  return useClientFilter
-    ? applyClientFilters(moduleKey, fetchedRows, search)
-    : fetchedRows
+
+  const filterParams = buildFilterParams(moduleKey, search)
+  let page = 0
+  while (true) {
+    const current = await fetchModulePage(
+      moduleKey,
+      filterParams,
+      page,
+      SERVER_MATCH_PAGE_SIZE,
+    )
+    const matched = current.rows.find(
+      (row) => asString(row[exactField]).trim() === exactValue,
+    )
+    if (matched) {
+      return matched
+    }
+    if (current.last || page >= current.totalPages - 1) {
+      return undefined
+    }
+    page += 1
+  }
 }

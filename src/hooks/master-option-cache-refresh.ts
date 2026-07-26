@@ -3,7 +3,6 @@ import { reloadSettlementCompanyOptions } from '@/api/company-settings'
 import { reloadCustomerOptions } from '@/api/customer-options'
 import { reloadMaterialCategories } from '@/api/material-categories'
 import { fetchMaterialSearch } from '@/api/materials'
-import { replaceMaterialCategoryOptions } from '@/api/option-resolvers'
 import { reloadSupplierOptions } from '@/api/supplier-options'
 import { reloadWarehouseOptions } from '@/api/warehouse-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -31,10 +30,7 @@ export async function reloadMasterOptionsForModule(moduleKey: string) {
     case 'material':
       return fetchMaterialSearch('', 500)
     case 'material-categories':
-      return reloadMaterialCategories().then((options) => {
-        replaceMaterialCategoryOptions(options)
-        return options
-      })
+      return reloadMaterialCategories()
     case 'settlement-company':
       return reloadSettlementCompanyOptions()
     case 'supplier':

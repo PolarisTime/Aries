@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { ModuleRecord, ModuleRecordInput } from '@/types/module-page'
+import type { ModuleRecord, ModuleRecordInput } from '@/types/module-record'
 
 export type ModuleColumnType =
   | 'text'
@@ -64,6 +64,7 @@ export interface ModuleMasterOptionRequirements {
   settlementCompanies?: boolean
   warehouses?: boolean
   materialCategories?: boolean
+  materialGrades?: boolean
   materials?: boolean
 }
 
@@ -77,8 +78,6 @@ export interface ModuleFilterDefinition {
     monthsBefore?: number
     monthsAfter?: number
   }
-  clientSearchKeys?: string[]
-  clientSearchLineItemKeys?: string[]
   options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
   row?: number
 }

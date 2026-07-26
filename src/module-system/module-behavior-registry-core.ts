@@ -1,13 +1,32 @@
 import type { ModuleBehaviorConfig } from '@/module-system/module-behavior-types'
+import type { ModuleKey } from '@/module-system/module-key'
 
-export const moduleBehaviorRegistry = new Map<string, ModuleBehaviorConfig>()
-
-export function registerModuleBehavior(
-  key: string,
+export type ModuleBehaviorRegistrar = (
+  key: ModuleKey,
   config: ModuleBehaviorConfig,
-) {
-  moduleBehaviorRegistry.set(key, {
-    ...moduleBehaviorRegistry.get(key),
-    ...config,
-  })
+) => void
+
+export type ModuleBehaviorContributor = (
+  registerModuleBehavior: ModuleBehaviorRegistrar,
+) => void
+
+export function assembleModuleBehaviors(
+  ...contributors: readonly ModuleBehaviorContributor[]
+): ReadonlyMap<ModuleKey, Readonly<ModuleBehaviorConfig>> {
+  const registry = new Map<ModuleKey, Readonly<ModuleBehaviorConfig>>()
+  const registerModuleBehavior: ModuleBehaviorRegistrar = (key, config) => {
+    registry.set(
+      key,
+      Object.freeze({
+        ...registry.get(key),
+        ...config,
+      }),
+    )
+  }
+
+  for (const contribute of contributors) {
+    contribute(registerModuleBehavior)
+  }
+
+  return registry
 }

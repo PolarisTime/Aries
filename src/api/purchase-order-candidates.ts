@@ -1,9 +1,7 @@
-import { normalizeRows } from '@/api/business-normalizers'
 import { apiGet, assertApiSuccess } from '@/api/client'
-import { pageContent, pageTotalElements } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { HTTP_STATUS } from '@/constants/http-status'
-import { rawPageResponseSchema } from '@/shared/schemas/api'
+import { purchaseOrderImportCandidatePageResponseSchema } from '@/shared/schemas/module-record'
 import type { TableResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -18,7 +16,7 @@ async function requestInboundImportCandidatePage(
   signal?: AbortSignal,
   suppressGlobalErrorStatuses?: readonly number[],
 ) {
-  return apiGet(endpoint, rawPageResponseSchema, {
+  return apiGet(endpoint, purchaseOrderImportCandidatePageResponseSchema, {
     params: {
       ...filters,
       keyword: asString(filters.keyword).trim(),
@@ -64,8 +62,8 @@ export async function listPurchaseOrderInboundImportCandidatePage(
   return {
     code: 0,
     data: {
-      rows: normalizeRows(pageContent(response.data)),
-      total: pageTotalElements(response.data),
+      rows: response.data.content,
+      total: response.data.totalElements,
     },
   }
 }

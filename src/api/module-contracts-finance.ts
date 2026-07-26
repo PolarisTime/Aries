@@ -1,9 +1,7 @@
 import type { ModuleEndpointConfig } from '@/api/module-contract-types'
+import type { ModuleKey } from '@/module-system/module-key'
 
-export const financeModuleEndpointContracts: Record<
-  string,
-  ModuleEndpointConfig
-> = {
+export const financeModuleEndpointContracts = {
   'customer-statement': {
     path: '/customer-statements',
     nativeFilterKeys: [
@@ -72,4 +70,4 @@ export const financeModuleEndpointContracts: Record<
       },
     },
   },
-}
+} satisfies Partial<Record<ModuleKey, ModuleEndpointConfig>>

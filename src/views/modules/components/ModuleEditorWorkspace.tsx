@@ -17,7 +17,12 @@ import {
 } from '@/layouts/editor-session/EditorSessionGuard'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleKey } from '@/module-system/module-key'
+import { readModuleRecordField } from '@/module-system/module-record-fields'
+import type { ModulePageConfig } from '@/types/module-page'
+import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
+import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
+import type { EditorSaveResult } from '@/views/modules/use-editor-submission-controller'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { EditorFooterActions } from './EditorFooterActions'
@@ -25,11 +30,11 @@ import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-interface Props {
+interface Props<Key extends ModuleKey> {
   open: boolean
   config: ModulePageConfig
-  record: ModuleRecord | null
-  moduleKey: string
+  record: PersistedModuleEditorDraftFor<Key> | null
+  moduleKey: Key
   canSave: boolean
   canAudit: boolean
   lineItemsLocked?: boolean
@@ -134,7 +139,7 @@ function useEditorSessionLifecycle({
   }, [open, saveErrorCode, saveStatus, saving, setSessionStatus])
 }
 
-export function ModuleEditorWorkspace({
+export function ModuleEditorWorkspace<Key extends ModuleKey>({
   open,
   config,
   record,
@@ -145,9 +150,9 @@ export function ModuleEditorWorkspace({
   lockedLineItemsNotice = '',
   onClose,
   onSaved,
-}: Props) {
+}: Props<Key>) {
   const { t } = useTranslation()
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<EditorFormValues>()
   const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
     useEditorSessionActions(onClose)
   const watchedCustomerId = Form.useWatch('customerId', form)
@@ -162,7 +167,9 @@ export function ModuleEditorWorkspace({
   const statusOptions = Array.isArray(statusField?.options)
     ? statusField.options.map((option) => String(option.value))
     : []
-  const currentStatus = String(record?.status || '').trim()
+  const currentStatus = String(
+    readModuleRecordField(record, 'status') || '',
+  ).trim()
   const isSalesOrderDeliveryVerification =
     moduleKey === 'sales-order' && currentStatus === '交付核定'
   const canEditLineItems = Boolean(config.itemColumns?.length)
@@ -412,33 +419,32 @@ export function ModuleEditorWorkspace({
   )
 }
 
-interface SaveResultOverlayProps {
-  saveResult: {
-    status: 'success' | 'error' | 'warning'
-    message: string
-    traceId?: string
-    errorCode?: number
-    record?: ModuleRecord
-  }
+interface SaveResultOverlayProps<Key extends ModuleKey> {
+  saveResult: EditorSaveResult<Key>
   config: ModulePageConfig
-  moduleKey: string
+  moduleKey: Key
   resolvingConflict: boolean
   onClear: () => void
   onResolveConflict: () => void
 }
 
-function SaveResultOverlay({
+function SaveResultOverlay<Key extends ModuleKey>({
   saveResult,
   config,
   moduleKey,
   resolvingConflict,
   onClear,
   onResolveConflict,
-}: SaveResultOverlayProps) {
+}: SaveResultOverlayProps<Key>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const items: ModuleRecord[] = Array.isArray(saveResult.record?.items)
-    ? saveResult.record.items
+  const rawItems = readModuleRecordField(saveResult.record, 'items')
+  const items: Record<string, unknown>[] = Array.isArray(rawItems)
+    ? rawItems.flatMap((item) =>
+        item && typeof item === 'object'
+          ? [Object.fromEntries(Object.entries(item))]
+          : [],
+      )
     : []
 
   const isSuccess =
@@ -626,13 +632,12 @@ function SaveResultOverlay({
         <Card size="small" className="mb-16">
           <Space orientation="vertical" size={4}>
             {(config.formFields || []).map((field) => {
-              const val = saveResult.record?.[field.key]
+              const val = readModuleRecordField(saveResult.record, field.key)
               if (val == null || val === '') return null
               const suffix =
-                (field as unknown as Record<string, unknown>).type === 'weight'
+                readModuleRecordField(field, 'type') === 'weight'
                   ? ` ${t('modules.itemColumns.weightTon').replace(/\(.*\)/, '')}`
-                  : (field as unknown as Record<string, unknown>).type ===
-                      'amount'
+                  : readModuleRecordField(field, 'type') === 'amount'
                     ? ` ${t('modules.itemColumns.amount')}`
                     : ''
               return (

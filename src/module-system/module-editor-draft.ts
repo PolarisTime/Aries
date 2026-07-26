@@ -1,5 +1,5 @@
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
-import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import type { ModuleLineItem, ModuleRecordInput } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import {
   applyFormFieldDefaultDraftValues,
@@ -8,7 +8,7 @@ import {
 
 export function normalizeDraftRecordForModule(options: {
   moduleKey: string
-  record: ModuleRecord
+  record: ModuleRecordInput
   items: ModuleLineItem[]
   primaryNoKey?: string
   currentOperatorName: string
@@ -55,7 +55,7 @@ export function normalizeDraftRecordForModule(options: {
 
 export function syncDerivedEditorFormValuesForModule(options: {
   moduleKey: string
-  record: ModuleRecord
+  record: ModuleRecordInput
   items: ModuleLineItem[]
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
   changedKeys?: ReadonlySet<string>

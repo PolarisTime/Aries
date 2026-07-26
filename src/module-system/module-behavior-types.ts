@@ -1,3 +1,4 @@
+import type { ModuleKey } from '@/module-system/module-key'
 import type {
   ModuleLineItem,
   ModuleRecord,
@@ -42,7 +43,7 @@ export interface ModuleBehaviorConfig {
   resolveReadonlyEditorFields?: (record: ModuleRecord) => string[]
   defaultOperatorField?: string
   locksLineItemsWhenRecordLocked?: boolean
-  lineItemLockSourceModule?: string
+  lineItemLockSourceModule?: ModuleKey
   lineItemLockSourceField?: string
   lineItemLockTargetField?: string
   lineItemLockStatuses?: string[]
@@ -55,13 +56,13 @@ export interface ModuleBehaviorConfig {
   supportsMaterialImport?: boolean
   statementLinkType?: 'supplier' | 'customer' | 'freight'
   normalizeDraftRecord?: (
-    record: ModuleRecord,
+    record: ModuleRecordInput,
     items: ModuleLineItem[],
     ctx: NormalizeDraftContext,
   ) => void
-  normalizeEditorRecord?: (record: ModuleRecord) => ModuleRecord
+  normalizeEditorRecord?: (record: ModuleRecordInput) => ModuleRecordInput
   syncEditorForm?: (
-    editorForm: ModuleRecord,
+    editorForm: ModuleRecordInput,
     ctx: SyncEditorFormContext,
   ) => void
   savePayloadLineItems?: boolean

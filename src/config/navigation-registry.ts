@@ -1,46 +1,15 @@
 import i18next from 'i18next'
-import type { AppPageDefinition } from '@/config/page-registry'
+import type {
+  MenuGroupDefinition,
+  MenuGroupKey,
+} from '@/config/navigation-registry-types'
+import type { AppPageDefinition } from '@/config/page-registry-types'
 
-export type AppIconKey =
-  | 'AccountBookOutlined'
-  | 'HomeOutlined'
-  | 'AppstoreOutlined'
-  | 'BankOutlined'
-  | 'CalculatorOutlined'
-  | 'CarOutlined'
-  | 'CreditCardOutlined'
-  | 'DatabaseOutlined'
-  | 'FileDoneOutlined'
-  | 'FileSearchOutlined'
-  | 'FileSyncOutlined'
-  | 'FileTextOutlined'
-  | 'InboxOutlined'
-  | 'PrinterOutlined'
-  | 'ProfileOutlined'
-  | 'RollbackOutlined'
-  | 'SettingOutlined'
-  | 'ShopOutlined'
-  | 'ShoppingCartOutlined'
-  | 'SwapOutlined'
-  | 'TagsOutlined'
-  | 'TeamOutlined'
-  | 'UserOutlined'
-  | 'WalletOutlined'
-
-export type MenuGroupKey =
-  | 'master'
-  | 'purchase'
-  | 'sales'
-  | 'freight'
-  | 'statements'
-  | 'finance'
-  | 'system'
-
-export interface MenuGroupDefinition {
-  key: MenuGroupKey
-  title: string
-  icon: AppIconKey
-}
+export type {
+  AppIconKey,
+  MenuGroupDefinition,
+  MenuGroupKey,
+} from '@/config/navigation-registry-types'
 
 export const menuGroupOrder: MenuGroupKey[] = [
   'master',

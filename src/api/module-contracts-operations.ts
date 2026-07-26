@@ -1,9 +1,7 @@
 import type { ModuleEndpointConfig } from '@/api/module-contract-types'
+import type { ModuleKey } from '@/module-system/module-key'
 
-export const operationModuleEndpointContracts: Record<
-  string,
-  ModuleEndpointConfig
-> = {
+export const operationModuleEndpointContracts = {
   'purchase-order': {
     path: '/purchase-orders',
     nativeFilterKeys: [
@@ -50,6 +48,7 @@ export const operationModuleEndpointContracts: Record<
       'customerName',
       'projectId',
       'projectName',
+      'productKeyword',
       'currentRecordId',
       'settlementCompanyId',
       'status',
@@ -71,6 +70,7 @@ export const operationModuleEndpointContracts: Record<
       'customerName',
       'projectId',
       'projectName',
+      'productKeyword',
       'currentRecordId',
       'settlementCompanyId',
       'status',
@@ -106,4 +106,4 @@ export const operationModuleEndpointContracts: Record<
       },
     },
   },
-}
+} satisfies Partial<Record<ModuleKey, ModuleEndpointConfig>>

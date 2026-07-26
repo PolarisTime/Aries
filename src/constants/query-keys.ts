@@ -57,6 +57,7 @@ export const QUERY_KEYS = {
       ['master-options', 'project', customerId] as const,
     material: ['master-options', 'material'] as const,
     materialCategories: ['master-options', 'material-categories'] as const,
+    materialGrades: ['master-options', 'material-grades'] as const,
     settlementCompany: ['master-options', 'settlement-company'] as const,
     supplier: ['master-options', 'supplier'] as const,
     warehouse: ['master-options', 'warehouse'] as const,

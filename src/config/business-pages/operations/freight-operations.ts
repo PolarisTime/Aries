@@ -317,7 +317,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       candidateQueryType: 'freight-sales-order-import',
       allowMultipleSelection: true,
       replaceUnlinkedItemsOnFirstImport: true,
-      enforceUniqueRelation: true,
       requiredSourceItemIdField: 'sourceSalesOrderItemId',
       buildParentFilters: (currentRecord) => ({
         currentRecordId: currentRecord.id || undefined,

@@ -45,6 +45,19 @@ export const rawPageSchema = <ItemSchema extends z.ZodType>(
     hasMore: z.boolean().optional(),
   })
 
+/** 当前后端 PageResponse 的精确结构，仅供已完成契约迁移的端点使用。 */
+export const exactPageSchema = <ItemSchema extends z.ZodType>(
+  itemSchema: ItemSchema,
+) =>
+  z.strictObject({
+    content: z.array(itemSchema),
+    totalElements: responseNonNegativeIntegerSchema,
+    totalPages: responseNonNegativeIntegerSchema,
+    currentPage: responseNonNegativeIntegerSchema,
+    pageSize: responseNonNegativeIntegerSchema,
+    hasMore: z.boolean(),
+  })
+
 export const apiResponseSchema = <DataSchema extends z.ZodType>(
   dataSchema: DataSchema,
 ) =>

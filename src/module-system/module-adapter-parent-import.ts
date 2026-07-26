@@ -3,9 +3,9 @@ import type {
   ModuleLineItem,
   ModuleParentImportDefinition,
   ModuleRecord,
+  ModuleRecordInput,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { parseParentRelationNos } from './module-adapter-shared'
 
 const SOURCE_PARENT_ITEM_ID_FIELDS = [
   'sourceFreightBillItemId',
@@ -16,7 +16,7 @@ const SOURCE_PARENT_ITEM_ID_FIELDS = [
 
 export function resolveParentImportDefinition(
   definition: ModuleParentImportDefinition,
-  currentRecord: ModuleRecord,
+  currentRecord: ModuleRecordInput,
 ): ModuleParentImportDefinition {
   const resolved = definition.resolveParentSelector?.(currentRecord)
   return resolved ? { ...definition, ...resolved } : definition
@@ -284,19 +284,4 @@ export function buildParentImportState(options: {
         ]
       : [...effectiveCurrentItems, ...importedItems],
   }
-}
-
-export function buildOccupiedParentMap(
-  rows: ModuleRecord[],
-  parentFieldKey: string,
-  currentEditorRecordId?: string,
-) {
-  return Object.fromEntries(
-    rows.flatMap((record) => {
-      if (String(record.id) === String(currentEditorRecordId || '')) return []
-      return parseParentRelationNos(record[parentFieldKey]).map(
-        (parentNo) => [parentNo, record] as const,
-      )
-    }),
-  )
 }

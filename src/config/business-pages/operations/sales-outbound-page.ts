@@ -34,7 +34,6 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       placeholder: i18next.t(
         'modules.pages.salesOutbound.placeholderOutboundNo',
       ),
-      clientSearchKeys: ['outboundNo'],
     },
     {
       key: 'customerName',
@@ -55,12 +54,6 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       placeholder: i18next.t(
         'modules.pages.salesOutbound.placeholderProductKeyword',
       ),
-      clientSearchLineItemKeys: [
-        'materialCode',
-        'materialName',
-        'material',
-        'spec',
-      ],
       row: 2,
     },
     {

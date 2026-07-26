@@ -3,7 +3,7 @@ import {
   isEditBlockedByStatus,
 } from '@/module-system/module-behavior-registry'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
-import type { ModuleRecord } from '@/types/module-page'
+import { readModuleRecordField } from '@/module-system/module-record-fields'
 
 interface ModuleRecordCapabilities {
   canEdit: boolean
@@ -11,13 +11,23 @@ interface ModuleRecordCapabilities {
 }
 
 export function resolveModuleRecordCapabilities(
-  record: ModuleRecord,
+  record: object,
   moduleKey?: string,
 ): ModuleRecordCapabilities {
   const isDeleted = isDeletedModuleRecord(record)
 
   return {
-    canEdit: !isDeleted && !isEditBlockedByStatus(record.status, moduleKey),
-    canDelete: !isDeleted && !isDeleteBlockedByStatus(record.status, moduleKey),
+    canEdit:
+      !isDeleted &&
+      !isEditBlockedByStatus(
+        readModuleRecordField(record, 'status'),
+        moduleKey,
+      ),
+    canDelete:
+      !isDeleted &&
+      !isDeleteBlockedByStatus(
+        readModuleRecordField(record, 'status'),
+        moduleKey,
+      ),
   }
 }

@@ -10,15 +10,40 @@ import {
   pageTotalPages,
 } from '@/api/page-contract'
 import { rawPageResponseSchema } from '@/shared/schemas/api'
-import type { SearchParams } from '@/types/api-raw'
-import type { ModuleRecord } from '@/types/module-page'
 import {
-  FULL_SCAN_PAGE_SIZE,
-  MAX_CLIENT_FILTER_ROWS,
-} from './business-listing-constants'
-import { buildFilterParams } from './business-listing-filtering'
-import { reportClientFilterTruncation } from './business-listing-warnings'
+  getMainFlowListResponseSchema,
+  type MainFlowModuleKey,
+} from '@/shared/schemas/module-record'
+import type { SearchParams } from '@/types/api-raw'
+import type {
+  LegacyModuleRecord,
+  MainFlowListRecord,
+} from '@/types/module-record'
 
+interface FetchedModulePage<Row> {
+  rows: Row[]
+  totalElements: number
+  totalPages: number
+  last: boolean
+  hasMore: boolean
+}
+
+export function fetchModulePage<Key extends MainFlowModuleKey>(
+  moduleKey: Key,
+  params: Record<string, QueryValue>,
+  page: number,
+  size: number,
+  config?: AxiosRequestConfig,
+  fields?: string[],
+): Promise<FetchedModulePage<MainFlowListRecord<Key>>>
+export function fetchModulePage(
+  moduleKey: string,
+  params: Record<string, QueryValue>,
+  page: number,
+  size: number,
+  config?: AxiosRequestConfig,
+  fields?: string[],
+): Promise<FetchedModulePage<LegacyModuleRecord>>
 export async function fetchModulePage(
   moduleKey: string,
   params: Record<string, QueryValue>,
@@ -26,23 +51,40 @@ export async function fetchModulePage(
   size: number,
   config?: AxiosRequestConfig,
   fields?: string[],
-) {
+): Promise<FetchedModulePage<LegacyModuleRecord>> {
   const endpointConfig = getModuleConfig(moduleKey)
+  const requestConfig = {
+    ...config,
+    params: {
+      ...params,
+      page,
+      size,
+      ...(fields?.length
+        ? {
+            [endpointConfig.fieldsParam || 'fields']: fields.join(','),
+          }
+        : {}),
+      ...(config?.params as SearchParams | undefined),
+    },
+  }
+  const mainFlowResponseSchema = getMainFlowListResponseSchema(moduleKey)
+  if (mainFlowResponseSchema) {
+    const response = assertApiSuccess(
+      await apiGet(endpointConfig.path, mainFlowResponseSchema, requestConfig),
+      '查询业务列表失败',
+    )
+
+    return {
+      rows: response.data.content,
+      totalElements: response.data.totalElements,
+      totalPages: Math.max(response.data.totalPages, 1),
+      last: !response.data.hasMore,
+      hasMore: response.data.hasMore,
+    }
+  }
+
   const response = assertApiSuccess(
-    await apiGet(endpointConfig.path, rawPageResponseSchema, {
-      ...config,
-      params: {
-        ...params,
-        page,
-        size,
-        ...(fields?.length
-          ? {
-              [endpointConfig.fieldsParam || 'fields']: fields.join(','),
-            }
-          : {}),
-        ...(config?.params as SearchParams | undefined),
-      },
-    }),
+    await apiGet(endpointConfig.path, rawPageResponseSchema, requestConfig),
     '查询业务列表失败',
   )
 
@@ -53,45 +95,4 @@ export async function fetchModulePage(
     last: pageLast(response.data),
     hasMore: pageHasMore(response.data),
   }
-}
-
-export async function fetchAllModuleRows(
-  moduleKey: string,
-  search: SearchParams,
-  enforceLimit = false,
-  config?: AxiosRequestConfig,
-  fields?: string[],
-): Promise<{ rows: ModuleRecord[]; truncated: boolean }> {
-  const filterParams = buildFilterParams(moduleKey, search)
-  const allRows: ModuleRecord[] = []
-  let page = 0
-  let totalFetched = 0
-  let truncated = false
-
-  while (true) {
-    const current = await fetchModulePage(
-      moduleKey,
-      filterParams,
-      page,
-      FULL_SCAN_PAGE_SIZE,
-      config,
-      fields,
-    )
-    allRows.push(...current.rows)
-    totalFetched += current.rows.length
-
-    if (enforceLimit && totalFetched >= MAX_CLIENT_FILTER_ROWS) {
-      reportClientFilterTruncation(moduleKey, MAX_CLIENT_FILTER_ROWS)
-      truncated = true
-      break
-    }
-
-    if (current.last || page >= current.totalPages - 1) {
-      break
-    }
-
-    page += 1
-  }
-
-  return { rows: allRows, truncated }
 }

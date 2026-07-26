@@ -1,15 +1,23 @@
-import { normalizeRecord } from '@/api/business-normalizers'
 import { apiPost, apiPut, assertApiSuccess } from '@/api/client'
 import { withIdempotencyKey } from '@/api/idempotency'
-import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
-import { rawRecordResponseSchema } from '@/shared/schemas/api'
-import type { ModuleRecord } from '@/types/module-page'
+import { toSaveRequest } from '@/api/module-save-payload'
+import { mainFlowDetailResponseSchemas } from '@/shared/schemas/module-record'
+import type { ApiResponse } from '@/types/api'
+import type {
+  MainFlowDetailRecord,
+  MainFlowEditorDraft,
+} from '@/types/module-record'
 
-export async function completeSalesOrder(id: string) {
+const salesOrderDetailResponseSchema =
+  mainFlowDetailResponseSchemas['sales-order']
+
+export async function completeSalesOrder(
+  id: string,
+): Promise<ApiResponse<MainFlowDetailRecord<'sales-order'>>> {
   return assertApiSuccess(
     await apiPost(
       `/sales-orders/${encodeURIComponent(id)}/complete`,
-      rawRecordResponseSchema,
+      salesOrderDetailResponseSchema,
       null,
       withIdempotencyKey(),
     ),
@@ -18,19 +26,19 @@ export async function completeSalesOrder(id: string) {
 }
 
 export async function saveAndCompleteSalesOrder(
-  record: ModuleRecord,
+  record: MainFlowEditorDraft<'sales-order'>,
   idempotencyKey?: string,
-) {
+): Promise<ApiResponse<MainFlowDetailRecord<'sales-order'>>> {
   const id = String(record.id || '').trim()
   if (!id) {
     throw new Error('销售订单 ID 不能为空')
   }
 
-  const payload = await serializeBusinessRecordForSave('sales-order', record)
+  const payload = await toSaveRequest('sales-order', record)
   const response = assertApiSuccess(
     await apiPut(
       `/sales-orders/${encodeURIComponent(id)}/save-and-complete`,
-      rawRecordResponseSchema,
+      salesOrderDetailResponseSchema,
       payload,
       withIdempotencyKey(undefined, idempotencyKey),
     ),
@@ -40,6 +48,6 @@ export async function saveAndCompleteSalesOrder(
   return {
     code: response.code,
     message: response.message,
-    data: response.data ? normalizeRecord(response.data) : undefined,
+    data: response.data,
   }
 }

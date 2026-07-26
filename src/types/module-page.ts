@@ -1,4 +1,4 @@
-import type { EntityId } from '@/types/entity-id'
+import type { ModuleKey } from '@/module-system/module-key'
 import type {
   ModuleColumnDefinition,
   ModuleDetailField,
@@ -6,6 +6,11 @@ import type {
   ModuleFormFieldDefinition,
   ModuleQuickFilterDefinition,
 } from '@/types/module-page-fields'
+import type {
+  ModuleLineItem,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-record'
 
 export type {
   ModuleColumnDefinition,
@@ -30,6 +35,12 @@ export type {
   UserColumnSettingsPayload,
 } from '@/types/module-page-settings'
 
+export type {
+  ModuleLineItem,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-record'
+
 export interface ModuleStatusMeta {
   text: string
   color: 'default' | 'success' | 'processing' | 'warning' | 'error'
@@ -49,35 +60,19 @@ export interface ModuleActionDefinition {
   loading?: boolean
 }
 
-export type ModuleRecordInput = {
-  id?: EntityId
-  items?: ModuleRecordInput[]
-  [key: string]: unknown
-}
-
-export type ModuleLineItem = {
-  id: EntityId
-  [key: string]: unknown
-}
-
-export type ModuleRecord = {
-  id: EntityId
-  items?: ModuleLineItem[]
-  [key: string]: unknown
-}
-
 export interface ModuleParentImportDefinition {
-  parentModuleKey: string
+  parentModuleKey: ModuleKey
   label: string
   parentFieldKey: string
   parentDisplayFieldKey: string
   buttonText?: string
-  enforceUniqueRelation?: boolean
   allowMultipleSelection?: boolean
   replaceUnlinkedItemsOnFirstImport?: boolean
   candidateStatementModuleKey?: 'customer-statement' | 'freight-statement'
-  buildParentFilters?: (currentRecord: ModuleRecord) => Record<string, unknown>
-  validateBeforeOpen?: (currentRecord: ModuleRecord) => string | null
+  buildParentFilters?: (
+    currentRecord: ModuleRecordInput,
+  ) => Record<string, unknown>
+  validateBeforeOpen?: (currentRecord: ModuleRecordInput) => string | null
   remainingQuantityKey?: string
   candidateQueryType?:
     | 'purchase-order-import'
@@ -87,8 +82,8 @@ export interface ModuleParentImportDefinition {
   useCandidateSnapshot?: boolean
   hiddenSelectorColumnKeys?: string[]
   visibleWhen?: (currentRecord: ModuleRecordInput) => boolean
-  resolveParentSelector?: (currentRecord: ModuleRecord) => {
-    parentModuleKey: string
+  resolveParentSelector?: (currentRecord: ModuleRecordInput) => {
+    parentModuleKey: ModuleKey
     parentDisplayFieldKey: string
   }
   requiredSourceItemIdField?:
@@ -97,7 +92,7 @@ export interface ModuleParentImportDefinition {
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
   validateParentImport?: (args: {
-    currentRecord: ModuleRecord
+    currentRecord: ModuleRecordInput
     currentItems: ModuleLineItem[]
     currentParentNos: string[]
     parentRecord: ModuleRecord
@@ -105,7 +100,7 @@ export interface ModuleParentImportDefinition {
 }
 
 export interface ModulePageConfig {
-  key: string
+  key: ModuleKey
   title: string
   kicker: string
   description: string

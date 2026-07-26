@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import type { ModuleKey } from '@/module-system/module-key'
 import type {
   ModuleColumnDefinition,
   ModulePageConfig,
@@ -46,12 +47,12 @@ function buildWeightOnlyViewConfig(
 }
 
 interface Props {
-  moduleKey: string
+  moduleKey: ModuleKey
   initialConfig?: ModulePageConfig
 }
 
 function isWeightOnlyViewEnabled(
-  moduleKey: string,
+  moduleKey: ModuleKey,
   runtimeConfig: ReturnType<typeof useRuntimeConfig>['data'],
 ) {
   if (!runtimeConfig) {

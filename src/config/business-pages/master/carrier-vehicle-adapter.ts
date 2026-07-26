@@ -1,6 +1,6 @@
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
-import type { ModuleRecord } from '@/types/module-page'
+import type { ModuleRecordInput } from '@/types/module-page'
 
 type VehicleRecord = Record<string, unknown>
 
@@ -87,12 +87,12 @@ function toVehiclePayload(
   }
 }
 
-function hasOwn(record: ModuleRecord, key: string): boolean {
+function hasOwn(record: ModuleRecordInput, key: string): boolean {
   return Object.hasOwn(record, key)
 }
 
 function buildSlotVehicle(
-  record: ModuleRecord,
+  record: ModuleRecordInput,
   existing: VehicleRecord | undefined,
   slotIndex: number,
 ): CarrierVehiclePayload | undefined {
@@ -147,8 +147,8 @@ function assertUniqueVehicles(vehicles: CarrierVehiclePayload[]): void {
 }
 
 export function normalizeCarrierEditorRecord(
-  record: ModuleRecord,
-): ModuleRecord {
+  record: ModuleRecordInput,
+): ModuleRecordInput {
   if (!hasOwn(record, 'vehicles')) {
     return { ...record }
   }
@@ -169,7 +169,7 @@ export function normalizeCarrierEditorRecord(
   return editorRecord
 }
 
-export function normalizeCarrierDraftRecord(record: ModuleRecord): void {
+export function normalizeCarrierDraftRecord(record: ModuleRecordInput): void {
   const existingVehicles = readVehicles(record.vehicles)
   const visibleVehicles = VEHICLE_SLOTS.flatMap((_, index) => {
     const vehicle = buildSlotVehicle(record, existingVehicles[index], index)

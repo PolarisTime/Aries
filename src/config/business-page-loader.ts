@@ -1,3 +1,4 @@
+import { assertModuleKey, type ModuleKey } from '@/module-system/module-key'
 import type { ModulePageConfig } from '@/types/module-page'
 
 type ConfigModule = {
@@ -6,7 +7,7 @@ type ConfigModule = {
 
 type ConfigLoader = () => Promise<ConfigModule>
 
-const businessPageLoaders: Record<string, ConfigLoader> = {
+const businessPageLoaders = {
   material: async () =>
     (await import('@/config/business-pages/master-material-pages'))
       .masterMaterialPageConfigs,
@@ -56,36 +57,37 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
   'operation-log': async () =>
     (await import('@/config/business-pages/system-audit-pages'))
       .systemAuditPageConfigs,
-}
+} satisfies Record<ModuleKey, ConfigLoader>
 
-const loadedConfigCache = new Map<string, ModulePageConfig>()
+const loadedConfigCache = new Map<ModuleKey, ModulePageConfig>()
 
 export async function loadBusinessPageConfig(moduleKey: string) {
-  const cached = loadedConfigCache.get(moduleKey)
-  if (cached?.key === moduleKey) {
+  const resolvedModuleKey = assertModuleKey(moduleKey)
+  const cached = loadedConfigCache.get(resolvedModuleKey)
+  if (cached?.key === resolvedModuleKey) {
     return cached
   }
-  if (cached && cached.key !== moduleKey) {
-    loadedConfigCache.delete(moduleKey)
+  if (cached && cached.key !== resolvedModuleKey) {
+    loadedConfigCache.delete(resolvedModuleKey)
   }
 
-  const loader = businessPageLoaders[moduleKey]
-  if (!loader) {
-    throw new Error(`Unknown module key: ${moduleKey}`)
-  }
+  const loader = businessPageLoaders[resolvedModuleKey]
 
   const moduleConfigs = await loader()
-  const config = moduleConfigs[moduleKey]
+  const config = moduleConfigs[resolvedModuleKey]
   if (!config) {
-    throw new Error(`Module config not found: ${moduleKey}`)
+    throw new Error(`Module config not found: ${resolvedModuleKey}`)
   }
 
-  loadedConfigCache.set(moduleKey, config)
+  if (config.key !== resolvedModuleKey) {
+    throw new Error(`Module config key mismatch: ${resolvedModuleKey}`)
+  }
+  loadedConfigCache.set(resolvedModuleKey, config)
   return config
 }
 
 export function primeBusinessPageConfig(
-  moduleKey: string,
+  moduleKey: ModuleKey,
   config: ModulePageConfig,
 ) {
   if (config.key !== moduleKey) {

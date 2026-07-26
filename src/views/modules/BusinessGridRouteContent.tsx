@@ -3,6 +3,7 @@ import { Empty } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import type { AppPageDefinition } from '@/config/page-registry'
+import { assertModuleKey } from '@/module-system/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -22,7 +23,7 @@ interface Props {
 export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const { t } = useTranslation()
   const location = useLocation()
-  const moduleKey = asString(pageDef.moduleKey)
+  const moduleKey = assertModuleKey(asString(pageDef.moduleKey))
   const state = useBusinessGridPage({ moduleKey, pageDef, initialConfig })
 
   useBusinessGridOverlayPreload({

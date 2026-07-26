@@ -1,10 +1,17 @@
 import { useRef, useState } from 'react'
 import { getBusinessModuleDetail } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleKey } from '@/module-system/module-key'
+import { hasModuleRecordItems } from '@/module-system/module-record-fields'
+import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
+import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleDetailRecordFor,
+  ModuleListRecordFor,
+} from '@/types/module-record'
 
-interface Options {
-  moduleKey: string
+interface Options<Key extends ModuleKey> {
+  moduleKey: Key
   config?: ModulePageConfig
 }
 
@@ -12,9 +19,34 @@ interface DetailRequest {
   recordId: string
 }
 
-export function useDetailSupport({ moduleKey, config }: Options) {
+interface DetailSupportResult<Key extends ModuleKey> {
+  detailOpen: boolean
+  detailRecord: ModuleDetailRecordFor<Key> | null
+  detailLoading: boolean
+  detailError: unknown
+  openDetail: (target: string | ModuleListRecordFor<Key>) => Promise<void>
+  retryDetail: () => void
+  closeDetail: () => void
+}
+
+function resolveDetailFallback<Key extends ModuleKey>(
+  moduleKey: Key,
+  record: ModuleListRecordFor<Key> | null,
+): ModuleDetailRecordFor<Key> | null
+function resolveDetailFallback(
+  moduleKey: ModuleKey,
+  record: ModuleListRecordFor<ModuleKey> | null,
+): object | null {
+  return isMainFlowModuleKey(moduleKey) ? null : record
+}
+
+export function useDetailSupport<Key extends ModuleKey>({
+  moduleKey,
+  config,
+}: Options<Key>): DetailSupportResult<Key> {
   const [detailOpen, setDetailOpen] = useState(false)
-  const [detailRecord, setDetailRecord] = useState<ModuleRecord | null>(null)
+  const [detailRecord, setDetailRecord] =
+    useState<ModuleDetailRecordFor<Key> | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<unknown>(null)
   const requestVersionRef = useRef(0)
@@ -42,7 +74,7 @@ export function useDetailSupport({ moduleKey, config }: Options) {
     }
   }
 
-  const openDetail = async (target: string | ModuleRecord) => {
+  const openDetail = async (target: string | ModuleListRecordFor<Key>) => {
     requestVersionRef.current += 1
     const fallbackRecord = typeof target === 'string' ? null : target
     const recordId =
@@ -53,7 +85,7 @@ export function useDetailSupport({ moduleKey, config }: Options) {
     )
 
     setDetailOpen(true)
-    setDetailRecord(fallbackRecord)
+    setDetailRecord(resolveDetailFallback(moduleKey, fallbackRecord))
     setDetailError(null)
     lastRequestRef.current = null
 
@@ -67,8 +99,8 @@ export function useDetailSupport({ moduleKey, config }: Options) {
 
     if (
       fallbackRecord &&
-      (!requiresDetailFetch ||
-        (Array.isArray(fallbackRecord.items) && fallbackRecord.items.length))
+      !isMainFlowModuleKey(moduleKey) &&
+      (!requiresDetailFetch || hasModuleRecordItems(fallbackRecord))
     ) {
       setDetailLoading(false)
       return

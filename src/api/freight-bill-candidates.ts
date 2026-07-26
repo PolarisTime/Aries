@@ -1,8 +1,6 @@
-import { normalizeRows } from '@/api/business-normalizers'
 import { apiGet, assertApiSuccess } from '@/api/client'
-import { pageContent, pageTotalElements } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { rawPageResponseSchema } from '@/shared/schemas/api'
+import { freightSalesOrderCandidatePageResponseSchema } from '@/shared/schemas/module-record'
 import type { TableResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -17,7 +15,7 @@ export async function listFreightSalesOrderCandidatePage(
   const response = assertApiSuccess(
     await apiGet(
       ENDPOINTS.FREIGHT_BILL_SALES_ORDER_CANDIDATES,
-      rawPageResponseSchema,
+      freightSalesOrderCandidatePageResponseSchema,
       {
         params: {
           ...filters,
@@ -34,8 +32,8 @@ export async function listFreightSalesOrderCandidatePage(
   return {
     code: 0,
     data: {
-      rows: normalizeRows(pageContent(response.data)),
-      total: pageTotalElements(response.data),
+      rows: response.data.content,
+      total: response.data.totalElements,
     },
   }
 }

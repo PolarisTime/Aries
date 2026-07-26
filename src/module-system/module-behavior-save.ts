@@ -1,4 +1,5 @@
-import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
+import type { ModuleBehaviorContributor } from '@/module-system/module-behavior-registry-core'
+import type { ModuleKey } from '@/module-system/module-key'
 
 const lineItemPayloadModules = [
   'purchase-order',
@@ -8,21 +9,25 @@ const lineItemPayloadModules = [
   'freight-bill',
   'customer-statement',
   'freight-statement',
-]
+] as const satisfies readonly ModuleKey[]
 
-for (const key of lineItemPayloadModules) {
-  registerModuleBehavior(key, { savePayloadLineItems: true })
+const extraScalarFieldsByModule = [
+  ['freight-statement', ['attachment']],
+  ['purchase-order', ['buyerName']],
+  ['sales-order', ['salesName']],
+  ['sales-outbound', ['salesName']],
+] as const satisfies ReadonlyArray<readonly [ModuleKey, readonly string[]]>
+
+export const contributeSaveBehaviors: ModuleBehaviorContributor = (
+  registerModuleBehavior,
+) => {
+  for (const key of lineItemPayloadModules) {
+    registerModuleBehavior(key, { savePayloadLineItems: true })
+  }
+
+  for (const [key, fields] of extraScalarFieldsByModule) {
+    registerModuleBehavior(key, { extraScalarFields: [...fields] })
+  }
+
+  registerModuleBehavior('freight-statement', { includeAttachmentIds: true })
 }
-
-const extraScalarFieldsMap: Record<string, string[]> = {
-  'freight-statement': ['attachment'],
-  'purchase-order': ['buyerName'],
-  'sales-order': ['salesName'],
-  'sales-outbound': ['salesName'],
-}
-
-for (const [key, fields] of Object.entries(extraScalarFieldsMap)) {
-  registerModuleBehavior(key, { extraScalarFields: fields })
-}
-
-registerModuleBehavior('freight-statement', { includeAttachmentIds: true })

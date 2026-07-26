@@ -1,9 +1,7 @@
 import type { ModuleEndpointConfig } from '@/api/module-contract-types'
+import type { ModuleKey } from '@/module-system/module-key'
 
-export const systemModuleEndpointContracts: Record<
-  string,
-  ModuleEndpointConfig
-> = {
+export const systemModuleEndpointContracts = {
   'operation-log': {
     path: '/operation-logs',
     readOnly: true,
@@ -24,4 +22,4 @@ export const systemModuleEndpointContracts: Record<
       },
     },
   },
-}
+} satisfies Partial<Record<ModuleKey, ModuleEndpointConfig>>

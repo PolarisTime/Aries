@@ -340,7 +340,6 @@ export const customerStatementPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     candidateStatementModuleKey: 'customer-statement',
     buttonText: '选择销售订单生成明细',
-    enforceUniqueRelation: true,
     allowMultipleSelection: true,
     buildParentFilters: (currentRecord) => ({
       customerId: entityIdOf(currentRecord.customerId, 'customerId'),

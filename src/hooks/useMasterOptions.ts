@@ -11,6 +11,10 @@ import {
 } from '@/api/customer-options'
 import { fetchMaterialCategories } from '@/api/material-categories'
 import {
+  fetchMaterialGrades,
+  type MaterialGradeOption,
+} from '@/api/material-grades'
+import {
   fetchMaterialSearch,
   type MaterialSearchResponse,
 } from '@/api/materials'
@@ -32,6 +36,7 @@ import {
   getSupplierOptions,
   getWarehouseOptions,
   materialCategoryOptions,
+  materialGradeOptions,
 } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
@@ -46,6 +51,7 @@ interface MasterOptions {
   settlementCompanies: SettlementCompanyOption[]
   warehouses: WarehouseOption[]
   materialCategories: { value: string; label: string }[]
+  materialGrades: MaterialGradeOption[]
   materials: MaterialSearchResponse[]
 }
 
@@ -65,6 +71,7 @@ function emptyRequirements(): MasterOptionRequirements {
     settlementCompanies: false,
     warehouses: false,
     materialCategories: false,
+    materialGrades: false,
     materials: false,
   }
 }
@@ -122,6 +129,11 @@ export function resolveMasterOptionRequirements(
 
     if (options === materialCategoryOptions) {
       requirements.materialCategories = true
+      continue
+    }
+
+    if (options === materialGradeOptions) {
+      requirements.materialGrades = true
     }
   }
 
@@ -142,6 +154,7 @@ export function useMasterOptions(
     settlementCompanies: Boolean(requirements.settlementCompanies),
     warehouses: Boolean(requirements.warehouses),
     materialCategories: Boolean(requirements.materialCategories),
+    materialGrades: Boolean(requirements.materialGrades),
     materials: Boolean(requirements.materials),
   }
 
@@ -177,6 +190,14 @@ export function useMasterOptions(
     enabled: queryEnabled && normalizedRequirements.settlementCompanies,
     staleTime: 300_000,
   })
+
+  const { data: materialGrades = [], isLoading: materialGradesLoading } =
+    useQuery({
+      queryKey: QUERY_KEYS.masterOptions.materialGrades,
+      queryFn: fetchMaterialGrades,
+      enabled: queryEnabled && normalizedRequirements.materialGrades,
+      staleTime: 300_000,
+    })
 
   const { data: warehouses = [], isLoading: warehousesLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.warehouse,
@@ -219,6 +240,7 @@ export function useMasterOptions(
     settlementCompanies,
     warehouses,
     materialCategories,
+    materialGrades,
     materials,
     isLoading:
       suppliersLoading ||
@@ -228,6 +250,7 @@ export function useMasterOptions(
       settlementCompaniesLoading ||
       warehousesLoading ||
       materialCategoriesLoading ||
+      materialGradesLoading ||
       materialsLoading,
   } satisfies MasterOptions & { isLoading: boolean }
 }
