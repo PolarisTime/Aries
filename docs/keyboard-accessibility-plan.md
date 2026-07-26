@@ -1,8 +1,8 @@
-# 键盘操作支持实施计划
+# 键盘操作支持实施记录
 
 ## 1. 目标
 
-为 `aries` 前端补齐键盘等价操作路径，优先覆盖业务工作台中的高频交互：
+`aries` 前端已补齐键盘等价操作路径，优先覆盖业务工作台中的高频交互：
 
 - 业务主表行选择、详情、编辑
 - 父单据选择弹层
@@ -18,11 +18,13 @@
 - `2.4.7 Focus Visible`
 - `4.1.2 Name, Role, Value`
 
-本计划只覆盖前端键盘交互与可访问性语义，不修改后端接口、权限模型和业务状态规则。
+本记录只覆盖前端键盘交互与可访问性语义，不修改后端接口、权限模型和业务状态规则。
 
-## 2. 当前结论
+## 2. 实现状态
 
-antd 基础组件风险较低。已执行：
+截至 2026-07-26，共享组件的代码实现已经完成；真实业务数据下的手工键盘冒烟仍需在发布前执行。
+
+实施提交 `0ac095c` 使用 Ant Design CLI 扫描了 antd 基础组件：
 
 ```bash
 antd lint "./src" --only a11y --format json
@@ -30,16 +32,16 @@ antd lint "./src" --only a11y --format json
 
 结果为 0 个 antd a11y 规则问题。
 
-主要缺口集中在项目自定义业务工作台层：
+项目自定义业务工作台层的实现状态如下：
 
-| 区域 | 当前行为 | 缺口 |
+| 区域 | 已实现能力 | 状态 |
 | --- | --- | --- |
-| `BusinessGridTable` | 鼠标单击选中、双击打开 | 无行级键盘入口 |
-| `ModuleParentSelectorOverlay` | 鼠标点击行导入或切换选择 | 无行级键盘入口 |
-| `WorkspaceOverlay` | 支持遮罩点击和 Esc 关闭 | 缺少 dialog 语义、焦点陷阱、初始焦点和焦点恢复 |
-| `ColumnSettingsPopover` | 已引入 `KeyboardSensor` | 拖拽句柄为 `span`，可聚焦和可访问名称不完整 |
-| `PrintJobModal` | 拖拽句柄已是 `button` | 缺少 `sortableKeyboardCoordinates` 和更具体的拖拽名称 |
-| 样式 | 少量组件有 focus 样式 | 表格行、overlay 焦点可视态不统一 |
+| `BusinessGridTable` | 行级聚焦、选择与打开快捷键 | 已完成 |
+| `ModuleParentSelectorOverlay` | 单选导入与多选切换快捷键 | 已完成 |
+| `WorkspaceOverlay` | dialog 语义、焦点陷阱、初始焦点和焦点恢复 | 已完成 |
+| `ColumnSettingsPopover` | 按钮式拖拽句柄、键盘坐标与可访问名称 | 已完成 |
+| `PrintJobModal` | 键盘排序与可区分的拖拽名称 | 已完成 |
+| 样式 | 表格行、overlay 和搜索框焦点可视态 | 已完成 |
 
 ## 3. 交互规范
 
@@ -53,7 +55,7 @@ antd lint "./src" --only a11y --format json
 | 打印明细排序 | 保留按钮句柄，补充键盘坐标 getter 和可访问名称 |
 | 搜索与筛选 | 保留 `Enter` 查询，确保输入框或外层容器有可见焦点 |
 
-## 4. 实施范围
+## 4. 实现明细
 
 ### 4.1 P0：主业务表格行键盘支持
 
@@ -62,7 +64,7 @@ antd lint "./src" --only a11y --format json
 - `src/views/modules/components/BusinessGridTable.tsx`
 - `src/styles/module-table.css`
 
-实施要点：
+实现内容：
 
 - 在 `onRow` 返回值中增加 `tabIndex: 0`。
 - 增加 `onKeyDown`：
@@ -87,7 +89,7 @@ antd lint "./src" --only a11y --format json
 - `src/views/modules/components/ModuleParentSelectorOverlay.tsx`
 - `src/styles/workspace-overlay.css`
 
-实施要点：
+实现内容：
 
 - 在父单据候选表格 `onRow` 中增加 `tabIndex: 0`。
 - 单选模式：
@@ -111,7 +113,7 @@ antd lint "./src" --only a11y --format json
 - `src/views/modules/components/WorkspaceOverlay.tsx`
 - `src/styles/workspace-overlay.css`
 
-实施要点：
+实现内容：
 
 - 面板增加：
   - `role="dialog"`
@@ -127,7 +129,7 @@ antd lint "./src" --only a11y --format json
 
 验收标准：
 
-- `getByRole('dialog', { name })` 能定位到工作区弹层。
+- 辅助技术可通过 dialog 角色和标题识别工作区弹层。
 - 打开弹层后焦点进入弹层。
 - `Tab` / `Shift+Tab` 不会逃出弹层。
 - `Esc` 关闭弹层。
@@ -141,7 +143,7 @@ antd lint "./src" --only a11y --format json
 - `src/styles/workspace-overlay.css`
 - `src/styles/layout-shell.css`
 
-实施要点：
+实现内容：
 
 - 为可聚焦表格行增加 `:focus-visible` 样式。
 - 为 `.workspace-overlay-close:focus-visible` 增加统一样式。
@@ -158,7 +160,7 @@ antd lint "./src" --only a11y --format json
 
 目标文件：`src/views/modules/components/ColumnSettingsPopover.tsx`
 
-实施要点：
+实现内容：
 
 - 将拖拽句柄从 `span` 改为 `button type="button"`。
 - `KeyboardSensor` 配置 `sortableKeyboardCoordinates`。
@@ -178,7 +180,7 @@ antd lint "./src" --only a11y --format json
 
 目标文件：`src/views/modules/components/PrintJobModal.tsx`
 
-实施要点：
+实现内容：
 
 - 保留当前按钮式拖拽句柄。
 - `KeyboardSensor` 配置 `sortableKeyboardCoordinates`。
@@ -199,7 +201,7 @@ antd lint "./src" --only a11y --format json
 
 - 登录后进入业务页。
 - `Tab` 聚焦到首个数据行。
-- `Space` 选中行，断言选中计数变化。
+- `Space` 选中行，确认选中计数变化。
 - `Enter` 打开详情或编辑 overlay。
 - `Esc` 关闭 overlay。
 - 确认焦点回到触发区域或合理的业务上下文。
@@ -211,6 +213,11 @@ pnpm lint
 pnpm typecheck
 pnpm build-only
 pnpm exec react-doctor . --full --no-score
+```
+
+Ant Design CLI 是共享开发工具，不属于项目本地依赖。已全局安装 `@ant-design/cli` 的环境可额外执行：
+
+```bash
 antd lint ./src --only a11y --format json
 ```
 
@@ -223,9 +230,9 @@ antd lint ./src --only a11y --format json
 - 不把表格行改造成伪按钮，避免破坏表格语义和 antd Table 行为。
 - 不新增全局快捷键，避免与浏览器、输入框、表格控件冲突。
 
-## 7. 交付拆分
+## 7. 实施拆分
 
-### 第一批：行级键盘入口
+### 第一批：行级键盘入口（已完成）
 
 内容：
 
@@ -234,9 +241,9 @@ antd lint ./src --only a11y --format json
 - 表格行 focus-visible 样式
 - 静态检查与手工键盘验证
 
-预估：0.5 到 1 天。
+原预估：0.5 到 1 天。
 
-### 第二批：工作区弹层焦点管理
+### 第二批：工作区弹层焦点管理（已完成）
 
 内容：
 
@@ -245,9 +252,9 @@ antd lint ./src --only a11y --format json
 - overlay focus-visible 样式
 - 静态检查与手工键盘验证
 
-预估：0.5 到 1 天。
+原预估：0.5 到 1 天。
 
-### 第三批：排序与细节补强
+### 第三批：排序与细节补强（已完成）
 
 内容：
 
@@ -256,21 +263,21 @@ antd lint ./src --only a11y --format json
 - 搜索框焦点样式收口
 - 静态检查与手工键盘验证
 
-预估：0.5 到 1 天。
+原预估：0.5 到 1 天。
 
 ## 8. 验收清单
 
-- [ ] 主业务表格行可以用键盘选择。
-- [ ] 主业务表格行可以用键盘打开详情或编辑。
-- [ ] 父单据选择行可以用键盘导入或切换选择。
-- [ ] 工作区弹层有正确 dialog 语义。
-- [ ] 工作区弹层打开后焦点进入弹层。
-- [ ] 工作区弹层内不会出现键盘焦点逃逸。
-- [ ] 工作区弹层关闭后焦点恢复。
-- [ ] 列设置排序句柄可聚焦且有明确名称。
-- [ ] 打印排序句柄可聚焦且有明确名称。
-- [ ] 所有新增键盘入口都有清晰焦点样式。
-- [ ] 静态检查、类型检查与生产构建通过。
+- [x] 主业务表格行可以用键盘选择。
+- [x] 主业务表格行可以用键盘打开详情或编辑。
+- [x] 父单据选择行可以用键盘导入或切换选择。
+- [x] 工作区弹层有正确 dialog 语义。
+- [x] 工作区弹层打开后焦点进入弹层。
+- [x] 工作区弹层内不会出现键盘焦点逃逸。
+- [x] 工作区弹层关闭后焦点恢复。
+- [x] 列设置排序句柄可聚焦且有明确名称。
+- [x] 打印排序句柄可聚焦且有明确名称。
+- [x] 所有新增键盘入口都有清晰焦点样式。
+- [x] 静态检查、类型检查与生产构建通过。
 - [ ] 手工键盘冒烟覆盖 overlay 打开、焦点循环、关闭与焦点恢复闭环。
 
 ## 9. 原则应用
