@@ -36,7 +36,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       ),
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
       options: getCustomerOptions,
@@ -57,7 +57,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'projectName',
+      key: 'projectId',
       label: i18next.t('modules.pages.salesOutbound.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
@@ -213,7 +213,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: i18next.t('modules.pages.salesOutbound.colCustomerName'),
       type: 'select',
       required: true,
@@ -221,10 +221,11 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'projectName',
+      key: 'projectId',
       label: i18next.t('modules.pages.salesOutbound.colProjectName'),
-      type: 'input',
+      type: 'select',
       required: true,
+      options: getCustomerProjectOptions,
       row: 2,
     },
     {
@@ -261,7 +262,9 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
+      customerId: parentRecord.customerId,
       customerName: parentRecord.customerName || '',
+      projectId: parentRecord.projectId,
       projectName: parentRecord.projectName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
       settlementCompanyName: parentRecord.settlementCompanyName || '',

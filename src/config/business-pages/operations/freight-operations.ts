@@ -1,7 +1,7 @@
 import i18next from 'i18next'
+import { getCarrierEntityOptions } from '@/api/master/carrier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
-  getCarrierOptions,
   getCarrierVehiclePlateOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
@@ -48,10 +48,10 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         ),
       },
       {
-        key: 'carrierName',
+        key: 'carrierId',
         label: CARRIER_NAME_LABEL,
         type: 'select',
-        options: getCarrierOptions,
+        options: getCarrierEntityOptions,
       },
       {
         key: 'status',
@@ -214,11 +214,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
-        key: 'carrierName',
+        key: 'carrierId',
         label: i18next.t('modules.pages.freightOperations.carrier'),
         type: 'select',
         required: true,
-        options: getCarrierOptions,
+        options: getCarrierEntityOptions,
         row: 1,
       },
       {
@@ -322,7 +322,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         currentRecordId: currentRecord.id || undefined,
       }),
       validateBeforeOpen: (currentRecord) =>
-        asString(currentRecord.carrierName).trim()
+        asString(currentRecord.carrierId).trim()
           ? null
           : '请先选择物流商，再选择销售订单',
       transformItems: (parentRecord) => {

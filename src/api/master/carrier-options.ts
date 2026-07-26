@@ -116,7 +116,7 @@ export function findCarrierOption(value: unknown): CarrierOption | undefined {
 }
 
 export function getCarrierVehiclePlateOptions(form?: ModuleRecordInput) {
-  const carrier = findCarrierOption(form?.carrierName)
+  const carrier = findCarrierOption(form?.carrierId ?? form?.carrierName)
   return (carrier?.vehiclePlates || []).map((plate) => ({
     label: plate,
     value: plate,

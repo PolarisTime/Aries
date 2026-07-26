@@ -535,7 +535,9 @@ export const salesOutboundSaveItemSchema = z.strictObject({
 export const salesOutboundSaveRequestSchema = z.strictObject({
   outboundNo: optionalTextSchema,
   salesOrderNo: optionalTextSchema,
+  customerId: optionalEntityIdSchema,
   customerName: requiredTextSchema,
+  projectId: optionalEntityIdSchema,
   projectName: requiredTextSchema,
   warehouseName: optionalTextSchema,
   outboundDate: responseDateTimeSchema,

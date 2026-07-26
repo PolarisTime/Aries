@@ -17,6 +17,30 @@ const operationLogActionOptions = [
     value: '审核',
   },
   {
+    label: i18next.t('modules.pages.operationLogOptions.reverseAudit'),
+    value: '反审核',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.statusChange'),
+    value: '状态变更',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.completePurchase'),
+    value: '完成采购',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.completeSales'),
+    value: '完成销售',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.deliveryVerification'),
+    value: '交付核定',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.returnToAudited'),
+    value: '退回已审核',
+  },
+  {
     label: i18next.t('modules.pages.operationLogOptions.export'),
     value: '导出',
   },
@@ -37,10 +61,26 @@ const operationLogActionOptions = [
     value: '退出登录',
   },
   {
+    label: i18next.t('modules.pages.operationLogOptions.changePassword'),
+    value: '修改密码',
+  },
+  {
     label: i18next.t('modules.pages.operationLogOptions.execute'),
     value: '执行',
   },
   { label: i18next.t('modules.pages.operationLogOptions.save'), value: '保存' },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.saveAndAudit'),
+    value: '保存并审核',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.saveAndConfirm'),
+    value: '保存并确认',
+  },
+  {
+    label: i18next.t('modules.pages.operationLogOptions.uploadJson'),
+    value: '上传 JSON',
+  },
   {
     label: i18next.t('modules.pages.operationLogOptions.exportBackup'),
     value: '导出备份',
@@ -52,6 +92,24 @@ const operationLogActionOptions = [
   {
     label: i18next.t('modules.pages.operationLogOptions.uploadAttachment'),
     value: '上传附件',
+  },
+  {
+    label: i18next.t(
+      'modules.pages.operationLogOptions.generateAttachmentUploadUrl',
+    ),
+    value: '生成附件直传地址',
+  },
+  {
+    label: i18next.t(
+      'modules.pages.operationLogOptions.completeAttachmentDirectUpload',
+    ),
+    value: '完成附件直传',
+  },
+  {
+    label: i18next.t(
+      'modules.pages.operationLogOptions.exportAttachmentRecoveryManifest',
+    ),
+    value: '导出附件恢复清单',
   },
 ]
 
@@ -93,7 +151,7 @@ const operationLogActionOptionsByModule: Record<
       value: '导入备份',
     },
   ],
-  公司信息: [
+  结算主体: [
     {
       label: i18next.t('modules.pages.operationLogOptions.save'),
       value: '保存',
@@ -103,6 +161,24 @@ const operationLogActionOptionsByModule: Record<
     {
       label: i18next.t('modules.pages.operationLogOptions.uploadAttachment'),
       value: '上传附件',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.operationLogOptions.generateAttachmentUploadUrl',
+      ),
+      value: '生成附件直传地址',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.operationLogOptions.completeAttachmentDirectUpload',
+      ),
+      value: '完成附件直传',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.operationLogOptions.exportAttachmentRecoveryManifest',
+      ),
+      value: '导出附件恢复清单',
     },
   ],
 }
@@ -130,7 +206,7 @@ export const operationLogModuleOptions = [
     options: [
       {
         label: i18next.t('modules.pages.operationLogOptions.companyInfo'),
-        value: '公司信息',
+        value: '结算主体',
       },
       {
         label: i18next.t('modules.pages.operationLogOptions.printTemplates'),
@@ -139,6 +215,16 @@ export const operationLogModuleOptions = [
       {
         label: i18next.t('modules.pages.operationLogOptions.operationLog'),
         value: '操作日志',
+      },
+      {
+        label: i18next.t('modules.pages.operationLogOptions.printModule'),
+        value: '打印',
+      },
+      {
+        label: i18next.t(
+          'modules.pages.operationLogOptions.attachmentManagement',
+        ),
+        value: '附件管理',
       },
     ],
   },

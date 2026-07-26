@@ -110,12 +110,11 @@ function lookupProjectNameAbbr(record: ModuleRecord) {
   const projectName = firstText(record, PROJECT_NAME_FIELDS)
   if (!projectName) return ''
 
-  const customerName = firstText(record, ['customerName'])
-  const options = getCustomerProjectOptions(
-    customerName ? { customerName } : {},
-  )
+  const projectId = firstText(record, ['projectId'])
+  const options = getCustomerProjectOptions({ customerId: record.customerId })
   const matched = options.find(
     (option) =>
+      (projectId && String(option.id).trim() === projectId) ||
       String(option.projectName || option.value).trim() === projectName,
   )
   const value = matched?.projectNameAbbr

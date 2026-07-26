@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   type CarrierOption,
   fetchCarrierOptions,
+  getCarrierEntityOptions,
 } from '@/api/master/carrier-options'
 import {
   type CustomerOption,
@@ -117,6 +118,7 @@ export function resolveMasterOptionRequirements(
 
     if (
       options === getCarrierOptions ||
+      options === getCarrierEntityOptions ||
       options === getCarrierVehiclePlateOptions
     ) {
       requirements.carriers = true

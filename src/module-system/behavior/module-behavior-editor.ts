@@ -200,7 +200,10 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     'customer-statement',
     'freight-statement',
   ] as const satisfies readonly ModuleKey[]
-  const customerProjectSnapshotModules = new Set(['sales-order'])
+  const customerProjectSnapshotModules = new Set<ModuleKey>([
+    'sales-order',
+    'sales-outbound',
+  ])
 
   for (const key of settlementCompanySnapshotModules) {
     registerModuleBehavior(key, {
@@ -269,10 +272,11 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
 
         if (
           (key === 'freight-bill' || key === 'freight-statement') &&
-          ctx.changedKeys.has('carrierName')
+          ctx.changedKeys.has('carrierId')
         ) {
-          if (isBlank(editorForm.carrierName)) {
+          if (isBlank(editorForm.carrierId)) {
             // 显式清空承运商：同步清空编码与默认结算公司
+            editorForm.carrierId = ''
             editorForm.carrierName = ''
             editorForm.carrierCode = ''
             if (key === 'freight-bill') {
@@ -280,9 +284,10 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
               return
             }
           } else {
-            const carrier = findCarrierOption(editorForm.carrierName)
+            const carrier = findCarrierOption(editorForm.carrierId)
             // 选项缓存未命中时保留现有编码与结算公司快照，避免误清
             if (carrier) {
+              editorForm.carrierId = asString(carrier.id)
               const carrierName = asString(carrier.carrierName).trim()
               if (carrierName) {
                 editorForm.carrierName = carrierName
@@ -473,7 +478,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     resolveReadonlyEditorFields(record) {
       if (record.id && !asString(record.sourceOrderNos).trim()) {
         return [
-          'carrierName',
+          'carrierId',
           'carrierCode',
           'settlementCompanyId',
           'vehiclePlate',

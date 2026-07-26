@@ -29,7 +29,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
         options: [
           {
             label: i18next.t('modules.pages.masterWarehouse.ownWarehouse'),
-            value: '自有仓',
+            value: '自营仓',
           },
           {
             label: i18next.t('modules.pages.masterWarehouse.partnerWarehouse'),
@@ -158,7 +158,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
         options: [
           {
             label: i18next.t('modules.pages.masterWarehouse.ownWarehouse'),
-            value: '自有仓',
+            value: '自营仓',
           },
           {
             label: i18next.t('modules.pages.masterWarehouse.partnerWarehouse'),
