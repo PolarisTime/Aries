@@ -15,10 +15,10 @@ import {
   type EditorSessionStatus,
   useEditorSession,
 } from '@/layouts/editor-session/EditorSessionGuard'
-import { resolveStatusChangeActionLabelKey } from '@/module-system/module-adapter-actions'
-import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
-import type { ModuleKey } from '@/module-system/module-key'
-import { readModuleRecordField } from '@/module-system/module-record-fields'
+import { resolveStatusChangeActionLabelKey } from '@/module-system/adapter/module-adapter-actions'
+import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type { ModulePageConfig } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'

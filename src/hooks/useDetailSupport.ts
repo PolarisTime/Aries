@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
-import { getBusinessModuleDetail } from '@/api/business'
-import { getModuleConfig } from '@/api/module-contracts'
-import type { ModuleKey } from '@/module-system/module-key'
-import { hasModuleRecordItems } from '@/module-system/module-record-fields'
+import { getBusinessModuleDetail } from '@/api/business/business-crud'
+import { getModuleConfig } from '@/api/contracts/module-contracts'
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { hasModuleRecordItems } from '@/module-system/record/module-record-fields'
 import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
 import type { ModulePageConfig } from '@/types/module-page'
 import type {

@@ -4,11 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "exports": "./index.js",
-  "scripts": {
-    "generate:api": "openapi-typescript http://localhost:11211/api/v3/api-docs -o ../../src/types/api-schema.ts"
-  },
   "dependencies": {
-    "openapi-typescript": "7.13.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.2"
   }

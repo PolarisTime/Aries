@@ -38,6 +38,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Check frontend API contract boundary
+        run: pnpm contract:check
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest

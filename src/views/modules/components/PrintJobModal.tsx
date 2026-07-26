@@ -40,11 +40,11 @@ import {
   listPrintRecordItems,
   type PrintRecordItem,
   type SalesOrderPrintXlsxOptions,
-} from '@/api/print-template'
+} from '@/api/system/print-template'
 import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
-import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
+import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'

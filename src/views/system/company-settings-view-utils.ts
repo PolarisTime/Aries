@@ -1,4 +1,4 @@
-import type { CompanySettlementAccount } from '@/api/company-settings'
+import type { CompanySettlementAccount } from '@/api/system/company-settings'
 
 export type SettlementAccountFormRow = CompanySettlementAccount
 

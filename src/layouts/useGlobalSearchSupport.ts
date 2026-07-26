@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { searchGlobalDocuments } from '@/api/global-search'
+import { searchGlobalDocuments } from '@/api/system/global-search'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import { modulePageMetaMap } from '@/config/module-page-meta'
 import { getSearchableModuleKeys } from '@/config/page-registry'

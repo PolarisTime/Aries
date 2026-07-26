@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getBusinessModuleDetail } from '@/api/business'
+import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import {
   buildParentImportState,
   resolveParentImportDefinition,
-} from '@/module-system/module-adapter-parent-import'
-import { parseParentRelationNos } from '@/module-system/module-adapter-shared'
+} from '@/module-system/adapter/module-adapter-parent-import'
+import { parseParentRelationNos } from '@/module-system/adapter/module-adapter-shared'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,

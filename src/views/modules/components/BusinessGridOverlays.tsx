@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import type { EntityId } from '@/types/entity-id'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'

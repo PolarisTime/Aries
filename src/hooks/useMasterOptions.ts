@@ -1,32 +1,38 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { type CarrierOption, fetchCarrierOptions } from '@/api/carrier-options'
 import {
-  fetchSettlementCompanyOptions,
-  type SettlementCompanyOption,
-} from '@/api/company-settings'
+  type CarrierOption,
+  fetchCarrierOptions,
+} from '@/api/master/carrier-options'
 import {
   type CustomerOption,
   fetchCustomerOptions,
-} from '@/api/customer-options'
-import { fetchMaterialCategories } from '@/api/material-categories'
+} from '@/api/master/customer-options'
+import { fetchMaterialCategories } from '@/api/master/material-categories'
 import {
   fetchMaterialGrades,
   type MaterialGradeOption,
-} from '@/api/material-grades'
+} from '@/api/master/material-grades'
 import {
   fetchMaterialSearch,
   type MaterialSearchResponse,
-} from '@/api/materials'
-import { fetchProjectOptions, type ProjectOption } from '@/api/project-options'
+} from '@/api/master/materials'
+import {
+  fetchProjectOptions,
+  type ProjectOption,
+} from '@/api/master/project-options'
 import {
   fetchSupplierOptions,
   type SupplierOption,
-} from '@/api/supplier-options'
+} from '@/api/master/supplier-options'
 import {
   fetchWarehouseOptions,
   type WarehouseOption,
-} from '@/api/warehouse-options'
+} from '@/api/master/warehouse-options'
+import {
+  fetchSettlementCompanyOptions,
+  type SettlementCompanyOption,
+} from '@/api/system/company-settings'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,

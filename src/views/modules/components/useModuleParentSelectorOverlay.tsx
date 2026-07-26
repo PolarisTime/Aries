@@ -3,20 +3,21 @@ import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
 import { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
-import { buildFilterParamsFromContract } from '@/api/business-listing-filtering'
-import { listFreightSalesOrderCandidatePage } from '@/api/freight-bill-candidates'
-import { getModuleConfig } from '@/api/module-contracts'
+import { getBusinessModuleDetail } from '@/api/business/business-crud'
+import { listBusinessModule } from '@/api/business/business-listing'
+import { buildFilterParamsFromContract } from '@/api/business/business-listing-filtering'
+import { getModuleConfig } from '@/api/contracts/module-contracts'
 import {
   getParentCandidateFilterContract,
   type ParentCandidateFilterContract,
-} from '@/api/parent-candidate-contracts'
-import { listPurchaseOrderInboundImportCandidatePage } from '@/api/purchase-order-candidates'
+} from '@/api/contracts/parent-candidate-contracts'
+import { listStatementCandidatePage } from '@/api/finance/statements'
+import { listFreightSalesOrderCandidatePage } from '@/api/logistics/freight-bill-candidates'
+import { listPurchaseOrderInboundImportCandidatePage } from '@/api/purchase/purchase-order-candidates'
 import {
   listSalesOrderOutboundImportCandidatePage,
   listSalesOrderPurchaseSourceCandidatePage,
-} from '@/api/sales-order-candidates'
-import { listStatementCandidatePage } from '@/api/statements'
+} from '@/api/sales/sales-order-candidates'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -26,7 +27,7 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import {
   getDisplayStatus,
   isDeletedModuleRecord,
-} from '@/module-system/module-record-deletion'
+} from '@/module-system/record/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModulePageConfig,

@@ -1,4 +1,7 @@
-import { assertModuleKey, type ModuleKey } from '@/module-system/module-key'
+import {
+  assertModuleKey,
+  type ModuleKey,
+} from '@/module-system/core/module-key'
 import type { ModulePageConfig } from '@/types/module-page'
 
 type ConfigModule = {

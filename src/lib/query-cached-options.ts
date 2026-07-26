@@ -1,5 +1,5 @@
 import { type ZodType, z } from 'zod'
-import { apiGet, assertApiSuccess } from '@/api/client'
+import { apiGet, assertApiSuccess } from '@/api/core/client'
 import { queryClient } from '@/lib/query-client'
 
 export type QueryCachedOptionsConfig<T, TRaw = T> = {

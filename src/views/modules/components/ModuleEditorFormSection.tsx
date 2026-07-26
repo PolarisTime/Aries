@@ -1,9 +1,9 @@
 import { Alert, Col, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
-import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
-import { groupFieldsByRow } from '@/module-system/module-field-layout'
-import { isModuleFormFieldVisible } from '@/module-system/module-form-field-visibility'
+import { isEditorFieldDisabledForModule } from '@/module-system/adapter/module-adapter-editor'
+import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
+import { groupFieldsByRow } from '@/module-system/presentation/module-field-layout'
+import { isModuleFormFieldVisible } from '@/module-system/presentation/module-form-field-visibility'
 import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,

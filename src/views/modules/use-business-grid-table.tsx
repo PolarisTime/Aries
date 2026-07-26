@@ -11,7 +11,7 @@ import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
 import { useDataTable } from '@/hooks/useDataTable'
 import { ACTION_COLUMN_WIDTH, useGridColumns } from '@/hooks/useGridColumns'
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface Props {

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import {
   getUserColumnSettings,
   saveUserColumnSettings,
-} from '@/api/user-preferences'
+} from '@/api/system/user-preferences'
 import { useAuthStore } from '@/stores/authStore'
 import type {
   ListColumnSettings,

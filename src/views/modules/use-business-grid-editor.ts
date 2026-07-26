@@ -1,17 +1,15 @@
 import { useCallback, useRef, useState } from 'react'
-import {
-  findServerFilteredBusinessModuleRow,
-  getBusinessModuleDetail,
-} from '@/api/business'
-import { getModuleConfig } from '@/api/module-contracts'
+import { getBusinessModuleDetail } from '@/api/business/business-crud'
+import { findServerFilteredBusinessModuleRow } from '@/api/business/business-listing'
+import { getModuleConfig } from '@/api/contracts/module-contracts'
 import { useRequestError } from '@/hooks/useRequestError'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import type { ModuleKey } from '@/module-system/module-key'
-import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import {
   hasModuleRecordItems,
   readModuleRecordField,
-} from '@/module-system/module-record-fields'
+} from '@/module-system/record/module-record-fields'
 import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
 import type { ModulePageConfig } from '@/types/module-page'
 import type {

@@ -7,9 +7,9 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { lazy } from 'react'
-import { listBusinessModule } from '@/api/business-listing'
-import { getRuntimeConfig } from '@/api/runtime-config'
-import { getInitialSetupStatus } from '@/api/setup'
+import { listBusinessModule } from '@/api/business/business-listing'
+import { getRuntimeConfig } from '@/api/system/runtime-config'
+import { getInitialSetupStatus } from '@/api/system/setup'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import {
   appPageDefinitions,

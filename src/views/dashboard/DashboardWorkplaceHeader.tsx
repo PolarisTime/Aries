@@ -1,7 +1,7 @@
 import { UserOutlined } from '@ant-design/icons'
 import { Avatar, Statistic } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { DashboardSummary } from '@/api/dashboard'
+import type { DashboardSummary } from '@/api/system/dashboard'
 
 interface DashboardWorkplaceHeaderProps {
   animatedServerTime: string

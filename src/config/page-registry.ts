@@ -4,7 +4,7 @@ import { masterPageDefinitions } from '@/config/page-registry-master'
 import { operationPageDefinitions } from '@/config/page-registry-operations'
 import { systemPageDefinitions } from '@/config/page-registry-system'
 import type { AppPageDefinition } from '@/config/page-registry-types'
-import { MODULE_KEYS, type ModuleKey } from '@/module-system/module-key'
+import { MODULE_KEYS, type ModuleKey } from '@/module-system/core/module-key'
 import { asString } from '@/utils/type-narrowing'
 
 export type {

@@ -1,13 +1,13 @@
 import axios from 'axios'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import { assertApiSuccess } from '@/api/client'
+import { assertApiSuccess } from '@/api/core/client'
 import {
   exportSalesOrderPrintXlsx,
   listPrintTemplates,
   renderPrintRecord,
   type SalesOrderPrintXlsxOptions,
-} from '@/api/print-template'
+} from '@/api/system/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'

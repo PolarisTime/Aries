@@ -1,5 +1,5 @@
 import i18next from 'i18next'
-import { getSupplierEntityOptions } from '@/api/supplier-options'
+import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import {
   getCustomerOptions,
   getSettlementCompanyOptions,

@@ -29,7 +29,7 @@ import {
   type FinanceOverviewQuery,
   type FinanceOverviewSummary,
   getFinanceOverview,
-} from '@/api/finance-overview'
+} from '@/api/finance/finance-overview'
 import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'

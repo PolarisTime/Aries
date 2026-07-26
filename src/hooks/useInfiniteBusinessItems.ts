@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { listBusinessModule } from '@/api/business-listing'
+import { listBusinessModule } from '@/api/business/business-listing'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleListRecordFor } from '@/types/module-record'
 

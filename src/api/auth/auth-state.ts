@@ -1,6 +1,6 @@
 import axios, { AxiosHeaders } from 'axios'
-import { parseApiContract } from '@/api/api-contract'
-import { authHttp } from '@/api/http'
+import { parseApiContract } from '@/api/core/api-contract'
+import { authHttp } from '@/api/core/http'
 import {
   AUTH_SESSION_CLEARED_EVENT,
   AUTH_STATE_CHANGED_EVENT,
@@ -122,10 +122,6 @@ export function handleAuthFailure(messageText: string) {
   clearAuthSession()
   message.error(messageText)
   redirectToLogin()
-}
-
-export function resetAuthFailureHandling() {
-  authFailureHandled = false
 }
 
 function redirectToLogin() {

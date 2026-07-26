@@ -3,12 +3,12 @@ import {
   buildListAuditTargets,
   resolveStatusChangeActionKind,
   resolveStatusOptions,
-} from '@/module-system/module-adapter-actions'
+} from '@/module-system/adapter/module-adapter-actions'
 import {
   canManageEditorLineItems,
   isModuleLineItemsLocked,
-} from '@/module-system/module-adapter-editor'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+} from '@/module-system/adapter/module-adapter-editor'
+import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import type {
   ModuleFilterDefinition,
   ModuleFormFieldDefinition,

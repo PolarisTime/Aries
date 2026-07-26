@@ -146,6 +146,11 @@ run_as_root chown "$NGINX_WORKER_USER:$NGINX_WORKER_GROUP" "$client_body_temp_pa
 run_as_root chmod 700 "$client_body_temp_path"
 
 cat > "$tmp_conf" <<EOF
+map "\$uri:\$status" \$aries_cache_control {
+    default "no-cache, no-store, must-revalidate";
+    ~^/assets/.+:(?:200|206|304)$ "public, max-age=31536000, immutable";
+}
+
 server {
     listen $HTTP_REDIRECT_PORT;
     server_name $SERVER_NAME;
@@ -166,21 +171,22 @@ server {
 
     server_tokens off;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' http://localhost:8000 http://localhost:18000; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: http://localhost:8000 http://localhost:18000 ws://localhost:8000 ws://localhost:18000; frame-src 'self' blob:; manifest-src 'self'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
+    add_header X-XSS-Protection "0" always;
     add_header Referrer-Policy "no-referrer" always;
+    add_header Permissions-Policy "camera=(), geolocation=(), microphone=(), payment=(), usb=()" always;
+    add_header Cache-Control "\$aries_cache_control" always;
 
     root $FRONTEND_ROOT/current;
     index index.html;
 
-    client_max_body_size 25m;
     client_body_temp_path $client_body_temp_path 1 2;
     client_body_buffer_size 64k;
 
     location /assets/ {
         try_files \$uri =404;
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000, immutable";
     }
 
     location ^~ /api/setup {
@@ -201,6 +207,8 @@ server {
     }
 
     location /api/ {
+        client_max_body_size 25m;
+
         proxy_pass http://127.0.0.1:$BACKEND_PORT/api/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;

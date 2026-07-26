@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import {
   listPrintTemplates,
   type SalesOrderPrintXlsxOptions,
-} from '@/api/print-template'
+} from '@/api/system/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'

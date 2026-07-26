@@ -2,15 +2,15 @@ import { useTranslation } from 'react-i18next'
 import {
   deleteBusinessModule,
   updateBusinessModuleStatus,
-} from '@/api/business'
+} from '@/api/business/business-crud'
 import {
   canAuditFromStatus,
   resolveReverseAuditTargetForStatus,
   resolveStatusChangeActionLabelKey,
   type StatusChangeActionKind,
-} from '@/module-system/module-adapter-actions'
-import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
-import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+} from '@/module-system/adapter/module-adapter-actions'
+import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
+import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 

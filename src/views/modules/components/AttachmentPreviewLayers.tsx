@@ -1,5 +1,5 @@
 import { Image, Modal } from 'antd'
-import type { AttachmentRecord } from '@/api/business'
+import type { AttachmentRecord } from '@/api/business/business-types'
 import { getAttachmentDisplayName } from './module-attachment-utils'
 
 interface AttachmentPreviewLayersProps {

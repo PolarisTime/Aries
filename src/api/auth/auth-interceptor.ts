@@ -1,24 +1,26 @@
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 import {
+  shouldClearAuthState,
+  shouldTriggerRefresh,
+} from '@/api/auth/auth-guard'
+import {
+  handleAuthFailure,
+  isAuthSessionSupersededError,
+  refreshAccessToken,
+  retryWithToken,
+} from '@/api/auth/auth-state'
+import { normalizeErrorMessage } from '@/api/auth/error-messages'
+import type { RetryableRequestConfig } from '@/api/auth/types'
+import {
   isCanceledRequestError,
   markHandledRequestError,
-} from '@/api/request-errors'
+} from '@/api/core/request-errors'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { message } from '@/utils/antd-app'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
 import { navigateToServerErrorPage } from '@/utils/server-error-navigation'
 import { getToken } from '@/utils/storage'
-import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
-import {
-  handleAuthFailure,
-  isAuthSessionSupersededError,
-  refreshAccessToken,
-  resetAuthFailureHandling,
-  retryWithToken,
-} from './auth-state'
-import { normalizeErrorMessage } from './error-messages'
-import type { RetryableRequestConfig } from './types'
 
 function extractBackendTraceId(error: {
   response?: {
@@ -144,7 +146,6 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       isExactAuthEndpoint(url, '/auth/refresh')
 
     if (token && !shouldSkipAuth) {
-      resetAuthFailureHandling()
       config.headers.set?.('Authorization', `Bearer ${token}`)
       if (!config.headers.set) {
         ;(config.headers as Record<string, string | undefined>).Authorization =

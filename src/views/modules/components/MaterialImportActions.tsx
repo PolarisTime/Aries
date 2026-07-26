@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import {
   downloadMaterialImportTemplate,
   importMaterialFile,
-} from '@/api/materials'
+} from '@/api/master/materials'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { message } from '@/utils/antd-app'
 

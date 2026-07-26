@@ -1,6 +1,6 @@
 import i18next from 'i18next'
-import { getCarrierEntityOptions } from '@/api/carrier-options'
-import { getSupplierEntityOptions } from '@/api/supplier-options'
+import { getCarrierEntityOptions } from '@/api/master/carrier-options'
+import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import {
   getSettlementCompanyOptions,
   withDeletedDocumentStatus,

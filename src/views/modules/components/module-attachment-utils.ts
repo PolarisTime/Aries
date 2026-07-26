@@ -1,4 +1,4 @@
-import type { AttachmentRecord } from '@/api/business'
+import type { AttachmentRecord } from '@/api/business/business-types'
 
 function getAttachmentFileName(attachment: AttachmentRecord) {
   return String(

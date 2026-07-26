@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  type AttachmentRecord,
   getAttachmentBindings,
   getAttachmentBlob,
   getPresignedAttachmentBlob,
   resolveAttachmentAccessUrl,
   updateAttachmentBindings,
   uploadAttachment,
-} from '@/api/business'
-import { assertApiSuccess } from '@/api/client'
+} from '@/api/business/business-attachments'
+import type { AttachmentRecord } from '@/api/business/business-types'
+import { assertApiSuccess } from '@/api/core/client'
 import { message } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import { asString } from '@/utils/type-narrowing'

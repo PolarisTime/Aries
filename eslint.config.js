@@ -73,7 +73,12 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/views/*', '@/hooks/*', '@/stores/*', '@/components/*'],
+              group: [
+                '@/views/**',
+                '@/hooks/**',
+                '@/stores/**',
+                '@/components/**',
+              ],
               message:
                 'api/ 层禁止导入 views/hooks/stores/components，应保持底层纯净',
             },
@@ -90,7 +95,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/views/*'],
+              group: ['@/views/**'],
               message: 'hooks/ 层禁止导入 views/，应导入 @/module-system/',
             },
           ],
@@ -106,7 +111,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/api/*'],
+              group: ['@/api/**'],
               message: 'constants/ 层禁止导入 api/，常量应为纯数据无副作用',
             },
           ],
@@ -122,7 +127,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/views/*', '@/hooks/*', '@/components/*'],
+              group: ['@/views/**', '@/hooks/**', '@/components/**'],
               message:
                 'stores/ 层禁止导入 views/hooks/components，应保持底层纯净',
             },
@@ -135,7 +140,7 @@ export default tseslint.config(
   // 底层 Axios 实例仅允许公共 API 客户端和认证刷新链路使用。
   {
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/api/client.ts', 'src/api/auth/auth-state.ts'],
+    ignores: ['src/api/core/client.ts', 'src/api/auth/auth-state.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',

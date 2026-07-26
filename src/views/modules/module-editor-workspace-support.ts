@@ -1,7 +1,7 @@
 import i18next from 'i18next'
-import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
-import { syncDerivedEditorFormValuesForModule } from '@/module-system/module-adapter-editor'
-import { readModuleRecordField } from '@/module-system/module-record-fields'
+import { syncDerivedEditorFormValuesForModule } from '@/module-system/adapter/module-adapter-editor'
+import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
+import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type {
   ModuleLineItem,
   ModulePageConfig,

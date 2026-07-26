@@ -1,4 +1,4 @@
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import {
   isMainFlowModuleKey,
   type MainFlowModuleKey,

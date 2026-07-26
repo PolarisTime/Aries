@@ -1,7 +1,7 @@
 import { FileTextOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import { Card, Col, Form, Input, InputNumber, Row, Select, Space } from 'antd'
-import type { SettlementCompanyOption } from '@/api/company-settings'
+import type { SettlementCompanyOption } from '@/api/system/company-settings'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import {
   defaultEngineForTemplateType,

@@ -1,24 +1,27 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { saveAndAuditBusinessModule, saveBusinessModule } from '@/api/business'
-import { saveAndCompleteSalesOrder } from '@/api/document-flow-commands'
-import { createIdempotencyKey } from '@/api/idempotency'
-import { readRequestError } from '@/api/request-errors'
+import {
+  saveAndAuditBusinessModule,
+  saveBusinessModule,
+} from '@/api/business/business-crud'
+import { createIdempotencyKey } from '@/api/core/idempotency'
+import { readRequestError } from '@/api/core/request-errors'
+import { saveAndCompleteSalesOrder } from '@/api/sales/document-flow-commands'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
-import { usesSnowflakeBusinessNo } from '@/module-system/business-no-policy'
 import {
   resolveStatusChangeActionLabelKey,
   type StatusChangeActionKind,
-} from '@/module-system/module-adapter-actions'
+} from '@/module-system/adapter/module-adapter-actions'
 import {
   getEditorValidationMessage,
   normalizeDraftRecordForModule,
   trimEditorItemsForModule,
-} from '@/module-system/module-adapter-editor'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import type { ModuleKey } from '@/module-system/module-key'
-import { readModuleRecordField } from '@/module-system/module-record-fields'
+} from '@/module-system/adapter/module-adapter-editor'
+import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type { ApiResponse } from '@/types/api'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import type {

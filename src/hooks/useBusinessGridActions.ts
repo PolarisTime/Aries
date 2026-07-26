@@ -5,7 +5,7 @@ import {
 import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightActions'
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
 import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
-import type { StatusChangeActionKind } from '@/module-system/module-adapter-actions'
+import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 

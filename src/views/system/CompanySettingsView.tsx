@@ -31,7 +31,7 @@ import {
   deleteCompanySetting,
   listCompanySettings,
   updateCompanySetting,
-} from '@/api/company-settings'
+} from '@/api/system/company-settings'
 import { AppProPage } from '@/components/AppProPage'
 import { AppResult } from '@/components/AppResult'
 import { QUERY_KEYS } from '@/constants/query-keys'

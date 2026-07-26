@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import { readModuleRecordField } from '@/module-system/module-record-fields'
+import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type {
   ModuleLineItem,
   ModulePageConfig,

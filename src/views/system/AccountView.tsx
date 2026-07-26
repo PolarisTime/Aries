@@ -8,7 +8,7 @@ import {
   changeCurrentAccountPassword,
   getCurrentAccount,
   updateCurrentAccount,
-} from '@/api/account'
+} from '@/api/system/account'
 import { AppProPage } from '@/components/AppProPage'
 import { AppResult } from '@/components/AppResult'
 import { QUERY_KEYS } from '@/constants/query-keys'

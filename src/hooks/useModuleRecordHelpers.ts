@@ -1,4 +1,4 @@
-import { getModuleRecordPrimaryNo } from '@/module-system/module-adapter-shared'
+import { getModuleRecordPrimaryNo } from '@/module-system/adapter/module-adapter-shared'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 

@@ -2,17 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Form } from 'antd'
 import { useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { assertApiSuccess } from '@/api/client'
+import { assertApiSuccess } from '@/api/core/client'
 import {
   fetchSettlementCompanyOptions,
   type SettlementCompanyOption,
-} from '@/api/company-settings'
+} from '@/api/system/company-settings'
 import {
   deletePrintTemplate,
   listPrintTemplates,
   savePrintTemplate,
   uploadPrintTemplateJson,
-} from '@/api/print-template'
+} from '@/api/system/print-template'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Card, Spin, Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { getBusinessModuleDetail } from '@/api/business'
+import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleRecord } from '@/types/module-page'

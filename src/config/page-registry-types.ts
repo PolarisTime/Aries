@@ -2,7 +2,7 @@ import type {
   AppIconKey,
   MenuGroupKey,
 } from '@/config/navigation-registry-types'
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 
 export type RouteViewKey =
   | 'dashboard'

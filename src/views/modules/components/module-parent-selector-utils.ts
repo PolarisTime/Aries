@@ -1,4 +1,4 @@
-import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleParentImportDefinition,

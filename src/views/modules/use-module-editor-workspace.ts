@@ -6,19 +6,19 @@ import {
   useReducer,
   useRef,
 } from 'react'
+import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
-} from '@/api/company-settings'
-import { fetchGeneratedMasterDataCode } from '@/api/master-data-codes'
-import type { StatusChangeActionKind } from '@/module-system/module-adapter-actions'
+} from '@/api/system/company-settings'
+import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
 import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
   buildDefaultEditorLineItem,
-} from '@/module-system/module-adapter-editor'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import type { ModuleKey } from '@/module-system/module-key'
+} from '@/module-system/adapter/module-adapter-editor'
+import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import { message } from '@/utils/antd-app'

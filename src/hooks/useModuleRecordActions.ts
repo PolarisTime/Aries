@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
-import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
+import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {

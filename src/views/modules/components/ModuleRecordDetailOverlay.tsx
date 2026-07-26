@@ -6,8 +6,8 @@ import { AppResult } from '@/components/AppResult'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
-import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
+import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
+import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type {
   ModuleLineItem,
   ModulePageConfig,

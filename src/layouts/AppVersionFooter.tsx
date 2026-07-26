@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { fetchBackendInfo } from '@/api/auth'
+import { fetchBackendInfo } from '@/api/auth/auth-api'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   frontendBuildTime,

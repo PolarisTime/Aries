@@ -169,7 +169,7 @@ export default defineConfig(({ mode }) => {
         clientFiles: [
           'src/main.tsx',
           'src/router/index.ts',
-          'src/api/client.ts',
+          'src/api/core/client.ts',
         ],
       },
       proxy: env.VITE_PROXY_TARGET

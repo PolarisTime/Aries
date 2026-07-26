@@ -2,13 +2,13 @@ import type { TableColumnsType } from 'antd'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import { isEditorItemColumnEditableForModule } from '@/module-system/module-adapter-editor'
+import { isEditorItemColumnEditableForModule } from '@/module-system/adapter/module-adapter-editor'
 import {
   buildModuleEditorDataColumns,
   buildModuleEditorManagementColumns,
-} from '@/module-system/module-editor-item-column-builders'
-import { useModuleEditorItemColumnHandlers } from '@/module-system/module-editor-item-column-handlers'
-import { applyMaterialToEditorLineItem } from '@/module-system/module-editor-line-item-utils'
+} from '@/module-system/editor/module-editor-item-column-builders'
+import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module-editor-item-column-handlers'
+import { applyMaterialToEditorLineItem } from '@/module-system/editor/module-editor-line-item-utils'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,

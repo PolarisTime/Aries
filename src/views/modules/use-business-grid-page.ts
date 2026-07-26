@@ -1,10 +1,8 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import {
-  fetchAttachmentCounts,
-  updateBusinessModuleStatus,
-} from '@/api/business'
-import { completeSalesOrder } from '@/api/document-flow-commands'
+import { fetchAttachmentCounts } from '@/api/business/business-attachments'
+import { updateBusinessModuleStatus } from '@/api/business/business-crud'
+import { completeSalesOrder } from '@/api/sales/document-flow-commands'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
@@ -31,11 +29,11 @@ import {
   resolveReverseAuditTargetForStatus,
   resolveStatusChangeActionKind,
   resolveStatusOptions,
-} from '@/module-system/module-adapter-actions'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import type { ModuleKey } from '@/module-system/module-key'
-import { resolveModuleRecordCapabilities } from '@/module-system/module-record-capabilities'
-import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+} from '@/module-system/adapter/module-adapter-actions'
+import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
+import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,

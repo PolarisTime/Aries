@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
   ModuleColumnDefinition,
   ModulePageConfig,

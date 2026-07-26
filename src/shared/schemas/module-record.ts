@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { ModuleKey } from '@/module-system/module-key'
+import type { ModuleKey } from '@/module-system/core/module-key'
 import {
   apiResponseSchema,
   exactPageSchema,

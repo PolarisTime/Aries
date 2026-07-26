@@ -3,7 +3,7 @@ import {
   resolveModuleActionKind,
   resolveStatusChangeActionLabelKey,
   type StatusChangeActionKind,
-} from '@/module-system/module-adapter-actions'
+} from '@/module-system/adapter/module-adapter-actions'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,

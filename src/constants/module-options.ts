@@ -44,4 +44,4 @@ export {
   isPurchaseWeighRequiredCategory,
   materialCategoryOptions,
   materialGradeOptions,
-} from '@/module-system/module-option-resolvers'
+} from '@/module-system/core/module-option-resolvers'

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchBackendHealth } from '@/api/auth'
+import { fetchBackendHealth } from '@/api/auth/auth-api'
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000
 const HEALTH_CHECK_MAX_RETRIES = 5

@@ -1,11 +1,14 @@
 import i18next from 'i18next'
-import { getBusinessModuleDetail, saveBusinessModule } from '@/api/business'
-import { listAllStatementCandidates } from '@/api/statements'
+import {
+  getBusinessModuleDetail,
+  saveBusinessModule,
+} from '@/api/business/business-crud'
+import { listAllStatementCandidates } from '@/api/finance/statements'
 import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
-} from '@/module-system/module-adapter-statement-drafts'
+} from '@/module-system/adapter/module-adapter-statement-drafts'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'

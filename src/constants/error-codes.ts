@@ -1,4 +1,4 @@
-/** Mirrors backend ErrorCode enum. Single source of truth for API error code handling. */
+/** Manually mirrors Leo's ErrorCode enum; update both sides in the same contract change. */
 export const ERROR_CODE = {
   SUCCESS: 0,
   VALIDATION_ERROR: 4000,

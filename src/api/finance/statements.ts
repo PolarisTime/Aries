@@ -1,0 +1,113 @@
+import { getModuleConfig } from '@/api/contracts/module-contracts'
+import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { pageContent, pageTotalElements } from '@/api/core/page-contract'
+import { rawPageResponseSchema } from '@/shared/schemas/api'
+import type { TableResponse } from '@/types/api'
+import type { RawApiRecord, SearchParams } from '@/types/api-raw'
+import {
+  normalizeEntityIds,
+  parseEntityId,
+  parseOptionalEntityId,
+} from '@/types/entity-id'
+import type { ModuleRecord } from '@/types/module-page'
+import { getApiMessage } from '@/utils/api-messages'
+import { asString } from '@/utils/type-narrowing'
+
+export function normalizeRecord(raw: RawApiRecord): ModuleRecord {
+  const normalized = normalizeEntityIds(raw)
+  const id = parseEntityId(normalized.id, 'id')
+  const items = Array.isArray(normalized.items)
+    ? normalized.items.map((item, index) => ({
+        ...item,
+        id: parseEntityId(item.id, `items[${index}].id`),
+      }))
+    : undefined
+  return { ...normalized, id, items }
+}
+
+type StatementModuleKey = 'customer-statement' | 'freight-statement'
+
+async function listStatementCandidates(
+  statementModuleKey: StatementModuleKey,
+  keyword = '',
+  page = 0,
+  size = 200,
+  filters: SearchParams = {},
+  signal?: AbortSignal,
+) {
+  const endpointConfig = getModuleConfig(statementModuleKey)
+  const { currentRecordId, ...candidateFilters } = filters
+  const currentStatementId = parseOptionalEntityId(
+    currentRecordId,
+    'currentRecordId',
+  )
+  const response = assertApiSuccess(
+    await apiGet(`${endpointConfig.path}/candidates`, rawPageResponseSchema, {
+      params: {
+        ...candidateFilters,
+        ...(currentStatementId ? { currentStatementId } : {}),
+        keyword: keyword.trim(),
+        page,
+        size,
+      },
+      signal,
+    }),
+    getApiMessage('queryStatementCandidatesFailed'),
+  )
+  const content = pageContent(response.data)
+  return {
+    rows: content.map(normalizeRecord),
+    total: pageTotalElements(response.data),
+  }
+}
+
+export async function listAllStatementCandidates(
+  statementModuleKey: StatementModuleKey,
+  keyword = '',
+  pageSize = 200,
+  filters: SearchParams = {},
+  signal?: AbortSignal,
+) {
+  const rows: ModuleRecord[] = []
+  let page = 0
+  let total = 0
+  while (true) {
+    const current = await listStatementCandidates(
+      statementModuleKey,
+      keyword,
+      page,
+      pageSize,
+      filters,
+      signal,
+    )
+    if (page === 0) total = current.total
+    rows.push(...current.rows)
+    if (rows.length >= total || current.rows.length < pageSize) break
+    page += 1
+  }
+  return rows
+}
+
+export async function listStatementCandidatePage(
+  statementModuleKey: StatementModuleKey,
+  filters: SearchParams,
+  page: number,
+  size: number,
+  signal?: AbortSignal,
+): Promise<TableResponse<ModuleRecord>> {
+  const current = await listStatementCandidates(
+    statementModuleKey,
+    asString(filters.keyword).trim(),
+    page,
+    size,
+    filters,
+    signal,
+  )
+  return {
+    code: 0,
+    data: {
+      rows: current.rows,
+      total: current.total,
+    },
+  }
+}

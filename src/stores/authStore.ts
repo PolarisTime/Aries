@@ -24,7 +24,7 @@ import {
 } from '@/utils/storage'
 
 async function loadAuthApi() {
-  return import('@/api/auth')
+  return import('@/api/auth/auth-api')
 }
 
 interface AuthState {

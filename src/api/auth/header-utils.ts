@@ -1,4 +1,4 @@
-import type { RetryableRequestConfig } from './types'
+import type { RetryableRequestConfig } from '@/api/auth/types'
 
 function getRequestHeader(
   config: RetryableRequestConfig | undefined,

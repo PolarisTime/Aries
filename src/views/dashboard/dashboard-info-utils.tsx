@@ -6,7 +6,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import type { TFunction } from 'i18next'
-import type { DashboardSummary } from '@/api/dashboard'
+import type { DashboardSummary } from '@/api/system/dashboard'
 import { formatDateTime } from '@/utils/formatters'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 

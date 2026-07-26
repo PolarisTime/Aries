@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { fetchPurchaseOrderWarehouseRecommendations } from '@/api/purchase-order-warehouse-recommendations'
+import { fetchPurchaseOrderWarehouseRecommendations } from '@/api/purchase/purchase-order-warehouse-recommendations'
 import {
   getWarehouseRecommendationKey,
   getWarehouseSelectionSource,
   WAREHOUSE_RECOMMENDATION_KEY,
   WAREHOUSE_SELECTION_SOURCE_KEY,
-} from '@/module-system/module-editor-warehouse-recommendation'
+} from '@/module-system/editor/module-editor-warehouse-recommendation'
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleLineItem } from '@/types/module-page'

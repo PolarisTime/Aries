@@ -17,7 +17,7 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
-import type { AttachmentRecord } from '@/api/business'
+import type { AttachmentRecord } from '@/api/business/business-types'
 import { formatDateTime } from '@/utils/formatters'
 import {
   getAttachmentDisplayName,

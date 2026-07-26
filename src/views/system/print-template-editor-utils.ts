@@ -1,4 +1,4 @@
-import type { SettlementCompanyOption } from '@/api/company-settings'
+import type { SettlementCompanyOption } from '@/api/system/company-settings'
 
 export interface PrintTemplateEditorFormValues {
   id?: string

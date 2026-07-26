@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { StatusTag } from '@/components/StatusTag'
-import { getDisplayStatus } from '@/module-system/module-record-deletion'
+import { getDisplayStatus } from '@/module-system/record/module-record-deletion'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface RenderModuleRecordStatusOptions {

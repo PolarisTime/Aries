@@ -11,7 +11,7 @@ import type { ModuleActionDefinition } from '@/types/module-page'
 
 const EMPTY_TOOLBAR_ACTIONS: never[] = []
 
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
+import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 
 function isCreateAction(action: ModuleActionDefinition) {
   return action.key === 'create' || action.key?.startsWith('create_')

@@ -34,7 +34,7 @@ import {
   type CashLedgerSummary,
   exportCashLedger,
   getCashLedger,
-} from '@/api/cash-ledger'
+} from '@/api/finance/cash-ledger'
 import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'

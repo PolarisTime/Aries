@@ -1,6 +1,6 @@
 import { Flex, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { fetchFreightStatementSummary } from '@/api/business'
+import { fetchFreightStatementSummary } from '@/api/finance/freight-statement-summary'
 import { useRequestError } from '@/hooks/useRequestError'
 import type { SearchParams } from '@/types/api-raw'
 import { message, modal } from '@/utils/antd-app'

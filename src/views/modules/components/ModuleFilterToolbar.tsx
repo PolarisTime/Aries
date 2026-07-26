@@ -4,7 +4,7 @@ import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
+import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleFilterDefinition,

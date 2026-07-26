@@ -54,6 +54,7 @@ bash ../leo/scripts/dev.sh start
 
 ```bash
 pnpm lint
+pnpm contract:check
 pnpm lint:fix
 pnpm format
 pnpm typecheck
@@ -78,6 +79,7 @@ pnpm release:dry-run
 
 - 使用 `Biome` 与 `ESLint` 执行静态检查，使用 `Biome` 统一格式化。
 - 使用 `TanStack Query` 管理服务端状态与缓存。
+- JSON API 响应必须在 `src/api/` 边界通过 Zod schema 解析；契约变更流程与门禁边界见 [`docs/api-contract-governance.md`](docs/api-contract-governance.md)。
 - 不引入 `ant-design-pro` 脚手架，不切换到 `Umi`。
 - 如需 Pro 风格组件，只局部引入 `@ant-design/pro-components`。
 
@@ -96,6 +98,7 @@ pnpm release:dry-run
 
 ```bash
 pnpm lint
+pnpm contract:check
 pnpm typecheck
 pnpm build-only
 pnpm exec react-doctor . --full --no-score

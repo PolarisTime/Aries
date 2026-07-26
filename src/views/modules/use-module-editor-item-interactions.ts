@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { EditorItemDragPosition } from '@/module-system/module-adapter-editor'
-import { moveEditorLineItemByDrag } from '@/module-system/module-adapter-editor'
+import type { EditorItemDragPosition } from '@/module-system/adapter/module-adapter-editor'
+import { moveEditorLineItemByDrag } from '@/module-system/adapter/module-adapter-editor'
 import type { ModuleLineItem } from '@/types/module-page'
 
 interface Props {
