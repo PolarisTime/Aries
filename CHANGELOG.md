@@ -1,3 +1,15 @@
+# [8.1.0](https://github.com/PolarisTime/Aries/compare/v8.0.2...v8.1.0) (2026-07-26)
+
+
+### Bug Fixes
+
+* **frontend:** 修复生产边界并收敛前端架构 ([be8a27a](https://github.com/PolarisTime/Aries/commit/be8a27a8a20c1e6983d96d1bb6685ee3be7a817b))
+
+
+### Features
+
+* **statement:** 恢复对账菜单并新增客户汇总 ([7a0307d](https://github.com/PolarisTime/Aries/commit/7a0307da906abc6cf0380f54764e6514c01db745))
+
 ## [8.0.2](https://github.com/PolarisTime/Aries/compare/v8.0.1...v8.0.2) (2026-07-25)
 
 
