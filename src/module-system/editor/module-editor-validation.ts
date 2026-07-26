@@ -1,5 +1,5 @@
 import i18next from 'i18next'
-import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
+import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { hasEditorValue } from '@/module-system/editor/module-editor-shared'
 import { isModuleFormFieldVisible } from '@/module-system/presentation/module-form-field-visibility'
 import type {

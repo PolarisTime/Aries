@@ -1,8 +1,6 @@
 import i18next from 'i18next'
-import {
-  enabledStatusOptions,
-  getSettlementCompanyOptions,
-} from '@/constants/module-options'
+import { enabledStatusOptions } from '@/constants/module-options'
+import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'

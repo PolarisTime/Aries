@@ -1,6 +1,6 @@
-import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
 import {
   buildDefaultEditorLineItem,

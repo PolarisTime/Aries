@@ -41,9 +41,9 @@ import {
   type PrintRecordItem,
   type SalesOrderPrintXlsxOptions,
 } from '@/api/system/print-template'
-import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
+import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'

@@ -20,7 +20,6 @@ function normalizeLineItem(raw: RawApiRecord, index: number): ModuleLineItem {
 
 const FINANCIAL_ALLOCATION_SOURCE_FIELDS = [
   'sourceCustomerStatementId',
-  'sourceSupplierStatementId',
   'sourceFreightStatementId',
 ] as const
 

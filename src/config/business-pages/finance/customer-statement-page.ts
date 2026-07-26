@@ -1,11 +1,13 @@
 import i18next from 'i18next'
 import {
-  getCustomerOptions,
-  getCustomerProjectOptions,
-  getSettlementCompanyOptions,
   statementStatusOptions,
   withDeletedDocumentStatus,
 } from '@/constants/module-options'
+import {
+  getCustomerOptions,
+  getCustomerProjectOptions,
+  getSettlementCompanyOptions,
+} from '@/module-system/core/module-option-resolvers'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -37,6 +39,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'generate_statement',
       label: i18next.t('modules.pages.customerStatement.generateStatement'),
       type: 'primary',
+    },
+    {
+      key: 'view_customer_summary',
+      label: i18next.t('modules.pages.customerStatement.viewCustomerSummary'),
+      type: 'default',
     },
   ],
   filters: [

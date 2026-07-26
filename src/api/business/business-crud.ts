@@ -1,5 +1,4 @@
 import { normalizeRecord } from '@/api/business/business-normalizers'
-import { toSaveRequest } from '@/api/business/module-save-payload'
 import { getModuleConfig } from '@/api/contracts/module-contracts'
 import {
   apiDelete,
@@ -10,6 +9,7 @@ import {
   assertApiSuccess,
 } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
+import { toSaveRequest } from '@/module-system/record/module-save-payload'
 import {
   nullResponseSchema,
   rawRecordResponseSchema,

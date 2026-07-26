@@ -1,9 +1,9 @@
 import i18next from 'i18next'
+import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
-  buildDocumentStatusOptions,
   getSettlementCompanyOptions,
   getSupplierOptions,
-} from '@/constants/module-options'
+} from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   BILL_STATUS_LABEL,

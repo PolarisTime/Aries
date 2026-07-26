@@ -1,10 +1,10 @@
 import i18next from 'i18next'
 import { getSupplierEntityOptions } from '@/api/master/supplier-options'
+import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
   getCustomerOptions,
   getSettlementCompanyOptions,
-  withDeletedDocumentStatus,
-} from '@/constants/module-options'
+} from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'

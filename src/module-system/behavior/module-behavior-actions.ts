@@ -4,8 +4,14 @@ export const contributeActionBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior,
 ) => {
   registerModuleBehavior('customer-statement', {
-    actionKindsByKey: { generate_statement: 'openCreateEditor' },
-    actionKindsByLabel: { 生成对账单: 'openCreateEditor' },
+    actionKindsByKey: {
+      generate_statement: 'openCreateEditor',
+      view_customer_summary: 'openCustomerSummary',
+    },
+    actionKindsByLabel: {
+      生成对账单: 'openCreateEditor',
+      查看客户对账汇总: 'openCustomerSummary',
+    },
   })
 
   registerModuleBehavior('freight-statement', {

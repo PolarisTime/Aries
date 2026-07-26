@@ -10,8 +10,6 @@ export const financePageDefinitions: AppPageDefinition[] = [
     menuParent: 'statements',
     moduleKey: 'customer-statement',
     searchable: true,
-    hiddenInMenu: true,
-    activeMenuKey: '/sales-order',
   },
   {
     key: 'freight-statement',
@@ -22,8 +20,6 @@ export const financePageDefinitions: AppPageDefinition[] = [
     menuParent: 'statements',
     moduleKey: 'freight-statement',
     searchable: true,
-    hiddenInMenu: true,
-    activeMenuKey: '/freight-bill',
   },
   {
     key: 'finance-overview',

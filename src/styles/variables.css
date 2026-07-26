@@ -3,9 +3,10 @@
 :root {
   --app-desktop-min-width: 1200px;
   --app-font-size: 14px;
-  --app-control-height: 36px;
-  --app-control-height-sm: 28px;
-  --app-control-height-lg: 44px;
+  /* 控件高度以 antd token 为单一来源，自定义元素与 antd 控件保持等高 */
+  --app-control-height: var(--ant-control-height, 34px);
+  --app-control-height-sm: var(--ant-control-height-sm, 26px);
+  --app-control-height-lg: var(--ant-control-height-lg, 42px);
   --app-label-width: 6em;
   --app-editor-label-width: 8.5em;
   --app-border-radius: var(--ant-border-radius-lg, 8px);
@@ -95,14 +96,14 @@ a {
   --theme-sider-surface: #1a1f25;
   --theme-sider-hover: #252b33;
   --theme-sider-text: #e2e8f0;
-  --theme-sider-muted: #8899aa;
+  --theme-sider-muted: #9aabbc;
   --theme-header-bg: #1a1f25;
   --theme-header-text: #e2e8f0;
-  --theme-header-muted: #8899aa;
+  --theme-header-muted: #9aabbc;
   --theme-card-border: #2d3748;
   --text-primary: #e2e8f0;
   --text-secondary: #a0aec0;
-  --text-placeholder: #5a6577;
+  --text-placeholder: #8090a2;
   --theme-table-header-bg: #1a1f25;
   --theme-surface: #1a1f25;
   --theme-surface-elevated: rgba(26, 31, 37, 0.88);
@@ -115,12 +116,9 @@ a {
   --theme-highlight-border: #2a4a6f;
   --theme-skeleton-from: #252b33;
   --theme-skeleton-to: #1a1f25;
-  --theme-error: #ff4d4f;
-  --theme-error-hover: #ff7875;
-  --theme-success: #22c55e;
-  --theme-disabled: #718096;
+  --theme-disabled: #7f8fa3;
   --theme-accent-bg: #1a2030;
   --theme-accent-border: #2d3748;
   --theme-text-muted: #a0aec0;
-  --theme-text-muted-light: #718096;
+  --theme-text-muted-light: #8494a8;
 }

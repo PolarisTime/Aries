@@ -1,10 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Leo ERP</title>
+    <script>
+      // 预注水主题：在首帧渲染前根据本地设置写入 data-theme，避免暗色模式刷新闪白。
+      // 存储结构与 uiSettingsStore（zustand persist）保持一致。
+      ;(() => {
+        try {
+          const raw = localStorage.getItem('aries-personal-settings')
+          const parsed = raw ? JSON.parse(raw) : null
+          const settings = parsed && parsed.state && parsed.state.settings
+          let mode = (settings && settings.themeMode) || 'system'
+          if (mode !== 'light' && mode !== 'dark') {
+            mode = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+          }
+          document.documentElement.setAttribute('data-theme', mode)
+        } catch {
+          /* 读取失败时保持默认亮色 */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

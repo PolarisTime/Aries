@@ -101,7 +101,7 @@ Pro 页面继续位于现有 `AppAntdProvider` 内，因此可以继承当前 An
 | 项目 | 规范 |
 |---|---|
 | 基础字号 | 14px |
-| 控件高度 | 32px |
+| 控件高度 | 跟随 antd `controlHeight` token（默认字号下 34px，随个性化字号派生）；自定义元素通过 `--app-control-height` 引用同一 token，禁止另设静态高度 |
 | 控件圆角 | 6px |
 | 卡片、弹窗圆角 | 8px |
 | 间距 | 4 / 8 / 16 / 24 / 32px |

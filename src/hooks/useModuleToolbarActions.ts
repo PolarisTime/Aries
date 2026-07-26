@@ -18,10 +18,9 @@ interface Handlers {
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
   openCreateEditor: () => Promise<void>
-  openCustomerStatementGenerator: () => void
   openFreightPickupList: () => void
-  openFreightStatementGenerator: () => void
   openFreightSummary: () => Promise<void>
+  openCustomerSummary: () => Promise<void>
 }
 
 interface Props {
@@ -142,12 +141,6 @@ export function useModuleToolbarActions({
         isMaterialModule,
       })
     ) {
-      case 'openCustomerStatementGenerator':
-        handlers.openCustomerStatementGenerator()
-        return
-      case 'openFreightStatementGenerator':
-        handlers.openFreightStatementGenerator()
-        return
       case 'openCreateEditor':
         await handlers.openCreateEditor()
         return
@@ -162,6 +155,9 @@ export function useModuleToolbarActions({
         return
       case 'openFreightSummary':
         await handlers.openFreightSummary()
+        return
+      case 'openCustomerSummary':
+        await handlers.openCustomerSummary()
         return
       default:
         message.info(

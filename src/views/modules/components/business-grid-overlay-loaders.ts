@@ -21,10 +21,3 @@ export const loadModuleRecordDetailOverlay = () =>
       default: module.ModuleRecordDetailOverlay,
     }),
   )
-
-export const loadModuleStatementGenerator = () =>
-  import('@/views/modules/components/ModuleStatementGenerator').then(
-    (module) => ({
-      default: module.ModuleStatementGenerator,
-    }),
-  )

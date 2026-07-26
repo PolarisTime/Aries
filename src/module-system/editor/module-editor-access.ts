@@ -1,5 +1,5 @@
-import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from '@/module-system/editor/module-editor-shared'
 import type {
   ModuleFormFieldDefinition,

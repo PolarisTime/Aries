@@ -1,16 +1,16 @@
 import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
-import {
-  buildDocumentStatusOptions,
-  getCustomerOptions,
-  getCustomerProjectOptions,
-  getSettlementCompanyOptions,
-} from '@/constants/module-options'
+import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
   DISPLAY_WEIGHT_PRECISION,
   INTERNAL_WEIGHT_PRECISION,
 } from '@/constants/precision'
+import {
+  getCustomerOptions,
+  getCustomerProjectOptions,
+  getSettlementCompanyOptions,
+} from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   BILL_STATUS_LABEL,

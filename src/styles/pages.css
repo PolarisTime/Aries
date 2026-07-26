@@ -114,7 +114,6 @@
 
 @media (max-width: 1440px), (max-height: 900px) {
   :root {
-    --app-control-height: 34px;
     --app-header-height: 56px;
     --app-content-padding: 0px;
     --app-card-body-padding: 10px;
@@ -147,7 +146,6 @@
 
 @media (max-width: 1280px) {
   :root {
-    --app-control-height: 32px;
     --app-content-padding: 0px;
     --app-card-body-padding: 8px;
   }

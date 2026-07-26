@@ -52,9 +52,7 @@ export interface ModuleBehaviorConfig {
   readonlyLineItems?: boolean
   lineItemTrimStrategy?: 'purchaseOrderBlank'
   supportsParentImport?: boolean
-  supportsStatements?: boolean
   supportsMaterialImport?: boolean
-  statementLinkType?: 'supplier' | 'customer' | 'freight'
   normalizeDraftRecord?: (
     record: ModuleRecordInput,
     items: ModuleLineItem[],

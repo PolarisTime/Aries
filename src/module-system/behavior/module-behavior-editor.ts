@@ -512,17 +512,5 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     readonlyLineItems: true,
   })
 
-  registerModuleBehavior('purchase-inbound', {
-    supportsStatements: false,
-  })
-  registerModuleBehavior('sales-order', {
-    supportsStatements: true,
-    statementLinkType: 'customer',
-  })
-  registerModuleBehavior('freight-bill', {
-    supportsStatements: true,
-    statementLinkType: 'freight',
-  })
-
   registerModuleBehavior('material', { supportsMaterialImport: true })
 }

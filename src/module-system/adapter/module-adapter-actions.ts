@@ -8,13 +8,12 @@ import type {
 import { asString } from '@/utils/type-narrowing'
 
 export type ModuleActionKind =
-  | 'openCustomerStatementGenerator'
-  | 'openFreightStatementGenerator'
   | 'openCreateEditor'
   | 'exportMaterialRows'
   | 'exportRows'
   | 'openFreightPickupList'
   | 'openFreightSummary'
+  | 'openCustomerSummary'
   | 'none'
 
 export type StatusChangeActionKind =

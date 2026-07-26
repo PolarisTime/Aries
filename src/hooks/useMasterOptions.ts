@@ -33,6 +33,7 @@ import {
   fetchSettlementCompanyOptions,
   type SettlementCompanyOption,
 } from '@/api/system/company-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -43,8 +44,7 @@ import {
   getWarehouseOptions,
   materialCategoryOptions,
   materialGradeOptions,
-} from '@/constants/module-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
+} from '@/module-system/core/module-option-resolvers'
 import { useAuthStore } from '@/stores/authStore'
 import type { EntityId } from '@/types/entity-id'
 import type { ModuleMasterOptionRequirements } from '@/types/module-page'

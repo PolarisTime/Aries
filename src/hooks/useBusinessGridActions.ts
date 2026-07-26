@@ -2,9 +2,9 @@ import {
   type AuditTarget,
   useBusinessGridBatchActions,
 } from '@/hooks/useBusinessGridBatchActions'
+import { useBusinessGridCustomerActions } from '@/hooks/useBusinessGridCustomerActions'
 import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightActions'
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
-import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
 import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -71,8 +71,9 @@ export function useBusinessGridActions({
     formatCellValue,
   })
 
-  const { handleStatementGenerate } = useBusinessGridStatementActions({
-    refreshModuleQueries,
+  const { openCustomerSummary } = useBusinessGridCustomerActions({
+    submittedFilters,
+    formatCellValue,
   })
 
   return {
@@ -82,6 +83,6 @@ export function useBusinessGridActions({
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
     openFreightSummary,
-    handleStatementGenerate,
+    openCustomerSummary,
   }
 }

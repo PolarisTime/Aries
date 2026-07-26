@@ -917,6 +917,7 @@ export const zhCN = {
       customerStatement: {
         customerStatement: '客户对账单',
         generateStatement: '生成对账单',
+        viewCustomerSummary: '查看客户对账汇总',
         period: '账期',
         statementNo: '对账单号',
         customer: '客户',
@@ -1268,6 +1269,14 @@ export const zhCN = {
       totalFreight: '总运费：',
       paidAmount: '已付金额：',
       unpaidAmount: '未付金额：',
+    },
+    customerActions: {
+      noCustomerData: '当前列表暂无客户对账单数据',
+      customerSummaryTitle: '客户对账汇总',
+      documentCount: '当前列表单据数：{{count}}',
+      salesAmount: '销售金额：',
+      receiptAmount: '收款金额：',
+      closingAmount: '期末余额：',
     },
     toolbarActions: {
       delete: '删除',

@@ -3,9 +3,9 @@
 // must use master-data APIs so stale hardcoded names cannot be saved.
 //
 // This file contains PURE data only — no API imports, no mutable runtime state.
-// Query-backed option resolvers are re-exported below for backward compatibility.
+// Query-backed option resolvers live in '@/module-system/core/module-option-resolvers'.
 
-function createOptionList(values: readonly string[]) {
+export function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
 }
 
@@ -29,19 +29,3 @@ export function withDeletedDocumentStatus<
 export function buildDocumentStatusOptions(...values: string[]) {
   return withDeletedDocumentStatus(createOptionList(values))
 }
-
-// Re-export Query-backed option resolvers for backward compatibility.
-// All existing imports from '@/constants/module-options' continue to work.
-export {
-  getCarrierOptions,
-  getCarrierVehiclePlateOptions,
-  getCustomerOptions,
-  getCustomerProjectOptions,
-  getMaterialCategoryOptions,
-  getSettlementCompanyOptions,
-  getSupplierOptions,
-  getWarehouseOptions,
-  isPurchaseWeighRequiredCategory,
-  materialCategoryOptions,
-  materialGradeOptions,
-} from '@/module-system/core/module-option-resolvers'

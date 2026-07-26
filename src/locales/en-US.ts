@@ -945,6 +945,7 @@ export const enUS = {
       customerStatement: {
         customerStatement: 'customerStatement',
         generateStatement: 'generateStatement',
+        viewCustomerSummary: 'View customer summary',
         period: 'period',
         statementNo: 'statementNo',
         customer: 'customer',
@@ -1301,6 +1302,14 @@ export const enUS = {
       totalFreight: 'Total freight: ',
       paidAmount: 'Paid amount: ',
       unpaidAmount: 'Unpaid amount: ',
+    },
+    customerActions: {
+      noCustomerData: 'No customer statement data in the current list',
+      customerSummaryTitle: 'Customer Reconciliation Summary',
+      documentCount: 'Documents in list: {{count}}',
+      salesAmount: 'Sales amount: ',
+      receiptAmount: 'Receipt amount: ',
+      closingAmount: 'Closing balance: ',
     },
     toolbarActions: {
       delete: 'Delete',

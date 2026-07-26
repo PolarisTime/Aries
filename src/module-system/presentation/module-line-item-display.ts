@@ -1,4 +1,4 @@
-import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
+import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { asString } from '@/utils/type-narrowing'
 
 export function shouldDisplayPieceWeightAsDash(item?: unknown) {

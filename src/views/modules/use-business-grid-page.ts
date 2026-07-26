@@ -374,7 +374,7 @@ export function useBusinessGridPage({
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
     openFreightSummary,
-    handleStatementGenerate,
+    openCustomerSummary,
   } = useBusinessGridActions({
     moduleKey,
     selectedRowKeys,
@@ -417,16 +417,11 @@ export function useBusinessGridPage({
       openCreateEditor: async () => {
         await openEditor(null)
       },
-      openCustomerStatementGenerator: () => {
-        overlays.openCustomerStatement()
-      },
       openFreightPickupList: () => {
         overlays.openFreightPickup(Object.values(selectedRowMap))
       },
-      openFreightStatementGenerator: () => {
-        overlays.openFreightStatement()
-      },
       openFreightSummary,
+      openCustomerSummary,
     },
   })
 
@@ -503,7 +498,6 @@ export function useBusinessGridPage({
     handleExport,
     handleReset: resetGridFilters,
     handleSearch: searchGrid,
-    handleStatementGenerate,
     isFetching,
     isLoading,
     listErrorMessage,

@@ -9,16 +9,13 @@ import type { ProjectOption } from '@/api/master/project-options'
 import { getSupplierOptions as apiGetSupplierOptions } from '@/api/master/supplier-options'
 import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/master/warehouse-options'
 import { getSettlementCompanyOptions as apiGetSettlementCompanyOptions } from '@/api/system/company-settings'
+import { createOptionList } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleRecordInput } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-
-function createOptionList(values: readonly string[]) {
-  return values.map((value) => ({ label: value, value }))
-}
 
 const materialCategoryFallbackOptions: MaterialCategoryOption[] = [
   '螺纹钢',

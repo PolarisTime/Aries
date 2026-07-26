@@ -1,10 +1,10 @@
 import i18next from 'i18next'
+import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
   getSettlementCompanyOptions,
-  withDeletedDocumentStatus,
-} from '@/constants/module-options'
+} from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {

@@ -209,11 +209,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           detailRecord={state.detailRecord}
           detailLoading={state.detailLoading}
           detailError={state.detailError}
-          customerStatementOpen={state.overlays.customerStatementOpen}
-          freightStatementOpen={state.overlays.freightStatementOpen}
           freightPickupOpen={state.overlays.freightPickupOpen}
           freightPickupRecords={state.overlays.freightPickupRecords}
-          selectedRows={state.selectedRows}
           canSave={canSaveEditorRecord}
           canAudit={state.canAuditRecord}
           lineItemsLocked={state.editorLineItemsLocked}
@@ -228,37 +225,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           onCloseDetail={state.closeDetail}
           onRetryDetail={state.retryDetail}
           onCloseAttachment={state.overlays.closeAttachment}
-          onCloseCustomerStatement={state.overlays.closeCustomerStatement}
-          onCloseFreightStatement={state.overlays.closeFreightStatement}
           onCloseFreightPickup={state.overlays.closeFreightPickup}
-          onGenerateCustomerStatement={(
-            counterpartyName,
-            start,
-            end,
-            counterpartyId,
-          ) =>
-            state.handleStatementGenerate(
-              'customer',
-              counterpartyName,
-              start,
-              end,
-              counterpartyId,
-            )
-          }
-          onGenerateFreightStatement={(
-            counterpartyName,
-            start,
-            end,
-            counterpartyId,
-          ) =>
-            state.handleStatementGenerate(
-              'freight',
-              counterpartyName,
-              start,
-              end,
-              counterpartyId,
-            )
-          }
         />
       </div>
     </AppProPage>

@@ -17,8 +17,8 @@
 }
 
 .app-dev-refresh-btn:hover {
-  color: #ff6b6b;
-  border-color: #ff6b6b;
+  color: var(--theme-error);
+  border-color: var(--theme-error);
 }
 
 .app-top-menu-shell {

@@ -406,8 +406,18 @@
   border: 0;
 }
 
+/* 自定义 shell 触发器统一可见焦点环（键盘导航可达性） */
+.app-trigger:focus-visible,
+.app-top-user-trigger:focus-visible,
+.app-top-brand:focus-visible,
+.app-user-settings-trigger:focus-visible,
+.app-dev-refresh-btn:focus-visible {
+  outline: 2px solid var(--theme-highlight-border);
+  outline-offset: 2px;
+}
+
 .app-trigger:hover {
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--theme-primary-soft);
 }
 
 .header-global-search {

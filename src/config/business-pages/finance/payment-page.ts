@@ -1,10 +1,8 @@
 import i18next from 'i18next'
 import { getCarrierEntityOptions } from '@/api/master/carrier-options'
 import { getSupplierEntityOptions } from '@/api/master/supplier-options'
-import {
-  getSettlementCompanyOptions,
-  withDeletedDocumentStatus,
-} from '@/constants/module-options'
+import { withDeletedDocumentStatus } from '@/constants/module-options'
+import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { buildFinanceOverview, statusMap } from '../shared/shared'

@@ -1,10 +1,10 @@
 import i18next from 'i18next'
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import {
   getMaterialCategoryOptions,
   materialCategoryOptions,
   materialGradeOptions,
-} from '@/constants/module-options'
-import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
+} from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, formatInteger } from '../shared/shared'
 

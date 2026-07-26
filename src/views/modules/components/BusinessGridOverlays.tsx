@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import type { EntityId } from '@/types/entity-id'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import {
@@ -8,7 +7,6 @@ import {
   loadModuleEditorWorkspace,
   loadModuleFreightPickupListOverlay,
   loadModuleRecordDetailOverlay,
-  loadModuleStatementGenerator,
 } from '@/views/modules/components/business-grid-overlay-loaders'
 import { OverlayLazyFallback } from '@/views/modules/components/OverlayLazyFallback'
 
@@ -18,7 +16,6 @@ const ModuleAttachmentModal = lazy(loadModuleAttachmentModal)
 const ModuleEditorWorkspace = lazy(loadModuleEditorWorkspace)
 const ModuleFreightPickupListOverlay = lazy(loadModuleFreightPickupListOverlay)
 const ModuleRecordDetailOverlay = lazy(loadModuleRecordDetailOverlay)
-const ModuleStatementGenerator = lazy(loadModuleStatementGenerator)
 
 interface Props<Key extends ModuleKey> {
   moduleKey: Key
@@ -31,11 +28,8 @@ interface Props<Key extends ModuleKey> {
   detailRecord: ModuleRecord | null
   detailLoading: boolean
   detailError: unknown
-  customerStatementOpen: boolean
-  freightStatementOpen: boolean
   freightPickupOpen: boolean
   freightPickupRecords?: ModuleRecord[]
-  selectedRows: ModuleRecord[]
   canSave: boolean
   canAudit: boolean
   lineItemsLocked: boolean
@@ -45,21 +39,7 @@ interface Props<Key extends ModuleKey> {
   onCloseDetail: () => void
   onRetryDetail: () => void
   onCloseAttachment: () => void
-  onCloseCustomerStatement: () => void
-  onCloseFreightStatement: () => void
   onCloseFreightPickup: () => void
-  onGenerateCustomerStatement: (
-    counterpartyName: string,
-    startDate: string,
-    endDate: string,
-    counterpartyId?: EntityId,
-  ) => Promise<void>
-  onGenerateFreightStatement: (
-    counterpartyName: string,
-    startDate: string,
-    endDate: string,
-    counterpartyId?: EntityId,
-  ) => Promise<void>
 }
 
 export function BusinessGridOverlays<Key extends ModuleKey>({
@@ -73,11 +53,8 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   detailRecord,
   detailLoading,
   detailError,
-  customerStatementOpen,
-  freightStatementOpen,
   freightPickupOpen,
   freightPickupRecords = EMPTY_FREIGHT_PICKUP_RECORDS,
-  selectedRows,
   canSave,
   canAudit,
   lineItemsLocked,
@@ -87,11 +64,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   onCloseDetail,
   onRetryDetail,
   onCloseAttachment,
-  onCloseCustomerStatement,
-  onCloseFreightStatement,
   onCloseFreightPickup,
-  onGenerateCustomerStatement,
-  onGenerateFreightStatement,
 }: Props<Key>) {
   return (
     <Suspense fallback={<OverlayLazyFallback />}>
@@ -129,25 +102,6 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
           moduleKey={moduleKey}
           recordId={attachRecordId}
           onClose={onCloseAttachment}
-        />
-      ) : null}
-
-      {customerStatementOpen ? (
-        <ModuleStatementGenerator
-          open={customerStatementOpen}
-          statementType="customer"
-          selectedRows={selectedRows}
-          onClose={onCloseCustomerStatement}
-          onGenerate={onGenerateCustomerStatement}
-        />
-      ) : null}
-      {freightStatementOpen ? (
-        <ModuleStatementGenerator
-          open={freightStatementOpen}
-          statementType="freight"
-          selectedRows={selectedRows}
-          onClose={onCloseFreightStatement}
-          onGenerate={onGenerateFreightStatement}
         />
       ) : null}
 
