@@ -203,6 +203,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   const customerProjectSnapshotModules = new Set<ModuleKey>([
     'sales-order',
     'sales-outbound',
+    'customer-statement',
   ])
 
   for (const key of settlementCompanySnapshotModules) {
@@ -274,6 +275,9 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
           (key === 'freight-bill' || key === 'freight-statement') &&
           ctx.changedKeys.has('carrierId')
         ) {
+          if (!ctx.changedKeys.has('vehiclePlate')) {
+            editorForm.vehiclePlate = ''
+          }
           if (isBlank(editorForm.carrierId)) {
             // 显式清空承运商：同步清空编码与默认结算公司
             editorForm.carrierId = ''

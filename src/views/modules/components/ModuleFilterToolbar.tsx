@@ -61,8 +61,12 @@ function buildNextFilters(
   baseFilters: SearchParams,
   key: string,
   value: unknown,
+  resetKeys: readonly string[] = [],
 ) {
   const nextFilters = { ...baseFilters }
+  for (const resetKey of resetKeys) {
+    delete nextFilters[resetKey]
+  }
   if (value === undefined || value === null || value === '') {
     delete nextFilters[key]
     return nextFilters
@@ -230,9 +234,13 @@ export function ModuleFilterToolbar({
       ...filter.values,
     }),
   )?.key
-  const commitFilter = (key: string, value: unknown) => {
+  const commitFilter = (
+    key: string,
+    value: unknown,
+    resetKeys: readonly string[] = [],
+  ) => {
     onUpdateFilter(key, value)
-    onApplyFilters(buildNextFilters(submittedFilters, key, value))
+    onApplyFilters(buildNextFilters(submittedFilters, key, value, resetKeys))
   }
 
   const commitTextFilter = (key: string, value: string) => {
@@ -276,7 +284,9 @@ export function ModuleFilterToolbar({
           filters={filters}
           submittedFilters={submittedFilters}
           onUpdateFilter={onUpdateFilter}
-          onCommitFilter={commitFilter}
+          onCommitFilter={(key, value) =>
+            commitFilter(key, value, field.resetKeysOnChange)
+          }
           onCommitTextFilter={commitTextFilter}
         />
       </Form.Item>

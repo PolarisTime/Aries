@@ -52,6 +52,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
       options: getCustomerOptions,
+      resetKeysOnChange: ['projectId'],
     },
     {
       key: 'projectId',

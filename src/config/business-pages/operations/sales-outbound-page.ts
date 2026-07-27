@@ -40,6 +40,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
       options: getCustomerOptions,
+      resetKeysOnChange: ['projectId'],
     },
     {
       key: 'status',
