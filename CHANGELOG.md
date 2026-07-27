@@ -1,3 +1,10 @@
+## [8.1.3](https://github.com/PolarisTime/Aries/compare/v8.1.2...v8.1.3) (2026-07-27)
+
+
+### Bug Fixes
+
+* **master-data:** 复用客户资料管理关联项目 ([f4fbb29](https://github.com/PolarisTime/Aries/commit/f4fbb29bf5858efb5a5b0b3f8a699dca24fecfec))
+
 ## [8.1.2](https://github.com/PolarisTime/Aries/compare/v8.1.1...v8.1.2) (2026-07-27)
 
 
