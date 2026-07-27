@@ -1,3 +1,10 @@
+## [8.1.2](https://github.com/PolarisTime/Aries/compare/v8.1.1...v8.1.2) (2026-07-27)
+
+
+### Bug Fixes
+
+* **frontend:** 修复级联选择残留条件 ([c5f0024](https://github.com/PolarisTime/Aries/commit/c5f0024339efc3f0b8016ad7027f22bb65cdf993))
+
 ## [8.1.1](https://github.com/PolarisTime/Aries/compare/v8.1.0...v8.1.1) (2026-07-26)
 
 
