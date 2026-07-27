@@ -12,7 +12,15 @@ export const customersPageConfig: ModulePageConfig = {
   description: i18next.t('modules.pages.customer.description'),
   primaryNoKey: 'customerCode',
   showGeneratedPrimaryNoOnCreate: true,
-  actions: actionSet,
+  actions: [
+    ...actionSet.slice(0, 1),
+    {
+      key: 'manage_customer_projects',
+      label: i18next.t('modules.pages.customer.manageProjects'),
+      type: 'default',
+    },
+    ...actionSet.slice(1),
+  ],
   filters: [
     {
       key: 'keyword',
@@ -35,8 +43,8 @@ export const customersPageConfig: ModulePageConfig = {
     },
     {
       title: i18next.t('modules.pages.customer.colProjectName'),
-      dataIndex: 'projectName',
-      width: 150,
+      dataIndex: 'projectNames',
+      width: 320,
     },
     {
       title: i18next.t('modules.pages.customer.colContactName'),
@@ -83,15 +91,7 @@ export const customersPageConfig: ModulePageConfig = {
     },
     {
       label: i18next.t('modules.pages.customer.colProjectName'),
-      key: 'projectName',
-    },
-    {
-      label: i18next.t('modules.pages.customer.colProjectNameAbbr'),
-      key: 'projectNameAbbr',
-    },
-    {
-      label: i18next.t('modules.pages.customer.colProjectAddress'),
-      key: 'projectAddress',
+      key: 'projectNames',
     },
     {
       label: i18next.t('modules.pages.customer.colContactName'),
@@ -138,42 +138,22 @@ export const customersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'projectName',
-      label: i18next.t('modules.pages.customer.colProjectName'),
-      type: 'input',
-      required: true,
-      row: 1,
-    },
-    {
-      key: 'projectNameAbbr',
-      label: i18next.t('modules.pages.customer.colProjectNameAbbr'),
-      type: 'input',
-      row: 1,
-    },
-    {
-      key: 'projectAddress',
-      label: i18next.t('modules.pages.customer.colProjectAddress'),
-      type: 'input',
-      row: 2,
-      fullRow: true,
-    },
-    {
       key: 'contactName',
       label: i18next.t('modules.pages.customer.colContactName'),
       type: 'input',
-      row: 3,
+      row: 2,
     },
     {
       key: 'contactPhone',
       label: i18next.t('modules.pages.customer.colContactPhone'),
       type: 'input',
-      row: 3,
+      row: 2,
     },
     {
       key: 'city',
       label: i18next.t('modules.pages.customer.colCity'),
       type: 'input',
-      row: 3,
+      row: 2,
     },
     {
       key: 'settlementMode',
@@ -193,7 +173,7 @@ export const customersPageConfig: ModulePageConfig = {
           value: '授信',
         },
       ],
-      row: 3,
+      row: 2,
     },
     {
       key: 'defaultSettlementCompanyId',
@@ -201,7 +181,7 @@ export const customersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getSettlementCompanyOptions,
-      row: 4,
+      row: 3,
     },
     {
       key: 'status',
@@ -209,13 +189,13 @@ export const customersPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: '正常',
       options: enabledStatusOptions,
-      row: 4,
+      row: 3,
     },
     {
       key: 'remark',
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
-      row: 5,
+      row: 4,
       fullRow: true,
     },
   ],

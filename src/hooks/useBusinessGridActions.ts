@@ -3,6 +3,7 @@ import {
   useBusinessGridBatchActions,
 } from '@/hooks/useBusinessGridBatchActions'
 import { useBusinessGridCustomerActions } from '@/hooks/useBusinessGridCustomerActions'
+import { useBusinessGridCustomerProjectActions } from '@/hooks/useBusinessGridCustomerProjectActions'
 import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightActions'
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
 import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
@@ -76,6 +77,11 @@ export function useBusinessGridActions({
     formatCellValue,
   })
 
+  const { openCustomerProjects } = useBusinessGridCustomerProjectActions({
+    selectedRows,
+    refreshModuleQueries,
+  })
+
   return {
     handlePrintSelectedRecords,
     handleExportSalesOrderPrintXlsx,
@@ -84,5 +90,6 @@ export function useBusinessGridActions({
     handleSelectedReverseAuditRecords,
     openFreightSummary,
     openCustomerSummary,
+    openCustomerProjects,
   }
 }

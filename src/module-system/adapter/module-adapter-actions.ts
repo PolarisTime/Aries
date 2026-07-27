@@ -14,6 +14,7 @@ export type ModuleActionKind =
   | 'openFreightPickupList'
   | 'openFreightSummary'
   | 'openCustomerSummary'
+  | 'openCustomerProjects'
   | 'none'
 
 export type StatusChangeActionKind =

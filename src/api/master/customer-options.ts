@@ -12,8 +12,6 @@ export type CustomerOption = {
   label: string
   customerCode: string
   customerName: string
-  projectName?: string
-  projectNameAbbr?: string
   defaultSettlementCompanyId?: EntityId
   defaultSettlementCompanyName?: string
 }
@@ -24,8 +22,6 @@ type RawCustomerOption = {
   label?: unknown
   customerCode?: unknown
   customerName?: unknown
-  projectName?: unknown
-  projectNameAbbr?: unknown
   defaultSettlementCompanyId?: unknown
   defaultSettlementCompanyName?: unknown
 }
@@ -36,26 +32,12 @@ const rawCustomerOptionSchema = z.object({
   label: z.unknown().optional(),
   customerCode: z.unknown().optional(),
   customerName: z.unknown().optional(),
-  projectName: z.unknown().optional(),
-  projectNameAbbr: z.unknown().optional(),
   defaultSettlementCompanyId: z.unknown().optional(),
   defaultSettlementCompanyName: z.unknown().optional(),
 })
 
 function normalizeText(value: unknown): string {
   return asString(value).trim()
-}
-
-function customerLabel(
-  id: EntityId,
-  label: string,
-  customerName: string,
-  projectName: string,
-): string {
-  if (label) {
-    return label
-  }
-  return [customerName, projectName].filter(Boolean).join(' / ') || `#${id}`
 }
 
 export function normalizeCustomerRows(
@@ -65,8 +47,6 @@ export function normalizeCustomerRows(
     const id = parseEntityId(row.id, `customers[${index}].customer.id`)
     const customerCode = normalizeText(row.customerCode)
     const customerName = normalizeText(row.customerName || row.value)
-    const projectName = normalizeText(row.projectName)
-    const projectNameAbbr = normalizeText(row.projectNameAbbr)
     const defaultSettlementCompanyId = parseOptionalEntityId(
       row.defaultSettlementCompanyId,
       `customers[${index}].defaultSettlementCompanyId`,
@@ -75,16 +55,9 @@ export function normalizeCustomerRows(
     return {
       id,
       value: id,
-      label: customerLabel(
-        id,
-        normalizeText(row.label),
-        customerName,
-        projectName,
-      ),
+      label: customerName || normalizeText(row.label) || `#${id}`,
       customerCode,
       customerName,
-      ...(projectName ? { projectName } : {}),
-      ...(projectNameAbbr ? { projectNameAbbr } : {}),
       ...(defaultSettlementCompanyId ? { defaultSettlementCompanyId } : {}),
       ...(normalizeText(row.defaultSettlementCompanyName)
         ? {

@@ -11,6 +11,7 @@ import {
   PlayCircleOutlined,
   PlusOutlined,
   PrinterOutlined,
+  ProjectOutlined,
   RedoOutlined,
   ReloadOutlined,
   RollbackOutlined,
@@ -20,6 +21,9 @@ import {
 import type { ReactNode } from 'react'
 
 export function resolveModuleActionIcon(label: string): ReactNode | undefined {
+  if (label.includes('项目') || label.includes('Project')) {
+    return <ProjectOutlined />
+  }
   if (
     label.includes('撤回执行') ||
     label.includes('反签') ||

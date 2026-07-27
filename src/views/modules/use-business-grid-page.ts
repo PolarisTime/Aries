@@ -375,6 +375,7 @@ export function useBusinessGridPage({
     handleSelectedReverseAuditRecords,
     openFreightSummary,
     openCustomerSummary,
+    openCustomerProjects,
   } = useBusinessGridActions({
     moduleKey,
     selectedRowKeys,
@@ -422,6 +423,7 @@ export function useBusinessGridPage({
       },
       openFreightSummary,
       openCustomerSummary,
+      openCustomerProjects,
     },
   })
 

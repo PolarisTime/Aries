@@ -21,6 +21,7 @@ interface Handlers {
   openFreightPickupList: () => void
   openFreightSummary: () => Promise<void>
   openCustomerSummary: () => Promise<void>
+  openCustomerProjects: () => void
 }
 
 interface Props {
@@ -115,6 +116,9 @@ export function useModuleToolbarActions({
       if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
         return []
       }
+      if (action.key === 'manage_customer_projects') {
+        return [{ ...action, disabled: selectedRowCount !== 1 }]
+      }
       return [action]
     })
   })() satisfies ModuleActionDefinition[]
@@ -158,6 +162,9 @@ export function useModuleToolbarActions({
         return
       case 'openCustomerSummary':
         await handlers.openCustomerSummary()
+        return
+      case 'openCustomerProjects':
+        handlers.openCustomerProjects()
         return
       default:
         message.info(

@@ -3,6 +3,12 @@ import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-
 export const contributeActionBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior,
 ) => {
+  registerModuleBehavior('customer', {
+    actionKindsByKey: {
+      manage_customer_projects: 'openCustomerProjects',
+    },
+  })
+
   registerModuleBehavior('customer-statement', {
     actionKindsByKey: {
       generate_statement: 'openCreateEditor',
