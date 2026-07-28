@@ -616,6 +616,7 @@ export const zhCN = {
       noBrands: '选中单据未找到品牌',
       selectedPrintItems: '打印明细',
       noPrintItems: '选中单据暂无可展示明细',
+      deliveryDate: '交货日期',
       recordRemark: '单据备注',
       totalQuantity: '合计件数',
       totalWeight: '合计重量',

@@ -634,6 +634,7 @@ export const enUS = {
       noBrands: 'No brands found in selected documents',
       selectedPrintItems: 'Print Items',
       noPrintItems: 'No printable line items found',
+      deliveryDate: 'Delivery Date',
       recordRemark: 'Document Remark',
       totalQuantity: 'Total Qty',
       totalWeight: 'Total Weight',

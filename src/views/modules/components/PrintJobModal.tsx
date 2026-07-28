@@ -47,6 +47,7 @@ import { getCustomerProjectOptions } from '@/module-system/core/module-option-re
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
+import { formatDate } from '@/utils/formatters'
 import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []
@@ -523,6 +524,7 @@ interface PrintItemSectionProps {
   itemSelectionEnabled: boolean
   orderedPrintItems: PrintRecordItem[]
   printItems: PrintRecordItem[]
+  recordDeliveryDate: string
   recordRemark: string
   settlementCompanyName: string
   sensors: ReturnType<typeof useSensors>
@@ -542,6 +544,7 @@ function PrintItemSection({
   itemSelectionEnabled,
   orderedPrintItems,
   printItems,
+  recordDeliveryDate,
   recordRemark,
   settlementCompanyName,
   sensors,
@@ -564,6 +567,12 @@ function PrintItemSection({
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
         <Typography.Text strong>
           {t('modules.print.selectedPrintItems')}
+        </Typography.Text>
+        <Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.print.deliveryDate')}：
+          </Typography.Text>
+          {recordDeliveryDate}
         </Typography.Text>
         <Typography.Text className="min-w-0 max-w-[560px] truncate">
           <Typography.Text type="secondary">
@@ -760,6 +769,7 @@ export function PrintJobModal({
   const primaryHeaderSummary = [primaryRecordSummary, primaryProjectSummary]
     .filter(Boolean)
     .join(' / ')
+  const recordDeliveryDate = formatDate(primaryRecord?.deliveryDate, '-')
   const recordRemark = fieldText(primaryRecord?.remark)
   const settlementCompanyName = fieldText(primaryRecord?.settlementCompanyName)
   const templateOptions = useMemo(
@@ -967,6 +977,7 @@ export function PrintJobModal({
           onSelectAllPrintItems={handleSelectAllPrintItems}
           orderedPrintItems={orderedPrintItems}
           printItems={printItems}
+          recordDeliveryDate={recordDeliveryDate}
           recordRemark={recordRemark}
           settlementCompanyName={settlementCompanyName}
           sensors={sensors}
