@@ -1,3 +1,10 @@
+# [8.2.0](https://github.com/PolarisTime/Aries/compare/v8.1.3...v8.2.0) (2026-07-28)
+
+
+### Features
+
+* **sales-order:** 支持多选导入采购订单明细 ([5c379c0](https://github.com/PolarisTime/Aries/commit/5c379c0759036d891c1592ba37d0c12d094f3da3))
+
 ## [8.1.3](https://github.com/PolarisTime/Aries/compare/v8.1.2...v8.1.3) (2026-07-27)
 
 
