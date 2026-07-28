@@ -1,3 +1,15 @@
+# [8.3.0](https://github.com/PolarisTime/Aries/compare/v8.2.0...v8.3.0) (2026-07-28)
+
+
+### Bug Fixes
+
+* **editor:** 修复明细拖拽丢行问题 ([5d52246](https://github.com/PolarisTime/Aries/commit/5d522468437d3ac387f1a71b028cb83ff886c3b7))
+
+
+### Features
+
+* **print:** 打印明细显示交货日期 ([2ec9c80](https://github.com/PolarisTime/Aries/commit/2ec9c80f82e9dd6b36b6d43383080deed477705a))
+
 # [8.2.0](https://github.com/PolarisTime/Aries/compare/v8.1.3...v8.2.0) (2026-07-28)
 
 
