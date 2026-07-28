@@ -111,20 +111,18 @@ export function moveEditorLineItemByDrag(
     return items
   }
 
-  const sourceItem = items.find((item) => String(item.id) === sourceId)
-  if (!sourceItem) {
+  const sourceIndex = items.findIndex((item) => String(item.id) === sourceId)
+  const targetIndex = items.findIndex((item) => String(item.id) === targetId)
+  if (sourceIndex < 0 || targetIndex < 0) {
     return items
   }
 
-  const nextItems = items.filter((item) => String(item.id) !== sourceId)
-  const targetIndex = nextItems.findIndex(
-    (item) => String(item.id) === targetId,
-  )
-  if (targetIndex < 0) {
-    return items
-  }
-
-  const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
+  const nextItems = [...items]
+  const [sourceItem] = nextItems.splice(sourceIndex, 1)
+  const adjustedTargetIndex =
+    sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
+  const insertIndex =
+    position === 'before' ? adjustedTargetIndex : adjustedTargetIndex + 1
   nextItems.splice(insertIndex, 0, sourceItem)
   return nextItems
 }

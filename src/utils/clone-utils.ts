@@ -10,15 +10,19 @@ export function cloneLineItems(
   }
 
   if (prefix) {
-    return cloneDeep(items).map((item: ModuleLineItem, index: number) => ({
+    return cloneDeep(items).map((item: ModuleLineItem) => ({
       ...item,
-      id: buildLineItemId(prefix, index),
+      id: buildLineItemId(prefix),
     }))
   }
 
   return cloneDeep(items) as ModuleLineItem[]
 }
 
-function buildLineItemId(prefix: string, index: number) {
-  return `${prefix}-${Date.now()}-${index + 1}`
+function buildLineItemId(prefix: string) {
+  const uniqueId =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  return `${prefix}-${uniqueId}`
 }
