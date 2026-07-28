@@ -313,6 +313,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     parentFieldKey: 'purchaseOrderNo',
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.salesOrder.parentImportButton'),
+    allowMultipleSelection: true,
     remainingQuantityKey: 'remainingQuantity',
     candidateQueryType: 'sales-order-purchase-source',
     useCandidateSnapshot: true,
