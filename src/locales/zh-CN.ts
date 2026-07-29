@@ -621,6 +621,7 @@ export const zhCN = {
       recordRemark: '单据备注',
       totalQuantity: '合计件数',
       totalWeight: '合计重量',
+      itemSequence: '序号',
       itemBrand: '品牌',
       dragItem: '拖动调整打印顺序',
       itemCategory: '类别',

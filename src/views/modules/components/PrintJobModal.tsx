@@ -177,8 +177,8 @@ const PRINT_ITEM_FIELDS = [
 
 function printItemsGridClass(brandOverrideEnabled: boolean) {
   return brandOverrideEnabled
-    ? 'grid min-w-[1260px] grid-cols-[80px_minmax(100px,130px)_128px_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
-    : 'grid min-w-[1160px] grid-cols-[80px_minmax(120px,150px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
+    ? 'grid min-w-[1320px] grid-cols-[56px_64px_minmax(100px,130px)_128px_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
+    : 'grid min-w-[1220px] grid-cols-[56px_64px_minmax(120px,150px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
 }
 
 interface PrintJobModalState {
@@ -329,6 +329,7 @@ function SortablePrintItemRow({
       }}
     >
       <div className={printItemsGridClass(brandOverrideEnabled)}>
+        <Typography.Text type="secondary">{index + 1}</Typography.Text>
         <span className="flex items-center gap-2 text-gray-500">
           <Checkbox
             aria-label={`${t('modules.print.selectedPrintItems')} #${index + 1}`}
@@ -348,7 +349,6 @@ function SortablePrintItemRow({
           >
             <HolderOutlined />
           </button>
-          <Typography.Text type="secondary">#{index + 1}</Typography.Text>
         </span>
         <Typography.Text className="block truncate">
           {fieldText(item.brand)}
@@ -614,7 +614,8 @@ function PrintItemSection({
                 brandOverrideEnabled,
               )} bg-gray-100 px-3 py-2 font-medium text-gray-600`}
             >
-              <span className="flex items-center gap-2">
+              <span>{t('modules.print.itemSequence')}</span>
+              <span className="flex items-center">
                 <Checkbox
                   aria-label={t('modules.print.selectedPrintItems')}
                   checked={allSelected}
@@ -624,7 +625,6 @@ function PrintItemSection({
                     onSelectAllPrintItems(event.target.checked)
                   }
                 />
-                #
               </span>
               <span>{t('modules.print.itemBrand')}</span>
               {brandOverrideEnabled ? (

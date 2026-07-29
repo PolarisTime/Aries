@@ -639,6 +639,7 @@ export const enUS = {
       recordRemark: 'Document Remark',
       totalQuantity: 'Total Qty',
       totalWeight: 'Total Weight',
+      itemSequence: 'No.',
       itemBrand: 'Brand',
       dragItem: 'Drag to reorder print items',
       itemCategory: 'Category',
