@@ -1,3 +1,10 @@
+# [8.6.0](https://github.com/PolarisTime/Aries/compare/v8.5.0...v8.6.0) (2026-07-29)
+
+
+### Features
+
+* **editor:** 支持订单保存后自动创建出入库 ([7acab92](https://github.com/PolarisTime/Aries/commit/7acab922e1043cba7f5ce18cbf1cca6391de83be))
+
 # [8.5.0](https://github.com/PolarisTime/Aries/compare/v8.4.0...v8.5.0) (2026-07-29)
 
 
