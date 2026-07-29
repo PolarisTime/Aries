@@ -11,6 +11,10 @@ import { useTranslation } from 'react-i18next'
 import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
+import {
+  DISPLAY_DATE_FORMAT,
+  DISPLAY_DATE_TIME_FORMAT,
+} from '@/utils/formatters'
 import { padLabel } from '@/utils/label-utils'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { asString } from '@/utils/type-narrowing'
@@ -190,7 +194,9 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           format={
             field.dateFormat ||
-            (field.showTime === true ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD')
+            (field.showTime === true
+              ? DISPLAY_DATE_TIME_FORMAT
+              : DISPLAY_DATE_FORMAT)
           }
           showTime={field.showTime === true ? { format: 'HH:mm:ss' } : false}
           className="w-full"

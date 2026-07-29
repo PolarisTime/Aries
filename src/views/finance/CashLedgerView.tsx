@@ -42,6 +42,7 @@ import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
+import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 
 const COUNTERPARTY_TYPE_OPTIONS = ['客户', '供应商', '物流商'].map((value) => ({
   value,
@@ -387,11 +388,12 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 <DatePicker.RangePicker
                   aria-label="业务日期"
                   value={dateRangeValue}
-                  onChange={(_, dateStrings) => {
+                  format={DISPLAY_DATE_FORMAT}
+                  onChange={(dates) => {
                     model.dispatch({
                       type: 'date-range-changed',
-                      startDate: dateStrings[0] || undefined,
-                      endDate: dateStrings[1] || undefined,
+                      startDate: dates?.[0]?.format('YYYY-MM-DD'),
+                      endDate: dates?.[1]?.format('YYYY-MM-DD'),
                     })
                   }}
                 />

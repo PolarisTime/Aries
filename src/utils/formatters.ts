@@ -1,8 +1,8 @@
 import dayjs, { type Dayjs } from 'dayjs'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 
-const DATE_FORMAT = 'YYYY-MM-DD'
-const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
+export const DISPLAY_DATE_FORMAT = 'YYYY年MM月DD日'
+export const DISPLAY_DATE_TIME_FORMAT = 'YYYY年MM月DD日 HH:mm:ss'
 
 /**
  * 格式化整数
@@ -71,16 +71,18 @@ export function parseDateTimeValue(value: unknown): Dayjs | null {
 
 export function formatDate(value: unknown, fallback = '—'): string {
   const parsed = parseDateTimeValue(value)
-  return parsed ? parsed.format(DATE_FORMAT) : getDateFallback(value, fallback)
+  return parsed
+    ? parsed.format(DISPLAY_DATE_FORMAT)
+    : getDateFallback(value, fallback)
 }
 
 /**
- * 格式化日期时间（YYYY-MM-DD HH:mm:ss）
+ * 格式化日期时间（YYYY年MM月DD日 HH:mm:ss）
  */
 export function formatDateTime(value: unknown, fallback = '—'): string {
   const parsed = parseDateTimeValue(value)
   return parsed
-    ? parsed.format(DATE_TIME_FORMAT)
+    ? parsed.format(DISPLAY_DATE_TIME_FORMAT)
     : getDateFallback(value, fallback)
 }
 

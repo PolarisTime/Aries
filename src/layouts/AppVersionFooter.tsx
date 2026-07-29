@@ -27,11 +27,11 @@ function formatBuildTime(value: string) {
       const parts = shanghaiBuildTimeFormatter.formatToParts(parsed)
       const part = (type: Intl.DateTimeFormatPartTypes) =>
         parts.find((item) => item.type === type)?.value || ''
-      return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:${part('second')}`
+      return `${part('year')}年${part('month')}月${part('day')}日 ${part('hour')}:${part('minute')}:${part('second')}`
     }
   }
-  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/)
-  return match ? `${match[1]} ${match[2]}` : trimmed
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2}:\d{2})/)
+  return match ? `${match[1]}年${match[2]}月${match[3]}日 ${match[4]}` : trimmed
 }
 
 function resolveDisplayValue(

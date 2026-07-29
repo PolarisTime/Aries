@@ -1,7 +1,11 @@
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
-import { parseDateTimeValue } from '@/utils/formatters'
+import {
+  DISPLAY_DATE_TIME_FORMAT,
+  formatDateTime,
+  parseDateTimeValue,
+} from '@/utils/formatters'
 
 function formatServerTime(serverTime?: string | number | null) {
   if (serverTime == null || serverTime === '') {
@@ -11,7 +15,7 @@ function formatServerTime(serverTime?: string | number | null) {
   if (!parsed) {
     return String(serverTime)
   }
-  return parsed.format('YYYY-MM-DD HH:mm:ss')
+  return formatDateTime(parsed)
 }
 
 export function useDashboardServerTime(serverTime?: string | number | null) {
@@ -37,7 +41,7 @@ export function useDashboardServerTime(serverTime?: string | number | null) {
       setTickingServerTime({
         source: String(serverTime || ''),
         value: dayjs(base + (Date.now() - syncedAt)).format(
-          'YYYY-MM-DD HH:mm:ss',
+          DISPLAY_DATE_TIME_FORMAT,
         ),
       })
     }

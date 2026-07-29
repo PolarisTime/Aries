@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next'
 import type { CSSProperties } from 'react'
 import { appTitle } from '@/utils/env'
+import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 
 interface BuildAppLayoutStylesOptions {
   appliedFontSize: number
@@ -46,7 +47,7 @@ export function buildClockDisplay(value: {
   format: (token: string) => string
 }): AppLayoutClockDisplay {
   return {
-    dateText: value.format('YYYY年MM月DD日'),
+    dateText: value.format(DISPLAY_DATE_FORMAT),
     timeText: value.format('HH时mm分ss秒'),
   }
 }

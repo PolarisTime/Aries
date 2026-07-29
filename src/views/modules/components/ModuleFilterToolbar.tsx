@@ -14,6 +14,7 @@ import type {
 } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
+import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import { padLabel } from '@/utils/label-utils'
 import { asString } from '@/utils/type-narrowing'
 
@@ -160,11 +161,12 @@ function ModuleFilterField({
         }}
         aria-label={field.label}
         value={rangeValue}
+        format={DISPLAY_DATE_FORMAT}
         className="w-full"
-        onChange={(_, dateStrings) => {
+        onChange={(dates) => {
           const nextValue =
-            Array.isArray(dateStrings) && dateStrings[0] && dateStrings[1]
-              ? dateStrings
+            dates?.[0] && dates[1]
+              ? [dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]
               : undefined
           onCommitFilter(field.key, nextValue)
         }}

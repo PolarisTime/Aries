@@ -37,6 +37,7 @@ import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
+import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 
 const DIRECTION_OPTIONS = [
   { label: '应收', value: 'RECEIVABLE' },
@@ -350,6 +351,7 @@ export function FinanceOverviewView() {
                   aria-label="截止日期"
                   value={dayjs(state.asOfDate)}
                   allowClear={false}
+                  format={DISPLAY_DATE_FORMAT}
                   onChange={(value) => {
                     if (value) {
                       dispatch({
