@@ -1,4 +1,8 @@
-import { ArrowRightOutlined, ReloadOutlined } from '@ant-design/icons'
+import {
+  ArrowRightOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
 import { useCallback, useEffect, useRef } from 'react'
@@ -37,10 +41,12 @@ interface Props<Key extends ModuleKey> {
   moduleKey: Key
   canSave: boolean
   canAudit: boolean
+  canCreateAnother: boolean
   lineItemsLocked?: boolean
   lockedLineItemsNotice?: string
   onClose: () => void
   onSaved: () => void
+  onCreateAnother: () => void
 }
 
 const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
@@ -146,10 +152,12 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   moduleKey,
   canSave,
   canAudit,
+  canCreateAnother,
   lineItemsLocked = false,
   lockedLineItemsNotice = '',
   onClose,
   onSaved,
+  onCreateAnother,
 }: Props<Key>) {
   const { t } = useTranslation()
   const [form] = Form.useForm<EditorFormValues>()
@@ -405,6 +413,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           saveResult={saveResult}
           config={config}
           moduleKey={moduleKey}
+          canCreateAnother={canCreateAnother}
           resolvingConflict={saving}
           onClear={() => {
             clearSaveResult()
@@ -412,6 +421,11 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           onResolveConflict={() => {
             void reloadAfterConflict()
+          }}
+          onCreateAnother={() => {
+            clearSaveResult()
+            finishAndCloseEditor()
+            onCreateAnother()
           }}
         />
       ) : null}
@@ -423,18 +437,22 @@ interface SaveResultOverlayProps<Key extends ModuleKey> {
   saveResult: EditorSaveResult<Key>
   config: ModulePageConfig
   moduleKey: Key
+  canCreateAnother: boolean
   resolvingConflict: boolean
   onClear: () => void
   onResolveConflict: () => void
+  onCreateAnother: () => void
 }
 
 function SaveResultOverlay<Key extends ModuleKey>({
   saveResult,
   config,
   moduleKey,
+  canCreateAnother,
   resolvingConflict,
   onClear,
   onResolveConflict,
+  onCreateAnother,
 }: SaveResultOverlayProps<Key>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -493,6 +511,11 @@ function SaveResultOverlay<Key extends ModuleKey>({
   const actionBar = (
     <>
       {quickActions}
+      {isSuccess && canCreateAnother ? (
+        <Button icon={<PlusOutlined />} onClick={onCreateAnother}>
+          {t('modules.saveResult.createAnother')}
+        </Button>
+      ) : null}
       <Button
         type="primary"
         icon={isConflict ? <ReloadOutlined /> : undefined}

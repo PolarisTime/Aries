@@ -517,6 +517,7 @@ export const enUS = {
       conflict: 'This data was updated by another operation',
       backToEdit: 'Back to Edit',
       reloadLatest: 'Reload Latest Data',
+      createAnother: 'Create Another',
       close: 'Close',
     },
     statement: {

@@ -21,6 +21,7 @@ interface Props<Key extends ModuleKey> {
   moduleKey: Key
   config: ModulePageConfig
   editRecord: PersistedModuleEditorDraftFor<Key> | null
+  editorSessionKey: number
   editorOpen: boolean
   attachOpen: boolean
   attachRecordId: string
@@ -32,10 +33,12 @@ interface Props<Key extends ModuleKey> {
   freightPickupRecords?: ModuleRecord[]
   canSave: boolean
   canAudit: boolean
+  canCreateAnother: boolean
   lineItemsLocked: boolean
   lockedLineItemsNotice: string
   onCloseEditor: () => void
   onSaved: () => void
+  onCreateAnother: () => void
   onCloseDetail: () => void
   onRetryDetail: () => void
   onCloseAttachment: () => void
@@ -46,6 +49,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   moduleKey,
   config,
   editRecord,
+  editorSessionKey,
   editorOpen,
   attachOpen,
   attachRecordId,
@@ -57,10 +61,12 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   freightPickupRecords = EMPTY_FREIGHT_PICKUP_RECORDS,
   canSave,
   canAudit,
+  canCreateAnother,
   lineItemsLocked,
   lockedLineItemsNotice,
   onCloseEditor,
   onSaved,
+  onCreateAnother,
   onCloseDetail,
   onRetryDetail,
   onCloseAttachment,
@@ -70,16 +76,19 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
     <Suspense fallback={<OverlayLazyFallback />}>
       {editorOpen ? (
         <ModuleEditorWorkspace
+          key={`${moduleKey}-${editorSessionKey}`}
           open={editorOpen}
           config={config}
           record={editRecord}
           moduleKey={moduleKey}
           canSave={canSave}
           canAudit={canAudit}
+          canCreateAnother={canCreateAnother}
           lineItemsLocked={lineItemsLocked}
           lockedLineItemsNotice={lockedLineItemsNotice}
           onClose={onCloseEditor}
           onSaved={onSaved}
+          onCreateAnother={onCreateAnother}
         />
       ) : null}
 

@@ -202,6 +202,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           moduleKey={moduleKey}
           config={state.config}
           editRecord={state.editRecord}
+          editorSessionKey={state.editorSessionKey}
           editorOpen={state.editorOpen}
           attachOpen={state.overlays.attachOpen}
           attachRecordId={state.overlays.attachRecordId}
@@ -213,6 +214,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           freightPickupRecords={state.overlays.freightPickupRecords}
           canSave={canSaveEditorRecord}
           canAudit={state.canAuditRecord}
+          canCreateAnother={canCreateRecord}
           lineItemsLocked={state.editorLineItemsLocked}
           lockedLineItemsNotice={
             state.editorLineItemsLocked ? state.lockedLineItemsNotice : ''
@@ -221,6 +223,10 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           onSaved={() => {
             state.clearSelection()
             state.handleEditorSaved()
+          }}
+          onCreateAnother={() => {
+            state.clearSelection()
+            void state.openEditor(null)
           }}
           onCloseDetail={state.closeDetail}
           onRetryDetail={state.retryDetail}

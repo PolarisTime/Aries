@@ -503,6 +503,7 @@ export const zhCN = {
       conflict: '数据已被其他操作更新',
       backToEdit: '返回编辑',
       reloadLatest: '重新加载最新数据',
+      createAnother: '再做一张',
       close: '关闭',
     },
     statement: {

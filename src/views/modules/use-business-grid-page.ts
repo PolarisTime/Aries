@@ -173,6 +173,7 @@ export function useBusinessGridPage({
   } = useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
     editRecord,
+    editorSessionKey,
     editorLockLoading,
     editorLockRelatedRows,
     editorOpen,
@@ -489,6 +490,7 @@ export function useBusinessGridPage({
     detailOpen,
     detailRecord,
     editRecord,
+    editorSessionKey,
     editorLineItemsLocked,
     editorLockLoading,
     editorOpen,

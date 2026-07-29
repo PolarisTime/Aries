@@ -29,6 +29,7 @@ interface Props<Key extends ModuleKey> {
 
 interface BusinessGridEditorResult<Key extends ModuleKey> {
   editRecord: PersistedModuleEditorDraftFor<Key> | null
+  editorSessionKey: number
   editorLockLoading: boolean
   editorLockRelatedRows: ModuleListRecordFor<ModuleKey>[]
   editorOpen: boolean
@@ -80,6 +81,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
 }: Props<Key>): BusinessGridEditorResult<Key> {
   const { showError } = useRequestError()
   const [editorOpen, setEditorOpen] = useState(false)
+  const [editorSessionKey, setEditorSessionKey] = useState(0)
   const [editRecord, setEditRecord] =
     useState<PersistedModuleEditorDraftFor<Key> | null>(null)
   const [editorLockRelatedRows, setEditorLockRelatedRows] = useState<
@@ -142,6 +144,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
       openVersionRef.current += 1
       setEditorLockRelatedRows([])
       setEditRecord(null)
+      setEditorSessionKey((current) => current + 1)
       setEditorOpen(true)
       setEditorLockLoading(false)
       return
@@ -159,6 +162,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
       }
       setEditorLockRelatedRows(lockRelatedRows)
       setEditRecord(resolvedRecord)
+      setEditorSessionKey((current) => current + 1)
       setEditorOpen(true)
     } catch (error) {
       if (version === openVersionRef.current) {
@@ -186,6 +190,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
 
   return {
     editRecord,
+    editorSessionKey,
     editorLockLoading,
     editorLockRelatedRows,
     editorOpen,
