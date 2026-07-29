@@ -1,7 +1,12 @@
 import type { ParsedLocation } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import type { SearchParams } from '@/types/api-raw'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { parseOptionalEntityId } from '@/types/entity-id'
+import type {
+  ModulePageConfig,
+  ModuleParentImportSource,
+  ModuleRecord,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
@@ -15,6 +20,10 @@ interface Props {
   setSubmittedFilters: (filters: SearchParams) => void
   updateFilter: (key: string, value: unknown) => void
   openDetail: (target: string | ModuleRecord) => Promise<void>
+  openEditor: (
+    record: null,
+    options: { parentImportSource: ModuleParentImportSource },
+  ) => Promise<void>
 }
 
 const EMPTY_FILTERS: SearchParams = {}
@@ -25,9 +34,32 @@ function parseRouteParams(searchStr: string) {
   const trackId = params.get('trackId') || ''
   return {
     docNo,
+    sourceModule: params.get('sourceModule') || '',
+    sourceRecordId: params.get('sourceRecordId') || '',
     trackId,
     routeKeyword: docNo || trackId,
     shouldOpenDetail: params.get('openDetail') === '1',
+  }
+}
+
+function resolveParentImportSource(
+  config: ModulePageConfig | undefined,
+  sourceModule: string,
+  sourceRecordId: string,
+): ModuleParentImportSource | null {
+  const parentModuleKey = config?.parentImport?.parentModuleKey
+  if (!parentModuleKey || sourceModule !== parentModuleKey) {
+    return null
+  }
+
+  try {
+    const parentRecordId = parseOptionalEntityId(
+      sourceRecordId,
+      'sourceRecordId',
+    )
+    return parentRecordId ? { parentModuleKey, parentRecordId } : null
+  } catch {
+    return null
   }
 }
 
@@ -103,8 +135,10 @@ export function useBusinessGridRouteSync({
   setSubmittedFilters,
   updateFilter,
   openDetail,
+  openEditor,
 }: Props) {
   const autoOpenedRouteKeyRef = useRef('')
+  const autoOpenedParentImportKeyRef = useRef('')
   // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
   const rawSearchStr = getRawSearchString(location.searchStr)
   const routeParams = parseRouteParams(rawSearchStr)
@@ -168,4 +202,24 @@ export function useBusinessGridRouteSync({
     autoOpenedRouteKeyRef.current = resolvedTarget.nextAutoOpenedRouteKey
     void openDetail(resolvedTarget.target)
   }, [config, openDetail, records, rawSearchStr, routeParams.shouldOpenDetail])
+
+  useEffect(() => {
+    const parentImportSource = resolveParentImportSource(
+      config,
+      routeParams.sourceModule,
+      routeParams.sourceRecordId,
+    )
+    if (!parentImportSource) {
+      autoOpenedParentImportKeyRef.current = ''
+      return
+    }
+
+    const routeKey = `${parentImportSource.parentModuleKey}:${parentImportSource.parentRecordId}`
+    if (autoOpenedParentImportKeyRef.current === routeKey) {
+      return
+    }
+
+    autoOpenedParentImportKeyRef.current = routeKey
+    void openEditor(null, { parentImportSource })
+  }, [config, openEditor, routeParams.sourceModule, routeParams.sourceRecordId])
 }

@@ -23,7 +23,10 @@ import { resolveStatusChangeActionLabelKey } from '@/module-system/adapter/modul
 import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModulePageConfig,
+  ModuleParentImportSource,
+} from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 import type { EditorSaveResult } from '@/views/modules/use-editor-submission-controller'
@@ -38,6 +41,7 @@ interface Props<Key extends ModuleKey> {
   open: boolean
   config: ModulePageConfig
   record: PersistedModuleEditorDraftFor<Key> | null
+  initialParentImportSource: ModuleParentImportSource | null
   moduleKey: Key
   canSave: boolean
   canAudit: boolean
@@ -53,6 +57,10 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
   'purchase-order': {
     labelKey: 'modules.nextModule.createPurchaseInbound',
     path: '/purchase-inbound',
+  },
+  'sales-order': {
+    labelKey: 'modules.nextModule.createSalesOutbound',
+    path: '/sales-outbound',
   },
 }
 
@@ -149,6 +157,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   open,
   config,
   record,
+  initialParentImportSource,
   moduleKey,
   canSave,
   canAudit,
@@ -241,6 +250,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     open,
     config,
     record,
+    initialParentImportSource,
     moduleKey,
     editorAuditActionKind,
     editorAuditTarget,

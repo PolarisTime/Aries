@@ -1,6 +1,10 @@
 import { lazy, Suspense } from 'react'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModulePageConfig,
+  ModuleParentImportSource,
+  ModuleRecord,
+} from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import {
   loadModuleAttachmentModal,
@@ -22,6 +26,7 @@ interface Props<Key extends ModuleKey> {
   config: ModulePageConfig
   editRecord: PersistedModuleEditorDraftFor<Key> | null
   editorSessionKey: number
+  initialParentImportSource: ModuleParentImportSource | null
   editorOpen: boolean
   attachOpen: boolean
   attachRecordId: string
@@ -50,6 +55,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   config,
   editRecord,
   editorSessionKey,
+  initialParentImportSource,
   editorOpen,
   attachOpen,
   attachRecordId,
@@ -80,6 +86,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
           open={editorOpen}
           config={config}
           record={editRecord}
+          initialParentImportSource={initialParentImportSource}
           moduleKey={moduleKey}
           canSave={canSave}
           canAudit={canAudit}

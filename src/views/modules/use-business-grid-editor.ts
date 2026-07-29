@@ -11,7 +11,10 @@ import {
   readModuleRecordField,
 } from '@/module-system/record/module-record-fields'
 import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModulePageConfig,
+  ModuleParentImportSource,
+} from '@/types/module-page'
 import type {
   ModuleListRecordFor,
   PersistedModuleEditorDraftFor,
@@ -30,12 +33,20 @@ interface Props<Key extends ModuleKey> {
 interface BusinessGridEditorResult<Key extends ModuleKey> {
   editRecord: PersistedModuleEditorDraftFor<Key> | null
   editorSessionKey: number
+  initialParentImportSource: ModuleParentImportSource | null
   editorLockLoading: boolean
   editorLockRelatedRows: ModuleListRecordFor<ModuleKey>[]
   editorOpen: boolean
-  openEditor: (record: ModuleListRecordFor<Key> | null) => Promise<void>
+  openEditor: (
+    record: ModuleListRecordFor<Key> | null,
+    options?: OpenEditorOptions,
+  ) => Promise<void>
   closeEditor: () => void
   handleSaved: () => void
+}
+
+interface OpenEditorOptions {
+  parentImportSource?: ModuleParentImportSource | null
 }
 
 interface ResolveEditorRecordOptions<Key extends ModuleKey> {
@@ -84,6 +95,8 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
   const [editorSessionKey, setEditorSessionKey] = useState(0)
   const [editRecord, setEditRecord] =
     useState<PersistedModuleEditorDraftFor<Key> | null>(null)
+  const [initialParentImportSource, setInitialParentImportSource] =
+    useState<ModuleParentImportSource | null>(null)
   const [editorLockRelatedRows, setEditorLockRelatedRows] = useState<
     ModuleListRecordFor<ModuleKey>[]
   >([])
@@ -136,7 +149,10 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     )
   }
 
-  const openEditor = async (record: ModuleListRecordFor<Key> | null) => {
+  const openEditor = async (
+    record: ModuleListRecordFor<Key> | null,
+    options: OpenEditorOptions = {},
+  ) => {
     if (!record && config.allowManualCreate === false) {
       return
     }
@@ -144,6 +160,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
       openVersionRef.current += 1
       setEditorLockRelatedRows([])
       setEditRecord(null)
+      setInitialParentImportSource(options.parentImportSource || null)
       setEditorSessionKey((current) => current + 1)
       setEditorOpen(true)
       setEditorLockLoading(false)
@@ -151,6 +168,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     }
 
     const version = ++openVersionRef.current
+    setInitialParentImportSource(null)
     setEditorLockLoading(true)
     try {
       const [lockRelatedRows, resolvedRecord] = await Promise.all([
@@ -180,17 +198,20 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     openVersionRef.current += 1
     setEditorOpen(false)
     setEditRecord(null)
+    setInitialParentImportSource(null)
     setEditorLockRelatedRows([])
     setEditorLockLoading(false)
   }, [])
 
   const handleSaved = () => {
     setEditorLockRelatedRows([])
+    setInitialParentImportSource(null)
   }
 
   return {
     editRecord,
     editorSessionKey,
+    initialParentImportSource,
     editorLockLoading,
     editorLockRelatedRows,
     editorOpen,

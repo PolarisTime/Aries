@@ -99,6 +99,11 @@ export interface ModuleParentImportDefinition {
   }) => string | null
 }
 
+export interface ModuleParentImportSource {
+  parentModuleKey: ModuleKey
+  parentRecordId: string
+}
+
 export interface ModulePageConfig {
   key: ModuleKey
   title: string

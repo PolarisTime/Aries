@@ -19,7 +19,11 @@ import {
 } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleParentImportSource,
+} from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import { message } from '@/utils/antd-app'
 import { toEditorFormState } from '@/views/modules/module-editor-draft-adapter'
@@ -50,6 +54,7 @@ interface Props<Key extends ModuleKey> {
   open: boolean
   config: ModulePageConfig
   record: PersistedModuleEditorDraftFor<Key> | null
+  initialParentImportSource: ModuleParentImportSource | null
   moduleKey: Key
   editorAuditActionKind: StatusChangeActionKind | null
   editorAuditTarget: EditorAuditTarget | null
@@ -117,6 +122,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
   open,
   config,
   record,
+  initialParentImportSource,
   moduleKey,
   editorAuditActionKind,
   editorAuditTarget,
@@ -132,6 +138,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     inFlight: false,
     sessionKey: null,
   })
+  const autoImportedParentRef = useRef('')
   const [workspaceState, dispatchWorkspaceState] = useReducer(
     editorWorkspaceReducer,
     {
@@ -265,6 +272,34 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     editorSessionKey,
     form,
     moduleKey,
+    open,
+    record,
+  ])
+
+  useEffect(() => {
+    if (
+      !open ||
+      record ||
+      !initialParentImportSource ||
+      initialParentImportSource.parentModuleKey !==
+        config.parentImport?.parentModuleKey
+    ) {
+      return
+    }
+
+    const importKey = `${initialParentImportSource.parentModuleKey}:${initialParentImportSource.parentRecordId}`
+    if (autoImportedParentRef.current === importKey) {
+      return
+    }
+
+    autoImportedParentRef.current = importKey
+    void handleImportParentRecord([
+      { id: initialParentImportSource.parentRecordId },
+    ])
+  }, [
+    config.parentImport?.parentModuleKey,
+    handleImportParentRecord,
+    initialParentImportSource,
     open,
     record,
   ])

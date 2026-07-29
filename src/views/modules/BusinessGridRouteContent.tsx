@@ -41,6 +41,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     setSubmittedFilters: state.setSubmittedFilters,
     updateFilter: state.updateFilter,
     openDetail: state.openDetail,
+    openEditor: state.openEditor,
   })
 
   if (!state.config) {
@@ -203,6 +204,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           config={state.config}
           editRecord={state.editRecord}
           editorSessionKey={state.editorSessionKey}
+          initialParentImportSource={state.initialParentImportSource}
           editorOpen={state.editorOpen}
           attachOpen={state.overlays.attachOpen}
           attachRecordId={state.overlays.attachRecordId}
