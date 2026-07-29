@@ -1,3 +1,11 @@
+# [8.4.0](https://github.com/PolarisTime/Aries/compare/v8.3.0...v8.4.0) (2026-07-29)
+
+
+### Features
+
+* **frontend:** 全局统一使用苹方字体 ([b7858f3](https://github.com/PolarisTime/Aries/commit/b7858f3879f353cedff77762fc9818452337f875))
+* **frontend:** 统一日期展示格式 ([f23002e](https://github.com/PolarisTime/Aries/commit/f23002e44026f550d0d07ecc4cdd6baea81dea02))
+
 # [8.3.0](https://github.com/PolarisTime/Aries/compare/v8.2.0...v8.3.0) (2026-07-28)
 
 
