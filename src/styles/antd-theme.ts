@@ -1,8 +1,7 @@
 import { type ThemeConfig, theme } from 'antd'
 import { getPersonalControlHeights } from '@/layouts/usePersonalSettings'
 
-const ANT_DESIGN_FONT_FAMILY =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif'
+const ANT_DESIGN_FONT_FAMILY = '"PingFang SC"'
 
 interface BuildAntdThemeOptions {
   borderRadius: number
@@ -20,6 +19,7 @@ export function buildAntdTheme(options: BuildAntdThemeOptions): ThemeConfig {
       borderRadius: options.borderRadius,
       fontSize: options.fontSize,
       fontFamily: ANT_DESIGN_FONT_FAMILY,
+      fontFamilyCode: ANT_DESIGN_FONT_FAMILY,
       ...getPersonalControlHeights(options.fontSize),
     },
   }

@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "PingFang SC";
+  src: url("/fonts/PingFangSC-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --app-desktop-min-width: 1200px;
+  --app-font-family: "PingFang SC";
+  --font-sans: var(--app-font-family);
+  --font-serif: var(--app-font-family);
+  --font-mono: var(--app-font-family);
+  --default-font-family: var(--app-font-family);
+  --default-mono-font-family: var(--app-font-family);
   --app-font-size: 14px;
   /* 控件高度以 antd token 为单一来源，自定义元素与 antd 控件保持等高 */
   --app-control-height: var(--ant-control-height, 34px);
@@ -61,9 +75,7 @@
   --app-overlay-body-padding: 16px;
   color: var(--text-primary);
   background: var(--theme-shell-bg);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-family: var(--app-font-family);
 }
 
 * {
@@ -76,9 +88,7 @@ body {
   background: var(--theme-shell-bg);
   color: var(--text-primary);
   font-size: var(--app-font-size);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-family: var(--app-font-family);
 }
 
 a {
