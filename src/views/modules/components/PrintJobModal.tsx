@@ -564,40 +564,44 @@ function PrintItemSection({
     printItems.length > 0 && selectedCount === printItems.length
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
-        <Typography.Text strong>
-          {t('modules.print.selectedPrintItems')}
-        </Typography.Text>
-        <Typography.Text>
-          <Typography.Text type="secondary">
-            {t('modules.print.deliveryDate')}：
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+          <Typography.Text strong>
+            {t('modules.print.selectedPrintItems')}
           </Typography.Text>
-          {recordDeliveryDate}
-        </Typography.Text>
-        <Typography.Text className="min-w-0 max-w-[560px] truncate">
-          <Typography.Text type="secondary">
-            {t('modules.print.recordRemark')}：
+          <Typography.Text>
+            <Typography.Text type="secondary">
+              {t('modules.print.deliveryDate')}：
+            </Typography.Text>
+            {recordDeliveryDate}
           </Typography.Text>
-          {recordRemark}
-        </Typography.Text>
-        <Typography.Text>
-          <Typography.Text type="secondary">
-            {t('modules.print.totalQuantity')}：
+          <Typography.Text className="min-w-0 max-w-[560px] truncate">
+            <Typography.Text type="secondary">
+              {t('modules.print.recordRemark')}：
+            </Typography.Text>
+            {recordRemark}
           </Typography.Text>
-          {formattedTotal(totalQuantity, 0)}
-        </Typography.Text>
-        <Typography.Text>
-          <Typography.Text type="secondary">
-            {t('modules.print.totalWeight')}：
+        </div>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+          <Typography.Text>
+            <Typography.Text type="secondary">
+              {t('modules.print.totalQuantity')}：
+            </Typography.Text>
+            {formattedTotal(totalQuantity, 0)}
           </Typography.Text>
-          {formattedTotal(totalWeight)}
-        </Typography.Text>
-        <Typography.Text className="min-w-0 max-w-[420px] truncate">
-          <Typography.Text type="secondary">
-            {t('modules.print.currentSettlementCompany')}：
+          <Typography.Text>
+            <Typography.Text type="secondary">
+              {t('modules.print.totalWeight')}：
+            </Typography.Text>
+            {formattedTotal(totalWeight)}
           </Typography.Text>
-          <span title={settlementCompanyName}>{settlementCompanyName}</span>
-        </Typography.Text>
+          <Typography.Text className="min-w-0 max-w-[420px] truncate">
+            <Typography.Text type="secondary">
+              {t('modules.print.currentSettlementCompany')}：
+            </Typography.Text>
+            <span title={settlementCompanyName}>{settlementCompanyName}</span>
+          </Typography.Text>
+        </div>
       </div>
       <div
         className="mt-8 overflow-auto rounded border border-gray-200 bg-gray-50"
