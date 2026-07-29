@@ -1,3 +1,16 @@
+# [8.5.0](https://github.com/PolarisTime/Aries/compare/v8.4.0...v8.5.0) (2026-07-29)
+
+
+### Bug Fixes
+
+* **print:** 调整打印明细摘要为两行布局 ([9002660](https://github.com/PolarisTime/Aries/commit/9002660f369de560603d3c0c39d6420f3df93b83))
+
+
+### Features
+
+* **editor:** 支持保存后再做一张单据 ([8bb322c](https://github.com/PolarisTime/Aries/commit/8bb322c53397c6faa71e175d32561a630408024c))
+* **print:** 增加打印明细序号列 ([5d10417](https://github.com/PolarisTime/Aries/commit/5d10417ad07890d628a06def84a66206e3e5c348))
+
 # [8.4.0](https://github.com/PolarisTime/Aries/compare/v8.3.0...v8.4.0) (2026-07-29)
 
 
