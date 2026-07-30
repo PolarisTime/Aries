@@ -1,3 +1,10 @@
+# [8.7.0](https://github.com/PolarisTime/Aries/compare/v8.6.0...v8.7.0) (2026-07-30)
+
+
+### Features
+
+* **ui:** 完善打印作业状态与列表序号展示 ([6b5a2fc](https://github.com/PolarisTime/Aries/commit/6b5a2fc82300db69d4b2b6eec3c358b2c9a89404))
+
 # [8.6.0](https://github.com/PolarisTime/Aries/compare/v8.5.0...v8.6.0) (2026-07-29)
 
 
