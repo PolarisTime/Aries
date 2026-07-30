@@ -14,3 +14,10 @@ export const loadModuleRecordDetailOverlay = () =>
       default: module.ModuleRecordDetailOverlay,
     }),
   )
+
+export const loadPurchaseOrderPickupListOverlay = () =>
+  import('@/views/modules/components/PurchaseOrderPickupListOverlay').then(
+    (module) => ({
+      default: module.PurchaseOrderPickupListOverlay,
+    }),
+  )

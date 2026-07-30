@@ -70,6 +70,7 @@ export const ENDPOINTS = {
   PURCHASE_ORDER_IMPORT_CANDIDATES_LEGACY: '/purchase-orders/import-candidates',
   PURCHASE_ORDER_WAREHOUSE_RECOMMENDATIONS:
     '/purchase-orders/warehouse-recommendations',
+  PURCHASE_ORDER_PICKUP_LIST_PREVIEW: '/purchase-orders/pickup-list-preview',
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',

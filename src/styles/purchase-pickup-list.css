@@ -1,0 +1,119 @@
+.purchase-pickup-list-content {
+  min-height: 240px;
+}
+
+.purchase-pickup-list-summary {
+  min-height: 52px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.purchase-pickup-list-summary + .ant-alert {
+  margin-top: 12px;
+}
+
+.purchase-pickup-list-summary-metrics {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+
+.purchase-pickup-list-metric {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.purchase-pickup-list-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.purchase-pickup-list-flat {
+  margin-top: 12px;
+}
+
+.purchase-pickup-list-group {
+  min-width: 0;
+  border-top: 2px solid var(--ant-color-border, #d9d9d9);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.purchase-pickup-list-group--drop-target {
+  border-top-color: var(--ant-color-primary, #1677ff);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+.purchase-pickup-list-group-header {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 4px;
+}
+
+.purchase-pickup-list-group-title {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.purchase-pickup-list-group-total {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.purchase-pickup-list-group-controls {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.purchase-pickup-list-group-remark {
+  width: min(100%, 640px);
+}
+
+.purchase-pickup-list-drag-handle {
+  width: 32px;
+  min-width: 32px;
+  cursor: grab;
+  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.25));
+  touch-action: none;
+  user-select: none;
+}
+
+.purchase-pickup-list-drag-handle:active {
+  cursor: grabbing;
+}
+
+.purchase-pickup-list-row--dragging > td {
+  background: var(--ant-color-bg-container, #fff) !important;
+}
+
+@media (max-width: 768px) {
+  .purchase-pickup-list-summary-metrics {
+    gap: 8px 16px;
+  }
+
+  .purchase-pickup-list-group-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .purchase-pickup-list-group-controls,
+  .purchase-pickup-list-group-remark {
+    width: 100%;
+  }
+}

@@ -11,6 +11,7 @@ import { BusinessGridContent } from '@/views/modules/components/BusinessGridCont
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
 import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
+import { PurchaseOrderPickupListAction } from '@/views/modules/components/PurchaseOrderPickupListAction'
 import { useBusinessGridOverlayPreload } from '@/views/modules/use-business-grid-overlay-preload'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
@@ -168,6 +169,12 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                   onImported={state.refreshModuleQueries}
                 />
               )}
+              {moduleKey === 'purchase-order' &&
+              state.selectedRowKeys.length ? (
+                <PurchaseOrderPickupListAction
+                  selectedOrderIds={state.selectedRowKeys}
+                />
+              ) : null}
               {state.canUseBulkPrintActions && state.selectedRowKeys.length ? (
                 <PrintTemplateDropdown
                   moduleKey={moduleKey}
