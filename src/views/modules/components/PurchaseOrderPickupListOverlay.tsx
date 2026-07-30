@@ -45,7 +45,7 @@ import {
   type CSSProperties,
   createContext,
   type HTMLAttributes,
-  useContext,
+  use,
   useMemo,
   useState,
 } from 'react'
@@ -84,8 +84,7 @@ function displayText(value: string | null | undefined) {
 }
 
 function DragHandle({ label }: { label: string }) {
-  const { attributes, listeners, setActivatorNodeRef } =
-    useContext(DragHandleContext)
+  const { attributes, listeners, setActivatorNodeRef } = use(DragHandleContext)
 
   return (
     <Tooltip title={label}>
@@ -100,6 +99,90 @@ function DragHandle({ label }: { label: string }) {
         type="text"
       />
     </Tooltip>
+  )
+}
+
+function usePickupListColumns() {
+  const { t } = useTranslation()
+
+  return useMemo<TableColumnsType<PurchaseOrderPickupListItem>>(
+    () => [
+      {
+        key: 'drag',
+        width: 48,
+        align: 'center',
+        render: (_value, _record, index) => (
+          <DragHandle
+            label={t('modules.purchasePickupList.dragRow', {
+              index: index + 1,
+            })}
+          />
+        ),
+      },
+      {
+        title: t('modules.columns.purchaseOrderNo'),
+        dataIndex: 'orderNo',
+        width: 176,
+      },
+      {
+        title: t('modules.columns.warehouseName'),
+        dataIndex: 'warehouseName',
+        width: 144,
+        render: (value: string | null) => displayText(value),
+      },
+      {
+        title: t('modules.columns.brand'),
+        dataIndex: 'brand',
+        width: 96,
+        ellipsis: true,
+      },
+      {
+        title: t('modules.purchasePickupList.itemName'),
+        dataIndex: 'category',
+        width: 96,
+        ellipsis: true,
+      },
+      {
+        title: t('modules.columns.material'),
+        dataIndex: 'material',
+        width: 96,
+        ellipsis: true,
+      },
+      {
+        title: t('modules.columns.spec'),
+        dataIndex: 'spec',
+        width: 112,
+        ellipsis: true,
+      },
+      {
+        title: t('modules.columns.length'),
+        dataIndex: 'length',
+        width: 80,
+        align: 'center',
+        render: (value: string | null) => displayText(value),
+      },
+      {
+        title: t('modules.purchasePickupList.pickupQuantity'),
+        dataIndex: 'pickupQuantity',
+        width: 96,
+        align: 'right',
+      },
+      {
+        title: t('modules.purchasePickupList.pieceWeight'),
+        dataIndex: 'pieceWeightTon',
+        width: 104,
+        align: 'right',
+        render: (value: number) => formatWeight(value),
+      },
+      {
+        title: t('modules.purchasePickupList.pickupWeight'),
+        dataIndex: 'pickupWeightTon',
+        width: 116,
+        align: 'right',
+        render: (value: number) => formatWeight(value),
+      },
+    ],
+    [t],
   )
 }
 
@@ -420,85 +503,7 @@ export function PurchaseOrderPickupListOverlay({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
-  const columns = useMemo<TableColumnsType<PurchaseOrderPickupListItem>>(
-    () => [
-      {
-        key: 'drag',
-        width: 48,
-        align: 'center',
-        render: (_value, _record, index) => (
-          <DragHandle
-            label={t('modules.purchasePickupList.dragRow', {
-              index: index + 1,
-            })}
-          />
-        ),
-      },
-      {
-        title: t('modules.columns.purchaseOrderNo'),
-        dataIndex: 'orderNo',
-        width: 176,
-      },
-      {
-        title: t('modules.columns.warehouseName'),
-        dataIndex: 'warehouseName',
-        width: 144,
-        render: (value: string | null) => displayText(value),
-      },
-      {
-        title: t('modules.columns.brand'),
-        dataIndex: 'brand',
-        width: 96,
-        ellipsis: true,
-      },
-      {
-        title: t('modules.purchasePickupList.itemName'),
-        dataIndex: 'category',
-        width: 96,
-        ellipsis: true,
-      },
-      {
-        title: t('modules.columns.material'),
-        dataIndex: 'material',
-        width: 96,
-        ellipsis: true,
-      },
-      {
-        title: t('modules.columns.spec'),
-        dataIndex: 'spec',
-        width: 112,
-        ellipsis: true,
-      },
-      {
-        title: t('modules.columns.length'),
-        dataIndex: 'length',
-        width: 80,
-        align: 'center',
-        render: (value: string | null) => displayText(value),
-      },
-      {
-        title: t('modules.purchasePickupList.pickupQuantity'),
-        dataIndex: 'pickupQuantity',
-        width: 96,
-        align: 'right',
-      },
-      {
-        title: t('modules.purchasePickupList.pieceWeight'),
-        dataIndex: 'pieceWeightTon',
-        width: 104,
-        align: 'right',
-        render: (value: number) => formatWeight(value),
-      },
-      {
-        title: t('modules.purchasePickupList.pickupWeight'),
-        dataIndex: 'pickupWeightTon',
-        width: 116,
-        align: 'right',
-        render: (value: number) => formatWeight(value),
-      },
-    ],
-    [t],
-  )
+  const columns = usePickupListColumns()
   const defaultItems = useMemo(
     () => data?.groups.flatMap((group) => group.items) || [],
     [data],
@@ -557,9 +562,9 @@ export function PurchaseOrderPickupListOverlay({
       if (groupIndex < 0 || current.groups.length === 1) return current
 
       const removedGroup = current.groups[groupIndex]
-      const groups = current.groups
-        .filter((group) => group.id !== groupId)
-        .map((group) => ({ ...group, itemIds: [...group.itemIds] }))
+      const groups = current.groups.flatMap((group) =>
+        group.id === groupId ? [] : [{ ...group, itemIds: [...group.itemIds] }],
+      )
       if (groupIndex === 0) {
         groups[0].itemIds = [...removedGroup.itemIds, ...groups[0].itemIds]
       } else {
