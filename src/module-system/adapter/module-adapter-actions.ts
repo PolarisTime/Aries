@@ -11,7 +11,6 @@ export type ModuleActionKind =
   | 'openCreateEditor'
   | 'exportMaterialRows'
   | 'exportRows'
-  | 'openFreightPickupList'
   | 'openFreightSummary'
   | 'openCustomerSummary'
   | 'openCustomerProjects'

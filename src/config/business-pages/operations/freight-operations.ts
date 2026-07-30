@@ -32,11 +32,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: i18next.t('modules.pages.freightOperations.createFreightBill'),
         type: 'primary',
       },
-      {
-        key: 'generate_pickup_list',
-        label: i18next.t('modules.pages.freightOperations.generatePickupList'),
-        type: 'default',
-      },
     ],
     filters: [
       {

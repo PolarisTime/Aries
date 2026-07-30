@@ -8,13 +8,6 @@ export const loadModuleEditorWorkspace = () =>
     default: module.ModuleEditorWorkspace,
   }))
 
-export const loadModuleFreightPickupListOverlay = () =>
-  import('@/views/modules/components/ModuleFreightPickupListOverlay').then(
-    (module) => ({
-      default: module.ModuleFreightPickupListOverlay,
-    }),
-  )
-
 export const loadModuleRecordDetailOverlay = () =>
   import('@/views/modules/components/ModuleRecordDetailOverlay').then(
     (module) => ({

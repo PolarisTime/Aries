@@ -18,7 +18,6 @@ interface Handlers {
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
   openCreateEditor: () => Promise<void>
-  openFreightPickupList: () => void
   openFreightSummary: () => Promise<void>
   openCustomerSummary: () => Promise<void>
   openCustomerProjects: () => void
@@ -113,9 +112,6 @@ export function useModuleToolbarActions({
     }
     orderedActions.push(...bulkToolbarActions, ...remainingActions)
     return orderedActions.flatMap((action) => {
-      if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
-        return []
-      }
       if (action.key === 'manage_customer_projects') {
         return [{ ...action, disabled: selectedRowCount !== 1 }]
       }
@@ -153,9 +149,6 @@ export function useModuleToolbarActions({
         return
       case 'exportRows':
         await handlers.exportRows('filtered')
-        return
-      case 'openFreightPickupList':
-        handlers.openFreightPickupList()
         return
       case 'openFreightSummary':
         await handlers.openFreightSummary()

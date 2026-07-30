@@ -95,7 +95,4 @@ export const QUERY_KEYS = {
     page: number,
     pageSize: number,
   ) => ['parent-selector-list', moduleKey, filters, page, pageSize] as const,
-
-  // Freight
-  freightPickup: (moduleKey: string) => ['freight-pickup', moduleKey] as const,
 } as const

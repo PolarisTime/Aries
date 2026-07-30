@@ -34,10 +34,6 @@ export const contributeActionBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior('freight-bill', {
     actionKindsByKey: {
       create_freight_bill: 'openCreateEditor',
-      generate_pickup_list: 'openFreightPickupList',
-    },
-    actionKindsByLabel: {
-      生成提货清单: 'openFreightPickupList',
     },
   })
 }

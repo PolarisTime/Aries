@@ -667,18 +667,6 @@ export const zhCN = {
       parentDoc: '上级单据',
       selectParent: '选择{{label}}',
     },
-    freightPickup: {
-      title: '提货清单 — 物流单（{{count}} 条）',
-      billNo: '运单号',
-      customer: '客户',
-      project: '项目',
-      carrier: '物流方',
-      vehiclePlate: '车牌号',
-      totalWeight: '总重(吨)',
-      totalFreight: '总运费',
-      pickupLocation: '提货地点',
-      planPickupNotice: '来源出库尚未审核，提货清单为计划提货',
-    },
     table: {
       noData: '暂无数据',
       sequence: '序号',
@@ -971,7 +959,6 @@ export const zhCN = {
       freightOperations: {
         freightBill: '物流单',
         createFreightBill: '新增物流单',
-        generatePickupList: '生成提货清单',
         freightBillPlaceholder: '输入物流单号',
         unaudited: '未审核',
         audited: '已审核',

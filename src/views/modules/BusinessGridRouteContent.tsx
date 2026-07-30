@@ -212,8 +212,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           detailRecord={state.detailRecord}
           detailLoading={state.detailLoading}
           detailError={state.detailError}
-          freightPickupOpen={state.overlays.freightPickupOpen}
-          freightPickupRecords={state.overlays.freightPickupRecords}
           canSave={canSaveEditorRecord}
           canAudit={state.canAuditRecord}
           canCreateAnother={canCreateRecord}
@@ -233,7 +231,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           onCloseDetail={state.closeDetail}
           onRetryDetail={state.retryDetail}
           onCloseAttachment={state.overlays.closeAttachment}
-          onCloseFreightPickup={state.overlays.closeFreightPickup}
         />
       </div>
     </AppProPage>

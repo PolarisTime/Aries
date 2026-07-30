@@ -4,10 +4,6 @@ import type { ModuleRecord } from '@/types/module-page'
 export function useBusinessGridOverlays() {
   const [attachOpen, setAttachOpen] = useState(false)
   const [attachRecordId, setAttachRecordId] = useState('')
-  const [freightPickupOpen, setFreightPickupOpen] = useState(false)
-  const [freightPickupRecords, setFreightPickupRecords] = useState<
-    ModuleRecord[]
-  >([])
 
   const openAttachment = (record: ModuleRecord) => {
     setAttachRecordId(String(record.id || ''))
@@ -22,17 +18,7 @@ export function useBusinessGridOverlays() {
   return {
     attachOpen,
     attachRecordId,
-    freightPickupOpen,
     openAttachment,
     closeAttachment,
-    freightPickupRecords,
-    openFreightPickup: (records: ModuleRecord[]) => {
-      setFreightPickupRecords(records)
-      setFreightPickupOpen(true)
-    },
-    closeFreightPickup: () => {
-      setFreightPickupOpen(false)
-      setFreightPickupRecords([])
-    },
   }
 }

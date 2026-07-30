@@ -688,19 +688,6 @@ export const enUS = {
       parentDoc: 'Parent Document',
       selectParent: 'Select {{label}}',
     },
-    freightPickup: {
-      title: 'Pickup List — Freight Bill ({{count}})',
-      billNo: 'Waybill No',
-      customer: 'Customer',
-      project: 'Project',
-      carrier: 'Carrier',
-      vehiclePlate: 'Plate No',
-      totalWeight: 'Weight(ton)',
-      totalFreight: 'Total Freight',
-      pickupLocation: 'Pickup Location',
-      planPickupNotice:
-        'Source outbound is not audited yet. This pickup list is a plan.',
-    },
     table: {
       noData: 'No data',
       sequence: 'No.',
@@ -998,7 +985,6 @@ export const enUS = {
       freightOperations: {
         freightBill: 'Freight Bills',
         createFreightBill: 'Create freight bill',
-        generatePickupList: 'Generate pickup list',
         freightBillPlaceholder: 'Enter freight bill no.',
         unaudited: 'Unaudited',
         audited: 'Audited',

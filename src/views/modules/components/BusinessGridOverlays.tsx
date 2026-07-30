@@ -9,16 +9,12 @@ import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import {
   loadModuleAttachmentModal,
   loadModuleEditorWorkspace,
-  loadModuleFreightPickupListOverlay,
   loadModuleRecordDetailOverlay,
 } from '@/views/modules/components/business-grid-overlay-loaders'
 import { OverlayLazyFallback } from '@/views/modules/components/OverlayLazyFallback'
 
-const EMPTY_FREIGHT_PICKUP_RECORDS: ModuleRecord[] = []
-
 const ModuleAttachmentModal = lazy(loadModuleAttachmentModal)
 const ModuleEditorWorkspace = lazy(loadModuleEditorWorkspace)
-const ModuleFreightPickupListOverlay = lazy(loadModuleFreightPickupListOverlay)
 const ModuleRecordDetailOverlay = lazy(loadModuleRecordDetailOverlay)
 
 interface Props<Key extends ModuleKey> {
@@ -34,8 +30,6 @@ interface Props<Key extends ModuleKey> {
   detailRecord: ModuleRecord | null
   detailLoading: boolean
   detailError: unknown
-  freightPickupOpen: boolean
-  freightPickupRecords?: ModuleRecord[]
   canSave: boolean
   canAudit: boolean
   canCreateAnother: boolean
@@ -47,7 +41,6 @@ interface Props<Key extends ModuleKey> {
   onCloseDetail: () => void
   onRetryDetail: () => void
   onCloseAttachment: () => void
-  onCloseFreightPickup: () => void
 }
 
 export function BusinessGridOverlays<Key extends ModuleKey>({
@@ -63,8 +56,6 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   detailRecord,
   detailLoading,
   detailError,
-  freightPickupOpen,
-  freightPickupRecords = EMPTY_FREIGHT_PICKUP_RECORDS,
   canSave,
   canAudit,
   canCreateAnother,
@@ -76,7 +67,6 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   onCloseDetail,
   onRetryDetail,
   onCloseAttachment,
-  onCloseFreightPickup,
 }: Props<Key>) {
   return (
     <Suspense fallback={<OverlayLazyFallback />}>
@@ -118,15 +108,6 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
           moduleKey={moduleKey}
           recordId={attachRecordId}
           onClose={onCloseAttachment}
-        />
-      ) : null}
-
-      {freightPickupOpen ? (
-        <ModuleFreightPickupListOverlay
-          open={freightPickupOpen}
-          moduleKey={moduleKey}
-          records={freightPickupRecords}
-          onClose={onCloseFreightPickup}
         />
       ) : null}
     </Suspense>

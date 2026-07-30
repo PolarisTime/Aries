@@ -420,9 +420,6 @@ export function useBusinessGridPage({
       openCreateEditor: async () => {
         await openEditor(null)
       },
-      openFreightPickupList: () => {
-        overlays.openFreightPickup(Object.values(selectedRowMap))
-      },
       openFreightSummary,
       openCustomerSummary,
       openCustomerProjects,
