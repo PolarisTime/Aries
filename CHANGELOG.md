@@ -1,3 +1,10 @@
+# [8.8.0](https://github.com/PolarisTime/Aries/compare/v8.7.0...v8.8.0) (2026-07-30)
+
+
+### Features
+
+* **purchase:** 新增采购订单提货清单自由分组 ([d0b68c1](https://github.com/PolarisTime/Aries/commit/d0b68c190445562320743375a1145ae7950c432c))
+
 # [8.7.0](https://github.com/PolarisTime/Aries/compare/v8.6.0...v8.7.0) (2026-07-30)
 
 
