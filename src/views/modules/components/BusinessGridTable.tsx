@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -21,6 +22,7 @@ import {
 const MIN_TABLE_BODY_SCROLL_Y = 120
 const TABLE_BOTTOM_INSET = 16
 const ROW_SINGLE_CLICK_DELAY_MS = 220
+const SEQUENCE_COLUMN_WIDTH = 64
 const ROW_INTERACTION_EXCLUSION_SELECTOR =
   'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
 
@@ -29,6 +31,8 @@ interface Props {
   columns: ColumnsType<ModuleRecord>
   dataSource: ModuleRecord[]
   loading: boolean
+  currentPage: number
+  pageSize: number
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
@@ -50,6 +54,8 @@ export function BusinessGridTable({
   columns,
   dataSource,
   loading,
+  currentPage,
+  pageSize,
   rowSelection,
   rowClassName,
   onRowClick,
@@ -63,6 +69,19 @@ export function BusinessGridTable({
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const [shellWidth, setShellWidth] = useState(0)
   const visibleColumns = useDeferredColumns(columns)
+  const sequenceStart = (currentPage - 1) * pageSize
+  const tableColumns = useMemo<ColumnsType<ModuleRecord>>(() => {
+    const sequenceColumn: ColumnsType<ModuleRecord>[number] = {
+      key: 'sequence',
+      title: t('modules.table.sequence'),
+      width: SEQUENCE_COLUMN_WIDTH,
+      align: 'center',
+      render: (_value, _record, index) => sequenceStart + index + 1,
+    }
+    return rowSelection
+      ? [sequenceColumn, Table.SELECTION_COLUMN, ...visibleColumns]
+      : [sequenceColumn, ...visibleColumns]
+  }, [rowSelection, sequenceStart, t, visibleColumns])
 
   useEffect(() => {
     const shell = shellRef.current
@@ -106,7 +125,10 @@ export function BusinessGridTable({
   const isVirtual = dataSource.length > 100
 
   const scrollX = computeTableScrollX({
-    columnWidths: visibleColumns.map((col) => col.width),
+    columnWidths: [
+      SEQUENCE_COLUMN_WIDTH,
+      ...visibleColumns.map((col) => col.width),
+    ],
     containerWidth: shellWidth,
     selectionColumnWidth: rowSelection ? 32 : 0,
   })
@@ -203,7 +225,7 @@ export function BusinessGridTable({
         rowKey="id"
         size="small"
         loading={loading}
-        columns={visibleColumns}
+        columns={tableColumns}
         dataSource={dataSource}
         rowSelection={rowSelection}
         virtual={isVirtual}

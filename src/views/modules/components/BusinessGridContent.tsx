@@ -172,6 +172,8 @@ export function BusinessGridContent({
             columns={columns}
             dataSource={records}
             loading={loading}
+            currentPage={currentPage}
+            pageSize={pageSize}
             rowSelection={rowSelection}
             rowClassName={rowClassName}
             onRowClick={onRowClick}

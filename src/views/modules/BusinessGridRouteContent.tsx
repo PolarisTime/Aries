@@ -178,7 +178,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                   selectedRowKeys={state.selectedRowKeys}
                   selectedRows={state.selectedRows}
                   onPrint={(mode, template, printOptions) => {
-                    void state.handlePrintSelectedRecords(
+                    return state.handlePrintSelectedRecords(
                       mode,
                       template,
                       printOptions,
@@ -187,7 +187,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                   onExportPrintXlsx={
                     moduleKey === 'sales-order'
                       ? (printOptions) => {
-                          void state.handleExportSalesOrderPrintXlsx(
+                          return state.handleExportSalesOrderPrintXlsx(
                             printOptions,
                           )
                         }

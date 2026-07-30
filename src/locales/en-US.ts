@@ -639,7 +639,13 @@ export const enUS = {
       recordRemark: 'Document Remark',
       totalQuantity: 'Total Qty',
       totalWeight: 'Total Weight',
+      closeConfirmTitle: 'Close Print Job?',
+      closeConfirmContent:
+        'Closing will clear the current item selection, order, and output markers. Continue?',
+      continueJob: 'Continue Working',
       itemSequence: 'No.',
+      itemOutputStatus: 'Output Status',
+      outputted: 'Output',
       itemBrand: 'Brand',
       dragItem: 'Drag to reorder print items',
       itemCategory: 'Category',
@@ -697,6 +703,7 @@ export const enUS = {
     },
     table: {
       noData: 'No data',
+      sequence: 'No.',
     },
     editorFooter: {
       cancel: 'Cancel',

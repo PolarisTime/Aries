@@ -28,8 +28,10 @@ interface Props {
     mode: PrintActionMode,
     template?: PrintTemplateRecord,
     printOptions?: PrintRenderOptions,
-  ) => void
-  onExportPrintXlsx?: (printOptions?: SalesOrderPrintXlsxOptions) => void
+  ) => Promise<boolean>
+  onExportPrintXlsx?: (
+    printOptions?: SalesOrderPrintXlsxOptions,
+  ) => Promise<boolean>
 }
 
 export function PrintTemplateDropdown({
@@ -76,7 +78,7 @@ export function PrintTemplateDropdown({
     template: PrintTemplateRecord,
     printOptions?: PrintRenderOptions,
   ) => {
-    onPrint(mode, template, printOptions)
+    return onPrint(mode, template, printOptions)
   }
 
   const handleOpen = () => {

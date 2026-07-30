@@ -125,16 +125,16 @@ export function useBusinessGridPrintActions({
   const handleExportSalesOrderPrintXlsx = async (
     printOptions?: SalesOrderPrintXlsxOptions,
   ) => {
-    if (moduleKey !== 'sales-order') return
+    if (moduleKey !== 'sales-order') return false
 
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))
-      return
+      return false
     }
 
     if (selectedRowKeys.length > 1) {
       message.warning(t('hooks.printActions.singleRecordOnly'))
-      return
+      return false
     }
 
     try {
@@ -147,10 +147,12 @@ export function useBusinessGridPrintActions({
         download.blob,
         normalizeXlsxFileName(download.fileName || recordId),
       )
+      return true
     } catch (err) {
       message.error(
         await normalizePdfError(err, t('hooks.printActions.exportXlsxFailed')),
       )
+      return false
     }
   }
 
@@ -161,12 +163,12 @@ export function useBusinessGridPrintActions({
   ) => {
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))
-      return
+      return false
     }
 
     if (selectedRowKeys.length > 1) {
       message.warning(t('hooks.printActions.singleRecordOnly'))
-      return
+      return false
     }
 
     const selectedRecord = selectedRows.find(
@@ -178,7 +180,7 @@ export function useBusinessGridPrintActions({
 
     if (!template) {
       message.warning(t('hooks.printActions.noPrintTemplateConfigured'))
-      return
+      return false
     }
 
     try {
@@ -203,21 +205,24 @@ export function useBusinessGridPrintActions({
       )
 
       if (mode === 'download' && runResult.pdfCount) {
-        return
+        return true
       }
 
       if (mode === 'download') {
         message.warning(t('hooks.printActions.noPrintContent'))
-        return
+        return false
       }
 
       if (!runResult.pdfCount && !runResult.coordCount) {
         message.warning(t('hooks.printActions.noPrintContent'))
+        return false
       }
+      return true
     } catch (err) {
       message.error(
         await normalizePdfError(err, t('hooks.printActions.printFailed')),
       )
+      return false
     }
   }
 

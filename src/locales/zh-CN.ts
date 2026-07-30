@@ -621,7 +621,13 @@ export const zhCN = {
       recordRemark: '单据备注',
       totalQuantity: '合计件数',
       totalWeight: '合计重量',
+      closeConfirmTitle: '确认关闭打印作业',
+      closeConfirmContent:
+        '关闭后，本次打印作业中的明细选择、排序和已输出标记将清除。确定关闭吗？',
+      continueJob: '继续操作',
       itemSequence: '序号',
+      itemOutputStatus: '输出状态',
+      outputted: '已输出',
       itemBrand: '品牌',
       dragItem: '拖动调整打印顺序',
       itemCategory: '类别',
@@ -675,6 +681,7 @@ export const zhCN = {
     },
     table: {
       noData: '暂无数据',
+      sequence: '序号',
     },
     editorFooter: {
       cancel: '取消',

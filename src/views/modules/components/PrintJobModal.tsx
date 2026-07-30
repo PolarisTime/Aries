@@ -47,6 +47,7 @@ import { getCustomerProjectOptions } from '@/module-system/core/module-option-re
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
+import { modal } from '@/utils/antd-app'
 import { formatDate } from '@/utils/formatters'
 import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
 
@@ -65,8 +66,10 @@ interface Props {
     mode: PrintActionMode,
     template: PrintTemplateRecord,
     printOptions?: PrintRenderOptions,
-  ) => void
-  onExportPrintXlsx?: (printOptions?: SalesOrderPrintXlsxOptions) => void
+  ) => Promise<boolean>
+  onExportPrintXlsx?: (
+    printOptions?: SalesOrderPrintXlsxOptions,
+  ) => Promise<boolean>
 }
 
 const SUMMARY_FIELDS = [
@@ -177,9 +180,11 @@ const PRINT_ITEM_FIELDS = [
 
 function printItemsGridClass(brandOverrideEnabled: boolean) {
   return brandOverrideEnabled
-    ? 'grid min-w-[1320px] grid-cols-[56px_64px_minmax(100px,130px)_128px_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
-    : 'grid min-w-[1220px] grid-cols-[56px_64px_minmax(120px,150px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
+    ? 'grid min-w-[1420px] grid-cols-[56px_64px_80px_minmax(100px,130px)_128px_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
+    : 'grid min-w-[1320px] grid-cols-[56px_64px_80px_minmax(120px,150px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
 }
+
+type PendingOutputAction = PrintActionMode | 'xlsx'
 
 interface PrintJobModalState {
   selectedTemplateId?: string
@@ -190,6 +195,8 @@ interface PrintJobModalState {
   orderedPrintItemIds: string[]
   excludedPrintItemIds: string[]
   itemSelectionEnabled: boolean
+  outputPrintItemIds: string[]
+  pendingOutputAction?: PendingOutputAction
 }
 
 type PrintJobModalAction =
@@ -202,6 +209,9 @@ type PrintJobModalAction =
   | { type: 'setPrintItemSelected'; itemId: string; selected: boolean }
   | { type: 'setAllPrintItemsSelected'; itemIds: string[]; selected: boolean }
   | { type: 'setItemSelectionEnabled'; value: boolean }
+  | { type: 'markPrintItemsOutput'; itemIds: string[] }
+  | { type: 'setPendingOutputAction'; value?: PendingOutputAction }
+  | { type: 'reset' }
 
 const INITIAL_PRINT_JOB_MODAL_STATE: PrintJobModalState = {
   hideUnitPrice: false,
@@ -211,6 +221,7 @@ const INITIAL_PRINT_JOB_MODAL_STATE: PrintJobModalState = {
   orderedPrintItemIds: [],
   excludedPrintItemIds: [],
   itemSelectionEnabled: false,
+  outputPrintItemIds: [],
 }
 
 function printJobModalReducer(
@@ -254,6 +265,17 @@ function printJobModalReducer(
         itemSelectionEnabled: action.value,
         excludedPrintItemIds: action.value ? state.excludedPrintItemIds : [],
       }
+    case 'markPrintItemsOutput':
+      return {
+        ...state,
+        outputPrintItemIds: Array.from(
+          new Set([...state.outputPrintItemIds, ...action.itemIds]),
+        ),
+      }
+    case 'setPendingOutputAction':
+      return { ...state, pendingOutputAction: action.value }
+    case 'reset':
+      return INITIAL_PRINT_JOB_MODAL_STATE
   }
 }
 
@@ -291,6 +313,7 @@ interface SortablePrintItemRowProps {
   index: number
   item: PrintRecordItem
   itemSelectionEnabled: boolean
+  outputted: boolean
   selected: boolean
   onBrandOverrideChange: (itemId: string, value: string) => void
   onSelectedChange: (itemId: string, selected: boolean) => void
@@ -303,6 +326,7 @@ function SortablePrintItemRow({
   index,
   item,
   itemSelectionEnabled,
+  outputted,
   selected,
   onBrandOverrideChange,
   onSelectedChange,
@@ -349,6 +373,13 @@ function SortablePrintItemRow({
           >
             <HolderOutlined />
           </button>
+        </span>
+        <span>
+          {outputted ? (
+            <Tag color="success">{t('modules.print.outputted')}</Tag>
+          ) : (
+            '-'
+          )}
         </span>
         <Typography.Text className="block truncate">
           {fieldText(item.brand)}
@@ -523,6 +554,7 @@ interface PrintItemSectionProps {
   excludedPrintItemIds: string[]
   itemSelectionEnabled: boolean
   orderedPrintItems: PrintRecordItem[]
+  outputPrintItemIds: string[]
   printItems: PrintRecordItem[]
   recordDeliveryDate: string
   recordRemark: string
@@ -543,6 +575,7 @@ function PrintItemSection({
   excludedPrintItemIds,
   itemSelectionEnabled,
   orderedPrintItems,
+  outputPrintItemIds,
   printItems,
   recordDeliveryDate,
   recordRemark,
@@ -564,44 +597,41 @@ function PrintItemSection({
     printItems.length > 0 && selectedCount === printItems.length
   return (
     <div>
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
-          <Typography.Text strong>
-            {t('modules.print.selectedPrintItems')}
+      <div className="grid grid-cols-[96px_200px_160px_minmax(0,1fr)] items-center gap-x-8 gap-y-2">
+        <Typography.Text strong>
+          {t('modules.print.selectedPrintItems')}
+        </Typography.Text>
+        <Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.print.deliveryDate')}：
           </Typography.Text>
-          <Typography.Text>
-            <Typography.Text type="secondary">
-              {t('modules.print.deliveryDate')}：
-            </Typography.Text>
-            {recordDeliveryDate}
+          {recordDeliveryDate}
+        </Typography.Text>
+        <Typography.Text className="col-span-2 min-w-0 truncate">
+          <Typography.Text type="secondary">
+            {t('modules.print.recordRemark')}：
           </Typography.Text>
-          <Typography.Text className="min-w-0 max-w-[560px] truncate">
-            <Typography.Text type="secondary">
-              {t('modules.print.recordRemark')}：
-            </Typography.Text>
-            {recordRemark}
+          {recordRemark}
+        </Typography.Text>
+        <span aria-hidden="true" />
+        <Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.print.totalQuantity')}：
           </Typography.Text>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
-          <Typography.Text>
-            <Typography.Text type="secondary">
-              {t('modules.print.totalQuantity')}：
-            </Typography.Text>
-            {formattedTotal(totalQuantity, 0)}
+          {formattedTotal(totalQuantity, 0)}
+        </Typography.Text>
+        <Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.print.totalWeight')}：
           </Typography.Text>
-          <Typography.Text>
-            <Typography.Text type="secondary">
-              {t('modules.print.totalWeight')}：
-            </Typography.Text>
-            {formattedTotal(totalWeight)}
+          {formattedTotal(totalWeight)}
+        </Typography.Text>
+        <Typography.Text className="min-w-0 truncate">
+          <Typography.Text type="secondary">
+            {t('modules.print.currentSettlementCompany')}：
           </Typography.Text>
-          <Typography.Text className="min-w-0 max-w-[420px] truncate">
-            <Typography.Text type="secondary">
-              {t('modules.print.currentSettlementCompany')}：
-            </Typography.Text>
-            <span title={settlementCompanyName}>{settlementCompanyName}</span>
-          </Typography.Text>
-        </div>
+          <span title={settlementCompanyName}>{settlementCompanyName}</span>
+        </Typography.Text>
       </div>
       <div
         className="mt-8 overflow-auto rounded border border-gray-200 bg-gray-50"
@@ -626,6 +656,7 @@ function PrintItemSection({
                   }
                 />
               </span>
+              <span>{t('modules.print.itemOutputStatus')}</span>
               <span>{t('modules.print.itemBrand')}</span>
               {brandOverrideEnabled ? (
                 <span>{t('modules.print.brandOverrideTo')}</span>
@@ -653,6 +684,7 @@ function PrintItemSection({
                     itemSelectionEnabled={itemSelectionEnabled}
                     onBrandOverrideChange={onBrandOverrideChange}
                     onSelectedChange={onPrintItemSelectedChange}
+                    outputted={outputPrintItemIds.includes(item.id)}
                     selected={!excludedPrintItemIds.includes(item.id)}
                     t={t}
                   />
@@ -671,8 +703,9 @@ function PrintItemSection({
 }
 
 interface PrintJobActionsProps {
-  canExportPrintXlsx?: (() => void) | false
+  canExportPrintXlsx: boolean
   hasSelectedPrintItems: boolean
+  pendingOutputAction?: PendingOutputAction
   selectedTemplate?: PrintTemplateRecord
   onClose: () => void
   onExportPrintXlsx: () => void
@@ -683,6 +716,7 @@ interface PrintJobActionsProps {
 function PrintJobActions({
   canExportPrintXlsx,
   hasSelectedPrintItems,
+  pendingOutputAction,
   selectedTemplate,
   onClose,
   onExportPrintXlsx,
@@ -693,34 +727,52 @@ function PrintJobActions({
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
       {canExportPrintXlsx ? (
         <Button
-          disabled={!hasSelectedPrintItems}
+          disabled={!hasSelectedPrintItems || Boolean(pendingOutputAction)}
           icon={<FileExcelOutlined />}
+          loading={pendingOutputAction === 'xlsx'}
           onClick={onExportPrintXlsx}
         >
           {t('modules.print.exportXlsx')}
         </Button>
       ) : null}
       <div className="ml-auto flex flex-wrap justify-end gap-2">
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
+        <Button disabled={Boolean(pendingOutputAction)} onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
         {isPdfTemplate(selectedTemplate) ? (
           <Button
-            disabled={!selectedTemplate || !hasSelectedPrintItems}
+            disabled={
+              !selectedTemplate ||
+              !hasSelectedPrintItems ||
+              Boolean(pendingOutputAction)
+            }
             icon={<DownloadOutlined />}
+            loading={pendingOutputAction === 'download'}
             onClick={() => onPrint('download')}
           >
             {t('modules.print.downloadPdf')}
           </Button>
         ) : null}
         <Button
-          disabled={!selectedTemplate || !hasSelectedPrintItems}
+          disabled={
+            !selectedTemplate ||
+            !hasSelectedPrintItems ||
+            Boolean(pendingOutputAction)
+          }
           icon={<EyeOutlined />}
+          loading={pendingOutputAction === 'preview'}
           onClick={() => onPrint('preview')}
         >
           {t('modules.print.preview')}
         </Button>
         <Button
-          disabled={!selectedTemplate || !hasSelectedPrintItems}
+          disabled={
+            !selectedTemplate ||
+            !hasSelectedPrintItems ||
+            Boolean(pendingOutputAction)
+          }
           icon={<PrinterOutlined />}
+          loading={pendingOutputAction === 'print'}
           onClick={() => onPrint('print')}
           type="primary"
         >
@@ -921,22 +973,70 @@ export function PrintJobModal({
     })
   }
 
-  const handlePrint = (mode: PrintActionMode) => {
-    if (!selectedTemplate) return
-    onPrint(mode, selectedTemplate, currentPrintRenderOptions())
+  const markSelectedPrintItemsOutput = (itemIds: string[]) => {
+    if (!state.itemSelectionEnabled || !itemIds.length) return
+    dispatchPrintJobModal({ type: 'markPrintItemsOutput', itemIds })
   }
 
-  const handleExportPrintXlsx = () => {
-    onExportPrintXlsx?.(currentSalesOrderPrintXlsxOptions())
+  const handlePrint = async (mode: PrintActionMode) => {
+    if (!selectedTemplate || state.pendingOutputAction) return
+    const outputItemIds = selectedPrintItems.map((item) => item.id)
+    dispatchPrintJobModal({ type: 'setPendingOutputAction', value: mode })
+    try {
+      const succeeded = await onPrint(
+        mode,
+        selectedTemplate,
+        currentPrintRenderOptions(),
+      )
+      if (succeeded && mode !== 'preview') {
+        markSelectedPrintItemsOutput(outputItemIds)
+      }
+    } finally {
+      dispatchPrintJobModal({ type: 'setPendingOutputAction' })
+    }
   }
 
-  const canExportPrintXlsx = moduleKey === 'sales-order' && onExportPrintXlsx
+  const handleExportPrintXlsx = async () => {
+    if (!onExportPrintXlsx || state.pendingOutputAction) return
+    const outputItemIds = selectedPrintItems.map((item) => item.id)
+    dispatchPrintJobModal({ type: 'setPendingOutputAction', value: 'xlsx' })
+    try {
+      const succeeded = await onExportPrintXlsx(
+        currentSalesOrderPrintXlsxOptions(),
+      )
+      if (succeeded) {
+        markSelectedPrintItemsOutput(outputItemIds)
+      }
+    } finally {
+      dispatchPrintJobModal({ type: 'setPendingOutputAction' })
+    }
+  }
+
+  const handleRequestClose = () => {
+    modal.confirm({
+      title: t('modules.print.closeConfirmTitle'),
+      content: t('modules.print.closeConfirmContent'),
+      okText: t('common.close'),
+      cancelText: t('modules.print.continueJob'),
+      okButtonProps: { danger: true },
+      onOk: () => {
+        dispatchPrintJobModal({ type: 'reset' })
+        onClose()
+      },
+    })
+  }
+
+  const canExportPrintXlsx =
+    moduleKey === 'sales-order' && Boolean(onExportPrintXlsx)
 
   return (
     <Modal
+      closable={!state.pendingOutputAction}
       destroyOnHidden
       footer={null}
-      onCancel={onClose}
+      keyboard={!state.pendingOutputAction}
+      mask={{ closable: !state.pendingOutputAction }}
+      onCancel={handleRequestClose}
       open={open}
       title={
         <div className="text-center font-semibold">
@@ -980,6 +1080,7 @@ export function PrintJobModal({
           onPrintItemSelectedChange={handlePrintItemSelectedChange}
           onSelectAllPrintItems={handleSelectAllPrintItems}
           orderedPrintItems={orderedPrintItems}
+          outputPrintItemIds={state.outputPrintItemIds}
           printItems={printItems}
           recordDeliveryDate={recordDeliveryDate}
           recordRemark={recordRemark}
@@ -996,9 +1097,14 @@ export function PrintJobModal({
             printItems.length === 0 ||
             selectedPrintItems.length > 0
           }
-          onClose={onClose}
-          onExportPrintXlsx={handleExportPrintXlsx}
-          onPrint={handlePrint}
+          onClose={handleRequestClose}
+          onExportPrintXlsx={() => {
+            void handleExportPrintXlsx()
+          }}
+          onPrint={(mode) => {
+            void handlePrint(mode)
+          }}
+          pendingOutputAction={state.pendingOutputAction}
           selectedTemplate={selectedTemplate}
           t={t}
         />
