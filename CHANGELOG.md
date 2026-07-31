@@ -1,3 +1,13 @@
+# [9.0.0](https://github.com/PolarisTime/Aries/compare/v8.9.0...v9.0.0) (2026-07-31)
+
+
+* feat(api)!: 仅保留 V2 接口契约 ([2929f95](https://github.com/PolarisTime/Aries/commit/2929f95a211e262157e771c5cda5f4cdf3137e83))
+
+
+### BREAKING CHANGES
+
+* 前端不再兼容 V1 API，后端必须提供 /api/v2.0 契约。
+
 # [8.9.0](https://github.com/PolarisTime/Aries/compare/v8.8.0...v8.9.0) (2026-07-31)
 
 
