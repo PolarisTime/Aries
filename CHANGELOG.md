@@ -1,3 +1,10 @@
+# [8.9.0](https://github.com/PolarisTime/Aries/compare/v8.8.0...v8.9.0) (2026-07-31)
+
+
+### Features
+
+* **purchase:** 增强提货清单分组排序 ([064aea4](https://github.com/PolarisTime/Aries/commit/064aea473937dde4285fcfc21258f5828b984c11))
+
 # [8.8.0](https://github.com/PolarisTime/Aries/compare/v8.7.0...v8.8.0) (2026-07-30)
 
 
