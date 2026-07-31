@@ -65,7 +65,7 @@ async function resolveEditorRecord({
 }: ResolveEditorRecordOptions<ModuleKey>): Promise<object> {
   if (isMainFlowModuleKey(moduleKey)) {
     const detail = await getBusinessModuleDetail(moduleKey, String(record.id))
-    return toEditorDraft(moduleKey, detail.data)
+    return toEditorDraft(moduleKey, detail)
   }
 
   const endpointConfig = getModuleConfig(moduleKey)
@@ -83,7 +83,7 @@ async function resolveEditorRecord({
   }
 
   const detail = await getBusinessModuleDetail(moduleKey, recordId)
-  return toLegacyEditorDraft(detail.data)
+  return toLegacyEditorDraft(detail)
 }
 
 export function useBusinessGridEditor<Key extends ModuleKey>({

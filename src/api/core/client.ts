@@ -3,8 +3,6 @@ import type { output, ZodType } from 'zod'
 import { setupAuthInterceptors } from '@/api/auth/auth-interceptor'
 import { parseApiContract } from '@/api/core/api-contract'
 import { type ApiRequestConfig, http } from '@/api/core/http'
-import { ERROR_CODE } from '@/constants/error-codes'
-import { getApiMessage } from '@/utils/api-messages'
 
 let authInterceptorsInitialized = false
 
@@ -15,26 +13,6 @@ export function ensureApiClientSetup() {
 
   setupAuthInterceptors(http.instance)
   authInterceptorsInitialized = true
-}
-
-function isSuccessCode(code: unknown) {
-  return Number(code) === ERROR_CODE.SUCCESS
-}
-
-export function assertApiSuccess<
-  T extends { code?: number; message?: string; traceId?: string },
->(response: T, fallbackMessage?: string) {
-  if (!isSuccessCode(response?.code)) {
-    const err = new Error(
-      response?.message || fallbackMessage || getApiMessage('requestFailed'),
-    )
-    if (response?.traceId) {
-      ;(err as Error & { traceId: string }).traceId = response.traceId
-    }
-    throw err
-  }
-
-  return response
 }
 
 async function parseRequest<Schema extends ZodType>(
@@ -66,6 +44,14 @@ export function apiPost<Schema extends ZodType>(
   )
 }
 
+export async function apiPostNoContent(
+  url: string,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<void> {
+  await http.post<unknown>(url, data, config)
+}
+
 export function apiPut<Schema extends ZodType>(
   url: string,
   schema: Schema,
@@ -77,6 +63,14 @@ export function apiPut<Schema extends ZodType>(
     schema,
     `PUT ${url}`,
   )
+}
+
+export async function apiPutNoContent(
+  url: string,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<void> {
+  await http.put<unknown>(url, data, config)
 }
 
 export function apiPatch<Schema extends ZodType>(
@@ -102,6 +96,13 @@ export function apiDelete<Schema extends ZodType>(
     schema,
     `DELETE ${url}`,
   )
+}
+
+export async function apiDeleteNoContent(
+  url: string,
+  config?: ApiRequestConfig,
+): Promise<void> {
+  await http.delete<unknown>(url, config)
 }
 
 export function downloadGet(

@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -21,15 +20,13 @@ type RawWarehouseRecommendation = {
 }
 
 const RECOMMENDATION_BATCH_SIZE = 200
-const warehouseRecommendationResponseSchema = apiResponseSchema(
-  z.array(
-    z.object({
-      materialId: z.union([z.string(), z.number()]),
-      warehouseId: z.union([z.string(), z.number()]),
-      warehouseCode: z.string(),
-      warehouseName: z.string(),
-    }),
-  ),
+const warehouseRecommendationResponseSchema = z.array(
+  z.object({
+    materialId: z.union([z.string(), z.number()]),
+    warehouseId: z.union([z.string(), z.number()]),
+    warehouseCode: z.string(),
+    warehouseName: z.string(),
+  }),
 )
 
 function normalizeRecommendation(
@@ -82,7 +79,7 @@ export async function fetchPurchaseOrderWarehouseRecommendations(
           signal,
         },
       )
-      return assertApiSuccess(rawResponse, '查询采购仓库推荐失败').data
+      return rawResponse
     }),
   )
   return batchRows.flat().map(normalizeRecommendation)

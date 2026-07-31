@@ -22,7 +22,6 @@ import { getBehaviorValue } from '@/module-system/behavior/module-behavior-regis
 import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
-import type { ApiResponse } from '@/types/api'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import type {
   ModuleDetailRecordFor,
@@ -94,11 +93,11 @@ interface ExecuteSubmissionOptions {
 function executeEditorSubmission<Key extends ModuleKey>(
   moduleKey: Key,
   options: ExecuteSubmissionOptions,
-): Promise<ApiResponse<ModuleDetailRecordFor<Key> | undefined>>
+): Promise<ModuleDetailRecordFor<Key>>
 async function executeEditorSubmission(
   moduleKey: ModuleKey,
   options: ExecuteSubmissionOptions,
-): Promise<ApiResponse<ModuleDetailRecordFor<ModuleKey> | undefined>> {
+): Promise<ModuleDetailRecordFor<ModuleKey>> {
   const { action, values, items, idempotencyKey } = options
   if (action === 'save-and-complete') {
     return saveAndCompleteSalesOrder(
@@ -313,7 +312,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
         idempotencyKey,
       })
       invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-      const savedRecord = savedResult.data
+      const savedRecord = savedResult
       try {
         await refreshModuleQueries()
       } catch (refreshError) {
@@ -326,9 +325,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
       onSaved()
       setSaveResult({
         status: 'success',
-        message:
-          savedResult.message ||
-          (isEdit ? t('common.editSuccess') : t('common.addSuccess')),
+        message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
         record: savedRecord,
       })
     } catch (error) {

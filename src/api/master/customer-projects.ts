@@ -1,18 +1,8 @@
 import { z } from 'zod'
-import {
-  apiDelete,
-  apiGet,
-  apiPost,
-  apiPut,
-  assertApiSuccess,
-} from '@/api/core/client'
+import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
-import {
-  apiResponseSchema,
-  exactPageSchema,
-  nullResponseSchema,
-} from '@/shared/schemas/api'
+import { exactPageSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -55,10 +45,8 @@ const rawProjectSchema = z.looseObject({
   remark: z.unknown().optional(),
 })
 
-const projectResponseSchema = apiResponseSchema(rawProjectSchema)
-const projectPageResponseSchema = apiResponseSchema(
-  exactPageSchema(rawProjectSchema),
-)
+const projectResponseSchema = rawProjectSchema
+const projectPageResponseSchema = exactPageSchema(rawProjectSchema)
 
 function normalizeProject(
   raw: z.output<typeof rawProjectSchema>,
@@ -84,19 +72,16 @@ function normalizeProject(
 export async function fetchCustomerProjects(
   customerId: EntityId,
 ): Promise<CustomerProject[]> {
-  const response = assertApiSuccess(
-    await apiGet(ENDPOINTS.PROJECTS, projectPageResponseSchema, {
-      params: {
-        customerId,
-        page: 0,
-        size: 200,
-        sortBy: 'projectCode',
-        direction: 'asc',
-      },
-    }),
-    '查询客户项目失败',
-  )
-  return response.data.content.map((project) =>
+  const response = await apiGet(ENDPOINTS.PROJECTS, projectPageResponseSchema, {
+    params: {
+      customerId,
+      page: 0,
+      size: 200,
+      sortBy: 'projectCode',
+      direction: 'asc',
+    },
+  })
+  return response.content.map((project) =>
     normalizeProject(project, customerId),
   )
 }
@@ -111,17 +96,12 @@ export async function saveCustomerProject(
   const request = projectId
     ? apiPut(path, projectResponseSchema, input, withIdempotencyKey())
     : apiPost(path, projectResponseSchema, input, withIdempotencyKey())
-  const response = assertApiSuccess(await request, '保存客户项目失败')
-  return normalizeProject(response.data, input.customerId)
+  return normalizeProject(await request, input.customerId)
 }
 
 export async function deleteCustomerProject(projectId: EntityId) {
-  return assertApiSuccess(
-    await apiDelete(
-      `${ENDPOINTS.PROJECTS}/${encodeURIComponent(projectId)}`,
-      nullResponseSchema,
-      withIdempotencyKey(),
-    ),
-    '删除客户项目失败',
+  return apiDeleteNoContent(
+    `${ENDPOINTS.PROJECTS}/${encodeURIComponent(projectId)}`,
+    withIdempotencyKey(),
   )
 }

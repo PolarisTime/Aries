@@ -31,10 +31,6 @@
   margin-top: 12px;
 }
 
-.purchase-pickup-list-flat {
-  margin-top: 12px;
-}
-
 .purchase-pickup-list-group {
   min-width: 0;
   border-top: 2px solid var(--ant-color-border, #d9d9d9);

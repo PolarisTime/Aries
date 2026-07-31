@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -28,19 +27,17 @@ type RawProjectOption = {
   projectNameAbbr?: unknown
 }
 
-const projectOptionsResponseSchema = apiResponseSchema(
-  z.array(
-    z.object({
-      id: z.unknown().optional(),
-      value: z.unknown().optional(),
-      label: z.unknown().optional(),
-      customerId: z.unknown().optional(),
-      customerCode: z.unknown().optional(),
-      projectCode: z.unknown().optional(),
-      projectName: z.unknown().optional(),
-      projectNameAbbr: z.unknown().optional(),
-    }),
-  ),
+const projectOptionsResponseSchema = z.array(
+  z.object({
+    id: z.unknown().optional(),
+    value: z.unknown().optional(),
+    label: z.unknown().optional(),
+    customerId: z.unknown().optional(),
+    customerCode: z.unknown().optional(),
+    projectCode: z.unknown().optional(),
+    projectName: z.unknown().optional(),
+    projectNameAbbr: z.unknown().optional(),
+  }),
 )
 
 function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
@@ -72,11 +69,10 @@ export async function fetchProjectOptions(
   customerId: EntityId,
 ): Promise<ProjectOption[]> {
   const normalizedCustomerId = parseEntityId(customerId, 'customerId')
-  const response = assertApiSuccess(
-    await apiGet(ENDPOINTS.PROJECTS_OPTIONS, projectOptionsResponseSchema, {
-      params: { customerId: normalizedCustomerId },
-    }),
-    '查询项目选项失败',
+  const response = await apiGet(
+    ENDPOINTS.PROJECTS_OPTIONS,
+    projectOptionsResponseSchema,
+    { params: { customerId: normalizedCustomerId } },
   )
-  return normalizeProjectOptions(response.data || [])
+  return normalizeProjectOptions(response)
 }

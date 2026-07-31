@@ -11,6 +11,9 @@
  * Module CRUD paths are in module-contracts.ts (derived from business-pages config).
  * This file covers auth, system, and other non-module endpoints.
  */
+const pathSegment = (value: string | number) =>
+  encodeURIComponent(String(value))
+
 export const ENDPOINTS = {
   // Auth (pure actions → singular)
   AUTH_LOGIN: '/auth/login',
@@ -26,7 +29,6 @@ export const ENDPOINTS = {
   COMPANY_SETTINGS: '/company-settings',
   COMPANY_SETTINGS_CURRENT: '/company-settings/current',
   COMPANY_SETTINGS_OPTIONS: '/company-settings/options',
-  COMPANY_NAME: '/company-settings/name',
 
   // Health (pure action → singular)
   HEALTH: '/health',
@@ -43,16 +45,28 @@ export const ENDPOINTS = {
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
 
-  // Print templates (business entity → plural)
+  // Print
+  PRINT_ITEMS: '/print/items',
+  PRINT_RECORD: '/print/record',
   PRINT_TEMPLATES: '/print-templates',
+  PRINT_TEMPLATE: (id: string | number) =>
+    `/print-templates/${pathSegment(id)}`,
+  PRINT_TEMPLATE_UPLOAD_JSON: (id: string | number) =>
+    `/print-templates/${pathSegment(id)}/upload-json`,
 
   // Setup (pure actions → singular)
-  SETUP_STATUS: '/setup/status',
   SETUP_ACCOUNT: '/setup/account',
 
-  // Attachments (business entity → plural) & General settings (business entity → plural)
+  // Attachments
   ATTACHMENTS_UPLOAD: '/attachments/upload',
+  ATTACHMENTS_DIRECT_UPLOAD_PREPARE: '/attachments/direct-upload/prepare',
+  ATTACHMENTS_DIRECT_UPLOAD_COMPLETE: '/attachments/direct-upload/complete',
   ATTACHMENTS_BINDINGS: '/attachments/bindings',
+  ATTACHMENTS_BINDING_COUNTS: '/attachments/bindings/counts',
+  ATTACHMENT_ACCESS_URL: (id: string | number) =>
+    `/attachments/${pathSegment(id)}/access-url`,
+  ATTACHMENT_CONTENT: (id: string | number, action: 'preview' | 'download') =>
+    `/attachments/${pathSegment(id)}/${action}`,
 
   // Materials (pure actions → singular)
   MATERIALS_IMPORT: '/materials/import',
@@ -64,17 +78,34 @@ export const ENDPOINTS = {
   // Master data code issuances
   MASTER_DATA_CODE_ISSUANCES: '/master-data/code-issuances',
 
-  // Import candidate collections
+  // Purchase orders
   PURCHASE_ORDER_INBOUND_IMPORT_CANDIDATES:
     '/purchase-orders/inbound-import-candidates',
-  PURCHASE_ORDER_IMPORT_CANDIDATES_LEGACY: '/purchase-orders/import-candidates',
   PURCHASE_ORDER_WAREHOUSE_RECOMMENDATIONS:
     '/purchase-orders/warehouse-recommendations',
   PURCHASE_ORDER_PICKUP_LIST_PREVIEW: '/purchase-orders/pickup-list-preview',
+
+  // Sales orders
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',
+  SALES_ORDER_COMPLETE: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/complete`,
+  SALES_ORDER_SAVE_AND_COMPLETE: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/save-and-complete`,
+  SALES_ORDER_PRINT_XLSX: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/print-xlsx`,
+
+  // Freight bills
   FREIGHT_BILL_SALES_ORDER_CANDIDATES: '/freight-bills/sales-order-candidates',
+
+  // Statements
+  CUSTOMER_STATEMENTS_SUMMARY: '/customer-statements/summary',
+  FREIGHT_STATEMENTS_SUMMARY: '/freight-statements/summary',
+
+  // Runtime configuration
+  RUNTIME_CONFIG: '/runtime-config',
+
   // Master data option lists (business entities → plural)
   WAREHOUSES_OPTIONS: '/warehouses/options',
   CUSTOMERS_OPTIONS: '/customers/options',

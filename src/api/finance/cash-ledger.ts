@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { apiGet, assertApiSuccess, downloadGet } from '@/api/core/client'
+import { apiGet, downloadGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema, rawPageSchema } from '@/shared/schemas/api'
+import { exactPageSchema } from '@/shared/schemas/api'
 import {
   type EntityId,
   parseEntityId,
@@ -92,12 +92,10 @@ const cashLedgerLineSchema = z.looseObject({
   operatorName: z.string().nullish(),
   remark: z.string().nullish(),
 })
-const cashLedgerResponseSchema = apiResponseSchema(
-  z.looseObject({
-    summary: cashLedgerSummarySchema,
-    page: rawPageSchema(cashLedgerLineSchema),
-  }),
-)
+const cashLedgerResponseSchema = z.looseObject({
+  summary: cashLedgerSummarySchema,
+  page: exactPageSchema(cashLedgerLineSchema),
+})
 
 function normalizeSummary(raw: RawRecord = {}): CashLedgerSummary {
   return {
@@ -146,9 +144,9 @@ function normalizeCashLedgerPage(
       content: asArray<RawRecord>(rawPage.content).map(normalizeLine),
       totalElements: asNumber(rawPage.totalElements),
       totalPages: asNumber(rawPage.totalPages),
-      page: asNumber(rawPage.currentPage ?? rawPage.page),
-      size: asNumber(rawPage.pageSize ?? rawPage.size),
-      hasNext: (rawPage.hasMore ?? rawPage.hasNext) === true,
+      page: asNumber(rawPage.currentPage),
+      size: asNumber(rawPage.pageSize),
+      hasNext: rawPage.hasMore === true,
     },
   }
 }
@@ -180,18 +178,19 @@ export async function getCashLedger(
   query: CashLedgerQuery,
   signal?: AbortSignal,
 ): Promise<CashLedgerPage> {
-  const response = assertApiSuccess(
-    await apiGet(ENDPOINTS.CASH_LEDGER, cashLedgerResponseSchema, {
+  const response = await apiGet(
+    ENDPOINTS.CASH_LEDGER,
+    cashLedgerResponseSchema,
+    {
       params: {
         ...normalizeFilter(query),
         page: Math.max(Math.trunc(query.page), 0),
         size: Math.max(Math.trunc(query.size), 1),
       },
       signal,
-    }),
-    '加载资金流水失败',
+    },
   )
-  return normalizeCashLedgerPage(response.data)
+  return normalizeCashLedgerPage(response)
 }
 
 export async function exportCashLedger(

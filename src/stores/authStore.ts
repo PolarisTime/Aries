@@ -5,7 +5,6 @@ import {
   clearAuthSession,
   scheduleAuthRefresh,
 } from '@/api/auth/auth-state'
-import { ERROR_CODE } from '@/constants/error-codes'
 import {
   clearUserQueryCache,
   clearUserQueryCacheOnIdentityChange,
@@ -67,11 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (payload: LoginPayload) => {
     const { login } = await loadAuthApi()
-    const response = await login(payload)
-    if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(response.message || i18next.t('auth.error.loginFailed'))
-    }
-    const data = response.data
+    const data = await login(payload)
     if (!data.accessToken || !data.user) {
       throw new Error(i18next.t('auth.error.missingTokenOrUser'))
     }

@@ -412,7 +412,7 @@ async function resolveParentImportRecords(
         parentModuleKey,
         String(record.id),
       )
-      return detail.data
+      return detail
     }),
   )
   return resolvedRecords

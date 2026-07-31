@@ -9,7 +9,6 @@ import {
 import { lazy } from 'react'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
-import { getInitialSetupStatus } from '@/api/system/setup'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import {
   appPageDefinitions,
@@ -80,9 +79,13 @@ const rootRoute = createRootRoute({
     // 如果没有缓存，则请求 API
     if (setupRequired === null) {
       try {
-        const response = await getInitialSetupStatus()
-        setupRequired = response.data.setupRequired
-        useSetupStore.getState().setStatus(response.data)
+        const response = await queryClient.ensureQueryData({
+          queryKey: QUERY_KEYS.runtimeConfig,
+          queryFn: getRuntimeConfig,
+          staleTime: 30_000,
+        })
+        setupRequired = response.setup.setupRequired
+        useSetupStore.getState().setStatus(response.setup)
       } catch (error) {
         // 重定向错误直接抛出
         if (error && typeof error === 'object' && 'to' in error) {

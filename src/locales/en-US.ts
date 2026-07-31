@@ -451,7 +451,6 @@ export const enUS = {
       groupItemCount: '{{count}} item(s)',
       groupTotalQuantity: 'Total Qty',
       groupTotalWeight: 'Total Weight',
-      freeGrouping: 'Free Grouping',
       groupByWarehouse: 'Group by Warehouse',
       unassignedWarehouse: 'Unassigned Warehouse',
       addGroup: 'Add Group',

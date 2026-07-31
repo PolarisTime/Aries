@@ -20,32 +20,12 @@ export const responseNonNegativeIntegerSchema = responseIntegerSchema.pipe(
   z.number().int().nonnegative(),
 )
 
-/** LocalDate/LocalDateTime 可能是 ISO 字符串或 epoch 毫秒。 */
-export const responseDateTimeSchema = z.union([
-  z.string().min(1),
-  z.number().int(),
-])
+/** v2 日期和时间统一使用 ISO-8601 字符串。 */
+export const responseDateTimeSchema = z.string().min(1)
 
-const rawRecordSchema = z.record(z.string(), z.unknown())
+export const rawRecordSchema = z.record(z.string(), z.unknown())
 
-export const rawPageSchema = <ItemSchema extends z.ZodType>(
-  itemSchema: ItemSchema,
-) =>
-  z.looseObject({
-    content: z.array(itemSchema).optional(),
-    records: z.array(itemSchema).optional(),
-    totalElements: responseNonNegativeIntegerSchema,
-    totalPages: responseNonNegativeIntegerSchema.optional(),
-    currentPage: responseNonNegativeIntegerSchema.optional(),
-    page: responseNonNegativeIntegerSchema.optional(),
-    pageSize: responseNonNegativeIntegerSchema.optional(),
-    size: responseNonNegativeIntegerSchema.optional(),
-    first: z.boolean().optional(),
-    last: z.boolean().optional(),
-    hasMore: z.boolean().optional(),
-  })
-
-/** 当前后端 PageResponse 的精确结构，仅供已完成契约迁移的端点使用。 */
+/** v2 后端 PageResponse 的唯一分页结构。 */
 export const exactPageSchema = <ItemSchema extends z.ZodType>(
   itemSchema: ItemSchema,
 ) =>
@@ -58,23 +38,27 @@ export const exactPageSchema = <ItemSchema extends z.ZodType>(
     hasMore: z.boolean(),
   })
 
-export const apiResponseSchema = <DataSchema extends z.ZodType>(
-  dataSchema: DataSchema,
-) =>
-  z.object({
-    code: z.number(),
-    data: dataSchema,
-    message: z.string().optional(),
-    traceId: z.string().optional(),
-  })
+export const rawRecordPageSchema = exactPageSchema(rawRecordSchema)
 
-export const rawRecordResponseSchema = apiResponseSchema(rawRecordSchema)
-export const rawPageResponseSchema = apiResponseSchema(
-  rawPageSchema(rawRecordSchema),
-)
-export const nullResponseSchema = apiResponseSchema(z.null().optional())
-export const stringResponseSchema = apiResponseSchema(z.string())
-export const stringArrayResponseSchema = apiResponseSchema(z.array(z.string()))
+export const apiProblemFieldErrorSchema = z.object({
+  field: z.string(),
+  code: z.string(),
+  message: z.string(),
+})
+
+export const apiProblemSchema = z.looseObject({
+  type: z.string().min(1),
+  title: z.string().min(1),
+  status: z.number().int().min(400).max(599),
+  detail: z.string().optional(),
+  instance: z.string().optional(),
+  code: z.number().int(),
+  traceId: z.string().optional(),
+  timestamp: z.string().min(1),
+  errors: z.array(apiProblemFieldErrorSchema).optional(),
+})
+
+export type ApiProblem = z.output<typeof apiProblemSchema>
 
 export type DocumentStatus =
   | '草稿'

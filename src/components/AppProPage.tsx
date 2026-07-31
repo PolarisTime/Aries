@@ -26,13 +26,15 @@ export function AppProPage({
 
   return (
     <PageContainer
-      breadcrumbRender={false}
       className={rootClassName}
-      content={description}
-      extra={extra}
-      title={title}
+      pageHeaderRender={false}
       token={pageContainerToken}
     >
+      <div className="app-pro-page-accessible-header">
+        <h1>{title}</h1>
+        {description ? <div>{description}</div> : null}
+      </div>
+      {extra ? <div className="app-pro-page-extra">{extra}</div> : null}
       {children}
     </PageContainer>
   )

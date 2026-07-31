@@ -808,8 +808,7 @@ export function PrintJobModal({
   const { data: fetchedPrintItems } = useQuery<PrintRecordItem[]>({
     queryKey: QUERY_KEYS.printRecordItems(moduleKey, selectedRowKeys),
     queryFn: async () => {
-      const response = await listPrintRecordItems(moduleKey, selectedRowKeys)
-      return Array.isArray(response.data) ? response.data : []
+      return listPrintRecordItems(moduleKey, selectedRowKeys)
     },
     enabled: open && selectedRowKeys.length > 0,
     staleTime: 30 * 1000,

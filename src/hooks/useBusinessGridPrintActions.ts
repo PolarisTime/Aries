@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import { assertApiSuccess } from '@/api/core/client'
 import {
   exportSalesOrderPrintXlsx,
   listPrintTemplates,
@@ -75,9 +74,9 @@ async function pickPrintTemplate(
   selectedRecord?: ModuleRecord,
 ): Promise<PrintTemplateRecord | null> {
   if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
-  const response = await listPrintTemplates(moduleKey)
+  const templatesResponse = await listPrintTemplates(moduleKey)
   const templates = filterPrintTemplatesBySettlementCompany(
-    (response?.data || []).filter(
+    templatesResponse.filter(
       (t) =>
         (t.status == null || t.status === 'ACTIVE') &&
         (t.templateType === 'COORD' || t.templateType === 'PDF_FORM') &&
@@ -189,20 +188,13 @@ export function useBusinessGridPrintActions({
           renderPrintRecord(template.id, moduleKey, recordId, printOptions),
         ),
       )
-      for (const r of results) {
-        assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
-      }
-
-      const runResult = await runPrintOutputs(
-        results.map((r) => r.data),
-        {
-          fallbackTemplateName: template.templateName,
-          mode,
-          printServiceUnavailableMessage: t(
-            'hooks.printActions.printServiceUnavailable',
-          ),
-        },
-      )
+      const runResult = await runPrintOutputs(results, {
+        fallbackTemplateName: template.templateName,
+        mode,
+        printServiceUnavailableMessage: t(
+          'hooks.printActions.printServiceUnavailable',
+        ),
+      })
 
       if (mode === 'download' && runResult.pdfCount) {
         return true

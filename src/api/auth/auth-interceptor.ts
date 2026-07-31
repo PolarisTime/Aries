@@ -17,10 +17,61 @@ import {
   markHandledRequestError,
 } from '@/api/core/request-errors'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { apiProblemSchema } from '@/shared/schemas/api'
 import { message } from '@/utils/antd-app'
+import { apiBaseUrl } from '@/utils/env'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
 import { navigateToServerErrorPage } from '@/utils/server-error-navigation'
 import { getToken } from '@/utils/storage'
+
+type BackendErrorResponse = {
+  data?: unknown
+  headers?: Record<string, unknown> & {
+    get?: (name: string) => unknown
+  }
+}
+
+function readContentType(response: BackendErrorResponse): string {
+  const value =
+    response.headers?.get?.('content-type') ??
+    response.headers?.['content-type'] ??
+    response.headers?.['Content-Type']
+  return typeof value === 'string' ? value.toLowerCase() : ''
+}
+
+async function normalizeBackendErrorPayload(error: unknown): Promise<void> {
+  if (!error || typeof error !== 'object') return
+  const response = (error as { response?: BackendErrorResponse }).response
+  if (!response) return
+
+  if (
+    typeof Blob !== 'undefined' &&
+    response.data instanceof Blob &&
+    (readContentType(response).includes('json') ||
+      response.data.type.toLowerCase().includes('json'))
+  ) {
+    try {
+      const text = await response.data.text()
+      response.data = text ? JSON.parse(text) : undefined
+    } catch {
+      return
+    }
+  }
+
+  const parsed = apiProblemSchema.safeParse(response.data)
+  if (parsed.success) {
+    response.data = parsed.data
+  }
+}
+
+function extractBackendMessage(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+  const data = (error as { response?: BackendErrorResponse }).response?.data
+  if (!data || typeof data !== 'object') return undefined
+  const payload = data as Record<string, unknown>
+  const value = payload.detail ?? payload.message ?? payload.title
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
 
 function extractBackendTraceId(error: {
   response?: {
@@ -116,16 +167,17 @@ function isBackendUnavailableError(error: unknown): boolean {
 }
 
 const PUBLIC_ENDPOINTS = [
-  ENDPOINTS.SETUP_STATUS,
+  ENDPOINTS.RUNTIME_CONFIG,
   ENDPOINTS.SETUP_ACCOUNT,
   ENDPOINTS.HEALTH,
   ENDPOINTS.VERSION,
 ]
+const API_BASE_PATH = getRequestPath(apiBaseUrl).replace(/\/$/, '')
 
 function isPublicEndpoint(url: string) {
   const path = getRequestPath(url)
   return PUBLIC_ENDPOINTS.some(
-    (endpoint) => path === endpoint || path === `/api${endpoint}`,
+    (endpoint) => path === endpoint || path === `${API_BASE_PATH}${endpoint}`,
   )
 }
 
@@ -142,8 +194,8 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     const publicEndpoint = isPublicEndpoint(url)
     const shouldSkipAuth =
       publicEndpoint ||
-      isExactAuthEndpoint(url, '/auth/login') ||
-      isExactAuthEndpoint(url, '/auth/refresh')
+      isExactAuthEndpoint(url, ENDPOINTS.AUTH_LOGIN) ||
+      isExactAuthEndpoint(url, ENDPOINTS.AUTH_REFRESH)
 
     if (token && !shouldSkipAuth) {
       config.headers.set?.('Authorization', `Bearer ${token}`)
@@ -172,13 +224,15 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         return Promise.reject(canceledErr)
       }
 
+      await normalizeBackendErrorPayload(error)
+
       const status = error.response?.status
       const originalRequest = error.config as RetryableRequestConfig | undefined
       const url = String(originalRequest?.url || '')
       const isAuthRequest =
-        isExactAuthEndpoint(url, '/auth/login') ||
-        isExactAuthEndpoint(url, '/auth/logout') ||
-        isExactAuthEndpoint(url, '/auth/refresh')
+        isExactAuthEndpoint(url, ENDPOINTS.AUTH_LOGIN) ||
+        isExactAuthEndpoint(url, ENDPOINTS.AUTH_LOGOUT) ||
+        isExactAuthEndpoint(url, ENDPOINTS.AUTH_REFRESH)
       const publicEndpoint = isPublicEndpoint(url)
 
       if (isBackendUnavailableError(error)) {
@@ -220,7 +274,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
             : undefined
           const refreshMessage = normalizeErrorMessage(
             axios.isAxiosError(refreshError)
-              ? refreshError.response?.data?.message || refreshError.message
+              ? extractBackendMessage(refreshError) || refreshError.message
               : refreshError instanceof Error
                 ? refreshError.message
                 : error.message,
@@ -240,7 +294,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       }
 
       const description = normalizeErrorMessage(
-        error.response?.data?.message || error.message,
+        extractBackendMessage(error) || error.message,
         status,
       )
 

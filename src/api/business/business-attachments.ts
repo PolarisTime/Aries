@@ -5,11 +5,8 @@ import type {
   AttachmentDirectUploadPrepareRecord,
 } from '@/api/business/business-types'
 import { apiGet, apiPost, apiPut, downloadGet } from '@/api/core/client'
-import {
-  apiResponseSchema,
-  rawRecordResponseSchema,
-} from '@/shared/schemas/api'
-import type { ApiResponse } from '@/types/api'
+import { ENDPOINTS } from '@/constants/endpoints'
+import { rawRecordSchema } from '@/shared/schemas/api'
 
 const attachmentRecordSchema = z.object({
   id: z.string(),
@@ -33,39 +30,32 @@ const attachmentBindingSchema = z.object({
   recordId: z.string(),
   attachments: z.array(attachmentRecordSchema),
 })
-const attachmentBindingResponseSchema = apiResponseSchema(
-  attachmentBindingSchema,
-)
-const attachmentCountsResponseSchema = apiResponseSchema(
-  z.object({
-    moduleKey: z.string(),
-    counts: z.record(z.string(), z.number()),
-  }),
-)
-const attachmentAccessResponseSchema = apiResponseSchema(
-  z.object({
-    url: z.string().nullable().optional(),
-    inline: z.boolean(),
-    presigned: z.boolean(),
-  }),
-)
-const directUploadPrepareResponseSchema = apiResponseSchema(
-  z.object({
-    attachmentId: z.union([z.string(), z.number()]),
-    token: z.string(),
-    objectKey: z.string().optional(),
-    storagePath: z.string().optional(),
-    uploadUrl: z.string().url(),
-    method: z.string().optional(),
-    headers: z.record(z.string(), z.string()).optional(),
-    expiresAt: z.union([z.string(), z.number()]).optional(),
-  }),
-)
+const attachmentBindingResponseSchema = attachmentBindingSchema
+const attachmentCountsResponseSchema = z.object({
+  moduleKey: z.string(),
+  counts: z.record(z.string(), z.number()),
+})
+const attachmentAccessResponseSchema = z.object({
+  url: z.string().nullable().optional(),
+  inline: z.boolean(),
+  presigned: z.boolean(),
+})
+const directUploadPrepareResponseSchema = z.object({
+  attachmentId: z.union([z.string(), z.number()]),
+  token: z.string(),
+  objectKey: z.string().optional(),
+  storagePath: z.string().optional(),
+  uploadUrl: z.string().url(),
+  method: z.string().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  expiresAt: z.union([z.string(), z.number()]).optional(),
+})
 
 const DIRECT_UPLOAD_UNSUPPORTED_MESSAGE = '不支持直传'
 const FORBIDDEN_UPLOAD_HEADERS = new Set(['host', 'content-length'])
 const INTERNAL_ATTACHMENT_URL_PATTERN =
-  /^(?:\/api)?\/attachments\/([^/?#]+)\/(preview|download)(?:\?([^#]*))?(?:#.*)?$/
+  /^\/api\/v2\.0\/attachments\/([^/?#]+)\/(preview|download)(?:\?([^#]*))?(?:#.*)?$/
+type InternalAttachmentAction = 'preview' | 'download'
 
 export interface AttachmentUploadOptions {
   onProgress?: (percent: number) => void
@@ -79,11 +69,11 @@ export async function uploadAttachment(
 ) {
   try {
     const prepared = await prepareDirectUpload(file, moduleKey, sourceType)
-    await putDirectUpload(file, prepared.data, options)
+    await putDirectUpload(file, prepared, options)
     reportUploadProgress(options, 100)
     return completeDirectUpload(
-      prepared.data.attachmentId,
-      prepared.data.token,
+      prepared.attachmentId,
+      prepared.token,
       moduleKey,
     )
   } catch (err) {
@@ -109,7 +99,7 @@ async function prepareDirectUpload(
   const sha256Hex = await calculateFileSha256Hex(file)
 
   return apiPost(
-    '/attachments/direct-upload/prepare',
+    ENDPOINTS.ATTACHMENTS_DIRECT_UPLOAD_PREPARE,
     directUploadPrepareResponseSchema,
     {
       fileName: file.name,
@@ -128,8 +118,8 @@ async function completeDirectUpload(
   moduleKey: string,
 ) {
   return apiPost(
-    '/attachments/direct-upload/complete',
-    rawRecordResponseSchema,
+    ENDPOINTS.ATTACHMENTS_DIRECT_UPLOAD_COMPLETE,
+    rawRecordSchema,
     {
       attachmentId,
       token,
@@ -184,7 +174,7 @@ function uploadAttachmentMultipart(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return apiPost('/attachments/upload', rawRecordResponseSchema, formData, {
+  return apiPost(ENDPOINTS.ATTACHMENTS_UPLOAD, rawRecordSchema, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (event) => {
       if (!event.total) {
@@ -236,42 +226,36 @@ function isDirectUploadUnsupported(err: unknown) {
     return true
   }
 
-  const response = (err as { response?: { data?: { message?: unknown } } })
-    ?.response
-  const responseMessage =
-    typeof response?.data?.message === 'string' ? response.data.message : ''
-  return responseMessage.includes(DIRECT_UPLOAD_UNSUPPORTED_MESSAGE)
+  return false
 }
 
 export async function getAttachmentBindings(
   moduleKey: string,
   recordId: string | number,
 ) {
-  return apiGet('/attachments/bindings', attachmentBindingResponseSchema, {
-    params: {
-      moduleKey,
-      recordId,
+  return apiGet(
+    ENDPOINTS.ATTACHMENTS_BINDINGS,
+    attachmentBindingResponseSchema,
+    {
+      params: {
+        moduleKey,
+        recordId,
+      },
     },
-  })
+  )
 }
 
 export async function fetchAttachmentCounts(
   moduleKey: string,
   recordIds: Array<string | number>,
-): Promise<ApiResponse<AttachmentBindingCountRecord>> {
+): Promise<AttachmentBindingCountRecord> {
   const normalizedRecordIds = normalizeRecordIds(recordIds)
   if (!normalizedRecordIds.length) {
-    return {
-      code: 0,
-      data: {
-        moduleKey,
-        counts: {},
-      },
-    }
+    return { moduleKey, counts: {} }
   }
 
   return apiGet(
-    '/attachments/bindings/counts',
+    ENDPOINTS.ATTACHMENTS_BINDING_COUNTS,
     attachmentCountsResponseSchema,
     {
       params: {
@@ -298,7 +282,7 @@ export async function resolveAttachmentAccessUrl(
 
   const resolvedModuleKey = moduleKey.trim() || parsed.moduleKey
   const response = await apiGet(
-    `/attachments/${parsed.id}/access-url`,
+    ENDPOINTS.ATTACHMENT_ACCESS_URL(parsed.id),
     attachmentAccessResponseSchema,
     {
       params: {
@@ -308,7 +292,7 @@ export async function resolveAttachmentAccessUrl(
       },
     },
   )
-  return response.data
+  return response
 }
 
 export async function getAttachmentBlob(url: string): Promise<Blob> {
@@ -317,7 +301,7 @@ export async function getAttachmentBlob(url: string): Promise<Blob> {
     return fetchExternalAttachmentBlob(url)
   }
 
-  return downloadGet(`/attachments/${parsed.id}/${parsed.action}`, {
+  return downloadGet(ENDPOINTS.ATTACHMENT_CONTENT(parsed.id, parsed.action), {
     params: {
       accessKey: parsed.accessKey,
       moduleKey: parsed.moduleKey,
@@ -347,11 +331,15 @@ export async function updateAttachmentBindings(
     return /^\d+$/.test(v) && v !== '0' ? [v] : []
   })
 
-  return apiPut('/attachments/bindings', attachmentBindingResponseSchema, {
-    moduleKey,
-    recordId: String(recordId).trim(),
-    attachmentIds: normalizedAttachmentIds,
-  })
+  return apiPut(
+    ENDPOINTS.ATTACHMENTS_BINDINGS,
+    attachmentBindingResponseSchema,
+    {
+      moduleKey,
+      recordId: String(recordId).trim(),
+      attachmentIds: normalizedAttachmentIds,
+    },
+  )
 }
 
 function parseInternalAttachmentUrl(url: string) {
@@ -363,7 +351,7 @@ function parseInternalAttachmentUrl(url: string) {
 
   const params = new URLSearchParams(match[3] || '')
   return {
-    action: match[2],
+    action: match[2] as InternalAttachmentAction,
     accessKey: params.get('accessKey') || '',
     id: decodeURIComponent(match[1]),
     moduleKey: params.get('moduleKey') || '',

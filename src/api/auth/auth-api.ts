@@ -1,29 +1,28 @@
 import { z } from 'zod'
 import { refreshAccessToken } from '@/api/auth/auth-state'
 import { parseApiContract } from '@/api/core/api-contract'
-import { apiGet, apiPost, assertApiSuccess } from '@/api/core/client'
+import { apiGet, apiPost, apiPostNoContent } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { LoginPayload, LoginResponseData } from '@/shared/schemas'
-import { apiResponseSchema, nullResponseSchema } from '@/shared/schemas/api'
 import {
   loginPayloadSchema,
   loginResponseDataSchema,
 } from '@/shared/schemas/auth'
-import { getApiMessage } from '@/utils/api-messages'
 
-const loginResponseSchema = apiResponseSchema(loginResponseDataSchema)
-const healthResponseSchema = apiResponseSchema(z.object({ status: z.string() }))
-const backendInfoResponseSchema = apiResponseSchema(
-  z.object({
-    app: z.string(),
-    version: z.string(),
-    gitCommit: z.string(),
-    buildTime: z.string().nullable(),
-  }),
-)
+const healthResponseSchema = z.object({
+  status: z.string(),
+  timestamp: z.string(),
+})
+const backendInfoResponseSchema = z.object({
+  app: z.string(),
+  version: z.string(),
+  gitCommit: z.string(),
+  buildTime: z.string().nullable(),
+})
 
 export type HealthResponse = {
   status: string
+  timestamp: string
 }
 
 export type BackendInfo = {
@@ -39,14 +38,14 @@ export function login(payload: LoginPayload) {
     payload,
     '登录请求',
   )
-  return apiPost(ENDPOINTS.AUTH_LOGIN, loginResponseSchema, {
+  return apiPost(ENDPOINTS.AUTH_LOGIN, loginResponseDataSchema, {
     loginName: validatedPayload.loginName,
     password: validatedPayload.password,
   })
 }
 
 export function logout() {
-  return apiPost(ENDPOINTS.AUTH_LOGOUT, nullResponseSchema, {})
+  return apiPostNoContent(ENDPOINTS.AUTH_LOGOUT, {})
 }
 
 export async function refreshSession(): Promise<LoginResponseData> {
@@ -54,13 +53,9 @@ export async function refreshSession(): Promise<LoginResponseData> {
 }
 
 export async function fetchBackendHealth(): Promise<HealthResponse> {
-  const response = await apiGet(ENDPOINTS.HEALTH, healthResponseSchema)
-  return assertApiSuccess(response, getApiMessage('backendServiceUnavailable'))
-    .data
+  return apiGet(ENDPOINTS.HEALTH, healthResponseSchema)
 }
 
 export async function fetchBackendInfo(): Promise<BackendInfo> {
-  const response = await apiGet(ENDPOINTS.VERSION, backendInfoResponseSchema)
-  return assertApiSuccess(response, getApiMessage('backendServiceUnavailable'))
-    .data
+  return apiGet(ENDPOINTS.VERSION, backendInfoResponseSchema)
 }

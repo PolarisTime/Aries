@@ -1,10 +1,6 @@
 import { z } from 'zod'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import {
-  apiResponseSchema,
-  exactPageSchema,
-  responseDateTimeSchema,
-} from './api'
+import { exactPageSchema, responseDateTimeSchema } from './api'
 
 const MAX_SIGNED_LONG = 9_223_372_036_854_775_807n
 const ENTITY_ID_PATTERN = /^[1-9]\d*$/
@@ -703,40 +699,32 @@ export const mainFlowStatusSchemas = {
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
 export const mainFlowListResponseSchemas = {
-  'purchase-order': apiResponseSchema(
-    exactPageSchema(purchaseOrderListRecordSchema),
-  ),
-  'purchase-inbound': apiResponseSchema(
-    exactPageSchema(purchaseInboundListRecordSchema),
-  ),
-  'sales-order': apiResponseSchema(exactPageSchema(salesOrderListRecordSchema)),
-  'sales-outbound': apiResponseSchema(
-    exactPageSchema(salesOutboundListRecordSchema),
-  ),
-  'freight-bill': apiResponseSchema(
-    exactPageSchema(freightBillListRecordSchema),
-  ),
+  'purchase-order': exactPageSchema(purchaseOrderListRecordSchema),
+  'purchase-inbound': exactPageSchema(purchaseInboundListRecordSchema),
+  'sales-order': exactPageSchema(salesOrderListRecordSchema),
+  'sales-outbound': exactPageSchema(salesOutboundListRecordSchema),
+  'freight-bill': exactPageSchema(freightBillListRecordSchema),
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
 export const mainFlowDetailResponseSchemas = {
-  'purchase-order': apiResponseSchema(purchaseOrderDetailRecordSchema),
-  'purchase-inbound': apiResponseSchema(purchaseInboundDetailRecordSchema),
-  'sales-order': apiResponseSchema(salesOrderDetailRecordSchema),
-  'sales-outbound': apiResponseSchema(salesOutboundDetailRecordSchema),
-  'freight-bill': apiResponseSchema(freightBillDetailRecordSchema),
+  'purchase-order': purchaseOrderDetailRecordSchema,
+  'purchase-inbound': purchaseInboundDetailRecordSchema,
+  'sales-order': salesOrderDetailRecordSchema,
+  'sales-outbound': salesOutboundDetailRecordSchema,
+  'freight-bill': freightBillDetailRecordSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
-export const purchaseOrderImportCandidatePageResponseSchema = apiResponseSchema(
-  exactPageSchema(purchaseOrderImportCandidateSchema),
+export const purchaseOrderImportCandidatePageResponseSchema = exactPageSchema(
+  purchaseOrderImportCandidateSchema,
 )
-export const salesOrderSourceCandidatePageResponseSchema = apiResponseSchema(
-  exactPageSchema(salesOrderSourceCandidateSchema),
+export const salesOrderSourceCandidatePageResponseSchema = exactPageSchema(
+  salesOrderSourceCandidateSchema,
 )
-export const salesOrderOutboundCandidatePageResponseSchema = apiResponseSchema(
-  exactPageSchema(salesOrderDetailRecordSchema),
+export const salesOrderOutboundCandidatePageResponseSchema = exactPageSchema(
+  salesOrderDetailRecordSchema,
 )
-export const freightSalesOrderCandidatePageResponseSchema = apiResponseSchema(
-  exactPageSchema(salesOrderDetailRecordSchema),
+export const freightSalesOrderCandidatePageResponseSchema = exactPageSchema(
+  salesOrderDetailRecordSchema,
 )
 
 export function getMainFlowListResponseSchema<Key extends MainFlowModuleKey>(

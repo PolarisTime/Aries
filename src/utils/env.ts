@@ -14,6 +14,5 @@ export const frontendGitCommit = normalizeGitCommit(
 )
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '/api'
-const apiVersion = import.meta.env.VITE_API_VERSION || ''
 
-export const apiBaseUrl = apiVersion ? `${apiBase}/${apiVersion}` : apiBase
+export const apiBaseUrl = `${apiBase}/v2.0`

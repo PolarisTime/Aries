@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 
 const entityIdSchema = z.string().regex(/^[1-9]\d*$/)
@@ -46,7 +45,7 @@ const pickupListSchema = z.strictObject({
   warnings: z.array(z.string()),
 })
 
-const pickupListResponseSchema = apiResponseSchema(pickupListSchema)
+const pickupListResponseSchema = pickupListSchema
 
 export type PurchaseOrderPickupList = z.output<typeof pickupListSchema>
 export type PurchaseOrderPickupListGroup = z.output<
@@ -58,17 +57,13 @@ export async function fetchPurchaseOrderPickupList(
   orderIds: EntityId[],
   signal?: AbortSignal,
 ): Promise<PurchaseOrderPickupList> {
-  const response = assertApiSuccess(
-    await apiGet(
-      ENDPOINTS.PURCHASE_ORDER_PICKUP_LIST_PREVIEW,
-      pickupListResponseSchema,
-      {
-        params: { orderIds },
-        paramsSerializer: { indexes: null },
-        signal,
-      },
-    ),
-    '查询采购订单提货清单失败',
+  return apiGet(
+    ENDPOINTS.PURCHASE_ORDER_PICKUP_LIST_PREVIEW,
+    pickupListResponseSchema,
+    {
+      params: { orderIds },
+      paramsSerializer: { indexes: null },
+      signal,
+    },
   )
-  return response.data
 }

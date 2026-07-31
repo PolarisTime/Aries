@@ -203,7 +203,7 @@ export function useBusinessGridPage({
     void fetchAttachmentCounts(moduleKey, recordIds)
       .then((response) => {
         if (!cancelled) {
-          setAttachmentCounts(response.data?.counts || {})
+          setAttachmentCounts(response.counts)
         }
       })
       .catch(() => {
@@ -295,19 +295,15 @@ export function useBusinessGridPage({
         cancelText: '取消',
         maskClosable: false,
         onOk: async () => {
-          const response = await completeSalesOrder(String(record.id))
-          message.success(response.message || '完成销售成功')
+          await completeSalesOrder(String(record.id))
+          message.success('完成销售成功')
           await refreshModuleQueries()
         },
       })
       return
     }
-    const response = await updateBusinessModuleStatus(
-      moduleKey,
-      String(record.id),
-      status,
-    )
-    message.success(response.message || '销售订单状态已更新')
+    await updateBusinessModuleStatus(moduleKey, String(record.id), status)
+    message.success('销售订单状态已更新')
     await refreshModuleQueries()
   }
 

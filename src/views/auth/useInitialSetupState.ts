@@ -1,10 +1,13 @@
 import { useNavigate } from '@tanstack/react-router'
 import { Form } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getInitialSetupStatus, submitInitialAccount } from '@/api/system/setup'
+import { submitInitialAccount } from '@/api/system/setup'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { queryClient } from '@/lib/query-client'
 import type { InitialSetupStatus } from '@/shared/schemas'
 import { useSetupStore } from '@/stores/setupStore'
+import type { RuntimeConfigResponse } from '@/types/runtime-config'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 
@@ -24,8 +27,7 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 export function useInitialSetupState() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [checking, setChecking] = useState(true)
-  const [status, setStatus] = useState<InitialSetupStatus | null>(null)
+  const status = useSetupStore((state) => state.status)
   const [loadingAccount, setLoadingAccount] = useState(false)
   const [form] = Form.useForm()
 
@@ -41,47 +43,6 @@ export function useInitialSetupState() {
     }
     return setupToken
   }
-
-  useEffect(() => {
-    let active = true
-    let redirectTimer: ReturnType<typeof setTimeout> | null = null
-
-    const loadInitialStatus = async () => {
-      try {
-        const res = await getInitialSetupStatus()
-        if (!active) {
-          return
-        }
-        const s = res.data
-        setStatus(s)
-        useSetupStore.getState().setStatus(s)
-        if (!s.setupRequired) {
-          message.info(t('auth.initialsetup.alreadyCompletedRedirect'))
-          redirectTimer = setTimeout(() => {
-            if (active) {
-              void navigate({ to: '/login' })
-            }
-          }, 1500)
-        }
-        setChecking(false)
-      } catch {
-        if (!active) {
-          return
-        }
-        message.error(t('auth.initialsetup.loadStatusFailed'))
-        setChecking(false)
-      }
-    }
-
-    void loadInitialStatus()
-
-    return () => {
-      active = false
-      if (redirectTimer) {
-        clearTimeout(redirectTimer)
-      }
-    }
-  }, [navigate, t])
 
   const handleSubmitAccount = async () => {
     const setupToken = getValidSetupToken()
@@ -102,7 +63,7 @@ export function useInitialSetupState() {
         return
       }
       setLoadingAccount(true)
-      const res = await submitInitialAccount(
+      await submitInitialAccount(
         {
           account: {
             loginName: values.accountLoginName.trim(),
@@ -115,10 +76,17 @@ export function useInitialSetupState() {
         },
         setupToken,
       )
-      message.success(
-        res.message || t('auth.initialsetup.accountCreateSuccess'),
+      message.success(t('auth.initialsetup.accountCreateSuccess'))
+      const completedStatus: InitialSetupStatus = {
+        setupRequired: false,
+        accountConfigured: true,
+      }
+      useSetupStore.getState().setStatus(completedStatus)
+      queryClient.setQueryData<RuntimeConfigResponse>(
+        QUERY_KEYS.runtimeConfig,
+        (current) =>
+          current ? { ...current, setup: completedStatus } : current,
       )
-      useSetupStore.getState().setStatus({ setupRequired: false })
       void navigate({ to: '/login' })
     } catch (error) {
       message.error(
@@ -130,7 +98,7 @@ export function useInitialSetupState() {
   }
 
   return {
-    checking,
+    checking: status === null,
     form,
     handleSubmitAccount,
     loadingAccount,

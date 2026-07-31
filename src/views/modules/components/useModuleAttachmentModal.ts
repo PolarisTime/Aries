@@ -9,7 +9,6 @@ import {
   uploadAttachment,
 } from '@/api/business/business-attachments'
 import type { AttachmentRecord } from '@/api/business/business-types'
-import { assertApiSuccess } from '@/api/core/client'
 import { message } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import { asString } from '@/utils/type-narrowing'
@@ -58,10 +57,8 @@ type AttachmentModalPatch =
   | ((prev: AttachmentModalState) => Partial<AttachmentModalState>)
 
 async function fetchAttachmentList(moduleKey: string, recordId: string) {
-  const response = assertApiSuccess(
-    await getAttachmentBindings(moduleKey, recordId),
-  )
-  return response.data.attachments
+  const response = await getAttachmentBindings(moduleKey, recordId)
+  return response.attachments
 }
 
 export function useModuleAttachmentModal({
@@ -181,18 +178,14 @@ export function useModuleAttachmentModal({
 
   const bindAttachment = useCallback(
     async (attachmentId: string) => {
-      const latestBindings = assertApiSuccess(
-        await getAttachmentBindings(moduleKey, recordId),
-      )
-      const latestAttachmentIds = latestBindings.data.attachments.map(
+      const latestBindings = await getAttachmentBindings(moduleKey, recordId)
+      const latestAttachmentIds = latestBindings.attachments.map(
         (item) => item.id,
       )
-      assertApiSuccess(
-        await updateAttachmentBindings(moduleKey, recordId, [
-          ...latestAttachmentIds,
-          attachmentId,
-        ]),
-      )
+      await updateAttachmentBindings(moduleKey, recordId, [
+        ...latestAttachmentIds,
+        attachmentId,
+      ])
     },
     [moduleKey, recordId],
   )
@@ -205,14 +198,17 @@ export function useModuleAttachmentModal({
         uploadProgress: 0,
       })
       try {
-        const uploadRes = assertApiSuccess(
-          await uploadAttachment(file, moduleKey, 'PAGE_UPLOAD', {
+        const uploadResult = await uploadAttachment(
+          file,
+          moduleKey,
+          'PAGE_UPLOAD',
+          {
             onProgress: (percent) => {
               setState({ uploadProgress: percent })
             },
-          }),
+          },
         )
-        const attachmentId = asString(uploadRes.data?.id).trim()
+        const attachmentId = asString(uploadResult.id).trim()
         if (!attachmentId) {
           message.error(t('modules.attachment.uploadNoId'))
           setState({ uploading: false, uploadFileName: '', uploadProgress: 0 })
@@ -316,13 +312,11 @@ export function useModuleAttachmentModal({
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        assertApiSuccess(
-          await updateAttachmentBindings(
-            moduleKey,
-            recordId,
-            attachments.flatMap((item) =>
-              String(item.id) !== id ? [item.id] : [],
-            ),
+        await updateAttachmentBindings(
+          moduleKey,
+          recordId,
+          attachments.flatMap((item) =>
+            String(item.id) !== id ? [item.id] : [],
           ),
         )
         message.success(t('modules.attachment.unbindSuccess'))

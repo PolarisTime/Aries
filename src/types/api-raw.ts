@@ -10,16 +10,6 @@ export type RawApiRecord = {
   [key: string]: unknown
 }
 
-/** 后端返回的分页响应 */
-export type RawPagePayload<T = RawApiRecord> = {
-  content?: T[]
-  records?: T[]
-  totalElements: number
-  totalPages?: number
-  currentPage?: number
-  pageSize?: number
-}
-
 /** 搜索参数类型 */
 export type SearchParams = {
   keyword?: string

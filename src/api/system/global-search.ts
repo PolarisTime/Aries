@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema } from '@/shared/schemas/api'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { asString } from '@/utils/type-narrowing'
@@ -15,17 +14,15 @@ export interface GlobalSearchResponse {
   matchedByTrackId?: boolean
 }
 
-const globalSearchResponseSchema = apiResponseSchema(
-  z.array(
-    z.object({
-      moduleKey: z.string().optional(),
-      title: z.string().optional(),
-      trackId: z.string().optional(),
-      primaryNo: z.string().optional(),
-      summary: z.string().optional(),
-      matchedByTrackId: z.boolean().optional(),
-    }),
-  ),
+const globalSearchResponseSchema = z.array(
+  z.object({
+    moduleKey: z.string().optional(),
+    title: z.string().optional(),
+    trackId: z.string().optional(),
+    primaryNo: z.string().optional(),
+    summary: z.string().optional(),
+    matchedByTrackId: z.boolean().optional(),
+  }),
 )
 
 function toGlobalSearchResult(item: GlobalSearchResponse): GlobalSearchResult {
@@ -57,19 +54,20 @@ export async function searchGlobalDocuments(
   moduleKeys: string[],
   signal?: AbortSignal,
 ): Promise<GlobalSearchResult[]> {
-  const response = assertApiSuccess(
-    await apiGet(ENDPOINTS.GLOBAL_SEARCH, globalSearchResponseSchema, {
+  const response = await apiGet(
+    ENDPOINTS.GLOBAL_SEARCH,
+    globalSearchResponseSchema,
+    {
       signal,
       params: {
         keyword,
         limit: 20,
         moduleKeys: moduleKeys.join(','),
       },
-    }),
-    '全局搜索失败',
+    },
   )
 
-  return (response.data || []).flatMap((rawItem) => {
+  return response.flatMap((rawItem) => {
     const item = toGlobalSearchResult(rawItem)
     return item.moduleKey && (item.trackId || item.primaryNo) ? [item] : []
   })

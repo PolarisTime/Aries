@@ -16,7 +16,13 @@ export interface RuntimeFeatureConfig {
   weightOnlySalesOutbound: boolean
 }
 
+export interface RuntimeSetupConfig {
+  setupRequired: boolean
+  accountConfigured: boolean
+}
+
 export interface RuntimeConfigResponse {
+  setup: RuntimeSetupConfig
   ui: RuntimeUiConfig
   business: RuntimeBusinessConfig
   features: RuntimeFeatureConfig

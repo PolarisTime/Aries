@@ -4,7 +4,7 @@ import {
   getModuleConfig,
   type QueryValue,
 } from '@/api/contracts/module-contracts'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import {
   pageContent,
   pageHasMore,
@@ -12,7 +12,7 @@ import {
   pageTotalElements,
   pageTotalPages,
 } from '@/api/core/page-contract'
-import { rawPageResponseSchema } from '@/shared/schemas/api'
+import { rawRecordPageSchema } from '@/shared/schemas/api'
 import {
   getMainFlowListResponseSchema,
   type MainFlowModuleKey,
@@ -72,30 +72,32 @@ export async function fetchModulePage(
   }
   const mainFlowResponseSchema = getMainFlowListResponseSchema(moduleKey)
   if (mainFlowResponseSchema) {
-    const response = assertApiSuccess(
-      await apiGet(endpointConfig.path, mainFlowResponseSchema, requestConfig),
-      '查询业务列表失败',
+    const response = await apiGet(
+      endpointConfig.path,
+      mainFlowResponseSchema,
+      requestConfig,
     )
 
     return {
-      rows: response.data.content,
-      totalElements: response.data.totalElements,
-      totalPages: Math.max(response.data.totalPages, 1),
-      last: !response.data.hasMore,
-      hasMore: response.data.hasMore,
+      rows: response.content,
+      totalElements: response.totalElements,
+      totalPages: Math.max(response.totalPages, 1),
+      last: !response.hasMore,
+      hasMore: response.hasMore,
     }
   }
 
-  const response = assertApiSuccess(
-    await apiGet(endpointConfig.path, rawPageResponseSchema, requestConfig),
-    '查询业务列表失败',
+  const response = await apiGet(
+    endpointConfig.path,
+    rawRecordPageSchema,
+    requestConfig,
   )
 
   return {
-    rows: normalizeRows(pageContent(response.data)),
-    totalElements: pageTotalElements(response.data),
-    totalPages: pageTotalPages(response.data),
-    last: pageLast(response.data),
-    hasMore: pageHasMore(response.data),
+    rows: normalizeRows(pageContent(response)),
+    totalElements: pageTotalElements(response),
+    totalPages: pageTotalPages(response),
+    last: pageLast(response),
+    hasMore: pageHasMore(response),
   }
 }

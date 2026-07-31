@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Form } from 'antd'
 import { useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { assertApiSuccess } from '@/api/core/client'
 import {
   fetchSettlementCompanyOptions,
   type SettlementCompanyOption,
@@ -95,11 +94,7 @@ export function usePrintTemplateView() {
 
   const templatesQuery = useQuery({
     queryKey: QUERY_KEYS.printTemplateByType(selectedBillType),
-    queryFn: async () =>
-      assertApiSuccess(
-        await listPrintTemplates(selectedBillType),
-        t('system.printTemplate.loadFailed'),
-      ),
+    queryFn: () => listPrintTemplates(selectedBillType),
   })
   const { data: settlementCompanyOptions = [] } = useQuery<
     SettlementCompanyOption[]
@@ -107,16 +102,13 @@ export function usePrintTemplateView() {
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
     queryFn: fetchSettlementCompanyOptions,
   })
-  const templates = templatesQuery.data?.data || []
+  const templates = templatesQuery.data || []
 
   const saveMutation = useMutation({
     mutationFn: ({
       previousBillType: _previousBillType,
       ...payload
-    }: SavePrintTemplateMutationPayload) =>
-      savePrintTemplate(payload).then((response) =>
-        assertApiSuccess(response, t('api.saveFailed')),
-      ),
+    }: SavePrintTemplateMutationPayload) => savePrintTemplate(payload),
     onSuccess: (_data, variables) => {
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
@@ -143,9 +135,7 @@ export function usePrintTemplateView() {
   })
   const deleteMutation = useMutation({
     mutationFn: ({ id }: { id: string; billType?: string }) =>
-      deletePrintTemplate(id).then((response) =>
-        assertApiSuccess(response, t('api.deleteFailed')),
-      ),
+      deletePrintTemplate(id),
     onSuccess: (_data, variables) => {
       message.success(t('common.deleteSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })

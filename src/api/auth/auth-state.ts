@@ -9,7 +9,6 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
 import type { LoginResponseData } from '@/shared/schemas'
-import { apiResponseSchema } from '@/shared/schemas/api'
 import { loginResponseDataSchema } from '@/shared/schemas/auth'
 import { message } from '@/utils/antd-app'
 import { getApiMessage } from '@/utils/api-messages'
@@ -32,7 +31,7 @@ const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
 const REFRESH_WARNED_KEY = 'aries-refresh-warned'
 const REFRESH_REUSE_RETRY_DELAY_MS = 250
-const refreshResponseSchema = apiResponseSchema(loginResponseDataSchema)
+const refreshResponseSchema = loginResponseDataSchema
 
 let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -211,19 +210,13 @@ async function requestTokenRefresh(): Promise<LoginResponseData> {
     payload = await postTokenRefresh()
   }
 
-  if (payload.code !== ERROR_CODE.SUCCESS) {
-    throw new Error(
-      payload.message || getApiMessage('refreshLoginStatusFailed'),
-    )
-  }
-
-  if (!payload.data?.accessToken || !payload.data?.user) {
-    throw new Error(payload.message || getApiMessage('loginStatusExpired'))
+  if (!payload.accessToken || !payload.user) {
+    throw new Error(getApiMessage('loginStatusExpired'))
   }
 
   assertAuthSessionCurrent(requestEpoch)
-  applyAuthSession(payload.data)
-  return payload.data
+  applyAuthSession(payload)
+  return payload
 }
 
 export function refreshAccessToken(): Promise<LoginResponseData> {

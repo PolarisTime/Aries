@@ -63,18 +63,3 @@ export type SavePrintTemplatePayload = z.input<
 >
 
 export type PrintActionMode = 'preview' | 'print' | 'download'
-
-export type PrintTemplateResponse<T> = {
-  code?: number
-  message?: string
-  data: T
-}
-
-export const printTemplateResponseSchema = <Schema extends z.ZodType>(
-  dataSchema: Schema,
-) =>
-  z.object({
-    code: z.number().optional(),
-    message: z.string().optional(),
-    data: dataSchema,
-  })

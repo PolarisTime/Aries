@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema, rawPageSchema } from '@/shared/schemas/api'
+import { exactPageSchema } from '@/shared/schemas/api'
 import { type EntityId, parseEntityId } from '@/types/entity-id'
 import { asArray, asNumber, asString } from '@/utils/type-narrowing'
 
@@ -84,13 +84,11 @@ const financeBalanceSchema = z.looseObject({
   outstandingAmount: decimalSchema,
   advanceAmount: decimalSchema,
 })
-const financeOverviewResponseSchema = apiResponseSchema(
-  z.looseObject({
-    asOfDate: z.string(),
-    summary: financeOverviewSummarySchema,
-    balances: rawPageSchema(financeBalanceSchema),
-  }),
-)
+const financeOverviewResponseSchema = z.looseObject({
+  asOfDate: z.string(),
+  summary: financeOverviewSummarySchema,
+  balances: exactPageSchema(financeBalanceSchema),
+})
 
 function normalizeSummary(raw: RawRecord = {}): FinanceOverviewSummary {
   return {
@@ -143,9 +141,9 @@ function normalizeFinanceOverview(
       content: asArray<RawRecord>(rawBalances.content).map(normalizeBalance),
       totalElements: asNumber(rawBalances.totalElements),
       totalPages: asNumber(rawBalances.totalPages),
-      currentPage: asNumber(rawBalances.currentPage ?? rawBalances.page),
-      pageSize: asNumber(rawBalances.pageSize ?? rawBalances.size),
-      hasMore: (rawBalances.hasMore ?? rawBalances.hasNext) === true,
+      currentPage: asNumber(rawBalances.currentPage),
+      pageSize: asNumber(rawBalances.pageSize),
+      hasMore: rawBalances.hasMore === true,
     },
   }
 }
@@ -172,12 +170,13 @@ export async function getFinanceOverview(
   query: FinanceOverviewQuery,
   signal?: AbortSignal,
 ): Promise<FinanceOverviewPage> {
-  const response = assertApiSuccess(
-    await apiGet(ENDPOINTS.FINANCE_OVERVIEW, financeOverviewResponseSchema, {
+  const response = await apiGet(
+    ENDPOINTS.FINANCE_OVERVIEW,
+    financeOverviewResponseSchema,
+    {
       params: normalizeQuery(query),
       signal,
-    }),
-    '加载财务概览失败',
+    },
   )
-  return normalizeFinanceOverview(response.data)
+  return normalizeFinanceOverview(response)
 }

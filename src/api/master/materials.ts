@@ -1,39 +1,31 @@
 import { z } from 'zod'
-import {
-  apiGet,
-  apiPost,
-  assertApiSuccess,
-  downloadGet,
-} from '@/api/core/client'
+import { apiGet, apiPost, downloadGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { apiResponseSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { downloadBlob } from '@/utils/download'
 
-const materialSearchResponseSchema = apiResponseSchema(
-  z.array(z.looseObject({ id: z.unknown().optional() })),
+const materialSearchResponseSchema = z.array(
+  z.looseObject({ id: z.unknown().optional() }),
 )
 
-const materialImportResponseSchema = apiResponseSchema(
-  z.object({
-    totalRows: z.number(),
-    successCount: z.number(),
-    createdCount: z.number(),
-    updatedCount: z.number(),
-    skippedCount: z.number(),
-    failCount: z.number(),
-    errors: z.array(
-      z.object({
-        row: z.number(),
-        field: z.string(),
-        message: z.string(),
-      }),
-    ),
-    successRows: z.array(z.unknown()).optional(),
-  }),
-)
+const materialImportResponseSchema = z.object({
+  totalRows: z.number(),
+  successCount: z.number(),
+  createdCount: z.number(),
+  updatedCount: z.number(),
+  skippedCount: z.number(),
+  failCount: z.number(),
+  errors: z.array(
+    z.object({
+      row: z.number(),
+      field: z.string(),
+      message: z.string(),
+    }),
+  ),
+  successRows: z.array(z.unknown()).optional(),
+})
 
 export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
   id: EntityId
@@ -96,11 +88,11 @@ export async function fetchMaterialSearch(
     },
   )
 
-  if (Number(response.code) !== 0 || !Array.isArray(response.data)) {
+  if (!Array.isArray(response)) {
     return []
   }
 
-  return normalizeMaterialSearchRows(response.data)
+  return normalizeMaterialSearchRows(response)
 }
 
 export async function downloadMaterialImportTemplate() {
@@ -112,12 +104,9 @@ export async function importMaterialFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await apiPost(
+  return apiPost(
     ENDPOINTS.MATERIALS_IMPORT,
     materialImportResponseSchema,
     formData,
   )
-
-  assertApiSuccess(response)
-  return response.data
 }

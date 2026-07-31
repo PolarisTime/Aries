@@ -1,13 +1,7 @@
 import { z } from 'zod'
-import {
-  buildFilterParams,
-  getUnsupportedFilterKeys,
-} from '@/api/business/business-listing-filtering'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
-import {
-  apiResponseSchema,
-  responseNonNegativeIntegerSchema,
-} from '@/shared/schemas/api'
+import { fetchBusinessSummary } from '@/api/business/business-summary'
+import { ENDPOINTS } from '@/constants/endpoints'
+import { responseNonNegativeIntegerSchema } from '@/shared/schemas/api'
 import type { SearchParams } from '@/types/api-raw'
 
 const MODULE_KEY = 'customer-statement'
@@ -19,31 +13,17 @@ const customerStatementSummarySchema = z.strictObject({
   closingAmount: z.number(),
 })
 
-const customerStatementSummaryResponseSchema = apiResponseSchema(
-  customerStatementSummarySchema,
-)
+const customerStatementSummaryResponseSchema = customerStatementSummarySchema
 
 export type CustomerStatementSummary = z.output<
   typeof customerStatementSummarySchema
 >
 
 export async function fetchCustomerStatementSummary(search: SearchParams) {
-  const unsupportedKeys = getUnsupportedFilterKeys(MODULE_KEY, search)
-  if (unsupportedKeys.length) {
-    throw new Error(
-      `${MODULE_KEY} 不支持服务端过滤字段：${unsupportedKeys.join(', ')}`,
-    )
-  }
-
-  const response = assertApiSuccess(
-    await apiGet(
-      '/customer-statements/summary',
-      customerStatementSummaryResponseSchema,
-      {
-        params: buildFilterParams(MODULE_KEY, search),
-      },
-    ),
-    '查询客户对账汇总失败',
+  return fetchBusinessSummary(
+    MODULE_KEY,
+    ENDPOINTS.CUSTOMER_STATEMENTS_SUMMARY,
+    customerStatementSummaryResponseSchema,
+    search,
   )
-  return response.data
 }

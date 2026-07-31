@@ -1,17 +1,16 @@
 import { z } from 'zod'
 import { parseApiContract } from '@/api/core/api-contract'
 import {
-  apiDelete,
+  apiDeleteNoContent,
   apiGet,
   apiPost,
   apiPut,
-  assertApiSuccess,
   downloadPostResponse,
 } from '@/api/core/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 import type { SavePrintTemplatePayload } from '@/shared/schemas'
 import {
   printTemplateRecordSchema,
-  printTemplateResponseSchema,
   savePrintTemplatePayloadSchema,
 } from '@/shared/schemas/print-template'
 
@@ -31,12 +30,8 @@ const printRecordItemSchema = z.object({
   amount: z.string(),
 })
 
-const printTemplateListResponseSchema = printTemplateResponseSchema(
-  z.array(printTemplateRecordSchema),
-)
-const printRecordItemsResponseSchema = printTemplateResponseSchema(
-  z.array(printRecordItemSchema),
-)
+const printTemplateListResponseSchema = z.array(printTemplateRecordSchema)
+const printRecordItemsResponseSchema = z.array(printRecordItemSchema)
 const printOutputBaseSchema = z.object({
   templateName: z.string().optional(),
   templateType: z.string().optional(),
@@ -55,14 +50,8 @@ const printOutputSchema = z.discriminatedUnion('kind', [
     templateHtml: z.string(),
   }),
 ])
-const printRecordResponseSchema = printTemplateResponseSchema(printOutputSchema)
-const printTemplateItemResponseSchema = printTemplateResponseSchema(
-  printTemplateRecordSchema,
-)
-const printTemplateDeleteResponseSchema = printTemplateResponseSchema(
-  z.string(),
-)
-
+const printRecordResponseSchema = printOutputSchema
+const printTemplateItemResponseSchema = printTemplateRecordSchema
 export interface PrintRecordItem {
   id: string
   recordId: string
@@ -118,13 +107,13 @@ function defaultEngineForTemplateType(
 }
 
 export function listPrintTemplates(billType: string) {
-  return apiGet('/print-templates', printTemplateListResponseSchema, {
+  return apiGet(ENDPOINTS.PRINT_TEMPLATES, printTemplateListResponseSchema, {
     params: { billType },
   })
 }
 
 export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
-  return apiPost('/print/items', printRecordItemsResponseSchema, {
+  return apiPost(ENDPOINTS.PRINT_ITEMS, printRecordItemsResponseSchema, {
     moduleKey,
     recordIds,
   })
@@ -136,7 +125,7 @@ export function renderPrintRecord(
   recordId: string,
   printOptions?: unknown,
 ) {
-  return apiPost('/print/record', printRecordResponseSchema, {
+  return apiPost(ENDPOINTS.PRINT_RECORD, printRecordResponseSchema, {
     templateId,
     moduleKey,
     recordId,
@@ -149,7 +138,7 @@ export async function exportSalesOrderPrintXlsx(
   payload: ExportSalesOrderPrintXlsxPayload = {},
 ): Promise<SalesOrderPrintXlsxDownload> {
   const response = await downloadPostResponse(
-    `/sales-orders/${encodeURIComponent(recordId)}/print-xlsx`,
+    ENDPOINTS.SALES_ORDER_PRINT_XLSX(recordId),
     payload,
     {
       responseType: 'blob',
@@ -188,31 +177,31 @@ export function savePrintTemplate(payload: SavePrintTemplatePayload) {
 
   return validatedPayload.id
     ? apiPut(
-        `/print-templates/${encodeURIComponent(validatedPayload.id)}`,
+        ENDPOINTS.PRINT_TEMPLATE(validatedPayload.id),
         printTemplateItemResponseSchema,
         requestBody,
       )
-    : apiPost('/print-templates', printTemplateItemResponseSchema, requestBody)
+    : apiPost(
+        ENDPOINTS.PRINT_TEMPLATES,
+        printTemplateItemResponseSchema,
+        requestBody,
+      )
 }
 
 export function deletePrintTemplate(id: string) {
-  return apiDelete(
-    `/print-templates/${encodeURIComponent(id)}`,
-    printTemplateDeleteResponseSchema,
-  )
+  return apiDeleteNoContent(ENDPOINTS.PRINT_TEMPLATE(id))
 }
 
 export async function uploadPrintTemplateJson(id: string, file: File) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await apiPost(
-    `/print-templates/${encodeURIComponent(id)}/upload-json`,
+  return apiPost(
+    ENDPOINTS.PRINT_TEMPLATE_UPLOAD_JSON(id),
     printTemplateItemResponseSchema,
     formData,
     {
       headers: { 'Content-Type': 'multipart/form-data' },
     },
   )
-  return assertApiSuccess(response, '上传模板 JSON 失败')
 }

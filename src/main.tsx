@@ -3,7 +3,8 @@ import { RouterProvider } from '@tanstack/react-router'
 import i18next from 'i18next'
 import { createRoot, type Root } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/core/client'
-import { getInitialSetupStatus } from '@/api/system/setup'
+import { getRuntimeConfig } from '@/api/system/runtime-config'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
 import { initializeErrorMonitoring } from '@/observability/sentry'
 import { router } from '@/router'
@@ -88,16 +89,19 @@ async function bootstrap() {
   const hydratedAuthStore = useAuthStore.getState()
 
   // 并行执行会话恢复和初始化状态检查，减少阻塞时间
-  const [, setupResult] = await Promise.allSettled([
+  const [, runtimeConfigResult] = await Promise.allSettled([
     hydratedAuthStore.isAuthenticated
       ? hydratedAuthStore.restoreSession().catch(() => false)
       : Promise.resolve(false),
-    getInitialSetupStatus().catch(() => null),
+    queryClient.ensureQueryData({
+      queryKey: QUERY_KEYS.runtimeConfig,
+      queryFn: getRuntimeConfig,
+      staleTime: 30_000,
+    }),
   ])
 
-  // 缓存 setup 状态
-  if (setupResult.status === 'fulfilled' && setupResult.value) {
-    useSetupStore.getState().setStatus(setupResult.value.data)
+  if (runtimeConfigResult.status === 'fulfilled') {
+    useSetupStore.getState().setStatus(runtimeConfigResult.value.setup)
   }
 
   root.render(<App />)

@@ -38,7 +38,6 @@ import {
   Flex,
   Input,
   Spin,
-  Switch,
   Table,
   Tag,
   Tooltip,
@@ -125,58 +124,63 @@ function usePickupListColumns() {
       {
         title: t('modules.columns.warehouseName'),
         dataIndex: 'warehouseName',
-        width: 144,
+        width: 112,
+        align: 'center',
         render: (value: string | null) => displayText(value),
       },
       {
         title: t('modules.columns.brand'),
         dataIndex: 'brand',
-        width: 96,
+        width: 80,
+        align: 'center',
         ellipsis: true,
       },
       {
         title: t('modules.purchasePickupList.itemName'),
         dataIndex: 'category',
-        width: 96,
+        width: 80,
+        align: 'center',
         ellipsis: true,
       },
       {
         title: t('modules.columns.material'),
         dataIndex: 'material',
-        width: 96,
+        width: 80,
+        align: 'center',
         ellipsis: true,
       },
       {
         title: t('modules.columns.spec'),
         dataIndex: 'spec',
-        width: 112,
+        width: 96,
+        align: 'center',
         ellipsis: true,
       },
       {
         title: t('modules.columns.length'),
         dataIndex: 'length',
-        width: 80,
+        width: 64,
         align: 'center',
         render: (value: string | null) => displayText(value),
       },
       {
         title: t('modules.purchasePickupList.pickupQuantity'),
         dataIndex: 'pickupQuantity',
-        width: 96,
-        align: 'right',
+        width: 72,
+        align: 'center',
       },
       {
         title: t('modules.purchasePickupList.pieceWeight'),
         dataIndex: 'pieceWeightTon',
-        width: 104,
-        align: 'right',
+        width: 96,
+        align: 'center',
         render: (value: number) => formatWeight(value),
       },
       {
         title: t('modules.purchasePickupList.pickupWeight'),
         dataIndex: 'pickupWeightTon',
-        width: 116,
-        align: 'right',
+        width: 96,
+        align: 'center',
         render: (value: number) => formatWeight(value),
       },
     ],
@@ -231,7 +235,6 @@ interface PickupDraftGroup {
 
 interface PickupListDraft {
   dataKey: string
-  groupingEnabled: boolean
   groups: PickupDraftGroup[]
 }
 
@@ -414,7 +417,6 @@ function createDefaultDraft(
 ): PickupListDraft {
   return {
     dataKey,
-    groupingEnabled: false,
     groups: [
       {
         id: DEFAULT_GROUP_ID,
@@ -461,28 +463,6 @@ function resolveDraft(
 
 function flattenGroupItemIds(groups: PickupDraftGroup[]) {
   return groups.flatMap((group) => group.itemIds)
-}
-
-function reorderFlatGroups(
-  groups: PickupDraftGroup[],
-  activeId: string,
-  overId: string,
-) {
-  const itemIds = flattenGroupItemIds(groups)
-  const activeIndex = itemIds.indexOf(activeId)
-  const overIndex = itemIds.indexOf(overId)
-  if (activeIndex < 0 || overIndex < 0) return groups
-
-  const reorderedItemIds = arrayMove(itemIds, activeIndex, overIndex)
-  let offset = 0
-  return groups.map((group) => {
-    const nextItemIds = reorderedItemIds.slice(
-      offset,
-      offset + group.itemIds.length,
-    )
-    offset += group.itemIds.length
-    return { ...group, itemIds: nextItemIds }
-  })
 }
 
 function reorderGroupedItems(
@@ -567,7 +547,7 @@ function PickupItemsTable({
         locale={{ emptyText }}
         pagination={false}
         rowKey="itemId"
-        scroll={{ x: 992 }}
+        scroll={{ x: 824 }}
         size="small"
       />
     </SortableContext>
@@ -716,20 +696,22 @@ function PickupDraftGroupSection({
 
 interface PickupListSummaryProps {
   canGroup: boolean
-  groupingEnabled: boolean
+  canRestore: boolean
   summaryItems: Array<[string, string | number]>
   onAddGroup: () => void
+  onClose: () => void
   onGroupByWarehouse: () => void
-  onGroupingEnabledChange: (enabled: boolean) => void
+  onRestore: () => void
 }
 
 function PickupListSummary({
   canGroup,
-  groupingEnabled,
+  canRestore,
   summaryItems,
   onAddGroup,
+  onClose,
   onGroupByWarehouse,
-  onGroupingEnabledChange,
+  onRestore,
 }: PickupListSummaryProps) {
   const { t } = useTranslation()
 
@@ -755,16 +737,6 @@ function PickupListSummary({
         ))}
       </Flex>
       <Flex align="center" gap={12} wrap>
-        <Flex align="center" gap={8}>
-          <Switch
-            aria-label={t('modules.purchasePickupList.freeGrouping')}
-            checked={groupingEnabled}
-            onChange={onGroupingEnabledChange}
-          />
-          <Typography.Text strong>
-            {t('modules.purchasePickupList.freeGrouping')}
-          </Typography.Text>
-        </Flex>
         <Button
           disabled={!canGroup}
           icon={<ApartmentOutlined />}
@@ -772,11 +744,19 @@ function PickupListSummary({
         >
           {t('modules.purchasePickupList.groupByWarehouse')}
         </Button>
-        {groupingEnabled ? (
-          <Button icon={<PlusOutlined />} onClick={onAddGroup}>
-            {t('modules.purchasePickupList.addGroup')}
-          </Button>
-        ) : null}
+        <Button icon={<PlusOutlined />} onClick={onAddGroup}>
+          {t('modules.purchasePickupList.addGroup')}
+        </Button>
+        <Button
+          disabled={!canRestore}
+          icon={<UndoOutlined />}
+          onClick={onRestore}
+        >
+          {t('modules.purchasePickupList.restoreDefault')}
+        </Button>
+        <Button type="primary" onClick={onClose}>
+          {t('common.close')}
+        </Button>
       </Flex>
     </Flex>
   )
@@ -837,9 +817,7 @@ export function PurchaseOrderPickupListOverlay({
       groups:
         active.data.current?.type === GROUP_DRAG_TYPE
           ? reorderGroups(current.groups, activeId, overId)
-          : current.groupingEnabled
-            ? reorderGroupedItems(current.groups, activeId, overId)
-            : reorderFlatGroups(current.groups, activeId, overId),
+          : reorderGroupedItems(current.groups, activeId, overId),
     }))
   }
 
@@ -849,8 +827,6 @@ export function PurchaseOrderPickupListOverlay({
     const activeId = String(active.id)
     const overId = String(over.id)
     updateDraft((current) => {
-      if (!current.groupingEnabled) return current
-
       const groups = reorderGroupedItems(current.groups, activeId, overId)
       return groups === current.groups ? current : { ...current, groups }
     })
@@ -899,7 +875,6 @@ export function PurchaseOrderPickupListOverlay({
     if (!groups.length) return
     updateDraft((current) => ({
       ...current,
-      groupingEnabled: true,
       groups,
     }))
   }
@@ -909,10 +884,6 @@ export function PurchaseOrderPickupListOverlay({
       ...current,
       groups: [...current.groups, createPickupGroup()],
     }))
-  }
-
-  const setGroupingEnabled = (groupingEnabled: boolean) => {
-    updateDraft((current) => ({ ...current, groupingEnabled }))
   }
 
   const summaryItems: Array<[string, string | number]> = data
@@ -928,7 +899,6 @@ export function PurchaseOrderPickupListOverlay({
       ]
     : []
   const hasCustomDraft =
-    activeDraft.groupingEnabled ||
     activeDraft.groups.length !== 1 ||
     activeDraft.groups.some(
       (group) => group.locked || group.remark.length > 0,
@@ -947,20 +917,6 @@ export function PurchaseOrderPickupListOverlay({
       open={open}
       onClose={onClose}
       width={1440}
-      footer={
-        <>
-          <Button
-            disabled={!hasCustomDraft}
-            icon={<UndoOutlined />}
-            onClick={() => setPickupDraft(null)}
-          >
-            {t('modules.purchasePickupList.restoreDefault')}
-          </Button>
-          <Button type="primary" onClick={onClose}>
-            {t('common.close')}
-          </Button>
-        </>
-      }
     >
       <Spin spinning={isPending || isFetching}>
         <div className="purchase-pickup-list-content">
@@ -980,11 +936,12 @@ export function PurchaseOrderPickupListOverlay({
             <>
               <PickupListSummary
                 canGroup={defaultItems.length > 0}
-                groupingEnabled={activeDraft.groupingEnabled}
+                canRestore={hasCustomDraft}
                 summaryItems={summaryItems}
                 onAddGroup={addGroup}
+                onClose={onClose}
                 onGroupByWarehouse={groupByWarehouse}
-                onGroupingEnabledChange={setGroupingEnabled}
+                onRestore={() => setPickupDraft(null)}
               />
               {data.warnings.length ? (
                 <Alert
@@ -999,47 +956,32 @@ export function PurchaseOrderPickupListOverlay({
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
               >
-                {activeDraft.groupingEnabled ? (
-                  <SortableContext
-                    items={activeDraft.groups.map((group) =>
-                      groupDragId(group.id),
-                    )}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="purchase-pickup-list-groups">
-                      {activeDraft.groups.map((group, index) => (
-                        <PickupDraftGroupSection
-                          key={group.id}
-                          columns={columns}
-                          emptyText={t('modules.purchasePickupList.emptyGroup')}
-                          group={group}
-                          groupCount={activeDraft.groups.length}
-                          index={index}
-                          items={group.itemIds.flatMap((itemId) => {
-                            const item = itemsById.get(itemId)
-                            return item ? [item] : []
-                          })}
-                          onLockedChange={setGroupLocked}
-                          onRemarkChange={setGroupRemark}
-                          onRemove={removeGroup}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                ) : (
-                  <div className="purchase-pickup-list-flat">
-                    <PickupItemsTable
-                      columns={columns}
-                      emptyText={t('modules.purchasePickupList.emptyGroup')}
-                      items={flattenGroupItemIds(activeDraft.groups).flatMap(
-                        (itemId) => {
+                <SortableContext
+                  items={activeDraft.groups.map((group) =>
+                    groupDragId(group.id),
+                  )}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="purchase-pickup-list-groups">
+                    {activeDraft.groups.map((group, index) => (
+                      <PickupDraftGroupSection
+                        key={group.id}
+                        columns={columns}
+                        emptyText={t('modules.purchasePickupList.emptyGroup')}
+                        group={group}
+                        groupCount={activeDraft.groups.length}
+                        index={index}
+                        items={group.itemIds.flatMap((itemId) => {
                           const item = itemsById.get(itemId)
                           return item ? [item] : []
-                        },
-                      )}
-                    />
+                        })}
+                        onLockedChange={setGroupLocked}
+                        onRemarkChange={setGroupRemark}
+                        onRemove={removeGroup}
+                      />
+                    ))}
                   </div>
-                )}
+                </SortableContext>
               </DndContext>
             </>
           ) : null}

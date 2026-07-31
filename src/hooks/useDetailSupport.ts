@@ -60,7 +60,7 @@ export function useDetailSupport<Key extends ModuleKey>({
     try {
       const record = await getBusinessModuleDetail(moduleKey, request.recordId)
       if (requestVersion === requestVersionRef.current) {
-        setDetailRecord(record.data)
+        setDetailRecord(record)
       }
     } catch (error) {
       if (requestVersion === requestVersionRef.current) {

@@ -437,7 +437,6 @@ export const zhCN = {
       groupItemCount: '{{count}}条明细',
       groupTotalQuantity: '总件数',
       groupTotalWeight: '总重量',
-      freeGrouping: '自由分组',
       groupByWarehouse: '按仓库一键分组',
       unassignedWarehouse: '未指定仓库',
       addGroup: '添加分组',

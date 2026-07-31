@@ -189,7 +189,7 @@ server {
         try_files \$uri =404;
     }
 
-    location ^~ /api/setup {
+    location ^~ /api/v2.0/setup {
         limit_except GET HEAD OPTIONS {
             allow 127.0.0.1;
             allow ::1;

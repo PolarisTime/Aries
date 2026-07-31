@@ -51,16 +51,3 @@ export interface AttachmentDirectUploadPreparePayload {
   sourceType: string
   sha256Hex: string
 }
-
-export interface LeoPageData<T> {
-  content?: T[]
-  records?: T[]
-  currentPage?: number
-  page?: number
-  pageSize?: number
-  size?: number
-  totalElements: number
-  totalPages: number
-  first?: boolean
-  last?: boolean
-}

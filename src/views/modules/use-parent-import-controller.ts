@@ -82,12 +82,10 @@ export function useParentImportController({
         selectedRecords.map(async (selectedRecord) => ({
           data: parentImportConfig.useCandidateSnapshot
             ? selectedRecord
-            : (
-                await getBusinessModuleDetail(
-                  parentImportConfig.parentModuleKey,
-                  String(selectedRecord.id),
-                )
-              ).data,
+            : await getBusinessModuleDetail(
+                parentImportConfig.parentModuleKey,
+                String(selectedRecord.id),
+              ),
         })),
       )
 

@@ -1,21 +1,10 @@
 import { z } from 'zod'
-import {
-  apiDelete,
-  apiGet,
-  apiPost,
-  apiPut,
-  assertApiSuccess,
-} from '@/api/core/client'
+import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
 import { pageContent } from '@/api/core/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
-import {
-  apiResponseSchema,
-  nullResponseSchema,
-  rawPageSchema,
-} from '@/shared/schemas/api'
-import { getApiMessage } from '@/utils/api-messages'
+import { exactPageSchema } from '@/shared/schemas/api'
 import { asId, asString } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
@@ -74,13 +63,9 @@ const rawSettlementCompanyOptionSchema = z.object({
   taxNo: z.string().optional(),
   status: z.string().optional(),
 })
-const currentCompanyResponseSchema = apiResponseSchema(
-  rawCompanyProfileSchema.nullish(),
-)
-const companyPageResponseSchema = apiResponseSchema(
-  rawPageSchema(rawCompanyProfileSchema),
-)
-const companyResponseSchema = apiResponseSchema(rawCompanyProfileSchema)
+const currentCompanyResponseSchema = rawCompanyProfileSchema.nullish()
+const companyPageResponseSchema = exactPageSchema(rawCompanyProfileSchema)
+const companyResponseSchema = rawCompanyProfileSchema
 
 export type RawSettlementAccount = z.output<typeof rawSettlementAccountSchema>
 export type RawCompanyProfile = z.output<typeof rawCompanyProfileSchema>
@@ -137,24 +122,20 @@ function normalizeProfile(
 }
 
 export async function getCompanySettingProfile() {
-  const r = assertApiSuccess(
-    await apiGet(
-      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
-      currentCompanyResponseSchema,
-    ),
-    getApiMessage('loadCompanyInfoFailed'),
+  const response = await apiGet(
+    ENDPOINTS.COMPANY_SETTINGS_CURRENT,
+    currentCompanyResponseSchema,
   )
-  return normalizeProfile(r.data)
+  return normalizeProfile(response)
 }
 
 export async function listCompanySettings() {
-  const r = assertApiSuccess(
-    await apiGet(ENDPOINTS.COMPANY_SETTINGS, companyPageResponseSchema, {
-      params: { page: 0, size: 200, sortBy: 'id', direction: 'asc' },
-    }),
-    getApiMessage('loadCompanyInfoFailed'),
+  const response = await apiGet(
+    ENDPOINTS.COMPANY_SETTINGS,
+    companyPageResponseSchema,
+    { params: { page: 0, size: 200, sortBy: 'id', direction: 'asc' } },
   )
-  return pageContent(r.data).flatMap((item) => {
+  return pageContent(response).flatMap((item) => {
     const profile = normalizeProfile(item)
     return profile ? [profile] : []
   })
@@ -180,31 +161,28 @@ export function getSettlementCompanyOptions(): SettlementCompanyOption[] {
 export async function createCompanySetting(
   payload: Omit<CompanySettingProfile, 'id'>,
 ) {
-  const r = assertApiSuccess(
-    await apiPost(ENDPOINTS.COMPANY_SETTINGS, companyResponseSchema, payload),
-    getApiMessage('saveCompanyInfoFailed'),
+  const response = await apiPost(
+    ENDPOINTS.COMPANY_SETTINGS,
+    companyResponseSchema,
+    payload,
   )
-  return normalizeProfile(r.data)
+  return normalizeProfile(response)
 }
 
 export async function updateCompanySetting(
   id: string,
   payload: Omit<CompanySettingProfile, 'id'>,
 ) {
-  const r = assertApiSuccess(
-    await apiPut(
-      `${ENDPOINTS.COMPANY_SETTINGS}/${id}`,
-      companyResponseSchema,
-      payload,
-    ),
-    getApiMessage('saveCompanyInfoFailed'),
+  const response = await apiPut(
+    `${ENDPOINTS.COMPANY_SETTINGS}/${id}`,
+    companyResponseSchema,
+    payload,
   )
-  return normalizeProfile(r.data)
+  return normalizeProfile(response)
 }
 
 export async function deleteCompanySetting(id: string) {
-  return assertApiSuccess(
-    await apiDelete(`${ENDPOINTS.COMPANY_SETTINGS}/${id}`, nullResponseSchema),
-    getApiMessage('requestFailed'),
+  return apiDeleteNoContent(
+    `${ENDPOINTS.COMPANY_SETTINGS}/${encodeURIComponent(id)}`,
   )
 }

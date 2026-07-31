@@ -1,7 +1,7 @@
 import { getModuleConfig } from '@/api/contracts/module-contracts'
-import { apiGet, assertApiSuccess } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
 import { pageContent, pageTotalElements } from '@/api/core/page-contract'
-import { rawPageResponseSchema } from '@/shared/schemas/api'
+import { rawRecordPageSchema } from '@/shared/schemas/api'
 import type { TableResponse } from '@/types/api'
 import type { RawApiRecord, SearchParams } from '@/types/api-raw'
 import {
@@ -10,7 +10,6 @@ import {
   parseOptionalEntityId,
 } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
-import { getApiMessage } from '@/utils/api-messages'
 import { asString } from '@/utils/type-narrowing'
 
 export function normalizeRecord(raw: RawApiRecord): ModuleRecord {
@@ -41,8 +40,10 @@ async function listStatementCandidates(
     currentRecordId,
     'currentRecordId',
   )
-  const response = assertApiSuccess(
-    await apiGet(`${endpointConfig.path}/candidates`, rawPageResponseSchema, {
+  const response = await apiGet(
+    `${endpointConfig.path}/candidates`,
+    rawRecordPageSchema,
+    {
       params: {
         ...candidateFilters,
         ...(currentStatementId ? { currentStatementId } : {}),
@@ -51,13 +52,12 @@ async function listStatementCandidates(
         size,
       },
       signal,
-    }),
-    getApiMessage('queryStatementCandidatesFailed'),
+    },
   )
-  const content = pageContent(response.data)
+  const content = pageContent(response) as RawApiRecord[]
   return {
     rows: content.map(normalizeRecord),
-    total: pageTotalElements(response.data),
+    total: pageTotalElements(response),
   }
 }
 
