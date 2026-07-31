@@ -1,10 +1,14 @@
 import {
+  ApartmentOutlined,
   DeleteOutlined,
   HolderOutlined,
+  LockOutlined,
   PlusOutlined,
   UndoOutlined,
+  UnlockOutlined,
 } from '@ant-design/icons'
 import type {
+  CollisionDetection,
   DragEndEvent,
   DraggableAttributes,
   DraggableSyntheticListeners,
@@ -15,7 +19,6 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
-  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -120,11 +123,6 @@ function usePickupListColumns() {
         ),
       },
       {
-        title: t('modules.columns.purchaseOrderNo'),
-        dataIndex: 'orderNo',
-        width: 176,
-      },
-      {
         title: t('modules.columns.warehouseName'),
         dataIndex: 'warehouseName',
         width: 144,
@@ -195,7 +193,10 @@ function SortableRow(props: SortableRowProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props['data-row-key'] })
+  } = useSortable({
+    id: props['data-row-key'],
+    data: { type: ITEM_DRAG_TYPE },
+  })
   const style: CSSProperties = {
     ...props.style,
     transform: transform
@@ -223,6 +224,7 @@ function SortableRow(props: SortableRowProps) {
 
 interface PickupDraftGroup {
   id: string
+  locked: boolean
   remark: string
   itemIds: string[]
 }
@@ -243,22 +245,167 @@ interface PickupDraftGroupSectionProps extends PickupItemsTableProps {
   group: PickupDraftGroup
   groupCount: number
   index: number
+  onLockedChange: (groupId: string, locked: boolean) => void
   onRemarkChange: (groupId: string, remark: string) => void
   onRemove: (groupId: string) => void
 }
 
 const DEFAULT_GROUP_ID = 'pickup-group-default'
-const GROUP_DROP_PREFIX = 'pickup-group-drop:'
+const GROUP_DRAG_PREFIX = 'pickup-group:'
+const GROUP_DRAG_TYPE = 'pickup-group'
+const ITEM_DRAG_TYPE = 'pickup-item'
 const TABLE_COMPONENTS = { body: { row: SortableRow } }
+const WAREHOUSE_NAME_COLLATOR = new Intl.Collator('zh-CN', {
+  numeric: true,
+  sensitivity: 'base',
+})
+const MATERIAL_TEXT_COLLATOR = new Intl.Collator('zh-CN', {
+  sensitivity: 'base',
+})
 let nextPickupGroupId = 0
+
+const pickupListCollisionDetection: CollisionDetection = (args) => {
+  if (args.active.data.current?.type !== GROUP_DRAG_TYPE) {
+    return closestCenter(args)
+  }
+
+  return closestCenter({
+    ...args,
+    droppableContainers: args.droppableContainers.filter(
+      (container) => container.data.current?.type === GROUP_DRAG_TYPE,
+    ),
+  })
+}
+
+function groupDragId(groupId: string) {
+  return `${GROUP_DRAG_PREFIX}${groupId}`
+}
+
+function groupIdFromDragId(dragId: string) {
+  return dragId.startsWith(GROUP_DRAG_PREFIX)
+    ? dragId.slice(GROUP_DRAG_PREFIX.length)
+    : undefined
+}
 
 function createPickupGroup(itemIds: string[] = []): PickupDraftGroup {
   nextPickupGroupId += 1
   return {
     id: `pickup-group-${nextPickupGroupId}`,
+    locked: false,
     remark: '',
     itemIds,
   }
+}
+
+function warehouseGroupKey(item: PurchaseOrderPickupListItem) {
+  const warehouseId = item.warehouseId?.trim()
+  if (warehouseId) return `id:${warehouseId}`
+
+  const warehouseName = item.warehouseName?.trim()
+  return warehouseName ? `name:${warehouseName}` : 'unassigned'
+}
+
+function numericSortValue(value: string, ignoredCharacters: RegExp) {
+  const numericText = value.replace(ignoredCharacters, '')
+  if (!numericText) return undefined
+
+  const numericValue = Number(numericText)
+  return Number.isFinite(numericValue) ? numericValue : undefined
+}
+
+function compareNullableNumbers(left?: number, right?: number) {
+  if (left === right) return 0
+  if (left === undefined) return 1
+  if (right === undefined) return -1
+  return left - right
+}
+
+function compareByMaterialCatalogOrder(
+  left: PurchaseOrderPickupListItem,
+  right: PurchaseOrderPickupListItem,
+) {
+  // Mirrors MaterialSearchPolicy.DEFAULT_SORT and its generated numeric columns.
+  return (
+    MATERIAL_TEXT_COLLATOR.compare(left.material, right.material) ||
+    compareNullableNumbers(
+      numericSortValue(left.length ?? '0', /[^0-9.]/g),
+      numericSortValue(right.length ?? '0', /[^0-9.]/g),
+    ) ||
+    MATERIAL_TEXT_COLLATOR.compare(left.brand, right.brand) ||
+    compareNullableNumbers(
+      numericSortValue(left.spec, /[^0-9]/g),
+      numericSortValue(right.spec, /[^0-9]/g),
+    )
+  )
+}
+
+function createWarehouseGroups(
+  items: PurchaseOrderPickupListItem[],
+): PickupDraftGroup[] {
+  const buckets = new Map<
+    string,
+    {
+      items: PurchaseOrderPickupListItem[]
+      warehouseId: string
+      warehouseName: string
+    }
+  >()
+  for (const item of items) {
+    const key = warehouseGroupKey(item)
+    const warehouseName = item.warehouseName?.trim() || ''
+    const bucket = buckets.get(key)
+    if (bucket) {
+      bucket.items.push(item)
+      if (!bucket.warehouseName && warehouseName) {
+        bucket.warehouseName = warehouseName
+      }
+      continue
+    }
+    buckets.set(key, {
+      items: [item],
+      warehouseId: item.warehouseId?.trim() || '',
+      warehouseName,
+    })
+  }
+
+  return Array.from(buckets.values())
+    .sort((left, right) => {
+      if (Boolean(left.warehouseName) !== Boolean(right.warehouseName)) {
+        return left.warehouseName ? -1 : 1
+      }
+      return (
+        WAREHOUSE_NAME_COLLATOR.compare(
+          left.warehouseName,
+          right.warehouseName,
+        ) ||
+        WAREHOUSE_NAME_COLLATOR.compare(left.warehouseId, right.warehouseId)
+      )
+    })
+    .map((bucket) =>
+      createPickupGroup(
+        bucket.items
+          .toSorted(compareByMaterialCatalogOrder)
+          .map((item) => item.itemId),
+      ),
+    )
+}
+
+function resolveWarehouseLabel(
+  items: PurchaseOrderPickupListItem[],
+  unassignedLabel: string,
+) {
+  if (!items.length) return undefined
+
+  const warehouseKeys = new Set(items.map(warehouseGroupKey))
+  if (warehouseKeys.size !== 1) return undefined
+
+  const warehouseNames = new Set(
+    items
+      .map((item) => item.warehouseName?.trim())
+      .filter((name): name is string => Boolean(name)),
+  )
+  if (warehouseNames.size > 1) return undefined
+  return warehouseNames.values().next().value || unassignedLabel
 }
 
 function createDefaultDraft(
@@ -268,7 +415,14 @@ function createDefaultDraft(
   return {
     dataKey,
     groupingEnabled: false,
-    groups: [{ id: DEFAULT_GROUP_ID, remark: '', itemIds: [...itemIds] }],
+    groups: [
+      {
+        id: DEFAULT_GROUP_ID,
+        locked: false,
+        remark: '',
+        itemIds: [...itemIds],
+      },
+    ],
   }
 }
 
@@ -285,6 +439,7 @@ function resolveDraft(
   const assignedItemIds = new Set<string>()
   const groups = draft.groups.map((group) => ({
     ...group,
+    locked: group.locked ?? false,
     itemIds: group.itemIds.filter((itemId) => {
       if (!validItemIds.has(itemId) || assignedItemIds.has(itemId)) return false
       assignedItemIds.add(itemId)
@@ -338,9 +493,7 @@ function reorderGroupedItems(
   const sourceGroupIndex = groups.findIndex((group) =>
     group.itemIds.includes(activeId),
   )
-  const targetGroupId = overId.startsWith(GROUP_DROP_PREFIX)
-    ? overId.slice(GROUP_DROP_PREFIX.length)
-    : undefined
+  const targetGroupId = groupIdFromDragId(overId)
   const targetGroupIndex = targetGroupId
     ? groups.findIndex((group) => group.id === targetGroupId)
     : groups.findIndex((group) => group.itemIds.includes(overId))
@@ -356,6 +509,9 @@ function reorderGroupedItems(
         ? { ...group, itemIds: arrayMove(itemIds, activeIndex, overIndex) }
         : group,
     )
+  }
+  if (groups[sourceGroupIndex].locked || groups[targetGroupIndex].locked) {
+    return groups
   }
 
   const nextGroups = groups.map((group) => ({
@@ -377,6 +533,23 @@ function reorderGroupedItems(
   return nextGroups
 }
 
+function reorderGroups(
+  groups: PickupDraftGroup[],
+  activeId: string,
+  overId: string,
+) {
+  const activeGroupId = groupIdFromDragId(activeId)
+  const overGroupId = groupIdFromDragId(overId)
+  if (!activeGroupId || !overGroupId) return groups
+
+  const activeIndex = groups.findIndex((group) => group.id === activeGroupId)
+  const overIndex = groups.findIndex((group) => group.id === overGroupId)
+  if (activeIndex < 0 || overIndex < 0 || activeIndex === overIndex) {
+    return groups
+  }
+  return arrayMove(groups, activeIndex, overIndex)
+}
+
 function PickupItemsTable({
   columns,
   emptyText,
@@ -394,7 +567,7 @@ function PickupItemsTable({
         locale={{ emptyText }}
         pagination={false}
         rowKey="itemId"
-        scroll={{ x: 1168 }}
+        scroll={{ x: 992 }}
         size="small"
       />
     </SortableContext>
@@ -408,13 +581,37 @@ function PickupDraftGroupSection({
   groupCount,
   index,
   items,
+  onLockedChange,
   onRemarkChange,
   onRemove,
 }: PickupDraftGroupSectionProps) {
   const { t } = useTranslation()
-  const { isOver, setNodeRef } = useDroppable({
-    id: `${GROUP_DROP_PREFIX}${group.id}`,
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({
+    id: groupDragId(group.id),
+    data: {
+      type: GROUP_DRAG_TYPE,
+      groupId: group.id,
+    },
   })
+  const style: CSSProperties = {
+    transform: transform
+      ? CSS.Transform.toString({ ...transform, x: 0 })
+      : undefined,
+    transition,
+  }
+  const dragHandleContextValue = useMemo<DragHandleContextValue>(
+    () => ({ attributes, listeners, setActivatorNodeRef }),
+    [attributes, listeners, setActivatorNodeRef],
+  )
   const groupTotals = items.reduce(
     (totals, item) => ({
       quantity: totals.quantity + item.pickupQuantity,
@@ -425,62 +622,163 @@ function PickupDraftGroupSection({
   const removeLabel = t('modules.purchasePickupList.removeGroup', {
     index: index + 1,
   })
+  const dragLabel = t('modules.purchasePickupList.dragGroup', {
+    index: index + 1,
+  })
+  const warehouseLabel = resolveWarehouseLabel(
+    items,
+    t('modules.purchasePickupList.unassignedWarehouse'),
+  )
+  const lockLabel = t(
+    group.locked
+      ? 'modules.purchasePickupList.unlockGroup'
+      : 'modules.purchasePickupList.lockGroup',
+    { index: index + 1 },
+  )
 
   return (
-    <section
-      ref={setNodeRef}
-      className={`purchase-pickup-list-group${isOver ? ' purchase-pickup-list-group--drop-target' : ''}`}
-    >
-      <div className="purchase-pickup-list-group-header">
-        <div className="purchase-pickup-list-group-title">
-          <Typography.Text strong>
-            {t('modules.purchasePickupList.groupLabel', { index: index + 1 })}
-          </Typography.Text>
-          <Tag>
-            {t('modules.purchasePickupList.groupItemCount', {
-              count: items.length,
-            })}
-          </Tag>
-          <span className="purchase-pickup-list-group-total">
-            <Typography.Text type="secondary">
-              {t('modules.purchasePickupList.groupTotalQuantity')}：
-            </Typography.Text>
-            <Typography.Text strong>{groupTotals.quantity}</Typography.Text>
-          </span>
-          <span className="purchase-pickup-list-group-total">
-            <Typography.Text type="secondary">
-              {t('modules.purchasePickupList.groupTotalWeight')}：
-            </Typography.Text>
+    <DragHandleContext.Provider value={dragHandleContextValue}>
+      <section
+        ref={setNodeRef}
+        className={`purchase-pickup-list-group${isOver ? ' purchase-pickup-list-group--drop-target' : ''}${isDragging ? ' purchase-pickup-list-group--dragging' : ''}`}
+        style={style}
+      >
+        <div className="purchase-pickup-list-group-header">
+          <div className="purchase-pickup-list-group-title">
+            <DragHandle label={dragLabel} />
             <Typography.Text strong>
-              {formatWeight(groupTotals.weightTon)}
-              {t('modules.units.ton')}
+              {t('modules.purchasePickupList.groupLabel', { index: index + 1 })}
             </Typography.Text>
-          </span>
-        </div>
-        <div className="purchase-pickup-list-group-controls">
-          <Input
-            allowClear
-            className="purchase-pickup-list-group-remark"
-            maxLength={200}
-            placeholder={t('modules.purchasePickupList.groupRemarkPlaceholder')}
-            value={group.remark}
-            onChange={(event) =>
-              onRemarkChange(group.id, event.currentTarget.value)
-            }
-          />
-          <Tooltip title={removeLabel}>
-            <Button
-              aria-label={removeLabel}
-              disabled={groupCount === 1}
-              icon={<DeleteOutlined />}
-              type="text"
-              onClick={() => onRemove(group.id)}
+            {warehouseLabel ? <Tag color="blue">{warehouseLabel}</Tag> : null}
+            <Tag>
+              {t('modules.purchasePickupList.groupItemCount', {
+                count: items.length,
+              })}
+            </Tag>
+            <span className="purchase-pickup-list-group-total">
+              <Typography.Text type="secondary">
+                {t('modules.purchasePickupList.groupTotalQuantity')}：
+              </Typography.Text>
+              <Typography.Text strong>{groupTotals.quantity}</Typography.Text>
+            </span>
+            <span className="purchase-pickup-list-group-total">
+              <Typography.Text type="secondary">
+                {t('modules.purchasePickupList.groupTotalWeight')}：
+              </Typography.Text>
+              <Typography.Text strong>
+                {formatWeight(groupTotals.weightTon)}
+                {t('modules.units.ton')}
+              </Typography.Text>
+            </span>
+          </div>
+          <div className="purchase-pickup-list-group-controls">
+            <Input
+              allowClear
+              className="purchase-pickup-list-group-remark"
+              maxLength={200}
+              placeholder={t(
+                'modules.purchasePickupList.groupRemarkPlaceholder',
+              )}
+              value={group.remark}
+              onChange={(event) =>
+                onRemarkChange(group.id, event.currentTarget.value)
+              }
             />
-          </Tooltip>
+            <Tooltip title={lockLabel}>
+              <Button
+                aria-label={lockLabel}
+                aria-pressed={group.locked}
+                icon={group.locked ? <LockOutlined /> : <UnlockOutlined />}
+                type={group.locked ? 'primary' : 'text'}
+                onClick={() => onLockedChange(group.id, !group.locked)}
+              />
+            </Tooltip>
+            <Tooltip title={removeLabel}>
+              <Button
+                aria-label={removeLabel}
+                disabled={groupCount === 1}
+                icon={<DeleteOutlined />}
+                type="text"
+                onClick={() => onRemove(group.id)}
+              />
+            </Tooltip>
+          </div>
         </div>
-      </div>
-      <PickupItemsTable columns={columns} emptyText={emptyText} items={items} />
-    </section>
+        <PickupItemsTable
+          columns={columns}
+          emptyText={emptyText}
+          items={items}
+        />
+      </section>
+    </DragHandleContext.Provider>
+  )
+}
+
+interface PickupListSummaryProps {
+  canGroup: boolean
+  groupingEnabled: boolean
+  summaryItems: Array<[string, string | number]>
+  onAddGroup: () => void
+  onGroupByWarehouse: () => void
+  onGroupingEnabledChange: (enabled: boolean) => void
+}
+
+function PickupListSummary({
+  canGroup,
+  groupingEnabled,
+  summaryItems,
+  onAddGroup,
+  onGroupByWarehouse,
+  onGroupingEnabledChange,
+}: PickupListSummaryProps) {
+  const { t } = useTranslation()
+
+  return (
+    <Flex
+      align="center"
+      className="purchase-pickup-list-summary"
+      gap={16}
+      justify="space-between"
+      wrap
+    >
+      <Flex
+        align="center"
+        className="purchase-pickup-list-summary-metrics"
+        gap={24}
+        wrap
+      >
+        {summaryItems.map(([label, value]) => (
+          <span key={label} className="purchase-pickup-list-metric">
+            <Typography.Text type="secondary">{label}：</Typography.Text>
+            <Typography.Text strong>{value}</Typography.Text>
+          </span>
+        ))}
+      </Flex>
+      <Flex align="center" gap={12} wrap>
+        <Flex align="center" gap={8}>
+          <Switch
+            aria-label={t('modules.purchasePickupList.freeGrouping')}
+            checked={groupingEnabled}
+            onChange={onGroupingEnabledChange}
+          />
+          <Typography.Text strong>
+            {t('modules.purchasePickupList.freeGrouping')}
+          </Typography.Text>
+        </Flex>
+        <Button
+          disabled={!canGroup}
+          icon={<ApartmentOutlined />}
+          onClick={onGroupByWarehouse}
+        >
+          {t('modules.purchasePickupList.groupByWarehouse')}
+        </Button>
+        {groupingEnabled ? (
+          <Button icon={<PlusOutlined />} onClick={onAddGroup}>
+            {t('modules.purchasePickupList.addGroup')}
+          </Button>
+        ) : null}
+      </Flex>
+    </Flex>
   )
 }
 
@@ -536,14 +834,18 @@ export function PurchaseOrderPickupListOverlay({
     const overId = String(over.id)
     updateDraft((current) => ({
       ...current,
-      groups: current.groupingEnabled
-        ? reorderGroupedItems(current.groups, activeId, overId)
-        : reorderFlatGroups(current.groups, activeId, overId),
+      groups:
+        active.data.current?.type === GROUP_DRAG_TYPE
+          ? reorderGroups(current.groups, activeId, overId)
+          : current.groupingEnabled
+            ? reorderGroupedItems(current.groups, activeId, overId)
+            : reorderFlatGroups(current.groups, activeId, overId),
     }))
   }
 
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over || active.id === over.id) return
+    if (active.data.current?.type === GROUP_DRAG_TYPE) return
     const activeId = String(active.id)
     const overId = String(over.id)
     updateDraft((current) => {
@@ -583,7 +885,37 @@ export function PurchaseOrderPickupListOverlay({
     }))
   }
 
-  const summaryItems = data
+  const setGroupLocked = (groupId: string, locked: boolean) => {
+    updateDraft((current) => ({
+      ...current,
+      groups: current.groups.map((group) =>
+        group.id === groupId ? { ...group, locked } : group,
+      ),
+    }))
+  }
+
+  const groupByWarehouse = () => {
+    const groups = createWarehouseGroups(defaultItems)
+    if (!groups.length) return
+    updateDraft((current) => ({
+      ...current,
+      groupingEnabled: true,
+      groups,
+    }))
+  }
+
+  const addGroup = () => {
+    updateDraft((current) => ({
+      ...current,
+      groups: [...current.groups, createPickupGroup()],
+    }))
+  }
+
+  const setGroupingEnabled = (groupingEnabled: boolean) => {
+    updateDraft((current) => ({ ...current, groupingEnabled }))
+  }
+
+  const summaryItems: Array<[string, string | number]> = data
     ? [
         [t('modules.purchasePickupList.orderCount'), data.orderCount],
         [t('modules.purchasePickupList.supplierCount'), data.supplierCount],
@@ -598,7 +930,9 @@ export function PurchaseOrderPickupListOverlay({
   const hasCustomDraft =
     activeDraft.groupingEnabled ||
     activeDraft.groups.length !== 1 ||
-    activeDraft.groups.some((group) => group.remark.length > 0) ||
+    activeDraft.groups.some(
+      (group) => group.locked || group.remark.length > 0,
+    ) ||
     flattenGroupItemIds(activeDraft.groups).some(
       (itemId, index) => itemId !== defaultItemIds[index],
     )
@@ -644,62 +978,14 @@ export function PurchaseOrderPickupListOverlay({
           ) : null}
           {data ? (
             <>
-              <Flex
-                align="center"
-                className="purchase-pickup-list-summary"
-                gap={16}
-                justify="space-between"
-                wrap
-              >
-                <Flex
-                  align="center"
-                  className="purchase-pickup-list-summary-metrics"
-                  gap={24}
-                  wrap
-                >
-                  {summaryItems.map(([label, value]) => (
-                    <span
-                      key={String(label)}
-                      className="purchase-pickup-list-metric"
-                    >
-                      <Typography.Text type="secondary">
-                        {label}：
-                      </Typography.Text>
-                      <Typography.Text strong>{value}</Typography.Text>
-                    </span>
-                  ))}
-                </Flex>
-                <Flex align="center" gap={12} wrap>
-                  <Flex align="center" gap={8}>
-                    <Switch
-                      aria-label={t('modules.purchasePickupList.freeGrouping')}
-                      checked={activeDraft.groupingEnabled}
-                      onChange={(groupingEnabled) =>
-                        updateDraft((current) => ({
-                          ...current,
-                          groupingEnabled,
-                        }))
-                      }
-                    />
-                    <Typography.Text strong>
-                      {t('modules.purchasePickupList.freeGrouping')}
-                    </Typography.Text>
-                  </Flex>
-                  {activeDraft.groupingEnabled ? (
-                    <Button
-                      icon={<PlusOutlined />}
-                      onClick={() =>
-                        updateDraft((current) => ({
-                          ...current,
-                          groups: [...current.groups, createPickupGroup()],
-                        }))
-                      }
-                    >
-                      {t('modules.purchasePickupList.addGroup')}
-                    </Button>
-                  ) : null}
-                </Flex>
-              </Flex>
+              <PickupListSummary
+                canGroup={defaultItems.length > 0}
+                groupingEnabled={activeDraft.groupingEnabled}
+                summaryItems={summaryItems}
+                onAddGroup={addGroup}
+                onGroupByWarehouse={groupByWarehouse}
+                onGroupingEnabledChange={setGroupingEnabled}
+              />
               {data.warnings.length ? (
                 <Alert
                   title={data.warnings.join('；')}
@@ -709,29 +995,37 @@ export function PurchaseOrderPickupListOverlay({
               ) : null}
               <DndContext
                 sensors={sensors}
-                collisionDetection={closestCenter}
+                collisionDetection={pickupListCollisionDetection}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
               >
                 {activeDraft.groupingEnabled ? (
-                  <div className="purchase-pickup-list-groups">
-                    {activeDraft.groups.map((group, index) => (
-                      <PickupDraftGroupSection
-                        key={group.id}
-                        columns={columns}
-                        emptyText={t('modules.purchasePickupList.emptyGroup')}
-                        group={group}
-                        groupCount={activeDraft.groups.length}
-                        index={index}
-                        items={group.itemIds.flatMap((itemId) => {
-                          const item = itemsById.get(itemId)
-                          return item ? [item] : []
-                        })}
-                        onRemarkChange={setGroupRemark}
-                        onRemove={removeGroup}
-                      />
-                    ))}
-                  </div>
+                  <SortableContext
+                    items={activeDraft.groups.map((group) =>
+                      groupDragId(group.id),
+                    )}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="purchase-pickup-list-groups">
+                      {activeDraft.groups.map((group, index) => (
+                        <PickupDraftGroupSection
+                          key={group.id}
+                          columns={columns}
+                          emptyText={t('modules.purchasePickupList.emptyGroup')}
+                          group={group}
+                          groupCount={activeDraft.groups.length}
+                          index={index}
+                          items={group.itemIds.flatMap((itemId) => {
+                            const item = itemsById.get(itemId)
+                            return item ? [item] : []
+                          })}
+                          onLockedChange={setGroupLocked}
+                          onRemarkChange={setGroupRemark}
+                          onRemove={removeGroup}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
                 ) : (
                   <div className="purchase-pickup-list-flat">
                     <PickupItemsTable
