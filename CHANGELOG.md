@@ -1,3 +1,10 @@
+## [9.0.4](https://github.com/PolarisTime/Aries/compare/v9.0.3...v9.0.4) (2026-08-01)
+
+
+### Bug Fixes
+
+* **deps:** 修复前端依赖安全漏洞 ([f4f5325](https://github.com/PolarisTime/Aries/commit/f4f53252abaa6a7feab8f1cbdc9f1d9d39dd513b))
+
 ## [9.0.3](https://github.com/PolarisTime/Aries/compare/v9.0.2...v9.0.3) (2026-08-01)
 
 
