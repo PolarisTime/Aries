@@ -28,6 +28,7 @@ import {
   Empty,
   Input,
   Modal,
+  Segmented,
   Select,
   Space,
   Switch,
@@ -53,7 +54,6 @@ import {
   buildPrintItemMergeMarkers,
   type PrintItemMergeMarker,
   reorderPrintItemIds,
-  SALES_ORDER_A4_TEMPLATE_CODE,
 } from '@/views/modules/components/print-job-modal-utils'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []
@@ -200,6 +200,7 @@ interface PrintJobModalState {
   orderedPrintItemIds: string[]
   excludedPrintItemIds: string[]
   itemSelectionEnabled: boolean
+  mergeEquivalentItems: boolean
   outputPrintItemIds: string[]
   pendingOutputAction?: PendingOutputAction
 }
@@ -214,6 +215,7 @@ type PrintJobModalAction =
   | { type: 'setPrintItemSelected'; itemId: string; selected: boolean }
   | { type: 'setAllPrintItemsSelected'; itemIds: string[]; selected: boolean }
   | { type: 'setItemSelectionEnabled'; value: boolean }
+  | { type: 'setMergeEquivalentItems'; value: boolean }
   | { type: 'markPrintItemsOutput'; itemIds: string[] }
   | { type: 'setPendingOutputAction'; value?: PendingOutputAction }
   | { type: 'reset' }
@@ -226,6 +228,7 @@ const INITIAL_PRINT_JOB_MODAL_STATE: PrintJobModalState = {
   orderedPrintItemIds: [],
   excludedPrintItemIds: [],
   itemSelectionEnabled: false,
+  mergeEquivalentItems: true,
   outputPrintItemIds: [],
 }
 
@@ -270,6 +273,8 @@ function printJobModalReducer(
         itemSelectionEnabled: action.value,
         excludedPrintItemIds: action.value ? state.excludedPrintItemIds : [],
       }
+    case 'setMergeEquivalentItems':
+      return { ...state, mergeEquivalentItems: action.value }
     case 'markPrintItemsOutput':
       return {
         ...state,
@@ -504,10 +509,13 @@ interface PrintOptionsFieldProps {
   hideRemark: boolean
   hideUnitPrice: boolean
   itemSelectionEnabled: boolean
+  mergeEquivalentItems: boolean
+  mergeEquivalentItemsAvailable: boolean
   onBrandOverrideEnabledChange: (value: boolean) => void
   onHideRemarkChange: (value: boolean) => void
   onHideUnitPriceChange: (value: boolean) => void
   onItemSelectionEnabledChange: (value: boolean) => void
+  onMergeEquivalentItemsChange: (value: boolean) => void
   t: (key: string) => string
 }
 
@@ -516,10 +524,13 @@ function PrintOptionsField({
   hideRemark,
   hideUnitPrice,
   itemSelectionEnabled,
+  mergeEquivalentItems,
+  mergeEquivalentItemsAvailable,
   onBrandOverrideEnabledChange,
   onHideRemarkChange,
   onHideUnitPriceChange,
   onItemSelectionEnabledChange,
+  onMergeEquivalentItemsChange,
   t,
 }: PrintOptionsFieldProps) {
   return (
@@ -558,6 +569,25 @@ function PrintOptionsField({
             {t('modules.print.enableItemSelection')}
           </Typography.Text>
         </span>
+        {mergeEquivalentItemsAvailable ? (
+          <Segmented<string>
+            onChange={(value) =>
+              onMergeEquivalentItemsChange(value === 'merge')
+            }
+            options={[
+              {
+                label: t('modules.print.mergeEquivalentItems'),
+                value: 'merge',
+              },
+              {
+                label: t('modules.print.splitEquivalentItems'),
+                value: 'split',
+              },
+            ]}
+            size="small"
+            value={mergeEquivalentItems ? 'merge' : 'split'}
+          />
+        ) : null}
       </div>
     </div>
   )
@@ -885,8 +915,9 @@ export function PrintJobModal({
   const totalWeight = numericTotal(
     selectedPrintItems.map((item) => item.weightTon),
   )
+  const mergeEquivalentItemsAvailable = moduleKey === 'sales-order'
   const mergeMarkersByItemId = useMemo(() => {
-    if (selectedTemplate?.templateCode !== SALES_ORDER_A4_TEMPLATE_CODE) {
+    if (!mergeEquivalentItemsAvailable || !state.mergeEquivalentItems) {
       return {}
     }
     return buildPrintItemMergeMarkers(
@@ -895,9 +926,10 @@ export function PrintJobModal({
     )
   }, [
     selectedPrintItems,
-    selectedTemplate?.templateCode,
+    mergeEquivalentItemsAvailable,
     state.brandOverrideEnabled,
     state.brandOverridesByItemId,
+    state.mergeEquivalentItems,
   ])
 
   const currentItemOrder = () =>
@@ -927,6 +959,9 @@ export function PrintJobModal({
     return {
       hideUnitPrice: state.hideUnitPrice,
       hideRemark: state.hideRemark,
+      ...(mergeEquivalentItemsAvailable
+        ? { mergeEquivalentItems: state.mergeEquivalentItems }
+        : {}),
       ...(state.itemSelectionEnabled
         ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
         : {}),
@@ -986,6 +1021,10 @@ export function PrintJobModal({
 
   const handleItemSelectionEnabledChange = (value: boolean) => {
     dispatchPrintJobModal({ type: 'setItemSelectionEnabled', value })
+  }
+
+  const handleMergeEquivalentItemsChange = (value: boolean) => {
+    dispatchPrintJobModal({ type: 'setMergeEquivalentItems', value })
   }
 
   const handleBrandOverrideChange = (itemId: string, value: string) => {
@@ -1099,6 +1138,9 @@ export function PrintJobModal({
           onHideRemarkChange={handleHideRemarkChange}
           onHideUnitPriceChange={handleHideUnitPriceChange}
           onItemSelectionEnabledChange={handleItemSelectionEnabledChange}
+          mergeEquivalentItems={state.mergeEquivalentItems}
+          mergeEquivalentItemsAvailable={mergeEquivalentItemsAvailable}
+          onMergeEquivalentItemsChange={handleMergeEquivalentItemsChange}
           t={t}
         />
         <PrintItemSection

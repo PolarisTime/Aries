@@ -25,6 +25,7 @@ interface Props {
 export interface PrintRenderOptions {
   hideUnitPrice?: boolean
   hideRemark?: boolean
+  mergeEquivalentItems?: boolean
   brandOverride?: string
   brandOverrides?: Record<string, string>
   brandOverridesByItemId?: Record<string, string>

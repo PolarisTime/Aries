@@ -642,6 +642,8 @@ export const zhCN = {
       hideRemark: '不打印单据备注',
       enableBrandOverride: '替换打印品牌',
       enableItemSelection: '选择打印明细',
+      mergeEquivalentItems: '合并同款',
+      splitEquivalentItems: '拆分明细',
       brandOverrideTo: '替换为',
       brandOverridePlaceholder: '留空保持原品牌',
       noBrands: '选中单据未找到品牌',

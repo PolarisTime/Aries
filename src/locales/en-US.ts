@@ -660,6 +660,8 @@ export const enUS = {
       hideRemark: 'Hide document remark',
       enableBrandOverride: 'Replace print brand',
       enableItemSelection: 'Select print items',
+      mergeEquivalentItems: 'Merge matching',
+      splitEquivalentItems: 'Split items',
       brandOverrideTo: 'Replace with',
       brandOverridePlaceholder: 'Leave blank to keep original',
       noBrands: 'No brands found in selected documents',

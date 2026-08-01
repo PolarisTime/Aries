@@ -1,7 +1,5 @@
 import type { PrintRecordItem } from '@/api/system/print-template'
 
-export const SALES_ORDER_A4_TEMPLATE_CODE = 'SALES_ORDER_YINGJIE_A4_REMARK_PDF'
-
 export interface PrintItemMergeMarker {
   groupIndex: number
   itemCount: number
