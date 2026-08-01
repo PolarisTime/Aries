@@ -1,3 +1,10 @@
+## [9.0.3](https://github.com/PolarisTime/Aries/compare/v9.0.2...v9.0.3) (2026-08-01)
+
+
+### Bug Fixes
+
+* **api:** 统一实体 ID 响应解析 ([5081c36](https://github.com/PolarisTime/Aries/commit/5081c3681f72943fd0a6a0bd23922e295129465c))
+
 ## [9.0.2](https://github.com/PolarisTime/Aries/compare/v9.0.1...v9.0.2) (2026-08-01)
 
 
