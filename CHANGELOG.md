@@ -1,3 +1,10 @@
+# [9.2.0](https://github.com/PolarisTime/Aries/compare/v9.1.0...v9.2.0) (2026-08-01)
+
+
+### Features
+
+* **print:** 支持切换销售订单明细合并模式 ([9677ca6](https://github.com/PolarisTime/Aries/commit/9677ca611dd2d9d41626456d0835abc998dbb9c5))
+
 # [9.1.0](https://github.com/PolarisTime/Aries/compare/v9.0.4...v9.1.0) (2026-08-01)
 
 
