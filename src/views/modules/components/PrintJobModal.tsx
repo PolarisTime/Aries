@@ -31,7 +31,6 @@ import {
   Segmented,
   Select,
   Space,
-  Switch,
   Tag,
   Typography,
 } from 'antd'
@@ -183,10 +182,36 @@ const PRINT_ITEM_FIELDS = [
   { key: 'amount', labelKey: 'modules.print.itemAmount' },
 ] as const
 
-function printItemsGridClass(brandOverrideEnabled: boolean) {
-  return brandOverrideEnabled
-    ? 'grid min-w-[1420px] grid-cols-[56px_64px_80px_minmax(100px,130px)_128px_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
-    : 'grid min-w-[1320px] grid-cols-[56px_64px_80px_minmax(120px,150px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
+const PRINT_ITEM_VALUE_GRID_COLUMNS = [
+  'minmax(92px, 1fr)',
+  'minmax(110px, 1fr)',
+  'minmax(90px, 0.8fr)',
+  'minmax(110px, 1fr)',
+  'minmax(70px, 0.7fr)',
+  'minmax(80px, 0.8fr)',
+  'minmax(90px, 0.8fr)',
+  'minmax(90px, 0.8fr)',
+  'minmax(110px, 1fr)',
+] as const
+
+function printItemsGridStyle(
+  brandOverrideEnabled: boolean,
+  showMergeGroup: boolean,
+) {
+  const columns = ['56px', '64px', '80px']
+  if (showMergeGroup) columns.push('72px')
+  columns.push(
+    brandOverrideEnabled ? 'minmax(100px, 130px)' : 'minmax(120px, 150px)',
+  )
+  if (brandOverrideEnabled) {
+    columns.push('128px')
+  }
+  columns.push(...PRINT_ITEM_VALUE_GRID_COLUMNS)
+  return {
+    gridTemplateColumns: columns.join(' '),
+    minWidth:
+      1320 + (brandOverrideEnabled ? 100 : 0) + (showMergeGroup ? 88 : 0),
+  }
 }
 
 type PendingOutputAction = PrintActionMode | 'xlsx'
@@ -326,6 +351,7 @@ interface SortablePrintItemRowProps {
   mergeMarker?: PrintItemMergeMarker
   outputted: boolean
   selected: boolean
+  showMergeGroup: boolean
   onBrandOverrideChange: (itemId: string, value: string) => void
   onSelectedChange: (itemId: string, selected: boolean) => void
   t: (key: string) => string
@@ -340,6 +366,7 @@ function SortablePrintItemRow({
   mergeMarker,
   outputted,
   selected,
+  showMergeGroup,
   onBrandOverrideChange,
   onSelectedChange,
   t,
@@ -364,7 +391,10 @@ function SortablePrintItemRow({
         opacity: isDragging ? 0.5 : 1,
       }}
     >
-      <div className={printItemsGridClass(brandOverrideEnabled)}>
+      <div
+        className="grid items-center gap-4 text-base"
+        style={printItemsGridStyle(brandOverrideEnabled, showMergeGroup)}
+      >
         <Typography.Text type="secondary">{index + 1}</Typography.Text>
         <span className="flex items-center gap-2 text-gray-500">
           <Checkbox
@@ -386,21 +416,28 @@ function SortablePrintItemRow({
             <HolderOutlined />
           </button>
         </span>
-        <span className="flex min-w-0 flex-col items-start gap-1">
+        <span>
           {outputted ? (
             <Tag color="success">{t('modules.print.outputted')}</Tag>
-          ) : !mergeMarker ? (
+          ) : (
             '-'
-          ) : null}
-          {mergeMarker ? (
-            <Tag
-              color="processing"
-              title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
-            >
-              {t('modules.print.mergeGroup')} {mergeMarker.groupIndex}
-            </Tag>
-          ) : null}
+          )}
         </span>
+        {showMergeGroup ? (
+          <span className="min-w-0">
+            {mergeMarker ? (
+              <Tag
+                className="m-0 min-w-6 text-center"
+                color="processing"
+                title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
+              >
+                {mergeMarker.groupIndex}
+              </Tag>
+            ) : (
+              '-'
+            )}
+          </span>
+        ) : null}
         <Typography.Text className="block truncate">
           {fieldText(item.brand)}
         </Typography.Text>
@@ -559,16 +596,14 @@ function PrintOptionsField({
         >
           {t('modules.print.enableBrandOverride')}
         </Checkbox>
-        <span className="inline-flex items-center gap-2">
-          <Switch
-            checked={itemSelectionEnabled}
-            onChange={onItemSelectionEnabledChange}
-            size="small"
-          />
-          <Typography.Text>
-            {t('modules.print.enableItemSelection')}
-          </Typography.Text>
-        </span>
+        <Checkbox
+          checked={itemSelectionEnabled}
+          onChange={(event) =>
+            onItemSelectionEnabledChange(event.target.checked)
+          }
+        >
+          {t('modules.print.enableItemSelection')}
+        </Checkbox>
         {mergeEquivalentItemsAvailable ? (
           <Segmented<string>
             onChange={(value) =>
@@ -606,6 +641,7 @@ interface PrintItemSectionProps {
   recordRemark: string
   settlementCompanyName: string
   sensors: ReturnType<typeof useSensors>
+  showMergeGroup: boolean
   totalQuantity: number | null
   totalWeight: number | null
   onBrandOverrideChange: (itemId: string, value: string) => void
@@ -628,6 +664,7 @@ function PrintItemSection({
   recordRemark,
   settlementCompanyName,
   sensors,
+  showMergeGroup,
   totalQuantity,
   totalWeight,
   onBrandOverrideChange,
@@ -687,9 +724,8 @@ function PrintItemSection({
         {printItems.length ? (
           <div className="divide-y divide-gray-200">
             <div
-              className={`${printItemsGridClass(
-                brandOverrideEnabled,
-              )} bg-gray-100 px-3 py-2 font-medium text-gray-600`}
+              className="grid items-center gap-4 bg-gray-100 px-3 py-2 text-base font-medium text-gray-600"
+              style={printItemsGridStyle(brandOverrideEnabled, showMergeGroup)}
             >
               <span>{t('modules.print.itemSequence')}</span>
               <span className="flex items-center">
@@ -704,6 +740,9 @@ function PrintItemSection({
                 />
               </span>
               <span>{t('modules.print.itemOutputStatus')}</span>
+              {showMergeGroup ? (
+                <span>{t('modules.print.mergeGroup')}</span>
+              ) : null}
               <span>{t('modules.print.itemBrand')}</span>
               {brandOverrideEnabled ? (
                 <span>{t('modules.print.brandOverrideTo')}</span>
@@ -734,6 +773,7 @@ function PrintItemSection({
                     onSelectedChange={onPrintItemSelectedChange}
                     outputted={outputPrintItemIds.includes(item.id)}
                     selected={!excludedPrintItemIds.includes(item.id)}
+                    showMergeGroup={showMergeGroup}
                     t={t}
                   />
                 ))}
@@ -916,8 +956,10 @@ export function PrintJobModal({
     selectedPrintItems.map((item) => item.weightTon),
   )
   const mergeEquivalentItemsAvailable = moduleKey === 'sales-order'
+  const showMergeGroup =
+    mergeEquivalentItemsAvailable && state.mergeEquivalentItems
   const mergeMarkersByItemId = useMemo(() => {
-    if (!mergeEquivalentItemsAvailable || !state.mergeEquivalentItems) {
+    if (!showMergeGroup) {
       return {}
     }
     return buildPrintItemMergeMarkers(
@@ -926,10 +968,9 @@ export function PrintJobModal({
     )
   }, [
     selectedPrintItems,
-    mergeEquivalentItemsAvailable,
+    showMergeGroup,
     state.brandOverrideEnabled,
     state.brandOverridesByItemId,
-    state.mergeEquivalentItems,
   ])
 
   const currentItemOrder = () =>
@@ -1113,7 +1154,7 @@ export function PrintJobModal({
           {t('modules.print.jobTitle')}
         </div>
       }
-      width={1104}
+      width={1440}
     >
       <div className="space-y-4 text-base">
         <PrintJobHeader
@@ -1160,6 +1201,7 @@ export function PrintJobModal({
           recordRemark={recordRemark}
           settlementCompanyName={settlementCompanyName}
           sensors={sensors}
+          showMergeGroup={showMergeGroup}
           totalQuantity={totalQuantity}
           totalWeight={totalWeight}
           t={t}
