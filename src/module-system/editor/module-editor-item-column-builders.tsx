@@ -17,6 +17,18 @@ import type {
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
+const EDITOR_ITEM_COLUMN_MIN_WIDTHS: Readonly<Record<string, number>> = {
+  materialCode: 330,
+  brand: 85,
+}
+
+function resolveEditorItemColumnWidth(column: ModuleColumnDefinition) {
+  const minWidth = EDITOR_ITEM_COLUMN_MIN_WIDTHS[column.dataIndex]
+  return minWidth === undefined
+    ? column.width
+    : Math.max(column.width ?? 0, minWidth)
+}
+
 interface MaterialOption {
   disabled?: boolean
   label: string
@@ -459,7 +471,7 @@ export function buildModuleEditorDataColumns({
     title: column.title,
     dataIndex: column.dataIndex,
     key: column.dataIndex,
-    width: column.width,
+    width: resolveEditorItemColumnWidth(column),
     align: column.align || 'center',
     ellipsis: true,
     render: renderEditableColumn(column.dataIndex, column.type),
