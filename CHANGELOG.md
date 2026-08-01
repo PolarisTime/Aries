@@ -1,3 +1,15 @@
+# [9.1.0](https://github.com/PolarisTime/Aries/compare/v9.0.4...v9.1.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* **editor:** 统一商品编码和品牌最小列宽 ([8f461c5](https://github.com/PolarisTime/Aries/commit/8f461c5528373f9710b61cc227ca3ce5a4f22b86))
+
+
+### Features
+
+* **print:** 标识A4打印明细合并组 ([c15b63c](https://github.com/PolarisTime/Aries/commit/c15b63c23dcad9c79f385e2b15d14b86af6cd682))
+
 ## [9.0.4](https://github.com/PolarisTime/Aries/compare/v9.0.3...v9.0.4) (2026-08-01)
 
 
