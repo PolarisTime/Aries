@@ -1,3 +1,10 @@
+## [9.2.1](https://github.com/PolarisTime/Aries/compare/v9.2.0...v9.2.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **print:** 优化打印作业窗口及明细状态展示 ([e953613](https://github.com/PolarisTime/Aries/commit/e953613fa51302c7898052e84ad4e608ea98ff5c))
+
 # [9.2.0](https://github.com/PolarisTime/Aries/compare/v9.1.0...v9.2.0) (2026-08-01)
 
 
