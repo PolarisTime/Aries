@@ -1,4 +1,10 @@
 export const zhCN = {
+  appUpdate: {
+    title: '系统版本已更新',
+    description: '检测到系统已发布新版本，请清除缓存并刷新后继续使用。',
+    unsavedWarning: '刷新将丢失尚未保存的内容。',
+    refreshButton: '清除缓存并强制刷新',
+  },
   errorBoundary: {
     retry: '重试',
     accessDenied: '当前页面拒绝访问',

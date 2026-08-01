@@ -4,7 +4,9 @@ import i18next from 'i18next'
 import { createRoot, type Root } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/core/client'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
+import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { AppUpdatePrompt } from '@/features/app-update'
 import { queryClient } from '@/lib/query-client'
 import { initializeErrorMonitoring } from '@/observability/sentry'
 import { router } from '@/router'
@@ -25,9 +27,14 @@ import '@/styles/workspace-overlay.css'
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+      <AppAntdProvider>
+        <AppUpdatePrompt />
+      </AppAntdProvider>
+    </>
   )
 }
 

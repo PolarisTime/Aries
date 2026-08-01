@@ -151,6 +151,11 @@ map "\$uri:\$status" \$aries_cache_control {
     ~^/assets/.+:(?:200|206|304)$ "public, max-age=31536000, immutable";
 }
 
+map \$uri \$aries_clear_site_data {
+    default "";
+    /_app/cache '"cache"';
+}
+
 server {
     listen $HTTP_REDIRECT_PORT;
     server_name $SERVER_NAME;
@@ -178,6 +183,7 @@ server {
     add_header Referrer-Policy "no-referrer" always;
     add_header Permissions-Policy "camera=(), geolocation=(), microphone=(), payment=(), usb=()" always;
     add_header Cache-Control "\$aries_cache_control" always;
+    add_header Clear-Site-Data "\$aries_clear_site_data" always;
 
     root $FRONTEND_ROOT/current;
     index index.html;
@@ -187,6 +193,10 @@ server {
 
     location /assets/ {
         try_files \$uri =404;
+    }
+
+    location = /_app/cache {
+        return 204;
     }
 
     location ^~ /api/v2.0/setup {

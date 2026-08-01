@@ -1,4 +1,11 @@
 export const enUS = {
+  appUpdate: {
+    title: 'System Updated',
+    description:
+      'A new system version is available. Clear the cache and refresh to continue.',
+    unsavedWarning: 'Refreshing will discard any unsaved changes.',
+    refreshButton: 'Clear Cache and Refresh',
+  },
   errorBoundary: {
     retry: 'Retry',
     accessDenied: 'Access denied',

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { webUpdateNotice } from '@plugin-web-update-notification/vite'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -135,6 +136,16 @@ export default defineConfig(({ mode }) => {
         },
       }),
       tailwindcss(),
+      webUpdateNotice({
+        versionType: 'custom',
+        customVersion: `${appVersion}+${gitCommit}`,
+        checkInterval: 60_000,
+        checkImmediately: true,
+        checkOnWindowFocus: true,
+        checkOnLoadFileError: true,
+        hiddenDefaultNotification: true,
+        logVersion: false,
+      }),
       ...(uploadSentrySourceMaps
         ? [
             sentryVitePlugin({

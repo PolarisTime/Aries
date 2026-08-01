@@ -63,6 +63,9 @@ interface CLodopInstance {
 declare const CLODOP: CLodopInstance | undefined
 
 interface Window {
+  pluginWebUpdateNotice_?: {
+    checkUpdate: () => void
+  }
   _CONFIG?: {
     clodopLicense?: CLodopLicenseConfig
   } & Record<string, unknown>
