@@ -177,11 +177,59 @@ jobs:
       ALL_PROXY: ""
       NO_PROXY: "127.0.0.1,localhost"
     steps:
-      - name: Download frontend release archive
+      - name: Download frontend release archive (attempt 1)
+        id: download-release-attempt-1
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: aries-frontend-release
-          path: frontend-release
+          path: frontend-release-attempt-1
+
+      - name: Wait before frontend archive attempt 2
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' }}
+        run: sleep 5
+
+      - name: Download frontend release archive (attempt 2)
+        id: download-release-attempt-2
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: frontend-release-attempt-2
+
+      - name: Wait before frontend archive attempt 3
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' && steps.download-release-attempt-2.outcome == 'failure' }}
+        run: sleep 15
+
+      - name: Download frontend release archive (attempt 3)
+        id: download-release-attempt-3
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' && steps.download-release-attempt-2.outcome == 'failure' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: frontend-release-attempt-3
+
+      - name: Select downloaded frontend release archive
+        env:
+          ATTEMPT_1_OUTCOME: ${{ steps.download-release-attempt-1.outcome }}
+          ATTEMPT_2_OUTCOME: ${{ steps.download-release-attempt-2.outcome }}
+          ATTEMPT_3_OUTCOME: ${{ steps.download-release-attempt-3.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$ATTEMPT_1_OUTCOME" == "success" ]]; then
+            successful_attempt=1
+          elif [[ "$ATTEMPT_2_OUTCOME" == "success" ]]; then
+            successful_attempt=2
+          elif [[ "$ATTEMPT_3_OUTCOME" == "success" ]]; then
+            successful_attempt=3
+          else
+            echo "::error::Failed to download frontend release archive after 3 attempts."
+            exit 1
+          fi
+
+          mv -- "frontend-release-attempt-${successful_attempt}" frontend-release
 
       - name: Extract deploy scripts
         run: |
@@ -253,11 +301,59 @@ jobs:
       ALL_PROXY: ""
       NO_PROXY: "127.0.0.1,localhost"
     steps:
-      - name: Download frontend release archive
+      - name: Download frontend release archive (attempt 1)
+        id: download-release-attempt-1
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: aries-frontend-release
-          path: frontend-release
+          path: frontend-release-attempt-1
+
+      - name: Wait before frontend archive attempt 2
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' }}
+        run: sleep 5
+
+      - name: Download frontend release archive (attempt 2)
+        id: download-release-attempt-2
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: frontend-release-attempt-2
+
+      - name: Wait before frontend archive attempt 3
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' && steps.download-release-attempt-2.outcome == 'failure' }}
+        run: sleep 15
+
+      - name: Download frontend release archive (attempt 3)
+        id: download-release-attempt-3
+        if: ${{ steps.download-release-attempt-1.outcome == 'failure' && steps.download-release-attempt-2.outcome == 'failure' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: frontend-release-attempt-3
+
+      - name: Select downloaded frontend release archive
+        env:
+          ATTEMPT_1_OUTCOME: ${{ steps.download-release-attempt-1.outcome }}
+          ATTEMPT_2_OUTCOME: ${{ steps.download-release-attempt-2.outcome }}
+          ATTEMPT_3_OUTCOME: ${{ steps.download-release-attempt-3.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$ATTEMPT_1_OUTCOME" == "success" ]]; then
+            successful_attempt=1
+          elif [[ "$ATTEMPT_2_OUTCOME" == "success" ]]; then
+            successful_attempt=2
+          elif [[ "$ATTEMPT_3_OUTCOME" == "success" ]]; then
+            successful_attempt=3
+          else
+            echo "::error::Failed to download frontend release archive after 3 attempts."
+            exit 1
+          fi
+
+          mv -- "frontend-release-attempt-${successful_attempt}" frontend-release
 
       - name: Extract deploy scripts
         run: |
