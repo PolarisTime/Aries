@@ -1,3 +1,10 @@
+## [9.0.2](https://github.com/PolarisTime/Aries/compare/v9.0.1...v9.0.2) (2026-08-01)
+
+
+### Bug Fixes
+
+* **ci:** 清理自托管前端部署工作区 ([bb25455](https://github.com/PolarisTime/Aries/commit/bb25455050f34a29dbd43e3c18c5ea43ef86ed2a))
+
 ## [9.0.1](https://github.com/PolarisTime/Aries/compare/v9.0.0...v9.0.1) (2026-08-01)
 
 
