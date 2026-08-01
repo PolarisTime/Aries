@@ -1,3 +1,15 @@
+# [9.3.0](https://github.com/PolarisTime/Aries/compare/v9.2.1...v9.3.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* **print:** 防止交货日期显示换行 ([8b79c6c](https://github.com/PolarisTime/Aries/commit/8b79c6c18f06fea13c2a651275caaf51fc87ea4d))
+
+
+### Features
+
+* **frontend:** 增加版本更新强制刷新 ([e382bf9](https://github.com/PolarisTime/Aries/commit/e382bf9ae3d11a7b1006edf5cfd1c632e51a8259))
+
 ## [9.2.1](https://github.com/PolarisTime/Aries/compare/v9.2.0...v9.2.1) (2026-08-01)
 
 
