@@ -2,10 +2,20 @@ packages:
   - tools/typescript-toolchain
 
 overrides:
+  "@babel/core@<7.29.6": 7.29.6
+  "brace-expansion@<1.1.17": 1.1.17
+  "brace-expansion@>=3.0.0 <5.0.8": 5.0.8
+  "fast-uri@>=3.0.0 <3.1.4": 3.1.4
+  "js-yaml@>=4.0.0 <4.3.0": 4.3.0
+  "postcss@<8.5.18": 8.5.18
   semver: ^7.7.4
+  "shell-quote@<=1.8.4": 1.9.0
+  "undici@>=7.0.0 <7.28.0": 7.28.0
+  "ws@>=8.0.0 <8.21.0": 8.21.0
 
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
+  - brace-expansion@1.1.17
   - deslop-js
   - oxlint-plugin-react-doctor
   - react-doctor

@@ -15,6 +15,7 @@
     "eslint": "eslint .",
     "eslint:fix": "eslint . --fix",
     "contract:check": "eslint \"src/api/**/*.{ts,tsx}\" \"src/shared/schemas/**/*.{ts,tsx}\" \"src/constants/error-codes.ts\"",
+    "audit:security": "pnpm audit --registry=https://registry.npmjs.org/",
     "lint": "run-s lint:biome eslint",
     "lint:biome": "biome check .",
     "lint:fix": "biome check . --write",
@@ -72,6 +73,6 @@
     "semantic-release": "^25.0.5",
     "tailwindcss": "^4.1.17",
     "typescript": "~7.0.2",
-    "vite": "^8.0.9"
+    "vite": "^8.1.5"
   }
 }
