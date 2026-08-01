@@ -1,22 +1,18 @@
 import { z } from 'zod'
-import { responseDateTimeSchema } from './api'
+import { responseDateTimeSchema, responseEntityIdSchema } from './api'
 
 const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
 const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
 const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
-const responseIdSchema = z
-  .union([z.string(), z.number().int().positive()])
-  .transform(String)
-
 export const printTemplateRecordSchema = z.object({
-  id: responseIdSchema,
+  id: responseEntityIdSchema,
   templateName: z.string(),
   templateCode: z.string().nullish(),
   templateHtml: z.string(),
   templateType: printTemplateTypeSchema.optional(),
   engine: printTemplateEngineSchema.nullish(),
   assetRef: z.string().nullish(),
-  settlementCompanyId: responseIdSchema.nullish(),
+  settlementCompanyId: responseEntityIdSchema.nullish(),
   settlementCompanyName: z.string().nullish(),
   versionNo: z.number().int().positive().nullish(),
   status: printTemplateStatusSchema.nullish(),

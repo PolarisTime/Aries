@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { responseEntityIdSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -22,8 +23,8 @@ type RawWarehouseRecommendation = {
 const RECOMMENDATION_BATCH_SIZE = 200
 const warehouseRecommendationResponseSchema = z.array(
   z.object({
-    materialId: z.union([z.string(), z.number()]),
-    warehouseId: z.union([z.string(), z.number()]),
+    materialId: responseEntityIdSchema,
+    warehouseId: responseEntityIdSchema,
     warehouseCode: z.string(),
     warehouseName: z.string(),
   }),

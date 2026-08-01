@@ -1,23 +1,15 @@
 import { z } from 'zod'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import { exactPageSchema, responseDateTimeSchema } from './api'
+import {
+  exactPageSchema,
+  responseDateTimeSchema,
+  responseEntityIdSchema,
+} from './api'
 
-const MAX_SIGNED_LONG = 9_223_372_036_854_775_807n
-const ENTITY_ID_PATTERN = /^[1-9]\d*$/
 const DECIMAL_PATTERN = /^-?(?:\d+\.?\d*|\.\d+)$/
 
-const entityIdStringSchema = z
-  .string()
-  .refine(
-    (value) =>
-      ENTITY_ID_PATTERN.test(value) && BigInt(value) <= MAX_SIGNED_LONG,
-    '实体 ID 格式错误或超出范围',
-  )
-
 /** 后端 Long 响应为字符串；兼容安全整数后统一输出十进制字符串。 */
-export const entityIdSchema = z
-  .union([entityIdStringSchema, z.number().int().positive().safe()])
-  .transform(String)
+export const entityIdSchema = responseEntityIdSchema
 
 const nullableEntityIdSchema = entityIdSchema.nullable()
 const optionalEntityIdSchema = entityIdSchema.nullish()

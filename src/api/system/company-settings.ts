@@ -4,7 +4,7 @@ import { pageContent } from '@/api/core/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
-import { exactPageSchema } from '@/shared/schemas/api'
+import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import { asId, asString } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
@@ -37,9 +37,8 @@ export interface SettlementCompanyOption {
   status?: string
 }
 
-const responseIdSchema = z.union([z.string(), z.number()])
 const rawSettlementAccountSchema = z.object({
-  id: responseIdSchema.nullish(),
+  id: responseEntityIdSchema.nullish(),
   accountName: z.string().nullish(),
   bankName: z.string().nullish(),
   bankAccount: z.string().nullish(),
@@ -48,7 +47,7 @@ const rawSettlementAccountSchema = z.object({
   remark: z.string().nullish(),
 })
 const rawCompanyProfileSchema = z.object({
-  id: responseIdSchema,
+  id: responseEntityIdSchema,
   companyName: z.string(),
   taxNo: z.string(),
   bankName: z.string().nullish(),
@@ -58,7 +57,7 @@ const rawCompanyProfileSchema = z.object({
   remark: z.string().nullish(),
 })
 const rawSettlementCompanyOptionSchema = z.object({
-  id: responseIdSchema,
+  id: responseEntityIdSchema,
   companyName: z.string(),
   taxNo: z.string().optional(),
   status: z.string().optional(),

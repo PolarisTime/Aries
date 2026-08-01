@@ -6,6 +6,21 @@ const integerStringSchema = z
   .regex(/^-?\d+$/)
   .transform(Number)
 
+const MAX_SIGNED_LONG = 9_223_372_036_854_775_807n
+const ENTITY_ID_PATTERN = /^[1-9]\d*$/
+const responseEntityIdStringSchema = z
+  .string()
+  .refine(
+    (value) =>
+      ENTITY_ID_PATTERN.test(value) && BigInt(value) <= MAX_SIGNED_LONG,
+    '实体 ID 格式错误或超出范围',
+  )
+
+/** 后端 Long 响应为字符串；兼容期仅接受安全整数 number。 */
+export const responseEntityIdSchema = z
+  .union([responseEntityIdStringSchema, z.number().int().positive().safe()])
+  .transform(String)
+
 /** 后端 Jackson 将 Long 输出为字符串，边界层统一归一化为安全整数。 */
 const responseIntegerSchema = z.union([
   z.number().int().safe(),

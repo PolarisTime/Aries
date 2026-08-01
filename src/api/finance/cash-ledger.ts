@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { apiGet, downloadGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { exactPageSchema } from '@/shared/schemas/api'
+import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import {
   type EntityId,
   parseEntityId,
@@ -70,7 +70,6 @@ export interface CashLedgerPage {
 type RawRecord = Record<string, unknown>
 
 const decimalSchema = z.union([z.number(), z.string()])
-const responseIdSchema = z.union([z.string(), z.number()])
 const cashLedgerSummarySchema = z.looseObject({
   openingBalance: decimalSchema,
   periodIncome: decimalSchema,
@@ -80,10 +79,10 @@ const cashLedgerSummarySchema = z.looseObject({
 const cashLedgerLineSchema = z.looseObject({
   businessDate: z.string(),
   flowType: z.string(),
-  documentId: responseIdSchema,
+  documentId: responseEntityIdSchema,
   documentNo: z.string(),
   counterpartyType: z.string(),
-  counterpartyId: responseIdSchema.nullish(),
+  counterpartyId: responseEntityIdSchema.nullish(),
   counterpartyName: z.string().nullish(),
   purpose: z.string().nullish(),
   incomeAmount: decimalSchema,

@@ -6,7 +6,7 @@ import type {
 } from '@/api/business/business-types'
 import { apiGet, apiPost, apiPut, downloadGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { rawRecordSchema } from '@/shared/schemas/api'
+import { rawRecordSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 
 const attachmentRecordSchema = z.object({
   id: z.string(),
@@ -41,7 +41,7 @@ const attachmentAccessResponseSchema = z.object({
   presigned: z.boolean(),
 })
 const directUploadPrepareResponseSchema = z.object({
-  attachmentId: z.union([z.string(), z.number()]),
+  attachmentId: responseEntityIdSchema,
   token: z.string(),
   objectKey: z.string().optional(),
   storagePath: z.string().optional(),

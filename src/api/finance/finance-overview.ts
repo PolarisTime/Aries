@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { exactPageSchema } from '@/shared/schemas/api'
+import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import { type EntityId, parseEntityId } from '@/types/entity-id'
 import { asArray, asNumber, asString } from '@/utils/type-narrowing'
 
@@ -60,7 +60,6 @@ export interface FinanceOverviewPage {
 type RawRecord = Record<string, unknown>
 
 const decimalSchema = z.union([z.number(), z.string()])
-const responseIdSchema = z.union([z.string(), z.number()])
 const financeOverviewSummarySchema = z.looseObject({
   receivableAmount: decimalSchema,
   receivedAmount: decimalSchema,
@@ -74,10 +73,10 @@ const financeOverviewSummarySchema = z.looseObject({
 const financeBalanceSchema = z.looseObject({
   direction: z.string(),
   counterpartyType: z.string(),
-  counterpartyId: responseIdSchema,
+  counterpartyId: responseEntityIdSchema,
   counterpartyCode: z.string().nullish(),
   counterpartyName: z.string(),
-  settlementCompanyId: responseIdSchema,
+  settlementCompanyId: responseEntityIdSchema,
   settlementCompanyName: z.string(),
   recognizedAmount: decimalSchema,
   settledAmount: decimalSchema,
