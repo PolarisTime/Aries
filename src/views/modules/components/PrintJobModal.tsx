@@ -49,7 +49,12 @@ import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { modal } from '@/utils/antd-app'
 import { formatDate } from '@/utils/formatters'
-import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
+import {
+  buildPrintItemMergeMarkers,
+  type PrintItemMergeMarker,
+  reorderPrintItemIds,
+  SALES_ORDER_A4_TEMPLATE_CODE,
+} from '@/views/modules/components/print-job-modal-utils'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []
 
@@ -313,6 +318,7 @@ interface SortablePrintItemRowProps {
   index: number
   item: PrintRecordItem
   itemSelectionEnabled: boolean
+  mergeMarker?: PrintItemMergeMarker
   outputted: boolean
   selected: boolean
   onBrandOverrideChange: (itemId: string, value: string) => void
@@ -326,6 +332,7 @@ function SortablePrintItemRow({
   index,
   item,
   itemSelectionEnabled,
+  mergeMarker,
   outputted,
   selected,
   onBrandOverrideChange,
@@ -374,12 +381,20 @@ function SortablePrintItemRow({
             <HolderOutlined />
           </button>
         </span>
-        <span>
+        <span className="flex min-w-0 flex-col items-start gap-1">
           {outputted ? (
             <Tag color="success">{t('modules.print.outputted')}</Tag>
-          ) : (
+          ) : !mergeMarker ? (
             '-'
-          )}
+          ) : null}
+          {mergeMarker ? (
+            <Tag
+              color="processing"
+              title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
+            >
+              {t('modules.print.mergeGroup')} {mergeMarker.groupIndex}
+            </Tag>
+          ) : null}
         </span>
         <Typography.Text className="block truncate">
           {fieldText(item.brand)}
@@ -553,6 +568,7 @@ interface PrintItemSectionProps {
   brandOverridesByItemId: Record<string, string>
   excludedPrintItemIds: string[]
   itemSelectionEnabled: boolean
+  mergeMarkersByItemId: Record<string, PrintItemMergeMarker>
   orderedPrintItems: PrintRecordItem[]
   outputPrintItemIds: string[]
   printItems: PrintRecordItem[]
@@ -574,6 +590,7 @@ function PrintItemSection({
   brandOverridesByItemId,
   excludedPrintItemIds,
   itemSelectionEnabled,
+  mergeMarkersByItemId,
   orderedPrintItems,
   outputPrintItemIds,
   printItems,
@@ -682,6 +699,7 @@ function PrintItemSection({
                     index={index}
                     item={item}
                     itemSelectionEnabled={itemSelectionEnabled}
+                    mergeMarker={mergeMarkersByItemId[item.id]}
                     onBrandOverrideChange={onBrandOverrideChange}
                     onSelectedChange={onPrintItemSelectedChange}
                     outputted={outputPrintItemIds.includes(item.id)}
@@ -867,6 +885,20 @@ export function PrintJobModal({
   const totalWeight = numericTotal(
     selectedPrintItems.map((item) => item.weightTon),
   )
+  const mergeMarkersByItemId = useMemo(() => {
+    if (selectedTemplate?.templateCode !== SALES_ORDER_A4_TEMPLATE_CODE) {
+      return {}
+    }
+    return buildPrintItemMergeMarkers(
+      selectedPrintItems,
+      state.brandOverrideEnabled ? state.brandOverridesByItemId : {},
+    )
+  }, [
+    selectedPrintItems,
+    selectedTemplate?.templateCode,
+    state.brandOverrideEnabled,
+    state.brandOverridesByItemId,
+  ])
 
   const currentItemOrder = () =>
     orderedPrintItems.length
@@ -1074,6 +1106,7 @@ export function PrintJobModal({
           brandOverridesByItemId={state.brandOverridesByItemId}
           excludedPrintItemIds={state.excludedPrintItemIds}
           itemSelectionEnabled={state.itemSelectionEnabled}
+          mergeMarkersByItemId={mergeMarkersByItemId}
           onBrandOverrideChange={handleBrandOverrideChange}
           onDragEnd={handleDragEnd}
           onPrintItemSelectedChange={handlePrintItemSelectedChange}

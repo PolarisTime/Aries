@@ -658,6 +658,8 @@ export const zhCN = {
       itemSequence: '序号',
       itemOutputStatus: '输出状态',
       outputted: '已输出',
+      mergeGroup: '合并组',
+      mergeRows: '行合并为 1 行',
       itemBrand: '品牌',
       dragItem: '拖动调整打印顺序',
       itemCategory: '类别',

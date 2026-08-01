@@ -676,6 +676,8 @@ export const enUS = {
       itemSequence: 'No.',
       itemOutputStatus: 'Output Status',
       outputted: 'Output',
+      mergeGroup: 'Merge group',
+      mergeRows: 'rows merged into 1 row',
       itemBrand: 'Brand',
       dragItem: 'Drag to reorder print items',
       itemCategory: 'Category',
