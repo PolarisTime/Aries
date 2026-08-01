@@ -86,18 +86,6 @@ export function apiPatch<Schema extends ZodType>(
   )
 }
 
-export function apiDelete<Schema extends ZodType>(
-  url: string,
-  schema: Schema,
-  config?: ApiRequestConfig,
-): Promise<output<Schema>> {
-  return parseRequest(
-    http.delete<unknown>(url, config),
-    schema,
-    `DELETE ${url}`,
-  )
-}
-
 export async function apiDeleteNoContent(
   url: string,
   config?: ApiRequestConfig,

@@ -13,6 +13,10 @@
       {
         "files": ["src/views/system/AccountView.tsx"],
         "rules": ["react-doctor/query-mutation-missing-invalidation"]
+      },
+      {
+        "files": ["package.json"],
+        "rules": ["deslop/unused-dev-dependency"]
       }
     ]
   }

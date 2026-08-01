@@ -56,7 +56,7 @@ export const freightBillStatusSchema = z.enum(['草稿', '已审核'])
 
 // Purchase order
 
-export const purchaseOrderItemSchema = z.strictObject({
+const purchaseOrderItemSchema = z.strictObject({
   id: entityIdSchema,
   lineNo: integerSchema,
   materialId: nullableEntityIdSchema,
@@ -103,19 +103,19 @@ const purchaseOrderRecordShape = {
   remark: nullableTextSchema,
 }
 
-export const purchaseOrderListRecordSchema = z
+const purchaseOrderListRecordSchema = z
   .strictObject({
     ...purchaseOrderRecordShape,
     items: z.null(),
   })
   .transform(({ items: _items, ...record }) => record)
 
-export const purchaseOrderDetailRecordSchema = z.strictObject({
+const purchaseOrderDetailRecordSchema = z.strictObject({
   ...purchaseOrderRecordShape,
   items: z.array(purchaseOrderItemSchema).min(1),
 })
 
-export const purchaseOrderSaveItemSchema = z.strictObject({
+const purchaseOrderSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   materialId: optionalEntityIdSchema,
   materialCode: requiredTextSchema,
@@ -137,7 +137,7 @@ export const purchaseOrderSaveItemSchema = z.strictObject({
   amount: optionalRequestDecimalSchema,
 })
 
-export const purchaseOrderSaveRequestSchema = z.strictObject({
+const purchaseOrderSaveRequestSchema = z.strictObject({
   orderNo: optionalTextSchema,
   supplierId: entityIdSchema,
   supplierCode: optionalTextSchema,
@@ -150,7 +150,7 @@ export const purchaseOrderSaveRequestSchema = z.strictObject({
   items: z.array(purchaseOrderSaveItemSchema).min(1),
 })
 
-export const purchaseOrderImportCandidateSchema = z.strictObject({
+const purchaseOrderImportCandidateSchema = z.strictObject({
   id: entityIdSchema,
   orderNo: requiredTextSchema,
   supplierId: nullableEntityIdSchema,
@@ -168,7 +168,7 @@ export const purchaseOrderImportCandidateSchema = z.strictObject({
 
 // Purchase inbound
 
-export const purchaseInboundItemSchema = z.strictObject({
+const purchaseInboundItemSchema = z.strictObject({
   id: entityIdSchema,
   lineNo: integerSchema,
   materialId: nullableEntityIdSchema,
@@ -222,19 +222,19 @@ const purchaseInboundRecordShape = {
   totalWeightAdjustmentTon: decimalSchema,
 }
 
-export const purchaseInboundListRecordSchema = z
+const purchaseInboundListRecordSchema = z
   .strictObject({
     ...purchaseInboundRecordShape,
     items: z.null(),
   })
   .transform(({ items: _items, ...record }) => record)
 
-export const purchaseInboundDetailRecordSchema = z.strictObject({
+const purchaseInboundDetailRecordSchema = z.strictObject({
   ...purchaseInboundRecordShape,
   items: z.array(purchaseInboundItemSchema).min(1),
 })
 
-export const purchaseInboundSaveItemSchema = z.strictObject({
+const purchaseInboundSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   materialId: entityIdSchema,
   materialCode: requiredTextSchema,
@@ -261,7 +261,7 @@ export const purchaseInboundSaveItemSchema = z.strictObject({
   amount: optionalRequestDecimalSchema,
 })
 
-export const purchaseInboundSaveRequestSchema = z.strictObject({
+const purchaseInboundSaveRequestSchema = z.strictObject({
   inboundNo: optionalTextSchema,
   purchaseOrderNo: requiredTextSchema,
   supplierId: entityIdSchema,
@@ -278,7 +278,7 @@ export const purchaseInboundSaveRequestSchema = z.strictObject({
 
 // Sales order
 
-export const salesOrderItemSchema = z.strictObject({
+const salesOrderItemSchema = z.strictObject({
   id: entityIdSchema,
   lineNo: integerSchema,
   materialId: nullableEntityIdSchema,
@@ -328,19 +328,19 @@ const salesOrderRecordShape = {
   remark: nullableTextSchema,
 }
 
-export const salesOrderListRecordSchema = z
+const salesOrderListRecordSchema = z
   .strictObject({
     ...salesOrderRecordShape,
     items: z.null(),
   })
   .transform(({ items: _items, ...record }) => record)
 
-export const salesOrderDetailRecordSchema = z.strictObject({
+const salesOrderDetailRecordSchema = z.strictObject({
   ...salesOrderRecordShape,
   items: z.array(salesOrderItemSchema).min(1),
 })
 
-export const salesOrderSaveItemSchema = z.strictObject({
+const salesOrderSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   materialId: optionalEntityIdSchema,
   materialCode: requiredTextSchema,
@@ -364,7 +364,7 @@ export const salesOrderSaveItemSchema = z.strictObject({
   amount: optionalRequestDecimalSchema,
 })
 
-export const salesOrderSaveRequestSchema = z.strictObject({
+const salesOrderSaveRequestSchema = z.strictObject({
   orderNo: optionalTextSchema,
   purchaseInboundNo: optionalTextSchema,
   purchaseOrderNo: optionalTextSchema,
@@ -382,7 +382,7 @@ export const salesOrderSaveRequestSchema = z.strictObject({
   items: z.array(salesOrderSaveItemSchema).min(1),
 })
 
-export const salesOrderSourceCandidateItemSchema = z.strictObject({
+const salesOrderSourceCandidateItemSchema = z.strictObject({
   id: entityIdSchema,
   lineNo: integerSchema,
   sourceInboundItemId: entityIdSchema,
@@ -415,7 +415,7 @@ export const salesOrderSourceCandidateItemSchema = z.strictObject({
   amount: decimalSchema,
 })
 
-export const salesOrderSourceCandidateSchema = z.strictObject({
+const salesOrderSourceCandidateSchema = z.strictObject({
   id: entityIdSchema,
   orderNo: requiredTextSchema,
   purchaseOrderNo: requiredTextSchema,
@@ -436,7 +436,7 @@ export const salesOrderSourceCandidateSchema = z.strictObject({
 
 // Sales outbound
 
-export const salesOutboundItemSchema = z.strictObject({
+const salesOutboundItemSchema = z.strictObject({
   id: entityIdSchema,
   lineNo: integerSchema,
   sourceNo: nullableTextSchema,
@@ -484,19 +484,19 @@ const salesOutboundRecordShape = {
   remark: nullableTextSchema,
 }
 
-export const salesOutboundListRecordSchema = z
+const salesOutboundListRecordSchema = z
   .strictObject({
     ...salesOutboundRecordShape,
     items: z.null(),
   })
   .transform(({ items: _items, ...record }) => record)
 
-export const salesOutboundDetailRecordSchema = z.strictObject({
+const salesOutboundDetailRecordSchema = z.strictObject({
   ...salesOutboundRecordShape,
   items: z.array(salesOutboundItemSchema).min(1),
 })
 
-export const salesOutboundSaveItemSchema = z.strictObject({
+const salesOutboundSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   sourceNo: optionalTextSchema,
   sourceSalesOrderItemId: entityIdSchema,
@@ -520,7 +520,7 @@ export const salesOutboundSaveItemSchema = z.strictObject({
   amount: optionalRequestDecimalSchema,
 })
 
-export const salesOutboundSaveRequestSchema = z.strictObject({
+const salesOutboundSaveRequestSchema = z.strictObject({
   outboundNo: optionalTextSchema,
   salesOrderNo: optionalTextSchema,
   customerId: optionalEntityIdSchema,
@@ -536,7 +536,7 @@ export const salesOutboundSaveRequestSchema = z.strictObject({
 
 // Freight bill
 
-export const freightBillItemSchema = z.strictObject({
+const freightBillItemSchema = z.strictObject({
   id: entityIdSchema,
   lineNo: integerSchema,
   sourceNo: requiredTextSchema,
@@ -587,19 +587,19 @@ const freightBillRecordShape = {
   remark: nullableTextSchema,
 }
 
-export const freightBillListRecordSchema = z
+const freightBillListRecordSchema = z
   .strictObject({
     ...freightBillRecordShape,
     items: z.null(),
   })
   .transform(({ items: _items, ...record }) => record)
 
-export const freightBillDetailRecordSchema = z.strictObject({
+const freightBillDetailRecordSchema = z.strictObject({
   ...freightBillRecordShape,
   items: z.array(freightBillItemSchema).min(1),
 })
 
-export const freightBillSaveItemSchema = z.strictObject({
+const freightBillSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   sourceNo: requiredTextSchema,
   settlementCompanyId: optionalEntityIdSchema,
@@ -627,7 +627,7 @@ export const freightBillSaveItemSchema = z.strictObject({
   sourceSalesOrderItemId: optionalEntityIdSchema,
 })
 
-export const freightBillSaveRequestSchema = z.strictObject({
+const freightBillSaveRequestSchema = z.strictObject({
   billNo: optionalTextSchema,
   carrierId: optionalEntityIdSchema,
   carrierCode: optionalTextSchema,
@@ -658,14 +658,6 @@ export function isMainFlowModuleKey(value: string): value is MainFlowModuleKey {
   return mainFlowModuleKeySet.has(value)
 }
 
-export const mainFlowListRecordSchemas = {
-  'purchase-order': purchaseOrderListRecordSchema,
-  'purchase-inbound': purchaseInboundListRecordSchema,
-  'sales-order': salesOrderListRecordSchema,
-  'sales-outbound': salesOutboundListRecordSchema,
-  'freight-bill': freightBillListRecordSchema,
-} satisfies Record<MainFlowModuleKey, z.ZodType>
-
 export const mainFlowDetailRecordSchemas = {
   'purchase-order': purchaseOrderDetailRecordSchema,
   'purchase-inbound': purchaseInboundDetailRecordSchema,
@@ -674,7 +666,7 @@ export const mainFlowDetailRecordSchemas = {
   'freight-bill': freightBillDetailRecordSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
-export const mainFlowSaveRequestSchemas = {
+const mainFlowSaveRequestSchemas = {
   'purchase-order': purchaseOrderSaveRequestSchema,
   'purchase-inbound': purchaseInboundSaveRequestSchema,
   'sales-order': salesOrderSaveRequestSchema,
@@ -682,7 +674,7 @@ export const mainFlowSaveRequestSchemas = {
   'freight-bill': freightBillSaveRequestSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
-export const mainFlowStatusSchemas = {
+const mainFlowStatusSchemas = {
   'purchase-order': purchaseOrderStatusSchema,
   'purchase-inbound': purchaseInboundStatusSchema,
   'sales-order': salesOrderStatusSchema,
@@ -690,7 +682,7 @@ export const mainFlowStatusSchemas = {
   'freight-bill': freightBillStatusSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
-export const mainFlowListResponseSchemas = {
+const mainFlowListResponseSchemas = {
   'purchase-order': exactPageSchema(purchaseOrderListRecordSchema),
   'purchase-inbound': exactPageSchema(purchaseInboundListRecordSchema),
   'sales-order': exactPageSchema(salesOrderListRecordSchema),

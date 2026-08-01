@@ -390,7 +390,7 @@ function resolveLineItemsForSave(
   return existingItems
 }
 
-export function serializeBusinessRecordForSave(
+function serializeBusinessRecordForSave(
   moduleKey: string,
   record: SerializableBusinessRecord,
 ) {

@@ -34,7 +34,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { useMemo, useReducer } from 'react'
+import { type Dispatch, useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   listPrintRecordItems,
@@ -871,6 +871,125 @@ function PrintJobActions({
   )
 }
 
+interface PrintJobOutputActionsInput {
+  dispatch: Dispatch<PrintJobModalAction>
+  mergeEquivalentItemsAvailable: boolean
+  onExportPrintXlsx?: Props['onExportPrintXlsx']
+  onPrint: Props['onPrint']
+  orderedPrintItems: PrintRecordItem[]
+  selectedPrintItems: PrintRecordItem[]
+  selectedTemplate?: PrintTemplateRecord
+  state: PrintJobModalState
+}
+
+function createPrintJobOutputActions({
+  dispatch,
+  mergeEquivalentItemsAvailable,
+  onExportPrintXlsx,
+  onPrint,
+  orderedPrintItems,
+  selectedPrintItems,
+  selectedTemplate,
+  state,
+}: PrintJobOutputActionsInput) {
+  const currentItemOrder = () =>
+    orderedPrintItems.length
+      ? orderedPrintItems.map((item) => item.id)
+      : undefined
+
+  const currentBrandOverridesByItemId = () => {
+    const normalizedBrandOverridesByItemId: Record<string, string> = {}
+    for (const [itemId, value] of Object.entries(
+      state.brandOverridesByItemId,
+    )) {
+      const trimmed = value.trim()
+      if (trimmed) {
+        normalizedBrandOverridesByItemId[itemId] = trimmed
+      }
+    }
+    return state.brandOverrideEnabled &&
+      Object.keys(normalizedBrandOverridesByItemId).length
+      ? normalizedBrandOverridesByItemId
+      : undefined
+  }
+
+  const currentPrintRenderOptions = (): PrintRenderOptions => {
+    const itemOrder = currentItemOrder()
+    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
+    return {
+      hideUnitPrice: state.hideUnitPrice,
+      hideRemark: state.hideRemark,
+      ...(mergeEquivalentItemsAvailable
+        ? { mergeEquivalentItems: state.mergeEquivalentItems }
+        : {}),
+      ...(state.itemSelectionEnabled
+        ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
+        : {}),
+      ...(itemOrder ? { itemOrder } : {}),
+      ...(normalizedBrandOverridesByItemId
+        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
+        : {}),
+    }
+  }
+
+  const currentSalesOrderPrintXlsxOptions = (): SalesOrderPrintXlsxOptions => {
+    const itemOrder = currentItemOrder()
+    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
+    return {
+      hideUnitPrice: state.hideUnitPrice,
+      hideRemark: state.hideRemark,
+      ...(state.itemSelectionEnabled
+        ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
+        : {}),
+      ...(itemOrder ? { itemOrder } : {}),
+      ...(normalizedBrandOverridesByItemId
+        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
+        : {}),
+    }
+  }
+
+  const markSelectedPrintItemsOutput = (itemIds: string[]) => {
+    if (!state.itemSelectionEnabled || !itemIds.length) return
+    dispatch({ type: 'markPrintItemsOutput', itemIds })
+  }
+
+  const handlePrint = (mode: PrintActionMode): Promise<void> => {
+    if (!selectedTemplate || state.pendingOutputAction) {
+      return Promise.resolve()
+    }
+    const outputItemIds = selectedPrintItems.map((item) => item.id)
+    dispatch({ type: 'setPendingOutputAction', value: mode })
+    return onPrint(mode, selectedTemplate, currentPrintRenderOptions())
+      .then((succeeded) => {
+        if (succeeded && mode !== 'preview') {
+          markSelectedPrintItemsOutput(outputItemIds)
+        }
+      })
+      .finally(() => {
+        dispatch({ type: 'setPendingOutputAction' })
+      })
+  }
+
+  const handleExportPrintXlsx = (): Promise<void> => {
+    if (!onExportPrintXlsx || state.pendingOutputAction) {
+      return Promise.resolve()
+    }
+    const outputItemIds = selectedPrintItems.map((item) => item.id)
+    dispatch({ type: 'setPendingOutputAction', value: 'xlsx' })
+    return onExportPrintXlsx(currentSalesOrderPrintXlsxOptions())
+      .then((succeeded) => {
+        if (succeeded) {
+          markSelectedPrintItemsOutput(outputItemIds)
+        }
+      })
+      .finally(() => {
+        dispatch({ type: 'setPendingOutputAction' })
+      })
+  }
+
+  return { handleExportPrintXlsx, handlePrint }
+}
+
 export function PrintJobModal({
   open,
   moduleKey,
@@ -973,61 +1092,16 @@ export function PrintJobModal({
     state.brandOverridesByItemId,
   ])
 
-  const currentItemOrder = () =>
-    orderedPrintItems.length
-      ? orderedPrintItems.map((item) => item.id)
-      : undefined
-
-  const currentBrandOverridesByItemId = () => {
-    const normalizedBrandOverridesByItemId: Record<string, string> = {}
-    for (const [itemId, value] of Object.entries(
-      state.brandOverridesByItemId,
-    )) {
-      const trimmed = value.trim()
-      if (trimmed) {
-        normalizedBrandOverridesByItemId[itemId] = trimmed
-      }
-    }
-    return state.brandOverrideEnabled &&
-      Object.keys(normalizedBrandOverridesByItemId).length
-      ? normalizedBrandOverridesByItemId
-      : undefined
-  }
-
-  const currentPrintRenderOptions = (): PrintRenderOptions => {
-    const itemOrder = currentItemOrder()
-    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
-    return {
-      hideUnitPrice: state.hideUnitPrice,
-      hideRemark: state.hideRemark,
-      ...(mergeEquivalentItemsAvailable
-        ? { mergeEquivalentItems: state.mergeEquivalentItems }
-        : {}),
-      ...(state.itemSelectionEnabled
-        ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
-        : {}),
-      ...(itemOrder ? { itemOrder } : {}),
-      ...(normalizedBrandOverridesByItemId
-        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
-        : {}),
-    }
-  }
-
-  const currentSalesOrderPrintXlsxOptions = (): SalesOrderPrintXlsxOptions => {
-    const itemOrder = currentItemOrder()
-    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
-    return {
-      hideUnitPrice: state.hideUnitPrice,
-      hideRemark: state.hideRemark,
-      ...(state.itemSelectionEnabled
-        ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
-        : {}),
-      ...(itemOrder ? { itemOrder } : {}),
-      ...(normalizedBrandOverridesByItemId
-        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
-        : {}),
-    }
-  }
+  const { handleExportPrintXlsx, handlePrint } = createPrintJobOutputActions({
+    dispatch: dispatchPrintJobModal,
+    mergeEquivalentItemsAvailable,
+    onExportPrintXlsx,
+    onPrint,
+    orderedPrintItems,
+    selectedPrintItems,
+    selectedTemplate,
+    state,
+  })
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -1082,45 +1156,6 @@ export function PrintJobModal({
       itemIds: printItems.map((item) => item.id),
       selected,
     })
-  }
-
-  const markSelectedPrintItemsOutput = (itemIds: string[]) => {
-    if (!state.itemSelectionEnabled || !itemIds.length) return
-    dispatchPrintJobModal({ type: 'markPrintItemsOutput', itemIds })
-  }
-
-  const handlePrint = async (mode: PrintActionMode) => {
-    if (!selectedTemplate || state.pendingOutputAction) return
-    const outputItemIds = selectedPrintItems.map((item) => item.id)
-    dispatchPrintJobModal({ type: 'setPendingOutputAction', value: mode })
-    try {
-      const succeeded = await onPrint(
-        mode,
-        selectedTemplate,
-        currentPrintRenderOptions(),
-      )
-      if (succeeded && mode !== 'preview') {
-        markSelectedPrintItemsOutput(outputItemIds)
-      }
-    } finally {
-      dispatchPrintJobModal({ type: 'setPendingOutputAction' })
-    }
-  }
-
-  const handleExportPrintXlsx = async () => {
-    if (!onExportPrintXlsx || state.pendingOutputAction) return
-    const outputItemIds = selectedPrintItems.map((item) => item.id)
-    dispatchPrintJobModal({ type: 'setPendingOutputAction', value: 'xlsx' })
-    try {
-      const succeeded = await onExportPrintXlsx(
-        currentSalesOrderPrintXlsxOptions(),
-      )
-      if (succeeded) {
-        markSelectedPrintItemsOutput(outputItemIds)
-      }
-    } finally {
-      dispatchPrintJobModal({ type: 'setPendingOutputAction' })
-    }
   }
 
   const handleRequestClose = () => {

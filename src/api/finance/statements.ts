@@ -61,33 +61,6 @@ async function listStatementCandidates(
   }
 }
 
-export async function listAllStatementCandidates(
-  statementModuleKey: StatementModuleKey,
-  keyword = '',
-  pageSize = 200,
-  filters: SearchParams = {},
-  signal?: AbortSignal,
-) {
-  const rows: ModuleRecord[] = []
-  let page = 0
-  let total = 0
-  while (true) {
-    const current = await listStatementCandidates(
-      statementModuleKey,
-      keyword,
-      page,
-      pageSize,
-      filters,
-      signal,
-    )
-    if (page === 0) total = current.total
-    rows.push(...current.rows)
-    if (rows.length >= total || current.rows.length < pageSize) break
-    page += 1
-  }
-  return rows
-}
-
 export async function listStatementCandidatePage(
   statementModuleKey: StatementModuleKey,
   filters: SearchParams,

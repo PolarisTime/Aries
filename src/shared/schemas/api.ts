@@ -55,7 +55,7 @@ export const exactPageSchema = <ItemSchema extends z.ZodType>(
 
 export const rawRecordPageSchema = exactPageSchema(rawRecordSchema)
 
-export const apiProblemFieldErrorSchema = z.object({
+const apiProblemFieldErrorSchema = z.object({
   field: z.string(),
   code: z.string(),
   message: z.string(),
