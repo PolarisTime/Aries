@@ -177,6 +177,11 @@ jobs:
       ALL_PROXY: ""
       NO_PROXY: "127.0.0.1,localhost"
     steps:
+      - name: Prepare frontend release workspace
+        run: |
+          set -euo pipefail
+          rm -rf -- frontend-release frontend-release-attempt-1 frontend-release-attempt-2 frontend-release-attempt-3
+
       - name: Download frontend release archive (attempt 1)
         id: download-release-attempt-1
         continue-on-error: true
@@ -301,6 +306,11 @@ jobs:
       ALL_PROXY: ""
       NO_PROXY: "127.0.0.1,localhost"
     steps:
+      - name: Prepare frontend release workspace
+        run: |
+          set -euo pipefail
+          rm -rf -- frontend-release frontend-release-attempt-1 frontend-release-attempt-2 frontend-release-attempt-3
+
       - name: Download frontend release archive (attempt 1)
         id: download-release-attempt-1
         continue-on-error: true
