@@ -1,3 +1,10 @@
+## [9.0.1](https://github.com/PolarisTime/Aries/compare/v9.0.0...v9.0.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **ci:** 重试前端部署产物下载 ([e4c5fb7](https://github.com/PolarisTime/Aries/commit/e4c5fb7b990722eb22c4abaa25ca5be084370170))
+
 # [9.0.0](https://github.com/PolarisTime/Aries/compare/v8.9.0...v9.0.0) (2026-07-31)
 
 
