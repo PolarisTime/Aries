@@ -681,11 +681,11 @@ function PrintItemSection({
     printItems.length > 0 && selectedCount === printItems.length
   return (
     <div>
-      <div className="grid grid-cols-[96px_200px_160px_minmax(0,1fr)] items-center gap-x-8 gap-y-2">
+      <div className="grid grid-cols-[96px_220px_160px_minmax(0,1fr)] items-center gap-x-8 gap-y-2">
         <Typography.Text strong>
           {t('modules.print.selectedPrintItems')}
         </Typography.Text>
-        <Typography.Text>
+        <Typography.Text className="whitespace-nowrap">
           <Typography.Text type="secondary">
             {t('modules.print.deliveryDate')}：
           </Typography.Text>
