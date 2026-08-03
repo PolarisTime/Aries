@@ -83,11 +83,6 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 160,
     },
     {
-      title: '仓库',
-      dataIndex: 'warehouseName',
-      width: 140,
-    },
-    {
       title: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
       dataIndex: 'inboundDate',
       width: 120,
@@ -240,20 +235,6 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'warehouseName',
-      label: '仓库',
-      type: 'input',
-      disabled: true,
-      row: 2,
-    },
-    {
-      key: 'settlementMode',
-      label: '结算方式',
-      type: 'input',
-      disabled: true,
-      row: 2,
-    },
-    {
       key: 'totalWeight',
       label: i18next.t('modules.pages.purchaseInbound.formTotalWeight'),
       type: 'input',
@@ -289,25 +270,14 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       currentRecordId: currentRecord.id,
     }),
     hiddenSelectorColumnKeys: ['status'],
-    mapParentToDraft: (parentRecord) => {
-      const sourceItems = Array.isArray(parentRecord.items)
-        ? parentRecord.items
-        : []
-      const firstItem = sourceItems[0]
-      return {
-        purchaseOrderNo: parentRecord.orderNo || '',
-        supplierId: parentRecord.supplierId,
-        supplierCode: parentRecord.supplierCode || '',
-        supplierName: parentRecord.supplierName || '',
-        settlementCompanyId: parentRecord.settlementCompanyId,
-        settlementCompanyName: parentRecord.settlementCompanyName || '',
-        warehouseId: firstItem?.warehouseId,
-        warehouseName: firstItem?.warehouseName || '',
-        settlementMode: isPurchaseWeighRequiredCategory(firstItem?.category)
-          ? '过磅'
-          : '理算',
-      }
-    },
+    mapParentToDraft: (parentRecord) => ({
+      purchaseOrderNo: parentRecord.orderNo || '',
+      supplierId: parentRecord.supplierId,
+      supplierCode: parentRecord.supplierCode || '',
+      supplierName: parentRecord.supplierName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
+    }),
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)

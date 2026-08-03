@@ -94,14 +94,6 @@ function getLineItemValidationMessages(
   }
 
   if (moduleKey === 'purchase-inbound') {
-    const warehouseIds = new Set(
-      items.map((item) => asString(item.warehouseId).trim()).filter(Boolean),
-    )
-    if (warehouseIds.size > 1) {
-      messages.push(
-        i18next.t('modules.validation.purchaseInboundMixedWarehouse'),
-      )
-    }
     const parentRelationIds = new Set(
       items
         .map((item) => asString(item._parentRelationId).trim())
