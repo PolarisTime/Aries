@@ -19,8 +19,6 @@ export const printTemplateRecordSchema = z.object({
   syncMode: z.enum(['MANUAL', 'FILE']).nullish(),
   sourceRef: z.string().nullish(),
   sourceChecksum: z.string().nullish(),
-  source: z.enum(['db', 'file']).optional(),
-  fileName: z.string().optional(),
   billType: z.string().optional(),
   createTime: responseDateTimeSchema.optional(),
   updateTime: responseDateTimeSchema.optional(),
