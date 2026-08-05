@@ -1,3 +1,10 @@
+## [9.5.1](https://github.com/PolarisTime/Aries/compare/v9.5.0...v9.5.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **freight-statement:** 同步 schema 明细保存字段使精简生效 ([f0ea4bd](https://github.com/PolarisTime/Aries/commit/f0ea4bd41262ef66002217e1cbfe78ddaae9c4a2))
+
 # [9.5.0](https://github.com/PolarisTime/Aries/compare/v9.4.0...v9.5.0) (2026-08-05)
 
 
