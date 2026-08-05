@@ -27,7 +27,8 @@ function matchesPrintTemplateSettlementCompany(
     return recordCompanyName === templateCompanyName
   }
 
-  return !recordCompanyId && !recordCompanyName
+  // 模板未绑定结算主体时为通用模板，适用于任何主体的单据（兜底）。
+  return true
 }
 
 export function filterPrintTemplatesBySettlementCompany(
