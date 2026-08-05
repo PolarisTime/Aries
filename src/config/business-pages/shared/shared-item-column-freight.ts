@@ -115,3 +115,9 @@ export const compactFreightItemColumns = applyCompactItemLayout(
   compactFreightItemWidthMap,
   ['brand', 'category', 'piecesPerBundle', 'batchNo'],
 )
+
+// 物流对账单明细列：客户名称/项目名称抽到项目分组行展示，商品编码列移除。
+export const freightStatementItemColumns = freightItemColumns.filter(
+  (column) =>
+    !['materialCode', 'customerName', 'projectName'].includes(column.dataIndex),
+)

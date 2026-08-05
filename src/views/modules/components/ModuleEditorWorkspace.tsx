@@ -28,11 +28,16 @@ import type {
   ModuleParentImportSource,
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
+import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 import type { EditorSaveResult } from '@/views/modules/use-editor-submission-controller'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { EditorFooterActions } from './EditorFooterActions'
+import {
+  FreightStatementItemGroupHeader,
+  FreightStatementProjectGroupHeader,
+} from './FreightStatementItemGroupHeader'
 import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -644,6 +649,20 @@ function SaveResultOverlay<Key extends ModuleKey>({
       : isFinanceOrTradeModule(moduleKey)
         ? [...baseItemColumns, ...financeItemColumns]
         : baseItemColumns
+  const itemGroups =
+    moduleKey === 'freight-statement'
+      ? groupFreightStatementItems(items)
+      : [
+          {
+            key: 'all',
+            sourceNo: '',
+            customerName: '',
+            projectName: '',
+            totalQuantity: 0,
+            totalWeightTon: 0,
+            items,
+          },
+        ]
 
   return (
     <WorkspaceOverlay
@@ -690,14 +709,54 @@ function SaveResultOverlay<Key extends ModuleKey>({
       ) : null}
 
       {items.length > 0 ? (
-        <div className="mt-16 flex justify-center">
-          <Table
-            rowKey={(_, i) => String(i)}
-            dataSource={items}
-            columns={itemColumns}
-            size="small"
-            pagination={false}
-          />
+        <div className="mt-16 module-items-groups">
+          {(itemGroups.length
+            ? itemGroups
+            : [
+                {
+                  key: 'empty',
+                  sourceNo: '',
+                  customerName: '',
+                  projectName: '',
+                  totalQuantity: 0,
+                  totalWeightTon: 0,
+                  items: [],
+                },
+              ]
+          ).map((group) => (
+            <div className="module-items-group" key={group.key}>
+              {'projectGroups' in group ? (
+                <>
+                  <FreightStatementItemGroupHeader group={group} />
+                  {group.projectGroups.map((projectGroup) => (
+                    <div
+                      className="module-items-project-group"
+                      key={projectGroup.key}
+                    >
+                      <FreightStatementProjectGroupHeader
+                        group={projectGroup}
+                      />
+                      <Table
+                        rowKey={(_, i) => String(i)}
+                        dataSource={projectGroup.items}
+                        columns={itemColumns}
+                        size="small"
+                        pagination={false}
+                      />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <Table
+                  rowKey={(_, i) => String(i)}
+                  dataSource={group.items}
+                  columns={itemColumns}
+                  size="small"
+                  pagination={false}
+                />
+              )}
+            </div>
+          ))}
         </div>
       ) : null}
     </WorkspaceOverlay>

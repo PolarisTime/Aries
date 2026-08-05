@@ -14,6 +14,11 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
+import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import {
+  FreightStatementItemGroupHeader,
+  FreightStatementProjectGroupHeader,
+} from './FreightStatementItemGroupHeader'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -56,6 +61,20 @@ export function ModuleRecordDetailOverlay({
     config,
   })
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
+  const detailItemGroups =
+    config.key === 'freight-statement'
+      ? groupFreightStatementItems(record?.items || [])
+      : [
+          {
+            key: 'all',
+            sourceNo: '',
+            customerName: '',
+            projectName: '',
+            totalQuantity: 0,
+            totalWeightTon: 0,
+            items: record?.items || [],
+          },
+        ]
   const detailTableColumns: TableColumnsType<ModuleLineItem> =
     detailItemColumns.map((column) => ({
       title: column.title,
@@ -167,11 +186,51 @@ export function ModuleRecordDetailOverlay({
                 </>
               }
             >
-              <ModuleItemsTable
-                columns={detailTableColumns}
-                dataSource={record.items || []}
-                emptyText={t('modules.detail.noDetailItems')}
-              />
+              <div className="module-items-groups">
+                {(detailItemGroups.length
+                  ? detailItemGroups
+                  : [
+                      {
+                        key: 'empty',
+                        sourceNo: '',
+                        customerName: '',
+                        projectName: '',
+                        totalQuantity: 0,
+                        totalWeightTon: 0,
+                        items: [],
+                      },
+                    ]
+                ).map((group) => (
+                  <div className="module-items-group" key={group.key}>
+                    {'projectGroups' in group ? (
+                      <>
+                        <FreightStatementItemGroupHeader group={group} />
+                        {group.projectGroups.map((projectGroup) => (
+                          <div
+                            className="module-items-project-group"
+                            key={projectGroup.key}
+                          >
+                            <FreightStatementProjectGroupHeader
+                              group={projectGroup}
+                            />
+                            <ModuleItemsTable
+                              columns={detailTableColumns}
+                              dataSource={projectGroup.items}
+                              emptyText={t('modules.detail.noDetailItems')}
+                            />
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <ModuleItemsTable
+                        columns={detailTableColumns}
+                        dataSource={group.items}
+                        emptyText={t('modules.detail.noDetailItems')}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             </ModuleItemsPanel>
           ) : (
             <div className="mt-20">

@@ -13,7 +13,7 @@ import {
 } from '../shared/settlement-company'
 import {
   buildStatementOverview,
-  freightItemColumns,
+  freightStatementItemColumns,
   statusMap,
 } from '../shared/shared'
 
@@ -425,7 +425,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       )
     },
   },
-  itemColumns: freightItemColumns,
+  itemColumns: freightStatementItemColumns,
   data: [],
   buildOverview: (rows) =>
     buildStatementOverview(rows, 'totalFreight', 'paidAmount', 'unpaidAmount'),

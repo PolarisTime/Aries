@@ -473,6 +473,38 @@
   min-width: 0;
 }
 
+.module-items-groups {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.module-items-group {
+  min-width: 0;
+}
+
+.module-items-group-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.module-items-project-group {
+  min-width: 0;
+}
+
+.module-items-project-group-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin: 8px 0 8px 12px;
+  color: var(--text-primary);
+}
+
 .overlay-action-button.ant-btn {
   color: var(--theme-primary-deep);
   border-color: var(--theme-primary-soft-strong);

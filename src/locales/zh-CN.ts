@@ -706,6 +706,14 @@ export const zhCN = {
       emptyText: '当前没有明细，可手动新增',
       parentDoc: '上级单据',
       selectParent: '选择{{label}}',
+      freightBillGroup: '来源物流单：{{sourceNo}}',
+      freightBillGroupCustomer: '客户名称：{{customerName}}',
+      freightBillGroupProject: '项目名称：{{projectName}}',
+      freightBillGroupTotal: '合计：数量 {{quantity}}，重量 {{weight}} 吨',
+      freightBillProjectGroup: '项目：{{projectName}}',
+      freightBillProjectGroupCustomer: '客户：{{customerName}}',
+      freightBillProjectGroupTotal:
+        '小计：数量 {{quantity}}，重量 {{weight}} 吨',
     },
     table: {
       noData: '暂无数据',
@@ -806,7 +814,6 @@ export const zhCN = {
       purchaseInboundWarehouseRequired: '第{{row}}行缺少来源仓库ID',
       purchaseOrderQuantityMinimum: '第{{row}}行数量必须至少为1个数量单位',
       purchaseInboundQuantityPositive: '第{{row}}行入库数量必须大于0',
-      purchaseInboundMixedWarehouse: '一张采购入库单不能包含不同仓库的明细',
       purchaseInboundMixedSource: '一张采购入库单只能关联一张采购订单',
       lineItemRequired: '请填写第{{row}}行{{label}}',
       fieldRequired: '请填写{{label}}',

@@ -9,8 +9,13 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { EditorFooterActions } from './EditorFooterActions'
+import {
+  FreightStatementItemGroupHeader,
+  FreightStatementProjectGroupHeader,
+} from './FreightStatementItemGroupHeader'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
@@ -79,6 +84,33 @@ export function ModuleEditorItemsSection({
 }: Props) {
   const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
+  const itemGroups =
+    config.key === 'freight-statement'
+      ? groupFreightStatementItems(items)
+      : [
+          {
+            key: 'all',
+            sourceNo: '',
+            customerName: '',
+            projectName: '',
+            totalQuantity: 0,
+            totalWeightTon: 0,
+            items,
+          },
+        ]
+  const renderedItemGroups = itemGroups.length
+    ? itemGroups
+    : [
+        {
+          key: 'empty',
+          sourceNo: '',
+          customerName: '',
+          projectName: '',
+          totalQuantity: 0,
+          totalWeightTon: 0,
+          items: [],
+        },
+      ]
 
   const parentSelector = config.parentImport ? (
     <ModuleParentSelectorOverlay
@@ -178,24 +210,64 @@ export function ModuleEditorItemsSection({
             </>
           }
         >
-          <ModuleItemsTable
-            columns={itemColumns}
-            dataSource={items}
-            emptyText={
-              config.parentImport
-                ? t('modules.itemsSection.emptyTextWithImport')
-                : t('modules.itemsSection.emptyText')
-            }
-            rowClassName={(record) =>
-              selectedItemIds.includes(record.id)
-                ? 'ant-table-row-selected'
-                : ''
-            }
-            onRow={(record) => ({
-              onDragOver: (event: React.DragEvent<Element>) =>
-                onRowDragOver(record.id, event),
-            })}
-          />
+          <div className="module-items-groups">
+            {renderedItemGroups.map((group) => (
+              <div className="module-items-group" key={group.key}>
+                {'projectGroups' in group ? (
+                  <>
+                    <FreightStatementItemGroupHeader group={group} />
+                    {group.projectGroups.map((projectGroup) => (
+                      <div
+                        className="module-items-project-group"
+                        key={projectGroup.key}
+                      >
+                        <FreightStatementProjectGroupHeader
+                          group={projectGroup}
+                        />
+                        <ModuleItemsTable
+                          columns={itemColumns}
+                          dataSource={projectGroup.items}
+                          emptyText={
+                            config.parentImport
+                              ? t('modules.itemsSection.emptyTextWithImport')
+                              : t('modules.itemsSection.emptyText')
+                          }
+                          rowClassName={(record) =>
+                            selectedItemIds.includes(record.id)
+                              ? 'ant-table-row-selected'
+                              : ''
+                          }
+                          onRow={(record) => ({
+                            onDragOver: (event: React.DragEvent<Element>) =>
+                              onRowDragOver(record.id, event),
+                          })}
+                        />
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <ModuleItemsTable
+                    columns={itemColumns}
+                    dataSource={group.items}
+                    emptyText={
+                      config.parentImport
+                        ? t('modules.itemsSection.emptyTextWithImport')
+                        : t('modules.itemsSection.emptyText')
+                    }
+                    rowClassName={(record) =>
+                      selectedItemIds.includes(record.id)
+                        ? 'ant-table-row-selected'
+                        : ''
+                    }
+                    onRow={(record) => ({
+                      onDragOver: (event: React.DragEvent<Element>) =>
+                        onRowDragOver(record.id, event),
+                    })}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </ModuleItemsPanel>
       </div>
 

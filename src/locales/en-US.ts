@@ -728,6 +728,14 @@ export const enUS = {
       emptyText: 'No items yet. Add manually.',
       parentDoc: 'Parent Document',
       selectParent: 'Select {{label}}',
+      freightBillGroup: 'Source freight bill: {{sourceNo}}',
+      freightBillGroupCustomer: 'Customer: {{customerName}}',
+      freightBillGroupProject: 'Project: {{projectName}}',
+      freightBillGroupTotal: 'Total: Qty {{quantity}}, Weight {{weight}} ton',
+      freightBillProjectGroup: 'Project: {{projectName}}',
+      freightBillProjectGroupCustomer: 'Customer: {{customerName}}',
+      freightBillProjectGroupTotal:
+        'Subtotal: Qty {{quantity}}, Weight {{weight}} ton',
     },
     table: {
       noData: 'No data',
@@ -833,8 +841,6 @@ export const enUS = {
         'Row {{row}}: quantity must be at least one quantity unit',
       purchaseInboundQuantityPositive:
         'Row {{row}}: inbound quantity must be greater than zero',
-      purchaseInboundMixedWarehouse:
-        'A purchase inbound cannot contain items from different warehouses',
       purchaseInboundMixedSource:
         'A purchase inbound can reference only one purchase order',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',
