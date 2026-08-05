@@ -1,3 +1,10 @@
+# [9.4.0](https://github.com/PolarisTime/Aries/compare/v9.3.1...v9.4.0) (2026-08-05)
+
+
+### Features
+
+* **freight-statement:** 物流对账单明细按单据与项目分组展示 ([ee6fbf9](https://github.com/PolarisTime/Aries/commit/ee6fbf9183a19d79b16bd57d5bee442ae907373c))
+
 ## [9.3.1](https://github.com/PolarisTime/Aries/compare/v9.3.0...v9.3.1) (2026-08-04)
 
 
