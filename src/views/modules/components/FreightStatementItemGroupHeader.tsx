@@ -1,6 +1,6 @@
 import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { formatWeight } from '@/utils/formatters'
+import { formatAmount, formatWeight } from '@/utils/formatters'
 import type {
   FreightStatementItemGroup,
   FreightStatementProjectGroup,
@@ -14,6 +14,8 @@ export function FreightStatementItemGroupHeader<
   Item extends Record<string, unknown>,
 >({ group }: ItemGroupHeaderProps<Item>) {
   const { t } = useTranslation()
+  const unitPrice =
+    group.totalWeightTon > 0 ? group.totalFreight / group.totalWeightTon : 0
 
   return (
     <div className="module-items-group-title">
@@ -26,6 +28,16 @@ export function FreightStatementItemGroupHeader<
         {t('modules.itemsSection.freightBillGroupTotal', {
           quantity: group.totalQuantity,
           weight: formatWeight(group.totalWeightTon),
+        })}
+      </Typography.Text>
+      <Typography.Text type="secondary">
+        {t('modules.itemsSection.freightBillGroupUnitPrice', {
+          unitPrice: formatAmount(unitPrice),
+        })}
+      </Typography.Text>
+      <Typography.Text strong>
+        {t('modules.itemsSection.freightBillGroupTotalFreight', {
+          totalFreight: formatAmount(group.totalFreight),
         })}
       </Typography.Text>
     </div>
@@ -44,13 +56,13 @@ export function FreightStatementProjectGroupHeader<
   return (
     <div className="module-items-project-group-title">
       <Typography.Text strong>
-        {t('modules.itemsSection.freightBillProjectGroup', {
-          projectName: group.projectName || '-',
+        {t('modules.itemsSection.freightBillProjectGroupCustomer', {
+          customerName: group.customerName || '-',
         })}
       </Typography.Text>
       <Typography.Text type="secondary">
-        {t('modules.itemsSection.freightBillProjectGroupCustomer', {
-          customerName: group.customerName || '-',
+        {t('modules.itemsSection.freightBillProjectGroup', {
+          projectName: group.projectName || '-',
         })}
       </Typography.Text>
       <Typography.Text strong>

@@ -494,6 +494,9 @@
 
 .module-items-project-group {
   min-width: 0;
+  border-left: 2px solid var(--theme-border-subtle);
+  padding-left: 12px;
+  margin-bottom: 16px;
 }
 
 .module-items-project-group-title {
@@ -501,7 +504,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 16px;
-  margin: 8px 0 8px 12px;
+  margin: 0 0 8px;
   color: var(--text-primary);
 }
 

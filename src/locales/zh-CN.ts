@@ -710,6 +710,8 @@ export const zhCN = {
       freightBillGroupCustomer: '客户名称：{{customerName}}',
       freightBillGroupProject: '项目名称：{{projectName}}',
       freightBillGroupTotal: '合计：数量 {{quantity}}，重量 {{weight}} 吨',
+      freightBillGroupUnitPrice: '运费单价：{{unitPrice}} 元/吨',
+      freightBillGroupTotalFreight: '运费总价：{{totalFreight}} 元',
       freightBillProjectGroup: '项目：{{projectName}}',
       freightBillProjectGroupCustomer: '客户：{{customerName}}',
       freightBillProjectGroupTotal:

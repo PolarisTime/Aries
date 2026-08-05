@@ -732,6 +732,8 @@ export const enUS = {
       freightBillGroupCustomer: 'Customer: {{customerName}}',
       freightBillGroupProject: 'Project: {{projectName}}',
       freightBillGroupTotal: 'Total: Qty {{quantity}}, Weight {{weight}} ton',
+      freightBillGroupUnitPrice: 'Freight unit price: {{unitPrice}} CNY/ton',
+      freightBillGroupTotalFreight: 'Freight total: {{totalFreight}} CNY',
       freightBillProjectGroup: 'Project: {{projectName}}',
       freightBillProjectGroupCustomer: 'Customer: {{customerName}}',
       freightBillProjectGroupTotal:

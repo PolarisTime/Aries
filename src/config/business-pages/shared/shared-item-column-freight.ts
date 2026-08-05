@@ -116,8 +116,26 @@ export const compactFreightItemColumns = applyCompactItemLayout(
   ['brand', 'category', 'piecesPerBundle', 'batchNo'],
 )
 
-// 物流对账单明细列：客户名称/项目名称抽到项目分组行展示，商品编码列移除。
-export const freightStatementItemColumns = freightItemColumns.filter(
-  (column) =>
-    !['materialCode', 'customerName', 'projectName'].includes(column.dataIndex),
-)
+// 物流对账单明细列：客户名称/项目名称抽到项目分组行展示，移除商品编码、商品名称、每件支数、批号列，
+// 品牌列提前到商品名称位置，出库单号（物流单号）列加宽以便完整显示雪花 ID。
+const freightStatementColumnOrder = [
+  'sourceNo',
+  'brand',
+  'spec',
+  'material',
+  'category',
+  'length',
+  'quantity',
+  'quantityUnit',
+  'pieceWeightTon',
+  'weightTon',
+  'warehouse',
+] as const
+
+export const freightStatementItemColumns: ModuleColumnDefinition[] =
+  freightStatementColumnOrder
+    .map((key) => freightItemColumns.find((column) => column.dataIndex === key))
+    .filter((column): column is ModuleColumnDefinition => column != null)
+    .map((column) =>
+      column.dataIndex === 'sourceNo' ? { ...column, width: 180 } : column,
+    )
