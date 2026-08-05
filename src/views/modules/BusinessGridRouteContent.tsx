@@ -6,6 +6,7 @@ import type { AppPageDefinition } from '@/config/page-registry'
 import { assertModuleKey } from '@/module-system/core/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
@@ -192,7 +193,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                     )
                   }}
                   onExportPrintXlsx={
-                    moduleKey === 'sales-order'
+                    supportsSalesOrderPrintOption(moduleKey)
                       ? (printOptions) => {
                           return state.handleExportSalesOrderPrintXlsx(
                             printOptions,

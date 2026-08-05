@@ -13,6 +13,7 @@ import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
+import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
 import { runPrintOutputs } from '@/utils/print-output-runner'
 import { filterPrintTemplatesBySettlementCompany } from '@/utils/print-template-settlement'
 
@@ -125,7 +126,7 @@ export function useBusinessGridPrintActions({
   const handleExportSalesOrderPrintXlsx = async (
     printOptions?: SalesOrderPrintXlsxOptions,
   ) => {
-    if (moduleKey !== 'sales-order') return false
+    if (!supportsSalesOrderPrintOption(moduleKey)) return false
 
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))

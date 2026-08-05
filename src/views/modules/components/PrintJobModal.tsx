@@ -49,6 +49,12 @@ import type { ModuleRecord } from '@/types/module-page'
 import { modal } from '@/utils/antd-app'
 import { formatDate } from '@/utils/formatters'
 import {
+  getPrintItemColumnWidths,
+  getPrintItemFields,
+  type PrintItemFieldSpec,
+  supportsSalesOrderPrintOption,
+} from '@/utils/print-module-config'
+import {
   buildPrintItemMergeMarkers,
   type PrintItemMergeMarker,
   reorderPrintItemIds,
@@ -169,33 +175,18 @@ function formattedTotal(value: number | null, fractionDigits = 3) {
   return value.toFixed(fractionDigits).replace(/\.?0+$/, '')
 }
 
-const PRINT_ITEM_FIELDS = [
-  { key: 'category', labelKey: 'modules.print.itemCategory' },
-  { key: 'material', labelKey: 'modules.print.itemMaterial' },
-  { key: 'spec', labelKey: 'modules.print.itemSpec' },
-  { key: 'length', labelKey: 'modules.print.itemLength' },
-  { key: 'quantity', labelKey: 'modules.print.itemQuantity' },
-  { key: 'pieceWeightTon', labelKey: 'modules.print.itemPieceWeight' },
-  { key: 'weightTon', labelKey: 'modules.print.itemWeight' },
-  { key: 'unitPrice', labelKey: 'modules.print.itemUnitPrice' },
-  { key: 'amount', labelKey: 'modules.print.itemAmount' },
-] as const
-
-const PRINT_ITEM_VALUE_GRID_COLUMNS = [
-  'minmax(92px, 1fr)',
-  'minmax(110px, 1fr)',
-  'minmax(90px, 0.8fr)',
-  'minmax(110px, 1fr)',
-  'minmax(70px, 0.7fr)',
-  'minmax(80px, 0.8fr)',
-  'minmax(90px, 0.8fr)',
-  'minmax(90px, 0.8fr)',
-  'minmax(110px, 1fr)',
-] as const
+/** 解析 minmax(minPx, …) 中列的最小像素宽度。 */
+function valueGridMinWidth(valueGridColumns: string[]) {
+  return valueGridColumns.reduce((sum, column) => {
+    const match = /^minmax\((\d+)px/.exec(column)
+    return sum + (match ? Number(match[1]) : 0)
+  }, 0)
+}
 
 function printItemsGridStyle(
   brandOverrideEnabled: boolean,
   showMergeGroup: boolean,
+  valueGridColumns: string[],
 ) {
   const columns = ['56px', '64px', '80px']
   if (showMergeGroup) columns.push('72px')
@@ -205,11 +196,16 @@ function printItemsGridStyle(
   if (brandOverrideEnabled) {
     columns.push('128px')
   }
-  columns.push(...PRINT_ITEM_VALUE_GRID_COLUMNS)
+  columns.push(...valueGridColumns)
+  const fixedMinWidth =
+    56 +
+    64 +
+    80 +
+    (showMergeGroup ? 72 : 0) +
+    (brandOverrideEnabled ? 100 + 128 : 120)
   return {
     gridTemplateColumns: columns.join(' '),
-    minWidth:
-      1320 + (brandOverrideEnabled ? 100 : 0) + (showMergeGroup ? 88 : 0),
+    minWidth: fixedMinWidth + valueGridMinWidth(valueGridColumns),
   }
 }
 
@@ -337,6 +333,7 @@ function normalizePrintItemOrder(
 interface SortablePrintItemRowProps {
   brandOverrideEnabled: boolean
   brandOverrideValue: string
+  fields: PrintItemFieldSpec[]
   index: number
   item: PrintRecordItem
   itemSelectionEnabled: boolean
@@ -344,6 +341,7 @@ interface SortablePrintItemRowProps {
   outputted: boolean
   selected: boolean
   showMergeGroup: boolean
+  valueGridColumns: string[]
   onBrandOverrideChange: (itemId: string, value: string) => void
   onSelectedChange: (itemId: string, selected: boolean) => void
   t: (key: string) => string
@@ -352,6 +350,7 @@ interface SortablePrintItemRowProps {
 function SortablePrintItemRow({
   brandOverrideEnabled,
   brandOverrideValue,
+  fields,
   index,
   item,
   itemSelectionEnabled,
@@ -359,6 +358,7 @@ function SortablePrintItemRow({
   outputted,
   selected,
   showMergeGroup,
+  valueGridColumns,
   onBrandOverrideChange,
   onSelectedChange,
   t,
@@ -385,7 +385,11 @@ function SortablePrintItemRow({
     >
       <div
         className="grid items-center gap-4 text-base"
-        style={printItemsGridStyle(brandOverrideEnabled, showMergeGroup)}
+        style={printItemsGridStyle(
+          brandOverrideEnabled,
+          showMergeGroup,
+          valueGridColumns,
+        )}
       >
         <Typography.Text type="secondary">{index + 1}</Typography.Text>
         <span className="flex items-center gap-2 text-gray-500">
@@ -444,7 +448,7 @@ function SortablePrintItemRow({
             value={brandOverrideValue}
           />
         ) : null}
-        {PRINT_ITEM_FIELDS.map((field) => (
+        {fields.map((field) => (
           <Typography.Text
             key={field.key}
             className="block truncate"
@@ -540,6 +544,7 @@ interface PrintOptionsFieldProps {
   itemSelectionEnabled: boolean
   mergeEquivalentItems: boolean
   mergeEquivalentItemsAvailable: boolean
+  salesOrderOptionsAvailable: boolean
   onBrandOverrideEnabledChange: (value: boolean) => void
   onHideRemarkChange: (value: boolean) => void
   onHideUnitPriceChange: (value: boolean) => void
@@ -555,6 +560,7 @@ function PrintOptionsField({
   itemSelectionEnabled,
   mergeEquivalentItems,
   mergeEquivalentItemsAvailable,
+  salesOrderOptionsAvailable,
   onBrandOverrideEnabledChange,
   onHideRemarkChange,
   onHideUnitPriceChange,
@@ -568,26 +574,30 @@ function PrintOptionsField({
         {t('modules.print.printOptions')}
       </Typography.Text>
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-base">
-        <Checkbox
-          checked={hideUnitPrice}
-          onChange={(event) => onHideUnitPriceChange(event.target.checked)}
-        >
-          {t('modules.print.hideUnitPrice')}
-        </Checkbox>
+        {salesOrderOptionsAvailable ? (
+          <Checkbox
+            checked={hideUnitPrice}
+            onChange={(event) => onHideUnitPriceChange(event.target.checked)}
+          >
+            {t('modules.print.hideUnitPrice')}
+          </Checkbox>
+        ) : null}
         <Checkbox
           checked={hideRemark}
           onChange={(event) => onHideRemarkChange(event.target.checked)}
         >
           {t('modules.print.hideRemark')}
         </Checkbox>
-        <Checkbox
-          checked={brandOverrideEnabled}
-          onChange={(event) =>
-            onBrandOverrideEnabledChange(event.target.checked)
-          }
-        >
-          {t('modules.print.enableBrandOverride')}
-        </Checkbox>
+        {salesOrderOptionsAvailable ? (
+          <Checkbox
+            checked={brandOverrideEnabled}
+            onChange={(event) =>
+              onBrandOverrideEnabledChange(event.target.checked)
+            }
+          >
+            {t('modules.print.enableBrandOverride')}
+          </Checkbox>
+        ) : null}
         <Checkbox
           checked={itemSelectionEnabled}
           onChange={(event) =>
@@ -624,6 +634,7 @@ interface PrintItemSectionProps {
   brandOverrideEnabled: boolean
   brandOverridesByItemId: Record<string, string>
   excludedPrintItemIds: string[]
+  fields: PrintItemFieldSpec[]
   itemSelectionEnabled: boolean
   mergeMarkersByItemId: Record<string, PrintItemMergeMarker>
   orderedPrintItems: PrintRecordItem[]
@@ -636,6 +647,7 @@ interface PrintItemSectionProps {
   showMergeGroup: boolean
   totalQuantity: number | null
   totalWeight: number | null
+  valueGridColumns: string[]
   onBrandOverrideChange: (itemId: string, value: string) => void
   onDragEnd: (event: DragEndEvent) => void
   onPrintItemSelectedChange: (itemId: string, selected: boolean) => void
@@ -647,6 +659,7 @@ function PrintItemSection({
   brandOverrideEnabled,
   brandOverridesByItemId,
   excludedPrintItemIds,
+  fields,
   itemSelectionEnabled,
   mergeMarkersByItemId,
   orderedPrintItems,
@@ -659,6 +672,7 @@ function PrintItemSection({
   showMergeGroup,
   totalQuantity,
   totalWeight,
+  valueGridColumns,
   onBrandOverrideChange,
   onDragEnd,
   onPrintItemSelectedChange,
@@ -717,7 +731,11 @@ function PrintItemSection({
           <div className="divide-y divide-gray-200">
             <div
               className="grid items-center gap-4 bg-gray-100 px-3 py-2 text-base font-medium text-gray-600"
-              style={printItemsGridStyle(brandOverrideEnabled, showMergeGroup)}
+              style={printItemsGridStyle(
+                brandOverrideEnabled,
+                showMergeGroup,
+                valueGridColumns,
+              )}
             >
               <span>{t('modules.print.itemSequence')}</span>
               <span className="flex items-center">
@@ -739,7 +757,7 @@ function PrintItemSection({
               {brandOverrideEnabled ? (
                 <span>{t('modules.print.brandOverrideTo')}</span>
               ) : null}
-              {PRINT_ITEM_FIELDS.map((field) => (
+              {fields.map((field) => (
                 <span key={field.key}>{t(field.labelKey)}</span>
               ))}
             </div>
@@ -757,6 +775,7 @@ function PrintItemSection({
                     key={item.id}
                     brandOverrideEnabled={brandOverrideEnabled}
                     brandOverrideValue={brandOverridesByItemId[item.id] || ''}
+                    fields={fields}
                     index={index}
                     item={item}
                     itemSelectionEnabled={itemSelectionEnabled}
@@ -766,6 +785,7 @@ function PrintItemSection({
                     outputted={outputPrintItemIds.includes(item.id)}
                     selected={!excludedPrintItemIds.includes(item.id)}
                     showMergeGroup={showMergeGroup}
+                    valueGridColumns={valueGridColumns}
                     t={t}
                   />
                 ))}
@@ -1060,13 +1080,22 @@ export function PrintJobModal({
     state.excludedPrintItemIds,
     state.itemSelectionEnabled,
   ])
+  const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
+  const printItemFields = useMemo(
+    () => getPrintItemFields(moduleKey),
+    [moduleKey],
+  )
+  const printItemValueGridColumns = useMemo(
+    () => getPrintItemColumnWidths(printItemFields),
+    [printItemFields],
+  )
   const totalQuantity = numericTotal(
     selectedPrintItems.map((item) => item.quantity),
   )
   const totalWeight = numericTotal(
     selectedPrintItems.map((item) => item.weightTon),
   )
-  const mergeEquivalentItemsAvailable = moduleKey === 'sales-order'
+  const mergeEquivalentItemsAvailable = isSalesOrder
   const showMergeGroup =
     mergeEquivalentItemsAvailable && state.mergeEquivalentItems
   const mergeMarkersByItemId = useMemo(() => {
@@ -1164,8 +1193,7 @@ export function PrintJobModal({
     })
   }
 
-  const canExportPrintXlsx =
-    moduleKey === 'sales-order' && Boolean(onExportPrintXlsx)
+  const canExportPrintXlsx = isSalesOrder && Boolean(onExportPrintXlsx)
 
   return (
     <Modal
@@ -1209,12 +1237,14 @@ export function PrintJobModal({
           mergeEquivalentItems={state.mergeEquivalentItems}
           mergeEquivalentItemsAvailable={mergeEquivalentItemsAvailable}
           onMergeEquivalentItemsChange={handleMergeEquivalentItemsChange}
+          salesOrderOptionsAvailable={isSalesOrder}
           t={t}
         />
         <PrintItemSection
           brandOverrideEnabled={state.brandOverrideEnabled}
           brandOverridesByItemId={state.brandOverridesByItemId}
           excludedPrintItemIds={state.excludedPrintItemIds}
+          fields={printItemFields}
           itemSelectionEnabled={state.itemSelectionEnabled}
           mergeMarkersByItemId={mergeMarkersByItemId}
           onBrandOverrideChange={handleBrandOverrideChange}
@@ -1231,6 +1261,7 @@ export function PrintJobModal({
           showMergeGroup={showMergeGroup}
           totalQuantity={totalQuantity}
           totalWeight={totalWeight}
+          valueGridColumns={printItemValueGridColumns}
           t={t}
         />
         <PrintJobActions
