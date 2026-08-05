@@ -6,6 +6,10 @@ import {
   hasBehavior,
 } from '@/module-system/behavior/module-behavior-registry'
 import {
+  isPurchaseInbound,
+  isPurchaseModule,
+} from '@/module-system/core/module-category'
+import {
   type MainFlowModuleKey,
   type ModuleSaveRequestMap,
   parseMainFlowSaveRequest,
@@ -43,17 +47,12 @@ const COMPUTED_FIELD_KEYS = new Set([
   'userCount',
 ])
 
-const REQUIRED_SUPPLIER_ID_MODULES = new Set([
-  'purchase-order',
-  'purchase-inbound',
-])
-
 function assertRequiredStableIdentities(
   moduleKey: string,
   record: SerializableBusinessRecord,
 ) {
   const fields = getDynamicFields(record)
-  if (REQUIRED_SUPPLIER_ID_MODULES.has(moduleKey)) {
+  if (isPurchaseModule(moduleKey)) {
     parseEntityId(fields.supplierId, `${moduleKey}.supplierId`)
   }
 }
@@ -253,7 +252,7 @@ function serializeLineItem(
     result.id = persistedId
   }
   for (const field of lineItemFields) {
-    if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbound') {
+    if (field.key === 'settlementMode' && !isPurchaseInbound(moduleKey)) {
       continue
     }
     const value = dynamicFields[field.key]
@@ -283,7 +282,11 @@ function assertTypedAllocationSource(
   index: number,
 ) {
   const fields = getDynamicFields(item)
-  if (moduleKey === 'receipt') {
+  const statementLinkingType = getBehaviorValue(
+    moduleKey,
+    'supportsStatementLinking',
+  )
+  if (statementLinkingType === 'receipt') {
     const sourceCustomerStatementId = parseOptionalEntityId(
       fields.sourceCustomerStatementId,
       `items[${index}].sourceCustomerStatementId`,
@@ -296,7 +299,7 @@ function assertTypedAllocationSource(
     return
   }
 
-  if (moduleKey !== 'payment') {
+  if (statementLinkingType !== 'payment') {
     return
   }
 
@@ -330,8 +333,12 @@ function resolveLineItemsForSave(
   const firstItemFields = existingItems[0]
     ? getDynamicFields(existingItems[0])
     : {}
+  const statementLinkingType = getBehaviorValue(
+    moduleKey,
+    'supportsStatementLinking',
+  )
 
-  if (moduleKey === 'receipt') {
+  if (statementLinkingType === 'receipt') {
     if (
       fields.receiptPurpose === 'SUPPLIER_PREPAYMENT_REFUND' ||
       fields.receiptPurpose === 'SUPPLIER_OTHER_RECEIPT'
@@ -357,7 +364,7 @@ function resolveLineItemsForSave(
     ]
   }
 
-  if (moduleKey !== 'payment') {
+  if (statementLinkingType !== 'payment') {
     return existingItems
   }
 

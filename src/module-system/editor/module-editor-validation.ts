@@ -1,4 +1,8 @@
 import i18next from 'i18next'
+import {
+  isPurchaseInbound,
+  isPurchaseOrder,
+} from '@/module-system/core/module-category'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { hasEditorValue } from '@/module-system/editor/module-editor-shared'
 import { isModuleFormFieldVisible } from '@/module-system/presentation/module-form-field-visibility'
@@ -31,14 +35,14 @@ function getLineItemValidationMessages(
         }),
       )
     }
-    if (moduleKey === 'purchase-order' && Number(item.quantity || 0) < 1) {
+    if (isPurchaseOrder(moduleKey) && Number(item.quantity || 0) < 1) {
       messages.push(
         i18next.t('modules.validation.purchaseOrderQuantityMinimum', {
           row: index + 1,
         }),
       )
     }
-    if (moduleKey === 'purchase-inbound') {
+    if (isPurchaseInbound(moduleKey)) {
       if (!asString(item.sourcePurchaseOrderItemId).trim()) {
         messages.push(
           i18next.t('modules.validation.purchaseInboundSourceRequired', {
@@ -93,7 +97,7 @@ function getLineItemValidationMessages(
     }
   }
 
-  if (moduleKey === 'purchase-inbound') {
+  if (isPurchaseInbound(moduleKey)) {
     const parentRelationIds = new Set(
       items
         .map((item) => asString(item._parentRelationId).trim())

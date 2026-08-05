@@ -8,6 +8,10 @@ import {
   getEditorItemPrecision,
   isNumberEditorColumn,
 } from '@/module-system/adapter/module-adapter-editor'
+import {
+  isPurchaseInbound,
+  isPurchaseOrder,
+} from '@/module-system/core/module-category'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type {
   ModuleColumnDefinition,
@@ -128,7 +132,7 @@ function renderReadOnlyValue(
 }
 
 function shouldRenderEditablePieceWeight(moduleKey: string, columnKey: string) {
-  return moduleKey === 'purchase-order' && columnKey === 'pieceWeightTon'
+  return isPurchaseOrder(moduleKey) && columnKey === 'pieceWeightTon'
 }
 
 function buildMaterialSnapshotLabel(record: ModuleLineItem) {
@@ -289,7 +293,7 @@ function buildEditableColumnRender({
         )
       }
 
-      if (key === 'weighWeightTon' && config.key === 'purchase-inbound') {
+      if (key === 'weighWeightTon' && isPurchaseInbound(config.key)) {
         const isWeigh = asString(record.settlementMode) === '过磅'
         const displayValue = isWeigh
           ? asNumber(value)

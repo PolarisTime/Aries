@@ -1,5 +1,9 @@
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import {
+  isPurchaseModule,
+  isPurchaseOrder,
+} from '@/module-system/core/module-category'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
 import {
@@ -161,7 +165,7 @@ export function applyMaterialToEditorLineItem(
   item.spec = materialRecord.spec || ''
   item.length = materialRecord.length || ''
   item.unit = materialRecord.unit || '吨'
-  if (!item.batchNo && moduleKey === 'purchase-order') {
+  if (!item.batchNo && isPurchaseOrder(moduleKey)) {
     item.batchNo = generateBatchNo()
   }
   item.quantityUnit = inferQuantityUnit(materialRecord)
@@ -215,10 +219,7 @@ export function getEditorItemMin(columnKey: string, moduleKey?: string) {
   if (['weightAdjustmentTon', 'weightAdjustmentAmount'].includes(columnKey)) {
     return undefined
   }
-  if (
-    columnKey === 'quantity' &&
-    (moduleKey === 'purchase-order' || moduleKey === 'purchase-inbound')
-  ) {
+  if (columnKey === 'quantity' && isPurchaseModule(moduleKey)) {
     return 1
   }
   if (isNumberEditorColumn(columnKey)) {

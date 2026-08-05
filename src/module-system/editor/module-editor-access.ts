@@ -1,4 +1,9 @@
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import {
+  isPurchaseInbound,
+  isPurchaseModule,
+  isPurchaseOrder,
+} from '@/module-system/core/module-category'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from '@/module-system/editor/module-editor-shared'
 import type {
@@ -173,7 +178,7 @@ export function isEditorItemColumnEditableForModule(
   }
 
   if (
-    moduleKey === 'purchase-inbound' &&
+    isPurchaseInbound(moduleKey) &&
     columnKey === 'materialCode' &&
     record?.sourcePurchaseOrderItemId
   ) {
@@ -202,9 +207,9 @@ export function isEditorItemColumnEditableForModule(
 
   if (
     DERIVED_READONLY_ITEM_COLUMN_KEYS.has(columnKey) &&
-    !(moduleKey === 'purchase-inbound' && columnKey === 'weightTon') &&
+    !(isPurchaseInbound(moduleKey) && columnKey === 'weightTon') &&
     !(
-      moduleKey === 'purchase-order' &&
+      isPurchaseOrder(moduleKey) &&
       columnKey === 'pieceWeightTon' &&
       isPurchaseWeighRequiredCategory(record?.category)
     )
@@ -212,10 +217,7 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
-  if (
-    columnKey === 'batchNo' &&
-    (moduleKey === 'purchase-inbound' || moduleKey === 'purchase-order')
-  ) {
+  if (columnKey === 'batchNo' && isPurchaseModule(moduleKey)) {
     return false
   }
 

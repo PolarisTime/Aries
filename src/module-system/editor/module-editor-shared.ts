@@ -1,3 +1,4 @@
+import { isPurchaseOrder } from '@/module-system/core/module-category'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -99,7 +100,7 @@ export function buildDefaultEditorLineItem(
     quantityUnit: '件',
     pieceWeightTon: 0,
     piecesPerBundle: 0,
-    quantity: moduleKey === 'purchase-order' ? 1 : 0,
+    quantity: isPurchaseOrder(moduleKey) ? 1 : 0,
     weightTon: 0,
     weightAdjustmentTon: 0,
     weightAdjustmentAmount: 0,

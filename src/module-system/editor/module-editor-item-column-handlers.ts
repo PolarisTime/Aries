@@ -1,5 +1,6 @@
 import type { WarehouseOption } from '@/api/master/warehouse-options'
 import { recalculateEditorLineItem } from '@/module-system/adapter/module-adapter-editor'
+import { isPurchaseOrder } from '@/module-system/core/module-category'
 import { markManualWarehouseSelection } from '@/module-system/editor/module-editor-warehouse-recommendation'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -79,7 +80,7 @@ export function useModuleEditorItemColumnHandlers({
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
-          ? moduleKey === 'purchase-order'
+          ? isPurchaseOrder(moduleKey)
             ? markManualWarehouseSelection({
                 ...item,
                 warehouseId: warehouseId || undefined,

@@ -30,4 +30,6 @@ export const contributeSaveBehaviors: ModuleBehaviorContributor = (
   }
 
   registerModuleBehavior('freight-statement', { includeAttachmentIds: true })
+  registerModuleBehavior('receipt', { supportsStatementLinking: 'receipt' })
+  registerModuleBehavior('payment', { supportsStatementLinking: 'payment' })
 }

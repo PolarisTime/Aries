@@ -45,13 +45,18 @@ function hydrateFinanceStatementSource(
     return
   }
 
-  if (moduleKey === 'receipt' && !record.sourceCustomerStatementId) {
+  const statementLinkingType = getBehaviorValue(
+    moduleKey,
+    'supportsStatementLinking',
+  )
+
+  if (statementLinkingType === 'receipt' && !record.sourceCustomerStatementId) {
     record.sourceCustomerStatementId =
       firstItem.sourceCustomerStatementId ?? firstItem.sourceStatementId
     return
   }
 
-  if (moduleKey !== 'payment') {
+  if (statementLinkingType !== 'payment') {
     return
   }
 
