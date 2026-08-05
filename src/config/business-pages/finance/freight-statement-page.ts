@@ -321,11 +321,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       'attachment',
       'remark',
     ],
-    lineItem: [
-      'id',
-      'sourceFreightBillId',
-      'sourceFreightBillItemId',
-    ],
+    lineItem: ['id', 'sourceFreightBillId', 'sourceFreightBillItemId'],
   },
   parentImport: {
     parentModuleKey: 'freight-bill',

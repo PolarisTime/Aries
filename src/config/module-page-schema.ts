@@ -259,10 +259,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'status',
         'remark',
       ],
-      lineItem: [
-        'id',
-        'sourceSalesOrderItemId',
-      ],
+      lineItem: ['id', 'sourceSalesOrderItemId'],
     },
   },
   receipt: {
@@ -337,10 +334,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'status',
         'remark',
       ],
-      lineItem: [
-        'id',
-        'sourceSalesOrderItemId',
-      ],
+      lineItem: ['id', 'sourceSalesOrderItemId'],
     },
   },
   'freight-statement': {
@@ -368,11 +362,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'attachment',
         'remark',
       ],
-      lineItem: [
-        'id',
-        'sourceFreightBillId',
-        'sourceFreightBillItemId',
-      ],
+      lineItem: ['id', 'sourceFreightBillId', 'sourceFreightBillItemId'],
     },
   },
 }

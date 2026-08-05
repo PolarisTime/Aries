@@ -317,10 +317,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       'status',
       'remark',
     ],
-    lineItem: [
-      'id',
-      'sourceSalesOrderItemId',
-    ],
+    lineItem: ['id', 'sourceSalesOrderItemId'],
   },
   parentImport: {
     parentModuleKey: 'sales-order',
