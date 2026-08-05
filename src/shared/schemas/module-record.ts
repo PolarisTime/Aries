@@ -19,6 +19,8 @@ const optionalTextSchema = z.string().nullish()
 const integerSchema = z.number().int()
 const nonNegativeIntegerSchema = integerSchema.nonnegative()
 const positiveIntegerSchema = integerSchema.positive()
+const optionalNonNegativeIntegerSchema = nonNegativeIntegerSchema.nullish()
+const optionalPositiveIntegerSchema = positiveIntegerSchema.nullish()
 const decimalSchema = z.number().finite()
 const nonNegativeDecimalSchema = decimalSchema.nonnegative()
 const nullableDecimalSchema = decimalSchema.nullable()
@@ -501,15 +503,15 @@ const salesOutboundSaveItemSchema = z.strictObject({
   sourceNo: optionalTextSchema,
   sourceSalesOrderItemId: entityIdSchema,
   materialId: optionalEntityIdSchema,
-  materialCode: requiredTextSchema,
-  brand: requiredTextSchema,
-  category: requiredTextSchema,
-  material: requiredTextSchema,
-  spec: requiredTextSchema,
+  materialCode: optionalTextSchema,
+  brand: optionalTextSchema,
+  category: optionalTextSchema,
+  material: optionalTextSchema,
+  spec: optionalTextSchema,
   length: optionalTextSchema,
-  unit: requiredTextSchema,
+  unit: optionalTextSchema,
   warehouseId: optionalEntityIdSchema,
-  warehouseName: requiredTextSchema,
+  warehouseName: optionalTextSchema,
   batchNo: optionalTextSchema,
   quantity: nonNegativeIntegerSchema,
   quantityUnit: optionalTextSchema,
@@ -601,7 +603,7 @@ const freightBillDetailRecordSchema = z.strictObject({
 
 const freightBillSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
-  sourceNo: requiredTextSchema,
+  sourceNo: optionalTextSchema,
   settlementCompanyId: optionalEntityIdSchema,
   settlementCompanyName: optionalTextSchema,
   customerId: optionalEntityIdSchema,
@@ -609,17 +611,17 @@ const freightBillSaveItemSchema = z.strictObject({
   projectId: optionalEntityIdSchema,
   projectName: optionalTextSchema,
   materialId: optionalEntityIdSchema,
-  materialCode: requiredTextSchema,
+  materialCode: optionalTextSchema,
   materialName: optionalTextSchema,
-  brand: requiredTextSchema,
-  category: requiredTextSchema,
-  material: requiredTextSchema,
-  spec: requiredTextSchema,
+  brand: optionalTextSchema,
+  category: optionalTextSchema,
+  material: optionalTextSchema,
+  spec: optionalTextSchema,
   length: optionalTextSchema,
-  quantity: positiveIntegerSchema,
+  quantity: optionalPositiveIntegerSchema,
   quantityUnit: optionalTextSchema,
-  pieceWeightTon: requestNonNegativeDecimalSchema,
-  piecesPerBundle: nonNegativeIntegerSchema,
+  pieceWeightTon: optionalRequestNonNegativeDecimalSchema,
+  piecesPerBundle: optionalNonNegativeIntegerSchema,
   batchNo: optionalTextSchema,
   weightTon: optionalRequestNonNegativeDecimalSchema,
   warehouseId: optionalEntityIdSchema,

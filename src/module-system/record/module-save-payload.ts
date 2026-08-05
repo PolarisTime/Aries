@@ -252,6 +252,10 @@ function serializeLineItem(
     result.id = persistedId
   }
   for (const field of lineItemFields) {
+    if (field.key === 'id') {
+      // 明细 id 由 toPersistedLineItemId 统一处理，避免前端临时 id（如 item-uuid）触发实体 ID 契约校验。
+      continue
+    }
     if (field.key === 'settlementMode' && !isPurchaseInbound(moduleKey)) {
       continue
     }
