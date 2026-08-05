@@ -1,3 +1,10 @@
+## [9.5.2](https://github.com/PolarisTime/Aries/compare/v9.5.1...v9.5.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* **frontend:** 修复销售出库/物流单明细保存的实体 ID 契约校验失败 ([954f3c2](https://github.com/PolarisTime/Aries/commit/954f3c2969ebd60dc6d691ee694c5d645148078c))
+
 ## [9.5.1](https://github.com/PolarisTime/Aries/compare/v9.5.0...v9.5.1) (2026-08-05)
 
 
