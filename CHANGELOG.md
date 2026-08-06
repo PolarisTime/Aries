@@ -1,3 +1,16 @@
+# [9.6.0](https://github.com/PolarisTime/Aries/compare/v9.5.2...v9.6.0) (2026-08-06)
+
+
+### Bug Fixes
+
+* **eslint:** hooks 层列宽解析工具移至 utils 层 ([3c1dd95](https://github.com/PolarisTime/Aries/commit/3c1dd95f345fb3ba6a6d0997a92a347122455234))
+
+
+### Features
+
+* **column-resize:** 列表页列宽拖拽调整并持久化 ([868f8c7](https://github.com/PolarisTime/Aries/commit/868f8c7edc0afae1383cf335803cd633e465165e))
+* **column-resize:** 编辑器明细/采购拣货/结算账户表接入列宽拖拽 ([8580235](https://github.com/PolarisTime/Aries/commit/85802359f8e781f4b0bbca92735dba8ba27cbd0f))
+
 ## [9.5.2](https://github.com/PolarisTime/Aries/compare/v9.5.1...v9.5.2) (2026-08-05)
 
 
