@@ -6,6 +6,7 @@ type BaseRecord = {
 
 interface Props<RecordType extends BaseRecord> {
   columns: TableColumnsType<RecordType>
+  components?: TableProps<RecordType>['components']
   dataSource: RecordType[]
   emptyText: React.ReactNode
   rowClassName?: TableProps<RecordType>['rowClassName']
@@ -15,6 +16,7 @@ interface Props<RecordType extends BaseRecord> {
 
 export function ModuleItemsTable<RecordType extends BaseRecord>({
   columns,
+  components,
   dataSource,
   emptyText,
   rowClassName,
@@ -44,6 +46,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
         .filter(Boolean)
         .join(' ')}
       columns={columns}
+      components={components}
       dataSource={dataSource}
       pagination={false}
       scroll={{ x: scrollX }}

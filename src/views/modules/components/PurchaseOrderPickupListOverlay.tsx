@@ -31,7 +31,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useQuery } from '@tanstack/react-query'
-import type { TableColumnsType } from 'antd'
+import type { TableColumnsType, TableProps } from 'antd'
 import {
   Alert,
   Button,
@@ -56,9 +56,13 @@ import {
   fetchPurchaseOrderPickupList,
   type PurchaseOrderPickupListItem,
 } from '@/api/purchase/purchase-order-pickup-list'
+import { ResizableHeaderCell } from '@/components/table/ResizableHeaderCell'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useColumnResizing } from '@/hooks/useColumnResizing'
+import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type { EntityId } from '@/types/entity-id'
 import { formatWeight } from '@/utils/formatters'
+import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 import '@/styles/purchase-pickup-list.css'
 
@@ -240,6 +244,7 @@ interface PickupListDraft {
 
 interface PickupItemsTableProps {
   columns: TableColumnsType<PurchaseOrderPickupListItem>
+  components: TableProps<PurchaseOrderPickupListItem>['components']
   emptyText: string
   items: PurchaseOrderPickupListItem[]
 }
@@ -257,7 +262,6 @@ const DEFAULT_GROUP_ID = 'pickup-group-default'
 const GROUP_DRAG_PREFIX = 'pickup-group:'
 const GROUP_DRAG_TYPE = 'pickup-group'
 const ITEM_DRAG_TYPE = 'pickup-item'
-const TABLE_COMPONENTS = { body: { row: SortableRow } }
 const WAREHOUSE_NAME_COLLATOR = new Intl.Collator('zh-CN', {
   numeric: true,
   sensitivity: 'base',
@@ -532,9 +536,11 @@ function reorderGroups(
 
 function PickupItemsTable({
   columns,
+  components,
   emptyText,
   items,
 }: PickupItemsTableProps) {
+  const scrollX = sumColumnWidths(columns.map((column) => column.width))
   return (
     <SortableContext
       items={items.map((item) => item.itemId)}
@@ -542,12 +548,12 @@ function PickupItemsTable({
     >
       <Table<PurchaseOrderPickupListItem>
         columns={columns}
-        components={TABLE_COMPONENTS}
+        components={components}
         dataSource={items}
         locale={{ emptyText }}
         pagination={false}
         rowKey="itemId"
-        scroll={{ x: 824 }}
+        scroll={{ x: scrollX }}
         size="small"
       />
     </SortableContext>
@@ -556,6 +562,7 @@ function PickupItemsTable({
 
 function PickupDraftGroupSection({
   columns,
+  components,
   emptyText,
   group,
   groupCount,
@@ -686,6 +693,7 @@ function PickupDraftGroupSection({
         </div>
         <PickupItemsTable
           columns={columns}
+          components={components}
           emptyText={emptyText}
           items={items}
         />
@@ -782,6 +790,35 @@ export function PurchaseOrderPickupListOverlay({
     }),
   )
   const columns = usePickupListColumns()
+  const {
+    columnSizes,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
+  } = useColumnSettingsSupport(
+    'purchase-order:pickup-list',
+    undefined,
+    columns.length,
+  )
+  // dnd-kit 行拖拽与列宽把手并存：合并 body.row 与 header.cell
+  const resizableComponents = useMemo<
+    TableProps<PurchaseOrderPickupListItem>['components']
+  >(
+    () => ({
+      body: { row: SortableRow },
+      header: { cell: ResizableHeaderCell },
+    }),
+    [],
+  )
+  const { columns: resizableColumns } =
+    useColumnResizing<PurchaseOrderPickupListItem>({
+      columns,
+      columnSizes,
+      onResizePreview: handleColumnResizePreview,
+      onResizeCommit: handleColumnResizeCommit,
+      onResizeReset: handleColumnResizeReset,
+      isResizable: (column) => column.key !== 'drag',
+    })
   const defaultItems = useMemo(
     () => data?.groups.flatMap((group) => group.items) || [],
     [data],
@@ -966,7 +1003,8 @@ export function PurchaseOrderPickupListOverlay({
                     {activeDraft.groups.map((group, index) => (
                       <PickupDraftGroupSection
                         key={group.id}
-                        columns={columns}
+                        columns={resizableColumns}
+                        components={resizableComponents}
                         emptyText={t('modules.purchasePickupList.emptyGroup')}
                         group={group}
                         groupCount={activeDraft.groups.length}

@@ -1,5 +1,5 @@
 import { DeleteOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons'
-import type { TableColumnsType } from 'antd'
+import type { TableColumnsType, TableProps } from 'antd'
 import { Button } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +31,7 @@ interface Props {
   parentSelectorModuleKey?: string
   parentSelectorOpen: boolean
   itemColumns: TableColumnsType<ModuleLineItem>
+  itemTableComponents: TableProps<ModuleLineItem>['components']
   itemColumnOrder: string[]
   visibleItemColumnKeys: string[]
   capabilities: {
@@ -65,6 +66,7 @@ export function ModuleEditorItemsSection({
   parentSelectorModuleKey,
   parentSelectorOpen,
   itemColumns,
+  itemTableComponents,
   itemColumnOrder,
   visibleItemColumnKeys,
   capabilities,
@@ -226,6 +228,7 @@ export function ModuleEditorItemsSection({
                         />
                         <ModuleItemsTable
                           columns={itemColumns}
+                          components={itemTableComponents}
                           dataSource={projectGroup.items}
                           emptyText={
                             config.parentImport
@@ -248,6 +251,7 @@ export function ModuleEditorItemsSection({
                 ) : (
                   <ModuleItemsTable
                     columns={itemColumns}
+                    components={itemTableComponents}
                     dataSource={group.items}
                     emptyText={
                       config.parentImport

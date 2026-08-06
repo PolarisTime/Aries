@@ -1,4 +1,5 @@
 import type { TableColumnsType } from 'antd'
+import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
@@ -113,8 +114,12 @@ export function useModuleEditorItemColumns({
   const {
     columnOrder: savedItemColumnOrder,
     columnVisibility,
+    columnSizes,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
   } = useColumnSettingsSupport(
     `${config?.key ?? moduleKey}:editor-items`,
     undefined,
@@ -280,8 +285,21 @@ export function useModuleEditorItemColumns({
     handleColumnVisibilityChange(next)
   }
 
+  // 选择/拖拽/序号列不参与列宽拖拽
+  const { columns: resizableItemColumns, components: itemTableComponents } =
+    useColumnResizing<ModuleLineItem>({
+      columns: itemColumns,
+      columnSizes,
+      onResizePreview: handleColumnResizePreview,
+      onResizeCommit: handleColumnResizeCommit,
+      onResizeReset: handleColumnResizeReset,
+      isResizable: (column) =>
+        column.key !== 'selection' && column.key !== '_index',
+    })
+
   return {
-    itemColumns,
+    itemColumns: resizableItemColumns,
+    itemTableComponents,
     itemColumnOrder,
     onItemColumnOrderChange: handleColumnOrderChange,
     toggleItemColumn,

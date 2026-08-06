@@ -69,6 +69,7 @@ export function useModuleEditorItems({
   }
   const {
     itemColumns,
+    itemTableComponents,
     itemColumnOrder,
     onItemColumnOrderChange,
     toggleItemColumn,
@@ -95,6 +96,7 @@ export function useModuleEditorItems({
     clearSelectedItems,
     handleDragOver,
     itemColumns,
+    itemTableComponents,
     itemColumnOrder,
     onItemColumnOrderChange,
     removeSelectedItems,

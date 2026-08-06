@@ -303,6 +303,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     clearSelectedItems,
     handleDragOver,
     itemColumns,
+    itemTableComponents,
     itemColumnOrder,
     onItemColumnOrderChange,
     removeSelectedItems,
@@ -394,6 +395,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           parentSelectorModuleKey={parentSelectorModuleKey}
           parentSelectorOpen={parentSelectorOpen}
           itemColumns={itemColumns}
+          itemTableComponents={itemTableComponents}
           itemColumnOrder={itemColumnOrder}
           visibleItemColumnKeys={visibleItemColumnKeys}
           capabilities={{
