@@ -1,5 +1,6 @@
+import { parseTableColumnWidth } from '@/utils/table-column-width'
+
 const MIN_TABLE_BODY_SCROLL_Y = 120
-const DEFAULT_COLUMN_WIDTH = 120
 
 export function computeTableBodyScrollY(
   containerHeight: number,
@@ -10,15 +11,6 @@ export function computeTableBodyScrollY(
     MIN_TABLE_BODY_SCROLL_Y,
     containerHeight - headerHeight - paginationHeight,
   )
-}
-
-export function parseTableColumnWidth(width: unknown) {
-  if (typeof width === 'number' && Number.isFinite(width)) return width
-  if (typeof width === 'string') {
-    const parsed = Number.parseInt(width, 10)
-    return Number.isFinite(parsed) ? parsed : DEFAULT_COLUMN_WIDTH
-  }
-  return DEFAULT_COLUMN_WIDTH
 }
 
 /** 汇总各列宽度，用于普通列表页计算横向滚动范围 */

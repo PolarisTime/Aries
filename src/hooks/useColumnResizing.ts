@@ -5,7 +5,7 @@ import {
   MIN_COLUMN_WIDTH,
   ResizableHeaderCell,
 } from '@/components/table/ResizableHeaderCell'
-import { parseTableColumnWidth } from '@/views/modules/components/business-grid-table-utils'
+import { parseTableColumnWidth } from '@/utils/table-column-width'
 
 export interface UseColumnResizingOptions<T> {
   /** 原始 antd 列（宽度为默认值） */
