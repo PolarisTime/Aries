@@ -43,7 +43,12 @@ function readDistinctText<Item extends Record<string, unknown>>(
   key: string,
 ) {
   return Array.from(
-    new Set(items.map((item) => readText(item[key])).filter(Boolean)),
+    new Set(
+      items.flatMap((item) => {
+        const value = readText(item[key])
+        return value ? [value] : []
+      }),
+    ),
   ).join('、')
 }
 

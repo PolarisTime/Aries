@@ -23,9 +23,9 @@ export function LoginView() {
       await signIn(values)
       message.success(t('auth.loginSuccess'))
       await navigate({ to: buildPostLoginTarget() as '/' })
-      setLoading(false)
     } catch (err) {
       showError(err, t('auth.loginFailed'))
+    } finally {
       setLoading(false)
     }
   }

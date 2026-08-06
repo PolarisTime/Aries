@@ -115,7 +115,9 @@ export function usePurchaseOrderWarehouseRecommendations({
   setItems,
 }: Props) {
   const setItemsRef = useRef(setItems)
-  setItemsRef.current = setItems
+  useEffect(() => {
+    setItemsRef.current = setItems
+  }, [setItems])
   const normalizedSupplierId = parseEditorEntityId(supplierId)
   const materialIds = useMemo(
     () =>

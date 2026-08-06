@@ -99,9 +99,10 @@ function getLineItemValidationMessages(
 
   if (isPurchaseInbound(moduleKey)) {
     const parentRelationIds = new Set(
-      items
-        .map((item) => asString(item._parentRelationId).trim())
-        .filter(Boolean),
+      items.flatMap((item) => {
+        const value = asString(item._parentRelationId).trim()
+        return value ? [value] : []
+      }),
     )
     if (parentRelationIds.size > 1) {
       messages.push(i18next.t('modules.validation.purchaseInboundMixedSource'))

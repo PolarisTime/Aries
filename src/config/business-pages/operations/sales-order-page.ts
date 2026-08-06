@@ -326,11 +326,13 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         parentRecord.purchaseOrderNo || parentRecord.orderNo || '',
       purchaseInboundNo: [
         ...new Set(
-          (Array.isArray(parentRecord.items) ? parentRecord.items : [])
-            .map((item) =>
-              typeof item.inboundNo === 'string' ? item.inboundNo.trim() : '',
-            )
-            .filter(Boolean),
+          (Array.isArray(parentRecord.items) ? parentRecord.items : []).flatMap(
+            (item) => {
+              const value =
+                typeof item.inboundNo === 'string' ? item.inboundNo.trim() : ''
+              return value ? [value] : []
+            },
+          ),
         ),
       ].join(', '),
     }),

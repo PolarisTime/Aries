@@ -55,8 +55,10 @@ export function useModuleEditorItems({
     const selectedSourceIds = new Set(
       items
         .filter((item) => selectedIds.has(item.id))
-        .map(sourceGroupKey)
-        .filter(Boolean),
+        .flatMap((item) => {
+          const value = sourceGroupKey(item)
+          return value ? [value] : []
+        }),
     )
     setItems((current) =>
       current.filter((item) => {

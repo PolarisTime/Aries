@@ -72,9 +72,12 @@ export function AppTopNavigationHeader({
             title={devTimeString}
             onClick={() => {
               if ('caches' in window) {
-                void caches.keys().then((keys) => {
-                  void Promise.all(keys.map((k) => caches.delete(k)))
-                })
+                void caches
+                  .keys()
+                  .then((keys) =>
+                    Promise.all(keys.map((k) => caches.delete(k))),
+                  )
+                  .catch(() => {})
               }
               window.location.reload()
             }}

@@ -131,12 +131,6 @@ export function useColumnSettingsSupport(
   useEffect(() => {
     columnSizesRef.current = columnSizes
   }, [columnSizes])
-  const defaultSettingsRef = useRef<ListColumnSettings | null | undefined>(
-    undefined,
-  )
-  if (defaultSettingsRef.current === undefined) {
-    defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
-  }
   const remoteLoadedRef = useRef(false)
   const userChangedRef = useRef(false)
   const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>> | null>(null)
@@ -144,10 +138,6 @@ export function useColumnSettingsSupport(
     retryTimersRef.current = new Set()
   }
   const retryTimers = retryTimersRef.current
-
-  useEffect(() => {
-    defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
-  }, [defaultHiddenKeys])
 
   useEffect(() => {
     let cancelled = false
