@@ -7,6 +7,7 @@ import {
   useEffect,
 } from 'react'
 import type { ActionItem } from '@/components/TableActions'
+import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
 import { useDataTable } from '@/hooks/useDataTable'
@@ -117,8 +118,12 @@ export function useBusinessGridTable({
   const {
     columnOrder: savedOrder,
     columnVisibility,
+    columnSizes,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
   } = useColumnSettingsSupport(
     moduleKey,
     config?.defaultHiddenColumnKeys,
@@ -175,7 +180,17 @@ export function useBusinessGridTable({
     columnOrder,
     columnVisibility,
   })
-  const antdColumns = computedColumns
+  // 操作列锁定宽度（sticky 固定列），不参与拖拽
+  const { columns: resizableColumns, components } =
+    useColumnResizing<ModuleRecord>({
+      columns: computedColumns,
+      columnSizes,
+      onResizePreview: handleColumnResizePreview,
+      onResizeCommit: handleColumnResizeCommit,
+      onResizeReset: handleColumnResizeReset,
+      isResizable: (column) => column.key !== ACTIONS_COLUMN_ID,
+    })
+  const antdColumns = resizableColumns
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined = {
     selectedRowKeys,
     onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
@@ -229,10 +244,12 @@ export function useBusinessGridTable({
   return {
     table,
     antdColumns,
+    components,
     columnOrder,
     columnVisibleKeys,
     toggleColumn,
     rowSelection,
     onColumnOrderChange: handleColumnOrderChange,
+    handleColumnResizeReset,
   }
 }

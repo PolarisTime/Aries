@@ -226,6 +226,7 @@ export const enUS = {
     saveInProgressContent:
       'This document is being saved. Wait for it to finish before leaving.',
     columnSettings: 'Column Settings',
+    resetColumnWidths: 'Reset column widths',
     saveAndAudit: 'Save & Audit',
     auditConfirm:
       'After audit, the document will be locked and cannot be edited. Continue?',

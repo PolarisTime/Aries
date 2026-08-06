@@ -1,3 +1,7 @@
+import {
+  MAX_COLUMN_WIDTH,
+  MIN_COLUMN_WIDTH,
+} from '@/components/table/ResizableHeaderCell'
 import { STORAGE_KEYS } from '@/constants/storage'
 import type { LoginUser } from '@/shared/schemas'
 import type { ThemeMode } from '@/stores/uiSettingsStore'
@@ -190,6 +194,25 @@ function getListColumnSettingsKey(pageKey: string, userKey?: string) {
   return `${STORAGE_KEYS.listColumnSettingsPrefix}${normalizedUserKey}:${pageKey}`
 }
 
+function normalizeStoredColumnSizes(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return {}
+  }
+  const result: Record<string, number> = {}
+  for (const [key, raw] of Object.entries(value)) {
+    const width = Number(raw)
+    if (
+      key &&
+      Number.isFinite(width) &&
+      width >= MIN_COLUMN_WIDTH &&
+      width <= MAX_COLUMN_WIDTH
+    ) {
+      result[key] = Math.round(width)
+    }
+  }
+  return result
+}
+
 export function getListColumnSettings(pageKey: string, userKey?: string) {
   const raw = localStorage.getItem(getListColumnSettingsKey(pageKey, userKey))
   if (!raw) {
@@ -203,7 +226,11 @@ export function getListColumnSettings(pageKey: string, userKey?: string) {
       Array.isArray(parsed.orderedKeys) &&
       Array.isArray(parsed.hiddenKeys)
     ) {
-      return parsed as ListColumnSettings
+      return {
+        ...parsed,
+        // 旧数据无 columnSizes 时归一化为空对象；坏值/超界值过滤，保证拖拽前状态合法
+        columnSizes: normalizeStoredColumnSizes(parsed.columnSizes),
+      } as ListColumnSettings
     }
     return null
   } catch {

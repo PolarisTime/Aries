@@ -29,6 +29,7 @@ const ROW_INTERACTION_EXCLUSION_SELECTOR =
 interface Props {
   moduleKey: string
   columns: ColumnsType<ModuleRecord>
+  components?: TableProps<ModuleRecord>['components']
   dataSource: ModuleRecord[]
   loading: boolean
   currentPage: number
@@ -52,6 +53,7 @@ function shouldIgnoreRowInteraction(target: EventTarget | null) {
 export function BusinessGridTable({
   moduleKey,
   columns,
+  components,
   dataSource,
   loading,
   currentPage,
@@ -226,6 +228,7 @@ export function BusinessGridTable({
         size="small"
         loading={loading}
         columns={tableColumns}
+        components={components}
         dataSource={dataSource}
         rowSelection={rowSelection}
         virtual={isVirtual}

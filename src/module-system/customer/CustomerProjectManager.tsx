@@ -26,9 +26,12 @@ import {
 import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useColumnResizing } from '@/hooks/useColumnResizing'
+import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useRequestError } from '@/hooks/useRequestError'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
+import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 
 interface CustomerIdentity {
   id: EntityId
@@ -240,6 +243,30 @@ export function CustomerProjectManager({ customer, onChanged }: Props) {
     },
   ]
 
+  const {
+    columnSizes,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
+  } = useColumnSettingsSupport(
+    'customer:project-manager',
+    undefined,
+    columns.length,
+  )
+  // 操作列固定右侧，不参与列宽拖拽
+  const { columns: resizableColumns, components } =
+    useColumnResizing<CustomerProject>({
+      columns,
+      columnSizes,
+      onResizePreview: handleColumnResizePreview,
+      onResizeCommit: handleColumnResizeCommit,
+      onResizeReset: handleColumnResizeReset,
+      isResizable: (column) => column.key !== 'operations',
+    })
+  const tableScrollX = sumColumnWidths(
+    resizableColumns.map((column) => column.width),
+  )
+
   return (
     <>
       <Flex vertical gap={12} className="mt-12">
@@ -256,10 +283,11 @@ export function CustomerProjectManager({ customer, onChanged }: Props) {
           rowKey="id"
           size="small"
           loading={isLoading}
-          columns={columns}
+          columns={resizableColumns}
+          components={components}
           dataSource={projects}
           pagination={false}
-          scroll={{ x: 980, y: 420 }}
+          scroll={{ x: tableScrollX, y: 420 }}
         />
       </Flex>
 

@@ -33,6 +33,7 @@ interface Props {
   columnVisibleKeys: string[]
   columnOrder: string[]
   columns: ColumnsType<ModuleRecord>
+  components: TableProps<ModuleRecord>['components']
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
@@ -45,6 +46,7 @@ interface Props {
   onClearSelection: () => void
   onToggleColumn: (key: string) => void
   onColumnOrderChange: (order: string[]) => void
+  onResetColumnSizes?: () => void
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
   canCreate: boolean
@@ -74,6 +76,7 @@ export function BusinessGridContent({
   columnVisibleKeys,
   columnOrder,
   columns,
+  components,
   rowSelection,
   rowClassName,
   onUpdateFilter,
@@ -86,6 +89,7 @@ export function BusinessGridContent({
   onClearSelection,
   onToggleColumn,
   onColumnOrderChange,
+  onResetColumnSizes,
   onRowClick,
   onRowDoubleClick,
   canCreate,
@@ -138,6 +142,7 @@ export function BusinessGridContent({
                 visibleKeys={columnVisibleKeys}
                 onToggle={onToggleColumn}
                 onOrderChange={onColumnOrderChange}
+                onResetColumnSizes={onResetColumnSizes}
                 open={columnSettingsOpen}
                 onOpenChange={setColumnSettingsOpen}
               />
@@ -170,6 +175,7 @@ export function BusinessGridContent({
             key={moduleKey}
             moduleKey={moduleKey}
             columns={columns}
+            components={components}
             dataSource={records}
             loading={loading}
             currentPage={currentPage}

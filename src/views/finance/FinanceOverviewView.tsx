@@ -32,12 +32,15 @@ import {
 } from '@/api/finance/finance-overview'
 import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useColumnResizing } from '@/hooks/useColumnResizing'
+import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 
 const DIRECTION_OPTIONS = [
   { label: '应收', value: 'RECEIVABLE' },
@@ -269,6 +272,23 @@ export function FinanceOverviewView() {
     () => buildBalanceColumns(state.direction, formatAmount),
     [state.direction, formatAmount],
   )
+  const {
+    columnSizes,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
+  } = useColumnSettingsSupport('finance:overview', undefined, columns.length)
+  const { columns: resizableColumns, components } =
+    useColumnResizing<FinanceBalance>({
+      columns,
+      columnSizes,
+      onResizePreview: handleColumnResizePreview,
+      onResizeCommit: handleColumnResizeCommit,
+      onResizeReset: handleColumnResizeReset,
+    })
+  const tableScrollX = sumColumnWidths(
+    resizableColumns.map((column) => column.width),
+  )
   const summaryItems = buildSummaryItems(
     state.direction,
     overviewQuery.data?.summary,
@@ -468,10 +488,11 @@ export function FinanceOverviewView() {
             <Table
               rowKey="key"
               size="small"
-              columns={columns}
+              columns={resizableColumns}
+              components={components}
               dataSource={rows}
               loading={queryEnabled && overviewQuery.isFetching}
-              scroll={{ x: 1250, y: 'calc(100vh - 410px)' }}
+              scroll={{ x: tableScrollX, y: 'calc(100vh - 410px)' }}
               locale={{
                 emptyText: (
                   <Empty

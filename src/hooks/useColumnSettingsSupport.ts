@@ -62,6 +62,10 @@ function toVisibilityState(settings: ListColumnSettings | null) {
   return nextVisibility
 }
 
+function toColumnSizesState(settings: ListColumnSettings | null) {
+  return settings?.columnSizes ?? {}
+}
+
 function hasAbnormalHiddenKeys(
   hiddenKeys: string[],
   totalColumnCount: number,
@@ -116,9 +120,17 @@ export function useColumnSettingsSupport(
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
     () => toVisibilityState(initialSettings),
   )
+  const [columnSizes, setColumnSizes] = useState<Record<string, number>>(() =>
+    toColumnSizesState(initialSettings),
+  )
   const [loaded, setLoaded] = useState(false)
   const remotePagesRef = useRef<UserColumnSettingsPayload['pages']>({})
   const syncWarningShownRef = useRef(false)
+  // commit 时读取最新列宽，避免 persist 闭包拿到过期值
+  const columnSizesRef = useRef(columnSizes)
+  useEffect(() => {
+    columnSizesRef.current = columnSizes
+  }, [columnSizes])
   const defaultSettingsRef = useRef<ListColumnSettings | null | undefined>(
     undefined,
   )
@@ -175,6 +187,7 @@ export function useColumnSettingsSupport(
             if (!userChangedRef.current) {
               setColumnOrder(toColumnOrderState(remoteSettings))
               setColumnVisibility(toVisibilityState(remoteSettings))
+              setColumnSizes(toColumnSizesState(remoteSettings))
             }
           }
         }
@@ -199,6 +212,7 @@ export function useColumnSettingsSupport(
   const persist = async (
     order: ColumnOrderState,
     visibility: VisibilityState,
+    sizes: Record<string, number>,
   ) => {
     const orderedKeys = order.length > 0 ? order : undefined
     const hiddenKeys = Object.entries(visibility).flatMap(([k, v]) =>
@@ -207,6 +221,8 @@ export function useColumnSettingsSupport(
     const settings: ListColumnSettings = {
       orderedKeys: orderedKeys || [],
       hiddenKeys,
+      // 未拖拽过的用户不写 columnSizes，保持旧 payload 不变
+      ...(Object.keys(sizes).length > 0 ? { columnSizes: sizes } : {}),
     }
 
     setListColumnSettings(pageKey, settings, userKey)
@@ -274,7 +290,7 @@ export function useColumnSettingsSupport(
   const handleColumnOrderChange: OnChangeFn<ColumnOrderState> = (updater) => {
     setColumnOrder((current) => {
       const next = resolveUpdater(updater, current)
-      void persist(next, columnVisibility)
+      void persist(next, columnVisibility, columnSizesRef.current)
       return next
     })
   }
@@ -284,16 +300,47 @@ export function useColumnSettingsSupport(
   ) => {
     setColumnVisibility((current) => {
       const next = resolveUpdater(updater, current)
-      void persist(columnOrder, next)
+      void persist(columnOrder, next, columnSizesRef.current)
       return next
     })
+  }
+
+  const handleColumnResizePreview = (columnKey: string, width: number) => {
+    setColumnSizes((current) => {
+      const rounded = Math.round(width)
+      if (current[columnKey] === rounded) return current
+      return { ...current, [columnKey]: rounded }
+    })
+  }
+
+  const handleColumnResizeCommit = () => {
+    void persist(columnOrder, columnVisibility, columnSizesRef.current)
+  }
+
+  const handleColumnResizeReset = (columnKey?: string) => {
+    const current = columnSizesRef.current
+    let next: Record<string, number>
+    if (columnKey) {
+      if (!(columnKey in current)) return
+      next = { ...current }
+      delete next[columnKey]
+    } else {
+      next = {}
+    }
+    setColumnSizes(next)
+    columnSizesRef.current = next
+    void persist(columnOrder, columnVisibility, next)
   }
 
   return {
     columnOrder,
     columnVisibility,
+    columnSizes,
     loaded,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
   }
 }

@@ -12,13 +12,21 @@ export function computeTableBodyScrollY(
   )
 }
 
-function parseTableColumnWidth(width: unknown) {
+export function parseTableColumnWidth(width: unknown) {
   if (typeof width === 'number' && Number.isFinite(width)) return width
   if (typeof width === 'string') {
     const parsed = Number.parseInt(width, 10)
     return Number.isFinite(parsed) ? parsed : DEFAULT_COLUMN_WIDTH
   }
   return DEFAULT_COLUMN_WIDTH
+}
+
+/** 汇总各列宽度，用于普通列表页计算横向滚动范围 */
+export function sumColumnWidths(columnWidths: unknown[]) {
+  return columnWidths.reduce<number>(
+    (total, width) => total + parseTableColumnWidth(width),
+    0,
+  )
 }
 
 export function computeTableScrollX({

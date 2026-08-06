@@ -1,0 +1,35 @@
+/* 列宽拖拽：表头把手 + 拖拽光标状态（全局作用域，覆盖主列表与财务/系统等表格） */
+.ant-table-thead .ant-table-cell {
+  position: relative;
+}
+
+.table-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  margin: 0;
+  border: 0;
+  cursor: col-resize;
+  z-index: 1;
+  touch-action: none;
+  user-select: none;
+}
+
+.table-resize-handle:hover,
+.table-resize-handle:focus-visible {
+  background: var(--ant-color-primary, #1677ff);
+  opacity: 0.3;
+  outline: none;
+}
+
+body.table-column-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.table-column-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}

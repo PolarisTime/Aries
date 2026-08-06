@@ -19,6 +19,7 @@ import {
   type SelectProps,
   Table,
   type TableColumnsType,
+  type TableProps,
   Tooltip,
   Typography,
 } from 'antd'
@@ -37,12 +38,15 @@ import {
 } from '@/api/finance/cash-ledger'
 import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useColumnResizing } from '@/hooks/useColumnResizing'
+import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 
 const COUNTERPARTY_TYPE_OPTIONS = ['客户', '供应商', '物流商'].map((value) => ({
   value,
@@ -297,6 +301,7 @@ function buildColumns(
 
 interface CashLedgerWorkspaceModel {
   columns: TableColumnsType<CashLedgerLine>
+  components: TableProps<CashLedgerLine>['components']
   counterpartyOptions: SelectProps['options']
   dispatch: Dispatch<CashLedgerAction>
   error: unknown
@@ -310,6 +315,7 @@ interface CashLedgerWorkspaceModel {
   pageSize: number
   queryEnabled: boolean
   rows: CashLedgerLine[]
+  scrollX: number
   settlementCompanies: SelectProps['options']
   state: CashLedgerState
   summary?: CashLedgerSummary
@@ -531,9 +537,10 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
               rowKey="key"
               size="small"
               columns={model.columns}
+              components={model.components}
               dataSource={model.rows}
               loading={model.queryEnabled && model.isFetching}
-              scroll={{ x: 1530, y: 'calc(100vh - 410px)' }}
+              scroll={{ x: model.scrollX, y: 'calc(100vh - 410px)' }}
               locale={{
                 emptyText: model.queryEnabled ? (
                   <Empty
@@ -581,6 +588,31 @@ export function CashLedgerView() {
   }
   const pageSize = state.pageSizeOverride ?? defaultPageSize
   const { formatCellValue } = useModuleDisplaySupport()
+  const rawColumns = useMemo(
+    () => buildColumns(formatCellValue),
+    [formatCellValue],
+  )
+  const {
+    columnSizes,
+    handleColumnResizePreview,
+    handleColumnResizeCommit,
+    handleColumnResizeReset,
+  } = useColumnSettingsSupport(
+    'finance:cash-ledger',
+    undefined,
+    rawColumns.length,
+  )
+  const { columns: resizableColumns, components } =
+    useColumnResizing<CashLedgerLine>({
+      columns: rawColumns,
+      columnSizes,
+      onResizePreview: handleColumnResizePreview,
+      onResizeCommit: handleColumnResizeCommit,
+      onResizeReset: handleColumnResizeReset,
+    })
+  const tableScrollX = sumColumnWidths(
+    resizableColumns.map((column) => column.width),
+  )
   const {
     settlementCompanies,
     customers,
@@ -656,7 +688,8 @@ export function CashLedgerView() {
   return (
     <CashLedgerWorkspace
       model={{
-        columns: buildColumns(formatCellValue),
+        columns: resizableColumns,
+        components,
         counterpartyOptions,
         dispatch,
         error: ledgerQuery.error,
@@ -670,6 +703,7 @@ export function CashLedgerView() {
         pageSize,
         queryEnabled,
         rows: visibleData?.page.content || [],
+        scrollX: tableScrollX,
         settlementCompanies,
         state,
         summary: visibleData?.summary,

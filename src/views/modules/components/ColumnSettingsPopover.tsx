@@ -34,6 +34,8 @@ interface Props {
   visibleKeys: string[]
   onToggle: (key: string) => void
   onOrderChange?: (order: string[]) => void
+  /** 一键重置全部列宽（缺省时不展示重置入口） */
+  onResetColumnSizes?: () => void
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -108,6 +110,7 @@ export function ColumnSettingsPopover({
   visibleKeys,
   onToggle,
   onOrderChange,
+  onResetColumnSizes,
   open,
   onOpenChange,
 }: Props) {
@@ -174,6 +177,14 @@ export function ColumnSettingsPopover({
           </Space>
         </SortableContext>
       </DndContext>
+      {onResetColumnSizes ? (
+        <>
+          <Divider className="my-4" />
+          <Button block size="small" onClick={onResetColumnSizes}>
+            {t('common.resetColumnWidths')}
+          </Button>
+        </>
+      ) : null}
     </Space>
   )
 

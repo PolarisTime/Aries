@@ -124,6 +124,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           columnVisibleKeys={state.columnVisibleKeys}
           columnOrder={state.columnOrder}
           columns={state.antdColumns}
+          components={state.components}
           rowSelection={state.rowSelection}
           rowClassName={state.getRowClassName}
           onUpdateFilter={state.updateFilter}
@@ -146,6 +147,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           onClearSelection={state.clearSelection}
           onToggleColumn={state.toggleColumn}
           onColumnOrderChange={state.onColumnOrderChange}
+          onResetColumnSizes={state.handleColumnResizeReset}
           onRowClick={toggleRecordSelection}
           onRowDoubleClick={openRecordEditor}
           canCreate={canCreateRecord}
