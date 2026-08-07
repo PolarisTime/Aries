@@ -118,6 +118,13 @@ function renderReadOnlyValue(
   if (key === 'pieceWeightTon' && shouldDisplayPieceWeightAsDash(record)) {
     return '-'
   }
+  // 商品编码只读态与编辑态一致显示中文物料快照，避免回显成数字编码
+  if (key === 'materialCode' && record) {
+    const label = buildMaterialSnapshotLabel(record)
+    if (label) {
+      return label
+    }
+  }
   if (type === 'status') {
     const statusValue = typeof value === 'string' ? value : ''
     return (
