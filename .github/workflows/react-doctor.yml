@@ -42,7 +42,10 @@ jobs:
         id: scan
         run: |
           set -euo pipefail
-          npx --yes react-doctor@0.9.5 --json --full --yes . > react-doctor-report.json 2>rd-scan-err.log || {
+          TOOLCHAIN="$RUNNER_TEMP/react-doctor-toolchain"
+          npm install --prefix "$TOOLCHAIN" --no-save --no-audit --no-fund react-doctor@0.9.5
+          "$TOOLCHAIN/node_modules/.bin/react-doctor" \
+            --json --scope full --yes . > react-doctor-report.json 2>rd-scan-err.log || {
             echo "::error::react-doctor scan failed (exit $?)"
             echo "--- stderr ---"
             cat rd-scan-err.log
@@ -50,7 +53,6 @@ jobs:
             head -c 500 react-doctor-report.json
             exit 1
           }
-          echo "::debug::report size: $(wc -c < react-doctor-report.json)"
           {
             echo "RD_SCORE=$(jq -r '.summary.score // 0' react-doctor-report.json)"
             echo "RD_ERRORS=$(jq -r '.summary.errorCount // 0' react-doctor-report.json)"
