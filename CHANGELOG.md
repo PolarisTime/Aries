@@ -1,3 +1,10 @@
+## [9.6.2](https://github.com/PolarisTime/Aries/compare/v9.6.1...v9.6.2) (2026-08-07)
+
+
+### Bug Fixes
+
+* **editor:** 商品编码只读态显示中文物料快照 ([727aaf0](https://github.com/PolarisTime/Aries/commit/727aaf01b838c8251905f219dd1309c40c4cd749))
+
 ## [9.6.1](https://github.com/PolarisTime/Aries/compare/v9.6.0...v9.6.1) (2026-08-07)
 
 
