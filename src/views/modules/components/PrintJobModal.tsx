@@ -188,7 +188,8 @@ function printItemsGridStyle(
   showMergeGroup: boolean,
   valueGridColumns: string[],
 ) {
-  const columns = ['56px', '64px', '80px']
+  // 选择复选框列在前，序号列在后
+  const columns = ['64px', '56px', '80px']
   if (showMergeGroup) columns.push('72px')
   columns.push(
     brandOverrideEnabled ? 'minmax(100px, 130px)' : 'minmax(120px, 150px)',
@@ -391,7 +392,6 @@ function SortablePrintItemRow({
           valueGridColumns,
         )}
       >
-        <Typography.Text type="secondary">{index + 1}</Typography.Text>
         <span className="flex items-center gap-2 text-gray-500">
           <Checkbox
             aria-label={`${t('modules.print.selectedPrintItems')} #${index + 1}`}
@@ -412,6 +412,7 @@ function SortablePrintItemRow({
             <HolderOutlined />
           </button>
         </span>
+        <Typography.Text type="secondary">{index + 1}</Typography.Text>
         <span>
           {outputted ? (
             <Tag color="success">{t('modules.print.outputted')}</Tag>
@@ -737,7 +738,6 @@ function PrintItemSection({
                 valueGridColumns,
               )}
             >
-              <span>{t('modules.print.itemSequence')}</span>
               <span className="flex items-center">
                 <Checkbox
                   aria-label={t('modules.print.selectedPrintItems')}
@@ -749,6 +749,7 @@ function PrintItemSection({
                   }
                 />
               </span>
+              <span>{t('modules.print.itemSequence')}</span>
               <span>{t('modules.print.itemOutputStatus')}</span>
               {showMergeGroup ? (
                 <span>{t('modules.print.mergeGroup')}</span>
