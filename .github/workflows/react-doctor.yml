@@ -41,21 +41,16 @@ jobs:
       - name: Run React Doctor scan
         id: scan
         run: |
+          set -euo pipefail
           npm exec --yes --package react-doctor@0.9.5 -- \
             react-doctor --json --yes . > react-doctor-report.json
-          python3 -c "
-          import json
-          import os
-          with open('react-doctor-report.json') as f:
-              r = json.load(f)
-          s = r.get('summary', {})
-          score = s.get('score', 0)
-          errors = s.get('errorCount', 0)
-          warnings = s.get('warningCount', 0)
-          with open(os.environ['GITHUB_ENV'], 'a') as env:
-              env.write(f'RD_SCORE={score}\nRD_ERRORS={errors}\nRD_WARNINGS={warnings}\n')
-          print(f'Score: {score}/100 · {errors} errors · {warnings} warnings')
-          "
+          {
+            echo "RD_SCORE=$(jq -r '.summary.score // 0' react-doctor-report.json)"
+            echo "RD_ERRORS=$(jq -r '.summary.errorCount // 0' react-doctor-report.json)"
+            echo "RD_WARNINGS=$(jq -r '.summary.warningCount // 0' react-doctor-report.json)"
+          } >> "$GITHUB_ENV"
+          jq -r '"Score: \(.summary.score)/100 · \(.summary.errorCount) errors · \(.summary.warningCount) warnings"' \
+            react-doctor-report.json
 
       - name: Upload React Doctor report
         uses: actions/upload-artifact@v4
