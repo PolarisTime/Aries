@@ -1,3 +1,10 @@
+## [9.6.1](https://github.com/PolarisTime/Aries/compare/v9.6.0...v9.6.1) (2026-08-07)
+
+
+### Bug Fixes
+
+* **doctor:** 消除 refs 诊断并关闭 Compiler todo 误报 ([57cb29d](https://github.com/PolarisTime/Aries/commit/57cb29d4f437a183aa00c7da79e09a993054f1de))
+
 # [9.6.0](https://github.com/PolarisTime/Aries/compare/v9.5.2...v9.6.0) (2026-08-06)
 
 
