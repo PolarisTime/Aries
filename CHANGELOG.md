@@ -1,3 +1,10 @@
+## [9.6.3](https://github.com/PolarisTime/Aries/compare/v9.6.2...v9.6.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* **print:** 打印作业明细复选框移至序号左侧 ([b553417](https://github.com/PolarisTime/Aries/commit/b5534174f31e7052fb2996184719c6d3acbd1545))
+
 ## [9.6.2](https://github.com/PolarisTime/Aries/compare/v9.6.1...v9.6.2) (2026-08-07)
 
 
