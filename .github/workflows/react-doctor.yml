@@ -1,13 +1,17 @@
 # React Doctor — finds security, performance, correctness, accessibility,
 # bundle-size, and architecture issues in React codebases.
 #
-# Docs: https://www.react.doctor/ci
+# Docs: https://www.react.doctor/cli
 # Source: https://github.com/millionco/react-doctor
+#
+# 直接调用 react-doctor CLI（固定 0.9.5，与项目依赖一致）并上传 JSON 报告为 artifact，
+# 使每次扫描的详细 findings（errors/warnings 逐条）可见、可定位修复；
+# 同时发布 commit status 保留分数趋势。
 
 name: React Doctor
 
 on:
-  # Scans the PR's changed files and posts a sticky summary comment listing only the new issues introduced relative to the merge base of the target branch.
+  # Scans the PR's changed files (full project on push).
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   # Scans `main` on every push to track the health-score trend and catch regressions that slipped past PR review.
@@ -16,8 +20,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
   statuses: write
 
 # Cancels any in-flight scan for the same PR (or branch, on push) the moment a new commit arrives, so reviewers only ever see the latest run.
@@ -31,20 +33,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: millionco/react-doctor@v2
-        # Advisory by default: React Doctor reports findings on every PR — a
-        # sticky summary comment, inline review comments, and a commit status
-        # with the health score — but never fails the check, so it won't red-X
-        # a teammate's PR on day one. When your team trusts the signal, graduate
-        # the gate: uncomment the block below and set blocking to "error" (fail
-        # on new error-severity findings) or "warning" (fail on any finding).
-        # Full reference: https://www.react.doctor/ci
-        # with:
-        #   blocking: error          # Gate level: "none" (advisory, the default) | "warning" | "error"
-        #   scope: full              # On PRs, scan the whole project instead of just changed files
-        #   comment: false           # Disable the sticky PR summary comment
-        #   review-comments: false   # Disable inline review comments on changed lines
-        #   commit-status: false     # Disable the commit status (score + counts, links to the run)
-        #   version: "0.4.0"         # Pin to a specific react-doctor version instead of "latest"
-        #   directory: apps/web      # Scan a sub-directory (default: ".")
-        #   project: "web,admin"     # In a monorepo, scan specific workspace project(s)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Run React Doctor scan
+        id: scan
+        run: |
+          npm exec --yes --package react-doctor@0.9.5 -- \
+            react-doctor --json --yes . > react-doctor-report.json
+          python3 -c "
+          import json
+          import os
+          with open('react-doctor-report.json') as f:
+              r = json.load(f)
+          s = r.get('summary', {})
+          score = s.get('score', 0)
+          errors = s.get('errorCount', 0)
+          warnings = s.get('warningCount', 0)
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f'RD_SCORE={score}\nRD_ERRORS={errors}\nRD_WARNINGS={warnings}\n')
+          print(f'Score: {score}/100 · {errors} errors · {warnings} warnings')
+          "
+
+      - name: Upload React Doctor report
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-doctor-report
+          path: react-doctor-report.json
+          if-no-files-found: error
+
+      - name: Publish commit status
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.sha,
+              context: 'React Doctor',
+              state: 'success',
+              description: `Score: ${process.env.RD_SCORE}/100 · ${process.env.RD_ERRORS} errors · ${process.env.RD_WARNINGS} warnings`,
+            })
