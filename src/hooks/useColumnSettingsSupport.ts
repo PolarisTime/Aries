@@ -133,11 +133,9 @@ export function useColumnSettingsSupport(
   }, [columnSizes])
   const remoteLoadedRef = useRef(false)
   const userChangedRef = useRef(false)
-  const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>> | null>(null)
-  if (retryTimersRef.current === null) {
-    retryTimersRef.current = new Set()
-  }
-  const retryTimers = retryTimersRef.current
+  const [retryTimers] = useState<Set<ReturnType<typeof setTimeout>>>(
+    () => new Set(),
+  )
 
   useEffect(() => {
     let cancelled = false

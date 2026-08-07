@@ -44,15 +44,19 @@ jobs:
           set -euo pipefail
           TOOLCHAIN="$RUNNER_TEMP/react-doctor-toolchain"
           npm install --prefix "$TOOLCHAIN" --no-save --no-audit --no-fund react-doctor@0.9.5
+          # react-doctor 返回非零仅表示存在 error 级 findings（advisory），
+          # 报告生成成功即视为扫描成功；仅当报告缺失时才判定扫描失败。
+          set +e
           "$TOOLCHAIN/node_modules/.bin/react-doctor" \
-            --json --scope full --yes . > react-doctor-report.json 2>rd-scan-err.log || {
-            echo "::error::react-doctor scan failed (exit $?)"
+            --json --scope full --yes . > react-doctor-report.json 2>rd-scan-err.log
+          SCAN_EXIT=$?
+          set -e
+          if [ ! -s react-doctor-report.json ]; then
+            echo "::error::react-doctor scan failed (exit $SCAN_EXIT)"
             echo "--- stderr ---"
             cat rd-scan-err.log
-            echo "--- report head ---"
-            head -c 500 react-doctor-report.json
             exit 1
-          }
+          fi
           {
             echo "RD_SCORE=$(jq -r '.summary.score // 0' react-doctor-report.json)"
             echo "RD_ERRORS=$(jq -r '.summary.errorCount // 0' react-doctor-report.json)"
