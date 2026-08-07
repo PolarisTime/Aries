@@ -42,9 +42,12 @@ jobs:
         id: scan
         run: |
           set -euo pipefail
-          npx --yes react-doctor@0.9.5 --json --yes . > react-doctor-report.json 2>rd-scan-err.log || {
-            echo "::error::react-doctor scan failed"
+          npx --yes react-doctor@0.9.5 --json --full --yes . > react-doctor-report.json 2>rd-scan-err.log || {
+            echo "::error::react-doctor scan failed (exit $?)"
+            echo "--- stderr ---"
             cat rd-scan-err.log
+            echo "--- report head ---"
+            head -c 500 react-doctor-report.json
             exit 1
           }
           echo "::debug::report size: $(wc -c < react-doctor-report.json)"
