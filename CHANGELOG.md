@@ -1,3 +1,10 @@
+## [9.6.4](https://github.com/PolarisTime/Aries/compare/v9.6.3...v9.6.4) (2026-08-09)
+
+
+### Bug Fixes
+
+* **freight-statement:** 修复详情运费单价显示 ([c6cbbfa](https://github.com/PolarisTime/Aries/commit/c6cbbfa15fb4ddea4bd27e0d21ba0d9842c6a22c))
+
 ## [9.6.3](https://github.com/PolarisTime/Aries/compare/v9.6.2...v9.6.3) (2026-08-07)
 
 
