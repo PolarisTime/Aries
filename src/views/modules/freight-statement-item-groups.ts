@@ -17,6 +17,7 @@ export interface FreightStatementItemGroup<
   totalQuantity: number
   totalWeightTon: number
   totalFreight: number
+  unitPrice: number
   projectGroups: FreightStatementProjectGroup<Item>[]
 }
 
@@ -75,12 +76,14 @@ function summarizeProjectGroup<Item extends Record<string, unknown>>(
 
 function readFirstPositiveNumber<Item extends Record<string, unknown>>(
   items: Item[],
-  key: string,
+  ...keys: string[]
 ) {
   for (const item of items) {
-    const number = Number(item[key])
-    if (Number.isFinite(number) && number > 0) {
-      return number
+    for (const key of keys) {
+      const number = Number(item[key])
+      if (Number.isFinite(number) && number > 0) {
+        return number
+      }
     }
   }
   return 0
@@ -126,6 +129,19 @@ export function groupFreightStatementItems<
         return summarizeProjectGroup(projectKey, projectName, projectItems)
       },
     )
+    const totalWeightTon = projectGroupList.reduce(
+      (sum, group) => sum + group.totalWeightTon,
+      0,
+    )
+    const totalFreight = readFirstPositiveNumber(
+      groupItems,
+      'sourceFreightBillTotalFreight',
+      '_parentTotalFreight',
+    )
+    const sourceUnitPrice = readFirstPositiveNumber(
+      groupItems,
+      'sourceFreightBillUnitPrice',
+    )
 
     return {
       key,
@@ -134,11 +150,11 @@ export function groupFreightStatementItems<
         (sum, group) => sum + group.totalQuantity,
         0,
       ),
-      totalWeightTon: projectGroupList.reduce(
-        (sum, group) => sum + group.totalWeightTon,
-        0,
-      ),
-      totalFreight: readFirstPositiveNumber(groupItems, '_parentTotalFreight'),
+      totalWeightTon,
+      totalFreight,
+      unitPrice:
+        sourceUnitPrice ||
+        (totalWeightTon > 0 ? totalFreight / totalWeightTon : 0),
       projectGroups: projectGroupList,
     }
   })

@@ -14,9 +14,6 @@ export function FreightStatementItemGroupHeader<
   Item extends Record<string, unknown>,
 >({ group }: ItemGroupHeaderProps<Item>) {
   const { t } = useTranslation()
-  const unitPrice =
-    group.totalWeightTon > 0 ? group.totalFreight / group.totalWeightTon : 0
-
   return (
     <div className="module-items-group-title">
       <Typography.Text strong>
@@ -32,7 +29,7 @@ export function FreightStatementItemGroupHeader<
       </Typography.Text>
       <Typography.Text type="secondary">
         {t('modules.itemsSection.freightBillGroupUnitPrice', {
-          unitPrice: formatAmount(unitPrice),
+          unitPrice: formatAmount(group.unitPrice),
         })}
       </Typography.Text>
       <Typography.Text strong>
