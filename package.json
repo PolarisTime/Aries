@@ -20,6 +20,8 @@
     "lint:biome": "biome check .",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "doctor": "react-doctor",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run"
@@ -74,6 +76,7 @@
     "semantic-release": "^25.0.5",
     "tailwindcss": "^4.1.17",
     "typescript": "~7.0.2",
-    "vite": "^8.1.5"
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
   }
 }
