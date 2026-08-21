@@ -6,9 +6,11 @@ import { useTranslation } from 'react-i18next'
 import {
   downloadMaterialImportTemplate,
   importMaterialFile,
+  type MaterialImportResponse,
 } from '@/api/master/materials'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { message } from '@/utils/antd-app'
+import { MaterialImportResultModal } from '@/views/modules/components/MaterialImportResultModal'
 
 interface Props {
   canDownloadTemplate: boolean
@@ -25,6 +27,8 @@ export function MaterialImportActions({
   const queryClient = useQueryClient()
   const [downloading, setDownloading] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] =
+    useState<MaterialImportResponse | null>(null)
 
   if (!canDownloadTemplate && !canImport) {
     return null
@@ -49,22 +53,31 @@ export function MaterialImportActions({
     setImporting(true)
     try {
       const result = await importMaterialFile(file)
+      setImportResult(result)
       await Promise.all([
         onImported(),
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.masterOptions.material,
         }),
       ])
-      message.success(
-        t('modules.pages.material.importSuccessSummary', {
-          totalRows: result.totalRows,
-          successCount: result.successCount,
-          createdCount: result.createdCount,
-          updatedCount: result.updatedCount,
-          skippedCount: result.skippedCount,
-          failedCount: result.failCount,
-        }),
-      )
+      if (result.failedCount > 0) {
+        message.warning(
+          t('modules.pages.material.importPartialFailure', {
+            failedCount: result.failedCount,
+          }),
+        )
+      } else {
+        message.success(
+          t('modules.pages.material.importSuccessSummary', {
+            totalRows: result.totalRows,
+            successCount: result.successCount,
+            createdCount: result.createdCount,
+            updatedCount: result.updatedCount,
+            skippedCount: result.skippedCount,
+            failedCount: result.failedCount,
+          }),
+        )
+      }
       setImporting(false)
     } catch (error) {
       message.error(
@@ -104,6 +117,11 @@ export function MaterialImportActions({
           </Button>
         </Upload>
       )}
+      <MaterialImportResultModal
+        open={importResult !== null}
+        result={importResult}
+        onClose={() => setImportResult(null)}
+      />
     </Space>
   )
 }

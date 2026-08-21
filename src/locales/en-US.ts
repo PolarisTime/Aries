@@ -914,6 +914,17 @@ export const enUS = {
         importFailed: 'Failed to import materials',
         importSuccessSummary:
           'Import completed: {{totalRows}} total, {{successCount}} succeeded, {{createdCount}} created, {{updatedCount}} updated, {{skippedCount}} skipped, {{failedCount}} failed',
+        importPartialFailure:
+          'Import completed with {{failedCount}} failed rows, see import result for details',
+        importResultTitle: 'Import Result',
+        importOutcomeCreated: 'Created',
+        importOutcomeUpdated: 'Updated',
+        importOutcomeSkipped: 'Skipped',
+        importOutcomeFailed: 'Failed',
+        importFilterAll: 'All',
+        importColumnRowNumber: 'Row',
+        importColumnOutcome: 'Outcome',
+        importColumnReason: 'Failure Reason',
       },
       materialCategories: {
         materialCategory: 'materialCategory',

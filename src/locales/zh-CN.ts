@@ -887,6 +887,17 @@ export const zhCN = {
         importFailed: '商品资料导入失败',
         importSuccessSummary:
           '导入完成：总行数 {{totalRows}}，成功 {{successCount}}，新增 {{createdCount}}，更新 {{updatedCount}}，跳过 {{skippedCount}}，失败 {{failedCount}}',
+        importPartialFailure:
+          '导入完成，但有 {{failedCount}} 行失败，详情见导入结果',
+        importResultTitle: '导入结果',
+        importOutcomeCreated: '新增',
+        importOutcomeUpdated: '更新',
+        importOutcomeSkipped: '跳过',
+        importOutcomeFailed: '失败',
+        importFilterAll: '全部',
+        importColumnRowNumber: '行号',
+        importColumnOutcome: '结果',
+        importColumnReason: '失败原因',
       },
       materialCategories: {
         materialCategory: '商品类别',

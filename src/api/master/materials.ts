@@ -10,22 +10,39 @@ const materialSearchResponseSchema = z.array(
   z.looseObject({ id: z.unknown().optional() }),
 )
 
+const materialImportRowSchema = z.object({
+  rowNumber: z.number(),
+  materialCode: z.string().nullable(),
+  brand: z.string().nullable(),
+  material: z.string().nullable(),
+  spec: z.string().nullable(),
+  length: z.string().nullable(),
+  outcome: z.enum(['CREATED', 'UPDATED', 'SKIPPED', 'FAILED']),
+  reason: z.string().nullable(),
+})
+
 const materialImportResponseSchema = z.object({
   totalRows: z.number(),
   successCount: z.number(),
   createdCount: z.number(),
   updatedCount: z.number(),
   skippedCount: z.number(),
-  failCount: z.number(),
-  errors: z.array(
+  failedCount: z.number(),
+  failures: z.array(
     z.object({
-      row: z.number(),
-      field: z.string(),
-      message: z.string(),
+      rowNumber: z.number(),
+      materialCode: z.string().nullable(),
+      reason: z.string(),
     }),
   ),
-  successRows: z.array(z.unknown()).optional(),
+  rows: z.array(materialImportRowSchema),
 })
+
+export type MaterialImportResponse = z.infer<
+  typeof materialImportResponseSchema
+>
+export type MaterialImportRowResult = z.infer<typeof materialImportRowSchema>
+export type MaterialImportOutcome = MaterialImportRowResult['outcome']
 
 export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
   id: EntityId
