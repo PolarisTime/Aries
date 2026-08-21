@@ -942,7 +942,10 @@ function createPrintJobOutputActions({
       : undefined
   }
 
-  const currentPrintRenderOptions = (): PrintRenderOptions => {
+  // 三通道共享的打印选项：hideRemark/选中项/行序/品牌覆盖全通道一致，
+  // mergeEquivalentItems 仅 LODOP/PDF 渲染通道支持（xlsx 导出无合并语义）。
+  const currentOutputOptions = (): PrintRenderOptions &
+    SalesOrderPrintXlsxOptions => {
     const itemOrder = currentItemOrder()
     const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
     return {
@@ -961,20 +964,14 @@ function createPrintJobOutputActions({
     }
   }
 
-  const currentSalesOrderPrintXlsxOptions = (): SalesOrderPrintXlsxOptions => {
-    const itemOrder = currentItemOrder()
-    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
-    return {
-      hideUnitPrice: state.hideUnitPrice,
-      hideRemark: state.hideRemark,
-      ...(state.itemSelectionEnabled
-        ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
-        : {}),
-      ...(itemOrder ? { itemOrder } : {}),
-      ...(normalizedBrandOverridesByItemId
-        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
-        : {}),
-    }
+  /** xlsx 导出选项：剥离渲染通道专属的合并开关。 */
+  const toXlsxOptions = (
+    options: PrintRenderOptions,
+  ): SalesOrderPrintXlsxOptions => {
+    const { mergeEquivalentItems: _mergeEquivalentItems, ...xlsxOptions } =
+      options
+    void _mergeEquivalentItems
+    return xlsxOptions
   }
 
   const markSelectedPrintItemsOutput = (itemIds: string[]) => {
@@ -982,13 +979,34 @@ function createPrintJobOutputActions({
     dispatch({ type: 'markPrintItemsOutput', itemIds })
   }
 
-  const handlePrint = (mode: PrintActionMode): Promise<void> => {
-    if (!selectedTemplate || state.pendingOutputAction) {
+  /**
+   * 三通道统一输出入口：preview/print/download 走渲染通道，xlsx 走导出通道。
+   * 防重入、已打印标记与状态清理逻辑单一实现。
+   */
+  const handleOutput = (mode: PendingOutputAction): Promise<void> => {
+    if (state.pendingOutputAction) {
+      return Promise.resolve()
+    }
+    const exportHandler = onExportPrintXlsx
+    if (mode !== 'xlsx' && !selectedTemplate) {
+      return Promise.resolve()
+    }
+    if (mode === 'xlsx' && !exportHandler) {
       return Promise.resolve()
     }
     const outputItemIds = selectedPrintItems.map((item) => item.id)
+    // 守卫已保证：xlsx 分支必有 exportHandler、渲染分支必有 template；
+    // 先于 dispatch 捕获快照，避免重渲染后引用变化。
+    const template = selectedTemplate
+    const options = currentOutputOptions()
     dispatch({ type: 'setPendingOutputAction', value: mode })
-    return onPrint(mode, selectedTemplate, currentPrintRenderOptions())
+    const run =
+      mode === 'xlsx'
+        ? (exportHandler as NonNullable<typeof exportHandler>)(
+            toXlsxOptions(options),
+          )
+        : onPrint(mode, template as NonNullable<typeof template>, options)
+    return run
       .then((succeeded) => {
         if (succeeded && mode !== 'preview') {
           markSelectedPrintItemsOutput(outputItemIds)
@@ -999,24 +1017,10 @@ function createPrintJobOutputActions({
       })
   }
 
-  const handleExportPrintXlsx = (): Promise<void> => {
-    if (!onExportPrintXlsx || state.pendingOutputAction) {
-      return Promise.resolve()
-    }
-    const outputItemIds = selectedPrintItems.map((item) => item.id)
-    dispatch({ type: 'setPendingOutputAction', value: 'xlsx' })
-    return onExportPrintXlsx(currentSalesOrderPrintXlsxOptions())
-      .then((succeeded) => {
-        if (succeeded) {
-          markSelectedPrintItemsOutput(outputItemIds)
-        }
-      })
-      .finally(() => {
-        dispatch({ type: 'setPendingOutputAction' })
-      })
+  return {
+    handleExportPrintXlsx: () => handleOutput('xlsx'),
+    handlePrint: (mode: PrintActionMode) => handleOutput(mode),
   }
-
-  return { handleExportPrintXlsx, handlePrint }
 }
 
 export function PrintJobModal({
