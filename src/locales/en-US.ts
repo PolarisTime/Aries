@@ -724,6 +724,7 @@ export const enUS = {
       addItem: 'Add Item',
       importItems: 'Import {{label}} Items',
       deleteSelected: 'Delete Selected',
+      autoSortItems: 'Auto Sort',
       emptyTextWithImport:
         'No items yet. Add manually or import from parent document.',
       emptyText: 'No items yet. Add manually.',

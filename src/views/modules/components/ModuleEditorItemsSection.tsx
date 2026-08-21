@@ -1,4 +1,9 @@
-import { DeleteOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  DeleteOutlined,
+  ImportOutlined,
+  PlusOutlined,
+  SortAscendingOutlined,
+} from '@ant-design/icons'
 import type { TableColumnsType, TableProps } from 'antd'
 import { Button } from 'antd'
 import { useState } from 'react'
@@ -37,6 +42,7 @@ interface Props {
   capabilities: {
     addManualItems: boolean
     importParentItems: boolean
+    autoSortItems: boolean
     save: boolean
     audit: boolean
   }
@@ -44,6 +50,7 @@ interface Props {
   saving: boolean
   showFooterActions?: boolean
   onAddItem: () => void
+  onAutoSortItems: () => void
   onCancel: () => void
   onSave: (audit: boolean) => void
   onOpenParentSelector: () => void
@@ -74,6 +81,7 @@ export function ModuleEditorItemsSection({
   saving,
   showFooterActions = true,
   onAddItem,
+  onAutoSortItems,
   onCancel,
   onSave,
   onOpenParentSelector,
@@ -176,6 +184,16 @@ export function ModuleEditorItemsSection({
                         config.parentImport?.label ||
                         t('modules.itemsSection.parentDoc'),
                     })}
+                </Button>
+              )}
+              {capabilities.autoSortItems && (
+                <Button
+                  className="overlay-action-button"
+                  icon={<SortAscendingOutlined />}
+                  disabled={saving}
+                  onClick={onAutoSortItems}
+                >
+                  {t('modules.itemsSection.autoSortItems')}
                 </Button>
               )}
               <ColumnSettingsPopover

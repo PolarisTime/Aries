@@ -336,6 +336,9 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
   registerModuleBehavior('sales-order', {
     defaultDraftValues: () => ({ deliveryDate: currentDateTime() }),
+    // 导入上游采购订单后行项目随上游锁定，仅单价（销售定价）可调整，
+    // 与已审核锁定时的 editableLockedItemColumns 保持一致。
+    parentImportedItemEditableColumns: ['unitPrice'],
   })
   registerModuleBehavior('sales-outbound', {
     defaultDraftValues: () => ({ outboundDate: currentDateTime() }),

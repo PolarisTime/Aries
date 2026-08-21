@@ -22,6 +22,7 @@ import {
 import { resolveStatusChangeActionLabelKey } from '@/module-system/adapter/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
 import type { ModuleKey } from '@/module-system/core/module-key'
+import { sortItemsByMaterialDefault } from '@/module-system/editor/module-editor-item-sort'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type {
   ModulePageConfig,
@@ -292,6 +293,15 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     canSave &&
     !lineItemsLocked &&
     !parentImportedItemEditLocked
+  // 自动排序当前仅销售订单启用：导入上游后行序随上游，需按商品资料默认规则整理。
+  const canAutoSortItems =
+    moduleKey === 'sales-order' &&
+    items.length > 1 &&
+    !saving &&
+    !lineItemsLocked
+  const handleAutoSortItems = () => {
+    setItems((current) => sortItemsByMaterialDefault(current))
+  }
   const parentImportVisible = Boolean(
     config.parentImport &&
       (config.parentImport.visibleWhen?.(editorFormValues) ?? true),
@@ -401,6 +411,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           capabilities={{
             addManualItems: canAddManualItemsForCurrentRecord,
             importParentItems: canImportParentItems,
+            autoSortItems: canAutoSortItems,
             save: canSave,
             audit: canSaveAndAuditInEditor,
           }}
@@ -408,6 +419,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           saving={saving}
           showFooterActions={!useFinanceEditorLayout}
           onAddItem={addItem}
+          onAutoSortItems={handleAutoSortItems}
           onCancel={requestCloseEditor}
           onSave={(audit) => {
             void handleSave(audit)
