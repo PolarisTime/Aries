@@ -12,17 +12,23 @@ export function formatInteger(value: number): string {
 }
 
 /**
- * 格式化金额（保留2位小数）
+ * 格式化金额（千分位 + 2 位小数，与表格 formatCellValue 的 amount 格式一致）
  */
 export function formatAmount(value: number): string {
-  return value.toFixed(2)
+  return value.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 /**
- * 格式化重量（保留3位小数）
+ * 格式化重量（千分位 + 3 位小数，与表格 formatCellValue 的 weight 格式一致）
  */
 export function formatWeight(value: number): string {
-  return value.toFixed(DISPLAY_WEIGHT_PRECISION)
+  return value.toLocaleString('zh-CN', {
+    minimumFractionDigits: DISPLAY_WEIGHT_PRECISION,
+    maximumFractionDigits: DISPLAY_WEIGHT_PRECISION,
+  })
 }
 
 /**
