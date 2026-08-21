@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRecord, normalizeRows } from '@/utils/normalizers'
 import { EntityIdContractError } from '@/types/entity-id'
+import { normalizeRecord, normalizeRows } from '@/utils/normalizers'
 
 describe('normalizeRows', () => {
   it('非数组返回空集合', () => {
@@ -11,7 +11,9 @@ describe('normalizeRows', () => {
   })
 
   it('数组内非法行抛契约错误', () => {
-    expect(() => normalizeRows([{ id: 1 }, 'bad'])).toThrow(EntityIdContractError)
+    expect(() => normalizeRows([{ id: 1 }, 'bad'])).toThrow(
+      EntityIdContractError,
+    )
     expect(() => normalizeRows([null])).toThrow(EntityIdContractError)
   })
 

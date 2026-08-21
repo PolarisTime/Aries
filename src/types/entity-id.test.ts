@@ -15,7 +15,9 @@ describe('parseEntityId', () => {
   })
 
   it('超 Long.MAX_VALUE 拒绝', () => {
-    expect(() => parseEntityId('9223372036854775808')).toThrow(EntityIdContractError)
+    expect(() => parseEntityId('9223372036854775808')).toThrow(
+      EntityIdContractError,
+    )
   })
 
   it('零拒绝', () => {

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { DOCUMENT_STATUS, SETTLEMENT_TYPE, STATUS } from '@/constants/status-constants'
+import {
+  DOCUMENT_STATUS,
+  SETTLEMENT_TYPE,
+  STATUS,
+} from '@/constants/status-constants'
 
 describe('STATUS 通用状态', () => {
   it('正常/禁用值', () => {
