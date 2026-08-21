@@ -282,10 +282,7 @@ export function useBusinessGridPage({
     },
   })
 
-  const handleSalesOrderStatusChange = async (
-    record: ModuleRecord,
-    status: string,
-  ) => {
+  const handleStatusChange = async (record: ModuleRecord, status: string) => {
     if (moduleKey === 'sales-order' && status === '完成销售') {
       modal.confirm({
         title: '确认完成销售',
@@ -303,7 +300,7 @@ export function useBusinessGridPage({
       return
     }
     await updateBusinessModuleStatus(moduleKey, String(record.id), status)
-    message.success('销售订单状态已更新')
+    message.success(`${config?.title ?? '单据'}状态已更新`)
     await refreshModuleQueries()
   }
 
@@ -324,7 +321,7 @@ export function useBusinessGridPage({
     canEditRecord: (record) =>
       resolveModuleRecordCapabilities(record, moduleKey).canEdit,
     onStatusChange: (record, status) => {
-      void handleSalesOrderStatusChange(record, status)
+      void handleStatusChange(record, status)
     },
   })
   const selectedRecords = Object.values(selectedRowMap)
