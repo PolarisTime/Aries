@@ -46,13 +46,13 @@ export const ENDPOINTS = {
   GLOBAL_SEARCH: '/global-search',
 
   // Print
+  PRINT_OUTPUTS: '/print-outputs',
   PRINT_ITEMS: '/print/items',
-  PRINT_RECORD: '/print/record',
   PRINT_TEMPLATES: '/print-templates',
   PRINT_TEMPLATE: (id: string | number) =>
     `/print-templates/${pathSegment(id)}`,
-  PRINT_TEMPLATE_UPLOAD_JSON: (id: string | number) =>
-    `/print-templates/${pathSegment(id)}/upload-json`,
+  PRINT_TEMPLATE_CONTENT: (id: string | number) =>
+    `/print-templates/${pathSegment(id)}/content`,
 
   // Setup (pure actions → singular)
   SETUP_ACCOUNT: '/setup/account',
@@ -94,7 +94,7 @@ export const ENDPOINTS = {
   SALES_ORDER_SAVE_AND_COMPLETE: (id: string | number) =>
     `/sales-orders/${pathSegment(id)}/save-and-complete`,
   SALES_ORDER_PRINT_XLSX: (id: string | number) =>
-    `/sales-orders/${pathSegment(id)}/print-xlsx`,
+    `/sales-orders/${pathSegment(id)}/xlsx-exports`,
 
   // Freight bills
   FREIGHT_BILL_SALES_ORDER_CANDIDATES: '/freight-bills/sales-order-candidates',

@@ -125,7 +125,7 @@ export function renderPrintRecord(
   recordId: string,
   printOptions?: unknown,
 ) {
-  return apiPost(ENDPOINTS.PRINT_RECORD, printRecordResponseSchema, {
+  return apiPost(ENDPOINTS.PRINT_OUTPUTS, printRecordResponseSchema, {
     templateId,
     moduleKey,
     recordId,
@@ -196,8 +196,8 @@ export async function uploadPrintTemplateJson(id: string, file: File) {
   const formData = new FormData()
   formData.append('file', file)
 
-  return apiPost(
-    ENDPOINTS.PRINT_TEMPLATE_UPLOAD_JSON(id),
+  return apiPut(
+    ENDPOINTS.PRINT_TEMPLATE_CONTENT(id),
     printTemplateItemResponseSchema,
     formData,
     {

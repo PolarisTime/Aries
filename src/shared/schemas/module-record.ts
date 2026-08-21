@@ -149,7 +149,8 @@ const purchaseOrderSaveRequestSchema = z.strictObject({
   buyerName: optionalTextSchema,
   status: purchaseOrderStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(purchaseOrderSaveItemSchema).min(1),
+  items: z.array(purchaseOrderSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  audit: z.boolean().optional(),
 })
 
 const purchaseOrderImportCandidateSchema = z.strictObject({
@@ -275,7 +276,8 @@ const purchaseInboundSaveRequestSchema = z.strictObject({
   settlementMode: optionalTextSchema,
   status: purchaseInboundStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(purchaseInboundSaveItemSchema).min(1),
+  items: z.array(purchaseInboundSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  audit: z.boolean().optional(),
 })
 
 // Sales order
@@ -381,7 +383,8 @@ const salesOrderSaveRequestSchema = z.strictObject({
   salesName: requiredTextSchema,
   status: salesOrderStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(salesOrderSaveItemSchema).min(1),
+  items: z.array(salesOrderSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  audit: z.boolean().optional(),
 })
 
 const salesOrderSourceCandidateItemSchema = z.strictObject({
@@ -533,7 +536,8 @@ const salesOutboundSaveRequestSchema = z.strictObject({
   outboundDate: responseDateTimeSchema,
   status: salesOutboundStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(salesOutboundSaveItemSchema).min(1),
+  items: z.array(salesOutboundSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  audit: z.boolean().optional(),
 })
 
 // Freight bill
@@ -641,7 +645,8 @@ const freightBillSaveRequestSchema = z.strictObject({
   unitPrice: requestNonNegativeDecimalSchema,
   status: freightBillStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(freightBillSaveItemSchema).min(1),
+  items: z.array(freightBillSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  audit: z.boolean().optional(),
 })
 
 export const MAIN_FLOW_MODULE_KEYS = [

@@ -113,11 +113,16 @@ export async function saveAndAuditBusinessModule(
     throw new Error('当前模块不支持保存并审核')
   }
 
-  const payload = await toSaveRequest(moduleKey, record)
+  // 后端已将"保存并审核"资源化：普通保存端点 + 请求体 audit 标志位，
+  // 后端在同一事务内完成保存与审核，原子语义不变。
+  const payload = {
+    ...(await toSaveRequest(moduleKey, record) as Record<string, unknown>),
+    audit: true,
+  }
   const hasId = Boolean(record.id)
   const path = hasId
-    ? `${endpointConfig.path}/${encodeURIComponent(String(record.id))}/save-and-audit`
-    : `${endpointConfig.path}/save-and-audit`
+    ? `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`
+    : endpointConfig.path
   const requestConfig = withIdempotencyKey(undefined, idempotencyKey)
   const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
   if (mainFlowResponseSchema) {
