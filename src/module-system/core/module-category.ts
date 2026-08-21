@@ -17,3 +17,17 @@ export function isPurchaseModule(moduleKey: string | undefined): boolean {
 export function isSalesOutbound(moduleKey: string | undefined): boolean {
   return moduleKey === 'sales-outbound'
 }
+
+/** 贸易与资金类单据模块：编辑器使用财务化布局与汇总展示。 */
+export function isFinanceOrTradeModule(moduleKey: string | undefined): boolean {
+  return (
+    isPurchaseOrder(moduleKey) ||
+    isPurchaseInbound(moduleKey) ||
+    moduleKey === 'sales-order' ||
+    moduleKey === 'sales-outbound' ||
+    moduleKey === 'receipt' ||
+    moduleKey === 'payment' ||
+    moduleKey === 'customer-statement' ||
+    moduleKey === 'freight-statement'
+  )
+}

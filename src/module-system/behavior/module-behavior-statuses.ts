@@ -1,6 +1,7 @@
 import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-behavior-registry-core'
 import type { ModuleKey } from '@/module-system/core/module-key'
 
+// 有行项目明细的单据模块（同时用于已审核状态锁定行为，两处共用同一清单）。
 const lineItemModules = [
   'purchase-order',
   'purchase-inbound',
@@ -29,14 +30,7 @@ const draftStatusByModule = [
   ['payment', '草稿'],
 ] as const satisfies ReadonlyArray<readonly [ModuleKey, string]>
 
-const approvedStatusModules = [
-  'purchase-order',
-  'purchase-inbound',
-  'sales-order',
-  'sales-outbound',
-  'freight-bill',
-  'freight-statement',
-] as const satisfies readonly ModuleKey[]
+const approvedStatusModules = lineItemModules
 
 export const contributeStatusBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior,

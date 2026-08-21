@@ -9,11 +9,11 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
-import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
+import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
 import {
   type EditorSessionStatus,
@@ -21,10 +21,12 @@ import {
 } from '@/layouts/editor-session/EditorSessionGuard'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/adapter/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
+import { isFinanceOrTradeModule } from '@/module-system/core/module-category'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { sortItemsByMaterialDefault } from '@/module-system/editor/module-editor-item-sort'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type {
+  ModuleColumnDefinition,
   ModulePageConfig,
   ModuleParentImportSource,
 } from '@/types/module-page'
@@ -71,19 +73,6 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
 }
 
 const FINANCE_DOCUMENT_MODULES = new Set(['receipt', 'payment'])
-
-function isFinanceOrTradeModule(key: string) {
-  return (
-    key === 'purchase-order' ||
-    key === 'purchase-inbound' ||
-    key === 'sales-order' ||
-    key === 'sales-outbound' ||
-    key === 'receipt' ||
-    key === 'payment' ||
-    key === 'customer-statement' ||
-    key === 'freight-statement'
-  )
-}
 
 function useEditorSessionActions(onClose: () => void) {
   const { endSession, requestClose, setSessionStatus } = useEditorSession()
@@ -485,6 +474,7 @@ function SaveResultOverlay<Key extends ModuleKey>({
 }: SaveResultOverlayProps<Key>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { formatCellValue } = useModuleDisplaySupport()
   const rawItems = readModuleRecordField(saveResult.record, 'items')
   const items: Record<string, unknown>[] = Array.isArray(rawItems)
     ? rawItems.flatMap((item) =>
@@ -560,109 +550,58 @@ function SaveResultOverlay<Key extends ModuleKey>({
     </>
   )
 
-  const baseItemColumns = [
-    {
-      title: t('modules.itemColumns.brand'),
-      dataIndex: 'brand',
-      ellipsis: true,
-      align: 'center' as const,
-    },
-    {
-      title: t('modules.itemColumns.material'),
-      dataIndex: 'material',
-      ellipsis: true,
-      align: 'center' as const,
-    },
-    {
-      title: t('modules.itemColumns.spec'),
-      dataIndex: 'spec',
-      ellipsis: true,
-      align: 'center' as const,
-    },
-    {
-      title: t('modules.itemColumns.length'),
-      dataIndex: 'length',
-      ellipsis: true,
-      align: 'center' as const,
-    },
-    {
-      title: t('modules.itemColumns.quantity'),
-      dataIndex: 'quantity',
-      align: 'center' as const,
-    },
-    {
-      title: t('modules.itemColumns.weightTon'),
-      dataIndex: 'weightTon',
-      align: 'center' as const,
-      render: (v: unknown) =>
-        v != null ? Number(v).toFixed(DISPLAY_WEIGHT_PRECISION) : '-',
-    },
-  ]
-  const financeItemColumns = [
-    {
-      title: t('modules.itemColumns.unitPrice'),
-      dataIndex: 'unitPrice',
-      align: 'right' as const,
-      render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
-    },
-    {
-      title: t('modules.itemColumns.amount'),
-      dataIndex: 'amount',
-      align: 'right' as const,
-      render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
-    },
-  ]
-  const freightItemColumns = [
-    {
-      title: t('modules.columns.customerName'),
-      dataIndex: 'customerName',
-      ellipsis: true,
-    },
-    {
-      title: t('modules.columns.projectName'),
-      dataIndex: 'projectName',
-      ellipsis: true,
-    },
-    {
-      title: t('modules.itemColumns.warehouseName'),
-      dataIndex: 'warehouseName',
-      ellipsis: true,
-    },
-    {
-      title: t('modules.itemColumns.brand'),
-      dataIndex: 'brand',
-      ellipsis: true,
-    },
-    {
-      title: t('modules.itemColumns.material'),
-      dataIndex: 'material',
-      ellipsis: true,
-    },
-    { title: t('modules.itemColumns.spec'), dataIndex: 'spec', ellipsis: true },
-    {
-      title: t('modules.itemColumns.length'),
-      dataIndex: 'length',
-      ellipsis: true,
-    },
-    {
-      title: t('modules.itemColumns.quantity'),
-      dataIndex: 'quantity',
-      align: 'center' as const,
-    },
-    {
-      title: t('modules.itemColumns.weightTon'),
-      dataIndex: 'weightTon',
-      align: 'center' as const,
-      render: (v: unknown) =>
-        v != null ? Number(v).toFixed(DISPLAY_WEIGHT_PRECISION) : '-',
-    },
-  ]
-  const itemColumns =
+  // 保存结果弹窗的只读明细列：按模块从 config.itemColumns 派生子集，
+  // 与编辑器表格共用 formatCellValue 渲染，避免手写第二套列定义与格式。
+  const saveResultColumnKeys =
     moduleKey === 'freight-bill'
-      ? freightItemColumns
+      ? ([
+          'customerName',
+          'projectName',
+          'warehouseName',
+          'brand',
+          'material',
+          'spec',
+          'length',
+          'quantity',
+          'weightTon',
+        ] as const)
       : isFinanceOrTradeModule(moduleKey)
-        ? [...baseItemColumns, ...financeItemColumns]
-        : baseItemColumns
+        ? ([
+            'brand',
+            'material',
+            'spec',
+            'length',
+            'quantity',
+            'weightTon',
+            'unitPrice',
+            'amount',
+          ] as const)
+        : ([
+            'brand',
+            'material',
+            'spec',
+            'length',
+            'quantity',
+            'weightTon',
+          ] as const)
+  const itemColumns = (() => {
+    const columnMap = new Map(
+      (config.itemColumns ?? []).map((column) => [column.dataIndex, column]),
+    )
+    return saveResultColumnKeys
+      .map((key) => columnMap.get(key))
+      .filter((column): column is ModuleColumnDefinition => Boolean(column))
+      .map((column) => ({
+        title: column.title,
+        dataIndex: column.dataIndex,
+        ellipsis: true,
+        align: 'center' as const,
+        render: (value: unknown) =>
+          value == null || value === ''
+            ? '-'
+            : formatCellValue(value, column.type),
+      }))
+  })()
   const itemGroups =
     moduleKey === 'freight-statement'
       ? groupFreightStatementItems(items)
