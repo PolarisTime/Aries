@@ -30,12 +30,7 @@ export function normalizeDraftRecordForModule(options: {
   applyFormFieldDefaultDraftValues(record, options.formFields)
   applyModuleDefaultEditorDraft(moduleKey, record, currentOperatorName)
 
-  if (hasBehavior(moduleKey, 'computesAmounts')) {
-    record.totalWeight = Number(
-      sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
-    )
-    record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-  }
+  applyComputedTotals(moduleKey, record, items, sumLineItemsBy)
 
   const normalizeFn = getBehaviorValue(moduleKey, 'normalizeDraftRecord')
   if (normalizeFn) {
@@ -65,12 +60,7 @@ export function syncDerivedEditorFormValuesForModule(options: {
 }) {
   const { moduleKey, record, items, sumLineItemsBy, changedKeys } = options
 
-  if (hasBehavior(moduleKey, 'computesAmounts')) {
-    record.totalWeight = Number(
-      sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
-    )
-    record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-  }
+  applyComputedTotals(moduleKey, record, items, sumLineItemsBy)
 
   const normalizeFn = getBehaviorValue(moduleKey, 'normalizeDraftRecord')
   if (normalizeFn) {
@@ -89,4 +79,19 @@ export function syncDerivedEditorFormValuesForModule(options: {
   }
 
   return record
+}
+
+function applyComputedTotals(
+  moduleKey: string,
+  record: ModuleRecordInput,
+  items: ModuleLineItem[],
+  sumLineItemsBy: (items: ModuleLineItem[], key: string) => number,
+) {
+  if (!hasBehavior(moduleKey, 'computesAmounts')) {
+    return
+  }
+  record.totalWeight = Number(
+    sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
+  )
+  record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
 }

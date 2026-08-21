@@ -175,16 +175,6 @@ export function recalculateEditorLineItem(
       Number(item.weightTon || 0) * Number(item.unitPrice || 0),
       2,
     )
-  }
-
-  if (
-    changedKey === 'quantity' ||
-    changedKey === 'pieceWeightTon' ||
-    changedKey === 'weighWeightTon' ||
-    changedKey === 'settlementMode' ||
-    changedKey === 'weightTon' ||
-    changedKey === 'unitPrice'
-  ) {
     item.weightAdjustmentTon = toRoundedNumber(
       Number(item.weightTon || 0) - theoreticalWeightTon,
       INTERNAL_WEIGHT_PRECISION,

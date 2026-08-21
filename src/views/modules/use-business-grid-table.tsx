@@ -13,6 +13,7 @@ import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { ACTION_COLUMN_WIDTH, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
 
 interface Props {
   moduleKey: ModuleKey
@@ -31,21 +32,6 @@ interface Props {
 }
 
 const ACTIONS_COLUMN_ID = 'actions'
-
-function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
-  const ordered = new Set(savedOrder)
-  const merged = [...savedOrder]
-  for (const id of allIds) {
-    if (!ordered.has(id)) merged.push(id)
-  }
-  // 操作列保持在业务数据之后，窄屏优先展示单号与交易方。
-  const idx = merged.indexOf(ACTIONS_COLUMN_ID)
-  if (idx >= 0 && idx !== merged.length - 1) {
-    merged.splice(idx, 1)
-    merged.push(ACTIONS_COLUMN_ID)
-  }
-  return merged
-}
 
 function buildAntdColumns({
   columnDefs,
@@ -148,7 +134,9 @@ export function useBusinessGridTable({
   const allColumnIds = columnDefs.map(
     (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
   )
-  const columnOrder = mergeColumnOrder(allColumnIds, savedOrder)
+  const columnOrder = mergeColumnOrder(allColumnIds, savedOrder, {
+    tailId: ACTIONS_COLUMN_ID,
+  })
   const computedColumns = buildAntdColumns({
     columnDefs,
     columnOrder,
@@ -207,13 +195,7 @@ export function useBusinessGridTable({
     (id) => columnVisibility[id] !== false,
   )
   const toggleColumn = (key: string) => {
-    const next = { ...columnVisibility }
-    if (next[key] === false) {
-      delete next[key]
-    } else {
-      next[key] = false
-    }
-    handleColumnVisibilityChange(next)
+    handleColumnVisibilityChange(toggleColumnVisibility(columnVisibility, key))
   }
   return {
     antdColumns,

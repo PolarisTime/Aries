@@ -16,6 +16,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
 import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
 
 interface Props {
@@ -46,18 +47,6 @@ type MaterialSelectOption = {
   category: string
   spec: string
   length: string
-}
-
-function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
-  const validIds = new Set(allIds)
-  const merged = savedOrder.filter((id) => validIds.has(id))
-  const ordered = new Set(merged)
-  for (const id of allIds) {
-    if (!ordered.has(id)) {
-      merged.push(id)
-    }
-  }
-  return merged
 }
 
 export function useModuleEditorItemColumns({
@@ -181,6 +170,9 @@ export function useModuleEditorItemColumns({
   const itemColumnOrder = mergeColumnOrder(
     allItemColumnIds,
     savedItemColumnOrder,
+    {
+      filterInvalid: true,
+    },
   )
   const visibleItemColumnKeys = itemColumnOrder.filter(
     (key) => columnVisibility[key] !== false,
@@ -246,13 +238,7 @@ export function useModuleEditorItemColumns({
   })()
 
   const toggleItemColumn = (key: string) => {
-    const next = { ...columnVisibility }
-    if (next[key] === false) {
-      delete next[key]
-    } else {
-      next[key] = false
-    }
-    handleColumnVisibilityChange(next)
+    handleColumnVisibilityChange(toggleColumnVisibility(columnVisibility, key))
   }
 
   // 选择/拖拽/序号列不参与列宽拖拽
