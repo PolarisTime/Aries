@@ -16,7 +16,6 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import { buildPinyinSearchTokens } from '@/utils/pinyin-search'
 import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
 
 interface Props {
@@ -40,40 +39,13 @@ interface Props {
 type MaterialLookupEntry = readonly [string, ModuleRecord]
 type MaterialSelectOption = {
   label: string
-  searchText: string
   value: string
-}
-
-type MaterialSelectSearchFields = {
-  materialCode: string
+  code: string
   brand: string
-  materialName: string
   material: string
+  category: string
   spec: string
   length: string
-}
-
-function buildMaterialSelectSearchText({
-  materialCode,
-  brand,
-  materialName,
-  material,
-  spec,
-  length,
-}: MaterialSelectSearchFields) {
-  return [
-    materialCode,
-    brand,
-    materialName,
-    material,
-    spec,
-    length,
-    ...buildPinyinSearchTokens(brand),
-    ...buildPinyinSearchTokens(materialName),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
 }
 
 function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
@@ -192,14 +164,12 @@ export function useModuleEditorItemColumns({
           label: [brand || materialName, category, material, spec, length]
             .filter(Boolean)
             .join(' | '),
-          searchText: buildMaterialSelectSearchText({
-            materialCode,
-            brand,
-            materialName,
-            material,
-            spec,
-            length,
-          }),
+          code: materialCode,
+          brand,
+          material,
+          category,
+          spec,
+          length,
           value: materialId,
         },
       ]

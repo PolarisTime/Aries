@@ -18,7 +18,10 @@ import type {
   ModuleLineItem,
   ModulePageConfig,
 } from '@/types/module-page'
-import { createPinyinFilterOption } from '@/utils/pinyin-search'
+import {
+  createPinyinFilterOption,
+  createStructuredMaterialFilterOption,
+} from '@/utils/pinyin-search'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
 const EDITOR_ITEM_COLUMN_MIN_WIDTHS: Readonly<Record<string, number>> = {
@@ -36,8 +39,13 @@ function resolveEditorItemColumnWidth(column: ModuleColumnDefinition) {
 interface MaterialOption {
   disabled?: boolean
   label: string
-  searchText: string
   value: string
+  code: string
+  brand: string
+  material: string
+  category: string
+  spec: string
+  length: string
 }
 
 interface EditableRenderOptions {
@@ -178,7 +186,12 @@ function withCurrentMaterialOption(
     {
       disabled: true,
       label,
-      searchText: [materialCode, label].filter(Boolean).join(' ').toLowerCase(),
+      code: materialCode,
+      brand: asString(record.brand).trim(),
+      material: asString(record.material).trim(),
+      category: asString(record.category).trim(),
+      spec: asString(record.spec).trim(),
+      length: asString(record.length).trim(),
       value: materialId,
     },
     ...materialOptions,
@@ -261,11 +274,7 @@ function buildEditableColumnRender({
           <Select
             value={materialValue || undefined}
             showSearch={{
-              filterOption: (input, option) => {
-                const keywords = input.trim().toLowerCase().split(/\s+/)
-                const searchText = (option?.searchText || '').toLowerCase()
-                return keywords.every((kw) => searchText.includes(kw))
-              },
+              filterOption: createStructuredMaterialFilterOption(),
             }}
             allowClear
             className="w-full"
