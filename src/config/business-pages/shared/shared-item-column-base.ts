@@ -116,59 +116,70 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
   },
 ]
 
-export const purchaseItemColumns: ModuleColumnDefinition[] = [
-  ...materialInfoColumns.slice(0, 7),
-  {
-    title: i18next.t('modules.columns.warehouseName'),
-    dataIndex: 'warehouseName',
-    width: 110,
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.batchNo'),
-    dataIndex: 'batchNo',
-    width: 130,
-  },
-  {
-    title: i18next.t('modules.columns.quantity'),
-    dataIndex: 'quantity',
-    width: 76,
-    align: 'center',
-    type: 'count',
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.quantityUnit'),
-    dataIndex: 'quantityUnit',
-    width: 64,
-    align: 'center',
-  },
-  ...materialInfoColumns.slice(7),
-  {
-    title: i18next.t('modules.columns.weightTon'),
-    dataIndex: 'weightTon',
-    width: 108,
-    align: 'center',
-    type: 'weight',
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.unitPrice'),
-    dataIndex: 'unitPrice',
-    width: 88,
-    align: 'center',
-    type: 'amount',
-    required: true,
-  },
-  {
-    title: i18next.t('modules.columns.amount'),
-    dataIndex: 'amount',
-    width: 92,
-    align: 'center',
-    type: 'amount',
-    required: true,
-  },
-]
+// 采购订单行项目 = 批号版结构 + 开头插入仓库列，其余列定义与批号版保持单一来源。
+function withLeadingWarehouseColumn(
+  columns: ModuleColumnDefinition[],
+): ModuleColumnDefinition[] {
+  return [
+    ...columns.slice(0, 7),
+    {
+      title: i18next.t('modules.columns.warehouseName'),
+      dataIndex: 'warehouseName',
+      width: 110,
+      required: true,
+    },
+    ...columns.slice(7),
+  ]
+}
+
+export const purchaseItemColumns: ModuleColumnDefinition[] =
+  withLeadingWarehouseColumn([
+    ...materialInfoColumns.slice(0, 7),
+    {
+      title: i18next.t('modules.columns.batchNo'),
+      dataIndex: 'batchNo',
+      width: 130,
+    },
+    {
+      title: i18next.t('modules.columns.quantity'),
+      dataIndex: 'quantity',
+      width: 76,
+      align: 'center',
+      type: 'count',
+      required: true,
+    },
+    {
+      title: i18next.t('modules.columns.quantityUnit'),
+      dataIndex: 'quantityUnit',
+      width: 64,
+      align: 'center',
+    },
+    ...materialInfoColumns.slice(7),
+    {
+      title: i18next.t('modules.columns.weightTon'),
+      dataIndex: 'weightTon',
+      width: 108,
+      align: 'center',
+      type: 'weight',
+      required: true,
+    },
+    {
+      title: i18next.t('modules.columns.unitPrice'),
+      dataIndex: 'unitPrice',
+      width: 88,
+      align: 'center',
+      type: 'amount',
+      required: true,
+    },
+    {
+      title: i18next.t('modules.columns.amount'),
+      dataIndex: 'amount',
+      width: 92,
+      align: 'center',
+      type: 'amount',
+      required: true,
+    },
+  ])
 
 const purchaseWeighColumns: ModuleColumnDefinition[] = [
   {

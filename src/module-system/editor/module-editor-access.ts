@@ -15,10 +15,6 @@ import type {
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-function resolveParentImportFieldKey(parentFieldKey: string | undefined) {
-  return parentFieldKey
-}
-
 export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
   const lockedStatuses = getBehaviorValue(moduleKey, 'lineItemLockStatuses')
   if (!lockedStatuses?.length) {
@@ -107,7 +103,7 @@ export function isEditorFieldDisabledForModule(
   record?: ModuleRecord,
   authoritativePrimaryNo?: string,
 ) {
-  const effectiveParentFieldKey = resolveParentImportFieldKey(parentFieldKey)
+  const effectiveParentFieldKey = parentFieldKey
 
   if (!canSaveCurrentEditor) {
     return true
@@ -272,7 +268,7 @@ export function isParentImportedEditorLocked(
   record: ModuleRecordInput | undefined,
   parentFieldKey: string | undefined,
 ) {
-  const effectiveParentFieldKey = resolveParentImportFieldKey(parentFieldKey)
+  const effectiveParentFieldKey = parentFieldKey
   if (!hasParentImportValue(record, effectiveParentFieldKey)) {
     return false
   }
