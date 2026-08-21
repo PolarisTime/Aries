@@ -20,8 +20,8 @@ import {
 } from '@/api/sales/sales-order-candidates'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { statusMap } from '@/config/business-pages/shared/shared-status'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import {
@@ -107,39 +107,6 @@ const parentSelectorInitialState: ParentSelectorState = {
   pageSize: DEFAULT_PAGE_SIZE,
   selectedRowKeys: [],
   selectedRecordMap: {},
-}
-
-export function getOverlayStatusMap() {
-  return {
-    [DOCUMENT_STATUS.DRAFT]: {
-      color: 'default',
-      text: i18next.t('modules.parentSelector.status.draft'),
-    },
-    [DOCUMENT_STATUS.UNAUDITED]: {
-      color: 'default',
-      text: i18next.t('modules.parentSelector.status.unaudited'),
-    },
-    [DOCUMENT_STATUS.AUDITED]: {
-      color: 'processing',
-      text: i18next.t('modules.parentSelector.status.audited'),
-    },
-    [DOCUMENT_STATUS.PURCHASE_COMPLETED]: {
-      color: 'success',
-      text: i18next.t('modules.parentSelector.status.purchaseComplete'),
-    },
-    [DOCUMENT_STATUS.SALES_COMPLETED]: {
-      color: 'success',
-      text: i18next.t('modules.parentSelector.status.salesComplete'),
-    },
-    [DOCUMENT_STATUS.INBOUND_COMPLETED]: {
-      color: 'success',
-      text: i18next.t('modules.parentSelector.status.inboundComplete'),
-    },
-    已删除: {
-      color: 'error',
-      text: i18next.t('modules.status.deleted'),
-    },
-  }
 }
 
 function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
@@ -748,7 +715,7 @@ export function useModuleParentSelectorOverlay({
           return (
             <StatusTag
               status={status}
-              statusMap={getOverlayStatusMap()}
+              statusMap={statusMap}
               fallback={status}
             />
           )

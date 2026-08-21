@@ -3,13 +3,13 @@ import { Button, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { Key } from 'react'
 import { StatusTag } from '@/components/StatusTag'
+import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import {
   buildSelectedRecordSummary,
   EMPTY_FIXED_FILTERS,
-  getOverlayStatusMap,
   type ModuleParentSelectorOverlayContentProps,
   type ParentSelectorFormatCellValue,
   type ParentSelectorTranslator,
@@ -79,7 +79,7 @@ function ParentSelectorSelectedPanel({
                     {summary.status ? (
                       <StatusTag
                         status={summary.status}
-                        statusMap={getOverlayStatusMap()}
+                        statusMap={statusMap}
                         fallback={summary.status}
                       />
                     ) : null}

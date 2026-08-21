@@ -63,23 +63,6 @@ export function useGridColumns({
           return <span>{formatCellValue(value, colDef.type)}</span>
         },
       },
-      cell: ({ getValue, row }) => {
-        const value = getValue()
-        if (colDef.type === 'status') {
-          return renderModuleRecordStatus({
-            record: row.original,
-            statusKey: colDef.dataIndex,
-            statusMap: config.statusMap,
-            renderFallback: (status) => (
-              <span>{formatCellValue(status, colDef.type)}</span>
-            ),
-          })
-        }
-        if (colDef.render) {
-          return colDef.render(value, row.original)
-        }
-        return <span>{formatCellValue(value, colDef.type)}</span>
-      },
     })
   }
 

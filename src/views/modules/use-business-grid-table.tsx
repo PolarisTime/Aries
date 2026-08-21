@@ -1,3 +1,4 @@
+import type { ColumnDef } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
 import {
@@ -9,8 +10,6 @@ import {
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
-import { useDataTable } from '@/hooks/useDataTable'
 import { ACTION_COLUMN_WIDTH, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -129,13 +128,6 @@ export function useBusinessGridTable({
     config?.defaultHiddenColumnKeys,
     totalColumnCount,
   )
-  const rowSelectionState: RowSelectionState = (() => {
-    const state: RowSelectionState = {}
-    for (const id of selectedRowKeys) {
-      state[id] = true
-    }
-    return state
-  })()
   const fallbackConfig: ModulePageConfig = {
     key: moduleKey,
     title: '',
@@ -157,24 +149,6 @@ export function useBusinessGridTable({
     (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
   )
   const columnOrder = mergeColumnOrder(allColumnIds, savedOrder)
-  const { table } = useDataTable<ModuleRecord>({
-    data: records,
-    columns: columnDefs,
-    manualSorting: true,
-    enableSorting: false,
-    enableRowSelection: true,
-    getRowId: (row) => String(row.id),
-    rowSelection: rowSelectionState,
-    onRowSelectionChange: (updater) => {
-      const next =
-        typeof updater === 'function' ? updater(rowSelectionState) : updater
-      setSelectedRowKeys(Object.keys(next).filter((k) => next[k]))
-    },
-    columnVisibility,
-    onColumnVisibilityChange: handleColumnVisibilityChange,
-    columnOrder,
-    onColumnOrderChange: handleColumnOrderChange,
-  })
   const computedColumns = buildAntdColumns({
     columnDefs,
     columnOrder,
@@ -242,7 +216,6 @@ export function useBusinessGridTable({
     handleColumnVisibilityChange(next)
   }
   return {
-    table,
     antdColumns,
     components,
     columnOrder,
