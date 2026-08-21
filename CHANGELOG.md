@@ -1,3 +1,16 @@
+# [9.7.0](https://github.com/PolarisTime/Aries/compare/v9.6.4...v9.7.0) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** 将 vitest.config.ts 纳入 tsconfig.node 项目 ([ee43054](https://github.com/PolarisTime/Aries/commit/ee4305429a53d7acaea6e2a16ba3613ddef1b734))
+
+
+### Features
+
+* **material:** 商品导入结果弹窗展示行级新增更新失败明细 ([7e4dfac](https://github.com/PolarisTime/Aries/commit/7e4dface23f87e121dc6721f7d91a8d2e1e50023))
+* **material:** 商品选择下拉改为结构化多词过滤 ([ac30444](https://github.com/PolarisTime/Aries/commit/ac3044479bdc1ddc0543a84fe0899a0c4bd359c2))
+
 ## [9.6.4](https://github.com/PolarisTime/Aries/compare/v9.6.3...v9.6.4) (2026-08-09)
 
 
