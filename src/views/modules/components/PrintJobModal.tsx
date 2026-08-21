@@ -150,7 +150,7 @@ function isPdfTemplate(template?: PrintTemplateRecord) {
 
 function templateTypeLabel(
   template: PrintTemplateRecord | undefined,
-  t: (key: string) => string,
+  t: (key: string, values?: Record<string, unknown>) => string,
 ) {
   return isPdfTemplate(template)
     ? t('system.printTemplateEditor.templateTypePdfForm')
@@ -172,7 +172,10 @@ function numericTotal(values: unknown[]) {
 
 function formattedTotal(value: number | null, fractionDigits = 3) {
   if (value == null) return '-'
-  return value.toFixed(fractionDigits).replace(/\.?0+$/, '')
+  const fixed = value.toFixed(fractionDigits)
+  // 整数展示（如合计件数）不做尾零截断，避免 100 被截成 "1"。
+  if (fractionDigits === 0) return fixed
+  return fixed.replace(/\.?0+$/, '')
 }
 
 /** 解析 minmax(minPx, …) 中列的最小像素宽度。 */
@@ -345,7 +348,7 @@ interface SortablePrintItemRowProps {
   valueGridColumns: string[]
   onBrandOverrideChange: (itemId: string, value: string) => void
   onSelectedChange: (itemId: string, selected: boolean) => void
-  t: (key: string) => string
+  t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function SortablePrintItemRow({
@@ -372,7 +375,9 @@ function SortablePrintItemRow({
     transition,
     isDragging,
   } = useSortable({ id: item.id })
-  const dragLabel = `拖动第 ${index + 1} 行打印明细`
+  const dragLabel = t('modules.print.dragRowAriaLabel', {
+    index: index + 1,
+  })
 
   return (
     <div
@@ -467,7 +472,7 @@ interface PrintJobHeaderProps {
   moduleTitle?: string
   primaryHeaderSummary: string
   selectedTemplate?: PrintTemplateRecord
-  t: (key: string) => string
+  t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function PrintJobHeader({
@@ -507,7 +512,7 @@ interface PrintTemplateFieldProps {
   templateOptions: Array<{ label: React.ReactNode; value: string }>
   templates: PrintTemplateRecord[]
   onChange: (templateId: string) => void
-  t: (key: string) => string
+  t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function PrintTemplateField({
@@ -551,7 +556,7 @@ interface PrintOptionsFieldProps {
   onHideUnitPriceChange: (value: boolean) => void
   onItemSelectionEnabledChange: (value: boolean) => void
   onMergeEquivalentItemsChange: (value: boolean) => void
-  t: (key: string) => string
+  t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function PrintOptionsField({
@@ -641,6 +646,7 @@ interface PrintItemSectionProps {
   orderedPrintItems: PrintRecordItem[]
   outputPrintItemIds: string[]
   printItems: PrintRecordItem[]
+  printItemsError: boolean
   recordDeliveryDate: string
   recordRemark: string
   settlementCompanyName: string
@@ -653,7 +659,8 @@ interface PrintItemSectionProps {
   onDragEnd: (event: DragEndEvent) => void
   onPrintItemSelectedChange: (itemId: string, selected: boolean) => void
   onSelectAllPrintItems: (selected: boolean) => void
-  t: (key: string) => string
+  onRetryPrintItems: () => void
+  t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function PrintItemSection({
@@ -666,6 +673,8 @@ function PrintItemSection({
   orderedPrintItems,
   outputPrintItemIds,
   printItems,
+  printItemsError,
+  onRetryPrintItems,
   recordDeliveryDate,
   recordRemark,
   settlementCompanyName,
@@ -793,6 +802,13 @@ function PrintItemSection({
               </SortableContext>
             </DndContext>
           </div>
+        ) : printItemsError ? (
+          <div className="flex flex-col items-center gap-2 px-3 py-6 text-center text-gray-500">
+            <span>{t('modules.print.printItemsLoadFailed')}</span>
+            <Button size="small" onClick={onRetryPrintItems}>
+              {t('common.retry')}
+            </Button>
+          </div>
         ) : (
           <div className="px-3 py-6 text-center text-gray-500">
             {t('modules.print.noPrintItems')}
@@ -811,7 +827,7 @@ interface PrintJobActionsProps {
   onClose: () => void
   onExportPrintXlsx: () => void
   onPrint: (mode: PrintActionMode) => void
-  t: (key: string) => string
+  t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function PrintJobActions({
@@ -1025,7 +1041,11 @@ export function PrintJobModal({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
-  const { data: fetchedPrintItems } = useQuery<PrintRecordItem[]>({
+  const {
+    data: fetchedPrintItems,
+    isError: printItemsError,
+    refetch: refetchPrintItems,
+  } = useQuery<PrintRecordItem[]>({
     queryKey: QUERY_KEYS.printRecordItems(moduleKey, selectedRowKeys),
     queryFn: async () => {
       return listPrintRecordItems(moduleKey, selectedRowKeys)
@@ -1255,6 +1275,10 @@ export function PrintJobModal({
           orderedPrintItems={orderedPrintItems}
           outputPrintItemIds={state.outputPrintItemIds}
           printItems={printItems}
+          printItemsError={printItemsError}
+          onRetryPrintItems={() => {
+            void refetchPrintItems()
+          }}
           recordDeliveryDate={recordDeliveryDate}
           recordRemark={recordRemark}
           settlementCompanyName={settlementCompanyName}

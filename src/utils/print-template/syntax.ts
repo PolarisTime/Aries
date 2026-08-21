@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger'
 import { escapeJs } from './escape'
 import type { PrintDataRow } from './types'
 
@@ -79,16 +80,31 @@ function expandIfBlocksForRow(
   )
 }
 
+const EACH_BLOCK_MISSING_FIELD_RE = /\{\{#each\s*\}\}/
+
 export function expandEachBlocks(
   source: string,
   items: PrintDataRow[],
   data: PrintDataRow = {},
   mode: PlaceholderMode = 'text',
 ): string {
+  // 无字段名的 each 块是模板写法错误，先于展开显式拒绝。
+  if (EACH_BLOCK_MISSING_FIELD_RE.test(source)) {
+    throw new Error('Missing print template each field')
+  }
   return source.replace(
     EACH_BLOCK_RE,
-    (_match, _field: string, inner: string) =>
-      items
+    (_match, field: string, inner: string) => {
+      // 字段名校验：缺失为模板写法错误直接拒绝；未知字段名（如拼写笔误）
+      // 渲染继续但给出告警，避免静默输出空内容。
+      if (!field) {
+        throw new Error('Missing print template each field')
+      }
+      const known = field in data || items.some((item) => field in item)
+      if (!known) {
+        logger.warn(`Unknown print template each field: ${field}`)
+      }
+      return items
         .map((item) => {
           const context = mergedRow(item, data)
           return replacePlaceholders(
@@ -97,7 +113,8 @@ export function expandEachBlocks(
             mode,
           )
         })
-        .join(''),
+        .join('')
+    },
   )
 }
 

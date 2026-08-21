@@ -47,7 +47,7 @@ export function loadCLodop() {
     return loadPromise
   }
 
-  loadPromise = new Promise<boolean>((resolve) => {
+  const attempt = new Promise<boolean>((resolve) => {
     let completed = 0
     let settled = false
 
@@ -79,7 +79,14 @@ export function loadCLodop() {
     }, 3000)
   })
 
-  return loadPromise
+  // 失败不缓存：CLodop 服务稍后可用时无需刷新页面即可重试。
+  attempt.then((success) => {
+    if (!success) {
+      loadPromise = null
+    }
+  })
+  loadPromise = attempt
+  return attempt
 }
 
 function applyLicense(lodop: CLodopInstance) {

@@ -675,6 +675,8 @@ export const enUS = {
       noBrands: 'No brands found in selected documents',
       selectedPrintItems: 'Print Items',
       noPrintItems: 'No printable line items found',
+      printItemsLoadFailed: 'Failed to load print items',
+      dragRowAriaLabel: 'Drag print item row {{index}}',
       deliveryDate: 'Delivery Date',
       recordRemark: 'Document Remark',
       totalQuantity: 'Total Qty',
