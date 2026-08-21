@@ -13,6 +13,11 @@
 // ── 基础类型收窄 ──────────────────────────────────────
 
 /** 安全转为 string。非字符串/数字/布尔/大整数原语 → '' */
+/** 空值判定：null/undefined 或 trim 后为空的字符串。 */
+export function isBlankValue(value: unknown): boolean {
+  return asString(value).trim() === ''
+}
+
 export function asString(value: unknown): string {
   if (typeof value === 'string') return value
   if (typeof value === 'number')

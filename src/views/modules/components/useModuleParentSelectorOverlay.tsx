@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
-import { useEffect, useReducer } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
@@ -24,6 +24,7 @@ import { statusMap } from '@/config/business-pages/shared/shared-status'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { usePatchState } from '@/hooks/usePatchState'
 import {
   getDisplayStatus,
   isDeletedModuleRecord,
@@ -572,11 +573,7 @@ export function useModuleParentSelectorOverlay({
   const effectiveTitle = title ?? t('modules.parentSelector.title')
   const { formatCellValue } = useModuleDisplaySupport()
   const defaultPageSize = useDefaultPageSize()
-  const [state, setState] = useReducer(
-    (prev: ParentSelectorState, patch: Partial<ParentSelectorState>) => ({
-      ...prev,
-      ...patch,
-    }),
+  const [state, setState] = usePatchState<ParentSelectorState>(
     parentSelectorInitialState,
   )
   useEffect(() => {

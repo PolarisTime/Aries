@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getAttachmentBindings,
@@ -9,6 +9,7 @@ import {
   uploadAttachment,
 } from '@/api/business/business-attachments'
 import type { AttachmentRecord } from '@/api/business/business-types'
+import { usePatchState } from '@/hooks/usePatchState'
 import { message } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import { asString } from '@/utils/type-narrowing'
@@ -52,10 +53,6 @@ const attachmentModalInitialState: AttachmentModalState = {
   pdfPreviewOpen: false,
 }
 
-type AttachmentModalPatch =
-  | Partial<AttachmentModalState>
-  | ((prev: AttachmentModalState) => Partial<AttachmentModalState>)
-
 async function fetchAttachmentList(moduleKey: string, recordId: string) {
   const response = await getAttachmentBindings(moduleKey, recordId)
   return response.attachments
@@ -67,11 +64,7 @@ export function useModuleAttachmentModal({
   recordId,
 }: UseModuleAttachmentModalParams) {
   const { t } = useTranslation()
-  const [state, setState] = useReducer(
-    (prev: AttachmentModalState, patch: AttachmentModalPatch) => ({
-      ...prev,
-      ...(typeof patch === 'function' ? patch(prev) : patch),
-    }),
+  const [state, setState] = usePatchState<AttachmentModalState>(
     attachmentModalInitialState,
   )
   const {

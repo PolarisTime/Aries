@@ -5,7 +5,7 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
+import { asString, isBlankValue } from '@/utils/type-narrowing'
 
 const SOURCE_PARENT_ITEM_ID_FIELDS = [
   'sourceFreightBillItemId',
@@ -57,9 +57,7 @@ function toFiniteNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
-function isBlankString(value: unknown) {
-  return asString(value).trim() === ''
-}
+const isBlankString = isBlankValue
 
 function isZeroLike(value: unknown) {
   if (value === undefined || value === null || value === '') {

@@ -79,7 +79,8 @@ export const contributeStatusBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior('customer-statement', { auditStatus: '已确认' })
 }
 
-export const protectedEditStatuses: ReadonlySet<string> = new Set([
+/** 终态保护状态：进入后默认禁止编辑与删除（两集合由单一来源派生，防止单侧漏维护）。 */
+const PROTECTED_TERMINAL_STATUSES: readonly string[] = [
   '已审核',
   '已完成',
   '完成采购',
@@ -91,18 +92,12 @@ export const protectedEditStatuses: ReadonlySet<string> = new Set([
   '已收款',
   '已签署',
   '已归档',
-])
+]
 
-export const protectedDeleteStatuses: ReadonlySet<string> = new Set([
-  '已审核',
-  '已完成',
-  '完成采购',
-  '完成入库',
-  '交付核定',
-  '完成销售',
-  '已确认',
-  '已付款',
-  '已收款',
-  '已签署',
-  '已归档',
-])
+export const protectedEditStatuses: ReadonlySet<string> = new Set(
+  PROTECTED_TERMINAL_STATUSES,
+)
+
+export const protectedDeleteStatuses: ReadonlySet<string> = new Set(
+  PROTECTED_TERMINAL_STATUSES,
+)

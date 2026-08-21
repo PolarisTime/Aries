@@ -6,7 +6,7 @@ import { getSettlementCompanyOptions } from '@/api/system/company-settings'
 import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-behavior-registry-core'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { findProjectOption } from '@/module-system/core/module-option-resolvers'
-import { asString } from '@/utils/type-narrowing'
+import { asString, isBlankValue } from '@/utils/type-narrowing'
 
 const currentDateTime = () => dayjs()
 const currentDate = () => dayjs().startOf('day')
@@ -88,9 +88,7 @@ function resolveCounterpartyIdentity(type: unknown, id: unknown) {
   return undefined
 }
 
-function isBlank(value: unknown) {
-  return !asString(value).trim()
-}
+const isBlank = isBlankValue
 
 function clearStatementSources(editorForm: Record<string, unknown>) {
   editorForm.sourceFreightStatementId = ''
@@ -453,29 +451,24 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     lineItemTrimStrategy: 'purchaseOrderBlank',
   })
 
+  // 物流单/运费对账单行项目的上游快照锁定列。
+  // sourceNo/brand/category/material/spec/length/quantityUnit/件重支数重量等
+  // 已由 DERIVED_READONLY_ITEM_COLUMN_KEYS 第一层固有只读覆盖，无需重复声明。
+  const FREIGHT_READONLY_ITEM_COLUMNS = [
+    'materialCode',
+    'materialName',
+    'customerName',
+    'projectName',
+    'quantity',
+    'batchNo',
+    'warehouseName',
+  ]
+
   registerModuleBehavior('freight-bill', {
     defaultDraftValues: () => ({ billTime: currentDate() }),
     allowsManualLineItems: false,
     lockParentImportOnlyWhenPersisted: true,
-    readonlyItemColumns: [
-      'sourceNo',
-      'materialCode',
-      'materialName',
-      'spec',
-      'material',
-      'customerName',
-      'projectName',
-      'brand',
-      'category',
-      'length',
-      'quantity',
-      'quantityUnit',
-      'pieceWeightTon',
-      'piecesPerBundle',
-      'batchNo',
-      'weightTon',
-      'warehouseName',
-    ],
+    readonlyItemColumns: [...FREIGHT_READONLY_ITEM_COLUMNS],
     parentImportedEditableFields: [
       'vehiclePlate',
       'billTime',
@@ -499,25 +492,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   })
   registerModuleBehavior('freight-statement', {
     allowsManualLineItems: false,
-    readonlyItemColumns: [
-      'sourceNo',
-      'materialCode',
-      'materialName',
-      'spec',
-      'material',
-      'customerName',
-      'projectName',
-      'brand',
-      'category',
-      'length',
-      'quantity',
-      'quantityUnit',
-      'pieceWeightTon',
-      'piecesPerBundle',
-      'batchNo',
-      'weightTon',
-      'warehouseName',
-    ],
+    readonlyItemColumns: [...FREIGHT_READONLY_ITEM_COLUMNS],
   })
   registerModuleBehavior('customer-statement', {
     allowsManualLineItems: false,
