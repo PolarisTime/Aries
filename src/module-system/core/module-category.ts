@@ -13,3 +13,7 @@ export function isPurchaseInbound(moduleKey: string | undefined): boolean {
 export function isPurchaseModule(moduleKey: string | undefined): boolean {
   return isPurchaseOrder(moduleKey) || isPurchaseInbound(moduleKey)
 }
+
+export function isSalesOutbound(moduleKey: string | undefined): boolean {
+  return moduleKey === 'sales-outbound'
+}

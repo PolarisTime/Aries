@@ -3,6 +3,7 @@ import {
   isPurchaseInbound,
   isPurchaseModule,
   isPurchaseOrder,
+  isSalesOutbound,
 } from '@/module-system/core/module-category'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from '@/module-system/editor/module-editor-shared'
@@ -165,6 +166,53 @@ export function isEditorFieldDisabledForModule(
   return false
 }
 
+/**
+ * 第一层：字段固有只读判定（与编辑状态无关，任何锁定白名单都不可越过）。
+ * 包含 behavior 显式只读列、派生快照列（含显式声明的人工输入豁免）与模块特例。
+ */
+function isIntrinsicallyReadonlyItemColumn(
+  moduleKey: string,
+  columnKey: string,
+  record?: ModuleLineItem,
+) {
+  const readonlyItemColumns = getBehaviorValue(moduleKey, 'readonlyItemColumns')
+  if (readonlyItemColumns?.includes(columnKey)) {
+    return true
+  }
+
+  if (DERIVED_READONLY_ITEM_COLUMN_KEYS.has(columnKey)) {
+    // 人工输入豁免：这些列在特定模块是称重/实测结果，需要操作员填写。
+    if (
+      isPurchaseOrder(moduleKey) &&
+      columnKey === 'pieceWeightTon' &&
+      isPurchaseWeighRequiredCategory(record?.category)
+    ) {
+      return false
+    }
+    if (
+      isSalesOutbound(moduleKey) &&
+      (columnKey === 'actualWeightTon' || columnKey === 'weighWeightTon')
+    ) {
+      return false
+    }
+    return true
+  }
+
+  if (
+    isPurchaseInbound(moduleKey) &&
+    columnKey === 'materialCode' &&
+    record?.sourcePurchaseOrderItemId
+  ) {
+    return true
+  }
+
+  if (columnKey === 'batchNo' && isPurchaseModule(moduleKey)) {
+    return true
+  }
+
+  return false
+}
+
 export function isEditorItemColumnEditableForModule(
   moduleKey: string,
   columnKey: string,
@@ -177,19 +225,12 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
-  if (
-    isPurchaseInbound(moduleKey) &&
-    columnKey === 'materialCode' &&
-    record?.sourcePurchaseOrderItemId
-  ) {
+  // 第一层：字段固有只读，任何状态白名单都不可越过。
+  if (isIntrinsicallyReadonlyItemColumn(moduleKey, columnKey, record)) {
     return false
   }
 
-  const readonlyItemColumns = getBehaviorValue(moduleKey, 'readonlyItemColumns')
-  if (readonlyItemColumns?.includes(columnKey)) {
-    return false
-  }
-
+  // 第二层：状态锁定，只能收窄第一层判定为可编辑的字段。
   const parentImportedItemEditableColumns = getBehaviorValue(
     moduleKey,
     'parentImportedItemEditableColumns',
@@ -202,22 +243,6 @@ export function isEditorItemColumnEditableForModule(
   }
 
   if (getBehaviorValue(moduleKey, 'readonlyLineItems') === true) {
-    return false
-  }
-
-  if (
-    DERIVED_READONLY_ITEM_COLUMN_KEYS.has(columnKey) &&
-    !(isPurchaseInbound(moduleKey) && columnKey === 'weightTon') &&
-    !(
-      isPurchaseOrder(moduleKey) &&
-      columnKey === 'pieceWeightTon' &&
-      isPurchaseWeighRequiredCategory(record?.category)
-    )
-  ) {
-    return false
-  }
-
-  if (columnKey === 'batchNo' && isPurchaseModule(moduleKey)) {
     return false
   }
 
