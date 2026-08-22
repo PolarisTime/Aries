@@ -1,7 +1,8 @@
 import {
-  DownloadOutlined,
+  CheckCircleFilled,
   EyeOutlined,
   FileExcelOutlined,
+  FilePdfOutlined,
   HolderOutlined,
   PrinterOutlined,
 } from '@ant-design/icons'
@@ -22,19 +23,33 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useQuery } from '@tanstack/react-query'
+import type { TableProps } from 'antd'
 import {
   Button,
   Checkbox,
   Empty,
+  Flex,
+  Form,
   Input,
   Modal,
-  Segmented,
   Select,
   Space,
+  Table,
   Tag,
+  Tooltip,
   Typography,
+  theme,
 } from 'antd'
-import { type Dispatch, useMemo, useReducer } from 'react'
+import {
+  createContext,
+  type Dispatch,
+  Fragment,
+  type HTMLAttributes,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   listPrintRecordItems,
@@ -49,18 +64,20 @@ import type { ModuleRecord } from '@/types/module-page'
 import { modal } from '@/utils/antd-app'
 import { formatDate } from '@/utils/formatters'
 import {
-  getPrintItemColumnWidths,
+  getPrintItemColumnAlign,
+  getPrintItemColumnWidth,
   getPrintItemFields,
+  type PrintItemFieldKey,
   type PrintItemFieldSpec,
   supportsSalesOrderPrintOption,
 } from '@/utils/print-module-config'
 import {
   buildPrintItemMergeMarkers,
-  type PrintItemMergeMarker,
   reorderPrintItemIds,
 } from '@/views/modules/components/print-job-modal-utils'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []
+const EMPTY_PRINT_OPTIONS: PrintOptionKey[] = []
 
 interface Props {
   open: boolean
@@ -112,11 +129,12 @@ function firstText(record: ModuleRecord, keys: string[]) {
   return ''
 }
 
-function recordSummary(record: ModuleRecord) {
-  const no = firstText(record, SUMMARY_FIELDS)
-  const counterparty = firstText(record, COUNTERPARTY_FIELDS)
-  if (no && counterparty) return `${no} / ${counterparty}`
-  return no || counterparty || String(record.id)
+function recordOrderNo(record?: ModuleRecord) {
+  return record ? firstText(record, SUMMARY_FIELDS) : ''
+}
+
+function recordCounterparty(record?: ModuleRecord) {
+  return record ? firstText(record, COUNTERPARTY_FIELDS) : ''
 }
 
 function lookupProjectNameAbbr(record: ModuleRecord) {
@@ -164,10 +182,16 @@ function fieldText(value: unknown) {
 
 function numericTotal(values: unknown[]) {
   const total = values.reduce<number>((sum, value) => {
-    const numericValue = Number(value)
-    return Number.isFinite(numericValue) ? sum + numericValue : sum
+    const numericValue = toNumberOrNull(value)
+    return numericValue == null ? sum : sum + numericValue
   }, 0)
   return total > 0 ? total : null
+}
+
+function toNumberOrNull(value: unknown) {
+  if (value == null || String(value).trim() === '') return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
 }
 
 function formattedTotal(value: number | null, fractionDigits = 3) {
@@ -178,81 +202,57 @@ function formattedTotal(value: number | null, fractionDigits = 3) {
   return fixed.replace(/\.?0+$/, '')
 }
 
-/** 解析 minmax(minPx, …) 中列的最小像素宽度。 */
-function valueGridMinWidth(valueGridColumns: string[]) {
-  return valueGridColumns.reduce((sum, column) => {
-    const match = /^minmax\((\d+)px/.exec(column)
-    return sum + (match ? Number(match[1]) : 0)
-  }, 0)
+/** 金额、单价统一两位小数展示。 */
+function formatAmount(value: unknown) {
+  const numeric = toNumberOrNull(value)
+  return numeric == null ? '-' : numeric.toFixed(2)
 }
 
-function printItemsGridStyle(
-  brandOverrideEnabled: boolean,
-  showMergeGroup: boolean,
-  valueGridColumns: string[],
-) {
-  // 选择复选框列在前，序号列在后
-  const columns = ['64px', '56px', '80px']
-  if (showMergeGroup) columns.push('72px')
-  columns.push(
-    brandOverrideEnabled ? 'minmax(100px, 130px)' : 'minmax(120px, 150px)',
-  )
-  if (brandOverrideEnabled) {
-    columns.push('128px')
+/** 按字段语义格式化明细单元格：件数取整、重量三位去尾零、金额两位小数。 */
+function printItemCellText(field: PrintItemFieldKey, value: string) {
+  if (field === 'quantity') return formattedTotal(toNumberOrNull(value), 0)
+  if (field === 'pieceWeightTon' || field === 'weightTon') {
+    return formattedTotal(toNumberOrNull(value), 3)
   }
-  columns.push(...valueGridColumns)
-  const fixedMinWidth =
-    56 +
-    64 +
-    80 +
-    (showMergeGroup ? 72 : 0) +
-    (brandOverrideEnabled ? 100 + 128 : 120)
-  return {
-    gridTemplateColumns: columns.join(' '),
-    minWidth: fixedMinWidth + valueGridMinWidth(valueGridColumns),
-  }
+  if (field === 'unitPrice' || field === 'amount') return formatAmount(value)
+  return fieldText(value)
 }
 
 type PendingOutputAction = PrintActionMode | 'xlsx'
 
+/** 参数配置表单承载的打印选项。 */
+type PrintOptionKey =
+  | 'hideUnitPrice'
+  | 'hideRemark'
+  | 'enableBrandOverride'
+  | 'enableItemSelection'
+
+interface PrintJobFormValues {
+  mergeMode: 'merge' | 'split'
+  printOptions: PrintOptionKey[]
+  templateId?: string
+}
+
 interface PrintJobModalState {
-  selectedTemplateId?: string
-  hideUnitPrice: boolean
-  hideRemark: boolean
-  brandOverrideEnabled: boolean
   brandOverridesByItemId: Record<string, string>
   orderedPrintItemIds: string[]
   excludedPrintItemIds: string[]
-  itemSelectionEnabled: boolean
-  mergeEquivalentItems: boolean
   outputPrintItemIds: string[]
   pendingOutputAction?: PendingOutputAction
 }
 
 type PrintJobModalAction =
-  | { type: 'selectTemplate'; templateId: string }
-  | { type: 'setHideUnitPrice'; value: boolean }
-  | { type: 'setHideRemark'; value: boolean }
-  | { type: 'setBrandOverrideEnabled'; value: boolean }
   | { type: 'setBrandOverride'; itemId: string; value: string }
   | { type: 'setOrderedPrintItemIds'; itemIds: string[] }
-  | { type: 'setPrintItemSelected'; itemId: string; selected: boolean }
-  | { type: 'setAllPrintItemsSelected'; itemIds: string[]; selected: boolean }
-  | { type: 'setItemSelectionEnabled'; value: boolean }
-  | { type: 'setMergeEquivalentItems'; value: boolean }
+  | { type: 'setExcludedPrintItemIds'; itemIds: string[] }
   | { type: 'markPrintItemsOutput'; itemIds: string[] }
   | { type: 'setPendingOutputAction'; value?: PendingOutputAction }
   | { type: 'reset' }
 
 const INITIAL_PRINT_JOB_MODAL_STATE: PrintJobModalState = {
-  hideUnitPrice: false,
-  hideRemark: false,
-  brandOverrideEnabled: false,
   brandOverridesByItemId: {},
-  orderedPrintItemIds: [],
   excludedPrintItemIds: [],
-  itemSelectionEnabled: false,
-  mergeEquivalentItems: true,
+  orderedPrintItemIds: [],
   outputPrintItemIds: [],
 }
 
@@ -261,14 +261,6 @@ function printJobModalReducer(
   action: PrintJobModalAction,
 ): PrintJobModalState {
   switch (action.type) {
-    case 'selectTemplate':
-      return { ...state, selectedTemplateId: action.templateId }
-    case 'setHideUnitPrice':
-      return { ...state, hideUnitPrice: action.value }
-    case 'setHideRemark':
-      return { ...state, hideRemark: action.value }
-    case 'setBrandOverrideEnabled':
-      return { ...state, brandOverrideEnabled: action.value }
     case 'setBrandOverride':
       return {
         ...state,
@@ -279,26 +271,8 @@ function printJobModalReducer(
       }
     case 'setOrderedPrintItemIds':
       return { ...state, orderedPrintItemIds: action.itemIds }
-    case 'setPrintItemSelected':
-      return {
-        ...state,
-        excludedPrintItemIds: action.selected
-          ? state.excludedPrintItemIds.filter((id) => id !== action.itemId)
-          : Array.from(new Set([...state.excludedPrintItemIds, action.itemId])),
-      }
-    case 'setAllPrintItemsSelected':
-      return {
-        ...state,
-        excludedPrintItemIds: action.selected ? [] : action.itemIds,
-      }
-    case 'setItemSelectionEnabled':
-      return {
-        ...state,
-        itemSelectionEnabled: action.value,
-        excludedPrintItemIds: action.value ? state.excludedPrintItemIds : [],
-      }
-    case 'setMergeEquivalentItems':
-      return { ...state, mergeEquivalentItems: action.value }
+    case 'setExcludedPrintItemIds':
+      return { ...state, excludedPrintItemIds: action.itemIds }
     case 'markPrintItemsOutput':
       return {
         ...state,
@@ -334,609 +308,197 @@ function normalizePrintItemOrder(
   return result
 }
 
-interface SortablePrintItemRowProps {
-  brandOverrideEnabled: boolean
-  brandOverrideValue: string
-  fields: PrintItemFieldSpec[]
-  index: number
-  item: PrintRecordItem
-  itemSelectionEnabled: boolean
-  mergeMarker?: PrintItemMergeMarker
-  outputted: boolean
-  selected: boolean
-  showMergeGroup: boolean
-  valueGridColumns: string[]
-  onBrandOverrideChange: (itemId: string, value: string) => void
-  onSelectedChange: (itemId: string, selected: boolean) => void
-  t: (key: string, values?: Record<string, unknown>) => string
+interface RowDragContextValue {
+  activatorNodeRef: (element: HTMLElement | null) => void
+  dragAttributes: Record<string, unknown>
+  dragListeners: Record<string, unknown> | undefined
 }
 
-function SortablePrintItemRow({
-  brandOverrideEnabled,
-  brandOverrideValue,
-  fields,
-  index,
-  item,
-  itemSelectionEnabled,
-  mergeMarker,
-  outputted,
-  selected,
-  showMergeGroup,
-  valueGridColumns,
-  onBrandOverrideChange,
-  onSelectedChange,
-  t,
-}: SortablePrintItemRowProps) {
+const RowDragContext = createContext<RowDragContextValue | null>(null)
+
+function DragHandle({ label }: { label: string }) {
+  const { token } = theme.useToken()
+  const context = useContext(RowDragContext)
+  if (!context) return null
+  return (
+    <button
+      {...context.dragAttributes}
+      {...(context.dragListeners ?? {})}
+      aria-label={label}
+      className="inline-flex cursor-grab items-center border-0 bg-transparent p-0"
+      ref={context.activatorNodeRef}
+      style={{ color: token.colorTextTertiary }}
+      title={label}
+      type="button"
+    >
+      <HolderOutlined />
+    </button>
+  )
+}
+
+interface SortableRowProps extends HTMLAttributes<HTMLTableRowElement> {
+  'data-row-key'?: string
+}
+
+function SortableRow({ children, ...props }: SortableRowProps) {
   const {
     attributes,
+    isDragging,
     listeners,
+    setActivatorNodeRef,
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id: item.id })
-  const dragLabel = t('modules.print.dragRowAriaLabel', {
-    index: index + 1,
-  })
-
+  } = useSortable({ id: props['data-row-key'] ?? '' })
+  const contextValue = useMemo<RowDragContextValue>(
+    () => ({
+      activatorNodeRef: setActivatorNodeRef,
+      dragAttributes: { ...attributes },
+      dragListeners: listeners ? { ...listeners } : undefined,
+    }),
+    [attributes, listeners, setActivatorNodeRef],
+  )
   return (
-    <div
-      ref={setNodeRef}
-      className="px-3 py-2"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-      }}
-    >
-      <div
-        className="grid items-center gap-4 text-base"
-        style={printItemsGridStyle(
-          brandOverrideEnabled,
-          showMergeGroup,
-          valueGridColumns,
-        )}
+    <RowDragContext.Provider value={contextValue}>
+      <tr
+        {...props}
+        ref={setNodeRef}
+        style={{
+          ...props.style,
+          opacity: isDragging ? 0.6 : undefined,
+          transform: CSS.Translate.toString(transform),
+          transition,
+        }}
       >
-        <span className="flex items-center gap-2 text-gray-500">
-          <Checkbox
-            aria-label={`${t('modules.print.selectedPrintItems')} #${index + 1}`}
-            checked={selected}
-            disabled={!itemSelectionEnabled}
-            onChange={(event) =>
-              onSelectedChange(item.id, event.target.checked)
-            }
-          />
-          <button
-            {...attributes}
-            {...listeners}
-            aria-label={dragLabel}
-            className="inline-flex cursor-grab items-center border-0 bg-transparent p-0 text-gray-400"
-            type="button"
-            title={dragLabel}
-          >
-            <HolderOutlined />
-          </button>
-        </span>
-        <Typography.Text type="secondary">{index + 1}</Typography.Text>
-        <span>
-          {outputted ? (
-            <Tag color="success">{t('modules.print.outputted')}</Tag>
-          ) : (
-            '-'
-          )}
-        </span>
-        {showMergeGroup ? (
-          <span className="min-w-0">
-            {mergeMarker ? (
-              <Tag
-                className="m-0 min-w-6 text-center"
-                color="processing"
-                title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
-              >
-                {mergeMarker.groupIndex}
-              </Tag>
-            ) : (
-              '-'
-            )}
-          </span>
-        ) : null}
-        <Typography.Text className="block truncate">
-          {fieldText(item.brand)}
-        </Typography.Text>
-        {brandOverrideEnabled ? (
-          <Input
-            maxLength={64}
-            className="h-8 w-[120px]"
-            onChange={(event) =>
-              onBrandOverrideChange(item.id, event.target.value)
-            }
-            placeholder={t('modules.print.brandOverridePlaceholder')}
-            value={brandOverrideValue}
-          />
-        ) : null}
-        {fields.map((field) => (
-          <Typography.Text
-            key={field.key}
-            className="block truncate"
-            title={`${t(field.labelKey)}：${fieldText(item[field.key])}`}
-          >
-            {fieldText(item[field.key])}
-          </Typography.Text>
-        ))}
-      </div>
-    </div>
+        {children}
+      </tr>
+    </RowDragContext.Provider>
   )
 }
 
 interface PrintJobHeaderProps {
+  counterpartyName: string
   moduleTitle?: string
-  primaryHeaderSummary: string
+  orderNo: string
+  projectSummaryText: string
   selectedTemplate?: PrintTemplateRecord
   t: (key: string, values?: Record<string, unknown>) => string
 }
 
 function PrintJobHeader({
+  counterpartyName,
   moduleTitle,
-  primaryHeaderSummary,
+  orderNo,
+  projectSummaryText,
   selectedTemplate,
   t,
 }: PrintJobHeaderProps) {
+  const { token } = theme.useToken()
+  const summaryParts = [
+    { key: 'counterparty', text: counterpartyName },
+    { key: 'project', text: projectSummaryText },
+  ].filter((part) => part.text)
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 pb-4">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Typography.Text strong className="text-lg">
-            {moduleTitle || t('modules.print.currentModule')}
+    <Flex vertical gap={token.marginXS}>
+      <Flex align="center" gap="middle" wrap="wrap">
+        <Typography.Text strong style={{ fontSize: token.fontSizeLG }}>
+          {moduleTitle || t('modules.print.currentModule')}
+        </Typography.Text>
+        {orderNo ? (
+          <Typography.Text copyable={{ text: orderNo }}>
+            <Tag color="blue">{orderNo}</Tag>
           </Typography.Text>
-          {primaryHeaderSummary ? (
-            <Typography.Text
-              className="min-w-0 flex-1 whitespace-normal break-words leading-6"
-              title={primaryHeaderSummary}
-            >
-              {primaryHeaderSummary}
-            </Typography.Text>
-          ) : null}
-        </div>
-      </div>
-      {selectedTemplate ? (
-        <Tag color={isPdfTemplate(selectedTemplate) ? 'blue' : 'green'}>
-          {templateTypeLabel(selectedTemplate, t)}
-        </Tag>
+        ) : null}
+        {selectedTemplate ? (
+          <Tag color={isPdfTemplate(selectedTemplate) ? 'blue' : 'green'}>
+            {templateTypeLabel(selectedTemplate, t)}
+          </Tag>
+        ) : null}
+      </Flex>
+      {summaryParts.length ? (
+        <Flex align="center" gap="small" wrap="wrap">
+          {summaryParts.map((part, index) => (
+            <Fragment key={part.key}>
+              {index > 0 ? (
+                <Typography.Text type="secondary">/</Typography.Text>
+              ) : null}
+              <Typography.Text
+                ellipsis={{ tooltip: true }}
+                style={{ maxWidth: 420 }}
+              >
+                {part.text}
+              </Typography.Text>
+            </Fragment>
+          ))}
+        </Flex>
       ) : null}
-    </div>
+    </Flex>
   )
 }
 
-interface PrintTemplateFieldProps {
-  selectedTemplateId?: string
-  templateOptions: Array<{ label: React.ReactNode; value: string }>
-  templates: PrintTemplateRecord[]
-  onChange: (templateId: string) => void
-  t: (key: string, values?: Record<string, unknown>) => string
-}
-
-function PrintTemplateField({
-  selectedTemplateId,
-  templateOptions,
-  templates,
-  onChange,
-  t,
-}: PrintTemplateFieldProps) {
+/** 汇总条内的“标签：值”项，长文本单行截断并悬浮提示。 */
+function SummaryInfo({
+  label,
+  value,
+  valueMaxWidth,
+}: {
+  label: string
+  value: string
+  valueMaxWidth: number
+}) {
   return (
-    <div className="grid grid-cols-[96px_minmax(0,520px)] items-center gap-3">
-      <Typography.Text strong className="whitespace-nowrap">
-        {t('modules.print.selectTemplate')}
+    <span className="inline-flex items-center whitespace-nowrap">
+      <Typography.Text type="secondary">{label}：</Typography.Text>
+      <Typography.Text
+        ellipsis={{ tooltip: true }}
+        style={{ maxWidth: valueMaxWidth }}
+      >
+        {value}
       </Typography.Text>
-      <div>
-        {templates.length ? (
-          <Select
-            className="w-full"
-            onChange={onChange}
-            options={templateOptions}
-            value={selectedTemplateId}
-          />
-        ) : (
-          <Empty description={t('modules.print.noTemplate')} />
-        )}
-      </div>
-    </div>
+    </span>
   )
 }
 
-interface PrintOptionsFieldProps {
+interface PrintJobOutputActionsInput {
   brandOverrideEnabled: boolean
+  brandOverridesByItemId: Record<string, string>
+  dispatch: Dispatch<PrintJobModalAction>
   hideRemark: boolean
   hideUnitPrice: boolean
   itemSelectionEnabled: boolean
   mergeEquivalentItems: boolean
   mergeEquivalentItemsAvailable: boolean
-  salesOrderOptionsAvailable: boolean
-  onBrandOverrideEnabledChange: (value: boolean) => void
-  onHideRemarkChange: (value: boolean) => void
-  onHideUnitPriceChange: (value: boolean) => void
-  onItemSelectionEnabledChange: (value: boolean) => void
-  onMergeEquivalentItemsChange: (value: boolean) => void
-  t: (key: string, values?: Record<string, unknown>) => string
+  onExportPrintXlsx?: Props['onExportPrintXlsx']
+  onPrint: Props['onPrint']
+  orderedPrintItemIds: string[]
+  selectedItemIds: string[]
+  selectedTemplate?: PrintTemplateRecord
 }
 
-function PrintOptionsField({
+function createPrintJobOutputActions({
   brandOverrideEnabled,
+  brandOverridesByItemId,
+  dispatch,
   hideRemark,
   hideUnitPrice,
   itemSelectionEnabled,
   mergeEquivalentItems,
   mergeEquivalentItemsAvailable,
-  salesOrderOptionsAvailable,
-  onBrandOverrideEnabledChange,
-  onHideRemarkChange,
-  onHideUnitPriceChange,
-  onItemSelectionEnabledChange,
-  onMergeEquivalentItemsChange,
-  t,
-}: PrintOptionsFieldProps) {
-  return (
-    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
-      <Typography.Text strong className="whitespace-nowrap">
-        {t('modules.print.printOptions')}
-      </Typography.Text>
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-base">
-        {salesOrderOptionsAvailable ? (
-          <Checkbox
-            checked={hideUnitPrice}
-            onChange={(event) => onHideUnitPriceChange(event.target.checked)}
-          >
-            {t('modules.print.hideUnitPrice')}
-          </Checkbox>
-        ) : null}
-        <Checkbox
-          checked={hideRemark}
-          onChange={(event) => onHideRemarkChange(event.target.checked)}
-        >
-          {t('modules.print.hideRemark')}
-        </Checkbox>
-        {salesOrderOptionsAvailable ? (
-          <Checkbox
-            checked={brandOverrideEnabled}
-            onChange={(event) =>
-              onBrandOverrideEnabledChange(event.target.checked)
-            }
-          >
-            {t('modules.print.enableBrandOverride')}
-          </Checkbox>
-        ) : null}
-        <Checkbox
-          checked={itemSelectionEnabled}
-          onChange={(event) =>
-            onItemSelectionEnabledChange(event.target.checked)
-          }
-        >
-          {t('modules.print.enableItemSelection')}
-        </Checkbox>
-        {mergeEquivalentItemsAvailable ? (
-          <Segmented<string>
-            onChange={(value) =>
-              onMergeEquivalentItemsChange(value === 'merge')
-            }
-            options={[
-              {
-                label: t('modules.print.mergeEquivalentItems'),
-                value: 'merge',
-              },
-              {
-                label: t('modules.print.splitEquivalentItems'),
-                value: 'split',
-              },
-            ]}
-            size="small"
-            value={mergeEquivalentItems ? 'merge' : 'split'}
-          />
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-interface PrintItemSectionProps {
-  brandOverrideEnabled: boolean
-  brandOverridesByItemId: Record<string, string>
-  excludedPrintItemIds: string[]
-  fields: PrintItemFieldSpec[]
-  itemSelectionEnabled: boolean
-  mergeMarkersByItemId: Record<string, PrintItemMergeMarker>
-  orderedPrintItems: PrintRecordItem[]
-  outputPrintItemIds: string[]
-  printItems: PrintRecordItem[]
-  printItemsError: boolean
-  recordDeliveryDate: string
-  recordRemark: string
-  settlementCompanyName: string
-  sensors: ReturnType<typeof useSensors>
-  showMergeGroup: boolean
-  totalQuantity: number | null
-  totalWeight: number | null
-  valueGridColumns: string[]
-  onBrandOverrideChange: (itemId: string, value: string) => void
-  onDragEnd: (event: DragEndEvent) => void
-  onPrintItemSelectedChange: (itemId: string, selected: boolean) => void
-  onSelectAllPrintItems: (selected: boolean) => void
-  onRetryPrintItems: () => void
-  t: (key: string, values?: Record<string, unknown>) => string
-}
-
-function PrintItemSection({
-  brandOverrideEnabled,
-  brandOverridesByItemId,
-  excludedPrintItemIds,
-  fields,
-  itemSelectionEnabled,
-  mergeMarkersByItemId,
-  orderedPrintItems,
-  outputPrintItemIds,
-  printItems,
-  printItemsError,
-  onRetryPrintItems,
-  recordDeliveryDate,
-  recordRemark,
-  settlementCompanyName,
-  sensors,
-  showMergeGroup,
-  totalQuantity,
-  totalWeight,
-  valueGridColumns,
-  onBrandOverrideChange,
-  onDragEnd,
-  onPrintItemSelectedChange,
-  onSelectAllPrintItems,
-  t,
-}: PrintItemSectionProps) {
-  const excludedPrintItemIdSet = new Set(excludedPrintItemIds)
-  const selectedCount = printItems.filter(
-    (item) => !excludedPrintItemIdSet.has(item.id),
-  ).length
-  const allSelected =
-    printItems.length > 0 && selectedCount === printItems.length
-  return (
-    <div>
-      <div className="grid grid-cols-[96px_220px_160px_minmax(0,1fr)] items-center gap-x-8 gap-y-2">
-        <Typography.Text strong>
-          {t('modules.print.selectedPrintItems')}
-        </Typography.Text>
-        <Typography.Text className="whitespace-nowrap">
-          <Typography.Text type="secondary">
-            {t('modules.print.deliveryDate')}：
-          </Typography.Text>
-          {recordDeliveryDate}
-        </Typography.Text>
-        <Typography.Text className="col-span-2 min-w-0 truncate">
-          <Typography.Text type="secondary">
-            {t('modules.print.recordRemark')}：
-          </Typography.Text>
-          {recordRemark}
-        </Typography.Text>
-        <span aria-hidden="true" />
-        <Typography.Text>
-          <Typography.Text type="secondary">
-            {t('modules.print.totalQuantity')}：
-          </Typography.Text>
-          {formattedTotal(totalQuantity, 0)}
-        </Typography.Text>
-        <Typography.Text>
-          <Typography.Text type="secondary">
-            {t('modules.print.totalWeight')}：
-          </Typography.Text>
-          {formattedTotal(totalWeight)}
-        </Typography.Text>
-        <Typography.Text className="min-w-0 truncate">
-          <Typography.Text type="secondary">
-            {t('modules.print.currentSettlementCompany')}：
-          </Typography.Text>
-          <span title={settlementCompanyName}>{settlementCompanyName}</span>
-        </Typography.Text>
-      </div>
-      <div
-        className="mt-8 overflow-auto rounded border border-gray-200 bg-gray-50"
-        style={{ maxHeight: brandOverrideEnabled ? 376 : 320 }}
-      >
-        {printItems.length ? (
-          <div className="divide-y divide-gray-200">
-            <div
-              className="grid items-center gap-4 bg-gray-100 px-3 py-2 text-base font-medium text-gray-600"
-              style={printItemsGridStyle(
-                brandOverrideEnabled,
-                showMergeGroup,
-                valueGridColumns,
-              )}
-            >
-              <span className="flex items-center">
-                <Checkbox
-                  aria-label={t('modules.print.selectedPrintItems')}
-                  checked={allSelected}
-                  disabled={!itemSelectionEnabled}
-                  indeterminate={selectedCount > 0 && !allSelected}
-                  onChange={(event) =>
-                    onSelectAllPrintItems(event.target.checked)
-                  }
-                />
-              </span>
-              <span>{t('modules.print.itemSequence')}</span>
-              <span>{t('modules.print.itemOutputStatus')}</span>
-              {showMergeGroup ? (
-                <span>{t('modules.print.mergeGroup')}</span>
-              ) : null}
-              <span>{t('modules.print.itemBrand')}</span>
-              {brandOverrideEnabled ? (
-                <span>{t('modules.print.brandOverrideTo')}</span>
-              ) : null}
-              {fields.map((field) => (
-                <span key={field.key}>{t(field.labelKey)}</span>
-              ))}
-            </div>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-            >
-              <SortableContext
-                items={orderedPrintItems.map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {orderedPrintItems.map((item, index) => (
-                  <SortablePrintItemRow
-                    key={item.id}
-                    brandOverrideEnabled={brandOverrideEnabled}
-                    brandOverrideValue={brandOverridesByItemId[item.id] || ''}
-                    fields={fields}
-                    index={index}
-                    item={item}
-                    itemSelectionEnabled={itemSelectionEnabled}
-                    mergeMarker={mergeMarkersByItemId[item.id]}
-                    onBrandOverrideChange={onBrandOverrideChange}
-                    onSelectedChange={onPrintItemSelectedChange}
-                    outputted={outputPrintItemIds.includes(item.id)}
-                    selected={!excludedPrintItemIds.includes(item.id)}
-                    showMergeGroup={showMergeGroup}
-                    valueGridColumns={valueGridColumns}
-                    t={t}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
-          </div>
-        ) : printItemsError ? (
-          <div className="flex flex-col items-center gap-2 px-3 py-6 text-center text-gray-500">
-            <span>{t('modules.print.printItemsLoadFailed')}</span>
-            <Button size="small" onClick={onRetryPrintItems}>
-              {t('common.retry')}
-            </Button>
-          </div>
-        ) : (
-          <div className="px-3 py-6 text-center text-gray-500">
-            {t('modules.print.noPrintItems')}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface PrintJobActionsProps {
-  canExportPrintXlsx: boolean
-  hasSelectedPrintItems: boolean
-  pendingOutputAction?: PendingOutputAction
-  selectedTemplate?: PrintTemplateRecord
-  onClose: () => void
-  onExportPrintXlsx: () => void
-  onPrint: (mode: PrintActionMode) => void
-  t: (key: string, values?: Record<string, unknown>) => string
-}
-
-function PrintJobActions({
-  canExportPrintXlsx,
-  hasSelectedPrintItems,
-  pendingOutputAction,
-  selectedTemplate,
-  onClose,
   onExportPrintXlsx,
   onPrint,
-  t,
-}: PrintJobActionsProps) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
-      {canExportPrintXlsx ? (
-        <Button
-          disabled={!hasSelectedPrintItems || Boolean(pendingOutputAction)}
-          icon={<FileExcelOutlined />}
-          loading={pendingOutputAction === 'xlsx'}
-          onClick={onExportPrintXlsx}
-        >
-          {t('modules.print.exportXlsx')}
-        </Button>
-      ) : null}
-      <div className="ml-auto flex flex-wrap justify-end gap-2">
-        <Button disabled={Boolean(pendingOutputAction)} onClick={onClose}>
-          {t('common.cancel')}
-        </Button>
-        {isPdfTemplate(selectedTemplate) ? (
-          <Button
-            disabled={
-              !selectedTemplate ||
-              !hasSelectedPrintItems ||
-              Boolean(pendingOutputAction)
-            }
-            icon={<DownloadOutlined />}
-            loading={pendingOutputAction === 'download'}
-            onClick={() => onPrint('download')}
-          >
-            {t('modules.print.downloadPdf')}
-          </Button>
-        ) : null}
-        <Button
-          disabled={
-            !selectedTemplate ||
-            !hasSelectedPrintItems ||
-            Boolean(pendingOutputAction)
-          }
-          icon={<EyeOutlined />}
-          loading={pendingOutputAction === 'preview'}
-          onClick={() => onPrint('preview')}
-        >
-          {t('modules.print.preview')}
-        </Button>
-        <Button
-          disabled={
-            !selectedTemplate ||
-            !hasSelectedPrintItems ||
-            Boolean(pendingOutputAction)
-          }
-          icon={<PrinterOutlined />}
-          loading={pendingOutputAction === 'print'}
-          onClick={() => onPrint('print')}
-          type="primary"
-        >
-          {t('modules.print.directPrint')}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-interface PrintJobOutputActionsInput {
-  dispatch: Dispatch<PrintJobModalAction>
-  mergeEquivalentItemsAvailable: boolean
-  onExportPrintXlsx?: Props['onExportPrintXlsx']
-  onPrint: Props['onPrint']
-  orderedPrintItems: PrintRecordItem[]
-  selectedPrintItems: PrintRecordItem[]
-  selectedTemplate?: PrintTemplateRecord
-  state: PrintJobModalState
-}
-
-function createPrintJobOutputActions({
-  dispatch,
-  mergeEquivalentItemsAvailable,
-  onExportPrintXlsx,
-  onPrint,
-  orderedPrintItems,
-  selectedPrintItems,
+  orderedPrintItemIds,
+  selectedItemIds,
   selectedTemplate,
-  state,
 }: PrintJobOutputActionsInput) {
-  const currentItemOrder = () =>
-    orderedPrintItems.length
-      ? orderedPrintItems.map((item) => item.id)
-      : undefined
-
   const currentBrandOverridesByItemId = () => {
     const normalizedBrandOverridesByItemId: Record<string, string> = {}
-    for (const [itemId, value] of Object.entries(
-      state.brandOverridesByItemId,
-    )) {
+    for (const [itemId, value] of Object.entries(brandOverridesByItemId)) {
       const trimmed = value.trim()
       if (trimmed) {
         normalizedBrandOverridesByItemId[itemId] = trimmed
       }
     }
-    return state.brandOverrideEnabled &&
+    return brandOverrideEnabled &&
       Object.keys(normalizedBrandOverridesByItemId).length
       ? normalizedBrandOverridesByItemId
       : undefined
@@ -946,20 +508,14 @@ function createPrintJobOutputActions({
   // mergeEquivalentItems 仅 LODOP/PDF 渲染通道支持（xlsx 导出无合并语义）。
   const currentOutputOptions = (): PrintRenderOptions &
     SalesOrderPrintXlsxOptions => {
-    const itemOrder = currentItemOrder()
-    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
     return {
-      hideUnitPrice: state.hideUnitPrice,
-      hideRemark: state.hideRemark,
-      ...(mergeEquivalentItemsAvailable
-        ? { mergeEquivalentItems: state.mergeEquivalentItems }
-        : {}),
-      ...(state.itemSelectionEnabled
-        ? { selectedItemIds: selectedPrintItems.map((item) => item.id) }
-        : {}),
-      ...(itemOrder ? { itemOrder } : {}),
-      ...(normalizedBrandOverridesByItemId
-        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
+      hideUnitPrice,
+      hideRemark,
+      ...(mergeEquivalentItemsAvailable ? { mergeEquivalentItems } : {}),
+      ...(itemSelectionEnabled ? { selectedItemIds } : {}),
+      ...(orderedPrintItemIds.length ? { itemOrder: orderedPrintItemIds } : {}),
+      ...(currentBrandOverridesByItemId()
+        ? { brandOverridesByItemId: currentBrandOverridesByItemId() }
         : {}),
     }
   }
@@ -975,7 +531,7 @@ function createPrintJobOutputActions({
   }
 
   const markSelectedPrintItemsOutput = (itemIds: string[]) => {
-    if (!state.itemSelectionEnabled || !itemIds.length) return
+    if (!itemSelectionEnabled || !itemIds.length) return
     dispatch({ type: 'markPrintItemsOutput', itemIds })
   }
 
@@ -984,9 +540,6 @@ function createPrintJobOutputActions({
    * 防重入、已打印标记与状态清理逻辑单一实现。
    */
   const handleOutput = (mode: PendingOutputAction): Promise<void> => {
-    if (state.pendingOutputAction) {
-      return Promise.resolve()
-    }
     const exportHandler = onExportPrintXlsx
     if (mode !== 'xlsx' && !selectedTemplate) {
       return Promise.resolve()
@@ -994,7 +547,6 @@ function createPrintJobOutputActions({
     if (mode === 'xlsx' && !exportHandler) {
       return Promise.resolve()
     }
-    const outputItemIds = selectedPrintItems.map((item) => item.id)
     // 守卫已保证：xlsx 分支必有 exportHandler、渲染分支必有 template；
     // 先于 dispatch 捕获快照，避免重渲染后引用变化。
     const template = selectedTemplate
@@ -1009,7 +561,7 @@ function createPrintJobOutputActions({
     return run
       .then((succeeded) => {
         if (succeeded && mode !== 'preview') {
-          markSelectedPrintItemsOutput(outputItemIds)
+          markSelectedPrintItemsOutput(selectedItemIds)
         }
       })
       .finally(() => {
@@ -1035,6 +587,8 @@ export function PrintJobModal({
   onExportPrintXlsx,
 }: Props) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
+  const [form] = Form.useForm<PrintJobFormValues>()
   const [state, dispatchPrintJobModal] = useReducer(
     printJobModalReducer,
     INITIAL_PRINT_JOB_MODAL_STATE,
@@ -1058,16 +612,35 @@ export function PrintJobModal({
     staleTime: 30 * 1000,
   })
   const printItems = fetchedPrintItems ?? EMPTY_PRINT_ITEMS
+  const templateIdFromForm = Form.useWatch('templateId', form)
+  const printOptionsFromForm =
+    Form.useWatch('printOptions', form) ?? EMPTY_PRINT_OPTIONS
+  const mergeModeFromForm = Form.useWatch('mergeMode', form)
+  const printOptionSet = useMemo(
+    () => new Set(printOptionsFromForm),
+    [printOptionsFromForm],
+  )
+  const hideUnitPrice = printOptionSet.has('hideUnitPrice')
+  const hideRemark = printOptionSet.has('hideRemark')
+  const brandOverrideEnabled = printOptionSet.has('enableBrandOverride')
+  const itemSelectionEnabled = printOptionSet.has('enableItemSelection')
+  const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
   const selectedTemplate =
-    templates.find((template) => template.id === state.selectedTemplateId) ||
+    templates.find((template) => template.id === templateIdFromForm) ??
     templates[0]
-  const selectedTemplateId = selectedTemplate?.id
+  // 模板列表晚于弹窗挂载到达时，补写默认模板，保证 Select 与实际输出一致。
+  useEffect(() => {
+    if (!open) return
+    const currentTemplateId: unknown = form.getFieldValue('templateId')
+    if (!currentTemplateId && templates.length) {
+      form.setFieldValue('templateId', templates[0].id)
+    }
+  }, [form, open, templates])
+
   const primaryRecord = selectedRows[0]
-  const primaryRecordSummary = primaryRecord ? recordSummary(primaryRecord) : ''
-  const primaryProjectSummary = projectSummary(primaryRecord)
-  const primaryHeaderSummary = [primaryRecordSummary, primaryProjectSummary]
-    .filter(Boolean)
-    .join(' / ')
+  const orderNo = recordOrderNo(primaryRecord)
+  const counterpartyName = recordCounterparty(primaryRecord)
+  const projectSummaryText = projectSummary(primaryRecord)
   const recordDeliveryDate = formatDate(primaryRecord?.deliveryDate, '-')
   const recordRemark = fieldText(primaryRecord?.remark)
   const settlementCompanyName = fieldText(primaryRecord?.settlementCompanyName)
@@ -1095,24 +668,24 @@ export function PrintJobModal({
     }
     return result.length ? result : printItems
   }, [state.orderedPrintItemIds, printItems])
-
+  const orderedPrintItemIds = useMemo(
+    () => orderedPrintItems.map((item) => item.id),
+    [orderedPrintItems],
+  )
+  const excludedPrintItemIdSet = useMemo(
+    () => new Set(state.excludedPrintItemIds),
+    [state.excludedPrintItemIds],
+  )
   const selectedPrintItems = useMemo(() => {
-    if (!state.itemSelectionEnabled) return orderedPrintItems
-    const excludedItemIds = new Set(state.excludedPrintItemIds)
-    return orderedPrintItems.filter((item) => !excludedItemIds.has(item.id))
-  }, [
-    orderedPrintItems,
-    state.excludedPrintItemIds,
-    state.itemSelectionEnabled,
-  ])
+    if (!itemSelectionEnabled) return orderedPrintItems
+    return orderedPrintItems.filter(
+      (item) => !excludedPrintItemIdSet.has(item.id),
+    )
+  }, [excludedPrintItemIdSet, itemSelectionEnabled, orderedPrintItems])
   const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
   const printItemFields = useMemo(
     () => getPrintItemFields(moduleKey),
     [moduleKey],
-  )
-  const printItemValueGridColumns = useMemo(
-    () => getPrintItemColumnWidths(printItemFields),
-    [printItemFields],
   )
   const totalQuantity = numericTotal(
     selectedPrintItems.map((item) => item.quantity),
@@ -1121,32 +694,40 @@ export function PrintJobModal({
     selectedPrintItems.map((item) => item.weightTon),
   )
   const mergeEquivalentItemsAvailable = isSalesOrder
-  const showMergeGroup =
-    mergeEquivalentItemsAvailable && state.mergeEquivalentItems
+  const showMergeGroup = mergeEquivalentItemsAvailable && mergeEquivalentItems
   const mergeMarkersByItemId = useMemo(() => {
     if (!showMergeGroup) {
       return {}
     }
     return buildPrintItemMergeMarkers(
       selectedPrintItems,
-      state.brandOverrideEnabled ? state.brandOverridesByItemId : {},
+      brandOverrideEnabled ? state.brandOverridesByItemId : {},
     )
   }, [
+    brandOverrideEnabled,
     selectedPrintItems,
     showMergeGroup,
-    state.brandOverrideEnabled,
     state.brandOverridesByItemId,
   ])
+  const outputPrintItemIdSet = useMemo(
+    () => new Set(state.outputPrintItemIds),
+    [state.outputPrintItemIds],
+  )
 
   const { handleExportPrintXlsx, handlePrint } = createPrintJobOutputActions({
+    brandOverrideEnabled,
+    brandOverridesByItemId: state.brandOverridesByItemId,
     dispatch: dispatchPrintJobModal,
+    hideRemark,
+    hideUnitPrice,
+    itemSelectionEnabled,
+    mergeEquivalentItems,
     mergeEquivalentItemsAvailable,
     onExportPrintXlsx,
     onPrint,
-    orderedPrintItems,
-    selectedPrintItems,
+    orderedPrintItemIds,
+    selectedItemIds: selectedPrintItems.map((item) => item.id),
     selectedTemplate,
-    state,
   })
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -1161,46 +742,6 @@ export function PrintJobModal({
         String(active.id),
         String(over.id),
       ),
-    })
-  }
-
-  const handleTemplateChange = (templateId: string) => {
-    dispatchPrintJobModal({ type: 'selectTemplate', templateId })
-  }
-
-  const handleHideUnitPriceChange = (value: boolean) => {
-    dispatchPrintJobModal({ type: 'setHideUnitPrice', value })
-  }
-
-  const handleHideRemarkChange = (value: boolean) => {
-    dispatchPrintJobModal({ type: 'setHideRemark', value })
-  }
-
-  const handleBrandOverrideEnabledChange = (value: boolean) => {
-    dispatchPrintJobModal({ type: 'setBrandOverrideEnabled', value })
-  }
-
-  const handleItemSelectionEnabledChange = (value: boolean) => {
-    dispatchPrintJobModal({ type: 'setItemSelectionEnabled', value })
-  }
-
-  const handleMergeEquivalentItemsChange = (value: boolean) => {
-    dispatchPrintJobModal({ type: 'setMergeEquivalentItems', value })
-  }
-
-  const handleBrandOverrideChange = (itemId: string, value: string) => {
-    dispatchPrintJobModal({ type: 'setBrandOverride', itemId, value })
-  }
-
-  const handlePrintItemSelectedChange = (itemId: string, selected: boolean) => {
-    dispatchPrintJobModal({ type: 'setPrintItemSelected', itemId, selected })
-  }
-
-  const handleSelectAllPrintItems = (selected: boolean) => {
-    dispatchPrintJobModal({
-      type: 'setAllPrintItemsSelected',
-      itemIds: printItems.map((item) => item.id),
-      selected,
     })
   }
 
@@ -1219,14 +760,210 @@ export function PrintJobModal({
   }
 
   const canExportPrintXlsx = isSalesOrder && Boolean(onExportPrintXlsx)
+  const pendingOutputAction = state.pendingOutputAction
+  const hasSelectedPrintItems =
+    !itemSelectionEnabled ||
+    printItems.length === 0 ||
+    selectedPrintItems.length > 0
+
+  const rowSelection: TableProps<PrintRecordItem>['rowSelection'] = {
+    align: 'center',
+    columnWidth: 40,
+    getCheckboxProps: () => ({ disabled: !itemSelectionEnabled }),
+    getTitleCheckboxProps: () => ({ disabled: !itemSelectionEnabled }),
+    selectedRowKeys: selectedPrintItems.map((item) => item.id),
+    onChange: (keys) => {
+      const selectedKeySet = new Set(keys.map(String))
+      dispatchPrintJobModal({
+        type: 'setExcludedPrintItemIds',
+        itemIds: printItems
+          .filter((item) => !selectedKeySet.has(item.id))
+          .map((item) => item.id),
+      })
+    },
+  }
+
+  const columns: TableProps<PrintRecordItem>['columns'] = [
+    {
+      key: 'drag',
+      width: 36,
+      align: 'center',
+      render: (_, _record, index) => (
+        <DragHandle
+          label={t('modules.print.dragRowAriaLabel', { index: index + 1 })}
+        />
+      ),
+    },
+    {
+      key: 'sequence',
+      width: 56,
+      align: 'center',
+      title: t('modules.print.itemSequence'),
+      render: (_, item, index) => (
+        <Space size={4}>
+          <span>{index + 1}</span>
+          {outputPrintItemIdSet.has(item.id) ? (
+            <Tooltip title={t('modules.print.outputted')}>
+              <CheckCircleFilled style={{ color: token.colorSuccess }} />
+            </Tooltip>
+          ) : null}
+        </Space>
+      ),
+    },
+    {
+      key: 'brand',
+      width: showMergeGroup ? 136 : 112,
+      align: 'left',
+      ellipsis: true,
+      title: t('modules.print.itemBrand'),
+      render: (_, item) => {
+        const mergeMarker = showMergeGroup
+          ? mergeMarkersByItemId[item.id]
+          : undefined
+        return (
+          <span className="flex min-w-0 items-center gap-1">
+            {mergeMarker ? (
+              <Tag
+                className="m-0"
+                color="processing"
+                title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
+              >
+                {mergeMarker.groupIndex}
+              </Tag>
+            ) : null}
+            <Typography.Text
+              ellipsis={{ tooltip: true }}
+              style={{ minWidth: 0, flex: 1 }}
+            >
+              {fieldText(item.brand)}
+            </Typography.Text>
+          </span>
+        )
+      },
+    },
+    ...(brandOverrideEnabled
+      ? [
+          {
+            key: 'brandOverrideTo',
+            width: 132,
+            align: 'left' as const,
+            title: t('modules.print.brandOverrideTo'),
+            render: (_: unknown, item: PrintRecordItem) => (
+              <Input
+                maxLength={64}
+                onChange={(event) =>
+                  dispatchPrintJobModal({
+                    type: 'setBrandOverride',
+                    itemId: item.id,
+                    value: event.target.value,
+                  })
+                }
+                placeholder={t('modules.print.brandOverridePlaceholder')}
+                size="small"
+                value={state.brandOverridesByItemId[item.id] || ''}
+                variant="filled"
+              />
+            ),
+          },
+        ]
+      : []),
+    ...printItemFields.map((field: PrintItemFieldSpec) => ({
+      key: field.key,
+      width: getPrintItemColumnWidth(field),
+      align: getPrintItemColumnAlign(field),
+      ellipsis: true,
+      title: t(field.labelKey),
+      render: (_: unknown, item: PrintRecordItem) =>
+        printItemCellText(field.key, item[field.key]),
+    })),
+  ]
+
+  const tableEmptyText = printItemsError ? (
+    <div className="flex flex-col items-center gap-2 py-4">
+      <Typography.Text type="secondary">
+        {t('modules.print.printItemsLoadFailed')}
+      </Typography.Text>
+      <Button
+        size="small"
+        onClick={() => {
+          void refetchPrintItems()
+        }}
+      >
+        {t('common.retry')}
+      </Button>
+    </div>
+  ) : (
+    t('modules.print.noPrintItems')
+  )
+
+  const footer = (
+    <Flex justify="space-between" align="center" gap="small" wrap="wrap">
+      {canExportPrintXlsx ? (
+        <Button
+          disabled={!hasSelectedPrintItems || Boolean(pendingOutputAction)}
+          icon={<FileExcelOutlined />}
+          loading={pendingOutputAction === 'xlsx'}
+          onClick={() => {
+            void handleExportPrintXlsx()
+          }}
+          type="text"
+        >
+          {t('modules.print.exportXlsx')}
+        </Button>
+      ) : (
+        <span />
+      )}
+      <Flex gap="small" wrap="wrap">
+        <Button
+          disabled={Boolean(pendingOutputAction)}
+          onClick={handleRequestClose}
+        >
+          {t('common.cancel')}
+        </Button>
+        {isPdfTemplate(selectedTemplate) ? (
+          <Button
+            disabled={!hasSelectedPrintItems || Boolean(pendingOutputAction)}
+            icon={<FilePdfOutlined />}
+            loading={pendingOutputAction === 'download'}
+            onClick={() => {
+              void handlePrint('download')
+            }}
+          >
+            {t('modules.print.downloadPdf')}
+          </Button>
+        ) : null}
+        <Button
+          disabled={!hasSelectedPrintItems || Boolean(pendingOutputAction)}
+          icon={<EyeOutlined />}
+          loading={pendingOutputAction === 'preview'}
+          onClick={() => {
+            void handlePrint('preview')
+          }}
+        >
+          {t('modules.print.preview')}
+        </Button>
+        <Button
+          disabled={!hasSelectedPrintItems || Boolean(pendingOutputAction)}
+          icon={<PrinterOutlined />}
+          loading={pendingOutputAction === 'print'}
+          onClick={() => {
+            void handlePrint('print')
+          }}
+          type="primary"
+        >
+          {t('modules.print.directPrint')}
+        </Button>
+      </Flex>
+    </Flex>
+  )
 
   return (
     <Modal
-      closable={!state.pendingOutputAction}
+      closable={!pendingOutputAction}
       destroyOnHidden
-      footer={null}
-      keyboard={!state.pendingOutputAction}
-      mask={{ closable: !state.pendingOutputAction }}
+      footer={footer}
+      keyboard={!pendingOutputAction}
+      mask={{ closable: !pendingOutputAction }}
       onCancel={handleRequestClose}
       open={open}
       title={
@@ -1236,82 +973,167 @@ export function PrintJobModal({
       }
       width={1440}
     >
-      <div className="space-y-4 text-base">
+      <Flex vertical gap="middle">
         <PrintJobHeader
+          counterpartyName={counterpartyName}
           moduleTitle={moduleTitle}
-          primaryHeaderSummary={primaryHeaderSummary}
+          orderNo={orderNo}
+          projectSummaryText={projectSummaryText}
           selectedTemplate={selectedTemplate}
           t={t}
         />
-        <PrintTemplateField
-          onChange={handleTemplateChange}
-          selectedTemplateId={selectedTemplateId}
-          templateOptions={templateOptions}
-          templates={templates}
-          t={t}
-        />
-        <PrintOptionsField
-          brandOverrideEnabled={state.brandOverrideEnabled}
-          hideRemark={state.hideRemark}
-          hideUnitPrice={state.hideUnitPrice}
-          itemSelectionEnabled={state.itemSelectionEnabled}
-          onBrandOverrideEnabledChange={handleBrandOverrideEnabledChange}
-          onHideRemarkChange={handleHideRemarkChange}
-          onHideUnitPriceChange={handleHideUnitPriceChange}
-          onItemSelectionEnabledChange={handleItemSelectionEnabledChange}
-          mergeEquivalentItems={state.mergeEquivalentItems}
-          mergeEquivalentItemsAvailable={mergeEquivalentItemsAvailable}
-          onMergeEquivalentItemsChange={handleMergeEquivalentItemsChange}
-          salesOrderOptionsAvailable={isSalesOrder}
-          t={t}
-        />
-        <PrintItemSection
-          brandOverrideEnabled={state.brandOverrideEnabled}
-          brandOverridesByItemId={state.brandOverridesByItemId}
-          excludedPrintItemIds={state.excludedPrintItemIds}
-          fields={printItemFields}
-          itemSelectionEnabled={state.itemSelectionEnabled}
-          mergeMarkersByItemId={mergeMarkersByItemId}
-          onBrandOverrideChange={handleBrandOverrideChange}
-          onDragEnd={handleDragEnd}
-          onPrintItemSelectedChange={handlePrintItemSelectedChange}
-          onSelectAllPrintItems={handleSelectAllPrintItems}
-          orderedPrintItems={orderedPrintItems}
-          outputPrintItemIds={state.outputPrintItemIds}
-          printItems={printItems}
-          printItemsError={printItemsError}
-          onRetryPrintItems={() => {
-            void refetchPrintItems()
+        <Form
+          component={false}
+          form={form}
+          initialValues={{
+            mergeMode: 'merge',
+            printOptions: EMPTY_PRINT_OPTIONS,
+            templateId: templates[0]?.id,
           }}
-          recordDeliveryDate={recordDeliveryDate}
-          recordRemark={recordRemark}
-          settlementCompanyName={settlementCompanyName}
+        >
+          <Flex align="center" gap="middle" wrap="wrap">
+            <Typography.Text strong className="whitespace-nowrap">
+              {t('modules.print.selectTemplate')}
+            </Typography.Text>
+            {templates.length ? (
+              <Form.Item name="templateId" noStyle>
+                <Select
+                  options={templateOptions}
+                  style={{ width: 220 }}
+                  variant="outlined"
+                />
+              </Form.Item>
+            ) : (
+              <Empty
+                description={t('modules.print.noTemplate')}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            )}
+            <Typography.Text strong className="whitespace-nowrap">
+              {t('modules.print.printOptions')}
+            </Typography.Text>
+            <Form.Item name="printOptions" noStyle>
+              <Checkbox.Group className="flex flex-wrap items-center gap-x-6 gap-y-1">
+                {isSalesOrder ? (
+                  <Checkbox value="hideUnitPrice">
+                    {t('modules.print.hideUnitPrice')}
+                  </Checkbox>
+                ) : null}
+                <Checkbox value="hideRemark">
+                  {t('modules.print.hideRemark')}
+                </Checkbox>
+                {isSalesOrder ? (
+                  <Checkbox value="enableBrandOverride">
+                    {t('modules.print.enableBrandOverride')}
+                  </Checkbox>
+                ) : null}
+                <Checkbox value="enableItemSelection">
+                  {t('modules.print.enableItemSelection')}
+                </Checkbox>
+              </Checkbox.Group>
+            </Form.Item>
+          </Flex>
+        </Form>
+        <Flex
+          justify="space-between"
+          align="center"
+          gap="small"
+          wrap="wrap"
+          style={{
+            background: token.colorFillQuaternary,
+            borderRadius: token.borderRadiusSM,
+            paddingBlock: token.paddingXS,
+            paddingInline: token.paddingSM,
+          }}
+        >
+          <Flex align="center" gap="middle" wrap="wrap" style={{ minWidth: 0 }}>
+            <SummaryInfo
+              label={t('modules.print.deliveryDate')}
+              value={recordDeliveryDate}
+              valueMaxWidth={160}
+            />
+            <SummaryInfo
+              label={t('modules.print.recordRemark')}
+              value={recordRemark}
+              valueMaxWidth={320}
+            />
+            <SummaryInfo
+              label={t('modules.print.currentSettlementCompany')}
+              value={settlementCompanyName}
+              valueMaxWidth={280}
+            />
+          </Flex>
+          <Flex align="center" gap="large" wrap="wrap">
+            <span className="whitespace-nowrap">
+              <Typography.Text type="secondary">
+                {t('modules.print.totalQuantity')}：
+              </Typography.Text>
+              <Typography.Text strong style={{ color: token.colorPrimary }}>
+                {formattedTotal(totalQuantity, 0)}
+              </Typography.Text>
+            </span>
+            <span className="whitespace-nowrap">
+              <Typography.Text type="secondary">
+                {t('modules.print.totalWeight')}：
+              </Typography.Text>
+              <Typography.Text strong style={{ color: token.colorPrimary }}>
+                {formattedTotal(totalWeight)}
+              </Typography.Text>
+            </span>
+          </Flex>
+        </Flex>
+        <Flex justify="space-between" align="center" gap="small" wrap="wrap">
+          <Typography.Text type="secondary">
+            {itemSelectionEnabled
+              ? t('modules.print.selectedItemsCount', {
+                  count: selectedPrintItems.length,
+                })
+              : t('modules.print.totalItemsCount', {
+                  count: printItems.length,
+                })}
+          </Typography.Text>
+          {mergeEquivalentItemsAvailable ? (
+            <Flex gap="small">
+              <Button
+                size="small"
+                type={mergeEquivalentItems ? 'primary' : 'default'}
+                onClick={() => form.setFieldValue('mergeMode', 'merge')}
+              >
+                {t('modules.print.mergeEquivalentItems')}
+              </Button>
+              <Button
+                size="small"
+                type={mergeEquivalentItems ? 'default' : 'primary'}
+                onClick={() => form.setFieldValue('mergeMode', 'split')}
+              >
+                {t('modules.print.splitEquivalentItems')}
+              </Button>
+            </Flex>
+          ) : null}
+        </Flex>
+        <DndContext
           sensors={sensors}
-          showMergeGroup={showMergeGroup}
-          totalQuantity={totalQuantity}
-          totalWeight={totalWeight}
-          valueGridColumns={printItemValueGridColumns}
-          t={t}
-        />
-        <PrintJobActions
-          canExportPrintXlsx={canExportPrintXlsx}
-          hasSelectedPrintItems={
-            !state.itemSelectionEnabled ||
-            printItems.length === 0 ||
-            selectedPrintItems.length > 0
-          }
-          onClose={handleRequestClose}
-          onExportPrintXlsx={() => {
-            void handleExportPrintXlsx()
-          }}
-          onPrint={(mode) => {
-            void handlePrint(mode)
-          }}
-          pendingOutputAction={state.pendingOutputAction}
-          selectedTemplate={selectedTemplate}
-          t={t}
-        />
-      </div>
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedPrintItemIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <Table<PrintRecordItem>
+              columns={columns}
+              components={{ body: { row: SortableRow } }}
+              dataSource={orderedPrintItems}
+              locale={{ emptyText: tableEmptyText }}
+              pagination={false}
+              rowKey={(item) => item.id}
+              rowSelection={rowSelection}
+              scroll={{ y: brandOverrideEnabled ? 376 : 320 }}
+              size="small"
+            />
+          </SortableContext>
+        </DndContext>
+      </Flex>
     </Modal>
   )
 }

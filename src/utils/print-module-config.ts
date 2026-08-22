@@ -40,17 +40,30 @@ const NON_SALES_PRINT_ITEM_FIELDS = FULL_PRINT_ITEM_FIELDS.filter(
   (field) => field.key !== 'unitPrice' && field.key !== 'amount',
 )
 
-/** 每列对应宽度，字段数量随模块变化。 */
-const PRINT_ITEM_COLUMN_WIDTHS: Record<string, string> = {
-  category: 'minmax(92px, 1fr)',
-  material: 'minmax(110px, 1fr)',
-  spec: 'minmax(90px, 0.8fr)',
-  length: 'minmax(110px, 1fr)',
-  quantity: 'minmax(70px, 0.7fr)',
-  pieceWeightTon: 'minmax(80px, 0.8fr)',
-  weightTon: 'minmax(90px, 0.8fr)',
-  unitPrice: 'minmax(90px, 0.8fr)',
-  amount: 'minmax(110px, 1fr)',
+/** 明细数据列固定宽度（px）：合计宽度控制在弹窗标准宽度内，避免横向滚动。 */
+const PRINT_ITEM_COLUMN_WIDTHS: Record<PrintItemFieldKey, number> = {
+  category: 84,
+  material: 96,
+  spec: 104,
+  length: 104,
+  quantity: 72,
+  pieceWeightTon: 88,
+  weightTon: 92,
+  unitPrice: 96,
+  amount: 108,
+}
+
+/** 品牌等描述性文本左对齐，规格与数值、金额右对齐。 */
+const PRINT_ITEM_FIELD_ALIGNS: Record<PrintItemFieldKey, 'left' | 'right'> = {
+  category: 'left',
+  material: 'left',
+  spec: 'right',
+  length: 'right',
+  quantity: 'right',
+  pieceWeightTon: 'right',
+  weightTon: 'right',
+  unitPrice: 'right',
+  amount: 'right',
 }
 
 export function getPrintItemFields(moduleKey: string): PrintItemFieldSpec[] {
@@ -59,10 +72,14 @@ export function getPrintItemFields(moduleKey: string): PrintItemFieldSpec[] {
     : NON_SALES_PRINT_ITEM_FIELDS
 }
 
-export function getPrintItemColumnWidths(
-  fields: PrintItemFieldSpec[],
-): string[] {
-  return fields.map((field) => PRINT_ITEM_COLUMN_WIDTHS[field.key])
+export function getPrintItemColumnWidth(field: PrintItemFieldSpec): number {
+  return PRINT_ITEM_COLUMN_WIDTHS[field.key]
+}
+
+export function getPrintItemColumnAlign(
+  field: PrintItemFieldSpec,
+): 'left' | 'right' {
+  return PRINT_ITEM_FIELD_ALIGNS[field.key]
 }
 
 /** 销售订单专属的打印选项（其他模块隐藏）。 */
