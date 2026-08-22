@@ -697,17 +697,20 @@
   overflow: hidden;
 }
 
+/* nav 默认 margin 与内容占位已在 LayoutTabBar 经 v6 语义 styles 内联关闭 */
 .leo-tabbar .ant-tabs-nav {
-  margin: 0;
   padding: 0 8px;
 }
 
-.leo-tabbar .ant-tabs-nav::before {
+/* antd 运行时注入的 ::before 底边框与项目样式表特异性平级、注入更晚，
+ * 必须提升选择器特异性才能移除，否则与下方容器边框形成双层灰线 */
+.leo-tabbar.ant-tabs .ant-tabs-nav::before {
   border-bottom: none;
 }
 
-/* 内容区由 AppTabContainer 渲染，隐藏 Tabs 自带的内容占位 */
-.leo-tabbar .ant-tabs-content-holder {
+/* v6 内容区外层占位（.ant-tabs-body-holder）无语义 styles key 可关；
+ * 其 flex:auto 会吞掉标签栏剩余高度形成幽灵缝隙，提升特异性整体隐藏 */
+.leo-tabbar.ant-tabs .ant-tabs-body-holder {
   display: none;
 }
 

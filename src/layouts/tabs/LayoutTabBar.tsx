@@ -127,6 +127,12 @@ export function LayoutTabBar() {
       type="editable-card"
       hideAdd
       size="small"
+      /* 内容区由 AppTabContainer 渲染，本组件仅保留导航头部：
+       * 经 v6 语义 styles 内联关闭 nav 默认 margin；
+       * 外层 body-holder 无对应语义 key，经 layout-shell.css 提升特异性隐藏 */
+      styles={{
+        header: { margin: 0 },
+      }}
       activeKey={activeTabId ?? undefined}
       items={items}
       onChange={(key) => useLayoutTabsStore.getState().activateTab(key)}
