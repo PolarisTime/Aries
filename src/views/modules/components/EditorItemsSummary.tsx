@@ -8,6 +8,8 @@ interface Props {
   amountKey?: string
   countKey?: string
   showAmount?: boolean
+  /** 单据附加费用合计；大于 0 时以独立项展示，不并入货物金额口径。 */
+  expenseTotalAmount?: number | null
   className?: string
 }
 
@@ -17,6 +19,7 @@ export function EditorItemsSummary({
   amountKey = 'amount',
   countKey = 'quantity',
   showAmount = true,
+  expenseTotalAmount,
   className,
 }: Props) {
   const { t } = useTranslation()
@@ -32,6 +35,7 @@ export function EditorItemsSummary({
     (sum, item) => sum + (Number(item[countKey]) || 0),
     0,
   )
+  const resolvedExpenseTotal = Number(expenseTotalAmount) || 0
 
   return (
     <div
@@ -56,6 +60,12 @@ export function EditorItemsSummary({
       {showAmount && totalAmount > 0 && (
         <span>
           {t('modules.itemsSummary.amount')} {totalAmount.toFixed(2)}
+        </span>
+      )}
+      {showAmount && resolvedExpenseTotal > 0 && (
+        <span>
+          {t('modules.itemsSummary.expenseAmount')}{' '}
+          {resolvedExpenseTotal.toFixed(2)}
         </span>
       )}
     </div>

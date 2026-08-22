@@ -29,8 +29,10 @@ import type {
 } from '@/types/module-record'
 import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
+import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import {
   buildEditorSubmissionDraft,
+  sumChargeItemAmount,
   toEditorFormState,
 } from '@/views/modules/module-editor-draft-adapter'
 import { mergeDateOnlyFieldTimesForSave } from '@/views/modules/module-editor-record-normalization'
@@ -67,6 +69,7 @@ interface SubmissionSession<Key extends ModuleKey> {
 
 interface SubmissionWorkspace {
   items: ModuleLineItem[]
+  expenseItems: DocumentChargeItemDraft[]
   authoritativePrimaryNo: string
   submissionRef: SubmissionRef
 }
@@ -88,6 +91,7 @@ interface ExecuteSubmissionOptions {
   values: EditorFormValues
   items: ModuleLineItem[]
   idempotencyKey: string
+  chargeItems?: DocumentChargeItemDraft[]
 }
 
 function executeEditorSubmission<Key extends ModuleKey>(
@@ -98,15 +102,20 @@ async function executeEditorSubmission(
   moduleKey: ModuleKey,
   options: ExecuteSubmissionOptions,
 ): Promise<ModuleDetailRecordFor<ModuleKey>> {
-  const { action, values, items, idempotencyKey } = options
+  const { action, values, items, chargeItems, idempotencyKey } = options
   if (action === 'save-and-complete') {
     return saveAndCompleteSalesOrder(
-      buildEditorSubmissionDraft('sales-order', values, items),
+      buildEditorSubmissionDraft('sales-order', values, items, chargeItems),
       idempotencyKey,
     )
   }
 
-  const draft = buildEditorSubmissionDraft(moduleKey, values, items)
+  const draft = buildEditorSubmissionDraft(
+    moduleKey,
+    values,
+    items,
+    chargeItems,
+  )
   return action === 'save-and-audit'
     ? saveAndAuditBusinessModule(moduleKey, draft, idempotencyKey)
     : saveBusinessModule(moduleKey, draft, idempotencyKey)
@@ -126,7 +135,8 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
     editorAuditActionKind,
     editorAuditTarget,
   } = session
-  const { items, authoritativePrimaryNo, submissionRef } = workspace
+  const { items, expenseItems, authoritativePrimaryNo, submissionRef } =
+    workspace
   const { onClose, onSaved } = callbacks
   const [saving, setSaving] = useState(false)
   const [saveResult, setSaveResult] = useState<EditorSaveResult<Key> | null>(
@@ -279,6 +289,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
         currentOperatorName: getCurrentOperatorName(),
         sumLineItemsBy,
         formFields: config.formFields,
+        chargeTotal: sumChargeItemAmount(expenseItems),
       })
 
       if (audit && editorAuditTarget && !confirmDeliveryVerification) {
@@ -309,6 +320,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
         action: submissionAction,
         values: draftRecord,
         items: trimmedItems,
+        chargeItems: expenseItems,
         idempotencyKey,
       })
       invalidateSubmissionIntent(submissionRef.current, idempotencyKey)

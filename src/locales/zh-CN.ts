@@ -706,6 +706,9 @@ export const zhCN = {
     },
     itemsSection: {
       addItem: '新增明细',
+      goodsTab: '货物明细',
+      expenseTab: '附加费用',
+      addExpense: '添加费用',
       importItems: '导入{{label}}明细',
       deleteSelected: '删除选中',
       autoSortItems: '自动排序',
@@ -723,6 +726,21 @@ export const zhCN = {
       freightBillProjectGroupCustomer: '客户：{{customerName}}',
       freightBillProjectGroupTotal:
         '小计：数量 {{quantity}}，重量 {{weight}} 吨',
+    },
+    expense: {
+      chargeName: '费用名称',
+      chargeNamePlaceholder: '搜索或输入新费用名称',
+      quickCreate: '创建费用项: "{{name}}"',
+      noChargeOptions: '暂无匹配的费用项，可输入名称快速创建',
+      amount: '金额 (元)',
+      unit: '单位',
+      unitPlaceholder: '次/项',
+      remark: '备注说明',
+      emptyHint: '暂无附加费用，点击"添加费用"录入',
+      removeSelected: '删除选中费用',
+      selectAllAriaLabel: '全选费用行',
+      deleteRowAriaLabel: '删除第 {{index}} 行费用',
+      totalAmount: '费用合计金额',
     },
     table: {
       noData: '暂无数据',
@@ -745,6 +763,7 @@ export const zhCN = {
       quantity: '数量',
       weight: '重量',
       amount: '金额',
+      expenseAmount: '附加费用合计',
     },
     editorForm: {
       documentInfo: '单据信息',

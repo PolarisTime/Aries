@@ -3,6 +3,7 @@ import type { ModuleFilterDefinition } from '@/types/module-page'
 interface ModuleSaveFieldSchema {
   scalar?: string[]
   lineItem?: string[]
+  chargeItem?: string[]
   computed?: string[]
 }
 
@@ -52,6 +53,14 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'orderDate',
         'buyerName',
         'status',
+        'remark',
+      ],
+      chargeItem: [
+        'id',
+        'chargeName',
+        'materialId',
+        'amount',
+        'unit',
         'remark',
       ],
       lineItem: [
@@ -169,6 +178,14 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'status',
         'remark',
       ],
+      chargeItem: [
+        'id',
+        'chargeName',
+        'materialId',
+        'amount',
+        'unit',
+        'remark',
+      ],
       lineItem: [
         'sourceInboundItemId',
         'sourcePurchaseOrderItemId',
@@ -257,6 +274,14 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'billTime',
         'unitPrice',
         'status',
+        'remark',
+      ],
+      chargeItem: [
+        'id',
+        'chargeName',
+        'materialId',
+        'amount',
+        'unit',
         'remark',
       ],
       lineItem: ['id', 'sourceSalesOrderItemId'],

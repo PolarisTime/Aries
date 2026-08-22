@@ -728,6 +728,9 @@ export const enUS = {
     },
     itemsSection: {
       addItem: 'Add Item',
+      goodsTab: 'Goods Items',
+      expenseTab: 'Additional Charges',
+      addExpense: 'Add Charge',
       importItems: 'Import {{label}} Items',
       deleteSelected: 'Delete Selected',
       autoSortItems: 'Auto Sort',
@@ -746,6 +749,21 @@ export const enUS = {
       freightBillProjectGroupCustomer: 'Customer: {{customerName}}',
       freightBillProjectGroupTotal:
         'Subtotal: Qty {{quantity}}, Weight {{weight}} ton',
+    },
+    expense: {
+      chargeName: 'Charge Name',
+      chargeNamePlaceholder: 'Search or enter new charge name',
+      quickCreate: 'Create charge item: "{{name}}"',
+      noChargeOptions: 'No matching charges. Type a name to create one',
+      amount: 'Amount',
+      unit: 'Unit',
+      unitPlaceholder: 'time/item',
+      remark: 'Remark',
+      emptyHint: 'No additional charges yet. Click "Add Charge" to enter',
+      removeSelected: 'Remove Selected Charges',
+      selectAllAriaLabel: 'Select all charge rows',
+      deleteRowAriaLabel: 'Delete charge row {{index}}',
+      totalAmount: 'Total Charges',
     },
     table: {
       noData: 'No data',
@@ -768,6 +786,7 @@ export const enUS = {
       quantity: 'Qty',
       weight: 'Weight',
       amount: 'Amount',
+      expenseAmount: 'Expense Total',
     },
     editorForm: {
       documentInfo: 'Document Info',

@@ -113,8 +113,10 @@ export function syncEditorFormValues(args: {
   moduleKey: string
   items: ModuleLineItem[]
   changedValues?: FormChangedValues
+  /** 单据附加费用合计，叠加进 totalAmount（货物 + 费用）。 */
+  chargeTotal?: number
 }) {
-  const { config, form, moduleKey, items, changedValues } = args
+  const { config, form, moduleKey, items, changedValues, chargeTotal } = args
   const currentValues = form.getFieldsValue(true)
   const changedKeys = new Set(Object.keys(changedValues || {}))
   const nextValues = syncDerivedEditorFormValuesForModule({
@@ -123,6 +125,7 @@ export function syncEditorFormValues(args: {
     items,
     sumLineItemsBy,
     changedKeys,
+    chargeTotal,
   })
   form.setFieldsValue(normalizeRecordForEditor(config, nextValues))
 }

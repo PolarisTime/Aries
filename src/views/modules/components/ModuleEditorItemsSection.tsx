@@ -5,7 +5,7 @@ import {
   SortAscendingOutlined,
 } from '@ant-design/icons'
 import type { TableColumnsType, TableProps } from 'antd'
-import { Button } from 'antd'
+import { Button, Tabs } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
@@ -15,12 +15,14 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { EditorFooterActions } from './EditorFooterActions'
 import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
+import { ModuleExpenseItemsTable } from './ModuleExpenseItemsTable'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
@@ -28,6 +30,15 @@ import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 interface Props {
   config: ModulePageConfig
   items: ModuleLineItem[]
+  expenseItems: DocumentChargeItemDraft[]
+  expenseSelectedItemIds: string[]
+  expenseMaterialOptions: Array<{
+    label: string
+    value: string
+    unit?: string
+    materialType?: string
+  }>
+  supportsExpenseTab: boolean
   selectedItemIds: string[]
   parentImportVisible: boolean
   parentImporting: boolean
@@ -51,6 +62,16 @@ interface Props {
   showFooterActions?: boolean
   onAddItem: () => void
   onAutoSortItems: () => void
+  onExpenseSelectedChange: (itemId: string, selected: boolean) => void
+  onExpenseSelectAll: (selected: boolean) => void
+  onExpenseChange: (
+    index: number,
+    patch: Partial<DocumentChargeItemDraft>,
+  ) => void
+  onCreateExpense: (name: string) => Promise<void>
+  onExpenseAddItem: () => void
+  onExpenseDelete: (index: number) => void
+  onExpenseRemoveSelected: () => void
   onCancel: () => void
   onSave: (audit: boolean) => void
   onOpenParentSelector: () => void
@@ -65,6 +86,10 @@ interface Props {
 export function ModuleEditorItemsSection({
   config,
   items,
+  expenseItems,
+  expenseSelectedItemIds,
+  expenseMaterialOptions,
+  supportsExpenseTab,
   selectedItemIds,
   parentImportVisible,
   parentImporting,
@@ -82,6 +107,13 @@ export function ModuleEditorItemsSection({
   showFooterActions = true,
   onAddItem,
   onAutoSortItems,
+  onExpenseSelectedChange,
+  onExpenseSelectAll,
+  onExpenseChange,
+  onCreateExpense,
+  onExpenseAddItem,
+  onExpenseDelete,
+  onExpenseRemoveSelected,
   onCancel,
   onSave,
   onOpenParentSelector,
@@ -94,6 +126,14 @@ export function ModuleEditorItemsSection({
 }: Props) {
   const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
+  const [activeItemTab, setActiveItemTab] = useState<'goods' | 'expenses'>(
+    'goods',
+  )
+  const expenseTotalAmount = expenseItems.reduce(
+    (sum, item) =>
+      sum + (Number.isFinite(Number(item.amount)) ? Number(item.amount) : 0),
+    0,
+  )
   const itemGroups =
     config.key === 'freight-statement'
       ? groupFreightStatementItems(items)
@@ -154,143 +194,189 @@ export function ModuleEditorItemsSection({
   return (
     <>
       <div className="mt-6">
-        <ModuleItemsPanel
-          items={items}
-          itemColumns={config.itemColumns}
-          actions={
-            <>
-              {capabilities.addManualItems && (
-                <Button
-                  type="primary"
-                  className="overlay-action-button"
-                  icon={<PlusOutlined />}
-                  disabled={saving}
-                  onClick={onAddItem}
-                >
-                  {t('modules.itemsSection.addItem')}
-                </Button>
-              )}
-              {parentImportVisible && (
-                <Button
-                  className="overlay-action-button"
-                  icon={<ImportOutlined />}
-                  loading={parentImporting}
-                  disabled={saving || !capabilities.importParentItems}
-                  onClick={onOpenParentSelector}
-                >
-                  {config.parentImport?.buttonText ||
-                    t('modules.itemsSection.importItems', {
-                      label:
-                        config.parentImport?.label ||
-                        t('modules.itemsSection.parentDoc'),
-                    })}
-                </Button>
-              )}
-              {capabilities.autoSortItems && (
-                <Button
-                  className="overlay-action-button"
-                  icon={<SortAscendingOutlined />}
-                  disabled={saving}
-                  onClick={onAutoSortItems}
-                >
-                  {t('modules.itemsSection.autoSortItems')}
-                </Button>
-              )}
-              <ColumnSettingsPopover
-                columns={config.itemColumns}
-                orderedKeys={itemColumnOrder}
-                visibleKeys={visibleItemColumnKeys}
-                onToggle={onToggleItemColumn}
-                onOrderChange={onItemColumnOrderChange}
-                open={columnSettingsOpen}
-                onOpenChange={setColumnSettingsOpen}
-              />
-              {selectedItemIds.length > 0 && (
-                <Button
-                  danger
-                  className="overlay-action-button"
-                  icon={<DeleteOutlined />}
-                  disabled={saving}
-                  onClick={onRemoveSelectedItems}
-                >
-                  {t('modules.itemsSection.deleteSelected')} (
-                  {selectedItemIds.length})
-                </Button>
-              )}
-              {showFooterActions ? (
-                <EditorFooterActions
-                  canSave={capabilities.save}
-                  canAudit={capabilities.audit}
-                  auditLabel={auditLabel}
-                  saving={saving}
-                  onCancel={onCancel}
-                  onSave={onSave}
-                />
-              ) : null}
-            </>
-          }
-        >
-          <div className="module-items-groups">
-            {renderedItemGroups.map((group) => (
-              <div className="module-items-group" key={group.key}>
-                {'projectGroups' in group ? (
-                  <>
-                    <FreightStatementItemGroupHeader group={group} />
-                    {group.projectGroups.map((projectGroup) => (
-                      <div
-                        className="module-items-project-group"
-                        key={projectGroup.key}
-                      >
-                        <FreightStatementProjectGroupHeader
-                          group={projectGroup}
-                        />
-                        <ModuleItemsTable
-                          columns={itemColumns}
-                          components={itemTableComponents}
-                          dataSource={projectGroup.items}
-                          emptyText={
-                            config.parentImport
-                              ? t('modules.itemsSection.emptyTextWithImport')
-                              : t('modules.itemsSection.emptyText')
-                          }
-                          rowClassName={(record) =>
-                            selectedItemIds.includes(record.id)
-                              ? 'ant-table-row-selected'
-                              : ''
-                          }
-                          onRow={(record) => ({
-                            onDragOver: (event: React.DragEvent<Element>) =>
-                              onRowDragOver(record.id, event),
-                          })}
-                        />
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <ModuleItemsTable
-                    columns={itemColumns}
-                    components={itemTableComponents}
-                    dataSource={group.items}
-                    emptyText={
-                      config.parentImport
-                        ? t('modules.itemsSection.emptyTextWithImport')
-                        : t('modules.itemsSection.emptyText')
-                    }
-                    rowClassName={(record) =>
-                      selectedItemIds.includes(record.id)
-                        ? 'ant-table-row-selected'
-                        : ''
-                    }
-                    onRow={(record) => ({
-                      onDragOver: (event: React.DragEvent<Element>) =>
-                        onRowDragOver(record.id, event),
-                    })}
-                  />
+        {supportsExpenseTab ? (
+          <Tabs
+            activeKey={activeItemTab}
+            onChange={(key) => setActiveItemTab(key as 'goods' | 'expenses')}
+            items={[
+              {
+                key: 'goods',
+                label: `${t('modules.itemsSection.goodsTab')} (${items.length})`,
+              },
+              {
+                key: 'expenses',
+                label: `${t('modules.itemsSection.expenseTab')} (${expenseItems.length})`,
+              },
+            ]}
+          />
+        ) : null}
+        {supportsExpenseTab && activeItemTab === 'expenses' ? (
+          <>
+            <div className="mb-2 flex justify-end">
+              <button
+                type="button"
+                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-50"
+                onClick={onExpenseAddItem}
+              >
+                + {t('modules.itemsSection.addExpense')}
+              </button>
+            </div>
+            <ModuleExpenseItemsTable
+              expenseItems={expenseItems}
+              materialOptions={expenseMaterialOptions}
+              selectedItemIds={expenseSelectedItemIds}
+              totalExpenseAmount={expenseTotalAmount}
+              onSelectedChange={onExpenseSelectedChange}
+              onSelectAll={onExpenseSelectAll}
+              onChange={onExpenseChange}
+              onCreateExpense={onCreateExpense}
+              onDelete={(index) => onExpenseDelete(index)}
+              onRemoveSelected={onExpenseRemoveSelected}
+            />
+          </>
+        ) : null}
+        {!supportsExpenseTab || activeItemTab === 'goods' ? (
+          <ModuleItemsPanel
+            items={items}
+            itemColumns={config.itemColumns}
+            expenseTotalAmount={
+              supportsExpenseTab ? expenseTotalAmount : undefined
+            }
+            actions={
+              <>
+                {capabilities.addManualItems && (
+                  <Button
+                    type="primary"
+                    className="overlay-action-button"
+                    icon={<PlusOutlined />}
+                    disabled={saving}
+                    onClick={onAddItem}
+                  >
+                    {t('modules.itemsSection.addItem')}
+                  </Button>
                 )}
-              </div>
-            ))}
-          </div>
-        </ModuleItemsPanel>
+                {parentImportVisible && (
+                  <Button
+                    className="overlay-action-button"
+                    icon={<ImportOutlined />}
+                    loading={parentImporting}
+                    disabled={saving || !capabilities.importParentItems}
+                    onClick={onOpenParentSelector}
+                  >
+                    {config.parentImport?.buttonText ||
+                      t('modules.itemsSection.importItems', {
+                        label:
+                          config.parentImport?.label ||
+                          t('modules.itemsSection.parentDoc'),
+                      })}
+                  </Button>
+                )}
+                {capabilities.autoSortItems && (
+                  <Button
+                    className="overlay-action-button"
+                    icon={<SortAscendingOutlined />}
+                    disabled={saving}
+                    onClick={onAutoSortItems}
+                  >
+                    {t('modules.itemsSection.autoSortItems')}
+                  </Button>
+                )}
+                <ColumnSettingsPopover
+                  columns={config.itemColumns}
+                  orderedKeys={itemColumnOrder}
+                  visibleKeys={visibleItemColumnKeys}
+                  onToggle={onToggleItemColumn}
+                  onOrderChange={onItemColumnOrderChange}
+                  open={columnSettingsOpen}
+                  onOpenChange={setColumnSettingsOpen}
+                />
+                {selectedItemIds.length > 0 && (
+                  <Button
+                    danger
+                    className="overlay-action-button"
+                    icon={<DeleteOutlined />}
+                    disabled={saving}
+                    onClick={onRemoveSelectedItems}
+                  >
+                    {t('modules.itemsSection.deleteSelected')} (
+                    {selectedItemIds.length})
+                  </Button>
+                )}
+                {showFooterActions ? (
+                  <EditorFooterActions
+                    canSave={capabilities.save}
+                    canAudit={capabilities.audit}
+                    auditLabel={auditLabel}
+                    saving={saving}
+                    onCancel={onCancel}
+                    onSave={onSave}
+                  />
+                ) : null}
+              </>
+            }
+          >
+            <div className="module-items-groups">
+              {renderedItemGroups.map((group) => (
+                <div className="module-items-group" key={group.key}>
+                  {'projectGroups' in group ? (
+                    <>
+                      <FreightStatementItemGroupHeader group={group} />
+                      {group.projectGroups.map((projectGroup) => (
+                        <div
+                          className="module-items-project-group"
+                          key={projectGroup.key}
+                        >
+                          <FreightStatementProjectGroupHeader
+                            group={projectGroup}
+                          />
+                          <ModuleItemsTable
+                            columns={itemColumns}
+                            components={itemTableComponents}
+                            dataSource={projectGroup.items}
+                            emptyText={
+                              config.parentImport
+                                ? t('modules.itemsSection.emptyTextWithImport')
+                                : t('modules.itemsSection.emptyText')
+                            }
+                            rowClassName={(record) =>
+                              selectedItemIds.includes(record.id)
+                                ? 'ant-table-row-selected'
+                                : ''
+                            }
+                            onRow={(record) => ({
+                              onDragOver: (event: React.DragEvent<Element>) =>
+                                onRowDragOver(record.id, event),
+                            })}
+                          />
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <ModuleItemsTable
+                      columns={itemColumns}
+                      components={itemTableComponents}
+                      dataSource={group.items}
+                      emptyText={
+                        config.parentImport
+                          ? t('modules.itemsSection.emptyTextWithImport')
+                          : t('modules.itemsSection.emptyText')
+                      }
+                      rowClassName={(record) =>
+                        selectedItemIds.includes(record.id)
+                          ? 'ant-table-row-selected'
+                          : ''
+                      }
+                      onRow={(record) => ({
+                        onDragOver: (event: React.DragEvent<Element>) =>
+                          onRowDragOver(record.id, event),
+                      })}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </ModuleItemsPanel>
+        ) : null}
       </div>
 
       {parentSelector}

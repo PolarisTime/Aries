@@ -17,6 +17,8 @@ export function normalizeDraftRecordForModule(options: {
   currentOperatorName: string
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
   formFields?: Parameters<typeof applyFormFieldDefaultDraftValues>[1]
+  /** 单据附加费用合计；提供时叠加进 totalAmount（货物 + 费用）。 */
+  chargeTotal?: number
 }) {
   const {
     moduleKey,
@@ -25,12 +27,15 @@ export function normalizeDraftRecordForModule(options: {
     primaryNoKey,
     currentOperatorName,
     sumLineItemsBy,
+    chargeTotal,
   } = options
 
   applyFormFieldDefaultDraftValues(record, options.formFields)
   applyModuleDefaultEditorDraft(moduleKey, record, currentOperatorName)
 
-  applyComputedTotals(moduleKey, record, items, sumLineItemsBy)
+  applyComputedTotals(moduleKey, record, items, sumLineItemsBy, {
+    chargeTotal,
+  })
 
   const normalizeFn = getBehaviorValue(moduleKey, 'normalizeDraftRecord')
   if (normalizeFn) {
@@ -57,10 +62,15 @@ export function syncDerivedEditorFormValuesForModule(options: {
   items: ModuleLineItem[]
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
   changedKeys?: ReadonlySet<string>
+  /** 单据附加费用合计；提供时叠加进 totalAmount（货物 + 费用）。 */
+  chargeTotal?: number
 }) {
-  const { moduleKey, record, items, sumLineItemsBy, changedKeys } = options
+  const { moduleKey, record, items, sumLineItemsBy, changedKeys, chargeTotal } =
+    options
 
-  applyComputedTotals(moduleKey, record, items, sumLineItemsBy)
+  applyComputedTotals(moduleKey, record, items, sumLineItemsBy, {
+    chargeTotal,
+  })
 
   const normalizeFn = getBehaviorValue(moduleKey, 'normalizeDraftRecord')
   if (normalizeFn) {
@@ -86,6 +96,7 @@ function applyComputedTotals(
   record: ModuleRecordInput,
   items: ModuleLineItem[],
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number,
+  options?: { chargeTotal?: number },
 ) {
   if (!hasBehavior(moduleKey, 'computesAmounts')) {
     return
@@ -93,5 +104,13 @@ function applyComputedTotals(
   record.totalWeight = Number(
     sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
   )
-  record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
+  // 单据总金额 = 货物小计 + 附加费用小计；费用通道未启用时 chargeTotal 缺省为 0，口径不变。
+  const chargeTotal = options?.chargeTotal
+  const chargeAmount =
+    typeof chargeTotal === 'number' && Number.isFinite(chargeTotal)
+      ? chargeTotal
+      : 0
+  record.totalAmount = Number(
+    (sumLineItemsBy(items, 'amount') + chargeAmount).toFixed(2),
+  )
 }

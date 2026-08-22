@@ -113,5 +113,6 @@ export const ENDPOINTS = {
   PROJECTS_OPTIONS: '/projects/options',
   SUPPLIERS_OPTIONS: '/suppliers/options',
   CARRIERS_OPTIONS: '/carriers/options',
+  MATERIALS: '/materials',
   MATERIAL_CATEGORIES: '/material-categories/options',
 } as const

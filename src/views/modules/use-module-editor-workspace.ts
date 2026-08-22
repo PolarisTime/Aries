@@ -26,7 +26,11 @@ import type {
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import { message } from '@/utils/antd-app'
-import { toEditorFormState } from '@/views/modules/module-editor-draft-adapter'
+import {
+  type DocumentChargeItemDraft,
+  sumChargeItemAmount,
+  toEditorFormState,
+} from '@/views/modules/module-editor-draft-adapter'
 import {
   normalizeLineItemsForEditor,
   normalizeRecordForEditor,
@@ -47,6 +51,7 @@ import { useParentImportController } from '@/views/modules/use-parent-import-con
 
 interface EditorWorkspaceState {
   items: ModuleLineItem[]
+  expenseItems: DocumentChargeItemDraft[]
   authoritativePrimaryNo: string
 }
 
@@ -143,10 +148,11 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     editorWorkspaceReducer,
     {
       items: [],
+      expenseItems: [],
       authoritativePrimaryNo: '',
     },
   )
-  const { items, authoritativePrimaryNo } = workspaceState
+  const { items, expenseItems, authoritativePrimaryNo } = workspaceState
   const isEdit = !!record
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const {
@@ -165,7 +171,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
       editorAuditTarget,
     },
     form,
-    workspace: { items, authoritativePrimaryNo, submissionRef },
+    workspace: { items, expenseItems, authoritativePrimaryNo, submissionRef },
     callbacks: { onClose, onSaved },
   })
   const {
@@ -217,6 +223,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
         )
         dispatchWorkspaceState({
           items: normalizeLineItemsForEditor(editorFormState.items),
+          expenseItems: editorFormState.chargeItems,
           authoritativePrimaryNo: nextAuthoritativePrimaryNo,
         })
         return
@@ -257,6 +264,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
         : []
       dispatchWorkspaceState({
         items: draftItems,
+        expenseItems: [],
         authoritativePrimaryNo: '',
       })
     }
@@ -329,7 +337,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     ).some((fieldKey) => changedKeys.has(fieldKey))
     const nextItems = shouldClearLineItems ? [] : items
     if (shouldClearLineItems && items.length) {
-      dispatchWorkspaceState({ items: [] })
+      dispatchWorkspaceState({ items: [], expenseItems: [] })
     }
     syncEditorFormValues({
       config,
@@ -337,6 +345,8 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
       moduleKey,
       items: nextItems,
       changedValues: effectiveChangedValues,
+      // 行项目随字段联动清空时费用通道同步清空，本次重算按 0 计。
+      chargeTotal: shouldClearLineItems ? 0 : sumChargeItemAmount(expenseItems),
     })
   }
 
@@ -349,7 +359,38 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     onDirty()
     dispatchWorkspaceState({ items: nextItems })
     if (open && config.itemColumns?.length) {
-      syncEditorFormValues({ config, form, moduleKey, items: nextItems })
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: nextItems,
+        chargeTotal: sumChargeItemAmount(expenseItems),
+      })
+    }
+  }
+
+  const updateExpenseItems: Dispatch<
+    SetStateAction<DocumentChargeItemDraft[]>
+  > = (nextExpenseItems) => {
+    const resolved =
+      typeof nextExpenseItems === 'function'
+        ? nextExpenseItems(expenseItems)
+        : nextExpenseItems
+    if (resolved === expenseItems) {
+      return
+    }
+    invalidateSubmissionIntent(submissionRef.current)
+    onDirty()
+    dispatchWorkspaceState({ expenseItems: resolved })
+    // 费用行增删改同步叠加进 totalAmount（货物 + 费用），与行项目联动保持同一口径。
+    if (open && config.itemColumns?.length) {
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items,
+        chargeTotal: sumChargeItemAmount(resolved),
+      })
     }
   }
 
@@ -365,13 +406,21 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     onDirty()
     dispatchWorkspaceState({ items: resolvedItems })
     if (open && config.itemColumns?.length) {
-      syncEditorFormValues({ config, form, moduleKey, items: resolvedItems })
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: resolvedItems,
+        chargeTotal: sumChargeItemAmount(expenseItems),
+      })
     }
   }
 
   return {
     addItem,
     authoritativePrimaryNo,
+    expenseItems,
+    updateExpenseItems,
     clearSaveResult,
     closeParentSelector,
     handleFormValuesChange,

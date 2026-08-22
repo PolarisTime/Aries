@@ -16,6 +16,7 @@ const optionalEntityIdSchema = entityIdSchema.nullish()
 const requiredTextSchema = z.string().min(1)
 const nullableTextSchema = z.string().nullable()
 const optionalTextSchema = z.string().nullish()
+
 const integerSchema = z.number().int()
 const nonNegativeIntegerSchema = integerSchema.nonnegative()
 const positiveIntegerSchema = integerSchema.positive()
@@ -24,6 +25,19 @@ const optionalPositiveIntegerSchema = positiveIntegerSchema.nullish()
 const decimalSchema = z.number().finite()
 const nonNegativeDecimalSchema = decimalSchema.nonnegative()
 const nullableDecimalSchema = decimalSchema.nullable()
+
+/** 单据附加费用行（独立于货物 items 的通道）；lineNo 为后端响应回显的行号。 */
+const documentChargeItemSchema = z.strictObject({
+  id: entityIdSchema.optional(),
+  lineNo: integerSchema.nullish(),
+  chargeName: requiredTextSchema,
+  materialId: entityIdSchema.optional(),
+  amount: z.number().min(0),
+  unit: optionalTextSchema,
+  remark: optionalTextSchema,
+})
+
+const documentChargeItemsSchema = z.array(documentChargeItemSchema)
 
 /** BigDecimal 请求兼容现有表单可能保留的十进制字符串，不做数值转换。 */
 const requestDecimalSchema = z.union([
@@ -109,12 +123,17 @@ const purchaseOrderListRecordSchema = z
   .strictObject({
     ...purchaseOrderRecordShape,
     items: z.null(),
+    /** 后端列表响应固定携带 chargeItems:null（Jackson 序列化 record 全组件），声明后剔除。 */
+    chargeItems: z.null(),
   })
-  .transform(({ items: _items, ...record }) => record)
+  .transform(
+    ({ items: _items, chargeItems: _chargeItems, ...record }) => record,
+  )
 
 const purchaseOrderDetailRecordSchema = z.strictObject({
   ...purchaseOrderRecordShape,
   items: z.array(purchaseOrderItemSchema).min(1),
+  chargeItems: documentChargeItemsSchema,
 })
 
 const purchaseOrderSaveItemSchema = z.strictObject({
@@ -149,8 +168,11 @@ const purchaseOrderSaveRequestSchema = z.strictObject({
   buyerName: optionalTextSchema,
   status: purchaseOrderStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(purchaseOrderSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  items: z
+    .array(purchaseOrderSaveItemSchema)
+    .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
   audit: z.boolean().optional(),
+  chargeItems: documentChargeItemsSchema.optional(),
 })
 
 const purchaseOrderImportCandidateSchema = z.strictObject({
@@ -276,7 +298,9 @@ const purchaseInboundSaveRequestSchema = z.strictObject({
   settlementMode: optionalTextSchema,
   status: purchaseInboundStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(purchaseInboundSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  items: z
+    .array(purchaseInboundSaveItemSchema)
+    .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
   audit: z.boolean().optional(),
 })
 
@@ -336,12 +360,17 @@ const salesOrderListRecordSchema = z
   .strictObject({
     ...salesOrderRecordShape,
     items: z.null(),
+    /** 后端列表响应固定携带 chargeItems:null（Jackson 序列化 record 全组件），声明后剔除。 */
+    chargeItems: z.null(),
   })
-  .transform(({ items: _items, ...record }) => record)
+  .transform(
+    ({ items: _items, chargeItems: _chargeItems, ...record }) => record,
+  )
 
 const salesOrderDetailRecordSchema = z.strictObject({
   ...salesOrderRecordShape,
   items: z.array(salesOrderItemSchema).min(1),
+  chargeItems: documentChargeItemsSchema,
 })
 
 const salesOrderSaveItemSchema = z.strictObject({
@@ -383,8 +412,11 @@ const salesOrderSaveRequestSchema = z.strictObject({
   salesName: requiredTextSchema,
   status: salesOrderStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(salesOrderSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  items: z
+    .array(salesOrderSaveItemSchema)
+    .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
   audit: z.boolean().optional(),
+  chargeItems: documentChargeItemsSchema.optional(),
 })
 
 const salesOrderSourceCandidateItemSchema = z.strictObject({
@@ -536,7 +568,9 @@ const salesOutboundSaveRequestSchema = z.strictObject({
   outboundDate: responseDateTimeSchema,
   status: salesOutboundStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(salesOutboundSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  items: z
+    .array(salesOutboundSaveItemSchema)
+    .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
   audit: z.boolean().optional(),
 })
 
@@ -597,12 +631,25 @@ const freightBillListRecordSchema = z
   .strictObject({
     ...freightBillRecordShape,
     items: z.null(),
+    /** 后端列表响应固定携带 null 占位（Jackson 序列化 record 全组件），声明后剔除。 */
+    chargeItems: z.null(),
+    totalExpenseAmount: z.null(),
   })
-  .transform(({ items: _items, ...record }) => record)
+  .transform(
+    ({
+      items: _items,
+      chargeItems: _chargeItems,
+      totalExpenseAmount: _totalExpenseAmount,
+      ...record
+    }) => record,
+  )
 
 const freightBillDetailRecordSchema = z.strictObject({
   ...freightBillRecordShape,
   items: z.array(freightBillItemSchema).min(1),
+  /** 附加费用合计（货物口径的 totalFreight 不含费用，保持不变）。 */
+  totalExpenseAmount: nonNegativeDecimalSchema,
+  chargeItems: documentChargeItemsSchema,
 })
 
 const freightBillSaveItemSchema = z.strictObject({
@@ -645,8 +692,11 @@ const freightBillSaveRequestSchema = z.strictObject({
   unitPrice: requestNonNegativeDecimalSchema,
   status: freightBillStatusSchema.nullish(),
   remark: optionalTextSchema,
-  items: z.array(freightBillSaveItemSchema).min(1),  /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */
+  items: z
+    .array(freightBillSaveItemSchema)
+    .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
   audit: z.boolean().optional(),
+  chargeItems: documentChargeItemsSchema.optional(),
 })
 
 export const MAIN_FLOW_MODULE_KEYS = [

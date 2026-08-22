@@ -8,6 +8,8 @@ interface Props {
   actions?: React.ReactNode
   items?: ModuleRecord[]
   itemColumns?: ModuleColumnDefinition[]
+  /** 单据附加费用合计，透传给汇总区独立展示。 */
+  expenseTotalAmount?: number | null
   className?: string
   children: React.ReactNode
 }
@@ -17,6 +19,7 @@ export function ModuleItemsPanel({
   actions,
   items,
   itemColumns,
+  expenseTotalAmount,
   className,
   children,
 }: Props) {
@@ -44,6 +47,7 @@ export function ModuleItemsPanel({
             <EditorItemsSummary
               items={items}
               showAmount={showAmountSummary}
+              expenseTotalAmount={expenseTotalAmount}
               className="editor-items-summary-inline"
             />
           ) : null}

@@ -3,12 +3,15 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { createExpenseMaterial } from '@/api/master/materials'
 import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -31,7 +34,9 @@ import type {
   ModuleParentImportSource,
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
+import { message } from '@/utils/antd-app'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 import type { EditorSaveResult } from '@/views/modules/use-editor-submission-controller'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
@@ -164,6 +169,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   onCreateAnother,
 }: Props<Key>) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [form] = Form.useForm<EditorFormValues>()
   const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
     useEditorSessionActions(onClose)
@@ -175,6 +181,10 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   const formFields = config.formFields || []
   const formOptionRequirements = resolveMasterOptionRequirements(formFields)
   useMasterOptions(formOptionRequirements, open, customerId)
+  const { materials: masterMaterials } = useMasterOptions(
+    { materials: true },
+    open,
+  )
   const statusField = formFields.find((field) => field.key === 'status')
   const statusOptions = Array.isArray(statusField?.options)
     ? statusField.options.map((option) => String(option.value))
@@ -241,6 +251,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     reloadAfterConflict,
     saving,
     setItems,
+    expenseItems,
+    updateExpenseItems,
   } = useModuleEditorWorkspace({
     open,
     config,
@@ -283,6 +295,12 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     !lineItemsLocked &&
     !parentImportedItemEditLocked
   // 自动排序当前仅销售订单启用：导入上游后行序随上游，需按商品资料默认规则整理。
+  // 附加费用 Tab：采购订单/销售订单/物流单启用
+  const supportsExpenseTab =
+    (moduleKey === 'purchase-order' ||
+      moduleKey === 'sales-order' ||
+      moduleKey === 'freight-bill') &&
+    Boolean(config.itemColumns?.length)
   const canAutoSortItems =
     moduleKey === 'sales-order' &&
     items.length > 1 &&
@@ -290,6 +308,74 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     !lineItemsLocked
   const handleAutoSortItems = () => {
     setItems((current) => sortItemsByMaterialDefault(current))
+  }
+
+  const [expenseSelectedItemIds, setExpenseSelectedItemIds] = useState<
+    string[]
+  >([])
+  const expenseMaterialOptions = useMemo(() => {
+    return masterMaterials
+      .filter((material) => material.materialType === '附加费用')
+      .map((material) => ({
+        label: material.material || '',
+        value: String(material.id ?? ''),
+        unit: material.unit,
+        materialType: material.materialType,
+      }))
+      .filter((option) => option.label && option.value)
+  }, [masterMaterials])
+
+  const handleCreateExpense = async (name: string): Promise<void> => {
+    // 快捷创建：静默写入商品资料（附加费用类型），成功后刷新选项缓存。
+    try {
+      await createExpenseMaterial(name)
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.masterOptions.material,
+      })
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '费用项创建失败')
+    }
+  }
+
+  const handleExpenseSelectedChange = (itemId: string, selected: boolean) => {
+    setExpenseSelectedItemIds((current) =>
+      selected ? [...current, itemId] : current.filter((id) => id !== itemId),
+    )
+  }
+
+  const handleExpenseSelectAll = (selected: boolean) => {
+    setExpenseSelectedItemIds(
+      selected ? expenseItems.map((item) => item.id ?? '') : [],
+    )
+  }
+
+  const handleExpenseChange = (
+    index: number,
+    patch: Partial<DocumentChargeItemDraft>,
+  ) => {
+    updateExpenseItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item,
+      ),
+    )
+  }
+
+  const handleExpenseDelete = (index: number) => {
+    updateExpenseItems((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    )
+  }
+
+  const handleExpenseRemoveSelected = () => {
+    const removedIds = new Set(expenseSelectedItemIds)
+    updateExpenseItems((current) =>
+      current.filter((item) => !removedIds.has(item.id ?? '')),
+    )
+    setExpenseSelectedItemIds([])
+  }
+
+  const handleExpenseAddItem = () => {
+    updateExpenseItems((current) => [...current, { chargeName: '', amount: 0 }])
   }
   const parentImportVisible = Boolean(
     config.parentImport &&
@@ -386,6 +472,10 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         <ModuleEditorItemsSection
           config={config}
           items={items}
+          expenseItems={expenseItems}
+          expenseSelectedItemIds={expenseSelectedItemIds}
+          expenseMaterialOptions={expenseMaterialOptions}
+          supportsExpenseTab={supportsExpenseTab}
           selectedItemIds={selectedItemIds}
           parentImportVisible={parentImportVisible}
           parentImporting={parentImporting}
@@ -409,6 +499,13 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           showFooterActions={!useFinanceEditorLayout}
           onAddItem={addItem}
           onAutoSortItems={handleAutoSortItems}
+          onExpenseSelectedChange={handleExpenseSelectedChange}
+          onExpenseSelectAll={handleExpenseSelectAll}
+          onExpenseChange={handleExpenseChange}
+          onCreateExpense={handleCreateExpense}
+          onExpenseAddItem={handleExpenseAddItem}
+          onExpenseDelete={handleExpenseDelete}
+          onExpenseRemoveSelected={handleExpenseRemoveSelected}
           onCancel={requestCloseEditor}
           onSave={(audit) => {
             void handleSave(audit)

@@ -28,9 +28,14 @@ interface SerializableLineItem {
   id?: EntityId
 }
 
+interface SerializableChargeItem {
+  id?: EntityId
+}
+
 interface SerializableBusinessRecord {
   id?: EntityId
   items?: SerializableLineItem[]
+  chargeItems?: SerializableChargeItem[]
 }
 
 function getDynamicFields(value: object): Record<string, unknown> {
@@ -408,6 +413,51 @@ function serializeBusinessRecordForSave(
   return serializeBusinessRecordForSaveAsync(moduleKey, record)
 }
 
+const CHARGE_ITEM_FIELD_KEYS = [
+  'chargeName',
+  'materialId',
+  'amount',
+  'unit',
+  'remark',
+] as const
+
+/** 仅 saveFields 声明了 chargeItem 白名单的模块（采购/销售/物流单）接受附加费用。 */
+function supportsChargeItems(moduleKey: string) {
+  return Boolean(getModulePageSchema(moduleKey)?.saveFields?.chargeItem)
+}
+
+/** 未填写名称且无持久化 ID 的全新空行不参与保存；已有 ID 的行交给必填校验拦截。 */
+function isBlankChargeItem(item: SerializableChargeItem) {
+  if (item.id != null && item.id !== '') {
+    return false
+  }
+  const chargeName = getDynamicFields(item).chargeName
+  return typeof chargeName !== 'string' || chargeName.trim() === ''
+}
+
+function serializeChargeItem(
+  item: SerializableChargeItem,
+  index: number,
+): Record<string, unknown> {
+  const fields = getDynamicFields(item)
+  const result: Record<string, unknown> = {}
+  const persistedId = toPersistedLineItemId(item.id)
+  if (persistedId) {
+    result.id = persistedId
+  }
+  for (const key of CHARGE_ITEM_FIELD_KEYS) {
+    const value = fields[key]
+    if (value === undefined || value === '') {
+      continue
+    }
+    result[key] =
+      key === 'materialId'
+        ? parseEntityId(String(value), `chargeItems[${index}].materialId`)
+        : value
+  }
+  return result
+}
+
 async function serializeBusinessRecordForSaveAsync(
   moduleKey: string,
   record: SerializableBusinessRecord,
@@ -420,7 +470,12 @@ async function serializeBusinessRecordForSaveAsync(
   if (import.meta.env.DEV) {
     const scalarFieldSet = new Set(scalarFields)
     for (const key of Object.keys(record)) {
-      if (key === 'id' || key === 'items' || key === 'attachmentIds') {
+      if (
+        key === 'id' ||
+        key === 'items' ||
+        key === 'attachmentIds' ||
+        key === 'chargeItems'
+      ) {
         continue
       }
       if (dynamicFields[key] !== undefined && !scalarFieldSet.has(key)) {
@@ -448,6 +503,15 @@ async function serializeBusinessRecordForSaveAsync(
         return serializeLineItem(item, moduleKey, lineItemFields)
       },
     )
+  }
+
+  if (
+    Array.isArray(dynamicFields.chargeItems) &&
+    supportsChargeItems(moduleKey)
+  ) {
+    payload.chargeItems = dynamicFields.chargeItems
+      .filter((item) => !isBlankChargeItem(item))
+      .map((item, index) => serializeChargeItem(item, index))
   }
 
   return payload

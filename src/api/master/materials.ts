@@ -128,3 +128,27 @@ export async function importMaterialFile(file: File) {
     formData,
   )
 }
+
+/** 单据费用下拉快捷新增：静默创建附加费用类主数据，返回新行 id。 */
+export async function createExpenseMaterial(name: string): Promise<string> {
+  const response = await apiPost(
+    ENDPOINTS.MATERIALS,
+    z.looseObject({ id: z.string() }),
+    {
+      materialCode: '',
+      brand: '',
+      material: name,
+      category: '附加费用',
+      spec: '',
+      length: '',
+      unit: '次',
+      quantityUnit: '次',
+      pieceWeightTon: 0,
+      piecesPerBundle: 0,
+      unitPrice: 0,
+      remark: '单据录入快捷新增',
+      materialType: '附加费用',
+    },
+  )
+  return String(response.id)
+}
