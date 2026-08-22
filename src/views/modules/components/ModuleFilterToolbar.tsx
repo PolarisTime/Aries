@@ -391,7 +391,10 @@ export function ModuleFilterToolbar({
         </Form.Item>
       </div>
       {expanded && secondaryFilters.length ? (
-        <div className="module-filter-secondary-row" id={secondaryRegionId}>
+        <div
+          className="module-filter-secondary-row module-filter-main-row"
+          id={secondaryRegionId}
+        >
           <div className="module-filter-fields-grid module-filter-secondary-grid">
             {secondaryFilters.map(renderFilterItem)}
           </div>

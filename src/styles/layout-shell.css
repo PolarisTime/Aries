@@ -1768,17 +1768,17 @@
 }
 
 .module-filter-main-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: start;
   gap: 8px 12px;
 }
 
 .module-filter-fields-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   gap: 8px 12px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1835,8 +1835,8 @@
 }
 
 .module-filter-actions {
+  grid-column: 5;
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   margin-bottom: 0;
