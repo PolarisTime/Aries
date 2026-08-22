@@ -7,4 +7,5 @@ export const STORAGE_KEYS = {
   personalSettings: 'aries-personal-settings',
   listColumnSettingsPrefix: 'aries-list-column-settings:',
   businessListCachePrefix: 'aries-business-list-cache:',
+  layoutTabsPrefix: 'aries-layout-tabs:',
 } as const

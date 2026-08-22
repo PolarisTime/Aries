@@ -1,10 +1,9 @@
-import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
-import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
@@ -16,6 +15,8 @@ import {
 import { EditorSessionGuard } from '@/layouts/editor-session/EditorSessionGuard'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
+import { AppTabContainer } from '@/layouts/tabs/AppTabContainer'
+import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
 import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
 import { useAppLayoutSessionGuards } from '@/layouts/useAppLayoutSessionGuards'
@@ -26,12 +27,13 @@ import {
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
+import { useLayoutTabsStore } from '@/stores/layoutTabsStore'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
 import type { ThemeMode } from '@/utils/storage'
 
-const { Header, Sider, Content } = Layout
+const { Header, Sider } = Layout
 
 type SideNavigationProps = {
   collapsed: boolean
@@ -84,22 +86,6 @@ function SideNavigation({
         className="leo-menu"
       />
     </Sider>
-  )
-}
-
-type AppContentOutletProps = {
-  openPageKey: string
-}
-
-function AppContentOutlet({ openPageKey }: AppContentOutletProps) {
-  return (
-    <Content className="leo-content">
-      <div className="leo-content-inner">
-        <AppErrorBoundary resetKey={openPageKey}>
-          <Outlet key={openPageKey} />
-        </AppErrorBoundary>
-      </div>
-    </Content>
   )
 }
 
@@ -181,6 +167,16 @@ export function AppLayout() {
 
   const isTopNavigationLayout = appliedLayoutMode === 'top'
 
+  const openTab = useTabOpen()
+
+  // 登录用户就绪后恢复其持久化的标签页清单
+  const userId = user?.id ?? ''
+  useEffect(() => {
+    if (authReady && userId) {
+      useLayoutTabsStore.getState().hydrateForUser(userId)
+    }
+  }, [authReady, userId])
+
   const {
     sideMenuItems,
     siderOpenKeys,
@@ -207,8 +203,11 @@ export function AppLayout() {
     if (result.trackId) {
       query.set('trackId', result.trackId)
     }
-    void navigate({
-      to: `/${getPageRoutePath(targetPage)}?${query.toString()}` as '/',
+    // 外部意图：强制更新既有 Tab 的查询串，触发子路由内自动打开详情
+    openTab({
+      pathname: `/${getPageRoutePath(targetPage)}`,
+      search: query.toString(),
+      forceSearch: true,
     })
   }
 
@@ -241,7 +240,7 @@ export function AppLayout() {
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     const targetPath = resolveMenuPath(String(key))
     if (targetPath) {
-      void navigate({ to: targetPath as '/' })
+      openTab({ pathname: targetPath })
     }
   }
 
@@ -314,8 +313,7 @@ export function AppLayout() {
               selectedKeys={selectedKeys}
               topMenuItems={topMenuItems}
               onMenuClick={handleMenuClick}
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-              onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
+              onDashboardClick={() => openTab({ pathname: '/dashboard' })}
               topBrandMark={topBrandMark}
               shellFontStyle={shellFontStyle}
               clockDisplay={clockDisplay}
@@ -365,7 +363,7 @@ export function AppLayout() {
           )}
         </Header>
 
-        <AppContentOutlet openPageKey={routePageContext.openPageKey} />
+        <AppTabContainer />
       </Layout>
 
       <PersonalSettingsHost

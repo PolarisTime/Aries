@@ -1,28 +1,18 @@
-import { useBlocker } from '@tanstack/react-router'
-import {
-  createContext,
-  type ReactNode,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react'
+import { createContext, type ReactNode, use, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AUTH_SESSION_CLEARED_EVENT } from '@/constants/auth'
-import { modal } from '@/utils/antd-app'
+import {
+  type EditorSessionIdentity,
+  type EditorSessionStatus,
+  editorSessionStore,
+} from '@/layouts/editor-session/editor-session-store'
+import { requestEditorSessionClose } from '@/layouts/editor-session/request-close'
 
-export type EditorSessionStatus = 'clean' | 'dirty' | 'submitting' | 'conflict'
-
-interface EditorSessionIdentity {
-  moduleKey: string
-  mode: 'create' | 'edit'
-  recordId?: string
-}
-
-interface EditorSession extends EditorSessionIdentity {
-  status: EditorSessionStatus
-}
+export type {
+  EditorSession,
+  EditorSessionIdentity,
+  EditorSessionStatus,
+} from '@/layouts/editor-session/editor-session-store'
 
 interface EditorSessionController {
   beginSession: (identity: EditorSessionIdentity) => void
@@ -33,159 +23,70 @@ interface EditorSessionController {
 
 const EditorSessionContext = createContext<EditorSessionController | null>(null)
 
-function requiresLeaveConfirmation(session: EditorSession | null): boolean {
-  return session != null && session.status !== 'clean'
+/**
+ * 应用级守卫：拦截浏览器刷新/关窗（存在任意未保存会话时），
+ * 并在认证会话清除事件后重置全部编辑器会话。
+ *
+ * 路由层面的离开拦截已随多标签页 keep-alive 移除：
+ * 切换 Tab / 打开新页面不再销毁编辑器，唯一丢失路径是「关闭 Tab」，
+ * 由 Tab 容器显式调用 requestEditorSessionClose 弹确认框处理。
+ */
+export function EditorSessionGuard({ children }: Props) {
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!editorSessionStore.anyDirty()) {
+        return
+      }
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    const clearEditorSessions = () => {
+      editorSessionStore.clearAll()
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, clearEditorSessions)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener(
+        AUTH_SESSION_CLEARED_EVENT,
+        clearEditorSessions,
+      )
+    }
+  }, [])
+
+  return <>{children}</>
 }
 
 interface Props {
   children: ReactNode
 }
 
-export function EditorSessionGuard({ children }: Props) {
+type ScopeProps = {
+  /** 多标签页面板 id；非 Tab 场景传稳定占位值 */
+  tabId: string
+  children: ReactNode
+}
+
+/** 每个多标签页面板包裹一层，为其内部的编辑器提供独立的会话槽 */
+export function EditorSessionScopeProvider({ tabId, children }: ScopeProps) {
   const { t } = useTranslation()
-  const sessionRef = useRef<EditorSession | null>(null)
-  const confirmationOpenRef = useRef(false)
-
-  const commitSession = useCallback((nextSession: EditorSession | null) => {
-    sessionRef.current = nextSession
-  }, [])
-
-  const beginSession = useCallback(
-    (identity: EditorSessionIdentity) => {
-      commitSession({ ...identity, status: 'clean' })
-    },
-    [commitSession],
-  )
-
-  const endSession = useCallback(() => {
-    commitSession(null)
-  }, [commitSession])
-
-  useEffect(() => {
-    const clearEditorSession = () => {
-      commitSession(null)
-    }
-    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, clearEditorSession)
-    return () => {
-      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, clearEditorSession)
-    }
-  }, [commitSession])
-
-  const setSessionStatus = useCallback(
-    (status: EditorSessionStatus) => {
-      const currentSession = sessionRef.current
-      if (!currentSession || currentSession.status === status) {
-        return
-      }
-      commitSession({ ...currentSession, status })
-    },
-    [commitSession],
-  )
-
-  const showDiscardConfirmation = useCallback(
-    (onDiscard: () => void, onCancel?: () => void): boolean => {
-      if (confirmationOpenRef.current) {
-        return false
-      }
-      confirmationOpenRef.current = true
-      modal.confirm({
-        title: t('common.unsavedChangesTitle'),
-        content: t('common.unsavedChangesContent'),
-        okText: t('common.discardChanges'),
-        cancelText: t('common.cancel'),
-        maskClosable: false,
-        onOk: onDiscard,
-        onCancel,
-        afterClose: () => {
-          confirmationOpenRef.current = false
-        },
-      })
-      return true
-    },
-    [t],
-  )
-
-  const requestClose = useCallback(
-    (onClose: () => void) => {
-      const currentSession = sessionRef.current
-      if (!currentSession || currentSession.status === 'clean') {
-        endSession()
-        onClose()
-        return
-      }
-      if (currentSession.status === 'submitting') {
-        if (confirmationOpenRef.current) {
-          return
-        }
-        confirmationOpenRef.current = true
-        modal.info({
-          title: t('common.saveInProgressTitle'),
-          content: t('common.saveInProgressContent'),
-          okText: t('common.confirm'),
-          afterClose: () => {
-            confirmationOpenRef.current = false
-          },
-        })
-        return
-      }
-      showDiscardConfirmation(() => {
-        endSession()
-        onClose()
-      })
-    },
-    [endSession, showDiscardConfirmation, t],
-  )
-
-  const {
-    status: blockerStatus,
-    proceed,
-    reset,
-  } = useBlocker({
-    shouldBlockFn: ({ current, next }) =>
-      requiresLeaveConfirmation(sessionRef.current) &&
-      current.pathname !== next.pathname,
-    enableBeforeUnload: () => requiresLeaveConfirmation(sessionRef.current),
-    withResolver: true,
-  })
-
-  useEffect(() => {
-    if (blockerStatus !== 'blocked') {
-      return
-    }
-    const currentSession = sessionRef.current
-    if (!requiresLeaveConfirmation(currentSession)) {
-      proceed()
-      return
-    }
-    if (currentSession?.status === 'submitting') {
-      if (confirmationOpenRef.current) {
-        reset()
-        return
-      }
-      confirmationOpenRef.current = true
-      modal.info({
-        title: t('common.saveInProgressTitle'),
-        content: t('common.saveInProgressContent'),
-        okText: t('common.confirm'),
-        onOk: reset,
-        afterClose: () => {
-          confirmationOpenRef.current = false
-        },
-      })
-      return
-    }
-    const opened = showDiscardConfirmation(() => {
-      endSession()
-      proceed()
-    }, reset)
-    if (!opened) {
-      reset()
-    }
-  }, [blockerStatus, endSession, proceed, reset, showDiscardConfirmation, t])
 
   const controller = useMemo<EditorSessionController>(
-    () => ({ beginSession, endSession, requestClose, setSessionStatus }),
-    [beginSession, endSession, requestClose, setSessionStatus],
+    () => ({
+      beginSession: (identity) => {
+        editorSessionStore.beginSession(tabId, identity)
+      },
+      endSession: () => {
+        editorSessionStore.endSession(tabId)
+      },
+      requestClose: (onClose) => {
+        requestEditorSessionClose(t, tabId, onClose)
+      },
+      setSessionStatus: (status) => {
+        editorSessionStore.setSessionStatus(tabId, status)
+      },
+    }),
+    [tabId, t],
   )
 
   return (
@@ -198,7 +99,9 @@ export function EditorSessionGuard({ children }: Props) {
 export function useEditorSession(): EditorSessionController {
   const controller = use(EditorSessionContext)
   if (!controller) {
-    throw new Error('useEditorSession must be used within EditorSessionGuard')
+    throw new Error(
+      'useEditorSession must be used within EditorSessionScopeProvider',
+    )
   }
   return controller
 }

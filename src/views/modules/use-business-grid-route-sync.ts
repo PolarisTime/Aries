@@ -28,7 +28,8 @@ interface Props {
 
 const EMPTY_FILTERS: SearchParams = {}
 
-function parseRouteParams(searchStr: string) {
+/** URL 查询参数解析（导出供单元测试与外部意图消费方复用） */
+export function parseRouteParams(searchStr: string) {
   const params = new URLSearchParams(searchStr)
   const docNo = params.get('docNo') || ''
   const trackId = params.get('trackId') || ''
@@ -36,6 +37,7 @@ function parseRouteParams(searchStr: string) {
     docNo,
     sourceModule: params.get('sourceModule') || '',
     sourceRecordId: params.get('sourceRecordId') || '',
+    status: params.get('status') || '',
     trackId,
     routeKeyword: docNo || trackId,
     shouldOpenDetail: params.get('openDetail') === '1',
@@ -61,13 +63,6 @@ function resolveParentImportSource(
   } catch {
     return null
   }
-}
-
-function getRawSearchString(fallbackSearchStr: string) {
-  if (typeof window !== 'undefined' && window.location.search) {
-    return window.location.search
-  }
-  return fallbackSearchStr
 }
 
 function resolveAutoOpenDetailTarget({
@@ -124,6 +119,14 @@ function resolveAutoOpenDetailTarget({
   return null
 }
 
+/** 模块筛选白名单中是否包含指定字段 */
+export function supportsFilterField(
+  config: ModulePageConfig | undefined,
+  filterKey: string,
+): boolean {
+  return Boolean(config?.filters.some((filter) => filter.key === filterKey))
+}
+
 export function useBusinessGridRouteSync({
   location,
   config,
@@ -140,7 +143,7 @@ export function useBusinessGridRouteSync({
   const autoOpenedRouteKeyRef = useRef('')
   const autoOpenedParentImportKeyRef = useRef('')
   // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
-  const rawSearchStr = getRawSearchString(location.searchStr)
+  const rawSearchStr = location.searchStr
   const routeParams = parseRouteParams(rawSearchStr)
 
   // react-doctor-disable-next-line react-doctor/no-cascading-set-state -- 路由入口变化需要同时重置分页、选中行和过滤条件。
@@ -152,12 +155,22 @@ export function useBusinessGridRouteSync({
     if (!routeParams.routeKeyword) {
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
       if (setFilters) {
-        setFilters({ ...defaultFilters })
+        setFilters({
+          ...defaultFilters,
+          // 待处理筛选意图（如指标卡跳转）：仅当模块筛选白名单包含 status 字段时应用
+          ...(routeParams.status && supportsFilterField(config, 'status')
+            ? { status: routeParams.status }
+            : {}),
+        })
       } else {
         updateFilter('keyword', '')
       }
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
-      setSubmittedFilters({ ...defaultFilters })
+      setSubmittedFilters(
+        routeParams.status && supportsFilterField(config, 'status')
+          ? { ...defaultFilters, status: routeParams.status }
+          : { ...defaultFilters },
+      )
       return
     }
 
@@ -175,8 +188,10 @@ export function useBusinessGridRouteSync({
     setSubmittedFilters(nextRouteFilters)
   }, [
     clearSelection,
+    config,
     defaultFilters,
     routeParams.routeKeyword,
+    routeParams.status,
     setPage,
     setFilters,
     setSubmittedFilters,

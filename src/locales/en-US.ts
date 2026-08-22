@@ -93,6 +93,61 @@ export const enUS = {
     },
   },
   dashboard: {
+    greeting: {
+      welcome: 'Welcome back, {{name}}',
+    },
+    metrics: {
+      purchaseAudit: 'Purchases to Approve',
+      outboundTask: 'Outbound Tasks',
+      receivable: 'Receivables',
+      receivableAmount: 'Amount {{amount}}',
+      stockAlert: 'Stock Alerts',
+      stockAlertStates: {
+        normal: 'Normal',
+        warning: 'Warning',
+        danger: 'Critical',
+      },
+    },
+    todo: {
+      title: 'To-Do Workbench',
+      tabs: {
+        all: 'All To-Dos',
+        purchaseAudit: 'Purchase Approval',
+        salesDelivery: 'Sales Delivery',
+        financeReconcile: 'Finance Reconciliation',
+      },
+      columns: {
+        docNo: 'Document No.',
+        bizType: 'Business Type',
+        contract: 'Related Contract',
+        customer: 'Customer',
+        createdAt: 'Created At',
+        action: 'Action',
+      },
+      goProcess: 'Process',
+      empty: 'No to-dos',
+      loadFailed: 'Failed to load to-dos. Please retry later.',
+    },
+    quick: {
+      title: 'Quick Actions',
+      newPurchaseOrder: 'New Purchase Order',
+      newSalesOrder: 'New Sales Order',
+      newOutbound: 'New Outbound Order',
+      newMasterData: 'New Master Data',
+    },
+    notices: {
+      title: 'Notices & Alerts',
+      empty: 'No notices',
+      drawerTitle: 'Notice Detail',
+      levels: {
+        info: 'Info',
+        warn: 'Alert',
+        critical: 'Important',
+      },
+    },
+    account: {
+      title: 'Account Overview',
+    },
     flow: {
       material: {
         title: 'Material',
@@ -1524,6 +1579,14 @@ export const enUS = {
     },
     routePage: {
       businessPageNotFound: 'Business page not found',
+    },
+    tabs: {
+      refresh: 'Refresh page',
+      close: 'Close tab',
+      closeOthers: 'Close other tabs',
+      closeRight: 'Close tabs to the right',
+      closeAll: 'Close all tabs',
+      pinDashboard: 'Dashboard is pinned',
     },
   },
   system: {

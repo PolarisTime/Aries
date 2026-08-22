@@ -492,7 +492,10 @@ export function FinanceOverviewView() {
               components={components}
               dataSource={rows}
               loading={queryEnabled && overviewQuery.isFetching}
-              scroll={{ x: tableScrollX, y: 'calc(100vh - 410px)' }}
+              scroll={{
+                x: tableScrollX,
+                y: 'calc(100vh - 410px - var(--app-tabbar-height))',
+              }}
               locale={{
                 emptyText: (
                   <Empty

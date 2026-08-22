@@ -92,6 +92,61 @@ export const zhCN = {
     },
   },
   dashboard: {
+    greeting: {
+      welcome: '欢迎回来，{{name}}',
+    },
+    metrics: {
+      purchaseAudit: '待审核采购',
+      outboundTask: '待出库任务',
+      receivable: '待收款订单',
+      receivableAmount: '金额 {{amount}}',
+      stockAlert: '库存预警',
+      stockAlertStates: {
+        normal: '正常',
+        warning: '预警',
+        danger: '告急',
+      },
+    },
+    todo: {
+      title: '待办工作台',
+      tabs: {
+        all: '全部待办',
+        purchaseAudit: '采购审批',
+        salesDelivery: '销售发货',
+        financeReconcile: '财务对账',
+      },
+      columns: {
+        docNo: '单据编号',
+        bizType: '业务类型',
+        contract: '关联合同',
+        customer: '客户',
+        createdAt: '创建时间',
+        action: '操作',
+      },
+      goProcess: '去处理',
+      empty: '暂无待办',
+      loadFailed: '待办加载失败，请稍后重试。',
+    },
+    quick: {
+      title: '常用快捷入口',
+      newPurchaseOrder: '新增采购订单',
+      newSalesOrder: '新增销售订单',
+      newOutbound: '新增出库单',
+      newMasterData: '新增基础资料',
+    },
+    notices: {
+      title: '系统公告与预警',
+      empty: '暂无公告',
+      drawerTitle: '公告详情',
+      levels: {
+        info: '通知',
+        warn: '预警',
+        critical: '重要',
+      },
+    },
+    account: {
+      title: '账户概况',
+    },
     flow: {
       material: {
         title: '商品资料',
@@ -1486,6 +1541,14 @@ export const zhCN = {
     },
     routePage: {
       businessPageNotFound: '未找到对应业务页面',
+    },
+    tabs: {
+      refresh: '刷新页面',
+      close: '关闭标签页',
+      closeOthers: '关闭其他',
+      closeRight: '关闭右侧',
+      closeAll: '全部关闭',
+      pinDashboard: '工作台固定展示',
     },
   },
   system: {

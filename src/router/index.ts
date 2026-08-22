@@ -17,6 +17,7 @@ import {
 } from '@/config/page-registry'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
+import { buildSharedRouterOptions } from '@/router/router-options'
 import { useAuthStore } from '@/stores/authStore'
 import { useSetupStore } from '@/stores/setupStore'
 import {
@@ -259,26 +260,12 @@ const routeTree = rootRoute.addChildren([
   authenticatedLayoutRoute.addChildren(moduleRoutes),
 ])
 
+export { routeTree }
+
 export const router = createRouter({
   routeTree,
   history: createBrowserHistory(),
-  defaultPreload: 'intent',
-  defaultPendingComponent: lazy(() =>
-    import('@/views/modules/components/BusinessGridPageSkeleton').then((m) => ({
-      default: m.BusinessGridPageSkeleton,
-    })),
-  ),
-  defaultPendingMs: 100,
-  defaultErrorComponent: lazy(() =>
-    import('@/views/error/ErrorView').then((m) => ({
-      default: m.ErrorView,
-    })),
-  ),
-  defaultNotFoundComponent: lazy(() =>
-    import('@/views/error/NotFoundView').then((m) => ({
-      default: m.NotFoundView,
-    })),
-  ),
+  ...buildSharedRouterOptions(),
 })
 
 declare module '@tanstack/react-router' {

@@ -194,6 +194,12 @@ function getListColumnSettingsKey(pageKey: string, userKey?: string) {
   return `${STORAGE_KEYS.listColumnSettingsPrefix}${normalizedUserKey}:${pageKey}`
 }
 
+/** 多标签页持久化 key：按登录用户隔离 */
+export function getLayoutTabsStorageKey(userKey?: string) {
+  const normalizedUserKey = String(userKey || 'anonymous').trim() || 'anonymous'
+  return `${STORAGE_KEYS.layoutTabsPrefix}${normalizedUserKey}`
+}
+
 function normalizeStoredColumnSizes(value: unknown): Record<string, number> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return {}

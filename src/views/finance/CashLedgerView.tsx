@@ -540,7 +540,10 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
               components={model.components}
               dataSource={model.rows}
               loading={model.queryEnabled && model.isFetching}
-              scroll={{ x: model.scrollX, y: 'calc(100vh - 410px)' }}
+              scroll={{
+                x: model.scrollX,
+                y: 'calc(100vh - 410px - var(--app-tabbar-height))',
+              }}
               locale={{
                 emptyText: model.queryEnabled ? (
                   <Empty
