@@ -168,14 +168,14 @@ export function ModuleExpenseItemsTable({
         className="grid items-center gap-4 bg-gray-100 px-3 py-2 font-medium text-gray-600"
         style={gridStyle}
       >
-        <span className="flex items-center">
+        <span className="flex items-center justify-center">
           <Checkbox
             checked={allSelected}
             onChange={(event) => onSelectAll(event.target.checked)}
             aria-label={t('modules.expense.selectAllAriaLabel')}
           />
         </span>
-        <span className="flex items-center gap-1 text-gray-400">
+        <span className="flex items-center justify-center gap-1 text-gray-400">
           <HolderOutlined />
           <span>#</span>
         </span>
@@ -196,7 +196,7 @@ export function ModuleExpenseItemsTable({
           className="grid items-center gap-4 border-b border-gray-200 px-3 py-2"
           style={gridStyle}
         >
-          <span className="flex items-center">
+          <span className="flex items-center justify-center">
             <Checkbox
               checked={selectedItemIds.includes(item.id ?? '')}
               onChange={(event) =>
@@ -204,7 +204,7 @@ export function ModuleExpenseItemsTable({
               }
             />
           </span>
-          <span className="flex items-center gap-1 text-gray-400">
+          <span className="flex items-center justify-center gap-1 text-gray-400">
             <HolderOutlined />
             <span>{index + 1}</span>
           </span>

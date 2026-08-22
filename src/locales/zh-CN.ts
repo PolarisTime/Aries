@@ -742,6 +742,7 @@ export const zhCN = {
       selectAllAriaLabel: '全选费用行',
       deleteRowAriaLabel: '删除第 {{index}} 行费用',
       totalAmount: '费用合计金额',
+      rowCount: '行数',
     },
     table: {
       noData: '暂无数据',

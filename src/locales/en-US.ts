@@ -765,6 +765,7 @@ export const enUS = {
       selectAllAriaLabel: 'Select all charge rows',
       deleteRowAriaLabel: 'Delete charge row {{index}}',
       totalAmount: 'Total Charges',
+      rowCount: 'Rows',
     },
     table: {
       noData: 'No data',
