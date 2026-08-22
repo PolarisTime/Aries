@@ -5,7 +5,7 @@ export const masterModuleEndpointContracts = {
   material: {
     path: '/materials',
     supportsSearch: true,
-    nativeFilterKeys: ['keyword', 'category', 'material'],
+    nativeFilterKeys: ['keyword', 'category', 'material', 'materialType'],
   },
   supplier: {
     path: '/suppliers',

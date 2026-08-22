@@ -565,6 +565,9 @@ export const zhCN = {
     },
     weightCell: {
       materialCode: '商品编码',
+      materialType: '商品类型',
+      materialTypePhysical: '实体商品',
+      materialTypeExpense: '附加费用',
       brand: '品牌',
       material: '材质',
       spec: '规格',

@@ -582,6 +582,10 @@ export const enUS = {
     },
     weightCell: {
       materialCode: 'Material Code',
+
+      materialType: 'Material Type',
+      materialTypePhysical: 'Physical Goods',
+      materialTypeExpense: 'Additional Charge',
       brand: 'Brand',
       material: 'Material',
       spec: 'Spec',

@@ -58,6 +58,7 @@ export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
   piecesPerBundle?: number
   unitPrice?: number
   remark?: string
+  materialType?: string
 }
 
 type RawMaterialSearchResponse = Omit<MaterialSearchResponse, 'id'> & {

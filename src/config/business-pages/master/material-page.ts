@@ -18,6 +18,21 @@ export const materialsPageConfig: ModulePageConfig = {
   actions: actionSet,
   filters: [
     {
+      key: 'materialType',
+      label: i18next.t('modules.pages.material.materialType'),
+      type: 'select',
+      options: [
+        {
+          label: i18next.t('modules.pages.material.materialTypePhysical'),
+          value: '实体商品',
+        },
+        {
+          label: i18next.t('modules.pages.material.materialTypeExpense'),
+          value: '附加费用',
+        },
+      ],
+    },
+    {
       key: 'keyword',
       label: i18next.t('modules.pages.material.keyword'),
       type: 'input',
@@ -37,6 +52,11 @@ export const materialsPageConfig: ModulePageConfig = {
     },
   ],
   columns: [
+    {
+      title: i18next.t('modules.pages.material.materialType'),
+      dataIndex: 'materialType',
+      width: 96,
+    },
     {
       title: i18next.t('modules.pages.material.materialCode'),
       dataIndex: 'materialCode',
@@ -112,6 +132,10 @@ export const materialsPageConfig: ModulePageConfig = {
   ],
   detailFields: [
     {
+      label: i18next.t('modules.pages.material.materialType'),
+      key: 'materialType',
+    },
+    {
       label: i18next.t('modules.pages.material.materialCode'),
       key: 'materialCode',
     },
@@ -141,6 +165,24 @@ export const materialsPageConfig: ModulePageConfig = {
   ],
   formFields: [
     {
+      key: 'materialType',
+      label: i18next.t('modules.pages.material.materialType'),
+      type: 'select',
+      required: true,
+      defaultValue: '实体商品',
+      options: [
+        {
+          label: i18next.t('modules.pages.material.materialTypePhysical'),
+          value: '实体商品',
+        },
+        {
+          label: i18next.t('modules.pages.material.materialTypeExpense'),
+          value: '附加费用',
+        },
+      ],
+      row: 1,
+    },
+    {
       key: 'materialCode',
       label: i18next.t('modules.pages.material.materialCode'),
       type: 'input',
@@ -157,6 +199,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 1,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'material',
@@ -164,6 +207,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 1,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'category',
@@ -179,6 +223,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 2,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'length',
@@ -186,6 +231,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 2,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'unit',
@@ -200,6 +246,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 2,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'pieceWeightTon',
@@ -210,6 +257,7 @@ export const materialsPageConfig: ModulePageConfig = {
       precision: INTERNAL_WEIGHT_PRECISION,
       defaultValue: 0,
       row: 3,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'piecesPerBundle',
@@ -220,6 +268,7 @@ export const materialsPageConfig: ModulePageConfig = {
       precision: 0,
       defaultValue: 0,
       row: 3,
+      visibleWhen: (form) => form?.materialType !== '附加费用',
     },
     {
       key: 'unitPrice',
