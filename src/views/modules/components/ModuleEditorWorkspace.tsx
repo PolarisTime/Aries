@@ -366,14 +366,6 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     )
   }
 
-  const handleExpenseRemoveSelected = () => {
-    const removedIds = new Set(expenseSelectedItemIds)
-    updateExpenseItems((current) =>
-      current.filter((item) => !removedIds.has(item.id ?? '')),
-    )
-    setExpenseSelectedItemIds([])
-  }
-
   const handleExpenseAddItem = () => {
     updateExpenseItems((current) => [...current, { chargeName: '', amount: 0 }])
   }
@@ -505,7 +497,6 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           onCreateExpense={handleCreateExpense}
           onExpenseAddItem={handleExpenseAddItem}
           onExpenseDelete={handleExpenseDelete}
-          onExpenseRemoveSelected={handleExpenseRemoveSelected}
           onCancel={requestCloseEditor}
           onSave={(audit) => {
             void handleSave(audit)

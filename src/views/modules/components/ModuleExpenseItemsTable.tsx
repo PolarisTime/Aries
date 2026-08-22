@@ -1,3 +1,4 @@
+import { HolderOutlined } from '@ant-design/icons'
 import { Checkbox, Input, InputNumber, Select, Typography } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -119,76 +120,94 @@ function ChargeNameSelect({
   )
 }
 
+/** 列宽体系与货物明细表格一致（勾选/序号固定，业务列自适应）。 */
+const EXPENSE_GRID_COLUMNS = [
+  '48px',
+  '56px',
+  'minmax(180px, 260px)',
+  '140px',
+  '120px',
+  'minmax(160px, 1fr)',
+  '64px',
+]
+
 export interface ModuleExpenseItemsTableProps {
   expenseItems: DocumentChargeItemDraft[]
   materialOptions: MaterialOption[]
   selectedItemIds: string[]
-  totalExpenseAmount: number | null
   onSelectedChange: (itemId: string, selected: boolean) => void
   onSelectAll: (selected: boolean) => void
   onChange: (index: number, patch: Partial<DocumentChargeItemDraft>) => void
   onCreateExpense: (name: string) => Promise<void>
   onDelete: (index: number) => void
-  onRemoveSelected: () => void
 }
 
-/** 单据附加费用精简表（Tab 2）：6 列布局 + 快捷创建 + 费用合计。 */
+/**
+ * 单据附加费用精简表（Tab 2）：横向 Table 布局，
+ * 勾选 + 拖拽抓手/序号 + 业务列（费用名称/金额/单位/备注），样式对齐货物明细。
+ */
 export function ModuleExpenseItemsTable({
   expenseItems,
   materialOptions,
   selectedItemIds,
-  totalExpenseAmount,
   onSelectedChange,
   onSelectAll,
   onChange,
   onCreateExpense,
   onDelete,
-  onRemoveSelected,
 }: ModuleExpenseItemsTableProps) {
   const { t } = useTranslation()
+  const allSelected =
+    expenseItems.length > 0 && selectedItemIds.length === expenseItems.length
+
+  const gridStyle = { gridTemplateColumns: EXPENSE_GRID_COLUMNS.join(' ') }
 
   return (
     <div className="overflow-auto rounded border border-gray-200 bg-gray-50">
-      <div className="grid items-center gap-4 bg-gray-100 px-3 py-2 text-base font-medium text-gray-600">
+      <div
+        className="grid items-center gap-4 bg-gray-100 px-3 py-2 font-medium text-gray-600"
+        style={gridStyle}
+      >
         <span className="flex items-center">
           <Checkbox
-            checked={
-              expenseItems.length > 0 &&
-              selectedItemIds.length === expenseItems.length
-            }
+            checked={allSelected}
             onChange={(event) => onSelectAll(event.target.checked)}
             aria-label={t('modules.expense.selectAllAriaLabel')}
           />
         </span>
-        <span>#</span>
+        <span className="flex items-center gap-1 text-gray-400">
+          <HolderOutlined />
+          <span>#</span>
+        </span>
         <span>{t('modules.expense.chargeName')}</span>
-        <span>{t('modules.expense.amount')}</span>
+        <span className="text-right">{t('modules.expense.amount')}</span>
         <span>{t('modules.expense.unit')}</span>
         <span>{t('modules.expense.remark')}</span>
+        <span>{t('common.actions')}</span>
       </div>
-      {selectedItemIds.length ? (
-        <div className="border-b border-gray-200 px-3 py-2">
-          <button
-            type="button"
-            className="text-red-500 hover:text-red-700"
-            onClick={onRemoveSelected}
-          >
-            {t('modules.expense.removeSelected')} ({selectedItemIds.length})
-          </button>
+      {!expenseItems.length ? (
+        <div className="px-3 py-6 text-center text-gray-500">
+          {t('modules.expense.emptyHint')}
         </div>
       ) : null}
       {expenseItems.map((item, index) => (
         <div
           key={item.id ?? `new-${index}`}
           className="grid items-center gap-4 border-b border-gray-200 px-3 py-2"
+          style={gridStyle}
         >
-          <Checkbox
-            checked={selectedItemIds.includes(item.id ?? '')}
-            onChange={(event) =>
-              onSelectedChange(item.id ?? '', event.target.checked)
-            }
-          />
-          <span className="text-center text-gray-600">{index + 1}</span>
+          <span className="flex items-center">
+            <Checkbox
+              checked={selectedItemIds.includes(item.id ?? '')}
+              onChange={(event) =>
+                onSelectedChange(item.id ?? '', event.target.checked)
+              }
+            />
+          </span>
+          <span className="flex items-center gap-1 text-gray-400">
+            <HolderOutlined />
+            <span>{index + 1}</span>
+          </span>
           <ChargeNameSelect
             item={item}
             materialOptions={materialOptions}
@@ -216,36 +235,42 @@ export function ModuleExpenseItemsTable({
               onChange(index, { remark: event.target.value })
             }
           />
-          <button
-            type="button"
-            className="text-red-500 hover:text-red-700"
-            onClick={() => onDelete(index)}
-            aria-label={t('modules.expense.deleteRowAriaLabel', {
-              index: index + 1,
-            })}
-          >
-            🗑
-          </button>
+          <span className="text-center">
+            <button
+              type="button"
+              className="text-red-500 hover:text-red-700"
+              onClick={() => onDelete(index)}
+              aria-label={t('modules.expense.deleteRowAriaLabel', {
+                index: index + 1,
+              })}
+            >
+              🗑
+            </button>
+          </span>
         </div>
       ))}
-      {!expenseItems.length ? (
-        <div className="px-3 py-6 text-center text-gray-500">
-          {t('modules.expense.emptyHint')}
-        </div>
-      ) : null}
-      {expenseItems.length ? (
-        <div className="flex justify-end gap-4 border-t border-gray-200 px-3 py-2">
-          <Typography.Text>
-            {t('modules.expense.totalAmount')}：
-            <Typography.Text strong>
-              {(totalExpenseAmount ?? 0).toLocaleString('zh-CN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Typography.Text>
-          </Typography.Text>
-        </div>
-      ) : null}
     </div>
+  )
+}
+
+export function ExpenseItemsSummaryBar({
+  count,
+  totalExpenseAmount,
+}: {
+  count: number
+  totalExpenseAmount: number | null
+}) {
+  const { t } = useTranslation()
+  return (
+    <Typography.Text className="editor-items-summary-inline">
+      {t('modules.expense.rowCount', { count })} ·{' '}
+      {t('modules.expense.totalAmount')}：
+      <Typography.Text strong>
+        {(totalExpenseAmount ?? 0).toLocaleString('zh-CN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </Typography.Text>
+    </Typography.Text>
   )
 }

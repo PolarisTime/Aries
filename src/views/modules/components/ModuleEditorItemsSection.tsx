@@ -22,7 +22,10 @@ import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
-import { ModuleExpenseItemsTable } from './ModuleExpenseItemsTable'
+import {
+  ExpenseItemsSummaryBar,
+  ModuleExpenseItemsTable,
+} from './ModuleExpenseItemsTable'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
@@ -71,7 +74,6 @@ interface Props {
   onCreateExpense: (name: string) => Promise<void>
   onExpenseAddItem: () => void
   onExpenseDelete: (index: number) => void
-  onExpenseRemoveSelected: () => void
   onCancel: () => void
   onSave: (audit: boolean) => void
   onOpenParentSelector: () => void
@@ -113,7 +115,6 @@ export function ModuleEditorItemsSection({
   onCreateExpense,
   onExpenseAddItem,
   onExpenseDelete,
-  onExpenseRemoveSelected,
   onCancel,
   onSave,
   onOpenParentSelector,
@@ -211,29 +212,59 @@ export function ModuleEditorItemsSection({
           />
         ) : null}
         {supportsExpenseTab && activeItemTab === 'expenses' ? (
-          <>
-            <div className="mb-2 flex justify-end">
-              <button
-                type="button"
-                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-50"
-                onClick={onExpenseAddItem}
-              >
-                + {t('modules.itemsSection.addExpense')}
-              </button>
-            </div>
+          <ModuleItemsPanel
+            title={t('modules.itemsSection.expensePanelTitle')}
+            actions={
+              <>
+                <Button
+                  type="primary"
+                  className="overlay-action-button"
+                  icon={<PlusOutlined />}
+                  disabled={saving}
+                  onClick={onExpenseAddItem}
+                >
+                  {t('modules.itemsSection.addExpense')}
+                </Button>
+                {expenseSelectedItemIds.length ? (
+                  <button
+                    type="button"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => {
+                      for (const id of expenseSelectedItemIds) {
+                        const index = expenseItems.findIndex(
+                          (item) => item.id === id,
+                        )
+                        if (index >= 0) {
+                          onExpenseDelete(index)
+                        }
+                      }
+                      for (const id of expenseSelectedItemIds) {
+                        onExpenseSelectedChange(id, false)
+                      }
+                    }}
+                  >
+                    {t('modules.expense.removeSelected')} (
+                    {expenseSelectedItemIds.length})
+                  </button>
+                ) : null}
+                <ExpenseItemsSummaryBar
+                  count={expenseItems.length}
+                  totalExpenseAmount={expenseTotalAmount}
+                />
+              </>
+            }
+          >
             <ModuleExpenseItemsTable
               expenseItems={expenseItems}
               materialOptions={expenseMaterialOptions}
               selectedItemIds={expenseSelectedItemIds}
-              totalExpenseAmount={expenseTotalAmount}
               onSelectedChange={onExpenseSelectedChange}
               onSelectAll={onExpenseSelectAll}
               onChange={onExpenseChange}
               onCreateExpense={onCreateExpense}
-              onDelete={(index) => onExpenseDelete(index)}
-              onRemoveSelected={onExpenseRemoveSelected}
+              onDelete={onExpenseDelete}
             />
-          </>
+          </ModuleItemsPanel>
         ) : null}
         {!supportsExpenseTab || activeItemTab === 'goods' ? (
           <ModuleItemsPanel

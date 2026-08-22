@@ -709,6 +709,7 @@ export const zhCN = {
       goodsTab: '货物明细',
       expenseTab: '附加费用',
       addExpense: '添加费用',
+      expensePanelTitle: '费用明细',
       importItems: '导入{{label}}明细',
       deleteSelected: '删除选中',
       autoSortItems: '自动排序',

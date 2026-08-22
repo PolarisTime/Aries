@@ -731,6 +731,7 @@ export const enUS = {
       goodsTab: 'Goods Items',
       expenseTab: 'Additional Charges',
       addExpense: 'Add Charge',
+      expensePanelTitle: 'Charge Items',
       importItems: 'Import {{label}} Items',
       deleteSelected: 'Delete Selected',
       autoSortItems: 'Auto Sort',
