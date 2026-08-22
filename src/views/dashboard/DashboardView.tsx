@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
 import { Alert } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,9 +7,13 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { AppVersionFooter } from '@/layouts/AppVersionFooter'
-import { DashboardSidebarPanels } from '@/views/dashboard/DashboardSidebarPanels'
-import { DashboardWorkplaceHeader } from '@/views/dashboard/DashboardWorkplaceHeader'
-import { buildDashboardInfoItems } from '@/views/dashboard/dashboard-info-utils'
+import { DashboardAccountCard } from '@/views/dashboard/DashboardAccountCard'
+import { DashboardFlowCardPlaceholder } from '@/views/dashboard/DashboardFlowCardPlaceholder'
+import { DashboardGreetingHeader } from '@/views/dashboard/DashboardGreetingHeader'
+import { DashboardNoticePanel } from '@/views/dashboard/DashboardNoticePanel'
+import { DashboardPendingMetrics } from '@/views/dashboard/DashboardPendingMetrics'
+import { DashboardQuickActions } from '@/views/dashboard/DashboardQuickActions'
+import { DashboardTodoPanel } from '@/views/dashboard/DashboardTodoPanel'
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
 
 const LazyDashboardFlowCard = lazy(() =>
@@ -19,9 +22,9 @@ const LazyDashboardFlowCard = lazy(() =>
   })),
 )
 
+/** 工作台看板：问候语 + 待处理指标 + 待办/业务链路 + 快捷入口/公告/账户概况 */
 export function DashboardView() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const isPageVisible = usePageVisibility()
   const canMountFlowCard = useIdleActivation(Boolean(isPageVisible), 1400)
   const { data: summary, isError: summaryIsError } = useQuery({
@@ -30,7 +33,6 @@ export function DashboardView() {
     refetchInterval: isPageVisible ? 120000 : false,
   })
   const animatedServerTime = useDashboardServerTime(summary?.serverTime)
-  const infoItems = buildDashboardInfoItems(t, summary)
 
   return (
     <div className="page-stack dashboard-root">
@@ -43,32 +45,31 @@ export function DashboardView() {
         />
       ) : null}
 
-      <DashboardWorkplaceHeader
-        animatedServerTime={animatedServerTime}
-        summary={summary}
-      />
+      <section className="dashboard-header-band">
+        <DashboardGreetingHeader
+          animatedServerTime={animatedServerTime}
+          summary={summary}
+        />
+        <DashboardPendingMetrics />
+      </section>
 
       <section className="dashboard-command-center">
         <div className="dashboard-workplace-layout">
           <main className="dashboard-workplace-main dashboard-primary-region">
+            <DashboardTodoPanel />
             {canMountFlowCard ? (
-              <Suspense
-                fallback={
-                  <div
-                    className="dashboard-flow-card-placeholder"
-                    aria-hidden
-                  />
-                }
-              >
-                <LazyDashboardFlowCard navigate={navigate} />
+              <Suspense fallback={<DashboardFlowCardPlaceholder />}>
+                <LazyDashboardFlowCard />
               </Suspense>
             ) : (
-              <div className="dashboard-flow-card-placeholder" aria-hidden />
+              <DashboardFlowCardPlaceholder />
             )}
           </main>
 
           <aside className="dashboard-workplace-sidebar dashboard-context-region">
-            <DashboardSidebarPanels infoItems={infoItems} />
+            <DashboardQuickActions />
+            <DashboardNoticePanel />
+            <DashboardAccountCard summary={summary} />
           </aside>
         </div>
       </section>
