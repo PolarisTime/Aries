@@ -46,7 +46,6 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       label: '结算主体',
       type: 'select',
       options: getSettlementCompanyOptions,
-      row: 2,
     },
     {
       key: 'status',

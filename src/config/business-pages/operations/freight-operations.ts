@@ -68,7 +68,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: SETTLEMENT_COMPANY_LABEL,
         type: 'select',
         options: getSettlementCompanyOptions,
-        row: 2,
       },
       {
         key: 'billTime',

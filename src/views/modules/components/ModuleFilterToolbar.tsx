@@ -220,7 +220,7 @@ export function ModuleFilterToolbar({
   const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
-  const primaryCapacity = hasConfigKeywordFilter ? 3 : 2
+  const primaryCapacity = hasConfigKeywordFilter ? 4 : 4
   const primaryCandidateFilters = sortedFilters.filter(isPrimaryFilter)
   const firstRowFilters = primaryCandidateFilters.slice(0, primaryCapacity)
   const overflowFilters = primaryCandidateFilters.slice(primaryCapacity)
@@ -392,11 +392,8 @@ export function ModuleFilterToolbar({
       </div>
       {expanded && secondaryFilters.length ? (
         <div className="module-filter-secondary-row" id={secondaryRegionId}>
-          <div className="module-filter-main-row">
-            <div className="module-filter-fields-grid module-filter-secondary-grid">
-              {secondaryFilters.map(renderFilterItem)}
-            </div>
-            <div className="module-filter-actions-placeholder" />
+          <div className="module-filter-fields-grid module-filter-secondary-grid">
+            {secondaryFilters.map(renderFilterItem)}
           </div>
         </div>
       ) : null}

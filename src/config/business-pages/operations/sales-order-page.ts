@@ -59,6 +59,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       ),
     },
     {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
+    },
+    {
       key: 'productKeyword',
       label: i18next.t('modules.pages.salesOrder.filterProductKeyword'),
       type: 'input',
@@ -72,13 +78,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOrder.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
-      row: 2,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: SETTLEMENT_COMPANY_LABEL,
-      type: 'select',
-      options: getSettlementCompanyOptions,
       row: 2,
     },
     {
@@ -283,13 +282,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerProjectOptions,
-      row: 2,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: SETTLEMENT_COMPANY_LABEL,
-      type: 'select',
-      options: getSettlementCompanyOptions,
       row: 2,
     },
     {

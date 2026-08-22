@@ -1768,16 +1768,17 @@
 }
 
 .module-filter-main-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px 12px;
 }
 
 .module-filter-fields-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px 12px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1834,7 +1835,10 @@
 }
 
 .module-filter-actions {
-  width: var(--module-filter-actions-width);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
   margin-bottom: 0;
 }
 
@@ -1865,7 +1869,7 @@
 }
 
 .module-filter-secondary-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .module-table-toolbar {
