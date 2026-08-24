@@ -704,6 +704,33 @@
   padding: 0 8px;
 }
 
+.leo-tabbar.ant-tabs .ant-tabs-tab {
+  color: var(--theme-text-muted);
+  transition:
+    color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out),
+    background-color var(--ant-motion-duration-fast)
+    var(--ant-motion-ease-in-out),
+    border-color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out);
+}
+
+.leo-tabbar.ant-tabs .ant-tabs-tab:hover {
+  color: var(--theme-primary);
+  background: var(--theme-surface-hover);
+}
+
+.leo-tabbar.ant-tabs .ant-tabs-tab-active {
+  color: var(--theme-primary) !important;
+  font-weight: 600;
+  background: var(--theme-primary-soft) !important;
+  border-color: var(--theme-highlight-border) !important;
+  box-shadow: inset 0 -2px 0 var(--theme-primary);
+}
+
+.leo-tabbar.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn,
+.leo-tabbar.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-remove {
+  color: inherit;
+}
+
 /* antd 运行时注入的 ::before 底边框与项目样式表特异性平级、注入更晚，
  * 必须提升选择器特异性才能移除，否则与下方容器边框形成双层灰线 */
 .leo-tabbar.ant-tabs .ant-tabs-nav::before {
