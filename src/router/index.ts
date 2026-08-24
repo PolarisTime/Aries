@@ -1,11 +1,11 @@
 import {
+  type AnyRoute,
   createBrowserHistory,
   createRootRoute,
   createRoute,
   createRouter,
   Outlet,
   redirect,
-  type AnyRoute,
 } from '@tanstack/react-router'
 import { lazy } from 'react'
 import { listBusinessModule } from '@/api/business/business-listing'
@@ -195,46 +195,46 @@ export function buildModuleRoutes(parent: AnyRoute) {
     return createRoute({
       getParentRoute: () => parent,
       path,
-    component:
-      def.view === 'dashboard'
-        ? LazyDashboardView
-        : lazy(viewLoaders[def.view]),
-    loader:
-      def.view === 'business-grid' && def.moduleKey
-        ? async () => {
-            const moduleKey = asString(def.moduleKey)
-            const config = await loadBusinessPageConfig(moduleKey)
+      component:
+        def.view === 'dashboard'
+          ? LazyDashboardView
+          : lazy(viewLoaders[def.view]),
+      loader:
+        def.view === 'business-grid' && def.moduleKey
+          ? async () => {
+              const moduleKey = asString(def.moduleKey)
+              const config = await loadBusinessPageConfig(moduleKey)
 
-            try {
-              const runtimeConfig = await queryClient.ensureQueryData({
-                queryKey: QUERY_KEYS.runtimeConfig,
-                queryFn: getRuntimeConfig,
-                staleTime: 30_000,
-              })
-              const pageSize = runtimeConfig.ui.defaultPageSize
-              await queryClient.ensureQueryData({
-                queryKey: QUERY_KEYS.businessGridList(
-                  moduleKey,
-                  {},
-                  1,
-                  pageSize,
-                ),
-                queryFn: ({ signal }) =>
-                  listBusinessModule(
+              try {
+                const runtimeConfig = await queryClient.ensureQueryData({
+                  queryKey: QUERY_KEYS.runtimeConfig,
+                  queryFn: getRuntimeConfig,
+                  staleTime: 30_000,
+                })
+                const pageSize = runtimeConfig.ui.defaultPageSize
+                await queryClient.ensureQueryData({
+                  queryKey: QUERY_KEYS.businessGridList(
                     moduleKey,
                     {},
-                    { currentPage: 1, pageSize },
-                    { signal },
+                    1,
+                    pageSize,
                   ),
-                staleTime: 60_000,
-              })
-            } catch {
-              // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
-            }
+                  queryFn: ({ signal }) =>
+                    listBusinessModule(
+                      moduleKey,
+                      {},
+                      { currentPage: 1, pageSize },
+                      { signal },
+                    ),
+                  staleTime: 60_000,
+                })
+              } catch {
+                // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
+              }
 
-            return config
-          }
-        : undefined,
+              return config
+            }
+          : undefined,
     })
   })
 }
@@ -264,7 +264,9 @@ const routeTree = rootRoute.addChildren([
   setupRoute,
   serverErrorRoute,
   notFoundRoute,
-  authenticatedLayoutRoute.addChildren(buildModuleRoutes(authenticatedLayoutRoute)),
+  authenticatedLayoutRoute.addChildren(
+    buildModuleRoutes(authenticatedLayoutRoute),
+  ),
 ])
 
 export { routeTree }

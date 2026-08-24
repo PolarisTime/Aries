@@ -118,14 +118,17 @@ export function useModuleAttachmentModal({
     [createTrackedObjectUrl, moduleKey],
   )
 
-  const cachePreviewUrl = useCallback((attachmentId: string, url: string) => {
-    setState((prev) => ({
-      previewUrlByAttachmentId: {
-        ...prev.previewUrlByAttachmentId,
-        [attachmentId]: url,
-      },
-    }))
-  }, [])
+  const cachePreviewUrl = useCallback(
+    (attachmentId: string, url: string) => {
+      setState((prev) => ({
+        previewUrlByAttachmentId: {
+          ...prev.previewUrlByAttachmentId,
+          [attachmentId]: url,
+        },
+      }))
+    },
+    [setState],
+  )
 
   const ensurePreviewUrl = useCallback(
     async (attachment: AttachmentRecord) => {
@@ -167,7 +170,7 @@ export function useModuleAttachmentModal({
         loading: false,
       })
     }
-  }, [moduleKey, recordId, t])
+  }, [moduleKey, recordId, setState, t])
 
   const bindAttachment = useCallback(
     async (attachmentId: string) => {
@@ -221,7 +224,7 @@ export function useModuleAttachmentModal({
       }
       return false
     },
-    [bindAttachment, fetchAttachments, moduleKey, t],
+    [bindAttachment, fetchAttachments, moduleKey, setState, t],
   )
 
   const openImagePreview = useCallback(
@@ -246,7 +249,7 @@ export function useModuleAttachmentModal({
         )
       }
     },
-    [ensurePreviewUrl, t],
+    [ensurePreviewUrl, setState, t],
   )
 
   const openPdfPreview = useCallback(
@@ -270,7 +273,7 @@ export function useModuleAttachmentModal({
         )
       }
     },
-    [createTrackedObjectUrl, moduleKey, t],
+    [createTrackedObjectUrl, moduleKey, setState, t],
   )
 
   const handleDownload = useCallback(
@@ -339,7 +342,7 @@ export function useModuleAttachmentModal({
       loadError: '',
     })
     revokeTrackedObjectUrls()
-  }, [revokeTrackedObjectUrls])
+  }, [revokeTrackedObjectUrls, setState])
 
   const handleModalOpenChange = useCallback(
     (visible: boolean) => {
@@ -353,7 +356,7 @@ export function useModuleAttachmentModal({
       pdfPreviewOpen: false,
       pdfPreviewUrl: '',
     })
-  }, [])
+  }, [setState])
 
   const handleImagePreviewChange = useCallback(
     (visible: boolean) => {
@@ -362,7 +365,7 @@ export function useModuleAttachmentModal({
         previewSource: visible ? previewSource : '',
       })
     },
-    [previewSource],
+    [previewSource, setState],
   )
 
   useEffect(() => {

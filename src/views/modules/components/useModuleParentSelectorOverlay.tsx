@@ -578,7 +578,7 @@ export function useModuleParentSelectorOverlay({
   )
   useEffect(() => {
     setState({ page: 1, pageSize: defaultPageSize })
-  }, [defaultPageSize])
+  }, [defaultPageSize, setState])
   const {
     draftFilters,
     submittedFilters,

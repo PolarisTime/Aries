@@ -1,10 +1,10 @@
 import {
+  type AnyRouter,
   createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
   Outlet,
-  type AnyRouter,
 } from '@tanstack/react-router'
 import { buildModuleRoutes } from '@/router/index'
 import { buildSharedRouterOptions } from '@/router/router-options'

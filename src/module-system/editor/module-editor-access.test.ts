@@ -64,7 +64,7 @@ describe('第一层：字段固有只读', () => {
     expect(editable('purchase-order', 'pieceWeightTon', { record })).toBe(true)
     expect(
       editable('purchase-order', 'pieceWeightTon', {
-        record: { id: 'row-2', category: '直条' } as ModuleLineItem,
+        record: { id: 'row-2', category: '直条' },
       }),
     ).toBe(false)
   })

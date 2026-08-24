@@ -116,7 +116,7 @@ export async function saveAndAuditBusinessModule(
   // 后端已将"保存并审核"资源化：普通保存端点 + 请求体 audit 标志位，
   // 后端在同一事务内完成保存与审核，原子语义不变。
   const payload = {
-    ...(await toSaveRequest(moduleKey, record) as Record<string, unknown>),
+    ...((await toSaveRequest(moduleKey, record)) as Record<string, unknown>),
     audit: true,
   }
   const hasId = Boolean(record.id)

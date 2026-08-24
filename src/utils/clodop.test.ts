@@ -5,7 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { execPrintCode } from './clodop'
 
 type LodopMethodMock = ReturnType<typeof vi.fn>
-type LodopStub = CLodopInstance & Record<string, LodopMethodMock>
+type LodopStub = {
+  [Key in keyof CLodopInstance]: ReturnType<typeof vi.fn<CLodopInstance[Key]>>
+} & Record<string, LodopMethodMock>
 
 function makeLodop(overrides: Record<string, unknown> = {}): LodopStub {
   return {
