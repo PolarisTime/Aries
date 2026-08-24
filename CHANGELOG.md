@@ -1,3 +1,15 @@
+# [9.9.0](https://github.com/PolarisTime/Aries/compare/v9.8.1...v9.9.0) (2026-08-24)
+
+
+### Bug Fixes
+
+* **layout:** 修复持久化业务标签页无法关闭 ([caac8e0](https://github.com/PolarisTime/Aries/commit/caac8e081eab5c2c24a68e02671d3d8829255ff1))
+
+
+### Features
+
+* **finance:** 重构收付款录入与往来台账交互 ([ce027e5](https://github.com/PolarisTime/Aries/commit/ce027e5ec274aa058e8a6353ce44a4e303cfa2c8))
+
 ## [9.8.1](https://github.com/PolarisTime/Aries/compare/v9.8.0...v9.8.1) (2026-08-24)
 
 
