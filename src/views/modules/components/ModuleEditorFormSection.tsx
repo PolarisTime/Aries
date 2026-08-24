@@ -34,6 +34,8 @@ interface Props {
   projectOptions?: readonly ProjectOption[]
 }
 
+const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
+
 function getFieldSpan(
   field: ModuleFormFieldDefinition,
   layoutVariant: 'default' | 'finance',
@@ -57,7 +59,7 @@ export function ModuleEditorFormSection({
   lockedLineItemsNotice,
   authoritativePrimaryNo,
   layoutVariant = 'default',
-  projectOptions = [],
+  projectOptions = EMPTY_PROJECT_OPTIONS,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()

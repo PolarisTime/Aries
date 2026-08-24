@@ -27,6 +27,8 @@ interface Props {
   projectOptions?: readonly ProjectOption[]
 }
 
+const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
+
 type SelectOptionValue = string | number | boolean
 
 function normalizeOptionValue(value: unknown): SelectOptionValue {
@@ -80,7 +82,7 @@ function withCurrentSnapshotOption(
 export function FormFieldRenderer({
   field,
   disabled,
-  projectOptions = [],
+  projectOptions = EMPTY_PROJECT_OPTIONS,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
