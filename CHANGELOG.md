@@ -1,3 +1,29 @@
+# [9.8.0](https://github.com/PolarisTime/Aries/compare/v9.7.0...v9.8.0) (2026-08-24)
+
+
+### Bug Fixes
+
+* **ci:** 修复前端质量门禁 ([7e1b152](https://github.com/PolarisTime/Aries/commit/7e1b152de5a0b64f34f5840fa00b72421e1d1725))
+* **layout:** 修复多标签导航栏幽灵占位与双层边框 ([4197699](https://github.com/PolarisTime/Aries/commit/4197699c550a863eb0e9237bbadccac0443e4b79))
+* **layout:** 强化导航标签激活态 ([fbc6733](https://github.com/PolarisTime/Aries/commit/fbc67331a5c1fe58cd79719c39a9c9bc25f95523))
+* **layout:** 收紧标签页与主内容间距 ([4f03394](https://github.com/PolarisTime/Aries/commit/4f033946204130bd38b60ac0f2422da59c8e5ac3))
+* **material:** 商品类型文案落入 pages.material 节修复本地化 ([33b2ac9](https://github.com/PolarisTime/Aries/commit/33b2ac90f7b22b8171b6604d724befe55ed7096e))
+* **modules:** 恢复筛选次级栅格 4 列规则修复展开布局失控 ([4b47fa3](https://github.com/PolarisTime/Aries/commit/4b47fa3a61473b6442d1bc08ef32d85f91e1fc89))
+* **modules:** 状态变更成功提示按模块标题动态生成 ([4903cdc](https://github.com/PolarisTime/Aries/commit/4903cdc54fcd4d066bd09e20692e9b23c2f7b15d))
+* **print:** 修复合计件数显示并增强打印链路健壮性 ([c1df553](https://github.com/PolarisTime/Aries/commit/c1df5532ff4224f0d3e3691fce4ace661b242459))
+* **print:** 费用表本地化与单元格对齐 ([210c2e6](https://github.com/PolarisTime/Aries/commit/210c2e6eff46616e8913d2652ac90b7a7435c047))
+* **ui:** 优化业务筛选与编辑表头布局 ([59eb873](https://github.com/PolarisTime/Aries/commit/59eb873785e9b9c9f434febfc52f49feccc33ec9))
+
+
+### Features
+
+* **dashboard:** 工作台重构为业务驱动型看板（mock 契约先行） ([20e3ed1](https://github.com/PolarisTime/Aries/commit/20e3ed14eae2cfa2b13d847b80204a575967c895))
+* **document:** 单据附加费用多 Tab 架构与三通道统一 ([048c80c](https://github.com/PolarisTime/Aries/commit/048c80cd7d7993d2362563e92e1b94cd8777db64))
+* **layout:** 新增全局多标签页导航与 Keep-Alive 页面缓存 ([cd9e454](https://github.com/PolarisTime/Aries/commit/cd9e454eceadd20951bef8ad8aa62e3f7ea15a4a))
+* **material:** 商品资料前端支持商品类型 ([a565893](https://github.com/PolarisTime/Aries/commit/a565893212b18f55c1979fb66aecd23740c710c8))
+* **sales:** 销售订单导入上游后锁定行项目并支持自动排序 ([df547d6](https://github.com/PolarisTime/Aries/commit/df547d647f72ed38b4cccea0788865957eaa6488))
+* **setup:** 初始化账号适配后端 201 摘要响应 ([867c5b5](https://github.com/PolarisTime/Aries/commit/867c5b593d40ccf5383338d0a029403119d30b56))
+
 # [9.7.0](https://github.com/PolarisTime/Aries/compare/v9.6.4...v9.7.0) (2026-08-21)
 
 
