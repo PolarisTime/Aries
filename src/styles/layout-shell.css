@@ -1101,15 +1101,31 @@
   white-space: nowrap;
 }
 
+.finance-overview-metric--outstanding {
+  background: var(--ant-color-error-bg, #fff1f0);
+  border-color: var(--ant-color-error-border, #ffccc7);
+}
+
+.finance-overview-metric--outstanding .ant-statistic-title {
+  color: var(--ant-color-error, #cf1322);
+  font-weight: 600;
+}
+
+.finance-overview-metric--outstanding .ant-statistic-content {
+  color: var(--ant-color-error, #cf1322);
+  font-weight: 700;
+}
+
+.finance-overview-outstanding-value {
+  color: var(--ant-color-error, #cf1322);
+  font-weight: 600;
+}
+
 .finance-overview-table {
   flex: 1 1 auto;
   min-height: 0;
   padding: 0 16px 16px;
-  overflow: hidden;
-}
-
-.finance-overview-table .ant-table-wrapper {
-  height: 100%;
+  overflow: auto;
 }
 
 .cash-ledger-page {

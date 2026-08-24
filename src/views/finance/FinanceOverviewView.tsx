@@ -156,7 +156,8 @@ function buildBalanceColumns(
     {
       title: '往来方编码',
       dataIndex: 'counterpartyCode',
-      width: 150,
+      width: 175,
+      ellipsis: true,
       render: displayText,
     },
     {
@@ -167,28 +168,39 @@ function buildBalanceColumns(
       render: displayText,
     },
     {
-      title: direction === 'RECEIVABLE' ? '应收' : '应付',
+      title: direction === 'RECEIVABLE' ? '应收 (元)' : '应付 (元)',
       dataIndex: 'recognizedAmount',
       width: 150,
       align: 'right',
       render: formatAmount,
     },
     {
-      title: direction === 'RECEIVABLE' ? '已收' : '已付',
+      title: direction === 'RECEIVABLE' ? '已收 (元)' : '已付 (元)',
       dataIndex: 'settledAmount',
       width: 150,
       align: 'right',
       render: formatAmount,
     },
     {
-      title: direction === 'RECEIVABLE' ? '未收' : '未付',
+      title: direction === 'RECEIVABLE' ? '未收 (元)' : '未付 (元)',
       dataIndex: 'outstandingAmount',
       width: 150,
       align: 'right',
-      render: formatAmount,
+      render: (value) => {
+        const amount = Number(value ?? 0)
+        return (
+          <span
+            className={
+              amount > 0 ? 'finance-overview-outstanding-value' : undefined
+            }
+          >
+            {formatAmount(value)}
+          </span>
+        )
+      },
     },
     {
-      title: direction === 'RECEIVABLE' ? '预收' : '预付',
+      title: direction === 'RECEIVABLE' ? '预收 (元)' : '预付 (元)',
       dataIndex: 'advanceAmount',
       width: 150,
       align: 'right',
@@ -528,10 +540,7 @@ function FinanceOverviewTableSection({
         components={components}
         dataSource={rows}
         loading={loading}
-        scroll={{
-          x: scrollX,
-          y: 'calc(100vh - 410px - var(--app-tabbar-height))',
-        }}
+        scroll={{ x: scrollX }}
         locale={{
           emptyText: (
             <Empty
