@@ -7,11 +7,11 @@ import {
   DASHBOARD_TODO_CATEGORIES,
   type DashboardTodoCategory,
   type DashboardTodoItem,
-  fetchDashboardTodoItems,
+  fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
-import { formatDateTime } from '@/utils/formatters'
+import { formatDate } from '@/utils/formatters'
 
 /** 待办类目 → 目标模块路径（「去处理」直达单据详情） */
 const TODO_CATEGORY_TARGETS: Record<
@@ -19,7 +19,7 @@ const TODO_CATEGORY_TARGETS: Record<
   string
 > = {
   'purchase-audit': '/purchase-order',
-  'sales-delivery': '/sales-outbound',
+  'sales-delivery': '/sales-order',
   'finance-reconcile': '/customer-statement',
 }
 
@@ -36,11 +36,14 @@ export function DashboardTodoPanel() {
   const openTab = useTabOpen()
   const [category, setCategory] = useState<DashboardTodoCategory>('all')
   const { data, isLoading, isError } = useQuery({
-    queryKey: QUERY_KEYS.dashboardTodoItems(category),
-    queryFn: () => fetchDashboardTodoItems(category),
+    queryKey: QUERY_KEYS.dashboardWorkspace,
+    queryFn: fetchDashboardWorkspace,
+    refetchInterval: 120000,
   })
 
-  const rows = (data ?? []).slice(0, 8)
+  const rows = (data?.todoItems ?? [])
+    .filter((item) => category === 'all' || item.category === category)
+    .slice(0, 8)
 
   const columns = useMemo<ColumnsType<DashboardTodoItem>>(
     () => [
@@ -52,31 +55,32 @@ export function DashboardTodoPanel() {
       },
       {
         title: t('dashboard.todo.columns.bizType'),
-        dataIndex: 'bizType',
-        key: 'bizType',
+        dataIndex: 'category',
+        key: 'category',
         width: 110,
+        render: (value: DashboardTodoItem['category']) =>
+          t(TODO_TAB_KEYS[value]),
       },
       {
-        title: t('dashboard.todo.columns.contract'),
-        dataIndex: 'relatedContractNo',
-        key: 'relatedContractNo',
+        title: t('dashboard.todo.columns.relatedDocument'),
+        dataIndex: 'relatedDocumentNo',
+        key: 'relatedDocumentNo',
         width: 140,
         ellipsis: true,
         render: (value: string | null) => value || '—',
       },
       {
-        title: t('dashboard.todo.columns.customer'),
-        dataIndex: 'relatedCustomerName',
-        key: 'relatedCustomerName',
+        title: t('dashboard.todo.columns.counterparty'),
+        dataIndex: 'counterpartyName',
+        key: 'counterpartyName',
         ellipsis: true,
-        render: (value: string | null) => value || '—',
       },
       {
-        title: t('dashboard.todo.columns.createdAt'),
-        dataIndex: 'createdAt',
-        key: 'createdAt',
-        width: 170,
-        render: (value: string) => formatDateTime(value),
+        title: t('dashboard.todo.columns.businessDate'),
+        dataIndex: 'businessDate',
+        key: 'businessDate',
+        width: 130,
+        render: (value: string) => formatDate(value),
       },
       {
         title: t('dashboard.todo.columns.action'),

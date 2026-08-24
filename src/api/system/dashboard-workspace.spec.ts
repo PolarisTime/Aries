@@ -1,65 +1,205 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { fetchCustomerStatementSummaryMock, fetchModulePageMock } = vi.hoisted(
+  () => ({
+    fetchCustomerStatementSummaryMock: vi.fn(),
+    fetchModulePageMock: vi.fn(),
+  }),
+)
+
+vi.mock('@/api/business/business-listing-fetch', () => ({
+  fetchModulePage: fetchModulePageMock,
+}))
+
+vi.mock('@/api/finance/customer-statement-summary', () => ({
+  fetchCustomerStatementSummary: fetchCustomerStatementSummaryMock,
+}))
+
 import {
   DASHBOARD_METRIC_TARGETS,
-  fetchDashboardNotices,
-  fetchDashboardPendingMetrics,
-  fetchDashboardTodoItems,
+  fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
-import { EMPTY_TODO_ITEMS } from '@/api/system/dashboard-workspace-fixtures'
 
-describe('工作台 mock 契约', () => {
-  it('指标卡 fixtures 通过 schema 且覆盖四个指标键', async () => {
-    const metrics = await fetchDashboardPendingMetrics()
-    expect(metrics.map((metric) => metric.key)).toEqual([
-      'purchase-audit',
-      'outbound-task',
-      'receivable',
-      'stock-alert',
-    ])
-    for (const metric of metrics) {
-      expect(Number.isFinite(metric.count)).toBe(true)
-      expect(metric.count).toBeGreaterThanOrEqual(0)
-      if (metric.amount !== null) {
-        expect(Number.isFinite(metric.amount)).toBe(true)
+const emptyPage = {
+  rows: [],
+  totalElements: 0,
+  totalPages: 1,
+  last: true,
+  hasMore: false,
+}
+
+describe('工作台真实业务数据聚合', () => {
+  beforeEach(() => {
+    fetchModulePageMock.mockReset()
+    fetchCustomerStatementSummaryMock.mockReset()
+  })
+
+  it('并发查询三类真实业务单据并映射为按业务日期倒序的待办', async () => {
+    fetchModulePageMock.mockImplementation((moduleKey: string) => {
+      if (moduleKey === 'purchase-order') {
+        return {
+          ...emptyPage,
+          rows: [
+            {
+              id: '9223372036854775807',
+              orderNo: 'PO-001',
+              supplierName: '钢材供应商',
+              orderDate: '2026-08-22',
+              totalAmount: 128500.55,
+            },
+          ],
+          totalElements: 12,
+        }
       }
-    }
-  })
+      if (moduleKey === 'sales-order') {
+        return {
+          ...emptyPage,
+          rows: [
+            {
+              id: '1983421000000000001',
+              orderNo: 'SO-001',
+              purchaseOrderNo: 'PO-REF-001',
+              customerName: '销售客户',
+              deliveryDate: '2026-08-23',
+              totalAmount: 98000,
+            },
+          ],
+          totalElements: 7,
+        }
+      }
+      return {
+        ...emptyPage,
+        rows: [
+          {
+            id: '1983421000000000002',
+            statementNo: 'CS-001',
+            customerName: '对账客户',
+            endDate: '2026-08-21',
+            closingAmount: 32000,
+          },
+        ],
+        totalElements: 5,
+      }
+    })
+    fetchCustomerStatementSummaryMock.mockResolvedValue({
+      documentCount: 5,
+      salesAmount: 120000,
+      receiptAmount: 30000,
+      closingAmount: 90000,
+    })
 
-  it('待办清单：雪花 ID 一律为正整数字符串且不超 Long 范围', async () => {
-    const items = await fetchDashboardTodoItems('all')
-    expect(items.length).toBeGreaterThan(0)
-    for (const item of items) {
-      expect(typeof item.id).toBe('string')
-      expect(item.id).toMatch(/^[1-9]\d*$/)
-      expect(BigInt(item.id) <= BigInt('9223372036854775807')).toBe(true)
-      // 极端值：超长单据号不丢字段
-      expect(item.docNo.length).toBeGreaterThan(0)
-    }
-  })
+    const workspace = await fetchDashboardWorkspace()
 
-  it('待办按类目过滤；all 返回全量', async () => {
-    const all = await fetchDashboardTodoItems('all')
-    const purchase = await fetchDashboardTodoItems('purchase-audit')
-    expect(purchase.every((item) => item.category === 'purchase-audit')).toBe(
-      true,
+    expect(fetchModulePageMock).toHaveBeenNthCalledWith(
+      1,
+      'purchase-order',
+      { status: '草稿', sortBy: 'orderDate', direction: 'desc' },
+      0,
+      8,
     )
-    expect(purchase.length).toBeLessThan(all.length)
-    expect(EMPTY_TODO_ITEMS).toHaveLength(0)
+    expect(fetchModulePageMock).toHaveBeenNthCalledWith(
+      2,
+      'sales-order',
+      { status: '已审核', sortBy: 'deliveryDate', direction: 'desc' },
+      0,
+      8,
+    )
+    expect(fetchModulePageMock).toHaveBeenNthCalledWith(
+      3,
+      'customer-statement',
+      { status: '待确认', sortBy: 'endDate', direction: 'desc' },
+      0,
+      8,
+    )
+    expect(fetchCustomerStatementSummaryMock).toHaveBeenCalledWith({
+      status: '待确认',
+    })
+    expect(workspace.todoItems).toEqual([
+      {
+        id: '1983421000000000001',
+        docNo: 'SO-001',
+        category: 'sales-delivery',
+        relatedDocumentNo: 'PO-REF-001',
+        counterpartyName: '销售客户',
+        amount: 98000,
+        businessDate: '2026-08-23',
+      },
+      {
+        id: '9223372036854775807',
+        docNo: 'PO-001',
+        category: 'purchase-audit',
+        relatedDocumentNo: null,
+        counterpartyName: '钢材供应商',
+        amount: 128500.55,
+        businessDate: '2026-08-22',
+      },
+      {
+        id: '1983421000000000002',
+        docNo: 'CS-001',
+        category: 'finance-reconcile',
+        relatedDocumentNo: null,
+        counterpartyName: '对账客户',
+        amount: 32000,
+        businessDate: '2026-08-21',
+      },
+    ])
+    expect(workspace.pendingMetrics).toEqual([
+      {
+        key: 'purchase-audit',
+        count: 12,
+        amount: null,
+        severity: 'danger',
+      },
+      {
+        key: 'outbound-task',
+        count: 7,
+        amount: null,
+        severity: 'warning',
+      },
+      {
+        key: 'statement-confirm',
+        count: 5,
+        amount: 90000,
+        severity: 'info',
+      },
+    ])
   })
 
-  it('公告 fixtures 通过 schema：level 合法、内容非空', async () => {
-    const notices = await fetchDashboardNotices()
-    expect(notices.length).toBeGreaterThan(0)
-    for (const notice of notices) {
-      expect(['info', 'warn', 'critical']).toContain(notice.level)
-      expect(notice.title.length).toBeGreaterThan(0)
-      expect(notice.content.length).toBeGreaterThan(0)
-    }
+  it('空业务数据返回零值指标和空待办，不注入占位数据', async () => {
+    fetchModulePageMock.mockResolvedValue(emptyPage)
+    fetchCustomerStatementSummaryMock.mockResolvedValue({
+      documentCount: 0,
+      salesAmount: 0,
+      receiptAmount: 0,
+      closingAmount: 0,
+    })
+
+    const workspace = await fetchDashboardWorkspace()
+
+    expect(workspace.todoItems).toEqual([])
+    expect(
+      workspace.pendingMetrics.map(({ count, amount }) => [count, amount]),
+    ).toEqual([
+      [0, null],
+      [0, null],
+      [0, 0],
+    ])
   })
 
-  it('指标卡跳转目标均为已注册页面路径', () => {
-    for (const target of Object.values(DASHBOARD_METRIC_TARGETS)) {
-      expect(target.pathname).toMatch(/^\/[a-z-]+$/)
-    }
+  it('指标跳转使用后端实际支持的状态值', () => {
+    expect(DASHBOARD_METRIC_TARGETS).toEqual({
+      'purchase-audit': {
+        pathname: '/purchase-order',
+        search: 'status=草稿',
+      },
+      'outbound-task': {
+        pathname: '/sales-order',
+        search: 'status=已审核',
+      },
+      'statement-confirm': {
+        pathname: '/customer-statement',
+        search: 'status=待确认',
+      },
+    })
   })
 })

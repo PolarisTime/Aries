@@ -10,10 +10,7 @@ export const QUERY_KEYS = {
   // Dashboard
   dashboardSummary: ['dashboard-summary'] as const,
   backendInfo: ['backend-info'] as const,
-  dashboardPendingMetrics: ['dashboard-pending-metrics'] as const,
-  dashboardTodoItems: (category: string) =>
-    ['dashboard-todo-items', category] as const,
-  dashboardNotices: ['dashboard-notices'] as const,
+  dashboardWorkspace: ['dashboard-workspace'] as const,
 
   // Finance
   cashLedger: (query: {

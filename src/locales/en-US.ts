@@ -99,14 +99,8 @@ export const enUS = {
     metrics: {
       purchaseAudit: 'Purchases to Approve',
       outboundTask: 'Outbound Tasks',
-      receivable: 'Receivables',
-      receivableAmount: 'Amount {{amount}}',
-      stockAlert: 'Stock Alerts',
-      stockAlertStates: {
-        normal: 'Normal',
-        warning: 'Warning',
-        danger: 'Critical',
-      },
+      statementConfirm: 'Statements to Confirm',
+      statementAmount: 'Pending amount {{amount}}',
     },
     todo: {
       title: 'To-Do Workbench',
@@ -119,9 +113,9 @@ export const enUS = {
       columns: {
         docNo: 'Document No.',
         bizType: 'Business Type',
-        contract: 'Related Contract',
-        customer: 'Customer',
-        createdAt: 'Created At',
+        relatedDocument: 'Related Document',
+        counterparty: 'Counterparty',
+        businessDate: 'Business Date',
         action: 'Action',
       },
       goProcess: 'Process',
@@ -134,16 +128,6 @@ export const enUS = {
       newSalesOrder: 'New Sales Order',
       newOutbound: 'New Outbound Order',
       newMasterData: 'New Master Data',
-    },
-    notices: {
-      title: 'Notices & Alerts',
-      empty: 'No notices',
-      drawerTitle: 'Notice Detail',
-      levels: {
-        info: 'Info',
-        warn: 'Alert',
-        critical: 'Important',
-      },
     },
     account: {
       title: 'Account Overview',

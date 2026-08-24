@@ -2,15 +2,14 @@ import {
   AuditOutlined,
   ExportOutlined,
   PayCircleOutlined,
-  WarningOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { Badge, Card, Statistic } from 'antd'
+import { Card, Statistic } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   DASHBOARD_METRIC_TARGETS,
   type DashboardPendingMetric,
-  fetchDashboardPendingMetrics,
+  fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
@@ -22,26 +21,25 @@ const METRIC_ICONS: Record<
 > = {
   'purchase-audit': AuditOutlined,
   'outbound-task': ExportOutlined,
-  receivable: PayCircleOutlined,
-  'stock-alert': WarningOutlined,
+  'statement-confirm': PayCircleOutlined,
 }
 
 const METRIC_TITLE_KEYS: Record<DashboardPendingMetric['key'], string> = {
   'purchase-audit': 'dashboard.metrics.purchaseAudit',
   'outbound-task': 'dashboard.metrics.outboundTask',
-  receivable: 'dashboard.metrics.receivable',
-  'stock-alert': 'dashboard.metrics.stockAlert',
+  'statement-confirm': 'dashboard.metrics.statementConfirm',
 }
 
 /** 工作台顶部核心指标卡：点击直达对应列表页并携带「待处理」筛选意图 */
 export function DashboardPendingMetrics() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
-  const { data: metrics } = useQuery({
-    queryKey: QUERY_KEYS.dashboardPendingMetrics,
-    queryFn: fetchDashboardPendingMetrics,
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.dashboardWorkspace,
+    queryFn: fetchDashboardWorkspace,
     refetchInterval: 120000,
   })
+  const metrics = data?.pendingMetrics
 
   if (!metrics?.length) {
     return null
@@ -71,29 +69,11 @@ export function DashboardPendingMetrics() {
                 value={metric.count}
               />
               <div className="dashboard-metric-hint">
-                {metric.key === 'receivable' && metric.amount != null
-                  ? t('dashboard.metrics.receivableAmount', {
+                {metric.key === 'statement-confirm' && metric.amount != null
+                  ? t('dashboard.metrics.statementAmount', {
                       amount: formatAmount(metric.amount),
                     })
                   : null}
-                {metric.key === 'stock-alert' ? (
-                  <Badge
-                    status={
-                      metric.severity === 'danger'
-                        ? 'error'
-                        : metric.severity === 'warning'
-                          ? 'warning'
-                          : 'default'
-                    }
-                    text={t(
-                      metric.severity === 'danger'
-                        ? 'dashboard.metrics.stockAlertStates.danger'
-                        : metric.severity === 'warning'
-                          ? 'dashboard.metrics.stockAlertStates.warning'
-                          : 'dashboard.metrics.stockAlertStates.normal',
-                    )}
-                  />
-                ) : null}
               </div>
             </div>
           </Card>

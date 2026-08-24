@@ -98,14 +98,8 @@ export const zhCN = {
     metrics: {
       purchaseAudit: '待审核采购',
       outboundTask: '待出库任务',
-      receivable: '待收款订单',
-      receivableAmount: '金额 {{amount}}',
-      stockAlert: '库存预警',
-      stockAlertStates: {
-        normal: '正常',
-        warning: '预警',
-        danger: '告急',
-      },
+      statementConfirm: '待确认对账',
+      statementAmount: '待确认金额 {{amount}}',
     },
     todo: {
       title: '待办工作台',
@@ -118,9 +112,9 @@ export const zhCN = {
       columns: {
         docNo: '单据编号',
         bizType: '业务类型',
-        contract: '关联合同',
-        customer: '客户',
-        createdAt: '创建时间',
+        relatedDocument: '关联单据',
+        counterparty: '往来单位',
+        businessDate: '业务日期',
         action: '操作',
       },
       goProcess: '去处理',
@@ -133,16 +127,6 @@ export const zhCN = {
       newSalesOrder: '新增销售订单',
       newOutbound: '新增出库单',
       newMasterData: '新增基础资料',
-    },
-    notices: {
-      title: '系统公告与预警',
-      empty: '暂无公告',
-      drawerTitle: '公告详情',
-      levels: {
-        info: '通知',
-        warn: '预警',
-        critical: '重要',
-      },
     },
     account: {
       title: '账户概况',

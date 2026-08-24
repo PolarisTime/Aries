@@ -66,7 +66,7 @@ export function DashboardSkeleton() {
 
         <aside className="dashboard-workplace-sidebar">
           <div className="dashboard-sidebar-panels">
-            {['quick', 'notices', 'account'].map((key) => (
+            {['quick', 'account'].map((key) => (
               <section
                 key={`skeleton-side-${key}`}
                 className="dashboard-skeleton-panel"

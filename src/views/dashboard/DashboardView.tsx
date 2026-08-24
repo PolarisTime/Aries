@@ -10,7 +10,6 @@ import { AppVersionFooter } from '@/layouts/AppVersionFooter'
 import { DashboardAccountCard } from '@/views/dashboard/DashboardAccountCard'
 import { DashboardFlowCardPlaceholder } from '@/views/dashboard/DashboardFlowCardPlaceholder'
 import { DashboardGreetingHeader } from '@/views/dashboard/DashboardGreetingHeader'
-import { DashboardNoticePanel } from '@/views/dashboard/DashboardNoticePanel'
 import { DashboardPendingMetrics } from '@/views/dashboard/DashboardPendingMetrics'
 import { DashboardQuickActions } from '@/views/dashboard/DashboardQuickActions'
 import { DashboardTodoPanel } from '@/views/dashboard/DashboardTodoPanel'
@@ -22,7 +21,7 @@ const LazyDashboardFlowCard = lazy(() =>
   })),
 )
 
-/** 工作台看板：问候语 + 待处理指标 + 待办/业务链路 + 快捷入口/公告/账户概况 */
+/** 工作台看板：问候语 + 待处理指标 + 待办/业务链路 + 快捷入口/账户概况 */
 export function DashboardView() {
   const { t } = useTranslation()
   const isPageVisible = usePageVisibility()
@@ -68,7 +67,6 @@ export function DashboardView() {
 
           <aside className="dashboard-workplace-sidebar dashboard-context-region">
             <DashboardQuickActions />
-            <DashboardNoticePanel />
             <DashboardAccountCard summary={summary} />
           </aside>
         </div>

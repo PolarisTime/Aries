@@ -1,20 +1,13 @@
 import { z } from 'zod'
-import {
-  MOCK_NOTICES,
-  MOCK_PENDING_METRICS,
-  MOCK_TODO_ITEMS,
-} from '@/api/system/dashboard-workspace-fixtures'
+import { fetchModulePage } from '@/api/business/business-listing-fetch'
+import { fetchCustomerStatementSummary } from '@/api/finance/customer-statement-summary'
 import {
   responseDateTimeSchema,
   responseEntityIdSchema,
   responseNonNegativeIntegerSchema,
 } from '@/shared/schemas/api'
 
-/**
- * 工作台看板数据契约（前端先行阶段）。
- * schema 即接口契约：mock 实现与后续真实 HTTP 实现（apiGet + ENDPOINTS 登记）
- * 共用同一校验层，UI 层零改动切换。
- */
+const DASHBOARD_PAGE_SIZE = 8
 
 export const DASHBOARD_TODO_CATEGORIES = [
   'all',
@@ -25,24 +18,20 @@ export const DASHBOARD_TODO_CATEGORIES = [
 
 export type DashboardTodoCategory = (typeof DASHBOARD_TODO_CATEGORIES)[number]
 
-export const dashboardTodoItemSchema = z.object({
-  /** 雪花 ID，跨端一律十进制字符串 */
+const dashboardTodoItemSchema = z.strictObject({
   id: responseEntityIdSchema,
   docNo: z.string().min(1),
-  bizType: z.string().min(1),
   category: z.enum(['purchase-audit', 'sales-delivery', 'finance-reconcile']),
-  relatedContractNo: z.string().nullable(),
-  relatedCustomerName: z.string().nullable(),
-  /** 金额沿仓库约定：number（finite），精度由 DTO 序列化保证 */
+  relatedDocumentNo: z.string().min(1).nullable(),
+  counterpartyName: z.string().min(1),
   amount: z.number().finite().nullable(),
-  createdAt: responseDateTimeSchema,
-  urgency: z.enum(['high', 'normal']),
+  businessDate: responseDateTimeSchema,
 })
 
 export type DashboardTodoItem = z.output<typeof dashboardTodoItemSchema>
 
-export const dashboardPendingMetricSchema = z.object({
-  key: z.enum(['purchase-audit', 'outbound-task', 'receivable', 'stock-alert']),
+const dashboardPendingMetricSchema = z.strictObject({
+  key: z.enum(['purchase-audit', 'outbound-task', 'statement-confirm']),
   count: responseNonNegativeIntegerSchema,
   amount: z.number().finite().nullable(),
   severity: z.enum(['danger', 'warning', 'info']),
@@ -52,57 +41,115 @@ export type DashboardPendingMetric = z.output<
   typeof dashboardPendingMetricSchema
 >
 
-export const dashboardNoticeSchema = z.object({
-  id: responseEntityIdSchema,
-  level: z.enum(['info', 'warn', 'critical']),
-  title: z.string().min(1),
-  content: z.string(),
-  publishedAt: responseDateTimeSchema,
+const dashboardWorkspaceSchema = z.strictObject({
+  todoItems: z.array(dashboardTodoItemSchema),
+  pendingMetrics: z.array(dashboardPendingMetricSchema),
 })
 
-export type DashboardNotice = z.output<typeof dashboardNoticeSchema>
+export type DashboardWorkspace = z.output<typeof dashboardWorkspaceSchema>
 
-/**
- * 待审核采购 / 待出库任务等指标的「待处理」筛选意图：
- * 跳转列表页时携带 status 查询参数（模块筛选白名单校验见 route-sync）。
- */
+const customerStatementTodoSourceSchema = z.object({
+  id: responseEntityIdSchema,
+  statementNo: z.string().min(1),
+  customerName: z.string().min(1),
+  endDate: responseDateTimeSchema,
+  closingAmount: z.number().finite(),
+})
+
 export const DASHBOARD_METRIC_TARGETS: Record<
   DashboardPendingMetric['key'],
-  { pathname: string; search?: string }
+  { pathname: string; search: string }
 > = {
-  'purchase-audit': { pathname: '/purchase-order', search: 'status=待审核' },
-  'outbound-task': { pathname: '/sales-outbound', search: 'status=部分出库' },
-  receivable: { pathname: '/receipt', search: 'status=未审核' },
-  'stock-alert': { pathname: '/material' },
+  'purchase-audit': { pathname: '/purchase-order', search: 'status=草稿' },
+  'outbound-task': { pathname: '/sales-order', search: 'status=已审核' },
+  'statement-confirm': {
+    pathname: '/customer-statement',
+    search: 'status=待确认',
+  },
 }
 
-function parseAll<Item>(
-  schema: z.ZodType<Item>,
-  items: readonly unknown[],
-): Item[] {
-  return items.map((item) => schema.parse(item))
-}
+export async function fetchDashboardWorkspace(): Promise<DashboardWorkspace> {
+  const [purchaseOrders, salesOrders, customerStatements, statementSummary] =
+    await Promise.all([
+      fetchModulePage(
+        'purchase-order',
+        { status: '草稿', sortBy: 'orderDate', direction: 'desc' },
+        0,
+        DASHBOARD_PAGE_SIZE,
+      ),
+      fetchModulePage(
+        'sales-order',
+        { status: '已审核', sortBy: 'deliveryDate', direction: 'desc' },
+        0,
+        DASHBOARD_PAGE_SIZE,
+      ),
+      fetchModulePage(
+        'customer-statement',
+        { status: '待确认', sortBy: 'endDate', direction: 'desc' },
+        0,
+        DASHBOARD_PAGE_SIZE,
+      ),
+      fetchCustomerStatementSummary({ status: '待确认' }),
+    ])
 
-/** 待办清单。Mock 阶段按类目内存过滤；后端就绪后替换为 apiGet 分页查询。 */
-export function fetchDashboardTodoItems(
-  category: DashboardTodoCategory,
-): Promise<DashboardTodoItem[]> {
-  const items = parseAll(dashboardTodoItemSchema, MOCK_TODO_ITEMS)
-  if (category === 'all') {
-    return Promise.resolve(items)
-  }
-  const filtered = items.filter((item) => item.category === category)
-  return Promise.resolve(filtered)
-}
-
-export function fetchDashboardPendingMetrics(): Promise<
-  DashboardPendingMetric[]
-> {
-  return Promise.resolve(
-    parseAll(dashboardPendingMetricSchema, MOCK_PENDING_METRICS),
+  const todoItems = [
+    ...purchaseOrders.rows.map((order) => ({
+      id: order.id,
+      docNo: order.orderNo,
+      category: 'purchase-audit' as const,
+      relatedDocumentNo: null,
+      counterpartyName: order.supplierName,
+      amount: order.totalAmount,
+      businessDate: order.orderDate,
+    })),
+    ...salesOrders.rows.map((order) => ({
+      id: order.id,
+      docNo: order.orderNo,
+      category: 'sales-delivery' as const,
+      relatedDocumentNo: order.purchaseOrderNo,
+      counterpartyName: order.customerName,
+      amount: order.totalAmount,
+      businessDate: order.deliveryDate,
+    })),
+    ...customerStatements.rows.map((rawStatement) => {
+      const statement = customerStatementTodoSourceSchema.parse(rawStatement)
+      return {
+        id: statement.id,
+        docNo: statement.statementNo,
+        category: 'finance-reconcile' as const,
+        relatedDocumentNo: null,
+        counterpartyName: statement.customerName,
+        amount: statement.closingAmount,
+        businessDate: statement.endDate,
+      }
+    }),
+  ].sort(
+    (left, right) =>
+      right.businessDate.localeCompare(left.businessDate) ||
+      right.id.localeCompare(left.id),
   )
-}
 
-export function fetchDashboardNotices(): Promise<DashboardNotice[]> {
-  return Promise.resolve(parseAll(dashboardNoticeSchema, MOCK_NOTICES))
+  return dashboardWorkspaceSchema.parse({
+    todoItems,
+    pendingMetrics: [
+      {
+        key: 'purchase-audit',
+        count: purchaseOrders.totalElements,
+        amount: null,
+        severity: purchaseOrders.totalElements > 0 ? 'danger' : 'info',
+      },
+      {
+        key: 'outbound-task',
+        count: salesOrders.totalElements,
+        amount: null,
+        severity: salesOrders.totalElements > 0 ? 'warning' : 'info',
+      },
+      {
+        key: 'statement-confirm',
+        count: statementSummary.documentCount,
+        amount: statementSummary.closingAmount,
+        severity: 'info',
+      },
+    ],
+  })
 }
