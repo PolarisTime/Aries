@@ -1986,6 +1986,8 @@
   padding-top: 8px;
 }
 
+/* 次级行无操作列，须脱离父级 subgrid 独立成 4 等列，
+ * 否则字段会流入第 5 列 auto 轨道导致列宽漂移、与主行错位 */
 .module-filter-secondary-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
