@@ -18,7 +18,7 @@ import {
 } from '../shared/settlement-company'
 import {
   buildStatementOverview,
-  compactBatchCustomerStatementItemColumns,
+  compactCustomerStatementItemColumns,
   statusMap,
 } from '../shared/shared'
 
@@ -420,7 +420,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       )
     },
   },
-  itemColumns: compactBatchCustomerStatementItemColumns,
+  itemColumns: compactCustomerStatementItemColumns,
   data: [],
   buildOverview: (rows) =>
     buildStatementOverview(

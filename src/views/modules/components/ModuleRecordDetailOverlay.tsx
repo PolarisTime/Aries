@@ -14,7 +14,12 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
+import {
+  type CustomerStatementItemGroup,
+  groupCustomerStatementItems,
+} from '@/views/modules/customer-statement-item-groups'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
 import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
@@ -64,24 +69,26 @@ export function ModuleRecordDetailOverlay({
   const detailItemGroups =
     config.key === 'freight-statement'
       ? groupFreightStatementItems(record?.items || [])
-      : [
-          {
-            key: 'all',
-            sourceNo: '',
-            customerName: '',
-            projectName: '',
-            totalQuantity: 0,
-            totalWeightTon: 0,
-            items: record?.items || [],
-          },
-        ]
+      : config.key === 'customer-statement'
+        ? groupCustomerStatementItems(record?.items || [])
+        : [
+            {
+              key: 'all',
+              sourceNo: '',
+              customerName: '',
+              projectName: '',
+              totalQuantity: 0,
+              totalWeightTon: 0,
+              items: record?.items || [],
+            },
+          ]
   const detailTableColumns: TableColumnsType<ModuleLineItem> =
     detailItemColumns.map((column) => ({
       title: column.title,
       dataIndex: column.dataIndex,
       key: column.dataIndex,
       width: column.width,
-      align: 'center',
+      align: column.align || 'center',
       render: (value: unknown, record: ModuleLineItem) =>
         column.dataIndex === 'pieceWeightTon' &&
         shouldDisplayPieceWeightAsDash(record)
@@ -190,15 +197,27 @@ export function ModuleRecordDetailOverlay({
                 {(detailItemGroups.length
                   ? detailItemGroups
                   : [
-                      {
-                        key: 'empty',
-                        sourceNo: '',
-                        customerName: '',
-                        projectName: '',
-                        totalQuantity: 0,
-                        totalWeightTon: 0,
-                        items: [],
-                      },
+                      ...(config.key === 'customer-statement'
+                        ? [
+                            {
+                              key: 'empty',
+                              groupNo: 1,
+                              sourceNo: '',
+                              deliveryDate: '',
+                              items: [],
+                            },
+                          ]
+                        : [
+                            {
+                              key: 'empty',
+                              sourceNo: '',
+                              customerName: '',
+                              projectName: '',
+                              totalQuantity: 0,
+                              totalWeightTon: 0,
+                              items: [],
+                            },
+                          ]),
                     ]
                 ).map((group) => (
                   <div className="module-items-group" key={group.key}>
@@ -220,6 +239,19 @@ export function ModuleRecordDetailOverlay({
                             />
                           </div>
                         ))}
+                      </>
+                    ) : config.key === 'customer-statement' ? (
+                      <>
+                        <CustomerStatementItemGroupHeader
+                          group={
+                            group as CustomerStatementItemGroup<ModuleLineItem>
+                          }
+                        />
+                        <ModuleItemsTable
+                          columns={detailTableColumns}
+                          dataSource={group.items}
+                          emptyText={t('modules.detail.noDetailItems')}
+                        />
                       </>
                     ) : (
                       <ModuleItemsTable

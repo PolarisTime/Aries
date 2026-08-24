@@ -788,6 +788,9 @@ export const enUS = {
       freightBillProjectGroupCustomer: 'Customer: {{customerName}}',
       freightBillProjectGroupTotal:
         'Subtotal: Qty {{quantity}}, Weight {{weight}} ton',
+      customerStatementGroupNo: 'Group: ',
+      customerStatementSalesOrderNo: 'Sales order: ',
+      customerStatementDeliveryDate: 'Delivery date: ',
     },
     expense: {
       chargeName: 'Charge Name',

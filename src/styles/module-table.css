@@ -497,6 +497,34 @@
   color: var(--text-primary);
 }
 
+.module-items-customer-statement-group-title {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.7fr) minmax(180px, 1.4fr) minmax(
+      150px,
+      1fr
+    );
+  gap: 12px;
+  align-items: center;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-hover);
+}
+
+.module-items-customer-statement-group-title > span {
+  display: inline-flex;
+  gap: 6px;
+  min-width: 0;
+  align-items: baseline;
+}
+
+@media (max-width: 720px) {
+  .module-items-customer-statement-group-title {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
 .module-items-project-group {
   min-width: 0;
   border-left: 2px solid var(--theme-border-subtle);

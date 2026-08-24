@@ -764,6 +764,9 @@ export const zhCN = {
       freightBillProjectGroupCustomer: '客户：{{customerName}}',
       freightBillProjectGroupTotal:
         '小计：数量 {{quantity}}，重量 {{weight}} 吨',
+      customerStatementGroupNo: '分组序号：',
+      customerStatementSalesOrderNo: '销售单号：',
+      customerStatementDeliveryDate: '交货日期：',
     },
     expense: {
       chargeName: '费用名称',

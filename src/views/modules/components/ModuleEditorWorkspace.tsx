@@ -36,12 +36,17 @@ import type {
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import { message } from '@/utils/antd-app'
+import {
+  type CustomerStatementItemGroup,
+  groupCustomerStatementItems,
+} from '@/views/modules/customer-statement-item-groups'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 import type { EditorSaveResult } from '@/views/modules/use-editor-submission-controller'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
+import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
 import { EditorFooterActions } from './EditorFooterActions'
 import {
   FreightStatementItemGroupHeader,
@@ -744,7 +749,7 @@ function SaveResultOverlay<Key extends ModuleKey>({
         title: column.title,
         dataIndex: column.dataIndex,
         ellipsis: true,
-        align: 'center' as const,
+        align: column.align || ('center' as const),
         render: (value: unknown) =>
           value == null || value === ''
             ? '-'
@@ -754,17 +759,19 @@ function SaveResultOverlay<Key extends ModuleKey>({
   const itemGroups =
     moduleKey === 'freight-statement'
       ? groupFreightStatementItems(items)
-      : [
-          {
-            key: 'all',
-            sourceNo: '',
-            customerName: '',
-            projectName: '',
-            totalQuantity: 0,
-            totalWeightTon: 0,
-            items,
-          },
-        ]
+      : moduleKey === 'customer-statement'
+        ? groupCustomerStatementItems(items)
+        : [
+            {
+              key: 'all',
+              sourceNo: '',
+              customerName: '',
+              projectName: '',
+              totalQuantity: 0,
+              totalWeightTon: 0,
+              items,
+            },
+          ]
 
   return (
     <WorkspaceOverlay
@@ -814,17 +821,27 @@ function SaveResultOverlay<Key extends ModuleKey>({
         <div className="mt-16 module-items-groups">
           {(itemGroups.length
             ? itemGroups
-            : [
-                {
-                  key: 'empty',
-                  sourceNo: '',
-                  customerName: '',
-                  projectName: '',
-                  totalQuantity: 0,
-                  totalWeightTon: 0,
-                  items: [],
-                },
-              ]
+            : moduleKey === 'customer-statement'
+              ? [
+                  {
+                    key: 'empty',
+                    groupNo: 1,
+                    sourceNo: '',
+                    deliveryDate: '',
+                    items: [],
+                  },
+                ]
+              : [
+                  {
+                    key: 'empty',
+                    sourceNo: '',
+                    customerName: '',
+                    projectName: '',
+                    totalQuantity: 0,
+                    totalWeightTon: 0,
+                    items: [],
+                  },
+                ]
           ).map((group) => (
             <div className="module-items-group" key={group.key}>
               {'projectGroups' in group ? (
@@ -847,6 +864,23 @@ function SaveResultOverlay<Key extends ModuleKey>({
                       />
                     </div>
                   ))}
+                </>
+              ) : moduleKey === 'customer-statement' ? (
+                <>
+                  <CustomerStatementItemGroupHeader
+                    group={
+                      group as CustomerStatementItemGroup<
+                        Record<string, unknown>
+                      >
+                    }
+                  />
+                  <Table
+                    rowKey={(_, i) => String(i)}
+                    dataSource={group.items}
+                    columns={itemColumns}
+                    size="small"
+                    pagination={false}
+                  />
                 </>
               ) : (
                 <Table

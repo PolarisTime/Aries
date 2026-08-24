@@ -14,9 +14,14 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import {
+  type CustomerStatementItemGroup,
+  groupCustomerStatementItems,
+} from '@/views/modules/customer-statement-item-groups'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
+import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
 import { EditorFooterActions } from './EditorFooterActions'
 import {
   FreightStatementItemGroupHeader,
@@ -138,30 +143,42 @@ export function ModuleEditorItemsSection({
   const itemGroups =
     config.key === 'freight-statement'
       ? groupFreightStatementItems(items)
+      : config.key === 'customer-statement'
+        ? groupCustomerStatementItems(items)
+        : [
+            {
+              key: 'all',
+              sourceNo: '',
+              customerName: '',
+              projectName: '',
+              totalQuantity: 0,
+              totalWeightTon: 0,
+              items,
+            },
+          ]
+  const renderedItemGroups = itemGroups.length
+    ? itemGroups
+    : config.key === 'customer-statement'
+      ? [
+          {
+            key: 'empty',
+            groupNo: 1,
+            sourceNo: '',
+            deliveryDate: '',
+            items: [],
+          },
+        ]
       : [
           {
-            key: 'all',
+            key: 'empty',
             sourceNo: '',
             customerName: '',
             projectName: '',
             totalQuantity: 0,
             totalWeightTon: 0,
-            items,
+            items: [],
           },
         ]
-  const renderedItemGroups = itemGroups.length
-    ? itemGroups
-    : [
-        {
-          key: 'empty',
-          sourceNo: '',
-          customerName: '',
-          projectName: '',
-          totalQuantity: 0,
-          totalWeightTon: 0,
-          items: [],
-        },
-      ]
 
   const parentSelector = config.parentImport ? (
     <ModuleParentSelectorOverlay
@@ -381,6 +398,33 @@ export function ModuleEditorItemsSection({
                           />
                         </div>
                       ))}
+                    </>
+                  ) : config.key === 'customer-statement' ? (
+                    <>
+                      <CustomerStatementItemGroupHeader
+                        group={
+                          group as CustomerStatementItemGroup<ModuleLineItem>
+                        }
+                      />
+                      <ModuleItemsTable
+                        columns={itemColumns}
+                        components={itemTableComponents}
+                        dataSource={group.items}
+                        emptyText={
+                          config.parentImport
+                            ? t('modules.itemsSection.emptyTextWithImport')
+                            : t('modules.itemsSection.emptyText')
+                        }
+                        rowClassName={(record) =>
+                          selectedItemIds.includes(record.id)
+                            ? 'ant-table-row-selected'
+                            : ''
+                        }
+                        onRow={(record) => ({
+                          onDragOver: (event: React.DragEvent<Element>) =>
+                            onRowDragOver(record.id, event),
+                        })}
+                      />
                     </>
                   ) : (
                     <ModuleItemsTable

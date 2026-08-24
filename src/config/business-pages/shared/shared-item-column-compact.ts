@@ -1,6 +1,6 @@
 import i18next from 'i18next'
+import type { ModuleColumnDefinition } from '@/types/module-page'
 import {
-  batchOrderItemColumns,
   purchaseInboundItemColumns,
   purchaseItemColumns,
 } from './shared-item-column-base'
@@ -41,15 +41,85 @@ export const compactPurchaseInboundItemColumns = applyCompactItemLayout(
   ['piecesPerBundle'],
 )
 
-export const compactBatchCustomerStatementItemColumns = applyCompactItemLayout(
-  [
-    {
-      title: i18next.t('modules.columns.orderNo'),
-      dataIndex: 'sourceNo',
-      width: 160,
-    },
-    ...batchOrderItemColumns,
-  ],
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
+export const compactCustomerStatementItemColumns: ModuleColumnDefinition[] = [
+  {
+    title: i18next.t('modules.columns.brand'),
+    dataIndex: 'brand',
+    width: 86,
+    required: true,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.category'),
+    dataIndex: 'category',
+    width: 72,
+    required: true,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.material'),
+    dataIndex: 'material',
+    width: 82,
+    required: true,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.spec'),
+    dataIndex: 'spec',
+    width: 100,
+    required: true,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.length'),
+    dataIndex: 'length',
+    width: 70,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.quantity'),
+    dataIndex: 'quantity',
+    width: 76,
+    align: 'center',
+    type: 'count',
+    required: true,
+  },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 76,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.pieceWeightTon'),
+    dataIndex: 'pieceWeightTon',
+    width: 92,
+    align: 'right',
+    type: 'weight',
+    required: true,
+  },
+  {
+    title: i18next.t('modules.columns.weightTon'),
+    dataIndex: 'weightTon',
+    width: 108,
+    align: 'right',
+    type: 'weight',
+    required: true,
+  },
+  {
+    title: i18next.t('modules.columns.unitPrice'),
+    dataIndex: 'unitPrice',
+    width: 88,
+    align: 'right',
+    type: 'amount',
+    required: true,
+  },
+  {
+    title: i18next.t('modules.columns.amount'),
+    dataIndex: 'amount',
+    width: 100,
+    align: 'right',
+    type: 'amount',
+    required: true,
+  },
+]
