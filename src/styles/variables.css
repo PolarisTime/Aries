@@ -67,7 +67,7 @@
   --theme-text-muted-light: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
   --app-header-height: 48px;
   --app-tabbar-height: 38px;
-  --app-content-padding: 8px 0px 0px 0px;
+  --app-content-padding: 4px 0px 0px 0px;
   --app-page-gap: 0px;
   --app-card-body-padding: 12px;
   --app-table-cell-padding-y: 12px;
