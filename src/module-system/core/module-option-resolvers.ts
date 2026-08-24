@@ -82,6 +82,7 @@ export function getCustomerOptions() {
 
 export function getCustomerProjectOptions(
   form?: ModuleRecordInput,
+  loadedOptions?: readonly ProjectOption[],
 ): ProjectOption[] {
   const customerIdentity =
     form?.customerId ??
@@ -89,9 +90,14 @@ export function getCustomerProjectOptions(
       ? form?.counterpartyId
       : undefined)
   const customerId = optionalId(customerIdentity, 'customerId')
-  return customerId
-    ? cachedOptions<ProjectOption>(QUERY_KEYS.masterOptions.project(customerId))
-    : []
+  if (!customerId) {
+    return []
+  }
+
+  const options =
+    loadedOptions ??
+    cachedOptions<ProjectOption>(QUERY_KEYS.masterOptions.project(customerId))
+  return options.filter((option) => option.customerId === customerId)
 }
 
 export function findProjectOption(

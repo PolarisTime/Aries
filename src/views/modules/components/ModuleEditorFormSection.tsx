@@ -1,5 +1,6 @@
 import { Alert, Col, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import type { ProjectOption } from '@/api/master/project-options'
 import { isEditorFieldDisabledForModule } from '@/module-system/adapter/module-adapter-editor'
 import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
 import { groupFieldsByRow } from '@/module-system/presentation/module-field-layout'
@@ -30,6 +31,7 @@ interface Props {
   lockedLineItemsNotice: string
   authoritativePrimaryNo?: string
   layoutVariant?: 'default' | 'finance'
+  projectOptions?: readonly ProjectOption[]
 }
 
 function getFieldSpan(
@@ -55,6 +57,7 @@ export function ModuleEditorFormSection({
   lockedLineItemsNotice,
   authoritativePrimaryNo,
   layoutVariant = 'default',
+  projectOptions = [],
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
@@ -114,6 +117,7 @@ export function ModuleEditorFormSection({
             <Col key={field.key} span={getFieldSpan(field, layoutVariant)}>
               <FormFieldRenderer
                 field={field}
+                projectOptions={projectOptions}
                 disabled={isEditorFieldDisabledForModule(
                   moduleKey,
                   field.key,

@@ -8,6 +8,8 @@ import {
 } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ProjectOption } from '@/api/master/project-options'
+import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
 import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
@@ -22,6 +24,7 @@ import { asString } from '@/utils/type-narrowing'
 interface Props {
   field: ModuleFormFieldDefinition
   disabled?: boolean
+  projectOptions?: readonly ProjectOption[]
 }
 
 type SelectOptionValue = string | number | boolean
@@ -74,7 +77,11 @@ function withCurrentSnapshotOption(
   return [{ label, value }, ...options]
 }
 
-export function FormFieldRenderer({ field, disabled }: Props) {
+export function FormFieldRenderer({
+  field,
+  disabled,
+  projectOptions = [],
+}: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
@@ -87,7 +94,9 @@ export function FormFieldRenderer({ field, disabled }: Props) {
   const fieldId = buildFormControlId('module-form', field.key)
   const resolvedOptions =
     typeof field.options === 'function'
-      ? field.options(formValues)
+      ? field.options === getCustomerProjectOptions
+        ? getCustomerProjectOptions(formValues, projectOptions)
+        : field.options(formValues)
       : field.options || []
   const selectOptions = Array.isArray(resolvedOptions)
     ? resolvedOptions.map((opt) => ({

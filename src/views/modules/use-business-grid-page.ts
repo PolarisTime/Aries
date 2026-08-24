@@ -9,10 +9,6 @@ import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
 import { useExcelExport } from '@/hooks/useExcelExport'
 import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
-import {
-  resolveMasterOptionRequirements,
-  useMasterOptions,
-} from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
 import {
@@ -114,10 +110,6 @@ export function useBusinessGridPage({
   const defaultPageSize = useDefaultPageSize()
   const [pageSize, setPageSize] = useState(defaultPageSize)
   const { formatCellValue } = useModuleDisplaySupport()
-  const listOptionRequirements = resolveMasterOptionRequirements(
-    config?.filters || [],
-  )
-
   const {
     filters,
     submittedFilters,
@@ -131,9 +123,6 @@ export function useBusinessGridPage({
     defaultFilters,
     setCurrentPage: (page: number) => setCurrentPage(page),
   })
-  const listCustomerId = asString(filters.customerId).trim() || undefined
-  useMasterOptions(listOptionRequirements, true, listCustomerId)
-
   const {
     records,
     total,

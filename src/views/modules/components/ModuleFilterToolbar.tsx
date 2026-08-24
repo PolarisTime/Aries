@@ -4,6 +4,12 @@ import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ProjectOption } from '@/api/master/project-options'
+import {
+  resolveMasterOptionRequirements,
+  useMasterOptions,
+} from '@/hooks/useMasterOptions'
+import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -87,6 +93,7 @@ function ModuleFilterField({
   onUpdateFilter,
   onCommitFilter,
   onCommitTextFilter,
+  projectOptions,
 }: {
   field: ModuleFilterDefinition
   filters: SearchParams
@@ -94,6 +101,7 @@ function ModuleFilterField({
   onUpdateFilter: (key: string, value: unknown) => void
   onCommitFilter: (key: string, value: unknown) => void
   onCommitTextFilter: (key: string, value: string) => void
+  projectOptions: readonly ProjectOption[]
 }) {
   const { t } = useTranslation()
   const fieldId = buildFormControlId('module-filter', field.key)
@@ -101,7 +109,9 @@ function ModuleFilterField({
   const resolveOptions = () => {
     const rawOptions =
       typeof field.options === 'function'
-        ? field.options(filters)
+        ? field.options === getCustomerProjectOptions
+          ? getCustomerProjectOptions(filters, projectOptions)
+          : field.options(filters)
         : field.options || []
 
     return rawOptions.map((option: ModuleFilterOptionEntry) => {
@@ -213,6 +223,13 @@ export function ModuleFilterToolbar({
   const [expanded, setExpanded] = useState(false)
   const secondaryRegionId = useId()
   const lastTextCommitAtRef = useRef(0)
+  const optionRequirements = resolveMasterOptionRequirements(config.filters)
+  const customerId = asString(filters.customerId).trim() || undefined
+  const { projects: projectOptions } = useMasterOptions(
+    optionRequirements,
+    true,
+    customerId,
+  )
 
   const hasConfigKeywordFilter = config.filters.some(
     (field) => field.key === 'keyword',
@@ -290,6 +307,7 @@ export function ModuleFilterToolbar({
             commitFilter(key, value, field.resetKeysOnChange)
           }
           onCommitTextFilter={commitTextFilter}
+          projectOptions={projectOptions}
         />
       </Form.Item>
     </div>

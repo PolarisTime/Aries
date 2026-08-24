@@ -180,7 +180,11 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       : undefined
   const formFields = config.formFields || []
   const formOptionRequirements = resolveMasterOptionRequirements(formFields)
-  useMasterOptions(formOptionRequirements, open, customerId)
+  const { projects: projectOptions } = useMasterOptions(
+    formOptionRequirements,
+    open,
+    customerId,
+  )
   const { materials: masterMaterials } = useMasterOptions(
     { materials: true },
     open,
@@ -443,6 +447,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           <ModuleEditorFormSection
             config={config}
             moduleKey={moduleKey}
+            projectOptions={projectOptions}
             auditLabel={editorAuditLabel}
             actions={{
               canSave,
