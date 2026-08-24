@@ -61,7 +61,7 @@ export function AppUpdatePrompt() {
         </Button>
       }
       keyboard={false}
-      maskClosable={false}
+      mask={{ closable: false }}
       open={open}
       title={
         <Space size="small">

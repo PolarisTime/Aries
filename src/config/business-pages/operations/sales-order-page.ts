@@ -251,30 +251,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'purchaseOrderNo',
-      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
-      type: 'input',
-      disabled: true,
-      placeholder: i18next.t(
-        'modules.pages.salesOrder.placeholderPurchaseOrderNo',
-      ),
-      row: 1,
-    },
-    {
-      key: 'salesName',
-      label: i18next.t('modules.pages.salesOrder.colSalesName'),
-      type: 'input',
-      required: true,
-      disabled: true,
-      row: 1,
-    },
-    {
       key: 'customerId',
       label: i18next.t('modules.pages.salesOrder.colCustomerName'),
       type: 'select',
       required: true,
       options: getCustomerOptions,
-      row: 2,
+      row: 1,
     },
     {
       key: 'projectId',
@@ -282,13 +264,31 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerProjectOptions,
-      row: 2,
+      row: 1,
     },
     {
       key: 'deliveryDate',
       label: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       type: 'date',
       required: true,
+      row: 1,
+    },
+    {
+      key: 'purchaseOrderNo',
+      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
+      type: 'input',
+      disabled: true,
+      placeholder: i18next.t(
+        'modules.pages.salesOrder.placeholderPurchaseOrderNo',
+      ),
+      row: 2,
+    },
+    {
+      key: 'salesName',
+      label: i18next.t('modules.pages.salesOrder.colSalesName'),
+      type: 'input',
+      required: true,
+      disabled: true,
       row: 2,
     },
     {
@@ -296,7 +296,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.columns.remark'),
       type: 'input',
       row: 3,
-      colSpan: 12,
+      fullRow: true,
     },
   ],
   parentImport: {

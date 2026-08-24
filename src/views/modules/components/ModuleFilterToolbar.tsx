@@ -220,7 +220,7 @@ export function ModuleFilterToolbar({
   const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
-  const primaryCapacity = hasConfigKeywordFilter ? 4 : 4
+  const primaryCapacity = 4
   const primaryCandidateFilters = sortedFilters.filter(isPrimaryFilter)
   const firstRowFilters = primaryCandidateFilters.slice(0, primaryCapacity)
   const overflowFilters = primaryCandidateFilters.slice(primaryCapacity)

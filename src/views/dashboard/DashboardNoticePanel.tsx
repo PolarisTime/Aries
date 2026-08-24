@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Card, Drawer, Empty, List, Tag } from 'antd'
+import { Card, Drawer, Empty, Tag } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -33,38 +33,36 @@ export function DashboardNoticePanel() {
 
   return (
     <Card size="small" title={t('dashboard.notices.title')}>
-      <List
-        size="small"
-        dataSource={notices ?? []}
-        locale={{
-          emptyText: (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={t('dashboard.notices.empty')}
-            />
-          ),
-        }}
-        renderItem={(notice) => (
-          <List.Item
-            className="dashboard-notice-item"
-            onClick={() => setActiveNotice(notice)}
-          >
-            <div className="dashboard-notice-copy">
-              <Tag color={NOTICE_LEVEL_COLORS[notice.level]}>
-                {t(NOTICE_LEVEL_LABEL_KEYS[notice.level])}
-              </Tag>
-              <span className="dashboard-notice-title">{notice.title}</span>
-            </div>
-            <span className="dashboard-notice-time">
-              {formatDateTime(notice.publishedAt)}
-            </span>
-          </List.Item>
-        )}
-      />
+      {notices?.length ? (
+        <div className="dashboard-notice-list">
+          {notices.map((notice) => (
+            <button
+              key={notice.id}
+              type="button"
+              className="dashboard-notice-item"
+              onClick={() => setActiveNotice(notice)}
+            >
+              <span className="dashboard-notice-copy">
+                <Tag color={NOTICE_LEVEL_COLORS[notice.level]}>
+                  {t(NOTICE_LEVEL_LABEL_KEYS[notice.level])}
+                </Tag>
+                <span className="dashboard-notice-title">{notice.title}</span>
+              </span>
+              <span className="dashboard-notice-time">
+                {formatDateTime(notice.publishedAt)}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('dashboard.notices.empty')}
+        />
+      )}
       <Drawer
         title={activeNotice?.title ?? t('dashboard.notices.drawerTitle')}
         placement="right"
-        width={420}
         open={Boolean(activeNotice)}
         onClose={() => setActiveNotice(null)}
       >

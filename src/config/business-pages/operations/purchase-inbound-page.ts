@@ -42,16 +42,16 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       options: getSupplierOptions,
     },
     {
-      key: 'settlementCompanyId',
-      label: '结算主体',
-      type: 'select',
-      options: getSettlementCompanyOptions,
-    },
-    {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
       options: buildDocumentStatusOptions('草稿', '已审核', '完成入库'),
+    },
+    {
+      key: 'settlementCompanyId',
+      label: '结算主体',
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'inboundDate',
@@ -223,7 +223,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getSupplierOptions,
-      row: 2,
+      row: 1,
     },
     {
       key: 'settlementCompanyId',
@@ -252,7 +252,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.columns.remark'),
       type: 'input',
       row: 3,
-      colSpan: 6,
+      fullRow: true,
     },
   ],
   parentImport: {

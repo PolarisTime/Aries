@@ -684,9 +684,11 @@
 
 .leo-content {
   position: relative;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding-top: calc(var(--app-header-height) + var(--app-tabbar-height));
+  padding-top: var(--app-header-height);
   overflow: hidden;
 }
 
@@ -739,13 +741,20 @@
 .leo-content-inner {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 auto;
+  height: auto;
   min-height: 0;
   padding: var(--app-content-padding);
   overflow: hidden;
 }
 
 .leo-content-inner > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 面板内的页面根沿用原内容区子项的高度约束行为 */
+.leo-tab-panel > * {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -1811,11 +1820,32 @@
 }
 
 /* ===== 系统公告与预警 ===== */
-.dashboard-notice-item {
-  cursor: pointer;
-  align-items: stretch;
+.dashboard-notice-list {
+  display: flex;
   flex-direction: column;
+}
+
+.dashboard-notice-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 4px;
+  padding: 8px 4px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.dashboard-notice-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-notice-item:hover .dashboard-notice-title {
+  color: var(--theme-primary);
 }
 
 .dashboard-notice-copy {
@@ -1887,7 +1917,9 @@
 
 .module-filter-main-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr))
+    var(--module-filter-actions-width);
   align-items: start;
   gap: 8px 12px;
 }
@@ -1895,7 +1927,7 @@
 .module-filter-fields-grid {
   display: grid;
   grid-template-columns: subgrid;
-  grid-column: 1 / -1;
+  grid-column: 1 / 5;
   gap: 8px 12px;
   min-width: 0;
 }
@@ -1954,6 +1986,7 @@
 
 .module-filter-actions {
   grid-column: 5;
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
@@ -1984,12 +2017,6 @@
 
 .module-filter-secondary-row {
   padding-top: 8px;
-}
-
-/* 次级行无操作列，须脱离父级 subgrid 独立成 4 等列，
- * 否则字段会流入第 5 列 auto 轨道导致列宽漂移、与主行错位 */
-.module-filter-secondary-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .module-table-toolbar {

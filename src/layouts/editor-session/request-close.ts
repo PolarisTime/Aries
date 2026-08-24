@@ -47,7 +47,7 @@ export function requestEditorSessionClose(
     content: t('common.unsavedChangesContent'),
     okText: t('common.discardChanges'),
     cancelText: t('common.cancel'),
-    maskClosable: false,
+    mask: { closable: false },
     onOk: () => {
       editorSessionStore.endSession(tabId)
       onClose()
@@ -83,7 +83,7 @@ export function confirmBatchTabClose(
     content: t('common.unsavedChangesContent'),
     okText: t('common.discardChanges'),
     cancelText: t('common.cancel'),
-    maskClosable: false,
+    mask: { closable: false },
     onOk: () => {
       tabIds.forEach((tabId) => {
         editorSessionStore.endSession(tabId)

@@ -290,7 +290,7 @@ export function useBusinessGridPage({
           '完成销售后将按最终交付结果进入结算，请确认销售出库和实际重量已经核定。',
         okText: '完成销售',
         cancelText: '取消',
-        maskClosable: false,
+        mask: { closable: false },
         onOk: async () => {
           await completeSalesOrder(String(record.id))
           message.success('完成销售成功')

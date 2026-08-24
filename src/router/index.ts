@@ -5,6 +5,7 @@ import {
   createRouter,
   Outlet,
   redirect,
+  type AnyRoute,
 } from '@tanstack/react-router'
 import { lazy } from 'react'
 import { listBusinessModule } from '@/api/business/business-listing'
@@ -184,11 +185,16 @@ const viewLoaders: Record<
     })),
 }
 
-const moduleRoutes = appPageDefinitions.map((def) => {
-  const path = `/${getPageRoutePath(def)}`
-  return createRoute({
-    getParentRoute: () => authenticatedLayoutRoute,
-    path,
+/**
+ * 业务页面路由工厂：主 Router 与多标签页子 Router 共用。
+ * 以传入的父路由为挂载点生成全部页面路由（含 loader 预取），避免两份定义漂移。
+ */
+export function buildModuleRoutes(parent: AnyRoute) {
+  return appPageDefinitions.map((def) => {
+    const path = `/${getPageRoutePath(def)}`
+    return createRoute({
+      getParentRoute: () => parent,
+      path,
     component:
       def.view === 'dashboard'
         ? LazyDashboardView
@@ -229,8 +235,9 @@ const moduleRoutes = appPageDefinitions.map((def) => {
             return config
           }
         : undefined,
+    })
   })
-})
+}
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -257,7 +264,7 @@ const routeTree = rootRoute.addChildren([
   setupRoute,
   serverErrorRoute,
   notFoundRoute,
-  authenticatedLayoutRoute.addChildren(moduleRoutes),
+  authenticatedLayoutRoute.addChildren(buildModuleRoutes(authenticatedLayoutRoute)),
 ])
 
 export { routeTree }

@@ -213,12 +213,19 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      key: 'outboundDate',
+      label: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
+      type: 'date',
+      required: true,
+      row: 1,
+    },
+    {
       key: 'customerId',
       label: i18next.t('modules.pages.salesOutbound.colCustomerName'),
       type: 'select',
       required: true,
       options: getCustomerOptions,
-      row: 2,
+      row: 1,
     },
     {
       key: 'projectId',
@@ -237,17 +244,11 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'outboundDate',
-      label: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
-      type: 'date',
-      required: true,
-      row: 2,
-    },
-    {
       key: 'remark',
       label: i18next.t('modules.columns.remark'),
       type: 'input',
-      row: 2,
+      row: 3,
+      fullRow: true,
     },
   ],
   parentImport: {
