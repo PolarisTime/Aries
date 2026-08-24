@@ -136,6 +136,25 @@ describe('批量移除', () => {
 })
 
 describe('sanitizePersistedTabs', () => {
+  it('仅工作台可以保留钉选状态，避免销售订单等业务 Tab 被缓存为不可关闭', () => {
+    const result = sanitizePersistedTabs([
+      { id: 'sales-order', pathname: '/sales-order', search: '', pinned: true },
+      {
+        id: 'dashboard',
+        pathname: DASHBOARD_TAB_PATH,
+        search: '',
+        pinned: false,
+      },
+    ])
+
+    expect(result.find((tab) => tab.pathname === '/sales-order')?.pinned).toBe(
+      false,
+    )
+    expect(
+      result.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.pinned,
+    ).toBe(true)
+  })
+
   it('过滤未注册路径与重复路径', () => {
     const raw = [
       { id: '1', pathname: '/material', search: '', pinned: false },

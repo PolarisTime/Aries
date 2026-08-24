@@ -206,7 +206,8 @@ export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
             : createTabId(),
         pathname,
         search: normalizeSearch(candidate.search),
-        pinned: pathname === DASHBOARD_TAB_PATH || candidate.pinned === true,
+        // 钉选是工作台的固定布局属性，不信任持久化数据中的任意路径标记。
+        pinned: pathname === DASHBOARD_TAB_PATH,
         mountedOnce: false,
         reloadKey: 0,
       })
