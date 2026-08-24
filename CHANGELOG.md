@@ -1,3 +1,12 @@
+## [9.8.1](https://github.com/PolarisTime/Aries/compare/v9.8.0...v9.8.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **dashboard:** 接入真实业务待办数据 ([a3b7f9f](https://github.com/PolarisTime/Aries/commit/a3b7f9f61316caae8214a2454c96d29cac21ea84))
+* **react:** 稳定项目选项空数组引用 ([75695df](https://github.com/PolarisTime/Aries/commit/75695df42e2ce6bbf0fb66dd8ba98ae527016359))
+* **sales-order:** 修复项目名称下拉异步刷新 ([3c81fce](https://github.com/PolarisTime/Aries/commit/3c81fcebcff5d43ce2c2842e571adcc8ee37d8e1))
+
 # [9.8.0](https://github.com/PolarisTime/Aries/compare/v9.7.0...v9.8.0) (2026-08-24)
 
 
