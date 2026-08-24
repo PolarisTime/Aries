@@ -12,9 +12,9 @@ import {
   Button,
   Card,
   DatePicker,
-  Drawer,
   Empty,
   Input,
+  Modal,
   Segmented,
   Select,
   Space,
@@ -22,6 +22,7 @@ import {
   Table,
   type TableColumnsType,
   type TableProps,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd'
@@ -47,6 +48,10 @@ import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
+import {
+  buildCounterpartyLedgerQuery,
+  COUNTERPARTY_LEDGER_EMPTY_DESCRIPTION,
+} from './finance-overview-support'
 
 const DIRECTION_OPTIONS = [
   { label: '应收', value: 'RECEIVABLE' },
@@ -262,7 +267,7 @@ function FinanceOverviewSummarySection({ items }: { items: SummaryItem[] }) {
   )
 }
 
-function FinanceCounterpartyLedgerDrawer({
+function FinanceCounterpartyLedgerModal({
   balance,
   formatAmount,
   onClose,
@@ -273,29 +278,36 @@ function FinanceCounterpartyLedgerDrawer({
   onClose: () => void
   open: boolean
 }) {
+  const queryParams = balance
+    ? buildCounterpartyLedgerQuery(balance)
+    : undefined
   const query = useQuery({
     queryKey: ['finance', 'counterparty-ledger', balance?.key],
-    queryFn: ({ signal }) =>
-      getCashLedger(
-        {
-          settlementCompanyId: balance?.settlementCompanyId || '',
-          counterpartyType: balance?.counterpartyType,
-          counterpartyId: balance?.counterpartyId,
-          page: 0,
-          size: 100,
-        },
-        signal,
-      ),
+    queryFn: ({ signal }) => {
+      if (!queryParams) {
+        throw new Error('缺少往来方信息')
+      }
+      return getCashLedger(queryParams, signal)
+    },
     enabled: open && Boolean(balance),
   })
   const rows = query.data?.page.content || []
   return (
-    <Drawer
-      title={balance ? `${balance.counterpartyName} · 对账明细` : '对账明细'}
-      open={open}
-      onClose={onClose}
-      size={720}
+    <Modal
+      centered
       destroyOnHidden
+      footer={null}
+      open={open}
+      onCancel={onClose}
+      title={
+        <Space size={8}>
+          <span>
+            {balance ? `${balance.counterpartyName} · 对账明细` : '对账明细'}
+          </span>
+          <Tag color="blue">资金流水</Tag>
+        </Space>
+      }
+      width={960}
     >
       {query.isError ? (
         <Alert
@@ -311,7 +323,15 @@ function FinanceCounterpartyLedgerDrawer({
           loading={query.isFetching}
           dataSource={rows}
           pagination={false}
-          scroll={{ x: 720, y: 520 }}
+          scroll={{ x: 760, y: 520 }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={COUNTERPARTY_LEDGER_EMPTY_DESCRIPTION}
+              />
+            ),
+          }}
           columns={[
             { title: '日期', dataIndex: 'businessDate', width: 110 },
             { title: '流水类型', dataIndex: 'flowType', width: 100 },
@@ -333,7 +353,7 @@ function FinanceCounterpartyLedgerDrawer({
           ]}
         />
       )}
-    </Drawer>
+    </Modal>
   )
 }
 
@@ -742,7 +762,7 @@ export function FinanceOverviewView() {
           />
         </div>
       </div>
-      <FinanceCounterpartyLedgerDrawer
+      <FinanceCounterpartyLedgerModal
         balance={ledgerBalance}
         formatAmount={formatAmount}
         open={Boolean(ledgerBalance)}
