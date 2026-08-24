@@ -22,7 +22,10 @@ interface Props {
   openDetail: (target: string | ModuleRecord) => Promise<void>
   openEditor: (
     record: null,
-    options: { parentImportSource: ModuleParentImportSource },
+    options?: {
+      parentImportSource?: ModuleParentImportSource | null
+      initialValues?: Record<string, unknown>
+    },
   ) => Promise<void>
 }
 
@@ -41,6 +44,19 @@ export function parseRouteParams(searchStr: string) {
     trackId,
     routeKeyword: docNo || trackId,
     shouldOpenDetail: params.get('openDetail') === '1',
+    shouldCreate: params.get('create') === '1',
+    initialValues: Object.fromEntries(
+      [
+        'counterpartyType',
+        'counterpartyId',
+        'counterpartyName',
+        'settlementCompanyId',
+        'settlementCompanyName',
+      ].flatMap((key) => {
+        const value = params.get(key)
+        return value ? [[key, value]] : []
+      }),
+    ),
   }
 }
 
@@ -142,6 +158,7 @@ export function useBusinessGridRouteSync({
 }: Props) {
   const autoOpenedRouteKeyRef = useRef('')
   const autoOpenedParentImportKeyRef = useRef('')
+  const autoOpenedCreateKeyRef = useRef('')
   // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
   const rawSearchStr = location.searchStr
   const routeParams = parseRouteParams(rawSearchStr)
@@ -220,6 +237,22 @@ export function useBusinessGridRouteSync({
     autoOpenedRouteKeyRef.current = resolvedTarget.nextAutoOpenedRouteKey
     void openDetail(resolvedTarget.target)
   }, [config, openDetail, records, rawSearchStr, routeParams.shouldOpenDetail])
+
+  useEffect(() => {
+    if (!routeParams.shouldCreate) {
+      autoOpenedCreateKeyRef.current = ''
+      return
+    }
+    if (!config || autoOpenedCreateKeyRef.current === rawSearchStr) return
+    autoOpenedCreateKeyRef.current = rawSearchStr
+    void openEditor(null, { initialValues: routeParams.initialValues })
+  }, [
+    config,
+    openEditor,
+    rawSearchStr,
+    routeParams.initialValues,
+    routeParams.shouldCreate,
+  ])
 
   useEffect(() => {
     const parentImportSource = resolveParentImportSource(

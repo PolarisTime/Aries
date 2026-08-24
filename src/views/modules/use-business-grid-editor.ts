@@ -34,6 +34,7 @@ interface BusinessGridEditorResult<Key extends ModuleKey> {
   editRecord: PersistedModuleEditorDraftFor<Key> | null
   editorSessionKey: number
   initialParentImportSource: ModuleParentImportSource | null
+  initialEditorValues: Record<string, unknown> | null
   editorLockLoading: boolean
   editorLockRelatedRows: ModuleListRecordFor<ModuleKey>[]
   editorOpen: boolean
@@ -47,6 +48,7 @@ interface BusinessGridEditorResult<Key extends ModuleKey> {
 
 interface OpenEditorOptions {
   parentImportSource?: ModuleParentImportSource | null
+  initialValues?: Record<string, unknown>
 }
 
 interface ResolveEditorRecordOptions<Key extends ModuleKey> {
@@ -97,6 +99,10 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     useState<PersistedModuleEditorDraftFor<Key> | null>(null)
   const [initialParentImportSource, setInitialParentImportSource] =
     useState<ModuleParentImportSource | null>(null)
+  const [initialEditorValues, setInitialEditorValues] = useState<Record<
+    string,
+    unknown
+  > | null>(null)
   const [editorLockRelatedRows, setEditorLockRelatedRows] = useState<
     ModuleListRecordFor<ModuleKey>[]
   >([])
@@ -161,6 +167,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
       setEditorLockRelatedRows([])
       setEditRecord(null)
       setInitialParentImportSource(options.parentImportSource || null)
+      setInitialEditorValues(options.initialValues || null)
       setEditorSessionKey((current) => current + 1)
       setEditorOpen(true)
       setEditorLockLoading(false)
@@ -169,6 +176,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
 
     const version = ++openVersionRef.current
     setInitialParentImportSource(null)
+    setInitialEditorValues(null)
     setEditorLockLoading(true)
     try {
       const [lockRelatedRows, resolvedRecord] = await Promise.all([
@@ -212,6 +220,7 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     editRecord,
     editorSessionKey,
     initialParentImportSource,
+    initialEditorValues,
     editorLockLoading,
     editorLockRelatedRows,
     editorOpen,

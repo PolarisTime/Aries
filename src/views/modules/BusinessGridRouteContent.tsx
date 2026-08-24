@@ -215,6 +215,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           editRecord={state.editRecord}
           editorSessionKey={state.editorSessionKey}
           initialParentImportSource={state.initialParentImportSource}
+          initialEditorValues={state.initialEditorValues}
           editorOpen={state.editorOpen}
           attachOpen={state.overlays.attachOpen}
           attachRecordId={state.overlays.attachRecordId}

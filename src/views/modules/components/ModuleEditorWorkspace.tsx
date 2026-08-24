@@ -3,12 +3,13 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Button, Card, Form, Space, Table, Typography } from 'antd'
+import { Button, Card, Form, Space, Table, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createExpenseMaterial } from '@/api/master/materials'
+import { listCompanySettings } from '@/api/system/company-settings'
 import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -46,6 +47,7 @@ import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
+import { ModuleAttachmentModal } from './ModuleAttachmentModal'
 import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -55,6 +57,7 @@ interface Props<Key extends ModuleKey> {
   config: ModulePageConfig
   record: PersistedModuleEditorDraftFor<Key> | null
   initialParentImportSource: ModuleParentImportSource | null
+  initialEditorValues?: Record<string, unknown> | null
   moduleKey: Key
   canSave: boolean
   canAudit: boolean
@@ -158,6 +161,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   config,
   record,
   initialParentImportSource,
+  initialEditorValues = null,
   moduleKey,
   canSave,
   canAudit,
@@ -174,6 +178,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
     useEditorSessionActions(onClose)
   const watchedCustomerId = Form.useWatch('customerId', form)
+  const watchedSettlementCompanyId = Form.useWatch('settlementCompanyId', form)
   const customerId =
     typeof watchedCustomerId === 'string' && watchedCustomerId
       ? watchedCustomerId
@@ -189,6 +194,24 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     { materials: true },
     open,
   )
+  const { data: companyProfiles = [] } = useQuery({
+    queryKey: QUERY_KEYS.companySettings,
+    queryFn: listCompanySettings,
+    enabled: open && FINANCE_DOCUMENT_MODULES.has(moduleKey),
+    staleTime: 300_000,
+  })
+  const settlementAccountOptions = useMemo(() => {
+    const companyId = String(watchedSettlementCompanyId || '')
+    if (!companyId) return []
+    const profile = companyProfiles.find((item) => item.id === companyId)
+    return (profile?.settlementAccounts || [])
+      .filter((account) => account.status !== '停用')
+      .flatMap((account) => {
+        const value = String(account.id || '')
+        const label = account.accountName.trim()
+        return value && label ? [{ label, value }] : []
+      })
+  }, [companyProfiles, watchedSettlementCompanyId])
   const statusField = formFields.find((field) => field.key === 'status')
   const statusOptions = Array.isArray(statusField?.options)
     ? statusField.options.map((option) => String(option.value))
@@ -262,6 +285,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     config,
     record,
     initialParentImportSource,
+    initialEditorValues,
     moduleKey,
     editorAuditActionKind,
     editorAuditTarget,
@@ -407,10 +431,23 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     <>
       <WorkspaceOverlay
         open={open}
-        title={t('modules.editor.title', {
-          mode: isEdit ? t('modules.editor.edit') : t('modules.editor.create'),
-          title: config.title,
-        })}
+        title={
+          <Space size={8}>
+            <span>
+              {t('modules.editor.title', {
+                mode: isEdit
+                  ? t('modules.editor.edit')
+                  : t('modules.editor.create'),
+                title: config.title,
+              })}
+            </span>
+            {useFinanceEditorLayout ? (
+              <Tag color={currentStatus === '已审核' ? 'success' : 'default'}>
+                {currentStatus || '草稿'}
+              </Tag>
+            ) : null}
+          </Space>
+        }
         onClose={requestCloseEditor}
         className={
           useFinanceEditorLayout
@@ -448,6 +485,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
             config={config}
             moduleKey={moduleKey}
             projectOptions={projectOptions}
+            settlementAccountOptions={settlementAccountOptions}
             auditLabel={editorAuditLabel}
             actions={{
               canSave,
@@ -538,6 +576,9 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
             finishAndCloseEditor()
             onCreateAnother()
           }}
+          pendingFiles={resolvePendingAttachmentFiles(
+            form.getFieldValue('attachments'),
+          )}
         />
       ) : null}
     </>
@@ -553,6 +594,16 @@ interface SaveResultOverlayProps<Key extends ModuleKey> {
   onClear: () => void
   onResolveConflict: () => void
   onCreateAnother: () => void
+  pendingFiles: readonly File[]
+}
+
+function resolvePendingAttachmentFiles(value: unknown): File[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const file = (item as { originFileObj?: unknown }).originFileObj
+    return file instanceof File ? [file] : []
+  })
 }
 
 function SaveResultOverlay<Key extends ModuleKey>({
@@ -564,9 +615,11 @@ function SaveResultOverlay<Key extends ModuleKey>({
   onClear,
   onResolveConflict,
   onCreateAnother,
+  pendingFiles,
 }: SaveResultOverlayProps<Key>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [attachmentOpen, setAttachmentOpen] = useState(false)
   const { formatCellValue } = useModuleDisplaySupport()
   const rawItems = readModuleRecordField(saveResult.record, 'items')
   const items: Record<string, unknown>[] = Array.isArray(rawItems)
@@ -622,6 +675,9 @@ function SaveResultOverlay<Key extends ModuleKey>({
 
   const actionBar = (
     <>
+      {isSuccess && saveResult.record?.id ? (
+        <Button onClick={() => setAttachmentOpen(true)}>上传回单/凭证</Button>
+      ) : null}
       {quickActions}
       {isSuccess && canCreateAnother ? (
         <Button icon={<PlusOutlined />} onClick={onCreateAnother}>
@@ -804,6 +860,15 @@ function SaveResultOverlay<Key extends ModuleKey>({
             </div>
           ))}
         </div>
+      ) : null}
+      {isSuccess && saveResult.record?.id ? (
+        <ModuleAttachmentModal
+          open={attachmentOpen}
+          moduleKey={moduleKey}
+          recordId={String(saveResult.record.id)}
+          initialFiles={pendingFiles}
+          onClose={() => setAttachmentOpen(false)}
+        />
       ) : null}
     </WorkspaceOverlay>
   )

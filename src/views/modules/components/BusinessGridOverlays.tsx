@@ -23,6 +23,7 @@ interface Props<Key extends ModuleKey> {
   editRecord: PersistedModuleEditorDraftFor<Key> | null
   editorSessionKey: number
   initialParentImportSource: ModuleParentImportSource | null
+  initialEditorValues: Record<string, unknown> | null
   editorOpen: boolean
   attachOpen: boolean
   attachRecordId: string
@@ -49,6 +50,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   editRecord,
   editorSessionKey,
   initialParentImportSource,
+  initialEditorValues,
   editorOpen,
   attachOpen,
   attachRecordId,
@@ -77,6 +79,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
           config={config}
           record={editRecord}
           initialParentImportSource={initialParentImportSource}
+          initialEditorValues={initialEditorValues}
           moduleKey={moduleKey}
           canSave={canSave}
           canAudit={canAudit}

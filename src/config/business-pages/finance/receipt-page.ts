@@ -3,6 +3,8 @@ import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
   getCustomerOptions,
+  getCustomerProjectOptions,
+  getSettlementAccountOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
@@ -228,7 +230,14 @@ export const receiptsPageConfig: ModulePageConfig = {
       required: true,
       min: 0.01,
       precision: 2,
-      defaultValue: 0,
+      row: 2,
+    },
+    {
+      key: 'accountId',
+      label: '资金账户',
+      type: 'select',
+      required: true,
+      options: getSettlementAccountOptions,
       row: 2,
     },
     {
@@ -237,11 +246,20 @@ export const receiptsPageConfig: ModulePageConfig = {
       type: 'select',
       disabled: true,
       defaultValue: '草稿',
+      visibleWhen: () => false,
       options: [
         { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
         { label: '已审核', value: '已审核' },
       ],
       row: 2,
+    },
+    {
+      key: 'projectId',
+      label: '关联合同/项目',
+      type: 'select',
+      options: getCustomerProjectOptions,
+      masterOptionRequirements: { customers: true, projects: true },
+      row: 3,
     },
     {
       key: 'operatorName',
@@ -255,6 +273,13 @@ export const receiptsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.receipt.remark'),
       type: 'textarea',
       row: 4,
+      fullRow: true,
+    },
+    {
+      key: 'attachments',
+      label: '回单/凭证',
+      type: 'upload',
+      row: 5,
       fullRow: true,
     },
   ],
@@ -276,6 +301,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       'receiptDate',
       'payType',
       'amount',
+      'accountId',
       'status',
       'operatorName',
       'remark',

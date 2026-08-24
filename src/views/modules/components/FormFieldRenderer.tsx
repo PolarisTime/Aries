@@ -1,16 +1,25 @@
 import {
   AutoComplete,
+  Button,
   DatePicker,
   Form,
   Input,
   InputNumber,
   Select,
+  Upload,
 } from 'antd'
+import type { UploadFile } from 'antd/es/upload/interface'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
-import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
-import type { ModuleFormFieldDefinition } from '@/types/module-page'
+import {
+  getCustomerProjectOptions,
+  getSettlementAccountOptions,
+} from '@/module-system/core/module-option-resolvers'
+import type {
+  ModuleFormFieldDefinition,
+  ModuleFormFieldOption,
+} from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import {
@@ -25,6 +34,8 @@ interface Props {
   field: ModuleFormFieldDefinition
   disabled?: boolean
   projectOptions?: readonly ProjectOption[]
+  settlementAccountOptions?: readonly ModuleFormFieldOption[]
+  financeLayout?: boolean
 }
 
 const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
@@ -83,12 +94,14 @@ export function FormFieldRenderer({
   field,
   disabled,
   projectOptions = EMPTY_PROJECT_OPTIONS,
+  settlementAccountOptions = [],
+  financeLayout = false,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
   const disabledValue = disabled ?? field.disabled
-  const displayLabel = padLabel(field.label)
+  const displayLabel = financeLayout ? field.label : padLabel(field.label)
   const placeholder =
     field.placeholder ||
     t('modules.formField.inputPlaceholder', { label: field.label })
@@ -98,7 +111,9 @@ export function FormFieldRenderer({
     typeof field.options === 'function'
       ? field.options === getCustomerProjectOptions
         ? getCustomerProjectOptions(formValues, projectOptions)
-        : field.options(formValues)
+        : field.options === getSettlementAccountOptions
+          ? settlementAccountOptions
+          : field.options(formValues)
       : field.options || []
   const selectOptions = Array.isArray(resolvedOptions)
     ? resolvedOptions.map((opt) => ({
@@ -127,7 +142,14 @@ export function FormFieldRenderer({
       ]
     : undefined
 
-  const renderFormItem = (children: ReactNode, extraClassName?: string) => (
+  const renderFormItem = (
+    children: ReactNode,
+    extraClassName?: string,
+    itemProps?: {
+      valuePropName?: string
+      getValueFromEvent?: (event: unknown) => unknown
+    },
+  ) => (
     <Form.Item
       key={field.key}
       name={field.key}
@@ -137,6 +159,7 @@ export function FormFieldRenderer({
         htmlFor: fieldId,
       })}
       rules={rules}
+      {...itemProps}
       className={[
         'editor-form-item',
         field.type === 'textarea' ? 'editor-form-item--textarea' : '',
@@ -161,6 +184,7 @@ export function FormFieldRenderer({
           precision={field.precision ?? 2}
           step={field.step}
           controls={field.controls}
+          prefix={field.key === 'amount' ? '¥' : undefined}
           className="w-full"
         />,
       )
@@ -226,6 +250,30 @@ export function FormFieldRenderer({
           showCount={field.showCount}
           rows={4}
         />,
+      )
+
+    case 'upload':
+      return renderFormItem(
+        <Upload
+          accept="image/*,.pdf,application/pdf"
+          beforeUpload={() => false}
+          maxCount={5}
+          multiple
+          listType="text"
+          disabled={disabledValue}
+        >
+          <Button type="dashed" block>
+            选择回单或凭证
+          </Button>
+        </Upload>,
+        'editor-form-item--upload',
+        {
+          valuePropName: 'fileList',
+          getValueFromEvent: (event) => {
+            const fileList = (event as { fileList?: UploadFile[] })?.fileList
+            return Array.isArray(fileList) ? fileList : []
+          },
+        },
       )
 
     case 'autoComplete':

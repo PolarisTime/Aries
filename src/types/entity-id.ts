@@ -61,6 +61,7 @@ export function parseOptionalEntityId(
 export const ENTITY_ID_FIELDS = new Set([
   'id',
   'attachmentId',
+  'accountId',
   'carrierId',
   'counterpartyId',
   'customerId',

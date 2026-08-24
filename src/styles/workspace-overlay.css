@@ -39,8 +39,27 @@
   background: var(--ant-color-bg-layout, #f5f5f5);
 }
 
+.workspace-overlay-panel--finance-editor {
+  width: min(720px, calc(100vw - 32px));
+  height: min(760px, calc(100vh - 32px));
+  max-width: 720px;
+  border-radius: var(--ant-border-radius-lg, 8px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+}
+
+.workspace-overlay-panel--finance-editor .workspace-overlay-body {
+  padding: 16px;
+}
+
 .workspace-overlay-panel--finance-editor .workspace-overlay-footer {
-  padding: 12px 24px;
+  padding: 10px 16px;
+}
+
+@media (max-width: 720px) {
+  .workspace-overlay-panel--finance-editor {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+  }
 }
 
 .workspace-overlay-panel--parent-selector {

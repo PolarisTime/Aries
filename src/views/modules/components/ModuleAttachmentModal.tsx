@@ -8,6 +8,7 @@ interface Props {
   open: boolean
   moduleKey: string
   recordId: string
+  initialFiles?: readonly File[]
   onClose: () => void
 }
 
@@ -15,12 +16,14 @@ export function ModuleAttachmentModal({
   open,
   moduleKey,
   recordId,
+  initialFiles,
   onClose,
 }: Props) {
   const modal = useModuleAttachmentModal({
     open,
     moduleKey,
     recordId,
+    initialFiles,
   })
 
   return (

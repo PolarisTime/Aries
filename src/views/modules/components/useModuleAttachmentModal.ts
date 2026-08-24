@@ -23,6 +23,7 @@ interface UseModuleAttachmentModalParams {
   open: boolean
   moduleKey: string
   recordId: string
+  initialFiles?: readonly File[]
 }
 
 interface AttachmentModalState {
@@ -62,6 +63,7 @@ export function useModuleAttachmentModal({
   open,
   moduleKey,
   recordId,
+  initialFiles = [],
 }: UseModuleAttachmentModalParams) {
   const { t } = useTranslation()
   const [state, setState] = usePatchState<AttachmentModalState>(
@@ -83,6 +85,7 @@ export function useModuleAttachmentModal({
   const pasteZoneRef = useRef<HTMLDivElement | null>(null)
   const objectUrlRef = useRef<Set<string>>(new Set())
   const attachmentRequestIdRef = useRef(0)
+  const initialUploadKeyRef = useRef('')
   const createTrackedObjectUrl = useCallback((blob: Blob) => {
     const objectUrl = URL.createObjectURL(blob)
     objectUrlRef.current.add(objectUrl)
@@ -226,6 +229,21 @@ export function useModuleAttachmentModal({
     },
     [bindAttachment, fetchAttachments, moduleKey, setState, t],
   )
+
+  useEffect(() => {
+    if (!open || !recordId || !initialFiles.length) {
+      if (!open) initialUploadKeyRef.current = ''
+      return
+    }
+    const uploadKey = `${recordId}:${initialFiles.map((file) => `${file.name}:${file.size}:${file.lastModified}`).join('|')}`
+    if (initialUploadKeyRef.current === uploadKey) return
+    initialUploadKeyRef.current = uploadKey
+    void (async () => {
+      for (const file of initialFiles) {
+        await uploadAndBindAttachment(file)
+      }
+    })()
+  }, [initialFiles, open, recordId, uploadAndBindAttachment])
 
   const openImagePreview = useCallback(
     async (attachment: AttachmentRecord) => {

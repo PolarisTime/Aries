@@ -2,7 +2,10 @@ import i18next from 'i18next'
 import { getCarrierEntityOptions } from '@/api/master/carrier-options'
 import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
-import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
+import {
+  getSettlementAccountOptions,
+  getSettlementCompanyOptions,
+} from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { buildFinanceOverview, statusMap } from '../shared/shared'
@@ -251,7 +254,14 @@ export const paymentsPageConfig: ModulePageConfig = {
       required: true,
       min: 0.01,
       precision: 2,
-      defaultValue: 0,
+      row: 2,
+    },
+    {
+      key: 'accountId',
+      label: '资金账户',
+      type: 'select',
+      required: true,
+      options: getSettlementAccountOptions,
       row: 2,
     },
     {
@@ -260,6 +270,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'select',
       disabled: true,
       defaultValue: '草稿',
+      visibleWhen: () => false,
       options: [
         { label: i18next.t('modules.pages.payment.draft'), value: '草稿' },
         { label: '已审核', value: '已审核' },
@@ -280,6 +291,13 @@ export const paymentsPageConfig: ModulePageConfig = {
       row: 4,
       fullRow: true,
     },
+    {
+      key: 'attachments',
+      label: '回单/凭证',
+      type: 'upload',
+      row: 4,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [
@@ -294,6 +312,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       'paymentDate',
       'payType',
       'amount',
+      'accountId',
       'status',
       'operatorName',
       'remark',

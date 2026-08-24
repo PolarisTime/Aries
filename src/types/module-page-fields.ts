@@ -21,6 +21,7 @@ export type ModuleFormFieldType =
   | 'date'
   | 'textarea'
   | 'number'
+  | 'upload'
 
 export interface ModuleFilterOption {
   label: string

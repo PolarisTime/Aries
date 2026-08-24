@@ -60,6 +60,7 @@ interface Props<Key extends ModuleKey> {
   config: ModulePageConfig
   record: PersistedModuleEditorDraftFor<Key> | null
   initialParentImportSource: ModuleParentImportSource | null
+  initialEditorValues?: Record<string, unknown> | null
   moduleKey: Key
   editorAuditActionKind: StatusChangeActionKind | null
   editorAuditTarget: EditorAuditTarget | null
@@ -128,6 +129,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
   config,
   record,
   initialParentImportSource,
+  initialEditorValues,
   moduleKey,
   editorAuditActionKind,
   editorAuditTarget,
@@ -237,7 +239,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
         defaultDraft,
         getCurrentOperatorName(),
       )
-      form.setFieldsValue(defaultDraft)
+      form.setFieldsValue({ ...defaultDraft, ...(initialEditorValues || {}) })
       if (config.showGeneratedPrimaryNoOnCreate && config.primaryNoKey) {
         const primaryNoKey = config.primaryNoKey
         void fetchGeneratedMasterDataCode(moduleKey)
@@ -282,6 +284,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     moduleKey,
     open,
     record,
+    initialEditorValues,
   ])
 
   useEffect(() => {

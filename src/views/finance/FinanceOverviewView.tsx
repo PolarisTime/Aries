@@ -6,14 +6,18 @@ import {
   UpOutlined,
 } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Alert,
   Button,
+  Card,
   DatePicker,
+  Drawer,
   Empty,
   Input,
   Segmented,
   Select,
+  Space,
   Statistic,
   Table,
   type TableColumnsType,
@@ -24,6 +28,7 @@ import {
 import dayjs from 'dayjs'
 import { useCallback, useMemo, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getCashLedger } from '@/api/finance/cash-ledger'
 import {
   type FinanceBalance,
   type FinanceDirection,
@@ -135,6 +140,11 @@ function buildSummaryItems(
 function buildBalanceColumns(
   direction: FinanceDirection,
   formatAmount: (value: number | undefined) => string,
+  onLedger: (record: FinanceBalance) => void,
+  onQuickCreate: (
+    record: FinanceBalance,
+    moduleKey: 'receipt' | 'payment',
+  ) => void,
 ): TableColumnsType<FinanceBalance> {
   return [
     {
@@ -191,6 +201,31 @@ function buildBalanceColumns(
       ellipsis: true,
       render: displayText,
     },
+    {
+      title: '操作',
+      key: 'actions',
+      fixed: 'right',
+      width: 210,
+      render: (_value, record) => (
+        <Space size={4}>
+          <Button type="link" size="small" onClick={() => onLedger(record)}>
+            对账明细
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() =>
+              onQuickCreate(
+                record,
+                direction === 'RECEIVABLE' ? 'receipt' : 'payment',
+              )
+            }
+          >
+            {direction === 'RECEIVABLE' ? '去收款' : '去付款'}
+          </Button>
+        </Space>
+      ),
+    },
   ]
 }
 
@@ -198,19 +233,95 @@ function FinanceOverviewSummarySection({ items }: { items: SummaryItem[] }) {
   return (
     <section className="finance-overview-summary">
       {items.map((item) => (
-        <div
+        <Card
           key={item.key}
+          size="small"
           className={`finance-overview-metric finance-overview-metric--${item.key}`}
         >
           <Statistic
             title={item.label}
-            value={item.value ?? 0}
+            value={item.value as number}
             precision={2}
             prefix="¥"
           />
-        </div>
+        </Card>
       ))}
     </section>
+  )
+}
+
+function FinanceCounterpartyLedgerDrawer({
+  balance,
+  formatAmount,
+  onClose,
+  open,
+}: {
+  balance: FinanceBalance | null
+  formatAmount: (value: number | undefined) => string
+  onClose: () => void
+  open: boolean
+}) {
+  const query = useQuery({
+    queryKey: ['finance', 'counterparty-ledger', balance?.key],
+    queryFn: ({ signal }) =>
+      getCashLedger(
+        {
+          settlementCompanyId: balance?.settlementCompanyId || '',
+          counterpartyType: balance?.counterpartyType,
+          counterpartyId: balance?.counterpartyId,
+          page: 0,
+          size: 100,
+        },
+        signal,
+      ),
+    enabled: open && Boolean(balance),
+  })
+  const rows = query.data?.page.content || []
+  return (
+    <Drawer
+      title={balance ? `${balance.counterpartyName} · 对账明细` : '对账明细'}
+      open={open}
+      onClose={onClose}
+      size={720}
+      destroyOnHidden
+    >
+      {query.isError ? (
+        <Alert
+          type="error"
+          showIcon
+          title="加载对账明细失败"
+          action={<Button onClick={() => void query.refetch()}>重试</Button>}
+        />
+      ) : (
+        <Table
+          size="small"
+          rowKey="key"
+          loading={query.isFetching}
+          dataSource={rows}
+          pagination={false}
+          scroll={{ x: 720, y: 520 }}
+          columns={[
+            { title: '日期', dataIndex: 'businessDate', width: 110 },
+            { title: '流水类型', dataIndex: 'flowType', width: 100 },
+            { title: '单号', dataIndex: 'documentNo', width: 160 },
+            {
+              title: '收入',
+              dataIndex: 'incomeAmount',
+              align: 'right' as const,
+              width: 120,
+              render: formatAmount,
+            },
+            {
+              title: '支出',
+              dataIndex: 'expenseAmount',
+              align: 'right' as const,
+              width: 120,
+              render: formatAmount,
+            },
+          ]}
+        />
+      )}
+    </Drawer>
   )
 }
 
@@ -280,6 +391,25 @@ function FinanceOverviewFilters({
                 },
               })
             }}
+          />
+        </div>
+        <div className="finance-overview-filter finance-overview-filter--keyword">
+          <Typography.Text type="secondary">往来方</Typography.Text>
+          <Input
+            aria-label="往来方"
+            value={state.keywordInput}
+            allowClear
+            placeholder="名称、拼音或编码"
+            onChange={(event) => {
+              const value = event.target.value
+              if (!value) {
+                commitKeyword('')
+                return
+              }
+              dispatch({ type: 'update', values: { keywordInput: value } })
+            }}
+            onBlur={(event) => commitKeyword(event.target.value)}
+            onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
           />
         </div>
         <div className="finance-overview-filter finance-overview-filter--date">
@@ -359,28 +489,6 @@ function FinanceOverviewFilters({
               />
             </div>
           ) : null}
-          <div className="finance-overview-filter finance-overview-filter--keyword">
-            <Typography.Text type="secondary">往来方</Typography.Text>
-            <Input
-              aria-label="往来方"
-              value={state.keywordInput}
-              allowClear
-              placeholder="名称、编码或ID"
-              onChange={(event) => {
-                const value = event.target.value
-                if (!value) {
-                  commitKeyword('')
-                  return
-                }
-                dispatch({
-                  type: 'update',
-                  values: { keywordInput: value },
-                })
-              }}
-              onBlur={(event) => commitKeyword(event.target.value)}
-              onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
-            />
-          </div>
         </div>
       ) : null}
     </section>
@@ -447,12 +555,16 @@ function FinanceOverviewTableSection({
 
 export function FinanceOverviewView() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const defaultPageSize = useDefaultPageSize()
   const { formatCellValue } = useModuleDisplaySupport()
   const [state, dispatch] = useReducer(
     financeOverviewReducer,
     undefined,
     createInitialState,
+  )
+  const [ledgerBalance, setLedgerBalance] = useState<FinanceBalance | null>(
+    null,
   )
   const { settlementCompanies, isLoading: optionsLoading } = useMasterOptions({
     settlementCompanies: true,
@@ -501,9 +613,31 @@ export function FinanceOverviewView() {
       value == null ? '--' : formatCellValue(value, 'amount'),
     [formatCellValue],
   )
+  const handleQuickCreate = useCallback(
+    (record: FinanceBalance, moduleKey: 'receipt' | 'payment') => {
+      void navigate({
+        to: `/${moduleKey}`,
+        search: new URLSearchParams({
+          create: '1',
+          counterpartyType: record.counterpartyType,
+          counterpartyId: record.counterpartyId,
+          counterpartyName: record.counterpartyName,
+          settlementCompanyId: record.settlementCompanyId,
+          settlementCompanyName: record.settlementCompanyName,
+        }).toString(),
+      } as never)
+    },
+    [navigate],
+  )
   const columns = useMemo(
-    () => buildBalanceColumns(state.direction, formatAmount),
-    [state.direction, formatAmount],
+    () =>
+      buildBalanceColumns(
+        state.direction,
+        formatAmount,
+        setLedgerBalance,
+        handleQuickCreate,
+      ),
+    [formatAmount, handleQuickCreate, state.direction],
   )
   const {
     columnSizes,
@@ -565,10 +699,17 @@ export function FinanceOverviewView() {
                 overviewQuery.error,
                 '请稍后重试',
               )}
+              action={
+                <Button onClick={() => void overviewQuery.refetch()}>
+                  重试
+                </Button>
+              }
             />
           ) : null}
 
-          <FinanceOverviewSummarySection items={summaryItems} />
+          {overviewQuery.isSuccess ? (
+            <FinanceOverviewSummarySection items={summaryItems} />
+          ) : null}
 
           <FinanceOverviewTableSection
             columns={resizableColumns}
@@ -592,6 +733,12 @@ export function FinanceOverviewView() {
           />
         </div>
       </div>
+      <FinanceCounterpartyLedgerDrawer
+        balance={ledgerBalance}
+        formatAmount={formatAmount}
+        open={Boolean(ledgerBalance)}
+        onClose={() => setLedgerBalance(null)}
+      />
     </AppProPage>
   )
 }

@@ -32,6 +32,10 @@ interface Props {
   authoritativePrimaryNo?: string
   layoutVariant?: 'default' | 'finance'
   projectOptions?: readonly ProjectOption[]
+  settlementAccountOptions?: readonly {
+    label: string
+    value: string | number | boolean
+  }[]
 }
 
 const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
@@ -47,7 +51,7 @@ function getFieldSpan(
   if (field.fullRow || field.type === 'textarea') {
     return 24
   }
-  return layoutVariant === 'finance' ? 8 : 6
+  return layoutVariant === 'finance' ? 12 : 6
 }
 
 export function ModuleEditorFormSection({
@@ -60,6 +64,7 @@ export function ModuleEditorFormSection({
   authoritativePrimaryNo,
   layoutVariant = 'default',
   projectOptions = EMPTY_PROJECT_OPTIONS,
+  settlementAccountOptions = [],
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
@@ -120,6 +125,8 @@ export function ModuleEditorFormSection({
               <FormFieldRenderer
                 field={field}
                 projectOptions={projectOptions}
+                settlementAccountOptions={settlementAccountOptions}
+                financeLayout={layoutVariant === 'finance'}
                 disabled={isEditorFieldDisabledForModule(
                   moduleKey,
                   field.key,

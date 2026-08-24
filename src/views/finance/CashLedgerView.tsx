@@ -518,10 +518,11 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
               showIcon
               title="加载资金流水失败"
               description={requestErrorMessage(model.error, '请稍后重试')}
+              action={<Button onClick={model.onRefresh}>重试</Button>}
             />
           ) : null}
 
-          {model.summary ? (
+          {model.summary && !model.isError ? (
             <section className="cash-ledger-summary">
               <Descriptions
                 size="small"

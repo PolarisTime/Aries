@@ -127,6 +127,11 @@ export function getSettlementCompanyOptions() {
   return apiGetSettlementCompanyOptions()
 }
 
+/** 财务单据资金账户字段的标识解析器；具体选项由编辑器按结算主体注入。 */
+export function getSettlementAccountOptions() {
+  return []
+}
+
 export function getWarehouseOptions() {
   return apiGetWarehouseOptions()
 }
