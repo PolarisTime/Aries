@@ -9,14 +9,14 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 
-interface QuickAction {
+export interface QuickAction {
   key: string
   labelKey: string
   pathname: string
   icon: ReactNode
 }
 
-const QUICK_ACTIONS: QuickAction[] = [
+export const QUICK_ACTIONS: QuickAction[] = [
   {
     key: 'purchase-order',
     labelKey: 'dashboard.quick.newPurchaseOrder',
@@ -43,18 +43,30 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
 ]
 
-/** 常用快捷入口：2×2 图标按钮网格，直达对应模块新建/列表 */
+export function buildQuickActionTarget(action: QuickAction) {
+  return {
+    pathname: action.pathname,
+    search: 'create=1',
+    forceSearch: true,
+  } as const
+}
+
+/** 快捷新建入口：直接打开对应模块的新建弹窗。 */
 export function DashboardQuickActions() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
 
   return (
-    <Card size="small" title={t('dashboard.quick.title')}>
+    <Card
+      size="small"
+      title={t('dashboard.quick.title')}
+      className="dashboard-quick-actions"
+    >
       <div className="dashboard-quick-grid">
         {QUICK_ACTIONS.map((action) => (
           <Button
             key={action.key}
-            onClick={() => openTab({ pathname: action.pathname })}
+            onClick={() => openTab(buildQuickActionTarget(action))}
           >
             <span className="dashboard-quick-item">
               <span className="dashboard-quick-icon" aria-hidden>

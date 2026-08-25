@@ -123,7 +123,7 @@ export const enUS = {
       loadFailed: 'Failed to load to-dos. Please retry later.',
     },
     quick: {
-      title: 'Quick Actions',
+      title: 'Quick Create',
       newPurchaseOrder: 'New Purchase Order',
       newSalesOrder: 'New Sales Order',
       newOutbound: 'New Outbound Order',

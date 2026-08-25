@@ -122,7 +122,7 @@ export const zhCN = {
       loadFailed: '待办加载失败，请稍后重试。',
     },
     quick: {
-      title: '常用快捷入口',
+      title: '快捷新建',
       newPurchaseOrder: '新增采购订单',
       newSalesOrder: '新增销售订单',
       newOutbound: '新增出库单',

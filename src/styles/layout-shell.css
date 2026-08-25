@@ -1356,6 +1356,8 @@
 }
 
 .dashboard-command-center {
+  display: grid;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -1377,6 +1379,10 @@
   display: grid;
   min-width: 0;
   gap: 16px;
+}
+
+.dashboard-flow-region {
+  min-width: 0;
 }
 
 .dashboard-sidebar-panels {
@@ -1807,33 +1813,59 @@
   text-align: center;
 }
 
-/* ===== 常用快捷入口（2×2 网格） ===== */
+/* ===== 快捷新建 ===== */
+.dashboard-quick-actions {
+  min-width: 0;
+}
+
 .dashboard-quick-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
 .dashboard-quick-grid .ant-btn {
   height: auto;
-  justify-content: center;
-  padding: 10px 8px;
+  min-height: 44px;
+  justify-content: flex-start;
+  padding: 8px 12px;
 }
 
 .dashboard-quick-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 8px;
   font-size: 12px;
   line-height: 18px;
-  text-align: center;
+  text-align: left;
   white-space: normal;
 }
 
 .dashboard-quick-icon {
+  display: inline-flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
   color: var(--theme-primary);
   font-size: 18px;
+}
+
+@media (max-width: 960px) {
+  .dashboard-workplace-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-quick-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .module-filter-toolbar {

@@ -25,6 +25,18 @@ export function DashboardSkeleton() {
         </div>
       </section>
 
+      <section className="dashboard-quick-actions dashboard-skeleton-panel">
+        <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
+        <div className="dashboard-quick-grid">
+          {['a', 'b', 'c', 'd'].map((key) => (
+            <div
+              key={`skeleton-quick-${key}`}
+              className="dashboard-skeleton-block dashboard-skeleton-line"
+            />
+          ))}
+        </div>
+      </section>
+
       <div className="dashboard-workplace-layout">
         <main className="dashboard-workplace-main">
           <section className="dashboard-todo-panel dashboard-skeleton-panel">
@@ -38,35 +50,11 @@ export function DashboardSkeleton() {
               ))}
             </div>
           </section>
-
-          <section className="dashboard-flow-card dashboard-skeleton-panel">
-            <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
-            <div className="dashboard-flow-lanes">
-              {['a', 'b', 'c', 'd'].map((key, index) => (
-                <div
-                  key={`skeleton-flow-${key}`}
-                  className="dashboard-flow-lane"
-                >
-                  <div className="dashboard-flow-lane-head">
-                    <div className="dashboard-skeleton-block dashboard-skeleton-flow-title" />
-                    <div className="dashboard-flow-lane-desc">
-                      {index === 0 ? t('common.masterDataDesc') : ''}
-                    </div>
-                  </div>
-                  <div className="dashboard-skeleton-chip-row">
-                    <div className="dashboard-skeleton-chip" />
-                    <div className="dashboard-skeleton-chip" />
-                    <div className="dashboard-skeleton-chip" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         </main>
 
         <aside className="dashboard-workplace-sidebar">
           <div className="dashboard-sidebar-panels">
-            {['quick', 'account'].map((key) => (
+            {['account'].map((key) => (
               <section
                 key={`skeleton-side-${key}`}
                 className="dashboard-skeleton-panel"
@@ -81,6 +69,27 @@ export function DashboardSkeleton() {
           </div>
         </aside>
       </div>
+
+      <section className="dashboard-flow-card dashboard-skeleton-panel">
+        <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
+        <div className="dashboard-flow-lanes">
+          {['a', 'b', 'c', 'd'].map((key, index) => (
+            <div key={`skeleton-flow-${key}`} className="dashboard-flow-lane">
+              <div className="dashboard-flow-lane-head">
+                <div className="dashboard-skeleton-block dashboard-skeleton-flow-title" />
+                <div className="dashboard-flow-lane-desc">
+                  {index === 0 ? t('common.masterDataDesc') : ''}
+                </div>
+              </div>
+              <div className="dashboard-skeleton-chip-row">
+                <div className="dashboard-skeleton-chip" />
+                <div className="dashboard-skeleton-chip" />
+                <div className="dashboard-skeleton-chip" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

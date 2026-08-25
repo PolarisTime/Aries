@@ -1,4 +1,5 @@
 import type { ParsedLocation } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import { parseOptionalEntityId } from '@/types/entity-id'
@@ -58,6 +59,13 @@ export function parseRouteParams(searchStr: string) {
       }),
     ),
   }
+}
+
+/** 消费一次性新建意图，保留调用方带入的业务字段。 */
+export function consumeCreateIntentSearch(searchStr: string): string {
+  const params = new URLSearchParams(searchStr)
+  params.delete('create')
+  return params.toString()
 }
 
 function resolveParentImportSource(
@@ -156,6 +164,7 @@ export function useBusinessGridRouteSync({
   openDetail,
   openEditor,
 }: Props) {
+  const navigate = useNavigate()
   const autoOpenedRouteKeyRef = useRef('')
   const autoOpenedParentImportKeyRef = useRef('')
   const autoOpenedCreateKeyRef = useRef('')
@@ -245,9 +254,25 @@ export function useBusinessGridRouteSync({
     }
     if (!config || autoOpenedCreateKeyRef.current === rawSearchStr) return
     autoOpenedCreateKeyRef.current = rawSearchStr
-    void openEditor(null, { initialValues: routeParams.initialValues })
+    void (async () => {
+      try {
+        await openEditor(null, { initialValues: routeParams.initialValues })
+        if (location.searchStr !== rawSearchStr) return
+        const nextSearch = consumeCreateIntentSearch(rawSearchStr)
+        const nextHref = nextSearch
+          ? `${location.pathname}?${nextSearch}`
+          : location.pathname
+        // 新建弹窗打开后消费 URL 意图，避免刷新或再次点击时重复触发。
+        await navigate({ to: nextHref as '/', replace: true })
+      } catch {
+        autoOpenedCreateKeyRef.current = ''
+      }
+    })()
   }, [
     config,
+    location.pathname,
+    location.searchStr,
+    navigate,
     openEditor,
     rawSearchStr,
     routeParams.initialValues,

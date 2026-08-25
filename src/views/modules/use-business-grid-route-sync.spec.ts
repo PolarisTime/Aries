@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
+  consumeCreateIntentSearch,
   parseRouteParams,
   supportsFilterField,
 } from '@/views/modules/use-business-grid-route-sync'
@@ -35,6 +36,14 @@ describe('parseRouteParams', () => {
     expect(params.trackId).toBe('')
     expect(params.status).toBe('')
     expect(params.shouldOpenDetail).toBe(false)
+  })
+
+  it('消费新建意图时移除 create 参数并保留其他查询条件', () => {
+    expect(
+      consumeCreateIntentSearch(
+        '?create=1&counterpartyId=100&counterpartyName=客户A',
+      ),
+    ).toBe('counterpartyId=100&counterpartyName=%E5%AE%A2%E6%88%B7A')
   })
 })
 
