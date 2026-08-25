@@ -114,6 +114,8 @@ export interface ModulePageConfig {
   showGeneratedPrimaryNoOnCreate?: boolean
   readOnly?: boolean
   allowManualCreate?: boolean
+  /** 是否隐藏通用关键词筛选；未配置时默认显示。 */
+  hideKeywordFilter?: boolean
   filters: ModuleFilterDefinition[]
   quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]

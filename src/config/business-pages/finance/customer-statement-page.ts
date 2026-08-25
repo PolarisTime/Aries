@@ -34,6 +34,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
     'modules.pages.customerStatement.customerStatementDesc',
   ),
   primaryNoKey: 'statementNo',
+  hideKeywordFilter: true,
   actions: [
     {
       key: 'generate_statement',
@@ -76,6 +77,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'endDate',
       label: i18next.t('modules.pages.customerStatement.period'),
       type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [

@@ -346,7 +346,7 @@ export function ModuleFilterToolbar({
       ) : null}
       <div className="module-filter-main-row">
         <div className="module-filter-fields-grid">
-          {!hasConfigKeywordFilter ? (
+          {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (
             <div className="module-filter-field">
               <Form.Item
                 {...buildLabeledFormItemProps({
