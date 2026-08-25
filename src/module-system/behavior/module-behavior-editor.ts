@@ -41,6 +41,26 @@ function applyDefaultSettlementCompany(
   )
 }
 
+function applyProjectSettlementCompany(
+  editorForm: Record<string, unknown>,
+  project:
+    | {
+        settlementCompanyId?: string | number
+        settlementCompanyName?: string
+      }
+    | undefined,
+) {
+  if (project?.settlementCompanyId != null) {
+    editorForm.settlementCompanyId = asString(project.settlementCompanyId)
+    editorForm.settlementCompanyName = asString(project.settlementCompanyName)
+    return
+  }
+  applyDefaultSettlementCompany(
+    editorForm,
+    findCustomerOption(editorForm.customerId),
+  )
+}
+
 function optionDisplayName(
   option: { id?: unknown; value?: unknown } | undefined,
   explicitName: unknown,
@@ -273,6 +293,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
           if (isBlank(editorForm.projectId)) {
             editorForm.projectId = ''
             editorForm.projectName = ''
+            applyProjectSettlementCompany(editorForm, undefined)
           } else {
             const project = findProjectOption(
               editorForm.projectId,
@@ -282,6 +303,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
             if (project) {
               editorForm.projectId = asString(project.id)
               editorForm.projectName = asString(project.projectName).trim()
+              applyProjectSettlementCompany(editorForm, project)
             }
           }
         }
@@ -422,6 +444,28 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
           editorForm.customerId = ''
           editorForm.customerCode = ''
           editorForm.customerName = ''
+        }
+        return
+      }
+
+      if (ctx.changedKeys.has('projectId')) {
+        if (isBlank(editorForm.projectId)) {
+          editorForm.projectId = ''
+          editorForm.projectName = ''
+          applyDefaultSettlementCompany(
+            editorForm,
+            findCustomerOption(editorForm.customerId),
+          )
+        } else {
+          const project = findProjectOption(
+            editorForm.projectId,
+            editorForm.customerId,
+          )
+          if (project) {
+            editorForm.projectId = asString(project.id)
+            editorForm.projectName = asString(project.projectName).trim()
+            applyProjectSettlementCompany(editorForm, project)
+          }
         }
         return
       }
