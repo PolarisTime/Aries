@@ -4,6 +4,7 @@ import {
   withDeletedDocumentStatus,
 } from '@/constants/module-options'
 import {
+  findProjectOption,
   getCustomerOptions,
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
@@ -12,10 +13,7 @@ import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
-import {
-  SETTLEMENT_COMPANY_LABEL,
-  validateSameSettlementCompany,
-} from '../shared/settlement-company'
+import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
   buildStatementOverview,
   compactCustomerStatementItemColumns,
@@ -353,25 +351,35 @@ export const customerStatementPageConfig: ModulePageConfig = {
       customerId: entityIdOf(currentRecord.customerId, 'customerId'),
       projectId: entityIdOf(currentRecord.projectId, 'projectId'),
       currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
-      settlementCompanyId: currentRecord.settlementCompanyId,
     }),
     validateBeforeOpen: (currentRecord) =>
       entityIdOf(currentRecord.customerId, 'customerId')
         ? null
         : '请先选择客户，再选择销售订单',
-    mapParentToDraft: (parentRecord) => ({
-      customerId: entityIdOf(parentRecord.customerId, 'customerId'),
-      customerCode: asString(parentRecord.customerCode).trim(),
-      customerName: parentRecord.customerName || '',
-      projectId: entityIdOf(parentRecord.projectId, 'projectId'),
-      projectName: parentRecord.projectName || '',
-      settlementCompanyId: parentRecord.settlementCompanyId,
-      settlementCompanyName: parentRecord.settlementCompanyName || '',
-      startDate: parentRecord.deliveryDate || '',
-      endDate: parentRecord.deliveryDate || '',
-      receiptAmount: 0,
-      status: '待确认',
-    }),
+    mapParentToDraft: (parentRecord) => {
+      const parentCustomerId = entityIdOf(
+        parentRecord.customerId,
+        'parentRecord.customerId',
+      )
+      const parentProjectId = entityIdOf(
+        parentRecord.projectId,
+        'parentRecord.projectId',
+      )
+      const project = findProjectOption(parentProjectId, parentCustomerId)
+      return {
+        customerId: parentCustomerId,
+        customerCode: asString(parentRecord.customerCode).trim(),
+        customerName: parentRecord.customerName || '',
+        projectId: parentProjectId,
+        projectName: parentRecord.projectName || '',
+        settlementCompanyId: project?.settlementCompanyId,
+        settlementCompanyName: project?.settlementCompanyName || '',
+        startDate: parentRecord.deliveryDate || '',
+        endDate: parentRecord.deliveryDate || '',
+        receiptAmount: 0,
+        status: '待确认',
+      }
+    },
     validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
       const currentCustomerId = entityIdOf(
         currentRecord.customerId,
@@ -404,14 +412,6 @@ export const customerStatementPageConfig: ModulePageConfig = {
         (!nextProjectId || !existingProjectIds.includes(nextProjectId))
       ) {
         return '只能选择同一项目的销售订单生成客户对账单'
-      }
-      const settlementCompanyError = validateSameSettlementCompany(
-        currentRecord,
-        parentRecord,
-        '只能选择同一结算主体的销售订单生成客户对账单',
-      )
-      if (settlementCompanyError) {
-        return settlementCompanyError
       }
       return null
     },
