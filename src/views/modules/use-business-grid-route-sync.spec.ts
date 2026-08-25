@@ -30,6 +30,11 @@ describe('parseRouteParams', () => {
     expect(params.shouldOpenDetail).toBe(false)
   })
 
+  it('解析客户筛选深链参数', () => {
+    const params = parseRouteParams('?customerId=1983421000000000001')
+    expect(params.customerId).toBe('1983421000000000001')
+  })
+
   it('空查询串返回全空值', () => {
     const params = parseRouteParams('')
     expect(params.docNo).toBe('')

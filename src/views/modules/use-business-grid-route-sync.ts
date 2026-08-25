@@ -37,12 +37,14 @@ export function parseRouteParams(searchStr: string) {
   const params = new URLSearchParams(searchStr)
   const docNo = params.get('docNo') || ''
   const trackId = params.get('trackId') || ''
+  const customerId = params.get('customerId') || ''
   return {
     docNo,
     sourceModule: params.get('sourceModule') || '',
     sourceRecordId: params.get('sourceRecordId') || '',
     status: params.get('status') || '',
     trackId,
+    customerId,
     routeKeyword: docNo || trackId,
     shouldOpenDetail: params.get('openDetail') === '1',
     shouldCreate: params.get('create') === '1',
@@ -184,6 +186,9 @@ export function useBusinessGridRouteSync({
         // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步路由入口过滤条件到父级列表。
         setFilters({
           ...defaultFilters,
+          ...(routeParams.customerId && supportsFilterField(config, 'customerId')
+            ? { customerId: routeParams.customerId }
+            : {}),
           // 待处理筛选意图（如指标卡跳转）：仅当模块筛选白名单包含 status 字段时应用
           ...(routeParams.status && supportsFilterField(config, 'status')
             ? { status: routeParams.status }
@@ -195,9 +200,15 @@ export function useBusinessGridRouteSync({
       }
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
       setSubmittedFilters(
-        routeParams.status && supportsFilterField(config, 'status')
-          ? { ...defaultFilters, status: routeParams.status }
-          : { ...defaultFilters },
+        {
+          ...defaultFilters,
+          ...(routeParams.customerId && supportsFilterField(config, 'customerId')
+            ? { customerId: routeParams.customerId }
+            : {}),
+          ...(routeParams.status && supportsFilterField(config, 'status')
+            ? { status: routeParams.status }
+            : {}),
+        },
       )
       return
     }
@@ -205,6 +216,9 @@ export function useBusinessGridRouteSync({
     const nextRouteFilters = {
       ...defaultFilters,
       keyword: routeParams.routeKeyword,
+      ...(routeParams.customerId && supportsFilterField(config, 'customerId')
+        ? { customerId: routeParams.customerId }
+        : {}),
     }
     if (setFilters) {
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步深链关键词到父级列表。
@@ -220,6 +234,7 @@ export function useBusinessGridRouteSync({
     config,
     defaultFilters,
     routeParams.routeKeyword,
+    routeParams.customerId,
     routeParams.status,
     setPage,
     setFilters,
