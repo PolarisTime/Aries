@@ -9,8 +9,16 @@ import {
   confirmBatchTabClose,
   requestEditorSessionClose,
 } from '@/layouts/editor-session/request-close'
-import { detachTabRouter } from '@/layouts/tabs/tab-location-sync'
-import { type LayoutTab, useLayoutTabsStore } from '@/stores/layoutTabsStore'
+import {
+  detachTabRouter,
+  replaceMainRouterHref,
+} from '@/layouts/tabs/tab-location-sync'
+import {
+  buildTabHref,
+  getNextActiveTabAfterClose,
+  type LayoutTab,
+  useLayoutTabsStore,
+} from '@/stores/layoutTabsStore'
 
 function getTabTitle(tab: LayoutTab): string {
   return getPageDefinition(tab.pathname)?.title ?? tab.pathname
@@ -48,8 +56,19 @@ export function LayoutTabBar() {
 
   const handleClose = (tabId: string) => {
     requestEditorSessionClose(t, tabId, () => {
+      const store = useLayoutTabsStore.getState()
+      const nextActiveTab = getNextActiveTabAfterClose(
+        store.tabs,
+        tabId,
+        store.activeTabId,
+      )
+      if (store.activeTabId === tabId && nextActiveTab) {
+        replaceMainRouterHref(
+          buildTabHref(nextActiveTab.pathname, nextActiveTab.search),
+        )
+      }
       detachTabRouter(tabId)
-      useLayoutTabsStore.getState().removeTab(tabId)
+      store.removeTab(tabId)
     })
   }
 

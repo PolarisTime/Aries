@@ -167,6 +167,25 @@ export function removeTabFrom(
   return { tabs: next, nextActiveTabId }
 }
 
+/** 关闭 Tab 前解析主路由应先切换到的目标 Tab。 */
+export function getNextActiveTabAfterClose(
+  tabs: LayoutTab[],
+  id: string,
+  activeTabId: string | null,
+): LayoutTab | null {
+  const { tabs: remainingTabs, nextActiveTabId } = removeTabFrom(
+    tabs,
+    id,
+    activeTabId,
+  )
+  const fallbackActiveId =
+    nextActiveTabId ??
+    remainingTabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
+    remainingTabs[0]?.id ??
+    null
+  return remainingTabs.find((tab) => tab.id === fallbackActiveId) ?? null
+}
+
 export function removeOtherTabsFrom(
   tabs: LayoutTab[],
   keepId: string,

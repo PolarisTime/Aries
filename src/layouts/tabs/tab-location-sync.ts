@@ -77,6 +77,13 @@ export function detachTabRouter(tabId: string): void {
   attachedReloadKeys.delete(tabId)
 }
 
+/** 在销毁活动 Tab 前同步主地址栏，避免路由协调器把已关闭路径重新打开。 */
+export function replaceMainRouterHref(href: string): void {
+  if (mainRouter.state.location.href !== href) {
+    mainRouter.history.replace(href)
+  }
+}
+
 /**
  * 外部意图注入：把主路由上的目标 href 推入子 Router。
  * 先更新 lastSyncedHref，使随后的 subscribe 回调判定为已同步（no-op）。

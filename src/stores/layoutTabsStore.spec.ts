@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DASHBOARD_TAB_PATH,
+  getNextActiveTabAfterClose,
   type LayoutTab,
   MAX_LAYOUT_TABS,
   openTabIn,
@@ -113,6 +114,19 @@ describe('removeTabFrom', () => {
     })
     const result = removeTabFrom([pinned], 'pinned', 'pinned')
     expect(result.tabs).toHaveLength(1)
+  })
+})
+
+describe('getNextActiveTabAfterClose', () => {
+  it('关闭活动 Tab 时返回路由应先切换到的下一个 Tab', () => {
+    const tabs = [
+      makeTab({ id: 'dashboard', pathname: DASHBOARD_TAB_PATH, pinned: true }),
+      makeTab({ id: 'sales-order', pathname: '/sales-order' }),
+    ]
+
+    expect(
+      getNextActiveTabAfterClose(tabs, 'sales-order', 'sales-order')?.id,
+    ).toBe('dashboard')
   })
 })
 
