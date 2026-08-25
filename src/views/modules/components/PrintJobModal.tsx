@@ -75,6 +75,16 @@ import {
   buildPrintItemMergeMarkers,
   reorderPrintItemIds,
 } from '@/views/modules/components/print-job-modal-utils'
+import {
+  type CustomerStatementItemGroup,
+  groupCustomerStatementItems,
+} from '@/views/modules/customer-statement-item-groups'
+import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
+import {
+  FreightStatementItemGroupHeader,
+  FreightStatementProjectGroupHeader,
+} from './FreightStatementItemGroupHeader'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []
 const EMPTY_PRINT_OPTIONS: PrintOptionKey[] = []
@@ -209,7 +219,7 @@ function formatAmount(value: unknown) {
 }
 
 /** 按字段语义格式化明细单元格：件数取整、重量三位去尾零、金额两位小数。 */
-function printItemCellText(field: PrintItemFieldKey, value: string) {
+function printItemCellText(field: PrintItemFieldKey, value?: string) {
   if (field === 'quantity') return formattedTotal(toNumberOrNull(value), 0)
   if (field === 'pieceWeightTon' || field === 'weightTon') {
     return formattedTotal(toNumberOrNull(value), 3)
@@ -687,6 +697,21 @@ export function PrintJobModal({
     () => getPrintItemFields(moduleKey),
     [moduleKey],
   )
+  type PrintGroupItem = PrintRecordItem & Record<string, unknown>
+  const customerStatementGroups = useMemo(
+    () =>
+      moduleKey === 'customer-statement'
+        ? groupCustomerStatementItems(orderedPrintItems as PrintGroupItem[])
+        : [],
+    [moduleKey, orderedPrintItems],
+  )
+  const freightStatementGroups = useMemo(
+    () =>
+      moduleKey === 'freight-statement'
+        ? groupFreightStatementItems(orderedPrintItems as PrintGroupItem[])
+        : [],
+    [moduleKey, orderedPrintItems],
+  )
   const totalQuantity = numericTotal(
     selectedPrintItems.map((item) => item.quantity),
   )
@@ -771,6 +796,7 @@ export function PrintJobModal({
     columnWidth: 40,
     getCheckboxProps: () => ({ disabled: !itemSelectionEnabled }),
     getTitleCheckboxProps: () => ({ disabled: !itemSelectionEnabled }),
+    preserveSelectedRowKeys: true,
     selectedRowKeys: selectedPrintItems.map((item) => item.id),
     onChange: (keys) => {
       const selectedKeySet = new Set(keys.map(String))
@@ -788,9 +814,11 @@ export function PrintJobModal({
       key: 'drag',
       width: 36,
       align: 'center',
-      render: (_, _record, index) => (
+      render: (_, item) => (
         <DragHandle
-          label={t('modules.print.dragRowAriaLabel', { index: index + 1 })}
+          label={t('modules.print.dragRowAriaLabel', {
+            index: orderedPrintItemIds.indexOf(item.id) + 1,
+          })}
         />
       ),
     },
@@ -799,9 +827,9 @@ export function PrintJobModal({
       width: 56,
       align: 'center',
       title: t('modules.print.itemSequence'),
-      render: (_, item, index) => (
+      render: (_, item) => (
         <Space size={4}>
-          <span>{index + 1}</span>
+          <span>{orderedPrintItemIds.indexOf(item.id) + 1}</span>
           {outputPrintItemIdSet.has(item.id) ? (
             <Tooltip title={t('modules.print.outputted')}>
               <CheckCircleFilled style={{ color: token.colorSuccess }} />
@@ -810,72 +838,73 @@ export function PrintJobModal({
         </Space>
       ),
     },
-    {
-      key: 'brand',
-      width: showMergeGroup ? 136 : 112,
-      align: 'left',
-      ellipsis: true,
-      title: t('modules.print.itemBrand'),
-      render: (_, item) => {
-        const mergeMarker = showMergeGroup
-          ? mergeMarkersByItemId[item.id]
-          : undefined
-        return (
-          <span className="flex min-w-0 items-center gap-1">
-            {mergeMarker ? (
-              <Tag
-                className="m-0"
-                color="processing"
-                title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
+    ...printItemFields.flatMap((field: PrintItemFieldSpec) => {
+      const itemColumn = {
+        key: field.key,
+        width:
+          field.key === 'brand' && showMergeGroup
+            ? 136
+            : getPrintItemColumnWidth(field),
+        align: getPrintItemColumnAlign(field, moduleKey),
+        ellipsis: true,
+        title: t(field.labelKey),
+        render: (_: unknown, item: PrintRecordItem) => {
+          if (field.key !== 'brand') {
+            return printItemCellText(field.key, item[field.key])
+          }
+          const mergeMarker = showMergeGroup
+            ? mergeMarkersByItemId[item.id]
+            : undefined
+          return (
+            <span className="flex min-w-0 items-center gap-1">
+              {mergeMarker ? (
+                <Tag
+                  className="m-0"
+                  color="processing"
+                  title={`${mergeMarker.itemCount} ${t('modules.print.mergeRows')}`}
+                >
+                  {mergeMarker.groupIndex}
+                </Tag>
+              ) : null}
+              <Typography.Text
+                ellipsis={{ tooltip: true }}
+                style={{ minWidth: 0, flex: 1 }}
               >
-                {mergeMarker.groupIndex}
-              </Tag>
-            ) : null}
-            <Typography.Text
-              ellipsis={{ tooltip: true }}
-              style={{ minWidth: 0, flex: 1 }}
-            >
-              {fieldText(item.brand)}
-            </Typography.Text>
-          </span>
-        )
-      },
-    },
-    ...(brandOverrideEnabled
-      ? [
-          {
-            key: 'brandOverrideTo',
-            width: 132,
-            align: 'left' as const,
-            title: t('modules.print.brandOverrideTo'),
-            render: (_: unknown, item: PrintRecordItem) => (
-              <Input
-                maxLength={64}
-                onChange={(event) =>
-                  dispatchPrintJobModal({
-                    type: 'setBrandOverride',
-                    itemId: item.id,
-                    value: event.target.value,
-                  })
-                }
-                placeholder={t('modules.print.brandOverridePlaceholder')}
-                size="small"
-                value={state.brandOverridesByItemId[item.id] || ''}
-                variant="filled"
-              />
-            ),
-          },
-        ]
-      : []),
-    ...printItemFields.map((field: PrintItemFieldSpec) => ({
-      key: field.key,
-      width: getPrintItemColumnWidth(field),
-      align: getPrintItemColumnAlign(field),
-      ellipsis: true,
-      title: t(field.labelKey),
-      render: (_: unknown, item: PrintRecordItem) =>
-        printItemCellText(field.key, item[field.key]),
-    })),
+                {fieldText(item.brand)}
+              </Typography.Text>
+            </span>
+          )
+        },
+      }
+      if (field.key !== 'brand' || !brandOverrideEnabled) {
+        return [itemColumn]
+      }
+      return [
+        itemColumn,
+        {
+          key: 'brandOverrideTo',
+          width: 132,
+          align: 'left' as const,
+          title: t('modules.print.brandOverrideTo'),
+          render: (_: unknown, item: PrintRecordItem) => (
+            <Input
+              maxLength={64}
+              onChange={(event) =>
+                dispatchPrintJobModal({
+                  type: 'setBrandOverride',
+                  itemId: item.id,
+                  value: event.target.value,
+                })
+              }
+              placeholder={t('modules.print.brandOverridePlaceholder')}
+              size="small"
+              value={state.brandOverridesByItemId[item.id] || ''}
+              variant="filled"
+            />
+          ),
+        },
+      ]
+    }),
   ]
 
   const tableEmptyText = printItemsError ? (
@@ -895,6 +924,57 @@ export function PrintJobModal({
   ) : (
     t('modules.print.noPrintItems')
   )
+
+  const printItemsTable = (items: PrintRecordItem[]) => (
+    <Table<PrintRecordItem>
+      columns={columns}
+      components={{ body: { row: SortableRow } }}
+      dataSource={items}
+      locale={{ emptyText: tableEmptyText }}
+      pagination={false}
+      rowKey={(item) => item.id}
+      rowSelection={rowSelection}
+      scroll={{ y: brandOverrideEnabled ? 376 : 320 }}
+      size="small"
+    />
+  )
+
+  const printItemsContent =
+    moduleKey === 'customer-statement' && customerStatementGroups.length ? (
+      <div className="module-items-groups">
+        {customerStatementGroups.map((group) => (
+          <div className="module-items-group" key={group.key}>
+            <CustomerStatementItemGroupHeader
+              group={
+                group as CustomerStatementItemGroup<
+                  PrintRecordItem & Record<string, unknown>
+                >
+              }
+            />
+            {printItemsTable(group.items as PrintRecordItem[])}
+          </div>
+        ))}
+      </div>
+    ) : moduleKey === 'freight-statement' && freightStatementGroups.length ? (
+      <div className="module-items-groups">
+        {freightStatementGroups.map((group) => (
+          <div className="module-items-group" key={group.key}>
+            <FreightStatementItemGroupHeader group={group} />
+            {group.projectGroups.map((projectGroup) => (
+              <div
+                className="module-items-project-group"
+                key={projectGroup.key}
+              >
+                <FreightStatementProjectGroupHeader group={projectGroup} />
+                {printItemsTable(projectGroup.items as PrintRecordItem[])}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    ) : (
+      printItemsTable(orderedPrintItems)
+    )
 
   const footer = (
     <Flex justify="space-between" align="center" gap="small" wrap="wrap">
@@ -1120,17 +1200,7 @@ export function PrintJobModal({
             items={orderedPrintItemIds}
             strategy={verticalListSortingStrategy}
           >
-            <Table<PrintRecordItem>
-              columns={columns}
-              components={{ body: { row: SortableRow } }}
-              dataSource={orderedPrintItems}
-              locale={{ emptyText: tableEmptyText }}
-              pagination={false}
-              rowKey={(item) => item.id}
-              rowSelection={rowSelection}
-              scroll={{ y: brandOverrideEnabled ? 376 : 320 }}
-              size="small"
-            />
+            {printItemsContent}
           </SortableContext>
         </DndContext>
       </Flex>

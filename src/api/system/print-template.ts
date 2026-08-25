@@ -28,6 +28,15 @@ const printRecordItemSchema = z.object({
   weightTon: z.string(),
   unitPrice: z.string(),
   amount: z.string(),
+  sourceNo: z.string().optional(),
+  deliveryDate: z.string().optional(),
+  quantityUnit: z.string().optional(),
+  customerName: z.string().optional(),
+  projectName: z.string().optional(),
+  sourceSalesOrderItemId: z.string().optional(),
+  sourceFreightBillId: z.string().optional(),
+  sourceFreightBillUnitPrice: z.string().optional(),
+  sourceFreightBillTotalFreight: z.string().optional(),
 })
 
 const printTemplateListResponseSchema = z.array(printTemplateRecordSchema)
@@ -66,6 +75,15 @@ export interface PrintRecordItem {
   weightTon: string
   unitPrice: string
   amount: string
+  sourceNo?: string
+  deliveryDate?: string
+  quantityUnit?: string
+  customerName?: string
+  projectName?: string
+  sourceSalesOrderItemId?: string
+  sourceFreightBillId?: string
+  sourceFreightBillUnitPrice?: string
+  sourceFreightBillTotalFreight?: string
 }
 
 export interface SalesOrderPrintXlsxOptions {

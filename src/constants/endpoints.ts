@@ -47,7 +47,7 @@ export const ENDPOINTS = {
 
   // Print
   PRINT_OUTPUTS: '/print-outputs',
-  PRINT_ITEMS: '/print/items',
+  PRINT_ITEMS: '/print-outputs/items',
   PRINT_TEMPLATES: '/print-templates',
   PRINT_TEMPLATE: (id: string | number) =>
     `/print-templates/${pathSegment(id)}`,
