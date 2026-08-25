@@ -1,3 +1,34 @@
+# [9.10.0](https://github.com/PolarisTime/Aries/compare/v9.9.0...v9.10.0) (2026-08-25)
+
+
+### Bug Fixes
+
+* **finance:** 优化财务概览台账排版 ([de27a42](https://github.com/PolarisTime/Aries/commit/de27a429f8b71c623d7c8705ee1140b939df687f))
+* **finance:** 将对账明细改为弹窗 ([b76d41e](https://github.com/PolarisTime/Aries/commit/b76d41eaf312a0eda1a22a747a43589260f804d6))
+* **finance:** 调整客户对账单筛选区 ([b0f9508](https://github.com/PolarisTime/Aries/commit/b0f9508cccfb9a735da346a621e4da23af28cb95))
+* **finance:** 调整客户对账单表单与明细滚动 ([3d3e23c](https://github.com/PolarisTime/Aries/commit/3d3e23cd9e75597fe8bef912ebb9148158617aeb))
+* **layout:** 修复快捷入口关闭标签卡死 ([755b52f](https://github.com/PolarisTime/Aries/commit/755b52fe8526b5dd71c9ce69e20329df43f84b60))
+* **master:** 保存项目后失效项目选项缓存 ([a7dafd9](https://github.com/PolarisTime/Aries/commit/a7dafd98dc2510a281999e07444ed059f8ba1e98))
+* **master:** 同步项目客户筛选深链 ([c6dc905](https://github.com/PolarisTime/Aries/commit/c6dc9053f07464c39fd1a3e33779e2f04b5c8120))
+* **master:** 选择项目时同步结算主体 ([12bbd80](https://github.com/PolarisTime/Aries/commit/12bbd8005e020372ca8c4dde439bdcd14709216e))
+* **print:** 适配对账单打印明细分组 ([127e881](https://github.com/PolarisTime/Aries/commit/127e881e07c49531c016769647d75d2d9d0c23a5))
+* **purchase:** 标注卸货目标并居中项目选择 ([3aa568f](https://github.com/PolarisTime/Aries/commit/3aa568fb340dd7813a693f834bc292253bf457d4))
+* **react:** 修复前端 Actions lint 门禁 ([76952b2](https://github.com/PolarisTime/Aries/commit/76952b262c269e60b2982d8b7891c0e5bbb6a7fb))
+* **react:** 修复物流候选销售订单无法显示 ([3f445e3](https://github.com/PolarisTime/Aries/commit/3f445e352352937de9100614fc9da1cd8f032a70))
+* **search:** 修正防抖器生命周期初始化 ([bb7c19e](https://github.com/PolarisTime/Aries/commit/bb7c19e5e0780e9c5c701cbd64cb6807ebf505ac))
+* **search:** 延迟初始化搜索防抖器 ([c7ab6a0](https://github.com/PolarisTime/Aries/commit/c7ab6a04305b710ae6a1bf73a95a4e70897c0077))
+* **search:** 防止全局单据搜索触发请求风暴 ([d256dd7](https://github.com/PolarisTime/Aries/commit/d256dd7a9c098a1666040d74567422a984d3f6df))
+* **statement:** 按项目配置选择客户对账单主体 ([634bd6e](https://github.com/PolarisTime/Aries/commit/634bd6e9bae0ce001910c3643389ed058b2a0b8d))
+
+
+### Features
+
+* **dashboard:** 快捷入口直接打开新建弹窗 ([7f129dc](https://github.com/PolarisTime/Aries/commit/7f129dc2e832aecde49a25b1942e111e1f9e793a))
+* **finance:** 按销售订单分组展示客户对账单 ([9129408](https://github.com/PolarisTime/Aries/commit/912940816a992ab0fc087cde6293d08c2b800c4b))
+* **master:** 新增独立项目资料页面 ([20a4168](https://github.com/PolarisTime/Aries/commit/20a4168a9eead7b3f1f31cf937ffe10ceb572728))
+* **purchase:** 支持提货清单分组选择项目简称 ([bfb8b29](https://github.com/PolarisTime/Aries/commit/bfb8b296e5ec1092e9fa620c03d3e34abaec7808))
+* **react:** 统一单据关联号下钻浮层展示 ([4fbc59a](https://github.com/PolarisTime/Aries/commit/4fbc59ac7d46da9c6103768faca1fd1f88fb3e03))
+
 # [9.9.0](https://github.com/PolarisTime/Aries/compare/v9.8.1...v9.9.0) (2026-08-24)
 
 
