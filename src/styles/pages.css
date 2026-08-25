@@ -1,5 +1,10 @@
 /* ── Detail table ── */
 
+.module-items-table-shell {
+  width: 100%;
+  min-width: 0;
+}
+
 .module-detail-table {
   width: 100%;
   overflow-x: auto;

@@ -165,6 +165,9 @@ export function ModuleEditorItemsSection({
             groupNo: 1,
             sourceNo: '',
             deliveryDate: '',
+            totalQuantity: 0,
+            totalWeightTon: 0,
+            totalAmount: 0,
             items: [],
           },
         ]

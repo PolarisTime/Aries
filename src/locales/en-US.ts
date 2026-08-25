@@ -791,6 +791,9 @@ export const enUS = {
       customerStatementGroupNo: 'Group: ',
       customerStatementSalesOrderNo: 'Sales order: ',
       customerStatementDeliveryDate: 'Delivery date: ',
+      customerStatementTotalQuantity: 'Total Qty: ',
+      customerStatementTotalWeight: 'Total Weight: ',
+      customerStatementTotalAmount: 'Total Amount: ',
     },
     expense: {
       chargeName: 'Charge Name',

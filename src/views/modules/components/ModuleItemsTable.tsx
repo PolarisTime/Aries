@@ -1,4 +1,5 @@
 import { Table, type TableColumnsType, type TableProps } from 'antd'
+import { useEffect, useRef, useState } from 'react'
 
 type BaseRecord = {
   id: string
@@ -23,6 +24,8 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
   onRow,
   className,
 }: Props<RecordType>) {
+  const tableShellRef = useRef<HTMLDivElement>(null)
+  const [needsHorizontalScroll, setNeedsHorizontalScroll] = useState(false)
   const scrollX = (() => {
     let total = 0
     for (const col of columns) {
@@ -36,23 +39,58 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
     return total || undefined
   })()
 
+  useEffect(() => {
+    if (!scrollX) {
+      setNeedsHorizontalScroll(false)
+      return
+    }
+
+    const measureHorizontalOverflow = () => {
+      const tableShell = tableShellRef.current
+      const tableContent =
+        tableShell?.querySelector<HTMLElement>('.ant-table-content')
+      if (!tableContent) return
+      setNeedsHorizontalScroll(
+        tableContent.scrollWidth > tableContent.clientWidth + 1,
+      )
+    }
+
+    measureHorizontalOverflow()
+    const tableShell = tableShellRef.current
+    const tableContent =
+      tableShell?.querySelector<HTMLElement>('.ant-table-content')
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measureHorizontalOverflow)
+    if (tableShell) resizeObserver?.observe(tableShell)
+    if (tableContent) resizeObserver?.observe(tableContent)
+    window.addEventListener('resize', measureHorizontalOverflow)
+    return () => {
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', measureHorizontalOverflow)
+    }
+  }, [scrollX])
+
   return (
-    <Table<RecordType>
-      rowKey="id"
-      size="small"
-      bordered
-      tableLayout="fixed"
-      className={['module-detail-table', className || '']
-        .filter(Boolean)
-        .join(' ')}
-      columns={columns}
-      components={components}
-      dataSource={dataSource}
-      pagination={false}
-      scroll={{ x: scrollX }}
-      locale={{ emptyText }}
-      rowClassName={rowClassName}
-      onRow={onRow}
-    />
+    <div ref={tableShellRef} className="module-items-table-shell">
+      <Table<RecordType>
+        rowKey="id"
+        size="small"
+        bordered
+        tableLayout="fixed"
+        className={['module-detail-table', className || '']
+          .filter(Boolean)
+          .join(' ')}
+        columns={columns}
+        components={components}
+        dataSource={dataSource}
+        pagination={false}
+        scroll={needsHorizontalScroll ? { x: scrollX } : undefined}
+        locale={{ emptyText }}
+        rowClassName={rowClassName}
+        onRow={onRow}
+      />
+    </div>
   )
 }

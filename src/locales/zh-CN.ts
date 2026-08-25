@@ -767,6 +767,9 @@ export const zhCN = {
       customerStatementGroupNo: '分组序号：',
       customerStatementSalesOrderNo: '销售单号：',
       customerStatementDeliveryDate: '交货日期：',
+      customerStatementTotalQuantity: '合计件数：',
+      customerStatementTotalWeight: '合计重量：',
+      customerStatementTotalAmount: '合计金额：',
     },
     expense: {
       chargeName: '费用名称',

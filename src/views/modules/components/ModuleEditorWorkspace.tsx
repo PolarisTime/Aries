@@ -39,6 +39,7 @@ import { message } from '@/utils/antd-app'
 import {
   type CustomerStatementItemGroup,
   groupCustomerStatementItems,
+  sortCustomerStatementItemsByDeliveryDate,
 } from '@/views/modules/customer-statement-item-groups'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
@@ -327,7 +328,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     canSave &&
     !lineItemsLocked &&
     !parentImportedItemEditLocked
-  // 自动排序当前仅销售订单启用：导入上游后行序随上游，需按商品资料默认规则整理。
+  // 导入上游后行序随上游：销售订单按商品资料规则，客户对账单按交货日期整理。
   // 附加费用 Tab：采购订单/销售订单/物流单启用
   const supportsExpenseTab =
     (moduleKey === 'purchase-order' ||
@@ -335,12 +336,16 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       moduleKey === 'freight-bill') &&
     Boolean(config.itemColumns?.length)
   const canAutoSortItems =
-    moduleKey === 'sales-order' &&
+    (moduleKey === 'sales-order' || moduleKey === 'customer-statement') &&
     items.length > 1 &&
     !saving &&
     !lineItemsLocked
   const handleAutoSortItems = () => {
-    setItems((current) => sortItemsByMaterialDefault(current))
+    setItems((current) =>
+      moduleKey === 'customer-statement'
+        ? sortCustomerStatementItemsByDeliveryDate(current)
+        : sortItemsByMaterialDefault(current),
+    )
   }
 
   const [expenseSelectedItemIds, setExpenseSelectedItemIds] = useState<
@@ -828,6 +833,9 @@ function SaveResultOverlay<Key extends ModuleKey>({
                     groupNo: 1,
                     sourceNo: '',
                     deliveryDate: '',
+                    totalQuantity: 0,
+                    totalWeightTon: 0,
+                    totalAmount: 0,
                     items: [],
                   },
                 ]
