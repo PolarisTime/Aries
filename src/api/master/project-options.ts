@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { exactPageSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -16,6 +17,12 @@ export type ProjectOption = {
   projectNameAbbr?: string
 }
 
+export type ProjectAbbreviationOption = {
+  value: EntityId
+  label: string
+  title: string
+}
+
 type RawProjectOption = {
   id?: unknown
   value?: unknown
@@ -24,6 +31,12 @@ type RawProjectOption = {
   customerCode?: unknown
   projectCode?: unknown
   projectName?: unknown
+  projectNameAbbr?: unknown
+}
+
+type RawProjectPageRow = {
+  id: unknown
+  projectName: unknown
   projectNameAbbr?: unknown
 }
 
@@ -39,6 +52,31 @@ const projectOptionsResponseSchema = z.array(
     projectNameAbbr: z.unknown().optional(),
   }),
 )
+
+const projectPageResponseSchema = exactPageSchema(
+  z.looseObject({
+    id: z.unknown(),
+    projectName: z.unknown(),
+    projectNameAbbr: z.unknown().optional(),
+  }),
+)
+
+export function toProjectAbbreviationOptions(
+  rows: RawProjectPageRow[],
+): ProjectAbbreviationOption[] {
+  return rows.map((row, index) => {
+    const value = parseEntityId(row.id, `projects[${index}].id`)
+    const projectName = asString(row.projectName).trim()
+    const projectNameAbbr = asString(row.projectNameAbbr).trim()
+    const label = projectNameAbbr || projectName || `#${value}`
+
+    return {
+      value,
+      label,
+      title: projectName || label,
+    }
+  })
+}
 
 function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
   return rows.map((row, index) => {
@@ -75,4 +113,20 @@ export async function fetchProjectOptions(
     { params: { customerId: normalizedCustomerId } },
   )
   return normalizeProjectOptions(response)
+}
+
+export async function fetchProjectAbbreviationOptions(
+  signal?: AbortSignal,
+): Promise<ProjectAbbreviationOption[]> {
+  const response = await apiGet(ENDPOINTS.PROJECTS, projectPageResponseSchema, {
+    params: {
+      page: 0,
+      size: 200,
+      sortBy: 'projectCode',
+      direction: 'asc',
+      status: '正常',
+    },
+    signal,
+  })
+  return toProjectAbbreviationOptions(response.content)
 }

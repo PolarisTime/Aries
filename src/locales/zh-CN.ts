@@ -487,6 +487,7 @@ export const zhCN = {
       unassignedWarehouse: '未指定仓库',
       addGroup: '添加分组',
       groupLabel: '分组 {{index}}',
+      groupProjectPlaceholder: '选择项目简称',
       groupRemarkPlaceholder: '添加分组备注',
       lockGroup: '锁定分组 {{index}}',
       unlockGroup: '解除锁定分组 {{index}}',

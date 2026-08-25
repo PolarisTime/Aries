@@ -37,6 +37,7 @@ import {
   Button,
   Flex,
   Input,
+  Select,
   Spin,
   Table,
   Tag,
@@ -52,6 +53,10 @@ import {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  fetchProjectAbbreviationOptions,
+  type ProjectAbbreviationOption,
+} from '@/api/master/project-options'
 import {
   fetchPurchaseOrderPickupList,
   type PurchaseOrderPickupListItem,
@@ -233,6 +238,7 @@ function SortableRow(props: SortableRowProps) {
 interface PickupDraftGroup {
   id: string
   locked: boolean
+  projectId?: EntityId
   remark: string
   itemIds: string[]
 }
@@ -253,7 +259,10 @@ interface PickupDraftGroupSectionProps extends PickupItemsTableProps {
   group: PickupDraftGroup
   groupCount: number
   index: number
+  projectOptions: ProjectAbbreviationOption[]
+  projectOptionsLoading: boolean
   onLockedChange: (groupId: string, locked: boolean) => void
+  onProjectChange: (groupId: string, projectId?: EntityId) => void
   onRemarkChange: (groupId: string, remark: string) => void
   onRemove: (groupId: string) => void
 }
@@ -569,8 +578,11 @@ function PickupDraftGroupSection({
   index,
   items,
   onLockedChange,
+  onProjectChange,
   onRemarkChange,
   onRemove,
+  projectOptions,
+  projectOptionsLoading,
 }: PickupDraftGroupSectionProps) {
   const { t } = useTranslation()
   const {
@@ -659,6 +671,25 @@ function PickupDraftGroupSection({
             </span>
           </div>
           <div className="purchase-pickup-list-group-controls">
+            <Select<EntityId>
+              allowClear
+              className="purchase-pickup-list-group-project"
+              loading={projectOptionsLoading}
+              options={projectOptions}
+              placeholder={t(
+                'modules.purchasePickupList.groupProjectPlaceholder',
+              )}
+              showSearch={{ optionFilterProp: 'label' }}
+              title={
+                projectOptions.find(
+                  (option) => option.value === group.projectId,
+                )?.title
+              }
+              value={group.projectId}
+              onChange={(value) =>
+                onProjectChange(group.id, value || undefined)
+              }
+            />
             <Input
               allowClear
               className="purchase-pickup-list-group-remark"
@@ -783,6 +814,13 @@ export function PurchaseOrderPickupListOverlay({
     enabled: open,
     staleTime: 0,
   })
+  const { data: projectOptions = [], isFetching: projectOptionsLoading } =
+    useQuery({
+      queryKey: QUERY_KEYS.masterOptions.projectAbbreviations,
+      queryFn: ({ signal }) => fetchProjectAbbreviationOptions(signal),
+      enabled: open,
+      staleTime: 300_000,
+    })
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
@@ -907,6 +945,15 @@ export function PurchaseOrderPickupListOverlay({
     }))
   }
 
+  const setGroupProject = (groupId: string, projectId?: EntityId) => {
+    updateDraft((current) => ({
+      ...current,
+      groups: current.groups.map((group) =>
+        group.id === groupId ? { ...group, projectId } : group,
+      ),
+    }))
+  }
+
   const groupByWarehouse = () => {
     const groups = createWarehouseGroups(defaultItems)
     if (!groups.length) return
@@ -938,7 +985,8 @@ export function PurchaseOrderPickupListOverlay({
   const hasCustomDraft =
     activeDraft.groups.length !== 1 ||
     activeDraft.groups.some(
-      (group) => group.locked || group.remark.length > 0,
+      (group) =>
+        group.locked || Boolean(group.projectId) || group.remark.length > 0,
     ) ||
     flattenGroupItemIds(activeDraft.groups).some(
       (itemId, index) => itemId !== defaultItemIds[index],
@@ -1013,7 +1061,10 @@ export function PurchaseOrderPickupListOverlay({
                           const item = itemsById.get(itemId)
                           return item ? [item] : []
                         })}
+                        projectOptions={projectOptions}
+                        projectOptionsLoading={projectOptionsLoading}
                         onLockedChange={setGroupLocked}
+                        onProjectChange={setGroupProject}
                         onRemarkChange={setGroupRemark}
                         onRemove={removeGroup}
                       />

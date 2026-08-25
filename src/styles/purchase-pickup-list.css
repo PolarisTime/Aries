@@ -82,10 +82,18 @@
   flex: 1;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
+.purchase-pickup-list-group-project {
+  min-width: 180px;
+  flex: 0 1 220px;
+}
+
 .purchase-pickup-list-group-remark {
+  min-width: 180px;
+  flex: 1 1 280px;
   width: min(100%, 640px);
 }
 
@@ -116,8 +124,14 @@
     flex-direction: column;
   }
 
-  .purchase-pickup-list-group-controls,
-  .purchase-pickup-list-group-remark {
+  .purchase-pickup-list-group-controls {
     width: 100%;
+  }
+
+  .purchase-pickup-list-group-project,
+  .purchase-pickup-list-group-remark {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 100%;
   }
 }
