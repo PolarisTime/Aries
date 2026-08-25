@@ -18,6 +18,8 @@ import {
   listSalesOrderOutboundImportCandidatePage,
   listSalesOrderPurchaseSourceCandidatePage,
 } from '@/api/sales/sales-order-candidates'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
@@ -714,6 +716,34 @@ export function useModuleParentSelectorOverlay({
               status={status}
               statusMap={statusMap}
               fallback={status}
+            />
+          )
+        }
+        if (isDocumentReferenceField(column.dataIndex)) {
+          return (
+            <DocumentReferencePopover
+              value={value}
+              fieldKey={column.dataIndex}
+              moduleKey={parentModuleKey}
+              contextModuleKey={parentModuleKey}
+              documentLabel={column.title}
+              summary={{
+                counterpartyName:
+                  typeof record.customerName === 'string'
+                    ? record.customerName
+                    : typeof record.supplierName === 'string'
+                      ? record.supplierName
+                      : typeof record.carrierName === 'string'
+                        ? record.carrierName
+                        : undefined,
+                amount:
+                  typeof record.totalAmount === 'number' ||
+                  typeof record.totalAmount === 'string'
+                    ? record.totalAmount
+                    : undefined,
+                status: getDisplayStatus(record, column.dataIndex),
+              }}
+              statusMap={statusMap}
             />
           )
         }

@@ -92,6 +92,11 @@ export const freightStatementPageConfig: ModulePageConfig = {
       width: 150,
     },
     {
+      title: '关联物流单',
+      dataIndex: 'sourceBillNos',
+      width: 180,
+    },
+    {
       title: SETTLEMENT_COMPANY_LABEL,
       dataIndex: 'settlementCompanyName',
       width: 160,
@@ -160,6 +165,10 @@ export const freightStatementPageConfig: ModulePageConfig = {
       key: 'carrierName',
     },
     {
+      label: '关联物流单',
+      key: 'sourceBillNos',
+    },
+    {
       label: i18next.t('modules.pages.freightStatement.carrierCode'),
       key: 'carrierCode',
     },
@@ -212,6 +221,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.freightStatement.statementNo'),
       type: 'input',
       required: true,
+      row: 1,
+    },
+    {
+      key: 'sourceBillNos',
+      label: '关联物流单',
+      type: 'input',
+      disabled: true,
       row: 1,
     },
     {

@@ -97,6 +97,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 140,
     },
     {
+      title: '关联销售订单',
+      dataIndex: 'sourceOrderNos',
+      width: 180,
+    },
+    {
       title: i18next.t('modules.pages.customerStatement.project'),
       dataIndex: 'projectName',
       width: 180,
@@ -163,6 +168,10 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'customerName',
     },
     {
+      label: '关联销售订单',
+      key: 'sourceOrderNos',
+    },
+    {
       label: i18next.t('modules.pages.customerStatement.customerCode'),
       key: 'customerCode',
     },
@@ -223,6 +232,13 @@ export const customerStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.customerStatement.statementNo'),
       type: 'input',
       required: true,
+      disabled: true,
+      row: 1,
+    },
+    {
+      key: 'sourceOrderNos',
+      label: '关联销售订单',
+      type: 'input',
       disabled: true,
       row: 1,
     },

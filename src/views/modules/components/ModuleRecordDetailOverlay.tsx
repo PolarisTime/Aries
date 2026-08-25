@@ -3,6 +3,8 @@ import type { TableColumnsType } from 'antd'
 import { Button, Col, Empty, Flex, Row, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
@@ -89,11 +91,42 @@ export function ModuleRecordDetailOverlay({
       key: column.dataIndex,
       width: column.width,
       align: column.align || 'center',
-      render: (value: unknown, record: ModuleLineItem) =>
-        column.dataIndex === 'pieceWeightTon' &&
-        shouldDisplayPieceWeightAsDash(record)
-          ? '-'
-          : formatCellValue(value, column.type),
+      render: (value: unknown, record: ModuleLineItem) => {
+        if (
+          column.dataIndex === 'pieceWeightTon' &&
+          shouldDisplayPieceWeightAsDash(record)
+        ) {
+          return '-'
+        }
+        if (isDocumentReferenceField(column.dataIndex)) {
+          return (
+            <DocumentReferencePopover
+              value={value}
+              fieldKey={column.dataIndex}
+              contextModuleKey={config.key}
+              documentLabel={column.title}
+              summary={{
+                counterpartyName:
+                  typeof record.customerName === 'string'
+                    ? record.customerName
+                    : typeof record.supplierName === 'string'
+                      ? record.supplierName
+                      : typeof record.carrierName === 'string'
+                        ? record.carrierName
+                        : undefined,
+                amount:
+                  typeof record.amount === 'number' ||
+                  typeof record.amount === 'string'
+                    ? record.amount
+                    : undefined,
+                status:
+                  typeof record.status === 'string' ? record.status : undefined,
+              }}
+            />
+          )
+        }
+        return formatCellValue(value, column.type)
+      },
     }))
   const detailFields = config.detailFields || []
   const colSpan = Math.max(
@@ -146,19 +179,54 @@ export function ModuleRecordDetailOverlay({
                       </span>
                       <span className="bill-detail-value">
                         {field.key === 'pieceWeightTon' &&
-                        shouldDisplayPieceWeightAsDash(record)
-                          ? '-'
-                          : fieldType === 'status'
-                            ? renderModuleRecordStatus({
-                                record,
-                                statusKey: field.key,
-                                statusMap: config.statusMap,
-                                renderFallback: (status) =>
-                                  formatCellValue(status, fieldType),
-                              })
-                            : colDef?.render
-                              ? colDef.render(record[field.key], record)
-                              : formatCellValue(record[field.key], fieldType)}
+                        shouldDisplayPieceWeightAsDash(record) ? (
+                          '-'
+                        ) : isDocumentReferenceField(field.key) ? (
+                          <DocumentReferencePopover
+                            value={record[field.key]}
+                            fieldKey={field.key}
+                            moduleKey={config.key}
+                            contextModuleKey={config.key}
+                            documentLabel={field.label}
+                            summary={{
+                              counterpartyName:
+                                typeof record.counterpartyName === 'string'
+                                  ? record.counterpartyName
+                                  : typeof record.customerName === 'string'
+                                    ? record.customerName
+                                    : typeof record.supplierName === 'string'
+                                      ? record.supplierName
+                                      : typeof record.carrierName === 'string'
+                                        ? record.carrierName
+                                        : undefined,
+                              amount:
+                                typeof record.amount === 'number' ||
+                                typeof record.amount === 'string'
+                                  ? record.amount
+                                  : typeof record.totalAmount === 'number' ||
+                                      typeof record.totalAmount === 'string'
+                                    ? record.totalAmount
+                                    : undefined,
+                              status:
+                                typeof record.status === 'string'
+                                  ? record.status
+                                  : undefined,
+                            }}
+                            statusMap={config.statusMap}
+                          />
+                        ) : fieldType === 'status' ? (
+                          renderModuleRecordStatus({
+                            record,
+                            statusKey: field.key,
+                            statusMap: config.statusMap,
+                            renderFallback: (status) =>
+                              formatCellValue(status, fieldType),
+                          })
+                        ) : colDef?.render ? (
+                          colDef.render(record[field.key], record)
+                        ) : (
+                          formatCellValue(record[field.key], fieldType)
+                        )}
                       </span>
                     </div>
                   </Col>

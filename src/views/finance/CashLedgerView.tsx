@@ -37,6 +37,7 @@ import {
   getCashLedger,
 } from '@/api/finance/cash-ledger'
 import { AppProPage } from '@/components/AppProPage'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -240,7 +241,15 @@ function buildColumns(
       dataIndex: 'documentNo',
       width: 180,
       ellipsis: true,
-      render: displayText,
+      render: (value: string, record: CashLedgerLine) => (
+        <DocumentReferencePopover
+          value={{ documentNo: value, id: record.documentId }}
+          moduleKey={
+            record.flowType.startsWith('RECEIPT') ? 'receipt' : 'payment'
+          }
+          documentLabel="单据"
+        />
+      ),
     },
     {
       title: '往来方类型',

@@ -56,6 +56,7 @@ import {
   type PrintRecordItem,
   type SalesOrderPrintXlsxOptions,
 } from '@/api/system/print-template'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
@@ -388,6 +389,7 @@ function SortableRow({ children, ...props }: SortableRowProps) {
 
 interface PrintJobHeaderProps {
   counterpartyName: string
+  moduleKey: string
   moduleTitle?: string
   orderNo: string
   projectSummaryText: string
@@ -397,6 +399,7 @@ interface PrintJobHeaderProps {
 
 function PrintJobHeader({
   counterpartyName,
+  moduleKey,
   moduleTitle,
   orderNo,
   projectSummaryText,
@@ -415,9 +418,11 @@ function PrintJobHeader({
           {moduleTitle || t('modules.print.currentModule')}
         </Typography.Text>
         {orderNo ? (
-          <Typography.Text copyable={{ text: orderNo }}>
-            <Tag color="blue">{orderNo}</Tag>
-          </Typography.Text>
+          <DocumentReferencePopover
+            value={orderNo}
+            moduleKey={moduleKey}
+            documentLabel={moduleTitle || t('modules.print.currentModule')}
+          />
         ) : null}
         {selectedTemplate ? (
           <Tag color={isPdfTemplate(selectedTemplate) ? 'blue' : 'green'}>
@@ -1056,6 +1061,7 @@ export function PrintJobModal({
       <Flex vertical gap="middle">
         <PrintJobHeader
           counterpartyName={counterpartyName}
+          moduleKey={moduleKey}
           moduleTitle={moduleTitle}
           orderNo={orderNo}
           projectSummaryText={projectSummaryText}

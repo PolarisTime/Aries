@@ -38,6 +38,7 @@ import {
   getFinanceOverview,
 } from '@/api/finance/finance-overview'
 import { AppProPage } from '@/components/AppProPage'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -335,7 +336,20 @@ function FinanceCounterpartyLedgerModal({
           columns={[
             { title: '日期', dataIndex: 'businessDate', width: 110 },
             { title: '流水类型', dataIndex: 'flowType', width: 100 },
-            { title: '单号', dataIndex: 'documentNo', width: 160 },
+            {
+              title: '单号',
+              dataIndex: 'documentNo',
+              width: 160,
+              render: (value: string, record: { documentId?: string }) => (
+                <DocumentReferencePopover
+                  value={{ documentNo: value, id: record.documentId }}
+                  moduleKey={
+                    balance?.counterpartyType === '客户' ? 'receipt' : 'payment'
+                  }
+                  documentLabel="单据"
+                />
+              ),
+            },
             {
               title: '收入',
               dataIndex: 'incomeAmount',

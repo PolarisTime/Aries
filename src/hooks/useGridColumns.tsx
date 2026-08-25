@@ -1,10 +1,13 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { type ActionItem, TableActions } from '@/components/TableActions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 export const ACTION_COLUMN_WIDTH = 200
 
@@ -37,6 +40,17 @@ export function useGridColumns({
 
   const columns: ColumnDef<ModuleRecord>[] = []
 
+  const resolveSummaryAmount = (record: ModuleRecord) => {
+    const amount =
+      record.amount ??
+      record.totalAmount ??
+      record.closingAmount ??
+      record.totalFreight
+    return typeof amount === 'number' || typeof amount === 'string'
+      ? amount
+      : undefined
+  }
+
   for (const colDef of config.columns) {
     columns.push({
       id: colDef.dataIndex,
@@ -56,6 +70,27 @@ export function useGridColumns({
                 <span>{formatCellValue(status, colDef.type)}</span>
               ),
             })
+          }
+          if (isDocumentReferenceField(colDef.dataIndex)) {
+            return (
+              <DocumentReferencePopover
+                value={value}
+                fieldKey={colDef.dataIndex}
+                moduleKey={config.key}
+                contextModuleKey={config.key}
+                documentLabel={colDef.title}
+                summary={{
+                  counterpartyName:
+                    asString(record.counterpartyName) ||
+                    asString(record.customerName) ||
+                    asString(record.supplierName) ||
+                    asString(record.carrierName),
+                  amount: resolveSummaryAmount(record),
+                  status: asString(record.status),
+                }}
+                statusMap={config.statusMap}
+              />
+            )
           }
           if (colDef.render) {
             return colDef.render(value, record)

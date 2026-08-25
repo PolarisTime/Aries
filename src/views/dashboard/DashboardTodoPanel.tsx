@@ -9,6 +9,7 @@ import {
   type DashboardTodoItem,
   fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatDate } from '@/utils/formatters'
@@ -28,6 +29,15 @@ const TODO_TAB_KEYS: Record<DashboardTodoCategory, string> = {
   'purchase-audit': 'dashboard.todo.tabs.purchaseAudit',
   'sales-delivery': 'dashboard.todo.tabs.salesDelivery',
   'finance-reconcile': 'dashboard.todo.tabs.financeReconcile',
+}
+
+const TODO_MODULE_KEYS: Record<
+  Exclude<DashboardTodoCategory, 'all'>,
+  string
+> = {
+  'purchase-audit': 'purchase-order',
+  'sales-delivery': 'sales-order',
+  'finance-reconcile': 'customer-statement',
 }
 
 /** 待办工作台：按类目展示紧急待办单据，一键直达处理 */
@@ -52,6 +62,13 @@ export function DashboardTodoPanel() {
         dataIndex: 'docNo',
         key: 'docNo',
         ellipsis: true,
+        render: (value: string, record) => (
+          <DocumentReferencePopover
+            value={value}
+            moduleKey={TODO_MODULE_KEYS[record.category]}
+            documentLabel={t('dashboard.todo.columns.docNo')}
+          />
+        ),
       },
       {
         title: t('dashboard.todo.columns.bizType'),
@@ -67,7 +84,19 @@ export function DashboardTodoPanel() {
         key: 'relatedDocumentNo',
         width: 140,
         ellipsis: true,
-        render: (value: string | null) => value || '—',
+        render: (value: string | null, record) => (
+          <DocumentReferencePopover
+            value={value}
+            moduleKey={
+              record.category === 'sales-delivery'
+                ? 'purchase-order'
+                : record.category === 'finance-reconcile'
+                  ? 'customer-statement'
+                  : undefined
+            }
+            documentLabel={t('dashboard.todo.columns.relatedDocument')}
+          />
+        ),
       },
       {
         title: t('dashboard.todo.columns.counterparty'),

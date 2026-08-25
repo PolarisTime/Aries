@@ -12,6 +12,8 @@ import type { UploadFile } from 'antd/es/upload/interface'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
+import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import {
   getCustomerProjectOptions,
   getSettlementAccountOptions,
@@ -32,6 +34,7 @@ import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   field: ModuleFormFieldDefinition
+  moduleKey?: string
   disabled?: boolean
   projectOptions?: readonly ProjectOption[]
   settlementAccountOptions?: readonly ModuleFormFieldOption[]
@@ -92,6 +95,7 @@ function withCurrentSnapshotOption(
 
 export function FormFieldRenderer({
   field,
+  moduleKey,
   disabled,
   projectOptions = EMPTY_PROJECT_OPTIONS,
   settlementAccountOptions = [],
@@ -171,6 +175,18 @@ export function FormFieldRenderer({
       {children}
     </Form.Item>
   )
+
+  if (disabledValue && isDocumentReferenceField(field.key)) {
+    return renderFormItem(
+      <DocumentReferencePopover
+        value={formValues[field.key]}
+        fieldKey={field.key}
+        moduleKey={moduleKey}
+        contextModuleKey={moduleKey}
+        documentLabel={field.label}
+      />,
+    )
+  }
 
   switch (field.type) {
     case 'number':
