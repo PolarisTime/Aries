@@ -207,9 +207,6 @@ export const customersPageConfig: ModulePageConfig = {
     scalar: [
       'customerCode',
       'customerName',
-      'projectName',
-      'projectNameAbbr',
-      'projectAddress',
       'contactName',
       'contactPhone',
       'city',
