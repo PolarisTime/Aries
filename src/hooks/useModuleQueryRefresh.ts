@@ -36,7 +36,16 @@ export function useModuleQueryRefresh(moduleKey: string) {
       ]),
     ]
 
-    if (masterOptionQueryKey) {
+    if (masterOptionQueryKey && moduleKey === 'project') {
+      tasks.push(
+        queryClient.invalidateQueries({
+          queryKey: masterOptionQueryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.masterOptions.projectAbbreviations,
+        }),
+      )
+    } else if (masterOptionQueryKey) {
       tasks.push(
         reloadMasterOptionsForModule(moduleKey).then((data) => {
           queryClient.setQueryData(masterOptionQueryKey, data)
