@@ -37,14 +37,9 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   const [results, setResults] = useState<GlobalSearchResult[]>([])
   const requestIdRef = useRef(0)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const searchDebouncerRef = useRef<ReturnType<
-    typeof createGlobalSearchDebouncer
-  > | null>(null)
-  if (searchDebouncerRef.current === null) {
-    searchDebouncerRef.current = createGlobalSearchDebouncer(
-      GLOBAL_SEARCH_DEBOUNCE_MS,
-    )
-  }
+  const [searchDebouncer] = useState(() =>
+    createGlobalSearchDebouncer(GLOBAL_SEARCH_DEBOUNCE_MS),
+  )
   const pendingSearchRef = useRef<{
     keyword: string
     promise: Promise<GlobalSearchResult[]>
@@ -64,13 +59,13 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
   useEffect(() => {
     return () => {
-      searchDebouncerRef.current.cancel()
+      searchDebouncer.cancel()
       requestIdRef.current += 1
       abortControllerRef.current?.abort()
       abortControllerRef.current = null
       pendingSearchRef.current = null
     }
-  }, [])
+  }, [searchDebouncer])
 
   const clearResults = () => {
     setResults([])
@@ -79,7 +74,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   const performSearch = async (rawKeyword: string) => {
     const normalizedKeyword = normalizeGlobalSearchKeyword(rawKeyword)
     if (!shouldSearchGlobalKeyword(normalizedKeyword)) {
-      searchDebouncerRef.current.cancel()
+      searchDebouncer.cancel()
       cancelActiveSearch()
       clearResults()
       return []
@@ -164,7 +159,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   }
 
   const jumpToResult = (result: GlobalSearchResult) => {
-    searchDebouncerRef.current.cancel()
+    searchDebouncer.cancel()
     cancelActiveSearch()
     clearResults()
     options.onJump(result)
@@ -174,19 +169,19 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
     setKeyword(value)
     const normalizedKeyword = normalizeGlobalSearchKeyword(value)
     if (!shouldSearchGlobalKeyword(normalizedKeyword)) {
-      searchDebouncerRef.current.cancel()
+      searchDebouncer.cancel()
       cancelActiveSearch()
       clearResults()
       return
     }
 
-    searchDebouncerRef.current.schedule(normalizedKeyword, (keyword) => {
+    searchDebouncer.schedule(normalizedKeyword, (keyword) => {
       void performSearch(keyword)
     })
   }
 
   const handleBlur = () => {
-    searchDebouncerRef.current.cancel()
+    searchDebouncer.cancel()
     if (typeof window === 'undefined') {
       clearResults()
       return
@@ -206,7 +201,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
   const handleSubmit = async (value: string) => {
     const normalizedKeyword = normalizeGlobalSearchKeyword(value)
-    searchDebouncerRef.current.cancel()
+    searchDebouncer.cancel()
     if (!shouldSearchGlobalKeyword(normalizedKeyword)) {
       cancelActiveSearch()
       clearResults()
