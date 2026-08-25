@@ -37,9 +37,14 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   const [results, setResults] = useState<GlobalSearchResult[]>([])
   const requestIdRef = useRef(0)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const searchDebouncerRef = useRef(
-    createGlobalSearchDebouncer(GLOBAL_SEARCH_DEBOUNCE_MS),
-  )
+  const searchDebouncerRef = useRef<ReturnType<
+    typeof createGlobalSearchDebouncer
+  > | null>(null)
+  if (searchDebouncerRef.current === null) {
+    searchDebouncerRef.current = createGlobalSearchDebouncer(
+      GLOBAL_SEARCH_DEBOUNCE_MS,
+    )
+  }
   const pendingSearchRef = useRef<{
     keyword: string
     promise: Promise<GlobalSearchResult[]>
