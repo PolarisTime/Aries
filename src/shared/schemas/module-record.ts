@@ -373,6 +373,15 @@ const salesOrderDetailRecordSchema = z.strictObject({
   chargeItems: documentChargeItemsSchema,
 })
 
+/**
+ * 物流单销售订单候选接口只返回订单及其明细，不返回销售订单详情中的附加费用。
+ * 保持候选契约独立，避免把列表候选误按完整详情解析。
+ */
+const freightSalesOrderCandidateRecordSchema = z.strictObject({
+  ...salesOrderRecordShape,
+  items: z.array(salesOrderItemSchema).min(1),
+})
+
 const salesOrderSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   materialId: optionalEntityIdSchema,
@@ -765,7 +774,7 @@ export const salesOrderOutboundCandidatePageResponseSchema = exactPageSchema(
   salesOrderDetailRecordSchema,
 )
 export const freightSalesOrderCandidatePageResponseSchema = exactPageSchema(
-  salesOrderDetailRecordSchema,
+  freightSalesOrderCandidateRecordSchema,
 )
 
 export function getMainFlowListResponseSchema<Key extends MainFlowModuleKey>(
