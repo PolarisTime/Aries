@@ -1199,6 +1199,19 @@ export const enUS = {
         settlementMonthly: 'Monthly',
         settlementCredit: 'Credit',
       },
+      project: {
+        title: 'Projects',
+        description:
+          'Manage project master data, customers, and project settlement entities.',
+        placeholderKeyword: 'Project code / name / abbreviation / customer',
+        projectCode: 'Project Code',
+        projectName: 'Project Name',
+        projectNameAbbr: 'Project Abbreviation',
+        customer: 'Customer',
+        settlementCompany: 'Settlement Entity',
+        projectManager: 'Project Manager',
+        projectAddress: 'Project Address',
+      },
       purchaseOrder: {
         title: 'Purchase Orders',
         description:

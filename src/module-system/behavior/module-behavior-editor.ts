@@ -161,6 +161,31 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     },
   })
 
+  registerModuleBehavior('project', {
+    syncEditorForm(editorForm, ctx) {
+      if (ctx.changedKeys.has('customerId')) {
+        if (isBlank(editorForm.customerId)) {
+          editorForm.customerId = ''
+          editorForm.customerCode = ''
+          applyDefaultSettlementCompany(editorForm, undefined)
+        } else {
+          const customer = findCustomerOption(editorForm.customerId)
+          if (customer) {
+            editorForm.customerId = asString(customer.id)
+            editorForm.customerCode = asString(customer.customerCode).trim()
+            applyDefaultSettlementCompany(editorForm, customer)
+          }
+        }
+      }
+      if (ctx.changedKeys.has('settlementCompanyId')) {
+        editorForm.settlementCompanyName = findSettlementCompanyName(
+          editorForm.settlementCompanyId,
+          asString(editorForm.settlementCompanyName),
+        )
+      }
+    },
+  })
+
   registerModuleBehavior('sales-order', {
     editableLockedFields: ['deliveryDate', 'remark'],
     editableLockedItemColumns: ['unitPrice'],

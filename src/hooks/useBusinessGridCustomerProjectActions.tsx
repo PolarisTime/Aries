@@ -1,22 +1,18 @@
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
-import { CustomerProjectManager } from '@/module-system/customer/CustomerProjectManager'
+import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
-import { message, modal } from '@/utils/antd-app'
-import { asString } from '@/utils/type-narrowing'
+import { message } from '@/utils/antd-app'
 
 interface Props {
   selectedRows: ModuleRecord[]
-  refreshModuleQueries: () => Promise<void>
 }
 
-export function useBusinessGridCustomerProjectActions({
-  selectedRows,
-  refreshModuleQueries,
-}: Props) {
+export function useBusinessGridCustomerProjectActions({ selectedRows }: Props) {
   const { t } = useTranslation()
   const { showError } = useRequestError()
+  const openTab = useTabOpen()
 
   const openCustomerProjects = () => {
     if (selectedRows.length !== 1) {
@@ -25,27 +21,12 @@ export function useBusinessGridCustomerProjectActions({
     }
 
     try {
-      const selectedCustomer = selectedRows[0]
-      const customer = {
-        id: parseEntityId(selectedCustomer.id, 'customer.id'),
-        code: asString(selectedCustomer.customerCode).trim(),
-        name: asString(selectedCustomer.customerName).trim(),
-      }
-      modal.info({
-        title: t('hooks.customerProjectActions.title', {
-          name: customer.name,
-        }),
-        width: 1080,
-        icon: null,
-        footer: null,
-        closable: true,
-        mask: { closable: false },
-        content: (
-          <CustomerProjectManager
-            customer={customer}
-            onChanged={refreshModuleQueries}
-          />
-        ),
+      const customerId = parseEntityId(selectedRows[0].id, 'customer.id')
+      const search = new URLSearchParams({ customerId })
+      openTab({
+        pathname: '/project',
+        search: search.toString(),
+        forceSearch: true,
       })
     } catch (error) {
       showError(error)

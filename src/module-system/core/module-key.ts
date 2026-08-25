@@ -3,6 +3,7 @@ export const MODULE_KEYS = [
   'material-categories',
   'supplier',
   'customer',
+  'project',
   'carrier',
   'warehouse',
   'company-setting',

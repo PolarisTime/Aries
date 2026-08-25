@@ -38,6 +38,15 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     moduleKey: 'customer',
   },
   {
+    key: 'project',
+    title: '项目资料',
+    menuKey: '/project',
+    view: 'business-grid',
+    icon: 'ProfileOutlined',
+    menuParent: 'master',
+    moduleKey: 'project',
+  },
+  {
     key: 'carrier',
     title: '物流方资料',
     menuKey: '/carrier',

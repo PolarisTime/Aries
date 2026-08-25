@@ -1170,6 +1170,18 @@ export const zhCN = {
         settlementMonthly: '月结',
         settlementCredit: '授信',
       },
+      project: {
+        title: '项目资料',
+        description: '独立管理项目资料、所属客户和项目结算主体。',
+        placeholderKeyword: '项目编码 / 名称 / 简称 / 客户编码',
+        projectCode: '项目编码',
+        projectName: '项目名称',
+        projectNameAbbr: '项目简称',
+        customer: '客户',
+        settlementCompany: '结算主体',
+        projectManager: '项目负责人',
+        projectAddress: '项目地址',
+      },
       purchaseOrder: {
         title: '采购订单',
         description:

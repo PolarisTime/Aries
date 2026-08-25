@@ -79,7 +79,6 @@ export function useBusinessGridActions({
 
   const { openCustomerProjects } = useBusinessGridCustomerProjectActions({
     selectedRows,
-    refreshModuleQueries,
   })
 
   return {

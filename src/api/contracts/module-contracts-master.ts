@@ -17,6 +17,11 @@ export const masterModuleEndpointContracts = {
     supportsSearch: false,
     nativeFilterKeys: ['keyword', 'status'],
   },
+  project: {
+    path: '/projects',
+    supportsSearch: false,
+    nativeFilterKeys: ['keyword', 'customerId', 'status'],
+  },
   carrier: {
     path: '/carriers',
     supportsSearch: false,

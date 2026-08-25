@@ -23,6 +23,9 @@ const businessPageLoaders = {
   customer: async () =>
     (await import('@/config/business-pages/master-party-pages'))
       .masterPartyPageConfigs,
+  project: async () =>
+    (await import('@/config/business-pages/master-project-pages'))
+      .masterProjectPageConfigs,
   carrier: async () =>
     (await import('@/config/business-pages/master-party-pages'))
       .masterPartyPageConfigs,
