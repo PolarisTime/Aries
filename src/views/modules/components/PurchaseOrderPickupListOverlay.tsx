@@ -671,25 +671,31 @@ function PickupDraftGroupSection({
             </span>
           </div>
           <div className="purchase-pickup-list-group-controls">
-            <Select<EntityId>
-              allowClear
-              className="purchase-pickup-list-group-project"
-              loading={projectOptionsLoading}
-              options={projectOptions}
-              placeholder={t(
-                'modules.purchasePickupList.groupProjectPlaceholder',
-              )}
-              showSearch={{ optionFilterProp: 'label' }}
-              title={
-                projectOptions.find(
-                  (option) => option.value === group.projectId,
-                )?.title
-              }
-              value={group.projectId}
-              onChange={(value) =>
-                onProjectChange(group.id, value || undefined)
-              }
-            />
+            <div className="purchase-pickup-list-group-project-field">
+              <Typography.Text className="purchase-pickup-list-group-project-label">
+                {t('modules.purchasePickupList.groupProjectLabel')}
+              </Typography.Text>
+              <Select<EntityId>
+                aria-label={t('modules.purchasePickupList.groupProjectLabel')}
+                allowClear
+                className="purchase-pickup-list-group-project"
+                loading={projectOptionsLoading}
+                options={projectOptions}
+                placeholder={t(
+                  'modules.purchasePickupList.groupProjectPlaceholder',
+                )}
+                showSearch={{ optionFilterProp: 'label' }}
+                title={
+                  projectOptions.find(
+                    (option) => option.value === group.projectId,
+                  )?.title
+                }
+                value={group.projectId}
+                onChange={(value) =>
+                  onProjectChange(group.id, value || undefined)
+                }
+              />
+            </div>
             <Input
               allowClear
               className="purchase-pickup-list-group-remark"

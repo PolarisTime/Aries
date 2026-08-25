@@ -502,6 +502,7 @@ export const enUS = {
       unassignedWarehouse: 'Unassigned Warehouse',
       addGroup: 'Add Group',
       groupLabel: 'Group {{index}}',
+      groupProjectLabel: 'Unloading destination',
       groupProjectPlaceholder: 'Select project abbreviation',
       groupRemarkPlaceholder: 'Add a group note',
       lockGroup: 'Lock group {{index}}',
