@@ -1,3 +1,10 @@
+## [9.10.3](https://github.com/PolarisTime/Aries/compare/v9.10.2...v9.10.3) (2026-08-26)
+
+
+### Bug Fixes
+
+* **master:** 修复项目资料客户名称显示 ([35b5ff1](https://github.com/PolarisTime/Aries/commit/35b5ff1462c3b4dedad55535d7fb968c03a85c2a))
+
 ## [9.10.2](https://github.com/PolarisTime/Aries/compare/v9.10.1...v9.10.2) (2026-08-26)
 
 
