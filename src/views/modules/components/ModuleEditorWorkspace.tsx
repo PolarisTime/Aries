@@ -36,6 +36,7 @@ import type {
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import { message } from '@/utils/antd-app'
+import { buildRouterHref } from '@/utils/router-search'
 import {
   type CustomerStatementItemGroup,
   groupCustomerStatementItems,
@@ -659,11 +660,10 @@ function SaveResultOverlay<Key extends ModuleKey>({
   const handleCreateNext = (targetModule: { label: string; path: string }) => {
     onClear()
     void navigate({
-      to: targetModule.path,
-      search: new URLSearchParams({
+      to: buildRouterHref(targetModule.path, {
         sourceModule: moduleKey,
         sourceRecordId: String(saveResult.record?.id || ''),
-      }).toString(),
+      }),
     } as never)
   }
 

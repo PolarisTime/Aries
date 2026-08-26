@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
@@ -27,7 +27,10 @@ import {
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
-import { useLayoutTabsStore } from '@/stores/layoutTabsStore'
+import {
+  normalizeTabPathname,
+  useLayoutTabsStore,
+} from '@/stores/layoutTabsStore'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
@@ -171,11 +174,21 @@ export function AppLayout() {
 
   // 登录用户就绪后恢复其持久化的标签页清单
   const userId = user?.id ?? ''
+  const hydratedUserRef = useRef('')
   useEffect(() => {
-    if (authReady && userId) {
-      useLayoutTabsStore.getState().hydrateForUser(userId)
+    if (!authReady || !userId) {
+      hydratedUserRef.current = ''
+      return
     }
-  }, [authReady, userId])
+    if (hydratedUserRef.current === userId) {
+      return
+    }
+    hydratedUserRef.current = userId
+    useLayoutTabsStore.getState().hydrateForUser(userId, {
+      pathname: normalizeTabPathname(location.pathname),
+      search: location.searchStr,
+    })
+  }, [authReady, location.pathname, location.searchStr, userId])
 
   const {
     sideMenuItems,

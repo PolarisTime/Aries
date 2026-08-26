@@ -48,6 +48,7 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { buildRouterHref } from '@/utils/router-search'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 import {
   buildCounterpartyLedgerQuery,
@@ -659,15 +660,14 @@ export function FinanceOverviewView() {
   const handleQuickCreate = useCallback(
     (record: FinanceBalance, moduleKey: 'receipt' | 'payment') => {
       void navigate({
-        to: `/${moduleKey}`,
-        search: new URLSearchParams({
+        to: buildRouterHref(`/${moduleKey}`, {
           create: '1',
           counterpartyType: record.counterpartyType,
           counterpartyId: record.counterpartyId,
           counterpartyName: record.counterpartyName,
           settlementCompanyId: record.settlementCompanyId,
           settlementCompanyName: record.settlementCompanyName,
-        }).toString(),
+        }),
       } as never)
     },
     [navigate],

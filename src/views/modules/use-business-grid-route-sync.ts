@@ -1,6 +1,6 @@
 import type { ParsedLocation } from '@tanstack/react-router'
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useRouter } from '@tanstack/react-router'
+import { useEffect, useMemo, useRef } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type {
@@ -32,22 +32,38 @@ interface Props {
 
 const EMPTY_FILTERS: SearchParams = {}
 
+/**
+ * TanStack Router 默认会把可解析为 JSON 的字符串编码为 `%22...%22`。
+ * 只还原 JSON 字符串，数字/布尔值继续保留原始文本，避免雪花 ID 精度丢失。
+ */
+function readRouteSearchParam(params: URLSearchParams, key: string): string {
+  const value = params.get(key) || ''
+  if (!value) return ''
+
+  try {
+    const parsed = JSON.parse(value)
+    return typeof parsed === 'string' ? parsed : value
+  } catch {
+    return value
+  }
+}
+
 /** URL 查询参数解析（导出供单元测试与外部意图消费方复用） */
 export function parseRouteParams(searchStr: string) {
   const params = new URLSearchParams(searchStr)
-  const docNo = params.get('docNo') || ''
-  const trackId = params.get('trackId') || ''
-  const customerId = params.get('customerId') || ''
+  const docNo = readRouteSearchParam(params, 'docNo')
+  const trackId = readRouteSearchParam(params, 'trackId')
+  const customerId = readRouteSearchParam(params, 'customerId')
   return {
     docNo,
-    sourceModule: params.get('sourceModule') || '',
-    sourceRecordId: params.get('sourceRecordId') || '',
-    status: params.get('status') || '',
+    sourceModule: readRouteSearchParam(params, 'sourceModule'),
+    sourceRecordId: readRouteSearchParam(params, 'sourceRecordId'),
+    status: readRouteSearchParam(params, 'status'),
     trackId,
     customerId,
     routeKeyword: docNo || trackId,
-    shouldOpenDetail: params.get('openDetail') === '1',
-    shouldCreate: params.get('create') === '1',
+    shouldOpenDetail: readRouteSearchParam(params, 'openDetail') === '1',
+    shouldCreate: readRouteSearchParam(params, 'create') === '1',
     initialValues: Object.fromEntries(
       [
         'counterpartyType',
@@ -56,7 +72,7 @@ export function parseRouteParams(searchStr: string) {
         'settlementCompanyId',
         'settlementCompanyName',
       ].flatMap((key) => {
-        const value = params.get(key)
+        const value = readRouteSearchParam(params, key)
         return value ? [[key, value]] : []
       }),
     ),
@@ -153,6 +169,67 @@ export function supportsFilterField(
   return Boolean(config?.filters.some((filter) => filter.key === filterKey))
 }
 
+type RouteParams = ReturnType<typeof parseRouteParams>
+
+interface RouteFilterSyncInput {
+  config: ModulePageConfig | undefined
+  defaultFilters: SearchParams
+  routeParams: RouteParams
+}
+
+/** 根据路由意图合并列表默认筛选条件。 */
+export function buildRouteFilterSyncState({
+  config,
+  defaultFilters,
+  routeParams,
+}: RouteFilterSyncInput): SearchParams {
+  if (routeParams.routeKeyword) {
+    return {
+      ...defaultFilters,
+      keyword: routeParams.routeKeyword,
+      ...(routeParams.customerId && supportsFilterField(config, 'customerId')
+        ? { customerId: routeParams.customerId }
+        : {}),
+    }
+  }
+
+  return {
+    ...defaultFilters,
+    ...(routeParams.customerId && supportsFilterField(config, 'customerId')
+      ? { customerId: routeParams.customerId }
+      : {}),
+    ...(routeParams.status && supportsFilterField(config, 'status')
+      ? { status: routeParams.status }
+      : {}),
+  }
+}
+
+/**
+ * 仅由会影响筛选结果的业务输入组成，避免回调引用变化重复同步状态。
+ */
+export function buildRouteFilterSyncKey({
+  config,
+  defaultFilters,
+  routeParams,
+  hasSetFilters,
+}: RouteFilterSyncInput & { hasSetFilters: boolean }): string {
+  const serializedDefaults = JSON.stringify(
+    Object.entries(defaultFilters).toSorted(([left], [right]) =>
+      left.localeCompare(right),
+    ),
+  )
+  return JSON.stringify([
+    config?.key || '',
+    supportsFilterField(config, 'customerId'),
+    supportsFilterField(config, 'status'),
+    serializedDefaults,
+    routeParams.routeKeyword,
+    routeParams.customerId,
+    routeParams.status,
+    hasSetFilters,
+  ])
+}
+
 export function useBusinessGridRouteSync({
   location,
   config,
@@ -166,59 +243,55 @@ export function useBusinessGridRouteSync({
   openDetail,
   openEditor,
 }: Props) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const autoOpenedRouteKeyRef = useRef('')
   const autoOpenedParentImportKeyRef = useRef('')
   const autoOpenedCreateKeyRef = useRef('')
+  const routeFilterSyncKeyRef = useRef<string | null>(null)
   // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
   const rawSearchStr = location.searchStr
-  const routeParams = parseRouteParams(rawSearchStr)
+  const routeParams = useMemo(
+    () => parseRouteParams(rawSearchStr),
+    [rawSearchStr],
+  )
+  const routeFilterSyncKey = buildRouteFilterSyncKey({
+    config,
+    defaultFilters,
+    routeParams,
+    hasSetFilters: Boolean(setFilters),
+  })
 
   // react-doctor-disable-next-line react-doctor/no-cascading-set-state -- 路由入口变化需要同时重置分页、选中行和过滤条件。
   useEffect(() => {
+    if (routeFilterSyncKeyRef.current === routeFilterSyncKey) {
+      return
+    }
+    routeFilterSyncKeyRef.current = routeFilterSyncKey
+
     setPage(1)
     clearSelection()
     autoOpenedRouteKeyRef.current = ''
+
+    const nextRouteFilters = buildRouteFilterSyncState({
+      config,
+      defaultFilters,
+      routeParams,
+    })
 
     if (!routeParams.routeKeyword) {
       // 过滤状态由父级列表持有，这里只同步路由入口。
       if (setFilters) {
         // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步路由入口过滤条件到父级列表。
-        setFilters({
-          ...defaultFilters,
-          ...(routeParams.customerId &&
-          supportsFilterField(config, 'customerId')
-            ? { customerId: routeParams.customerId }
-            : {}),
-          // 待处理筛选意图（如指标卡跳转）：仅当模块筛选白名单包含 status 字段时应用
-          ...(routeParams.status && supportsFilterField(config, 'status')
-            ? { status: routeParams.status }
-            : {}),
-        })
+        setFilters(nextRouteFilters)
       } else {
         // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步路由入口过滤条件到父级列表。
         updateFilter('keyword', '')
       }
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
-      setSubmittedFilters({
-        ...defaultFilters,
-        ...(routeParams.customerId && supportsFilterField(config, 'customerId')
-          ? { customerId: routeParams.customerId }
-          : {}),
-        ...(routeParams.status && supportsFilterField(config, 'status')
-          ? { status: routeParams.status }
-          : {}),
-      })
+      setSubmittedFilters(nextRouteFilters)
       return
     }
 
-    const nextRouteFilters = {
-      ...defaultFilters,
-      keyword: routeParams.routeKeyword,
-      ...(routeParams.customerId && supportsFilterField(config, 'customerId')
-        ? { customerId: routeParams.customerId }
-        : {}),
-    }
     if (setFilters) {
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步深链关键词到父级列表。
       setFilters(nextRouteFilters)
@@ -232,9 +305,8 @@ export function useBusinessGridRouteSync({
     clearSelection,
     config,
     defaultFilters,
-    routeParams.routeKeyword,
-    routeParams.customerId,
-    routeParams.status,
+    routeFilterSyncKey,
+    routeParams,
     setPage,
     setFilters,
     setSubmittedFilters,
@@ -277,7 +349,7 @@ export function useBusinessGridRouteSync({
           ? `${location.pathname}?${nextSearch}`
           : location.pathname
         // 新建弹窗打开后消费 URL 意图，避免刷新或再次点击时重复触发。
-        await navigate({ to: nextHref as '/', replace: true })
+        router.history.replace(nextHref)
       } catch {
         autoOpenedCreateKeyRef.current = ''
       }
@@ -286,7 +358,7 @@ export function useBusinessGridRouteSync({
     config,
     location.pathname,
     location.searchStr,
-    navigate,
+    router,
     openEditor,
     rawSearchStr,
     routeParams.initialValues,

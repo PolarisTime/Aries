@@ -46,15 +46,15 @@ export function attachTabRouter(tab: LayoutTab): AnyRouter {
   attachedReloadKeys.set(tab.id, tab.reloadKey)
 
   subRouter.history.subscribe(() => {
-    const subLocation = subRouter.state.location
-    const subHref = subLocation.href
+    const historyLocation = subRouter.history.location
+    const subHref = historyLocation.href
     if (subHref === lastSyncedHrefs.get(tab.id)) {
       return
     }
     lastSyncedHrefs.set(tab.id, subHref)
     useLayoutTabsStore.getState().setTabLocation(tab.id, {
-      pathname: subLocation.pathname,
-      search: subLocation.searchStr,
+      pathname: historyLocation.pathname,
+      search: historyLocation.search,
     })
     if (mainRouter.state.location.href !== subHref) {
       // Tab 内漂移同步到地址栏（replace 不污染激活点历史）
@@ -90,7 +90,7 @@ export function replaceMainRouterHref(href: string): void {
  */
 export function pushExternalIntent(tabId: string, href: string): void {
   const subRouter = tabRouters.get(tabId)
-  if (!subRouter || subRouter.state.location.href === href) {
+  if (!subRouter || subRouter.history.location.href === href) {
     return
   }
   lastSyncedHrefs.set(tabId, href)
@@ -104,5 +104,5 @@ export function hasTabRouter(tabId: string): boolean {
 
 /** 当前 Tab 子 Router 的 href（未挂载返回 null） */
 export function getTabRouterHref(tabId: string): string | null {
-  return tabRouters.get(tabId)?.state.location.href ?? null
+  return tabRouters.get(tabId)?.history.location.href ?? null
 }

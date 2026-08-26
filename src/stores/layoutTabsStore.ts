@@ -36,7 +36,10 @@ export interface OpenTabTarget {
 interface LayoutTabsState {
   tabs: LayoutTab[]
   activeTabId: string | null
-  hydrateForUser: (userId?: string) => void
+  hydrateForUser: (
+    userId?: string,
+    currentLocation?: { pathname: string; search: string },
+  ) => void
   openTab: (target: OpenTabTarget) => string
   activateTab: (id: string) => void
   setTabLocation: (
@@ -310,17 +313,44 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
   tabs: [createTab({ pathname: DASHBOARD_TAB_PATH })],
   activeTabId: null,
 
-  hydrateForUser: (userId) => {
+  hydrateForUser: (userId, currentLocation) => {
     currentUserId = String(userId || 'anonymous').trim() || 'anonymous'
     const persisted = readPersistedTabs(currentUserId)
-    const tabs = sanitizePersistedTabs(persisted?.tabs ?? [])
-    const activeTabId =
+    let tabs = sanitizePersistedTabs(persisted?.tabs ?? [])
+    let activeTabId =
       persisted?.activeTabId &&
       tabs.some((tab) => tab.id === persisted.activeTabId)
         ? persisted.activeTabId
         : (tabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
           tabs[0]?.id ??
           null)
+
+    // 首次打开的深链优先于持久化的上次工作区，避免 hydration 将外部意图丢失。
+    const currentPath = normalizeTabPathname(currentLocation?.pathname)
+    if (
+      currentLocation &&
+      currentPath !== DASHBOARD_TAB_PATH &&
+      isRegisteredPagePath(currentPath)
+    ) {
+      const currentSearch = normalizeSearch(currentLocation.search)
+      const existingIndex = tabs.findIndex(
+        (tab) => tab.pathname === currentPath,
+      )
+      if (existingIndex >= 0) {
+        const existing = tabs[existingIndex]
+        if (currentSearch && existing.search !== currentSearch) {
+          tabs = tabs.map((tab, index) =>
+            index === existingIndex ? { ...tab, search: currentSearch } : tab,
+          )
+        }
+        activeTabId = existing.id
+      } else {
+        const tab = createTab({ pathname: currentPath, search: currentSearch })
+        tabs = evictOverflow([...tabs, tab], tab.id)
+        activeTabId = tab.id
+      }
+    }
+
     set({ tabs, activeTabId })
   },
 
@@ -331,28 +361,36 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
   },
 
   activateTab: (id) => {
-    if (get().tabs.some((tab) => tab.id === id)) {
+    if (get().activeTabId !== id && get().tabs.some((tab) => tab.id === id)) {
       set({ activeTabId: id })
     }
   },
 
   setTabLocation: (id, location) => {
+    const pathname = normalizeTabPathname(location.pathname)
+    const search = normalizeSearch(location.search)
+    const tabs = get().tabs
+    const current = tabs.find((tab) => tab.id === id)
+    if (
+      !current ||
+      (current.pathname === pathname && current.search === search)
+    ) {
+      return
+    }
     set({
-      tabs: get().tabs.map((tab) =>
-        tab.id === id
-          ? {
-              ...tab,
-              pathname: normalizeTabPathname(location.pathname),
-              search: normalizeSearch(location.search),
-            }
-          : tab,
+      tabs: tabs.map((tab) =>
+        tab.id === id ? { ...tab, pathname, search } : tab,
       ),
     })
   },
 
   markTabMounted: (id) => {
+    const tabs = get().tabs
+    if (!tabs.some((tab) => tab.id === id && !tab.mountedOnce)) {
+      return
+    }
     set({
-      tabs: get().tabs.map((tab) =>
+      tabs: tabs.map((tab) =>
         tab.id === id ? { ...tab, mountedOnce: true } : tab,
       ),
     })
