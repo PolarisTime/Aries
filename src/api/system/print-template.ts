@@ -44,8 +44,8 @@ const printRecordItemsResponseSchema = z.array(printRecordItemSchema)
 const printOutputBaseSchema = z.object({
   templateName: z.string().optional(),
   templateType: z.string().optional(),
-  data: z.record(z.string(), z.string()).optional(),
-  items: z.array(z.record(z.string(), z.string())).optional(),
+  data: z.record(z.string(), z.string()).nullable().optional(),
+  items: z.array(z.record(z.string(), z.string())).nullable().optional(),
 })
 const printOutputSchema = z.discriminatedUnion('kind', [
   printOutputBaseSchema.extend({

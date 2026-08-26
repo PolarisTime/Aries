@@ -6,8 +6,8 @@ import { renderPrintTemplate } from '@/utils/print-template'
 interface BasePrintOutputResponse {
   templateName?: string
   templateType?: string
-  data?: Record<string, string>
-  items?: Record<string, string>[]
+  data?: Record<string, string> | null
+  items?: Record<string, string>[] | null
 }
 
 export interface PdfPrintOutputResponse extends BasePrintOutputResponse {
