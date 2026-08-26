@@ -7,12 +7,7 @@ import {
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
-
-const customerFilterOptions = () =>
-  getCustomerOptions().map((option) => ({
-    label: option.customerName || option.label,
-    value: option.id,
-  }))
+import { resolveProjectCustomerDisplay } from './project-page-utils'
 
 const customerFieldOptions = () =>
   getCustomerOptions().map((option) => ({
@@ -43,7 +38,7 @@ const projectPageConfig: ModulePageConfig = {
       key: 'customerId',
       label: i18next.t('modules.pages.project.customer'),
       type: 'select',
-      options: customerFilterOptions,
+      options: getCustomerOptions,
     },
     { ...masterStatusFilter },
   ],
@@ -67,6 +62,8 @@ const projectPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.project.customer'),
       dataIndex: 'customerCode',
       width: 180,
+      render: (_value, record) =>
+        resolveProjectCustomerDisplay(record, getCustomerOptions()),
     },
     {
       title: i18next.t('modules.pages.project.settlementCompany'),
