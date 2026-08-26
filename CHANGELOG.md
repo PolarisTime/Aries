@@ -1,3 +1,10 @@
+## [9.10.2](https://github.com/PolarisTime/Aries/compare/v9.10.1...v9.10.2) (2026-08-26)
+
+
+### Bug Fixes
+
+* **router:** 修复创建跳转循环与雪花ID精度丢失 ([de365f3](https://github.com/PolarisTime/Aries/commit/de365f349e61ce8e0ac76ae3102d9f7aabadc1f2))
+
 ## [9.10.1](https://github.com/PolarisTime/Aries/compare/v9.10.0...v9.10.1) (2026-08-26)
 
 
