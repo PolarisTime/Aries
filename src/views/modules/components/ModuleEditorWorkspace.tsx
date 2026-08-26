@@ -42,7 +42,11 @@ import {
   groupCustomerStatementItems,
   sortCustomerStatementItemsByDeliveryDate,
 } from '@/views/modules/customer-statement-item-groups'
-import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import {
+  type FreightStatementProjectGroup,
+  groupFreightBillItems,
+  groupFreightStatementItems,
+} from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 import type { EditorSaveResult } from '@/views/modules/use-editor-submission-controller'
@@ -764,19 +768,21 @@ function SaveResultOverlay<Key extends ModuleKey>({
   const itemGroups =
     moduleKey === 'freight-statement'
       ? groupFreightStatementItems(items)
-      : moduleKey === 'customer-statement'
-        ? groupCustomerStatementItems(items)
-        : [
-            {
-              key: 'all',
-              sourceNo: '',
-              customerName: '',
-              projectName: '',
-              totalQuantity: 0,
-              totalWeightTon: 0,
-              items,
-            },
-          ]
+      : moduleKey === 'freight-bill'
+        ? groupFreightBillItems(items)
+        : moduleKey === 'customer-statement'
+          ? groupCustomerStatementItems(items)
+          : [
+              {
+                key: 'all',
+                sourceNo: '',
+                customerName: '',
+                projectName: '',
+                totalQuantity: 0,
+                totalWeightTon: 0,
+                items,
+              },
+            ]
 
   return (
     <WorkspaceOverlay
@@ -852,7 +858,30 @@ function SaveResultOverlay<Key extends ModuleKey>({
                 ]
           ).map((group) => (
             <div className="module-items-group" key={group.key}>
-              {'projectGroups' in group ? (
+              {moduleKey === 'freight-bill' ? (
+                <div className="module-items-project-group">
+                  <FreightStatementProjectGroupHeader
+                    group={
+                      group as FreightStatementProjectGroup<
+                        Record<string, unknown>
+                      >
+                    }
+                  />
+                  <Table
+                    rowKey={(_, i) => String(i)}
+                    dataSource={
+                      (
+                        group as FreightStatementProjectGroup<
+                          Record<string, unknown>
+                        >
+                      ).items
+                    }
+                    columns={itemColumns}
+                    size="small"
+                    pagination={false}
+                  />
+                </div>
+              ) : 'projectGroups' in group ? (
                 <>
                   <FreightStatementItemGroupHeader group={group} />
                   {group.projectGroups.map((projectGroup) => (

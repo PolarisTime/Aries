@@ -18,7 +18,11 @@ import {
   type CustomerStatementItemGroup,
   groupCustomerStatementItems,
 } from '@/views/modules/customer-statement-item-groups'
-import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
+import {
+  type FreightStatementProjectGroup,
+  groupFreightBillItems,
+  groupFreightStatementItems,
+} from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
@@ -143,19 +147,21 @@ export function ModuleEditorItemsSection({
   const itemGroups =
     config.key === 'freight-statement'
       ? groupFreightStatementItems(items)
-      : config.key === 'customer-statement'
-        ? groupCustomerStatementItems(items)
-        : [
-            {
-              key: 'all',
-              sourceNo: '',
-              customerName: '',
-              projectName: '',
-              totalQuantity: 0,
-              totalWeightTon: 0,
-              items,
-            },
-          ]
+      : config.key === 'freight-bill'
+        ? groupFreightBillItems(items)
+        : config.key === 'customer-statement'
+          ? groupCustomerStatementItems(items)
+          : [
+              {
+                key: 'all',
+                sourceNo: '',
+                customerName: '',
+                projectName: '',
+                totalQuantity: 0,
+                totalWeightTon: 0,
+                items,
+              },
+            ]
   const renderedItemGroups = itemGroups.length
     ? itemGroups
     : config.key === 'customer-statement'
@@ -369,7 +375,38 @@ export function ModuleEditorItemsSection({
             <div className="module-items-groups">
               {renderedItemGroups.map((group) => (
                 <div className="module-items-group" key={group.key}>
-                  {'projectGroups' in group ? (
+                  {config.key === 'freight-bill' ? (
+                    <div className="module-items-project-group">
+                      <FreightStatementProjectGroupHeader
+                        group={
+                          group as FreightStatementProjectGroup<ModuleLineItem>
+                        }
+                      />
+                      <ModuleItemsTable
+                        columns={itemColumns}
+                        components={itemTableComponents}
+                        dataSource={
+                          (
+                            group as FreightStatementProjectGroup<ModuleLineItem>
+                          ).items
+                        }
+                        emptyText={
+                          config.parentImport
+                            ? t('modules.itemsSection.emptyTextWithImport')
+                            : t('modules.itemsSection.emptyText')
+                        }
+                        rowClassName={(record) =>
+                          selectedItemIds.includes(record.id)
+                            ? 'ant-table-row-selected'
+                            : ''
+                        }
+                        onRow={(record) => ({
+                          onDragOver: (event: React.DragEvent<Element>) =>
+                            onRowDragOver(record.id, event),
+                        })}
+                      />
+                    </div>
+                  ) : 'projectGroups' in group ? (
                     <>
                       <FreightStatementItemGroupHeader group={group} />
                       {group.projectGroups.map((projectGroup) => (

@@ -21,6 +21,7 @@ const compactFreightItemWidthMap: Record<string, number> = {
   batchNo: 120,
 }
 
+// 仓库紧邻商品身份字段，物流明细按仓库和品牌核对时更易扫描。
 export const freightItemColumns: ModuleColumnDefinition[] = [
   {
     title: i18next.t('modules.columns.outboundNo'),
@@ -52,6 +53,11 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
     title: i18next.t('modules.columns.projectName'),
     dataIndex: 'projectName',
     width: 156,
+  },
+  {
+    title: i18next.t('modules.columns.warehouse'),
+    dataIndex: 'warehouseName',
+    width: 132,
   },
   { title: i18next.t('modules.columns.brand'), dataIndex: 'brand', width: 92 },
   {
@@ -103,23 +109,19 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
     align: 'center',
     type: 'weight',
   },
-  {
-    title: i18next.t('modules.columns.warehouse'),
-    dataIndex: 'warehouseName',
-    width: 132,
-  },
 ]
 
 export const compactFreightItemColumns = applyCompactItemLayout(
   freightItemColumns,
   compactFreightItemWidthMap,
-  ['brand', 'category', 'piecesPerBundle', 'batchNo'],
+  ['category', 'piecesPerBundle', 'batchNo'],
 )
 
 // 物流对账单明细列：客户名称/项目名称抽到项目分组行展示，移除商品编码、商品名称、每件支数、批号列，
 // 品牌列提前到商品名称位置，出库单号（物流单号）列加宽以便完整显示雪花 ID。
 const freightStatementColumnOrder = [
   'sourceNo',
+  'warehouseName',
   'brand',
   'spec',
   'material',
@@ -129,7 +131,6 @@ const freightStatementColumnOrder = [
   'quantityUnit',
   'pieceWeightTon',
   'weightTon',
-  'warehouse',
 ] as const
 
 export const freightStatementItemColumns: ModuleColumnDefinition[] =

@@ -74,6 +74,43 @@ function summarizeProjectGroup<Item extends Record<string, unknown>>(
   }
 }
 
+/**
+ * 普通物流单按客户和项目拆分明细，避免不同项目混在同一张表中。
+ * 项目名称缺失的行统一归入“未分组”，并保留首次出现顺序。
+ */
+export function groupFreightBillItems<Item extends Record<string, unknown>>(
+  items: Item[],
+): FreightStatementProjectGroup<Item>[] {
+  const groups = new Map<
+    string,
+    { customerName: string; projectName: string; items: Item[] }
+  >()
+
+  for (const item of items) {
+    const customerName = readText(item.customerName)
+    const projectName = readText(item.projectName)
+    const key = JSON.stringify(['project', customerName, projectName])
+    const group = groups.get(key)
+    if (group) {
+      group.items.push(item)
+    } else {
+      groups.set(key, { customerName, projectName, items: [item] })
+    }
+  }
+
+  return Array.from(groups.entries()).map(([key, group]) => {
+    const summarized = summarizeProjectGroup(
+      key,
+      group.projectName,
+      group.items,
+    )
+    return {
+      ...summarized,
+      customerName: group.customerName || summarized.customerName,
+    }
+  })
+}
+
 function readFirstPositiveNumber<Item extends Record<string, unknown>>(
   items: Item[],
   ...keys: string[]
