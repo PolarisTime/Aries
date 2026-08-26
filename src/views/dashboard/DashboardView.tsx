@@ -11,7 +11,6 @@ import { DashboardAccountCard } from '@/views/dashboard/DashboardAccountCard'
 import { DashboardFlowCardPlaceholder } from '@/views/dashboard/DashboardFlowCardPlaceholder'
 import { DashboardGreetingHeader } from '@/views/dashboard/DashboardGreetingHeader'
 import { DashboardPendingMetrics } from '@/views/dashboard/DashboardPendingMetrics'
-import { DashboardQuickActions } from '@/views/dashboard/DashboardQuickActions'
 import { DashboardTodoPanel } from '@/views/dashboard/DashboardTodoPanel'
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
 
@@ -21,7 +20,7 @@ const LazyDashboardFlowCard = lazy(() =>
   })),
 )
 
-/** 工作台看板：问候语 + 指标 + 快捷新建 + 待办/账户 + 业务链路 */
+/** 工作台看板：问候语 + 指标 + 待办/账户 + 业务链路 */
 export function DashboardView() {
   const { t } = useTranslation()
   const isPageVisible = usePageVisibility()
@@ -53,8 +52,6 @@ export function DashboardView() {
       </section>
 
       <section className="dashboard-command-center">
-        <DashboardQuickActions />
-
         <div className="dashboard-workplace-layout">
           <main className="dashboard-workplace-main dashboard-primary-region">
             <DashboardTodoPanel />

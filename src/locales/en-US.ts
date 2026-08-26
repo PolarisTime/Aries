@@ -96,6 +96,9 @@ export const enUS = {
     greeting: {
       welcome: 'Welcome back, {{name}}',
     },
+    actions: {
+      forceRefresh: 'Force refresh',
+    },
     metrics: {
       purchaseAudit: 'Purchases to Approve',
       outboundTask: 'Outbound Tasks',
@@ -121,13 +124,6 @@ export const enUS = {
       goProcess: 'Process',
       empty: 'No to-dos',
       loadFailed: 'Failed to load to-dos. Please retry later.',
-    },
-    quick: {
-      title: 'Quick Create',
-      newPurchaseOrder: 'New Purchase Order',
-      newSalesOrder: 'New Sales Order',
-      newOutbound: 'New Outbound Order',
-      newMasterData: 'New Master Data',
     },
     account: {
       title: 'Account Overview',

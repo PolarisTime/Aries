@@ -95,6 +95,9 @@ export const zhCN = {
     greeting: {
       welcome: '欢迎回来，{{name}}',
     },
+    actions: {
+      forceRefresh: '强制刷新',
+    },
     metrics: {
       purchaseAudit: '待审核采购',
       outboundTask: '待出库任务',
@@ -120,13 +123,6 @@ export const zhCN = {
       goProcess: '去处理',
       empty: '暂无待办',
       loadFailed: '待办加载失败，请稍后重试。',
-    },
-    quick: {
-      title: '快捷新建',
-      newPurchaseOrder: '新增采购订单',
-      newSalesOrder: '新增销售订单',
-      newOutbound: '新增出库单',
-      newMasterData: '新增基础资料',
     },
     account: {
       title: '账户概况',

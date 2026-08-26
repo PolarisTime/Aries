@@ -1,20 +1,28 @@
-import { UserOutlined } from '@ant-design/icons'
-import { Avatar } from 'antd'
+import { ReloadOutlined, UserOutlined } from '@ant-design/icons'
+import { Avatar, Button } from 'antd'
+import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/system/dashboard'
+import { useAuthStore } from '@/stores/authStore'
+import { clearPersistedLayoutTabs } from '@/stores/layoutTabsStore'
 
 interface DashboardGreetingHeaderProps {
   animatedServerTime: string
   summary?: DashboardSummary
 }
 
-/** 工作台顶部问候语组件：头像 + 欢迎语 + 服务时间 / 所属公司 */
+/** 工作台顶部问候语组件：头像 + 欢迎语 + 服务时间 / 所属公司 / 强制刷新 */
 export function DashboardGreetingHeader({
   animatedServerTime,
   summary,
 }: DashboardGreetingHeaderProps) {
   const { t } = useTranslation()
+  const userId = useAuthStore((state) => state.user?.id)
   const userName = summary?.userName || t('dashboard.info.userName')
+  const handleForceRefresh = useCallback(() => {
+    clearPersistedLayoutTabs(userId)
+    window.location.reload()
+  }, [userId])
 
   return (
     <section className="dashboard-greeting">
@@ -33,6 +41,13 @@ export function DashboardGreetingHeader({
           </span>
         </div>
       </div>
+      <Button
+        icon={<ReloadOutlined />}
+        onClick={handleForceRefresh}
+        className="dashboard-force-refresh"
+      >
+        {t('dashboard.actions.forceRefresh')}
+      </Button>
     </section>
   )
 }

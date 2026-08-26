@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
+  clearPersistedLayoutTabs,
   DASHBOARD_TAB_PATH,
   getNextActiveTabAfterClose,
   type LayoutTab,
@@ -10,6 +11,7 @@ import {
   removeTabFrom,
   sanitizePersistedTabs,
 } from '@/stores/layoutTabsStore'
+import { getLayoutTabsStorageKey } from '@/utils/storage'
 
 function makeTab(overrides: Partial<LayoutTab> = {}): LayoutTab {
   return {
@@ -217,5 +219,26 @@ describe('sanitizePersistedTabs', () => {
     const result = sanitizePersistedTabs(raw)
     expect(result.length).toBeLessThanOrEqual(MAX_LAYOUT_TABS)
     expect(result[0]?.pathname).toBe(DASHBOARD_TAB_PATH)
+  })
+})
+
+describe('clearPersistedLayoutTabs', () => {
+  it('只清除指定用户的持久化标签页数据', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    }
+    vi.stubGlobal('window', {})
+    vi.stubGlobal('localStorage', storage)
+    values.set(getLayoutTabsStorageKey('user-1'), '{"tabs":[]}')
+    values.set(getLayoutTabsStorageKey('user-2'), '{"tabs":[]}')
+
+    clearPersistedLayoutTabs('user-1')
+
+    expect(values.has(getLayoutTabsStorageKey('user-1'))).toBe(false)
+    expect(values.has(getLayoutTabsStorageKey('user-2'))).toBe(true)
+    vi.unstubAllGlobals()
   })
 })

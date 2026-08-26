@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
+import { isListDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { type ActionItem, TableActions } from '@/components/TableActions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
@@ -71,7 +71,9 @@ export function useGridColumns({
               ),
             })
           }
-          if (isDocumentReferenceField(colDef.dataIndex)) {
+          if (
+            isListDocumentReferenceField(colDef.dataIndex, config.primaryNoKey)
+          ) {
             return (
               <DocumentReferencePopover
                 value={value}

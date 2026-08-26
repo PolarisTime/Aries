@@ -25,18 +25,6 @@ export function DashboardSkeleton() {
         </div>
       </section>
 
-      <section className="dashboard-quick-actions dashboard-skeleton-panel">
-        <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
-        <div className="dashboard-quick-grid">
-          {['a', 'b', 'c', 'd'].map((key) => (
-            <div
-              key={`skeleton-quick-${key}`}
-              className="dashboard-skeleton-block dashboard-skeleton-line"
-            />
-          ))}
-        </div>
-      </section>
-
       <div className="dashboard-workplace-layout">
         <main className="dashboard-workplace-main">
           <section className="dashboard-todo-panel dashboard-skeleton-panel">

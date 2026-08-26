@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildDocumentReferenceSummary,
+  isListDocumentReferenceField,
   normalizeDocumentReferences,
   resolveDocumentReferenceModule,
 } from '@/components/document-reference/document-reference-utils'
@@ -58,5 +59,14 @@ describe('resolveDocumentReferenceModule', () => {
       'sales-order',
     )
     expect(resolveDocumentReferenceModule('unknown')).toBeUndefined()
+  })
+})
+
+describe('isListDocumentReferenceField', () => {
+  it('列表主单号不使用关联 Popover，跨单据字段仍使用', () => {
+    expect(isListDocumentReferenceField('orderNo', 'orderNo')).toBe(false)
+    expect(isListDocumentReferenceField('purchaseOrderNo', 'orderNo')).toBe(
+      true,
+    )
   })
 })

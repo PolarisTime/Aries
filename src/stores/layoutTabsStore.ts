@@ -283,6 +283,24 @@ function readPersistedTabs(userId: string): PersistedTabsPayload | null {
 let currentUserId = 'anonymous'
 let persistTimer: ReturnType<typeof setTimeout> | undefined
 
+/** 清除指定用户的持久化标签页，供工作台强制刷新使用。 */
+export function clearPersistedLayoutTabs(userId?: string): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+    persistTimer = undefined
+  }
+  try {
+    localStorage.removeItem(
+      getLayoutTabsStorageKey(userId === undefined ? currentUserId : userId),
+    )
+  } catch {
+    // 存储不可用时静默降级，刷新仍可恢复当前会话状态
+  }
+}
+
 function persistTabs(): void {
   const { tabs, activeTabId } = useLayoutTabsStore.getState()
   const payload: PersistedTabsPayload = {

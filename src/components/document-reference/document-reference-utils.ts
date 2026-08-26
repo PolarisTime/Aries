@@ -222,6 +222,14 @@ export function isDocumentReferenceField(fieldKey: string): boolean {
   return DOCUMENT_REFERENCE_FIELD_KEYS.has(fieldKey)
 }
 
+/** 列表主单号保持紧凑文本展示，跨单据关联号继续使用下钻 Popover。 */
+export function isListDocumentReferenceField(
+  fieldKey: string,
+  primaryNoKey?: string,
+): boolean {
+  return isDocumentReferenceField(fieldKey) && fieldKey !== primaryNoKey
+}
+
 export function getDocumentReferenceSummary(value: unknown): {
   counterpartyName?: string
   amount?: number | string

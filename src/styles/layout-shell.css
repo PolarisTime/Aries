@@ -1426,6 +1426,11 @@
   min-width: 0;
 }
 
+.dashboard-force-refresh {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .dashboard-greeting-copy h1 {
   margin: 0;
   overflow: hidden;
@@ -1813,57 +1818,8 @@
   text-align: center;
 }
 
-/* ===== 快捷新建 ===== */
-.dashboard-quick-actions {
-  min-width: 0;
-}
-
-.dashboard-quick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.dashboard-quick-grid .ant-btn {
-  height: auto;
-  min-height: 44px;
-  justify-content: flex-start;
-  padding: 8px 12px;
-}
-
-.dashboard-quick-item {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: left;
-  white-space: normal;
-}
-
-.dashboard-quick-icon {
-  display: inline-flex;
-  flex: 0 0 24px;
-  align-items: center;
-  justify-content: center;
-  color: var(--theme-primary);
-  font-size: 18px;
-}
-
 @media (max-width: 960px) {
   .dashboard-workplace-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .dashboard-quick-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .dashboard-quick-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
