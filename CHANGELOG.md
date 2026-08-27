@@ -1,3 +1,11 @@
+## [9.10.4](https://github.com/PolarisTime/Aries/compare/v9.10.3...v9.10.4) (2026-08-27)
+
+
+### Bug Fixes
+
+* **dashboard:** 移除快捷新建并支持清理标签页刷新 ([5b2d05c](https://github.com/PolarisTime/Aries/commit/5b2d05cd905981d74fbbdb5cbe3ac562fbec622a))
+* **freight-bill:** 按项目分组展示物流明细 ([229d020](https://github.com/PolarisTime/Aries/commit/229d020c14cc39274c4b255da6bdfa6b2714aac2))
+
 ## [9.10.3](https://github.com/PolarisTime/Aries/compare/v9.10.2...v9.10.3) (2026-08-26)
 
 
