@@ -44,8 +44,10 @@ import {
 } from '@/views/modules/customer-statement-item-groups'
 import {
   type FreightStatementProjectGroup,
+  type FreightStatementSortMode,
   groupFreightBillItems,
   groupFreightStatementItems,
+  sortFreightStatementItems,
 } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
@@ -341,15 +343,19 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       moduleKey === 'freight-bill') &&
     Boolean(config.itemColumns?.length)
   const canAutoSortItems =
-    (moduleKey === 'sales-order' || moduleKey === 'customer-statement') &&
+    (moduleKey === 'sales-order' ||
+      moduleKey === 'customer-statement' ||
+      moduleKey === 'freight-statement') &&
     items.length > 1 &&
     !saving &&
     !lineItemsLocked
-  const handleAutoSortItems = () => {
+  const handleAutoSortItems = (mode?: FreightStatementSortMode) => {
     setItems((current) =>
       moduleKey === 'customer-statement'
         ? sortCustomerStatementItemsByDeliveryDate(current)
-        : sortItemsByMaterialDefault(current),
+        : moduleKey === 'freight-statement'
+          ? sortFreightStatementItems(current, mode ?? 'sourceNo')
+          : sortItemsByMaterialDefault(current),
     )
   }
 

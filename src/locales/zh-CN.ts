@@ -748,6 +748,8 @@ export const zhCN = {
       importItems: '导入{{label}}明细',
       deleteSelected: '删除选中',
       autoSortItems: '自动排序',
+      autoSortBySourceNo: '按单号顺序',
+      autoSortByBillTime: '按日期顺序',
       emptyTextWithImport: '当前没有明细，可手动新增或从上级单据导入',
       emptyText: '当前没有明细，可手动新增',
       parentDoc: '上级单据',

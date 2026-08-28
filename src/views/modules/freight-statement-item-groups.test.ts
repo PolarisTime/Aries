@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { groupFreightBillItems } from './freight-statement-item-groups'
+import {
+  groupFreightBillItems,
+  sortFreightStatementItems,
+} from './freight-statement-item-groups'
 
 describe('groupFreightBillItems', () => {
   it('按客户和项目分组并计算数量、重量汇总', () => {
@@ -52,5 +55,43 @@ describe('groupFreightBillItems', () => {
 
   it('空明细返回空分组', () => {
     expect(groupFreightBillItems([])).toEqual([])
+  })
+})
+
+describe('sortFreightStatementItems', () => {
+  const items = [
+    {
+      id: '1',
+      sourceNo: '340845280926638080',
+      sourceFreightBillTime: '2026-07-29',
+    },
+    {
+      id: '2',
+      sourceNo: '338315174437986304',
+      sourceFreightBillTime: '2026-07-21',
+    },
+    {
+      id: '3',
+      sourceNo: '340845280926638080',
+      sourceFreightBillTime: '2026-07-29',
+    },
+    {
+      id: '4',
+      sourceNo: '339030568157061120',
+      _parentBillTime: '2026-07-24',
+    },
+    { id: '5', sourceNo: '' },
+  ]
+
+  it('按单号数值升序并保持同一物流单内的明细顺序', () => {
+    const sorted = sortFreightStatementItems(items, 'sourceNo')
+
+    expect(sorted.map((item) => item.id)).toEqual(['2', '4', '1', '3', '5'])
+  })
+
+  it('按来源物流单日期升序并将缺失日期的明细置后', () => {
+    const sorted = sortFreightStatementItems(items, 'billTime')
+
+    expect(sorted.map((item) => item.id)).toEqual(['2', '4', '1', '3', '5'])
   })
 })

@@ -1,11 +1,12 @@
 import {
   DeleteOutlined,
+  DownOutlined,
   ImportOutlined,
   PlusOutlined,
   SortAscendingOutlined,
 } from '@ant-design/icons'
-import type { TableColumnsType, TableProps } from 'antd'
-import { Button, Tabs } from 'antd'
+import type { MenuProps, TableColumnsType, TableProps } from 'antd'
+import { Button, Dropdown, Tabs } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
@@ -20,6 +21,7 @@ import {
 } from '@/views/modules/customer-statement-item-groups'
 import {
   type FreightStatementProjectGroup,
+  type FreightStatementSortMode,
   groupFreightBillItems,
   groupFreightStatementItems,
 } from '@/views/modules/freight-statement-item-groups'
@@ -73,7 +75,7 @@ interface Props {
   saving: boolean
   showFooterActions?: boolean
   onAddItem: () => void
-  onAutoSortItems: () => void
+  onAutoSortItems: (mode?: FreightStatementSortMode) => void
   onExpenseSelectedChange: (itemId: string, selected: boolean) => void
   onExpenseSelectAll: (selected: boolean) => void
   onExpenseChange: (
@@ -144,6 +146,16 @@ export function ModuleEditorItemsSection({
       sum + (Number.isFinite(Number(item.amount)) ? Number(item.amount) : 0),
     0,
   )
+  const freightStatementSortMenuItems: MenuProps['items'] = [
+    {
+      key: 'sourceNo',
+      label: t('modules.itemsSection.autoSortBySourceNo'),
+    },
+    {
+      key: 'billTime',
+      label: t('modules.itemsSection.autoSortByBillTime'),
+    },
+  ]
   const itemGroups =
     config.key === 'freight-statement'
       ? groupFreightStatementItems(items)
@@ -328,16 +340,35 @@ export function ModuleEditorItemsSection({
                       })}
                   </Button>
                 )}
-                {capabilities.autoSortItems && (
-                  <Button
-                    className="overlay-action-button"
-                    icon={<SortAscendingOutlined />}
-                    disabled={saving}
-                    onClick={onAutoSortItems}
-                  >
-                    {t('modules.itemsSection.autoSortItems')}
-                  </Button>
-                )}
+                {capabilities.autoSortItems &&
+                  (config.key === 'freight-statement' ? (
+                    <Dropdown
+                      menu={{
+                        items: freightStatementSortMenuItems,
+                        onClick: ({ key }) =>
+                          onAutoSortItems(key as FreightStatementSortMode),
+                      }}
+                      trigger={['click']}
+                    >
+                      <Button
+                        className="overlay-action-button"
+                        icon={<SortAscendingOutlined />}
+                        disabled={saving}
+                      >
+                        {t('modules.itemsSection.autoSortItems')}
+                        <DownOutlined />
+                      </Button>
+                    </Dropdown>
+                  ) : (
+                    <Button
+                      className="overlay-action-button"
+                      icon={<SortAscendingOutlined />}
+                      disabled={saving}
+                      onClick={() => onAutoSortItems()}
+                    >
+                      {t('modules.itemsSection.autoSortItems')}
+                    </Button>
+                  ))}
                 <ColumnSettingsPopover
                   columns={config.itemColumns}
                   orderedKeys={itemColumnOrder}

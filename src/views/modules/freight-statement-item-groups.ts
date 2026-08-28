@@ -21,6 +21,8 @@ export interface FreightStatementItemGroup<
   projectGroups: FreightStatementProjectGroup<Item>[]
 }
 
+export type FreightStatementSortMode = 'sourceNo' | 'billTime'
+
 function readText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -32,6 +34,53 @@ function readSourceId(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value)
     ? String(value)
     : ''
+}
+
+function compareSourceNo(left: string, right: string) {
+  const leftIsNumeric = /^\d+$/.test(left)
+  const rightIsNumeric = /^\d+$/.test(right)
+  if (leftIsNumeric && rightIsNumeric) {
+    const leftValue = BigInt(left)
+    const rightValue = BigInt(right)
+    return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0
+  }
+  return left.localeCompare(right, 'zh-CN', { numeric: true })
+}
+
+function readSourceBillTime<Item extends Record<string, unknown>>(item: Item) {
+  return (
+    readText(item.sourceFreightBillTime) ||
+    readText(item._parentBillTime) ||
+    readText(item.billTime)
+  )
+}
+
+/** 按物流单号或来源单据日期稳定排序，缺失排序值的明细始终排在最后。 */
+export function sortFreightStatementItems<Item extends Record<string, unknown>>(
+  items: Item[],
+  mode: FreightStatementSortMode,
+): Item[] {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftValue =
+        mode === 'billTime'
+          ? readSourceBillTime(left.item)
+          : readText(left.item.sourceNo)
+      const rightValue =
+        mode === 'billTime'
+          ? readSourceBillTime(right.item)
+          : readText(right.item.sourceNo)
+      if (!leftValue && !rightValue) return left.index - right.index
+      if (!leftValue) return 1
+      if (!rightValue) return -1
+      const comparison =
+        mode === 'billTime'
+          ? leftValue.localeCompare(rightValue)
+          : compareSourceNo(leftValue, rightValue)
+      return comparison || left.index - right.index
+    })
+    .map(({ item }) => item)
 }
 
 function readNumber(value: unknown) {

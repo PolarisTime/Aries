@@ -771,6 +771,8 @@ export const enUS = {
       importItems: 'Import {{label}} Items',
       deleteSelected: 'Delete Selected',
       autoSortItems: 'Auto Sort',
+      autoSortBySourceNo: 'By bill number',
+      autoSortByBillTime: 'By date',
       emptyTextWithImport:
         'No items yet. Add manually or import from parent document.',
       emptyText: 'No items yet. Add manually.',
