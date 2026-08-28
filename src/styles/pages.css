@@ -1,5 +1,19 @@
 /* ── Detail table ── */
 
+/* 对账打印作业统一由外层承接纵向滚动，避免项目分组表格出现嵌套滚动条。 */
+.print-job-items-scroll {
+  max-height: min(480px, 52vh);
+  min-height: 120px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.print-job-items-scroll .ant-table-body {
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
 .module-items-table-shell {
   width: 100%;
   min-width: 0;

@@ -698,6 +698,8 @@ export function PrintJobModal({
     )
   }, [excludedPrintItemIdSet, itemSelectionEnabled, orderedPrintItems])
   const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
+  const isStatementPrintModule =
+    moduleKey === 'customer-statement' || moduleKey === 'freight-statement'
   const printItemFields = useMemo(
     () => getPrintItemFields(moduleKey),
     [moduleKey],
@@ -939,7 +941,11 @@ export function PrintJobModal({
       pagination={false}
       rowKey={(item) => item.id}
       rowSelection={rowSelection}
-      scroll={{ y: brandOverrideEnabled ? 376 : 320 }}
+      scroll={
+        isStatementPrintModule
+          ? undefined
+          : { y: brandOverrideEnabled ? 376 : 320 }
+      }
       size="small"
     />
   )
@@ -1206,7 +1212,13 @@ export function PrintJobModal({
             items={orderedPrintItemIds}
             strategy={verticalListSortingStrategy}
           >
-            {printItemsContent}
+            <div
+              className={
+                isStatementPrintModule ? 'print-job-items-scroll' : undefined
+              }
+            >
+              {printItemsContent}
+            </div>
           </SortableContext>
         </DndContext>
       </Flex>
