@@ -1,3 +1,16 @@
+# [9.11.0](https://github.com/PolarisTime/Aries/compare/v9.10.4...v9.11.0) (2026-08-29)
+
+
+### Bug Fixes
+
+* **freight-bill:** 移除商品编码展示列 ([150c29d](https://github.com/PolarisTime/Aries/commit/150c29d4a63e2b9518e1769a56b9c3045ad86116))
+* **print:** 限制对账明细滚动高度 ([32811c2](https://github.com/PolarisTime/Aries/commit/32811c29ed7bad48e1de58339ed8a3f003d8a340))
+
+
+### Features
+
+* **statement:** 增加物流对账单自动排序选项 ([34a7cb6](https://github.com/PolarisTime/Aries/commit/34a7cb6507649affd37ef7719f8b3e4a5893f763))
+
 ## [9.10.4](https://github.com/PolarisTime/Aries/compare/v9.10.3...v9.10.4) (2026-08-27)
 
 
