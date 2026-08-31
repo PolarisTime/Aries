@@ -577,6 +577,7 @@ export const enUS = {
       sourceNo: 'Outbound No',
     },
     units: {
+      documentSheet: 'sheets',
       ton: 'ton',
       yuan: 'yuan',
     },

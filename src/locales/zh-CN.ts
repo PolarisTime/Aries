@@ -562,6 +562,7 @@ export const zhCN = {
       sourceNo: '出库单号',
     },
     units: {
+      documentSheet: '张',
       ton: '吨',
       yuan: '元',
     },

@@ -8,6 +8,10 @@ function sumBy(rows: ModuleRecord[], key: string) {
   return rows.reduce((sum, row) => sum + Number(row[key] || 0), 0)
 }
 
+function withUnit(value: string, unitKey: string) {
+  return `${value} ${i18next.t(unitKey)}`
+}
+
 export function buildAmountWeightOverview(
   rows: ModuleRecord[],
   amountKey: string,
@@ -16,15 +20,24 @@ export function buildAmountWeightOverview(
   return [
     {
       label: i18next.t('modules.overview.documentCount'),
-      value: formatInteger(rows.length),
+      value: withUnit(
+        formatInteger(rows.length),
+        'modules.units.documentSheet',
+      ),
     },
     {
       label: i18next.t('modules.overview.totalWeight'),
-      value: formatWeight(sumBy(rows, weightKey)),
+      value: withUnit(
+        formatWeight(sumBy(rows, weightKey)),
+        'modules.units.ton',
+      ),
     },
     {
       label: i18next.t('modules.overview.totalAmount'),
-      value: formatAmount(sumBy(rows, amountKey)),
+      value: withUnit(
+        formatAmount(sumBy(rows, amountKey)),
+        'modules.units.yuan',
+      ),
     },
   ]
 }
