@@ -1,3 +1,10 @@
+## [9.11.4](https://github.com/PolarisTime/Aries/compare/v9.11.3...v9.11.4) (2026-08-31)
+
+
+### Bug Fixes
+
+* **layout:** 收紧页面内容顶部间距 ([f4d8e40](https://github.com/PolarisTime/Aries/commit/f4d8e40b2bf0199ee6eb2289e0d178f341d4fdb6))
+
 ## [9.11.3](https://github.com/PolarisTime/Aries/compare/v9.11.2...v9.11.3) (2026-08-31)
 
 
