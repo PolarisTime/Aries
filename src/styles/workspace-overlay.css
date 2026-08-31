@@ -255,6 +255,7 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--app-overlay-body-padding, 24px);
+  scrollbar-gutter: stable;
 }
 
 .workspace-overlay-panel--fit-content {

@@ -39,40 +39,19 @@ export function computeTableScrollX({
   return contentWidth > containerWidth ? contentWidth : undefined
 }
 
-export function computeTableAvailableHeight({
-  containerHeight,
-  viewportHeight,
-  containerTop,
-  bottomInset,
-}: {
-  containerHeight: number
-  viewportHeight: number
-  containerTop: number
-  bottomInset: number
-}) {
-  if (containerHeight > 0) return containerHeight
-
-  const viewportAvailableHeight =
-    viewportHeight > 0 && containerTop >= 0
-      ? Math.max(0, viewportHeight - containerTop - bottomInset)
-      : 0
-  return viewportAvailableHeight
+/** 仅使用真实容器高度；零高度表示标签页隐藏或尚未完成布局。 */
+export function computeTableAvailableHeight(containerHeight: number) {
+  return Math.max(0, containerHeight)
 }
 
-export function buildTableScrollConfig({
-  dataLength,
-  isVirtual,
-  scrollX,
-  scrollY,
-  shellWidth,
-}: {
+export function buildTableScrollConfig(options: {
   dataLength: number
   isVirtual: boolean
   scrollX: number | undefined
   scrollY: number
   shellWidth: number
 }) {
-  if (dataLength === 0) return undefined
+  const { isVirtual, scrollX, scrollY, shellWidth } = options
   return {
     x: isVirtual ? (scrollX ?? Math.max(shellWidth, 1)) : scrollX,
     y: scrollY,

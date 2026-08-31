@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,7 +21,6 @@ import {
 } from '@/views/modules/components/business-grid-table-utils'
 
 const MIN_TABLE_BODY_SCROLL_Y = 120
-const TABLE_BOTTOM_INSET = 16
 const ROW_SINGLE_CLICK_DELAY_MS = 220
 const SEQUENCE_COLUMN_WIDTH = 64
 const ROW_INTERACTION_EXCLUSION_SELECTOR =
@@ -85,19 +85,13 @@ export function BusinessGridTable({
       : [sequenceColumn, ...visibleColumns]
   }, [rowSelection, sequenceStart, t, visibleColumns])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const shell = shellRef.current
     if (!shell || typeof ResizeObserver === 'undefined') return
 
     let frameId = 0
     const measure = () => {
-      const shellRect = shell.getBoundingClientRect()
-      const availableHeight = computeTableAvailableHeight({
-        containerHeight: shell.clientHeight,
-        viewportHeight: window.innerHeight,
-        containerTop: shellRect.top,
-        bottomInset: TABLE_BOTTOM_INSET,
-      })
+      const availableHeight = computeTableAvailableHeight(shell.clientHeight)
       if (availableHeight <= 0) return
       const headerHeight =
         shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
@@ -117,7 +111,7 @@ export function BusinessGridTable({
     }
     const observer = new ResizeObserver(scheduleMeasure)
     observer.observe(shell)
-    scheduleMeasure()
+    measure()
     return () => {
       cancelAnimationFrame(frameId)
       observer.disconnect()

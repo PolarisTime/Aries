@@ -787,6 +787,7 @@
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .account-page {
@@ -1126,6 +1127,7 @@
   min-height: 0;
   padding: 0 16px 16px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .cash-ledger-page {

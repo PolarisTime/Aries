@@ -7,6 +7,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .print-job-items-scroll .ant-table-body {
@@ -21,8 +22,8 @@
 
 .module-detail-table {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .module-detail-table .ant-table-body {
@@ -50,7 +51,6 @@
 }
 
 .module-detail-table .ant-table-content table {
-  width: max-content;
   min-width: 100%;
 }
 
