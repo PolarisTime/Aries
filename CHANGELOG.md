@@ -1,3 +1,15 @@
+# [9.12.0](https://github.com/PolarisTime/Aries/compare/v9.11.5...v9.12.0) (2026-08-31)
+
+
+### Bug Fixes
+
+* **overview:** 补充业务汇总指标单位 ([bc7ce29](https://github.com/PolarisTime/Aries/commit/bc7ce29bba4de67e90006a4e2d42a8195164f734))
+
+
+### Features
+
+* **grid:** 列表页新增明细查看图标 ([991c890](https://github.com/PolarisTime/Aries/commit/991c890e050ac16d0d8cb7cb11db9651e22b2281))
+
 ## [9.11.5](https://github.com/PolarisTime/Aries/compare/v9.11.4...v9.11.5) (2026-08-31)
 
 
