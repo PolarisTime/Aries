@@ -1,3 +1,10 @@
+## [9.11.2](https://github.com/PolarisTime/Aries/compare/v9.11.1...v9.11.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* **freight:** 调整物流单明细列顺序 ([7f596bb](https://github.com/PolarisTime/Aries/commit/7f596bb3f2cb48e588659d221c5603dd357f1e5e))
+
 ## [9.11.1](https://github.com/PolarisTime/Aries/compare/v9.11.0...v9.11.1) (2026-08-31)
 
 
