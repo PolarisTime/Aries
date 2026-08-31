@@ -1,3 +1,12 @@
+## [9.11.5](https://github.com/PolarisTime/Aries/compare/v9.11.4...v9.11.5) (2026-08-31)
+
+
+### Bug Fixes
+
+* **freight:** 调整物流单明细列顺序 ([f18bbc6](https://github.com/PolarisTime/Aries/commit/f18bbc64bc25d4cc7f90c589076b1678e51b27bf))
+* **status:** 区分审核与完成状态标签颜色 ([3cac2a9](https://github.com/PolarisTime/Aries/commit/3cac2a937e298245a500792137015a8da6e43a60))
+* **status:** 区分核定与完成状态标签颜色 ([c8dfb71](https://github.com/PolarisTime/Aries/commit/c8dfb71ba591fccda044f1a42be05cc8cb875816))
+
 ## [9.11.4](https://github.com/PolarisTime/Aries/compare/v9.11.3...v9.11.4) (2026-08-31)
 
 
