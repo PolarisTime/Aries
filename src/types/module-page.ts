@@ -43,7 +43,7 @@ export type {
 
 export interface ModuleStatusMeta {
   text: string
-  color: 'default' | 'success' | 'processing' | 'warning' | 'error'
+  color: 'default' | 'success' | 'processing' | 'warning' | 'error' | 'cyan'
 }
 
 export interface ModuleOverviewItem {

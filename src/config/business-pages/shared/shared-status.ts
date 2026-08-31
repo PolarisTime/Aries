@@ -5,11 +5,11 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
   草稿: { text: i18next.t('modules.status.draft'), color: 'warning' },
   完成采购: {
     text: i18next.t('modules.status.completedPurchase'),
-    color: 'processing',
+    color: 'cyan',
   },
   完成入库: {
     text: i18next.t('modules.status.completedInbound'),
-    color: 'processing',
+    color: 'cyan',
   },
   交付核定: {
     text: i18next.t('modules.status.deliveryVerification'),
@@ -17,7 +17,7 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
   },
   完成销售: {
     text: i18next.t('modules.status.completedSales'),
-    color: 'processing',
+    color: 'cyan',
   },
   待核准: {
     text: i18next.t('modules.status.pendingApproval'),
@@ -34,7 +34,7 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
     text: i18next.t('modules.status.partialOutbound'),
     color: 'processing',
   },
-  已完成: { text: i18next.t('modules.status.completed'), color: 'processing' },
+  已完成: { text: i18next.t('modules.status.completed'), color: 'cyan' },
   待确认: {
     text: i18next.t('modules.status.pendingConfirm'),
     color: 'warning',
