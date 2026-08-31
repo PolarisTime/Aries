@@ -21,13 +21,19 @@ const compactFreightItemWidthMap: Record<string, number> = {
   batchNo: 120,
 }
 
-// 仓库紧邻商品身份字段，物流明细按仓库和品牌核对时更易扫描。
+// 仓库和品牌紧邻出库单号，物流明细按仓库、品牌与规格核对时更易扫描。
 export const freightItemColumns: ModuleColumnDefinition[] = [
   {
     title: i18next.t('modules.columns.outboundNo'),
     dataIndex: 'sourceNo',
     width: 140,
   },
+  {
+    title: i18next.t('modules.columns.warehouse'),
+    dataIndex: 'warehouseName',
+    width: 132,
+  },
+  { title: i18next.t('modules.columns.brand'), dataIndex: 'brand', width: 92 },
   {
     title: i18next.t('modules.columns.materialCode'),
     dataIndex: 'materialCode',
@@ -54,12 +60,6 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
     dataIndex: 'projectName',
     width: 156,
   },
-  {
-    title: i18next.t('modules.columns.warehouse'),
-    dataIndex: 'warehouseName',
-    width: 132,
-  },
-  { title: i18next.t('modules.columns.brand'), dataIndex: 'brand', width: 92 },
   {
     title: i18next.t('modules.columns.category'),
     dataIndex: 'category',

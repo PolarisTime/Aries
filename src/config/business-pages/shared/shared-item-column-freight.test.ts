@@ -11,4 +11,17 @@ describe('compactFreightItemColumns', () => {
     expect(dataIndexes).not.toContain('projectName')
     expect(dataIndexes).not.toContain('materialName')
   })
+
+  it('仓库和品牌紧跟出库单号，并排在规格之前', () => {
+    const dataIndexes = compactFreightItemColumns.map(
+      (column) => column.dataIndex,
+    )
+
+    expect(dataIndexes.slice(0, 4)).toEqual([
+      'sourceNo',
+      'warehouseName',
+      'brand',
+      'spec',
+    ])
+  })
 })
