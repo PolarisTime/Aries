@@ -4,7 +4,7 @@ import '@/styles/pro-components.css'
 
 const pageContainerToken = {
   paddingInlinePageContainerContent: 16,
-  paddingBlockPageContainerContent: 16,
+  paddingBlockPageContainerContent: 8,
 }
 
 interface Props {
