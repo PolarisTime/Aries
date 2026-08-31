@@ -1,3 +1,10 @@
+## [9.11.1](https://github.com/PolarisTime/Aries/compare/v9.11.0...v9.11.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* **freight-bill:** 移除明细重复名称列 ([6cb9e4c](https://github.com/PolarisTime/Aries/commit/6cb9e4c14122f8902eea4a189e8bc2fa2774704e))
+
 # [9.11.0](https://github.com/PolarisTime/Aries/compare/v9.10.4...v9.11.0) (2026-08-29)
 
 
