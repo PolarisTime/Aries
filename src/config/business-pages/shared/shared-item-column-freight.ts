@@ -114,7 +114,15 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
 export const compactFreightItemColumns = applyCompactItemLayout(
   freightItemColumns,
   compactFreightItemWidthMap,
-  ['materialCode', 'category', 'piecesPerBundle', 'batchNo'],
+  [
+    'materialCode',
+    'materialName',
+    'customerName',
+    'projectName',
+    'category',
+    'piecesPerBundle',
+    'batchNo',
+  ],
 )
 
 // 物流对账单明细列：客户名称/项目名称抽到项目分组行展示，移除商品编码、商品名称、每件支数、批号列，
