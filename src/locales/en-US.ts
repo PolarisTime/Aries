@@ -1525,6 +1525,7 @@ export const enUS = {
     },
     gridColumns: {
       actions: 'Actions',
+      detail: 'View details',
     },
     columnSettings: {
       syncRetryLater:

@@ -1,4 +1,6 @@
+import { EyeOutlined } from '@ant-design/icons'
 import type { ColumnDef } from '@tanstack/react-table'
+import { Button, Tooltip } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
@@ -10,6 +12,8 @@ import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 export const ACTION_COLUMN_WIDTH = 200
+export const DETAIL_TOGGLE_COLUMN_ID = 'detail-toggle'
+export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -27,6 +31,7 @@ interface Props {
   rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean
   showActions?: boolean
+  onOpenDetail?: (record: ModuleRecord) => void
 }
 
 export function useGridColumns({
@@ -34,6 +39,7 @@ export function useGridColumns({
   rowActions,
   canUpdate: _canUpdate,
   showActions,
+  onOpenDetail,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
   const { t } = useTranslation()
@@ -100,6 +106,33 @@ export function useGridColumns({
           return <span>{formatCellValue(value, colDef.type)}</span>
         },
       },
+    })
+  }
+
+  if (onOpenDetail) {
+    columns.push({
+      id: DETAIL_TOGGLE_COLUMN_ID,
+      header: '',
+      meta: {
+        width: DETAIL_TOGGLE_COLUMN_WIDTH,
+        align: 'center',
+        renderCell: (record: ModuleRecord) => (
+          <Tooltip title={t('hooks.gridColumns.detail')}>
+            <Button
+              aria-label={t('hooks.gridColumns.detail')}
+              className="table-detail-toggle-btn"
+              icon={<EyeOutlined />}
+              onClick={(event) => {
+                event.stopPropagation()
+                onOpenDetail(record)
+              }}
+              size="small"
+              type="text"
+            />
+          </Tooltip>
+        ),
+      },
+      cell: () => null,
     })
   }
 

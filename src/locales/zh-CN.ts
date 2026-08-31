@@ -1489,6 +1489,7 @@ export const zhCN = {
     },
     gridColumns: {
       actions: '操作',
+      detail: '查看明细',
     },
     columnSettings: {
       syncRetryLater: '列设置已保存到本地，云同步稍后重试',

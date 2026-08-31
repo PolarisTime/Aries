@@ -29,6 +29,7 @@ interface Props {
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
   showActions?: boolean
+  onOpenDetail?: (record: ModuleRecord) => void
 }
 
 const ACTIONS_COLUMN_ID = 'actions'
@@ -98,6 +99,7 @@ export function useBusinessGridTable({
   setSelectedRowMap,
   buildActions,
   showActions,
+  onOpenDetail,
 }: Props) {
   const totalColumnCount = config?.columns?.length ?? 0
   const {
@@ -130,6 +132,7 @@ export function useBusinessGridTable({
     rowActions: buildActions,
     canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
     showActions: Boolean(config) && showActions,
+    onOpenDetail: config ? onOpenDetail : undefined,
   })
   const allColumnIds = columnDefs.map(
     (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',

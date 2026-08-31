@@ -453,6 +453,9 @@ export function useBusinessGridPage({
     setSelectedRowMap,
     buildActions,
     showActions: false,
+    onOpenDetail: (record) => {
+      void openDetail(record)
+    },
   })
 
   return {

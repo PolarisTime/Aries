@@ -176,6 +176,18 @@
   cursor: pointer;
 }
 
+.table-detail-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-secondary, inherit);
+  cursor: pointer;
+}
+
+.table-detail-toggle-btn:hover {
+  color: var(--theme-primary);
+}
+
 .module-attachment-upload-shell {
   display: flex;
   flex-direction: column;
