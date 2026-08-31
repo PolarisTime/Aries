@@ -1,3 +1,10 @@
+## [9.11.3](https://github.com/PolarisTime/Aries/compare/v9.11.2...v9.11.3) (2026-08-31)
+
+
+### Bug Fixes
+
+* **frontend:** 消除表格布局震荡 ([83cc05e](https://github.com/PolarisTime/Aries/commit/83cc05e37c12e48424412d9350dfcc0a6849f150))
+
 ## [9.11.2](https://github.com/PolarisTime/Aries/compare/v9.11.1...v9.11.2) (2026-08-31)
 
 
