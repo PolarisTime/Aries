@@ -12,16 +12,24 @@ describe('compactFreightItemColumns', () => {
     expect(dataIndexes).not.toContain('materialName')
   })
 
-  it('仓库和品牌紧跟出库单号，并排在规格之前', () => {
+  it('按出库单号、仓库、品牌、类别、材质、规格、长度、单位和数量顺序展示', () => {
     const dataIndexes = compactFreightItemColumns.map(
       (column) => column.dataIndex,
     )
 
-    expect(dataIndexes.slice(0, 4)).toEqual([
+    expect(dataIndexes).toEqual([
       'sourceNo',
       'warehouseName',
       'brand',
+      'category',
+      'material',
       'spec',
+      'length',
+      'unit',
+      'quantity',
+      'quantityUnit',
+      'pieceWeightTon',
+      'weightTon',
     ])
   })
 })

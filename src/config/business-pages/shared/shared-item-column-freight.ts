@@ -13,6 +13,7 @@ const compactFreightItemWidthMap: Record<string, number> = {
   material: 92,
   spec: 128,
   length: 64,
+  unit: 64,
   quantity: 70,
   quantityUnit: 64,
   pieceWeightTon: 90,
@@ -35,40 +36,25 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
   },
   { title: i18next.t('modules.columns.brand'), dataIndex: 'brand', width: 92 },
   {
-    title: i18next.t('modules.columns.materialCode'),
-    dataIndex: 'materialCode',
-    width: 148,
-  },
-  {
-    title: i18next.t('modules.columns.materialName'),
-    dataIndex: 'materialName',
-    width: 156,
-  },
-  { title: i18next.t('modules.columns.spec'), dataIndex: 'spec', width: 128 },
-  {
-    title: i18next.t('modules.columns.material'),
-    dataIndex: 'material',
-    width: 92,
-  },
-  {
-    title: i18next.t('modules.columns.customerName'),
-    dataIndex: 'customerName',
-    width: 136,
-  },
-  {
-    title: i18next.t('modules.columns.projectName'),
-    dataIndex: 'projectName',
-    width: 156,
-  },
-  {
     title: i18next.t('modules.columns.category'),
     dataIndex: 'category',
     width: 84,
   },
   {
+    title: i18next.t('modules.columns.material'),
+    dataIndex: 'material',
+    width: 92,
+  },
+  { title: i18next.t('modules.columns.spec'), dataIndex: 'spec', width: 128 },
+  {
     title: i18next.t('modules.columns.length'),
     dataIndex: 'length',
     width: 70,
+  },
+  {
+    title: i18next.t('modules.columns.unit'),
+    dataIndex: 'unit',
+    width: 64,
   },
   {
     title: i18next.t('modules.columns.quantity'),
@@ -91,6 +77,33 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
     type: 'weight',
   },
   {
+    title: i18next.t('modules.columns.weightTon'),
+    dataIndex: 'weightTon',
+    width: 108,
+    align: 'center',
+    type: 'weight',
+  },
+  {
+    title: i18next.t('modules.columns.materialCode'),
+    dataIndex: 'materialCode',
+    width: 148,
+  },
+  {
+    title: i18next.t('modules.columns.materialName'),
+    dataIndex: 'materialName',
+    width: 156,
+  },
+  {
+    title: i18next.t('modules.columns.customerName'),
+    dataIndex: 'customerName',
+    width: 136,
+  },
+  {
+    title: i18next.t('modules.columns.projectName'),
+    dataIndex: 'projectName',
+    width: 156,
+  },
+  {
     title: i18next.t('modules.columns.piecesPerBundle'),
     dataIndex: 'piecesPerBundle',
     width: 76,
@@ -102,13 +115,6 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
     dataIndex: 'batchNo',
     width: 130,
   },
-  {
-    title: i18next.t('modules.columns.weightTon'),
-    dataIndex: 'weightTon',
-    width: 108,
-    align: 'center',
-    type: 'weight',
-  },
 ]
 
 export const compactFreightItemColumns = applyCompactItemLayout(
@@ -119,7 +125,6 @@ export const compactFreightItemColumns = applyCompactItemLayout(
     'materialName',
     'customerName',
     'projectName',
-    'category',
     'piecesPerBundle',
     'batchNo',
   ],
