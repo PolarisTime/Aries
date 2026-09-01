@@ -9,3 +9,10 @@ export const ORDER_NO_FILTER_LABEL = i18next.t('modules.filter.orderNo')
 export const OUTBOUND_NO_FILTER_LABEL = i18next.t('modules.filter.outboundNo')
 export const INBOUND_NO_FILTER_LABEL = i18next.t('modules.filter.inboundNo')
 export const FREIGHT_NO_FILTER_LABEL = i18next.t('modules.filter.freightNo')
+export const REFERENCE_STATUS_LABEL = i18next.t(
+  'modules.filter.referenceStatus',
+)
+export const REFERENCE_STATUS_OPTIONS = [
+  { label: i18next.t('modules.filter.referenced'), value: 'true' },
+  { label: i18next.t('modules.filter.notReferenced'), value: 'false' },
+]

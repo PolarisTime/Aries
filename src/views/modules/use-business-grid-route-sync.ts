@@ -54,11 +54,13 @@ export function parseRouteParams(searchStr: string) {
   const docNo = readRouteSearchParam(params, 'docNo')
   const trackId = readRouteSearchParam(params, 'trackId')
   const customerId = readRouteSearchParam(params, 'customerId')
+  const referenced = readRouteSearchParam(params, 'referenced')
   return {
     docNo,
     sourceModule: readRouteSearchParam(params, 'sourceModule'),
     sourceRecordId: readRouteSearchParam(params, 'sourceRecordId'),
     status: readRouteSearchParam(params, 'status'),
+    referenced,
     trackId,
     customerId,
     routeKeyword: docNo || trackId,
@@ -186,10 +188,13 @@ export function buildRouteFilterSyncState({
   const hasStatusFilter = Boolean(
     routeParams.status && supportsFilterField(config, 'status'),
   )
+  const hasReferenceFilter = Boolean(
+    routeParams.referenced && supportsFilterField(config, 'referenced'),
+  )
   const filters = { ...defaultFilters }
   // Explicit status selection represents an all-records query. Do not retain
   // the list's default pending-only mode, which excludes completed statuses.
-  if (hasStatusFilter) {
+  if (hasStatusFilter || hasReferenceFilter) {
     delete filters.pendingOnly
   }
 
@@ -210,6 +215,9 @@ export function buildRouteFilterSyncState({
       : {}),
     ...(routeParams.status && supportsFilterField(config, 'status')
       ? { status: routeParams.status }
+      : {}),
+    ...(routeParams.referenced && supportsFilterField(config, 'referenced')
+      ? { referenced: routeParams.referenced }
       : {}),
   }
 }
@@ -232,10 +240,12 @@ export function buildRouteFilterSyncKey({
     config?.key || '',
     supportsFilterField(config, 'customerId'),
     supportsFilterField(config, 'status'),
+    supportsFilterField(config, 'referenced'),
     serializedDefaults,
     routeParams.routeKeyword,
     routeParams.customerId,
     routeParams.status,
+    routeParams.referenced,
     hasSetFilters,
   ])
 }

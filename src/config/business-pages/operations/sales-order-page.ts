@@ -20,6 +20,8 @@ import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
   ORDER_NO_FILTER_LABEL,
+  REFERENCE_STATUS_LABEL,
+  REFERENCE_STATUS_OPTIONS,
 } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
@@ -129,6 +131,13 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         '交付核定',
         '完成销售',
       ),
+    },
+    {
+      key: 'referenced',
+      label: REFERENCE_STATUS_LABEL,
+      type: 'select',
+      resetKeysOnChange: ['pendingOnly'],
+      options: REFERENCE_STATUS_OPTIONS,
     },
     {
       key: 'settlementCompanyId',

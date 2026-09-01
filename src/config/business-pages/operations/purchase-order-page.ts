@@ -13,6 +13,8 @@ import type {
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
+  REFERENCE_STATUS_LABEL,
+  REFERENCE_STATUS_OPTIONS,
   SUPPLIER_NAME_LABEL,
 } from '../shared/filter-labels'
 import {
@@ -112,6 +114,13 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       resetKeysOnChange: ['pendingOnly'],
       options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
+    },
+    {
+      key: 'referenced',
+      label: REFERENCE_STATUS_LABEL,
+      type: 'select',
+      resetKeysOnChange: ['pendingOnly'],
+      options: REFERENCE_STATUS_OPTIONS,
     },
     {
       key: 'settlementCompanyId',
