@@ -111,15 +111,20 @@ type CashLedgerAction =
   | { type: 'default-page-size-changed'; value: number }
   | { type: 'reset-filters' }
 
-function createInitialLedgerState(defaultPageSize: number): CashLedgerState {
+export function createInitialLedgerState(
+  defaultPageSize: number,
+): CashLedgerState {
+  const today = dayjs()
   return {
+    startDate: today.subtract(3, 'month').format('YYYY-MM-DD'),
+    endDate: today.format('YYYY-MM-DD'),
     keywordInput: '',
     observedDefaultPageSize: defaultPageSize,
     page: 1,
   }
 }
 
-function cashLedgerReducer(
+export function cashLedgerReducer(
   state: CashLedgerState,
   action: CashLedgerAction,
 ): CashLedgerState {
@@ -172,9 +177,7 @@ function cashLedgerReducer(
       }
     case 'reset-filters':
       return {
-        keywordInput: '',
-        observedDefaultPageSize: state.observedDefaultPageSize,
-        page: 1,
+        ...createInitialLedgerState(state.observedDefaultPageSize),
         pageSizeOverride: state.pageSizeOverride,
       }
   }
