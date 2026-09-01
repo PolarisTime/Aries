@@ -1,3 +1,12 @@
+## [9.12.2](https://github.com/PolarisTime/Aries/compare/v9.12.1...v9.12.2) (2026-09-01)
+
+
+### Bug Fixes
+
+* **business-pages:** 修复交易明细配置投影与元数据一致性 ([a1a7c43](https://github.com/PolarisTime/Aries/commit/a1a7c435e3b33b25bd3bd9c2fe77b4a949c1d2da))
+* **sales-order:** 恢复隐藏编码后的物料选择 ([7d8835b](https://github.com/PolarisTime/Aries/commit/7d8835b2b639fea5d1c21765a26fbf905aad0abd))
+* **sales-order:** 调整销售订单明细列展示 ([d1d1d3b](https://github.com/PolarisTime/Aries/commit/d1d1d3bb497b7f6ffc81f2409a65d2c368c6e024))
+
 ## [9.12.1](https://github.com/PolarisTime/Aries/compare/v9.12.0...v9.12.1) (2026-09-01)
 
 
