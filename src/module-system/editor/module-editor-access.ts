@@ -176,6 +176,18 @@ function isIntrinsicallyReadonlyItemColumn(
     return true
   }
 
+  // 销售订单隐藏商品编码列后，手工行通过“材质”列选择物料。
+  // 已导入来源行仍由父单快照驱动，不能借此绕过来源锁定。
+  if (
+    moduleKey === 'sales-order' &&
+    columnKey === 'material' &&
+    record &&
+    !asString(record.sourceInboundItemId).trim() &&
+    !asString(record.sourcePurchaseOrderItemId).trim()
+  ) {
+    return false
+  }
+
   if (DERIVED_READONLY_ITEM_COLUMN_KEYS.has(columnKey)) {
     // 人工输入豁免：这些列在特定模块是称重/实测结果，需要操作员填写。
     if (

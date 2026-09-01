@@ -59,6 +59,13 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
     'unitPrice',
     'amount',
   ],
+  // 商品编码列不再占用表格空间；材质列承载物料选择，选中后仍会同步填充
+  // materialId/materialCode 及其它物料快照字段，满足后端请求契约。
+  overrides: {
+    material: {
+      editor: { control: 'material' },
+    },
+  },
   projections: {
     saveResult: [
       'brand',

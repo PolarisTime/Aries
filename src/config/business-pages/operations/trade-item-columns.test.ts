@@ -44,6 +44,12 @@ describe('销售订单明细列', () => {
     expect(columns[warehouseIndex]?.width).toBe(160)
   })
 
+  it('材质列承载物料选择，隐藏商品编码后仍可满足保存契约', () => {
+    expect(
+      columns.find((column) => column.dataIndex === 'material')?.editor,
+    ).toEqual({ control: 'material' })
+  })
+
   it('保存结果摘要列由模块配置投影决定', () => {
     expect(
       salesOrdersPageConfig.saveResultItemColumns?.map(

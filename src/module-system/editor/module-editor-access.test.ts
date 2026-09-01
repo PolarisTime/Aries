@@ -53,6 +53,17 @@ describe('第一层：字段固有只读', () => {
     }
   })
 
+  it('销售订单手工行通过材质列选择物料，导入行仍保持快照只读', () => {
+    expect(
+      editable('sales-order', 'material', { record: { id: 'manual-1' } }),
+    ).toBe(true)
+    expect(
+      editable('sales-order', 'material', {
+        record: { id: 'imported-1', sourcePurchaseOrderItemId: '123' },
+      }),
+    ).toBe(false)
+  })
+
   it('采购入库的理算重量被 behavior 显式只读（随上游导入，不允许编辑）', () => {
     // purchase-inbound 的 readonlyItemColumns 含 weightTon，
     // 显式配置优先于派生豁免——旧判定链中该豁免为不可达死代码，已随重构移除。
