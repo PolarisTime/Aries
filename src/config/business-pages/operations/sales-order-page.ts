@@ -156,6 +156,10 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       key: 'deliveryDate',
       label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
       type: 'dateRange',
+      defaultDateRange: {
+        monthsBefore: 3,
+        monthsAfter: 1,
+      },
       row: 2,
     },
   ],
