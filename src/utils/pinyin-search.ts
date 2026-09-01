@@ -54,6 +54,9 @@ export interface StructuredMaterialOption {
 /** 编码前缀匹配所需的最小数字位数，避免短数字词随机命中雪花 ID。 */
 const MATERIAL_CODE_MIN_PREFIX_LENGTH = 6
 
+/** 双字母声母必须按首字母串匹配，避免 zh 命中所有 zhong* 音节。 */
+const PINYIN_INITIAL_DIGRAPHS = new Set(['zh', 'ch', 'sh'])
+
 function asSearchText(value: unknown): string {
   return String(value ?? '')
     .trim()
@@ -81,17 +84,20 @@ function matchStructuredKeyword(
     )
   }
 
-  // 文本词：品牌/材质/类别/长度子串 + 品牌拼音（全拼、首字母）。
-  const haystack = [
-    brand,
-    material,
-    category,
-    length,
-    ...buildPinyinSearchTokens(brand),
-  ]
-    .filter(Boolean)
-    .join(' ')
-  return haystack.includes(keyword)
+  // 文本词：品牌/材质/类别/长度子串。
+  if (
+    [brand, material, category, length].some((field) => field.includes(keyword))
+  ) {
+    return true
+  }
+
+  // zh/ch/sh 是合法的双字母声母，优先按品牌首字母匹配，避免 zh
+  // 被当作 zhong 等完整拼音的前缀而误命中“中天”“中新”等品牌。
+  const [fullPinyin = '', initials = ''] = buildPinyinSearchTokens(brand)
+  if (PINYIN_INITIAL_DIGRAPHS.has(keyword)) {
+    return initials.includes(keyword)
+  }
+  return fullPinyin.includes(keyword) || initials.includes(keyword)
 }
 
 /**
