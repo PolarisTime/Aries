@@ -1,4 +1,6 @@
 import i18next from 'i18next'
+import React from 'react'
+import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
   getSettlementCompanyOptions,
@@ -77,7 +79,20 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
   kicker: 'Purchase',
   description: i18next.t('modules.pages.purchaseOrder.description'),
   primaryNoKey: 'orderNo',
+  defaultFilters: { pendingOnly: 'true' },
   actions: actionSet,
+  quickFilters: [
+    {
+      key: 'pending',
+      label: i18next.t('modules.pages.purchaseOrder.pendingOnly'),
+      values: { pendingOnly: 'true' },
+    },
+    {
+      key: 'all',
+      label: i18next.t('modules.pages.purchaseOrder.filterAll'),
+      values: { pendingOnly: undefined },
+    },
+  ],
   filters: [
     {
       key: 'keyword',
@@ -114,7 +129,35 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.purchaseOrder.colOrderNo'),
       dataIndex: 'orderNo',
-      width: 160,
+      width: 190,
+      render: (value, record) =>
+        React.createElement(
+          'span',
+          { className: 'document-reference-trigger' },
+          React.createElement(
+            'span',
+            { className: 'document-reference-link' },
+            String(value ?? ''),
+          ),
+          React.createElement(DocumentReferenceStatusIcons, {
+            statuses: [
+              {
+                key: 'sales-order',
+                label: i18next.t(
+                  'modules.pages.purchaseOrder.referencedBySalesOrder',
+                ),
+                referenced: Boolean(record.referencedBySalesOrder),
+              },
+              {
+                key: 'purchase-inbound',
+                label: i18next.t(
+                  'modules.pages.purchaseOrder.referencedByPurchaseInbound',
+                ),
+                referenced: Boolean(record.referencedByPurchaseInbound),
+              },
+            ],
+          }),
+        ),
     },
     {
       title: i18next.t('modules.pages.purchaseOrder.colSupplier'),

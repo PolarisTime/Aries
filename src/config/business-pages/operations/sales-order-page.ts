@@ -1,6 +1,7 @@
 import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
+import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
   DISPLAY_WEIGHT_PRECISION,
@@ -89,7 +90,20 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   kicker: 'Sales',
   description: i18next.t('modules.pages.salesOrder.description'),
   primaryNoKey: 'orderNo',
+  defaultFilters: { pendingOnly: 'true' },
   actions: actionSet,
+  quickFilters: [
+    {
+      key: 'pending',
+      label: i18next.t('modules.pages.salesOrder.pendingOnly'),
+      values: { pendingOnly: 'true' },
+    },
+    {
+      key: 'all',
+      label: i18next.t('modules.pages.salesOrder.filterAll'),
+      values: { pendingOnly: undefined },
+    },
+  ],
   filters: [
     {
       key: 'keyword',
@@ -151,7 +165,35 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.salesOrder.colOrderNo'),
       dataIndex: 'orderNo',
-      width: 160,
+      width: 190,
+      render: (value, record) =>
+        React.createElement(
+          'span',
+          { className: 'document-reference-trigger' },
+          React.createElement(
+            'span',
+            { className: 'document-reference-link' },
+            String(value ?? ''),
+          ),
+          React.createElement(DocumentReferenceStatusIcons, {
+            statuses: [
+              {
+                key: 'freight-bill',
+                label: i18next.t(
+                  'modules.pages.salesOrder.referencedByFreightBill',
+                ),
+                referenced: Boolean(record.referencedByFreightBill),
+              },
+              {
+                key: 'sales-outbound',
+                label: i18next.t(
+                  'modules.pages.salesOrder.referencedBySalesOutbound',
+                ),
+                referenced: Boolean(record.referencedBySalesOutbound),
+              },
+            ],
+          }),
+        ),
     },
     {
       title: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),

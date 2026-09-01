@@ -1,4 +1,5 @@
 import type { ModuleKey } from '@/module-system/core/module-key'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleColumnDefinition,
   ModuleDetailField,
@@ -167,6 +168,8 @@ export interface ModulePageConfig {
   allowManualCreate?: boolean
   /** 是否隐藏通用关键词筛选；未配置时默认显示。 */
   hideKeywordFilter?: boolean
+  /** 列表首次加载及重置时使用的默认服务端筛选。 */
+  defaultFilters?: SearchParams
   filters: ModuleFilterDefinition[]
   quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]

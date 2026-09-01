@@ -13,6 +13,7 @@ export const operationModuleEndpointContracts = {
       'status',
       'startDate',
       'endDate',
+      'pendingOnly',
     ],
     dateRangeMapping: {
       orderDate: {

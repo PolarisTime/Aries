@@ -59,10 +59,11 @@ function mergeDefaultFilters(
 export function buildDefaultModuleFilters(
   config?: ModulePageConfig | null,
 ): SearchParams {
+  const defaults = cloneFilters(config?.defaultFilters || {})
   const dateRangeField = config?.filters.find(
     (field) => field.type === 'dateRange',
   )
-  if (!dateRangeField) return {}
+  if (!dateRangeField) return defaults
 
   const today = new Date()
   const start = shiftCalendarMonths(
@@ -75,6 +76,7 @@ export function buildDefaultModuleFilters(
   )
 
   return {
+    ...defaults,
     [dateRangeField.key]: [formatLocalDate(start), formatLocalDate(end)],
   }
 }
