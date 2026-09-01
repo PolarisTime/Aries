@@ -1,3 +1,10 @@
+## [9.12.1](https://github.com/PolarisTime/Aries/compare/v9.12.0...v9.12.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **statement:** 修复物流对账单日期排序与分组展示 ([d40c9ee](https://github.com/PolarisTime/Aries/commit/d40c9eead8852fa7e219ea29d1ceb6991bdf6aee))
+
 # [9.12.0](https://github.com/PolarisTime/Aries/compare/v9.11.5...v9.12.0) (2026-08-31)
 
 
