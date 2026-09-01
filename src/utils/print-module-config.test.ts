@@ -70,9 +70,9 @@ describe('打印字段与页面列边界', () => {
     for (const field of allFields) {
       seen.add(field.key)
       expect(typeof getPrintItemColumnWidth(field)).toBe('number')
-      expect(
-        ['left', 'center', 'right'],
-      ).toContain(getPrintItemColumnAlign(field))
+      expect(['left', 'center', 'right']).toContain(
+        getPrintItemColumnAlign(field),
+      )
     }
     expect(seen.size).toBeGreaterThanOrEqual(12)
   })
