@@ -1,3 +1,14 @@
+## [9.13.1](https://github.com/PolarisTime/Aries/compare/v9.13.0...v9.13.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **api:** 兼容订单引用状态字段缺失 ([ceb8660](https://github.com/PolarisTime/Aries/commit/ceb866028a14310d2a6614f7b55b602915339c44))
+* **filters:** 保留销售订单未来日期范围 ([2ce7bb1](https://github.com/PolarisTime/Aries/commit/2ce7bb135d75cb40be124aa32bf2a02db02448dc))
+* **filters:** 修复订单状态筛选被待处理条件覆盖 ([0448426](https://github.com/PolarisTime/Aries/commit/0448426463769cf8b473fac08ae6f19f7bbea723))
+* **filters:** 统一日期筛选默认范围 ([c427ade](https://github.com/PolarisTime/Aries/commit/c427ade6e6f01ed62cb864c89faee82f783a9b3f))
+* **filters:** 设置资金流水日期默认范围 ([3528e89](https://github.com/PolarisTime/Aries/commit/3528e89ec76c2fe9a1f1533e67912ac6edb1fc39))
+
 # [9.13.0](https://github.com/PolarisTime/Aries/compare/v9.12.2...v9.13.0) (2026-09-01)
 
 
