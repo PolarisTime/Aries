@@ -117,8 +117,8 @@ const purchaseOrderRecordShape = {
   status: purchaseOrderStatusSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
-  referencedBySalesOrder: z.boolean(),
-  referencedByPurchaseInbound: z.boolean(),
+  referencedBySalesOrder: z.boolean().default(false),
+  referencedByPurchaseInbound: z.boolean().default(false),
 }
 
 const purchaseOrderListRecordSchema = z
@@ -356,8 +356,8 @@ const salesOrderRecordShape = {
   status: salesOrderStatusSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
-  referencedByFreightBill: z.boolean(),
-  referencedBySalesOutbound: z.boolean(),
+  referencedByFreightBill: z.boolean().default(false),
+  referencedBySalesOutbound: z.boolean().default(false),
 }
 
 const salesOrderListRecordSchema = z
@@ -383,8 +383,6 @@ const salesOrderDetailRecordSchema = z.strictObject({
  */
 const freightSalesOrderCandidateRecordSchema = z.strictObject({
   ...salesOrderRecordShape,
-  referencedByFreightBill: z.boolean().default(false),
-  referencedBySalesOutbound: z.boolean().default(false),
   items: z.array(salesOrderItemSchema).min(1),
 })
 
