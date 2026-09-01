@@ -49,6 +49,7 @@ interface Props {
   onResetColumnSizes?: () => void
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
+  expandable?: TableProps<ModuleRecord>['expandable']
   canCreate: boolean
   canExport: boolean
   toolbarActions: ModuleActionDefinition[]
@@ -92,6 +93,7 @@ export function BusinessGridContent({
   onResetColumnSizes,
   onRowClick,
   onRowDoubleClick,
+  expandable,
   canCreate,
   canExport,
   toolbarActions,
@@ -184,6 +186,7 @@ export function BusinessGridContent({
             rowClassName={rowClassName}
             onRowClick={onRowClick}
             onRowDoubleClick={onRowDoubleClick}
+            expandable={expandable}
           />
 
           <ModuleTablePagination

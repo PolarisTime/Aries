@@ -150,6 +150,17 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           onResetColumnSizes={state.handleColumnResizeReset}
           onRowClick={toggleRecordSelection}
           onRowDoubleClick={openRecordEditor}
+          expandable={
+            state.expandedRowRender && state.onExpandDetail
+              ? {
+                  expandedRowKeys: state.inlineExpandedRowKeys,
+                  expandedRowRender: state.expandedRowRender,
+                  onExpand: state.onExpandDetail,
+                  // 明细按钮位于列表列中，避免额外的原生展开列造成重复入口。
+                  showExpandColumn: false,
+                }
+              : undefined
+          }
           canCreate={canCreateRecord}
           canExport={state.canExportData}
           toolbarActions={state.visibleToolbarActions}

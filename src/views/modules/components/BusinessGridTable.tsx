@@ -1,3 +1,4 @@
+import { MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons'
 import { Empty, Table } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import {
@@ -38,6 +39,7 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
+  expandable?: TableProps<ModuleRecord>['expandable']
   hasNextPage?: boolean
   fetchNextPage?: () => void
   isFetchingNextPage?: boolean
@@ -62,6 +64,7 @@ export function BusinessGridTable({
   rowClassName,
   onRowClick,
   onRowDoubleClick,
+  expandable,
   hasNextPage: _hasNextPage,
   fetchNextPage: _fetchNextPage,
   isFetchingNextPage: _isFetchingNextPage,
@@ -118,7 +121,9 @@ export function BusinessGridTable({
     }
   }, [])
 
-  const isVirtual = dataSource.length > 100
+  // 展开行包含额外 DOM，高度由明细内容决定；关闭虚拟滚动避免 rc-table
+  // 虚拟布局截断展开内容。
+  const isVirtual = dataSource.length > 100 && !expandable
 
   const scrollX = computeTableScrollX({
     columnWidths: [
@@ -225,6 +230,32 @@ export function BusinessGridTable({
         components={components}
         dataSource={dataSource}
         rowSelection={rowSelection}
+        expandable={
+          expandable
+            ? {
+                ...expandable,
+                expandIcon: ({ expanded, onExpand, record }) => (
+                  <button
+                    type="button"
+                    className="module-table-expand-button"
+                    aria-label={
+                      expanded ? t('common.collapse') : t('common.expand')
+                    }
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onExpand(record, event)
+                    }}
+                  >
+                    {expanded ? (
+                      <MinusSquareOutlined />
+                    ) : (
+                      <PlusSquareOutlined />
+                    )}
+                  </button>
+                ),
+              }
+            : undefined
+        }
         virtual={isVirtual}
         tableLayout="fixed"
         pagination={false}

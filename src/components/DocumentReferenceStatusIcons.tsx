@@ -16,7 +16,6 @@ interface Props {
 export function DocumentReferenceStatusIcons({ statuses }: Props): ReactNode {
   return (
     <span
-      aria-label="引用状态"
       style={{
         display: 'inline-flex',
         flex: '0 0 auto',

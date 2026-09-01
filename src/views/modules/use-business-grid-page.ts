@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { createElement, useEffect, useMemo, useState } from 'react'
 import { fetchAttachmentCounts } from '@/api/business/business-attachments'
 import { updateBusinessModuleStatus } from '@/api/business/business-crud'
 import { completeSalesOrder } from '@/api/sales/document-flow-commands'
@@ -37,6 +37,7 @@ import type {
 } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
+import { ModuleRecordDetailInline } from '@/views/modules/components/ModuleRecordDetailInline'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
@@ -159,6 +160,13 @@ export function useBusinessGridPage({
     openDetail,
     retryDetail,
     closeDetail,
+    inlineExpandedRowKeys,
+    inlineDetailRecord,
+    inlineDetailLoading,
+    inlineDetailError,
+    openInlineDetail,
+    closeInlineDetail,
+    retryInlineDetail,
   } = useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
     editRecord,
@@ -240,6 +248,39 @@ export function useBusinessGridPage({
       config?.detailActionLabel ||
       (config?.readOnly && config.detailFields.length > 0),
   )
+  const shouldUseInlineDetail = Boolean(
+    resolvedConfig.itemColumns?.length ||
+      resolvedConfig.detailItemColumns?.length ||
+      resolvedConfig.detailFields.length,
+  )
+  const toggleInlineDetail = (record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    if (inlineExpandedRowKeys[0] === recordId) {
+      closeInlineDetail(recordId)
+      return
+    }
+    void openInlineDetail(record)
+  }
+  const handleInlineExpand = (expanded: boolean, record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    if (expanded) {
+      if (inlineExpandedRowKeys[0] !== recordId) {
+        void openInlineDetail(record)
+      }
+    } else {
+      closeInlineDetail(recordId)
+    }
+  }
+  const renderInlineDetail = (record: ModuleRecord) => {
+    const active = inlineExpandedRowKeys[0] === String(record.id || '')
+    return createElement(ModuleRecordDetailInline, {
+      config: resolvedConfig,
+      record: active ? inlineDetailRecord : null,
+      loading: active && inlineDetailLoading,
+      error: active ? inlineDetailError : null,
+      onRetry: retryInlineDetail,
+    })
+  }
 
   const formFields = config?.formFields || []
   const statusFields = [...formFields, ...(config?.filters || [])]
@@ -303,7 +344,9 @@ export function useBusinessGridPage({
     onDetail: shouldUseDetailAction
       ? detailRoutePath
         ? (record) => navigateToDetailRoute(detailRoutePath, record)
-        : openDetail
+        : shouldUseInlineDetail
+          ? toggleInlineDetail
+          : openDetail
       : undefined,
     onEdit: (record) => {
       void openEditor(record)
@@ -453,9 +496,11 @@ export function useBusinessGridPage({
     setSelectedRowMap,
     buildActions,
     showActions: false,
-    onOpenDetail: (record) => {
-      void openDetail(record)
-    },
+    onOpenDetail: shouldUseInlineDetail
+      ? toggleInlineDetail
+      : (record) => {
+          void openDetail(record)
+        },
   })
 
   return {
@@ -465,6 +510,13 @@ export function useBusinessGridPage({
     canUpdateRecord,
     clearSelection,
     closeDetail,
+    inlineExpandedRowKeys,
+    inlineDetailRecord,
+    inlineDetailLoading,
+    inlineDetailError,
+    retryInlineDetail,
+    onExpandDetail: handleInlineExpand,
+    expandedRowRender: shouldUseInlineDetail ? renderInlineDetail : undefined,
     columnVisibleKeys,
     columnOrder,
     onColumnOrderChange,
