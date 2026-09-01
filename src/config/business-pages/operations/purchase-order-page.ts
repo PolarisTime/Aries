@@ -110,6 +110,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
+      resetKeysOnChange: ['pendingOnly'],
       options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
     },
     {

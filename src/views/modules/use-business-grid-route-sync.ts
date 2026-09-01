@@ -183,9 +183,19 @@ export function buildRouteFilterSyncState({
   defaultFilters,
   routeParams,
 }: RouteFilterSyncInput): SearchParams {
+  const hasStatusFilter = Boolean(
+    routeParams.status && supportsFilterField(config, 'status'),
+  )
+  const filters = { ...defaultFilters }
+  // Explicit status selection represents an all-records query. Do not retain
+  // the list's default pending-only mode, which excludes completed statuses.
+  if (hasStatusFilter) {
+    delete filters.pendingOnly
+  }
+
   if (routeParams.routeKeyword) {
     return {
-      ...defaultFilters,
+      ...filters,
       keyword: routeParams.routeKeyword,
       ...(routeParams.customerId && supportsFilterField(config, 'customerId')
         ? { customerId: routeParams.customerId }
@@ -194,7 +204,7 @@ export function buildRouteFilterSyncState({
   }
 
   return {
-    ...defaultFilters,
+    ...filters,
     ...(routeParams.customerId && supportsFilterField(config, 'customerId')
       ? { customerId: routeParams.customerId }
       : {}),

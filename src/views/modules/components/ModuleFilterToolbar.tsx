@@ -23,6 +23,10 @@ import { buildFormControlId } from '@/utils/form-control-id'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import { padLabel } from '@/utils/label-utils'
 import { asString } from '@/utils/type-narrowing'
+import {
+  buildNextFilters,
+  normalizeFilters,
+} from '@/views/modules/components/module-filter-utils'
 
 interface Props {
   config: ModulePageConfig
@@ -35,17 +39,6 @@ interface Props {
 }
 
 const EMPTY_FILTERS: SearchParams = {}
-
-function normalizeFilters(filters: SearchParams) {
-  const normalized: SearchParams = {}
-  for (const [key, value] of Object.entries(filters)) {
-    if (value === undefined || value === null || value === '') {
-      continue
-    }
-    normalized[key] = value
-  }
-  return normalized
-}
 
 function isSameFilterPreset(left: SearchParams, right: SearchParams) {
   const leftEntries = Object.entries(normalizeFilters(left)).toSorted()
@@ -62,24 +55,6 @@ function isSameFilterPreset(left: SearchParams, right: SearchParams) {
 function getFilterFieldLabelTargetId(field: ModuleFilterDefinition) {
   const fieldId = buildFormControlId('module-filter', field.key)
   return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
-}
-
-function buildNextFilters(
-  baseFilters: SearchParams,
-  key: string,
-  value: unknown,
-  resetKeys: readonly string[] = [],
-) {
-  const nextFilters = { ...baseFilters }
-  for (const resetKey of resetKeys) {
-    delete nextFilters[resetKey]
-  }
-  if (value === undefined || value === null || value === '') {
-    delete nextFilters[key]
-    return nextFilters
-  }
-  nextFilters[key] = value
-  return normalizeFilters(nextFilters)
 }
 
 function isPrimaryFilter(field: ModuleFilterDefinition) {

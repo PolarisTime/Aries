@@ -124,6 +124,21 @@ describe('route filter synchronization', () => {
     })
   })
 
+  it('removes pending-only mode for explicit status deep links', () => {
+    const config = {
+      ...configWithStatus,
+      key: 'purchase-order',
+    } as unknown as ModulePageConfig
+
+    expect(
+      buildRouteFilterSyncState({
+        config,
+        defaultFilters: { pendingOnly: 'true' },
+        routeParams: parseRouteParams('?status=完成采购'),
+      }),
+    ).toEqual({ status: '完成采购' })
+  })
+
   it('keeps the synchronization key stable when callback inputs are recreated', () => {
     const routeParams = parseRouteParams('?create=1')
     const first = buildRouteFilterSyncKey({
