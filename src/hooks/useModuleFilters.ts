@@ -68,7 +68,7 @@ export function buildDefaultModuleFilters(
   const today = new Date()
   const start = shiftCalendarMonths(
     today,
-    -(dateRangeField.defaultDateRange?.monthsBefore ?? 1),
+    -(dateRangeField.defaultDateRange?.monthsBefore ?? 3),
   )
   const end = shiftCalendarMonths(
     today,
