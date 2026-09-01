@@ -1,3 +1,16 @@
+# [9.13.0](https://github.com/PolarisTime/Aries/compare/v9.12.2...v9.13.0) (2026-09-01)
+
+
+### Bug Fixes
+
+* **grid:** 列表明细改为行内展开 ([658724f](https://github.com/PolarisTime/Aries/commit/658724fec08fc8676f6f8b565aaf22ebcd1b09ce))
+* **material:** 修复商品品牌拼音首字母匹配 ([ace2dbe](https://github.com/PolarisTime/Aries/commit/ace2dbe54e74714c8f008d31176e8ad37babba96))
+
+
+### Features
+
+* **orders:** 增加订单下游引用状态与待处理筛选 ([04beded](https://github.com/PolarisTime/Aries/commit/04bededc5d02d5f047f1df5f3989837d593f238b))
+
 ## [9.12.2](https://github.com/PolarisTime/Aries/compare/v9.12.1...v9.12.2) (2026-09-01)
 
 
