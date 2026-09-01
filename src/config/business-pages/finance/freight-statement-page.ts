@@ -4,21 +4,62 @@ import { withDeletedDocumentStatus } from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
 import { parseOptionalEntityId } from '@/types/entity-id'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { AUDIT_STATUS_LABEL, CARRIER_NAME_LABEL } from '../shared/filter-labels'
 import {
   SETTLEMENT_COMPANY_LABEL,
   validateSameSettlementCompany,
 } from '../shared/settlement-company'
+import { buildStatementOverview, statusMap } from '../shared/shared'
 import {
-  buildStatementOverview,
-  freightStatementItemColumns,
-  statusMap,
-} from '../shared/shared'
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
 
 function entityIdOf(value: unknown, field: string) {
   return parseOptionalEntityId(value, field)
+}
+
+// 物流对账单明细列：客户/项目在分组行展示，金额在分组行合计。
+const freightStatementItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'sourceNo',
+    'warehouseName',
+    'brand',
+    'spec',
+    'material',
+    'category',
+    'length',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+  ],
+  overrides: {
+    sourceNo: { width: 180 },
+    warehouseName: { labelKey: 'modules.columns.warehouse', width: 132 },
+    brand: { width: 92 },
+    spec: { width: 128 },
+    material: { width: 92 },
+    category: { width: 84 },
+    length: { width: 70 },
+    quantity: { width: 76 },
+    pieceWeightTon: { width: 90 },
+  },
+  projections: {
+    saveResult: [
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+    ],
+  },
 }
 
 export const freightStatementPageConfig: ModulePageConfig = {
@@ -415,7 +456,12 @@ export const freightStatementPageConfig: ModulePageConfig = {
       )
     },
   },
-  itemColumns: freightStatementItemColumns,
+  itemColumnConfig: freightStatementItemColumnConfig,
+  itemColumns: resolveItemColumns(freightStatementItemColumnConfig),
+  saveResultItemColumns: resolveItemColumnProjection(
+    freightStatementItemColumnConfig,
+    freightStatementItemColumnConfig.projections?.saveResult,
+  ),
   data: [],
   buildOverview: (rows) =>
     buildStatementOverview(rows, 'totalFreight', 'paidAmount', 'unpaidAmount'),

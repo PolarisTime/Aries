@@ -5,7 +5,10 @@ import {
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -15,9 +18,59 @@ import {
   actionSet,
   buildAmountWeightOverview,
   cloneLineItems,
-  compactPurchaseItemColumns,
   statusMap,
 } from '../shared/shared'
+import {
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
+
+// 销售出库明细列：复用采购基础列（商品编码、批号可见），无仓库前置要求。
+const salesOutboundItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'materialCode',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'length',
+    'unit',
+    'warehouseName',
+    'batchNo',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  requiredFieldKeys: [
+    'materialCode',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'unit',
+    'warehouseName',
+    'quantity',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  projections: {
+    saveResult: [
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+      'unitPrice',
+      'amount',
+    ],
+  },
+}
 
 export const salesOutboundsPageConfig: ModulePageConfig = {
   key: 'sales-outbound',
@@ -282,7 +335,12 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
         'sales-outbound-item',
       ),
   },
-  itemColumns: compactPurchaseItemColumns,
+  itemColumnConfig: salesOutboundItemColumnConfig,
+  itemColumns: resolveItemColumns(salesOutboundItemColumnConfig),
+  saveResultItemColumns: resolveItemColumnProjection(
+    salesOutboundItemColumnConfig,
+    salesOutboundItemColumnConfig.projections?.saveResult,
+  ),
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

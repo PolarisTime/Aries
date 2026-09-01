@@ -11,7 +11,10 @@ import {
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -22,9 +25,56 @@ import {
   actionSet,
   buildAmountWeightOverview,
   cloneLineItems,
-  compactSalesOrderItemColumns,
   statusMap,
 } from '../shared/shared'
+import {
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
+
+// 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
+const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'warehouseName',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'length',
+    'unit',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  requiredFieldKeys: [
+    'warehouseName',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'unit',
+    'quantity',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  projections: {
+    saveResult: [
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+      'unitPrice',
+      'amount',
+    ],
+  },
+}
 
 export const salesOrdersPageConfig: ModulePageConfig = {
   key: 'sales-order',
@@ -387,7 +437,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         'sales-order-item',
       ),
   },
-  itemColumns: compactSalesOrderItemColumns,
+  itemColumnConfig: salesOrderItemColumnConfig,
+  itemColumns: resolveItemColumns(salesOrderItemColumnConfig),
+  saveResultItemColumns: resolveItemColumnProjection(
+    salesOrderItemColumnConfig,
+    salesOrderItemColumnConfig.projections?.saveResult,
+  ),
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

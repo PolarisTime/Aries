@@ -5,7 +5,10 @@ import {
   getCarrierVehiclePlateOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
@@ -13,11 +16,49 @@ import {
   FREIGHT_NO_FILTER_LABEL,
 } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
+import { buildAmountWeightOverview, statusMap } from '../shared/shared'
 import {
-  buildAmountWeightOverview,
-  compactFreightItemColumns,
-  statusMap,
-} from '../shared/shared'
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
+
+// 物流单明细列：按仓库、品牌与规格核对，隐藏商品编码、商品名称、客户/项目、每件支数与批号。
+const freightBillItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'sourceNo',
+    'warehouseName',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'length',
+    'unit',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+  ],
+  overrides: {
+    warehouseName: { labelKey: 'modules.columns.warehouse', width: 132 },
+    brand: { width: 92 },
+    category: { width: 84 },
+    material: { width: 92 },
+    spec: { width: 128 },
+    unit: { width: 64 },
+    pieceWeightTon: { width: 90 },
+  },
+  projections: {
+    saveResult: [
+      'warehouseName',
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+    ],
+  },
+}
 
 export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
   'freight-bill': {
@@ -347,7 +388,12 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         }))
       },
     },
-    itemColumns: compactFreightItemColumns,
+    itemColumnConfig: freightBillItemColumnConfig,
+    itemColumns: resolveItemColumns(freightBillItemColumnConfig),
+    saveResultItemColumns: resolveItemColumnProjection(
+      freightBillItemColumnConfig,
+      freightBillItemColumnConfig.projections?.saveResult,
+    ),
     data: [],
     buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
     statusMap,

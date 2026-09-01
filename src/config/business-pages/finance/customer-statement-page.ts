@@ -10,18 +10,74 @@ import {
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import { parseOptionalEntityId } from '@/types/entity-id'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
+import { buildStatementOverview, statusMap } from '../shared/shared'
 import {
-  buildStatementOverview,
-  compactCustomerStatementItemColumns,
-  statusMap,
-} from '../shared/shared'
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
 
 function entityIdOf(value: unknown, field: string) {
   return parseOptionalEntityId(value, field)
+}
+
+// 客户对账单明细列：金额类字段右对齐展示。
+const customerStatementItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'length',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  overrides: {
+    brand: { width: 86 },
+    category: { width: 72 },
+    material: { width: 82 },
+    spec: { width: 100 },
+    length: { width: 70 },
+    quantity: { width: 76 },
+    quantityUnit: { width: 76 },
+    pieceWeightTon: { width: 92, align: 'right' },
+    weightTon: { align: 'right' },
+    unitPrice: { width: 88, align: 'right' },
+    amount: { width: 100, align: 'right' },
+  },
+  requiredFieldKeys: [
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'quantity',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  projections: {
+    saveResult: [
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+      'unitPrice',
+      'amount',
+    ],
+  },
 }
 
 export const customerStatementPageConfig: ModulePageConfig = {
@@ -442,7 +498,12 @@ export const customerStatementPageConfig: ModulePageConfig = {
       )
     },
   },
-  itemColumns: compactCustomerStatementItemColumns,
+  itemColumnConfig: customerStatementItemColumnConfig,
+  itemColumns: resolveItemColumns(customerStatementItemColumnConfig),
+  saveResultItemColumns: resolveItemColumnProjection(
+    customerStatementItemColumnConfig,
+    customerStatementItemColumnConfig.projections?.saveResult,
+  ),
   data: [],
   buildOverview: (rows) =>
     buildStatementOverview(

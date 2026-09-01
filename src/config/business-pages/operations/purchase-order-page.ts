@@ -4,7 +4,10 @@ import {
   getSettlementCompanyOptions,
   getSupplierOptions,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
@@ -13,24 +16,60 @@ import {
 import {
   actionSet,
   buildAmountWeightOverview,
-  compactPurchaseItemColumns,
   statusMap,
 } from '../shared/shared'
-import { insertColumnsAfter } from '../shared/shared-item-column-utils'
+import {
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
 
-const purchaseOrderItemColumns = insertColumnsAfter(
-  compactPurchaseItemColumns,
-  'weightTon',
-  [
-    {
-      title: i18next.t('modules.columns.weighWeight'),
-      dataIndex: 'actualWeightTon',
-      width: 96,
-      align: 'center',
-      type: 'weight',
-    },
+// 采购订单明细列：批号版结构 + 实际重量列（位于重量吨之后、单价之前）。
+const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'materialCode',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'length',
+    'unit',
+    'warehouseName',
+    'batchNo',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+    'actualWeightTon',
+    'unitPrice',
+    'amount',
   ],
-)
+  requiredFieldKeys: [
+    'materialCode',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'unit',
+    'warehouseName',
+    'quantity',
+    'pieceWeightTon',
+    'weightTon',
+    'unitPrice',
+    'amount',
+  ],
+  projections: {
+    saveResult: [
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+      'unitPrice',
+      'amount',
+    ],
+  },
+}
 
 export const purchaseOrdersPageConfig: ModulePageConfig = {
   key: 'purchase-order',
@@ -234,7 +273,12 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       fullRow: true,
     },
   ],
-  itemColumns: purchaseOrderItemColumns,
+  itemColumnConfig: purchaseOrderItemColumnConfig,
+  itemColumns: resolveItemColumns(purchaseOrderItemColumnConfig),
+  saveResultItemColumns: resolveItemColumnProjection(
+    purchaseOrderItemColumnConfig,
+    purchaseOrderItemColumnConfig.projections?.saveResult,
+  ),
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

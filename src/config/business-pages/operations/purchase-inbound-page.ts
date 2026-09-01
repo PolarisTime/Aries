@@ -5,7 +5,10 @@ import {
   getSupplierOptions,
   isPurchaseWeighRequiredCategory,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleItemColumnConfig,
+  ModulePageConfig,
+} from '@/types/module-page'
 import { cloneLineItems } from '@/utils/clone-utils'
 import {
   BILL_STATUS_LABEL,
@@ -15,9 +18,64 @@ import {
 import {
   actionSet,
   buildAmountWeightOverview,
-  compactPurchaseInboundItemColumns,
   statusMap,
 } from '../shared/shared'
+import {
+  resolveItemColumnProjection,
+  resolveItemColumns,
+} from '../shared/shared-item-column-utils'
+
+// 采购入库明细列：采购列基础上增加结算方式、过磅、调重字段（位于重量吨之后、单价之前）。
+const purchaseInboundItemColumnConfig: ModuleItemColumnConfig = {
+  include: [
+    'materialCode',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'length',
+    'unit',
+    'warehouseName',
+    'batchNo',
+    'quantity',
+    'quantityUnit',
+    'pieceWeightTon',
+    'weightTon',
+    'settlementMode',
+    'weighWeightTon',
+    'weightAdjustmentTon',
+    'weightAdjustmentAmount',
+    'unitPrice',
+    'amount',
+  ],
+  requiredFieldKeys: [
+    'materialCode',
+    'brand',
+    'category',
+    'material',
+    'spec',
+    'unit',
+    'warehouseName',
+    'quantity',
+    'pieceWeightTon',
+    'weightTon',
+    'settlementMode',
+    'unitPrice',
+    'amount',
+  ],
+  projections: {
+    saveResult: [
+      'brand',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'weightTon',
+      'unitPrice',
+      'amount',
+    ],
+  },
+}
 
 export const purchaseInboundsPageConfig: ModulePageConfig = {
   key: 'purchase-inbound',
@@ -306,7 +364,12 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
         'purchase-inbound-item',
       ),
   },
-  itemColumns: compactPurchaseInboundItemColumns,
+  itemColumnConfig: purchaseInboundItemColumnConfig,
+  itemColumns: resolveItemColumns(purchaseInboundItemColumnConfig),
+  saveResultItemColumns: resolveItemColumnProjection(
+    purchaseInboundItemColumnConfig,
+    purchaseInboundItemColumnConfig.projections?.saveResult,
+  ),
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

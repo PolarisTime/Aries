@@ -1,0 +1,274 @@
+import type { ModuleColumnDefinition } from '@/types/module-page'
+
+/**
+ * 交易明细公共字段目录：字段 key、多语言 label key 与基础展示属性的唯一来源。
+ *
+ * 边界约定：
+ * - 目录只维护前端展示语义（label key、宽度、对齐、类型、编辑器控件），
+ *   不维护模块流程锁定、后端必填、打印布局和数据库映射。
+ * - 模块通过 {@link ModuleItemColumnConfig} 显式声明 include 白名单与覆盖，
+ *   公共目录新增字段不会自动进入未声明模块。
+ * - 解析器只输出展示列（ModuleColumnDefinition[]），
+ *   不能替代 `saveFields.lineItem`、`LINE_ITEM_FIELDS` 或 strict Zod 保存 schema。
+ */
+export type TradeLineItemFieldKey =
+  | 'sourceNo'
+  | 'materialCode'
+  | 'brand'
+  | 'category'
+  | 'material'
+  | 'spec'
+  | 'length'
+  | 'unit'
+  | 'piecesPerBundle'
+  | 'warehouseName'
+  | 'batchNo'
+  | 'quantity'
+  | 'quantityUnit'
+  | 'pieceWeightTon'
+  | 'weightTon'
+  | 'settlementMode'
+  | 'weighWeightTon'
+  | 'weightAdjustmentTon'
+  | 'weightAdjustmentAmount'
+  | 'actualWeightTon'
+  | 'unitPrice'
+  | 'amount'
+  | 'materialName'
+  | 'customerName'
+  | 'projectName'
+
+export type TradeLineItemEditorControl =
+  | 'text'
+  | 'number'
+  | 'material'
+  | 'warehouse'
+  | 'settlementMode'
+
+export interface TradeLineItemEditorSemantics {
+  control: TradeLineItemEditorControl
+  precision?: number
+  min?: number
+}
+
+export interface TradeLineItemFieldSpec {
+  key: TradeLineItemFieldKey
+  /** i18n label key；目录不持有跨语言翻译文本 */
+  labelKey: string
+  width: number
+  align?: ModuleColumnDefinition['align']
+  type?: ModuleColumnDefinition['type']
+  /** 编辑器控件与基础编辑语义（编辑器组件当前仍按 dataIndex 适配，目录为稳定契约） */
+  editor?: TradeLineItemEditorSemantics
+}
+
+export const TRADE_LINE_ITEM_FIELD_KEYS: readonly TradeLineItemFieldKey[] = [
+  'sourceNo',
+  'materialCode',
+  'brand',
+  'category',
+  'material',
+  'spec',
+  'length',
+  'unit',
+  'piecesPerBundle',
+  'warehouseName',
+  'batchNo',
+  'quantity',
+  'quantityUnit',
+  'pieceWeightTon',
+  'weightTon',
+  'settlementMode',
+  'weighWeightTon',
+  'weightAdjustmentTon',
+  'weightAdjustmentAmount',
+  'actualWeightTon',
+  'unitPrice',
+  'amount',
+  'materialName',
+  'customerName',
+  'projectName',
+]
+
+export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
+  Record<TradeLineItemFieldKey, TradeLineItemFieldSpec>
+> = {
+  sourceNo: {
+    key: 'sourceNo',
+    labelKey: 'modules.columns.outboundNo',
+    width: 140,
+  },
+  materialCode: {
+    key: 'materialCode',
+    labelKey: 'modules.columns.materialCode',
+    width: 280,
+    align: 'center',
+    editor: { control: 'material' },
+  },
+  brand: {
+    key: 'brand',
+    labelKey: 'modules.columns.brand',
+    width: 68,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  category: {
+    key: 'category',
+    labelKey: 'modules.columns.category',
+    width: 58,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  material: {
+    key: 'material',
+    labelKey: 'modules.columns.material',
+    width: 76,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  spec: {
+    key: 'spec',
+    labelKey: 'modules.columns.spec',
+    width: 72,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  length: {
+    key: 'length',
+    labelKey: 'modules.columns.length',
+    width: 64,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  unit: {
+    key: 'unit',
+    labelKey: 'modules.columns.unit',
+    width: 56,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  piecesPerBundle: {
+    key: 'piecesPerBundle',
+    labelKey: 'modules.columns.piecesPerBundle',
+    width: 76,
+    align: 'center',
+    type: 'count',
+    editor: { control: 'number' },
+  },
+  warehouseName: {
+    key: 'warehouseName',
+    labelKey: 'modules.columns.warehouseName',
+    width: 160,
+    editor: { control: 'warehouse' },
+  },
+  batchNo: {
+    key: 'batchNo',
+    labelKey: 'modules.columns.batchNo',
+    width: 130,
+    editor: { control: 'text' },
+  },
+  quantity: {
+    key: 'quantity',
+    labelKey: 'modules.columns.quantity',
+    width: 70,
+    align: 'center',
+    type: 'count',
+    editor: { control: 'number', min: 0 },
+  },
+  quantityUnit: {
+    key: 'quantityUnit',
+    labelKey: 'modules.columns.quantityUnit',
+    width: 64,
+    align: 'center',
+    editor: { control: 'text' },
+  },
+  pieceWeightTon: {
+    key: 'pieceWeightTon',
+    labelKey: 'modules.columns.pieceWeightTon',
+    width: 76,
+    align: 'center',
+    type: 'weight',
+    editor: { control: 'number', min: 0 },
+  },
+  weightTon: {
+    key: 'weightTon',
+    labelKey: 'modules.columns.weightTon',
+    width: 108,
+    align: 'center',
+    type: 'weight',
+    editor: { control: 'number', min: 0 },
+  },
+  settlementMode: {
+    key: 'settlementMode',
+    labelKey: 'modules.columns.settlementMode',
+    width: 76,
+    align: 'center',
+    editor: { control: 'settlementMode' },
+  },
+  weighWeightTon: {
+    key: 'weighWeightTon',
+    labelKey: 'modules.columns.weighWeight',
+    width: 86,
+    align: 'center',
+    type: 'weight',
+    editor: { control: 'number', precision: 3, min: 0 },
+  },
+  weightAdjustmentTon: {
+    key: 'weightAdjustmentTon',
+    labelKey: 'modules.columns.weightAdjustmentTon',
+    width: 106,
+    align: 'center',
+    type: 'weight',
+    editor: { control: 'number' },
+  },
+  weightAdjustmentAmount: {
+    key: 'weightAdjustmentAmount',
+    labelKey: 'modules.columns.weightAdjustmentAmount',
+    width: 90,
+    align: 'center',
+    type: 'amount',
+    editor: { control: 'number' },
+  },
+  actualWeightTon: {
+    key: 'actualWeightTon',
+    labelKey: 'modules.columns.weighWeight',
+    width: 96,
+    align: 'center',
+    type: 'weight',
+    editor: { control: 'number', precision: 3, min: 0 },
+  },
+  unitPrice: {
+    key: 'unitPrice',
+    labelKey: 'modules.columns.unitPrice',
+    width: 86,
+    align: 'center',
+    type: 'amount',
+    editor: { control: 'number', min: 0 },
+  },
+  amount: {
+    key: 'amount',
+    labelKey: 'modules.columns.amount',
+    width: 90,
+    align: 'center',
+    type: 'amount',
+    editor: { control: 'number', min: 0 },
+  },
+  materialName: {
+    key: 'materialName',
+    labelKey: 'modules.columns.materialName',
+    width: 156,
+    editor: { control: 'text' },
+  },
+  customerName: {
+    key: 'customerName',
+    labelKey: 'modules.columns.customerName',
+    width: 136,
+    editor: { control: 'text' },
+  },
+  projectName: {
+    key: 'projectName',
+    labelKey: 'modules.columns.projectName',
+    width: 156,
+    editor: { control: 'text' },
+  },
+}

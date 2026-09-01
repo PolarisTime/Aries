@@ -25,12 +25,10 @@ import {
 } from '@/layouts/editor-session/EditorSessionGuard'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/adapter/module-adapter-actions'
 import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
-import { isFinanceOrTradeModule } from '@/module-system/core/module-category'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { sortItemsByMaterialDefault } from '@/module-system/editor/module-editor-item-sort'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type {
-  ModuleColumnDefinition,
   ModulePageConfig,
   ModuleParentImportSource,
 } from '@/types/module-page'
@@ -743,58 +741,20 @@ function SaveResultOverlay<Key extends ModuleKey>({
     </>
   )
 
-  // 保存结果弹窗的只读明细列：按模块从 config.itemColumns 派生子集，
-  // 与编辑器表格共用 formatCellValue 渲染，避免手写第二套列定义与格式。
-  const saveResultColumnKeys =
-    moduleKey === 'freight-bill'
-      ? ([
-          'customerName',
-          'projectName',
-          'warehouseName',
-          'brand',
-          'material',
-          'spec',
-          'length',
-          'quantity',
-          'weightTon',
-        ] as const)
-      : isFinanceOrTradeModule(moduleKey)
-        ? ([
-            'brand',
-            'material',
-            'spec',
-            'length',
-            'quantity',
-            'weightTon',
-            'unitPrice',
-            'amount',
-          ] as const)
-        : ([
-            'brand',
-            'material',
-            'spec',
-            'length',
-            'quantity',
-            'weightTon',
-          ] as const)
-  const itemColumns = (() => {
-    const columnMap = new Map(
-      (config.itemColumns ?? []).map((column) => [column.dataIndex, column]),
-    )
-    return saveResultColumnKeys
-      .map((key) => columnMap.get(key))
-      .filter((column): column is ModuleColumnDefinition => Boolean(column))
-      .map((column) => ({
-        title: column.title,
-        dataIndex: column.dataIndex,
-        ellipsis: true,
-        align: column.align || ('center' as const),
-        render: (value: unknown) =>
-          value == null || value === ''
-            ? '-'
-            : formatCellValue(value, column.type),
-      }))
-  })()
+  // 保存结果弹窗的只读明细列：由模块配置的保存结果摘要投影提供，
+  // 组件不再维护模块字段白名单，与编辑器表格共用 formatCellValue 渲染。
+  const itemColumns = (
+    config.saveResultItemColumns ??
+    config.itemColumns ??
+    []
+  ).map((column) => ({
+    title: column.title,
+    dataIndex: column.dataIndex,
+    ellipsis: true,
+    align: column.align || ('center' as const),
+    render: (value: unknown) =>
+      value == null || value === '' ? '-' : formatCellValue(value, column.type),
+  }))
   const itemGroups =
     moduleKey === 'freight-statement'
       ? groupFreightStatementItems(items)

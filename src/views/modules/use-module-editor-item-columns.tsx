@@ -72,6 +72,7 @@ export function useModuleEditorItemColumns({
     materials: true,
   })
   const totalItemColumnCount = config.itemColumns?.length ?? 0
+  const defaultHiddenItemColumnKeys = config?.itemColumnConfig?.hiddenByDefault
   const {
     columnOrder: savedItemColumnOrder,
     columnVisibility,
@@ -83,7 +84,7 @@ export function useModuleEditorItemColumns({
     handleColumnResizeReset,
   } = useColumnSettingsSupport(
     `${config?.key ?? moduleKey}:editor-items`,
-    undefined,
+    defaultHiddenItemColumnKeys,
     totalItemColumnCount,
   )
   const {
