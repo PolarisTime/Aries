@@ -27,10 +27,7 @@ import {
   cloneLineItems,
   statusMap,
 } from '../shared/shared'
-import {
-  resolveItemColumnProjection,
-  resolveItemColumns,
-} from '../shared/shared-item-column-utils'
+import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 
 // 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
 const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
@@ -75,6 +72,9 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
     ],
   },
 }
+const salesOrderItemColumnOutputs = resolveModuleItemColumnConfig(
+  salesOrderItemColumnConfig,
+)
 
 export const salesOrdersPageConfig: ModulePageConfig = {
   key: 'sales-order',
@@ -437,12 +437,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         'sales-order-item',
       ),
   },
-  itemColumnConfig: salesOrderItemColumnConfig,
-  itemColumns: resolveItemColumns(salesOrderItemColumnConfig),
-  saveResultItemColumns: resolveItemColumnProjection(
-    salesOrderItemColumnConfig,
-    salesOrderItemColumnConfig.projections?.saveResult,
-  ),
+  ...salesOrderItemColumnOutputs,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

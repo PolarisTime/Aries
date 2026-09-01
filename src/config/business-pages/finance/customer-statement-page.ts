@@ -18,10 +18,7 @@ import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { buildStatementOverview, statusMap } from '../shared/shared'
-import {
-  resolveItemColumnProjection,
-  resolveItemColumns,
-} from '../shared/shared-item-column-utils'
+import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 
 function entityIdOf(value: unknown, field: string) {
   return parseOptionalEntityId(value, field)
@@ -79,6 +76,9 @@ const customerStatementItemColumnConfig: ModuleItemColumnConfig = {
     ],
   },
 }
+const customerStatementItemColumnOutputs = resolveModuleItemColumnConfig(
+  customerStatementItemColumnConfig,
+)
 
 export const customerStatementPageConfig: ModulePageConfig = {
   key: 'customer-statement',
@@ -498,12 +498,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       )
     },
   },
-  itemColumnConfig: customerStatementItemColumnConfig,
-  itemColumns: resolveItemColumns(customerStatementItemColumnConfig),
-  saveResultItemColumns: resolveItemColumnProjection(
-    customerStatementItemColumnConfig,
-    customerStatementItemColumnConfig.projections?.saveResult,
-  ),
+  ...customerStatementItemColumnOutputs,
   data: [],
   buildOverview: (rows) =>
     buildStatementOverview(

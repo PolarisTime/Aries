@@ -16,7 +16,7 @@ const WEIGHT_ONLY_AMOUNT_COLUMN_KEYS = new Set([
   'weightAdjustmentAmount',
 ])
 
-function filterWeightOnlyItemColumns(
+export function filterWeightOnlyItemColumns(
   columns?: ModuleColumnDefinition[],
 ): ModuleColumnDefinition[] | undefined {
   return columns?.filter(
@@ -24,7 +24,7 @@ function filterWeightOnlyItemColumns(
   )
 }
 
-function buildWeightOnlyViewConfig(
+export function buildWeightOnlyViewConfig(
   baseConfig: ModulePageConfig,
 ): ModulePageConfig {
   return {
@@ -41,6 +41,9 @@ function buildWeightOnlyViewConfig(
     itemColumns: filterWeightOnlyItemColumns(baseConfig.itemColumns),
     detailItemColumns: filterWeightOnlyItemColumns(
       baseConfig.detailItemColumns,
+    ),
+    saveResultItemColumns: filterWeightOnlyItemColumns(
+      baseConfig.saveResultItemColumns,
     ),
     buildOverview: (rows: ModuleRecord[]) => buildWeightOverview(rows),
   }

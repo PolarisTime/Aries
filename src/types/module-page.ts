@@ -1,4 +1,3 @@
-import type { TradeLineItemFieldKey } from '@/config/business-pages/shared/trade-line-item-field-catalog'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
   ModuleColumnDefinition,
@@ -12,6 +11,10 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-record'
+import type {
+  TradeLineItemEditorSemantics,
+  TradeLineItemFieldKey,
+} from '@/types/trade-line-item-fields'
 
 export type {
   ModuleColumnDefinition,
@@ -111,32 +114,45 @@ export interface ModuleColumnOverride {
   width?: number
   align?: ModuleColumnDefinition['align']
   type?: ModuleColumnDefinition['type']
+  editor?: Partial<TradeLineItemEditorSemantics>
 }
 
-export interface ModuleItemColumnProjections {
+export type ModuleItemColumnKey<PrivateKey extends string = never> =
+  | TradeLineItemFieldKey
+  | PrivateKey
+
+export type ModuleItemColumnDefinition<PrivateKey extends string = string> =
+  Omit<ModuleColumnDefinition, 'dataIndex'> & {
+    dataIndex: PrivateKey
+    editor?: TradeLineItemEditorSemantics
+  }
+
+export interface ModuleItemColumnProjections<
+  PrivateKey extends string = never,
+> {
   /** 详情专用投影（dataIndex 顺序即展示顺序）；缺省回退到解析后的 itemColumns。 */
-  detail?: TradeLineItemFieldKey[]
+  detail?: ModuleItemColumnKey<PrivateKey>[]
   /** 保存结果摘要只读投影；缺省回退到解析后的 itemColumns。 */
-  saveResult?: TradeLineItemFieldKey[]
+  saveResult?: ModuleItemColumnKey<PrivateKey>[]
 }
 
 /**
  * 明细列配置驱动入口：由模块显式声明字段白名单、顺序、覆盖、默认隐藏与场景投影。
  * 解析结果通过 itemColumns / detailItemColumns 兼容输出，组件层的调用协议不变。
  */
-export interface ModuleItemColumnConfig {
+export interface ModuleItemColumnConfig<PrivateKey extends string = never> {
   /** 模块可用字段的显式白名单，数组顺序即默认展示顺序；未声明字段不会进入最终列。 */
-  include: TradeLineItemFieldKey[]
+  include: ModuleItemColumnKey<PrivateKey>[]
   /** 模块对公共字段展示属性的覆盖；覆盖目标必须存在于公共目录。 */
   overrides?: Partial<Record<TradeLineItemFieldKey, ModuleColumnOverride>>
   /** 默认隐藏但允许列设置恢复的字段；必须属于 include。 */
-  hiddenByDefault?: TradeLineItemFieldKey[]
+  hiddenByDefault?: ModuleItemColumnKey<PrivateKey>[]
   /** 编辑器必填展示语义（区别于后端请求 DTO 校验）；字段 key 必须属于 include。 */
-  requiredFieldKeys?: TradeLineItemFieldKey[]
+  requiredFieldKeys?: ModuleItemColumnKey<PrivateKey>[]
   /** 仅模块拥有的字段定义，参与编辑器与详情投影，不提升到公共目录。 */
-  privateColumns?: ModuleColumnDefinition[]
+  privateColumns?: ModuleItemColumnDefinition<PrivateKey>[]
   /** 场景独立投影：编辑器、详情、保存结果摘要。 */
-  projections?: ModuleItemColumnProjections
+  projections?: ModuleItemColumnProjections<PrivateKey>
 }
 
 export interface ModulePageConfig {
@@ -163,7 +179,7 @@ export interface ModulePageConfig {
   parentImport?: ModuleParentImportDefinition
   itemColumns?: ModuleColumnDefinition[]
   /** 明细列配置驱动入口；解析结果供 itemColumns / detailItemColumns 兼容输出。 */
-  itemColumnConfig?: ModuleItemColumnConfig
+  itemColumnConfig?: ModuleItemColumnConfig<string>
   detailItemColumns?: ModuleColumnDefinition[]
   /** 保存结果摘要只读投影（由 itemColumnConfig.projections.saveResult 解析），组件消费且不再硬编码字段白名单。 */
   saveResultItemColumns?: ModuleColumnDefinition[]

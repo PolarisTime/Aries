@@ -265,8 +265,11 @@ function buildEditableColumnRender({
 }: EditableRenderOptions) {
   const settlementModeOptions = ['理算', '过磅']
 
-  return (key: string, type: string | undefined) =>
+  return (column: ModuleColumnDefinition) =>
     (value: unknown, record: ModuleLineItem) => {
+      const key = column.dataIndex
+      const type = column.type
+      const editor = column.editor
       if (!isItemColumnEditable(key, record)) {
         return renderReadOnlyValue(
           value,
@@ -295,7 +298,7 @@ function buildEditableColumnRender({
         )
       }
 
-      if (key === 'materialCode') {
+      if (editor?.control === 'material' || key === 'materialCode') {
         const materialValue = asString(record.materialId).trim()
         return (
           <Select
@@ -315,7 +318,7 @@ function buildEditableColumnRender({
         )
       }
 
-      if (key === 'warehouseName') {
+      if (editor?.control === 'warehouse' || key === 'warehouseName') {
         const warehouseValue = asString(record.warehouseId).trim()
         return (
           <Select
@@ -357,9 +360,9 @@ function buildEditableColumnRender({
             value={asNumber(value)}
             className="w-full module-editor-number-input"
             data-module-editor-number-column={key}
-            min={0}
-            precision={3}
-            controls={false}
+            min={editor?.min ?? 0}
+            precision={editor?.precision ?? 3}
+            controls={editor?.controls ?? false}
             onKeyDown={(event) => handleNumberCellTab(event, key)}
             onChange={(nextValue) =>
               handleItemNumberChange(record.id, key, nextValue)
@@ -368,7 +371,7 @@ function buildEditableColumnRender({
         )
       }
 
-      if (key === 'settlementMode') {
+      if (editor?.control === 'settlementMode' || key === 'settlementMode') {
         return (
           <Select
             value={
@@ -389,9 +392,11 @@ function buildEditableColumnRender({
         )
       }
 
-      if (isNumberEditorColumn(key)) {
+      if (editor?.control === 'number' || isNumberEditorColumn(key)) {
         const precision = getEditorItemPrecision(key)
-        const min = getEditorItemMin(key, config.key)
+        const moduleMin = getEditorItemMin(key, config.key)
+        // 采购数量至少为 1，这是模块业务规则，优先于公共字段默认下限。
+        const min = key === 'quantity' ? moduleMin : (editor?.min ?? moduleMin)
         const hideControls = [
           'quantity',
           'pieceWeightTon',
@@ -405,8 +410,8 @@ function buildEditableColumnRender({
             className="w-full module-editor-number-input"
             data-module-editor-number-column={key}
             min={min}
-            precision={precision}
-            controls={!hideControls}
+            precision={editor?.precision ?? precision}
+            controls={editor?.controls ?? !hideControls}
             onKeyDown={(event) => handleNumberCellTab(event, key)}
             onChange={(nextValue) =>
               handleItemNumberChange(record.id, key, nextValue)
@@ -522,6 +527,6 @@ export function buildModuleEditorDataColumns({
     width: resolveEditorItemColumnWidth(column),
     align: column.align || 'center',
     ellipsis: true,
-    render: renderEditableColumn(column.dataIndex, column.type),
+    render: renderEditableColumn(column),
   }))
 }

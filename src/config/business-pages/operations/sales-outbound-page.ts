@@ -20,10 +20,7 @@ import {
   cloneLineItems,
   statusMap,
 } from '../shared/shared'
-import {
-  resolveItemColumnProjection,
-  resolveItemColumns,
-} from '../shared/shared-item-column-utils'
+import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 
 // 销售出库明细列：复用采购基础列（商品编码、批号可见），无仓库前置要求。
 const salesOutboundItemColumnConfig: ModuleItemColumnConfig = {
@@ -71,6 +68,9 @@ const salesOutboundItemColumnConfig: ModuleItemColumnConfig = {
     ],
   },
 }
+const salesOutboundItemColumnOutputs = resolveModuleItemColumnConfig(
+  salesOutboundItemColumnConfig,
+)
 
 export const salesOutboundsPageConfig: ModulePageConfig = {
   key: 'sales-outbound',
@@ -335,12 +335,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
         'sales-outbound-item',
       ),
   },
-  itemColumnConfig: salesOutboundItemColumnConfig,
-  itemColumns: resolveItemColumns(salesOutboundItemColumnConfig),
-  saveResultItemColumns: resolveItemColumnProjection(
-    salesOutboundItemColumnConfig,
-    salesOutboundItemColumnConfig.projections?.saveResult,
-  ),
+  ...salesOutboundItemColumnOutputs,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

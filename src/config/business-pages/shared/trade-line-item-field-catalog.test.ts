@@ -14,6 +14,9 @@ describe('TRADE_LINE_ITEM_FIELD_CATALOG', () => {
     for (const key of TRADE_LINE_ITEM_FIELD_KEYS) {
       expect(TRADE_LINE_ITEM_FIELD_CATALOG[key]).toBeDefined()
     }
+    expect(Object.keys(TRADE_LINE_ITEM_FIELD_CATALOG)).toEqual(
+      TRADE_LINE_ITEM_FIELD_KEYS,
+    )
   })
 
   it('目录条目 key 与索引一致，且包含 labelKey 与宽度', () => {
@@ -28,5 +31,17 @@ describe('TRADE_LINE_ITEM_FIELD_CATALOG', () => {
     const spec = TRADE_LINE_ITEM_FIELD_CATALOG.brand
     expect(spec.labelKey.startsWith('modules.')).toBe(true)
     expect(spec.labelKey).not.toContain('品牌')
+  })
+
+  it('目录透传编辑器控件和数值语义', () => {
+    expect(TRADE_LINE_ITEM_FIELD_CATALOG.materialCode.editor).toMatchObject({
+      control: 'material',
+    })
+    expect(TRADE_LINE_ITEM_FIELD_CATALOG.weightTon.editor).toMatchObject({
+      control: 'number',
+      precision: 8,
+      min: 0,
+      controls: false,
+    })
   })
 })

@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  ModuleColumnDefinition,
-  ModuleItemColumnConfig,
-} from '@/types/module-page'
+import type { ModuleItemColumnConfig } from '@/types/module-page'
 import {
+  defineItemColumnConfig,
   ItemColumnConfigError,
   resolveItemColumnProjection,
   resolveItemColumns,
+  resolveModuleItemColumnConfig,
 } from './shared-item-column-utils'
-import type { TradeLineItemFieldKey } from './trade-line-item-field-catalog'
 
 const baseConfig: ModuleItemColumnConfig = {
   include: ['brand', 'category', 'material', 'spec', 'length', 'unit'],
@@ -35,6 +33,14 @@ describe('resolveItemColumns', () => {
     // 宽度/对齐/类型来自公共目录
     expect(columns[0]).toMatchObject({ width: 68, align: 'center' })
     expect(columns[4].width).toBe(64)
+    expect(resolveItemColumns({ include: ['weightTon'] })[0]).toMatchObject({
+      editor: {
+        control: 'number',
+        precision: 8,
+        min: 0,
+        controls: false,
+      },
+    })
   })
 
   it('空白配置解析为空数组', () => {
@@ -56,22 +62,31 @@ describe('resolveItemColumns', () => {
     ).toThrowError(/重复明细字段 key/)
   })
 
-  it('私有字段追加到白名单之后', () => {
-    const columns = resolveItemColumns({
-      include: ['brand', 'category'],
+  it('私有字段按 include 声明顺序参与解析', () => {
+    const config = defineItemColumnConfig({
+      include: ['brand', 'privateField', 'category'],
       privateColumns: [
-        {
-          title: '私有列',
-          dataIndex: 'privateField',
-          width: 90,
-        } satisfies ModuleColumnDefinition,
+        { title: '私有列', dataIndex: 'privateField', width: 90 },
       ],
     })
+    const columns = resolveItemColumns(config)
     expect(columns.map((column) => column.dataIndex)).toEqual([
       'brand',
-      'category',
       'privateField',
+      'category',
     ])
+  })
+
+  it('未将私有字段加入 include 时快速失败', () => {
+    const config = defineItemColumnConfig({
+      include: ['brand'],
+      privateColumns: [
+        { title: '私有列', dataIndex: 'privateField', width: 90 },
+      ],
+    })
+    expect(() => resolveItemColumns(config)).toThrowError(
+      /私有字段不在 include 白名单中/,
+    )
   })
 
   it('私有字段与白名单冲突快速失败', () => {
@@ -153,15 +168,19 @@ describe('resolveItemColumnProjection', () => {
   })
 
   it('投影可引用私有字段', () => {
-    const columns = resolveItemColumnProjection(
-      {
-        include: ['brand'],
-        privateColumns: [
-          { title: '私有列', dataIndex: 'privateField', width: 90 },
-        ],
-      },
-      ['privateField' as TradeLineItemFieldKey],
-    )
+    const config = defineItemColumnConfig({
+      include: ['brand', 'privateField'],
+      privateColumns: [
+        { title: '私有列', dataIndex: 'privateField', width: 90 },
+      ],
+      projections: { detail: ['privateField'] },
+    })
+    // @ts-expect-error 未声明的私有字段不能进入投影类型
+    const invalidProjection = ['unknownPrivateField'] satisfies NonNullable<
+      typeof config.projections
+    >['detail']
+    void invalidProjection
+    const columns = resolveItemColumnProjection(config, ['privateField'])
     expect(columns?.map((column) => column.dataIndex)).toEqual(['privateField'])
   })
 
@@ -169,5 +188,25 @@ describe('resolveItemColumnProjection', () => {
     expect(() =>
       resolveItemColumnProjection(baseConfig, ['quantity']),
     ).toThrowError(/投影字段不在 include 白名单中/)
+  })
+
+  it('统一工厂解析编辑器、详情与保存结果列，避免手写出口漂移', () => {
+    const resolved = resolveModuleItemColumnConfig({
+      include: ['brand', 'category'],
+      projections: {
+        detail: ['category'],
+        saveResult: ['brand'],
+      },
+    })
+    expect(resolved.itemColumns.map((column) => column.dataIndex)).toEqual([
+      'brand',
+      'category',
+    ])
+    expect(
+      resolved.detailItemColumns?.map((column) => column.dataIndex),
+    ).toEqual(['category'])
+    expect(
+      resolved.saveResultItemColumns?.map((column) => column.dataIndex),
+    ).toEqual(['brand'])
   })
 })

@@ -18,10 +18,7 @@ import {
   buildAmountWeightOverview,
   statusMap,
 } from '../shared/shared'
-import {
-  resolveItemColumnProjection,
-  resolveItemColumns,
-} from '../shared/shared-item-column-utils'
+import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 
 // 采购订单明细列：批号版结构 + 实际重量列（位于重量吨之后、单价之前）。
 const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
@@ -70,6 +67,9 @@ const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
     ],
   },
 }
+const purchaseOrderItemColumnOutputs = resolveModuleItemColumnConfig(
+  purchaseOrderItemColumnConfig,
+)
 
 export const purchaseOrdersPageConfig: ModulePageConfig = {
   key: 'purchase-order',
@@ -273,12 +273,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       fullRow: true,
     },
   ],
-  itemColumnConfig: purchaseOrderItemColumnConfig,
-  itemColumns: resolveItemColumns(purchaseOrderItemColumnConfig),
-  saveResultItemColumns: resolveItemColumnProjection(
-    purchaseOrderItemColumnConfig,
-    purchaseOrderItemColumnConfig.projections?.saveResult,
-  ),
+  ...purchaseOrderItemColumnOutputs,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

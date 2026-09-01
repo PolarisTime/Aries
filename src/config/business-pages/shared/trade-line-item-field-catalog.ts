@@ -1,4 +1,14 @@
-import type { ModuleColumnDefinition } from '@/types/module-page'
+import type { ModuleColumnType } from '@/types/module-page-fields'
+import type {
+  TradeLineItemEditorSemantics,
+  TradeLineItemFieldKey,
+} from '@/types/trade-line-item-fields'
+
+export type {
+  TradeLineItemEditorControl,
+  TradeLineItemEditorSemantics,
+  TradeLineItemFieldKey,
+} from '@/types/trade-line-item-fields'
 
 /**
  * 交易明细公共字段目录：字段 key、多语言 label key 与基础展示属性的唯一来源。
@@ -11,54 +21,14 @@ import type { ModuleColumnDefinition } from '@/types/module-page'
  * - 解析器只输出展示列（ModuleColumnDefinition[]），
  *   不能替代 `saveFields.lineItem`、`LINE_ITEM_FIELDS` 或 strict Zod 保存 schema。
  */
-export type TradeLineItemFieldKey =
-  | 'sourceNo'
-  | 'materialCode'
-  | 'brand'
-  | 'category'
-  | 'material'
-  | 'spec'
-  | 'length'
-  | 'unit'
-  | 'piecesPerBundle'
-  | 'warehouseName'
-  | 'batchNo'
-  | 'quantity'
-  | 'quantityUnit'
-  | 'pieceWeightTon'
-  | 'weightTon'
-  | 'settlementMode'
-  | 'weighWeightTon'
-  | 'weightAdjustmentTon'
-  | 'weightAdjustmentAmount'
-  | 'actualWeightTon'
-  | 'unitPrice'
-  | 'amount'
-  | 'materialName'
-  | 'customerName'
-  | 'projectName'
-
-export type TradeLineItemEditorControl =
-  | 'text'
-  | 'number'
-  | 'material'
-  | 'warehouse'
-  | 'settlementMode'
-
-export interface TradeLineItemEditorSemantics {
-  control: TradeLineItemEditorControl
-  precision?: number
-  min?: number
-}
-
 export interface TradeLineItemFieldSpec {
   key: TradeLineItemFieldKey
   /** i18n label key；目录不持有跨语言翻译文本 */
   labelKey: string
   width: number
-  align?: ModuleColumnDefinition['align']
-  type?: ModuleColumnDefinition['type']
-  /** 编辑器控件与基础编辑语义（编辑器组件当前仍按 dataIndex 适配，目录为稳定契约） */
+  align?: 'left' | 'center' | 'right'
+  type?: ModuleColumnType
+  /** 编辑器控件与基础编辑语义，由解析器透传给明细编辑器 */
   editor?: TradeLineItemEditorSemantics
 }
 
@@ -97,6 +67,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'sourceNo',
     labelKey: 'modules.columns.outboundNo',
     width: 140,
+    editor: { control: 'text' },
   },
   materialCode: {
     key: 'materialCode',
@@ -153,7 +124,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 76,
     align: 'center',
     type: 'count',
-    editor: { control: 'number' },
+    editor: { control: 'number', min: 0, controls: true },
   },
   warehouseName: {
     key: 'warehouseName',
@@ -173,7 +144,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 70,
     align: 'center',
     type: 'count',
-    editor: { control: 'number', min: 0 },
+    editor: { control: 'number', min: 0, controls: false },
   },
   quantityUnit: {
     key: 'quantityUnit',
@@ -188,7 +159,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 76,
     align: 'center',
     type: 'weight',
-    editor: { control: 'number', min: 0 },
+    editor: { control: 'number', precision: 8, min: 0, controls: false },
   },
   weightTon: {
     key: 'weightTon',
@@ -196,7 +167,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 108,
     align: 'center',
     type: 'weight',
-    editor: { control: 'number', min: 0 },
+    editor: { control: 'number', precision: 8, min: 0, controls: false },
   },
   settlementMode: {
     key: 'settlementMode',
@@ -211,7 +182,12 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 86,
     align: 'center',
     type: 'weight',
-    editor: { control: 'number', precision: 3, min: 0 },
+    editor: {
+      control: 'number',
+      precision: 3,
+      min: 0,
+      controls: false,
+    },
   },
   weightAdjustmentTon: {
     key: 'weightAdjustmentTon',
@@ -219,7 +195,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 106,
     align: 'center',
     type: 'weight',
-    editor: { control: 'number' },
+    editor: { control: 'number', precision: 8, controls: true },
   },
   weightAdjustmentAmount: {
     key: 'weightAdjustmentAmount',
@@ -227,7 +203,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 90,
     align: 'center',
     type: 'amount',
-    editor: { control: 'number' },
+    editor: { control: 'number', precision: 2, controls: true },
   },
   actualWeightTon: {
     key: 'actualWeightTon',
@@ -235,7 +211,12 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 96,
     align: 'center',
     type: 'weight',
-    editor: { control: 'number', precision: 3, min: 0 },
+    editor: {
+      control: 'number',
+      precision: 3,
+      min: 0,
+      controls: false,
+    },
   },
   unitPrice: {
     key: 'unitPrice',
@@ -243,7 +224,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 86,
     align: 'center',
     type: 'amount',
-    editor: { control: 'number', min: 0 },
+    editor: { control: 'number', precision: 2, min: 0, controls: false },
   },
   amount: {
     key: 'amount',
@@ -251,7 +232,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     width: 90,
     align: 'center',
     type: 'amount',
-    editor: { control: 'number', min: 0 },
+    editor: { control: 'number', precision: 2, min: 0, controls: true },
   },
   materialName: {
     key: 'materialName',

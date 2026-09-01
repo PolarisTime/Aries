@@ -17,10 +17,7 @@ import {
 } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { buildAmountWeightOverview, statusMap } from '../shared/shared'
-import {
-  resolveItemColumnProjection,
-  resolveItemColumns,
-} from '../shared/shared-item-column-utils'
+import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 
 // 物流单明细列：按仓库、品牌与规格核对，隐藏商品编码、商品名称、客户/项目、每件支数与批号。
 const freightBillItemColumnConfig: ModuleItemColumnConfig = {
@@ -59,6 +56,9 @@ const freightBillItemColumnConfig: ModuleItemColumnConfig = {
     ],
   },
 }
+const freightBillItemColumnOutputs = resolveModuleItemColumnConfig(
+  freightBillItemColumnConfig,
+)
 
 export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
   'freight-bill': {
@@ -388,12 +388,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         }))
       },
     },
-    itemColumnConfig: freightBillItemColumnConfig,
-    itemColumns: resolveItemColumns(freightBillItemColumnConfig),
-    saveResultItemColumns: resolveItemColumnProjection(
-      freightBillItemColumnConfig,
-      freightBillItemColumnConfig.projections?.saveResult,
-    ),
+    ...freightBillItemColumnOutputs,
     data: [],
     buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
     statusMap,

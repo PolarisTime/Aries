@@ -15,10 +15,7 @@ import {
   validateSameSettlementCompany,
 } from '../shared/settlement-company'
 import { buildStatementOverview, statusMap } from '../shared/shared'
-import {
-  resolveItemColumnProjection,
-  resolveItemColumns,
-} from '../shared/shared-item-column-utils'
+import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 
 function entityIdOf(value: unknown, field: string) {
   return parseOptionalEntityId(value, field)
@@ -61,6 +58,9 @@ const freightStatementItemColumnConfig: ModuleItemColumnConfig = {
     ],
   },
 }
+const freightStatementItemColumnOutputs = resolveModuleItemColumnConfig(
+  freightStatementItemColumnConfig,
+)
 
 export const freightStatementPageConfig: ModulePageConfig = {
   key: 'freight-statement',
@@ -456,12 +456,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       )
     },
   },
-  itemColumnConfig: freightStatementItemColumnConfig,
-  itemColumns: resolveItemColumns(freightStatementItemColumnConfig),
-  saveResultItemColumns: resolveItemColumnProjection(
-    freightStatementItemColumnConfig,
-    freightStatementItemColumnConfig.projections?.saveResult,
-  ),
+  ...freightStatementItemColumnOutputs,
   data: [],
   buildOverview: (rows) =>
     buildStatementOverview(rows, 'totalFreight', 'paidAmount', 'unpaidAmount'),

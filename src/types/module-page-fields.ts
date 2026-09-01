@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { ModuleRecord, ModuleRecordInput } from '@/types/module-record'
+import type { TradeLineItemEditorSemantics } from '@/types/trade-line-item-fields'
 
 export type ModuleColumnType =
   | 'text'
@@ -98,6 +99,7 @@ export interface ModuleColumnDefinition {
   align?: 'left' | 'center' | 'right'
   type?: ModuleColumnType
   required?: boolean
+  editor?: TradeLineItemEditorSemantics
   render?: (value: unknown, record: ModuleRecord) => ReactNode
 }
 
