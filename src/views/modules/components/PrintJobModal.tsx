@@ -976,7 +976,10 @@ export function PrintJobModal({
                 className="module-items-project-group"
                 key={projectGroup.key}
               >
-                <FreightStatementProjectGroupHeader group={projectGroup} />
+                <FreightStatementProjectGroupHeader
+                  group={projectGroup}
+                  showSubtotal={false}
+                />
                 {printItemsTable(projectGroup.items as PrintRecordItem[])}
               </div>
             ))}

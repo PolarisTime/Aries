@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   groupFreightBillItems,
+  groupFreightStatementItems,
   sortFreightStatementItems,
 } from './freight-statement-item-groups'
 
@@ -93,5 +94,26 @@ describe('sortFreightStatementItems', () => {
     const sorted = sortFreightStatementItems(items, 'billTime')
 
     expect(sorted.map((item) => item.id)).toEqual(['2', '4', '1', '3', '5'])
+  })
+
+  it('按来源物流单日期降序并将缺失日期的明细置后', () => {
+    const sorted = sortFreightStatementItems(items, 'billTime', 'desc')
+
+    expect(sorted.map((item) => item.id)).toEqual(['1', '3', '4', '2', '5'])
+  })
+})
+
+describe('groupFreightStatementItems', () => {
+  it('保留来源物流单的单据日期供分组头展示', () => {
+    const [group] = groupFreightStatementItems([
+      {
+        id: 'item-1',
+        sourceFreightBillId: 'bill-1',
+        sourceNo: 'WL-001',
+        sourceFreightBillTime: '2026-08-01',
+      },
+    ])
+
+    expect(group?.billTime).toBe('2026-08-01')
   })
 })

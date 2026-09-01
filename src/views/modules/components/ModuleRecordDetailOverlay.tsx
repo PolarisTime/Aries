@@ -83,6 +83,7 @@ export function ModuleRecordDetailOverlay({
               {
                 key: 'all',
                 sourceNo: '',
+                billTime: '',
                 customerName: '',
                 projectName: '',
                 totalQuantity: 0,
@@ -288,6 +289,7 @@ export function ModuleRecordDetailOverlay({
                             {
                               key: 'empty',
                               sourceNo: '',
+                              billTime: '',
                               customerName: '',
                               projectName: '',
                               totalQuantity: 0,
@@ -325,6 +327,7 @@ export function ModuleRecordDetailOverlay({
                           >
                             <FreightStatementProjectGroupHeader
                               group={projectGroup}
+                              showSubtotal={false}
                             />
                             <ModuleItemsTable
                               columns={detailTableColumns}

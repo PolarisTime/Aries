@@ -14,6 +14,7 @@ export interface FreightStatementItemGroup<
 > {
   key: string
   sourceNo: string
+  billTime: string
   totalQuantity: number
   totalWeightTon: number
   totalFreight: number
@@ -22,6 +23,7 @@ export interface FreightStatementItemGroup<
 }
 
 export type FreightStatementSortMode = 'sourceNo' | 'billTime'
+export type FreightStatementSortDirection = 'asc' | 'desc'
 
 function readText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
@@ -59,7 +61,9 @@ function readSourceBillTime<Item extends Record<string, unknown>>(item: Item) {
 export function sortFreightStatementItems<Item extends Record<string, unknown>>(
   items: Item[],
   mode: FreightStatementSortMode,
+  direction: FreightStatementSortDirection = 'asc',
 ): Item[] {
+  const directionMultiplier = direction === 'desc' ? -1 : 1
   return items
     .map((item, index) => ({ item, index }))
     .sort((left, right) => {
@@ -78,9 +82,15 @@ export function sortFreightStatementItems<Item extends Record<string, unknown>>(
         mode === 'billTime'
           ? leftValue.localeCompare(rightValue)
           : compareSourceNo(leftValue, rightValue)
-      return comparison || left.index - right.index
+      return comparison * directionMultiplier || left.index - right.index
     })
     .map(({ item }) => item)
+}
+
+function readFirstSourceBillTime<Item extends Record<string, unknown>>(
+  items: Item[],
+) {
+  return items.map(readSourceBillTime).find(Boolean) || ''
 }
 
 function readNumber(value: unknown) {
@@ -232,6 +242,7 @@ export function groupFreightStatementItems<
     return {
       key,
       sourceNo: readDistinctText(groupItems, 'sourceNo'),
+      billTime: readFirstSourceBillTime(groupItems),
       totalQuantity: projectGroupList.reduce(
         (sum, group) => sum + group.totalQuantity,
         0,

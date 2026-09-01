@@ -1,7 +1,7 @@
 import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { formatAmount, formatWeight } from '@/utils/formatters'
+import { formatAmount, formatDate, formatWeight } from '@/utils/formatters'
 import type {
   FreightStatementItemGroup,
   FreightStatementProjectGroup,
@@ -17,6 +17,11 @@ export function FreightStatementItemGroupHeader<
   const { t } = useTranslation()
   return (
     <div className="module-items-group-title">
+      <Typography.Text strong>
+        {t('modules.itemsSection.freightBillGroupBillTime', {
+          billTime: group.billTime ? formatDate(group.billTime) : '-',
+        })}
+      </Typography.Text>
       <Typography.Text strong>
         {t('modules.itemsSection.freightBillGroup', {
           sourceNo: '',
@@ -49,11 +54,12 @@ export function FreightStatementItemGroupHeader<
 
 interface ProjectGroupHeaderProps<Item extends Record<string, unknown>> {
   group: FreightStatementProjectGroup<Item>
+  showSubtotal?: boolean
 }
 
 export function FreightStatementProjectGroupHeader<
   Item extends Record<string, unknown>,
->({ group }: ProjectGroupHeaderProps<Item>) {
+>({ group, showSubtotal = true }: ProjectGroupHeaderProps<Item>) {
   const { t } = useTranslation()
 
   return (
@@ -68,12 +74,14 @@ export function FreightStatementProjectGroupHeader<
           projectName: group.projectName || '-',
         })}
       </Typography.Text>
-      <Typography.Text strong>
-        {t('modules.itemsSection.freightBillProjectGroupTotal', {
-          quantity: group.totalQuantity,
-          weight: formatWeight(group.totalWeightTon),
-        })}
-      </Typography.Text>
+      {showSubtotal ? (
+        <Typography.Text strong>
+          {t('modules.itemsSection.freightBillProjectGroupTotal', {
+            quantity: group.totalQuantity,
+            weight: formatWeight(group.totalWeightTon),
+          })}
+        </Typography.Text>
+      ) : null}
     </div>
   )
 }

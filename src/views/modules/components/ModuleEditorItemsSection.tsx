@@ -21,6 +21,7 @@ import {
 } from '@/views/modules/customer-statement-item-groups'
 import {
   type FreightStatementProjectGroup,
+  type FreightStatementSortDirection,
   type FreightStatementSortMode,
   groupFreightBillItems,
   groupFreightStatementItems,
@@ -76,6 +77,7 @@ interface Props {
   showFooterActions?: boolean
   onAddItem: () => void
   onAutoSortItems: (mode?: FreightStatementSortMode) => void
+  freightStatementSortDirection?: FreightStatementSortDirection
   onExpenseSelectedChange: (itemId: string, selected: boolean) => void
   onExpenseSelectAll: (selected: boolean) => void
   onExpenseChange: (
@@ -120,6 +122,7 @@ export function ModuleEditorItemsSection({
   showFooterActions = true,
   onAddItem,
   onAutoSortItems,
+  freightStatementSortDirection = 'asc',
   onExpenseSelectedChange,
   onExpenseSelectAll,
   onExpenseChange,
@@ -153,7 +156,11 @@ export function ModuleEditorItemsSection({
     },
     {
       key: 'billTime',
-      label: t('modules.itemsSection.autoSortByBillTime'),
+      label: t(
+        freightStatementSortDirection === 'asc'
+          ? 'modules.itemsSection.autoSortByBillTimeAscending'
+          : 'modules.itemsSection.autoSortByBillTimeDescending',
+      ),
     },
   ]
   const itemGroups =
@@ -167,6 +174,7 @@ export function ModuleEditorItemsSection({
               {
                 key: 'all',
                 sourceNo: '',
+                billTime: '',
                 customerName: '',
                 projectName: '',
                 totalQuantity: 0,
@@ -193,6 +201,7 @@ export function ModuleEditorItemsSection({
           {
             key: 'empty',
             sourceNo: '',
+            billTime: '',
             customerName: '',
             projectName: '',
             totalQuantity: 0,
@@ -447,6 +456,7 @@ export function ModuleEditorItemsSection({
                         >
                           <FreightStatementProjectGroupHeader
                             group={projectGroup}
+                            showSubtotal={false}
                           />
                           <ModuleItemsTable
                             columns={itemColumns}

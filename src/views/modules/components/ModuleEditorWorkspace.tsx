@@ -44,6 +44,7 @@ import {
 } from '@/views/modules/customer-statement-item-groups'
 import {
   type FreightStatementProjectGroup,
+  type FreightStatementSortDirection,
   type FreightStatementSortMode,
   groupFreightBillItems,
   groupFreightStatementItems,
@@ -342,6 +343,16 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       moduleKey === 'sales-order' ||
       moduleKey === 'freight-bill') &&
     Boolean(config.itemColumns?.length)
+  const [freightStatementSortDirection, setFreightStatementSortDirection] =
+    useState<FreightStatementSortDirection>('asc')
+  const freightStatementSortResetKey = open
+    ? `${moduleKey}:${String(record?.id || 'new')}`
+    : ''
+  useEffect(() => {
+    if (freightStatementSortResetKey) {
+      setFreightStatementSortDirection('asc')
+    }
+  }, [freightStatementSortResetKey])
   const canAutoSortItems =
     (moduleKey === 'sales-order' ||
       moduleKey === 'customer-statement' ||
@@ -350,13 +361,25 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     !saving &&
     !lineItemsLocked
   const handleAutoSortItems = (mode?: FreightStatementSortMode) => {
+    const effectiveMode = mode ?? 'sourceNo'
     setItems((current) =>
       moduleKey === 'customer-statement'
         ? sortCustomerStatementItemsByDeliveryDate(current)
         : moduleKey === 'freight-statement'
-          ? sortFreightStatementItems(current, mode ?? 'sourceNo')
+          ? sortFreightStatementItems(
+              current,
+              effectiveMode,
+              effectiveMode === 'billTime'
+                ? freightStatementSortDirection
+                : 'asc',
+            )
           : sortItemsByMaterialDefault(current),
     )
+    if (moduleKey === 'freight-statement' && effectiveMode === 'billTime') {
+      setFreightStatementSortDirection((current) =>
+        current === 'asc' ? 'desc' : 'asc',
+      )
+    }
   }
 
   const [expenseSelectedItemIds, setExpenseSelectedItemIds] = useState<
@@ -555,6 +578,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           showFooterActions={!useFinanceEditorLayout}
           onAddItem={addItem}
           onAutoSortItems={handleAutoSortItems}
+          freightStatementSortDirection={freightStatementSortDirection}
           onExpenseSelectedChange={handleExpenseSelectedChange}
           onExpenseSelectAll={handleExpenseSelectAll}
           onExpenseChange={handleExpenseChange}
@@ -782,6 +806,7 @@ function SaveResultOverlay<Key extends ModuleKey>({
               {
                 key: 'all',
                 sourceNo: '',
+                billTime: '',
                 customerName: '',
                 projectName: '',
                 totalQuantity: 0,
@@ -855,6 +880,7 @@ function SaveResultOverlay<Key extends ModuleKey>({
                   {
                     key: 'empty',
                     sourceNo: '',
+                    billTime: '',
                     customerName: '',
                     projectName: '',
                     totalQuantity: 0,
@@ -897,6 +923,7 @@ function SaveResultOverlay<Key extends ModuleKey>({
                     >
                       <FreightStatementProjectGroupHeader
                         group={projectGroup}
+                        showSubtotal={false}
                       />
                       <Table
                         rowKey={(_, i) => String(i)}
