@@ -43,18 +43,22 @@
 
 ### 2.3 状态字段
 
-当前前端页面使用中文状态值，后端第一阶段建议直接存中文，减少映射成本。
+受控状态字段使用稳定的 ASCII 编码保存和传输，展示文案由前端 i18n 或字典元数据解析。禁止在数据库、API、缓存、事件或业务代码中依赖中文文案做分支判断。
 
 例如：
 
-- `草稿`
-- `已审核`
-- `完成采购`
-- `完成入库`
-- `完成销售`
-- `价格核准`
-- `待确认`
-- `已确认`
+- `DRAFT`（草稿）
+- `AUDITED`（已审核）
+- `PURCHASE_COMPLETED`（完成采购）
+- `INBOUND_COMPLETED`（完成入库）
+- `SALES_COMPLETED`（完成销售）
+- `PRICE_APPROVED`（价格核准）
+- `PENDING_CONFIRMATION`（待确认）
+- `CONFIRMED`（已确认）
+
+状态编码一经发布不可重命名或复用；固定流程状态由后端状态机校验，可配置选项使用字典项。资源响应可同时提供 `status`（编码）和 `statusLabel`（展示文本），但 label 不参与业务判断。
+
+一次性切换、历史数据映射、API 兼容、回滚和后续字典扩展遵循 Leo 的 `ADR-002：受控业务值使用稳定编码与中文展示分离`。客户/供应商/项目名称、备注、合同条款、打印模板正文和历史快照仍保留原始中文。
 
 ### 2.4 快照字段
 
@@ -109,7 +113,7 @@
 | `spec` | `VARCHAR(32)` | 是 | 规格 |
 | `length` | `VARCHAR(32)` | 否 | 长度 |
 | `unit` | `VARCHAR(16)` | 是 | 单位 |
-| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `件` |
+| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `PIECE`（件） |
 | `piece_weight_ton` | `DECIMAL(12,3)` | 是 | 件重/吨 |
 | `pieces_per_bundle` | `INT` | 是 | 每件支数 |
 | `unit_price` | `DECIMAL(12,2)` | 是 | 默认单价 |
@@ -133,7 +137,7 @@
 | `contact_name` | `VARCHAR(64)` | 是 | 联系人 |
 | `contact_phone` | `VARCHAR(32)` | 是 | 联系电话 |
 | `city` | `VARCHAR(64)` | 是 | 所在城市 |
-| `status` | `VARCHAR(16)` | 是 | `正常/禁用` |
+| `status` | `VARCHAR(32)` | 是 | `ACTIVE/DISABLED`（正常/禁用） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -153,8 +157,8 @@
 | `contact_name` | `VARCHAR(64)` | 是 | 联系人 |
 | `contact_phone` | `VARCHAR(32)` | 是 | 联系电话 |
 | `city` | `VARCHAR(64)` | 是 | 所在城市 |
-| `settlement_mode` | `VARCHAR(32)` | 是 | 结算方式 |
-| `status` | `VARCHAR(16)` | 是 | `正常/禁用` |
+| `settlement_mode` | `VARCHAR(32)` | 是 | 结算方式编码，如 `CALCULATED`/`BY_WEIGHT`（理算/过磅） |
+| `status` | `VARCHAR(32)` | 是 | `ACTIVE/DISABLED`（正常/禁用） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -197,7 +201,7 @@
 | `contact_phone` | `VARCHAR(32)` | 是 | 联系电话 |
 | `vehicle_type` | `VARCHAR(64)` | 是 | 常用车型 |
 | `price_mode` | `VARCHAR(32)` | 否 | 计费模式，当前列表展示需要 |
-| `status` | `VARCHAR(16)` | 是 | `正常/禁用` |
+| `status` | `VARCHAR(32)` | 是 | `ACTIVE/DISABLED`（正常/禁用） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -218,7 +222,7 @@
 | `contact_name` | `VARCHAR(64)` | 是 | 联系人 |
 | `contact_phone` | `VARCHAR(32)` | 是 | 联系电话 |
 | `address` | `VARCHAR(255)` | 是 | 仓库地址 |
-| `status` | `VARCHAR(16)` | 是 | `正常/禁用` |
+| `status` | `VARCHAR(32)` | 是 | `ACTIVE/DISABLED`（正常/禁用） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -242,7 +246,7 @@
 | `buyer_name` | `VARCHAR(64)` | 否 | 采购员 |
 | `total_weight` | `DECIMAL(14,3)` | 是 | 总吨位 |
 | `total_amount` | `DECIMAL(14,2)` | 是 | 总金额 |
-| `status` | `VARCHAR(16)` | 是 | `草稿/已审核/完成采购` |
+| `status` | `VARCHAR(32)` | 是 | `DRAFT/AUDITED/PURCHASE_COMPLETED`（草稿/已审核/完成采购） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -267,7 +271,7 @@
 | `length` | `VARCHAR(32)` | 否 | 长度 |
 | `unit` | `VARCHAR(16)` | 是 | 单位 |
 | `quantity` | `INT` | 是 | 数量 |
-| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `件` |
+| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `PIECE`（件） |
 | `piece_weight_ton` | `DECIMAL(12,3)` | 是 | 件重/吨 |
 | `pieces_per_bundle` | `INT` | 是 | 每件支数 |
 | `weight_ton` | `DECIMAL(14,3)` | 是 | 吨位 |
@@ -294,10 +298,10 @@
 | `warehouse_id` | `BIGINT` | 否 | 仓库主键 |
 | `warehouse_name` | `VARCHAR(128)` | 是 | 仓库名称快照 |
 | `inbound_date` | `DATE` | 是 | 入库日期 |
-| `settlement_mode` | `VARCHAR(32)` | 是 | `理算/过磅` |
+| `settlement_mode` | `VARCHAR(32)` | 是 | `CALCULATED/BY_WEIGHT`（理算/过磅） |
 | `total_weight` | `DECIMAL(14,3)` | 是 | 总吨位 |
 | `total_amount` | `DECIMAL(14,2)` | 是 | 总金额 |
-| `status` | `VARCHAR(16)` | 是 | `草稿/已审核/完成入库` |
+| `status` | `VARCHAR(32)` | 是 | `DRAFT/AUDITED/INBOUND_COMPLETED`（草稿/已审核/完成入库） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -325,7 +329,7 @@
 | `unit` | `VARCHAR(16)` | 是 | 单位 |
 | `batch_no` | `VARCHAR(64)` | 否 | 批号 |
 | `quantity` | `INT` | 是 | 数量 |
-| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `件` |
+| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `PIECE`（件） |
 | `piece_weight_ton` | `DECIMAL(12,3)` | 是 | 件重/吨 |
 | `pieces_per_bundle` | `INT` | 是 | 每件支数 |
 | `weight_ton` | `DECIMAL(14,3)` | 是 | 吨位 |
@@ -356,7 +360,7 @@
 | `sales_name` | `VARCHAR(64)` | 是 | 销售员 |
 | `total_weight` | `DECIMAL(14,3)` | 是 | 总吨位 |
 | `total_amount` | `DECIMAL(14,2)` | 是 | 总金额 |
-| `status` | `VARCHAR(16)` | 是 | `草稿/已审核/完成销售` |
+| `status` | `VARCHAR(32)` | 是 | `DRAFT/AUDITED/SALES_COMPLETED`（草稿/已审核/完成销售） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -397,7 +401,7 @@
 | `outbound_date` | `DATE` | 是 | 出库日期 |
 | `total_weight` | `DECIMAL(14,3)` | 是 | 总吨位 |
 | `total_amount` | `DECIMAL(14,2)` | 是 | 总金额 |
-| `status` | `VARCHAR(16)` | 是 | `草稿/已审核/价格核准` |
+| `status` | `VARCHAR(32)` | 是 | `DRAFT/AUDITED/PRICE_APPROVED`（草稿/已审核/价格核准） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 索引：
@@ -436,7 +440,7 @@
 | `unit_price` | `DECIMAL(12,2)` | 是 | 运费单价 |
 | `total_weight` | `DECIMAL(14,3)` | 是 | 总吨位 |
 | `total_freight` | `DECIMAL(14,2)` | 是 | 总运费 |
-| `status` | `VARCHAR(16)` | 是 | `未审核/已审核` |
+| `status` | `VARCHAR(32)` | 是 | `PENDING_AUDIT/AUDITED`（未审核/已审核） |
 | `paid_amount` | `DECIMAL(14,2)` | 否 | 已付金额，可供汇总使用 |
 | `unpaid_amount` | `DECIMAL(14,2)` | 否 | 未付金额 |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
@@ -468,7 +472,7 @@
 | `spec` | `VARCHAR(32)` | 是 | 规格 |
 | `length` | `VARCHAR(32)` | 否 | 长度 |
 | `quantity` | `INT` | 是 | 数量 |
-| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `件` |
+| `quantity_unit` | `VARCHAR(16)` | 是 | 数量单位，当前统一固定为 `PIECE`（件） |
 | `piece_weight_ton` | `DECIMAL(12,3)` | 是 | 件重/吨 |
 | `pieces_per_bundle` | `INT` | 是 | 每件支数 |
 | `batch_no` | `VARCHAR(64)` | 否 | 批号 |
@@ -509,7 +513,7 @@
 | `warehouse_name` | `VARCHAR(128)` | 仓库名称快照 |
 | `batch_no` | `VARCHAR(64)` | 批号 |
 | `quantity` | `INT` | 当前数量 |
-| `quantity_unit` | `VARCHAR(16)` | 当前数量单位，统一为 `件` |
+| `quantity_unit` | `VARCHAR(16)` | 当前数量单位，统一为 `PIECE`（件） |
 | `weight_ton` | `DECIMAL(14,3)` | 当前吨位 |
 
 索引：
@@ -527,7 +531,7 @@
 | --- | --- | --- |
 | `id` | `BIGINT` | 主键 |
 | `business_date` | `DATE` | 业务日期 |
-| `business_type` | `VARCHAR(32)` | `采购入库/销售出库` |
+| `business_type` | `VARCHAR(32)` | `PURCHASE_INBOUND/SALES_OUTBOUND`（采购入库/销售出库） |
 | `source_table` | `VARCHAR(64)` | 来源表名 |
 | `source_id` | `BIGINT` | 来源单据主键 |
 | `source_no` | `VARCHAR(64)` | 来源单号 |
@@ -539,7 +543,7 @@
 | `batch_no` | `VARCHAR(64)` | 批号 |
 | `in_quantity` | `INT` | 入库数量 |
 | `out_quantity` | `INT` | 出库数量 |
-| `quantity_unit` | `VARCHAR(16)` | 数量单位，统一为 `件` |
+| `quantity_unit` | `VARCHAR(16)` | 数量单位，统一为 `PIECE`（件） |
 | `in_weight_ton` | `DECIMAL(14,3)` | 入库吨位 |
 | `out_weight_ton` | `DECIMAL(14,3)` | 出库吨位 |
 | `remark` | `VARCHAR(255)` | 备注 |
@@ -568,7 +572,7 @@
 | `payment_amount` | `DECIMAL(14,2)` | 是 | 付款金额 |
 | `closing_amount` | `DECIMAL(14,2)` | 是 | 期末余额 |
 | `source_inbound_nos` | `VARCHAR(500)` | 否 | 来源入库单号列表 |
-| `status` | `VARCHAR(16)` | 是 | `待确认/已确认` |
+| `status` | `VARCHAR(32)` | 是 | `PENDING_CONFIRMATION/CONFIRMED`（待确认/已确认） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 ### 9.2 客户对账单 `st_customer_statement`
@@ -588,7 +592,7 @@
 | `receipt_amount` | `DECIMAL(14,2)` | 是 | 收款金额 |
 | `closing_amount` | `DECIMAL(14,2)` | 是 | 期末余额 |
 | `source_order_nos` | `VARCHAR(500)` | 否 | 来源销售订单号列表 |
-| `status` | `VARCHAR(16)` | 是 | `待确认/已确认` |
+| `status` | `VARCHAR(32)` | 是 | `PENDING_CONFIRMATION/CONFIRMED`（待确认/已确认） |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
 ### 9.3 物流对账单头 `st_freight_statement`
@@ -608,8 +612,8 @@
 | `paid_amount` | `DECIMAL(14,2)` | 是 | 已付金额 |
 | `unpaid_amount` | `DECIMAL(14,2)` | 是 | 未付金额 |
 | `source_bill_nos` | `VARCHAR(500)` | 否 | 来源物流单号列表 |
-| `status` | `VARCHAR(16)` | 是 | `待审核/已审核` |
-| `sign_status` | `VARCHAR(16)` | 是 | `未签署/已签署` |
+| `status` | `VARCHAR(32)` | 是 | `PENDING_AUDIT/AUDITED`（待审核/已审核） |
+| `sign_status` | `VARCHAR(32)` | 是 | `UNSIGNED/SIGNED`（未签署/已签署） |
 | `attachment` | `VARCHAR(500)` | 否 | 附件名称摘要 |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
@@ -661,7 +665,7 @@
 | `receipt_date` | `DATE` | 是 | 收款日期 |
 | `pay_type` | `VARCHAR(32)` | 是 | 收款方式 |
 | `amount` | `DECIMAL(14,2)` | 是 | 金额 |
-| `status` | `VARCHAR(16)` | 是 | `草稿/已收款` |
+| `status` | `VARCHAR(32)` | 是 | `DRAFT/RECEIVED`（草稿/已收款） |
 | `operator_name` | `VARCHAR(64)` | 是 | 经办人 |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
@@ -673,13 +677,13 @@
 | --- | --- | --- | --- |
 | `id` | `BIGINT` | 是 | 主键 |
 | `payment_no` | `VARCHAR(32)` | 是 | 单号，唯一 |
-| `business_type` | `VARCHAR(32)` | 是 | `供应商/物流商` |
+| `business_type` | `VARCHAR(32)` | 是 | `SUPPLIER/CARRIER`（供应商/物流商） |
 | `counterparty_id` | `BIGINT` | 否 | 往来方主键 |
 | `counterparty_name` | `VARCHAR(128)` | 是 | 往来方名称快照 |
 | `payment_date` | `DATE` | 是 | 付款日期 |
 | `pay_type` | `VARCHAR(32)` | 是 | 付款方式 |
 | `amount` | `DECIMAL(14,2)` | 是 | 金额 |
-| `status` | `VARCHAR(16)` | 是 | `草稿/已付款` |
+| `status` | `VARCHAR(32)` | 是 | `DRAFT/PAID`（草稿/已付款） |
 | `operator_name` | `VARCHAR(64)` | 是 | 经办人 |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
 
