@@ -22,7 +22,7 @@ import {
   actionSet,
   buildAmountWeightOverview,
   cloneLineItems,
-  compactPurchaseItemColumns,
+  compactSalesOrderItemColumns,
   statusMap,
 } from '../shared/shared'
 
@@ -387,7 +387,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         'sales-order-item',
       ),
   },
-  itemColumns: compactPurchaseItemColumns,
+  itemColumns: compactSalesOrderItemColumns,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

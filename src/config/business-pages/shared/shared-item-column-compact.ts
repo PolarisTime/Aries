@@ -35,6 +35,31 @@ export const compactPurchaseItemColumns = applyCompactItemLayout(
   ['piecesPerBundle'],
 )
 
+// 销售订单明细仅展示业务核对所需字段：仓库放在品牌前，隐藏商品编码和批号。
+const compactSalesOrderItemColumnOrder = [
+  'warehouseName',
+  'brand',
+  'category',
+  'material',
+  'spec',
+  'length',
+  'unit',
+  'quantity',
+  'quantityUnit',
+  'pieceWeightTon',
+  'weightTon',
+  'unitPrice',
+  'amount',
+] as const
+
+export const compactSalesOrderItemColumns: ModuleColumnDefinition[] =
+  compactSalesOrderItemColumnOrder.flatMap((dataIndex) => {
+    const column = compactPurchaseItemColumns.find(
+      (item) => item.dataIndex === dataIndex,
+    )
+    return column ? [column] : []
+  })
+
 export const compactPurchaseInboundItemColumns = applyCompactItemLayout(
   purchaseInboundItemColumns,
   compactTradeItemWidthMap,
