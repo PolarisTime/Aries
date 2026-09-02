@@ -111,7 +111,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     {
       key: 'status',
       label: BILL_STATUS_LABEL,
-      type: 'select',
+      type: 'segmented',
       resetKeysOnChange: ['pendingOnly'],
       options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
     },
@@ -125,7 +125,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     {
       key: 'settlementCompanyId',
       label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
-      type: 'select',
+      type: 'segmented',
       options: getSettlementCompanyOptions,
     },
     {

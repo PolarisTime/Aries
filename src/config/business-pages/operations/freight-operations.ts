@@ -92,7 +92,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         key: 'status',
         label: AUDIT_STATUS_LABEL,
-        type: 'select',
+        type: 'segmented',
         options: withDeletedDocumentStatus([
           {
             label: '草稿',
@@ -107,7 +107,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         key: 'settlementCompanyId',
         label: SETTLEMENT_COMPANY_LABEL,
-        type: 'select',
+        type: 'segmented',
         options: getSettlementCompanyOptions,
       },
       {

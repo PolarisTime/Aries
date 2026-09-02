@@ -102,13 +102,13 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     {
       key: 'status',
       label: BILL_STATUS_LABEL,
-      type: 'select',
+      type: 'segmented',
       options: buildDocumentStatusOptions('草稿', '已审核', '完成入库'),
     },
     {
       key: 'settlementCompanyId',
       label: '结算主体',
-      type: 'select',
+      type: 'segmented',
       options: getSettlementCompanyOptions,
     },
     {
