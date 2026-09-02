@@ -10,7 +10,6 @@ import {
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
-  getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type {
   ModuleItemColumnConfig,
@@ -138,21 +137,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       resetKeysOnChange: ['pendingOnly'],
       options: REFERENCE_STATUS_OPTIONS,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: SETTLEMENT_COMPANY_LABEL,
-      type: 'segmented',
-      options: getSettlementCompanyOptions,
-    },
-    {
-      key: 'productKeyword',
-      label: i18next.t('modules.pages.salesOrder.filterProductKeyword'),
-      type: 'input',
-      placeholder: i18next.t(
-        'modules.pages.salesOrder.placeholderProductKeyword',
-      ),
-      row: 2,
     },
     {
       key: 'projectId',

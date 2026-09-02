@@ -102,20 +102,6 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       options: buildDocumentStatusOptions('草稿', '已审核'),
     },
     {
-      key: 'settlementCompanyId',
-      label: '结算主体',
-      type: 'segmented',
-      options: getSettlementCompanyOptions,
-    },
-    {
-      key: 'productKeyword',
-      label: i18next.t('modules.pages.salesOutbound.filterProductKeyword'),
-      type: 'input',
-      placeholder: i18next.t(
-        'modules.pages.salesOutbound.placeholderProductKeyword',
-      ),
-    },
-    {
       key: 'projectId',
       label: i18next.t('modules.pages.salesOutbound.filterProjectName'),
       type: 'select',
