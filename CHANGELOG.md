@@ -1,3 +1,10 @@
+# [9.16.0](https://github.com/PolarisTime/Aries/compare/v9.15.0...v9.16.0) (2026-09-02)
+
+
+### Features
+
+* **filters:** 采购订单、采购入库与物流单筛选改用分段控制器 ([4acb744](https://github.com/PolarisTime/Aries/commit/4acb74448a8d5a5902f4faa2358704cde251ce16))
+
 # [9.15.0](https://github.com/PolarisTime/Aries/compare/v9.14.1...v9.15.0) (2026-09-02)
 
 
