@@ -1,3 +1,10 @@
+# [9.15.0](https://github.com/PolarisTime/Aries/compare/v9.14.1...v9.15.0) (2026-09-02)
+
+
+### Features
+
+* **filters:** 销售订单单据状态与结算主体改用分段控制器 ([33894e2](https://github.com/PolarisTime/Aries/commit/33894e26588d82f19b81c7d33b29d4f27dc5464c))
+
 ## [9.14.1](https://github.com/PolarisTime/Aries/compare/v9.14.0...v9.14.1) (2026-09-02)
 
 
