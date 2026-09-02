@@ -123,7 +123,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       key: 'status',
       label: BILL_STATUS_LABEL,
-      type: 'select',
+      type: 'segmented',
       resetKeysOnChange: ['pendingOnly'],
       options: buildDocumentStatusOptions(
         '草稿',
@@ -142,7 +142,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       key: 'settlementCompanyId',
       label: SETTLEMENT_COMPANY_LABEL,
-      type: 'select',
+      type: 'segmented',
       options: getSettlementCompanyOptions,
     },
     {
