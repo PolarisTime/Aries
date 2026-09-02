@@ -1,3 +1,10 @@
+# [9.17.0](https://github.com/PolarisTime/Aries/compare/v9.16.0...v9.17.0) (2026-09-02)
+
+
+### Features
+
+* **filters:** 销售订单与销售出库筛选移除商品关键字与结算主体 ([b9a6782](https://github.com/PolarisTime/Aries/commit/b9a67822eb054f1ac36d51f5b6841191b23b0e60))
+
 # [9.16.0](https://github.com/PolarisTime/Aries/compare/v9.15.0...v9.16.0) (2026-09-02)
 
 
