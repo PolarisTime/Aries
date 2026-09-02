@@ -1,3 +1,10 @@
+## [9.14.1](https://github.com/PolarisTime/Aries/compare/v9.14.0...v9.14.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **grid:** 查看明细按钮移动到复选框右侧 ([c553be1](https://github.com/PolarisTime/Aries/commit/c553be1ec7ebf771980ad1a7eb0392788024a392))
+
 # [9.14.0](https://github.com/PolarisTime/Aries/compare/v9.13.1...v9.14.0) (2026-09-02)
 
 
