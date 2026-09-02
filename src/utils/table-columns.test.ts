@@ -75,6 +75,27 @@ describe('mergeColumnOrder', () => {
     ])
   })
 
+  it('头部固定列始终保持在最前，即使历史顺序已将其排在其他位置', () => {
+    const allIds = ['detail-toggle', 'brand', 'category', 'amount', 'action']
+    const savedOrder = ['brand', 'detail-toggle', 'amount']
+
+    expect(
+      mergeColumnOrder(allIds, savedOrder, {
+        headId: 'detail-toggle',
+        tailId: 'action',
+      }),
+    ).toEqual(['detail-toggle', 'brand', 'amount', 'category', 'action'])
+  })
+
+  it('头部固定列不在保存顺序中时，从默认列追加后仍置于最前', () => {
+    const allIds = ['brand', 'detail-toggle', 'category', 'amount']
+    const savedOrder = ['brand', 'amount']
+
+    expect(
+      mergeColumnOrder(allIds, savedOrder, { headId: 'detail-toggle' }),
+    ).toEqual(['detail-toggle', 'brand', 'amount', 'category'])
+  })
+
   it('保存顺序为空时输出全部默认列', () => {
     const allIds = ['brand', 'category', 'amount']
 

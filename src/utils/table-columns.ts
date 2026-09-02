@@ -3,6 +3,8 @@
  * 业务网格与编辑器行项目两处表格复用同一规则，避免行为漂移。
  */
 export interface MergeColumnOrderOptions {
+  /** 追加到开头的固定列（如查看明细按钮列），保证始终排在业务数据之前。 */
+  headId?: string
   /** 追加到末尾的固定列（如操作列），保证始终排在业务数据之后。 */
   tailId?: string
   /** 剔除保存顺序中已不存在于当前列集合的非法 id。 */
@@ -30,6 +32,14 @@ export function mergeColumnOrder(
     if (index >= 0 && index !== merged.length - 1) {
       merged.splice(index, 1)
       merged.push(tailId)
+    }
+  }
+  const headId = options?.headId
+  if (headId) {
+    const index = merged.indexOf(headId)
+    if (index > 0) {
+      merged.splice(index, 1)
+      merged.unshift(headId)
     }
   }
   return merged

@@ -10,7 +10,11 @@ import {
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import { ACTION_COLUMN_WIDTH, useGridColumns } from '@/hooks/useGridColumns'
+import {
+  ACTION_COLUMN_WIDTH,
+  DETAIL_TOGGLE_COLUMN_ID,
+  useGridColumns,
+} from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
@@ -138,6 +142,7 @@ export function useBusinessGridTable({
     (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
   )
   const columnOrder = mergeColumnOrder(allColumnIds, savedOrder, {
+    headId: DETAIL_TOGGLE_COLUMN_ID,
     tailId: ACTIONS_COLUMN_ID,
   })
   const computedColumns = buildAntdColumns({
