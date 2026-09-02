@@ -1,4 +1,3 @@
-import { DownOutlined, UpOutlined } from '@ant-design/icons'
 import {
   Button,
   Col,
@@ -12,7 +11,7 @@ import {
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useId, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import {
@@ -68,10 +67,6 @@ function isSameFilterPreset(left: SearchParams, right: SearchParams) {
 function getFilterFieldLabelTargetId(field: ModuleFilterDefinition) {
   const fieldId = buildFormControlId('module-filter', field.key)
   return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
-}
-
-function isPrimaryFilter(field: ModuleFilterDefinition) {
-  return (field.row || 1) <= 1
 }
 
 function resolveFilterOptions(
@@ -238,8 +233,6 @@ export function ModuleFilterToolbar({
   onReset,
 }: Props) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
-  const secondaryRegionId = useId()
   const lastTextCommitAtRef = useRef(0)
   const optionRequirements = resolveMasterOptionRequirements(config.filters)
   const customerId = asString(filters.customerId).trim() || undefined
@@ -261,11 +254,6 @@ export function ModuleFilterToolbar({
   const gridFilters = sortedFilters.filter(
     (field) => field.type !== 'segmented',
   )
-  const primaryFilters = gridFilters.filter(isPrimaryFilter)
-  const secondaryFilters = gridFilters.filter(
-    (field) => !isPrimaryFilter(field),
-  )
-  const canExpand = secondaryFilters.length > 0
   const quickFilters = config.quickFilters || []
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
@@ -463,23 +451,9 @@ export function ModuleFilterToolbar({
             </Form.Item>
           </Col>
         ) : null}
-        {primaryFilters.map(renderFilterItem)}
+        {gridFilters.map(renderFilterItem)}
         <Col flex="auto" className="module-filter-actions-col">
           <Form.Item className="module-filter-actions">
-            {canExpand ? (
-              <Button
-                type="text"
-                icon={expanded ? <UpOutlined /> : <DownOutlined />}
-                iconPlacement="end"
-                aria-controls={secondaryRegionId}
-                aria-expanded={expanded}
-                onClick={() => setExpanded((value) => !value)}
-              >
-                <span>
-                  {expanded ? t('common.collapse') : t('common.expand')}
-                </span>
-              </Button>
-            ) : null}
             <Button
               className="module-filter-reset-button"
               icon={resolveModuleActionIcon('重置')}
@@ -490,15 +464,6 @@ export function ModuleFilterToolbar({
           </Form.Item>
         </Col>
       </Row>
-      {expanded && secondaryFilters.length ? (
-        <Row
-          gutter={[16, 16]}
-          className="module-filter-secondary-row"
-          id={secondaryRegionId}
-        >
-          {secondaryFilters.map(renderFilterItem)}
-        </Row>
-      ) : null}
     </Form>
   )
 }
