@@ -349,6 +349,30 @@ export function ModuleFilterToolbar({
     </Col>
   )
 
+  const renderQuickFilters = () => (
+    <Segmented
+      aria-label={t('modules.filter.quickFilters')}
+      value={activeQuickFilterKey}
+      options={quickFilters.map((filter) => ({
+        label: filter.label,
+        value: filter.key,
+      }))}
+      onChange={(value) => {
+        const selected = quickFilters.find(
+          (filter) => filter.key === String(value),
+        )
+        if (selected) {
+          onApplyFilters(
+            normalizeFilters({
+              ...defaultFilters,
+              ...selected.values,
+            }),
+          )
+        }
+      }}
+    />
+  )
+
   return (
     <Form
       colon={false}
@@ -384,33 +408,16 @@ export function ModuleFilterToolbar({
                 </div>
               )
             })}
+            {quickFilters.length ? (
+              <div className="module-filter-quick-group" key="quick-filters">
+                {renderQuickFilters()}
+              </div>
+            ) : null}
           </Space>
         </div>
       ) : null}
-      {quickFilters.length ? (
-        <div className="module-filter-quick-row">
-          <Segmented
-            aria-label={t('modules.filter.quickFilters')}
-            value={activeQuickFilterKey}
-            options={quickFilters.map((filter) => ({
-              label: filter.label,
-              value: filter.key,
-            }))}
-            onChange={(value) => {
-              const selected = quickFilters.find(
-                (filter) => filter.key === String(value),
-              )
-              if (selected) {
-                onApplyFilters(
-                  normalizeFilters({
-                    ...defaultFilters,
-                    ...selected.values,
-                  }),
-                )
-              }
-            }}
-          />
-        </div>
+      {!segmentedFilters.length && quickFilters.length ? (
+        <div className="module-filter-quick-row">{renderQuickFilters()}</div>
       ) : null}
       <Row gutter={[16, 16]}>
         {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (

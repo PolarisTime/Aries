@@ -1850,18 +1850,7 @@
   box-shadow: 0 1px 0 var(--theme-border-subtle);
 }
 
-.module-filter-quick-row {
-  max-width: 100%;
-  margin-bottom: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-
-.module-filter-quick-row > .ant-segmented {
-  min-width: max-content;
-}
-
+.module-filter-quick-row,
 .module-filter-segmented-row {
   max-width: 100%;
   margin-bottom: 8px;
@@ -1870,7 +1859,13 @@
   scrollbar-width: thin;
 }
 
-.module-filter-segmented-group {
+.module-filter-quick-row > .ant-segmented,
+.module-filter-quick-group > .ant-segmented {
+  min-width: max-content;
+}
+
+.module-filter-segmented-group,
+.module-filter-quick-group {
   display: inline-flex;
   align-items: center;
   min-width: max-content;
