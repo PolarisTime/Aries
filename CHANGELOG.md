@@ -1,3 +1,15 @@
+# [9.14.0](https://github.com/PolarisTime/Aries/compare/v9.13.1...v9.14.0) (2026-09-02)
+
+
+### Bug Fixes
+
+* **orders:** 被引用时才显示引用状态图标 ([a180c4b](https://github.com/PolarisTime/Aries/commit/a180c4b4fa5a00d66df6aefae8335a3a6f11b289))
+
+
+### Features
+
+* **filters:** 增加订单关联状态筛选 ([86c0ffe](https://github.com/PolarisTime/Aries/commit/86c0ffec264989de99a6ab3e50c3d0cbc187bd85))
+
 ## [9.13.1](https://github.com/PolarisTime/Aries/compare/v9.13.0...v9.13.1) (2026-09-01)
 
 
