@@ -1,3 +1,10 @@
+## [9.17.1](https://github.com/PolarisTime/Aries/compare/v9.17.0...v9.17.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **filters:** 合并快捷筛选与分段控制器避免重复行 ([6fd835c](https://github.com/PolarisTime/Aries/commit/6fd835c3aab2adaa0a619ba620594e0bbf2736b6))
+
 # [9.17.0](https://github.com/PolarisTime/Aries/compare/v9.16.0...v9.17.0) (2026-09-02)
 
 
