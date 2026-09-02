@@ -1,8 +1,18 @@
 import { DownOutlined, UpOutlined } from '@ant-design/icons'
-import { Button, DatePicker, Form, Input, Segmented, Select } from 'antd'
+import {
+  Button,
+  Col,
+  DatePicker,
+  Form,
+  Input,
+  Row,
+  Segmented,
+  Select,
+  Space,
+} from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useId, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import {
@@ -26,6 +36,9 @@ import { asString } from '@/utils/type-narrowing'
 import {
   buildNextFilters,
   normalizeFilters,
+  resolveSegmentedFilterValue,
+  SEGMENTED_ALL_VALUE,
+  toSegmentedOptions,
 } from '@/views/modules/components/module-filter-utils'
 
 interface Props {
@@ -61,6 +74,38 @@ function isPrimaryFilter(field: ModuleFilterDefinition) {
   return (field.row || 1) <= 1
 }
 
+function resolveFilterOptions(
+  field: ModuleFilterDefinition,
+  filters: SearchParams,
+  projectOptions: readonly ProjectOption[],
+): ModuleFilterOptionEntry[] {
+  const rawOptions =
+    typeof field.options === 'function'
+      ? field.options === getCustomerProjectOptions
+        ? getCustomerProjectOptions(filters, projectOptions)
+        : field.options(filters)
+      : field.options || []
+
+  return rawOptions.map((option: ModuleFilterOptionEntry) => {
+    if ('options' in option) {
+      const group = option
+      return {
+        label: group.label,
+        options: group.options.map((item: ModuleFilterOption) => ({
+          label: item.label,
+          value: item.value,
+        })),
+      }
+    }
+
+    const entry = option
+    return {
+      label: entry.label,
+      value: entry.value,
+    }
+  })
+}
+
 function ModuleFilterField({
   field,
   filters,
@@ -80,34 +125,29 @@ function ModuleFilterField({
 }) {
   const { t } = useTranslation()
   const fieldId = buildFormControlId('module-filter', field.key)
-
-  const resolveOptions = () => {
-    const rawOptions =
-      typeof field.options === 'function'
-        ? field.options === getCustomerProjectOptions
-          ? getCustomerProjectOptions(filters, projectOptions)
-          : field.options(filters)
-        : field.options || []
-
-    return rawOptions.map((option: ModuleFilterOptionEntry) => {
-      if ('options' in option) {
-        const group = option
-        return {
-          label: group.label,
-          options: group.options.map((item: ModuleFilterOption) => ({
-            label: item.label,
-            value: item.value,
-          })),
-        }
-      }
-
-      const entry = option
-      return {
-        label: entry.label,
-        value: entry.value,
-      }
-    })
-  }
+  const datePresets = useMemo<
+    { label: string; value: [Dayjs, Dayjs] }[]
+  >(() => {
+    const today = dayjs()
+    return [
+      {
+        label: t('modules.filter.today'),
+        value: [today, today],
+      },
+      {
+        label: t('modules.filter.last7Days'),
+        value: [today.subtract(6, 'day'), today],
+      },
+      {
+        label: t('modules.filter.last30Days'),
+        value: [today.subtract(29, 'day'), today],
+      },
+      {
+        label: t('modules.filter.thisMonth'),
+        value: [today.startOf('month'), today.endOf('month')],
+      },
+    ]
+  }, [t])
 
   if (field.type === 'select') {
     return (
@@ -115,6 +155,7 @@ function ModuleFilterField({
         id={fieldId}
         aria-label={field.label}
         allowClear
+        style={{ width: '100%' }}
         placeholder={
           field.placeholder ||
           t('modules.filter.selectPlaceholder', { label: field.label })
@@ -126,7 +167,7 @@ function ModuleFilterField({
             : undefined
         }
         onChange={(value) => onCommitFilter(field.key, value)}
-        options={resolveOptions()}
+        options={resolveFilterOptions(field, filters, projectOptions)}
       />
     )
   }
@@ -147,7 +188,8 @@ function ModuleFilterField({
         aria-label={field.label}
         value={rangeValue}
         format={DISPLAY_DATE_FORMAT}
-        className="w-full"
+        presets={datePresets}
+        style={{ width: '100%' }}
         onChange={(dates) => {
           const nextValue =
             dates?.[0] && dates[1]
@@ -166,6 +208,7 @@ function ModuleFilterField({
       id={fieldId}
       name={field.key}
       allowClear
+      style={{ width: '100%' }}
       aria-keyshortcuts="Enter"
       suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
       placeholder={
@@ -212,14 +255,16 @@ export function ModuleFilterToolbar({
   const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
-  const primaryCapacity = 4
-  const primaryCandidateFilters = sortedFilters.filter(isPrimaryFilter)
-  const firstRowFilters = primaryCandidateFilters.slice(0, primaryCapacity)
-  const overflowFilters = primaryCandidateFilters.slice(primaryCapacity)
-  const secondaryFilters = [
-    ...overflowFilters,
-    ...sortedFilters.filter((field) => !isPrimaryFilter(field)),
-  ]
+  const segmentedFilters = sortedFilters.filter(
+    (field) => field.type === 'segmented',
+  )
+  const gridFilters = sortedFilters.filter(
+    (field) => field.type !== 'segmented',
+  )
+  const primaryFilters = gridFilters.filter(isPrimaryFilter)
+  const secondaryFilters = gridFilters.filter(
+    (field) => !isPrimaryFilter(field),
+  )
   const canExpand = secondaryFilters.length > 0
   const quickFilters = config.quickFilters || []
   const activeQuickFilterKey = quickFilters.find((filter) =>
@@ -235,6 +280,22 @@ export function ModuleFilterToolbar({
   ) => {
     onUpdateFilter(key, value)
     onApplyFilters(buildNextFilters(submittedFilters, key, value, resetKeys))
+  }
+
+  const commitSegmentedFilter = (
+    field: ModuleFilterDefinition,
+    rawValue: string,
+  ) => {
+    const value = rawValue === SEGMENTED_ALL_VALUE ? undefined : rawValue
+    onUpdateFilter(field.key, value)
+    onApplyFilters(
+      buildNextFilters(
+        submittedFilters,
+        field.key,
+        value,
+        field.resetKeysOnChange,
+      ),
+    )
   }
 
   const commitTextFilter = (key: string, value: string) => {
@@ -265,7 +326,7 @@ export function ModuleFilterToolbar({
   }
 
   const renderFilterItem = (field: ModuleFilterDefinition) => (
-    <div key={field.key} className="module-filter-field">
+    <Col key={field.key} xs={24} sm={12} xl={6} className="module-filter-field">
       <Form.Item
         {...buildLabeledFormItemProps({
           label: padLabel(field.label),
@@ -285,7 +346,7 @@ export function ModuleFilterToolbar({
           projectOptions={projectOptions}
         />
       </Form.Item>
-    </div>
+    </Col>
   )
 
   return (
@@ -294,6 +355,38 @@ export function ModuleFilterToolbar({
       className="module-filter-toolbar"
       aria-label={t('modules.filter.conditions')}
     >
+      {segmentedFilters.length ? (
+        <div className="module-filter-segmented-row">
+          <Space size={32} wrap>
+            {segmentedFilters.map((field) => {
+              const labelId = buildFormControlId('module-filter', field.key)
+              return (
+                <div className="module-filter-segmented-group" key={field.key}>
+                  <span id={labelId} className="module-filter-segmented-label">
+                    {field.label}:
+                  </span>
+                  <Segmented
+                    aria-labelledby={labelId}
+                    options={[
+                      {
+                        label: t('modules.filter.all'),
+                        value: SEGMENTED_ALL_VALUE,
+                      },
+                      ...toSegmentedOptions(
+                        resolveFilterOptions(field, filters, projectOptions),
+                      ),
+                    ]}
+                    value={resolveSegmentedFilterValue(filters[field.key])}
+                    onChange={(value) =>
+                      commitSegmentedFilter(field, String(value))
+                    }
+                  />
+                </div>
+              )
+            })}
+          </Space>
+        </div>
+      ) : null}
       {quickFilters.length ? (
         <div className="module-filter-quick-row">
           <Segmented
@@ -319,79 +412,85 @@ export function ModuleFilterToolbar({
           />
         </div>
       ) : null}
-      <div className="module-filter-main-row">
-        <div className="module-filter-fields-grid">
-          {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (
-            <div className="module-filter-field">
-              <Form.Item
-                {...buildLabeledFormItemProps({
-                  label: padLabel(t('common.keyword')),
-                  htmlFor: buildFormControlId('module-filter', 'keyword'),
-                })}
-                className="module-filter-item"
-              >
-                <Input
-                  id={buildFormControlId('module-filter', 'keyword')}
-                  name="keyword"
-                  allowClear
-                  aria-keyshortcuts="Enter"
-                  suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
-                  placeholder={t('common.pleaseInput')}
-                  value={asString(filters.keyword)}
-                  onChange={(event) =>
-                    onUpdateFilter('keyword', event.target.value)
-                  }
-                  onBlur={(event) => {
-                    if (
-                      event.target.value.trim() ===
-                      asString(submittedFilters.keyword).trim()
-                    ) {
-                      return
-                    }
-                    commitTextFilter('keyword', event.target.value)
-                  }}
-                  onPressEnter={(event) =>
-                    commitTextFilter('keyword', event.currentTarget.value)
-                  }
-                />
-              </Form.Item>
-            </div>
-          ) : null}
-          {firstRowFilters.map(renderFilterItem)}
-        </div>
-        <Form.Item className="module-filter-actions">
-          {canExpand ? (
-            <Button
-              type="text"
-              icon={expanded ? <UpOutlined /> : <DownOutlined />}
-              iconPlacement="end"
-              aria-controls={secondaryRegionId}
-              aria-expanded={expanded}
-              onClick={() => setExpanded((value) => !value)}
-            >
-              <span>
-                {expanded ? t('common.collapse') : t('common.expand')}
-              </span>
-            </Button>
-          ) : null}
-          <Button
-            className="module-filter-reset-button"
-            icon={resolveModuleActionIcon('重置')}
-            onClick={onReset}
+      <Row gutter={[16, 16]}>
+        {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (
+          <Col
+            key="keyword"
+            xs={24}
+            sm={12}
+            xl={6}
+            className="module-filter-field"
           >
-            {t('common.reset')}
-          </Button>
-        </Form.Item>
-      </div>
+            <Form.Item
+              {...buildLabeledFormItemProps({
+                label: padLabel(t('common.keyword')),
+                htmlFor: buildFormControlId('module-filter', 'keyword'),
+              })}
+              className="module-filter-item"
+            >
+              <Input
+                id={buildFormControlId('module-filter', 'keyword')}
+                name="keyword"
+                allowClear
+                style={{ width: '100%' }}
+                aria-keyshortcuts="Enter"
+                suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
+                placeholder={t('common.pleaseInput')}
+                value={asString(filters.keyword)}
+                onChange={(event) =>
+                  onUpdateFilter('keyword', event.target.value)
+                }
+                onBlur={(event) => {
+                  if (
+                    event.target.value.trim() ===
+                    asString(submittedFilters.keyword).trim()
+                  ) {
+                    return
+                  }
+                  commitTextFilter('keyword', event.target.value)
+                }}
+                onPressEnter={(event) =>
+                  commitTextFilter('keyword', event.currentTarget.value)
+                }
+              />
+            </Form.Item>
+          </Col>
+        ) : null}
+        {primaryFilters.map(renderFilterItem)}
+        <Col flex="auto" className="module-filter-actions-col">
+          <Form.Item className="module-filter-actions">
+            {canExpand ? (
+              <Button
+                type="text"
+                icon={expanded ? <UpOutlined /> : <DownOutlined />}
+                iconPlacement="end"
+                aria-controls={secondaryRegionId}
+                aria-expanded={expanded}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                <span>
+                  {expanded ? t('common.collapse') : t('common.expand')}
+                </span>
+              </Button>
+            ) : null}
+            <Button
+              className="module-filter-reset-button"
+              icon={resolveModuleActionIcon('重置')}
+              onClick={onReset}
+            >
+              {t('common.reset')}
+            </Button>
+          </Form.Item>
+        </Col>
+      </Row>
       {expanded && secondaryFilters.length ? (
-        <div
-          className="module-filter-secondary-row module-filter-main-row"
+        <Row
+          gutter={[16, 16]}
+          className="module-filter-secondary-row"
           id={secondaryRegionId}
         >
-          <div className="module-filter-fields-grid module-filter-secondary-grid">
-            {secondaryFilters.map(renderFilterItem)}
-          </div>
-        </div>
+          {secondaryFilters.map(renderFilterItem)}
+        </Row>
       ) : null}
     </Form>
   )

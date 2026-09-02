@@ -12,7 +12,7 @@ export type ModuleColumnType =
   | 'count'
   | 'boolean'
 
-export type ModuleFilterType = 'input' | 'select' | 'dateRange'
+export type ModuleFilterType = 'input' | 'select' | 'dateRange' | 'segmented'
 
 export type ModuleFormFieldType =
   | 'input'

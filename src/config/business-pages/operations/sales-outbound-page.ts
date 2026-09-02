@@ -98,13 +98,13 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     {
       key: 'status',
       label: BILL_STATUS_LABEL,
-      type: 'select',
+      type: 'segmented',
       options: buildDocumentStatusOptions('草稿', '已审核'),
     },
     {
       key: 'settlementCompanyId',
       label: '结算主体',
-      type: 'select',
+      type: 'segmented',
       options: getSettlementCompanyOptions,
     },
     {
@@ -114,20 +114,17 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       placeholder: i18next.t(
         'modules.pages.salesOutbound.placeholderProductKeyword',
       ),
-      row: 2,
     },
     {
       key: 'projectId',
       label: i18next.t('modules.pages.salesOutbound.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
-      row: 2,
     },
     {
       key: 'outboundDate',
       label: i18next.t('modules.pages.salesOutbound.filterOutboundDate'),
       type: 'dateRange',
-      row: 2,
     },
   ],
   columns: [

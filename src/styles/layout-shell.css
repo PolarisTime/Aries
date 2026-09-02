@@ -1827,7 +1827,6 @@
 }
 
 .module-filter-toolbar {
-  --module-filter-actions-width: 216px;
   --module-filter-label-width: 104px;
   padding-bottom: 10px;
 }
@@ -1863,21 +1862,24 @@
   min-width: max-content;
 }
 
-.module-filter-main-row {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr))
-    var(--module-filter-actions-width);
-  align-items: start;
-  gap: 8px 12px;
+.module-filter-segmented-row {
+  max-width: 100%;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
-.module-filter-fields-grid {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 1 / 5;
-  gap: 8px 12px;
-  min-width: 0;
+.module-filter-segmented-group {
+  display: inline-flex;
+  align-items: center;
+  min-width: max-content;
+}
+
+.module-filter-segmented-label {
+  margin-right: 8px;
+  color: var(--theme-text-muted);
+  white-space: nowrap;
 }
 
 .module-filter-field {
@@ -1933,16 +1935,11 @@
 }
 
 .module-filter-actions {
-  grid-column: 5;
   width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   margin-bottom: 0;
-}
-
-.module-filter-actions-placeholder {
-  width: var(--module-filter-actions-width);
 }
 
 .module-filter-actions .ant-form-item-control-input {
@@ -1961,10 +1958,6 @@
 .module-filter-reset-button {
   border-color: var(--ant-color-border);
   color: var(--ant-color-text-secondary);
-}
-
-.module-filter-secondary-row {
-  padding-top: 8px;
 }
 
 .module-table-toolbar {
