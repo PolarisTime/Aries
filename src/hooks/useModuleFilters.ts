@@ -63,7 +63,9 @@ export function buildDefaultModuleFilters(
   const dateRangeField = config?.filters.find(
     (field) => field.type === 'dateRange',
   )
-  if (!dateRangeField) return defaults
+  if (!dateRangeField || dateRangeField.defaultDateRange === false) {
+    return defaults
+  }
 
   const today = new Date()
   const start = shiftCalendarMonths(

@@ -62,4 +62,8 @@ describe('buildDefaultModuleFilters', () => {
 
     vi.useRealTimers()
   })
+
+  it('supports an empty default date range', () => {
+    expect(buildDefaultModuleFilters(createDateFilterConfig(false))).toEqual({})
+  })
 })

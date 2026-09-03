@@ -1,4 +1,4 @@
-import { Button, Col, Form, Input, Row, Segmented, Space } from 'antd'
+import { Button, Form, Input, Radio, Space } from 'antd'
 import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -151,7 +151,12 @@ export function ModuleFilterToolbar({
   }
 
   const renderFilterItem = (field: ModuleFilterDefinition) => (
-    <Col key={field.key} xs={24} sm={12} xl={6} className="module-filter-field">
+    <div
+      key={field.key}
+      className={`module-filter-field${
+        field.type === 'dateRange' ? ' module-filter-field-fluid' : ''
+      }`}
+    >
       <Form.Item
         {...buildLabeledFormItemProps({
           label: padLabel(field.label),
@@ -172,7 +177,7 @@ export function ModuleFilterToolbar({
           projectOptions={projectOptions}
         />
       </Form.Item>
-    </Col>
+    </div>
   )
 
   const renderQuickDateFilters = () =>
@@ -186,8 +191,10 @@ export function ModuleFilterToolbar({
     ) : null
 
   const renderQuickFilters = () => (
-    <Segmented
+    <Radio.Group
       aria-label={t('modules.filter.quickFilters')}
+      buttonStyle="solid"
+      optionType="button"
       value={activeQuickFilterKey}
       options={quickFilters.map((filter) => ({
         label: filter.label,
@@ -242,8 +249,10 @@ export function ModuleFilterToolbar({
                     >
                       {field.label}:
                     </span>
-                    <Segmented
+                    <Radio.Group
                       aria-labelledby={labelId}
+                      buttonStyle="solid"
+                      optionType="button"
                       options={[
                         {
                           label: t('modules.filter.all'),
@@ -278,15 +287,9 @@ export function ModuleFilterToolbar({
           {quickFilters.length ? renderQuickFilters() : null}
         </div>
       ) : null}
-      <Row gutter={[16, 16]}>
+      <div className="module-filter-form-row">
         {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (
-          <Col
-            key="keyword"
-            xs={24}
-            sm={12}
-            xl={6}
-            className="module-filter-field"
-          >
+          <div key="keyword" className="module-filter-field">
             <Form.Item
               {...buildLabeledFormItemProps({
                 label: padLabel(t('common.keyword')),
@@ -320,17 +323,17 @@ export function ModuleFilterToolbar({
                 }
               />
             </Form.Item>
-          </Col>
+          </div>
         ) : null}
         {gridFilters.map(renderFilterItem)}
         {segmentedFilters.length ? null : (
-          <Col flex="auto" className="module-filter-actions-col">
+          <div className="module-filter-actions-col">
             <Form.Item className="module-filter-actions">
               {renderResetButton()}
             </Form.Item>
-          </Col>
+          </div>
         )}
-      </Row>
+      </div>
     </Form>
   )
 }

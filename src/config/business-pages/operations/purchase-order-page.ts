@@ -102,22 +102,23 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
     },
     {
-      key: 'referenced',
-      label: REFERENCE_STATUS_LABEL,
-      type: 'segmented',
-      options: REFERENCE_STATUS_OPTIONS,
-    },
-    {
       key: 'settlementCompanyId',
       label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
       type: 'segmented',
       options: getSettlementCompanyOptions,
     },
     {
+      key: 'referenced',
+      label: REFERENCE_STATUS_LABEL,
+      type: 'segmented',
+      options: REFERENCE_STATUS_OPTIONS,
+    },
+    {
       key: 'orderDate',
       label: i18next.t('modules.pages.purchaseOrder.filterOrderDate'),
       type: 'dateRange',
       row: 2,
+      defaultDateRange: false,
     },
   ],
   columns: [

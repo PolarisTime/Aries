@@ -77,11 +77,13 @@ export interface ModuleFilterDefinition {
   placeholder?: string
   /** 当前筛选值变化时一并清理的级联筛选字段。 */
   resetKeysOnChange?: string[]
-  /** 仅用于日期范围筛选；未配置时默认今天往前 3 个月至今天。 */
-  defaultDateRange?: {
-    monthsBefore?: number
-    monthsAfter?: number
-  }
+  /** 仅用于日期范围筛选；false 表示默认不回填日期范围。 */
+  defaultDateRange?:
+    | false
+    | {
+        monthsBefore?: number
+        monthsAfter?: number
+      }
   options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
   row?: number
 }

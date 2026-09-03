@@ -1,4 +1,4 @@
-import { Segmented } from 'antd'
+import { Radio } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleFilterDefinition } from '@/types/module-page'
@@ -34,8 +34,10 @@ export function ModuleQuickDateFilter({
       <span id={labelId} className="module-filter-segmented-label">
         {field.label}:
       </span>
-      <Segmented
+      <Radio.Group
         aria-labelledby={labelId}
+        buttonStyle="solid"
+        optionType="button"
         options={[
           {
             label: t('modules.filter.all'),
