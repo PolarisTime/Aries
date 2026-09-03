@@ -1,3 +1,10 @@
+# [9.19.0](https://github.com/PolarisTime/Aries/compare/v9.18.0...v9.19.0) (2026-09-03)
+
+
+### Features
+
+* **filters:** 移除重复快捷筛选并增加日期快捷选择 ([5ce70b4](https://github.com/PolarisTime/Aries/commit/5ce70b45d51575a8251c6def1f27bf5d6759b132))
+
 # [9.18.0](https://github.com/PolarisTime/Aries/compare/v9.17.1...v9.18.0) (2026-09-02)
 
 
