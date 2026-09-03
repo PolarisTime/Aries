@@ -1,3 +1,10 @@
+# [9.20.0](https://github.com/PolarisTime/Aries/compare/v9.19.1...v9.20.0) (2026-09-03)
+
+
+### Features
+
+* **filters:** 关联状态改用分段控制器并调整重置位置 ([8a375a8](https://github.com/PolarisTime/Aries/commit/8a375a86300995887ceb72e731c3165f20cc8a51))
+
 ## [9.19.1](https://github.com/PolarisTime/Aries/compare/v9.19.0...v9.19.1) (2026-09-03)
 
 
