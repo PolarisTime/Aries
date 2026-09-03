@@ -1,37 +1,24 @@
-import {
-  Button,
-  Col,
-  DatePicker,
-  Form,
-  Input,
-  Row,
-  Segmented,
-  Select,
-  Space,
-} from 'antd'
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
+import { Button, Col, Form, Input, Row, Segmented, Space } from 'antd'
 import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ProjectOption } from '@/api/master/project-options'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
-import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleFilterDefinition,
-  ModuleFilterOption,
-  ModuleFilterOptionEntry,
   ModulePageConfig,
 } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
-import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import { padLabel } from '@/utils/label-utils'
 import { asString } from '@/utils/type-narrowing'
+import { ModuleFilterField } from '@/views/modules/components/ModuleFilterField'
+import { ModuleQuickDateFilter } from '@/views/modules/components/ModuleQuickDateFilter'
+import { buildDateRangePresets } from '@/views/modules/components/module-date-range'
+import { resolveFilterOptions } from '@/views/modules/components/module-filter-options'
 import {
   buildNextFilters,
   normalizeFilters,
@@ -52,51 +39,6 @@ interface Props {
 
 const EMPTY_FILTERS: SearchParams = {}
 
-interface ModuleDateRangePreset {
-  key: string
-  label: string
-  value: [Dayjs, Dayjs]
-}
-
-function buildDateRangePresets(t: ReturnType<typeof useTranslation>['t']) {
-  const today = dayjs()
-  return [
-    {
-      key: 'today',
-      label: t('modules.filter.today'),
-      value: [today, today] as [Dayjs, Dayjs],
-    },
-    {
-      key: 'last7Days',
-      label: t('modules.filter.last7Days'),
-      value: [today.subtract(6, 'day'), today] as [Dayjs, Dayjs],
-    },
-    {
-      key: 'last30Days',
-      label: t('modules.filter.last30Days'),
-      value: [today.subtract(29, 'day'), today] as [Dayjs, Dayjs],
-    },
-    {
-      key: 'thisMonth',
-      label: t('modules.filter.thisMonth'),
-      value: [today.startOf('month'), today.endOf('month')] as [Dayjs, Dayjs],
-    },
-  ]
-}
-
-function resolveDateRangePresetKey(
-  value: unknown,
-  presets: readonly ModuleDateRangePreset[],
-) {
-  if (!Array.isArray(value) || value.length !== 2) return undefined
-  const serializedValue = `${value[0]}|${value[1]}`
-  return presets.find(
-    (preset) =>
-      `${preset.value[0].format('YYYY-MM-DD')}|${preset.value[1].format('YYYY-MM-DD')}` ===
-      serializedValue,
-  )?.key
-}
-
 function isSameFilterPreset(left: SearchParams, right: SearchParams) {
   const leftEntries = Object.entries(normalizeFilters(left)).toSorted()
   const rightEntries = Object.entries(normalizeFilters(right)).toSorted()
@@ -112,139 +54,6 @@ function isSameFilterPreset(left: SearchParams, right: SearchParams) {
 function getFilterFieldLabelTargetId(field: ModuleFilterDefinition) {
   const fieldId = buildFormControlId('module-filter', field.key)
   return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
-}
-
-function resolveFilterOptions(
-  field: ModuleFilterDefinition,
-  filters: SearchParams,
-  projectOptions: readonly ProjectOption[],
-): ModuleFilterOptionEntry[] {
-  const rawOptions =
-    typeof field.options === 'function'
-      ? field.options === getCustomerProjectOptions
-        ? getCustomerProjectOptions(filters, projectOptions)
-        : field.options(filters)
-      : field.options || []
-
-  return rawOptions.map((option: ModuleFilterOptionEntry) => {
-    if ('options' in option) {
-      const group = option
-      return {
-        label: group.label,
-        options: group.options.map((item: ModuleFilterOption) => ({
-          label: item.label,
-          value: item.value,
-        })),
-      }
-    }
-
-    const entry = option
-    return {
-      label: entry.label,
-      value: entry.value,
-    }
-  })
-}
-
-function ModuleFilterField({
-  field,
-  filters,
-  submittedFilters,
-  datePresets,
-  onUpdateFilter,
-  onCommitFilter,
-  onCommitTextFilter,
-  projectOptions,
-}: {
-  field: ModuleFilterDefinition
-  filters: SearchParams
-  submittedFilters: SearchParams
-  datePresets: readonly ModuleDateRangePreset[]
-  onUpdateFilter: (key: string, value: unknown) => void
-  onCommitFilter: (key: string, value: unknown) => void
-  onCommitTextFilter: (key: string, value: string) => void
-  projectOptions: readonly ProjectOption[]
-}) {
-  const { t } = useTranslation()
-  const fieldId = buildFormControlId('module-filter', field.key)
-
-  if (field.type === 'select') {
-    return (
-      <Select
-        id={fieldId}
-        aria-label={field.label}
-        allowClear
-        style={{ width: '100%' }}
-        placeholder={
-          field.placeholder ||
-          t('modules.filter.selectPlaceholder', { label: field.label })
-        }
-        value={
-          typeof filters[field.key] === 'string' ||
-          typeof filters[field.key] === 'number'
-            ? filters[field.key]
-            : undefined
-        }
-        onChange={(value) => onCommitFilter(field.key, value)}
-        options={resolveFilterOptions(field, filters, projectOptions)}
-      />
-    )
-  }
-
-  if (field.type === 'dateRange') {
-    const value = filters[field.key]
-    const rangeValue =
-      Array.isArray(value) && value.length === 2
-        ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [Dayjs, Dayjs])
-        : undefined
-
-    return (
-      <DatePicker.RangePicker
-        id={{
-          start: `${fieldId}-start`,
-          end: `${fieldId}-end`,
-        }}
-        aria-label={field.label}
-        value={rangeValue}
-        format={DISPLAY_DATE_FORMAT}
-        presets={datePresets.map(({ label, value }) => ({ label, value }))}
-        style={{ width: '100%' }}
-        onChange={(dates) => {
-          const nextValue =
-            dates?.[0] && dates[1]
-              ? [dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]
-              : undefined
-          onCommitFilter(field.key, nextValue)
-        }}
-      />
-    )
-  }
-
-  const committedValue = asString(submittedFilters[field.key])
-
-  return (
-    <Input
-      id={fieldId}
-      name={field.key}
-      allowClear
-      style={{ width: '100%' }}
-      aria-keyshortcuts="Enter"
-      suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
-      placeholder={
-        field.placeholder ||
-        t('modules.filter.inputPlaceholder', { label: field.label })
-      }
-      value={asString(filters[field.key])}
-      onChange={(event) => onUpdateFilter(field.key, event.target.value)}
-      onBlur={(event) => {
-        if (event.target.value.trim() === committedValue.trim()) return
-        onCommitTextFilter(field.key, event.target.value)
-      }}
-      onPressEnter={(event) =>
-        onCommitTextFilter(field.key, event.currentTarget.value)
-      }
-    />
-  )
 }
 
 export function ModuleFilterToolbar({
@@ -366,54 +175,15 @@ export function ModuleFilterToolbar({
     </Col>
   )
 
-  const renderQuickDateFilters = () => {
-    if (!dateRangeFilter) return null
-    const labelId = buildFormControlId(
-      'module-filter',
-      `quick-date-${dateRangeFilter.key}`,
-    )
-    const activePresetKey = resolveDateRangePresetKey(
-      filters[dateRangeFilter.key],
-      datePresets,
-    )
-    return (
-      <div
-        className="module-filter-segmented-group"
-        key={`quick-date-${dateRangeFilter.key}`}
-      >
-        <span id={labelId} className="module-filter-segmented-label">
-          {dateRangeFilter.label}:
-        </span>
-        <Segmented
-          aria-labelledby={labelId}
-          options={[
-            {
-              label: t('modules.filter.all'),
-              value: SEGMENTED_ALL_VALUE,
-            },
-            ...datePresets.map((preset) => ({
-              label: preset.label,
-              value: preset.key,
-            })),
-          ]}
-          value={
-            activePresetKey ||
-            (Array.isArray(filters[dateRangeFilter.key])
-              ? undefined
-              : SEGMENTED_ALL_VALUE)
-          }
-          onChange={(value) => {
-            const presetKey = String(value)
-            const preset = datePresets.find((item) => item.key === presetKey)
-            commitFilter(
-              dateRangeFilter.key,
-              preset?.value.map((date) => date.format('YYYY-MM-DD')),
-            )
-          }}
-        />
-      </div>
-    )
-  }
+  const renderQuickDateFilters = () =>
+    dateRangeFilter ? (
+      <ModuleQuickDateFilter
+        field={dateRangeFilter}
+        filters={filters}
+        datePresets={datePresets}
+        onCommitFilter={(key, value) => commitFilter(key, value)}
+      />
+    ) : null
 
   const renderQuickFilters = () => (
     <Segmented
