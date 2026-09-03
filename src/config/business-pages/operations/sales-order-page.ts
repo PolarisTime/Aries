@@ -93,18 +93,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   primaryNoKey: 'orderNo',
   defaultFilters: { pendingOnly: 'true' },
   actions: actionSet,
-  quickFilters: [
-    {
-      key: 'pending',
-      label: i18next.t('modules.pages.salesOrder.pendingOnly'),
-      values: { pendingOnly: 'true' },
-    },
-    {
-      key: 'all',
-      label: i18next.t('modules.pages.salesOrder.filterAll'),
-      values: { pendingOnly: undefined },
-    },
-  ],
   filters: [
     {
       key: 'keyword',

@@ -52,6 +52,51 @@ interface Props {
 
 const EMPTY_FILTERS: SearchParams = {}
 
+interface ModuleDateRangePreset {
+  key: string
+  label: string
+  value: [Dayjs, Dayjs]
+}
+
+function buildDateRangePresets(t: ReturnType<typeof useTranslation>['t']) {
+  const today = dayjs()
+  return [
+    {
+      key: 'today',
+      label: t('modules.filter.today'),
+      value: [today, today] as [Dayjs, Dayjs],
+    },
+    {
+      key: 'last7Days',
+      label: t('modules.filter.last7Days'),
+      value: [today.subtract(6, 'day'), today] as [Dayjs, Dayjs],
+    },
+    {
+      key: 'last30Days',
+      label: t('modules.filter.last30Days'),
+      value: [today.subtract(29, 'day'), today] as [Dayjs, Dayjs],
+    },
+    {
+      key: 'thisMonth',
+      label: t('modules.filter.thisMonth'),
+      value: [today.startOf('month'), today.endOf('month')] as [Dayjs, Dayjs],
+    },
+  ]
+}
+
+function resolveDateRangePresetKey(
+  value: unknown,
+  presets: readonly ModuleDateRangePreset[],
+) {
+  if (!Array.isArray(value) || value.length !== 2) return undefined
+  const serializedValue = `${value[0]}|${value[1]}`
+  return presets.find(
+    (preset) =>
+      `${preset.value[0].format('YYYY-MM-DD')}|${preset.value[1].format('YYYY-MM-DD')}` ===
+      serializedValue,
+  )?.key
+}
+
 function isSameFilterPreset(left: SearchParams, right: SearchParams) {
   const leftEntries = Object.entries(normalizeFilters(left)).toSorted()
   const rightEntries = Object.entries(normalizeFilters(right)).toSorted()
@@ -105,6 +150,7 @@ function ModuleFilterField({
   field,
   filters,
   submittedFilters,
+  datePresets,
   onUpdateFilter,
   onCommitFilter,
   onCommitTextFilter,
@@ -113,6 +159,7 @@ function ModuleFilterField({
   field: ModuleFilterDefinition
   filters: SearchParams
   submittedFilters: SearchParams
+  datePresets: readonly ModuleDateRangePreset[]
   onUpdateFilter: (key: string, value: unknown) => void
   onCommitFilter: (key: string, value: unknown) => void
   onCommitTextFilter: (key: string, value: string) => void
@@ -120,29 +167,6 @@ function ModuleFilterField({
 }) {
   const { t } = useTranslation()
   const fieldId = buildFormControlId('module-filter', field.key)
-  const datePresets = useMemo<
-    { label: string; value: [Dayjs, Dayjs] }[]
-  >(() => {
-    const today = dayjs()
-    return [
-      {
-        label: t('modules.filter.today'),
-        value: [today, today],
-      },
-      {
-        label: t('modules.filter.last7Days'),
-        value: [today.subtract(6, 'day'), today],
-      },
-      {
-        label: t('modules.filter.last30Days'),
-        value: [today.subtract(29, 'day'), today],
-      },
-      {
-        label: t('modules.filter.thisMonth'),
-        value: [today.startOf('month'), today.endOf('month')],
-      },
-    ]
-  }, [t])
 
   if (field.type === 'select') {
     return (
@@ -183,7 +207,7 @@ function ModuleFilterField({
         aria-label={field.label}
         value={rangeValue}
         format={DISPLAY_DATE_FORMAT}
-        presets={datePresets}
+        presets={datePresets.map(({ label, value }) => ({ label, value }))}
         style={{ width: '100%' }}
         onChange={(dates) => {
           const nextValue =
@@ -251,10 +275,14 @@ export function ModuleFilterToolbar({
   const segmentedFilters = sortedFilters.filter(
     (field) => field.type === 'segmented',
   )
+  const dateRangeFilter = sortedFilters.find(
+    (field) => field.type === 'dateRange',
+  )
   const gridFilters = sortedFilters.filter(
     (field) => field.type !== 'segmented',
   )
   const quickFilters = config.quickFilters || []
+  const datePresets = useMemo(() => buildDateRangePresets(t), [t])
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
       ...defaultFilters,
@@ -326,6 +354,7 @@ export function ModuleFilterToolbar({
           field={field}
           filters={filters}
           submittedFilters={submittedFilters}
+          datePresets={datePresets}
           onUpdateFilter={onUpdateFilter}
           onCommitFilter={(key, value) =>
             commitFilter(key, value, field.resetKeysOnChange)
@@ -336,6 +365,55 @@ export function ModuleFilterToolbar({
       </Form.Item>
     </Col>
   )
+
+  const renderQuickDateFilters = () => {
+    if (!dateRangeFilter) return null
+    const labelId = buildFormControlId(
+      'module-filter',
+      `quick-date-${dateRangeFilter.key}`,
+    )
+    const activePresetKey = resolveDateRangePresetKey(
+      filters[dateRangeFilter.key],
+      datePresets,
+    )
+    return (
+      <div
+        className="module-filter-segmented-group"
+        key={`quick-date-${dateRangeFilter.key}`}
+      >
+        <span id={labelId} className="module-filter-segmented-label">
+          {dateRangeFilter.label}:
+        </span>
+        <Segmented
+          aria-labelledby={labelId}
+          options={[
+            {
+              label: t('modules.filter.all'),
+              value: SEGMENTED_ALL_VALUE,
+            },
+            ...datePresets.map((preset) => ({
+              label: preset.label,
+              value: preset.key,
+            })),
+          ]}
+          value={
+            activePresetKey ||
+            (Array.isArray(filters[dateRangeFilter.key])
+              ? undefined
+              : SEGMENTED_ALL_VALUE)
+          }
+          onChange={(value) => {
+            const presetKey = String(value)
+            const preset = datePresets.find((item) => item.key === presetKey)
+            commitFilter(
+              dateRangeFilter.key,
+              preset?.value.map((date) => date.format('YYYY-MM-DD')),
+            )
+          }}
+        />
+      </div>
+    )
+  }
 
   const renderQuickFilters = () => (
     <Segmented
@@ -396,6 +474,7 @@ export function ModuleFilterToolbar({
                 </div>
               )
             })}
+            {renderQuickDateFilters()}
             {quickFilters.length ? (
               <div className="module-filter-quick-group" key="quick-filters">
                 {renderQuickFilters()}
@@ -404,8 +483,11 @@ export function ModuleFilterToolbar({
           </Space>
         </div>
       ) : null}
-      {!segmentedFilters.length && quickFilters.length ? (
-        <div className="module-filter-quick-row">{renderQuickFilters()}</div>
+      {!segmentedFilters.length && (dateRangeFilter || quickFilters.length) ? (
+        <div className="module-filter-quick-row">
+          {renderQuickDateFilters()}
+          {quickFilters.length ? renderQuickFilters() : null}
+        </div>
       ) : null}
       <Row gutter={[16, 16]}>
         {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (
