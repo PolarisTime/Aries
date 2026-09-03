@@ -1854,9 +1854,24 @@
 .module-filter-segmented-row {
   max-width: 100%;
   margin-bottom: 8px;
+}
+
+.module-filter-segmented-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.module-filter-segmented-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+}
+
+.module-filter-segmented-row > .module-filter-reset-button {
+  flex: 0 0 auto;
 }
 
 .module-filter-quick-row > .ant-segmented,

@@ -8,6 +8,7 @@ describe('订单是否被关联筛选', () => {
     for (const config of [purchaseOrdersPageConfig, salesOrdersPageConfig]) {
       const filter = config.filters.find((item) => item.key === 'referenced')
       expect(filter?.key).toBe('referenced')
+      expect(filter?.type).toBe('segmented')
       const options = Array.isArray(filter?.options) ? filter.options : []
       expect(options).toHaveLength(2)
       expect(

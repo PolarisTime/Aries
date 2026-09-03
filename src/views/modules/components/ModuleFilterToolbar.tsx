@@ -209,6 +209,16 @@ export function ModuleFilterToolbar({
     />
   )
 
+  const renderResetButton = () => (
+    <Button
+      className="module-filter-reset-button"
+      icon={resolveModuleActionIcon('重置')}
+      onClick={onReset}
+    >
+      {t('common.reset')}
+    </Button>
+  )
+
   return (
     <Form
       colon={false}
@@ -217,40 +227,49 @@ export function ModuleFilterToolbar({
     >
       {segmentedFilters.length ? (
         <div className="module-filter-segmented-row">
-          <Space size={32} wrap>
-            {segmentedFilters.map((field) => {
-              const labelId = buildFormControlId('module-filter', field.key)
-              return (
-                <div className="module-filter-segmented-group" key={field.key}>
-                  <span id={labelId} className="module-filter-segmented-label">
-                    {field.label}:
-                  </span>
-                  <Segmented
-                    aria-labelledby={labelId}
-                    options={[
-                      {
-                        label: t('modules.filter.all'),
-                        value: SEGMENTED_ALL_VALUE,
-                      },
-                      ...toSegmentedOptions(
-                        resolveFilterOptions(field, filters, projectOptions),
-                      ),
-                    ]}
-                    value={resolveSegmentedFilterValue(filters[field.key])}
-                    onChange={(value) =>
-                      commitSegmentedFilter(field, String(value))
-                    }
-                  />
+          <div className="module-filter-segmented-scroll">
+            <Space size={32} wrap>
+              {segmentedFilters.map((field) => {
+                const labelId = buildFormControlId('module-filter', field.key)
+                return (
+                  <div
+                    className="module-filter-segmented-group"
+                    key={field.key}
+                  >
+                    <span
+                      id={labelId}
+                      className="module-filter-segmented-label"
+                    >
+                      {field.label}:
+                    </span>
+                    <Segmented
+                      aria-labelledby={labelId}
+                      options={[
+                        {
+                          label: t('modules.filter.all'),
+                          value: SEGMENTED_ALL_VALUE,
+                        },
+                        ...toSegmentedOptions(
+                          resolveFilterOptions(field, filters, projectOptions),
+                        ),
+                      ]}
+                      value={resolveSegmentedFilterValue(filters[field.key])}
+                      onChange={(value) =>
+                        commitSegmentedFilter(field, String(value))
+                      }
+                    />
+                  </div>
+                )
+              })}
+              {renderQuickDateFilters()}
+              {quickFilters.length ? (
+                <div className="module-filter-quick-group" key="quick-filters">
+                  {renderQuickFilters()}
                 </div>
-              )
-            })}
-            {renderQuickDateFilters()}
-            {quickFilters.length ? (
-              <div className="module-filter-quick-group" key="quick-filters">
-                {renderQuickFilters()}
-              </div>
-            ) : null}
-          </Space>
+              ) : null}
+            </Space>
+          </div>
+          {renderResetButton()}
         </div>
       ) : null}
       {!segmentedFilters.length && (dateRangeFilter || quickFilters.length) ? (
@@ -304,17 +323,13 @@ export function ModuleFilterToolbar({
           </Col>
         ) : null}
         {gridFilters.map(renderFilterItem)}
-        <Col flex="auto" className="module-filter-actions-col">
-          <Form.Item className="module-filter-actions">
-            <Button
-              className="module-filter-reset-button"
-              icon={resolveModuleActionIcon('重置')}
-              onClick={onReset}
-            >
-              {t('common.reset')}
-            </Button>
-          </Form.Item>
-        </Col>
+        {segmentedFilters.length ? null : (
+          <Col flex="auto" className="module-filter-actions-col">
+            <Form.Item className="module-filter-actions">
+              {renderResetButton()}
+            </Form.Item>
+          </Col>
+        )}
       </Row>
     </Form>
   )

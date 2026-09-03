@@ -120,7 +120,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       key: 'referenced',
       label: REFERENCE_STATUS_LABEL,
-      type: 'select',
+      type: 'segmented',
       options: REFERENCE_STATUS_OPTIONS,
     },
     {
