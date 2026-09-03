@@ -1,6 +1,5 @@
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import type { useTranslation } from 'react-i18next'
 
 export interface ModuleDateRangePreset {
   key: string
@@ -8,9 +7,7 @@ export interface ModuleDateRangePreset {
   value: [Dayjs, Dayjs]
 }
 
-export function buildDateRangePresets(
-  t: ReturnType<typeof useTranslation>['t'],
-) {
+export function buildDateRangePresets(t: (key: string) => string) {
   const today = dayjs()
   return [
     {

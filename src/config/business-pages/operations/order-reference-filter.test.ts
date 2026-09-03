@@ -13,7 +13,15 @@ describe('订单是否被关联筛选', () => {
       expect(
         options.map((option) => ('value' in option ? option.value : undefined)),
       ).toEqual(['true', 'false'])
-      expect(filter?.resetKeysOnChange).toEqual(['pendingOnly'])
+    }
+  })
+
+  it('订单状态分段不保留隐藏的待处理默认条件', () => {
+    for (const config of [purchaseOrdersPageConfig, salesOrdersPageConfig]) {
+      expect(config.defaultFilters?.pendingOnly).toBeUndefined()
+      expect(
+        config.filters.find((item) => item.key === 'status')?.resetKeysOnChange,
+      ).toBeUndefined()
     }
   })
 

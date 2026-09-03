@@ -91,7 +91,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   kicker: 'Sales',
   description: i18next.t('modules.pages.salesOrder.description'),
   primaryNoKey: 'orderNo',
-  defaultFilters: { pendingOnly: 'true' },
   actions: actionSet,
   filters: [
     {
@@ -111,7 +110,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'segmented',
-      resetKeysOnChange: ['pendingOnly'],
       options: buildDocumentStatusOptions(
         '草稿',
         '已审核',
@@ -123,7 +121,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       key: 'referenced',
       label: REFERENCE_STATUS_LABEL,
       type: 'select',
-      resetKeysOnChange: ['pendingOnly'],
       options: REFERENCE_STATUS_OPTIONS,
     },
     {

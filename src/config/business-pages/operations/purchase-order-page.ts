@@ -81,7 +81,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
   kicker: 'Purchase',
   description: i18next.t('modules.pages.purchaseOrder.description'),
   primaryNoKey: 'orderNo',
-  defaultFilters: { pendingOnly: 'true' },
   actions: actionSet,
   filters: [
     {
@@ -100,14 +99,12 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'segmented',
-      resetKeysOnChange: ['pendingOnly'],
       options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
     },
     {
       key: 'referenced',
       label: REFERENCE_STATUS_LABEL,
       type: 'select',
-      resetKeysOnChange: ['pendingOnly'],
       options: REFERENCE_STATUS_OPTIONS,
     },
     {
