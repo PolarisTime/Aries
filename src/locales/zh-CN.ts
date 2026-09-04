@@ -661,7 +661,7 @@ export const zhCN = {
       outboundNo: '出库单号',
       inboundNo: '入库单号',
       freightNo: '物流单号',
-      referenceStatus: '是否被关联',
+      referenceStatus: '被什么关联',
       referenced: '已关联',
       notReferenced: '未关联',
       all: '全部',

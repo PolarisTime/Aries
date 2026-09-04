@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildDateRangePresets,
   resolveDateRangePresetKey,
@@ -7,10 +7,16 @@ import {
 const t = (key: string) => key
 
 describe('module date range presets', () => {
-  it('builds local date presets around today', () => {
+  beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-03T12:00:00+08:00'))
+  })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('builds local date presets around today', () => {
     const presets = buildDateRangePresets(t)
     expect(
       presets.map(({ key, label, value }) => ({
@@ -40,8 +46,6 @@ describe('module date range presets', () => {
         value: ['2026-09-01', '2026-09-30'],
       },
     ])
-
-    vi.useRealTimers()
   })
 
   it('resolves the active preset only for an exact date range', () => {
