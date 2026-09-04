@@ -200,9 +200,9 @@ export function ModuleFilterToolbar({
         label: filter.label,
         value: filter.key,
       }))}
-      onChange={(value) => {
+      onChange={(event) => {
         const selected = quickFilters.find(
-          (filter) => filter.key === String(value),
+          (filter) => filter.key === String(event.target.value),
         )
         if (selected) {
           onApplyFilters(
@@ -263,8 +263,8 @@ export function ModuleFilterToolbar({
                         ),
                       ]}
                       value={resolveSegmentedFilterValue(filters[field.key])}
-                      onChange={(value) =>
-                        commitSegmentedFilter(field, String(value))
+                      onChange={(event) =>
+                        commitSegmentedFilter(field, String(event.target.value))
                       }
                     />
                   </div>

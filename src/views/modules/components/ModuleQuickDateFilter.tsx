@@ -52,8 +52,10 @@ export function ModuleQuickDateFilter({
           activePresetKey ||
           (Array.isArray(filters[field.key]) ? undefined : SEGMENTED_ALL_VALUE)
         }
-        onChange={(value) => {
-          const preset = datePresets.find((item) => item.key === String(value))
+        onChange={(event) => {
+          const preset = datePresets.find(
+            (item) => item.key === String(event.target.value),
+          )
           onCommitFilter(
             field.key,
             preset?.value.map((date) => date.format('YYYY-MM-DD')),
