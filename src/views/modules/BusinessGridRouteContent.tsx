@@ -230,10 +230,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           editorOpen={state.editorOpen}
           attachOpen={state.overlays.attachOpen}
           attachRecordId={state.overlays.attachRecordId}
-          detailOpen={state.detailOpen}
-          detailRecord={state.detailRecord}
-          detailLoading={state.detailLoading}
-          detailError={state.detailError}
+          detailItems={state.detailItems}
           canSave={canSaveEditorRecord}
           canAudit={state.canAuditRecord}
           canCreateAnother={canCreateRecord}

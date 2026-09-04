@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
+import type { DetailItem } from '@/hooks/useDetailSupport'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
   ModulePageConfig,
   ModuleParentImportSource,
-  ModuleRecord,
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import {
@@ -27,10 +27,7 @@ interface Props<Key extends ModuleKey> {
   editorOpen: boolean
   attachOpen: boolean
   attachRecordId: string
-  detailOpen: boolean
-  detailRecord: ModuleRecord | null
-  detailLoading: boolean
-  detailError: unknown
+  detailItems: DetailItem<Key>[]
   canSave: boolean
   canAudit: boolean
   canCreateAnother: boolean
@@ -39,8 +36,8 @@ interface Props<Key extends ModuleKey> {
   onCloseEditor: () => void
   onSaved: () => void
   onCreateAnother: () => void
-  onCloseDetail: () => void
-  onRetryDetail: () => void
+  onCloseDetail: (recordId: string) => void
+  onRetryDetail: (recordId: string) => void
   onCloseAttachment: () => void
 }
 
@@ -54,10 +51,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   editorOpen,
   attachOpen,
   attachRecordId,
-  detailOpen,
-  detailRecord,
-  detailLoading,
-  detailError,
+  detailItems,
   canSave,
   canAudit,
   canCreateAnother,
@@ -92,18 +86,19 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
         />
       ) : null}
 
-      {detailOpen ? (
+      {detailItems.map((detailItem) => (
         <ModuleRecordDetailOverlay
-          open={detailOpen}
+          key={detailItem.recordId}
+          open
           config={config}
-          record={detailRecord}
-          loading={detailLoading}
-          error={detailError}
+          record={detailItem.record}
+          loading={detailItem.loading}
+          error={detailItem.error}
           canPrint={false}
-          onClose={onCloseDetail}
-          onRetry={onRetryDetail}
+          onClose={() => onCloseDetail(detailItem.recordId)}
+          onRetry={() => onRetryDetail(detailItem.recordId)}
         />
-      ) : null}
+      ))}
 
       {attachOpen ? (
         <ModuleAttachmentModal

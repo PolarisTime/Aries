@@ -153,10 +153,7 @@ export function useBusinessGridPage({
     await exportModuleRows(submittedFilters)
   }
   const {
-    detailOpen,
-    detailRecord,
-    detailLoading,
-    detailError,
+    detailItems,
     openDetail,
     retryDetail,
     closeDetail,
@@ -524,10 +521,7 @@ export function useBusinessGridPage({
     config,
     currentPage,
     defaultFilters,
-    detailLoading,
-    detailError,
-    detailOpen,
-    detailRecord,
+    detailItems,
     editRecord,
     editorSessionKey,
     initialParentImportSource,
