@@ -25,14 +25,12 @@ export interface DetailItem<Key extends ModuleKey> {
 interface DetailSupportResult<Key extends ModuleKey> {
   detailItems: DetailItem<Key>[]
   openDetail: (target: string | ModuleListRecordFor<Key>) => Promise<void>
+  inlineDetailItems: DetailItem<Key>[]
   inlineExpandedRowKeys: string[]
-  inlineDetailRecord: ModuleDetailRecordFor<Key> | null
-  inlineDetailLoading: boolean
-  inlineDetailError: unknown
   openInlineDetail: (target: ModuleListRecordFor<Key>) => Promise<void>
   closeInlineDetail: (recordId?: string) => void
   retryDetail: (recordId: string) => void
-  retryInlineDetail: () => void
+  retryInlineDetail: (recordId: string) => void
   closeDetail: (recordId: string) => void
 }
 
@@ -52,17 +50,13 @@ export function useDetailSupport<Key extends ModuleKey>({
   config,
 }: Options<Key>): DetailSupportResult<Key> {
   const [detailItems, setDetailItems] = useState<DetailItem<Key>[]>([])
-  const [inlineExpandedRowKeys, setInlineExpandedRowKeys] = useState<string[]>(
+  const [inlineDetailItems, setInlineDetailItems] = useState<DetailItem<Key>[]>(
     [],
   )
-  const [inlineDetailRecord, setInlineDetailRecord] =
-    useState<ModuleDetailRecordFor<Key> | null>(null)
-  const [inlineDetailLoading, setInlineDetailLoading] = useState(false)
-  const [inlineDetailError, setInlineDetailError] = useState<unknown>(null)
   const requestSequenceRef = useRef(0)
   const detailRequestVersionsRef = useRef(new Map<string, number>())
-  const inlineRequestVersionRef = useRef(0)
-  const inlineLastRequestRef = useRef<{ recordId: string } | null>(null)
+  const inlineRequestVersionsRef = useRef(new Map<string, number>())
+  const inlineExpandedRowKeys = inlineDetailItems.map((item) => item.recordId)
 
   const updateDetailItem = (
     recordId: string,
@@ -103,6 +97,44 @@ export function useDetailSupport<Key extends ModuleKey>({
       if (detailRequestVersionsRef.current.get(recordId) === requestVersion) {
         updateDetailItem(recordId, (item) => ({
           ...item,
+          loading: false,
+        }))
+      }
+    }
+  }
+
+  const updateInlineDetailItem = (
+    recordId: string,
+    updater: (item: DetailItem<Key>) => DetailItem<Key>,
+  ) => {
+    setInlineDetailItems((prev) =>
+      prev.map((item) => (item.recordId === recordId ? updater(item) : item)),
+    )
+  }
+
+  const loadInlineDetail = async (recordId: string) => {
+    const requestVersion = ++requestSequenceRef.current
+    inlineRequestVersionsRef.current.set(recordId, requestVersion)
+    updateInlineDetailItem(recordId, (item) => ({
+      ...item,
+      loading: true,
+      error: null,
+    }))
+    try {
+      const record = await getBusinessModuleDetail(moduleKey, recordId)
+      if (inlineRequestVersionsRef.current.get(recordId) === requestVersion) {
+        updateInlineDetailItem(recordId, (item) => ({
+          ...item,
+          record,
+          loading: false,
+        }))
+      }
+    } catch (error) {
+      if (inlineRequestVersionsRef.current.get(recordId) === requestVersion) {
+        updateInlineDetailItem(recordId, (item) => ({
+          ...item,
+          record: null,
+          error,
           loading: false,
         }))
       }
@@ -160,12 +192,18 @@ export function useDetailSupport<Key extends ModuleKey>({
       return
     }
 
-    const requestVersion = ++inlineRequestVersionRef.current
-    setInlineExpandedRowKeys([recordId])
-    setInlineDetailLoading(true)
-    setInlineDetailError(null)
-    setInlineDetailRecord(resolveDetailFallback(moduleKey, target))
-    inlineLastRequestRef.current = { recordId }
+    setInlineDetailItems((prev) => {
+      if (prev.some((item) => item.recordId === recordId)) return prev
+      return [
+        ...prev,
+        {
+          recordId,
+          record: resolveDetailFallback(moduleKey, target),
+          loading: false,
+          error: null,
+        },
+      ]
+    })
 
     const endpointConfig = getModuleConfig(moduleKey)
     if (
@@ -173,7 +211,6 @@ export function useDetailSupport<Key extends ModuleKey>({
       !endpointConfig.supportsDetail &&
       !isMainFlowModuleKey(moduleKey)
     ) {
-      setInlineDetailLoading(false)
       return
     }
 
@@ -184,50 +221,28 @@ export function useDetailSupport<Key extends ModuleKey>({
       !isMainFlowModuleKey(moduleKey) &&
       (!hasConfiguredItemColumns || hasModuleRecordItems(target))
     ) {
-      setInlineDetailLoading(false)
       return
     }
 
-    try {
-      const record = await getBusinessModuleDetail(moduleKey, recordId)
-      if (requestVersion === inlineRequestVersionRef.current) {
-        setInlineDetailRecord(record)
-      }
-    } catch (error) {
-      if (requestVersion === inlineRequestVersionRef.current) {
-        setInlineDetailRecord(null)
-        setInlineDetailError(error)
-      }
-    } finally {
-      if (requestVersion === inlineRequestVersionRef.current) {
-        setInlineDetailLoading(false)
-      }
-    }
+    await loadInlineDetail(recordId)
   }
 
-  const retryInlineDetail = () => {
-    const request = inlineLastRequestRef.current
-    if (!request) {
-      return
+  const retryInlineDetail = (recordId: string) => {
+    if (inlineDetailItems.some((item) => item.recordId === recordId)) {
+      void loadInlineDetail(recordId)
     }
-    const target = { id: request.recordId } as ModuleListRecordFor<Key>
-    void openInlineDetail(target)
   }
 
   const closeInlineDetail = (recordId?: string) => {
-    if (
-      recordId &&
-      inlineExpandedRowKeys.length > 0 &&
-      inlineExpandedRowKeys[0] !== recordId
-    ) {
+    if (recordId) {
+      inlineRequestVersionsRef.current.delete(recordId)
+      setInlineDetailItems((prev) =>
+        prev.filter((item) => item.recordId !== recordId),
+      )
       return
     }
-    inlineRequestVersionRef.current += 1
-    inlineLastRequestRef.current = null
-    setInlineExpandedRowKeys([])
-    setInlineDetailRecord(null)
-    setInlineDetailError(null)
-    setInlineDetailLoading(false)
+    inlineRequestVersionsRef.current.clear()
+    setInlineDetailItems([])
   }
 
   const closeDetail = (recordId: string) => {
@@ -238,10 +253,8 @@ export function useDetailSupport<Key extends ModuleKey>({
   return {
     detailItems,
     openDetail,
+    inlineDetailItems,
     inlineExpandedRowKeys,
-    inlineDetailRecord,
-    inlineDetailLoading,
-    inlineDetailError,
     openInlineDetail,
     closeInlineDetail,
     retryDetail,

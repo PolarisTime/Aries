@@ -71,4 +71,31 @@ describe('useDetailSupport', () => {
 
     expect(latest.detailItems.map((item) => item.recordId)).toEqual(['2'])
   })
+
+  it('keeps multiple inline document details open independently', async () => {
+    const firstRecord = { id: '1' } as ModuleListRecordFor<'purchase-order'>
+    const secondRecord = { id: '2' } as ModuleListRecordFor<'purchase-order'>
+
+    await act(async () => {
+      await latest.openInlineDetail(firstRecord)
+    })
+    await act(async () => {
+      await latest.openInlineDetail(secondRecord)
+    })
+
+    expect(latest.inlineExpandedRowKeys).toEqual(['1', '2'])
+    expect(
+      latest.inlineDetailItems.map((item) => [item.recordId, item.record?.id]),
+    ).toEqual([
+      ['1', '1'],
+      ['2', '2'],
+    ])
+
+    act(() => {
+      latest.closeInlineDetail('1')
+    })
+
+    expect(latest.inlineExpandedRowKeys).toEqual(['2'])
+    expect(latest.inlineDetailItems.map((item) => item.recordId)).toEqual(['2'])
+  })
 })

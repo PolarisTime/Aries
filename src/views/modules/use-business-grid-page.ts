@@ -157,10 +157,8 @@ export function useBusinessGridPage({
     openDetail,
     retryDetail,
     closeDetail,
+    inlineDetailItems,
     inlineExpandedRowKeys,
-    inlineDetailRecord,
-    inlineDetailLoading,
-    inlineDetailError,
     openInlineDetail,
     closeInlineDetail,
     retryInlineDetail,
@@ -252,7 +250,7 @@ export function useBusinessGridPage({
   )
   const toggleInlineDetail = (record: ModuleRecord) => {
     const recordId = String(record.id || '')
-    if (inlineExpandedRowKeys[0] === recordId) {
+    if (inlineExpandedRowKeys.includes(recordId)) {
       closeInlineDetail(recordId)
       return
     }
@@ -261,7 +259,7 @@ export function useBusinessGridPage({
   const handleInlineExpand = (expanded: boolean, record: ModuleRecord) => {
     const recordId = String(record.id || '')
     if (expanded) {
-      if (inlineExpandedRowKeys[0] !== recordId) {
+      if (!inlineExpandedRowKeys.includes(recordId)) {
         void openInlineDetail(record)
       }
     } else {
@@ -269,13 +267,16 @@ export function useBusinessGridPage({
     }
   }
   const renderInlineDetail = (record: ModuleRecord) => {
-    const active = inlineExpandedRowKeys[0] === String(record.id || '')
+    const recordId = String(record.id || '')
+    const detailItem = inlineDetailItems.find(
+      (item) => item.recordId === recordId,
+    )
     return createElement(ModuleRecordDetailInline, {
       config: resolvedConfig,
-      record: active ? inlineDetailRecord : null,
-      loading: active && inlineDetailLoading,
-      error: active ? inlineDetailError : null,
-      onRetry: retryInlineDetail,
+      record: detailItem?.record ?? null,
+      loading: detailItem?.loading ?? false,
+      error: detailItem?.error ?? null,
+      onRetry: () => retryInlineDetail(recordId),
     })
   }
 
@@ -508,9 +509,6 @@ export function useBusinessGridPage({
     clearSelection,
     closeDetail,
     inlineExpandedRowKeys,
-    inlineDetailRecord,
-    inlineDetailLoading,
-    inlineDetailError,
     retryInlineDetail,
     onExpandDetail: handleInlineExpand,
     expandedRowRender: shouldUseInlineDetail ? renderInlineDetail : undefined,
