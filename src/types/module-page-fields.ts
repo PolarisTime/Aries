@@ -75,6 +75,8 @@ export interface ModuleFilterDefinition {
   label: string
   type: ModuleFilterType
   placeholder?: string
+  /** 是否显示日期范围的快捷日期选择器；默认显示。 */
+  showQuickDateFilter?: boolean
   /** 当前筛选值变化时一并清理的级联筛选字段。 */
   resetKeysOnChange?: string[]
   /** 仅用于日期范围筛选；false 表示默认不回填日期范围。 */

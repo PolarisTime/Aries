@@ -87,6 +87,9 @@ export function ModuleFilterToolbar({
   const dateRangeFilter = sortedFilters.find(
     (field) => field.type === 'dateRange',
   )
+  const hasQuickDateFilter = Boolean(
+    dateRangeFilter && dateRangeFilter.showQuickDateFilter !== false,
+  )
   const gridFilters = sortedFilters.filter(
     (field) => field.type !== 'segmented',
   )
@@ -181,7 +184,7 @@ export function ModuleFilterToolbar({
   )
 
   const renderQuickDateFilters = () =>
-    dateRangeFilter ? (
+    hasQuickDateFilter && dateRangeFilter ? (
       <ModuleQuickDateFilter
         field={dateRangeFilter}
         filters={filters}
@@ -281,7 +284,8 @@ export function ModuleFilterToolbar({
           {renderResetButton()}
         </div>
       ) : null}
-      {!segmentedFilters.length && (dateRangeFilter || quickFilters.length) ? (
+      {!segmentedFilters.length &&
+      (hasQuickDateFilter || quickFilters.length) ? (
         <div className="module-filter-quick-row">
           {renderQuickDateFilters()}
           {quickFilters.length ? renderQuickFilters() : null}

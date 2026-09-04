@@ -67,7 +67,8 @@ vi.mock('@/views/modules/components/ModuleFilterField', () => ({
 }))
 
 vi.mock('@/views/modules/components/ModuleQuickDateFilter', () => ({
-  ModuleQuickDateFilter: () => null,
+  ModuleQuickDateFilter: ({ field }: { field: { key: string } }) =>
+    createElement('div', { 'data-testid': `quick-date-${field.key}` }),
 }))
 
 import type { ModulePageConfig } from '@/types/module-page'
@@ -163,5 +164,36 @@ describe('ModuleFilterToolbar', () => {
     act(() => pendingButton?.click())
 
     expect(onApplyFilters).toHaveBeenLastCalledWith({ pendingOnly: 'true' })
+  })
+
+  it('配置关闭快捷日期选择器时不渲染快捷日期控件', () => {
+    const config = {
+      filters: [
+        {
+          key: 'orderDate',
+          label: '订单日期',
+          type: 'dateRange',
+          showQuickDateFilter: false,
+        },
+      ],
+      quickFilters: [],
+    } as unknown as ModulePageConfig
+
+    act(() => {
+      root.render(
+        createElement(ModuleFilterToolbar, {
+          config,
+          filters: {},
+          submittedFilters: {},
+          onUpdateFilter: vi.fn(),
+          onApplyFilters: vi.fn(),
+          onReset: vi.fn(),
+        }),
+      )
+    })
+
+    expect(
+      container.querySelector('[data-testid="quick-date-orderDate"]'),
+    ).toBeNull()
   })
 })

@@ -117,6 +117,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       key: 'orderDate',
       label: i18next.t('modules.pages.purchaseOrder.filterOrderDate'),
       type: 'dateRange',
+      showQuickDateFilter: false,
       row: 2,
       defaultDateRange: false,
     },

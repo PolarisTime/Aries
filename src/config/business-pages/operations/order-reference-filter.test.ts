@@ -47,6 +47,13 @@ describe('订单被什么关联筛选', () => {
     }
   })
 
+  it('订单日期不展示快捷日期选择器', () => {
+    expect(
+      purchaseOrdersPageConfig.filters.find((item) => item.key === 'orderDate')
+        ?.showQuickDateFilter,
+    ).toBe(false)
+  })
+
   it('将引用筛选参数声明为订单接口原生筛选', () => {
     expect(
       operationModuleEndpointContracts['purchase-order'].nativeFilterKeys,
