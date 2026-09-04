@@ -1,3 +1,15 @@
+# [9.22.0](https://github.com/PolarisTime/Aries/compare/v9.21.0...v9.22.0) (2026-09-04)
+
+
+### Bug Fixes
+
+* **filters:** 修复单选筛选参数格式错误 ([dc7ee18](https://github.com/PolarisTime/Aries/commit/dc7ee1809981e7b46f7df396a21fc22f835a9bf7))
+
+
+### Features
+
+* **frontend:** 支持同时打开多个单据明细 ([a68758d](https://github.com/PolarisTime/Aries/commit/a68758dfaae1a84fd12091f26dceff1a20e0ebc4))
+
 # [9.21.0](https://github.com/PolarisTime/Aries/compare/v9.20.0...v9.21.0) (2026-09-03)
 
 
