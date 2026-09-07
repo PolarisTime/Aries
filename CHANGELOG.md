@@ -1,3 +1,16 @@
+# [9.23.0](https://github.com/PolarisTime/Aries/compare/v9.22.0...v9.23.0) (2026-09-07)
+
+
+### Bug Fixes
+
+* **details:** 允许同时展开多个单据明细 ([fbd12f6](https://github.com/PolarisTime/Aries/commit/fbd12f693ca3e221ca9d63b6b5394305054563c6))
+* **filters:** 移除订单日期快捷选择器 ([0e12b49](https://github.com/PolarisTime/Aries/commit/0e12b49657b4cf827b77cf7addac76ef56ea8429))
+
+
+### Features
+
+* **modules:** 被什么关联筛选改为按实际下游模块筛选 ([62ea9f8](https://github.com/PolarisTime/Aries/commit/62ea9f88c0078179183ee2af5ea69d62bd807c32))
+
 # [9.22.0](https://github.com/PolarisTime/Aries/compare/v9.21.0...v9.22.0) (2026-09-04)
 
 
