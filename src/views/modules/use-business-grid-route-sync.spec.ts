@@ -60,14 +60,16 @@ describe('parseRouteParams', () => {
   it('解析待处理筛选意图 status', () => {
     const params = parseRouteParams('?status=待审核')
     expect(params.status).toBe('待审核')
-    expect(params.referenced).toBe('')
+    expect(params.referencedBy).toBe('')
     expect(params.routeKeyword).toBe('')
     expect(params.shouldOpenDetail).toBe(false)
   })
 
-  it('解析是否被关联筛选意图', () => {
-    expect(parseRouteParams('?referenced=true').referenced).toBe('true')
-    expect(parseRouteParams('?referenced=false').referenced).toBe('false')
+  it('解析下游模块关联筛选意图', () => {
+    expect(parseRouteParams('?referencedBy=freight-bill').referencedBy).toBe(
+      'freight-bill',
+    )
+    expect(parseRouteParams('?referencedBy=none').referencedBy).toBe('none')
   })
 
   it('解析客户筛选深链参数', () => {
@@ -149,16 +151,16 @@ describe('route filter synchronization', () => {
     const config = {
       ...configWithStatus,
       key: 'purchase-order',
-      filters: [{ key: 'referenced' }],
+      filters: [{ key: 'referencedBy' }],
     } as unknown as ModulePageConfig
 
     expect(
       buildRouteFilterSyncState({
         config,
         defaultFilters: { pendingOnly: 'true' },
-        routeParams: parseRouteParams('?referenced=true'),
+        routeParams: parseRouteParams('?referencedBy=sales-order'),
       }),
-    ).toEqual({ referenced: 'true' })
+    ).toEqual({ referencedBy: 'sales-order' })
   })
 
   it('keeps the synchronization key stable when callback inputs are recreated', () => {

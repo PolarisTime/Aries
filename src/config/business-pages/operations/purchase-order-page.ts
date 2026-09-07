@@ -13,8 +13,8 @@ import type {
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
+  PURCHASE_ORDER_REFERENCE_OPTIONS,
   REFERENCE_STATUS_LABEL,
-  REFERENCE_STATUS_OPTIONS,
   SUPPLIER_NAME_LABEL,
 } from '../shared/filter-labels'
 import {
@@ -108,10 +108,10 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       options: getSettlementCompanyOptions,
     },
     {
-      key: 'referenced',
+      key: 'referencedBy',
       label: REFERENCE_STATUS_LABEL,
       type: 'segmented',
-      options: REFERENCE_STATUS_OPTIONS,
+      options: PURCHASE_ORDER_REFERENCE_OPTIONS,
     },
     {
       key: 'orderDate',

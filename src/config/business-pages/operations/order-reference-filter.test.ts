@@ -18,22 +18,37 @@ describe('订单被什么关联筛选', () => {
     ))
   })
 
-  it('采购订单和销售订单都提供被什么关联选项', () => {
-    for (const config of [purchaseOrdersPageConfig, salesOrdersPageConfig]) {
-      const filter = config.filters.find((item) => item.key === 'referenced')
-      expect(filter?.key).toBe('referenced')
-      expect(filter?.type).toBe('segmented')
-      const options = Array.isArray(filter?.options) ? filter.options : []
-      expect(options).toHaveLength(2)
-      expect(
-        options.map((option) => ('value' in option ? option.value : undefined)),
-      ).toEqual(['true', 'false'])
-    }
+  it('销售订单提供按实际下游模块的关联选项', () => {
+    const filter = salesOrdersPageConfig.filters.find(
+      (item) => item.key === 'referencedBy',
+    )
+    expect(filter?.type).toBe('segmented')
+    const options = Array.isArray(filter?.options) ? filter.options : []
+    expect(
+      options.map((option) => ('value' in option ? option.value : undefined)),
+    ).toEqual(['freight-bill', 'sales-outbound', 'none'])
+    expect(
+      options.map((option) => ('label' in option ? option.label : undefined)),
+    ).toEqual(['被物流单关联', '被销售出库关联', '未关联'])
+  })
+
+  it('采购订单提供按实际下游模块的关联选项', () => {
+    const filter = purchaseOrdersPageConfig.filters.find(
+      (item) => item.key === 'referencedBy',
+    )
+    expect(filter?.type).toBe('segmented')
+    const options = Array.isArray(filter?.options) ? filter.options : []
+    expect(
+      options.map((option) => ('value' in option ? option.value : undefined)),
+    ).toEqual(['sales-order', 'purchase-inbound', 'none'])
+    expect(
+      options.map((option) => ('label' in option ? option.label : undefined)),
+    ).toEqual(['被销售订单关联', '被采购入库关联', '未关联'])
   })
 
   it('订单筛选标签声明为被什么关联', () => {
     for (const config of [purchaseOrdersPageConfig, salesOrdersPageConfig]) {
-      const filter = config.filters.find((item) => item.key === 'referenced')
+      const filter = config.filters.find((item) => item.key === 'referencedBy')
       expect(filter?.label).toBe('被什么关联')
     }
   })
@@ -54,12 +69,12 @@ describe('订单被什么关联筛选', () => {
     ).toBe(false)
   })
 
-  it('将引用筛选参数声明为订单接口原生筛选', () => {
+  it('将下游模块关联筛选参数声明为订单接口原生筛选', () => {
     expect(
       operationModuleEndpointContracts['purchase-order'].nativeFilterKeys,
-    ).toContain('referenced')
+    ).toContain('referencedBy')
     expect(
       operationModuleEndpointContracts['sales-order'].nativeFilterKeys,
-    ).toContain('referenced')
+    ).toContain('referencedBy')
   })
 })

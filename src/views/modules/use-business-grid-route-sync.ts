@@ -54,13 +54,13 @@ export function parseRouteParams(searchStr: string) {
   const docNo = readRouteSearchParam(params, 'docNo')
   const trackId = readRouteSearchParam(params, 'trackId')
   const customerId = readRouteSearchParam(params, 'customerId')
-  const referenced = readRouteSearchParam(params, 'referenced')
+  const referencedBy = readRouteSearchParam(params, 'referencedBy')
   return {
     docNo,
     sourceModule: readRouteSearchParam(params, 'sourceModule'),
     sourceRecordId: readRouteSearchParam(params, 'sourceRecordId'),
     status: readRouteSearchParam(params, 'status'),
-    referenced,
+    referencedBy,
     trackId,
     customerId,
     routeKeyword: docNo || trackId,
@@ -189,7 +189,7 @@ export function buildRouteFilterSyncState({
     routeParams.status && supportsFilterField(config, 'status'),
   )
   const hasReferenceFilter = Boolean(
-    routeParams.referenced && supportsFilterField(config, 'referenced'),
+    routeParams.referencedBy && supportsFilterField(config, 'referencedBy'),
   )
   const filters = { ...defaultFilters }
   // Explicit status selection represents an all-records query. Do not retain
@@ -216,8 +216,8 @@ export function buildRouteFilterSyncState({
     ...(routeParams.status && supportsFilterField(config, 'status')
       ? { status: routeParams.status }
       : {}),
-    ...(routeParams.referenced && supportsFilterField(config, 'referenced')
-      ? { referenced: routeParams.referenced }
+    ...(routeParams.referencedBy && supportsFilterField(config, 'referencedBy')
+      ? { referencedBy: routeParams.referencedBy }
       : {}),
   }
 }
@@ -240,12 +240,12 @@ export function buildRouteFilterSyncKey({
     config?.key || '',
     supportsFilterField(config, 'customerId'),
     supportsFilterField(config, 'status'),
-    supportsFilterField(config, 'referenced'),
+    supportsFilterField(config, 'referencedBy'),
     serializedDefaults,
     routeParams.routeKeyword,
     routeParams.customerId,
     routeParams.status,
-    routeParams.referenced,
+    routeParams.referencedBy,
     hasSetFilters,
   ])
 }

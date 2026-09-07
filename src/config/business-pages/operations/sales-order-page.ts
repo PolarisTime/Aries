@@ -20,7 +20,7 @@ import {
   CUSTOMER_NAME_LABEL,
   ORDER_NO_FILTER_LABEL,
   REFERENCE_STATUS_LABEL,
-  REFERENCE_STATUS_OPTIONS,
+  SALES_ORDER_REFERENCE_OPTIONS,
 } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
@@ -118,10 +118,10 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       ),
     },
     {
-      key: 'referenced',
+      key: 'referencedBy',
       label: REFERENCE_STATUS_LABEL,
       type: 'segmented',
-      options: REFERENCE_STATUS_OPTIONS,
+      options: SALES_ORDER_REFERENCE_OPTIONS,
     },
     {
       key: 'projectId',
