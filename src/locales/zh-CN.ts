@@ -103,6 +103,21 @@ export const zhCN = {
       outboundTask: '待出库任务',
       statementConfirm: '待确认对账',
       statementAmount: '待确认金额 {{amount}}',
+      monthOutbound: '本月出库',
+      monthInbound: '本月入库',
+      monthReceipt: '本月回款',
+      monthUnit: '本月累计单量',
+    },
+    recent: {
+      title: '最近单据',
+      hint: '按业务日期倒序，点击查看详情',
+      empty: '暂无单据',
+      loadFailed: '最近单据加载失败，请稍后重试。',
+    },
+    modules: {
+      title: '全部模块',
+      byFlow: '按业务流程查看',
+      create: '新建',
     },
     todo: {
       title: '待办工作台',
@@ -151,6 +166,10 @@ export const zhCN = {
       purchaseInbound: {
         title: '采购入库',
         hint: '确认入库数量重量',
+      },
+      project: {
+        title: '客户项目',
+        hint: '维护客户项目档案',
       },
       payment: {
         title: '付款单',

@@ -1,11 +1,14 @@
 import {
   AuditOutlined,
   ExportOutlined,
+  InboxOutlined,
   PayCircleOutlined,
+  WalletOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { Card, Statistic } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { fetchDashboardMonthCounts } from '@/api/system/dashboard-recent'
 import {
   DASHBOARD_METRIC_TARGETS,
   type DashboardPendingMetric,
@@ -30,7 +33,25 @@ const METRIC_TITLE_KEYS: Record<DashboardPendingMetric['key'], string> = {
   'statement-confirm': 'dashboard.metrics.statementConfirm',
 }
 
-/** 工作台顶部核心指标卡：点击直达对应列表页并携带「待处理」筛选意图 */
+const MONTH_TARGET_PATHS = {
+  outbound: '/sales-outbound',
+  inbound: '/purchase-inbound',
+  receipt: '/receipt',
+} as const
+
+const MONTH_TITLE_KEYS = {
+  outbound: 'dashboard.metrics.monthOutbound',
+  inbound: 'dashboard.metrics.monthInbound',
+  receipt: 'dashboard.metrics.monthReceipt',
+} as const
+
+const MONTH_ICONS = {
+  outbound: ExportOutlined,
+  inbound: InboxOutlined,
+  receipt: WalletOutlined,
+} as const
+
+/** 工作台顶部指标条：待处理指标（点击带「待处理」筛选直达）+ 本月经营单量 */
 export function DashboardPendingMetrics() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
@@ -38,6 +59,11 @@ export function DashboardPendingMetrics() {
     queryKey: QUERY_KEYS.dashboardWorkspace,
     queryFn: fetchDashboardWorkspace,
     refetchInterval: 120000,
+  })
+  const { data: monthCounts } = useQuery({
+    queryKey: QUERY_KEYS.dashboardMonthCounts,
+    queryFn: fetchDashboardMonthCounts,
+    staleTime: 300_000,
   })
   const metrics = data?.pendingMetrics
 
@@ -74,6 +100,31 @@ export function DashboardPendingMetrics() {
                       amount: formatAmount(metric.amount),
                     })
                   : null}
+              </div>
+            </div>
+          </Card>
+        )
+      })}
+      {(
+        Object.keys(MONTH_TITLE_KEYS) as Array<keyof typeof MONTH_TITLE_KEYS>
+      ).map((key) => {
+        const Icon = MONTH_ICONS[key]
+        const count = monthCounts?.[key]
+        return (
+          <Card
+            key={key}
+            hoverable
+            size="small"
+            className="dashboard-metric-card severity-month"
+            onClick={() => openTab({ pathname: MONTH_TARGET_PATHS[key] })}
+          >
+            <span className="dashboard-metric-icon" aria-hidden>
+              <Icon />
+            </span>
+            <div className="dashboard-metric-copy">
+              <Statistic title={t(MONTH_TITLE_KEYS[key])} value={count ?? 0} />
+              <div className="dashboard-metric-hint">
+                {t('dashboard.metrics.monthUnit')}
               </div>
             </div>
           </Card>

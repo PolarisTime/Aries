@@ -104,6 +104,21 @@ export const enUS = {
       outboundTask: 'Outbound Tasks',
       statementConfirm: 'Statements to Confirm',
       statementAmount: 'Pending amount {{amount}}',
+      monthOutbound: 'Outbound this month',
+      monthInbound: 'Inbound this month',
+      monthReceipt: 'Receipts this month',
+      monthUnit: 'Documents this month',
+    },
+    recent: {
+      title: 'Recent documents',
+      hint: 'Newest first, click to open details',
+      empty: 'No documents',
+      loadFailed: 'Failed to load recent documents. Please retry later.',
+    },
+    modules: {
+      title: 'All modules',
+      byFlow: 'View by workflow',
+      create: 'Create',
     },
     todo: {
       title: 'To-Do Workbench',
@@ -152,6 +167,10 @@ export const enUS = {
       purchaseInbound: {
         title: 'Purchase Inbound',
         hint: 'Confirm inbound quantity and weight',
+      },
+      project: {
+        title: 'Customer Project',
+        hint: 'Maintain customer project records',
       },
       payment: {
         title: 'Payment',

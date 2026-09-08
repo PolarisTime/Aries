@@ -11,6 +11,8 @@ export const QUERY_KEYS = {
   dashboardSummary: ['dashboard-summary'] as const,
   backendInfo: ['backend-info'] as const,
   dashboardWorkspace: ['dashboard-workspace'] as const,
+  dashboardMonthCounts: ['dashboard-month-counts'] as const,
+  dashboardRecent: ['dashboard-recent'] as const,
 
   // Finance
   cashLedger: (query: {

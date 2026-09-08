@@ -19,10 +19,3 @@ export interface WorkflowSection {
   description: string
   nodes: WorkflowNode[]
 }
-
-export interface DashboardInfoItem {
-  key: string
-  label: string
-  value: string
-  icon: ComponentType<DashboardIconProps>
-}
