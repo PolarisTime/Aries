@@ -1,3 +1,11 @@
+# [9.27.0](https://github.com/PolarisTime/Aries/compare/v9.26.1...v9.27.0) (2026-09-08)
+
+
+### Features
+
+* **modules:** 选单器明细行默认展开显示 ([9314a87](https://github.com/PolarisTime/Aries/commit/9314a87c583fb967892e32857cfc4f45e844f658))
+* **modules:** 选单器表格增加常驻查看明细按钮与行内明细展开 ([c209cc7](https://github.com/PolarisTime/Aries/commit/c209cc7e3c4ed24409924494487dcaab564ddd2e))
+
 ## [9.26.1](https://github.com/PolarisTime/Aries/compare/v9.26.0...v9.26.1) (2026-09-08)
 
 
