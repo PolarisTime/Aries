@@ -1,3 +1,10 @@
+# [9.24.0](https://github.com/PolarisTime/Aries/compare/v9.23.0...v9.24.0) (2026-09-08)
+
+
+### Features
+
+* **modules:** 筛选区重构为 Filter Chips 布局并规范下游引用文案 ([321fa7c](https://github.com/PolarisTime/Aries/commit/321fa7c493a31b0d23aeb94805cd4eefd2a44e0d))
+
 # [9.23.0](https://github.com/PolarisTime/Aries/compare/v9.22.0...v9.23.0) (2026-09-07)
 
 
