@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Button, Spin, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
@@ -721,6 +721,19 @@ export function useModuleParentSelectorOverlay({
     candidateQueryType,
   )
   const total = Number(data?.data?.total || 0)
+  const recordsRef = useRef<ModuleRecord[]>([])
+  const inlineDetailItemsRef = useRef<
+    Record<string, ParentSelectorInlineDetailItem>
+  >({})
+  useEffect(() => {
+    recordsRef.current = records
+    inlineDetailItemsRef.current = inlineDetailItems
+  }, [inlineDetailItems, records])
+  const recordsKey = records.flatMap((record) => {
+    const recordId = String(record.id || '')
+    return recordId ? [recordId] : []
+  })
+  const recordsKeyText = recordsKey.join(',')
   const dataColumns: ColumnsType<ModuleRecord> =
     resolveVisibleParentSelectorColumns(
       resolveParentSelectorColumns(parentModuleKey, displayFieldKey),
@@ -889,56 +902,62 @@ export function useModuleParentSelectorOverlay({
     })
   }
 
-  const setInlineDetailItem = (
-    recordId: string,
-    updater: (
-      prev: ParentSelectorInlineDetailItem,
-    ) => ParentSelectorInlineDetailItem,
-  ) => {
-    setState((prev) => ({
-      inlineDetailItems: {
-        ...prev.inlineDetailItems,
-        [recordId]: updater(
-          prev.inlineDetailItems[recordId] || {
-            record: null,
-            loading: false,
-            error: null,
-          },
-        ),
-      },
-    }))
-  }
+  const setInlineDetailItem = useCallback(
+    (
+      recordId: string,
+      updater: (
+        prev: ParentSelectorInlineDetailItem,
+      ) => ParentSelectorInlineDetailItem,
+    ) => {
+      setState((prev) => ({
+        inlineDetailItems: {
+          ...prev.inlineDetailItems,
+          [recordId]: updater(
+            prev.inlineDetailItems[recordId] || {
+              record: null,
+              loading: false,
+              error: null,
+            },
+          ),
+        },
+      }))
+    },
+    [setState],
+  )
 
-  const loadDetailRecord = async (recordId: string) => {
-    const requestVersion = ++detailRequestSequenceRef.current
-    detailRequestVersionsRef.current.set(recordId, requestVersion)
-    setInlineDetailItem(recordId, (prev) => ({
-      ...prev,
-      loading: true,
-      error: null,
-    }))
-    try {
-      const record = await getBusinessModuleDetail(detailModuleKey, recordId)
-      if (detailRequestVersionsRef.current.get(recordId) !== requestVersion) {
-        return
-      }
+  const loadDetailRecord = useCallback(
+    async (recordId: string) => {
+      const requestVersion = ++detailRequestSequenceRef.current
+      detailRequestVersionsRef.current.set(recordId, requestVersion)
       setInlineDetailItem(recordId, (prev) => ({
         ...prev,
-        record,
-        loading: false,
+        loading: true,
+        error: null,
       }))
-    } catch (error) {
-      if (detailRequestVersionsRef.current.get(recordId) !== requestVersion) {
-        return
+      try {
+        const record = await getBusinessModuleDetail(detailModuleKey, recordId)
+        if (detailRequestVersionsRef.current.get(recordId) !== requestVersion) {
+          return
+        }
+        setInlineDetailItem(recordId, (prev) => ({
+          ...prev,
+          record,
+          loading: false,
+        }))
+      } catch (error) {
+        if (detailRequestVersionsRef.current.get(recordId) !== requestVersion) {
+          return
+        }
+        setInlineDetailItem(recordId, (prev) => ({
+          ...prev,
+          record: null,
+          loading: false,
+          error,
+        }))
       }
-      setInlineDetailItem(recordId, (prev) => ({
-        ...prev,
-        record: null,
-        loading: false,
-        error,
-      }))
-    }
-  }
+    },
+    [detailModuleKey, setInlineDetailItem],
+  )
 
   const toggleDetail = (record: ModuleRecord) => {
     const recordId = String(record.id || '')
@@ -979,6 +998,35 @@ export function useModuleParentSelectorOverlay({
       void loadDetailRecord(recordId)
     }
   }
+
+  // 列表数据加载后默认展开全部行明细；已手动收起的行在当前页内保持收起。
+  useEffect(() => {
+    if (!recordsKeyText) {
+      setState({ detailExpandedRowKeys: [] })
+      return
+    }
+    const currentRecords = recordsRef.current
+    const recordIds: string[] = []
+    const seedItems: Record<string, ParentSelectorInlineDetailItem> = {}
+    const pendingRecordIds: string[] = []
+    for (const record of currentRecords) {
+      const recordId = String(record.id || '')
+      if (!recordId) continue
+      recordIds.push(recordId)
+      if (!needsParentDetail(record)) {
+        seedItems[recordId] = { record, loading: false, error: null }
+      } else if (!inlineDetailItemsRef.current[recordId]) {
+        pendingRecordIds.push(recordId)
+      }
+    }
+    setState((prev) => ({
+      detailExpandedRowKeys: recordIds,
+      inlineDetailItems: { ...prev.inlineDetailItems, ...seedItems },
+    }))
+    pendingRecordIds.forEach((recordId) => {
+      void loadDetailRecord(recordId)
+    })
+  }, [loadDetailRecord, recordsKeyText, setState])
 
   const renderDetail = (record: ModuleRecord) => {
     const recordId = String(record.id || '')
