@@ -96,7 +96,11 @@ export function DashboardPendingMetrics() {
             size="small"
             className={`dashboard-metric-card severity-${metric.severity}`}
             onClick={() =>
-              openTab({ pathname: target.pathname, search: target.search })
+              openTab({
+                pathname: target.pathname,
+                search: target.search,
+                forceSearch: true,
+              })
             }
           >
             <span className="dashboard-metric-icon" aria-hidden>
@@ -126,6 +130,7 @@ export function DashboardPendingMetrics() {
           openTab({
             pathname: AWAITING_INBOUND_TARGET.pathname,
             search: AWAITING_INBOUND_TARGET.search,
+            forceSearch: true,
           })
         }
       >
@@ -153,7 +158,12 @@ export function DashboardPendingMetrics() {
             hoverable
             size="small"
             className="dashboard-metric-card severity-month"
-            onClick={() => openTab({ pathname: MONTH_TARGET_PATHS[key] })}
+            onClick={() =>
+              openTab({
+                pathname: MONTH_TARGET_PATHS[key],
+                forceSearch: true,
+              })
+            }
           >
             <span className="dashboard-metric-icon" aria-hidden>
               <Icon />

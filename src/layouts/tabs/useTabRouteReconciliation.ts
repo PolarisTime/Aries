@@ -1,9 +1,10 @@
-import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useLocation } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import {
   getTabRouterHref,
   pushExternalIntent,
 } from '@/layouts/tabs/tab-location-sync'
+import { router as mainRouter } from '@/router'
 import {
   buildTabHref,
   isRegisteredPagePath,
@@ -19,7 +20,6 @@ import {
  */
 export function useTabRouteReconciliation(): void {
   const location = useLocation()
-  const navigate = useNavigate()
   const activeTab = useLayoutTabsStore((state) =>
     state.tabs.find((tab) => tab.id === state.activeTabId),
   )
@@ -55,23 +55,28 @@ export function useTabRouteReconciliation(): void {
     // href 已涵盖 pathname+searchStr，显式列出以满足依赖完整性检查
   }, [location.href, location.pathname, location.searchStr])
 
+  // 仅在激活 Tab 真实切换（点击页签/关闭后邻位继承）时让主地址栏跟随。
+  // 页面内导航（如指标卡点击）会先改地址栏、后更新激活 Tab，
+  // 若响应 location 变化会把主地址栏拉回旧 Tab，与上方协调逻辑形成乒乓。
+  const followedTabIdRef = useRef<string | null>(null)
   useEffect(() => {
     if (!activeTab) {
       return
     }
+    if (followedTabIdRef.current === activeTab.id) {
+      return
+    }
+    followedTabIdRef.current = activeTab.id
     if (normalizeTabPathname(location.pathname) === activeTab.pathname) {
       return
     }
     // 关闭 Tab 等场景下主地址栏跟随新激活 Tab（push 保留激活点历史，后退可回溯）
-    void navigate({
-      to: buildTabHref(activeTab.pathname, activeTab.search) as '/',
-    })
+    mainRouter.history.push(buildTabHref(activeTab.pathname, activeTab.search))
   }, [
     activeTab,
     activeTab?.id,
     activeTab?.pathname,
     activeTab?.search,
     location.pathname,
-    navigate,
   ])
 }
