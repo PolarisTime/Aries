@@ -8,7 +8,10 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { Card, Statistic } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { fetchDashboardMonthCounts } from '@/api/system/dashboard-recent'
+import {
+  fetchDashboardAwaitingInboundCount,
+  fetchDashboardMonthCounts,
+} from '@/api/system/dashboard-recent'
 import {
   DASHBOARD_METRIC_TARGETS,
   type DashboardPendingMetric,
@@ -51,6 +54,11 @@ const MONTH_ICONS = {
   receipt: WalletOutlined,
 } as const
 
+const AWAITING_INBOUND_TARGET = {
+  pathname: '/purchase-order',
+  search: 'status=已审核',
+}
+
 /** 工作台顶部指标条：待处理指标（点击带「待处理」筛选直达）+ 本月经营单量 */
 export function DashboardPendingMetrics() {
   const { t } = useTranslation()
@@ -64,6 +72,11 @@ export function DashboardPendingMetrics() {
     queryKey: QUERY_KEYS.dashboardMonthCounts,
     queryFn: fetchDashboardMonthCounts,
     staleTime: 300_000,
+  })
+  const { data: awaitingInboundCount } = useQuery({
+    queryKey: QUERY_KEYS.dashboardAwaitingInbound,
+    queryFn: fetchDashboardAwaitingInboundCount,
+    refetchInterval: 120000,
   })
   const metrics = data?.pendingMetrics
 
@@ -105,6 +118,30 @@ export function DashboardPendingMetrics() {
           </Card>
         )
       })}
+      <Card
+        hoverable
+        size="small"
+        className="dashboard-metric-card severity-warning"
+        onClick={() =>
+          openTab({
+            pathname: AWAITING_INBOUND_TARGET.pathname,
+            search: AWAITING_INBOUND_TARGET.search,
+          })
+        }
+      >
+        <span className="dashboard-metric-icon" aria-hidden>
+          <InboxOutlined />
+        </span>
+        <div className="dashboard-metric-copy">
+          <Statistic
+            title={t('dashboard.metrics.awaitingInbound')}
+            value={awaitingInboundCount ?? 0}
+          />
+          <div className="dashboard-metric-hint">
+            {t('dashboard.metrics.awaitingInboundHint')}
+          </div>
+        </div>
+      </Card>
       {(
         Object.keys(MONTH_TITLE_KEYS) as Array<keyof typeof MONTH_TITLE_KEYS>
       ).map((key) => {

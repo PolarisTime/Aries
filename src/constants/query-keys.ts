@@ -12,6 +12,7 @@ export const QUERY_KEYS = {
   backendInfo: ['backend-info'] as const,
   dashboardWorkspace: ['dashboard-workspace'] as const,
   dashboardMonthCounts: ['dashboard-month-counts'] as const,
+  dashboardAwaitingInbound: ['dashboard-awaiting-inbound'] as const,
   dashboardRecent: ['dashboard-recent'] as const,
 
   // Finance

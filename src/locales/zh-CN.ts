@@ -107,6 +107,8 @@ export const zhCN = {
       monthInbound: '本月入库',
       monthReceipt: '本月回款',
       monthUnit: '本月累计单量',
+      awaitingInbound: '待入库采购',
+      awaitingInboundHint: '已审核未入库（未发货）',
     },
     recent: {
       title: '最近单据',

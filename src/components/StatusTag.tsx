@@ -6,6 +6,7 @@ interface StatusMeta {
   label?: string
   color?: string
   icon?: ReactNode
+  hint?: string
 }
 
 interface Props {
@@ -44,15 +45,22 @@ export function StatusTag({ status, statusMap, fallback, className }: Props) {
   const fallbackText = fallback || normalizedStatus || '--'
   const displayText = meta?.label || meta?.text || fallbackText
   const color = resolveTagColor(meta?.color)
+  const hint = meta?.hint
   if (!meta) {
     return (
-      <Tag color={color} variant="filled" className={className}>
+      <Tag color={color} variant="filled" className={className} title={hint}>
         {fallbackText}
       </Tag>
     )
   }
   return (
-    <Tag color={color} icon={meta.icon} variant="filled" className={className}>
+    <Tag
+      color={color}
+      icon={meta.icon}
+      variant="filled"
+      className={className}
+      title={hint}
+    >
       {displayText}
     </Tag>
   )

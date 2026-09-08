@@ -130,3 +130,17 @@ export async function fetchDashboardMonthCounts(): Promise<DashboardMonthCounts>
   ])
   return { outbound, inbound, receipt }
 }
+
+/**
+ * 待入库采购订单数（单据状态=已审核）。
+ * 采购订单整单交付：已审核=等待入库（未发货），完成采购=已全部入库。
+ */
+export async function fetchDashboardAwaitingInboundCount(): Promise<number> {
+  const page = await fetchModulePage(
+    'purchase-order',
+    { status: '已审核' },
+    0,
+    1,
+  )
+  return page.totalElements
+}

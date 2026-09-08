@@ -27,9 +27,9 @@ import {
   actionSet,
   buildAmountWeightOverview,
   cloneLineItems,
-  statusMap,
 } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
+import { statusMap as sharedStatusMap } from '../shared/shared-status'
 
 // 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
 const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
@@ -84,6 +84,15 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
 const salesOrderItemColumnOutputs = resolveModuleItemColumnConfig(
   salesOrderItemColumnConfig,
 )
+
+// 销售订单状态含义：已审核=待交付核定，交付核定=待出库，完成销售=销售流程完成。
+const salesOrderStatusMap = {
+  ...sharedStatusMap,
+  草稿: { ...sharedStatusMap.草稿, hint: '未审核，可编辑' },
+  已审核: { ...sharedStatusMap.已审核, hint: '已审核，待交付核定' },
+  交付核定: { ...sharedStatusMap.交付核定, hint: '已核定交付，待出库' },
+  完成销售: { ...sharedStatusMap.完成销售, hint: '销售流程已完成' },
+}
 
 export const salesOrdersPageConfig: ModulePageConfig = {
   key: 'sales-order',
@@ -469,6 +478,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   ...salesOrderItemColumnOutputs,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
-  statusMap,
+  statusMap: salesOrderStatusMap,
   rowHighlightStatuses: ['草稿'],
 }

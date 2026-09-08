@@ -108,6 +108,8 @@ export const enUS = {
       monthInbound: 'Inbound this month',
       monthReceipt: 'Receipts this month',
       monthUnit: 'Documents this month',
+      awaitingInbound: 'Purchase awaiting inbound',
+      awaitingInboundHint: 'Audited, not yet inbound',
     },
     recent: {
       title: 'Recent documents',

@@ -17,12 +17,9 @@ import {
   REFERENCE_STATUS_LABEL,
   SUPPLIER_NAME_LABEL,
 } from '../shared/filter-labels'
-import {
-  actionSet,
-  buildAmountWeightOverview,
-  statusMap,
-} from '../shared/shared'
+import { actionSet, buildAmountWeightOverview } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
+import { statusMap as sharedStatusMap } from '../shared/shared-status'
 
 // 采购订单明细列：批号版结构 + 实际重量列（位于重量吨之后、单价之前）。
 const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
@@ -74,6 +71,14 @@ const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
 const purchaseOrderItemColumnOutputs = resolveModuleItemColumnConfig(
   purchaseOrderItemColumnConfig,
 )
+
+// 采购订单整单交付：已审核=等待入库（未发货），完成采购=已全部入库（由入库审核自动触发）。
+const purchaseOrderStatusMap = {
+  ...sharedStatusMap,
+  草稿: { ...sharedStatusMap.草稿, hint: '未审核，可编辑' },
+  已审核: { ...sharedStatusMap.已审核, hint: '已审核，等待入库（未发货）' },
+  完成采购: { ...sharedStatusMap.完成采购, hint: '已全部入库，采购完成' },
+}
 
 export const purchaseOrdersPageConfig: ModulePageConfig = {
   key: 'purchase-order',
@@ -144,13 +149,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
                   'modules.pages.purchaseOrder.referencedBySalesOrder',
                 ),
                 referenced: Boolean(record.referencedBySalesOrder),
-              },
-              {
-                key: 'purchase-inbound',
-                label: i18next.t(
-                  'modules.pages.purchaseOrder.referencedByPurchaseInbound',
-                ),
-                referenced: Boolean(record.referencedByPurchaseInbound),
               },
             ],
           }),
@@ -316,6 +314,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
   ...purchaseOrderItemColumnOutputs,
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
-  statusMap,
+  statusMap: purchaseOrderStatusMap,
   rowHighlightStatuses: ['草稿'],
 }

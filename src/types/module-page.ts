@@ -49,6 +49,8 @@ export type {
 export interface ModuleStatusMeta {
   text: string
   color: 'default' | 'success' | 'processing' | 'warning' | 'error' | 'cyan'
+  /** 状态的业务含义说明（悬浮提示），如「已审核=等待入库」 */
+  hint?: string
 }
 
 export interface ModuleOverviewItem {
