@@ -1,3 +1,10 @@
+## [9.26.1](https://github.com/PolarisTime/Aries/compare/v9.26.0...v9.26.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **layout:** 修复多标签页 SPA 导航丢失深链查询串导致筛选失效与乒乓卡死 ([a9432e5](https://github.com/PolarisTime/Aries/commit/a9432e59219bbfb7d243ba4d6f9a9fe0c0c2b17b))
+
 # [9.26.0](https://github.com/PolarisTime/Aries/compare/v9.25.0...v9.26.0) (2026-09-08)
 
 
