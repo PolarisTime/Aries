@@ -1,3 +1,10 @@
+# [9.25.0](https://github.com/PolarisTime/Aries/compare/v9.24.0...v9.25.0) (2026-09-08)
+
+
+### Features
+
+* **dashboard:** 工作台重构为信息密度优先的新布局 ([33088aa](https://github.com/PolarisTime/Aries/commit/33088aac3f913cbefee0e006103835109682fc9e))
+
 # [9.24.0](https://github.com/PolarisTime/Aries/compare/v9.23.0...v9.24.0) (2026-09-08)
 
 
