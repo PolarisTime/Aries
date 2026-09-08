@@ -1,3 +1,10 @@
+# [9.26.0](https://github.com/PolarisTime/Aries/compare/v9.25.0...v9.26.0) (2026-09-08)
+
+
+### Features
+
+* **dashboard:** 显性化采购订单入库履约状态，降低筛选理解成本 ([251674b](https://github.com/PolarisTime/Aries/commit/251674bc1a17fac5a523ba765221c98dcd44b300))
+
 # [9.25.0](https://github.com/PolarisTime/Aries/compare/v9.24.0...v9.25.0) (2026-09-08)
 
 
