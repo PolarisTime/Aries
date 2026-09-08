@@ -20,7 +20,8 @@ export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
   if (!lockedStatuses?.length) {
     return false
   }
-  return statuses.some((status) => lockedStatuses.includes(status))
+  const lockedStatusSet = new Set(lockedStatuses)
+  return statuses.some((status) => lockedStatusSet.has(status))
 }
 
 export function canManageEditorLineItems(

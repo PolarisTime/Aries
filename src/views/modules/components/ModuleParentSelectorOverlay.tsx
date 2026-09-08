@@ -24,6 +24,13 @@ interface Props extends ModuleParentSelectorOverlayContentProps {
 const PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR =
   '.ant-table-selection-column, .parent-selector-selected-chip-remove'
 
+function shouldIgnoreRowInteraction(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest(PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR))
+  )
+}
+
 interface ParentSelectorSelectedPanelProps {
   displayFieldKey: string
   formatCellValue: ParentSelectorFormatCellValue
@@ -253,10 +260,6 @@ function ParentSelectorTable({
   t,
   total,
 }: ParentSelectorTableProps) {
-  const shouldIgnoreRowInteraction = (target: EventTarget | null) =>
-    target instanceof Element &&
-    Boolean(target.closest(PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR))
-
   const handleRowAction = (record: ModuleRecord) => {
     if (allowMultipleSelection) {
       onToggleRecordSelection(record)

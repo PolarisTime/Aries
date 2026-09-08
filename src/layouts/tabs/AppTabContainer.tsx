@@ -33,24 +33,26 @@ export function AppTabContainer() {
     <Content className="leo-content">
       <LayoutTabBar />
       <div className="leo-content-inner leo-tab-viewport">
-        {tabs
-          .filter((tab) => tab.mountedOnce || tab.id === activeTabId)
-          .map((tab) => (
-            <div
-              key={tab.id}
-              hidden={tab.id !== activeTabId}
-              className="leo-tab-panel"
-            >
-              <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
-                <EditorSessionScopeProvider tabId={tab.id}>
-                  <TabPanelRouter
-                    key={`${tab.id}:${tab.reloadKey}`}
-                    tab={tab}
-                  />
-                </EditorSessionScopeProvider>
-              </AppErrorBoundary>
-            </div>
-          ))}
+        {tabs.flatMap((tab) =>
+          tab.mountedOnce || tab.id === activeTabId
+            ? [
+                <div
+                  key={tab.id}
+                  hidden={tab.id !== activeTabId}
+                  className="leo-tab-panel"
+                >
+                  <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
+                    <EditorSessionScopeProvider tabId={tab.id}>
+                      <TabPanelRouter
+                        key={`${tab.id}:${tab.reloadKey}`}
+                        tab={tab}
+                      />
+                    </EditorSessionScopeProvider>
+                  </AppErrorBoundary>
+                </div>,
+              ]
+            : [],
+        )}
       </div>
     </Content>
   )

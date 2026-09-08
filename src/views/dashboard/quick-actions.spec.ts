@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildQuickActionTarget,
   QUICK_ACTIONS,
-} from '@/views/dashboard/DashboardQuickActions'
+} from '@/views/dashboard/quick-actions'
 
 describe('DashboardQuickActions', () => {
   it('为快捷新建入口生成直接打开新建弹窗的 Tab 目标', () => {

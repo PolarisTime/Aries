@@ -21,9 +21,8 @@ export function useModuleEditorItemInteractions({ items, setItems }: Props) {
 
   const removeSelectedItems = () => {
     if (!selectedItemIds.length) return
-    setItems((prev) =>
-      prev.filter((item) => !selectedItemIds.includes(item.id)),
-    )
+    const selectedItemIdSet = new Set(selectedItemIds)
+    setItems((prev) => prev.filter((item) => !selectedItemIdSet.has(item.id)))
     setSelectedItemIds([])
   }
 

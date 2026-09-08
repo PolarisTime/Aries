@@ -97,11 +97,6 @@ export function pushExternalIntent(tabId: string, href: string): void {
   subRouter.history.push(href)
 }
 
-/** 当前 Tab 子 Router 是否已挂载 */
-export function hasTabRouter(tabId: string): boolean {
-  return tabRouters.has(tabId)
-}
-
 /** 当前 Tab 子 Router 的 href（未挂载返回 null） */
 export function getTabRouterHref(tabId: string): string | null {
   return tabRouters.get(tabId)?.history.location.href ?? null

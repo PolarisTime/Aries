@@ -45,7 +45,7 @@ const directUploadPrepareResponseSchema = z.object({
   token: z.string(),
   objectKey: z.string().optional(),
   storagePath: z.string().optional(),
-  uploadUrl: z.string().url(),
+  uploadUrl: z.url(),
   method: z.string().optional(),
   headers: z.record(z.string(), z.string()).optional(),
   expiresAt: z.union([z.string(), z.number()]).optional(),

@@ -87,6 +87,7 @@ export function useModuleAttachmentModal({
   const attachmentRequestIdRef = useRef(0)
   const initialUploadKeyRef = useRef('')
   const createTrackedObjectUrl = useCallback((blob: Blob) => {
+    // react-doctor-disable-next-line react-doctor/no-create-object-url-without-revoke -- URL 已登记进 objectUrlRef，弹窗关闭与组件卸载时统一 revoke，无法在创建点就地撤销。
     const objectUrl = URL.createObjectURL(blob)
     objectUrlRef.current.add(objectUrl)
     return objectUrl
@@ -230,6 +231,17 @@ export function useModuleAttachmentModal({
     [bindAttachment, fetchAttachments, moduleKey, setState, t],
   )
 
+  // 上传进度、文件名与 uploading 标志是共享 UI 状态，必须逐个串行上传，避免并行时互相覆盖。
+  const uploadFilesSequentially = useCallback(
+    async (files: readonly File[]) => {
+      await files.reduce<Promise<boolean>>(
+        (previous, file) => previous.then(() => uploadAndBindAttachment(file)),
+        Promise.resolve(false),
+      )
+    },
+    [uploadAndBindAttachment],
+  )
+
   useEffect(() => {
     if (!open || !recordId || !initialFiles.length) {
       if (!open) initialUploadKeyRef.current = ''
@@ -238,12 +250,8 @@ export function useModuleAttachmentModal({
     const uploadKey = `${recordId}:${initialFiles.map((file) => `${file.name}:${file.size}:${file.lastModified}`).join('|')}`
     if (initialUploadKeyRef.current === uploadKey) return
     initialUploadKeyRef.current = uploadKey
-    void (async () => {
-      for (const file of initialFiles) {
-        await uploadAndBindAttachment(file)
-      }
-    })()
-  }, [initialFiles, open, recordId, uploadAndBindAttachment])
+    void uploadFilesSequentially(initialFiles)
+  }, [initialFiles, open, recordId, uploadFilesSequentially])
 
   const openImagePreview = useCallback(
     async (attachment: AttachmentRecord) => {
@@ -413,18 +421,14 @@ export function useModuleAttachmentModal({
       }
 
       event.preventDefault()
-      void (async () => {
-        for (const file of files) {
-          await uploadAndBindAttachment(file)
-        }
-      })()
+      void uploadFilesSequentially(files)
     }
 
     window.addEventListener('paste', handlePaste)
     return () => {
       window.removeEventListener('paste', handlePaste)
     }
-  }, [open, uploadAndBindAttachment])
+  }, [open, uploadFilesSequentially])
 
   useEffect(() => {
     return () => {

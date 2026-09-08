@@ -24,6 +24,11 @@ function getTabTitle(tab: LayoutTab): string {
   return getPageDefinition(tab.pathname)?.title ?? tab.pathname
 }
 
+/** 刷新不依赖组件闭包，直接读取最新 store 状态 */
+function handleRefresh(tabId: string) {
+  useLayoutTabsStore.getState().bumpReloadKey(tabId)
+}
+
 /** 关闭一组 Tab：统一脏检查后逐个销毁子 Router 与编辑器会话 */
 function closeManyTabs(
   t: TFunction,
@@ -49,10 +54,6 @@ export function LayoutTabBar() {
   const { t } = useTranslation()
   const tabs = useLayoutTabsStore((state) => state.tabs)
   const activeTabId = useLayoutTabsStore((state) => state.activeTabId)
-
-  const handleRefresh = (tabId: string) => {
-    useLayoutTabsStore.getState().bumpReloadKey(tabId)
-  }
 
   const handleClose = (tabId: string) => {
     requestEditorSessionClose(t, tabId, () => {
@@ -97,9 +98,9 @@ export function LayoutTabBar() {
         }
         case 'closeOthers': {
           store.activateTab(tab.id)
-          const removeIds = tabs
-            .filter((item) => !item.pinned && item.id !== tab.id)
-            .map((item) => item.id)
+          const removeIds = tabs.flatMap((item) =>
+            !item.pinned && item.id !== tab.id ? [item.id] : [],
+          )
           closeManyTabs(t, removeIds, () => store.removeOtherTabs(tab.id))
           break
         }
@@ -107,16 +108,16 @@ export function LayoutTabBar() {
           const tabIndex = tabs.findIndex((item) => item.id === tab.id)
           if (tabIndex < 0) break
           store.activateTab(tab.id)
-          const removeIds = tabs
-            .filter((item, index) => index > tabIndex && !item.pinned)
-            .map((item) => item.id)
+          const removeIds = tabs.flatMap((item, itemIndex) =>
+            itemIndex > tabIndex && !item.pinned ? [item.id] : [],
+          )
           closeManyTabs(t, removeIds, () => store.removeRightTabs(tab.id))
           break
         }
         case 'closeAll': {
-          const removeIds = tabs
-            .filter((item) => !item.pinned)
-            .map((item) => item.id)
+          const removeIds = tabs.flatMap((item) =>
+            !item.pinned ? [item.id] : [],
+          )
           const dashboardId = tabs.find((item) => item.pinned)?.id
           if (dashboardId) {
             store.activateTab(dashboardId)

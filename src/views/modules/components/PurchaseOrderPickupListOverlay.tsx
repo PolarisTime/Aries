@@ -452,7 +452,7 @@ function resolveDraft(
 
   const validItemIds = new Set(defaultItemIds)
   const assignedItemIds = new Set<string>()
-  const groups = draft.groups.map((group) => ({
+  const filteredGroups = draft.groups.map((group) => ({
     ...group,
     locked: group.locked ?? false,
     itemIds: group.itemIds.filter((itemId) => {
@@ -464,12 +464,12 @@ function resolveDraft(
   const unassignedItemIds = defaultItemIds.filter(
     (itemId) => !assignedItemIds.has(itemId),
   )
-  if (unassignedItemIds.length) {
-    groups[0] = {
-      ...groups[0],
-      itemIds: [...groups[0].itemIds, ...unassignedItemIds],
-    }
-  }
+  // 未分配的 item 归入第一个分组（与原实现一致，避免对数组元素赋值）
+  const groups = filteredGroups.map((group, groupIndex) =>
+    groupIndex === 0 && unassignedItemIds.length
+      ? { ...group, itemIds: [...group.itemIds, ...unassignedItemIds] }
+      : group,
+  )
 
   return { ...draft, groups }
 }

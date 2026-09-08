@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   cashLedgerReducer,
   createInitialLedgerState,
-} from '@/views/finance/CashLedgerView'
+} from '@/views/finance/cash-ledger-state'
 
 describe('cash ledger filter defaults', () => {
   it('defaults the business date range to the previous three months through today', () => {

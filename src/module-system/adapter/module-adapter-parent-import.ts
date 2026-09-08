@@ -265,6 +265,7 @@ export function buildParentImportState(options: {
       : []
   })
 
+  const currentParentItemSet = new Set(currentParentItems)
   return {
     parentId,
     parentNo,
@@ -276,7 +277,7 @@ export function buildParentImportState(options: {
     nextItems: hasImportedCurrentParent
       ? [
           ...effectiveCurrentItems.filter(
-            (item) => !currentParentItems.includes(item),
+            (item) => !currentParentItemSet.has(item),
           ),
           ...importedItems,
         ]

@@ -509,9 +509,16 @@ async function serializeBusinessRecordForSaveAsync(
     Array.isArray(dynamicFields.chargeItems) &&
     supportsChargeItems(moduleKey)
   ) {
-    payload.chargeItems = dynamicFields.chargeItems
-      .filter((item) => !isBlankChargeItem(item))
-      .map((item, index) => serializeChargeItem(item, index))
+    const chargeItems: Record<string, unknown>[] = []
+    let chargeItemIndex = 0
+    for (const chargeItem of dynamicFields.chargeItems) {
+      if (isBlankChargeItem(chargeItem)) {
+        continue
+      }
+      chargeItems.push(serializeChargeItem(chargeItem, chargeItemIndex))
+      chargeItemIndex += 1
+    }
+    payload.chargeItems = chargeItems
   }
 
   return payload

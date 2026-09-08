@@ -15,6 +15,17 @@ export const ACTION_COLUMN_WIDTH = 200
 export const DETAIL_TOGGLE_COLUMN_ID = 'detail-toggle'
 export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
 
+function resolveSummaryAmount(record: ModuleRecord) {
+  const amount =
+    record.amount ??
+    record.totalAmount ??
+    record.closingAmount ??
+    record.totalFreight
+  return typeof amount === 'number' || typeof amount === 'string'
+    ? amount
+    : undefined
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
@@ -45,17 +56,6 @@ export function useGridColumns({
   const { t } = useTranslation()
 
   const columns: ColumnDef<ModuleRecord>[] = []
-
-  const resolveSummaryAmount = (record: ModuleRecord) => {
-    const amount =
-      record.amount ??
-      record.totalAmount ??
-      record.closingAmount ??
-      record.totalFreight
-    return typeof amount === 'number' || typeof amount === 'string'
-      ? amount
-      : undefined
-  }
 
   for (const colDef of config.columns) {
     columns.push({

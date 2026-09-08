@@ -6,7 +6,13 @@ import globals from 'globals'
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'archive', 'node_modules', 'src/utils/clodop.ts'],
+    ignores: [
+      'dist',
+      'archive',
+      'node_modules',
+      'src/utils/clodop.ts',
+      'doctor.config.ts',
+    ],
   },
 
   // ── 全项目严格规则 ───────────────────────────────────

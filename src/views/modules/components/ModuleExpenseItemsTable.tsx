@@ -1,6 +1,6 @@
 import { HolderOutlined } from '@ant-design/icons'
 import { Checkbox, Input, InputNumber, Select, Typography } from 'antd'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 
@@ -31,7 +31,8 @@ function ChargeNameSelect({
   t,
 }: ChargeNameSelectProps) {
   const [searchText, setSearchText] = useState('')
-  const [creating, setCreating] = useState(false)
+  // 仅在事件处理器中读取，渲染不依赖，用 ref 避免多余重渲染
+  const creatingRef = useRef(false)
 
   const matched = materialOptions.find(
     (option) => option.value === (item.materialId ?? ''),
@@ -39,16 +40,16 @@ function ChargeNameSelect({
 
   const handleCreate = async () => {
     const name = searchText.trim()
-    if (!name || creating) {
+    if (!name || creatingRef.current) {
       return
     }
-    setCreating(true)
+    creatingRef.current = true
     try {
       await onCreateExpense(name)
       // 创建后由父组件回填 materialId/unit，这里仅清空搜索态。
       setSearchText('')
     } finally {
-      setCreating(false)
+      creatingRef.current = false
     }
   }
 
@@ -131,6 +132,10 @@ const EXPENSE_GRID_COLUMNS = [
   '64px',
 ]
 
+const EXPENSE_GRID_STYLE = {
+  gridTemplateColumns: EXPENSE_GRID_COLUMNS.join(' '),
+}
+
 export interface ModuleExpenseItemsTableProps {
   expenseItems: DocumentChargeItemDraft[]
   materialOptions: MaterialOption[]
@@ -160,13 +165,26 @@ export function ModuleExpenseItemsTable({
   const allSelected =
     expenseItems.length > 0 && selectedItemIds.length === expenseItems.length
 
-  const gridStyle = { gridTemplateColumns: EXPENSE_GRID_COLUMNS.join(' ') }
+  // 行 key：持久化行用业务 id；手工新增行无稳定业务 key，
+  // 退化为「稳定前缀 + 位置」组合，与原 `new-${index}` 行为等价。
+  // 预生成数组避免在 JSX key 里直接引用 map 的 index。
+  const rowKeys = useMemo(
+    () =>
+      expenseItems.map(
+        (item, rowIndex) => item.id ?? `expense-draft-row-${rowIndex}`,
+      ),
+    [expenseItems],
+  )
+  const selectedItemIdsSet = useMemo(
+    () => new Set(selectedItemIds),
+    [selectedItemIds],
+  )
 
   return (
     <div className="overflow-auto rounded border border-gray-200 bg-gray-50">
       <div
         className="grid items-center gap-4 bg-gray-100 px-3 py-2 font-medium text-gray-600"
-        style={gridStyle}
+        style={EXPENSE_GRID_STYLE}
       >
         <span className="flex items-center justify-center">
           <Checkbox
@@ -192,13 +210,13 @@ export function ModuleExpenseItemsTable({
       ) : null}
       {expenseItems.map((item, index) => (
         <div
-          key={item.id ?? `new-${index}`}
+          key={rowKeys[index]}
           className="grid items-center gap-4 border-b border-gray-200 px-3 py-2"
-          style={gridStyle}
+          style={EXPENSE_GRID_STYLE}
         >
           <span className="flex items-center justify-center">
             <Checkbox
-              checked={selectedItemIds.includes(item.id ?? '')}
+              checked={selectedItemIdsSet.has(item.id ?? '')}
               onChange={(event) =>
                 onSelectedChange(item.id ?? '', event.target.checked)
               }

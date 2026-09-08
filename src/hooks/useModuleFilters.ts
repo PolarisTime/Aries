@@ -88,9 +88,9 @@ export function useModuleFilters({
   setCurrentPage,
 }: Props) {
   const defaultFiltersKey = serializeFilters(defaultFilters)
-  const previousDefaultFiltersRef = useRef<SearchParams>(
-    cloneFilters(defaultFilters),
-  )
+  // 惰性初始化放到首个 effect 中执行，避免每次渲染都 cloneFilters，
+  // 也避免在渲染期间读写 ref
+  const previousDefaultFiltersRef = useRef<SearchParams | null>(null)
   const previousDefaultFiltersKeyRef = useRef(defaultFiltersKey)
   const [filters, setFilters] = useState<SearchParams>(() =>
     cloneFilters(defaultFilters),
@@ -100,6 +100,10 @@ export function useModuleFilters({
   )
 
   useEffect(() => {
+    if (previousDefaultFiltersRef.current === null) {
+      previousDefaultFiltersRef.current = cloneFilters(defaultFilters)
+      return
+    }
     if (previousDefaultFiltersKeyRef.current === defaultFiltersKey) return
 
     const previousDefaultFilters = previousDefaultFiltersRef.current

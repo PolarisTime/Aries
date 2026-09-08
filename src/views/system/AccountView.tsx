@@ -73,6 +73,9 @@ export function AccountView(): React.JSX.Element {
   const passwordMutation = useMutation({
     mutationFn: changeCurrentAccountPassword,
     onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.currentAccount,
+      })
       passwordForm.resetFields()
       message.success(t('system.account.passwordChanged'))
       await signOut()

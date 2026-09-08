@@ -196,9 +196,9 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
       }
       return
     } finally {
-      if (version === openVersionRef.current) {
-        setEditorLockLoading(false)
-      }
+      setEditorLockLoading((current) =>
+        version === openVersionRef.current ? false : current,
+      )
     }
   }
 

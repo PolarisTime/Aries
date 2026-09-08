@@ -120,6 +120,10 @@ export function useColumnSettingsSupport(
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
     () => toVisibilityState(initialSettings),
   )
+  // 与 state 同步维护的镜像 ref：事件处理器里先算 next 再 setState，
+  // 保证 persist 拿到最新值的同时不把副作用塞进 setState updater
+  const columnOrderRef = useRef(columnOrder)
+  const columnVisibilityRef = useRef(columnVisibility)
   const [columnSizes, setColumnSizes] = useState<Record<string, number>>(() =>
     toColumnSizesState(initialSettings),
   )
@@ -173,8 +177,12 @@ export function useColumnSettingsSupport(
           } else {
             setListColumnSettings(pageKey, remoteSettings, userKey)
             if (!userChangedRef.current) {
-              setColumnOrder(toColumnOrderState(remoteSettings))
-              setColumnVisibility(toVisibilityState(remoteSettings))
+              const nextOrder = toColumnOrderState(remoteSettings)
+              const nextVisibility = toVisibilityState(remoteSettings)
+              columnOrderRef.current = nextOrder
+              columnVisibilityRef.current = nextVisibility
+              setColumnOrder(nextOrder)
+              setColumnVisibility(nextVisibility)
               setColumnSizes(toColumnSizesState(remoteSettings))
             }
           }
@@ -276,21 +284,19 @@ export function useColumnSettingsSupport(
   }, [retryTimers])
 
   const handleColumnOrderChange: OnChangeFn<ColumnOrderState> = (updater) => {
-    setColumnOrder((current) => {
-      const next = resolveUpdater(updater, current)
-      void persist(next, columnVisibility, columnSizesRef.current)
-      return next
-    })
+    const next = resolveUpdater(updater, columnOrderRef.current)
+    columnOrderRef.current = next
+    setColumnOrder(next)
+    void persist(next, columnVisibilityRef.current, columnSizesRef.current)
   }
 
   const handleColumnVisibilityChange: OnChangeFn<VisibilityState> = (
     updater,
   ) => {
-    setColumnVisibility((current) => {
-      const next = resolveUpdater(updater, current)
-      void persist(columnOrder, next, columnSizesRef.current)
-      return next
-    })
+    const next = resolveUpdater(updater, columnVisibilityRef.current)
+    columnVisibilityRef.current = next
+    setColumnVisibility(next)
+    void persist(columnOrderRef.current, next, columnSizesRef.current)
   }
 
   const handleColumnResizePreview = (columnKey: string, width: number) => {

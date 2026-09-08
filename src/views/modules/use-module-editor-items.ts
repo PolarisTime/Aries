@@ -52,14 +52,12 @@ export function useModuleEditorItems({
       }
       return String(item._parentRelationId || item.sourceNo || '')
     }
-    const selectedSourceIds = new Set(
-      items
-        .filter((item) => selectedIds.has(item.id))
-        .flatMap((item) => {
-          const value = sourceGroupKey(item)
-          return value ? [value] : []
-        }),
-    )
+    const selectedSourceIds = new Set<string>()
+    for (const item of items) {
+      if (!selectedIds.has(item.id)) continue
+      const value = sourceGroupKey(item)
+      if (value) selectedSourceIds.add(value)
+    }
     setItems((current) =>
       current.filter((item) => {
         if (selectedIds.has(item.id)) return false

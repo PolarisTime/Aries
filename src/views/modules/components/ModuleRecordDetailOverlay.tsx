@@ -16,22 +16,9 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
-import {
-  type CustomerStatementItemGroup,
-  groupCustomerStatementItems,
-} from '@/views/modules/customer-statement-item-groups'
-import {
-  type FreightStatementProjectGroup,
-  groupFreightBillItems,
-  groupFreightStatementItems,
-} from '@/views/modules/freight-statement-item-groups'
-import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
-import {
-  FreightStatementItemGroupHeader,
-  FreightStatementProjectGroupHeader,
-} from './FreightStatementItemGroupHeader'
+import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
-import { ModuleItemsTable } from './ModuleItemsTable'
+import { buildModuleItemGroups } from './module-item-groups'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -72,25 +59,10 @@ export function ModuleRecordDetailOverlay({
     config,
   })
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
-  const detailItemGroups =
-    config.key === 'freight-statement'
-      ? groupFreightStatementItems(record?.items || [])
-      : config.key === 'freight-bill'
-        ? groupFreightBillItems(record?.items || [])
-        : config.key === 'customer-statement'
-          ? groupCustomerStatementItems(record?.items || [])
-          : [
-              {
-                key: 'all',
-                sourceNo: '',
-                billTime: '',
-                customerName: '',
-                projectName: '',
-                totalQuantity: 0,
-                totalWeightTon: 0,
-                items: record?.items || [],
-              },
-            ]
+  const detailItemGroups = buildModuleItemGroups(
+    config.key,
+    record?.items || [],
+  )
   const detailTableColumns: TableColumnsType<ModuleLineItem> =
     detailItemColumns.map((column) => ({
       title: column.title,
@@ -268,98 +240,12 @@ export function ModuleRecordDetailOverlay({
                 </>
               }
             >
-              <div className="module-items-groups">
-                {(detailItemGroups.length
-                  ? detailItemGroups
-                  : [
-                      ...(config.key === 'customer-statement'
-                        ? [
-                            {
-                              key: 'empty',
-                              groupNo: 1,
-                              sourceNo: '',
-                              deliveryDate: '',
-                              totalQuantity: 0,
-                              totalWeightTon: 0,
-                              totalAmount: 0,
-                              items: [],
-                            },
-                          ]
-                        : [
-                            {
-                              key: 'empty',
-                              sourceNo: '',
-                              billTime: '',
-                              customerName: '',
-                              projectName: '',
-                              totalQuantity: 0,
-                              totalWeightTon: 0,
-                              items: [],
-                            },
-                          ]),
-                    ]
-                ).map((group) => (
-                  <div className="module-items-group" key={group.key}>
-                    {config.key === 'freight-bill' ? (
-                      <div className="module-items-project-group">
-                        <FreightStatementProjectGroupHeader
-                          group={
-                            group as FreightStatementProjectGroup<ModuleLineItem>
-                          }
-                        />
-                        <ModuleItemsTable
-                          columns={detailTableColumns}
-                          dataSource={
-                            (
-                              group as FreightStatementProjectGroup<ModuleLineItem>
-                            ).items
-                          }
-                          emptyText={t('modules.detail.noDetailItems')}
-                        />
-                      </div>
-                    ) : 'projectGroups' in group ? (
-                      <>
-                        <FreightStatementItemGroupHeader group={group} />
-                        {group.projectGroups.map((projectGroup) => (
-                          <div
-                            className="module-items-project-group"
-                            key={projectGroup.key}
-                          >
-                            <FreightStatementProjectGroupHeader
-                              group={projectGroup}
-                              showSubtotal={false}
-                            />
-                            <ModuleItemsTable
-                              columns={detailTableColumns}
-                              dataSource={projectGroup.items}
-                              emptyText={t('modules.detail.noDetailItems')}
-                            />
-                          </div>
-                        ))}
-                      </>
-                    ) : config.key === 'customer-statement' ? (
-                      <>
-                        <CustomerStatementItemGroupHeader
-                          group={
-                            group as CustomerStatementItemGroup<ModuleLineItem>
-                          }
-                        />
-                        <ModuleItemsTable
-                          columns={detailTableColumns}
-                          dataSource={group.items}
-                          emptyText={t('modules.detail.noDetailItems')}
-                        />
-                      </>
-                    ) : (
-                      <ModuleItemsTable
-                        columns={detailTableColumns}
-                        dataSource={group.items}
-                        emptyText={t('modules.detail.noDetailItems')}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+              <ModuleItemGroupsView
+                groups={detailItemGroups}
+                moduleKey={config.key}
+                columns={detailTableColumns}
+                emptyText={t('modules.detail.noDetailItems')}
+              />
             </ModuleItemsPanel>
           ) : (
             <div className="mt-20">

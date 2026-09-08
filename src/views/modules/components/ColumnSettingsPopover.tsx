@@ -122,12 +122,21 @@ export function ColumnSettingsPopover({
     }),
   )
   const fallbackOrder = columns.map((column) => column.dataIndex)
+  const fallbackOrderSet = new Set(fallbackOrder)
   const sortableKeys =
-    orderedKeys?.filter((key) => fallbackOrder.includes(key)) || []
+    orderedKeys?.filter((key) => fallbackOrderSet.has(key)) || []
+  const sortableKeySet = new Set(sortableKeys)
   const orderedSortableKeys = [
     ...sortableKeys,
-    ...fallbackOrder.filter((key) => !sortableKeys.includes(key)),
+    ...fallbackOrder.filter((key) => !sortableKeySet.has(key)),
   ]
+  const visibleKeySet = new Set(visibleKeys)
+  const columnsByDataIndex = new Map<string, ModuleColumnDefinition>()
+  for (const column of columns) {
+    if (!columnsByDataIndex.has(column.dataIndex)) {
+      columnsByDataIndex.set(column.dataIndex, column)
+    }
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -158,7 +167,7 @@ export function ColumnSettingsPopover({
         >
           <Space orientation="vertical" size="small" className="w-full">
             {orderedSortableKeys.map((key) => {
-              const column = columns.find((item) => item.dataIndex === key)
+              const column = columnsByDataIndex.get(key)
               if (!column) {
                 return null
               }
@@ -168,7 +177,7 @@ export function ColumnSettingsPopover({
                   key={column.dataIndex}
                   columnId={column.dataIndex}
                   dragLabel={`拖动列：${column.title}`}
-                  checked={visibleKeys.includes(column.dataIndex)}
+                  checked={visibleKeySet.has(column.dataIndex)}
                   onToggle={() => onToggle(column.dataIndex)}
                   label={<span className="text-xs">{column.title}</span>}
                 />

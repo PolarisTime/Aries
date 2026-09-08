@@ -129,3 +129,13 @@ export function syncEditorFormValues(args: {
   })
   form.setFieldsValue(normalizeRecordForEditor(config, nextValues))
 }
+
+/** 从附件上传表单值中提取待随单保存的原始 File 列表。 */
+export function resolvePendingAttachmentFiles(value: unknown): File[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const file = (item as { originFileObj?: unknown }).originFileObj
+    return file instanceof File ? [file] : []
+  })
+}

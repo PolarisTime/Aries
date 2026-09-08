@@ -63,6 +63,10 @@ function settlementCompanyLabel(
   return record.settlementCompanyName?.trim() || unassignedLabel
 }
 
+function canEditRecord(record: PrintTemplateRecord) {
+  return record.syncMode !== 'FILE'
+}
+
 interface PrintTemplateStatusTagProps {
   record: PrintTemplateRecord
   statusMap: Parameters<typeof StatusTag>[0]['statusMap']
@@ -251,8 +255,6 @@ export function PrintTemplateTableCard({
     )
   })()
 
-  const canEditRecord = (record: PrintTemplateRecord) =>
-    record.syncMode !== 'FILE'
   const statusMap = {
     active: {
       color: 'green',

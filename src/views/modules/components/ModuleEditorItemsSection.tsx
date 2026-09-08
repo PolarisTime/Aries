@@ -7,7 +7,7 @@ import {
 } from '@ant-design/icons'
 import type { MenuProps, TableColumnsType, TableProps } from 'antd'
 import { Button, Dropdown, Tabs } from 'antd'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -15,32 +15,18 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import {
-  type CustomerStatementItemGroup,
-  groupCustomerStatementItems,
-} from '@/views/modules/customer-statement-item-groups'
-import {
-  type FreightStatementProjectGroup,
-  type FreightStatementSortDirection,
-  type FreightStatementSortMode,
-  groupFreightBillItems,
-  groupFreightStatementItems,
+import type {
+  FreightStatementSortDirection,
+  FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
-import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
 import { EditorFooterActions } from './EditorFooterActions'
-import {
-  FreightStatementItemGroupHeader,
-  FreightStatementProjectGroupHeader,
-} from './FreightStatementItemGroupHeader'
-import {
-  ExpenseItemsSummaryBar,
-  ModuleExpenseItemsTable,
-} from './ModuleExpenseItemsTable'
+import { ModuleEditorExpensePanel } from './ModuleEditorExpensePanel'
+import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
-import { ModuleItemsTable } from './ModuleItemsTable'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
+import { buildModuleItemGroups } from './module-item-groups'
 
 interface Props {
   config: ModulePageConfig
@@ -163,52 +149,19 @@ export function ModuleEditorItemsSection({
       ),
     },
   ]
-  const itemGroups =
-    config.key === 'freight-statement'
-      ? groupFreightStatementItems(items)
-      : config.key === 'freight-bill'
-        ? groupFreightBillItems(items)
-        : config.key === 'customer-statement'
-          ? groupCustomerStatementItems(items)
-          : [
-              {
-                key: 'all',
-                sourceNo: '',
-                billTime: '',
-                customerName: '',
-                projectName: '',
-                totalQuantity: 0,
-                totalWeightTon: 0,
-                items,
-              },
-            ]
-  const renderedItemGroups = itemGroups.length
-    ? itemGroups
-    : config.key === 'customer-statement'
-      ? [
-          {
-            key: 'empty',
-            groupNo: 1,
-            sourceNo: '',
-            deliveryDate: '',
-            totalQuantity: 0,
-            totalWeightTon: 0,
-            totalAmount: 0,
-            items: [],
-          },
-        ]
-      : [
-          {
-            key: 'empty',
-            sourceNo: '',
-            billTime: '',
-            customerName: '',
-            projectName: '',
-            totalQuantity: 0,
-            totalWeightTon: 0,
-            items: [],
-          },
-        ]
+  const itemGroups = useMemo(
+    () => buildModuleItemGroups(config.key, items),
+    [config.key, items],
+  )
+  const selectedItemIdSet = useMemo(
+    () => new Set(selectedItemIds),
+    [selectedItemIds],
+  )
+  const rowClassName = (record: ModuleLineItem) =>
+    selectedItemIdSet.has(record.id) ? 'ant-table-row-selected' : ''
+  const emptyText = config.parentImport
+    ? t('modules.itemsSection.emptyTextWithImport')
+    : t('modules.itemsSection.emptyText')
 
   const parentSelector = config.parentImport ? (
     <ModuleParentSelectorOverlay
@@ -259,59 +212,19 @@ export function ModuleEditorItemsSection({
           />
         ) : null}
         {supportsExpenseTab && activeItemTab === 'expenses' ? (
-          <ModuleItemsPanel
-            title={t('modules.itemsSection.expensePanelTitle')}
-            actions={
-              <>
-                <Button
-                  type="primary"
-                  className="overlay-action-button"
-                  icon={<PlusOutlined />}
-                  disabled={saving}
-                  onClick={onExpenseAddItem}
-                >
-                  {t('modules.itemsSection.addExpense')}
-                </Button>
-                {expenseSelectedItemIds.length ? (
-                  <button
-                    type="button"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => {
-                      for (const id of expenseSelectedItemIds) {
-                        const index = expenseItems.findIndex(
-                          (item) => item.id === id,
-                        )
-                        if (index >= 0) {
-                          onExpenseDelete(index)
-                        }
-                      }
-                      for (const id of expenseSelectedItemIds) {
-                        onExpenseSelectedChange(id, false)
-                      }
-                    }}
-                  >
-                    {t('modules.expense.removeSelected')} (
-                    {expenseSelectedItemIds.length})
-                  </button>
-                ) : null}
-                <ExpenseItemsSummaryBar
-                  count={expenseItems.length}
-                  totalExpenseAmount={expenseTotalAmount}
-                />
-              </>
-            }
-          >
-            <ModuleExpenseItemsTable
-              expenseItems={expenseItems}
-              materialOptions={expenseMaterialOptions}
-              selectedItemIds={expenseSelectedItemIds}
-              onSelectedChange={onExpenseSelectedChange}
-              onSelectAll={onExpenseSelectAll}
-              onChange={onExpenseChange}
-              onCreateExpense={onCreateExpense}
-              onDelete={onExpenseDelete}
-            />
-          </ModuleItemsPanel>
+          <ModuleEditorExpensePanel
+            expenseItems={expenseItems}
+            expenseSelectedItemIds={expenseSelectedItemIds}
+            expenseMaterialOptions={expenseMaterialOptions}
+            expenseTotalAmount={expenseTotalAmount}
+            saving={saving}
+            onExpenseSelectedChange={onExpenseSelectedChange}
+            onExpenseSelectAll={onExpenseSelectAll}
+            onExpenseChange={onExpenseChange}
+            onCreateExpense={onCreateExpense}
+            onExpenseAddItem={onExpenseAddItem}
+            onExpenseDelete={onExpenseDelete}
+          />
         ) : null}
         {!supportsExpenseTab || activeItemTab === 'goods' ? (
           <ModuleItemsPanel
@@ -412,125 +325,15 @@ export function ModuleEditorItemsSection({
               </>
             }
           >
-            <div className="module-items-groups">
-              {renderedItemGroups.map((group) => (
-                <div className="module-items-group" key={group.key}>
-                  {config.key === 'freight-bill' ? (
-                    <div className="module-items-project-group">
-                      <FreightStatementProjectGroupHeader
-                        group={
-                          group as FreightStatementProjectGroup<ModuleLineItem>
-                        }
-                      />
-                      <ModuleItemsTable
-                        columns={itemColumns}
-                        components={itemTableComponents}
-                        dataSource={
-                          (
-                            group as FreightStatementProjectGroup<ModuleLineItem>
-                          ).items
-                        }
-                        emptyText={
-                          config.parentImport
-                            ? t('modules.itemsSection.emptyTextWithImport')
-                            : t('modules.itemsSection.emptyText')
-                        }
-                        rowClassName={(record) =>
-                          selectedItemIds.includes(record.id)
-                            ? 'ant-table-row-selected'
-                            : ''
-                        }
-                        onRow={(record) => ({
-                          onDragOver: (event: React.DragEvent<Element>) =>
-                            onRowDragOver(record.id, event),
-                        })}
-                      />
-                    </div>
-                  ) : 'projectGroups' in group ? (
-                    <>
-                      <FreightStatementItemGroupHeader group={group} />
-                      {group.projectGroups.map((projectGroup) => (
-                        <div
-                          className="module-items-project-group"
-                          key={projectGroup.key}
-                        >
-                          <FreightStatementProjectGroupHeader
-                            group={projectGroup}
-                            showSubtotal={false}
-                          />
-                          <ModuleItemsTable
-                            columns={itemColumns}
-                            components={itemTableComponents}
-                            dataSource={projectGroup.items}
-                            emptyText={
-                              config.parentImport
-                                ? t('modules.itemsSection.emptyTextWithImport')
-                                : t('modules.itemsSection.emptyText')
-                            }
-                            rowClassName={(record) =>
-                              selectedItemIds.includes(record.id)
-                                ? 'ant-table-row-selected'
-                                : ''
-                            }
-                            onRow={(record) => ({
-                              onDragOver: (event: React.DragEvent<Element>) =>
-                                onRowDragOver(record.id, event),
-                            })}
-                          />
-                        </div>
-                      ))}
-                    </>
-                  ) : config.key === 'customer-statement' ? (
-                    <>
-                      <CustomerStatementItemGroupHeader
-                        group={
-                          group as CustomerStatementItemGroup<ModuleLineItem>
-                        }
-                      />
-                      <ModuleItemsTable
-                        columns={itemColumns}
-                        components={itemTableComponents}
-                        dataSource={group.items}
-                        emptyText={
-                          config.parentImport
-                            ? t('modules.itemsSection.emptyTextWithImport')
-                            : t('modules.itemsSection.emptyText')
-                        }
-                        rowClassName={(record) =>
-                          selectedItemIds.includes(record.id)
-                            ? 'ant-table-row-selected'
-                            : ''
-                        }
-                        onRow={(record) => ({
-                          onDragOver: (event: React.DragEvent<Element>) =>
-                            onRowDragOver(record.id, event),
-                        })}
-                      />
-                    </>
-                  ) : (
-                    <ModuleItemsTable
-                      columns={itemColumns}
-                      components={itemTableComponents}
-                      dataSource={group.items}
-                      emptyText={
-                        config.parentImport
-                          ? t('modules.itemsSection.emptyTextWithImport')
-                          : t('modules.itemsSection.emptyText')
-                      }
-                      rowClassName={(record) =>
-                        selectedItemIds.includes(record.id)
-                          ? 'ant-table-row-selected'
-                          : ''
-                      }
-                      onRow={(record) => ({
-                        onDragOver: (event: React.DragEvent<Element>) =>
-                          onRowDragOver(record.id, event),
-                      })}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+            <ModuleItemGroupsView
+              groups={itemGroups}
+              moduleKey={config.key}
+              columns={itemColumns}
+              components={itemTableComponents}
+              emptyText={emptyText}
+              rowClassName={rowClassName}
+              onRowDragOver={onRowDragOver}
+            />
           </ModuleItemsPanel>
         ) : null}
       </div>

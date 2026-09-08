@@ -155,6 +155,7 @@ export function WorkspaceOverlay({
       />
       <section
         ref={panelRef}
+        // react-doctor-disable-next-line react-doctor/prefer-html-dialog -- 面板已自实现 Tab 焦点圈定、Escape 关闭与焦点还原，整体迁移原生 dialog 会改变 DOM/CSS 结构与多层层级管理。
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

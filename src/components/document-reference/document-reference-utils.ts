@@ -229,25 +229,3 @@ export function isListDocumentReferenceField(
 ): boolean {
   return isDocumentReferenceField(fieldKey) && fieldKey !== primaryNoKey
 }
-
-export function getDocumentReferenceSummary(value: unknown): {
-  counterpartyName?: string
-  amount?: number | string
-  status?: string
-} {
-  if (!isRecord(value)) {
-    return {}
-  }
-  const amount = firstValue(value, AMOUNT_KEYS)
-  return {
-    ...(firstText(value, COUNTERPARTY_KEYS)
-      ? { counterpartyName: firstText(value, COUNTERPARTY_KEYS) }
-      : {}),
-    ...(typeof amount === 'number' || typeof amount === 'string'
-      ? { amount }
-      : {}),
-    ...(firstText(value, ['status', 'auditStatus'])
-      ? { status: firstText(value, ['status', 'auditStatus']) }
-      : {}),
-  }
-}

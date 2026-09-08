@@ -39,6 +39,10 @@ interface Props {
 }
 
 const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
+const EMPTY_SETTLEMENT_ACCOUNT_OPTIONS: readonly {
+  label: string
+  value: string | number | boolean
+}[] = []
 
 function getFieldSpan(
   field: ModuleFormFieldDefinition,
@@ -64,7 +68,7 @@ export function ModuleEditorFormSection({
   authoritativePrimaryNo,
   layoutVariant = 'default',
   projectOptions = EMPTY_PROJECT_OPTIONS,
-  settlementAccountOptions = [],
+  settlementAccountOptions = EMPTY_SETTLEMENT_ACCOUNT_OPTIONS,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()

@@ -15,11 +15,13 @@ export function DashboardAccountCard({
   const items = useMemo(() => {
     const infoItems = buildDashboardInfoItems(t, summary)
     const wantedKeys = new Set(['loginName', 'companyName', 'lastLoginAt'])
-    return infoItems
-      .filter((item) => wantedKeys.has(item.key))
-      .map((item) => {
-        const Icon = item.icon
-        return {
+    return infoItems.flatMap((item) => {
+      if (!wantedKeys.has(item.key)) {
+        return []
+      }
+      const Icon = item.icon
+      return [
+        {
           key: item.key,
           label: item.label,
           children: (
@@ -28,8 +30,9 @@ export function DashboardAccountCard({
               {item.value}
             </>
           ),
-        }
-      })
+        },
+      ]
+    })
   }, [summary, t])
 
   return (
