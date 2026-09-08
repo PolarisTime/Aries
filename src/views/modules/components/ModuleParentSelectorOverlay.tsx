@@ -1,7 +1,7 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { Button, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { Key } from 'react'
+import type { Key, ReactNode } from 'react'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { SearchParams } from '@/types/api-raw'
@@ -232,14 +232,17 @@ function ParentSelectorTop({
 interface ParentSelectorTableProps {
   allowMultipleSelection: boolean
   columns: ColumnsType<ModuleRecord>
+  detailExpandedRowKeys: string[]
   loading: boolean
   onImportRecord: (record: ModuleRecord) => void
   onPageChange: (page: number, pageSize: number) => void
   onSelectedRowsChange: (keys: Key[], rows: ModuleRecord[]) => void
+  onToggleDetail: (record: ModuleRecord) => void
   onToggleRecordSelection: (record: ModuleRecord) => void
   page: number
   pageSize: number
   records: ModuleRecord[]
+  renderDetail: (record: ModuleRecord) => ReactNode
   selectedRowKeys: string[]
   t: ParentSelectorTranslator
   total: number
@@ -248,14 +251,17 @@ interface ParentSelectorTableProps {
 function ParentSelectorTable({
   allowMultipleSelection,
   columns,
+  detailExpandedRowKeys,
   loading,
   onImportRecord,
   onPageChange,
   onSelectedRowsChange,
+  onToggleDetail,
   onToggleRecordSelection,
   page,
   pageSize,
   records,
+  renderDetail,
   selectedRowKeys,
   t,
   total,
@@ -284,6 +290,18 @@ function ParentSelectorTable({
             }
           : undefined
       }
+      expandable={{
+        expandedRowKeys: detailExpandedRowKeys,
+        expandedRowRender: renderDetail,
+        onExpand: (expanded, record) => {
+          const isExpanded = detailExpandedRowKeys.includes(String(record.id))
+          if (expanded !== isExpanded) {
+            onToggleDetail(record)
+          }
+        },
+        // 明细入口为行首常驻的眼睛按钮，避免额外的原生展开列造成重复入口。
+        showExpandColumn: false,
+      }}
       onRow={(record) => ({
         tabIndex: 0,
         'aria-keyshortcuts': allowMultipleSelection ? 'Enter Space' : 'Enter',
@@ -404,16 +422,19 @@ function ModuleParentSelectorOverlayContent(
       <ParentSelectorTable
         allowMultipleSelection={selector.allowMultipleSelection}
         columns={selector.columns}
+        detailExpandedRowKeys={selector.detailExpandedRowKeys}
         loading={selector.isLoading}
         onImportRecord={(record) => {
           void selector.handleImportRecords([record])
         }}
         onPageChange={selector.handlePageChange}
         onSelectedRowsChange={selector.handleSelectedRowsChange}
+        onToggleDetail={selector.toggleDetail}
         onToggleRecordSelection={selector.toggleRecordSelection}
         page={selector.page}
         pageSize={selector.pageSize}
         records={selector.records}
+        renderDetail={selector.renderDetail}
         selectedRowKeys={selector.selectedRowKeys}
         t={selector.t}
         total={selector.total}

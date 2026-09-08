@@ -1,7 +1,9 @@
+import { EyeOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { Button, Spin, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
@@ -25,6 +27,10 @@ import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
+import {
+  DETAIL_TOGGLE_COLUMN_ID,
+  DETAIL_TOGGLE_COLUMN_WIDTH,
+} from '@/hooks/useGridColumns'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { usePatchState } from '@/hooks/usePatchState'
 import {
@@ -39,6 +45,7 @@ import type {
 } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
+import { ModuleRecordDetailInline } from './ModuleRecordDetailInline'
 import {
   compactParentSelectorFilters,
   filterImportableParentRecords,
@@ -73,6 +80,12 @@ type SelectedSummaryField = {
   type?: 'date'
 }
 
+type ParentSelectorInlineDetailItem = {
+  record: ModuleRecord | null
+  loading: boolean
+  error: unknown
+}
+
 interface ParentSelectorState {
   draftFilters: SearchParams
   submittedFilters: SearchParams
@@ -80,6 +93,8 @@ interface ParentSelectorState {
   pageSize: number
   selectedRowKeys: string[]
   selectedRecordMap: Record<string, ModuleRecord>
+  detailExpandedRowKeys: string[]
+  inlineDetailItems: Record<string, ParentSelectorInlineDetailItem>
 }
 
 export const EMPTY_FIXED_FILTERS: SearchParams = {}
@@ -110,6 +125,8 @@ const parentSelectorInitialState: ParentSelectorState = {
   pageSize: DEFAULT_PAGE_SIZE,
   selectedRowKeys: [],
   selectedRecordMap: {},
+  detailExpandedRowKeys: [],
+  inlineDetailItems: {},
 }
 
 function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
@@ -578,6 +595,8 @@ export function useModuleParentSelectorOverlay({
   const [state, setState] = usePatchState<ParentSelectorState>(
     parentSelectorInitialState,
   )
+  const detailRequestSequenceRef = useRef(0)
+  const detailRequestVersionsRef = useRef(new Map<string, number>())
   useEffect(() => {
     setState({ page: 1, pageSize: defaultPageSize })
   }, [defaultPageSize, setState])
@@ -588,11 +607,14 @@ export function useModuleParentSelectorOverlay({
     pageSize,
     selectedRowKeys,
     selectedRecordMap,
+    detailExpandedRowKeys,
+    inlineDetailItems,
   } = state
   const displayFieldKey =
     parentDisplayFieldKey ||
     parentDisplayFieldFallbackMap[parentModuleKey] ||
     'id'
+  const detailModuleKey = candidateStatementModuleKey || parentModuleKey
   const effectiveFixedFilters = compactParentSelectorFilters(fixedFilters)
   const effectiveSubmittedFilters = mergeParentSelectorFilters(
     submittedFilters,
@@ -699,7 +721,7 @@ export function useModuleParentSelectorOverlay({
     candidateQueryType,
   )
   const total = Number(data?.data?.total || 0)
-  const columns: ColumnsType<ModuleRecord> =
+  const dataColumns: ColumnsType<ModuleRecord> =
     resolveVisibleParentSelectorColumns(
       resolveParentSelectorColumns(parentModuleKey, displayFieldKey),
       hiddenSelectorColumnKeys,
@@ -750,6 +772,31 @@ export function useModuleParentSelectorOverlay({
         return formatCellValue(value, column.type)
       },
     }))
+  const detailToggleColumn: ColumnsType<ModuleRecord>[number] = {
+    key: DETAIL_TOGGLE_COLUMN_ID,
+    title: '',
+    width: DETAIL_TOGGLE_COLUMN_WIDTH,
+    fixed: 'left',
+    render: (_: unknown, record: ModuleRecord) => (
+      <Tooltip title={t('modules.parentSelector.viewDetail')}>
+        <Button
+          aria-label={t('modules.parentSelector.viewDetail')}
+          className="table-detail-toggle-btn"
+          icon={<EyeOutlined />}
+          onClick={(event) => {
+            event.stopPropagation()
+            toggleDetail(record)
+          }}
+          size="small"
+          type="text"
+        />
+      </Tooltip>
+    ),
+  }
+  const columns: ColumnsType<ModuleRecord> = [
+    detailToggleColumn,
+    ...dataColumns,
+  ]
   const selectedRows = resolveSelectedParentRows(
     selectedRowKeys,
     selectedRecordMap,
@@ -842,6 +889,118 @@ export function useModuleParentSelectorOverlay({
     })
   }
 
+  const setInlineDetailItem = (
+    recordId: string,
+    updater: (
+      prev: ParentSelectorInlineDetailItem,
+    ) => ParentSelectorInlineDetailItem,
+  ) => {
+    setState((prev) => ({
+      inlineDetailItems: {
+        ...prev.inlineDetailItems,
+        [recordId]: updater(
+          prev.inlineDetailItems[recordId] || {
+            record: null,
+            loading: false,
+            error: null,
+          },
+        ),
+      },
+    }))
+  }
+
+  const loadDetailRecord = async (recordId: string) => {
+    const requestVersion = ++detailRequestSequenceRef.current
+    detailRequestVersionsRef.current.set(recordId, requestVersion)
+    setInlineDetailItem(recordId, (prev) => ({
+      ...prev,
+      loading: true,
+      error: null,
+    }))
+    try {
+      const record = await getBusinessModuleDetail(detailModuleKey, recordId)
+      if (detailRequestVersionsRef.current.get(recordId) !== requestVersion) {
+        return
+      }
+      setInlineDetailItem(recordId, (prev) => ({
+        ...prev,
+        record,
+        loading: false,
+      }))
+    } catch (error) {
+      if (detailRequestVersionsRef.current.get(recordId) !== requestVersion) {
+        return
+      }
+      setInlineDetailItem(recordId, (prev) => ({
+        ...prev,
+        record: null,
+        loading: false,
+        error,
+      }))
+    }
+  }
+
+  const toggleDetail = (record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    if (!recordId) return
+    if (detailExpandedRowKeys.includes(recordId)) {
+      detailRequestVersionsRef.current.delete(recordId)
+      setState((prev) => {
+        const nextInlineDetailItems = { ...prev.inlineDetailItems }
+        delete nextInlineDetailItems[recordId]
+        return {
+          detailExpandedRowKeys: prev.detailExpandedRowKeys.filter(
+            (key) => key !== recordId,
+          ),
+          inlineDetailItems: nextInlineDetailItems,
+        }
+      })
+      return
+    }
+    const hasInlineItems = !needsParentDetail(record)
+    setState((prev) => ({
+      detailExpandedRowKeys: [...prev.detailExpandedRowKeys, recordId],
+      inlineDetailItems: {
+        ...prev.inlineDetailItems,
+        [recordId]: {
+          record: hasInlineItems ? record : null,
+          loading: !hasInlineItems,
+          error: null,
+        },
+      },
+    }))
+    if (!hasInlineItems) {
+      void loadDetailRecord(recordId)
+    }
+  }
+
+  const retryDetail = (recordId: string) => {
+    if (inlineDetailItems[recordId]) {
+      void loadDetailRecord(recordId)
+    }
+  }
+
+  const renderDetail = (record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    if (!parentPageConfig) {
+      return (
+        <div className="module-record-detail-inline-state">
+          <Spin size="small" />
+        </div>
+      )
+    }
+    const item = inlineDetailItems[recordId]
+    return (
+      <ModuleRecordDetailInline
+        config={parentPageConfig}
+        record={item?.record ?? null}
+        loading={item?.loading ?? false}
+        error={item?.error ?? null}
+        onRetry={() => retryDetail(recordId)}
+      />
+    )
+  }
+
   const handleImportRecords = async (recordsToImport: ModuleRecord[]) => {
     try {
       const resolvedRecords = await resolveParentImportRecords(
@@ -869,6 +1028,7 @@ export function useModuleParentSelectorOverlay({
     allowMultipleSelection,
     applyFilters,
     columns,
+    detailExpandedRowKeys,
     displayFieldKey,
     draftFilters,
     effectiveTitle,
@@ -885,11 +1045,13 @@ export function useModuleParentSelectorOverlay({
     parentModuleKey,
     records,
     removeSelectedRecord,
+    renderDetail,
     resetFilters,
     selectedRows,
     selectedRowKeys,
     submittedFilters,
     t,
+    toggleDetail,
     toggleRecordSelection,
     total,
     updateFilter,
