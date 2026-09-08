@@ -32,16 +32,3 @@ export function buildDateRangePresets(t: (key: string) => string) {
     },
   ]
 }
-
-export function resolveDateRangePresetKey(
-  value: unknown,
-  presets: readonly ModuleDateRangePreset[],
-) {
-  if (!Array.isArray(value) || value.length !== 2) return undefined
-  const serializedValue = `${value[0]}|${value[1]}`
-  return presets.find(
-    (preset) =>
-      `${preset.value[0].format('YYYY-MM-DD')}|${preset.value[1].format('YYYY-MM-DD')}` ===
-      serializedValue,
-  )?.key
-}

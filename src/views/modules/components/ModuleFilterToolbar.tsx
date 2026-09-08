@@ -1,5 +1,6 @@
-import { Button, Form, Input, Radio, Space } from 'antd'
-import { useMemo, useRef } from 'react'
+import { DownOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Popover, Radio, Select } from 'antd'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   resolveMasterOptionRequirements,
@@ -11,12 +12,8 @@ import type {
   ModuleFilterDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
-import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
-import { buildFormControlId } from '@/utils/form-control-id'
-import { padLabel } from '@/utils/label-utils'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterField } from '@/views/modules/components/ModuleFilterField'
-import { ModuleQuickDateFilter } from '@/views/modules/components/ModuleQuickDateFilter'
 import { buildDateRangePresets } from '@/views/modules/components/module-date-range'
 import { resolveFilterOptions } from '@/views/modules/components/module-filter-options'
 import {
@@ -51,9 +48,11 @@ function isSameFilterPreset(left: SearchParams, right: SearchParams) {
   )
 }
 
-function getFilterFieldLabelTargetId(field: ModuleFilterDefinition) {
-  const fieldId = buildFormControlId('module-filter', field.key)
-  return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
+/** 筛选是否已设置有效值（用于 chip 高亮） */
+function hasActiveValue(value: unknown) {
+  if (value === undefined || value === null || value === '') return false
+  if (Array.isArray(value)) return value.some((item) => item)
+  return true
 }
 
 export function ModuleFilterToolbar({
@@ -74,24 +73,13 @@ export function ModuleFilterToolbar({
     true,
     customerId,
   )
+  const [openChipKey, setOpenChipKey] = useState<string | null>(null)
+  const closeChip = () => setOpenChipKey(null)
+  const toggleChip = (key: string, open: boolean) =>
+    setOpenChipKey(open ? key : null)
 
-  const hasConfigKeywordFilter = config.filters.some(
-    (field) => field.key === 'keyword',
-  )
   const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
-  )
-  const segmentedFilters = sortedFilters.filter(
-    (field) => field.type === 'segmented',
-  )
-  const dateRangeFilter = sortedFilters.find(
-    (field) => field.type === 'dateRange',
-  )
-  const hasQuickDateFilter = Boolean(
-    dateRangeFilter && dateRangeFilter.showQuickDateFilter !== false,
-  )
-  const gridFilters = sortedFilters.filter(
-    (field) => field.type !== 'segmented',
   )
   const quickFilters = config.quickFilters || []
   const datePresets = useMemo(() => buildDateRangePresets(t), [t])
@@ -108,22 +96,6 @@ export function ModuleFilterToolbar({
   ) => {
     onUpdateFilter(key, value)
     onApplyFilters(buildNextFilters(submittedFilters, key, value, resetKeys))
-  }
-
-  const commitSegmentedFilter = (
-    field: ModuleFilterDefinition,
-    rawValue: string,
-  ) => {
-    const value = rawValue === SEGMENTED_ALL_VALUE ? undefined : rawValue
-    onUpdateFilter(field.key, value)
-    onApplyFilters(
-      buildNextFilters(
-        submittedFilters,
-        field.key,
-        value,
-        field.resetKeysOnChange,
-      ),
-    )
   }
 
   const commitTextFilter = (key: string, value: string) => {
@@ -153,190 +125,247 @@ export function ModuleFilterToolbar({
     )
   }
 
-  const renderFilterItem = (field: ModuleFilterDefinition) => (
-    <div
-      key={field.key}
-      className={`module-filter-field${
-        field.type === 'dateRange' ? ' module-filter-field-fluid' : ''
-      }`}
-    >
-      <Form.Item
-        {...buildLabeledFormItemProps({
-          label: padLabel(field.label),
-          htmlFor: getFilterFieldLabelTargetId(field),
-        })}
-        className="module-filter-item"
-      >
-        <ModuleFilterField
-          field={field}
-          filters={filters}
-          submittedFilters={submittedFilters}
-          datePresets={datePresets}
-          onUpdateFilter={onUpdateFilter}
-          onCommitFilter={(key, value) =>
-            commitFilter(key, value, field.resetKeysOnChange)
-          }
-          onCommitTextFilter={commitTextFilter}
-          projectOptions={projectOptions}
-        />
-      </Form.Item>
-    </div>
+  const hasConfigKeywordFilter = config.filters.some(
+    (field) => field.key === 'keyword',
+  )
+  const pillFilters = sortedFilters.filter((field) => field.type === 'input')
+  const dateRangeFilters = sortedFilters.filter(
+    (field) => field.type === 'dateRange',
+  )
+  const chipFilters = sortedFilters.filter(
+    (field) => field.type !== 'input' && field.type !== 'dateRange',
   )
 
-  const renderQuickDateFilters = () =>
-    hasQuickDateFilter && dateRangeFilter ? (
-      <ModuleQuickDateFilter
-        field={dateRangeFilter}
-        filters={filters}
-        datePresets={datePresets}
-        onCommitFilter={(key, value) => commitFilter(key, value)}
-      />
-    ) : null
-
-  const renderQuickFilters = () => (
-    <Radio.Group
-      aria-label={t('modules.filter.quickFilters')}
-      buttonStyle="solid"
-      optionType="button"
-      value={activeQuickFilterKey}
-      options={quickFilters.map((filter) => ({
-        label: filter.label,
-        value: filter.key,
-      }))}
-      onChange={(event) => {
-        const selected = quickFilters.find(
-          (filter) => filter.key === String(event.target.value),
-        )
-        if (selected) {
-          onApplyFilters(
-            normalizeFilters({
-              ...defaultFilters,
-              ...selected.values,
-            }),
-          )
-        }
+  const renderTextPill = (
+    key: string,
+    label: string,
+    placeholder: string,
+    committedValue: string,
+  ) => (
+    <Input
+      key={key}
+      name={key}
+      allowClear
+      aria-label={label}
+      aria-keyshortcuts="Enter"
+      className="module-filter-pill module-filter-pill-input"
+      style={{ width: 176, borderRadius: 999 }}
+      suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
+      placeholder={placeholder}
+      value={asString(filters[key])}
+      onChange={(event) => onUpdateFilter(key, event.target.value)}
+      onBlur={(event) => {
+        if (event.target.value.trim() === committedValue.trim()) return
+        commitTextFilter(key, event.target.value)
       }}
+      onPressEnter={(event) => commitTextFilter(key, event.currentTarget.value)}
     />
   )
 
-  const renderResetButton = () => (
-    <Button
-      className="module-filter-reset-button"
-      icon={resolveModuleActionIcon('重置')}
-      onClick={onReset}
-    >
-      {t('common.reset')}
-    </Button>
-  )
+  const renderChip = (field: ModuleFilterDefinition) => {
+    const options = toSegmentedOptions(
+      resolveFilterOptions(field, filters, projectOptions),
+    )
+    const value = filters[field.key]
+    const active = hasActiveValue(value)
+    const selectedLabel = options.find(
+      (option) => String(option.value) === String(value ?? ''),
+    )?.label
+    const isOpen = openChipKey === field.key
+    const ariaLabel = `${field.label}: ${active ? (selectedLabel ?? String(value)) : t('modules.filter.all')}`
+    const popoverContent =
+      field.type === 'select' ? (
+        <div className="module-filter-chip-panel">
+          <Select
+            autoFocus
+            allowClear
+            aria-label={field.label}
+            style={{ width: '100%' }}
+            placeholder={
+              field.placeholder ||
+              t('modules.filter.selectPlaceholder', { label: field.label })
+            }
+            value={
+              typeof value === 'string' || typeof value === 'number'
+                ? value
+                : undefined
+            }
+            onChange={(nextValue) => {
+              commitFilter(field.key, nextValue, field.resetKeysOnChange)
+              closeChip()
+            }}
+            options={resolveFilterOptions(field, filters, projectOptions)}
+          />
+        </div>
+      ) : (
+        <Radio.Group
+          aria-label={field.label}
+          className="module-filter-chip-options"
+          value={resolveSegmentedFilterValue(value)}
+          onChange={(event) => {
+            const rawValue = String(event.target.value)
+            const nextValue =
+              rawValue === SEGMENTED_ALL_VALUE ? undefined : rawValue
+            onUpdateFilter(field.key, nextValue)
+            onApplyFilters(
+              buildNextFilters(
+                submittedFilters,
+                field.key,
+                nextValue,
+                field.resetKeysOnChange,
+              ),
+            )
+            closeChip()
+          }}
+          options={[
+            { label: t('modules.filter.all'), value: SEGMENTED_ALL_VALUE },
+            ...options,
+          ]}
+        />
+      )
+
+    return (
+      <Popover
+        key={field.key}
+        trigger="click"
+        placement="bottomLeft"
+        arrow={false}
+        open={isOpen}
+        onOpenChange={(open) => toggleChip(field.key, open)}
+        content={popoverContent}
+        overlayClassName="module-filter-chip-popover"
+      >
+        <button
+          type="button"
+          className={`module-filter-chip${active ? ' module-filter-chip-active' : ''}`}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-label={ariaLabel}
+        >
+          <span className="module-filter-chip-label">{field.label}</span>
+          {active && selectedLabel ? (
+            <span className="module-filter-chip-value">{selectedLabel}</span>
+          ) : null}
+          <DownOutlined className="module-filter-chip-caret" />
+        </button>
+      </Popover>
+    )
+  }
+
+  const quickFilterChip =
+    quickFilters.length > 0 ? (
+      <Popover
+        key="quick-filters"
+        trigger="click"
+        placement="bottomLeft"
+        arrow={false}
+        open={openChipKey === 'quick-filters'}
+        onOpenChange={(open) => toggleChip('quick-filters', open)}
+        content={
+          <Radio.Group
+            aria-label={t('modules.filter.quickFilters')}
+            className="module-filter-chip-options"
+            value={activeQuickFilterKey}
+            onChange={(event) => {
+              const selected = quickFilters.find(
+                (filter) => filter.key === String(event.target.value),
+              )
+              if (selected) {
+                onApplyFilters(
+                  normalizeFilters({
+                    ...defaultFilters,
+                    ...selected.values,
+                  }),
+                )
+              }
+              closeChip()
+            }}
+            options={quickFilters.map((filter) => ({
+              label: filter.label,
+              value: filter.key,
+            }))}
+          />
+        }
+        overlayClassName="module-filter-chip-popover"
+      >
+        <button
+          type="button"
+          className={`module-filter-chip${activeQuickFilterKey ? ' module-filter-chip-active' : ''}`}
+          aria-expanded={openChipKey === 'quick-filters'}
+          aria-haspopup="listbox"
+          aria-label={t('modules.filter.quickFilters')}
+        >
+          <span className="module-filter-chip-label">
+            {t('modules.filter.quickFilters')}
+          </span>
+          {activeQuickFilterKey ? (
+            <span className="module-filter-chip-value">
+              {
+                quickFilters.find(
+                  (filter) => filter.key === activeQuickFilterKey,
+                )?.label
+              }
+            </span>
+          ) : null}
+          <DownOutlined className="module-filter-chip-caret" />
+        </button>
+      </Popover>
+    ) : null
 
   return (
     <Form
       colon={false}
-      className="module-filter-toolbar"
+      className="module-filter-toolbar module-filter-chip-toolbar"
       aria-label={t('modules.filter.conditions')}
     >
-      {segmentedFilters.length ? (
-        <div className="module-filter-segmented-row">
-          <div className="module-filter-segmented-scroll">
-            <Space size={32} wrap>
-              {segmentedFilters.map((field) => {
-                const labelId = buildFormControlId('module-filter', field.key)
-                return (
-                  <div
-                    className="module-filter-segmented-group"
-                    key={field.key}
-                  >
-                    <span
-                      id={labelId}
-                      className="module-filter-segmented-label"
-                    >
-                      {field.label}:
-                    </span>
-                    <Radio.Group
-                      aria-labelledby={labelId}
-                      buttonStyle="solid"
-                      optionType="button"
-                      options={[
-                        {
-                          label: t('modules.filter.all'),
-                          value: SEGMENTED_ALL_VALUE,
-                        },
-                        ...toSegmentedOptions(
-                          resolveFilterOptions(field, filters, projectOptions),
-                        ),
-                      ]}
-                      value={resolveSegmentedFilterValue(filters[field.key])}
-                      onChange={(event) =>
-                        commitSegmentedFilter(field, String(event.target.value))
-                      }
-                    />
-                  </div>
-                )
-              })}
-              {renderQuickDateFilters()}
-              {quickFilters.length ? (
-                <div className="module-filter-quick-group" key="quick-filters">
-                  {renderQuickFilters()}
-                </div>
-              ) : null}
-            </Space>
-          </div>
-          {renderResetButton()}
-        </div>
-      ) : null}
-      {!segmentedFilters.length &&
-      (hasQuickDateFilter || quickFilters.length) ? (
-        <div className="module-filter-quick-row">
-          {renderQuickDateFilters()}
-          {quickFilters.length ? renderQuickFilters() : null}
-        </div>
-      ) : null}
-      <div className="module-filter-form-row">
-        {!config.hideKeywordFilter && !hasConfigKeywordFilter ? (
-          <div key="keyword" className="module-filter-field">
-            <Form.Item
-              {...buildLabeledFormItemProps({
-                label: padLabel(t('common.keyword')),
-                htmlFor: buildFormControlId('module-filter', 'keyword'),
-              })}
-              className="module-filter-item"
-            >
-              <Input
-                id={buildFormControlId('module-filter', 'keyword')}
-                name="keyword"
-                allowClear
-                style={{ width: '100%' }}
-                aria-keyshortcuts="Enter"
-                suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
-                placeholder={t('common.pleaseInput')}
-                value={asString(filters.keyword)}
-                onChange={(event) =>
-                  onUpdateFilter('keyword', event.target.value)
-                }
-                onBlur={(event) => {
-                  if (
-                    event.target.value.trim() ===
-                    asString(submittedFilters.keyword).trim()
-                  ) {
-                    return
-                  }
-                  commitTextFilter('keyword', event.target.value)
-                }}
-                onPressEnter={(event) =>
-                  commitTextFilter('keyword', event.currentTarget.value)
-                }
-              />
-            </Form.Item>
-          </div>
-        ) : null}
-        {gridFilters.map(renderFilterItem)}
-        {segmentedFilters.length ? null : (
-          <div className="module-filter-actions-col">
-            <Form.Item className="module-filter-actions">
-              {renderResetButton()}
-            </Form.Item>
-          </div>
+      <div className="module-filter-chip-row">
+        {!config.hideKeywordFilter && !hasConfigKeywordFilter
+          ? renderTextPill(
+              'keyword',
+              t('common.keyword'),
+              t('common.pleaseInput'),
+              asString(submittedFilters.keyword),
+            )
+          : null}
+        {pillFilters.map((field) =>
+          renderTextPill(
+            field.key,
+            field.label,
+            field.placeholder ||
+              t('modules.filter.inputPlaceholder', { label: field.label }),
+            asString(submittedFilters[field.key]),
+          ),
         )}
+        {dateRangeFilters.map((field) => (
+          <div
+            key={field.key}
+            className="module-filter-pill module-filter-pill-date"
+          >
+            <ModuleFilterField
+              field={field}
+              filters={filters}
+              submittedFilters={submittedFilters}
+              datePresets={datePresets}
+              onUpdateFilter={onUpdateFilter}
+              onCommitFilter={(key, value) =>
+                commitFilter(key, value, field.resetKeysOnChange)
+              }
+              onCommitTextFilter={commitTextFilter}
+              projectOptions={projectOptions}
+            />
+          </div>
+        ))}
+        {chipFilters.map((field) => renderChip(field))}
+        {quickFilterChip}
+        <Button
+          className="module-filter-reset-button"
+          type="text"
+          size="small"
+          icon={resolveModuleActionIcon('重置')}
+          onClick={onReset}
+        >
+          {t('common.reset')}
+        </Button>
       </div>
     </Form>
   )

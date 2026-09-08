@@ -7,7 +7,7 @@ import type { ModulePageConfig } from '@/types/module-page'
 let purchaseOrdersPageConfig: ModulePageConfig
 let salesOrdersPageConfig: ModulePageConfig
 
-describe('订单被什么关联筛选', () => {
+describe('订单下游引用筛选', () => {
   beforeAll(async () => {
     await i18next.changeLanguage('zh-CN')
     ;({ purchaseOrdersPageConfig } = await import(
@@ -29,7 +29,7 @@ describe('订单被什么关联筛选', () => {
     ).toEqual(['freight-bill', 'sales-outbound', 'none'])
     expect(
       options.map((option) => ('label' in option ? option.label : undefined)),
-    ).toEqual(['被物流单关联', '被销售出库关联', '未关联'])
+    ).toEqual(['被物流单引用', '被销售出库引用', '未被引用'])
   })
 
   it('采购订单提供按实际下游模块的关联选项', () => {
@@ -43,13 +43,13 @@ describe('订单被什么关联筛选', () => {
     ).toEqual(['sales-order', 'purchase-inbound', 'none'])
     expect(
       options.map((option) => ('label' in option ? option.label : undefined)),
-    ).toEqual(['被销售订单关联', '被采购入库关联', '未关联'])
+    ).toEqual(['被销售订单引用', '被采购入库引用', '未被引用'])
   })
 
-  it('订单筛选标签声明为被什么关联', () => {
+  it('订单筛选标签声明为下游引用', () => {
     for (const config of [purchaseOrdersPageConfig, salesOrdersPageConfig]) {
       const filter = config.filters.find((item) => item.key === 'referencedBy')
-      expect(filter?.label).toBe('被什么关联')
+      expect(filter?.label).toBe('下游引用')
     }
   })
 

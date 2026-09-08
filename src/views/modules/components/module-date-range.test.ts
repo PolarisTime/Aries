@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  buildDateRangePresets,
-  resolveDateRangePresetKey,
-} from '@/views/modules/components/module-date-range'
+import { buildDateRangePresets } from '@/views/modules/components/module-date-range'
 
 const t = (key: string) => key
 
@@ -46,18 +43,5 @@ describe('module date range presets', () => {
         value: ['2026-09-01', '2026-09-30'],
       },
     ])
-  })
-
-  it('resolves the active preset only for an exact date range', () => {
-    const presets = buildDateRangePresets(t)
-
-    expect(
-      resolveDateRangePresetKey(['2026-08-28', '2026-09-03'], presets),
-    ).toBe('last7Days')
-    expect(
-      resolveDateRangePresetKey(['2026-08-29', '2026-09-03'], presets),
-    ).toBeUndefined()
-    expect(resolveDateRangePresetKey(['2026-08-28'], presets)).toBeUndefined()
-    expect(resolveDateRangePresetKey(undefined, presets)).toBeUndefined()
   })
 })

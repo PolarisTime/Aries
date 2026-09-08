@@ -37,17 +37,28 @@ vi.mock('antd', () => {
         ),
       ),
   }
+  const Popover = ({
+    content,
+    children,
+  }: {
+    content?: ReactNode
+    children?: ReactNode
+  }) => createElement('div', { className: 'mock-popover' }, children, content)
 
   return {
     Button: ({ children }: { children?: ReactNode }) =>
       createElement('button', { type: 'button' }, children),
     Form,
     Input: () => createElement('input'),
+    Popover,
     Radio,
-    Space: ({ children }: { children?: ReactNode }) =>
-      createElement('div', null, children),
+    Select: () => createElement('select'),
   }
 })
+
+vi.mock('@ant-design/icons', () => ({
+  DownOutlined: () => createElement('span'),
+}))
 
 vi.mock('@/hooks/useMasterOptions', () => ({
   resolveMasterOptionRequirements: () => ({}),
@@ -64,11 +75,6 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/views/modules/components/ModuleFilterField', () => ({
   ModuleFilterField: () => null,
-}))
-
-vi.mock('@/views/modules/components/ModuleQuickDateFilter', () => ({
-  ModuleQuickDateFilter: ({ field }: { field: { key: string } }) =>
-    createElement('div', { 'data-testid': `quick-date-${field.key}` }),
 }))
 
 import type { ModulePageConfig } from '@/types/module-page'
@@ -92,17 +98,17 @@ describe('ModuleFilterToolbar', () => {
     container.remove()
   })
 
-  it('从单选事件中提取关联筛选值后再提交', () => {
+  it('从分段筛选面板单选事件中提取关联筛选值后再提交', () => {
     const onApplyFilters = vi.fn()
     const config = {
       filters: [
         {
-          key: 'referenced',
-          label: '是否被关联',
+          key: 'referencedBy',
+          label: '下游引用',
           type: 'segmented',
           options: [
-            { label: '已关联', value: 'true' },
-            { label: '未关联', value: 'false' },
+            { label: '被物流单引用', value: 'freight-bill' },
+            { label: '未被引用', value: 'none' },
           ],
         },
       ],
@@ -124,14 +130,16 @@ describe('ModuleFilterToolbar', () => {
 
     const referencedButton = Array.from(
       container.querySelectorAll('button'),
-    ).find((button) => button.textContent === '已关联')
+    ).find((button) => button.textContent === '被物流单引用')
 
     act(() => referencedButton?.click())
 
-    expect(onApplyFilters).toHaveBeenLastCalledWith({ referenced: 'true' })
+    expect(onApplyFilters).toHaveBeenLastCalledWith({
+      referencedBy: 'freight-bill',
+    })
   })
 
-  it('从单选事件中提取快捷筛选值后再匹配预设', () => {
+  it('从快捷筛选面板单选事件中匹配预设', () => {
     const onApplyFilters = vi.fn()
     const config = {
       filters: [],
@@ -166,14 +174,17 @@ describe('ModuleFilterToolbar', () => {
     expect(onApplyFilters).toHaveBeenLastCalledWith({ pendingOnly: 'true' })
   })
 
-  it('配置关闭快捷日期选择器时不渲染快捷日期控件', () => {
+  it('chip 按钮声明标签与当前筛选值的可访问名称', () => {
     const config = {
       filters: [
         {
-          key: 'orderDate',
-          label: '订单日期',
-          type: 'dateRange',
-          showQuickDateFilter: false,
+          key: 'referencedBy',
+          label: '下游引用',
+          type: 'segmented',
+          options: [
+            { label: '被物流单引用', value: 'freight-bill' },
+            { label: '未被引用', value: 'none' },
+          ],
         },
       ],
       quickFilters: [],
@@ -183,8 +194,8 @@ describe('ModuleFilterToolbar', () => {
       root.render(
         createElement(ModuleFilterToolbar, {
           config,
-          filters: {},
-          submittedFilters: {},
+          filters: { referencedBy: 'freight-bill' },
+          submittedFilters: { referencedBy: 'freight-bill' },
           onUpdateFilter: vi.fn(),
           onApplyFilters: vi.fn(),
           onReset: vi.fn(),
@@ -192,8 +203,10 @@ describe('ModuleFilterToolbar', () => {
       )
     })
 
-    expect(
-      container.querySelector('[data-testid="quick-date-orderDate"]'),
-    ).toBeNull()
+    const chip = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.className.includes('module-filter-chip'),
+    )
+    expect(chip?.getAttribute('aria-label')).toBe('下游引用: 被物流单引用')
+    expect(chip?.getAttribute('aria-haspopup')).toBe('listbox')
   })
 })
