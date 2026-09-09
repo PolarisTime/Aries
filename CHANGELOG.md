@@ -1,3 +1,12 @@
+## [10.0.1](https://github.com/PolarisTime/Aries/compare/v10.0.0...v10.0.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* **a11y:** 修复触摸目标热区与文本对比度不满足 WCAG AA ([f587dd3](https://github.com/PolarisTime/Aries/commit/f587dd37b5c0f92be12ec2fec0ae79adc3beeda9))
+* **a11y:** 表单错误状态补充 ARIA 关联与焦点管理 ([dc1e11a](https://github.com/PolarisTime/Aries/commit/dc1e11afae851e018095ad2500f912d8d24ae921))
+* **layout:** 修复多标签页状态保存的三处逻辑缺陷 ([b2e9129](https://github.com/PolarisTime/Aries/commit/b2e9129b7362a2630ceb23a91ebb7ae2db36b02c))
+
 # [10.0.0](https://github.com/PolarisTime/Aries/compare/v9.27.0...v10.0.0) (2026-09-09)
 
 
