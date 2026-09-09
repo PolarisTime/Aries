@@ -438,6 +438,7 @@
 }
 
 .header-global-search-group {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
@@ -450,11 +451,58 @@
   border-radius: var(--ant-border-radius);
   background: var(--theme-surface);
   box-shadow: none;
+  transition:
+    border-color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out),
+    box-shadow var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out);
+}
+
+.header-global-search-group:hover {
+  border-color: var(--theme-highlight-border);
 }
 
 .header-global-search-group:focus-within {
-  border-color: var(--theme-highlight-border);
-  box-shadow: 0 0 0 2px var(--theme-primary-soft);
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px var(--theme-primary-soft-strong);
+}
+
+/* 搜索请求进行中的底部进度线：绝对定位 + transform，不产生布局位移 */
+.header-global-search-group::after {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  content: "";
+  background: var(--theme-primary);
+  opacity: 0;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+.header-global-search-group.is-loading::after {
+  opacity: 1;
+  animation: header-search-progress 1.4s var(--ant-motion-ease-in-out) infinite;
+}
+
+@keyframes header-search-progress {
+  0% {
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+
+  45% {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+  }
+
+  55% {
+    transform: scaleX(1);
+    transform-origin: 100% 50%;
+  }
+
+  100% {
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+  }
 }
 
 .header-global-search-box,
@@ -2320,4 +2368,128 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   margin: 0 !important;
+}
+
+/* ===== 响应式断点（#12）=====
+ * 说明：
+ * - layout-shell.css 在 pages.css 之前加载，平板/移动断点统一加 .app-shell
+ *   前缀提升特异性，确保能覆盖 pages.css 既有 1440/1280 断点的收敛值；
+ * - 既有 1440/1280 断点（pages.css）与 960/768 断点保持原样，向后兼容；
+ * - <768px 侧边栏为纯 CSS 抽屉（:hover/:focus-within 触发），不改 TSX。
+ */
+
+/* ---- 平板 768-1024px：header 高度与搜索宽度收敛、表格横向滚动优化 ---- */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .app-shell {
+    /* 元素级覆盖 :root 的 --app-header-height（就近继承优先生效） */
+    --app-header-height: 52px;
+  }
+
+  .app-shell .header-global-search {
+    flex-basis: 220px;
+    min-width: 150px;
+    max-width: 260px;
+    margin-left: 10px;
+  }
+
+  .app-shell .header-global-search-top {
+    flex-basis: 220px;
+    width: 220px;
+  }
+
+  .app-shell .app-top-user-copy strong {
+    max-width: 110px;
+  }
+
+  .app-shell .module-table-shell {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---- 移动 <768px：侧边栏抽屉化（纯 CSS，:hover/:focus-within 触发） ---- */
+@media (max-width: 767.98px) {
+  .app-shell {
+    --app-header-height: 48px;
+  }
+
+  /* 覆盖 app-layout-utils 写入的内联宽度/padding（内联样式需 !important） */
+  .app-shell .app-fixed-header.app-side-opened,
+  .app-shell .app-fixed-header.app-side-closed {
+    width: 100% !important;
+  }
+
+  .app-shell .leo-main {
+    padding-left: 0 !important;
+  }
+
+  /* 头部时钟元信息在窄屏收敛隐藏 */
+  .app-shell .app-top-header-meta {
+    display: none;
+  }
+
+  .app-shell .header-global-search {
+    flex: 1 1 auto;
+    min-width: 120px;
+    max-width: none;
+    margin-left: 8px;
+  }
+
+  .app-shell .header-global-search-top {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .app-shell .module-table-shell {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 抽屉化：默认移出屏幕，悬停/聚焦时滑入覆盖内容层 */
+  .app-shell .leo-sider {
+    transform: translateX(-100%);
+    transition: transform var(--ant-motion-duration-mid)
+      var(--ant-motion-ease-in-out);
+  }
+
+  .app-shell .leo-sider:hover,
+  .app-shell .leo-sider:focus-within {
+    transform: translateX(0);
+    box-shadow: var(--theme-shadow-md);
+  }
+
+  /* 遮罩：仅抽屉展开（sider 处于 hover/focus-within）时出现；
+   * pointer 移出 sider 即收起，不会拦截点击形成死区 */
+  .app-shell:has(.leo-sider:hover)::before,
+  .app-shell:has(.leo-sider:focus-within)::before {
+    position: fixed;
+    inset: 0;
+    z-index: 99; /* 低于 .leo-sider 的 z-index:100 */
+    content: "";
+    background: rgb(0 0 0 / 45%);
+  }
+}
+
+/* ---- 动效降级： prefers-reduced-motion 时移除过渡/动画 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .header-global-search-group,
+  .header-global-search-group:hover,
+  .header-global-search-group:focus-within {
+    transition: none;
+  }
+
+  /* 保留静态半宽进度条作为加载指示，仅去除位移动画 */
+  .header-global-search-group.is-loading::after {
+    animation: none;
+    transform: scaleX(0.5);
+    transform-origin: 0 50%;
+  }
+
+  @media (max-width: 767.98px) {
+    .app-shell .leo-sider {
+      transition: none;
+    }
+  }
 }

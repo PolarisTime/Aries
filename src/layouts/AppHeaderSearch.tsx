@@ -57,7 +57,13 @@ export function AppHeaderSearch({
 
   return (
     <div className={className}>
-      <div className="header-global-search-group">
+      <div
+        className={
+          loading
+            ? 'header-global-search-group is-loading'
+            : 'header-global-search-group'
+        }
+      >
         <AutoComplete
           className="header-global-search-box"
           value={keyword}

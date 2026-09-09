@@ -35,7 +35,7 @@ describe('AppHeaderSearch focus restore', () => {
     onSubmit: vi.fn(),
   }
 
-  const renderSearch = () => {
+  const renderSearch = (loading = false) => {
     act(() => {
       root.render(
         createElement(AppHeaderSearch, {
@@ -43,7 +43,7 @@ describe('AppHeaderSearch focus restore', () => {
           keyword: 'SO-1',
           options: [{ value: 'sales-order::1', label: 'SO-1' }],
           open: true,
-          loading: false,
+          loading,
           ...handlers,
         }),
       )
@@ -129,5 +129,77 @@ describe('AppHeaderSearch focus restore', () => {
 
     expect(handlers.onSubmit).toHaveBeenCalledWith('SO-1')
     expect(document.activeElement).toBe(input)
+  })
+})
+
+describe('AppHeaderSearch loading state', () => {
+  let root: Root
+  let host: HTMLDivElement
+  const handlers = {
+    onBlur: vi.fn(),
+    onKeywordChange: vi.fn(),
+    onOpen: vi.fn(),
+    onOpenChange: vi.fn(),
+    onSearch: vi.fn(),
+    onSelect: vi.fn(),
+    onSubmit: vi.fn(),
+  }
+
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+  })
+
+  afterEach(() => {
+    act(() => {
+      root.unmount()
+    })
+    host.remove()
+    document.body.innerHTML = ''
+    Object.values(handlers).forEach((handler) => {
+      handler.mockClear()
+    })
+  })
+
+  it('toggles the is-loading class on the search group while a request is in flight', () => {
+    act(() => {
+      root.render(
+        createElement(AppHeaderSearch, {
+          className: 'header-global-search',
+          keyword: 'SO-1',
+          options: [],
+          open: false,
+          loading: true,
+          ...handlers,
+        }),
+      )
+    })
+
+    const group = host.querySelector<HTMLElement>(
+      '.header-global-search-group',
+    )!
+    expect(group).toBeTruthy()
+    expect(group.classList.contains('is-loading')).toBe(true)
+  })
+
+  it('does not apply the is-loading class when idle', () => {
+    act(() => {
+      root.render(
+        createElement(AppHeaderSearch, {
+          className: 'header-global-search',
+          keyword: 'SO-1',
+          options: [],
+          open: false,
+          loading: false,
+          ...handlers,
+        }),
+      )
+    })
+
+    const group = host.querySelector<HTMLElement>(
+      '.header-global-search-group',
+    )!
+    expect(group.classList.contains('is-loading')).toBe(false)
   })
 })
