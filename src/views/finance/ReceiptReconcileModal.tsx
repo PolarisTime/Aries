@@ -896,7 +896,7 @@ export default function ReceiptReconcileModal({
               />
             )}
 
-            <Divider orientation="left" plain>
+            <Divider titlePlacement="left" plain>
               凭证与备注
             </Divider>
             <Row gutter={12}>
@@ -1026,7 +1026,7 @@ export default function ReceiptReconcileModal({
               </div>
 
               <Alert
-                type={attachments.length > 0 ? 'success' : 'default'}
+                type={attachments.length > 0 ? 'success' : 'info'}
                 showIcon
                 title={
                   attachments.length > 0
