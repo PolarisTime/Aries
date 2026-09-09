@@ -133,9 +133,18 @@ describe('选单器默认展开明细', () => {
     })
 
     await vi.waitFor(() => {
-      const detailElement = hook.result.renderDetail({ id: '9001' }) as {
-        props: { record: { items: unknown[] } | null; loading: boolean }
+      const panelElement = hook.result.renderDetail({ id: '9001' }) as {
+        props: {
+          className: string
+          children: {
+            props: { record: { items: unknown[] } | null; loading: boolean }
+          }
+        }
       }
+      expect(panelElement.props.className).toContain(
+        'parent-selector-detail-panel',
+      )
+      const detailElement = panelElement.props.children
       expect(detailElement.props.loading).toBe(false)
       expect(detailElement.props.record?.items).toHaveLength(1)
     })
