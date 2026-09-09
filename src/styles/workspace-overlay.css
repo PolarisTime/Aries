@@ -76,8 +76,19 @@
   gap: 16px;
 }
 
+/* 展开按钮：标准 +/- 折叠控件 */
+.parent-selector-detail-toggle-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: 4px;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+}
+
 .parent-selector-detail-toggle-btn.is-active {
   color: var(--ant-color-primary, #1677ff);
+  border-color: var(--ant-color-primary, #1677ff);
   background: var(--ant-color-primary-bg, #e6f4ff);
 }
 
@@ -85,20 +96,56 @@
   background: var(--ant-color-primary-bg, #e6f4ff);
 }
 
-/* 展开明细面板：与主行保持缩进对齐，并呈现为附属卡片 */
+/* 展开明细面板：与主行保持缩进对齐，摘要行 + 明细卡片一体化 */
 .parent-selector-detail-panel {
-  padding: 8px 12px 12px 52px;
+  padding: 8px 12px 12px 84px;
 }
 
-.parent-selector-detail-panel .module-record-detail-inline,
-.parent-selector-detail-panel .module-record-detail-inline-state {
+.parent-selector-detail-summary {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+  background: var(--ant-color-fill-quaternary, #fafafa);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-bottom: 1px dashed var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius-lg, 8px)
+    var(--ant-border-radius-lg, 8px) 0 0;
+}
+
+.parent-selector-detail-panel
+  .module-record-detail-inline.module-record-detail-inline,
+.parent-selector-detail-panel
+  .module-record-detail-inline-state.module-record-detail-inline-state {
   background: var(--ant-color-bg-container, #fff);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  border-radius: var(--ant-border-radius-lg, 8px);
+  border-top: 0;
+  border-radius: 0 0 var(--ant-border-radius-lg, 8px)
+    var(--ant-border-radius-lg, 8px);
 }
 
 .parent-selector-detail-panel .module-record-detail-inline-state {
   min-height: 64px;
+}
+
+.parent-selector-copy-btn {
+  margin-left: 6px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.parent-selector-copy-btn:hover {
+  color: var(--ant-color-primary, #1677ff);
+}
+
+.parent-selector-detail-summary-docno {
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
 }
 
 .parent-selector-top {

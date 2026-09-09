@@ -60,7 +60,13 @@ export function ModuleRecordDetailInline({
       dataIndex: column.dataIndex,
       key: column.dataIndex,
       width: column.width,
-      align: column.align || 'center',
+      align:
+        column.align ||
+        (column.type === 'amount' ||
+        column.type === 'weight' ||
+        column.type === 'count'
+          ? 'right'
+          : 'center'),
       render: (value: unknown, item: ModuleLineItem) => {
         if (
           column.dataIndex === 'pieceWeightTon' &&

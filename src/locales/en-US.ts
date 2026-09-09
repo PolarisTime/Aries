@@ -887,6 +887,16 @@ export const enUS = {
       paginationTotal: 'Total {{count}}',
       viewDetail: 'View details',
       collapseDetail: 'Collapse details',
+      expandDetail: 'Expand details',
+      copied: 'Copied',
+      detailLines: '{{count}} items',
+      detailImportable: 'Importable qty {{count}}',
+      selectedMultiSummary:
+        'Selected {{orderCount}} orders ({{lineCount}} items, importable qty {{importableQuantity}})',
+      selectedMultiSummarySimple:
+        'Selected {{orderCount}} orders ({{lineCount}} items)',
+      selectedSingleSummary: 'Selected {{count}} order: {{docNo}}',
+      selectedEmptyHint: 'Nothing selected. Click a row or checkbox to select.',
       status: {
         draft: 'Draft',
         unaudited: 'Unaudited',

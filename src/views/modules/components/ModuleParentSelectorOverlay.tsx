@@ -132,33 +132,29 @@ function ParentSelectorSelectedPanel({
 }
 
 interface ParentSelectorFooterProps {
-  disabled: boolean
+  confirmDisabled: boolean
   onCancel: () => void
   onConfirm: () => void
-  selectedCount: number
+  summary: string
   t: ParentSelectorTranslator
 }
 
 function ParentSelectorFooter({
-  disabled,
+  confirmDisabled,
   onCancel,
   onConfirm,
-  selectedCount,
+  summary,
   t,
 }: ParentSelectorFooterProps) {
   return (
     <div className="flex justify-between items-center gap-12">
-      <span className="text-secondary">
-        {t('modules.parentSelector.selectedCount', {
-          count: selectedCount,
-        })}
-      </span>
+      <span className="text-secondary">{summary}</span>
       <div className="flex gap-8">
         <Button onClick={onCancel}>{t('modules.parentSelector.cancel')}</Button>
         <Button
           type="primary"
           icon={<CheckOutlined />}
-          disabled={disabled}
+          disabled={confirmDisabled}
           onClick={onConfirm}
         >
           {t('modules.parentSelector.confirmImport')}
@@ -208,6 +204,7 @@ function ParentSelectorTop({
           config={overlayFilterConfig}
           filters={draftFilters}
           defaultFilters={{}}
+          showSubmitButton
           submittedFilters={submittedFilters}
           onUpdateFilter={onUpdateFilter}
           onApplyFilters={onApplyFilters}
@@ -234,9 +231,9 @@ interface ParentSelectorTableProps {
   columns: ColumnsType<ModuleRecord>
   detailExpandedRowKeys: string[]
   loading: boolean
-  onImportRecord: (record: ModuleRecord) => void
   onPageChange: (page: number, pageSize: number) => void
   onSelectedRowsChange: (keys: Key[], rows: ModuleRecord[]) => void
+  onSelectSingleRecord: (record: ModuleRecord) => void
   onToggleDetail: (record: ModuleRecord) => void
   onToggleRecordSelection: (record: ModuleRecord) => void
   page: number
@@ -253,9 +250,9 @@ function ParentSelectorTable({
   columns,
   detailExpandedRowKeys,
   loading,
-  onImportRecord,
   onPageChange,
   onSelectedRowsChange,
+  onSelectSingleRecord,
   onToggleDetail,
   onToggleRecordSelection,
   page,
@@ -271,7 +268,7 @@ function ParentSelectorTable({
       onToggleRecordSelection(record)
       return
     }
-    onImportRecord(record)
+    onSelectSingleRecord(record)
   }
 
   return (
@@ -281,15 +278,12 @@ function ParentSelectorTable({
       dataSource={records}
       loading={loading}
       scroll={{ x: 'max-content' }}
-      rowSelection={
-        allowMultipleSelection
-          ? {
-              preserveSelectedRowKeys: true,
-              selectedRowKeys,
-              onChange: onSelectedRowsChange,
-            }
-          : undefined
-      }
+      rowSelection={{
+        type: allowMultipleSelection ? 'checkbox' : 'radio',
+        preserveSelectedRowKeys: true,
+        selectedRowKeys,
+        onChange: onSelectedRowsChange,
+      }}
       expandable={{
         expandedRowKeys: detailExpandedRowKeys,
         expandedRowRender: renderDetail,
@@ -299,7 +293,7 @@ function ParentSelectorTable({
             onToggleDetail(record)
           }
         },
-        // 明细入口为行首常驻的眼睛按钮，避免额外的原生展开列造成重复入口。
+        // 明细入口为行首折叠按钮，避免额外的原生展开列造成重复入口。
         showExpandColumn: false,
       }}
       rowClassName={(record) =>
@@ -309,11 +303,9 @@ function ParentSelectorTable({
       }
       onRow={(record) => ({
         tabIndex: 0,
-        'aria-keyshortcuts': allowMultipleSelection ? 'Enter Space' : 'Enter',
-        title: allowMultipleSelection ? 'Space 选择，Enter 打开' : 'Enter 打开',
-        'aria-selected': allowMultipleSelection
-          ? selectedRowKeys.includes(String(record.id))
-          : undefined,
+        'aria-keyshortcuts': 'Enter Space',
+        title: 'Space 选择，Enter 选择',
+        'aria-selected': selectedRowKeys.includes(String(record.id)),
         onClick: (event) => {
           if (shouldIgnoreRowInteraction(event.target)) return
           handleRowAction(record)
@@ -321,9 +313,8 @@ function ParentSelectorTable({
         onKeyDown: (event) => {
           if (shouldIgnoreRowInteraction(event.target)) return
           if (event.key === ' ' || event.key === 'Spacebar') {
-            if (!allowMultipleSelection) return
             event.preventDefault()
-            onToggleRecordSelection(record)
+            handleRowAction(record)
             return
           }
           if (event.key === 'Enter') {
@@ -391,17 +382,15 @@ function ModuleParentSelectorOverlayContent(
       onClose={selector.onClose}
       className="workspace-overlay-panel--parent-selector"
       footer={
-        selector.allowMultipleSelection ? (
-          <ParentSelectorFooter
-            disabled={!selector.selectedRows.length}
-            onCancel={selector.onClose}
-            onConfirm={() => {
-              void selector.handleImportRecords(selector.selectedRows)
-            }}
-            selectedCount={selector.selectedRows.length}
-            t={selector.t}
-          />
-        ) : undefined
+        <ParentSelectorFooter
+          confirmDisabled={!selector.selectedRows.length}
+          onCancel={selector.onClose}
+          onConfirm={() => {
+            void selector.handleImportRecords(selector.selectedRows)
+          }}
+          summary={selector.selectedSummary}
+          t={selector.t}
+        />
       }
       variant="workspace"
       width="100%"
@@ -429,11 +418,9 @@ function ModuleParentSelectorOverlayContent(
         columns={selector.columns}
         detailExpandedRowKeys={selector.detailExpandedRowKeys}
         loading={selector.isLoading}
-        onImportRecord={(record) => {
-          void selector.handleImportRecords([record])
-        }}
         onPageChange={selector.handlePageChange}
         onSelectedRowsChange={selector.handleSelectedRowsChange}
+        onSelectSingleRecord={selector.selectSingleRecord}
         onToggleDetail={selector.toggleDetail}
         onToggleRecordSelection={selector.toggleRecordSelection}
         page={selector.page}

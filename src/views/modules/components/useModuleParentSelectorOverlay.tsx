@@ -1,4 +1,4 @@
-import { EyeOutlined } from '@ant-design/icons'
+import { MinusOutlined, PlusOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Button, Spin, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -99,6 +99,26 @@ interface ParentSelectorState {
 
 export const EMPTY_FIXED_FILTERS: SearchParams = {}
 export const DEFAULT_PAGE_SIZE = 30
+
+/** 选单器主表日期展示：X年M月D日，月/日不足两位补零。 */
+function formatCnDate(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return formatCellValueDateFallback(value)
+  }
+  const match = String(value).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (!match) {
+    return formatCellValueDateFallback(value)
+  }
+  const [, year, month, day] = match
+  return `${year}年${month.padStart(2, '0')}月${day.padStart(2, '0')}日`
+}
+
+function formatCellValueDateFallback(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '-'
+  }
+  return String(value)
+}
 
 export type ParentSelectorTranslator = (
   key: string,
@@ -721,19 +741,6 @@ export function useModuleParentSelectorOverlay({
     candidateQueryType,
   )
   const total = Number(data?.data?.total || 0)
-  const recordsRef = useRef<ModuleRecord[]>([])
-  const inlineDetailItemsRef = useRef<
-    Record<string, ParentSelectorInlineDetailItem>
-  >({})
-  useEffect(() => {
-    recordsRef.current = records
-    inlineDetailItemsRef.current = inlineDetailItems
-  }, [inlineDetailItems, records])
-  const recordsKey = records.flatMap((record) => {
-    const recordId = String(record.id || '')
-    return recordId ? [recordId] : []
-  })
-  const recordsKeyText = recordsKey.join(',')
   const dataColumns: ColumnsType<ModuleRecord> =
     resolveVisibleParentSelectorColumns(
       resolveParentSelectorColumns(parentModuleKey, displayFieldKey),
@@ -743,6 +750,10 @@ export function useModuleParentSelectorOverlay({
       title: column.title,
       width: column.width,
       ellipsis: true,
+      align:
+        column.type === 'amount' || column.type === 'weight'
+          ? 'right'
+          : 'center',
       render: (value: unknown, record: ModuleRecord) => {
         if (column.type === 'status') {
           const status = getDisplayStatus(record, column.dataIndex)
@@ -782,6 +793,9 @@ export function useModuleParentSelectorOverlay({
             />
           )
         }
+        if (column.type === 'date') {
+          return formatCnDate(value)
+        }
         return formatCellValue(value, column.type)
       },
     }))
@@ -794,7 +808,7 @@ export function useModuleParentSelectorOverlay({
       const expanded = detailExpandedRowKeys.includes(String(record.id))
       const label = expanded
         ? t('modules.parentSelector.collapseDetail')
-        : t('modules.parentSelector.viewDetail')
+        : t('modules.parentSelector.expandDetail')
       return (
         <Tooltip title={label}>
           <Button
@@ -803,7 +817,7 @@ export function useModuleParentSelectorOverlay({
             className={`table-detail-toggle-btn parent-selector-detail-toggle-btn${
               expanded ? ' is-active' : ''
             }`}
-            icon={<EyeOutlined />}
+            icon={expanded ? <MinusOutlined /> : <PlusOutlined />}
             onClick={(event) => {
               event.stopPropagation()
               toggleDetail(record)
@@ -901,6 +915,15 @@ export function useModuleParentSelectorOverlay({
           return [normalizedKey, matchedRow || selectedRecordMap[normalizedKey]]
         }),
       ),
+    })
+  }
+
+  /** 单选模式：点行/单选钮仅选中该行，导入需经底部确认栏。 */
+  const selectSingleRecord = (record: ModuleRecord) => {
+    const recordKey = String(record.id)
+    setState({
+      selectedRowKeys: [recordKey],
+      selectedRecordMap: { [recordKey]: record },
     })
   }
 
@@ -1008,37 +1031,33 @@ export function useModuleParentSelectorOverlay({
     }
   }
 
-  // 列表数据加载后默认展开全部行明细；已手动收起的行在当前页内保持收起。
-  useEffect(() => {
-    if (!recordsKeyText) {
-      setState({ detailExpandedRowKeys: [] })
+  const copyDocNo = useCallback(async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
       return
     }
-    const currentRecords = recordsRef.current
-    const recordIds: string[] = []
-    const seedItems: Record<string, ParentSelectorInlineDetailItem> = {}
-    const pendingRecordIds: string[] = []
-    for (const record of currentRecords) {
-      const recordId = String(record.id || '')
-      if (!recordId) continue
-      recordIds.push(recordId)
-      if (!needsParentDetail(record)) {
-        seedItems[recordId] = { record, loading: false, error: null }
-      } else if (!inlineDetailItemsRef.current[recordId]) {
-        pendingRecordIds.push(recordId)
-      }
+    const input = document.createElement('textarea')
+    input.value = text
+    input.setAttribute('readonly', '')
+    input.style.position = 'fixed'
+    input.style.opacity = '0'
+    document.body.appendChild(input)
+    input.select()
+    const copied = document.execCommand('copy')
+    input.remove()
+    if (!copied) {
+      throw new Error('clipboard unavailable')
     }
-    setState((prev) => ({
-      detailExpandedRowKeys: recordIds,
-      inlineDetailItems: { ...prev.inlineDetailItems, ...seedItems },
-    }))
-    pendingRecordIds.forEach((recordId) => {
-      void loadDetailRecord(recordId)
-    })
-  }, [loadDetailRecord, recordsKeyText, setState])
+  }, [])
 
   const renderDetail = (record: ModuleRecord) => {
     const recordId = String(record.id || '')
+    const detailRecord = inlineDetailItems[recordId]?.record ?? record
+    const lineCount = Array.isArray(detailRecord.items)
+      ? detailRecord.items.length
+      : 0
+    const importableQty = Number(record.importableQuantity)
+    const docNo = asString(record[displayFieldKey]).trim() || recordId
     const content = !parentPageConfig ? (
       <div className="module-record-detail-inline-state">
         <Spin size="small" />
@@ -1057,7 +1076,46 @@ export function useModuleParentSelectorOverlay({
         )
       })()
     )
-    return <div className="parent-selector-detail-panel">{content}</div>
+    return (
+      <div className="parent-selector-detail-panel">
+        <div className="parent-selector-detail-summary">
+          <span>
+            {t('modules.parentSelector.detailLines', { count: lineCount })}
+          </span>
+          {Number.isFinite(importableQty) && importableQty > 0 ? (
+            <span>
+              {t('modules.parentSelector.detailImportable', {
+                count: importableQty,
+              })}
+            </span>
+          ) : null}
+          <span>
+            {t('modules.parentSelector.column.docNo')}：
+            <span className="parent-selector-detail-summary-docno">
+              {docNo}
+            </span>
+            <button
+              type="button"
+              className="parent-selector-copy-btn"
+              aria-label={t('common.copy')}
+              onClick={(event) => {
+                event.stopPropagation()
+                void copyDocNo(docNo)
+                  .then(() =>
+                    message.success(t('modules.parentSelector.copied')),
+                  )
+                  .catch(() => {
+                    /* 忽略剪贴板不可用场景 */
+                  })
+              }}
+            >
+              ⧉
+            </button>
+          </span>
+        </div>
+        {content}
+      </div>
+    )
   }
 
   const handleImportRecords = async (recordsToImport: ModuleRecord[]) => {
@@ -1083,6 +1141,38 @@ export function useModuleParentSelectorOverlay({
     }
   }
 
+  const selectedOrderCount = selectedRows.length
+  const selectedLineCount = selectedRows.reduce(
+    (sum, row) => sum + (Array.isArray(row.items) ? row.items.length : 0),
+    0,
+  )
+  const hasImportableQuantity = selectedRows.some((row) =>
+    Number.isFinite(Number(row.importableQuantity)),
+  )
+  const selectedImportableQuantity = selectedRows.reduce(
+    (sum, row) => sum + Math.max(Number(row.importableQuantity) || 0, 0),
+    0,
+  )
+  const selectedSummary = allowMultipleSelection
+    ? hasImportableQuantity
+      ? t('modules.parentSelector.selectedMultiSummary', {
+          orderCount: selectedOrderCount,
+          lineCount: selectedLineCount,
+          importableQuantity: selectedImportableQuantity,
+        })
+      : t('modules.parentSelector.selectedMultiSummarySimple', {
+          orderCount: selectedOrderCount,
+          lineCount: selectedLineCount,
+        })
+    : selectedOrderCount
+      ? t('modules.parentSelector.selectedSingleSummary', {
+          count: selectedOrderCount,
+          docNo:
+            asString(selectedRows[0]?.[displayFieldKey]).trim() ||
+            asString(selectedRows[0]?.id),
+        })
+      : t('modules.parentSelector.selectedEmptyHint')
+
   return {
     allowMultipleSelection,
     applyFilters,
@@ -1106,8 +1196,10 @@ export function useModuleParentSelectorOverlay({
     removeSelectedRecord,
     renderDetail,
     resetFilters,
+    selectSingleRecord,
     selectedRows,
     selectedRowKeys,
+    selectedSummary,
     submittedFilters,
     t,
     toggleDetail,

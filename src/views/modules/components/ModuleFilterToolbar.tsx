@@ -1,3 +1,4 @@
+import { SearchOutlined } from '@ant-design/icons'
 import { Button, Form, Input } from 'antd'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +23,8 @@ interface Props {
   filters: SearchParams
   defaultFilters?: SearchParams
   submittedFilters: SearchParams
+  /** 显示明确的「查询」主按钮（选单器等独立筛选场景） */
+  showSubmitButton?: boolean
   onUpdateFilter: (key: string, value: unknown) => void
   onApplyFilters: (filters: SearchParams) => void
   onReset: () => void
@@ -46,6 +49,7 @@ export function ModuleFilterToolbar({
   filters,
   defaultFilters = EMPTY_FILTERS,
   submittedFilters,
+  showSubmitButton = false,
   onUpdateFilter,
   onApplyFilters,
   onReset,
@@ -210,6 +214,17 @@ export function ModuleFilterToolbar({
           onToggle={(open) => toggleChip('quick-filters', open)}
           onApplyFilters={onApplyFilters}
         />
+        {showSubmitButton ? (
+          <Button
+            className="module-filter-submit-button"
+            type="primary"
+            size="small"
+            icon={<SearchOutlined />}
+            onClick={() => onApplyFilters(filters)}
+          >
+            {t('common.search')}
+          </Button>
+        ) : null}
         <Button
           className="module-filter-reset-button"
           type="text"

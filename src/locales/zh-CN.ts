@@ -862,6 +862,16 @@ export const zhCN = {
       paginationTotal: '共 {{count}} 条',
       viewDetail: '查看明细',
       collapseDetail: '收起明细',
+      expandDetail: '展开明细',
+      copied: '已复制',
+      detailLines: '明细 {{count}} 条',
+      detailImportable: '可导数量 {{count}}',
+      selectedMultiSummary:
+        '已选 {{orderCount}} 个订单（含 {{lineCount}} 条明细，可导数量 {{importableQuantity}}）',
+      selectedMultiSummarySimple:
+        '已选 {{orderCount}} 个订单（含 {{lineCount}} 条明细）',
+      selectedSingleSummary: '已选 {{count}} 个订单：{{docNo}}',
+      selectedEmptyHint: '未选择，点击行或勾选框进行选择',
       status: {
         draft: '草稿',
         unaudited: '未审核',

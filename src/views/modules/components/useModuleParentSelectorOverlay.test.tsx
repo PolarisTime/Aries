@@ -125,37 +125,69 @@ describe('选单器默认展开明细', () => {
     }
   }
 
-  it('采购入库候选行默认展开并自动预取明细', async () => {
+  it('候选行默认折叠，手动展开时按需预取明细并渲染摘要行', async () => {
     const hook = renderHook()
 
     await vi.waitFor(() => {
-      expect(hook.result.detailExpandedRowKeys).toEqual(['9001', '9002'])
+      expect(hook.result.records).toHaveLength(2)
+    })
+    // 默认全部折叠
+    expect(hook.result.detailExpandedRowKeys).toEqual([])
+
+    act(() => {
+      hook.result.toggleDetail({ id: '9001' })
+    })
+
+    await vi.waitFor(() => {
+      expect(hook.result.detailExpandedRowKeys).toEqual(['9001'])
+      expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
+        'purchase-order',
+        '9001',
+      )
     })
 
     await vi.waitFor(() => {
       const panelElement = hook.result.renderDetail({ id: '9001' }) as {
         props: {
           className: string
-          children: {
-            props: { record: { items: unknown[] } | null; loading: boolean }
-          }
+          children: Array<{
+            props: {
+              className?: string
+              record?: { items?: unknown[] } | null
+              loading?: boolean
+            }
+          }>
         }
       }
       expect(panelElement.props.className).toContain(
         'parent-selector-detail-panel',
       )
-      const detailElement = panelElement.props.children
+      // 摘要行在前，明细内容在后
+      const summaryElement = panelElement.props.children[0]
+      expect(String(summaryElement.props.className)).toContain(
+        'parent-selector-detail-summary',
+      )
+      const detailElement = panelElement.props.children[1]
       expect(detailElement.props.loading).toBe(false)
       expect(detailElement.props.record?.items).toHaveLength(1)
     })
+  })
 
-    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
-      'purchase-order',
-      '9001',
-    )
-    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
-      'purchase-order',
-      '9002',
-    )
+  it('单选模式点行仅选中，不直接导入', async () => {
+    const hook = renderHook()
+
+    await vi.waitFor(() => {
+      expect(hook.result.records).toHaveLength(2)
+    })
+
+    act(() => {
+      hook.result.selectSingleRecord({ id: '9002' })
+    })
+
+    expect(hook.result.selectedRowKeys).toEqual(['9002'])
+    // 单选汇总走 selectedSingleSummary 分支（测试 i18n mock 不做插值）
+    await vi.waitFor(() => {
+      expect(hook.result.selectedSummary).toContain('selectedSingleSummary')
+    })
   })
 })

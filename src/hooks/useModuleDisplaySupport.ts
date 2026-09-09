@@ -6,7 +6,7 @@ export function useModuleDisplaySupport() {
   const { t } = useTranslation()
 
   const formatCellValue = (value: unknown, columnType?: string): string => {
-    if (value === null || value === undefined) return '--'
+    if (value === null || value === undefined || value === '') return '-'
     if (columnType === 'amount' || columnType === 'number') {
       const num = Number(value)
       return Number.isNaN(num)

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>选单器重构 Demo — Selector Modal Redesign</title>
+<style>
+  :root {
+    --primary: #1677ff;
+    --primary-bg: #e6f4ff;
+    --border: #f0f0f0;
+    --border-strong: #d9d9d9;
+    --text: rgba(0,0,0,.88);
+    --text-2: rgba(0,0,0,.65);
+    --text-3: rgba(0,0,0,.45);
+    --bg: #fff;
+    --bg-fill: #fafafa;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: #eef1f5; font-size: 14px; padding: 24px;
+  }
+  .demo-note { max-width: 1180px; margin: 0 auto 12px; color: var(--text-3); font-size: 12px; }
+  .tabs { max-width: 1180px; margin: 0 auto 12px; display: flex; gap: 8px; }
+  .tab {
+    padding: 6px 16px; border: 1px solid var(--border-strong); border-radius: 6px;
+    background: #fff; cursor: pointer; color: var(--text-2); font-size: 13px;
+  }
+  .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .modal {
+    max-width: 1180px; margin: 0 auto; background: var(--bg);
+    border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.12); overflow: hidden;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { font-size: 16px; font-weight: 600; }
+  .esc {
+    display: inline-flex; gap: 6px; align-items: center; color: var(--text-3);
+    font-size: 12px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 6px;
+  }
+  .modal-body { padding: 14px 20px 0; }
+  /* 筛选栏 */
+  .filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filter-field {
+    display: flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong);
+    border-radius: 6px; padding: 5px 10px; color: var(--text-3); background: #fff; min-width: 150px;
+    font-size: 13px;
+  }
+  .filter-field .val { color: var(--text); }
+  .btn {
+    padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border-strong);
+    background: #fff; cursor: pointer; font-size: 13px; color: var(--text);
+  }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.link { border: none; color: var(--primary); background: transparent; }
+  /* 已选面板 */
+  .selected-panel {
+    margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg-fill); padding: 10px 14px;
+  }
+  .selected-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .selected-title { font-weight: 600; }
+  .selected-title small { color: var(--text-3); font-weight: 400; margin-left: 6px; }
+  .selected-chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 62px; overflow-y: auto; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: #fff; font-size: 12px;
+  }
+  .chip b { font-weight: 500; }
+  .chip .rm { color: var(--text-3); cursor: pointer; border: none; background: none; }
+  /* 表格 */
+  .grid { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: var(--bg-fill); font-weight: 500; color: var(--text-2);
+    padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 13px;
+  }
+  td, th { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr.main-row { cursor: pointer; }
+  tr.main-row:hover td { background: #f5faff; }
+  tr.main-row.checked td { background: var(--primary-bg); }
+  tr.expanded-row td { background: var(--bg); padding: 0 0 8px; border-bottom: 1px solid var(--border); }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.ctr, td.ctr { text-align: center; }
+  .sel-col, .exp-col { width: 40px; text-align: center; }
+  .radio, .checkbox {
+    width: 16px; height: 16px; border: 1px solid var(--border-strong); border-radius: 50%;
+    display: inline-block; background: #fff; vertical-align: middle; cursor: pointer;
+  }
+  .checkbox { border-radius: 4px; }
+  .row-checked .checkbox, .checkbox.on {
+    background: var(--primary); border-color: var(--primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M6.5 10.8L3.7 8l1-1 1.8 1.8L10.9 4.6l1 1z'/%3E%3C/svg%3E");
+  }
+  .radio.on { border-width: 5px; }
+  .exp-btn {
+    width: 20px; height: 20px; border: 1px solid var(--border-strong); background: #fff;
+    border-radius: 4px; cursor: pointer; color: var(--text-2); font-size: 12px; line-height: 1;
+  }
+  .exp-btn.on { color: var(--primary); border-color: var(--primary); }
+  .order-no { color: var(--primary); cursor: pointer; }
+  .copy {
+    color: var(--text-3); cursor: pointer; font-size: 12px; margin-left: 4px; border: none; background: none;
+  }
+  .status {
+    display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 12px;
+    background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f;
+  }
+  .dash { color: var(--text-3); }
+  /* 明细面板 */
+  .detail-wrap { padding: 4px 16px 4px 88px; }
+  .detail-card {
+    border: 1px solid var(--border); border-radius: var(--radius); background: #fff; overflow: hidden;
+  }
+  .detail-summary {
+    display: flex; gap: 16px; padding: 8px 14px; color: var(--text-2); font-size: 12px;
+    border-bottom: 1px dashed var(--border); background: #fcfcfc;
+  }
+  table.detail { margin: 0; }
+  table.detail th { background: #fcfcfc; font-size: 12px; padding: 8px 10px; }
+  table.detail td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .empty-detail { padding: 14px; color: var(--text-3); text-align: center; }
+  /* 底部操作栏 */
+  .modal-footer {
+    margin-top: 12px; padding: 12px 20px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; background: var(--bg);
+  }
+  .footer-left { color: var(--text-2); }
+  .footer-left b { color: var(--primary); }
+  .footer-right { display: flex; gap: 10px; }
+  .hidden { display: none; }
+  .legend { padding: 10px 20px 16px; color: var(--text-3); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="tabs">
+  <div class="tab active" id="tab-multi" onclick="switchMode('multi')">多选模式（引入销售订单 → 采购订单）</div>
+  <div class="tab" id="tab-single" onclick="switchMode('single')">单选模式（采购入库 → 采购订单）</div>
+</div>
+<div class="demo-note">Demo：按最新评审意见重构 —— 勾选控件 / 默认折叠明细 / 数值右对齐 / 统一占位符 / 明确查询按钮 / 底部确认栏</div>
+
+<div class="modal">
+  <div class="modal-header">
+    <h2 id="modal-title">选择采购订单</h2>
+    <span class="esc">Esc 关闭</span>
+  </div>
+  <div class="modal-body">
+    <div class="filters">
+      <div class="filter-field">🔍 <span class="val">单号 / 关键字</span></div>
+      <div class="filter-field">📅 <span class="val">2026-08-01 → 2026-09-09</span></div>
+      <div class="filter-field">供应商 ▾</div>
+      <div class="filter-field">结算主体 ▾</div>
+      <button class="btn primary">查 询</button>
+      <button class="btn">重 置</button>
+    </div>
+
+    <div class="selected-panel" id="selected-panel">
+      <div class="selected-head">
+        <span class="selected-title">已选单据 <small id="selected-sub">2 笔订单 · 共 5 条明细</small></span>
+        <button class="btn link">清空</button>
+      </div>
+      <div class="selected-chips" id="chips"></div>
+    </div>
+
+    <div class="grid">
+      <table>
+        <thead>
+          <tr>
+            <th class="sel-col" id="sel-head"><span class="checkbox" onclick="toggleAll(event)"></span></th>
+            <th class="exp-col"></th>
+            <th>订单号</th>
+            <th>供应商</th>
+            <th>订单日期</th>
+            <th class="num">总重量（吨）</th>
+            <th class="num">可导数量</th>
+            <th class="num">总金额</th>
+            <th class="ctr">状态</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="footer-left" id="footer-left">已选 <b>0</b> 个订单</div>
+    <div class="footer-right">
+      <button class="btn">取 消</button>
+      <button class="btn primary" id="confirm-btn" disabled>确认导入</button>
+    </div>
+  </div>
+  <div class="legend">
+    交互说明：① 行首勾选框为唯一选择入口（多选=复选 / 单选=单选钮，点行等同勾选）；② 第二列「+ / −」按需展开明细，默认全部收起保证屏效；
+    ③ 数值列右对齐、等宽数字；④ 空值统一「-」；⑤ 单选模式同样保留底部确认栏，避免误触直接导入。
+  </div>
+</div>
+
+<script>
+const ORDERS = [
+  { no: '350236411552604160', supplier: '浙江铁都钢材有限公司', date: '2026-08-24', weight: '28.080', importable: 14, amount: '86,166.24', status: '已审核',
+    detail: { rows: [
+      { code: '333641990484795392', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '20', len: '9米', unit: '吨', wh: '钢联新安', batch: '2NSKEQAJHUKG', qty: 8, piece: '2.001', weight: '16.008', price: '3,060.00', amt: '48,984.48' },
+      { code: '333641990505766912', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '22', len: '9米', unit: '吨', wh: '钢联新安', batch: '2NSKF1U6LLVK', qty: 6, piece: '2.012', weight: '12.072', price: '3,080.00', amt: '37,181.76' },
+    ] } },
+  { no: '350234724267991040', supplier: '浙江钧宸国际贸易有限公司', date: '2026-08-24', weight: '11.500', importable: 5, amount: '37,720.00', status: '已审核',
+    detail: { rows: [
+      { code: '335117385751076864', brand: '亚新', cat: '盘螺', mat: 'HRB400', spec: '8', len: null, unit: '吨', wh: '恒基库', batch: '2NSJQFIT46PS', qty: 2, piece: null, weight: '4.600', price: '3,280.00', amt: '15,088.00' },
+      { code: '335117385767854080', brand: '亚新', cat: '盘螺', mat: 'HRB400', spec: '10', len: null, unit: '吨', wh: '恒基库', batch: '2NSJQNN9883K', qty: 3, piece: null, weight: '6.900', price: '3,280.00', amt: '22,632.00' },
+    ] } },
+  { no: '350234341940404224', supplier: '浙江铁都钢材有限公司', date: '2026-08-23', weight: '11.988', importable: 6, amount: '36,923.04', status: '已审核',
+    detail: { rows: [
+      { code: '333641990396715008', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '12', len: '9米', unit: '吨', wh: '钢联新安', batch: '2NSJO8IQ85J4', qty: 3, piece: '1.998', weight: '5.994', price: '3,100.00', amt: '18,581.40' },
+      { code: '333641990463823872', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '18', len: '9米', unit: '吨', wh: '钢联新安', batch: '2NSJOHOMTDKW', qty: 3, piece: '1.998', weight: '5.994', price: '3,060.00', amt: '18,341.64' },
+    ] } },
+  { no: '349942859387904000', supplier: '杭州杭浚贸易有限公司', date: '2026-08-23', weight: '23.391', importable: 9, amount: '72,010.49', status: '已审核',
+    detail: { rows: [
+      { code: '333641990484795392', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '20', len: '12米', unit: '吨', wh: '钢联新安', batch: '2NSJQ7H3K21A', qty: 4, piece: '2.001', weight: '8.004', price: '3,060.00', amt: '24,480.00' },
+      { code: '333641990505766913', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '22', len: '12米', unit: '吨', wh: '钢联新安', batch: '2NSJQ8K2M31B', qty: 5, piece: '2.012', weight: '10.060', price: '3,080.00', amt: '31,000.00' },
+      { code: '335117385751076865', brand: '亚新', cat: '盘螺', mat: 'HRB400', spec: '8', len: null, unit: '吨', wh: '恒基库', batch: '2NSJQ9L4N41C', qty: 2, piece: null, weight: '3.120', price: '3,280.00', amt: '10,240.00' },
+    ] } },
+  { no: '349623869448921088', supplier: '浙江钧宸国际贸易有限公司', date: '2026-08-22', weight: '18.900', importable: 7, amount: '61,845.00', status: '已审核',
+    detail: { rows: [
+      { code: '335117385767854081', brand: '亚新', cat: '盘螺', mat: 'HRB400', spec: '10', len: null, unit: '吨', wh: '恒基库', batch: '2NSJQ0M5N51D', qty: 4, piece: null, weight: '9.200', price: '3,280.00', amt: '30,176.00' },
+    ] } },
+  { no: '349623739610046464', supplier: '杭州中金钢铁有限公司', date: '2026-08-22', weight: '18.000', importable: 8, amount: '59,040.00', status: '已审核',
+    detail: { rows: [
+      { code: '333641990396715009', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '12', len: '12米', unit: '吨', wh: '钢联新安', batch: '2NSJQ1N6P61E', qty: 6, piece: '1.998', weight: '11.988', price: '3,100.00', amt: '37,162.80' },
+    ] } },
+  { no: '349525884362825728', supplier: '浙江钧叶贸易有限公司', date: '2026-08-22', weight: '9.955', importable: 4, amount: '30,462.30', status: '已审核',
+    detail: { rows: [
+      { code: '335117385751076866', brand: '亚新', cat: '盘螺', mat: 'HRB400', spec: '8', len: null, unit: '吨', wh: '恒基库', batch: '2NSJQ2P7Q71F', qty: 2, piece: null, weight: '2.400', price: '3,280.00', amt: '7,872.00' },
+      { code: '333641990484795393', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '20', len: '9米', unit: '吨', wh: '钢联新安', batch: '2NSJQ3Q8R81G', qty: 1, piece: '2.001', weight: '2.001', price: '3,060.00', amt: '6,120.00' },
+    ] } },
+  { no: '349525367279425536', supplier: '浙江钧叶贸易有限公司', date: '2026-08-22', weight: '40.699', importable: 12, amount: '125,138.50', status: '已审核',
+    detail: { rows: [
+      { code: '333641990505766914', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '22', len: '12米', unit: '吨', wh: '钢联新安', batch: '2NSJQ4R9S91H', qty: 8, piece: '2.012', weight: '16.096', price: '3,080.00', amt: '49,581.44' },
+      { code: '333641990396715010', brand: '铜陵富鑫', cat: '直条', mat: 'HRB400E', spec: '12', len: '12米', unit: '吨', wh: '钢联新安', batch: '2NSJQ5S0T01I', qty: 6, piece: '1.998', weight: '11.988', price: '3,100.00', amt: '37,162.80' },
+    ] } },
+]
+
+let mode = 'multi'
+const checked = new Set()
+const expanded = new Set()
+
+function formatDateCn(v) {
+  if (!v) return '<span class="dash">-</span>'
+  const [y, m, d] = v.split('-')
+  return `${y}年${m.padStart(2, '0')}月${d.padStart(2, '0')}日`
+}
+
+function dash(v) {
+  return v === null || v === undefined || v === '' ? '<span class="dash">-</span>' : v
+}
+
+function detailRows(order) {
+  return order.detail.rows.map(r => `
+    <tr>
+      <td>${r.code}</td><td>${r.brand}</td><td>${r.cat}</td><td>${r.mat}</td>
+      <td>${r.spec}</td><td>${dash(r.len)}</td><td>${dash(r.piece)}</td>
+      <td class="num">${r.qty}</td><td class="num">${r.weight}</td>
+      <td class="num">${dash(r.batch ? r.price : null)}</td><td class="num">${r.amt}</td>
+    </tr>`).join('')
+}
+
+function detailBlock(order) {
+  const rows = detailRows(order)
+  const detailQty = order.detail.rows.reduce((s, r) => s + r.qty, 0)
+  return `
+  <tr class="expanded-row"><td colspan="9">
+    <div class="detail-wrap"><div class="detail-card">
+      <div class="detail-summary">
+        <span>可导明细：<b>${order.detail.rows.length}</b> 条</span>
+        <span>可导数量合计：<b>${order.importable}</b></span>
+        <span>订单号：<span class="order-no">${order.no}</span><button class="copy">⧉</button></span>
+      </div>
+      <table class="detail">
+        <thead><tr>
+          <th>物料编码</th><th>品牌</th><th>类别</th><th>材质</th><th>规格</th><th>长度</th>
+          <th>件重(吨)</th><th class="num">数量</th><th class="num">重量(吨)</th><th class="num">单价</th><th class="num">金额</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div></div>
+  </td></tr>`
+}
+
+function render() {
+  const isMulti = mode === 'multi'
+  document.getElementById('sel-head').innerHTML = isMulti
+    ? '<span class="checkbox" id="sel-all" onclick="toggleAll(event)"></span>'
+    : ''
+  document.getElementById('selected-panel').classList.toggle('hidden', !isMulti)
+  document.getElementById('modal-title').textContent = isMulti ? '选择采购订单' : '选择采购订单（单选）'
+
+  const tbody = document.getElementById('tbody')
+  let html = ''
+  for (const o of ORDERS) {
+    const isOn = checked.has(o.no)
+    const isOpen = expanded.has(o.no)
+    html += `
+    <tr class="main-row ${isOn ? 'checked row-checked' : ''}" onclick="toggleRow('${o.no}', event)">
+      <td class="sel-col">${isMulti
+        ? `<span class="checkbox ${isOn ? 'on' : ''}"></span>`
+        : `<span class="radio ${isOn ? 'on' : ''}"></span>`}</td>
+      <td class="exp-col"><button class="exp-btn ${isOpen ? 'on' : ''}" onclick="toggleExpand('${o.no}', event)">${isOpen ? '−' : '+'}</button></td>
+      <td><span class="order-no">${o.no}</span><button class="copy">⧉</button></td>
+      <td>${o.supplier}</td>
+      <td>${formatDateCn(o.date)}</td>
+      <td class="num">${o.weight}</td>
+      <td class="num">${o.importable}</td>
+      <td class="num">${o.amount}</td>
+      <td class="ctr"><span class="status">${o.status}</span></td>
+    </tr>`
+    if (isOpen) html += detailBlock(o)
+  }
+  tbody.innerHTML = html
+
+  // 已选 chips
+  const chips = document.getElementById('chips')
+  chips.innerHTML = ORDERS.filter(o => checked.has(o.no)).map(o => {
+    const lines = o.detail.rows.length
+    return `<span class="chip"><b>${o.no}</b><span style="color:var(--text-3)">${o.supplier.slice(0, 8)} · ${lines} 条明细</span><button class="rm" onclick="toggleRow('${o.no}', event)">✕</button></span>`
+  }).join('')
+
+  // 汇总
+  const sel = ORDERS.filter(o => checked.has(o.no))
+  const lines = sel.reduce((s, o) => s + o.detail.rows.length, 0)
+  const qty = sel.reduce((s, o) => s + o.importable, 0)
+  document.getElementById('selected-sub').textContent = `${sel.length} 笔订单 · 共 ${lines} 条明细 · 可导数量 ${qty}`
+  document.getElementById('footer-left').innerHTML =
+    isMulti ? `已选 <b>${sel.length}</b> 个订单（含 <b>${lines}</b> 条明细，可导数量 <b>${qty}</b>）`
+            : (sel.length ? `已选 <b>${sel.length}</b> 个订单：<span style="color:var(--text)">${sel[0].no}</span>` : '未选择，点击行或单选钮进行选择')
+  document.getElementById('confirm-btn').disabled = sel.length === 0
+  const all = sel.length === ORDERS.length
+  const sa = document.getElementById('sel-all')
+  if (sa) sa.classList.toggle('on', all)
+}
+
+function toggleRow(no, e) {
+  if (e) e.stopPropagation()
+  if (mode === 'single') {
+    checked.clear()
+    if (!checked.has(no)) checked.add(no)
+  } else if (checked.has(no)) checked.delete(no)
+  else checked.add(no)
+  render()
+}
+function toggleExpand(no, e) {
+  e.stopPropagation()
+  expanded.has(no) ? expanded.delete(no) : expanded.add(no)
+  render()
+}
+function toggleAll(e) {
+  e.stopPropagation()
+  if (checked.size === ORDERS.length) checked.clear()
+  else ORDERS.forEach(o => checked.add(o.no))
+  render()
+}
+function switchMode(m) {
+  mode = m
+  checked.clear()
+  expanded.clear()
+  document.getElementById('tab-multi').classList.toggle('active', m === 'multi')
+  document.getElementById('tab-single').classList.toggle('active', m === 'single')
+  render()
+}
+
+// 初始：1 条展开示例 + 2 条已选示例
+expanded.add(ORDERS[0].no)
+checked.add(ORDERS[0].no)
+checked.add(ORDERS[1].no)
+render()
+</script>
+</body>
+</html>
