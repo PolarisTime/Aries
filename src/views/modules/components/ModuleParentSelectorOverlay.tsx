@@ -302,6 +302,11 @@ function ParentSelectorTable({
         // 明细入口为行首常驻的眼睛按钮，避免额外的原生展开列造成重复入口。
         showExpandColumn: false,
       }}
+      rowClassName={(record) =>
+        detailExpandedRowKeys.includes(String(record.id))
+          ? 'parent-selector-row--expanded'
+          : ''
+      }
       onRow={(record) => ({
         tabIndex: 0,
         'aria-keyshortcuts': allowMultipleSelection ? 'Enter Space' : 'Enter',

@@ -76,6 +76,31 @@
   gap: 16px;
 }
 
+.parent-selector-detail-toggle-btn.is-active {
+  color: var(--ant-color-primary, #1677ff);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+.parent-selector-row--expanded > td {
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+/* 展开明细面板：与主行保持缩进对齐，并呈现为附属卡片 */
+.parent-selector-detail-panel {
+  padding: 8px 12px 12px 52px;
+}
+
+.parent-selector-detail-panel .module-record-detail-inline,
+.parent-selector-detail-panel .module-record-detail-inline-state {
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+.parent-selector-detail-panel .module-record-detail-inline-state {
+  min-height: 64px;
+}
+
 .parent-selector-top {
   position: sticky;
   top: calc(var(--app-overlay-body-padding, 24px) * -1);

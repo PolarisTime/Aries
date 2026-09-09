@@ -861,6 +861,7 @@ export const zhCN = {
       noSelectionHint: '暂未选择单据，勾选后会固定显示在这里。',
       paginationTotal: '共 {{count}} 条',
       viewDetail: '查看明细',
+      collapseDetail: '收起明细',
       status: {
         draft: '草稿',
         unaudited: '未审核',

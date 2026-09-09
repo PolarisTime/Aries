@@ -790,21 +790,30 @@ export function useModuleParentSelectorOverlay({
     title: '',
     width: DETAIL_TOGGLE_COLUMN_WIDTH,
     fixed: 'left',
-    render: (_: unknown, record: ModuleRecord) => (
-      <Tooltip title={t('modules.parentSelector.viewDetail')}>
-        <Button
-          aria-label={t('modules.parentSelector.viewDetail')}
-          className="table-detail-toggle-btn"
-          icon={<EyeOutlined />}
-          onClick={(event) => {
-            event.stopPropagation()
-            toggleDetail(record)
-          }}
-          size="small"
-          type="text"
-        />
-      </Tooltip>
-    ),
+    render: (_: unknown, record: ModuleRecord) => {
+      const expanded = detailExpandedRowKeys.includes(String(record.id))
+      const label = expanded
+        ? t('modules.parentSelector.collapseDetail')
+        : t('modules.parentSelector.viewDetail')
+      return (
+        <Tooltip title={label}>
+          <Button
+            aria-label={label}
+            aria-expanded={expanded}
+            className={`table-detail-toggle-btn parent-selector-detail-toggle-btn${
+              expanded ? ' is-active' : ''
+            }`}
+            icon={<EyeOutlined />}
+            onClick={(event) => {
+              event.stopPropagation()
+              toggleDetail(record)
+            }}
+            size="small"
+            type="text"
+          />
+        </Tooltip>
+      )
+    },
   }
   const columns: ColumnsType<ModuleRecord> = [
     detailToggleColumn,
@@ -1030,23 +1039,25 @@ export function useModuleParentSelectorOverlay({
 
   const renderDetail = (record: ModuleRecord) => {
     const recordId = String(record.id || '')
-    if (!parentPageConfig) {
-      return (
-        <div className="module-record-detail-inline-state">
-          <Spin size="small" />
-        </div>
-      )
-    }
-    const item = inlineDetailItems[recordId]
-    return (
-      <ModuleRecordDetailInline
-        config={parentPageConfig}
-        record={item?.record ?? null}
-        loading={item?.loading ?? false}
-        error={item?.error ?? null}
-        onRetry={() => retryDetail(recordId)}
-      />
+    const content = !parentPageConfig ? (
+      <div className="module-record-detail-inline-state">
+        <Spin size="small" />
+      </div>
+    ) : (
+      (() => {
+        const item = inlineDetailItems[recordId]
+        return (
+          <ModuleRecordDetailInline
+            config={parentPageConfig}
+            record={item?.record ?? null}
+            loading={item?.loading ?? false}
+            error={item?.error ?? null}
+            onRetry={() => retryDetail(recordId)}
+          />
+        )
+      })()
     )
+    return <div className="parent-selector-detail-panel">{content}</div>
   }
 
   const handleImportRecords = async (recordsToImport: ModuleRecord[]) => {

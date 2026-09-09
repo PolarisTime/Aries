@@ -886,6 +886,7 @@ export const enUS = {
         'No documents selected yet. Check items to pin them here.',
       paginationTotal: 'Total {{count}}',
       viewDetail: 'View details',
+      collapseDetail: 'Collapse details',
       status: {
         draft: 'Draft',
         unaudited: 'Unaudited',
