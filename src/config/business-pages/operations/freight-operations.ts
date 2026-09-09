@@ -9,15 +9,20 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
   FREIGHT_NO_FILTER_LABEL,
 } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
-import { buildAmountWeightOverview, statusMap } from '../shared/shared'
+import { statusMap } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
+import {
+  buildFreightBillOverview,
+  buildFreightBillParentFilters,
+  transformSalesOrderItemsToFreightBillItems,
+  validateFreightBillBeforeOpen,
+} from './freight-operations-rules'
 
 // 物流单明细列：按仓库、品牌与规格核对，隐藏商品编码、商品名称、客户/项目、每件支数与批号。
 const freightBillItemColumnConfig: ModuleItemColumnConfig = {
@@ -354,43 +359,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       allowMultipleSelection: true,
       replaceUnlinkedItemsOnFirstImport: true,
       requiredSourceItemIdField: 'sourceSalesOrderItemId',
-      buildParentFilters: (currentRecord) => ({
-        currentRecordId: currentRecord.id || undefined,
-      }),
-      validateBeforeOpen: (currentRecord) =>
-        asString(currentRecord.carrierId).trim()
-          ? null
-          : '请先选择物流商，再选择销售订单',
-      transformItems: (parentRecord) => {
-        const sourceNo = asString(parentRecord.orderNo).trim()
-        const customerName = asString(parentRecord.customerName).trim()
-        const projectName = asString(parentRecord.projectName).trim()
-        const settlementCompanyName = asString(
-          parentRecord.settlementCompanyName,
-        ).trim()
-        return (
-          Array.isArray(parentRecord.items) ? parentRecord.items : []
-        ).map((item, index) => ({
-          ...item,
-          id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
-          sourceNo,
-          sourceSalesOrderItemId: item.id,
-          materialName: asString(item.brand).trim(),
-          customerId: parentRecord.customerId,
-          customerName,
-          projectId: parentRecord.projectId,
-          projectName,
-          settlementCompanyId:
-            item.settlementCompanyId ?? parentRecord.settlementCompanyId,
-          settlementCompanyName:
-            asString(item.settlementCompanyName).trim() ||
-            settlementCompanyName,
-        }))
-      },
+      buildParentFilters: buildFreightBillParentFilters,
+      validateBeforeOpen: validateFreightBillBeforeOpen,
+      transformItems: transformSalesOrderItemsToFreightBillItems,
     },
     ...freightBillItemColumnOutputs,
     data: [],
-    buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
+    buildOverview: buildFreightBillOverview,
     statusMap,
     rowHighlightStatuses: ['草稿'],
   },

@@ -1,8 +1,9 @@
 import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { actionSet, formatInteger, statusMap } from '../shared/shared'
+import { actionSet, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
+import { buildMaterialCategoryOverview } from './material-categories-rules'
 
 export const materialCategoriesPageConfig: ModulePageConfig = {
   key: 'material-categories',
@@ -153,20 +154,5 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
   data: [],
   statusMap,
   rowHighlightStatuses: ['禁用'],
-  buildOverview: (rows) => [
-    {
-      label: i18next.t('modules.pages.materialCategories.categoryCount'),
-      value: formatInteger(rows.length),
-    },
-    {
-      label: i18next.t('modules.pages.materialCategories.enabled'),
-      value: formatInteger(rows.filter((row) => row.status === '正常').length),
-    },
-    {
-      label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
-      value: formatInteger(
-        rows.filter((row) => row.purchaseWeighRequired === true).length,
-      ),
-    },
-  ],
+  buildOverview: buildMaterialCategoryOverview,
 }

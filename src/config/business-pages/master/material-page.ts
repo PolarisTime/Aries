@@ -6,7 +6,11 @@ import {
   materialGradeOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
-import { actionSet, formatInteger } from '../shared/shared'
+import { actionSet } from '../shared/shared'
+import {
+  buildMaterialOverview,
+  isPhysicalMaterialFieldVisible,
+} from './material-rules'
 
 export const materialsPageConfig: ModulePageConfig = {
   key: 'material',
@@ -199,7 +203,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 1,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'material',
@@ -207,7 +211,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 1,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'category',
@@ -223,7 +227,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 2,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'length',
@@ -231,7 +235,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 2,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'unit',
@@ -246,7 +250,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 2,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'pieceWeightTon',
@@ -257,7 +261,7 @@ export const materialsPageConfig: ModulePageConfig = {
       precision: INTERNAL_WEIGHT_PRECISION,
       defaultValue: 0,
       row: 3,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'piecesPerBundle',
@@ -268,7 +272,7 @@ export const materialsPageConfig: ModulePageConfig = {
       precision: 0,
       defaultValue: 0,
       row: 3,
-      visibleWhen: (form) => form?.materialType !== '附加费用',
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'unitPrice',
@@ -289,22 +293,5 @@ export const materialsPageConfig: ModulePageConfig = {
     },
   ],
   data: [],
-  buildOverview: (rows) => [
-    {
-      label: i18next.t('modules.pages.material.materialCount'),
-      value: formatInteger(rows.length),
-    },
-    {
-      label: i18next.t('modules.pages.material.calculated'),
-      value: formatInteger(
-        rows.filter((row) => row.category === '螺纹钢').length,
-      ),
-    },
-    {
-      label: i18next.t('modules.pages.material.weighed'),
-      value: formatInteger(
-        rows.filter((row) => row.category !== '螺纹钢').length,
-      ),
-    },
-  ],
+  buildOverview: buildMaterialOverview,
 }

@@ -1,5 +1,17 @@
 import type { CustomerOption } from '@/api/master/customer-options'
+import { getCustomerOptions } from '@/module-system/core/module-option-resolvers'
 import { asString } from '@/utils/type-narrowing'
+
+export function projectCustomerFieldOptions() {
+  return getCustomerOptions().map((option) => ({
+    label: option.customerName || option.label,
+    value: option.id,
+    customerCode: option.customerCode,
+    customerName: option.customerName,
+    settlementCompanyId: option.defaultSettlementCompanyId,
+    settlementCompanyName: option.defaultSettlementCompanyName,
+  }))
+}
 
 export function resolveProjectCustomerDisplay(
   record: Record<string, unknown>,

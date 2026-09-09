@@ -1,10 +1,11 @@
 import i18next from 'i18next'
 import type { ModulePageConfig } from '@/types/module-page'
-import { formatInteger, statusMap } from '../shared/shared'
+import { statusMap } from '../shared/shared'
 import {
   operationLogModuleOptions,
   resolveOperationLogActionOptions,
 } from './operation-log-options'
+import { buildOperationLogOverview } from './operation-log-rules'
 
 export const operationLogsPageConfig: ModulePageConfig = {
   key: 'operation-log',
@@ -211,24 +212,7 @@ export const operationLogsPageConfig: ModulePageConfig = {
     { label: i18next.t('modules.pages.operationLog.remark'), key: 'remark' },
   ],
   data: [],
-  buildOverview: (rows) => [
-    {
-      label: i18next.t('modules.pages.operationLog.logCount'),
-      value: formatInteger(rows.length),
-    },
-    {
-      label: i18next.t('modules.pages.operationLog.successCount'),
-      value: formatInteger(
-        rows.filter((row) => row.resultStatus === '成功').length,
-      ),
-    },
-    {
-      label: i18next.t('modules.pages.operationLog.failedCount'),
-      value: formatInteger(
-        rows.filter((row) => row.resultStatus === '失败').length,
-      ),
-    },
-  ],
+  buildOverview: buildOperationLogOverview,
   statusMap,
   rowHighlightStatuses: ['失败'],
 }

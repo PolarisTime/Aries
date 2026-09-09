@@ -3,24 +3,24 @@ import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
   getSettlementCompanyOptions,
   getSupplierOptions,
-  isPurchaseWeighRequiredCategory,
 } from '@/module-system/core/module-option-resolvers'
 import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
-import { cloneLineItems } from '@/utils/clone-utils'
 import {
   BILL_STATUS_LABEL,
   INBOUND_NO_FILTER_LABEL,
   SUPPLIER_NAME_LABEL,
 } from '../shared/filter-labels'
-import {
-  actionSet,
-  buildAmountWeightOverview,
-  statusMap,
-} from '../shared/shared'
+import { actionSet, statusMap } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
+import {
+  buildPurchaseInboundOverview,
+  buildPurchaseInboundParentFilters,
+  mapPurchaseOrderToInboundDraft,
+  transformPurchaseOrderItemsToInboundItems,
+} from './purchase-inbound-rules'
 
 // 采购入库明细列：采购列基础上增加结算方式、过磅、调重字段（位于重量吨之后、单价之前）。
 const purchaseInboundItemColumnConfig: ModuleItemColumnConfig = {
@@ -322,51 +322,14 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     candidateQueryType: 'purchase-order-import',
     allowMultipleSelection: false,
     remainingQuantityKey: 'remainingQuantity',
-    buildParentFilters: (currentRecord) => ({
-      supplierId: currentRecord.supplierId,
-      currentRecordId: currentRecord.id,
-    }),
+    buildParentFilters: buildPurchaseInboundParentFilters,
     hiddenSelectorColumnKeys: ['status'],
-    mapParentToDraft: (parentRecord) => ({
-      purchaseOrderNo: parentRecord.orderNo || '',
-      supplierId: parentRecord.supplierId,
-      supplierCode: parentRecord.supplierCode || '',
-      supplierName: parentRecord.supplierName || '',
-      settlementCompanyId: parentRecord.settlementCompanyId,
-      settlementCompanyName: parentRecord.settlementCompanyName || '',
-    }),
-    transformItems: (parentRecord) =>
-      cloneLineItems(
-        Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => {
-              const quantity = Number(
-                item.remainingQuantity ?? item.quantity ?? 0,
-              )
-              const pieceWeightTon = Number(item.pieceWeightTon || 0)
-              const unitPrice = Number(item.unitPrice || 0)
-              const weightTon = Number((quantity * pieceWeightTon).toFixed(8))
-              return {
-                ...item,
-                sourceNo: parentRecord.orderNo || '',
-                sourcePurchaseOrderItemId: item.id,
-                settlementMode: isPurchaseWeighRequiredCategory(item.category)
-                  ? '过磅'
-                  : '理算',
-                quantity,
-                weightTon,
-                weighWeightTon: undefined,
-                weightAdjustmentTon: 0,
-                weightAdjustmentAmount: 0,
-                amount: Number((weightTon * unitPrice).toFixed(2)),
-              }
-            })
-          : [],
-        'purchase-inbound-item',
-      ),
+    mapParentToDraft: mapPurchaseOrderToInboundDraft,
+    transformItems: transformPurchaseOrderItemsToInboundItems,
   },
   ...purchaseInboundItemColumnOutputs,
   data: [],
-  buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
+  buildOverview: buildPurchaseInboundOverview,
   statusMap,
   rowHighlightStatuses: ['草稿'],
 }

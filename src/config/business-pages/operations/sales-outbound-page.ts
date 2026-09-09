@@ -14,13 +14,14 @@ import {
   CUSTOMER_NAME_LABEL,
   OUTBOUND_NO_FILTER_LABEL,
 } from '../shared/filter-labels'
-import {
-  actionSet,
-  buildAmountWeightOverview,
-  cloneLineItems,
-  statusMap,
-} from '../shared/shared'
+import { actionSet, statusMap } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
+import {
+  buildSalesOutboundOverview,
+  buildSalesOutboundParentFilters,
+  mapSalesOrderToOutboundDraft,
+  transformSalesOrderItemsToOutboundItems,
+} from './sales-outbound-rules'
 
 // 销售出库明细列：复用采购基础列（商品编码、批号可见），无仓库前置要求。
 const salesOutboundItemColumnConfig: ModuleItemColumnConfig = {
@@ -294,33 +295,14 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     candidateQueryType: 'sales-order-outbound-import',
     buttonText: i18next.t('modules.pages.salesOutbound.parentImportButton'),
-    buildParentFilters: (currentRecord) => ({
-      currentRecordId: currentRecord.id,
-    }),
+    buildParentFilters: buildSalesOutboundParentFilters,
     hiddenSelectorColumnKeys: ['status'],
-    mapParentToDraft: (parentRecord) => ({
-      customerId: parentRecord.customerId,
-      customerName: parentRecord.customerName || '',
-      projectId: parentRecord.projectId,
-      projectName: parentRecord.projectName || '',
-      settlementCompanyId: parentRecord.settlementCompanyId,
-      settlementCompanyName: parentRecord.settlementCompanyName || '',
-    }),
-    transformItems: (parentRecord) =>
-      cloneLineItems(
-        Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => ({
-              ...item,
-              sourceNo: parentRecord.orderNo || '',
-              sourceSalesOrderItemId: item.id,
-            }))
-          : [],
-        'sales-outbound-item',
-      ),
+    mapParentToDraft: mapSalesOrderToOutboundDraft,
+    transformItems: transformSalesOrderItemsToOutboundItems,
   },
   ...salesOutboundItemColumnOutputs,
   data: [],
-  buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
+  buildOverview: buildSalesOutboundOverview,
   statusMap,
   rowHighlightStatuses: ['草稿'],
 }

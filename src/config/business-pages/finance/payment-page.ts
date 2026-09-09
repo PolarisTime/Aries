@@ -1,20 +1,16 @@
 import i18next from 'i18next'
-import { getCarrierEntityOptions } from '@/api/master/carrier-options'
-import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
   getSettlementAccountOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
+import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
-import { buildFinanceOverview, statusMap } from '../shared/shared'
-
-function getCounterpartyOptions(form?: ModuleRecordInput) {
-  return form?.counterpartyType === '物流商'
-    ? getCarrierEntityOptions()
-    : getSupplierEntityOptions()
-}
+import { statusMap } from '../shared/shared'
+import {
+  buildPaymentOverview,
+  getPaymentCounterpartyOptions,
+} from './finance-page-rules'
 
 export const paymentsPageConfig: ModulePageConfig = {
   key: 'payment',
@@ -209,7 +205,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.payment.counterparty'),
       type: 'select',
       required: true,
-      options: getCounterpartyOptions,
+      options: getPaymentCounterpartyOptions,
       masterOptionRequirements: { suppliers: true, carriers: true },
       row: 1,
     },
@@ -319,7 +315,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     ],
   },
   data: [],
-  buildOverview: (rows) => buildFinanceOverview(rows, 'amount'),
+  buildOverview: buildPaymentOverview,
   statusMap,
   rowHighlightStatuses: ['草稿'],
 }

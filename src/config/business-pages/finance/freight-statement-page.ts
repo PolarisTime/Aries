@@ -3,23 +3,21 @@ import { getCarrierEntityOptions } from '@/api/master/carrier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
-import { parseOptionalEntityId } from '@/types/entity-id'
 import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import { AUDIT_STATUS_LABEL, CARRIER_NAME_LABEL } from '../shared/filter-labels'
-import {
-  SETTLEMENT_COMPANY_LABEL,
-  validateSameSettlementCompany,
-} from '../shared/settlement-company'
-import { buildStatementOverview, statusMap } from '../shared/shared'
+import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
+import { statusMap } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
-
-function entityIdOf(value: unknown, field: string) {
-  return parseOptionalEntityId(value, field)
-}
+import {
+  buildFreightStatementOverview,
+  buildFreightStatementParentFilters,
+  mapFreightBillToFreightStatementDraft,
+  transformFreightBillItemsToFreightStatementItems,
+  validateFreightStatementParentImport,
+} from './freight-statement-rules'
 
 // 物流对账单明细列：客户/项目在分组行展示，金额在分组行合计。
 const freightStatementItemColumnConfig: ModuleItemColumnConfig = {
@@ -388,78 +386,14 @@ export const freightStatementPageConfig: ModulePageConfig = {
     candidateStatementModuleKey: 'freight-statement',
     buttonText: '选择物流单生成明细',
     allowMultipleSelection: true,
-    buildParentFilters: (currentRecord) => ({
-      carrierId: entityIdOf(currentRecord.carrierId, 'carrierId'),
-      currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
-      settlementCompanyId: currentRecord.settlementCompanyId,
-    }),
-    mapParentToDraft: (parentRecord) => ({
-      carrierId: entityIdOf(parentRecord.carrierId, 'carrierId'),
-      carrierCode: asString(parentRecord.carrierCode).trim(),
-      carrierName: parentRecord.carrierName || '',
-      settlementCompanyId: parentRecord.settlementCompanyId,
-      settlementCompanyName: parentRecord.settlementCompanyName || '',
-      startDate: parentRecord.billTime || '',
-      endDate: parentRecord.billTime || '',
-      paidAmount: 0,
-      status: '草稿',
-    }),
-    validateParentImport: ({ currentRecord, parentRecord }) => {
-      const currentCarrierId = entityIdOf(
-        currentRecord.carrierId,
-        'currentRecord.carrierId',
-      )
-      const parentCarrierId = entityIdOf(
-        parentRecord.carrierId,
-        'parentRecord.carrierId',
-      )
-      if (currentCarrierId && currentCarrierId !== parentCarrierId) {
-        return '只能选择同一物流商的物流单生成物流对账单'
-      }
-      const settlementCompanyError = currentRecord.settlementCompanyId
-        ? validateSameSettlementCompany(
-            currentRecord,
-            parentRecord,
-            '只能选择同一结算主体的物流单生成物流对账单',
-          )
-        : null
-      if (settlementCompanyError) {
-        return settlementCompanyError
-      }
-      return null
-    },
-    transformItems: (parentRecord) => {
-      const sourceNo = asString(parentRecord.billNo).trim()
-      const parentCustomerId = entityIdOf(
-        parentRecord.customerId,
-        'parentRecord.customerId',
-      )
-      const parentProjectId = entityIdOf(
-        parentRecord.projectId,
-        'parentRecord.projectId',
-      )
-      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
-        (item, index) => ({
-          ...item,
-          id: `${sourceNo || 'freight-bill'}-${String(item.id || index)}`,
-          sourceNo,
-          sourceFreightBillId: parentRecord.id,
-          sourceFreightBillItemId: item.id,
-          customerId:
-            entityIdOf(item.customerId, 'items[].customerId') ||
-            parentCustomerId,
-          projectId:
-            entityIdOf(item.projectId, 'items[].projectId') || parentProjectId,
-          _parentBillTime: parentRecord.billTime || '',
-          _parentTotalFreight: Number(parentRecord.totalFreight || 0),
-        }),
-      )
-    },
+    buildParentFilters: buildFreightStatementParentFilters,
+    mapParentToDraft: mapFreightBillToFreightStatementDraft,
+    validateParentImport: validateFreightStatementParentImport,
+    transformItems: transformFreightBillItemsToFreightStatementItems,
   },
   ...freightStatementItemColumnOutputs,
   data: [],
-  buildOverview: (rows) =>
-    buildStatementOverview(rows, 'totalFreight', 'paidAmount', 'unpaidAmount'),
+  buildOverview: buildFreightStatementOverview,
   statusMap,
   rowHighlightStatuses: ['草稿'],
 }

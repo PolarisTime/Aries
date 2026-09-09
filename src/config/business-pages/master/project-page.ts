@@ -7,17 +7,10 @@ import {
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
-import { resolveProjectCustomerDisplay } from './project-page-utils'
-
-const customerFieldOptions = () =>
-  getCustomerOptions().map((option) => ({
-    label: option.customerName || option.label,
-    value: option.id,
-    customerCode: option.customerCode,
-    customerName: option.customerName,
-    settlementCompanyId: option.defaultSettlementCompanyId,
-    settlementCompanyName: option.defaultSettlementCompanyName,
-  }))
+import {
+  projectCustomerFieldOptions,
+  resolveProjectCustomerDisplay,
+} from './project-page-utils'
 
 const projectPageConfig: ModulePageConfig = {
   key: 'project',
@@ -161,7 +154,7 @@ const projectPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.project.customer'),
       type: 'select',
       required: true,
-      options: customerFieldOptions,
+      options: projectCustomerFieldOptions,
       masterOptionRequirements: { customers: true },
       row: 1,
     },
@@ -204,7 +197,7 @@ const projectPageConfig: ModulePageConfig = {
     },
   ],
   data: [],
-  buildOverview: (rows) => buildMasterOverview(rows),
+  buildOverview: buildMasterOverview,
   statusMap,
   rowHighlightStatuses: ['禁用'],
   saveFields: {

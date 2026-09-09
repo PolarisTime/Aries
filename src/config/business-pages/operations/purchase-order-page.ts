@@ -1,6 +1,4 @@
 import i18next from 'i18next'
-import React from 'react'
-import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
   getSettlementCompanyOptions,
@@ -17,9 +15,13 @@ import {
   REFERENCE_STATUS_LABEL,
   SUPPLIER_NAME_LABEL,
 } from '../shared/filter-labels'
-import { actionSet, buildAmountWeightOverview } from '../shared/shared'
+import { actionSet } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 import { statusMap as sharedStatusMap } from '../shared/shared-status'
+import {
+  buildPurchaseOrderOverview,
+  renderPurchaseOrderNo,
+} from './purchase-order-rules'
 
 // 采购订单明细列：批号版结构 + 实际重量列（位于重量吨之后、单价之前）。
 const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
@@ -132,27 +134,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.purchaseOrder.colOrderNo'),
       dataIndex: 'orderNo',
       width: 190,
-      render: (value, record) =>
-        React.createElement(
-          'span',
-          { className: 'document-reference-trigger' },
-          React.createElement(
-            'span',
-            { className: 'document-reference-link' },
-            String(value ?? ''),
-          ),
-          React.createElement(DocumentReferenceStatusIcons, {
-            statuses: [
-              {
-                key: 'sales-order',
-                label: i18next.t(
-                  'modules.pages.purchaseOrder.referencedBySalesOrder',
-                ),
-                referenced: Boolean(record.referencedBySalesOrder),
-              },
-            ],
-          }),
-        ),
+      render: renderPurchaseOrderNo,
     },
     {
       title: i18next.t('modules.pages.purchaseOrder.colSupplier'),
@@ -313,7 +295,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
   ],
   ...purchaseOrderItemColumnOutputs,
   data: [],
-  buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
+  buildOverview: buildPurchaseOrderOverview,
   statusMap: purchaseOrderStatusMap,
   rowHighlightStatuses: ['草稿'],
 }

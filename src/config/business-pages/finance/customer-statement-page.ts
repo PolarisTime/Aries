@@ -4,25 +4,26 @@ import {
   withDeletedDocumentStatus,
 } from '@/constants/module-options'
 import {
-  findProjectOption,
   getCustomerOptions,
   getCustomerProjectOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
-import { parseOptionalEntityId } from '@/types/entity-id'
 import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
-import { buildStatementOverview, statusMap } from '../shared/shared'
+import { statusMap } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
-
-function entityIdOf(value: unknown, field: string) {
-  return parseOptionalEntityId(value, field)
-}
+import {
+  buildCustomerStatementOverview,
+  buildCustomerStatementParentFilters,
+  mapSalesOrderToCustomerStatementDraft,
+  transformSalesOrderItemsToCustomerStatementItems,
+  validateCustomerStatementBeforeOpen,
+  validateCustomerStatementParentImport,
+} from './customer-statement-rules'
 
 // 客户对账单明细列：金额类字段右对齐展示。
 const customerStatementItemColumnConfig: ModuleItemColumnConfig = {
@@ -403,110 +404,15 @@ export const customerStatementPageConfig: ModulePageConfig = {
     candidateStatementModuleKey: 'customer-statement',
     buttonText: '选择销售订单生成明细',
     allowMultipleSelection: true,
-    buildParentFilters: (currentRecord) => ({
-      customerId: entityIdOf(currentRecord.customerId, 'customerId'),
-      projectId: entityIdOf(currentRecord.projectId, 'projectId'),
-      currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
-    }),
-    validateBeforeOpen: (currentRecord) =>
-      entityIdOf(currentRecord.customerId, 'customerId')
-        ? null
-        : '请先选择客户，再选择销售订单',
-    mapParentToDraft: (parentRecord) => {
-      const parentCustomerId = entityIdOf(
-        parentRecord.customerId,
-        'parentRecord.customerId',
-      )
-      const parentProjectId = entityIdOf(
-        parentRecord.projectId,
-        'parentRecord.projectId',
-      )
-      const project = findProjectOption(parentProjectId, parentCustomerId)
-      return {
-        customerId: parentCustomerId,
-        customerCode: asString(parentRecord.customerCode).trim(),
-        customerName: parentRecord.customerName || '',
-        projectId: parentProjectId,
-        projectName: parentRecord.projectName || '',
-        settlementCompanyId: project?.settlementCompanyId,
-        settlementCompanyName: project?.settlementCompanyName || '',
-        startDate: parentRecord.deliveryDate || '',
-        endDate: parentRecord.deliveryDate || '',
-        receiptAmount: 0,
-        status: '待确认',
-      }
-    },
-    validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
-      const currentCustomerId = entityIdOf(
-        currentRecord.customerId,
-        'currentRecord.customerId',
-      )
-      const parentCustomerId = entityIdOf(
-        parentRecord.customerId,
-        'parentRecord.customerId',
-      )
-      if (!currentCustomerId || currentCustomerId !== parentCustomerId) {
-        return '只能选择同一客户的销售订单生成客户对账单'
-      }
-      const existingProjectIds = Array.from(
-        new Set(
-          [
-            currentRecord.projectId,
-            ...currentItems.map((item) => item.projectId),
-          ].flatMap((value) => {
-            const projectId = entityIdOf(value, 'projectId')
-            return projectId ? [projectId] : []
-          }),
-        ),
-      )
-      const nextProjectId = entityIdOf(
-        parentRecord.projectId,
-        'parentRecord.projectId',
-      )
-      if (
-        existingProjectIds.length &&
-        (!nextProjectId || !existingProjectIds.includes(nextProjectId))
-      ) {
-        return '只能选择同一项目的销售订单生成客户对账单'
-      }
-      return null
-    },
-    transformItems: (parentRecord) => {
-      const sourceNo = asString(parentRecord.orderNo).trim()
-      const parentCustomerId = entityIdOf(
-        parentRecord.customerId,
-        'parentRecord.customerId',
-      )
-      const parentProjectId = entityIdOf(
-        parentRecord.projectId,
-        'parentRecord.projectId',
-      )
-      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
-        (item, index) => ({
-          ...item,
-          id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
-          sourceNo,
-          sourceSalesOrderItemId: item.id,
-          customerId:
-            entityIdOf(item.customerId, 'items[].customerId') ||
-            parentCustomerId,
-          projectId:
-            entityIdOf(item.projectId, 'items[].projectId') || parentProjectId,
-          warehouseId: entityIdOf(item.warehouseId, 'items[].warehouseId'),
-          _parentBillTime: parentRecord.deliveryDate || '',
-        }),
-      )
-    },
+    buildParentFilters: buildCustomerStatementParentFilters,
+    validateBeforeOpen: validateCustomerStatementBeforeOpen,
+    mapParentToDraft: mapSalesOrderToCustomerStatementDraft,
+    validateParentImport: validateCustomerStatementParentImport,
+    transformItems: transformSalesOrderItemsToCustomerStatementItems,
   },
   ...customerStatementItemColumnOutputs,
   data: [],
-  buildOverview: (rows) =>
-    buildStatementOverview(
-      rows,
-      'salesAmount',
-      'receiptAmount',
-      'closingAmount',
-    ),
+  buildOverview: buildCustomerStatementOverview,
   statusMap,
   rowHighlightStatuses: ['待确认'],
 }

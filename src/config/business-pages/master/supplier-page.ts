@@ -141,7 +141,7 @@ export const suppliersPageConfig: ModulePageConfig = {
     },
   ],
   data: [],
-  buildOverview: (rows) => buildMasterOverview(rows),
+  buildOverview: buildMasterOverview,
   statusMap,
   rowHighlightStatuses: ['禁用'],
 }

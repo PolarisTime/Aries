@@ -1,12 +1,5 @@
-import { Tooltip } from 'antd'
 import i18next from 'i18next'
-import React from 'react'
-import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
-import {
-  DISPLAY_WEIGHT_PRECISION,
-  INTERNAL_WEIGHT_PRECISION,
-} from '@/constants/precision'
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
@@ -23,13 +16,17 @@ import {
   SALES_ORDER_REFERENCE_OPTIONS,
 } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
-import {
-  actionSet,
-  buildAmountWeightOverview,
-  cloneLineItems,
-} from '../shared/shared'
+import { actionSet } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
 import { statusMap as sharedStatusMap } from '../shared/shared-status'
+import {
+  buildSalesOrderOverview,
+  buildSalesOrderParentFilters,
+  mapPurchaseInboundToSalesOrderDraft,
+  renderSalesOrderNo,
+  renderSalesOrderTotalWeight,
+  transformPurchaseInboundItemsToSalesOrderItems,
+} from './sales-order-rules'
 
 // 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
 const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
@@ -155,34 +152,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.salesOrder.colOrderNo'),
       dataIndex: 'orderNo',
       width: 190,
-      render: (value, record) =>
-        React.createElement(
-          'span',
-          { className: 'document-reference-trigger' },
-          React.createElement(
-            'span',
-            { className: 'document-reference-link' },
-            String(value ?? ''),
-          ),
-          React.createElement(DocumentReferenceStatusIcons, {
-            statuses: [
-              {
-                key: 'freight-bill',
-                label: i18next.t(
-                  'modules.pages.salesOrder.referencedByFreightBill',
-                ),
-                referenced: Boolean(record.referencedByFreightBill),
-              },
-              {
-                key: 'sales-outbound',
-                label: i18next.t(
-                  'modules.pages.salesOrder.referencedBySalesOutbound',
-                ),
-                referenced: Boolean(record.referencedBySalesOutbound),
-              },
-            ],
-          }),
-        ),
+      render: renderSalesOrderNo,
     },
     {
       title: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
@@ -221,31 +191,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 140,
       align: 'right',
       type: 'weight',
-      render: (value, record) => {
-        const fmt = (v: unknown) => {
-          const n = Number(v)
-          return Number.isFinite(n)
-            ? n.toFixed(DISPLAY_WEIGHT_PRECISION).replace(/\.?0+$/, '')
-            : '-'
-        }
-        const hasOverwritten = (record.items || []).some(
-          (item: Record<string, unknown>) =>
-            item.originalWeightTon != null &&
-            Number(item.originalWeightTon) !== Number(item.weightTon),
-        )
-        if (!hasOverwritten) return fmt(value)
-        const original = (record.items as Record<string, unknown>[]).reduce(
-          (sum, item) => sum + Number(item.originalWeightTon || 0),
-          0,
-        )
-        return React.createElement(
-          Tooltip,
-          {
-            title: `原始计划 ${fmt(original)} 吨`,
-          },
-          `${fmt(value)} ⚠️`,
-        )
-      },
+      render: renderSalesOrderTotalWeight,
     },
     {
       title: i18next.t('modules.columns.totalAmount'),
@@ -397,87 +343,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     remainingQuantityKey: 'remainingQuantity',
     candidateQueryType: 'sales-order-purchase-source',
     useCandidateSnapshot: true,
-    buildParentFilters: (currentRecord) => ({
-      currentSalesOrderId: currentRecord.id,
-    }),
+    buildParentFilters: buildSalesOrderParentFilters,
     hiddenSelectorColumnKeys: ['status'],
-    mapParentToDraft: (parentRecord) => ({
-      purchaseOrderNo:
-        parentRecord.purchaseOrderNo || parentRecord.orderNo || '',
-      purchaseInboundNo: [
-        ...new Set(
-          (Array.isArray(parentRecord.items) ? parentRecord.items : []).flatMap(
-            (item) => {
-              const value =
-                typeof item.inboundNo === 'string' ? item.inboundNo.trim() : ''
-              return value ? [value] : []
-            },
-          ),
-        ),
-      ].join(', '),
-    }),
-    transformItems: (parentRecord) =>
-      cloneLineItems(
-        Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => {
-              const rawRemainingQuantity = Number(
-                item.remainingQuantity ??
-                  item.salesRemainingQuantity ??
-                  item.quantity ??
-                  0,
-              )
-              const rawTotalQuantity = Number(item.quantity || 0)
-              const rawTotalWeightTon = Number(item.weightTon || 0)
-              const rawRemainingWeightTon = Number(
-                item.salesRemainingWeightTon ?? 0,
-              )
-              const rawPieceWeightTon = Number(item.pieceWeightTon || 0)
-              const rawUnitPrice = Number(item.unitPrice || 0)
-              const remainingQuantity = Number.isFinite(rawRemainingQuantity)
-                ? rawRemainingQuantity
-                : 0
-              const pieceWeightTon = Number.isFinite(rawPieceWeightTon)
-                ? rawPieceWeightTon
-                : 0
-              const unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0
-              const remainingWeightTon =
-                rawRemainingWeightTon > 0
-                  ? Number(
-                      rawRemainingWeightTon.toFixed(INTERNAL_WEIGHT_PRECISION),
-                    )
-                  : rawTotalQuantity > 0 &&
-                      rawTotalWeightTon > 0 &&
-                      remainingQuantity === rawTotalQuantity
-                    ? Number(
-                        rawTotalWeightTon.toFixed(INTERNAL_WEIGHT_PRECISION),
-                      )
-                    : Number(
-                        (remainingQuantity * pieceWeightTon).toFixed(
-                          INTERNAL_WEIGHT_PRECISION,
-                        ),
-                      )
-              return {
-                ...item,
-                sourceInboundItemId: item.sourceInboundItemId ?? item.id,
-                sourcePurchaseOrderItemId: undefined,
-                pieceWeightTon,
-                remainingQuantity,
-                remainingWeightTon,
-                remainingAmount: Number(
-                  (remainingWeightTon * unitPrice).toFixed(2),
-                ),
-                _sourceTotalQuantity: item.quantity,
-                _sourceTotalWeightTon: item.weightTon,
-                _sourcePieceWeightTon: item.pieceWeightTon,
-              }
-            })
-          : [],
-        'sales-order-item',
-      ),
+    mapParentToDraft: mapPurchaseInboundToSalesOrderDraft,
+    transformItems: transformPurchaseInboundItemsToSalesOrderItems,
   },
   ...salesOrderItemColumnOutputs,
   data: [],
-  buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
+  buildOverview: buildSalesOrderOverview,
   statusMap: salesOrderStatusMap,
   rowHighlightStatuses: ['草稿'],
 }

@@ -1,22 +1,18 @@
 import i18next from 'i18next'
-import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
-  getCustomerOptions,
   getCustomerProjectOptions,
   getSettlementAccountOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
-import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
+import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
-import { buildFinanceOverview, statusMap } from '../shared/shared'
-
-function getCounterpartyOptions(form?: ModuleRecordInput) {
-  return form?.counterpartyType === '供应商'
-    ? getSupplierEntityOptions()
-    : getCustomerOptions()
-}
+import { statusMap } from '../shared/shared'
+import {
+  buildReceiptOverview,
+  getReceiptCounterpartyOptions,
+} from './finance-page-rules'
 
 export const receiptsPageConfig: ModulePageConfig = {
   key: 'receipt',
@@ -181,7 +177,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       label: '往来方',
       type: 'select',
       required: true,
-      options: getCounterpartyOptions,
+      options: getReceiptCounterpartyOptions,
       masterOptionRequirements: { customers: true, suppliers: true },
       row: 1,
     },
@@ -308,7 +304,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     ],
   },
   data: [],
-  buildOverview: (rows) => buildFinanceOverview(rows, 'amount'),
+  buildOverview: buildReceiptOverview,
   statusMap,
   rowHighlightStatuses: ['草稿'],
 }

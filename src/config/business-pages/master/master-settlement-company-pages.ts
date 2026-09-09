@@ -65,7 +65,7 @@ export const settlementCompanyPageConfig: ModulePageConfig = {
     },
   ],
   data: [],
-  buildOverview: (rows) => buildMasterOverview(rows),
+  buildOverview: buildMasterOverview,
 }
 
 export const masterSettlementCompanyPageConfigs: Record<

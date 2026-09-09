@@ -212,7 +212,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     data: [],
-    buildOverview: (rows) => buildMasterOverview(rows),
+    buildOverview: buildMasterOverview,
     statusMap,
     rowHighlightStatuses: ['禁用'],
   },
