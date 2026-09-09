@@ -1,7 +1,9 @@
-import { useCallback, useRef, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { createElement, useCallback, useRef, useState } from 'react'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { findServerFilteredBusinessModuleRow } from '@/api/business/business-listing'
 import { getModuleConfig } from '@/api/contracts/module-contracts'
+import { useDetailSupport } from '@/hooks/useDetailSupport'
 import { useRequestError } from '@/hooks/useRequestError'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import type { ModuleKey } from '@/module-system/core/module-key'
@@ -14,36 +16,23 @@ import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
 import type {
   ModulePageConfig,
   ModuleParentImportSource,
+  ModuleRecord,
 } from '@/types/module-page'
 import type {
   ModuleListRecordFor,
   PersistedModuleEditorDraftFor,
 } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
+import { ModuleRecordDetailInline } from '@/views/modules/components/ModuleRecordDetailInline'
 import {
   toEditorDraft,
   toLegacyEditorDraft,
 } from '@/views/modules/module-editor-draft-adapter'
 
-interface Props<Key extends ModuleKey> {
-  moduleKey: Key
-  config: ModulePageConfig
-}
-
-interface BusinessGridEditorResult<Key extends ModuleKey> {
-  editRecord: PersistedModuleEditorDraftFor<Key> | null
-  editorSessionKey: number
-  initialParentImportSource: ModuleParentImportSource | null
-  initialEditorValues: Record<string, unknown> | null
-  editorLockLoading: boolean
-  editorLockRelatedRows: ModuleListRecordFor<ModuleKey>[]
-  editorOpen: boolean
-  openEditor: (
-    record: ModuleListRecordFor<Key> | null,
-    options?: OpenEditorOptions,
-  ) => Promise<void>
-  closeEditor: () => void
-  handleSaved: () => void
+interface Props {
+  moduleKey: ModuleKey
+  config: ModulePageConfig | undefined
+  resolvedConfig: ModulePageConfig
 }
 
 interface OpenEditorOptions {
@@ -51,20 +40,20 @@ interface OpenEditorOptions {
   initialValues?: Record<string, unknown>
 }
 
-interface ResolveEditorRecordOptions<Key extends ModuleKey> {
-  moduleKey: Key
-  record: ModuleListRecordFor<Key>
+interface ResolveEditorRecordOptions {
+  moduleKey: ModuleKey
+  record: ModuleListRecordFor<ModuleKey>
   requiresDetailFetch: boolean
 }
 
-function resolveEditorRecord<Key extends ModuleKey>(
-  options: ResolveEditorRecordOptions<Key>,
-): Promise<PersistedModuleEditorDraftFor<Key>>
+function resolveEditorRecord(
+  options: ResolveEditorRecordOptions,
+): Promise<PersistedModuleEditorDraftFor<ModuleKey>>
 async function resolveEditorRecord({
   moduleKey,
   record,
   requiresDetailFetch,
-}: ResolveEditorRecordOptions<ModuleKey>): Promise<object> {
+}: ResolveEditorRecordOptions): Promise<object> {
   if (isMainFlowModuleKey(moduleKey)) {
     const detail = await getBusinessModuleDetail(moduleKey, String(record.id))
     return toEditorDraft(moduleKey, detail)
@@ -88,15 +77,16 @@ async function resolveEditorRecord({
   return toLegacyEditorDraft(detail)
 }
 
-export function useBusinessGridEditor<Key extends ModuleKey>({
+export function useBusinessGridEditor({
   moduleKey,
   config,
-}: Props<Key>): BusinessGridEditorResult<Key> {
+  resolvedConfig,
+}: Props) {
   const { showError } = useRequestError()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorSessionKey, setEditorSessionKey] = useState(0)
   const [editRecord, setEditRecord] =
-    useState<PersistedModuleEditorDraftFor<Key> | null>(null)
+    useState<PersistedModuleEditorDraftFor<ModuleKey> | null>(null)
   const [initialParentImportSource, setInitialParentImportSource] =
     useState<ModuleParentImportSource | null>(null)
   const [initialEditorValues, setInitialEditorValues] = useState<Record<
@@ -109,6 +99,17 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
   const [editorLockLoading, setEditorLockLoading] = useState(false)
   const openVersionRef = useRef(0)
 
+  const [attachOpen, setAttachOpen] = useState(false)
+  const [attachRecordId, setAttachRecordId] = useState('')
+  const openAttachment = (record: ModuleRecord) => {
+    setAttachRecordId(String(record.id || ''))
+    setAttachOpen(true)
+  }
+  const closeAttachment = () => {
+    setAttachOpen(false)
+    setAttachRecordId('')
+  }
+
   const lineItemLockSourceModule = getBehaviorValue(
     moduleKey,
     'lineItemLockSourceModule',
@@ -119,10 +120,10 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
   const lineItemLockTargetField = String(
     getBehaviorValue(moduleKey, 'lineItemLockTargetField') || '',
   )
-  const requiresDetailFetch = Boolean(config.itemColumns?.length)
+  const requiresDetailFetch = Boolean(resolvedConfig.itemColumns?.length)
 
   const resolveEditorLockRelatedRows = async (
-    record: ModuleListRecordFor<Key> | null,
+    record: ModuleListRecordFor<ModuleKey> | null,
   ) => {
     if (
       !record ||
@@ -156,10 +157,10 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
   }
 
   const openEditor = async (
-    record: ModuleListRecordFor<Key> | null,
+    record: ModuleListRecordFor<ModuleKey> | null,
     options: OpenEditorOptions = {},
   ) => {
-    if (!record && config.allowManualCreate === false) {
+    if (!record && resolvedConfig.allowManualCreate === false) {
       return
     }
     if (!record) {
@@ -216,7 +217,84 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     setInitialParentImportSource(null)
   }
 
+  const {
+    detailItems,
+    openDetail,
+    retryDetail,
+    closeDetail,
+    inlineDetailItems,
+    inlineExpandedRowKeys,
+    openInlineDetail,
+    closeInlineDetail,
+    retryInlineDetail,
+  } = useDetailSupport({ moduleKey, config: resolvedConfig })
+
+  const navigate = useNavigate()
+  const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
+
+  const navigateToDetailRoute = (routePath: string, record: ModuleRecord) => {
+    const path = routePath.replace(':projectId', String(record.projectId))
+    void navigate({ to: path as never })
+  }
+
+  const shouldUseDetailAction = Boolean(
+    detailRoutePath ||
+      config?.detailActionLabel ||
+      (config?.readOnly && config.detailFields.length > 0),
+  )
+  const shouldUseInlineDetail = Boolean(
+    resolvedConfig.itemColumns?.length ||
+      resolvedConfig.detailItemColumns?.length ||
+      resolvedConfig.detailFields.length,
+  )
+  const toggleInlineDetail = (record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    if (inlineExpandedRowKeys.includes(recordId)) {
+      closeInlineDetail(recordId)
+      return
+    }
+    void openInlineDetail(record)
+  }
+  const handleInlineExpand = (expanded: boolean, record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    if (expanded) {
+      if (!inlineExpandedRowKeys.includes(recordId)) {
+        void openInlineDetail(record)
+      }
+    } else {
+      closeInlineDetail(recordId)
+    }
+  }
+  const renderInlineDetail = (record: ModuleRecord) => {
+    const recordId = String(record.id || '')
+    const detailItem = inlineDetailItems.find(
+      (item) => item.recordId === recordId,
+    )
+    return createElement(ModuleRecordDetailInline, {
+      config: resolvedConfig,
+      record: detailItem?.record ?? null,
+      loading: detailItem?.loading ?? false,
+      error: detailItem?.error ?? null,
+      onRetry: () => retryInlineDetail(recordId),
+    })
+  }
+
+  const recordDetailAction: ((record: ModuleRecord) => void) | undefined =
+    shouldUseDetailAction
+      ? detailRoutePath
+        ? (record) => navigateToDetailRoute(detailRoutePath, record)
+        : shouldUseInlineDetail
+          ? toggleInlineDetail
+          : openDetail
+      : undefined
+  const openGridDetail = shouldUseInlineDetail
+    ? toggleInlineDetail
+    : (record: ModuleRecord) => {
+        void openDetail(record)
+      }
+
   return {
+    shouldUseDetailAction,
     editRecord,
     editorSessionKey,
     initialParentImportSource,
@@ -226,6 +304,24 @@ export function useBusinessGridEditor<Key extends ModuleKey>({
     editorOpen,
     openEditor,
     closeEditor,
-    handleSaved,
+    handleEditorSaved: handleSaved,
+    overlays: {
+      attachOpen,
+      attachRecordId,
+      openAttachment,
+      closeAttachment,
+    },
+    detailItems,
+    openDetail,
+    retryDetail,
+    closeDetail,
+    inlineExpandedRowKeys,
+    retryInlineDetail,
+    toggleInlineDetail,
+    handleInlineExpand,
+    shouldUseInlineDetail,
+    renderInlineDetail,
+    recordDetailAction,
+    openGridDetail,
   }
 }

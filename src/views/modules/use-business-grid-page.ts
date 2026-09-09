@@ -1,45 +1,9 @@
-import { useNavigate } from '@tanstack/react-router'
-import { createElement, useEffect, useMemo, useState } from 'react'
-import { fetchAttachmentCounts } from '@/api/business/business-attachments'
-import { updateBusinessModuleStatus } from '@/api/business/business-crud'
-import { completeSalesOrder } from '@/api/sales/document-flow-commands'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
-import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
-import { useDetailSupport } from '@/hooks/useDetailSupport'
-import { useExcelExport } from '@/hooks/useExcelExport'
-import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
-import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
-import {
-  buildDefaultModuleFilters,
-  useModuleFilters,
-} from '@/hooks/useModuleFilters'
-import { useModulePageConfig } from '@/hooks/useModulePageConfig'
-import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
-import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
-import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
-import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
-import {
-  canAuditFromStatus,
-  resolveReverseAuditTargetForStatus,
-  resolveStatusChangeActionKind,
-  resolveStatusOptions,
-} from '@/module-system/adapter/module-adapter-actions'
-import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { useBusinessGridData } from '@/hooks/useBusinessGridData'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
-import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
-import type {
-  ModuleActionDefinition,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
-import { message, modal } from '@/utils/antd-app'
-import { asString } from '@/utils/type-narrowing'
-import { ModuleRecordDetailInline } from '@/views/modules/components/ModuleRecordDetailInline'
+import type { ModulePageConfig } from '@/types/module-page'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
-import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
 
 interface Props {
@@ -48,433 +12,39 @@ interface Props {
   initialConfig?: ModulePageConfig
 }
 
-function createEmptyConfig(moduleKey: ModuleKey): ModulePageConfig {
-  return {
-    key: moduleKey,
-    title: '',
-    kicker: '',
-    description: '',
-    filters: [],
-    columns: [],
-    detailFields: [],
-    data: [],
-    buildOverview: () => [],
-  }
-}
-
-function isListExportAction(action: ModuleActionDefinition) {
-  return (
-    action.key === 'export' ||
-    action.key === 'export_balance' ||
-    action.label.includes('导出')
-  )
-}
-
-function withoutListExportActions(config: ModulePageConfig) {
-  if (!config.actions?.length) return config
-  const actions = config.actions.filter((action) => !isListExportAction(action))
-  return actions.length === config.actions.length
-    ? config
-    : { ...config, actions }
-}
-
 export function useBusinessGridPage({
   moduleKey,
   pageDef,
   initialConfig,
 }: Props) {
-  const { config } = useModulePageConfig({ moduleKey, initialConfig })
-  const emptyConfig = useMemo(() => createEmptyConfig(moduleKey), [moduleKey])
-  const resolvedConfig = config || emptyConfig
-  const canCreateRecord = !resolvedConfig.readOnly
-  const canUpdateRecord = !resolvedConfig.readOnly
-  const canDeleteRecord = !resolvedConfig.readOnly
-  const canAuditRecord = !resolvedConfig.readOnly
-  const canPrintRecord = true
-  const canUseListExport = pageDef.menuParent === 'master'
-  const toolbarConfig = canUseListExport
-    ? resolvedConfig
-    : withoutListExportActions(resolvedConfig)
-  const defaultFilters = useMemo(
-    () => buildDefaultModuleFilters(config),
-    [config],
-  )
-
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
-  const [selectedRowMap, setSelectedRowMap] = useState<
-    Record<string, ModuleRecord>
-  >({})
-  const [attachmentCounts, setAttachmentCounts] = useState<
-    Record<string, number>
-  >({})
-  const [currentPage, setCurrentPage] = useState(1)
-  const defaultPageSize = useDefaultPageSize()
-  const [pageSize, setPageSize] = useState(defaultPageSize)
-  const { formatCellValue } = useModuleDisplaySupport()
-  const {
-    filters,
-    submittedFilters,
-    applyFilters,
-    handleSearch,
-    handleReset,
-    updateFilter,
-    setFilters,
-    setSubmittedFilters,
-  } = useModuleFilters({
-    defaultFilters,
-    setCurrentPage: (page: number) => setCurrentPage(page),
-  })
-  const {
-    records,
-    total,
-    isLoading,
-    isFetching,
-    errorMessage: listErrorMessage,
-    hasError: listHasError,
-    retry: retryList,
-  } = useInfiniteBusinessItems({
+  const data = useBusinessGridData({ moduleKey, pageDef, initialConfig })
+  const editor = useBusinessGridEditor({
     moduleKey,
-    // react-doctor: intentional callback, not event handler
-    filters: submittedFilters,
-    // react-doctor: intentional callback, not event handler
-    enabled: true,
-    // react-doctor: intentional callback, not event handler
-    currentPage,
-    // react-doctor: intentional callback, not event handler
-    pageSize,
+    config: data.config,
+    resolvedConfig: data.resolvedConfig,
   })
-  const recordIdsKey = records.map((record) => record.id).join(',')
-
-  const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
-  const { exporting, handleExport: exportModuleRows } =
-    useExcelExport(moduleKey)
-  const handleExport = async () => {
-    if (!canUseListExport) return
-    await exportModuleRows(submittedFilters)
-  }
-  const {
-    detailItems,
-    openDetail,
-    retryDetail,
-    closeDetail,
-    inlineDetailItems,
-    inlineExpandedRowKeys,
-    openInlineDetail,
-    closeInlineDetail,
-    retryInlineDetail,
-  } = useDetailSupport({ moduleKey, config: resolvedConfig })
-  const {
-    editRecord,
-    editorSessionKey,
-    initialParentImportSource,
-    initialEditorValues,
-    editorLockLoading,
-    editorLockRelatedRows,
-    editorOpen,
-    openEditor,
-    closeEditor,
-    handleSaved: handleEditorSaved,
-  } = useBusinessGridEditor({ moduleKey, config: resolvedConfig })
-  const overlays = useBusinessGridOverlays()
-  const { getRowClassName } = useModuleRecordHelpers({
+  const actions = useBusinessGridActions({
     moduleKey,
-    config: resolvedConfig,
+    config: data.config,
+    toolbarConfig: data.toolbarConfig,
+    selectedRowKeys: data.selectedRowKeys,
+    selectedRecords: data.selectedRecords,
+    submittedFilters: data.submittedFilters,
+    attachmentCounts: data.attachmentCounts,
+    canCreateRecord: data.canCreateRecord,
+    canUpdateRecord: data.canUpdateRecord,
+    canDeleteRecord: data.canDeleteRecord,
+    canAuditRecord: data.canAuditRecord,
+    canPrintRecord: data.canPrintRecord,
+    refreshModuleQueries: data.refreshModuleQueries,
+    clearSelection: data.clearSelection,
+    handleExport: data.handleExport,
+    editRecord: editor.editRecord,
+    editorLockRelatedRows: editor.editorLockRelatedRows,
+    openEditor: editor.openEditor,
+    openAttachment: editor.overlays.openAttachment,
+    recordDetailAction: editor.recordDetailAction,
   })
-
-  useEffect(() => {
-    if (resolvedConfig.readOnly) {
-      setAttachmentCounts({})
-      return
-    }
-    const recordIds = recordIdsKey.split(',').filter(Boolean)
-    if (!recordIds.length) {
-      setAttachmentCounts({})
-      return
-    }
-
-    let cancelled = false
-    void fetchAttachmentCounts(moduleKey, recordIds)
-      .then((response) => {
-        if (!cancelled) {
-          setAttachmentCounts(response.counts)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAttachmentCounts({})
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [moduleKey, recordIdsKey, resolvedConfig.readOnly])
-
-  const clearSelection = () => {
-    setSelectedRowKeys([])
-    setSelectedRowMap({})
-  }
-  const applyGridFilters: typeof applyFilters = (nextFilters) => {
-    clearSelection()
-    applyFilters(nextFilters)
-  }
-  const searchGrid = () => {
-    clearSelection()
-    handleSearch()
-  }
-  const resetGridFilters = () => {
-    clearSelection()
-    handleReset()
-  }
-
-  const navigate = useNavigate()
-  const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
-
-  const navigateToDetailRoute = (routePath: string, record: ModuleRecord) => {
-    const path = routePath.replace(':projectId', String(record.projectId))
-    void navigate({ to: path as never })
-  }
-
-  const lockedLineItemsNotice = String(
-    getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || '',
-  )
-  const shouldUseDetailAction = Boolean(
-    detailRoutePath ||
-      config?.detailActionLabel ||
-      (config?.readOnly && config.detailFields.length > 0),
-  )
-  const shouldUseInlineDetail = Boolean(
-    resolvedConfig.itemColumns?.length ||
-      resolvedConfig.detailItemColumns?.length ||
-      resolvedConfig.detailFields.length,
-  )
-  const toggleInlineDetail = (record: ModuleRecord) => {
-    const recordId = String(record.id || '')
-    if (inlineExpandedRowKeys.includes(recordId)) {
-      closeInlineDetail(recordId)
-      return
-    }
-    void openInlineDetail(record)
-  }
-  const handleInlineExpand = (expanded: boolean, record: ModuleRecord) => {
-    const recordId = String(record.id || '')
-    if (expanded) {
-      if (!inlineExpandedRowKeys.includes(recordId)) {
-        void openInlineDetail(record)
-      }
-    } else {
-      closeInlineDetail(recordId)
-    }
-  }
-  const renderInlineDetail = (record: ModuleRecord) => {
-    const recordId = String(record.id || '')
-    const detailItem = inlineDetailItems.find(
-      (item) => item.recordId === recordId,
-    )
-    return createElement(ModuleRecordDetailInline, {
-      config: resolvedConfig,
-      record: detailItem?.record ?? null,
-      loading: detailItem?.loading ?? false,
-      error: detailItem?.error ?? null,
-      onRetry: () => retryInlineDetail(recordId),
-    })
-  }
-
-  const formFields = config?.formFields || []
-  const statusFields = [...formFields, ...(config?.filters || [])]
-  const {
-    canUseBulkAuditAction,
-    canUseBulkReverseAuditAction,
-    canUseBulkDeleteActions,
-    canUseBulkPrintActions,
-    lineItemsLocked: editorLineItemsLocked,
-    listAuditActionKind,
-    listAuditTarget,
-    listReverseAuditActionKind,
-    listReverseAuditTarget,
-    listAuditSourceStatuses,
-  } = useModuleEditorCapabilities({
-    moduleKey,
-    formFields,
-    listStatusFields: statusFields,
-    lineItemLockRelatedRows: editorLockRelatedRows,
-    currentStatus: editRecord?.status ? asString(editRecord.status) : undefined,
-    canEditLineItems: canUpdateRecord,
-    canSaveCurrentEditor: canCreateRecord || canUpdateRecord,
-    canAuditRecords: canAuditRecord,
-    canPrintRecords: canPrintRecord,
-    canDeleteRecords: canDeleteRecord,
-    isReadOnly: Boolean(config?.readOnly),
-    resolveModuleStatusOptions: (statusField) => {
-      if (!Array.isArray(statusField?.options)) return []
-      return resolveStatusOptions({ fields: [statusField] })
-    },
-  })
-
-  const handleStatusChange = async (record: ModuleRecord, status: string) => {
-    if (moduleKey === 'sales-order' && status === '完成销售') {
-      modal.confirm({
-        title: '确认完成销售',
-        content:
-          '完成销售后将按最终交付结果进入结算，请确认销售出库和实际重量已经核定。',
-        okText: '完成销售',
-        cancelText: '取消',
-        mask: { closable: false },
-        onOk: async () => {
-          await completeSalesOrder(String(record.id))
-          message.success('完成销售成功')
-          await refreshModuleQueries()
-        },
-      })
-      return
-    }
-    await updateBusinessModuleStatus(moduleKey, String(record.id), status)
-    message.success(`${config?.title ?? '单据'}状态已更新`)
-    await refreshModuleQueries()
-  }
-
-  const { buildActions } = useModuleRecordActions({
-    moduleKey,
-    isReadOnly: Boolean(config?.readOnly),
-    attachmentCounts,
-    onAttach: overlays.openAttachment,
-    detailActionLabel: config?.detailActionLabel,
-    onDetail: shouldUseDetailAction
-      ? detailRoutePath
-        ? (record) => navigateToDetailRoute(detailRoutePath, record)
-        : shouldUseInlineDetail
-          ? toggleInlineDetail
-          : openDetail
-      : undefined,
-    onEdit: (record) => {
-      void openEditor(record)
-    },
-    canEditRecord: (record) =>
-      resolveModuleRecordCapabilities(record, moduleKey).canEdit,
-    onStatusChange: (record, status) => {
-      void handleStatusChange(record, status)
-    },
-  })
-  const selectedRecords = Object.values(selectedRowMap)
-  const canUseSelectedBulkAuditAction =
-    canUseBulkAuditAction &&
-    selectedRecords.some(
-      (record) =>
-        !isDeletedModuleRecord(record) &&
-        canAuditFromStatus(
-          record.status,
-          listAuditTarget,
-          listReverseAuditTarget,
-          listAuditSourceStatuses,
-        ),
-    )
-  const selectedReverseAuditTargets = selectedRecords.flatMap((record) => {
-    if (isDeletedModuleRecord(record)) return []
-    const targetStatus = resolveReverseAuditTargetForStatus(
-      moduleKey,
-      record.status,
-      listAuditTarget,
-      listReverseAuditTarget,
-    )
-    return targetStatus ? [targetStatus] : []
-  })
-  const hasSingleReverseAuditTarget = selectedReverseAuditTargets.every(
-    (targetStatus) => targetStatus === selectedReverseAuditTargets[0],
-  )
-  const effectiveListReverseAuditActionKind =
-    selectedReverseAuditTargets.length > 0 && hasSingleReverseAuditTarget
-      ? resolveStatusChangeActionKind(selectedReverseAuditTargets[0], true)
-      : listReverseAuditActionKind
-  const canUseSelectedBulkReverseAuditAction =
-    canUseBulkReverseAuditAction && selectedReverseAuditTargets.length > 0
-  const canUseSelectedBulkDeleteActions =
-    canUseBulkDeleteActions &&
-    selectedRecords.some(
-      (record) => resolveModuleRecordCapabilities(record, moduleKey).canDelete,
-    )
-
-  const {
-    handlePrintSelectedRecords,
-    handleExportSalesOrderPrintXlsx,
-    handleSelectedAuditRecords,
-    handleSelectedDeleteRecords,
-    handleSelectedReverseAuditRecords,
-    openFreightSummary,
-    openCustomerSummary,
-    openCustomerProjects,
-  } = useBusinessGridActions({
-    moduleKey,
-    selectedRowKeys,
-    selectedRows: Object.values(selectedRowMap),
-    submittedFilters,
-    listAuditTarget,
-    listReverseAuditTarget,
-    listAuditSourceStatuses,
-    listAuditActionKind,
-    listReverseAuditActionKind: effectiveListReverseAuditActionKind,
-    refreshModuleQueries,
-    clearSelection,
-    formatCellValue,
-  })
-
-  const {
-    visibleToolbarActions: baseVisibleToolbarActions,
-    handleAction: handleToolbarAction,
-  } = useModuleToolbarActions({
-    moduleKey,
-    config: toolbarConfig,
-    formFields,
-    isMaterialModule: false,
-    selectedRowCount: selectedRowKeys.length,
-    canUseBulkAuditAction: canUseSelectedBulkAuditAction,
-    canUseBulkReverseAuditAction: canUseSelectedBulkReverseAuditAction,
-    canUseBulkDeleteActions: canUseSelectedBulkDeleteActions,
-    listAuditActionKind,
-    listReverseAuditActionKind: effectiveListReverseAuditActionKind,
-    handlers: {
-      exportMaterialRows: async () => {
-        await handleExport()
-      },
-      exportRows: async () => {
-        await handleExport()
-      },
-      handleSelectedAuditRecords,
-      handleSelectedDeleteRecords,
-      handleSelectedReverseAuditRecords,
-      openCreateEditor: async () => {
-        await openEditor(null)
-      },
-      openFreightSummary,
-      openCustomerSummary,
-      openCustomerProjects,
-    },
-  })
-
-  const selectedRecordActions =
-    selectedRecords.length === 1 ? buildActions(selectedRecords[0]) : []
-  const selectedRecordToolbarActions: ModuleActionDefinition[] =
-    selectedRecordActions.map((action) => ({
-      key: action.key,
-      label: action.label,
-      type: 'default',
-      danger: action.danger,
-      disabled: action.disabled,
-    }))
-  const visibleToolbarActions = [
-    ...baseVisibleToolbarActions,
-    ...selectedRecordToolbarActions,
-  ]
-  const handleAction = async (action: ModuleActionDefinition) => {
-    const selectedRecordAction = selectedRecordActions.find(
-      (candidate) => candidate.key === action.key,
-    )
-    if (selectedRecordAction) {
-      selectedRecordAction.onClick()
-      return
-    }
-    await handleToolbarAction(action)
-  }
-
   const {
     columnOrder,
     columnVisibleKeys,
@@ -486,88 +56,86 @@ export function useBusinessGridPage({
     handleColumnResizeReset,
   } = useBusinessGridTable({
     moduleKey,
-    config,
-    records,
-    canUpdateRecord,
-    selectedRowKeys,
-    setSelectedRowKeys,
-    setSelectedRowMap,
-    buildActions,
+    config: data.config,
+    records: data.records,
+    canUpdateRecord: data.canUpdateRecord,
+    selectedRowKeys: data.selectedRowKeys,
+    setSelectedRowKeys: data.setSelectedRowKeys,
+    setSelectedRowMap: data.setSelectedRowMap,
+    buildActions: actions.buildActions,
     showActions: false,
-    onOpenDetail: shouldUseInlineDetail
-      ? toggleInlineDetail
-      : (record) => {
-          void openDetail(record)
-        },
+    onOpenDetail: editor.openGridDetail,
   })
 
   return {
-    canAuditRecord,
-    canCreateRecord,
-    canExportData: canUseListExport,
-    canUpdateRecord,
-    clearSelection,
-    closeDetail,
-    inlineExpandedRowKeys,
-    retryInlineDetail,
-    onExpandDetail: handleInlineExpand,
-    expandedRowRender: shouldUseInlineDetail ? renderInlineDetail : undefined,
+    canAuditRecord: data.canAuditRecord,
+    canCreateRecord: data.canCreateRecord,
+    canExportData: data.canUseListExport,
+    canUpdateRecord: data.canUpdateRecord,
+    clearSelection: data.clearSelection,
+    closeDetail: editor.closeDetail,
+    inlineExpandedRowKeys: editor.inlineExpandedRowKeys,
+    retryInlineDetail: editor.retryInlineDetail,
+    onExpandDetail: editor.handleInlineExpand,
+    expandedRowRender: editor.shouldUseInlineDetail
+      ? editor.renderInlineDetail
+      : undefined,
     columnVisibleKeys,
     columnOrder,
     onColumnOrderChange,
     handleColumnResizeReset,
-    config,
-    currentPage,
-    defaultFilters,
-    detailItems,
-    editRecord,
-    editorSessionKey,
-    initialParentImportSource,
-    initialEditorValues,
-    editorLineItemsLocked,
-    editorLockLoading,
-    editorOpen,
-    exporting,
-    applyFilters: applyGridFilters,
-    filters,
-    handleAction,
-    handleEditorSaved,
-    handleExport,
-    handleReset: resetGridFilters,
-    handleSearch: searchGrid,
-    isFetching,
-    isLoading,
-    listErrorMessage,
-    listHasError,
-    lockedLineItemsNotice,
-    openDetail,
-    openEditor,
-    overlays,
-    records,
-    total,
-    pageSize,
-    setCurrentPage,
-    setPageSize,
-    refreshModuleQueries,
-    retryDetail,
-    retryList,
+    config: data.config,
+    currentPage: data.currentPage,
+    defaultFilters: data.defaultFilters,
+    detailItems: editor.detailItems,
+    editRecord: editor.editRecord,
+    editorSessionKey: editor.editorSessionKey,
+    initialParentImportSource: editor.initialParentImportSource,
+    initialEditorValues: editor.initialEditorValues,
+    editorLineItemsLocked: actions.editorLineItemsLocked,
+    editorLockLoading: editor.editorLockLoading,
+    editorOpen: editor.editorOpen,
+    exporting: data.exporting,
+    applyFilters: data.applyGridFilters,
+    filters: data.filters,
+    handleAction: actions.handleAction,
+    handleEditorSaved: editor.handleEditorSaved,
+    handleExport: data.handleExport,
+    handleReset: data.resetGridFilters,
+    handleSearch: data.searchGrid,
+    isFetching: data.isFetching,
+    isLoading: data.isLoading,
+    listErrorMessage: data.listErrorMessage,
+    listHasError: data.listHasError,
+    lockedLineItemsNotice: actions.lockedLineItemsNotice,
+    openDetail: editor.openDetail,
+    openEditor: editor.openEditor,
+    overlays: editor.overlays,
+    records: data.records,
+    total: data.total,
+    pageSize: data.pageSize,
+    setCurrentPage: data.setCurrentPage,
+    setPageSize: data.setPageSize,
+    refreshModuleQueries: data.refreshModuleQueries,
+    retryDetail: editor.retryDetail,
+    retryList: data.retryList,
     rowSelection,
-    selectedRowKeys,
-    selectedRows: Object.values(selectedRowMap),
-    setSelectedRowKeys,
-    setSelectedRowMap,
-    setFilters,
-    setSubmittedFilters,
-    submittedFilters,
+    selectedRowKeys: data.selectedRowKeys,
+    selectedRows: data.selectedRecords,
+    setSelectedRowKeys: data.setSelectedRowKeys,
+    setSelectedRowMap: data.setSelectedRowMap,
+    setFilters: data.setFilters,
+    setSubmittedFilters: data.setSubmittedFilters,
+    submittedFilters: data.submittedFilters,
     antdColumns,
     components,
     toggleColumn,
-    updateFilter,
-    visibleToolbarActions,
-    getRowClassName,
-    closeEditor,
-    canUseBulkPrintActions,
-    handlePrintSelectedRecords,
-    handleExportSalesOrderPrintXlsx,
+    updateFilter: data.updateFilter,
+    visibleToolbarActions: actions.visibleToolbarActions,
+    getRowClassName: data.getRowClassName,
+    closeEditor: editor.closeEditor,
+    canUseBulkPrintActions: actions.canUseBulkPrintActions,
+    handlePrintSelectedRecords: actions.handlePrintSelectedRecords,
+    handleExportSalesOrderPrintXlsx: actions.handleExportSalesOrderPrintXlsx,
   }
 }
