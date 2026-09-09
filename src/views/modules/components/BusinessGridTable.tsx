@@ -12,7 +12,9 @@ import {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '@/components/EmptyState'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
+import { useEmptyState, type EmptyStateStateInput } from '@/hooks/useEmptyState'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildTableScrollConfig,
@@ -43,6 +45,7 @@ interface Props {
   hasNextPage?: boolean
   fetchNextPage?: () => void
   isFetchingNextPage?: boolean
+  emptyStateInput?: EmptyStateStateInput
 }
 
 function shouldIgnoreRowInteraction(target: EventTarget | null) {
@@ -68,6 +71,7 @@ export function BusinessGridTable({
   hasNextPage: _hasNextPage,
   fetchNextPage: _fetchNextPage,
   isFetchingNextPage: _isFetchingNextPage,
+  emptyStateInput,
 }: Props) {
   const { t } = useTranslation()
   const shellRef = useRef<HTMLDivElement | null>(null)
@@ -211,7 +215,21 @@ export function BusinessGridTable({
     },
   })
 
-  const emptyText = (
+  const emptyState = useEmptyState({
+    // 加载中不判定空状态，避免闪烁出「无数据」提示
+    hasData: loading ? null : dataSource.length > 0,
+    ...emptyStateInput,
+  })
+  const emptyText = emptyState ? (
+    <EmptyState
+      type={emptyState.type}
+      title={emptyState.title}
+      description={emptyState.description}
+      hint={emptyState.hint}
+      primaryAction={emptyState.primaryAction}
+      secondaryAction={emptyState.secondaryAction}
+    />
+  ) : (
     <Empty
       image={Empty.PRESENTED_IMAGE_SIMPLE}
       description={t('modules.table.noData')}

@@ -1,7 +1,8 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import { Alert, Button } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import { useState } from 'react'
+import { isEqual } from 'es-toolkit'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -59,6 +60,18 @@ interface Props {
   printDropdown?: React.ReactNode
 }
 
+function hasNonDefaultFilters(
+  submittedFilters: SearchParams,
+  defaultFilters: SearchParams,
+) {
+  const submittedKeys = Object.keys(submittedFilters)
+  const defaultEntries = Object.entries(defaultFilters)
+  if (submittedKeys.length !== defaultEntries.length) return true
+  return defaultEntries.some(
+    ([key, value]) => !isEqual(submittedFilters[key], value),
+  )
+}
+
 export function BusinessGridContent({
   moduleKey,
   config,
@@ -104,6 +117,10 @@ export function BusinessGridContent({
 }: Props) {
   const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
+  const hasActiveFilters = useMemo(
+    () => hasNonDefaultFilters(submittedFilters, defaultFilters),
+    [submittedFilters, defaultFilters],
+  )
   const overviewItems = config.buildOverview(
     selectedRows.length ? selectedRows : records,
   )
@@ -187,6 +204,14 @@ export function BusinessGridContent({
             onRowClick={onRowClick}
             onRowDoubleClick={onRowDoubleClick}
             expandable={expandable}
+            emptyStateInput={{
+              hasError: hasLoadError,
+              hasFilters: hasActiveFilters,
+              canCreate,
+              onResetFilters: onReset,
+              onCreate,
+              onRetry,
+            }}
           />
 
           <ModuleTablePagination
