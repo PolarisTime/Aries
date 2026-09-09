@@ -7,6 +7,8 @@ import type { ModuleKey } from '@/module-system/core/module-key'
 export type RouteViewKey =
   | 'dashboard'
   | 'business-grid'
+  | 'master-project'
+  | 'master-carrier'
   | 'company-setting'
   | 'print-template'
   | 'account'

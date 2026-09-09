@@ -163,6 +163,14 @@ const viewLoaders: Record<
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
     })),
+  'master-project': () =>
+    import('@/views/master-archive/ProjectPage').then((m) => ({
+      default: m.ProjectPage,
+    })),
+  'master-carrier': () =>
+    import('@/views/master-archive/CarrierPage').then((m) => ({
+      default: m.CarrierPage,
+    })),
   'company-setting': () =>
     import('@/views/system/CompanySettingsView').then((m) => ({
       default: m.CompanySettingsView,
@@ -234,7 +242,41 @@ export function buildModuleRoutes(parent: AnyRoute) {
 
               return config
             }
-          : undefined,
+          : def.view === 'master-project' || def.view === 'master-carrier'
+            ? async () => {
+                if (!def.moduleKey) {
+                  return undefined
+                }
+                const moduleKey = asString(def.moduleKey)
+                try {
+                  const runtimeConfig = await queryClient.ensureQueryData({
+                    queryKey: QUERY_KEYS.runtimeConfig,
+                    queryFn: getRuntimeConfig,
+                    staleTime: 30_000,
+                  })
+                  const pageSize = runtimeConfig.ui.defaultPageSize
+                  await queryClient.ensureQueryData({
+                    queryKey: QUERY_KEYS.businessGridList(
+                      moduleKey,
+                      {},
+                      1,
+                      pageSize,
+                    ),
+                    queryFn: ({ signal }) =>
+                      listBusinessModule(
+                        moduleKey,
+                        {},
+                        { currentPage: 1, pageSize },
+                        { signal },
+                      ),
+                    staleTime: 60_000,
+                  })
+                } catch {
+                  // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
+                }
+                return undefined
+              }
+            : undefined,
     })
   })
 }
