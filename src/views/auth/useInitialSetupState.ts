@@ -9,6 +9,10 @@ import type { InitialSetupStatus } from '@/shared/schemas'
 import { useSetupStore } from '@/stores/setupStore'
 import type { RuntimeConfigResponse } from '@/types/runtime-config'
 import { message } from '@/utils/antd-app'
+import {
+  focusFirstInvalidField,
+  readAntdFormValidationErrorFields,
+} from '@/utils/form-control-a11y'
 import { asString } from '@/utils/type-narrowing'
 
 export const SETUP_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}=?$/
@@ -89,6 +93,11 @@ export function useInitialSetupState() {
       )
       void navigate({ to: '/login' })
     } catch (error) {
+      const validationErrorFields = readAntdFormValidationErrorFields(error)
+      if (validationErrorFields) {
+        focusFirstInvalidField(form, validationErrorFields)
+        return
+      }
       message.error(
         getErrorMessage(error, t('auth.initialsetup.operationFailed')),
       )

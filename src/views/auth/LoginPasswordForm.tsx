@@ -2,7 +2,9 @@ import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Checkbox, Form, Input } from 'antd'
 import type { FormInstance } from 'antd/es/form'
 import { useTranslation } from 'react-i18next'
+import { AccessibleFormItem } from '@/components/AccessibleFormItem'
 import type { LoginPayload } from '@/shared/schemas'
+import { focusFirstInvalidField } from '@/utils/form-control-a11y'
 
 interface Props {
   loading: boolean
@@ -31,12 +33,15 @@ export function LoginPasswordForm({
       <Form
         form={form}
         onFinish={onSubmit}
+        onFinishFailed={({ errorFields }) =>
+          focusFirstInvalidField(form, errorFields)
+        }
         initialValues={{ loginName: savedLoginName, remember: true }}
         layout="vertical"
         size="large"
         className="login-form"
       >
-        <Form.Item
+        <AccessibleFormItem
           name="loginName"
           label={t('auth.loginform.loginNameLabel')}
           rules={[
@@ -48,9 +53,9 @@ export function LoginPasswordForm({
             placeholder={t('auth.loginform.loginNamePlaceholder')}
             autoComplete="username"
           />
-        </Form.Item>
+        </AccessibleFormItem>
 
-        <Form.Item
+        <AccessibleFormItem
           name="password"
           label={t('auth.loginform.passwordLabel')}
           rules={[
@@ -62,7 +67,7 @@ export function LoginPasswordForm({
             placeholder={t('auth.loginform.passwordPlaceholder')}
             autoComplete="current-password"
           />
-        </Form.Item>
+        </AccessibleFormItem>
 
         <Form.Item name="remember" valuePropName="checked">
           <Checkbox>{t('auth.loginform.remember')}</Checkbox>

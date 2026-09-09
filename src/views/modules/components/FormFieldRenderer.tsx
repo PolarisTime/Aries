@@ -12,6 +12,7 @@ import type { UploadFile } from 'antd/es/upload/interface'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
+import { AccessibleFormItem } from '@/components/AccessibleFormItem'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import {
@@ -154,7 +155,7 @@ export function FormFieldRenderer({
       getValueFromEvent?: (event: unknown) => unknown
     },
   ) => (
-    <Form.Item
+    <AccessibleFormItem
       key={field.key}
       name={field.key}
       preserve={field.preserve}
@@ -173,7 +174,7 @@ export function FormFieldRenderer({
         .join(' ')}
     >
       {children}
-    </Form.Item>
+    </AccessibleFormItem>
   )
 
   if (disabledValue && isDocumentReferenceField(field.key)) {

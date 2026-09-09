@@ -1,3 +1,4 @@
+import type { NamePath } from 'antd/es/form/interface'
 import i18next from 'i18next'
 import { syncDerivedEditorFormValuesForModule } from '@/module-system/adapter/module-adapter-editor'
 import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
@@ -34,6 +35,7 @@ export interface WorkspaceFormApi {
   getFieldsValue: (all?: boolean) => ModuleRecordInput
   setFieldsValue: (values: Partial<ModuleRecordInput>) => void
   resetFields: () => void
+  focusField: (name: NamePath) => void
 }
 
 export type EditorFormValues = ModuleRecordInput

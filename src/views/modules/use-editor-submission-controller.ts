@@ -28,6 +28,10 @@ import type {
   PersistedModuleEditorDraftFor,
 } from '@/types/module-record'
 import { message, modal } from '@/utils/antd-app'
+import {
+  focusFirstInvalidField,
+  readAntdFormValidationErrorFields,
+} from '@/utils/form-control-a11y'
 import { asString } from '@/utils/type-narrowing'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import {
@@ -346,6 +350,10 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
       }
       if (isAntdFormValidationError(error)) {
         // Form 已内联展示校验错误，不重复提示。
+        const validationErrorFields = readAntdFormValidationErrorFields(error)
+        if (validationErrorFields) {
+          focusFirstInvalidField(form, validationErrorFields)
+        }
       } else if (error instanceof Error) {
         const { code, traceId } = readRequestError(error)
         const baseErrorMessage = error.message || t('common.saveFailed')

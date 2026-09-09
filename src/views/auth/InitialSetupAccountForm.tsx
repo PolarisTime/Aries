@@ -1,6 +1,7 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
-import { Button, Form, Input } from 'antd'
+import { Button, Input } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AccessibleFormItem } from '@/components/AccessibleFormItem'
 
 interface Props {
   loadingAccount: boolean
@@ -15,7 +16,7 @@ export function InitialSetupAccountForm({
 
   return (
     <>
-      <Form.Item
+      <AccessibleFormItem
         name="accountLoginName"
         label={t('auth.initialsetup.account.loginNameLabel')}
         rules={[
@@ -30,8 +31,8 @@ export function InitialSetupAccountForm({
           placeholder={t('auth.initialsetup.account.loginNamePlaceholder')}
           autoFocus
         />
-      </Form.Item>
-      <Form.Item
+      </AccessibleFormItem>
+      <AccessibleFormItem
         name="accountPassword"
         label={t('auth.initialsetup.account.passwordLabel')}
         rules={[
@@ -46,8 +47,8 @@ export function InitialSetupAccountForm({
           prefix={<LockOutlined />}
           placeholder={t('auth.initialsetup.account.passwordPlaceholder')}
         />
-      </Form.Item>
-      <Form.Item
+      </AccessibleFormItem>
+      <AccessibleFormItem
         name="accountConfirmPassword"
         label={t('auth.initialsetup.account.confirmPasswordLabel')}
         rules={[
@@ -63,8 +64,8 @@ export function InitialSetupAccountForm({
             'auth.initialsetup.account.confirmPasswordPlaceholder',
           )}
         />
-      </Form.Item>
-      <Form.Item
+      </AccessibleFormItem>
+      <AccessibleFormItem
         name="accountUserName"
         label={t('auth.initialsetup.account.userNameLabel')}
       >
@@ -72,7 +73,7 @@ export function InitialSetupAccountForm({
           prefix={<UserOutlined />}
           placeholder={t('auth.initialsetup.account.userNamePlaceholder')}
         />
-      </Form.Item>
+      </AccessibleFormItem>
       <Button
         type="primary"
         loading={loadingAccount}
