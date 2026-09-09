@@ -5,6 +5,7 @@ import {
   isPurchaseOrder,
   isSalesOutbound,
 } from '@/module-system/core/module-category'
+import { isModuleKey, type ModuleKey } from '@/module-system/core/module-key'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from '@/module-system/editor/module-editor-shared'
 import type {
@@ -164,6 +165,35 @@ export function isEditorFieldDisabledForModule(
 }
 
 /**
+ * 固有只读列的人工输入豁免表：特定模块的称重/实测列需要操作员填写。
+ * 返回 true 表示该列对该行可编辑（越过派生只读判定）。
+ */
+type ItemColumnReadonlyExemption = (
+  columnKey: string,
+  record: ModuleLineItem,
+) => boolean
+
+const ITEM_COLUMN_READONLY_EXEMPTIONS = {
+  // 销售订单隐藏商品编码列后，手工行通过“材质”列选择物料。
+  // 已导入来源行仍由父单快照驱动，不能借此绕过来源锁定。
+  'sales-order': (columnKey, record) =>
+    columnKey === 'material' &&
+    !asString(record.sourceInboundItemId).trim() &&
+    !asString(record.sourcePurchaseOrderItemId).trim(),
+} satisfies Partial<Record<ModuleKey, ItemColumnReadonlyExemption>>
+
+function getItemColumnReadonlyExemption(
+  moduleKey: string,
+): ItemColumnReadonlyExemption | undefined {
+  if (!isModuleKey(moduleKey)) return undefined
+  return (
+    ITEM_COLUMN_READONLY_EXEMPTIONS as Partial<
+      Record<ModuleKey, ItemColumnReadonlyExemption>
+    >
+  )[moduleKey]
+}
+
+/**
  * 第一层：字段固有只读判定（与编辑状态无关，任何锁定白名单都不可越过）。
  * 包含 behavior 显式只读列、派生快照列（含显式声明的人工输入豁免）与模块特例。
  */
@@ -177,15 +207,8 @@ function isIntrinsicallyReadonlyItemColumn(
     return true
   }
 
-  // 销售订单隐藏商品编码列后，手工行通过“材质”列选择物料。
-  // 已导入来源行仍由父单快照驱动，不能借此绕过来源锁定。
-  if (
-    moduleKey === 'sales-order' &&
-    columnKey === 'material' &&
-    record &&
-    !asString(record.sourceInboundItemId).trim() &&
-    !asString(record.sourcePurchaseOrderItemId).trim()
-  ) {
+  const exemption = getItemColumnReadonlyExemption(moduleKey)
+  if (exemption && record && exemption(columnKey, record)) {
     return false
   }
 

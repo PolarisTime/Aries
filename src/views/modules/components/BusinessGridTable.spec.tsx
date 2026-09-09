@@ -98,7 +98,9 @@ describe('BusinessGridTable 空状态集成', () => {
 
   it('数据为空且无筛选时可创建时展示 no-data 与创建入口', () => {
     const onCreate = vi.fn()
-    renderTable({ emptyStateInput: { hasFilters: false, canCreate: true, onCreate } })
+    renderTable({
+      emptyStateInput: { hasFilters: false, canCreate: true, onCreate },
+    })
 
     expect(
       document.querySelector('[data-testid="empty-state-no-data"]'),

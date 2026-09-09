@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { getModulePageBehavior } from '@/module-system/behavior/module-page-behaviors'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
   ModuleColumnDefinition,
@@ -61,13 +62,8 @@ function isWeightOnlyViewEnabled(
   if (!runtimeConfig) {
     return false
   }
-  if (moduleKey === 'purchase-inbound') {
-    return runtimeConfig.features.weightOnlyPurchaseInbound
-  }
-  if (moduleKey === 'sales-outbound') {
-    return runtimeConfig.features.weightOnlySalesOutbound
-  }
-  return false
+  const featureKey = getModulePageBehavior(moduleKey)?.weightOnlyFeatureKey
+  return featureKey ? runtimeConfig.features[featureKey] : false
 }
 
 export function useModulePageConfig({ moduleKey, initialConfig }: Props) {

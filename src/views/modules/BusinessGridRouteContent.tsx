@@ -3,6 +3,7 @@ import { Empty } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import type { AppPageDefinition } from '@/config/page-registry'
+import { getModulePageBehavior } from '@/module-system/behavior/module-page-behaviors'
 import { assertModuleKey } from '@/module-system/core/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -10,9 +11,8 @@ import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
-import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
-import { PurchaseOrderPickupListAction } from '@/views/modules/components/PurchaseOrderPickupListAction'
+import { renderModuleGridToolbarExtra } from '@/views/modules/module-grid-toolbar-extras'
 import { useBusinessGridOverlayPreload } from '@/views/modules/use-business-grid-overlay-preload'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
@@ -89,8 +89,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const canCreateRecord =
     !state.config.readOnly &&
     state.config.allowManualCreate !== false &&
-    moduleKey !== 'customer-statement' &&
-    moduleKey !== 'freight-statement'
+    !getModulePageBehavior(moduleKey)?.disablesManualCreate
   const canSaveEditorRecord = state.editRecord
     ? !state.config.readOnly &&
       resolveModuleRecordCapabilities(state.editRecord, moduleKey).canEdit
@@ -176,19 +175,13 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           selectedCount={state.selectedRowKeys.length}
           printDropdown={
             <>
-              {moduleKey === 'material' && (
-                <MaterialImportActions
-                  canDownloadTemplate={state.canExportData}
-                  canImport={state.canUpdateRecord}
-                  onImported={state.refreshModuleQueries}
-                />
-              )}
-              {moduleKey === 'purchase-order' &&
-              state.selectedRowKeys.length ? (
-                <PurchaseOrderPickupListAction
-                  selectedOrderIds={state.selectedRowKeys}
-                />
-              ) : null}
+              {renderModuleGridToolbarExtra(moduleKey, {
+                selectedRowKeys: state.selectedRowKeys,
+                selectedRows: state.selectedRows,
+                canExportData: state.canExportData,
+                canUpdateRecord: state.canUpdateRecord,
+                refreshModuleQueries: state.refreshModuleQueries,
+              })}
               {state.canUseBulkPrintActions && state.selectedRowKeys.length ? (
                 <PrintTemplateDropdown
                   moduleKey={moduleKey}

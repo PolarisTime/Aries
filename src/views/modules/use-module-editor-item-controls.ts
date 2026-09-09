@@ -2,12 +2,11 @@ import { useState } from 'react'
 import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
 import { sortItemsByMaterialDefault } from '@/module-system/editor/module-editor-item-sort'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
-import { sortCustomerStatementItemsByDeliveryDate } from '@/views/modules/customer-statement-item-groups'
-import {
-  type FreightStatementSortDirection,
-  type FreightStatementSortMode,
-  sortFreightStatementItems,
+import type {
+  FreightStatementSortDirection,
+  FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
+import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 
 interface Options {
@@ -56,16 +55,13 @@ export function useModuleEditorItemControls({
     config.parentImport &&
       (config.parentImport.visibleWhen?.(editorFormValues) ?? true),
   )
-  // 附加费用 Tab：采购订单/销售订单/物流单启用
+  const editorItemBehavior = getModuleEditorItemBehavior(moduleKey)
+  // 附加费用 Tab：采购订单/销售订单/物流单启用（行为表注册）。
   const supportsExpenseTab =
-    (moduleKey === 'purchase-order' ||
-      moduleKey === 'sales-order' ||
-      moduleKey === 'freight-bill') &&
+    Boolean(editorItemBehavior?.supportsExpenseTab) &&
     Boolean(config.itemColumns?.length)
   const canAutoSortItems =
-    (moduleKey === 'sales-order' ||
-      moduleKey === 'customer-statement' ||
-      moduleKey === 'freight-statement') &&
+    Boolean(editorItemBehavior?.itemSort) &&
     items.length > 1 &&
     !saving &&
     !lineItemsLocked
@@ -75,20 +71,19 @@ export function useModuleEditorItemControls({
   // 导入上游后行序随上游：销售订单按商品资料规则，客户对账单按交货日期整理。
   const handleAutoSortItems = (mode?: FreightStatementSortMode) => {
     const effectiveMode = mode ?? 'sourceNo'
+    const itemSortBehavior = editorItemBehavior?.itemSort
     setItems((current) =>
-      moduleKey === 'customer-statement'
-        ? sortCustomerStatementItemsByDeliveryDate(current)
-        : moduleKey === 'freight-statement'
-          ? sortFreightStatementItems(
-              current,
-              effectiveMode,
-              effectiveMode === 'billTime'
-                ? freightStatementSortDirection
-                : 'asc',
-            )
-          : sortItemsByMaterialDefault(current),
+      itemSortBehavior
+        ? itemSortBehavior.sort(
+            current,
+            effectiveMode,
+            effectiveMode === 'billTime'
+              ? freightStatementSortDirection
+              : 'asc',
+          )
+        : sortItemsByMaterialDefault(current),
     )
-    if (moduleKey === 'freight-statement' && effectiveMode === 'billTime') {
+    if (itemSortBehavior?.directionToggleMode === effectiveMode) {
       setFreightStatementSortDirection((current) =>
         current === 'asc' ? 'desc' : 'asc',
       )

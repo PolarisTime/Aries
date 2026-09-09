@@ -14,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/EmptyState'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
-import { useEmptyState, type EmptyStateStateInput } from '@/hooks/useEmptyState'
+import { type EmptyStateStateInput, useEmptyState } from '@/hooks/useEmptyState'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildTableScrollConfig,

@@ -11,6 +11,7 @@ import {
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
 import { ModuleItemsTable } from './ModuleItemsTable'
+import { resolveModuleItemGroupViewKind } from './module-item-groups'
 
 type ProjectGroup = FreightStatementProjectGroup<ModuleLineItem>
 
@@ -58,50 +59,62 @@ export function ModuleItemGroupsView({
 
   return (
     <div className="module-items-groups">
-      {groups.map((group) => (
-        <div className="module-items-group" key={group.key}>
-          {moduleKey === 'freight-bill' ? (
-            <div className="module-items-project-group">
-              <FreightStatementProjectGroupHeader
-                group={group as ProjectGroup}
-              />
-              <ModuleItemsTable
-                columns={columns}
-                components={components}
-                dataSource={(group as ProjectGroup).items}
-                emptyText={emptyText}
-                rowClassName={rowClassName}
-                onRow={onRow}
-              />
-            </div>
-          ) : 'projectGroups' in group ? (
-            <>
-              <FreightStatementItemGroupHeader group={group} />
-              {group.projectGroups.map((projectGroup) => (
-                <div
-                  className="module-items-project-group"
-                  key={projectGroup.key}
-                >
-                  <FreightStatementProjectGroupHeader
-                    group={projectGroup}
-                    showSubtotal={false}
-                  />
-                  <ModuleItemsTable
-                    columns={columns}
-                    components={components}
-                    dataSource={projectGroup.items}
-                    emptyText={emptyText}
-                    rowClassName={rowClassName}
-                    onRow={onRow}
-                  />
-                </div>
-              ))}
-            </>
-          ) : moduleKey === 'customer-statement' ? (
-            <>
-              <CustomerStatementItemGroupHeader
-                group={group as CustomerStatementItemGroup<ModuleLineItem>}
-              />
+      {groups.map((group) => {
+        const viewKind = resolveModuleItemGroupViewKind(moduleKey, group)
+        return (
+          <div className="module-items-group" key={group.key}>
+            {viewKind === 'freight-project' ? (
+              <div className="module-items-project-group">
+                <FreightStatementProjectGroupHeader
+                  group={group as ProjectGroup}
+                />
+                <ModuleItemsTable
+                  columns={columns}
+                  components={components}
+                  dataSource={(group as ProjectGroup).items}
+                  emptyText={emptyText}
+                  rowClassName={rowClassName}
+                  onRow={onRow}
+                />
+              </div>
+            ) : 'projectGroups' in group ? (
+              <>
+                <FreightStatementItemGroupHeader group={group} />
+                {group.projectGroups.map((projectGroup) => (
+                  <div
+                    className="module-items-project-group"
+                    key={projectGroup.key}
+                  >
+                    <FreightStatementProjectGroupHeader
+                      group={projectGroup}
+                      showSubtotal={false}
+                    />
+                    <ModuleItemsTable
+                      columns={columns}
+                      components={components}
+                      dataSource={projectGroup.items}
+                      emptyText={emptyText}
+                      rowClassName={rowClassName}
+                      onRow={onRow}
+                    />
+                  </div>
+                ))}
+              </>
+            ) : viewKind === 'customer-statement' ? (
+              <>
+                <CustomerStatementItemGroupHeader
+                  group={group as CustomerStatementItemGroup<ModuleLineItem>}
+                />
+                <ModuleItemsTable
+                  columns={columns}
+                  components={components}
+                  dataSource={group.items}
+                  emptyText={emptyText}
+                  rowClassName={rowClassName}
+                  onRow={onRow}
+                />
+              </>
+            ) : (
               <ModuleItemsTable
                 columns={columns}
                 components={components}
@@ -110,19 +123,10 @@ export function ModuleItemGroupsView({
                 rowClassName={rowClassName}
                 onRow={onRow}
               />
-            </>
-          ) : (
-            <ModuleItemsTable
-              columns={columns}
-              components={components}
-              dataSource={group.items}
-              emptyText={emptyText}
-              rowClassName={rowClassName}
-              onRow={onRow}
-            />
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

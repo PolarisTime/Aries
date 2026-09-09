@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
+import { getModuleDeliveryVerification } from '@/module-system/behavior/module-page-behaviors'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
@@ -64,9 +65,10 @@ export function useModuleRecordActions({
         onClick: () => onEdit(record),
       })
     }
+    const deliveryVerification = getModuleDeliveryVerification(moduleKey)
     if (
-      moduleKey === 'sales-order' &&
-      record.status === '交付核定' &&
+      deliveryVerification &&
+      record.status === deliveryVerification.sourceStatus &&
       !isDeletedModuleRecord(record) &&
       onStatusChange
     ) {
@@ -74,7 +76,8 @@ export function useModuleRecordActions({
         key: 'confirm-delivery-verification',
         label: t('hooks.recordActions.confirmDeliveryVerification'),
         icon: resolveModuleActionIcon('审核'),
-        onClick: () => onStatusChange(record, '完成销售'),
+        onClick: () =>
+          onStatusChange(record, deliveryVerification.targetStatus),
       })
     }
     {

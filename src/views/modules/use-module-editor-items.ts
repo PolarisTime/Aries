@@ -1,4 +1,5 @@
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { useModuleEditorItemColumns } from '@/views/modules/use-module-editor-item-columns'
 import { useModuleEditorItemInteractions } from '@/views/modules/use-module-editor-item-interactions'
 
@@ -39,19 +40,14 @@ export function useModuleEditorItems({
     setItems,
   })
   const removeSelectedItems = () => {
-    if (moduleKey !== 'freight-statement' && moduleKey !== 'freight-bill') {
+    const itemRemovalSourceGroupKey =
+      getModuleEditorItemBehavior(moduleKey)?.itemRemovalSourceGroupKey
+    if (!itemRemovalSourceGroupKey) {
       removeSelectedItemsDirectly()
       return
     }
     const selectedIds = new Set(selectedItemIds)
-    const sourceGroupKey = (item: ModuleLineItem) => {
-      if (moduleKey === 'freight-statement') {
-        return item.sourceFreightBillId == null
-          ? ''
-          : String(item.sourceFreightBillId)
-      }
-      return String(item._parentRelationId || item.sourceNo || '')
-    }
+    const sourceGroupKey = itemRemovalSourceGroupKey
     const selectedSourceIds = new Set<string>()
     for (const item of items) {
       if (!selectedIds.has(item.id)) continue

@@ -24,7 +24,10 @@ import {
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
 import { ModuleAttachmentModal } from './ModuleAttachmentModal'
-import { buildModuleItemGroups } from './module-item-groups'
+import {
+  buildModuleItemGroups,
+  resolveModuleItemGroupViewKind,
+} from './module-item-groups'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
@@ -205,53 +208,66 @@ export function SaveResultOverlay<Key extends ModuleKey>({
 
       {items.length > 0 ? (
         <div className="mt-16 module-items-groups">
-          {itemGroups.map((group) => (
-            <div className="module-items-group" key={group.key}>
-              {moduleKey === 'freight-bill' ? (
-                <div className="module-items-project-group">
-                  <FreightStatementProjectGroupHeader
-                    group={
-                      group as FreightStatementProjectGroup<ModuleLineItem>
-                    }
-                  />
-                  <Table
-                    rowKey={(_, i) => String(i)}
-                    dataSource={
-                      (group as FreightStatementProjectGroup<ModuleLineItem>)
-                        .items
-                    }
-                    columns={itemColumns}
-                    size="small"
-                    pagination={false}
-                  />
-                </div>
-              ) : 'projectGroups' in group ? (
-                <>
-                  <FreightStatementItemGroupHeader group={group} />
-                  {group.projectGroups.map((projectGroup) => (
-                    <div
-                      className="module-items-project-group"
-                      key={projectGroup.key}
-                    >
-                      <FreightStatementProjectGroupHeader
-                        group={projectGroup}
-                        showSubtotal={false}
-                      />
-                      <Table
-                        rowKey={(_, i) => String(i)}
-                        dataSource={projectGroup.items}
-                        columns={itemColumns}
-                        size="small"
-                        pagination={false}
-                      />
-                    </div>
-                  ))}
-                </>
-              ) : moduleKey === 'customer-statement' ? (
-                <>
-                  <CustomerStatementItemGroupHeader
-                    group={group as CustomerStatementItemGroup<ModuleLineItem>}
-                  />
+          {itemGroups.map((group) => {
+            const viewKind = resolveModuleItemGroupViewKind(moduleKey, group)
+            return (
+              <div className="module-items-group" key={group.key}>
+                {viewKind === 'freight-project' ? (
+                  <div className="module-items-project-group">
+                    <FreightStatementProjectGroupHeader
+                      group={
+                        group as FreightStatementProjectGroup<ModuleLineItem>
+                      }
+                    />
+                    <Table
+                      rowKey={(_, i) => String(i)}
+                      dataSource={
+                        (group as FreightStatementProjectGroup<ModuleLineItem>)
+                          .items
+                      }
+                      columns={itemColumns}
+                      size="small"
+                      pagination={false}
+                    />
+                  </div>
+                ) : 'projectGroups' in group ? (
+                  <>
+                    <FreightStatementItemGroupHeader group={group} />
+                    {group.projectGroups.map((projectGroup) => (
+                      <div
+                        className="module-items-project-group"
+                        key={projectGroup.key}
+                      >
+                        <FreightStatementProjectGroupHeader
+                          group={projectGroup}
+                          showSubtotal={false}
+                        />
+                        <Table
+                          rowKey={(_, i) => String(i)}
+                          dataSource={projectGroup.items}
+                          columns={itemColumns}
+                          size="small"
+                          pagination={false}
+                        />
+                      </div>
+                    ))}
+                  </>
+                ) : viewKind === 'customer-statement' ? (
+                  <>
+                    <CustomerStatementItemGroupHeader
+                      group={
+                        group as CustomerStatementItemGroup<ModuleLineItem>
+                      }
+                    />
+                    <Table
+                      rowKey={(_, i) => String(i)}
+                      dataSource={group.items}
+                      columns={itemColumns}
+                      size="small"
+                      pagination={false}
+                    />
+                  </>
+                ) : (
                   <Table
                     rowKey={(_, i) => String(i)}
                     dataSource={group.items}
@@ -259,18 +275,10 @@ export function SaveResultOverlay<Key extends ModuleKey>({
                     size="small"
                     pagination={false}
                   />
-                </>
-              ) : (
-                <Table
-                  rowKey={(_, i) => String(i)}
-                  dataSource={group.items}
-                  columns={itemColumns}
-                  size="small"
-                  pagination={false}
-                />
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            )
+          })}
         </div>
       ) : null}
       {isSuccess && saveResult.record?.id ? (

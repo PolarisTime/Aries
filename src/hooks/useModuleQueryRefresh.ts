@@ -5,14 +5,15 @@ import {
   getMasterOptionQueryKey,
   reloadMasterOptionsForModule,
 } from '@/hooks/master-option-cache-refresh'
+import { getModulePageBehavior } from '@/module-system/behavior/module-page-behaviors'
 
 export function useModuleQueryRefresh(moduleKey: string) {
   const queryClient = useQueryClient()
+  const pageBehavior = getModulePageBehavior(moduleKey)
 
   const refreshModuleQueries = async () => {
     const masterOptionQueryKey = getMasterOptionQueryKey(moduleKey)
-    const relatedModuleKeys =
-      moduleKey === 'purchase-inbound' ? ['purchase-order'] : []
+    const relatedModuleKeys = pageBehavior?.relatedRefreshModuleKeys ?? []
     const tasks = [
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.businessGrid(moduleKey),
@@ -36,7 +37,10 @@ export function useModuleQueryRefresh(moduleKey: string) {
       ]),
     ]
 
-    if (masterOptionQueryKey && moduleKey === 'project') {
+    if (
+      masterOptionQueryKey &&
+      pageBehavior?.masterOptionRefreshMode === 'project'
+    ) {
       tasks.push(
         queryClient.invalidateQueries({
           queryKey: masterOptionQueryKey,

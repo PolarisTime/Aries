@@ -21,6 +21,8 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintRecordItem } from '@/api/system/print-template'
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { isModuleKey } from '@/module-system/core/module-key'
 import type { PrintItemFieldSpec } from '@/utils/print-module-config'
 import {
   getPrintItemColumnAlign,
@@ -32,7 +34,9 @@ import {
 } from '@/views/modules/components/print-job-modal-format'
 import type { PrintJobModalAction } from '@/views/modules/components/print-job-modal-state'
 import type { PrintItemMergeMarker } from '@/views/modules/components/print-job-modal-utils'
+import type { CustomerStatementItemGroup } from '@/views/modules/customer-statement-item-groups'
 import { groupCustomerStatementItems } from '@/views/modules/customer-statement-item-groups'
+import type { FreightStatementItemGroup } from '@/views/modules/freight-statement-item-groups'
 import { groupFreightStatementItems } from '@/views/modules/freight-statement-item-groups'
 import { CustomerStatementItemGroupHeader } from './CustomerStatementItemGroupHeader'
 import {
@@ -128,6 +132,42 @@ interface Props {
 }
 
 type PrintGroupItem = PrintRecordItem & Record<string, unknown>
+
+type StatementPrintGroup =
+  | CustomerStatementItemGroup<PrintGroupItem>
+  | FreightStatementItemGroup<PrintGroupItem>
+
+/** 打印明细按对账单模块注册的分组策略；未注册模块返回空数组，走平铺表格。 */
+const STATEMENT_PRINT_ITEM_GROUPINGS = {
+  'customer-statement': {
+    groupItems: (items: PrintGroupItem[]) => groupCustomerStatementItems(items),
+  },
+  'freight-statement': {
+    groupItems: (items: PrintGroupItem[]) => groupFreightStatementItems(items),
+  },
+} satisfies Partial<
+  Record<
+    ModuleKey,
+    { groupItems: (items: PrintGroupItem[]) => StatementPrintGroup[] }
+  >
+>
+
+function getStatementPrintItemGroups(
+  moduleKey: string,
+  items: PrintGroupItem[],
+): StatementPrintGroup[] {
+  if (!isModuleKey(moduleKey)) return []
+  return (
+    (
+      STATEMENT_PRINT_ITEM_GROUPINGS as Partial<
+        Record<
+          ModuleKey,
+          { groupItems: (items: PrintGroupItem[]) => StatementPrintGroup[] }
+        >
+      >
+    )[moduleKey]?.groupItems(items) ?? []
+  )
+}
 
 /** 打印作业弹窗的明细区：可拖拽行、品牌覆盖列、分组渲染与选择控制。 */
 export function PrintJobItemsSection({
@@ -298,39 +338,37 @@ export function PrintJobItemsSection({
     />
   )
 
-  const customerStatementGroups =
-    moduleKey === 'customer-statement'
-      ? groupCustomerStatementItems(orderedPrintItems as PrintGroupItem[])
-      : []
-  const freightStatementGroups =
-    moduleKey === 'freight-statement'
-      ? groupFreightStatementItems(orderedPrintItems as PrintGroupItem[])
-      : []
+  const statementGroups = getStatementPrintItemGroups(
+    moduleKey,
+    orderedPrintItems as PrintGroupItem[],
+  )
 
-  return moduleKey === 'customer-statement' &&
-    customerStatementGroups.length ? (
+  return statementGroups.length ? (
     <div className="module-items-groups">
-      {customerStatementGroups.map((group) => (
+      {statementGroups.map((group) => (
         <div className="module-items-group" key={group.key}>
-          <CustomerStatementItemGroupHeader group={group} />
-          {printItemsTable(group.items as PrintRecordItem[])}
-        </div>
-      ))}
-    </div>
-  ) : moduleKey === 'freight-statement' && freightStatementGroups.length ? (
-    <div className="module-items-groups">
-      {freightStatementGroups.map((group) => (
-        <div className="module-items-group" key={group.key}>
-          <FreightStatementItemGroupHeader group={group} />
-          {group.projectGroups.map((projectGroup) => (
-            <div className="module-items-project-group" key={projectGroup.key}>
-              <FreightStatementProjectGroupHeader
-                group={projectGroup}
-                showSubtotal={false}
-              />
-              {printItemsTable(projectGroup.items as PrintRecordItem[])}
-            </div>
-          ))}
+          {'projectGroups' in group ? (
+            <>
+              <FreightStatementItemGroupHeader group={group} />
+              {group.projectGroups.map((projectGroup) => (
+                <div
+                  className="module-items-project-group"
+                  key={projectGroup.key}
+                >
+                  <FreightStatementProjectGroupHeader
+                    group={projectGroup}
+                    showSubtotal={false}
+                  />
+                  {printItemsTable(projectGroup.items as PrintRecordItem[])}
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <CustomerStatementItemGroupHeader group={group} />
+              {printItemsTable(group.items as PrintRecordItem[])}
+            </>
+          )}
         </div>
       ))}
     </div>

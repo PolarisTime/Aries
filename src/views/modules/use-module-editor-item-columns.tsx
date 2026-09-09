@@ -17,6 +17,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
+import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
 
 interface Props {
@@ -96,7 +97,11 @@ export function useModuleEditorItemColumns({
   } = useModuleEditorItemColumnHandlers({ moduleKey, setItems })
   usePurchaseOrderWarehouseRecommendations({
     enabled:
-      moduleKey === 'purchase-order' && canEditItemColumns && !lineItemsLocked,
+      Boolean(
+        getModuleEditorItemBehavior(moduleKey)?.enablesWarehouseRecommendations,
+      ) &&
+      canEditItemColumns &&
+      !lineItemsLocked,
     supplierId,
     items,
     setItems,
@@ -207,7 +212,7 @@ export function useModuleEditorItemColumns({
       cols.push(
         ...buildModuleEditorManagementColumns({
           draggable:
-            moduleKey !== 'freight-statement' && moduleKey !== 'freight-bill',
+            !getModuleEditorItemBehavior(moduleKey)?.disablesItemReorder,
           items,
           selectedItemIds,
           onSelectAll,

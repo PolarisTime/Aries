@@ -30,6 +30,7 @@ import { modal } from '@/utils/antd-app'
 import { formatDate } from '@/utils/formatters'
 import {
   getPrintItemFields,
+  isStatementPrintModule as isStatementPrintModuleForModule,
   supportsSalesOrderPrintOption,
 } from '@/utils/print-module-config'
 import {
@@ -358,8 +359,7 @@ export function PrintJobModal({
   )
 
   const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
-  const isStatementPrintModule =
-    moduleKey === 'customer-statement' || moduleKey === 'freight-statement'
+  const statementPrintModule = isStatementPrintModuleForModule(moduleKey)
   const printItemFields = useMemo(
     () => getPrintItemFields(moduleKey),
     [moduleKey],
@@ -533,7 +533,7 @@ export function PrintJobModal({
           >
             <div
               className={
-                isStatementPrintModule ? 'print-job-items-scroll' : undefined
+                statementPrintModule ? 'print-job-items-scroll' : undefined
               }
             >
               <PrintJobItemsSection
@@ -548,7 +548,7 @@ export function PrintJobModal({
                 brandOverrideEnabled={brandOverrideEnabled}
                 brandOverridesByItemId={state.brandOverridesByItemId}
                 dispatch={dispatchPrintJobModal}
-                isStatementPrintModule={isStatementPrintModule}
+                isStatementPrintModule={statementPrintModule}
                 itemSelectionEnabled={itemSelectionEnabled}
                 printItemFields={printItemFields}
                 printItemsError={printItemsError}

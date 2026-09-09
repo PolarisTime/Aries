@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
 import { resolveStatusChangeActionLabelKey } from '@/module-system/adapter/module-adapter-actions'
+import { isDeliveryVerificationStatus } from '@/module-system/behavior/module-page-behaviors'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type {
   ModuleFormFieldDefinition,
@@ -38,8 +39,10 @@ export function useModuleEditorCapabilityFlags({
   const currentStatus = String(
     readModuleRecordField(record, 'status') || '',
   ).trim()
-  const isSalesOrderDeliveryVerification =
-    moduleKey === 'sales-order' && currentStatus === '交付核定'
+  const isDeliveryVerification = isDeliveryVerificationStatus(
+    moduleKey,
+    currentStatus,
+  )
   const canEditLineItems = Boolean(config.itemColumns?.length)
   // oxlint-disable react-doctor/no-event-handler -- These are capability inputs, not event handlers.
   const {
@@ -65,7 +68,7 @@ export function useModuleEditorCapabilityFlags({
   // oxlint-enable react-doctor/no-event-handler
 
   const canConfirmDeliveryVerification =
-    isSalesOrderDeliveryVerification && canSave && canAudit
+    isDeliveryVerification && canSave && canAudit
   const editorAuditLabel = canConfirmDeliveryVerification
     ? t('modules.editorFooter.confirmDeliveryVerification')
     : t('modules.editorFooter.saveAndAction', {

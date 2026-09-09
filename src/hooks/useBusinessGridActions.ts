@@ -1,5 +1,4 @@
 import { updateBusinessModuleStatus } from '@/api/business/business-crud'
-import { completeSalesOrder } from '@/api/sales/document-flow-commands'
 import { useBusinessGridBatchActions } from '@/hooks/useBusinessGridBatchActions'
 import { useBusinessGridCustomerActions } from '@/hooks/useBusinessGridCustomerActions'
 import { useBusinessGridCustomerProjectActions } from '@/hooks/useBusinessGridCustomerProjectActions'
@@ -16,6 +15,7 @@ import {
   resolveStatusOptions,
 } from '@/module-system/adapter/module-adapter-actions'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { getModuleStatusCommand } from '@/module-system/behavior/module-page-behaviors'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
 import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
@@ -124,17 +124,17 @@ export function useBusinessGridActions({
   )
 
   const handleStatusChange = async (record: ModuleRecord, status: string) => {
-    if (moduleKey === 'sales-order' && status === '完成销售') {
+    const statusCommand = getModuleStatusCommand(moduleKey, status)
+    if (statusCommand) {
       modal.confirm({
-        title: '确认完成销售',
-        content:
-          '完成销售后将按最终交付结果进入结算，请确认销售出库和实际重量已经核定。',
-        okText: '完成销售',
+        title: statusCommand.confirmTitle,
+        content: statusCommand.confirmContent,
+        okText: statusCommand.okText,
         cancelText: '取消',
         mask: { closable: false },
         onOk: async () => {
-          await completeSalesOrder(String(record.id))
-          message.success('完成销售成功')
+          await statusCommand.execute(String(record.id))
+          message.success(statusCommand.successMessage)
           await refreshModuleQueries()
         },
       })

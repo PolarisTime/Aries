@@ -4,6 +4,9 @@
  * 客户对账单、物流对账单复用业务页面的分组字段顺序，物流对账单金额在分组行展示。
  */
 
+import type { ModuleKey } from '@/module-system/core/module-key'
+import { isModuleKey } from '@/module-system/core/module-key'
+
 /** 打印明细中可展示的取值字段（对应 PrintRecordItem 上的字符串属性）。 */
 export type PrintItemFieldKey =
   | 'sourceNo'
@@ -25,8 +28,6 @@ export interface PrintItemFieldSpec {
 }
 
 export type PrintItemFieldAlign = 'left' | 'center' | 'right'
-
-const SALES_ORDER_MODULE = 'sales-order'
 
 const FULL_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
   { key: 'brand', labelKey: 'modules.print.itemBrand' },
@@ -131,42 +132,68 @@ const FREIGHT_STATEMENT_FIELD_ALIGNS: Partial<
   weightTon: 'center',
 }
 
+const PRINT_ITEM_FIELDS_BY_MODULE = {
+  'customer-statement': CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS,
+  'freight-statement': FREIGHT_STATEMENT_PRINT_ITEM_FIELDS,
+  'sales-order': FULL_PRINT_ITEM_FIELDS,
+} satisfies Partial<Record<ModuleKey, PrintItemFieldSpec[]>>
+
 export function getPrintItemFields(moduleKey: string): PrintItemFieldSpec[] {
-  if (moduleKey === 'customer-statement') {
-    return CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS
+  if (isModuleKey(moduleKey)) {
+    const specific = (
+      PRINT_ITEM_FIELDS_BY_MODULE as Partial<
+        Record<ModuleKey, PrintItemFieldSpec[]>
+      >
+    )[moduleKey]
+    return specific ?? NON_SALES_PRINT_ITEM_FIELDS
   }
-  if (moduleKey === 'freight-statement') {
-    return FREIGHT_STATEMENT_PRINT_ITEM_FIELDS
-  }
-  return moduleKey === SALES_ORDER_MODULE
-    ? FULL_PRINT_ITEM_FIELDS
-    : NON_SALES_PRINT_ITEM_FIELDS
+  return NON_SALES_PRINT_ITEM_FIELDS
 }
 
 export function getPrintItemColumnWidth(field: PrintItemFieldSpec): number {
   return PRINT_ITEM_COLUMN_WIDTHS[field.key]
 }
 
+const PRINT_ITEM_ALIGN_OVERRIDES_BY_MODULE = {
+  'customer-statement': CUSTOMER_STATEMENT_FIELD_ALIGNS,
+  'freight-statement': FREIGHT_STATEMENT_FIELD_ALIGNS,
+} satisfies Partial<
+  Record<ModuleKey, Partial<Record<PrintItemFieldKey, PrintItemFieldAlign>>>
+>
+
 export function getPrintItemColumnAlign(
   field: PrintItemFieldSpec,
   moduleKey?: string,
 ): PrintItemFieldAlign {
-  if (moduleKey === 'customer-statement') {
-    return (
-      CUSTOMER_STATEMENT_FIELD_ALIGNS[field.key] ||
-      PRINT_ITEM_FIELD_ALIGNS[field.key]
-    )
-  }
-  if (moduleKey === 'freight-statement') {
-    return (
-      FREIGHT_STATEMENT_FIELD_ALIGNS[field.key] ||
-      PRINT_ITEM_FIELD_ALIGNS[field.key]
-    )
-  }
-  return PRINT_ITEM_FIELD_ALIGNS[field.key]
+  const overrides =
+    moduleKey && isModuleKey(moduleKey)
+      ? (
+          PRINT_ITEM_ALIGN_OVERRIDES_BY_MODULE as Partial<
+            Record<
+              ModuleKey,
+              Partial<Record<PrintItemFieldKey, PrintItemFieldAlign>>
+            >
+          >
+        )[moduleKey]
+      : undefined
+  return overrides?.[field.key] || PRINT_ITEM_FIELD_ALIGNS[field.key]
 }
 
-/** 销售订单专属的打印选项（其他模块隐藏）。 */
+/** 销售订单专属的打印选项模块（其他模块隐藏）。 */
+const SALES_ORDER_PRINT_OPTION_MODULES = new Set<ModuleKey>(['sales-order'])
+
 export function supportsSalesOrderPrintOption(moduleKey: string): boolean {
-  return moduleKey === SALES_ORDER_MODULE
+  return (
+    isModuleKey(moduleKey) && SALES_ORDER_PRINT_OPTION_MODULES.has(moduleKey)
+  )
+}
+
+/** 对账单类打印模块：明细按对账单分组渲染。 */
+const STATEMENT_PRINT_MODULES = new Set<ModuleKey>([
+  'customer-statement',
+  'freight-statement',
+])
+
+export function isStatementPrintModule(moduleKey: string): boolean {
+  return isModuleKey(moduleKey) && STATEMENT_PRINT_MODULES.has(moduleKey)
 }

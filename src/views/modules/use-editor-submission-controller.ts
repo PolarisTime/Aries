@@ -19,6 +19,10 @@ import {
   trimEditorItemsForModule,
 } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import {
+  getModulePageBehavior,
+  isDeliveryVerificationStatus,
+} from '@/module-system/behavior/module-page-behaviors'
 import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
@@ -150,10 +154,10 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
   const { t } = useTranslation()
 
   const handleSave = async (audit = false) => {
+    const pageBehavior = getModulePageBehavior(moduleKey)
     const confirmDeliveryVerification =
       audit &&
-      moduleKey === 'sales-order' &&
-      asString(record?.status).trim() === '交付核定'
+      isDeliveryVerificationStatus(moduleKey, asString(record?.status).trim())
     const submissionAction: SubmissionAction = confirmDeliveryVerification
       ? 'save-and-complete'
       : audit && editorAuditTarget
@@ -217,12 +221,11 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
         return
       }
 
-      const zeroPriceItemCount =
-        moduleKey === 'sales-order'
-          ? trimmedItems.filter(
-              (item) => !item.unitPrice || Number(item.unitPrice) === 0,
-            ).length
-          : 0
+      const zeroPriceItemCount = pageBehavior?.confirmsZeroPriceItems
+        ? trimmedItems.filter(
+            (item) => !item.unitPrice || Number(item.unitPrice) === 0,
+          ).length
+        : 0
       if (zeroPriceItemCount > 0) {
         const confirmed = await new Promise<boolean>((resolve) => {
           modal.confirm({
