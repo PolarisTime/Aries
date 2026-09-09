@@ -1,3 +1,13 @@
+# [10.0.0](https://github.com/PolarisTime/Aries/compare/v9.27.0...v10.0.0) (2026-09-09)
+
+
+* feat(modules)!: 重构选单器选择交互与信息层级 ([50563c2](https://github.com/PolarisTime/Aries/commit/50563c2f8e295778a5246382c2c3b918637c9437))
+
+
+### BREAKING CHANGES
+
+* 选单器单选模式点击行不再直接导入，需点击底部「确认导入」完成选择
+
 # [9.27.0](https://github.com/PolarisTime/Aries/compare/v9.26.1...v9.27.0) (2026-09-08)
 
 
