@@ -142,6 +142,20 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  /* 限制已选卡片区高度（约两行卡片），超出在面板内滚动，避免挤压下方列表 */
+  max-height: 124px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.parent-selector-selected-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.parent-selector-selected-list::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.15));
 }
 
 .parent-selector-selected-chip {
