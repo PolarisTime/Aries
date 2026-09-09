@@ -21,6 +21,10 @@ import type {
 } from '@/shared/schemas'
 import { message, modal } from '@/utils/antd-app'
 import {
+  focusFirstInvalidField,
+  readAntdFormValidationErrorFields,
+} from '@/utils/form-control-a11y'
+import {
   defaultEngineForTemplateType,
   type PrintTemplateEditorFormValues,
 } from '@/views/system/print-template-editor-utils'
@@ -316,8 +320,11 @@ export function usePrintTemplateView() {
           ? { previousBillType: editingBillType }
           : {}),
       })
-    } catch {
-      // validation failed
+    } catch (error) {
+      const errorFields = readAntdFormValidationErrorFields(error)
+      if (errorFields) {
+        focusFirstInvalidField(form, errorFields)
+      }
     }
   }
 

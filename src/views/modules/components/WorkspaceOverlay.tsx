@@ -1,6 +1,7 @@
 import { CloseOutlined } from '@ant-design/icons'
-import { useEffect, useEffectEvent, useId, useRef } from 'react'
+import { useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getTrapFocusableElements, useFocusTrap } from '@/hooks/useFocusTrap'
 import '@/styles/workspace-overlay.css'
 
 interface Props {
@@ -16,34 +17,13 @@ interface Props {
   className?: string
 }
 
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-  '[contenteditable="true"]',
-].join(',')
-
-function getFocusableElements(container: HTMLElement) {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(
-    (element) =>
-      !element.hasAttribute('disabled') &&
-      element.getAttribute('aria-hidden') !== 'true' &&
-      !element.hidden,
-  )
-}
-
 function getInitialFocusTarget(panel: HTMLElement) {
   const body = panel.querySelector<HTMLElement>('.workspace-overlay-body')
-  const bodyFocusable = body ? getFocusableElements(body)[0] : undefined
+  const bodyFocusable = body ? getTrapFocusableElements(body)[0] : undefined
   return (
     bodyFocusable ||
     panel.querySelector<HTMLElement>('.workspace-overlay-close') ||
-    getFocusableElements(panel)[0] ||
+    getTrapFocusableElements(panel)[0] ||
     panel
   )
 }
@@ -61,78 +41,15 @@ export function WorkspaceOverlay({
   className,
 }: Props) {
   const { t } = useTranslation()
-  const handleClose = useEffectEvent(onClose)
   const titleId = useId()
   const panelRef = useRef<HTMLElement | null>(null)
-  const previousActiveElementRef = useRef<HTMLElement | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-
-    previousActiveElementRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null
-
-    const focusFrameId = requestAnimationFrame(() => {
-      const panel = panelRef.current
-      if (!panel) return
-      getInitialFocusTarget(panel).focus()
-    })
-
-    return () => {
-      cancelAnimationFrame(focusFrameId)
-      const previousActiveElement = previousActiveElementRef.current
-      if (previousActiveElement?.isConnected) {
-        previousActiveElement.focus()
-      }
-      previousActiveElementRef.current = null
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (open) {
-      const handler = (e: KeyboardEvent) => {
-        if (e.key !== 'Escape' && e.key !== 'Tab') return
-
-        const panel = panelRef.current
-        if (!panel) return
-        const topOverlay = Array.from(
-          document.querySelectorAll('.workspace-overlay'),
-        ).at(-1)
-        if (!topOverlay?.contains(panel)) return
-
-        if (e.key === 'Escape') {
-          handleClose()
-          return
-        }
-
-        const focusableElements = getFocusableElements(panel)
-        if (!focusableElements.length) {
-          e.preventDefault()
-          panel.focus()
-          return
-        }
-
-        const currentIndex = focusableElements.indexOf(
-          document.activeElement as HTMLElement,
-        )
-        const nextIndex = e.shiftKey
-          ? currentIndex <= 0
-            ? focusableElements.length - 1
-            : currentIndex - 1
-          : currentIndex === -1 || currentIndex === focusableElements.length - 1
-            ? 0
-            : currentIndex + 1
-        e.preventDefault()
-        focusableElements[nextIndex].focus()
-      }
-      document.addEventListener('keydown', handler)
-      return () => {
-        document.removeEventListener('keydown', handler)
-      }
-    }
-  }, [open])
+  useFocusTrap({
+    containerRef: panelRef,
+    active: open,
+    getInitialFocusTarget: getInitialFocusTarget,
+    onEscape: onClose,
+  })
 
   if (!open) return null
 
@@ -155,7 +72,7 @@ export function WorkspaceOverlay({
       />
       <section
         ref={panelRef}
-        // react-doctor-disable-next-line react-doctor/prefer-html-dialog -- 面板已自实现 Tab 焦点圈定、Escape 关闭与焦点还原，整体迁移原生 dialog 会改变 DOM/CSS 结构与多层层级管理。
+        // react-doctor-disable-next-line react-doctor/prefer-html-dialog -- 面板通过 useFocusTrap 实现 Tab 焦点圈定、Escape 关闭与焦点还原，整体迁移原生 dialog 会改变 DOM/CSS 结构与多层层级管理。
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

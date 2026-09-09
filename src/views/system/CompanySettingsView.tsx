@@ -41,6 +41,10 @@ import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useRequestError } from '@/hooks/useRequestError'
 import { validateForm } from '@/lib/antd-form'
 import { message, modal } from '@/utils/antd-app'
+import {
+  focusFirstInvalidField,
+  readAntdFormValidationErrorFields,
+} from '@/utils/form-control-a11y'
 import { asString } from '@/utils/type-narrowing'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 import {
@@ -704,8 +708,11 @@ function CompanySettingsForm({
         usedBankAccounts.add(bankAccount)
       }
       saveMutation.mutate(values)
-    } catch {
-      /* validation failed */
+    } catch (error) {
+      const errorFields = readAntdFormValidationErrorFields(error)
+      if (errorFields) {
+        focusFirstInvalidField(form, errorFields)
+      }
     }
   }
 

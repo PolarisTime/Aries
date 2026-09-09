@@ -19,6 +19,10 @@ import type {
 } from '@/shared/schemas/current-account'
 import { useAuthStore } from '@/stores/authStore'
 import { message } from '@/utils/antd-app'
+import {
+  focusFirstInvalidField,
+  readAntdFormValidationErrorFields,
+} from '@/utils/form-control-a11y'
 
 interface AccountProfileFormValues {
   userName: string
@@ -95,8 +99,11 @@ export function AccountView(): React.JSX.Element {
         remark: values.remark,
       }
       profileMutation.mutate(payload)
-    } catch {
-      // Ant Design 已在表单字段上展示校验错误。
+    } catch (error) {
+      const errorFields = readAntdFormValidationErrorFields(error)
+      if (errorFields) {
+        focusFirstInvalidField(profileForm, errorFields)
+      }
     }
   }
 
@@ -110,6 +117,7 @@ export function AccountView(): React.JSX.Element {
             errors: [t('system.account.passwordMismatch')],
           },
         ])
+        passwordForm.focusField?.('confirmPassword')
         return
       }
       const payload: PasswordChange = {
@@ -117,8 +125,11 @@ export function AccountView(): React.JSX.Element {
         newPassword: values.newPassword,
       }
       passwordMutation.mutate(payload)
-    } catch {
-      // Ant Design 已在表单字段上展示校验错误。
+    } catch (error) {
+      const errorFields = readAntdFormValidationErrorFields(error)
+      if (errorFields) {
+        focusFirstInvalidField(passwordForm, errorFields)
+      }
     }
   }
 

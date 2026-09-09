@@ -1,6 +1,8 @@
 import { SearchOutlined } from '@ant-design/icons'
+import type { InputRef } from 'antd'
 import { AutoComplete, Button, Input } from 'antd'
 import type { AutoCompleteProps } from 'antd/es/auto-complete'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { buildFormControlId } from '@/utils/form-control-id'
 
@@ -35,6 +37,23 @@ export function AppHeaderSearch({
 }: AppHeaderSearchProps) {
   const { t } = useTranslation()
   const searchInputId = buildFormControlId('header-search', 'keyword')
+  const inputRef = useRef<InputRef | null>(null)
+
+  const restoreSearchInputFocus = () => {
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true })
+    })
+  }
+
+  const handleSelect = (value: string) => {
+    onSelect(String(value))
+    restoreSearchInputFocus()
+  }
+
+  const handleSubmit = (value: string) => {
+    void onSubmit(value)
+    restoreSearchInputFocus()
+  }
 
   return (
     <div className={className}>
@@ -59,13 +78,11 @@ export function AppHeaderSearch({
               onKeywordChange(nextValue)
             }
           }}
-          onSelect={(value) => {
-            const selectedValue = String(value)
-            onSelect(selectedValue)
-          }}
+          onSelect={handleSelect}
           onOpenChange={onOpenChange}
         >
           <Input
+            ref={inputRef}
             id={searchInputId}
             name="header-search-keyword"
             aria-label={t('layouts.headerSearch.placeholder')}
@@ -73,7 +90,7 @@ export function AppHeaderSearch({
             placeholder={t('layouts.headerSearch.placeholder')}
             onFocus={onOpen}
             onBlur={onBlur}
-            onPressEnter={(event) => void onSubmit(event.currentTarget.value)}
+            onPressEnter={(event) => handleSubmit(event.currentTarget.value)}
           />
         </AutoComplete>
         <Button
@@ -81,7 +98,7 @@ export function AppHeaderSearch({
           className="header-global-search-button"
           loading={loading}
           icon={<SearchOutlined />}
-          onClick={() => void onSubmit(keyword)}
+          onClick={() => handleSubmit(keyword)}
         />
       </div>
     </div>

@@ -210,6 +210,12 @@
   outline-offset: 1px;
 }
 
+.table-action-btn:focus-visible,
+.table-detail-toggle-btn:focus-visible {
+  outline: 2px solid var(--theme-highlight-border, var(--theme-primary));
+  outline-offset: 1px;
+}
+
 /* 视觉保持 24×24，::before 热区扩大到 ≥44×44（WCAG 2.5.8） */
 .module-table-expand-button::before {
   width: max(100%, 44px);
