@@ -329,27 +329,27 @@
   text-align: right;
 }
 
-/* Font size utilities */
+/* Font size utilities（取值由 tokens.css 字号阶梯统一管理） */
 .text-xs {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 .text-sm {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 .text-base {
-  font-size: 16px;
+  font-size: var(--font-size-base);
 }
 .text-lg {
-  font-size: 18px;
+  font-size: var(--font-size-lg);
 }
 .text-xl {
-  font-size: 20px;
+  font-size: var(--font-size-xl);
 }
 .text-2xl {
-  font-size: 24px;
+  font-size: var(--font-size-2xl);
 }
 .text-3xl {
-  font-size: 30px;
+  font-size: var(--font-size-3xl);
 }
 .text-4xl {
   font-size: 36px;
@@ -485,10 +485,10 @@
 
 /* Transition utilities */
 .transition {
-  transition: var(--ant-motion-duration-slow);
+  transition: all var(--motion-duration-slow) var(--motion-ease-in-out);
 }
 .transition-fast {
-  transition: var(--ant-motion-duration-fast);
+  transition: all var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 /* Pointer events utilities */

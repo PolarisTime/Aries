@@ -1,0 +1,20 @@
+/* 动画过渡令牌：时长与缓动统一映射 antd motion token（cssVar 模式输出），带回退值 */
+
+:root {
+  --motion-duration-fast: var(--ant-motion-duration-fast, 0.1s);
+  --motion-duration-base: var(--ant-motion-duration-mid, 0.2s);
+  --motion-duration-slow: var(--ant-motion-duration-slow, 0.3s);
+
+  --motion-ease-in-out: var(
+    --ant-motion-ease-in-out,
+    cubic-bezier(0.645, 0.045, 0.355, 1)
+  );
+  --motion-ease-out: var(
+    --ant-motion-ease-out,
+    cubic-bezier(0.215, 0.61, 0.355, 1)
+  );
+  --motion-ease-circ: var(
+    --ant-motion-ease-in-out-circ,
+    cubic-bezier(0.78, 0.14, 0.15, 0.86)
+  );
+}

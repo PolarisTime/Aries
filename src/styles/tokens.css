@@ -1,0 +1,37 @@
+/* 语义化设计令牌层：统一映射 antd cssVar token，带回退值（与 antd 默认 seed 一致） */
+
+:root {
+  /* 语义色：danger / success / warning / info */
+  --color-danger: var(--ant-color-error, #ff4d4f);
+  --color-danger-hover: var(--ant-color-error-hover, #ff7875);
+  --color-danger-active: var(--ant-color-error-active, #d9363e);
+  --color-danger-bg: var(--ant-color-error-bg, #fff2f0);
+  --color-danger-border: var(--ant-color-error-border, #ffccc7);
+
+  --color-success: var(--ant-color-success, #52c41a);
+  --color-success-hover: var(--ant-color-success-hover, #73d13d);
+  --color-success-active: var(--ant-color-success-active, #389e0d);
+  --color-success-bg: var(--ant-color-success-bg, #f6ffed);
+  --color-success-border: var(--ant-color-success-border, #b7eb8f);
+
+  --color-warning: var(--ant-color-warning, #faad14);
+  --color-warning-hover: var(--ant-color-warning-hover, #ffc53d);
+  --color-warning-active: var(--ant-color-warning-active, #d48806);
+  --color-warning-bg: var(--ant-color-warning-bg, #fffbe6);
+  --color-warning-border: var(--ant-color-warning-border, #ffe58f);
+
+  --color-info: var(--ant-color-info, #1677ff);
+  --color-info-hover: var(--ant-color-info-hover, #4096ff);
+  --color-info-active: var(--ant-color-info-active, #0958d9);
+  --color-info-bg: var(--ant-color-info-bg, #e6f4ff);
+  --color-info-border: var(--ant-color-info-border, #91caff);
+
+  /* 字号阶梯：xs ~ 3xl（与 utilities.css 现有 .text-* 工具类取值一致），优先映射 antd 字号 token */
+  --font-size-xs: var(--ant-font-size-sm, 12px);
+  --font-size-sm: var(--ant-font-size, 14px);
+  --font-size-base: var(--ant-font-size-lg, 16px);
+  --font-size-lg: calc(var(--ant-font-size-lg, 16px) + 2px);
+  --font-size-xl: var(--ant-font-size-xl, 20px);
+  --font-size-2xl: var(--ant-font-size-heading-3, 24px);
+  --font-size-3xl: var(--ant-font-size-heading-2, 30px);
+}
