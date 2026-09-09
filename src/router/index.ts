@@ -155,6 +155,17 @@ const authenticatedLayoutRoute = createRoute({
   },
 })
 
+// demo 页面：比价模块 UI 设计稿（mock 数据），验收后迁移到正式模块
+const priceCompareDemoRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: '/demo/price-compare',
+  component: lazy(() =>
+    import('@/views/demo/PriceCompareDemoView').then((m) => ({
+      default: m.PriceCompareDemoView,
+    })),
+  ),
+})
+
 const viewLoaders: Record<
   Exclude<RouteViewKey, 'dashboard'>,
   () => Promise<{ default: React.ComponentType }>
@@ -286,7 +297,7 @@ const indexRoute = createRoute({
   path: '/',
   beforeLoad: () => {
     // eslint-disable-next-line @typescript-eslint/only-throw-error
-    throw redirect({ to: '/dashboard' as never })
+    throw redirect({ to: '/dashboard' })
   },
 })
 
@@ -307,7 +318,11 @@ const routeTree = rootRoute.addChildren([
   serverErrorRoute,
   notFoundRoute,
   authenticatedLayoutRoute.addChildren(
-    buildModuleRoutes(authenticatedLayoutRoute),
+    // TanStack Router 的子路由数组要求统一 AnyRoute 泛型，demo 路由单独追加
+    [
+      ...buildModuleRoutes(authenticatedLayoutRoute),
+      priceCompareDemoRoute as AnyRoute,
+    ],
   ),
 ])
 
