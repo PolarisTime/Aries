@@ -69,20 +69,7 @@ export function buildTabHref(pathname: string, search: string): string {
     : normalizeTabPathname(pathname)
 }
 
-/**
- * 把查询串解析为 TanStack Router navigate 可用的 search 对象。
- * 主路由 navigate 的 `to` 不支持内联 query（会被剥离），
- * 必须以独立 search 属性传参才能在 SPA 导航中保留深链意图。
- */
-export function parseTabSearch(search: string): Record<string, string> {
-  const normalizedSearch = normalizeSearch(search)
-  if (!normalizedSearch) {
-    return {}
-  }
-  return Object.fromEntries(new URLSearchParams(normalizedSearch))
-}
-
-function normalizeSearch(search: unknown): string {
+export function normalizeSearch(search: unknown): string {
   return String(search || '').replace(/^\?+/, '')
 }
 

@@ -1,4 +1,8 @@
 import { useCallback } from 'react'
+import {
+  getTabRouterHref,
+  pushExternalIntent,
+} from '@/layouts/tabs/tab-location-sync'
 import { router as mainRouter } from '@/router'
 import {
   buildTabHref,
@@ -33,16 +37,33 @@ export function useTabOpen() {
     const pathname = normalizeTabPathname(target.pathname)
     const search = target.search ?? ''
     const existing = store.tabs.find((tab) => tab.pathname === pathname)
+    const href = buildTabHref(pathname, search)
 
-    if (existing) {
-      if (target.forceSearch) {
-        store.setTabLocation(existing.id, { pathname, search })
-      } else {
-        store.activateTab(existing.id)
-      }
-    } else {
+    if (!existing) {
       store.openTab({ pathname, search })
+      mainRouter.history.push(href)
+      return
     }
-    mainRouter.history.push(buildTabHref(pathname, search))
+
+    if (target.forceSearch) {
+      // 外部意图覆盖 Tab 状态：先更新保存的查询串，再把新 href 注入已挂载的子
+      // Router（未挂载 Tab 由 attach 时的初始 href 对齐），最后同步地址栏。
+      store.setTabLocation(existing.id, { pathname, search })
+      pushExternalIntent(existing.id, href)
+      if (mainRouter.state.location.href !== href) {
+        mainRouter.history.push(href)
+      }
+      return
+    }
+
+    // 非 forceSearch：激活并保留 Tab 内部状态，地址栏跟随 Tab 保存的完整 href
+    //（含其内部筛选），不能推无参 href——否则协调层会清掉 Tab 保存的状态。
+    store.activateTab(existing.id)
+    const preservedHref =
+      getTabRouterHref(existing.id) ??
+      buildTabHref(existing.pathname, existing.search)
+    if (mainRouter.state.location.href !== preservedHref) {
+      mainRouter.history.push(preservedHref)
+    }
   }, [])
 }

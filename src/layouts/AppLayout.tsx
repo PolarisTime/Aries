@@ -16,6 +16,7 @@ import { EditorSessionGuard } from '@/layouts/editor-session/EditorSessionGuard'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { AppTabContainer } from '@/layouts/tabs/AppTabContainer'
+import { detachAllTabRouters } from '@/layouts/tabs/tab-location-sync'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
 import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
@@ -184,6 +185,8 @@ export function AppLayout() {
       return
     }
     hydratedUserRef.current = userId
+    // 切换用户/重新登录时销毁上一会话残留的子 Router 实例，避免内存泄漏
+    detachAllTabRouters()
     useLayoutTabsStore.getState().hydrateForUser(userId, {
       pathname: normalizeTabPathname(location.pathname),
       search: location.searchStr,

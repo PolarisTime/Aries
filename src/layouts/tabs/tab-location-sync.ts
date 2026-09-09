@@ -97,6 +97,13 @@ export function pushExternalIntent(tabId: string, href: string): void {
   subRouter.history.push(href)
 }
 
+/** 切换用户等场景：销毁全部子 Router 实例，避免内存残留 */
+export function detachAllTabRouters(): void {
+  for (const tabId of [...tabRouters.keys()]) {
+    detachTabRouter(tabId)
+  }
+}
+
 /** 当前 Tab 子 Router 的 href（未挂载返回 null） */
 export function getTabRouterHref(tabId: string): string | null {
   return tabRouters.get(tabId)?.history.location.href ?? null

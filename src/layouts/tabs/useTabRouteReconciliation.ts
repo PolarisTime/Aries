@@ -8,6 +8,7 @@ import { router as mainRouter } from '@/router'
 import {
   buildTabHref,
   isRegisteredPagePath,
+  normalizeSearch,
   normalizeTabPathname,
   useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
@@ -40,6 +41,13 @@ export function useTabRouteReconciliation(): void {
       // 已挂载的 Tab 才存在子 Router 同步；未挂载 Tab 由 attach 时的初始 href 对齐
       const subHref = getTabRouterHref(existing.id)
       if (subHref && subHref !== mainHref) {
+        if (!normalizeSearch(location.searchStr) && subHref.includes('?')) {
+          // 主地址栏无参（激活跳转/菜单点击）而 Tab 保存了内部筛选：
+          // 保留 Tab 状态，地址栏回退到子路由的完整 href。
+          mainRouter.history.replace(subHref)
+          store.markTabMounted(existing.id)
+          return
+        }
         store.setTabLocation(existing.id, {
           pathname,
           search: location.searchStr,
