@@ -5,6 +5,10 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { readRequestError } from '@/api/core/request-errors'
 import { AppResult } from '@/components/AppResult'
 import { captureFrontendException } from '@/observability/sentry'
+import {
+  resolveErrorPresentation,
+  summarizeErrorMessage,
+} from '@/utils/error-presentation'
 
 interface Props {
   children: ReactNode
@@ -17,38 +21,6 @@ interface Props {
 interface State {
   error: Error | null
   resetKey?: string
-}
-
-type ErrorCategory = 'forbidden' | 'network' | 'runtime'
-type ResultStatus = '403' | '500' | 'warning' | 'error'
-
-interface ErrorPresentation {
-  category: ErrorCategory
-  status: ResultStatus
-  title?: string
-  description?: string
-  hint: string
-}
-
-const MAX_SUMMARY_LENGTH = 120
-
-const NETWORK_MESSAGE_PATTERNS = [
-  'failed to fetch',
-  'networkerror',
-  'network error',
-  'err_network',
-  'load failed',
-  'timeout',
-  'timed out',
-  'failed to fetch dynamically imported module',
-  'loading chunk',
-  'internet disconnected',
-]
-
-const HINT_DEFAULTS: Record<ErrorCategory, string> = {
-  network: '请检查网络连接后重试',
-  forbidden: '请联系管理员开通相关权限',
-  runtime: '请刷新页面重试；若问题持续请联系技术支持',
 }
 
 export class AppErrorBoundary extends Component<Props, State> {
@@ -155,90 +127,6 @@ export class AppErrorBoundary extends Component<Props, State> {
 
     return this.props.children
   }
-}
-
-function classifyError(error: Error): ErrorCategory {
-  const { status, code } = readRequestError(error)
-  if (status === 403 || code === 403) return 'forbidden'
-
-  const msg = error.message.toLowerCase()
-  if (
-    msg.includes('403') ||
-    msg.includes('forbidden') ||
-    msg.includes('unauthorized')
-  ) {
-    return 'forbidden'
-  }
-  if (NETWORK_MESSAGE_PATTERNS.some((pattern) => msg.includes(pattern))) {
-    return 'network'
-  }
-  return 'runtime'
-}
-
-function resolveErrorPresentation(error: Error): ErrorPresentation {
-  const category = classifyError(error)
-  const { status, code } = readRequestError(error)
-  const msg = error.message.toLowerCase()
-  const message = shortMessage(error.message)
-
-  if (category === 'forbidden') {
-    return {
-      category,
-      status: '403',
-      description: i18next.t('errorBoundary.accessDenied'),
-      hint: i18next.t('errorBoundary.forbiddenHint', {
-        defaultValue: HINT_DEFAULTS.forbidden,
-      }),
-    }
-  }
-
-  if (category === 'network') {
-    return {
-      category,
-      status: 'warning',
-      title: i18next.t('errorBoundary.networkError'),
-      description: message,
-      hint: i18next.t('errorBoundary.networkHint', {
-        defaultValue: HINT_DEFAULTS.network,
-      }),
-    }
-  }
-
-  if (status === 500 || code === 500 || msg.includes('internal server')) {
-    return {
-      category,
-      status: '500',
-      description: i18next.t('errorBoundary.serverBusy'),
-      hint: i18next.t('errorBoundary.runtimeHint', {
-        defaultValue: HINT_DEFAULTS.runtime,
-      }),
-    }
-  }
-
-  return {
-    category,
-    status: 'error',
-    title: i18next.t('errorBoundary.runtimeTitle', {
-      defaultValue: '页面渲染出错',
-    }),
-    description: message,
-    hint: i18next.t('errorBoundary.runtimeHint', {
-      defaultValue: HINT_DEFAULTS.runtime,
-    }),
-  }
-}
-
-function shortMessage(message: string): string | undefined {
-  const normalized = message.replace(/\s+/g, ' ').trim()
-  if (!normalized || normalized.length >= 100) return undefined
-  return normalized
-}
-
-function summarizeErrorMessage(error: Error): string {
-  const normalized = error.message.replace(/\s+/g, ' ').trim()
-  return normalized.length > MAX_SUMMARY_LENGTH
-    ? `${normalized.slice(0, MAX_SUMMARY_LENGTH)}…`
-    : normalized
 }
 
 async function copyText(text: string): Promise<boolean> {

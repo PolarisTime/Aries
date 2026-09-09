@@ -3,6 +3,7 @@ import { Button } from 'antd'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
+import { resolveErrorPresentation } from '@/utils/error-presentation'
 
 function extractBackendTraceId(error: unknown): string | undefined {
   if (error == null) return undefined
@@ -16,19 +17,14 @@ function extractBackendTraceId(error: unknown): string | undefined {
   return undefined
 }
 
-function stripTraceSuffix(message: string): string {
-  return message.replace(/\s*\(trace:\s*\S+\)\s*$/, '')
-}
-
 export function ErrorView() {
   const router = useRouter()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const error = (router.state as unknown as Record<string, unknown>).error
 
-  const status = getErrorStatus(error)
-  const rawMessage = getErrorMessage(error, status, t)
-  const subTitle = stripTraceSuffix(rawMessage)
+  // 与 AppErrorBoundary 共用同一套分类规则（403/网络/500/运行时）与恢复建议文案。
+  const presentation = resolveErrorPresentation(error)
   const traceId = extractBackendTraceId(error)
 
   useEffect(() => {
@@ -46,44 +42,20 @@ export function ErrorView() {
   return (
     <AppResult
       className="app-result--page"
-      status={status}
-      subTitle={subTitle}
+      status={presentation.status}
+      title={presentation.title}
+      subTitle={
+        <div className="space-y-1">
+          {presentation.description ? (
+            <div>{presentation.description}</div>
+          ) : null}
+          <div>{presentation.hint}</div>
+        </div>
+      }
       traceId={traceId}
       showHomeButton
       showBackButton
-      extra={<Button onClick={handleRetry}>{t('error.retry')}</Button>}
+      extra={<Button onClick={handleRetry}>{t('errorBoundary.retry')}</Button>}
     />
   )
-}
-
-function getErrorStatus(error: unknown): '403' | '500' | 'error' {
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase()
-    if (
-      msg.includes('403') ||
-      msg.includes('unauthorized') ||
-      msg.includes('forbidden')
-    )
-      return '403'
-    if (msg.includes('500') || msg.includes('internal server')) return '500'
-    if (msg.includes('timeout') || msg.includes('network')) return '500'
-  }
-  return 'error'
-}
-
-function getErrorMessage(
-  error: unknown,
-  status: string,
-  t: (key: string) => string,
-): string {
-  if (status === '403') return t('error.accessDenied')
-  if (status === '500') return t('error.serverBusy')
-  if (error instanceof Error) {
-    const msg = error.message
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
-      return t('error.networkError')
-    if (msg.length < 100) return msg
-    return t('error.serverResponseError')
-  }
-  return t('error.unknownError')
 }

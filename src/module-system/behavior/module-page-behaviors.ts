@@ -40,6 +40,10 @@ export interface ModulePageBehavior {
   relatedRefreshModuleKeys?: readonly ModuleKey[]
   /** master options 刷新策略：project 需要同时失效衍生简称缓存。 */
   masterOptionRefreshMode?: 'project' | 'reload'
+  /** 批量审核/反审核仅允许单选（采购入库）。 */
+  limitsBulkAuditToSingleSelection?: boolean
+  /** 新建草稿时自动填充默认结算主体（采购订单）。 */
+  autoFillSettlementCompanyOnCreate?: boolean
 }
 
 const MODULE_PAGE_BEHAVIORS = {
@@ -64,6 +68,10 @@ const MODULE_PAGE_BEHAVIORS = {
   'purchase-inbound': {
     weightOnlyFeatureKey: 'weightOnlyPurchaseInbound',
     relatedRefreshModuleKeys: ['purchase-order'],
+    limitsBulkAuditToSingleSelection: true,
+  },
+  'purchase-order': {
+    autoFillSettlementCompanyOnCreate: true,
   },
   'sales-outbound': {
     weightOnlyFeatureKey: 'weightOnlySalesOutbound',
@@ -110,4 +118,20 @@ export function isDeliveryVerificationStatus(
   const deliveryVerification = getModuleDeliveryVerification(moduleKey)
   if (!deliveryVerification) return false
   return status === deliveryVerification.sourceStatus
+}
+
+/** 批量审核/反审核是否仅允许单选；未配置的模块允许多选。 */
+export function limitsBulkAuditToSingleSelection(moduleKey: string): boolean {
+  return (
+    getModulePageBehavior(moduleKey)?.limitsBulkAuditToSingleSelection === true
+  )
+}
+
+/** 新建草稿时是否自动填充默认结算主体。 */
+export function shouldAutoFillSettlementCompanyOnCreate(
+  moduleKey: string,
+): boolean {
+  return (
+    getModulePageBehavior(moduleKey)?.autoFillSettlementCompanyOnCreate === true
+  )
 }

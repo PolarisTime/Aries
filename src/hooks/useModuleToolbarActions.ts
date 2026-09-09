@@ -4,6 +4,7 @@ import {
   resolveStatusChangeActionLabelKey,
   type StatusChangeActionKind,
 } from '@/module-system/adapter/module-adapter-actions'
+import { limitsBulkAuditToSingleSelection } from '@/module-system/behavior/module-page-behaviors'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,
@@ -74,7 +75,7 @@ export function useModuleToolbarActions({
     const actions: ModuleActionDefinition[] = []
     const auditSelectionSupported =
       selectedRowCount > 0 &&
-      (moduleKey !== 'purchase-inbound' || selectedRowCount === 1)
+      (!limitsBulkAuditToSingleSelection(moduleKey) || selectedRowCount === 1)
     if (
       canUseBulkAuditAction &&
       auditSelectionSupported &&

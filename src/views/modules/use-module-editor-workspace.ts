@@ -18,6 +18,7 @@ import {
   buildDefaultEditorLineItem,
 } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { shouldAutoFillSettlementCompanyOnCreate } from '@/module-system/behavior/module-page-behaviors'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
   ModuleLineItem,
@@ -92,12 +93,12 @@ async function resolveDefaultSettlementCompany() {
   }
 }
 
-function applyPurchaseOrderDefaultSettlementCompany(
+function applyDefaultSettlementCompany(
   moduleKey: string,
   form: WorkspaceFormApi,
   isActive: () => boolean,
 ) {
-  if (moduleKey !== 'purchase-order') {
+  if (!shouldAutoFillSettlementCompanyOnCreate(moduleKey)) {
     return
   }
 
@@ -260,7 +261,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
             )
           })
       }
-      applyPurchaseOrderDefaultSettlementCompany(moduleKey, form, () => active)
+      applyDefaultSettlementCompany(moduleKey, form, () => active)
       const draftItems = autoInsertBlankItemOnCreate
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]
         : []

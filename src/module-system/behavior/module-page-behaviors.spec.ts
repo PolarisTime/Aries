@@ -4,6 +4,8 @@ import {
   getModulePageBehavior,
   getModuleStatusCommand,
   isDeliveryVerificationStatus,
+  limitsBulkAuditToSingleSelection,
+  shouldAutoFillSettlementCompanyOnCreate,
 } from './module-page-behaviors'
 
 describe('module-page-behaviors', () => {
@@ -53,6 +55,24 @@ describe('module-page-behaviors', () => {
     ).toBe(true)
     expect(
       getModulePageBehavior('sales-order')?.disablesManualCreate,
+    ).toBeUndefined()
+  })
+
+  it('采购入库注册批量审核单选限制，其余模块不受限', () => {
+    expect(limitsBulkAuditToSingleSelection('purchase-inbound')).toBe(true)
+    expect(limitsBulkAuditToSingleSelection('sales-order')).toBe(false)
+    expect(limitsBulkAuditToSingleSelection('unknown-module')).toBe(false)
+  })
+
+  it('采购订单注册新建自动填充结算主体，其余模块不填充', () => {
+    expect(shouldAutoFillSettlementCompanyOnCreate('purchase-order')).toBe(true)
+    expect(shouldAutoFillSettlementCompanyOnCreate('sales-order')).toBe(false)
+    expect(shouldAutoFillSettlementCompanyOnCreate('unknown-module')).toBe(
+      false,
+    )
+    expect(
+      getModulePageBehavior('purchase-inbound')
+        ?.autoFillSettlementCompanyOnCreate,
     ).toBeUndefined()
   })
 
