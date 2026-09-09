@@ -13,6 +13,13 @@ export const enUS = {
     networkError: 'Network connection error',
     timeout: 'Request timed out',
     serverError: 'Server response error, please try again later',
+    networkHint: 'Check your network connection and try again',
+    forbiddenHint: 'Contact your administrator to request access',
+    runtimeHint:
+      'Refresh the page and try again; contact support if the problem persists',
+    runtimeTitle: 'Page failed to render',
+    errorSummary: 'Error summary',
+    copyFailed: 'Copy failed. Please copy manually',
   },
   result: {
     '403': {
@@ -261,6 +268,7 @@ export const enUS = {
     keyword: 'Keyword',
     detail: 'Detail',
     loading: 'Loading...',
+    loadingIndicatorAnnouncing: 'Loading data…',
     noData: 'No Data',
     total: '{{count}} total',
     selected: '{{count}} selected',
@@ -1833,6 +1841,31 @@ export const enUS = {
       title: 'Cannot Connect to Server',
       subTitle:
         'The server is temporarily unavailable. Please check your network connection or try again later.',
+    },
+  },
+  emptyState: {
+    noData: {
+      title: 'No Records Yet',
+      description:
+        'This list is empty. Create your first record to get started.',
+      createFirstRecord: 'Create First Record',
+    },
+    noResult: {
+      title: 'No Matching Records',
+      description:
+        'No records match the current filters. Try adjusting or clearing the filters.',
+      resetFilters: 'Clear Filters',
+    },
+    noPermission: {
+      title: 'No Access',
+      description: 'You do not have permission to view this content.',
+      hint: 'Contact your administrator to request access.',
+    },
+    error: {
+      title: 'Failed to Load Data',
+      description:
+        'Something went wrong while loading data. Check your connection and try again.',
+      retry: 'Retry',
     },
   },
   navigation: {

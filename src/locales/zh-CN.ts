@@ -12,6 +12,12 @@ export const zhCN = {
     networkError: '网络连接异常',
     timeout: '请求超时',
     serverError: '服务器响应异常，请稍后重试',
+    networkHint: '请检查网络连接后重试',
+    forbiddenHint: '请联系管理员开通相关权限',
+    runtimeHint: '请刷新页面重试；若问题持续请联系技术支持',
+    runtimeTitle: '页面渲染出错',
+    errorSummary: '错误摘要',
+    copyFailed: '复制失败，请手动复制',
   },
   result: {
     '403': {
@@ -260,6 +266,7 @@ export const zhCN = {
     keyword: '关键词',
     detail: '详情',
     loading: '加载中...',
+    loadingIndicatorAnnouncing: '正在加载数据…',
     noData: '暂无数据',
     total: '共 {{count}} 条',
     selected: '已选择 {{count}} 项',
@@ -1787,6 +1794,28 @@ export const zhCN = {
     serverError: {
       title: '无法连接到服务器',
       subTitle: '服务器暂时不可用，请检查网络连接或稍后重试',
+    },
+  },
+  emptyState: {
+    noData: {
+      title: '还没有任何数据',
+      description: '当前列表暂无记录，创建第一条记录开始使用',
+      createFirstRecord: '创建第一条记录',
+    },
+    noResult: {
+      title: '没有匹配的记录',
+      description: '当前筛选条件下未找到记录，可调整或清空筛选条件后重试',
+      resetFilters: '清空筛选',
+    },
+    noPermission: {
+      title: '暂无访问权限',
+      description: '您没有查看此内容的权限',
+      hint: '如需访问，请联系管理员开通相应权限',
+    },
+    error: {
+      title: '数据加载失败',
+      description: '加载数据时出现问题，请检查网络后重试',
+      retry: '重试',
     },
   },
   navigation: {
