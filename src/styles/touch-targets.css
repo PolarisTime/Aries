@@ -1,0 +1,31 @@
+/*
+ * 触摸目标热区（WCAG 2.5.8 AA）
+ * 通过 ::before 伪元素扩大命中区域，不改变按钮的视觉尺寸。
+ * 例外：antd compact 组内 solid 按钮的 ::before 被 antd 用于 1px 连接边框，必须排除。
+ */
+
+button:not(.ant-btn-variant-solid.ant-btn-compact-item),
+[role="button"],
+.ant-btn:not(.ant-btn-variant-solid.ant-btn-compact-item) {
+  position: relative;
+}
+
+button:not(.ant-btn-variant-solid.ant-btn-compact-item)::before,
+[role="button"]::before,
+.ant-btn:not(.ant-btn-variant-solid.ant-btn-compact-item)::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+
+/* 表格内操作按钮：热区扩大到 44×44，视觉尺寸不变 */
+.table-action-btn::before,
+.module-table-shell
+  .ant-btn-sm:not(.ant-btn-variant-solid.ant-btn-compact-item)::before {
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+}
