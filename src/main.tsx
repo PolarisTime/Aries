@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/core/client'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
+import { GlobalLoadingIndicator } from '@/components/loading'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { AppUpdatePrompt } from '@/features/app-update'
 import { queryClient } from '@/lib/query-client'
@@ -19,6 +20,7 @@ import '@/i18n'
 import '@/styles/variables.css'
 import '@/styles/utilities.css'
 import '@/styles/global.css'
+import '@/styles/loading.css'
 import '@/styles/touch-targets.css'
 import '@/styles/layout-shell.css'
 import '@/styles/module-table.css'
@@ -32,6 +34,7 @@ function App() {
     <>
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
+        <GlobalLoadingIndicator />
       </QueryClientProvider>
       <AppAntdProvider>
         <AppUpdatePrompt />
