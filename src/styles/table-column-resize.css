@@ -8,20 +8,63 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 6px;
+  width: 8px;
   margin: 0;
+  padding: 0;
   border: 0;
+  background: transparent;
   cursor: col-resize;
   z-index: 1;
   touch-action: none;
   user-select: none;
+  /* 默认隐藏：仅在表头悬停、把手聚焦或拖拽时显示，避免静态表头出现多余视觉噪声 */
+  opacity: 0;
+  transition:
+    opacity var(--motion-duration-fast, 0.1s) ease,
+    background-color var(--motion-duration-fast, 0.1s) ease;
 }
 
-.table-resize-handle:hover,
-.table-resize-handle:focus-visible {
+/* 表头悬停时以细主色线提示可拖拽（8px 命中区，视觉仅 2px） */
+.ant-table-thead .ant-table-cell:hover > .table-resize-handle {
+  opacity: 0.45;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 3px,
+    var(--ant-color-primary, #1677ff) 3px,
+    var(--ant-color-primary, #1677ff) 5px,
+    transparent 5px,
+    transparent 100%
+  );
+}
+
+/* 把手自身悬停：整条 8px 命中区高亮，交互意图更明确（覆盖表头细线提示态） */
+.ant-table-thead .ant-table-cell:hover > .table-resize-handle:hover {
+  opacity: 0.6;
   background: var(--ant-color-primary, #1677ff);
-  opacity: 0.3;
-  outline: none;
+}
+
+/* 键盘聚焦：常显 + 描边，保证可达性（置于表头悬停规则之后以赢得同特异性级联） */
+.ant-table-thead .ant-table-cell > .table-resize-handle:focus-visible {
+  opacity: 1;
+  background: var(--ant-color-primary, #1677ff);
+  outline: 2px solid var(--ant-color-primary, #1677ff);
+  outline-offset: -2px;
+}
+
+/* 拖拽中：把手保持高亮 */
+body.table-column-resizing
+  .ant-table-thead
+  .ant-table-cell
+  > .table-resize-handle {
+  opacity: 1;
+  background: var(--ant-color-primary, #1677ff);
+}
+
+/* 当前列高亮：把手悬停或拖拽中，对应列表头背景同步高亮 */
+.ant-table-thead .ant-table-cell:has(> .table-resize-handle:hover),
+body.table-column-resizing .ant-table-thead th:has(> .table-resize-handle) {
+  background-color: var(--ant-color-primary-bg, var(--theme-surface-hover));
 }
 
 body.table-column-resizing {
@@ -32,4 +75,10 @@ body.table-column-resizing {
 body.table-column-resizing * {
   cursor: col-resize !important;
   user-select: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-resize-handle {
+    transition: none;
+  }
 }

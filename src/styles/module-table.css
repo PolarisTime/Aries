@@ -78,42 +78,17 @@
 
 .module-table-shell .ant-table-tbody .module-table-row-selected-border-beam {
   background-color: var(--ant-table-row-selected-bg, var(--theme-highlight-bg));
-  background-image:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 35%,
-      color-mix(in srgb, var(--theme-primary) 45%, transparent) 43%,
-      var(--theme-primary) 50%,
-      color-mix(in srgb, var(--theme-primary) 45%, transparent) 57%,
-      transparent 65%,
-      transparent 100%
-    ),
-    linear-gradient(
-      270deg,
-      transparent 0%,
-      transparent 35%,
-      color-mix(in srgb, var(--theme-primary) 45%, transparent) 43%,
-      var(--theme-primary) 50%,
-      color-mix(in srgb, var(--theme-primary) 45%, transparent) 57%,
-      transparent 65%,
-      transparent 100%
-    );
-  background-position:
-    0 0,
-    0 100%;
-  background-repeat: repeat-x;
-  background-size: 220% 2px;
-  animation: module-table-selected-border-beam 1.8s linear infinite;
 }
 
 .module-table-shell
   .ant-table-tbody
   .module-table-row-selected-border-beam
   > td {
+  position: relative;
   background-color: transparent !important;
 }
 
+/* 静态高亮：左右边缘 2px 主色条 + 柔和外发光（box-shadow 为静态渲染，不参与动画） */
 .module-table-shell
   .ant-table-tbody
   .module-table-row-selected-border-beam
@@ -132,16 +107,75 @@
     2px 0 8px color-mix(in srgb, var(--theme-primary) 35%, transparent);
 }
 
-@keyframes module-table-selected-border-beam {
-  to {
-    background-position:
-      220% 0,
-      -220% 100%;
+/* 动画仅用 transform + opacity（合成器友好，避免逐帧重绘背景） */
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:first-child::after,
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:last-child::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--theme-highlight-border, var(--theme-primary));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--theme-primary) 35%, transparent);
+  pointer-events: none;
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:first-child::after {
+  left: 0;
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:last-child::after {
+  right: 0;
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:first-child::after,
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:last-child::after {
+  transform-origin: center;
+  /* 呼吸周期长于 --motion-duration-slow（该组令牌面向过渡而非循环动画），此处独立设定 */
+  animation: module-table-selected-edge-pulse 2.4s
+    var(--motion-ease-in-out, ease-in-out) infinite;
+}
+
+@keyframes module-table-selected-edge-pulse {
+  0%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scaleY(0.55);
+    opacity: 0.55;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .module-table-shell .ant-table-tbody .module-table-row-selected-border-beam {
+  .module-table-shell
+    .ant-table-tbody
+    .module-table-row-selected-border-beam
+    > td:first-child::after,
+  .module-table-shell
+    .ant-table-tbody
+    .module-table-row-selected-border-beam
+    > td:last-child::after {
     animation: none;
   }
 }
@@ -665,6 +699,116 @@
   color: #fff;
   border-color: var(--theme-primary-hover);
   background: var(--theme-primary-hover);
+}
+
+/* ── 业务列表页骨架屏（BusinessGridPageSkeleton）────────────────────────────
+   与最终布局逐区对齐：筛选区 / 工具栏 / 表格（表头+行）/ 分页，减少加载完成后的 CLS。
+   本文件在 layout-shell.css 之后加载，此处规则可覆盖骨架的基础几何参数。 */
+.module-page-skeleton {
+  gap: 0;
+  padding: 0;
+  background: var(--theme-card-bg);
+}
+
+.module-page-skeleton-region--filter {
+  padding: 8px 16px;
+  background: var(--theme-surface-hover);
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.module-page-skeleton-region--filter .module-page-skeleton-row {
+  align-items: center;
+}
+
+.module-page-skeleton-region--toolbar {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.module-page-skeleton-region--pagination {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
+.module-page-skeleton-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.module-page-skeleton-label,
+.module-page-skeleton-control,
+.module-page-skeleton-range {
+  background: linear-gradient(
+    90deg,
+    var(--theme-skeleton-from) 25%,
+    var(--theme-skeleton-to) 50%,
+    var(--theme-skeleton-from) 75%
+  );
+  background-size: 200% 100%;
+  animation: module-page-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.module-page-skeleton-label {
+  width: 48px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.module-page-skeleton-control {
+  width: 160px;
+  height: 32px;
+  border-radius: var(--ant-border-radius, 6px);
+}
+
+.module-page-skeleton-control.is-narrow {
+  width: 120px;
+}
+
+.module-page-skeleton-table {
+  gap: 0;
+  border: 0;
+}
+
+/* 表头行：与真实表头同高并加强分隔（渐变微光由 layout-shell 基类提供） */
+.module-page-skeleton-table .module-page-skeleton-line.is-head {
+  height: 40px;
+  border-bottom: 1px solid var(--theme-border-subtle);
+  border-radius: 0;
+}
+
+/* 数据行：连续 1px 分隔，行高与真实表格行一致（无行间空隙） */
+.module-page-skeleton-table .module-page-skeleton-line:not(.is-head) {
+  height: 39px;
+  border-bottom: 1px solid var(--theme-border-subtle);
+  border-radius: 0;
+}
+
+.module-page-skeleton-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.module-page-skeleton-range {
+  width: 120px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-page-skeleton-label,
+  .module-page-skeleton-control,
+  .module-page-skeleton-range {
+    animation: none;
+    background: var(--theme-skeleton-from);
+  }
 }
 
 /* ── Bill detail page ── */
