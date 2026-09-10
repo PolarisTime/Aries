@@ -307,15 +307,15 @@ export function PriceCompareView() {
           >
             ＋ 新批次
           </Button>
-          {active && currentGroup && currentGroup.sheets.length > 1 ? (
-            <Button
-              size="small"
-              danger
-              onClick={() => confirmRemoveSheet(active.id)}
-            >
-              删除批次
-            </Button>
-          ) : null}
+          <Button
+            size="small"
+            danger
+            disabled={!active || sheets.length <= 1}
+            title={sheets.length <= 1 ? '至少保留一个批次' : '删除当前批次'}
+            onClick={() => active && confirmRemoveSheet(active.id)}
+          >
+            删除批次
+          </Button>
           <Divider type="vertical" style={{ margin: '0 2px' }} />
           <Segmented
             size="small"
