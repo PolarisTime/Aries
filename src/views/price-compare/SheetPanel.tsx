@@ -37,7 +37,9 @@ import {
   makeRow,
   moveItem,
   netPrice,
+  resolveRef,
   SHEET_COLUMN_WIDTH,
+  SPOT_PRICE_MAX,
 } from './core'
 import type {
   Brand,
@@ -51,12 +53,14 @@ import type {
 
 const { Text } = Typography
 const DATE_FMT = 'YYYY年M月D日'
-const MAX_SPOT = 20000
+const CAPTURE_BACKGROUND = '#ffffff'
 
 /* ------------------------------------------------------------------ 列定义 */
 
 type ColumnContext = {
   sheet: PriceSheet
+  refDate: string
+  refPeriod: string
   data: PriceData | null
   varieties: Variety[]
   brands: Brand[]
@@ -104,6 +108,8 @@ function buildVarietyOptions(varieties: Variety[]) {
 function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const {
     sheet,
+    refDate,
+    refPeriod,
     data,
     varieties,
     brands,
@@ -257,8 +263,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               if (row.isGroup || !row.row) return null
               const price = netPrice(
                 data,
-                sheet.refDate,
-                sheet.refPeriod,
+                refDate,
+                refPeriod,
                 brand.name,
                 row.row,
                 sheet.lengthPremium,
@@ -302,7 +308,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     const value = Number(event.target.value)
                     if (
                       event.target.value !== '' &&
-                      (Number.isNaN(value) || value <= 0 || value > MAX_SPOT)
+                      (Number.isNaN(value) ||
+                        value <= 0 ||
+                        value > SPOT_PRICE_MAX)
                     ) {
                       message.warning('现货价超出合理范围')
                     }
@@ -324,8 +332,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               if (row.isGroup || !row.row) return null
               const price = netPrice(
                 data,
-                sheet.refDate,
-                sheet.refPeriod,
+                refDate,
+                refPeriod,
                 brand.name,
                 row.row,
                 sheet.lengthPremium,
@@ -361,6 +369,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
 
 function SheetHeader({
   sheet,
+  refDate,
+  refPeriod,
   data,
   locked,
   capturing,
@@ -371,6 +381,8 @@ function SheetHeader({
   onCopySheet,
 }: {
   sheet: PriceSheet
+  refDate: string
+  refPeriod: string
   data: PriceData | null
   locked: boolean
   capturing: boolean
@@ -380,7 +392,7 @@ function SheetHeader({
   onAddRow: (category?: string) => void
   onCopySheet: () => void
 }) {
-  const periodLabel = (sheet.refPeriod || '').split(' ').pop()
+  const periodLabel = (refPeriod || '').split(' ').pop()
   return (
     <Flex justify="space-between" align="center" wrap="wrap" gap="small">
       <Flex gap="middle" align="center" wrap="wrap">
@@ -422,7 +434,8 @@ function SheetHeader({
         </Space>
         <Tooltip title="整组统一使用该日期与时段作为网价基准">
           <Tag color="green" icon={<InfoCircleOutlined />}>
-            整组参照 {dayjs(sheet.refDate).format(DATE_FMT)} {periodLabel}
+            整组参照 {refDate ? dayjs(refDate).format(DATE_FMT) : '未设置'}{' '}
+            {periodLabel}
           </Tag>
         </Tooltip>
         <Space size="small">
@@ -432,7 +445,7 @@ function SheetHeader({
           <DatePicker
             size="small"
             disabled={locked}
-            value={dayjs(sheet.refDate)}
+            value={refDate ? dayjs(refDate) : null}
             format={DATE_FMT}
             allowClear={false}
             onChange={(value) => {
@@ -448,9 +461,9 @@ function SheetHeader({
             size="small"
             style={{ width: 112 }}
             disabled={locked}
-            value={sheet.refPeriod}
+            value={refPeriod || undefined}
             onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-            options={Object.keys(data?.[sheet.refDate] ?? {}).map((period) => ({
+            options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
               value: period,
               label: period,
             }))}
@@ -651,6 +664,7 @@ export function SheetPanel(props: Props) {
   const captureRef = useRef<HTMLDivElement>(null)
   const [capturing, setCapturing] = useState(false)
   const [collapsed, setCollapsed] = useState<string[]>([])
+  const { refDate, refPeriod } = resolveRef(data, sheet)
   const [bestGroups, setBestGroups] = useState<string[]>([])
   const locked = sheet.locked
 
@@ -690,8 +704,20 @@ export function SheetPanel(props: Props) {
         ? current.filter((item) => item !== category)
         : [...current, category],
     )
-  const onAddRow = (category?: string) =>
-    setRows((list) => [...list, makeRow(category ?? '螺纹钢')])
+  const onAddRow = (category?: string) => {
+    const targetCategory = category ?? CATEGORIES[0]
+    const variety = varieties.find((item) => item.category === targetCategory)
+    const row = variety
+      ? {
+          id: Math.random().toString(36).slice(2, 8),
+          category: variety.category,
+          material: variety.material,
+          spec: variety.spec,
+          length: variety.length,
+        }
+      : makeRow(targetCategory)
+    setRows((list) => [...list, row])
+  }
 
   const capture = async (copy: boolean) => {
     if (!captureRef.current) return
@@ -699,7 +725,7 @@ export function SheetPanel(props: Props) {
     try {
       const canvas = await html2canvas(captureRef.current, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: CAPTURE_BACKGROUND,
         useCORS: true,
       })
       if (copy && navigator.clipboard && window.ClipboardItem) {
@@ -730,6 +756,8 @@ export function SheetPanel(props: Props) {
 
   const columns = buildSheetColumns({
     sheet,
+    refDate,
+    refPeriod,
     data,
     varieties,
     brands,
@@ -750,13 +778,20 @@ export function SheetPanel(props: Props) {
   const dataSource = useMemo(() => buildGridRows(rows), [rows])
   const groupKeys = dataSource.map((row) => row.key)
   const collapsedSet = useMemo(() => new Set(collapsed), [collapsed])
-  const summary = computeSummary(data, sheet, rows, brands)
+  const summary = computeSummary(
+    data,
+    { ...sheet, refDate, refPeriod },
+    rows,
+    brands,
+  )
 
   return (
     <Card size="small" styles={{ body: { padding: 12 } }}>
       <div ref={captureRef}>
         <SheetHeader
           sheet={sheet}
+          refDate={refDate}
+          refPeriod={refPeriod}
           data={data}
           locked={locked}
           capturing={capturing}

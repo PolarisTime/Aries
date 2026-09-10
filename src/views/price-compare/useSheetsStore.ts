@@ -4,8 +4,6 @@ import type { Brand, PriceRow, PriceSheet } from './types'
 
 const LS_KEY = 'aries-price-compare-v2'
 const HISTORY_LIMIT = 50
-const DEFAULT_PROJECT_ID = '339483372885635072'
-const DEFAULT_PROJECT_NAME = '云潮筝鸣府'
 const COALESCE_MS = 800
 
 type Snapshot = {
@@ -15,22 +13,8 @@ type Snapshot = {
 }
 
 function defaultState(): Snapshot {
-  const a = makeSheet(
-    '9月6日报单',
-    DEFAULT_PROJECT_ID,
-    DEFAULT_PROJECT_NAME,
-    '2026-09-06',
-    '2026-09-07',
-    '12:00 中午',
-  )
-  const b = makeSheet(
-    '9月9日报单',
-    DEFAULT_PROJECT_ID,
-    DEFAULT_PROJECT_NAME,
-    '2026-09-09',
-    '2026-09-10',
-    '9:30 上午',
-  )
+  const a = makeSheet('批次 1', '', '', '', '', '')
+  const b = makeSheet('批次 2', '', '', '', '', '')
   return { sheets: [a, b], activeId: a.id, brands: [] }
 }
 
@@ -69,7 +53,13 @@ export type SheetsStore = {
     patch: Partial<PriceSheet>,
     coalesceKey?: string,
   ) => void
-  addSheet: (projectId: string, projectName: string) => void
+  addSheet: (
+    projectId: string,
+    projectName: string,
+    orderDate: string,
+    refDate: string,
+    refPeriod: string,
+  ) => void
   copyActiveSheet: () => void
   removeSheet: (id: string) => void
 }
@@ -95,7 +85,10 @@ export function useSheetsStore(): SheetsStore {
 
   useEffect(() => {
     stateRef.current = state
-    localStorage.setItem(LS_KEY, JSON.stringify(state))
+    const timer = setTimeout(() => {
+      localStorage.setItem(LS_KEY, JSON.stringify(state))
+    }, 300)
+    return () => clearTimeout(timer)
   }, [state])
 
   const commit = useCallback((next: Snapshot, coalesceKey?: string) => {

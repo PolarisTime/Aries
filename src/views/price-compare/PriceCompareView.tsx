@@ -24,25 +24,19 @@ import {
   Typography,
   Watermark,
 } from 'antd'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import dayjs from 'dayjs'
+import { useEffect, useRef, useState } from 'react'
 import { modal } from '@/utils/antd-app'
 import { BrandSettingsDrawer } from './BrandSettingsDrawer'
-import { countMissing } from './core'
+import { countMissing, resolveRef, SHEET_STATUS_META } from './core'
 import { SheetPanel } from './SheetPanel'
-import type { Brand, PriceSheet, ProjectOption } from './types'
+import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
 import { usePriceCompareData } from './usePriceCompareData'
 import { useSheetsStore } from './useSheetsStore'
 import './price-compare.css'
 
 const { Text } = Typography
 const TOUR_KEY = 'aries-price-compare-tour'
-
-const SHEET_STATUS_COLOR: Record<string, string> = {
-  报价: '#1677ff',
-  已报: '#faad14',
-  成交: '#389e0d',
-  作废: '#bfbfbf',
-}
 
 function projectAbbrOf(
   projects: ProjectOption[],
@@ -99,7 +93,7 @@ function SheetTabLabel({
       title="双击重命名"
     >
       {sheet.name}{' '}
-      <span style={{ color: SHEET_STATUS_COLOR[sheet.status] ?? '#8c8c8c' }}>
+      <span style={{ color: SHEET_STATUS_META[sheet.status] ?? '#8c8c8c' }}>
         ●
       </span>
       {sheet.locked ? <LockOutlined style={{ marginLeft: 4 }} /> : null}
@@ -192,32 +186,88 @@ function PriceCompareHeader({
 
 type ProjectBatchTabsProps = {
   projects: ProjectOption[]
-  projectGroups: ProjectGroup[]
-  activeProjectId: string
+  sheets: PriceSheet[]
+  data: PriceData | null
+  brands: Brand[]
   activeId: string
-  projectItems: import('antd').TabsProps['items']
-  batchItems: import('antd').TabsProps['items']
-  onSwitchProject: (projectId: string) => void
   onSwitchBatch: (id: string) => void
-  onAddBatch: () => void
+  patchSheet: (
+    id: string,
+    patch: Partial<PriceSheet>,
+    coalesceKey?: string,
+  ) => void
+  onAddBatch: (projectId: string, projectName: string) => void
   onRemoveBatch: (id: string) => void
-  onAddProjectBatch: (projectId: string) => void
 }
 
 /** 大 Tab(项目) -> 批次 Tab。 */
 function ProjectBatchTabs({
   projects,
-  projectGroups,
-  activeProjectId,
+  sheets,
+  data,
+  brands,
   activeId,
-  projectItems,
-  batchItems,
-  onSwitchProject,
   onSwitchBatch,
+  patchSheet,
   onAddBatch,
   onRemoveBatch,
-  onAddProjectBatch,
 }: ProjectBatchTabsProps) {
+  const projectGroups: ProjectGroup[] = []
+  for (const sheet of sheets) {
+    let group = projectGroups.find((item) => item.projectId === sheet.projectId)
+    if (!group) {
+      group = {
+        projectId: sheet.projectId,
+        projectName: sheet.projectName,
+        sheets: [],
+      }
+      projectGroups.push(group)
+    }
+    group.sheets.push(sheet)
+  }
+  const activeSheet = sheets.find((sheet) => sheet.id === activeId)
+  const activeProjectId =
+    activeSheet?.projectId ?? projectGroups[0]?.projectId ?? ''
+  const switchProject = (projectId: string) => {
+    const group = projectGroups.find((item) => item.projectId === projectId)
+    if (group?.sheets.length) onSwitchBatch(group.sheets[0].id)
+  }
+  const projectItems = projectGroups.map((group) => ({
+    key: group.projectId,
+    label: (
+      <span>
+        {projectAbbrOf(projects, group.projectId, group.projectName)}{' '}
+        <Badge count={group.sheets.length} size="small" color="#1677ff" />
+      </span>
+    ),
+  }))
+  const batchItems = []
+  for (const group of projectGroups) {
+    if (group.projectId !== activeProjectId) continue
+    for (const sheet of group.sheets) {
+      const missing = countMissing(
+        data,
+        { ...sheet, ...resolveRef(data, sheet) },
+        sheet.rows,
+        brands,
+      )
+      batchItems.push({
+        key: sheet.id,
+        closable: sheets.length > 1,
+        label: (
+          <span>
+            <SheetTabLabel
+              sheet={sheet}
+              onRename={(id, name) => patchSheet(id, { name })}
+            />{' '}
+            {missing > 0 ? (
+              <Badge count={missing} size="small" color="#faad14" />
+            ) : null}
+          </span>
+        ),
+      })
+    }
+  }
   const availableProjects = (() => {
     const options: { value: string; label: string }[] = []
     for (const project of projects) {
@@ -242,7 +292,7 @@ function ProjectBatchTabs({
       <Tabs
         size="small"
         activeKey={activeProjectId}
-        onChange={onSwitchProject}
+        onChange={switchProject}
         items={projectItems}
         tabBarExtraContent={
           <Select
@@ -252,7 +302,10 @@ function ProjectBatchTabs({
             showSearch={{ optionFilterProp: 'label' }}
             value={null}
             options={availableProjects}
-            onChange={onAddProjectBatch}
+            onChange={(projectId) => {
+              const project = projects.find((item) => item.id === projectId)
+              if (project) onAddBatch(project.id, project.abbr || project.name)
+            }}
           />
         }
       />
@@ -262,7 +315,12 @@ function ProjectBatchTabs({
         activeKey={activeId}
         onChange={onSwitchBatch}
         onEdit={(target, action) =>
-          action === 'add' ? onAddBatch() : onRemoveBatch(String(target))
+          action === 'add'
+            ? onAddBatch(
+                activeSheet?.projectId ?? '',
+                activeSheet?.projectName ?? '',
+              )
+            : onRemoveBatch(String(target))
         }
         items={batchItems}
       />
@@ -363,69 +421,13 @@ export function PriceCompareView() {
       onOk: () => removeSheet(id),
     })
 
-  const projectGroups = useMemo(() => {
-    const groups: ProjectGroup[] = []
-    for (const sheet of sheets) {
-      let group = groups.find((item) => item.projectId === sheet.projectId)
-      if (!group) {
-        group = {
-          projectId: sheet.projectId,
-          projectName: sheet.projectName,
-          sheets: [],
-        }
-        groups.push(group)
-      }
-      group.sheets.push(sheet)
-    }
-    return groups
-  }, [sheets])
-
-  const activeProjectId = active?.projectId ?? projectGroups[0]?.projectId ?? ''
-
-  const projectTabItems = useMemo(
-    () =>
-      projectGroups.map((group) => ({
-        key: group.projectId,
-        label: (
-          <span>
-            {projectAbbrOf(projects, group.projectId, group.projectName)}{' '}
-            <Badge count={group.sheets.length} size="small" color="#1677ff" />
-          </span>
-        ),
-      })),
-    [projectGroups, projects],
-  )
-
-  const batchTabItems = useMemo(() => {
-    const items = []
-    for (const group of projectGroups) {
-      if (group.projectId !== activeProjectId) continue
-      for (const sheet of group.sheets) {
-        const missing = countMissing(data, sheet, sheet.rows, brands)
-        items.push({
-          key: sheet.id,
-          closable: sheets.length > 1,
-          label: (
-            <span>
-              <SheetTabLabel
-                sheet={sheet}
-                onRename={(id, name) => patchSheet(id, { name })}
-              />{' '}
-              {missing > 0 ? (
-                <Badge count={missing} size="small" color="#faad14" />
-              ) : null}
-            </span>
-          ),
-        })
-      }
-    }
-    return items
-  }, [projectGroups, activeProjectId, data, brands, sheets.length, patchSheet])
-
-  const switchProject = (projectId: string) => {
-    const group = projectGroups.find((item) => item.projectId === projectId)
-    if (group?.sheets.length) setActiveId(group.sheets[0].id)
-  }
+  const dataDates = data ? Object.keys(data).sort().reverse() : []
+  const defaultRefDate = dataDates[0] ?? ''
+  const defaultRefPeriod =
+    defaultRefDate && data
+      ? (Object.keys(data[defaultRefDate] ?? {})[0] ?? '')
+      : ''
+  const today = dayjs().format('YYYY-MM-DD')
 
   if (loading) {
     return (
@@ -463,21 +465,22 @@ export function PriceCompareView() {
 
       <ProjectBatchTabs
         projects={projects}
-        projectGroups={projectGroups}
-        activeProjectId={activeProjectId}
+        sheets={sheets}
+        data={data}
+        brands={brands}
         activeId={activeId}
-        projectItems={projectTabItems}
-        batchItems={batchTabItems}
-        onSwitchProject={switchProject}
         onSwitchBatch={setActiveId}
-        onAddBatch={() =>
-          addSheet(active?.projectId ?? '', active?.projectName ?? '')
+        patchSheet={patchSheet}
+        onAddBatch={(projectId, projectName) =>
+          addSheet(
+            projectId,
+            projectName,
+            active?.orderDate || today,
+            active?.refDate || defaultRefDate,
+            active?.refPeriod || defaultRefPeriod,
+          )
         }
         onRemoveBatch={(id) => confirmRemoveSheet(id)}
-        onAddProjectBatch={(projectId) => {
-          const project = projects.find((item) => item.id === projectId)
-          if (project) addSheet(project.id, project.abbr || project.name)
-        }}
       />
 
       {active ? (
@@ -510,7 +513,13 @@ export function PriceCompareView() {
             <Button
               type="primary"
               onClick={() =>
-                addSheet(projects[0]?.id ?? '', projects[0]?.abbr ?? '')
+                addSheet(
+                  projects[0]?.id ?? '',
+                  projects[0]?.abbr ?? '',
+                  today,
+                  defaultRefDate,
+                  defaultRefPeriod,
+                )
               }
             >
               新建批次

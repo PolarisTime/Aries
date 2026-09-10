@@ -16,6 +16,21 @@ export const LENGTHS: Record<string, string[]> = {
 
 export const dataKeyOf = (row: PriceRow) => `${row.category}|${row.material}`
 
+/** 12米加价生效的品种(业务规则) */
+const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
+/** 现货价合理上限(元/吨), 超出提示 */
+export const SPOT_PRICE_MAX = 20000
+/** 默认 12 米加价(元/吨) */
+export const DEFAULT_LENGTH_PREMIUM = 30
+
+/** 单据状态与颜色(集中定义, 避免散落) */
+export const SHEET_STATUS_META: Record<string, string> = {
+  报价: '#1677ff',
+  已报: '#faad14',
+  成交: '#389e0d',
+  作废: '#bfbfbf',
+}
+
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
   spec: 200,
@@ -42,8 +57,21 @@ export function netPrice(
     ]
   if (base === undefined) return undefined
   const premium =
-    row.category === '螺纹钢' && row.length === '12米' ? lengthPremium : 0
+    LENGTH_PREMIUM_CATEGORIES.has(row.category) && row.length === '12米'
+      ? lengthPremium
+      : 0
   return base + premium
+}
+
+/** 解析单据有效参照(为空时回退到数据源最新日期/首个时段)。 */
+export function resolveRef(
+  data: PriceData | null,
+  sheet: Pick<PriceSheet, 'refDate' | 'refPeriod'>,
+): { refDate: string; refPeriod: string } {
+  const refDate = sheet.refDate || Object.keys(data ?? {})[0] || ''
+  const refPeriod =
+    sheet.refPeriod || Object.keys(data?.[refDate] ?? {})[0] || ''
+  return { refDate, refPeriod }
 }
 
 export type SheetSummary = {
@@ -175,7 +203,7 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   return next
 }
 
-export function makeRow(category = '螺纹钢'): PriceRow {
+export function makeRow(category: string = CATEGORIES[0]): PriceRow {
   return {
     id: Math.random().toString(36).slice(2, 8),
     category,
@@ -215,7 +243,7 @@ export function makeSheet(
     orderDate,
     refDate,
     refPeriod,
-    lengthPremium: 30,
+    lengthPremium: DEFAULT_LENGTH_PREMIUM,
     locked: false,
     inputs: {},
     rows: defaultSheetRows(),
