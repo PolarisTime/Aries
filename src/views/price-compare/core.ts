@@ -18,12 +18,12 @@ export const dataKeyOf = (row: PriceRow) => `${row.category}|${row.material}`
 
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
-  spec: 240,
-  ton: 60,
-  net: 62,
-  spot: 66,
-  diff: 58,
-  action: 40,
+  spec: 200,
+  action: 34,
+  ton: 54,
+  net: 58,
+  spot: 62,
+  diff: 54,
 } as const
 
 /** 网价: 参照日期+时段, 命中则返回并叠加 12 米加价。 */

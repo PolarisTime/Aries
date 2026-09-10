@@ -25,7 +25,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { modal } from '@/utils/antd-app'
 import { BrandSettingsDrawer } from './BrandSettingsDrawer'
-import { CATEGORIES, countMissing, makeRow } from './core'
+import { countMissing } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { Brand } from './types'
 import { usePriceCompareData } from './usePriceCompareData'
@@ -110,10 +110,6 @@ export function PriceCompareView() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
-
-  const addPriceRow = (category = '螺纹钢') => {
-    setRows((list) => [...list, makeRow(category)])
-  }
 
   const openSettings = () => {
     form.setFieldsValue({ brands: brands.map((brand) => ({ ...brand })) })
@@ -230,9 +226,6 @@ export function PriceCompareView() {
               onClick={redo}
             />
           </Tooltip>
-          <Button size="small" onClick={() => addPriceRow(CATEGORIES[0])}>
-            ＋规格行
-          </Button>
         </Space>
       </div>
 

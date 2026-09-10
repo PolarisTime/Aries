@@ -34,6 +34,7 @@ import {
   buildGridRows,
   CATEGORIES,
   computeSummary,
+  makeRow,
   moveItem,
   netPrice,
   SHEET_COLUMN_WIDTH,
@@ -71,6 +72,7 @@ type ColumnContext = {
   onReorderBrands: (from: number, to: number) => void
   bestGroups: string[]
   onToggleBest: (category: string) => void
+  onAddRow: (category?: string) => void
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -117,6 +119,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     onReorderBrands,
     bestGroups,
     onToggleBest,
+    onAddRow,
     spotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(varieties)
@@ -139,6 +142,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           return (
             <Flex gap="small" align="center">
               <b>{row.category}</b>
+              <Button size="small" onClick={() => onAddRow(row.category)}>
+                ＋行
+              </Button>
               <Button
                 size="small"
                 type={active ? 'primary' : 'default'}
@@ -180,6 +186,29 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           />
         )
       },
+    },
+    {
+      title: '',
+      width: SHEET_COLUMN_WIDTH.action,
+      align: 'center',
+      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
+      render: (_, row) =>
+        row.isGroup || !row.rowId ? null : (
+          <Popconfirm
+            title="删除该行？"
+            okText="删除"
+            cancelText="取消"
+            disabled={locked}
+            onConfirm={() => removeRow(row.rowId ?? '')}
+          >
+            <Button
+              size="small"
+              type="text"
+              disabled={locked}
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        ),
     },
     {
       title: '吨',
@@ -326,29 +355,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         },
       ],
     ),
-    {
-      title: '',
-      width: SHEET_COLUMN_WIDTH.action,
-      align: 'center',
-      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
-      render: (_, row) =>
-        row.isGroup || !row.rowId ? null : (
-          <Popconfirm
-            title="删除该行？"
-            okText="删除"
-            cancelText="取消"
-            disabled={locked}
-            onConfirm={() => removeRow(row.rowId ?? '')}
-          >
-            <Button
-              size="small"
-              type="text"
-              disabled={locked}
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        ),
-    },
   ]
 }
 
@@ -689,6 +695,8 @@ export function SheetPanel(props: Props) {
         ? current.filter((item) => item !== category)
         : [...current, category],
     )
+  const onAddRow = (category?: string) =>
+    setRows((list) => [...list, makeRow(category ?? '螺纹钢')])
 
   const capture = async (copy: boolean) => {
     if (!captureRef.current) return
@@ -741,6 +749,7 @@ export function SheetPanel(props: Props) {
     onReorderBrands,
     bestGroups,
     onToggleBest,
+    onAddRow,
     spotRef,
   })
   const dataSource = useMemo(() => buildGridRows(rows), [rows])

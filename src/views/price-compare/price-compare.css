@@ -128,3 +128,23 @@
 .price-compare-dim {
   opacity: 0.28;
 }
+
+/* 紧凑表格: 减小单元格留白, 提高信息密度 */
+.price-compare-page .ant-table.ant-table-small .ant-table-tbody > tr > td,
+.price-compare-page .ant-table.ant-table-small .ant-table-thead > tr > th {
+  padding: 3px 6px !important;
+}
+
+.price-compare-page .ant-table.ant-table-middle .ant-table-tbody > tr > td,
+.price-compare-page .ant-table.ant-table-middle .ant-table-thead > tr > th {
+  padding: 6px 8px !important;
+}
+
+.price-compare-page .ant-table-cell .ant-select-selection-item,
+.price-compare-page .ant-table-cell .ant-select-selection-placeholder {
+  font-size: 12px;
+}
+
+.price-compare-page .ant-table-tbody > tr > td {
+  line-height: 1.4;
+}
