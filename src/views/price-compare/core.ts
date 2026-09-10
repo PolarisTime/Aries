@@ -35,7 +35,6 @@ export const SHEET_STATUS_META: Record<string, string> = {
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
   spec: 200,
-  action: 34,
   ton: 54,
   net: 58,
   spot: 62,

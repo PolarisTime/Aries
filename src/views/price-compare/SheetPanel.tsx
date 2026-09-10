@@ -73,7 +73,6 @@ type ColumnContext = {
   getTon: (rowId: string) => number | undefined
   setInput: (key: string, patch: { ton?: number; spot?: number }) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
-  removeRow: (rowId: string) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
   bestOn: boolean
@@ -121,7 +120,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     getTon,
     setInput,
     patchRow,
-    removeRow,
     moveFocus,
     bestOn,
     onReorderBrands,
@@ -189,30 +187,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           />
         )
       },
-    },
-    {
-      title: '',
-      width: SHEET_COLUMN_WIDTH.action,
-      fixed: 'left',
-      align: 'center',
-      render: (_, row) => (
-        <span className="price-compare-row-action">
-          <Popconfirm
-            title="删除该行？"
-            okText="删除"
-            cancelText="取消"
-            disabled={locked}
-            onConfirm={() => removeRow(row.rowId)}
-          >
-            <Button
-              size="small"
-              type="text"
-              disabled={locked}
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </span>
-      ),
     },
     {
       title: '吨',
@@ -409,6 +383,8 @@ function SheetHeader({
   onOpenSettings,
   bestOn,
   onToggleBest,
+  selectedCount,
+  onRemoveSelected,
   summary,
   brandCount,
   lengthPremium,
@@ -429,6 +405,8 @@ function SheetHeader({
   onOpenSettings: () => void
   bestOn: boolean
   onToggleBest: () => void
+  selectedCount: number
+  onRemoveSelected: () => void
   summary: ReturnType<typeof computeSummary>
 }) {
   return (
@@ -523,6 +501,22 @@ function SheetHeader({
           >
             {bestOn ? '取消最优' : '一键最优'}
           </Button>
+          <Popconfirm
+            title={`删除选中的 ${selectedCount} 行？`}
+            okText="删除"
+            cancelText="取消"
+            disabled={locked || selectedCount === 0}
+            onConfirm={onRemoveSelected}
+          >
+            <Button
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              disabled={locked || selectedCount === 0}
+            >
+              删除
+            </Button>
+          </Popconfirm>
           <Button size="small" disabled={locked} onClick={onAddRow}>
             ＋规格行
           </Button>
@@ -648,6 +642,7 @@ export function SheetPanel(props: Props) {
     [varieties],
   )
   const [bestOn, setBestOn] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<React.Key[]>([])
   const locked = sheet.locked
 
   const getSpot = (brandName: string, rowId: string) =>
@@ -664,8 +659,12 @@ export function SheetPanel(props: Props) {
     setRows((list) =>
       list.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
     )
-  const removeRow = (rowId: string) =>
-    setRows((list) => list.filter((row) => row.id !== rowId))
+  const removeRows = (rowIds: React.Key[]) => {
+    const ids = new Set(rowIds.map(String))
+    if (!ids.size) return
+    setRows((list) => list.filter((row) => !ids.has(row.id)))
+    setSelectedIds([])
+  }
 
   const moveFocus = (brandName: string, rowId: string, delta: number) => {
     const index = rows.findIndex((row) => row.id === rowId)
@@ -738,7 +737,6 @@ export function SheetPanel(props: Props) {
     getTon,
     setInput,
     patchRow,
-    removeRow,
     moveFocus,
     bestOn,
     onReorderBrands,
@@ -771,6 +769,8 @@ export function SheetPanel(props: Props) {
           onOpenSettings={onOpenSettings}
           bestOn={bestOn}
           onToggleBest={() => setBestOn((value) => !value)}
+          selectedCount={selectedIds.length}
+          onRemoveSelected={() => removeRows(selectedIds)}
           summary={summary}
           brandCount={brands.length}
           lengthPremium={lengthPremium}
@@ -785,10 +785,14 @@ export function SheetPanel(props: Props) {
           columns={columns}
           dataSource={dataSource}
           pagination={false}
+          rowSelection={{
+            selectedRowKeys: selectedIds,
+            onChange: (keys) => setSelectedIds(keys),
+            getCheckboxProps: () => ({ disabled: locked }),
+          }}
           scroll={{
             x:
               SHEET_COLUMN_WIDTH.spec +
-              SHEET_COLUMN_WIDTH.action +
               SHEET_COLUMN_WIDTH.ton +
               brands.length *
                 (SHEET_COLUMN_WIDTH.net +
