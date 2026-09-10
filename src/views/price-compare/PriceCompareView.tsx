@@ -9,33 +9,40 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Empty,
   Flex,
-  Input,
   Segmented,
   Select,
   Skeleton,
   Space,
-  Tabs,
+  Tag,
   Tooltip,
   Tour,
   Typography,
   Watermark,
 } from 'antd'
-import dayjs from 'dayjs'
 import { useEffect, useRef, useState } from 'react'
 import { modal } from '@/utils/antd-app'
-import { countMissing, moveItem, resolveRef, SHEET_STATUS_META } from './core'
+import { countMissing, moveItem, resolveRef } from './core'
 import { ReportSettingsModal } from './ReportSettingsModal'
 import { SheetPanel } from './SheetPanel'
-import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
+import type { PriceSheet, ProjectOption } from './types'
 import { useMaterialBrands } from './useMaterialBrands'
 import { usePriceCompareData } from './usePriceCompareData'
 import { useSheetsStore } from './useSheetsStore'
+import './price-compare.css'
 
 const { Text } = Typography
 const TOUR_KEY = 'aries-price-compare-tour'
+const SCHEMA_DEFAULT_PREMIUM = 30
+
+function toggleFullscreen(): void {
+  if (document.fullscreenElement) {
+    void document.exitFullscreen()
+  } else {
+    void document.getElementById('price-compare-root')?.requestFullscreen()
+  }
+}
 
 function projectAbbrOf(
   projects: ProjectOption[],
@@ -48,287 +55,37 @@ function projectAbbrOf(
   return fallback || '未指定项目'
 }
 
-type ProjectGroup = {
-  projectId: string
-  projectName: string
-  sheets: PriceSheet[]
-}
-
-function SheetTabLabel({
-  sheet,
-  onRename,
-}: {
-  sheet: { id: string; name: string; status: string; locked: boolean }
-  onRename: (id: string, name: string) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(sheet.name)
-  if (editing) {
-    return (
-      <Input
-        size="small"
-        autoFocus
-        style={{ width: 120 }}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={() => {
-          setEditing(false)
-          if (draft.trim()) onRename(sheet.id, draft.trim())
-        }}
-        onPressEnter={() => {
-          setEditing(false)
-          if (draft.trim()) onRename(sheet.id, draft.trim())
-        }}
-        onClick={(event) => event.stopPropagation()}
-      />
-    )
-  }
-  return (
-    <span
-      onDoubleClick={() => {
-        setDraft(sheet.name)
-        setEditing(true)
-      }}
-      title="双击重命名"
-    >
-      {sheet.name}{' '}
-      <span style={{ color: SHEET_STATUS_META[sheet.status] ?? '#8c8c8c' }}>
-        ●
-      </span>
-      {sheet.locked ? <LockOutlined style={{ marginLeft: 4 }} /> : null}
-    </span>
-  )
-}
-
-function toggleFullscreen(): void {
-  if (document.fullscreenElement) {
-    void document.exitFullscreen()
-  } else {
-    void document.getElementById('price-compare-root')?.requestFullscreen()
-  }
-}
-
-type PriceCompareHeaderProps = {
-  density: 'small' | 'middle' | 'large'
-  fullscreen: boolean
-  canUndo: boolean
-  canRedo: boolean
-  onDensityChange: (value: 'small' | 'middle' | 'large') => void
-  onToggleFullscreen: () => void
-  onUndo: () => void
-  onRedo: () => void
-}
-
-/** 页面头: 标题 + 密度/全屏/撤销/重做。 */
-function PriceCompareHeader({
-  density,
-  fullscreen,
-  canUndo,
-  canRedo,
-  onDensityChange,
-  onToggleFullscreen,
-  onUndo,
-  onRedo,
-}: PriceCompareHeaderProps) {
-  return (
-    <div className="price-compare-head">
-      <div>
-        <h1>报单比价</h1>
-        <span className="price-compare-desc">
-          项目 → 批次 → 类别分组 · Ctrl+Z 撤销 · 锁定防改 · 一键截图
-        </span>
-      </div>
-      <Space>
-        <Segmented
-          size="small"
-          value={density}
-          onChange={(value) =>
-            onDensityChange(value as 'small' | 'middle' | 'large')
-          }
-          options={[
-            { label: '紧凑', value: 'small' },
-            { label: '适中', value: 'middle' },
-            { label: '宽松', value: 'large' },
-          ]}
-        />
-        <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
-          <Button
-            size="small"
-            icon={
-              fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
-            }
-            onClick={onToggleFullscreen}
-          />
-        </Tooltip>
-        <Tooltip title="撤销 (Ctrl+Z)">
-          <Button
-            size="small"
-            icon={<UndoOutlined />}
-            disabled={!canUndo}
-            onClick={onUndo}
-          />
-        </Tooltip>
-        <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
-          <Button
-            size="small"
-            icon={<RedoOutlined />}
-            disabled={!canRedo}
-            onClick={onRedo}
-          />
-        </Tooltip>
-      </Space>
-    </div>
-  )
-}
-
-type ProjectBatchTabsProps = {
-  projects: ProjectOption[]
-  sheets: PriceSheet[]
-  data: PriceData | null
-  brands: Brand[]
-  activeId: string
-  onSwitchBatch: (id: string) => void
-  patchSheet: (
-    id: string,
-    patch: Partial<PriceSheet>,
-    coalesceKey?: string,
-  ) => void
-  onAddBatch: (projectId: string, projectName: string) => void
-  onRemoveBatch: (id: string) => void
-}
-
-/** 大 Tab(项目) -> 批次 Tab。 */
-function ProjectBatchTabs({
-  projects,
-  sheets,
-  data,
-  brands,
-  activeId,
-  onSwitchBatch,
-  patchSheet,
-  onAddBatch,
-  onRemoveBatch,
-}: ProjectBatchTabsProps) {
-  const projectGroups: ProjectGroup[] = []
+function projectGroupsOf(
+  sheets: PriceSheet[],
+): { projectId: string; projectName: string; sheets: PriceSheet[] }[] {
+  const byId = new Map<
+    string,
+    { projectId: string; projectName: string; sheets: PriceSheet[] }
+  >()
   for (const sheet of sheets) {
-    let group = projectGroups.find((item) => item.projectId === sheet.projectId)
+    let group = byId.get(sheet.projectId)
     if (!group) {
       group = {
         projectId: sheet.projectId,
         projectName: sheet.projectName,
         sheets: [],
       }
-      projectGroups.push(group)
+      byId.set(sheet.projectId, group)
     }
     group.sheets.push(sheet)
   }
-  const activeSheet = sheets.find((sheet) => sheet.id === activeId)
-  const activeProjectId =
-    activeSheet?.projectId ?? projectGroups[0]?.projectId ?? ''
-  const switchProject = (projectId: string) => {
-    const group = projectGroups.find((item) => item.projectId === projectId)
-    if (group?.sheets.length) onSwitchBatch(group.sheets[0].id)
-  }
-  const projectItems = projectGroups.map((group) => ({
-    key: group.projectId,
-    label: (
-      <span>
-        {projectAbbrOf(projects, group.projectId, group.projectName)}{' '}
-        <Badge count={group.sheets.length} size="small" color="#1677ff" />
-      </span>
-    ),
-  }))
-  const batchItems = []
-  for (const group of projectGroups) {
-    if (group.projectId !== activeProjectId) continue
-    for (const sheet of group.sheets) {
-      const missing = countMissing(
-        data,
-        { ...sheet, ...resolveRef(data, sheet) },
-        sheet.rows,
-        brands,
-      )
-      batchItems.push({
-        key: sheet.id,
-        closable: sheets.length > 1,
-        label: (
-          <span>
-            <SheetTabLabel
-              sheet={sheet}
-              onRename={(id, name) => patchSheet(id, { name })}
-            />{' '}
-            {missing > 0 ? (
-              <Badge count={missing} size="small" color="#faad14" />
-            ) : null}
-          </span>
-        ),
-      })
-    }
-  }
-  const availableProjects = (() => {
-    const options: { value: string; label: string }[] = []
-    for (const project of projects) {
-      let used = false
-      for (const group of projectGroups) {
-        if (group.projectId === project.id) {
-          used = true
-          break
-        }
-      }
-      if (!used)
-        options.push({
-          value: project.id,
-          label: `${project.abbr} · ${project.name}`,
-        })
-    }
-    return options
-  })()
-
-  return (
-    <>
-      <Tabs
-        size="small"
-        activeKey={activeProjectId}
-        onChange={switchProject}
-        items={projectItems}
-        tabBarExtraContent={
-          <Select
-            size="small"
-            style={{ width: 190 }}
-            placeholder="＋ 项目批次"
-            showSearch={{ optionFilterProp: 'label' }}
-            value={null}
-            options={availableProjects}
-            onChange={(projectId) => {
-              const project = projects.find((item) => item.id === projectId)
-              if (project) onAddBatch(project.id, project.abbr || project.name)
-            }}
-          />
-        }
-      />
-      <Tabs
-        type="editable-card"
-        size="small"
-        activeKey={activeId}
-        onChange={onSwitchBatch}
-        onEdit={(target, action) =>
-          action === 'add'
-            ? onAddBatch(
-                activeSheet?.projectId ?? '',
-                activeSheet?.projectName ?? '',
-              )
-            : onRemoveBatch(String(target))
-        }
-        items={batchItems}
-      />
-    </>
-  )
+  return [...byId.values()]
 }
 
-/** 比价页: 多单据 + 品牌分项对比。 */
+/** 报单比价页: 顶部胶囊(项目/批次) + 单据表格。 */
 export function PriceCompareView() {
   const { data, varieties, projects, catalog, loading, error } =
     usePriceCompareData()
+  const materialBrands = useMaterialBrands()
+  const brandOptions = materialBrands.length
+    ? materialBrands
+    : catalog.map((item) => item.name)
+
   const store = useSheetsStore()
   const {
     sheets,
@@ -336,7 +93,7 @@ export function PriceCompareView() {
     active,
     rows,
     brands,
-    settings = { lengthPremium: 30 },
+    settings = { lengthPremium: SCHEMA_DEFAULT_PREMIUM },
     setSettings,
     canUndo,
     canRedo,
@@ -356,33 +113,23 @@ export function PriceCompareView() {
   const [fullscreen, setFullscreen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
-  const materialBrands = useMaterialBrands()
-  const brandOptions = materialBrands.length
-    ? materialBrands
-    : catalog.map((item) => item.name)
-
-  const brandSelectRef = useRef<HTMLSpanElement>(null)
   const spotRef = useRef<HTMLSpanElement>(null)
   const captureBtnRef = useRef<HTMLSpanElement>(null)
+  const initialized = useRef(false)
 
-  // 数据源就绪后, 首次访问展示引导; 并按品牌数据源初始化默认品牌
   useEffect(() => {
-    if (!catalog.length) return
-    if (brands.length === 0) {
+    if (initialized.current || !projects.length) return
+    initialized.current = true
+    assignProjectToUnassigned(
+      projects[0].id,
+      projects[0].abbr || projects[0].name,
+    )
+    if (!brands.length)
       setBrands(
         catalog.map((item) => ({ name: item.name, freight: item.freight })),
       )
-    }
     if (!localStorage.getItem(TOUR_KEY)) setTourOpen(true)
-  }, [catalog, brands.length, setBrands])
-
-  useEffect(() => {
-    if (projects.length)
-      assignProjectToUnassigned(
-        projects[0].id,
-        projects[0].abbr || projects[0].name,
-      )
-  }, [projects.length])
+  }, [projects, catalog, brands.length, assignProjectToUnassigned, setBrands])
 
   useEffect(() => {
     const handler = () => setFullscreen(Boolean(document.fullscreenElement))
@@ -406,24 +153,27 @@ export function PriceCompareView() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
 
-  const openSettings = () => setSettingsOpen(true)
-  const confirmRemoveSheet = (id: string) =>
-    modal.confirm({
-      title: '删除该单据？',
-      content: '单据及其填写内容将一并删除',
-      okText: '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: () => removeSheet(id),
-    })
-
+  const projectGroups = projectGroupsOf(sheets)
+  const currentGroup =
+    projectGroups.find((group) => group.projectId === active?.projectId) ??
+    projectGroups[0]
   const dataDates = data ? Object.keys(data).sort().reverse() : []
   const defaultRefDate = dataDates[0] ?? ''
   const defaultRefPeriod =
     defaultRefDate && data
       ? (Object.keys(data[defaultRefDate] ?? {})[0] ?? '')
       : ''
-  const today = dayjs().format('YYYY-MM-DD')
+  const today = new Date().toISOString().slice(0, 10)
+
+  const confirmRemoveSheet = (id: string) =>
+    modal.confirm({
+      title: '删除该批次？',
+      content: '批次及其填写内容将一并删除',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => removeSheet(id),
+    })
 
   if (loading) {
     return (
@@ -432,7 +182,6 @@ export function PriceCompareView() {
       </div>
     )
   }
-
   if (error) {
     return (
       <div className="price-compare-page">
@@ -448,36 +197,167 @@ export function PriceCompareView() {
 
   return (
     <div id="price-compare-root" className="price-compare-page">
-      <PriceCompareHeader
-        density={density}
-        onDensityChange={setDensity}
-        fullscreen={fullscreen}
-        onToggleFullscreen={toggleFullscreen}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={undo}
-        onRedo={redo}
-      />
+      <div className="price-compare-head">
+        <div>
+          <h1>报单比价</h1>
+          <span className="price-compare-desc">
+            项目 → 批次 → 类别分组 · Ctrl+Z 撤销 · 锁定防改 · 一键截图
+          </span>
+        </div>
+        <Space>
+          <Segmented
+            size="small"
+            value={density}
+            onChange={(value) =>
+              setDensity(value as 'small' | 'middle' | 'large')
+            }
+            options={[
+              { label: '紧凑', value: 'small' },
+              { label: '适中', value: 'middle' },
+              { label: '宽松', value: 'large' },
+            ]}
+          />
+          <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
+            <Button
+              size="small"
+              icon={
+                fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
+              }
+              onClick={toggleFullscreen}
+            />
+          </Tooltip>
+          <Tooltip title="撤销 (Ctrl+Z)">
+            <Button
+              size="small"
+              icon={<UndoOutlined />}
+              disabled={!canUndo}
+              onClick={undo}
+            />
+          </Tooltip>
+          <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
+            <Button
+              size="small"
+              icon={<RedoOutlined />}
+              disabled={!canRedo}
+              onClick={redo}
+            />
+          </Tooltip>
+        </Space>
+      </div>
 
-      <ProjectBatchTabs
-        projects={projects}
-        sheets={sheets}
-        data={data}
-        brands={brands}
-        activeId={activeId}
-        onSwitchBatch={setActiveId}
-        patchSheet={patchSheet}
-        onAddBatch={(projectId, projectName) =>
-          addSheet(
-            projectId,
-            projectName,
-            active?.orderDate || today,
-            active?.refDate || defaultRefDate,
-            active?.refPeriod || defaultRefPeriod,
-          )
-        }
-        onRemoveBatch={(id) => confirmRemoveSheet(id)}
-      />
+      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          项目
+        </Text>
+        {projectGroups.map((group) => (
+          <Tag.CheckableTag
+            key={group.projectId}
+            checked={group.projectId === currentGroup?.projectId}
+            onChange={() => group.sheets[0] && setActiveId(group.sheets[0].id)}
+          >
+            {projectAbbrOf(projects, group.projectId, group.projectName)}
+          </Tag.CheckableTag>
+        ))}
+        <Select
+          size="small"
+          style={{ width: 170 }}
+          placeholder="＋ 项目批次"
+          showSearch={{ optionFilterProp: 'label' }}
+          value={null}
+          options={projects
+            .filter(
+              (project) =>
+                !projectGroups.some((group) => group.projectId === project.id),
+            )
+            .map((project) => ({
+              value: project.id,
+              label: `${project.abbr} · ${project.name}`,
+            }))}
+          onChange={(projectId) => {
+            const project = projects.find((item) => item.id === projectId)
+            if (project)
+              addSheet(
+                project.id,
+                project.abbr || project.name,
+                today,
+                defaultRefDate,
+                defaultRefPeriod,
+              )
+          }}
+        />
+      </Flex>
+
+      <Flex
+        gap={12}
+        align="center"
+        wrap="wrap"
+        justify="space-between"
+        style={{ marginBottom: 8 }}
+      >
+        <Flex gap={8} align="center">
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            批次
+          </Text>
+          <Segmented
+            value={activeId}
+            onChange={(value) => setActiveId(String(value))}
+            options={(currentGroup?.sheets ?? []).map((sheet) => ({
+              value: sheet.id,
+              label: (
+                <span>
+                  {sheet.name}
+                  {sheet.locked ? (
+                    <LockOutlined style={{ marginLeft: 4 }} />
+                  ) : null}
+                  {countMissing(
+                    data,
+                    { ...sheet, ...resolveRef(data, sheet) },
+                    sheet.rows,
+                    brands,
+                  ) > 0 ? (
+                    <Badge
+                      count={countMissing(
+                        data,
+                        { ...sheet, ...resolveRef(data, sheet) },
+                        sheet.rows,
+                        brands,
+                      )}
+                      size="small"
+                      color="#faad14"
+                      style={{ marginLeft: 6 }}
+                    />
+                  ) : null}
+                </span>
+              ),
+            }))}
+          />
+        </Flex>
+        <Space>
+          <Button
+            size="small"
+            onClick={() =>
+              addSheet(
+                currentGroup?.projectId ?? '',
+                currentGroup?.projectName ?? '',
+                today,
+                defaultRefDate,
+                defaultRefPeriod,
+              )
+            }
+          >
+            ＋ 新批次
+          </Button>
+          {active && currentGroup && currentGroup.sheets.length > 1 ? (
+            <Button
+              size="small"
+              danger
+              onClick={() => confirmRemoveSheet(active.id)}
+            >
+              删除批次
+            </Button>
+          ) : null}
+        </Space>
+      </Flex>
 
       {active ? (
         <Watermark
@@ -492,37 +372,22 @@ export function PriceCompareView() {
             brands={brands}
             rows={rows}
             density={density}
+            lengthPremium={settings?.lengthPremium ?? SCHEMA_DEFAULT_PREMIUM}
             patchSheet={patchSheet}
             setRows={setRows}
-            onOpenSettings={openSettings}
-            onCopySheet={copyActiveSheet}
-            lengthPremium={settings?.lengthPremium ?? 30}
             onReorderBrands={(from, to) =>
               setBrands((current) => moveItem(current, from, to))
             }
+            onOpenSettings={() => setSettingsOpen(true)}
+            onCopySheet={copyActiveSheet}
             spotRef={spotRef}
             captureBtnRef={captureBtnRef}
           />
         </Watermark>
       ) : (
-        <Card>
-          <Empty description="暂无批次">
-            <Button
-              type="primary"
-              onClick={() =>
-                addSheet(
-                  projects[0]?.id ?? '',
-                  projects[0]?.abbr ?? '',
-                  today,
-                  defaultRefDate,
-                  defaultRefPeriod,
-                )
-              }
-            >
-              新建批次
-            </Button>
-          </Empty>
-        </Card>
+        <Flex justify="center" style={{ padding: 40 }}>
+          <Empty description="暂无批次" />
+        </Flex>
       )}
 
       <Flex justify="flex-end" style={{ marginTop: 8 }}>
@@ -535,7 +400,7 @@ export function PriceCompareView() {
         open={settingsOpen}
         brandOptions={brandOptions}
         brands={brands}
-        lengthPremium={settings?.lengthPremium ?? 30}
+        lengthPremium={settings?.lengthPremium ?? SCHEMA_DEFAULT_PREMIUM}
         onClose={() => setSettingsOpen(false)}
         onSave={({ brands: nextBrands, lengthPremium }) => {
           setBrands(nextBrands)
@@ -551,13 +416,13 @@ export function PriceCompareView() {
         }}
         steps={[
           {
-            title: '选择品牌',
-            description: '勾选参与比价的品牌，网价自动取自行情数据源',
-            target: () => brandSelectRef.current ?? document.body,
+            title: '选择项目/批次',
+            description: '顶部胶囊切换项目与批次，批次即一次报价',
+            target: () => document.body,
           },
           {
             title: '录入现货价',
-            description: '支持 Excel 复制一列粘贴、回车/上下键切换、锁定防改',
+            description: '逐格录入现货价，回车/上下移动；行可拖拽排序',
             target: () => spotRef.current ?? document.body,
           },
           {

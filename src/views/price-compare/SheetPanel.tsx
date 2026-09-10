@@ -4,6 +4,7 @@ import {
   CaretRightOutlined,
   CopyOutlined,
   DeleteOutlined,
+  HolderOutlined,
   InfoCircleOutlined,
   LockOutlined,
   SettingOutlined,
@@ -36,6 +37,7 @@ import {
   CATEGORIES,
   computeSummary,
   makeRow,
+  moveItem,
   netPrice,
   resolveRef,
   SHEET_COLUMN_WIDTH,
@@ -140,6 +142,27 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   }
 
   return [
+    {
+      title: '',
+      width: 24,
+      fixed: 'left',
+      align: 'center',
+      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
+      render: (_, row) =>
+        row.isGroup || !row.rowId ? null : (
+          <span
+            className="price-compare-row-drag"
+            draggable
+            title="拖拽调整行顺序"
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = 'move'
+              event.dataTransfer.setData('text/row-id', row.rowId ?? '')
+            }}
+          >
+            <HolderOutlined />
+          </span>
+        ),
+    },
     {
       title: '商品（类别 / 材质 / 规格 / 长度）',
       dataIndex: 'base',
@@ -690,6 +713,17 @@ export function SheetPanel(props: Props) {
         ? current.filter((item) => item !== category)
         : [...current, category],
     )
+  const onReorderRow = (fromId: string, toId: string) =>
+    setRows((list) => {
+      const from = list.findIndex((row) => row.id === fromId)
+      const to = list.findIndex((row) => row.id === toId)
+      if (from < 0 || to < 0 || from === to) return list
+      const targetCategory = list[to].category
+      return moveItem(list, from, to).map((row) =>
+        row.id === fromId ? { ...row, category: targetCategory } : row,
+      )
+    })
+
   const onAddRow = (category?: string) => {
     const targetCategory = category ?? CATEGORIES[0]
     const variety = varieties.find((item) => item.category === targetCategory)
@@ -815,6 +849,18 @@ export function SheetPanel(props: Props) {
                   SHEET_COLUMN_WIDTH.diff),
           }}
           rowClassName={(row) => (row.isGroup ? 'price-compare-group-row' : '')}
+          onRow={(row) =>
+            row.isGroup || !row.rowId
+              ? {}
+              : {
+                  onDragOver: (event) => event.preventDefault(),
+                  onDrop: (event) => {
+                    event.preventDefault()
+                    const fromId = event.dataTransfer.getData('text/row-id')
+                    if (fromId) onReorderRow(fromId, row.rowId ?? '')
+                  },
+                }
+          }
           expandIcon={({ expanded, onExpand, record }) =>
             record.isGroup ? (
               <button
