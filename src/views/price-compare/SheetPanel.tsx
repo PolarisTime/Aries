@@ -804,12 +804,19 @@ export function SheetPanel(props: Props) {
   ) =>
     setRows((list) => {
       const inGroup = list.filter((row) => row.groupId === groupId)
-      const others = list.filter((row) => row.groupId !== groupId)
       const from = inGroup.findIndex((row) => row.id === fromId)
       const to = inGroup.findIndex((row) => row.id === toId)
       if (from < 0 || to < 0 || from === to) return list
       const insert = from < to ? (after ? to : to - 1) : after ? to + 1 : to
-      return [...others, ...moveItem(inGroup, from, insert)]
+      const reordered = moveItem(inGroup, from, insert)
+      const known = new Set(sheet.groups.map((group) => group.id))
+      const next: PriceRow[] = []
+      for (const group of sheet.groups) {
+        if (group.id === groupId) next.push(...reordered)
+        else next.push(...list.filter((row) => row.groupId === group.id))
+      }
+      next.push(...list.filter((row) => !known.has(row.groupId)))
+      return next
     })
 
   const addGroup = () => {

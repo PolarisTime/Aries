@@ -219,14 +219,9 @@
   border-bottom: 2px solid var(--theme-primary) !important;
 }
 
-/* 分组堆叠: 组间分隔 */
+/* 分组堆叠: 组间距(不用分隔线, 避免多余细线) */
 .price-compare-group {
-  margin-top: 12px;
-}
-
-.price-compare-group + .price-compare-group {
-  border-top: 1px solid var(--theme-border-subtle);
-  padding-top: 8px;
+  margin-top: 16px;
 }
 
 .price-compare-group-head {
