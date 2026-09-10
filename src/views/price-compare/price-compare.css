@@ -124,3 +124,7 @@
   color: rgba(0, 0, 0, 0.35);
   user-select: none;
 }
+
+.price-compare-dim {
+  opacity: 0.28;
+}

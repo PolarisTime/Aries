@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeRow, makeSheet } from './core'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
 const LS_KEY = 'aries-price-compare-v1'
+const HISTORY_LIMIT = 50
+const COALESCE_MS = 800
 
-type PersistedState = {
+type Snapshot = {
   sheets: PriceSheet[]
   activeId: string
   rows: PriceRow[]
   brands: Brand[]
 }
 
-function defaultState(): PersistedState {
+function defaultState(): Snapshot {
   const a = makeSheet(
     '9月6日报单',
     '',
@@ -35,11 +37,11 @@ function defaultState(): PersistedState {
   }
 }
 
-function loadState(): PersistedState {
+function loadState(): Snapshot {
   try {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as PersistedState
+      const parsed = JSON.parse(raw) as Snapshot
       if (parsed.sheets?.length && parsed.rows) return parsed
     }
   } catch {
@@ -54,73 +56,173 @@ export type SheetsStore = {
   active: PriceSheet
   rows: PriceRow[]
   brands: Brand[]
+  canUndo: boolean
+  canRedo: boolean
+  undo: () => void
+  redo: () => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   setActiveId: (id: string) => void
-  patchSheet: (id: string, patch: Partial<PriceSheet>) => void
+  patchSheet: (
+    id: string,
+    patch: Partial<PriceSheet>,
+    coalesceKey?: string,
+  ) => void
   addSheet: (projectId: string) => void
   removeSheet: (id: string) => void
 }
 
-/** 多单据状态 + 本地持久化(后续可替换为后端保存)。 */
+type History = {
+  past: Snapshot[]
+  future: Snapshot[]
+  lastKey: string
+  lastTime: number
+}
+
+/** 多单据状态 + 撤销/重做 + 本地持久化(后续可替换为后端保存)。 */
 export function useSheetsStore(): SheetsStore {
-  const [state, setState] = useState<PersistedState>(() => loadState())
-  const { sheets, activeId, rows, brands } = state
+  const [state, setState] = useState<Snapshot>(() => loadState())
+  const [, forceRender] = useState(0)
+  const stateRef = useRef(state)
+  const historyRef = useRef<History>({
+    past: [],
+    future: [],
+    lastKey: '',
+    lastTime: 0,
+  })
 
   useEffect(() => {
+    stateRef.current = state
     localStorage.setItem(LS_KEY, JSON.stringify(state))
   }, [state])
 
+  const commit = useCallback((next: Snapshot, coalesceKey?: string) => {
+    const history = historyRef.current
+    const now = Date.now()
+    const coalesce =
+      Boolean(coalesceKey) &&
+      coalesceKey === history.lastKey &&
+      now - history.lastTime < COALESCE_MS
+    if (!coalesce) {
+      history.past = [
+        ...history.past.slice(-(HISTORY_LIMIT - 1)),
+        stateRef.current,
+      ]
+      history.future = []
+    }
+    history.lastKey = coalesceKey ?? ''
+    history.lastTime = now
+    stateRef.current = next
+    setState(next)
+    forceRender((version) => version + 1)
+  }, [])
+
+  const apply = useCallback(
+    (updater: (current: Snapshot) => Snapshot, coalesceKey?: string) => {
+      const next = updater(stateRef.current)
+      if (next === stateRef.current) return
+      commit(next, coalesceKey)
+    },
+    [commit],
+  )
+
+  const undo = useCallback(() => {
+    const history = historyRef.current
+    if (!history.past.length) return
+    const target = history.past[history.past.length - 1]
+    history.past = history.past.slice(0, -1)
+    history.future = [stateRef.current, ...history.future].slice(
+      0,
+      HISTORY_LIMIT,
+    )
+    history.lastKey = ''
+    stateRef.current = target
+    setState(target)
+    forceRender((version) => version + 1)
+  }, [])
+
+  const redo = useCallback(() => {
+    const history = historyRef.current
+    if (!history.future.length) return
+    const target = history.future[0]
+    history.future = history.future.slice(1)
+    history.past = [
+      ...history.past.slice(-(HISTORY_LIMIT - 1)),
+      stateRef.current,
+    ]
+    history.lastKey = ''
+    stateRef.current = target
+    setState(target)
+    forceRender((version) => version + 1)
+  }, [])
+
   const setRows = (updater: (current: PriceRow[]) => PriceRow[]) =>
-    setState((prev) => ({ ...prev, rows: updater(prev.rows) }))
-  const setBrands: React.Dispatch<React.SetStateAction<Brand[]>> = (value) =>
-    setState((prev) => ({
-      ...prev,
-      brands: typeof value === 'function' ? value(prev.brands) : value,
+    apply((current) => ({ ...current, rows: updater(current.rows) }))
+  const setBrands = (value: Brand[] | ((current: Brand[]) => Brand[])) =>
+    apply((current) => ({
+      ...current,
+      brands: typeof value === 'function' ? value(current.brands) : value,
     }))
   const setActiveId = (id: string) =>
-    setState((prev) => ({ ...prev, activeId: id }))
-  const patchSheet = (id: string, patch: Partial<PriceSheet>) =>
-    setState((prev) => ({
-      ...prev,
-      sheets: prev.sheets.map((sheet) =>
-        sheet.id === id ? { ...sheet, ...patch } : sheet,
-      ),
-    }))
-  const addSheet = (projectId: string) => {
-    const sheet = makeSheet(
-      `单据 ${sheets.length + 1}`,
-      projectId,
-      new Date().toISOString().slice(0, 10),
-      '2026-09-10',
-      '9:30 上午',
+    setState((current) => ({ ...current, activeId: id }))
+  const patchSheet = (
+    id: string,
+    patch: Partial<PriceSheet>,
+    coalesceKey?: string,
+  ) =>
+    apply(
+      (current) => ({
+        ...current,
+        sheets: current.sheets.map((sheet) =>
+          sheet.id === id ? { ...sheet, ...patch } : sheet,
+        ),
+      }),
+      coalesceKey,
     )
-    setState((prev) => ({
-      ...prev,
-      sheets: [...prev.sheets, sheet],
-      activeId: sheet.id,
-    }))
-  }
-  const removeSheet = (id: string) =>
-    setState((prev) => {
-      const next = prev.sheets.filter((sheet) => sheet.id !== id)
-      if (!next.length) return prev
+  const addSheet = (projectId: string) =>
+    apply((current) => {
+      const sheet = makeSheet(
+        `单据 ${current.sheets.length + 1}`,
+        projectId,
+        new Date().toISOString().slice(0, 10),
+        '2026-09-10',
+        '9:30 上午',
+      )
       return {
-        ...prev,
+        ...current,
+        sheets: [...current.sheets, sheet],
+        activeId: sheet.id,
+      }
+    })
+  const removeSheet = (id: string) =>
+    apply((current) => {
+      const next = current.sheets.filter((sheet) => sheet.id !== id)
+      if (!next.length) return current
+      return {
+        ...current,
         sheets: next,
         activeId:
-          id === prev.activeId ? next[next.length - 1].id : prev.activeId,
+          id === current.activeId ? next[next.length - 1].id : current.activeId,
       }
     })
 
-  const active = sheets.find((sheet) => sheet.id === activeId) ?? sheets[0]
+  const active = useMemo(
+    () =>
+      state.sheets.find((sheet) => sheet.id === state.activeId) ??
+      state.sheets[0],
+    [state.sheets, state.activeId],
+  )
 
   return {
-    sheets,
-    activeId,
+    sheets: state.sheets,
+    activeId: state.activeId,
     active,
-    rows,
-    brands,
+    rows: state.rows,
+    brands: state.brands,
+    canUndo: historyRef.current.past.length > 0,
+    canRedo: historyRef.current.future.length > 0,
+    undo,
+    redo,
     setRows,
     setBrands,
     setActiveId,

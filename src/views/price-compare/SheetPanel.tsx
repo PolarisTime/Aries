@@ -30,12 +30,12 @@ import html2canvas from 'html2canvas'
 import { useMemo, useRef, useState } from 'react'
 import { message } from '@/utils/antd-app'
 import {
+  bestBrandOfRow,
   buildGridRows,
   CATEGORIES,
   computeSummary,
   moveItem,
   netPrice,
-  parsePasteValues,
   SHEET_COLUMN_WIDTH,
 } from './core'
 import type {
@@ -67,13 +67,10 @@ type ColumnContext = {
   setInput: (key: string, patch: { ton?: number; spot?: number }) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   removeRow: (rowId: string) => void
-  onSpotPaste: (
-    event: React.ClipboardEvent<HTMLInputElement>,
-    brandName: string,
-    rowId: string,
-  ) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
+  bestGroups: string[]
+  onToggleBest: (category: string) => void
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -116,12 +113,18 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     setInput,
     patchRow,
     removeRow,
-    onSpotPaste,
     moveFocus,
     onReorderBrands,
+    bestGroups,
+    onToggleBest,
     spotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(varieties)
+  const isDimmed = (row: GridRow, brandName: string) => {
+    if (!row.row || !bestGroups.includes(row.category)) return false
+    const best = bestBrandOfRow(data, sheet, row.row, brands)
+    return best !== undefined && best !== brandName
+  }
 
   return [
     {
@@ -131,7 +134,21 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       fixed: 'left',
       onCell: (row) => (row.isGroup ? { colSpan: 3 + brands.length * 3 } : {}),
       render: (_, row) => {
-        if (row.isGroup) return <b>{row.category}</b>
+        if (row.isGroup) {
+          const active = bestGroups.includes(row.category)
+          return (
+            <Flex gap="small" align="center">
+              <b>{row.category}</b>
+              <Button
+                size="small"
+                type={active ? 'primary' : 'default'}
+                onClick={() => onToggleBest(row.category)}
+              >
+                {active ? '取消最优' : '一键最优'}
+              </Button>
+            </Flex>
+          )
+        }
         const current = row.row
         const value = varieties.find(
           (item) =>
@@ -218,10 +235,17 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 row.row,
                 sheet.lengthPremium,
               )
+              const dim = isDimmed(row, brand.name)
               return price === undefined ? (
-                <div className="price-compare-num price-compare-sub">-</div>
+                <div
+                  className={`price-compare-num price-compare-sub${dim ? ' price-compare-dim' : ''}`}
+                >
+                  -
+                </div>
               ) : (
-                <div className="price-compare-net price-compare-num">
+                <div
+                  className={`price-compare-net price-compare-num${dim ? ' price-compare-dim' : ''}`}
+                >
                   {price}
                 </div>
               )
@@ -233,7 +257,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               const isFirst = brandIndex === 0 && current.id === rows[0]?.id
               const input = (
                 <Input
-                  className="price-compare-spot"
+                  className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                   size="small"
                   variant="borderless"
                   disabled={locked}
@@ -255,9 +279,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       message.warning('现货价超出合理范围')
                     }
                   }}
-                  onPaste={(event) =>
-                    onSpotPaste(event, brand.name, current.id)
-                  }
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === 'ArrowDown') {
                       event.preventDefault()
@@ -289,9 +310,12 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               }
               const diff = price - spot - brand.freight
               const cls = diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
+              const dim = isDimmed(row, brand.name)
               return (
                 <Tooltip title={diff >= 0 ? '现货更划算' : '网价更优'}>
-                  <span className={`price-compare-diff ${cls}`}>
+                  <span
+                    className={`price-compare-diff ${cls}${dim ? ' price-compare-dim' : ''}`}
+                  >
                     {diff > 0 ? '+' : ''}
                     {diff}
                   </span>
@@ -554,15 +578,9 @@ function SheetToolbar({
 
 function SheetStats({
   summary,
-  brands,
 }: {
   summary: ReturnType<typeof computeSummary>
-  brands: Brand[]
 }) {
-  const total = Object.values(summary.amount).reduce(
-    (sum, value) => sum + value,
-    0,
-  )
   return (
     <Flex gap="middle" align="center" wrap="wrap">
       <Statistic
@@ -570,65 +588,19 @@ function SheetStats({
         value={summary.totalTon}
         styles={{ content: { fontSize: 16 } }}
       />
-      <Statistic
-        title="总盈亏（元）"
-        value={Math.round(total)}
-        styles={{
-          content: { fontSize: 16, color: total >= 0 ? '#389e0d' : '#cf1322' },
-        }}
-      />
-      <Divider orientation="vertical" style={{ height: 32 }} />
-      {brands.map((brand) =>
-        summary.amount[brand.name] === undefined ? null : (
-          <span key={brand.name} style={{ fontSize: 12 }}>
-            <span className="price-compare-sub">{brand.name}</span>
-            <span
-              className={`price-compare-diff ${summary.amount[brand.name] >= 0 ? 'is-pos' : 'is-neg'}`}
-              style={{ marginLeft: 4 }}
-            >
-              {summary.amount[brand.name] > 0 ? '+' : ''}
-              {Math.round(summary.amount[brand.name])}
-            </span>
-          </span>
-        ),
-      )}
     </Flex>
   )
 }
 
 function SummaryBar({
   summary,
-  brands,
 }: {
   summary: ReturnType<typeof computeSummary>
-  brands: Brand[]
 }) {
-  const total = Object.values(summary.amount).reduce(
-    (sum, value) => sum + value,
-    0,
-  )
   return (
     <div className="price-compare-summary">
       <Text strong>合计</Text>
       <Text>总吨数 {summary.totalTon || 0}</Text>
-      <Text strong style={{ color: total >= 0 ? '#389e0d' : '#cf1322' }}>
-        总盈亏 {total > 0 ? '+' : ''}
-        {Math.round(total)}
-      </Text>
-      {brands.map((brand) =>
-        summary.amount[brand.name] === undefined ? null : (
-          <span key={brand.name} className="price-compare-sub">
-            {brand.name}
-            <span
-              className={`price-compare-diff ${summary.amount[brand.name] >= 0 ? 'is-pos' : 'is-neg'}`}
-              style={{ marginLeft: 4 }}
-            >
-              {summary.amount[brand.name] > 0 ? '+' : ''}
-              {Math.round(summary.amount[brand.name])}
-            </span>
-          </span>
-        ),
-      )}
       <span className="price-compare-legend" style={{ marginLeft: 'auto' }}>
         差价 = 网价 − 现货 − 运费
       </span>
@@ -678,6 +650,7 @@ export function SheetPanel(props: Props) {
   const captureRef = useRef<HTMLDivElement>(null)
   const [capturing, setCapturing] = useState(false)
   const [collapsed, setCollapsed] = useState<string[]>([])
+  const [bestGroups, setBestGroups] = useState<string[]>([])
   const locked = sheet.locked
 
   const getSpot = (brandName: string, rowId: string) =>
@@ -697,30 +670,6 @@ export function SheetPanel(props: Props) {
   const removeRow = (rowId: string) =>
     setRows((list) => list.filter((row) => row.id !== rowId))
 
-  const onSpotPaste = (
-    event: React.ClipboardEvent<HTMLInputElement>,
-    brandName: string,
-    rowId: string,
-  ) => {
-    const values = parsePasteValues(event.clipboardData.getData('text'))
-    if (values.length <= 1) return
-    event.preventDefault()
-    const startIndex = rows.findIndex((row) => row.id === rowId)
-    const nextInputs = { ...sheet.inputs }
-    values.forEach((value, offset) => {
-      const target = rows[startIndex + offset]
-      if (!target) return
-      nextInputs[`${brandName}:${target.id}`] = {
-        ...(nextInputs[`${brandName}:${target.id}`] ?? {}),
-        spot: value,
-      }
-    })
-    patchSheet(sheet.id, { inputs: nextInputs })
-    message.success(
-      `已粘贴 ${Math.min(values.length, rows.length - startIndex)} 个现货价`,
-    )
-  }
-
   const moveFocus = (brandName: string, rowId: string, delta: number) => {
     const index = rows.findIndex((row) => row.id === rowId)
     const target = rows[index + delta]
@@ -734,6 +683,12 @@ export function SheetPanel(props: Props) {
 
   const onReorderBrands = (from: number, to: number) =>
     setBrands((current) => moveItem(current, from, to))
+  const onToggleBest = (category: string) =>
+    setBestGroups((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category],
+    )
 
   const capture = async (copy: boolean) => {
     if (!captureRef.current) return
@@ -782,9 +737,10 @@ export function SheetPanel(props: Props) {
     setInput,
     patchRow,
     removeRow,
-    onSpotPaste,
     moveFocus,
     onReorderBrands,
+    bestGroups,
+    onToggleBest,
     spotRef,
   })
   const dataSource = useMemo(() => buildGridRows(rows), [rows])
@@ -814,7 +770,7 @@ export function SheetPanel(props: Props) {
           brandSelectRef={brandSelectRef}
         />
         <Divider style={{ margin: '8px 0' }} />
-        <SheetStats summary={summary} brands={brands} />
+        <SheetStats summary={summary} />
         <Table<GridRow>
           size={density}
           bordered
@@ -845,7 +801,7 @@ export function SheetPanel(props: Props) {
           }}
           style={{ marginTop: 8 }}
         />
-        <SummaryBar summary={summary} brands={brands} />
+        <SummaryBar summary={summary} />
       </div>
     </Card>
   )

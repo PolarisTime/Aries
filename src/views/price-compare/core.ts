@@ -41,12 +41,13 @@ export function netPrice(
       String(row.spec)
     ]
   if (base === undefined) return undefined
-  return base + (row.length === '12米' ? lengthPremium : 0)
+  const premium =
+    row.category === '螺纹钢' && row.length === '12米' ? lengthPremium : 0
+  return base + premium
 }
 
 export type SheetSummary = {
   totalTon: number
-  amount: Record<string, number>
   filled: number
 }
 
@@ -55,17 +56,15 @@ export function computeSummary(
   sheet: PriceSheet,
   rows: PriceRow[],
   brands: Brand[],
-  net: typeof netPrice = netPrice,
 ): SheetSummary {
   let totalTon = 0
   let filled = 0
-  const amount: Record<string, number> = {}
   for (const row of rows) {
     const ton = sheet.inputs[`_:${row.id}`]?.ton
     if (!ton) continue
     totalTon += ton
     for (const brand of brands) {
-      const auto = net(
+      const auto = netPrice(
         data,
         sheet.refDate,
         sheet.refPeriod,
@@ -75,12 +74,39 @@ export function computeSummary(
       )
       const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
       if (auto === undefined || spot === undefined) continue
-      amount[brand.name] =
-        (amount[brand.name] ?? 0) + (auto - spot - brand.freight) * ton
       filled += 1
     }
   }
-  return { totalTon, amount, filled }
+  return { totalTon, filled }
+}
+
+/** 单个商品行在各品牌中的最优(差价最大)品牌, 无有效数据返回 undefined。 */
+export function bestBrandOfRow(
+  data: PriceData | null,
+  sheet: PriceSheet,
+  row: PriceRow,
+  brands: Brand[],
+): string | undefined {
+  let best: string | undefined
+  let bestDiff = Number.NEGATIVE_INFINITY
+  for (const brand of brands) {
+    const auto = netPrice(
+      data,
+      sheet.refDate,
+      sheet.refPeriod,
+      brand.name,
+      row,
+      sheet.lengthPremium,
+    )
+    const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
+    if (auto === undefined || spot === undefined) continue
+    const diff = auto - spot - brand.freight
+    if (diff > bestDiff) {
+      bestDiff = diff
+      best = brand.name
+    }
+  }
+  return best
 }
 
 /** 统计"有网价但未填现货"的数量, 用于标签页角标。 */
@@ -107,15 +133,6 @@ export function countMissing(
     }
   }
   return missing
-}
-
-/** 解析粘贴文本为现货价数组(取每行首个数值)。 */
-export function parsePasteValues(text: string): number[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.split(/\t/)[0].trim())
-    .map((value) => Number(value.replace(/[^\d.-]/g, '')))
-    .filter((value) => !Number.isNaN(value) && value > 0)
 }
 
 export function buildGridRows(rows: PriceRow[]): GridRow[] {

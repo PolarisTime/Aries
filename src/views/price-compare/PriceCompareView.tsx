@@ -2,6 +2,8 @@ import {
   FullscreenExitOutlined,
   FullscreenOutlined,
   LockOutlined,
+  RedoOutlined,
+  UndoOutlined,
 } from '@ant-design/icons'
 import {
   Alert,
@@ -54,6 +56,10 @@ export function PriceCompareView() {
     active,
     rows,
     brands,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
     setRows,
     setBrands,
     setActiveId,
@@ -88,6 +94,22 @@ export function PriceCompareView() {
     document.addEventListener('fullscreenchange', handler)
     return () => document.removeEventListener('fullscreenchange', handler)
   }, [])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return
+      const key = event.key.toLowerCase()
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault()
+        undo()
+      } else if ((key === 'z' && event.shiftKey) || key === 'y') {
+        event.preventDefault()
+        redo()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo, redo])
 
   const addPriceRow = (category = '螺纹钢') => {
     setRows((list) => [...list, makeRow(category)])
@@ -166,7 +188,8 @@ export function PriceCompareView() {
         <div>
           <h1>报单比价</h1>
           <span className="price-compare-desc">
-            多单据 · 类 Excel 录入（粘贴/回车/上下切换）· 锁定防改 · 一键截图
+            多单据 · 手工录入（回车/上下切换）· Ctrl+Z 撤销 · 锁定防改 ·
+            一键截图
           </span>
         </div>
         <Space>
@@ -189,6 +212,22 @@ export function PriceCompareView() {
                 fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
               }
               onClick={toggleFullscreen}
+            />
+          </Tooltip>
+          <Tooltip title="撤销 (Ctrl+Z)">
+            <Button
+              size="small"
+              icon={<UndoOutlined />}
+              disabled={!canUndo}
+              onClick={undo}
+            />
+          </Tooltip>
+          <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
+            <Button
+              size="small"
+              icon={<RedoOutlined />}
+              disabled={!canRedo}
+              onClick={redo}
             />
           </Tooltip>
           <Button size="small" onClick={() => addPriceRow(CATEGORIES[0])}>

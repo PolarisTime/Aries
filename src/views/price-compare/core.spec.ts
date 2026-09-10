@@ -6,7 +6,6 @@ import {
   makeRow,
   moveItem,
   netPrice,
-  parsePasteValues,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
 
@@ -82,23 +81,50 @@ describe('computeSummary', () => {
       brands,
     )
     expect(summary.totalTon).toBe(10)
-    expect(summary.amount['中天']).toBe((3320 - 3280 - 30) * 10)
     expect(summary.filled).toBe(1)
   })
 
-  it('缺现货或吨数时不计入', () => {
+  it('缺现货或吨数时不计入已填数', () => {
     expect(
       computeSummary(
         data,
         sheet({ '中天:r1': { spot: 3280 } }),
         [row12],
         brands,
-      ).amount['中天'],
-    ).toBeUndefined()
+      ).filled,
+    ).toBe(0)
     expect(
       computeSummary(data, sheet({ '_:r1': { ton: 10 } }), [row12], brands)
-        .amount['中天'],
-    ).toBeUndefined()
+        .filled,
+    ).toBe(0)
+  })
+
+  it('12 米加价仅螺纹钢生效', () => {
+    const rowRebar12: PriceRow = {
+      id: 'x',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '12米',
+    }
+    const rowRound12: PriceRow = {
+      id: 'y',
+      category: '圆钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '12米',
+    }
+    const dataRound: PriceData = {
+      '2026-09-10': {
+        '9:30 上午': { 中天: { '圆钢|HRB400E': { '12': 4000 } } },
+      },
+    }
+    expect(
+      netPrice(data, '2026-09-10', '9:30 上午', '中天', rowRebar12, 30),
+    ).toBe(3350)
+    expect(
+      netPrice(dataRound, '2026-09-10', '9:30 上午', '中天', rowRound12, 30),
+    ).toBe(4000)
   })
 })
 
@@ -124,15 +150,6 @@ describe('countMissing', () => {
         brands,
       ),
     ).toBe(1)
-  })
-})
-
-describe('parsePasteValues', () => {
-  it('按行取首个数值并过滤非法值', () => {
-    expect(parsePasteValues('3280\n3290\nabc\n0\n-1\n3310.5')).toEqual([
-      3280, 3290, 3310.5,
-    ])
-    expect(parsePasteValues('3280\t备注')).toEqual([3280])
   })
 })
 
