@@ -1870,6 +1870,7 @@ export const enUS = {
   },
   navigation: {
     master: 'Master Data',
+    market: 'Price Compare',
     purchase: 'Purchase',
     sales: 'Sales',
     freight: 'Freight',

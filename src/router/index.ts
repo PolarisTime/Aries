@@ -155,17 +155,6 @@ const authenticatedLayoutRoute = createRoute({
   },
 })
 
-// 比价页面: 报单 vs 参照网价对照（多报单块堆叠）
-const priceCompareRoute = createRoute({
-  getParentRoute: () => authenticatedLayoutRoute,
-  path: '/price-compare',
-  component: lazy(() =>
-    import('@/views/price-compare/PriceCompareView').then((m) => ({
-      default: m.PriceCompareView,
-    })),
-  ),
-})
-
 const viewLoaders: Record<
   Exclude<RouteViewKey, 'dashboard'>,
   () => Promise<{ default: React.ComponentType }>
@@ -181,6 +170,10 @@ const viewLoaders: Record<
   'master-carrier': () =>
     import('@/views/master-archive/CarrierPage').then((m) => ({
       default: m.CarrierPage,
+    })),
+  'price-compare': () =>
+    import('@/views/price-compare/PriceCompareView').then((m) => ({
+      default: m.PriceCompareView,
     })),
   'company-setting': () =>
     import('@/views/system/CompanySettingsView').then((m) => ({
@@ -318,11 +311,8 @@ const routeTree = rootRoute.addChildren([
   serverErrorRoute,
   notFoundRoute,
   authenticatedLayoutRoute.addChildren(
-    // TanStack Router 的子路由数组要求统一 AnyRoute 泛型，demo 路由单独追加
-    [
-      ...buildModuleRoutes(authenticatedLayoutRoute),
-      priceCompareRoute as AnyRoute,
-    ],
+    // TanStack Router 子路由需统一 AnyRoute 泛型，否则整棵路由树的类型会丢失
+    buildModuleRoutes(authenticatedLayoutRoute) as AnyRoute[],
   ),
 ])
 

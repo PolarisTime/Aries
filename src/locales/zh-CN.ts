@@ -1820,6 +1820,7 @@ export const zhCN = {
   },
   navigation: {
     master: '基础数据',
+    market: '比价',
     purchase: '采购',
     sales: '销售',
     freight: '物流',

@@ -1,5 +1,6 @@
 import { dashboardPageDefinitions } from '@/config/page-registry-dashboard'
 import { financePageDefinitions } from '@/config/page-registry-finance'
+import { marketPageDefinitions } from '@/config/page-registry-market'
 import { masterPageDefinitions } from '@/config/page-registry-master'
 import { operationPageDefinitions } from '@/config/page-registry-operations'
 import { systemPageDefinitions } from '@/config/page-registry-system'
@@ -15,6 +16,7 @@ export type {
 export const appPageDefinitions: AppPageDefinition[] = [
   ...dashboardPageDefinitions,
   ...masterPageDefinitions,
+  ...marketPageDefinitions,
   ...operationPageDefinitions,
   ...financePageDefinitions,
   ...systemPageDefinitions,

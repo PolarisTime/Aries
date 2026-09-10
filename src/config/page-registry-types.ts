@@ -9,6 +9,7 @@ export type RouteViewKey =
   | 'business-grid'
   | 'master-project'
   | 'master-carrier'
+  | 'price-compare'
   | 'company-setting'
   | 'print-template'
   | 'account'

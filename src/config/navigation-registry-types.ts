@@ -26,6 +26,7 @@ export type AppIconKey =
 
 export type MenuGroupKey =
   | 'master'
+  | 'market'
   | 'purchase'
   | 'sales'
   | 'freight'

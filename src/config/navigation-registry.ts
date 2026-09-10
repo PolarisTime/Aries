@@ -13,6 +13,7 @@ export type {
 
 export const menuGroupOrder: MenuGroupKey[] = [
   'master',
+  'market',
   'purchase',
   'sales',
   'freight',
@@ -26,6 +27,11 @@ export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
     key: 'master',
     title: i18next.t('navigation.master'),
     icon: 'AppstoreOutlined',
+  },
+  market: {
+    key: 'market',
+    title: i18next.t('navigation.market'),
+    icon: 'CalculatorOutlined',
   },
   purchase: {
     key: 'purchase',
