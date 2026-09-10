@@ -175,7 +175,6 @@ export function buildGridRows(
       isGroup: true,
       groupId: group.id,
       group,
-      count: rows.filter((row) => row.groupId === group.id).length,
     })
     for (const row of rows) {
       if (row.groupId !== group.id) continue

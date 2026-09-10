@@ -56,7 +56,6 @@ export type GridRow = {
   isGroup: boolean
   groupId?: string
   group?: SheetGroup
-  count?: number
   rowId?: string
   row?: PriceRow
 }

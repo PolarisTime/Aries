@@ -186,7 +186,7 @@ describe('buildGridRows / makeRow', () => {
     )
     expect(rows.map((row) => row.key)).toEqual(['g:g1', 'r1', 'g:g2', 'r3'])
     expect(rows[0].isGroup).toBe(true)
-    expect(rows[0].count).toBe(1)
+    expect(rows[0].group?.name).toBe('分组 1')
     expect(rows[1].row?.category).toBe('螺纹钢')
   })
 

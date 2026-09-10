@@ -17,7 +17,6 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Tooltip,
   Typography,
 } from 'antd'
@@ -186,7 +185,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         ),
     },
     {
-      title: '商品（类别 / 材质 / 规格 / 长度）',
+      title: '类别 / 材质 / 规格 / 长度',
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
@@ -206,7 +205,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   onRenameGroup(group.id, event.target.value)
                 }
               />
-              <Tag>{row.count ?? 0} 行</Tag>
             </Flex>
           )
         }
