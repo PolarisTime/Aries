@@ -29,7 +29,6 @@ import {
   bestBrandOfRow,
   buildGridRows,
   CATEGORIES,
-  computeSummary,
   makeGroup,
   makeRow,
   moveItem,
@@ -77,10 +76,7 @@ type ColumnContext = {
   toggleAll: (checked: boolean) => void
   allSelected: boolean
   someSelected: boolean
-  canRemoveGroup: boolean
-  onAddRowToGroup: (groupId: string) => void
   onRenameGroup: (groupId: string, name: string) => void
-  onRemoveGroup: (groupId: string) => void
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -130,10 +126,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     toggleAll,
     allSelected,
     someSelected,
-    canRemoveGroup,
-    onAddRowToGroup,
     onRenameGroup,
-    onRemoveGroup,
     onRowDragStart,
     onRowDragEnd,
     onReorderBrands,
@@ -206,7 +199,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               <Input
                 size="small"
                 variant="borderless"
-                style={{ width: 160, fontWeight: 600 }}
+                style={{ width: 180, fontWeight: 600 }}
                 disabled={locked}
                 value={group.name}
                 onChange={(event) =>
@@ -214,28 +207,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 }
               />
               <Tag>{row.count ?? 0} 行</Tag>
-              <Button
-                size="small"
-                disabled={locked}
-                onClick={() => onAddRowToGroup(group.id)}
-              >
-                ＋行
-              </Button>
-              <Popconfirm
-                title="删除该分组及其行？"
-                okText="删除"
-                cancelText="取消"
-                disabled={locked || !canRemoveGroup}
-                onConfirm={() => onRemoveGroup(group.id)}
-              >
-                <Button
-                  size="small"
-                  type="text"
-                  danger
-                  disabled={locked || !canRemoveGroup}
-                  icon={<DeleteOutlined />}
-                />
-              </Popconfirm>
             </Flex>
           )
         }
@@ -437,15 +408,10 @@ function SheetHeader({
   onToggleBest,
   selectedCount,
   onRemoveSelected,
-  summary,
-  brandCount,
-  lengthPremium,
 }: {
   sheet: PriceSheet
   refDate: string
   refPeriod: string
-  lengthPremium: number
-  brandCount: number
   data: PriceData | null
   locked: boolean
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
@@ -456,147 +422,121 @@ function SheetHeader({
   onToggleBest: () => void
   selectedCount: number
   onRemoveSelected: () => void
-  summary: ReturnType<typeof computeSummary>
 }) {
   return (
     <Flex vertical gap={8}>
       <Flex
-        justify="space-between"
+        gap="small"
         align="center"
         wrap="wrap"
-        gap={8}
         className="price-compare-toolbar"
       >
-        <Flex gap="small" align="center" wrap="wrap">
-          <Text strong>{sheet.projectName || '未指定项目'}</Text>
-          <Space size="small">
-            <Text type="secondary" className="price-compare-sub">
-              报单日期
-            </Text>
-            <DatePicker
-              size="small"
-              disabled={locked}
-              value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
-              format={DATE_FMT}
-              allowClear={false}
-              onChange={(value) =>
-                value &&
-                patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
-              }
-            />
-          </Space>
-          <Space size="small">
-            <Tooltip title="整组统一使用该日期与时段作为网价基准">
-              <Text type="secondary" className="price-compare-sub">
-                <InfoCircleOutlined /> 参照网价
-              </Text>
-            </Tooltip>
-            <DatePicker
-              size="small"
-              disabled={locked}
-              value={refDate ? dayjs(refDate) : null}
-              format={DATE_FMT}
-              allowClear={false}
-              onChange={(value) => {
-                if (!value) return
-                const date = value.format('YYYY-MM-DD')
-                patchSheet(sheet.id, {
-                  refDate: date,
-                  refPeriod: Object.keys(data?.[date] ?? {})[0] ?? '',
-                })
-              }}
-            />
-            <Select
-              size="small"
-              style={{ width: 104 }}
-              disabled={locked}
-              value={refPeriod || undefined}
-              onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-              options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
-                value: period,
-                label: period,
-              }))}
-            />
-          </Space>
-          <Button
+        <Text strong>{sheet.projectName || '未指定项目'}</Text>
+        <Space size="small">
+          <Text type="secondary" className="price-compare-sub">
+            报单日期
+          </Text>
+          <DatePicker
             size="small"
-            icon={<SettingOutlined />}
-            onClick={onOpenSettings}
-          >
-            报价总设置
-          </Button>
-        </Flex>
-        <Space size={4} wrap>
-          <Button size="small" disabled={locked} onClick={onAddGroup}>
-            ＋分组
-          </Button>
-          <Button
-            size="small"
-            type={bestOn ? 'primary' : 'default'}
-            onClick={onToggleBest}
-          >
-            {bestOn ? '取消最优' : '一键最优'}
-          </Button>
-          {selectedCount > 0 ? (
-            <Popconfirm
-              title={`删除选中的 ${selectedCount} 行？`}
-              okText="删除"
-              cancelText="取消"
-              disabled={locked}
-              onConfirm={onRemoveSelected}
-            >
-              <Button
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                disabled={locked}
-              >
-                删除
-              </Button>
-            </Popconfirm>
-          ) : null}
-          <Button size="small" disabled={locked} onClick={onAddRow}>
-            ＋规格行
-          </Button>
-          <Button
-            size="small"
-            icon={locked ? <UnlockOutlined /> : <LockOutlined />}
-            onClick={() => patchSheet(sheet.id, { locked: !locked })}
-          >
-            {locked ? '解锁' : '锁定'}
-          </Button>
+            disabled={locked}
+            value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
+            format={DATE_FMT}
+            allowClear={false}
+            onChange={(value) =>
+              value &&
+              patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
+            }
+          />
         </Space>
+        <Space size="small">
+          <Tooltip title="整组统一使用该日期与时段作为网价基准">
+            <Text type="secondary" className="price-compare-sub">
+              <InfoCircleOutlined /> 参照网价
+            </Text>
+          </Tooltip>
+          <DatePicker
+            size="small"
+            disabled={locked}
+            value={refDate ? dayjs(refDate) : null}
+            format={DATE_FMT}
+            allowClear={false}
+            onChange={(value) => {
+              if (!value) return
+              const date = value.format('YYYY-MM-DD')
+              patchSheet(sheet.id, {
+                refDate: date,
+                refPeriod: Object.keys(data?.[date] ?? {})[0] ?? '',
+              })
+            }}
+          />
+          <Select
+            size="small"
+            style={{ width: 104 }}
+            disabled={locked}
+            value={refPeriod || undefined}
+            onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
+            options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
+              value: period,
+              label: period,
+            }))}
+          />
+        </Space>
+        <Button
+          size="small"
+          icon={<SettingOutlined />}
+          onClick={onOpenSettings}
+        >
+          报价总设置
+        </Button>
       </Flex>
 
-      <Flex gap={12} align="center" wrap="wrap" className="price-compare-stats">
-        <Text type="secondary">
-          品牌 <Text strong>{brandCount}</Text> 个 · 12米 +{lengthPremium}
-        </Text>
-        <Text type="secondary">
-          已填 <Text strong>{summary.filled}</Text> 格
-        </Text>
-        <span className="price-compare-legend">
-          差价：<i className="is-pos">+ 现货划算</i>
-          <i className="is-neg">− 网价更优</i>
-        </span>
+      <Flex
+        justify="flex-end"
+        align="center"
+        wrap="wrap"
+        gap={4}
+        className="price-compare-actions"
+      >
+        <Button size="small" disabled={locked} onClick={onAddGroup}>
+          ＋分组
+        </Button>
+        <Button
+          size="small"
+          type={bestOn ? 'primary' : 'default'}
+          onClick={onToggleBest}
+        >
+          {bestOn ? '取消最优' : '一键最优'}
+        </Button>
+        {selectedCount > 0 ? (
+          <Popconfirm
+            title={`删除选中的 ${selectedCount} 行？`}
+            okText="删除"
+            cancelText="取消"
+            disabled={locked}
+            onConfirm={onRemoveSelected}
+          >
+            <Button
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              disabled={locked}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        ) : null}
+        <Button size="small" disabled={locked} onClick={onAddRow}>
+          ＋规格行
+        </Button>
+        <Button
+          size="small"
+          icon={locked ? <UnlockOutlined /> : <LockOutlined />}
+          onClick={() => patchSheet(sheet.id, { locked: !locked })}
+        >
+          {locked ? '解锁' : '锁定'}
+        </Button>
       </Flex>
     </Flex>
-  )
-}
-
-function SummaryBar({
-  summary,
-}: {
-  summary: ReturnType<typeof computeSummary>
-}) {
-  return (
-    <div className="price-compare-summary">
-      <Text strong>合计</Text>
-      <Text type="secondary">已填 {summary.filled} 格</Text>
-      <span className="price-compare-legend" style={{ marginLeft: 'auto' }}>
-        差价 = 网价 − 现货 − 运费
-      </span>
-    </div>
   )
 }
 
@@ -733,8 +673,6 @@ export function SheetPanel(props: Props) {
     patchSheet(sheet.id, { groups: [...sheet.groups, group] })
     setRows((list) => [...list, makeRow(group.id)])
   }
-  const addRowToGroup = (groupId: string) =>
-    setRows((list) => [...list, makeRow(groupId)])
   const addRow = () => setRows((list) => [...list, makeRow(lastGroupId)])
   const renameGroup = (groupId: string, name: string) =>
     patchSheet(
@@ -746,14 +684,6 @@ export function SheetPanel(props: Props) {
       },
       `group:${groupId}`,
     )
-  const removeGroup = (groupId: string) => {
-    if (sheet.groups.length <= 1) return
-    patchSheet(sheet.id, {
-      groups: sheet.groups.filter((group) => group.id !== groupId),
-    })
-    setRows((list) => list.filter((row) => row.groupId !== groupId))
-  }
-
   const columns = buildSheetColumns({
     sheet,
     refDate,
@@ -778,24 +708,13 @@ export function SheetPanel(props: Props) {
     toggleAll,
     allSelected: selectedIds.length > 0 && selectedIds.length === rows.length,
     someSelected: selectedIds.length > 0,
-    canRemoveGroup: sheet.groups.length > 1,
-    onAddRowToGroup: addRowToGroup,
     onRenameGroup: renameGroup,
-    onRemoveGroup: removeGroup,
     spotRef,
   })
   const dataSource = useMemo(
     () => buildGridRows(rows, sheet.groups),
     [rows, sheet.groups],
   )
-  const summary = computeSummary(
-    data,
-    { ...sheet, refDate, refPeriod },
-    rows,
-    brands,
-    lengthPremium,
-  )
-
   const content = (
     <>
       <SheetHeader
@@ -812,9 +731,6 @@ export function SheetPanel(props: Props) {
         onToggleBest={() => setBestOn((value) => !value)}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
-        summary={summary}
-        brandCount={brands.length}
-        lengthPremium={lengthPremium}
       />
       <Table<GridRow>
         className="price-compare-table"
@@ -872,7 +788,6 @@ export function SheetPanel(props: Props) {
         }}
         style={{ marginTop: 8 }}
       />
-      <SummaryBar summary={summary} />
     </>
   )
 
