@@ -18,8 +18,14 @@ export type BrandOption = { name: string; freight: number }
 
 export type Brand = { name: string; freight: number }
 
+export type SheetGroup = {
+  id: string
+  name: string
+}
+
 export type PriceRow = {
   id: string
+  groupId: string
   category: string
   material: string
   spec: number | null
@@ -41,11 +47,16 @@ export type PriceSheet = {
   lengthPremium: number
   locked: boolean
   inputs: SheetInputs
+  groups: SheetGroup[]
   rows: PriceRow[]
 }
 
 export type GridRow = {
   key: string
-  rowId: string
-  row: PriceRow
+  isGroup: boolean
+  groupId?: string
+  group?: SheetGroup
+  count?: number
+  rowId?: string
+  row?: PriceRow
 }

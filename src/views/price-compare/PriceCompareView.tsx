@@ -115,7 +115,6 @@ export function PriceCompareView() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
-  const captureBtnRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
 
   useEffect(() => {
@@ -381,7 +380,6 @@ export function PriceCompareView() {
             onOpenSettings={() => setSettingsOpen(true)}
             onCopySheet={copyActiveSheet}
             spotRef={spotRef}
-            captureBtnRef={captureBtnRef}
           />
         </Watermark>
       ) : (
@@ -421,14 +419,10 @@ export function PriceCompareView() {
             target: () => document.body,
           },
           {
-            title: '录入现货价',
-            description: '逐格录入现货价，回车/上下移动；行可拖拽排序',
+            title: '分组与录入',
+            description:
+              '可在表内添加分组、拖拽排序；逐格录入现货价，回车/上下移动',
             target: () => spotRef.current ?? document.body,
-          },
-          {
-            title: '截图发出去',
-            description: '一键截图或复制图片，可直接粘贴到聊天工具发送',
-            target: () => captureBtnRef.current ?? document.body,
           },
         ]}
       />

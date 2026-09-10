@@ -1,4 +1,11 @@
-import type { Brand, GridRow, PriceData, PriceRow, PriceSheet } from './types'
+import type {
+  Brand,
+  GridRow,
+  PriceData,
+  PriceRow,
+  PriceSheet,
+  SheetGroup,
+} from './types'
 
 export const CATEGORIES = ['螺纹钢', '盘螺', '高线', '圆钢']
 export const SPECS: Record<string, number[]> = {
@@ -165,8 +172,41 @@ export function countMissing(
   return missing
 }
 
-export function buildGridRows(rows: PriceRow[]): GridRow[] {
-  return rows.map((row) => ({ key: row.id, rowId: row.id, row }))
+export function buildGridRows(
+  rows: PriceRow[],
+  groups: SheetGroup[],
+): GridRow[] {
+  const out: GridRow[] = []
+  for (const group of groups) {
+    out.push({
+      key: `g:${group.id}`,
+      isGroup: true,
+      groupId: group.id,
+      group,
+      count: rows.filter((row) => row.groupId === group.id).length,
+    })
+    for (const row of rows) {
+      if (row.groupId !== group.id) continue
+      out.push({
+        key: row.id,
+        isGroup: false,
+        groupId: group.id,
+        rowId: row.id,
+        row,
+      })
+    }
+  }
+  const known = new Set(groups.map((group) => group.id))
+  for (const row of rows) {
+    if (known.has(row.groupId)) continue
+    out.push({
+      key: row.id,
+      isGroup: false,
+      rowId: row.id,
+      row,
+    })
+  }
+  return out
 }
 
 /** 将 from 位置的元素移动到 to 位置(用于品牌列拖拽排序)。 */
@@ -185,9 +225,18 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   return next
 }
 
-export function makeRow(): PriceRow {
+function makeId(): string {
+  return Math.random().toString(36).slice(2, 8)
+}
+
+export function makeGroup(name: string): SheetGroup {
+  return { id: makeId(), name }
+}
+
+export function makeRow(groupId: string): PriceRow {
   return {
-    id: Math.random().toString(36).slice(2, 8),
+    id: makeId(),
+    groupId,
     category: '',
     material: '',
     spec: null,
@@ -197,11 +246,11 @@ export function makeRow(): PriceRow {
 
 export const DEFAULT_STATUS = '报价'
 
-/** 新建单据默认行数(均为空行, 由用户自行选择商品)。 */
+/** 新建单据默认分组内的行数(均为空行, 由用户自行选择商品)。 */
 const DEFAULT_ROW_COUNT = 5
 
-export function defaultSheetRows(): PriceRow[] {
-  return Array.from({ length: DEFAULT_ROW_COUNT }, () => makeRow())
+export function defaultSheetRows(groupId: string): PriceRow[] {
+  return Array.from({ length: DEFAULT_ROW_COUNT }, () => makeRow(groupId))
 }
 
 export function makeSheet(
@@ -212,8 +261,9 @@ export function makeSheet(
   refDate: string,
   refPeriod: string,
 ): PriceSheet {
+  const group = makeGroup('分组 1')
   return {
-    id: Math.random().toString(36).slice(2, 8),
+    id: makeId(),
     name,
     status: DEFAULT_STATUS,
     projectId,
@@ -224,16 +274,34 @@ export function makeSheet(
     lengthPremium: DEFAULT_LENGTH_PREMIUM,
     locked: false,
     inputs: {},
-    rows: defaultSheetRows(),
+    groups: [group],
+    rows: defaultSheetRows(group.id),
   }
 }
 
-/** 复制单据(新 ID, 名称追加“副本”)。 */
+/** 复制单据(新 ID, 名称追加“副本”; 分组与行 ID 全部重建并保持关联)。 */
 export function copySheet(sheet: PriceSheet): PriceSheet {
+  const groupIdMap = new Map<string, string>()
+  const groups = sheet.groups.map((group) => {
+    const id = makeId()
+    groupIdMap.set(group.id, id)
+    return { ...group, id }
+  })
+  const groupIds = new Set(groups.map((group) => group.id))
+  const fallbackId = groups[0]?.id ?? ''
+  const rows = sheet.rows.map((row) => ({
+    ...row,
+    id: makeId(),
+    groupId: groupIds.has(row.groupId)
+      ? (groupIdMap.get(row.groupId) as string)
+      : fallbackId,
+  }))
   return {
     ...structuredClone(sheet),
-    id: Math.random().toString(36).slice(2, 8),
+    id: makeId(),
     name: `${sheet.name} 副本`,
     locked: false,
+    groups,
+    rows,
   }
 }

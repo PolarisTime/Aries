@@ -20,7 +20,6 @@ export function DesignSheet({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const materialBrands = useMaterialBrands()
   const spotRef = useRef<HTMLSpanElement>(null)
-  const captureBtnRef = useRef<HTMLSpanElement>(null)
   const {
     active,
     data,
@@ -60,7 +59,6 @@ export function DesignSheet({
         onOpenSettings={() => setSettingsOpen(true)}
         onCopySheet={copyActiveSheet}
         spotRef={spotRef}
-        captureBtnRef={captureBtnRef}
       />
       <ReportSettingsModal
         open={settingsOpen}

@@ -22,6 +22,7 @@ const data: PriceData = {
 
 const row12: PriceRow = {
   id: 'r1',
+  groupId: 'g1',
   category: '螺纹钢',
   material: 'HRB400E',
   spec: 12,
@@ -72,6 +73,7 @@ describe('computeSummary', () => {
     lengthPremium: 30,
     locked: false,
     status: '报价',
+    groups: [],
     rows: [],
     inputs,
   })
@@ -106,6 +108,7 @@ describe('computeSummary', () => {
   it('12 米加价仅螺纹钢生效', () => {
     const rowRebar12: PriceRow = {
       id: 'x',
+      groupId: 'g1',
       category: '螺纹钢',
       material: 'HRB400E',
       spec: 12,
@@ -113,6 +116,7 @@ describe('computeSummary', () => {
     }
     const rowRound12: PriceRow = {
       id: 'y',
+      groupId: 'g1',
       category: '圆钢',
       material: 'HRB400E',
       spec: 12,
@@ -145,6 +149,7 @@ describe('countMissing', () => {
       lengthPremium: 30,
       locked: false,
       status: '报价',
+      groups: [],
       rows: [],
       inputs: {},
     }
@@ -170,18 +175,24 @@ describe('moveItem', () => {
 })
 
 describe('buildGridRows / makeRow', () => {
-  it('按行顺序平铺, 每行携带自身数据', () => {
-    const rows = buildGridRows([
-      row12,
-      { ...row12, id: 'r3', category: '盘螺', spec: 6, length: '-' },
-    ])
-    expect(rows.map((row) => row.row.id)).toEqual(['r1', 'r3'])
-    expect(rows[0].rowId).toBe('r1')
-    expect(rows[0].row?.category).toBe('螺纹钢')
+  it('按分组顺序生成组头与数据行', () => {
+    const groups = [
+      { id: 'g1', name: '分组 1' },
+      { id: 'g2', name: '分组 2' },
+    ]
+    const rows = buildGridRows(
+      [{ ...row12, groupId: 'g2', id: 'r3' }, row12],
+      groups,
+    )
+    expect(rows.map((row) => row.key)).toEqual(['g:g1', 'r1', 'g:g2', 'r3'])
+    expect(rows[0].isGroup).toBe(true)
+    expect(rows[0].count).toBe(1)
+    expect(rows[1].row?.category).toBe('螺纹钢')
   })
 
-  it('makeRow 生成空行', () => {
-    const row = makeRow()
+  it('makeRow 生成指定分组下的空行', () => {
+    const row = makeRow('g1')
+    expect(row.groupId).toBe('g1')
     expect(row.category).toBe('')
     expect(row.material).toBe('')
     expect(row.spec).toBeNull()

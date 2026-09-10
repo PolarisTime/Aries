@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { copySheet, DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
-const LS_KEY = 'aries-price-compare-v3'
+const LS_KEY = 'aries-price-compare-v4'
 const HISTORY_LIMIT = 50
 const COALESCE_MS = 800
 
@@ -31,7 +31,9 @@ function loadState(): Snapshot {
       const parsed = JSON.parse(raw) as Snapshot
       if (
         parsed.sheets?.length &&
-        parsed.sheets.every((sheet) => Array.isArray(sheet.rows))
+        parsed.sheets.every(
+          (sheet) => Array.isArray(sheet.rows) && Array.isArray(sheet.groups),
+        )
       )
         return parsed
     }
