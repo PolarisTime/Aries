@@ -75,6 +75,8 @@ type ColumnContext = {
   toggleAll: (checked: boolean) => void
   allSelected: boolean
   someSelected: boolean
+  canRemoveGroup: boolean
+  onRemoveGroup: (groupId: string) => void
   onRenameGroup: (groupId: string, name: string) => void
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -125,6 +127,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     toggleAll,
     allSelected,
     someSelected,
+    canRemoveGroup,
+    onRemoveGroup,
     onRenameGroup,
     onRowDragStart,
     onRowDragEnd,
@@ -202,6 +206,24 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   onRenameGroup(group.id, event.target.value)
                 }
               />
+              {canRemoveGroup ? (
+                <Popconfirm
+                  title="删除该分组及其行？"
+                  okText="删除"
+                  cancelText="取消"
+                  disabled={locked}
+                  onConfirm={() => onRemoveGroup(group.id)}
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    danger
+                    disabled={locked}
+                    className="price-compare-group-del"
+                    icon={<DeleteOutlined />}
+                  />
+                </Popconfirm>
+              ) : null}
             </Flex>
           )
         }
@@ -668,6 +690,13 @@ export function SheetPanel(props: Props) {
     setRows((list) => [...list, makeRow(group.id)])
   }
   const addRow = () => setRows((list) => [...list, makeRow(lastGroupId)])
+  const removeGroup = (groupId: string) => {
+    if (sheet.groups.length <= 1) return
+    patchSheet(sheet.id, {
+      groups: sheet.groups.filter((group) => group.id !== groupId),
+    })
+    setRows((list) => list.filter((row) => row.groupId !== groupId))
+  }
   const renameGroup = (groupId: string, name: string) =>
     patchSheet(
       sheet.id,
@@ -702,6 +731,8 @@ export function SheetPanel(props: Props) {
     toggleAll,
     allSelected: selectedIds.length > 0 && selectedIds.length === rows.length,
     someSelected: selectedIds.length > 0,
+    canRemoveGroup: sheet.groups.length > 1,
+    onRemoveGroup: removeGroup,
     onRenameGroup: renameGroup,
     spotRef,
   })

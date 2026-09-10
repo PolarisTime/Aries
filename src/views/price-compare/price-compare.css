@@ -257,3 +257,13 @@
 .price-compare-table .ant-table-tbody > tr.price-compare-drop-after > td {
   border-bottom: 2px solid #1677ff !important;
 }
+
+/* 分组删除: 悬停时显现, 默认不占视觉 */
+.price-compare-group-row .price-compare-group-del {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.price-compare-group-row:hover .price-compare-group-del {
+  opacity: 1;
+}
