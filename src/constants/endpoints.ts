@@ -74,6 +74,7 @@ export const ENDPOINTS = {
   MATERIALS_EXPORT: '/materials/export',
   MATERIALS_SEARCH: '/materials/search',
   MATERIAL_GRADES: '/materials/grades',
+  MATERIAL_BRANDS: '/materials/brands',
 
   // Master data code issuances
   MASTER_DATA_CODE_ISSUANCES: '/master-data/code-issuances',

@@ -1,8 +1,8 @@
-import { Form } from 'antd'
 import { useRef, useState } from 'react'
 import { BrandSettingsDrawer } from '../BrandSettingsDrawer'
+import { moveItem } from '../core'
 import { SheetPanel } from '../SheetPanel'
-import type { Brand } from '../types'
+import { useMaterialBrands } from '../useMaterialBrands'
 import type { DesignState } from './useDesignState'
 
 type Props = {
@@ -11,15 +11,14 @@ type Props = {
   chrome?: boolean
 }
 
-/** 设计草案共用: 单据表格 + 品牌设置抽屉。 */
+/** 设计草案共用: 单据表格 + 报价总设置抽屉。 */
 export function DesignSheet({
   state,
   density = 'small',
   chrome = true,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [form] = Form.useForm<{ brands: Brand[] }>()
-  const brandSelectRef = useRef<HTMLSpanElement>(null)
+  const materialBrands = useMaterialBrands()
   const spotRef = useRef<HTMLSpanElement>(null)
   const captureBtnRef = useRef<HTMLSpanElement>(null)
   const {
@@ -29,11 +28,16 @@ export function DesignSheet({
     catalog,
     brands,
     rows,
+    settings,
     patchSheet,
     setRows,
     setBrands,
+    setSettings,
     copyActiveSheet,
   } = state
+  const brandOptions = materialBrands.length
+    ? materialBrands
+    : catalog.map((item) => item.name)
 
   if (!active) return null
 
@@ -43,41 +47,30 @@ export function DesignSheet({
         sheet={active}
         data={data}
         varieties={varieties}
-        catalog={catalog}
         brands={brands}
         rows={rows}
         density={density}
         chrome={chrome}
         patchSheet={patchSheet}
         setRows={setRows}
-        setBrands={setBrands}
+        lengthPremium={settings.lengthPremium}
+        onReorderBrands={(from, to) =>
+          setBrands((current) => moveItem(current, from, to))
+        }
         onOpenSettings={() => setSettingsOpen(true)}
         onCopySheet={copyActiveSheet}
-        brandSelectRef={brandSelectRef}
         spotRef={spotRef}
         captureBtnRef={captureBtnRef}
       />
       <BrandSettingsDrawer
         open={settingsOpen}
-        catalog={catalog}
-        form={form}
+        brandOptions={brandOptions}
+        brands={brands}
+        lengthPremium={settings.lengthPremium}
         onClose={() => setSettingsOpen(false)}
-        onSave={() => {
-          void form.validateFields().then((values) => {
-            const next = (values.brands ?? []).reduce<Brand[]>(
-              (list, brand) => {
-                if (brand.name)
-                  list.push({
-                    name: brand.name,
-                    freight: Number(brand.freight) || 0,
-                  })
-                return list
-              },
-              [],
-            )
-            setBrands(next)
-            setSettingsOpen(false)
-          })
+        onSave={({ brands: nextBrands, lengthPremium }) => {
+          setBrands(nextBrands)
+          setSettings({ lengthPremium })
         }}
       />
     </>

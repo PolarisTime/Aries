@@ -82,6 +82,7 @@ describe('computeSummary', () => {
       sheet({ '_:r1': { ton: 10 }, '中天:r1': { spot: 3280 } }),
       [row12],
       brands,
+      30,
     )
     expect(summary.totalTon).toBe(10)
     expect(summary.filled).toBe(1)
@@ -94,10 +95,11 @@ describe('computeSummary', () => {
         sheet({ '中天:r1': { spot: 3280 } }),
         [row12],
         brands,
+        30,
       ).filled,
     ).toBe(0)
     expect(
-      computeSummary(data, sheet({ '_:r1': { ton: 10 } }), [row12], brands)
+      computeSummary(data, sheet({ '_:r1': { ton: 10 } }), [row12], brands, 30)
         .filled,
     ).toBe(0)
   })

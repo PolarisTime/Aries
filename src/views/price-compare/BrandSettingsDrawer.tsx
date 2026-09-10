@@ -1,137 +1,138 @@
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import type { FormInstance } from 'antd'
 import {
   Button,
+  Checkbox,
+  Divider,
   Drawer,
-  Form,
+  Flex,
   InputNumber,
-  Select,
   Space,
   Typography,
 } from 'antd'
-import { moveItem } from './core'
-import type { Brand, BrandOption } from './types'
+import { useState } from 'react'
+import type { Brand } from './types'
 
 const { Text } = Typography
-
-type BrandFormValues = { brands: Brand[] }
+const DEFAULT_FREIGHT = 30
 
 type Props = {
   open: boolean
-  catalog: BrandOption[]
-  form: FormInstance<BrandFormValues>
+  /** 可选品牌(来自系统商品资料) */
+  brandOptions: string[]
+  brands: Brand[]
+  lengthPremium: number
   onClose: () => void
-  onSave: () => void
+  onSave: (payload: { brands: Brand[]; lengthPremium: number }) => void
 }
 
-/** 比价设置: 品牌列与各品牌运费。 */
+/** 报价总设置: 12米加价 / 参与比价的品牌 / 各品牌运费。 */
 export function BrandSettingsDrawer({
   open,
-  catalog,
-  form,
+  brandOptions,
+  brands,
+  lengthPremium,
   onClose,
   onSave,
 }: Props) {
-  const moveBrand = (from: number, to: number) => {
-    const list = form.getFieldValue('brands') as Brand[] | undefined
-    form.setFieldsValue({ brands: moveItem(list ?? [], from, to) })
+  const [selected, setSelected] = useState<string[]>(() =>
+    brands.map((brand) => brand.name),
+  )
+  const [freightMap, setFreightMap] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {}
+    for (const name of brandOptions)
+      map[name] =
+        brands.find((brand) => brand.name === name)?.freight ?? DEFAULT_FREIGHT
+    for (const brand of brands)
+      map[brand.name] = map[brand.name] ?? brand.freight
+    return map
+  })
+  const [premium, setPremium] = useState<number>(() => lengthPremium)
+
+  const save = () => {
+    onSave({
+      lengthPremium: premium,
+      brands: selected.map((name) => ({
+        name,
+        freight: freightMap[name] ?? DEFAULT_FREIGHT,
+      })),
+    })
+    onClose()
   }
 
   return (
     <Drawer
-      title="比价设置"
-      size={420}
+      title="报价总设置"
+      size={460}
       open={open}
+      destroyOnHidden
       onClose={onClose}
       extra={
         <Space>
           <Button onClick={onClose}>取消</Button>
-          <Button type="primary" onClick={onSave}>
+          <Button type="primary" onClick={save}>
             保存
           </Button>
         </Space>
       }
     >
-      <Form form={form} layout="vertical">
-        <Form.List name="brands">
-          {(fields, { add, remove }) => (
-            <Space
-              orientation="vertical"
-              style={{ width: '100%' }}
-              size="small"
-            >
-              {fields.map((field, index) => (
-                <Space
-                  key={field.key}
-                  align="baseline"
-                  style={{ display: 'flex' }}
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = 'move'
-                    event.dataTransfer.setData('text/plain', String(index))
-                  }}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault()
-                    const from = Number(
-                      event.dataTransfer.getData('text/plain'),
-                    )
-                    if (!Number.isNaN(from)) moveBrand(from, index)
-                  }}
-                >
-                  <span className="price-compare-drag" title="拖拽调整顺序">
-                    ⠿
-                  </span>
-                  <Form.Item
-                    {...field}
-                    name={[field.name, 'name']}
-                    rules={[{ required: true, message: '选择品牌' }]}
-                    style={{ marginBottom: 8 }}
-                  >
-                    <Select
-                      style={{ width: 160 }}
-                      placeholder="品牌"
-                      options={catalog.map((item) => ({
-                        value: item.name,
-                        label: item.name,
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    {...field}
-                    name={[field.name, 'freight']}
-                    style={{ marginBottom: 8 }}
-                  >
+      <Flex vertical gap={16}>
+        <div>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            12米加价（元/吨，仅螺纹钢生效）
+          </Text>
+          <div style={{ marginTop: 4 }}>
+            <InputNumber
+              min={0}
+              max={999}
+              style={{ width: 160 }}
+              value={premium}
+              onChange={(value) => setPremium(value ?? 0)}
+            />
+          </div>
+        </div>
+
+        <Divider style={{ margin: 0 }} />
+
+        <div>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            参与比价的品牌（来自商品资料，勾选后作为表格列）
+          </Text>
+          <Checkbox.Group
+            style={{ width: '100%', marginTop: 8 }}
+            value={selected}
+            onChange={(values) => setSelected(values)}
+          >
+            <Flex vertical gap={6} style={{ width: '100%' }}>
+              {brandOptions.map((name) => (
+                <Flex key={name} justify="space-between" align="center">
+                  <Checkbox value={name}>{name}</Checkbox>
+                  <Space size={4}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      运费
+                    </Text>
                     <InputNumber
+                      size="small"
                       min={0}
                       max={9999}
-                      suffix="元/吨"
-                      style={{ width: 150 }}
+                      style={{ width: 80 }}
+                      value={freightMap[name] ?? DEFAULT_FREIGHT}
+                      onChange={(value) =>
+                        setFreightMap((prev) => ({
+                          ...prev,
+                          [name]: Number(value) || 0,
+                        }))
+                      }
                     />
-                  </Form.Item>
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => remove(field.name)}
-                  />
-                </Space>
+                  </Space>
+                </Flex>
               ))}
-              <Button
-                block
-                type="dashed"
-                icon={<PlusOutlined />}
-                onClick={() => add({ name: undefined, freight: 30 })}
-              >
-                添加品牌
-              </Button>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                品牌列的顺序即表格中的展示顺序；网价自动取自行情数据源。
-              </Text>
-            </Space>
-          )}
-        </Form.List>
-      </Form>
+            </Flex>
+          </Checkbox.Group>
+        </div>
+
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          差价 = 网价 − 现货 − 运费；12米加价仅对螺纹钢生效。
+        </Text>
+      </Flex>
     </Drawer>
   )
 }

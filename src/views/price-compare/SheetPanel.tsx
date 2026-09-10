@@ -1,5 +1,7 @@
 import {
   CameraOutlined,
+  CaretDownOutlined,
+  CaretRightOutlined,
   CopyOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
@@ -34,7 +36,6 @@ import {
   CATEGORIES,
   computeSummary,
   makeRow,
-  moveItem,
   netPrice,
   resolveRef,
   SHEET_COLUMN_WIDTH,
@@ -43,7 +44,6 @@ import {
 } from './core'
 import type {
   Brand,
-  BrandOption,
   GridRow,
   PriceData,
   PriceRow,
@@ -62,6 +62,8 @@ type ColumnContext = {
   sheet: PriceSheet
   refDate: string
   refPeriod: string
+  lengthPremium: number
+  varietyByLabel: Map<string, Variety>
   data: PriceData | null
   varieties: Variety[]
   brands: Brand[]
@@ -111,6 +113,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     sheet,
     refDate,
     refPeriod,
+    lengthPremium,
+    varietyByLabel,
     data,
     varieties,
     brands,
@@ -122,16 +126,16 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     patchRow,
     removeRow,
     moveFocus,
-    onReorderBrands,
     bestGroups,
     onToggleBest,
     onAddRow,
+    onReorderBrands,
     spotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(varieties)
   const isDimmed = (row: GridRow, brandName: string) => {
     if (!row.row || !bestGroups.includes(row.category)) return false
-    const best = bestBrandOfRow(data, sheet, row.row, brands)
+    const best = bestBrandOfRow(data, sheet, row.row, brands, lengthPremium)
     return best !== undefined && best !== brandName
   }
 
@@ -162,13 +166,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           )
         }
         const current = row.row
-        const value = varieties.find(
-          (item) =>
-            item.category === current?.category &&
-            item.material === current?.material &&
-            item.spec === current?.spec &&
-            item.length === current?.length,
-        )?.label
+        const value = current
+          ? varietyByLabel.get(
+              `${current.category}|${current.material}|${current.spec}|${current.length}`,
+            )?.label
+          : undefined
         return (
           <Select
             size="small"
@@ -179,15 +181,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             value={value}
             options={varietyOptions}
             onChange={(label) => {
-              const target = varieties.find((item) => item.label === label)
-              if (target && row.rowId) {
-                patchRow(row.rowId, {
-                  category: target.category,
-                  material: target.material,
-                  spec: target.spec,
-                  length: target.length,
-                })
-              }
+              const target = varietyByLabel.get(label)
+              if (!target || !row.rowId) return
+              patchRow(row.rowId, {
+                category: target.category,
+                material: target.material,
+                spec: target.spec,
+                length: target.length,
+              })
             }}
           />
         )
@@ -233,10 +234,19 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             disabled={locked}
             min={0}
             style={{ width: 58 }}
-            value={getTon(row.rowId)}
-            onChange={(value) =>
-              setInput(`_:${row.rowId}`, { ton: value ?? undefined })
-            }
+            defaultValue={getTon(row.rowId)}
+            onBlur={(event) => {
+              const raw = event.target.value
+              setInput(`_:${row.rowId}`, {
+                ton: raw === '' ? undefined : Number(raw),
+              })
+            }}
+            onPressEnter={(event) => {
+              const raw = (event.target as HTMLInputElement).value
+              setInput(`_:${row.rowId}`, {
+                ton: raw === '' ? undefined : Number(raw),
+              })
+            }}
           />
         ),
     },
@@ -271,7 +281,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 refPeriod,
                 brand.name,
                 row.row,
-                sheet.lengthPremium,
+                lengthPremium,
               )
               const dim = isDimmed(row, brand.name)
               return price === undefined ? (
@@ -301,31 +311,48 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   disabled={locked}
                   inputMode="decimal"
                   data-spot={`${brand.name}:${current.id}`}
-                  value={spot === undefined ? '' : String(spot)}
-                  onChange={(event) => {
-                    const value = event.target.value
-                    setInput(`${brand.name}:${current.id}`, {
-                      spot: value === '' ? undefined : Number(value),
-                    })
-                  }}
+                  defaultValue={spot === undefined ? '' : String(spot)}
                   onBlur={(event) => {
-                    const value = Number(event.target.value)
+                    const raw = event.target.value
+                    const value = Number(raw)
                     if (
-                      event.target.value !== '' &&
+                      raw !== '' &&
                       (Number.isNaN(value) ||
                         value <= 0 ||
                         value > SPOT_PRICE_MAX)
                     ) {
                       message.warning('现货价超出合理范围')
+                      return
                     }
+                    setInput(`${brand.name}:${current.id}`, {
+                      spot: raw === '' ? undefined : value,
+                    })
+                  }}
+                  onPressEnter={(event) => {
+                    const raw = (event.target as HTMLInputElement).value
+                    const value = Number(raw)
+                    if (
+                      raw === '' ||
+                      (!Number.isNaN(value) &&
+                        value > 0 &&
+                        value <= SPOT_PRICE_MAX)
+                    ) {
+                      setInput(`${brand.name}:${current.id}`, {
+                        spot: raw === '' ? undefined : value,
+                      })
+                    }
+                    event.preventDefault()
+                    moveFocus(brand.name, current.id, 1)
                   }}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === 'ArrowDown') {
+                    if (event.key === 'ArrowDown') {
                       event.preventDefault()
                       moveFocus(brand.name, current.id, 1)
                     } else if (event.key === 'ArrowUp') {
                       event.preventDefault()
                       moveFocus(brand.name, current.id, -1)
+                    } else if (event.key === 'Tab') {
+                      // Tab 交给浏览器/后续逻辑, 提交后移动由 onBlur 完成
                     }
                   }}
                 />
@@ -340,7 +367,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 refPeriod,
                 brand.name,
                 row.row,
-                sheet.lengthPremium,
+                lengthPremium,
               )
               const spot = getSpot(brand.name, row.row.id)
               if (price === undefined || spot === undefined) {
@@ -386,8 +413,6 @@ function SheetHeader({
   data,
   locked,
   capturing,
-  catalog,
-  brands,
   patchSheet,
   capture,
   captureBtnRef,
@@ -395,17 +420,17 @@ function SheetHeader({
   onCopySheet,
   onOpenSettings,
   summary,
-  setBrands,
-  brandSelectRef,
+  brandCount,
+  lengthPremium,
 }: {
   sheet: PriceSheet
   refDate: string
   refPeriod: string
+  lengthPremium: number
+  brandCount: number
   data: PriceData | null
   locked: boolean
   capturing: boolean
-  catalog: BrandOption[]
-  brands: Brand[]
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   capture: (copy: boolean) => Promise<void>
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
@@ -413,8 +438,6 @@ function SheetHeader({
   onCopySheet: () => void
   onOpenSettings: () => void
   summary: ReturnType<typeof computeSummary>
-  setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
-  brandSelectRef: React.RefObject<HTMLSpanElement | null>
 }) {
   return (
     <Flex vertical gap={8}>
@@ -533,63 +556,18 @@ function SheetHeader({
               }))}
             />
           </Space>
-          <Space size="small">
-            <Text type="secondary" className="price-compare-sub">
-              12米加价
-            </Text>
-            <InputNumber
-              size="small"
-              disabled={locked}
-              min={0}
-              style={{ width: 60 }}
-              value={sheet.lengthPremium}
-              onChange={(value) =>
-                patchSheet(sheet.id, { lengthPremium: value ?? 0 })
-              }
-            />
-          </Space>
-          <span ref={brandSelectRef}>
-            <Space size="small">
-              <Text type="secondary" className="price-compare-sub">
-                品牌
-              </Text>
-              <Select
-                size="small"
-                mode="multiple"
-                disabled={locked}
-                style={{ minWidth: 180 }}
-                placeholder="选择品牌"
-                value={brands.map((brand) => brand.name)}
-                options={catalog.map((item) => ({
-                  value: item.name,
-                  label: item.name,
-                }))}
-                onChange={(names) =>
-                  setBrands(() =>
-                    names.map(
-                      (name) =>
-                        brands.find((brand) => brand.name === name) ?? {
-                          name,
-                          freight:
-                            catalog.find((item) => item.name === name)
-                              ?.freight ?? 0,
-                        },
-                    ),
-                  )
-                }
-                maxTagCount="responsive"
-              />
-            </Space>
-          </span>
           <Button
             size="small"
             icon={<SettingOutlined />}
             onClick={onOpenSettings}
           >
-            运费
+            报价总设置
           </Button>
         </Flex>
         <Flex gap={12} align="center" className="price-compare-stats">
+          <Text type="secondary">
+            品牌 <Text strong>{brandCount}</Text> 个 · 12米 +{lengthPremium}
+          </Text>
           <Text>
             总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
           </Text>
@@ -628,17 +606,16 @@ type Props = {
   sheet: PriceSheet
   data: PriceData | null
   varieties: Variety[]
-  catalog: BrandOption[]
   brands: Brand[]
   rows: PriceRow[]
   density: 'small' | 'middle' | 'large'
+  lengthPremium: number
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
-  setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
+  onReorderBrands: (from: number, to: number) => void
   onOpenSettings: () => void
   onCopySheet: () => void
   chrome?: boolean
-  brandSelectRef: React.RefObject<HTMLSpanElement | null>
   spotRef: React.RefObject<HTMLSpanElement | null>
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -649,17 +626,16 @@ export function SheetPanel(props: Props) {
     sheet,
     data,
     varieties,
-    catalog,
     brands,
     rows,
     density,
+    lengthPremium,
     patchSheet,
     setRows,
-    setBrands,
+    onReorderBrands,
     onOpenSettings,
     onCopySheet,
     chrome = true,
-    brandSelectRef,
     spotRef,
     captureBtnRef,
   } = props
@@ -667,6 +643,16 @@ export function SheetPanel(props: Props) {
   const [capturing, setCapturing] = useState(false)
   const [collapsed, setCollapsed] = useState<string[]>([])
   const { refDate, refPeriod } = resolveRef(data, sheet)
+  const varietyByLabel = useMemo(
+    () =>
+      new Map(
+        varieties.map((item) => [
+          `${item.category}|${item.material}|${item.spec}|${item.length}`,
+          item,
+        ]),
+      ),
+    [varieties],
+  )
   const [bestGroups, setBestGroups] = useState<string[]>([])
   const locked = sheet.locked
 
@@ -698,8 +684,6 @@ export function SheetPanel(props: Props) {
     input?.select()
   }
 
-  const onReorderBrands = (from: number, to: number) =>
-    setBrands((current) => moveItem(current, from, to))
   const onToggleBest = (category: string) =>
     setBestGroups((current) =>
       current.includes(category)
@@ -760,6 +744,8 @@ export function SheetPanel(props: Props) {
     sheet,
     refDate,
     refPeriod,
+    lengthPremium,
+    varietyByLabel,
     data,
     varieties,
     brands,
@@ -771,10 +757,10 @@ export function SheetPanel(props: Props) {
     patchRow,
     removeRow,
     moveFocus,
-    onReorderBrands,
     bestGroups,
     onToggleBest,
     onAddRow,
+    onReorderBrands,
     spotRef,
   })
   const dataSource = useMemo(() => buildGridRows(rows), [rows])
@@ -785,6 +771,7 @@ export function SheetPanel(props: Props) {
     { ...sheet, refDate, refPeriod },
     rows,
     brands,
+    lengthPremium,
   )
 
   const content = (
@@ -802,12 +789,10 @@ export function SheetPanel(props: Props) {
           captureBtnRef={captureBtnRef}
           onAddRow={onAddRow}
           onCopySheet={onCopySheet}
-          summary={summary}
-          catalog={catalog}
-          brands={brands}
           onOpenSettings={onOpenSettings}
-          setBrands={setBrands}
-          brandSelectRef={brandSelectRef}
+          summary={summary}
+          brandCount={brands.length}
+          lengthPremium={lengthPremium}
         />
         <Table<GridRow>
           className="price-compare-table"
@@ -830,6 +815,17 @@ export function SheetPanel(props: Props) {
                   SHEET_COLUMN_WIDTH.diff),
           }}
           rowClassName={(row) => (row.isGroup ? 'price-compare-group-row' : '')}
+          expandIcon={({ expanded, onExpand, record }) =>
+            record.isGroup ? (
+              <button
+                type="button"
+                className="price-compare-expand"
+                onClick={(event) => onExpand(record, event)}
+              >
+                {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+              </button>
+            ) : null
+          }
           expandable={{
             expandedRowKeys: groupKeys.filter((key) => !collapsedSet.has(key)),
             onExpandedRowsChange: (keys) => {

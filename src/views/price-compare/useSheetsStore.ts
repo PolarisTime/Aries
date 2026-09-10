@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { copySheet, makeSheet } from './core'
+import { copySheet, DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
 const LS_KEY = 'aries-price-compare-v2'
@@ -10,12 +10,18 @@ type Snapshot = {
   sheets: PriceSheet[]
   activeId: string
   brands: Brand[]
+  settings: { lengthPremium: number }
 }
 
 function defaultState(): Snapshot {
   const a = makeSheet('批次 1', '', '', '', '', '')
   const b = makeSheet('批次 2', '', '', '', '', '')
-  return { sheets: [a, b], activeId: a.id, brands: [] }
+  return {
+    sheets: [a, b],
+    activeId: a.id,
+    brands: [],
+    settings: { lengthPremium: DEFAULT_LENGTH_PREMIUM },
+  }
 }
 
 function loadState(): Snapshot {
@@ -41,6 +47,8 @@ export type SheetsStore = {
   active: PriceSheet
   rows: PriceRow[]
   brands: Brand[]
+  settings: { lengthPremium: number }
+  setSettings: (patch: Partial<{ lengthPremium: number }>) => void
   canUndo: boolean
   canRedo: boolean
   undo: () => void
@@ -152,6 +160,12 @@ export function useSheetsStore(): SheetsStore {
     forceRender((version) => version + 1)
   }, [])
 
+  const setSettings = (patch: Partial<{ lengthPremium: number }>) =>
+    apply((current) => ({
+      ...current,
+      settings: { ...current.settings, ...patch },
+    }))
+
   const active = useMemo(
     () =>
       state.sheets.find((sheet) => sheet.id === state.activeId) ??
@@ -255,6 +269,8 @@ export function useSheetsStore(): SheetsStore {
     active,
     rows: active?.rows ?? [],
     brands: state.brands,
+    settings: state.settings,
+    setSettings,
     canUndo: historyRef.current.past.length > 0,
     canRedo: historyRef.current.future.length > 0,
     undo,

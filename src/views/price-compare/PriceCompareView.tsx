@@ -12,7 +12,6 @@ import {
   Card,
   Empty,
   Flex,
-  Form,
   Input,
   Segmented,
   Select,
@@ -28,9 +27,10 @@ import dayjs from 'dayjs'
 import { useEffect, useRef, useState } from 'react'
 import { modal } from '@/utils/antd-app'
 import { BrandSettingsDrawer } from './BrandSettingsDrawer'
-import { countMissing, resolveRef, SHEET_STATUS_META } from './core'
+import { countMissing, moveItem, resolveRef, SHEET_STATUS_META } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
+import { useMaterialBrands } from './useMaterialBrands'
 import { usePriceCompareData } from './usePriceCompareData'
 import { useSheetsStore } from './useSheetsStore'
 
@@ -99,8 +99,6 @@ function SheetTabLabel({
     </span>
   )
 }
-
-type BrandFormValues = { brands: Brand[] }
 
 function toggleFullscreen(): void {
   if (document.fullscreenElement) {
@@ -338,6 +336,8 @@ export function PriceCompareView() {
     active,
     rows,
     brands,
+    settings,
+    setSettings,
     canUndo,
     canRedo,
     undo,
@@ -356,7 +356,10 @@ export function PriceCompareView() {
   const [fullscreen, setFullscreen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
-  const [form] = Form.useForm<BrandFormValues>()
+  const materialBrands = useMaterialBrands()
+  const brandOptions = materialBrands.length
+    ? materialBrands
+    : catalog.map((item) => item.name)
 
   const brandSelectRef = useRef<HTMLSpanElement>(null)
   const spotRef = useRef<HTMLSpanElement>(null)
@@ -403,22 +406,7 @@ export function PriceCompareView() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
 
-  const openSettings = () => {
-    form.setFieldsValue({ brands: brands.map((brand) => ({ ...brand })) })
-    setSettingsOpen(true)
-  }
-  const saveSettings = () => {
-    void form.validateFields().then((values) => {
-      const next = (values.brands ?? []).reduce<Brand[]>((list, brand) => {
-        if (brand.name)
-          list.push({ name: brand.name, freight: Number(brand.freight) || 0 })
-        return list
-      }, [])
-      setBrands(next)
-      setSettingsOpen(false)
-    })
-  }
-
+  const openSettings = () => setSettingsOpen(true)
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({
       title: '删除该单据？',
@@ -501,16 +489,17 @@ export function PriceCompareView() {
             sheet={active}
             data={data}
             varieties={varieties}
-            catalog={catalog}
             brands={brands}
             rows={rows}
             density={density}
             patchSheet={patchSheet}
             setRows={setRows}
-            setBrands={setBrands}
             onOpenSettings={openSettings}
             onCopySheet={copyActiveSheet}
-            brandSelectRef={brandSelectRef}
+            lengthPremium={settings.lengthPremium}
+            onReorderBrands={(from, to) =>
+              setBrands((current) => moveItem(current, from, to))
+            }
             spotRef={spotRef}
             captureBtnRef={captureBtnRef}
           />
@@ -544,10 +533,14 @@ export function PriceCompareView() {
 
       <BrandSettingsDrawer
         open={settingsOpen}
-        catalog={catalog}
-        form={form}
+        brandOptions={brandOptions}
+        brands={brands}
+        lengthPremium={settings.lengthPremium}
         onClose={() => setSettingsOpen(false)}
-        onSave={saveSettings}
+        onSave={({ brands: nextBrands, lengthPremium }) => {
+          setBrands(nextBrands)
+          setSettings({ lengthPremium })
+        }}
       />
 
       <Tour

@@ -90,6 +90,7 @@ export function computeSummary(
   sheet: PriceSheet,
   rows: PriceRow[],
   brands: Brand[],
+  lengthPremium: number,
 ): SheetSummary {
   let totalTon = 0
   let filled = 0
@@ -104,7 +105,7 @@ export function computeSummary(
         sheet.refPeriod,
         brand.name,
         row,
-        sheet.lengthPremium,
+        lengthPremium,
       )
       const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
       if (auto === undefined || spot === undefined) continue
@@ -120,6 +121,7 @@ export function bestBrandOfRow(
   sheet: PriceSheet,
   row: PriceRow,
   brands: Brand[],
+  lengthPremium: number,
 ): string | undefined {
   let best: string | undefined
   let bestDiff = Number.NEGATIVE_INFINITY
@@ -130,7 +132,7 @@ export function bestBrandOfRow(
       sheet.refPeriod,
       brand.name,
       row,
-      sheet.lengthPremium,
+      lengthPremium,
     )
     const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
     if (auto === undefined || spot === undefined) continue
@@ -159,7 +161,7 @@ export function countMissing(
         sheet.refPeriod,
         brand.name,
         row,
-        sheet.lengthPremium,
+        0,
       )
       if (auto === undefined) continue
       const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
