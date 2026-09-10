@@ -13,9 +13,7 @@ import {
   DatePicker,
   Flex,
   Input,
-  Modal,
   Popconfirm,
-  Segmented,
   Select,
   Space,
   Table,
@@ -24,7 +22,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { message } from '@/utils/antd-app'
 import {
   bestBrandOfRow,
@@ -36,6 +34,7 @@ import {
   resolveRef,
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
+  syncSpotInputs,
 } from './core'
 import type {
   Brand,
@@ -43,6 +42,7 @@ import type {
   PriceData,
   PriceRow,
   PriceSheet,
+  SheetGroup,
   Variety,
 } from './types'
 import './price-compare.css'
@@ -64,7 +64,7 @@ type ColumnContext = {
   rows: PriceRow[]
   locked: boolean
   getSpot: (brandName: string, rowId: string) => number | undefined
-  setInput: (key: string, patch: { spot?: number }) => void
+  setSpot: (brandName: string, rowId: string, value: number | undefined) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
@@ -74,8 +74,7 @@ type ColumnContext = {
   selectedIds: string[]
   toggleSelect: (rowId: string, checked: boolean) => void
   toggleAll: (checked: boolean) => void
-  allSelected: boolean
-  someSelected: boolean
+  attachSpotRef: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -116,23 +115,21 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     rows,
     locked,
     getSpot,
-    setInput,
+    setSpot,
     patchRow,
     moveFocus,
     bestOn,
     selectedIds,
     toggleSelect,
     toggleAll,
-    allSelected,
-    someSelected,
     onRowDragStart,
     onRowDragEnd,
     onReorderBrands,
+    attachSpotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(ctx.varieties)
-  const selectableRows = rows.map((row) => row.id)
-  const allChecked = selectableRows.length > 0 && allSelected
-  const someChecked = someSelected && !allChecked
+  const allChecked = rows.length > 0 && selectedIds.length === rows.length
+  const someChecked = selectedIds.length > 0 && !allChecked
   const isDimmed = (row: GridRow, brandName: string) => {
     if (!bestOn) return false
     const best = bestBrandOfRow(data, sheet, row.row, brands, lengthPremium)
@@ -145,7 +142,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         <Checkbox
           checked={allChecked}
           indeterminate={someChecked}
-          disabled={locked || selectableRows.length === 0}
+          disabled={locked || rows.length === 0}
           onChange={(event) => toggleAll(event.target.checked)}
         />
       ),
@@ -263,7 +260,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             cellOf('现货', SHEET_COLUMN_WIDTH.spot, (_, row) => {
               const current = row.row
               const spot = getSpot(brand.name, current.id)
-              const isFirst = brandIndex === 0 && current.id === rows[0]?.id
+              const isFirst =
+                attachSpotRef && brandIndex === 0 && current.id === rows[0]?.id
               const input = (
                 <Input
                   className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
@@ -285,9 +283,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       message.warning('现货价超出合理范围')
                       return
                     }
-                    setInput(`${brand.name}:${current.id}`, {
-                      spot: raw === '' ? undefined : value,
-                    })
+                    setSpot(
+                      brand.name,
+                      current.id,
+                      raw === '' ? undefined : value,
+                    )
                   }}
                   onPressEnter={(event) => {
                     const raw = (event.target as HTMLInputElement).value
@@ -298,9 +298,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         value > 0 &&
                         value <= SPOT_PRICE_MAX)
                     ) {
-                      setInput(`${brand.name}:${current.id}`, {
-                        spot: raw === '' ? undefined : value,
-                      })
+                      setSpot(
+                        brand.name,
+                        current.id,
+                        raw === '' ? undefined : value,
+                      )
                     }
                     event.preventDefault()
                     moveFocus(brand.name, current.id, 1)
@@ -361,7 +363,174 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   ]
 }
 
-/* ---------------------------------------------------------------- 子组件 */
+/* ----------------------------------------------------------- 单个分组表格 */
+
+type GroupTableProps = {
+  group: SheetGroup
+  rows: PriceRow[]
+  canRemove: boolean
+  attachSpotRef: boolean
+  base: Omit<
+    ColumnContext,
+    'rows' | 'onRowDragStart' | 'onRowDragEnd' | 'toggleAll' | 'attachSpotRef'
+  > & { density: 'small' | 'middle' | 'large' }
+  onReorderRow: (
+    groupId: string,
+    fromId: string,
+    toId: string,
+    after: boolean,
+  ) => void
+  onAddRowToGroup: (groupId: string) => void
+  onRenameGroup: (groupId: string, name: string) => void
+  onRemoveGroup: (groupId: string) => void
+}
+
+function GroupTable(props: GroupTableProps) {
+  const {
+    group,
+    rows,
+    canRemove,
+    attachSpotRef,
+    base,
+    onReorderRow,
+    onAddRowToGroup,
+    onRenameGroup,
+    onRemoveGroup,
+  } = props
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dropId, setDropId] = useState<string | null>(null)
+  const [dropAfter, setDropAfter] = useState(false)
+  const { toggleSelect } = base
+
+  const onRowDragStart = (
+    rowId: string,
+    event: React.DragEvent<HTMLElement>,
+  ) => {
+    setDragId(rowId)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/row-id', rowId)
+    const tr = event.currentTarget.closest('tr')
+    if (tr) event.dataTransfer.setDragImage(tr, 24, tr.offsetHeight / 2)
+  }
+  const onRowDragEnd = () => {
+    setDragId(null)
+    setDropId(null)
+    setDropAfter(false)
+  }
+
+  const columns = buildSheetColumns({
+    ...base,
+    rows,
+    attachSpotRef,
+    onRowDragStart,
+    onRowDragEnd,
+    toggleAll: (checked) => {
+      for (const row of rows) toggleSelect(row.id, checked)
+    },
+  })
+  const dataSource = useMemo<GridRow[]>(
+    () => rows.map((row) => ({ key: row.id, rowId: row.id, row })),
+    [rows],
+  )
+
+  return (
+    <div className="price-compare-group">
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={8}
+        className="price-compare-group-head"
+      >
+        <Input
+          size="small"
+          variant="borderless"
+          className="price-compare-group-name"
+          style={{ width: 200, fontWeight: 600 }}
+          disabled={base.locked}
+          value={group.name}
+          onChange={(event) => onRenameGroup(group.id, event.target.value)}
+        />
+        <Space size={4}>
+          <Button
+            size="small"
+            disabled={base.locked}
+            onClick={() => onAddRowToGroup(group.id)}
+          >
+            ＋行
+          </Button>
+          {canRemove ? (
+            <Popconfirm
+              title="删除该分组及其行？"
+              okText="删除"
+              cancelText="取消"
+              disabled={base.locked}
+              onConfirm={() => onRemoveGroup(group.id)}
+            >
+              <Button
+                size="small"
+                danger
+                type="text"
+                disabled={base.locked}
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          ) : null}
+        </Space>
+      </Flex>
+      <Table<GridRow>
+        className="price-compare-table"
+        size={base.density}
+        bordered
+        tableLayout="fixed"
+        rowKey="key"
+        columns={columns}
+        dataSource={dataSource}
+        pagination={false}
+        rowClassName={(row) => {
+          const classes: string[] = []
+          if (row.rowId === dragId) classes.push('price-compare-dragging')
+          if (dragId && row.rowId === dropId && row.rowId !== dragId)
+            classes.push(
+              dropAfter
+                ? 'price-compare-drop-after'
+                : 'price-compare-drop-before',
+            )
+          return classes.join(' ')
+        }}
+        onRow={(row) => ({
+          onDragOver: (event) => {
+            if (!dragId) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'move'
+            const rect = event.currentTarget.getBoundingClientRect()
+            const after = event.clientY > rect.top + rect.height / 2
+            if (dropId !== row.rowId || dropAfter !== after) {
+              setDropId(row.rowId)
+              setDropAfter(after)
+            }
+          },
+          onDrop: (event) => {
+            event.preventDefault()
+            const fromId = event.dataTransfer.getData('text/row-id')
+            if (fromId) onReorderRow(group.id, fromId, row.rowId, dropAfter)
+            onRowDragEnd()
+          },
+        })}
+        scroll={{
+          x:
+            SHEET_COLUMN_WIDTH.spec +
+            base.brands.length *
+              (SHEET_COLUMN_WIDTH.net +
+                SHEET_COLUMN_WIDTH.spot +
+                SHEET_COLUMN_WIDTH.diff),
+        }}
+      />
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- 顶部栏 */
 
 function SheetHeader({
   sheet,
@@ -370,6 +539,7 @@ function SheetHeader({
   data,
   locked,
   patchSheet,
+  onAddGroup,
   onOpenSettings,
   bestOn,
   onToggleBest,
@@ -382,6 +552,7 @@ function SheetHeader({
   data: PriceData | null
   locked: boolean
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
+  onAddGroup: () => void
   onOpenSettings: () => void
   bestOn: boolean
   onToggleBest: () => void
@@ -465,6 +636,9 @@ function SheetHeader({
         gap={4}
         className="price-compare-actions"
       >
+        <Button size="small" disabled={locked} onClick={onAddGroup}>
+          ＋分组
+        </Button>
         <Button
           size="small"
           type={bestOn ? 'primary' : 'default'}
@@ -524,7 +698,7 @@ type Props = {
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
-/** 单个报单: 顶部按分组标签切换, 表格仅显示当前分组。 */
+/** 单个报单: 分组在下方堆叠展示, 现货价同品牌/规格/材质/长度自动联动。 */
 export function SheetPanel(props: Props) {
   const {
     sheet,
@@ -543,14 +717,6 @@ export function SheetPanel(props: Props) {
   } = props
   const [bestOn, setBestOn] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [dragId, setDragId] = useState<string | null>(null)
-  const [dropId, setDropId] = useState<string | null>(null)
-  const [dropAfter, setDropAfter] = useState(false)
-  const [renameOpen, setRenameOpen] = useState(false)
-  const [renameValue, setRenameValue] = useState('')
-  const [selectedGroupId, setSelectedGroupId] = useState(
-    sheet.groups[0]?.id ?? '',
-  )
   const locked = sheet.locked
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
@@ -564,33 +730,36 @@ export function SheetPanel(props: Props) {
     [varieties],
   )
 
-  useEffect(() => {
-    if (!sheet.groups.some((group) => group.id === selectedGroupId)) {
-      setSelectedGroupId(sheet.groups[0]?.id ?? '')
-    }
-  }, [sheet.groups, selectedGroupId])
-
-  const currentGroup =
-    sheet.groups.find((group) => group.id === selectedGroupId) ??
-    sheet.groups[0]
-  const groupRows = useMemo(
-    () => rows.filter((row) => row.groupId === currentGroup?.id),
-    [rows, currentGroup?.id],
-  )
-
   const getSpot = (brandName: string, rowId: string) =>
     sheet.inputs[`${brandName}:${rowId}`]?.spot
-  const setInput = (key: string, patch: { spot?: number }) =>
-    patchSheet(sheet.id, {
-      inputs: {
-        ...sheet.inputs,
-        [key]: { ...(sheet.inputs[key] ?? {}), ...patch },
-      },
-    })
   const patchRow = (rowId: string, patch: Partial<PriceRow>) =>
     setRows((list) =>
       list.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
     )
+
+  /** 现货价联动: 同批次内 品牌+类别+材质+规格+长度 相同则同步。 */
+  const setSpot = (
+    brandName: string,
+    rowId: string,
+    value: number | undefined,
+  ) => {
+    const { inputs, targets } = syncSpotInputs(
+      rows,
+      sheet.inputs,
+      brandName,
+      rowId,
+      value,
+    )
+    patchSheet(sheet.id, { inputs })
+    const text = value === undefined ? '' : String(value)
+    for (const target of targets) {
+      if (target.id === rowId) continue
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-spot="${brandName}:${target.id}"] input`,
+      )
+      if (input) input.value = text
+    }
+  }
 
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
@@ -600,8 +769,6 @@ export function SheetPanel(props: Props) {
           : [...current, rowId]
         : current.filter((id) => id !== rowId),
     )
-  const toggleAll = (checked: boolean) =>
-    setSelectedIds(checked ? groupRows.map((row) => row.id) : [])
   const removeSelected = () => {
     const ids = new Set(selectedIds)
     if (!ids.size) return
@@ -609,21 +776,28 @@ export function SheetPanel(props: Props) {
     setSelectedIds([])
   }
 
-  const moveFocus = (brandName: string, rowId: string, delta: number) => {
-    const index = groupRows.findIndex((row) => row.id === rowId)
-    const target = groupRows[index + delta]
-    if (!target) return
-    const input = document.querySelector<HTMLInputElement>(
-      `[data-spot="${brandName}:${target.id}"] input`,
-    )
-    input?.focus()
-    input?.select()
-  }
+  const moveFocus =
+    (groupRows: PriceRow[]) =>
+    (brandName: string, rowId: string, delta: number) => {
+      const index = groupRows.findIndex((row) => row.id === rowId)
+      const target = groupRows[index + delta]
+      if (!target) return
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-spot="${brandName}:${target.id}"] input`,
+      )
+      input?.focus()
+      input?.select()
+    }
 
-  const reorderRow = (fromId: string, toId: string, after: boolean) =>
+  const reorderRow = (
+    groupId: string,
+    fromId: string,
+    toId: string,
+    after: boolean,
+  ) =>
     setRows((list) => {
-      const inGroup = list.filter((row) => row.groupId === currentGroup?.id)
-      const others = list.filter((row) => row.groupId !== currentGroup?.id)
+      const inGroup = list.filter((row) => row.groupId === groupId)
+      const others = list.filter((row) => row.groupId !== groupId)
       const from = inGroup.findIndex((row) => row.id === fromId)
       const to = inGroup.findIndex((row) => row.id === toId)
       if (from < 0 || to < 0 || from === to) return list
@@ -631,30 +805,13 @@ export function SheetPanel(props: Props) {
       return [...others, ...moveItem(inGroup, from, insert)]
     })
 
-  const onRowDragStart = (
-    rowId: string,
-    event: React.DragEvent<HTMLElement>,
-  ) => {
-    setDragId(rowId)
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/row-id', rowId)
-    const tr = event.currentTarget.closest('tr')
-    if (tr) event.dataTransfer.setDragImage(tr, 24, tr.offsetHeight / 2)
-  }
-  const onRowDragEnd = () => {
-    setDragId(null)
-    setDropId(null)
-    setDropAfter(false)
-  }
-
   const addGroup = () => {
     const group = makeGroup(`分组 ${sheet.groups.length + 1}`)
     patchSheet(sheet.id, { groups: [...sheet.groups, group] })
     setRows((list) => [...list, makeRow(group.id)])
-    setSelectedGroupId(group.id)
   }
-  const addRow = () =>
-    setRows((list) => [...list, makeRow(currentGroup?.id ?? '')])
+  const addRowToGroup = (groupId: string) =>
+    setRows((list) => [...list, makeRow(groupId)])
   const renameGroup = (groupId: string, name: string) =>
     patchSheet(
       sheet.id,
@@ -671,9 +828,14 @@ export function SheetPanel(props: Props) {
       groups: sheet.groups.filter((group) => group.id !== groupId),
     })
     setRows((list) => list.filter((row) => row.groupId !== groupId))
+    setSelectedIds((current) =>
+      current.filter((id) =>
+        rows.some((row) => row.id === id && row.groupId !== groupId),
+      ),
+    )
   }
 
-  const columns = buildSheetColumns({
+  const base = {
     sheet,
     refDate,
     refPeriod,
@@ -682,28 +844,17 @@ export function SheetPanel(props: Props) {
     data,
     varieties,
     brands,
-    rows: groupRows,
+    density,
     locked,
     getSpot,
-    setInput,
+    setSpot,
     patchRow,
-    moveFocus,
     onReorderBrands,
-    onRowDragStart,
-    onRowDragEnd,
     bestOn,
     selectedIds,
     toggleSelect,
-    toggleAll,
-    allSelected:
-      selectedIds.length > 0 && selectedIds.length === groupRows.length,
-    someSelected: selectedIds.length > 0,
     spotRef,
-  })
-  const dataSource = useMemo<GridRow[]>(
-    () => groupRows.map((row) => ({ key: row.id, rowId: row.id, row })),
-    [groupRows],
-  )
+  }
 
   const content = (
     <>
@@ -714,6 +865,7 @@ export function SheetPanel(props: Props) {
         data={data}
         locked={locked}
         patchSheet={patchSheet}
+        onAddGroup={addGroup}
         onOpenSettings={onOpenSettings}
         bestOn={bestOn}
         onToggleBest={() => setBestOn((value) => !value)}
@@ -721,136 +873,23 @@ export function SheetPanel(props: Props) {
         onRemoveSelected={removeSelected}
       />
 
-      <Flex
-        justify="space-between"
-        align="center"
-        wrap="wrap"
-        gap={8}
-        className="price-compare-groupbar"
-      >
-        <Flex gap={8} align="center" wrap="wrap">
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            分组
-          </Text>
-          <Segmented
-            value={currentGroup?.id}
-            onChange={(value) => setSelectedGroupId(String(value))}
-            options={sheet.groups.map((group) => ({
-              value: group.id,
-              label: group.name,
-            }))}
+      {sheet.groups.map((group, index) => {
+        const groupRows = rows.filter((row) => row.groupId === group.id)
+        return (
+          <GroupTable
+            key={group.id}
+            group={group}
+            rows={groupRows}
+            canRemove={sheet.groups.length > 1}
+            attachSpotRef={index === 0}
+            base={{ ...base, moveFocus: moveFocus(groupRows) }}
+            onReorderRow={reorderRow}
+            onAddRowToGroup={addRowToGroup}
+            onRenameGroup={renameGroup}
+            onRemoveGroup={removeGroup}
           />
-        </Flex>
-        <Space size={4}>
-          <Button size="small" disabled={locked} onClick={addGroup}>
-            ＋分组
-          </Button>
-          <Button
-            size="small"
-            disabled={locked}
-            onClick={() => {
-              setRenameValue(currentGroup?.name ?? '')
-              setRenameOpen(true)
-            }}
-          >
-            重命名
-          </Button>
-          <Popconfirm
-            title="删除该分组及其行？"
-            okText="删除"
-            cancelText="取消"
-            disabled={locked || sheet.groups.length <= 1}
-            onConfirm={() => currentGroup && removeGroup(currentGroup.id)}
-          >
-            <Button
-              size="small"
-              danger
-              disabled={locked || sheet.groups.length <= 1}
-            >
-              删除分组
-            </Button>
-          </Popconfirm>
-          <Button size="small" disabled={locked} onClick={addRow}>
-            ＋规格行
-          </Button>
-        </Space>
-      </Flex>
-
-      <Table<GridRow>
-        className="price-compare-table"
-        size={density}
-        bordered
-        sticky
-        tableLayout="fixed"
-        rowKey="key"
-        columns={columns}
-        dataSource={dataSource}
-        pagination={false}
-        rowClassName={(row) => {
-          const classes: string[] = []
-          if (row.rowId === dragId) classes.push('price-compare-dragging')
-          if (dragId && row.rowId === dropId && row.rowId !== dragId)
-            classes.push(
-              dropAfter
-                ? 'price-compare-drop-after'
-                : 'price-compare-drop-before',
-            )
-          return classes.join(' ')
-        }}
-        onRow={(row) => ({
-          onDragOver: (event) => {
-            if (!dragId) return
-            event.preventDefault()
-            event.dataTransfer.dropEffect = 'move'
-            const rect = event.currentTarget.getBoundingClientRect()
-            const after = event.clientY > rect.top + rect.height / 2
-            if (dropId !== row.rowId || dropAfter !== after) {
-              setDropId(row.rowId)
-              setDropAfter(after)
-            }
-          },
-          onDrop: (event) => {
-            event.preventDefault()
-            const fromId = event.dataTransfer.getData('text/row-id')
-            if (fromId) reorderRow(fromId, row.rowId, dropAfter)
-            onRowDragEnd()
-          },
-        })}
-        scroll={{
-          x:
-            SHEET_COLUMN_WIDTH.spec +
-            brands.length *
-              (SHEET_COLUMN_WIDTH.net +
-                SHEET_COLUMN_WIDTH.spot +
-                SHEET_COLUMN_WIDTH.diff),
-        }}
-        style={{ marginTop: 8 }}
-      />
-
-      <Modal
-        open={renameOpen}
-        title="重命名分组"
-        okText="保存"
-        cancelText="取消"
-        onOk={() => {
-          const name = renameValue.trim()
-          if (name && currentGroup) renameGroup(currentGroup.id, name)
-          setRenameOpen(false)
-        }}
-        onCancel={() => setRenameOpen(false)}
-      >
-        <Input
-          value={renameValue}
-          maxLength={20}
-          placeholder="分组名称"
-          onChange={(event) => setRenameValue(event.target.value)}
-          onPressEnter={() => {
-            const name = renameValue.trim()
-            if (name && currentGroup) renameGroup(currentGroup.id, name)
-            setRenameOpen(false)
-          }}
-        />
-      </Modal>
+        )
+      })}
     </>
   )
 

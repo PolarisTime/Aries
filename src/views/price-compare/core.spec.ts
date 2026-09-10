@@ -5,6 +5,7 @@ import {
   makeRow,
   moveItem,
   netPrice,
+  syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
 
@@ -161,6 +162,26 @@ describe('countMissing', () => {
         brands,
       ),
     ).toBe(1)
+  })
+})
+
+describe('syncSpotInputs', () => {
+  it('相同 类别/材质/规格/长度 的行同步现货价', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const c = { ...row12, id: 'c', spec: 16 }
+    const { inputs, targets } = syncSpotInputs([a, b, c], {}, '中天', 'a', 3300)
+    expect(targets.map((row) => row.id).sort()).toEqual(['a', 'b'])
+    expect(inputs['中天:a'].spot).toBe(3300)
+    expect(inputs['中天:b'].spot).toBe(3300)
+    expect(inputs['中天:c']).toBeUndefined()
+  })
+
+  it('未选择商品的空行不联动', () => {
+    const a = makeRow('g1')
+    const b = makeRow('g1')
+    const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
+    expect(targets.map((row) => row.id)).toEqual([a.id])
   })
 })
 

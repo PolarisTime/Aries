@@ -4,6 +4,7 @@ import type {
   PriceRow,
   PriceSheet,
   SheetGroup,
+  SheetInputs,
 } from './types'
 
 export const CATEGORIES = ['螺纹钢', '盘螺', '高线', '圆钢']
@@ -22,6 +23,37 @@ export const LENGTHS: Record<string, string[]> = {
 
 export const dataKeyOf = (row: PriceRow) =>
   row.category && row.material ? `${row.category}|${row.material}` : ''
+
+/** 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。 */
+export const productKeyOf = (row: PriceRow) =>
+  row.category && row.material
+    ? `${row.category}|${row.material}|${row.spec}|${row.length}`
+    : ''
+
+/**
+ * 现货价联动: 返回同步后的 inputs 与需要联动的目标行。
+ * 同一商品键(类别/材质/规格/长度)的行共享同一品牌现货价。
+ */
+export function syncSpotInputs(
+  rows: PriceRow[],
+  inputs: SheetInputs,
+  brandName: string,
+  rowId: string,
+  value: number | undefined,
+): { inputs: SheetInputs; targets: PriceRow[] } {
+  const source = rows.find((row) => row.id === rowId)
+  if (!source) return { inputs, targets: [] }
+  const key = productKeyOf(source)
+  const targets = rows.filter(
+    (row) => row.id === rowId || (key && productKeyOf(row) === key),
+  )
+  const next: SheetInputs = { ...inputs }
+  for (const target of targets) {
+    const inputKey = `${brandName}:${target.id}`
+    next[inputKey] = { ...(next[inputKey] ?? {}), spot: value }
+  }
+  return { inputs: next, targets }
+}
 
 /** 12米加价生效的品种(业务规则) */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])

@@ -248,3 +248,17 @@
 .price-compare-table .ant-table-tbody > tr.price-compare-drop-after > td {
   border-bottom: 2px solid #1677ff !important;
 }
+
+/* 分组堆叠: 组间分隔 */
+.price-compare-group {
+  margin-top: 12px;
+}
+
+.price-compare-group + .price-compare-group {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 8px;
+}
+
+.price-compare-group-head {
+  padding: 2px 0;
+}
