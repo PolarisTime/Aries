@@ -22,7 +22,7 @@ export type PriceRow = {
   id: string
   category: string
   material: string
-  spec: number
+  spec: number | null
   length: string
 }
 
@@ -46,9 +46,6 @@ export type PriceSheet = {
 
 export type GridRow = {
   key: string
-  isGroup: boolean
-  category: string
-  rowId?: string
-  row?: PriceRow
-  children?: GridRow[]
+  rowId: string
+  row: PriceRow
 }

@@ -14,7 +14,8 @@ export const LENGTHS: Record<string, string[]> = {
   圆钢: ['9米', '12米'],
 }
 
-export const dataKeyOf = (row: PriceRow) => `${row.category}|${row.material}`
+export const dataKeyOf = (row: PriceRow) =>
+  row.category && row.material ? `${row.category}|${row.material}` : ''
 
 /** 12米加价生效的品种(业务规则) */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
@@ -50,11 +51,11 @@ export function netPrice(
   row: PriceRow,
   lengthPremium: number,
 ): number | undefined {
-  if (!data) return undefined
+  if (!data || row.spec === null || !row.material) return undefined
+  const key = dataKeyOf(row)
+  if (!key) return undefined
   const base =
-    data[refDate]?.[refPeriod]?.[brandName]?.[dataKeyOf(row)]?.[
-      String(row.spec)
-    ]
+    data[refDate]?.[refPeriod]?.[brandName]?.[key]?.[String(row.spec)]
   if (base === undefined) return undefined
   const premium =
     LENGTH_PREMIUM_CATEGORIES.has(row.category) && row.length === '12米'
@@ -172,27 +173,7 @@ export function countMissing(
 }
 
 export function buildGridRows(rows: PriceRow[]): GridRow[] {
-  const groups = new Map<string, GridRow>()
-  for (const row of rows) {
-    let group = groups.get(row.category)
-    if (!group) {
-      group = {
-        key: `h:${row.category}`,
-        isGroup: true,
-        category: row.category,
-        children: [],
-      }
-      groups.set(row.category, group)
-    }
-    group.children?.push({
-      key: row.id,
-      isGroup: false,
-      category: row.category,
-      rowId: row.id,
-      row,
-    })
-  }
-  return CATEGORIES.flatMap((category) => groups.get(category) ?? [])
+  return rows.map((row) => ({ key: row.id, rowId: row.id, row }))
 }
 
 /** 将 from 位置的元素移动到 to 位置(用于品牌列拖拽排序)。 */
@@ -211,27 +192,23 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   return next
 }
 
-export function makeRow(category: string = CATEGORIES[0]): PriceRow {
+export function makeRow(): PriceRow {
   return {
     id: Math.random().toString(36).slice(2, 8),
-    category,
-    material: 'HRB400E',
-    spec: (SPECS[category] ?? [12])[0],
-    length: (LENGTHS[category] ?? ['9米'])[0],
+    category: '',
+    material: '',
+    spec: null,
+    length: '',
   }
 }
 
 export const DEFAULT_STATUS = '报价'
 
+/** 新建单据默认行数(均为空行, 由用户自行选择商品)。 */
+const DEFAULT_ROW_COUNT = 5
+
 export function defaultSheetRows(): PriceRow[] {
-  return [
-    ...[12, 14, 16, 18, 20, 22, 25].map((spec) => ({
-      ...makeRow('螺纹钢'),
-      spec,
-      length: '9米',
-    })),
-    ...[6, 8, 10].map((spec) => ({ ...makeRow('盘螺'), spec, length: '-' })),
-  ]
+  return Array.from({ length: DEFAULT_ROW_COUNT }, () => makeRow())
 }
 
 export function makeSheet(

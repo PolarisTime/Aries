@@ -1,7 +1,5 @@
 import {
   CameraOutlined,
-  CaretDownOutlined,
-  CaretRightOutlined,
   CopyOutlined,
   DeleteOutlined,
   HolderOutlined,
@@ -78,9 +76,7 @@ type ColumnContext = {
   removeRow: (rowId: string) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
-  bestGroups: string[]
-  onToggleBest: (category: string) => void
-  onAddRow: (category?: string) => void
+  bestOn: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -93,7 +89,6 @@ const cellOf = (
   width,
   align: 'center' as const,
   render,
-  onCell: (row: GridRow) => (row.isGroup ? { colSpan: 0 } : {}),
 })
 
 function buildVarietyOptions(varieties: Variety[]) {
@@ -128,15 +123,13 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     patchRow,
     removeRow,
     moveFocus,
-    bestGroups,
-    onToggleBest,
-    onAddRow,
+    bestOn,
     onReorderBrands,
     spotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(varieties)
   const isDimmed = (row: GridRow, brandName: string) => {
-    if (!row.row || !bestGroups.includes(row.category)) return false
+    if (!bestOn) return false
     const best = bestBrandOfRow(data, sheet, row.row, brands, lengthPremium)
     return best !== undefined && best !== brandName
   }
@@ -147,47 +140,26 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: 24,
       fixed: 'left',
       align: 'center',
-      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
-      render: (_, row) =>
-        row.isGroup || !row.rowId ? null : (
-          <span
-            className="price-compare-row-drag"
-            draggable
-            title="拖拽调整行顺序"
-            onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = 'move'
-              event.dataTransfer.setData('text/row-id', row.rowId ?? '')
-            }}
-          >
-            <HolderOutlined />
-          </span>
-        ),
+      render: (_, row) => (
+        <span
+          className="price-compare-row-drag"
+          draggable
+          title="拖拽调整行顺序"
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData('text/row-id', row.rowId)
+          }}
+        >
+          <HolderOutlined />
+        </span>
+      ),
     },
     {
       title: '商品（类别 / 材质 / 规格 / 长度）',
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
-      onCell: (row) => (row.isGroup ? { colSpan: 4 + brands.length * 3 } : {}),
       render: (_, row) => {
-        if (row.isGroup) {
-          const active = bestGroups.includes(row.category)
-          return (
-            <Flex gap="small" align="center">
-              <b>{row.category}</b>
-              <Button size="small" onClick={() => onAddRow(row.category)}>
-                ＋行
-              </Button>
-              <Button
-                size="small"
-                type={active ? 'primary' : 'default'}
-                onClick={() => onToggleBest(row.category)}
-              >
-                {active ? '取消最优' : '一键最优'}
-              </Button>
-            </Flex>
-          )
-        }
         const current = row.row
         const value = current
           ? varietyByLabel.get(
@@ -200,12 +172,13 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             variant="borderless"
             disabled={locked}
             style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
+            placeholder="选择商品"
             showSearch={{ optionFilterProp: 'label' }}
             value={value}
             options={varietyOptions}
             onChange={(label) => {
               const target = varietyByLabel.get(label)
-              if (!target || !row.rowId) return
+              if (!target) return
               patchRow(row.rowId, {
                 category: target.category,
                 material: target.material,
@@ -222,56 +195,52 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: SHEET_COLUMN_WIDTH.action,
       fixed: 'left',
       align: 'center',
-      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
-      render: (_, row) =>
-        row.isGroup || !row.rowId ? null : (
-          <span className="price-compare-row-action">
-            <Popconfirm
-              title="删除该行？"
-              okText="删除"
-              cancelText="取消"
+      render: (_, row) => (
+        <span className="price-compare-row-action">
+          <Popconfirm
+            title="删除该行？"
+            okText="删除"
+            cancelText="取消"
+            disabled={locked}
+            onConfirm={() => removeRow(row.rowId)}
+          >
+            <Button
+              size="small"
+              type="text"
               disabled={locked}
-              onConfirm={() => removeRow(row.rowId ?? '')}
-            >
-              <Button
-                size="small"
-                type="text"
-                disabled={locked}
-                icon={<DeleteOutlined />}
-              />
-            </Popconfirm>
-          </span>
-        ),
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </span>
+      ),
     },
     {
       title: '吨',
       width: SHEET_COLUMN_WIDTH.ton,
       fixed: 'left',
       align: 'right',
-      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
-      render: (_, row) =>
-        row.isGroup || !row.rowId ? null : (
-          <InputNumber
-            size="small"
-            variant="borderless"
-            disabled={locked}
-            min={0}
-            style={{ width: 58 }}
-            defaultValue={getTon(row.rowId)}
-            onBlur={(event) => {
-              const raw = event.target.value
-              setInput(`_:${row.rowId}`, {
-                ton: raw === '' ? undefined : Number(raw),
-              })
-            }}
-            onPressEnter={(event) => {
-              const raw = (event.target as HTMLInputElement).value
-              setInput(`_:${row.rowId}`, {
-                ton: raw === '' ? undefined : Number(raw),
-              })
-            }}
-          />
-        ),
+      render: (_, row) => (
+        <InputNumber
+          size="small"
+          variant="borderless"
+          disabled={locked}
+          min={0}
+          style={{ width: 58 }}
+          defaultValue={getTon(row.rowId)}
+          onBlur={(event) => {
+            const raw = event.target.value
+            setInput(`_:${row.rowId}`, {
+              ton: raw === '' ? undefined : Number(raw),
+            })
+          }}
+          onPressEnter={(event) => {
+            const raw = (event.target as HTMLInputElement).value
+            setInput(`_:${row.rowId}`, {
+              ton: raw === '' ? undefined : Number(raw),
+            })
+          }}
+        />
+      ),
     },
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> => [
@@ -297,7 +266,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           ),
           children: [
             cellOf('网价', SHEET_COLUMN_WIDTH.net, (_, row) => {
-              if (row.isGroup || !row.row) return null
               const price = netPrice(
                 data,
                 refDate,
@@ -322,7 +290,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               )
             }),
             cellOf('现货', SHEET_COLUMN_WIDTH.spot, (_, row) => {
-              if (row.isGroup || !row.row) return null
               const current = row.row
               const spot = getSpot(brand.name, current.id)
               const isFirst = brandIndex === 0 && current.id === rows[0]?.id
@@ -383,7 +350,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               return isFirst ? <span ref={spotRef}>{input}</span> : input
             }),
             cellOf('差价', SHEET_COLUMN_WIDTH.diff, (_, row) => {
-              if (row.isGroup || !row.row) return null
               const price = netPrice(
                 data,
                 refDate,
@@ -421,7 +387,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       key: '__filler__',
       title: '',
       align: 'left',
-      onCell: (row: GridRow) => (row.isGroup ? { colSpan: 0 } : {}),
       render: () => null,
     },
   ]
@@ -442,6 +407,8 @@ function SheetHeader({
   onAddRow,
   onCopySheet,
   onOpenSettings,
+  bestOn,
+  onToggleBest,
   summary,
   brandCount,
   lengthPremium,
@@ -457,9 +424,11 @@ function SheetHeader({
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   capture: (copy: boolean) => Promise<void>
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
-  onAddRow: (category?: string) => void
+  onAddRow: () => void
   onCopySheet: () => void
   onOpenSettings: () => void
+  bestOn: boolean
+  onToggleBest: () => void
   summary: ReturnType<typeof computeSummary>
 }) {
   return (
@@ -485,7 +454,14 @@ function SheetHeader({
           </Text>
         </Flex>
         <Space size={4}>
-          <Button size="small" disabled={locked} onClick={() => onAddRow()}>
+          <Button
+            size="small"
+            type={bestOn ? 'primary' : 'default'}
+            onClick={onToggleBest}
+          >
+            {bestOn ? '取消最优' : '一键最优'}
+          </Button>
+          <Button size="small" disabled={locked} onClick={onAddRow}>
             ＋规格行
           </Button>
           <Button size="small" onClick={onCopySheet}>
@@ -664,7 +640,6 @@ export function SheetPanel(props: Props) {
   } = props
   const captureRef = useRef<HTMLDivElement>(null)
   const [capturing, setCapturing] = useState(false)
-  const [collapsed, setCollapsed] = useState<string[]>([])
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
     () =>
@@ -676,7 +651,7 @@ export function SheetPanel(props: Props) {
       ),
     [varieties],
   )
-  const [bestGroups, setBestGroups] = useState<string[]>([])
+  const [bestOn, setBestOn] = useState(false)
   const locked = sheet.locked
 
   const getSpot = (brandName: string, rowId: string) =>
@@ -707,37 +682,15 @@ export function SheetPanel(props: Props) {
     input?.select()
   }
 
-  const onToggleBest = (category: string) =>
-    setBestGroups((current) =>
-      current.includes(category)
-        ? current.filter((item) => item !== category)
-        : [...current, category],
-    )
   const onReorderRow = (fromId: string, toId: string) =>
     setRows((list) => {
       const from = list.findIndex((row) => row.id === fromId)
       const to = list.findIndex((row) => row.id === toId)
       if (from < 0 || to < 0 || from === to) return list
-      const targetCategory = list[to].category
-      return moveItem(list, from, to).map((row) =>
-        row.id === fromId ? { ...row, category: targetCategory } : row,
-      )
+      return moveItem(list, from, to)
     })
 
-  const onAddRow = (category?: string) => {
-    const targetCategory = category ?? CATEGORIES[0]
-    const variety = varieties.find((item) => item.category === targetCategory)
-    const row = variety
-      ? {
-          id: Math.random().toString(36).slice(2, 8),
-          category: variety.category,
-          material: variety.material,
-          spec: variety.spec,
-          length: variety.length,
-        }
-      : makeRow(targetCategory)
-    setRows((list) => [...list, row])
-  }
+  const onAddRow = () => setRows((list) => [...list, makeRow()])
 
   const capture = async (copy: boolean) => {
     if (!captureRef.current) return
@@ -791,15 +744,11 @@ export function SheetPanel(props: Props) {
     patchRow,
     removeRow,
     moveFocus,
-    bestGroups,
-    onToggleBest,
-    onAddRow,
+    bestOn,
     onReorderBrands,
     spotRef,
   })
   const dataSource = useMemo(() => buildGridRows(rows), [rows])
-  const groupKeys = dataSource.map((row) => row.key)
-  const collapsedSet = useMemo(() => new Set(collapsed), [collapsed])
   const summary = computeSummary(
     data,
     { ...sheet, refDate, refPeriod },
@@ -824,6 +773,8 @@ export function SheetPanel(props: Props) {
           onAddRow={onAddRow}
           onCopySheet={onCopySheet}
           onOpenSettings={onOpenSettings}
+          bestOn={bestOn}
+          onToggleBest={() => setBestOn((value) => !value)}
           summary={summary}
           brandCount={brands.length}
           lengthPremium={lengthPremium}
@@ -848,37 +799,14 @@ export function SheetPanel(props: Props) {
                   SHEET_COLUMN_WIDTH.spot +
                   SHEET_COLUMN_WIDTH.diff),
           }}
-          rowClassName={(row) => (row.isGroup ? 'price-compare-group-row' : '')}
-          onRow={(row) =>
-            row.isGroup || !row.rowId
-              ? {}
-              : {
-                  onDragOver: (event) => event.preventDefault(),
-                  onDrop: (event) => {
-                    event.preventDefault()
-                    const fromId = event.dataTransfer.getData('text/row-id')
-                    if (fromId) onReorderRow(fromId, row.rowId ?? '')
-                  },
-                }
-          }
-          expandIcon={({ expanded, onExpand, record }) =>
-            record.isGroup ? (
-              <button
-                type="button"
-                className="price-compare-expand"
-                onClick={(event) => onExpand(record, event)}
-              >
-                {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
-              </button>
-            ) : null
-          }
-          expandable={{
-            expandedRowKeys: groupKeys.filter((key) => !collapsedSet.has(key)),
-            onExpandedRowsChange: (keys) => {
-              const expanded = new Set(keys.map(String))
-              setCollapsed(groupKeys.filter((key) => !expanded.has(key)))
+          onRow={(row) => ({
+            onDragOver: (event) => event.preventDefault(),
+            onDrop: (event) => {
+              event.preventDefault()
+              const fromId = event.dataTransfer.getData('text/row-id')
+              if (fromId) onReorderRow(fromId, row.rowId)
             },
-          }}
+          })}
           style={{ marginTop: 8 }}
         />
         <SummaryBar summary={summary} />

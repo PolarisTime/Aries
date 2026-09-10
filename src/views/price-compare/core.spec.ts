@@ -171,19 +171,21 @@ describe('moveItem', () => {
 })
 
 describe('buildGridRows / makeRow', () => {
-  it('按类别分组, 组行不携带数据', () => {
+  it('按行顺序平铺, 每行携带自身数据', () => {
     const rows = buildGridRows([
       row12,
       { ...row12, id: 'r3', category: '盘螺', spec: 6, length: '-' },
     ])
-    expect(rows.map((row) => row.category)).toEqual(['螺纹钢', '盘螺'])
-    expect(rows[0].isGroup).toBe(true)
-    expect(rows[0].children?.[0].row?.id).toBe('r1')
+    expect(rows.map((row) => row.row.id)).toEqual(['r1', 'r3'])
+    expect(rows[0].rowId).toBe('r1')
+    expect(rows[0].row?.category).toBe('螺纹钢')
   })
 
-  it('makeRow 使用类别的默认规格与长度', () => {
-    expect(makeRow('盘螺').spec).toBe(6)
-    expect(makeRow('盘螺').length).toBe('-')
-    expect(makeRow('螺纹钢').length).toBe('9米')
+  it('makeRow 生成空行', () => {
+    const row = makeRow()
+    expect(row.category).toBe('')
+    expect(row.material).toBe('')
+    expect(row.spec).toBeNull()
+    expect(row.length).toBe('')
   })
 })
