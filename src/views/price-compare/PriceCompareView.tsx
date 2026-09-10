@@ -15,6 +15,7 @@ import {
   Form,
   Input,
   Segmented,
+  Select,
   Skeleton,
   Space,
   Tabs,
@@ -28,7 +29,7 @@ import { modal } from '@/utils/antd-app'
 import { BrandSettingsDrawer } from './BrandSettingsDrawer'
 import { countMissing } from './core'
 import { SheetPanel } from './SheetPanel'
-import type { Brand } from './types'
+import type { Brand, PriceSheet, ProjectOption } from './types'
 import { usePriceCompareData } from './usePriceCompareData'
 import { useSheetsStore } from './useSheetsStore'
 import './price-compare.css'
@@ -41,6 +42,23 @@ const SHEET_STATUS_COLOR: Record<string, string> = {
   已报: '#faad14',
   成交: '#389e0d',
   作废: '#bfbfbf',
+}
+
+function projectAbbrOf(
+  projects: ProjectOption[],
+  projectId: string,
+  fallback: string,
+): string {
+  for (const project of projects) {
+    if (project.id === projectId) return project.abbr || project.name
+  }
+  return fallback || '未指定项目'
+}
+
+type ProjectGroup = {
+  projectId: string
+  projectName: string
+  sheets: PriceSheet[]
 }
 
 function SheetTabLabel({
@@ -97,6 +115,159 @@ function toggleFullscreen(): void {
   } else {
     void document.getElementById('price-compare-root')?.requestFullscreen()
   }
+}
+
+type PriceCompareHeaderProps = {
+  density: 'small' | 'middle' | 'large'
+  fullscreen: boolean
+  canUndo: boolean
+  canRedo: boolean
+  onDensityChange: (value: 'small' | 'middle' | 'large') => void
+  onToggleFullscreen: () => void
+  onUndo: () => void
+  onRedo: () => void
+}
+
+/** 页面头: 标题 + 密度/全屏/撤销/重做。 */
+function PriceCompareHeader({
+  density,
+  fullscreen,
+  canUndo,
+  canRedo,
+  onDensityChange,
+  onToggleFullscreen,
+  onUndo,
+  onRedo,
+}: PriceCompareHeaderProps) {
+  return (
+    <div className="price-compare-head">
+      <div>
+        <h1>报单比价</h1>
+        <span className="price-compare-desc">
+          项目 → 批次 → 类别分组 · Ctrl+Z 撤销 · 锁定防改 · 一键截图
+        </span>
+      </div>
+      <Space>
+        <Segmented
+          size="small"
+          value={density}
+          onChange={(value) =>
+            onDensityChange(value as 'small' | 'middle' | 'large')
+          }
+          options={[
+            { label: '紧凑', value: 'small' },
+            { label: '适中', value: 'middle' },
+            { label: '宽松', value: 'large' },
+          ]}
+        />
+        <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
+          <Button
+            size="small"
+            icon={
+              fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
+            }
+            onClick={onToggleFullscreen}
+          />
+        </Tooltip>
+        <Tooltip title="撤销 (Ctrl+Z)">
+          <Button
+            size="small"
+            icon={<UndoOutlined />}
+            disabled={!canUndo}
+            onClick={onUndo}
+          />
+        </Tooltip>
+        <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
+          <Button
+            size="small"
+            icon={<RedoOutlined />}
+            disabled={!canRedo}
+            onClick={onRedo}
+          />
+        </Tooltip>
+      </Space>
+    </div>
+  )
+}
+
+type ProjectBatchTabsProps = {
+  projects: ProjectOption[]
+  projectGroups: ProjectGroup[]
+  activeProjectId: string
+  activeId: string
+  projectItems: import('antd').TabsProps['items']
+  batchItems: import('antd').TabsProps['items']
+  onSwitchProject: (projectId: string) => void
+  onSwitchBatch: (id: string) => void
+  onAddBatch: () => void
+  onRemoveBatch: (id: string) => void
+  onAddProjectBatch: (projectId: string) => void
+}
+
+/** 大 Tab(项目) -> 批次 Tab。 */
+function ProjectBatchTabs({
+  projects,
+  projectGroups,
+  activeProjectId,
+  activeId,
+  projectItems,
+  batchItems,
+  onSwitchProject,
+  onSwitchBatch,
+  onAddBatch,
+  onRemoveBatch,
+  onAddProjectBatch,
+}: ProjectBatchTabsProps) {
+  const availableProjects = (() => {
+    const options: { value: string; label: string }[] = []
+    for (const project of projects) {
+      let used = false
+      for (const group of projectGroups) {
+        if (group.projectId === project.id) {
+          used = true
+          break
+        }
+      }
+      if (!used)
+        options.push({
+          value: project.id,
+          label: `${project.abbr} · ${project.name}`,
+        })
+    }
+    return options
+  })()
+
+  return (
+    <>
+      <Tabs
+        size="small"
+        activeKey={activeProjectId}
+        onChange={onSwitchProject}
+        items={projectItems}
+        tabBarExtraContent={
+          <Select
+            size="small"
+            style={{ width: 190 }}
+            placeholder="＋ 项目批次"
+            showSearch={{ optionFilterProp: 'label' }}
+            value={null}
+            options={availableProjects}
+            onChange={onAddProjectBatch}
+          />
+        }
+      />
+      <Tabs
+        type="editable-card"
+        size="small"
+        activeKey={activeId}
+        onChange={onSwitchBatch}
+        onEdit={(target, action) =>
+          action === 'add' ? onAddBatch() : onRemoveBatch(String(target))
+        }
+        items={batchItems}
+      />
+    </>
+  )
 }
 
 /** 比价页: 多单据 + 品牌分项对比。 */
@@ -192,11 +363,46 @@ export function PriceCompareView() {
       onOk: () => removeSheet(id),
     })
 
-  const tabItems = useMemo(
+  const projectGroups = useMemo(() => {
+    const groups: ProjectGroup[] = []
+    for (const sheet of sheets) {
+      let group = groups.find((item) => item.projectId === sheet.projectId)
+      if (!group) {
+        group = {
+          projectId: sheet.projectId,
+          projectName: sheet.projectName,
+          sheets: [],
+        }
+        groups.push(group)
+      }
+      group.sheets.push(sheet)
+    }
+    return groups
+  }, [sheets])
+
+  const activeProjectId = active?.projectId ?? projectGroups[0]?.projectId ?? ''
+
+  const projectTabItems = useMemo(
     () =>
-      sheets.map((sheet) => {
+      projectGroups.map((group) => ({
+        key: group.projectId,
+        label: (
+          <span>
+            {projectAbbrOf(projects, group.projectId, group.projectName)}{' '}
+            <Badge count={group.sheets.length} size="small" color="#1677ff" />
+          </span>
+        ),
+      })),
+    [projectGroups, projects],
+  )
+
+  const batchTabItems = useMemo(() => {
+    const items = []
+    for (const group of projectGroups) {
+      if (group.projectId !== activeProjectId) continue
+      for (const sheet of group.sheets) {
         const missing = countMissing(data, sheet, sheet.rows, brands)
-        return {
+        items.push({
           key: sheet.id,
           closable: sheets.length > 1,
           label: (
@@ -210,10 +416,16 @@ export function PriceCompareView() {
               ) : null}
             </span>
           ),
-        }
-      }),
-    [sheets, data, brands, patchSheet],
-  )
+        })
+      }
+    }
+    return items
+  }, [projectGroups, activeProjectId, data, brands, sheets.length, patchSheet])
+
+  const switchProject = (projectId: string) => {
+    const group = projectGroups.find((item) => item.projectId === projectId)
+    if (group?.sheets.length) setActiveId(group.sheets[0].id)
+  }
 
   if (loading) {
     return (
@@ -238,66 +450,34 @@ export function PriceCompareView() {
 
   return (
     <div id="price-compare-root" className="price-compare-page">
-      <div className="price-compare-head">
-        <div>
-          <h1>报单比价</h1>
-          <span className="price-compare-desc">
-            多单据 · 手工录入（回车/上下切换）· Ctrl+Z 撤销 · 锁定防改 ·
-            一键截图
-          </span>
-        </div>
-        <Space>
-          <Segmented
-            size="small"
-            value={density}
-            onChange={(value) =>
-              setDensity(value as 'small' | 'middle' | 'large')
-            }
-            options={[
-              { label: '紧凑', value: 'small' },
-              { label: '适中', value: 'middle' },
-              { label: '宽松', value: 'large' },
-            ]}
-          />
-          <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
-            <Button
-              size="small"
-              icon={
-                fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
-              }
-              onClick={toggleFullscreen}
-            />
-          </Tooltip>
-          <Tooltip title="撤销 (Ctrl+Z)">
-            <Button
-              size="small"
-              icon={<UndoOutlined />}
-              disabled={!canUndo}
-              onClick={undo}
-            />
-          </Tooltip>
-          <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
-            <Button
-              size="small"
-              icon={<RedoOutlined />}
-              disabled={!canRedo}
-              onClick={redo}
-            />
-          </Tooltip>
-        </Space>
-      </div>
+      <PriceCompareHeader
+        density={density}
+        onDensityChange={setDensity}
+        fullscreen={fullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+      />
 
-      <Tabs
-        type="editable-card"
-        size="small"
-        activeKey={activeId}
-        onChange={setActiveId}
-        onEdit={(target, action) =>
-          action === 'add'
-            ? addSheet(sheets[0]?.projectId ?? '')
-            : confirmRemoveSheet(String(target))
+      <ProjectBatchTabs
+        projects={projects}
+        projectGroups={projectGroups}
+        activeProjectId={activeProjectId}
+        activeId={activeId}
+        projectItems={projectTabItems}
+        batchItems={batchTabItems}
+        onSwitchProject={switchProject}
+        onSwitchBatch={setActiveId}
+        onAddBatch={() =>
+          addSheet(active?.projectId ?? '', active?.projectName ?? '')
         }
-        items={tabItems}
+        onRemoveBatch={(id) => confirmRemoveSheet(id)}
+        onAddProjectBatch={(projectId) => {
+          const project = projects.find((item) => item.id === projectId)
+          if (project) addSheet(project.id, project.abbr || project.name)
+        }}
       />
 
       {active ? (
@@ -310,7 +490,6 @@ export function PriceCompareView() {
             sheet={active}
             data={data}
             varieties={varieties}
-            projects={projects}
             catalog={catalog}
             brands={brands}
             rows={rows}
@@ -327,9 +506,14 @@ export function PriceCompareView() {
         </Watermark>
       ) : (
         <Card>
-          <Empty description="暂无单据">
-            <Button type="primary" onClick={() => addSheet('')}>
-              新建单据
+          <Empty description="暂无批次">
+            <Button
+              type="primary"
+              onClick={() =>
+                addSheet(projects[0]?.id ?? '', projects[0]?.abbr ?? '')
+              }
+            >
+              新建批次
             </Button>
           </Empty>
         </Card>

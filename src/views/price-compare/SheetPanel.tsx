@@ -46,7 +46,6 @@ import type {
   PriceData,
   PriceRow,
   PriceSheet,
-  ProjectOption,
   Variety,
 } from './types'
 
@@ -363,7 +362,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
 function SheetHeader({
   sheet,
   data,
-  projects,
   locked,
   capturing,
   patchSheet,
@@ -374,7 +372,6 @@ function SheetHeader({
 }: {
   sheet: PriceSheet
   data: PriceData | null
-  projects: ProjectOption[]
   locked: boolean
   capturing: boolean
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
@@ -405,19 +402,7 @@ function SheetHeader({
           <Text type="secondary" className="price-compare-sub">
             项目
           </Text>
-          <Select
-            size="small"
-            style={{ width: 190 }}
-            showSearch={{ optionFilterProp: 'label' }}
-            disabled={locked}
-            placeholder="选择系统项目"
-            value={sheet.projectId || undefined}
-            options={projects.map((project) => ({
-              value: project.id,
-              label: `${project.abbr} · ${project.name}`,
-            }))}
-            onChange={(value) => patchSheet(sheet.id, { projectId: value })}
-          />
+          <Text strong>{sheet.projectName || '未指定'}</Text>
         </Space>
         <Space size="small">
           <Text type="secondary" className="price-compare-sub">
@@ -630,7 +615,6 @@ type Props = {
   sheet: PriceSheet
   data: PriceData | null
   varieties: Variety[]
-  projects: ProjectOption[]
   catalog: BrandOption[]
   brands: Brand[]
   rows: PriceRow[]
@@ -651,7 +635,6 @@ export function SheetPanel(props: Props) {
     sheet,
     data,
     varieties,
-    projects,
     catalog,
     brands,
     rows,
@@ -775,7 +758,6 @@ export function SheetPanel(props: Props) {
         <SheetHeader
           sheet={sheet}
           data={data}
-          projects={projects}
           locked={locked}
           capturing={capturing}
           patchSheet={patchSheet}

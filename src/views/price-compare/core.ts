@@ -201,6 +201,7 @@ export function defaultSheetRows(): PriceRow[] {
 export function makeSheet(
   name: string,
   projectId: string,
+  projectName: string,
   orderDate: string,
   refDate: string,
   refPeriod: string,
@@ -210,6 +211,7 @@ export function makeSheet(
     name,
     status: DEFAULT_STATUS,
     projectId,
+    projectName,
     orderDate,
     refDate,
     refPeriod,

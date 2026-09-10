@@ -34,6 +34,7 @@ export type PriceSheet = {
   name: string
   status: string
   projectId: string
+  projectName: string
   orderDate: string
   refDate: string
   refPeriod: string
