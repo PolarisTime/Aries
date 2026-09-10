@@ -1,3 +1,5 @@
+/* 报单比价: 使用项目统一样式令牌(theme / ant-color / text 变量), 支持暗色 */
+
 .price-compare-page {
   padding: 12px;
 }
@@ -21,7 +23,7 @@
 .price-compare-head .price-compare-desc {
   margin-left: 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-placeholder);
 }
 
 .price-compare-num {
@@ -37,25 +39,25 @@
   display: inline-block;
   min-width: 46px;
   padding: 0 6px;
-  border-radius: 4px;
+  border-radius: var(--ant-border-radius, 6px);
   font-weight: 600;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .price-compare-diff.is-pos {
-  background: #f6ffed;
-  color: #389e0d;
+  background: var(--color-success-bg, #f6ffed);
+  color: var(--color-success-active, #389e0d);
 }
 
 .price-compare-diff.is-neg {
-  background: #fff1f0;
-  color: #cf1322;
+  background: var(--color-danger-bg, #fff1f0);
+  color: var(--color-danger-active, #cf1322);
 }
 
 .price-compare-diff.is-zero {
-  background: rgba(0, 0, 0, 0.04);
-  color: rgba(0, 0, 0, 0.45);
+  background: var(--ant-color-fill-tertiary, rgba(0, 0, 0, 0.04));
+  color: var(--text-placeholder);
 }
 
 .price-compare-brand-name {
@@ -65,12 +67,12 @@
 
 .price-compare-sub {
   font-size: 11px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-placeholder);
 }
 
 .price-compare-legend {
   font-size: 11px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-placeholder);
 }
 
 .price-compare-legend i {
@@ -81,13 +83,13 @@
 }
 
 .price-compare-legend i.is-pos {
-  background: #f6ffed;
-  color: #389e0d;
+  background: var(--color-success-bg, #f6ffed);
+  color: var(--color-success-active, #389e0d);
 }
 
 .price-compare-legend i.is-neg {
-  background: #fff1f0;
-  color: #cf1322;
+  background: var(--color-danger-bg, #fff1f0);
+  color: var(--color-danger-active, #cf1322);
 }
 
 .price-compare-spot input {
@@ -96,26 +98,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-.price-compare-summary {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  padding: 6px 12px;
-  background: var(--ant-color-bg-container, #fff);
-  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-}
-
 .price-compare-spot {
   width: 100%;
 }
 
 .price-compare-drag {
   cursor: grab;
-  color: rgba(0, 0, 0, 0.35);
+  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.45));
   user-select: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .price-compare-dim {
@@ -154,44 +148,20 @@
   line-height: 20px;
 }
 
-/* 视觉优化: 层级与密度 */
-.price-compare-sheet-name {
-  padding-left: 0 !important;
-}
-
-.price-compare-sheet-name:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.price-compare-settings {
-  font-size: 12px;
-}
-
-.price-compare-stats {
-  padding: 2px 0;
-}
-
 .price-compare-table .ant-table-thead > tr > th {
-  background: #fafafa !important;
-  color: rgba(0, 0, 0, 0.62);
+  background: var(--theme-table-header-bg) !important;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.62));
   font-weight: 500;
 }
 
 .price-compare-table .ant-table-tbody > tr:hover > td {
-  background: rgba(22, 119, 255, 0.035) !important;
-}
-
-.price-compare-drag {
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  background: var(--theme-surface-hover) !important;
 }
 
 /* 表格框线: 清晰的纵横实线网格(统一 1px) */
 .price-compare-table .ant-table.ant-table-bordered > .ant-table-container {
-  border-inline-start: 1px solid #d9d9d9;
-  border-top: 1px solid #d9d9d9;
+  border-inline-start: 1px solid var(--ant-color-border, #d9d9d9);
+  border-top: 1px solid var(--ant-color-border, #d9d9d9);
 }
 
 .price-compare-table
@@ -210,12 +180,12 @@
   > tbody
   > tr
   > td {
-  border-inline-end: 1px solid #d9d9d9 !important;
-  border-bottom: 1px solid #d9d9d9 !important;
+  border-inline-end: 1px solid var(--ant-color-border, #d9d9d9) !important;
+  border-bottom: 1px solid var(--ant-color-border, #d9d9d9) !important;
 }
 
 .price-compare-table .ant-table-thead > tr > th {
-  border-bottom: 1px solid #d9d9d9 !important;
+  border-bottom: 1px solid var(--ant-color-border, #d9d9d9) !important;
 }
 
 /* 品牌列组之间用略深的框线分隔 */
@@ -229,7 +199,7 @@
 /* 行拖拽: 手柄样式 / 整行拖起 / 落点指示线 */
 .price-compare-row-drag {
   cursor: grab;
-  color: #8c8c8c;
+  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.45));
 }
 
 .price-compare-row-drag:active {
@@ -237,16 +207,16 @@
 }
 
 .price-compare-table .ant-table-tbody > tr.price-compare-dragging > td {
-  background: #e6f4ff !important;
+  background: var(--theme-highlight-bg) !important;
   opacity: 0.55;
 }
 
 .price-compare-table .ant-table-tbody > tr.price-compare-drop-before > td {
-  border-top: 2px solid #1677ff !important;
+  border-top: 2px solid var(--theme-primary) !important;
 }
 
 .price-compare-table .ant-table-tbody > tr.price-compare-drop-after > td {
-  border-bottom: 2px solid #1677ff !important;
+  border-bottom: 2px solid var(--theme-primary) !important;
 }
 
 /* 分组堆叠: 组间分隔 */
@@ -255,7 +225,7 @@
 }
 
 .price-compare-group + .price-compare-group {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--theme-border-subtle);
   padding-top: 8px;
 }
 
@@ -269,6 +239,6 @@
 }
 
 .price-compare-add-row {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-placeholder);
   justify-content: flex-start;
 }
