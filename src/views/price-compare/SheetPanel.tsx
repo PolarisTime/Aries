@@ -141,7 +141,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
-      onCell: (row) => (row.isGroup ? { colSpan: 3 + brands.length * 3 } : {}),
+      onCell: (row) => (row.isGroup ? { colSpan: 4 + brands.length * 3 } : {}),
       render: (_, row) => {
         if (row.isGroup) {
           const active = bestGroups.includes(row.category)
@@ -174,7 +174,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             size="small"
             variant="borderless"
             disabled={locked}
-            style={{ width: '100%' }}
+            style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
             showSearch={{ optionFilterProp: 'label' }}
             value={value}
             options={varietyOptions}
@@ -366,6 +366,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         },
       ],
     ),
+    {
+      // 填充列: 宽窗口时吸收剩余宽度, 避免商品列被拉伸
+      key: '__filler__',
+      title: '',
+      align: 'left',
+      onCell: (row: GridRow) => (row.isGroup ? { colSpan: 0 } : {}),
+      render: () => null,
+    },
   ]
 }
 

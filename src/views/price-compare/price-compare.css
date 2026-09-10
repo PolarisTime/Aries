@@ -210,11 +210,6 @@
   gap: 2px;
 }
 
-.price-compare-table .ant-table {
-  width: max-content;
-  min-width: 100%;
-}
-
 /* 表格框线: 清晰的纵横网格 */
 .price-compare-table .ant-table.ant-table-bordered > .ant-table-container {
   border-inline-start: 1px solid #e5e6eb;
