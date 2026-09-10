@@ -221,12 +221,33 @@
   border-top: 1px solid #e5e6eb;
 }
 
-.price-compare-table .ant-table.ant-table-bordered > .ant-table-container > .ant-table-content > table > thead > tr > th,
-.price-compare-table .ant-table.ant-table-bordered > .ant-table-container > .ant-table-content > table > tbody > tr > td {
+.price-compare-table
+  .ant-table.ant-table-bordered
+  > .ant-table-container
+  > .ant-table-content
+  > table
+  > thead
+  > tr
+  > th,
+.price-compare-table
+  .ant-table.ant-table-bordered
+  > .ant-table-container
+  > .ant-table-content
+  > table
+  > tbody
+  > tr
+  > td {
   border-inline-end: 1px solid #e5e6eb !important;
 }
 
-.price-compare-table .ant-table.ant-table-bordered > .ant-table-container > .ant-table-content > table > tbody > tr > td {
+.price-compare-table
+  .ant-table.ant-table-bordered
+  > .ant-table-container
+  > .ant-table-content
+  > table
+  > tbody
+  > tr
+  > td {
   border-bottom: 1px solid #f0f0f0 !important;
 }
 
@@ -235,6 +256,9 @@
 }
 
 /* 品牌列组之间用略深的框线分隔 */
-.price-compare-table .ant-table-thead > tr > th.ant-table-cell-fix-left-last::after {
+.price-compare-table
+  .ant-table-thead
+  > tr
+  > th.ant-table-cell-fix-left-last::after {
   box-shadow: none;
 }

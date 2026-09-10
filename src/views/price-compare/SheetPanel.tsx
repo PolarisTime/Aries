@@ -11,7 +11,7 @@ import {
   Button,
   Card,
   DatePicker,
-  Divider,
+  Dropdown,
   Flex,
   Input,
   InputNumber,
@@ -386,6 +386,7 @@ function SheetHeader({
   onAddRow,
   onCopySheet,
   onOpenSettings,
+  summary,
   setBrands,
   brandSelectRef,
 }: {
@@ -403,10 +404,10 @@ function SheetHeader({
   onAddRow: (category?: string) => void
   onCopySheet: () => void
   onOpenSettings: () => void
+  summary: ReturnType<typeof computeSummary>
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   brandSelectRef: React.RefObject<HTMLSpanElement | null>
 }) {
-  const periodLabel = (refPeriod || '').split(' ').pop()
   return (
     <Flex vertical gap={8}>
       <Flex justify="space-between" align="center" wrap="wrap" gap="small">
@@ -415,7 +416,7 @@ function SheetHeader({
             size="small"
             variant="borderless"
             className="price-compare-sheet-name"
-            style={{ width: 140, fontWeight: 600 }}
+            style={{ width: 150, fontWeight: 600 }}
             disabled={locked}
             value={sheet.name}
             onChange={(event) =>
@@ -427,10 +428,6 @@ function SheetHeader({
           </Tag>
           <Text type="secondary" className="price-compare-sub">
             {sheet.projectName || '未指定项目'}
-          </Text>
-          <Text type="secondary" className="price-compare-sub">
-            <InfoCircleOutlined /> 参照{' '}
-            {refDate ? dayjs(refDate).format(DATE_FMT) : '未设置'} {periodLabel}
           </Text>
         </Flex>
         <Space size={4}>
@@ -447,164 +444,156 @@ function SheetHeader({
           >
             {locked ? '解锁' : '锁定'}
           </Button>
-          <Tooltip title="生成图片并下载">
-            <span ref={captureBtnRef}>
-              <Button
-                size="small"
-                icon={<CameraOutlined />}
-                loading={capturing}
-                onClick={() => {
-                  void capture(false)
-                }}
-              >
-                截图
+          <span ref={captureBtnRef}>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'download',
+                    icon: <CameraOutlined />,
+                    label: '截图下载',
+                  },
+                  { key: 'copy', icon: <CopyOutlined />, label: '复制图片' },
+                ],
+                onClick: ({ key }) => {
+                  void capture(key === 'copy')
+                },
+              }}
+            >
+              <Button size="small" type="primary" loading={capturing}>
+                导出 ▾
               </Button>
-            </span>
-          </Tooltip>
-          <Button
-            size="small"
-            type="primary"
-            icon={<CopyOutlined />}
-            loading={capturing}
-            onClick={() => {
-              void capture(true)
-            }}
-          >
-            复制图片
-          </Button>
+            </Dropdown>
+          </span>
         </Space>
       </Flex>
 
       <Flex
-        gap={16}
+        justify="space-between"
         align="center"
         wrap="wrap"
+        gap={16}
         className="price-compare-settings"
       >
-        <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            报单日期
-          </Text>
-          <DatePicker
-            size="small"
-            disabled={locked}
-            value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
-            format={DATE_FMT}
-            allowClear={false}
-            onChange={(value) =>
-              value &&
-              patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
-            }
-          />
-        </Space>
-        <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            参照网价
-          </Text>
-          <DatePicker
-            size="small"
-            disabled={locked}
-            value={refDate ? dayjs(refDate) : null}
-            format={DATE_FMT}
-            allowClear={false}
-            onChange={(value) => {
-              if (!value) return
-              const date = value.format('YYYY-MM-DD')
-              patchSheet(sheet.id, {
-                refDate: date,
-                refPeriod: Object.keys(data?.[date] ?? {})[0] ?? '',
-              })
-            }}
-          />
-          <Select
-            size="small"
-            style={{ width: 108 }}
-            disabled={locked}
-            value={refPeriod || undefined}
-            onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-            options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
-              value: period,
-              label: period,
-            }))}
-          />
-        </Space>
-        <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            12米加价
-          </Text>
-          <InputNumber
-            size="small"
-            disabled={locked}
-            min={0}
-            style={{ width: 64 }}
-            value={sheet.lengthPremium}
-            onChange={(value) =>
-              patchSheet(sheet.id, { lengthPremium: value ?? 0 })
-            }
-          />
-        </Space>
-        <span ref={brandSelectRef}>
+        <Flex gap={16} align="center" wrap="wrap">
           <Space size="small">
             <Text type="secondary" className="price-compare-sub">
-              品牌
+              报单日期
             </Text>
-            <Select
+            <DatePicker
               size="small"
-              mode="multiple"
               disabled={locked}
-              style={{ minWidth: 200 }}
-              placeholder="选择品牌"
-              value={brands.map((brand) => brand.name)}
-              options={catalog.map((item) => ({
-                value: item.name,
-                label: item.name,
-              }))}
-              onChange={(names) =>
-                setBrands(() =>
-                  names.map(
-                    (name) =>
-                      brands.find((brand) => brand.name === name) ?? {
-                        name,
-                        freight:
-                          catalog.find((item) => item.name === name)?.freight ??
-                          0,
-                      },
-                  ),
-                )
+              value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
+              format={DATE_FMT}
+              allowClear={false}
+              onChange={(value) =>
+                value &&
+                patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
               }
-              maxTagCount="responsive"
             />
           </Space>
-        </span>
-        <Button
-          size="small"
-          icon={<SettingOutlined />}
-          onClick={onOpenSettings}
-        >
-          品牌与运费
-        </Button>
-        <span className="price-compare-legend">
-          差价：<i className="is-pos">+ 现货划算</i>
-          <i className="is-neg">− 网价更优</i>
-        </span>
+          <Space size="small">
+            <Tooltip title="整组统一使用该日期与时段作为网价基准">
+              <Text type="secondary" className="price-compare-sub">
+                <InfoCircleOutlined /> 参照网价
+              </Text>
+            </Tooltip>
+            <DatePicker
+              size="small"
+              disabled={locked}
+              value={refDate ? dayjs(refDate) : null}
+              format={DATE_FMT}
+              allowClear={false}
+              onChange={(value) => {
+                if (!value) return
+                const date = value.format('YYYY-MM-DD')
+                patchSheet(sheet.id, {
+                  refDate: date,
+                  refPeriod: Object.keys(data?.[date] ?? {})[0] ?? '',
+                })
+              }}
+            />
+            <Select
+              size="small"
+              style={{ width: 104 }}
+              disabled={locked}
+              value={refPeriod || undefined}
+              onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
+              options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
+                value: period,
+                label: period,
+              }))}
+            />
+          </Space>
+          <Space size="small">
+            <Text type="secondary" className="price-compare-sub">
+              12米加价
+            </Text>
+            <InputNumber
+              size="small"
+              disabled={locked}
+              min={0}
+              style={{ width: 60 }}
+              value={sheet.lengthPremium}
+              onChange={(value) =>
+                patchSheet(sheet.id, { lengthPremium: value ?? 0 })
+              }
+            />
+          </Space>
+          <span ref={brandSelectRef}>
+            <Space size="small">
+              <Text type="secondary" className="price-compare-sub">
+                品牌
+              </Text>
+              <Select
+                size="small"
+                mode="multiple"
+                disabled={locked}
+                style={{ minWidth: 180 }}
+                placeholder="选择品牌"
+                value={brands.map((brand) => brand.name)}
+                options={catalog.map((item) => ({
+                  value: item.name,
+                  label: item.name,
+                }))}
+                onChange={(names) =>
+                  setBrands(() =>
+                    names.map(
+                      (name) =>
+                        brands.find((brand) => brand.name === name) ?? {
+                          name,
+                          freight:
+                            catalog.find((item) => item.name === name)
+                              ?.freight ?? 0,
+                        },
+                    ),
+                  )
+                }
+                maxTagCount="responsive"
+              />
+            </Space>
+          </span>
+          <Button
+            size="small"
+            icon={<SettingOutlined />}
+            onClick={onOpenSettings}
+          >
+            运费
+          </Button>
+        </Flex>
+        <Flex gap={12} align="center" className="price-compare-stats">
+          <Text>
+            总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
+          </Text>
+          <Text type="secondary">
+            已填 <Text strong>{summary.filled}</Text> 格
+          </Text>
+          <span className="price-compare-legend">
+            差价：<i className="is-pos">+ 现货划算</i>
+            <i className="is-neg">− 网价更优</i>
+          </span>
+        </Flex>
       </Flex>
-    </Flex>
-  )
-}
-
-function SheetStats({
-  summary,
-}: {
-  summary: ReturnType<typeof computeSummary>
-}) {
-  return (
-    <Flex gap={20} align="center" className="price-compare-stats">
-      <Text>
-        总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
-      </Text>
-      <Text type="secondary">
-        已填 <Text strong>{summary.filled}</Text> 格
-      </Text>
     </Flex>
   )
 }
@@ -805,14 +794,13 @@ export function SheetPanel(props: Props) {
           captureBtnRef={captureBtnRef}
           onAddRow={onAddRow}
           onCopySheet={onCopySheet}
+          summary={summary}
           catalog={catalog}
           brands={brands}
           onOpenSettings={onOpenSettings}
           setBrands={setBrands}
           brandSelectRef={brandSelectRef}
         />
-        <Divider style={{ margin: '10px 0 8px' }} />
-        <SheetStats summary={summary} />
         <Table<GridRow>
           className="price-compare-table"
           size={density}
