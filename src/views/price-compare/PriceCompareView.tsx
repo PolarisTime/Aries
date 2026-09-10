@@ -50,7 +50,6 @@ type GridRow = {
   ri?: number
   rowId?: string
   label?: string
-  rowKey?: string
   groupName: string
   children?: GridRow[]
 }
@@ -60,6 +59,46 @@ const dates = Object.keys(DATA).sort().reverse()
 const periodsOf = (date: string) => Object.keys(DATA[date] ?? {})
 const firstPeriod = (date: string) => periodsOf(date)[0] ?? ''
 const uid = () => Math.random().toString(36).slice(2, 8)
+
+const refPriceOf = (
+  refDate: string,
+  refPeriod: string,
+  brandName: string,
+  label: string,
+): number | undefined => DATA[refDate]?.[refPeriod]?.[brandName]?.[label]
+
+const brandApplies = (brand: Brand, groupName: string): boolean =>
+  !brand.groups || brand.groups.includes(groupName)
+
+const buildCell = (
+  title: string,
+  width: number,
+  render: (value: unknown, row: GridRow) => React.ReactNode,
+): ColumnsType<GridRow>[number] => ({
+  title,
+  width,
+  align: 'center',
+  render,
+  onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
+})
+
+const buildDataSource = (config: Config): GridRow[] =>
+  config.groups.map((group, gi) => ({
+    key: `g${gi}`,
+    isGroup: true,
+    gi,
+    name: group.name,
+    groupName: group.name,
+    children: group.rows.map((row, ri) => ({
+      key: `${group.id}:${row.id}`,
+      isGroup: false,
+      gi,
+      ri,
+      rowId: row.id,
+      label: row.label,
+      groupName: group.name,
+    })),
+  }))
 
 const defaultConfig = (): Config => ({
   brands: [
@@ -172,6 +211,56 @@ export function PriceCompareView() {
   )
 }
 
+type BrandHeaderProps = {
+  brand: Brand
+  patchConfig: (updater: (draft: Config) => void) => void
+}
+
+function BrandHeader({ brand, patchConfig }: BrandHeaderProps) {
+  return (
+    <div className="price-compare-brand-header">
+      <Input
+        size="small"
+        value={brand.name}
+        onChange={(event) =>
+          patchConfig((draft) => {
+            const target = draft.brands.find((item) => item.id === brand.id)
+            if (target) target.name = event.target.value
+          })
+        }
+      />
+      <span className="price-compare-brand-sub">
+        运费{' '}
+        <InputNumber
+          size="small"
+          min={0}
+          value={brand.freight}
+          onChange={(value) =>
+            patchConfig((draft) => {
+              const target = draft.brands.find((item) => item.id === brand.id)
+              if (target) target.freight = value ?? 0
+            })
+          }
+        />
+      </span>
+      <span className="price-compare-brand-sub">
+        <Button
+          type="link"
+          size="small"
+          style={{ padding: 0, height: 'auto', fontSize: 11 }}
+          onClick={() =>
+            patchConfig((draft) => {
+              draft.brands = draft.brands.filter((item) => item.id !== brand.id)
+            })
+          }
+        >
+          删除
+        </Button>
+      </span>
+    </div>
+  )
+}
+
 type BlockTableProps = {
   block: Block
   config: Config
@@ -180,64 +269,37 @@ type BlockTableProps = {
   resetConfig: () => void
 }
 
-function BlockTable({
-  block,
-  config,
-  setBlocks,
-  patchConfig,
-  resetConfig,
-}: BlockTableProps) {
-  const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
-    config.groups.map((_, i) => `g${i}`),
-  )
-  const groupKeys = useMemo(
-    () => config.groups.map((_, i) => `g${i}`),
-    [config.groups],
-  )
-
-  useEffect(() => {
-    setExpandedKeys((prev) => Array.from(new Set([...prev, ...groupKeys])))
-  }, [groupKeys])
-
-  const refPrice = (brandName: string, label: string) =>
-    DATA[block.refDate]?.[block.refPeriod]?.[brandName]?.[label]
-  const periodLabel = block.refPeriod.split(' ').pop()
-  const totalCols = 2 + config.brands.length * 3
-  const applies = (brand: Brand, groupName: string) =>
-    !brand.groups || brand.groups.includes(groupName)
-
-  const getVal = (brandId: string, rowId: string, kind: keyof BlockInput) =>
-    block.inputs[`${brandId}:${rowId}`]?.[kind]
-  const getTon = (rowId: string) => block.inputs[`_:${rowId}`]?.ton
-  const setBlock = (patch: Partial<Block>) =>
-    setBlocks((prev) =>
-      prev.map((item) => (item.id === block.id ? { ...item, ...patch } : item)),
-    )
-  const setVal = (
+type GridContext = {
+  block: Block
+  config: Config
+  totalCols: number
+  patchConfig: (updater: (draft: Config) => void) => void
+  getVal: (
+    brandId: string,
+    rowId: string,
+    kind: keyof BlockInput,
+  ) => number | undefined
+  getTon: (rowId: string) => number | undefined
+  setVal: (
     key: string,
     kind: keyof BlockInput,
     value: number | undefined,
-  ) =>
-    setBlock({
-      inputs: {
-        ...block.inputs,
-        [key]: { ...(block.inputs[key] ?? {}), [kind]: value },
-      },
-    })
+  ) => void
+}
 
-  const cell = (
-    title: string,
-    width: number,
-    render: (value: unknown, row: GridRow) => React.ReactNode,
-  ): ColumnsType<GridRow>[number] => ({
-    title,
-    width,
-    align: 'center',
-    render,
-    onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
-  })
+function buildGridColumns({
+  block,
+  config,
+  totalCols,
+  patchConfig,
+  getVal,
+  getTon,
+  setVal,
+}: GridContext): ColumnsType<GridRow> {
+  const refPrice = (brandName: string, label: string) =>
+    refPriceOf(block.refDate, block.refPeriod, brandName, label)
 
-  const columns: ColumnsType<GridRow> = [
+  return [
     {
       title: '规格',
       dataIndex: 'label',
@@ -337,57 +399,11 @@ function BlockTable({
     ...config.brands.flatMap(
       (brand): ColumnsType<GridRow> => [
         {
-          title: (
-            <div className="price-compare-brand-header">
-              <Input
-                size="small"
-                value={brand.name}
-                onChange={(event) =>
-                  patchConfig((draft) => {
-                    const target = draft.brands.find(
-                      (item) => item.id === brand.id,
-                    )
-                    if (target) target.name = event.target.value
-                  })
-                }
-              />
-              <span className="price-compare-brand-sub">
-                运费{' '}
-                <InputNumber
-                  size="small"
-                  min={0}
-                  value={brand.freight}
-                  onChange={(value) =>
-                    patchConfig((draft) => {
-                      const target = draft.brands.find(
-                        (item) => item.id === brand.id,
-                      )
-                      if (target) target.freight = value ?? 0
-                    })
-                  }
-                />
-              </span>
-              <span className="price-compare-brand-sub">
-                <Button
-                  type="link"
-                  size="small"
-                  style={{ padding: 0, height: 'auto', fontSize: 11 }}
-                  onClick={() =>
-                    patchConfig((draft) => {
-                      draft.brands = draft.brands.filter(
-                        (item) => item.id !== brand.id,
-                      )
-                    })
-                  }
-                >
-                  删除
-                </Button>
-              </span>
-            </div>
-          ),
+          title: <BrandHeader brand={brand} patchConfig={patchConfig} />,
           children: [
-            cell('网价', 80, (_, row) => {
-              if (row.isGroup || !applies(brand, row.groupName)) return null
+            buildCell('网价', 80, (_, row) => {
+              if (row.isGroup || !brandApplies(brand, row.groupName))
+                return null
               const auto = refPrice(brand.name, row.label ?? '')
               if (auto !== undefined) return <Text strong>{auto}</Text>
               return (
@@ -406,8 +422,9 @@ function BlockTable({
                 />
               )
             }),
-            cell('现货', 80, (_, row) => {
-              if (row.isGroup || !applies(brand, row.groupName)) return null
+            buildCell('现货', 80, (_, row) => {
+              if (row.isGroup || !brandApplies(brand, row.groupName))
+                return null
               return (
                 <InputNumber
                   size="small"
@@ -423,8 +440,9 @@ function BlockTable({
                 />
               )
             }),
-            cell('差价', 64, (_, row) => {
-              if (row.isGroup || !applies(brand, row.groupName)) return null
+            buildCell('差价', 64, (_, row) => {
+              if (row.isGroup || !brandApplies(brand, row.groupName))
+                return null
               const auto = refPrice(brand.name, row.label ?? '')
               const net =
                 auto !== undefined
@@ -460,74 +478,112 @@ function BlockTable({
       ],
     ),
   ]
+}
 
-  const dataSource: GridRow[] = config.groups.map((group, gi) => ({
-    key: `g${gi}`,
-    isGroup: true,
-    gi,
-    name: group.name,
-    groupName: group.name,
-    children: group.rows.map((row, ri) => ({
-      key: `${group.id}:${row.id}`,
-      isGroup: false,
-      gi,
-      ri,
-      rowId: row.id,
-      label: row.label,
-      groupName: group.name,
-    })),
-  }))
+type SummaryResult = { totalTon: number; amount: Record<string, number> }
 
-  const summary = () => {
-    let totalTon = 0
-    const amount: Record<string, number> = {}
-    for (const group of config.groups) {
-      for (const row of group.rows) {
-        const ton = getTon(row.id)
-        if (!ton) continue
-        totalTon += ton
-        for (const brand of config.brands) {
-          if (!applies(brand, group.name)) continue
-          const auto = refPrice(brand.name, row.label)
-          const net =
-            auto !== undefined ? auto : getVal(brand.id, row.id, 'net')
-          const spot = getVal(brand.id, row.id, 'spot')
-          if (
-            net === undefined ||
-            net === null ||
-            spot === undefined ||
-            spot === null
-          )
-            continue
-          amount[brand.id] =
-            (amount[brand.id] ?? 0) + (net - spot - brand.freight) * ton
-        }
+function computeSummary(config: Config, block: Block): SummaryResult {
+  let totalTon = 0
+  const amount: Record<string, number> = {}
+  for (const group of config.groups) {
+    for (const row of group.rows) {
+      const ton = block.inputs[`_:${row.id}`]?.ton
+      if (!ton) continue
+      totalTon += ton
+      for (const brand of config.brands) {
+        if (!brandApplies(brand, group.name)) continue
+        const auto = refPriceOf(
+          block.refDate,
+          block.refPeriod,
+          brand.name,
+          row.label,
+        )
+        const net =
+          auto !== undefined ? auto : block.inputs[`${brand.id}:${row.id}`]?.net
+        const spot = block.inputs[`${brand.id}:${row.id}`]?.spot
+        if (
+          net === undefined ||
+          net === null ||
+          spot === undefined ||
+          spot === null
+        )
+          continue
+        amount[brand.id] =
+          (amount[brand.id] ?? 0) + (net - spot - brand.freight) * ton
       }
     }
-    return (
-      <Table.Summary.Row>
-        <Table.Summary.Cell index={0}>
-          <Text strong>合计{totalTon ? ` (${totalTon} 吨)` : ''}</Text>
-        </Table.Summary.Cell>
-        <Table.Summary.Cell index={1} />
-        {config.brands.flatMap((brand) => [
-          <Table.Summary.Cell
-            key={brand.id}
-            index={0}
-            align="center"
-            colSpan={3}
-          >
-            {amount[brand.id] !== undefined && (
-              <Text className="price-compare-brand-sub">
-                盈亏 {(amount[brand.id] ?? 0) > 0 ? '+' : ''}
-                {Math.round(amount[brand.id] ?? 0)} 元
-              </Text>
-            )}
-          </Table.Summary.Cell>,
-        ])}
-      </Table.Summary.Row>
-    )
   }
+  return { totalTon, amount }
+}
+
+function BlockSummary({ config, block }: { config: Config; block: Block }) {
+  const { totalTon, amount } = computeSummary(config, block)
+  return (
+    <Table.Summary.Row>
+      <Table.Summary.Cell index={0}>
+        <Text strong>合计{totalTon ? ` (${totalTon} 吨)` : ''}</Text>
+      </Table.Summary.Cell>
+      <Table.Summary.Cell index={1} />
+      {config.brands.flatMap((brand) => [
+        <Table.Summary.Cell key={brand.id} index={0} align="center" colSpan={3}>
+          {amount[brand.id] !== undefined && (
+            <Text className="price-compare-brand-sub">
+              盈亏 {(amount[brand.id] ?? 0) > 0 ? '+' : ''}
+              {Math.round(amount[brand.id] ?? 0)} 元
+            </Text>
+          )}
+        </Table.Summary.Cell>,
+      ])}
+    </Table.Summary.Row>
+  )
+}
+
+function BlockTable({
+  block,
+  config,
+  setBlocks,
+  patchConfig,
+  resetConfig,
+}: BlockTableProps) {
+  const groupKeys = useMemo(
+    () => config.groups.map((_, i) => `g${i}`),
+    [config.groups],
+  )
+  const [collapsedKeys, setCollapsedKeys] = useState<string[]>([])
+  const collapsedSet = useMemo(() => new Set(collapsedKeys), [collapsedKeys])
+  const expandedKeys = groupKeys.filter((key) => !collapsedSet.has(key))
+
+  const periodLabel = block.refPeriod.split(' ').pop()
+  const totalCols = 2 + config.brands.length * 3
+  const getVal = (brandId: string, rowId: string, kind: keyof BlockInput) =>
+    block.inputs[`${brandId}:${rowId}`]?.[kind]
+  const getTon = (rowId: string) => block.inputs[`_:${rowId}`]?.ton
+  const setBlock = (patch: Partial<Block>) =>
+    setBlocks((prev) =>
+      prev.map((item) => (item.id === block.id ? { ...item, ...patch } : item)),
+    )
+  const setVal = (
+    key: string,
+    kind: keyof BlockInput,
+    value: number | undefined,
+  ) =>
+    setBlock({
+      inputs: {
+        ...block.inputs,
+        [key]: { ...(block.inputs[key] ?? {}), [kind]: value },
+      },
+    })
+
+  const columns = buildGridColumns({
+    block,
+    config,
+    totalCols,
+    patchConfig,
+    getVal,
+    getTon,
+    setVal,
+  })
+  const dataSource = buildDataSource(config)
 
   return (
     <Card
@@ -644,10 +700,13 @@ function BlockTable({
         dataSource={dataSource}
         pagination={false}
         scroll={{ x: 'max-content' }}
-        summary={summary}
+        summary={() => <BlockSummary config={config} block={block} />}
         expandable={{
           expandedRowKeys: expandedKeys,
-          onExpandedRowsChange: (keys) => setExpandedKeys(keys.map(String)),
+          onExpandedRowsChange: (keys) => {
+            const expanded = new Set(keys.map(String))
+            setCollapsedKeys(groupKeys.filter((key) => !expanded.has(key)))
+          },
         }}
       />
     </Card>
