@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { BrandSettingsDrawer } from '../BrandSettingsDrawer'
 import { moveItem } from '../core'
+import { ReportSettingsModal } from '../ReportSettingsModal'
 import { SheetPanel } from '../SheetPanel'
 import { useMaterialBrands } from '../useMaterialBrands'
 import type { DesignState } from './useDesignState'
@@ -62,7 +62,7 @@ export function DesignSheet({
         spotRef={spotRef}
         captureBtnRef={captureBtnRef}
       />
-      <BrandSettingsDrawer
+      <ReportSettingsModal
         open={settingsOpen}
         brandOptions={brandOptions}
         brands={brands}

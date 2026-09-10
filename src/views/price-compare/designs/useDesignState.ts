@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useMemo } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react'
 import { countMissing, resolveRef } from '../core'
 import type { Brand, PriceData, PriceSheet } from '../types'
 import { usePriceCompareData } from '../usePriceCompareData'
@@ -32,8 +38,10 @@ export function useDesignState() {
   } = store
 
   const assignProjectToUnassigned = store.assignProjectToUnassigned
+  const initialized = useRef(false)
   useEffect(() => {
-    if (!projects.length) return
+    if (initialized.current || !projects.length) return
+    initialized.current = true
     const first = projects[0]
     assignProjectToUnassigned(first.id, first.abbr || first.name)
     setBrands((current) =>

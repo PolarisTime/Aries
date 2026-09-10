@@ -26,8 +26,8 @@ import {
 import dayjs from 'dayjs'
 import { useEffect, useRef, useState } from 'react'
 import { modal } from '@/utils/antd-app'
-import { BrandSettingsDrawer } from './BrandSettingsDrawer'
 import { countMissing, moveItem, resolveRef, SHEET_STATUS_META } from './core'
+import { ReportSettingsModal } from './ReportSettingsModal'
 import { SheetPanel } from './SheetPanel'
 import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
 import { useMaterialBrands } from './useMaterialBrands'
@@ -531,7 +531,7 @@ export function PriceCompareView() {
         </Text>
       </Flex>
 
-      <BrandSettingsDrawer
+      <ReportSettingsModal
         open={settingsOpen}
         brandOptions={brandOptions}
         brands={brands}
