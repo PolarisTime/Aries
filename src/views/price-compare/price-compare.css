@@ -114,3 +114,7 @@
 .price-compare-group-row > td {
   font-weight: 600;
 }
+
+.price-compare-spot {
+  width: 100%;
+}

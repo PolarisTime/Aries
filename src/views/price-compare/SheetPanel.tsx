@@ -51,6 +51,16 @@ const { Text } = Typography
 const DATE_FMT = 'YYYY年M月D日'
 const MAX_SPOT = 20000
 
+/** 固定列宽(预览 -> 保证左右对齐稳定) */
+export const SHEET_COLUMN_WIDTH = {
+  spec: 240,
+  ton: 60,
+  net: 62,
+  spot: 66,
+  diff: 58,
+  action: 40,
+} as const
+
 /* ------------------------------------------------------------------ 列定义 */
 
 type ColumnContext = {
@@ -123,7 +133,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     {
       title: '商品（类别 / 材质 / 规格 / 长度）',
       dataIndex: 'base',
-      width: 300,
+      width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
       onCell: (row) => (row.isGroup ? { colSpan: 3 + brands.length * 3 } : {}),
       render: (_, row) => {
@@ -141,7 +151,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             size="small"
             variant="borderless"
             disabled={locked}
-            style={{ width: 300 }}
+            style={{ width: '100%' }}
             showSearch={{ optionFilterProp: 'label' }}
             value={value}
             options={varietyOptions}
@@ -162,7 +172,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     },
     {
       title: '吨',
-      width: 66,
+      width: SHEET_COLUMN_WIDTH.ton,
+      fixed: 'left',
       align: 'right',
       onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
       render: (_, row) =>
@@ -185,7 +196,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         {
           title: <span className="price-compare-brand-name">{brand.name}</span>,
           children: [
-            cellOf('网价', 66, (_, row) => {
+            cellOf('网价', SHEET_COLUMN_WIDTH.net, (_, row) => {
               if (row.isGroup || !row.row) return null
               const price = netPrice(
                 data,
@@ -203,7 +214,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 </div>
               )
             }),
-            cellOf('现货', 70, (_, row) => {
+            cellOf('现货', SHEET_COLUMN_WIDTH.spot, (_, row) => {
               if (row.isGroup || !row.row) return null
               const current = row.row
               const spot = getSpot(brand.name, current.id)
@@ -248,7 +259,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               )
               return isFirst ? <span ref={spotRef}>{input}</span> : input
             }),
-            cellOf('差价', 62, (_, row) => {
+            cellOf('差价', SHEET_COLUMN_WIDTH.diff, (_, row) => {
               if (row.isGroup || !row.row) return null
               const price = netPrice(
                 data,
@@ -281,7 +292,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     ),
     {
       title: '',
-      width: 36,
+      width: SHEET_COLUMN_WIDTH.action,
       align: 'center',
       onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
       render: (_, row) =>
@@ -792,11 +803,22 @@ export function SheetPanel(props: Props) {
           size={density}
           bordered
           sticky
+          tableLayout="fixed"
           rowKey="key"
           columns={columns}
           dataSource={dataSource}
           pagination={false}
-          scroll={{ x: 'max-content', y: 'calc(100vh - 400px)' }}
+          scroll={{
+            x:
+              SHEET_COLUMN_WIDTH.spec +
+              SHEET_COLUMN_WIDTH.ton +
+              SHEET_COLUMN_WIDTH.action +
+              brands.length *
+                (SHEET_COLUMN_WIDTH.net +
+                  SHEET_COLUMN_WIDTH.spot +
+                  SHEET_COLUMN_WIDTH.diff),
+            y: 'calc(100vh - 400px)',
+          }}
           rowClassName={(row) => (row.isGroup ? 'price-compare-group-row' : '')}
           expandable={{
             expandedRowKeys: groupKeys.filter((key) => !collapsedSet.has(key)),
