@@ -248,3 +248,26 @@
   > th.ant-table-cell-fix-left-last::after {
   box-shadow: none;
 }
+
+/* 行拖拽: 手柄样式 / 整行拖起 / 落点指示线 */
+.price-compare-row-drag {
+  cursor: grab;
+  color: #8c8c8c;
+}
+
+.price-compare-row-drag:active {
+  cursor: grabbing;
+}
+
+.price-compare-table .ant-table-tbody > tr.price-compare-dragging > td {
+  background: #e6f4ff !important;
+  opacity: 0.55;
+}
+
+.price-compare-table .ant-table-tbody > tr.price-compare-drop-before > td {
+  border-top: 2px solid #1677ff !important;
+}
+
+.price-compare-table .ant-table-tbody > tr.price-compare-drop-after > td {
+  border-bottom: 2px solid #1677ff !important;
+}

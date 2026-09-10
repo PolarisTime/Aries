@@ -73,6 +73,8 @@ type ColumnContext = {
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
+  onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
+  onRowDragEnd: () => void
   bestOn: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -120,6 +122,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     moveFocus,
     bestOn,
     onReorderBrands,
+    onRowDragStart,
+    onRowDragEnd,
     spotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(varieties)
@@ -140,10 +144,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           className="price-compare-row-drag"
           draggable
           title="拖拽调整行顺序"
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = 'move'
-            event.dataTransfer.setData('text/row-id', row.rowId)
-          }}
+          onDragStart={(event) => onRowDragStart(row.rowId, event)}
+          onDragEnd={onRowDragEnd}
         >
           <HolderOutlined />
         </span>
@@ -609,6 +611,9 @@ export function SheetPanel(props: Props) {
   )
   const [bestOn, setBestOn] = useState(false)
   const [selectedIds, setSelectedIds] = useState<React.Key[]>([])
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dropId, setDropId] = useState<string | null>(null)
+  const [dropAfter, setDropAfter] = useState(false)
   const locked = sheet.locked
 
   const getSpot = (brandName: string, rowId: string) =>
@@ -642,13 +647,31 @@ export function SheetPanel(props: Props) {
     input?.select()
   }
 
-  const onReorderRow = (fromId: string, toId: string) =>
+  const reorderRow = (fromId: string, toId: string, after: boolean) =>
     setRows((list) => {
       const from = list.findIndex((row) => row.id === fromId)
       const to = list.findIndex((row) => row.id === toId)
       if (from < 0 || to < 0 || from === to) return list
-      return moveItem(list, from, to)
+      const insert = from < to ? (after ? to : to - 1) : after ? to + 1 : to
+      return moveItem(list, from, insert)
     })
+
+  const onRowDragStart = (
+    rowId: string,
+    event: React.DragEvent<HTMLElement>,
+  ) => {
+    setDragId(rowId)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/row-id', rowId)
+    const tr = event.currentTarget.closest('tr')
+    if (tr) event.dataTransfer.setDragImage(tr, 24, tr.offsetHeight / 2)
+  }
+
+  const onRowDragEnd = () => {
+    setDragId(null)
+    setDropId(null)
+    setDropAfter(false)
+  }
 
   const onAddRow = () => setRows((list) => [...list, makeRow()])
 
@@ -704,6 +727,8 @@ export function SheetPanel(props: Props) {
     moveFocus,
     bestOn,
     onReorderBrands,
+    onRowDragStart,
+    onRowDragEnd,
     spotRef,
   })
   const dataSource = useMemo(() => buildGridRows(rows), [rows])
@@ -762,12 +787,34 @@ export function SheetPanel(props: Props) {
                   SHEET_COLUMN_WIDTH.spot +
                   SHEET_COLUMN_WIDTH.diff),
           }}
+          rowClassName={(row) => {
+            const classes: string[] = []
+            if (row.rowId === dragId) classes.push('price-compare-dragging')
+            if (dragId && row.rowId === dropId && row.rowId !== dragId)
+              classes.push(
+                dropAfter
+                  ? 'price-compare-drop-after'
+                  : 'price-compare-drop-before',
+              )
+            return classes.join(' ')
+          }}
           onRow={(row) => ({
-            onDragOver: (event) => event.preventDefault(),
+            onDragOver: (event) => {
+              if (!dragId) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              const rect = event.currentTarget.getBoundingClientRect()
+              const after = event.clientY > rect.top + rect.height / 2
+              if (dropId !== row.rowId || dropAfter !== after) {
+                setDropId(row.rowId)
+                setDropAfter(after)
+              }
+            },
             onDrop: (event) => {
               event.preventDefault()
               const fromId = event.dataTransfer.getData('text/row-id')
-              if (fromId) onReorderRow(fromId, row.rowId)
+              if (fromId) reorderRow(fromId, row.rowId, dropAfter)
+              onRowDragEnd()
             },
           })}
           style={{ marginTop: 8 }}
