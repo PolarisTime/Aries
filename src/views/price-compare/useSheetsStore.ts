@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { makeRow, makeSheet } from './core'
+import { copySheet, makeSheet } from './core'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
-const LS_KEY = 'aries-price-compare-v1'
+const LS_KEY = 'aries-price-compare-v2'
 const HISTORY_LIMIT = 50
 const COALESCE_MS = 800
 
 type Snapshot = {
   sheets: PriceSheet[]
   activeId: string
-  rows: PriceRow[]
   brands: Brand[]
 }
 
@@ -22,19 +21,7 @@ function defaultState(): Snapshot {
     '12:00 中午',
   )
   const b = makeSheet('9月9日报单', '', '2026-09-09', '2026-09-10', '9:30 上午')
-  return {
-    sheets: [a, b],
-    activeId: a.id,
-    rows: [
-      ...[12, 14, 16, 18, 20, 22, 25].map((spec) => ({
-        ...makeRow('螺纹钢'),
-        spec,
-        length: '9米',
-      })),
-      ...[6, 8, 10].map((spec) => ({ ...makeRow('盘螺'), spec, length: '-' })),
-    ],
-    brands: [],
-  }
+  return { sheets: [a, b], activeId: a.id, brands: [] }
 }
 
 function loadState(): Snapshot {
@@ -42,7 +29,11 @@ function loadState(): Snapshot {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Snapshot
-      if (parsed.sheets?.length && parsed.rows) return parsed
+      if (
+        parsed.sheets?.length &&
+        parsed.sheets.every((sheet) => Array.isArray(sheet.rows))
+      )
+        return parsed
     }
   } catch {
     // ignore malformed storage
@@ -69,6 +60,7 @@ export type SheetsStore = {
     coalesceKey?: string,
   ) => void
   addSheet: (projectId: string) => void
+  copyActiveSheet: () => void
   removeSheet: (id: string) => void
 }
 
@@ -79,7 +71,7 @@ type History = {
   lastTime: number
 }
 
-/** 多单据状态 + 撤销/重做 + 本地持久化(后续可替换为后端保存)。 */
+/** 多单据状态(行随单据独立) + 撤销/重做 + 本地持久化。 */
 export function useSheetsStore(): SheetsStore {
   const [state, setState] = useState<Snapshot>(() => loadState())
   const [, forceRender] = useState(0)
@@ -156,8 +148,26 @@ export function useSheetsStore(): SheetsStore {
     forceRender((version) => version + 1)
   }, [])
 
-  const setRows = (updater: (current: PriceRow[]) => PriceRow[]) =>
-    apply((current) => ({ ...current, rows: updater(current.rows) }))
+  const active = useMemo(
+    () =>
+      state.sheets.find((sheet) => sheet.id === state.activeId) ??
+      state.sheets[0],
+    [state.sheets, state.activeId],
+  )
+
+  const updateActiveRows = (updater: (rows: PriceRow[]) => PriceRow[]) =>
+    apply((current) => {
+      const activeId = current.activeId
+      return {
+        ...current,
+        sheets: current.sheets.map((sheet) =>
+          sheet.id === activeId
+            ? { ...sheet, rows: updater(sheet.rows) }
+            : sheet,
+        ),
+      }
+    })
+
   const setBrands = (value: Brand[] | ((current: Brand[]) => Brand[])) =>
     apply((current) => ({
       ...current,
@@ -182,7 +192,7 @@ export function useSheetsStore(): SheetsStore {
   const addSheet = (projectId: string) =>
     apply((current) => {
       const sheet = makeSheet(
-        `单据 ${current.sheets.length + 1}`,
+        `批次 ${current.sheets.length + 1}`,
         projectId,
         new Date().toISOString().slice(0, 10),
         '2026-09-10',
@@ -193,6 +203,20 @@ export function useSheetsStore(): SheetsStore {
         sheets: [...current.sheets, sheet],
         activeId: sheet.id,
       }
+    })
+  const copyActiveSheet = () =>
+    apply((current) => {
+      const source = current.sheets.find(
+        (sheet) => sheet.id === current.activeId,
+      )
+      if (!source) return current
+      const copy = copySheet(source)
+      const index = current.sheets.findIndex(
+        (sheet) => sheet.id === current.activeId,
+      )
+      const next = [...current.sheets]
+      next.splice(index + 1, 0, copy)
+      return { ...current, sheets: next, activeId: copy.id }
     })
   const removeSheet = (id: string) =>
     apply((current) => {
@@ -206,28 +230,22 @@ export function useSheetsStore(): SheetsStore {
       }
     })
 
-  const active = useMemo(
-    () =>
-      state.sheets.find((sheet) => sheet.id === state.activeId) ??
-      state.sheets[0],
-    [state.sheets, state.activeId],
-  )
-
   return {
     sheets: state.sheets,
     activeId: state.activeId,
     active,
-    rows: state.rows,
+    rows: active?.rows ?? [],
     brands: state.brands,
     canUndo: historyRef.current.past.length > 0,
     canRedo: historyRef.current.future.length > 0,
     undo,
     redo,
-    setRows,
+    setRows: updateActiveRows,
     setBrands,
     setActiveId,
     patchSheet,
     addSheet,
+    copyActiveSheet,
     removeSheet,
   }
 }

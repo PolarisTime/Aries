@@ -70,6 +70,8 @@ describe('computeSummary', () => {
     refPeriod: '9:30 上午',
     lengthPremium: 30,
     locked: false,
+    status: '报价',
+    rows: [],
     inputs,
   })
 
@@ -139,6 +141,8 @@ describe('countMissing', () => {
       refPeriod: '9:30 上午',
       lengthPremium: 30,
       locked: false,
+      status: '报价',
+      rows: [],
       inputs: {},
     }
     expect(countMissing(data, sheet, [row12, row12m], brands)).toBe(2)

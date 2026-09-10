@@ -369,6 +369,8 @@ function SheetHeader({
   patchSheet,
   capture,
   captureBtnRef,
+  onAddRow,
+  onCopySheet,
 }: {
   sheet: PriceSheet
   data: PriceData | null
@@ -378,6 +380,8 @@ function SheetHeader({
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   capture: (copy: boolean) => Promise<void>
+  onAddRow: (category?: string) => void
+  onCopySheet: () => void
 }) {
   const periodLabel = (sheet.refPeriod || '').split(' ').pop()
   return (
@@ -484,6 +488,12 @@ function SheetHeader({
         </Space>
       </Flex>
       <Space>
+        <Button size="small" disabled={locked} onClick={() => onAddRow()}>
+          ＋规格行
+        </Button>
+        <Button size="small" onClick={onCopySheet}>
+          复制批次
+        </Button>
         <Button
           size="small"
           icon={locked ? <UnlockOutlined /> : <LockOutlined />}
@@ -629,6 +639,7 @@ type Props = {
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   onOpenSettings: () => void
+  onCopySheet: () => void
   brandSelectRef: React.RefObject<HTMLSpanElement | null>
   spotRef: React.RefObject<HTMLSpanElement | null>
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
@@ -649,6 +660,7 @@ export function SheetPanel(props: Props) {
     setRows,
     setBrands,
     onOpenSettings,
+    onCopySheet,
     brandSelectRef,
     spotRef,
     captureBtnRef,
@@ -769,6 +781,8 @@ export function SheetPanel(props: Props) {
           patchSheet={patchSheet}
           capture={capture}
           captureBtnRef={captureBtnRef}
+          onAddRow={onAddRow}
+          onCopySheet={onCopySheet}
         />
         <SheetToolbar
           brands={brands}

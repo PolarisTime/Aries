@@ -13,6 +13,7 @@ import {
   Empty,
   Flex,
   Form,
+  Input,
   Segmented,
   Skeleton,
   Space,
@@ -34,6 +35,59 @@ import './price-compare.css'
 
 const { Text } = Typography
 const TOUR_KEY = 'aries-price-compare-tour'
+
+const SHEET_STATUS_COLOR: Record<string, string> = {
+  报价: '#1677ff',
+  已报: '#faad14',
+  成交: '#389e0d',
+  作废: '#bfbfbf',
+}
+
+function SheetTabLabel({
+  sheet,
+  onRename,
+}: {
+  sheet: { id: string; name: string; status: string; locked: boolean }
+  onRename: (id: string, name: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(sheet.name)
+  if (editing) {
+    return (
+      <Input
+        size="small"
+        autoFocus
+        style={{ width: 120 }}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          setEditing(false)
+          if (draft.trim()) onRename(sheet.id, draft.trim())
+        }}
+        onPressEnter={() => {
+          setEditing(false)
+          if (draft.trim()) onRename(sheet.id, draft.trim())
+        }}
+        onClick={(event) => event.stopPropagation()}
+      />
+    )
+  }
+  return (
+    <span
+      onDoubleClick={() => {
+        setDraft(sheet.name)
+        setEditing(true)
+      }}
+      title="双击重命名"
+    >
+      {sheet.name}{' '}
+      <span style={{ color: SHEET_STATUS_COLOR[sheet.status] ?? '#8c8c8c' }}>
+        ●
+      </span>
+      {sheet.locked ? <LockOutlined style={{ marginLeft: 4 }} /> : null}
+    </span>
+  )
+}
 
 type BrandFormValues = { brands: Brand[] }
 
@@ -65,6 +119,7 @@ export function PriceCompareView() {
     setActiveId,
     patchSheet,
     addSheet,
+    copyActiveSheet,
     removeSheet,
   } = store
 
@@ -140,13 +195,16 @@ export function PriceCompareView() {
   const tabItems = useMemo(
     () =>
       sheets.map((sheet) => {
-        const missing = countMissing(data, sheet, rows, brands)
+        const missing = countMissing(data, sheet, sheet.rows, brands)
         return {
           key: sheet.id,
           closable: sheets.length > 1,
           label: (
             <span>
-              {sheet.name} {sheet.locked ? <LockOutlined /> : null}{' '}
+              <SheetTabLabel
+                sheet={sheet}
+                onRename={(id, name) => patchSheet(id, { name })}
+              />{' '}
               {missing > 0 ? (
                 <Badge count={missing} size="small" color="#faad14" />
               ) : null}
@@ -154,7 +212,7 @@ export function PriceCompareView() {
           ),
         }
       }),
-    [sheets, data, rows, brands],
+    [sheets, data, brands, patchSheet],
   )
 
   if (loading) {
@@ -261,6 +319,7 @@ export function PriceCompareView() {
             setRows={setRows}
             setBrands={setBrands}
             onOpenSettings={openSettings}
+            onCopySheet={copyActiveSheet}
             brandSelectRef={brandSelectRef}
             spotRef={spotRef}
             captureBtnRef={captureBtnRef}

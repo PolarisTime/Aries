@@ -32,6 +32,7 @@ export type SheetInputs = Record<string, SheetInput>
 export type PriceSheet = {
   id: string
   name: string
+  status: string
   projectId: string
   orderDate: string
   refDate: string
@@ -39,6 +40,7 @@ export type PriceSheet = {
   lengthPremium: number
   locked: boolean
   inputs: SheetInputs
+  rows: PriceRow[]
 }
 
 export type GridRow = {

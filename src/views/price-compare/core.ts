@@ -185,6 +185,19 @@ export function makeRow(category = '螺纹钢'): PriceRow {
   }
 }
 
+export const DEFAULT_STATUS = '报价'
+
+export function defaultSheetRows(): PriceRow[] {
+  return [
+    ...[12, 14, 16, 18, 20, 22, 25].map((spec) => ({
+      ...makeRow('螺纹钢'),
+      spec,
+      length: '9米',
+    })),
+    ...[6, 8, 10].map((spec) => ({ ...makeRow('盘螺'), spec, length: '-' })),
+  ]
+}
+
 export function makeSheet(
   name: string,
   projectId: string,
@@ -195,6 +208,7 @@ export function makeSheet(
   return {
     id: Math.random().toString(36).slice(2, 8),
     name,
+    status: DEFAULT_STATUS,
     projectId,
     orderDate,
     refDate,
@@ -202,5 +216,16 @@ export function makeSheet(
     lengthPremium: 30,
     locked: false,
     inputs: {},
+    rows: defaultSheetRows(),
+  }
+}
+
+/** 复制单据(新 ID, 名称追加“副本”)。 */
+export function copySheet(sheet: PriceSheet): PriceSheet {
+  return {
+    ...structuredClone(sheet),
+    id: Math.random().toString(36).slice(2, 8),
+    name: `${sheet.name} 副本`,
+    locked: false,
   }
 }
