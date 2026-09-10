@@ -76,7 +76,7 @@ describe('computeSummary', () => {
     inputs,
   })
 
-  it('差值乘吨数, 差价 = 网价 − 现货 − 运费', () => {
+  it('差价 = 网价 − 现货 − 运费, 统计已填格数', () => {
     const summary = computeSummary(
       data,
       sheet({ '_:r1': { ton: 10 }, '中天:r1': { spot: 3280 } }),
@@ -84,11 +84,10 @@ describe('computeSummary', () => {
       brands,
       30,
     )
-    expect(summary.totalTon).toBe(10)
     expect(summary.filled).toBe(1)
   })
 
-  it('缺现货或吨数时不计入已填数', () => {
+  it('缺现货时不计入已填数', () => {
     expect(
       computeSummary(
         data,
@@ -97,7 +96,7 @@ describe('computeSummary', () => {
         brands,
         30,
       ).filled,
-    ).toBe(0)
+    ).toBe(1)
     expect(
       computeSummary(data, sheet({ '_:r1': { ton: 10 } }), [row12], brands, 30)
         .filled,

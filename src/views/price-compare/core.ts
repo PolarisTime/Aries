@@ -35,7 +35,6 @@ export const SHEET_STATUS_META: Record<string, string> = {
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
   spec: 200,
-  ton: 54,
   net: 58,
   spot: 62,
   diff: 54,
@@ -81,7 +80,6 @@ export function resolveRef(
 }
 
 export type SheetSummary = {
-  totalTon: number
   filled: number
 }
 
@@ -92,12 +90,8 @@ export function computeSummary(
   brands: Brand[],
   lengthPremium: number,
 ): SheetSummary {
-  let totalTon = 0
   let filled = 0
   for (const row of rows) {
-    const ton = sheet.inputs[`_:${row.id}`]?.ton
-    if (!ton) continue
-    totalTon += ton
     for (const brand of brands) {
       const auto = netPrice(
         data,
@@ -112,7 +106,7 @@ export function computeSummary(
       filled += 1
     }
   }
-  return { totalTon, filled }
+  return { filled }
 }
 
 /** 单个商品行在各品牌中的最优(差价最大)品牌, 无有效数据返回 undefined。 */

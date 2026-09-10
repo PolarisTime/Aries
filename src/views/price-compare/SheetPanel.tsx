@@ -15,7 +15,6 @@ import {
   Dropdown,
   Flex,
   Input,
-  InputNumber,
   Popconfirm,
   Select,
   Space,
@@ -70,8 +69,7 @@ type ColumnContext = {
   rows: PriceRow[]
   locked: boolean
   getSpot: (brandName: string, rowId: string) => number | undefined
-  getTon: (rowId: string) => number | undefined
-  setInput: (key: string, patch: { ton?: number; spot?: number }) => void
+  setInput: (key: string, patch: { spot?: number }) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
@@ -117,7 +115,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     rows,
     locked,
     getSpot,
-    getTon,
     setInput,
     patchRow,
     moveFocus,
@@ -187,34 +184,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           />
         )
       },
-    },
-    {
-      title: '吨',
-      width: SHEET_COLUMN_WIDTH.ton,
-      fixed: 'left',
-      align: 'right',
-      render: (_, row) => (
-        <InputNumber
-          size="small"
-          variant="borderless"
-          disabled={locked}
-          min={0}
-          style={{ width: 58 }}
-          defaultValue={getTon(row.rowId)}
-          onBlur={(event) => {
-            const raw = event.target.value
-            setInput(`_:${row.rowId}`, {
-              ton: raw === '' ? undefined : Number(raw),
-            })
-          }}
-          onPressEnter={(event) => {
-            const raw = (event.target as HTMLInputElement).value
-            setInput(`_:${row.rowId}`, {
-              ton: raw === '' ? undefined : Number(raw),
-            })
-          }}
-        />
-      ),
     },
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> => [
@@ -558,9 +527,6 @@ function SheetHeader({
         <Text type="secondary">
           品牌 <Text strong>{brandCount}</Text> 个 · 12米 +{lengthPremium}
         </Text>
-        <Text>
-          总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
-        </Text>
         <Text type="secondary">
           已填 <Text strong>{summary.filled}</Text> 格
         </Text>
@@ -581,7 +547,7 @@ function SummaryBar({
   return (
     <div className="price-compare-summary">
       <Text strong>合计</Text>
-      <Text>总吨数 {summary.totalTon || 0}</Text>
+      <Text type="secondary">已填 {summary.filled} 格</Text>
       <span className="price-compare-legend" style={{ marginLeft: 'auto' }}>
         差价 = 网价 − 现货 − 运费
       </span>
@@ -647,8 +613,7 @@ export function SheetPanel(props: Props) {
 
   const getSpot = (brandName: string, rowId: string) =>
     sheet.inputs[`${brandName}:${rowId}`]?.spot
-  const getTon = (rowId: string) => sheet.inputs[`_:${rowId}`]?.ton
-  const setInput = (key: string, patch: { ton?: number; spot?: number }) =>
+  const setInput = (key: string, patch: { spot?: number }) =>
     patchSheet(sheet.id, {
       inputs: {
         ...sheet.inputs,
@@ -734,7 +699,6 @@ export function SheetPanel(props: Props) {
     rows,
     locked,
     getSpot,
-    getTon,
     setInput,
     patchRow,
     moveFocus,
@@ -793,7 +757,6 @@ export function SheetPanel(props: Props) {
           scroll={{
             x:
               SHEET_COLUMN_WIDTH.spec +
-              SHEET_COLUMN_WIDTH.ton +
               brands.length *
                 (SHEET_COLUMN_WIDTH.net +
                   SHEET_COLUMN_WIDTH.spot +
