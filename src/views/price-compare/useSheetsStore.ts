@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { copySheet, DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
+import { DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
 const LS_KEY = 'aries-price-compare-v4'
@@ -70,7 +70,6 @@ export type SheetsStore = {
     refDate: string,
     refPeriod: string,
   ) => void
-  copyActiveSheet: () => void
   assignProjectToUnassigned: (projectId: string, projectName: string) => void
   removeSheet: (id: string) => void
 }
@@ -228,20 +227,6 @@ export function useSheetsStore(): SheetsStore {
         activeId: sheet.id,
       }
     })
-  const copyActiveSheet = () =>
-    apply((current) => {
-      const source = current.sheets.find(
-        (sheet) => sheet.id === current.activeId,
-      )
-      if (!source) return current
-      const copy = copySheet(source)
-      const index = current.sheets.findIndex(
-        (sheet) => sheet.id === current.activeId,
-      )
-      const next = [...current.sheets]
-      next.splice(index + 1, 0, copy)
-      return { ...current, sheets: next, activeId: copy.id }
-    })
   const assignProjectToUnassigned = (projectId: string, projectName: string) =>
     apply((current) => {
       if (!projectId || !current.sheets.some((sheet) => !sheet.projectId))
@@ -282,7 +267,6 @@ export function useSheetsStore(): SheetsStore {
     setActiveId,
     patchSheet,
     addSheet,
-    copyActiveSheet,
     assignProjectToUnassigned,
     removeSheet,
   }

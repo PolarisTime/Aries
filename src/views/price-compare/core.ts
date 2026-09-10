@@ -31,14 +31,6 @@ export const SPOT_PRICE_MAX = 20000
 /** 默认 12 米加价(元/吨) */
 export const DEFAULT_LENGTH_PREMIUM = 30
 
-/** 单据状态与颜色(集中定义, 避免散落) */
-export const SHEET_STATUS_META: Record<string, string> = {
-  报价: '#1677ff',
-  已报: '#faad14',
-  成交: '#389e0d',
-  作废: '#bfbfbf',
-}
-
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
   spec: 200,
@@ -276,32 +268,5 @@ export function makeSheet(
     inputs: {},
     groups: [group],
     rows: defaultSheetRows(group.id),
-  }
-}
-
-/** 复制单据(新 ID, 名称追加“副本”; 分组与行 ID 全部重建并保持关联)。 */
-export function copySheet(sheet: PriceSheet): PriceSheet {
-  const groupIdMap = new Map<string, string>()
-  const groups = sheet.groups.map((group) => {
-    const id = makeId()
-    groupIdMap.set(group.id, id)
-    return { ...group, id }
-  })
-  const groupIds = new Set(groups.map((group) => group.id))
-  const fallbackId = groups[0]?.id ?? ''
-  const rows = sheet.rows.map((row) => ({
-    ...row,
-    id: makeId(),
-    groupId: groupIds.has(row.groupId)
-      ? (groupIdMap.get(row.groupId) as string)
-      : fallbackId,
-  }))
-  return {
-    ...structuredClone(sheet),
-    id: makeId(),
-    name: `${sheet.name} 副本`,
-    locked: false,
-    groups,
-    rows,
   }
 }

@@ -32,7 +32,6 @@ export function DesignSheet({
     setRows,
     setBrands,
     setSettings,
-    copyActiveSheet,
   } = state
   const brandOptions = materialBrands.length
     ? materialBrands
@@ -57,7 +56,6 @@ export function DesignSheet({
           setBrands((current) => moveItem(current, from, to))
         }
         onOpenSettings={() => setSettingsOpen(true)}
-        onCopySheet={copyActiveSheet}
         spotRef={spotRef}
       />
       <ReportSettingsModal

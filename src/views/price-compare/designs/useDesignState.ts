@@ -33,7 +33,6 @@ export function useDesignState() {
     setActiveId,
     patchSheet,
     addSheet,
-    copyActiveSheet,
     removeSheet,
   } = store
 
@@ -105,7 +104,6 @@ export function useDesignState() {
     setBrands,
     setActiveId,
     patchSheet,
-    copyActiveSheet,
     removeSheet,
     projectGroups,
     createBatch,

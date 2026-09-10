@@ -22,7 +22,6 @@ export function DesignC({ state }: { state: DesignState }) {
     setActiveId,
     createBatch,
     patchSheet,
-    copyActiveSheet,
     active,
     missingOf,
   } = state
@@ -96,9 +95,6 @@ export function DesignC({ state }: { state: DesignState }) {
             }
           >
             ＋批次
-          </Button>
-          <Button size="small" onClick={copyActiveSheet}>
-            复制
           </Button>
           <Button
             size="small"

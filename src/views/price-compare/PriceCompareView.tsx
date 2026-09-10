@@ -105,7 +105,6 @@ export function PriceCompareView() {
     setActiveId,
     patchSheet,
     addSheet,
-    copyActiveSheet,
     assignProjectToUnassigned,
     removeSheet,
   } = store
@@ -201,7 +200,7 @@ export function PriceCompareView() {
         <div>
           <h1>报单比价</h1>
           <span className="price-compare-desc">
-            项目 → 批次 · Ctrl+Z 撤销 · 锁定防改 · 一键截图
+            项目 → 批次 · 分组 · Ctrl+Z 撤销 · 锁定防改
           </span>
         </div>
       </div>
@@ -378,7 +377,6 @@ export function PriceCompareView() {
               setBrands((current) => moveItem(current, from, to))
             }
             onOpenSettings={() => setSettingsOpen(true)}
-            onCopySheet={copyActiveSheet}
             spotRef={spotRef}
           />
         </Watermark>

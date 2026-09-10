@@ -36,7 +36,6 @@ import {
   netPrice,
   resolveRef,
   SHEET_COLUMN_WIDTH,
-  SHEET_STATUS_META,
   SPOT_PRICE_MAX,
 } from './core'
 import type {
@@ -433,7 +432,6 @@ function SheetHeader({
   patchSheet,
   onAddGroup,
   onAddRow,
-  onCopySheet,
   onOpenSettings,
   bestOn,
   onToggleBest,
@@ -453,7 +451,6 @@ function SheetHeader({
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   onAddGroup: () => void
   onAddRow: () => void
-  onCopySheet: () => void
   onOpenSettings: () => void
   bestOn: boolean
   onToggleBest: () => void
@@ -471,23 +468,7 @@ function SheetHeader({
         className="price-compare-toolbar"
       >
         <Flex gap="small" align="center" wrap="wrap">
-          <Input
-            size="small"
-            variant="borderless"
-            className="price-compare-sheet-name"
-            style={{ width: 140, fontWeight: 600 }}
-            disabled={locked}
-            value={sheet.name}
-            onChange={(event) =>
-              patchSheet(sheet.id, { name: event.target.value })
-            }
-          />
-          <Tag color={SHEET_STATUS_META[sheet.status] ?? 'default'}>
-            {sheet.status}
-          </Tag>
-          <Text type="secondary" className="price-compare-sub">
-            {sheet.projectName || '未指定项目'}
-          </Text>
+          <Text strong>{sheet.projectName || '未指定项目'}</Text>
           <Space size="small">
             <Text type="secondary" className="price-compare-sub">
               报单日期
@@ -556,27 +537,26 @@ function SheetHeader({
           >
             {bestOn ? '取消最优' : '一键最优'}
           </Button>
-          <Popconfirm
-            title={`删除选中的 ${selectedCount} 行？`}
-            okText="删除"
-            cancelText="取消"
-            disabled={locked || selectedCount === 0}
-            onConfirm={onRemoveSelected}
-          >
-            <Button
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={locked || selectedCount === 0}
+          {selectedCount > 0 ? (
+            <Popconfirm
+              title={`删除选中的 ${selectedCount} 行？`}
+              okText="删除"
+              cancelText="取消"
+              disabled={locked}
+              onConfirm={onRemoveSelected}
             >
-              删除
-            </Button>
-          </Popconfirm>
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                disabled={locked}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          ) : null}
           <Button size="small" disabled={locked} onClick={onAddRow}>
             ＋规格行
-          </Button>
-          <Button size="small" onClick={onCopySheet}>
-            复制批次
           </Button>
           <Button
             size="small"
@@ -638,7 +618,6 @@ type Props = {
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
   onReorderBrands: (from: number, to: number) => void
   onOpenSettings: () => void
-  onCopySheet: () => void
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -657,7 +636,6 @@ export function SheetPanel(props: Props) {
     setRows,
     onReorderBrands,
     onOpenSettings,
-    onCopySheet,
     chrome = true,
     spotRef,
   } = props
@@ -829,7 +807,6 @@ export function SheetPanel(props: Props) {
         patchSheet={patchSheet}
         onAddGroup={addGroup}
         onAddRow={addRow}
-        onCopySheet={onCopySheet}
         onOpenSettings={onOpenSettings}
         bestOn={bestOn}
         onToggleBest={() => setBestOn((value) => !value)}
