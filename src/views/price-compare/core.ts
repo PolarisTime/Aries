@@ -16,6 +16,16 @@ export const LENGTHS: Record<string, string[]> = {
 
 export const dataKeyOf = (row: PriceRow) => `${row.category}|${row.material}`
 
+/** 单据表格固定列宽 */
+export const SHEET_COLUMN_WIDTH = {
+  spec: 240,
+  ton: 60,
+  net: 62,
+  spot: 66,
+  diff: 58,
+  action: 40,
+} as const
+
 /** 网价: 参照日期+时段, 命中则返回并叠加 12 米加价。 */
 export function netPrice(
   data: PriceData | null,
@@ -130,6 +140,22 @@ export function buildGridRows(rows: PriceRow[]): GridRow[] {
     })
   }
   return CATEGORIES.flatMap((category) => groups.get(category) ?? [])
+}
+
+/** 将 from 位置的元素移动到 to 位置(用于品牌列拖拽排序)。 */
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (
+    from === to ||
+    from < 0 ||
+    to < 0 ||
+    from >= list.length ||
+    to >= list.length
+  )
+    return list
+  const next = [...list]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  return next
 }
 
 export function makeRow(category = '螺纹钢'): PriceRow {

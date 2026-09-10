@@ -9,6 +9,7 @@ import {
   Space,
   Typography,
 } from 'antd'
+import { moveItem } from './core'
 import type { Brand, BrandOption } from './types'
 
 const { Text } = Typography
@@ -31,6 +32,11 @@ export function BrandSettingsDrawer({
   onClose,
   onSave,
 }: Props) {
+  const moveBrand = (from: number, to: number) => {
+    const list = form.getFieldValue('brands') as Brand[] | undefined
+    form.setFieldsValue({ brands: moveItem(list ?? [], from, to) })
+  }
+
   return (
     <Drawer
       title="比价设置"
@@ -54,12 +60,28 @@ export function BrandSettingsDrawer({
               style={{ width: '100%' }}
               size="small"
             >
-              {fields.map((field) => (
+              {fields.map((field, index) => (
                 <Space
                   key={field.key}
                   align="baseline"
                   style={{ display: 'flex' }}
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', String(index))
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const from = Number(
+                      event.dataTransfer.getData('text/plain'),
+                    )
+                    if (!Number.isNaN(from)) moveBrand(from, index)
+                  }}
                 >
+                  <span className="price-compare-drag" title="拖拽调整顺序">
+                    ⠿
+                  </span>
                   <Form.Item
                     {...field}
                     name={[field.name, 'name']}

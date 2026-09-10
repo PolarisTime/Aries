@@ -4,6 +4,7 @@ import {
   computeSummary,
   countMissing,
   makeRow,
+  moveItem,
   netPrice,
   parsePasteValues,
 } from './core'
@@ -132,6 +133,15 @@ describe('parsePasteValues', () => {
       3280, 3290, 3310.5,
     ])
     expect(parsePasteValues('3280\t备注')).toEqual([3280])
+  })
+})
+
+describe('moveItem', () => {
+  it('按位置移动元素, 越界或同位置时原样返回', () => {
+    expect(moveItem(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a'])
+    expect(moveItem(['a', 'b', 'c'], 2, 0)).toEqual(['c', 'a', 'b'])
+    expect(moveItem(['a', 'b'], 1, 1)).toEqual(['a', 'b'])
+    expect(moveItem(['a', 'b'], 5, 0)).toEqual(['a', 'b'])
   })
 })
 

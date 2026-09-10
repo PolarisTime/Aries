@@ -100,7 +100,8 @@ export function PriceCompareView() {
   const saveSettings = () => {
     void form.validateFields().then((values) => {
       const next = (values.brands ?? []).reduce<Brand[]>((list, brand) => {
-        if (brand.name) list.push({ name: brand.name, freight: Number(brand.freight) || 0 })
+        if (brand.name)
+          list.push({ name: brand.name, freight: Number(brand.freight) || 0 })
         return list
       }, [])
       setBrands(next)

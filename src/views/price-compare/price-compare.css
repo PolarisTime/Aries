@@ -118,3 +118,9 @@
 .price-compare-spot {
   width: 100%;
 }
+
+.price-compare-drag {
+  cursor: grab;
+  color: rgba(0, 0, 0, 0.35);
+  user-select: none;
+}

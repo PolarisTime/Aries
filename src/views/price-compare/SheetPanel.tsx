@@ -33,8 +33,10 @@ import {
   buildGridRows,
   CATEGORIES,
   computeSummary,
+  moveItem,
   netPrice,
   parsePasteValues,
+  SHEET_COLUMN_WIDTH,
 } from './core'
 import type {
   Brand,
@@ -50,16 +52,6 @@ import type {
 const { Text } = Typography
 const DATE_FMT = 'YYYY年M月D日'
 const MAX_SPOT = 20000
-
-/** 固定列宽(预览 -> 保证左右对齐稳定) */
-export const SHEET_COLUMN_WIDTH = {
-  spec: 240,
-  ton: 60,
-  net: 62,
-  spot: 66,
-  diff: 58,
-  action: 40,
-} as const
 
 /* ------------------------------------------------------------------ 列定义 */
 
@@ -81,6 +73,7 @@ type ColumnContext = {
     rowId: string,
   ) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
+  onReorderBrands: (from: number, to: number) => void
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -125,6 +118,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     removeRow,
     onSpotPaste,
     moveFocus,
+    onReorderBrands,
     spotRef,
   } = ctx
   const varietyOptions = buildVarietyOptions(varieties)
@@ -194,7 +188,25 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> => [
         {
-          title: <span className="price-compare-brand-name">{brand.name}</span>,
+          title: (
+            <span
+              className="price-compare-brand-name price-compare-drag"
+              draggable
+              title="拖拽调整品牌列顺序"
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/plain', String(brandIndex))
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault()
+                const from = Number(event.dataTransfer.getData('text/plain'))
+                if (!Number.isNaN(from)) onReorderBrands(from, brandIndex)
+              }}
+            >
+              ⠿ {brand.name}
+            </span>
+          ),
           children: [
             cellOf('网价', SHEET_COLUMN_WIDTH.net, (_, row) => {
               if (row.isGroup || !row.row) return null
@@ -720,6 +732,9 @@ export function SheetPanel(props: Props) {
     input?.select()
   }
 
+  const onReorderBrands = (from: number, to: number) =>
+    setBrands((current) => moveItem(current, from, to))
+
   const capture = async (copy: boolean) => {
     if (!captureRef.current) return
     setCapturing(true)
@@ -769,6 +784,7 @@ export function SheetPanel(props: Props) {
     removeRow,
     onSpotPaste,
     moveFocus,
+    onReorderBrands,
     spotRef,
   })
   const dataSource = useMemo(() => buildGridRows(rows), [rows])
