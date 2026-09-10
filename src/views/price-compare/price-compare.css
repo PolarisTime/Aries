@@ -1,0 +1,29 @@
+.price-compare-brand-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.price-compare-brand-header .ant-input {
+  width: 84px;
+  text-align: center;
+  padding: 1px 4px;
+}
+
+.price-compare-brand-header .ant-input-number {
+  width: 54px;
+}
+
+.price-compare-brand-sub {
+  font-size: 11px;
+  color: #888;
+}
+
+.price-compare-pos {
+  color: #389e0d;
+}
+
+.price-compare-neg {
+  color: #cf1322;
+}

@@ -155,13 +155,13 @@ const authenticatedLayoutRoute = createRoute({
   },
 })
 
-// demo 页面：比价模块 UI 设计稿（mock 数据），验收后迁移到正式模块
-const priceCompareDemoRoute = createRoute({
+// 比价页面: 报单 vs 参照网价对照（多报单块堆叠）
+const priceCompareRoute = createRoute({
   getParentRoute: () => authenticatedLayoutRoute,
-  path: '/demo/price-compare',
+  path: '/price-compare',
   component: lazy(() =>
-    import('@/views/demo/PriceCompareDemoView').then((m) => ({
-      default: m.PriceCompareDemoView,
+    import('@/views/price-compare/PriceCompareView').then((m) => ({
+      default: m.PriceCompareView,
     })),
   ),
 })
@@ -321,7 +321,7 @@ const routeTree = rootRoute.addChildren([
     // TanStack Router 的子路由数组要求统一 AnyRoute 泛型，demo 路由单独追加
     [
       ...buildModuleRoutes(authenticatedLayoutRoute),
-      priceCompareDemoRoute as AnyRoute,
+      priceCompareRoute as AnyRoute,
     ],
   ),
 ])
