@@ -53,7 +53,7 @@ export function DesignSheet({
         chrome={chrome}
         patchSheet={patchSheet}
         setRows={setRows}
-        lengthPremium={settings.lengthPremium}
+        lengthPremium={settings?.lengthPremium ?? 30}
         onReorderBrands={(from, to) =>
           setBrands((current) => moveItem(current, from, to))
         }
@@ -66,7 +66,7 @@ export function DesignSheet({
         open={settingsOpen}
         brandOptions={brandOptions}
         brands={brands}
-        lengthPremium={settings.lengthPremium}
+        lengthPremium={settings?.lengthPremium ?? 30}
         onClose={() => setSettingsOpen(false)}
         onSave={({ brands: nextBrands, lengthPremium }) => {
           setBrands(nextBrands)

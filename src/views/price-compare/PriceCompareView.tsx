@@ -336,7 +336,7 @@ export function PriceCompareView() {
     active,
     rows,
     brands,
-    settings,
+    settings = { lengthPremium: 30 },
     setSettings,
     canUndo,
     canRedo,
@@ -496,7 +496,7 @@ export function PriceCompareView() {
             setRows={setRows}
             onOpenSettings={openSettings}
             onCopySheet={copyActiveSheet}
-            lengthPremium={settings.lengthPremium}
+            lengthPremium={settings?.lengthPremium ?? 30}
             onReorderBrands={(from, to) =>
               setBrands((current) => moveItem(current, from, to))
             }
@@ -535,7 +535,7 @@ export function PriceCompareView() {
         open={settingsOpen}
         brandOptions={brandOptions}
         brands={brands}
-        lengthPremium={settings.lengthPremium}
+        lengthPremium={settings?.lengthPremium ?? 30}
         onClose={() => setSettingsOpen(false)}
         onSave={({ brands: nextBrands, lengthPremium }) => {
           setBrands(nextBrands)

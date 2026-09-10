@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { copySheet, DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
-const LS_KEY = 'aries-price-compare-v2'
+const LS_KEY = 'aries-price-compare-v3'
 const HISTORY_LIMIT = 50
 const COALESCE_MS = 800
 
