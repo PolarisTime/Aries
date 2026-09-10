@@ -1,0 +1,618 @@
+[
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 10,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ10 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 10,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ10 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 12,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ12 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 12,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ12 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 14,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ14 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 14,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ14 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 16,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ16 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 16,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ16 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 18,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ18 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 18,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ18 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 20,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ20 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 20,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ20 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 22,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ22 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 22,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ22 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 25,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ25 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 25,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ25 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 28,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ28 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 28,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ28 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 32,
+"length": "9米",
+"label": "螺纹钢 HRB400 Φ32 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400",
+"spec": 32,
+"length": "12米",
+"label": "螺纹钢 HRB400 Φ32 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 10,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ10 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 10,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ10 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 12,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ12 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 12,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ12 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 14,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ14 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 14,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ14 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 16,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ16 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 16,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ16 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 18,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ18 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 18,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ18 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 20,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ20 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 20,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ20 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 22,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ22 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 22,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ22 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 25,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ25 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 25,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ25 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 28,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ28 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 28,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ28 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 32,
+"length": "9米",
+"label": "螺纹钢 HRB400E Φ32 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB400E",
+"spec": 32,
+"length": "12米",
+"label": "螺纹钢 HRB400E Φ32 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 10,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ10 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 10,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ10 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 12,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ12 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 12,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ12 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 14,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ14 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 14,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ14 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 16,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ16 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 16,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ16 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 18,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ18 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 18,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ18 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 20,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ20 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 20,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ20 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 22,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ22 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 22,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ22 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 25,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ25 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 25,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ25 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 28,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ28 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 28,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ28 12米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 32,
+"length": "9米",
+"label": "螺纹钢 HRB500E Φ32 9米"
+},
+{
+"category": "螺纹钢",
+"material": "HRB500E",
+"spec": 32,
+"length": "12米",
+"label": "螺纹钢 HRB500E Φ32 12米"
+},
+{
+"category": "盘螺",
+"material": "HRB400",
+"spec": 6,
+"length": "-",
+"label": "盘螺 HRB400 Φ6 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB400",
+"spec": 8,
+"length": "-",
+"label": "盘螺 HRB400 Φ8 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB400",
+"spec": 10,
+"length": "-",
+"label": "盘螺 HRB400 Φ10 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB400E",
+"spec": 6,
+"length": "-",
+"label": "盘螺 HRB400E Φ6 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB400E",
+"spec": 8,
+"length": "-",
+"label": "盘螺 HRB400E Φ8 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB400E",
+"spec": 10,
+"length": "-",
+"label": "盘螺 HRB400E Φ10 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB500E",
+"spec": 8,
+"length": "-",
+"label": "盘螺 HRB500E Φ8 盘"
+},
+{
+"category": "盘螺",
+"material": "HRB500E",
+"spec": 10,
+"length": "-",
+"label": "盘螺 HRB500E Φ10 盘"
+},
+{
+"category": "高线",
+"material": "HPB300",
+"spec": 6,
+"length": "9米",
+"label": "高线 HPB300 Φ6 9米"
+},
+{
+"category": "高线",
+"material": "HPB300",
+"spec": 6,
+"length": "12米",
+"label": "高线 HPB300 Φ6 12米"
+},
+{
+"category": "高线",
+"material": "HPB300",
+"spec": 8,
+"length": "9米",
+"label": "高线 HPB300 Φ8 9米"
+},
+{
+"category": "高线",
+"material": "HPB300",
+"spec": 8,
+"length": "12米",
+"label": "高线 HPB300 Φ8 12米"
+},
+{
+"category": "高线",
+"material": "HPB300",
+"spec": 10,
+"length": "9米",
+"label": "高线 HPB300 Φ10 9米"
+},
+{
+"category": "高线",
+"material": "HPB300",
+"spec": 10,
+"length": "12米",
+"label": "高线 HPB300 Φ10 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 12,
+"length": "9米",
+"label": "圆钢 HPB300 Φ12 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 12,
+"length": "12米",
+"label": "圆钢 HPB300 Φ12 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 14,
+"length": "9米",
+"label": "圆钢 HPB300 Φ14 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 14,
+"length": "12米",
+"label": "圆钢 HPB300 Φ14 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 16,
+"length": "9米",
+"label": "圆钢 HPB300 Φ16 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 16,
+"length": "12米",
+"label": "圆钢 HPB300 Φ16 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 18,
+"length": "9米",
+"label": "圆钢 HPB300 Φ18 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 18,
+"length": "12米",
+"label": "圆钢 HPB300 Φ18 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 20,
+"length": "9米",
+"label": "圆钢 HPB300 Φ20 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 20,
+"length": "12米",
+"label": "圆钢 HPB300 Φ20 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 22,
+"length": "9米",
+"label": "圆钢 HPB300 Φ22 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 22,
+"length": "12米",
+"label": "圆钢 HPB300 Φ22 12米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 25,
+"length": "9米",
+"label": "圆钢 HPB300 Φ25 9米"
+},
+{
+"category": "圆钢",
+"material": "HPB300",
+"spec": 25,
+"length": "12米",
+"label": "圆钢 HPB300 Φ25 12米"
+}
+]

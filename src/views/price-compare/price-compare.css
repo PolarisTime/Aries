@@ -1,29 +1,116 @@
-.price-compare-brand-header {
+.price-compare-page {
+  padding: 12px;
+}
+
+.price-compare-head {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.price-compare-brand-header .ant-input {
-  width: 84px;
-  text-align: center;
-  padding: 1px 4px;
+.price-compare-head h1 {
+  display: inline-block;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.price-compare-brand-header .ant-input-number {
-  width: 54px;
+.price-compare-head .price-compare-desc {
+  margin-left: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
-.price-compare-brand-sub {
-  font-size: 11px;
-  color: #888;
+.price-compare-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.price-compare-pos {
+.price-compare-net {
+  font-weight: 600;
+}
+
+.price-compare-diff {
+  display: inline-block;
+  min-width: 46px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-compare-diff.is-pos {
+  background: #f6ffed;
   color: #389e0d;
 }
 
-.price-compare-neg {
+.price-compare-diff.is-neg {
+  background: #fff1f0;
   color: #cf1322;
+}
+
+.price-compare-diff.is-zero {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.price-compare-brand-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.price-compare-sub {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.price-compare-legend {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.price-compare-legend i {
+  font-style: normal;
+  padding: 0 4px;
+  border-radius: 3px;
+  margin: 0 2px;
+}
+
+.price-compare-legend i.is-pos {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.price-compare-legend i.is-neg {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+.price-compare-spot input {
+  text-align: right;
+  padding-inline: 4px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-compare-summary {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--ant-color-bg-container, #fff);
+  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.price-compare-group-row > td {
+  font-weight: 600;
 }
