@@ -349,6 +349,7 @@ export function PriceCompareView() {
     patchSheet,
     addSheet,
     copyActiveSheet,
+    assignProjectToUnassigned,
     removeSheet,
   } = store
 
@@ -372,6 +373,16 @@ export function PriceCompareView() {
     }
     if (!localStorage.getItem(TOUR_KEY)) setTourOpen(true)
   }, [catalog, brands.length, setBrands])
+
+  useEffect(() => {
+    if (projects.length)
+      assignProjectToUnassigned(
+        projects[0].id,
+        projects[0].abbr || projects[0].name,
+      )
+    // 仅在项目数据首次加载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects.length])
 
   useEffect(() => {
     const handler = () => setFullscreen(Boolean(document.fullscreenElement))
@@ -487,7 +498,7 @@ export function PriceCompareView() {
         <Watermark
           content={['内部资料 · 报单比价', active.name]}
           gap={[140, 120]}
-          font={{ fontSize: 12, color: 'rgba(0,0,0,0.06)' }}
+          font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
         >
           <SheetPanel
             sheet={active}

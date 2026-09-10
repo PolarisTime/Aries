@@ -18,7 +18,6 @@ import {
   Popconfirm,
   Select,
   Space,
-  Statistic,
   Table,
   Tag,
   Tooltip,
@@ -39,6 +38,7 @@ import {
   netPrice,
   resolveRef,
   SHEET_COLUMN_WIDTH,
+  SHEET_STATUS_META,
   SPOT_PRICE_MAX,
 } from './core'
 import type {
@@ -195,24 +195,27 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     {
       title: '',
       width: SHEET_COLUMN_WIDTH.action,
+      fixed: 'left',
       align: 'center',
       onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
       render: (_, row) =>
         row.isGroup || !row.rowId ? null : (
-          <Popconfirm
-            title="删除该行？"
-            okText="删除"
-            cancelText="取消"
-            disabled={locked}
-            onConfirm={() => removeRow(row.rowId ?? '')}
-          >
-            <Button
-              size="small"
-              type="text"
+          <span className="price-compare-row-action">
+            <Popconfirm
+              title="删除该行？"
+              okText="删除"
+              cancelText="取消"
               disabled={locked}
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
+              onConfirm={() => removeRow(row.rowId ?? '')}
+            >
+              <Button
+                size="small"
+                type="text"
+                disabled={locked}
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          </span>
         ),
     },
     {
@@ -374,11 +377,16 @@ function SheetHeader({
   data,
   locked,
   capturing,
+  catalog,
+  brands,
   patchSheet,
   capture,
   captureBtnRef,
   onAddRow,
   onCopySheet,
+  onOpenSettings,
+  setBrands,
+  brandSelectRef,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -386,36 +394,92 @@ function SheetHeader({
   data: PriceData | null
   locked: boolean
   capturing: boolean
-  captureBtnRef: React.RefObject<HTMLSpanElement | null>
+  catalog: BrandOption[]
+  brands: Brand[]
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   capture: (copy: boolean) => Promise<void>
+  captureBtnRef: React.RefObject<HTMLSpanElement | null>
   onAddRow: (category?: string) => void
   onCopySheet: () => void
+  onOpenSettings: () => void
+  setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
+  brandSelectRef: React.RefObject<HTMLSpanElement | null>
 }) {
   const periodLabel = (refPeriod || '').split(' ').pop()
   return (
-    <Flex justify="space-between" align="center" wrap="wrap" gap="small">
-      <Flex gap="middle" align="center" wrap="wrap">
-        <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            单据名称
-          </Text>
+    <Flex vertical gap={8}>
+      <Flex justify="space-between" align="center" wrap="wrap" gap="small">
+        <Flex gap="small" align="center" wrap="wrap">
           <Input
             size="small"
-            style={{ width: 120 }}
+            variant="borderless"
+            className="price-compare-sheet-name"
+            style={{ width: 140, fontWeight: 600 }}
             disabled={locked}
             value={sheet.name}
             onChange={(event) =>
               patchSheet(sheet.id, { name: event.target.value })
             }
           />
-        </Space>
-        <Space size="small">
+          <Tag color={SHEET_STATUS_META[sheet.status] ?? 'default'}>
+            {sheet.status}
+          </Tag>
           <Text type="secondary" className="price-compare-sub">
-            项目
+            {sheet.projectName || '未指定项目'}
           </Text>
-          <Text strong>{sheet.projectName || '未指定'}</Text>
+          <Text type="secondary" className="price-compare-sub">
+            <InfoCircleOutlined /> 参照{' '}
+            {refDate ? dayjs(refDate).format(DATE_FMT) : '未设置'} {periodLabel}
+          </Text>
+        </Flex>
+        <Space size={4}>
+          <Button size="small" disabled={locked} onClick={() => onAddRow()}>
+            ＋规格行
+          </Button>
+          <Button size="small" onClick={onCopySheet}>
+            复制批次
+          </Button>
+          <Button
+            size="small"
+            icon={locked ? <UnlockOutlined /> : <LockOutlined />}
+            onClick={() => patchSheet(sheet.id, { locked: !locked })}
+          >
+            {locked ? '解锁' : '锁定'}
+          </Button>
+          <Tooltip title="生成图片并下载">
+            <span ref={captureBtnRef}>
+              <Button
+                size="small"
+                icon={<CameraOutlined />}
+                loading={capturing}
+                onClick={() => {
+                  void capture(false)
+                }}
+              >
+                截图
+              </Button>
+            </span>
+          </Tooltip>
+          <Button
+            size="small"
+            type="primary"
+            icon={<CopyOutlined />}
+            loading={capturing}
+            onClick={() => {
+              void capture(true)
+            }}
+          >
+            复制图片
+          </Button>
         </Space>
+      </Flex>
+
+      <Flex
+        gap={16}
+        align="center"
+        wrap="wrap"
+        className="price-compare-settings"
+      >
         <Space size="small">
           <Text type="secondary" className="price-compare-sub">
             报单日期
@@ -423,7 +487,7 @@ function SheetHeader({
           <DatePicker
             size="small"
             disabled={locked}
-            value={dayjs(sheet.orderDate)}
+            value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
             format={DATE_FMT}
             allowClear={false}
             onChange={(value) =>
@@ -432,12 +496,6 @@ function SheetHeader({
             }
           />
         </Space>
-        <Tooltip title="整组统一使用该日期与时段作为网价基准">
-          <Tag color="green" icon={<InfoCircleOutlined />}>
-            整组参照 {refDate ? dayjs(refDate).format(DATE_FMT) : '未设置'}{' '}
-            {periodLabel}
-          </Tag>
-        </Tooltip>
         <Space size="small">
           <Text type="secondary" className="price-compare-sub">
             参照网价
@@ -459,7 +517,7 @@ function SheetHeader({
           />
           <Select
             size="small"
-            style={{ width: 112 }}
+            style={{ width: 108 }}
             disabled={locked}
             value={refPeriod || undefined}
             onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
@@ -484,108 +542,51 @@ function SheetHeader({
             }
           />
         </Space>
-      </Flex>
-      <Space>
-        <Button size="small" disabled={locked} onClick={() => onAddRow()}>
-          ＋规格行
-        </Button>
-        <Button size="small" onClick={onCopySheet}>
-          复制批次
-        </Button>
-        <Button
-          size="small"
-          icon={locked ? <UnlockOutlined /> : <LockOutlined />}
-          onClick={() => patchSheet(sheet.id, { locked: !locked })}
-        >
-          {locked ? '解锁' : '锁定'}
-        </Button>
-        <Tooltip title="生成图片并下载">
-          <span ref={captureBtnRef}>
-            <Button
+        <span ref={brandSelectRef}>
+          <Space size="small">
+            <Text type="secondary" className="price-compare-sub">
+              品牌
+            </Text>
+            <Select
               size="small"
-              icon={<CameraOutlined />}
-              loading={capturing}
-              onClick={() => {
-                void capture(false)
-              }}
-            >
-              截图
-            </Button>
-          </span>
-        </Tooltip>
+              mode="multiple"
+              disabled={locked}
+              style={{ minWidth: 200 }}
+              placeholder="选择品牌"
+              value={brands.map((brand) => brand.name)}
+              options={catalog.map((item) => ({
+                value: item.name,
+                label: item.name,
+              }))}
+              onChange={(names) =>
+                setBrands(() =>
+                  names.map(
+                    (name) =>
+                      brands.find((brand) => brand.name === name) ?? {
+                        name,
+                        freight:
+                          catalog.find((item) => item.name === name)?.freight ??
+                          0,
+                      },
+                  ),
+                )
+              }
+              maxTagCount="responsive"
+            />
+          </Space>
+        </span>
         <Button
           size="small"
-          type="primary"
-          icon={<CopyOutlined />}
-          loading={capturing}
-          onClick={() => {
-            void capture(true)
-          }}
+          icon={<SettingOutlined />}
+          onClick={onOpenSettings}
         >
-          复制图片
+          品牌与运费
         </Button>
-      </Space>
-    </Flex>
-  )
-}
-
-function SheetToolbar({
-  brands,
-  catalog,
-  locked,
-  setBrands,
-  onOpenSettings,
-  brandSelectRef,
-}: {
-  brands: Brand[]
-  catalog: BrandOption[]
-  locked: boolean
-  brandSelectRef: React.RefObject<HTMLSpanElement | null>
-  setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
-  onOpenSettings: () => void
-}) {
-  return (
-    <Flex gap="middle" align="center" wrap="wrap" style={{ marginTop: 6 }}>
-      <span ref={brandSelectRef}>
-        <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            品牌
-          </Text>
-          <Select
-            size="small"
-            mode="multiple"
-            disabled={locked}
-            style={{ minWidth: 220 }}
-            placeholder="选择品牌（自动取数据源网价）"
-            value={brands.map((brand) => brand.name)}
-            options={catalog.map((item) => ({
-              value: item.name,
-              label: item.name,
-            }))}
-            onChange={(names) =>
-              setBrands(() =>
-                names.map(
-                  (name) =>
-                    brands.find((brand) => brand.name === name) ?? {
-                      name,
-                      freight:
-                        catalog.find((item) => item.name === name)?.freight ??
-                        0,
-                    },
-                ),
-              )
-            }
-            maxTagCount="responsive"
-          />
-        </Space>
-      </span>
-      <Button size="small" icon={<SettingOutlined />} onClick={onOpenSettings}>
-        品牌与运费
-      </Button>
-      <span className="price-compare-legend">
-        差价：<i className="is-pos">+ 现货划算</i>
-        <i className="is-neg">− 网价更优</i>（网价 − 现货 − 运费）
-      </span>
+        <span className="price-compare-legend">
+          差价：<i className="is-pos">+ 现货划算</i>
+          <i className="is-neg">− 网价更优</i>
+        </span>
+      </Flex>
     </Flex>
   )
 }
@@ -596,12 +597,13 @@ function SheetStats({
   summary: ReturnType<typeof computeSummary>
 }) {
   return (
-    <Flex gap="middle" align="center" wrap="wrap">
-      <Statistic
-        title="总吨数"
-        value={summary.totalTon}
-        styles={{ content: { fontSize: 16 } }}
-      />
+    <Flex gap={20} align="center" className="price-compare-stats">
+      <Text>
+        总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
+      </Text>
+      <Text type="secondary">
+        已填 <Text strong>{summary.filled}</Text> 格
+      </Text>
     </Flex>
   )
 }
@@ -800,16 +802,13 @@ export function SheetPanel(props: Props) {
           captureBtnRef={captureBtnRef}
           onAddRow={onAddRow}
           onCopySheet={onCopySheet}
-        />
-        <SheetToolbar
-          brands={brands}
           catalog={catalog}
-          locked={locked}
-          setBrands={setBrands}
+          brands={brands}
           onOpenSettings={onOpenSettings}
+          setBrands={setBrands}
           brandSelectRef={brandSelectRef}
         />
-        <Divider style={{ margin: '8px 0' }} />
+        <Divider style={{ margin: '10px 0 8px' }} />
         <SheetStats summary={summary} />
         <Table<GridRow>
           size={density}

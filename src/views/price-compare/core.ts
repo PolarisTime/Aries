@@ -68,7 +68,13 @@ export function resolveRef(
   data: PriceData | null,
   sheet: Pick<PriceSheet, 'refDate' | 'refPeriod'>,
 ): { refDate: string; refPeriod: string } {
-  const refDate = sheet.refDate || Object.keys(data ?? {})[0] || ''
+  let refDate = sheet.refDate
+  if (!refDate) {
+    for (const date of Object.keys(data ?? {})) {
+      if (!refDate || date > refDate) refDate = date
+    }
+    refDate = refDate ?? ''
+  }
   const refPeriod =
     sheet.refPeriod || Object.keys(data?.[refDate] ?? {})[0] || ''
   return { refDate, refPeriod }

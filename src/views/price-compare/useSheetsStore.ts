@@ -61,6 +61,7 @@ export type SheetsStore = {
     refPeriod: string,
   ) => void
   copyActiveSheet: () => void
+  assignProjectToUnassigned: (projectId: string, projectName: string) => void
   removeSheet: (id: string) => void
 }
 
@@ -225,6 +226,17 @@ export function useSheetsStore(): SheetsStore {
       next.splice(index + 1, 0, copy)
       return { ...current, sheets: next, activeId: copy.id }
     })
+  const assignProjectToUnassigned = (projectId: string, projectName: string) =>
+    apply((current) => {
+      if (!projectId || !current.sheets.some((sheet) => !sheet.projectId))
+        return current
+      return {
+        ...current,
+        sheets: current.sheets.map((sheet) =>
+          sheet.projectId ? sheet : { ...sheet, projectId, projectName },
+        ),
+      }
+    })
   const removeSheet = (id: string) =>
     apply((current) => {
       const next = current.sheets.filter((sheet) => sheet.id !== id)
@@ -253,6 +265,7 @@ export function useSheetsStore(): SheetsStore {
     patchSheet,
     addSheet,
     copyActiveSheet,
+    assignProjectToUnassigned,
     removeSheet,
   }
 }
