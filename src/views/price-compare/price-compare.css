@@ -97,9 +97,6 @@
 }
 
 .price-compare-summary {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -129,24 +126,41 @@
   opacity: 0.28;
 }
 
-/* 紧凑表格: 减小单元格留白, 提高信息密度 */
-.price-compare-page .ant-table.ant-table-small .ant-table-tbody > tr > td,
-.price-compare-page .ant-table.ant-table-small .ant-table-thead > tr > th {
-  padding: 3px 6px !important;
+/* 紧凑表格: 减小单元格留白与行高 */
+.price-compare-table .ant-table-small .ant-table-tbody > tr > td,
+.price-compare-table .ant-table-small .ant-table-thead > tr > th {
+  padding: 2px 6px !important;
+  line-height: 22px;
 }
 
-.price-compare-page .ant-table.ant-table-middle .ant-table-tbody > tr > td,
-.price-compare-page .ant-table.ant-table-middle .ant-table-thead > tr > th {
+.price-compare-table .ant-table-small .ant-select-single,
+.price-compare-table .ant-table-small .ant-input-number,
+.price-compare-table .ant-table-small .ant-input {
+  height: 24px;
+}
+
+.price-compare-table .ant-table-small .ant-select-single .ant-select-selector {
+  height: 24px !important;
+}
+
+.price-compare-table .ant-table-medium .ant-table-tbody > tr > td,
+.price-compare-table .ant-table-medium .ant-table-thead > tr > th {
   padding: 6px 8px !important;
 }
 
-.price-compare-page .ant-table-cell .ant-select-selection-item,
-.price-compare-page .ant-table-cell .ant-select-selection-placeholder {
+.price-compare-table .ant-table-cell .ant-select-selection-item,
+.price-compare-table .ant-table-cell .ant-select-selection-placeholder {
   font-size: 12px;
 }
 
-.price-compare-page .ant-table-tbody > tr > td {
-  line-height: 1.4;
+.price-compare-table .ant-table-tbody > tr > td {
+  height: 32px;
+  line-height: 20px;
+}
+
+.price-compare-table .ant-table-tbody > tr.price-compare-group-row > td {
+  height: 34px;
+  background: rgba(22, 119, 255, 0.03);
 }
 
 /* 视觉优化: 层级与密度 */
@@ -166,17 +180,17 @@
   padding: 2px 0;
 }
 
-.price-compare-page .ant-table-thead > tr > th {
+.price-compare-table .ant-table-thead > tr > th {
   background: #fafafa !important;
   color: rgba(0, 0, 0, 0.62);
   font-weight: 500;
 }
 
-.price-compare-page .ant-table-tbody > tr:hover > td {
+.price-compare-table .ant-table-tbody > tr:hover > td {
   background: rgba(22, 119, 255, 0.035) !important;
 }
 
-.price-compare-page .ant-table.ant-table-small .ant-table-tbody > tr > td {
+.price-compare-table .ant-table-tbody > tr > td {
   border-bottom-color: #f5f5f5 !important;
 }
 
@@ -185,7 +199,7 @@
   transition: opacity 0.15s;
 }
 
-.price-compare-page .ant-table-row:hover .price-compare-row-action {
+.price-compare-table .ant-table-row:hover .price-compare-row-action {
   opacity: 1;
 }
 

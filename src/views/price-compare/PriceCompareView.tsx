@@ -33,7 +33,6 @@ import { SheetPanel } from './SheetPanel'
 import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
 import { usePriceCompareData } from './usePriceCompareData'
 import { useSheetsStore } from './useSheetsStore'
-import './price-compare.css'
 
 const { Text } = Typography
 const TOUR_KEY = 'aries-price-compare-tour'
@@ -380,8 +379,6 @@ export function PriceCompareView() {
         projects[0].id,
         projects[0].abbr || projects[0].name,
       )
-    // 仅在项目数据首次加载时执行一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projects.length])
 
   useEffect(() => {

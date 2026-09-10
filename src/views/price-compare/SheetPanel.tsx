@@ -50,6 +50,7 @@ import type {
   PriceSheet,
   Variety,
 } from './types'
+import './price-compare.css'
 
 const { Text } = Typography
 const DATE_FMT = 'YYYY年M月D日'
@@ -639,6 +640,7 @@ type Props = {
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   onOpenSettings: () => void
   onCopySheet: () => void
+  chrome?: boolean
   brandSelectRef: React.RefObject<HTMLSpanElement | null>
   spotRef: React.RefObject<HTMLSpanElement | null>
   captureBtnRef: React.RefObject<HTMLSpanElement | null>
@@ -659,6 +661,7 @@ export function SheetPanel(props: Props) {
     setBrands,
     onOpenSettings,
     onCopySheet,
+    chrome = true,
     brandSelectRef,
     spotRef,
     captureBtnRef,
@@ -787,8 +790,8 @@ export function SheetPanel(props: Props) {
     brands,
   )
 
-  return (
-    <Card size="small" styles={{ body: { padding: 12 } }}>
+  const content = (
+    <>
       <div ref={captureRef}>
         <SheetHeader
           sheet={sheet}
@@ -811,6 +814,7 @@ export function SheetPanel(props: Props) {
         <Divider style={{ margin: '10px 0 8px' }} />
         <SheetStats summary={summary} />
         <Table<GridRow>
+          className="price-compare-table"
           size={density}
           bordered
           sticky
@@ -822,13 +826,12 @@ export function SheetPanel(props: Props) {
           scroll={{
             x:
               SHEET_COLUMN_WIDTH.spec +
-              SHEET_COLUMN_WIDTH.ton +
               SHEET_COLUMN_WIDTH.action +
+              SHEET_COLUMN_WIDTH.ton +
               brands.length *
                 (SHEET_COLUMN_WIDTH.net +
                   SHEET_COLUMN_WIDTH.spot +
                   SHEET_COLUMN_WIDTH.diff),
-            y: 'calc(100vh - 400px)',
           }}
           rowClassName={(row) => (row.isGroup ? 'price-compare-group-row' : '')}
           expandable={{
@@ -842,6 +845,13 @@ export function SheetPanel(props: Props) {
         />
         <SummaryBar summary={summary} />
       </div>
+    </>
+  )
+
+  if (!chrome) return content
+  return (
+    <Card size="small" styles={{ body: { padding: 12 } }}>
+      {content}
     </Card>
   )
 }
