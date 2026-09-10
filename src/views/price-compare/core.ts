@@ -1,6 +1,5 @@
 import type {
   Brand,
-  GridRow,
   PriceData,
   PriceRow,
   PriceSheet,
@@ -162,42 +161,6 @@ export function countMissing(
     }
   }
   return missing
-}
-
-export function buildGridRows(
-  rows: PriceRow[],
-  groups: SheetGroup[],
-): GridRow[] {
-  const out: GridRow[] = []
-  for (const group of groups) {
-    out.push({
-      key: `g:${group.id}`,
-      isGroup: true,
-      groupId: group.id,
-      group,
-    })
-    for (const row of rows) {
-      if (row.groupId !== group.id) continue
-      out.push({
-        key: row.id,
-        isGroup: false,
-        groupId: group.id,
-        rowId: row.id,
-        row,
-      })
-    }
-  }
-  const known = new Set(groups.map((group) => group.id))
-  for (const row of rows) {
-    if (known.has(row.groupId)) continue
-    out.push({
-      key: row.id,
-      isGroup: false,
-      rowId: row.id,
-      row,
-    })
-  }
-  return out
 }
 
 /** 将 from 位置的元素移动到 to 位置(用于品牌列拖拽排序)。 */

@@ -53,9 +53,6 @@ export type PriceSheet = {
 
 export type GridRow = {
   key: string
-  isGroup: boolean
-  groupId?: string
-  group?: SheetGroup
-  rowId?: string
-  row?: PriceRow
+  rowId: string
+  row: PriceRow
 }

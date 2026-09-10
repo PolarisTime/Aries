@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildGridRows,
   computeSummary,
   countMissing,
   makeRow,
@@ -174,22 +173,7 @@ describe('moveItem', () => {
   })
 })
 
-describe('buildGridRows / makeRow', () => {
-  it('按分组顺序生成组头与数据行', () => {
-    const groups = [
-      { id: 'g1', name: '分组 1' },
-      { id: 'g2', name: '分组 2' },
-    ]
-    const rows = buildGridRows(
-      [{ ...row12, groupId: 'g2', id: 'r3' }, row12],
-      groups,
-    )
-    expect(rows.map((row) => row.key)).toEqual(['g:g1', 'r1', 'g:g2', 'r3'])
-    expect(rows[0].isGroup).toBe(true)
-    expect(rows[0].group?.name).toBe('分组 1')
-    expect(rows[1].row?.category).toBe('螺纹钢')
-  })
-
+describe('makeRow', () => {
   it('makeRow 生成指定分组下的空行', () => {
     const row = makeRow('g1')
     expect(row.groupId).toBe('g1')

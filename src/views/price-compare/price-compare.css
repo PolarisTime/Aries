@@ -108,10 +108,6 @@
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.price-compare-group-row > td {
-  font-weight: 600;
-}
-
 .price-compare-spot {
   width: 100%;
 }
@@ -156,11 +152,6 @@
 .price-compare-table .ant-table-tbody > tr > td {
   height: 32px;
   line-height: 20px;
-}
-
-.price-compare-table .ant-table-tbody > tr.price-compare-group-row > td {
-  height: 34px;
-  background: rgba(22, 119, 255, 0.03);
 }
 
 /* 视觉优化: 层级与密度 */
@@ -256,14 +247,4 @@
 
 .price-compare-table .ant-table-tbody > tr.price-compare-drop-after > td {
   border-bottom: 2px solid #1677ff !important;
-}
-
-/* 分组删除: 悬停时显现, 默认不占视觉 */
-.price-compare-group-row .price-compare-group-del {
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.price-compare-group-row:hover .price-compare-group-del {
-  opacity: 1;
 }
