@@ -433,13 +433,19 @@ function SheetHeader({
 }) {
   return (
     <Flex vertical gap={8}>
-      <Flex justify="space-between" align="center" wrap="wrap" gap="small">
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={8}
+        className="price-compare-toolbar"
+      >
         <Flex gap="small" align="center" wrap="wrap">
           <Input
             size="small"
             variant="borderless"
             className="price-compare-sheet-name"
-            style={{ width: 150, fontWeight: 600 }}
+            style={{ width: 140, fontWeight: 600 }}
             disabled={locked}
             value={sheet.name}
             onChange={(event) =>
@@ -452,60 +458,6 @@ function SheetHeader({
           <Text type="secondary" className="price-compare-sub">
             {sheet.projectName || '未指定项目'}
           </Text>
-        </Flex>
-        <Space size={4}>
-          <Button
-            size="small"
-            type={bestOn ? 'primary' : 'default'}
-            onClick={onToggleBest}
-          >
-            {bestOn ? '取消最优' : '一键最优'}
-          </Button>
-          <Button size="small" disabled={locked} onClick={onAddRow}>
-            ＋规格行
-          </Button>
-          <Button size="small" onClick={onCopySheet}>
-            复制批次
-          </Button>
-          <Button
-            size="small"
-            icon={locked ? <UnlockOutlined /> : <LockOutlined />}
-            onClick={() => patchSheet(sheet.id, { locked: !locked })}
-          >
-            {locked ? '解锁' : '锁定'}
-          </Button>
-          <span ref={captureBtnRef}>
-            <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: 'download',
-                    icon: <CameraOutlined />,
-                    label: '截图下载',
-                  },
-                  { key: 'copy', icon: <CopyOutlined />, label: '复制图片' },
-                ],
-                onClick: ({ key }) => {
-                  void capture(key === 'copy')
-                },
-              }}
-            >
-              <Button size="small" type="primary" loading={capturing}>
-                导出 ▾
-              </Button>
-            </Dropdown>
-          </span>
-        </Space>
-      </Flex>
-
-      <Flex
-        justify="space-between"
-        align="center"
-        wrap="wrap"
-        gap={16}
-        className="price-compare-settings"
-      >
-        <Flex gap={16} align="center" wrap="wrap">
           <Space size="small">
             <Text type="secondary" className="price-compare-sub">
               报单日期
@@ -563,21 +515,65 @@ function SheetHeader({
             报价总设置
           </Button>
         </Flex>
-        <Flex gap={12} align="center" className="price-compare-stats">
-          <Text type="secondary">
-            品牌 <Text strong>{brandCount}</Text> 个 · 12米 +{lengthPremium}
-          </Text>
-          <Text>
-            总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
-          </Text>
-          <Text type="secondary">
-            已填 <Text strong>{summary.filled}</Text> 格
-          </Text>
-          <span className="price-compare-legend">
-            差价：<i className="is-pos">+ 现货划算</i>
-            <i className="is-neg">− 网价更优</i>
+        <Space size={4} wrap>
+          <Button
+            size="small"
+            type={bestOn ? 'primary' : 'default'}
+            onClick={onToggleBest}
+          >
+            {bestOn ? '取消最优' : '一键最优'}
+          </Button>
+          <Button size="small" disabled={locked} onClick={onAddRow}>
+            ＋规格行
+          </Button>
+          <Button size="small" onClick={onCopySheet}>
+            复制批次
+          </Button>
+          <Button
+            size="small"
+            icon={locked ? <UnlockOutlined /> : <LockOutlined />}
+            onClick={() => patchSheet(sheet.id, { locked: !locked })}
+          >
+            {locked ? '解锁' : '锁定'}
+          </Button>
+          <span ref={captureBtnRef}>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'download',
+                    icon: <CameraOutlined />,
+                    label: '截图下载',
+                  },
+                  { key: 'copy', icon: <CopyOutlined />, label: '复制图片' },
+                ],
+                onClick: ({ key }) => {
+                  void capture(key === 'copy')
+                },
+              }}
+            >
+              <Button size="small" type="primary" loading={capturing}>
+                导出 ▾
+              </Button>
+            </Dropdown>
           </span>
-        </Flex>
+        </Space>
+      </Flex>
+
+      <Flex gap={12} align="center" wrap="wrap" className="price-compare-stats">
+        <Text type="secondary">
+          品牌 <Text strong>{brandCount}</Text> 个 · 12米 +{lengthPremium}
+        </Text>
+        <Text>
+          总吨数 <Text strong>{summary.totalTon || 0}</Text> 吨
+        </Text>
+        <Text type="secondary">
+          已填 <Text strong>{summary.filled}</Text> 格
+        </Text>
+        <span className="price-compare-legend">
+          差价：<i className="is-pos">+ 现货划算</i>
+          <i className="is-neg">− 网价更优</i>
+        </span>
       </Flex>
     </Flex>
   )

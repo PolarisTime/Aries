@@ -9,6 +9,7 @@ import {
   Alert,
   Badge,
   Button,
+  Divider,
   Empty,
   Flex,
   Segmented,
@@ -201,48 +202,9 @@ export function PriceCompareView() {
         <div>
           <h1>报单比价</h1>
           <span className="price-compare-desc">
-            项目 → 批次 → 类别分组 · Ctrl+Z 撤销 · 锁定防改 · 一键截图
+            项目 → 批次 · Ctrl+Z 撤销 · 锁定防改 · 一键截图
           </span>
         </div>
-        <Space>
-          <Segmented
-            size="small"
-            value={density}
-            onChange={(value) =>
-              setDensity(value as 'small' | 'middle' | 'large')
-            }
-            options={[
-              { label: '紧凑', value: 'small' },
-              { label: '适中', value: 'middle' },
-              { label: '宽松', value: 'large' },
-            ]}
-          />
-          <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
-            <Button
-              size="small"
-              icon={
-                fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
-              }
-              onClick={toggleFullscreen}
-            />
-          </Tooltip>
-          <Tooltip title="撤销 (Ctrl+Z)">
-            <Button
-              size="small"
-              icon={<UndoOutlined />}
-              disabled={!canUndo}
-              onClick={undo}
-            />
-          </Tooltip>
-          <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
-            <Button
-              size="small"
-              icon={<RedoOutlined />}
-              disabled={!canRedo}
-              onClick={redo}
-            />
-          </Tooltip>
-        </Space>
       </div>
 
       <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
@@ -332,7 +294,7 @@ export function PriceCompareView() {
             }))}
           />
         </Flex>
-        <Space>
+        <Space size={4}>
           <Button
             size="small"
             onClick={() =>
@@ -356,6 +318,44 @@ export function PriceCompareView() {
               删除批次
             </Button>
           ) : null}
+          <Divider type="vertical" style={{ margin: '0 2px' }} />
+          <Segmented
+            size="small"
+            value={density}
+            onChange={(value) =>
+              setDensity(value as 'small' | 'middle' | 'large')
+            }
+            options={[
+              { label: '紧凑', value: 'small' },
+              { label: '适中', value: 'middle' },
+              { label: '宽松', value: 'large' },
+            ]}
+          />
+          <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
+            <Button
+              size="small"
+              icon={
+                fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
+              }
+              onClick={toggleFullscreen}
+            />
+          </Tooltip>
+          <Tooltip title="撤销 (Ctrl+Z)">
+            <Button
+              size="small"
+              icon={<UndoOutlined />}
+              disabled={!canUndo}
+              onClick={undo}
+            />
+          </Tooltip>
+          <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
+            <Button
+              size="small"
+              icon={<RedoOutlined />}
+              disabled={!canRedo}
+              onClick={redo}
+            />
+          </Tooltip>
         </Space>
       </Flex>
 
