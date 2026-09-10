@@ -262,3 +262,13 @@
 .price-compare-group-head {
   padding: 2px 0;
 }
+
+/* 组内底部“添加一行” */
+.price-compare-table .ant-table-summary > tr > td {
+  padding: 2px 6px !important;
+}
+
+.price-compare-add-row {
+  color: rgba(0, 0, 0, 0.45);
+  justify-content: flex-start;
+}

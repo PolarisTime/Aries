@@ -436,10 +436,9 @@ function GroupTable(props: GroupTableProps) {
   return (
     <div className="price-compare-group">
       <Flex
-        justify="space-between"
         align="center"
+        gap={4}
         wrap="wrap"
-        gap={8}
         className="price-compare-group-head"
       >
         <Input
@@ -451,32 +450,24 @@ function GroupTable(props: GroupTableProps) {
           value={group.name}
           onChange={(event) => onRenameGroup(group.id, event.target.value)}
         />
-        <Space size={4}>
-          <Button
-            size="small"
+        {canRemove ? (
+          <Popconfirm
+            title="删除该分组及其行？"
+            okText="删除"
+            cancelText="取消"
             disabled={base.locked}
-            onClick={() => onAddRowToGroup(group.id)}
+            onConfirm={() => onRemoveGroup(group.id)}
           >
-            ＋行
-          </Button>
-          {canRemove ? (
-            <Popconfirm
-              title="删除该分组及其行？"
-              okText="删除"
-              cancelText="取消"
+            <Button
+              size="small"
+              type="text"
+              danger
               disabled={base.locked}
-              onConfirm={() => onRemoveGroup(group.id)}
-            >
-              <Button
-                size="small"
-                danger
-                type="text"
-                disabled={base.locked}
-                icon={<DeleteOutlined />}
-              />
-            </Popconfirm>
-          ) : null}
-        </Space>
+              title="删除分组"
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        ) : null}
       </Flex>
       <Table<GridRow>
         className="price-compare-table"
@@ -487,6 +478,22 @@ function GroupTable(props: GroupTableProps) {
         columns={columns}
         dataSource={dataSource}
         pagination={false}
+        summary={() => (
+          <Table.Summary.Row>
+            <Table.Summary.Cell index={0} colSpan={4 + base.brands.length * 3}>
+              <Button
+                type="text"
+                size="small"
+                block
+                disabled={base.locked}
+                className="price-compare-add-row"
+                onClick={() => onAddRowToGroup(group.id)}
+              >
+                ＋ 添加一行
+              </Button>
+            </Table.Summary.Cell>
+          </Table.Summary.Row>
+        )}
         rowClassName={(row) => {
           const classes: string[] = []
           if (row.rowId === dragId) classes.push('price-compare-dragging')
