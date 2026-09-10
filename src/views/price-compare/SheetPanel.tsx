@@ -153,7 +153,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: 32,
       fixed: 'left',
       align: 'center',
-      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
       render: (_, row) =>
         row.isGroup || !row.rowId ? null : (
           <Checkbox
@@ -170,7 +169,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: 24,
       fixed: 'left',
       align: 'center',
-      onCell: (row) => (row.isGroup ? { colSpan: 0 } : {}),
       render: (_, row) =>
         row.isGroup || !row.rowId ? null : (
           <span
@@ -189,7 +187,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
-      onCell: (row) => (row.isGroup ? { colSpan: 2 + brands.length * 3 } : {}),
       render: (_, row) => {
         if (row.isGroup && row.group) {
           const group = row.group
@@ -384,7 +381,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       key: '__filler__',
       title: '',
       align: 'left',
-      onCell: (row: GridRow) => (row.isGroup ? { colSpan: 0 } : {}),
       render: () => null,
     },
   ]
