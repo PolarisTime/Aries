@@ -259,7 +259,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 if (!Number.isNaN(from)) onReorderBrands(from, brandIndex)
               }}
             >
-              ⠿ {brand.name}
+              {brand.name}
             </span>
           ),
           children: [
