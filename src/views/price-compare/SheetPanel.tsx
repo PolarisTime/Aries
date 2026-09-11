@@ -624,6 +624,7 @@ function SheetHeader({
             </Text>
             <DatePicker
               size="small"
+              style={{ width: 132 }}
               value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
               format={DATE_FMT}
               allowClear={false}
@@ -641,6 +642,7 @@ function SheetHeader({
             </Tooltip>
             <DatePicker
               size="small"
+              style={{ width: 132 }}
               value={refDate ? dayjs(refDate) : null}
               format={DATE_FMT}
               allowClear={false}
@@ -655,7 +657,7 @@ function SheetHeader({
             />
             <Select
               size="small"
-              style={{ width: 104 }}
+              style={{ width: 110 }}
               value={refPeriod || undefined}
               onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
               options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
