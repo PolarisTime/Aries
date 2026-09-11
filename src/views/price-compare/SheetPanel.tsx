@@ -30,6 +30,7 @@ import {
   resolveRef,
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
+  syncAllSpots,
   syncSpotInputs,
 } from './core'
 import type {
@@ -535,6 +536,7 @@ function SheetHeader({
   data,
   patchSheet,
   onAddGroup,
+  onSyncPrice,
   selectedCount,
   onRemoveSelected,
 }: {
@@ -544,6 +546,7 @@ function SheetHeader({
   data: PriceData | null
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   onAddGroup: () => void
+  onSyncPrice: () => void
   selectedCount: number
   onRemoveSelected: () => void
 }) {
@@ -616,6 +619,9 @@ function SheetHeader({
       >
         <Button size="small" onClick={onAddGroup}>
           ＋分组
+        </Button>
+        <Button size="small" onClick={onSyncPrice}>
+          价格同步
         </Button>
         {selectedCount > 0 ? (
           <Popconfirm
@@ -730,6 +736,22 @@ export function SheetPanel(props: Props) {
     setSelectedIds([])
   }
 
+  const syncPrices = () => {
+    const { inputs, updates } = syncAllSpots(rows, sheet.inputs, brands)
+    if (!updates.length) {
+      message.info('现货价已一致，无需同步')
+      return
+    }
+    patchSheet(sheet.id, { inputs })
+    for (const update of updates) {
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-spot="${update.brandName}:${update.rowId}"] input`,
+      )
+      if (input) input.value = String(update.value)
+    }
+    message.success(`已同步 ${updates.length} 处现货价`)
+  }
+
   const moveFocus =
     (groupRows: PriceRow[]) =>
     (brandName: string, rowId: string, delta: number) => {
@@ -824,6 +846,7 @@ export function SheetPanel(props: Props) {
         data={data}
         patchSheet={patchSheet}
         onAddGroup={addGroup}
+        onSyncPrice={syncPrices}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
       />

@@ -5,6 +5,7 @@ import {
   makeRow,
   moveItem,
   netPrice,
+  syncAllSpots,
   syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
@@ -180,6 +181,45 @@ describe('syncSpotInputs', () => {
     const b = makeRow('g1')
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
+  })
+})
+
+describe('syncAllSpots', () => {
+  it('以首个已录入现货价补齐同商品键的其他行', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const c = { ...row12, id: 'c', spec: 16 }
+    const { inputs, updates } = syncAllSpots(
+      [a, b, c],
+      { '中天:b': { spot: 3200 } },
+      brands,
+    )
+    expect(inputs['中天:a'].spot).toBe(3200)
+    expect(inputs['中天:b'].spot).toBe(3200)
+    expect(inputs['中天:c']).toBeUndefined()
+    expect(updates.map((item) => item.rowId)).toEqual(['a'])
+  })
+
+  it('同键价格一致时无需更新', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const { updates } = syncAllSpots(
+      [a, b],
+      { '中天:a': { spot: 3200 }, '中天:b': { spot: 3200 } },
+      brands,
+    )
+    expect(updates).toEqual([])
+  })
+
+  it('空商品行不参与同步', () => {
+    const a = makeRow('g1')
+    const b = makeRow('g1')
+    const { updates } = syncAllSpots(
+      [a, b],
+      { '中天:a': { spot: 3000 } },
+      brands,
+    )
+    expect(updates).toEqual([])
   })
 })
 
