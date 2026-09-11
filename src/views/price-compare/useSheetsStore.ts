@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
-import type { Brand, PriceRow, PriceSheet } from './types'
+import type { Brand, PriceRow, PriceSheet, ProjectConfig } from './types'
 
-const LS_KEY = 'aries-price-compare-v4'
+const LS_KEY = 'aries-price-compare-v5'
 const HISTORY_LIMIT = 50
 const COALESCE_MS = 800
 
 type Snapshot = {
   sheets: PriceSheet[]
   activeId: string
-  brands: Brand[]
-  settings: { lengthPremium: number }
+  /** 项目级配置: projectId -> 配置 */
+  configs: Record<string, ProjectConfig>
 }
+
+const emptyConfig = (): ProjectConfig => ({
+  brands: [],
+  lengthPremium: DEFAULT_LENGTH_PREMIUM,
+})
 
 function defaultState(): Snapshot {
   const a = makeSheet('批次 1', '', '', '', '', '')
@@ -19,8 +24,7 @@ function defaultState(): Snapshot {
   return {
     sheets: [a, b],
     activeId: a.id,
-    brands: [],
-    settings: { lengthPremium: DEFAULT_LENGTH_PREMIUM },
+    configs: {},
   }
 }
 
@@ -33,7 +37,9 @@ function loadState(): Snapshot {
         parsed.sheets?.length &&
         parsed.sheets.every(
           (sheet) => Array.isArray(sheet.rows) && Array.isArray(sheet.groups),
-        )
+        ) &&
+        parsed.configs &&
+        typeof parsed.configs === 'object'
       )
         return parsed
     }
@@ -48,15 +54,15 @@ export type SheetsStore = {
   activeId: string
   active: PriceSheet
   rows: PriceRow[]
-  brands: Brand[]
-  settings: { lengthPremium: number }
-  setSettings: (patch: Partial<{ lengthPremium: number }>) => void
+  /** 当前项目配置 */
+  config: ProjectConfig
+  setConfig: (patch: Partial<ProjectConfig>) => void
+  setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   canUndo: boolean
   canRedo: boolean
   undo: () => void
   redo: () => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
-  setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   setActiveId: (id: string) => void
   patchSheet: (
     id: string,
@@ -81,7 +87,7 @@ type History = {
   lastTime: number
 }
 
-/** 多单据状态(行随单据独立) + 撤销/重做 + 本地持久化。 */
+/** 多单据状态(行随单据独立) + 项目级配置 + 撤销/重做 + 本地持久化。 */
 export function useSheetsStore(): SheetsStore {
   const [state, setState] = useState<Snapshot>(() => loadState())
   const [, forceRender] = useState(0)
@@ -161,18 +167,42 @@ export function useSheetsStore(): SheetsStore {
     forceRender((version) => version + 1)
   }, [])
 
-  const setSettings = (patch: Partial<{ lengthPremium: number }>) =>
-    apply((current) => ({
-      ...current,
-      settings: { ...current.settings, ...patch },
-    }))
-
   const active = useMemo(
     () =>
       state.sheets.find((sheet) => sheet.id === state.activeId) ??
       state.sheets[0],
     [state.sheets, state.activeId],
   )
+
+  const config =
+    (active?.projectId && state.configs[active.projectId]) || emptyConfig()
+
+  const setConfig = (patch: Partial<ProjectConfig>) =>
+    apply((current) => {
+      const projectId =
+        current.sheets.find((sheet) => sheet.id === current.activeId)
+          ?.projectId ?? ''
+      if (!projectId) return current
+      const prev = current.configs[projectId] ?? emptyConfig()
+      return {
+        ...current,
+        configs: { ...current.configs, [projectId]: { ...prev, ...patch } },
+      }
+    })
+
+  const setBrands = (value: Brand[] | ((current: Brand[]) => Brand[])) =>
+    apply((current) => {
+      const projectId =
+        current.sheets.find((sheet) => sheet.id === current.activeId)
+          ?.projectId ?? ''
+      if (!projectId) return current
+      const prev = current.configs[projectId] ?? emptyConfig()
+      const brands = typeof value === 'function' ? value(prev.brands) : value
+      return {
+        ...current,
+        configs: { ...current.configs, [projectId]: { ...prev, brands } },
+      }
+    })
 
   const updateActiveRows = (updater: (rows: PriceRow[]) => PriceRow[]) =>
     apply((current) => {
@@ -187,11 +217,6 @@ export function useSheetsStore(): SheetsStore {
       }
     })
 
-  const setBrands = (value: Brand[] | ((current: Brand[]) => Brand[])) =>
-    apply((current) => ({
-      ...current,
-      brands: typeof value === 'function' ? value(current.brands) : value,
-    }))
   const setActiveId = (id: string) =>
     setState((current) => ({ ...current, activeId: id }))
   const patchSheet = (
@@ -255,15 +280,14 @@ export function useSheetsStore(): SheetsStore {
     activeId: state.activeId,
     active,
     rows: active?.rows ?? [],
-    brands: state.brands,
-    settings: state.settings,
-    setSettings,
+    config,
+    setConfig,
+    setBrands,
     canUndo: historyRef.current.past.length > 0,
     canRedo: historyRef.current.future.length > 0,
     undo,
     redo,
     setRows: updateActiveRows,
-    setBrands,
     setActiveId,
     patchSheet,
     addSheet,

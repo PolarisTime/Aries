@@ -24,7 +24,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { modal } from '@/utils/antd-app'
 import { countMissing, moveItem, resolveRef } from './core'
-import { ReportSettingsModal } from './ReportSettingsModal'
+import { ProjectConfigModal } from './ProjectConfigModal'
 import { SheetPanel } from './SheetPanel'
 import type { PriceSheet, ProjectOption } from './types'
 import { useMaterialBrands } from './useMaterialBrands'
@@ -34,7 +34,6 @@ import './price-compare.css'
 
 const { Text } = Typography
 const TOUR_KEY = 'aries-price-compare-tour'
-const SCHEMA_DEFAULT_PREMIUM = 30
 
 function toggleFullscreen(): void {
   if (document.fullscreenElement) {
@@ -92,9 +91,8 @@ export function PriceCompareView() {
     activeId,
     active,
     rows,
-    brands,
-    settings = { lengthPremium: SCHEMA_DEFAULT_PREMIUM },
-    setSettings,
+    config,
+    setConfig,
     canUndo,
     canRedo,
     undo,
@@ -108,9 +106,12 @@ export function PriceCompareView() {
     removeSheet,
   } = store
 
+  const brands = config.brands
+  const lengthPremium = config.lengthPremium
+
   const [density, setDensity] = useState<'small' | 'middle' | 'large'>('small')
   const [fullscreen, setFullscreen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
@@ -122,12 +123,15 @@ export function PriceCompareView() {
       projects[0].id,
       projects[0].abbr || projects[0].name,
     )
-    if (!brands.length)
+    if (!localStorage.getItem(TOUR_KEY)) setTourOpen(true)
+  }, [projects, assignProjectToUnassigned])
+
+  useEffect(() => {
+    if (active?.projectId && catalog.length && !config.brands.length)
       setBrands(
         catalog.map((item) => ({ name: item.name, freight: item.freight })),
       )
-    if (!localStorage.getItem(TOUR_KEY)) setTourOpen(true)
-  }, [projects, catalog, brands.length, assignProjectToUnassigned, setBrands])
+  }, [active?.projectId, catalog, config.brands.length, setBrands])
 
   useEffect(() => {
     const handler = () => setFullscreen(Boolean(document.fullscreenElement))
@@ -244,6 +248,9 @@ export function PriceCompareView() {
               )
           }}
         />
+        <Button size="small" onClick={() => setConfigOpen(true)}>
+          配置
+        </Button>
       </Flex>
 
       <Flex
@@ -366,13 +373,12 @@ export function PriceCompareView() {
             brands={brands}
             rows={rows}
             density={density}
-            lengthPremium={settings?.lengthPremium ?? SCHEMA_DEFAULT_PREMIUM}
+            lengthPremium={lengthPremium}
             patchSheet={patchSheet}
             setRows={setRows}
             onReorderBrands={(from, to) =>
               setBrands((current) => moveItem(current, from, to))
             }
-            onOpenSettings={() => setSettingsOpen(true)}
             spotRef={spotRef}
           />
         </Watermark>
@@ -388,16 +394,12 @@ export function PriceCompareView() {
         </Text>
       </Flex>
 
-      <ReportSettingsModal
-        open={settingsOpen}
+      <ProjectConfigModal
+        open={configOpen}
         brandOptions={brandOptions}
-        brands={brands}
-        lengthPremium={settings?.lengthPremium ?? SCHEMA_DEFAULT_PREMIUM}
-        onClose={() => setSettingsOpen(false)}
-        onSave={({ brands: nextBrands, lengthPremium }) => {
-          setBrands(nextBrands)
-          setSettings({ lengthPremium })
-        }}
+        config={config}
+        onClose={() => setConfigOpen(false)}
+        onSave={(next) => setConfig(next)}
       />
 
       <Tour

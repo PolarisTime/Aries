@@ -16,7 +16,18 @@ export type ProjectOption = { id: string; name: string; abbr: string }
 
 export type BrandOption = { name: string; freight: number }
 
-export type Brand = { name: string; freight: number }
+export type Brand = {
+  name: string
+  freight: number
+  /** 启用品种(类别); 为空表示全部启用。未启用则该品牌在该品种下不显示价格 */
+  categories?: string[]
+}
+
+/** 项目级配置: 参与品牌(含运费/启用品种) 与 12 米加价 */
+export type ProjectConfig = {
+  brands: Brand[]
+  lengthPremium: number
+}
 
 export type SheetGroup = {
   id: string

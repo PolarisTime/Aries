@@ -2,7 +2,6 @@ import {
   DeleteOutlined,
   HolderOutlined,
   InfoCircleOutlined,
-  SettingOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -119,7 +118,23 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     onReorderBrands,
     attachSpotRef,
   } = ctx
-  const varietyOptions = buildVarietyOptions(ctx.varieties)
+  const enabledCategories = new Set<string>()
+  if (!brands.length) {
+    for (const category of CATEGORIES) enabledCategories.add(category)
+  } else {
+    for (const brand of brands) {
+      const list = brand.categories?.length ? brand.categories : CATEGORIES
+      for (const category of list) enabledCategories.add(category)
+    }
+  }
+  const varietyOptions = buildVarietyOptions(
+    ctx.varieties.filter((item) => enabledCategories.has(item.category)),
+  )
+  const isCategoryEnabled = (brand: Brand, category: string) =>
+    !brand.categories ||
+    brand.categories.length === 0 ||
+    !category ||
+    brand.categories.includes(category)
   const allChecked = rows.length > 0 && selectedIds.length === rows.length
   const someChecked = selectedIds.length > 0 && !allChecked
 
@@ -219,14 +234,16 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           ),
           children: [
             cellOf('网价', SHEET_COLUMN_WIDTH.net, (_, row) => {
-              const price = netPrice(
-                data,
-                refDate,
-                refPeriod,
-                brand.name,
-                row.row,
-                lengthPremium,
-              )
+              const price = isCategoryEnabled(brand, row.row.category)
+                ? netPrice(
+                    data,
+                    refDate,
+                    refPeriod,
+                    brand.name,
+                    row.row,
+                    lengthPremium,
+                  )
+                : undefined
               return price === undefined ? (
                 <div className="price-compare-num price-compare-sub">-</div>
               ) : (
@@ -298,14 +315,16 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               return isFirst ? <span ref={ctx.spotRef}>{input}</span> : input
             }),
             cellOf('差价', SHEET_COLUMN_WIDTH.diff, (_, row) => {
-              const price = netPrice(
-                data,
-                refDate,
-                refPeriod,
-                brand.name,
-                row.row,
-                lengthPremium,
-              )
+              const price = isCategoryEnabled(brand, row.row.category)
+                ? netPrice(
+                    data,
+                    refDate,
+                    refPeriod,
+                    brand.name,
+                    row.row,
+                    lengthPremium,
+                  )
+                : undefined
               const spot = getSpot(brand.name, row.row.id)
               if (price === undefined || spot === undefined) {
                 return (
@@ -516,7 +535,6 @@ function SheetHeader({
   data,
   patchSheet,
   onAddGroup,
-  onOpenSettings,
   selectedCount,
   onRemoveSelected,
 }: {
@@ -526,7 +544,6 @@ function SheetHeader({
   data: PriceData | null
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   onAddGroup: () => void
-  onOpenSettings: () => void
   selectedCount: number
   onRemoveSelected: () => void
 }) {
@@ -587,13 +604,6 @@ function SheetHeader({
               }))}
             />
           </Space>
-          <Button
-            size="small"
-            icon={<SettingOutlined />}
-            onClick={onOpenSettings}
-          >
-            报价总设置
-          </Button>
         </Flex>
       </Flex>
 
@@ -641,7 +651,6 @@ type Props = {
   ) => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
   onReorderBrands: (from: number, to: number) => void
-  onOpenSettings: () => void
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -659,7 +668,6 @@ export function SheetPanel(props: Props) {
     patchSheet,
     setRows,
     onReorderBrands,
-    onOpenSettings,
     chrome = true,
     spotRef,
   } = props
@@ -816,7 +824,6 @@ export function SheetPanel(props: Props) {
         data={data}
         patchSheet={patchSheet}
         onAddGroup={addGroup}
-        onOpenSettings={onOpenSettings}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
       />
