@@ -113,23 +113,12 @@ export function CarrierPage() {
   )
 
   const refreshModuleQueries = async () => {
-    const masterOptionQueryKey = getMasterOptionQueryKey(MODULE_KEY)
     await Promise.all([
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.businessGrid(MODULE_KEY),
       }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.businessGridAll(MODULE_KEY),
-      }),
-      ...(masterOptionQueryKey
-        ? [
-            reloadMasterOptionsForModule(MODULE_KEY).then((data) => {
-              queryClient.setQueryData(masterOptionQueryKey, data)
-              return queryClient.invalidateQueries({
-                queryKey: masterOptionQueryKey,
-              })
-            }),
-          ]
+      ...(getMasterOptionQueryKey(MODULE_KEY)
+        ? [reloadMasterOptionsForModule(MODULE_KEY).then(() => undefined)]
         : []),
     ])
   }

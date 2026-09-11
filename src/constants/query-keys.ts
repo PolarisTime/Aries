@@ -40,8 +40,8 @@ export const QUERY_KEYS = {
 
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
-  businessGridAll: (moduleKey: string) =>
-    ['business-grid-all', moduleKey] as const,
+  businessGridDetail: (moduleKey: string, id: string) =>
+    ['business-grid', moduleKey, 'detail', id] as const,
   businessGridList: (
     moduleKey: string,
     filters: Record<string, unknown>,
@@ -59,6 +59,7 @@ export const QUERY_KEYS = {
   masterOptions: {
     carrier: ['master-options', 'carrier'] as const,
     customer: ['master-options', 'customer'] as const,
+    projectBase: ['master-options', 'project'] as const,
     project: (customerId: string) =>
       ['master-options', 'project', customerId] as const,
     projectAbbreviations: ['master-options', 'project-abbreviations'] as const,
@@ -71,6 +72,16 @@ export const QUERY_KEYS = {
     supplier: ['master-options', 'supplier'] as const,
     warehouse: ['master-options', 'warehouse'] as const,
   },
+
+  // Price compare
+  priceCompare: {
+    materialBrands: ['price-compare', 'material-brands'] as const,
+    metadata: ['price-compare', 'metadata'] as const,
+  },
+
+  // Finance ledger
+  counterpartyLedger: (key: string) =>
+    ['finance', 'counterparty-ledger', key] as const,
 
   // Auth / Account
   currentAccount: ['current-account'] as const,

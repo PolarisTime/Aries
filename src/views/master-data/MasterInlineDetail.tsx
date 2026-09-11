@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
 import type { MasterDataPageSpec } from './master-data-types'
@@ -18,7 +19,7 @@ export function MasterInlineDetail({
 }) {
   const { t } = useTranslation()
   const detail = useQuery({
-    queryKey: ['business-grid', spec.moduleKey, 'detail', recordId],
+    queryKey: QUERY_KEYS.businessGridDetail(spec.moduleKey, recordId),
     queryFn: () => getBusinessModuleDetail(spec.moduleKey, recordId),
     enabled: Boolean(recordId),
     staleTime: 5_000,

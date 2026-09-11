@@ -46,9 +46,9 @@ export function createQueryCachedOptions<T, TRaw = T>({
     return []
   }
 
+  // 强制刷新并返回最新数据：仅一次网络请求；直接更新缓存并通知观察者，
+  // 不再先 setQueryData([]) 造成闪空，也不额外 invalidate 造成重复请求。
   const reloadOptions = async (): Promise<T[]> => {
-    queryClient.setQueryData(queryKey, [])
-    await queryClient.invalidateQueries({ queryKey })
     try {
       return await queryClient.fetchQuery({
         queryKey,

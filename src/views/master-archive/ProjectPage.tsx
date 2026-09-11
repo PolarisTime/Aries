@@ -133,9 +133,6 @@ export function ProjectPage() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.businessGrid(MODULE_KEY),
       }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.businessGridAll(MODULE_KEY),
-      }),
       ...(masterOptionQueryKey
         ? [
             queryClient.invalidateQueries({ queryKey: masterOptionQueryKey }),

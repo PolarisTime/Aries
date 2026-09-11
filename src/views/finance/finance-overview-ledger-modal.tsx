@@ -3,6 +3,7 @@ import { Alert, Button, Empty, Modal, Space, Table, Tag } from 'antd'
 import { getCashLedger } from '@/api/finance/cash-ledger'
 import type { FinanceBalance } from '@/api/finance/finance-overview'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   buildCounterpartyLedgerQuery,
   COUNTERPARTY_LEDGER_EMPTY_DESCRIPTION,
@@ -23,7 +24,7 @@ export function FinanceCounterpartyLedgerModal({
     ? buildCounterpartyLedgerQuery(balance)
     : undefined
   const query = useQuery({
-    queryKey: ['finance', 'counterparty-ledger', balance?.key],
+    queryKey: QUERY_KEYS.counterpartyLedger(String(balance?.key ?? '')),
     queryFn: ({ signal }) => {
       if (!queryParams) {
         throw new Error('缺少往来方信息')

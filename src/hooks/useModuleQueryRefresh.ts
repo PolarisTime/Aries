@@ -19,9 +19,6 @@ export function useModuleQueryRefresh(moduleKey: string) {
         queryKey: QUERY_KEYS.businessGrid(moduleKey),
       }),
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.businessGridAll(moduleKey),
-      }),
-      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.parentSelectorListBase,
       }),
       queryClient.invalidateQueries({
@@ -30,9 +27,6 @@ export function useModuleQueryRefresh(moduleKey: string) {
       ...relatedModuleKeys.flatMap((relatedModuleKey) => [
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.businessGrid(relatedModuleKey),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.businessGridAll(relatedModuleKey),
         }),
       ]),
     ]
@@ -50,14 +44,7 @@ export function useModuleQueryRefresh(moduleKey: string) {
         }),
       )
     } else if (masterOptionQueryKey) {
-      tasks.push(
-        reloadMasterOptionsForModule(moduleKey).then((data) => {
-          queryClient.setQueryData(masterOptionQueryKey, data)
-          return queryClient.invalidateQueries({
-            queryKey: masterOptionQueryKey,
-          })
-        }),
-      )
+      tasks.push(reloadMasterOptionsForModule(moduleKey).then(() => undefined))
     }
 
     await Promise.all(tasks)

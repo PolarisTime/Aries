@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { matchesToData, mergePriceData } from './core'
 import type { BrandOption, PriceData, ProjectOption, Variety } from './types'
 
@@ -50,7 +51,7 @@ export type PriceCompareData = {
 export function usePriceCompareData(): PriceCompareData {
   const [data, setData] = useState<PriceData>({})
   const query = useQuery({
-    queryKey: ['price-compare', 'metadata'],
+    queryKey: QUERY_KEYS.priceCompare.metadata,
     queryFn: fetchMetadata,
     staleTime: Number.POSITIVE_INFINITY,
   })

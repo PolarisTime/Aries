@@ -6,6 +6,7 @@ import { getCustomerOptions } from '@/api/master/customer-options'
 import { StatusTag } from '@/components/StatusTag'
 import { resolveProjectCustomerDisplay } from '@/config/business-pages/master/project-page-utils'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { EntityId } from '@/types/entity-id'
 import type { LegacyModuleRecord } from '@/types/module-record'
@@ -18,7 +19,7 @@ const MODULE_KEY: ModuleKey = 'project'
 export function ProjectInlineDetail({ recordId }: { recordId: EntityId }) {
   const { t } = useTranslation()
   const detail = useQuery({
-    queryKey: ['business-grid', MODULE_KEY, 'detail', recordId],
+    queryKey: QUERY_KEYS.businessGridDetail(MODULE_KEY, recordId),
     queryFn: () => getBusinessModuleDetail(MODULE_KEY, recordId),
     enabled: Boolean(recordId),
     staleTime: 5_000,

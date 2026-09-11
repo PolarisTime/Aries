@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { EntityId } from '@/types/entity-id'
 import type { LegacyModuleRecord } from '@/types/module-record'
@@ -16,7 +17,7 @@ const MODULE_KEY: ModuleKey = 'carrier'
 export function CarrierInlineDetail({ recordId }: { recordId: EntityId }) {
   const { t } = useTranslation()
   const detail = useQuery({
-    queryKey: ['business-grid', MODULE_KEY, 'detail', recordId],
+    queryKey: QUERY_KEYS.businessGridDetail(MODULE_KEY, recordId),
     queryFn: () => getBusinessModuleDetail(MODULE_KEY, recordId),
     enabled: Boolean(recordId),
     staleTime: 5_000,

@@ -12,7 +12,7 @@ const MASTER_OPTION_QUERY_BY_MODULE: Record<string, readonly unknown[]> = {
   customer: QUERY_KEYS.masterOptions.customer,
   material: QUERY_KEYS.masterOptions.material,
   'material-categories': QUERY_KEYS.masterOptions.materialCategories,
-  project: ['master-options', 'project'],
+  project: QUERY_KEYS.masterOptions.projectBase,
   'settlement-company': QUERY_KEYS.masterOptions.settlementCompany,
   supplier: QUERY_KEYS.masterOptions.supplier,
   warehouse: QUERY_KEYS.masterOptions.warehouse,

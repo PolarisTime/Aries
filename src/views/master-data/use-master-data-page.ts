@@ -117,9 +117,6 @@ export function useMasterDataPage(spec: MasterDataPageSpec) {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.businessGrid(moduleKey),
       }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.businessGridAll(moduleKey),
-      }),
       ...(masterOptionQueryKey
         ? [queryClient.invalidateQueries({ queryKey: masterOptionQueryKey })]
         : []),
