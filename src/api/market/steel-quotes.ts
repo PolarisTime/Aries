@@ -153,6 +153,8 @@ export async function fetchSteelQuotes(params: {
   spec?: string
   material?: string
   factory?: string
+  sortBy?: string
+  direction?: string
   page?: number
   size?: number
 }): Promise<{ rows: SteelQuote[]; total: number }> {

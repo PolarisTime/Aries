@@ -7,12 +7,15 @@ import {
   Flex,
   Input,
   List,
+  Select,
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
+import type { SorterResult } from 'antd/es/table/interface'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -27,6 +30,7 @@ import { message } from '@/utils/antd-app'
 
 const { Text } = Typography
 const PERIODS = ['上午', '中午', '下午']
+const BREEDS = ['螺纹钢', '盘螺', '高线', '圆钢']
 const PAGE_SIZE = 20
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -35,7 +39,13 @@ type DateGroup = {
   periods: string[]
   rows: number
   fetchedAt: string | null
-  articles: SteelQuoteSyncRecord[]
+}
+
+type Filters = {
+  breed?: string
+  material?: string
+  factory?: string
+  spec?: string
 }
 
 function groupByDate(records: SteelQuoteSyncRecord[]): DateGroup[] {
@@ -47,12 +57,10 @@ function groupByDate(records: SteelQuoteSyncRecord[]): DateGroup[] {
       periods: [],
       rows: 0,
       fetchedAt: null,
-      articles: [],
     }
     if (record.period && !group.periods.includes(record.period))
       group.periods.push(record.period)
     group.rows += record.rowCount ?? 0
-    group.articles.push(record)
     if (
       record.fetchedAt &&
       (!group.fetchedAt || record.fetchedAt > group.fetchedAt)
@@ -78,8 +86,12 @@ export function MarketSyncView() {
 
   const [selectedDate, setSelectedDate] = useState<string>('')
   const [period, setPeriod] = useState<string>('')
-  const [factory, setFactory] = useState<string>('')
-  const [material, setMaterial] = useState<string>('')
+
+  const [form, setForm] = useState<Filters>({})
+  const [applied, setApplied] = useState<Filters>({})
+  const [sort, setSort] = useState<{ field?: string; order?: 'asc' | 'desc' }>(
+    {},
+  )
 
   const [quotes, setQuotes] = useState<SteelQuote[]>([])
   const [quotePage, setQuotePage] = useState(0)
@@ -114,8 +126,12 @@ export function MarketSyncView() {
         const { rows, total } = await fetchSteelQuotes({
           quoteDate: date || undefined,
           period: currentPeriod || undefined,
-          factory: factory || undefined,
-          material: material || undefined,
+          breed: applied.breed || undefined,
+          material: applied.material || undefined,
+          factory: applied.factory || undefined,
+          spec: applied.spec || undefined,
+          sortBy: sort.field,
+          direction: sort.order,
           page,
           size: PAGE_SIZE,
         })
@@ -128,14 +144,13 @@ export function MarketSyncView() {
         setQuoteLoading(false)
       }
     },
-    [isAuthenticated, factory, material],
+    [isAuthenticated, applied, sort],
   )
 
   useEffect(() => {
     void loadRecords()
   }, [loadRecords])
 
-  // 首次加载/记录刷新后: 保证有选中日期
   useEffect(() => {
     if (records.length === 0) return
     if (selectedDate && groups.some((group) => group.date === selectedDate))
@@ -146,7 +161,6 @@ export function MarketSyncView() {
     setPeriod(first.periods[0] ?? '')
   }, [records, groups, selectedDate])
 
-  // 选中日期/时段变化时加载明细
   useEffect(() => {
     if (!selectedDate || !period) return
     void loadQuotes(0, selectedDate, period)
@@ -180,16 +194,40 @@ export function MarketSyncView() {
     }
   }
 
-  const quoteColumns: ColumnsType<SteelQuote> = [
-    { title: '品牌', dataIndex: 'factory', width: 110 },
-    { title: '品名', dataIndex: 'breed', width: 90 },
+  const resetFilters = () => {
+    setForm({})
+    setApplied({})
+    setSort({})
+  }
+
+  const columns: ColumnsType<SteelQuote> = [
+    {
+      title: '品牌/钢厂',
+      dataIndex: 'factory',
+      width: 120,
+      fixed: 'left',
+      render: (value: string | null) => value || '-',
+    },
+    {
+      title: '品名',
+      dataIndex: 'breed',
+      width: 90,
+      render: (value: string | null) => value || '-',
+    },
     { title: '材质', dataIndex: 'material', width: 100 },
     { title: '规格', dataIndex: 'spec', width: 90 },
     {
-      title: '价格',
+      title: '价格(元/吨)',
       dataIndex: 'price',
-      width: 100,
+      width: 120,
       align: 'right',
+      sorter: true,
+      sortOrder:
+        sort.field === 'price'
+          ? sort.order === 'asc'
+            ? 'ascend'
+            : 'descend'
+          : undefined,
       render: (value: number | string | null | undefined) =>
         value === null || value === undefined ? (
           '-'
@@ -206,18 +244,14 @@ export function MarketSyncView() {
         if (!value) return '-'
         const positive = value.startsWith('+') || Number(value) > 0
         const negative = value.startsWith('-') || Number(value) < 0
+        if (!positive && !negative) return value
         return (
-          <span
-            style={{
-              color: positive
-                ? 'var(--color-success-active, #389e0d)'
-                : negative
-                  ? 'var(--color-danger-active, #cf1322)'
-                  : undefined,
-            }}
+          <Tag
+            color={positive ? 'green' : 'red'}
+            style={{ marginInlineEnd: 0 }}
           >
             {value}
-          </span>
+          </Tag>
         )
       },
     },
@@ -225,7 +259,8 @@ export function MarketSyncView() {
       title: '备注',
       dataIndex: 'remark',
       ellipsis: true,
-      render: (value: string | null) => value || '-',
+      render: (value: string | null) =>
+        value ? <Tooltip title={value}>{value}</Tooltip> : '-',
     },
   ]
 
@@ -261,7 +296,7 @@ export function MarketSyncView() {
         </Space>
       </div>
 
-      <Flex gap={12} align="flex-start" wrap="wrap" style={{ marginBottom: 8 }}>
+      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
         <Tag color="blue">已同步 {groups.length} 天</Tag>
         {groups[0]?.date ? <Tag>最近：{groups[0].date}</Tag> : null}
         {groups[0]?.fetchedAt ? (
@@ -301,6 +336,7 @@ export function MarketSyncView() {
                 return (
                   <List.Item
                     onClick={() => onSelect(group.date)}
+                    className="market-sync-record-item"
                     style={{
                       cursor: 'pointer',
                       paddingInline: 8,
@@ -345,59 +381,115 @@ export function MarketSyncView() {
 
         <Card
           size="small"
-          title="行情明细"
+          title={
+            <Space size={6}>
+              <span>行情明细</span>
+              <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+                {selectedDate || '未选择日期'}
+                {period ? ` · ${period}` : ''}
+              </Text>
+            </Space>
+          }
           style={{ flex: '1 1 560px', minWidth: 0 }}
         >
           <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {selectedDate || '未选择日期'}
-              {period ? ` · ${period}` : ''}
-            </Text>
-            <Input
+            <Select
               size="small"
-              style={{ width: 130 }}
-              placeholder="品牌/钢厂"
+              style={{ width: 110 }}
+              placeholder="品名"
               allowClear
-              value={factory}
-              onChange={(event) => setFactory(event.target.value)}
-              onPressEnter={() => void loadQuotes(0, selectedDate, period)}
+              value={form.breed}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, breed: value }))
+              }
+              options={BREEDS.map((b) => ({ value: b, label: b }))}
             />
             <Input
               size="small"
               style={{ width: 110 }}
               placeholder="材质"
               allowClear
-              value={material}
-              onChange={(event) => setMaterial(event.target.value)}
-              onPressEnter={() => void loadQuotes(0, selectedDate, period)}
+              value={form.material}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, material: event.target.value }))
+              }
+              onPressEnter={() => setApplied(form)}
+            />
+            <Input
+              size="small"
+              style={{ width: 120 }}
+              placeholder="品牌/钢厂"
+              allowClear
+              value={form.factory}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, factory: event.target.value }))
+              }
+              onPressEnter={() => setApplied(form)}
+            />
+            <Input
+              size="small"
+              style={{ width: 90 }}
+              placeholder="规格"
+              allowClear
+              value={form.spec}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, spec: event.target.value }))
+              }
+              onPressEnter={() => setApplied(form)}
             />
             <Button
               size="small"
-              icon={<ReloadOutlined />}
-              loading={quoteLoading}
-              onClick={() => void loadQuotes(0, selectedDate, period)}
+              type="primary"
+              onClick={() => setApplied(form)}
             >
               查询
             </Button>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Button size="small" onClick={resetFilters}>
+              重置
+            </Button>
+            <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
               共 {quoteTotal} 条
             </Text>
           </Flex>
           <Table<SteelQuote>
             size="small"
+            sticky
             rowKey={(row) =>
               `${row.quoteDate}|${row.period}|${row.factory}|${row.breed}|${row.material}|${row.spec}|${row.id ?? ''}`
             }
-            columns={quoteColumns}
+            columns={columns}
             dataSource={quotes}
             loading={quoteLoading}
+            scroll={{ x: 760 }}
+            onChange={(
+              pagination: TablePaginationConfig,
+              _filters,
+              sorter: SorterResult<SteelQuote> | SorterResult<SteelQuote>[],
+            ) => {
+              const single = Array.isArray(sorter) ? sorter[0] : sorter
+              const field =
+                single?.order && single.field ? String(single.field) : undefined
+              const order =
+                single?.order === 'ascend'
+                  ? 'asc'
+                  : single?.order === 'descend'
+                    ? 'desc'
+                    : undefined
+              if (field !== sort.field || order !== sort.order) {
+                setSort({ field, order })
+                return
+              }
+              const page = (pagination.current ?? 1) - 1
+              if (page !== quotePage)
+                void loadQuotes(page, selectedDate, period)
+            }}
             pagination={{
               current: quotePage + 1,
               pageSize: PAGE_SIZE,
               total: quoteTotal,
               showSizeChanger: false,
-              onChange: (page) =>
-                void loadQuotes(page - 1, selectedDate, period),
+              size: 'small',
+              showTotal: (total) => `共 ${total} 条`,
             }}
           />
         </Card>
