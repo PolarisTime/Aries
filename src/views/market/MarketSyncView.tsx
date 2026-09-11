@@ -24,9 +24,11 @@ import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   backfillSteelQuotes,
+  fetchBackfillStatus,
   fetchSteelQuoteCalendars,
   fetchSteelQuotes,
   type SteelQuote,
+  type SteelQuoteBackfillStatus,
   syncSteelQuotes,
 } from '@/api/market/steel-quotes'
 import { useAuthStore } from '@/stores/authStore'
@@ -66,6 +68,8 @@ export function MarketSyncView() {
   const [syncing, setSyncing] = useState(false)
   const [backfillDays, setBackfillDays] = useState<number>(30)
   const [backfilling, setBackfilling] = useState(false)
+  const [backfillStatus, setBackfillStatus] =
+    useState<SteelQuoteBackfillStatus | null>(null)
 
   const [form, setForm] = useState<Filters>({})
   const [applied, setApplied] = useState<Filters>({})
@@ -147,6 +151,28 @@ export function MarketSyncView() {
   }, [loadCalendars])
 
   useEffect(() => {
+    if (!isAuthenticated) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const poll = async () => {
+      try {
+        const status = await fetchBackfillStatus()
+        setBackfillStatus(status)
+        if (status.running) {
+          timer = setTimeout(() => void poll(), 3000)
+        } else {
+          void loadCalendars()
+        }
+      } catch (error) {
+        console.error('补数状态查询失败', error)
+      }
+    }
+    void poll()
+    return () => {
+      if (timer) clearTimeout(timer)
+    }
+  }, [isAuthenticated, loadCalendars])
+
+  useEffect(() => {
     void loadQuotes(0)
   }, [loadQuotes])
 
@@ -195,10 +221,16 @@ export function MarketSyncView() {
     try {
       const result = await backfillSteelQuotes(backfillDays)
       message.success(
-        `已受理补数：${result.from} ~ ${result.to}（后台执行，稍后自动刷新）`,
+        `已受理补数：${result.from} ~ ${result.to}（后台执行，完成后自动刷新）`,
       )
-      setTimeout(() => void loadCalendars(), 8000)
-      setTimeout(() => void loadCalendars(), 25000)
+      setBackfillStatus({
+        running: true,
+        from: result.from,
+        to: result.to,
+        syncedDays: 0,
+        failedDays: 0,
+        totalRows: 0,
+      })
     } catch (error) {
       console.error('补数失败', error)
       message.error(
@@ -331,6 +363,17 @@ export function MarketSyncView() {
         <Tag color={stats.missingSlots > 0 ? 'red' : 'green'}>
           缺失时段 {stats.missingSlots}
         </Tag>
+        {backfillStatus?.running ? (
+          <Tag color="processing">
+            补数中 {backfillStatus.from} ~ {backfillStatus.to}
+          </Tag>
+        ) : backfillStatus?.finishedAt ? (
+          <Tag>
+            上次补数 {backfillStatus.from} ~ {backfillStatus.to}：成功
+            {backfillStatus.syncedDays}天/失败{backfillStatus.failedDays}天/
+            {backfillStatus.totalRows}行
+          </Tag>
+        ) : null}
         {PERIODS.map((p) => {
           const has = stats.todayEntry?.periods.includes(p)
           return (

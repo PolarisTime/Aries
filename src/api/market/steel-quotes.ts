@@ -180,10 +180,34 @@ export type SteelQuoteBackfillResult = z.infer<
 >
 
 /** 触发区间补数(后台异步执行)。 */
-export function backfillSteelQuotes(days: number): Promise<SteelQuoteBackfillResult> {
+export function backfillSteelQuotes(
+  days: number,
+): Promise<SteelQuoteBackfillResult> {
   return apiPost(
     ENDPOINTS.STEEL_QUOTE_BACKFILLS,
     steelQuoteBackfillResponseSchema,
     { days },
+  )
+}
+
+const steelQuoteBackfillStatusSchema = z.looseObject({
+  running: z.boolean(),
+  from: z.string().nullable().optional(),
+  to: z.string().nullable().optional(),
+  startedAt: z.string().nullable().optional(),
+  finishedAt: z.string().nullable().optional(),
+  syncedDays: z.number(),
+  failedDays: z.number(),
+  totalRows: z.number(),
+})
+export type SteelQuoteBackfillStatus = z.infer<
+  typeof steelQuoteBackfillStatusSchema
+>
+
+/** 当前/最近一次补数任务状态。 */
+export function fetchBackfillStatus(): Promise<SteelQuoteBackfillStatus> {
+  return apiGet(
+    `${ENDPOINTS.STEEL_QUOTE_BACKFILLS}/current`,
+    steelQuoteBackfillStatusSchema,
   )
 }
