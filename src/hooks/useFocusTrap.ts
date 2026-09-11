@@ -39,9 +39,15 @@ export function useFocusTrap({
   restoreFocus = true,
 }: UseFocusTrapOptions) {
   const getInitialFocusTargetRef = useRef(getInitialFocusTarget)
-  getInitialFocusTargetRef.current = getInitialFocusTarget
   const onEscapeRef = useRef(onEscape)
-  onEscapeRef.current = onEscape
+
+  useEffect(() => {
+    getInitialFocusTargetRef.current = getInitialFocusTarget
+  }, [getInitialFocusTarget])
+
+  useEffect(() => {
+    onEscapeRef.current = onEscape
+  }, [onEscape])
 
   useEffect(() => {
     if (!active) return
