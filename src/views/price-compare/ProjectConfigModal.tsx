@@ -44,6 +44,7 @@ export type ProjectConfigDraft = {
 function createDraft(
   config: ProjectConfig,
   brandOptions: string[],
+  varieties: Variety[],
 ): ProjectConfigDraft {
   const names = config.brands.map((brand) => brand.name)
   const freightMap: Record<string, number> = {}
@@ -59,11 +60,16 @@ function createDraft(
     categoryMap,
     premium: config.lengthPremium,
     hrb400eFallback: config.hrb400eFallback,
-    products: config.products ?? [],
+    products: config.products?.length
+      ? config.products
+      : varieties.map(varietyKey),
   }
 }
 
-function draftToConfig(draft: ProjectConfigDraft): ProjectConfig {
+function draftToConfig(
+  draft: ProjectConfigDraft,
+  varieties: Variety[],
+): ProjectConfig {
   const brands: Brand[] = draft.brands.map((name) => {
     const categories = draft.categoryMap[name] ?? CATEGORIES
     const enabled =
@@ -80,7 +86,8 @@ function draftToConfig(draft: ProjectConfigDraft): ProjectConfig {
     brands,
     lengthPremium: draft.premium,
     hrb400eFallback: draft.hrb400eFallback,
-    products: draft.products.length ? draft.products : undefined,
+    products:
+      draft.products.length === varieties.length ? undefined : draft.products,
   }
 }
 
@@ -295,7 +302,6 @@ function ProductSection({
   const [keyword, setKeyword] = useState('')
 
   const allKeys = useMemo(() => varieties.map(varietyKey), [varieties])
-  const restricted = draft.products.length > 0
   const selectedSet = useMemo(() => new Set(draft.products), [draft.products])
 
   const materials = useMemo(
@@ -338,123 +344,102 @@ function ProductSection({
   return (
     <Flex vertical gap={10}>
       <Flex justify="space-between" align="center" gap={8} wrap="wrap">
-        <Flex align="center" gap={8}>
-          <Switch
-            size="small"
-            checked={restricted}
-            onChange={(checked) =>
-              onChange({ products: checked ? allKeys : [] })
-            }
-          />
-          <Text style={{ fontSize: 12 }}>
-            {restricted ? '仅允许勾选以下商品' : '全部商品可选（默认）'}
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          报单时可选的商品（默认全选；取消勾选即从下拉中移除）
+        </Text>
+        <Space size={4}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            已选 {draft.products.length}/{allKeys.length}
           </Text>
-        </Flex>
-        {restricted ? (
-          <Space size={4}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              已选 {draft.products.length}/{allKeys.length}
-            </Text>
-            <Button
-              size="small"
-              onClick={() => onChange({ products: allKeys })}
-            >
-              全选
-            </Button>
-            <Button size="small" onClick={() => onChange({ products: [] })}>
-              清空
-            </Button>
-          </Space>
-        ) : null}
+          <Button size="small" onClick={() => onChange({ products: allKeys })}>
+            全选
+          </Button>
+          <Button size="small" onClick={() => onChange({ products: [] })}>
+            清空
+          </Button>
+        </Space>
       </Flex>
 
-      {restricted ? (
-        <>
-          <Flex gap={6} align="center" wrap="wrap">
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              材质
-            </Text>
-            <Tag.CheckableTag
-              checked={material === ''}
-              onChange={() => setMaterial('')}
-            >
-              全部
-            </Tag.CheckableTag>
-            {materials.map((item) => (
-              <Tag.CheckableTag
-                key={item}
-                checked={material === item}
-                onChange={() => setMaterial(item)}
-              >
-                {item}
-              </Tag.CheckableTag>
-            ))}
-            <Input
-              size="small"
-              allowClear
-              prefix={<SearchOutlined />}
-              placeholder="搜索规格"
-              style={{ width: 150, marginLeft: 'auto' }}
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-          </Flex>
+      <Flex gap={6} align="center" wrap="wrap">
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          材质
+        </Text>
+        <Tag.CheckableTag
+          checked={material === ''}
+          onChange={() => setMaterial('')}
+        >
+          全部
+        </Tag.CheckableTag>
+        {materials.map((item) => (
+          <Tag.CheckableTag
+            key={item}
+            checked={material === item}
+            onChange={() => setMaterial(item)}
+          >
+            {item}
+          </Tag.CheckableTag>
+        ))}
+        <Input
+          size="small"
+          allowClear
+          prefix={<SearchOutlined />}
+          placeholder="搜索规格"
+          style={{ width: 150, marginLeft: 'auto' }}
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+        />
+      </Flex>
 
-          <div className="price-compare-product-panel">
-            {groups.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="无匹配商品"
-              />
-            ) : (
-              groups.map((group) => {
-                const keys = group.items.map(varietyKey)
-                const selectedCount = keys.filter((key) =>
-                  selectedSet.has(key),
-                ).length
-                const allChecked = selectedCount === keys.length
-                return (
-                  <div
-                    key={group.category}
-                    className="price-compare-product-group"
+      <div className="price-compare-product-panel">
+        {groups.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="无匹配商品"
+          />
+        ) : (
+          groups.map((group) => {
+            const keys = group.items.map(varietyKey)
+            const selectedCount = keys.filter((key) =>
+              selectedSet.has(key),
+            ).length
+            const allChecked = selectedCount === keys.length
+            return (
+              <div key={group.category} className="price-compare-product-group">
+                <Flex justify="space-between" align="center">
+                  <Checkbox
+                    checked={allChecked}
+                    indeterminate={selectedCount > 0 && !allChecked}
+                    onChange={(event) =>
+                      toggleGroup(keys, event.target.checked)
+                    }
                   >
-                    <Flex justify="space-between" align="center">
+                    {group.category}
+                  </Checkbox>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    {selectedCount}/{keys.length}
+                  </Text>
+                </Flex>
+                <Flex wrap gap={8} className="price-compare-product-items">
+                  {group.items.map((item) => {
+                    const key = varietyKey(item)
+                    return (
                       <Checkbox
-                        checked={allChecked}
-                        indeterminate={selectedCount > 0 && !allChecked}
+                        key={key}
+                        checked={selectedSet.has(key)}
                         onChange={(event) =>
-                          toggleGroup(keys, event.target.checked)
+                          toggleKey(key, event.target.checked)
                         }
                       >
-                        {group.category}
+                        {material ? varietyShort(item) : varietyLabel(item)}
                       </Checkbox>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        {selectedCount}/{keys.length}
-                      </Text>
-                    </Flex>
-                    <Flex wrap gap={8} className="price-compare-product-items">
-                      {group.items.map((item) => {
-                        const key = varietyKey(item)
-                        return (
-                          <Checkbox
-                            key={key}
-                            checked={selectedSet.has(key)}
-                            onChange={(event) =>
-                              toggleKey(key, event.target.checked)
-                            }
-                          >
-                            {material ? varietyShort(item) : varietyLabel(item)}
-                          </Checkbox>
-                        )
-                      })}
-                    </Flex>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </>
-      ) : null}
+                    )
+                  })}
+                </Flex>
+              </div>
+            )
+          })
+        )}
+      </div>
     </Flex>
   )
 }
@@ -482,13 +467,13 @@ export function ProjectConfigModal({
   onSave,
 }: Props) {
   const [draft, setDraft] = useState<ProjectConfigDraft>(() =>
-    createDraft(config, brandOptions),
+    createDraft(config, brandOptions, varieties),
   )
 
   useEffect(() => {
     if (!open) return
-    setDraft(createDraft(config, brandOptions))
-  }, [open, brandOptions, config])
+    setDraft(createDraft(config, brandOptions, varieties))
+  }, [open, brandOptions, config, varieties])
 
   const patch = (partial: Partial<ProjectConfigDraft>) =>
     setDraft((current) => ({ ...current, ...partial }))
@@ -496,7 +481,7 @@ export function ProjectConfigModal({
   const handleCancel = () => {
     const dirty =
       JSON.stringify(draft) !==
-      JSON.stringify(createDraft(config, brandOptions))
+      JSON.stringify(createDraft(config, brandOptions, varieties))
     if (!dirty) {
       onClose()
       return
@@ -518,7 +503,7 @@ export function ProjectConfigModal({
       okText="保存"
       cancelText="取消"
       onOk={() => {
-        onSave(draftToConfig(draft))
+        onSave(draftToConfig(draft, varieties))
         onClose()
       }}
       onCancel={handleCancel}
