@@ -93,7 +93,7 @@ export function ReportSettingsModal({
 
         <div>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            参与比价的品牌（来自商品资料，勾选后作为表格列）
+            参与比价的品牌（来自商品资料，勾选后显示为表格列）
           </Text>
           <Flex vertical gap={6} style={{ width: '100%', marginTop: 8 }}>
             {brandOptions.map((name) => (

@@ -166,7 +166,7 @@ export function PriceCompareView() {
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({
       title: '删除该批次？',
-      content: '批次及其填写内容将一并删除',
+      content: '该批次的全部录入内容将一并删除',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -220,7 +220,7 @@ export function PriceCompareView() {
         <Select
           size="small"
           style={{ width: 170 }}
-          placeholder="＋ 项目批次"
+          placeholder="新增项目批次"
           showSearch={{ optionFilterProp: 'label' }}
           value={null}
           options={projects
@@ -384,7 +384,7 @@ export function PriceCompareView() {
 
       <Flex justify="flex-end" style={{ marginTop: 8 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          数据源为本地行情快照，正式环境将改为后端接口
+          行情数据暂取自本地快照，正式环境将接入后端接口
         </Text>
       </Flex>
 
@@ -409,13 +409,13 @@ export function PriceCompareView() {
         steps={[
           {
             title: '选择项目/批次',
-            description: '顶部胶囊切换项目与批次，批次即一次报价',
+            description: '在顶部切换项目与批次；每个批次对应一次报价',
             target: () => document.body,
           },
           {
             title: '分组与录入',
             description:
-              '可在表内添加分组、拖拽排序；逐格录入现货价，回车/上下移动',
+              '支持添加分组与拖动排序；录入现货价，按回车或方向键切换行',
             target: () => spotRef.current ?? document.body,
           },
         ]}

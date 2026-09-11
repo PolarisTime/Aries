@@ -152,7 +152,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         <span
           className="price-compare-row-drag"
           draggable
-          title="拖拽调整行顺序"
+          title="拖动调整行顺序"
           onDragStart={(event) => onRowDragStart(row.rowId, event)}
           onDragEnd={onRowDragEnd}
         >
@@ -202,7 +202,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             <span
               className="price-compare-brand-name price-compare-drag"
               draggable
-              title="拖拽调整品牌列顺序"
+              title="拖动调整品牌列顺序"
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = 'move'
                 event.dataTransfer.setData('text/plain', String(brandIndex))
@@ -257,7 +257,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         value <= 0 ||
                         value > SPOT_PRICE_MAX)
                     ) {
-                      message.warning('现货价超出合理范围')
+                      message.warning('现货价超出合理范围（0 - 20000）')
                       return
                     }
                     setSpot(
@@ -425,7 +425,7 @@ function GroupTable(props: GroupTableProps) {
         />
         {canRemove ? (
           <Popconfirm
-            title="删除该分组及其行？"
+            title="删除该分组及其全部行？"
             okText="删除"
             cancelText="取消"
             onConfirm={() => onRemoveGroup(group.id)}
@@ -557,7 +557,7 @@ function SheetHeader({
             />
           </Space>
           <Space size="small">
-            <Tooltip title="整组统一使用该日期与时段作为网价基准">
+            <Tooltip title="全部行统一使用该日期与时段作为网价基准">
               <Text type="secondary" className="price-compare-sub">
                 <InfoCircleOutlined /> 参照网价
               </Text>
