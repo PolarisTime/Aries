@@ -1,7 +1,10 @@
 import {
+  DeleteOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
+  PlusOutlined,
   RedoOutlined,
+  SettingOutlined,
   UndoOutlined,
 } from '@ant-design/icons'
 import {
@@ -385,7 +388,9 @@ export function PriceCompareView() {
             <Tag.CheckableTag
               key={group.projectId}
               checked={group.projectId === currentGroup?.projectId}
-              onChange={() => group.sheets[0] && setActiveId(group.sheets[0].id)}
+              onChange={() =>
+                group.sheets[0] && setActiveId(group.sheets[0].id)
+              }
             >
               {projectAbbrOf(projects, group.projectId, group.projectName)}
             </Tag.CheckableTag>
@@ -399,7 +404,9 @@ export function PriceCompareView() {
             options={projects
               .filter(
                 (project) =>
-                  !projectGroups.some((group) => group.projectId === project.id),
+                  !projectGroups.some(
+                    (group) => group.projectId === project.id,
+                  ),
               )
               .map((project) => ({
                 value: project.id,
@@ -418,7 +425,11 @@ export function PriceCompareView() {
             }}
           />
         </Flex>
-        <Button size="small" onClick={() => setConfigOpen(true)}>
+        <Button
+          size="small"
+          icon={<SettingOutlined />}
+          onClick={() => setConfigOpen(true)}
+        >
           配置
         </Button>
       </Flex>
@@ -435,6 +446,7 @@ export function PriceCompareView() {
             批次
           </Text>
           <Segmented
+            size="small"
             value={activeId}
             onChange={(value) => setActiveId(String(value))}
             options={(currentGroup?.sheets ?? []).map((sheet) => ({
@@ -468,6 +480,7 @@ export function PriceCompareView() {
         <Space size={4}>
           <Button
             size="small"
+            icon={<PlusOutlined />}
             onClick={() =>
               addSheet(
                 currentGroup?.projectId ?? '',
@@ -478,11 +491,12 @@ export function PriceCompareView() {
               )
             }
           >
-            ＋ 新批次
+            新批次
           </Button>
           <Button
             size="small"
             danger
+            icon={<DeleteOutlined />}
             disabled={!active || sheets.length <= 1}
             title={sheets.length <= 1 ? '至少保留一个批次' : '删除当前批次'}
             onClick={() => active && confirmRemoveSheet(active.id)}

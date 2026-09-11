@@ -2,6 +2,9 @@ import {
   DeleteOutlined,
   HolderOutlined,
   InfoCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -749,17 +752,23 @@ function SheetHeader({
         gap={4}
         className="price-compare-actions"
       >
-        <Button size="small" onClick={onAddGroup}>
-          ＋分组
+        <Button size="small" icon={<PlusOutlined />} onClick={onAddGroup}>
+          分组
         </Button>
         <Button
           size="small"
           type={bestOn ? 'primary' : 'default'}
+          icon={<TrophyOutlined />}
           onClick={onToggleBest}
         >
           差价最优
         </Button>
-        <Button size="small" loading={refreshing} onClick={onRefresh}>
+        <Button
+          size="small"
+          icon={<ReloadOutlined />}
+          loading={refreshing}
+          onClick={onRefresh}
+        >
           刷新价格
         </Button>
         {selectedCount > 0 ? (

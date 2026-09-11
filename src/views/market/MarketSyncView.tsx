@@ -1,4 +1,9 @@
-import { ReloadOutlined, SyncOutlined } from '@ant-design/icons'
+import {
+  ClearOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SyncOutlined,
+} from '@ant-design/icons'
 import {
   Button,
   Card,
@@ -440,11 +445,12 @@ export function MarketSyncView() {
             <Button
               size="small"
               type="primary"
+              icon={<SearchOutlined />}
               onClick={() => setApplied(form)}
             >
               查询
             </Button>
-            <Button size="small" onClick={resetFilters}>
+            <Button size="small" icon={<ClearOutlined />} onClick={resetFilters}>
               重置
             </Button>
             <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
