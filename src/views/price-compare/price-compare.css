@@ -317,12 +317,12 @@
   white-space: nowrap;
 }
 
-/* 差价最优: 最优高亮边框 */
-.price-compare-diff.is-best {
-  box-shadow: inset 0 0 0 1px var(--theme-primary);
-}
-
+/* 差价最优: 最优使用 antd 蓝色高亮 */
+.price-compare-diff.is-best,
 .price-compare-diff.is-best.is-pos,
-.price-compare-diff.is-best.is-neg {
-  box-shadow: inset 0 0 0 1px var(--theme-primary);
+.price-compare-diff.is-best.is-neg,
+.price-compare-diff.is-best.is-zero {
+  background: var(--ant-color-primary-bg, #e6f4ff) !important;
+  color: var(--ant-color-primary-active, #0958d9) !important;
+  box-shadow: inset 0 0 0 1px var(--ant-color-primary, #1677ff);
 }
