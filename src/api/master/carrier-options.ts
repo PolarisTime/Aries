@@ -30,14 +30,14 @@ type RawCarrierOption = {
 }
 
 const rawCarrierOptionSchema = z.object({
-  id: z.unknown().optional(),
-  carrierCode: z.unknown().optional(),
-  carrierName: z.unknown().optional(),
-  value: z.unknown().optional(),
-  label: z.unknown().optional(),
-  vehiclePlates: z.unknown().optional(),
-  defaultSettlementCompanyId: z.unknown().optional(),
-  defaultSettlementCompanyName: z.unknown().optional(),
+  id: z.string(),
+  carrierCode: z.string(),
+  carrierName: z.string(),
+  value: z.string(),
+  label: z.string(),
+  vehiclePlates: z.array(z.string()),
+  defaultSettlementCompanyId: z.string().nullable().optional(),
+  defaultSettlementCompanyName: z.string().nullable().optional(),
 })
 
 export function normalizeCarrierOptions(

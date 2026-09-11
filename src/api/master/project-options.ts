@@ -46,24 +46,24 @@ type RawProjectPageRow = {
 
 const projectOptionsResponseSchema = z.array(
   z.object({
-    id: z.unknown().optional(),
-    value: z.unknown().optional(),
-    label: z.unknown().optional(),
-    customerId: z.unknown().optional(),
-    customerCode: z.unknown().optional(),
-    projectCode: z.unknown().optional(),
-    projectName: z.unknown().optional(),
-    projectNameAbbr: z.unknown().optional(),
-    settlementCompanyId: z.unknown().optional(),
-    settlementCompanyName: z.unknown().optional(),
+    id: z.string(),
+    value: z.string(),
+    label: z.string(),
+    customerId: z.string(),
+    customerCode: z.string(),
+    projectCode: z.string(),
+    projectName: z.string(),
+    projectNameAbbr: z.string().nullable().optional(),
+    settlementCompanyId: z.string().nullable().optional(),
+    settlementCompanyName: z.string().nullable().optional(),
   }),
 )
 
 const projectPageResponseSchema = exactPageSchema(
   z.looseObject({
-    id: z.unknown(),
-    projectName: z.unknown(),
-    projectNameAbbr: z.unknown().optional(),
+    id: z.string(),
+    projectName: z.string(),
+    projectNameAbbr: z.string().nullable().optional(),
   }),
 )
 

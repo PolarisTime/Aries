@@ -27,13 +27,13 @@ type RawCustomerOption = {
 }
 
 const rawCustomerOptionSchema = z.object({
-  id: z.unknown().optional(),
-  value: z.unknown().optional(),
-  label: z.unknown().optional(),
-  customerCode: z.unknown().optional(),
-  customerName: z.unknown().optional(),
-  defaultSettlementCompanyId: z.unknown().optional(),
-  defaultSettlementCompanyName: z.unknown().optional(),
+  id: z.string(),
+  value: z.string(),
+  label: z.string(),
+  customerCode: z.string(),
+  customerName: z.string(),
+  defaultSettlementCompanyId: z.string().nullable().optional(),
+  defaultSettlementCompanyName: z.string().nullable().optional(),
 })
 
 function normalizeText(value: unknown): string {

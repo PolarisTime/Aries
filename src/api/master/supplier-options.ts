@@ -23,11 +23,11 @@ type RawSupplierOption = {
 }
 
 const rawSupplierOptionSchema = z.object({
-  id: z.unknown().optional(),
-  supplierCode: z.unknown().optional(),
-  supplierName: z.unknown().optional(),
-  value: z.unknown().optional(),
-  label: z.unknown().optional(),
+  id: z.string(),
+  supplierCode: z.string(),
+  supplierName: z.string(),
+  value: z.string(),
+  label: z.string(),
 })
 
 function buildSupplierLabel(id: EntityId, supplierName: string): string {

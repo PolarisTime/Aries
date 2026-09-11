@@ -23,11 +23,11 @@ type RawWarehouseOption = {
 }
 
 const rawWarehouseOptionSchema = z.object({
-  id: z.unknown().optional(),
-  value: z.unknown().optional(),
-  label: z.unknown().optional(),
-  warehouseCode: z.unknown().optional(),
-  warehouseName: z.unknown().optional(),
+  id: z.string(),
+  value: z.string(),
+  label: z.string(),
+  warehouseCode: z.string(),
+  warehouseName: z.string(),
 })
 
 export function normalizeWarehouseOptions(
