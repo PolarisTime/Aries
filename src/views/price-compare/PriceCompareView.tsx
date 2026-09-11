@@ -21,6 +21,7 @@ import {
   Typography,
   Watermark,
 } from 'antd'
+import { isAxiosError } from 'axios'
 import { useEffect, useRef, useState } from 'react'
 import { syncSteelQuotes } from '@/api/market/steel-quotes'
 import { message, modal } from '@/utils/antd-app'
@@ -176,8 +177,25 @@ export function PriceCompareView() {
       message.success(
         `已拉取 ${result.articleDate} ${result.period} 行情，共 ${result.rowCount} 条${result.created ? '' : '（已存在，未重复入库）'}`,
       )
-    } catch {
-      message.error('行情拉取失败，请稍后重试')
+    } catch (error) {
+      console.error('行情同步失败', error)
+      if (isAxiosError(error)) {
+        const status = error.response?.status
+        const problem = error.response?.data as
+          | { detail?: string; title?: string }
+          | undefined
+        if (status === 401) {
+          message.error('登录已失效，请重新登录后再试')
+          return
+        }
+        message.error(
+          `行情拉取失败：${problem?.detail || problem?.title || `HTTP ${status ?? ''}`}`,
+        )
+        return
+      }
+      message.error(
+        `行情拉取失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+      )
     } finally {
       setSyncing(false)
     }

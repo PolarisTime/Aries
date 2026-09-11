@@ -2,8 +2,9 @@ import { z } from 'zod'
 import { apiPost } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 
-const steelQuoteSyncResponseSchema = z.looseObject({
-  articleId: z.number().nullable().optional(),
+export const steelQuoteSyncResponseSchema = z.looseObject({
+  // 雪花 ID 按项目规范序列化为字符串
+  articleId: z.union([z.string(), z.number()]).nullable().optional(),
   articleUrl: z.string().nullable().optional(),
   articleDate: z.string(),
   articleTime: z.string().nullable().optional(),
