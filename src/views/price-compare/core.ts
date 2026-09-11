@@ -139,36 +139,6 @@ export function computeSummary(
   return { filled }
 }
 
-/** 单个商品行在各品牌中的最优(差价最大)品牌, 无有效数据返回 undefined。 */
-export function bestBrandOfRow(
-  data: PriceData | null,
-  sheet: PriceSheet,
-  row: PriceRow,
-  brands: Brand[],
-  lengthPremium: number,
-): string | undefined {
-  let best: string | undefined
-  let bestDiff = Number.NEGATIVE_INFINITY
-  for (const brand of brands) {
-    const auto = netPrice(
-      data,
-      sheet.refDate,
-      sheet.refPeriod,
-      brand.name,
-      row,
-      lengthPremium,
-    )
-    const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
-    if (auto === undefined || spot === undefined) continue
-    const diff = auto - spot - brand.freight
-    if (diff > bestDiff) {
-      bestDiff = diff
-      best = brand.name
-    }
-  }
-  return best
-}
-
 /** 统计"有网价但未填现货"的数量, 用于标签页角标。 */
 export function countMissing(
   data: PriceData | null,
@@ -258,7 +228,6 @@ export function makeSheet(
     refDate,
     refPeriod,
     lengthPremium: DEFAULT_LENGTH_PREMIUM,
-    locked: false,
     inputs: {},
     groups: [group],
     rows: defaultSheetRows(group.id),

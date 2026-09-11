@@ -21,7 +21,6 @@ export function DesignC({ state }: { state: DesignState }) {
     activeId,
     setActiveId,
     createBatch,
-    patchSheet,
     active,
     missingOf,
   } = state
@@ -95,14 +94,6 @@ export function DesignC({ state }: { state: DesignState }) {
             }
           >
             ＋批次
-          </Button>
-          <Button
-            size="small"
-            onClick={() =>
-              active && patchSheet(active.id, { locked: !active.locked })
-            }
-          >
-            {active?.locked ? '解锁' : '锁定'}
           </Button>
         </Space>
       </Flex>

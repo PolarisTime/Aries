@@ -45,7 +45,6 @@ export type PriceSheet = {
   refDate: string
   refPeriod: string
   lengthPremium: number
-  locked: boolean
   inputs: SheetInputs
   groups: SheetGroup[]
   rows: PriceRow[]

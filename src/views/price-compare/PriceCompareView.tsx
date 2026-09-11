@@ -1,7 +1,6 @@
 import {
   FullscreenExitOutlined,
   FullscreenOutlined,
-  LockOutlined,
   RedoOutlined,
   UndoOutlined,
 } from '@ant-design/icons'
@@ -200,7 +199,7 @@ export function PriceCompareView() {
         <div>
           <h1>报单比价</h1>
           <span className="price-compare-desc">
-            项目 → 批次 · 分组 · Ctrl+Z 撤销 · 锁定防改
+            项目 → 批次 · 分组 · Ctrl+Z 撤销
           </span>
         </div>
       </div>
@@ -266,9 +265,6 @@ export function PriceCompareView() {
               label: (
                 <span>
                   {sheet.name}
-                  {sheet.locked ? (
-                    <LockOutlined style={{ marginLeft: 4 }} />
-                  ) : null}
                   {countMissing(
                     data,
                     { ...sheet, ...resolveRef(data, sheet) },

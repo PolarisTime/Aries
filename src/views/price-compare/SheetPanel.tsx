@@ -2,9 +2,7 @@ import {
   DeleteOutlined,
   HolderOutlined,
   InfoCircleOutlined,
-  LockOutlined,
   SettingOutlined,
-  UnlockOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -25,7 +23,6 @@ import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import { message } from '@/utils/antd-app'
 import {
-  bestBrandOfRow,
   CATEGORIES,
   makeGroup,
   makeRow,
@@ -62,7 +59,6 @@ type ColumnContext = {
   varieties: Variety[]
   brands: Brand[]
   rows: PriceRow[]
-  locked: boolean
   getSpot: (brandName: string, rowId: string) => number | undefined
   setSpot: (brandName: string, rowId: string, value: number | undefined) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
@@ -70,7 +66,6 @@ type ColumnContext = {
   onReorderBrands: (from: number, to: number) => void
   onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
   onRowDragEnd: () => void
-  bestOn: boolean
   selectedIds: string[]
   toggleSelect: (rowId: string, checked: boolean) => void
   toggleAll: (checked: boolean) => void
@@ -105,7 +100,6 @@ function buildVarietyOptions(varieties: Variety[]) {
 
 function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const {
-    sheet,
     refDate,
     refPeriod,
     lengthPremium,
@@ -113,12 +107,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     data,
     brands,
     rows,
-    locked,
     getSpot,
     setSpot,
     patchRow,
     moveFocus,
-    bestOn,
     selectedIds,
     toggleSelect,
     toggleAll,
@@ -130,11 +122,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const varietyOptions = buildVarietyOptions(ctx.varieties)
   const allChecked = rows.length > 0 && selectedIds.length === rows.length
   const someChecked = selectedIds.length > 0 && !allChecked
-  const isDimmed = (row: GridRow, brandName: string) => {
-    if (!bestOn) return false
-    const best = bestBrandOfRow(data, sheet, row.row, brands, lengthPremium)
-    return best !== undefined && best !== brandName
-  }
 
   return [
     {
@@ -142,7 +129,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         <Checkbox
           checked={allChecked}
           indeterminate={someChecked}
-          disabled={locked || rows.length === 0}
+          disabled={rows.length === 0}
           onChange={(event) => toggleAll(event.target.checked)}
         />
       ),
@@ -152,7 +139,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       render: (_, row) => (
         <Checkbox
           checked={selectedIds.includes(row.rowId)}
-          disabled={locked}
           onChange={(event) => toggleSelect(row.rowId, event.target.checked)}
         />
       ),
@@ -190,7 +176,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           <Select
             size="small"
             variant="borderless"
-            disabled={locked}
             style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
             placeholder="选择商品"
             showSearch={{ optionFilterProp: 'label' }}
@@ -242,17 +227,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 row.row,
                 lengthPremium,
               )
-              const dim = isDimmed(row, brand.name)
               return price === undefined ? (
-                <div
-                  className={`price-compare-num price-compare-sub${dim ? ' price-compare-dim' : ''}`}
-                >
-                  -
-                </div>
+                <div className="price-compare-num price-compare-sub">-</div>
               ) : (
-                <div
-                  className={`price-compare-net price-compare-num${dim ? ' price-compare-dim' : ''}`}
-                >
+                <div className="price-compare-net price-compare-num">
                   {price}
                 </div>
               )
@@ -264,10 +242,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 attachSpotRef && brandIndex === 0 && current.id === rows[0]?.id
               const input = (
                 <Input
-                  className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                  className="price-compare-spot"
                   size="small"
                   variant="borderless"
-                  disabled={locked}
                   inputMode="decimal"
                   data-spot={`${brand.name}:${current.id}`}
                   defaultValue={spot === undefined ? '' : String(spot)}
@@ -337,12 +314,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               }
               const diff = price - spot - brand.freight
               const cls = diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
-              const dim = isDimmed(row, brand.name)
               return (
                 <Tooltip title={diff >= 0 ? '现货更划算' : '网价更优'}>
-                  <span
-                    className={`price-compare-diff ${cls}${dim ? ' price-compare-dim' : ''}`}
-                  >
+                  <span className={`price-compare-diff ${cls}`}>
                     {diff > 0 ? '+' : ''}
                     {diff}
                   </span>
@@ -446,7 +420,6 @@ function GroupTable(props: GroupTableProps) {
           variant="borderless"
           className="price-compare-group-name"
           style={{ width: 200, fontWeight: 600 }}
-          disabled={base.locked}
           value={group.name}
           onChange={(event) => onRenameGroup(group.id, event.target.value)}
         />
@@ -455,14 +428,12 @@ function GroupTable(props: GroupTableProps) {
             title="删除该分组及其行？"
             okText="删除"
             cancelText="取消"
-            disabled={base.locked}
             onConfirm={() => onRemoveGroup(group.id)}
           >
             <Button
               size="small"
               type="text"
               danger
-              disabled={base.locked}
               title="删除分组"
               icon={<DeleteOutlined />}
             />
@@ -485,7 +456,6 @@ function GroupTable(props: GroupTableProps) {
                 type="text"
                 size="small"
                 block
-                disabled={base.locked}
                 className="price-compare-add-row"
                 onClick={() => onAddRowToGroup(group.id)}
               >
@@ -544,12 +514,9 @@ function SheetHeader({
   refDate,
   refPeriod,
   data,
-  locked,
   patchSheet,
   onAddGroup,
   onOpenSettings,
-  bestOn,
-  onToggleBest,
   selectedCount,
   onRemoveSelected,
 }: {
@@ -557,12 +524,9 @@ function SheetHeader({
   refDate: string
   refPeriod: string
   data: PriceData | null
-  locked: boolean
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   onAddGroup: () => void
   onOpenSettings: () => void
-  bestOn: boolean
-  onToggleBest: () => void
   selectedCount: number
   onRemoveSelected: () => void
 }) {
@@ -583,7 +547,6 @@ function SheetHeader({
             </Text>
             <DatePicker
               size="small"
-              disabled={locked}
               value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
               format={DATE_FMT}
               allowClear={false}
@@ -601,7 +564,6 @@ function SheetHeader({
             </Tooltip>
             <DatePicker
               size="small"
-              disabled={locked}
               value={refDate ? dayjs(refDate) : null}
               format={DATE_FMT}
               allowClear={false}
@@ -617,7 +579,6 @@ function SheetHeader({
             <Select
               size="small"
               style={{ width: 104 }}
-              disabled={locked}
               value={refPeriod || undefined}
               onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
               options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
@@ -643,41 +604,21 @@ function SheetHeader({
         gap={4}
         className="price-compare-actions"
       >
-        <Button size="small" disabled={locked} onClick={onAddGroup}>
+        <Button size="small" onClick={onAddGroup}>
           ＋分组
-        </Button>
-        <Button
-          size="small"
-          type={bestOn ? 'primary' : 'default'}
-          onClick={onToggleBest}
-        >
-          {bestOn ? '取消最优' : '一键最优'}
         </Button>
         {selectedCount > 0 ? (
           <Popconfirm
             title={`删除选中的 ${selectedCount} 行？`}
             okText="删除"
             cancelText="取消"
-            disabled={locked}
             onConfirm={onRemoveSelected}
           >
-            <Button
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={locked}
-            >
+            <Button size="small" danger icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
         ) : null}
-        <Button
-          size="small"
-          icon={locked ? <UnlockOutlined /> : <LockOutlined />}
-          onClick={() => patchSheet(sheet.id, { locked: !locked })}
-        >
-          {locked ? '解锁' : '锁定'}
-        </Button>
       </Flex>
     </Flex>
   )
@@ -722,9 +663,7 @@ export function SheetPanel(props: Props) {
     chrome = true,
     spotRef,
   } = props
-  const [bestOn, setBestOn] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const locked = sheet.locked
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
     () =>
@@ -859,12 +798,10 @@ export function SheetPanel(props: Props) {
     varieties,
     brands,
     density,
-    locked,
     getSpot,
     setSpot,
     patchRow,
     onReorderBrands,
-    bestOn,
     selectedIds,
     toggleSelect,
     spotRef,
@@ -877,12 +814,9 @@ export function SheetPanel(props: Props) {
         refDate={refDate}
         refPeriod={refPeriod}
         data={data}
-        locked={locked}
         patchSheet={patchSheet}
         onAddGroup={addGroup}
         onOpenSettings={onOpenSettings}
-        bestOn={bestOn}
-        onToggleBest={() => setBestOn((value) => !value)}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
       />
