@@ -315,9 +315,6 @@ export function PriceCompareView() {
       <div className="price-compare-head">
         <div>
           <h1>报单比价</h1>
-          <span className="price-compare-desc">
-            项目 → 批次 · 分组 · Ctrl+Z 撤销
-          </span>
         </div>
       </div>
 
