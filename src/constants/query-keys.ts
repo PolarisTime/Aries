@@ -59,6 +59,8 @@ export const QUERY_KEYS = {
     ['business-grid-overlay-preload', name] as const,
 
   // Master data
+  masterDataCode: (moduleKey: string) =>
+    ['master-data-code', moduleKey] as const,
   masterOptions: {
     carrier: ['master-options', 'carrier'] as const,
     customer: ['master-options', 'customer'] as const,

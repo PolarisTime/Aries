@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import i18next from 'i18next'
 import {
   type Dispatch,
@@ -11,6 +12,7 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/system/company-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
 import {
   applyFormFieldDefaultDraftValues,
@@ -198,6 +200,28 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     },
   })
 
+  const shouldGeneratePrimaryNo =
+    open &&
+    !isEdit &&
+    !!config.primaryNoKey &&
+    !!config.showGeneratedPrimaryNoOnCreate
+  const generatedPrimaryNoQuery = useQuery({
+    queryKey: QUERY_KEYS.masterDataCode(moduleKey),
+    queryFn: async ({ signal }) => {
+      signal.throwIfAborted()
+      const generatedCode = await fetchGeneratedMasterDataCode(moduleKey)
+      signal.throwIfAborted()
+      return generatedCode
+    },
+    enabled: shouldGeneratePrimaryNo,
+    staleTime: 0,
+    gcTime: 0,
+  })
+  const appliedGeneratedPrimaryNoRef = useRef<{
+    sessionKey: string
+    value: string
+  }>({ sessionKey: '', value: '' })
+
   useEffect(() => {
     const submission = submissionRef.current
     if (submission.sessionKey !== editorSessionKey) {
@@ -241,26 +265,6 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
         getCurrentOperatorName(),
       )
       form.setFieldsValue({ ...defaultDraft, ...(initialEditorValues || {}) })
-      if (config.showGeneratedPrimaryNoOnCreate && config.primaryNoKey) {
-        const primaryNoKey = config.primaryNoKey
-        void fetchGeneratedMasterDataCode(moduleKey)
-          .then((generatedCode) => {
-            if (!active) {
-              return
-            }
-            form.setFieldsValue({ [primaryNoKey]: generatedCode })
-          })
-          .catch(() => {
-            if (!active) {
-              return
-            }
-            message.error(
-              i18next.t(
-                'modules.editorWorkspace.masterDataCodeGenerationFailed',
-              ),
-            )
-          })
-      }
       applyDefaultSettlementCompany(moduleKey, form, () => active)
       const draftItems = autoInsertBlankItemOnCreate
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]
@@ -287,6 +291,52 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     record,
     initialEditorValues,
   ])
+
+  const generatedPrimaryNo = generatedPrimaryNoQuery.data
+  const generatedPrimaryNoKey = config.primaryNoKey
+  useEffect(() => {
+    if (
+      !open ||
+      isEdit ||
+      !generatedPrimaryNoKey ||
+      !generatedPrimaryNo ||
+      !config.showGeneratedPrimaryNoOnCreate
+    ) {
+      return
+    }
+    const applied = appliedGeneratedPrimaryNoRef.current
+    const currentValue = form.getFieldsValue(true)[generatedPrimaryNoKey]
+    const matchesApplied =
+      applied.sessionKey === editorSessionKey && currentValue === applied.value
+    if (currentValue && !matchesApplied) {
+      return
+    }
+    if (currentValue === generatedPrimaryNo) {
+      return
+    }
+    appliedGeneratedPrimaryNoRef.current = {
+      sessionKey: editorSessionKey,
+      value: generatedPrimaryNo,
+    }
+    form.setFieldsValue({ [generatedPrimaryNoKey]: generatedPrimaryNo })
+  }, [
+    config.showGeneratedPrimaryNoOnCreate,
+    editorSessionKey,
+    form,
+    generatedPrimaryNo,
+    generatedPrimaryNoKey,
+    isEdit,
+    open,
+  ])
+
+  useEffect(() => {
+    if (!generatedPrimaryNoQuery.isError) {
+      return
+    }
+    message.error(
+      i18next.t('modules.editorWorkspace.masterDataCodeGenerationFailed'),
+    )
+  }, [generatedPrimaryNoQuery.isError])
 
   useEffect(() => {
     if (
