@@ -1,10 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  getSettlementCompanyOptions,
-  type SettlementCompanyOption,
-} from '@/api/system/company-settings'
+import type { SettlementCompanyOption } from '@/api/system/company-settings'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
 import type { MasterDataPageSpec } from './master-data-types'

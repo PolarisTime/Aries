@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
-import { getSettlementCompanyOptions } from '@/api/system/company-settings'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModuleKey } from '@/module-system/core/module-key'
+import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
 import type {
   LegacyModuleRecord,

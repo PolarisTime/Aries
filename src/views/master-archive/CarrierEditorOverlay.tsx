@@ -3,10 +3,10 @@ import { Button, Col, Form, Input, Row, Select, Space } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
-import { getSettlementCompanyOptions } from '@/api/system/company-settings'
 import { normalizeCarrierDraftRecord } from '@/config/business-pages/master/carrier-vehicle-adapter'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModuleKey } from '@/module-system/core/module-key'
+import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
 import type {
   LegacyModuleRecord,

@@ -2,8 +2,6 @@ import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
 import { pageContent } from '@/api/core/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import { asId, asString } from '@/utils/type-narrowing'
 
@@ -140,21 +138,14 @@ export async function listCompanySettings() {
   })
 }
 
-const settlementCompanyOptions = createQueryCachedOptions<
-  SettlementCompanyOption,
-  RawSettlementCompanyOption
->({
-  endpoint: ENDPOINTS.COMPANY_SETTINGS_OPTIONS,
-  queryKey: QUERY_KEYS.masterOptions.settlementCompany,
-  itemSchema: rawSettlementCompanyOptionSchema,
-  normalizer: normalizeSettlementCompanyOptions,
-})
-
-export const fetchSettlementCompanyOptions = settlementCompanyOptions.fetch
-export const reloadSettlementCompanyOptions = settlementCompanyOptions.reload
-
-export function getSettlementCompanyOptions(): SettlementCompanyOption[] {
-  return settlementCompanyOptions.get()
+export async function fetchSettlementCompanyOptions(): Promise<
+  SettlementCompanyOption[]
+> {
+  const data = await apiGet(
+    ENDPOINTS.COMPANY_SETTINGS_OPTIONS,
+    z.array(rawSettlementCompanyOptionSchema),
+  )
+  return normalizeSettlementCompanyOptions(data)
 }
 
 export async function createCompanySetting(

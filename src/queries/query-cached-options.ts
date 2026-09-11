@@ -1,37 +1,23 @@
-import { type ZodType, z } from 'zod'
-import { apiGet } from '@/api/core/client'
 import { queryClient } from '@/lib/query-client'
 
-export type QueryCachedOptionsConfig<T, TRaw = T> = {
-  endpoint: string
+export type QueryCachedOptionsConfig<T> = {
   queryKey: readonly unknown[]
-  itemSchema: ZodType<TRaw>
-  normalizer?: (data: TRaw[]) => T[]
+  fetch: () => Promise<T[]>
   staleTime?: number
 }
 
-export type QueryCachedOptionsReturn<T> = {
-  fetch: () => Promise<T[]>
+export type QueryCachedOptionsAccessor<T> = {
   get: () => T[]
   reload: () => Promise<T[]>
 }
 
 const MASTER_OPTION_STALE_TIME = 300_000
 
-export function createQueryCachedOptions<T, TRaw = T>({
-  endpoint,
-  itemSchema,
-  normalizer,
+export function createQueryCachedOptions<T>({
   queryKey,
+  fetch: fetchOptions,
   staleTime = MASTER_OPTION_STALE_TIME,
-}: QueryCachedOptionsConfig<T, TRaw>): QueryCachedOptionsReturn<T> {
-  const responseSchema = z.array(itemSchema)
-
-  const fetchOptions = async (): Promise<T[]> => {
-    const data = await apiGet(endpoint, responseSchema)
-    return normalizer ? normalizer(data) : (data as unknown as T[])
-  }
-
+}: QueryCachedOptionsConfig<T>): QueryCachedOptionsAccessor<T> {
   const getOptions = (): T[] => {
     const cached = queryClient.getQueryData<T[]>(queryKey)
     if (cached !== undefined) {
@@ -61,8 +47,12 @@ export function createQueryCachedOptions<T, TRaw = T>({
   }
 
   return {
-    fetch: fetchOptions,
     get: getOptions,
     reload: reloadOptions,
   }
+}
+
+/** 纯缓存读取：不触发预取，命中缓存返回数据，否则返回空数组。 */
+export function getCachedQueryData<T>(queryKey: readonly unknown[]): T[] {
+  return queryClient.getQueryData<T[]>(queryKey) || []
 }

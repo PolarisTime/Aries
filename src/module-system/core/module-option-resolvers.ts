@@ -1,21 +1,22 @@
-import {
-  getCarrierOptions as apiGetCarrierOptions,
-  getCarrierVehiclePlateOptions as apiGetCarrierVehiclePlateOptions,
-} from '@/api/master/carrier-options'
-import { getCustomerOptions as apiGetCustomerOptions } from '@/api/master/customer-options'
 import type { MaterialCategoryOption } from '@/api/master/material-categories'
 import type { MaterialGradeOption } from '@/api/master/material-grades'
 import type { ProjectOption } from '@/api/master/project-options'
-import { getSupplierOptions as apiGetSupplierOptions } from '@/api/master/supplier-options'
-import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/master/warehouse-options'
-import { getSettlementCompanyOptions as apiGetSettlementCompanyOptions } from '@/api/system/company-settings'
 import { createOptionList } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { queryClient } from '@/lib/query-client'
+import { getCachedQueryData } from '@/queries/query-cached-options'
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleRecordInput } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+
+export {
+  getCarrierOptions,
+  getCarrierVehiclePlateOptions,
+} from '@/queries/master/carrier-options'
+export { getCustomerOptions } from '@/queries/master/customer-options'
+export { getSupplierOptions } from '@/queries/master/supplier-options'
+export { getWarehouseOptions } from '@/queries/master/warehouse-options'
+export { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 
 const materialCategoryFallbackOptions: MaterialCategoryOption[] = [
   '螺纹钢',
@@ -33,7 +34,7 @@ const materialGradeFallbackOptions: MaterialGradeOption[] = createOptionList([
 ])
 
 function cachedOptions<T>(queryKey: readonly unknown[]): T[] {
-  return queryClient.getQueryData<T[]>(queryKey) || []
+  return getCachedQueryData<T>(queryKey)
 }
 
 function optionalId(value: unknown, field: string): EntityId | undefined {
@@ -72,14 +73,6 @@ export function materialGradeOptions(): MaterialGradeOption[] {
   return options.length ? options : materialGradeFallbackOptions
 }
 
-export function getSupplierOptions() {
-  return apiGetSupplierOptions()
-}
-
-export function getCustomerOptions() {
-  return apiGetCustomerOptions()
-}
-
 export function getCustomerProjectOptions(
   form?: ModuleRecordInput,
   loadedOptions?: readonly ProjectOption[],
@@ -115,23 +108,7 @@ export function findProjectOption(
   )
 }
 
-export function getCarrierOptions() {
-  return apiGetCarrierOptions()
-}
-
-export function getCarrierVehiclePlateOptions(form?: ModuleRecordInput) {
-  return apiGetCarrierVehiclePlateOptions(form)
-}
-
-export function getSettlementCompanyOptions() {
-  return apiGetSettlementCompanyOptions()
-}
-
 /** 财务单据资金账户字段的标识解析器；具体选项由编辑器按结算主体注入。 */
 export function getSettlementAccountOptions() {
   return []
-}
-
-export function getWarehouseOptions() {
-  return apiGetWarehouseOptions()
 }

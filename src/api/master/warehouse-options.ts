@@ -1,7 +1,6 @@
 import { z } from 'zod'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import type { EntityId } from '@/types/entity-id'
 import { EntityIdContractError, parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -56,13 +55,10 @@ export function normalizeWarehouseOptions(
   })
 }
 
-const cached = createQueryCachedOptions<WarehouseOption, RawWarehouseOption>({
-  endpoint: ENDPOINTS.WAREHOUSES_OPTIONS,
-  queryKey: QUERY_KEYS.masterOptions.warehouse,
-  itemSchema: rawWarehouseOptionSchema,
-  normalizer: normalizeWarehouseOptions,
-})
-
-export const fetchWarehouseOptions = cached.fetch
-export const getWarehouseOptions = cached.get
-export const reloadWarehouseOptions = cached.reload
+export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
+  const data = await apiGet(
+    ENDPOINTS.WAREHOUSES_OPTIONS,
+    z.array(rawWarehouseOptionSchema),
+  )
+  return normalizeWarehouseOptions(data)
+}

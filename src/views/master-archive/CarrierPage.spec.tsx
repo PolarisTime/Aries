@@ -11,10 +11,8 @@ import {
   saveBusinessModule,
 } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
-import {
-  fetchSettlementCompanyOptions,
-  getSettlementCompanyOptions,
-} from '@/api/system/company-settings'
+import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
+import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import { bindAntdAppApi } from '@/utils/antd-app'
 import { CarrierPage } from './CarrierPage'
 
@@ -31,12 +29,20 @@ vi.mock('@/api/business/common-export', () => ({
 }))
 vi.mock('@/api/master/customer-options', () => ({
   fetchCustomerOptions: vi.fn(),
-  getCustomerOptions: vi.fn(),
 }))
+vi.mock('@/queries/master/customer-options', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/queries/master/customer-options')>()
+  return { ...actual, getCustomerOptions: vi.fn() }
+})
 vi.mock('@/api/system/company-settings', () => ({
   fetchSettlementCompanyOptions: vi.fn(),
-  getSettlementCompanyOptions: vi.fn(),
 }))
+vi.mock('@/queries/system/company-settings', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/queries/system/company-settings')>()
+  return { ...actual, getSettlementCompanyOptions: vi.fn() }
+})
 vi.mock('@/api/system/runtime-config', () => ({
   getRuntimeConfig: vi.fn(() =>
     Promise.resolve({ ui: { defaultPageSize: 10 } }),

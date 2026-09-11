@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import {
   type CarrierOption,
   fetchCarrierOptions,
-  getCarrierEntityOptions,
 } from '@/api/master/carrier-options'
 import {
   type CustomerOption,
@@ -46,6 +45,7 @@ import {
   materialCategoryOptions,
   materialGradeOptions,
 } from '@/module-system/core/module-option-resolvers'
+import { getCarrierEntityOptions } from '@/queries/master/carrier-options'
 import { useAuthStore } from '@/stores/authStore'
 import type { EntityId } from '@/types/entity-id'
 import type { ModuleMasterOptionRequirements } from '@/types/module-page'

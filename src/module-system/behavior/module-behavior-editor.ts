@@ -1,11 +1,11 @@
 import dayjs from 'dayjs'
-import { findCarrierOption } from '@/api/master/carrier-options'
-import { findCustomerOption } from '@/api/master/customer-options'
-import { findSupplierOption } from '@/api/master/supplier-options'
-import { getSettlementCompanyOptions } from '@/api/system/company-settings'
 import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-behavior-registry-core'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { findProjectOption } from '@/module-system/core/module-option-resolvers'
+import { findCarrierOption } from '@/queries/master/carrier-options'
+import { findCustomerOption } from '@/queries/master/customer-options'
+import { findSupplierOption } from '@/queries/master/supplier-options'
+import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import { asString, isBlankValue } from '@/utils/type-narrowing'
 
 const currentDateTime = () => dayjs()

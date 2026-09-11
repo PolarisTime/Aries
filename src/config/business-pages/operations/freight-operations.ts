@@ -1,10 +1,10 @@
 import i18next from 'i18next'
-import { getCarrierEntityOptions } from '@/api/master/carrier-options'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import {
   getCarrierVehiclePlateOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
+import { getCarrierEntityOptions } from '@/queries/master/carrier-options'
 import type {
   ModuleItemColumnConfig,
   ModulePageConfig,

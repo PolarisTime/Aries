@@ -1,9 +1,8 @@
 import { z } from 'zod'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import type { EntityId } from '@/types/entity-id'
-import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
+import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
 
 export type SupplierOption = {
@@ -57,27 +56,10 @@ export function normalizeSupplierOptions(
   })
 }
 
-export function findSupplierOption(value: unknown): SupplierOption | undefined {
-  let id: EntityId | undefined
-  try {
-    id = parseOptionalEntityId(value, 'supplierId')
-  } catch {
-    return undefined
-  }
-  return id ? cached.get().find((option) => option.id === id) : undefined
+export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
+  const data = await apiGet(
+    ENDPOINTS.SUPPLIERS_OPTIONS,
+    z.array(rawSupplierOptionSchema),
+  )
+  return normalizeSupplierOptions(data)
 }
-
-export function getSupplierEntityOptions(): SupplierOption[] {
-  return cached.get()
-}
-
-const cached = createQueryCachedOptions<SupplierOption, RawSupplierOption>({
-  endpoint: ENDPOINTS.SUPPLIERS_OPTIONS,
-  queryKey: QUERY_KEYS.masterOptions.supplier,
-  itemSchema: rawSupplierOptionSchema,
-  normalizer: normalizeSupplierOptions,
-})
-
-export const fetchSupplierOptions = cached.fetch
-export const getSupplierOptions = cached.get
-export const reloadSupplierOptions = cached.reload

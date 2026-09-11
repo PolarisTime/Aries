@@ -6,11 +6,11 @@ const mocks = vi.hoisted(() => ({
   getCustomerOptions: vi.fn(() => [{ label: 'customer', value: 'cu1' }]),
 }))
 
-vi.mock('@/api/master/carrier-options', () => ({
+vi.mock('@/queries/master/carrier-options', () => ({
   getCarrierEntityOptions: mocks.getCarrierEntityOptions,
 }))
 
-vi.mock('@/api/master/supplier-options', () => ({
+vi.mock('@/queries/master/supplier-options', () => ({
   getSupplierEntityOptions: mocks.getSupplierEntityOptions,
 }))
 

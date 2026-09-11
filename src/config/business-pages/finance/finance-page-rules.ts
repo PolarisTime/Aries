@@ -1,6 +1,6 @@
-import { getCarrierEntityOptions } from '@/api/master/carrier-options'
-import { getSupplierEntityOptions } from '@/api/master/supplier-options'
 import { getCustomerOptions } from '@/module-system/core/module-option-resolvers'
+import { getCarrierEntityOptions } from '@/queries/master/carrier-options'
+import { getSupplierEntityOptions } from '@/queries/master/supplier-options'
 import type { ModuleRecord, ModuleRecordInput } from '@/types/module-page'
 import { buildFinanceOverview } from '../shared/shared'
 

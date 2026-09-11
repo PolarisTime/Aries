@@ -1,11 +1,11 @@
-import { reloadCarrierOptions } from '@/api/master/carrier-options'
-import { reloadCustomerOptions } from '@/api/master/customer-options'
-import { reloadMaterialCategories } from '@/api/master/material-categories'
 import { fetchMaterialSearch } from '@/api/master/materials'
-import { reloadSupplierOptions } from '@/api/master/supplier-options'
-import { reloadWarehouseOptions } from '@/api/master/warehouse-options'
-import { reloadSettlementCompanyOptions } from '@/api/system/company-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { reloadCarrierOptions } from '@/queries/master/carrier-options'
+import { reloadCustomerOptions } from '@/queries/master/customer-options'
+import { reloadMaterialCategories } from '@/queries/master/material-categories'
+import { reloadSupplierOptions } from '@/queries/master/supplier-options'
+import { reloadWarehouseOptions } from '@/queries/master/warehouse-options'
+import { reloadSettlementCompanyOptions } from '@/queries/system/company-settings'
 
 const MASTER_OPTION_QUERY_BY_MODULE: Record<string, readonly unknown[]> = {
   carrier: QUERY_KEYS.masterOptions.carrier,

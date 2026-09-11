@@ -1,7 +1,6 @@
 import { z } from 'zod'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
@@ -70,32 +69,11 @@ export function normalizeCustomerRows(
   })
 }
 
-const cached = createQueryCachedOptions<CustomerOption, RawCustomerOption>({
-  endpoint: ENDPOINTS.CUSTOMERS_OPTIONS,
-  queryKey: QUERY_KEYS.masterOptions.customer,
-  itemSchema: rawCustomerOptionSchema,
-  normalizer: normalizeCustomerRows,
-})
-
-export const fetchCustomerOptions = cached.fetch
-export const reloadCustomerOptions = cached.reload
-
 /** 同名客户不得合并，选项顺序由服务端业务编码排序决定。 */
-export function getCustomerOptions(): CustomerOption[] {
-  return cached.get()
-}
-
-export function findCustomerOption(
-  customerId: unknown,
-): CustomerOption | undefined {
-  let normalizedId: EntityId | undefined
-  try {
-    normalizedId = parseOptionalEntityId(customerId, 'customerId')
-  } catch {
-    return undefined
-  }
-  if (!normalizedId) {
-    return undefined
-  }
-  return cached.get().find((row) => row.id === normalizedId)
+export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
+  const data = await apiGet(
+    ENDPOINTS.CUSTOMERS_OPTIONS,
+    z.array(rawCustomerOptionSchema),
+  )
+  return normalizeCustomerRows(data)
 }

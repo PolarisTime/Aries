@@ -1,10 +1,8 @@
 import { z } from 'zod'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
-import type { ModuleRecordInput } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 export type CarrierOption = {
@@ -71,54 +69,10 @@ export function normalizeCarrierOptions(
   })
 }
 
-const cached = createQueryCachedOptions<CarrierOption, RawCarrierOption>({
-  endpoint: ENDPOINTS.CARRIERS_OPTIONS,
-  queryKey: QUERY_KEYS.masterOptions.carrier,
-  itemSchema: rawCarrierOptionSchema,
-  normalizer: normalizeCarrierOptions,
-})
-
-export const fetchCarrierOptions = cached.fetch
-export const reloadCarrierOptions = cached.reload
-
-export function getCarrierOptions(): CarrierOption[] {
-  return cached.get()
-}
-
-export function getCarrierEntityOptions(): CarrierOption[] {
-  return cached.get().flatMap((option) => {
-    const id = option.id
-    const carrierName = String(option.carrierName ?? option.value).trim()
-    if (!id || !carrierName) return []
-    return [
-      {
-        ...option,
-        id,
-        carrierName,
-        value: id,
-        label: carrierName,
-      },
-    ]
-  })
-}
-
-export function findCarrierOption(value: unknown): CarrierOption | undefined {
-  const normalizedValue = asString(value).trim()
-  if (!normalizedValue) return undefined
-  return cached
-    .get()
-    .find(
-      (option) =>
-        String(option.id ?? '').trim() === normalizedValue ||
-        String(option.value).trim() === normalizedValue ||
-        String(option.carrierName ?? '').trim() === normalizedValue,
-    )
-}
-
-export function getCarrierVehiclePlateOptions(form?: ModuleRecordInput) {
-  const carrier = findCarrierOption(form?.carrierId ?? form?.carrierName)
-  return (carrier?.vehiclePlates || []).map((plate) => ({
-    label: plate,
-    value: plate,
-  }))
+export async function fetchCarrierOptions(): Promise<CarrierOption[]> {
+  const data = await apiGet(
+    ENDPOINTS.CARRIERS_OPTIONS,
+    z.array(rawCarrierOptionSchema),
+  )
+  return normalizeCarrierOptions(data)
 }

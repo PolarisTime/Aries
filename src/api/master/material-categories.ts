@@ -1,7 +1,6 @@
 import { z } from 'zod'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { createQueryCachedOptions } from '@/lib/query-cached-options'
 
 export type MaterialCategoryOption = {
   value: string
@@ -15,11 +14,11 @@ const materialCategoryOptionSchema = z.object({
   purchaseWeighRequired: z.boolean().optional(),
 })
 
-const cached = createQueryCachedOptions<MaterialCategoryOption>({
-  endpoint: ENDPOINTS.MATERIAL_CATEGORIES,
-  queryKey: QUERY_KEYS.masterOptions.materialCategories,
-  itemSchema: materialCategoryOptionSchema,
-})
-
-export const fetchMaterialCategories = cached.fetch
-export const reloadMaterialCategories = cached.reload
+export async function fetchMaterialCategories(): Promise<
+  MaterialCategoryOption[]
+> {
+  return apiGet(
+    ENDPOINTS.MATERIAL_CATEGORIES,
+    z.array(materialCategoryOptionSchema),
+  )
+}
