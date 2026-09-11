@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,6 +21,7 @@ import type {
 describe('useDetailSupport', () => {
   let root: Root
   let container: HTMLDivElement
+  let queryClient: QueryClient
   let latest: ReturnType<typeof useDetailSupport<'purchase-order'>>
 
   function Probe() {
@@ -28,6 +30,25 @@ describe('useDetailSupport', () => {
       config: purchaseOrdersPageConfig,
     })
     return null
+  }
+
+  function renderOnce() {
+    act(() => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(Probe),
+        ),
+      )
+    })
+  }
+
+  const flushAsync = async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
   }
 
   beforeEach(() => {
@@ -39,9 +60,10 @@ describe('useDetailSupport', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
-    act(() => {
-      root.render(createElement(Probe))
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
     })
+    renderOnce()
   })
 
   afterEach(() => {
@@ -49,6 +71,7 @@ describe('useDetailSupport', () => {
       root.unmount()
     })
     container.remove()
+    queryClient.clear()
   })
 
   it('keeps multiple document details open independently', async () => {
@@ -61,8 +84,13 @@ describe('useDetailSupport', () => {
     await act(async () => {
       await latest.openDetail(secondRecord)
     })
+    await flushAsync()
 
     expect(latest.detailItems.map((item) => item.recordId)).toEqual(['1', '2'])
+    expect(latest.detailItems.map((item) => item.record?.id)).toEqual([
+      '1',
+      '2',
+    ])
     expect(getBusinessModuleDetailMock).toHaveBeenCalledTimes(2)
 
     act(() => {
@@ -82,6 +110,7 @@ describe('useDetailSupport', () => {
     await act(async () => {
       await latest.openInlineDetail(secondRecord)
     })
+    await flushAsync()
 
     expect(latest.inlineExpandedRowKeys).toEqual(['1', '2'])
     expect(
@@ -90,6 +119,7 @@ describe('useDetailSupport', () => {
       ['1', '1'],
       ['2', '2'],
     ])
+    expect(getBusinessModuleDetailMock).toHaveBeenCalledTimes(2)
 
     act(() => {
       latest.closeInlineDetail('1')

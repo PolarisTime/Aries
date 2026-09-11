@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -59,6 +60,7 @@ describe('useBusinessGridEditor', () => {
   let root: Root
   let container: HTMLDivElement
   let latest: ReturnType<typeof useBusinessGridEditor>
+  let queryClient: QueryClient
   let config: ModulePageConfig
 
   function Probe() {
@@ -72,7 +74,13 @@ describe('useBusinessGridEditor', () => {
 
   function renderOnce() {
     act(() => {
-      root.render(createElement(Probe))
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(Probe),
+        ),
+      )
     })
   }
 
@@ -89,6 +97,9 @@ describe('useBusinessGridEditor', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
     renderOnce()
   })
 
@@ -97,6 +108,7 @@ describe('useBusinessGridEditor', () => {
       root.unmount()
     })
     container.remove()
+    queryClient.clear()
   })
 
   it('opens a manual create editor and closes it cleanly', () => {

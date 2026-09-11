@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
+import { useState } from 'react'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { getModuleConfig } from '@/api/contracts/module-contracts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { hasModuleRecordItems } from '@/module-system/record/module-record-fields'
 import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
@@ -34,6 +36,18 @@ interface DetailSupportResult<Key extends ModuleKey> {
   closeDetail: (recordId: string) => void
 }
 
+interface DetailTarget<Key extends ModuleKey> {
+  recordId: string
+  fallbackRecord: ModuleDetailRecordFor<Key> | null
+  enabled: boolean
+}
+
+interface DetailQueryState<Key extends ModuleKey> {
+  data: ModuleDetailRecordFor<Key> | undefined
+  isLoading: boolean
+  error: unknown
+}
+
 function resolveDetailFallback<Key extends ModuleKey>(
   moduleKey: Key,
   record: ModuleListRecordFor<Key> | null,
@@ -45,209 +59,156 @@ function resolveDetailFallback(
   return isMainFlowModuleKey(moduleKey) ? null : record
 }
 
+function toDetailItem<Key extends ModuleKey>(
+  target: DetailTarget<Key>,
+  query: DetailQueryState<Key>,
+): DetailItem<Key> {
+  return {
+    recordId: target.recordId,
+    record: query.error != null ? null : (query.data ?? target.fallbackRecord),
+    loading: query.isLoading,
+    error: query.error,
+  }
+}
+
 export function useDetailSupport<Key extends ModuleKey>({
   moduleKey,
   config,
 }: Options<Key>): DetailSupportResult<Key> {
-  const [detailItems, setDetailItems] = useState<DetailItem<Key>[]>([])
-  const [inlineDetailItems, setInlineDetailItems] = useState<DetailItem<Key>[]>(
-    [],
+  const [detailTargets, setDetailTargets] = useState<DetailTarget<Key>[]>([])
+  const [inlineTargets, setInlineTargets] = useState<DetailTarget<Key>[]>([])
+
+  const detailQueries = useQueries({
+    queries: detailTargets.map((target) => ({
+      queryKey: QUERY_KEYS.businessGridDetail(moduleKey, target.recordId),
+      queryFn: async ({ signal }) => {
+        const record = await getBusinessModuleDetail(moduleKey, target.recordId)
+        signal.throwIfAborted()
+        return record
+      },
+      enabled: target.enabled,
+      staleTime: 5_000,
+    })),
+  })
+
+  const inlineQueries = useQueries({
+    queries: inlineTargets.map((target) => ({
+      queryKey: QUERY_KEYS.businessGridDetail(moduleKey, target.recordId),
+      queryFn: async ({ signal }) => {
+        const record = await getBusinessModuleDetail(moduleKey, target.recordId)
+        signal.throwIfAborted()
+        return record
+      },
+      enabled: target.enabled,
+      staleTime: 5_000,
+    })),
+  })
+
+  const detailItems = detailTargets.map((target, index) =>
+    toDetailItem(target, detailQueries[index]),
   )
-  const requestSequenceRef = useRef(0)
-  const detailRequestVersionsRef = useRef(new Map<string, number>())
-  const inlineRequestVersionsRef = useRef(new Map<string, number>())
-  const inlineExpandedRowKeys = inlineDetailItems.map((item) => item.recordId)
+  const inlineDetailItems = inlineTargets.map((target, index) =>
+    toDetailItem(target, inlineQueries[index]),
+  )
+  const inlineExpandedRowKeys = inlineTargets.map((item) => item.recordId)
 
-  const updateDetailItem = (
-    recordId: string,
-    updater: (item: DetailItem<Key>) => DetailItem<Key>,
-  ) => {
-    setDetailItems((prev) =>
-      prev.map((item) => (item.recordId === recordId ? updater(item) : item)),
-    )
-  }
-
-  const loadDetail = async (recordId: string) => {
-    const requestVersion = ++requestSequenceRef.current
-    detailRequestVersionsRef.current.set(recordId, requestVersion)
-    updateDetailItem(recordId, (item) => ({
-      ...item,
-      loading: true,
-      error: null,
-    }))
-    try {
-      const record = await getBusinessModuleDetail(moduleKey, recordId)
-      if (detailRequestVersionsRef.current.get(recordId) === requestVersion) {
-        updateDetailItem(recordId, (item) => ({
-          ...item,
-          record,
-          loading: false,
-        }))
-      }
-    } catch (error) {
-      if (detailRequestVersionsRef.current.get(recordId) === requestVersion) {
-        updateDetailItem(recordId, (item) => ({
-          ...item,
-          record: null,
-          error,
-          loading: false,
-        }))
-      }
-    } finally {
-      if (detailRequestVersionsRef.current.get(recordId) === requestVersion) {
-        updateDetailItem(recordId, (item) => ({
-          ...item,
-          loading: false,
-        }))
-      }
-    }
-  }
-
-  const updateInlineDetailItem = (
-    recordId: string,
-    updater: (item: DetailItem<Key>) => DetailItem<Key>,
-  ) => {
-    setInlineDetailItems((prev) =>
-      prev.map((item) => (item.recordId === recordId ? updater(item) : item)),
-    )
-  }
-
-  const loadInlineDetail = async (recordId: string) => {
-    const requestVersion = ++requestSequenceRef.current
-    inlineRequestVersionsRef.current.set(recordId, requestVersion)
-    updateInlineDetailItem(recordId, (item) => ({
-      ...item,
-      loading: true,
-      error: null,
-    }))
-    try {
-      const record = await getBusinessModuleDetail(moduleKey, recordId)
-      if (inlineRequestVersionsRef.current.get(recordId) === requestVersion) {
-        updateInlineDetailItem(recordId, (item) => ({
-          ...item,
-          record,
-          loading: false,
-        }))
-      }
-    } catch (error) {
-      if (inlineRequestVersionsRef.current.get(recordId) === requestVersion) {
-        updateInlineDetailItem(recordId, (item) => ({
-          ...item,
-          record: null,
-          error,
-          loading: false,
-        }))
-      }
-    }
-  }
-
-  const openDetail = async (target: string | ModuleListRecordFor<Key>) => {
+  const openDetail = (
+    target: string | ModuleListRecordFor<Key>,
+  ): Promise<void> => {
     const fallbackRecord = typeof target === 'string' ? null : target
     const recordId =
       typeof target === 'string' ? target : String(target.id || '')
+    if (!recordId) {
+      return Promise.resolve()
+    }
+
     const endpointConfig = getModuleConfig(moduleKey)
     const requiresDetailFetch = Boolean(
       config?.detailItemColumns?.length || config?.itemColumns?.length,
     )
+    const shouldLoad = !(
+      (endpointConfig.readOnly && !endpointConfig.supportsDetail) ||
+      (fallbackRecord &&
+        !isMainFlowModuleKey(moduleKey) &&
+        (!requiresDetailFetch || hasModuleRecordItems(fallbackRecord)))
+    )
 
-    if (!recordId) return
-
-    setDetailItems((prev) => {
+    setDetailTargets((prev) => {
       if (prev.some((item) => item.recordId === recordId)) return prev
       return [
         ...prev,
         {
           recordId,
-          record: resolveDetailFallback(moduleKey, fallbackRecord),
-          loading: false,
-          error: null,
+          fallbackRecord: resolveDetailFallback(moduleKey, fallbackRecord),
+          enabled: shouldLoad,
         },
       ]
     })
 
-    if (endpointConfig.readOnly && !endpointConfig.supportsDetail) {
-      return
-    }
-
-    if (
-      fallbackRecord &&
-      !isMainFlowModuleKey(moduleKey) &&
-      (!requiresDetailFetch || hasModuleRecordItems(fallbackRecord))
-    ) {
-      return
-    }
-
-    await loadDetail(recordId)
+    return Promise.resolve()
   }
 
   const retryDetail = (recordId: string) => {
-    if (detailItems.some((item) => item.recordId === recordId)) {
-      void loadDetail(recordId)
-    }
+    const index = detailTargets.findIndex((item) => item.recordId === recordId)
+    if (index < 0) return
+    void detailQueries[index].refetch()
   }
 
-  const openInlineDetail = async (target: ModuleListRecordFor<Key>) => {
+  const openInlineDetail = (
+    target: ModuleListRecordFor<Key>,
+  ): Promise<void> => {
     const recordId = String(target.id || '')
     if (!recordId) {
-      return
+      return Promise.resolve()
     }
 
-    setInlineDetailItems((prev) => {
+    const endpointConfig = getModuleConfig(moduleKey)
+    const hasConfiguredItemColumns = Boolean(
+      config?.detailItemColumns?.length || config?.itemColumns?.length,
+    )
+    const shouldLoad = !(
+      (endpointConfig.readOnly &&
+        !endpointConfig.supportsDetail &&
+        !isMainFlowModuleKey(moduleKey)) ||
+      (!isMainFlowModuleKey(moduleKey) &&
+        (!hasConfiguredItemColumns || hasModuleRecordItems(target)))
+    )
+
+    setInlineTargets((prev) => {
       if (prev.some((item) => item.recordId === recordId)) return prev
       return [
         ...prev,
         {
           recordId,
-          record: resolveDetailFallback(moduleKey, target),
-          loading: false,
-          error: null,
+          fallbackRecord: resolveDetailFallback(moduleKey, target),
+          enabled: shouldLoad,
         },
       ]
     })
 
-    const endpointConfig = getModuleConfig(moduleKey)
-    if (
-      endpointConfig.readOnly &&
-      !endpointConfig.supportsDetail &&
-      !isMainFlowModuleKey(moduleKey)
-    ) {
-      return
-    }
-
-    const hasConfiguredItemColumns = Boolean(
-      config?.detailItemColumns?.length || config?.itemColumns?.length,
-    )
-    if (
-      !isMainFlowModuleKey(moduleKey) &&
-      (!hasConfiguredItemColumns || hasModuleRecordItems(target))
-    ) {
-      return
-    }
-
-    await loadInlineDetail(recordId)
+    return Promise.resolve()
   }
 
   const retryInlineDetail = (recordId: string) => {
-    if (inlineDetailItems.some((item) => item.recordId === recordId)) {
-      void loadInlineDetail(recordId)
-    }
+    const index = inlineTargets.findIndex((item) => item.recordId === recordId)
+    if (index < 0) return
+    void inlineQueries[index].refetch()
   }
 
   const closeInlineDetail = (recordId?: string) => {
     if (recordId) {
-      inlineRequestVersionsRef.current.delete(recordId)
-      setInlineDetailItems((prev) =>
+      setInlineTargets((prev) =>
         prev.filter((item) => item.recordId !== recordId),
       )
       return
     }
-    inlineRequestVersionsRef.current.clear()
-    setInlineDetailItems([])
+    setInlineTargets([])
   }
 
   const closeDetail = (recordId: string) => {
-    detailRequestVersionsRef.current.delete(recordId)
-    setDetailItems((prev) => prev.filter((item) => item.recordId !== recordId))
+    setDetailTargets((prev) =>
+      prev.filter((item) => item.recordId !== recordId),
+    )
   }
 
   return {
