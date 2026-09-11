@@ -69,3 +69,24 @@ export async function fetchMaterialPriceMatches(
   }
   return all
 }
+
+const steelQuoteCalendarSchema = z.array(
+  z.looseObject({
+    quoteDate: z.string(),
+    periods: z.array(z.string()),
+  }),
+)
+
+export type SteelQuoteCalendarItem = z.infer<
+  typeof steelQuoteCalendarSchema
+>[number]
+
+/** 行情日历: 指定区间内有行情的日期与可用时段。 */
+export function fetchSteelQuoteCalendars(
+  from: string,
+  to: string,
+): Promise<SteelQuoteCalendarItem[]> {
+  return apiGet(ENDPOINTS.STEEL_QUOTE_CALENDARS, steelQuoteCalendarSchema, {
+    params: { from, to },
+  })
+}

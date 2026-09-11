@@ -22,9 +22,10 @@ import {
   Watermark,
 } from 'antd'
 import { isAxiosError } from 'axios'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   fetchMaterialPriceMatches,
+  fetchSteelQuoteCalendars,
   syncSteelQuotes,
 } from '@/api/market/steel-quotes'
 import { useAuthStore } from '@/stores/authStore'
@@ -124,6 +125,8 @@ export function PriceCompareView() {
   const initialized = useRef(false)
   const fetchedDates = useRef<Set<string>>(new Set())
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const [availability, setAvailability] = useState<Record<string, string[]>>({})
+  const availabilityLoaded = useRef(false)
 
   useEffect(() => {
     if (initialized.current || !projects.length) return
@@ -163,6 +166,28 @@ export function PriceCompareView() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
+
+  const loadAvailability = useCallback(() => {
+    const now = Date.now()
+    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10)
+    const from = iso(now - 120 * 86400000)
+    const to = iso(now + 14 * 86400000)
+    fetchSteelQuoteCalendars(from, to)
+      .then((rows) => {
+        const map: Record<string, string[]> = {}
+        for (const row of rows) map[row.quoteDate] = row.periods
+        setAvailability(map)
+      })
+      .catch((error) => {
+        console.error('行情日历加载失败', error)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated || availabilityLoaded.current) return
+    availabilityLoaded.current = true
+    loadAvailability()
+  }, [isAuthenticated, loadAvailability])
 
   useEffect(() => {
     if (!active || !isAuthenticated) return
@@ -223,6 +248,7 @@ export function PriceCompareView() {
         message.warning(
           `已拉取 ${result.articleDate} ${result.period} 行情，但商品资料未匹配到网价`,
         )
+      loadAvailability()
       message.success(
         `已拉取 ${result.articleDate} ${result.period} 行情，共 ${result.rowCount} 条${result.created ? '' : '（已存在，未重复入库）'}`,
       )
@@ -467,6 +493,7 @@ export function PriceCompareView() {
             }}
             syncing={syncing}
             allowHrb400eFallback={config.hrb400eFallback}
+            availability={availability}
             spotRef={spotRef}
           />
         </Watermark>

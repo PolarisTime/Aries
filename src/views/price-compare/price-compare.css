@@ -277,3 +277,35 @@
   padding-inline: 4px !important;
   font-variant-numeric: tabular-nums;
 }
+
+/* 参照网价日历: 上/中/下午点位 */
+.price-compare-cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.price-compare-cal-dots {
+  display: flex;
+  gap: 3px;
+  margin-top: 1px;
+}
+
+.price-compare-cal-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.15));
+}
+
+.price-compare-cal-dots i.is-on {
+  background: var(--theme-primary);
+}
+
+.ant-picker-cell-selected .price-compare-cal-dots i {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ant-picker-cell-selected .price-compare-cal-dots i.is-on {
+  background: #fff;
+}

@@ -593,6 +593,7 @@ function SheetHeader({
   onAddGroup,
   onSyncPrice,
   syncing,
+  availability,
   selectedCount,
   onRemoveSelected,
 }: {
@@ -604,6 +605,7 @@ function SheetHeader({
   onAddGroup: () => void
   onSyncPrice: () => void
   syncing: boolean
+  availability: Record<string, string[]>
   selectedCount: number
   onRemoveSelected: () => void
 }) {
@@ -646,6 +648,24 @@ function SheetHeader({
               value={refDate ? dayjs(refDate) : null}
               format={DATE_FMT}
               allowClear={false}
+              cellRender={(current, info) => {
+                if (info.type !== 'date') return info.originNode
+                const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
+                const periods = availability[key] ?? []
+                return (
+                  <div className="price-compare-cal-cell">
+                    {info.originNode}
+                    <div className="price-compare-cal-dots">
+                      {['上午', '中午', '下午'].map((period) => (
+                        <i
+                          key={period}
+                          className={periods.includes(period) ? 'is-on' : ''}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              }}
               onChange={(value) => {
                 if (!value) return
                 const date = value.format('YYYY-MM-DD')
@@ -719,6 +739,7 @@ type Props = {
   onSyncPrice: () => void
   syncing?: boolean
   allowHrb400eFallback?: boolean
+  availability?: Record<string, string[]>
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -739,6 +760,7 @@ export function SheetPanel(props: Props) {
     onSyncPrice,
     syncing = false,
     allowHrb400eFallback = false,
+    availability = {},
     chrome = true,
     spotRef,
   } = props
@@ -910,6 +932,7 @@ export function SheetPanel(props: Props) {
         onAddGroup={addGroup}
         onSyncPrice={onSyncPrice}
         syncing={syncing}
+        availability={availability}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
       />
