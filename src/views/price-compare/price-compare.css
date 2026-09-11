@@ -327,3 +327,23 @@
   color: var(--ant-color-primary-active, #0958d9) !important;
   box-shadow: inset 0 0 0 1px var(--ant-color-primary, #1677ff);
 }
+
+/* 可选商品: 内联勾选面板 */
+.price-compare-product-panel {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius, 6px);
+  padding: 8px 10px;
+}
+
+.price-compare-product-group + .price-compare-product-group {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.price-compare-product-items {
+  margin-top: 6px;
+  padding-left: 24px;
+}

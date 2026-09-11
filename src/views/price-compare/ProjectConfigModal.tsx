@@ -1,5 +1,4 @@
 import { SearchOutlined } from '@ant-design/icons'
-import type { TreeSelectProps } from 'antd'
 import {
   Button,
   Checkbox,
@@ -12,7 +11,6 @@ import {
   Switch,
   Tabs,
   Tag,
-  TreeSelect,
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -29,6 +27,9 @@ const varietyLabel = (item: Variety) =>
   [item.material, item.spec, item.length === '-' ? '' : item.length]
     .filter(Boolean)
     .join(' ')
+
+const varietyShort = (item: Variety) =>
+  [item.spec, item.length === '-' ? '' : item.length].filter(Boolean).join(' ')
 
 export type ProjectConfigDraft = {
   brands: string[]
@@ -260,148 +261,170 @@ function ProductSection({
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
   const [material, setMaterial] = useState<string>('')
+  const [keyword, setKeyword] = useState('')
+
+  const allKeys = useMemo(() => varieties.map(varietyKey), [varieties])
+  const restricted = draft.products.length > 0
+  const selectedSet = useMemo(() => new Set(draft.products), [draft.products])
 
   const materials = useMemo(
     () => [...new Set(varieties.map((item) => item.material))],
     [varieties],
   )
-  const productKeys = useMemo(
-    () => new Set(varieties.map(varietyKey)),
-    [varieties],
-  )
 
-  const visible = useMemo(
-    () =>
-      material
-        ? varieties.filter((item) => item.material === material)
-        : varieties,
-    [varieties, material],
-  )
+  const visible = useMemo(() => {
+    const query = keyword.trim()
+    return varieties.filter(
+      (item) =>
+        (!material || item.material === material) &&
+        (!query || varietyLabel(item).includes(query)),
+    )
+  }, [varieties, material, keyword])
 
-  const treeData: TreeSelectProps['treeData'] = useMemo(
+  const groups = useMemo(
     () =>
       CATEGORIES.map((category) => ({
-        title: category,
-        value: `__category__:${category}`,
-        selectable: false,
-        children: visible
-          .filter((item) => item.category === category)
-          .map((item) => ({
-            title: varietyLabel(item),
-            value: varietyKey(item),
-          })),
-      })).filter((node) => node.children.length > 0),
+        category,
+        items: visible.filter((item) => item.category === category),
+      })).filter((group) => group.items.length > 0),
     [visible],
   )
 
-  const materialKeys = visible.map(varietyKey)
+  const toggleKey = (key: string, checked: boolean) =>
+    onChange({
+      products: checked
+        ? [...new Set([...draft.products, key])]
+        : draft.products.filter((item) => item !== key),
+    })
+
+  const toggleGroup = (keys: string[], checked: boolean) =>
+    onChange({
+      products: checked
+        ? [...new Set([...draft.products, ...keys])]
+        : draft.products.filter((item) => !keys.includes(item)),
+    })
 
   return (
-    <>
+    <Flex vertical gap={10}>
       <Flex justify="space-between" align="center" gap={8} wrap="wrap">
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          可选商品（留空=全部可选；用于精简表格商品下拉）
-        </Text>
-        <Space size={4}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            已选 {draft.products.length ? draft.products.length : '全部'}
+        <Flex align="center" gap={8}>
+          <Switch
+            size="small"
+            checked={restricted}
+            onChange={(checked) =>
+              onChange({ products: checked ? allKeys : [] })
+            }
+          />
+          <Text style={{ fontSize: 12 }}>
+            {restricted ? '仅允许勾选以下商品' : '全部商品可选（默认）'}
           </Text>
-          <Button
-            size="small"
-            type="text"
-            onClick={() => onChange({ products: varieties.map(varietyKey) })}
-          >
-            全选
-          </Button>
-          <Button
-            size="small"
-            type="text"
-            onClick={() => onChange({ products: [] })}
-          >
-            清空
-          </Button>
-        </Space>
-      </Flex>
-
-      <Flex gap={6} align="center" wrap="wrap" style={{ marginTop: 8 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          材质
-        </Text>
-        <Tag.CheckableTag
-          checked={material === ''}
-          onChange={() => setMaterial('')}
-        >
-          全部
-        </Tag.CheckableTag>
-        {materials.map((item) => (
-          <Tag.CheckableTag
-            key={item}
-            checked={material === item}
-            onChange={() => setMaterial(item)}
-          >
-            {item}
-          </Tag.CheckableTag>
-        ))}
-        {material ? (
-          <>
+        </Flex>
+        {restricted ? (
+          <Space size={4}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              已选 {draft.products.length}/{allKeys.length}
+            </Text>
             <Button
               size="small"
-              type="link"
-              style={{ padding: 0 }}
-              onClick={() =>
-                onChange({
-                  products: [...new Set([...draft.products, ...materialKeys])],
-                })
-              }
+              onClick={() => onChange({ products: allKeys })}
             >
-              选中该材质全部
+              全选
             </Button>
-            <Button
-              size="small"
-              type="link"
-              style={{ padding: 0 }}
-              onClick={() =>
-                onChange({
-                  products: draft.products.filter(
-                    (key) => !materialKeys.includes(key),
-                  ),
-                })
-              }
-            >
-              取消该材质
+            <Button size="small" onClick={() => onChange({ products: [] })}>
+              清空
             </Button>
-          </>
+          </Space>
         ) : null}
       </Flex>
 
-      <TreeSelect
-        treeCheckable
-        showCheckedStrategy={TreeSelect.SHOW_CHILD}
-        size="small"
-        style={{ width: '100%', marginTop: 8 }}
-        placeholder="搜索并勾选可报单的商品"
-        allowClear
-        showSearch
-        treeNodeFilterProp="title"
-        treeDefaultExpandAll
-        maxTagCount="responsive"
-        treeData={treeData}
-        value={draft.products.filter((key) => materialKeys.includes(key))}
-        onChange={(values: string[]) => {
-          const kept = draft.products.filter(
-            (key) => !productKeys.has(key) || !materialKeys.includes(key),
-          )
-          onChange({
-            products: [
-              ...new Set([
-                ...kept,
-                ...values.filter((value) => productKeys.has(value)),
-              ]),
-            ],
-          })
-        }}
-      />
-    </>
+      {restricted ? (
+        <>
+          <Flex gap={6} align="center" wrap="wrap">
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              材质
+            </Text>
+            <Tag.CheckableTag
+              checked={material === ''}
+              onChange={() => setMaterial('')}
+            >
+              全部
+            </Tag.CheckableTag>
+            {materials.map((item) => (
+              <Tag.CheckableTag
+                key={item}
+                checked={material === item}
+                onChange={() => setMaterial(item)}
+              >
+                {item}
+              </Tag.CheckableTag>
+            ))}
+            <Input
+              size="small"
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="搜索规格"
+              style={{ width: 150, marginLeft: 'auto' }}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+            />
+          </Flex>
+
+          <div className="price-compare-product-panel">
+            {groups.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="无匹配商品"
+              />
+            ) : (
+              groups.map((group) => {
+                const keys = group.items.map(varietyKey)
+                const selectedCount = keys.filter((key) =>
+                  selectedSet.has(key),
+                ).length
+                const allChecked = selectedCount === keys.length
+                return (
+                  <div
+                    key={group.category}
+                    className="price-compare-product-group"
+                  >
+                    <Flex justify="space-between" align="center">
+                      <Checkbox
+                        checked={allChecked}
+                        indeterminate={selectedCount > 0 && !allChecked}
+                        onChange={(event) =>
+                          toggleGroup(keys, event.target.checked)
+                        }
+                      >
+                        {group.category}
+                      </Checkbox>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        {selectedCount}/{keys.length}
+                      </Text>
+                    </Flex>
+                    <Flex wrap gap={8} className="price-compare-product-items">
+                      {group.items.map((item) => {
+                        const key = varietyKey(item)
+                        return (
+                          <Checkbox
+                            key={key}
+                            checked={selectedSet.has(key)}
+                            onChange={(event) =>
+                              toggleKey(key, event.target.checked)
+                            }
+                          >
+                            {material ? varietyShort(item) : varietyLabel(item)}
+                          </Checkbox>
+                        )
+                      })}
+                    </Flex>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </>
+      ) : null}
+    </Flex>
   )
 }
 
@@ -418,7 +441,6 @@ type Props = {
 
 /**
  * 项目配置: 基础(12米加价/兜底) · 品牌与品种 · 可选商品。
- * 未勾选的品牌不生成列; 未启用的品种不显示价格; 可选商品限制表格商品下拉。
  */
 export function ProjectConfigModal({
   open,
