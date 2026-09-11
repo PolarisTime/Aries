@@ -1,0 +1,6 @@
+/* 统一键盘可见焦点环：低特异性全局兜底，组件级样式与 antd 字段焦点样式优先 */
+:where(a, button, [role="button"], [role="link"], summary):focus-visible {
+  outline: var(--focus-ring-width, 2px) solid
+    var(--focus-ring-color, var(--theme-highlight-border, #1677ff));
+  outline-offset: var(--focus-ring-offset, 2px);
+}

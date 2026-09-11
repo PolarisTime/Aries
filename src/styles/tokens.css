@@ -34,4 +34,12 @@
   --font-size-xl: var(--ant-font-size-xl, 20px);
   --font-size-2xl: var(--ant-font-size-heading-3, 24px);
   --font-size-3xl: var(--ant-font-size-heading-2, 30px);
+
+  /* 焦点环：统一键盘可见焦点样式，供 focus.css 与组件级 :focus-visible 复用 */
+  --focus-ring-color: var(
+    --theme-highlight-border,
+    var(--theme-primary, #1677ff)
+  );
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 }
