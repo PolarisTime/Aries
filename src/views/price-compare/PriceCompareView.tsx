@@ -1,72 +1,21 @@
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
-import {
-  Alert,
-  Badge,
-  Button,
-  Empty,
-  Flex,
-  Segmented,
-  Select,
-  Skeleton,
-  Tag,
-  Tour,
-  Typography,
-  Watermark,
-} from 'antd'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  fetchMaterialPriceMatches,
-  fetchSteelQuoteCalendars,
-} from '@/api/market/steel-quotes'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { STALE_STATIC } from '@/constants/query-policies'
+import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
+import { useEffect, useRef, useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
-import { message, modal } from '@/utils/antd-app'
-import { countMissing, moveItem, resolveRef } from './core'
+import { modal } from '@/utils/antd-app'
+import { moveItem } from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
+import {
+  PriceCompareBatchBar,
+  PriceCompareProjectPicker,
+} from './price-compare-pickers'
+import { projectGroupsOf, TOUR_KEY } from './price-compare-support'
+import { PriceCompareTour } from './price-compare-tour'
 import { SheetPanel } from './SheetPanel'
-import type { PriceSheet, ProjectOption } from './types'
 import { useMaterialBrands } from './useMaterialBrands'
 import { usePriceCompareData } from './usePriceCompareData'
+import { usePriceComparePricing } from './usePriceComparePricing'
 import { useSheetsStore } from './useSheetsStore'
 import './price-compare.css'
-
-const { Text } = Typography
-const TOUR_KEY = 'aries-price-compare-tour'
-
-function projectAbbrOf(
-  projects: ProjectOption[],
-  projectId: string,
-  fallback: string,
-): string {
-  for (const project of projects) {
-    if (project.id === projectId) return project.abbr || project.name
-  }
-  return fallback || '未指定项目'
-}
-
-function projectGroupsOf(
-  sheets: PriceSheet[],
-): { projectId: string; projectName: string; sheets: PriceSheet[] }[] {
-  const byId = new Map<
-    string,
-    { projectId: string; projectName: string; sheets: PriceSheet[] }
-  >()
-  for (const sheet of sheets) {
-    let group = byId.get(sheet.projectId)
-    if (!group) {
-      group = {
-        projectId: sheet.projectId,
-        projectName: sheet.projectName,
-        sheets: [],
-      }
-      byId.set(sheet.projectId, group)
-    }
-    group.sheets.push(sheet)
-  }
-  return [...byId.values()]
-}
 
 /** 报单比价页: 顶部胶囊(项目/批次) + 单据表格。 */
 export function PriceCompareView() {
@@ -100,7 +49,6 @@ export function PriceCompareView() {
   const lengthPremium = config.lengthPremium
 
   const [configOpen, setConfigOpen] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
@@ -154,81 +102,23 @@ export function PriceCompareView() {
     })
   }, [active, patchSheet])
 
-  const availabilityRange = useMemo(() => {
-    const now = Date.now()
-    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10)
-    return {
-      from: iso(now - 120 * 86400000),
-      to: iso(now + 14 * 86400000),
-    }
-  }, [])
-
-  const availabilityQuery = useQuery({
-    queryKey: QUERY_KEYS.priceCompare.steelQuoteCalendars(
-      availabilityRange.from,
-      availabilityRange.to,
-    ),
-    queryFn: ({ signal }) =>
-      fetchSteelQuoteCalendars(
-        availabilityRange.from,
-        availabilityRange.to,
-        signal,
-      ),
-    enabled: isAuthenticated,
-    staleTime: STALE_STATIC,
-    retry: 1,
-  })
-
-  const availability = useMemo(() => {
-    const map: Record<string, string[]> = {}
-    for (const row of availabilityQuery.data ?? [])
-      map[row.quoteDate] = row.periods
-    return map
-  }, [availabilityQuery.data])
-
-  const activeSheetId = active?.id ?? ''
-  const activeRefDate = active?.refDate ?? ''
-  const activeRefPeriod = active?.refPeriod ?? ''
-  const isLatestRef = Boolean(active) && !activeRefDate
-  const calendarPeriods = activeRefDate
-    ? availability[activeRefDate]?.length
-      ? availability[activeRefDate]
-      : Object.keys(data[activeRefDate] ?? {})
-    : []
-  const resolvedRefPeriod = activeRefDate
-    ? activeRefPeriod && calendarPeriods.includes(activeRefPeriod)
-      ? activeRefPeriod
-      : (calendarPeriods[0] ?? '')
-    : ''
-  const hasResolvedPriceData = Boolean(
-    activeRefDate &&
-      resolvedRefPeriod &&
-      Object.keys(data[activeRefDate]?.[resolvedRefPeriod] ?? {}).length,
-  )
+  const {
+    activeRefDate,
+    activeRefPeriod,
+    activeSheetId,
+    availability,
+    isLatestRef,
+    matchesData,
+    onRefreshPrice,
+    refPeriods,
+    refreshing,
+    resolvedRefPeriod,
+  } = usePriceComparePricing({ active, data, isAuthenticated })
 
   const patchSheetRef = useRef(patchSheet)
   useEffect(() => {
     patchSheetRef.current = patchSheet
   }, [patchSheet])
-
-  const matchesQuery = useQuery({
-    queryKey: QUERY_KEYS.priceCompare.materialPriceMatches(
-      activeRefDate,
-      resolvedRefPeriod,
-    ),
-    queryFn: ({ signal }) =>
-      fetchMaterialPriceMatches(
-        activeRefDate,
-        activeRefDate ? resolvedRefPeriod : undefined,
-        signal,
-      ),
-    enabled:
-      isAuthenticated &&
-      Boolean(activeSheetId) &&
-      (isLatestRef || (Boolean(resolvedRefPeriod) && !hasResolvedPriceData)),
-    staleTime: STALE_STATIC,
-    retry: 1,
-  })
 
   useEffect(() => {
     if (!activeSheetId || !activeRefDate || !resolvedRefPeriod) return
@@ -237,7 +127,7 @@ export function PriceCompareView() {
   }, [activeSheetId, activeRefDate, activeRefPeriod, resolvedRefPeriod])
 
   useEffect(() => {
-    const matches = matchesQuery.data
+    const matches = matchesData
     if (!activeSheetId || !matches?.length) return
     mergeMatches(matches)
     if (isLatestRef) {
@@ -248,17 +138,7 @@ export function PriceCompareView() {
         ...(activeRefPeriod ? {} : { refPeriod: period }),
       })
     }
-  }, [
-    activeSheetId,
-    activeRefPeriod,
-    isLatestRef,
-    matchesQuery.data,
-    mergeMatches,
-  ])
-
-  const refPeriods = active?.refDate
-    ? (availability[active.refDate] ?? Object.keys(data[active.refDate] ?? {}))
-    : []
+  }, [activeSheetId, activeRefPeriod, isLatestRef, matchesData, mergeMatches])
 
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =
@@ -271,35 +151,6 @@ export function PriceCompareView() {
       ? (Object.keys(data[defaultRefDate] ?? {})[0] ?? '')
       : ''
   const today = new Date().toISOString().slice(0, 10)
-
-  /** 刷新读取: 重新拉取当前参照日期/时段的后端网价(不对后端做同步操作)。 */
-  const onRefreshPrice = async () => {
-    if (!isAuthenticated) {
-      message.error('请先登录后再读取网价')
-      return
-    }
-    setRefreshing(true)
-    try {
-      await availabilityQuery.refetch()
-      if (!active) return
-      const result = await matchesQuery.refetch()
-      if (result.error) throw result.error
-      if (!activeRefDate) {
-        message.success('已读取最新网价')
-        return
-      }
-      message.success(
-        `已读取 ${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''} 网价`,
-      )
-    } catch (error) {
-      console.error('读取网价失败', error)
-      message.error(
-        `读取网价失败：${error instanceof Error ? error.message : '请稍后重试'}`,
-      )
-    } finally {
-      setRefreshing(false)
-    }
-  }
 
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({
@@ -339,120 +190,41 @@ export function PriceCompareView() {
         </div>
       </div>
 
-      <Flex
-        gap={8}
-        align="center"
-        wrap="wrap"
-        justify="space-between"
-        style={{ marginBottom: 8 }}
-      >
-        <Flex gap={8} align="center" wrap="wrap">
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            项目
-          </Text>
-          {projectGroups.map((group) => (
-            <Tag.CheckableTag
-              key={group.projectId}
-              checked={group.projectId === currentGroup?.projectId}
-              onChange={() =>
-                group.sheets[0] && setActiveId(group.sheets[0].id)
-              }
-            >
-              {projectAbbrOf(projects, group.projectId, group.projectName)}
-            </Tag.CheckableTag>
-          ))}
-          <Select
-            size="small"
-            style={{ width: 150 }}
-            placeholder="新增项目批次"
-            showSearch={{ optionFilterProp: 'label' }}
-            value={null}
-            options={projects.flatMap((project) =>
-              projectGroups.some((group) => group.projectId === project.id)
-                ? []
-                : [
-                    {
-                      value: project.id,
-                      label: `${project.abbr} · ${project.name}`,
-                    },
-                  ],
-            )}
-            onChange={(projectId) => {
-              const project = projects.find((item) => item.id === projectId)
-              if (project)
-                addSheet(
-                  project.id,
-                  project.abbr || project.name,
-                  today,
-                  defaultRefDate,
-                  defaultRefPeriod,
-                )
-            }}
-          />
-        </Flex>
-      </Flex>
+      <PriceCompareProjectPicker
+        projects={projects}
+        projectGroups={projectGroups}
+        currentGroup={currentGroup}
+        onSelectSheet={setActiveId}
+        onAddProject={(project) =>
+          addSheet(
+            project.id,
+            project.abbr || project.name,
+            today,
+            defaultRefDate,
+            defaultRefPeriod,
+          )
+        }
+      />
 
-      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          批次
-        </Text>
-        <Segmented
-          size="small"
-          value={activeId}
-          onChange={(value) => setActiveId(String(value))}
-          options={(currentGroup?.sheets ?? []).map((sheet) => ({
-            value: sheet.id,
-            label: (
-              <span>
-                {sheet.name}
-                {countMissing(
-                  data,
-                  { ...sheet, ...resolveRef(data, sheet) },
-                  sheet.rows,
-                  brands,
-                ) > 0 ? (
-                  <Badge
-                    count={countMissing(
-                      data,
-                      { ...sheet, ...resolveRef(data, sheet) },
-                      sheet.rows,
-                      brands,
-                    )}
-                    size="small"
-                    color="#faad14"
-                    style={{ marginLeft: 6 }}
-                  />
-                ) : null}
-              </span>
-            ),
-          }))}
-        />
-        <Button
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={() =>
-            addSheet(
-              currentGroup?.projectId ?? '',
-              currentGroup?.projectName ?? '',
-              today,
-              defaultRefDate,
-              defaultRefPeriod,
-            )
-          }
-        >
-          新批次
-        </Button>
-        <Button
-          size="small"
-          danger
-          icon={<DeleteOutlined />}
-          disabled={!active || sheets.length <= 1}
-          title={sheets.length <= 1 ? '至少保留一个批次' : '删除当前批次'}
-          onClick={() => active && confirmRemoveSheet(active.id)}
-        >
-          删除批次
-        </Button>
-      </Flex>
+      <PriceCompareBatchBar
+        active={active}
+        activeId={activeId}
+        brands={brands}
+        currentGroup={currentGroup}
+        data={data}
+        sheets={sheets}
+        onSelectSheet={setActiveId}
+        onAddBatch={() =>
+          addSheet(
+            currentGroup?.projectId ?? '',
+            currentGroup?.projectName ?? '',
+            today,
+            defaultRefDate,
+            defaultRefPeriod,
+          )
+        }
+        onDeleteBatch={confirmRemoveSheet}
+      />
 
       {active ? (
         <Watermark
@@ -500,25 +272,10 @@ export function PriceCompareView() {
         onSave={(next) => setConfig(next)}
       />
 
-      <Tour
+      <PriceCompareTour
         open={tourOpen}
-        onClose={() => {
-          setTourOpen(false)
-          localStorage.setItem(TOUR_KEY, '1')
-        }}
-        steps={[
-          {
-            title: '选择项目/批次',
-            description: '在顶部切换项目与批次；每个批次对应一次报价',
-            target: () => document.body,
-          },
-          {
-            title: '分组与录入',
-            description:
-              '支持添加分组与拖动排序；录入现货价，按回车或方向键切换行',
-            target: () => spotRef.current ?? document.body,
-          },
-        ]}
+        onClose={() => setTourOpen(false)}
+        spotRef={spotRef}
       />
     </div>
   )
