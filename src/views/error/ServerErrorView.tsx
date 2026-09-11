@@ -11,7 +11,7 @@ export function ServerErrorView() {
 
   const handleRetry = () => {
     const retryPath = resolveServerErrorRetryPath(location.searchStr)
-    void navigate({ to: retryPath as '/' })
+    void navigate({ to: retryPath })
   }
 
   return (

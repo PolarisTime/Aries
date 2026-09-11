@@ -67,7 +67,7 @@ export function AppResult({
         <Button
           type="primary"
           onClick={() => {
-            void navigate({ to: '/dashboard' as '/' })
+            void navigate({ to: '/dashboard' })
           }}
         >
           {resolvedHomeButtonText}

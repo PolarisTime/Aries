@@ -36,7 +36,7 @@ export function ErrorView() {
   }, [error, traceId])
 
   const handleRetry = () => {
-    void navigate({ to: router.state.location.pathname as '/' })
+    void navigate({ to: router.state.location.pathname })
   }
 
   return (
