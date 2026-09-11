@@ -234,7 +234,7 @@ export function useBusinessGridEditor({
 
   const navigateToDetailRoute = (routePath: string, record: ModuleRecord) => {
     const path = routePath.replace(':projectId', String(record.projectId))
-    void navigate({ to: path as never })
+    void navigate({ to: path })
   }
 
   const shouldUseDetailAction = Boolean(

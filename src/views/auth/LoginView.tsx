@@ -22,7 +22,7 @@ export function LoginView() {
     try {
       await signIn(values)
       message.success(t('auth.loginSuccess'))
-      await navigate({ to: buildPostLoginTarget() as '/' })
+      await navigate({ to: buildPostLoginTarget() })
     } catch (err) {
       showError(err, t('auth.loginFailed'))
     } finally {
