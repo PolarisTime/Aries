@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { getModuleConfig } from '@/api/contracts/module-contracts'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_REALTIME } from '@/constants/query-policies'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { hasModuleRecordItems } from '@/module-system/record/module-record-fields'
 import { isMainFlowModuleKey } from '@/shared/schemas/module-record'
@@ -87,7 +88,7 @@ export function useDetailSupport<Key extends ModuleKey>({
         return record
       },
       enabled: target.enabled,
-      staleTime: 5_000,
+      staleTime: STALE_REALTIME,
     })),
   })
 
@@ -100,7 +101,7 @@ export function useDetailSupport<Key extends ModuleKey>({
         return record
       },
       enabled: target.enabled,
-      staleTime: 5_000,
+      staleTime: STALE_REALTIME,
     })),
   })
 

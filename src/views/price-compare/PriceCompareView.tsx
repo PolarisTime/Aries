@@ -20,6 +20,7 @@ import {
   fetchSteelQuoteCalendars,
 } from '@/api/market/steel-quotes'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_STATIC } from '@/constants/query-policies'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
 import { countMissing, moveItem, resolveRef } from './core'
@@ -167,10 +168,14 @@ export function PriceCompareView() {
       availabilityRange.from,
       availabilityRange.to,
     ),
-    queryFn: () =>
-      fetchSteelQuoteCalendars(availabilityRange.from, availabilityRange.to),
+    queryFn: ({ signal }) =>
+      fetchSteelQuoteCalendars(
+        availabilityRange.from,
+        availabilityRange.to,
+        signal,
+      ),
     enabled: isAuthenticated,
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: STALE_STATIC,
     retry: 1,
   })
 
@@ -211,16 +216,17 @@ export function PriceCompareView() {
       activeRefDate,
       resolvedRefPeriod,
     ),
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       fetchMaterialPriceMatches(
         activeRefDate,
         activeRefDate ? resolvedRefPeriod : undefined,
+        signal,
       ),
     enabled:
       isAuthenticated &&
       Boolean(activeSheetId) &&
       (isLatestRef || (Boolean(resolvedRefPeriod) && !hasResolvedPriceData)),
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: STALE_STATIC,
     retry: 1,
   })
 

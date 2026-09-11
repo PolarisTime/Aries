@@ -34,6 +34,7 @@ import {
   type SettlementCompanyOption,
 } from '@/api/system/company-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -172,21 +173,21 @@ export function useMasterOptions(
     queryKey: QUERY_KEYS.masterOptions.supplier,
     queryFn: fetchSupplierOptions,
     enabled: queryEnabled && normalizedRequirements.suppliers,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.customer,
     queryFn: fetchCustomerOptions,
     enabled: queryEnabled && normalizedRequirements.customers,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: carriers = [], isLoading: carriersLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.carrier,
     queryFn: fetchCarrierOptions,
     enabled: queryEnabled && normalizedRequirements.carriers,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const {
@@ -196,7 +197,7 @@ export function useMasterOptions(
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
     queryFn: fetchSettlementCompanyOptions,
     enabled: queryEnabled && normalizedRequirements.settlementCompanies,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: materialGrades = [], isLoading: materialGradesLoading } =
@@ -204,14 +205,14 @@ export function useMasterOptions(
       queryKey: QUERY_KEYS.masterOptions.materialGrades,
       queryFn: fetchMaterialGrades,
       enabled: queryEnabled && normalizedRequirements.materialGrades,
-      staleTime: 300_000,
+      staleTime: STALE_MASTER_OPTIONS,
     })
 
   const { data: warehouses = [], isLoading: warehousesLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.warehouse,
     queryFn: fetchWarehouseOptions,
     enabled: queryEnabled && normalizedRequirements.warehouses,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const {
@@ -221,14 +222,15 @@ export function useMasterOptions(
     queryKey: QUERY_KEYS.masterOptions.materialCategories,
     queryFn: fetchMaterialCategories,
     enabled: queryEnabled && normalizedRequirements.materialCategories,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.material,
-    queryFn: () => fetchMaterialSearch('', 500),
+    queryFn: () =>
+      fetchMaterialSearch('', 500).then((response) => response.content),
     enabled: queryEnabled && normalizedRequirements.materials,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
@@ -237,7 +239,7 @@ export function useMasterOptions(
       customerId ? fetchProjectOptions(customerId) : Promise.resolve([]),
     enabled:
       queryEnabled && normalizedRequirements.projects && Boolean(customerId),
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
 
   return {

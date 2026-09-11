@@ -104,6 +104,4 @@ export type EnabledStatus = '正常' | '禁用'
 export interface SettlementCompanyOption {
   id: string
   companyName: string
-  taxNo?: string
-  status?: string
 }

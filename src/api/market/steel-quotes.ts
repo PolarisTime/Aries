@@ -34,13 +34,14 @@ const PAGE_SIZE = 200
 export async function fetchMaterialPriceMatches(
   quoteDate: string,
   period?: string,
+  signal?: AbortSignal,
 ): Promise<MaterialPriceMatch[]> {
   const all: MaterialPriceMatch[] = []
   for (let page = 0; page <= 50; page += 1) {
     const rows = await apiGet(
       ENDPOINTS.MATERIAL_PRICE_MATCHES,
       z.array(materialPriceMatchSchema),
-      { params: { quoteDate, period, page, size: PAGE_SIZE } },
+      { params: { quoteDate, period, page, size: PAGE_SIZE }, signal },
     )
     all.push(...rows)
     if (rows.length < PAGE_SIZE) break
@@ -64,9 +65,11 @@ export type SteelQuoteCalendarItem = z.infer<
 export function fetchSteelQuoteCalendars(
   from: string,
   to: string,
+  signal?: AbortSignal,
 ): Promise<SteelQuoteCalendarItem[]> {
   return apiGet(ENDPOINTS.STEEL_QUOTE_CALENDARS, steelQuoteCalendarSchema, {
     params: { from, to },
+    signal,
   })
 }
 
@@ -147,24 +150,28 @@ export async function fetchSteelQuoteSyncs(
 }
 
 /** 行情明细分页。 */
-export async function fetchSteelQuotes(params: {
-  quoteDate?: string
-  period?: string
-  breed?: string
-  spec?: string
-  material?: string
-  factory?: string
-  change?: string
-  sortBy?: string
-  direction?: string
-  page?: number
-  size?: number
-}): Promise<{ rows: SteelQuote[]; total: number }> {
+export async function fetchSteelQuotes(
+  params: {
+    quoteDate?: string
+    period?: string
+    breed?: string
+    spec?: string
+    material?: string
+    factory?: string
+    change?: string
+    sortBy?: string
+    direction?: string
+    page?: number
+    size?: number
+  },
+  signal?: AbortSignal,
+): Promise<{ rows: SteelQuote[]; total: number }> {
   const res = await apiGet(
     ENDPOINTS.STEEL_QUOTES,
     pageSchema(steelQuoteSchema),
     {
       params,
+      signal,
     },
   )
   return { rows: res.content, total: Number(res.totalElements) }
@@ -209,9 +216,12 @@ export type SteelQuoteBackfillStatus = z.infer<
 >
 
 /** 当前/最近一次补数任务状态。 */
-export function fetchBackfillStatus(): Promise<SteelQuoteBackfillStatus> {
+export function fetchBackfillStatus(
+  signal?: AbortSignal,
+): Promise<SteelQuoteBackfillStatus> {
   return apiGet(
     `${ENDPOINTS.STEEL_QUOTE_BACKFILLS}/current`,
     steelQuoteBackfillStatusSchema,
+    { signal },
   )
 }

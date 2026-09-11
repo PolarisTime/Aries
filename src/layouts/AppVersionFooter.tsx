@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchBackendInfo } from '@/api/auth/auth-api'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_LONG } from '@/constants/query-policies'
 import {
   frontendBuildTime,
   frontendGitCommit,
@@ -60,7 +61,7 @@ export function AppVersionFooter() {
   const { data } = useQuery({
     queryKey: QUERY_KEYS.backendInfo,
     queryFn: fetchBackendInfo,
-    staleTime: 60 * 60 * 1000,
+    staleTime: STALE_LONG,
     gcTime: 2 * 60 * 60 * 1000,
     refetchInterval: false,
     refetchOnWindowFocus: false,

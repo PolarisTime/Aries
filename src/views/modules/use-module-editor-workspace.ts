@@ -207,12 +207,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     !!config.showGeneratedPrimaryNoOnCreate
   const generatedPrimaryNoQuery = useQuery({
     queryKey: QUERY_KEYS.masterDataCode(moduleKey),
-    queryFn: async ({ signal }) => {
-      signal.throwIfAborted()
-      const generatedCode = await fetchGeneratedMasterDataCode(moduleKey)
-      signal.throwIfAborted()
-      return generatedCode
-    },
+    queryFn: ({ signal }) => fetchGeneratedMasterDataCode(moduleKey, signal),
     enabled: shouldGeneratePrimaryNo,
     staleTime: 0,
     gcTime: 0,

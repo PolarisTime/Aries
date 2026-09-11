@@ -12,6 +12,11 @@ import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { AppProPage } from '@/components/AppProPage'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import {
+  STALE_LONG,
+  STALE_MASTER_OPTIONS,
+  STALE_REALTIME,
+} from '@/constants/query-policies'
 import { getMasterOptionQueryKey } from '@/hooks/master-option-cache-refresh'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
@@ -61,7 +66,7 @@ export function ProjectPage() {
   const { data: runtimeConfig } = useQuery({
     queryKey: QUERY_KEYS.runtimeConfig,
     queryFn: getRuntimeConfig,
-    staleTime: 30_000,
+    staleTime: STALE_LONG,
   })
   useEffect(() => {
     const value = Number(runtimeConfig?.ui.defaultPageSize)
@@ -73,12 +78,12 @@ export function ProjectPage() {
   const customerQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.customer,
     queryFn: fetchCustomerOptions,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
   const settlementCompanyQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
     queryFn: fetchSettlementCompanyOptions,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
   const customerOptions = useMemo(
     () => customerQuery.data ?? [],
@@ -100,7 +105,7 @@ export function ProjectPage() {
         { currentPage: page, pageSize },
         { signal },
       ),
-    staleTime: 5_000,
+    staleTime: STALE_REALTIME,
     placeholderData: keepPreviousData,
   })
 

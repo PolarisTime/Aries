@@ -12,10 +12,13 @@ const masterDataCodeIssuanceResponseSchema = z.strictObject({
 /** 请求后端签发基础资料 Snowflake 编码，供新建表单只读展示并在保存时校验。 */
 export async function fetchGeneratedMasterDataCode(
   moduleKey: string,
+  signal?: AbortSignal,
 ): Promise<string> {
   const response = await apiPost(
     `${ENDPOINTS.MASTER_DATA_CODE_ISSUANCES}/${encodeURIComponent(moduleKey)}`,
     masterDataCodeIssuanceResponseSchema,
+    undefined,
+    { signal },
   )
   return response.code
 }

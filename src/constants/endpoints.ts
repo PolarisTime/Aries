@@ -59,8 +59,9 @@ export const ENDPOINTS = {
 
   // Attachments
   ATTACHMENTS_UPLOAD: '/attachments/upload',
-  ATTACHMENTS_DIRECT_UPLOAD_PREPARE: '/attachments/direct-upload/prepare',
-  ATTACHMENTS_DIRECT_UPLOAD_COMPLETE: '/attachments/direct-upload/complete',
+  ATTACHMENT_UPLOAD_SESSIONS: '/attachment-upload-sessions',
+  ATTACHMENT_UPLOAD_SESSION_COMPLETIONS: (sessionId: string | number) =>
+    `/attachment-upload-sessions/${pathSegment(sessionId)}/completions`,
   ATTACHMENTS_BINDINGS: '/attachments/bindings',
   ATTACHMENTS_BINDING_COUNTS: '/attachments/bindings/counts',
   ATTACHMENT_ACCESS_URL: (id: string | number) =>
@@ -72,7 +73,6 @@ export const ENDPOINTS = {
   MATERIAL_IMPORTS: '/material-imports',
   MATERIAL_EXPORTS: '/material-exports',
   MATERIALS_TEMPLATE: '/materials/template',
-  MATERIALS_SEARCH: '/materials/search',
   MATERIAL_GRADES: '/materials/grades',
   MATERIAL_BRANDS: '/materials/brands',
 

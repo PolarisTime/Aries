@@ -31,8 +31,6 @@ export interface SettlementCompanyOption {
   value: string
   label: string
   companyName: string
-  taxNo?: string
-  status?: string
 }
 
 const rawSettlementAccountSchema = z.object({
@@ -57,8 +55,6 @@ const rawCompanyProfileSchema = z.object({
 const rawSettlementCompanyOptionSchema = z.object({
   id: responseEntityIdSchema,
   companyName: z.string(),
-  taxNo: z.string().optional(),
-  status: z.string().optional(),
 })
 const currentCompanyResponseSchema = rawCompanyProfileSchema.nullish()
 const companyPageResponseSchema = exactPageSchema(rawCompanyProfileSchema)
@@ -85,8 +81,6 @@ export function normalizeSettlementCompanyOptions(
         value: id,
         label: companyName,
         companyName,
-        taxNo: asString(row.taxNo).trim() || undefined,
-        status: asString(row.status).trim() || undefined,
       },
     ]
   })

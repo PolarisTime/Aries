@@ -29,7 +29,7 @@ export async function reloadMasterOptionsForModule(moduleKey: string) {
     case 'customer':
       return reloadCustomerOptions()
     case 'material':
-      return fetchMaterialSearch('', 500)
+      return fetchMaterialSearch('', 500).then((response) => response.content)
     case 'material-categories':
       return reloadMaterialCategories()
     case 'settlement-company':

@@ -5,6 +5,7 @@ import type {
   AttachmentDirectUploadPrepareRecord,
 } from '@/api/business/business-types'
 import { apiGet, apiPost, apiPut, downloadGet } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { rawRecordSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 
@@ -99,7 +100,7 @@ async function prepareDirectUpload(
   const sha256Hex = await calculateFileSha256Hex(file)
 
   return apiPost(
-    ENDPOINTS.ATTACHMENTS_DIRECT_UPLOAD_PREPARE,
+    ENDPOINTS.ATTACHMENT_UPLOAD_SESSIONS,
     directUploadPrepareResponseSchema,
     {
       fileName: file.name,
@@ -108,23 +109,22 @@ async function prepareDirectUpload(
       sourceType,
       sha256Hex,
     },
-    { params: { moduleKey } },
+    withIdempotencyKey({ params: { moduleKey } }),
   )
 }
 
 async function completeDirectUpload(
-  attachmentId: string | number,
+  sessionId: string | number,
   token: string,
   moduleKey: string,
 ) {
   return apiPost(
-    ENDPOINTS.ATTACHMENTS_DIRECT_UPLOAD_COMPLETE,
+    ENDPOINTS.ATTACHMENT_UPLOAD_SESSION_COMPLETIONS(sessionId),
     rawRecordSchema,
     {
-      attachmentId,
       token,
     },
-    { params: { moduleKey } },
+    withIdempotencyKey({ params: { moduleKey } }),
   )
 }
 

@@ -57,29 +57,6 @@ const csvCell = (value: unknown) => {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
-/** 将已有 Promise 接入 AbortSignal：取消后以 AbortError 拒绝，让 Query 丢弃过期结果。 */
-function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) {
-    return Promise.reject(new DOMException('Aborted', 'AbortError'))
-  }
-  return new Promise<T>((resolve, reject) => {
-    const handleAbort = () => {
-      reject(new DOMException('Aborted', 'AbortError'))
-    }
-    signal.addEventListener('abort', handleAbort, { once: true })
-    promise.then(
-      (value) => {
-        signal.removeEventListener('abort', handleAbort)
-        resolve(value)
-      },
-      (error: unknown) => {
-        signal.removeEventListener('abort', handleAbort)
-        reject(error instanceof Error ? error : new Error(String(error)))
-      },
-    )
-  })
-}
-
 type Filters = {
   breed?: string
   material?: string
@@ -137,10 +114,7 @@ export function MarketSyncView() {
   const calendarQuery = useQuery({
     queryKey: QUERY_KEYS.marketCalendar(calendarRange.from, calendarRange.to),
     queryFn: ({ signal }) =>
-      withAbort(
-        fetchSteelQuoteCalendars(calendarRange.from, calendarRange.to),
-        signal,
-      ),
+      fetchSteelQuoteCalendars(calendarRange.from, calendarRange.to, signal),
     enabled: isAuthenticated,
     staleTime: 60_000,
   })
@@ -184,7 +158,7 @@ export function MarketSyncView() {
 
   const quotesQuery = useQuery({
     queryKey: QUERY_KEYS.marketQuotes(quotesParams),
-    queryFn: ({ signal }) => withAbort(fetchSteelQuotes(quotesParams), signal),
+    queryFn: ({ signal }) => fetchSteelQuotes(quotesParams, signal),
     enabled: isAuthenticated && Boolean(selected.date && selected.period),
     staleTime: 30_000,
     placeholderData: keepPreviousData,
@@ -195,7 +169,7 @@ export function MarketSyncView() {
 
   const backfillStatusQuery = useQuery({
     queryKey: QUERY_KEYS.marketBackfillStatus,
-    queryFn: ({ signal }) => withAbort(fetchBackfillStatus(), signal),
+    queryFn: ({ signal }) => fetchBackfillStatus(signal),
     enabled: isAuthenticated,
     refetchInterval: (query) =>
       isPageVisible && query.state.data?.running

@@ -14,6 +14,7 @@ import { listBusinessModule } from '@/api/business/business-listing'
 import { exportModuleData } from '@/api/business/common-export'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_LONG, STALE_REALTIME } from '@/constants/query-policies'
 import { getMasterOptionQueryKey } from '@/hooks/master-option-cache-refresh'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
 import type { SearchParams } from '@/types/api-raw'
@@ -53,7 +54,7 @@ export function useMasterDataPage(spec: MasterDataPageSpec) {
   const runtimeQuery = useQuery({
     queryKey: QUERY_KEYS.runtimeConfig,
     queryFn: getRuntimeConfig,
-    staleTime: 30_000,
+    staleTime: STALE_LONG,
   })
   const runtimePageSize = runtimeQuery.data?.ui.defaultPageSize
   const effectivePageSize = useMemo(() => {
@@ -75,7 +76,7 @@ export function useMasterDataPage(spec: MasterDataPageSpec) {
         { currentPage: page, pageSize: effectivePageSize },
         { signal },
       ),
-    staleTime: 5_000,
+    staleTime: STALE_REALTIME,
     placeholderData: keepPreviousData,
   })
 

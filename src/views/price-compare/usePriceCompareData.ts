@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_STATIC } from '@/constants/query-policies'
 import { matchesToData, mergePriceData } from './core'
 import type { BrandOption, PriceData, ProjectOption, Variety } from './types'
 
@@ -53,7 +54,7 @@ export function usePriceCompareData(): PriceCompareData {
   const query = useQuery({
     queryKey: QUERY_KEYS.priceCompare.metadata,
     queryFn: fetchMetadata,
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: STALE_STATIC,
   })
 
   const mergeMatches = useCallback((matches: MaterialPriceMatch[]) => {

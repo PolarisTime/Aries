@@ -13,6 +13,11 @@ import { AppProPage } from '@/components/AppProPage'
 import { normalizeCarrierEditorRecord } from '@/config/business-pages/master/carrier-vehicle-adapter'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
+  STALE_LONG,
+  STALE_MASTER_OPTIONS,
+  STALE_REALTIME,
+} from '@/constants/query-policies'
+import {
   getMasterOptionQueryKey,
   reloadMasterOptionsForModule,
 } from '@/hooks/master-option-cache-refresh'
@@ -55,7 +60,7 @@ export function CarrierPage() {
   const { data: runtimeConfig } = useQuery({
     queryKey: QUERY_KEYS.runtimeConfig,
     queryFn: getRuntimeConfig,
-    staleTime: 30_000,
+    staleTime: STALE_LONG,
   })
   useEffect(() => {
     const value = Number(runtimeConfig?.ui.defaultPageSize)
@@ -67,7 +72,7 @@ export function CarrierPage() {
   const settlementCompanyQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
     queryFn: fetchSettlementCompanyOptions,
-    staleTime: 300_000,
+    staleTime: STALE_MASTER_OPTIONS,
   })
   const settlementCompanyOptions = settlementCompanyQuery.data ?? []
 
@@ -85,7 +90,7 @@ export function CarrierPage() {
         { currentPage: page, pageSize },
         { signal },
       ),
-    staleTime: 5_000,
+    staleTime: STALE_REALTIME,
     placeholderData: keepPreviousData,
   })
 

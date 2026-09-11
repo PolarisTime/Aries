@@ -1,13 +1,16 @@
 import { z } from 'zod'
 import { apiGet, apiPost, downloadGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { exactPageSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { downloadBlob } from '@/utils/download'
 
-const materialSearchResponseSchema = z.array(
-  z.looseObject({ id: z.unknown().optional() }),
+const materialSearchRowSchema = z.looseObject({ id: z.unknown().optional() })
+
+const materialSearchPageResponseSchema = exactPageSchema(
+  materialSearchRowSchema,
 )
 
 const materialImportRowSchema = z.object({
@@ -61,6 +64,15 @@ export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
   materialType?: string
 }
 
+export type MaterialSearchPageResponse = {
+  content: MaterialSearchResponse[]
+  totalElements: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+  hasMore: boolean
+}
+
 type RawMaterialSearchResponse = Omit<MaterialSearchResponse, 'id'> & {
   id?: unknown
 }
@@ -94,23 +106,23 @@ export interface MaterialImportResult {
 export async function fetchMaterialSearch(
   keyword = '',
   limit = 200,
-): Promise<MaterialSearchResponse[]> {
+): Promise<MaterialSearchPageResponse> {
   const response = await apiGet(
-    ENDPOINTS.MATERIALS_SEARCH,
-    materialSearchResponseSchema,
+    ENDPOINTS.MATERIALS,
+    materialSearchPageResponseSchema,
     {
       params: {
         keyword,
-        limit,
+        page: 0,
+        size: limit,
       },
     },
   )
 
-  if (!Array.isArray(response)) {
-    return []
+  return {
+    ...response,
+    content: normalizeMaterialSearchRows(response.content),
   }
-
-  return normalizeMaterialSearchRows(response)
 }
 
 export async function downloadMaterialImportTemplate() {
