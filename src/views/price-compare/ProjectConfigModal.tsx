@@ -1,4 +1,4 @@
-import { SearchOutlined } from '@ant-design/icons'
+import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
 import {
   Button,
   Checkbox,
@@ -134,35 +134,31 @@ function BrandSection({
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
   const [keyword, setKeyword] = useState('')
-  const filtered = useMemo(() => {
+  const selectedBrands = useMemo(
+    () => brandOptions.filter((name) => draft.brands.includes(name)),
+    [brandOptions, draft.brands],
+  )
+  const unselected = useMemo(() => {
     const query = keyword.trim().toLowerCase()
-    if (!query) return brandOptions
-    return brandOptions.filter((name) => name.toLowerCase().includes(query))
-  }, [brandOptions, keyword])
+    return brandOptions.filter(
+      (name) =>
+        !draft.brands.includes(name) &&
+        (!query || name.toLowerCase().includes(query)),
+    )
+  }, [brandOptions, draft.brands, keyword])
 
-  const toggle = (name: string, checked: boolean) =>
-    onChange({
-      brands: checked
-        ? [...draft.brands, name]
-        : draft.brands.filter((item) => item !== name),
-    })
+  const add = (names: string[]) =>
+    onChange({ brands: [...new Set([...draft.brands, ...names])] })
+  const remove = (name: string) =>
+    onChange({ brands: draft.brands.filter((item) => item !== name) })
 
   return (
-    <>
+    <Flex vertical gap={12}>
       <Flex justify="space-between" align="center" gap={8} wrap="wrap">
         <Text type="secondary" style={{ fontSize: 12 }}>
           参与比价的品牌与品种（未启用的品种该品牌不显示价格）
         </Text>
         <Space size={4}>
-          <Input
-            size="small"
-            allowClear
-            prefix={<SearchOutlined />}
-            placeholder="搜索品牌"
-            style={{ width: 140 }}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
           <Text type="secondary" style={{ fontSize: 12 }}>
             已选 {draft.brands.length}/{brandOptions.length}
           </Text>
@@ -182,27 +178,24 @@ function BrandSection({
           </Button>
         </Space>
       </Flex>
-      <Flex vertical gap={4} style={{ marginTop: 8 }}>
-        {filtered.length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="未匹配到品牌"
-          />
-        ) : (
-          filtered.map((name) => {
-            const active = draft.brands.includes(name)
-            return (
-              <div
-                key={name}
-                className={`price-compare-config-brand${active ? ' is-active' : ''}`}
-              >
+
+      <div>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          已参与品牌（{selectedBrands.length}）
+        </Text>
+        <Flex vertical gap={6} style={{ marginTop: 6 }}>
+          {selectedBrands.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="尚未选择品牌"
+            />
+          ) : (
+            selectedBrands.map((name) => (
+              <div key={name} className="price-compare-config-brand is-active">
                 <Flex align="center" gap={12} wrap="wrap">
-                  <Checkbox
-                    checked={active}
-                    onChange={(event) => toggle(name, event.target.checked)}
-                  >
+                  <Text strong style={{ minWidth: 72 }}>
                     {name}
-                  </Checkbox>
+                  </Text>
                   <Space size={4}>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       运费(元/吨)
@@ -212,7 +205,6 @@ function BrandSection({
                       min={0}
                       max={9999}
                       style={{ width: 72 }}
-                      disabled={!active}
                       value={draft.freightMap[name] ?? DEFAULT_FREIGHT}
                       onChange={(value) =>
                         onChange({
@@ -224,26 +216,67 @@ function BrandSection({
                       }
                     />
                   </Space>
-                  <Checkbox.Group
-                    disabled={!active}
-                    value={draft.categoryMap[name] ?? CATEGORIES}
-                    options={CATEGORIES.map((category) => ({
-                      label: category,
-                      value: category,
-                    }))}
-                    onChange={(values) =>
-                      onChange({
-                        categoryMap: { ...draft.categoryMap, [name]: values },
-                      })
-                    }
+                  <Space size={4}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      品种
+                    </Text>
+                    <Checkbox.Group
+                      value={draft.categoryMap[name] ?? CATEGORIES}
+                      options={CATEGORIES.map((category) => ({
+                        label: category,
+                        value: category,
+                      }))}
+                      onChange={(values) =>
+                        onChange({
+                          categoryMap: { ...draft.categoryMap, [name]: values },
+                        })
+                      }
+                    />
+                  </Space>
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<CloseOutlined />}
+                    style={{ marginLeft: 'auto' }}
+                    onClick={() => remove(name)}
                   />
                 </Flex>
               </div>
-            )
-          })
-        )}
-      </Flex>
-    </>
+            ))
+          )}
+        </Flex>
+      </div>
+
+      <div>
+        <Flex justify="space-between" align="center" gap={8} wrap="wrap">
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            未参与品牌（点击加入）
+          </Text>
+          <Input
+            size="small"
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="搜索品牌"
+            style={{ width: 150 }}
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+        </Flex>
+        <div className="price-compare-brand-pool">
+          {unselected.length === 0 ? (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              无
+            </Text>
+          ) : (
+            <Checkbox.Group
+              value={[]}
+              options={unselected.map((name) => ({ label: name, value: name }))}
+              onChange={(values) => add(values)}
+            />
+          )}
+        </div>
+      </div>
+    </Flex>
   )
 }
 
