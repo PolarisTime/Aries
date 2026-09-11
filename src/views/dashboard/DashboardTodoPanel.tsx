@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { Button, Card, Table, Tabs } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
@@ -7,13 +6,11 @@ import {
   DASHBOARD_TODO_CATEGORIES,
   type DashboardTodoCategory,
   type DashboardTodoItem,
-  fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatDate } from '@/utils/formatters'
+import { useDashboardWorkspaceQuery } from './useDashboardWorkspaceQuery'
 
 /** 待办类目 → 目标模块路径（「去处理」直达单据详情） */
 const TODO_CATEGORY_TARGETS: Record<
@@ -45,13 +42,8 @@ const TODO_MODULE_KEYS: Record<
 export function DashboardTodoPanel() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
-  const isPageVisible = usePageVisibility()
   const [category, setCategory] = useState<DashboardTodoCategory>('all')
-  const { data, isLoading, isError } = useQuery({
-    queryKey: QUERY_KEYS.dashboardWorkspace,
-    queryFn: fetchDashboardWorkspace,
-    refetchInterval: isPageVisible ? 120000 : false,
-  })
+  const { data, isLoading, isError } = useDashboardWorkspaceQuery()
 
   const rows = (data?.todoItems ?? [])
     .filter((item) => category === 'all' || item.category === category)

@@ -4,7 +4,6 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 describe('QUERY_KEYS 静态 key', () => {
   it('设置类 key', () => {
     expect(QUERY_KEYS.runtimeConfig).toEqual(['runtime-config'])
-    expect(QUERY_KEYS.companySetting).toEqual(['company-setting'])
     expect(QUERY_KEYS.companySettings).toEqual(['company-settings'])
   })
 

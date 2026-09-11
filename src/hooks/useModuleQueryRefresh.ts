@@ -21,9 +21,6 @@ export function useModuleQueryRefresh(moduleKey: string) {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.parentSelectorListBase,
       }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.statementLinkOptionsBase,
-      }),
       ...relatedModuleKeys.flatMap((relatedModuleKey) => [
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.businessGrid(relatedModuleKey),

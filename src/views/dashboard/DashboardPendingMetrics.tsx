@@ -15,12 +15,12 @@ import {
 import {
   DASHBOARD_METRIC_TARGETS,
   type DashboardPendingMetric,
-  fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatAmount } from '@/utils/formatters'
+import { useDashboardWorkspaceQuery } from './useDashboardWorkspaceQuery'
 
 const METRIC_ICONS: Record<
   DashboardPendingMetric['key'],
@@ -65,11 +65,7 @@ export function DashboardPendingMetrics() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
   const isPageVisible = usePageVisibility()
-  const { data } = useQuery({
-    queryKey: QUERY_KEYS.dashboardWorkspace,
-    queryFn: fetchDashboardWorkspace,
-    refetchInterval: isPageVisible ? 120000 : false,
-  })
+  const { data } = useDashboardWorkspaceQuery()
   const { data: monthCounts } = useQuery({
     queryKey: QUERY_KEYS.dashboardMonthCounts,
     queryFn: fetchDashboardMonthCounts,

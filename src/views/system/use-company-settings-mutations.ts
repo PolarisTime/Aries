@@ -58,9 +58,6 @@ export function useCompanySettingsMutations({
         queryKey: QUERY_KEYS.companySettings,
       })
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.companySetting,
-      })
-      void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.masterOptions.settlementCompany,
       })
       if (data?.id) {
@@ -83,9 +80,6 @@ export function useCompanySettingsMutations({
       )
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.companySettings,
-      })
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.companySetting,
       })
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.masterOptions.settlementCompany,

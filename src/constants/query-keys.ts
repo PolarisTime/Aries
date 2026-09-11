@@ -4,7 +4,6 @@
 export const QUERY_KEYS = {
   // Settings
   runtimeConfig: ['runtime-config'] as const,
-  companySetting: ['company-setting'] as const,
   companySettings: ['company-settings'] as const,
 
   // Dashboard
@@ -122,11 +121,6 @@ export const QUERY_KEYS = {
   // Auth / Account
   currentAccount: ['current-account'] as const,
 
-  // Statements
-  statementLinkOptionsBase: ['statement-link-options'] as const,
-  statementLinkOptions: (type: string) =>
-    ['statement-link-options', type] as const,
-
   // Print
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>
@@ -134,8 +128,6 @@ export const QUERY_KEYS = {
   printableTemplatesBase: ['print-templates'] as const,
   printableTemplates: (moduleKey: string) =>
     ['print-templates', moduleKey] as const,
-  printRecordBrands: (moduleKey: string, recordIds: string[]) =>
-    ['print-record-brands', moduleKey, recordIds.join(',')] as const,
   printRecordItems: (moduleKey: string, recordIds: string[]) =>
     ['print-record-items', moduleKey, recordIds.join(',')] as const,
 

@@ -17,7 +17,6 @@ export function useModuleEditorSettlementAccounts({
     queryKey: QUERY_KEYS.companySettings,
     queryFn: listCompanySettings,
     enabled: open && enabled,
-    staleTime: 300_000,
   })
 
   const settlementAccountOptions = useMemo(() => {
