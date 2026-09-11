@@ -19,21 +19,22 @@ export const steelQuoteSchema = z.looseObject({
   id: z.union([z.string(), z.number()]).nullable().optional(),
   market: z.string().nullable().optional(),
   quoteDate: z.string(),
-  period: z.string(),
-  breed: z.string(),
-  spec: z.string(),
-  material: z.string(),
-  factory: z.string(),
-  price: z.union([z.number(), z.string()]),
+  period: z.string().nullable(),
+  breed: z.string().nullable(),
+  spec: z.union([z.string(), z.number()]).nullable(),
+  material: z.string().nullable(),
+  factory: z.string().nullable(),
+  price: z.union([z.number(), z.string()]).nullable(),
   changeVal: z.string().nullable().optional(),
   remark: z.string().nullable().optional(),
 })
 
 export type SteelQuote = z.infer<typeof steelQuoteSchema>
 
-const steelQuotePageSchema = z.looseObject({
+export const steelQuotePageSchema = z.looseObject({
   content: z.array(steelQuoteSchema),
-  totalElements: z.number(),
+  // totalElements 为 long, 按项目规范序列化为字符串
+  totalElements: z.union([z.number(), z.string()]),
   totalPages: z.number(),
   currentPage: z.number(),
   pageSize: z.number(),

@@ -179,22 +179,33 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
 
 export type QuoteLike = {
   quoteDate: string
-  period: string
-  breed: string
-  material: string
-  spec: string
-  factory: string
-  price: number | string
+  period?: string | null
+  breed?: string | null
+  material?: string | null
+  spec?: string | number | null
+  factory?: string | null
+  price?: number | string | null
 }
 
 /** 后端行情明细 -> data[日期][时段][品牌][品类|材质][规格] = 网价 */
 export function quotesToData(quotes: QuoteLike[]): PriceData {
   const patch: PriceData = {}
   for (const quote of quotes) {
+    if (
+      !quote.quoteDate ||
+      !quote.period ||
+      !quote.factory ||
+      !quote.breed ||
+      !quote.material ||
+      quote.spec === null ||
+      quote.spec === undefined ||
+      quote.price === null ||
+      quote.price === undefined
+    )
+      continue
     const spec = String(Number(quote.spec))
     const price = Number(quote.price)
-    if (!quote.quoteDate || !quote.period || !quote.factory || !spec) continue
-    if (Number.isNaN(price)) continue
+    if (!spec || Number.isNaN(price)) continue
     const key = `${quote.breed}|${quote.material}`
     patch[quote.quoteDate] ??= {}
     patch[quote.quoteDate][quote.period] ??= {}

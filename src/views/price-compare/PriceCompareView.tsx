@@ -169,7 +169,13 @@ export function PriceCompareView() {
       .then((quotes) => {
         if (!quotes.length) return
         mergeQuotes(quotes)
-        const periods = [...new Set(quotes.map((quote) => quote.period))]
+        const periods = [
+          ...new Set(
+            quotes
+              .map((quote) => quote.period)
+              .filter((period): period is string => Boolean(period)),
+          ),
+        ]
         if (active && !active.refPeriod && periods.length)
           patchSheet(active.id, { refPeriod: periods[0] })
       })
