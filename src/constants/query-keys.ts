@@ -55,6 +55,10 @@ export const QUERY_KEYS = {
     ['business-page-config', moduleKey] as const,
   purchaseOrderPickupList: (orderIds: string[]) =>
     ['purchase-order-pickup-list', orderIds.join(',')] as const,
+  warehouseRecommendations: (params: {
+    supplierId: string
+    materialIds: readonly string[]
+  }) => ['warehouse-recommendations', params] as const,
   businessGridOverlayPreload: (name: string) =>
     ['business-grid-overlay-preload', name] as const,
 

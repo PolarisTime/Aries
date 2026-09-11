@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef } from 'react'
 import { fetchPurchaseOrderWarehouseRecommendations } from '@/api/purchase/purchase-order-warehouse-recommendations'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   getWarehouseRecommendationKey,
   getWarehouseSelectionSource,
@@ -9,7 +11,6 @@ import {
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleLineItem } from '@/types/module-page'
-import { logger } from '@/utils/logger'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
 }
+
+const RECOMMENDATION_STALE_TIME = 30_000
 
 function parseEditorEntityId(value: unknown): EntityId | undefined {
   try {
@@ -128,75 +131,84 @@ export function usePurchaseOrderWarehouseRecommendations({
   )
   const materialIdsKey = materialIds.join(',')
 
+  // 供应商或待推荐物料变化时，先清理已失效的历史推荐仓库，避免残留错误选择。
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || items.length === 0) {
       return
     }
-
     setItemsRef.current((current) =>
       clearStaleRecommendedWarehouses(current, normalizedSupplierId),
     )
+  }, [enabled, normalizedSupplierId, items])
+
+  const recommendationsQuery = useQuery({
+    queryKey: QUERY_KEYS.warehouseRecommendations({
+      supplierId: normalizedSupplierId ?? '',
+      materialIds,
+    }),
+    queryFn: ({ signal }) => {
+      if (!normalizedSupplierId) {
+        return Promise.resolve([])
+      }
+      return fetchPurchaseOrderWarehouseRecommendations(
+        normalizedSupplierId,
+        materialIds,
+        signal,
+      )
+    },
+    enabled: Boolean(enabled && normalizedSupplierId && materialIds.length),
+    staleTime: RECOMMENDATION_STALE_TIME,
+  })
+
+  const recommendations = recommendationsQuery.data
+
+  // 仅在查询成功且当前供应商/物料与结果匹配时写回编辑器，避免覆盖用户已编辑内容。
+  useEffect(() => {
+    if (!enabled || !normalizedSupplierId || !recommendations) {
+      return
+    }
     const requestedMaterialIdList = materialIdsKey
       ? materialIdsKey.split(',')
       : []
-    if (!normalizedSupplierId || !requestedMaterialIdList.length) {
+    if (!requestedMaterialIdList.length) {
       return
     }
 
-    const controller = new AbortController()
     const requestedMaterialIds = new Set(requestedMaterialIdList)
-    void fetchPurchaseOrderWarehouseRecommendations(
-      normalizedSupplierId,
-      requestedMaterialIdList,
-      controller.signal,
+    const recommendationByMaterialId = new Map(
+      recommendations.map((recommendation) => [
+        recommendation.materialId,
+        recommendation,
+      ]),
     )
-      .then((recommendations) => {
-        if (controller.signal.aborted) {
-          return
+    setItemsRef.current((current) =>
+      current.map((item) => {
+        const materialId = parseEditorEntityId(item.materialId)
+        if (!materialId || !requestedMaterialIds.has(materialId)) {
+          return item
         }
-        const recommendationByMaterialId = new Map(
-          recommendations.map((recommendation) => [
-            recommendation.materialId,
-            recommendation,
-          ]),
-        )
-        setItemsRef.current((current) =>
-          current.map((item) => {
-            const materialId = parseEditorEntityId(item.materialId)
-            if (!materialId || !requestedMaterialIds.has(materialId)) {
-              return item
-            }
 
-            const source = getWarehouseSelectionSource(item)
-            if (
-              source === 'manual' ||
-              (source !== 'recommended' && hasWarehouse(item))
-            ) {
-              return item
-            }
-
-            const key = recommendationKey(normalizedSupplierId, materialId)
-            if (getWarehouseRecommendationKey(item) === key) {
-              return item
-            }
-            const recommendation = recommendationByMaterialId.get(materialId)
-            return {
-              ...item,
-              warehouseId: recommendation?.warehouseId,
-              warehouseName: recommendation?.warehouseName || '',
-              [WAREHOUSE_SELECTION_SOURCE_KEY]: 'recommended',
-              [WAREHOUSE_RECOMMENDATION_KEY]: key,
-            }
-          }),
-        )
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) {
-          return
+        const source = getWarehouseSelectionSource(item)
+        if (
+          source === 'manual' ||
+          (source !== 'recommended' && hasWarehouse(item))
+        ) {
+          return item
         }
-        logger.warn('采购订单仓库自动推荐失败', { error })
-      })
 
-    return () => controller.abort()
-  }, [enabled, normalizedSupplierId, materialIdsKey])
+        const key = recommendationKey(normalizedSupplierId, materialId)
+        if (getWarehouseRecommendationKey(item) === key) {
+          return item
+        }
+        const recommendation = recommendationByMaterialId.get(materialId)
+        return {
+          ...item,
+          warehouseId: recommendation?.warehouseId,
+          warehouseName: recommendation?.warehouseName || '',
+          [WAREHOUSE_SELECTION_SOURCE_KEY]: 'recommended',
+          [WAREHOUSE_RECOMMENDATION_KEY]: key,
+        }
+      }),
+    )
+  }, [enabled, normalizedSupplierId, materialIdsKey, recommendations])
 }
