@@ -29,6 +29,8 @@ export type ProjectConfig = {
   lengthPremium: number
   /** HRB400 无网价时, 使用 HRB400E 价格兜底(展示前缀 E) */
   hrb400eFallback: boolean
+  /** 可选择的商品键(类别|材质|规格|长度); 为空表示全部可选 */
+  products?: string[]
 }
 
 export type SheetGroup = {

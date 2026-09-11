@@ -536,6 +536,7 @@ export function PriceCompareView() {
             }}
             refreshing={refreshing}
             allowHrb400eFallback={config.hrb400eFallback}
+            allowedProducts={config.products}
             availability={availability}
             spotRef={spotRef}
           />
@@ -555,6 +556,7 @@ export function PriceCompareView() {
       <ProjectConfigModal
         open={configOpen}
         brandOptions={brandOptions}
+        varieties={varieties}
         config={config}
         onClose={() => setConfigOpen(false)}
         onSave={(next) => setConfig(next)}

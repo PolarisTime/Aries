@@ -7,21 +7,32 @@ import {
   Input,
   InputNumber,
   Modal,
+  Select,
   Space,
   Switch,
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { CATEGORIES } from './core'
-import type { Brand, ProjectConfig } from './types'
+import type { Brand, ProjectConfig, Variety } from './types'
 
 const { Text } = Typography
 const DEFAULT_FREIGHT = 30
+
+const varietyKey = (item: Variety) =>
+  `${item.category}|${item.material}|${item.spec}|${item.length}`
+
+const varietyLabel = (item: Variety) =>
+  [item.material, item.spec, item.length === '-' ? '' : item.length]
+    .filter(Boolean)
+    .join(' ')
 
 type Props = {
   open: boolean
   /** 可选品牌(来自系统商品资料) */
   brandOptions: string[]
+  /** 全部商品(来自商品数据) */
+  varieties: Variety[]
   config: ProjectConfig
   onClose: () => void
   onSave: (config: ProjectConfig) => void
@@ -34,6 +45,7 @@ type Props = {
 export function ProjectConfigModal({
   open,
   brandOptions,
+  varieties,
   config,
   onClose,
   onSave,
@@ -46,6 +58,19 @@ export function ProjectConfigModal({
     config.hrb400eFallback,
   )
   const [keyword, setKeyword] = useState('')
+  const [products, setProducts] = useState<string[]>([])
+
+  const varietyOptions = useMemo(() => {
+    return CATEGORIES.reduce<
+      { label: string; options: { value: string; label: string }[] }[]
+    >((groups, category) => {
+      const options = varieties
+        .filter((item) => item.category === category)
+        .map((item) => ({ value: varietyKey(item), label: varietyLabel(item) }))
+      if (options.length) groups.push({ label: category, options })
+      return groups
+    }, [])
+  }, [varieties])
 
   useEffect(() => {
     if (!open) return
@@ -62,6 +87,7 @@ export function ProjectConfigModal({
     setCategoryMap(nextCategory)
     setPremium(config.lengthPremium)
     setHrb400eFallback(config.hrb400eFallback)
+    setProducts(config.products ?? [])
     setKeyword('')
   }, [open, brandOptions, config])
 
@@ -89,7 +115,12 @@ export function ProjectConfigModal({
         categories: enabled,
       }
     })
-    onSave({ brands, lengthPremium: premium, hrb400eFallback })
+    onSave({
+      brands,
+      lengthPremium: premium,
+      hrb400eFallback,
+      products: products.length ? products : undefined,
+    })
     onClose()
   }
 
@@ -229,6 +260,42 @@ export function ProjectConfigModal({
               })
             )}
           </Flex>
+        </div>
+
+        <div>
+          <Flex justify="space-between" align="center" gap={8} wrap="wrap">
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              可选商品（留空=全部可选；用于精简表格商品下拉）
+            </Text>
+            <Space size={4}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                已选 {products.length ? products.length : '全部'}
+              </Text>
+              <Button
+                size="small"
+                type="text"
+                onClick={() => setProducts(varieties.map(varietyKey))}
+              >
+                全选
+              </Button>
+              <Button size="small" type="text" onClick={() => setProducts([])}>
+                清空
+              </Button>
+            </Space>
+          </Flex>
+          <Select
+            mode="multiple"
+            size="small"
+            style={{ width: '100%', marginTop: 6 }}
+            placeholder="搜索并选择可报单的商品"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            maxTagCount="responsive"
+            value={products}
+            onChange={setProducts}
+            options={varietyOptions}
+          />
         </div>
 
         <Text type="secondary" style={{ fontSize: 12 }}>

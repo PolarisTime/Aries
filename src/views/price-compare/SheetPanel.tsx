@@ -74,6 +74,7 @@ type ColumnContext = {
   toggleAll: (checked: boolean) => void
   attachSpotRef: boolean
   allowHrb400eFallback: boolean
+  allowedProducts?: string[]
   bestOn: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -133,6 +134,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     onReorderBrands,
     attachSpotRef,
     allowHrb400eFallback,
+    allowedProducts,
     bestOn,
   } = ctx
   const enabledCategories = new Set<string>()
@@ -144,8 +146,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       for (const category of list) enabledCategories.add(category)
     }
   }
+  const allowedProductSet = new Set(allowedProducts ?? [])
   const varietyOptions = buildVarietyOptions(
-    ctx.varieties.filter((item) => enabledCategories.has(item.category)),
+    ctx.varieties.filter(
+      (item) =>
+        enabledCategories.has(item.category) &&
+        (allowedProductSet.size === 0 ||
+          allowedProductSet.has(varietyKeyOf(item))),
+    ),
   )
   const bestCache = new Map<string, string | undefined>()
   const bestOf = (row: GridRow): string | undefined => {
@@ -800,6 +808,7 @@ type Props = {
   onRefresh: () => void
   refreshing?: boolean
   allowHrb400eFallback?: boolean
+  allowedProducts?: string[]
   availability?: Record<string, string[]>
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
@@ -822,6 +831,7 @@ export function SheetPanel(props: Props) {
     onRefresh,
     refreshing = false,
     allowHrb400eFallback = false,
+    allowedProducts = [],
     availability = {},
     chrome = true,
     spotRef,
@@ -981,6 +991,7 @@ export function SheetPanel(props: Props) {
     selectedIds,
     toggleSelect,
     allowHrb400eFallback,
+    allowedProducts,
     bestOn,
     spotRef,
   }
