@@ -43,6 +43,8 @@ export const QUERY_KEYS = {
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
   businessGridDetail: (moduleKey: string, id: string) =>
     ['business-grid', moduleKey, 'detail', id] as const,
+  attachmentCounts: (moduleKey: string, recordIds: string[]) =>
+    ['attachment-counts', moduleKey, [...recordIds].sort()] as const,
   businessGridList: (
     moduleKey: string,
     filters: Record<string, unknown>,

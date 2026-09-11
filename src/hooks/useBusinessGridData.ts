@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import { fetchAttachmentCounts } from '@/api/business/business-attachments'
 import type { AppPageDefinition } from '@/config/page-registry'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useExcelExport } from '@/hooks/useExcelExport'
 import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
@@ -80,9 +82,6 @@ export function useBusinessGridData({
   const [selectedRowMap, setSelectedRowMap] = useState<
     Record<string, ModuleRecord>
   >({})
-  const [attachmentCounts, setAttachmentCounts] = useState<
-    Record<string, number>
-  >({})
   const [currentPage, setCurrentPage] = useState(1)
   const defaultPageSize = useDefaultPageSize()
   const [pageSize, setPageSize] = useState(defaultPageSize)
@@ -132,34 +131,19 @@ export function useBusinessGridData({
     config: resolvedConfig,
   })
 
-  useEffect(() => {
-    if (resolvedConfig.readOnly) {
-      setAttachmentCounts({})
-      return
-    }
-    const recordIds = recordIdsKey.split(',').filter(Boolean)
-    if (!recordIds.length) {
-      setAttachmentCounts({})
-      return
-    }
-
-    let cancelled = false
-    void fetchAttachmentCounts(moduleKey, recordIds)
-      .then((response) => {
-        if (!cancelled) {
-          setAttachmentCounts(response.counts)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAttachmentCounts({})
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [moduleKey, recordIdsKey, resolvedConfig.readOnly])
+  const attachmentRecordIds = useMemo(
+    () => recordIdsKey.split(',').filter(Boolean),
+    [recordIdsKey],
+  )
+  const attachmentCountsQuery = useQuery({
+    queryKey: QUERY_KEYS.attachmentCounts(moduleKey, attachmentRecordIds),
+    queryFn: () => fetchAttachmentCounts(moduleKey, attachmentRecordIds),
+    enabled: !resolvedConfig.readOnly && attachmentRecordIds.length > 0,
+    staleTime: 30_000,
+  })
+  const attachmentCounts = resolvedConfig.readOnly
+    ? {}
+    : (attachmentCountsQuery.data?.counts ?? {})
 
   const clearSelection = () => {
     setSelectedRowKeys([])

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -87,6 +88,7 @@ describe('useBusinessGridData', () => {
   let root: Root
   let container: HTMLDivElement
   let latest: ReturnType<typeof useBusinessGridData>
+  let queryClient: QueryClient
   let pageDefFixture = { menuParent: 'master' } as AppPageDefinition
 
   function Probe() {
@@ -99,7 +101,20 @@ describe('useBusinessGridData', () => {
 
   function renderOnce() {
     act(() => {
-      root.render(createElement(Probe))
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(Probe),
+        ),
+      )
+    })
+  }
+
+  const flushAsync = async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
   }
 
@@ -125,6 +140,9 @@ describe('useBusinessGridData', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
     renderOnce()
   })
 
@@ -133,6 +151,7 @@ describe('useBusinessGridData', () => {
       root.unmount()
     })
     container.remove()
+    queryClient.clear()
   })
 
   it('applyGridFilters clears selection and queries from page 1', () => {
@@ -206,7 +225,7 @@ describe('useBusinessGridData', () => {
   })
 
   it('resets attachment counts when records are empty', async () => {
-    await act(async () => {})
+    await flushAsync()
 
     expect(fetchAttachmentCountsMock).not.toHaveBeenCalled()
     expect(latest.attachmentCounts).toEqual({})
@@ -217,7 +236,7 @@ describe('useBusinessGridData', () => {
     fetchAttachmentCountsMock.mockResolvedValue({ counts: { '1': 3 } })
 
     renderOnce()
-    await act(async () => {})
+    await flushAsync()
 
     expect(fetchAttachmentCountsMock).toHaveBeenCalledWith('material', [
       '1',
@@ -231,7 +250,7 @@ describe('useBusinessGridData', () => {
     fetchAttachmentCountsMock.mockRejectedValue(new Error('boom'))
 
     renderOnce()
-    await act(async () => {})
+    await flushAsync()
 
     expect(latest.attachmentCounts).toEqual({})
   })
@@ -241,7 +260,7 @@ describe('useBusinessGridData', () => {
     configFixture = { ...configFixture, readOnly: true }
 
     renderOnce()
-    await act(async () => {})
+    await flushAsync()
 
     expect(fetchAttachmentCountsMock).not.toHaveBeenCalled()
     expect(latest.attachmentCounts).toEqual({})
