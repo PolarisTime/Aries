@@ -211,9 +211,15 @@ export function PriceCompareView() {
         })
       return
     }
-    const calendarPeriods = availability[date] ?? []
-    const period = active.refPeriod || calendarPeriods[0] || ''
+    const calendarPeriods = availability[date]?.length
+      ? availability[date]
+      : Object.keys(data[date] ?? {})
+    const period = calendarPeriods.includes(active.refPeriod)
+      ? active.refPeriod
+      : (calendarPeriods[0] ?? '')
     if (!period) return
+    if (period !== active.refPeriod)
+      patchSheet(active.id, { refPeriod: period })
     const key = `${date}|${period}`
     if (data[date]?.[period] && Object.keys(data[date][period]).length) return
     if (fetchedDates.current.has(key)) return
