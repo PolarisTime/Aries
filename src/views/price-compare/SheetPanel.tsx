@@ -71,6 +71,7 @@ type ColumnContext = {
   toggleAll: (checked: boolean) => void
   attachSpotRef: boolean
   allowHrb400eFallback: boolean
+  bestOn: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -129,6 +130,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     onReorderBrands,
     attachSpotRef,
     allowHrb400eFallback,
+    bestOn,
   } = ctx
   const enabledCategories = new Set<string>()
   if (!brands.length) {
@@ -142,6 +144,40 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const varietyOptions = buildVarietyOptions(
     ctx.varieties.filter((item) => enabledCategories.has(item.category)),
   )
+  const bestCache = new Map<string, string | undefined>()
+  const bestOf = (row: GridRow): string | undefined => {
+    if (!bestOn) return undefined
+    if (bestCache.has(row.rowId)) return bestCache.get(row.rowId)
+    let best: string | undefined
+    let bestVal = Number.NEGATIVE_INFINITY
+    for (const brand of brands) {
+      const price = isCategoryEnabled(brand, row.row.category)
+        ? netPriceWithFallback(
+            data,
+            refDate,
+            refPeriod,
+            brand.name,
+            row.row,
+            lengthPremium,
+            allowHrb400eFallback,
+          ).value
+        : undefined
+      const spot = getSpot(brand.name, row.row.id)
+      if (price === undefined || spot === undefined) continue
+      const diff = price - spot - brand.freight
+      if (diff > bestVal) {
+        bestVal = diff
+        best = brand.name
+      }
+    }
+    bestCache.set(row.rowId, best)
+    return best
+  }
+  const isDimmed = (row: GridRow, brandName: string) => {
+    const best = bestOf(row)
+    return best !== undefined && best !== brandName
+  }
+
   const isCategoryEnabled = (brand: Brand, category: string) =>
     !brand.categories ||
     brand.categories.length === 0 ||
@@ -188,7 +224,17 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       ),
     },
     {
-      title: '类别 / 材质 / 规格 / 长度',
+      title: '类别',
+      dataIndex: 'category',
+      width: SHEET_COLUMN_WIDTH.category,
+      fixed: 'left',
+      align: 'center',
+      render: (_, row) => (
+        <span className="price-compare-category">{row.row.category}</span>
+      ),
+    },
+    {
+      title: '材质 / 规格 / 长度',
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
@@ -298,7 +344,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               return price === undefined ? (
                 <div className="price-compare-num price-compare-sub">-</div>
               ) : (
-                <div className="price-compare-net price-compare-num">
+                <div
+                  className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                >
                   {resolved.fallback ? `E ${price}` : price}
                 </div>
               )
@@ -310,7 +358,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 attachSpotRef && brandIndex === 0 && current.id === rows[0]?.id
               const input = (
                 <Input
-                  className="price-compare-spot"
+                  className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                   size="small"
                   variant="borderless"
                   inputMode="decimal"
@@ -388,9 +436,12 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               }
               const diff = price - spot - brand.freight
               const cls = diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
+              const best = bestOf(row)
               return (
                 <Tooltip title={diff >= 0 ? '现货更划算' : '网价更优'}>
-                  <span className={`price-compare-diff ${cls}`}>
+                  <span
+                    className={`price-compare-diff ${cls}${best === brand.name ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                  >
                     {diff > 0 ? '+' : ''}
                     {diff}
                   </span>
@@ -570,6 +621,7 @@ function GroupTable(props: GroupTableProps) {
         })}
         scroll={{
           x:
+            SHEET_COLUMN_WIDTH.category +
             SHEET_COLUMN_WIDTH.spec +
             SHEET_COLUMN_WIDTH.ton +
             base.brands.length *
@@ -594,6 +646,8 @@ function SheetHeader({
   onSyncPrice,
   syncing,
   availability,
+  bestOn,
+  onToggleBest,
   selectedCount,
   onRemoveSelected,
 }: {
@@ -606,6 +660,8 @@ function SheetHeader({
   onSyncPrice: () => void
   syncing: boolean
   availability: Record<string, string[]>
+  bestOn: boolean
+  onToggleBest: () => void
   selectedCount: number
   onRemoveSelected: () => void
 }) {
@@ -699,6 +755,13 @@ function SheetHeader({
         <Button size="small" onClick={onAddGroup}>
           ＋分组
         </Button>
+        <Button
+          size="small"
+          type={bestOn ? 'primary' : 'default'}
+          onClick={onToggleBest}
+        >
+          差价最优
+        </Button>
         <Button size="small" loading={syncing} onClick={onSyncPrice}>
           价格同步
         </Button>
@@ -765,6 +828,7 @@ export function SheetPanel(props: Props) {
     spotRef,
   } = props
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bestOn, setBestOn] = useState(false)
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
     () =>
@@ -918,6 +982,7 @@ export function SheetPanel(props: Props) {
     selectedIds,
     toggleSelect,
     allowHrb400eFallback,
+    bestOn,
     spotRef,
   }
 
@@ -933,6 +998,8 @@ export function SheetPanel(props: Props) {
         onSyncPrice={onSyncPrice}
         syncing={syncing}
         availability={availability}
+        bestOn={bestOn}
+        onToggleBest={() => setBestOn((value) => !value)}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
       />
