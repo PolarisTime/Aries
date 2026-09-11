@@ -7,9 +7,9 @@ import {
   Input,
   InputNumber,
   Modal,
-  Select,
   Space,
   Switch,
+  TreeSelect,
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -60,17 +60,26 @@ export function ProjectConfigModal({
   const [keyword, setKeyword] = useState('')
   const [products, setProducts] = useState<string[]>([])
 
-  const varietyOptions = useMemo(() => {
-    return CATEGORIES.reduce<
-      { label: string; options: { value: string; label: string }[] }[]
-    >((groups, category) => {
-      const options = varieties
-        .filter((item) => item.category === category)
-        .map((item) => ({ value: varietyKey(item), label: varietyLabel(item) }))
-      if (options.length) groups.push({ label: category, options })
-      return groups
-    }, [])
-  }, [varieties])
+  const productKeys = useMemo(
+    () => new Set(varieties.map(varietyKey)),
+    [varieties],
+  )
+
+  const productTree = useMemo(
+    () =>
+      CATEGORIES.map((category) => ({
+        title: category,
+        value: `__category__:${category}`,
+        selectable: false,
+        children: varieties
+          .filter((item) => item.category === category)
+          .map((item) => ({
+            title: varietyLabel(item),
+            value: varietyKey(item),
+          })),
+      })).filter((node) => node.children.length > 0),
+    [varieties],
+  )
 
   useEffect(() => {
     if (!open) return
@@ -283,18 +292,22 @@ export function ProjectConfigModal({
               </Button>
             </Space>
           </Flex>
-          <Select
-            mode="multiple"
+          <TreeSelect
+            treeCheckable
+            showCheckedStrategy={TreeSelect.SHOW_CHILD}
             size="small"
             style={{ width: '100%', marginTop: 6 }}
-            placeholder="搜索并选择可报单的商品"
+            placeholder="搜索并勾选可报单的商品"
             allowClear
             showSearch
-            optionFilterProp="label"
+            treeNodeFilterProp="title"
+            treeDefaultExpandAll
             maxTagCount="responsive"
+            treeData={productTree}
             value={products}
-            onChange={setProducts}
-            options={varietyOptions}
+            onChange={(values: string[]) =>
+              setProducts(values.filter((value) => productKeys.has(value)))
+            }
           />
         </div>
 
