@@ -1,24 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  materialPriceMatchSchema,
-  steelQuoteSyncResponseSchema,
-} from './steel-quotes'
-
-describe('steelQuoteSyncResponseSchema', () => {
-  it('雪花 ID 以字符串返回时可正常解析', () => {
-    const result = steelQuoteSyncResponseSchema.parse({
-      articleId: '700500000000000129',
-      articleUrl: 'https://example.com/a.html',
-      articleDate: '2026-09-11',
-      articleTime: '09:11',
-      period: '上午',
-      rowCount: 540,
-      created: true,
-    })
-    expect(result.articleId).toBe('700500000000000129')
-    expect(result.rowCount).toBe(540)
-  })
-})
+import { materialPriceMatchSchema } from './steel-quotes'
 
 describe('materialPriceMatchSchema', () => {
   it('解析匹配结果(含字符串 basePrice / 雪花 materialId)', () => {

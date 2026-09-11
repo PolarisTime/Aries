@@ -21,12 +21,10 @@ import {
   Typography,
   Watermark,
 } from 'antd'
-import { isAxiosError } from 'axios'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   fetchMaterialPriceMatches,
   fetchSteelQuoteCalendars,
-  syncSteelQuotes,
 } from '@/api/market/steel-quotes'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
@@ -119,7 +117,7 @@ export function PriceCompareView() {
   const [density, setDensity] = useState<'small' | 'middle' | 'large'>('small')
   const [fullscreen, setFullscreen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
-  const [syncing, setSyncing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
@@ -192,26 +190,48 @@ export function PriceCompareView() {
   useEffect(() => {
     if (!active || !isAuthenticated) return
     const date = active.refDate
-    const key = date || '__latest__'
-    if (date && data[date] && Object.keys(data[date]).length) return
+    if (!date) {
+      if (fetchedDates.current.has('__latest__')) return
+      fetchedDates.current.add('__latest__')
+      fetchMaterialPriceMatches('')
+        .then((matches) => {
+          if (!matches.length) return
+          mergeMatches(matches)
+          const quoteDate =
+            matches.find((row) => row.quoteDate)?.quoteDate ?? ''
+          const period = matches.find((row) => row.period)?.period ?? ''
+          patchSheet(active.id, {
+            refDate: quoteDate,
+            ...(active.refPeriod ? {} : { refPeriod: period }),
+          })
+        })
+        .catch((error) => {
+          fetchedDates.current.delete('__latest__')
+          console.error('读取网价失败', error)
+        })
+      return
+    }
+    const calendarPeriods = availability[date] ?? []
+    const period = active.refPeriod || calendarPeriods[0] || ''
+    if (!period) return
+    const key = `${date}|${period}`
+    if (data[date]?.[period] && Object.keys(data[date][period]).length) return
     if (fetchedDates.current.has(key)) return
     fetchedDates.current.add(key)
-    fetchMaterialPriceMatches(date)
+    fetchMaterialPriceMatches(date, period)
       .then((matches) => {
         if (!matches.length) return
         mergeMatches(matches)
-        const quoteDate = matches.find((row) => row.quoteDate)?.quoteDate
-        const period = matches.find((row) => row.period)?.period
-        patchSheet(active.id, {
-          ...(date ? {} : { refDate: quoteDate ?? '' }),
-          ...(active.refPeriod ? {} : { refPeriod: period ?? '' }),
-        })
       })
       .catch((error) => {
         fetchedDates.current.delete(key)
-        console.error('拉取行情匹配失败', error)
+        console.error('读取网价失败', error)
       })
-  }, [active, data, mergeMatches, patchSheet, isAuthenticated])
+  }, [active, availability, data, mergeMatches, patchSheet, isAuthenticated])
+
+  const refPeriods = active?.refDate
+    ? (availability[active.refDate] ?? Object.keys(data[active.refDate] ?? {}))
+    : []
 
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =
@@ -225,54 +245,43 @@ export function PriceCompareView() {
       : ''
   const today = new Date().toISOString().slice(0, 10)
 
-  const onSyncPrice = async () => {
+  /** 刷新读取: 重新拉取当前参照日期/时段的后端网价(不对后端做同步操作)。 */
+  const onRefreshPrice = async () => {
     if (!isAuthenticated) {
-      message.error('请先登录后再同步行情')
+      message.error('请先登录后再读取网价')
       return
     }
-    setSyncing(true)
+    setRefreshing(true)
     try {
-      const result = await syncSteelQuotes(active?.refDate || today)
-      const matches = await fetchMaterialPriceMatches(
-        result.articleDate,
-        result.period,
-      )
-      mergeMatches(matches)
-      if (active)
-        patchSheet(active.id, {
-          refDate: result.articleDate,
-          refPeriod: result.period,
-        })
-      const matched = matches.filter((row) => row.status === '匹配').length
-      if (!matched)
-        message.warning(
-          `已拉取 ${result.articleDate} ${result.period} 行情，但商品资料未匹配到网价`,
-        )
       loadAvailability()
-      message.success(
-        `已拉取 ${result.articleDate} ${result.period} 行情，共 ${result.rowCount} 条${result.created ? '' : '（已存在，未重复入库）'}`,
-      )
-    } catch (error) {
-      console.error('行情同步失败', error)
-      if (isAxiosError(error)) {
-        const status = error.response?.status
-        const problem = error.response?.data as
-          | { detail?: string; title?: string }
-          | undefined
-        if (status === 401) {
-          message.error('登录已失效，请重新登录后再试')
-          return
+      const date = active?.refDate
+      if (!date) {
+        const latest = await fetchMaterialPriceMatches('')
+        if (latest.length) {
+          mergeMatches(latest)
+          const quoteDate = latest.find((row) => row.quoteDate)?.quoteDate ?? ''
+          const period = latest.find((row) => row.period)?.period ?? ''
+          if (active)
+            patchSheet(active.id, {
+              refDate: quoteDate,
+              ...(active.refPeriod ? {} : { refPeriod: period }),
+            })
         }
-        message.error(
-          `行情拉取失败：${problem?.detail || problem?.title || `HTTP ${status ?? ''}`}`,
-        )
+        message.success('已读取最新网价')
         return
       }
+      const period = resolveRef(data, active).refPeriod
+      fetchedDates.current.delete(`${date}|${period}`)
+      const matches = await fetchMaterialPriceMatches(date, period)
+      mergeMatches(matches)
+      message.success(`已读取 ${date}${period ? ` ${period}` : ''} 网价`)
+    } catch (error) {
+      console.error('读取网价失败', error)
       message.error(
-        `行情拉取失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+        `读取网价失败：${error instanceof Error ? error.message : '请稍后重试'}`,
       )
     } finally {
-      setSyncing(false)
+      setRefreshing(false)
     }
   }
 
@@ -488,10 +497,11 @@ export function PriceCompareView() {
             onReorderBrands={(from, to) =>
               setBrands((current) => moveItem(current, from, to))
             }
-            onSyncPrice={() => {
-              void onSyncPrice()
+            periods={refPeriods}
+            onRefresh={() => {
+              void onRefreshPrice()
             }}
-            syncing={syncing}
+            refreshing={refreshing}
             allowHrb400eFallback={config.hrb400eFallback}
             availability={availability}
             spotRef={spotRef}
@@ -505,7 +515,7 @@ export function PriceCompareView() {
 
       <Flex justify="flex-end" style={{ marginTop: 8 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          网价来自后端行情接口，可点击「价格同步」拉取最新行情
+          网价由后端行情接口提供，点击「刷新价格」可重新读取当前日期/时段
         </Text>
       </Flex>
 

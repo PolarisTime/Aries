@@ -640,11 +640,11 @@ function SheetHeader({
   sheet,
   refDate,
   refPeriod,
-  data,
   patchSheet,
   onAddGroup,
-  onSyncPrice,
-  syncing,
+  periods,
+  onRefresh,
+  refreshing,
   availability,
   bestOn,
   onToggleBest,
@@ -654,11 +654,11 @@ function SheetHeader({
   sheet: PriceSheet
   refDate: string
   refPeriod: string
-  data: PriceData | null
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   onAddGroup: () => void
-  onSyncPrice: () => void
-  syncing: boolean
+  periods: string[]
+  onRefresh: () => void
+  refreshing: boolean
   availability: Record<string, string[]>
   bestOn: boolean
   onToggleBest: () => void
@@ -725,10 +725,7 @@ function SheetHeader({
               onChange={(value) => {
                 if (!value) return
                 const date = value.format('YYYY-MM-DD')
-                patchSheet(sheet.id, {
-                  refDate: date,
-                  refPeriod: Object.keys(data?.[date] ?? {})[0] ?? '',
-                })
+                patchSheet(sheet.id, { refDate: date })
               }}
             />
             <Select
@@ -736,7 +733,7 @@ function SheetHeader({
               style={{ width: 110 }}
               value={refPeriod || undefined}
               onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-              options={Object.keys(data?.[refDate] ?? {}).map((period) => ({
+              options={periods.map((period) => ({
                 value: period,
                 label: period,
               }))}
@@ -762,8 +759,8 @@ function SheetHeader({
         >
           差价最优
         </Button>
-        <Button size="small" loading={syncing} onClick={onSyncPrice}>
-          价格同步
+        <Button size="small" loading={refreshing} onClick={onRefresh}>
+          刷新价格
         </Button>
         {selectedCount > 0 ? (
           <Popconfirm
@@ -799,8 +796,9 @@ type Props = {
   ) => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
   onReorderBrands: (from: number, to: number) => void
-  onSyncPrice: () => void
-  syncing?: boolean
+  periods: string[]
+  onRefresh: () => void
+  refreshing?: boolean
   allowHrb400eFallback?: boolean
   availability?: Record<string, string[]>
   chrome?: boolean
@@ -820,8 +818,9 @@ export function SheetPanel(props: Props) {
     patchSheet,
     setRows,
     onReorderBrands,
-    onSyncPrice,
-    syncing = false,
+    periods,
+    onRefresh,
+    refreshing = false,
     allowHrb400eFallback = false,
     availability = {},
     chrome = true,
@@ -992,11 +991,11 @@ export function SheetPanel(props: Props) {
         sheet={sheet}
         refDate={refDate}
         refPeriod={refPeriod}
-        data={data}
         patchSheet={patchSheet}
         onAddGroup={addGroup}
-        onSyncPrice={onSyncPrice}
-        syncing={syncing}
+        periods={periods}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
         availability={availability}
         bestOn={bestOn}
         onToggleBest={() => setBestOn((value) => !value)}
