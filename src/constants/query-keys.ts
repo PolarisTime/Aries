@@ -13,7 +13,7 @@ export const QUERY_KEYS = {
   dashboardWorkspace: ['dashboard-workspace'] as const,
   dashboardMonthCounts: ['dashboard-month-counts'] as const,
   dashboardAwaitingInbound: ['dashboard-awaiting-inbound'] as const,
-  dashboardRecent: ['dashboard-recent'] as const,
+  dashboardRecentTab: (tab: string) => ['dashboard-recent', tab] as const,
 
   // Finance
   cashLedger: (query: {

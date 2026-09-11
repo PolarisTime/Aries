@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { Form } from 'antd'
 import { useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -99,6 +104,7 @@ export function usePrintTemplateView() {
   const templatesQuery = useQuery({
     queryKey: QUERY_KEYS.printTemplateByType(selectedBillType),
     queryFn: () => listPrintTemplates(selectedBillType),
+    placeholderData: keepPreviousData,
   })
   const { data: settlementCompanyOptions = [] } = useQuery<
     SettlementCompanyOption[]

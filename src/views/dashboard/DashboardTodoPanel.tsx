@@ -11,6 +11,7 @@ import {
 } from '@/api/system/dashboard-workspace'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatDate } from '@/utils/formatters'
 
@@ -44,11 +45,12 @@ const TODO_MODULE_KEYS: Record<
 export function DashboardTodoPanel() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
+  const isPageVisible = usePageVisibility()
   const [category, setCategory] = useState<DashboardTodoCategory>('all')
   const { data, isLoading, isError } = useQuery({
     queryKey: QUERY_KEYS.dashboardWorkspace,
     queryFn: fetchDashboardWorkspace,
-    refetchInterval: 120000,
+    refetchInterval: isPageVisible ? 120000 : false,
   })
 
   const rows = (data?.todoItems ?? [])

@@ -18,6 +18,7 @@ import {
   fetchDashboardWorkspace,
 } from '@/api/system/dashboard-workspace'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatAmount } from '@/utils/formatters'
 
@@ -63,10 +64,11 @@ const AWAITING_INBOUND_TARGET = {
 export function DashboardPendingMetrics() {
   const { t } = useTranslation()
   const openTab = useTabOpen()
+  const isPageVisible = usePageVisibility()
   const { data } = useQuery({
     queryKey: QUERY_KEYS.dashboardWorkspace,
     queryFn: fetchDashboardWorkspace,
-    refetchInterval: 120000,
+    refetchInterval: isPageVisible ? 120000 : false,
   })
   const { data: monthCounts } = useQuery({
     queryKey: QUERY_KEYS.dashboardMonthCounts,
@@ -76,7 +78,7 @@ export function DashboardPendingMetrics() {
   const { data: awaitingInboundCount } = useQuery({
     queryKey: QUERY_KEYS.dashboardAwaitingInbound,
     queryFn: fetchDashboardAwaitingInboundCount,
-    refetchInterval: 120000,
+    refetchInterval: isPageVisible ? 120000 : false,
   })
   const metrics = data?.pendingMetrics
 

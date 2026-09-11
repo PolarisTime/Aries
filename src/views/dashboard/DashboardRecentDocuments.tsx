@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Card, Empty, Spin, Tabs } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -41,9 +41,10 @@ export function DashboardRecentDocuments() {
   const openTab = useTabOpen()
   const [tab, setTab] = useState<DashboardRecentTab>('purchase-order')
   const { data, isLoading, isError } = useQuery({
-    queryKey: [...QUERY_KEYS.dashboardRecent, tab],
+    queryKey: QUERY_KEYS.dashboardRecentTab(tab),
     queryFn: () => fetchDashboardRecentDocuments(tab),
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   })
 
   return (
