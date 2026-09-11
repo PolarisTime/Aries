@@ -1,7 +1,6 @@
 import { KeyOutlined } from '@ant-design/icons'
 import { Card, Flex, Form, Input, Space, Spin, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppResult } from '@/components/AppResult'
 import { appTitle } from '@/utils/env'
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
@@ -16,27 +15,24 @@ export function InitialSetupView() {
   const { checking, form, handleSubmitAccount, loadingAccount, status } =
     useInitialSetupState()
 
+  // antd App/ConfigProvider 已由 main.tsx 的根级 AppAntdProvider 提供。
   if (checking) {
     return (
-      <AppAntdProvider>
-        <Flex align="center" justify="center" className="min-h-screen">
-          <Spin size="large" description={t('auth.initialsetup.checking')} />
-        </Flex>
-      </AppAntdProvider>
+      <Flex align="center" justify="center" className="min-h-screen">
+        <Spin size="large" description={t('auth.initialsetup.checking')} />
+      </Flex>
     )
   }
 
   if (status && !status.setupRequired) {
     return (
-      <AppAntdProvider>
-        <Flex align="center" justify="center" className="min-h-screen p-6">
-          <AppResult
-            className="app-result--page"
-            status="success"
-            title={t('auth.initialsetup.completedTitle')}
-          />
-        </Flex>
-      </AppAntdProvider>
+      <Flex align="center" justify="center" className="min-h-screen p-6">
+        <AppResult
+          className="app-result--page"
+          status="success"
+          title={t('auth.initialsetup.completedTitle')}
+        />
+      </Flex>
     )
   }
 

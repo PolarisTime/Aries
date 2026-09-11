@@ -34,15 +34,15 @@ import '@/styles/workspace-overlay.css'
 
 function App() {
   return (
-    <>
+    // 唯一的 antd App 上下文：同时覆盖路由内容与 AppUpdatePrompt，
+    // 保证全局 message/modal/notification 始终绑定到同一实例。
+    <AppAntdProvider>
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
         <GlobalLoadingIndicator />
       </QueryClientProvider>
-      <AppAntdProvider>
-        <AppUpdatePrompt />
-      </AppAntdProvider>
-    </>
+      <AppUpdatePrompt />
+    </AppAntdProvider>
   )
 }
 

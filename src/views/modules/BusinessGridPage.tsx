@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
@@ -16,7 +17,11 @@ interface Props {
 
 export function BusinessGridPage({ pageDef, initialConfig }: Props) {
   return (
-    <Suspense fallback={<BusinessGridPageSkeleton />}>
+    <Suspense
+      fallback={
+        <RouteLoadingFallback skeleton={<BusinessGridPageSkeleton />} />
+      }
+    >
       <BusinessGridRouteContent
         key={pageDef.moduleKey || pageDef.key}
         pageDef={pageDef}

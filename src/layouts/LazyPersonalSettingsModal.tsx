@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 import type { ThemeMode } from '@/utils/storage'
 
@@ -27,7 +28,12 @@ export function LazyPersonalSettingsModal(props: Props) {
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        // 有意静默：设置弹窗加载极快且关闭时不渲染，使用 blank 占位等价于 null。
+        <RouteLoadingFallback variant="blank" />
+      }
+    >
       <PersonalSettingsModal {...props} />
     </Suspense>
   )

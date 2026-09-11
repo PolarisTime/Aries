@@ -2,10 +2,10 @@ import { UnorderedListOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import type { EntityId } from '@/types/entity-id'
 import { message } from '@/utils/antd-app'
 import { loadPurchaseOrderPickupListOverlay } from '@/views/modules/components/business-grid-overlay-loaders'
-import { OverlayLazyFallback } from '@/views/modules/components/OverlayLazyFallback'
 
 const PurchaseOrderPickupListOverlay = lazy(loadPurchaseOrderPickupListOverlay)
 
@@ -33,7 +33,7 @@ export function PurchaseOrderPickupListAction({ selectedOrderIds }: Props) {
         })}
       </Button>
       {openOrderIds.length ? (
-        <Suspense fallback={<OverlayLazyFallback />}>
+        <Suspense fallback={<RouteLoadingFallback />}>
           <PurchaseOrderPickupListOverlay
             open
             orderIds={openOrderIds}

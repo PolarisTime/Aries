@@ -233,22 +233,13 @@ const indexRoute = createRoute({
   },
 })
 
-const notFoundRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '*',
-  component: lazy(() =>
-    import('@/views/error/NotFoundView').then((m) => ({
-      default: m.NotFoundView,
-    })),
-  ),
-})
-
+// 未匹配路径统一由共享的 `defaultNotFoundComponent`（router-options.ts）渲染：
+// 多标签子 Router 没有 catch-all，同样依赖该默认组件，这里不再重复定义 `*` 路由。
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   setupRoute,
   serverErrorRoute,
-  notFoundRoute,
   authenticatedLayoutRoute.addChildren(
     // TanStack Router 子路由需统一 AnyRoute 泛型，否则整棵路由树的类型会丢失
     buildModuleRoutes(authenticatedLayoutRoute) as AnyRoute[],

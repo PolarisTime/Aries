@@ -51,6 +51,8 @@ export function buildSharedRouterOptions() {
         default: m.ErrorView,
       })),
     ),
+    // 主 Router 与多标签子 Router 共用的 404 唯一入口：
+    // 主 Router 不再定义 `path: '*'` 路由，未匹配路径统一走这里，避免两份实现漂移。
     defaultNotFoundComponent: lazy(() =>
       import('@/views/error/NotFoundView').then((m) => ({
         default: m.NotFoundView,

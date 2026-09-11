@@ -1,7 +1,6 @@
 import { Flex, Layout, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { appTitle } from '@/utils/env'
 
 interface Props {
@@ -34,28 +33,25 @@ export function AuthPageShell({ children, hero }: Props) {
     </div>
   )
 
+  // antd App/ConfigProvider 已由 main.tsx 的根级 AppAntdProvider 提供。
   return (
-    <AppAntdProvider>
-      <Layout className="auth-page-shell">
-        <div className="auth-page-grid">
-          <aside className="auth-page-visual">
-            <div className="auth-page-visual-orbit" aria-hidden="true" />
-            <div className="auth-page-visual-content">
-              {hero || defaultHero}
-            </div>
-          </aside>
-          <main className="auth-page-main">
-            <Flex
-              vertical
-              align="center"
-              justify="center"
-              className="auth-page-content"
-            >
-              <div className="auth-page-panel">{children}</div>
-            </Flex>
-          </main>
-        </div>
-      </Layout>
-    </AppAntdProvider>
+    <Layout className="auth-page-shell">
+      <div className="auth-page-grid">
+        <aside className="auth-page-visual">
+          <div className="auth-page-visual-orbit" aria-hidden="true" />
+          <div className="auth-page-visual-content">{hero || defaultHero}</div>
+        </aside>
+        <main className="auth-page-main">
+          <Flex
+            vertical
+            align="center"
+            justify="center"
+            className="auth-page-content"
+          >
+            <div className="auth-page-panel">{children}</div>
+          </Flex>
+        </main>
+      </div>
+    </Layout>
   )
 }

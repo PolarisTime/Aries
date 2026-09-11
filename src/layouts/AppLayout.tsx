@@ -3,7 +3,6 @@ import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
@@ -397,9 +396,6 @@ export function AppLayout() {
     </Layout>
   )
 
-  return (
-    <AppAntdProvider>
-      <EditorSessionGuard>{layoutShell}</EditorSessionGuard>
-    </AppAntdProvider>
-  )
+  // antd App/ConfigProvider 已由 main.tsx 的根级 AppAntdProvider 提供。
+  return <EditorSessionGuard>{layoutShell}</EditorSessionGuard>
 }

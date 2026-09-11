@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import type { DetailItem } from '@/hooks/useDetailSupport'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
@@ -11,7 +12,6 @@ import {
   loadModuleEditorWorkspace,
   loadModuleRecordDetailOverlay,
 } from '@/views/modules/components/business-grid-overlay-loaders'
-import { OverlayLazyFallback } from '@/views/modules/components/OverlayLazyFallback'
 
 const ModuleAttachmentModal = lazy(loadModuleAttachmentModal)
 const ModuleEditorWorkspace = lazy(loadModuleEditorWorkspace)
@@ -65,7 +65,7 @@ export function BusinessGridOverlays<Key extends ModuleKey>({
   onCloseAttachment,
 }: Props<Key>) {
   return (
-    <Suspense fallback={<OverlayLazyFallback />}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       {editorOpen ? (
         <ModuleEditorWorkspace
           key={`${moduleKey}-${editorSessionKey}`}

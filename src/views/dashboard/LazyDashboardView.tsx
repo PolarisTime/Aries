@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import { DashboardSkeleton } from '@/views/dashboard/DashboardSkeleton'
 
 const DashboardViewContent = lazy(() =>
@@ -9,7 +10,9 @@ const DashboardViewContent = lazy(() =>
 
 export function LazyDashboardView() {
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
+    <Suspense
+      fallback={<RouteLoadingFallback skeleton={<DashboardSkeleton />} />}
+    >
       <DashboardViewContent />
     </Suspense>
   )

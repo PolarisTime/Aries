@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import { LoginSkeleton } from '@/views/auth/LoginSkeleton'
 
 const LoginViewContent = lazy(() =>
@@ -9,7 +10,7 @@ const LoginViewContent = lazy(() =>
 
 export function LazyLoginView() {
   return (
-    <Suspense fallback={<LoginSkeleton />}>
+    <Suspense fallback={<RouteLoadingFallback skeleton={<LoginSkeleton />} />}>
       <LoginViewContent />
     </Suspense>
   )
