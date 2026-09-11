@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canonicalCategory,
   computeSummary,
   countMissing,
+  dataKeyOf,
   makeRow,
   matchesToData,
   mergePriceData,
@@ -182,6 +184,35 @@ describe('syncSpotInputs', () => {
     const b = makeRow('g1')
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
+  })
+})
+
+describe('canonicalCategory / dataKeyOf', () => {
+  it('螺纹钢 与 直条 归一为同一类别', () => {
+    expect(canonicalCategory('直条')).toBe('螺纹钢')
+    expect(canonicalCategory('盘螺')).toBe('盘螺')
+    const rebar = { ...row12, category: '螺纹钢' }
+    const straight = { ...row12, category: '直条' }
+    expect(dataKeyOf(rebar)).toBe('螺纹钢|HRB400E')
+    expect(dataKeyOf(straight)).toBe(dataKeyOf(rebar))
+  })
+
+  it('匹配结果的直条类别归并到螺纹钢键', () => {
+    const patch = matchesToData([
+      {
+        brand: '中天',
+        category: '直条',
+        material: 'HRB400E',
+        spec: '14',
+        status: '匹配',
+        quoteDate: '2026-09-11',
+        period: '上午',
+        basePrice: 3300,
+      },
+    ])
+    expect(patch['2026-09-11']['上午']['中天']['螺纹钢|HRB400E']['14']).toBe(
+      3300,
+    )
   })
 })
 

@@ -27,8 +27,15 @@ export function normalizePeriod(value: string): string {
   return matched ? matched[1] : (value ?? '')
 }
 
+/** 商品类别规范化: 默认相等, 仅 螺纹钢 与 直条 视为同一类别。 */
+export function canonicalCategory(value: string): string {
+  return value === '直条' ? '螺纹钢' : value
+}
+
 export const dataKeyOf = (row: PriceRow) =>
-  row.category && row.material ? `${row.category}|${row.material}` : ''
+  row.category && row.material
+    ? `${canonicalCategory(row.category)}|${row.material}`
+    : ''
 
 /** 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。 */
 export const productKeyOf = (row: PriceRow) =>
@@ -88,7 +95,8 @@ export function netPrice(
     data[refDate]?.[refPeriod]?.[brandName]?.[key]?.[String(row.spec)]
   if (base === undefined) return undefined
   const premium =
-    LENGTH_PREMIUM_CATEGORIES.has(row.category) && row.length === '12米'
+    LENGTH_PREMIUM_CATEGORIES.has(canonicalCategory(row.category)) &&
+    row.length === '12米'
       ? lengthPremium
       : 0
   return base + premium
@@ -196,11 +204,6 @@ export type MaterialMatchLike = {
   basePrice?: string | number | null
 }
 
-/** 商品类别 -> 表格类别别名(与后端 breed-mappings 对应)。 */
-const CATEGORY_ALIAS: Record<string, string> = {
-  直条: '螺纹钢',
-}
-
 /** 商品行情匹配结果 -> data[日期][时段][品牌][类别|材质][规格] = 网价(不含长度加价)。 */
 export function matchesToData(rows: MaterialMatchLike[]): PriceData {
   const patch: PriceData = {}
@@ -217,7 +220,7 @@ export function matchesToData(rows: MaterialMatchLike[]): PriceData {
       row.basePrice === undefined
     )
       continue
-    const category = CATEGORY_ALIAS[row.category] ?? row.category
+    const category = canonicalCategory(row.category)
     const spec = String(Number(String(row.spec).replace(/[^0-9.]/g, '')))
     const price = Number(row.basePrice)
     if (!spec || Number.isNaN(price)) continue
