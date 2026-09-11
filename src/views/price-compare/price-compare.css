@@ -272,7 +272,7 @@
 
 /* 报单吨位输入 */
 .price-compare-ton input {
-  text-align: right;
+  text-align: center;
   padding-inline: 4px !important;
   font-variant-numeric: tabular-nums;
 }

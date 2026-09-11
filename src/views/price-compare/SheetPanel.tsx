@@ -62,6 +62,7 @@ type ColumnContext = {
   setSpot: (brandName: string, rowId: string, value: number | undefined) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
+  moveFocusTon: (rowId: string, delta: number) => void
   onReorderBrands: (from: number, to: number) => void
   onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
   onRowDragEnd: () => void
@@ -222,7 +223,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       title: '报单吨位',
       width: SHEET_COLUMN_WIDTH.ton,
       fixed: 'left',
-      align: 'right',
+      align: 'center',
       render: (_, row) => (
         <Input
           className="price-compare-ton"
@@ -246,6 +247,12 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             if (raw === '') patchRow(row.rowId, { ton: undefined })
             else if (!Number.isNaN(value) && value > 0)
               patchRow(row.rowId, { ton: value })
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Tab') {
+              event.preventDefault()
+              ctx.moveFocusTon(row.rowId, event.shiftKey ? -1 : 1)
+            }
           }}
         />
       ),
@@ -348,6 +355,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     } else if (event.key === 'ArrowUp') {
                       event.preventDefault()
                       moveFocus(brand.name, current.id, -1)
+                    } else if (event.key === 'Tab') {
+                      event.preventDefault()
+                      moveFocus(brand.name, current.id, event.shiftKey ? -1 : 1)
                     }
                   }}
                 />
@@ -761,7 +771,7 @@ export function SheetPanel(props: Props) {
     for (const target of targets) {
       if (target.id === rowId) continue
       const input = document.querySelector<HTMLInputElement>(
-        `[data-spot="${brandName}:${target.id}"] input`,
+        `input[data-spot="${brandName}:${target.id}"]`,
       )
       if (input) input.value = text
     }
@@ -789,7 +799,19 @@ export function SheetPanel(props: Props) {
       const target = groupRows[index + delta]
       if (!target) return
       const input = document.querySelector<HTMLInputElement>(
-        `[data-spot="${brandName}:${target.id}"] input`,
+        `input[data-spot="${brandName}:${target.id}"]`,
+      )
+      input?.focus()
+      input?.select()
+    }
+
+  const moveFocusTon =
+    (groupRows: PriceRow[]) => (rowId: string, delta: number) => {
+      const index = groupRows.findIndex((row) => row.id === rowId)
+      const target = groupRows[index + delta]
+      if (!target) return
+      const input = document.querySelector<HTMLInputElement>(
+        `input[data-ton="${target.id}"]`,
       )
       input?.focus()
       input?.select()
@@ -891,7 +913,11 @@ export function SheetPanel(props: Props) {
             rows={groupRows}
             canRemove={sheet.groups.length > 1}
             attachSpotRef={index === 0}
-            base={{ ...base, moveFocus: moveFocus(groupRows) }}
+            base={{
+              ...base,
+              moveFocus: moveFocus(groupRows),
+              moveFocusTon: moveFocusTon(groupRows),
+            }}
             onReorderRow={reorderRow}
             onAddRowToGroup={addRowToGroup}
             onRenameGroup={renameGroup}
