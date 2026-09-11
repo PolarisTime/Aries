@@ -7,6 +7,11 @@ import {
   SyncOutlined,
 } from '@ant-design/icons'
 import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import {
   Button,
   Card,
   DatePicker,
@@ -24,7 +29,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   backfillSteelQuotes,
   fetchBackfillStatus,
@@ -34,6 +39,8 @@ import {
   type SteelQuoteBackfillStatus,
   syncSteelQuotes,
 } from '@/api/market/steel-quotes'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useAuthStore } from '@/stores/authStore'
 import { message } from '@/utils/antd-app'
 
@@ -42,11 +49,35 @@ const PERIODS = ['上午', '中午', '下午']
 const BREEDS = ['螺纹钢', '盘螺', '高线', '圆钢']
 const PAGE_SIZE = 20
 const MATRIX_DAYS = 30
+const BACKFILL_POLL_INTERVAL_MS = 3000
 const today = () => new Date().toISOString().slice(0, 10)
 
 const csvCell = (value: unknown) => {
   const text = value === null || value === undefined ? '' : String(value)
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+/** 将已有 Promise 接入 AbortSignal：取消后以 AbortError 拒绝，让 Query 丢弃过期结果。 */
+function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) {
+    return Promise.reject(new DOMException('Aborted', 'AbortError'))
+  }
+  return new Promise<T>((resolve, reject) => {
+    const handleAbort = () => {
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    signal.addEventListener('abort', handleAbort, { once: true })
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', handleAbort)
+        resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', handleAbort)
+        reject(error instanceof Error ? error : new Error(String(error)))
+      },
+    )
+  })
 }
 
 type Filters = {
@@ -65,9 +96,9 @@ type CalendarMap = Record<
 /** 行情同步: 覆盖矩阵(近30天) + 内联明细 + 单日/区间补数。 */
 export function MarketSyncView() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isPageVisible = usePageVisibility()
+  const queryClient = useQueryClient()
 
-  const [calendars, setCalendars] = useState<CalendarMap>({})
-  const [loadingCalendar, setLoadingCalendar] = useState(false)
   const [selected, setSelected] = useState<{ date: string; period: string }>({
     date: '',
     period: '',
@@ -77,8 +108,6 @@ export function MarketSyncView() {
   const [syncing, setSyncing] = useState(false)
   const [backfillDays, setBackfillDays] = useState<number>(30)
   const [backfilling, setBackfilling] = useState(false)
-  const [backfillStatus, setBackfillStatus] =
-    useState<SteelQuoteBackfillStatus | null>(null)
   const [syncingDate, setSyncingDate] = useState<string | null>(null)
 
   const [form, setForm] = useState<Filters>({})
@@ -86,10 +115,7 @@ export function MarketSyncView() {
   const [sort, setSort] = useState<{ field?: string; order?: 'asc' | 'desc' }>(
     {},
   )
-  const [quotes, setQuotes] = useState<SteelQuote[]>([])
   const [quotePage, setQuotePage] = useState(0)
-  const [quoteTotal, setQuoteTotal] = useState(0)
-  const [quoteLoading, setQuoteLoading] = useState(false)
 
   const matrixDays = useMemo(() => {
     const days: string[] = []
@@ -98,94 +124,119 @@ export function MarketSyncView() {
     return days
   }, [])
 
-  const loadCalendars = useCallback(async () => {
-    if (!isAuthenticated) return
-    setLoadingCalendar(true)
-    try {
-      const from = dayjs()
+  const calendarRange = useMemo(
+    () => ({
+      from: dayjs()
         .subtract(MATRIX_DAYS - 1, 'day')
-        .format('YYYY-MM-DD')
-      const to = dayjs().add(1, 'day').format('YYYY-MM-DD')
-      const rows = await fetchSteelQuoteCalendars(from, to)
-      const map: CalendarMap = {}
-      for (const row of rows)
-        map[row.quoteDate] = {
-          periods: row.periods,
-          rows: row.periodRows ?? {},
-        }
-      setCalendars(map)
-      setSelected((current) => {
-        if (current.date && map[current.date]) return current
-        const latest = Object.keys(map).sort().reverse()[0]
-        if (!latest) return current
-        return { date: latest, period: map[latest]?.periods[0] ?? '' }
-      })
-    } catch (error) {
-      console.error('行情日历加载失败', error)
-    } finally {
-      setLoadingCalendar(false)
-    }
-  }, [isAuthenticated])
-
-  const loadQuotes = useCallback(
-    async (page: number) => {
-      if (!isAuthenticated || !selected.date || !selected.period) return
-      setQuoteLoading(true)
-      try {
-        const { rows, total } = await fetchSteelQuotes({
-          quoteDate: selected.date,
-          period: selected.period,
-          breed: applied.breed || undefined,
-          material: applied.material || undefined,
-          factory: applied.factory || undefined,
-          spec: applied.spec || undefined,
-          change: applied.change || undefined,
-          sortBy: sort.field,
-          direction: sort.order,
-          page,
-          size: PAGE_SIZE,
-        })
-        setQuotes(rows)
-        setQuotePage(page)
-        setQuoteTotal(total)
-      } catch (error) {
-        console.error('行情明细加载失败', error)
-      } finally {
-        setQuoteLoading(false)
-      }
-    },
-    [isAuthenticated, selected, applied, sort],
+        .format('YYYY-MM-DD'),
+      to: dayjs().add(1, 'day').format('YYYY-MM-DD'),
+    }),
+    [],
   )
 
-  useEffect(() => {
-    void loadCalendars()
-  }, [loadCalendars])
+  const calendarQuery = useQuery({
+    queryKey: QUERY_KEYS.marketCalendar(calendarRange.from, calendarRange.to),
+    queryFn: ({ signal }) =>
+      withAbort(
+        fetchSteelQuoteCalendars(calendarRange.from, calendarRange.to),
+        signal,
+      ),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  })
 
-  useEffect(() => {
-    if (!isAuthenticated) return
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const poll = async () => {
-      try {
-        const status = await fetchBackfillStatus()
-        setBackfillStatus(status)
-        if (status.running) {
-          timer = setTimeout(() => void poll(), 3000)
-        } else {
-          void loadCalendars()
-        }
-      } catch (error) {
-        console.error('补数状态查询失败', error)
+  const calendars = useMemo<CalendarMap>(() => {
+    const map: CalendarMap = {}
+    for (const row of calendarQuery.data ?? [])
+      map[row.quoteDate] = {
+        periods: row.periods,
+        rows: row.periodRows ?? {},
       }
-    }
-    void poll()
-    return () => {
-      if (timer) clearTimeout(timer)
-    }
-  }, [isAuthenticated, loadCalendars])
+    return map
+  }, [calendarQuery.data])
 
   useEffect(() => {
-    void loadQuotes(0)
-  }, [loadQuotes])
+    if (!calendarQuery.data) return
+    setSelected((current) => {
+      if (current.date && calendars[current.date]) return current
+      const latest = Object.keys(calendars).sort().reverse()[0]
+      if (!latest) return current
+      return { date: latest, period: calendars[latest]?.periods[0] ?? '' }
+    })
+  }, [calendarQuery.data, calendars])
+
+  const quotesParams = useMemo(
+    () => ({
+      quoteDate: selected.date,
+      period: selected.period,
+      breed: applied.breed || undefined,
+      material: applied.material || undefined,
+      factory: applied.factory || undefined,
+      spec: applied.spec || undefined,
+      change: applied.change || undefined,
+      sortBy: sort.field,
+      direction: sort.order,
+      page: quotePage,
+      size: PAGE_SIZE,
+    }),
+    [selected.date, selected.period, applied, sort, quotePage],
+  )
+
+  const quotesQuery = useQuery({
+    queryKey: QUERY_KEYS.marketQuotes(quotesParams),
+    queryFn: ({ signal }) => withAbort(fetchSteelQuotes(quotesParams), signal),
+    enabled: isAuthenticated && Boolean(selected.date && selected.period),
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  })
+
+  const quotes = quotesQuery.data?.rows ?? []
+  const quoteTotal = quotesQuery.data?.total ?? 0
+
+  const backfillStatusQuery = useQuery({
+    queryKey: QUERY_KEYS.marketBackfillStatus,
+    queryFn: ({ signal }) => withAbort(fetchBackfillStatus(), signal),
+    enabled: isAuthenticated,
+    refetchInterval: (query) =>
+      isPageVisible && query.state.data?.running
+        ? BACKFILL_POLL_INTERVAL_MS
+        : false,
+  })
+
+  const backfillStatus = backfillStatusQuery.data ?? null
+
+  const wasBackfillRunning = useRef(false)
+  useEffect(() => {
+    const running = backfillStatus?.running ?? false
+    if (wasBackfillRunning.current && !running) {
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.marketCalendarsBase,
+      })
+    }
+    wasBackfillRunning.current = running
+  }, [backfillStatus?.running, queryClient])
+
+  const applyFilters = (next: Filters) => {
+    setApplied(next)
+    setQuotePage(0)
+  }
+
+  const resetFilters = () => {
+    setForm({})
+    setApplied({})
+    setSort({})
+    setQuotePage(0)
+  }
+
+  const changeSort = (next: { field?: string; order?: 'asc' | 'desc' }) => {
+    setSort(next)
+    setQuotePage(0)
+  }
+
+  const selectQuote = (date: string, period: string) => {
+    setSelected({ date, period })
+    setQuotePage(0)
+  }
 
   // 概览统计
   const stats = useMemo(() => {
@@ -212,11 +263,8 @@ export function MarketSyncView() {
       message.success(
         `同步完成：${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
       )
-      await loadCalendars()
-      setSelected({
-        date: result.articleDate,
-        period: result.period,
-      })
+      await calendarQuery.refetch()
+      selectQuote(result.articleDate, result.period)
     } catch (error) {
       console.error('同步失败', error)
       message.error(
@@ -234,14 +282,18 @@ export function MarketSyncView() {
       message.success(
         `已受理补数：${result.from} ~ ${result.to}（后台执行，完成后自动刷新）`,
       )
-      setBackfillStatus({
-        running: true,
-        from: result.from,
-        to: result.to,
-        syncedDays: 0,
-        failedDays: 0,
-        totalRows: 0,
-      })
+      queryClient.setQueryData<SteelQuoteBackfillStatus>(
+        QUERY_KEYS.marketBackfillStatus,
+        {
+          running: true,
+          from: result.from,
+          to: result.to,
+          syncedDays: 0,
+          failedDays: 0,
+          totalRows: 0,
+        },
+      )
+      void backfillStatusQuery.refetch()
     } catch (error) {
       console.error('补数失败', error)
       message.error(
@@ -260,8 +312,8 @@ export function MarketSyncView() {
       message.success(
         `已同步 ${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行`,
       )
-      await loadCalendars()
-      setSelected({ date: result.articleDate, period: result.period })
+      await calendarQuery.refetch()
+      selectQuote(result.articleDate, result.period)
     } catch (error) {
       console.error('同步失败', error)
       message.error(
@@ -467,8 +519,8 @@ export function MarketSyncView() {
             size="small"
             type="text"
             icon={<ReloadOutlined />}
-            loading={loadingCalendar}
-            onClick={() => void loadCalendars()}
+            loading={calendarQuery.isFetching}
+            onClick={() => void calendarQuery.refetch()}
           />
         </Space>
       </div>
@@ -582,7 +634,7 @@ export function MarketSyncView() {
                 return (
                   <Tag.CheckableTag
                     checked={active}
-                    onChange={() => setSelected({ date: row.date, period: p })}
+                    onChange={() => selectQuote(row.date, p)}
                   >
                     {rows ? `${rows}行` : '✓'}
                   </Tag.CheckableTag>
@@ -624,7 +676,7 @@ export function MarketSyncView() {
             onChange={(event) =>
               setForm((prev) => ({ ...prev, material: event.target.value }))
             }
-            onPressEnter={() => setApplied(form)}
+            onPressEnter={() => applyFilters(form)}
           />
           <Input
             size="small"
@@ -635,7 +687,7 @@ export function MarketSyncView() {
             onChange={(event) =>
               setForm((prev) => ({ ...prev, factory: event.target.value }))
             }
-            onPressEnter={() => setApplied(form)}
+            onPressEnter={() => applyFilters(form)}
           />
           <Input
             size="small"
@@ -646,7 +698,7 @@ export function MarketSyncView() {
             onChange={(event) =>
               setForm((prev) => ({ ...prev, spec: event.target.value }))
             }
-            onPressEnter={() => setApplied(form)}
+            onPressEnter={() => applyFilters(form)}
           />
           <Select
             size="small"
@@ -666,19 +718,11 @@ export function MarketSyncView() {
             size="small"
             type="primary"
             icon={<SearchOutlined />}
-            onClick={() => setApplied(form)}
+            onClick={() => applyFilters(form)}
           >
             查询
           </Button>
-          <Button
-            size="small"
-            icon={<ClearOutlined />}
-            onClick={() => {
-              setForm({})
-              setApplied({})
-              setSort({})
-            }}
-          >
+          <Button size="small" icon={<ClearOutlined />} onClick={resetFilters}>
             重置
           </Button>
           <Button
@@ -718,7 +762,7 @@ export function MarketSyncView() {
             }
             columns={columns}
             dataSource={quotes}
-            loading={quoteLoading}
+            loading={quotesQuery.isFetching}
             scroll={{ x: 760 }}
             onChange={(pagination, _filters, sorter) => {
               const single = Array.isArray(sorter) ? sorter[0] : sorter
@@ -731,11 +775,11 @@ export function MarketSyncView() {
                     ? 'desc'
                     : undefined
               if (field !== sort.field || order !== sort.order) {
-                setSort({ field, order })
+                changeSort({ field, order })
                 return
               }
               const page = (pagination.current ?? 1) - 1
-              if (page !== quotePage) void loadQuotes(page)
+              if (page !== quotePage) setQuotePage(page)
             }}
             pagination={{
               current: quotePage + 1,

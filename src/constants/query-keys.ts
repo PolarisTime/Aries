@@ -88,6 +88,25 @@ export const QUERY_KEYS = {
     metadata: ['price-compare', 'metadata'] as const,
   },
 
+  // Market (steel quotes)
+  marketCalendarsBase: ['market', 'calendar'] as const,
+  marketCalendar: (from: string, to: string) =>
+    ['market', 'calendar', from, to] as const,
+  marketQuotes: (query: {
+    quoteDate: string
+    period: string
+    breed?: string
+    material?: string
+    factory?: string
+    spec?: string
+    change?: string
+    sortBy?: string
+    direction?: string
+    page: number
+    size: number
+  }) => ['market', 'quotes', query] as const,
+  marketBackfillStatus: ['market', 'backfill-status'] as const,
+
   // Finance ledger
   counterpartyLedger: (key: string) =>
     ['finance', 'counterparty-ledger', key] as const,
