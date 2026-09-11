@@ -23,7 +23,10 @@ import {
 } from 'antd'
 import { isAxiosError } from 'axios'
 import { useEffect, useRef, useState } from 'react'
-import { fetchSteelQuotes, syncSteelQuotes } from '@/api/market/steel-quotes'
+import {
+  fetchMaterialPriceMatches,
+  syncSteelQuotes,
+} from '@/api/market/steel-quotes'
 import { message, modal } from '@/utils/antd-app'
 import { countMissing, moveItem, resolveRef } from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
@@ -80,7 +83,7 @@ function projectGroupsOf(
 
 /** 报单比价页: 顶部胶囊(项目/批次) + 单据表格。 */
 export function PriceCompareView() {
-  const { data, varieties, projects, catalog, loading, error, mergeQuotes } =
+  const { data, varieties, projects, catalog, loading, error, mergeMatches } =
     usePriceCompareData()
   const materialBrands = useMaterialBrands()
   const brandOptions = materialBrands.length
@@ -165,24 +168,18 @@ export function PriceCompareView() {
     if (data[date] && Object.keys(data[date]).length) return
     if (fetchedDates.current.has(date)) return
     fetchedDates.current.add(date)
-    fetchSteelQuotes(date)
-      .then((quotes) => {
-        if (!quotes.length) return
-        mergeQuotes(quotes)
-        const periods = [
-          ...new Set(
-            quotes
-              .map((quote) => quote.period)
-              .filter((period): period is string => Boolean(period)),
-          ),
-        ]
-        if (active && !active.refPeriod && periods.length)
-          patchSheet(active.id, { refPeriod: periods[0] })
+    fetchMaterialPriceMatches(date)
+      .then((matches) => {
+        if (!matches.length) return
+        mergeMatches(matches)
+        const period = matches.find((row) => row.period)?.period
+        if (active && !active.refPeriod && period)
+          patchSheet(active.id, { refPeriod: period })
       })
       .catch(() => {
         // 未登录或后端不可用时静默失败
       })
-  }, [active, data, mergeQuotes, patchSheet])
+  }, [active, data, mergeMatches, patchSheet])
 
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =
@@ -200,17 +197,16 @@ export function PriceCompareView() {
     setSyncing(true)
     try {
       const result = await syncSteelQuotes(active?.refDate || today)
-      const quotes = await fetchSteelQuotes(result.articleDate)
-      mergeQuotes(quotes)
-      if (active) {
-        const periods = Object.keys(data?.[result.articleDate] ?? {})
+      const matches = await fetchMaterialPriceMatches(
+        result.articleDate,
+        result.period,
+      )
+      mergeMatches(matches)
+      if (active)
         patchSheet(active.id, {
           refDate: result.articleDate,
-          refPeriod: periods.includes(result.period)
-            ? result.period
-            : (periods[0] ?? result.period),
+          refPeriod: result.period,
         })
-      }
       message.success(
         `已拉取 ${result.articleDate} ${result.period} 行情，共 ${result.rowCount} 条${result.created ? '' : '（已存在，未重复入库）'}`,
       )

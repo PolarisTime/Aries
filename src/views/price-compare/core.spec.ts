@@ -3,10 +3,10 @@ import {
   computeSummary,
   countMissing,
   makeRow,
+  matchesToData,
   mergePriceData,
   moveItem,
   netPrice,
-  quotesToData,
   syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
@@ -185,30 +185,32 @@ describe('syncSpotInputs', () => {
   })
 })
 
-describe('quotesToData / mergePriceData', () => {
-  it('按 日期/时段/品牌/品类|材质/规格 归并网价', () => {
-    const patch = quotesToData([
+describe('matchesToData / mergePriceData', () => {
+  it('按 日期/时段/品牌/类别|材质/规格 归并 basePrice', () => {
+    const patch = matchesToData([
       {
+        brand: '万泰',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: '12',
+        status: '匹配',
         quoteDate: '2026-09-11',
         period: '上午',
-        breed: '螺纹钢',
-        material: 'HRB400',
-        spec: '12',
-        factory: '中天',
-        price: 3320,
+        basePrice: '3290.00',
       },
       {
+        brand: '万泰',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: '12',
+        status: '无网价',
         quoteDate: '2026-09-11',
         period: '上午',
-        breed: '螺纹钢',
-        material: 'HRB400',
-        spec: '12',
-        factory: '中天',
-        price: '3330',
+        basePrice: null,
       },
     ])
-    expect(patch['2026-09-11']['上午']['中天']['螺纹钢|HRB400']['12']).toBe(
-      3330,
+    expect(patch['2026-09-11']['上午']['万泰']['螺纹钢|HRB400E']['12']).toBe(
+      3290,
     )
   })
 
@@ -216,15 +218,16 @@ describe('quotesToData / mergePriceData', () => {
     const base = {
       '2026-09-10': { 上午: { 中天: { '螺纹钢|HRB400': { '12': 3200 } } } },
     }
-    const patch = quotesToData([
+    const patch = matchesToData([
       {
-        quoteDate: '2026-09-11',
-        period: '上午',
-        breed: '盘螺',
+        brand: '万泰',
+        category: '盘螺',
         material: 'HRB400',
         spec: '8',
-        factory: '万泰',
-        price: 3500,
+        status: '匹配',
+        quoteDate: '2026-09-11',
+        period: '上午',
+        basePrice: 3500,
       },
     ])
     const merged = mergePriceData(base, patch)

@@ -15,31 +15,28 @@ export const steelQuoteSyncResponseSchema = z.looseObject({
 
 export type SteelQuoteSyncResult = z.infer<typeof steelQuoteSyncResponseSchema>
 
-export const steelQuoteSchema = z.looseObject({
-  id: z.union([z.string(), z.number()]).nullable().optional(),
-  market: z.string().nullable().optional(),
-  quoteDate: z.string(),
-  period: z.string().nullable(),
-  breed: z.string().nullable(),
-  spec: z.union([z.string(), z.number()]).nullable(),
+export const materialPriceMatchSchema = z.looseObject({
+  materialId: z.union([z.string(), z.number()]).nullable().optional(),
+  materialCode: z.string().nullable().optional(),
+  brand: z.string().nullable(),
   material: z.string().nullable(),
-  factory: z.string().nullable(),
+  category: z.string().nullable(),
+  spec: z.string().nullable(),
+  length: z.string().nullable(),
+  status: z.string(),
+  factory: z.string().nullable().optional(),
+  matchedSpec: z.string().nullable().optional(),
+  singleSpecPrice: z.boolean().optional(),
+  basePrice: z.union([z.number(), z.string()]).nullable(),
   price: z.union([z.number(), z.string()]).nullable(),
+  priceType: z.string().nullable().optional(),
   changeVal: z.string().nullable().optional(),
   remark: z.string().nullable().optional(),
+  quoteDate: z.string(),
+  period: z.string(),
 })
 
-export type SteelQuote = z.infer<typeof steelQuoteSchema>
-
-export const steelQuotePageSchema = z.looseObject({
-  content: z.array(steelQuoteSchema),
-  // totalElements 为 long, 按项目规范序列化为字符串
-  totalElements: z.union([z.number(), z.string()]),
-  totalPages: z.number(),
-  currentPage: z.number(),
-  pageSize: z.number(),
-  hasMore: z.boolean(),
-})
+export type MaterialPriceMatch = z.infer<typeof materialPriceMatchSchema>
 
 const PAGE_SIZE = 200
 
@@ -52,25 +49,23 @@ export function syncSteelQuotes(date?: string): Promise<SteelQuoteSyncResult> {
   )
 }
 
-/** 拉取指定日期的全部行情明细(自动翻页)。 */
-export async function fetchSteelQuotes(
+/**
+ * 拉取商品行情匹配结果(自动翻页)。
+ * 后端已按品牌别名/品名映射/规格区间/长度加价完成匹配, 返回每条商品的 basePrice。
+ */
+export async function fetchMaterialPriceMatches(
   quoteDate: string,
   period?: string,
-): Promise<SteelQuote[]> {
-  const all: SteelQuote[] = []
-  let page = 0
-  for (;;) {
-    const response = await apiGet(
-      ENDPOINTS.STEEL_QUOTES,
-      steelQuotePageSchema,
-      {
-        params: { quoteDate, period, page, size: PAGE_SIZE },
-      },
+): Promise<MaterialPriceMatch[]> {
+  const all: MaterialPriceMatch[] = []
+  for (let page = 0; page <= 50; page += 1) {
+    const rows = await apiGet(
+      ENDPOINTS.MATERIAL_PRICE_MATCHES,
+      z.array(materialPriceMatchSchema),
+      { params: { quoteDate, period, page, size: PAGE_SIZE } },
     )
-    all.push(...response.content)
-    if (!response.hasMore || response.content.length === 0) break
-    page += 1
-    if (page > 50) break
+    all.push(...rows)
+    if (rows.length < PAGE_SIZE) break
   }
   return all
 }

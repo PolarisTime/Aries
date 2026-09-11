@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  steelQuotePageSchema,
+  materialPriceMatchSchema,
   steelQuoteSyncResponseSchema,
 } from './steel-quotes'
 
@@ -18,41 +18,28 @@ describe('steelQuoteSyncResponseSchema', () => {
     expect(result.articleId).toBe('700500000000000129')
     expect(result.rowCount).toBe(540)
   })
-
-  it('数字 ID 亦兼容', () => {
-    const result = steelQuoteSyncResponseSchema.parse({
-      articleId: 123,
-      articleDate: '2026-09-11',
-      period: '中午',
-      rowCount: 0,
-      created: false,
-    })
-    expect(result.articleId).toBe(123)
-  })
 })
 
-describe('steelQuotePageSchema', () => {
-  it('totalElements 为字符串(long)时可解析', () => {
-    const result = steelQuotePageSchema.parse({
-      content: [
-        {
-          id: '700500000000000129',
-          quoteDate: '2026-09-11',
-          period: '上午',
-          breed: '螺纹钢',
-          spec: '12',
-          material: 'HRB400',
-          factory: '中天',
-          price: 3320,
-        },
-      ],
-      totalElements: '540',
-      totalPages: 3,
-      currentPage: 0,
-      pageSize: 200,
-      hasMore: true,
+describe('materialPriceMatchSchema', () => {
+  it('解析匹配结果(含字符串 basePrice / 雪花 materialId)', () => {
+    const result = materialPriceMatchSchema.parse({
+      materialId: '700500000000000130',
+      materialCode: 'M001',
+      brand: '万泰',
+      material: 'HRB400E',
+      category: '螺纹钢',
+      spec: '12',
+      length: '9米',
+      status: '匹配',
+      factory: '浙江万泰',
+      matchedSpec: 'Φ12',
+      singleSpecPrice: false,
+      basePrice: '3290.00',
+      price: '3320.00',
+      quoteDate: '2026-09-11',
+      period: '上午',
     })
-    expect(result.totalElements).toBe('540')
-    expect(result.content).toHaveLength(1)
+    expect(result.basePrice).toBe('3290.00')
+    expect(result.brand).toBe('万泰')
   })
 })

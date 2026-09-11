@@ -21,6 +21,12 @@ export const LENGTHS: Record<string, string[]> = {
   圆钢: ['9米', '12米'],
 }
 
+/** 归一化时段为 上午/中午/下午。 */
+export function normalizePeriod(value: string): string {
+  const matched = /(上午|中午|下午)\s*$/.exec((value ?? '').trim())
+  return matched ? matched[1] : (value ?? '')
+}
+
 export const dataKeyOf = (row: PriceRow) =>
   row.category && row.material ? `${row.category}|${row.material}` : ''
 
@@ -100,8 +106,10 @@ export function resolveRef(
     }
     refDate = refDate ?? ''
   }
+  const periods = Object.keys(data?.[refDate] ?? {})
+  const wanted = normalizePeriod(sheet.refPeriod)
   const refPeriod =
-    sheet.refPeriod || Object.keys(data?.[refDate] ?? {})[0] || ''
+    wanted && periods.includes(wanted) ? wanted : (periods[0] ?? wanted ?? '')
   return { refDate, refPeriod }
 }
 
@@ -177,41 +185,42 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   return next
 }
 
-export type QuoteLike = {
-  quoteDate: string
-  period?: string | null
-  breed?: string | null
+export type MaterialMatchLike = {
+  brand?: string | null
+  category?: string | null
   material?: string | null
-  spec?: string | number | null
-  factory?: string | null
-  price?: number | string | null
+  spec?: string | null
+  status?: string | null
+  quoteDate?: string | null
+  period?: string | null
+  basePrice?: string | number | null
 }
 
-/** 后端行情明细 -> data[日期][时段][品牌][品类|材质][规格] = 网价 */
-export function quotesToData(quotes: QuoteLike[]): PriceData {
+/** 商品行情匹配结果 -> data[日期][时段][品牌][类别|材质][规格] = 网价(不含长度加价)。 */
+export function matchesToData(rows: MaterialMatchLike[]): PriceData {
   const patch: PriceData = {}
-  for (const quote of quotes) {
+  for (const row of rows) {
+    if (row.status && row.status !== '匹配') continue
     if (
-      !quote.quoteDate ||
-      !quote.period ||
-      !quote.factory ||
-      !quote.breed ||
-      !quote.material ||
-      quote.spec === null ||
-      quote.spec === undefined ||
-      quote.price === null ||
-      quote.price === undefined
+      !row.brand ||
+      !row.category ||
+      !row.material ||
+      !row.spec ||
+      !row.quoteDate ||
+      !row.period ||
+      row.basePrice === null ||
+      row.basePrice === undefined
     )
       continue
-    const spec = String(Number(quote.spec))
-    const price = Number(quote.price)
+    const spec = String(Number(String(row.spec).replace(/[^0-9.]/g, '')))
+    const price = Number(row.basePrice)
     if (!spec || Number.isNaN(price)) continue
-    const key = `${quote.breed}|${quote.material}`
-    patch[quote.quoteDate] ??= {}
-    patch[quote.quoteDate][quote.period] ??= {}
-    patch[quote.quoteDate][quote.period][quote.factory] ??= {}
-    patch[quote.quoteDate][quote.period][quote.factory][key] ??= {}
-    patch[quote.quoteDate][quote.period][quote.factory][key][spec] = price
+    const key = `${row.category}|${row.material}`
+    patch[row.quoteDate] ??= {}
+    patch[row.quoteDate][row.period] ??= {}
+    patch[row.quoteDate][row.period][row.brand] ??= {}
+    patch[row.quoteDate][row.period][row.brand][key] ??= {}
+    patch[row.quoteDate][row.period][row.brand][key][spec] = price
   }
   return patch
 }

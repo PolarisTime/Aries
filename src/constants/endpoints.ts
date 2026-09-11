@@ -120,4 +120,5 @@ export const ENDPOINTS = {
   // Market (steel quotes)
   STEEL_QUOTES: '/steel-quotes',
   STEEL_QUOTE_SYNCS: '/steel-quote-syncs',
+  MATERIAL_PRICE_MATCHES: '/material-price-matches',
 } as const
