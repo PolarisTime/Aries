@@ -11,8 +11,6 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
-  Divider,
   Empty,
   Flex,
   Segmented,
@@ -375,130 +373,128 @@ export function PriceCompareView() {
         </Space>
       </div>
 
-      <Card
-        size="small"
+      <Flex
+        gap={8}
+        align="center"
+        wrap="wrap"
+        justify="space-between"
         style={{ marginBottom: 8 }}
-        styles={{ body: { padding: 8 } }}
       >
-        <Flex gap={12} align="center" wrap="wrap">
-          <Flex gap={8} align="center" wrap="wrap">
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              项目
-            </Text>
-            {projectGroups.map((group) => (
-              <Tag.CheckableTag
-                key={group.projectId}
-                checked={group.projectId === currentGroup?.projectId}
-                onChange={() =>
-                  group.sheets[0] && setActiveId(group.sheets[0].id)
-                }
-              >
-                {projectAbbrOf(projects, group.projectId, group.projectName)}
-              </Tag.CheckableTag>
-            ))}
-            <Select
-              size="small"
-              style={{ width: 150 }}
-              placeholder="新增项目批次"
-              showSearch={{ optionFilterProp: 'label' }}
-              value={null}
-              options={projects
-                .filter(
-                  (project) =>
-                    !projectGroups.some(
-                      (group) => group.projectId === project.id,
-                    ),
-                )
-                .map((project) => ({
-                  value: project.id,
-                  label: `${project.abbr} · ${project.name}`,
-                }))}
-              onChange={(projectId) => {
-                const project = projects.find((item) => item.id === projectId)
-                if (project)
-                  addSheet(
-                    project.id,
-                    project.abbr || project.name,
-                    today,
-                    defaultRefDate,
-                    defaultRefPeriod,
-                  )
-              }}
-            />
-            <Button
-              size="small"
-              icon={<SettingOutlined />}
-              onClick={() => setConfigOpen(true)}
+        <Flex gap={8} align="center" wrap="wrap">
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            项目
+          </Text>
+          {projectGroups.map((group) => (
+            <Tag.CheckableTag
+              key={group.projectId}
+              checked={group.projectId === currentGroup?.projectId}
+              onChange={() =>
+                group.sheets[0] && setActiveId(group.sheets[0].id)
+              }
             >
-              配置
-            </Button>
-          </Flex>
-
-          <Divider type="vertical" style={{ margin: 0 }} />
-
-          <Flex gap={8} align="center" wrap="wrap">
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              批次
-            </Text>
-            <Segmented
-              size="small"
-              value={activeId}
-              onChange={(value) => setActiveId(String(value))}
-              options={(currentGroup?.sheets ?? []).map((sheet) => ({
-                value: sheet.id,
-                label: (
-                  <span>
-                    {sheet.name}
-                    {countMissing(
-                      data,
-                      { ...sheet, ...resolveRef(data, sheet) },
-                      sheet.rows,
-                      brands,
-                    ) > 0 ? (
-                      <Badge
-                        count={countMissing(
-                          data,
-                          { ...sheet, ...resolveRef(data, sheet) },
-                          sheet.rows,
-                          brands,
-                        )}
-                        size="small"
-                        color="#faad14"
-                        style={{ marginLeft: 6 }}
-                      />
-                    ) : null}
-                  </span>
-                ),
+              {projectAbbrOf(projects, group.projectId, group.projectName)}
+            </Tag.CheckableTag>
+          ))}
+          <Select
+            size="small"
+            style={{ width: 150 }}
+            placeholder="新增项目批次"
+            showSearch={{ optionFilterProp: 'label' }}
+            value={null}
+            options={projects
+              .filter(
+                (project) =>
+                  !projectGroups.some(
+                    (group) => group.projectId === project.id,
+                  ),
+              )
+              .map((project) => ({
+                value: project.id,
+                label: `${project.abbr} · ${project.name}`,
               }))}
-            />
-            <Button
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={() =>
+            onChange={(projectId) => {
+              const project = projects.find((item) => item.id === projectId)
+              if (project)
                 addSheet(
-                  currentGroup?.projectId ?? '',
-                  currentGroup?.projectName ?? '',
+                  project.id,
+                  project.abbr || project.name,
                   today,
                   defaultRefDate,
                   defaultRefPeriod,
                 )
-              }
-            >
-              新批次
-            </Button>
-            <Button
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!active || sheets.length <= 1}
-              title={sheets.length <= 1 ? '至少保留一个批次' : '删除当前批次'}
-              onClick={() => active && confirmRemoveSheet(active.id)}
-            >
-              删除批次
-            </Button>
-          </Flex>
+            }}
+          />
         </Flex>
-      </Card>
+        <Button
+          size="small"
+          icon={<SettingOutlined />}
+          onClick={() => setConfigOpen(true)}
+        >
+          配置
+        </Button>
+      </Flex>
+
+      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          批次
+        </Text>
+        <Segmented
+          size="small"
+          value={activeId}
+          onChange={(value) => setActiveId(String(value))}
+          options={(currentGroup?.sheets ?? []).map((sheet) => ({
+            value: sheet.id,
+            label: (
+              <span>
+                {sheet.name}
+                {countMissing(
+                  data,
+                  { ...sheet, ...resolveRef(data, sheet) },
+                  sheet.rows,
+                  brands,
+                ) > 0 ? (
+                  <Badge
+                    count={countMissing(
+                      data,
+                      { ...sheet, ...resolveRef(data, sheet) },
+                      sheet.rows,
+                      brands,
+                    )}
+                    size="small"
+                    color="#faad14"
+                    style={{ marginLeft: 6 }}
+                  />
+                ) : null}
+              </span>
+            ),
+          }))}
+        />
+        <Button
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={() =>
+            addSheet(
+              currentGroup?.projectId ?? '',
+              currentGroup?.projectName ?? '',
+              today,
+              defaultRefDate,
+              defaultRefPeriod,
+            )
+          }
+        >
+          新批次
+        </Button>
+        <Button
+          size="small"
+          danger
+          icon={<DeleteOutlined />}
+          disabled={!active || sheets.length <= 1}
+          title={sheets.length <= 1 ? '至少保留一个批次' : '删除当前批次'}
+          onClick={() => active && confirmRemoveSheet(active.id)}
+        >
+          删除批次
+        </Button>
+      </Flex>
 
       {active ? (
         <Watermark
