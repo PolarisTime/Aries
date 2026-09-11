@@ -237,3 +237,35 @@
   color: var(--text-placeholder);
   justify-content: flex-start;
 }
+
+/* 项目配置弹窗: 品牌列表 */
+.price-compare-config-premium {
+  padding: 6px 10px;
+  border-radius: var(--ant-border-radius, 6px);
+  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
+}
+
+.price-compare-config-brand {
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--ant-border-radius, 6px);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.price-compare-config-brand:hover {
+  background: var(--theme-surface-hover);
+}
+
+.price-compare-config-brand.is-active {
+  padding: 6px 10px;
+  border-color: var(--ant-color-border-secondary, #f0f0f0);
+  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
+}
+
+.price-compare-config-categories {
+  margin-top: 6px;
+  padding-left: 24px;
+  row-gap: 4px;
+}
