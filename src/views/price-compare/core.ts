@@ -196,6 +196,11 @@ export type MaterialMatchLike = {
   basePrice?: string | number | null
 }
 
+/** 商品类别 -> 表格类别别名(与后端 breed-mappings 对应)。 */
+const CATEGORY_ALIAS: Record<string, string> = {
+  直条: '螺纹钢',
+}
+
 /** 商品行情匹配结果 -> data[日期][时段][品牌][类别|材质][规格] = 网价(不含长度加价)。 */
 export function matchesToData(rows: MaterialMatchLike[]): PriceData {
   const patch: PriceData = {}
@@ -212,10 +217,11 @@ export function matchesToData(rows: MaterialMatchLike[]): PriceData {
       row.basePrice === undefined
     )
       continue
+    const category = CATEGORY_ALIAS[row.category] ?? row.category
     const spec = String(Number(String(row.spec).replace(/[^0-9.]/g, '')))
     const price = Number(row.basePrice)
     if (!spec || Number.isNaN(price)) continue
-    const key = `${row.category}|${row.material}`
+    const key = `${category}|${row.material}`
     patch[row.quoteDate] ??= {}
     patch[row.quoteDate][row.period] ??= {}
     patch[row.quoteDate][row.period][row.brand] ??= {}

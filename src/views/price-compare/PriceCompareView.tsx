@@ -176,8 +176,8 @@ export function PriceCompareView() {
         if (active && !active.refPeriod && period)
           patchSheet(active.id, { refPeriod: period })
       })
-      .catch(() => {
-        // 未登录或后端不可用时静默失败
+      .catch((error) => {
+        console.error('拉取行情匹配失败', error)
       })
   }, [active, data, mergeMatches, patchSheet])
 
@@ -207,6 +207,11 @@ export function PriceCompareView() {
           refDate: result.articleDate,
           refPeriod: result.period,
         })
+      const matched = matches.filter((row) => row.status === '匹配').length
+      if (!matched)
+        message.warning(
+          `已拉取 ${result.articleDate} ${result.period} 行情，但商品资料未匹配到网价`,
+        )
       message.success(
         `已拉取 ${result.articleDate} ${result.period} 行情，共 ${result.rowCount} 条${result.created ? '' : '（已存在，未重复入库）'}`,
       )
