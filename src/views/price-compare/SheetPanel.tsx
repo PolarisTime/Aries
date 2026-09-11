@@ -4,6 +4,7 @@ import {
   InfoCircleOutlined,
   PlusOutlined,
   ReloadOutlined,
+  SettingOutlined,
   TrophyOutlined,
 } from '@ant-design/icons'
 import {
@@ -656,6 +657,7 @@ function SheetHeader({
   periods,
   onRefresh,
   refreshing,
+  onOpenConfig,
   availability,
   bestOn,
   onToggleBest,
@@ -670,6 +672,7 @@ function SheetHeader({
   periods: string[]
   onRefresh: () => void
   refreshing: boolean
+  onOpenConfig?: () => void
   availability: Record<string, string[]>
   bestOn: boolean
   onToggleBest: () => void
@@ -770,6 +773,15 @@ function SheetHeader({
         >
           刷新价格
         </Button>
+        {onOpenConfig ? (
+          <Button
+            size="small"
+            icon={<SettingOutlined />}
+            onClick={onOpenConfig}
+          >
+            配置
+          </Button>
+        ) : null}
         {selectedCount > 0 ? (
           <Popconfirm
             title={`删除选中的 ${selectedCount} 行？`}
@@ -807,6 +819,7 @@ type Props = {
   periods: string[]
   onRefresh: () => void
   refreshing?: boolean
+  onOpenConfig?: () => void
   allowHrb400eFallback?: boolean
   allowedProducts?: string[]
   availability?: Record<string, string[]>
@@ -830,6 +843,7 @@ export function SheetPanel(props: Props) {
     periods,
     onRefresh,
     refreshing = false,
+    onOpenConfig,
     allowHrb400eFallback = false,
     allowedProducts = [],
     availability = {},
@@ -1007,6 +1021,7 @@ export function SheetPanel(props: Props) {
         periods={periods}
         onRefresh={onRefresh}
         refreshing={refreshing}
+        onOpenConfig={onOpenConfig}
         availability={availability}
         bestOn={bestOn}
         onToggleBest={() => setBestOn((value) => !value)}

@@ -1,12 +1,4 @@
-import {
-  DeleteOutlined,
-  FullscreenExitOutlined,
-  FullscreenOutlined,
-  PlusOutlined,
-  RedoOutlined,
-  SettingOutlined,
-  UndoOutlined,
-} from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import {
   Alert,
   Badge,
@@ -16,9 +8,7 @@ import {
   Segmented,
   Select,
   Skeleton,
-  Space,
   Tag,
-  Tooltip,
   Tour,
   Typography,
   Watermark,
@@ -41,14 +31,6 @@ import './price-compare.css'
 
 const { Text } = Typography
 const TOUR_KEY = 'aries-price-compare-tour'
-
-function toggleFullscreen(): void {
-  if (document.fullscreenElement) {
-    void document.exitFullscreen()
-  } else {
-    void document.getElementById('price-compare-root')?.requestFullscreen()
-  }
-}
 
 function projectAbbrOf(
   projects: ProjectOption[],
@@ -100,8 +82,6 @@ export function PriceCompareView() {
     rows,
     config,
     setConfig,
-    canUndo,
-    canRedo,
     undo,
     redo,
     setRows,
@@ -116,8 +96,6 @@ export function PriceCompareView() {
   const brands = config.brands
   const lengthPremium = config.lengthPremium
 
-  const [density, setDensity] = useState<'small' | 'middle' | 'large'>('small')
-  const [fullscreen, setFullscreen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
@@ -145,12 +123,6 @@ export function PriceCompareView() {
         catalog.map((item) => ({ name: item.name, freight: item.freight })),
       )
   }, [active?.projectId, catalog, config.brands.length, setBrands])
-
-  useEffect(() => {
-    const handler = () => setFullscreen(Boolean(document.fullscreenElement))
-    document.addEventListener('fullscreenchange', handler)
-    return () => document.removeEventListener('fullscreenchange', handler)
-  }, [])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -347,45 +319,6 @@ export function PriceCompareView() {
             项目 → 批次 · 分组 · Ctrl+Z 撤销
           </span>
         </div>
-        <Space size={4}>
-          <Segmented
-            size="small"
-            value={density}
-            onChange={(value) =>
-              setDensity(value as 'small' | 'middle' | 'large')
-            }
-            options={[
-              { label: '紧凑', value: 'small' },
-              { label: '适中', value: 'middle' },
-              { label: '宽松', value: 'large' },
-            ]}
-          />
-          <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
-            <Button
-              size="small"
-              icon={
-                fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
-              }
-              onClick={toggleFullscreen}
-            />
-          </Tooltip>
-          <Tooltip title="撤销 (Ctrl+Z)">
-            <Button
-              size="small"
-              icon={<UndoOutlined />}
-              disabled={!canUndo}
-              onClick={undo}
-            />
-          </Tooltip>
-          <Tooltip title="重做 (Ctrl+Shift+Z / Ctrl+Y)">
-            <Button
-              size="small"
-              icon={<RedoOutlined />}
-              disabled={!canRedo}
-              onClick={redo}
-            />
-          </Tooltip>
-        </Space>
       </div>
 
       <Flex
@@ -440,13 +373,6 @@ export function PriceCompareView() {
             }}
           />
         </Flex>
-        <Button
-          size="small"
-          icon={<SettingOutlined />}
-          onClick={() => setConfigOpen(true)}
-        >
-          配置
-        </Button>
       </Flex>
 
       <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
@@ -523,7 +449,7 @@ export function PriceCompareView() {
             varieties={varieties}
             brands={brands}
             rows={rows}
-            density={density}
+            density="small"
             lengthPremium={lengthPremium}
             patchSheet={patchSheet}
             setRows={setRows}
@@ -537,6 +463,7 @@ export function PriceCompareView() {
             refreshing={refreshing}
             allowHrb400eFallback={config.hrb400eFallback}
             allowedProducts={config.products}
+            onOpenConfig={() => setConfigOpen(true)}
             availability={availability}
             spotRef={spotRef}
           />
@@ -546,12 +473,6 @@ export function PriceCompareView() {
           <Empty description="暂无批次" />
         </Flex>
       )}
-
-      <Flex justify="flex-end" style={{ marginTop: 8 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          网价由后端行情接口提供，点击「刷新价格」可重新读取当前日期/时段
-        </Text>
-      </Flex>
 
       <ProjectConfigModal
         open={configOpen}
