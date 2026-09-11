@@ -11,7 +11,7 @@ import {
   Empty,
   Flex,
   Input,
-  List,
+  InputNumber,
   Select,
   Space,
   Table,
@@ -19,15 +19,14 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
-import type { SorterResult } from 'antd/es/table/interface'
+import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  fetchSteelQuoteSyncs,
+  backfillSteelQuotes,
+  fetchSteelQuoteCalendars,
   fetchSteelQuotes,
   type SteelQuote,
-  type SteelQuoteSyncRecord,
   syncSteelQuotes,
 } from '@/api/market/steel-quotes'
 import { useAuthStore } from '@/stores/authStore'
@@ -37,14 +36,8 @@ const { Text } = Typography
 const PERIODS = ['上午', '中午', '下午']
 const BREEDS = ['螺纹钢', '盘螺', '高线', '圆钢']
 const PAGE_SIZE = 20
+const MATRIX_DAYS = 30
 const today = () => new Date().toISOString().slice(0, 10)
-
-type DateGroup = {
-  date: string
-  periods: string[]
-  rows: number
-  fetchedAt: string | null
-}
 
 type Filters = {
   breed?: string
@@ -53,84 +46,81 @@ type Filters = {
   spec?: string
 }
 
-function groupByDate(records: SteelQuoteSyncRecord[]): DateGroup[] {
-  const map = new Map<string, DateGroup>()
-  for (const record of records) {
-    const key = record.articleDate
-    const group = map.get(key) ?? {
-      date: key,
-      periods: [],
-      rows: 0,
-      fetchedAt: null,
-    }
-    if (record.period && !group.periods.includes(record.period))
-      group.periods.push(record.period)
-    group.rows += record.rowCount ?? 0
-    if (
-      record.fetchedAt &&
-      (!group.fetchedAt || record.fetchedAt > group.fetchedAt)
-    )
-      group.fetchedAt = record.fetchedAt
-    map.set(key, group)
-  }
-  const list = [...map.values()]
-  list.sort((a, b) => (a.date < b.date ? 1 : -1))
-  for (const group of list) group.periods.sort()
-  return list
-}
+type CalendarMap = Record<
+  string,
+  { periods: string[]; rows: Record<string, number> }
+>
 
-/** 行情同步: 左侧同步记录(按日期), 右侧行情明细联动。 */
+/** 行情同步: 覆盖矩阵(近30天) + 内联明细 + 单日/区间补数。 */
 export function MarketSyncView() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
-  const [syncDate, setSyncDate] = useState<string>(today())
+  const [calendars, setCalendars] = useState<CalendarMap>({})
+  const [loadingCalendar, setLoadingCalendar] = useState(false)
+  const [selected, setSelected] = useState<{ date: string; period: string }>({
+    date: '',
+    period: '',
+  })
+
+  const [singleDate, setSingleDate] = useState<string>(today())
   const [syncing, setSyncing] = useState(false)
-
-  const [records, setRecords] = useState<SteelQuoteSyncRecord[]>([])
-  const [recordLoading, setRecordLoading] = useState(false)
-
-  const [selectedDate, setSelectedDate] = useState<string>('')
-  const [period, setPeriod] = useState<string>('')
+  const [backfillDays, setBackfillDays] = useState<number>(30)
+  const [backfilling, setBackfilling] = useState(false)
 
   const [form, setForm] = useState<Filters>({})
   const [applied, setApplied] = useState<Filters>({})
   const [sort, setSort] = useState<{ field?: string; order?: 'asc' | 'desc' }>(
     {},
   )
-
   const [quotes, setQuotes] = useState<SteelQuote[]>([])
   const [quotePage, setQuotePage] = useState(0)
   const [quoteTotal, setQuoteTotal] = useState(0)
   const [quoteLoading, setQuoteLoading] = useState(false)
 
-  const groups = useMemo(() => groupByDate(records), [records])
+  const matrixDays = useMemo(() => {
+    const days: string[] = []
+    for (let i = 0; i < MATRIX_DAYS; i += 1)
+      days.push(dayjs().subtract(i, 'day').format('YYYY-MM-DD'))
+    return days
+  }, [])
 
-  const loadRecords = useCallback(async () => {
+  const loadCalendars = useCallback(async () => {
     if (!isAuthenticated) return
-    setRecordLoading(true)
+    setLoadingCalendar(true)
     try {
-      const all: SteelQuoteSyncRecord[] = []
-      for (let page = 0; page < 10; page += 1) {
-        const { rows, total } = await fetchSteelQuoteSyncs(page, 200)
-        all.push(...rows)
-        if (all.length >= total || rows.length < 200) break
-      }
-      setRecords(all)
+      const from = dayjs()
+        .subtract(MATRIX_DAYS - 1, 'day')
+        .format('YYYY-MM-DD')
+      const to = dayjs().add(1, 'day').format('YYYY-MM-DD')
+      const rows = await fetchSteelQuoteCalendars(from, to)
+      const map: CalendarMap = {}
+      for (const row of rows)
+        map[row.quoteDate] = {
+          periods: row.periods,
+          rows: row.periodRows ?? {},
+        }
+      setCalendars(map)
+      setSelected((current) => {
+        if (current.date && map[current.date]) return current
+        const latest = Object.keys(map).sort().reverse()[0]
+        if (!latest) return current
+        return { date: latest, period: map[latest]?.periods[0] ?? '' }
+      })
     } catch (error) {
-      console.error('同步记录加载失败', error)
+      console.error('行情日历加载失败', error)
     } finally {
-      setRecordLoading(false)
+      setLoadingCalendar(false)
     }
   }, [isAuthenticated])
 
   const loadQuotes = useCallback(
-    async (page: number, date: string, currentPeriod: string) => {
-      if (!isAuthenticated) return
+    async (page: number) => {
+      if (!isAuthenticated || !selected.date || !selected.period) return
       setQuoteLoading(true)
       try {
         const { rows, total } = await fetchSteelQuotes({
-          quoteDate: date || undefined,
-          period: currentPeriod || undefined,
+          quoteDate: selected.date,
+          period: selected.period,
           breed: applied.breed || undefined,
           material: applied.material || undefined,
           factory: applied.factory || undefined,
@@ -149,46 +139,47 @@ export function MarketSyncView() {
         setQuoteLoading(false)
       }
     },
-    [isAuthenticated, applied, sort],
+    [isAuthenticated, selected, applied, sort],
   )
 
   useEffect(() => {
-    void loadRecords()
-  }, [loadRecords])
+    void loadCalendars()
+  }, [loadCalendars])
 
   useEffect(() => {
-    if (records.length === 0) return
-    if (selectedDate && groups.some((group) => group.date === selectedDate))
-      return
-    const first = groups[0]
-    if (!first) return
-    setSelectedDate(first.date)
-    setPeriod(first.periods[0] ?? '')
-  }, [records, groups, selectedDate])
+    void loadQuotes(0)
+  }, [loadQuotes])
 
-  useEffect(() => {
-    if (!selectedDate || !period) return
-    void loadQuotes(0, selectedDate, period)
-  }, [selectedDate, period, loadQuotes])
-
-  const onSelect = (date: string, targetPeriod?: string) => {
-    const group = groups.find((item) => item.date === date)
-    const next =
-      targetPeriod ??
-      (group?.periods.includes(period) ? period : (group?.periods[0] ?? ''))
-    setSelectedDate(date)
-    if (next !== period) setPeriod(next)
-  }
+  // 概览统计
+  const stats = useMemo(() => {
+    const weekdays = matrixDays.filter((date) => {
+      const dow = dayjs(date).day()
+      return dow !== 0 && dow !== 6
+    })
+    let covered = 0
+    let missingSlots = 0
+    for (const date of weekdays) {
+      const entry = calendars[date]
+      const count = entry?.periods.length ?? 0
+      if (count > 0) covered += 1
+      missingSlots += PERIODS.length - count
+    }
+    const todayEntry = calendars[today()]
+    return { weekdays: weekdays.length, covered, missingSlots, todayEntry }
+  }, [matrixDays, calendars])
 
   const onSync = async () => {
     setSyncing(true)
     try {
-      const result = await syncSteelQuotes(syncDate || undefined)
+      const result = await syncSteelQuotes(singleDate || undefined)
       message.success(
         `同步完成：${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
       )
-      await loadRecords()
-      onSelect(result.articleDate, result.period)
+      await loadCalendars()
+      setSelected({
+        date: result.articleDate,
+        period: result.period,
+      })
     } catch (error) {
       console.error('同步失败', error)
       message.error(
@@ -199,26 +190,28 @@ export function MarketSyncView() {
     }
   }
 
-  const resetFilters = () => {
-    setForm({})
-    setApplied({})
-    setSort({})
+  const onBackfill = async () => {
+    setBackfilling(true)
+    try {
+      const result = await backfillSteelQuotes(backfillDays)
+      message.success(
+        `已受理补数：${result.from} ~ ${result.to}（后台执行，稍后自动刷新）`,
+      )
+      setTimeout(() => void loadCalendars(), 8000)
+      setTimeout(() => void loadCalendars(), 25000)
+    } catch (error) {
+      console.error('补数失败', error)
+      message.error(
+        `补数失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+      )
+    } finally {
+      setBackfilling(false)
+    }
   }
 
   const columns: ColumnsType<SteelQuote> = [
-    {
-      title: '品牌/钢厂',
-      dataIndex: 'factory',
-      width: 120,
-      fixed: 'left',
-      render: (value: string | null) => value || '-',
-    },
-    {
-      title: '品名',
-      dataIndex: 'breed',
-      width: 90,
-      render: (value: string | null) => value || '-',
-    },
+    { title: '品牌/钢厂', dataIndex: 'factory', width: 120, fixed: 'left' },
+    { title: '品名', dataIndex: 'breed', width: 90 },
     { title: '材质', dataIndex: 'material', width: 100 },
     { title: '规格', dataIndex: 'spec', width: 90 },
     {
@@ -260,13 +253,7 @@ export function MarketSyncView() {
         )
       },
     },
-    {
-      title: '备注',
-      dataIndex: 'remark',
-      ellipsis: true,
-      render: (value: string | null) =>
-        value ? <Tooltip title={value}>{value}</Tooltip> : '-',
-    },
+    { title: '备注', dataIndex: 'remark', ellipsis: true },
   ]
 
   return (
@@ -275,188 +262,217 @@ export function MarketSyncView() {
         <div>
           <h1>行情同步</h1>
           <span className="price-compare-desc">
-            后端定时任务同步；可手动补同步，左侧记录与右侧明细联动
+            近 30 天覆盖监控；缺时段高亮；点击单元格查看该时段明细
           </span>
         </div>
-        <Space wrap>
-          <DatePicker
-            size="small"
-            style={{ width: 140 }}
-            value={syncDate ? dayjs(syncDate) : null}
-            format="YYYY年M月D日"
-            allowClear={false}
-            onChange={(value) =>
-              value && setSyncDate(value.format('YYYY-MM-DD'))
-            }
-          />
-          <Button
-            size="small"
-            type="primary"
-            icon={<SyncOutlined />}
-            loading={syncing}
-            onClick={() => void onSync()}
-          >
-            手动同步
-          </Button>
-        </Space>
-      </div>
-
-      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
-        <Tag color="blue">已同步 {groups.length} 天</Tag>
-        {groups[0]?.date ? <Tag>最近：{groups[0].date}</Tag> : null}
-        {groups[0]?.fetchedAt ? (
-          <Tag>
-            抓取于 {dayjs(groups[0].fetchedAt).format('YYYY-MM-DD HH:mm')}
-          </Tag>
-        ) : null}
-      </Flex>
-
-      <Flex gap={12} align="flex-start" wrap="wrap">
-        <Card
-          size="small"
-          title="同步记录"
-          style={{ flex: '0 0 380px', maxWidth: '100%' }}
-          extra={
-            <Button
+        <Space wrap size={8}>
+          <Space size={4}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              单日
+            </Text>
+            <DatePicker
               size="small"
-              type="text"
-              icon={<ReloadOutlined />}
-              loading={recordLoading}
-              onClick={() => void loadRecords()}
-            />
-          }
-        >
-          {groups.length === 0 ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="暂无记录"
-            />
-          ) : (
-            <List
-              size="small"
-              dataSource={groups}
-              style={{ maxHeight: 560, overflowY: 'auto' }}
-              renderItem={(group) => {
-                const active = group.date === selectedDate
-                return (
-                  <List.Item
-                    onClick={() => onSelect(group.date)}
-                    className="market-sync-record-item"
-                    style={{
-                      cursor: 'pointer',
-                      paddingInline: 8,
-                      borderRadius: 6,
-                      background: active
-                        ? 'var(--theme-highlight-bg)'
-                        : undefined,
-                    }}
-                  >
-                    <Flex vertical gap={4} style={{ width: '100%' }}>
-                      <Flex justify="space-between" align="center">
-                        <Text strong>{group.date}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {group.rows} 行
-                        </Text>
-                      </Flex>
-                      <Flex gap={4} align="center" wrap="wrap">
-                        {PERIODS.filter((p) => group.periods.includes(p)).map(
-                          (p) => (
-                            <Tag.CheckableTag
-                              key={p}
-                              checked={active && period === p}
-                              onChange={() => onSelect(group.date, p)}
-                            >
-                              {p}
-                            </Tag.CheckableTag>
-                          ),
-                        )}
-                        {group.fetchedAt ? (
-                          <Text type="secondary" style={{ fontSize: 11 }}>
-                            {dayjs(group.fetchedAt).format('MM-DD HH:mm')}
-                          </Text>
-                        ) : null}
-                      </Flex>
-                    </Flex>
-                  </List.Item>
-                )
-              }}
-            />
-          )}
-        </Card>
-
-        <Card
-          size="small"
-          title={
-            <Space size={6}>
-              <span>行情明细</span>
-              <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
-                {selectedDate || '未选择日期'}
-                {period ? ` · ${period}` : ''}
-              </Text>
-            </Space>
-          }
-          style={{ flex: '1 1 560px', minWidth: 0 }}
-        >
-          <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
-            <Select
-              size="small"
-              style={{ width: 110 }}
-              placeholder="品名"
-              allowClear
-              value={form.breed}
+              style={{ width: 130 }}
+              value={singleDate ? dayjs(singleDate) : null}
+              format="YYYY-MM-DD"
+              allowClear={false}
               onChange={(value) =>
-                setForm((prev) => ({ ...prev, breed: value }))
+                value && setSingleDate(value.format('YYYY-MM-DD'))
               }
-              options={BREEDS.map((b) => ({ value: b, label: b }))}
-            />
-            <Input
-              size="small"
-              style={{ width: 110 }}
-              placeholder="材质"
-              allowClear
-              value={form.material}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, material: event.target.value }))
-              }
-              onPressEnter={() => setApplied(form)}
-            />
-            <Input
-              size="small"
-              style={{ width: 120 }}
-              placeholder="品牌/钢厂"
-              allowClear
-              value={form.factory}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, factory: event.target.value }))
-              }
-              onPressEnter={() => setApplied(form)}
-            />
-            <Input
-              size="small"
-              style={{ width: 90 }}
-              placeholder="规格"
-              allowClear
-              value={form.spec}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, spec: event.target.value }))
-              }
-              onPressEnter={() => setApplied(form)}
             />
             <Button
               size="small"
               type="primary"
-              icon={<SearchOutlined />}
-              onClick={() => setApplied(form)}
+              icon={<SyncOutlined />}
+              loading={syncing}
+              onClick={() => void onSync()}
             >
-              查询
+              同步
             </Button>
-            <Button size="small" icon={<ClearOutlined />} onClick={resetFilters}>
-              重置
-            </Button>
-            <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
-              共 {quoteTotal} 条
+          </Space>
+          <Space size={4}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              补数
             </Text>
-          </Flex>
+            <InputNumber
+              size="small"
+              min={1}
+              max={60}
+              style={{ width: 70 }}
+              value={backfillDays}
+              onChange={(value) => setBackfillDays(value ?? 30)}
+            />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              天
+            </Text>
+            <Button
+              size="small"
+              icon={<SyncOutlined />}
+              loading={backfilling}
+              onClick={() => void onBackfill()}
+            >
+              补数
+            </Button>
+          </Space>
+          <Button
+            size="small"
+            type="text"
+            icon={<ReloadOutlined />}
+            loading={loadingCalendar}
+            onClick={() => void loadCalendars()}
+          />
+        </Space>
+      </div>
+
+      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+        <Tag color={stats.missingSlots > 0 ? 'orange' : 'green'}>
+          近30天覆盖 {stats.covered}/{stats.weekdays} 天
+        </Tag>
+        <Tag color={stats.missingSlots > 0 ? 'red' : 'green'}>
+          缺失时段 {stats.missingSlots}
+        </Tag>
+        {PERIODS.map((p) => {
+          const has = stats.todayEntry?.periods.includes(p)
+          return (
+            <Tag key={p} color={has ? 'green' : 'default'}>
+              今日{p} {has ? '✓' : '—'}
+            </Tag>
+          )
+        })}
+      </Flex>
+
+      <Card
+        size="small"
+        title="覆盖矩阵（近30天）"
+        style={{ marginBottom: 12 }}
+      >
+        <Table
+          size="small"
+          rowKey="date"
+          pagination={false}
+          dataSource={matrixDays.map((date) => ({ date }))}
+          scroll={{ y: 420 }}
+          columns={[
+            {
+              title: '日期',
+              dataIndex: 'date',
+              width: 130,
+              render: (date: string) => (
+                <Text strong={date === today()}>{date}</Text>
+              ),
+            },
+            ...PERIODS.map((p) => ({
+              title: p,
+              key: p,
+              align: 'center' as const,
+              render: (_: unknown, row: { date: string }) => {
+                const dow = dayjs(row.date).day()
+                const weekend = dow === 0 || dow === 6
+                const entry = calendars[row.date]
+                const has = entry?.periods.includes(p)
+                const rows = entry?.rows[p]
+                const active =
+                  selected.date === row.date && selected.period === p
+                if (weekend) return <Text type="secondary">休</Text>
+                if (!has)
+                  return (
+                    <Tooltip title="该时段无行情数据">
+                      <Tag color="red">缺</Tag>
+                    </Tooltip>
+                  )
+                return (
+                  <Tag.CheckableTag
+                    checked={active}
+                    onChange={() => setSelected({ date: row.date, period: p })}
+                  >
+                    {rows ? `${rows}行` : '✓'}
+                  </Tag.CheckableTag>
+                )
+              },
+            })),
+          ]}
+        />
+      </Card>
+
+      <Card
+        size="small"
+        title={
+          <Space size={6}>
+            <span>行情明细</span>
+            <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+              {selected.date || '未选择'}
+              {selected.period ? ` · ${selected.period}` : ''}
+            </Text>
+          </Space>
+        }
+      >
+        <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+          <Select
+            size="small"
+            style={{ width: 110 }}
+            placeholder="品名"
+            allowClear
+            value={form.breed}
+            onChange={(value) => setForm((prev) => ({ ...prev, breed: value }))}
+            options={BREEDS.map((b) => ({ value: b, label: b }))}
+          />
+          <Input
+            size="small"
+            style={{ width: 110 }}
+            placeholder="材质"
+            allowClear
+            value={form.material}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, material: event.target.value }))
+            }
+            onPressEnter={() => setApplied(form)}
+          />
+          <Input
+            size="small"
+            style={{ width: 120 }}
+            placeholder="品牌/钢厂"
+            allowClear
+            value={form.factory}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, factory: event.target.value }))
+            }
+            onPressEnter={() => setApplied(form)}
+          />
+          <Input
+            size="small"
+            style={{ width: 90 }}
+            placeholder="规格"
+            allowClear
+            value={form.spec}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, spec: event.target.value }))
+            }
+            onPressEnter={() => setApplied(form)}
+          />
+          <Button
+            size="small"
+            type="primary"
+            icon={<SearchOutlined />}
+            onClick={() => setApplied(form)}
+          >
+            查询
+          </Button>
+          <Button
+            size="small"
+            icon={<ClearOutlined />}
+            onClick={() => {
+              setForm({})
+              setApplied({})
+              setSort({})
+            }}
+          >
+            重置
+          </Button>
+          <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
+            共 {quoteTotal} 条
+          </Text>
+        </Flex>
+        {selected.date && selected.period ? (
           <Table<SteelQuote>
             size="small"
             sticky
@@ -467,11 +483,7 @@ export function MarketSyncView() {
             dataSource={quotes}
             loading={quoteLoading}
             scroll={{ x: 760 }}
-            onChange={(
-              pagination: TablePaginationConfig,
-              _filters,
-              sorter: SorterResult<SteelQuote> | SorterResult<SteelQuote>[],
-            ) => {
+            onChange={(pagination, _filters, sorter) => {
               const single = Array.isArray(sorter) ? sorter[0] : sorter
               const field =
                 single?.order && single.field ? String(single.field) : undefined
@@ -486,8 +498,7 @@ export function MarketSyncView() {
                 return
               }
               const page = (pagination.current ?? 1) - 1
-              if (page !== quotePage)
-                void loadQuotes(page, selectedDate, period)
+              if (page !== quotePage) void loadQuotes(page)
             }}
             pagination={{
               current: quotePage + 1,
@@ -495,11 +506,15 @@ export function MarketSyncView() {
               total: quoteTotal,
               showSizeChanger: false,
               size: 'small',
-              showTotal: (total) => `共 ${total} 条`,
             }}
           />
-        </Card>
-      </Flex>
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="请选择日期时段"
+          />
+        )}
+      </Card>
     </div>
   )
 }

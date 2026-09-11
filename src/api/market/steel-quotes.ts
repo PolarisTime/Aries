@@ -52,6 +52,7 @@ const steelQuoteCalendarSchema = z.array(
   z.looseObject({
     quoteDate: z.string(),
     periods: z.array(z.string()),
+    periodRows: z.record(z.string(), z.number()).optional(),
   }),
 )
 
@@ -166,4 +167,23 @@ export async function fetchSteelQuotes(params: {
     },
   )
   return { rows: res.content, total: Number(res.totalElements) }
+}
+
+const steelQuoteBackfillResponseSchema = z.looseObject({
+  from: z.string(),
+  to: z.string(),
+  days: z.number(),
+  accepted: z.boolean(),
+})
+export type SteelQuoteBackfillResult = z.infer<
+  typeof steelQuoteBackfillResponseSchema
+>
+
+/** 触发区间补数(后台异步执行)。 */
+export function backfillSteelQuotes(days: number): Promise<SteelQuoteBackfillResult> {
+  return apiPost(
+    ENDPOINTS.STEEL_QUOTE_BACKFILLS,
+    steelQuoteBackfillResponseSchema,
+    { days },
+  )
 }
