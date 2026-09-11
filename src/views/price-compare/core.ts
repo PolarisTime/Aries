@@ -75,9 +75,9 @@ export const DEFAULT_LENGTH_PREMIUM = 30
 export const SHEET_COLUMN_WIDTH = {
   spec: 248,
   ton: 84,
-  net: 58,
-  spot: 62,
-  diff: 54,
+  net: 74,
+  spot: 72,
+  diff: 60,
 } as const
 
 /** 网价: 参照日期+时段, 命中则返回并叠加 12 米加价。 */
