@@ -3,10 +3,10 @@ import {
   Button,
   Card,
   DatePicker,
-  Descriptions,
+  Empty,
   Flex,
   Input,
-  Select,
+  List,
   Space,
   Table,
   Tag,
@@ -14,7 +14,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchSteelQuoteSyncs,
   fetchSteelQuotes,
@@ -30,52 +30,90 @@ const PERIODS = ['上午', '中午', '下午']
 const PAGE_SIZE = 20
 const today = () => new Date().toISOString().slice(0, 10)
 
-/** 行情同步: 手动同步 + 同步记录 + 行情明细。 */
+type DateGroup = {
+  date: string
+  periods: string[]
+  rows: number
+  fetchedAt: string | null
+  articles: SteelQuoteSyncRecord[]
+}
+
+function groupByDate(records: SteelQuoteSyncRecord[]): DateGroup[] {
+  const map = new Map<string, DateGroup>()
+  for (const record of records) {
+    const key = record.articleDate
+    const group = map.get(key) ?? {
+      date: key,
+      periods: [],
+      rows: 0,
+      fetchedAt: null,
+      articles: [],
+    }
+    if (record.period && !group.periods.includes(record.period))
+      group.periods.push(record.period)
+    group.rows += record.rowCount ?? 0
+    group.articles.push(record)
+    if (
+      record.fetchedAt &&
+      (!group.fetchedAt || record.fetchedAt > group.fetchedAt)
+    )
+      group.fetchedAt = record.fetchedAt
+    map.set(key, group)
+  }
+  const list = [...map.values()]
+  list.sort((a, b) => (a.date < b.date ? 1 : -1))
+  for (const group of list) group.periods.sort()
+  return list
+}
+
+/** 行情同步: 左侧同步记录(按日期), 右侧行情明细联动。 */
 export function MarketSyncView() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
   const [syncDate, setSyncDate] = useState<string>(today())
   const [syncing, setSyncing] = useState(false)
 
   const [records, setRecords] = useState<SteelQuoteSyncRecord[]>([])
-  const [recordPage, setRecordPage] = useState(0)
-  const [recordTotal, setRecordTotal] = useState(0)
   const [recordLoading, setRecordLoading] = useState(false)
 
-  const [quoteDate, setQuoteDate] = useState<string>(today())
+  const [selectedDate, setSelectedDate] = useState<string>('')
   const [period, setPeriod] = useState<string>('')
   const [factory, setFactory] = useState<string>('')
   const [material, setMaterial] = useState<string>('')
+
   const [quotes, setQuotes] = useState<SteelQuote[]>([])
   const [quotePage, setQuotePage] = useState(0)
   const [quoteTotal, setQuoteTotal] = useState(0)
   const [quoteLoading, setQuoteLoading] = useState(false)
 
-  const loadRecords = useCallback(
-    async (page = 0) => {
-      if (!isAuthenticated) return
-      setRecordLoading(true)
-      try {
-        const { rows, total } = await fetchSteelQuoteSyncs(page, PAGE_SIZE)
-        setRecords(rows)
-        setRecordPage(page)
-        setRecordTotal(total)
-      } catch (error) {
-        console.error('同步记录加载失败', error)
-      } finally {
-        setRecordLoading(false)
+  const groups = useMemo(() => groupByDate(records), [records])
+
+  const loadRecords = useCallback(async () => {
+    if (!isAuthenticated) return
+    setRecordLoading(true)
+    try {
+      const all: SteelQuoteSyncRecord[] = []
+      for (let page = 0; page < 10; page += 1) {
+        const { rows, total } = await fetchSteelQuoteSyncs(page, 200)
+        all.push(...rows)
+        if (all.length >= total || rows.length < 200) break
       }
-    },
-    [isAuthenticated],
-  )
+      setRecords(all)
+    } catch (error) {
+      console.error('同步记录加载失败', error)
+    } finally {
+      setRecordLoading(false)
+    }
+  }, [isAuthenticated])
 
   const loadQuotes = useCallback(
-    async (page = 0) => {
+    async (page: number, date: string, currentPeriod: string) => {
       if (!isAuthenticated) return
       setQuoteLoading(true)
       try {
         const { rows, total } = await fetchSteelQuotes({
-          quoteDate: quoteDate || undefined,
-          period: period || undefined,
+          quoteDate: date || undefined,
+          period: currentPeriod || undefined,
           factory: factory || undefined,
           material: material || undefined,
           page,
@@ -90,27 +128,48 @@ export function MarketSyncView() {
         setQuoteLoading(false)
       }
     },
-    [quoteDate, period, factory, material, isAuthenticated],
+    [isAuthenticated, factory, material],
   )
 
   useEffect(() => {
-    void loadRecords(0)
+    void loadRecords()
   }, [loadRecords])
 
+  // 首次加载/记录刷新后: 保证有选中日期
   useEffect(() => {
-    void loadQuotes(0)
-  }, [loadQuotes])
+    if (records.length === 0) return
+    if (selectedDate && groups.some((group) => group.date === selectedDate))
+      return
+    const first = groups[0]
+    if (!first) return
+    setSelectedDate(first.date)
+    setPeriod(first.periods[0] ?? '')
+  }, [records, groups, selectedDate])
+
+  // 选中日期/时段变化时加载明细
+  useEffect(() => {
+    if (!selectedDate || !period) return
+    void loadQuotes(0, selectedDate, period)
+  }, [selectedDate, period, loadQuotes])
+
+  const onSelect = (date: string, targetPeriod?: string) => {
+    const group = groups.find((item) => item.date === date)
+    const next =
+      targetPeriod ??
+      (group?.periods.includes(period) ? period : (group?.periods[0] ?? ''))
+    setSelectedDate(date)
+    if (next !== period) setPeriod(next)
+  }
 
   const onSync = async () => {
     setSyncing(true)
     try {
       const result = await syncSteelQuotes(syncDate || undefined)
       message.success(
-        `同步完成：${result.articleDate} ${result.period}，${result.rowCount} 行${result.created ? '' : '（已存在，未重复入库）'}`,
+        `同步完成：${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
       )
-      setQuoteDate(result.articleDate)
-      setPeriod(result.period)
-      await loadRecords(0)
+      await loadRecords()
+      onSelect(result.articleDate, result.period)
     } catch (error) {
       console.error('同步失败', error)
       message.error(
@@ -120,44 +179,6 @@ export function MarketSyncView() {
       setSyncing(false)
     }
   }
-
-  const recordColumns: ColumnsType<SteelQuoteSyncRecord> = [
-    { title: '行情日期', dataIndex: 'articleDate', width: 120 },
-    {
-      title: '时段',
-      dataIndex: 'period',
-      width: 90,
-      render: (value: string | null) => value || '-',
-    },
-    {
-      title: '文章',
-      dataIndex: 'title',
-      ellipsis: true,
-      render: (value: string | null, row) =>
-        row.articleUrl ? (
-          <a href={row.articleUrl} target="_blank" rel="noreferrer">
-            {value || row.articleUrl}
-          </a>
-        ) : (
-          value || '-'
-        ),
-    },
-    {
-      title: '行数',
-      dataIndex: 'rowCount',
-      width: 80,
-      align: 'right',
-      render: (value: number | null) => value ?? '-',
-    },
-    { title: '市场', dataIndex: 'market', width: 90 },
-    {
-      title: '抓取时间',
-      dataIndex: 'fetchedAt',
-      width: 170,
-      render: (value: string | null) =>
-        value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-',
-    },
-  ]
 
   const quoteColumns: ColumnsType<SteelQuote> = [
     { title: '品牌', dataIndex: 'factory', width: 110 },
@@ -170,13 +191,35 @@ export function MarketSyncView() {
       width: 100,
       align: 'right',
       render: (value: number | string | null | undefined) =>
-        value === null || value === undefined ? '-' : Number(value),
+        value === null || value === undefined ? (
+          '-'
+        ) : (
+          <Text strong>{Number(value)}</Text>
+        ),
     },
     {
       title: '涨跌',
       dataIndex: 'changeVal',
       width: 90,
-      render: (value: string | null) => value || '-',
+      align: 'right',
+      render: (value: string | null) => {
+        if (!value) return '-'
+        const positive = value.startsWith('+') || Number(value) > 0
+        const negative = value.startsWith('-') || Number(value) < 0
+        return (
+          <span
+            style={{
+              color: positive
+                ? 'var(--color-success-active, #389e0d)'
+                : negative
+                  ? 'var(--color-danger-active, #cf1322)'
+                  : undefined,
+            }}
+          >
+            {value}
+          </span>
+        )
+      },
     },
     {
       title: '备注',
@@ -192,14 +235,10 @@ export function MarketSyncView() {
         <div>
           <h1>行情同步</h1>
           <span className="price-compare-desc">
-            后端定时任务同步行情；此处可手动补同步、查看同步结果与行情明细
+            后端定时任务同步；可手动补同步，左侧记录与右侧明细联动
           </span>
         </div>
-      </div>
-
-      <Card size="small" title="手动同步" style={{ marginBottom: 12 }}>
         <Space wrap>
-          <Text type="secondary">行情日期</Text>
           <DatePicker
             size="small"
             style={{ width: 140 }}
@@ -219,93 +258,131 @@ export function MarketSyncView() {
           >
             手动同步
           </Button>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            同一文章重复同步幂等，不会重复入库
-          </Text>
         </Space>
-      </Card>
+      </div>
 
-      <Card
-        size="small"
-        title="同步记录"
-        extra={
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            loading={recordLoading}
-            onClick={() => void loadRecords(recordPage)}
-          >
-            刷新
-          </Button>
-        }
-        style={{ marginBottom: 12 }}
-      >
-        <Table<SteelQuoteSyncRecord>
+      <Flex gap={12} align="flex-start" wrap="wrap" style={{ marginBottom: 8 }}>
+        <Tag color="blue">已同步 {groups.length} 天</Tag>
+        {groups[0]?.date ? <Tag>最近：{groups[0].date}</Tag> : null}
+        {groups[0]?.fetchedAt ? (
+          <Tag>
+            抓取于 {dayjs(groups[0].fetchedAt).format('YYYY-MM-DD HH:mm')}
+          </Tag>
+        ) : null}
+      </Flex>
+
+      <Flex gap={12} align="flex-start" wrap="wrap">
+        <Card
           size="small"
-          rowKey={(row) => String(row.articleId ?? row.articleUrl)}
-          columns={recordColumns}
-          dataSource={records}
-          loading={recordLoading}
-          pagination={{
-            current: recordPage + 1,
-            pageSize: PAGE_SIZE,
-            total: recordTotal,
-            showSizeChanger: false,
-            onChange: (page) => void loadRecords(page - 1),
-          }}
-        />
-      </Card>
+          title="同步记录"
+          style={{ flex: '0 0 380px', maxWidth: '100%' }}
+          extra={
+            <Button
+              size="small"
+              type="text"
+              icon={<ReloadOutlined />}
+              loading={recordLoading}
+              onClick={() => void loadRecords()}
+            />
+          }
+        >
+          {groups.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="暂无记录"
+            />
+          ) : (
+            <List
+              size="small"
+              dataSource={groups}
+              style={{ maxHeight: 560, overflowY: 'auto' }}
+              renderItem={(group) => {
+                const active = group.date === selectedDate
+                return (
+                  <List.Item
+                    onClick={() => onSelect(group.date)}
+                    style={{
+                      cursor: 'pointer',
+                      paddingInline: 8,
+                      borderRadius: 6,
+                      background: active
+                        ? 'var(--theme-highlight-bg)'
+                        : undefined,
+                    }}
+                  >
+                    <Flex vertical gap={4} style={{ width: '100%' }}>
+                      <Flex justify="space-between" align="center">
+                        <Text strong>{group.date}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {group.rows} 行
+                        </Text>
+                      </Flex>
+                      <Flex gap={4} align="center" wrap="wrap">
+                        {PERIODS.filter((p) => group.periods.includes(p)).map(
+                          (p) => (
+                            <Tag.CheckableTag
+                              key={p}
+                              checked={active && period === p}
+                              onChange={() => onSelect(group.date, p)}
+                            >
+                              {p}
+                            </Tag.CheckableTag>
+                          ),
+                        )}
+                        {group.fetchedAt ? (
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            {dayjs(group.fetchedAt).format('MM-DD HH:mm')}
+                          </Text>
+                        ) : null}
+                      </Flex>
+                    </Flex>
+                  </List.Item>
+                )
+              }}
+            />
+          )}
+        </Card>
 
-      <Card size="small" title="行情明细">
-        <Descriptions size="small" column={1} style={{ marginBottom: 8 }}>
-          <Descriptions.Item label="筛选">
-            <Space wrap>
-              <DatePicker
-                size="small"
-                style={{ width: 140 }}
-                value={quoteDate ? dayjs(quoteDate) : null}
-                format="YYYY年M月D日"
-                allowClear
-                onChange={(value) =>
-                  setQuoteDate(value ? value.format('YYYY-MM-DD') : '')
-                }
-              />
-              <Select
-                size="small"
-                style={{ width: 100 }}
-                placeholder="时段"
-                allowClear
-                value={period || undefined}
-                onChange={(value) => setPeriod(value ?? '')}
-                options={PERIODS.map((p) => ({ value: p, label: p }))}
-              />
-              <Input
-                size="small"
-                style={{ width: 130 }}
-                placeholder="钢厂/品牌"
-                value={factory}
-                onChange={(event) => setFactory(event.target.value)}
-              />
-              <Input
-                size="small"
-                style={{ width: 120 }}
-                placeholder="材质"
-                value={material}
-                onChange={(event) => setMaterial(event.target.value)}
-              />
-              <Button
-                size="small"
-                icon={<ReloadOutlined />}
-                loading={quoteLoading}
-                onClick={() => void loadQuotes(0)}
-              >
-                查询
-              </Button>
-              <Tag>共 {quoteTotal} 条</Tag>
-            </Space>
-          </Descriptions.Item>
-        </Descriptions>
-        <Flex vertical>
+        <Card
+          size="small"
+          title="行情明细"
+          style={{ flex: '1 1 560px', minWidth: 0 }}
+        >
+          <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {selectedDate || '未选择日期'}
+              {period ? ` · ${period}` : ''}
+            </Text>
+            <Input
+              size="small"
+              style={{ width: 130 }}
+              placeholder="品牌/钢厂"
+              allowClear
+              value={factory}
+              onChange={(event) => setFactory(event.target.value)}
+              onPressEnter={() => void loadQuotes(0, selectedDate, period)}
+            />
+            <Input
+              size="small"
+              style={{ width: 110 }}
+              placeholder="材质"
+              allowClear
+              value={material}
+              onChange={(event) => setMaterial(event.target.value)}
+              onPressEnter={() => void loadQuotes(0, selectedDate, period)}
+            />
+            <Button
+              size="small"
+              icon={<ReloadOutlined />}
+              loading={quoteLoading}
+              onClick={() => void loadQuotes(0, selectedDate, period)}
+            >
+              查询
+            </Button>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              共 {quoteTotal} 条
+            </Text>
+          </Flex>
           <Table<SteelQuote>
             size="small"
             rowKey={(row) =>
@@ -319,11 +396,12 @@ export function MarketSyncView() {
               pageSize: PAGE_SIZE,
               total: quoteTotal,
               showSizeChanger: false,
-              onChange: (page) => void loadQuotes(page - 1),
+              onChange: (page) =>
+                void loadQuotes(page - 1, selectedDate, period),
             }}
           />
-        </Flex>
-      </Card>
+        </Card>
+      </Flex>
     </div>
   )
 }

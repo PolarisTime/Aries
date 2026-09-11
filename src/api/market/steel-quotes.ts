@@ -99,6 +99,7 @@ export const steelQuoteSyncResponseSchema = z.looseObject({
   articleDate: z.string(),
   articleTime: z.string().nullable().optional(),
   period: z.string(),
+  periods: z.array(z.string()).optional(),
   rowCount: z.number(),
   created: z.boolean(),
 })
