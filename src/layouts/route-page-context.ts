@@ -4,7 +4,6 @@ import { appTitle } from '@/utils/env'
 
 export interface RoutePageContext {
   activeMenuKey: string
-  openPageKey: string
   title: string
 }
 
@@ -30,13 +29,11 @@ export function resolveRoutePageContext(
       title: matchedDefinition.title,
       activeMenuKey:
         matchedDefinition.activeMenuKey || matchedDefinition.menuKey,
-      openPageKey: matchedDefinition.openPageKey || matchedDefinition.menuKey,
     }
   }
 
   return {
     title: appTitle,
     activeMenuKey: normalizedPath,
-    openPageKey: normalizedPath,
   }
 }

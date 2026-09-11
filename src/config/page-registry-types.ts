@@ -33,5 +33,4 @@ export interface AppPageDefinition {
   searchable?: boolean
   hiddenInMenu?: boolean
   activeMenuKey?: string
-  openPageKey?: string
 }
