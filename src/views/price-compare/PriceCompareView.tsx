@@ -466,6 +466,7 @@ export function PriceCompareView() {
               void onSyncPrice()
             }}
             syncing={syncing}
+            allowHrb400eFallback={config.hrb400eFallback}
             spotRef={spotRef}
           />
         </Watermark>

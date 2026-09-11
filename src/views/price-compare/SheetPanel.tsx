@@ -26,7 +26,7 @@ import {
   makeGroup,
   makeRow,
   moveItem,
-  netPrice,
+  netPriceWithFallback,
   resolveRef,
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
@@ -70,6 +70,7 @@ type ColumnContext = {
   toggleSelect: (rowId: string, checked: boolean) => void
   toggleAll: (checked: boolean) => void
   attachSpotRef: boolean
+  allowHrb400eFallback: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -127,6 +128,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     onRowDragEnd,
     onReorderBrands,
     attachSpotRef,
+    allowHrb400eFallback,
   } = ctx
   const enabledCategories = new Set<string>()
   if (!brands.length) {
@@ -281,21 +283,23 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           ),
           children: [
             cellOf('网价', SHEET_COLUMN_WIDTH.net, (_, row) => {
-              const price = isCategoryEnabled(brand, row.row.category)
-                ? netPrice(
+              const resolved = isCategoryEnabled(brand, row.row.category)
+                ? netPriceWithFallback(
                     data,
                     refDate,
                     refPeriod,
                     brand.name,
                     row.row,
                     lengthPremium,
+                    allowHrb400eFallback,
                   )
-                : undefined
+                : { value: undefined, fallback: false }
+              const price = resolved.value
               return price === undefined ? (
                 <div className="price-compare-num price-compare-sub">-</div>
               ) : (
                 <div className="price-compare-net price-compare-num">
-                  {price}
+                  {resolved.fallback ? `E ${price}` : price}
                 </div>
               )
             }),
@@ -366,14 +370,15 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             }),
             cellOf('差价', SHEET_COLUMN_WIDTH.diff, (_, row) => {
               const price = isCategoryEnabled(brand, row.row.category)
-                ? netPrice(
+                ? netPriceWithFallback(
                     data,
                     refDate,
                     refPeriod,
                     brand.name,
                     row.row,
                     lengthPremium,
-                  )
+                    allowHrb400eFallback,
+                  ).value
                 : undefined
               const spot = getSpot(brand.name, row.row.id)
               if (price === undefined || spot === undefined) {
@@ -711,6 +716,7 @@ type Props = {
   onReorderBrands: (from: number, to: number) => void
   onSyncPrice: () => void
   syncing?: boolean
+  allowHrb400eFallback?: boolean
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -730,6 +736,7 @@ export function SheetPanel(props: Props) {
     onReorderBrands,
     onSyncPrice,
     syncing = false,
+    allowHrb400eFallback = false,
     chrome = true,
     spotRef,
   } = props
@@ -886,6 +893,7 @@ export function SheetPanel(props: Props) {
     onReorderBrands,
     selectedIds,
     toggleSelect,
+    allowHrb400eFallback,
     spotRef,
   }
 

@@ -16,6 +16,7 @@ type Snapshot = {
 const emptyConfig = (): ProjectConfig => ({
   brands: [],
   lengthPremium: DEFAULT_LENGTH_PREMIUM,
+  hrb400eFallback: false,
 })
 
 function defaultState(): Snapshot {

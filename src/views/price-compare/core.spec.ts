@@ -9,6 +9,7 @@ import {
   mergePriceData,
   moveItem,
   netPrice,
+  netPriceWithFallback,
   syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
@@ -136,6 +137,56 @@ describe('computeSummary', () => {
     expect(
       netPrice(dataRound, '2026-09-10', '9:30 上午', '中天', rowRound12, 30),
     ).toBe(4000)
+  })
+})
+
+describe('netPriceWithFallback', () => {
+  const dataE: PriceData = {
+    '2026-09-10': {
+      上午: { 中天: { '螺纹钢|HRB400E': { '12': 3320 } } },
+    },
+  }
+  const hrb400 = { ...row12, material: 'HRB400' }
+
+  it('HRB400 无价且开启兜底时用 HRB400E 价格', () => {
+    const result = netPriceWithFallback(
+      dataE,
+      '2026-09-10',
+      '上午',
+      '中天',
+      hrb400,
+      30,
+      true,
+    )
+    expect(result.value).toBe(3320)
+    expect(result.fallback).toBe(true)
+  })
+
+  it('关闭兜底时返回空', () => {
+    const result = netPriceWithFallback(
+      dataE,
+      '2026-09-10',
+      '上午',
+      '中天',
+      hrb400,
+      30,
+      false,
+    )
+    expect(result.value).toBeUndefined()
+  })
+
+  it('HRB400 自身有价时优先, 不标记 fallback', () => {
+    const result = netPriceWithFallback(
+      data,
+      '2026-09-10',
+      '9:30 上午',
+      '中天',
+      row12,
+      30,
+      true,
+    )
+    expect(result.value).toBe(3320)
+    expect(result.fallback).toBe(false)
   })
 })
 

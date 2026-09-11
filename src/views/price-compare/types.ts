@@ -27,6 +27,8 @@ export type Brand = {
 export type ProjectConfig = {
   brands: Brand[]
   lengthPremium: number
+  /** HRB400 无网价时, 使用 HRB400E 价格兜底(展示前缀 E) */
+  hrb400eFallback: boolean
 }
 
 export type SheetGroup = {

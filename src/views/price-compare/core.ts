@@ -103,6 +103,44 @@ export function netPrice(
   return base + premium
 }
 
+/** HRB400 兜底材质 */
+export const HRB400_FALLBACK_MATERIAL = 'HRB400E'
+
+/**
+ * 取网价: 若 HRB400 无价且开启兜底, 使用 HRB400E 价格并标记 fallback。
+ */
+export function netPriceWithFallback(
+  data: PriceData | null,
+  refDate: string,
+  refPeriod: string,
+  brandName: string,
+  row: PriceRow,
+  lengthPremium: number,
+  allowFallback: boolean,
+): { value: number | undefined; fallback: boolean } {
+  const direct = netPrice(
+    data,
+    refDate,
+    refPeriod,
+    brandName,
+    row,
+    lengthPremium,
+  )
+  if (direct !== undefined) return { value: direct, fallback: false }
+  if (allowFallback && row.material === 'HRB400') {
+    const alt = netPrice(
+      data,
+      refDate,
+      refPeriod,
+      brandName,
+      { ...row, material: HRB400_FALLBACK_MATERIAL },
+      lengthPremium,
+    )
+    if (alt !== undefined) return { value: alt, fallback: true }
+  }
+  return { value: undefined, fallback: false }
+}
+
 /** 解析单据有效参照(为空时回退到数据源最新日期/首个时段)。 */
 export function resolveRef(
   data: PriceData | null,

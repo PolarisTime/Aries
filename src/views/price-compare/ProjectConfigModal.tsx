@@ -8,6 +8,7 @@ import {
   InputNumber,
   Modal,
   Space,
+  Switch,
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -41,6 +42,9 @@ export function ProjectConfigModal({
   const [freightMap, setFreightMap] = useState<Record<string, number>>({})
   const [categoryMap, setCategoryMap] = useState<Record<string, string[]>>({})
   const [premium, setPremium] = useState<number>(config.lengthPremium)
+  const [hrb400eFallback, setHrb400eFallback] = useState<boolean>(
+    config.hrb400eFallback,
+  )
   const [keyword, setKeyword] = useState('')
 
   useEffect(() => {
@@ -57,6 +61,7 @@ export function ProjectConfigModal({
     setFreightMap(nextFreight)
     setCategoryMap(nextCategory)
     setPremium(config.lengthPremium)
+    setHrb400eFallback(config.hrb400eFallback)
     setKeyword('')
   }, [open, brandOptions, config])
 
@@ -84,7 +89,7 @@ export function ProjectConfigModal({
         categories: enabled,
       }
     })
-    onSave({ brands, lengthPremium: premium })
+    onSave({ brands, lengthPremium: premium, hrb400eFallback })
     onClose()
   }
 
@@ -114,6 +119,17 @@ export function ProjectConfigModal({
             style={{ width: 120 }}
             value={premium}
             onChange={(value) => setPremium(value ?? 0)}
+          />
+        </Flex>
+
+        <Flex align="center" justify="space-between" gap={8}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            HRB400 无网价时改用 HRB400E 价格（网价前显示 E）
+          </Text>
+          <Switch
+            size="small"
+            checked={hrb400eFallback}
+            onChange={setHrb400eFallback}
           />
         </Flex>
 
