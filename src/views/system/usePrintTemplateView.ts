@@ -103,14 +103,14 @@ export function usePrintTemplateView() {
 
   const templatesQuery = useQuery({
     queryKey: QUERY_KEYS.printTemplateByType(selectedBillType),
-    queryFn: () => listPrintTemplates(selectedBillType),
+    queryFn: ({ signal }) => listPrintTemplates(selectedBillType, signal),
     placeholderData: keepPreviousData,
   })
   const { data: settlementCompanyOptions = [] } = useQuery<
     SettlementCompanyOption[]
   >({
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
-    queryFn: fetchSettlementCompanyOptions,
+    queryFn: ({ signal }) => fetchSettlementCompanyOptions(signal),
   })
   const templates = templatesQuery.data || []
 

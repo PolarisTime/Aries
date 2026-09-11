@@ -195,7 +195,7 @@ export function useMasterOptions(
     isLoading: settlementCompaniesLoading,
   } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
-    queryFn: fetchSettlementCompanyOptions,
+    queryFn: ({ signal }) => fetchSettlementCompanyOptions(signal),
     enabled: queryEnabled && normalizedRequirements.settlementCompanies,
     staleTime: STALE_MASTER_OPTIONS,
   })

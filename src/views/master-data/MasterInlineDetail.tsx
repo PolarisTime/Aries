@@ -20,7 +20,8 @@ export function MasterInlineDetail({
   const { t } = useTranslation()
   const detail = useQuery({
     queryKey: QUERY_KEYS.businessGridDetail(spec.moduleKey, recordId),
-    queryFn: () => getBusinessModuleDetail(spec.moduleKey, recordId),
+    queryFn: ({ signal }) =>
+      getBusinessModuleDetail(spec.moduleKey, recordId, signal),
     enabled: Boolean(recordId),
     staleTime: 5_000,
   })

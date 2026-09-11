@@ -163,7 +163,11 @@ describe('useBusinessGridEditor', () => {
     })
     await act(async () => {})
     expect(latest.inlineExpandedRowKeys).toEqual(['3'])
-    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith('material', '3')
+    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
+      'material',
+      '3',
+      expect.anything(),
+    )
 
     act(() => {
       latest.toggleInlineDetail(record)

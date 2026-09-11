@@ -83,7 +83,11 @@ export function useDetailSupport<Key extends ModuleKey>({
     queries: detailTargets.map((target) => ({
       queryKey: QUERY_KEYS.businessGridDetail(moduleKey, target.recordId),
       queryFn: async ({ signal }) => {
-        const record = await getBusinessModuleDetail(moduleKey, target.recordId)
+        const record = await getBusinessModuleDetail(
+          moduleKey,
+          target.recordId,
+          signal,
+        )
         signal.throwIfAborted()
         return record
       },
@@ -96,7 +100,11 @@ export function useDetailSupport<Key extends ModuleKey>({
     queries: inlineTargets.map((target) => ({
       queryKey: QUERY_KEYS.businessGridDetail(moduleKey, target.recordId),
       queryFn: async ({ signal }) => {
-        const record = await getBusinessModuleDetail(moduleKey, target.recordId)
+        const record = await getBusinessModuleDetail(
+          moduleKey,
+          target.recordId,
+          signal,
+        )
         signal.throwIfAborted()
         return record
       },

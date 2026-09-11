@@ -125,15 +125,17 @@ function defaultEngineForTemplateType(
   return 'LODOP'
 }
 
-export function listPrintTemplates(billType: string) {
+export function listPrintTemplates(billType: string, signal?: AbortSignal) {
   return apiGet(ENDPOINTS.PRINT_TEMPLATES, printTemplateListResponseSchema, {
     params: { billType },
+    signal,
   })
 }
 
 export async function listPrintRecordItems(
   moduleKey: string,
   recordIds: string[],
+  signal?: AbortSignal,
 ): Promise<PrintRecordItem[]> {
   const response = await apiGet(
     ENDPOINTS.PRINT_PREVIEWS_ITEMS,
@@ -145,6 +147,7 @@ export async function listPrintRecordItems(
         page: 0,
         size: 200,
       },
+      signal,
     },
   )
   return response.content

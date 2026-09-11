@@ -320,7 +320,11 @@ describe('ProjectPage 主数据拆分试点', () => {
     })
     await flushAsync()
 
-    expect(getBusinessModuleDetail).toHaveBeenCalledWith('project', '9001')
+    expect(getBusinessModuleDetail).toHaveBeenCalledWith(
+      'project',
+      '9001',
+      expect.anything(),
+    )
     expect(container.textContent).toContain('详情地址')
   })
 

@@ -50,7 +50,7 @@ export function PrintTemplateDropdown({
   const supportsPrintTemplate = moduleKey in printTemplateTargetMap
   const { data: templates = [] } = useQuery<PrintTemplateRecord[]>({
     queryKey: QUERY_KEYS.printableTemplates(moduleKey),
-    queryFn: () => listPrintTemplates(moduleKey),
+    queryFn: ({ signal }) => listPrintTemplates(moduleKey, signal),
     staleTime: 5 * 60 * 1000,
     enabled: supportsPrintTemplate,
   })

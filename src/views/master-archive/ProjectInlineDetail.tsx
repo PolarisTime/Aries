@@ -20,7 +20,8 @@ export function ProjectInlineDetail({ recordId }: { recordId: EntityId }) {
   const { t } = useTranslation()
   const detail = useQuery({
     queryKey: QUERY_KEYS.businessGridDetail(MODULE_KEY, recordId),
-    queryFn: () => getBusinessModuleDetail(MODULE_KEY, recordId),
+    queryFn: ({ signal }) =>
+      getBusinessModuleDetail(MODULE_KEY, recordId, signal),
     enabled: Boolean(recordId),
     staleTime: 5_000,
   })

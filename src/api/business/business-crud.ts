@@ -31,14 +31,17 @@ type BusinessModuleSaveRecord =
 export function getBusinessModuleDetail<Key extends MainFlowModuleKey>(
   moduleKey: Key,
   id: string,
+  signal?: AbortSignal,
 ): Promise<MainFlowDetailRecord<Key>>
 export function getBusinessModuleDetail<Key extends string>(
   moduleKey: Key,
   id: string,
+  signal?: AbortSignal,
 ): Promise<ModuleDetailRecordFor<Key>>
 export async function getBusinessModuleDetail(
   moduleKey: string,
   id: string,
+  signal?: AbortSignal,
 ): Promise<LegacyModuleRecord> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly && !endpointConfig.supportsDetail) {
@@ -48,10 +51,10 @@ export async function getBusinessModuleDetail(
   const path = `${endpointConfig.path}/${encodeURIComponent(id)}`
   const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
   if (mainFlowResponseSchema) {
-    return apiGet(path, mainFlowResponseSchema)
+    return apiGet(path, mainFlowResponseSchema, { signal })
   }
 
-  return normalizeRecord(await apiGet(path, rawRecordSchema))
+  return normalizeRecord(await apiGet(path, rawRecordSchema, { signal }))
 }
 
 export function saveBusinessModule<Key extends MainFlowModuleKey>(

@@ -132,12 +132,13 @@ export async function listCompanySettings() {
   })
 }
 
-export async function fetchSettlementCompanyOptions(): Promise<
-  SettlementCompanyOption[]
-> {
+export async function fetchSettlementCompanyOptions(
+  signal?: AbortSignal,
+): Promise<SettlementCompanyOption[]> {
   const data = await apiGet(
     ENDPOINTS.COMPANY_SETTINGS_OPTIONS,
     z.array(rawSettlementCompanyOptionSchema),
+    { signal },
   )
   return normalizeSettlementCompanyOptions(data)
 }

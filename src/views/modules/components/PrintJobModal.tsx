@@ -305,8 +305,8 @@ export function PrintJobModal({
     refetch: refetchPrintItems,
   } = useQuery<PrintRecordItem[]>({
     queryKey: QUERY_KEYS.printRecordItems(moduleKey, selectedRowKeys),
-    queryFn: async () => {
-      return listPrintRecordItems(moduleKey, selectedRowKeys)
+    queryFn: async ({ signal }) => {
+      return listPrintRecordItems(moduleKey, selectedRowKeys, signal)
     },
     enabled: open && selectedRowKeys.length > 0,
     staleTime: 30 * 1000,
