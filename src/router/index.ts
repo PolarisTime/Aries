@@ -29,8 +29,6 @@ import {
   SERVER_ERROR_ROUTE,
 } from '@/utils/server-error-navigation'
 import { asString } from '@/utils/type-narrowing'
-import { LazyLoginView } from '@/views/auth/LazyLoginView'
-import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
 
 const SETUP_ROUTE_PATH = '/setup'
 
@@ -122,7 +120,11 @@ const rootRoute = createRootRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: LazyLoginView,
+  component: lazy(() =>
+    import('@/views/auth/LazyLoginView').then((m) => ({
+      default: m.LazyLoginView,
+    })),
+  ),
 })
 
 const serverErrorRoute = createRoute({
@@ -196,10 +198,7 @@ export function buildModuleRoutes(parent: AnyRoute) {
     return createRoute({
       getParentRoute: () => parent,
       path,
-      component:
-        def.view === 'dashboard'
-          ? LazyDashboardView
-          : lazy(viewLoaders[def.view]),
+      component: lazy(viewLoaders[def.view]),
       loader:
         isListPrefetchView(def.view) && def.moduleKey
           ? async () => {

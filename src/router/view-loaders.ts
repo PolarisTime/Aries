@@ -7,9 +7,13 @@ import type { RouteViewKey } from '@/config/page-registry'
  * 并由 `view-loaders.spec.ts` 守卫，避免 `page-registry` 与路由映射漂移。
  */
 export const viewLoaders: Record<
-  Exclude<RouteViewKey, 'dashboard'>,
+  RouteViewKey,
   () => Promise<{ default: ComponentType }>
 > = {
+  dashboard: () =>
+    import('@/views/dashboard/LazyDashboardView').then((m) => ({
+      default: m.LazyDashboardView,
+    })),
   'business-grid': () =>
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
