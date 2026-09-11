@@ -218,6 +218,38 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         )
       },
     },
+    {
+      title: '报单吨位',
+      width: SHEET_COLUMN_WIDTH.ton,
+      fixed: 'left',
+      align: 'right',
+      render: (_, row) => (
+        <Input
+          className="price-compare-ton"
+          size="small"
+          variant="borderless"
+          inputMode="decimal"
+          data-ton={row.rowId}
+          defaultValue={row.row.ton === undefined ? '' : String(row.row.ton)}
+          onBlur={(event) => {
+            const raw = event.target.value
+            const value = Number(raw)
+            if (raw !== '' && (Number.isNaN(value) || value <= 0)) {
+              message.warning('报单吨位需为正数')
+              return
+            }
+            patchRow(row.rowId, { ton: raw === '' ? undefined : value })
+          }}
+          onPressEnter={(event) => {
+            const raw = (event.target as HTMLInputElement).value
+            const value = Number(raw)
+            if (raw === '') patchRow(row.rowId, { ton: undefined })
+            else if (!Number.isNaN(value) && value > 0)
+              patchRow(row.rowId, { ton: value })
+          }}
+        />
+      ),
+    },
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> => [
         {
@@ -524,6 +556,7 @@ function GroupTable(props: GroupTableProps) {
         scroll={{
           x:
             SHEET_COLUMN_WIDTH.spec +
+            SHEET_COLUMN_WIDTH.ton +
             base.brands.length *
               (SHEET_COLUMN_WIDTH.net +
                 SHEET_COLUMN_WIDTH.spot +

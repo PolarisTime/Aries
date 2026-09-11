@@ -27,6 +27,7 @@ import {
   fetchMaterialPriceMatches,
   syncSteelQuotes,
 } from '@/api/market/steel-quotes'
+import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
 import { countMissing, moveItem, resolveRef } from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
@@ -122,6 +123,7 @@ export function PriceCompareView() {
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
   const fetchedDates = useRef<Set<string>>(new Set())
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   useEffect(() => {
     if (initialized.current || !projects.length) return
@@ -163,23 +165,28 @@ export function PriceCompareView() {
   }, [undo, redo])
 
   useEffect(() => {
-    const date = active?.refDate
-    if (!date || !data) return
-    if (data[date] && Object.keys(data[date]).length) return
-    if (fetchedDates.current.has(date)) return
-    fetchedDates.current.add(date)
+    if (!active || !isAuthenticated) return
+    const date = active.refDate
+    const key = date || '__latest__'
+    if (date && data[date] && Object.keys(data[date]).length) return
+    if (fetchedDates.current.has(key)) return
+    fetchedDates.current.add(key)
     fetchMaterialPriceMatches(date)
       .then((matches) => {
         if (!matches.length) return
         mergeMatches(matches)
+        const quoteDate = matches.find((row) => row.quoteDate)?.quoteDate
         const period = matches.find((row) => row.period)?.period
-        if (active && !active.refPeriod && period)
-          patchSheet(active.id, { refPeriod: period })
+        patchSheet(active.id, {
+          ...(date ? {} : { refDate: quoteDate ?? '' }),
+          ...(active.refPeriod ? {} : { refPeriod: period ?? '' }),
+        })
       })
       .catch((error) => {
+        fetchedDates.current.delete(key)
         console.error('拉取行情匹配失败', error)
       })
-  }, [active, data, mergeMatches, patchSheet])
+  }, [active, data, mergeMatches, patchSheet, isAuthenticated])
 
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =
@@ -194,6 +201,10 @@ export function PriceCompareView() {
   const today = new Date().toISOString().slice(0, 10)
 
   const onSyncPrice = async () => {
+    if (!isAuthenticated) {
+      message.error('请先登录后再同步行情')
+      return
+    }
     setSyncing(true)
     try {
       const result = await syncSteelQuotes(active?.refDate || today)
@@ -466,7 +477,7 @@ export function PriceCompareView() {
 
       <Flex justify="flex-end" style={{ marginTop: 8 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          行情数据暂取自本地快照，正式环境将接入后端接口
+          网价来自后端行情接口，可点击「价格同步」拉取最新行情
         </Text>
       </Flex>
 

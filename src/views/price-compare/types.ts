@@ -41,6 +41,8 @@ export type PriceRow = {
   material: string
   spec: number | null
   length: string
+  /** 报单吨位(手动输入) */
+  ton?: number
 }
 
 export type SheetInput = { ton?: number; spot?: number }
