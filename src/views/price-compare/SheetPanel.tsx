@@ -30,7 +30,6 @@ import {
   resolveRef,
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
-  syncAllSpots,
   syncSpotInputs,
 } from './core'
 import type {
@@ -84,6 +83,15 @@ const cellOf = (
   render,
 })
 
+const varietyKeyOf = (item: Variety) =>
+  `${item.category}|${item.material}|${item.spec}|${item.length}`
+
+/** 精简展示: 类别由分组表头给出, 选项只显示 材质/规格/长度。 */
+const varietyDisplay = (item: Variety) =>
+  [item.material, item.spec, item.length === '-' ? '' : item.length]
+    .filter(Boolean)
+    .join(' ')
+
 function buildVarietyOptions(varieties: Variety[]) {
   return CATEGORIES.reduce<
     { label: string; options: { value: string; label: string }[] }[]
@@ -91,7 +99,7 @@ function buildVarietyOptions(varieties: Variety[]) {
     const options: { value: string; label: string }[] = []
     for (const item of varieties) {
       if (item.category === category)
-        options.push({ value: item.label, label: item.label })
+        options.push({ value: varietyKeyOf(item), label: varietyDisplay(item) })
     }
     if (options.length) groups.push({ label: category, options })
     return groups
@@ -183,11 +191,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       fixed: 'left',
       render: (_, row) => {
         const current = row.row
-        const value = current
-          ? varietyByLabel.get(
-              `${current.category}|${current.material}|${current.spec}|${current.length}`,
-            )?.label
-          : undefined
+        const value =
+          current && current.material
+            ? `${current.category}|${current.material}|${current.spec}|${current.length}`
+            : undefined
         return (
           <Select
             size="small"
@@ -197,8 +204,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             showSearch={{ optionFilterProp: 'label' }}
             value={value}
             options={varietyOptions}
-            onChange={(label) => {
-              const target = varietyByLabel.get(label)
+            onChange={(key) => {
+              const target = varietyByLabel.get(key)
               if (!target) return
               patchRow(row.rowId, {
                 category: target.category,
@@ -537,6 +544,7 @@ function SheetHeader({
   patchSheet,
   onAddGroup,
   onSyncPrice,
+  syncing,
   selectedCount,
   onRemoveSelected,
 }: {
@@ -547,6 +555,7 @@ function SheetHeader({
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   onAddGroup: () => void
   onSyncPrice: () => void
+  syncing: boolean
   selectedCount: number
   onRemoveSelected: () => void
 }) {
@@ -620,7 +629,7 @@ function SheetHeader({
         <Button size="small" onClick={onAddGroup}>
           ＋分组
         </Button>
-        <Button size="small" onClick={onSyncPrice}>
+        <Button size="small" loading={syncing} onClick={onSyncPrice}>
           价格同步
         </Button>
         {selectedCount > 0 ? (
@@ -657,6 +666,8 @@ type Props = {
   ) => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
   onReorderBrands: (from: number, to: number) => void
+  onSyncPrice: () => void
+  syncing?: boolean
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
@@ -674,6 +685,8 @@ export function SheetPanel(props: Props) {
     patchSheet,
     setRows,
     onReorderBrands,
+    onSyncPrice,
+    syncing = false,
     chrome = true,
     spotRef,
   } = props
@@ -734,22 +747,6 @@ export function SheetPanel(props: Props) {
     if (!ids.size) return
     setRows((list) => list.filter((row) => !ids.has(row.id)))
     setSelectedIds([])
-  }
-
-  const syncPrices = () => {
-    const { inputs, updates } = syncAllSpots(rows, sheet.inputs, brands)
-    if (!updates.length) {
-      message.info('现货价已一致，无需同步')
-      return
-    }
-    patchSheet(sheet.id, { inputs })
-    for (const update of updates) {
-      const input = document.querySelector<HTMLInputElement>(
-        `[data-spot="${update.brandName}:${update.rowId}"] input`,
-      )
-      if (input) input.value = String(update.value)
-    }
-    message.success(`已同步 ${updates.length} 处现货价`)
   }
 
   const moveFocus =
@@ -846,7 +843,8 @@ export function SheetPanel(props: Props) {
         data={data}
         patchSheet={patchSheet}
         onAddGroup={addGroup}
-        onSyncPrice={syncPrices}
+        onSyncPrice={onSyncPrice}
+        syncing={syncing}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
       />

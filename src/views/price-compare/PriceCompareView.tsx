@@ -22,7 +22,8 @@ import {
   Watermark,
 } from 'antd'
 import { useEffect, useRef, useState } from 'react'
-import { modal } from '@/utils/antd-app'
+import { syncSteelQuotes } from '@/api/market/steel-quotes'
+import { message, modal } from '@/utils/antd-app'
 import { countMissing, moveItem, resolveRef } from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
 import { SheetPanel } from './SheetPanel'
@@ -112,6 +113,7 @@ export function PriceCompareView() {
   const [density, setDensity] = useState<'small' | 'middle' | 'large'>('small')
   const [fullscreen, setFullscreen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
@@ -166,6 +168,20 @@ export function PriceCompareView() {
       ? (Object.keys(data[defaultRefDate] ?? {})[0] ?? '')
       : ''
   const today = new Date().toISOString().slice(0, 10)
+
+  const onSyncPrice = async () => {
+    setSyncing(true)
+    try {
+      const result = await syncSteelQuotes(active?.refDate || today)
+      message.success(
+        `已拉取 ${result.articleDate} ${result.period} 行情，共 ${result.rowCount} 条${result.created ? '' : '（已存在，未重复入库）'}`,
+      )
+    } catch {
+      message.error('行情拉取失败，请稍后重试')
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({
@@ -379,6 +395,10 @@ export function PriceCompareView() {
             onReorderBrands={(from, to) =>
               setBrands((current) => moveItem(current, from, to))
             }
+            onSyncPrice={() => {
+              void onSyncPrice()
+            }}
+            syncing={syncing}
             spotRef={spotRef}
           />
         </Watermark>

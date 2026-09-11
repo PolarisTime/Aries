@@ -24,7 +24,15 @@ async function fetchDataSource(): Promise<DataSource> {
     loadJson<ProjectOption[]>('projects.json'),
     loadJson<BrandOption[]>('brands.json'),
   ])
-  return { data, varieties, projects, catalog }
+  return {
+    data,
+    varieties: varieties.map((item) => ({
+      ...item,
+      label: item.label.replace(/Φ\s*/g, '').replace(/\s+/g, ' ').trim(),
+    })),
+    projects,
+    catalog,
+  }
 }
 
 export type PriceCompareData = {

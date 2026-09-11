@@ -116,4 +116,8 @@ export const ENDPOINTS = {
   CARRIERS_OPTIONS: '/carriers/options',
   MATERIALS: '/materials',
   MATERIAL_CATEGORIES: '/material-categories/options',
+
+  // Market (steel quotes)
+  STEEL_QUOTES: '/steel-quotes',
+  STEEL_QUOTE_SYNCS: '/steel-quote-syncs',
 } as const

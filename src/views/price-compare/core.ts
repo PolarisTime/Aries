@@ -30,42 +30,6 @@ export const productKeyOf = (row: PriceRow) =>
     ? `${row.category}|${row.material}|${row.spec}|${row.length}`
     : ''
 
-/**
- * 现货价同步: 按 品牌 + 商品键 归并, 以首个已录入的现货价补齐同键的其他行。
- * 返回合并后的 inputs 与需要更新到界面的目标(非受控输入)。
- */
-export function syncAllSpots(
-  rows: PriceRow[],
-  inputs: SheetInputs,
-  brands: Brand[],
-): {
-  inputs: SheetInputs
-  updates: { brandName: string; rowId: string; value: number }[]
-} {
-  const updates: { brandName: string; rowId: string; value: number }[] = []
-  let next = inputs
-  for (const brand of brands) {
-    const representative = new Map<string, number>()
-    for (const row of rows) {
-      const key = productKeyOf(row)
-      if (!key || representative.has(key)) continue
-      const spot = next[`${brand.name}:${row.id}`]?.spot
-      if (spot !== undefined) representative.set(key, spot)
-    }
-    for (const row of rows) {
-      const key = productKeyOf(row)
-      if (!key) continue
-      const value = representative.get(key)
-      if (value === undefined) continue
-      const inputKey = `${brand.name}:${row.id}`
-      if (next[inputKey]?.spot === value) continue
-      if (next === inputs) next = { ...inputs }
-      next[inputKey] = { ...(next[inputKey] ?? {}), spot: value }
-      updates.push({ brandName: brand.name, rowId: row.id, value })
-    }
-  }
-  return { inputs: next, updates }
-}
 export function syncSpotInputs(
   rows: PriceRow[],
   inputs: SheetInputs,
