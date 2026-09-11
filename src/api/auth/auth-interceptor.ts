@@ -309,6 +309,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         markHandledRequestError(error)
         handleAuthFailure(description)
       } else if (
+        // 查询类请求（GET）的错误由页面内呈现，避免与页内错误重复提示；
+        // 写操作（POST/PUT/PATCH/DELETE）错误仍走全局提示。
+        String(originalRequest?.method ?? '').toLowerCase() !== 'get' &&
         !originalRequest?.suppressGlobalErrorStatuses?.includes(Number(status))
       ) {
         markHandledRequestError(error)
