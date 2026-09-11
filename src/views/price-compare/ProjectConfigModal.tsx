@@ -14,6 +14,7 @@ import {
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
+import { modal } from '@/utils/antd-app'
 import { CATEGORIES } from './core'
 import type { Brand, ProjectConfig, Variety } from './types'
 
@@ -195,39 +196,36 @@ function BrandSection({
                 key={name}
                 className={`price-compare-config-brand${active ? ' is-active' : ''}`}
               >
-                <Flex justify="space-between" align="center" gap={8}>
+                <Flex align="center" gap={12} wrap="wrap">
                   <Checkbox
                     checked={active}
                     onChange={(event) => toggle(name, event.target.checked)}
                   >
                     {name}
                   </Checkbox>
-                  {active ? (
-                    <Space size={4}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        运费
-                      </Text>
-                      <InputNumber
-                        size="small"
-                        min={0}
-                        max={9999}
-                        style={{ width: 72 }}
-                        value={draft.freightMap[name] ?? DEFAULT_FREIGHT}
-                        onChange={(value) =>
-                          onChange({
-                            freightMap: {
-                              ...draft.freightMap,
-                              [name]: Number(value) || 0,
-                            },
-                          })
-                        }
-                      />
-                    </Space>
-                  ) : null}
-                </Flex>
-                {active ? (
+                  <Space size={4}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      运费(元/吨)
+                    </Text>
+                    <InputNumber
+                      size="small"
+                      min={0}
+                      max={9999}
+                      style={{ width: 72 }}
+                      disabled={!active}
+                      value={draft.freightMap[name] ?? DEFAULT_FREIGHT}
+                      onChange={(value) =>
+                        onChange({
+                          freightMap: {
+                            ...draft.freightMap,
+                            [name]: Number(value) || 0,
+                          },
+                        })
+                      }
+                    />
+                  </Space>
                   <Checkbox.Group
-                    className="price-compare-config-categories"
+                    disabled={!active}
                     value={draft.categoryMap[name] ?? CATEGORIES}
                     options={CATEGORIES.map((category) => ({
                       label: category,
@@ -239,7 +237,7 @@ function BrandSection({
                       })
                     }
                   />
-                ) : null}
+                </Flex>
               </div>
             )
           })
@@ -462,6 +460,22 @@ export function ProjectConfigModal({
   const patch = (partial: Partial<ProjectConfigDraft>) =>
     setDraft((current) => ({ ...current, ...partial }))
 
+  const handleCancel = () => {
+    const dirty =
+      JSON.stringify(draft) !==
+      JSON.stringify(createDraft(config, brandOptions))
+    if (!dirty) {
+      onClose()
+      return
+    }
+    modal.confirm({
+      title: '放弃未保存的修改？',
+      okText: '放弃',
+      cancelText: '继续编辑',
+      onOk: onClose,
+    })
+  }
+
   return (
     <Modal
       title="项目配置"
@@ -474,7 +488,7 @@ export function ProjectConfigModal({
         onSave(draftToConfig(draft))
         onClose()
       }}
-      onCancel={onClose}
+      onCancel={handleCancel}
       styles={{
         body: { maxHeight: '64vh', overflowY: 'auto', paddingRight: 8 },
       }}
@@ -489,7 +503,7 @@ export function ProjectConfigModal({
           },
           {
             key: 'brands',
-            label: `品牌与品种 (${draft.brands.length})`,
+            label: '品牌与品种',
             children: (
               <BrandSection
                 draft={draft}
