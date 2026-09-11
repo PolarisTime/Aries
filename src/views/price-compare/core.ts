@@ -96,7 +96,7 @@ export const DEFAULT_LENGTH_PREMIUM = 30
 
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
-  spec: 200,
+  spec: 248,
   net: 58,
   spot: 62,
   diff: 54,
