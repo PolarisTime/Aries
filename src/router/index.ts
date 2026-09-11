@@ -304,25 +304,12 @@ const notFoundRoute = createRoute({
   ),
 })
 
-const priceCompareDesignRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/price-compare-design',
-  component: lazy(() =>
-    import('@/views/price-compare/designs/PriceCompareDesignPreview').then(
-      (m) => ({
-        default: m.PriceCompareDesignPreview,
-      }),
-    ),
-  ),
-})
-
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   setupRoute,
   serverErrorRoute,
   notFoundRoute,
-  priceCompareDesignRoute,
   authenticatedLayoutRoute.addChildren(
     // TanStack Router 子路由需统一 AnyRoute 泛型，否则整棵路由树的类型会丢失
     buildModuleRoutes(authenticatedLayoutRoute) as AnyRoute[],
