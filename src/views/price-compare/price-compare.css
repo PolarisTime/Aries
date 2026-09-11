@@ -64,6 +64,7 @@
 .price-compare-brand-name {
   font-size: 13px;
   font-weight: 600;
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
 }
 
 .price-compare-sub {
@@ -105,7 +106,7 @@
 
 .price-compare-drag {
   cursor: grab;
-  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.45));
+  color: inherit;
   user-select: none;
   white-space: nowrap;
   display: inline-flex;
