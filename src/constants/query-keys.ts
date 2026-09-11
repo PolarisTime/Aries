@@ -10,6 +10,7 @@ export const QUERY_KEYS = {
   // Dashboard
   dashboardSummary: ['dashboard-summary'] as const,
   backendInfo: ['backend-info'] as const,
+  backendHealth: ['backend-health'] as const,
   dashboardWorkspace: ['dashboard-workspace'] as const,
   dashboardMonthCounts: ['dashboard-month-counts'] as const,
   dashboardAwaitingInbound: ['dashboard-awaiting-inbound'] as const,

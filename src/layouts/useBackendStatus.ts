@@ -1,80 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { fetchBackendHealth } from '@/api/auth/auth-api'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000
-const HEALTH_CHECK_MAX_RETRIES = 5
-const HEALTH_CHECK_MAX_BACKOFF_MS = 30_000
-const INITIAL_BOOT_DELAY_MS = 1200
 
+/** 后端健康状态：由 react-query 统一负责缓存、重试与轮询，页面不可见时停止轮询。 */
 export function useBackendStatus(token: string): {
   backendOnline: boolean
 } {
-  const [healthState, setHealthState] = useState<{
-    backendOnline: boolean
-    token: string
-  }>({ backendOnline: false, token })
-  const isCurrentToken = Boolean(token) && healthState.token === token
-  const backendOnline = isCurrentToken ? healthState.backendOnline : false
-  const healthRetriesRef = useRef(0)
-
-  useEffect(() => {
-    if (!token) {
-      return
-    }
-
-    let healthTimer: ReturnType<typeof setInterval> | null = null
-    const retryTimers = new Set<ReturnType<typeof setTimeout>>()
-
-    const checkBackendHealth = async (): Promise<void> => {
-      try {
-        const body = await fetchBackendHealth()
-        setHealthState({
-          backendOnline: body.status === 'UP',
-          token,
-        })
-        healthRetriesRef.current = 0
-      } catch {
-        setHealthState({
-          backendOnline: false,
-          token,
-        })
-        healthRetriesRef.current += 1
-        if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
-          const delay = Math.min(
-            1000 * 2 ** healthRetriesRef.current,
-            HEALTH_CHECK_MAX_BACKOFF_MS,
-          )
-          const retryTimer = window.setTimeout(() => {
-            retryTimers.delete(retryTimer)
-            void checkBackendHealth()
-          }, delay)
-          retryTimers.add(retryTimer)
-        }
-      }
-    }
-
-    const timer = window.setTimeout(() => {
-      void checkBackendHealth()
-      healthTimer = setInterval(() => {
-        if (healthRetriesRef.current === 0) {
-          void checkBackendHealth()
-        }
-      }, HEALTH_CHECK_INTERVAL_MS)
-    }, INITIAL_BOOT_DELAY_MS)
-
-    return () => {
-      window.clearTimeout(timer)
-      if (healthTimer) {
-        clearInterval(healthTimer)
-      }
-      for (const retryTimer of retryTimers) {
-        window.clearTimeout(retryTimer)
-      }
-      retryTimers.clear()
-    }
-  }, [token])
+  const isPageVisible = usePageVisibility()
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.backendHealth,
+    queryFn: fetchBackendHealth,
+    enabled: Boolean(token),
+    refetchInterval: isPageVisible && token ? HEALTH_CHECK_INTERVAL_MS : false,
+    retry: 2,
+    staleTime: 15_000,
+  })
 
   return {
-    backendOnline,
+    backendOnline: data?.status === 'UP',
   }
 }
