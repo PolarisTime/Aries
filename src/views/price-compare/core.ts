@@ -203,7 +203,7 @@ export function makeRow(groupId: string): PriceRow {
 export const DEFAULT_STATUS = '报价'
 
 /** 新建单据默认分组内的行数(均为空行, 由用户自行选择商品)。 */
-const DEFAULT_ROW_COUNT = 5
+const DEFAULT_ROW_COUNT = 1
 
 export function defaultSheetRows(groupId: string): PriceRow[] {
   return Array.from({ length: DEFAULT_ROW_COUNT }, () => makeRow(groupId))
