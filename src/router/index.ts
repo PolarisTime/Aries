@@ -17,10 +17,13 @@ import {
   type RouteViewKey,
 } from '@/config/page-registry'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { buildDefaultModuleFilters } from '@/hooks/useModuleFilters'
 import { queryClient } from '@/lib/query-client'
 import { buildSharedRouterOptions } from '@/router/router-options'
+import { viewLoaders } from '@/router/view-loaders'
 import { useAuthStore } from '@/stores/authStore'
 import { useSetupStore } from '@/stores/setupStore'
+import type { SearchParams } from '@/types/api-raw'
 import {
   getServerErrorReturnPath,
   SERVER_ERROR_ROUTE,
@@ -155,70 +158,32 @@ const authenticatedLayoutRoute = createRoute({
   },
 })
 
-const viewLoaders: Record<
-  Exclude<RouteViewKey, 'dashboard'>,
-  () => Promise<{ default: React.ComponentType }>
-> = {
-  'business-grid': () =>
-    import('@/views/modules/BusinessGridView').then((m) => ({
-      default: m.BusinessGridView,
-    })),
-  'master-project': () =>
-    import('@/views/master-archive/ProjectPage').then((m) => ({
-      default: m.ProjectPage,
-    })),
-  'master-carrier': () =>
-    import('@/views/master-archive/CarrierPage').then((m) => ({
-      default: m.CarrierPage,
-    })),
-  'master-material': () =>
-    import('@/views/master-data/MaterialPage').then((m) => ({
-      default: m.MaterialPage,
-    })),
-  'master-material-categories': () =>
-    import('@/views/master-data/MaterialCategoriesPage').then((m) => ({
-      default: m.MaterialCategoriesPage,
-    })),
-  'master-supplier': () =>
-    import('@/views/master-data/SupplierPage').then((m) => ({
-      default: m.SupplierPage,
-    })),
-  'master-customer': () =>
-    import('@/views/master-data/CustomerPage').then((m) => ({
-      default: m.CustomerPage,
-    })),
-  'master-warehouse': () =>
-    import('@/views/master-data/WarehousePage').then((m) => ({
-      default: m.WarehousePage,
-    })),
-  'price-compare': () =>
-    import('@/views/price-compare/PriceCompareView').then((m) => ({
-      default: m.PriceCompareView,
-    })),
-  'market-sync': () =>
-    import('@/views/market/MarketSyncView').then((m) => ({
-      default: m.MarketSyncView,
-    })),
-  'company-setting': () =>
-    import('@/views/system/CompanySettingsView').then((m) => ({
-      default: m.CompanySettingsView,
-    })),
-  'print-template': () =>
-    import('@/views/system/PrintTemplateView').then((m) => ({
-      default: m.PrintTemplateView,
-    })),
-  account: () =>
-    import('@/views/system/AccountView').then((m) => ({
-      default: m.AccountView,
-    })),
-  'finance-overview': () =>
-    import('@/views/finance/FinanceOverviewView').then((m) => ({
-      default: m.FinanceOverviewView,
-    })),
-  'cash-ledger': () =>
-    import('@/views/finance/CashLedgerView').then((m) => ({
-      default: m.CashLedgerView,
-    })),
+async function prefetchModuleList(moduleKey: string, filters: SearchParams) {
+  const runtimeConfig = await queryClient.ensureQueryData({
+    queryKey: QUERY_KEYS.runtimeConfig,
+    queryFn: getRuntimeConfig,
+    staleTime: 30_000,
+  })
+  const pageSize = runtimeConfig.ui.defaultPageSize
+  await queryClient.ensureQueryData({
+    queryKey: QUERY_KEYS.businessGridList(moduleKey, filters, 1, pageSize),
+    queryFn: ({ signal }) =>
+      listBusinessModule(
+        moduleKey,
+        filters,
+        { currentPage: 1, pageSize },
+        { signal },
+      ),
+    staleTime: 60_000,
+  })
+}
+
+/**
+ * 是否列表型视图（需要预取业务列表）：配置驱动的 business-grid 与主数据专属页 master-*。
+ * 两分支初始过滤不同，business-grid 用页面配置的默认过滤，master-* 用空过滤。
+ */
+function isListPrefetchView(view: RouteViewKey) {
+  return view === 'business-grid' || view.startsWith('master-')
 }
 
 /**
@@ -236,75 +201,26 @@ export function buildModuleRoutes(parent: AnyRoute) {
           ? LazyDashboardView
           : lazy(viewLoaders[def.view]),
       loader:
-        def.view === 'business-grid' && def.moduleKey
+        isListPrefetchView(def.view) && def.moduleKey
           ? async () => {
               const moduleKey = asString(def.moduleKey)
-              const config = await loadBusinessPageConfig(moduleKey)
-
               try {
-                const runtimeConfig = await queryClient.ensureQueryData({
-                  queryKey: QUERY_KEYS.runtimeConfig,
-                  queryFn: getRuntimeConfig,
-                  staleTime: 30_000,
-                })
-                const pageSize = runtimeConfig.ui.defaultPageSize
-                await queryClient.ensureQueryData({
-                  queryKey: QUERY_KEYS.businessGridList(
-                    moduleKey,
-                    {},
-                    1,
-                    pageSize,
-                  ),
-                  queryFn: ({ signal }) =>
-                    listBusinessModule(
-                      moduleKey,
-                      {},
-                      { currentPage: 1, pageSize },
-                      { signal },
-                    ),
-                  staleTime: 60_000,
-                })
+                const config =
+                  def.view === 'business-grid'
+                    ? await loadBusinessPageConfig(moduleKey)
+                    : undefined
+                // 预取键必须与组件真实初始查询键一致（含默认过滤），否则预取无效。
+                await prefetchModuleList(
+                  moduleKey,
+                  buildDefaultModuleFilters(config),
+                )
+                return config
               } catch {
-                // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
-              }
-
-              return config
-            }
-          : def.view.startsWith('master-')
-            ? async () => {
-                if (!def.moduleKey) {
-                  return undefined
-                }
-                const moduleKey = asString(def.moduleKey)
-                try {
-                  const runtimeConfig = await queryClient.ensureQueryData({
-                    queryKey: QUERY_KEYS.runtimeConfig,
-                    queryFn: getRuntimeConfig,
-                    staleTime: 30_000,
-                  })
-                  const pageSize = runtimeConfig.ui.defaultPageSize
-                  await queryClient.ensureQueryData({
-                    queryKey: QUERY_KEYS.businessGridList(
-                      moduleKey,
-                      {},
-                      1,
-                      pageSize,
-                    ),
-                    queryFn: ({ signal }) =>
-                      listBusinessModule(
-                        moduleKey,
-                        {},
-                        { currentPage: 1, pageSize },
-                        { signal },
-                      ),
-                    staleTime: 60_000,
-                  })
-                } catch {
-                  // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
-                }
+                // 预取或配置加载失败不影响页面渲染，组件内 useQuery 会自行重试
                 return undefined
               }
-            : undefined,
+            }
+          : undefined,
     })
   })
 }
