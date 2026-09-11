@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiGet, apiPost, downloadGet } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { exactPageSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
@@ -141,6 +142,7 @@ export async function importMaterialFile(file: File) {
     ENDPOINTS.MATERIAL_IMPORTS,
     materialImportResponseSchema,
     formData,
+    withIdempotencyKey(),
   )
 }
 
@@ -164,6 +166,7 @@ export async function createExpenseMaterial(name: string): Promise<string> {
       remark: '单据录入快捷新增',
       materialType: '附加费用',
     },
+    withIdempotencyKey(),
   )
   return String(response.id)
 }

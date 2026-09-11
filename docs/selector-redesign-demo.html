@@ -321,7 +321,8 @@ function render() {
 
   // 已选 chips
   const chips = document.getElementById('chips')
-  chips.innerHTML = ORDERS.filter(o => checked.has(o.no)).map(o => {
+  chips.innerHTML = ORDERS.flatMap(o => {
+    if (!checked.has(o.no)) return []
     const lines = o.detail.rows.length
     return `<span class="chip"><b>${o.no}</b><span style="color:var(--text-3)">${o.supplier.slice(0, 8)} · ${lines} 条明细</span><button class="rm" onclick="toggleRow('${o.no}', event)">✕</button></span>`
   }).join('')

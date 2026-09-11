@@ -1,31 +1,17 @@
 import { HolderOutlined } from '@ant-design/icons'
-import type {
-  DraggableAttributes,
-  DraggableSyntheticListeners,
-} from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button, Tooltip } from 'antd'
-import {
-  type CSSProperties,
-  createContext,
-  type HTMLAttributes,
-  use,
-  useMemo,
-} from 'react'
+import { type CSSProperties, type HTMLAttributes, use, useMemo } from 'react'
 import { ITEM_DRAG_TYPE } from './pickup-list-draft'
-
-export interface DragHandleContextValue {
-  attributes?: DraggableAttributes
-  listeners?: DraggableSyntheticListeners
-  setActivatorNodeRef?: (element: HTMLElement | null) => void
-}
+import {
+  DragHandleContext,
+  type DragHandleContextValue,
+} from './pickup-list-drag-context'
 
 interface SortableRowProps extends HTMLAttributes<HTMLTableRowElement> {
   'data-row-key': string
 }
-
-export const DragHandleContext = createContext<DragHandleContextValue>({})
 
 export function DragHandle({ label }: { label: string }) {
   const { attributes, listeners, setActivatorNodeRef } = use(DragHandleContext)

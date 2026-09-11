@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiGet, apiPost } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 
 export const materialPriceMatchSchema = z.looseObject({
@@ -131,6 +132,7 @@ export function syncSteelQuotes(date?: string): Promise<SteelQuoteSyncResult> {
     ENDPOINTS.STEEL_QUOTE_SYNCS,
     steelQuoteSyncResponseSchema,
     date ? { date } : {},
+    withIdempotencyKey(),
   )
 }
 
@@ -195,6 +197,7 @@ export function backfillSteelQuotes(
     ENDPOINTS.STEEL_QUOTE_BACKFILLS,
     steelQuoteBackfillResponseSchema,
     { days },
+    withIdempotencyKey(),
   )
 }
 

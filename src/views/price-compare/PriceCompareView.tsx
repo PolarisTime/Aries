@@ -367,17 +367,16 @@ export function PriceCompareView() {
             placeholder="新增项目批次"
             showSearch={{ optionFilterProp: 'label' }}
             value={null}
-            options={projects
-              .filter(
-                (project) =>
-                  !projectGroups.some(
-                    (group) => group.projectId === project.id,
-                  ),
-              )
-              .map((project) => ({
-                value: project.id,
-                label: `${project.abbr} · ${project.name}`,
-              }))}
+            options={projects.flatMap((project) =>
+              projectGroups.some((group) => group.projectId === project.id)
+                ? []
+                : [
+                    {
+                      value: project.id,
+                      label: `${project.abbr} · ${project.name}`,
+                    },
+                  ],
+            )}
             onChange={(projectId) => {
               const project = projects.find((item) => item.id === projectId)
               if (project)

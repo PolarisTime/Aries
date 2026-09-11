@@ -7,6 +7,7 @@ import {
   apiPut,
   downloadPostResponse,
 } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { SavePrintTemplatePayload } from '@/shared/schemas'
 import { exactPageSchema } from '@/shared/schemas/api'
@@ -178,7 +179,7 @@ export async function renderPrintRecord(
       recordId,
       ...(printOptions ? { printOptions } : {}),
     },
-    { responseType: 'blob' },
+    withIdempotencyKey({ responseType: 'blob' }),
   )
   const contentType = String(response.headers['content-type'] || '')
 
@@ -208,9 +209,9 @@ export async function exportSalesOrderPrintXlsx(
   const response = await downloadPostResponse(
     ENDPOINTS.SALES_ORDER_PRINT_XLSX(recordId),
     payload,
-    {
+    withIdempotencyKey({
       responseType: 'blob',
-    },
+    }),
   )
   return {
     blob: response.data,
@@ -248,16 +249,18 @@ export function savePrintTemplate(payload: SavePrintTemplatePayload) {
         ENDPOINTS.PRINT_TEMPLATE(validatedPayload.id),
         printTemplateItemResponseSchema,
         requestBody,
+        withIdempotencyKey(),
       )
     : apiPost(
         ENDPOINTS.PRINT_TEMPLATES,
         printTemplateItemResponseSchema,
         requestBody,
+        withIdempotencyKey(),
       )
 }
 
 export function deletePrintTemplate(id: string) {
-  return apiDeleteNoContent(ENDPOINTS.PRINT_TEMPLATE(id))
+  return apiDeleteNoContent(ENDPOINTS.PRINT_TEMPLATE(id), withIdempotencyKey())
 }
 
 export async function uploadPrintTemplateJson(id: string, file: File) {
@@ -268,8 +271,8 @@ export async function uploadPrintTemplateJson(id: string, file: File) {
     ENDPOINTS.PRINT_TEMPLATE_CONTENT(id),
     printTemplateItemResponseSchema,
     formData,
-    {
+    withIdempotencyKey({
       headers: { 'Content-Type': 'multipart/form-data' },
-    },
+    }),
   )
 }

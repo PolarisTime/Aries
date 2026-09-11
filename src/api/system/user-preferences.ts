@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiGet, apiPut } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { UserColumnSettingsPayload } from '@/types/module-page'
 
@@ -31,5 +32,6 @@ export async function saveUserColumnSettings(
     ENDPOINTS.ACCOUNT_PREFERENCES,
     userColumnSettingsResponseSchema,
     payload,
+    withIdempotencyKey(),
   )
 }

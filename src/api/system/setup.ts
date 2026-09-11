@@ -1,5 +1,6 @@
 import { parseApiContract } from '@/api/core/api-contract'
 import { apiPost } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { InitialSetupAccountSubmitPayload } from '@/shared/schemas'
 import {
@@ -25,6 +26,6 @@ export async function submitInitialAccount(
     ENDPOINTS.SETUP_ACCOUNT,
     initialSetupAccountCreatedSchema,
     validatedPayload,
-    setupTokenHeaders(setupToken),
+    withIdempotencyKey(setupTokenHeaders(setupToken)),
   )
 }

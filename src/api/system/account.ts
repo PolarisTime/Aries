@@ -1,5 +1,6 @@
 import { parseApiContract } from '@/api/core/api-contract'
 import { apiGet, apiPut, apiPutNoContent } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type {
   CurrentAccountUpdate,
@@ -27,6 +28,7 @@ export async function updateCurrentAccount(payload: CurrentAccountUpdate) {
     ENDPOINTS.ACCOUNT,
     currentAccountResponseSchema,
     validatedPayload,
+    withIdempotencyKey(),
   )
 }
 
@@ -36,5 +38,9 @@ export async function changeCurrentAccountPassword(payload: PasswordChange) {
     payload,
     '修改当前账号密码请求',
   )
-  return apiPutNoContent(ENDPOINTS.ACCOUNT_PASSWORD, validatedPayload)
+  return apiPutNoContent(
+    ENDPOINTS.ACCOUNT_PASSWORD,
+    validatedPayload,
+    withIdempotencyKey(),
+  )
 }

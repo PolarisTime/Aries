@@ -32,6 +32,9 @@ const varietyLabel = (item: Variety) =>
 const varietyShort = (item: Variety) =>
   [item.spec, item.length === '-' ? '' : item.length].filter(Boolean).join(' ')
 
+const matchesVarietyKeyword = (item: Variety, query: string) =>
+  !query || varietyLabel(item).includes(query)
+
 export type ProjectConfigDraft = {
   brands: string[]
   freightMap: Record<string, number>
@@ -47,10 +50,14 @@ function createDraft(
   varieties: Variety[],
 ): ProjectConfigDraft {
   const names = config.brands.map((brand) => brand.name)
+  const brandByName = new Map<string, Brand>()
+  for (const brand of config.brands) {
+    if (!brandByName.has(brand.name)) brandByName.set(brand.name, brand)
+  }
   const freightMap: Record<string, number> = {}
   const categoryMap: Record<string, string[]> = {}
   for (const name of brandOptions) {
-    const brand = config.brands.find((item) => item.name === name)
+    const brand = brandByName.get(name)
     freightMap[name] = brand?.freight ?? DEFAULT_FREIGHT
     categoryMap[name] = brand?.categories ?? CATEGORIES
   }
@@ -141,18 +148,19 @@ function BrandSection({
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
   const [keyword, setKeyword] = useState('')
+  const selectedBrandSet = useMemo(() => new Set(draft.brands), [draft.brands])
   const selectedBrands = useMemo(
-    () => brandOptions.filter((name) => draft.brands.includes(name)),
-    [brandOptions, draft.brands],
+    () => brandOptions.filter((name) => selectedBrandSet.has(name)),
+    [brandOptions, selectedBrandSet],
   )
   const unselected = useMemo(() => {
     const query = keyword.trim().toLowerCase()
     return brandOptions.filter(
       (name) =>
-        !draft.brands.includes(name) &&
+        !selectedBrandSet.has(name) &&
         (!query || name.toLowerCase().includes(query)),
     )
-  }, [brandOptions, draft.brands, keyword])
+  }, [brandOptions, selectedBrandSet, keyword])
 
   const add = (names: string[]) =>
     onChange({ brands: [...new Set([...draft.brands, ...names])] })
@@ -314,16 +322,16 @@ function ProductSection({
     return varieties.filter(
       (item) =>
         (!material || item.material === material) &&
-        (!query || varietyLabel(item).includes(query)),
+        matchesVarietyKeyword(item, query),
     )
   }, [varieties, material, keyword])
 
   const groups = useMemo(
     () =>
-      CATEGORIES.map((category) => ({
-        category,
-        items: visible.filter((item) => item.category === category),
-      })).filter((group) => group.items.length > 0),
+      CATEGORIES.flatMap((category) => {
+        const items = visible.filter((item) => item.category === category)
+        return items.length > 0 ? [{ category, items }] : []
+      }),
     [visible],
   )
 
@@ -334,12 +342,14 @@ function ProductSection({
         : draft.products.filter((item) => item !== key),
     })
 
-  const toggleGroup = (keys: string[], checked: boolean) =>
+  const toggleGroup = (keys: string[], checked: boolean) => {
+    const keySet = new Set(keys)
     onChange({
       products: checked
         ? [...new Set([...draft.products, ...keys])]
-        : draft.products.filter((item) => !keys.includes(item)),
+        : draft.products.filter((item) => !keySet.has(item)),
     })
+  }
 
   return (
     <Flex vertical gap={10}>

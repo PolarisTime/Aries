@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { refreshAccessToken } from '@/api/auth/auth-state'
 import { parseApiContract } from '@/api/core/api-contract'
 import { apiGet, apiPost, apiPostNoContent } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { LoginPayload, LoginResponseData } from '@/shared/schemas'
 import {
@@ -38,14 +39,19 @@ export function login(payload: LoginPayload) {
     payload,
     '登录请求',
   )
-  return apiPost(ENDPOINTS.AUTH_LOGIN, loginResponseDataSchema, {
-    loginName: validatedPayload.loginName,
-    password: validatedPayload.password,
-  })
+  return apiPost(
+    ENDPOINTS.AUTH_LOGIN,
+    loginResponseDataSchema,
+    {
+      loginName: validatedPayload.loginName,
+      password: validatedPayload.password,
+    },
+    withIdempotencyKey(),
+  )
 }
 
 export function logout() {
-  return apiPostNoContent(ENDPOINTS.AUTH_LOGOUT, {})
+  return apiPostNoContent(ENDPOINTS.AUTH_LOGOUT, {}, withIdempotencyKey())
 }
 
 export async function refreshSession(): Promise<LoginResponseData> {

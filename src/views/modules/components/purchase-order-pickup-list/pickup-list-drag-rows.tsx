@@ -21,10 +21,10 @@ import {
   resolveWarehouseLabel,
 } from './pickup-list-draft'
 import {
-  DragHandle,
   DragHandleContext,
   type DragHandleContextValue,
-} from './pickup-list-sortable'
+} from './pickup-list-drag-context'
+import { DragHandle } from './pickup-list-sortable'
 
 interface PickupItemsTableProps {
   columns: TableColumnsType<PurchaseOrderPickupListItem>

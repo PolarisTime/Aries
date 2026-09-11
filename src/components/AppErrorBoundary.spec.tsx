@@ -84,7 +84,7 @@ describe('AppErrorBoundary', () => {
   function renderBoundary(children: ReactNode = createElement('div')) {
     act(() => {
       root.render(
-        createElement(AppErrorBoundary, { resetKey: 'test', children }),
+        <AppErrorBoundary resetKey="test">{children}</AppErrorBoundary>,
       )
     })
   }

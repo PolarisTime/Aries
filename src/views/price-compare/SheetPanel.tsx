@@ -50,6 +50,32 @@ import './price-compare.css'
 const { Text } = Typography
 const DATE_FMT = 'YYYY年M月D日'
 
+function moveFocus(groupRows: PriceRow[]) {
+  return (brandName: string, rowId: string, delta: number) => {
+    const index = groupRows.findIndex((row) => row.id === rowId)
+    const target = groupRows[index + delta]
+    if (!target) return
+    const input = document.querySelector<HTMLInputElement>(
+      `input[data-spot="${brandName}:${target.id}"]`,
+    )
+    input?.focus()
+    input?.select()
+  }
+}
+
+function moveFocusTon(groupRows: PriceRow[]) {
+  return (rowId: string, delta: number) => {
+    const index = groupRows.findIndex((row) => row.id === rowId)
+    const target = groupRows[index + delta]
+    if (!target) return
+    const input = document.querySelector<HTMLInputElement>(
+      `input[data-ton="${target.id}"]`,
+    )
+    input?.focus()
+    input?.select()
+  }
+}
+
 /* ------------------------------------------------------------------ 列定义 */
 
 type ColumnContext = {
@@ -909,31 +935,6 @@ export function SheetPanel(props: Props) {
     setRows((list) => list.filter((row) => !ids.has(row.id)))
     setSelectedIds([])
   }
-
-  const moveFocus =
-    (groupRows: PriceRow[]) =>
-    (brandName: string, rowId: string, delta: number) => {
-      const index = groupRows.findIndex((row) => row.id === rowId)
-      const target = groupRows[index + delta]
-      if (!target) return
-      const input = document.querySelector<HTMLInputElement>(
-        `input[data-spot="${brandName}:${target.id}"]`,
-      )
-      input?.focus()
-      input?.select()
-    }
-
-  const moveFocusTon =
-    (groupRows: PriceRow[]) => (rowId: string, delta: number) => {
-      const index = groupRows.findIndex((row) => row.id === rowId)
-      const target = groupRows[index + delta]
-      if (!target) return
-      const input = document.querySelector<HTMLInputElement>(
-        `input[data-ton="${target.id}"]`,
-      )
-      input?.focus()
-      input?.select()
-    }
 
   const reorderRow = (
     groupId: string,

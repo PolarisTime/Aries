@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { pageContent } from '@/api/core/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
@@ -150,6 +151,7 @@ export async function createCompanySetting(
     ENDPOINTS.COMPANY_SETTINGS,
     companyResponseSchema,
     payload,
+    withIdempotencyKey(),
   )
   return normalizeProfile(response)
 }
@@ -162,6 +164,7 @@ export async function updateCompanySetting(
     `${ENDPOINTS.COMPANY_SETTINGS}/${id}`,
     companyResponseSchema,
     payload,
+    withIdempotencyKey(),
   )
   return normalizeProfile(response)
 }
@@ -169,5 +172,6 @@ export async function updateCompanySetting(
 export async function deleteCompanySetting(id: string) {
   return apiDeleteNoContent(
     `${ENDPOINTS.COMPANY_SETTINGS}/${encodeURIComponent(id)}`,
+    withIdempotencyKey(),
   )
 }

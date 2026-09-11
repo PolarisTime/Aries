@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiPost } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 
 const masterDataCodeIssuanceResponseSchema = z.strictObject({
@@ -18,7 +19,7 @@ export async function fetchGeneratedMasterDataCode(
     `${ENDPOINTS.MASTER_DATA_CODE_ISSUANCES}/${encodeURIComponent(moduleKey)}`,
     masterDataCodeIssuanceResponseSchema,
     undefined,
-    { signal },
+    withIdempotencyKey({ signal }),
   )
   return response.code
 }

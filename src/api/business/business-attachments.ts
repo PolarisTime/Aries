@@ -174,18 +174,23 @@ function uploadAttachmentMultipart(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return apiPost(ENDPOINTS.ATTACHMENTS_UPLOAD, rawRecordSchema, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: (event) => {
-      if (!event.total) {
-        return
-      }
-      reportUploadProgress(
-        options,
-        Math.min(99, Math.round((event.loaded / event.total) * 100)),
-      )
-    },
-  })
+  return apiPost(
+    ENDPOINTS.ATTACHMENTS_UPLOAD,
+    rawRecordSchema,
+    formData,
+    withIdempotencyKey({
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (event) => {
+        if (!event.total) {
+          return
+        }
+        reportUploadProgress(
+          options,
+          Math.min(99, Math.round((event.loaded / event.total) * 100)),
+        )
+      },
+    }),
+  )
 }
 
 function reportUploadProgress(
@@ -340,6 +345,7 @@ export async function updateAttachmentBindings(
       recordId: String(recordId).trim(),
       attachmentIds: normalizedAttachmentIds,
     },
+    withIdempotencyKey(),
   )
 }
 
