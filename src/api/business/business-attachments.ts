@@ -54,7 +54,7 @@ const directUploadPrepareResponseSchema = z.object({
 const DIRECT_UPLOAD_UNSUPPORTED_MESSAGE = '不支持直传'
 const FORBIDDEN_UPLOAD_HEADERS = new Set(['host', 'content-length'])
 const INTERNAL_ATTACHMENT_URL_PATTERN =
-  /^\/api\/v2\.0\/attachments\/([^/?#]+)\/(preview|download)(?:\?([^#]*))?(?:#.*)?$/
+  /^\/api\/v2\.0\/attachments\/([^/?#]+)\/(preview|download|content)(?:\?([^#]*))?(?:#.*)?$/
 type InternalAttachmentAction = 'preview' | 'download'
 
 export interface AttachmentUploadOptions {
@@ -301,10 +301,11 @@ export async function getAttachmentBlob(url: string): Promise<Blob> {
     return fetchExternalAttachmentBlob(url)
   }
 
-  return downloadGet(ENDPOINTS.ATTACHMENT_CONTENT(parsed.id, parsed.action), {
+  return downloadGet(ENDPOINTS.ATTACHMENT_CONTENT(parsed.id), {
     params: {
       accessKey: parsed.accessKey,
       moduleKey: parsed.moduleKey,
+      disposition: parsed.action === 'preview' ? 'inline' : 'attachment',
     },
   })
 }
@@ -350,8 +351,15 @@ function parseInternalAttachmentUrl(url: string) {
   }
 
   const params = new URLSearchParams(match[3] || '')
+  const segment = match[2]
+  const action: InternalAttachmentAction =
+    segment === 'content'
+      ? params.get('disposition') === 'inline'
+        ? 'preview'
+        : 'download'
+      : (segment as InternalAttachmentAction)
   return {
-    action: match[2] as InternalAttachmentAction,
+    action,
     accessKey: params.get('accessKey') || '',
     id: decodeURIComponent(match[1]),
     moduleKey: params.get('moduleKey') || '',

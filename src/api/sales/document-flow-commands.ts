@@ -1,4 +1,4 @@
-import { apiPost, apiPut } from '@/api/core/client'
+import { apiPost } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { toSaveRequest } from '@/module-system/record/module-save-payload'
@@ -15,7 +15,7 @@ export async function completeSalesOrder(
   id: string,
 ): Promise<MainFlowDetailRecord<'sales-order'>> {
   return apiPost(
-    ENDPOINTS.SALES_ORDER_COMPLETE(id),
+    ENDPOINTS.SALES_ORDER_COMPLETIONS(id),
     salesOrderDetailResponseSchema,
     null,
     withIdempotencyKey(),
@@ -32,8 +32,8 @@ export async function saveAndCompleteSalesOrder(
   }
 
   const payload = await toSaveRequest('sales-order', record)
-  return apiPut(
-    ENDPOINTS.SALES_ORDER_SAVE_AND_COMPLETE(id),
+  return apiPost(
+    ENDPOINTS.SALES_ORDER_DELIVERY_VERIFICATIONS(id),
     salesOrderDetailResponseSchema,
     payload,
     withIdempotencyKey(undefined, idempotencyKey),

@@ -121,9 +121,12 @@ export async function downloadMaterialImportTemplate() {
 export async function importMaterialFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
+  if (file.name.toLowerCase().endsWith('.csv')) {
+    formData.append('format', 'csv')
+  }
 
   return apiPost(
-    ENDPOINTS.MATERIALS_IMPORT,
+    ENDPOINTS.MATERIAL_IMPORTS,
     materialImportResponseSchema,
     formData,
   )

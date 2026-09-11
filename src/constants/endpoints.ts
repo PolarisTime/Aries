@@ -46,8 +46,8 @@ export const ENDPOINTS = {
   GLOBAL_SEARCH: '/global-search',
 
   // Print
-  PRINT_OUTPUTS: '/print-outputs',
-  PRINT_ITEMS: '/print-outputs/items',
+  PRINT_EXPORTS: '/print-exports',
+  PRINT_PREVIEWS_ITEMS: '/print-previews/items',
   PRINT_TEMPLATES: '/print-templates',
   PRINT_TEMPLATE: (id: string | number) =>
     `/print-templates/${pathSegment(id)}`,
@@ -65,13 +65,13 @@ export const ENDPOINTS = {
   ATTACHMENTS_BINDING_COUNTS: '/attachments/bindings/counts',
   ATTACHMENT_ACCESS_URL: (id: string | number) =>
     `/attachments/${pathSegment(id)}/access-url`,
-  ATTACHMENT_CONTENT: (id: string | number, action: 'preview' | 'download') =>
-    `/attachments/${pathSegment(id)}/${action}`,
+  ATTACHMENT_CONTENT: (id: string | number) =>
+    `/attachments/${pathSegment(id)}/content`,
 
   // Materials (pure actions → singular)
-  MATERIALS_IMPORT: '/materials/import',
+  MATERIAL_IMPORTS: '/material-imports',
+  MATERIAL_EXPORTS: '/material-exports',
   MATERIALS_TEMPLATE: '/materials/template',
-  MATERIALS_EXPORT: '/materials/export',
   MATERIALS_SEARCH: '/materials/search',
   MATERIAL_GRADES: '/materials/grades',
   MATERIAL_BRANDS: '/materials/brands',
@@ -90,10 +90,10 @@ export const ENDPOINTS = {
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',
-  SALES_ORDER_COMPLETE: (id: string | number) =>
-    `/sales-orders/${pathSegment(id)}/complete`,
-  SALES_ORDER_SAVE_AND_COMPLETE: (id: string | number) =>
-    `/sales-orders/${pathSegment(id)}/save-and-complete`,
+  SALES_ORDER_DELIVERY_VERIFICATIONS: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/delivery-verifications`,
+  SALES_ORDER_COMPLETIONS: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/completions`,
   SALES_ORDER_PRINT_XLSX: (id: string | number) =>
     `/sales-orders/${pathSegment(id)}/xlsx-exports`,
 

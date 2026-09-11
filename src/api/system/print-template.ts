@@ -9,6 +9,7 @@ import {
 } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { SavePrintTemplatePayload } from '@/shared/schemas'
+import { exactPageSchema } from '@/shared/schemas/api'
 import {
   printTemplateRecordSchema,
   savePrintTemplatePayloadSchema,
@@ -40,7 +41,7 @@ const printRecordItemSchema = z.object({
 })
 
 const printTemplateListResponseSchema = z.array(printTemplateRecordSchema)
-const printRecordItemsResponseSchema = z.array(printRecordItemSchema)
+const printRecordItemPageResponseSchema = exactPageSchema(printRecordItemSchema)
 const printOutputBaseSchema = z.object({
   templateName: z.string().optional(),
   templateType: z.string().optional(),
@@ -130,25 +131,71 @@ export function listPrintTemplates(billType: string) {
   })
 }
 
-export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
-  return apiPost(ENDPOINTS.PRINT_ITEMS, printRecordItemsResponseSchema, {
-    moduleKey,
-    recordIds,
-  })
+export async function listPrintRecordItems(
+  moduleKey: string,
+  recordIds: string[],
+): Promise<PrintRecordItem[]> {
+  const response = await apiGet(
+    ENDPOINTS.PRINT_PREVIEWS_ITEMS,
+    printRecordItemPageResponseSchema,
+    {
+      params: {
+        moduleKey,
+        recordIds: recordIds.join(','),
+        page: 0,
+        size: 200,
+      },
+    },
+  )
+  return response.content
 }
 
-export function renderPrintRecord(
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 0x8000
+  let binary = ''
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
+  }
+  return btoa(binary)
+}
+
+export async function renderPrintRecord(
   templateId: string,
   moduleKey: string,
   recordId: string,
   printOptions?: unknown,
 ) {
-  return apiPost(ENDPOINTS.PRINT_OUTPUTS, printRecordResponseSchema, {
-    templateId,
-    moduleKey,
-    recordId,
-    ...(printOptions ? { printOptions } : {}),
-  })
+  const response = await downloadPostResponse(
+    ENDPOINTS.PRINT_EXPORTS,
+    {
+      templateId,
+      moduleKey,
+      recordId,
+      ...(printOptions ? { printOptions } : {}),
+    },
+    { responseType: 'blob' },
+  )
+  const contentType = String(response.headers['content-type'] || '')
+
+  if (contentType.includes('json')) {
+    const text = await response.data.text()
+    return parseApiContract(
+      printRecordResponseSchema,
+      JSON.parse(text),
+      'POST /print-exports',
+    )
+  }
+
+  return {
+    kind: 'PDF' as const,
+    contentType: contentType || 'application/pdf',
+    fileName: contentDispositionFileName(
+      response.headers['content-disposition'],
+    ),
+    pdfBase64: await blobToBase64(response.data),
+  }
 }
 
 export async function exportSalesOrderPrintXlsx(
