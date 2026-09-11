@@ -669,89 +669,80 @@ function SheetHeader({
   onRemoveSelected: () => void
 }) {
   return (
-    <Flex vertical gap={8}>
-      <Flex
-        justify="space-between"
-        align="center"
-        wrap="wrap"
-        gap={8}
-        className="price-compare-toolbar"
-      >
-        <Flex gap="small" align="center" wrap="wrap">
-          <Text strong>{sheet.projectName || '未指定项目'}</Text>
-          <Space size="small">
+    <Flex
+      justify="space-between"
+      align="center"
+      wrap="wrap"
+      gap={8}
+      className="price-compare-toolbar"
+    >
+      <Flex gap="small" align="center" wrap="wrap">
+        <Text strong>{sheet.projectName || '未指定项目'}</Text>
+        <Space size="small">
+          <Text type="secondary" className="price-compare-sub">
+            报单日期
+          </Text>
+          <DatePicker
+            size="small"
+            style={{ width: 132 }}
+            value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
+            format={DATE_FMT}
+            allowClear={false}
+            onChange={(value) =>
+              value &&
+              patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
+            }
+          />
+        </Space>
+        <Space size="small">
+          <Tooltip title="全部行统一使用该日期与时段作为网价基准">
             <Text type="secondary" className="price-compare-sub">
-              报单日期
+              <InfoCircleOutlined /> 参照网价
             </Text>
-            <DatePicker
-              size="small"
-              style={{ width: 132 }}
-              value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
-              format={DATE_FMT}
-              allowClear={false}
-              onChange={(value) =>
-                value &&
-                patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
-              }
-            />
-          </Space>
-          <Space size="small">
-            <Tooltip title="全部行统一使用该日期与时段作为网价基准">
-              <Text type="secondary" className="price-compare-sub">
-                <InfoCircleOutlined /> 参照网价
-              </Text>
-            </Tooltip>
-            <DatePicker
-              size="small"
-              style={{ width: 132 }}
-              value={refDate ? dayjs(refDate) : null}
-              format={DATE_FMT}
-              allowClear={false}
-              cellRender={(current, info) => {
-                if (info.type !== 'date') return info.originNode
-                const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
-                const periods = availability[key] ?? []
-                return (
-                  <div className="price-compare-cal-cell">
-                    {info.originNode}
-                    <div className="price-compare-cal-dots">
-                      {['上午', '中午', '下午'].map((period) => (
-                        <i
-                          key={period}
-                          className={periods.includes(period) ? 'is-on' : ''}
-                        />
-                      ))}
-                    </div>
+          </Tooltip>
+          <DatePicker
+            size="small"
+            style={{ width: 132 }}
+            value={refDate ? dayjs(refDate) : null}
+            format={DATE_FMT}
+            allowClear={false}
+            cellRender={(current, info) => {
+              if (info.type !== 'date') return info.originNode
+              const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
+              const periods = availability[key] ?? []
+              return (
+                <div className="price-compare-cal-cell">
+                  {info.originNode}
+                  <div className="price-compare-cal-dots">
+                    {['上午', '中午', '下午'].map((period) => (
+                      <i
+                        key={period}
+                        className={periods.includes(period) ? 'is-on' : ''}
+                      />
+                    ))}
                   </div>
-                )
-              }}
-              onChange={(value) => {
-                if (!value) return
-                const date = value.format('YYYY-MM-DD')
-                patchSheet(sheet.id, { refDate: date })
-              }}
-            />
-            <Select
-              size="small"
-              style={{ width: 110 }}
-              value={refPeriod || undefined}
-              onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-              options={periods.map((period) => ({
-                value: period,
-                label: period,
-              }))}
-            />
-          </Space>
-        </Flex>
+                </div>
+              )
+            }}
+            onChange={(value) => {
+              if (!value) return
+              patchSheet(sheet.id, { refDate: value.format('YYYY-MM-DD') })
+            }}
+          />
+          <Select
+            size="small"
+            style={{ width: 110 }}
+            value={refPeriod || undefined}
+            onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
+            options={periods.map((period) => ({
+              value: period,
+              label: period,
+            }))}
+          />
+        </Space>
       </Flex>
 
-      <Flex
-        justify="flex-start"
-        align="center"
-        wrap="wrap"
-        gap={4}
-        className="price-compare-actions"
-      >
+      <Space size={4} wrap>
         <Button size="small" icon={<PlusOutlined />} onClick={onAddGroup}>
           分组
         </Button>
@@ -783,7 +774,7 @@ function SheetHeader({
             </Button>
           </Popconfirm>
         ) : null}
-      </Flex>
+      </Space>
     </Flex>
   )
 }
