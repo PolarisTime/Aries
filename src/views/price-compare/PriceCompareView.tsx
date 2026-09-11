@@ -1,4 +1,5 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import {
   Alert,
   Badge,
@@ -13,11 +14,12 @@ import {
   Typography,
   Watermark,
 } from 'antd'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchMaterialPriceMatches,
   fetchSteelQuoteCalendars,
 } from '@/api/market/steel-quotes'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
 import { countMissing, moveItem, resolveRef } from './core'
@@ -101,11 +103,8 @@ export function PriceCompareView() {
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
-  const fetchedDates = useRef<Set<string>>(new Set())
   const urlParamsApplied = useRef(false)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const [availability, setAvailability] = useState<Record<string, string[]>>({})
-  const availabilityLoaded = useRef(false)
 
   useEffect(() => {
     if (initialized.current || !projects.length) return
@@ -154,75 +153,102 @@ export function PriceCompareView() {
     })
   }, [active, patchSheet])
 
-  const loadAvailability = useCallback(() => {
+  const availabilityRange = useMemo(() => {
     const now = Date.now()
     const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10)
-    const from = iso(now - 120 * 86400000)
-    const to = iso(now + 14 * 86400000)
-    fetchSteelQuoteCalendars(from, to)
-      .then((rows) => {
-        const map: Record<string, string[]> = {}
-        for (const row of rows) map[row.quoteDate] = row.periods
-        setAvailability(map)
-      })
-      .catch((error) => {
-        console.error('行情日历加载失败', error)
-      })
+    return {
+      from: iso(now - 120 * 86400000),
+      to: iso(now + 14 * 86400000),
+    }
   }, [])
 
+  const availabilityQuery = useQuery({
+    queryKey: QUERY_KEYS.priceCompare.steelQuoteCalendars(
+      availabilityRange.from,
+      availabilityRange.to,
+    ),
+    queryFn: () =>
+      fetchSteelQuoteCalendars(availabilityRange.from, availabilityRange.to),
+    enabled: isAuthenticated,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  })
+
+  const availability = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const row of availabilityQuery.data ?? [])
+      map[row.quoteDate] = row.periods
+    return map
+  }, [availabilityQuery.data])
+
+  const activeSheetId = active?.id ?? ''
+  const activeRefDate = active?.refDate ?? ''
+  const activeRefPeriod = active?.refPeriod ?? ''
+  const isLatestRef = Boolean(active) && !activeRefDate
+  const calendarPeriods = activeRefDate
+    ? availability[activeRefDate]?.length
+      ? availability[activeRefDate]
+      : Object.keys(data[activeRefDate] ?? {})
+    : []
+  const resolvedRefPeriod = activeRefDate
+    ? activeRefPeriod && calendarPeriods.includes(activeRefPeriod)
+      ? activeRefPeriod
+      : (calendarPeriods[0] ?? '')
+    : ''
+  const hasResolvedPriceData = Boolean(
+    activeRefDate &&
+      resolvedRefPeriod &&
+      Object.keys(data[activeRefDate]?.[resolvedRefPeriod] ?? {}).length,
+  )
+
+  const patchSheetRef = useRef(patchSheet)
   useEffect(() => {
-    if (!isAuthenticated || availabilityLoaded.current) return
-    availabilityLoaded.current = true
-    loadAvailability()
-  }, [isAuthenticated, loadAvailability])
+    patchSheetRef.current = patchSheet
+  }, [patchSheet])
+
+  const matchesQuery = useQuery({
+    queryKey: QUERY_KEYS.priceCompare.materialPriceMatches(
+      activeRefDate,
+      resolvedRefPeriod,
+    ),
+    queryFn: () =>
+      fetchMaterialPriceMatches(
+        activeRefDate,
+        activeRefDate ? resolvedRefPeriod : undefined,
+      ),
+    enabled:
+      isAuthenticated &&
+      Boolean(activeSheetId) &&
+      (isLatestRef || (Boolean(resolvedRefPeriod) && !hasResolvedPriceData)),
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  })
 
   useEffect(() => {
-    if (!active || !isAuthenticated) return
-    const date = active.refDate
-    if (!date) {
-      if (fetchedDates.current.has('__latest__')) return
-      fetchedDates.current.add('__latest__')
-      fetchMaterialPriceMatches('')
-        .then((matches) => {
-          if (!matches.length) return
-          mergeMatches(matches)
-          const quoteDate =
-            matches.find((row) => row.quoteDate)?.quoteDate ?? ''
-          const period = matches.find((row) => row.period)?.period ?? ''
-          patchSheet(active.id, {
-            refDate: quoteDate,
-            ...(active.refPeriod ? {} : { refPeriod: period }),
-          })
-        })
-        .catch((error) => {
-          fetchedDates.current.delete('__latest__')
-          console.error('读取网价失败', error)
-        })
-      return
+    if (!activeSheetId || !activeRefDate || !resolvedRefPeriod) return
+    if (resolvedRefPeriod !== activeRefPeriod)
+      patchSheetRef.current(activeSheetId, { refPeriod: resolvedRefPeriod })
+  }, [activeSheetId, activeRefDate, activeRefPeriod, resolvedRefPeriod])
+
+  useEffect(() => {
+    const matches = matchesQuery.data
+    if (!activeSheetId || !matches?.length) return
+    mergeMatches(matches)
+    if (isLatestRef) {
+      const quoteDate = matches.find((row) => row.quoteDate)?.quoteDate ?? ''
+      const period = matches.find((row) => row.period)?.period ?? ''
+      patchSheetRef.current(activeSheetId, {
+        refDate: quoteDate,
+        ...(activeRefPeriod ? {} : { refPeriod: period }),
+      })
     }
-    const calendarPeriods = availability[date]?.length
-      ? availability[date]
-      : Object.keys(data[date] ?? {})
-    const period = calendarPeriods.includes(active.refPeriod)
-      ? active.refPeriod
-      : (calendarPeriods[0] ?? '')
-    if (!period) return
-    if (period !== active.refPeriod)
-      patchSheet(active.id, { refPeriod: period })
-    const key = `${date}|${period}`
-    if (data[date]?.[period] && Object.keys(data[date][period]).length) return
-    if (fetchedDates.current.has(key)) return
-    fetchedDates.current.add(key)
-    fetchMaterialPriceMatches(date, period)
-      .then((matches) => {
-        if (!matches.length) return
-        mergeMatches(matches)
-      })
-      .catch((error) => {
-        fetchedDates.current.delete(key)
-        console.error('读取网价失败', error)
-      })
-  }, [active, availability, data, mergeMatches, patchSheet, isAuthenticated])
+  }, [
+    activeSheetId,
+    activeRefPeriod,
+    isLatestRef,
+    matchesQuery.data,
+    mergeMatches,
+  ])
 
   const refPeriods = active?.refDate
     ? (availability[active.refDate] ?? Object.keys(data[active.refDate] ?? {}))
@@ -248,28 +274,17 @@ export function PriceCompareView() {
     }
     setRefreshing(true)
     try {
-      loadAvailability()
-      const date = active?.refDate
-      if (!date) {
-        const latest = await fetchMaterialPriceMatches('')
-        if (latest.length) {
-          mergeMatches(latest)
-          const quoteDate = latest.find((row) => row.quoteDate)?.quoteDate ?? ''
-          const period = latest.find((row) => row.period)?.period ?? ''
-          if (active)
-            patchSheet(active.id, {
-              refDate: quoteDate,
-              ...(active.refPeriod ? {} : { refPeriod: period }),
-            })
-        }
+      await availabilityQuery.refetch()
+      if (!active) return
+      const result = await matchesQuery.refetch()
+      if (result.error) throw result.error
+      if (!activeRefDate) {
         message.success('已读取最新网价')
         return
       }
-      const period = resolveRef(data, active).refPeriod
-      fetchedDates.current.delete(`${date}|${period}`)
-      const matches = await fetchMaterialPriceMatches(date, period)
-      mergeMatches(matches)
-      message.success(`已读取 ${date}${period ? ` ${period}` : ''} 网价`)
+      message.success(
+        `已读取 ${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''} 网价`,
+      )
     } catch (error) {
       console.error('读取网价失败', error)
       message.error(

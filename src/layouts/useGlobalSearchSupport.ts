@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { searchGlobalDocuments } from '@/api/system/global-search'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import { modulePageMetaMap } from '@/config/module-page-meta'
 import { getSearchableModuleKeys } from '@/config/page-registry'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   buildGlobalSearchSummary,
   searchModules,
@@ -32,151 +34,100 @@ interface UseGlobalSearchSupportOptions {
 }
 
 export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
+  const { onJump, moduleKeys: moduleKeysOption } = options
   const [keyword, setKeyword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<GlobalSearchResult[]>([])
-  const requestIdRef = useRef(0)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const [searchDebouncer] = useState(() =>
     createGlobalSearchDebouncer(GLOBAL_SEARCH_DEBOUNCE_MS),
   )
-  const pendingSearchRef = useRef<{
-    keyword: string
-    promise: Promise<GlobalSearchResult[]>
-  } | null>(null)
-  const lastSearchRef = useRef<{
-    keyword: string
-    results: GlobalSearchResult[]
-  } | null>(null)
+  const queryClient = useQueryClient()
 
-  const cancelActiveSearch = () => {
-    requestIdRef.current += 1
-    abortControllerRef.current?.abort()
-    abortControllerRef.current = null
-    pendingSearchRef.current = null
-    setLoading(false)
-  }
+  const moduleKeys = useMemo(
+    () => moduleKeysOption ?? getSearchableModuleKeys(),
+    [moduleKeysOption],
+  )
+  const searchModule = options.searchModule
+  const pageConfigs = options.pageConfigs
+  const buildSummary = options.buildSummary
+
+  const searchDocuments = useCallback(
+    async (normalizedKeyword: string, signal?: AbortSignal) => {
+      if (searchModule) {
+        return searchModules({
+          keyword: normalizedKeyword,
+          moduleKeys,
+          pageConfigs: pageConfigs ?? modulePageMetaMap,
+          searchModule,
+          buildSummary: buildSummary ?? buildGlobalSearchSummary,
+        })
+      }
+      return searchGlobalDocuments(normalizedKeyword, moduleKeys, signal)
+    },
+    [buildSummary, moduleKeys, pageConfigs, searchModule],
+  )
+
+  const normalizedKeyword = normalizeGlobalSearchKeyword(debouncedKeyword)
+  const searchEnabled = shouldSearchGlobalKeyword(normalizedKeyword)
+
+  const query = useQuery({
+    queryKey: QUERY_KEYS.globalSearch(normalizedKeyword, moduleKeys),
+    queryFn: ({ signal }) => searchDocuments(normalizedKeyword, signal),
+    enabled: searchEnabled,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  })
 
   useEffect(() => {
     return () => {
       searchDebouncer.cancel()
-      requestIdRef.current += 1
-      abortControllerRef.current?.abort()
-      abortControllerRef.current = null
-      pendingSearchRef.current = null
     }
   }, [searchDebouncer])
 
-  const clearResults = () => {
-    setResults([])
-  }
+  const clearResults = useCallback(() => {
+    setDebouncedKeyword('')
+  }, [])
 
-  const performSearch = async (rawKeyword: string) => {
-    const normalizedKeyword = normalizeGlobalSearchKeyword(rawKeyword)
-    if (!shouldSearchGlobalKeyword(normalizedKeyword)) {
-      searchDebouncer.cancel()
-      cancelActiveSearch()
-      clearResults()
-      return []
-    }
-
-    const cachedSearch = lastSearchRef.current
-    if (cachedSearch?.keyword === normalizedKeyword) {
-      setResults(cachedSearch.results)
-      return cachedSearch.results
-    }
-
-    const pendingSearch = pendingSearchRef.current
-    if (pendingSearch?.keyword === normalizedKeyword) {
-      return pendingSearch.promise
-    }
-
-    const currentRequestId = ++requestIdRef.current
-    abortControllerRef.current?.abort()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
-    setLoading(true)
-
-    const handleSearchError = (): GlobalSearchResult[] => {
-      if (controller.signal.aborted) {
-        if (currentRequestId === requestIdRef.current) {
-          setLoading(false)
-        }
+  const performSearch = useCallback(
+    async (rawKeyword: string): Promise<GlobalSearchResult[]> => {
+      const normalized = normalizeGlobalSearchKeyword(rawKeyword)
+      if (!shouldSearchGlobalKeyword(normalized)) {
+        searchDebouncer.cancel()
+        clearResults()
         return []
       }
-      if (currentRequestId === requestIdRef.current) {
-        setLoading(false)
-        clearResults()
-      }
-      return []
-    }
 
-    const searchPromise = (async () => {
+      setDebouncedKeyword(normalized)
       try {
-        const moduleKeys = options.moduleKeys || getSearchableModuleKeys()
-        const searchModule = options.searchModule
-        const merged = await (searchModule
-          ? searchModules({
-              keyword: normalizedKeyword,
-              moduleKeys,
-              pageConfigs: options.pageConfigs || modulePageMetaMap,
-              searchModule,
-              buildSummary: options.buildSummary || buildGlobalSearchSummary,
-            })
-          : searchGlobalDocuments(
-              normalizedKeyword,
-              moduleKeys,
-              controller.signal,
-            ))
-
-        if (currentRequestId !== requestIdRef.current) {
-          return []
-        }
-
-        abortControllerRef.current = null
-        lastSearchRef.current = {
-          keyword: normalizedKeyword,
-          results: merged,
-        }
-        setResults(merged)
-        setLoading(false)
-        return merged
+        return await queryClient.fetchQuery({
+          queryKey: QUERY_KEYS.globalSearch(normalized, moduleKeys),
+          queryFn: ({ signal }) => searchDocuments(normalized, signal),
+          staleTime: Number.POSITIVE_INFINITY,
+          retry: false,
+        })
       } catch {
-        return handleSearchError()
+        return []
       }
-    })()
-
-    pendingSearchRef.current = {
-      keyword: normalizedKeyword,
-      promise: searchPromise,
-    }
-    void searchPromise.finally(() => {
-      if (pendingSearchRef.current?.promise === searchPromise) {
-        pendingSearchRef.current = null
-      }
-    })
-    return searchPromise
-  }
+    },
+    [clearResults, moduleKeys, queryClient, searchDebouncer, searchDocuments],
+  )
 
   const jumpToResult = (result: GlobalSearchResult) => {
     searchDebouncer.cancel()
-    cancelActiveSearch()
     clearResults()
-    options.onJump(result)
+    onJump(result)
   }
 
   const handleSearch = (value: string) => {
     setKeyword(value)
-    const normalizedKeyword = normalizeGlobalSearchKeyword(value)
-    if (!shouldSearchGlobalKeyword(normalizedKeyword)) {
+    const normalized = normalizeGlobalSearchKeyword(value)
+    if (!shouldSearchGlobalKeyword(normalized)) {
       searchDebouncer.cancel()
-      cancelActiveSearch()
       clearResults()
       return
     }
 
-    searchDebouncer.schedule(normalizedKeyword, (keyword) => {
-      void performSearch(keyword)
+    searchDebouncer.schedule(normalized, (nextKeyword) => {
+      setDebouncedKeyword(nextKeyword)
     })
   }
 
@@ -192,6 +143,8 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
     }, 120)
   }
 
+  const results = searchEnabled ? (query.data ?? []) : []
+
   const handleSelect = (value: string) => {
     const target = results.find((item) => item.value === value)
     if (target) {
@@ -200,19 +153,16 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   }
 
   const handleSubmit = async (value: string) => {
-    const normalizedKeyword = normalizeGlobalSearchKeyword(value)
+    const normalized = normalizeGlobalSearchKeyword(value)
     searchDebouncer.cancel()
-    if (!shouldSearchGlobalKeyword(normalizedKeyword)) {
-      cancelActiveSearch()
+    if (!shouldSearchGlobalKeyword(normalized)) {
       clearResults()
       return
     }
 
-    const matchedResults = await performSearch(normalizedKeyword)
+    const matchedResults = await performSearch(normalized)
     const exactMatched = matchedResults.find(
-      (item) =>
-        item.primaryNo === normalizedKeyword ||
-        item.trackId === normalizedKeyword,
+      (item) => item.primaryNo === normalized || item.trackId === normalized,
     )
     if (exactMatched) {
       jumpToResult(exactMatched)
@@ -227,7 +177,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   return {
     keyword,
     setKeyword,
-    loading,
+    loading: query.isFetching,
     results,
     resultOptions: results.map((item) => ({
       value: item.value,
