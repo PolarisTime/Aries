@@ -10,4 +10,12 @@ export const marketPageDefinitions: AppPageDefinition[] = [
     icon: 'CalculatorOutlined',
     menuParent: 'market',
   },
+  {
+    key: 'market-sync',
+    title: '行情同步',
+    menuKey: '/market-sync',
+    view: 'market-sync',
+    icon: 'FileSyncOutlined',
+    menuParent: 'market',
+  },
 ]

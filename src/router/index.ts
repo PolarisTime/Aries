@@ -175,6 +175,10 @@ const viewLoaders: Record<
     import('@/views/price-compare/PriceCompareView').then((m) => ({
       default: m.PriceCompareView,
     })),
+  'market-sync': () =>
+    import('@/views/market/MarketSyncView').then((m) => ({
+      default: m.MarketSyncView,
+    })),
   'company-setting': () =>
     import('@/views/system/CompanySettingsView').then((m) => ({
       default: m.CompanySettingsView,

@@ -10,6 +10,7 @@ export type RouteViewKey =
   | 'master-project'
   | 'master-carrier'
   | 'price-compare'
+  | 'market-sync'
   | 'company-setting'
   | 'print-template'
   | 'account'
