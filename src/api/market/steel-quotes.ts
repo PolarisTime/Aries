@@ -154,6 +154,7 @@ export async function fetchSteelQuotes(params: {
   spec?: string
   material?: string
   factory?: string
+  change?: string
   sortBy?: string
   direction?: string
   page?: number
@@ -199,6 +200,9 @@ const steelQuoteBackfillStatusSchema = z.looseObject({
   syncedDays: z.number(),
   failedDays: z.number(),
   totalRows: z.number(),
+  failures: z
+    .array(z.looseObject({ date: z.string(), message: z.string() }))
+    .optional(),
 })
 export type SteelQuoteBackfillStatus = z.infer<
   typeof steelQuoteBackfillStatusSchema

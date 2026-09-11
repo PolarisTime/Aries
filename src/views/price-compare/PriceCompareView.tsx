@@ -124,6 +124,7 @@ export function PriceCompareView() {
   const spotRef = useRef<HTMLSpanElement>(null)
   const initialized = useRef(false)
   const fetchedDates = useRef<Set<string>>(new Set())
+  const urlParamsApplied = useRef(false)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [availability, setAvailability] = useState<Record<string, string[]>>({})
   const availabilityLoaded = useRef(false)
@@ -166,6 +167,20 @@ export function PriceCompareView() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [undo, redo])
+
+  // 支持从「行情同步」页跳转携带 refDate/refPeriod
+  useEffect(() => {
+    if (urlParamsApplied.current || !active) return
+    urlParamsApplied.current = true
+    const params = new URLSearchParams(window.location.search)
+    const refDate = params.get('refDate')
+    const refPeriod = params.get('refPeriod')
+    if (!refDate) return
+    patchSheet(active.id, {
+      refDate,
+      ...(refPeriod ? { refPeriod } : {}),
+    })
+  }, [active, patchSheet])
 
   const loadAvailability = useCallback(() => {
     const now = Date.now()

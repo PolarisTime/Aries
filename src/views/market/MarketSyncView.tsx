@@ -1,5 +1,7 @@
 import {
   ClearOutlined,
+  DownloadOutlined,
+  ExportOutlined,
   ReloadOutlined,
   SearchOutlined,
   SyncOutlined,
@@ -12,6 +14,7 @@ import {
   Flex,
   Input,
   InputNumber,
+  Progress,
   Select,
   Space,
   Table,
@@ -41,11 +44,17 @@ const PAGE_SIZE = 20
 const MATRIX_DAYS = 30
 const today = () => new Date().toISOString().slice(0, 10)
 
+const csvCell = (value: unknown) => {
+  const text = value === null || value === undefined ? '' : String(value)
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
 type Filters = {
   breed?: string
   material?: string
   factory?: string
   spec?: string
+  change?: string
 }
 
 type CalendarMap = Record<
@@ -70,6 +79,7 @@ export function MarketSyncView() {
   const [backfilling, setBackfilling] = useState(false)
   const [backfillStatus, setBackfillStatus] =
     useState<SteelQuoteBackfillStatus | null>(null)
+  const [syncingDate, setSyncingDate] = useState<string | null>(null)
 
   const [form, setForm] = useState<Filters>({})
   const [applied, setApplied] = useState<Filters>({})
@@ -129,6 +139,7 @@ export function MarketSyncView() {
           material: applied.material || undefined,
           factory: applied.factory || undefined,
           spec: applied.spec || undefined,
+          change: applied.change || undefined,
           sortBy: sort.field,
           direction: sort.order,
           page,
@@ -241,6 +252,102 @@ export function MarketSyncView() {
     }
   }
 
+  /** 手动同步某一天(矩阵缺失格子点击)。 */
+  const onSyncDate = async (date: string) => {
+    setSyncingDate(date)
+    try {
+      const result = await syncSteelQuotes(date)
+      message.success(
+        `已同步 ${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行`,
+      )
+      await loadCalendars()
+      setSelected({ date: result.articleDate, period: result.period })
+    } catch (error) {
+      console.error('同步失败', error)
+      message.error(
+        `同步失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+      )
+    } finally {
+      setSyncingDate(null)
+    }
+  }
+
+  const backfillTotalWeekdays = (() => {
+    if (!backfillStatus?.from || !backfillStatus?.to) return 0
+    let count = 0
+    let cursor = dayjs(backfillStatus.from)
+    const end = dayjs(backfillStatus.to)
+    while (!cursor.isAfter(end)) {
+      const dow = cursor.day()
+      if (dow !== 0 && dow !== 6) count += 1
+      cursor = cursor.add(1, 'day')
+    }
+    return count
+  })()
+
+  /** 导出当前筛选下的全部明细为 CSV。 */
+  const onExport = async () => {
+    if (!selected.date || !selected.period) return
+    try {
+      const all: SteelQuote[] = []
+      for (let page = 0; page < 50; page += 1) {
+        const { rows, total } = await fetchSteelQuotes({
+          quoteDate: selected.date,
+          period: selected.period,
+          breed: applied.breed || undefined,
+          material: applied.material || undefined,
+          factory: applied.factory || undefined,
+          spec: applied.spec || undefined,
+          change: applied.change || undefined,
+          sortBy: sort.field,
+          direction: sort.order,
+          page,
+          size: 200,
+        })
+        all.push(...rows)
+        if (all.length >= total || rows.length < 200) break
+      }
+      const header = [
+        '日期',
+        '时段',
+        '品牌/钢厂',
+        '品名',
+        '材质',
+        '规格',
+        '价格(元/吨)',
+        '涨跌',
+        '备注',
+      ]
+      const lines = all.map((row) =>
+        [
+          row.quoteDate,
+          row.period,
+          row.factory,
+          row.breed,
+          row.material,
+          row.spec,
+          row.price,
+          row.changeVal,
+          row.remark,
+        ]
+          .map(csvCell)
+          .join(','),
+      )
+      const csv = `\uFEFF${[header.join(','), ...lines].join('\n')}`
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `行情明细_${selected.date}_${selected.period}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+      message.success(`已导出 ${all.length} 行`)
+    } catch (error) {
+      console.error('导出失败', error)
+      message.error('导出失败，请稍后重试')
+    }
+  }
+
   const columns: ColumnsType<SteelQuote> = [
     { title: '品牌/钢厂', dataIndex: 'factory', width: 120, fixed: 'left' },
     { title: '品名', dataIndex: 'breed', width: 90 },
@@ -345,6 +452,16 @@ export function MarketSyncView() {
             >
               补数
             </Button>
+            <Tooltip title="只补最近30天缺失的文章(已入库的会跳过)">
+              <Button
+                size="small"
+                icon={<SyncOutlined />}
+                loading={backfilling}
+                onClick={() => void onBackfill()}
+              >
+                补缺失
+              </Button>
+            </Tooltip>
           </Space>
           <Button
             size="small"
@@ -382,7 +499,37 @@ export function MarketSyncView() {
             </Tag>
           )
         })}
+        {backfillStatus?.running && backfillTotalWeekdays > 0 ? (
+          <Flex align="center" gap={8} style={{ minWidth: 220 }}>
+            <Progress
+              size="small"
+              style={{ width: 160, margin: 0 }}
+              percent={Math.round(
+                ((backfillStatus.syncedDays + backfillStatus.failedDays) /
+                  backfillTotalWeekdays) *
+                  100,
+              )}
+            />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {backfillStatus.syncedDays + backfillStatus.failedDays}/
+              {backfillTotalWeekdays} 天
+            </Text>
+          </Flex>
+        ) : null}
       </Flex>
+
+      {backfillStatus && backfillStatus.failures?.length ? (
+        <Flex gap={6} wrap="wrap" style={{ marginBottom: 8 }}>
+          <Text type="danger" style={{ fontSize: 12 }}>
+            补数失败 {backfillStatus.failures.length} 天：
+          </Text>
+          {backfillStatus.failures.map((failure) => (
+            <Tooltip key={failure.date} title={failure.message}>
+              <Tag color="red">{failure.date}</Tag>
+            </Tooltip>
+          ))}
+        </Flex>
+      ) : null}
 
       <Card
         size="small"
@@ -419,8 +566,17 @@ export function MarketSyncView() {
                 if (weekend) return <Text type="secondary">休</Text>
                 if (!has)
                   return (
-                    <Tooltip title="该时段无行情数据">
-                      <Tag color="red">缺</Tag>
+                    <Tooltip title="该时段无行情数据，点击同步该日">
+                      <Button
+                        size="small"
+                        type="link"
+                        danger
+                        loading={syncingDate === row.date}
+                        style={{ padding: 0, height: 'auto' }}
+                        onClick={() => void onSyncDate(row.date)}
+                      >
+                        缺
+                      </Button>
                     </Tooltip>
                   )
                 return (
@@ -492,6 +648,20 @@ export function MarketSyncView() {
             }
             onPressEnter={() => setApplied(form)}
           />
+          <Select
+            size="small"
+            style={{ width: 100 }}
+            placeholder="涨跌"
+            allowClear
+            value={form.change}
+            onChange={(value) =>
+              setForm((prev) => ({ ...prev, change: value }))
+            }
+            options={[
+              { value: 'up', label: '涨' },
+              { value: 'down', label: '跌' },
+            ]}
+          />
           <Button
             size="small"
             type="primary"
@@ -511,6 +681,30 @@ export function MarketSyncView() {
           >
             重置
           </Button>
+          <Button
+            size="small"
+            icon={<DownloadOutlined />}
+            disabled={!selected.date || !selected.period}
+            onClick={() => void onExport()}
+          >
+            导出
+          </Button>
+          {selected.date && selected.period ? (
+            <Tooltip title="打开报单比价并应用该日期/时段">
+              <Button
+                size="small"
+                icon={<ExportOutlined />}
+                onClick={() =>
+                  window.open(
+                    `/price-compare?refDate=${selected.date}&refPeriod=${encodeURIComponent(selected.period)}`,
+                    '_blank',
+                  )
+                }
+              >
+                去比价
+              </Button>
+            </Tooltip>
+          ) : null}
           <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
             共 {quoteTotal} 条
           </Text>
