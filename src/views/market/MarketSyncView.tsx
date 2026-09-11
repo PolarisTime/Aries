@@ -104,7 +104,7 @@ export function MarketSyncView() {
     period: '',
   })
 
-  const [singleDate, setSingleDate] = useState<string>(today())
+  const [singleDate, setSingleDate] = useState<string>(() => today())
   const [syncing, setSyncing] = useState(false)
   const [backfillDays, setBackfillDays] = useState<number>(30)
   const [backfilling, setBackfilling] = useState(false)
