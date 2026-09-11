@@ -3,8 +3,10 @@ import {
   computeSummary,
   countMissing,
   makeRow,
+  mergePriceData,
   moveItem,
   netPrice,
+  quotesToData,
   syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
@@ -180,6 +182,56 @@ describe('syncSpotInputs', () => {
     const b = makeRow('g1')
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
+  })
+})
+
+describe('quotesToData / mergePriceData', () => {
+  it('按 日期/时段/品牌/品类|材质/规格 归并网价', () => {
+    const patch = quotesToData([
+      {
+        quoteDate: '2026-09-11',
+        period: '上午',
+        breed: '螺纹钢',
+        material: 'HRB400',
+        spec: '12',
+        factory: '中天',
+        price: 3320,
+      },
+      {
+        quoteDate: '2026-09-11',
+        period: '上午',
+        breed: '螺纹钢',
+        material: 'HRB400',
+        spec: '12',
+        factory: '中天',
+        price: '3330',
+      },
+    ])
+    expect(patch['2026-09-11']['上午']['中天']['螺纹钢|HRB400']['12']).toBe(
+      3330,
+    )
+  })
+
+  it('深合并保留既有日期数据', () => {
+    const base = {
+      '2026-09-10': { 上午: { 中天: { '螺纹钢|HRB400': { '12': 3200 } } } },
+    }
+    const patch = quotesToData([
+      {
+        quoteDate: '2026-09-11',
+        period: '上午',
+        breed: '盘螺',
+        material: 'HRB400',
+        spec: '8',
+        factory: '万泰',
+        price: 3500,
+      },
+    ])
+    const merged = mergePriceData(base, patch)
+    expect(merged['2026-09-10']['上午']['中天']['螺纹钢|HRB400']['12']).toBe(
+      3200,
+    )
+    expect(merged['2026-09-11']['上午']['万泰']['盘螺|HRB400']['8']).toBe(3500)
   })
 })
 

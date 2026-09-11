@@ -177,6 +177,55 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   return next
 }
 
+export type QuoteLike = {
+  quoteDate: string
+  period: string
+  breed: string
+  material: string
+  spec: string
+  factory: string
+  price: number | string
+}
+
+/** 后端行情明细 -> data[日期][时段][品牌][品类|材质][规格] = 网价 */
+export function quotesToData(quotes: QuoteLike[]): PriceData {
+  const patch: PriceData = {}
+  for (const quote of quotes) {
+    const spec = String(Number(quote.spec))
+    const price = Number(quote.price)
+    if (!quote.quoteDate || !quote.period || !quote.factory || !spec) continue
+    if (Number.isNaN(price)) continue
+    const key = `${quote.breed}|${quote.material}`
+    patch[quote.quoteDate] ??= {}
+    patch[quote.quoteDate][quote.period] ??= {}
+    patch[quote.quoteDate][quote.period][quote.factory] ??= {}
+    patch[quote.quoteDate][quote.period][quote.factory][key] ??= {}
+    patch[quote.quoteDate][quote.period][quote.factory][key][spec] = price
+  }
+  return patch
+}
+
+/** 深合并两份行情数据。 */
+export function mergePriceData(base: PriceData, patch: PriceData): PriceData {
+  const next: PriceData = { ...base }
+  for (const [date, periods] of Object.entries(patch)) {
+    next[date] = { ...(next[date] ?? {}) }
+    for (const [period, brands] of Object.entries(periods)) {
+      next[date][period] = { ...(next[date][period] ?? {}) }
+      for (const [brand, keys] of Object.entries(brands)) {
+        next[date][period][brand] = { ...(next[date][period][brand] ?? {}) }
+        for (const [key, specs] of Object.entries(keys)) {
+          next[date][period][brand][key] = {
+            ...(next[date][period][brand][key] ?? {}),
+            ...specs,
+          }
+        }
+      }
+    }
+  }
+  return next
+}
+
 function makeId(): string {
   return Math.random().toString(36).slice(2, 8)
 }
