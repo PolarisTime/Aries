@@ -368,11 +368,11 @@
 }
 
 .table-action-danger {
-  color: #ff4d4f;
+  color: var(--color-danger);
 }
 
 .table-action-danger:hover {
-  color: #ff7875;
+  color: var(--color-danger-hover);
 }
 
 .table-action-disabled {

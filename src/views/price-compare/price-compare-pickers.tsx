@@ -126,7 +126,7 @@ export function PriceCompareBatchBar({
                     brands,
                   )}
                   size="small"
-                  color="#faad14"
+                  color="var(--color-warning)"
                   style={{ marginLeft: 6 }}
                 />
               ) : null}
