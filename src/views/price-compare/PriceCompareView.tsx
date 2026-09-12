@@ -2,7 +2,7 @@ import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
-import { moveItem } from './core'
+import { moveItem, reconcileSpotInputs } from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
 import {
   PriceCompareBatchBar,
@@ -139,6 +139,19 @@ export function PriceCompareView() {
       })
     }
   }, [activeSheetId, activeRefPeriod, isLatestRef, matchesData, mergeMatches])
+
+  // 对账式现货联动：同商品同品牌已有现货价时自动套用到缺省行，避免重复输入。
+  useEffect(() => {
+    if (!active || !rows.length || !brands.length) return
+    const next = reconcileSpotInputs(
+      rows,
+      active.inputs,
+      brands.map((brand) => brand.name),
+    )
+    if (next !== active.inputs) {
+      patchSheet(active.id, { inputs: next })
+    }
+  }, [active, rows, brands, patchSheet])
 
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =

@@ -396,6 +396,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 attachSpotRef && brandIndex === 0 && current.id === rows[0]?.id
               const input = (
                 <Input
+                  key={`${brand.name}:${current.id}:${spot ?? ''}`}
                   className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                   size="small"
                   variant="borderless"

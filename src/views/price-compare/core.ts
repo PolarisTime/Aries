@@ -64,6 +64,43 @@ export function syncSpotInputs(
   return { inputs: next, targets }
 }
 
+/**
+ * 对账式现货联动：同批次内，若某行某品牌缺现货价，而同商品(类别+材质+规格+长度)的其它行已有现货价，
+ * 则自动套用，避免同一商品在不同行重复输入。返回新 inputs；无变化时返回原对象。
+ */
+export function reconcileSpotInputs(
+  rows: PriceRow[],
+  inputs: SheetInputs,
+  brandNames: string[],
+): SheetInputs {
+  const spotByProduct = new Map<string, number>()
+  for (const row of rows) {
+    const key = productKeyOf(row)
+    if (!key) continue
+    for (const brand of brandNames) {
+      const spot = inputs[`${brand}:${row.id}`]?.spot
+      if (spot !== undefined) spotByProduct.set(`${brand}\u0000${key}`, spot)
+    }
+  }
+
+  let changed = false
+  const next: SheetInputs = { ...inputs }
+  for (const row of rows) {
+    const key = productKeyOf(row)
+    if (!key) continue
+    for (const brand of brandNames) {
+      const inputKey = `${brand}:${row.id}`
+      if (next[inputKey]?.spot !== undefined) continue
+      const spot = spotByProduct.get(`${brand}\u0000${key}`)
+      if (spot !== undefined) {
+        next[inputKey] = { ...(next[inputKey] ?? {}), spot }
+        changed = true
+      }
+    }
+  }
+  return changed ? next : inputs
+}
+
 /** 12米加价生效的品种(业务规则) */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
 /** 现货价合理上限(元/吨), 超出提示 */

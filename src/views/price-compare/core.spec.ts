@@ -10,6 +10,7 @@ import {
   moveItem,
   netPrice,
   netPriceWithFallback,
+  reconcileSpotInputs,
   syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
@@ -235,6 +236,26 @@ describe('syncSpotInputs', () => {
     const b = makeRow('g1')
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
+  })
+})
+
+describe('reconcileSpotInputs', () => {
+  it('同商品同品牌缺省行自动套用已有现货价', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const next = reconcileSpotInputs([a, b], { '中天:a': { spot: 3160 } }, [
+      '中天',
+      '铜陵富鑫',
+    ])
+    expect(next['中天:a'].spot).toBe(3160)
+    expect(next['中天:b'].spot).toBe(3160)
+    expect(next['铜陵富鑫:a']).toBeUndefined()
+  })
+
+  it('无变化时返回原对象', () => {
+    const a = { ...row12, id: 'a' }
+    const inputs = { '中天:a': { spot: 3160 } }
+    expect(reconcileSpotInputs([a], inputs, ['中天'])).toBe(inputs)
   })
 })
 
