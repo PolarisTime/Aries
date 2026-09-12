@@ -15,6 +15,7 @@ import { message, modal } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
 import { runPrintOutputs } from '@/utils/print-output-runner'
+import { pickDefaultPrintTemplate } from '@/utils/print-template'
 import { filterPrintTemplatesBySettlementCompany } from '@/utils/print-template-settlement'
 
 interface Props {
@@ -91,7 +92,7 @@ async function pickPrintTemplate(
   if (templates.length === 1) return templates[0]
 
   return new Promise<PrintTemplateRecord | null>((resolve) => {
-    let selectedId = templates[0].id
+    let selectedId = pickDefaultPrintTemplate(templates)?.id ?? templates[0].id
 
     modal.confirm({
       title: t('hooks.printActions.selectPrintTemplate'),

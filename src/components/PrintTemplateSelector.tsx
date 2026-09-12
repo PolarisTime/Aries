@@ -1,5 +1,6 @@
 import { Radio, Space } from 'antd'
 import type { PrintTemplateRecord } from '@/shared/schemas'
+import { pickDefaultPrintTemplate } from '@/utils/print-template'
 
 interface Props {
   templates: PrintTemplateRecord[]
@@ -12,9 +13,11 @@ export function PrintTemplateSelector({
   defaultId,
   onSelect,
 }: Props) {
+  const initialTemplateId = defaultId || pickDefaultPrintTemplate(templates)?.id
+
   return (
     <Radio.Group
-      defaultValue={defaultId}
+      defaultValue={initialTemplateId}
       onChange={(e) => onSelect(e.target.value)}
     >
       <Space orientation="vertical" className="w-full">

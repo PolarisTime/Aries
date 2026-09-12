@@ -16,6 +16,7 @@ export const printTemplateRecordSchema = z.object({
   settlementCompanyName: z.string().nullish(),
   versionNo: z.number().int().positive().nullish(),
   status: printTemplateStatusSchema.nullish(),
+  isDefault: z.boolean().nullish(),
   syncMode: z.enum(['MANUAL', 'FILE']).nullish(),
   sourceRef: z.string().nullish(),
   sourceChecksum: z.string().nullish(),

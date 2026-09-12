@@ -1745,6 +1745,8 @@ export const enUS = {
       uploadPdfFormOnly: 'Only PDF form templates support JSON upload',
       uploadJsonFileOnly: 'Please upload a JSON file',
       uploadJsonSizeLimit: 'JSON file must be 1MB or smaller',
+      uploadJsonHint:
+        'File managed templates are managed by deployment files and cannot be uploaded. Copy it as a manual template first.',
       deleteContent: 'Delete template "{{name}}"?',
       inputTemplateContent: 'Please enter template content',
     },
@@ -1816,7 +1818,7 @@ export const enUS = {
         'COORD uses overlay script or shared layout JSON. PDF_FORM generates PDF from pure JSON and can optionally reference a PDF asset.',
       helpTitle: 'Print Template Guide',
       unifiedPrintApi:
-        'All templates use POST /print/record. COORD returns overlay script and data, PDF_FORM returns PDF content. The frontend only previews and prints.',
+        'Print APIs follow the v2.0 contract: GET /v2.0/print-templates lists templates, PUT /v2.0/print-templates/{id}/content uploads template JSON, GET /v2.0/print-previews/items loads print items, and POST /v2.0/print-exports generates print output. COORD returns overlay script and data, PDF_FORM returns PDF content. The frontend only previews and prints.',
       syntaxHint:
         'Use {{fieldName}} for fields, {{#each details}}...{{/each}} for detail rows, and {{#if fieldName}}...{{else}}...{{/if}} for conditional blocks.',
       commonFields: 'Header fields',

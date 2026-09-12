@@ -3,6 +3,7 @@ import { Checkbox, Empty, Flex, Form, Select, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintTemplateRecord } from '@/shared/schemas'
+import { pickDefaultPrintTemplate } from '@/utils/print-template'
 import type { PrintJobFormValues } from '@/views/modules/components/print-job-modal-state'
 
 interface Props {
@@ -28,7 +29,7 @@ export function PrintJobTemplateOptionsForm({
       initialValues={{
         mergeMode: 'merge',
         printOptions: [],
-        templateId: templates[0]?.id,
+        templateId: pickDefaultPrintTemplate(templates)?.id,
       }}
     >
       <Flex align="center" gap="middle" wrap="wrap">

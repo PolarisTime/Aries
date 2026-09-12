@@ -33,6 +33,7 @@ import {
   isStatementPrintModule as isStatementPrintModuleForModule,
   supportsSalesOrderPrintOption,
 } from '@/utils/print-module-config'
+import { pickDefaultPrintTemplate } from '@/utils/print-template'
 import {
   fieldText,
   isPdfTemplate,
@@ -327,13 +328,14 @@ export function PrintJobModal({
   const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
   const selectedTemplate =
     templates.find((template) => template.id === templateIdFromForm) ??
-    templates[0]
+    pickDefaultPrintTemplate(templates)
   // 模板列表晚于弹窗挂载到达时，补写默认模板，保证 Select 与实际输出一致。
   useEffect(() => {
     if (!open) return
     const currentTemplateId: unknown = form.getFieldValue('templateId')
-    if (!currentTemplateId && templates.length) {
-      form.setFieldValue('templateId', templates[0].id)
+    const defaultTemplate = pickDefaultPrintTemplate(templates)
+    if (!currentTemplateId && defaultTemplate) {
+      form.setFieldValue('templateId', defaultTemplate.id)
     }
   }, [form, open, templates])
 

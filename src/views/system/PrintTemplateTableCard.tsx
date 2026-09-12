@@ -32,6 +32,7 @@ import { StatusTag } from '@/components/StatusTag'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import { formatDateTime } from '@/utils/formatters'
+import { pickDefaultPrintTemplate } from '@/utils/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 
 interface Props {
@@ -111,6 +112,7 @@ interface PrintTemplateActionsProps {
     more: string
     preview: string
     uploadJson: string
+    uploadJsonHint: string
   }
   onCopy: (record: PrintTemplateRecord) => void
   onDelete: (record: PrintTemplateRecord) => void
@@ -129,7 +131,10 @@ function PrintTemplateActions({
   onPreview,
   onUploadJson,
 }: PrintTemplateActionsProps) {
-  const canUploadJson = record.templateType === 'PDF_FORM'
+  const isPdfForm = record.templateType === 'PDF_FORM'
+  const isFileManaged = record.syncMode === 'FILE'
+  const canUploadJson = isPdfForm && !isFileManaged
+  const showUploadJsonHint = isPdfForm && isFileManaged
   const canEditRecord = record.syncMode !== 'FILE'
 
   return (
@@ -190,7 +195,20 @@ function PrintTemplateActions({
                   ),
                   disabled: uploadPending,
                 }
-              : null,
+              : showUploadJsonHint
+                ? {
+                    key: 'upload',
+                    label: (
+                      <Tooltip title={labels.uploadJsonHint}>
+                        <span>
+                          <UploadOutlined className="mr-8" />
+                          {labels.uploadJson}
+                        </span>
+                      </Tooltip>
+                    ),
+                    disabled: true,
+                  }
+                : null,
             {
               key: 'delete',
               danger: true,
@@ -234,7 +252,7 @@ export function PrintTemplateTableCard({
   const [keyword, setKeyword] = useState('')
   const activeTemplate =
     templates.find((template) => template.id === activeTemplateId) ??
-    templates[0] ??
+    pickDefaultPrintTemplate(templates) ??
     null
   const filteredTemplates = (() => {
     const normalizedKeyword = keyword.trim().toLowerCase()
@@ -273,6 +291,7 @@ export function PrintTemplateTableCard({
     more: t('common.more'),
     preview: t('system.printTemplate.preview'),
     uploadJson: t('system.printTemplate.uploadJson'),
+    uploadJsonHint: t('system.printTemplate.uploadJsonHint'),
   }
   const syncLabels = {
     file: t('system.printTemplate.syncModeFile'),

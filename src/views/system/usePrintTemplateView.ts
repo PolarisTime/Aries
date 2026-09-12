@@ -278,6 +278,10 @@ export function usePrintTemplateView() {
   }
 
   const handleUploadJson = (record: PrintTemplateRecord, file: File) => {
+    if (record.syncMode === 'FILE') {
+      message.warning(t('system.printTemplate.uploadJsonHint'))
+      return
+    }
     if (record.templateType !== 'PDF_FORM') {
       message.warning(t('system.printTemplate.uploadPdfFormOnly'))
       return
