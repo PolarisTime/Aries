@@ -7,6 +7,7 @@ import type {
 import { apiGet, apiPost, apiPut, downloadGet } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { HTTP_STATUS } from '@/constants/http-status'
 import { rawRecordSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 
 const attachmentRecordSchema = z.object({
@@ -52,7 +53,20 @@ const directUploadPrepareResponseSchema = z.object({
   expiresAt: z.union([z.string(), z.number()]).optional(),
 })
 
-const DIRECT_UPLOAD_UNSUPPORTED_MESSAGE = '不支持直传'
+// 后端在 OSS 仅允许后端中转时返回 422（VALIDATION_ERROR），文案不固定，
+// 因此回退判断以状态码/业务码为主，文案匹配仅作为无状态信息时的兜底。
+const DIRECT_UPLOAD_UNSUPPORTED_BUSINESS_CODES = new Set([4000])
+const DIRECT_UPLOAD_UNSUPPORTED_MESSAGE_PATTERNS = [
+  '不支持直传',
+  '仅允许后端中转',
+  '仅允许服务端中转',
+  'direct upload is not supported',
+  'server proxy only',
+] as const
+// 附件上传的错误提示统一由调用方呈现；关闭全局拦截器提示，避免直传预检
+// 失败与回退 multipart 失败时同一错误被多层 message.error 重复弹出。
+const ATTACHMENT_UPLOAD_SUPPRESSED_ERROR_STATUSES: readonly number[] =
+  Array.from({ length: 200 }, (_, index) => 400 + index)
 const FORBIDDEN_UPLOAD_HEADERS = new Set(['host', 'content-length'])
 const INTERNAL_ATTACHMENT_URL_PATTERN =
   /^\/api\/v2\.0\/attachments\/([^/?#]+)\/(preview|download|content)(?:\?([^#]*))?(?:#.*)?$/
@@ -109,7 +123,10 @@ async function prepareDirectUpload(
       sourceType,
       sha256Hex,
     },
-    withIdempotencyKey({ params: { moduleKey } }),
+    {
+      ...withIdempotencyKey({ params: { moduleKey } }),
+      suppressGlobalErrorStatuses: ATTACHMENT_UPLOAD_SUPPRESSED_ERROR_STATUSES,
+    },
   )
 }
 
@@ -124,7 +141,10 @@ async function completeDirectUpload(
     {
       token,
     },
-    withIdempotencyKey({ params: { moduleKey } }),
+    {
+      ...withIdempotencyKey({ params: { moduleKey } }),
+      suppressGlobalErrorStatuses: ATTACHMENT_UPLOAD_SUPPRESSED_ERROR_STATUSES,
+    },
   )
 }
 
@@ -174,11 +194,8 @@ function uploadAttachmentMultipart(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return apiPost(
-    ENDPOINTS.ATTACHMENTS_UPLOAD,
-    rawRecordSchema,
-    formData,
-    withIdempotencyKey({
+  return apiPost(ENDPOINTS.ATTACHMENTS_UPLOAD, rawRecordSchema, formData, {
+    ...withIdempotencyKey({
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (event) => {
         if (!event.total) {
@@ -190,7 +207,8 @@ function uploadAttachmentMultipart(
         )
       },
     }),
-  )
+    suppressGlobalErrorStatuses: ATTACHMENT_UPLOAD_SUPPRESSED_ERROR_STATUSES,
+  })
 }
 
 function reportUploadProgress(
@@ -220,18 +238,81 @@ async function calculateFileSha256Hex(file: File) {
   ).join('')
 }
 
+function toFiniteErrorNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return undefined
+}
+
+function readErrorStatus(err: unknown): number | undefined {
+  if (!err || typeof err !== 'object') {
+    return undefined
+  }
+  const source = err as {
+    status?: unknown
+    response?: { status?: unknown }
+  }
+  return (
+    toFiniteErrorNumber(source.status) ??
+    toFiniteErrorNumber(source.response?.status)
+  )
+}
+
+function readErrorBusinessCode(err: unknown): number | undefined {
+  if (!err || typeof err !== 'object') {
+    return undefined
+  }
+  const source = err as {
+    code?: unknown
+    response?: { data?: { code?: unknown } }
+  }
+  return (
+    toFiniteErrorNumber(source.response?.data?.code) ??
+    toFiniteErrorNumber(source.code)
+  )
+}
+
+function collectErrorMessages(err: unknown): string {
+  if (typeof err === 'string') {
+    return err
+  }
+  if (!err || typeof err !== 'object') {
+    return ''
+  }
+  const source = err as {
+    message?: unknown
+    response?: {
+      data?: { message?: unknown; detail?: unknown; title?: unknown }
+    }
+  }
+  const data = source.response?.data
+  return [source.message, data?.message, data?.detail, data?.title]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+}
+
 function isDirectUploadUnsupported(err: unknown) {
-  const message =
-    err instanceof Error
-      ? err.message
-      : typeof err === 'object' && err !== null && 'message' in err
-        ? String((err as { message?: unknown }).message || '')
-        : ''
-  if (message.includes(DIRECT_UPLOAD_UNSUPPORTED_MESSAGE)) {
+  if (readErrorStatus(err) === HTTP_STATUS.UNPROCESSABLE_ENTITY) {
     return true
   }
 
-  return false
+  const businessCode = readErrorBusinessCode(err)
+  if (
+    businessCode !== undefined &&
+    DIRECT_UPLOAD_UNSUPPORTED_BUSINESS_CODES.has(businessCode)
+  ) {
+    return true
+  }
+
+  const message = collectErrorMessages(err)
+  return DIRECT_UPLOAD_UNSUPPORTED_MESSAGE_PATTERNS.some((pattern) =>
+    message.includes(pattern),
+  )
 }
 
 export async function getAttachmentBindings(

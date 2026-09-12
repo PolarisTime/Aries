@@ -94,7 +94,13 @@ export function CarrierEditorOverlay({
   }
 
   const handleEditorSave = async () => {
-    const values = await form.validateFields()
+    let values: CarrierEditorValues
+    try {
+      values = await form.validateFields()
+    } catch {
+      // 必填校验失败时 antd 已内联提示，直接返回，避免未处理的 Promise rejection。
+      return
+    }
     setSaving(true)
     try {
       const draft: LegacyModuleRecordInput = {
