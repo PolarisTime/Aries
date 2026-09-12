@@ -115,7 +115,8 @@ export async function fetchMaterialSearch(
       params: {
         keyword,
         page: 0,
-        size: limit,
+        // 后端 PageQuery 上限为 200，超出会返回 422
+        size: Math.min(Math.max(limit, 1), 200),
       },
     },
   )

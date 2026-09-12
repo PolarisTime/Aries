@@ -228,7 +228,7 @@ export function useMasterOptions(
   const { data: materials = [], isLoading: materialsLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.material,
     queryFn: () =>
-      fetchMaterialSearch('', 500).then((response) => response.content),
+      fetchMaterialSearch('', 200).then((response) => response.content),
     enabled: queryEnabled && normalizedRequirements.materials,
     staleTime: STALE_MASTER_OPTIONS,
   })
