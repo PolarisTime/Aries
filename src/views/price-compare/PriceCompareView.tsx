@@ -1,5 +1,6 @@
 import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
@@ -19,6 +20,7 @@ import './price-compare.css'
 
 /** 报单比价页: 顶部胶囊(项目/批次) + 单据表格。 */
 export function PriceCompareView() {
+  const { t } = useTranslation()
   const { data, varieties, projects, catalog, loading, error, mergeMatches } =
     usePriceCompareData()
   const materialBrands = useMaterialBrands()
@@ -167,11 +169,11 @@ export function PriceCompareView() {
 
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({
-      title: '删除该批次？',
-      content: '该批次的全部录入内容将一并删除',
-      okText: '删除',
+      title: t('priceCompare.view.removeSheetConfirmTitle'),
+      content: t('priceCompare.view.removeSheetConfirmContent'),
+      okText: t('common.delete'),
       okButtonProps: { danger: true },
-      cancelText: '取消',
+      cancelText: t('common.cancel'),
       onOk: () => removeSheet(id),
     })
 
@@ -188,7 +190,7 @@ export function PriceCompareView() {
         <Alert
           type="error"
           showIcon
-          title="比价数据加载失败"
+          title={t('priceCompare.view.loadFailedTitle')}
           description={error}
         />
       </div>
@@ -199,7 +201,7 @@ export function PriceCompareView() {
     <div id="price-compare-root" className="price-compare-page">
       <div className="price-compare-head">
         <div>
-          <h1>报单比价</h1>
+          <h1>{t('priceCompare.view.title')}</h1>
         </div>
       </div>
 
@@ -241,7 +243,7 @@ export function PriceCompareView() {
 
       {active ? (
         <Watermark
-          content={['内部资料 · 报单比价', active.name]}
+          content={[t('priceCompare.view.watermark'), active.name]}
           gap={[140, 120]}
           font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
         >
@@ -272,7 +274,7 @@ export function PriceCompareView() {
         </Watermark>
       ) : (
         <Flex justify="center" style={{ padding: 40 }}>
-          <Empty description="暂无批次" />
+          <Empty description={t('priceCompare.view.noBatch')} />
         </Flex>
       )}
 

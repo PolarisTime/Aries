@@ -1,5 +1,6 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Badge, Button, Flex, Segmented, Select, Tag, Typography } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { countMissing, resolveRef } from './core'
 import { projectAbbrOf } from './price-compare-support'
 import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
@@ -25,6 +26,7 @@ export function PriceCompareProjectPicker({
   projects: ProjectOption[]
   projectGroups: ProjectGroup[]
 }) {
+  const { t } = useTranslation()
   return (
     <Flex
       gap={8}
@@ -35,7 +37,7 @@ export function PriceCompareProjectPicker({
     >
       <Flex gap={8} align="center" wrap="wrap">
         <Text type="secondary" style={{ fontSize: 12 }}>
-          项目
+          {t('priceCompare.picker.project')}
         </Text>
         {projectGroups.map((group) => (
           <Tag.CheckableTag
@@ -51,7 +53,7 @@ export function PriceCompareProjectPicker({
         <Select
           size="small"
           style={{ width: 150 }}
-          placeholder="新增项目批次"
+          placeholder={t('priceCompare.picker.addProjectBatch')}
           showSearch={{ optionFilterProp: 'label' }}
           value={null}
           options={projects.flatMap((project) =>
@@ -95,10 +97,11 @@ export function PriceCompareBatchBar({
   onSelectSheet: (id: string) => void
   sheets: PriceSheet[]
 }) {
+  const { t } = useTranslation()
   return (
     <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
       <Text type="secondary" style={{ fontSize: 12 }}>
-        批次
+        {t('priceCompare.picker.batch')}
       </Text>
       <Segmented
         size="small"
@@ -132,17 +135,21 @@ export function PriceCompareBatchBar({
         }))}
       />
       <Button size="small" icon={<PlusOutlined />} onClick={onAddBatch}>
-        新批次
+        {t('priceCompare.picker.newBatch')}
       </Button>
       <Button
         size="small"
         danger
         icon={<DeleteOutlined />}
         disabled={!active || sheets.length <= 1}
-        title={sheets.length <= 1 ? '至少保留一个批次' : '删除当前批次'}
+        title={
+          sheets.length <= 1
+            ? t('priceCompare.picker.keepOneBatch')
+            : t('priceCompare.picker.deleteCurrentBatch')
+        }
         onClick={() => active && onDeleteBatch(active.id)}
       >
-        删除批次
+        {t('priceCompare.picker.deleteBatch')}
       </Button>
     </Flex>
   )

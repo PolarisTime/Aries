@@ -14,6 +14,7 @@ import {
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
 import { CATEGORIES } from './core'
 import type { Brand, ProjectConfig, Variety } from './types'
@@ -107,11 +108,12 @@ function BasicSection({
   draft: ProjectConfigDraft
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
+  const { t } = useTranslation()
   return (
     <Flex vertical gap={12}>
       <Flex align="center" gap={8} className="price-compare-config-premium">
         <Text type="secondary" style={{ fontSize: 12 }}>
-          12米加价（元/吨，仅螺纹钢生效）
+          {t('priceCompare.config.premiumLabel')}
         </Text>
         <InputNumber
           size="small"
@@ -124,7 +126,7 @@ function BasicSection({
       </Flex>
       <Flex align="center" justify="space-between" gap={8}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          HRB400 无网价时改用 HRB400E 价格（网价前显示 E）
+          {t('priceCompare.config.fallbackLabel')}
         </Text>
         <Switch
           size="small"
@@ -148,6 +150,7 @@ function BrandSection({
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
   const [keyword, setKeyword] = useState('')
+  const { t } = useTranslation()
   const selectedBrandSet = useMemo(() => new Set(draft.brands), [draft.brands])
   const selectedBrands = useMemo(
     () => brandOptions.filter((name) => selectedBrandSet.has(name)),
@@ -171,38 +174,43 @@ function BrandSection({
     <Flex vertical gap={12}>
       <Flex justify="space-between" align="center" gap={8} wrap="wrap">
         <Text type="secondary" style={{ fontSize: 12 }}>
-          参与比价的品牌与品种（未启用的品种该品牌不显示价格）
+          {t('priceCompare.config.brandsHint')}
         </Text>
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            已选 {draft.brands.length}/{brandOptions.length}
+            {t('priceCompare.config.selectedCount', {
+              selected: draft.brands.length,
+              total: brandOptions.length,
+            })}
           </Text>
           <Button
             size="small"
             type="text"
             onClick={() => onChange({ brands: brandOptions })}
           >
-            全选
+            {t('priceCompare.config.selectAll')}
           </Button>
           <Button
             size="small"
             type="text"
             onClick={() => onChange({ brands: [] })}
           >
-            清空
+            {t('priceCompare.config.clear')}
           </Button>
         </Space>
       </Flex>
 
       <div>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          已参与品牌（{selectedBrands.length}）
+          {t('priceCompare.config.selectedBrands', {
+            selected: selectedBrands.length,
+          })}
         </Text>
         <Flex vertical gap={6} style={{ marginTop: 6 }}>
           {selectedBrands.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="尚未选择品牌"
+              description={t('priceCompare.config.noBrandSelected')}
             />
           ) : (
             selectedBrands.map((name) => (
@@ -213,7 +221,7 @@ function BrandSection({
                   </Text>
                   <Space size={4}>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      运费(元/吨)
+                      {t('priceCompare.config.freight')}
                     </Text>
                     <InputNumber
                       size="small"
@@ -233,7 +241,7 @@ function BrandSection({
                   </Space>
                   <Space size={4}>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      品种
+                      {t('priceCompare.config.category')}
                     </Text>
                     <Checkbox.Group
                       value={draft.categoryMap[name] ?? CATEGORIES}
@@ -265,13 +273,13 @@ function BrandSection({
       <div>
         <Flex justify="space-between" align="center" gap={8} wrap="wrap">
           <Text type="secondary" style={{ fontSize: 12 }}>
-            未参与品牌（点击加入）
+            {t('priceCompare.config.unselectedBrands')}
           </Text>
           <Input
             size="small"
             allowClear
             prefix={<SearchOutlined />}
-            placeholder="搜索品牌"
+            placeholder={t('priceCompare.config.searchBrand')}
             style={{ width: 150 }}
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -280,7 +288,7 @@ function BrandSection({
         <div className="price-compare-brand-pool">
           {unselected.length === 0 ? (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              无
+              {t('priceCompare.config.none')}
             </Text>
           ) : (
             <Checkbox.Group
@@ -308,6 +316,7 @@ function ProductSection({
 }) {
   const [material, setMaterial] = useState<string>('')
   const [keyword, setKeyword] = useState('')
+  const { t } = useTranslation()
 
   const allKeys = useMemo(() => varieties.map(varietyKey), [varieties])
   const selectedSet = useMemo(() => new Set(draft.products), [draft.products])
@@ -355,30 +364,33 @@ function ProductSection({
     <Flex vertical gap={10}>
       <Flex justify="space-between" align="center" gap={8} wrap="wrap">
         <Text type="secondary" style={{ fontSize: 12 }}>
-          报单时可选的商品（默认全选；取消勾选即从下拉中移除）
+          {t('priceCompare.config.productsHint')}
         </Text>
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            已选 {draft.products.length}/{allKeys.length}
+            {t('priceCompare.config.selectedCount', {
+              selected: draft.products.length,
+              total: allKeys.length,
+            })}
           </Text>
           <Button size="small" onClick={() => onChange({ products: allKeys })}>
-            全选
+            {t('priceCompare.config.selectAll')}
           </Button>
           <Button size="small" onClick={() => onChange({ products: [] })}>
-            清空
+            {t('priceCompare.config.clear')}
           </Button>
         </Space>
       </Flex>
 
       <Flex gap={6} align="center" wrap="wrap">
         <Text type="secondary" style={{ fontSize: 12 }}>
-          材质
+          {t('priceCompare.config.material')}
         </Text>
         <Tag.CheckableTag
           checked={material === ''}
           onChange={() => setMaterial('')}
         >
-          全部
+          {t('priceCompare.config.all')}
         </Tag.CheckableTag>
         {materials.map((item) => (
           <Tag.CheckableTag
@@ -393,7 +405,7 @@ function ProductSection({
           size="small"
           allowClear
           prefix={<SearchOutlined />}
-          placeholder="搜索规格"
+          placeholder={t('priceCompare.config.searchSpec')}
           style={{ width: 150, marginLeft: 'auto' }}
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
@@ -404,7 +416,7 @@ function ProductSection({
         {groups.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="无匹配商品"
+            description={t('priceCompare.config.noMatchedProduct')}
           />
         ) : (
           groups.map((group) => {
@@ -476,6 +488,7 @@ export function ProjectConfigModal({
   onClose,
   onSave,
 }: Props) {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState<ProjectConfigDraft>(() =>
     createDraft(config, brandOptions, varieties),
   )
@@ -497,21 +510,21 @@ export function ProjectConfigModal({
       return
     }
     modal.confirm({
-      title: '放弃未保存的修改？',
-      okText: '放弃',
-      cancelText: '继续编辑',
+      title: t('priceCompare.config.discardTitle'),
+      okText: t('priceCompare.config.abandon'),
+      cancelText: t('priceCompare.config.continueEditing'),
       onOk: onClose,
     })
   }
 
   return (
     <Modal
-      title="项目配置"
+      title={t('priceCompare.config.title')}
       open={open}
       width={680}
       destroyOnHidden
-      okText="保存"
-      cancelText="取消"
+      okText={t('common.save')}
+      cancelText={t('common.cancel')}
       onOk={() => {
         onSave(draftToConfig(draft, varieties))
         onClose()
@@ -526,12 +539,12 @@ export function ProjectConfigModal({
         items={[
           {
             key: 'basic',
-            label: '基础',
+            label: t('priceCompare.config.tabs.basic'),
             children: <BasicSection draft={draft} onChange={patch} />,
           },
           {
             key: 'brands',
-            label: '品牌与品种',
+            label: t('priceCompare.config.tabs.brands'),
             children: (
               <BrandSection
                 draft={draft}
@@ -542,7 +555,7 @@ export function ProjectConfigModal({
           },
           {
             key: 'products',
-            label: '可选商品',
+            label: t('priceCompare.config.tabs.products'),
             children: (
               <ProductSection
                 draft={draft}

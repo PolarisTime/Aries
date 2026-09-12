@@ -1,5 +1,6 @@
 import { Tour } from 'antd'
 import type { RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TOUR_KEY } from './price-compare-support'
 
 export function PriceCompareTour({
@@ -11,6 +12,7 @@ export function PriceCompareTour({
   open: boolean
   spotRef: RefObject<HTMLSpanElement | null>
 }) {
+  const { t } = useTranslation()
   return (
     <Tour
       open={open}
@@ -20,14 +22,13 @@ export function PriceCompareTour({
       }}
       steps={[
         {
-          title: '选择项目/批次',
-          description: '在顶部切换项目与批次；每个批次对应一次报价',
+          title: t('priceCompare.tour.selectTitle'),
+          description: t('priceCompare.tour.selectDesc'),
           target: () => document.body,
         },
         {
-          title: '分组与录入',
-          description:
-            '支持添加分组与拖动排序；录入现货价，按回车或方向键切换行',
+          title: t('priceCompare.tour.entryTitle'),
+          description: t('priceCompare.tour.entryDesc'),
           target: () => spotRef.current ?? document.body,
         },
       ]}

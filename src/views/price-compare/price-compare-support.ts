@@ -1,3 +1,4 @@
+import i18n from 'i18next'
 import type { PriceSheet, ProjectOption } from './types'
 
 export const TOUR_KEY = 'aries-price-compare-tour'
@@ -10,7 +11,7 @@ export function projectAbbrOf(
   for (const project of projects) {
     if (project.id === projectId) return project.abbr || project.name
   }
-  return fallback || '未指定项目'
+  return fallback || i18n.t('priceCompare.sheet.unspecifiedProject')
 }
 
 export function projectGroupsOf(

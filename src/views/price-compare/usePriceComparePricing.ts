@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   fetchMaterialPriceMatches,
   fetchSteelQuoteCalendars,
@@ -18,6 +19,7 @@ export function usePriceComparePricing({
   data: PriceData
   isAuthenticated: boolean
 }) {
+  const { t } = useTranslation()
   const [refreshing, setRefreshing] = useState(false)
 
   const availabilityRange = useMemo(() => {
@@ -98,7 +100,7 @@ export function usePriceComparePricing({
   /** 刷新读取: 重新拉取当前参照日期/时段的后端网价(不对后端做同步操作)。 */
   const onRefreshPrice = async () => {
     if (!isAuthenticated) {
-      message.error('请先登录后再读取网价')
+      message.error(t('priceCompare.pricing.loginRequired'))
       return
     }
     setRefreshing(true)
@@ -108,16 +110,23 @@ export function usePriceComparePricing({
       const result = await matchesQuery.refetch()
       if (result.error) throw result.error
       if (!activeRefDate) {
-        message.success('已读取最新网价')
+        message.success(t('priceCompare.pricing.refreshedLatest'))
         return
       }
       message.success(
-        `已读取 ${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''} 网价`,
+        t('priceCompare.pricing.refreshedWithRef', {
+          ref: `${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''}`,
+        }),
       )
     } catch (error) {
       console.error('读取网价失败', error)
       message.error(
-        `读取网价失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+        t('priceCompare.pricing.refreshFailed', {
+          message:
+            error instanceof Error
+              ? error.message
+              : t('priceCompare.pricing.retryLater'),
+        }),
       )
     } finally {
       setRefreshing(false)

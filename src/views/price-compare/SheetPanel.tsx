@@ -23,7 +23,9 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
+import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import {
   CATEGORIES,
@@ -48,7 +50,6 @@ import type {
 import './price-compare.css'
 
 const { Text } = Typography
-const DATE_FMT = 'YYYY年M月D日'
 
 function moveFocus(groupRows: PriceRow[]) {
   return (brandName: string, rowId: string, delta: number) => {
@@ -80,6 +81,7 @@ function moveFocusTon(groupRows: PriceRow[]) {
 
 type ColumnContext = {
   sheet: PriceSheet
+  t: TFunction
   refDate: string
   refPeriod: string
   lengthPremium: number
@@ -165,6 +167,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowHrb400eFallback,
     allowedProducts,
     bestOn,
+    t,
   } = ctx
   const enabledCategories = new Set<string>()
   if (!brands.length) {
@@ -255,7 +258,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         <span
           className="price-compare-row-drag"
           draggable
-          title="拖动调整行顺序"
+          title={t('priceCompare.sheet.dragRow')}
           onDragStart={(event) => onRowDragStart(row.rowId, event)}
           onDragEnd={onRowDragEnd}
         >
@@ -264,7 +267,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       ),
     },
     {
-      title: '类别',
+      title: t('priceCompare.sheet.columns.category'),
       dataIndex: 'category',
       width: SHEET_COLUMN_WIDTH.category,
       fixed: 'left',
@@ -274,7 +277,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       ),
     },
     {
-      title: '材质 / 规格 / 长度',
+      title: t('priceCompare.sheet.columns.variety'),
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
@@ -289,7 +292,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             size="small"
             variant="borderless"
             style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
-            placeholder="选择商品"
+            placeholder={t('priceCompare.sheet.selectProduct')}
             showSearch={{ optionFilterProp: 'label' }}
             value={value}
             options={varietyOptions}
@@ -308,7 +311,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       },
     },
     {
-      title: '报单吨位',
+      title: t('priceCompare.sheet.columns.ton'),
       width: SHEET_COLUMN_WIDTH.ton,
       fixed: 'left',
       align: 'center',
@@ -325,7 +328,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             const raw = event.target.value
             const value = Number(raw)
             if (raw !== '' && (Number.isNaN(value) || value <= 0)) {
-              message.warning('报单吨位需为正数')
+              message.warning(t('priceCompare.sheet.tonPositive'))
               return
             }
             patchRow(row.rowId, { ton: raw === '' ? undefined : value })
@@ -353,7 +356,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             <span
               className="price-compare-brand-name price-compare-drag"
               draggable
-              title="拖动调整品牌列顺序"
+              title={t('priceCompare.sheet.dragBrand')}
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = 'move'
                 event.dataTransfer.setData('text/plain', String(brandIndex))
@@ -369,129 +372,158 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             </span>
           ),
           children: [
-            cellOf('网价', SHEET_COLUMN_WIDTH.net, (_, row) => {
-              const resolved = isCategoryEnabled(brand, row.row.category)
-                ? netPriceWithFallback(
-                    data,
-                    refDate,
-                    refPeriod,
-                    brand.name,
-                    row.row,
-                    lengthPremium,
-                    allowHrb400eFallback,
-                  )
-                : { value: undefined, fallback: false }
-              const price = resolved.value
-              return price === undefined ? (
-                <div className="price-compare-num price-compare-sub">-</div>
-              ) : (
-                <div
-                  className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                >
-                  {resolved.fallback ? `E ${price}` : price}
-                </div>
-              )
-            }),
-            cellOf('现货', SHEET_COLUMN_WIDTH.spot, (_, row) => {
-              const current = row.row
-              const spot = getSpot(brand.name, current.id)
-              const isFirst =
-                attachSpotRef && brandIndex === 0 && current.id === rows[0]?.id
-              const input = (
-                <Input
-                  key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
-                  className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                  size="small"
-                  variant="borderless"
-                  inputMode="decimal"
-                  data-spot={`${brand.name}:${current.id}`}
-                  defaultValue={spot === undefined ? '' : String(spot)}
-                  onBlur={(event) => {
-                    const raw = event.target.value
-                    const value = Number(raw)
-                    if (
-                      raw !== '' &&
-                      (Number.isNaN(value) ||
-                        value <= 0 ||
-                        value > SPOT_PRICE_MAX)
-                    ) {
-                      message.warning('现货价超出合理范围（0 - 20000）')
-                      // 非法输入：触发重挂载，恢复为已保存值
-                      ctx.onInvalidSpot()
-                      return
-                    }
-                    setSpot(
+            cellOf(
+              t('priceCompare.sheet.columns.net'),
+              SHEET_COLUMN_WIDTH.net,
+              (_, row) => {
+                const resolved = isCategoryEnabled(brand, row.row.category)
+                  ? netPriceWithFallback(
+                      data,
+                      refDate,
+                      refPeriod,
                       brand.name,
-                      current.id,
-                      raw === '' ? undefined : value,
+                      row.row,
+                      lengthPremium,
+                      allowHrb400eFallback,
                     )
-                  }}
-                  onPressEnter={(event) => {
-                    const raw = (event.target as HTMLInputElement).value
-                    const value = Number(raw)
-                    if (
-                      raw === '' ||
-                      (!Number.isNaN(value) &&
-                        value > 0 &&
-                        value <= SPOT_PRICE_MAX)
-                    ) {
+                  : { value: undefined, fallback: false }
+                const price = resolved.value
+                return price === undefined ? (
+                  <div className="price-compare-num price-compare-sub">-</div>
+                ) : (
+                  <div
+                    className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                  >
+                    {resolved.fallback ? `E ${price}` : price}
+                  </div>
+                )
+              },
+            ),
+            cellOf(
+              t('priceCompare.sheet.columns.spot'),
+              SHEET_COLUMN_WIDTH.spot,
+              (_, row) => {
+                const current = row.row
+                const spot = getSpot(brand.name, current.id)
+                const isFirst =
+                  attachSpotRef &&
+                  brandIndex === 0 &&
+                  current.id === rows[0]?.id
+                const input = (
+                  <Input
+                    key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
+                    className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                    size="small"
+                    variant="borderless"
+                    inputMode="decimal"
+                    data-spot={`${brand.name}:${current.id}`}
+                    defaultValue={spot === undefined ? '' : String(spot)}
+                    onBlur={(event) => {
+                      const raw = event.target.value
+                      const value = Number(raw)
+                      if (
+                        raw !== '' &&
+                        (Number.isNaN(value) ||
+                          value <= 0 ||
+                          value > SPOT_PRICE_MAX)
+                      ) {
+                        message.warning(
+                          t('priceCompare.sheet.spotOutOfRange', {
+                            max: SPOT_PRICE_MAX,
+                          }),
+                        )
+                        // 非法输入：触发重挂载，恢复为已保存值
+                        ctx.onInvalidSpot()
+                        return
+                      }
                       setSpot(
                         brand.name,
                         current.id,
                         raw === '' ? undefined : value,
                       )
-                    }
-                    event.preventDefault()
-                    moveFocus(brand.name, current.id, 1)
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'ArrowDown') {
+                    }}
+                    onPressEnter={(event) => {
+                      const raw = (event.target as HTMLInputElement).value
+                      const value = Number(raw)
+                      if (
+                        raw === '' ||
+                        (!Number.isNaN(value) &&
+                          value > 0 &&
+                          value <= SPOT_PRICE_MAX)
+                      ) {
+                        setSpot(
+                          brand.name,
+                          current.id,
+                          raw === '' ? undefined : value,
+                        )
+                      }
                       event.preventDefault()
                       moveFocus(brand.name, current.id, 1)
-                    } else if (event.key === 'ArrowUp') {
-                      event.preventDefault()
-                      moveFocus(brand.name, current.id, -1)
-                    } else if (event.key === 'Tab') {
-                      event.preventDefault()
-                      moveFocus(brand.name, current.id, event.shiftKey ? -1 : 1)
-                    }
-                  }}
-                />
-              )
-              return isFirst ? <span ref={ctx.spotRef}>{input}</span> : input
-            }),
-            cellOf('差价', SHEET_COLUMN_WIDTH.diff, (_, row) => {
-              const price = isCategoryEnabled(brand, row.row.category)
-                ? netPriceWithFallback(
-                    data,
-                    refDate,
-                    refPeriod,
-                    brand.name,
-                    row.row,
-                    lengthPremium,
-                    allowHrb400eFallback,
-                  ).value
-                : undefined
-              const spot = getSpot(brand.name, row.row.id)
-              if (price === undefined || spot === undefined) {
-                return (
-                  <div className="price-compare-num price-compare-sub">-</div>
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowDown') {
+                        event.preventDefault()
+                        moveFocus(brand.name, current.id, 1)
+                      } else if (event.key === 'ArrowUp') {
+                        event.preventDefault()
+                        moveFocus(brand.name, current.id, -1)
+                      } else if (event.key === 'Tab') {
+                        event.preventDefault()
+                        moveFocus(
+                          brand.name,
+                          current.id,
+                          event.shiftKey ? -1 : 1,
+                        )
+                      }
+                    }}
+                  />
                 )
-              }
-              const diff = price - spot - brand.freight
-              const cls = diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
-              const best = bestOf(row)
-              return (
-                <Tooltip title={diff >= 0 ? '现货更划算' : '网价更优'}>
-                  <span
-                    className={`price-compare-diff ${cls}${best === brand.name ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                return isFirst ? <span ref={ctx.spotRef}>{input}</span> : input
+              },
+            ),
+            cellOf(
+              t('priceCompare.sheet.columns.diff'),
+              SHEET_COLUMN_WIDTH.diff,
+              (_, row) => {
+                const price = isCategoryEnabled(brand, row.row.category)
+                  ? netPriceWithFallback(
+                      data,
+                      refDate,
+                      refPeriod,
+                      brand.name,
+                      row.row,
+                      lengthPremium,
+                      allowHrb400eFallback,
+                    ).value
+                  : undefined
+                const spot = getSpot(brand.name, row.row.id)
+                if (price === undefined || spot === undefined) {
+                  return (
+                    <div className="price-compare-num price-compare-sub">-</div>
+                  )
+                }
+                const diff = price - spot - brand.freight
+                const cls =
+                  diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
+                const best = bestOf(row)
+                return (
+                  <Tooltip
+                    title={
+                      diff >= 0
+                        ? t('priceCompare.sheet.spotBetter')
+                        : t('priceCompare.sheet.netBetter')
+                    }
                   >
-                    {diff > 0 ? '+' : ''}
-                    {diff}
-                  </span>
-                </Tooltip>
-              )
-            }),
+                    <span
+                      className={`price-compare-diff ${cls}${best === brand.name ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                    >
+                      {diff > 0 ? '+' : ''}
+                      {diff}
+                    </span>
+                  </Tooltip>
+                )
+              },
+            ),
           ],
         },
       ],
@@ -543,7 +575,7 @@ function GroupTable(props: GroupTableProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
   const [dropAfter, setDropAfter] = useState(false)
-  const { toggleSelect } = base
+  const { toggleSelect, t } = base
 
   const onRowDragStart = (
     rowId: string,
@@ -594,16 +626,16 @@ function GroupTable(props: GroupTableProps) {
         />
         {canRemove ? (
           <Popconfirm
-            title="删除该分组及其全部行？"
-            okText="删除"
-            cancelText="取消"
+            title={t('priceCompare.sheet.removeGroupTitle')}
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             onConfirm={() => onRemoveGroup(group.id)}
           >
             <Button
               size="small"
               type="text"
               danger
-              title="删除分组"
+              title={t('priceCompare.sheet.removeGroup')}
               icon={<DeleteOutlined />}
             />
           </Popconfirm>
@@ -628,7 +660,7 @@ function GroupTable(props: GroupTableProps) {
                 className="price-compare-add-row"
                 onClick={() => onAddRowToGroup(group.id)}
               >
-                ＋ 添加一行
+                {t('priceCompare.sheet.addRow')}
               </Button>
             </Table.Summary.Cell>
           </Table.Summary.Row>
@@ -711,6 +743,8 @@ function SheetHeader({
   selectedCount: number
   onRemoveSelected: () => void
 }) {
+  const { t } = useTranslation()
+  const dateFormat = t('priceCompare.sheet.dateFormat')
   return (
     <Flex
       justify="space-between"
@@ -720,16 +754,18 @@ function SheetHeader({
       className="price-compare-toolbar"
     >
       <Flex gap="small" align="center" wrap="wrap">
-        <Text strong>{sheet.projectName || '未指定项目'}</Text>
+        <Text strong>
+          {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
+        </Text>
         <Space size="small">
           <Text type="secondary" className="price-compare-sub">
-            报单日期
+            {t('priceCompare.sheet.orderDate')}
           </Text>
           <DatePicker
             size="small"
             style={{ width: 132 }}
             value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
-            format={DATE_FMT}
+            format={dateFormat}
             allowClear={false}
             onChange={(value) =>
               value &&
@@ -738,16 +774,16 @@ function SheetHeader({
           />
         </Space>
         <Space size="small">
-          <Tooltip title="全部行统一使用该日期与时段作为网价基准">
+          <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
             <Text type="secondary" className="price-compare-sub">
-              <InfoCircleOutlined /> 参照网价
+              <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
             </Text>
           </Tooltip>
           <DatePicker
             size="small"
             style={{ width: 132 }}
             value={refDate ? dayjs(refDate) : null}
-            format={DATE_FMT}
+            format={dateFormat}
             allowClear={false}
             cellRender={(current, info) => {
               if (info.type !== 'date') return info.originNode
@@ -787,7 +823,7 @@ function SheetHeader({
 
       <Space size={4} wrap>
         <Button size="small" icon={<PlusOutlined />} onClick={onAddGroup}>
-          分组
+          {t('priceCompare.sheet.group')}
         </Button>
         <Button
           size="small"
@@ -795,7 +831,7 @@ function SheetHeader({
           icon={<TrophyOutlined />}
           onClick={onToggleBest}
         >
-          差价最优
+          {t('priceCompare.sheet.bestDiff')}
         </Button>
         <Button
           size="small"
@@ -803,7 +839,7 @@ function SheetHeader({
           loading={refreshing}
           onClick={onRefresh}
         >
-          刷新价格
+          {t('priceCompare.sheet.refreshPrice')}
         </Button>
         {onOpenConfig ? (
           <Button
@@ -811,18 +847,20 @@ function SheetHeader({
             icon={<SettingOutlined />}
             onClick={onOpenConfig}
           >
-            配置
+            {t('priceCompare.sheet.config')}
           </Button>
         ) : null}
         {selectedCount > 0 ? (
           <Popconfirm
-            title={`删除选中的 ${selectedCount} 行？`}
-            okText="删除"
-            cancelText="取消"
+            title={t('priceCompare.sheet.removeSelectedTitle', {
+              selected: selectedCount,
+            })}
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             onConfirm={onRemoveSelected}
           >
             <Button size="small" danger icon={<DeleteOutlined />}>
-              删除
+              {t('common.delete')}
             </Button>
           </Popconfirm>
         ) : null}
@@ -882,6 +920,7 @@ export function SheetPanel(props: Props) {
     chrome = true,
     spotRef,
   } = props
+  const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bestOn, setBestOn] = useState(false)
   const [spotResetNonce, setSpotResetNonce] = useState(0)
@@ -1015,6 +1054,7 @@ export function SheetPanel(props: Props) {
 
   const base = {
     sheet,
+    t,
     refDate,
     refPeriod,
     lengthPremium,

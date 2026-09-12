@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import i18n from 'i18next'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_STATIC } from '@/constants/query-policies'
@@ -11,7 +13,12 @@ const BASE = `${import.meta.env.BASE_URL}price-compare/`
 async function loadJson<T>(file: string): Promise<T> {
   const response = await fetch(`${BASE}${file}`)
   if (!response.ok)
-    throw new Error(`加载 ${file} 失败: HTTP ${response.status}`)
+    throw new Error(
+      i18n.t('priceCompare.data.loadFileFailed', {
+        file,
+        status: response.status,
+      }),
+    )
   return (await response.json()) as T
 }
 
@@ -50,6 +57,7 @@ export type PriceCompareData = {
 
 /** 比价页数据: 网价来自后端匹配接口, 商品/项目/品牌元数据来自本地清单。 */
 export function usePriceCompareData(): PriceCompareData {
+  const { t } = useTranslation()
   const [data, setData] = useState<PriceData>({})
   const query = useQuery({
     queryKey: QUERY_KEYS.priceCompare.metadata,
@@ -68,9 +76,7 @@ export function usePriceCompareData(): PriceCompareData {
     projects: query.data?.projects ?? [],
     catalog: query.data?.catalog ?? [],
     loading: query.isLoading,
-    error: query.isError
-      ? '基础数据加载失败，请检查 public/price-compare/ 下的 JSON 文件'
-      : null,
+    error: query.isError ? t('priceCompare.data.loadFailed') : null,
     mergeMatches,
   }
 }
