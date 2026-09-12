@@ -26,8 +26,12 @@ export function useModuleEditorSettlementAccounts({
     return (profile?.settlementAccounts || []).flatMap((account) => {
       if (account.status === '停用') return []
       const value = String(account.id || '')
-      const label = account.accountName.trim()
-      return value && label ? [{ label, value }] : []
+      const label =
+        account.accountName.trim() ||
+        account.bankName?.trim() ||
+        account.bankAccount?.trim() ||
+        `账户#${value}`
+      return value ? [{ label, value }] : []
     })
   }, [companyProfiles, settlementCompanyId])
 

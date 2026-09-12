@@ -10,6 +10,7 @@ export function MaterialCategoriesPage() {
   const spec = useMemo<MasterDataPageSpec>(
     () => ({
       moduleKey: 'material-categories',
+      primaryNoKey: 'categoryCode',
       title: t('modules.pages.materialCategories.materialCategory'),
       description: t('modules.pages.materialCategories.categoryDesc'),
       keywordPlaceholder: t(

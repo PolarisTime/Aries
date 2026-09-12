@@ -10,6 +10,7 @@ export function SupplierPage() {
   const spec = useMemo<MasterDataPageSpec>(
     () => ({
       moduleKey: 'supplier',
+      primaryNoKey: 'supplierCode',
       title: t('modules.pages.supplier.title'),
       description: t('modules.pages.supplier.description'),
       keywordPlaceholder: t('modules.pages.supplier.placeholderKeyword'),

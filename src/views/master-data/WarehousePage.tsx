@@ -35,6 +35,7 @@ export function WarehousePage() {
     ]
     return {
       moduleKey: 'warehouse',
+      primaryNoKey: 'warehouseCode',
       title: t('modules.pages.masterWarehouse.warehouseMaster'),
       description: t('modules.pages.masterWarehouse.warehouseDesc'),
       keywordPlaceholder: t(

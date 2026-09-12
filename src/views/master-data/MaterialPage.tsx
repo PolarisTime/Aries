@@ -27,6 +27,7 @@ export function MaterialPage() {
     ]
     return {
       moduleKey: 'material',
+      primaryNoKey: 'materialCode',
       title: t('modules.pages.material.materials'),
       description: t('modules.pages.material.materialDesc'),
       keywordPlaceholder: t('modules.pages.material.materialPlaceholder'),

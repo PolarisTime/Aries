@@ -56,6 +56,8 @@ export interface MasterDataPageSpec {
   title: string
   description: string
   keywordPlaceholder: string
+  /** 自动生成的业务编码字段名；新建时经编码签发接口填充。 */
+  primaryNoKey?: string
   filters: MasterFilterSpec[]
   columns: MasterColumnSpec[]
   defaultHiddenColumnKeys: string[]

@@ -12,6 +12,7 @@ import {
 } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { exportModuleData } from '@/api/business/common-export'
+import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_LONG, STALE_REALTIME } from '@/constants/query-policies'
@@ -170,6 +171,17 @@ export function useMasterDataPage(spec: MasterDataPageSpec) {
     form.resetFields()
     form.setFieldsValue(values)
     setEditorOpen(true)
+    if (!record && spec.primaryNoKey) {
+      const primaryNoKey = spec.primaryNoKey
+      void fetchGeneratedMasterDataCode(moduleKey)
+        .then((code) => {
+          form.setFieldsValue({ [primaryNoKey]: code })
+          setFormValues((previous) => ({ ...previous, [primaryNoKey]: code }))
+        })
+        .catch(() => {
+          // 生成失败时留空，保存时由后端校验提示
+        })
+    }
   }
 
   const closeEditor = () => {

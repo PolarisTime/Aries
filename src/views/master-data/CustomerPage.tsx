@@ -1,37 +1,38 @@
+import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SettlementCompanyOption } from '@/api/system/company-settings'
+import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { enabledStatusOptions } from '@/constants/module-options'
-import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
 import type { MasterDataPageSpec } from './master-data-types'
 
-function settlementCompanyOptions(): SettlementCompanyOption[] {
-  return getSettlementCompanyOptions()
-}
-
-function resolveCompanyName(id: unknown): string {
-  const normalized = asString(id).trim()
-  if (!normalized) {
-    return ''
-  }
-  return (
-    settlementCompanyOptions().find(
-      (option) => asString(option.value).trim() === normalized,
-    )?.companyName ?? ''
-  )
-}
-
 export function CustomerPage() {
   const { t } = useTranslation()
+  const { data: settlementCompanies = [] } = useQuery({
+    queryKey: QUERY_KEYS.masterOptions.settlementCompany,
+    queryFn: ({ signal }) => fetchSettlementCompanyOptions(signal),
+  })
   const spec = useMemo<MasterDataPageSpec>(() => {
-    const companyOptions = settlementCompanyOptions().map((option) => ({
+    const companyOptions = settlementCompanies.map((option) => ({
       label: option.companyName,
       value: option.value,
     }))
+    const resolveCompanyName = (id: unknown): string => {
+      const normalized = asString(id).trim()
+      if (!normalized) {
+        return ''
+      }
+      return (
+        settlementCompanies.find(
+          (option) => asString(option.value).trim() === normalized,
+        )?.companyName ?? ''
+      )
+    }
     return {
       moduleKey: 'customer',
+      primaryNoKey: 'customerCode',
       title: t('modules.pages.customer.title'),
       description: t('modules.pages.customer.description'),
       keywordPlaceholder: t('modules.pages.customer.placeholderKeyword'),
@@ -232,6 +233,6 @@ export function CustomerPage() {
         remark: values.remark ?? '',
       }),
     }
-  }, [t])
+  }, [t, settlementCompanies])
   return <MasterDataListPage spec={spec} />
 }

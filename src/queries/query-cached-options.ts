@@ -26,7 +26,7 @@ export function createQueryCachedOptions<T>({
 
     void queryClient.prefetchQuery({
       queryKey,
-      queryFn: fetchOptions,
+      queryFn: () => fetchOptions(),
       staleTime,
     })
     return []
@@ -38,7 +38,7 @@ export function createQueryCachedOptions<T>({
     try {
       return await queryClient.fetchQuery({
         queryKey,
-        queryFn: fetchOptions,
+        queryFn: () => fetchOptions(),
         staleTime: 0,
       })
     } catch {
