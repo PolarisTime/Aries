@@ -103,6 +103,8 @@ type ColumnContext = {
   allowHrb400eFallback: boolean
   allowedProducts?: string[]
   bestOn: boolean
+  spotResetNonce: number
+  onInvalidSpot: () => void
   spotRef: React.RefObject<HTMLSpanElement | null>
 }
 
@@ -312,6 +314,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       align: 'center',
       render: (_, row) => (
         <Input
+          key={`ton:${row.rowId}:${row.row.ton ?? ''}`}
           className="price-compare-ton"
           size="small"
           variant="borderless"
@@ -396,7 +399,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 attachSpotRef && brandIndex === 0 && current.id === rows[0]?.id
               const input = (
                 <Input
-                  key={`${brand.name}:${current.id}:${spot ?? ''}`}
+                  key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
                   className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                   size="small"
                   variant="borderless"
@@ -413,6 +416,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         value > SPOT_PRICE_MAX)
                     ) {
                       message.warning('现货价超出合理范围（0 - 20000）')
+                      // 非法输入：触发重挂载，恢复为已保存值
+                      ctx.onInvalidSpot()
                       return
                     }
                     setSpot(
@@ -879,6 +884,7 @@ export function SheetPanel(props: Props) {
   } = props
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bestOn, setBestOn] = useState(false)
+  const [spotResetNonce, setSpotResetNonce] = useState(0)
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
     () =>
@@ -934,6 +940,13 @@ export function SheetPanel(props: Props) {
     const ids = new Set(selectedIds)
     if (!ids.size) return
     setRows((list) => list.filter((row) => !ids.has(row.id)))
+    const nextInputs = { ...sheet.inputs }
+    for (const brand of brands) {
+      for (const id of ids) {
+        delete nextInputs[`${brand.name}:${id}`]
+      }
+    }
+    patchSheet(sheet.id, { inputs: nextInputs })
     setSelectedIds([])
   }
 
@@ -979,8 +992,18 @@ export function SheetPanel(props: Props) {
     )
   const removeGroup = (groupId: string) => {
     if (sheet.groups.length <= 1) return
+    const removedRowIds = new Set(
+      rows.flatMap((row) => (row.groupId === groupId ? [row.id] : [])),
+    )
+    const nextInputs = { ...sheet.inputs }
+    for (const brand of brands) {
+      for (const id of removedRowIds) {
+        delete nextInputs[`${brand.name}:${id}`]
+      }
+    }
     patchSheet(sheet.id, {
       groups: sheet.groups.filter((group) => group.id !== groupId),
+      inputs: nextInputs,
     })
     setRows((list) => list.filter((row) => row.groupId !== groupId))
     setSelectedIds((current) =>
@@ -1009,6 +1032,8 @@ export function SheetPanel(props: Props) {
     allowHrb400eFallback,
     allowedProducts,
     bestOn,
+    spotResetNonce,
+    onInvalidSpot: () => setSpotResetNonce((nonce) => nonce + 1),
     spotRef,
   }
 
