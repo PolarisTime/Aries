@@ -130,8 +130,6 @@ export function MaterialPage() {
       ],
       renderToolbarExtra: ({ refresh }) => (
         <MaterialImportActions
-          canDownloadTemplate
-          canImport
           onImported={() => {
             refresh()
             return Promise.resolve()

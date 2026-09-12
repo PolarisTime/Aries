@@ -13,14 +13,14 @@ import { message } from '@/utils/antd-app'
 import { MaterialImportResultModal } from '@/views/modules/components/MaterialImportResultModal'
 
 interface Props {
-  canDownloadTemplate: boolean
-  canImport: boolean
+  canDownloadTemplate?: boolean
+  canImport?: boolean
   onImported: () => Promise<void>
 }
 
 export function MaterialImportActions({
-  canDownloadTemplate,
-  canImport,
+  canDownloadTemplate = true,
+  canImport = true,
   onImported,
 }: Props) {
   const { t } = useTranslation()
