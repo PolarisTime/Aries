@@ -108,6 +108,25 @@ export function useSheetsStore(): SheetsStore {
     return () => clearTimeout(timer)
   }, [state])
 
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== LS_KEY || event.newValue == null) return
+      if (event.newValue === JSON.stringify(stateRef.current)) return
+      try {
+        const parsed = JSON.parse(event.newValue) as Snapshot
+        if (!parsed?.sheets?.length) return
+        stateRef.current = parsed
+        historyRef.current = { past: [], future: [], lastKey: '', lastTime: 0 }
+        setState(parsed)
+        forceRender((version) => version + 1)
+      } catch {
+        // ignore malformed storage
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   const commit = useCallback((next: Snapshot, coalesceKey?: string) => {
     const history = historyRef.current
     const now = Date.now()
