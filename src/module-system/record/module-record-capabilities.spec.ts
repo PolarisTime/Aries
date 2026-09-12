@@ -13,7 +13,8 @@ describe('resolveModuleRecordCapabilities', () => {
 
   it('草稿销售订单可编辑', () => {
     expect(
-      resolveModuleRecordCapabilities({ status: '草稿' }, 'sales-order').canEdit,
+      resolveModuleRecordCapabilities({ status: '草稿' }, 'sales-order')
+        .canEdit,
     ).toBe(true)
   })
 

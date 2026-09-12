@@ -72,8 +72,15 @@ describe('AccessibleFormItem', () => {
     })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     act(() => root.unmount())
+    // antd 内部 useDelayState 的 rAF 回退 setTimeout 在卸载后仍可能触发，
+    // 需在 jsdom 环境拆除前跑完，避免拆除后访问 window 抛未处理异常。
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 25)
+      })
+    })
     container.remove()
   })
 
