@@ -4,6 +4,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons'
 import { Button, Dropdown, Input, Select, Space, Tooltip } from 'antd'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
 import type { MasterColumnSpec, MasterFilterSpec } from './master-data-types'
@@ -33,6 +34,7 @@ interface Props {
   onClearSelection: () => void
   isFetching: boolean
   onRefresh: () => void
+  toolbarExtra?: ReactNode
 }
 
 export function MasterDataToolbar({
@@ -60,6 +62,7 @@ export function MasterDataToolbar({
   onClearSelection,
   isFetching,
   onRefresh,
+  toolbarExtra,
 }: Props) {
   const { t } = useTranslation()
   return (
@@ -135,6 +138,7 @@ export function MasterDataToolbar({
             >
               {t('common.export')}
             </Button>
+            {toolbarExtra}
             <Dropdown
               menu={{
                 multiple: true,

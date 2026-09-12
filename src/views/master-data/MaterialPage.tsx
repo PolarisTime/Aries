@@ -6,6 +6,7 @@ import {
   materialGradeOptions,
 } from '@/module-system/core/module-option-resolvers'
 import { asString } from '@/utils/type-narrowing'
+import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { MasterDataListPage } from './MasterDataListPage'
 import type { MasterDataPageSpec } from './master-data-types'
 
@@ -127,6 +128,16 @@ export function MaterialPage() {
         'unitPrice',
         'remark',
       ],
+      renderToolbarExtra: ({ refresh }) => (
+        <MaterialImportActions
+          canDownloadTemplate
+          canImport
+          onImported={() => {
+            refresh()
+            return Promise.resolve()
+          }}
+        />
+      ),
       detailFields: [
         {
           key: 'materialType',

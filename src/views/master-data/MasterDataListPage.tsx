@@ -47,6 +47,9 @@ export function MasterDataListPage({ spec }: { spec: MasterDataPageSpec }) {
             onClearSelection={page.clearSelection}
             isFetching={page.listQuery.isFetching}
             onRefresh={page.handleRefresh}
+            toolbarExtra={spec.renderToolbarExtra?.({
+              refresh: page.handleRefresh,
+            })}
           />
           <MasterDataTable
             spec={spec}

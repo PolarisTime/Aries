@@ -52,6 +52,10 @@ export interface MasterFormFieldSpec {
 
 export type MasterFormValues = Record<string, unknown>
 
+export interface MasterToolbarExtraContext {
+  refresh: () => void
+}
+
 export interface MasterDataPageSpec {
   moduleKey: ModuleKey
   title: string
@@ -65,6 +69,8 @@ export interface MasterDataPageSpec {
   detailFields: MasterDetailFieldSpec[]
   formFields: MasterFormFieldSpec[]
   rowHighlightStatuses?: string[]
+  /** 工具栏扩展槽：渲染模块专属操作（如商品导入），可调用 refresh 刷新列表。 */
+  renderToolbarExtra?: (context: MasterToolbarExtraContext) => ReactNode
   buildValues: (record: LegacyModuleRecord | null) => MasterFormValues
   buildRecord: (
     values: MasterFormValues,
