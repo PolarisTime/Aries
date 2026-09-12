@@ -1,3 +1,16 @@
+# [10.2.0](https://github.com/PolarisTime/Aries/compare/v10.1.0...v10.2.0) (2026-09-12)
+
+
+### Bug Fixes
+
+* **ci:** 修复前端发布流水线格式与 a11y 用例悬空定时器 ([580facc](https://github.com/PolarisTime/Aries/commit/580faccf172c6c07ab9e0a10e6d9c9e874de4d84))
+* **document:** 修正附加费用下拉取数与商品表单字段 ([2f58835](https://github.com/PolarisTime/Aries/commit/2f58835df082da95147b56c0a75482dca437e411))
+
+
+### Features
+
+* **print:** 打印模板默认选择与文件托管上传限制 ([d4aa7ad](https://github.com/PolarisTime/Aries/commit/d4aa7add4310493dd1834e64ccd0c0c41977566d))
+
 # [10.1.0](https://github.com/PolarisTime/Aries/compare/v10.0.1...v10.1.0) (2026-09-12)
 
 
