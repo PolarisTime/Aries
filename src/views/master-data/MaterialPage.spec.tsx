@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { bindAntdAppApi } from '@/utils/antd-app'
-import { MaterialPage } from './MaterialPage'
+import { buildMaterialFormFields, MaterialPage } from './MaterialPage'
 
 vi.mock('@/api/business/business-listing', () => ({
   listBusinessModule: vi.fn(),
@@ -121,5 +121,33 @@ describe('MaterialPage 专属页面导入入口', () => {
     )
     expect(buttons).toContain('下载模板')
     expect(buttons).toContain('导入')
+  })
+})
+
+describe('商品表单附加费用字段可见性', () => {
+  const fields = buildMaterialFormFields((key) => key, [])
+  const byKey = new Map(fields.map((field) => [field.key, field]))
+  const expense = { materialType: '附加费用' }
+  const physical = { materialType: '实体商品' }
+
+  it('附加费用保留名称、单位与单价必填，隐藏类别与物理属性', () => {
+    expect(byKey.get('material')?.visibleWhen).toBeUndefined()
+    expect(byKey.get('material')?.required).toBe(true)
+    expect(byKey.get('unit')?.visibleWhen).toBeUndefined()
+    expect(byKey.get('unitPrice')?.visibleWhen).toBeUndefined()
+
+    expect(byKey.get('category')?.visibleWhen?.(expense)).toBe(false)
+    expect(byKey.get('brand')?.visibleWhen?.(expense)).toBe(false)
+    expect(byKey.get('spec')?.visibleWhen?.(expense)).toBe(false)
+    expect(byKey.get('length')?.visibleWhen?.(expense)).toBe(false)
+    expect(byKey.get('quantityUnit')?.visibleWhen?.(expense)).toBe(false)
+    expect(byKey.get('pieceWeightTon')?.visibleWhen?.(expense)).toBe(false)
+    expect(byKey.get('piecesPerBundle')?.visibleWhen?.(expense)).toBe(false)
+  })
+
+  it('实体商品显示类别与物理属性，未选类型时默认按实体展示', () => {
+    expect(byKey.get('category')?.visibleWhen?.(physical)).toBe(true)
+    expect(byKey.get('brand')?.visibleWhen?.(physical)).toBe(true)
+    expect(byKey.get('category')?.visibleWhen?.({})).toBe(true)
   })
 })

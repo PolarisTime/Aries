@@ -154,10 +154,6 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       ? watchedCustomerId
       : undefined,
   )
-  const { materials: masterMaterials } = useMasterOptions(
-    { materials: true },
-    open,
-  )
   const settlementAccountOptions = useModuleEditorSettlementAccounts({
     open,
     enabled: FINANCE_DOCUMENT_MODULES.has(moduleKey),
@@ -235,7 +231,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   })
   const editorFormValues = Form.useWatch([], form) || {}
   const expense = useModuleEditorExpenseItems({
-    masterMaterials,
+    open,
     expenseItems,
     updateExpenseItems,
   })

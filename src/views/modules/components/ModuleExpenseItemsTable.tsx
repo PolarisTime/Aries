@@ -2,6 +2,7 @@ import { HolderOutlined } from '@ant-design/icons'
 import { Checkbox, Input, InputNumber, Select, Typography } from 'antd'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { CreatedExpenseMaterial } from '@/api/master/materials'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 
 interface MaterialOption {
@@ -15,7 +16,7 @@ interface ChargeNameSelectProps {
   item: DocumentChargeItemDraft
   materialOptions: MaterialOption[]
   onChange: (patch: Partial<DocumentChargeItemDraft>) => void
-  onCreateExpense: (name: string) => Promise<void>
+  onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   t: (key: string, values?: Record<string, unknown>) => string
 }
 
@@ -45,8 +46,15 @@ function ChargeNameSelect({
     }
     creatingRef.current = true
     try {
-      await onCreateExpense(name)
-      // 创建后由父组件回填 materialId/unit，这里仅清空搜索态。
+      const created = await onCreateExpense(name)
+      // 快捷新增建项后回填当前行，避免用户再次手动选择。
+      if (created) {
+        onChange({
+          materialId: created.id,
+          chargeName: created.name,
+          unit: created.unit || item.unit,
+        })
+      }
       setSearchText('')
     } finally {
       creatingRef.current = false
@@ -143,7 +151,7 @@ export interface ModuleExpenseItemsTableProps {
   onSelectedChange: (itemId: string, selected: boolean) => void
   onSelectAll: (selected: boolean) => void
   onChange: (index: number, patch: Partial<DocumentChargeItemDraft>) => void
-  onCreateExpense: (name: string) => Promise<void>
+  onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   onDelete: (index: number) => void
 }
 

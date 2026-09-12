@@ -1,6 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
+import type { CreatedExpenseMaterial } from '@/api/master/materials'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import {
   ExpenseItemsSummaryBar,
@@ -25,7 +26,7 @@ interface Props {
     index: number,
     patch: Partial<DocumentChargeItemDraft>,
   ) => void
-  onCreateExpense: (name: string) => Promise<void>
+  onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   onExpenseAddItem: () => void
   onExpenseDelete: (index: number) => void
 }

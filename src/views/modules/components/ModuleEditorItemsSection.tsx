@@ -9,6 +9,7 @@ import type { MenuProps, TableColumnsType, TableProps } from 'antd'
 import { Button, Dropdown, Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { CreatedExpenseMaterial } from '@/api/master/materials'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
@@ -70,7 +71,7 @@ interface Props {
     index: number,
     patch: Partial<DocumentChargeItemDraft>,
   ) => void
-  onCreateExpense: (name: string) => Promise<void>
+  onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   onExpenseAddItem: () => void
   onExpenseDelete: (index: number) => void
   onCancel: () => void

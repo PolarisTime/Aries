@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { apiGet, apiPost, downloadGet } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
+import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { exactPageSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
@@ -107,6 +108,7 @@ export interface MaterialImportResult {
 export async function fetchMaterialSearch(
   keyword = '',
   limit = 200,
+  materialType?: string,
 ): Promise<MaterialSearchPageResponse> {
   const response = await apiGet(
     ENDPOINTS.MATERIALS,
@@ -117,6 +119,7 @@ export async function fetchMaterialSearch(
         page: 0,
         // 后端 PageQuery 上限为 200，超出会返回 422
         size: Math.min(Math.max(limit, 1), 200),
+        ...(materialType ? { materialType } : {}),
       },
     },
   )
@@ -147,13 +150,24 @@ export async function importMaterialFile(file: File) {
   )
 }
 
-/** 单据费用下拉快捷新增：静默创建附加费用类主数据，返回新行 id。 */
-export async function createExpenseMaterial(name: string): Promise<string> {
+/** 单据费用下拉快捷新增返回的新主数据信息，用于回填当前费用行。 */
+export interface CreatedExpenseMaterial {
+  id: string
+  name: string
+  unit: string
+}
+
+/** 单据费用下拉快捷新增：静默创建附加费用类主数据。 */
+export async function createExpenseMaterial(
+  name: string,
+): Promise<CreatedExpenseMaterial> {
+  // 主数据编码必须由后端签发，否则会被 @NotBlank 与服务层签发校验拒绝。
+  const materialCode = await fetchGeneratedMasterDataCode('material')
   const response = await apiPost(
     ENDPOINTS.MATERIALS,
     z.looseObject({ id: z.string() }),
     {
-      materialCode: '',
+      materialCode,
       brand: '',
       material: name,
       category: '附加费用',
@@ -169,5 +183,5 @@ export async function createExpenseMaterial(name: string): Promise<string> {
     },
     withIdempotencyKey(),
   )
-  return String(response.id)
+  return { id: String(response.id), name, unit: '次' }
 }

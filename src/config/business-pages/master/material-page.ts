@@ -211,7 +211,6 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 1,
-      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'category',
@@ -220,6 +219,7 @@ export const materialsPageConfig: ModulePageConfig = {
       required: true,
       options: getMaterialCategoryOptions,
       row: 1,
+      visibleWhen: isPhysicalMaterialFieldVisible,
     },
     {
       key: 'spec',
