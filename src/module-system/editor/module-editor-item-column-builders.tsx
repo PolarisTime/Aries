@@ -1,6 +1,7 @@
 import { MenuOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { Checkbox, Input, InputNumber, Select } from 'antd'
+import i18next from 'i18next'
 import type { WarehouseOption } from '@/api/master/warehouse-options'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
@@ -308,7 +309,9 @@ function buildEditableColumnRender({
             }}
             allowClear
             className="w-full"
-            placeholder="搜索品牌 / 类别 / 材质 / 规格 / 长度"
+            placeholder={i18next.t(
+              'modules.itemColumns.materialSearchPlaceholder',
+            )}
             optionLabelProp="label"
             onChange={(selectedValue) =>
               handleMaterialSelect(record.id, String(selectedValue || ''))
@@ -326,7 +329,7 @@ function buildEditableColumnRender({
             showSearch={{ filterOption: createPinyinFilterOption() }}
             allowClear
             className="w-full"
-            placeholder="选择码头"
+            placeholder={i18next.t('modules.itemColumns.warehousePlaceholder')}
             onChange={(selectedValue) => {
               const warehouseId = String(selectedValue || '')
               const warehouse = warehouses.find(
@@ -380,7 +383,9 @@ function buildEditableColumnRender({
                 : undefined
             }
             className="w-full"
-            placeholder="选择结算方式"
+            placeholder={i18next.t(
+              'modules.itemColumns.settlementModePlaceholder',
+            )}
             onChange={(selectedValue: string) =>
               handleSettlementModeChange(record.id, selectedValue)
             }

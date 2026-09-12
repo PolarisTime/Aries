@@ -1,7 +1,8 @@
 import { App as AntdApp, ConfigProvider } from 'antd'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
-import { appAntdLocale } from '@/config/antd-locale'
+import { useTranslation } from 'react-i18next'
+import { getAntdLocale } from '@/config/antd-locale'
 import { useThemeMode } from '@/hooks/useThemeMode'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { buildAntdTheme } from '@/styles/antd-theme'
@@ -25,6 +26,7 @@ function AntdAppRuntimeBridge({ children }: Props) {
 }
 
 export function AppAntdProvider({ children }: Props) {
+  const { i18n } = useTranslation()
   const { resolvedTheme } = useThemeMode()
   const fontSize = useUiSettingsStore((state) => state.settings?.fontSize ?? 14)
 
@@ -36,7 +38,7 @@ export function AppAntdProvider({ children }: Props) {
   })
 
   return (
-    <ConfigProvider locale={appAntdLocale} theme={themeConfig}>
+    <ConfigProvider locale={getAntdLocale(i18n.language)} theme={themeConfig}>
       <AntdApp className="leo-antd-app">
         <AntdAppRuntimeBridge>{children}</AntdAppRuntimeBridge>
       </AntdApp>

@@ -41,7 +41,13 @@ function renderFieldControl(field: MasterFormFieldSpec): ReactNode {
   if (field.type === 'textarea') {
     return <Input.TextArea rows={3} />
   }
-  return <Input disabled={field.disabled} placeholder={field.placeholder} />
+  return (
+    <Input
+      disabled={field.disabled}
+      placeholder={field.placeholder}
+      maxLength={field.maxLength}
+    />
+  )
 }
 
 export function MasterDataEditor({

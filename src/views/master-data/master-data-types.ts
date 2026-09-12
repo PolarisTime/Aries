@@ -41,6 +41,7 @@ export interface MasterFormFieldSpec {
   required?: boolean
   disabled?: boolean
   placeholder?: string
+  maxLength?: number
   fullRow?: boolean
   defaultValue?: unknown
   min?: number

@@ -175,6 +175,7 @@ export function MaterialPage() {
           label: t('modules.pages.material.brand'),
           type: 'input',
           required: true,
+          maxLength: 64,
           visibleWhen: physicalVisibleWhen,
         },
         {
@@ -182,6 +183,7 @@ export function MaterialPage() {
           label: t('modules.pages.material.material'),
           type: 'input',
           required: true,
+          maxLength: 16,
           visibleWhen: physicalVisibleWhen,
         },
         {
@@ -196,6 +198,7 @@ export function MaterialPage() {
           label: t('modules.pages.material.spec'),
           type: 'input',
           required: true,
+          maxLength: 64,
           visibleWhen: physicalVisibleWhen,
         },
         {
@@ -203,6 +206,7 @@ export function MaterialPage() {
           label: t('modules.pages.material.length'),
           type: 'input',
           required: true,
+          maxLength: 32,
           visibleWhen: physicalVisibleWhen,
         },
         {
@@ -210,12 +214,14 @@ export function MaterialPage() {
           label: t('modules.pages.material.unit'),
           type: 'input',
           required: true,
+          maxLength: 8,
         },
         {
           key: 'quantityUnit',
           label: t('modules.pages.material.qtyUnit'),
           type: 'input',
           required: true,
+          maxLength: 8,
           visibleWhen: physicalVisibleWhen,
         },
         {

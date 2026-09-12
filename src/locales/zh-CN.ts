@@ -588,6 +588,9 @@ export const zhCN = {
       amount: '金额',
       warehouseName: '码头',
       sourceNo: '出库单号',
+      materialSearchPlaceholder: '搜索品牌 / 类别 / 材质 / 规格 / 长度',
+      warehousePlaceholder: '选择码头',
+      settlementModePlaceholder: '选择结算方式',
     },
     units: {
       documentSheet: '张',
@@ -984,6 +987,8 @@ export const zhCN = {
       weighWeight: '过磅重量',
       weightAdjustmentAmount: '重量调整金额',
       weightAdjustmentTon: '重量调整(吨)',
+      settlementCompany: '结算主体',
+      account: '资金账户',
     },
     pages: {
       material: {

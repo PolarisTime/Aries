@@ -107,7 +107,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     },
     {
       key: 'settlementCompanyId',
-      label: '结算主体',
+      label: i18next.t('modules.columns.settlementCompany'),
       type: 'segmented',
       options: getSettlementCompanyOptions,
     },
@@ -135,7 +135,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 140,
     },
     {
-      title: '结算主体',
+      title: i18next.t('modules.columns.settlementCompany'),
       dataIndex: 'settlementCompanyName',
       width: 160,
     },
@@ -208,7 +208,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      label: '结算主体',
+      label: i18next.t('modules.columns.settlementCompany'),
       key: 'settlementCompanyName',
       row: 1,
     },
@@ -285,7 +285,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     },
     {
       key: 'settlementCompanyId',
-      label: '结算主体',
+      label: i18next.t('modules.columns.settlementCompany'),
       type: 'select',
       options: getSettlementCompanyOptions,
       disabled: true,

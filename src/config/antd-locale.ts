@@ -1,4 +1,5 @@
 import type { Locale } from 'antd/es/locale'
+import enUS from 'antd/locale/en_US'
 
 const typeTemplate = '${label}不是一个有效的${type}'
 
@@ -118,4 +119,9 @@ export const appAntdLocale: Locale = {
     singleColor: '单色',
     gradientColor: '渐变色',
   },
+}
+
+/** 依据 i18n 语言返回 antd 组件语言包（中文用定制版，其余用英文默认）。 */
+export function getAntdLocale(language: string | undefined): Locale {
+  return (language ?? '').toLowerCase().startsWith('en') ? enUS : appAntdLocale
 }

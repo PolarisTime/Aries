@@ -254,7 +254,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'accountId',
-      label: '资金账户',
+      label: i18next.t('modules.columns.account'),
       type: 'select',
       required: true,
       options: getSettlementAccountOptions,
