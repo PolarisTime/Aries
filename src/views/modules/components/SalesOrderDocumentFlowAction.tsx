@@ -1,11 +1,24 @@
-import { ApartmentOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, ArrowRightOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { Alert, Button, Drawer, Empty, List, Spin, Tag, Typography } from 'antd'
+import {
+  Alert,
+  Button,
+  Drawer,
+  Empty,
+  List,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSalesOrderDocumentFlow } from '@/api/sales/sales-order-document-flow'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import type { SalesOrderDocumentFlowNode } from '@/shared/schemas/sales-order-document-flow'
+import type {
+  SalesOrderDocumentFlowLink,
+  SalesOrderDocumentFlowNode,
+} from '@/shared/schemas/sales-order-document-flow'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
@@ -33,6 +46,18 @@ function groupNodesByType(nodes: SalesOrderDocumentFlowNode[]): NodeGroup[] {
   }))
 }
 
+/** 关系端点标签：优先使用节点单据号，节点缺失时回退到原始 id。 */
+function resolveLinkNodeLabel(
+  nodeId: string | undefined,
+  nodeById: Map<string, SalesOrderDocumentFlowNode>,
+): string {
+  if (!nodeId) {
+    return '--'
+  }
+  const key = String(nodeId)
+  return nodeById.get(key)?.no || key
+}
+
 export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -47,7 +72,12 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
   })
 
   const nodes = data?.nodes ?? []
+  const links = data?.links ?? []
   const nodeGroups = useMemo(() => groupNodesByType(nodes), [nodes])
+  const nodeById = useMemo(
+    () => new Map(nodes.map((node) => [String(node.id), node])),
+    [nodes],
+  )
   const documentNo = String(target?.orderNo ?? '')
 
   const handleOpen = () => {
@@ -130,6 +160,41 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
               />
             </div>
           ))}
+          {!isPending && (nodes.length > 0 || links.length > 0) ? (
+            <div>
+              <Typography.Title level={5}>
+                {t('modules.pages.salesOrder.documentFlow.relationsTitle')}
+              </Typography.Title>
+              <List
+                bordered
+                size="small"
+                dataSource={links}
+                locale={{
+                  emptyText: t(
+                    'modules.pages.salesOrder.documentFlow.relationsEmpty',
+                  ),
+                }}
+                renderItem={(link: SalesOrderDocumentFlowLink) => (
+                  <List.Item>
+                    <Space size="small" wrap>
+                      {link.fromType ? <Tag>{link.fromType}</Tag> : null}
+                      <Typography.Text>
+                        {resolveLinkNodeLabel(link.fromId, nodeById)}
+                      </Typography.Text>
+                      <ArrowRightOutlined />
+                      {link.toType ? <Tag>{link.toType}</Tag> : null}
+                      <Typography.Text>
+                        {resolveLinkNodeLabel(link.toId, nodeById)}
+                      </Typography.Text>
+                      {link.linkType ? (
+                        <Tag color="blue">{link.linkType}</Tag>
+                      ) : null}
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            </div>
+          ) : null}
         </Spin>
       </Drawer>
     </>

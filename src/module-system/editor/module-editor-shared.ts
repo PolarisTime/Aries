@@ -20,6 +20,9 @@ export const DERIVED_READONLY_ITEM_COLUMN_KEYS = new Set([
   'weightAdjustmentTon',
   'weightAdjustmentAmount',
   'amount',
+  'deliveredQuantity',
+  'returnedQuantity',
+  'deliveredNetQuantity',
 ])
 
 export function hasEditorValue(value: unknown) {

@@ -1,5 +1,5 @@
 import { ImportOutlined } from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { TableProps } from 'antd'
 import {
   Alert,
@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   Space,
+  Spin,
   Table,
   Typography,
 } from 'antd'
@@ -34,27 +35,46 @@ interface Props {
 }
 
 const AUDITED_OUTBOUND_FILTERS = { status: '已审核' } as const
+const OUTBOUND_SEARCH_PAGE_SIZE = 30
+const OUTBOUND_SEARCH_DEBOUNCE_MS = 300
 
 export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [outboundId, setOutboundId] = useState('')
+  const [outboundKeyword, setOutboundKeyword] = useState('')
+  const [debouncedOutboundKeyword, setDebouncedOutboundKeyword] = useState('')
   const [returnDate, setReturnDate] = useState<Dayjs>(dayjs())
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [quantityById, setQuantityById] = useState<Record<string, number>>({})
   const [creating, setCreating] = useState(false)
 
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedOutboundKeyword(outboundKeyword),
+      OUTBOUND_SEARCH_DEBOUNCE_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [outboundKeyword])
+
   const outboundQuery = useQuery({
-    queryKey: QUERY_KEYS.salesOutboundAuditedList(0, 100),
+    queryKey: QUERY_KEYS.salesOutboundAuditedList(
+      0,
+      OUTBOUND_SEARCH_PAGE_SIZE,
+      debouncedOutboundKeyword,
+    ),
     queryFn: ({ signal }) =>
       listBusinessModule(
         'sales-outbound',
-        AUDITED_OUTBOUND_FILTERS,
-        { currentPage: 0, pageSize: 100 },
+        debouncedOutboundKeyword
+          ? { ...AUDITED_OUTBOUND_FILTERS, keyword: debouncedOutboundKeyword }
+          : AUDITED_OUTBOUND_FILTERS,
+        { currentPage: 0, pageSize: OUTBOUND_SEARCH_PAGE_SIZE },
         { signal },
       ),
     enabled: open,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   })
 
   const candidatesQuery = useQuery({
@@ -105,6 +125,8 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
 
   const resetState = () => {
     setOutboundId('')
+    setOutboundKeyword('')
+    setDebouncedOutboundKeyword('')
     setReturnDate(dayjs())
     setSelectedIds([])
     setQuantityById({})
@@ -239,7 +261,8 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
           <Space wrap>
             <Select
               showSearch
-              optionFilterProp="label"
+              filterOption={false}
+              onSearch={setOutboundKeyword}
               style={{ width: 380 }}
               placeholder={t(
                 'modules.pages.salesReturn.sourceImport.outboundPlaceholder',
@@ -247,7 +270,22 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
               value={outboundId || undefined}
               loading={outboundQuery.isPending || outboundQuery.isFetching}
               options={outboundOptions}
-              onChange={(value) => setOutboundId(String(value))}
+              notFoundContent={
+                outboundQuery.isFetching ? (
+                  <Spin size="small" />
+                ) : (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={t(
+                      'modules.pages.salesReturn.sourceImport.noOutbound',
+                    )}
+                  />
+                )
+              }
+              onChange={(value) => {
+                setOutboundId(String(value))
+                setOutboundKeyword('')
+              }}
             />
             <DatePicker
               value={returnDate}

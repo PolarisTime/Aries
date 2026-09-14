@@ -30,55 +30,91 @@ import {
 } from './sales-order-rules'
 
 // 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
-const salesOrderItemColumnConfig: ModuleItemColumnConfig = {
-  include: [
-    'warehouseName',
-    'brand',
-    'category',
-    'material',
-    'spec',
-    'length',
-    'unit',
-    'quantity',
-    'quantityUnit',
-    'pieceWeightTon',
-    'weightTon',
-    'unitPrice',
-    'amount',
-  ],
-  requiredFieldKeys: [
-    'warehouseName',
-    'brand',
-    'category',
-    'material',
-    'spec',
-    'unit',
-    'quantity',
-    'pieceWeightTon',
-    'weightTon',
-    'unitPrice',
-    'amount',
-  ],
-  // 商品编码列不再占用表格空间；材质列承载物料选择，选中后仍会同步填充
-  // materialId/materialCode 及其它物料快照字段，满足后端请求契约。
-  overrides: {
-    material: {
-      editor: { control: 'material' },
-    },
-  },
-  projections: {
-    saveResult: [
+// 末端三个派生数量列由后端聚合返回，仅用于只读展示。
+type SalesOrderDerivedItemColumnKey =
+  | 'deliveredQuantity'
+  | 'returnedQuantity'
+  | 'deliveredNetQuantity'
+
+const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemColumnKey> =
+  {
+    include: [
+      'warehouseName',
       'brand',
+      'category',
       'material',
       'spec',
       'length',
+      'unit',
       'quantity',
+      'quantityUnit',
+      'pieceWeightTon',
+      'weightTon',
+      'unitPrice',
+      'amount',
+      'deliveredQuantity',
+      'returnedQuantity',
+      'deliveredNetQuantity',
+    ],
+    requiredFieldKeys: [
+      'warehouseName',
+      'brand',
+      'category',
+      'material',
+      'spec',
+      'unit',
+      'quantity',
+      'pieceWeightTon',
       'weightTon',
       'unitPrice',
       'amount',
     ],
-  },
-}
+    // 商品编码列不再占用表格空间；材质列承载物料选择，选中后仍会同步填充
+    // materialId/materialCode 及其它物料快照字段，满足后端请求契约。
+    overrides: {
+      material: {
+        editor: { control: 'material' },
+      },
+    },
+    privateColumns: [
+      {
+        title: i18next.t('modules.pages.salesOrder.colDeliveredQuantity'),
+        dataIndex: 'deliveredQuantity',
+        width: 100,
+        align: 'right',
+        type: 'count',
+        render: renderDerivedQuantity,
+      },
+      {
+        title: i18next.t('modules.pages.salesOrder.colReturnedQuantity'),
+        dataIndex: 'returnedQuantity',
+        width: 100,
+        align: 'right',
+        type: 'count',
+        render: renderDerivedQuantity,
+      },
+      {
+        title: i18next.t('modules.pages.salesOrder.colDeliveredNetQuantity'),
+        dataIndex: 'deliveredNetQuantity',
+        width: 110,
+        align: 'right',
+        type: 'count',
+        render: renderDerivedQuantity,
+      },
+    ],
+    projections: {
+      saveResult: [
+        'brand',
+        'material',
+        'spec',
+        'length',
+        'quantity',
+        'weightTon',
+        'unitPrice',
+        'amount',
+      ],
+    },
+  }
 const salesOrderItemColumnOutputs = resolveModuleItemColumnConfig(
   salesOrderItemColumnConfig,
 )

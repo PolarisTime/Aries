@@ -27,6 +27,9 @@ describe('销售订单明细列', () => {
       'weightTon',
       'unitPrice',
       'amount',
+      'deliveredQuantity',
+      'returnedQuantity',
+      'deliveredNetQuantity',
     ])
     expect(dataIndexes(salesOrdersPageConfig)).not.toContain('materialCode')
     expect(dataIndexes(salesOrdersPageConfig)).not.toContain('batchNo')
