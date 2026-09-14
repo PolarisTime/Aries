@@ -42,6 +42,10 @@ export const ENDPOINTS = {
   CASH_LEDGER_EXPORT: '/cash-ledger/export',
   FINANCE_OVERVIEW: '/finance/overview',
 
+  // Inventory (aggregate read models)
+  INVENTORY_BALANCES: '/inventory/balances',
+  INVENTORY_TRANSACTIONS: '/inventory/transactions',
+
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
 

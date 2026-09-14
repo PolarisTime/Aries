@@ -21,6 +21,7 @@ export type RouteViewKey =
   | 'account'
   | 'finance-overview'
   | 'cash-ledger'
+  | 'inventory'
 
 export interface AppPageDefinition {
   key: string

@@ -1223,6 +1223,31 @@
   height: 100%;
 }
 
+.inventory-page {
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.inventory-page > .ant-tabs {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.inventory-page .inventory-workspace {
+  height: auto;
+  overflow: visible;
+}
+
+.inventory-filter-row {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.inventory-table {
+  padding: 0 16px 16px;
+  overflow-x: auto;
+}
+
 .module-grid-workspace {
   display: flex;
   flex: 1 1 auto;

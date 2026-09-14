@@ -52,6 +52,14 @@ export const operationPageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
+    key: 'inventory',
+    title: '库存查询',
+    menuKey: '/inventory',
+    view: 'inventory',
+    icon: 'DatabaseOutlined',
+    menuParent: 'inventory',
+  },
+  {
     key: 'freight-bill',
     title: '物流单',
     menuKey: '/freight-bill',

@@ -29,6 +29,7 @@ export type MenuGroupKey =
   | 'market'
   | 'purchase'
   | 'sales'
+  | 'inventory'
   | 'freight'
   | 'statements'
   | 'finance'

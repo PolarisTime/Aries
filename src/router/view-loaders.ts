@@ -74,4 +74,8 @@ export const viewLoaders: Record<
     import('@/views/finance/CashLedgerView').then((m) => ({
       default: m.CashLedgerView,
     })),
+  inventory: () =>
+    import('@/views/inventory/InventoryView').then((m) => ({
+      default: m.InventoryView,
+    })),
 }

@@ -125,6 +125,29 @@ export const QUERY_KEYS = {
   counterpartyLedger: (key: string) =>
     ['finance', 'counterparty-ledger', key] as const,
 
+  // Inventory (read models)
+  inventoryBalances: (query: {
+    keyword?: string
+    materialId?: string
+    warehouseId?: string
+    sortBy?: string
+    direction?: string
+    page: number
+    size: number
+  }) => ['inventory', 'balances', query] as const,
+  inventoryTransactions: (query: {
+    keyword?: string
+    materialId?: string
+    warehouseId?: string
+    transactionType?: string
+    startDate?: string
+    endDate?: string
+    sortBy?: string
+    direction?: string
+    page: number
+    size: number
+  }) => ['inventory', 'transactions', query] as const,
+
   // Auth / Account
   currentAccount: ['current-account'] as const,
 

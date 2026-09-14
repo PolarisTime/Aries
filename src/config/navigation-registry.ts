@@ -16,6 +16,7 @@ export const menuGroupOrder: MenuGroupKey[] = [
   'market',
   'purchase',
   'sales',
+  'inventory',
   'freight',
   'statements',
   'finance',
@@ -42,6 +43,11 @@ export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
     key: 'sales',
     title: i18next.t('navigation.sales'),
     icon: 'ShopOutlined',
+  },
+  inventory: {
+    key: 'inventory',
+    title: i18next.t('navigation.inventory'),
+    icon: 'DatabaseOutlined',
   },
   freight: {
     key: 'freight',
