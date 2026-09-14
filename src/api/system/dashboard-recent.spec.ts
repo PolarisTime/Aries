@@ -16,11 +16,11 @@ describe('工作台最近单据排序参数', () => {
     mocks.fetchModulePage.mockResolvedValue({ rows: [] })
   })
 
-  it('客户对账单使用 sortDirection，避免与蓝字/红字筛选参数冲突', async () => {
+  it('客户对账单排序方向使用 direction', async () => {
     await fetchDashboardRecentDocuments('customer-statement')
     expect(mocks.fetchModulePage).toHaveBeenCalledWith(
       'customer-statement',
-      { sortBy: 'endDate', sortDirection: 'desc' },
+      { sortBy: 'endDate', direction: 'desc' },
       0,
       5,
     )

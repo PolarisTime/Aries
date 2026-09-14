@@ -107,7 +107,7 @@ describe('工作台真实业务数据聚合', () => {
     expect(fetchModulePageMock).toHaveBeenNthCalledWith(
       3,
       'customer-statement',
-      { status: '待确认', sortBy: 'endDate', sortDirection: 'desc' },
+      { status: '待确认', sortBy: 'endDate', direction: 'desc' },
       0,
       8,
     )

@@ -156,7 +156,7 @@ function normalizeQuery(query: FinanceOverviewQuery) {
       'settlementCompanyId',
     ),
     asOfDate: query.asOfDate,
-    direction: query.direction,
+    balanceDirection: query.direction,
     ...(counterpartyType ? { counterpartyType } : {}),
     ...(keyword ? { keyword } : {}),
     ...(query.onlyOpen ? { onlyOpen: true } : {}),

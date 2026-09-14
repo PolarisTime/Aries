@@ -393,7 +393,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       { key: 'projectId', label: '项目名称', type: 'select' },
       { key: 'settlementCompanyId', label: '结算主体', type: 'select' },
       { key: 'status', label: '单据状态', type: 'select' },
-      { key: 'direction', label: '方向', type: 'segmented' },
+      { key: 'billDirection', label: '方向', type: 'segmented' },
       { key: 'endDate', label: '对账期间', type: 'dateRange' },
     ],
     saveFields: {

@@ -3,6 +3,7 @@ import i18next from 'i18next'
 import React from 'react'
 import { beforeAll, describe, expect, it } from 'vitest'
 import '@/i18n'
+import { buildQueryParams } from '@/api/business/business-listing-filtering'
 import { financeModuleEndpointContracts } from '@/api/contracts/module-contracts-finance'
 import { customerStatementPageConfig } from './customer-statement-page'
 import {
@@ -18,7 +19,7 @@ beforeAll(async () => {
 describe('客户对账单红字展示配置', () => {
   it('筛选包含方向分段选项（蓝字/红字）', () => {
     const directionFilter = customerStatementPageConfig.filters.find(
-      (filter) => filter.key === 'direction',
+      (filter) => filter.key === 'billDirection',
     )
     expect(directionFilter?.type).toBe('segmented')
     const options = directionFilter?.options
@@ -73,10 +74,25 @@ describe('客户对账单红字展示配置', () => {
     )
   })
 
-  it('接口契约声明 direction 过滤并让出排序方向参数', () => {
+  it('接口契约声明 billDirection 过滤，排序方向沿用 direction', () => {
     const contract = financeModuleEndpointContracts['customer-statement']
-    expect(contract.nativeFilterKeys).toContain('direction')
-    expect(contract.sortDirectionParam).toBe('sortDirection')
+    expect(contract.nativeFilterKeys).toContain('billDirection')
+    expect(contract.nativeFilterKeys).not.toContain('direction')
+    expect('sortDirectionParam' in contract).toBe(false)
+  })
+
+  it('筛选值 billDirection 与排序方向 direction 同时传递', () => {
+    const params = buildQueryParams(
+      'customer-statement',
+      { billDirection: '蓝字' },
+      {
+        currentPage: 1,
+        pageSize: 20,
+        sortBy: 'endDate',
+        sortDirection: 'desc',
+      },
+    )
+    expect(params).toMatchObject({ billDirection: '蓝字', direction: 'desc' })
   })
 })
 

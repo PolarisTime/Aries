@@ -132,7 +132,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       options: withDeletedDocumentStatus(statementStatusOptions),
     },
     {
-      key: 'direction',
+      key: 'billDirection',
       label: i18next.t('modules.pages.customerStatement.direction'),
       type: 'segmented',
       row: 2,

@@ -11,7 +11,7 @@ export const financeModuleEndpointContracts = {
       'projectId',
       'settlementCompanyId',
       'status',
-      'direction',
+      'billDirection',
     ],
     dateRangeMapping: {
       endDate: {
@@ -19,8 +19,6 @@ export const financeModuleEndpointContracts = {
         endKey: 'periodEnd',
       },
     },
-    // 方向筛选占用 `direction`，把分页排序方向改走 `sortDirection`，避免同名参数冲突。
-    sortDirectionParam: 'sortDirection',
   },
   'freight-statement': {
     path: '/freight-statements',
