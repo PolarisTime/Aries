@@ -66,6 +66,10 @@ export interface InventoryTransaction {
   transactionType: string
   materialId: EntityId
   materialCode: string
+  brand: string
+  material: string
+  spec: string
+  unit: string
   warehouseId: EntityId
   warehouseName: string
   batchNo: string
@@ -106,6 +110,10 @@ export const inventoryTransactionRowSchema = z.looseObject({
   transactionType: z.string().nullish(),
   materialId: responseEntityIdSchema,
   materialCode: z.string().nullish(),
+  brand: z.string().nullish(),
+  material: z.string().nullish(),
+  spec: z.string().nullish(),
+  unit: z.string().nullish(),
   warehouseId: responseEntityIdSchema,
   warehouseName: z.string().nullish(),
   batchNo: z.string().nullish(),
@@ -209,6 +217,10 @@ function normalizeTransaction(
       `inventoryTransactions.content[${index}].materialId`,
     ),
     materialCode: asString(raw.materialCode),
+    brand: asString(raw.brand),
+    material: asString(raw.material),
+    spec: asString(raw.spec),
+    unit: asString(raw.unit),
     warehouseId: parseEntityId(
       raw.warehouseId,
       `inventoryTransactions.content[${index}].warehouseId`,

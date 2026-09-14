@@ -390,6 +390,30 @@ function InventoryTransactionsPanel() {
         render: displayText,
       },
       {
+        title: t('inventory.columns.brand'),
+        dataIndex: 'brand',
+        width: 110,
+        render: displayText,
+      },
+      {
+        title: t('inventory.columns.material'),
+        dataIndex: 'material',
+        width: 120,
+        render: displayText,
+      },
+      {
+        title: t('inventory.columns.spec'),
+        dataIndex: 'spec',
+        width: 100,
+        render: displayText,
+      },
+      {
+        title: t('inventory.columns.unit'),
+        dataIndex: 'unit',
+        width: 80,
+        render: displayText,
+      },
+      {
         title: t('inventory.columns.warehouse'),
         dataIndex: 'warehouseName',
         width: 140,

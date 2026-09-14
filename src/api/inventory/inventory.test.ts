@@ -56,6 +56,11 @@ describe('库存余额查询', () => {
     expect(page.content[0]).toMatchObject({
       materialId: '700500000000000130',
       warehouseId: '800500000000000001',
+      brand: '万泰',
+      material: 'HRB400E',
+      spec: '12',
+      length: '9米',
+      unit: '吨',
       quantity: 12.5,
       amount: 40625,
       avgUnitCost: 3250,
