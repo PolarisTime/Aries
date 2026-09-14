@@ -104,6 +104,9 @@ export function ModuleRecordDetailOverlay({
             />
           )
         }
+        if (column.render) {
+          return column.render(value, record)
+        }
         return formatCellValue(value, column.type)
       },
     }))

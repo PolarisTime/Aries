@@ -5,6 +5,7 @@ import {
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-behavior-registry-core'
 import { collectUniqueSourceNos } from '@/module-system/behavior/module-behavior-registry-utils'
+import { normalizeStatementDirection } from '@/shared/schemas/customer-statement'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -113,6 +114,12 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
   })
 
   registerModuleBehavior('customer-statement', {
+    normalizeEditorRecord(record) {
+      return {
+        ...record,
+        direction: normalizeStatementDirection(record.direction),
+      }
+    },
     normalizeDraftRecord(record, items, ctx) {
       if (items.length) {
         record.salesAmount = Number(
@@ -132,6 +139,7 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
       }
       record.receiptAmount = Number(record.receiptAmount || 0)
       record.closingAmount = Number(Number(record.salesAmount || 0).toFixed(2))
+      record.direction = normalizeStatementDirection(record.direction)
     },
   })
 }

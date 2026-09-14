@@ -81,9 +81,12 @@ export async function fetchDashboardRecentDocuments(
   tab: DashboardRecentTab,
 ): Promise<DashboardRecentDocument[]> {
   const query = RECENT_QUERY[tab]
+  // 客户对账单的 `direction` 已用于蓝字/红字筛选，排序方向改走 `sortDirection`。
+  const sortDirectionParam =
+    tab === 'customer-statement' ? 'sortDirection' : 'direction'
   const page = await fetchModulePage(
     tab,
-    { sortBy: query.sortBy, direction: 'desc' },
+    { sortBy: query.sortBy, [sortDirectionParam]: 'desc' },
     0,
     RECENT_PAGE_SIZE,
   )

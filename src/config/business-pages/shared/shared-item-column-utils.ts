@@ -139,6 +139,7 @@ function resolveColumns<PrivateKey extends string>(
     if (align !== undefined) column.align = align
     if (type !== undefined) column.type = type
     if (mergedEditor !== undefined) column.editor = mergedEditor
+    if (override?.render) column.render = override.render
     if (requiredSet.has(key)) column.required = true
     result.push(column)
   }

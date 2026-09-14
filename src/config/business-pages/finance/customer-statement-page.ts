@@ -20,6 +20,9 @@ import {
   buildCustomerStatementOverview,
   buildCustomerStatementParentFilters,
   mapSalesOrderToCustomerStatementDraft,
+  renderStatementAmount,
+  renderStatementDirection,
+  renderStatementWeight,
   transformSalesOrderItemsToCustomerStatementItems,
   validateCustomerStatementBeforeOpen,
   validateCustomerStatementParentImport,
@@ -49,9 +52,9 @@ const customerStatementItemColumnConfig: ModuleItemColumnConfig = {
     quantity: { width: 76 },
     quantityUnit: { width: 76 },
     pieceWeightTon: { width: 92, align: 'right' },
-    weightTon: { align: 'right' },
+    weightTon: { align: 'right', render: renderStatementWeight },
     unitPrice: { width: 88, align: 'right' },
-    amount: { width: 100, align: 'right' },
+    amount: { width: 100, align: 'right', render: renderStatementAmount },
   },
   requiredFieldKeys: [
     'brand',
@@ -129,6 +132,22 @@ export const customerStatementPageConfig: ModulePageConfig = {
       options: withDeletedDocumentStatus(statementStatusOptions),
     },
     {
+      key: 'direction',
+      label: i18next.t('modules.pages.customerStatement.direction'),
+      type: 'segmented',
+      row: 2,
+      options: [
+        {
+          label: i18next.t('modules.pages.customerStatement.blueDirection'),
+          value: '蓝字',
+        },
+        {
+          label: i18next.t('modules.pages.customerStatement.redDirection'),
+          value: '红字',
+        },
+      ],
+    },
+    {
       key: 'endDate',
       label: i18next.t('modules.pages.customerStatement.period'),
       type: 'dateRange',
@@ -184,6 +203,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 110,
       align: 'right',
       type: 'amount',
+      render: renderStatementAmount,
     },
     {
       title: i18next.t('modules.pages.customerStatement.receiptAmount'),
@@ -191,6 +211,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 110,
       align: 'right',
       type: 'amount',
+      render: renderStatementAmount,
     },
     {
       title: i18next.t('modules.pages.customerStatement.closingBalance'),
@@ -198,6 +219,14 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 110,
       align: 'right',
       type: 'amount',
+      render: renderStatementAmount,
+    },
+    {
+      title: i18next.t('modules.pages.customerStatement.direction'),
+      dataIndex: 'direction',
+      width: 90,
+      align: 'center',
+      render: renderStatementDirection,
     },
     {
       title: i18next.t('modules.pages.customerStatement.status'),
@@ -262,6 +291,14 @@ export const customerStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.customerStatement.closingBalance'),
       key: 'closingAmount',
       type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.direction'),
+      key: 'direction',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.sourceSalesReturnNo'),
+      key: 'sourceSalesReturnNo',
     },
     {
       label: i18next.t('modules.pages.customerStatement.status'),
@@ -341,7 +378,6 @@ export const customerStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.customerStatement.salesAmount'),
       type: 'number',
       required: true,
-      min: 0,
       precision: 2,
       defaultValue: 0,
       disabled: true,
@@ -352,11 +388,28 @@ export const customerStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.customerStatement.closingBalance'),
       type: 'number',
       required: true,
-      min: 0,
       precision: 2,
       defaultValue: 0,
       disabled: true,
       row: 3,
+    },
+    {
+      key: 'direction',
+      label: i18next.t('modules.pages.customerStatement.direction'),
+      type: 'select',
+      defaultValue: '蓝字',
+      disabled: true,
+      row: 3,
+      options: [
+        {
+          label: i18next.t('modules.pages.customerStatement.blueDirection'),
+          value: '蓝字',
+        },
+        {
+          label: i18next.t('modules.pages.customerStatement.redDirection'),
+          value: '红字',
+        },
+      ],
     },
     {
       key: 'status',
@@ -391,6 +444,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       'salesAmount',
       'receiptAmount',
       'closingAmount',
+      'direction',
       'status',
       'remark',
     ],

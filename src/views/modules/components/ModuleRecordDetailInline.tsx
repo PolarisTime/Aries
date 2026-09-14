@@ -101,6 +101,9 @@ export function ModuleRecordDetailInline({
             />
           )
         }
+        if (column.render) {
+          return column.render(value, item)
+        }
         return formatCellValue(value, column.type)
       },
     }),

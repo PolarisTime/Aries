@@ -1120,6 +1120,10 @@ export const zhCN = {
         salesAmount: '销售金额',
         receiptAmount: '收款金额',
         closingBalance: '期末余额',
+        direction: '方向',
+        blueDirection: '蓝字',
+        redDirection: '红字',
+        sourceSalesReturnNo: '来源退货单',
         status: '状态',
         remark: '备注',
         customerStatementDesc:

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -118,6 +119,8 @@ export interface ModuleColumnOverride {
   align?: ModuleColumnDefinition['align']
   type?: ModuleColumnDefinition['type']
   editor?: Partial<TradeLineItemEditorSemantics>
+  /** 模块级自定义单元格渲染（如红字金额负数红色），仅覆盖本模块字段。 */
+  render?: (value: unknown) => ReactNode
 }
 
 export type ModuleItemColumnKey<PrivateKey extends string = never> =

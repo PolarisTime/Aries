@@ -85,7 +85,7 @@ export async function fetchDashboardWorkspace(): Promise<DashboardWorkspace> {
       ),
       fetchModulePage(
         'customer-statement',
-        { status: '待确认', sortBy: 'endDate', direction: 'desc' },
+        { status: '待确认', sortBy: 'endDate', sortDirection: 'desc' },
         0,
         DASHBOARD_PAGE_SIZE,
       ),

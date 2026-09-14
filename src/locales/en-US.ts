@@ -1153,6 +1153,10 @@ export const enUS = {
         salesAmount: 'Sales amount',
         receiptAmount: 'Receipt amount',
         closingBalance: 'Closing balance',
+        direction: 'Direction',
+        blueDirection: 'Blue',
+        redDirection: 'Red',
+        sourceSalesReturnNo: 'Source return',
         status: 'Status',
         remark: 'Remark',
         customerStatementDesc:

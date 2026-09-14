@@ -88,6 +88,7 @@ export const ENTITY_ID_FIELDS = new Set([
   'sourcePurchaseOrderItemId',
   'sourceSalesOrderItemId',
   'sourceSalesOutboundItemId',
+  'sourceSalesReturnId',
   'sourceStatementId',
   'supplierId',
   'userId',

@@ -19,6 +19,12 @@ export type {
   CurrentAccountUpdate,
   PasswordChange,
 } from './current-account'
+// ── 客户对账单 / 红字对账 ────────────────────────────────
+export type {
+  CustomerStatementItem,
+  CustomerStatementRecord,
+  StatementDirection,
+} from './customer-statement'
 // ── 物料 / 打印模板 / 初始化 ────────────────────────────
 export type {
   MaterialImportFailure,
