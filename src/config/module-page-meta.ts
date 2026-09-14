@@ -18,6 +18,7 @@ const primaryNoKeyMap: Record<string, string> = {
   'purchase-inbound': 'inboundNo',
   'sales-order': 'orderNo',
   'sales-outbound': 'outboundNo',
+  'sales-return': 'returnNo',
   'freight-bill': 'billNo',
   'customer-statement': 'statementNo',
   'freight-statement': 'statementNo',

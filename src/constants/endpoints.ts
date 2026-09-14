@@ -96,6 +96,17 @@ export const ENDPOINTS = {
     `/sales-orders/${pathSegment(id)}/completions`,
   SALES_ORDER_PRINT_XLSX: (id: string | number) =>
     `/sales-orders/${pathSegment(id)}/xlsx-exports`,
+  SALES_ORDER_DOCUMENT_FLOW: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/document-flow`,
+
+  // Sales returns (reverse outbound documents)
+  SALES_RETURNS: '/sales-returns',
+  SALES_RETURN_CANDIDATES: '/sales-returns/candidates',
+  SALES_RETURN: (id: string | number) => `/sales-returns/${pathSegment(id)}`,
+  SALES_RETURN_AUDITS: (id: string | number) =>
+    `/sales-returns/${pathSegment(id)}/audits`,
+  SALES_RETURN_STATUS: (id: string | number) =>
+    `/sales-returns/${pathSegment(id)}/status`,
 
   // Freight bills
   FREIGHT_BILL_SALES_ORDER_CANDIDATES: '/freight-bills/sales-order-candidates',

@@ -68,6 +68,7 @@ export const salesOrderStatusSchema = z.enum([
   '完成销售',
 ])
 export const salesOutboundStatusSchema = z.enum(['草稿', '已审核'])
+export const salesReturnStatusSchema = z.enum(['草稿', '已审核'])
 export const freightBillStatusSchema = z.enum(['草稿', '已审核'])
 
 // Purchase order
@@ -335,6 +336,10 @@ const salesOrderItemSchema = z.strictObject({
   unitPrice: nonNegativeDecimalSchema,
   amount: decimalSchema,
   originalWeightTon: nullableDecimalSchema,
+  /** 只读派生数量：已交付 / 已退货 / 净交付（退货上线后由后端聚合返回）。 */
+  deliveredQuantity: nonNegativeDecimalSchema.optional(),
+  returnedQuantity: nonNegativeDecimalSchema.optional(),
+  deliveredNetQuantity: nonNegativeDecimalSchema.optional(),
 })
 
 const salesOrderRecordShape = {
@@ -358,6 +363,11 @@ const salesOrderRecordShape = {
   remark: nullableTextSchema,
   referencedByFreightBill: z.boolean().default(false),
   referencedBySalesOutbound: z.boolean().default(false),
+  referencedBySalesReturn: z.boolean().default(false),
+  /** 只读派生数量：已交付 / 已退货 / 净交付（退货上线后由后端聚合返回）。 */
+  deliveredQuantity: nonNegativeDecimalSchema.optional(),
+  returnedQuantity: nonNegativeDecimalSchema.optional(),
+  deliveredNetQuantity: nonNegativeDecimalSchema.optional(),
 }
 
 const salesOrderListRecordSchema = z
@@ -587,6 +597,162 @@ const salesOutboundSaveRequestSchema = z.strictObject({
   audit: z.boolean().optional(),
 })
 
+// Sales return (reverse outbound document)
+
+/**
+ * 销售退货详情明细响应。
+ * 后端字段以当前契约为准；looseObject 容忍后端新增字段而不阻断解析。
+ */
+const salesReturnItemSchema = z.looseObject({
+  id: entityIdSchema,
+  lineNo: integerSchema,
+  sourceSalesOutboundItemId: nullableEntityIdSchema,
+  sourceSalesOutboundNo: nullableTextSchema,
+  sourceSalesOrderItemId: nullableEntityIdSchema,
+  sourceSalesOrderNo: nullableTextSchema,
+  sourceFreightBillId: nullableEntityIdSchema,
+  sourceFreightBillNo: nullableTextSchema,
+  settlementCompanyId: nullableEntityIdSchema,
+  settlementCompanyName: nullableTextSchema,
+  materialId: nullableEntityIdSchema,
+  materialCode: requiredTextSchema,
+  brand: requiredTextSchema,
+  category: requiredTextSchema,
+  material: requiredTextSchema,
+  spec: requiredTextSchema,
+  length: nullableTextSchema,
+  unit: requiredTextSchema,
+  warehouseId: nullableEntityIdSchema,
+  warehouseName: nullableTextSchema,
+  batchNo: nullableTextSchema,
+  batchNoNormalized: nullableTextSchema,
+  quantity: nonNegativeIntegerSchema,
+  quantityUnit: nullableTextSchema,
+  pieceWeightTon: nonNegativeDecimalSchema,
+  piecesPerBundle: nonNegativeIntegerSchema,
+  weightTon: nonNegativeDecimalSchema,
+  unitPrice: nonNegativeDecimalSchema,
+  amount: decimalSchema,
+})
+
+const salesReturnRecordShape = {
+  id: entityIdSchema,
+  returnNo: requiredTextSchema,
+  salesOrderNo: nullableTextSchema,
+  customerId: nullableEntityIdSchema,
+  customerName: requiredTextSchema,
+  projectId: nullableEntityIdSchema,
+  projectName: requiredTextSchema,
+  warehouseId: nullableEntityIdSchema,
+  warehouseName: nullableTextSchema,
+  settlementCompanyId: nullableEntityIdSchema,
+  settlementCompanyName: nullableTextSchema,
+  returnDate: responseDateTimeSchema,
+  totalWeight: nonNegativeDecimalSchema,
+  totalAmount: decimalSchema,
+  status: salesReturnStatusSchema,
+  deletedFlag: z.boolean(),
+  remark: nullableTextSchema,
+}
+
+/** 列表响应与详情同结构，仅 items 固定为 null（后端全组件序列化）。 */
+const salesReturnListRecordSchema = z
+  .looseObject({
+    ...salesReturnRecordShape,
+    items: z.null(),
+  })
+  .transform(({ items: _items, ...record }) => record)
+
+const salesReturnDetailRecordSchema = z.looseObject({
+  ...salesReturnRecordShape,
+  items: z.array(salesReturnItemSchema).min(1),
+})
+
+const salesReturnSaveItemSchema = z.looseObject({
+  id: entityIdSchema.optional(),
+  sourceSalesOutboundItemId: entityIdSchema,
+  sourceSalesOrderItemId: optionalEntityIdSchema,
+  sourceFreightBillId: optionalEntityIdSchema,
+  materialId: optionalEntityIdSchema,
+  materialCode: optionalTextSchema,
+  brand: optionalTextSchema,
+  category: optionalTextSchema,
+  material: optionalTextSchema,
+  spec: optionalTextSchema,
+  length: optionalTextSchema,
+  unit: optionalTextSchema,
+  warehouseId: optionalEntityIdSchema,
+  warehouseName: optionalTextSchema,
+  batchNo: optionalTextSchema,
+  quantity: nonNegativeIntegerSchema,
+  quantityUnit: optionalTextSchema,
+  pieceWeightTon: optionalRequestNonNegativeDecimalSchema,
+  piecesPerBundle: optionalNonNegativeIntegerSchema,
+  weightTon: optionalRequestNonNegativeDecimalSchema,
+  unitPrice: optionalRequestNonNegativeDecimalSchema,
+  amount: optionalRequestDecimalSchema,
+})
+
+const salesReturnSaveRequestSchema = z.looseObject({
+  returnNo: optionalTextSchema,
+  salesOrderNo: optionalTextSchema,
+  customerId: optionalEntityIdSchema,
+  customerName: optionalTextSchema,
+  projectId: optionalEntityIdSchema,
+  projectName: optionalTextSchema,
+  warehouseId: optionalEntityIdSchema,
+  warehouseName: optionalTextSchema,
+  settlementCompanyId: optionalEntityIdSchema,
+  settlementCompanyName: optionalTextSchema,
+  returnDate: responseDateTimeSchema,
+  status: salesReturnStatusSchema.nullish(),
+  remark: optionalTextSchema,
+  items: z
+    .array(salesReturnSaveItemSchema)
+    .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
+  audit: z.boolean().optional(),
+})
+
+// Sales return source candidates (create return from an audited sales outbound)
+
+const salesReturnCandidateItemSchema = z.looseObject({
+  sourceSalesOutboundItemId: entityIdSchema,
+  sourceSalesOrderItemId: nullableEntityIdSchema,
+  materialId: nullableEntityIdSchema,
+  materialCode: requiredTextSchema,
+  brand: requiredTextSchema,
+  category: requiredTextSchema,
+  material: requiredTextSchema,
+  spec: requiredTextSchema,
+  length: nullableTextSchema,
+  unit: requiredTextSchema,
+  warehouseId: nullableEntityIdSchema,
+  warehouseName: nullableTextSchema,
+  batchNo: nullableTextSchema,
+  quantityUnit: nullableTextSchema,
+  pieceWeightTon: nonNegativeDecimalSchema,
+  piecesPerBundle: nonNegativeIntegerSchema,
+  outboundQuantity: nonNegativeIntegerSchema,
+  returnedQuantity: nonNegativeIntegerSchema,
+  returnableQuantity: nonNegativeIntegerSchema,
+  unitPrice: nonNegativeDecimalSchema,
+})
+
+export const salesReturnCandidatesSchema = z.looseObject({
+  salesOutboundId: entityIdSchema,
+  salesOutboundNo: requiredTextSchema,
+  salesOrderNo: nullableTextSchema,
+  customerId: nullableEntityIdSchema,
+  customerName: nullableTextSchema,
+  projectId: nullableEntityIdSchema,
+  projectName: nullableTextSchema,
+  warehouseId: nullableEntityIdSchema,
+  warehouseName: nullableTextSchema,
+  settlementCompanyId: nullableEntityIdSchema,
+  settlementCompanyName: nullableTextSchema,
+  items: z.array(salesReturnCandidateItemSchema),
+})
+
 // Freight bill
 
 const freightBillItemSchema = z.strictObject({
@@ -717,6 +883,7 @@ export const MAIN_FLOW_MODULE_KEYS = [
   'purchase-inbound',
   'sales-order',
   'sales-outbound',
+  'sales-return',
   'freight-bill',
 ] as const satisfies readonly ModuleKey[]
 
@@ -733,6 +900,7 @@ export const mainFlowDetailRecordSchemas = {
   'purchase-inbound': purchaseInboundDetailRecordSchema,
   'sales-order': salesOrderDetailRecordSchema,
   'sales-outbound': salesOutboundDetailRecordSchema,
+  'sales-return': salesReturnDetailRecordSchema,
   'freight-bill': freightBillDetailRecordSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
@@ -741,6 +909,7 @@ const mainFlowSaveRequestSchemas = {
   'purchase-inbound': purchaseInboundSaveRequestSchema,
   'sales-order': salesOrderSaveRequestSchema,
   'sales-outbound': salesOutboundSaveRequestSchema,
+  'sales-return': salesReturnSaveRequestSchema,
   'freight-bill': freightBillSaveRequestSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
@@ -749,6 +918,7 @@ const mainFlowStatusSchemas = {
   'purchase-inbound': purchaseInboundStatusSchema,
   'sales-order': salesOrderStatusSchema,
   'sales-outbound': salesOutboundStatusSchema,
+  'sales-return': salesReturnStatusSchema,
   'freight-bill': freightBillStatusSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
@@ -757,6 +927,7 @@ const mainFlowListResponseSchemas = {
   'purchase-inbound': exactPageSchema(purchaseInboundListRecordSchema),
   'sales-order': exactPageSchema(salesOrderListRecordSchema),
   'sales-outbound': exactPageSchema(salesOutboundListRecordSchema),
+  'sales-return': exactPageSchema(salesReturnListRecordSchema),
   'freight-bill': exactPageSchema(freightBillListRecordSchema),
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
@@ -765,6 +936,7 @@ export const mainFlowDetailResponseSchemas = {
   'purchase-inbound': purchaseInboundDetailRecordSchema,
   'sales-order': salesOrderDetailRecordSchema,
   'sales-outbound': salesOutboundDetailRecordSchema,
+  'sales-return': salesReturnDetailRecordSchema,
   'freight-bill': freightBillDetailRecordSchema,
 } satisfies Record<MainFlowModuleKey, z.ZodType>
 
@@ -865,6 +1037,18 @@ export type SalesOutboundSaveRequest = z.output<
   typeof salesOutboundSaveRequestSchema
 >
 
+export type SalesReturnItem = z.output<typeof salesReturnItemSchema>
+export type SalesReturn = z.output<typeof salesReturnDetailRecordSchema>
+export type SalesReturnListRecord = z.output<typeof salesReturnListRecordSchema>
+export type SalesReturnSaveItem = z.output<typeof salesReturnSaveItemSchema>
+export type SalesReturnSaveRequest = z.output<
+  typeof salesReturnSaveRequestSchema
+>
+export type SalesReturnCandidateItem = z.output<
+  typeof salesReturnCandidateItemSchema
+>
+export type SalesReturnCandidates = z.output<typeof salesReturnCandidatesSchema>
+
 export type FreightBillItem = z.output<typeof freightBillItemSchema>
 export type FreightBill = z.output<typeof freightBillDetailRecordSchema>
 export type FreightBillListRecord = z.output<typeof freightBillListRecordSchema>
@@ -877,6 +1061,7 @@ export interface ModuleRecordMap {
   'purchase-inbound': PurchaseInbound
   'sales-order': SalesOrder
   'sales-outbound': SalesOutbound
+  'sales-return': SalesReturn
   'freight-bill': FreightBill
 }
 
@@ -885,6 +1070,7 @@ export interface ModuleListRecordMap {
   'purchase-inbound': PurchaseInboundListRecord
   'sales-order': SalesOrderListRecord
   'sales-outbound': SalesOutboundListRecord
+  'sales-return': SalesReturnListRecord
   'freight-bill': FreightBillListRecord
 }
 
@@ -893,6 +1079,7 @@ export interface ModuleSaveRequestMap {
   'purchase-inbound': PurchaseInboundSaveRequest
   'sales-order': SalesOrderSaveRequest
   'sales-outbound': SalesOutboundSaveRequest
+  'sales-return': SalesReturnSaveRequest
   'freight-bill': FreightBillSaveRequest
 }
 
@@ -901,6 +1088,7 @@ export type LineItem =
   | PurchaseInboundItem
   | SalesOrderItem
   | SalesOutboundItem
+  | SalesReturnItem
   | FreightBillItem
 
 export type ModuleRecord = ModuleRecordMap[MainFlowModuleKey]

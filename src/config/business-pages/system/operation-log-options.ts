@@ -268,6 +268,10 @@ export const operationLogModuleOptions = [
         value: '销售出库',
       },
       {
+        label: i18next.t('modules.pages.operationLogOptions.salesReturn'),
+        value: '销售退货单',
+      },
+      {
         label: i18next.t('modules.pages.operationLogOptions.freightBill'),
         value: '物流单',
       },

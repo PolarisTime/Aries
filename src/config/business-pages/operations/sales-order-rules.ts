@@ -7,7 +7,19 @@ import {
   INTERNAL_WEIGHT_PRECISION,
 } from '@/constants/precision'
 import type { ModuleRecord, ModuleRecordInput } from '@/types/module-page'
-import { buildAmountWeightOverview, cloneLineItems } from '../shared/shared'
+import {
+  buildAmountWeightOverview,
+  cloneLineItems,
+  formatInteger,
+} from '../shared/shared'
+
+export function renderDerivedQuantity(value: unknown): React.ReactNode {
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? formatInteger(parsed) : null
+}
 
 export function renderSalesOrderNo(
   value: unknown,
@@ -34,6 +46,11 @@ export function renderSalesOrderNo(
             'modules.pages.salesOrder.referencedBySalesOutbound',
           ),
           referenced: Boolean(record.referencedBySalesOutbound),
+        },
+        {
+          key: 'sales-return',
+          label: i18next.t('modules.pages.salesOrder.referencedBySalesReturn'),
+          referenced: Boolean(record.referencedBySalesReturn),
         },
       ],
     }),

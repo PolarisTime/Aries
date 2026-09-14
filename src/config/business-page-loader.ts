@@ -44,6 +44,9 @@ const businessPageLoaders = {
   'sales-outbound': async () =>
     (await import('@/config/business-pages/sales-operations'))
       .salesOperationsPageConfigs,
+  'sales-return': async () =>
+    (await import('@/config/business-pages/sales-operations'))
+      .salesOperationsPageConfigs,
   'freight-bill': async () =>
     (await import('@/config/business-pages/freight-operations'))
       .freightOperationsPageConfigs,

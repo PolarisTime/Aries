@@ -7,6 +7,7 @@ const lineItemModules = [
   'purchase-inbound',
   'sales-order',
   'sales-outbound',
+  'sales-return',
   'freight-bill',
   'freight-statement',
 ] as const satisfies readonly ModuleKey[]
@@ -16,6 +17,7 @@ const amountModules = [
   'purchase-inbound',
   'sales-order',
   'sales-outbound',
+  'sales-return',
 ] as const satisfies readonly ModuleKey[]
 
 const draftStatusByModule = [
@@ -23,6 +25,7 @@ const draftStatusByModule = [
   ['purchase-inbound', '草稿'],
   ['sales-order', '草稿'],
   ['sales-outbound', '草稿'],
+  ['sales-return', '草稿'],
   ['freight-bill', '草稿'],
   ['freight-statement', '草稿'],
   ['customer-statement', '待确认'],

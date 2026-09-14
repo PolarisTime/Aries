@@ -3,6 +3,7 @@ const SNOWFLAKE_BUSINESS_NO_MODULES = new Set([
   'purchase-inbound',
   'sales-order',
   'sales-outbound',
+  'sales-return',
   'freight-bill',
   'customer-statement',
   'freight-statement',

@@ -42,6 +42,16 @@ export const operationPageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
+    key: 'sales-return',
+    title: '销售退货单',
+    menuKey: '/sales-return',
+    view: 'business-grid',
+    icon: 'RollbackOutlined',
+    menuParent: 'sales',
+    moduleKey: 'sales-return',
+    searchable: true,
+  },
+  {
     key: 'freight-bill',
     title: '物流单',
     menuKey: '/freight-bill',

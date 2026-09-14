@@ -140,6 +140,10 @@ export function toEditorDraft(
       const record = mainFlowDetailRecordSchemas[moduleKey].parse(detail)
       return { ...record, items: record.items.map((item) => ({ ...item })) }
     }
+    case 'sales-return': {
+      const record = mainFlowDetailRecordSchemas[moduleKey].parse(detail)
+      return { ...record, items: record.items.map((item) => ({ ...item })) }
+    }
     case 'freight-bill': {
       const record = mainFlowDetailRecordSchemas[moduleKey].parse(detail)
       return { ...record, items: record.items.map((item) => ({ ...item })) }

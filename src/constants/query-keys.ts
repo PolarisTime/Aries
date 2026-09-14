@@ -54,6 +54,12 @@ export const QUERY_KEYS = {
     ['business-page-config', moduleKey] as const,
   purchaseOrderPickupList: (orderIds: string[]) =>
     ['purchase-order-pickup-list', orderIds.join(',')] as const,
+  salesOrderDocumentFlow: (orderId: string) =>
+    ['sales-order-document-flow', orderId] as const,
+  salesOutboundAuditedList: (page: number, pageSize: number) =>
+    ['sales-outbound-audited', page, pageSize] as const,
+  salesReturnCandidates: (salesOutboundId: string) =>
+    ['sales-return-candidates', salesOutboundId] as const,
   warehouseRecommendations: (params: {
     supplierId: string
     materialIds: readonly string[]

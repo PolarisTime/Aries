@@ -88,6 +88,26 @@ export const operationModuleEndpointContracts = {
       },
     },
   },
+  'sales-return': {
+    path: '/sales-returns',
+    nativeFilterKeys: [
+      'keyword',
+      'customerId',
+      'customerName',
+      'projectId',
+      'projectName',
+      'salesOrderId',
+      'status',
+      'startDate',
+      'endDate',
+    ],
+    dateRangeMapping: {
+      returnDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
   'freight-bill': {
     path: '/freight-bills',
     nativeFilterKeys: [

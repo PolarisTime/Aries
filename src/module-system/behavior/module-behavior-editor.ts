@@ -239,6 +239,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     'purchase-inbound',
     'sales-order',
     'sales-outbound',
+    'sales-return',
     'freight-bill',
     'customer-statement',
     'freight-statement',
@@ -246,6 +247,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   const customerProjectSnapshotModules = new Set<ModuleKey>([
     'sales-order',
     'sales-outbound',
+    'sales-return',
     'customer-statement',
   ])
 
@@ -389,6 +391,9 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     defaultDraftValues: () => ({ outboundDate: currentDateTime() }),
     parentImportedEditableFields: ['outboundDate', 'remark'],
     parentImportedItemEditableColumns: ['actualWeightTon', 'weighWeightTon'],
+  })
+  registerModuleBehavior('sales-return', {
+    defaultDraftValues: () => ({ returnDate: currentDate() }),
   })
   const operatorNameModules = [
     'receipt',

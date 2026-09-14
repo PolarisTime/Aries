@@ -7,6 +7,8 @@ import { isModuleKey } from '@/module-system/core/module-key'
 import type { ModuleRecord } from '@/types/module-page'
 import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { PurchaseOrderPickupListAction } from '@/views/modules/components/PurchaseOrderPickupListAction'
+import { SalesOrderDocumentFlowAction } from '@/views/modules/components/SalesOrderDocumentFlowAction'
+import { SalesReturnSourceImportAction } from '@/views/modules/components/SalesReturnSourceImportAction'
 
 export interface ModuleGridToolbarExtraProps {
   selectedRowKeys: string[]
@@ -32,6 +34,14 @@ const MODULE_GRID_TOOLBAR_EXTRAS = {
     selectedRowKeys.length ? (
       <PurchaseOrderPickupListAction selectedOrderIds={selectedRowKeys} />
     ) : null,
+  'sales-order': ({ selectedRows }: ModuleGridToolbarExtraProps) => (
+    <SalesOrderDocumentFlowAction selectedRows={selectedRows} />
+  ),
+  'sales-return': ({ refreshModuleQueries }: ModuleGridToolbarExtraProps) => (
+    <SalesReturnSourceImportAction
+      refreshModuleQueries={refreshModuleQueries}
+    />
+  ),
 } satisfies Partial<
   Record<ModuleKey, (props: ModuleGridToolbarExtraProps) => React.ReactNode>
 >
