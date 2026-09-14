@@ -70,6 +70,8 @@ export const QUERY_KEYS = {
   // Master data
   masterDataCode: (moduleKey: string) =>
     ['master-data-code', moduleKey] as const,
+  materialHistories: (materialId: string, page: number, pageSize: number) =>
+    ['material-histories', materialId, page, pageSize] as const,
   masterOptions: {
     carrier: ['master-options', 'carrier'] as const,
     customer: ['master-options', 'customer'] as const,

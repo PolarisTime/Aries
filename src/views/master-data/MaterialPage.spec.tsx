@@ -29,6 +29,10 @@ vi.mock('@/api/system/runtime-config', () => ({
 vi.mock('@/api/master/materials', () => ({
   downloadMaterialImportTemplate: vi.fn(),
   importMaterialFile: vi.fn(),
+  previewMaterialImportFile: vi.fn(),
+  rollbackMaterialImportBatch: vi.fn(),
+  fetchMaterialHistories: vi.fn(),
+  diffMaterialSnapshots: vi.fn(() => []),
 }))
 vi.mock('@/views/modules/components/ModuleAttachmentModal', () => ({
   ModuleAttachmentModal: () => null,

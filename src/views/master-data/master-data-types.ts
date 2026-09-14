@@ -54,6 +54,9 @@ export type MasterFormValues = Record<string, unknown>
 
 export interface MasterToolbarExtraContext {
   refresh: () => void
+  /** 当前单选记录；用于版本历史等仅单选可用的模块专属操作。 */
+  selectedRecord?: LegacyModuleRecord
+  selectedCount: number
 }
 
 export interface MasterDataPageSpec {

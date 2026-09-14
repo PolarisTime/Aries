@@ -75,10 +75,17 @@ export const ENDPOINTS = {
 
   // Materials (pure actions → singular)
   MATERIAL_IMPORTS: '/material-imports',
+  MATERIAL_IMPORT_PREVIEWS: '/material-imports/previews',
   MATERIAL_EXPORTS: '/material-exports',
   MATERIALS_TEMPLATE: '/materials/template',
   MATERIAL_GRADES: '/materials/grades',
   MATERIAL_BRANDS: '/materials/brands',
+  MATERIAL_HISTORIES: (id: string | number) =>
+    `/materials/${pathSegment(id)}/histories`,
+
+  // Import batches (rollback is a rollbacks sub-resource)
+  IMPORT_BATCH_ROLLBACKS: (importBatchNo: string) =>
+    `/import-batches/${pathSegment(importBatchNo)}/rollbacks`,
 
   // Master data code issuances
   MASTER_DATA_CODE_ISSUANCES: '/master-data/code-issuances',

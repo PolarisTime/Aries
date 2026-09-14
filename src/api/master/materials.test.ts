@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ZodType } from 'zod'
 
 const { apiGetMock, apiPostMock, fetchGeneratedMasterDataCodeMock } =
   vi.hoisted(() => ({
@@ -17,7 +18,15 @@ vi.mock('@/api/master/master-data-codes', () => ({
   fetchGeneratedMasterDataCode: fetchGeneratedMasterDataCodeMock,
 }))
 
-import { createExpenseMaterial, fetchMaterialSearch } from './materials'
+import { parseApiContract } from '@/api/core/api-contract'
+import {
+  createExpenseMaterial,
+  diffMaterialSnapshots,
+  fetchMaterialHistories,
+  fetchMaterialSearch,
+  previewMaterialImportFile,
+  rollbackMaterialImportBatch,
+} from './materials'
 
 const emptyPage = {
   content: [],
@@ -104,5 +113,241 @@ describe('快捷新增附加费用主数据', () => {
       '签发失败',
     )
     expect(apiPostMock).not.toHaveBeenCalled()
+  })
+})
+
+function parseWithSchema(schema: unknown, value: unknown) {
+  return parseApiContract(schema as ZodType, value, 'test')
+}
+
+describe('商品版本历史 schema 解析', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+    apiPostMock.mockReset()
+  })
+
+  it('解析分页并保持雪花 ID 为字符串', async () => {
+    const rawHistoryPage = {
+      content: [
+        {
+          id: '100000000000000001',
+          materialId: '100000000000000002',
+          changeSource: 'IMPORT',
+          changeType: 'UPDATED',
+          before: {
+            id: '100000000000000002',
+            materialCode: 'M-1',
+            brand: '宝钢',
+            pieceWeightTon: '1.250',
+            unitPrice: '10.00',
+          },
+          after: {
+            id: '100000000000000002',
+            materialCode: 'M-1',
+            brand: '沙钢',
+            pieceWeightTon: 1.5,
+          },
+          importBatchNo: '888000000000000001',
+          remark: null,
+          changedBy: '900000000000000009',
+          changedAt: '2026-09-14T10:00:00+08:00',
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 10,
+      hasMore: false,
+    }
+    apiGetMock.mockImplementation((_url: string, schema: unknown) =>
+      Promise.resolve(parseWithSchema(schema, rawHistoryPage)),
+    )
+
+    const result = await fetchMaterialHistories('100000000000000002', 2, 10)
+
+    expect(apiGetMock.mock.calls[0][0]).toBe(
+      '/materials/100000000000000002/histories',
+    )
+    expect(apiGetMock.mock.calls[0][2].params).toMatchObject({
+      page: 1,
+      size: 10,
+      sortBy: 'id',
+      direction: 'desc',
+    })
+    expect(result.content[0]).toMatchObject({
+      id: '100000000000000001',
+      materialId: '100000000000000002',
+      changeSource: 'IMPORT',
+      changeType: 'UPDATED',
+      importBatchNo: '888000000000000001',
+      changedBy: '900000000000000009',
+    })
+    expect(result.content[0].before?.id).toBe('100000000000000002')
+    expect(result.content[0].after?.brand).toBe('沙钢')
+  })
+
+  it('快照缺失或非对象时降级为 null', async () => {
+    apiGetMock.mockImplementation((_url: string, schema: unknown) =>
+      Promise.resolve(
+        parseWithSchema(schema, {
+          content: [
+            {
+              id: '1',
+              materialId: '2',
+              changeSource: 'MANUAL',
+              changeType: 'CREATED',
+              before: null,
+              after: 'unexpected',
+              importBatchNo: null,
+              remark: null,
+              changedBy: null,
+              changedAt: null,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+          currentPage: 0,
+          pageSize: 10,
+          hasMore: false,
+        }),
+      ),
+    )
+
+    const result = await fetchMaterialHistories('2')
+
+    expect(result.content[0].before).toBeNull()
+    expect(result.content[0].after).toBeNull()
+  })
+})
+
+describe('商品导入差异预览 schema 解析', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+    apiPostMock.mockReset()
+  })
+
+  it('解析每行结果与字段差异，materialId 归一化为字符串', async () => {
+    const rawPreview = {
+      totalRows: 2,
+      createdCount: 1,
+      updatedCount: 1,
+      skippedCount: 0,
+      failedCount: 0,
+      rows: [
+        {
+          rowNumber: 1,
+          materialCode: null,
+          brand: '宝钢',
+          material: '螺纹钢',
+          spec: 'HRB400',
+          length: '9m',
+          outcome: 'CREATED',
+          materialId: null,
+          changes: [
+            { field: 'brand', label: '品牌', before: null, after: '宝钢' },
+          ],
+          reason: null,
+        },
+        {
+          rowNumber: 2,
+          materialCode: 'M-1',
+          brand: '沙钢',
+          material: '螺纹钢',
+          spec: 'HRB400',
+          length: '9m',
+          outcome: 'UPDATED',
+          materialId: '100000000000000002',
+          changes: [
+            { field: 'brand', label: '品牌', before: '宝钢', after: '沙钢' },
+          ],
+          reason: null,
+        },
+      ],
+    }
+    apiPostMock.mockImplementation((_url: string, schema: unknown) =>
+      Promise.resolve(parseWithSchema(schema, rawPreview)),
+    )
+
+    const result = await previewMaterialImportFile(
+      new File(['x'], 'materials.xlsx'),
+    )
+
+    expect(apiPostMock.mock.calls[0][0]).toBe('/material-imports/previews')
+    expect(result.rows[0].changes).toEqual([
+      { field: 'brand', label: '品牌', before: null, after: '宝钢' },
+    ])
+    expect(result.rows[1].materialId).toBe('100000000000000002')
+    expect(result.createdCount).toBe(1)
+    expect(result.updatedCount).toBe(1)
+  })
+})
+
+describe('导入批次回滚 schema 解析', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+    apiPostMock.mockReset()
+  })
+
+  it('调用 rollbacks 子资源并映射 totalRows', async () => {
+    apiPostMock.mockImplementation((_url: string, schema: unknown) =>
+      Promise.resolve(
+        parseWithSchema(schema, {
+          importBatchNo: '888',
+          totalRows: 5,
+          createdRolledBack: 2,
+          updatedRestored: 3,
+          missing: 0,
+        }),
+      ),
+    )
+
+    const result = await rollbackMaterialImportBatch('888')
+
+    expect(apiPostMock.mock.calls[0][0]).toBe('/import-batches/888/rollbacks')
+    expect(result).toEqual({
+      importBatchNo: '888',
+      totalRows: 5,
+      createdRolledBack: 2,
+      updatedRestored: 3,
+      missing: 0,
+    })
+  })
+
+  it('兼容旧字段名 total', async () => {
+    apiPostMock.mockImplementation((_url: string, schema: unknown) =>
+      Promise.resolve(
+        parseWithSchema(schema, {
+          importBatchNo: '999',
+          total: 4,
+          createdRolledBack: 0,
+          updatedRestored: 0,
+          missing: 0,
+        }),
+      ),
+    )
+
+    const result = await rollbackMaterialImportBatch('999')
+
+    expect(result.totalRows).toBe(4)
+  })
+})
+
+describe('diffMaterialSnapshots', () => {
+  it('只返回发生变化的字段', () => {
+    expect(
+      diffMaterialSnapshots(
+        { brand: '宝钢', materialCode: 'M-1' },
+        { brand: '沙钢', materialCode: 'M-1' },
+      ),
+    ).toEqual([{ field: 'brand', before: '宝钢', after: '沙钢' }])
+  })
+
+  it('新建时列出 after 的非空字段，删除时列出 before', () => {
+    expect(diffMaterialSnapshots(null, { brand: '宝钢', remark: '' })).toEqual([
+      { field: 'brand', before: null, after: '宝钢' },
+    ])
+    expect(diffMaterialSnapshots({ brand: '宝钢' }, null)).toEqual([
+      { field: 'brand', before: '宝钢', after: null },
+    ])
   })
 })

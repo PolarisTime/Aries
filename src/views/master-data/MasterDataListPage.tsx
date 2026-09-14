@@ -49,6 +49,8 @@ export function MasterDataListPage({ spec }: { spec: MasterDataPageSpec }) {
             onRefresh={page.handleRefresh}
             toolbarExtra={spec.renderToolbarExtra?.({
               refresh: page.handleRefresh,
+              selectedRecord: page.singleSelected,
+              selectedCount: page.selectedRowKeys.length,
             })}
           />
           <MasterDataTable

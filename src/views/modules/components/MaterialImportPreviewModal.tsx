@@ -3,29 +3,29 @@ import { Button, Modal, Segmented, Space, Table, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
-  MaterialImportOutcome,
-  MaterialImportResponse,
-  MaterialImportRowResult,
+  MaterialImportPreviewOutcome,
+  MaterialImportPreviewResponse,
+  MaterialImportPreviewRow,
 } from '@/api/master/materials'
-import { MaterialBatchRollbackButton } from '@/views/modules/components/MaterialBatchRollbackButton'
+import { MaterialFieldChanges } from './MaterialFieldChanges'
 
 interface Props {
   open: boolean
-  result: MaterialImportResponse | null
-  /** 后端当前批次数只出现在历史记录中；提供时展示批次回滚入口。 */
-  importBatchNo?: string | null
-  onRollback?: (importBatchNo: string) => Promise<void> | void
-  onClose: () => void
+  preview: MaterialImportPreviewResponse | null
+  fileName?: string
+  importing: boolean
+  onCancel: () => void
+  onConfirm: () => void
 }
 
-const OUTCOME_TAG_COLOR: Record<MaterialImportOutcome, string> = {
+const OUTCOME_TAG_COLOR: Record<MaterialImportPreviewOutcome, string> = {
   CREATED: 'success',
   UPDATED: 'processing',
   SKIPPED: 'default',
   FAILED: 'error',
 }
 
-type OutcomeFilter = 'ALL' | MaterialImportOutcome
+type OutcomeFilter = 'ALL' | MaterialImportPreviewOutcome
 
 const OUTCOME_FILTERS: readonly OutcomeFilter[] = [
   'ALL',
@@ -35,23 +35,26 @@ const OUTCOME_FILTERS: readonly OutcomeFilter[] = [
   'FAILED',
 ]
 
-export function MaterialImportResultModal({
+/** 导入前差异预览：展示每行新建/更新/跳过/失败与字段差异，确认后再执行正式导入。 */
+export function MaterialImportPreviewModal({
   open,
-  result,
-  importBatchNo,
-  onRollback,
-  onClose,
+  preview,
+  fileName,
+  importing,
+  onCancel,
+  onConfirm,
 }: Props) {
   const { t } = useTranslation()
   const [filter, setFilter] = useState<OutcomeFilter>('ALL')
-  const rows = useMemo(() => result?.rows ?? [], [result])
+
+  const rows = useMemo(() => preview?.rows ?? [], [preview])
   const filteredRows = useMemo(
     () =>
       filter === 'ALL' ? rows : rows.filter((row) => row.outcome === filter),
     [rows, filter],
   )
 
-  const outcomeLabel = (outcome: MaterialImportOutcome) => {
+  const outcomeLabel = (outcome: MaterialImportPreviewOutcome) => {
     switch (outcome) {
       case 'CREATED':
         return t('modules.pages.material.importOutcomeCreated')
@@ -72,113 +75,112 @@ export function MaterialImportResultModal({
     value,
   }))
 
-  const columns: TableProps<MaterialImportRowResult>['columns'] = [
+  const columns: TableProps<MaterialImportPreviewRow>['columns'] = [
     {
       title: t('modules.pages.material.importColumnRowNumber'),
       dataIndex: 'rowNumber',
-      width: 64,
+      width: 56,
     },
     {
       title: t('modules.pages.material.materialCode'),
       dataIndex: 'materialCode',
-      width: 160,
+      width: 150,
       render: (value: string | null) => value ?? '-',
     },
     {
       title: t('modules.pages.material.brand'),
       dataIndex: 'brand',
-      width: 96,
+      width: 90,
       render: (value: string | null) => value ?? '-',
     },
     {
       title: t('modules.pages.material.material'),
       dataIndex: 'material',
-      width: 96,
-      render: (value: string | null) => value ?? '-',
-    },
-    {
-      title: t('modules.pages.material.spec'),
-      dataIndex: 'spec',
-      width: 72,
-      render: (value: string | null) => value ?? '-',
-    },
-    {
-      title: t('modules.pages.material.length'),
-      dataIndex: 'length',
-      width: 72,
+      width: 90,
       render: (value: string | null) => value ?? '-',
     },
     {
       title: t('modules.pages.material.importColumnOutcome'),
       dataIndex: 'outcome',
-      width: 80,
-      render: (outcome: MaterialImportOutcome) => (
+      width: 76,
+      render: (outcome: MaterialImportPreviewOutcome) => (
         <Tag color={OUTCOME_TAG_COLOR[outcome]}>{outcomeLabel(outcome)}</Tag>
       ),
     },
     {
-      title: t('modules.pages.material.importColumnReason'),
-      dataIndex: 'reason',
-      render: (reason: string | null) => reason ?? '-',
+      title: t('modules.pages.material.importPreviewColumnChanges'),
+      dataIndex: 'changes',
+      render: (_: unknown, row: MaterialImportPreviewRow) =>
+        row.changes.length ? (
+          <MaterialFieldChanges changes={row.changes} />
+        ) : (
+          <Typography.Text type="secondary">
+            {row.reason ?? t('modules.pages.material.importPreviewNoChange')}
+          </Typography.Text>
+        ),
     },
   ]
 
   const handleClose = () => {
     setFilter('ALL')
-    onClose()
+    onCancel()
   }
 
   return (
     <Modal
       open={open}
       onCancel={handleClose}
+      maskClosable={false}
       footer={
-        <Button type="primary" onClick={handleClose}>
-          {t('common.close')}
-        </Button>
+        <Space>
+          <Button disabled={importing} onClick={handleClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="primary"
+            loading={importing}
+            disabled={!rows.length}
+            onClick={onConfirm}
+          >
+            {t('modules.pages.material.importPreviewConfirm')}
+          </Button>
+        </Space>
       }
-      title={t('modules.pages.material.importResultTitle')}
-      width={880}
+      title={
+        fileName
+          ? `${t('modules.pages.material.importPreviewTitle')} · ${fileName}`
+          : t('modules.pages.material.importPreviewTitle')
+      }
+      width={920}
       destroyOnHidden
     >
-      {result ? (
+      {preview ? (
         <div className="flex flex-col gap-3">
-          {importBatchNo ? (
-            <Space wrap>
-              <Typography.Text>
-                {t('modules.pages.material.importBatchNo')}: {importBatchNo}
-              </Typography.Text>
-              <MaterialBatchRollbackButton
-                importBatchNo={importBatchNo}
-                onRolledBack={
-                  onRollback ? () => onRollback(importBatchNo) : undefined
-                }
-              />
-            </Space>
-          ) : null}
           <Typography.Paragraph
-            type={result.failedCount > 0 ? 'warning' : undefined}
+            type={preview.failedCount > 0 ? 'warning' : undefined}
           >
-            {t('modules.pages.material.importSuccessSummary', {
-              totalRows: result.totalRows,
-              successCount: result.successCount,
-              createdCount: result.createdCount,
-              updatedCount: result.updatedCount,
-              skippedCount: result.skippedCount,
-              failedCount: result.failedCount,
+            {t('modules.pages.material.importPreviewSummary', {
+              totalRows: preview.totalRows,
+              createdCount: preview.createdCount,
+              updatedCount: preview.updatedCount,
+              skippedCount: preview.skippedCount,
+              failedCount: preview.failedCount,
             })}
           </Typography.Paragraph>
           <Segmented
-            aria-label={t('modules.pages.material.importResultTitle')}
+            aria-label={t('modules.pages.material.importPreviewTitle')}
             value={filter}
             options={filterOptions}
             onChange={(value) => setFilter(String(value) as OutcomeFilter)}
           />
-          <Table<MaterialImportRowResult>
+          <Table<MaterialImportPreviewRow>
             rowKey="rowNumber"
             size="small"
             columns={columns}
             dataSource={filteredRows}
+            locale={{
+              emptyText: t('modules.pages.material.importPreviewEmpty'),
+            }}
             pagination={{ pageSize: 10, showSizeChanger: false }}
           />
         </div>

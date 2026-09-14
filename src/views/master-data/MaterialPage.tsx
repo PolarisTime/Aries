@@ -1,3 +1,4 @@
+import { Space } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
@@ -6,6 +7,7 @@ import {
   materialGradeOptions,
 } from '@/module-system/core/module-option-resolvers'
 import { asString } from '@/utils/type-narrowing'
+import { MaterialHistoryAction } from '@/views/modules/components/MaterialHistoryAction'
 import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { MasterDataListPage } from './MasterDataListPage'
 import type {
@@ -249,13 +251,22 @@ export function MaterialPage() {
         'unitPrice',
         'remark',
       ],
-      renderToolbarExtra: ({ refresh }) => (
-        <MaterialImportActions
-          onImported={() => {
-            refresh()
-            return Promise.resolve()
-          }}
-        />
+      renderToolbarExtra: ({ refresh, selectedRecord }) => (
+        <Space wrap>
+          <MaterialImportActions
+            onImported={() => {
+              refresh()
+              return Promise.resolve()
+            }}
+          />
+          <MaterialHistoryAction
+            selectedRecord={selectedRecord}
+            onRolledBack={() => {
+              refresh()
+              return Promise.resolve()
+            }}
+          />
+        </Space>
       ),
       detailFields: [
         {
