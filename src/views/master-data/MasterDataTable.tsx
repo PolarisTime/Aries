@@ -9,6 +9,7 @@ import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
+import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 import { MasterInlineDetail } from './MasterInlineDetail'
 import type { MasterDataPageSpec } from './master-data-types'
 import { formatMasterValue } from './master-data-utils'
@@ -81,6 +82,7 @@ export function MasterDataTable({
   onRetry,
 }: Props) {
   const { t } = useTranslation()
+  const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
 
   const visibleColumns: ColumnsType<LegacyModuleRecord> = useMemo(() => {
     const dataColumns: ColumnsType<LegacyModuleRecord> = spec.columns.flatMap(
@@ -171,43 +173,45 @@ export function MasterDataTable({
 
   return (
     <>
-      <Table<LegacyModuleRecord>
-        rowKey={(record) => String(record.id)}
-        columns={visibleColumns}
-        dataSource={records}
-        loading={isLoading || isFetching}
-        pagination={false}
-        rowSelection={{
-          selectedRowKeys,
-          preserveSelectedRowKeys: true,
-          onChange: (keys: Key[]) => onSelectionChange(keys.map(String)),
-        }}
-        rowClassName={(record) =>
-          (spec.rowHighlightStatuses ?? []).includes(asString(record.status))
-            ? 'table-row-emphasis'
-            : ''
-        }
-        expandable={{
-          expandedRowKeys,
-          showExpandColumn: false,
-          expandedRowRender: (record) => (
-            <MasterInlineDetail spec={spec} recordId={String(record.id)} />
-          ),
-          onExpand: (expanded, record) => {
-            const recordKey = String(record.id)
-            onExpandedRowKeysChange((previous) =>
-              expanded
-                ? [...previous, recordKey]
-                : previous.filter((key) => key !== recordKey),
-            )
-          },
-        }}
-        onRow={(record) => ({
-          onClick: () => onToggleRecordSelected(record),
-          onDoubleClick: () => onRecordDoubleClick(record),
-        })}
-        scroll={{ x: 'max-content' }}
-      />
+      <div ref={shellRef} className="module-table-shell" style={shellStyle}>
+        <Table<LegacyModuleRecord>
+          rowKey={(record) => String(record.id)}
+          columns={visibleColumns}
+          dataSource={records}
+          loading={isLoading || isFetching}
+          pagination={false}
+          rowSelection={{
+            selectedRowKeys,
+            preserveSelectedRowKeys: true,
+            onChange: (keys: Key[]) => onSelectionChange(keys.map(String)),
+          }}
+          rowClassName={(record) =>
+            (spec.rowHighlightStatuses ?? []).includes(asString(record.status))
+              ? 'table-row-emphasis'
+              : ''
+          }
+          expandable={{
+            expandedRowKeys,
+            showExpandColumn: false,
+            expandedRowRender: (record) => (
+              <MasterInlineDetail spec={spec} recordId={String(record.id)} />
+            ),
+            onExpand: (expanded, record) => {
+              const recordKey = String(record.id)
+              onExpandedRowKeysChange((previous) =>
+                expanded
+                  ? [...previous, recordKey]
+                  : previous.filter((key) => key !== recordKey),
+              )
+            },
+          }}
+          onRow={(record) => ({
+            onClick: () => onToggleRecordSelected(record),
+            onDoubleClick: () => onRecordDoubleClick(record),
+          })}
+          scroll={{ x: 'max-content', y: scrollY }}
+        />
+      </div>
       <ModuleTablePagination
         total={total}
         currentPage={page}

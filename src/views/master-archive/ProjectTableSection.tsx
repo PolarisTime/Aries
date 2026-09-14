@@ -11,6 +11,7 @@ import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
+import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 import { ProjectInlineDetail } from './ProjectInlineDetail'
 import type { ProjectColumnKey } from './project-page-columns'
 import {
@@ -65,6 +66,7 @@ export function ProjectTableSection({
   onRetry,
 }: ProjectTableSectionProps) {
   const { t } = useTranslation()
+  const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
 
   const overviewItems = useMemo(() => {
     const rows = selectedRows.length ? selectedRows : records
@@ -201,41 +203,43 @@ export function ProjectTableSection({
 
   return (
     <>
-      <Table<ProjectListRow>
-        rowKey={(record) => String(record.id)}
-        columns={visibleColumns}
-        dataSource={records}
-        loading={isLoading || isFetching}
-        pagination={false}
-        rowSelection={{
-          selectedRowKeys,
-          preserveSelectedRowKeys: true,
-          onChange: onSelectionChange,
-        }}
-        rowClassName={(record) =>
-          asString(record.status) === '禁用' ? 'table-row-emphasis' : ''
-        }
-        expandable={{
-          expandedRowKeys,
-          showExpandColumn: false,
-          expandedRowRender: (record) => (
-            <ProjectInlineDetail recordId={String(record.id)} />
-          ),
-          onExpand: (expanded, record) => {
-            const recordKey = String(record.id)
-            onExpandedRowKeysChange((previous) =>
-              expanded
-                ? [...previous, recordKey]
-                : previous.filter((key) => key !== recordKey),
-            )
-          },
-        }}
-        onRow={(record) => ({
-          onClick: () => onToggleRecordSelected(record),
-          onDoubleClick: () => onRecordDoubleClick(record),
-        })}
-        scroll={{ x: 'max-content' }}
-      />
+      <div ref={shellRef} className="module-table-shell" style={shellStyle}>
+        <Table<ProjectListRow>
+          rowKey={(record) => String(record.id)}
+          columns={visibleColumns}
+          dataSource={records}
+          loading={isLoading || isFetching}
+          pagination={false}
+          rowSelection={{
+            selectedRowKeys,
+            preserveSelectedRowKeys: true,
+            onChange: onSelectionChange,
+          }}
+          rowClassName={(record) =>
+            asString(record.status) === '禁用' ? 'table-row-emphasis' : ''
+          }
+          expandable={{
+            expandedRowKeys,
+            showExpandColumn: false,
+            expandedRowRender: (record) => (
+              <ProjectInlineDetail recordId={String(record.id)} />
+            ),
+            onExpand: (expanded, record) => {
+              const recordKey = String(record.id)
+              onExpandedRowKeysChange((previous) =>
+                expanded
+                  ? [...previous, recordKey]
+                  : previous.filter((key) => key !== recordKey),
+              )
+            },
+          }}
+          onRow={(record) => ({
+            onClick: () => onToggleRecordSelected(record),
+            onDoubleClick: () => onRecordDoubleClick(record),
+          })}
+          scroll={{ x: 'max-content', y: scrollY }}
+        />
+      </div>
       <ModuleTablePagination
         total={total}
         currentPage={page}

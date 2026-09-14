@@ -1,6 +1,6 @@
 import { parseTableColumnWidth } from '@/utils/table-column-width'
 
-const MIN_TABLE_BODY_SCROLL_Y = 120
+export const MIN_TABLE_BODY_SCROLL_Y = 120
 
 export function computeTableBodyScrollY(
   containerHeight: number,

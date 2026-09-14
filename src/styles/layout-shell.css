@@ -1171,11 +1171,12 @@
 }
 
 .finance-overview-table {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
   padding: 0 16px 16px;
-  overflow: auto;
-  scrollbar-gutter: stable;
+  overflow: hidden;
 }
 
 .cash-ledger-page {
