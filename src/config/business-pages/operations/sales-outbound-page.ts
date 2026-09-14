@@ -16,6 +16,7 @@ import {
 } from '../shared/filter-labels'
 import { actionSet, statusMap } from '../shared/shared'
 import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-utils'
+import { renderDerivedQuantity } from './sales-order-rules'
 import {
   buildSalesOutboundOverview,
   buildSalesOutboundParentFilters,
@@ -24,51 +25,66 @@ import {
 } from './sales-outbound-rules'
 
 // 销售出库明细列：复用采购基础列（商品编码、批号可见），无仓库前置要求。
-const salesOutboundItemColumnConfig: ModuleItemColumnConfig = {
-  include: [
-    'materialCode',
-    'brand',
-    'category',
-    'material',
-    'spec',
-    'length',
-    'unit',
-    'warehouseName',
-    'batchNo',
-    'quantity',
-    'quantityUnit',
-    'pieceWeightTon',
-    'weightTon',
-    'unitPrice',
-    'amount',
-  ],
-  requiredFieldKeys: [
-    'materialCode',
-    'brand',
-    'category',
-    'material',
-    'spec',
-    'unit',
-    'warehouseName',
-    'quantity',
-    'pieceWeightTon',
-    'weightTon',
-    'unitPrice',
-    'amount',
-  ],
-  projections: {
-    saveResult: [
+// 出库剩余可出数量为导入销售订单时后端返回的只读派生列。
+type SalesOutboundPrivateItemColumnKey = 'outboundRemainingQuantity'
+
+const salesOutboundItemColumnConfig: ModuleItemColumnConfig<SalesOutboundPrivateItemColumnKey> =
+  {
+    include: [
+      'materialCode',
       'brand',
+      'category',
       'material',
       'spec',
       'length',
+      'unit',
+      'warehouseName',
+      'batchNo',
       'quantity',
+      'quantityUnit',
+      'pieceWeightTon',
+      'weightTon',
+      'unitPrice',
+      'amount',
+      'outboundRemainingQuantity',
+    ],
+    requiredFieldKeys: [
+      'materialCode',
+      'brand',
+      'category',
+      'material',
+      'spec',
+      'unit',
+      'warehouseName',
+      'quantity',
+      'pieceWeightTon',
       'weightTon',
       'unitPrice',
       'amount',
     ],
-  },
-}
+    privateColumns: [
+      {
+        title: i18next.t('modules.columns.outboundRemainingQuantity'),
+        dataIndex: 'outboundRemainingQuantity',
+        width: 116,
+        align: 'right',
+        type: 'count',
+        render: renderDerivedQuantity,
+      },
+    ],
+    projections: {
+      saveResult: [
+        'brand',
+        'material',
+        'spec',
+        'length',
+        'quantity',
+        'weightTon',
+        'unitPrice',
+        'amount',
+      ],
+    },
+  }
 const salesOutboundItemColumnOutputs = resolveModuleItemColumnConfig(
   salesOutboundItemColumnConfig,
 )

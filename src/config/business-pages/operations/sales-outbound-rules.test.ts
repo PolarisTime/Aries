@@ -87,5 +87,66 @@ describe('sales-outbound-rules', () => {
       )
       expect(items[0].sourceNo).toBe('')
     })
+
+    it('有剩余可出数量时写入 remainingQuantity 并按件重换算重量', () => {
+      const items = transformSalesOrderItemsToOutboundItems(
+        recordWith({
+          orderNo: 'SO-9',
+          items: [
+            {
+              id: '1932500000000000005',
+              outboundRemainingQuantity: 4,
+              quantity: 10,
+              pieceWeightTon: 0.5,
+              unitPrice: 100,
+              weightTon: 5,
+              amount: 500,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({
+        sourceSalesOrderItemId: '1932500000000000005',
+        remainingQuantity: 4,
+        remainingWeightTon: 2,
+        remainingAmount: 200,
+      })
+    })
+
+    it('剩余可出数量为 0 时仍保留明细交由导入逻辑过滤', () => {
+      const items = transformSalesOrderItemsToOutboundItems(
+        recordWith({
+          items: [
+            {
+              id: '1932500000000000006',
+              outboundRemainingQuantity: 0,
+              quantity: 3,
+              pieceWeightTon: 1,
+              unitPrice: 10,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({ remainingQuantity: 0 })
+    })
+
+    it('缺少剩余量字段时保持整单快照不追加派生字段', () => {
+      const items = transformSalesOrderItemsToOutboundItems(
+        recordWith({
+          items: [
+            {
+              id: '1932500000000000007',
+              quantity: 8,
+              pieceWeightTon: 2,
+              weightTon: 16,
+              unitPrice: 5,
+              amount: 80,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({ weightTon: 16, amount: 80 })
+      expect(items[0].remainingQuantity).toBeUndefined()
+    })
   })
 })

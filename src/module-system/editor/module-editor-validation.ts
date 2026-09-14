@@ -2,6 +2,7 @@ import i18next from 'i18next'
 import {
   isPurchaseInbound,
   isPurchaseOrder,
+  isSalesOutbound,
 } from '@/module-system/core/module-category'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { hasEditorValue } from '@/module-system/editor/module-editor-shared'
@@ -38,6 +39,13 @@ function getLineItemValidationMessages(
     if (isPurchaseOrder(moduleKey) && Number(item.quantity || 0) < 1) {
       messages.push(
         i18next.t('modules.validation.purchaseOrderQuantityMinimum', {
+          row: index + 1,
+        }),
+      )
+    }
+    if (isSalesOutbound(moduleKey) && Number(item.quantity || 0) < 1) {
+      messages.push(
+        i18next.t('modules.validation.salesOutboundQuantityMinimum', {
           row: index + 1,
         }),
       )

@@ -35,6 +35,7 @@ type SalesOrderDerivedItemColumnKey =
   | 'deliveredQuantity'
   | 'returnedQuantity'
   | 'deliveredNetQuantity'
+  | 'outboundRemainingQuantity'
 
 const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemColumnKey> =
   {
@@ -55,6 +56,7 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
       'deliveredQuantity',
       'returnedQuantity',
       'deliveredNetQuantity',
+      'outboundRemainingQuantity',
     ],
     requiredFieldKeys: [
       'warehouseName',
@@ -69,6 +71,8 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
       'unitPrice',
       'amount',
     ],
+    // 剩余可出库量仅在销售订单详情/出库来源候选中只读展示，销售订单编辑态默认隐藏。
+    hiddenByDefault: ['outboundRemainingQuantity'],
     // 商品编码列不再占用表格空间；材质列承载物料选择，选中后仍会同步填充
     // materialId/materialCode 及其它物料快照字段，满足后端请求契约。
     overrides: {
@@ -97,6 +101,14 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         title: i18next.t('modules.pages.salesOrder.colDeliveredNetQuantity'),
         dataIndex: 'deliveredNetQuantity',
         width: 110,
+        align: 'right',
+        type: 'count',
+        render: renderDerivedQuantity,
+      },
+      {
+        title: i18next.t('modules.columns.outboundRemainingQuantity'),
+        dataIndex: 'outboundRemainingQuantity',
+        width: 116,
         align: 'right',
         type: 'count',
         render: renderDerivedQuantity,

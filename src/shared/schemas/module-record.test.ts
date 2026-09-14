@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getMainFlowDetailResponseSchema,
   getMainFlowListResponseSchema,
+  salesOrderOutboundCandidatePageResponseSchema,
 } from './module-record'
 
 const purchaseOrder = {
@@ -155,5 +156,54 @@ describe('订单引用状态响应契约', () => {
       referencedByFreightBill: false,
       referencedBySalesOutbound: false,
     })
+  })
+})
+
+describe('销售订单明细出库剩余量契约', () => {
+  it('详情解析 outboundRemainingQuantity 并保持为数字', () => {
+    const parsed = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      items: [{ ...salesOrderItem, outboundRemainingQuantity: 7 }],
+      chargeItems: [],
+    })
+
+    expect(parsed.items[0].outboundRemainingQuantity).toBe(7)
+  })
+
+  it('字段缺省或为 null 时不影响解析', () => {
+    const missing = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+    const nullable = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      items: [{ ...salesOrderItem, outboundRemainingQuantity: null }],
+      chargeItems: [],
+    })
+
+    expect(missing.items[0].outboundRemainingQuantity).toBeUndefined()
+    expect(nullable.items[0].outboundRemainingQuantity).toBeNull()
+  })
+
+  it('出库来源候选分页同样接受 outboundRemainingQuantity 且雪花 ID 保持字符串', () => {
+    const parsed = salesOrderOutboundCandidatePageResponseSchema.parse({
+      content: [
+        {
+          ...salesOrder,
+          items: [{ ...salesOrderItem, outboundRemainingQuantity: 2 }],
+          chargeItems: [],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 30,
+      hasMore: false,
+    })
+
+    expect(parsed.content[0].items[0].outboundRemainingQuantity).toBe(2)
+    expect(parsed.content[0].id).toBe('2')
+    expect(parsed.content[0].items[0].id).toBe('21')
   })
 })

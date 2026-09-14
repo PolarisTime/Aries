@@ -976,6 +976,8 @@ export const enUS = {
         'Row {{row}}: quantity must be at least one quantity unit',
       purchaseInboundQuantityPositive:
         'Row {{row}}: inbound quantity must be greater than zero',
+      salesOutboundQuantityMinimum:
+        'Row {{row}}: outbound quantity must be at least one quantity unit',
       purchaseInboundMixedSource:
         'A purchase inbound can reference only one purchase order',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',
@@ -1016,6 +1018,7 @@ export const enUS = {
       salesOrderNo: 'SO No',
       inboundNo: 'Inbound No',
       outboundNo: 'Outbound No',
+      outboundRemainingQuantity: 'Remaining Outbound Qty',
       weighWeight: 'Weigh Weight',
       weightAdjustmentAmount: 'Weight Adj Amount',
       weightAdjustmentTon: 'Weight Adj(ton)',

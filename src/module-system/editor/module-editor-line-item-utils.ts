@@ -3,6 +3,7 @@ import { getBehaviorValue } from '@/module-system/behavior/module-behavior-regis
 import {
   isPurchaseModule,
   isPurchaseOrder,
+  isSalesOutbound,
 } from '@/module-system/core/module-category'
 import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-option-resolvers'
 import { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
@@ -219,7 +220,10 @@ export function getEditorItemMin(columnKey: string, moduleKey?: string) {
   if (['weightAdjustmentTon', 'weightAdjustmentAmount'].includes(columnKey)) {
     return undefined
   }
-  if (columnKey === 'quantity' && isPurchaseModule(moduleKey)) {
+  if (
+    columnKey === 'quantity' &&
+    (isPurchaseModule(moduleKey) || isSalesOutbound(moduleKey))
+  ) {
     return 1
   }
   if (isNumberEditorColumn(columnKey)) {

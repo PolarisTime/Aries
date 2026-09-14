@@ -390,7 +390,13 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior('sales-outbound', {
     defaultDraftValues: () => ({ outboundDate: currentDateTime() }),
     parentImportedEditableFields: ['outboundDate', 'remark'],
-    parentImportedItemEditableColumns: ['actualWeightTon', 'weighWeightTon'],
+    // 销售出库支持部分出库：导入销售订单后仍可编辑数量，
+    // 由 _maxImportQuantity（outboundRemainingQuantity + 本单已分配）做上限兜底。
+    parentImportedItemEditableColumns: [
+      'quantity',
+      'actualWeightTon',
+      'weighWeightTon',
+    ],
   })
   registerModuleBehavior('sales-return', {
     defaultDraftValues: () => ({ returnDate: currentDate() }),

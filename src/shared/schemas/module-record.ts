@@ -336,6 +336,11 @@ const salesOrderItemSchema = z.strictObject({
   unitPrice: nonNegativeDecimalSchema,
   amount: decimalSchema,
   originalWeightTon: nullableDecimalSchema,
+  /**
+   * 出库剩余可出数量：max(订单数量 − 未删除销售出库已占用数量, 0)。
+   * 销售订单详情与出库来源候选都会返回该明细字段；可空/可缺省。
+   */
+  outboundRemainingQuantity: optionalNonNegativeIntegerSchema,
   /** 只读派生数量：已交付 / 已退货 / 净交付（退货上线后由后端聚合返回）。 */
   deliveredQuantity: nonNegativeDecimalSchema.optional(),
   returnedQuantity: nonNegativeDecimalSchema.optional(),
