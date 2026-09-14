@@ -91,7 +91,9 @@ export function renderSalesOrderTotalWeight(
   return React.createElement(
     Tooltip,
     {
-      title: `原始计划 ${fmt(original)} 吨`,
+      title: i18next.t('modules.pages.salesOrder.originalPlannedWeight', {
+        weight: fmt(original),
+      }),
     },
     `${fmt(value)} ⚠️`,
   )

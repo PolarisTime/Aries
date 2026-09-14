@@ -171,7 +171,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 140,
     },
     {
-      title: '关联销售订单',
+      title: i18next.t('modules.pages.customerStatement.relatedSalesOrders'),
       dataIndex: 'sourceOrderNos',
       width: 180,
     },
@@ -252,7 +252,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'customerName',
     },
     {
-      label: '关联销售订单',
+      label: i18next.t('modules.pages.customerStatement.relatedSalesOrders'),
       key: 'sourceOrderNos',
     },
     {
@@ -329,7 +329,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
     },
     {
       key: 'sourceOrderNos',
-      label: '关联销售订单',
+      label: i18next.t('modules.pages.customerStatement.relatedSalesOrders'),
       type: 'input',
       disabled: true,
       row: 1,
@@ -452,11 +452,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
   },
   parentImport: {
     parentModuleKey: 'sales-order',
-    label: '销售订单',
+    label: i18next.t('modules.pages.customerStatement.parentImportLabel'),
     parentFieldKey: 'sourceOrderNos',
     parentDisplayFieldKey: 'orderNo',
     candidateStatementModuleKey: 'customer-statement',
-    buttonText: '选择销售订单生成明细',
+    buttonText: i18next.t('modules.pages.customerStatement.parentImportButton'),
     allowMultipleSelection: true,
     buildParentFilters: buildCustomerStatementParentFilters,
     validateBeforeOpen: validateCustomerStatementBeforeOpen,

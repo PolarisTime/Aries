@@ -152,7 +152,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
-      title: '仓库',
+      title: i18next.t('modules.columns.warehouse'),
       dataIndex: 'warehouseName',
       width: 140,
     },

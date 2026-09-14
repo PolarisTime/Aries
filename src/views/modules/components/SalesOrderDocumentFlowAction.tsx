@@ -9,6 +9,7 @@ import {
   Space,
   Spin,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import { useMemo, useState } from 'react'
@@ -79,6 +80,10 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
     [nodes],
   )
   const documentNo = String(target?.orderNo ?? '')
+  const canOpen = selectedRows.length === 1
+  const disabledReason = canOpen
+    ? undefined
+    : t('modules.pages.salesOrder.documentFlow.selectSingle')
 
   const handleOpen = () => {
     if (!targetId) {
@@ -89,18 +94,16 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
 
   return (
     <>
-      <Button
-        disabled={selectedRows.length !== 1}
-        icon={<ApartmentOutlined />}
-        onClick={handleOpen}
-        title={
-          selectedRows.length === 1
-            ? undefined
-            : t('modules.pages.salesOrder.documentFlow.selectSingle')
-        }
-      >
-        {t('modules.pages.salesOrder.documentFlow.action')}
-      </Button>
+      <Tooltip title={disabledReason}>
+        <Button
+          aria-disabled={!canOpen}
+          icon={<ApartmentOutlined />}
+          onClick={handleOpen}
+          style={canOpen ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
+        >
+          {t('modules.pages.salesOrder.documentFlow.action')}
+        </Button>
+      </Tooltip>
       <Drawer
         open={open}
         title={t('modules.pages.salesOrder.documentFlow.title', {
@@ -174,24 +177,29 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
                     'modules.pages.salesOrder.documentFlow.relationsEmpty',
                   ),
                 }}
-                renderItem={(link: SalesOrderDocumentFlowLink) => (
-                  <List.Item>
-                    <Space size="small" wrap>
-                      {link.fromType ? <Tag>{link.fromType}</Tag> : null}
-                      <Typography.Text>
-                        {resolveLinkNodeLabel(link.fromId, nodeById)}
-                      </Typography.Text>
-                      <ArrowRightOutlined />
-                      {link.toType ? <Tag>{link.toType}</Tag> : null}
-                      <Typography.Text>
-                        {resolveLinkNodeLabel(link.toId, nodeById)}
-                      </Typography.Text>
-                      {link.linkType ? (
-                        <Tag color="blue">{link.linkType}</Tag>
-                      ) : null}
-                    </Space>
-                  </List.Item>
-                )}
+                renderItem={(link: SalesOrderDocumentFlowLink) => {
+                  const fromLabel = resolveLinkNodeLabel(link.fromId, nodeById)
+                  const toLabel = resolveLinkNodeLabel(link.toId, nodeById)
+                  return (
+                    <List.Item>
+                      <Space size="small" wrap>
+                        {link.fromType ? <Tag>{link.fromType}</Tag> : null}
+                        <Typography.Text>{fromLabel}</Typography.Text>
+                        <span className="aries-sr-only">
+                          {t(
+                            'modules.pages.salesOrder.documentFlow.relationArrow',
+                          )}
+                        </span>
+                        <ArrowRightOutlined aria-hidden="true" />
+                        {link.toType ? <Tag>{link.toType}</Tag> : null}
+                        <Typography.Text>{toLabel}</Typography.Text>
+                        {link.linkType ? (
+                          <Tag color="blue">{link.linkType}</Tag>
+                        ) : null}
+                      </Space>
+                    </List.Item>
+                  )
+                }}
               />
             </div>
           ) : null}

@@ -119,30 +119,41 @@ export function MasterDataTable({
         title: '',
         width: 48,
         align: 'center',
-        render: (_: unknown, record: LegacyModuleRecord) => (
-          <Tooltip title={t('hooks.gridColumns.detail')}>
-            <Button
-              aria-label={t('hooks.gridColumns.detail')}
-              className="table-detail-toggle-btn"
-              icon={<EyeOutlined />}
-              size="small"
-              type="text"
-              onClick={(event) => {
-                event.stopPropagation()
-                const recordKey = String(record.id)
-                onExpandedRowKeysChange((previous) =>
-                  previous.includes(recordKey)
-                    ? previous.filter((key) => key !== recordKey)
-                    : [...previous, recordKey],
-                )
-              }}
-            />
-          </Tooltip>
-        ),
+        render: (_: unknown, record: LegacyModuleRecord) => {
+          const recordKey = String(record.id)
+          const expanded = expandedRowKeys.includes(recordKey)
+          return (
+            <Tooltip title={t('hooks.gridColumns.detail')}>
+              <Button
+                aria-label={t('hooks.gridColumns.detail')}
+                aria-expanded={expanded}
+                aria-controls={`master-detail-${recordKey}`}
+                className="table-detail-toggle-btn"
+                icon={<EyeOutlined />}
+                size="small"
+                type="text"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onExpandedRowKeysChange((previous) =>
+                    previous.includes(recordKey)
+                      ? previous.filter((key) => key !== recordKey)
+                      : [...previous, recordKey],
+                  )
+                }}
+              />
+            </Tooltip>
+          )
+        },
       },
       ...dataColumns,
     ]
-  }, [spec.columns, hiddenColumnKeySet, t, onExpandedRowKeysChange])
+  }, [
+    spec.columns,
+    hiddenColumnKeySet,
+    t,
+    onExpandedRowKeysChange,
+    expandedRowKeys,
+  ])
 
   const overviewItems = useMemo(
     () => buildOverview(spec, records, selectedRows, t),
@@ -194,7 +205,9 @@ export function MasterDataTable({
             expandedRowKeys,
             showExpandColumn: false,
             expandedRowRender: (record) => (
-              <MasterInlineDetail spec={spec} recordId={String(record.id)} />
+              <div id={`master-detail-${String(record.id)}`}>
+                <MasterInlineDetail spec={spec} recordId={String(record.id)} />
+              </div>
             ),
             onExpand: (expanded, record) => {
               const recordKey = String(record.id)

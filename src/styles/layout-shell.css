@@ -1226,17 +1226,37 @@
 .inventory-page {
   flex-direction: column;
   min-width: 0;
-  overflow-y: auto;
 }
 
 .inventory-page > .ant-tabs {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+}
+
+.inventory-page .ant-tabs-body-holder {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.inventory-page .ant-tabs-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.inventory-page .ant-tabs-content-active {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .inventory-page .inventory-workspace {
-  height: auto;
-  overflow: visible;
+  height: 100%;
+  min-height: 0;
 }
 
 .inventory-filter-row {
@@ -1244,8 +1264,12 @@
 }
 
 .inventory-table {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
   padding: 0 16px 16px;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .module-grid-workspace {

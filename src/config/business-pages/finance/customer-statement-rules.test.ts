@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   findProjectOption: vi.fn(),
@@ -8,6 +9,7 @@ vi.mock('@/module-system/core/module-option-resolvers', () => ({
   findProjectOption: mocks.findProjectOption,
 }))
 
+import '@/i18n'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildCustomerStatementOverview,
@@ -17,6 +19,10 @@ import {
   validateCustomerStatementBeforeOpen,
   validateCustomerStatementParentImport,
 } from './customer-statement-rules'
+
+beforeAll(async () => {
+  await i18next.changeLanguage('zh-CN')
+})
 
 const entityId = '1932500000000000001'
 

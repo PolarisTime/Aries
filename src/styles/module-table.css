@@ -190,6 +190,11 @@
   outline-offset: -2px;
 }
 
+.module-table-shell .ant-table-body:focus-visible {
+  outline: 2px solid var(--theme-highlight-border, var(--theme-primary));
+  outline-offset: -2px;
+}
+
 .table-action-group {
   display: inline-flex;
   align-items: center;

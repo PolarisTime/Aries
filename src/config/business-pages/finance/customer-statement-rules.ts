@@ -28,7 +28,10 @@ function renderNegativeAwareValue(
   return numericValue < 0
     ? React.createElement(
         'span',
-        { className: 'statement-amount-negative', style: { color: '#cf1322' } },
+        {
+          className: 'statement-amount-negative',
+          style: { color: 'var(--theme-error)' },
+        },
         formatted,
       )
     : formatted
@@ -87,7 +90,7 @@ export function validateCustomerStatementBeforeOpen(
 ): string | null {
   return entityIdOf(currentRecord.customerId, 'customerId')
     ? null
-    : '请先选择客户，再选择销售订单'
+    : i18next.t('modules.pages.customerStatement.validationSelectCustomerFirst')
 }
 
 export function mapSalesOrderToCustomerStatementDraft(
@@ -136,7 +139,7 @@ export function validateCustomerStatementParentImport({
     'parentRecord.customerId',
   )
   if (!currentCustomerId || currentCustomerId !== parentCustomerId) {
-    return '只能选择同一客户的销售订单生成客户对账单'
+    return i18next.t('modules.pages.customerStatement.validationSameCustomer')
   }
   const existingProjectIds = Array.from(
     new Set(
@@ -157,7 +160,7 @@ export function validateCustomerStatementParentImport({
     existingProjectIds.length &&
     (!nextProjectId || !existingProjectIds.includes(nextProjectId))
   ) {
-    return '只能选择同一项目的销售订单生成客户对账单'
+    return i18next.t('modules.pages.customerStatement.validationSameProject')
   }
   return null
 }

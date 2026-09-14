@@ -91,6 +91,15 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
     [candidates],
   )
 
+  const isQuantityInvalid = (item: SalesReturnCandidateItem) => {
+    const value = quantityById[item.sourceSalesOutboundItemId]
+    if (value === undefined) return false
+    return (
+      !Number.isFinite(value) || value < 0 || value > item.returnableQuantity
+    )
+  }
+  const hasInvalidQuantity = returnableItems.some(isQuantityInvalid)
+
   useEffect(() => {
     if (!candidates) {
       return
@@ -219,21 +228,50 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
     {
       title: t('modules.pages.salesReturn.sourceImport.colReturnQuantity'),
       dataIndex: 'sourceSalesOutboundItemId',
-      width: 120,
-      render: (_value, item) => (
-        <InputNumber
-          min={0}
-          max={item.returnableQuantity}
-          precision={0}
-          value={quantityById[item.sourceSalesOutboundItemId] ?? 0}
-          onChange={(value) =>
-            setQuantityById((current) => ({
-              ...current,
-              [item.sourceSalesOutboundItemId]: Number(value ?? 0),
-            }))
-          }
-        />
-      ),
+      width: 160,
+      render: (_value, item, index) => {
+        const inputId = `sales-return-quantity-${item.sourceSalesOutboundItemId}`
+        const errorId = `${inputId}-error`
+        const invalid = isQuantityInvalid(item)
+        return (
+          <div>
+            <InputNumber
+              id={inputId}
+              min={0}
+              max={item.returnableQuantity}
+              precision={0}
+              status={invalid ? 'error' : undefined}
+              aria-label={t(
+                'modules.pages.salesReturn.sourceImport.quantityAriaLabel',
+                { index: index + 1 },
+              )}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? errorId : undefined}
+              value={quantityById[item.sourceSalesOutboundItemId] ?? 0}
+              onChange={(value) =>
+                setQuantityById((current) => ({
+                  ...current,
+                  [item.sourceSalesOutboundItemId]: Number(value ?? 0),
+                }))
+              }
+              style={{ width: '100%' }}
+            />
+            {invalid ? (
+              <Typography.Text
+                id={errorId}
+                role="alert"
+                type="danger"
+                style={{ display: 'block', fontSize: 12 }}
+              >
+                {t(
+                  'modules.pages.salesReturn.sourceImport.quantityOutOfRange',
+                  { max: item.returnableQuantity },
+                )}
+              </Typography.Text>
+            ) : null}
+          </div>
+        )
+      },
     },
   ]
 
@@ -253,7 +291,8 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
         okText={t('modules.pages.salesReturn.sourceImport.confirm')}
         confirmLoading={creating}
         okButtonProps={{
-          disabled: !outboundId || returnableItems.length === 0,
+          disabled:
+            !outboundId || returnableItems.length === 0 || hasInvalidQuantity,
         }}
         destroyOnHidden
       >
@@ -264,6 +303,9 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
               filterOption={false}
               onSearch={setOutboundKeyword}
               style={{ width: 380 }}
+              aria-label={t(
+                'modules.pages.salesReturn.sourceImport.outboundPlaceholder',
+              )}
               placeholder={t(
                 'modules.pages.salesReturn.sourceImport.outboundPlaceholder',
               )}
@@ -288,6 +330,9 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
               }}
             />
             <DatePicker
+              aria-label={t(
+                'modules.pages.salesReturn.sourceImport.returnDateLabel',
+              )}
               value={returnDate}
               onChange={(value) => setReturnDate(value ?? dayjs())}
             />

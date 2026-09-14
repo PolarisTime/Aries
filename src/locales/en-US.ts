@@ -338,6 +338,8 @@ export const enUS = {
       description:
         'Review receivables, payables, and counterparty balances by settlement entity and date.',
       refreshAria: 'Refresh finance overview',
+      emptyBalances: 'No balances yet',
+      selectSettlementCompany: 'Select a settlement entity',
     },
     cashLedger: {
       title: 'Cash Ledger',
@@ -822,7 +824,6 @@ export const enUS = {
       brandOverrideTo: 'Replace with',
       brandOverridePlaceholder: 'Leave blank to keep original',
       noBrands: 'No brands found in selected documents',
-      selectedPrintItems: 'Print Items',
       totalItemsCount: '{{count}} item(s) total',
       selectedItemsCount: '{{count}} item(s) selected',
       noPrintItems: 'No printable line items found',
@@ -1225,6 +1226,15 @@ export const enUS = {
         sourceSalesReturnNo: 'Source return',
         status: 'Status',
         remark: 'Remark',
+        relatedSalesOrders: 'Related Sales Orders',
+        parentImportLabel: 'Sales Order',
+        parentImportButton: 'Import SO Items',
+        validationSelectCustomerFirst:
+          'Select a customer before choosing sales orders',
+        validationSameCustomer:
+          'Only sales orders of the same customer can be imported',
+        validationSameProject:
+          'Only sales orders of the same project can be imported',
         customerStatementDesc:
           'Customer statements by customer and project; confirm to lock for settlement.',
       },
@@ -1393,9 +1403,11 @@ export const enUS = {
           relationsEmpty: 'No document relations',
           loadFailed: 'Failed to load document flow',
           selectSingle: 'Select one sales order to view document flow',
+          relationArrow: 'to',
         },
         parentImportLabel: 'Purchase Order',
         parentImportButton: 'Import PO Items',
+        originalPlannedWeight: 'Original planned {{weight}} t',
       },
       purchaseInbound: {
         title: 'Purchase Inbounds',
@@ -1454,6 +1466,7 @@ export const enUS = {
           action: 'Create Return from Outbound',
           title: 'Create Sales Return from Audited Outbound',
           outboundPlaceholder: 'Select an audited sales outbound',
+          returnDateLabel: 'Return date',
           noOutbound: 'No audited sales outbound found',
           confirm: 'Create Return',
           colMaterialCode: 'Material Code',
@@ -1469,6 +1482,9 @@ export const enUS = {
           noReturnableItems: 'No returnable items for this outbound',
           quantityRequired:
             'Select at least one line and enter a quantity greater than 0',
+          quantityAriaLabel: 'Return quantity for row {{index}}',
+          quantityOutOfRange:
+            'Return quantity cannot exceed returnable quantity (max {{max}})',
           createSuccess: 'Sales return created',
           createFailed: 'Failed to create sales return',
         },

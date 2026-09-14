@@ -1,5 +1,6 @@
 import type { TableColumnsType, TableProps } from 'antd'
 import { Empty, Table } from 'antd'
+import { useTranslation } from 'react-i18next'
 import type { FinanceBalance } from '@/api/finance/finance-overview'
 import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 
@@ -28,6 +29,7 @@ export function FinanceOverviewTableSection({
   total: number
 }) {
   const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
+  const { t } = useTranslation()
   return (
     <section className="finance-overview-table">
       <div ref={shellRef} className="module-table-shell" style={shellStyle}>
@@ -43,7 +45,11 @@ export function FinanceOverviewTableSection({
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={queryEnabled ? '暂无往来余额' : '请选择结算主体'}
+                description={
+                  queryEnabled
+                    ? t('finance.overview.emptyBalances')
+                    : t('finance.overview.selectSettlementCompany')
+                }
               />
             ),
           }}
@@ -52,7 +58,7 @@ export function FinanceOverviewTableSection({
             pageSize,
             total,
             showSizeChanger: true,
-            showTotal: (count) => `共 ${count} 条`,
+            showTotal: (count) => t('common.total', { count }),
             onChange: onPageChange,
           }}
         />

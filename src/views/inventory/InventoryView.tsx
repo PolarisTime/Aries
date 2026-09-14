@@ -15,7 +15,13 @@ import {
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getInventoryBalances,
@@ -28,7 +34,10 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import type { ModuleOverviewItem } from '@/types/module-page'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
+import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 
 const TRANSACTION_TYPE_KEYS = [
   'PURCHASE_INBOUND',
@@ -44,6 +53,10 @@ const TRANSACTION_TYPE_KEYS = [
   'INITIAL_BALANCE',
 ] as const
 
+const EMPTY_BALANCES: InventoryBalance[] = []
+const EMPTY_TRANSACTIONS: InventoryTransaction[] = []
+const EMPTY_OVERVIEW_ITEMS: ModuleOverviewItem[] = []
+
 function requestErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message.trim()
     ? error.message
@@ -53,6 +66,14 @@ function requestErrorMessage(error: unknown, fallback: string) {
 function displayText(value: unknown) {
   const text = String(value ?? '').trim()
   return text || '--'
+}
+
+function sumColumnWidths(columns: { width?: unknown }[]): number {
+  return columns.reduce(
+    (total, column) =>
+      total + (typeof column.width === 'number' ? column.width : 0),
+    0,
+  )
 }
 
 function useWarehouseOptions() {
@@ -70,19 +91,37 @@ function useWarehouseOptions() {
 
 function useTransactionTypeLabel() {
   const { t } = useTranslation()
-  return (value: string) => {
-    const key = value.trim()
-    if (!key) return '--'
-    return (TRANSACTION_TYPE_KEYS as readonly string[]).includes(key)
-      ? t(`inventory.transactionType.${key}`)
-      : key
-  }
+  return useCallback(
+    (value: string) => {
+      const key = value.trim()
+      if (!key) return '--'
+      return (TRANSACTION_TYPE_KEYS as readonly string[]).includes(key)
+        ? t(`inventory.transactionType.${key}`)
+        : key
+    },
+    [t],
+  )
+}
+
+function useFocusableTableBody(
+  shellRef: RefObject<HTMLDivElement | null>,
+  label: string,
+) {
+  useEffect(() => {
+    const body = shellRef.current?.querySelector<HTMLElement>('.ant-table-body')
+    if (!body) return
+    body.tabIndex = 0
+    body.setAttribute('role', 'region')
+    body.setAttribute('aria-label', label)
+  })
 }
 
 function InventoryBalancesPanel() {
   const { t } = useTranslation()
   const defaultPageSize = useDefaultPageSize()
   const { formatCellValue } = useModuleDisplaySupport()
+  const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
+  useFocusableTableBody(shellRef, t('inventory.tabs.balances'))
   const { options: warehouseOptions, isLoading: warehousesLoading } =
     useWarehouseOptions()
   const [page, setPage] = useState(1)
@@ -187,12 +226,8 @@ function InventoryBalancesPanel() {
     ]
   }, [formatCellValue, t])
 
-  const scrollX = columns.reduce(
-    (total, column) =>
-      total + (typeof column.width === 'number' ? column.width : 0),
-    0,
-  )
-  const rows = balancesQuery.data?.content || []
+  const scrollX = useMemo(() => sumColumnWidths(columns), [columns])
+  const rows = balancesQuery.data?.content ?? EMPTY_BALANCES
   const total = balancesQuery.data?.totalElements || 0
 
   const commitKeyword = (value: string) => {
@@ -276,35 +311,47 @@ function InventoryBalancesPanel() {
         />
       ) : null}
 
+      <div className="aries-sr-only" role="status" aria-live="polite">
+        {balancesQuery.isFetching
+          ? ''
+          : total === 0
+            ? t('inventory.empty.balances')
+            : t('common.total', { count: total })}
+      </div>
+
       <section className="inventory-table">
-        <Table
-          rowKey="key"
-          size="small"
-          columns={columns}
-          dataSource={rows}
-          loading={balancesQuery.isFetching}
-          scroll={{ x: scrollX }}
-          locale={{
-            emptyText: (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('inventory.empty.balances')}
-              />
-            ),
-          }}
-          pagination={{
-            current: page,
-            pageSize: effectivePageSize,
-            total,
-            showSizeChanger: true,
-            showTotal: (count) => t('common.total', { count }),
-            onChange: (nextPage, nextPageSize) => {
-              setPage(nextPageSize === effectivePageSize ? nextPage : 1)
-              setPageSizeOverride(nextPageSize)
-            },
-          }}
-        />
+        <div ref={shellRef} className="module-table-shell" style={shellStyle}>
+          <Table
+            rowKey="key"
+            size="small"
+            columns={columns}
+            dataSource={rows}
+            loading={balancesQuery.isFetching}
+            scroll={{ x: scrollX, y: scrollY }}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={t('inventory.empty.balances')}
+                />
+              ),
+            }}
+            pagination={false}
+          />
+        </div>
       </section>
+
+      <ModuleTablePagination
+        total={total}
+        currentPage={page}
+        pageSize={effectivePageSize}
+        currentItemCount={rows.length}
+        overviewItems={EMPTY_OVERVIEW_ITEMS}
+        onPageChange={(nextPage, nextPageSize) => {
+          setPage(nextPageSize === effectivePageSize ? nextPage : 1)
+          setPageSizeOverride(nextPageSize)
+        }}
+      />
     </div>
   )
 }
@@ -313,6 +360,8 @@ function InventoryTransactionsPanel() {
   const { t } = useTranslation()
   const defaultPageSize = useDefaultPageSize()
   const { formatCellValue } = useModuleDisplaySupport()
+  const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
+  useFocusableTableBody(shellRef, t('inventory.tabs.transactions'))
   const { options: warehouseOptions, isLoading: warehousesLoading } =
     useWarehouseOptions()
   const transactionTypeLabel = useTransactionTypeLabel()
@@ -473,12 +522,8 @@ function InventoryTransactionsPanel() {
     ]
   }, [formatCellValue, t, transactionTypeLabel])
 
-  const scrollX = columns.reduce(
-    (total, column) =>
-      total + (typeof column.width === 'number' ? column.width : 0),
-    0,
-  )
-  const rows = transactionsQuery.data?.content || []
+  const scrollX = useMemo(() => sumColumnWidths(columns), [columns])
+  const rows = transactionsQuery.data?.content ?? EMPTY_TRANSACTIONS
   const total = transactionsQuery.data?.totalElements || 0
 
   const commitKeyword = (value: string) => {
@@ -596,35 +641,47 @@ function InventoryTransactionsPanel() {
         />
       ) : null}
 
+      <div className="aries-sr-only" role="status" aria-live="polite">
+        {transactionsQuery.isFetching
+          ? ''
+          : total === 0
+            ? t('inventory.empty.transactions')
+            : t('common.total', { count: total })}
+      </div>
+
       <section className="inventory-table">
-        <Table
-          rowKey="key"
-          size="small"
-          columns={columns}
-          dataSource={rows}
-          loading={transactionsQuery.isFetching}
-          scroll={{ x: scrollX }}
-          locale={{
-            emptyText: (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={t('inventory.empty.transactions')}
-              />
-            ),
-          }}
-          pagination={{
-            current: page,
-            pageSize: effectivePageSize,
-            total,
-            showSizeChanger: true,
-            showTotal: (count) => t('common.total', { count }),
-            onChange: (nextPage, nextPageSize) => {
-              setPage(nextPageSize === effectivePageSize ? nextPage : 1)
-              setPageSizeOverride(nextPageSize)
-            },
-          }}
-        />
+        <div ref={shellRef} className="module-table-shell" style={shellStyle}>
+          <Table
+            rowKey="key"
+            size="small"
+            columns={columns}
+            dataSource={rows}
+            loading={transactionsQuery.isFetching}
+            scroll={{ x: scrollX, y: scrollY }}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={t('inventory.empty.transactions')}
+                />
+              ),
+            }}
+            pagination={false}
+          />
+        </div>
       </section>
+
+      <ModuleTablePagination
+        total={total}
+        currentPage={page}
+        pageSize={effectivePageSize}
+        currentItemCount={rows.length}
+        overviewItems={EMPTY_OVERVIEW_ITEMS}
+        onPageChange={(nextPage, nextPageSize) => {
+          setPage(nextPageSize === effectivePageSize ? nextPage : 1)
+          setPageSizeOverride(nextPageSize)
+        }}
+      />
     </div>
   )
 }

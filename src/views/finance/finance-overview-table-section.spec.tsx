@@ -1,11 +1,24 @@
 // @vitest-environment jsdom
 
+import i18next from 'i18next'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import '@/i18n'
 import type { FinanceBalance } from '@/api/finance/finance-overview'
 import { FinanceOverviewTableSection } from './finance-overview-table-section'
+
+beforeAll(async () => {
+  await i18next.changeLanguage('zh-CN')
+})
 
 const rows: FinanceBalance[] = [
   {
