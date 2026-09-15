@@ -19,7 +19,6 @@ function externalSheet(): PriceSheet {
     refPeriod: '',
     lengthPremium: 30,
     inputs: {},
-    groups: [{ id: 'g1', name: '分组 1' }],
     rows: [],
   }
 }
@@ -75,6 +74,40 @@ describe('useSheetsStore 多标签页同步', () => {
     expect(store.current.sheets).toHaveLength(1)
     expect(store.current.sheets[0].id).toBe('ext-1')
     expect(store.current.activeId).toBe('ext-1')
+  })
+
+  it('兼容旧持久化数据: 忽略 groups/groupId 并摊平行', () => {
+    const legacy = {
+      sheets: [
+        {
+          ...externalSheet(),
+          groups: [{ id: 'g1', name: '分组 1' }],
+          rows: [
+            {
+              id: 'r1',
+              groupId: 'g1',
+              category: '螺纹钢',
+              material: 'HRB400E',
+              spec: 12,
+              length: '9米',
+            },
+          ],
+        },
+      ],
+      activeId: 'ext-1',
+      configs: {},
+    }
+    localStorage.setItem(LS_KEY, JSON.stringify(legacy))
+    const store = renderStore()
+    const sheet = store.current.sheets[0] as unknown as Record<string, unknown>
+    expect(sheet.groups).toBeUndefined()
+    const row = store.current.sheets[0].rows[0] as unknown as Record<
+      string,
+      unknown
+    >
+    expect(row.groupId).toBeUndefined()
+    expect(row.id).toBe('r1')
+    expect(store.current.sheets[0].rows).toHaveLength(1)
   })
 
   it('忽略非本 key 与非法 JSON 的变化', () => {

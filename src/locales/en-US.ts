@@ -2100,8 +2100,6 @@ export const enUS = {
       spotBetter: 'Spot price is better',
       netBetter: 'Market price is better',
       addRow: '+ Add Row',
-      removeGroup: 'Delete group',
-      removeGroupTitle: 'Delete this group and all its rows?',
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',
       unspecifiedProject: 'Unspecified project',
       orderDate: 'Order Date',
@@ -2113,7 +2111,6 @@ export const enUS = {
       refPrice: 'Reference Price',
       refDateTooltip:
         'All rows use this date and period as the market price reference',
-      group: 'Group',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',
@@ -2165,9 +2162,9 @@ export const enUS = {
       selectTitle: 'Select project/batch',
       selectDesc:
         'Switch project and batch at the top; each batch is one quote',
-      entryTitle: 'Groups and Entry',
+      entryTitle: 'Entry and Comparison',
       entryDesc:
-        'Add groups and drag to reorder; enter spot prices and use Enter or arrow keys to switch rows',
+        'Drag to reorder rows; enter spot prices and use Enter or arrow keys to switch rows',
     },
   },
   navigation: {

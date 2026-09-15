@@ -3,7 +3,6 @@ import type {
   PriceData,
   PriceRow,
   PriceSheet,
-  SheetGroup,
   SheetInputs,
 } from './types'
 
@@ -336,14 +335,9 @@ function makeId(): string {
   return Math.random().toString(36).slice(2, 8)
 }
 
-export function makeGroup(name: string): SheetGroup {
-  return { id: makeId(), name }
-}
-
-export function makeRow(groupId: string): PriceRow {
+export function makeRow(): PriceRow {
   return {
     id: makeId(),
-    groupId,
     category: '',
     material: '',
     spec: null,
@@ -353,11 +347,11 @@ export function makeRow(groupId: string): PriceRow {
 
 export const DEFAULT_STATUS = '报价'
 
-/** 新建单据默认分组内的行数(均为空行, 由用户自行选择商品)。 */
+/** 新建单据默认空行数(由用户自行选择商品)。 */
 const DEFAULT_ROW_COUNT = 1
 
-export function defaultSheetRows(groupId: string): PriceRow[] {
-  return Array.from({ length: DEFAULT_ROW_COUNT }, () => makeRow(groupId))
+export function defaultSheetRows(): PriceRow[] {
+  return Array.from({ length: DEFAULT_ROW_COUNT }, () => makeRow())
 }
 
 export function makeSheet(
@@ -368,7 +362,6 @@ export function makeSheet(
   refDate: string,
   refPeriod: string,
 ): PriceSheet {
-  const group = makeGroup('分组 1')
   return {
     id: makeId(),
     name,
@@ -380,7 +373,6 @@ export function makeSheet(
     refPeriod,
     lengthPremium: DEFAULT_LENGTH_PREMIUM,
     inputs: {},
-    groups: [group],
-    rows: defaultSheetRows(group.id),
+    rows: defaultSheetRows(),
   }
 }

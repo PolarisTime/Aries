@@ -37,14 +37,8 @@ export type ProjectConfig = {
   remark?: string
 }
 
-export type SheetGroup = {
-  id: string
-  name: string
-}
-
 export type PriceRow = {
   id: string
-  groupId: string
   category: string
   material: string
   spec: number | null
@@ -67,7 +61,6 @@ export type PriceSheet = {
   refPeriod: string
   lengthPremium: number
   inputs: SheetInputs
-  groups: SheetGroup[]
   rows: PriceRow[]
 }
 

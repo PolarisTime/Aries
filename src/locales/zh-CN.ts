@@ -2037,8 +2037,6 @@ export const zhCN = {
       spotBetter: '现货更划算',
       netBetter: '网价更优',
       addRow: '＋ 添加一行',
-      removeGroup: '删除分组',
-      removeGroupTitle: '删除该分组及其全部行？',
       removeSelectedTitle: '删除选中的 {{selected}} 行？',
       unspecifiedProject: '未指定项目',
       orderDate: '报单日期',
@@ -2049,7 +2047,6 @@ export const zhCN = {
       clear: '清除',
       refPrice: '参照网价',
       refDateTooltip: '全部行统一使用该日期与时段作为网价基准',
-      group: '分组',
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
       config: '配置',
@@ -2098,8 +2095,8 @@ export const zhCN = {
     tour: {
       selectTitle: '选择项目/批次',
       selectDesc: '在顶部切换项目与批次；每个批次对应一次报价',
-      entryTitle: '分组与录入',
-      entryDesc: '支持添加分组与拖动排序；录入现货价，按回车或方向键切换行',
+      entryTitle: '录入与比价',
+      entryDesc: '支持拖动排序行；录入现货价，按回车或方向键切换行',
     },
   },
   navigation: {

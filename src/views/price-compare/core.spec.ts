@@ -28,7 +28,6 @@ const data: PriceData = {
 
 const row12: PriceRow = {
   id: 'r1',
-  groupId: 'g1',
   category: '螺纹钢',
   material: 'HRB400E',
   spec: 12,
@@ -78,7 +77,6 @@ describe('computeSummary', () => {
     refPeriod: '9:30 上午',
     lengthPremium: 30,
     status: '报价',
-    groups: [],
     rows: [],
     inputs,
   })
@@ -113,7 +111,6 @@ describe('computeSummary', () => {
   it('12 米加价仅螺纹钢生效', () => {
     const rowRebar12: PriceRow = {
       id: 'x',
-      groupId: 'g1',
       category: '螺纹钢',
       material: 'HRB400E',
       spec: 12,
@@ -121,7 +118,6 @@ describe('computeSummary', () => {
     }
     const rowRound12: PriceRow = {
       id: 'y',
-      groupId: 'g1',
       category: '圆钢',
       material: 'HRB400E',
       spec: 12,
@@ -203,7 +199,6 @@ describe('countMissing', () => {
       refPeriod: '9:30 上午',
       lengthPremium: 30,
       status: '报价',
-      groups: [],
       rows: [],
       inputs: {},
     }
@@ -232,8 +227,8 @@ describe('syncSpotInputs', () => {
   })
 
   it('未选择商品的空行不联动', () => {
-    const a = makeRow('g1')
-    const b = makeRow('g1')
+    const a = makeRow()
+    const b = makeRow()
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
   })
@@ -351,9 +346,10 @@ describe('moveItem', () => {
 })
 
 describe('makeRow', () => {
-  it('makeRow 生成指定分组下的空行', () => {
-    const row = makeRow('g1')
-    expect(row.groupId).toBe('g1')
+  it('makeRow 生成扁平的空白行', () => {
+    const row = makeRow()
+    expect(row.id).toBeTruthy()
+    expect('groupId' in row).toBe(false)
     expect(row.category).toBe('')
     expect(row.material).toBe('')
     expect(row.spec).toBeNull()

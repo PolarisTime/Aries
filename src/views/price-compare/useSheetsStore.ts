@@ -13,11 +13,45 @@ type Snapshot = {
   configs: Record<string, ProjectConfig>
 }
 
+/** 旧持久化模型: 单据含 groups, 行含 groupId。 */
+type LegacyPriceRow = PriceRow & { groupId?: string }
+type LegacyPriceSheet = Omit<PriceSheet, 'rows'> & {
+  groups?: unknown
+  rows?: LegacyPriceRow[]
+}
+
 const emptyConfig = (): ProjectConfig => ({
   brands: [],
   lengthPremium: DEFAULT_LENGTH_PREMIUM,
   hrb400eFallback: false,
 })
+
+/** 行归一化: 丢弃历史 groupId, 只保留扁平行字段。 */
+function normalizeRow(row: LegacyPriceRow): PriceRow {
+  const { groupId: _groupId, ...rest } = row
+  return rest
+}
+
+/** 单据归一化: 丢弃历史 groups 字段, 行摊平为单一表格。 */
+function normalizeSheet(sheet: LegacyPriceSheet): PriceSheet {
+  const { groups: _groups, rows, ...rest } = sheet
+  return { ...rest, rows: (rows ?? []).map(normalizeRow) }
+}
+
+/** 读取快照并兼容旧分组模型; 结构非法时返回 null。 */
+function normalizeSnapshot(parsed: Snapshot): Snapshot | null {
+  if (!parsed || !Array.isArray(parsed.sheets) || !parsed.sheets.length)
+    return null
+  if (!parsed.configs || typeof parsed.configs !== 'object') return null
+  const sheets = parsed.sheets
+    .filter((sheet) => sheet && Array.isArray(sheet.rows))
+    .map((sheet) => normalizeSheet(sheet as LegacyPriceSheet))
+  if (!sheets.length) return null
+  const activeId = sheets.some((sheet) => sheet.id === parsed.activeId)
+    ? parsed.activeId
+    : sheets[0].id
+  return { sheets, activeId, configs: parsed.configs }
+}
 
 function defaultState(): Snapshot {
   const a = makeSheet('批次 1', '', '', '', '', '')
@@ -34,15 +68,8 @@ function loadState(): Snapshot {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Snapshot
-      if (
-        parsed.sheets?.length &&
-        parsed.sheets.every(
-          (sheet) => Array.isArray(sheet.rows) && Array.isArray(sheet.groups),
-        ) &&
-        parsed.configs &&
-        typeof parsed.configs === 'object'
-      )
-        return parsed
+      const normalized = normalizeSnapshot(parsed)
+      if (normalized) return normalized
     }
   } catch {
     // ignore malformed storage
@@ -114,10 +141,11 @@ export function useSheetsStore(): SheetsStore {
       if (event.newValue === JSON.stringify(stateRef.current)) return
       try {
         const parsed = JSON.parse(event.newValue) as Snapshot
-        if (!parsed?.sheets?.length) return
-        stateRef.current = parsed
+        const normalized = normalizeSnapshot(parsed)
+        if (!normalized) return
+        stateRef.current = normalized
         historyRef.current = { past: [], future: [], lastKey: '', lastTime: 0 }
-        setState(parsed)
+        setState(normalized)
         forceRender((version) => version + 1)
       } catch {
         // ignore malformed storage
