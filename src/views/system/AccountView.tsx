@@ -1,7 +1,16 @@
 import { LockOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Button, Col, Form, Input, Row, Skeleton } from 'antd'
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  Row,
+  Select,
+  Skeleton,
+  Typography,
+} from 'antd'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -9,6 +18,8 @@ import {
   getCurrentAccount,
   updateCurrentAccount,
 } from '@/api/system/account'
+import { listRoles } from '@/api/system/roles'
+import { getUserRoles, updateUserRoles } from '@/api/system/user-roles'
 import { AppProPage } from '@/components/AppProPage'
 import { AppResult } from '@/components/AppResult'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -36,6 +47,12 @@ interface PasswordFormValues {
   confirmPassword: string
 }
 
+interface RolesFormValues {
+  roleIds: string[]
+}
+
+const ROLE_OPTIONS_PAGE_SIZE = 200
+
 export function AccountView(): React.JSX.Element {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -45,10 +62,28 @@ export function AccountView(): React.JSX.Element {
   const updateUserProfile = useAuthStore((state) => state.updateUserProfile)
   const [profileForm] = Form.useForm<AccountProfileFormValues>()
   const [passwordForm] = Form.useForm<PasswordFormValues>()
+  const [rolesForm] = Form.useForm<RolesFormValues>()
 
   const accountQuery = useQuery({
     queryKey: QUERY_KEYS.currentAccount,
     queryFn: getCurrentAccount,
+  })
+  const accountId = accountQuery.data?.id ?? ''
+
+  const userRolesQuery = useQuery({
+    queryKey: QUERY_KEYS.userRoles(accountId),
+    queryFn: ({ signal }) => getUserRoles(accountId, signal),
+    enabled: Boolean(accountId),
+  })
+  const roleOptionsQuery = useQuery({
+    queryKey: QUERY_KEYS.roles({
+      keyword: '',
+      status: undefined,
+      page: 0,
+      size: ROLE_OPTIONS_PAGE_SIZE,
+    }),
+    queryFn: ({ signal }) =>
+      listRoles({ page: 0, size: ROLE_OPTIONS_PAGE_SIZE }, signal),
   })
 
   useEffect(() => {
@@ -61,6 +96,13 @@ export function AccountView(): React.JSX.Element {
       remark: accountQuery.data.remark ?? '',
     })
   }, [accountQuery.data, profileForm])
+
+  useEffect(() => {
+    if (!userRolesQuery.data) {
+      return
+    }
+    rolesForm.setFieldsValue({ roleIds: userRolesQuery.data })
+  }, [userRolesQuery.data, rolesForm])
 
   const profileMutation = useMutation({
     mutationFn: updateCurrentAccount,
@@ -87,6 +129,21 @@ export function AccountView(): React.JSX.Element {
     },
     onError: (error: Error) => {
       showError(error, t('system.account.passwordChangeFailed'))
+    },
+  })
+
+  const rolesMutation = useMutation({
+    mutationFn: ({ id, roleIds }: { id: string; roleIds: string[] }) =>
+      updateUserRoles(id, roleIds),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.userRoles(accountId),
+      })
+      await queryClient.invalidateQueries({ queryKey: ['roles'] })
+      message.success(t('system.account.rolesSaved'))
+    },
+    onError: (error: Error) => {
+      showError(error, t('system.account.rolesSaveFailed'))
     },
   })
 
@@ -129,6 +186,19 @@ export function AccountView(): React.JSX.Element {
       const errorFields = readAntdFormValidationErrorFields(error)
       if (errorFields) {
         focusFirstInvalidField(passwordForm, errorFields)
+      }
+    }
+  }
+
+  const saveRoles = async (): Promise<void> => {
+    try {
+      const values = await rolesForm.validateFields()
+      if (!accountId) return
+      rolesMutation.mutate({ id: accountId, roleIds: values.roleIds ?? [] })
+    } catch (error) {
+      const errorFields = readAntdFormValidationErrorFields(error)
+      if (errorFields) {
+        focusFirstInvalidField(rolesForm, errorFields)
       }
     }
   }
@@ -271,6 +341,46 @@ export function AccountView(): React.JSX.Element {
                     }}
                   >
                     {t('system.account.changePassword')}
+                  </Button>
+                </div>
+              </Form>
+            </section>
+
+            <section className="account-section">
+              <h2 className="account-section-title">
+                {t('system.account.rolesSection')}
+              </h2>
+              <Typography.Paragraph type="secondary">
+                {t('system.account.rolesHint')}
+              </Typography.Paragraph>
+              <Form form={rolesForm} layout="vertical" className="account-form">
+                <Form.Item
+                  name="roleIds"
+                  label={t('system.account.rolesLabel')}
+                >
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    loading={roleOptionsQuery.isPending}
+                    placeholder={t('system.account.rolesPlaceholder')}
+                    options={(roleOptionsQuery.data?.content ?? []).map(
+                      (role) => ({
+                        value: role.id,
+                        label: `${role.name} (${role.code})`,
+                      }),
+                    )}
+                  />
+                </Form.Item>
+                <div className="account-form-actions">
+                  <Button
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    loading={rolesMutation.isPending}
+                    onClick={() => {
+                      void saveRoles()
+                    }}
+                  >
+                    {t('system.account.saveRoles')}
                   </Button>
                 </div>
               </Form>

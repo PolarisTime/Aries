@@ -139,6 +139,15 @@ export const ENDPOINTS = {
   MATERIALS: '/materials',
   MATERIAL_CATEGORIES: '/material-categories/options',
 
+  // Roles & permissions (RBAC0)
+  ROLES: '/roles',
+  ROLE: (id: string | number) => `/roles/${pathSegment(id)}`,
+  ROLE_STATUS: (id: string | number) => `/roles/${pathSegment(id)}/status`,
+  ROLE_PERMISSIONS: (id: string | number) =>
+    `/roles/${pathSegment(id)}/permissions`,
+  PERMISSIONS: '/permissions',
+  USER_ROLES: (id: string | number) => `/users/${pathSegment(id)}/roles`,
+
   // Market (steel quotes)
   STEEL_QUOTES: '/steel-quotes',
   MATERIAL_PRICE_MATCHES: '/material-price-matches',

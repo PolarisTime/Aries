@@ -62,6 +62,10 @@ export const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
+  'role-management': () =>
+    import('@/views/system/RoleManagementView').then((m) => ({
+      default: m.RoleManagementView,
+    })),
   account: () =>
     import('@/views/system/AccountView').then((m) => ({
       default: m.AccountView,

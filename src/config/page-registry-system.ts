@@ -19,6 +19,14 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     moduleKey: 'operation-log',
   },
   {
+    key: 'role-management',
+    title: '角色管理',
+    menuKey: '/role',
+    view: 'role-management',
+    icon: 'TeamOutlined',
+    menuParent: 'system',
+  },
+  {
     key: 'account',
     title: '个人账号',
     menuKey: '/account',

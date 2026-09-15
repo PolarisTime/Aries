@@ -45,6 +45,20 @@ export type {
   PrintTemplateRecord,
   SavePrintTemplatePayload,
 } from './print-template'
+// ── 角色 / 权限（RBAC0） ─────────────────────────────────
+export type {
+  Permission,
+  RoleCreatePayload,
+  RoleDetailResponse,
+  RoleFormValues,
+  RoleListPage,
+  RolePermissionsUpdatePayload,
+  RoleResponse,
+  RoleStatus,
+  RoleStatusUpdatePayload,
+  RoleUpdatePayload,
+  UserRolesUpdatePayload,
+} from './role'
 export type {
   InitialSetupAccountPayload,
   InitialSetupAccountSubmitPayload,

@@ -157,6 +157,17 @@ export const QUERY_KEYS = {
   // Auth / Account
   currentAccount: ['current-account'] as const,
 
+  // Roles & permissions (RBAC0)
+  roles: (query: {
+    keyword?: string
+    status?: string
+    page: number
+    size: number
+  }) => ['roles', query] as const,
+  role: (id: string) => ['roles', 'detail', id] as const,
+  permissions: ['permissions'] as const,
+  userRoles: (userId: string) => ['users', userId, 'roles'] as const,
+
   // Print
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>

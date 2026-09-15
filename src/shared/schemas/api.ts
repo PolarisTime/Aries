@@ -21,6 +21,17 @@ export const responseEntityIdSchema = z
   .union([responseEntityIdStringSchema, z.number().int().positive().safe()])
   .transform(String)
 
+/** 客户端传入的实体 ID 必须为十进制字符串（雪花 ID 不做 JSON number）。 */
+export const requestEntityIdSchema = z
+  .string()
+  .trim()
+  .regex(ENTITY_ID_PATTERN, '实体 ID 必须为正整数的十进制字符串')
+  .refine(
+    (value) =>
+      !ENTITY_ID_PATTERN.test(value) || BigInt(value) <= MAX_SIGNED_LONG,
+    '实体 ID 超出范围',
+  )
+
 /** 后端 Jackson 将 Long 输出为字符串，边界层统一归一化为安全整数。 */
 const responseIntegerSchema = z.union([
   z.number().int().safe(),

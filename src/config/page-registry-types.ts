@@ -18,6 +18,7 @@ export type RouteViewKey =
   | 'market-sync'
   | 'company-setting'
   | 'print-template'
+  | 'role-management'
   | 'account'
   | 'finance-overview'
   | 'cash-ledger'
