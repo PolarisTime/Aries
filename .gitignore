@@ -18,6 +18,13 @@ temppic/
 .tmp-browser/
 .local-browser/
 
+# Playwright E2E artifacts
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+coverage-e2e/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
