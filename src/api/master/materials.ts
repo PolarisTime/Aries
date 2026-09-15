@@ -114,6 +114,7 @@ export async function fetchMaterialSearch(
   keyword = '',
   limit = 200,
   materialType?: string,
+  signal?: AbortSignal,
 ): Promise<MaterialSearchPageResponse> {
   const response = await apiGet(
     ENDPOINTS.MATERIALS,
@@ -126,6 +127,7 @@ export async function fetchMaterialSearch(
         size: Math.min(Math.max(limit, 1), 200),
         ...(materialType ? { materialType } : {}),
       },
+      ...(signal ? { signal } : {}),
     },
   )
 

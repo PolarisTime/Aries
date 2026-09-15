@@ -1,4 +1,9 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchMaterialSearch } from '@/api/master/materials'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
@@ -10,6 +15,12 @@ import {
 } from '@/module-system/editor/module-editor-item-column-builders'
 import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module-editor-item-column-handlers'
 import { applyMaterialToEditorLineItem } from '@/module-system/editor/module-editor-line-item-utils'
+import {
+  buildMaterialSelectOptions,
+  mergeMaterialRecords,
+} from '@/module-system/editor/module-editor-material-options'
+import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
+import { useAuthStore } from '@/stores/authStore'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,
@@ -17,6 +28,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
+import { asString } from '@/utils/type-narrowing'
 import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
 
@@ -39,16 +51,9 @@ interface Props {
 }
 
 type MaterialLookupEntry = readonly [string, ModuleRecord]
-type MaterialSelectOption = {
-  label: string
-  value: string
-  code: string
-  brand: string
-  material: string
-  category: string
-  spec: string
-  length: string
-}
+
+/** 商品下拉服务端搜索防抖间隔，避免每次按键都请求主数据。 */
+const MATERIAL_SEARCH_DEBOUNCE_MS = 300
 
 export function useModuleEditorItemColumns({
   moduleKey,
@@ -72,6 +77,10 @@ export function useModuleEditorItemColumns({
     warehouses: true,
     materials: true,
   })
+  const token = useAuthStore((s) => s.token)
+  const [materialSearchKeyword, setMaterialSearchKeyword] = useState('')
+  const [debouncedMaterialSearchKeyword, setDebouncedMaterialSearchKeyword] =
+    useState('')
   const totalItemColumnCount = config.itemColumns?.length ?? 0
   const defaultHiddenItemColumnKeys = config?.itemColumnConfig?.hiddenByDefault
   const {
@@ -117,59 +126,67 @@ export function useModuleEditorItemColumns({
       parentImportedItemEditLocked,
     )
 
-  const materialLookup = (() => {
-    const entries = materials.flatMap((record): MaterialLookupEntry[] => {
-      const materialId = record.id
-      if (!materialId) {
-        return []
-      }
-      return [[materialId, record]]
+  useEffect(() => {
+    const keyword = materialSearchKeyword.trim()
+    if (!keyword) {
+      setDebouncedMaterialSearchKeyword('')
+      return
+    }
+    const timer = window.setTimeout(
+      () => setDebouncedMaterialSearchKeyword(keyword),
+      MATERIAL_SEARCH_DEBOUNCE_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [materialSearchKeyword])
+
+  const { data: materialSearchPage, isFetching: isMaterialSearchFetching } =
+    useQuery({
+      queryKey: QUERY_KEYS.masterOptions.materialSearch(
+        debouncedMaterialSearchKeyword,
+      ),
+      queryFn: ({ signal }) =>
+        fetchMaterialSearch(
+          debouncedMaterialSearchKeyword,
+          200,
+          undefined,
+          signal,
+        ),
+      enabled: Boolean(token) && debouncedMaterialSearchKeyword.length > 0,
+      staleTime: STALE_MASTER_OPTIONS,
+      placeholderData: keepPreviousData,
+    })
+
+  // 本地只预加载首页 200 条商品，输入关键词时用服务端搜索结果补全，
+  // 再按主键合并去重，让本地结构化/拼音过滤继续对全量候选生效。
+  const materialRecords = useMemo(() => {
+    const searchResults = debouncedMaterialSearchKeyword
+      ? (materialSearchPage?.content ?? [])
+      : []
+    return mergeMaterialRecords(searchResults, materials)
+  }, [debouncedMaterialSearchKeyword, materialSearchPage, materials])
+
+  const materialLookup = useMemo(() => {
+    const entries = materialRecords.flatMap((record): MaterialLookupEntry[] => {
+      const materialId = asString(record.id).trim()
+      return materialId ? [[materialId, record]] : []
     })
 
     return new Map(entries)
-  })()
+  }, [materialRecords])
 
-  const materialOptions = (() => {
-    const seen = new Set<string>()
+  const materialOptions = useMemo(
+    () => buildMaterialSelectOptions(materialRecords),
+    [materialRecords],
+  )
 
-    return materials.flatMap((record): MaterialSelectOption[] => {
-      const materialId = record.id
-      const materialCode = String(record.materialCode || '').trim()
-      if (!materialId || !materialCode) {
-        return []
-      }
-
-      if (seen.has(materialId)) {
-        return []
-      }
-      seen.add(materialId)
-
-      const brand = String(record.brand || '').trim()
-      const category = String(record.category || '').trim()
-      const material = String(record.material || '').trim()
-      const spec = String(record.spec || '').trim()
-      const length = String(record.length || '').trim()
-      const materialName =
-        typeof record.materialName === 'string'
-          ? record.materialName.trim()
-          : ''
-
-      return [
-        {
-          label: [brand || materialName, category, material, spec, length]
-            .filter(Boolean)
-            .join(' | '),
-          code: materialCode,
-          brand,
-          material,
-          category,
-          spec,
-          length,
-          value: materialId,
-        },
-      ]
-    })
-  })()
+  const materialSearch: MaterialSearchController = {
+    searching: isMaterialSearchFetching,
+    onSearch: (keyword) => setMaterialSearchKeyword(keyword),
+    onClose: () => {
+      setMaterialSearchKeyword('')
+      setDebouncedMaterialSearchKeyword('')
+    },
+  }
   const allItemColumnIds = (config.itemColumns || []).map(
     (column) => column.dataIndex,
   )
@@ -229,6 +246,7 @@ export function useModuleEditorItemColumns({
         config,
         itemColumns: orderedVisibleItemColumns,
         materialOptions,
+        materialSearch,
         warehouses,
         formatCellValue,
         isItemColumnEditable,

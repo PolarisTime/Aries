@@ -15,16 +15,17 @@ import {
   isPurchaseInbound,
   isPurchaseOrder,
 } from '@/module-system/core/module-category'
+import type { MaterialSelectOption } from '@/module-system/editor/module-editor-material-options'
+import { buildMaterialSnapshotLabel } from '@/module-system/editor/module-editor-material-options'
+import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
+import { ModuleEditorMaterialSelect } from '@/module-system/editor/module-editor-material-select'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,
   ModulePageConfig,
 } from '@/types/module-page'
-import {
-  createPinyinFilterOption,
-  createStructuredMaterialFilterOption,
-} from '@/utils/pinyin-search'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
 const EDITOR_ITEM_COLUMN_MIN_WIDTHS: Readonly<Record<string, number>> = {
@@ -39,21 +40,10 @@ function resolveEditorItemColumnWidth(column: ModuleColumnDefinition) {
     : Math.max(column.width ?? 0, minWidth)
 }
 
-interface MaterialOption {
-  disabled?: boolean
-  label: string
-  value: string
-  code: string
-  brand: string
-  material: string
-  category: string
-  spec: string
-  length: string
-}
-
 interface EditableRenderOptions {
   config: ModulePageConfig
-  materialOptions: MaterialOption[]
+  materialOptions: MaterialSelectOption[]
+  materialSearch: MaterialSearchController
   warehouses: WarehouseOption[]
   formatCellValue: (value: unknown, columnType?: string) => string
   isItemColumnEditable: (columnKey: string, record?: ModuleLineItem) => boolean
@@ -176,54 +166,6 @@ function shouldRenderEditablePieceWeight(moduleKey: string, columnKey: string) {
   return isPurchaseOrder(moduleKey) && columnKey === 'pieceWeightTon'
 }
 
-function buildMaterialSnapshotLabel(record: ModuleLineItem) {
-  const materialName =
-    typeof record.materialName === 'string' ? record.materialName.trim() : ''
-  return [
-    asString(record.brand).trim() || materialName,
-    asString(record.category).trim(),
-    asString(record.material).trim(),
-    asString(record.spec).trim(),
-    asString(record.length).trim(),
-  ]
-    .filter(Boolean)
-    .join(' | ')
-}
-
-function withCurrentMaterialOption(
-  materialOptions: MaterialOption[],
-  record: ModuleLineItem,
-) {
-  const materialId = asString(record.materialId).trim()
-  if (!materialId) {
-    return materialOptions
-  }
-  if (materialOptions.some((option) => option.value === materialId)) {
-    return materialOptions
-  }
-
-  const materialCode = asString(record.materialCode).trim()
-  const label = buildMaterialSnapshotLabel(record) || materialCode
-  if (!label) {
-    return materialOptions
-  }
-
-  return [
-    {
-      disabled: true,
-      label,
-      code: materialCode,
-      brand: asString(record.brand).trim(),
-      material: asString(record.material).trim(),
-      category: asString(record.category).trim(),
-      spec: asString(record.spec).trim(),
-      length: asString(record.length).trim(),
-      value: materialId,
-    },
-    ...materialOptions,
-  ]
-}
-
 function withCurrentWarehouseOption(
   warehouses: WarehouseOption[],
   record: ModuleLineItem,
@@ -255,6 +197,7 @@ function withCurrentWarehouseOption(
 function buildEditableColumnRender({
   config,
   materialOptions,
+  materialSearch,
   warehouses,
   formatCellValue,
   isItemColumnEditable,
@@ -300,23 +243,14 @@ function buildEditableColumnRender({
       }
 
       if (editor?.control === 'material' || key === 'materialCode') {
-        const materialValue = asString(record.materialId).trim()
         return (
-          <Select
-            value={materialValue || undefined}
-            showSearch={{
-              filterOption: createStructuredMaterialFilterOption(),
-            }}
-            allowClear
-            className="w-full"
-            placeholder={i18next.t(
-              'modules.itemColumns.materialSearchPlaceholder',
-            )}
-            optionLabelProp="label"
-            onChange={(selectedValue) =>
-              handleMaterialSelect(record.id, String(selectedValue || ''))
+          <ModuleEditorMaterialSelect
+            record={record}
+            options={materialOptions}
+            search={materialSearch}
+            onChange={(materialId) =>
+              handleMaterialSelect(record.id, materialId)
             }
-            options={withCurrentMaterialOption(materialOptions, record)}
           />
         )
       }
@@ -501,6 +435,7 @@ export function buildModuleEditorDataColumns({
   config,
   itemColumns,
   materialOptions,
+  materialSearch,
   warehouses,
   formatCellValue,
   isItemColumnEditable,
@@ -515,6 +450,7 @@ export function buildModuleEditorDataColumns({
   const renderEditableColumn = buildEditableColumnRender({
     config,
     materialOptions,
+    materialSearch,
     warehouses,
     formatCellValue,
     isItemColumnEditable,
