@@ -26,7 +26,7 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import { modal } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import { formatDate } from '@/utils/formatters'
 import {
   getPrintItemFields,
@@ -48,6 +48,7 @@ import {
   type PendingOutputAction,
   type PrintJobFormValues,
   printJobModalReducer,
+  resolveSplitPieceCount,
 } from '@/views/modules/components/print-job-modal-state'
 import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
 import { usePrintJobItems } from '@/views/modules/use-print-job-items'
@@ -154,9 +155,10 @@ interface PrintJobOutputActionsInput {
   orderedPrintItemIds: string[]
   selectedItemIds: string[]
   selectedTemplate?: PrintTemplateRecord
+  splitPieceCount?: number
 }
 
-function createPrintJobOutputActions({
+export function createPrintJobOutputActions({
   brandOverrideEnabled,
   brandOverridesByItemId,
   dispatch,
@@ -170,6 +172,7 @@ function createPrintJobOutputActions({
   orderedPrintItemIds,
   selectedItemIds,
   selectedTemplate,
+  splitPieceCount,
 }: PrintJobOutputActionsInput) {
   const currentBrandOverridesByItemId = () => {
     const normalizedBrandOverridesByItemId: Record<string, string> = {}
@@ -198,6 +201,7 @@ function createPrintJobOutputActions({
       ...(currentBrandOverridesByItemId()
         ? { brandOverridesByItemId: currentBrandOverridesByItemId() }
         : {}),
+      ...(splitPieceCount ? { splitPieceCount } : {}),
     }
   }
 
@@ -316,6 +320,7 @@ export function PrintJobModal({
   const templateIdFromForm = Form.useWatch('templateId', form)
   const printOptionsFromForm =
     Form.useWatch('printOptions', form) ?? EMPTY_PRINT_OPTIONS
+  const splitPieceCountFromForm = Form.useWatch('splitPieceCount', form)
   const mergeModeFromForm = Form.useWatch('mergeMode', form)
   const printOptionSet = useMemo(
     () => new Set(printOptionsFromForm),
@@ -325,6 +330,13 @@ export function PrintJobModal({
   const hideRemark = printOptionSet.has('hideRemark')
   const brandOverrideEnabled = printOptionSet.has('enableBrandOverride')
   const itemSelectionEnabled = printOptionSet.has('enableItemSelection')
+  const splitPrintEnabled = printOptionSet.has('enableSplitPrint')
+  const splitPieceCount = resolveSplitPieceCount(
+    printOptionsFromForm,
+    splitPieceCountFromForm,
+  )
+  const splitPieceCountInvalid =
+    splitPrintEnabled && splitPieceCount === undefined
   const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
   const selectedTemplate =
     templates.find((template) => template.id === templateIdFromForm) ??
@@ -404,6 +416,7 @@ export function PrintJobModal({
     orderedPrintItemIds,
     selectedItemIds: selectedPrintItems.map((item) => item.id),
     selectedTemplate,
+    splitPieceCount,
   })
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -435,6 +448,12 @@ export function PrintJobModal({
     })
   }
 
+  const ensureValidSplitPieceCount = () => {
+    if (!splitPieceCountInvalid) return true
+    message.warning(t('modules.print.splitPieceCountPlaceholder'))
+    return false
+  }
+
   const canExportPrintXlsx = isSalesOrder && Boolean(onExportPrintXlsx)
   const pendingOutputAction = state.pendingOutputAction
   const hasSelectedPrintItems =
@@ -453,10 +472,12 @@ export function PrintJobModal({
           pendingOutputAction={pendingOutputAction}
           selectedTemplate={selectedTemplate}
           onExportPrintXlsx={() => {
+            if (!ensureValidSplitPieceCount()) return
             void handleExportPrintXlsx()
           }}
           onRequestClose={handleRequestClose}
           onPrint={(mode) => {
+            if (!ensureValidSplitPieceCount()) return
             void handlePrint(mode)
           }}
         />

@@ -94,6 +94,7 @@ export interface SalesOrderPrintXlsxOptions {
   brandOverridesByItemId?: Record<string, string>
   itemOrder?: string[]
   selectedItemIds?: string[]
+  splitPieceCount?: number
 }
 
 export interface ExportSalesOrderPrintXlsxPayload {

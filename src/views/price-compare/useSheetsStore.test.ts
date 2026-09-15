@@ -90,4 +90,30 @@ describe('useSheetsStore 多标签页同步', () => {
     })
     expect(store.current.sheets).toBe(before)
   })
+
+  it('项目级配置补丁持久化品牌限定与备注', async () => {
+    const store = renderStore()
+    act(() => {
+      store.current.assignProjectToUnassigned('p1', '项目')
+    })
+    act(() => {
+      store.current.setConfig({
+        brandRestriction: '仅中天',
+        remark: '含 12 米',
+      })
+    })
+
+    expect(store.current.config.brandRestriction).toBe('仅中天')
+    expect(store.current.config.remark).toBe('含 12 米')
+
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 350)
+      })
+    })
+    const raw = localStorage.getItem(LS_KEY)
+    const saved = JSON.parse(raw ?? '{}')
+    expect(saved.configs.p1.brandRestriction).toBe('仅中天')
+    expect(saved.configs.p1.remark).toBe('含 12 米')
+  })
 })

@@ -31,6 +31,10 @@ export type ProjectConfig = {
   hrb400eFallback: boolean
   /** 可选择的商品键(类别|材质|规格|长度); 为空表示全部可选 */
   products?: string[]
+  /** 品牌限定(项目级文本备注, 不参与自动过滤) */
+  brandRestriction?: string
+  /** 备注信息(项目级文本) */
+  remark?: string
 }
 
 export type SheetGroup = {

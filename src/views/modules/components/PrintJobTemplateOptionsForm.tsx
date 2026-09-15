@@ -1,10 +1,21 @@
 import type { FormInstance } from 'antd'
-import { Checkbox, Empty, Flex, Form, Select, Typography } from 'antd'
+import {
+  Checkbox,
+  Empty,
+  Flex,
+  Form,
+  InputNumber,
+  Select,
+  Typography,
+} from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import { pickDefaultPrintTemplate } from '@/utils/print-template'
-import type { PrintJobFormValues } from '@/views/modules/components/print-job-modal-state'
+import {
+  isValidSplitPieceCount,
+  type PrintJobFormValues,
+} from '@/views/modules/components/print-job-modal-state'
 
 interface Props {
   form: FormInstance<PrintJobFormValues>
@@ -21,6 +32,8 @@ export function PrintJobTemplateOptionsForm({
   isSalesOrder,
 }: Props) {
   const { t } = useTranslation()
+  const selectedPrintOptions = Form.useWatch('printOptions', form) ?? []
+  const splitPrintEnabled = selectedPrintOptions.includes('enableSplitPrint')
 
   return (
     <Form
@@ -71,8 +84,41 @@ export function PrintJobTemplateOptionsForm({
             <Checkbox value="enableItemSelection">
               {t('modules.print.enableItemSelection')}
             </Checkbox>
+            <Checkbox value="enableSplitPrint">
+              {t('modules.print.enableSplitPrint')}
+            </Checkbox>
           </Checkbox.Group>
         </Form.Item>
+        {splitPrintEnabled ? (
+          <Flex align="center" gap="small">
+            <Typography.Text className="whitespace-nowrap">
+              {t('modules.print.splitPieceCountLabel')}
+            </Typography.Text>
+            <Form.Item
+              name="splitPieceCount"
+              noStyle
+              rules={[
+                {
+                  validator: (_rule, value) =>
+                    isValidSplitPieceCount(value)
+                      ? Promise.resolve()
+                      : Promise.reject(
+                          new Error(
+                            t('modules.print.splitPieceCountPlaceholder'),
+                          ),
+                        ),
+                },
+              ]}
+            >
+              <InputNumber
+                min={1}
+                precision={0}
+                placeholder={t('modules.print.splitPieceCountPlaceholder')}
+                style={{ width: 120 }}
+              />
+            </Form.Item>
+          </Flex>
+        ) : null}
       </Flex>
     </Form>
   )

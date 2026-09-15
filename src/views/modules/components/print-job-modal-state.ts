@@ -8,11 +8,32 @@ export type PrintOptionKey =
   | 'hideRemark'
   | 'enableBrandOverride'
   | 'enableItemSelection'
+  | 'enableSplitPrint'
 
 export interface PrintJobFormValues {
   mergeMode: 'merge' | 'split'
   printOptions: PrintOptionKey[]
   templateId?: string
+  splitPieceCount?: number
+}
+
+/** 拆分打印的每份件数必须是 ≥1 的整数。 */
+export function isValidSplitPieceCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1
+}
+
+/**
+ * 仅当勾选「拆分打印」且件数为有效正整数时返回该件数，
+ * 其余情况返回 undefined，避免把空值或非法值传给后端。
+ */
+export function resolveSplitPieceCount(
+  printOptions: readonly PrintOptionKey[],
+  value: unknown,
+): number | undefined {
+  return printOptions.includes('enableSplitPrint') &&
+    isValidSplitPieceCount(value)
+    ? value
+    : undefined
 }
 
 export interface PrintJobModalState {

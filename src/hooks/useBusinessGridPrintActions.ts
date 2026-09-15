@@ -33,6 +33,7 @@ export interface PrintRenderOptions {
   brandOverridesByItemId?: Record<string, string>
   itemOrder?: string[]
   selectedItemIds?: string[]
+  splitPieceCount?: number
 }
 
 function normalizeXlsxFileName(value: unknown) {

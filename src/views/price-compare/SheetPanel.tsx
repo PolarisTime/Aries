@@ -38,6 +38,7 @@ import {
   SPOT_PRICE_MAX,
   syncSpotInputs,
 } from './core'
+import { LockableField } from './LockableField'
 import type {
   Brand,
   GridRow,
@@ -727,6 +728,10 @@ function SheetHeader({
   onToggleBest,
   selectedCount,
   onRemoveSelected,
+  brandRestriction,
+  remark,
+  onBrandRestrictionChange,
+  onRemarkChange,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -742,129 +747,148 @@ function SheetHeader({
   onToggleBest: () => void
   selectedCount: number
   onRemoveSelected: () => void
+  brandRestriction?: string
+  remark?: string
+  onBrandRestrictionChange?: (value: string) => void
+  onRemarkChange?: (value: string) => void
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
   return (
-    <Flex
-      justify="space-between"
-      align="center"
-      wrap="wrap"
-      gap={8}
-      className="price-compare-toolbar"
-    >
-      <Flex gap="small" align="center" wrap="wrap">
-        <Text strong>
-          {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
-        </Text>
-        <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            {t('priceCompare.sheet.orderDate')}
+    <Flex vertical gap={8} className="price-compare-toolbar">
+      <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+        <Flex gap="small" align="center" wrap="wrap">
+          <Text strong>
+            {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
           </Text>
-          <DatePicker
-            size="small"
-            style={{ width: 132 }}
-            value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
-            format={dateFormat}
-            allowClear={false}
-            onChange={(value) =>
-              value &&
-              patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
-            }
-          />
-        </Space>
-        <Space size="small">
-          <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
+          <Space size="small">
             <Text type="secondary" className="price-compare-sub">
-              <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
+              {t('priceCompare.sheet.orderDate')}
             </Text>
-          </Tooltip>
-          <DatePicker
-            size="small"
-            style={{ width: 132 }}
-            value={refDate ? dayjs(refDate) : null}
-            format={dateFormat}
-            allowClear={false}
-            cellRender={(current, info) => {
-              if (info.type !== 'date') return info.originNode
-              const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
-              const periods = availability[key] ?? []
-              return (
-                <div className="price-compare-cal-cell">
-                  {info.originNode}
-                  <div className="price-compare-cal-dots">
-                    {['上午', '中午', '下午'].map((period) => (
-                      <i
-                        key={period}
-                        className={periods.includes(period) ? 'is-on' : ''}
-                      />
-                    ))}
+            <DatePicker
+              size="small"
+              style={{ width: 132 }}
+              value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
+              format={dateFormat}
+              allowClear={false}
+              onChange={(value) =>
+                value &&
+                patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
+              }
+            />
+          </Space>
+          <Space size="small">
+            <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
+              <Text type="secondary" className="price-compare-sub">
+                <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
+              </Text>
+            </Tooltip>
+            <DatePicker
+              size="small"
+              style={{ width: 132 }}
+              value={refDate ? dayjs(refDate) : null}
+              format={dateFormat}
+              allowClear={false}
+              cellRender={(current, info) => {
+                if (info.type !== 'date') return info.originNode
+                const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
+                const periods = availability[key] ?? []
+                return (
+                  <div className="price-compare-cal-cell">
+                    {info.originNode}
+                    <div className="price-compare-cal-dots">
+                      {['上午', '中午', '下午'].map((period) => (
+                        <i
+                          key={period}
+                          className={periods.includes(period) ? 'is-on' : ''}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            }}
-            onChange={(value) => {
-              if (!value) return
-              patchSheet(sheet.id, { refDate: value.format('YYYY-MM-DD') })
-            }}
-          />
-          <Select
+                )
+              }}
+              onChange={(value) => {
+                if (!value) return
+                patchSheet(sheet.id, { refDate: value.format('YYYY-MM-DD') })
+              }}
+            />
+            <Select
+              size="small"
+              style={{ width: 110 }}
+              value={refPeriod || undefined}
+              onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
+              options={periods.map((period) => ({
+                value: period,
+                label: period,
+              }))}
+            />
+          </Space>
+        </Flex>
+
+        <Space size={4} wrap>
+          <Button size="small" icon={<PlusOutlined />} onClick={onAddGroup}>
+            {t('priceCompare.sheet.group')}
+          </Button>
+          <Button
             size="small"
-            style={{ width: 110 }}
-            value={refPeriod || undefined}
-            onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-            options={periods.map((period) => ({
-              value: period,
-              label: period,
-            }))}
-          />
+            type={bestOn ? 'primary' : 'default'}
+            icon={<TrophyOutlined />}
+            onClick={onToggleBest}
+          >
+            {t('priceCompare.sheet.bestDiff')}
+          </Button>
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            loading={refreshing}
+            onClick={onRefresh}
+          >
+            {t('priceCompare.sheet.refreshPrice')}
+          </Button>
+          {onOpenConfig ? (
+            <Button
+              size="small"
+              icon={<SettingOutlined />}
+              onClick={onOpenConfig}
+            >
+              {t('priceCompare.sheet.config')}
+            </Button>
+          ) : null}
+          {selectedCount > 0 ? (
+            <Popconfirm
+              title={t('priceCompare.sheet.removeSelectedTitle', {
+                selected: selectedCount,
+              })}
+              okText={t('common.delete')}
+              cancelText={t('common.cancel')}
+              onConfirm={onRemoveSelected}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />}>
+                {t('common.delete')}
+              </Button>
+            </Popconfirm>
+          ) : null}
         </Space>
       </Flex>
 
-      <Space size={4} wrap>
-        <Button size="small" icon={<PlusOutlined />} onClick={onAddGroup}>
-          {t('priceCompare.sheet.group')}
-        </Button>
-        <Button
-          size="small"
-          type={bestOn ? 'primary' : 'default'}
-          icon={<TrophyOutlined />}
-          onClick={onToggleBest}
-        >
-          {t('priceCompare.sheet.bestDiff')}
-        </Button>
-        <Button
-          size="small"
-          icon={<ReloadOutlined />}
-          loading={refreshing}
-          onClick={onRefresh}
-        >
-          {t('priceCompare.sheet.refreshPrice')}
-        </Button>
-        {onOpenConfig ? (
-          <Button
-            size="small"
-            icon={<SettingOutlined />}
-            onClick={onOpenConfig}
-          >
-            {t('priceCompare.sheet.config')}
-          </Button>
-        ) : null}
-        {selectedCount > 0 ? (
-          <Popconfirm
-            title={t('priceCompare.sheet.removeSelectedTitle', {
-              selected: selectedCount,
-            })}
-            okText={t('common.delete')}
-            cancelText={t('common.cancel')}
-            onConfirm={onRemoveSelected}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />}>
-              {t('common.delete')}
-            </Button>
-          </Popconfirm>
-        ) : null}
-      </Space>
+      <Flex
+        gap="small"
+        align="center"
+        wrap="wrap"
+        className="price-compare-meta-row"
+      >
+        <LockableField
+          label={t('priceCompare.sheet.brandRestriction')}
+          value={brandRestriction ?? ''}
+          onConfirm={(value) => onBrandRestrictionChange?.(value)}
+        />
+        <LockableField
+          label={t('priceCompare.sheet.remark')}
+          value={remark ?? ''}
+          width={220}
+          onConfirm={(value) => onRemarkChange?.(value)}
+        />
+      </Flex>
     </Flex>
   )
 }
@@ -895,6 +919,10 @@ type Props = {
   availability?: Record<string, string[]>
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
+  brandRestriction?: string
+  remark?: string
+  onBrandRestrictionChange?: (value: string) => void
+  onRemarkChange?: (value: string) => void
 }
 
 /** 单个报单: 分组在下方堆叠展示, 现货价同品牌/规格/材质/长度自动联动。 */
@@ -919,6 +947,10 @@ export function SheetPanel(props: Props) {
     availability = {},
     chrome = true,
     spotRef,
+    brandRestriction,
+    remark,
+    onBrandRestrictionChange,
+    onRemarkChange,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1094,6 +1126,10 @@ export function SheetPanel(props: Props) {
         onToggleBest={() => setBestOn((value) => !value)}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
+        brandRestriction={brandRestriction}
+        remark={remark}
+        onBrandRestrictionChange={onBrandRestrictionChange}
+        onRemarkChange={onRemarkChange}
       />
 
       {sheet.groups.map((group, index) => {
