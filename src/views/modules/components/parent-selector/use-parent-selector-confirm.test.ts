@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import { useParentSelectorConfirm } from './use-parent-selector-confirm'
 
@@ -27,6 +27,10 @@ vi.mock('@/api/business/business-crud', () => ({
 const t = (key: string) => key
 
 describe('useParentSelectorConfirm', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('selectedSummary 单选无选中行时为空提示', () => {
     const { selectedSummary } = useParentSelectorConfirm({
       parentModuleKey: 'purchase-order',
