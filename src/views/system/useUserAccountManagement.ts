@@ -107,8 +107,9 @@ export function useUserAccountManagement() {
   const resetPasswordMutation = useMutation({
     mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
       resetUserPassword(id, newPassword),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       message.success(t('system.userAccount.passwordResetSuccess'))
+      invalidateUsers(variables.id)
       setResetUser(null)
     },
     onError: (error: Error) =>

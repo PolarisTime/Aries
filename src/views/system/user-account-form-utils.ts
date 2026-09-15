@@ -7,12 +7,6 @@ import type {
 } from '@/shared/schemas'
 import { userCreateFormSchema, userFormSchema } from '@/shared/schemas/user'
 
-/** 用户账号状态 → 界面中文标签。 */
-export const USER_STATUS_LABELS: Record<UserStatus, string> = {
-  NORMAL: '正常',
-  DISABLED: '禁用',
-}
-
 export function isUserActive(status: UserStatus): boolean {
   return status === 'NORMAL'
 }

@@ -34,9 +34,9 @@ export function UserPasswordResetModal({
   }, [form, open])
 
   const handleOk = async () => {
+    if (!user) return
     try {
       const values = await form.validateFields()
-      if (!user) return
       if (values.newPassword !== values.confirmPassword) {
         form.setFields([
           {

@@ -85,7 +85,3 @@ export type UserFormValues = z.input<typeof userFormSchema>
 export const userCreateFormSchema = userFormSchema.extend({
   password: userPasswordSchema,
 })
-
-export const userPasswordResetFormSchema = z.object({
-  newPassword: userPasswordSchema,
-})
