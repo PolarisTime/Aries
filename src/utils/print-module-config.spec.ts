@@ -19,6 +19,15 @@ describe('getPrintItemFields', () => {
     expect(keys).toContain('amount')
   })
 
+  it('销售退货单返回全量字段（含单价/金额）', () => {
+    const keys = getPrintItemFields('sales-return').map(({ key }) => key)
+    expect(keys).toContain('quantity')
+    expect(keys).toContain('pieceWeightTon')
+    expect(keys).toContain('weightTon')
+    expect(keys).toContain('unitPrice')
+    expect(keys).toContain('amount')
+  })
+
   it('普通单据模块隐藏单价/金额', () => {
     const keys = getPrintItemFields('purchase-order').map(({ key }) => key)
     expect(keys).not.toContain('unitPrice')

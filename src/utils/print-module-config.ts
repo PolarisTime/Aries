@@ -136,6 +136,7 @@ const PRINT_ITEM_FIELDS_BY_MODULE = {
   'customer-statement': CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS,
   'freight-statement': FREIGHT_STATEMENT_PRINT_ITEM_FIELDS,
   'sales-order': FULL_PRINT_ITEM_FIELDS,
+  'sales-return': FULL_PRINT_ITEM_FIELDS,
 } satisfies Partial<Record<ModuleKey, PrintItemFieldSpec[]>>
 
 export function getPrintItemFields(moduleKey: string): PrintItemFieldSpec[] {
