@@ -1,7 +1,8 @@
-import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
+import { CloseOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import {
   Button,
   Checkbox,
+  Divider,
   Empty,
   Flex,
   Input,
@@ -105,6 +106,32 @@ export function draftToConfig(
   }
 }
 
+/* ------------------------------------------------------------------ 通用 */
+
+function SectionHeader({
+  title,
+  description,
+  extra,
+}: {
+  title: string
+  description?: string
+  extra?: React.ReactNode
+}) {
+  return (
+    <Flex justify="space-between" align="flex-start" gap={12} wrap>
+      <Flex vertical gap={2}>
+        <Text strong>{title}</Text>
+        {description ? (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {description}
+          </Text>
+        ) : null}
+      </Flex>
+      {extra ? <Flex align="center">{extra}</Flex> : null}
+    </Flex>
+  )
+}
+
 /* ------------------------------------------------------------------ 基础 */
 
 function BasicSection({
@@ -116,26 +143,21 @@ function BasicSection({
 }) {
   const { t } = useTranslation()
   return (
-    <Flex vertical gap={12}>
-      <Flex align="center" gap={8} className="price-compare-config-premium">
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('priceCompare.config.premiumLabel')}
-        </Text>
+    <Flex vertical className="pc-config-card">
+      <Flex align="center" justify="space-between" gap={16}>
+        <Text>{t('priceCompare.config.premiumLabel')}</Text>
         <InputNumber
-          size="small"
           min={0}
           max={999}
-          style={{ width: 120 }}
+          style={{ width: 160 }}
           value={draft.premium}
           onChange={(value) => onChange({ premium: value ?? 0 })}
         />
       </Flex>
-      <Flex align="center" justify="space-between" gap={8}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('priceCompare.config.fallbackLabel')}
-        </Text>
+      <Divider style={{ margin: '12px 0' }} />
+      <Flex align="center" justify="space-between" gap={16}>
+        <Text>{t('priceCompare.config.fallbackLabel')}</Text>
         <Switch
-          size="small"
           checked={draft.hrb400eFallback}
           onChange={(value) => onChange({ hrb400eFallback: value })}
         />
@@ -158,6 +180,10 @@ function BrandSection({
   const [keyword, setKeyword] = useState('')
   const { t } = useTranslation()
   const selectedBrandSet = useMemo(() => new Set(draft.brands), [draft.brands])
+  const designatedSet = useMemo(
+    () => new Set(draft.designatedBrands),
+    [draft.designatedBrands],
+  )
   const selectedBrands = useMemo(
     () => brandOptions.filter((name) => selectedBrandSet.has(name)),
     [brandOptions, selectedBrandSet],
@@ -174,157 +200,184 @@ function BrandSection({
   const add = (names: string[]) =>
     onChange({ brands: [...new Set([...draft.brands, ...names])] })
   const remove = (name: string) =>
-    onChange({ brands: draft.brands.filter((item) => item !== name) })
+    onChange({
+      brands: draft.brands.filter((item) => item !== name),
+      designatedBrands: draft.designatedBrands.filter((item) => item !== name),
+    })
+  const toggleCategory = (name: string, category: string, checked: boolean) => {
+    const current = draft.categoryMap[name] ?? CATEGORIES
+    const next = checked
+      ? [...new Set([...current, category])]
+      : current.filter((item) => item !== category)
+    onChange({ categoryMap: { ...draft.categoryMap, [name]: next } })
+  }
 
   return (
-    <Flex vertical gap={12}>
-      <Flex justify="space-between" align="center" gap={8} wrap="wrap">
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('priceCompare.config.brandsHint')}
-        </Text>
-        <Space size={4}>
+    <Flex vertical gap={20}>
+      <Flex vertical gap={12}>
+        <SectionHeader
+          title={t('priceCompare.config.brandsTitle')}
+          description={t('priceCompare.config.brandsHint')}
+          extra={
+            <Space size={4}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t('priceCompare.config.selectedCount', {
+                  selected: draft.brands.length,
+                  total: brandOptions.length,
+                })}
+              </Text>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => onChange({ brands: brandOptions })}
+              >
+                {t('priceCompare.config.selectAll')}
+              </Button>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => onChange({ brands: [], designatedBrands: [] })}
+              >
+                {t('priceCompare.config.clear')}
+              </Button>
+            </Space>
+          }
+        />
+
+        <Flex vertical gap={8}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('priceCompare.config.selectedCount', {
-              selected: draft.brands.length,
-              total: brandOptions.length,
+            {t('priceCompare.config.selectedBrands', {
+              selected: selectedBrands.length,
             })}
           </Text>
-          <Button
-            size="small"
-            type="text"
-            onClick={() => onChange({ brands: brandOptions })}
-          >
-            {t('priceCompare.config.selectAll')}
-          </Button>
-          <Button
-            size="small"
-            type="text"
-            onClick={() => onChange({ brands: [] })}
-          >
-            {t('priceCompare.config.clear')}
-          </Button>
-        </Space>
-      </Flex>
-
-      <div>
-        <Flex justify="space-between" align="center" gap={8} wrap="wrap">
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('priceCompare.config.designatedBrandsHint')}
-          </Text>
-          <Select
-            mode="multiple"
-            size="small"
-            allowClear
-            showSearch
-            style={{ minWidth: 260, maxWidth: 360 }}
-            placeholder={t('priceCompare.config.designatedBrands')}
-            aria-label={t('priceCompare.config.designatedBrands')}
-            value={draft.designatedBrands}
-            options={brandOptions.map((name) => ({ value: name, label: name }))}
-            onChange={(values) => onChange({ designatedBrands: values })}
-          />
-        </Flex>
-      </div>
-
-      <div>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('priceCompare.config.selectedBrands', {
-            selected: selectedBrands.length,
-          })}
-        </Text>
-        <Flex vertical gap={6} style={{ marginTop: 6 }}>
           {selectedBrands.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={t('priceCompare.config.noBrandSelected')}
             />
           ) : (
-            selectedBrands.map((name) => (
-              <div key={name} className="price-compare-config-brand is-active">
-                <Flex align="center" gap={12} wrap="wrap">
-                  <Text strong style={{ minWidth: 72 }}>
-                    {name}
-                  </Text>
-                  <Space size={4}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {t('priceCompare.config.freight')}
-                    </Text>
-                    <InputNumber
-                      size="small"
-                      min={0}
-                      max={9999}
-                      style={{ width: 72 }}
-                      value={draft.freightMap[name] ?? DEFAULT_FREIGHT}
-                      onChange={(value) =>
-                        onChange({
-                          freightMap: {
-                            ...draft.freightMap,
-                            [name]: Number(value) || 0,
-                          },
-                        })
-                      }
-                    />
-                  </Space>
-                  <Space size={4}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {t('priceCompare.config.category')}
-                    </Text>
-                    <Checkbox.Group
-                      value={draft.categoryMap[name] ?? CATEGORIES}
-                      options={CATEGORIES.map((category) => ({
-                        label: category,
-                        value: category,
-                      }))}
-                      onChange={(values) =>
-                        onChange({
-                          categoryMap: { ...draft.categoryMap, [name]: values },
-                        })
-                      }
-                    />
-                  </Space>
-                  <Button
-                    size="small"
-                    type="text"
-                    icon={<CloseOutlined />}
-                    style={{ marginLeft: 'auto' }}
-                    onClick={() => remove(name)}
-                  />
-                </Flex>
-              </div>
-            ))
+            <Flex vertical gap={8}>
+              {selectedBrands.map((name) => (
+                <div key={name} className="pc-brand-row">
+                  <Flex align="center" justify="space-between" gap={12} wrap>
+                    <Space size={6} align="center">
+                      <Text strong style={{ minWidth: 56 }}>
+                        {name}
+                      </Text>
+                      {designatedSet.has(name) ? (
+                        <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+                          {t('priceCompare.config.designatedBadge')}
+                        </Tag>
+                      ) : null}
+                    </Space>
+                    <Flex align="center" gap={16} wrap>
+                      <Space size={6} align="center">
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('priceCompare.config.freight')}
+                        </Text>
+                        <InputNumber
+                          size="small"
+                          min={0}
+                          max={9999}
+                          style={{ width: 84 }}
+                          aria-label={`${name} ${t('priceCompare.config.freight')}`}
+                          value={draft.freightMap[name] ?? DEFAULT_FREIGHT}
+                          onChange={(value) =>
+                            onChange({
+                              freightMap: {
+                                ...draft.freightMap,
+                                [name]: Number(value) || 0,
+                              },
+                            })
+                          }
+                        />
+                      </Space>
+                      <Space size={4} align="center">
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('priceCompare.config.category')}
+                        </Text>
+                        {CATEGORIES.map((category) => (
+                          <Tag.CheckableTag
+                            key={category}
+                            checked={(
+                              draft.categoryMap[name] ?? CATEGORIES
+                            ).includes(category)}
+                            onChange={(checked) =>
+                              toggleCategory(name, category, checked)
+                            }
+                          >
+                            {category}
+                          </Tag.CheckableTag>
+                        ))}
+                      </Space>
+                      <Button
+                        size="small"
+                        type="text"
+                        danger
+                        icon={<CloseOutlined />}
+                        aria-label={`${t('common.delete')} ${name}`}
+                        onClick={() => remove(name)}
+                      />
+                    </Flex>
+                  </Flex>
+                </div>
+              ))}
+            </Flex>
           )}
         </Flex>
-      </div>
+      </Flex>
 
-      <div>
-        <Flex justify="space-between" align="center" gap={8} wrap="wrap">
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('priceCompare.config.unselectedBrands')}
-          </Text>
-          <Input
-            size="small"
-            allowClear
-            prefix={<SearchOutlined />}
-            placeholder={t('priceCompare.config.searchBrand')}
-            style={{ width: 150 }}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-        </Flex>
-        <div className="price-compare-brand-pool">
+      <Flex vertical gap={6} className="pc-field">
+        <Text strong>{t('priceCompare.config.designatedBrands')}</Text>
+        <Select
+          mode="multiple"
+          allowClear
+          showSearch
+          style={{ width: '100%' }}
+          placeholder={t('priceCompare.config.designatedBrands')}
+          aria-label={t('priceCompare.config.designatedBrands')}
+          value={draft.designatedBrands}
+          options={brandOptions.map((name) => ({ value: name, label: name }))}
+          onChange={(values) => onChange({ designatedBrands: values })}
+        />
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {t('priceCompare.config.designatedBrandsHint')}
+        </Text>
+      </Flex>
+
+      <Flex vertical gap={8}>
+        <SectionHeader
+          title={t('priceCompare.config.unselectedBrands')}
+          extra={
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder={t('priceCompare.config.searchBrand')}
+              style={{ width: 180 }}
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+            />
+          }
+        />
+        <div className="pc-brand-pool">
           {unselected.length === 0 ? (
             <Text type="secondary" style={{ fontSize: 12 }}>
               {t('priceCompare.config.none')}
             </Text>
           ) : (
-            <Checkbox.Group
-              value={[]}
-              options={unselected.map((name) => ({ label: name, value: name }))}
-              onChange={(values) => add(values)}
-            />
+            unselected.map((name) => (
+              <Tag
+                key={name}
+                icon={<PlusOutlined />}
+                className="pc-brand-pool-tag"
+                onClick={() => add([name])}
+              >
+                {name}
+              </Tag>
+            ))
           )}
         </div>
-      </div>
+      </Flex>
     </Flex>
   )
 }
@@ -387,28 +440,37 @@ function ProductSection({
   }
 
   return (
-    <Flex vertical gap={10}>
-      <Flex justify="space-between" align="center" gap={8} wrap="wrap">
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('priceCompare.config.productsHint')}
-        </Text>
-        <Space size={4}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('priceCompare.config.selectedCount', {
-              selected: draft.products.length,
-              total: allKeys.length,
-            })}
-          </Text>
-          <Button size="small" onClick={() => onChange({ products: allKeys })}>
-            {t('priceCompare.config.selectAll')}
-          </Button>
-          <Button size="small" onClick={() => onChange({ products: [] })}>
-            {t('priceCompare.config.clear')}
-          </Button>
-        </Space>
-      </Flex>
+    <Flex vertical gap={12}>
+      <SectionHeader
+        title={t('priceCompare.config.productsTitle')}
+        description={t('priceCompare.config.productsHint')}
+        extra={
+          <Space size={4}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {t('priceCompare.config.selectedCount', {
+                selected: draft.products.length,
+                total: allKeys.length,
+              })}
+            </Text>
+            <Button
+              size="small"
+              type="link"
+              onClick={() => onChange({ products: allKeys })}
+            >
+              {t('priceCompare.config.selectAll')}
+            </Button>
+            <Button
+              size="small"
+              type="link"
+              onClick={() => onChange({ products: [] })}
+            >
+              {t('priceCompare.config.clear')}
+            </Button>
+          </Space>
+        }
+      />
 
-      <Flex gap={6} align="center" wrap="wrap">
+      <Flex gap={8} align="center" wrap>
         <Text type="secondary" style={{ fontSize: 12 }}>
           {t('priceCompare.config.material')}
         </Text>
@@ -428,11 +490,10 @@ function ProductSection({
           </Tag.CheckableTag>
         ))}
         <Input
-          size="small"
           allowClear
           prefix={<SearchOutlined />}
           placeholder={t('priceCompare.config.searchSpec')}
-          style={{ width: 150, marginLeft: 'auto' }}
+          style={{ width: 180, marginLeft: 'auto' }}
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
         />
@@ -547,7 +608,7 @@ export function ProjectConfigModal({
     <Modal
       title={t('priceCompare.config.title')}
       open={open}
-      width={680}
+      width={720}
       destroyOnHidden
       okText={t('common.save')}
       cancelText={t('common.cancel')}
@@ -561,7 +622,6 @@ export function ProjectConfigModal({
       }}
     >
       <Tabs
-        size="small"
         items={[
           {
             key: 'basic',

@@ -2123,11 +2123,13 @@ export const enUS = {
       },
       premiumLabel: '12m premium (CNY/ton, rebar only)',
       fallbackLabel: 'Use HRB400E price when HRB400 has no quote (prefix E)',
+      brandsTitle: 'Participating Brands',
       brandsHint:
         'Brands and categories in comparison (disabled categories are hidden)',
       designatedBrands: 'Designated Brands',
       designatedBrandsHint:
         'Designated brands (display only, excluded from automatic filtering)',
+      designatedBadge: 'Designated',
       selectedCount: 'Selected {{selected}}/{{total}}',
       selectAll: 'Select All',
       clear: 'Clear',
@@ -2138,6 +2140,7 @@ export const enUS = {
       unselectedBrands: 'Unselected brands (click to add)',
       searchBrand: 'Search brand',
       none: 'None',
+      productsTitle: 'Available Products',
       productsHint:
         'Products selectable when ordering (all by default; uncheck to remove)',
       material: 'Material',
