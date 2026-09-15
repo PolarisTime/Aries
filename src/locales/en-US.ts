@@ -2103,7 +2103,6 @@ export const enUS = {
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',
       unspecifiedProject: 'Unspecified project',
       orderDate: 'Order Date',
-      brandRestriction: 'Brand Restriction',
       remark: 'Remark',
       lock: 'Locked. Unlock to edit.',
       unlock: 'Unlock',
@@ -2126,6 +2125,9 @@ export const enUS = {
       fallbackLabel: 'Use HRB400E price when HRB400 has no quote (prefix E)',
       brandsHint:
         'Brands and categories in comparison (disabled categories are hidden)',
+      designatedBrands: 'Designated Brands',
+      designatedBrandsHint:
+        'Designated brands (display only, excluded from automatic filtering)',
       selectedCount: 'Selected {{selected}}/{{total}}',
       selectAll: 'Select All',
       clear: 'Clear',

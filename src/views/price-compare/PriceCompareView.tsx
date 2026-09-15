@@ -270,11 +270,8 @@ export function PriceCompareView() {
             onOpenConfig={() => setConfigOpen(true)}
             availability={availability}
             spotRef={spotRef}
-            brandRestriction={config.brandRestriction}
+            designatedBrands={config.designatedBrands}
             remark={config.remark}
-            onBrandRestrictionChange={(value) =>
-              setConfig({ brandRestriction: value })
-            }
             onRemarkChange={(value) => setConfig({ remark: value })}
           />
         </Watermark>

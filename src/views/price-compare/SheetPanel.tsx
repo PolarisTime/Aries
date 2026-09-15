@@ -17,6 +17,7 @@ import {
   Select,
   Space,
   Table,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd'
@@ -671,9 +672,8 @@ function SheetHeader({
   onToggleBest,
   selectedCount,
   onRemoveSelected,
-  brandRestriction,
+  designatedBrands,
   remark,
-  onBrandRestrictionChange,
   onRemarkChange,
 }: {
   sheet: PriceSheet
@@ -689,9 +689,8 @@ function SheetHeader({
   onToggleBest: () => void
   selectedCount: number
   onRemoveSelected: () => void
-  brandRestriction?: string
+  designatedBrands?: string[]
   remark?: string
-  onBrandRestrictionChange?: (value: string) => void
   onRemarkChange?: (value: string) => void
 }) {
   const { t } = useTranslation()
@@ -817,16 +816,27 @@ function SheetHeader({
         className="price-compare-meta-row"
       >
         <LockableField
-          label={t('priceCompare.sheet.brandRestriction')}
-          value={brandRestriction ?? ''}
-          onConfirm={(value) => onBrandRestrictionChange?.(value)}
-        />
-        <LockableField
           label={t('priceCompare.sheet.remark')}
           value={remark ?? ''}
           width={220}
           onConfirm={(value) => onRemarkChange?.(value)}
         />
+        <Space size={4} align="center" className="price-compare-meta-field">
+          <span className="price-compare-sub">
+            {t('priceCompare.config.designatedBrands')}
+          </span>
+          {designatedBrands?.length ? (
+            <Flex gap={4} wrap="wrap" align="center">
+              {designatedBrands.map((brand) => (
+                <Tag key={brand} color="blue" style={{ marginInlineEnd: 0 }}>
+                  {brand}
+                </Tag>
+              ))}
+            </Flex>
+          ) : (
+            <Text type="secondary">-</Text>
+          )}
+        </Space>
       </Flex>
     </Flex>
   )
@@ -858,9 +868,8 @@ type Props = {
   availability?: Record<string, string[]>
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
-  brandRestriction?: string
+  designatedBrands?: string[]
   remark?: string
-  onBrandRestrictionChange?: (value: string) => void
   onRemarkChange?: (value: string) => void
 }
 
@@ -886,9 +895,8 @@ export function SheetPanel(props: Props) {
     availability = {},
     chrome = true,
     spotRef,
-    brandRestriction,
+    designatedBrands,
     remark,
-    onBrandRestrictionChange,
     onRemarkChange,
   } = props
   const { t } = useTranslation()
@@ -1012,9 +1020,8 @@ export function SheetPanel(props: Props) {
         onToggleBest={() => setBestOn((value) => !value)}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
-        brandRestriction={brandRestriction}
+        designatedBrands={designatedBrands}
         remark={remark}
-        onBrandRestrictionChange={onBrandRestrictionChange}
         onRemarkChange={onRemarkChange}
       />
 

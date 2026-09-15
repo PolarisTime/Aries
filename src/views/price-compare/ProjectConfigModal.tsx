@@ -7,6 +7,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Select,
   Space,
   Switch,
   Tabs,
@@ -43,9 +44,10 @@ export type ProjectConfigDraft = {
   premium: number
   hrb400eFallback: boolean
   products: string[]
+  designatedBrands: string[]
 }
 
-function createDraft(
+export function createDraft(
   config: ProjectConfig,
   brandOptions: string[],
   varieties: Variety[],
@@ -71,10 +73,11 @@ function createDraft(
     products: config.products?.length
       ? config.products
       : varieties.map(varietyKey),
+    designatedBrands: config.designatedBrands ?? [],
   }
 }
 
-function draftToConfig(
+export function draftToConfig(
   draft: ProjectConfigDraft,
   varieties: Variety[],
 ): ProjectConfig {
@@ -96,6 +99,9 @@ function draftToConfig(
     hrb400eFallback: draft.hrb400eFallback,
     products:
       draft.products.length === varieties.length ? undefined : draft.products,
+    designatedBrands: draft.designatedBrands.length
+      ? draft.designatedBrands
+      : undefined,
   }
 }
 
@@ -199,6 +205,26 @@ function BrandSection({
           </Button>
         </Space>
       </Flex>
+
+      <div>
+        <Flex justify="space-between" align="center" gap={8} wrap="wrap">
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {t('priceCompare.config.designatedBrandsHint')}
+          </Text>
+          <Select
+            mode="multiple"
+            size="small"
+            allowClear
+            showSearch
+            style={{ minWidth: 260, maxWidth: 360 }}
+            placeholder={t('priceCompare.config.designatedBrands')}
+            aria-label={t('priceCompare.config.designatedBrands')}
+            value={draft.designatedBrands}
+            options={brandOptions.map((name) => ({ value: name, label: name }))}
+            onChange={(values) => onChange({ designatedBrands: values })}
+          />
+        </Flex>
+      </div>
 
       <div>
         <Text type="secondary" style={{ fontSize: 12 }}>
