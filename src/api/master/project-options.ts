@@ -128,18 +128,29 @@ export async function fetchProjectOptions(
   return normalizeProjectOptions(response)
 }
 
+const PROJECT_OPTIONS_PAGE_SIZE = 200
+
 export async function fetchProjectAbbreviationOptions(
   signal?: AbortSignal,
 ): Promise<ProjectAbbreviationOption[]> {
-  const response = await apiGet(ENDPOINTS.PROJECTS, projectPageResponseSchema, {
-    params: {
-      page: 0,
-      size: 200,
-      sortBy: 'projectCode',
-      direction: 'asc',
-      status: '正常',
-    },
-    signal,
-  })
-  return toProjectAbbreviationOptions(response.content)
+  const fetchPage = (page: number) =>
+    apiGet(ENDPOINTS.PROJECTS, projectPageResponseSchema, {
+      params: {
+        page,
+        size: PROJECT_OPTIONS_PAGE_SIZE,
+        sortBy: 'projectCode',
+        direction: 'asc',
+        status: '正常',
+      },
+      signal,
+    })
+
+  // 项目下拉必须覆盖全部启用项目：按总页数拉全，避免只取首页截断后选不到。
+  const firstPage = await fetchPage(0)
+  const rows = [...firstPage.content]
+  for (let page = 1; page < firstPage.totalPages; page += 1) {
+    const response = await fetchPage(page)
+    rows.push(...response.content)
+  }
+  return toProjectAbbreviationOptions(rows)
 }

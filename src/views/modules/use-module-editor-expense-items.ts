@@ -1,5 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import {
   type CreatedExpenseMaterial,
   createExpenseMaterial,
@@ -7,8 +11,14 @@ import {
 } from '@/api/master/materials'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import {
+  MATERIAL_SEARCH_DEBOUNCE_MS,
+  mergeMaterialRecords,
+} from '@/module-system/editor/module-editor-material-options'
+import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import { useAuthStore } from '@/stores/authStore'
 import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 
 /** 附加费用类主数据标识，前后端一致。 */
@@ -33,6 +43,9 @@ export function useModuleEditorExpenseItems({
   const [expenseSelectedItemIds, setExpenseSelectedItemIds] = useState<
     string[]
   >([])
+  const [materialSearchKeyword, setMaterialSearchKeyword] = useState('')
+  const [debouncedMaterialSearchKeyword, setDebouncedMaterialSearchKeyword] =
+    useState('')
 
   // 附加费用主数据可能排在分页末页，必须在后端按类型过滤后单独拉取，
   // 不能在“商品全量前 200 条”里做客户端过滤，否则费用项永远取不到。
@@ -46,23 +59,71 @@ export function useModuleEditorExpenseItems({
     staleTime: STALE_MASTER_OPTIONS,
   })
 
+  useEffect(() => {
+    const keyword = materialSearchKeyword.trim()
+    if (!keyword) {
+      setDebouncedMaterialSearchKeyword('')
+      return
+    }
+    const timer = window.setTimeout(
+      () => setDebouncedMaterialSearchKeyword(keyword),
+      MATERIAL_SEARCH_DEBOUNCE_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [materialSearchKeyword])
+
+  // 附加费用超过首页 200 条时同样需要在服务端搜索，否则只能快捷新增出重复项。
+  const { data: expenseSearchPage, isFetching: isExpenseSearchFetching } =
+    useQuery({
+      queryKey: QUERY_KEYS.masterOptions.expenseMaterialSearch(
+        debouncedMaterialSearchKeyword,
+      ),
+      queryFn: ({ signal }) =>
+        fetchMaterialSearch(
+          debouncedMaterialSearchKeyword,
+          200,
+          EXPENSE_MATERIAL_TYPE,
+          signal,
+        ),
+      enabled: open && !!token && debouncedMaterialSearchKeyword.length > 0,
+      staleTime: STALE_MASTER_OPTIONS,
+      placeholderData: keepPreviousData,
+    })
+
+  const expenseMaterialRecords = useMemo(() => {
+    const searchResults = debouncedMaterialSearchKeyword
+      ? (expenseSearchPage?.content ?? [])
+      : []
+    return mergeMaterialRecords(searchResults, expenseMaterials)
+  }, [debouncedMaterialSearchKeyword, expenseSearchPage, expenseMaterials])
+
   // 仅保留“附加费用”类型的商品作为费用项候选，并过滤掉缺名称/ID 的脏数据。
   const expenseMaterialOptions = useMemo(() => {
-    return expenseMaterials.flatMap((material) => {
-      if (material.materialType !== EXPENSE_MATERIAL_TYPE) return []
-      const label = material.material || ''
-      const value = String(material.id ?? '')
+    return expenseMaterialRecords.flatMap((material) => {
+      if (asString(material.materialType) !== EXPENSE_MATERIAL_TYPE) return []
+      const label = asString(material.material).trim()
+      const value = asString(material.id).trim()
       if (!label || !value) return []
+      const unit = asString(material.unit).trim()
       return [
         {
           label,
           value,
-          unit: material.unit,
-          materialType: material.materialType,
+          ...(unit ? { unit } : {}),
+          materialType: EXPENSE_MATERIAL_TYPE,
         },
       ]
     })
-  }, [expenseMaterials])
+  }, [expenseMaterialRecords])
+
+  const expenseMaterialSearch: MaterialSearchController = {
+    searching: isExpenseSearchFetching,
+    onSearch: (keyword) => setMaterialSearchKeyword(keyword),
+    onClose: () => {
+      setMaterialSearchKeyword('')
+      setDebouncedMaterialSearchKeyword('')
+    },
+  }
 
   const handleCreateExpense = async (
     name: string,
@@ -115,6 +176,7 @@ export function useModuleEditorExpenseItems({
 
   return {
     expenseMaterialOptions,
+    expenseMaterialSearch,
     expenseSelectedItemIds,
     handleCreateExpense,
     handleExpenseAddItem,

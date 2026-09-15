@@ -1,18 +1,86 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { downloadPostResponseMock } = vi.hoisted(() => ({
+const { downloadPostResponseMock, apiGetMock } = vi.hoisted(() => ({
   downloadPostResponseMock: vi.fn(),
+  apiGetMock: vi.fn(),
 }))
 
 vi.mock('@/api/core/client', () => ({
   apiPost: vi.fn(),
   apiDeleteNoContent: vi.fn(),
-  apiGet: vi.fn(),
+  apiGet: apiGetMock,
   apiPut: vi.fn(),
   downloadPostResponse: downloadPostResponseMock,
 }))
 
-import { renderPrintRecord } from '@/api/system/print-template'
+import {
+  listPrintRecordItems,
+  renderPrintRecord,
+} from '@/api/system/print-template'
+
+function printItem(id: string, recordId = '9') {
+  return {
+    id,
+    recordId,
+    brand: '泸钢',
+    category: '盘螺',
+    material: 'HRB400E',
+    spec: '8',
+    length: '-',
+    quantity: '1',
+    pieceWeightTon: '1.000',
+    weightTon: '1.000',
+    unitPrice: '1.00',
+    amount: '1.00',
+  }
+}
+
+function printItemsPage(
+  content: ReturnType<typeof printItem>[],
+  totalPages: number,
+  currentPage: number,
+) {
+  return {
+    content,
+    totalElements: totalPages * 200,
+    totalPages,
+    currentPage,
+    pageSize: 200,
+    hasMore: currentPage < totalPages - 1,
+  }
+}
+
+describe('打印明细分页拉全', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+  })
+
+  it('按总页数拉全，避免只取首页导致批量打印静默少打', async () => {
+    apiGetMock
+      .mockResolvedValueOnce(printItemsPage([printItem('1')], 2, 0))
+      .mockResolvedValueOnce(printItemsPage([printItem('2')], 2, 1))
+
+    const items = await listPrintRecordItems('sales-order', ['9'])
+
+    expect(items.map((item) => item.id)).toEqual(['1', '2'])
+    expect(apiGetMock).toHaveBeenCalledTimes(2)
+    expect(apiGetMock.mock.calls[1][2].params).toMatchObject({
+      page: 1,
+      size: 200,
+      moduleKey: 'sales-order',
+      recordIds: '9',
+    })
+  })
+
+  it('单页响应只请求一次', async () => {
+    apiGetMock.mockResolvedValueOnce(printItemsPage([printItem('1')], 1, 0))
+
+    const items = await listPrintRecordItems('sales-order', ['9'])
+
+    expect(items).toHaveLength(1)
+    expect(apiGetMock).toHaveBeenCalledTimes(1)
+  })
+})
 
 describe('打印导出响应契约', () => {
   beforeEach(() => {

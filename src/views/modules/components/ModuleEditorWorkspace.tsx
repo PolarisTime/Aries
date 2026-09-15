@@ -343,6 +343,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           expenseItems={expenseItems}
           expenseSelectedItemIds={expense.expenseSelectedItemIds}
           expenseMaterialOptions={expense.expenseMaterialOptions}
+          expenseMaterialSearch={expense.expenseMaterialSearch}
           supportsExpenseTab={supportsExpenseTab}
           selectedItemIds={selectedItemIds}
           parentImportVisible={parentImportVisible}

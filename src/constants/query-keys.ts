@@ -85,6 +85,8 @@ export const QUERY_KEYS = {
     materialSearch: (keyword: string) =>
       ['master-options', 'material', 'search', keyword] as const,
     expenseMaterial: ['master-options', 'material', 'expense'] as const,
+    expenseMaterialSearch: (keyword: string) =>
+      ['master-options', 'material', 'expense', 'search', keyword] as const,
     materialCategories: ['master-options', 'material-categories'] as const,
     materialGrades: ['master-options', 'material-grades'] as const,
     settlementCompany: ['master-options', 'settlement-company'] as const,

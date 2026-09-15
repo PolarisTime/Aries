@@ -17,6 +17,7 @@ import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module
 import { applyMaterialToEditorLineItem } from '@/module-system/editor/module-editor-line-item-utils'
 import {
   buildMaterialSelectOptions,
+  MATERIAL_SEARCH_DEBOUNCE_MS,
   mergeMaterialRecords,
 } from '@/module-system/editor/module-editor-material-options'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
@@ -51,9 +52,6 @@ interface Props {
 }
 
 type MaterialLookupEntry = readonly [string, ModuleRecord]
-
-/** 商品下拉服务端搜索防抖间隔，避免每次按键都请求主数据。 */
-const MATERIAL_SEARCH_DEBOUNCE_MS = 300
 
 export function useModuleEditorItemColumns({
   moduleKey,

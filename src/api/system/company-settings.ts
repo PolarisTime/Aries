@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
-import { pageContent } from '@/api/core/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import { asId, asString } from '@/utils/type-narrowing'
@@ -121,13 +120,27 @@ export async function getCompanySettingProfile() {
   return normalizeProfile(response)
 }
 
+const COMPANY_SETTINGS_PAGE_SIZE = 200
+
 export async function listCompanySettings() {
-  const response = await apiGet(
-    ENDPOINTS.COMPANY_SETTINGS,
-    companyPageResponseSchema,
-    { params: { page: 0, size: 200, sortBy: 'id', direction: 'asc' } },
-  )
-  return pageContent(response).flatMap((item) => {
+  const fetchPage = (page: number) =>
+    apiGet(ENDPOINTS.COMPANY_SETTINGS, companyPageResponseSchema, {
+      params: {
+        page,
+        size: COMPANY_SETTINGS_PAGE_SIZE,
+        sortBy: 'id',
+        direction: 'asc',
+      },
+    })
+
+  // 结算账户选项与设置页都需要完整公司列表：按总页数拉全，避免首页截断。
+  const firstPage = await fetchPage(0)
+  const rows = [...firstPage.content]
+  for (let page = 1; page < firstPage.totalPages; page += 1) {
+    const response = await fetchPage(page)
+    rows.push(...response.content)
+  }
+  return rows.flatMap((item) => {
     const profile = normalizeProfile(item)
     return profile ? [profile] : []
   })

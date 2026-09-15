@@ -1,6 +1,9 @@
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
+/** 商品类下拉服务端搜索防抖间隔，避免每次按键都请求主数据。 */
+export const MATERIAL_SEARCH_DEBOUNCE_MS = 300
+
 /** 商品下拉选项：展示字段来自主数据快照，value 为商品主键字符串。 */
 export interface MaterialSelectOption {
   disabled?: boolean

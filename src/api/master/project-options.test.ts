@@ -1,5 +1,68 @@
-import { describe, expect, it } from 'vitest'
-import { toProjectAbbreviationOptions } from './project-options'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { apiGetMock } = vi.hoisted(() => ({ apiGetMock: vi.fn() }))
+
+vi.mock('@/api/core/client', () => ({ apiGet: apiGetMock }))
+
+import {
+  fetchProjectAbbreviationOptions,
+  toProjectAbbreviationOptions,
+} from './project-options'
+
+function projectPage(
+  content: Array<{ id: string; projectName: string; projectNameAbbr?: string }>,
+  totalPages: number,
+  currentPage: number,
+) {
+  return {
+    content,
+    totalElements: totalPages * 200,
+    totalPages,
+    currentPage,
+    pageSize: 200,
+    hasMore: currentPage < totalPages - 1,
+  }
+}
+
+describe('fetchProjectAbbreviationOptions', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+  })
+
+  it('按总页数拉全启用项目，避免只取首页截断后选不到', async () => {
+    apiGetMock
+      .mockResolvedValueOnce(
+        projectPage(
+          [{ id: '1', projectName: '甲项目', projectNameAbbr: '甲' }],
+          2,
+          0,
+        ),
+      )
+      .mockResolvedValueOnce(
+        projectPage([{ id: '2', projectName: '乙项目' }], 2, 1),
+      )
+
+    const options = await fetchProjectAbbreviationOptions()
+
+    expect(options.map((option) => option.value)).toEqual(['1', '2'])
+    expect(apiGetMock).toHaveBeenCalledTimes(2)
+    expect(apiGetMock.mock.calls[1][2].params).toMatchObject({
+      page: 1,
+      size: 200,
+      status: '正常',
+    })
+  })
+
+  it('单页响应只请求一次', async () => {
+    apiGetMock.mockResolvedValueOnce(
+      projectPage([{ id: '1', projectName: '甲项目' }], 1, 0),
+    )
+
+    await fetchProjectAbbreviationOptions()
+
+    expect(apiGetMock).toHaveBeenCalledTimes(1)
+  })
+})
 
 describe('toProjectAbbreviationOptions', () => {
   it('优先以项目简称作为提货分组下拉展示文本', () => {

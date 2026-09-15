@@ -133,25 +133,32 @@ export function listPrintTemplates(billType: string, signal?: AbortSignal) {
   })
 }
 
+const PRINT_ITEMS_PAGE_SIZE = 200
+
 export async function listPrintRecordItems(
   moduleKey: string,
   recordIds: string[],
   signal?: AbortSignal,
 ): Promise<PrintRecordItem[]> {
-  const response = await apiGet(
-    ENDPOINTS.PRINT_PREVIEWS_ITEMS,
-    printRecordItemPageResponseSchema,
-    {
+  const fetchPage = (page: number) =>
+    apiGet(ENDPOINTS.PRINT_PREVIEWS_ITEMS, printRecordItemPageResponseSchema, {
       params: {
         moduleKey,
         recordIds: recordIds.join(','),
-        page: 0,
-        size: 200,
+        page,
+        size: PRINT_ITEMS_PAGE_SIZE,
       },
       signal,
-    },
-  )
-  return response.content
+    })
+
+  // 打印明细必须完整：按后端总页数拉全，避免只取首页导致批量打印静默少打。
+  const firstPage = await fetchPage(0)
+  const items = [...firstPage.content]
+  for (let page = 1; page < firstPage.totalPages; page += 1) {
+    const response = await fetchPage(page)
+    items.push(...response.content)
+  }
+  return items
 }
 
 async function blobToBase64(blob: Blob): Promise<string> {

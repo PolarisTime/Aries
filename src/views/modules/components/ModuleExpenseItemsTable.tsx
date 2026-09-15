@@ -1,8 +1,10 @@
 import { HolderOutlined } from '@ant-design/icons'
-import { Checkbox, Input, InputNumber, Select, Typography } from 'antd'
+import { Checkbox, Input, InputNumber, Select, Spin, Typography } from 'antd'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
+import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 
 interface MaterialOption {
@@ -12,21 +14,26 @@ interface MaterialOption {
   materialType?: string
 }
 
+const QUICK_CREATE_VALUE = '__quick_create__'
+const filterExpenseOption = createPinyinFilterOption()
+
 interface ChargeNameSelectProps {
   item: DocumentChargeItemDraft
   materialOptions: MaterialOption[]
+  materialSearch: MaterialSearchController
   onChange: (patch: Partial<DocumentChargeItemDraft>) => void
   onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   t: (key: string, values?: Record<string, unknown>) => string
 }
 
 /**
- * 费用名称下拉：过滤附加费用类主数据；输入不存在项时展示快捷创建入口，
+ * 费用名称下拉：本地候选与远程搜索结果合并展示；输入不存在项时展示快捷创建入口，
  * 创建成功后静默写入商品资料并回填当前行。
  */
 function ChargeNameSelect({
   item,
   materialOptions,
+  materialSearch,
   onChange,
   onCreateExpense,
   t,
@@ -35,12 +42,26 @@ function ChargeNameSelect({
   // 仅在事件处理器中读取，渲染不依赖，用 ref 避免多余重渲染
   const creatingRef = useRef(false)
 
-  const matched = materialOptions.find(
-    (option) => option.value === (item.materialId ?? ''),
-  )
+  const materialId = item.materialId ?? ''
+  const matched = materialOptions.find((option) => option.value === materialId)
+  const trimmedSearchText = searchText.trim()
+
+  // 远程搜索结果关闭下拉后不在本地候选内，用行快照回显已选费用名称。
+  const options = useMemo(() => {
+    const base = materialOptions.map((option: MaterialOption) => ({
+      label: option.label,
+      value: option.value,
+      unit: option.unit,
+    }))
+    const snapshotLabel = (item.chargeName || '').trim()
+    if (!materialId || matched || !snapshotLabel) {
+      return base
+    }
+    return [{ label: snapshotLabel, value: materialId }, ...base]
+  }, [item.chargeName, materialId, matched, materialOptions])
 
   const handleCreate = async () => {
-    const name = searchText.trim()
+    const name = trimmedSearchText
     if (!name || creatingRef.current) {
       return
     }
@@ -61,37 +82,40 @@ function ChargeNameSelect({
     }
   }
 
+  // 服务端搜索未完成时不展示快捷新增，避免主数据已有同名项却建成重复数据。
   const showQuickCreate = Boolean(
-    searchText.trim() &&
-      !materialOptions.some((option) => option.label === searchText.trim()),
+    trimmedSearchText &&
+      !materialSearch.searching &&
+      !materialOptions.some((option) => option.label === trimmedSearchText),
   )
 
   return (
     <Select
-      showSearch
-      value={matched ? matched.value : undefined}
+      showSearch={{
+        filterOption: filterExpenseOption,
+        onSearch: (value) => {
+          setSearchText(value)
+          materialSearch.onSearch(value)
+        },
+      }}
+      value={materialId || undefined}
       placeholder={t('modules.expense.chargeNamePlaceholder')}
       style={{ width: '100%' }}
       options={[
-        ...materialOptions.map((option: MaterialOption) => ({
-          label: option.label,
-          value: option.value,
-          unit: option.unit,
-        })),
+        ...options,
         ...(showQuickCreate
           ? [
               {
                 label: `+ ${t('modules.expense.quickCreate', {
-                  name: searchText.trim(),
+                  name: trimmedSearchText,
                 })}`,
-                value: '__quick_create__',
+                value: QUICK_CREATE_VALUE,
               },
             ]
           : []),
       ]}
-      onSearch={setSearchText}
       onSelect={(value) => {
-        if (value === '__quick_create__') {
+        if (value === QUICK_CREATE_VALUE) {
           void handleCreate()
           return
         }
@@ -104,7 +128,13 @@ function ChargeNameSelect({
           unit: option?.unit || item.unit,
         })
       }}
-      dropdownRender={(menu) => (
+      onOpenChange={(open) => {
+        if (!open) {
+          materialSearch.onClose()
+          setSearchText('')
+        }
+      }}
+      popupRender={(menu) => (
         <>
           {menu}
           {showQuickCreate ? (
@@ -115,15 +145,19 @@ function ChargeNameSelect({
                 void handleCreate()
               }}
             >
-              + {t('modules.expense.quickCreate', { name: searchText.trim() })}
+              + {t('modules.expense.quickCreate', { name: trimmedSearchText })}
             </button>
           ) : null}
         </>
       )}
       notFoundContent={
-        <div className="px-3 py-2 text-gray-500">
-          {t('modules.expense.noChargeOptions')}
-        </div>
+        materialSearch.searching ? (
+          <Spin size="small" />
+        ) : (
+          <div className="px-3 py-2 text-gray-500">
+            {t('modules.expense.noChargeOptions')}
+          </div>
+        )
       }
     />
   )
@@ -147,6 +181,7 @@ const EXPENSE_GRID_STYLE = {
 export interface ModuleExpenseItemsTableProps {
   expenseItems: DocumentChargeItemDraft[]
   materialOptions: MaterialOption[]
+  materialSearch: MaterialSearchController
   selectedItemIds: string[]
   onSelectedChange: (itemId: string, selected: boolean) => void
   onSelectAll: (selected: boolean) => void
@@ -162,6 +197,7 @@ export interface ModuleExpenseItemsTableProps {
 export function ModuleExpenseItemsTable({
   expenseItems,
   materialOptions,
+  materialSearch,
   selectedItemIds,
   onSelectedChange,
   onSelectAll,
@@ -237,6 +273,7 @@ export function ModuleExpenseItemsTable({
           <ChargeNameSelect
             item={item}
             materialOptions={materialOptions}
+            materialSearch={materialSearch}
             onChange={(patch) => onChange(index, patch)}
             onCreateExpense={onCreateExpense}
             t={t}

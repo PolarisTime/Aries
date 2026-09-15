@@ -10,6 +10,7 @@ import { Button, Dropdown, Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
+import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
@@ -40,6 +41,7 @@ interface Props {
     unit?: string
     materialType?: string
   }>
+  expenseMaterialSearch: MaterialSearchController
   supportsExpenseTab: boolean
   selectedItemIds: string[]
   parentImportVisible: boolean
@@ -91,6 +93,7 @@ export function ModuleEditorItemsSection({
   expenseItems,
   expenseSelectedItemIds,
   expenseMaterialOptions,
+  expenseMaterialSearch,
   supportsExpenseTab,
   selectedItemIds,
   parentImportVisible,
@@ -217,6 +220,7 @@ export function ModuleEditorItemsSection({
             expenseItems={expenseItems}
             expenseSelectedItemIds={expenseSelectedItemIds}
             expenseMaterialOptions={expenseMaterialOptions}
+            expenseMaterialSearch={expenseMaterialSearch}
             expenseTotalAmount={expenseTotalAmount}
             saving={saving}
             onExpenseSelectedChange={onExpenseSelectedChange}

@@ -2,6 +2,7 @@ import { PlusOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
+import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import {
   ExpenseItemsSummaryBar,
@@ -18,6 +19,7 @@ interface Props {
     unit?: string
     materialType?: string
   }>
+  expenseMaterialSearch: MaterialSearchController
   expenseTotalAmount: number
   saving: boolean
   onExpenseSelectedChange: (itemId: string, selected: boolean) => void
@@ -36,6 +38,7 @@ export function ModuleEditorExpensePanel({
   expenseItems,
   expenseSelectedItemIds,
   expenseMaterialOptions,
+  expenseMaterialSearch,
   expenseTotalAmount,
   saving,
   onExpenseSelectedChange,
@@ -95,6 +98,7 @@ export function ModuleEditorExpensePanel({
       <ModuleExpenseItemsTable
         expenseItems={expenseItems}
         materialOptions={expenseMaterialOptions}
+        materialSearch={expenseMaterialSearch}
         selectedItemIds={expenseSelectedItemIds}
         onSelectedChange={onExpenseSelectedChange}
         onSelectAll={onExpenseSelectAll}
