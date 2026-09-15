@@ -22,6 +22,7 @@ export type AppIconKey =
   | 'TagsOutlined'
   | 'TeamOutlined'
   | 'UserOutlined'
+  | 'UsergroupAddOutlined'
   | 'WalletOutlined'
 
 export type MenuGroupKey =

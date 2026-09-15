@@ -65,3 +65,14 @@ export type {
   InitialSetupResult,
   InitialSetupStatus,
 } from './setup'
+// ── 用户账号（多用户管理） ──────────────────────────────
+export type {
+  UserAccountResponse,
+  UserCreatePayload,
+  UserFormValues,
+  UserListPage,
+  UserPasswordResetPayload,
+  UserStatus,
+  UserStatusUpdatePayload,
+  UserUpdatePayload,
+} from './user'

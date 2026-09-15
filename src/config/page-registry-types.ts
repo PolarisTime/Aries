@@ -19,6 +19,7 @@ export type RouteViewKey =
   | 'company-setting'
   | 'print-template'
   | 'role-management'
+  | 'user-accounts'
   | 'account'
   | 'finance-overview'
   | 'cash-ledger'

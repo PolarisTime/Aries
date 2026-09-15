@@ -168,6 +168,15 @@ export const QUERY_KEYS = {
   permissions: ['permissions'] as const,
   userRoles: (userId: string) => ['users', userId, 'roles'] as const,
 
+  // User accounts (multi-user management)
+  users: (query: {
+    keyword?: string
+    status?: string
+    page: number
+    size: number
+  }) => ['users', query] as const,
+  user: (id: string) => ['users', 'detail', id] as const,
+
   // Print
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>

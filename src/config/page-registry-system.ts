@@ -27,6 +27,14 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     menuParent: 'system',
   },
   {
+    key: 'user-accounts',
+    title: '用户账号',
+    menuKey: '/user-accounts',
+    view: 'user-accounts',
+    icon: 'UsergroupAddOutlined',
+    menuParent: 'system',
+  },
+  {
     key: 'account',
     title: '个人账号',
     menuKey: '/account',

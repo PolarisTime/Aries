@@ -21,6 +21,7 @@ import {
   SwapOutlined,
   TagsOutlined,
   TeamOutlined,
+  UsergroupAddOutlined,
   UserOutlined,
   WalletOutlined,
 } from '@ant-design/icons'
@@ -51,6 +52,7 @@ const appIconMap: Record<AppIconKey, ComponentType> = {
   TagsOutlined,
   TeamOutlined,
   UserOutlined,
+  UsergroupAddOutlined,
   WalletOutlined,
 }
 

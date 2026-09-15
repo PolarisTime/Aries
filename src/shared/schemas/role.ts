@@ -88,4 +88,17 @@ export const roleFormSchema = z.object({
 })
 export type RoleFormValues = z.input<typeof roleFormSchema>
 
-export const userRolesResponseSchema = z.array(requestEntityIdSchema)
+/**
+ * 用户角色响应：后端返回 `{ userId, roles: RoleResponse[] }`，
+ * 历史/契约变体为字符串 ID 数组；统一归一化为字符串角色 ID 数组。
+ */
+export const userRolesResponseSchema = z
+  .union([
+    z.array(requestEntityIdSchema),
+    z.object({
+      roles: z.array(z.object({ id: requestEntityIdSchema })),
+    }),
+  ])
+  .transform((value) =>
+    Array.isArray(value) ? value : value.roles.map((role) => role.id),
+  )

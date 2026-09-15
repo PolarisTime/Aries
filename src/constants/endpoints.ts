@@ -139,6 +139,13 @@ export const ENDPOINTS = {
   MATERIALS: '/materials',
   MATERIAL_CATEGORIES: '/material-categories/options',
 
+  // User accounts (multi-user management)
+  USERS: '/users',
+  USER: (id: string | number) => `/users/${pathSegment(id)}`,
+  USER_STATUS: (id: string | number) => `/users/${pathSegment(id)}/status`,
+  USER_PASSWORD_RESETS: (id: string | number) =>
+    `/users/${pathSegment(id)}/password-resets`,
+
   // Roles & permissions (RBAC0)
   ROLES: '/roles',
   ROLE: (id: string | number) => `/roles/${pathSegment(id)}`,
