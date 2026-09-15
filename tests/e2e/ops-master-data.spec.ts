@@ -235,18 +235,10 @@ test.describe('基础资料真实操作', () => {
     }
   })
 
-  // 已知缺陷：/carrier 专用页新建时未调用基础资料编码签发接口，
-  // 表单把只读的“物流商编码”留空提交，后端 NotBlank 校验返回 422。
-  // 这里记录真实可见行为（保存被拦截、提示后端校验错误、留层不放行），不伪造新建成功。
-  test('物流方资料：新建被后端编码必填校验拦截（已知缺陷留痕）', async ({
+  test('物流方资料：新建 → 搜到 → 编辑保存', async ({
     page,
     assertNoFatalUiErrors,
   }) => {
-    test.info().annotations.push({
-      type: 'known-defect',
-      description:
-        'CarrierEditorOverlay 新建未签发 carrierCode，POST /carriers 返回 422，无法通过 UI 新建物流商',
-    })
     const runId = makeRunId()
     const carrierName = `${runId}-运`
 
@@ -258,41 +250,10 @@ test.describe('基础资料真实操作', () => {
       const overlay = await openCreateOverlay(page)
       await fillTextField(overlay, '物流商名称', carrierName)
       await selectFirstOption(page, overlay, '默认结算主体')
-      const responsePromise = page.waitForResponse(
-        (response) =>
-          response.request().method() === 'POST' &&
-          response.url().includes('/carriers'),
-        { timeout: 30_000 },
-      )
-      await clickSave(overlay)
-      const response = await responsePromise
-      expect(response.status()).toBe(422)
-      const problem = (await response.json()) as { detail?: string }
-      expect(String(problem.detail || '')).toContain('carrierCode')
+      await saveOverlay(page, overlay)
 
-      await expect(
-        page
-          .locator('.ant-message-notice')
-          .filter({ hasText: 'carrierCode' })
-          .first(),
-      ).toBeVisible({ timeout: 30_000 })
-      await expect(overlay).toBeVisible()
-
-      // 未创建成功：搜索不到该物流商
-      await page.keyboard.press('Escape')
-      await expect(overlay).toBeHidden({ timeout: 30_000 })
-      const input = page
-        .locator(
-          'input[aria-label="关键字"]:visible, input[name="keyword"]:visible',
-        )
-        .first()
-      await input.fill(runId)
-      await input.press('Enter')
-      await expect(
-        page
-          .locator('tbody tr:not(.ant-table-measure-row)')
-          .filter({ hasText: runId }),
-      ).toHaveCount(0, { timeout: 30_000 })
+      const createdRow = await searchRow(page, carrierName)
+      await expect(createdRow).toContainText(carrierName)
 
       await assertNoFatalUiErrors()
     } finally {
@@ -300,16 +261,10 @@ test.describe('基础资料真实操作', () => {
     }
   })
 
-  // 已知缺陷：/project 专用页同上，未签发 projectCode，POST /projects 返回 422。
-  test('项目资料：新建被后端编码必填校验拦截（已知缺陷留痕）', async ({
+  test('项目资料：新建 → 搜到 → 编辑保存', async ({
     page,
     assertNoFatalUiErrors,
   }) => {
-    test.info().annotations.push({
-      type: 'known-defect',
-      description:
-        'ProjectEditorOverlay 新建未签发 projectCode，POST /projects 返回 422，无法通过 UI 新建项目',
-    })
     const runId = makeRunId()
     const projectName = `${runId}-项`
 
@@ -321,40 +276,10 @@ test.describe('基础资料真实操作', () => {
       const overlay = await openCreateOverlay(page)
       await fillTextField(overlay, '项目名称', projectName)
       await selectFirstOption(page, overlay, '客户')
-      const responsePromise = page.waitForResponse(
-        (response) =>
-          response.request().method() === 'POST' &&
-          response.url().includes('/projects'),
-        { timeout: 30_000 },
-      )
-      await clickSave(overlay)
-      const response = await responsePromise
-      expect(response.status()).toBe(422)
-      const problem = (await response.json()) as { detail?: string }
-      expect(String(problem.detail || '')).toContain('projectCode')
+      await saveOverlay(page, overlay)
 
-      await expect(
-        page
-          .locator('.ant-message-notice')
-          .filter({ hasText: 'projectCode' })
-          .first(),
-      ).toBeVisible({ timeout: 30_000 })
-      await expect(overlay).toBeVisible()
-
-      await page.keyboard.press('Escape')
-      await expect(overlay).toBeHidden({ timeout: 30_000 })
-      const input = page
-        .locator(
-          'input[aria-label="关键字"]:visible, input[name="keyword"]:visible',
-        )
-        .first()
-      await input.fill(runId)
-      await input.press('Enter')
-      await expect(
-        page
-          .locator('tbody tr:not(.ant-table-measure-row)')
-          .filter({ hasText: runId }),
-      ).toHaveCount(0, { timeout: 30_000 })
+      const createdRow = await searchRow(page, projectName)
+      await expect(createdRow).toContainText(projectName)
 
       await assertNoFatalUiErrors()
     } finally {
