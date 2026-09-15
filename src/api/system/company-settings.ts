@@ -135,15 +135,17 @@ export async function listCompanySettings() {
 
   // 结算账户选项与设置页都需要完整公司列表：按总页数拉全，避免首页截断。
   const firstPage = await fetchPage(0)
-  const rows = [...firstPage.content]
-  for (let page = 1; page < firstPage.totalPages; page += 1) {
-    const response = await fetchPage(page)
-    rows.push(...response.content)
-  }
-  return rows.flatMap((item) => {
-    const profile = normalizeProfile(item)
-    return profile ? [profile] : []
-  })
+  const restPages = await Promise.all(
+    Array.from({ length: Math.max(firstPage.totalPages - 1, 0) }, (_, index) =>
+      fetchPage(index + 1),
+    ),
+  )
+  return [firstPage, ...restPages].flatMap((page) =>
+    page.content.flatMap((item) => {
+      const profile = normalizeProfile(item)
+      return profile ? [profile] : []
+    }),
+  )
 }
 
 export async function fetchSettlementCompanyOptions(

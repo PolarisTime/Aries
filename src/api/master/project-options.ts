@@ -147,10 +147,11 @@ export async function fetchProjectAbbreviationOptions(
 
   // 项目下拉必须覆盖全部启用项目：按总页数拉全，避免只取首页截断后选不到。
   const firstPage = await fetchPage(0)
-  const rows = [...firstPage.content]
-  for (let page = 1; page < firstPage.totalPages; page += 1) {
-    const response = await fetchPage(page)
-    rows.push(...response.content)
-  }
+  const restPages = await Promise.all(
+    Array.from({ length: Math.max(firstPage.totalPages - 1, 0) }, (_, index) =>
+      fetchPage(index + 1),
+    ),
+  )
+  const rows = [firstPage, ...restPages].flatMap((page) => page.content)
   return toProjectAbbreviationOptions(rows)
 }
