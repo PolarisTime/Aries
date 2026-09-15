@@ -3,8 +3,8 @@ import type { Profiler } from 'node:inspector'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import type { SourceMapInput } from '@jridgewell/trace-mapping'
+import { transformSync } from 'esbuild'
 import type { CoverageMapData } from 'istanbul-lib-coverage'
-import ts from 'typescript'
 
 const require = createRequire(import.meta.url)
 const v8ToIstanbul =
@@ -46,23 +46,22 @@ function hasRuntimeCode(code: string) {
 }
 
 function transpileSourceForCoverage(filePath: string, source: string) {
-  const result = ts.transpileModule(source, {
-    fileName: filePath,
-    compilerOptions: {
-      jsx: ts.JsxEmit.ReactJSX,
-      module: ts.ModuleKind.ESNext,
-      sourceMap: true,
-      target: ts.ScriptTarget.ES2023,
-    },
+  const result = transformSync(source, {
+    loader: filePath.endsWith('.tsx') ? 'tsx' : 'ts',
+    format: 'esm',
+    jsx: 'automatic',
+    sourcefile: filePath,
+    sourcemap: true,
+    target: 'es2023',
   })
 
-  if (!hasRuntimeCode(result.outputText)) {
+  if (!hasRuntimeCode(result.code)) {
     return null
   }
 
   return {
-    source: result.outputText,
-    sourceMap: JSON.parse(result.sourceMapText || '{}') as SourceMapInput,
+    source: result.code,
+    sourceMap: JSON.parse(result.map || '{}') as SourceMapInput,
   }
 }
 
