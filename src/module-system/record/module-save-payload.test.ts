@@ -100,6 +100,26 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     ).rejects.toThrow()
   })
 
+  it('receipt 保存载荷保留资金账户 accountId 并按实体 ID 契约输出字符串', async () => {
+    const payload = (await submitRecord('receipt', {
+      receiptNo: '1234567890123456789',
+      amount: 100,
+      accountId: '1932500000000000123',
+    })) as Record<string, unknown>
+
+    expect(payload.accountId).toBe('1932500000000000123')
+  })
+
+  it('payment 保存载荷保留资金账户 accountId 并按实体 ID 契约输出字符串', async () => {
+    const payload = (await submitRecord('payment', {
+      paymentNo: '1234567890123456790',
+      amount: 200,
+      accountId: '1932500000000000123',
+    })) as Record<string, unknown>
+
+    expect(payload.accountId).toBe('1932500000000000123')
+  })
+
   it('未声明 chargeItem 白名单的模块（sales-outbound）不下发 chargeItems 键', async () => {
     const payload = (await submitRecord('sales-outbound', {
       customerName: '客户A',

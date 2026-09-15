@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { fetchCustomerOptions } from '@/api/master/customer-options'
+import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { AppProPage } from '@/components/AppProPage'
@@ -219,6 +220,13 @@ export function ProjectPage() {
     form.resetFields()
     form.setFieldsValue({ status: '正常', projectCode: '' })
     setEditorOpen(true)
+    void fetchGeneratedMasterDataCode(MODULE_KEY)
+      .then((code) => {
+        form.setFieldsValue({ projectCode: code })
+      })
+      .catch(() => {
+        // 编码签发失败时留空，保存时由后端必填校验兜底。
+      })
   }
 
   const closeEditor = () => {

@@ -13,6 +13,7 @@ import {
 } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { fetchCustomerOptions } from '@/api/master/customer-options'
+import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getCustomerOptions } from '@/queries/master/customer-options'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
@@ -32,6 +33,9 @@ vi.mock('@/api/business/common-export', () => ({
 }))
 vi.mock('@/api/master/customer-options', () => ({
   fetchCustomerOptions: vi.fn(),
+}))
+vi.mock('@/api/master/master-data-codes', () => ({
+  fetchGeneratedMasterDataCode: vi.fn(),
 }))
 vi.mock('@/queries/master/customer-options', async (importOriginal) => {
   const actual =
@@ -163,6 +167,9 @@ describe('ProjectPage 主数据拆分试点', () => {
     })
     vi.mocked(fetchCustomerOptions).mockResolvedValue(customerOptions)
     vi.mocked(getCustomerOptions).mockReturnValue(customerOptions)
+    vi.mocked(fetchGeneratedMasterDataCode).mockResolvedValue(
+      '7000000000000000002',
+    )
     vi.mocked(fetchSettlementCompanyOptions).mockResolvedValue(
       settlementCompanyOptions,
     )
@@ -347,9 +354,11 @@ describe('ProjectPage 主数据拆分试点', () => {
 
     await clickButtonInOverlay('保存')
 
+    expect(fetchGeneratedMasterDataCode).toHaveBeenCalledWith('project')
     expect(saveBusinessModule).toHaveBeenCalledTimes(1)
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
     expect(draft).toMatchObject({
+      projectCode: '7000000000000000002',
       projectName: '项目三',
       customerId: '1001',
       customerCode: 'KH001',

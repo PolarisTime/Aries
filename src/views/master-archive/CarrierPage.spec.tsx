@@ -11,6 +11,7 @@ import {
   saveBusinessModule,
 } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
+import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import { bindAntdAppApi } from '@/utils/antd-app'
@@ -29,6 +30,9 @@ vi.mock('@/api/business/common-export', () => ({
 }))
 vi.mock('@/api/master/customer-options', () => ({
   fetchCustomerOptions: vi.fn(),
+}))
+vi.mock('@/api/master/master-data-codes', () => ({
+  fetchGeneratedMasterDataCode: vi.fn(),
 }))
 vi.mock('@/queries/master/customer-options', async (importOriginal) => {
   const actual =
@@ -136,6 +140,9 @@ describe('CarrierPage 主数据拆分试点', () => {
       code: 0,
       data: { rows: carrierRows, total: 11 },
     })
+    vi.mocked(fetchGeneratedMasterDataCode).mockResolvedValue(
+      '7000000000000000001',
+    )
     vi.mocked(fetchSettlementCompanyOptions).mockResolvedValue(
       settlementCompanyOptions,
     )
@@ -296,9 +303,11 @@ describe('CarrierPage 主数据拆分试点', () => {
 
     await clickButton('保存', document.body)
 
+    expect(fetchGeneratedMasterDataCode).toHaveBeenCalledWith('carrier')
     expect(saveBusinessModule).toHaveBeenCalledTimes(1)
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
     expect(draft).toMatchObject({
+      carrierCode: '7000000000000000001',
       carrierName: '物流商二',
       defaultSettlementCompanyId: '2001',
       defaultSettlementCompanyName: '结算主体甲',
