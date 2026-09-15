@@ -391,9 +391,20 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   <div className="price-compare-num price-compare-sub">-</div>
                 ) : (
                   <div
-                    className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                    className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${resolved.fallback ? ' price-compare-fallback' : ''}`}
                   >
-                    {resolved.fallback ? `E ${price}` : price}
+                    {resolved.fallback ? (
+                      <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
+                        <span className="price-compare-fallback-value">
+                          {price}
+                          <span className="price-compare-fallback-badge">
+                            E
+                          </span>
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      price
+                    )}
                   </div>
                 )
               },
@@ -675,6 +686,7 @@ function SheetHeader({
   designatedBrands,
   remark,
   onRemarkChange,
+  allowHrb400eFallback = false,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -692,6 +704,7 @@ function SheetHeader({
   designatedBrands?: string[]
   remark?: string
   onRemarkChange?: (value: string) => void
+  allowHrb400eFallback?: boolean
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
@@ -764,6 +777,16 @@ function SheetHeader({
               }))}
             />
           </Space>
+          {allowHrb400eFallback ? (
+            <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
+              <Space size={4} align="center">
+                <span className="price-compare-fallback-badge">E</span>
+                <Text type="secondary" className="price-compare-sub">
+                  {t('priceCompare.sheet.fallbackLegend')}
+                </Text>
+              </Space>
+            </Tooltip>
+          ) : null}
         </Flex>
 
         <Space size={4} wrap>
@@ -1023,6 +1046,7 @@ export function SheetPanel(props: Props) {
         designatedBrands={designatedBrands}
         remark={remark}
         onRemarkChange={onRemarkChange}
+        allowHrb400eFallback={allowHrb400eFallback}
       />
 
       <SheetTable

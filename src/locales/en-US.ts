@@ -2110,6 +2110,9 @@ export const enUS = {
       refPrice: 'Reference Price',
       refDateTooltip:
         'All rows use this date and period as the market price reference',
+      fallbackLegend: 'HRB400E reference price',
+      fallbackTooltip:
+        'No HRB400 quote for this brand/spec; using the HRB400E reference price',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',
@@ -2122,7 +2125,8 @@ export const enUS = {
         products: 'Available Products',
       },
       premiumLabel: '12m premium (CNY/ton, rebar only)',
-      fallbackLabel: 'Use HRB400E price when HRB400 has no quote (prefix E)',
+      fallbackLabel:
+        'Use the HRB400E reference price when HRB400 has no quote (marked with E)',
       brandsTitle: 'Participating Brands',
       brandsHint:
         'Brands and categories in comparison (disabled categories are hidden)',
