@@ -12,6 +12,18 @@ export default tseslint.config(
       'node_modules',
       'src/utils/clodop.ts',
       'doctor.config.ts',
+      // E2E 用例与 Playwright 配置不属于根 tsconfig.json 的 project graph
+      // （tsconfig.e2e.json 独立存在且未纳入 references，以免 tsc -b 因缺 composite 报错），
+      // 无法被 parserOptions.projectService 解析；defaultProject 仅提供 inferred project 的
+      // compilerOptions，文件仍会被判定为 “not found by the project service”。
+      // E2E 由 Playwright 运行、经 tsconfig.e2e.json 单独类型检查，非类型感知 lint/格式化由
+      // `biome check .` 覆盖，故在此排除。
+      'tests/e2e/**',
+      'playwright.config.ts',
+      // E2E / 测试生成目录（已在 .gitignore，CI 干净检出不存在），排除以避免本地噪声。
+      'coverage-e2e',
+      'test-results',
+      'playwright-report',
     ],
   },
 
