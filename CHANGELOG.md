@@ -1,3 +1,11 @@
+## [10.9.1](https://github.com/PolarisTime/Aries/compare/v10.9.0...v10.9.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 修复编辑锁竞态与被跳过保存的刷新覆盖 ([5e5dc7a](https://github.com/PolarisTime/Aries/commit/5e5dc7a12e41d1e11535c658977b7802d2b38a4f))
+* **price-compare:** 修复编辑锁误删与保存失败后刷新回滚 ([5868e22](https://github.com/PolarisTime/Aries/commit/5868e22eb42b2e86cb969768485664ed04b9a07e))
+
 # [10.9.0](https://github.com/PolarisTime/Aries/compare/v10.8.1...v10.9.0) (2026-09-16)
 
 
