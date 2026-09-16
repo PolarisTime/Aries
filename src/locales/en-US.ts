@@ -2194,7 +2194,6 @@ export const enUS = {
     view: {
       title: 'Order Price Comparison',
       watermark: 'INTERNAL · Order Price Comparison',
-      loadFailedTitle: 'Failed to load price comparison data',
       noBatch: 'No batch',
       removeSheetConfirmTitle: 'Delete this batch?',
       removeSheetConfirmContent:
@@ -2281,11 +2280,6 @@ export const enUS = {
       discardTitle: 'Discard unsaved changes?',
       abandon: 'Discard',
       continueEditing: 'Keep Editing',
-    },
-    data: {
-      loadFailed:
-        'Failed to load base data. Check the JSON files under public/price-compare-data/.',
-      loadFileFailed: 'Failed to load {{file}}: HTTP {{status}}',
     },
     pricing: {
       loginRequired: 'Please sign in before reading prices',

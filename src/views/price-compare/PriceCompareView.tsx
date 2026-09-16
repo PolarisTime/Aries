@@ -1,4 +1,4 @@
-import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
+import { Empty, Flex, Watermark } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
@@ -21,7 +21,7 @@ import './price-compare.css'
 /** 报单比价页: 顶部胶囊(项目/批次) + 单据表格。 */
 export function PriceCompareView() {
   const { t } = useTranslation()
-  const { data, varieties, projects, catalog, loading, error, mergeMatches } =
+  const { data, varieties, projects, catalog, mergeMatches } =
     usePriceCompareData()
   const materialBrands = useMaterialBrands()
   const brandOptions = materialBrands.length
@@ -176,26 +176,6 @@ export function PriceCompareView() {
       cancelText: t('common.cancel'),
       onOk: () => removeSheet(id),
     })
-
-  if (loading) {
-    return (
-      <div className="price-compare-page">
-        <Skeleton active />
-      </div>
-    )
-  }
-  if (error) {
-    return (
-      <div className="price-compare-page">
-        <Alert
-          type="error"
-          showIcon
-          title={t('priceCompare.view.loadFailedTitle')}
-          description={error}
-        />
-      </div>
-    )
-  }
 
   return (
     <div id="price-compare-root" className="price-compare-page">

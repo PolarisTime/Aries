@@ -2126,7 +2126,6 @@ export const zhCN = {
     view: {
       title: '报单比价',
       watermark: '内部资料 · 报单比价',
-      loadFailedTitle: '比价数据加载失败',
       noBatch: '暂无批次',
       removeSheetConfirmTitle: '删除该批次？',
       removeSheetConfirmContent: '该批次的全部录入内容将一并删除',
@@ -2206,11 +2205,6 @@ export const zhCN = {
       discardTitle: '放弃未保存的修改？',
       abandon: '放弃',
       continueEditing: '继续编辑',
-    },
-    data: {
-      loadFailed:
-        '基础数据加载失败，请检查 public/price-compare-data/ 下的 JSON 文件',
-      loadFileFailed: '加载 {{file}} 失败: HTTP {{status}}',
     },
     pricing: {
       loginRequired: '请先登录后再读取网价',

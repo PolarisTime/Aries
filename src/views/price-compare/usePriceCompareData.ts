@@ -1,48 +1,27 @@
-import { useQuery } from '@tanstack/react-query'
-import i18n from 'i18next'
 import { useCallback, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { STALE_STATIC } from '@/constants/query-policies'
 import { matchesToData, mergePriceData } from './core'
+import brands from './data/brands.json'
+import projects from './data/projects.json'
+import varieties from './data/varieties.json'
 import type { BrandOption, PriceData, ProjectOption, Variety } from './types'
 
-// 静态数据目录不能与 SPA 路由 /price-compare 同名，否则 nginx 会命中同名目录返回 403。
-const BASE = `${import.meta.env.BASE_URL}price-compare-data/`
-
-async function loadJson<T>(file: string): Promise<T> {
-  const response = await fetch(`${BASE}${file}`)
-  if (!response.ok)
-    throw new Error(
-      i18n.t('priceCompare.data.loadFileFailed', {
-        file,
-        status: response.status,
-      }),
-    )
-  return (await response.json()) as T
-}
-
-type Metadata = {
+/**
+ * 基础元数据随应用发布会变更，体积很小，按工程惯例打进 bundle：
+ * 构建期类型校验、内容哈希随版本缓存、无需运行时 fetch 与加载失败分支。
+ * 网价等大体积/需独立更新的数据仍由后端接口提供（mergeMatches）。
+ */
+const metadata: {
   varieties: Variety[]
   projects: ProjectOption[]
   catalog: BrandOption[]
-}
-
-async function fetchMetadata(): Promise<Metadata> {
-  const [varieties, projects, catalog] = await Promise.all([
-    loadJson<Variety[]>('varieties.json'),
-    loadJson<ProjectOption[]>('projects.json'),
-    loadJson<BrandOption[]>('brands.json'),
-  ])
-  return {
-    varieties: varieties.map((item) => ({
-      ...item,
-      label: item.label.replace(/Φ\s*/g, '').replace(/\s+/g, ' ').trim(),
-    })),
-    projects,
-    catalog,
-  }
+} = {
+  varieties: varieties.map((item) => ({
+    ...item,
+    label: item.label.replace(/Φ\s*/g, '').replace(/\s+/g, ' ').trim(),
+  })),
+  projects,
+  catalog: brands,
 }
 
 export type PriceCompareData = {
@@ -50,21 +29,13 @@ export type PriceCompareData = {
   varieties: Variety[]
   projects: ProjectOption[]
   catalog: BrandOption[]
-  loading: boolean
-  error: string | null
   /** 合并后端商品行情匹配结果(网价完全来自后端) */
   mergeMatches: (matches: MaterialPriceMatch[]) => void
 }
 
-/** 比价页数据: 网价来自后端匹配接口, 商品/项目/品牌元数据来自本地清单。 */
+/** 比价页数据: 网价来自后端匹配接口, 商品/项目/品牌元数据来自随包发布的本地清单。 */
 export function usePriceCompareData(): PriceCompareData {
-  const { t } = useTranslation()
   const [data, setData] = useState<PriceData>({})
-  const query = useQuery({
-    queryKey: QUERY_KEYS.priceCompare.metadata,
-    queryFn: fetchMetadata,
-    staleTime: STALE_STATIC,
-  })
 
   const mergeMatches = useCallback((matches: MaterialPriceMatch[]) => {
     const patch = matchesToData(matches)
@@ -73,11 +44,9 @@ export function usePriceCompareData(): PriceCompareData {
 
   return {
     data,
-    varieties: query.data?.varieties ?? [],
-    projects: query.data?.projects ?? [],
-    catalog: query.data?.catalog ?? [],
-    loading: query.isLoading,
-    error: query.isError ? t('priceCompare.data.loadFailed') : null,
+    varieties: metadata.varieties,
+    projects: metadata.projects,
+    catalog: metadata.catalog,
     mergeMatches,
   }
 }

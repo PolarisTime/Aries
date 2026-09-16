@@ -97,7 +97,6 @@ export const QUERY_KEYS = {
   // Price compare
   priceCompare: {
     materialBrands: ['price-compare', 'material-brands'] as const,
-    metadata: ['price-compare', 'metadata'] as const,
     steelQuoteCalendars: (from: string, to: string) =>
       ['price-compare', 'steel-quote-calendars', from, to] as const,
     materialPriceMatches: (quoteDate: string, period: string) =>
