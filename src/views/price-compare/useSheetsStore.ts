@@ -26,6 +26,28 @@ const HISTORY_LIMIT = 50
 const COALESCE_MS = 800
 const SAVE_DEBOUNCE_MS = 800
 
+/** 同一资源串行执行: 在飞行中则排队一次, 结束后补跑最新任务。 */
+async function runSerializedTask(
+  inflight: Set<string>,
+  pending: Set<string>,
+  key: string,
+  task: () => Promise<void>,
+): Promise<void> {
+  if (inflight.has(key)) {
+    pending.add(key)
+    return
+  }
+  inflight.add(key)
+  try {
+    await task()
+  } finally {
+    inflight.delete(key)
+    if (pending.delete(key)) {
+      void runSerializedTask(inflight, pending, key, task)
+    }
+  }
+}
+
 type Snapshot = {
   sheets: PriceSheet[]
   activeId: string
@@ -164,6 +186,15 @@ export function useSheetsStore(): SheetsStore {
   const sheetTimersRef = useRef<Map<string, number>>(new Map())
   const configTimerRef = useRef<number | null>(null)
   const hydratedRef = useRef(false)
+  /** 同一资源(单据/项目配置)串行保存, 避免并发 PUT 触发乐观锁 409。 */
+  const inflightRef = useRef<Set<string>>(new Set())
+  const pendingRef = useRef<Set<string>>(new Set())
+
+  const runSerialized = useCallback(
+    (key: string, task: () => Promise<void>) =>
+      runSerializedTask(inflightRef.current, pendingRef.current, key, task),
+    [],
+  )
 
   useEffect(() => {
     stateRef.current = state
@@ -206,26 +237,32 @@ export function useSheetsStore(): SheetsStore {
   )
 
   const saveSheetNow = useCallback(
-    async (sheet: PriceSheet) => {
-      const payload = buildPayload(sheet, configOf(sheet.projectId))
-      if (!payload) return
-      const serverId = serverIdRef.current.get(sheet.id)
-      try {
-        if (serverId) {
-          await updateQuoteSheet(serverId, payload)
-        } else {
-          const created = await createQuoteSheet(payload)
-          serverIdRef.current.set(sheet.id, created.id)
-        }
-      } catch (error) {
-        message.error(
-          error instanceof Error
-            ? `保存比价单失败：${error.message}`
-            : '保存比价单失败',
+    async (sheetId: string) => {
+      await runSerialized(`sheet:${sheetId}`, async () => {
+        const sheet = stateRef.current.sheets.find(
+          (item) => item.id === sheetId,
         )
-      }
+        if (!sheet) return
+        const payload = buildPayload(sheet, configOf(sheet.projectId))
+        if (!payload) return
+        const serverId = serverIdRef.current.get(sheet.id)
+        try {
+          if (serverId) {
+            await updateQuoteSheet(serverId, payload)
+          } else {
+            const created = await createQuoteSheet(payload)
+            serverIdRef.current.set(sheet.id, created.id)
+          }
+        } catch (error) {
+          message.error(
+            error instanceof Error
+              ? `保存比价单失败：${error.message}`
+              : '保存比价单失败',
+          )
+        }
+      })
     },
-    [configOf],
+    [configOf, runSerialized],
   )
 
   const scheduleSaveSheet = useCallback(
@@ -234,42 +271,44 @@ export function useSheetsStore(): SheetsStore {
       if (existing) window.clearTimeout(existing)
       const timer = window.setTimeout(() => {
         sheetTimersRef.current.delete(sheetId)
-        const sheet = stateRef.current.sheets.find(
-          (item) => item.id === sheetId,
-        )
-        if (sheet) void saveSheetNow(sheet)
+        void saveSheetNow(sheetId)
       }, SAVE_DEBOUNCE_MS)
       sheetTimersRef.current.set(sheetId, timer)
     },
     [saveSheetNow],
   )
 
-  const saveConfigNow = useCallback(async (projectId: string) => {
-    if (!projectId) return
-    const config = stateRef.current.configs[projectId]
-    if (!config) return
-    try {
-      await saveQuoteProjectConfig(projectId, {
-        lengthPremium: config.lengthPremium,
-        hrb400eFallback: Boolean(config.hrb400eFallback),
-        products: config.products ?? [],
-        designatedBrands: config.designatedBrands ?? [],
-        ...(config.remark ? { remark: config.remark } : {}),
-        brands: config.brands.map((brand, index) => ({
-          brandName: brand.name,
-          freight: brand.freight,
-          categories: brand.categories ?? [],
-          sortOrder: index,
-        })),
+  const saveConfigNow = useCallback(
+    async (projectId: string) => {
+      if (!projectId) return
+      await runSerialized(`config:${projectId}`, async () => {
+        const config = stateRef.current.configs[projectId]
+        if (!config) return
+        try {
+          await saveQuoteProjectConfig(projectId, {
+            lengthPremium: config.lengthPremium,
+            hrb400eFallback: Boolean(config.hrb400eFallback),
+            products: config.products ?? [],
+            designatedBrands: config.designatedBrands ?? [],
+            ...(config.remark ? { remark: config.remark } : {}),
+            brands: config.brands.map((brand, index) => ({
+              brandName: brand.name,
+              freight: brand.freight,
+              categories: brand.categories ?? [],
+              sortOrder: index,
+            })),
+          })
+        } catch (error) {
+          message.error(
+            error instanceof Error
+              ? `保存比价配置失败：${error.message}`
+              : '保存比价配置失败',
+          )
+        }
       })
-    } catch (error) {
-      message.error(
-        error instanceof Error
-          ? `保存比价配置失败：${error.message}`
-          : '保存比价配置失败',
-      )
-    }
-  }, [])
+    },
+    [runSerialized],
+  )
 
   const scheduleSaveConfig = useCallback(
     (projectId: string) => {
