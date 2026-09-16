@@ -1,3 +1,10 @@
+# [10.9.0](https://github.com/PolarisTime/Aries/compare/v10.8.1...v10.9.0) (2026-09-16)
+
+
+### Features
+
+* **price-compare:** 支持锁定报单规格和数量 ([d73a363](https://github.com/PolarisTime/Aries/commit/d73a3630093e8dd569d329a6048274d5e1a1b349))
+
 # [10.8.0](https://github.com/PolarisTime/Aries/compare/v10.7.0...v10.8.0) (2026-09-16)
 
 
