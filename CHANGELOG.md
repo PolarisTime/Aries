@@ -1,3 +1,38 @@
+# [10.3.0](https://github.com/PolarisTime/Aries/compare/v10.2.0...v10.3.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* **e2e:** 修复 E2E_COVERAGE=1 因 typescript JS API 缺失导致的覆盖率失败 ([2781179](https://github.com/PolarisTime/Aries/commit/27811797455b061703799641b80159b49cd2810f))
+* **lint:** 排除 E2E 与 Playwright 配置以修复 ESLint project service 解析错误 ([4ffc8dc](https://github.com/PolarisTime/Aries/commit/4ffc8dc31dac80e79bf9e634d18e62725e755eec))
+* **master,finance:** 物流商/项目编码签发与收付款保存账户字段 ([d69541e](https://github.com/PolarisTime/Aries/commit/d69541e32ab3b77256e1ff53d3eb53f9dc996f70))
+* **master:** 商品编码下拉支持服务端搜索全量商品 ([4025e1f](https://github.com/PolarisTime/Aries/commit/4025e1f7c7b13546efa5515e0ce23f0b86f2b88b))
+* **modules:** 费用下拉支持服务端搜索，打印/项目/结算主体改为分页拉全 ([d31e53a](https://github.com/PolarisTime/Aries/commit/d31e53afd1c112e19eb4552d9205229c9006cde6))
+* **price-compare:** 移除失焦回调中冗余的输入元素类型断言 ([5984ab3](https://github.com/PolarisTime/Aries/commit/5984ab3100691cbb8b7c606a29dd06c6f27d8969))
+* **sales-return:** 出库来源服务端搜索、订单行级派生数量与单据流关系展示 ([be75e5b](https://github.com/PolarisTime/Aries/commit/be75e5ba5604cfa0217c0413e5304e6cccaff1eb))
+* **ui:** 修复主数据与档案页面表格无法纵向滚动 ([5136fff](https://github.com/PolarisTime/Aries/commit/5136fff7ef014ca4adf71801face6e8b10f9f792))
+* **ui:** 修复可访问性对比度与 i18n 硬编码并复用库存表格组件 ([2321b1c](https://github.com/PolarisTime/Aries/commit/2321b1c41103f0f79a52f9e2fd33639c44433253))
+
+
+### Features
+
+* **inventory:** 库存流水展示物料信息 ([42e1c29](https://github.com/PolarisTime/Aries/commit/42e1c29df00a921047a8e3a4f48f630b37b74f50))
+* **inventory:** 新增库存查询页（余额/流水） ([d8a0f3b](https://github.com/PolarisTime/Aries/commit/d8a0f3b5ea4ddf241dc4846361c042ec9ec797cf))
+* **master-data:** 商品版本历史、导入预览与批次回滚前端 ([e4fe914](https://github.com/PolarisTime/Aries/commit/e4fe914600939f3ca77e6d53befe97337358a876))
+* **price-compare:** 项目配置新增指定品牌并于比价单展示 ([a872929](https://github.com/PolarisTime/Aries/commit/a872929b496bf5076b2d0c178b0031d23d62eda5))
+* **print,price-compare:** 打印拆分件数选项与比价标题品牌限定/备注 ([5b715f9](https://github.com/PolarisTime/Aries/commit/5b715f9f4541ffef062f0ae4b92b28815c1beb84))
+* **print:** 注册销售退货单为可打印模块并补齐打印明细字段 ([8d61981](https://github.com/PolarisTime/Aries/commit/8d619811cd903d6b49134c4c1f2e61f434499c23))
+* **sales-outbound:** 支持部分出库录入与剩余可出量展示 ([e565fa7](https://github.com/PolarisTime/Aries/commit/e565fa76970c54c8bc09118d21698f2f788b48a8))
+* **sales-return:** 新增销售退货单页面、来源导入与订单单据流 ([42d3323](https://github.com/PolarisTime/Aries/commit/42d332380ee4117d518dc086e4d0aec6e385ddb4))
+* **security:** 新增角色管理与权限矩阵界面(RBAC0) ([1102047](https://github.com/PolarisTime/Aries/commit/110204776786ff74aa6a02308efb28eabf944be7))
+* **statement:** 客户对账单支持蓝字/红字方向展示与筛选 ([02c83f8](https://github.com/PolarisTime/Aries/commit/02c83f89566c48443a462f3c3a27651786f62cab))
+* **system:** 新增多用户账号管理与角色分配界面并补齐端到端用例 ([d734676](https://github.com/PolarisTime/Aries/commit/d73467610fe266e69ff7bb7c2b47773505145067))
+
+
+### Performance Improvements
+
+* **api:** 分页拉取并行请求并消除 React Doctor 告警 ([6007772](https://github.com/PolarisTime/Aries/commit/600777219c2b302ed3db4d81cace419ed34e16bd))
+
 # [10.2.0](https://github.com/PolarisTime/Aries/compare/v10.1.0...v10.2.0) (2026-09-12)
 
 
