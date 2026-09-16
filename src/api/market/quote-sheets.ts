@@ -4,6 +4,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
+import { normalizeVersion, withConcurrencyHeaders } from './quote-concurrency'
 
 /** 数字或数字字符串统一为 number; 空值返回 undefined。 */
 function toOptionalNumber(value: unknown): number | undefined {
@@ -50,6 +51,7 @@ const sheetSchema = z.looseObject({
   remark: z.string().nullable().optional(),
   brands: z.array(brandSchema).nullable().optional(),
   items: z.array(itemSchema).nullable().optional(),
+  version: z.union([z.number(), z.string()]).nullable().optional(),
 })
 
 const sheetPageSchema = z.looseObject({
@@ -99,6 +101,7 @@ export type QuoteSheetRecord = {
   remark?: string
   brands: QuoteSheetBrandRecord[]
   items: QuoteSheetItemRecord[]
+  version: string
 }
 
 /** 保存请求体(整体替换)。 */
@@ -188,6 +191,7 @@ function normalizeSheet(
       sortOrder: toOptionalNumber(brand.sortOrder) ?? brandIndex,
     })),
     items,
+    version: normalizeVersion(raw.version) ?? '',
     ...(raw.sheetNo ? { sheetNo: raw.sheetNo } : {}),
     ...(projectId ? { projectId } : {}),
     ...(raw.projectName ? { projectName: raw.projectName } : {}),
@@ -228,8 +232,14 @@ export async function createQuoteSheet(
 export async function updateQuoteSheet(
   id: EntityId,
   payload: QuoteSheetPayload,
+  expectedVersion?: string,
 ): Promise<QuoteSheetRecord> {
-  const response = await apiPut(ENDPOINTS.QUOTE_SHEET(id), sheetSchema, payload)
+  const response = await apiPut(
+    ENDPOINTS.QUOTE_SHEET(id),
+    sheetSchema,
+    payload,
+    withConcurrencyHeaders(expectedVersion),
+  )
   return normalizeSheet(response, 0)
 }
 

@@ -118,6 +118,32 @@ describe('quote-sheets API', () => {
     expect(payload.items[0].prices[0].supplierId).toBe('77')
   })
 
+  it('更新请求携带 If-Match 版本并抑制 409 全局提示', async () => {
+    apiPutMock.mockResolvedValue(page.content[0])
+
+    await updateQuoteSheet(
+      '700500000000000130',
+      {
+        name: '批次 1',
+        orderDate: '2026-09-16',
+        refDate: '2026-09-16',
+        refPeriod: '上午',
+        lengthPremium: 30,
+        locked: false,
+        brands: [],
+        items: [],
+      },
+      '3',
+    )
+
+    const config = apiPutMock.mock.calls[0][3] as {
+      headers: Record<string, string>
+      suppressGlobalErrorStatuses: number[]
+    }
+    expect(config.headers['If-Match']).toBe('3')
+    expect(config.suppressGlobalErrorStatuses).toContain(409)
+  })
+
   it('创建与删除走集合与资源路径', async () => {
     apiPostMock.mockResolvedValue(page.content[0])
     apiDeleteMock.mockResolvedValue(undefined)

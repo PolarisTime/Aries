@@ -3,6 +3,7 @@ import { apiGet, apiPut } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
+import { normalizeVersion, withConcurrencyHeaders } from './quote-concurrency'
 
 function toNumber(value: unknown, fallback = 0): number {
   const parsed = Number(value)
@@ -24,6 +25,7 @@ const configSchema = z.looseObject({
   designatedBrands: z.array(z.string()).nullable().optional(),
   remark: z.string().nullable().optional(),
   brands: z.array(brandSchema).nullable().optional(),
+  version: z.union([z.number(), z.string()]).nullable().optional(),
 })
 
 export type QuoteProjectBrandRecord = {
@@ -41,6 +43,7 @@ export type QuoteProjectConfigRecord = {
   designatedBrands: string[]
   remark?: string
   brands: QuoteProjectBrandRecord[]
+  version?: string
 }
 
 export type QuoteProjectConfigPayload = {
@@ -70,6 +73,9 @@ function normalizeConfig(
       categories: brand.categories ?? [],
       sortOrder: toNumber(brand.sortOrder, index),
     })),
+    ...(normalizeVersion(raw.version)
+      ? { version: normalizeVersion(raw.version) }
+      : {}),
     ...(raw.remark ? { remark: raw.remark } : {}),
   }
 }
@@ -92,12 +98,14 @@ export async function fetchQuoteProjectConfig(
 export async function saveQuoteProjectConfig(
   projectId: EntityId,
   payload: QuoteProjectConfigPayload,
+  expectedVersion?: string,
 ): Promise<QuoteProjectConfigRecord> {
   const normalized = parseEntityId(projectId, 'projectId')
   const response = await apiPut(
     ENDPOINTS.QUOTE_PROJECT_CONFIG(normalized),
     configSchema,
     payload,
+    withConcurrencyHeaders(expectedVersion),
   )
   return normalizeConfig(response, normalized)
 }

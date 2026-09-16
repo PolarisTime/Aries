@@ -3,10 +3,12 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/authStore'
+import { message, modal } from '@/utils/antd-app'
 import { type SheetsStore, useSheetsStore } from './useSheetsStore'
 
 const api = vi.hoisted(() => ({
   fetchQuoteSheets: vi.fn(),
+  fetchQuoteSheet: vi.fn(),
   createQuoteSheet: vi.fn(),
   updateQuoteSheet: vi.fn(),
   deleteQuoteSheet: vi.fn(),
@@ -16,6 +18,7 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/api/market/quote-sheets', () => ({
   fetchQuoteSheets: api.fetchQuoteSheets,
+  fetchQuoteSheet: api.fetchQuoteSheet,
   createQuoteSheet: api.createQuoteSheet,
   updateQuoteSheet: api.updateQuoteSheet,
   deleteQuoteSheet: api.deleteQuoteSheet,
@@ -35,6 +38,9 @@ vi.mock('@/utils/antd-app', () => ({
     loading: vi.fn(),
     destroy: vi.fn(),
   },
+  modal: {
+    confirm: vi.fn(),
+  },
 }))
 
 function sheetRecord(overrides: Record<string, unknown> = {}) {
@@ -50,6 +56,7 @@ function sheetRecord(overrides: Record<string, unknown> = {}) {
     lengthPremium: 30,
     locked: false,
     status: '报价',
+    version: '0',
     brands: [{ brandName: '中天', freight: 30, sortOrder: 0 }],
     items: [
       {
@@ -78,6 +85,7 @@ const configRecord = {
   hrb400eFallback: false,
   products: [],
   designatedBrands: [],
+  version: '0',
   brands: [{ brandName: '中天', freight: 30, categories: [], sortOrder: 0 }],
 }
 
@@ -88,11 +96,14 @@ describe('useSheetsStore 服务端数据源', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     api.fetchQuoteSheets.mockReset().mockResolvedValue([sheetRecord()])
+    api.fetchQuoteSheet.mockReset().mockResolvedValue(sheetRecord())
     api.createQuoteSheet.mockReset()
     api.updateQuoteSheet.mockReset().mockResolvedValue(sheetRecord())
     api.deleteQuoteSheet.mockReset().mockResolvedValue(undefined)
     api.fetchQuoteProjectConfig.mockReset().mockResolvedValue(configRecord)
     api.saveQuoteProjectConfig.mockReset().mockResolvedValue(configRecord)
+    vi.mocked(modal.confirm).mockReset()
+    vi.mocked(message.info).mockReset()
     useAuthStore.setState({ token: 'token', isAuthenticated: true })
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -205,5 +216,88 @@ describe('useSheetsStore 服务端数据源', () => {
 
     expect(api.createQuoteSheet).not.toHaveBeenCalled()
     expect(api.updateQuoteSheet).not.toHaveBeenCalled()
+  })
+
+  it('更新保存携带 If-Match 版本号并回填新版本', async () => {
+    api.updateQuoteSheet.mockResolvedValue(sheetRecord({ version: '1' }))
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.active.version).toBe('0')
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    const [, , expectedVersion] = api.updateQuoteSheet.mock.calls[0] as [
+      string,
+      unknown,
+      string,
+    ]
+    expect(expectedVersion).toBe('0')
+    expect(store.current.active.version).toBe('1')
+  })
+
+  it('保存冲突时提示并支持重新加载丢弃本地改动', async () => {
+    api.updateQuoteSheet.mockRejectedValue({ status: 409, code: 4090 })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    expect(store.current.conflict).toEqual({
+      kind: 'sheet',
+      id: store.current.activeId,
+    })
+
+    api.fetchQuoteSheet.mockResolvedValue(sheetRecord({ locked: false }))
+    const options = vi.mocked(modal.confirm).mock.calls[0][0] as {
+      onCancel: () => Promise<void>
+    }
+    await act(async () => {
+      await options.onCancel()
+    })
+
+    expect(store.current.conflict).toBeNull()
+    expect(store.current.active.locked).toBe(false)
+  })
+
+  it('聚焦时无未保存改动则静默刷新', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    api.fetchQuoteSheets.mockClear()
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(api.fetchQuoteSheets).toHaveBeenCalledTimes(1)
+  })
+
+  it('聚焦时存在未保存改动仅提示不覆盖本地', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    api.fetchQuoteSheets.mockClear()
+    vi.mocked(message.info).mockClear()
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
+    expect(vi.mocked(message.info)).toHaveBeenCalled()
   })
 })
