@@ -154,6 +154,20 @@ describe('商品选项分页拉全', () => {
 
     expect(apiGetMock).toHaveBeenCalledTimes(1)
   })
+
+  it('总页数超过上限时截断到 50 页并告警，不无限翻页', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    apiGetMock.mockResolvedValue(pageOf(['100000000000000001'], 9999))
+
+    const rows = await fetchAllMaterialOptions()
+
+    expect(apiGetMock).toHaveBeenCalledTimes(50)
+    const pages = apiGetMock.mock.calls.map((call) => call[2].params.page)
+    expect(pages).toEqual(Array.from({ length: 50 }, (_, index) => index))
+    expect(warn).toHaveBeenCalled()
+    expect(rows).toHaveLength(50)
+    warn.mockRestore()
+  })
 })
 
 describe('快捷新增附加费用主数据', () => {

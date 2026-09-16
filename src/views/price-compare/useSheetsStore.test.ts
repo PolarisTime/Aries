@@ -109,9 +109,11 @@ const configRecord = {
 describe('useSheetsStore 服务端数据源', () => {
   let container: HTMLDivElement
   let root: Root
+  let rootUnmounted: boolean
 
   beforeEach(() => {
     vi.useFakeTimers()
+    rootUnmounted = false
     api.fetchQuoteSheets.mockReset().mockResolvedValue([sheetRecord()])
     api.fetchQuoteSheet.mockReset().mockResolvedValue(sheetRecord())
     api.createQuoteSheet.mockReset()
@@ -167,7 +169,7 @@ describe('useSheetsStore 服务端数据源', () => {
   })
 
   afterEach(() => {
-    act(() => root.unmount())
+    if (!rootUnmounted) act(() => root.unmount())
     container.remove()
     vi.useRealTimers()
   })
@@ -820,5 +822,129 @@ describe('useSheetsStore 服务端数据源', () => {
       store.current.removeSheet(targetId)
     })
     expect(store.current.conflict).toBeNull()
+  })
+
+  it('项目配置未加载完成时跳过保存, 加载完成后再发完整 prices', async () => {
+    let resolveConfig!: (value: typeof configRecord) => void
+    api.fetchQuoteProjectConfig.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveConfig = resolve
+        }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+    // 配置仍处于未加载状态
+    expect(store.current.configLoaded).toBe(false)
+    api.updateQuoteSheetItem.mockClear()
+    api.updateQuoteSheetHeader.mockClear()
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    // 配置未加载: 不得发出任何写请求, 更不能发 prices: [] 清空服务端现货价
+    expect(api.updateQuoteSheetItem).not.toHaveBeenCalled()
+    expect(api.updateQuoteSheetHeader).not.toHaveBeenCalled()
+
+    await act(async () => {
+      resolveConfig(configRecord)
+      await Promise.resolve()
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      {
+        prices: { brandName: string; spotPrice?: number; supplierId?: string }[]
+      },
+    ]
+    expect(itemId).toBe('7001')
+    expect(payload.prices).toEqual([
+      { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
+    ])
+  })
+
+  it('新建批次 create 成功后自动签出该单据', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+    api.acquireQuoteSheetEditLock.mockClear()
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith(
+      '9002',
+      undefined,
+    )
+  })
+
+  it('切到未落库批次时释放上一批次编辑锁', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+    })
+    expect(store.current.editLock?.sheetId).toBe('9001')
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+  })
+
+  it('卸载时释放当前批次编辑锁', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+    })
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    act(() => root.unmount())
+    rootUnmounted = true
+
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
   })
 })

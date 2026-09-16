@@ -141,6 +141,12 @@ export async function fetchMaterialSearch(
 const MATERIAL_OPTIONS_PAGE_SIZE = 200
 
 /**
+ * 商品选项分页拉全的最大页数。
+ * 防御性上限：后端 `totalPages` 异常(如极端数据量、脏数据)时避免无限翻页拖垮前端。
+ */
+const MATERIAL_OPTIONS_MAX_PAGES = 50
+
+/**
  * 分页拉取全部商品选项。
  * <p>
  * 商品下拉需要在本地做结构化/拼音过滤（如品牌“泸钢”用 “lg” 命中），
@@ -162,8 +168,16 @@ export async function fetchAllMaterialOptions(
     })
 
   const firstPage = await fetchPage(0)
+  const totalPages = Math.max(firstPage.totalPages, 1)
+  const pagesToFetch = Math.min(totalPages, MATERIAL_OPTIONS_MAX_PAGES)
+  if (totalPages > MATERIAL_OPTIONS_MAX_PAGES) {
+    // 安全降级: 截断到上限并告警, 保证下拉可用而不是无限翻页
+    console.warn(
+      `[materials] 商品选项共 ${totalPages} 页, 超过上限 ${MATERIAL_OPTIONS_MAX_PAGES} 页, 仅加载前 ${MATERIAL_OPTIONS_MAX_PAGES} 页`,
+    )
+  }
   const restPages = await Promise.all(
-    Array.from({ length: Math.max(firstPage.totalPages - 1, 0) }, (_, index) =>
+    Array.from({ length: pagesToFetch - 1 }, (_, index) =>
       fetchPage(index + 1),
     ),
   )

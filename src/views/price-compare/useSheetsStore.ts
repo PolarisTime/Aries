@@ -439,6 +439,15 @@ export function useSheetsStore(): SheetsStore {
   const sheetTimersRef = useRef<Map<string, number>>(new Map())
   const configTimerRef = useRef<number | null>(null)
   const hydratedRef = useRef(false)
+  /**
+   * 已完成服务端加载的项目配置: projectId 集合。
+   * 未加载完成时 `configOf` 会回退 `emptyConfig()`(brands 为空), 此时保存单据会把
+   * 行级 `prices` 变成 `[]`, 后端 `applyItem` 会清空现货价/供应商, 造成数据丢失。
+   * 守卫条件: 单据带 projectId 且该项目不在集合内时, 跳过本次保存。
+   */
+  const configLoadedRef = useRef<Set<string>>(new Set())
+  /** 因项目配置未加载而跳过的待保存单据 id, 配置加载完成后补跑一次。 */
+  const configBlockedSaveRef = useRef<Set<string>>(new Set())
   /** 同一资源(单据/项目配置)串行保存, 避免并发 PUT 触发乐观锁 409。 */
   const inflightRef = useRef<Set<string>>(new Set())
   const pendingRef = useRef<Set<string>>(new Set())
@@ -476,6 +485,10 @@ export function useSheetsStore(): SheetsStore {
   >(() => Promise.resolve('skipped'))
   /** 保存遇到他人签出锁冲突时的处理(刷新锁状态并提示)。 */
   const handleLockConflictRef = useRef<(sheetId: string) => void>(() => {})
+  /** 最新 acquireEditLock, 供 create 成功等非渲染路径触发签出。 */
+  const acquireEditLockRef = useRef<
+    (id?: string, options?: { force?: boolean }) => Promise<boolean>
+  >(() => Promise.resolve(true))
 
   const runSerialized = useCallback(
     (key: string, task: () => Promise<void>) =>
@@ -533,6 +546,25 @@ export function useSheetsStore(): SheetsStore {
       (projectId && stateRef.current.configs[projectId]) || emptyConfig(),
     [],
   )
+
+  /** 最新 scheduleSaveSheet, 供配置加载完成后的补跑使用(避免声明顺序依赖)。 */
+  const scheduleSaveSheetRef = useRef<(sheetId: string) => void>(() => {})
+
+  /**
+   * 项目配置加载完成后, 补跑此前因配置未就绪而跳过的单据保存。
+   * 与 scheduleSaveSheet 通过 ref 解耦, 便于在更早的回调中引用。
+   */
+  const flushBlockedSaves = useCallback((projectId: string) => {
+    if (!projectId) return
+    const projectIdBySheet = new Map(
+      stateRef.current.sheets.map((sheet) => [sheet.id, sheet.projectId]),
+    )
+    for (const sheetId of [...configBlockedSaveRef.current]) {
+      if (projectIdBySheet.get(sheetId) !== projectId) continue
+      configBlockedSaveRef.current.delete(sheetId)
+      scheduleSaveSheetRef.current(sheetId)
+    }
+  }, [])
 
   /** 回填单据服务端版本(不进入撤销历史)。 */
   const applySheetVersion = useCallback(
@@ -766,12 +798,14 @@ export function useSheetsStore(): SheetsStore {
           ...current,
           configs: { ...current.configs, [projectId]: fresh },
         }))
+        configLoadedRef.current.add(projectId)
+        flushBlockedSaves(projectId)
       } catch (error) {
         console.error('重新加载比价配置失败', error)
         message.error('重新加载比价配置失败，请稍后重试')
       }
     },
-    [mutate],
+    [flushBlockedSaves, mutate],
   )
 
   /** 以我的覆盖: 取服务端最新版本后原样重发本地项目配置, 冲突时重试一次。 */
@@ -845,6 +879,11 @@ export function useSheetsStore(): SheetsStore {
           (item) => item.id === sheetId,
         )
         if (!sheet) return
+        // 项目配置未加载完成: 跳过保存并登记补跑, 避免用空品牌清空服务端现货价
+        if (sheet.projectId && !configLoadedRef.current.has(sheet.projectId)) {
+          configBlockedSaveRef.current.add(sheet.id)
+          return
+        }
         const config = configOf(sheet.projectId)
         const serverId = serverIdRef.current.get(sheet.id)
         const fail = (error: unknown, fallback: string) =>
@@ -867,6 +906,11 @@ export function useSheetsStore(): SheetsStore {
               }),
             )
             broadcastSaved()
+            // create 只拿到 serverId 就返回, 不会触发依赖 serverIdRef 的切换 effect;
+            // 若该单据仍是当前激活批次, 显式补一次签出, 避免新批次无编辑锁。
+            if (stateRef.current.activeId === sheet.id) {
+              void acquireEditLockRef.current(sheet.id)
+            }
           } catch (error) {
             fail(error, '保存比价单失败')
           }
@@ -1004,6 +1048,10 @@ export function useSheetsStore(): SheetsStore {
     },
     [saveSheetNow],
   )
+
+  useEffect(() => {
+    scheduleSaveSheetRef.current = scheduleSaveSheet
+  }, [scheduleSaveSheet])
 
   const saveConfigNow = useCallback(
     async (projectId: string) => {
@@ -1159,9 +1207,11 @@ export function useSheetsStore(): SheetsStore {
         ...current,
         configs: { ...current.configs, [projectId]: fresh },
       }))
+      configLoadedRef.current.add(projectId)
+      flushBlockedSaves(projectId)
       return true
     },
-    [mutate],
+    [flushBlockedSaves, mutate],
   )
 
   /** 聚焦/轮询/跨标签共用的刷新入口: 有未保存改动时轻提示。 */
@@ -1370,7 +1420,6 @@ export function useSheetsStore(): SheetsStore {
     [applyLockState, clearHeldLockTimer],
   )
 
-  const acquireEditLockRef = useRef(acquireEditLock)
   useEffect(() => {
     acquireEditLockRef.current = acquireEditLock
   }, [acquireEditLock])
@@ -1392,18 +1441,19 @@ export function useSheetsStore(): SheetsStore {
     })
   }, [])
 
-  // 切换批次: 释放上一批次锁并签出新批次
+  // 切换批次: 无条件释放上一批次锁(含未落库批次, 避免锁泄漏)并签出新批次
   const lockedActiveRef = useRef<string | null>(null)
   useEffect(() => {
     if (loading) return
     if (!token || !hydratedRef.current) return
     const target = state.activeId
     if (!target || lockedActiveRef.current === target) return
-    // 等待单据落库(拿到服务端 id)后再签出
-    if (!serverIdRef.current.get(target)) return
     const previous = lockedActiveRef.current
     lockedActiveRef.current = target
+    // 先释放上一批次锁并停止其续约; 即使目标批次尚未落库也要执行, 否则旧锁会泄漏
     if (previous) void releaseEditLock(previous)
+    // 未落库批次(尚无服务端 id): 待 create 成功后由 saveSheetNow 显式签出
+    if (!serverIdRef.current.get(target)) return
     void acquireEditLock(target)
   }, [state.activeId, token, loading, acquireEditLock, releaseEditLock])
 
@@ -1453,7 +1503,12 @@ export function useSheetsStore(): SheetsStore {
   // 切换项目时按需加载项目配置; 后端无品牌时用单据品牌兜底(保留运费)
   useEffect(() => {
     const projectId = active?.projectId
-    if (!token || !projectId || state.configs[projectId]) return
+    if (!token || !projectId) return
+    if (state.configs[projectId]) {
+      // 配置已在本地(含其他路径写入): 视为已加载, 允许该项目单据保存
+      configLoadedRef.current.add(projectId)
+      return
+    }
     const controller = new AbortController()
     void (async () => {
       try {
@@ -1498,6 +1553,8 @@ export function useSheetsStore(): SheetsStore {
             },
           }
         })
+        configLoadedRef.current.add(projectId)
+        flushBlockedSaves(projectId)
       } catch (error) {
         if (!controller.signal.aborted) {
           console.error('加载比价配置失败', error)
@@ -1505,7 +1562,7 @@ export function useSheetsStore(): SheetsStore {
       }
     })()
     return () => controller.abort()
-  }, [token, active?.projectId, state.configs, apply])
+  }, [token, active?.projectId, state.configs, apply, flushBlockedSaves])
 
   const undo = useCallback(() => {
     const history = historyRef.current
