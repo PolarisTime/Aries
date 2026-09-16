@@ -1,3 +1,10 @@
+# [10.7.0](https://github.com/PolarisTime/Aries/compare/v10.6.1...v10.7.0) (2026-09-16)
+
+
+### Features
+
+* **price-compare:** 乐观并发冲突提示与聚焦/轮询刷新 ([716ee97](https://github.com/PolarisTime/Aries/commit/716ee974c97cb305c148fdea883d9a3c63378ba0))
+
 ## [10.6.1](https://github.com/PolarisTime/Aries/compare/v10.6.0...v10.6.1) (2026-09-16)
 
 
