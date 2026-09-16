@@ -3,11 +3,13 @@ import {
   Button,
   DatePicker,
   InputNumber,
+  Select,
   Space,
   Tooltip,
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
+import { PERIODS } from './market-sync-model'
 
 const { Text } = Typography
 
@@ -20,7 +22,9 @@ export function MarketSyncToolbar({
   onRefreshCalendar,
   onSingleDateChange,
   onSync,
+  onSyncPeriodsChange,
   singleDate,
+  syncPeriods,
   syncing,
 }: {
   backfillDays: number
@@ -31,7 +35,9 @@ export function MarketSyncToolbar({
   onRefreshCalendar: () => void
   onSingleDateChange: (date: string) => void
   onSync: () => void
+  onSyncPeriodsChange: (periods: string[]) => void
   singleDate: string
+  syncPeriods: string[]
   syncing: boolean
 }) {
   return (
@@ -56,6 +62,20 @@ export function MarketSyncToolbar({
             onChange={(value) =>
               value && onSingleDateChange(value.format('YYYY-MM-DD'))
             }
+          />
+          <Select
+            size="small"
+            mode="multiple"
+            maxTagCount="responsive"
+            style={{ minWidth: 140 }}
+            value={syncPeriods}
+            placeholder="全部时段"
+            allowClear
+            options={PERIODS.map((period) => ({
+              value: period,
+              label: period,
+            }))}
+            onChange={onSyncPeriodsChange}
           />
           <Button
             size="small"

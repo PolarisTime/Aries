@@ -10,14 +10,14 @@ export function MarketSyncMatrix({
   onSelectQuote,
   onSyncDate,
   selected,
-  syncingDate,
+  syncingCell,
 }: {
   calendars: CalendarMap
   matrixDays: string[]
   onSelectQuote: (date: string, period: string) => void
-  onSyncDate: (date: string) => void
+  onSyncDate: (date: string, period?: string) => void
   selected: { date: string; period: string }
-  syncingDate: string | null
+  syncingCell: string | null
 }) {
   return (
     <Card size="small" title="覆盖矩阵（近30天）" style={{ marginBottom: 12 }}>
@@ -50,14 +50,14 @@ export function MarketSyncMatrix({
               if (weekend) return <Text type="secondary">休</Text>
               if (!has)
                 return (
-                  <Tooltip title="该时段无行情数据，点击同步该日">
+                  <Tooltip title="该时段无行情数据，点击同步该时段">
                     <Button
                       size="small"
                       type="link"
                       danger
-                      loading={syncingDate === row.date}
+                      loading={syncingCell === `${row.date}|${p}`}
                       style={{ padding: 0, height: 'auto' }}
-                      onClick={() => onSyncDate(row.date)}
+                      onClick={() => onSyncDate(row.date, p)}
                     >
                       缺
                     </Button>

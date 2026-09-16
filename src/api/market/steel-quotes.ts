@@ -126,12 +126,18 @@ export const steelQuoteSchema = z.looseObject({
 })
 export type SteelQuote = z.infer<typeof steelQuoteSchema>
 
-/** 手动触发后端行情同步。 */
-export function syncSteelQuotes(date?: string): Promise<SteelQuoteSyncResult> {
+/** 手动触发后端行情同步; periods 为空表示同步当天全部时段。 */
+export function syncSteelQuotes(
+  date?: string,
+  periods?: string[],
+): Promise<SteelQuoteSyncResult> {
+  const body: { date?: string; periods?: string[] } = {}
+  if (date) body.date = date
+  if (periods && periods.length > 0) body.periods = periods
   return apiPost(
     ENDPOINTS.STEEL_QUOTE_SYNCS,
     steelQuoteSyncResponseSchema,
-    date ? { date } : {},
+    body,
     withIdempotencyKey(),
   )
 }

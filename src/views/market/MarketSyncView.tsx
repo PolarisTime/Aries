@@ -36,7 +36,9 @@ export function MarketSyncView() {
     sort,
     stats,
     syncing,
-    syncingDate,
+    syncPeriods,
+    setSyncPeriods,
+    syncingCell,
   } = useMarketSync()
 
   return (
@@ -46,6 +48,8 @@ export function MarketSyncView() {
         onSingleDateChange={setSingleDate}
         syncing={syncing}
         onSync={() => void onSync()}
+        syncPeriods={syncPeriods}
+        onSyncPeriodsChange={setSyncPeriods}
         backfillDays={backfillDays}
         onBackfillDaysChange={setBackfillDays}
         backfilling={backfilling}
@@ -64,8 +68,8 @@ export function MarketSyncView() {
         matrixDays={matrixDays}
         calendars={calendars}
         selected={selected}
-        syncingDate={syncingDate}
-        onSyncDate={(date) => void onSyncDate(date)}
+        syncingCell={syncingCell}
+        onSyncDate={(date, period) => void onSyncDate(date, period)}
         onSelectQuote={selectQuote}
       />
 

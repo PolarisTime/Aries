@@ -41,10 +41,11 @@ export function useMarketSync() {
   })
 
   const [singleDate, setSingleDate] = useState<string>(() => today())
+  const [syncPeriods, setSyncPeriods] = useState<string[]>(() => [...PERIODS])
   const [syncing, setSyncing] = useState(false)
   const [backfillDays, setBackfillDays] = useState<number>(30)
   const [backfilling, setBackfilling] = useState(false)
-  const [syncingDate, setSyncingDate] = useState<string | null>(null)
+  const [syncingCell, setSyncingCell] = useState<string | null>(null)
 
   const [form, setForm] = useState<Filters>({})
   const [applied, setApplied] = useState<Filters>({})
@@ -190,10 +191,15 @@ export function useMarketSync() {
   const onSync = async () => {
     setSyncing(true)
     try {
-      const result = await syncSteelQuotes(singleDate || undefined)
+      const result = await syncSteelQuotes(singleDate || undefined, syncPeriods)
+      const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
-        `同步完成：${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
+        `同步完成：${result.articleDate} ${synced.join('/')}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
       )
+      const missing = syncPeriods.filter((p) => !synced.includes(p))
+      if (missing.length > 0) {
+        message.warning(`当天暂无以下时段行情：${missing.join('/')}`)
+      }
       await calendarQuery.refetch()
       selectQuote(result.articleDate, result.period)
     } catch (error) {
@@ -235,13 +241,15 @@ export function useMarketSync() {
     }
   }
 
-  /** 手动同步某一天(矩阵缺失格子点击)。 */
-  const onSyncDate = async (date: string) => {
-    setSyncingDate(date)
+  /** 同步某天(可指定时段); 矩阵缺失格子点击时只同步该日该时段。 */
+  const onSyncDate = async (date: string, period?: string) => {
+    const periods = period ? [period] : syncPeriods
+    setSyncingCell(period ? `${date}|${period}` : date)
     try {
-      const result = await syncSteelQuotes(date)
+      const result = await syncSteelQuotes(date, periods)
+      const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
-        `已同步 ${result.articleDate} ${result.periods?.join('/') ?? result.period}，${result.rowCount} 行`,
+        `已同步 ${result.articleDate} ${synced.join('/')}，${result.rowCount} 行`,
       )
       await calendarQuery.refetch()
       selectQuote(result.articleDate, result.period)
@@ -251,7 +259,7 @@ export function useMarketSync() {
         `同步失败：${error instanceof Error ? error.message : '请稍后重试'}`,
       )
     } finally {
-      setSyncingDate(null)
+      setSyncingCell(null)
     }
   }
 
@@ -335,11 +343,13 @@ export function useMarketSync() {
     selected,
     singleDate,
     setSingleDate,
+    syncPeriods,
+    setSyncPeriods,
     syncing,
     backfillDays,
     setBackfillDays,
     backfilling,
-    syncingDate,
+    syncingCell,
     form,
     setForm,
     sort,
