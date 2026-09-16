@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { Empty, Flex, Skeleton, Watermark } from 'antd'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchSupplierOptions } from '@/api/master/supplier-options'
+import {
+  fetchSupplierOptions,
+  supplierDisplayName,
+} from '@/api/master/supplier-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useAuthStore } from '@/stores/authStore'
@@ -68,6 +71,15 @@ export function PriceCompareView() {
     enabled: isAuthenticated,
     staleTime: STALE_MASTER_OPTIONS,
   })
+  // 现货价单元格空间有限: 优先展示供应商简称
+  const supplierSelectOptions = useMemo(
+    () =>
+      supplierOptions.map((option) => ({
+        value: option.value,
+        label: supplierDisplayName(option),
+      })),
+    [supplierOptions],
+  )
 
   useEffect(() => {
     if (initialized.current || !projects.length) return
@@ -271,7 +283,7 @@ export function PriceCompareView() {
             availability={availability}
             spotRef={spotRef}
             designatedBrands={config.designatedBrands}
-            suppliers={supplierOptions}
+            suppliers={supplierSelectOptions}
             remark={config.remark}
             onRemarkChange={(value) => setConfig({ remark: value })}
           />

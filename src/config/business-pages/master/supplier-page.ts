@@ -33,6 +33,11 @@ export const suppliersPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      title: i18next.t('modules.pages.supplier.colShortName'),
+      dataIndex: 'shortName',
+      width: 120,
+    },
+    {
       title: i18next.t('modules.pages.supplier.colContactName'),
       dataIndex: 'contactName',
       width: 110,
@@ -71,6 +76,10 @@ export const suppliersPageConfig: ModulePageConfig = {
       key: 'supplierName',
     },
     {
+      label: i18next.t('modules.pages.supplier.colShortName'),
+      key: 'shortName',
+    },
+    {
       label: i18next.t('modules.pages.supplier.colContactName'),
       key: 'contactName',
     },
@@ -104,6 +113,12 @@ export const suppliersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.supplier.colSupplierName'),
       type: 'input',
       required: true,
+      row: 1,
+    },
+    {
+      key: 'shortName',
+      label: i18next.t('modules.pages.supplier.colShortName'),
+      type: 'input',
       row: 1,
     },
     {

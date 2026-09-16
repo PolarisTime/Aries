@@ -1539,6 +1539,7 @@ export const enUS = {
         placeholderKeyword: 'Supplier code / name / contact',
         colSupplierCode: 'Supplier Code',
         colSupplierName: 'Supplier Name',
+        colShortName: 'Supplier Short Name',
         colContactName: 'Contact',
         colContactPhone: 'Phone',
         colCity: 'City',

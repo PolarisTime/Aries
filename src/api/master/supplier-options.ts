@@ -9,6 +9,8 @@ export type SupplierOption = {
   id: EntityId
   supplierCode: string
   supplierName: string
+  /** 简称: 主数据维护, 用于下拉/单据等空间受限展示 */
+  shortName?: string
   value: EntityId
   label: string
 }
@@ -17,6 +19,7 @@ type RawSupplierOption = {
   id?: unknown
   supplierCode?: unknown
   supplierName?: unknown
+  shortName?: unknown
   value?: unknown
   label?: unknown
 }
@@ -25,9 +28,15 @@ const rawSupplierOptionSchema = z.object({
   id: z.string(),
   supplierCode: z.string(),
   supplierName: z.string(),
+  shortName: z.string().nullable().optional(),
   value: z.string(),
   label: z.string(),
 })
+
+/** 空间受限场景展示名: 优先简称, 否则全称。 */
+export function supplierDisplayName(option: SupplierOption): string {
+  return option.shortName || option.supplierName
+}
 
 function buildSupplierLabel(id: EntityId, supplierName: string): string {
   return supplierName || `#${id}`
@@ -45,11 +54,13 @@ export function normalizeSupplierOptions(
       asString(option.supplierName).trim() ||
       (rawValue && rawValue !== id ? rawValue : '') ||
       sourceLabel
+    const shortName = asString(option.shortName).trim()
 
     return {
       id,
       supplierCode,
       supplierName,
+      ...(shortName ? { shortName } : {}),
       value: id,
       label: buildSupplierLabel(id, supplierName),
     }

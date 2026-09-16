@@ -1499,6 +1499,7 @@ export const zhCN = {
         placeholderKeyword: '供应商编码 / 名称 / 联系人',
         colSupplierCode: '供应商编码',
         colSupplierName: '供应商名称',
+        colShortName: '供应商简称',
         colContactName: '联系人',
         colContactPhone: '联系电话',
         colCity: '城市',
