@@ -1,3 +1,10 @@
+# [10.5.0](https://github.com/PolarisTime/Aries/compare/v10.4.0...v10.5.0) (2026-09-16)
+
+
+### Features
+
+* **price-compare:** 比价单服务端持久化，支持参照锁定与现货供应商 ([e26bf34](https://github.com/PolarisTime/Aries/commit/e26bf346d993072c1ddd4b9c6ca6b817339ce47f))
+
 # [10.4.0](https://github.com/PolarisTime/Aries/compare/v10.3.2...v10.4.0) (2026-09-16)
 
 
