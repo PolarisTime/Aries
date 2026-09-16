@@ -1,3 +1,10 @@
+## [10.6.1](https://github.com/PolarisTime/Aries/compare/v10.6.0...v10.6.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 单据与项目配置保存串行化，避免并发 PUT 触发 409 ([b61ab0e](https://github.com/PolarisTime/Aries/commit/b61ab0e83672b6fee49a19703b86d43df1d11e40))
+
 # [10.6.0](https://github.com/PolarisTime/Aries/compare/v10.5.0...v10.6.0) (2026-09-16)
 
 
