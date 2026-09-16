@@ -56,7 +56,9 @@ test.describe('基础资料模块', () => {
 
       // 打开首行内联详情
       const detailToggle = page
-        .locator('button.table-detail-toggle-btn[aria-label="查看明细"]:visible')
+        .locator(
+          'button.table-detail-toggle-btn[aria-label="查看明细"]:visible',
+        )
         .first()
       if ((await detailToggle.count()) > 0) {
         await detailToggle.click()

@@ -1,9 +1,6 @@
 import fs from 'node:fs/promises'
 import { expect } from '@playwright/test'
-import {
-  e2eApiBaseUrl,
-  getPasswordSession,
-} from './support/api-key'
+import { e2eApiBaseUrl, getPasswordSession } from './support/api-key'
 import {
   buttonName,
   expectGridTable,
@@ -19,10 +16,9 @@ async function downloadMaterialTemplate(
   outputPath: string,
 ) {
   const session = await getPasswordSession(request)
-  const response = await request.get(
-    `${e2eApiBaseUrl()}/materials/template`,
-    { headers: { Authorization: `Bearer ${session.accessToken}` } },
-  )
+  const response = await request.get(`${e2eApiBaseUrl()}/materials/template`, {
+    headers: { Authorization: `Bearer ${session.accessToken}` },
+  })
   expect(response.ok()).toBeTruthy()
   await fs.writeFile(outputPath, await response.body())
   return outputPath
@@ -41,13 +37,13 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     await expectModuleHeading(page, '商品资料')
     await expectGridTable(page)
 
-    const firstRow = page.locator('tbody tr:not(.ant-table-measure-row)').first()
+    const firstRow = page
+      .locator('tbody tr:not(.ant-table-measure-row)')
+      .first()
     await expect(firstRow).toBeVisible({ timeout: 30_000 })
     await firstRow.click()
 
-    const historyButton = page
-      .getByRole('button', { name: '版本历史' })
-      .first()
+    const historyButton = page.getByRole('button', { name: '版本历史' }).first()
     await expect(historyButton).toBeVisible({ timeout: 30_000 })
     await historyButton.click()
 
@@ -80,7 +76,10 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     await expectGridTable(page)
 
     const chooserPromise = page.waitForEvent('filechooser')
-    await page.getByRole('button', { name: buttonName('导入') }).first().click()
+    await page
+      .getByRole('button', { name: buttonName('导入') })
+      .first()
+      .click()
     const chooser = await chooserPromise
     await chooser.setFiles(templatePath)
 
@@ -92,7 +91,10 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
       previewModal.locator('tbody tr:not(.ant-table-measure-row)').first(),
     ).toBeVisible({ timeout: 30_000 })
 
-    await previewModal.getByRole('button', { name: buttonName('取消') }).first().click()
+    await previewModal
+      .getByRole('button', { name: buttonName('取消') })
+      .first()
+      .click()
     await expect(previewModal).toBeHidden({ timeout: 30_000 })
 
     await assertNoFatalUiErrors()
@@ -113,7 +115,10 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     await expectGridTable(page)
 
     const chooserPromise = page.waitForEvent('filechooser')
-    await page.getByRole('button', { name: buttonName('导入') }).first().click()
+    await page
+      .getByRole('button', { name: buttonName('导入') })
+      .first()
+      .click()
     const chooser = await chooserPromise
     await chooser.setFiles(templatePath)
 
@@ -129,10 +134,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
         !response.url().includes('previews'),
       { timeout: 30_000 },
     )
-    await previewModal
-      .getByRole('button', { name: '确认导入' })
-      .first()
-      .click()
+    await previewModal.getByRole('button', { name: '确认导入' }).first().click()
     const importResponse = await importResponsePromise
     const importPayload = (await importResponse.json()) as {
       rows?: Array<{ materialCode?: string | null }>
@@ -144,7 +146,10 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
       hasText: '导入结果',
     })
     await expect(resultModal).toBeVisible({ timeout: 30_000 })
-    await resultModal.getByRole('button', { name: buttonName('关闭') }).first().click()
+    await resultModal
+      .getByRole('button', { name: buttonName('关闭') })
+      .first()
+      .click()
     await expect(resultModal).toBeHidden({ timeout: 30_000 })
 
     // 搜索新导入商品并打开版本历史
@@ -158,9 +163,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     await expect(importedRow).toBeVisible({ timeout: 30_000 })
     await importedRow.click()
 
-    const historyButton = page
-      .getByRole('button', { name: '版本历史' })
-      .first()
+    const historyButton = page.getByRole('button', { name: '版本历史' }).first()
     await historyButton.click()
 
     const drawer = page.locator('.ant-drawer:visible').filter({

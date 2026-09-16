@@ -84,9 +84,9 @@ test.describe('采购模块', () => {
       .getByRole('button', { name: /新增|新建/ })
       .first()
       .click()
-    await expect(
-      page.locator('.workspace-overlay-panel').first(),
-    ).toBeVisible({ timeout: 30_000 })
+    await expect(page.locator('.workspace-overlay-panel').first()).toBeVisible({
+      timeout: 30_000,
+    })
     await closeTopOverlay(page)
   })
 })

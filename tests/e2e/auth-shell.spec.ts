@@ -31,9 +31,7 @@ test.describe('认证与外壳', () => {
     // 顶部全局搜索与应用外壳存在
     await expect(page.locator('#header-search-keyword').first()).toBeVisible()
     // 登录态写入 localStorage
-    const token = await page.evaluate(() =>
-      localStorage.getItem('aries-token'),
-    )
+    const token = await page.evaluate(() => localStorage.getItem('aries-token'))
     expect(token).toBeTruthy()
     await assertNoFatalUiErrors()
   })

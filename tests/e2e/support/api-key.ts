@@ -206,9 +206,7 @@ export async function loginWithPassword(
       },
     })
 
-    const payload = (await response
-      .json()
-      .catch(() => ({}))) as ApiLoginPayload
+    const payload = (await response.json().catch(() => ({}))) as ApiLoginPayload
 
     if (!response.ok()) {
       const message =
@@ -258,7 +256,10 @@ export async function getPasswordSession(request: APIRequestContext) {
   const existing = passwordSessionPromises.get(request)
   if (existing) {
     const session = await existing
-    if (!session.accessTokenExpiresAt || session.accessTokenExpiresAt > Date.now() + 30_000) {
+    if (
+      !session.accessTokenExpiresAt ||
+      session.accessTokenExpiresAt > Date.now() + 30_000
+    ) {
       return session
     }
     passwordSessionPromises.delete(request)
@@ -459,7 +460,7 @@ export async function fetchCollection(
   const records = Array.isArray(data)
     ? data
     : Array.isArray((payload as { data?: unknown }).data)
-      ? ((payload as { data: Array<Record<string, unknown>> }).data)
+      ? (payload as { data: Array<Record<string, unknown>> }).data
       : []
 
   return { ok: true, status: response.status(), records }
@@ -521,9 +522,7 @@ export async function fetchDetail(
     ok: true,
     status: response.status(),
     record:
-      (payload.data as Record<string, unknown> | undefined) ??
-      payload ??
-      null,
+      (payload.data as Record<string, unknown> | undefined) ?? payload ?? null,
   }
 }
 

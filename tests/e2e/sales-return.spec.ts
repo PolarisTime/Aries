@@ -74,9 +74,7 @@ test.describe('销售退货单', () => {
     }
 
     // 只退第一行 1 件，避免整单退货耗尽可退数量
-    const quantityInputs = modal.locator(
-      'input[id^="sales-return-quantity-"]',
-    )
+    const quantityInputs = modal.locator('input[id^="sales-return-quantity-"]')
     const inputCount = await quantityInputs.count()
     for (let index = 0; index < inputCount; index += 1) {
       await quantityInputs.nth(index).fill(index === 0 ? '1' : '0')
@@ -89,19 +87,19 @@ test.describe('销售退货单', () => {
     // 重新加载列表，确认草稿已生成
     await gotoRoute(page, '/sales-return')
     await expectModuleHeading(page, '销售退货单')
-    const firstRow = page.locator('tbody tr:not(.ant-table-measure-row)').first()
+    const firstRow = page
+      .locator('tbody tr:not(.ant-table-measure-row)')
+      .first()
     await expect(firstRow).toBeVisible({ timeout: 30_000 })
     await expect(firstRow).toContainText('草稿')
 
     // 双击草稿行打开编辑器并审核
     await firstRow.dblclick()
-    await expect(
-      page.locator('.workspace-overlay-panel').first(),
-    ).toBeVisible({ timeout: 30_000 })
+    await expect(page.locator('.workspace-overlay-panel').first()).toBeVisible({
+      timeout: 30_000,
+    })
 
-    const auditButton = page
-      .getByRole('button', { name: '保存并审核' })
-      .first()
+    const auditButton = page.getByRole('button', { name: '保存并审核' }).first()
     await expect(auditButton).toBeVisible({ timeout: 30_000 })
     await auditButton.click()
 
@@ -111,7 +109,10 @@ test.describe('销售退货单', () => {
 
     const saveResult = page.locator('.save-result-overlay').first()
     await expect(saveResult).toBeVisible({ timeout: 30_000 })
-    await saveResult.getByRole('button', { name: /关\s*闭/ }).first().click()
+    await saveResult
+      .getByRole('button', { name: /关\s*闭/ })
+      .first()
+      .click()
     await expect(saveResult).toBeHidden({ timeout: 30_000 })
 
     // 审核后列表首行应为已审核

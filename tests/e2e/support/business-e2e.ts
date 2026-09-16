@@ -48,9 +48,9 @@ export async function gotoRoute(page: Page, path: string) {
 }
 
 export async function expectModuleHeading(page: Page, title: string) {
-  await expect(
-    page.getByRole('heading', { name: title }).first(),
-  ).toBeVisible({ timeout: NAV_TIMEOUT_MS })
+  await expect(page.getByRole('heading', { name: title }).first()).toBeVisible({
+    timeout: NAV_TIMEOUT_MS,
+  })
 }
 
 /** 当前应用列表页关键字输入：business-grid 用 name=keyword，master/独立页用 aria-label=关键字。 */
