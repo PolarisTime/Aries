@@ -22,6 +22,7 @@ import { parseApiContract } from '@/api/core/api-contract'
 import {
   createExpenseMaterial,
   diffMaterialSnapshots,
+  fetchAllMaterialOptions,
   fetchMaterialHistories,
   fetchMaterialSearch,
   previewMaterialImportFile,
@@ -75,6 +76,83 @@ describe('商品搜索附加费用过滤', () => {
 
     const [, , options] = apiGetMock.mock.calls[0]
     expect(options.params.size).toBe(200)
+  })
+})
+
+function pageOf(
+  ids: string[],
+  totalPages: number,
+): {
+  content: { id: string; brand: string }[]
+  totalElements: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+  hasMore: boolean
+} {
+  return {
+    content: ids.map((id) => ({ id, brand: '泸钢' })),
+    totalElements: ids.length,
+    totalPages,
+    currentPage: 0,
+    pageSize: 200,
+    hasMore: totalPages > 1,
+  }
+}
+
+describe('商品选项分页拉全', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+    apiPostMock.mockReset()
+    fetchGeneratedMasterDataCodeMock.mockReset()
+  })
+
+  it('按总页数拉全并合并所有页', async () => {
+    apiGetMock
+      .mockResolvedValueOnce(pageOf(['100000000000000001'], 2))
+      .mockResolvedValueOnce(pageOf(['100000000000000002'], 2))
+
+    const rows = await fetchAllMaterialOptions()
+
+    expect(apiGetMock).toHaveBeenCalledTimes(2)
+    const [, , firstOptions] = apiGetMock.mock.calls[0]
+    expect(firstOptions.params).toMatchObject({
+      keyword: '',
+      page: 0,
+      size: 200,
+    })
+    const [, , secondOptions] = apiGetMock.mock.calls[1]
+    expect(secondOptions.params).toMatchObject({
+      keyword: '',
+      page: 1,
+      size: 200,
+    })
+    expect(rows.map((row) => row.id)).toEqual([
+      '100000000000000001',
+      '100000000000000002',
+    ])
+  })
+
+  it('携带 materialType 时把它透传给后端', async () => {
+    apiGetMock.mockResolvedValue(pageOf(['100000000000000003'], 1))
+
+    await fetchAllMaterialOptions('附加费用')
+
+    const [, , options] = apiGetMock.mock.calls[0]
+    expect(options.params).toMatchObject({
+      keyword: '',
+      page: 0,
+      size: 200,
+      materialType: '附加费用',
+    })
+  })
+
+  it('只有一页时只请求一次', async () => {
+    apiGetMock.mockResolvedValue(pageOf([], 1))
+
+    await fetchAllMaterialOptions()
+
+    expect(apiGetMock).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   type CreatedExpenseMaterial,
   createExpenseMaterial,
+  fetchAllMaterialOptions,
   fetchMaterialSearch,
 } from '@/api/master/materials'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -47,14 +48,11 @@ export function useModuleEditorExpenseItems({
   const [debouncedMaterialSearchKeyword, setDebouncedMaterialSearchKeyword] =
     useState('')
 
-  // 附加费用主数据可能排在分页末页，必须在后端按类型过滤后单独拉取，
-  // 不能在“商品全量前 200 条”里做客户端过滤，否则费用项永远取不到。
+  // 附加费用主数据可能排在分页末页，按类型单独分页拉全，
+  // 保证本地结构化/拼音过滤能覆盖全部费用项。
   const { data: expenseMaterials = [] } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.expenseMaterial,
-    queryFn: () =>
-      fetchMaterialSearch('', 200, EXPENSE_MATERIAL_TYPE).then(
-        (response) => response.content,
-      ),
+    queryFn: () => fetchAllMaterialOptions(EXPENSE_MATERIAL_TYPE),
     enabled: open && !!token,
     staleTime: STALE_MASTER_OPTIONS,
   })

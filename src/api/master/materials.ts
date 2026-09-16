@@ -137,6 +137,41 @@ export async function fetchMaterialSearch(
   }
 }
 
+/** 商品选项分页拉全的页大小：与后端 PageQuery 上限保持一致。 */
+const MATERIAL_OPTIONS_PAGE_SIZE = 200
+
+/**
+ * 分页拉取全部商品选项。
+ * <p>
+ * 商品下拉需要在本地做结构化/拼音过滤（如品牌“泸钢”用 “lg” 命中），
+ * 只预加载首页 200 条会漏掉默认排序靠后的数据，因此按总页数拉全。
+ */
+export async function fetchAllMaterialOptions(
+  materialType?: string,
+  signal?: AbortSignal,
+): Promise<MaterialSearchResponse[]> {
+  const fetchPage = (page: number) =>
+    apiGet(ENDPOINTS.MATERIALS, materialSearchPageResponseSchema, {
+      params: {
+        keyword: '',
+        page,
+        size: MATERIAL_OPTIONS_PAGE_SIZE,
+        ...(materialType ? { materialType } : {}),
+      },
+      ...(signal ? { signal } : {}),
+    })
+
+  const firstPage = await fetchPage(0)
+  const restPages = await Promise.all(
+    Array.from({ length: Math.max(firstPage.totalPages - 1, 0) }, (_, index) =>
+      fetchPage(index + 1),
+    ),
+  )
+  return normalizeMaterialSearchRows(
+    [firstPage, ...restPages].flatMap((page) => page.content),
+  )
+}
+
 export async function downloadMaterialImportTemplate() {
   const blob = await downloadGet(ENDPOINTS.MATERIALS_TEMPLATE)
   downloadBlob(blob, '商品资料导入模板.xlsx')

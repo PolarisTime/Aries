@@ -1,4 +1,4 @@
-import { fetchMaterialSearch } from '@/api/master/materials'
+import { fetchAllMaterialOptions } from '@/api/master/materials'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { reloadCarrierOptions } from '@/queries/master/carrier-options'
 import { reloadCustomerOptions } from '@/queries/master/customer-options'
@@ -29,7 +29,7 @@ export async function reloadMasterOptionsForModule(moduleKey: string) {
     case 'customer':
       return reloadCustomerOptions()
     case 'material':
-      return fetchMaterialSearch('', 200).then((response) => response.content)
+      return fetchAllMaterialOptions()
     case 'material-categories':
       return reloadMaterialCategories()
     case 'settlement-company':

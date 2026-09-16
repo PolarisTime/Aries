@@ -14,7 +14,7 @@ import {
   type MaterialGradeOption,
 } from '@/api/master/material-grades'
 import {
-  fetchMaterialSearch,
+  fetchAllMaterialOptions,
   type MaterialSearchResponse,
 } from '@/api/master/materials'
 import {
@@ -227,8 +227,7 @@ export function useMasterOptions(
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.material,
-    queryFn: () =>
-      fetchMaterialSearch('', 200).then((response) => response.content),
+    queryFn: () => fetchAllMaterialOptions(),
     enabled: queryEnabled && normalizedRequirements.materials,
     staleTime: STALE_MASTER_OPTIONS,
   })
