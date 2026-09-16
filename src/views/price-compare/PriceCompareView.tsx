@@ -1,6 +1,10 @@
-import { Empty, Flex, Watermark } from 'antd'
+import { useQuery } from '@tanstack/react-query'
+import { Empty, Flex, Skeleton, Watermark } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { fetchSupplierOptions } from '@/api/master/supplier-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
@@ -30,6 +34,7 @@ export function PriceCompareView() {
 
   const store = useSheetsStore()
   const {
+    loading,
     sheets,
     activeId,
     active,
@@ -56,6 +61,13 @@ export function PriceCompareView() {
   const initialized = useRef(false)
   const urlParamsApplied = useRef(false)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  const { data: supplierOptions = [] } = useQuery({
+    queryKey: QUERY_KEYS.masterOptions.supplier,
+    queryFn: () => fetchSupplierOptions(),
+    enabled: isAuthenticated,
+    staleTime: STALE_MASTER_OPTIONS,
+  })
 
   useEffect(() => {
     if (initialized.current || !projects.length) return
@@ -177,6 +189,14 @@ export function PriceCompareView() {
       onOk: () => removeSheet(id),
     })
 
+  if (loading) {
+    return (
+      <div className="price-compare-page">
+        <Skeleton active />
+      </div>
+    )
+  }
+
   return (
     <div id="price-compare-root" className="price-compare-page">
       <div className="price-compare-head">
@@ -251,6 +271,7 @@ export function PriceCompareView() {
             availability={availability}
             spotRef={spotRef}
             designatedBrands={config.designatedBrands}
+            suppliers={supplierOptions}
             remark={config.remark}
             onRemarkChange={(value) => setConfig({ remark: value })}
           />

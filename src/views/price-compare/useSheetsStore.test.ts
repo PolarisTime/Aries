@@ -1,34 +1,99 @@
 // @vitest-environment jsdom
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { PriceSheet } from './types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuthStore } from '@/stores/authStore'
 import { type SheetsStore, useSheetsStore } from './useSheetsStore'
 
-const LS_KEY = 'aries-price-compare-v5'
+const api = vi.hoisted(() => ({
+  fetchQuoteSheets: vi.fn(),
+  createQuoteSheet: vi.fn(),
+  updateQuoteSheet: vi.fn(),
+  deleteQuoteSheet: vi.fn(),
+  fetchQuoteProjectConfig: vi.fn(),
+  saveQuoteProjectConfig: vi.fn(),
+}))
 
-function externalSheet(): PriceSheet {
+vi.mock('@/api/market/quote-sheets', () => ({
+  fetchQuoteSheets: api.fetchQuoteSheets,
+  createQuoteSheet: api.createQuoteSheet,
+  updateQuoteSheet: api.updateQuoteSheet,
+  deleteQuoteSheet: api.deleteQuoteSheet,
+}))
+
+vi.mock('@/api/market/quote-project-configs', () => ({
+  fetchQuoteProjectConfig: api.fetchQuoteProjectConfig,
+  saveQuoteProjectConfig: api.saveQuoteProjectConfig,
+}))
+
+vi.mock('@/utils/antd-app', () => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(),
+    destroy: vi.fn(),
+  },
+}))
+
+function sheetRecord(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'ext-1',
-    name: '批次 X',
-    status: '报价',
-    projectId: 'p1',
-    projectName: '项目',
-    orderDate: '',
-    refDate: '',
-    refPeriod: '',
+    id: '9001',
+    sheetNo: '9001',
+    name: '批次 1',
+    projectId: '100',
+    projectName: '云潮筝鸣府',
+    orderDate: '2026-09-16',
+    refDate: '2026-09-16',
+    refPeriod: '上午',
     lengthPremium: 30,
-    inputs: {},
-    rows: [],
+    locked: false,
+    status: '报价',
+    brands: [{ brandName: '中天', freight: 30, sortOrder: 0 }],
+    items: [
+      {
+        id: '7001',
+        category: '螺纹钢',
+        material: 'HRB400',
+        spec: 12,
+        length: '9米',
+        prices: [
+          {
+            brandName: '中天',
+            spotPrice: 3200,
+            supplierId: '5001',
+            supplierName: '杭州物资',
+          },
+        ],
+      },
+    ],
+    ...overrides,
   }
 }
 
-describe('useSheetsStore 多标签页同步', () => {
+const configRecord = {
+  projectId: '100',
+  lengthPremium: 30,
+  hrb400eFallback: false,
+  products: [],
+  designatedBrands: [],
+  brands: [{ brandName: '中天', freight: 30, categories: [], sortOrder: 0 }],
+}
+
+describe('useSheetsStore 服务端数据源', () => {
   let container: HTMLDivElement
   let root: Root
 
   beforeEach(() => {
-    localStorage.clear()
+    vi.useFakeTimers()
+    api.fetchQuoteSheets.mockReset().mockResolvedValue([sheetRecord()])
+    api.createQuoteSheet.mockReset()
+    api.updateQuoteSheet.mockReset().mockResolvedValue(sheetRecord())
+    api.deleteQuoteSheet.mockReset().mockResolvedValue(undefined)
+    api.fetchQuoteProjectConfig.mockReset().mockResolvedValue(configRecord)
+    api.saveQuoteProjectConfig.mockReset().mockResolvedValue(configRecord)
+    useAuthStore.setState({ token: 'token', isAuthenticated: true })
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -37,7 +102,7 @@ describe('useSheetsStore 多标签页同步', () => {
   afterEach(() => {
     act(() => root.unmount())
     container.remove()
-    localStorage.clear()
+    vi.useRealTimers()
   })
 
   function renderStore() {
@@ -56,119 +121,89 @@ describe('useSheetsStore 多标签页同步', () => {
     }
   }
 
-  it('外部 storage 变化时同步单据状态', () => {
-    const store = renderStore()
-    const external = {
-      sheets: [externalSheet()],
-      activeId: 'ext-1',
-      configs: {},
-    }
-    act(() => {
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: LS_KEY,
-          newValue: JSON.stringify(external),
-        }),
-      )
-    })
-    expect(store.current.sheets).toHaveLength(1)
-    expect(store.current.sheets[0].id).toBe('ext-1')
-    expect(store.current.activeId).toBe('ext-1')
-  })
-
-  it('兼容旧持久化数据: 忽略 groups/groupId 并摊平行', () => {
-    const legacy = {
-      sheets: [
-        {
-          ...externalSheet(),
-          groups: [{ id: 'g1', name: '分组 1' }],
-          rows: [
-            {
-              id: 'r1',
-              groupId: 'g1',
-              category: '螺纹钢',
-              material: 'HRB400E',
-              spec: 12,
-              length: '9米',
-            },
-          ],
-        },
-      ],
-      activeId: 'ext-1',
-      configs: {},
-    }
-    localStorage.setItem(LS_KEY, JSON.stringify(legacy))
-    const store = renderStore()
-    const sheet = store.current.sheets[0] as unknown as Record<string, unknown>
-    expect(sheet.groups).toBeUndefined()
-    const row = store.current.sheets[0].rows[0] as unknown as Record<
-      string,
-      unknown
-    >
-    expect(row.groupId).toBeUndefined()
-    expect(row.id).toBe('r1')
-    expect(store.current.sheets[0].rows).toHaveLength(1)
-  })
-
-  it('忽略非本 key 与非法 JSON 的变化', () => {
-    const store = renderStore()
-    const before = store.current.sheets
-    act(() => {
-      window.dispatchEvent(
-        new StorageEvent('storage', { key: 'other', newValue: '{}' }),
-      )
-      window.dispatchEvent(
-        new StorageEvent('storage', { key: LS_KEY, newValue: 'not-json' }),
-      )
-    })
-    expect(store.current.sheets).toBe(before)
-  })
-
-  it('项目级配置补丁持久化指定品牌与备注', async () => {
-    const store = renderStore()
-    act(() => {
-      store.current.assignProjectToUnassigned('p1', '项目')
-    })
-    act(() => {
-      store.current.setConfig({
-        designatedBrands: ['中天', '沙钢'],
-        remark: '含 12 米',
-      })
-    })
-
-    expect(store.current.config.designatedBrands).toEqual(['中天', '沙钢'])
-    expect(store.current.config.remark).toBe('含 12 米')
-
+  async function hydrate(store: { current: SheetsStore }) {
     await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 350)
-      })
+      await Promise.resolve()
     })
-    const raw = localStorage.getItem(LS_KEY)
-    const saved = JSON.parse(raw ?? '{}')
-    expect(saved.configs.p1.designatedBrands).toEqual(['中天', '沙钢'])
-    expect(saved.configs.p1.remark).toBe('含 12 米')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    return store
+  }
+
+  it('从服务端加载单据与项目配置, 不回填 localStorage', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(api.fetchQuoteSheets).toHaveBeenCalledTimes(1)
+    expect(store.current.loading).toBe(false)
+    expect(store.current.sheets).toHaveLength(1)
+    expect(store.current.active.name).toBe('批次 1')
+    expect(store.current.rows).toHaveLength(1)
+    expect(store.current.config.brands).toHaveLength(1)
+    expect(localStorage.getItem('aries-price-compare-v5')).toBeNull()
   })
 
-  it('兼容旧配置数据: 已移除的 brandRestriction 被忽略且不报错', () => {
-    localStorage.setItem(
-      LS_KEY,
-      JSON.stringify({
-        sheets: [externalSheet()],
-        activeId: 'ext-1',
-        configs: {
-          p1: {
-            brands: [],
-            lengthPremium: 30,
-            hrb400eFallback: false,
-            brandRestriction: '仅中天',
-            remark: '含 12 米',
+  it('完整单据变更后防抖 PUT 保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheet).toHaveBeenCalledTimes(1)
+    const [id, payload] = api.updateQuoteSheet.mock.calls[0] as [
+      string,
+      { locked: boolean; items: unknown[] },
+    ]
+    expect(id).toBe('9001')
+    expect(payload.locked).toBe(true)
+    expect(payload.items).toHaveLength(1)
+  })
+
+  it('供应商随现货价一并保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: {
+          [inputKey]: {
+            spot: 3200,
+            supplierId: '5002',
+            supplierName: '沙钢贸易',
           },
         },
-      }),
-    )
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    const payload = api.updateQuoteSheet.mock.calls[0]?.[1] as {
+      items: { prices: { supplierId?: string }[] }[]
+    }
+    expect(payload.items[0].prices[0].supplierId).toBe('5002')
+  })
+
+  it('不完整单据不触发保存', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([])
     const store = renderStore()
-    expect(store.current.config.designatedBrands).toBeUndefined()
-    expect(store.current.config.remark).toBe('含 12 米')
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { refPeriod: '下午' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200)
+    })
+
+    expect(api.createQuoteSheet).not.toHaveBeenCalled()
+    expect(api.updateQuoteSheet).not.toHaveBeenCalled()
   })
 })

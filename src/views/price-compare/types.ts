@@ -47,7 +47,14 @@ export type PriceRow = {
   ton?: number
 }
 
-export type SheetInput = { ton?: number; spot?: number }
+export type SheetInput = {
+  ton?: number
+  spot?: number
+  /** 现货价来源供应商(主数据) */
+  supplierId?: string
+  supplierName?: string
+}
+
 export type SheetInputs = Record<string, SheetInput>
 
 export type PriceSheet = {
@@ -59,9 +66,14 @@ export type PriceSheet = {
   orderDate: string
   refDate: string
   refPeriod: string
+  /** 参考网价锁定: 仅锁定参照日期/时段, 网价仍随刷新变化 */
+  locked?: boolean
   lengthPremium: number
   inputs: SheetInputs
   rows: PriceRow[]
+  /** 服务端保存的品牌快照(仅回填配置兜底用) */
+  brands?: Brand[]
+  remark?: string
 }
 
 export type GridRow = {

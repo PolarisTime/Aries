@@ -2242,6 +2242,12 @@ export const enUS = {
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',
+      lockRef: 'Lock Reference',
+      unlockRef: 'Unlock Reference',
+      lockRefTooltip:
+        'Lock the reference date/period to prevent refresh or accidental edits; market prices still update on refresh',
+      unlockRefTooltip: 'Unlock to change the reference date/period',
+      supplier: 'Supplier',
     },
     config: {
       title: 'Project Settings',

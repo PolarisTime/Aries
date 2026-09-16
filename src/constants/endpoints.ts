@@ -161,4 +161,11 @@ export const ENDPOINTS = {
   STEEL_QUOTE_SYNCS: '/steel-quote-syncs',
   STEEL_QUOTE_BACKFILLS: '/steel-quote-backfills',
   STEEL_QUOTE_CALENDARS: '/steel-quote-calendars',
+
+  // Quote sheets (报单比价)
+  QUOTE_SHEETS: '/quote-sheets',
+  QUOTE_SHEET: (id: string | number) => `/quote-sheets/${pathSegment(id)}`,
+  QUOTE_PROJECT_CONFIGS: '/quote-project-configs',
+  QUOTE_PROJECT_CONFIG: (projectId: string | number) =>
+    `/quote-project-configs/${pathSegment(projectId)}`,
 } as const

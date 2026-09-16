@@ -2,9 +2,11 @@ import {
   DeleteOutlined,
   HolderOutlined,
   InfoCircleOutlined,
+  LockOutlined,
   ReloadOutlined,
   SettingOutlined,
   TrophyOutlined,
+  UnlockOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -44,6 +46,8 @@ import type {
   PriceData,
   PriceRow,
   PriceSheet,
+  SheetInput,
+  SheetInputs,
   Variety,
 } from './types'
 import './price-compare.css'
@@ -91,6 +95,13 @@ type ColumnContext = {
   rows: PriceRow[]
   getSpot: (brandName: string, rowId: string) => number | undefined
   setSpot: (brandName: string, rowId: string, value: number | undefined) => void
+  getInput: (brandName: string, rowId: string) => SheetInput | undefined
+  setSupplier: (
+    brandName: string,
+    rowId: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
+  supplierOptions: { value: string; label: string }[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   moveFocusTon: (rowId: string, delta: number) => void
@@ -420,73 +431,100 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   brandIndex === 0 &&
                   current.id === rows[0]?.id
                 const input = (
-                  <Input
-                    key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
-                    className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                    size="small"
-                    variant="borderless"
-                    inputMode="decimal"
-                    data-spot={`${brand.name}:${current.id}`}
-                    defaultValue={spot === undefined ? '' : String(spot)}
-                    onBlur={(event) => {
-                      const raw = event.target.value
-                      const value = Number(raw)
-                      if (
-                        raw !== '' &&
-                        (Number.isNaN(value) ||
-                          value <= 0 ||
-                          value > SPOT_PRICE_MAX)
-                      ) {
-                        message.warning(
-                          t('priceCompare.sheet.spotOutOfRange', {
-                            max: SPOT_PRICE_MAX,
-                          }),
-                        )
-                        // 非法输入：触发重挂载，恢复为已保存值
-                        ctx.onInvalidSpot()
-                        return
-                      }
-                      setSpot(
-                        brand.name,
-                        current.id,
-                        raw === '' ? undefined : value,
-                      )
-                    }}
-                    onPressEnter={(event) => {
-                      const raw = (event.target as HTMLInputElement).value
-                      const value = Number(raw)
-                      if (
-                        raw === '' ||
-                        (!Number.isNaN(value) &&
-                          value > 0 &&
-                          value <= SPOT_PRICE_MAX)
-                      ) {
+                  <Flex vertical gap={0}>
+                    <Input
+                      key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
+                      className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                      size="small"
+                      variant="borderless"
+                      inputMode="decimal"
+                      data-spot={`${brand.name}:${current.id}`}
+                      defaultValue={spot === undefined ? '' : String(spot)}
+                      onBlur={(event) => {
+                        const raw = event.target.value
+                        const value = Number(raw)
+                        if (
+                          raw !== '' &&
+                          (Number.isNaN(value) ||
+                            value <= 0 ||
+                            value > SPOT_PRICE_MAX)
+                        ) {
+                          message.warning(
+                            t('priceCompare.sheet.spotOutOfRange', {
+                              max: SPOT_PRICE_MAX,
+                            }),
+                          )
+                          // 非法输入：触发重挂载，恢复为已保存值
+                          ctx.onInvalidSpot()
+                          return
+                        }
                         setSpot(
                           brand.name,
                           current.id,
                           raw === '' ? undefined : value,
                         )
-                      }
-                      event.preventDefault()
-                      moveFocus(brand.name, current.id, 1)
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'ArrowDown') {
+                      }}
+                      onPressEnter={(event) => {
+                        const raw = (event.target as HTMLInputElement).value
+                        const value = Number(raw)
+                        if (
+                          raw === '' ||
+                          (!Number.isNaN(value) &&
+                            value > 0 &&
+                            value <= SPOT_PRICE_MAX)
+                        ) {
+                          setSpot(
+                            brand.name,
+                            current.id,
+                            raw === '' ? undefined : value,
+                          )
+                        }
                         event.preventDefault()
                         moveFocus(brand.name, current.id, 1)
-                      } else if (event.key === 'ArrowUp') {
-                        event.preventDefault()
-                        moveFocus(brand.name, current.id, -1)
-                      } else if (event.key === 'Tab') {
-                        event.preventDefault()
-                        moveFocus(
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'ArrowDown') {
+                          event.preventDefault()
+                          moveFocus(brand.name, current.id, 1)
+                        } else if (event.key === 'ArrowUp') {
+                          event.preventDefault()
+                          moveFocus(brand.name, current.id, -1)
+                        } else if (event.key === 'Tab') {
+                          event.preventDefault()
+                          moveFocus(
+                            brand.name,
+                            current.id,
+                            event.shiftKey ? -1 : 1,
+                          )
+                        }
+                      }}
+                    />
+                    <Select
+                      size="small"
+                      variant="borderless"
+                      className="price-compare-supplier"
+                      value={ctx.getInput(brand.name, current.id)?.supplierId}
+                      placeholder={t('priceCompare.sheet.supplier')}
+                      allowClear
+                      showSearch={{ optionFilterProp: 'label' }}
+                      options={ctx.supplierOptions}
+                      onChange={(value) => {
+                        const option = ctx.supplierOptions.find(
+                          (item) => item.value === value,
+                        )
+                        ctx.setSupplier(
                           brand.name,
                           current.id,
-                          event.shiftKey ? -1 : 1,
+                          value
+                            ? {
+                                value: String(value),
+                                label: option?.label ?? String(value),
+                              }
+                            : undefined,
                         )
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  </Flex>
                 )
                 return isFirst ? <span ref={ctx.spotRef}>{input}</span> : input
               },
@@ -743,6 +781,7 @@ function SheetHeader({
               value={refDate ? dayjs(refDate) : null}
               format={dateFormat}
               allowClear={false}
+              disabled={Boolean(sheet.locked)}
               cellRender={(current, info) => {
                 if (info.type !== 'date') return info.originNode
                 const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
@@ -770,6 +809,7 @@ function SheetHeader({
               size="small"
               style={{ width: 110 }}
               value={refPeriod || undefined}
+              disabled={Boolean(sheet.locked)}
               onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
               options={periods.map((period) => ({
                 value: period,
@@ -790,6 +830,24 @@ function SheetHeader({
         </Flex>
 
         <Space size={4} wrap>
+          <Tooltip
+            title={
+              sheet.locked
+                ? t('priceCompare.sheet.unlockRefTooltip')
+                : t('priceCompare.sheet.lockRefTooltip')
+            }
+          >
+            <Button
+              size="small"
+              type={sheet.locked ? 'primary' : 'default'}
+              icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
+              onClick={() => patchSheet(sheet.id, { locked: !sheet.locked })}
+            >
+              {sheet.locked
+                ? t('priceCompare.sheet.unlockRef')
+                : t('priceCompare.sheet.lockRef')}
+            </Button>
+          </Tooltip>
           <Button
             size="small"
             type={bestOn ? 'primary' : 'default'}
@@ -894,6 +952,7 @@ type Props = {
   designatedBrands?: string[]
   remark?: string
   onRemarkChange?: (value: string) => void
+  suppliers?: { value: string; label: string }[]
 }
 
 /** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
@@ -921,6 +980,7 @@ export function SheetPanel(props: Props) {
     designatedBrands,
     remark,
     onRemarkChange,
+    suppliers = [],
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -969,6 +1029,39 @@ export function SheetPanel(props: Props) {
     }
   }
 
+  const getInput = (brandName: string, rowId: string) =>
+    sheet.inputs[`${brandName}:${rowId}`]
+
+  /** 记录/清除现货价来源供应商; 无现货也无供应商时删除该输入。 */
+  const setSupplier = (
+    brandName: string,
+    rowId: string,
+    option: { value: string; label: string } | undefined,
+  ) => {
+    const key = `${brandName}:${rowId}`
+    const inputs: SheetInputs = { ...sheet.inputs }
+    const prev = inputs[key] ?? {}
+    if (!option) {
+      const {
+        supplierId: _supplierId,
+        supplierName: _supplierName,
+        ...rest
+      } = prev
+      if (rest.spot === undefined && rest.ton === undefined) {
+        delete inputs[key]
+      } else {
+        inputs[key] = rest
+      }
+    } else {
+      inputs[key] = {
+        ...prev,
+        supplierId: option.value,
+        supplierName: option.label,
+      }
+    }
+    patchSheet(sheet.id, { inputs })
+  }
+
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
       checked
@@ -1015,6 +1108,9 @@ export function SheetPanel(props: Props) {
     density,
     getSpot,
     setSpot,
+    getInput,
+    setSupplier,
+    supplierOptions: suppliers,
     patchRow,
     onReorderBrands,
     selectedIds,

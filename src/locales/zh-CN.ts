@@ -2171,6 +2171,11 @@ export const zhCN = {
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
       config: '配置',
+      lockRef: '锁定参照',
+      unlockRef: '解锁参照',
+      lockRefTooltip: '锁定参照日期/时段，避免刷新或误改；网价仍随刷新更新',
+      unlockRefTooltip: '解锁后可修改参照日期/时段',
+      supplier: '供应商',
     },
     config: {
       title: '项目配置',
