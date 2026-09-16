@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { readRequestError } from '@/api/core/request-errors'
 import {
@@ -472,6 +473,13 @@ export function useSheetsStore(): SheetsStore {
   const [editLock, setEditLock] = useState<EditLockView | null>(null)
   /** 已签出批次的服务端 id 与续约定时器。 */
   const heldLockRef = useRef<{ sheetId: string; timer: number } | null>(null)
+  /** 组件是否已卸载: 阻断飞行中锁请求回写状态或建立续约定时器。 */
+  const disposedRef = useRef(false)
+  /**
+   * 每个目标单据的锁请求代次: 释放/切走/删除时自增。
+   * 飞行中的签出响应回到本地时若代次已变化, 说明目标已失效, 丢弃结果并归还锁。
+   */
+  const lockRequestGenRef = useRef<Map<string, number>>(new Map())
   const syncChannelRef = useRef<BroadcastChannel | null>(null)
   const reloadSheetRef = useRef<(sheetId: string) => Promise<void>>(
     async () => {},
@@ -1128,6 +1136,8 @@ export function useSheetsStore(): SheetsStore {
   /** 拉取服务端单据覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
   const refreshSheets = useCallback(async (): Promise<boolean> => {
     const hasPendingSheetSave = () =>
+      // 配置未加载而被跳过的保存同样属于"有未保存改动", 刷新不得覆盖
+      configBlockedSaveRef.current.size > 0 ||
       sheetTimersRef.current.size > 0 ||
       [...inflightRef.current, ...pendingRef.current].some((key) =>
         key.startsWith('sheet:'),
@@ -1164,11 +1174,14 @@ export function useSheetsStore(): SheetsStore {
     })
     const next = [...serverSheets, ...localOnly]
     if (!next.length) return true
+    // 本地 id 可能已被服务端 id 取代: 反查映射后再判断存在性, 避免列表重建时 activeId 回跳
+    const activeServerId =
+      serverIdRef.current.get(current.activeId) ?? current.activeId
     mutate((snapshot) => ({
       ...snapshot,
       sheets: next,
-      activeId: next.some((sheet) => sheet.id === snapshot.activeId)
-        ? snapshot.activeId
+      activeId: next.some((sheet) => sheet.id === activeServerId)
+        ? activeServerId
         : next[0].id,
     }))
     return true
@@ -1220,13 +1233,15 @@ export function useSheetsStore(): SheetsStore {
   const refreshFromServer = useCallback(async () => {
     if (!token || !hydratedRef.current) return
     try {
-      const sheetsFresh = await refreshSheets()
+      // 先就绪项目配置: 配置加载完成会补跑此前被跳过的保存, 再刷新单据列表,
+      // 确保"配置未加载时被跳过的编辑"不会被静默覆盖
       const projectId =
         stateRef.current.sheets.find(
           (sheet) => sheet.id === stateRef.current.activeId,
         )?.projectId ?? ''
       const configFresh = projectId ? await refreshConfig(projectId) : true
-      if (!sheetsFresh || !configFresh) {
+      const sheetsFresh = await refreshSheets()
+      if (!configFresh || !sheetsFresh) {
         message.info({ content: STALE_NOTICE_TEXT, key: STALE_NOTICE_KEY })
       }
     } catch (error) {
@@ -1363,6 +1378,11 @@ export function useSheetsStore(): SheetsStore {
     async (id?: string) => {
       const target =
         id ?? heldLockRef.current?.sheetId ?? stateRef.current.activeId
+      // 自增代次: 使该单据飞行中的签出请求失效, 不再回写状态或建立续约定时器
+      lockRequestGenRef.current.set(
+        target,
+        (lockRequestGenRef.current.get(target) ?? 0) + 1,
+      )
       const serverId = serverIdRef.current.get(target)
       clearHeldLockTimer()
       setEditLock((current) =>
@@ -1384,8 +1404,19 @@ export function useSheetsStore(): SheetsStore {
       const serverId = serverIdRef.current.get(target)
       // 尚未落库或锁接口失败: 降级为可编辑, 不阻断
       if (!serverId) return true
+      const generation = (lockRequestGenRef.current.get(target) ?? 0) + 1
+      lockRequestGenRef.current.set(target, generation)
+      /** 请求期间已卸载/已切走/已释放: 响应过期, 丢弃结果。 */
+      const isStale = () =>
+        disposedRef.current ||
+        lockRequestGenRef.current.get(target) !== generation
       try {
         const lock = await acquireQuoteSheetEditLock(serverId, options)
+        if (isStale()) {
+          // 已拿到的锁不能留下变成僵尸续约: 立即归还给服务端
+          void releaseQuoteSheetEditLock(serverId).catch(() => {})
+          return false
+        }
         applyLockState(target, {
           mine: lock.mine,
           ...(lock.ownerName ? { ownerName: lock.ownerName } : {}),
@@ -1399,6 +1430,7 @@ export function useSheetsStore(): SheetsStore {
         heldLockRef.current = { sheetId: target, timer }
         return lock.mine
       } catch (error) {
+        if (isStale()) return false
         if (isConflictError(error)) {
           let ownerName: string | undefined
           try {
@@ -1407,6 +1439,7 @@ export function useSheetsStore(): SheetsStore {
           } catch {
             ownerName = undefined
           }
+          if (isStale()) return false
           applyLockState(target, {
             mine: false,
             ...(ownerName ? { ownerName } : {}),
@@ -1472,6 +1505,7 @@ export function useSheetsStore(): SheetsStore {
 
   useEffect(
     () => () => {
+      disposedRef.current = true
       flushPendingSaves()
       const held = heldLockRef.current
       if (!held) return
@@ -1687,7 +1721,7 @@ export function useSheetsStore(): SheetsStore {
       `批次 ${count}`,
       projectId,
       projectName,
-      orderDate || new Date().toISOString().slice(0, 10),
+      orderDate || dayjs().format('YYYY-MM-DD'),
       refDate,
       refPeriod,
     )
@@ -1715,6 +1749,15 @@ export function useSheetsStore(): SheetsStore {
     const serverId = serverIdRef.current.get(id)
     serverIdRef.current.delete(id)
     baselineRef.current.delete(id)
+    // 使该单据飞行中的签出请求失效, 并停止其续约定时器, 避免删除后仍续约
+    lockRequestGenRef.current.set(
+      id,
+      (lockRequestGenRef.current.get(id) ?? 0) + 1,
+    )
+    if (heldLockRef.current?.sheetId === id) clearHeldLockTimer()
+    setEditLock((current) =>
+      current && current.sheetId === id ? null : current,
+    )
     // 清理该单据的防抖保存 timer 与排队项, 避免删除后仍触发保存
     const timer = sheetTimersRef.current.get(id)
     if (timer !== undefined) {

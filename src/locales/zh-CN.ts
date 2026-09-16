@@ -2189,6 +2189,8 @@ export const zhCN = {
       lockSpecQuantityTooltip:
         '锁定商品规格与数量输入，避免误改；与锁定参照互不影响',
       unlockSpecQuantityTooltip: '解锁后可修改商品规格与数量',
+      specQuantityLockedHint:
+        '已锁定规格和数量，暂不可新增、删除或拖动行；解锁后可继续编辑',
       supplier: '供应商',
     },
     config: {

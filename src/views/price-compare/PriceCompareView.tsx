@@ -1,4 +1,5 @@
 import { Empty, Flex, Skeleton, Watermark } from 'antd'
+import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
@@ -127,10 +128,18 @@ export function PriceCompareView() {
   }, [patchSheet])
 
   useEffect(() => {
+    // 参照锁定期间不得程序化改写 refPeriod: 绕过锁定会被后端 422 拒绝
+    if (active?.locked) return
     if (!activeSheetId || !activeRefDate || !resolvedRefPeriod) return
     if (resolvedRefPeriod !== activeRefPeriod)
       patchSheetRef.current(activeSheetId, { refPeriod: resolvedRefPeriod })
-  }, [activeSheetId, activeRefDate, activeRefPeriod, resolvedRefPeriod])
+  }, [
+    active?.locked,
+    activeSheetId,
+    activeRefDate,
+    activeRefPeriod,
+    resolvedRefPeriod,
+  ])
 
   useEffect(() => {
     const matches = matchesData
@@ -169,7 +178,7 @@ export function PriceCompareView() {
     defaultRefDate && data
       ? (Object.keys(data[defaultRefDate] ?? {})[0] ?? '')
       : ''
-  const today = new Date().toISOString().slice(0, 10)
+  const today = dayjs().format('YYYY-MM-DD')
 
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({

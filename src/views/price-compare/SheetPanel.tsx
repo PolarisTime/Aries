@@ -182,6 +182,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     readOnly,
     sheet,
   } = ctx
+  /** 锁定规格和数量: 一并禁掉行级增删与拖拽重排(会间接改变规格/数量顺序)。 */
+  const quantityLocked = Boolean(sheet.specQuantityLocked)
+  const rowInteractionLocked = readOnly || quantityLocked
+  const rowLockedHint = t('priceCompare.sheet.specQuantityLockedHint')
   const enabledCategories = new Set<string>()
   if (!brands.length) {
     for (const category of CATEGORIES) enabledCategories.add(category)
@@ -268,15 +272,25 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       fixed: 'left',
       align: 'center',
       render: (_, row) => (
-        <span
-          className="price-compare-row-drag"
-          draggable
-          title={t('priceCompare.sheet.dragRow')}
-          onDragStart={(event) => onRowDragStart(row.rowId, event)}
-          onDragEnd={onRowDragEnd}
-        >
-          <HolderOutlined />
-        </span>
+        <Tooltip title={rowInteractionLocked ? rowLockedHint : undefined}>
+          <span
+            className={`price-compare-row-drag${rowInteractionLocked ? ' price-compare-row-drag-disabled' : ''}`}
+            draggable={!rowInteractionLocked}
+            aria-disabled={rowInteractionLocked}
+            title={
+              rowInteractionLocked
+                ? rowLockedHint
+                : t('priceCompare.sheet.dragRow')
+            }
+            onDragStart={(event) => {
+              if (rowInteractionLocked) return
+              onRowDragStart(row.rowId, event)
+            }}
+            onDragEnd={onRowDragEnd}
+          >
+            <HolderOutlined />
+          </span>
+        </Tooltip>
       ),
     },
     {
@@ -611,11 +625,15 @@ function SheetTable(props: SheetTableProps) {
   const [dropId, setDropId] = useState<string | null>(null)
   const [dropAfter, setDropAfter] = useState(false)
   const { toggleSelect, t } = base
+  /** 只读或被他人签出 / 锁定规格数量时: 禁止行级拖拽重排与新增。 */
+  const rowLocked = base.readOnly || Boolean(base.sheet.specQuantityLocked)
+  const rowLockedHint = t('priceCompare.sheet.specQuantityLockedHint')
 
   const onRowDragStart = (
     rowId: string,
     event: React.DragEvent<HTMLElement>,
   ) => {
+    if (rowLocked) return
     setDragId(rowId)
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/row-id', rowId)
@@ -656,16 +674,24 @@ function SheetTable(props: SheetTableProps) {
       summary={() => (
         <Table.Summary.Row>
           <Table.Summary.Cell index={0} colSpan={5 + base.brands.length * 3}>
-            <Button
-              type="text"
-              size="small"
-              block
-              className="price-compare-add-row"
-              disabled={base.readOnly}
-              onClick={onAddRow}
+            <Tooltip
+              title={
+                !base.readOnly && base.sheet.specQuantityLocked
+                  ? rowLockedHint
+                  : undefined
+              }
             >
-              {t('priceCompare.sheet.addRow')}
-            </Button>
+              <Button
+                type="text"
+                size="small"
+                block
+                className="price-compare-add-row"
+                disabled={rowLocked}
+                onClick={onAddRow}
+              >
+                {t('priceCompare.sheet.addRow')}
+              </Button>
+            </Tooltip>
           </Table.Summary.Cell>
         </Table.Summary.Row>
       )}
@@ -682,7 +708,7 @@ function SheetTable(props: SheetTableProps) {
       }}
       onRow={(row) => ({
         onDragOver: (event) => {
-          if (!dragId) return
+          if (!dragId || rowLocked) return
           event.preventDefault()
           event.dataTransfer.dropEffect = 'move'
           const rect = event.currentTarget.getBoundingClientRect()
@@ -694,6 +720,10 @@ function SheetTable(props: SheetTableProps) {
         },
         onDrop: (event) => {
           event.preventDefault()
+          if (rowLocked) {
+            onRowDragEnd()
+            return
+          }
           const fromId = event.dataTransfer.getData('text/row-id')
           if (fromId) onReorderRow(fromId, row.rowId, dropAfter)
           onRowDragEnd()
@@ -911,23 +941,39 @@ function SheetHeader({
             </Button>
           ) : null}
           {selectedCount > 0 ? (
-            <Popconfirm
-              title={t('priceCompare.sheet.removeSelectedTitle', {
-                selected: selectedCount,
-              })}
-              okText={t('common.delete')}
-              cancelText={t('common.cancel')}
-              onConfirm={onRemoveSelected}
-            >
-              <Button
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                disabled={readOnly}
+            readOnly || sheet.specQuantityLocked ? (
+              <Tooltip
+                title={
+                  !readOnly && sheet.specQuantityLocked
+                    ? t('priceCompare.sheet.specQuantityLockedHint')
+                    : undefined
+                }
               >
-                {t('common.delete')}
-              </Button>
-            </Popconfirm>
+                <span>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    disabled
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <Popconfirm
+                title={t('priceCompare.sheet.removeSelectedTitle', {
+                  selected: selectedCount,
+                })}
+                okText={t('common.delete')}
+                cancelText={t('common.cancel')}
+                onConfirm={onRemoveSelected}
+              >
+                <Button size="small" danger icon={<DeleteOutlined />}>
+                  {t('common.delete')}
+                </Button>
+              </Popconfirm>
+            )
           ) : null}
         </Space>
       </Flex>

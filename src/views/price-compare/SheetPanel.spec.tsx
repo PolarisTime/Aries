@@ -175,4 +175,50 @@ describe('SheetPanel 指定品牌展示', () => {
         ?.disabled,
     ).toBe(false)
   })
+
+  it('规格数量锁定后禁用新增/删除/拖拽重排并给出提示', () => {
+    renderStateful({ ...makeSheet(), specQuantityLocked: true }, [
+      { ...baseRow },
+    ])
+
+    // 拖拽手柄不可拖拽并降级样式
+    const drag = container.querySelector('.price-compare-row-drag')
+    expect(drag?.getAttribute('draggable')).toBe('false')
+    expect(drag?.classList.contains('price-compare-row-drag-disabled')).toBe(
+      true,
+    )
+
+    // 新增行入口禁用
+    const addRow = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('添加一行'),
+    )
+    expect(addRow?.disabled).toBe(true)
+
+    // 选中一行后, 删除所选行入口禁用
+    const rowCheckbox = container.querySelector<HTMLInputElement>(
+      '.ant-table-tbody input[type="checkbox"]',
+    )
+    act(() => {
+      rowCheckbox?.click()
+    })
+    const removeSelected = Array.from(
+      container.querySelectorAll('button'),
+    ).find((button) => button.textContent?.includes('删除'))
+    expect(removeSelected?.disabled).toBe(true)
+  })
+
+  it('解锁规格数量后恢复新增与拖拽入口', () => {
+    renderStateful(makeSheet(), [{ ...baseRow }])
+
+    const drag = container.querySelector('.price-compare-row-drag')
+    expect(drag?.getAttribute('draggable')).toBe('true')
+    expect(drag?.classList.contains('price-compare-row-drag-disabled')).toBe(
+      false,
+    )
+
+    const addRow = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('添加一行'),
+    )
+    expect(addRow?.disabled).toBe(false)
+  })
 })

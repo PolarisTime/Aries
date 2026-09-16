@@ -2261,6 +2261,8 @@ export const enUS = {
       lockSpecQuantityTooltip:
         'Lock the product spec and quantity inputs to prevent accidental edits; independent of reference lock',
       unlockSpecQuantityTooltip: 'Unlock to edit product spec and quantity',
+      specQuantityLockedHint:
+        'Spec & quantity locked; adding, deleting, or reordering rows is disabled until unlocked',
       supplier: 'Supplier',
     },
     config: {

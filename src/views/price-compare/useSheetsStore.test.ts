@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import dayjs from 'dayjs'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -970,5 +971,214 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.specQuantityLocked).toBe(true)
     expect(payload.brands).toBeUndefined()
     expect(payload.items).toBeUndefined()
+  })
+
+  it('签出请求飞行中卸载不再续约且归还刚拿到的锁', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    // 清除初始自动签出留下的锁与计时器, 隔离本次飞行中的签出
+    await act(async () => {
+      await store.current.releaseEditLock()
+    })
+    api.acquireQuoteSheetEditLock.mockClear()
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    let resolveLock!: (value: unknown) => void
+    api.acquireQuoteSheetEditLock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveLock = resolve
+        }),
+    )
+
+    let pending!: Promise<boolean>
+    act(() => {
+      pending = store.current.acquireEditLock()
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(1)
+
+    act(() => root.unmount())
+    rootUnmounted = true
+
+    await act(async () => {
+      resolveLock({
+        sheetId: '9001',
+        locked: true,
+        mine: true,
+        ttlSeconds: 120,
+      })
+      await pending
+    })
+
+    // 已卸载: 不回写状态、不建续约, 立即归还刚拿到的锁
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(130_000)
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(1)
+  })
+
+  it('切走后迟到的签出响应不回写状态也不再续约', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.releaseEditLock()
+    })
+    api.acquireQuoteSheetEditLock.mockClear()
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    let resolveLock!: (value: unknown) => void
+    api.acquireQuoteSheetEditLock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveLock = resolve
+        }),
+    )
+    let pending!: Promise<boolean>
+    act(() => {
+      pending = store.current.acquireEditLock('9001')
+    })
+
+    // 迟到响应到达前, 该目标已被释放(代次自增)
+    await act(async () => {
+      await store.current.releaseEditLock('9001')
+    })
+    await act(async () => {
+      resolveLock({
+        sheetId: '9001',
+        locked: true,
+        mine: true,
+        ttlSeconds: 120,
+      })
+      await pending
+    })
+
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(130_000)
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(1)
+  })
+
+  it('配置未加载时被跳过的编辑在聚焦刷新后仍保留并补发', async () => {
+    // 首次配置加载挂起: 保持未加载, 使编辑落入 configBlockedSaveRef
+    api.fetchQuoteProjectConfig.mockImplementationOnce(
+      () => new Promise(() => {}),
+    )
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.configLoaded).toBe(false)
+    api.updateQuoteSheetItem.mockClear()
+    api.fetchQuoteSheets.mockClear()
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.updateQuoteSheetItem).not.toHaveBeenCalled()
+
+    // 聚焦: 先加载配置(默认 mock 可解析)并补跑被跳过的保存, 再判断刷新
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
+    expect(store.current.active.inputs[inputKey]).toEqual({
+      spot: 3350,
+      supplierId: '5001',
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { prices: { brandName: string; spotPrice?: number }[] },
+    ]
+    expect(payload.prices).toEqual([
+      { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
+    ])
+  })
+
+  it('刷新重建列表时 activeId 跟随本地→服务端映射, 不回跳', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    const localId = store.current.activeId
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+    expect(store.current.activeId).toBe(localId)
+
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord(),
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    ])
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(store.current.sheets.map((sheet) => sheet.id)).not.toContain(localId)
+    expect(store.current.activeId).toBe('9002')
+  })
+
+  it('addSheet 缺省报单日期使用本地时区而非 UTC', async () => {
+    const nodeEnv = (
+      globalThis as unknown as {
+        process: { env: Record<string, string | undefined> }
+      }
+    ).process.env
+    const originalTz = nodeEnv.TZ
+    nodeEnv.TZ = 'Asia/Shanghai'
+    try {
+      // 23:30 UTC = 次日 07:30 (+08:00)
+      vi.setSystemTime(new Date('2026-09-16T23:30:00Z'))
+      api.fetchQuoteSheets.mockResolvedValue([])
+      const store = renderStore()
+      await hydrate(store)
+
+      act(() => {
+        store.current.addSheet('100', '云潮筝鸣府', '', '', '')
+      })
+
+      expect(store.current.active.orderDate).toBe(dayjs().format('YYYY-MM-DD'))
+      expect(store.current.active.orderDate).toBe('2026-09-17')
+    } finally {
+      if (originalTz === undefined) delete nodeEnv.TZ
+      else nodeEnv.TZ = originalTz
+    }
   })
 })

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -24,7 +25,8 @@ export function usePriceComparePricing({
 
   const availabilityRange = useMemo(() => {
     const now = Date.now()
-    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10)
+    // 本地时区日期, 避免 UTC 偏移导致边界日期错位
+    const iso = (ms: number) => dayjs(ms).format('YYYY-MM-DD')
     return {
       from: iso(now - 120 * 86400000),
       to: iso(now + 14 * 86400000),
