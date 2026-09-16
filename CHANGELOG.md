@@ -1,3 +1,11 @@
+## [10.8.1](https://github.com/PolarisTime/Aries/compare/v10.8.0...v10.8.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 修复刷新覆盖本地改动与重复创建单据 ([3de10a6](https://github.com/PolarisTime/Aries/commit/3de10a61bfb8b3accc6421ffb98dd5b63f9cdf87))
+* **price-compare:** 收尾报单比价 P2 缺陷 ([1e0a7ad](https://github.com/PolarisTime/Aries/commit/1e0a7adb9a6847e7d765f3c943bd2615e8c39435))
+
 # [10.8.0](https://github.com/PolarisTime/Aries/compare/v10.7.0...v10.8.0) (2026-09-16)
 
 
