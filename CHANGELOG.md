@@ -1,3 +1,15 @@
+# [10.4.0](https://github.com/PolarisTime/Aries/compare/v10.3.2...v10.4.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* **market:** 时段缺失比对改用 Set 避免循环内重复查找 ([be32743](https://github.com/PolarisTime/Aries/commit/be327438d584e5b2941e8f5aca51c058dcdaa73e))
+
+
+### Features
+
+* **market:** 行情同步支持选择时段(上午/中午/下午) ([ce8ef3a](https://github.com/PolarisTime/Aries/commit/ce8ef3a5398c7480a112106ef5f3ae1b9e9e783b))
+
 ## [10.3.2](https://github.com/PolarisTime/Aries/compare/v10.3.1...v10.3.2) (2026-09-16)
 
 
