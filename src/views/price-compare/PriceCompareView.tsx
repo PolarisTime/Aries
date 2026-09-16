@@ -74,7 +74,8 @@ export function PriceCompareView() {
 
   const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
-  useUndoRedoShortcuts(undo, redo)
+  // 只读态(他人签出)禁用撤销/重做快捷键
+  useUndoRedoShortcuts(undo, redo, !readOnly)
 
   // 配置首次从服务端加载且品牌为空时, 用商品品牌目录兜底; 每个项目只回填一次,
   // 用户显式清空品牌后不再自动回填。未加载完成前不回填, 避免覆盖服务端配置。
@@ -142,6 +143,8 @@ export function PriceCompareView() {
   ])
 
   useEffect(() => {
+    // 参照锁定期间不得程序化改写 refDate/refPeriod: 绕过锁定会被后端 422 拒绝
+    if (active?.locked) return
     const matches = matchesData
     if (!activeSheetId || !matches?.length) return
     mergeMatches(matches)
@@ -153,7 +156,14 @@ export function PriceCompareView() {
         ...(activeRefPeriod ? {} : { refPeriod: period }),
       })
     }
-  }, [activeSheetId, activeRefPeriod, isLatestRef, matchesData, mergeMatches])
+  }, [
+    active?.locked,
+    activeSheetId,
+    activeRefPeriod,
+    isLatestRef,
+    matchesData,
+    mergeMatches,
+  ])
 
   // 对账式现货联动：同商品同品牌已有现货价时自动套用到缺省行，避免重复输入。
   useEffect(() => {
@@ -256,6 +266,7 @@ export function PriceCompareView() {
           font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
         >
           <SheetPanel
+            key={active.id}
             sheet={active}
             data={data}
             varieties={varieties}

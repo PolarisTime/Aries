@@ -308,6 +308,25 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
 
 type SheetBaseline = { header: string; items: Map<string, string> }
 
+/** 单据内容指纹: 用于刷新时判断服务端内容是否已不同于本地待保存编辑。 */
+function sheetContentFingerprint(sheet: PriceSheet): string {
+  return JSON.stringify({
+    name: sheet.name,
+    status: sheet.status,
+    projectId: sheet.projectId,
+    projectName: sheet.projectName,
+    orderDate: sheet.orderDate,
+    refDate: sheet.refDate,
+    refPeriod: sheet.refPeriod,
+    locked: Boolean(sheet.locked),
+    specQuantityLocked: Boolean(sheet.specQuantityLocked),
+    lengthPremium: sheet.lengthPremium,
+    remark: sheet.remark ?? '',
+    rows: sheet.rows,
+    inputs: sheet.inputs,
+  })
+}
+
 /** 由服务端已保存单据构建基线(用于行级差异比对)。 */
 function buildBaseline(sheet: PriceSheet): SheetBaseline {
   const items = new Map<string, string>()
@@ -449,8 +468,16 @@ export function useSheetsStore(): SheetsStore {
    * 守卫条件: 单据带 projectId 且该项目不在集合内时, 跳过本次保存。
    */
   const configLoadedRef = useRef<Set<string>>(new Set())
-  /** 因项目配置未加载而跳过的待保存单据 id, 配置加载完成后补跑一次。 */
-  const configBlockedSaveRef = useRef<Set<string>>(new Set())
+  /**
+   * 因项目配置未加载而跳过的待保存单据 id -> 跳过时所属项目 id。
+   * 配置加载完成后按项目补跑一次; 单据删除或改项目时清理, 避免刷新被永久关闭。
+   */
+  const configBlockedSaveRef = useRef<Map<string, string>>(new Map())
+  /**
+   * 保存失败或行不完整被跳过后仍待保存的单据 id。
+   * 纳入 `hasPendingSheetSave`, 刷新时按内容指纹比对, 避免静默回滚本地编辑。
+   */
+  const dirtySheetsRef = useRef<Set<string>>(new Set())
   /** 同一资源(单据/项目配置)串行保存, 避免并发 PUT 触发乐观锁 409。 */
   const inflightRef = useRef<Set<string>>(new Set())
   const pendingRef = useRef<Set<string>>(new Set())
@@ -471,12 +498,14 @@ export function useSheetsStore(): SheetsStore {
   /** 服务端快照基线: 本地单据 id -> 表头/行指纹, 用于行级差异保存。 */
   const baselineRef = useRef<Map<string, SheetBaseline>>(new Map())
   const [editLock, setEditLock] = useState<EditLockView | null>(null)
-  /** 已签出批次的服务端 id 与续约定时器。 */
+  /** 已签出批次的服务端 id 与续约定时器(键统一用映射后的 serverId)。 */
   const heldLockRef = useRef<{ sheetId: string; timer: number } | null>(null)
+  /** 当前已签出(或已发起签出)批次的服务端 id, 用于切换检测。 */
+  const lockedActiveRef = useRef<string | null>(null)
   /** 组件是否已卸载: 阻断飞行中锁请求回写状态或建立续约定时器。 */
   const disposedRef = useRef(false)
   /**
-   * 每个目标单据的锁请求代次: 释放/切走/删除时自增。
+   * 每个服务端单据 id 的锁请求代次: 释放/切走/删除时自增。
    * 飞行中的签出响应回到本地时若代次已变化, 说明目标已失效, 丢弃结果并归还锁。
    */
   const lockRequestGenRef = useRef<Map<string, number>>(new Map())
@@ -569,8 +598,19 @@ export function useSheetsStore(): SheetsStore {
     const projectIdBySheet = new Map(
       stateRef.current.sheets.map((sheet) => [sheet.id, sheet.projectId]),
     )
-    for (const sheetId of [...configBlockedSaveRef.current]) {
-      if (projectIdBySheet.get(sheetId) !== projectId) continue
+    for (const [sheetId, blockedProjectId] of [
+      ...configBlockedSaveRef.current,
+    ]) {
+      const currentProjectId = projectIdBySheet.get(sheetId)
+      // 单据已删除或已换项目: 该补跑已无意义, 直接清理, 否则会永久关闭刷新
+      if (
+        currentProjectId === undefined ||
+        currentProjectId !== blockedProjectId
+      ) {
+        configBlockedSaveRef.current.delete(sheetId)
+        continue
+      }
+      if (blockedProjectId !== projectId) continue
       configBlockedSaveRef.current.delete(sheetId)
       scheduleSaveSheetRef.current(sheetId)
     }
@@ -739,6 +779,8 @@ export function useSheetsStore(): SheetsStore {
         serverIdRef.current.set(sheetId, record.id)
         const fresh: PriceSheet = { ...toPriceSheet(record), id: sheetId }
         baselineRef.current.set(sheetId, buildBaseline(fresh))
+        // 已丢弃本地改动: 清除脏标记, 否则刷新会被永久关闭
+        dirtySheetsRef.current.delete(sheetId)
         mutate((current) => ({
           ...current,
           sheets: current.sheets.map((sheet) =>
@@ -778,6 +820,7 @@ export function useSheetsStore(): SheetsStore {
               version: saved.version ?? sheet.version,
             }),
           )
+          dirtySheetsRef.current.delete(sheetId)
           broadcastSaved()
           return 'ok'
         } catch (error) {
@@ -889,17 +932,22 @@ export function useSheetsStore(): SheetsStore {
           (item) => item.id === sheetId,
         )
         if (!sheet) return
+        const markDirty = () => dirtySheetsRef.current.add(sheet.id)
         // 项目配置未加载完成: 跳过保存并登记补跑, 避免用空品牌清空服务端现货价
         if (sheet.projectId && !configLoadedRef.current.has(sheet.projectId)) {
-          configBlockedSaveRef.current.add(sheet.id)
+          configBlockedSaveRef.current.set(sheet.id, sheet.projectId)
+          markDirty()
           return
         }
         const config = configOf(sheet.projectId)
         const serverId = serverIdRef.current.get(sheet.id)
-        const fail = (error: unknown, fallback: string) =>
+        const fail = (error: unknown, fallback: string) => {
+          // 写失败后仍保留本地编辑并置脏: 纳入未保存判定, 聚焦时可重试且不被刷新覆盖
+          markDirty()
           message.error(
             error instanceof Error ? `${fallback}：${error.message}` : fallback,
           )
+        }
 
         if (!serverId) {
           const created = buildPayload(sheet, config)
@@ -916,9 +964,12 @@ export function useSheetsStore(): SheetsStore {
               }),
             )
             broadcastSaved()
+            dirtySheetsRef.current.delete(sheet.id)
             // create 只拿到 serverId 就返回, 不会触发依赖 serverIdRef 的切换 effect;
             // 若该单据仍是当前激活批次, 显式补一次签出, 避免新批次无编辑锁。
             if (stateRef.current.activeId === sheet.id) {
+              // 记录已签出的 serverId, 避免 activeId 重映射到 serverId 后再重复释放/签出
+              lockedActiveRef.current = saved.id
               void acquireEditLockRef.current(sheet.id)
             }
           } catch (error) {
@@ -983,7 +1034,11 @@ export function useSheetsStore(): SheetsStore {
 
         for (const row of sheet.rows) {
           const payload = buildItemPayload(sheet, row, config.brands)
-          if (!payload) continue
+          if (!payload) {
+            // 行不完整无法持久化: 置脏保留本地行, 刷新不得静默丢弃
+            markDirty()
+            continue
+          }
           const signature = itemSignature(row, sheet.inputs)
           const known = baseline.items.has(row.id)
           if (known && baseline.items.get(row.id) === signature) continue
@@ -1034,6 +1089,8 @@ export function useSheetsStore(): SheetsStore {
           }
         }
         broadcastSaved()
+        // 全部内容已落库: 清除脏标记, 允许后续刷新覆盖
+        dirtySheetsRef.current.delete(sheet.id)
       })
     },
     [
@@ -1136,8 +1193,9 @@ export function useSheetsStore(): SheetsStore {
   /** 拉取服务端单据覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
   const refreshSheets = useCallback(async (): Promise<boolean> => {
     const hasPendingSheetSave = () =>
-      // 配置未加载而被跳过的保存同样属于"有未保存改动", 刷新不得覆盖
+      // 配置未加载被跳过、保存失败/行不完整被跳过的编辑同样属于"有未保存改动", 刷新不得覆盖
       configBlockedSaveRef.current.size > 0 ||
+      dirtySheetsRef.current.size > 0 ||
       sheetTimersRef.current.size > 0 ||
       [...inflightRef.current, ...pendingRef.current].some((key) =>
         key.startsWith('sheet:'),
@@ -1168,11 +1226,24 @@ export function useSheetsStore(): SheetsStore {
       baselineRef.current.set(sheet.id, buildBaseline(sheet))
     }
     const current = stateRef.current
+    const localById = new Map(current.sheets.map((sheet) => [sheet.id, sheet]))
+    // 待保存编辑的本地内容与服务端不同: 保留本地, 避免静默回滚 (基线仍按服务端保存)
+    const mergedServerSheets = serverSheets.map((serverSheet) => {
+      const local = localById.get(serverSheet.id)
+      if (
+        local &&
+        dirtySheetsRef.current.has(serverSheet.id) &&
+        sheetContentFingerprint(local) !== sheetContentFingerprint(serverSheet)
+      ) {
+        return local
+      }
+      return serverSheet
+    })
     const localOnly = current.sheets.filter((sheet) => {
       const serverId = serverIdRef.current.get(sheet.id)
       return !serverId || !serverIds.has(serverId)
     })
-    const next = [...serverSheets, ...localOnly]
+    const next = [...mergedServerSheets, ...localOnly]
     if (!next.length) return true
     // 本地 id 可能已被服务端 id 取代: 反查映射后再判断存在性, 避免列表重建时 activeId 回跳
     const activeServerId =
@@ -1233,6 +1304,14 @@ export function useSheetsStore(): SheetsStore {
   const refreshFromServer = useCallback(async () => {
     if (!token || !hydratedRef.current) return
     try {
+      // 重试此前保存失败/被跳过的单据, 避免本地编辑一直停留在未落库状态
+      for (const sheetId of [...dirtySheetsRef.current]) {
+        if (stateRef.current.sheets.some((sheet) => sheet.id === sheetId)) {
+          scheduleSaveSheetRef.current(sheetId)
+        } else {
+          dirtySheetsRef.current.delete(sheetId)
+        }
+      }
       // 先就绪项目配置: 配置加载完成会补跑此前被跳过的保存, 再刷新单据列表,
       // 确保"配置未加载时被跳过的编辑"不会被静默覆盖
       const projectId =
@@ -1376,17 +1455,23 @@ export function useSheetsStore(): SheetsStore {
 
   const releaseEditLock = useCallback(
     async (id?: string) => {
-      const target =
+      const requested =
         id ?? heldLockRef.current?.sheetId ?? stateRef.current.activeId
-      // 自增代次: 使该单据飞行中的签出请求失效, 不再回写状态或建立续约定时器
-      lockRequestGenRef.current.set(
-        target,
-        (lockRequestGenRef.current.get(target) ?? 0) + 1,
-      )
-      const serverId = serverIdRef.current.get(target)
-      clearHeldLockTimer()
+      // 键统一用映射后的 serverId(heldLockRef 本身也存 serverId)
+      const resolved = serverIdRef.current.get(requested)
+      const serverId =
+        resolved ??
+        (heldLockRef.current?.sheetId === requested ? requested : undefined)
+      if (serverId) {
+        // 自增代次: 使该单据飞行中的签出请求失效, 不再回写状态或建立续约定时器
+        lockRequestGenRef.current.set(
+          serverId,
+          (lockRequestGenRef.current.get(serverId) ?? 0) + 1,
+        )
+      }
+      if (heldLockRef.current?.sheetId === serverId) clearHeldLockTimer()
       setEditLock((current) =>
-        current && current.sheetId === target ? null : current,
+        current && current.sheetId === serverId ? null : current,
       )
       if (!serverId) return
       try {
@@ -1404,20 +1489,28 @@ export function useSheetsStore(): SheetsStore {
       const serverId = serverIdRef.current.get(target)
       // 尚未落库或锁接口失败: 降级为可编辑, 不阻断
       if (!serverId) return true
-      const generation = (lockRequestGenRef.current.get(target) ?? 0) + 1
-      lockRequestGenRef.current.set(target, generation)
+      // 锁状态与代次统一按 serverId 记账, 避免本地 id 重映射后错配
+      const generation = (lockRequestGenRef.current.get(serverId) ?? 0) + 1
+      lockRequestGenRef.current.set(serverId, generation)
       /** 请求期间已卸载/已切走/已释放: 响应过期, 丢弃结果。 */
       const isStale = () =>
         disposedRef.current ||
-        lockRequestGenRef.current.get(target) !== generation
+        lockRequestGenRef.current.get(serverId) !== generation
       try {
         const lock = await acquireQuoteSheetEditLock(serverId, options)
         if (isStale()) {
-          // 已拿到的锁不能留下变成僵尸续约: 立即归还给服务端
-          void releaseQuoteSheetEditLock(serverId).catch(() => {})
+          // 仅当该服务端锁不是"当前仍持有的锁"时才归还;
+          // 否则 A→B→A/create 重映射时旧响应会误删新一轮已签出的锁
+          const held = heldLockRef.current
+          const heldServerId = held
+            ? (serverIdRef.current.get(held.sheetId) ?? held.sheetId)
+            : undefined
+          if (heldServerId !== serverId) {
+            void releaseQuoteSheetEditLock(serverId).catch(() => {})
+          }
           return false
         }
-        applyLockState(target, {
+        applyLockState(serverId, {
           mine: lock.mine,
           ...(lock.ownerName ? { ownerName: lock.ownerName } : {}),
         })
@@ -1427,7 +1520,7 @@ export function useSheetsStore(): SheetsStore {
             void acquireEditLockRef.current(target)
           }
         }, EDIT_LOCK_RENEW_MS)
-        heldLockRef.current = { sheetId: target, timer }
+        heldLockRef.current = { sheetId: serverId, timer }
         return lock.mine
       } catch (error) {
         if (isStale()) return false
@@ -1440,14 +1533,14 @@ export function useSheetsStore(): SheetsStore {
             ownerName = undefined
           }
           if (isStale()) return false
-          applyLockState(target, {
+          applyLockState(serverId, {
             mine: false,
             ...(ownerName ? { ownerName } : {}),
           })
           return false
         }
         setEditLock((current) =>
-          current && current.sheetId === target ? null : current,
+          current && current.sheetId === serverId ? null : current,
         )
         return true
       }
@@ -1476,19 +1569,20 @@ export function useSheetsStore(): SheetsStore {
     })
   }, [])
 
-  // 切换批次: 无条件释放上一批次锁(含未落库批次, 避免锁泄漏)并签出新批次
-  const lockedActiveRef = useRef<string | null>(null)
+  // 切换批次: 释放上一批次锁(含未落库批次, 避免锁泄漏)并签出新批次(按 serverId 记账)
   useEffect(() => {
     if (loading) return
     if (!token || !hydratedRef.current) return
     const target = state.activeId
-    if (!target || lockedActiveRef.current === target) return
+    if (!target) return
+    const targetServerId = serverIdRef.current.get(target)
+    if (targetServerId && lockedActiveRef.current === targetServerId) return
     const previous = lockedActiveRef.current
-    lockedActiveRef.current = target
+    // 未落库批次: 清空持有标记, 待 create 成功后由 saveSheetNow 显式签出
+    lockedActiveRef.current = targetServerId ?? null
     // 先释放上一批次锁并停止其续约; 即使目标批次尚未落库也要执行, 否则旧锁会泄漏
-    if (previous) void releaseEditLock(previous)
-    // 未落库批次(尚无服务端 id): 待 create 成功后由 saveSheetNow 显式签出
-    if (!serverIdRef.current.get(target)) return
+    if (previous && previous !== targetServerId) void releaseEditLock(previous)
+    if (!targetServerId) return
     void acquireEditLock(target)
   }, [state.activeId, token, loading, acquireEditLock, releaseEditLock])
 
@@ -1510,9 +1604,10 @@ export function useSheetsStore(): SheetsStore {
       const held = heldLockRef.current
       if (!held) return
       window.clearInterval(held.timer)
-      const serverId = serverIdRef.current.get(held.sheetId)
-      if (serverId) void releaseQuoteSheetEditLock(serverId).catch(() => {})
+      // heldLockRef.sheetId 已是 serverId
+      void releaseQuoteSheetEditLock(held.sheetId).catch(() => {})
       heldLockRef.current = null
+      lockedActiveRef.current = null
     },
     [flushPendingSaves],
   )
@@ -1528,8 +1623,11 @@ export function useSheetsStore(): SheetsStore {
   const configLoaded = Boolean(
     active?.projectId && state.configs[active.projectId],
   )
+  // editLock 按 serverId 记账: activeId 可能仍是本地 id, 需先反查映射
+  const activeServerId =
+    serverIdRef.current.get(state.activeId) ?? state.activeId
   const activeLock =
-    editLock && editLock.sheetId === state.activeId ? editLock : null
+    editLock && editLock.sheetId === activeServerId ? editLock : null
   const readOnly = Boolean(activeLock && activeLock.locked && !activeLock.mine)
   const readOnlyRef = useRef(false)
   useEffect(() => {
@@ -1600,10 +1698,31 @@ export function useSheetsStore(): SheetsStore {
     return () => controller.abort()
   }, [token, active?.projectId, state.configs, apply, flushBlockedSaves])
 
+  /** 撤销/重做时保留当前锁字段: 锁是并发控制状态, 不应被历史回滚覆盖。 */
+  const preserveLockFields = useCallback((snapshot: Snapshot): Snapshot => {
+    const currentSheets = new Map(
+      stateRef.current.sheets.map((sheet) => [sheet.id, sheet]),
+    )
+    return {
+      ...snapshot,
+      sheets: snapshot.sheets.map((sheet) => {
+        const currentSheet = currentSheets.get(sheet.id)
+        if (!currentSheet) return sheet
+        return {
+          ...sheet,
+          locked: currentSheet.locked,
+          specQuantityLocked: currentSheet.specQuantityLocked,
+        }
+      }),
+    }
+  }, [])
+
   const undo = useCallback(() => {
+    // 只读态(他人签出)禁用撤销, 且不进入历史回滚
+    if (readOnlyRef.current) return
     const history = historyRef.current
     if (!history.past.length) return
-    const target = history.past[history.past.length - 1]
+    const target = preserveLockFields(history.past[history.past.length - 1])
     history.past = history.past.slice(0, -1)
     history.future = [stateRef.current, ...history.future].slice(
       0,
@@ -1620,12 +1739,14 @@ export function useSheetsStore(): SheetsStore {
       )?.projectId
       if (projectId) scheduleSaveConfig(projectId)
     }
-  }, [scheduleSaveSheet, scheduleSaveConfig])
+  }, [preserveLockFields, scheduleSaveSheet, scheduleSaveConfig])
 
   const redo = useCallback(() => {
+    // 只读态(他人签出)禁用重做, 且不进入历史回滚
+    if (readOnlyRef.current) return
     const history = historyRef.current
     if (!history.future.length) return
-    const target = history.future[0]
+    const target = preserveLockFields(history.future[0])
     history.future = history.future.slice(1)
     history.past = [
       ...history.past.slice(-(HISTORY_LIMIT - 1)),
@@ -1642,7 +1763,7 @@ export function useSheetsStore(): SheetsStore {
       )?.projectId
       if (projectId) scheduleSaveConfig(projectId)
     }
-  }, [scheduleSaveSheet, scheduleSaveConfig])
+  }, [preserveLockFields, scheduleSaveSheet, scheduleSaveConfig])
 
   const setConfig = (patch: Partial<ProjectConfig>) => {
     const projectId = active?.projectId ?? ''
@@ -1695,6 +1816,8 @@ export function useSheetsStore(): SheetsStore {
     coalesceKey?: string,
   ) => {
     if (readOnlyRef.current && id === stateRef.current.activeId) return
+    // 改项目后原项目的"被跳过保存"已失效: 清理后由新的保存流程按新项目重新登记
+    if (patch.projectId !== undefined) configBlockedSaveRef.current.delete(id)
     apply(
       (current) => ({
         ...current,
@@ -1749,14 +1872,23 @@ export function useSheetsStore(): SheetsStore {
     const serverId = serverIdRef.current.get(id)
     serverIdRef.current.delete(id)
     baselineRef.current.delete(id)
+    // 清理待保存登记: 已删除单据不应再阻塞刷新或触发补跑
+    configBlockedSaveRef.current.delete(id)
+    if (serverId) configBlockedSaveRef.current.delete(serverId)
+    dirtySheetsRef.current.delete(id)
+    if (serverId) dirtySheetsRef.current.delete(serverId)
     // 使该单据飞行中的签出请求失效, 并停止其续约定时器, 避免删除后仍续约
-    lockRequestGenRef.current.set(
-      id,
-      (lockRequestGenRef.current.get(id) ?? 0) + 1,
-    )
-    if (heldLockRef.current?.sheetId === id) clearHeldLockTimer()
+    if (serverId) {
+      lockRequestGenRef.current.set(
+        serverId,
+        (lockRequestGenRef.current.get(serverId) ?? 0) + 1,
+      )
+    }
+    // 清理本地 id 的代次键, 避免 Map 随删除无限增长
+    lockRequestGenRef.current.delete(id)
+    if (heldLockRef.current?.sheetId === serverId) clearHeldLockTimer()
     setEditLock((current) =>
-      current && current.sheetId === id ? null : current,
+      current && current.sheetId === serverId ? null : current,
     )
     // 清理该单据的防抖保存 timer 与排队项, 避免删除后仍触发保存
     const timer = sheetTimersRef.current.get(id)
@@ -1813,8 +1945,8 @@ export function useSheetsStore(): SheetsStore {
     readOnly,
     setConfig,
     setBrands,
-    canUndo: historyRef.current.past.length > 0,
-    canRedo: historyRef.current.future.length > 0,
+    canUndo: !readOnly && historyRef.current.past.length > 0,
+    canRedo: !readOnly && historyRef.current.future.length > 0,
     undo,
     redo,
     setRows: updateActiveRows,

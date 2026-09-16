@@ -1155,6 +1155,136 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.activeId).toBe('9002')
   })
 
+  it('A→B→A 后迟到的旧签出响应不归还新一轮已持锁', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord(),
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    ])
+    const store = renderStore()
+    await hydrate(store)
+    // 清掉初始自动签出, 隔离本次飞行中的签出
+    await act(async () => {
+      await store.current.releaseEditLock()
+    })
+    api.acquireQuoteSheetEditLock.mockClear()
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    let resolveOld!: (value: unknown) => void
+    api.acquireQuoteSheetEditLock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveOld = resolve
+        }),
+    )
+    let pending!: Promise<boolean>
+    act(() => {
+      pending = store.current.acquireEditLock('9001')
+    })
+
+    // A -> B -> A: 切走释放 A, 再回到 A 并成功签出新一轮锁
+    await act(async () => {
+      store.current.setActiveId('9002')
+      await Promise.resolve()
+    })
+    await act(async () => {
+      store.current.setActiveId('9001')
+      await Promise.resolve()
+    })
+    expect(store.current.editLock?.sheetId).toBe('9001')
+
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    // 旧响应此时才回到本地: 代次已过期, 但该锁正由当前这代持有, 不得 DELETE
+    await act(async () => {
+      resolveOld({
+        sheetId: '9001',
+        locked: true,
+        mine: true,
+        ttlSeconds: 120,
+      })
+      await pending
+    })
+
+    expect(api.releaseQuoteSheetEditLock).not.toHaveBeenCalled()
+    expect(store.current.editLock?.sheetId).toBe('9001')
+    expect(store.current.readOnly).toBe(false)
+  })
+
+  it('行保存普通失败后聚焦刷新不覆盖本地且会重试保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    api.updateQuoteSheetItem.mockRejectedValueOnce(new Error('boom'))
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { [inputKey]: { spot: 3400, supplierId: '5001' } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(message.error)).toHaveBeenCalled()
+
+    api.fetchQuoteSheets.mockClear()
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    // 存在保存失败的脏编辑: 不覆盖本地
+    expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
+    expect(store.current.active.inputs[inputKey]).toEqual({
+      spot: 3400,
+      supplierId: '5001',
+    })
+
+    // 聚焦触发的重试保存
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(2)
+  })
+
+  it('配置未加载被跳过的保存随单据删除而清理, 不永久关闭刷新', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord(),
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    ])
+    // 首次配置加载挂起: 保持未加载, 使编辑落入 configBlockedSaveRef
+    api.fetchQuoteProjectConfig.mockImplementationOnce(
+      () => new Promise(() => {}),
+    )
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.configLoaded).toBe(false)
+
+    const sheetId = store.current.activeId
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(sheetId, {
+        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.updateQuoteSheetItem).not.toHaveBeenCalled()
+
+    // 删除挂起保存的单据: 其 blocked 登记应被清理
+    act(() => {
+      store.current.removeSheet(sheetId)
+    })
+    api.fetchQuoteSheets.mockClear()
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(api.fetchQuoteSheets).toHaveBeenCalled()
+  })
+
   it('addSheet 缺省报单日期使用本地时区而非 UTC', async () => {
     const nodeEnv = (
       globalThis as unknown as {

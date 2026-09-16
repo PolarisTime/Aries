@@ -45,9 +45,14 @@ export function useInitialProjectAssignment(
   }, [projects, assignProjectToUnassigned, setTourOpen])
 }
 
-/** Ctrl/Cmd+Z 撤销, Ctrl/Cmd+Shift+Z 或 Ctrl/Cmd+Y 重做。 */
-export function useUndoRedoShortcuts(undo: () => void, redo: () => void) {
+/** Ctrl/Cmd+Z 撤销, Ctrl/Cmd+Shift+Z 或 Ctrl/Cmd+Y 重做。只读态禁用。 */
+export function useUndoRedoShortcuts(
+  undo: () => void,
+  redo: () => void,
+  enabled = true,
+) {
   useEffect(() => {
+    if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey)) return
       const key = event.key.toLowerCase()
@@ -61,5 +66,5 @@ export function useUndoRedoShortcuts(undo: () => void, redo: () => void) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [undo, redo])
+  }, [undo, redo, enabled])
 }
