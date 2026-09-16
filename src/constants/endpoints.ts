@@ -165,6 +165,12 @@ export const ENDPOINTS = {
   // Quote sheets (报单比价)
   QUOTE_SHEETS: '/quote-sheets',
   QUOTE_SHEET: (id: string | number) => `/quote-sheets/${pathSegment(id)}`,
+  QUOTE_SHEET_ITEMS: (id: string | number) =>
+    `/quote-sheets/${pathSegment(id)}/items`,
+  QUOTE_SHEET_ITEM: (id: string | number, itemId: string | number) =>
+    `/quote-sheets/${pathSegment(id)}/items/${pathSegment(itemId)}`,
+  QUOTE_SHEET_EDIT_LOCK: (id: string | number) =>
+    `/quote-sheets/${pathSegment(id)}/edit-locks`,
   QUOTE_PROJECT_CONFIGS: '/quote-project-configs',
   QUOTE_PROJECT_CONFIG: (projectId: string | number) =>
     `/quote-project-configs/${pathSegment(projectId)}`,

@@ -131,6 +131,34 @@ export type QuoteSheetPayload = {
   }[]
 }
 
+/** 行级保存请求体(整行替换)。 */
+export type QuoteSheetItemPayload = {
+  category: string
+  material: string
+  spec: number
+  length: string
+  ton?: number
+  prices: {
+    brandName: string
+    spotPrice?: number
+    supplierId?: EntityId
+  }[]
+}
+
+/** 表头保存请求体(不携带 brands/items, 后端仅更新表头字段)。 */
+export type QuoteSheetHeaderPayload = {
+  name: string
+  projectId?: EntityId
+  projectName?: string
+  orderDate: string
+  refDate: string
+  refPeriod: string
+  lengthPremium: number
+  locked: boolean
+  status?: string
+  remark?: string
+}
+
 function normalizePrice(
   raw: z.infer<typeof priceSchema>,
   index: number,
@@ -152,6 +180,27 @@ function normalizePrice(
   }
 }
 
+function normalizeItem(
+  item: z.infer<typeof itemSchema>,
+  path: string,
+): QuoteSheetItemRecord {
+  return {
+    id: parseEntityId(item.id, `${path}.id`),
+    category: asString(item.category).trim(),
+    material: asString(item.material).trim(),
+    length: asString(item.length).trim(),
+    ...(toOptionalNumber(item.spec) !== undefined
+      ? { spec: toOptionalNumber(item.spec) }
+      : {}),
+    ...(toOptionalNumber(item.ton) !== undefined
+      ? { ton: toOptionalNumber(item.ton) }
+      : {}),
+    prices: (item.prices ?? []).map((price, priceIndex) =>
+      normalizePrice(price, priceIndex),
+    ),
+  }
+}
+
 function normalizeSheet(
   raw: z.infer<typeof sheetSchema>,
   index: number,
@@ -161,21 +210,8 @@ function normalizeSheet(
     `sheets[${index}].projectId`,
   )
   const items: QuoteSheetItemRecord[] = (raw.items ?? []).map(
-    (item, itemIndex): QuoteSheetItemRecord => ({
-      id: parseEntityId(item.id, `sheets[${index}].items[${itemIndex}].id`),
-      category: asString(item.category).trim(),
-      material: asString(item.material).trim(),
-      length: asString(item.length).trim(),
-      ...(toOptionalNumber(item.spec) !== undefined
-        ? { spec: toOptionalNumber(item.spec) }
-        : {}),
-      ...(toOptionalNumber(item.ton) !== undefined
-        ? { ton: toOptionalNumber(item.ton) }
-        : {}),
-      prices: (item.prices ?? []).map((price, priceIndex) =>
-        normalizePrice(price, priceIndex),
-      ),
-    }),
+    (item, itemIndex) =>
+      normalizeItem(item, `sheets[${index}].items[${itemIndex}]`),
   )
   return {
     id: parseEntityId(raw.id, `sheets[${index}].id`),
@@ -245,4 +281,62 @@ export async function updateQuoteSheet(
 
 export async function deleteQuoteSheet(id: EntityId): Promise<void> {
   await apiDeleteNoContent(ENDPOINTS.QUOTE_SHEET(id))
+}
+
+/** 仅保存表头字段(不传 brands/items), 携带 If-Match 版本。 */
+export async function updateQuoteSheetHeader(
+  id: EntityId,
+  payload: QuoteSheetHeaderPayload,
+  expectedVersion?: string,
+): Promise<QuoteSheetRecord> {
+  const response = await apiPut(
+    ENDPOINTS.QUOTE_SHEET(id),
+    sheetSchema,
+    payload,
+    withConcurrencyHeaders(expectedVersion),
+  )
+  return normalizeSheet(response, 0)
+}
+
+/** 新增商品行(201), 返回新行。 */
+export async function addQuoteSheetItem(
+  id: EntityId,
+  payload: QuoteSheetItemPayload,
+  expectedVersion?: string,
+): Promise<QuoteSheetItemRecord> {
+  const response = await apiPost(
+    ENDPOINTS.QUOTE_SHEET_ITEMS(id),
+    itemSchema,
+    payload,
+    withConcurrencyHeaders(expectedVersion),
+  )
+  return normalizeItem(response, 'quoteSheetItem')
+}
+
+/** 整行替换商品行。 */
+export async function updateQuoteSheetItem(
+  id: EntityId,
+  itemId: EntityId,
+  payload: QuoteSheetItemPayload,
+  expectedVersion?: string,
+): Promise<QuoteSheetItemRecord> {
+  const response = await apiPut(
+    ENDPOINTS.QUOTE_SHEET_ITEM(id, itemId),
+    itemSchema,
+    payload,
+    withConcurrencyHeaders(expectedVersion),
+  )
+  return normalizeItem(response, 'quoteSheetItem')
+}
+
+/** 删除商品行(204)。 */
+export async function deleteQuoteSheetItem(
+  id: EntityId,
+  itemId: EntityId,
+  expectedVersion?: string,
+): Promise<void> {
+  await apiDeleteNoContent(
+    ENDPOINTS.QUOTE_SHEET_ITEM(id, itemId),
+    withConcurrencyHeaders(expectedVersion),
+  )
 }

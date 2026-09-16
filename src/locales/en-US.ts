@@ -2199,6 +2199,14 @@ export const enUS = {
       removeSheetConfirmTitle: 'Delete this batch?',
       removeSheetConfirmContent:
         'All entries in this batch will also be deleted',
+      editingByMe: 'You are editing this batch',
+      editingByOther: '{{name}} is editing this batch',
+      editingByOtherUnknown: 'Another user is editing this batch',
+      requestTakeover: 'Request takeover',
+      takeoverConfirmTitle: 'Take over editing?',
+      takeoverConfirmContent:
+        'Takeover acquires the edit right for this batch. If the current editor is still active it will conflict again; retry after the lock expires.',
+      takeoverFailed: 'The other user is still editing. Try again later.',
     },
     picker: {
       project: 'Project',

@@ -85,6 +85,7 @@ function moveFocusTon(orderedRows: PriceRow[]) {
 type ColumnContext = {
   sheet: PriceSheet
   t: TFunction
+  readOnly: boolean
   refDate: string
   refPeriod: string
   lengthPremium: number
@@ -178,6 +179,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowedProducts,
     bestOn,
     t,
+    readOnly,
   } = ctx
   const enabledCategories = new Set<string>()
   if (!brands.length) {
@@ -301,6 +303,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           <Select
             size="small"
             variant="borderless"
+            disabled={readOnly}
             style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
             placeholder={t('priceCompare.sheet.selectProduct')}
             showSearch={{ optionFilterProp: 'label' }}
@@ -332,6 +335,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           size="small"
           variant="borderless"
           inputMode="decimal"
+          disabled={readOnly}
           data-ton={row.rowId}
           defaultValue={row.row.ton === undefined ? '' : String(row.row.ton)}
           onBlur={(event) => {
@@ -438,6 +442,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       size="small"
                       variant="borderless"
                       inputMode="decimal"
+                      disabled={readOnly}
                       data-spot={`${brand.name}:${current.id}`}
                       defaultValue={spot === undefined ? '' : String(spot)}
                       onBlur={(event) => {
@@ -503,6 +508,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       size="small"
                       variant="borderless"
                       className="price-compare-supplier"
+                      disabled={readOnly}
                       value={ctx.getInput(brand.name, current.id)?.supplierId}
                       placeholder={t('priceCompare.sheet.supplier')}
                       allowClear
@@ -654,6 +660,7 @@ function SheetTable(props: SheetTableProps) {
               size="small"
               block
               className="price-compare-add-row"
+              disabled={base.readOnly}
               onClick={onAddRow}
             >
               {t('priceCompare.sheet.addRow')}
@@ -725,6 +732,7 @@ function SheetHeader({
   remark,
   onRemarkChange,
   allowHrb400eFallback = false,
+  readOnly = false,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -743,6 +751,7 @@ function SheetHeader({
   remark?: string
   onRemarkChange?: (value: string) => void
   allowHrb400eFallback?: boolean
+  readOnly?: boolean
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
@@ -763,6 +772,7 @@ function SheetHeader({
               value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
               format={dateFormat}
               allowClear={false}
+              disabled={readOnly}
               onChange={(value) =>
                 value &&
                 patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
@@ -781,7 +791,7 @@ function SheetHeader({
               value={refDate ? dayjs(refDate) : null}
               format={dateFormat}
               allowClear={false}
-              disabled={Boolean(sheet.locked)}
+              disabled={readOnly || Boolean(sheet.locked)}
               cellRender={(current, info) => {
                 if (info.type !== 'date') return info.originNode
                 const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
@@ -809,7 +819,7 @@ function SheetHeader({
               size="small"
               style={{ width: 110 }}
               value={refPeriod || undefined}
-              disabled={Boolean(sheet.locked)}
+              disabled={readOnly || Boolean(sheet.locked)}
               onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
               options={periods.map((period) => ({
                 value: period,
@@ -841,6 +851,7 @@ function SheetHeader({
               size="small"
               type={sheet.locked ? 'primary' : 'default'}
               icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
+              disabled={readOnly}
               onClick={() => patchSheet(sheet.id, { locked: !sheet.locked })}
             >
               {sheet.locked
@@ -882,7 +893,12 @@ function SheetHeader({
               cancelText={t('common.cancel')}
               onConfirm={onRemoveSelected}
             >
-              <Button size="small" danger icon={<DeleteOutlined />}>
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                disabled={readOnly}
+              >
                 {t('common.delete')}
               </Button>
             </Popconfirm>
@@ -896,12 +912,21 @@ function SheetHeader({
         wrap="wrap"
         className="price-compare-meta-row"
       >
-        <LockableField
-          label={t('priceCompare.sheet.remark')}
-          value={remark ?? ''}
-          width={220}
-          onConfirm={(value) => onRemarkChange?.(value)}
-        />
+        {readOnly ? (
+          <Space size={4} align="center" className="price-compare-meta-field">
+            <span className="price-compare-sub">
+              {t('priceCompare.sheet.remark')}
+            </span>
+            <Text type="secondary">{remark || '-'}</Text>
+          </Space>
+        ) : (
+          <LockableField
+            label={t('priceCompare.sheet.remark')}
+            value={remark ?? ''}
+            width={220}
+            onConfirm={(value) => onRemarkChange?.(value)}
+          />
+        )}
         <Space size={4} align="center" className="price-compare-meta-field">
           <span className="price-compare-sub">
             {t('priceCompare.config.designatedBrands')}
@@ -953,6 +978,8 @@ type Props = {
   remark?: string
   onRemarkChange?: (value: string) => void
   suppliers?: { value: string; label: string }[]
+  /** 被他人签出编辑时只读(禁用编辑类交互) */
+  readOnly?: boolean
 }
 
 /** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
@@ -981,6 +1008,7 @@ export function SheetPanel(props: Props) {
     remark,
     onRemarkChange,
     suppliers = [],
+    readOnly = false,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1121,6 +1149,7 @@ export function SheetPanel(props: Props) {
     spotResetNonce,
     onInvalidSpot: () => setSpotResetNonce((nonce) => nonce + 1),
     spotRef,
+    readOnly,
   }
 
   const content = (
@@ -1143,6 +1172,7 @@ export function SheetPanel(props: Props) {
         remark={remark}
         onRemarkChange={onRemarkChange}
         allowHrb400eFallback={allowHrb400eFallback}
+        readOnly={readOnly}
       />
 
       <SheetTable

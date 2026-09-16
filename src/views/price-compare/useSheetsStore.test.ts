@@ -12,8 +12,15 @@ const api = vi.hoisted(() => ({
   createQuoteSheet: vi.fn(),
   updateQuoteSheet: vi.fn(),
   deleteQuoteSheet: vi.fn(),
+  updateQuoteSheetHeader: vi.fn(),
+  addQuoteSheetItem: vi.fn(),
+  updateQuoteSheetItem: vi.fn(),
+  deleteQuoteSheetItem: vi.fn(),
   fetchQuoteProjectConfig: vi.fn(),
   saveQuoteProjectConfig: vi.fn(),
+  acquireQuoteSheetEditLock: vi.fn(),
+  fetchQuoteSheetEditLock: vi.fn(),
+  releaseQuoteSheetEditLock: vi.fn(),
 }))
 
 vi.mock('@/api/market/quote-sheets', () => ({
@@ -22,6 +29,16 @@ vi.mock('@/api/market/quote-sheets', () => ({
   createQuoteSheet: api.createQuoteSheet,
   updateQuoteSheet: api.updateQuoteSheet,
   deleteQuoteSheet: api.deleteQuoteSheet,
+  updateQuoteSheetHeader: api.updateQuoteSheetHeader,
+  addQuoteSheetItem: api.addQuoteSheetItem,
+  updateQuoteSheetItem: api.updateQuoteSheetItem,
+  deleteQuoteSheetItem: api.deleteQuoteSheetItem,
+}))
+
+vi.mock('@/api/market/quote-edit-locks', () => ({
+  acquireQuoteSheetEditLock: api.acquireQuoteSheetEditLock,
+  fetchQuoteSheetEditLock: api.fetchQuoteSheetEditLock,
+  releaseQuoteSheetEditLock: api.releaseQuoteSheetEditLock,
 }))
 
 vi.mock('@/api/market/quote-project-configs', () => ({
@@ -100,6 +117,39 @@ describe('useSheetsStore 服务端数据源', () => {
     api.createQuoteSheet.mockReset()
     api.updateQuoteSheet.mockReset().mockResolvedValue(sheetRecord())
     api.deleteQuoteSheet.mockReset().mockResolvedValue(undefined)
+    api.updateQuoteSheetHeader
+      .mockReset()
+      .mockResolvedValue(sheetRecord({ version: '1' }))
+    api.addQuoteSheetItem.mockReset().mockResolvedValue({
+      id: '7002',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+      prices: [],
+    })
+    api.updateQuoteSheetItem.mockReset().mockResolvedValue({
+      id: '7001',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+      prices: [],
+    })
+    api.deleteQuoteSheetItem.mockReset().mockResolvedValue(undefined)
+    api.acquireQuoteSheetEditLock.mockReset().mockResolvedValue({
+      sheetId: '9001',
+      locked: true,
+      mine: true,
+      ttlSeconds: 120,
+    })
+    api.fetchQuoteSheetEditLock.mockReset().mockResolvedValue({
+      sheetId: '9001',
+      locked: false,
+      mine: false,
+      ttlSeconds: 120,
+    })
+    api.releaseQuoteSheetEditLock.mockReset().mockResolvedValue(undefined)
     api.fetchQuoteProjectConfig.mockReset().mockResolvedValue(configRecord)
     api.saveQuoteProjectConfig.mockReset().mockResolvedValue(configRecord)
     vi.mocked(modal.confirm).mockReset()
@@ -155,7 +205,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(localStorage.getItem('aries-price-compare-v5')).toBeNull()
   })
 
-  it('完整单据变更后防抖 PUT 保存', async () => {
+  it('表头变更后防抖只发头字段(不携带 brands/items)', async () => {
     const store = renderStore()
     await hydrate(store)
 
@@ -166,17 +216,18 @@ describe('useSheetsStore 服务端数据源', () => {
       await vi.advanceTimersByTimeAsync(900)
     })
 
-    expect(api.updateQuoteSheet).toHaveBeenCalledTimes(1)
-    const [id, payload] = api.updateQuoteSheet.mock.calls[0] as [
+    expect(api.updateQuoteSheetHeader).toHaveBeenCalledTimes(1)
+    const [id, payload] = api.updateQuoteSheetHeader.mock.calls[0] as [
       string,
-      { locked: boolean; items: unknown[] },
+      { locked: boolean; brands?: unknown; items?: unknown },
     ]
     expect(id).toBe('9001')
     expect(payload.locked).toBe(true)
-    expect(payload.items).toHaveLength(1)
+    expect(payload.brands).toBeUndefined()
+    expect(payload.items).toBeUndefined()
   })
 
-  it('供应商随现货价一并保存', async () => {
+  it('供应商随现货价一并走行级保存', async () => {
     const store = renderStore()
     await hydrate(store)
 
@@ -196,10 +247,14 @@ describe('useSheetsStore 服务端数据源', () => {
       await vi.advanceTimersByTimeAsync(900)
     })
 
-    const payload = api.updateQuoteSheet.mock.calls[0]?.[1] as {
-      items: { prices: { supplierId?: string }[] }[]
-    }
-    expect(payload.items[0].prices[0].supplierId).toBe('5002')
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { prices: { supplierId?: string }[] },
+    ]
+    expect(itemId).toBe('7001')
+    expect(payload.prices[0].supplierId).toBe('5002')
   })
 
   it('不完整单据不触发保存', async () => {
@@ -218,8 +273,8 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.updateQuoteSheet).not.toHaveBeenCalled()
   })
 
-  it('更新保存携带 If-Match 版本号并回填新版本', async () => {
-    api.updateQuoteSheet.mockResolvedValue(sheetRecord({ version: '1' }))
+  it('表头保存携带 If-Match 版本号并回填新版本', async () => {
+    api.updateQuoteSheetHeader.mockResolvedValue(sheetRecord({ version: '1' }))
     const store = renderStore()
     await hydrate(store)
     expect(store.current.active.version).toBe('0')
@@ -231,7 +286,7 @@ describe('useSheetsStore 服务端数据源', () => {
       await vi.advanceTimersByTimeAsync(900)
     })
 
-    const [, , expectedVersion] = api.updateQuoteSheet.mock.calls[0] as [
+    const [, , expectedVersion] = api.updateQuoteSheetHeader.mock.calls[0] as [
       string,
       unknown,
       string,
@@ -240,8 +295,51 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.active.version).toBe('1')
   })
 
+  it('行删除调用行级删除端点并携带 If-Match', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) => list.filter((row) => row.id !== '7001'))
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.deleteQuoteSheetItem).toHaveBeenCalledTimes(1)
+    expect(api.deleteQuoteSheetItem.mock.calls[0]).toEqual([
+      '9001',
+      '7001',
+      '0',
+    ])
+  })
+
+  it('新增行调用行级新增端点', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) => [
+        ...list,
+        {
+          id: 'local1',
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        },
+      ])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.addQuoteSheetItem).toHaveBeenCalledTimes(1)
+    expect(api.addQuoteSheetItem.mock.calls[0][0]).toBe('9001')
+  })
+
   it('保存冲突时提示并支持重新加载丢弃本地改动', async () => {
-    api.updateQuoteSheet.mockRejectedValue({ status: 409, code: 4090 })
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
     const store = renderStore()
     await hydrate(store)
 
@@ -299,5 +397,58 @@ describe('useSheetsStore 服务端数据源', () => {
 
     expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
     expect(vi.mocked(message.info)).toHaveBeenCalled()
+  })
+
+  it('签出成功标记为我正在编辑且可编辑', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+    })
+
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+    expect(store.current.editLock?.mine).toBe(true)
+    expect(store.current.readOnly).toBe(false)
+  })
+
+  it('被他人签出时只读并显示对方名称', async () => {
+    api.acquireQuoteSheetEditLock.mockRejectedValue({ status: 409, code: 4090 })
+    api.fetchQuoteSheetEditLock.mockResolvedValue({
+      sheetId: '9001',
+      locked: true,
+      mine: false,
+      ownerName: '李四',
+      ttlSeconds: 120,
+    })
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+    })
+
+    expect(store.current.readOnly).toBe(true)
+    expect(store.current.editLock?.ownerName).toBe('李四')
+  })
+
+  it('释放编辑锁调用 DELETE 并清除状态', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+      await store.current.releaseEditLock()
+    })
+
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+    expect(store.current.editLock).toBeNull()
+  })
+
+  it('接管走二次确认弹窗', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    act(() => {
+      void store.current.takeoverEditLock()
+    })
+
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalled()
   })
 })

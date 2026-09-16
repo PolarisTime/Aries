@@ -11,6 +11,7 @@ import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
+import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
 import { ProjectConfigModal } from './ProjectConfigModal'
 import {
   PriceCompareBatchBar,
@@ -53,6 +54,9 @@ export function PriceCompareView() {
     addSheet,
     assignProjectToUnassigned,
     removeSheet,
+    editLock,
+    readOnly,
+    takeoverEditLock,
   } = store
 
   const brands = config.brands
@@ -253,6 +257,13 @@ export function PriceCompareView() {
         onDeleteBatch={confirmRemoveSheet}
       />
 
+      {active && editLock ? (
+        <PriceCompareEditLockBanner
+          lock={editLock}
+          onTakeover={() => takeoverEditLock(active.id)}
+        />
+      ) : null}
+
       {active ? (
         <Watermark
           content={[t('priceCompare.view.watermark'), active.name]}
@@ -286,6 +297,7 @@ export function PriceCompareView() {
             suppliers={supplierSelectOptions}
             remark={config.remark}
             onRemarkChange={(value) => setConfig({ remark: value })}
+            readOnly={readOnly}
           />
         </Watermark>
       ) : (

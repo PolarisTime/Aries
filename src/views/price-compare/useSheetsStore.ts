@@ -1,19 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { readRequestError } from '@/api/core/request-errors'
 import {
+  acquireQuoteSheetEditLock,
+  fetchQuoteSheetEditLock,
+  releaseQuoteSheetEditLock,
+} from '@/api/market/quote-edit-locks'
+import {
   fetchQuoteProjectConfig,
   type QuoteProjectConfigPayload,
   type QuoteProjectConfigRecord,
   saveQuoteProjectConfig,
 } from '@/api/market/quote-project-configs'
 import {
+  addQuoteSheetItem,
   createQuoteSheet,
   deleteQuoteSheet,
+  deleteQuoteSheetItem,
   fetchQuoteSheet,
   fetchQuoteSheets,
+  type QuoteSheetHeaderPayload,
+  type QuoteSheetItemPayload,
   type QuoteSheetPayload,
   type QuoteSheetRecord,
   updateQuoteSheet,
+  updateQuoteSheetHeader,
+  updateQuoteSheetItem,
 } from '@/api/market/quote-sheets'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
@@ -34,6 +45,8 @@ const SAVE_DEBOUNCE_MS = 800
 const SYNC_CHANNEL = 'aries-price-compare'
 /** 聚焦/轮询刷新间隔。 */
 const REFRESH_INTERVAL_MS = 30_000
+/** 编辑锁续约间隔(页面可见时)。 */
+const EDIT_LOCK_RENEW_MS = 60_000
 /** 有未保存改动时"服务器有更新"提示的去重 key。 */
 const STALE_NOTICE_KEY = 'price-compare-stale'
 const CONFLICT_STATUS = 409
@@ -194,8 +207,121 @@ function buildPayload(
   }
 }
 
-/** 乐观并发冲突: 单据或项目配置。 */
-export type SheetsConflict = { kind: 'sheet' | 'config'; id: string }
+/** 表头保存请求体(不含 brands/items)。 */
+function buildHeaderPayload(sheet: PriceSheet): QuoteSheetHeaderPayload {
+  return {
+    name: sheet.name || '未命名批次',
+    orderDate: sheet.orderDate,
+    refDate: sheet.refDate,
+    refPeriod: sheet.refPeriod,
+    lengthPremium: sheet.lengthPremium,
+    locked: Boolean(sheet.locked),
+    ...(sheet.projectId ? { projectId: sheet.projectId } : {}),
+    ...(sheet.projectName ? { projectName: sheet.projectName } : {}),
+    ...(sheet.status ? { status: sheet.status } : {}),
+    ...(sheet.remark ? { remark: sheet.remark } : {}),
+  }
+}
+
+/** 单行整行替换请求体; 商品信息不完整时返回 null。 */
+function buildItemPayload(
+  sheet: PriceSheet,
+  row: PriceRow,
+  brands: Brand[],
+): QuoteSheetItemPayload | null {
+  if (!isCompleteRow(row)) return null
+  const prices = brands.flatMap((brand) => {
+    const input = sheet.inputs[`${brand.name}:${row.id}`]
+    if (!input || (input.spot === undefined && !input.supplierId)) return []
+    return [
+      {
+        brandName: brand.name,
+        ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
+        ...(input.supplierId ? { supplierId: input.supplierId } : {}),
+      },
+    ]
+  })
+  return {
+    category: row.category,
+    material: row.material,
+    spec: Number(row.spec),
+    length: row.length,
+    ...(row.ton !== undefined ? { ton: row.ton } : {}),
+    prices,
+  }
+}
+
+/** 表头指纹: 与服务端快照比较, 判断是否需要发头 PUT。 */
+function headerSignature(sheet: PriceSheet): string {
+  return JSON.stringify(buildHeaderPayload(sheet))
+}
+
+/** 行指纹: 商品字段/吨位/现货价/供应商任一变化即不同。 */
+function itemSignature(row: PriceRow, inputs: SheetInputs): string {
+  const suffix = `:${row.id}`
+  const prices = Object.keys(inputs)
+    .filter((key) => key.endsWith(suffix))
+    .sort()
+    .map((key) => [key, inputs[key] ?? {}])
+  return JSON.stringify({
+    category: row.category,
+    material: row.material,
+    spec: row.spec,
+    length: row.length,
+    ton: row.ton ?? null,
+    prices,
+  })
+}
+
+type SheetBaseline = { header: string; items: Map<string, string> }
+
+/** 由服务端已保存单据构建基线(用于行级差异比对)。 */
+function buildBaseline(sheet: PriceSheet): SheetBaseline {
+  const items = new Map<string, string>()
+  for (const row of sheet.rows) {
+    items.set(row.id, itemSignature(row, sheet.inputs))
+  }
+  return { header: headerSignature(sheet), items }
+}
+
+/** 乐观版本自增: 行级写每次使单据 @Version +1。 */
+function bumpVersion(version: string | undefined): string | undefined {
+  if (!version) return undefined
+  const parsed = Number(version)
+  return Number.isFinite(parsed) ? String(parsed + 1) : version
+}
+
+/** 把 inputs 中指向某行的键从 fromId 迁移到 toId。 */
+function remapInputKeys(
+  inputs: SheetInputs,
+  fromId: string,
+  toId: string,
+): SheetInputs {
+  const next: SheetInputs = {}
+  for (const [key, value] of Object.entries(inputs)) {
+    next[
+      key.endsWith(`:${fromId}`)
+        ? `${key.slice(0, -fromId.length)}${toId}`
+        : key
+    ] = value
+  }
+  return next
+}
+
+/** 乐观并发冲突: 单据头/项目配置/某商品行。 */
+export type SheetsConflict = {
+  kind: 'sheet' | 'config' | 'item'
+  id: string
+  itemId?: string
+}
+
+/** 当前批次编辑签出状态(供 UI 呈现与只读控制)。 */
+export type EditLockView = {
+  sheetId: string
+  locked: boolean
+  mine: boolean
+  ownerName?: string
+}
 
 export type SheetsStore = {
   loading: boolean
@@ -207,6 +333,10 @@ export type SheetsStore = {
   conflict: SheetsConflict | null
   /** 当前项目配置 */
   config: ProjectConfig
+  /** 当前批次编辑签出状态; null 表示未签出/降级可编辑 */
+  editLock: EditLockView | null
+  /** 当前批次是否只读(被他人签出) */
+  readOnly: boolean
   setConfig: (patch: Partial<ProjectConfig>) => void
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   canUndo: boolean
@@ -229,6 +359,12 @@ export type SheetsStore = {
   ) => void
   assignProjectToUnassigned: (projectId: string, projectName: string) => void
   removeSheet: (id: string) => void
+  /** 签出当前批次编辑锁并启动续约; 返回是否成功取得编辑权 */
+  acquireEditLock: (id?: string) => Promise<boolean>
+  /** 释放批次编辑锁 */
+  releaseEditLock: (id?: string) => Promise<void>
+  /** 抢占已被他人签出(可能已过期)的批次 */
+  takeoverEditLock: (id?: string) => void
 }
 
 type History = {
@@ -266,6 +402,11 @@ export function useSheetsStore(): SheetsStore {
   const inflightRef = useRef<Set<string>>(new Set())
   const pendingRef = useRef<Set<string>>(new Set())
   const [conflict, setConflict] = useState<SheetsConflict | null>(null)
+  /** 服务端快照基线: 本地单据 id -> 表头/行指纹, 用于行级差异保存。 */
+  const baselineRef = useRef<Map<string, SheetBaseline>>(new Map())
+  const [editLock, setEditLock] = useState<EditLockView | null>(null)
+  /** 已签出批次的服务端 id 与续约定时器。 */
+  const heldLockRef = useRef<{ sheetId: string; timer: number } | null>(null)
   const syncChannelRef = useRef<BroadcastChannel | null>(null)
   const reloadSheetRef = useRef<(sheetId: string) => Promise<void>>(
     async () => {},
@@ -374,27 +515,32 @@ export function useSheetsStore(): SheetsStore {
   }, [])
 
   /** 乐观并发冲突: 提示并以"重新加载/以我的覆盖"驱动处理。 */
-  const handleConflict = useCallback((kind: 'sheet' | 'config', id: string) => {
-    setConflict({ kind, id })
-    modal.confirm({
-      title: CONFLICT_TITLE,
-      content: CONFLICT_CONTENT,
-      okText: CONFLICT_OVERWRITE_TEXT,
-      cancelText: CONFLICT_RELOAD_TEXT,
-      closable: false,
-      maskClosable: false,
-      onOk: async () => {
-        setConflict(null)
-        if (kind === 'sheet') await overrideSheetRef.current(id)
-        else await overrideConfigRef.current(id)
-      },
-      onCancel: async () => {
-        setConflict(null)
-        if (kind === 'sheet') await reloadSheetRef.current(id)
-        else await reloadConfigRef.current(id)
-      },
-    })
-  }, [])
+  const handleConflict = useCallback(
+    (kind: 'sheet' | 'config' | 'item', id: string, itemId?: string) => {
+      setConflict({ kind, id, ...(itemId ? { itemId } : {}) })
+      const scopeText =
+        kind === 'config' ? '项目配置' : kind === 'item' ? '某商品行' : '表头'
+      modal.confirm({
+        title: CONFLICT_TITLE,
+        content: `${scopeText}：${CONFLICT_CONTENT}`,
+        okText: CONFLICT_OVERWRITE_TEXT,
+        cancelText: CONFLICT_RELOAD_TEXT,
+        closable: false,
+        maskClosable: false,
+        onOk: async () => {
+          setConflict(null)
+          if (kind === 'config') await overrideConfigRef.current(id)
+          else await overrideSheetRef.current(id)
+        },
+        onCancel: async () => {
+          setConflict(null)
+          if (kind === 'config') await reloadConfigRef.current(id)
+          else await reloadSheetRef.current(id)
+        },
+      })
+    },
+    [],
+  )
 
   /** 重新加载(丢弃本地改动): 拉取服务端最新覆盖本地。 */
   const reloadSheet = useCallback(
@@ -404,6 +550,7 @@ export function useSheetsStore(): SheetsStore {
         const record = await fetchQuoteSheet(serverId)
         serverIdRef.current.set(sheetId, record.id)
         const fresh: PriceSheet = { ...toPriceSheet(record), id: sheetId }
+        baselineRef.current.set(sheetId, buildBaseline(fresh))
         mutate((current) => ({
           ...current,
           sheets: current.sheets.map((sheet) =>
@@ -431,6 +578,10 @@ export function useSheetsStore(): SheetsStore {
         const latest = await fetchQuoteSheet(serverId)
         const saved = await updateQuoteSheet(serverId, payload, latest.version)
         applySheetVersion(sheetId, saved.version)
+        baselineRef.current.set(
+          sheetId,
+          buildBaseline({ ...sheet, version: saved.version ?? sheet.version }),
+        )
         broadcastSaved()
       } catch (error) {
         if (isConflictError(error)) {
@@ -504,6 +655,27 @@ export function useSheetsStore(): SheetsStore {
     overrideConfigRef.current = overrideConfig
   }, [reloadSheet, overrideSheet, reloadConfig, overrideConfig])
 
+  /** 新增行拿到服务端 id 后, 把本地行 id 与 inputs 键迁移到服务端 id。 */
+  const remapItemId = useCallback(
+    (sheetId: string, fromId: string, toId: string) => {
+      mutate((current) => ({
+        ...current,
+        sheets: current.sheets.map((sheet) =>
+          sheet.id === sheetId
+            ? {
+                ...sheet,
+                rows: sheet.rows.map((row) =>
+                  row.id === fromId ? { ...row, id: toId } : row,
+                ),
+                inputs: remapInputKeys(sheet.inputs, fromId, toId),
+              }
+            : sheet,
+        ),
+      }))
+    },
+    [mutate],
+  )
+
   const saveSheetNow = useCallback(
     async (sheetId: string) => {
       await runSerialized(`sheet:${sheetId}`, async () => {
@@ -511,34 +683,116 @@ export function useSheetsStore(): SheetsStore {
           (item) => item.id === sheetId,
         )
         if (!sheet) return
-        const payload = buildPayload(sheet, configOf(sheet.projectId))
-        if (!payload) return
+        const config = configOf(sheet.projectId)
         const serverId = serverIdRef.current.get(sheet.id)
-        try {
-          if (serverId) {
-            const saved = await updateQuoteSheet(
-              serverId,
-              payload,
-              sheet.version,
-            )
+        const fail = (error: unknown, fallback: string) =>
+          message.error(
+            error instanceof Error ? `${fallback}：${error.message}` : fallback,
+          )
+
+        if (!serverId) {
+          const created = buildPayload(sheet, config)
+          if (!created) return
+          try {
+            const saved = await createQuoteSheet(created)
+            serverIdRef.current.set(sheet.id, saved.id)
             applySheetVersion(sheet.id, saved.version)
-          } else {
-            const created = await createQuoteSheet(payload)
-            serverIdRef.current.set(sheet.id, created.id)
-            applySheetVersion(sheet.id, created.version)
+            baselineRef.current.set(
+              sheet.id,
+              buildBaseline({
+                ...sheet,
+                version: saved.version ?? sheet.version,
+              }),
+            )
+            broadcastSaved()
+          } catch (error) {
+            fail(error, '保存比价单失败')
           }
-          broadcastSaved()
-        } catch (error) {
-          if (isConflictError(error)) {
-            handleConflict('sheet', sheetId)
+          return
+        }
+
+        let version = sheet.version
+        const baseline =
+          baselineRef.current.get(sheet.id) ?? buildBaseline(sheet)
+
+        if (headerSignature(sheet) !== baseline.header) {
+          try {
+            const saved = await updateQuoteSheetHeader(
+              serverId,
+              buildHeaderPayload(sheet),
+              version,
+            )
+            version = saved.version ?? version
+            applySheetVersion(sheet.id, version)
+            baseline.header = headerSignature(sheet)
+          } catch (error) {
+            if (isConflictError(error)) {
+              handleConflict('sheet', sheetId)
+              return
+            }
+            fail(error, '保存比价单表头失败')
             return
           }
-          message.error(
-            error instanceof Error
-              ? `保存比价单失败：${error.message}`
-              : '保存比价单失败',
-          )
         }
+
+        const currentRowIds = new Set(sheet.rows.map((row) => row.id))
+        for (const itemId of [...baseline.items.keys()]) {
+          if (currentRowIds.has(itemId)) continue
+          try {
+            await deleteQuoteSheetItem(serverId, itemId, version)
+            version = bumpVersion(version)
+            baseline.items.delete(itemId)
+            applySheetVersion(sheet.id, version)
+          } catch (error) {
+            if (isConflictError(error)) {
+              handleConflict('item', sheetId, itemId)
+              return
+            }
+            fail(error, '删除商品行失败')
+            return
+          }
+        }
+
+        for (const row of sheet.rows) {
+          const payload = buildItemPayload(sheet, row, config.brands)
+          if (!payload) continue
+          const signature = itemSignature(row, sheet.inputs)
+          const known = baseline.items.has(row.id)
+          if (known && baseline.items.get(row.id) === signature) continue
+          try {
+            if (known) {
+              await updateQuoteSheetItem(serverId, row.id, payload, version)
+              baseline.items.set(row.id, signature)
+            } else {
+              const created = await addQuoteSheetItem(
+                serverId,
+                payload,
+                version,
+              )
+              const remappedRow = { ...row, id: created.id }
+              const remappedInputs = remapInputKeys(
+                sheet.inputs,
+                row.id,
+                created.id,
+              )
+              remapItemId(sheetId, row.id, created.id)
+              baseline.items.set(
+                created.id,
+                itemSignature(remappedRow, remappedInputs),
+              )
+            }
+            version = bumpVersion(version)
+            applySheetVersion(sheet.id, version)
+          } catch (error) {
+            if (isConflictError(error)) {
+              handleConflict('item', sheetId, row.id)
+              return
+            }
+            fail(error, '保存商品行失败')
+            return
+          }
+        }
+        broadcastSaved()
       })
     },
     [
@@ -546,6 +800,7 @@ export function useSheetsStore(): SheetsStore {
       broadcastSaved,
       configOf,
       handleConflict,
+      remapItemId,
       runSerialized,
     ],
   )
@@ -624,6 +879,9 @@ export function useSheetsStore(): SheetsStore {
     serverIdRef.current = new Map(
       serverSheets.map((sheet) => [sheet.id, sheet.id] as const),
     )
+    for (const sheet of serverSheets) {
+      baselineRef.current.set(sheet.id, buildBaseline(sheet))
+    }
     const next = [...serverSheets, ...localOnly]
     if (!next.length) return true
     mutate((current) => ({
@@ -729,7 +987,10 @@ export function useSheetsStore(): SheetsStore {
       .then((records) => {
         if (!records.length) return
         const sheets = records.map(toPriceSheet)
-        for (const sheet of sheets) serverIdRef.current.set(sheet.id, sheet.id)
+        for (const sheet of sheets) {
+          serverIdRef.current.set(sheet.id, sheet.id)
+          baselineRef.current.set(sheet.id, buildBaseline(sheet))
+        }
         commit({
           sheets,
           activeId: sheets[0].id,
@@ -746,6 +1007,141 @@ export function useSheetsStore(): SheetsStore {
     return () => controller.abort()
   }, [token, commit])
 
+  const clearHeldLockTimer = useCallback(() => {
+    const held = heldLockRef.current
+    if (held) {
+      window.clearInterval(held.timer)
+      heldLockRef.current = null
+    }
+  }, [])
+
+  const applyLockState = useCallback(
+    (sheetId: string, lock: { mine: boolean; ownerName?: string } | null) => {
+      setEditLock(
+        lock
+          ? {
+              sheetId,
+              locked: true,
+              mine: lock.mine,
+              ...(lock.ownerName ? { ownerName: lock.ownerName } : {}),
+            }
+          : null,
+      )
+    },
+    [],
+  )
+
+  const releaseEditLock = useCallback(
+    async (id?: string) => {
+      const target =
+        id ?? heldLockRef.current?.sheetId ?? stateRef.current.activeId
+      const serverId = serverIdRef.current.get(target)
+      clearHeldLockTimer()
+      setEditLock((current) =>
+        current && current.sheetId === target ? null : current,
+      )
+      if (!serverId) return
+      try {
+        await releaseQuoteSheetEditLock(serverId)
+      } catch (error) {
+        if (!isConflictError(error)) console.error('释放编辑锁失败', error)
+      }
+    },
+    [clearHeldLockTimer],
+  )
+
+  const acquireEditLock = useCallback(
+    async (id?: string): Promise<boolean> => {
+      const target = id ?? stateRef.current.activeId
+      const serverId = serverIdRef.current.get(target)
+      // 尚未落库或锁接口失败: 降级为可编辑, 不阻断
+      if (!serverId) return true
+      try {
+        const lock = await acquireQuoteSheetEditLock(serverId)
+        applyLockState(target, {
+          mine: lock.mine,
+          ...(lock.ownerName ? { ownerName: lock.ownerName } : {}),
+        })
+        clearHeldLockTimer()
+        const timer = window.setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            void acquireEditLockRef.current(target)
+          }
+        }, EDIT_LOCK_RENEW_MS)
+        heldLockRef.current = { sheetId: target, timer }
+        return lock.mine
+      } catch (error) {
+        if (isConflictError(error)) {
+          let ownerName: string | undefined
+          try {
+            const current = await fetchQuoteSheetEditLock(serverId)
+            ownerName = current.ownerName
+          } catch {
+            ownerName = undefined
+          }
+          applyLockState(target, {
+            mine: false,
+            ...(ownerName ? { ownerName } : {}),
+          })
+          return false
+        }
+        setEditLock((current) =>
+          current && current.sheetId === target ? null : current,
+        )
+        return true
+      }
+    },
+    [applyLockState, clearHeldLockTimer],
+  )
+
+  const acquireEditLockRef = useRef(acquireEditLock)
+  useEffect(() => {
+    acquireEditLockRef.current = acquireEditLock
+  }, [acquireEditLock])
+
+  const takeoverEditLock = useCallback((id?: string) => {
+    const target = id ?? stateRef.current.activeId
+    modal.confirm({
+      title: '申请接管批次',
+      content:
+        '接管将取得该批次编辑权；若对方仍在编辑会再次冲突，请等待其签出过期后重试。',
+      okText: '强制接管',
+      cancelText: '取消',
+      onOk: async () => {
+        const acquired = await acquireEditLockRef.current(target)
+        if (!acquired) message.warning('对方仍在编辑该批次，请稍后再试')
+      },
+    })
+  }, [])
+
+  // 切换批次: 释放上一批次锁并签出新批次
+  const lockedActiveRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (loading) return
+    if (!token || !hydratedRef.current) return
+    const target = state.activeId
+    if (!target || lockedActiveRef.current === target) return
+    // 等待单据落库(拿到服务端 id)后再签出
+    if (!serverIdRef.current.get(target)) return
+    const previous = lockedActiveRef.current
+    lockedActiveRef.current = target
+    if (previous) void releaseEditLock(previous)
+    void acquireEditLock(target)
+  }, [state.activeId, token, loading, acquireEditLock, releaseEditLock])
+
+  // 卸载: 释放当前批次锁
+  useEffect(
+    () => () => {
+      const held = heldLockRef.current
+      if (!held) return
+      window.clearInterval(held.timer)
+      const serverId = serverIdRef.current.get(held.sheetId)
+      if (serverId) void releaseQuoteSheetEditLock(serverId).catch(() => {})
+      heldLockRef.current = null
+    },
+    [],
+  )
+
   const active = useMemo(
     () =>
       state.sheets.find((sheet) => sheet.id === state.activeId) ??
@@ -753,6 +1149,13 @@ export function useSheetsStore(): SheetsStore {
     [state.sheets, state.activeId],
   )
   const config = configOf(active?.projectId ?? '')
+  const activeLock =
+    editLock && editLock.sheetId === state.activeId ? editLock : null
+  const readOnly = Boolean(activeLock && activeLock.locked && !activeLock.mine)
+  const readOnlyRef = useRef(false)
+  useEffect(() => {
+    readOnlyRef.current = readOnly
+  }, [readOnly])
 
   // 切换项目时按需加载项目配置; 后端无品牌时用单据品牌兜底(保留运费)
   useEffect(() => {
@@ -883,6 +1286,7 @@ export function useSheetsStore(): SheetsStore {
 
   const updateActiveRows = (updater: (rows: PriceRow[]) => PriceRow[]) => {
     const activeId = stateRef.current.activeId
+    if (readOnlyRef.current) return
     apply((current) => ({
       ...current,
       sheets: current.sheets.map((sheet) =>
@@ -900,6 +1304,7 @@ export function useSheetsStore(): SheetsStore {
     patch: Partial<PriceSheet>,
     coalesceKey?: string,
   ) => {
+    if (readOnlyRef.current && id === stateRef.current.activeId) return
     apply(
       (current) => ({
         ...current,
@@ -979,6 +1384,8 @@ export function useSheetsStore(): SheetsStore {
     rows: active?.rows ?? [],
     conflict,
     config,
+    editLock: activeLock,
+    readOnly,
     setConfig,
     setBrands,
     canUndo: historyRef.current.past.length > 0,
@@ -991,6 +1398,9 @@ export function useSheetsStore(): SheetsStore {
     addSheet,
     assignProjectToUnassigned,
     removeSheet,
+    acquireEditLock,
+    releaseEditLock,
+    takeoverEditLock,
   }
 }
 

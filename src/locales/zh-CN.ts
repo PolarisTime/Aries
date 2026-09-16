@@ -2130,6 +2130,14 @@ export const zhCN = {
       noBatch: '暂无批次',
       removeSheetConfirmTitle: '删除该批次？',
       removeSheetConfirmContent: '该批次的全部录入内容将一并删除',
+      editingByMe: '你正在编辑该批次',
+      editingByOther: '{{name}} 正在编辑该批次',
+      editingByOtherUnknown: '他人正在编辑该批次',
+      requestTakeover: '申请接管',
+      takeoverConfirmTitle: '确认接管编辑？',
+      takeoverConfirmContent:
+        '接管将取得该批次编辑权；若对方仍在编辑会再次冲突，请等待其签出过期后重试。',
+      takeoverFailed: '对方仍在编辑该批次，请稍后再试。',
     },
     picker: {
       project: '项目',

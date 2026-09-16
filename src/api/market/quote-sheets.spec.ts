@@ -17,10 +17,14 @@ vi.mock('@/api/core/client', () => ({
 }))
 
 import {
+  addQuoteSheetItem,
   createQuoteSheet,
   deleteQuoteSheet,
+  deleteQuoteSheetItem,
   fetchQuoteSheets,
   updateQuoteSheet,
+  updateQuoteSheetHeader,
+  updateQuoteSheetItem,
 } from './quote-sheets'
 
 const page = {
@@ -164,5 +168,76 @@ describe('quote-sheets API', () => {
     expect(apiDeleteMock.mock.calls[0][0]).toBe(
       '/quote-sheets/700500000000000130',
     )
+  })
+
+  it('表头保存仅发送头字段且不携带 brands/items', async () => {
+    apiPutMock.mockResolvedValue(page.content[0])
+
+    await updateQuoteSheetHeader(
+      '700500000000000130',
+      {
+        name: '批次 1',
+        orderDate: '2026-09-16',
+        refDate: '2026-09-16',
+        refPeriod: '上午',
+        lengthPremium: 30,
+        locked: true,
+      },
+      '3',
+    )
+
+    const [url, , payload, config] = apiPutMock.mock.calls[0]
+    expect(url).toBe('/quote-sheets/700500000000000130')
+    expect(payload).not.toHaveProperty('brands')
+    expect(payload).not.toHaveProperty('items')
+    expect(
+      (config as { headers: Record<string, string> }).headers['If-Match'],
+    ).toBe('3')
+  })
+
+  it('行新增/整行替换/删除走行级子资源路径', async () => {
+    apiPostMock.mockResolvedValue(page.content[0].items[0])
+    apiPutMock.mockResolvedValue(page.content[0].items[0])
+    apiDeleteMock.mockResolvedValue(undefined)
+
+    const created = await addQuoteSheetItem(
+      '700500000000000130',
+      {
+        category: '螺纹钢',
+        material: 'HRB400',
+        spec: 12,
+        length: '9米',
+        prices: [{ brandName: '中天', spotPrice: 3200 }],
+      },
+      '5',
+    )
+    await updateQuoteSheetItem(
+      '700500000000000130',
+      '700500000000000140',
+      {
+        category: '螺纹钢',
+        material: 'HRB400',
+        spec: 12,
+        length: '9米',
+        prices: [{ brandName: '中天', spotPrice: 3300 }],
+      },
+      '6',
+    )
+    await deleteQuoteSheetItem('700500000000000130', '700500000000000140', '7')
+
+    expect(created.id).toBe('700500000000000140')
+    expect(apiPostMock.mock.calls[0][0]).toBe(
+      '/quote-sheets/700500000000000130/items',
+    )
+    expect(apiPutMock.mock.calls[0][0]).toBe(
+      '/quote-sheets/700500000000000130/items/700500000000000140',
+    )
+    expect(apiDeleteMock.mock.calls[0][0]).toBe(
+      '/quote-sheets/700500000000000130/items/700500000000000140',
+    )
+    expect(
+      (apiDeleteMock.mock.calls[0][1] as { headers: Record<string, string> })
+        .headers['If-Match'],
+    ).toBe('7')
   })
 })
