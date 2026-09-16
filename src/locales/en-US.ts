@@ -2284,7 +2284,7 @@ export const enUS = {
     },
     data: {
       loadFailed:
-        'Failed to load base data. Check the JSON files under public/price-compare/.',
+        'Failed to load base data. Check the JSON files under public/price-compare-data/.',
       loadFileFailed: 'Failed to load {{file}}: HTTP {{status}}',
     },
     pricing: {

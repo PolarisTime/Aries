@@ -8,7 +8,8 @@ import { STALE_STATIC } from '@/constants/query-policies'
 import { matchesToData, mergePriceData } from './core'
 import type { BrandOption, PriceData, ProjectOption, Variety } from './types'
 
-const BASE = `${import.meta.env.BASE_URL}price-compare/`
+// 静态数据目录不能与 SPA 路由 /price-compare 同名，否则 nginx 会命中同名目录返回 403。
+const BASE = `${import.meta.env.BASE_URL}price-compare-data/`
 
 async function loadJson<T>(file: string): Promise<T> {
   const response = await fetch(`${BASE}${file}`)

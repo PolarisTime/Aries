@@ -2209,7 +2209,7 @@ export const zhCN = {
     },
     data: {
       loadFailed:
-        '基础数据加载失败，请检查 public/price-compare/ 下的 JSON 文件',
+        '基础数据加载失败，请检查 public/price-compare-data/ 下的 JSON 文件',
       loadFileFailed: '加载 {{file}} 失败: HTTP {{status}}',
     },
     pricing: {
