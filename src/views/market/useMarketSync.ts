@@ -196,7 +196,8 @@ export function useMarketSync() {
       message.success(
         `同步完成：${result.articleDate} ${synced.join('/')}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
       )
-      const missing = syncPeriods.filter((p) => !synced.includes(p))
+      const syncedSet = new Set(synced)
+      const missing = syncPeriods.filter((p) => !syncedSet.has(p))
       if (missing.length > 0) {
         message.warning(`当天暂无以下时段行情：${missing.join('/')}`)
       }
