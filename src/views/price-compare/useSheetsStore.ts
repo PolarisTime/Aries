@@ -57,6 +57,10 @@ const CONFLICT_CONTENT =
   '服务器上的内容已被其他设备更新，请选择处理方式。重新加载将丢弃本地改动，以我的覆盖将用当前内容覆盖服务器。'
 const CONFLICT_OVERWRITE_TEXT = '以我的覆盖'
 const CONFLICT_RELOAD_TEXT = '重新加载（丢弃我的改动）'
+/** 覆盖重试后仍冲突时的提示文案(保留同一弹窗)。 */
+const CONFLICT_RETRY_TEXT = '仍在被修改，请稍后重试'
+/** "以我的覆盖"最多尝试次数(含首次), 避免无限连环冲突。 */
+const OVERRIDE_MAX_ATTEMPTS = 2
 const STALE_NOTICE_TEXT = '服务器有更新，保存后请刷新'
 
 /** 同一资源串行执行: 在飞行中则排队一次, 结束后补跑最新任务。 */
@@ -315,6 +319,20 @@ export type SheetsConflict = {
   itemId?: string
 }
 
+/** 冲突资源键: 表头与商品行同属一个单据资源, 项目配置独立。 */
+function conflictResourceKey(kind: SheetsConflict['kind'], id: string): string {
+  return kind === 'config' ? `config:${id}` : `sheet:${id}`
+}
+
+/** 覆盖保存结果: 成功/仍冲突/其他失败/无可保存内容。 */
+type ConflictResolution = 'ok' | 'conflict' | 'error' | 'skipped'
+
+/** 冲突弹窗实例(antd confirm 返回值), 用于更新文案或销毁。 */
+type ConflictModalInstance = {
+  update?: (config: Record<string, unknown>) => void
+  destroy?: () => void
+}
+
 /** 当前批次编辑签出状态(供 UI 呈现与只读控制)。 */
 export type EditLockView = {
   sheetId: string
@@ -402,6 +420,19 @@ export function useSheetsStore(): SheetsStore {
   const inflightRef = useRef<Set<string>>(new Set())
   const pendingRef = useRef<Set<string>>(new Set())
   const [conflict, setConflict] = useState<SheetsConflict | null>(null)
+  /** 当前弹窗中的冲突(带资源键), 非空时不再新建弹窗。 */
+  const activeConflictRef = useRef<(SheetsConflict & { key: string }) | null>(
+    null,
+  )
+  /** 其他资源的待处理冲突队列(同一资源去重), 逐个弹窗而非叠加。 */
+  const conflictQueueRef = useRef<SheetsConflict[]>([])
+  /** 唯一冲突弹窗实例, 用于更新文案或关闭。 */
+  const conflictModalRef = useRef<ConflictModalInstance | null>(null)
+  /** 项目配置防抖 timer 对应的项目 id(仅单 timer)。 */
+  const configTimerProjectRef = useRef<string | null>(null)
+  /** 打开/收敛冲突弹窗的稳定引用, 供内部互调。 */
+  const openConflictRef = useRef<(conflict: SheetsConflict) => void>(() => {})
+  const settleConflictRef = useRef<(key: string) => void>(() => {})
   /** 服务端快照基线: 本地单据 id -> 表头/行指纹, 用于行级差异保存。 */
   const baselineRef = useRef<Map<string, SheetBaseline>>(new Map())
   const [editLock, setEditLock] = useState<EditLockView | null>(null)
@@ -411,15 +442,15 @@ export function useSheetsStore(): SheetsStore {
   const reloadSheetRef = useRef<(sheetId: string) => Promise<void>>(
     async () => {},
   )
-  const overrideSheetRef = useRef<(sheetId: string) => Promise<void>>(
-    async () => {},
-  )
+  const overrideSheetRef = useRef<
+    (sheetId: string) => Promise<ConflictResolution>
+  >(() => Promise.resolve('skipped'))
   const reloadConfigRef = useRef<(projectId: string) => Promise<void>>(
     async () => {},
   )
-  const overrideConfigRef = useRef<(projectId: string) => Promise<void>>(
-    async () => {},
-  )
+  const overrideConfigRef = useRef<
+    (projectId: string) => Promise<ConflictResolution>
+  >(() => Promise.resolve('skipped'))
 
   const runSerialized = useCallback(
     (key: string, task: () => Promise<void>) =>
@@ -514,13 +545,43 @@ export function useSheetsStore(): SheetsStore {
     syncChannelRef.current?.postMessage({ type: 'saved' })
   }, [])
 
-  /** 乐观并发冲突: 提示并以"重新加载/以我的覆盖"驱动处理。 */
-  const handleConflict = useCallback(
-    (kind: 'sheet' | 'config' | 'item', id: string, itemId?: string) => {
-      setConflict({ kind, id, ...(itemId ? { itemId } : {}) })
+  /** 冲突时取消该资源的待执行保存: 清理防抖 timer 与串行排队项。 */
+  const cancelPendingSave = useCallback((key: string) => {
+    if (key.startsWith('sheet:')) {
+      const sheetId = key.slice('sheet:'.length)
+      const timer = sheetTimersRef.current.get(sheetId)
+      if (timer !== undefined) {
+        window.clearTimeout(timer)
+        sheetTimersRef.current.delete(sheetId)
+      }
+    } else if (key.startsWith('config:')) {
+      const projectId = key.slice('config:'.length)
+      if (
+        configTimerProjectRef.current === projectId &&
+        configTimerRef.current !== null
+      ) {
+        window.clearTimeout(configTimerRef.current)
+        configTimerRef.current = null
+        configTimerProjectRef.current = null
+      }
+    }
+    pendingRef.current.delete(key)
+  }, [])
+
+  /** 打开唯一冲突弹窗; 同一时刻只会存在一个 modal。 */
+  const openConflict = useCallback(
+    (target: SheetsConflict) => {
+      const key = conflictResourceKey(target.kind, target.id)
+      cancelPendingSave(key)
+      activeConflictRef.current = { ...target, key }
+      setConflict(target)
       const scopeText =
-        kind === 'config' ? '项目配置' : kind === 'item' ? '某商品行' : '表头'
-      modal.confirm({
+        target.kind === 'config'
+          ? '项目配置'
+          : target.kind === 'item'
+            ? '某商品行'
+            : '表头'
+      const instance = modal.confirm({
         title: CONFLICT_TITLE,
         content: `${scopeText}：${CONFLICT_CONTENT}`,
         okText: CONFLICT_OVERWRITE_TEXT,
@@ -528,18 +589,76 @@ export function useSheetsStore(): SheetsStore {
         closable: false,
         maskClosable: false,
         onOk: async () => {
-          setConflict(null)
-          if (kind === 'config') await overrideConfigRef.current(id)
-          else await overrideSheetRef.current(id)
+          const runOverride =
+            target.kind === 'config'
+              ? overrideConfigRef.current
+              : overrideSheetRef.current
+          const result = await runOverride(target.id)
+          if (result === 'conflict') {
+            conflictModalRef.current?.update?.({
+              content: `${scopeText}：${CONFLICT_RETRY_TEXT}`,
+            })
+            throw new Error(CONFLICT_RETRY_TEXT)
+          }
+          cancelPendingSave(key)
+          settleConflictRef.current(key)
         },
         onCancel: async () => {
-          setConflict(null)
-          if (kind === 'config') await reloadConfigRef.current(id)
-          else await reloadSheetRef.current(id)
+          cancelPendingSave(key)
+          const runReload =
+            target.kind === 'config'
+              ? reloadConfigRef.current
+              : reloadSheetRef.current
+          await runReload(target.id)
+          settleConflictRef.current(key)
         },
-      })
+      }) as ConflictModalInstance | undefined
+      conflictModalRef.current = instance ?? null
     },
-    [],
+    [cancelPendingSave],
+  )
+
+  /** 关闭当前弹窗并推进队列中的下一个资源冲突。 */
+  const settleConflict = useCallback((key: string) => {
+    if (activeConflictRef.current?.key !== key) return
+    conflictModalRef.current?.destroy?.()
+    conflictModalRef.current = null
+    activeConflictRef.current = null
+    setConflict(null)
+    const next = conflictQueueRef.current.shift()
+    if (next) openConflictRef.current(next)
+  }, [])
+
+  /** 乐观并发冲突: 同资源复用弹窗, 不同资源排队, 避免叠加多个 modal。 */
+  const handleConflict = useCallback(
+    (kind: 'sheet' | 'config' | 'item', id: string, itemId?: string) => {
+      const key = conflictResourceKey(kind, id)
+      const active = activeConflictRef.current
+      if (active) {
+        cancelPendingSave(key)
+        if (active.key === key) {
+          if (itemId && active.itemId !== itemId) {
+            activeConflictRef.current = { ...active, itemId }
+            setConflict({ kind, id, itemId })
+          }
+          return
+        }
+        if (
+          !conflictQueueRef.current.some(
+            (queued) => conflictResourceKey(queued.kind, queued.id) === key,
+          )
+        ) {
+          conflictQueueRef.current.push({
+            kind,
+            id,
+            ...(itemId ? { itemId } : {}),
+          })
+        }
+        return
+      }
+      openConflictRef.current({ kind, id, ...(itemId ? { itemId } : {}) })
+    },
+    [cancelPendingSave],
   )
 
   /** 重新加载(丢弃本地改动): 拉取服务端最新覆盖本地。 */
@@ -565,37 +684,46 @@ export function useSheetsStore(): SheetsStore {
     [mutate],
   )
 
-  /** 以我的覆盖: 取服务端最新版本后原样重发本地内容。 */
+  /** 以我的覆盖: 取服务端最新版本后原样重发本地内容, 冲突时重试一次。 */
   const overrideSheet = useCallback(
-    async (sheetId: string) => {
+    async (sheetId: string): Promise<ConflictResolution> => {
       const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
-      if (!sheet) return
+      if (!sheet) return 'skipped'
       const payload = buildPayload(sheet, configOf(sheet.projectId))
-      if (!payload) return
+      if (!payload) return 'skipped'
       const serverId = serverIdRef.current.get(sheetId)
-      if (!serverId) return
-      try {
-        const latest = await fetchQuoteSheet(serverId)
-        const saved = await updateQuoteSheet(serverId, payload, latest.version)
-        applySheetVersion(sheetId, saved.version)
-        baselineRef.current.set(
-          sheetId,
-          buildBaseline({ ...sheet, version: saved.version ?? sheet.version }),
-        )
-        broadcastSaved()
-      } catch (error) {
-        if (isConflictError(error)) {
-          handleConflict('sheet', sheetId)
-          return
+      if (!serverId) return 'skipped'
+      for (let attempt = 0; attempt < OVERRIDE_MAX_ATTEMPTS; attempt += 1) {
+        try {
+          const latest = await fetchQuoteSheet(serverId)
+          const saved = await updateQuoteSheet(
+            serverId,
+            payload,
+            latest.version,
+          )
+          applySheetVersion(sheetId, saved.version)
+          baselineRef.current.set(
+            sheetId,
+            buildBaseline({
+              ...sheet,
+              version: saved.version ?? sheet.version,
+            }),
+          )
+          broadcastSaved()
+          return 'ok'
+        } catch (error) {
+          if (isConflictError(error)) continue
+          message.error(
+            error instanceof Error
+              ? `保存比价单失败：${error.message}`
+              : '保存比价单失败',
+          )
+          return 'error'
         }
-        message.error(
-          error instanceof Error
-            ? `保存比价单失败：${error.message}`
-            : '保存比价单失败',
-        )
       }
+      return 'conflict'
     },
-    [applySheetVersion, broadcastSaved, configOf, handleConflict],
+    [applySheetVersion, broadcastSaved, configOf],
   )
 
   /** 重新加载(丢弃本地改动)项目配置。 */
@@ -619,33 +747,35 @@ export function useSheetsStore(): SheetsStore {
     [mutate],
   )
 
-  /** 以我的覆盖: 取服务端最新版本后原样重发本地项目配置。 */
+  /** 以我的覆盖: 取服务端最新版本后原样重发本地项目配置, 冲突时重试一次。 */
   const overrideConfig = useCallback(
-    async (projectId: string) => {
+    async (projectId: string): Promise<ConflictResolution> => {
       const config = stateRef.current.configs[projectId]
-      if (!config) return
-      try {
-        const latest = await fetchQuoteProjectConfig(projectId)
-        const saved = await saveQuoteProjectConfig(
-          projectId,
-          buildConfigPayload(config),
-          latest.version,
-        )
-        applyConfigVersion(projectId, saved.version)
-        broadcastSaved()
-      } catch (error) {
-        if (isConflictError(error)) {
-          handleConflict('config', projectId)
-          return
+      if (!config) return 'skipped'
+      for (let attempt = 0; attempt < OVERRIDE_MAX_ATTEMPTS; attempt += 1) {
+        try {
+          const latest = await fetchQuoteProjectConfig(projectId)
+          const saved = await saveQuoteProjectConfig(
+            projectId,
+            buildConfigPayload(config),
+            latest.version,
+          )
+          applyConfigVersion(projectId, saved.version)
+          broadcastSaved()
+          return 'ok'
+        } catch (error) {
+          if (isConflictError(error)) continue
+          message.error(
+            error instanceof Error
+              ? `保存比价配置失败：${error.message}`
+              : '保存比价配置失败',
+          )
+          return 'error'
         }
-        message.error(
-          error instanceof Error
-            ? `保存比价配置失败：${error.message}`
-            : '保存比价配置失败',
-        )
       }
+      return 'conflict'
     },
-    [applyConfigVersion, broadcastSaved, handleConflict],
+    [applyConfigVersion, broadcastSaved],
   )
 
   useEffect(() => {
@@ -654,6 +784,11 @@ export function useSheetsStore(): SheetsStore {
     reloadConfigRef.current = reloadConfig
     overrideConfigRef.current = overrideConfig
   }, [reloadSheet, overrideSheet, reloadConfig, overrideConfig])
+
+  useEffect(() => {
+    openConflictRef.current = openConflict
+    settleConflictRef.current = settleConflict
+  }, [openConflict, settleConflict])
 
   /** 新增行拿到服务端 id 后, 把本地行 id 与 inputs 键迁移到服务端 id。 */
   const remapItemId = useCallback(
@@ -852,8 +987,10 @@ export function useSheetsStore(): SheetsStore {
     (projectId: string) => {
       if (!projectId) return
       if (configTimerRef.current) window.clearTimeout(configTimerRef.current)
+      configTimerProjectRef.current = projectId
       configTimerRef.current = window.setTimeout(() => {
         configTimerRef.current = null
+        configTimerProjectRef.current = null
         void saveConfigNow(projectId)
       }, SAVE_DEBOUNCE_MS)
     },

@@ -368,6 +368,93 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.active.locked).toBe(false)
   })
 
+  it('同一资源连续两次 409 只弹一次冲突弹窗', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { name: '批次 1 改' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    expect(store.current.conflict).toEqual({
+      kind: 'sheet',
+      id: store.current.activeId,
+    })
+  })
+
+  it('以我的覆盖成功后回填最新版本且不重发旧版本', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+
+    api.fetchQuoteSheet.mockResolvedValue(sheetRecord({ version: '5' }))
+    api.updateQuoteSheet.mockResolvedValue(sheetRecord({ version: '6' }))
+    const options = vi.mocked(modal.confirm).mock.calls[0][0] as {
+      onOk: () => Promise<void>
+    }
+    await act(async () => {
+      await options.onOk()
+    })
+
+    expect(api.updateQuoteSheet).toHaveBeenCalledTimes(1)
+    expect(api.updateQuoteSheet.mock.calls[0][2]).toBe('5')
+    expect(store.current.active.version).toBe('6')
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    expect(store.current.conflict).toBeNull()
+  })
+
+  it('以我的覆盖仍冲突时保留同一弹窗且重试一次', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+
+    api.fetchQuoteSheet.mockResolvedValue(sheetRecord({ version: '5' }))
+    api.updateQuoteSheet.mockRejectedValue({ status: 409, code: 4090 })
+    const options = vi.mocked(modal.confirm).mock.calls[0][0] as {
+      onOk: () => Promise<void>
+    }
+    await act(async () => {
+      try {
+        await options.onOk()
+      } catch {
+        // 预期仍冲突: onOk 抛错以保持弹窗打开
+      }
+    })
+
+    expect(api.updateQuoteSheet).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    expect(store.current.conflict).not.toBeNull()
+  })
+
   it('聚焦时无未保存改动则静默刷新', async () => {
     const store = renderStore()
     await hydrate(store)
