@@ -441,6 +441,14 @@ function defaultState(): Snapshot {
   return { sheets: [a, b], activeId: a.id, configs: {} }
 }
 
+/** 当前激活单据是否锁定了规格和数量(锁定期间禁止撤销/重做规格与吨位)。 */
+function activeSheetSpecQuantityLocked(snapshot: Snapshot): boolean {
+  const activeSheet = snapshot.sheets.find(
+    (sheet) => sheet.id === snapshot.activeId,
+  )
+  return Boolean(activeSheet?.specQuantityLocked)
+}
+
 /** 多单据状态: 服务端为数据源, 本地乐观更新 + 防抖自动保存; 支持撤销/重做。 */
 export function useSheetsStore(): SheetsStore {
   const token = useAuthStore((state) => state.token)
@@ -1720,6 +1728,8 @@ export function useSheetsStore(): SheetsStore {
   const undo = useCallback(() => {
     // 只读态(他人签出)禁用撤销, 且不进入历史回滚
     if (readOnlyRef.current) return
+    // 规格数量锁定期间撤销会回退规格/吨位, 被后端 422 拒绝后本地与服务端不一致, 直接禁用
+    if (activeSheetSpecQuantityLocked(stateRef.current)) return
     const history = historyRef.current
     if (!history.past.length) return
     const target = preserveLockFields(history.past[history.past.length - 1])
@@ -1744,6 +1754,8 @@ export function useSheetsStore(): SheetsStore {
   const redo = useCallback(() => {
     // 只读态(他人签出)禁用重做, 且不进入历史回滚
     if (readOnlyRef.current) return
+    // 规格数量锁定期间重做同样会回退规格/吨位, 与后端 422 语义冲突, 直接禁用
+    if (activeSheetSpecQuantityLocked(stateRef.current)) return
     const history = historyRef.current
     if (!history.future.length) return
     const target = preserveLockFields(history.future[0])
@@ -1945,8 +1957,14 @@ export function useSheetsStore(): SheetsStore {
     readOnly,
     setConfig,
     setBrands,
-    canUndo: !readOnly && historyRef.current.past.length > 0,
-    canRedo: !readOnly && historyRef.current.future.length > 0,
+    canUndo:
+      !readOnly &&
+      !active?.specQuantityLocked &&
+      historyRef.current.past.length > 0,
+    canRedo:
+      !readOnly &&
+      !active?.specQuantityLocked &&
+      historyRef.current.future.length > 0,
     undo,
     redo,
     setRows: updateActiveRows,
