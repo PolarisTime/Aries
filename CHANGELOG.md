@@ -1,3 +1,10 @@
+## [10.3.2](https://github.com/PolarisTime/Aries/compare/v10.3.1...v10.3.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 静态数据目录改名避免遮蔽 SPA 路由导致 403 ([d2de312](https://github.com/PolarisTime/Aries/commit/d2de312f540d35a425879ddee0817d87af210e09))
+
 ## [10.3.1](https://github.com/PolarisTime/Aries/compare/v10.3.0...v10.3.1) (2026-09-16)
 
 
