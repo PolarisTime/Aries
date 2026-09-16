@@ -93,6 +93,43 @@ export async function apiDeleteNoContent(
   await http.delete<unknown>(url, config)
 }
 
+/** POST 并保留响应头(用于读取 X-Resource-Version 等元数据)。 */
+export async function apiPostResponse<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<{ data: output<Schema>; headers: AxiosResponse['headers'] }> {
+  const response = await http.postResponse<unknown>(url, data, config)
+  return {
+    data: parseApiContract(schema, response.data, `POST ${url}`),
+    headers: response.headers,
+  }
+}
+
+/** PUT 并保留响应头。 */
+export async function apiPutResponse<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  data?: unknown,
+  config?: ApiRequestConfig,
+): Promise<{ data: output<Schema>; headers: AxiosResponse['headers'] }> {
+  const response = await http.putResponse<unknown>(url, data, config)
+  return {
+    data: parseApiContract(schema, response.data, `PUT ${url}`),
+    headers: response.headers,
+  }
+}
+
+/** DELETE(无响应体) 并保留响应头。 */
+export async function apiDeleteResponse(
+  url: string,
+  config?: ApiRequestConfig,
+): Promise<{ headers: AxiosResponse['headers'] }> {
+  const response = await http.deleteResponse<unknown>(url, config)
+  return { headers: response.headers }
+}
+
 export function downloadGet(
   url: string,
   config?: ApiRequestConfig,

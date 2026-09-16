@@ -62,6 +62,24 @@ describe('quote-edit-locks API', () => {
     expect(apiPostMock.mock.calls[0][0]).toBe('/quote-sheets/9001/edit-locks')
   })
 
+  it('强制接管时携带 force=true 查询参数', async () => {
+    apiPostMock.mockResolvedValue({
+      sheetId: '9001',
+      locked: true,
+      ownerId: '77',
+      ownerName: '张三',
+      mine: true,
+      ttlSeconds: 120,
+    })
+
+    await acquireQuoteSheetEditLock('9001', { force: true })
+
+    const config = apiPostMock.mock.calls[0][3] as {
+      params?: { force?: boolean }
+    }
+    expect(config.params).toEqual({ force: true })
+  })
+
   it('释放走 DELETE 且抑制全局 409', async () => {
     apiDeleteMock.mockResolvedValue(undefined)
 

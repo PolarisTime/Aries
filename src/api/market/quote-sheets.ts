@@ -1,10 +1,22 @@
 import { z } from 'zod'
-import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
+import {
+  apiDeleteNoContent,
+  apiDeleteResponse,
+  apiGet,
+  apiPost,
+  apiPostResponse,
+  apiPut,
+  apiPutResponse,
+} from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
-import { normalizeVersion, withConcurrencyHeaders } from './quote-concurrency'
+import {
+  normalizeVersion,
+  readResourceVersionHeader,
+  withConcurrencyHeaders,
+} from './quote-concurrency'
 
 /** 数字或数字字符串统一为 number; 空值返回 undefined。 */
 function toOptionalNumber(value: unknown): number | undefined {
@@ -298,45 +310,66 @@ export async function updateQuoteSheetHeader(
   return normalizeSheet(response, 0)
 }
 
-/** 新增商品行(201), 返回新行。 */
+/** 行级写结果: 新行(删除时无) + 服务端权威单据版本。 */
+export type QuoteSheetItemWriteResult = {
+  item?: QuoteSheetItemRecord
+  version?: string
+}
+
+/** 新增商品行(201), 返回新行与服务端权威单据版本。 */
 export async function addQuoteSheetItem(
   id: EntityId,
   payload: QuoteSheetItemPayload,
   expectedVersion?: string,
-): Promise<QuoteSheetItemRecord> {
-  const response = await apiPost(
+): Promise<QuoteSheetItemWriteResult> {
+  const response = await apiPostResponse(
     ENDPOINTS.QUOTE_SHEET_ITEMS(id),
     itemSchema,
     payload,
     withConcurrencyHeaders(expectedVersion),
   )
-  return normalizeItem(response, 'quoteSheetItem')
+  return {
+    item: normalizeItem(response.data, 'quoteSheetItem'),
+    ...(readResourceVersionHeader(response.headers)
+      ? { version: readResourceVersionHeader(response.headers) }
+      : {}),
+  }
 }
 
-/** 整行替换商品行。 */
+/** 整行替换商品行, 返回新行与服务端权威单据版本。 */
 export async function updateQuoteSheetItem(
   id: EntityId,
   itemId: EntityId,
   payload: QuoteSheetItemPayload,
   expectedVersion?: string,
-): Promise<QuoteSheetItemRecord> {
-  const response = await apiPut(
+): Promise<QuoteSheetItemWriteResult> {
+  const response = await apiPutResponse(
     ENDPOINTS.QUOTE_SHEET_ITEM(id, itemId),
     itemSchema,
     payload,
     withConcurrencyHeaders(expectedVersion),
   )
-  return normalizeItem(response, 'quoteSheetItem')
+  return {
+    item: normalizeItem(response.data, 'quoteSheetItem'),
+    ...(readResourceVersionHeader(response.headers)
+      ? { version: readResourceVersionHeader(response.headers) }
+      : {}),
+  }
 }
 
-/** 删除商品行(204)。 */
+/** 删除商品行(204), 返回服务端权威单据版本。 */
 export async function deleteQuoteSheetItem(
   id: EntityId,
   itemId: EntityId,
   expectedVersion?: string,
-): Promise<void> {
-  await apiDeleteNoContent(
+): Promise<QuoteSheetItemWriteResult> {
+  const response = await apiDeleteResponse(
     ENDPOINTS.QUOTE_SHEET_ITEM(id, itemId),
     withConcurrencyHeaders(expectedVersion),
   )
+  return {
+    ...(readResourceVersionHeader(response.headers)
+      ? { version: readResourceVersionHeader(response.headers) }
+      : {}),
+  }
 }

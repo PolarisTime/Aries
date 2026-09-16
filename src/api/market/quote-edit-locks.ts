@@ -57,15 +57,22 @@ export async function fetchQuoteSheetEditLock(
   return normalizeEditLock(response)
 }
 
-/** 签出/续约编辑锁。他人未过期时抛 409(由调用方降级处理)。 */
+/**
+ * 签出/续约编辑锁。他人未过期时抛 409(由调用方降级处理)。
+ * @param options.force 为 true 时强制接管未过期的他人锁(需二次确认)。
+ */
 export async function acquireQuoteSheetEditLock(
   id: EntityId,
+  options?: { force?: boolean },
 ): Promise<QuoteSheetEditLock> {
   const response = await apiPost(
     ENDPOINTS.QUOTE_SHEET_EDIT_LOCK(id),
     editLockSchema,
     undefined,
-    withConcurrencyHeaders(undefined),
+    withConcurrencyHeaders(
+      undefined,
+      options?.force ? { params: { force: true } } : undefined,
+    ),
   )
   return normalizeEditLock(response)
 }

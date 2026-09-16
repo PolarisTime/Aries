@@ -1,20 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { apiGetMock, apiPutMock, apiPostMock, apiDeleteMock } = vi.hoisted(
-  () => ({
-    apiGetMock: vi.fn(),
-    apiPutMock: vi.fn(),
-    apiPostMock: vi.fn(),
-    apiDeleteMock: vi.fn(),
-  }),
-)
+const {
+  apiGetMock,
+  apiPutMock,
+  apiPostMock,
+  apiDeleteMock,
+  apiPostResponseMock,
+  apiPutResponseMock,
+  apiDeleteResponseMock,
+} = vi.hoisted(() => ({
+  apiGetMock: vi.fn(),
+  apiPutMock: vi.fn(),
+  apiPostMock: vi.fn(),
+  apiDeleteMock: vi.fn(),
+  apiPostResponseMock: vi.fn(),
+  apiPutResponseMock: vi.fn(),
+  apiDeleteResponseMock: vi.fn(),
+}))
 
 vi.mock('@/api/core/client', () => ({
   apiGet: apiGetMock,
   apiPut: apiPutMock,
   apiPost: apiPostMock,
   apiDeleteNoContent: apiDeleteMock,
+  apiPostResponse: apiPostResponseMock,
+  apiPutResponse: apiPutResponseMock,
+  apiDeleteResponse: apiDeleteResponseMock,
 }))
+
+function versionHeaders(version: string) {
+  return { 'x-resource-version': version }
+}
 
 import {
   addQuoteSheetItem,
@@ -75,6 +91,9 @@ describe('quote-sheets API', () => {
     apiPutMock.mockReset()
     apiPostMock.mockReset()
     apiDeleteMock.mockReset()
+    apiPostResponseMock.mockReset()
+    apiPutResponseMock.mockReset()
+    apiDeleteResponseMock.mockReset()
   })
 
   it('分页归一化雪花 ID 为字符串并解析供应商/数值字段', async () => {
@@ -122,7 +141,7 @@ describe('quote-sheets API', () => {
     expect(payload.items[0].prices[0].supplierId).toBe('77')
   })
 
-  it('更新请求携带 If-Match 版本并抑制 409 全局提示', async () => {
+  it('更新请求携带 X-Resource-Version 版本并抑制 409/412/428 全局提示', async () => {
     apiPutMock.mockResolvedValue(page.content[0])
 
     await updateQuoteSheet(
@@ -144,8 +163,11 @@ describe('quote-sheets API', () => {
       headers: Record<string, string>
       suppressGlobalErrorStatuses: number[]
     }
-    expect(config.headers['If-Match']).toBe('3')
+    expect(config.headers['X-Resource-Version']).toBe('3')
+    expect(config.headers['If-Match']).toBeUndefined()
     expect(config.suppressGlobalErrorStatuses).toContain(409)
+    expect(config.suppressGlobalErrorStatuses).toContain(412)
+    expect(config.suppressGlobalErrorStatuses).toContain(428)
   })
 
   it('创建与删除走集合与资源路径', async () => {
@@ -191,14 +213,22 @@ describe('quote-sheets API', () => {
     expect(payload).not.toHaveProperty('brands')
     expect(payload).not.toHaveProperty('items')
     expect(
-      (config as { headers: Record<string, string> }).headers['If-Match'],
+      (config as { headers: Record<string, string> }).headers[
+        'X-Resource-Version'
+      ],
     ).toBe('3')
   })
 
-  it('行新增/整行替换/删除走行级子资源路径', async () => {
-    apiPostMock.mockResolvedValue(page.content[0].items[0])
-    apiPutMock.mockResolvedValue(page.content[0].items[0])
-    apiDeleteMock.mockResolvedValue(undefined)
+  it('行新增/整行替换/删除走行级子资源路径并回传服务端版本', async () => {
+    apiPostResponseMock.mockResolvedValue({
+      data: page.content[0].items[0],
+      headers: versionHeaders('5'),
+    })
+    apiPutResponseMock.mockResolvedValue({
+      data: page.content[0].items[0],
+      headers: versionHeaders('6'),
+    })
+    apiDeleteResponseMock.mockResolvedValue({ headers: versionHeaders('7') })
 
     const created = await addQuoteSheetItem(
       '700500000000000130',
@@ -209,9 +239,9 @@ describe('quote-sheets API', () => {
         length: '9米',
         prices: [{ brandName: '中天', spotPrice: 3200 }],
       },
-      '5',
+      '4',
     )
-    await updateQuoteSheetItem(
+    const updated = await updateQuoteSheetItem(
       '700500000000000130',
       '700500000000000140',
       {
@@ -221,23 +251,30 @@ describe('quote-sheets API', () => {
         length: '9米',
         prices: [{ brandName: '中天', spotPrice: 3300 }],
       },
+      '5',
+    )
+    const deleted = await deleteQuoteSheetItem(
+      '700500000000000130',
+      '700500000000000140',
       '6',
     )
-    await deleteQuoteSheetItem('700500000000000130', '700500000000000140', '7')
 
-    expect(created.id).toBe('700500000000000140')
-    expect(apiPostMock.mock.calls[0][0]).toBe(
+    expect(created.item?.id).toBe('700500000000000140')
+    expect(created.version).toBe('5')
+    expect(updated.version).toBe('6')
+    expect(deleted.version).toBe('7')
+    expect(apiPostResponseMock.mock.calls[0][0]).toBe(
       '/quote-sheets/700500000000000130/items',
     )
-    expect(apiPutMock.mock.calls[0][0]).toBe(
+    expect(apiPutResponseMock.mock.calls[0][0]).toBe(
       '/quote-sheets/700500000000000130/items/700500000000000140',
     )
-    expect(apiDeleteMock.mock.calls[0][0]).toBe(
+    expect(apiDeleteResponseMock.mock.calls[0][0]).toBe(
       '/quote-sheets/700500000000000130/items/700500000000000140',
     )
-    expect(
-      (apiDeleteMock.mock.calls[0][1] as { headers: Record<string, string> })
-        .headers['If-Match'],
-    ).toBe('7')
+    const deleteConfig = apiDeleteResponseMock.mock.calls[0][1] as {
+      headers: Record<string, string>
+    }
+    expect(deleteConfig.headers['X-Resource-Version']).toBe('6')
   })
 })

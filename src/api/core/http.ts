@@ -56,6 +56,17 @@ function createApiClient(instance: AxiosInstance) {
     ): Promise<T> {
       return asApiResponse<T>(instance.put<T, T>(url, data, config))
     },
+    putResponse<T = unknown>(
+      url: string,
+      data?: unknown,
+      config?: ApiRequestConfig,
+    ): Promise<AxiosResponse<T>> {
+      const fullResponseConfig: ApiRequestConfig = {
+        ...config,
+        returnFullResponse: true,
+      }
+      return instance.put<T, AxiosResponse<T>>(url, data, fullResponseConfig)
+    },
     patch<T = unknown>(
       url: string,
       data?: unknown,
@@ -65,6 +76,16 @@ function createApiClient(instance: AxiosInstance) {
     },
     delete<T = unknown>(url: string, config?: ApiRequestConfig): Promise<T> {
       return asApiResponse<T>(instance.delete<T, T>(url, config))
+    },
+    deleteResponse<T = unknown>(
+      url: string,
+      config?: ApiRequestConfig,
+    ): Promise<AxiosResponse<T>> {
+      const fullResponseConfig: ApiRequestConfig = {
+        ...config,
+        returnFullResponse: true,
+      }
+      return instance.delete<T, AxiosResponse<T>>(url, fullResponseConfig)
     },
     get instance() {
       return instance

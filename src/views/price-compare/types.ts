@@ -35,7 +35,7 @@ export type ProjectConfig = {
   designatedBrands?: string[]
   /** 备注信息(项目级文本) */
   remark?: string
-  /** 服务端乐观锁版本号(用于 If-Match) */
+  /** 服务端乐观锁版本号(用于 X-Resource-Version) */
   version?: string
 }
 
@@ -76,7 +76,7 @@ export type PriceSheet = {
   /** 服务端保存的品牌快照(仅回填配置兜底用) */
   brands?: Brand[]
   remark?: string
-  /** 服务端乐观锁版本号(用于 If-Match) */
+  /** 服务端乐观锁版本号(用于 X-Resource-Version) */
   version?: string
 }
 

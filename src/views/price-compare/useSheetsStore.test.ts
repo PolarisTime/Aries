@@ -121,22 +121,28 @@ describe('useSheetsStore 服务端数据源', () => {
       .mockReset()
       .mockResolvedValue(sheetRecord({ version: '1' }))
     api.addQuoteSheetItem.mockReset().mockResolvedValue({
-      id: '7002',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: 12,
-      length: '9米',
-      prices: [],
+      item: {
+        id: '7002',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+        prices: [],
+      },
+      version: '1',
     })
     api.updateQuoteSheetItem.mockReset().mockResolvedValue({
-      id: '7001',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: 12,
-      length: '9米',
-      prices: [],
+      item: {
+        id: '7001',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+        prices: [],
+      },
+      version: '1',
     })
-    api.deleteQuoteSheetItem.mockReset().mockResolvedValue(undefined)
+    api.deleteQuoteSheetItem.mockReset().mockResolvedValue({ version: '1' })
     api.acquireQuoteSheetEditLock.mockReset().mockResolvedValue({
       sheetId: '9001',
       locked: true,
@@ -338,8 +344,63 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.addQuoteSheetItem.mock.calls[0][0]).toBe('9001')
   })
 
-  it('保存冲突时提示并支持重新加载丢弃本地改动', async () => {
+  it('行级写后回填服务端权威版本而非本地 +1 猜测', async () => {
+    api.updateQuoteSheetItem.mockResolvedValue({
+      item: {
+        id: '7001',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+        prices: [],
+      },
+      version: '7',
+    })
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.active.version).toBe('0')
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { [inputKey]: { spot: 3300 } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    expect(store.current.active.version).toBe('7')
+  })
+
+  it('保存遇到他人签出锁冲突时提示并进入只读(不弹版本冲突窗)', async () => {
     api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    api.fetchQuoteSheetEditLock.mockResolvedValue({
+      sheetId: '9001',
+      locked: true,
+      mine: false,
+      ownerName: '李四',
+      ttlSeconds: 120,
+    })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(vi.mocked(message.warning)).toHaveBeenCalled()
+    expect(vi.mocked(modal.confirm)).not.toHaveBeenCalled()
+    expect(store.current.readOnly).toBe(true)
+    expect(store.current.editLock?.ownerName).toBe('李四')
+  })
+
+  it('保存冲突时提示并支持重新加载丢弃本地改动', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
     const store = renderStore()
     await hydrate(store)
 
@@ -369,7 +430,7 @@ describe('useSheetsStore 服务端数据源', () => {
   })
 
   it('同一资源连续两次 409 只弹一次冲突弹窗', async () => {
-    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
     const store = renderStore()
     await hydrate(store)
 
@@ -396,7 +457,7 @@ describe('useSheetsStore 服务端数据源', () => {
   })
 
   it('以我的覆盖成功后回填最新版本且不重发旧版本', async () => {
-    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
     const store = renderStore()
     await hydrate(store)
 
@@ -425,7 +486,7 @@ describe('useSheetsStore 服务端数据源', () => {
   })
 
   it('以我的覆盖仍冲突时保留同一弹窗且重试一次', async () => {
-    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
     const store = renderStore()
     await hydrate(store)
 
@@ -438,7 +499,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
 
     api.fetchQuoteSheet.mockResolvedValue(sheetRecord({ version: '5' }))
-    api.updateQuoteSheet.mockRejectedValue({ status: 409, code: 4090 })
+    api.updateQuoteSheet.mockRejectedValue({ status: 412, code: 4120 })
     const options = vi.mocked(modal.confirm).mock.calls[0][0] as {
       onOk: () => Promise<void>
     }
@@ -493,7 +554,10 @@ describe('useSheetsStore 服务端数据源', () => {
       await store.current.acquireEditLock()
     })
 
-    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith(
+      '9001',
+      undefined,
+    )
     expect(store.current.editLock?.mine).toBe(true)
     expect(store.current.readOnly).toBe(false)
   })

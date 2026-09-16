@@ -43,7 +43,8 @@ export type QuoteProjectConfigRecord = {
   designatedBrands: string[]
   remark?: string
   brands: QuoteProjectBrandRecord[]
-  version?: string
+  /** 服务端权威版本; 未保存过时为 '0'。 */
+  version: string
 }
 
 export type QuoteProjectConfigPayload = {
@@ -73,9 +74,7 @@ function normalizeConfig(
       categories: brand.categories ?? [],
       sortOrder: toNumber(brand.sortOrder, index),
     })),
-    ...(normalizeVersion(raw.version)
-      ? { version: normalizeVersion(raw.version) }
-      : {}),
+    version: normalizeVersion(raw.version) ?? '0',
     ...(raw.remark ? { remark: raw.remark } : {}),
   }
 }
