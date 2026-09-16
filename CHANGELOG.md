@@ -1,3 +1,10 @@
+# [10.6.0](https://github.com/PolarisTime/Aries/compare/v10.5.0...v10.6.0) (2026-09-16)
+
+
+### Features
+
+* **master:** 供应商资料新增简称，比价现货价下拉优先展示简称 ([485efd6](https://github.com/PolarisTime/Aries/commit/485efd6f983243a53a33bd82f03e5881c15450c4))
+
 # [10.5.0](https://github.com/PolarisTime/Aries/compare/v10.4.0...v10.5.0) (2026-09-16)
 
 
