@@ -1,3 +1,16 @@
+# [10.8.0](https://github.com/PolarisTime/Aries/compare/v10.7.0...v10.8.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 并发前置条件改用 X-Resource-Version 并区分 412/409 ([be91dad](https://github.com/PolarisTime/Aries/commit/be91dad4c96986d9746b79deb8a617fdf538b9df))
+* **price-compare:** 收敛并发冲突弹窗，避免重复弹出 ([695c22a](https://github.com/PolarisTime/Aries/commit/695c22ac1a6e2993b232e1eff6a097161b3bc96a))
+
+
+### Features
+
+* **price-compare:** 行级增量保存与编辑签出体验 ([01d34cf](https://github.com/PolarisTime/Aries/commit/01d34cf8a8e85d9be7d1f454205e98623448466a))
+
 # [10.7.0](https://github.com/PolarisTime/Aries/compare/v10.6.1...v10.7.0) (2026-09-16)
 
 
