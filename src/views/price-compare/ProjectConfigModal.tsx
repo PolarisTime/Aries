@@ -15,7 +15,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
 import { CATEGORIES } from './core'
@@ -196,6 +196,14 @@ function BrandSection({
         (!query || name.toLowerCase().includes(query)),
     )
   }, [brandOptions, selectedBrandSet, keyword])
+  /** 每个品牌的启用类别集合: 供渲染时 O(1) 判断, 避免循环内 includes。 */
+  const categorySetByName = useMemo(() => {
+    const result: Record<string, Set<string>> = {}
+    for (const name of brandOptions) {
+      result[name] = new Set(draft.categoryMap[name] ?? CATEGORIES)
+    }
+    return result
+  }, [brandOptions, draft.categoryMap])
 
   const add = (names: string[]) =>
     onChange({ brands: [...new Set([...draft.brands, ...names])] })
@@ -299,9 +307,9 @@ function BrandSection({
                         {CATEGORIES.map((category) => (
                           <Tag.CheckableTag
                             key={category}
-                            checked={(
-                              draft.categoryMap[name] ?? CATEGORIES
-                            ).includes(category)}
+                            checked={
+                              categorySetByName[name]?.has(category) ?? false
+                            }
                             onChange={(checked) =>
                               toggleCategory(name, category, checked)
                             }
@@ -579,10 +587,16 @@ export function ProjectConfigModal({
   const [draft, setDraft] = useState<ProjectConfigDraft>(() =>
     createDraft(config, brandOptions, varieties),
   )
+  const wasOpenRef = useRef(false)
 
+  // 仅在 open 由 false -> true 时初始化草稿; 打开期间 config/brandOptions 变化
+  // (保存回填版本、后台刷新)不会重置用户正在编辑的内容, 也避免依赖不稳定的
+  // brandOptions 数组造成的重复 setDraft。
   useEffect(() => {
-    if (!open) return
-    setDraft(createDraft(config, brandOptions, varieties))
+    if (open && !wasOpenRef.current) {
+      setDraft(createDraft(config, brandOptions, varieties))
+    }
+    wasOpenRef.current = open
   }, [open, brandOptions, config, varieties])
 
   const patch = (partial: Partial<ProjectConfigDraft>) =>

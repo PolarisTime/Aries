@@ -1,13 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { Empty, Flex, Skeleton, Watermark } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  fetchSupplierOptions,
-  supplierDisplayName,
-} from '@/api/master/supplier-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
@@ -17,8 +10,13 @@ import {
   PriceCompareBatchBar,
   PriceCompareProjectPicker,
 } from './price-compare-pickers'
-import { projectGroupsOf, TOUR_KEY } from './price-compare-support'
+import { projectGroupsOf } from './price-compare-support'
 import { PriceCompareTour } from './price-compare-tour'
+import {
+  useInitialProjectAssignment,
+  useSupplierSelectOptions,
+  useUndoRedoShortcuts,
+} from './price-compare-view-hooks'
 import { SheetPanel } from './SheetPanel'
 import { useMaterialBrands } from './useMaterialBrands'
 import { usePriceCompareData } from './usePriceCompareData'
@@ -32,9 +30,11 @@ export function PriceCompareView() {
   const { data, varieties, projects, catalog, mergeMatches } =
     usePriceCompareData()
   const materialBrands = useMaterialBrands()
-  const brandOptions = materialBrands.length
-    ? materialBrands
-    : catalog.map((item) => item.name)
+  const brandOptions = useMemo(
+    () =>
+      materialBrands.length ? materialBrands : catalog.map((item) => item.name),
+    [materialBrands, catalog],
+  )
 
   const store = useSheetsStore()
   const {
@@ -44,6 +44,7 @@ export function PriceCompareView() {
     active,
     rows,
     config,
+    configLoaded,
     setConfig,
     undo,
     redo,
@@ -65,58 +66,33 @@ export function PriceCompareView() {
   const [configOpen, setConfigOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
-  const initialized = useRef(false)
   const urlParamsApplied = useRef(false)
+  /** 已按项目完成品牌回填的项目 id: 避免用户显式清空品牌后被再次自动回填。 */
+  const brandAutoFilledRef = useRef<Set<string>>(new Set())
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
-  const { data: supplierOptions = [] } = useQuery({
-    queryKey: QUERY_KEYS.masterOptions.supplier,
-    queryFn: () => fetchSupplierOptions(),
-    enabled: isAuthenticated,
-    staleTime: STALE_MASTER_OPTIONS,
-  })
-  // 现货价单元格空间有限: 优先展示供应商简称
-  const supplierSelectOptions = useMemo(
-    () =>
-      supplierOptions.map((option) => ({
-        value: option.value,
-        label: supplierDisplayName(option),
-      })),
-    [supplierOptions],
-  )
+  const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
+  useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
+  useUndoRedoShortcuts(undo, redo)
 
+  // 配置首次从服务端加载且品牌为空时, 用商品品牌目录兜底; 每个项目只回填一次,
+  // 用户显式清空品牌后不再自动回填。未加载完成前不回填, 避免覆盖服务端配置。
   useEffect(() => {
-    if (initialized.current || !projects.length) return
-    initialized.current = true
-    assignProjectToUnassigned(
-      projects[0].id,
-      projects[0].abbr || projects[0].name,
-    )
-    if (!localStorage.getItem(TOUR_KEY)) setTourOpen(true)
-  }, [projects, assignProjectToUnassigned])
-
-  useEffect(() => {
-    if (active?.projectId && catalog.length && !config.brands.length)
+    const projectId = active?.projectId
+    if (!projectId || !configLoaded || !catalog.length) return
+    if (brandAutoFilledRef.current.has(projectId)) return
+    brandAutoFilledRef.current.add(projectId)
+    if (!config.brands.length)
       setBrands(
         catalog.map((item) => ({ name: item.name, freight: item.freight })),
       )
-  }, [active?.projectId, catalog, config.brands.length, setBrands])
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return
-      const key = event.key.toLowerCase()
-      if (key === 'z' && !event.shiftKey) {
-        event.preventDefault()
-        undo()
-      } else if ((key === 'z' && event.shiftKey) || key === 'y') {
-        event.preventDefault()
-        redo()
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [undo, redo])
+  }, [
+    active?.projectId,
+    configLoaded,
+    catalog,
+    config.brands.length,
+    setBrands,
+  ])
 
   // 支持从「行情同步」页跳转携带 refDate/refPeriod
   useEffect(() => {

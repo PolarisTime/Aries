@@ -52,6 +52,9 @@ const STALE_NOTICE_KEY = 'price-compare-stale'
 /** 版本不匹配: 412 Precondition Failed。 */
 const VERSION_CONFLICT_STATUS = 412
 const VERSION_CONFLICT_CODE = 4120
+/** 缺少版本前置条件: 428 Precondition Required(需要带版本重试)。 */
+const PRECONDITION_REQUIRED_STATUS = 428
+const PRECONDITION_REQUIRED_CODE = 4280
 /** 他人签出锁冲突: 409 Conflict。 */
 const LOCK_CONFLICT_STATUS = 409
 const LOCK_CONFLICT_CODE = 4090
@@ -98,10 +101,15 @@ type Snapshot = {
   configs: Record<string, ProjectConfig>
 }
 
-/** 版本冲突: 412 / 4120(资源版本已变更)。 */
+/** 版本冲突: 412/4120(版本已变更) 或 428/4280(缺少版本前置条件)。 */
 function isVersionConflict(error: unknown): boolean {
   const { status, code } = readRequestError(error)
-  return status === VERSION_CONFLICT_STATUS || code === VERSION_CONFLICT_CODE
+  return (
+    status === VERSION_CONFLICT_STATUS ||
+    status === PRECONDITION_REQUIRED_STATUS ||
+    code === VERSION_CONFLICT_CODE ||
+    code === PRECONDITION_REQUIRED_CODE
+  )
 }
 
 /** 签出锁冲突: 409 / 4090(单据被他人签出)。 */
@@ -362,6 +370,8 @@ export type SheetsStore = {
   conflict: SheetsConflict | null
   /** 当前项目配置 */
   config: ProjectConfig
+  /** 当前项目配置是否已从服务端加载(未加载时不应自动回填品牌) */
+  configLoaded: boolean
   /** 当前批次编辑签出状态; null 表示未签出/降级可编辑 */
   editLock: EditLockView | null
   /** 当前批次是否只读(被他人签出) */
@@ -424,6 +434,8 @@ export function useSheetsStore(): SheetsStore {
   })
   /** 本地单据 id -> 服务端单据 id(新建成功后填充)。 */
   const serverIdRef = useRef<Map<string, string>>(new Map())
+  /** 本地数据版本指纹: 每次提交/静默写入自增, 用于刷新期间检测新增编辑。 */
+  const dataRevisionRef = useRef(0)
   const sheetTimersRef = useRef<Map<string, number>>(new Map())
   const configTimerRef = useRef<number | null>(null)
   const hydratedRef = useRef(false)
@@ -475,6 +487,7 @@ export function useSheetsStore(): SheetsStore {
   const mutate = useCallback((updater: (current: Snapshot) => Snapshot) => {
     const next = updater(stateRef.current)
     if (next === stateRef.current) return
+    dataRevisionRef.current += 1
     stateRef.current = next
     setState(next)
     forceRender((version) => version + 1)
@@ -500,6 +513,7 @@ export function useSheetsStore(): SheetsStore {
     }
     history.lastKey = coalesceKey ?? ''
     history.lastTime = now
+    dataRevisionRef.current += 1
     stateRef.current = next
     setState(next)
     forceRender((version) => version + 1)
@@ -1035,44 +1049,88 @@ export function useSheetsStore(): SheetsStore {
     [saveConfigNow],
   )
 
-  /** 拉取服务端单据覆盖本地; 有未保存改动时跳过(返回 false)。 */
+  /** 供卸载/隐藏时调用最新保存函数, 避免依赖变量带来的闭包失效。 */
+  const saveSheetNowRef = useRef(saveSheetNow)
+  const saveConfigNowRef = useRef(saveConfigNow)
+  useEffect(() => {
+    saveSheetNowRef.current = saveSheetNow
+    saveConfigNowRef.current = saveConfigNow
+  }, [saveSheetNow, saveConfigNow])
+
+  /** 清空防抖 timer 并立即补跑最后一次保存(卸载/页面隐藏时避免丢失编辑)。 */
+  const flushPendingSaves = useCallback(() => {
+    const sheetIds = [...sheetTimersRef.current.keys()]
+    for (const sheetId of sheetIds) {
+      const timer = sheetTimersRef.current.get(sheetId)
+      if (timer !== undefined) window.clearTimeout(timer)
+      sheetTimersRef.current.delete(sheetId)
+    }
+    for (const sheetId of sheetIds) void saveSheetNowRef.current(sheetId)
+    if (configTimerRef.current !== null) {
+      window.clearTimeout(configTimerRef.current)
+      configTimerRef.current = null
+    }
+    const projectId = configTimerProjectRef.current
+    configTimerProjectRef.current = null
+    if (projectId) void saveConfigNowRef.current(projectId)
+  }, [])
+
+  /** 拉取服务端单据覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
   const refreshSheets = useCallback(async (): Promise<boolean> => {
-    if (
+    const hasPendingSheetSave = () =>
       sheetTimersRef.current.size > 0 ||
       [...inflightRef.current, ...pendingRef.current].some((key) =>
         key.startsWith('sheet:'),
       )
-    ) {
+    if (hasPendingSheetSave()) return false
+    if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
       return false
     }
+    const revision = dataRevisionRef.current
     const records = await fetchQuoteSheets()
+    // await 期间出现新编辑或新保存/冲突: 放弃本次刷新, 避免覆盖本地改动
+    if (dataRevisionRef.current !== revision) return false
+    if (hasPendingSheetSave()) return false
+    if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
+      return false
+    }
     if (!records.length) return true
-    const localOnly = stateRef.current.sheets.filter(
-      (sheet) => !serverIdRef.current.has(sheet.id),
-    )
     const serverSheets = records.map(toPriceSheet)
-    serverIdRef.current = new Map(
-      serverSheets.map((sheet) => [sheet.id, sheet.id] as const),
-    )
+    const serverIds = new Set(serverSheets.map((sheet) => sheet.id))
+    // 保留已有"本地 id -> 服务端 id"映射(含服务端列表暂未反映的新建单据),
+    // 再为服务端单据补恒等映射。避免本地新建单据丢失映射后被再次 create。
+    const nextServerMap = new Map(serverIdRef.current)
+    for (const sheet of serverSheets) {
+      if (!nextServerMap.has(sheet.id)) nextServerMap.set(sheet.id, sheet.id)
+    }
+    serverIdRef.current = nextServerMap
     for (const sheet of serverSheets) {
       baselineRef.current.set(sheet.id, buildBaseline(sheet))
     }
+    const current = stateRef.current
+    const localOnly = current.sheets.filter((sheet) => {
+      const serverId = serverIdRef.current.get(sheet.id)
+      return !serverId || !serverIds.has(serverId)
+    })
     const next = [...serverSheets, ...localOnly]
     if (!next.length) return true
-    mutate((current) => ({
-      ...current,
+    mutate((snapshot) => ({
+      ...snapshot,
       sheets: next,
-      activeId: next.some((sheet) => sheet.id === current.activeId)
-        ? current.activeId
+      activeId: next.some((sheet) => sheet.id === snapshot.activeId)
+        ? snapshot.activeId
         : next[0].id,
     }))
     return true
   }, [mutate])
 
-  /** 拉取服务端项目配置覆盖本地; 有未保存改动时跳过(返回 false)。 */
+  /** 拉取服务端项目配置覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
   const refreshConfig = useCallback(
     async (projectId: string): Promise<boolean> => {
       if (!projectId) return true
+      if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
+        return false
+      }
       if (
         configTimerRef.current !== null ||
         inflightRef.current.has(`config:${projectId}`) ||
@@ -1080,7 +1138,19 @@ export function useSheetsStore(): SheetsStore {
       ) {
         return false
       }
+      const revision = dataRevisionRef.current
       const record = await fetchQuoteProjectConfig(projectId)
+      if (dataRevisionRef.current !== revision) return false
+      if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
+        return false
+      }
+      if (
+        configTimerRef.current !== null ||
+        inflightRef.current.has(`config:${projectId}`) ||
+        pendingRef.current.has(`config:${projectId}`)
+      ) {
+        return false
+      }
       const fallbackBrands = stateRef.current.sheets.find(
         (sheet) => sheet.projectId === projectId && sheet.brands?.length,
       )?.brands
@@ -1337,9 +1407,20 @@ export function useSheetsStore(): SheetsStore {
     void acquireEditLock(target)
   }, [state.activeId, token, loading, acquireEditLock, releaseEditLock])
 
-  // 卸载: 释放当前批次锁
+  // 页面隐藏/卸载: 补跑最后一次防抖保存并释放当前批次锁
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushPendingSaves()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [flushPendingSaves])
+
   useEffect(
     () => () => {
+      flushPendingSaves()
       const held = heldLockRef.current
       if (!held) return
       window.clearInterval(held.timer)
@@ -1347,7 +1428,7 @@ export function useSheetsStore(): SheetsStore {
       if (serverId) void releaseQuoteSheetEditLock(serverId).catch(() => {})
       heldLockRef.current = null
     },
-    [],
+    [flushPendingSaves],
   )
 
   const active = useMemo(
@@ -1357,6 +1438,10 @@ export function useSheetsStore(): SheetsStore {
     [state.sheets, state.activeId],
   )
   const config = configOf(active?.projectId ?? '')
+  /** 当前项目配置是否已从服务端加载(用于区分未初始化与用户显式清空品牌)。 */
+  const configLoaded = Boolean(
+    active?.projectId && state.configs[active.projectId],
+  )
   const activeLock =
     editLock && editLock.sheetId === state.activeId ? editLock : null
   const readOnly = Boolean(activeLock && activeLock.locked && !activeLock.mine)
@@ -1505,8 +1590,11 @@ export function useSheetsStore(): SheetsStore {
     scheduleSaveSheet(activeId)
   }
 
-  const setActiveId = (id: string) =>
-    setState((current) => ({ ...current, activeId: id }))
+  const setActiveId = (id: string) => {
+    const next = { ...stateRef.current, activeId: id }
+    stateRef.current = next
+    setState(next)
+  }
 
   const patchSheet = (
     id: string,
@@ -1567,6 +1655,31 @@ export function useSheetsStore(): SheetsStore {
   const removeSheet = (id: string) => {
     const serverId = serverIdRef.current.get(id)
     serverIdRef.current.delete(id)
+    baselineRef.current.delete(id)
+    // 清理该单据的防抖保存 timer 与排队项, 避免删除后仍触发保存
+    const timer = sheetTimersRef.current.get(id)
+    if (timer !== undefined) {
+      window.clearTimeout(timer)
+      sheetTimersRef.current.delete(id)
+    }
+    pendingRef.current.delete(`sheet:${id}`)
+    // 清理指向该单据的冲突弹窗/队列, 避免弹窗指向已删除单据后重新加载 404
+    const isSheetConflict = (item: SheetsConflict) =>
+      item.kind !== 'config' && item.id === id
+    conflictQueueRef.current = conflictQueueRef.current.filter(
+      (item) => !isSheetConflict(item),
+    )
+    if (
+      activeConflictRef.current &&
+      isSheetConflict(activeConflictRef.current)
+    ) {
+      conflictModalRef.current?.destroy?.()
+      conflictModalRef.current = null
+      activeConflictRef.current = null
+      setConflict(null)
+      const nextConflict = conflictQueueRef.current.shift()
+      if (nextConflict) openConflictRef.current(nextConflict)
+    }
     apply((current) => {
       const next = current.sheets.filter((sheet) => sheet.id !== id)
       if (!next.length) return current
@@ -1593,6 +1706,7 @@ export function useSheetsStore(): SheetsStore {
     rows: active?.rows ?? [],
     conflict,
     config,
+    configLoaded,
     editLock: activeLock,
     readOnly,
     setConfig,

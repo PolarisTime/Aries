@@ -602,4 +602,223 @@ describe('useSheetsStore 服务端数据源', () => {
 
     expect(vi.mocked(modal.confirm)).toHaveBeenCalled()
   })
+
+  it('本地新建单据落库后聚焦刷新不重复且不再次创建', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    const localId = store.current.activeId
+    expect(store.current.sheets).toHaveLength(2)
+
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord(),
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    ])
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    const ids = store.current.sheets.map((sheet) => sheet.id)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids).size).toBe(2)
+    expect(ids).toContain('9001')
+    expect(ids).toContain('9002')
+    expect(ids).not.toContain(localId)
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+  })
+
+  it('刷新列表缺少已创建单据时保留本地单据与本地→服务端映射', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    const localId = store.current.activeId
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+
+    // 服务端列表暂未包含新单据(陈旧): 本地单据应保留而不是被丢弃
+    api.fetchQuoteSheets.mockResolvedValue([sheetRecord()])
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(store.current.sheets.map((sheet) => sheet.id)).toContain(localId)
+
+    // 映射仍保留: 再次编辑走更新(9002)而不是重新创建
+    act(() => {
+      store.current.patchSheet(localId, { name: '批次 2 改' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+    expect(api.updateQuoteSheetHeader).toHaveBeenCalledTimes(1)
+    expect(api.updateQuoteSheetHeader.mock.calls[0][0]).toBe('9002')
+  })
+
+  it('冲突弹窗打开期间刷新不覆盖本地改动且仍可覆盖', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { name: '本地改名' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    expect(store.current.active.name).toBe('本地改名')
+
+    api.fetchQuoteSheets.mockClear()
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({ name: '服务端改名' }),
+    ])
+    api.fetchQuoteProjectConfig.mockClear()
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
+    expect(api.fetchQuoteProjectConfig).not.toHaveBeenCalled()
+    expect(store.current.active.name).toBe('本地改名')
+
+    api.fetchQuoteSheet.mockResolvedValue(sheetRecord({ version: '5' }))
+    api.updateQuoteSheet.mockResolvedValue(sheetRecord({ version: '6' }))
+    const options = vi.mocked(modal.confirm).mock.calls[0][0] as {
+      onOk: () => Promise<void>
+    }
+    await act(async () => {
+      await options.onOk()
+    })
+    expect(api.updateQuoteSheet).toHaveBeenCalledTimes(1)
+    const payload = api.updateQuoteSheet.mock.calls[0][1] as { name: string }
+    expect(payload.name).toBe('本地改名')
+    expect(store.current.conflict).toBeNull()
+  })
+
+  it('刷新 await 期间的新编辑不会被覆盖', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    let resolveFetch!: (value: unknown) => void
+    api.fetchQuoteSheets.mockClear()
+    api.fetchQuoteSheets.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await Promise.resolve()
+    })
+    expect(api.fetchQuoteSheets).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { name: '等待中改名' })
+    })
+
+    await act(async () => {
+      resolveFetch([sheetRecord({ name: '服务端改名' })])
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(store.current.active.name).toBe('等待中改名')
+  })
+
+  it('表头保存返回 428 时进入版本冲突处理而非泛化报错', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 428, code: 4280 })
+    const store = renderStore()
+    await hydrate(store)
+    vi.mocked(message.error).mockClear()
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    expect(store.current.conflict).toEqual({
+      kind: 'sheet',
+      id: store.current.activeId,
+    })
+    expect(vi.mocked(message.error)).not.toHaveBeenCalled()
+  })
+
+  it('删除单据时关闭指向它的冲突弹窗', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+    const targetId = store.current.activeId
+
+    act(() => {
+      store.current.removeSheet(targetId)
+    })
+    expect(store.current.conflict).toBeNull()
+  })
 })
