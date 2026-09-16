@@ -70,6 +70,8 @@ export type PriceSheet = {
   refPeriod: string
   /** 参考网价锁定: 仅锁定参照日期/时段, 网价仍随刷新变化 */
   locked?: boolean
+  /** 锁定规格和数量: 商品选择与数量输入只读 */
+  specQuantityLocked?: boolean
   lengthPremium: number
   inputs: SheetInputs
   rows: PriceRow[]

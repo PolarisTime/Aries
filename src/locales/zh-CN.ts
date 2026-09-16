@@ -2184,6 +2184,11 @@ export const zhCN = {
       unlockRef: '解锁参照',
       lockRefTooltip: '锁定参照日期/时段，避免刷新或误改；网价仍随刷新更新',
       unlockRefTooltip: '解锁后可修改参照日期/时段',
+      lockSpecQuantity: '锁定规格和数量',
+      unlockSpecQuantity: '解锁规格和数量',
+      lockSpecQuantityTooltip:
+        '锁定商品规格与数量输入，避免误改；与锁定参照互不影响',
+      unlockSpecQuantityTooltip: '解锁后可修改商品规格与数量',
       supplier: '供应商',
     },
     config: {

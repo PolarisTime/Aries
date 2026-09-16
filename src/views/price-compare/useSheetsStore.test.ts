@@ -947,4 +947,28 @@ describe('useSheetsStore 服务端数据源', () => {
 
     expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
   })
+
+  it('规格数量锁定随表头 PUT 携带 specQuantityLocked', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        specQuantityLocked: true,
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetHeader).toHaveBeenCalledTimes(1)
+    const [id, payload] = api.updateQuoteSheetHeader.mock.calls[0] as [
+      string,
+      { specQuantityLocked?: boolean; brands?: unknown; items?: unknown },
+    ]
+    expect(id).toBe('9001')
+    expect(payload.specQuantityLocked).toBe(true)
+    expect(payload.brands).toBeUndefined()
+    expect(payload.items).toBeUndefined()
+  })
 })

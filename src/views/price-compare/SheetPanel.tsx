@@ -180,6 +180,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     bestOn,
     t,
     readOnly,
+    sheet,
   } = ctx
   const enabledCategories = new Set<string>()
   if (!brands.length) {
@@ -303,7 +304,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           <Select
             size="small"
             variant="borderless"
-            disabled={readOnly}
+            disabled={readOnly || Boolean(sheet.specQuantityLocked)}
             style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
             placeholder={t('priceCompare.sheet.selectProduct')}
             showSearch={{ optionFilterProp: 'label' }}
@@ -335,7 +336,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           size="small"
           variant="borderless"
           inputMode="decimal"
-          disabled={readOnly}
+          disabled={readOnly || Boolean(sheet.specQuantityLocked)}
           data-ton={row.rowId}
           defaultValue={row.row.ton === undefined ? '' : String(row.row.ton)}
           onBlur={(event) => {
@@ -857,6 +858,31 @@ function SheetHeader({
               {sheet.locked
                 ? t('priceCompare.sheet.unlockRef')
                 : t('priceCompare.sheet.lockRef')}
+            </Button>
+          </Tooltip>
+          <Tooltip
+            title={
+              sheet.specQuantityLocked
+                ? t('priceCompare.sheet.unlockSpecQuantityTooltip')
+                : t('priceCompare.sheet.lockSpecQuantityTooltip')
+            }
+          >
+            <Button
+              size="small"
+              type={sheet.specQuantityLocked ? 'primary' : 'default'}
+              icon={
+                sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />
+              }
+              disabled={readOnly}
+              onClick={() =>
+                patchSheet(sheet.id, {
+                  specQuantityLocked: !sheet.specQuantityLocked,
+                })
+              }
+            >
+              {sheet.specQuantityLocked
+                ? t('priceCompare.sheet.unlockSpecQuantity')
+                : t('priceCompare.sheet.lockSpecQuantity')}
             </Button>
           </Tooltip>
           <Button

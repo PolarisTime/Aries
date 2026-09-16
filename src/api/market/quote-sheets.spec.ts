@@ -56,6 +56,7 @@ const page = {
       refPeriod: '上午',
       lengthPremium: '30.00',
       locked: true,
+      specQuantityLocked: true,
       status: '报价',
       brands: [{ brandName: '中天', freight: '30.00', sortOrder: 0 }],
       items: [
@@ -104,6 +105,7 @@ describe('quote-sheets API', () => {
     expect(record.id).toBe('700500000000000130')
     expect(record.projectId).toBe('100000000000000001')
     expect(record.locked).toBe(true)
+    expect(record.specQuantityLocked).toBe(true)
     expect(record.lengthPremium).toBe(30)
     expect(record.items[0].ton).toBe(10.5)
     expect(record.items[0].prices[0]).toMatchObject({
@@ -112,6 +114,17 @@ describe('quote-sheets API', () => {
       supplierId: '700500000000000200',
       supplierName: '杭州物资',
     })
+  })
+
+  it('缺省规格数量锁定归一为 false', async () => {
+    apiGetMock.mockResolvedValue({
+      ...page,
+      content: [{ ...page.content[0], specQuantityLocked: undefined }],
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.specQuantityLocked).toBe(false)
   })
 
   it('更新按路径 ID 提交整体替换请求体', async () => {
@@ -124,6 +137,7 @@ describe('quote-sheets API', () => {
       refPeriod: '上午',
       lengthPremium: 30,
       locked: false,
+      specQuantityLocked: false,
       brands: [{ brandName: '中天', freight: 30, sortOrder: 0 }],
       items: [
         {
@@ -153,6 +167,7 @@ describe('quote-sheets API', () => {
         refPeriod: '上午',
         lengthPremium: 30,
         locked: false,
+        specQuantityLocked: false,
         brands: [],
         items: [],
       },
@@ -181,6 +196,7 @@ describe('quote-sheets API', () => {
       refPeriod: '上午',
       lengthPremium: 30,
       locked: false,
+      specQuantityLocked: false,
       brands: [],
       items: [],
     })
@@ -204,6 +220,7 @@ describe('quote-sheets API', () => {
         refPeriod: '上午',
         lengthPremium: 30,
         locked: true,
+        specQuantityLocked: true,
       },
       '3',
     )
@@ -212,6 +229,7 @@ describe('quote-sheets API', () => {
     expect(url).toBe('/quote-sheets/700500000000000130')
     expect(payload).not.toHaveProperty('brands')
     expect(payload).not.toHaveProperty('items')
+    expect(payload.specQuantityLocked).toBe(true)
     expect(
       (config as { headers: Record<string, string> }).headers[
         'X-Resource-Version'

@@ -59,6 +59,7 @@ const sheetSchema = z.looseObject({
   refPeriod: z.string(),
   lengthPremium: z.union([z.number(), z.string()]).nullable().optional(),
   locked: z.boolean().nullable().optional(),
+  specQuantityLocked: z.boolean().nullable().optional(),
   status: z.string().nullable().optional(),
   remark: z.string().nullable().optional(),
   brands: z.array(brandSchema).nullable().optional(),
@@ -109,6 +110,7 @@ export type QuoteSheetRecord = {
   refPeriod: string
   lengthPremium: number
   locked: boolean
+  specQuantityLocked: boolean
   status?: string
   remark?: string
   brands: QuoteSheetBrandRecord[]
@@ -126,6 +128,7 @@ export type QuoteSheetPayload = {
   refPeriod: string
   lengthPremium: number
   locked: boolean
+  specQuantityLocked: boolean
   status?: string
   remark?: string
   brands: QuoteSheetBrandRecord[]
@@ -167,6 +170,7 @@ export type QuoteSheetHeaderPayload = {
   refPeriod: string
   lengthPremium: number
   locked: boolean
+  specQuantityLocked: boolean
   status?: string
   remark?: string
 }
@@ -233,6 +237,7 @@ function normalizeSheet(
     refPeriod: raw.refPeriod,
     lengthPremium: toOptionalNumber(raw.lengthPremium) ?? 30,
     locked: Boolean(raw.locked),
+    specQuantityLocked: Boolean(raw.specQuantityLocked),
     brands: (raw.brands ?? []).map((brand, brandIndex) => ({
       brandName: brand.brandName,
       freight: toOptionalNumber(brand.freight) ?? 0,

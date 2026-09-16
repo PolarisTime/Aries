@@ -2256,6 +2256,11 @@ export const enUS = {
       lockRefTooltip:
         'Lock the reference date/period to prevent refresh or accidental edits; market prices still update on refresh',
       unlockRefTooltip: 'Unlock to change the reference date/period',
+      lockSpecQuantity: 'Lock Spec & Quantity',
+      unlockSpecQuantity: 'Unlock Spec & Quantity',
+      lockSpecQuantityTooltip:
+        'Lock the product spec and quantity inputs to prevent accidental edits; independent of reference lock',
+      unlockSpecQuantityTooltip: 'Unlock to edit product spec and quantity',
       supplier: 'Supplier',
     },
     config: {
