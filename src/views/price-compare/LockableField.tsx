@@ -91,7 +91,7 @@ export function LockableField({
           onPressEnter={(event) =>
             commit((event.target as HTMLInputElement).value)
           }
-          onBlur={(event) => commit((event.target as HTMLInputElement).value)}
+          onBlur={(event) => commit(event.currentTarget.value)}
         />
       </Tooltip>
       {locked ? (
