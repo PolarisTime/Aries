@@ -45,3 +45,11 @@ Full-stack, architecture, and quality skills:
 - 如果仓库存在未提交改动、分支分叉、rebase/merge 进行中，必须先向用户说明状态并等待明确处理指令；不得自动覆盖、回滚或强推。
 - release 后继续开发前，必须先拉取 `semantic-release` 生成的版本提交，例如 `chore(release): x.y.z`，确保本地 `package.json` 与 `CHANGELOG.md` 和远端一致。
 - 检查完成后，在工作更新中说明分支、同步结果和工作区是否干净，再继续开发。
+
+## Mandatory PGP-Signed Commits
+
+- **所有提交必须使用 PGP/GPG 签名。** 仓库已配置 `commit.gpgsign=true` 与 `user.signingkey`；禁止使用 `--no-gpg-sign`、`-c commit.gpgsign=false` 或任何临时关闭签名的方式提交。
+- 提交前确认 gpg-agent 已解锁。若签名失败（例如 batchmode 无法输入密码、`gpg failed to sign the data`），必须停止提交并请用户解锁 gpg-agent 后重试；不得改以未签名方式提交或跳过签名。
+- 每次提交后自检：`git log --format='%h %G? %s' -n <数量>` 中 `%G?` 必须为 `G`（或受信任密钥的 `U`）；出现 `N`（无签名）、`B`（坏签名）视为不合格，必须修复后再继续。
+- 若某次提交被判定未签名，优先用 `git commit --amend -S --no-edit`（仅限尚未推送的提交）补救；已推送到共享远端的历史不得为补签名而重写。
+- 历史遗留的未签名提交保持原样，不重写已共享历史；本规则约束今后所有新增提交。
