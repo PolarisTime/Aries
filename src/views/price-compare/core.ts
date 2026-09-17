@@ -36,6 +36,30 @@ export const dataKeyOf = (row: PriceRow) =>
     ? `${canonicalCategory(row.category)}|${row.material}`
     : ''
 
+/** 现货价供应商下拉选项: 携带经营品牌用于按品牌列过滤。 */
+export type SupplierSelectOption = {
+  value: string
+  label: string
+  /** 经营品牌(商品品牌名称), 缺省视为未绑定任何品牌。 */
+  brands?: string[]
+}
+
+/**
+ * 按品牌列过滤供应商选项。
+ *
+ * - 品牌名称为空 → 返回全部(保持兼容)。
+ * - 存在至少一个绑定该品牌的供应商 → 只返回绑定供应商。
+ * - 无任何供应商绑定该品牌 → 回退返回全部(避免下拉为空)。
+ */
+export function filterSupplierOptionsByBrand(
+  options: SupplierSelectOption[],
+  brandName: string | undefined,
+): SupplierSelectOption[] {
+  if (!brandName) return options
+  const bound = options.filter((option) => option.brands?.includes(brandName))
+  return bound.length > 0 ? bound : options
+}
+
 /** 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。 */
 export const productKeyOf = (row: PriceRow) =>
   row.category && row.material

@@ -124,7 +124,7 @@ describe('SheetPanel 指定品牌展示', () => {
   function renderStateful(
     initialSheet: PriceSheet,
     initialRows: PriceRow[],
-    suppliers: { value: string; label: string }[] = [],
+    suppliers: { value: string; label: string; brands?: string[] }[] = [],
   ) {
     const observed = { rows: initialRows, sheet: initialSheet }
     function Harness() {
@@ -232,6 +232,17 @@ describe('SheetPanel 指定品牌展示', () => {
     { value: 's2', label: '河钢' },
   ]
 
+  async function openSupplierDropdown() {
+    const supplierSelect = container.querySelector('.price-compare-supplier')
+    await act(async () => {
+      supplierSelect?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
   it('品牌分组在差价后新增供应商简称列, 现货单元格不再内嵌供应商下拉', () => {
     renderStateful(
       {
@@ -260,6 +271,66 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(
       container.querySelector('.price-compare-supplier')?.textContent,
     ).toContain('沙钢')
+  })
+
+  it('品牌列只显示绑定该品牌的供应商', async () => {
+    renderStateful(
+      makeSheet(),
+      [{ ...baseRow }],
+      [
+        { value: 's1', label: '沙钢', brands: ['中天'] },
+        { value: 's2', label: '河钢', brands: ['永钢'] },
+      ],
+    )
+
+    await openSupplierDropdown()
+
+    expect(
+      document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
+    ).toBeTruthy()
+    expect(
+      document.body.querySelector('.ant-select-item-option[title="河钢"]'),
+    ).toBeNull()
+  })
+
+  it('品牌无绑定供应商时回退显示全部', async () => {
+    renderStateful(
+      makeSheet(),
+      [{ ...baseRow }],
+      [
+        { value: 's1', label: '沙钢', brands: ['永钢'] },
+        { value: 's2', label: '河钢', brands: ['永钢'] },
+      ],
+    )
+
+    await openSupplierDropdown()
+
+    expect(
+      document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
+    ).toBeTruthy()
+    expect(
+      document.body.querySelector('.ant-select-item-option[title="河钢"]'),
+    ).toBeTruthy()
+  })
+
+  it('已选供应商不属于当前品牌时保留原值回显', () => {
+    renderStateful(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3280, supplierId: 's2', supplierName: '河钢' },
+        },
+      },
+      [{ ...baseRow }],
+      [
+        { value: 's1', label: '沙钢', brands: ['中天'] },
+        { value: 's2', label: '河钢', brands: ['永钢'] },
+      ],
+    )
+
+    expect(
+      container.querySelector('.price-compare-supplier')?.textContent,
+    ).toContain('河钢')
   })
 
   it('在简称列选择供应商后回显简称并持久化到输入', async () => {

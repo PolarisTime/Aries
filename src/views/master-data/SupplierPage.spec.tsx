@@ -9,7 +9,8 @@ import '@/i18n'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { bindAntdAppApi } from '@/utils/antd-app'
-import { SupplierPage } from './SupplierPage'
+import type { MasterOption } from './master-data-types'
+import { buildSupplierSpec, SupplierPage } from './SupplierPage'
 
 vi.mock('@/api/business/business-listing', () => ({
   listBusinessModule: vi.fn(),
@@ -37,6 +38,7 @@ const supplierRows = [
     supplierCode: 'SUP0001',
     supplierName: '河北钢铁贸易',
     shortName: '河钢',
+    brands: ['中天', '永钢'],
     contactName: '张伟',
     contactPhone: '13800001111',
     city: '石家庄',
@@ -215,5 +217,84 @@ describe('SupplierPage 专属页面', () => {
       'supplier',
       expect.objectContaining({ shortName: '河钢集团' }),
     )
+  })
+
+  it('新增抽屉展示经营品牌多选控件', async () => {
+    renderPage()
+    await flushAsync()
+
+    const createButton = [...container.querySelectorAll('button')].find(
+      (button) => button.textContent?.replace(/\s/g, '') === '新增',
+    )
+    await act(async () => {
+      createButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flushAsync()
+
+    expect(document.body.textContent).toContain('经营品牌')
+    expect(document.body.querySelector('.ant-select-multiple')).not.toBeNull()
+  })
+
+  it('编辑抽屉回填经营品牌并在保存时携带 brands', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    const row = [...container.querySelectorAll('tr')].find((element) =>
+      element.textContent?.includes('河北钢铁贸易'),
+    )
+    await act(async () => {
+      row!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flushAsync()
+
+    expect(document.body.textContent).toContain('经营品牌')
+    expect(document.body.textContent).toContain('中天')
+    expect(document.body.textContent).toContain('永钢')
+
+    const saveButton = [...document.querySelectorAll('button')].find(
+      (button) => button.textContent?.replace(/\s/g, '') === '保存',
+    )
+    await act(async () => {
+      saveButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flushAsync()
+
+    expect(vi.mocked(saveBusinessModule)).toHaveBeenCalledWith(
+      'supplier',
+      expect.objectContaining({ brands: ['中天', '永钢'] }),
+    )
+  })
+})
+
+describe('buildSupplierSpec 经营品牌', () => {
+  const brandOptions: MasterOption[] = [
+    { label: '中天', value: '中天' },
+    { label: '永钢', value: '永钢' },
+  ]
+  const spec = buildSupplierSpec(i18n.getFixedT('zh-CN'), brandOptions)
+
+  it('表单提供经营品牌多选字段', () => {
+    const field = spec.formFields.find((item) => item.key === 'brands')
+    expect(field?.type).toBe('select')
+    expect(field?.multiple).toBe(true)
+    expect(field?.options).toEqual(brandOptions)
+  })
+
+  it('保存 payload 携带 brands, 缺省为空数组', () => {
+    expect(
+      spec.buildRecord({ supplierName: '沙钢', brands: ['中天'] }, null).brands,
+    ).toEqual(['中天'])
+    expect(spec.buildRecord({ supplierName: '河钢' }, null).brands).toEqual([])
+  })
+
+  it('回填时读取 brands 并去除空白', () => {
+    expect(spec.buildValues({ id: '1', brands: ['中天', ' '] }).brands).toEqual(
+      ['中天'],
+    )
+    expect(spec.buildValues({ id: '2' }).brands).toEqual([])
   })
 })

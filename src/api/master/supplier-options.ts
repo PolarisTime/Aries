@@ -11,6 +11,8 @@ export type SupplierOption = {
   supplierName: string
   /** 简称: 主数据维护, 用于下拉/单据等空间受限展示 */
   shortName?: string
+  /** 经营品牌: 商品品牌名称列表, 用于报单比价按品牌过滤现货货源 */
+  brands?: string[]
   value: EntityId
   label: string
 }
@@ -20,6 +22,7 @@ type RawSupplierOption = {
   supplierCode?: unknown
   supplierName?: unknown
   shortName?: unknown
+  brands?: unknown
   value?: unknown
   label?: unknown
 }
@@ -29,6 +32,7 @@ const rawSupplierOptionSchema = z.object({
   supplierCode: z.string(),
   supplierName: z.string(),
   shortName: z.string().nullable().optional(),
+  brands: z.array(z.string()).nullable().optional(),
   value: z.string(),
   label: z.string(),
 })
@@ -55,12 +59,19 @@ export function normalizeSupplierOptions(
       (rawValue && rawValue !== id ? rawValue : '') ||
       sourceLabel
     const shortName = asString(option.shortName).trim()
+    const brands = Array.isArray(option.brands)
+      ? option.brands.flatMap((brand) => {
+          const value = asString(brand).trim()
+          return value ? [value] : []
+        })
+      : []
 
     return {
       id,
       supplierCode,
       supplierName,
       ...(shortName ? { shortName } : {}),
+      brands,
       value: id,
       label: buildSupplierLabel(id, supplierName),
     }

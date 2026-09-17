@@ -24,6 +24,7 @@ function renderFieldControl(field: MasterFormFieldSpec): ReactNode {
         allowClear
         showSearch
         optionFilterProp="label"
+        mode={field.multiple ? 'multiple' : undefined}
         placeholder={field.placeholder}
         options={field.options}
       />

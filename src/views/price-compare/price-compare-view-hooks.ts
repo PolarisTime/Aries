@@ -26,6 +26,7 @@ export function useSupplierSelectOptions(enabled: boolean) {
       supplierOptions.map((option) => ({
         value: option.value,
         label: supplierDisplayName(option),
+        brands: option.brands ?? [],
       })),
     [supplierOptions],
   )

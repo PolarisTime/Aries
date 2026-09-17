@@ -4,6 +4,7 @@ import {
   computeSummary,
   countMissing,
   dataKeyOf,
+  filterSupplierOptionsByBrand,
   makeRow,
   matchesToData,
   mergePriceData,
@@ -333,6 +334,34 @@ describe('matchesToData / mergePriceData', () => {
       3200,
     )
     expect(merged['2026-09-11']['上午']['万泰']['盘螺|HRB400']['8']).toBe(3500)
+  })
+})
+
+describe('filterSupplierOptionsByBrand', () => {
+  const options = [
+    { value: 's1', label: '沙钢', brands: ['中天', '永钢'] },
+    { value: 's2', label: '河钢', brands: ['沙钢'] },
+    { value: 's3', label: '无品牌' },
+  ]
+
+  it('品牌有绑定供应商时只返回绑定项', () => {
+    const result = filterSupplierOptionsByBrand(options, '中天')
+    expect(result.map((option) => option.value)).toEqual(['s1'])
+  })
+
+  it('品牌无任何绑定供应商时回退返回全部', () => {
+    const result = filterSupplierOptionsByBrand(options, '亚新')
+    expect(result.map((option) => option.value)).toEqual(['s1', 's2', 's3'])
+  })
+
+  it('未选品牌时返回全部, 保持兼容', () => {
+    expect(filterSupplierOptionsByBrand(options, undefined)).toBe(options)
+    expect(filterSupplierOptionsByBrand(options, '')).toBe(options)
+  })
+
+  it('多品牌绑定时返回全部命中项', () => {
+    const result = filterSupplierOptionsByBrand(options, '永钢')
+    expect(result.map((option) => option.value)).toEqual(['s1'])
   })
 })
 

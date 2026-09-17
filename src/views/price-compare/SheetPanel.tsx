@@ -31,12 +31,14 @@ import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import {
   CATEGORIES,
+  filterSupplierOptionsByBrand,
   makeRow,
   moveItem,
   netPriceWithFallback,
   resolveRef,
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
+  type SupplierSelectOption,
   syncSpotInputs,
 } from './core'
 import { LockableField } from './LockableField'
@@ -102,7 +104,7 @@ type ColumnContext = {
     rowId: string,
     option: { value: string; label: string } | undefined,
   ) => void
-  supplierOptions: { value: string; label: string }[]
+  supplierOptions: SupplierSelectOption[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   moveFocusTon: (rowId: string, delta: number) => void
@@ -570,24 +572,40 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               SHEET_COLUMN_WIDTH.supplier,
               (_, row) => {
                 const current = row.row
-                const supplierName = ctx.getInput(
+                const input = ctx.getInput(brand.name, current.id)
+                const supplierName = input?.supplierName
+                const filtered = filterSupplierOptionsByBrand(
+                  ctx.supplierOptions,
                   brand.name,
-                  current.id,
-                )?.supplierName
+                )
+                // 保留已选供应商: 若其不属于当前品牌过滤结果, 仍加入选项避免回显丢失,
+                // 不强制清空用户已选值。
+                const options =
+                  input?.supplierId &&
+                  !filtered.some((item) => item.value === input.supplierId)
+                    ? [
+                        {
+                          value: input.supplierId,
+                          label: supplierName || input.supplierId,
+                          brands: [],
+                        },
+                        ...filtered,
+                      ]
+                    : filtered
                 return (
                   <Select
                     size="small"
                     variant="borderless"
                     className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                     disabled={readOnly}
-                    value={ctx.getInput(brand.name, current.id)?.supplierId}
+                    value={input?.supplierId}
                     title={supplierName}
                     placeholder={t('priceCompare.sheet.supplier')}
                     allowClear
                     showSearch={{ optionFilterProp: 'label' }}
-                    options={ctx.supplierOptions}
+                    options={options}
                     onChange={(value) => {
-                      const option = ctx.supplierOptions.find(
+                      const option = options.find(
                         (item) => item.value === value,
                       )
                       ctx.setSupplier(
@@ -1062,7 +1080,7 @@ type Props = {
   designatedBrands?: string[]
   remark?: string
   onRemarkChange?: (value: string) => void
-  suppliers?: { value: string; label: string }[]
+  suppliers?: SupplierSelectOption[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
 }

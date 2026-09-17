@@ -38,6 +38,8 @@ export interface MasterFormFieldSpec {
   key: string
   label: string
   type: 'input' | 'select' | 'number' | 'textarea'
+  /** 多选: 仅 select 生效, 用于经营品牌等标签式多值字段。 */
+  multiple?: boolean
   required?: boolean
   disabled?: boolean
   placeholder?: string

@@ -10,7 +10,7 @@ const brandListSchema = z.array(z.string())
 /** 稳定的空数组引用: 避免未加载时每次 render 返回新数组, 破坏调用方 useMemo。 */
 const EMPTY_BRANDS: string[] = []
 
-/** 商品品牌(来自系统商品资料), 失败时返回空数组由调用方回退。 */
+/** 商品品牌(来自系统商品资料去重), 失败时返回空数组由调用方回退。 */
 export function useMaterialBrands() {
   const query = useQuery({
     queryKey: QUERY_KEYS.priceCompare.materialBrands,
