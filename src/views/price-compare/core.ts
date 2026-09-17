@@ -112,9 +112,11 @@ export const SHEET_COLUMN_WIDTH = {
   category: 72,
   spec: 200,
   ton: 84,
-  net: 74,
-  spot: 72,
-  diff: 60,
+  net: 60,
+  spot: 58,
+  diff: 50,
+  /** 供应商简称列: 简称上限 4 个字符, 超出省略 */
+  supplier: 66,
 } as const
 
 /** 网价: 参照日期+时段, 命中则返回并叠加 12 米加价。 */

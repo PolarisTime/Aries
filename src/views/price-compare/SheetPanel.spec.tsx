@@ -121,7 +121,11 @@ describe('SheetPanel 指定品牌展示', () => {
     length: '9米',
   }
 
-  function renderStateful(initialSheet: PriceSheet, initialRows: PriceRow[]) {
+  function renderStateful(
+    initialSheet: PriceSheet,
+    initialRows: PriceRow[],
+    suppliers: { value: string; label: string }[] = [],
+  ) {
     const observed = { rows: initialRows, sheet: initialSheet }
     function Harness() {
       const [sheet, setSheet] = useState(initialSheet)
@@ -143,6 +147,7 @@ describe('SheetPanel 指定品牌展示', () => {
         onRefresh: () => {},
         chrome: false,
         spotRef: { current: null },
+        suppliers,
       })
     }
     act(() => {
@@ -220,5 +225,69 @@ describe('SheetPanel 指定品牌展示', () => {
       (button) => button.textContent?.includes('添加一行'),
     )
     expect(addRow?.disabled).toBe(false)
+  })
+
+  const suppliers = [
+    { value: 's1', label: '沙钢' },
+    { value: 's2', label: '河钢' },
+  ]
+
+  it('品牌分组在差价后新增供应商简称列, 现货单元格不再内嵌供应商下拉', () => {
+    renderStateful(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
+        },
+      },
+      [{ ...baseRow }],
+      suppliers,
+    )
+
+    const headerRow =
+      container.querySelectorAll('.ant-table-thead tr')[1]?.textContent ?? ''
+    expect(headerRow).toContain('网价')
+    expect(headerRow).toContain('现货')
+    expect(headerRow).toContain('差价')
+    expect(headerRow).toContain('简称')
+    expect(headerRow.indexOf('差价')).toBeLessThan(headerRow.indexOf('简称'))
+
+    const spotCell = container
+      .querySelector('input[data-spot="中天:r1"]')
+      ?.closest('td')
+    expect(spotCell?.querySelector('.ant-select')).toBeNull()
+
+    expect(
+      container.querySelector('.price-compare-supplier')?.textContent,
+    ).toContain('沙钢')
+  })
+
+  it('在简称列选择供应商后回显简称并持久化到输入', async () => {
+    const observed = renderStateful(makeSheet(), [{ ...baseRow }], suppliers)
+
+    const supplierSelect = container.querySelector('.price-compare-supplier')
+    expect(supplierSelect).not.toBeNull()
+    await act(async () => {
+      supplierSelect?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const option = document.body.querySelector(
+      '.ant-select-item-option[title="河钢"]',
+    )
+    expect(option).toBeTruthy()
+    await act(async () => {
+      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s2')
+    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
+    expect(
+      container.querySelector('.price-compare-supplier')?.textContent,
+    ).toContain('河钢')
   })
 })

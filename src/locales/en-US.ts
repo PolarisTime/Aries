@@ -2228,6 +2228,7 @@ export const enUS = {
         net: 'Market Price',
         spot: 'Spot Price',
         diff: 'Difference',
+        supplierShort: 'Abbr.',
       },
       selectProduct: 'Select product',
       tonPositive: 'Order tonnage must be a positive number',

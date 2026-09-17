@@ -450,102 +450,74 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   brandIndex === 0 &&
                   current.id === rows[0]?.id
                 const input = (
-                  <Flex vertical gap={0}>
-                    <Input
-                      key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
-                      className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                      size="small"
-                      variant="borderless"
-                      inputMode="decimal"
-                      disabled={readOnly}
-                      data-spot={`${brand.name}:${current.id}`}
-                      defaultValue={spot === undefined ? '' : String(spot)}
-                      onBlur={(event) => {
-                        const raw = event.target.value
-                        const value = Number(raw)
-                        if (
-                          raw !== '' &&
-                          (Number.isNaN(value) ||
-                            value <= 0 ||
-                            value > SPOT_PRICE_MAX)
-                        ) {
-                          message.warning(
-                            t('priceCompare.sheet.spotOutOfRange', {
-                              max: SPOT_PRICE_MAX,
-                            }),
-                          )
-                          // 非法输入：触发重挂载，恢复为已保存值
-                          ctx.onInvalidSpot()
-                          return
-                        }
+                  <Input
+                    key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
+                    className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                    size="small"
+                    variant="borderless"
+                    inputMode="decimal"
+                    disabled={readOnly}
+                    data-spot={`${brand.name}:${current.id}`}
+                    defaultValue={spot === undefined ? '' : String(spot)}
+                    onBlur={(event) => {
+                      const raw = event.target.value
+                      const value = Number(raw)
+                      if (
+                        raw !== '' &&
+                        (Number.isNaN(value) ||
+                          value <= 0 ||
+                          value > SPOT_PRICE_MAX)
+                      ) {
+                        message.warning(
+                          t('priceCompare.sheet.spotOutOfRange', {
+                            max: SPOT_PRICE_MAX,
+                          }),
+                        )
+                        // 非法输入：触发重挂载，恢复为已保存值
+                        ctx.onInvalidSpot()
+                        return
+                      }
+                      setSpot(
+                        brand.name,
+                        current.id,
+                        raw === '' ? undefined : value,
+                      )
+                    }}
+                    onPressEnter={(event) => {
+                      const raw = (event.target as HTMLInputElement).value
+                      const value = Number(raw)
+                      if (
+                        raw === '' ||
+                        (!Number.isNaN(value) &&
+                          value > 0 &&
+                          value <= SPOT_PRICE_MAX)
+                      ) {
                         setSpot(
                           brand.name,
                           current.id,
                           raw === '' ? undefined : value,
                         )
-                      }}
-                      onPressEnter={(event) => {
-                        const raw = (event.target as HTMLInputElement).value
-                        const value = Number(raw)
-                        if (
-                          raw === '' ||
-                          (!Number.isNaN(value) &&
-                            value > 0 &&
-                            value <= SPOT_PRICE_MAX)
-                        ) {
-                          setSpot(
-                            brand.name,
-                            current.id,
-                            raw === '' ? undefined : value,
-                          )
-                        }
+                      }
+                      event.preventDefault()
+                      moveFocus(brand.name, current.id, 1)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowDown') {
                         event.preventDefault()
                         moveFocus(brand.name, current.id, 1)
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'ArrowDown') {
-                          event.preventDefault()
-                          moveFocus(brand.name, current.id, 1)
-                        } else if (event.key === 'ArrowUp') {
-                          event.preventDefault()
-                          moveFocus(brand.name, current.id, -1)
-                        } else if (event.key === 'Tab') {
-                          event.preventDefault()
-                          moveFocus(
-                            brand.name,
-                            current.id,
-                            event.shiftKey ? -1 : 1,
-                          )
-                        }
-                      }}
-                    />
-                    <Select
-                      size="small"
-                      variant="borderless"
-                      className="price-compare-supplier"
-                      disabled={readOnly}
-                      value={ctx.getInput(brand.name, current.id)?.supplierId}
-                      placeholder={t('priceCompare.sheet.supplier')}
-                      allowClear
-                      showSearch={{ optionFilterProp: 'label' }}
-                      options={ctx.supplierOptions}
-                      onChange={(value) => {
-                        const option = ctx.supplierOptions.find(
-                          (item) => item.value === value,
-                        )
-                        ctx.setSupplier(
+                      } else if (event.key === 'ArrowUp') {
+                        event.preventDefault()
+                        moveFocus(brand.name, current.id, -1)
+                      } else if (event.key === 'Tab') {
+                        event.preventDefault()
+                        moveFocus(
                           brand.name,
                           current.id,
-                          value
-                            ? {
-                                value: String(value),
-                                label: option?.label ?? String(value),
-                              }
-                            : undefined,
+                          event.shiftKey ? -1 : 1,
                         )
-                      }}
-                    />
-                  </Flex>
+                      }
+                    }}
+                  />
                 )
                 return isFirst ? <span ref={ctx.spotRef}>{input}</span> : input
               },
@@ -590,6 +562,46 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       {diff}
                     </span>
                   </Tooltip>
+                )
+              },
+            ),
+            cellOf(
+              t('priceCompare.sheet.columns.supplierShort'),
+              SHEET_COLUMN_WIDTH.supplier,
+              (_, row) => {
+                const current = row.row
+                const supplierName = ctx.getInput(
+                  brand.name,
+                  current.id,
+                )?.supplierName
+                return (
+                  <Select
+                    size="small"
+                    variant="borderless"
+                    className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                    disabled={readOnly}
+                    value={ctx.getInput(brand.name, current.id)?.supplierId}
+                    title={supplierName}
+                    placeholder={t('priceCompare.sheet.supplier')}
+                    allowClear
+                    showSearch={{ optionFilterProp: 'label' }}
+                    options={ctx.supplierOptions}
+                    onChange={(value) => {
+                      const option = ctx.supplierOptions.find(
+                        (item) => item.value === value,
+                      )
+                      ctx.setSupplier(
+                        brand.name,
+                        current.id,
+                        value
+                          ? {
+                              value: String(value),
+                              label: option?.label ?? String(value),
+                            }
+                          : undefined,
+                      )
+                    }}
+                  />
                 )
               },
             ),
@@ -673,7 +685,7 @@ function SheetTable(props: SheetTableProps) {
       pagination={false}
       summary={() => (
         <Table.Summary.Row>
-          <Table.Summary.Cell index={0} colSpan={5 + base.brands.length * 3}>
+          <Table.Summary.Cell index={0} colSpan={5 + base.brands.length * 4}>
             <Tooltip
               title={
                 !base.readOnly && base.sheet.specQuantityLocked
@@ -737,7 +749,8 @@ function SheetTable(props: SheetTableProps) {
           base.brands.length *
             (SHEET_COLUMN_WIDTH.net +
               SHEET_COLUMN_WIDTH.spot +
-              SHEET_COLUMN_WIDTH.diff),
+              SHEET_COLUMN_WIDTH.diff +
+              SHEET_COLUMN_WIDTH.supplier),
       }}
     />
   )

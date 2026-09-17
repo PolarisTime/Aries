@@ -2159,6 +2159,7 @@ export const zhCN = {
         net: '网价',
         spot: '现货',
         diff: '差价',
+        supplierShort: '简称',
       },
       selectProduct: '选择商品',
       tonPositive: '报单吨位需为正数',

@@ -38,8 +38,8 @@
 
 .price-compare-diff {
   display: inline-block;
-  min-width: 46px;
-  padding: 0 6px;
+  min-width: 34px;
+  padding: 0 4px;
   border-radius: var(--ant-border-radius, 6px);
   font-weight: 600;
   text-align: right;
@@ -121,6 +121,25 @@
 
 .price-compare-spot {
   width: 100%;
+}
+
+/* 供应商简称列: 4 个字符的窄列, 压缩内边距与箭头占位 */
+.price-compare-table .price-compare-supplier {
+  width: 100%;
+}
+
+.price-compare-table .price-compare-supplier .ant-select-selector {
+  padding-inline: 2px !important;
+}
+
+.price-compare-table .price-compare-supplier .ant-select-selection-item,
+.price-compare-table .price-compare-supplier .ant-select-selection-placeholder {
+  padding-inline: 2px 12px !important;
+}
+
+.price-compare-table .price-compare-supplier .ant-select-arrow {
+  inset-inline-end: 4px;
+  font-size: 10px;
 }
 
 .price-compare-drag {
