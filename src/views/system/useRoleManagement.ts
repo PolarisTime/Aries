@@ -17,17 +17,9 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useRequestError } from '@/hooks/useRequestError'
-import type {
-  RoleCreatePayload,
-  RoleResponse,
-  RoleUpdatePayload,
-} from '@/shared/schemas'
+import type { RoleCreatePayload, RoleResponse } from '@/shared/schemas'
 import { message, modal } from '@/utils/antd-app'
-
-interface SaveRoleVariables {
-  id?: string
-  payload: RoleUpdatePayload
-}
+import type { RoleWizardSubmit } from '@/views/system/RoleWizardModal'
 
 export function useRoleManagement() {
   const { t } = useTranslation()
@@ -62,8 +54,13 @@ export function useRoleManagement() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: ({ id, payload }: SaveRoleVariables) =>
-      id ? updateRole(id, payload) : createRole(payload as RoleCreatePayload),
+    mutationFn: async ({ id, payload, permissions }: RoleWizardSubmit) => {
+      const saved = id
+        ? await updateRole(id, payload)
+        : await createRole(payload as RoleCreatePayload)
+      await updateRolePermissions(saved.id, permissions)
+      return saved
+    },
     onSuccess: (_data, variables) => {
       message.success(
         variables.id ? t('common.editSuccess') : t('common.addSuccess'),
@@ -152,8 +149,8 @@ export function useRoleManagement() {
     })
   }
 
-  const saveRole = (values: RoleUpdatePayload) => {
-    saveMutation.mutate({ id: editingRole?.id, payload: values })
+  const saveRole = (submit: RoleWizardSubmit) => {
+    saveMutation.mutate(submit)
   }
 
   return {

@@ -3,9 +3,9 @@ import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import { AppResult } from '@/components/AppResult'
-import { RoleEditorModal } from '@/views/system/RoleEditorModal'
 import { RolePermissionMatrixModal } from '@/views/system/RolePermissionMatrixModal'
 import { RoleTableCard } from '@/views/system/RoleTableCard'
+import { RoleWizardModal } from '@/views/system/RoleWizardModal'
 import { useRoleManagement } from '@/views/system/useRoleManagement'
 
 export function RoleManagementView() {
@@ -65,7 +65,8 @@ export function RoleManagementView() {
             onDelete={model.handleDelete}
           />
         )}
-        <RoleEditorModal
+        <RoleWizardModal
+          key={`${model.editorOpen}-${model.editingRole?.id ?? 'new'}`}
           open={model.editorOpen}
           role={model.editingRole}
           saving={model.savePending}
