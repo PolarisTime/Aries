@@ -9,7 +9,12 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { hasPermission } from '@/utils/permission'
+import { usePermissions } from './usePermission'
 import { useRuntimeConfig } from './useRuntimeConfig'
+
+/** 受 `sales-orders:read:amount` 收敛的销售金额列（单价/金额）。 */
+const SALES_ORDER_AMOUNT_ITEM_COLUMN_KEYS = new Set(['unitPrice', 'amount'])
 
 const WEIGHT_ONLY_AMOUNT_COLUMN_KEYS = new Set([
   'unitPrice',
@@ -50,6 +55,40 @@ export function buildWeightOnlyViewConfig(
   }
 }
 
+export function filterAmountItemColumns(
+  columns?: ModuleColumnDefinition[],
+): ModuleColumnDefinition[] | undefined {
+  return columns?.filter(
+    (column) => !SALES_ORDER_AMOUNT_ITEM_COLUMN_KEYS.has(column.dataIndex),
+  )
+}
+
+/**
+ * 无 `sales-orders:read:amount` 字段级权限时，移除销售订单的金额/单价列与字段，
+ * 与后端 `PermissionDecimalSerializer` 的读侧脱敏保持一致（前端仅做 UI 降级）。
+ */
+export function buildAmountRestrictedViewConfig(
+  baseConfig: ModulePageConfig,
+): ModulePageConfig {
+  return {
+    ...baseConfig,
+    columns: baseConfig.columns.filter(
+      (column) => column.dataIndex !== 'totalAmount',
+    ),
+    detailFields: baseConfig.detailFields.filter(
+      (field) => field.key !== 'totalAmount',
+    ),
+    formFields: baseConfig.formFields?.filter(
+      (field) => field.key !== 'totalAmount',
+    ),
+    itemColumns: filterAmountItemColumns(baseConfig.itemColumns),
+    detailItemColumns: filterAmountItemColumns(baseConfig.detailItemColumns),
+    saveResultItemColumns: filterAmountItemColumns(
+      baseConfig.saveResultItemColumns,
+    ),
+  }
+}
+
 interface Props {
   moduleKey: ModuleKey
   initialConfig?: ModulePageConfig
@@ -77,15 +116,25 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
   const { data: runtimeConfig, isLoading: runtimeConfigLoading } =
     useRuntimeConfig()
 
+  const permissions = usePermissions()
+  const canReadSalesAmount = hasPermission(
+    permissions,
+    'sales-orders:read:amount',
+  )
+
   const config = (() => {
     const found = moduleConfig
     if (!found || found.key !== moduleKey) {
       return initialConfig
     }
 
-    const baseConfig = isWeightOnlyViewEnabled(moduleKey, runtimeConfig)
+    let baseConfig = isWeightOnlyViewEnabled(moduleKey, runtimeConfig)
       ? buildWeightOnlyViewConfig(found)
       : found
+
+    if (moduleKey === 'sales-order' && !canReadSalesAmount) {
+      baseConfig = buildAmountRestrictedViewConfig(baseConfig)
+    }
 
     return baseConfig
   })() satisfies ModulePageConfig | undefined

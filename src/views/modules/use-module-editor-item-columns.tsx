@@ -8,6 +8,7 @@ import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { useHasPermission } from '@/hooks/usePermission'
 import { isEditorItemColumnEditableForModule } from '@/module-system/adapter/module-adapter-editor'
 import {
   buildModuleEditorDataColumns,
@@ -76,6 +77,9 @@ export function useModuleEditorItemColumns({
     materials: true,
   })
   const token = useAuthStore((s) => s.token)
+  const canEditSalesUnitPrice = useHasPermission(
+    'sales-orders:update:unit-price',
+  )
   const [materialSearchKeyword, setMaterialSearchKeyword] = useState('')
   const [debouncedMaterialSearchKeyword, setDebouncedMaterialSearchKeyword] =
     useState('')
@@ -114,8 +118,16 @@ export function useModuleEditorItemColumns({
     setItems,
   })
 
-  const isItemColumnEditable = (columnKey: string, record?: ModuleLineItem) =>
-    isEditorItemColumnEditableForModule(
+  const isItemColumnEditable = (columnKey: string, record?: ModuleLineItem) => {
+    // 字段级写权限：无 sales-orders:update:unit-price 时销售单价只读（后端另有拒改校验）。
+    if (
+      moduleKey === 'sales-order' &&
+      columnKey === 'unitPrice' &&
+      !canEditSalesUnitPrice
+    ) {
+      return false
+    }
+    return isEditorItemColumnEditableForModule(
       moduleKey,
       columnKey,
       canEditItemColumns,
@@ -123,6 +135,7 @@ export function useModuleEditorItemColumns({
       record,
       parentImportedItemEditLocked,
     )
+  }
 
   useEffect(() => {
     const keyword = materialSearchKeyword.trim()

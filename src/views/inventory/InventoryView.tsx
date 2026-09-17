@@ -34,6 +34,7 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { useHasPermission } from '@/hooks/usePermission'
 import type { ModuleOverviewItem } from '@/types/module-page'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
@@ -145,6 +146,8 @@ function InventoryBalancesPanel() {
     queryFn: ({ signal }) => getInventoryBalances(queryParams, signal),
     placeholderData: keepPreviousData,
   })
+  // 字段级权限：无 inventory:read:cost 时隐藏成本列（后端同时脱敏为 null）。
+  const canViewCost = useHasPermission('inventory:read:cost')
 
   const columns = useMemo<TableColumnsType<InventoryBalance>>(() => {
     const formatNumber = (value: number) => formatCellValue(value, 'number')
@@ -209,22 +212,26 @@ function InventoryBalancesPanel() {
         align: 'right',
         render: formatNumber,
       },
-      {
-        title: t('inventory.columns.avgUnitCost'),
-        dataIndex: 'avgUnitCost',
-        width: 130,
-        align: 'right',
-        render: formatAmount,
-      },
-      {
-        title: t('inventory.columns.amount'),
-        dataIndex: 'amount',
-        width: 140,
-        align: 'right',
-        render: formatAmount,
-      },
+      ...(canViewCost
+        ? [
+            {
+              title: t('inventory.columns.avgUnitCost'),
+              dataIndex: 'avgUnitCost',
+              width: 130,
+              align: 'right' as const,
+              render: formatAmount,
+            },
+            {
+              title: t('inventory.columns.amount'),
+              dataIndex: 'amount',
+              width: 140,
+              align: 'right' as const,
+              render: formatAmount,
+            },
+          ]
+        : []),
     ]
-  }, [formatCellValue, t])
+  }, [canViewCost, formatCellValue, t])
 
   const scrollX = useMemo(() => sumColumnWidths(columns), [columns])
   const rows = balancesQuery.data?.content ?? EMPTY_BALANCES
@@ -411,6 +418,8 @@ function InventoryTransactionsPanel() {
     queryFn: ({ signal }) => getInventoryTransactions(queryParams, signal),
     placeholderData: keepPreviousData,
   })
+  // 字段级权限：无 inventory:read:cost 时隐藏成本列（后端同时脱敏为 null）。
+  const canViewCost = useHasPermission('inventory:read:cost')
 
   const columns = useMemo<TableColumnsType<InventoryTransaction>>(() => {
     const formatNumber = (value: number) => formatCellValue(value, 'number')
@@ -492,20 +501,24 @@ function InventoryTransactionsPanel() {
         align: 'right',
         render: formatNumber,
       },
-      {
-        title: t('inventory.columns.unitCost'),
-        dataIndex: 'unitCost',
-        width: 120,
-        align: 'right',
-        render: formatAmount,
-      },
-      {
-        title: t('inventory.columns.amount'),
-        dataIndex: 'amount',
-        width: 140,
-        align: 'right',
-        render: formatAmount,
-      },
+      ...(canViewCost
+        ? [
+            {
+              title: t('inventory.columns.unitCost'),
+              dataIndex: 'unitCost',
+              width: 120,
+              align: 'right' as const,
+              render: formatAmount,
+            },
+            {
+              title: t('inventory.columns.amount'),
+              dataIndex: 'amount',
+              width: 140,
+              align: 'right' as const,
+              render: formatAmount,
+            },
+          ]
+        : []),
       {
         title: t('inventory.columns.sourceDocumentNo'),
         dataIndex: 'sourceDocumentNo',
@@ -520,7 +533,7 @@ function InventoryTransactionsPanel() {
         render: formatDateTime,
       },
     ]
-  }, [formatCellValue, t, transactionTypeLabel])
+  }, [canViewCost, formatCellValue, t, transactionTypeLabel])
 
   const scrollX = useMemo(() => sumColumnWidths(columns), [columns])
   const rows = transactionsQuery.data?.content ?? EMPTY_TRANSACTIONS
