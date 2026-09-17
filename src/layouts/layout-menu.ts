@@ -18,6 +18,8 @@ interface BuildLayoutMenuOptions {
   getMenuEntriesByGroup: (groupKey: MenuGroupKey) => AppPageDefinition[]
   menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition>
   menuGroupOrder: MenuGroupKey[]
+  /** 页面级访问判定: 返回 false 的页面不进入菜单(缺省全部可见)。 */
+  canAccessPage?: (entry: AppPageDefinition) => boolean
 }
 
 function resolveEntryPath(entry: AppPageDefinition) {
@@ -27,13 +29,14 @@ function resolveEntryPath(entry: AppPageDefinition) {
 export function buildVisibleLayoutMenuEntries(
   options: BuildLayoutMenuOptions,
 ): LayoutMenuEntry[] {
+  const canAccessPage = options.canAccessPage ?? (() => true)
   const topLevelMenuEntries = options.appPageDefinitions.filter(
-    (entry) => !entry.menuParent && !entry.hiddenInMenu,
+    (entry) => !entry.menuParent && !entry.hiddenInMenu && canAccessPage(entry),
   )
   const menuGroups = options.menuGroupOrder.flatMap((groupKey) => {
     const items = options
       .getMenuEntriesByGroup(groupKey)
-      .filter((entry) => !entry.hiddenInMenu)
+      .filter((entry) => !entry.hiddenInMenu && canAccessPage(entry))
     return items.length > 0
       ? [{ ...options.menuGroupDefinitions[groupKey], items }]
       : []

@@ -11,6 +11,7 @@ import { Button, Empty, Flex, Input, Select, Space, Table, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
+import { useHasPermission } from '@/hooks/usePermission'
 import type { UserAccountResponse } from '@/shared/schemas'
 
 interface Props {
@@ -67,6 +68,8 @@ export function UserAccountTableCard({
   onDelete,
 }: Props) {
   const { t } = useTranslation()
+  const canWrite = useHasPermission('user-accounts:write')
+  const canAssignRoles = useHasPermission('user-accounts:update')
 
   const statusMap = {
     NORMAL: { color: 'green', label: t('system.userAccount.statusNormal') },
@@ -117,57 +120,67 @@ export function UserAccountTableCard({
       key: 'actions',
       width: 220,
       fixed: 'right',
-      render: (_value, record) => (
-        <Space size={4}>
-          <Tooltip title={t('common.edit')}>
+      render: (_value, record) => {
+        if (!canWrite && !canAssignRoles) {
+          return '--'
+        }
+        return (
+          <Space size={4}>
+            <Tooltip title={t('common.edit')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label={t('common.edit')}
+                disabled={!canWrite}
+                onClick={() => onEdit(record)}
+              />
+            </Tooltip>
+            <Tooltip title={t('system.userAccount.assignRoles')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<SafetyOutlined />}
+                aria-label={t('system.userAccount.assignRoles')}
+                disabled={!canAssignRoles}
+                onClick={() => onRoles(record)}
+              />
+            </Tooltip>
+            <Tooltip title={t('system.userAccount.resetPassword')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<KeyOutlined />}
+                aria-label={t('system.userAccount.resetPassword')}
+                disabled={!canWrite}
+                onClick={() => onReset(record)}
+              />
+            </Tooltip>
             <Button
-              type="text"
               size="small"
-              icon={<EditOutlined />}
-              aria-label={t('common.edit')}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('system.userAccount.assignRoles')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<SafetyOutlined />}
-              aria-label={t('system.userAccount.assignRoles')}
-              onClick={() => onRoles(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('system.userAccount.resetPassword')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<KeyOutlined />}
-              aria-label={t('system.userAccount.resetPassword')}
-              onClick={() => onReset(record)}
-            />
-          </Tooltip>
-          <Button
-            size="small"
-            loading={statusPending}
-            onClick={() => onToggleStatus(record)}
-          >
-            {record.status === 'NORMAL'
-              ? t('system.userAccount.disable')
-              : t('system.userAccount.enable')}
-          </Button>
-          <Tooltip title={t('system.userAccount.deleteUser')}>
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={t('common.delete')}
-              loading={deletePending}
-              onClick={() => onDelete(record)}
-            />
-          </Tooltip>
-        </Space>
-      ),
+              loading={statusPending}
+              disabled={!canWrite}
+              onClick={() => onToggleStatus(record)}
+            >
+              {record.status === 'NORMAL'
+                ? t('system.userAccount.disable')
+                : t('system.userAccount.enable')}
+            </Button>
+            <Tooltip title={t('system.userAccount.deleteUser')}>
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                aria-label={t('common.delete')}
+                disabled={!canWrite}
+                loading={deletePending}
+                onClick={() => onDelete(record)}
+              />
+            </Tooltip>
+          </Space>
+        )
+      },
     },
   ]
 
@@ -215,7 +228,12 @@ export function UserAccountTableCard({
           >
             {t('common.refresh')}
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!canWrite}
+            onClick={onCreate}
+          >
             {t('system.userAccount.newUser')}
           </Button>
         </Space>

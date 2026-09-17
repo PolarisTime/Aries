@@ -37,4 +37,6 @@ export interface AppPageDefinition {
   searchable?: boolean
   hiddenInMenu?: boolean
   activeMenuKey?: string
+  /** 访问该页面/菜单所需权限码；缺省表示所有登录用户可见。 */
+  requiredPermission?: string
 }

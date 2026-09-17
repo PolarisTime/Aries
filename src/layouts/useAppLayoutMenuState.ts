@@ -5,6 +5,7 @@ import {
   menuGroupOrder,
 } from '@/config/navigation-registry'
 import { appPageDefinitions } from '@/config/page-registry'
+import { usePermissions } from '@/hooks/usePermission'
 import { buildVisibleLayoutMenuEntries } from '@/layouts/layout-menu'
 import {
   buildMenuPathMap,
@@ -12,6 +13,7 @@ import {
   buildTopMenuItems,
   findMenuParentKeys,
 } from '@/layouts/layout-menu-items'
+import { hasPermission } from '@/utils/permission'
 
 const menuEntriesByGroup = buildMenuEntriesByGroup(appPageDefinitions)
 
@@ -22,11 +24,14 @@ interface Options {
 
 export function useAppLayoutMenuState(options: Options) {
   const [manualSiderOpenKeys, setManualSiderOpenKeys] = useState<string[]>([])
+  const permissions = usePermissions()
   const visibleMenuEntries = buildVisibleLayoutMenuEntries({
     appPageDefinitions,
     getMenuEntriesByGroup: (groupKey) => menuEntriesByGroup.get(groupKey) || [],
     menuGroupDefinitions,
     menuGroupOrder,
+    canAccessPage: (entry) =>
+      hasPermission(permissions, entry.requiredPermission),
   })
 
   const menuPathByKey = buildMenuPathMap(visibleMenuEntries)

@@ -12,6 +12,8 @@ const loginUserSchema = z.object({
   id: responseEntityIdSchema,
   loginName: z.string(),
   userName: z.string().optional(),
+  /** 当前用户启用角色的权限码并集(含通配), 用于菜单/按钮级 UI 控制。 */
+  permissions: z.array(z.string()).optional(),
 })
 export type LoginUser = z.output<typeof loginUserSchema>
 

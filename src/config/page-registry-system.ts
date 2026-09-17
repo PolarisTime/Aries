@@ -8,6 +8,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     view: 'print-template',
     icon: 'PrinterOutlined',
     menuParent: 'system',
+    requiredPermission: 'print-templates:read',
   },
   {
     key: 'operation-log',
@@ -17,6 +18,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'FileSearchOutlined',
     menuParent: 'system',
     moduleKey: 'operation-log',
+    requiredPermission: 'operation-logs:read',
   },
   {
     key: 'role-management',
@@ -25,6 +27,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     view: 'role-management',
     icon: 'TeamOutlined',
     menuParent: 'system',
+    requiredPermission: 'roles:read',
   },
   {
     key: 'user-accounts',
@@ -33,13 +36,16 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     view: 'user-accounts',
     icon: 'UsergroupAddOutlined',
     menuParent: 'system',
+    requiredPermission: 'user-accounts:read',
   },
   {
+    // 个人账号已并入右上角「个人设置」，此处保留路由与视图以兼容旧链接，菜单隐藏。
     key: 'account',
     title: '个人账号',
     menuKey: '/account',
     view: 'account',
     icon: 'UserOutlined',
     menuParent: 'system',
+    hiddenInMenu: true,
   },
 ]

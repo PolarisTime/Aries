@@ -19,6 +19,7 @@ import {
 } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
+import { useHasPermission } from '@/hooks/usePermission'
 import type { RoleResponse } from '@/shared/schemas'
 import { canDeleteRole } from '@/views/system/role-permission-utils'
 
@@ -68,6 +69,7 @@ export function RoleTableCard({
   onDelete,
 }: Props) {
   const { t } = useTranslation()
+  const canWrite = useHasPermission('roles:write')
 
   const statusMap = {
     正常: { color: 'green', label: t('system.role.statusNormal') },
@@ -130,53 +132,63 @@ export function RoleTableCard({
       key: 'actions',
       width: 180,
       fixed: 'right',
-      render: (_value, record) => (
-        <Space size={4}>
-          <Tooltip title={t('common.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label={t('common.edit')}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('system.role.permissions')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<SafetyOutlined />}
-              aria-label={t('system.role.permissions')}
-              onClick={() => onPermissions(record)}
-            />
-          </Tooltip>
-          <Button
-            size="small"
-            loading={statusPending}
-            onClick={() => onToggleStatus(record)}
-          >
-            {record.status === '正常'
-              ? t('system.role.disable')
-              : t('system.role.enable')}
-          </Button>
-          <Tooltip
-            title={
-              canDeleteRole(record) ? undefined : t('system.role.builtinHint')
-            }
-          >
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={t('common.delete')}
-              disabled={!canDeleteRole(record)}
-              loading={deletePending}
-              onClick={() => onDelete(record)}
-            />
-          </Tooltip>
-        </Space>
-      ),
+      render: (_value, record) => {
+        if (!canWrite) {
+          return '--'
+        }
+        return (
+          <Space size={4}>
+            <Tooltip title={t('common.edit')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label={t('common.edit')}
+                onClick={() => onEdit(record)}
+              />
+            </Tooltip>
+            <Tooltip title={t('system.role.permissions')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<SafetyOutlined />}
+                aria-label={t('system.role.permissions')}
+                onClick={() => onPermissions(record)}
+              />
+            </Tooltip>
+            <Tooltip
+              title={record.builtin ? t('system.role.builtinHint') : undefined}
+            >
+              <Button
+                size="small"
+                loading={statusPending}
+                disabled={record.builtin}
+                onClick={() => onToggleStatus(record)}
+              >
+                {record.status === '正常'
+                  ? t('system.role.disable')
+                  : t('system.role.enable')}
+              </Button>
+            </Tooltip>
+            <Tooltip
+              title={
+                canDeleteRole(record) ? undefined : t('system.role.builtinHint')
+              }
+            >
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                aria-label={t('common.delete')}
+                disabled={!canDeleteRole(record)}
+                loading={deletePending}
+                onClick={() => onDelete(record)}
+              />
+            </Tooltip>
+          </Space>
+        )
+      },
     },
   ]
 
@@ -221,7 +233,12 @@ export function RoleTableCard({
           >
             {t('common.refresh')}
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!canWrite}
+            onClick={onCreate}
+          >
             {t('system.role.newRole')}
           </Button>
         </Space>
