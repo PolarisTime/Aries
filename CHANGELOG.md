@@ -1,3 +1,10 @@
+## [10.9.4](https://github.com/PolarisTime/Aries/compare/v10.9.3...v10.9.4) (2026-09-17)
+
+
+### Bug Fixes
+
+* **supplier:** 供应商资料表单补全供应商简称字段 ([83daf5e](https://github.com/PolarisTime/Aries/commit/83daf5e7469d4b569da86a24113bfe3e78d44ba8))
+
 ## [10.9.3](https://github.com/PolarisTime/Aries/compare/v10.9.2...v10.9.3) (2026-09-17)
 
 
