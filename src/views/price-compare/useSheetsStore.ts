@@ -1455,8 +1455,9 @@ export function useSheetsStore(options?: {
         if (serverId) {
           try {
             const lock = await fetchQuoteSheetEditLock(serverId)
+            // 统一按 serverId 记账, 与 acquire/release/activeLock 口径一致
             applyLockState(
-              sheetId,
+              serverId,
               lock.locked
                 ? {
                     mine: lock.mine,
@@ -1524,13 +1525,13 @@ export function useSheetsStore(options?: {
       try {
         const lock = await acquireQuoteSheetEditLock(serverId, options)
         if (isStale()) {
-          // 仅当该服务端锁不是"当前仍持有的锁"时才归还;
-          // 否则 A→B→A/create 重映射时旧响应会误删新一轮已签出的锁
-          const held = heldLockRef.current
-          const heldServerId = held
-            ? (serverIdRef.current.get(held.sheetId) ?? held.sheetId)
-            : undefined
-          if (heldServerId !== serverId) {
+          // 迟到的签出响应:
+          // - 若代次已变化(释放或新一轮签出): 不能归还, 否则会误删新一轮刚签出的锁;
+          //   释放自身会发 DELETE, 新签出会持有该锁, 均无需此处兜底。
+          // - 若仅因组件卸载: 没有其他操作会释放刚取得的锁, 必须归还, 否则锁泄漏到 TTL。
+          const generationChanged =
+            lockRequestGenRef.current.get(serverId) !== generation
+          if (disposedRef.current && !generationChanged) {
             void releaseQuoteSheetEditLock(serverId).catch(() => {})
           }
           return false
@@ -1558,12 +1559,15 @@ export function useSheetsStore(options?: {
             ownerName = undefined
           }
           if (isStale()) return false
+          // 已失去/未取得该锁: 停止其续约, 避免继续对同一批次发起无效续约。
+          if (heldLockRef.current?.sheetId === serverId) clearHeldLockTimer()
           applyLockState(serverId, {
             mine: false,
             ...(ownerName ? { ownerName } : {}),
           })
           return false
         }
+        if (heldLockRef.current?.sheetId === serverId) clearHeldLockTimer()
         setEditLock((current) =>
           current && current.sheetId === serverId ? null : current,
         )
@@ -1598,16 +1602,31 @@ export function useSheetsStore(options?: {
   // 离开 /price-compare 时只释放并停止续约(保留页面本地状态), 不签出新锁。
   useEffect(() => {
     if (loading) return
-    if (!token || !hydratedRef.current) return
-    const previous = lockedActiveRef.current
-    // 离开比价路由: 立即归还当前持有的锁, 返回时由下方分支重新签出
-    if (!routeActive) {
-      if (previous) void releaseEditLock(previous)
+    if (!token) {
+      // 登出/令牌失效: 归还当前持有的锁, 避免 keep-alive 下锁泄漏到 TTL 过期
+      const held = lockedActiveRef.current ?? heldLockRef.current?.sheetId
       lockedActiveRef.current = null
+      if (held) void releaseEditLock(held)
+      return
+    }
+    if (!hydratedRef.current) return
+    const previous = lockedActiveRef.current
+    // 离开比价路由: 清理防抖 timer 并补跑最后保存, 同时归还锁; 返回时由下方分支重新签出
+    if (!routeActive) {
+      lockedActiveRef.current = null
+      flushPendingSaves()
+      if (previous) void releaseEditLock(previous)
       return
     }
     const target = state.activeId
-    if (!target) return
+    if (!target) {
+      // 无激活批次时也要归还原有锁, 避免持有旧锁却无人续约/释放
+      if (previous) {
+        lockedActiveRef.current = null
+        void releaseEditLock(previous)
+      }
+      return
+    }
     const targetServerId = serverIdRef.current.get(target)
     if (targetServerId && previous === targetServerId) return
     // 未落库批次: 清空持有标记, 待 create 成功后由 saveSheetNow 显式签出
@@ -1623,6 +1642,7 @@ export function useSheetsStore(options?: {
     loading,
     acquireEditLock,
     releaseEditLock,
+    flushPendingSaves,
   ])
 
   // 页面隐藏/卸载: 补跑最后一次防抖保存并释放当前批次锁
@@ -1639,6 +1659,7 @@ export function useSheetsStore(options?: {
   useEffect(
     () => () => {
       disposedRef.current = true
+      // 先清理 timer 并补跑最后保存, 再归还锁
       flushPendingSaves()
       const held = heldLockRef.current
       if (!held) return
