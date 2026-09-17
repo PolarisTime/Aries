@@ -50,10 +50,16 @@ export function toRoundedNumber(value: unknown, precision: number) {
 }
 
 /**
- * 数量单位真源为商品主数据的 `unit`（单位）。
- * 仅当商品没有 unit（空/缺失）时才回落默认「件」。
+ * 数量单位真源为商品主数据的 `quantityUnit`（数量单位，例：件/支）。
+ * 当 quantityUnit 为空/缺失时，回落到商品 `unit`（单位，例：吨）；
+ * 仍为空时回落默认「件」。
  */
 export function inferQuantityUnit(record?: ModuleRecord | null) {
+  const explicitUnit = asString(record?.quantityUnit).trim()
+  if (explicitUnit) {
+    return explicitUnit
+  }
+
   const sourceUnit = asString(record?.unit).trim()
   if (sourceUnit) {
     return sourceUnit

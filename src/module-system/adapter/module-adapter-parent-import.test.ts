@@ -14,32 +14,32 @@ const parentImportConfig: ModuleParentImportDefinition = {
   parentDisplayFieldKey: 'orderNo',
 }
 
+const parentItem: ModuleLineItem = {
+  id: '347011099205312900',
+  materialId: '347011099205312512',
+  materialCode: 'M-001',
+  brand: '泸钢',
+  category: '盘螺',
+  material: 'HRB400E',
+  spec: '8',
+  length: '9米',
+  unit: '吨',
+  quantityUnit: '支',
+  quantity: 10,
+  pieceWeightTon: 0.002,
+  weightTon: 0.02,
+  unitPrice: 4000,
+  amount: 80,
+}
+
 const parentRecord: ModuleRecord = {
   id: '347011099205312512',
   orderNo: 'SO-20260917-001',
-  items: [
-    {
-      id: '347011099205312900',
-      materialId: '347011099205312512',
-      materialCode: 'M-001',
-      brand: '泸钢',
-      category: '盘螺',
-      material: 'HRB400E',
-      spec: '8',
-      length: '9米',
-      unit: '支',
-      quantityUnit: '支',
-      quantity: 10,
-      pieceWeightTon: 0.002,
-      weightTon: 0.02,
-      unitPrice: 4000,
-      amount: 80,
-    },
-  ],
+  items: [parentItem],
 }
 
 describe('buildParentImportState 数量单位', () => {
-  it('父单据导入带出商品数量单位，不被「件」覆盖', () => {
+  it('父单据导入带出商品数量单位，不被 unit「吨」覆盖', () => {
     const state = buildParentImportState({
       parentImportConfig,
       parentRecord,
@@ -50,6 +50,22 @@ describe('buildParentImportState 数量单位', () => {
 
     expect(state.nextItems).toHaveLength(1)
     expect(state.nextItems[0].quantityUnit).toBe('支')
+  })
+
+  it('父单据导入的 quantityUnit=件 不被 unit「吨」覆盖', () => {
+    const state = buildParentImportState({
+      parentImportConfig,
+      parentRecord: {
+        ...parentRecord,
+        items: [{ ...parentItem, unit: '吨', quantityUnit: '件' }],
+      },
+      currentParentNos: [],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(state.nextItems).toHaveLength(1)
+    expect(state.nextItems[0].quantityUnit).toBe('件')
   })
 
   it('已选商品但数量单位为「件」的草稿行不被误判为空行', () => {

@@ -21,22 +21,39 @@ const material = (overrides: Record<string, unknown>): ModuleRecord => ({
 })
 
 describe('inferQuantityUnit', () => {
-  it('取商品 unit（单位）作为数量单位', () => {
+  it('优先取商品 quantityUnit（数量单位），而非 unit（单位）', () => {
+    expect(
+      inferQuantityUnit(material({ quantityUnit: '支', unit: '吨' })),
+    ).toBe('支')
+  })
+
+  it('quantityUnit=件、unit=吨 时取「件」，不被「吨」覆盖', () => {
+    expect(
+      inferQuantityUnit(material({ quantityUnit: '件', unit: '吨' })),
+    ).toBe('件')
+  })
+
+  it('quantityUnit 缺失时回落商品 unit', () => {
     expect(inferQuantityUnit(material({ unit: '支' }))).toBe('支')
   })
 
-  it('商品单位为「件」时保持「件」', () => {
-    expect(inferQuantityUnit(material({ unit: '件' }))).toBe('件')
+  it('quantityUnit 为空/空白时回落商品 unit', () => {
+    expect(inferQuantityUnit(material({ quantityUnit: '', unit: '支' }))).toBe(
+      '支',
+    )
+    expect(
+      inferQuantityUnit(material({ quantityUnit: '   ', unit: '支' })),
+    ).toBe('支')
   })
 
-  it('商品单位为「吨」时不再写死「件」', () => {
-    expect(inferQuantityUnit(material({ unit: '吨' }))).toBe('吨')
-  })
-
-  it('unit 缺失/空/空白时回落「件」', () => {
+  it('quantityUnit 与 unit 都缺失/空/空白时回落「件」', () => {
     expect(inferQuantityUnit(material({}))).toBe('件')
-    expect(inferQuantityUnit(material({ unit: '' }))).toBe('件')
-    expect(inferQuantityUnit(material({ unit: '   ' }))).toBe('件')
+    expect(inferQuantityUnit(material({ quantityUnit: '', unit: '' }))).toBe(
+      '件',
+    )
+    expect(
+      inferQuantityUnit(material({ quantityUnit: '   ', unit: '   ' })),
+    ).toBe('件')
     expect(inferQuantityUnit(null)).toBe('件')
     expect(inferQuantityUnit(undefined)).toBe('件')
   })
@@ -50,7 +67,25 @@ describe('applyMaterialToEditorLineItem', () => {
     ...overrides,
   })
 
-  it('选中 unit=支 的商品后行数量单位为「支」', () => {
+  it('选中 quantityUnit=支 的商品后行数量单位为「支」', () => {
+    const item = applyMaterialToEditorLineItem(
+      baseItem(),
+      material({ quantityUnit: '支', unit: '吨' }),
+      'sales-order',
+    )
+    expect(item.quantityUnit).toBe('支')
+  })
+
+  it('选中 unit=吨、quantityUnit=件 的商品后行数量单位为「件」', () => {
+    const item = applyMaterialToEditorLineItem(
+      baseItem(),
+      material({ unit: '吨', quantityUnit: '件' }),
+      'sales-order',
+    )
+    expect(item.quantityUnit).toBe('件')
+  })
+
+  it('quantityUnit 缺失但 unit=支 时行数量单位回落「支」', () => {
     const item = applyMaterialToEditorLineItem(
       baseItem(),
       material({ unit: '支' }),
@@ -59,19 +94,10 @@ describe('applyMaterialToEditorLineItem', () => {
     expect(item.quantityUnit).toBe('支')
   })
 
-  it('选中 unit=件 的商品后行数量单位为「件」', () => {
+  it('quantityUnit 与 unit 都缺失时行数量单位回落「件」', () => {
     const item = applyMaterialToEditorLineItem(
       baseItem(),
-      material({ unit: '件' }),
-      'sales-order',
-    )
-    expect(item.quantityUnit).toBe('件')
-  })
-
-  it('商品 unit 缺失时行数量单位回落「件」', () => {
-    const item = applyMaterialToEditorLineItem(
-      baseItem(),
-      material({ unit: undefined }),
+      material({ quantityUnit: undefined, unit: undefined }),
       'sales-order',
     )
     expect(item.quantityUnit).toBe('件')
@@ -87,10 +113,10 @@ describe('applyMaterialToEditorLineItem', () => {
     expect(item.unit).toBe('吨')
   })
 
-  it('重新选择商品会按新商品单位更新（商品变更即更新）', () => {
+  it('重新选择商品会按新商品数量单位更新（商品变更即更新）', () => {
     const item = applyMaterialToEditorLineItem(
       baseItem({ quantityUnit: '支' }),
-      material({ unit: '根' }),
+      material({ quantityUnit: '根', unit: '吨' }),
       'sales-order',
     )
     expect(item.quantityUnit).toBe('根')

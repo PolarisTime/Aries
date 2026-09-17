@@ -67,7 +67,29 @@ describe('商品浮层选择后数量单位跟随商品', () => {
     return result
   }
 
-  it('unit=支 的商品写入行数量单位「支」', () => {
+  it('quantityUnit=支 的商品写入行数量单位「支」', () => {
+    const result = mount()
+    act(() => {
+      result.select(
+        '347011099205312512',
+        material({ quantityUnit: '支', unit: '吨' }),
+      )
+    })
+    expect(result.items[0].quantityUnit).toBe('支')
+  })
+
+  it('unit=吨、quantityUnit=件 的商品写入行数量单位「件」', () => {
+    const result = mount()
+    act(() => {
+      result.select(
+        '347011099205312512',
+        material({ quantityUnit: '件', unit: '吨' }),
+      )
+    })
+    expect(result.items[0].quantityUnit).toBe('件')
+  })
+
+  it('quantityUnit 缺失但 unit=支 时回落「支」', () => {
     const result = mount()
     act(() => {
       result.select('347011099205312512', material({ unit: '支' }))
@@ -75,18 +97,13 @@ describe('商品浮层选择后数量单位跟随商品', () => {
     expect(result.items[0].quantityUnit).toBe('支')
   })
 
-  it('unit=件 的商品保持「件」', () => {
+  it('quantityUnit 与 unit 都缺失时回落「件」', () => {
     const result = mount()
     act(() => {
-      result.select('347011099205312512', material({ unit: '件' }))
-    })
-    expect(result.items[0].quantityUnit).toBe('件')
-  })
-
-  it('商品 unit 缺失时回落「件」', () => {
-    const result = mount()
-    act(() => {
-      result.select('347011099205312512', material({ unit: undefined }))
+      result.select(
+        '347011099205312512',
+        material({ quantityUnit: undefined, unit: undefined }),
+      )
     })
     expect(result.items[0].quantityUnit).toBe('件')
   })
