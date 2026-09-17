@@ -27,6 +27,7 @@ import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import {
   buildSalesContractFormValues,
+  getSalesContractStatusLabelKey,
   getStatusActionTarget,
   resolveSalesContractCapabilities,
   type SalesContractFormValues,
@@ -242,9 +243,15 @@ export function useSalesContractPage() {
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       onOk: async () => {
-        await deleteSalesContract(record.id)
-        message.success(t('modules.salesContract.deleteSuccess'))
-        await handleEditorSaved()
+        try {
+          await deleteSalesContract(record.id)
+          message.success(t('modules.salesContract.deleteSuccess'))
+          await handleEditorSaved()
+        } catch (error) {
+          message.error(
+            error instanceof Error ? error.message : t('api.saveFailed'),
+          )
+        }
       },
     })
   }
@@ -255,18 +262,27 @@ export function useSalesContractPage() {
     }
     const record = selectedRecord
     const target = getStatusActionTarget(kind)
+    // 状态值以后端中文枚举为契约, 展示层按 locale 翻译, 避免英文界面出现原始中文。
+    const targetLabel =
+      t(getSalesContractStatusLabelKey(target) ?? '') || target
     modal.confirm({
       title: t('modules.salesContract.statusChangeConfirmTitle'),
       content: t('modules.salesContract.statusChangeConfirmContent', {
         contractNo: asString(record.contractNo),
-        status: target,
+        status: targetLabel,
       }),
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       onOk: async () => {
-        await updateSalesContractStatus(record.id, target)
-        message.success(t('modules.salesContract.statusChangeSuccess'))
-        await handleEditorSaved()
+        try {
+          await updateSalesContractStatus(record.id, target)
+          message.success(t('modules.salesContract.statusChangeSuccess'))
+          await handleEditorSaved()
+        } catch (error) {
+          message.error(
+            error instanceof Error ? error.message : t('api.saveFailed'),
+          )
+        }
       },
     })
   }

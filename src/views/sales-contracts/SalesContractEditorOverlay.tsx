@@ -122,9 +122,7 @@ export function SalesContractEditorOverlay({
         form={form}
         layout="vertical"
         disabled={saving}
-        onValuesChange={(_, allValues) =>
-          syncEditorForm(allValues as unknown as Record<string, unknown>)
-        }
+        onValuesChange={(changedValues) => syncEditorForm(changedValues)}
       >
         <Row gutter={[12, 12]}>
           <Col span={8}>

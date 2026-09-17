@@ -8,6 +8,7 @@ import type {
   SalesContractStatus,
 } from '@/api/sales/sales-contracts'
 import {
+  getSalesContractStatusLabelKey,
   SALES_CONTRACT_STATUS_OPTIONS,
   type SalesContractCapabilities,
 } from './sales-contract-model'
@@ -126,7 +127,12 @@ export function SalesContractFilterToolbar({
             style={{ width: 140 }}
             value={filterStatus}
             onChange={onFilterStatusChange}
-            options={[...SALES_CONTRACT_STATUS_OPTIONS]}
+            options={SALES_CONTRACT_STATUS_OPTIONS.map((option) => ({
+              label:
+                t(getSalesContractStatusLabelKey(option.value) ?? '') ||
+                option.value,
+              value: option.value,
+            }))}
           />
           <Button type="primary" onClick={onSearch}>
             {t('common.search')}
