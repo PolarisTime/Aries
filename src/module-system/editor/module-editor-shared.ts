@@ -4,6 +4,9 @@ import { asString } from '@/utils/type-narrowing'
 
 export type EditorItemDragPosition = 'before' | 'after'
 
+/** 商品主数据缺失单位时数量单位回落的默认值。 */
+export const DEFAULT_QUANTITY_UNIT = '件'
+
 export const DERIVED_READONLY_ITEM_COLUMN_KEYS = new Set([
   'sourceNo',
   'brand',
@@ -46,13 +49,29 @@ export function toRoundedNumber(value: unknown, precision: number) {
   return Number(numericValue.toFixed(precision))
 }
 
+/**
+ * 数量单位真源为商品主数据的 `unit`（单位）。
+ * 仅当商品没有 unit（空/缺失）时才回落默认「件」。
+ */
 export function inferQuantityUnit(record?: ModuleRecord | null) {
-  const explicitUnit = asString(record?.quantityUnit).trim()
-  if (explicitUnit) {
-    return explicitUnit
+  const sourceUnit = asString(record?.unit).trim()
+  if (sourceUnit) {
+    return sourceUnit
   }
 
-  return '件'
+  return DEFAULT_QUANTITY_UNIT
+}
+
+/** 判断行是否已选中商品：数量单位是否来自商品据此判定，而不是字符串等于「件」。 */
+export function hasMaterialSelection(record?: ModuleLineItem | null) {
+  if (!record) {
+    return false
+  }
+  return (
+    hasEditorValue(record.materialId) ||
+    hasEditorValue(record.materialCode) ||
+    hasEditorValue(record.material)
+  )
 }
 
 function buildModuleLineItemId() {
@@ -100,7 +119,7 @@ export function buildDefaultEditorLineItem(
     length: '',
     unit: '吨',
     batchNo: '',
-    quantityUnit: '件',
+    quantityUnit: DEFAULT_QUANTITY_UNIT,
     pieceWeightTon: 0,
     piecesPerBundle: 0,
     quantity: isPurchaseOrder(moduleKey) ? 1 : 0,

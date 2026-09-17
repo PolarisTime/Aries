@@ -9,9 +9,11 @@ import { isPurchaseWeighRequiredCategory } from '@/module-system/core/module-opt
 import { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
 import {
   buildDefaultEditorLineItem,
+  DEFAULT_QUANTITY_UNIT,
   type EditorItemDragPosition,
   generateBatchNo,
   hasEditorValue,
+  hasMaterialSelection,
   inferQuantityUnit,
   toRoundedNumber,
 } from '@/module-system/editor/module-editor-shared'
@@ -78,7 +80,9 @@ function isEmptyDraftLineItem(item: ModuleLineItem, moduleKey: string) {
     isBlankLike(item.warehouseName) &&
     isBlankLike(item.settlementMode) &&
     (!unit || unit === defaultItem.unit) &&
-    (!quantityUnit || quantityUnit === defaultItem.quantityUnit) &&
+    (!quantityUnit ||
+      (!hasMaterialSelection(item) &&
+        quantityUnit === defaultItem.quantityUnit)) &&
     isDefaultOrZeroNumericValue(item.quantity, defaultItem.quantity) &&
     isZeroLike(item.pieceWeightTon) &&
     isZeroLike(item.piecesPerBundle) &&
@@ -147,7 +151,7 @@ export function applyMaterialToEditorLineItem(
     item.spec = ''
     item.length = ''
     item.unit = '吨'
-    item.quantityUnit = '件'
+    item.quantityUnit = DEFAULT_QUANTITY_UNIT
     item.pieceWeightTon = 0
     item.piecesPerBundle = 0
     item.unitPrice = 0

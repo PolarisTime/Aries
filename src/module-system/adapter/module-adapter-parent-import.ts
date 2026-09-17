@@ -1,3 +1,7 @@
+import {
+  DEFAULT_QUANTITY_UNIT,
+  hasMaterialSelection,
+} from '@/module-system/editor/module-editor-shared'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import type {
   ModuleLineItem,
@@ -94,7 +98,9 @@ function isEmptyDraftLineItem(item: ModuleLineItem) {
       item.materialName,
     ].every(isBlankString) &&
     (!unit || unit === '吨') &&
-    (!quantityUnit || quantityUnit === '件') &&
+    (!quantityUnit ||
+      (!hasMaterialSelection(item) &&
+        quantityUnit === DEFAULT_QUANTITY_UNIT)) &&
     [
       item.quantity,
       item.pieceWeightTon,
