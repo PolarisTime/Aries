@@ -107,7 +107,7 @@
 | 15 | 锁 TTL 过期后他人无需 force 即可接管 | PASS（约 2.2m） |
 | 16 | 续约请求飞行中关闭页面: 不再续约且锁按 TTL 释放 | PASS（约 2.1m） |
 
-汇总：concurrency 10 passed（1.1m）+ edit-lock 6 passed（4.7m）。相关 vitest：`pnpm exec vitest run`
+汇总：concurrency 10 passed（1.1m）+ edit-lock 6 passed（4.8m）。相关 vitest：`pnpm exec vitest run`
 1015 passed（含新增 4 条路由释放/补签出用例，原 1011）；`pnpm typecheck` 通过；
 `npx eslint .` 退出码 0；`npx biome check src tests/e2e` 退出码 0（仅既有 core.spec.ts 的 info）。
 
