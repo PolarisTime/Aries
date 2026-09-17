@@ -1804,6 +1804,9 @@ export const zhCN = {
     },
     personalSettings: {
       title: '个人设置',
+      displayTab: '外观',
+      accountTab: '账户资料',
+      passwordTab: '修改密码',
     },
     settings: {
       systemFont: '系统字体',

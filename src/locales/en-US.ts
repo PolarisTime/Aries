@@ -1856,6 +1856,9 @@ export const enUS = {
     },
     personalSettings: {
       title: 'Personal Settings',
+      displayTab: 'Display',
+      accountTab: 'Account Profile',
+      passwordTab: 'Change Password',
     },
     settings: {
       systemFont: 'System Font',

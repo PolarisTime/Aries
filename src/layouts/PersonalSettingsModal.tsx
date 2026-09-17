@@ -1,8 +1,12 @@
-import { Modal } from 'antd'
+import { Modal, Tabs } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 import type { ThemeMode } from '@/utils/storage'
+import {
+  AccountPasswordPanel,
+  AccountProfilePanel,
+} from '@/views/system/account-panels'
 
 interface Props {
   open: boolean
@@ -38,18 +42,38 @@ export function PersonalSettingsModal({
       open={open}
       onCancel={onClose}
       footer={null}
-      width={720}
+      width={760}
       mask={{ closable: false }}
     >
-      <PersonalSettingsDisplayTab
-        fontSize={fontSize}
-        layoutMode={layoutMode}
-        themeMode={themeMode}
-        onFontSizeChange={onFontSizeChange}
-        onLayoutModeChange={onLayoutModeChange}
-        onThemeModeChange={onThemeModeChange}
-        onResetDisplay={onResetDisplay}
-        onSaveDisplay={onSaveDisplay}
+      <Tabs
+        items={[
+          {
+            key: 'display',
+            label: t('layouts.personalSettings.displayTab'),
+            children: (
+              <PersonalSettingsDisplayTab
+                fontSize={fontSize}
+                layoutMode={layoutMode}
+                themeMode={themeMode}
+                onFontSizeChange={onFontSizeChange}
+                onLayoutModeChange={onLayoutModeChange}
+                onThemeModeChange={onThemeModeChange}
+                onResetDisplay={onResetDisplay}
+                onSaveDisplay={onSaveDisplay}
+              />
+            ),
+          },
+          {
+            key: 'account',
+            label: t('layouts.personalSettings.accountTab'),
+            children: <AccountProfilePanel />,
+          },
+          {
+            key: 'password',
+            label: t('layouts.personalSettings.passwordTab'),
+            children: <AccountPasswordPanel />,
+          },
+        ]}
       />
     </Modal>
   )
