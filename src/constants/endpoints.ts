@@ -114,6 +114,14 @@ export const ENDPOINTS = {
   SALES_ORDER_DOCUMENT_FLOW: (id: string | number) =>
     `/sales-orders/${pathSegment(id)}/document-flow`,
 
+  // Sales contracts (sales order amount/tonnage limit basis)
+  SALES_CONTRACTS: '/sales-contracts',
+  SALES_CONTRACT: (id: string | number) =>
+    `/sales-contracts/${pathSegment(id)}`,
+  SALES_CONTRACT_STATUS: (id: string | number) =>
+    `/sales-contracts/${pathSegment(id)}/status`,
+  SALES_ORDER_CONTRACT_CHECKS: '/sales-orders/contract-checks',
+
   // Sales returns (reverse outbound documents)
   SALES_RETURNS: '/sales-returns',
   SALES_RETURN_CANDIDATES: '/sales-returns/candidates',

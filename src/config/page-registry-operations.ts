@@ -32,6 +32,14 @@ export const operationPageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
+    key: 'sales-contract',
+    title: '销售合同',
+    menuKey: '/sales-contract',
+    view: 'sales-contract',
+    icon: 'ProfileOutlined',
+    menuParent: 'sales',
+  },
+  {
     key: 'sales-outbound',
     title: '销售出库',
     menuKey: '/sales-outbound',

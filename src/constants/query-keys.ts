@@ -67,6 +67,19 @@ export const QUERY_KEYS = {
   businessGridOverlayPreload: (name: string) =>
     ['business-grid-overlay-preload', name] as const,
 
+  // Sales contracts
+  salesContractsBase: ['sales-contracts'] as const,
+  salesContracts: (query: {
+    keyword?: string
+    customerId?: string
+    projectId?: string
+    status?: string
+    page: number
+    size: number
+  }) => ['sales-contracts', query] as const,
+  salesContractDetail: (id: string) =>
+    ['sales-contracts', 'detail', id] as const,
+
   // Master data
   masterDataCode: (moduleKey: string) =>
     ['master-data-code', moduleKey] as const,

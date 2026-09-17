@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   saveAndAuditBusinessModule,
@@ -7,6 +7,7 @@ import {
 import { createIdempotencyKey } from '@/api/core/idempotency'
 import { readRequestError } from '@/api/core/request-errors'
 import { saveAndCompleteSalesOrder } from '@/api/sales/document-flow-commands'
+import { fetchSalesOrderContractCheck } from '@/api/sales/sales-contracts'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import {
@@ -57,6 +58,7 @@ import {
   sumLineItemsBy,
   type WorkspaceFormApi,
 } from '@/views/modules/module-editor-workspace-support'
+import { runSalesOrderContractCheck } from '@/views/modules/sales-order-contract-check'
 
 export interface EditorSaveResult<Key extends ModuleKey> {
   status: 'success' | 'error' | 'warning'
@@ -319,6 +321,36 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
           } else {
             delete draftRecord[editorAuditTarget.key]
           }
+        }
+      }
+
+      if (moduleKey === 'sales-order') {
+        const contractDecision = await runSalesOrderContractCheck(
+          draftRecord,
+          t,
+          {
+            fetchCheck: (params) => fetchSalesOrderContractCheck(params),
+            confirm: (options) =>
+              new Promise<boolean>((resolve) => {
+                modal.confirm({
+                  title: options.title,
+                  content: createElement(
+                    'div',
+                    { style: { whiteSpace: 'pre-line' } },
+                    options.content.join('\n'),
+                  ),
+                  okText: options.okText,
+                  cancelText: options.cancelText,
+                  onOk: () => resolve(true),
+                  onCancel: () => resolve(false),
+                })
+              }),
+            warn: (text) => message.warning(text),
+          },
+        )
+        if (contractDecision === 'abort') {
+          invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+          return
         }
       }
 
