@@ -5,6 +5,7 @@ import {
   canDeleteRole,
   canEditRoleCode,
   getActionLabel,
+  getPermissionLabel,
   groupPermissionCodes,
   groupPermissionsByResource,
   hasWildcardPermission,
@@ -143,5 +144,63 @@ describe('getActionLabel', () => {
   it('缺少翻译时回退动作原值', () => {
     const t = ((key: string) => key) as unknown as TFunction
     expect(getActionLabel('unknown-action', t)).toBe('unknown-action')
+  })
+})
+
+describe('getPermissionLabel', () => {
+  const t = ((key: string) =>
+    ({
+      'system.role.actions.read': '查看',
+      'system.role.actions.update': '编辑',
+      'system.role.fields.amount': '金额',
+      'system.role.fields.unit-price': '单价',
+    })[key] ?? key) as unknown as TFunction
+
+  it('普通权限仅显示动作', () => {
+    expect(
+      getPermissionLabel(
+        { code: 'sales-orders:read', resource: 'sales-orders', action: 'read' },
+        t,
+      ),
+    ).toBe('查看')
+  })
+
+  it('字段级权限显示「动作·字段」，与普通权限区分', () => {
+    expect(
+      getPermissionLabel(
+        {
+          code: 'sales-orders:read:amount',
+          resource: 'sales-orders',
+          action: 'read',
+          field: 'amount',
+        },
+        t,
+      ),
+    ).toBe('查看·金额')
+    expect(
+      getPermissionLabel(
+        {
+          code: 'sales-orders:update:unit-price',
+          resource: 'sales-orders',
+          action: 'update',
+          field: 'unit-price',
+        },
+        t,
+      ),
+    ).toBe('编辑·单价')
+  })
+
+  it('未登记字段回退字段码', () => {
+    expect(
+      getPermissionLabel(
+        {
+          code: 'x:read:unknown',
+          resource: 'x',
+          action: 'read',
+          field: 'unknown',
+        },
+        t,
+      ),
+    ).toBe('查看·unknown')
   })
 })

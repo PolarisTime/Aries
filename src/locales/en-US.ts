@@ -2089,6 +2089,11 @@ export const enUS = {
         rebuild: 'Rebuild',
         sync: 'Sync',
       },
+      fields: {
+        amount: 'Amount',
+        'unit-price': 'Unit Price',
+        cost: 'Cost',
+      },
     },
     companyHeader: {
       title: 'Settlement Entity Management',

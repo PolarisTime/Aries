@@ -54,7 +54,7 @@ export function groupPermissionsByResource(
   return [...byResource.entries()]
     .map(([resource, actions]) => ({
       resource,
-      actions: [...actions].sort(compareActions),
+      actions: actions.toSorted(compareActions),
     }))
     .sort((left, right) => left.resource.localeCompare(right.resource))
 }
@@ -115,6 +115,27 @@ export function getActionLabel(action: string, t: TFunction): string {
   const key = `system.role.actions.${action}`
   const translated = t(key)
   return translated === key ? action : translated
+}
+
+/** 字段级权限的字段名文案；未登记时回退字段码本身。 */
+export function getFieldLabel(field: string, t: TFunction): string {
+  const key = `system.role.fields.${field}`
+  const translated = t(key)
+  return translated === key ? field : translated
+}
+
+/**
+ * 权限项展示文案：字段级权限显示「动作·字段」(如「查看·金额」)，避免与普通
+ * `资源:动作` 权限（同为「查看」「编辑」）在矩阵中重名无法区分。
+ */
+export function getPermissionLabel(
+  permission: Permission,
+  t: TFunction,
+): string {
+  const action = getActionLabel(permission.action, t)
+  return permission.field
+    ? `${action}·${getFieldLabel(permission.field, t)}`
+    : action
 }
 
 export const WILDCARD_PERMISSION = '*'

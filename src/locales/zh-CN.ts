@@ -2029,6 +2029,11 @@ export const zhCN = {
         rebuild: '重建',
         sync: '同步',
       },
+      fields: {
+        amount: '金额',
+        'unit-price': '单价',
+        cost: '成本',
+      },
     },
     companyHeader: {
       title: '结算主体管理',

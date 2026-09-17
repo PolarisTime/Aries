@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { listPermissions } from '@/api/system/permissions'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
-  getActionLabel,
+  getPermissionLabel,
   groupPermissionsByResource,
   isGroupFullySelected,
   isGroupPartiallySelected,
@@ -179,7 +179,7 @@ export function RolePermissionPicker({
                         )
                       }
                     >
-                      {getActionLabel(permission.action, t)}
+                      {getPermissionLabel(permission, t)}
                     </Checkbox>
                   ))}
                 </Flex>
