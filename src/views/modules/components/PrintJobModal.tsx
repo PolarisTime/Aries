@@ -350,13 +350,13 @@ export function PrintJobModal({
     () => new Set(state.splitItemIds),
     [state.splitItemIds],
   )
-  const effectiveSplitItemIds = useMemo(
-    () =>
-      printItems
-        .filter((item) => splitItemIdSet.has(item.id))
-        .map((item) => item.id),
-    [printItems, splitItemIdSet],
-  )
+  const effectiveSplitItemIds = useMemo(() => {
+    const itemIds: string[] = []
+    for (const item of printItems) {
+      if (splitItemIdSet.has(item.id)) itemIds.push(item.id)
+    }
+    return itemIds
+  }, [printItems, splitItemIdSet])
   const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
   const selectedTemplate =
     templates.find((template) => template.id === templateIdFromForm) ??
