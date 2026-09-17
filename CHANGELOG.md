@@ -1,3 +1,19 @@
+# [10.10.0](https://github.com/PolarisTime/Aries/compare/v10.9.4...v10.10.0) (2026-09-17)
+
+
+### Bug Fixes
+
+* **editor:** 明细数量单位改为跟随商品单位 ([096c450](https://github.com/PolarisTime/Aries/commit/096c450a4d2971c0689a6e8ff097c8190a47df7c))
+* **editor:** 明细数量单位真源纠正为商品 quantityUnit ([a39c45c](https://github.com/PolarisTime/Aries/commit/a39c45cef2eab6558f29d25cad315ca68537f4db))
+
+
+### Features
+
+* **price-compare:** 新增供应商简称列并压缩品牌列宽 ([a4c35fd](https://github.com/PolarisTime/Aries/commit/a4c35fdf45961668dfd36f1d02ae738f8c0e4a28))
+* **sales-contract:** 对齐销售合同后端契约并新增管理页 ([ee34fed](https://github.com/PolarisTime/Aries/commit/ee34fed8d87818756b5e0f95493a5064c76fb10e))
+* **search:** 全局搜索支持查看采购销售物流单据流向 ([df9d9fd](https://github.com/PolarisTime/Aries/commit/df9d9fd67eb2a2142c9da244af0fe762cb9b606c))
+* **supplier:** 新增经营品牌并在报单比价按品牌过滤供应商 ([e69ceb0](https://github.com/PolarisTime/Aries/commit/e69ceb0115b8af7d70fd784bd986d0e52d5cfa5f))
+
 ## [10.9.4](https://github.com/PolarisTime/Aries/compare/v10.9.3...v10.9.4) (2026-09-17)
 
 
