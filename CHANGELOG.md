@@ -1,3 +1,10 @@
+## [10.9.2](https://github.com/PolarisTime/Aries/compare/v10.9.1...v10.9.2) (2026-09-17)
+
+
+### Bug Fixes
+
+* **price-compare:** 禁止锁定规格数量后撤销回退并补充极端场景 E2E ([7496138](https://github.com/PolarisTime/Aries/commit/74961384604cef5c345ce4c28f1ae21750570aea))
+
 ## [10.9.1](https://github.com/PolarisTime/Aries/compare/v10.9.0...v10.9.1) (2026-09-16)
 
 
