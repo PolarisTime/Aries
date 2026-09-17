@@ -1,3 +1,11 @@
+## [10.9.3](https://github.com/PolarisTime/Aries/compare/v10.9.2...v10.9.3) (2026-09-17)
+
+
+### Bug Fixes
+
+* **price-compare:** 离开比价路由释放编辑锁并补强多角色 E2E ([ae116c7](https://github.com/PolarisTime/Aries/commit/ae116c7075cf690229109b39b00db3faa597a152))
+* **price-compare:** 离开路由后新批次不再后台签出编辑锁 ([0578a38](https://github.com/PolarisTime/Aries/commit/0578a387a6557f40b206a5868e29b4778272e13b))
+
 ## [10.9.2](https://github.com/PolarisTime/Aries/compare/v10.9.1...v10.9.2) (2026-09-17)
 
 
