@@ -19,6 +19,7 @@ const template: PrintTemplateRecord = {
 function setup(
   overrides: {
     splitPieceCount?: number
+    splitItemIds?: string[]
     onExportPrintXlsx?: (
       options?: SalesOrderPrintXlsxOptions,
     ) => Promise<boolean>
@@ -45,10 +46,11 @@ function setup(
 }
 
 describe('拆分打印选项组装', () => {
-  it('勾选且件数有效时，渲染与 xlsx 选项都携带 splitPieceCount', async () => {
+  it('勾选且件数有效时，渲染与 xlsx 选项都携带 splitPieceCount 与逐行拆分集合', async () => {
     const onExportPrintXlsx = vi.fn().mockResolvedValue(true)
     const { actions, onPrint } = setup({
       splitPieceCount: 25,
+      splitItemIds: ['1001', '1002'],
       onExportPrintXlsx,
     })
 
@@ -56,21 +58,42 @@ describe('拆分打印选项组装', () => {
     expect(onPrint).toHaveBeenCalledWith(
       'preview',
       template,
-      expect.objectContaining({ splitPieceCount: 25 }),
+      expect.objectContaining({
+        splitPieceCount: 25,
+        splitItemIds: ['1001', '1002'],
+      }),
     )
 
     await actions.handleExportPrintXlsx()
     expect(onExportPrintXlsx).toHaveBeenCalledWith(
-      expect.objectContaining({ splitPieceCount: 25 }),
+      expect.objectContaining({
+        splitPieceCount: 25,
+        splitItemIds: ['1001', '1002'],
+      }),
     )
   })
 
-  it('未勾选或件数无效时，选项不包含 splitPieceCount', async () => {
+  it('勾选拆分但未勾选任何行时，splitItemIds 下传空数组表示不拆', async () => {
+    const { actions, onPrint } = setup({
+      splitPieceCount: 25,
+      splitItemIds: [],
+    })
+
+    await actions.handlePrint('preview')
+    expect(onPrint).toHaveBeenCalledWith(
+      'preview',
+      template,
+      expect.objectContaining({ splitPieceCount: 25, splitItemIds: [] }),
+    )
+  })
+
+  it('未勾选或件数无效时，选项不包含拆分字段', async () => {
     const { actions, onPrint } = setup({ splitPieceCount: undefined })
 
     await actions.handlePrint('preview')
     const options = onPrint.mock.calls[0]?.[2] ?? {}
     expect(options).not.toHaveProperty('splitPieceCount')
+    expect(options).not.toHaveProperty('splitItemIds')
   })
 })
 

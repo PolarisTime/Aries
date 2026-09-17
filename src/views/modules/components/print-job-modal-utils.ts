@@ -22,6 +22,24 @@ export function reorderPrintItemIds(
   return next
 }
 
+/** 切换拆分勾选：组内全部已勾选则取消全组，否则勾选全组（单行为组长度 1）。 */
+export function togglePrintItemSplitIds(
+  current: string[],
+  memberIds: string[],
+): string[] {
+  const next = new Set(current)
+  const shouldRemove =
+    memberIds.length > 0 && memberIds.every((itemId) => next.has(itemId))
+  for (const itemId of memberIds) {
+    if (shouldRemove) {
+      next.delete(itemId)
+    } else {
+      next.add(itemId)
+    }
+  }
+  return Array.from(next)
+}
+
 function normalizedPrintItemField(value: string | undefined) {
   return value?.trim() ?? ''
 }
@@ -41,7 +59,11 @@ function printItemMergeKey(
   return JSON.stringify([brand, category, material, spec, length])
 }
 
-export function buildPrintItemMergeMarkers(
+/**
+ * 按后端合并键（品牌/类别/材质/规格/长度）返回可合并分组，仅包含 ≥2 行的分组；
+ * 组内顺序保持传入明细顺序，与后端合并后的代表行（组内首行）一致。
+ */
+export function buildPrintItemMergeGroups(
   items: PrintRecordItem[],
   brandOverridesByItemId: Record<string, string>,
 ) {
@@ -54,10 +76,21 @@ export function buildPrintItemMergeMarkers(
     itemIdsByMergeKey.set(mergeKey, itemIds)
   }
 
+  return Array.from(itemIdsByMergeKey.values()).filter(
+    (itemIds) => itemIds.length >= 2,
+  )
+}
+
+export function buildPrintItemMergeMarkers(
+  items: PrintRecordItem[],
+  brandOverridesByItemId: Record<string, string>,
+) {
   const markersByItemId: Record<string, PrintItemMergeMarker> = {}
   let groupIndex = 1
-  for (const itemIds of itemIdsByMergeKey.values()) {
-    if (itemIds.length < 2) continue
+  for (const itemIds of buildPrintItemMergeGroups(
+    items,
+    brandOverridesByItemId,
+  )) {
     for (const itemId of itemIds) {
       markersByItemId[itemId] = {
         groupIndex,

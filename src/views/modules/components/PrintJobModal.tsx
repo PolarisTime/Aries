@@ -50,7 +50,11 @@ import {
   printJobModalReducer,
   resolveSplitPieceCount,
 } from '@/views/modules/components/print-job-modal-state'
-import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
+import {
+  buildPrintItemMergeGroups,
+  reorderPrintItemIds,
+  togglePrintItemSplitIds,
+} from '@/views/modules/components/print-job-modal-utils'
 import { usePrintJobItems } from '@/views/modules/use-print-job-items'
 import { PrintJobItemsSection } from './PrintJobItemsSection'
 import { PrintJobModalFooter } from './PrintJobModalFooter'
@@ -155,6 +159,7 @@ interface PrintJobOutputActionsInput {
   orderedPrintItemIds: string[]
   selectedItemIds: string[]
   selectedTemplate?: PrintTemplateRecord
+  splitItemIds?: string[]
   splitPieceCount?: number
 }
 
@@ -172,6 +177,7 @@ export function createPrintJobOutputActions({
   orderedPrintItemIds,
   selectedItemIds,
   selectedTemplate,
+  splitItemIds,
   splitPieceCount,
 }: PrintJobOutputActionsInput) {
   const currentBrandOverridesByItemId = () => {
@@ -201,7 +207,10 @@ export function createPrintJobOutputActions({
       ...(currentBrandOverridesByItemId()
         ? { brandOverridesByItemId: currentBrandOverridesByItemId() }
         : {}),
-      ...(splitPieceCount ? { splitPieceCount } : {}),
+      // 拆分件数与逐行拆分集合必须成对下传：空数组表示勾选了拆分打印但没有勾选任何行。
+      ...(splitPieceCount
+        ? { splitPieceCount, splitItemIds: splitItemIds ?? [] }
+        : {}),
     }
   }
 
@@ -337,6 +346,17 @@ export function PrintJobModal({
   )
   const splitPieceCountInvalid =
     splitPrintEnabled && splitPieceCount === undefined
+  const splitItemIdSet = useMemo(
+    () => new Set(state.splitItemIds),
+    [state.splitItemIds],
+  )
+  const effectiveSplitItemIds = useMemo(
+    () =>
+      printItems
+        .filter((item) => splitItemIdSet.has(item.id))
+        .map((item) => item.id),
+    [printItems, splitItemIdSet],
+  )
   const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
   const selectedTemplate =
     templates.find((template) => template.id === templateIdFromForm) ??
@@ -416,8 +436,38 @@ export function PrintJobModal({
     orderedPrintItemIds,
     selectedItemIds: selectedPrintItems.map((item) => item.id),
     selectedTemplate,
+    splitItemIds: effectiveSplitItemIds,
     splitPieceCount,
   })
+
+  const mergeGroupByItemId = useMemo(() => {
+    const groupByItemId: Record<string, string[]> = {}
+    if (!showMergeGroup) return groupByItemId
+    const groups = buildPrintItemMergeGroups(
+      selectedPrintItems,
+      brandOverrideEnabled ? state.brandOverridesByItemId : {},
+    )
+    for (const memberIds of groups) {
+      for (const itemId of memberIds) {
+        groupByItemId[itemId] = memberIds
+      }
+    }
+    return groupByItemId
+  }, [
+    brandOverrideEnabled,
+    selectedPrintItems,
+    showMergeGroup,
+    state.brandOverridesByItemId,
+  ])
+
+  const handleToggleSplitItem = (itemId: string) => {
+    // 合并模式下拆分作用于整个同款组：勾选任一行即勾选全组，取消同理。
+    const memberIds = mergeGroupByItemId[itemId] ?? [itemId]
+    dispatchPrintJobModal({
+      type: 'setSplitItemIds',
+      itemIds: togglePrintItemSplitIds(state.splitItemIds, memberIds),
+    })
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -578,6 +628,10 @@ export function PrintJobModal({
                 onRetryPrintItems={() => {
                   void refetchPrintItems()
                 }}
+                splitColumnEnabled={splitPrintEnabled}
+                splitPieceCount={splitPieceCount}
+                splitItemIds={effectiveSplitItemIds}
+                onToggleSplitItem={handleToggleSplitItem}
               />
             </div>
           </SortableContext>

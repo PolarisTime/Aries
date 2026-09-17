@@ -41,6 +41,7 @@ export interface PrintJobModalState {
   orderedPrintItemIds: string[]
   excludedPrintItemIds: string[]
   outputPrintItemIds: string[]
+  splitItemIds: string[]
   pendingOutputAction?: PendingOutputAction
 }
 
@@ -48,6 +49,7 @@ export type PrintJobModalAction =
   | { type: 'setBrandOverride'; itemId: string; value: string }
   | { type: 'setOrderedPrintItemIds'; itemIds: string[] }
   | { type: 'setExcludedPrintItemIds'; itemIds: string[] }
+  | { type: 'setSplitItemIds'; itemIds: string[] }
   | { type: 'markPrintItemsOutput'; itemIds: string[] }
   | { type: 'setPendingOutputAction'; value?: PendingOutputAction }
   | { type: 'reset' }
@@ -57,6 +59,7 @@ export const INITIAL_PRINT_JOB_MODAL_STATE: PrintJobModalState = {
   excludedPrintItemIds: [],
   orderedPrintItemIds: [],
   outputPrintItemIds: [],
+  splitItemIds: [],
 }
 
 export function printJobModalReducer(
@@ -76,6 +79,8 @@ export function printJobModalReducer(
       return { ...state, orderedPrintItemIds: action.itemIds }
     case 'setExcludedPrintItemIds':
       return { ...state, excludedPrintItemIds: action.itemIds }
+    case 'setSplitItemIds':
+      return { ...state, splitItemIds: action.itemIds }
     case 'markPrintItemsOutput':
       return {
         ...state,

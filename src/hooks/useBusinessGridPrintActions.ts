@@ -34,6 +34,8 @@ export interface PrintRenderOptions {
   itemOrder?: string[]
   selectedItemIds?: string[]
   splitPieceCount?: number
+  /** 逐行勾选拆分的明细 ID；空数组表示没有任何行需要拆分。 */
+  splitItemIds?: string[]
 }
 
 function normalizeXlsxFileName(value: unknown) {

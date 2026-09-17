@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type { TableProps } from 'antd'
 import {
   Button,
+  Checkbox,
   Input,
   Space,
   Table,
@@ -28,12 +29,15 @@ import {
   getPrintItemColumnAlign,
   getPrintItemColumnWidth,
 } from '@/utils/print-module-config'
+import type { PrintItemSplitPart } from '@/views/modules/components/print-item-split'
+import { buildPrintItemSplitPreviews } from '@/views/modules/components/print-item-split'
 import {
   fieldText,
   printItemCellText,
 } from '@/views/modules/components/print-job-modal-format'
 import type { PrintJobModalAction } from '@/views/modules/components/print-job-modal-state'
 import type { PrintItemMergeMarker } from '@/views/modules/components/print-job-modal-utils'
+import { buildPrintItemMergeGroups } from '@/views/modules/components/print-job-modal-utils'
 import type { CustomerStatementItemGroup } from '@/views/modules/customer-statement-item-groups'
 import { groupCustomerStatementItems } from '@/views/modules/customer-statement-item-groups'
 import type { FreightStatementItemGroup } from '@/views/modules/freight-statement-item-groups'
@@ -129,6 +133,10 @@ interface Props {
   printItemFields: PrintItemFieldSpec[]
   printItemsError: boolean
   onRetryPrintItems: () => void
+  splitColumnEnabled: boolean
+  splitPieceCount?: number
+  splitItemIds: string[]
+  onToggleSplitItem: (itemId: string) => void
 }
 
 type PrintGroupItem = PrintRecordItem & Record<string, unknown>
@@ -187,9 +195,33 @@ export function PrintJobItemsSection({
   printItemFields,
   printItemsError,
   onRetryPrintItems,
+  splitColumnEnabled,
+  splitPieceCount,
+  splitItemIds,
+  onToggleSplitItem,
 }: Props) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const splitItemIdSet = useMemo(() => new Set(splitItemIds), [splitItemIds])
+  // 合并模式下后端先合并再拆分：预览按合并组汇总件数/重量/金额，拆分份挂在组内代表行（首行）。
+  const splitPartsByItemId = useMemo(() => {
+    if (!splitColumnEnabled || !splitPieceCount) return {}
+    return buildPrintItemSplitPreviews(
+      selectedPrintItems,
+      splitItemIds,
+      splitPieceCount,
+      showMergeGroup
+        ? buildPrintItemMergeGroups(selectedPrintItems, brandOverridesByItemId)
+        : [],
+    )
+  }, [
+    brandOverridesByItemId,
+    selectedPrintItems,
+    showMergeGroup,
+    splitColumnEnabled,
+    splitItemIds,
+    splitPieceCount,
+  ])
 
   const rowSelection: TableProps<PrintRecordItem>['rowSelection'] = {
     align: 'center',
@@ -238,6 +270,31 @@ export function PrintJobItemsSection({
         </Space>
       ),
     },
+    ...(splitColumnEnabled
+      ? [
+          {
+            key: 'split',
+            width: 64,
+            align: 'center' as const,
+            title: t('modules.print.itemSplit'),
+            render: (_: unknown, item: PrintRecordItem) => (
+              <Tooltip
+                title={
+                  splitPieceCount
+                    ? undefined
+                    : t('modules.print.splitPieceCountRequired')
+                }
+              >
+                <Checkbox
+                  checked={splitItemIdSet.has(item.id)}
+                  disabled={!splitPieceCount}
+                  onChange={() => onToggleSplitItem(item.id)}
+                />
+              </Tooltip>
+            ),
+          },
+        ]
+      : []),
     ...printItemFields.flatMap((field: PrintItemFieldSpec) => {
       const itemColumn = {
         key: field.key,
@@ -320,11 +377,84 @@ export function PrintJobItemsSection({
     t('modules.print.noPrintItems')
   )
 
+  const renderSplitParts = (item: PrintRecordItem) => {
+    const parts = splitPartsByItemId[item.id]
+    if (!parts?.length) {
+      return (
+        <Typography.Text type="secondary">
+          {t('modules.print.splitNotNeeded')}
+        </Typography.Text>
+      )
+    }
+    const hasWeight = parts.some((part) => part.weightTon !== undefined)
+    const hasAmount = parts.some((part) => part.amount !== undefined)
+    return (
+      <Table<PrintItemSplitPart>
+        columns={[
+          {
+            key: 'part',
+            width: 96,
+            align: 'center',
+            title: t('modules.print.splitPartIndex'),
+            render: (_, part) => `${part.index} / ${part.total}`,
+          },
+          {
+            key: 'quantity',
+            width: 96,
+            align: 'right',
+            title: t('modules.print.itemQuantity'),
+            render: (_, part) => part.quantity,
+          },
+          ...(hasWeight
+            ? [
+                {
+                  key: 'weightTon',
+                  width: 120,
+                  align: 'right' as const,
+                  title: t('modules.print.itemWeight'),
+                  render: (_: unknown, part: PrintItemSplitPart) =>
+                    part.weightTon ?? '-',
+                },
+              ]
+            : []),
+          ...(hasAmount
+            ? [
+                {
+                  key: 'amount',
+                  width: 120,
+                  align: 'right' as const,
+                  title: t('modules.print.itemAmount'),
+                  render: (_: unknown, part: PrintItemSplitPart) =>
+                    part.amount ?? '-',
+                },
+              ]
+            : []),
+        ]}
+        dataSource={parts}
+        pagination={false}
+        rowKey={(part) => `${item.id}-${part.index}`}
+        size="small"
+      />
+    )
+  }
+
+  const expandedSplitRowKeys = Object.keys(splitPartsByItemId)
+  const splitExpandable: TableProps<PrintRecordItem>['expandable'] =
+    splitColumnEnabled
+      ? {
+          expandedRowKeys: expandedSplitRowKeys,
+          expandedRowRender: (item) => renderSplitParts(item),
+          rowExpandable: (item) => item.id in splitPartsByItemId,
+          showExpandColumn: false,
+        }
+      : undefined
+
   const printItemsTable = (items: PrintRecordItem[]) => (
     <Table<PrintRecordItem>
       columns={columns}
       components={{ body: { row: SortableRow } }}
       dataSource={items}
+      expandable={splitExpandable}
       locale={{ emptyText: tableEmptyText }}
       pagination={false}
       rowKey={(item) => item.id}
