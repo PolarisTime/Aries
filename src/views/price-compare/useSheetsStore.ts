@@ -459,6 +459,11 @@ export function useSheetsStore(options?: {
   routeActive?: boolean
 }): SheetsStore {
   const routeActive = options?.routeActive ?? true
+  /** 最新路由活跃态: 供 create 成功等非渲染路径判断是否需要补签出。 */
+  const routeActiveRef = useRef(routeActive)
+  useEffect(() => {
+    routeActiveRef.current = routeActive
+  }, [routeActive])
   const token = useAuthStore((state) => state.token)
   const [state, setState] = useState<Snapshot>(defaultState)
   const [loading, setLoading] = useState(true)
@@ -983,7 +988,11 @@ export function useSheetsStore(options?: {
             dirtySheetsRef.current.delete(sheet.id)
             // create 只拿到 serverId 就返回, 不会触发依赖 serverIdRef 的切换 effect;
             // 若该单据仍是当前激活批次, 显式补一次签出, 避免新批次无编辑锁。
-            if (stateRef.current.activeId === sheet.id) {
+            // 已离开比价路由时不签出(否则会在后台续约占锁); 返回时由切换 effect 补签。
+            if (
+              routeActiveRef.current &&
+              stateRef.current.activeId === sheet.id
+            ) {
               // 记录已签出的 serverId, 避免 activeId 重映射到 serverId 后再重复释放/签出
               lockedActiveRef.current = saved.id
               void acquireEditLockRef.current(sheet.id)

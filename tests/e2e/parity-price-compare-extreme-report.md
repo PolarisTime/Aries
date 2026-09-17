@@ -108,7 +108,7 @@
 | 16 | 续约请求飞行中关闭页面: 不再续约且锁按 TTL 释放 | PASS（约 2.1m） |
 
 汇总：concurrency 10 passed（1.1m）+ edit-lock 6 passed（4.7m）。相关 vitest：`pnpm exec vitest run`
-1014 passed（含新增 3 条路由释放用例，原 1011）；`pnpm typecheck` 通过；
+1015 passed（含新增 4 条路由释放/补签出用例，原 1011）；`pnpm typecheck` 通过；
 `npx eslint .` 退出码 0；`npx biome check src tests/e2e` 退出码 0（仅既有 core.spec.ts 的 info）。
 
 ## 4. 发现的真实缺陷
@@ -139,6 +139,10 @@
   `usePriceCompareRouteActive()`（依据全局激活标签路径而非视图内子 Router location）判断是否仍在
   `/price-compare`；离开时释放当前锁并停止续约（保留页面本地状态），返回时重新签出，
   并沿用既有代次/卸载标记守卫，迟到响应不误删返回后重新签出的锁。
+- 衍生缺陷（已修复）：本地新建批次在防抖 `create` 成功后会补签出编辑锁，若在 `create` 返回前已离开
+  `/price-compare`，仍会在后台签出并续约。修复为 `create` 成功补签出前校验最新 `routeActive`，
+  离开时不签出、返回后由切换 effect 补签；vitest 用例「离开路由后新批次落库不后台签出, 返回后补签出」
+  在移除该守卫时稳定失败（`acquireQuoteSheetEditLock` 被调用），加回后通过。
 
 ## 5. 未覆盖 / 存疑
 

@@ -918,6 +918,59 @@ describe('useSheetsStore 服务端数据源', () => {
     )
   })
 
+  it('离开路由后新批次落库不后台签出, 返回后补签出', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.releaseEditLock()
+    })
+    api.acquireQuoteSheetEditLock.mockClear()
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    act(() => store.setRouteActive(false))
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+    // 已离开路由: create 成功也不得后台签出/续约
+    expect(api.acquireQuoteSheetEditLock).not.toHaveBeenCalled()
+
+    // 返回路由后由切换 effect 补签出
+    act(() => store.setRouteActive(true))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith(
+      '9002',
+      undefined,
+    )
+    expect(store.current.editLock?.mine).toBe(true)
+  })
+
   it('切到未落库批次时释放上一批次编辑锁', async () => {
     const store = renderStore()
     await hydrate(store)
