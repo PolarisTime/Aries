@@ -40,7 +40,9 @@ export function flowNodeKey(node: { type: string; id: string }): string {
 }
 
 function edgeKey(link: DocumentFlowLink): string {
-  return `${link.fromType ?? ''}:${link.fromId ?? ''}->${link.toType ?? ''}:${link.toId ?? ''}`
+  // 同一对节点间可能存在多种关系(如物流单同时是销售单与出库单的下游),
+  // key 必须包含 linkType, 否则多条连线会被误去重而丢失关系标签。
+  return `${link.fromType ?? ''}:${link.fromId ?? ''}->${link.toType ?? ''}:${link.toId ?? ''}#${link.linkType ?? ''}`
 }
 
 /**
@@ -92,6 +94,8 @@ export function layoutDocumentFlow(
     (key) => (indegree.get(key) ?? 0) === 0,
   )
   const remaining = new Map(indegree)
+  // 用 Set 记录已入队节点, 避免在循环内做 O(n) 的 queue.includes 查找。
+  const enqueued = new Set(queue)
   for (const key of queue) levelOf.set(key, 0)
   while (queue.length) {
     const current = queue.shift() as string
@@ -101,7 +105,8 @@ export function layoutDocumentFlow(
         Math.max(levelOf.get(next) ?? 0, (levelOf.get(current) ?? 0) + 1),
       )
       remaining.set(next, (remaining.get(next) ?? 0) - 1)
-      if ((remaining.get(next) ?? 0) <= 0 && !queue.includes(next)) {
+      if ((remaining.get(next) ?? 0) <= 0 && !enqueued.has(next)) {
+        enqueued.add(next)
         queue.push(next)
       }
     }

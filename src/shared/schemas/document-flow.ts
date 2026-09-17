@@ -29,6 +29,8 @@ export const documentFlowSchema = z.looseObject({
   documentNo: z.string(),
   nodes: z.array(documentFlowNodeSchema),
   links: z.array(documentFlowLinkSchema),
+  /** 节点/关系边数量达到上限被服务端截断时置真。 */
+  truncated: z.boolean().optional(),
 })
 
 export type DocumentFlow = z.output<typeof documentFlowSchema>

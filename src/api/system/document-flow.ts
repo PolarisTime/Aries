@@ -10,7 +10,8 @@ export function getDocumentFlow(
   documentNo: string,
   signal?: AbortSignal,
 ): Promise<DocumentFlow> {
-  return apiGet(ENDPOINTS.DOCUMENT_FLOW(documentNo), documentFlowSchema, {
+  return apiGet(ENDPOINTS.DOCUMENT_FLOW, documentFlowSchema, {
     signal,
+    params: { documentNo },
   })
 }

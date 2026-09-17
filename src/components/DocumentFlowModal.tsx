@@ -97,7 +97,7 @@ export function DocumentFlowModal({
         <Alert
           showIcon
           type="error"
-          message={
+          title={
             error instanceof Error
               ? error.message
               : t('documentFlow.loadFailed')
@@ -175,6 +175,7 @@ export function DocumentFlowModal({
                     <button
                       type="button"
                       className="document-flow-node"
+                      disabled={!onOpenNode}
                       style={{
                         left: item.x,
                         top: item.y,
@@ -182,9 +183,13 @@ export function DocumentFlowModal({
                         height: FLOW_NODE_HEIGHT,
                         ...(meta ? { borderTopColor: meta.color } : {}),
                       }}
-                      aria-label={t('documentFlow.openDocument', {
-                        no: item.node.no ?? item.node.id,
-                      })}
+                      aria-label={
+                        onOpenNode
+                          ? t('documentFlow.openDocument', {
+                              no: item.node.no ?? item.node.id,
+                            })
+                          : undefined
+                      }
                       onClick={() => onOpenNode?.(item.node)}
                     >
                       <span
