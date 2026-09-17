@@ -597,6 +597,32 @@
   box-shadow: none;
 }
 
+/* 搜索结果项: 文本 + 单据流向入口 */
+.header-global-search-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.header-global-search-option-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-global-search-flow-button.ant-btn {
+  flex: 0 0 auto;
+  color: var(--text-placeholder);
+}
+
+.header-global-search-flow-button.ant-btn:hover,
+.header-global-search-flow-button.ant-btn:focus {
+  color: var(--theme-primary);
+}
+
 .user-wrapper {
   display: inline-flex;
   align-items: center;

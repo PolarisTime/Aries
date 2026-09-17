@@ -106,6 +106,7 @@ export const QUERY_KEYS = {
   // Global search
   globalSearch: (keyword: string, moduleKeys: readonly string[]) =>
     ['global-search', keyword, moduleKeys] as const,
+  documentFlow: (documentNo: string) => ['document-flow', documentNo] as const,
 
   // Market (steel quotes)
   marketCalendarsBase: ['market', 'calendar'] as const,

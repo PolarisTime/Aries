@@ -1500,6 +1500,7 @@ export const zhCN = {
         colSupplierCode: '供应商编码',
         colSupplierName: '供应商名称',
         colShortName: '供应商简称',
+        colBrands: '经营品牌',
         colContactName: '联系人',
         colContactPhone: '联系电话',
         colCity: '城市',
@@ -1776,6 +1777,7 @@ export const zhCN = {
     },
     headerSearch: {
       placeholder: '搜索单号、合同号、对账单号',
+      viewFlow: '查看单据流向',
     },
     userInfo: {
       notLoggedIn: '未登录',
@@ -2121,6 +2123,32 @@ export const zhCN = {
       title: '数据加载失败',
       description: '加载数据时出现问题，请检查网络后重试',
       retry: '重试',
+    },
+  },
+  documentFlow: {
+    title: '单据流向',
+    titleWithNo: '单据流向：{{no}}',
+    documentCount: '共 {{count}} 张单据',
+    loadFailed: '单据流向加载失败',
+    empty: '该单号暂无可展示的流向',
+    nodeHint: '点击节点打开对应单据',
+    openDocument: '打开 {{no}}',
+    amount: '金额',
+    weight: '重量',
+    types: {
+      purchaseOrder: '采购单',
+      purchaseInbound: '采购入库单',
+      salesOrder: '销售单',
+      salesOutbound: '销售出库单',
+      salesReturn: '销售退货单',
+      freightBill: '物流单',
+    },
+    linkTypes: {
+      inbound: '入库',
+      sales: '销售',
+      outbound: '出库',
+      returns: '退货',
+      freight: '物流',
     },
   },
   priceCompare: {

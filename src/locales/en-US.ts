@@ -1540,6 +1540,7 @@ export const enUS = {
         colSupplierCode: 'Supplier Code',
         colSupplierName: 'Supplier Name',
         colShortName: 'Supplier Short Name',
+        colBrands: 'Operating Brands',
         colContactName: 'Contact',
         colContactPhone: 'Phone',
         colCity: 'City',
@@ -1829,6 +1830,7 @@ export const enUS = {
     },
     headerSearch: {
       placeholder: 'Search order, contract, or statement number',
+      viewFlow: 'View document flow',
     },
     userInfo: {
       notLoggedIn: 'Not Logged In',
@@ -2189,6 +2191,32 @@ export const enUS = {
       description:
         'Something went wrong while loading data. Check your connection and try again.',
       retry: 'Retry',
+    },
+  },
+  documentFlow: {
+    title: 'Document Flow',
+    titleWithNo: 'Document Flow: {{no}}',
+    documentCount: '{{count}} document(s)',
+    loadFailed: 'Failed to load document flow',
+    empty: 'No flow available for this document number',
+    nodeHint: 'Click a node to open the document',
+    openDocument: 'Open {{no}}',
+    amount: 'Amount',
+    weight: 'Weight',
+    types: {
+      purchaseOrder: 'Purchase Order',
+      purchaseInbound: 'Purchase Inbound',
+      salesOrder: 'Sales Order',
+      salesOutbound: 'Sales Outbound',
+      salesReturn: 'Sales Return',
+      freightBill: 'Freight Bill',
+    },
+    linkTypes: {
+      inbound: 'Inbound',
+      sales: 'Sales',
+      outbound: 'Outbound',
+      returns: 'Return',
+      freight: 'Freight',
     },
   },
   priceCompare: {

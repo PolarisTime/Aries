@@ -3,6 +3,7 @@ import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { DocumentFlowModal } from '@/components/DocumentFlowModal'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
@@ -26,6 +27,7 @@ import {
   type LayoutMode,
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
+import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { useAuthStore } from '@/stores/authStore'
 import {
   normalizeTabPathname,
@@ -146,6 +148,8 @@ export function AppLayout() {
 
   const [collapsed, setCollapsed] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [flowDocumentNo, setFlowDocumentNo] = useState('')
+  const [flowOpen, setFlowOpen] = useState(false)
   const clock = useAppLayoutClock()
 
   const routePageContext = resolveRoutePageContext(location.pathname, t)
@@ -230,6 +234,7 @@ export function AppLayout() {
     keyword: globalSearchKeyword,
     setKeyword: setGlobalSearchKeyword,
     loading: globalSearchLoading,
+    results: globalSearchResults,
     resultOptions: globalSearchOptions,
     handleBlur: handleGlobalSearchBlur,
     handleSearch: handleGlobalSearch,
@@ -238,6 +243,34 @@ export function AppLayout() {
   } = useGlobalSearchSupport({
     onJump: handleJumpToSearchResult,
   })
+
+  /** 在搜索结果项上打开该单号的单据流向弹窗（不跳转详情）。 */
+  const handleOpenSearchResultFlow = (value: string) => {
+    const target = globalSearchResults.find((item) => item.value === value)
+    if (!target) return
+    setSearchOpen(false)
+    setFlowDocumentNo(target.primaryNo)
+    setFlowOpen(true)
+  }
+
+  /** 点击流向图节点：跳转到对应模块并自动打开单据详情。 */
+  const handleOpenFlowNode = (node: DocumentFlowNode) => {
+    const targetPage = getPageDefinition(node.type)
+    if (!targetPage) {
+      message.warning(t('layouts.routePage.businessPageNotFound'))
+      return
+    }
+    const query = new URLSearchParams({ docNo: node.no ?? '', openDetail: '1' })
+    if (node.id) {
+      query.set('trackId', node.id)
+    }
+    openTab({
+      pathname: `/${getPageRoutePath(targetPage)}`,
+      search: query.toString(),
+      forceSearch: true,
+    })
+    setFlowOpen(false)
+  }
 
   useEffect(() => {
     document.title = routePageContext.title
@@ -348,6 +381,7 @@ export function AppLayout() {
                 onSearch: handleGlobalSearch,
                 onSelect: handleGlobalSearchSelect,
                 onSubmit: handleGlobalSearchSubmit,
+                onOpenFlow: handleOpenSearchResultFlow,
               }}
             />
           ) : (
@@ -373,6 +407,7 @@ export function AppLayout() {
                 onSearch: handleGlobalSearch,
                 onSelect: handleGlobalSearchSelect,
                 onSubmit: handleGlobalSearchSubmit,
+                onOpenFlow: handleOpenSearchResultFlow,
               }}
             />
           )}
@@ -392,6 +427,13 @@ export function AppLayout() {
         onLayoutModeChange={setLayoutMode}
         themeMode={themeMode}
         onThemeModeChange={setThemeMode}
+      />
+
+      <DocumentFlowModal
+        open={flowOpen}
+        documentNo={flowDocumentNo}
+        onClose={() => setFlowOpen(false)}
+        onOpenNode={handleOpenFlowNode}
       />
     </Layout>
   )

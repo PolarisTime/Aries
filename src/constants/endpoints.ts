@@ -49,6 +49,10 @@ export const ENDPOINTS = {
   // Global search (aggregate query → singular)
   GLOBAL_SEARCH: '/global-search',
 
+  // Document flow (cross-module trace by business no)
+  DOCUMENT_FLOW: (documentNo: string) =>
+    `/document-flows/${pathSegment(documentNo)}`,
+
   // Print
   PRINT_EXPORTS: '/print-exports',
   PRINT_PREVIEWS_ITEMS: '/print-previews/items',

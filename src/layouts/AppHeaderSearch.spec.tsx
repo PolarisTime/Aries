@@ -132,6 +132,72 @@ describe('AppHeaderSearch focus restore', () => {
   })
 })
 
+describe('AppHeaderSearch document flow entry', () => {
+  let root: Root
+  let host: HTMLDivElement
+  const handlers = {
+    onBlur: vi.fn(),
+    onKeywordChange: vi.fn(),
+    onOpen: vi.fn(),
+    onOpenChange: vi.fn(),
+    onSearch: vi.fn(),
+    onSelect: vi.fn(),
+    onSubmit: vi.fn(),
+    onOpenFlow: vi.fn(),
+  }
+
+  beforeEach(() => {
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+    act(() => {
+      root.render(
+        createElement(AppHeaderSearch, {
+          className: 'header-global-search',
+          keyword: 'SO',
+          options: [
+            { value: 'sales-order::1', label: 'SO-1' },
+            { value: 'customer-statement::2', label: 'ST-1' },
+          ],
+          open: true,
+          loading: false,
+          ...handlers,
+        }),
+      )
+    })
+  })
+
+  afterEach(() => {
+    act(() => {
+      root.unmount()
+    })
+    host.remove()
+    document.body.innerHTML = ''
+    Object.values(handlers).forEach((handler) => {
+      handler.mockClear()
+    })
+  })
+
+  it('仅对采购/销售/物流结果显示查看流向入口', () => {
+    const flowButtons = document.body.querySelectorAll(
+      '.header-global-search-flow-button',
+    )
+    expect(flowButtons).toHaveLength(1)
+  })
+
+  it('点击查看流向按钮触发 onOpenFlow 且不触发 onSelect', () => {
+    const flowButton = document.body.querySelector<HTMLButtonElement>(
+      '.header-global-search-flow-button',
+    )!
+    act(() => {
+      flowButton.click()
+    })
+
+    expect(handlers.onOpenFlow).toHaveBeenCalledWith('sales-order::1')
+    expect(handlers.onSelect).not.toHaveBeenCalled()
+  })
+})
+
 describe('AppHeaderSearch loading state', () => {
   let root: Root
   let host: HTMLDivElement

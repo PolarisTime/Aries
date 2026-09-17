@@ -1,4 +1,4 @@
-import { SearchOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, SearchOutlined } from '@ant-design/icons'
 import type { InputRef } from 'antd'
 import { AutoComplete, Button, Input } from 'antd'
 import type { AutoCompleteProps } from 'antd/es/auto-complete'
@@ -19,6 +19,22 @@ export interface AppHeaderSearchProps {
   onSearch: (value: string) => void | Promise<void>
   onSelect: (value: string) => void
   onSubmit: (value: string) => void | Promise<void>
+  /** 打开该搜索结果的单据流向弹窗；未提供时不展示流向入口。 */
+  onOpenFlow?: (value: string) => void
+}
+
+/** 支持单据流向查询的模块（与后端 DocumentFlowService 识别的单据类型一致）。 */
+const FLOW_MODULE_KEYS: ReadonlySet<string> = new Set([
+  'purchase-order',
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'sales-return',
+  'freight-bill',
+])
+
+function moduleKeyOfOption(value: unknown): string {
+  return String(value ?? '').split('::')[0]
 }
 
 export function AppHeaderSearch({
@@ -34,6 +50,7 @@ export function AppHeaderSearch({
   onSearch,
   onSelect,
   onSubmit,
+  onOpenFlow,
 }: AppHeaderSearchProps) {
   const { t } = useTranslation()
   const searchInputId = buildFormControlId('header-search', 'keyword')
@@ -86,6 +103,33 @@ export function AppHeaderSearch({
           }}
           onSelect={handleSelect}
           onOpenChange={onOpenChange}
+          optionRender={(option) => (
+            <div className="header-global-search-option">
+              <span className="header-global-search-option-label">
+                {option.data.label}
+              </span>
+              {onOpenFlow &&
+              FLOW_MODULE_KEYS.has(moduleKeyOfOption(option.value)) ? (
+                <Button
+                  type="text"
+                  size="small"
+                  className="header-global-search-flow-button"
+                  icon={<ApartmentOutlined />}
+                  title={t('layouts.headerSearch.viewFlow')}
+                  aria-label={t('layouts.headerSearch.viewFlow')}
+                  onMouseDown={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                  }}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onOpenFlow(String(option.value))
+                  }}
+                />
+              ) : null}
+            </div>
+          )}
         >
           <Input
             ref={inputRef}
