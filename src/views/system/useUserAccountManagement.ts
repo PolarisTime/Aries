@@ -7,6 +7,7 @@ import {
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readRequestError } from '@/api/core/request-errors'
+import { updateUserRoles } from '@/api/system/user-roles'
 import {
   createUser,
   deleteUser,
@@ -18,19 +19,11 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useRequestError } from '@/hooks/useRequestError'
-import type {
-  UserAccountResponse,
-  UserCreatePayload,
-  UserUpdatePayload,
-} from '@/shared/schemas'
+import type { UserAccountResponse, UserCreatePayload } from '@/shared/schemas'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
+import type { UserWizardSubmit } from '@/views/system/UserAccountWizardModal'
 import { nextUserStatus } from '@/views/system/user-account-form-utils'
-
-interface SaveUserVariables {
-  id?: string
-  payload: UserUpdatePayload
-}
 
 export function useUserAccountManagement() {
   const { t } = useTranslation()
@@ -65,8 +58,15 @@ export function useUserAccountManagement() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: ({ id, payload }: SaveUserVariables) =>
-      id ? updateUser(id, payload) : createUser(payload as UserCreatePayload),
+    mutationFn: async ({ id, payload, roleIds }: UserWizardSubmit) => {
+      const saved = id
+        ? await updateUser(id, payload)
+        : await createUser(payload as UserCreatePayload)
+      if (roleIds) {
+        await updateUserRoles(saved.id, roleIds)
+      }
+      return saved
+    },
     onSuccess: (_data, variables) => {
       message.success(
         variables.id ? t('common.editSuccess') : t('common.addSuccess'),
@@ -168,8 +168,8 @@ export function useUserAccountManagement() {
     })
   }
 
-  const saveUser = (values: UserUpdatePayload) => {
-    saveMutation.mutate({ id: editingUser?.id, payload: values })
+  const saveUser = (submit: UserWizardSubmit) => {
+    saveMutation.mutate(submit)
   }
 
   return {

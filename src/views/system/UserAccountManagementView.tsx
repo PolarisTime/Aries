@@ -3,8 +3,8 @@ import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppProPage } from '@/components/AppProPage'
 import { AppResult } from '@/components/AppResult'
-import { UserAccountEditorModal } from '@/views/system/UserAccountEditorModal'
 import { UserAccountTableCard } from '@/views/system/UserAccountTableCard'
+import { UserAccountWizardModal } from '@/views/system/UserAccountWizardModal'
 import { UserPasswordResetModal } from '@/views/system/UserPasswordResetModal'
 import { UserRoleAssignmentModal } from '@/views/system/UserRoleAssignmentModal'
 import { useUserAccountManagement } from '@/views/system/useUserAccountManagement'
@@ -67,7 +67,8 @@ export function UserAccountManagementView() {
             onDelete={model.handleDelete}
           />
         )}
-        <UserAccountEditorModal
+        <UserAccountWizardModal
+          key={`${model.editorOpen}-${model.editingUser?.id ?? 'new'}`}
           open={model.editorOpen}
           user={model.editingUser}
           saving={model.savePending}
