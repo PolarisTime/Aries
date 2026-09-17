@@ -20,6 +20,7 @@ import {
   trimEditorItemsForModule,
 } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
+import { hasMaterialSelection } from '@/module-system/editor/module-editor-shared'
 import {
   getModulePageBehavior,
   isDeliveryVerificationStatus,
@@ -219,6 +220,25 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
       })
       if (validationMessage) {
         message.warning(validationMessage)
+        invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+        return
+      }
+
+      // 数量单位真源为商品主数据 quantityUnit: 缺失时禁止保存并提示补全, 不做静默回落
+      const itemMissingQuantityUnit = trimmedItems.find(
+        (item) =>
+          hasMaterialSelection(item) && !asString(item.quantityUnit).trim(),
+      )
+      if (itemMissingQuantityUnit) {
+        message.warning(
+          t('modules.editor.missingQuantityUnit', {
+            material:
+              asString(itemMissingQuantityUnit.materialName) ||
+              asString(itemMissingQuantityUnit.materialCode) ||
+              asString(itemMissingQuantityUnit.material) ||
+              '--',
+          }),
+        )
         invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
         return
       }

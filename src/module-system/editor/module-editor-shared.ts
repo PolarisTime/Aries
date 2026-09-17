@@ -51,21 +51,12 @@ export function toRoundedNumber(value: unknown, precision: number) {
 
 /**
  * 数量单位真源为商品主数据的 `quantityUnit`（数量单位，例：件/支）。
- * 当 quantityUnit 为空/缺失时，回落到商品 `unit`（单位，例：吨）；
- * 仍为空时回落默认「件」。
+ * <p>
+ * quantityUnit 为空/缺失时**不再静默回落**到商品 `unit`（物理单位，多为「吨」），
+ * 返回空字符串，由保存校验提示用户补全商品主数据，避免把数量单位错当吨。
  */
 export function inferQuantityUnit(record?: ModuleRecord | null) {
-  const explicitUnit = asString(record?.quantityUnit).trim()
-  if (explicitUnit) {
-    return explicitUnit
-  }
-
-  const sourceUnit = asString(record?.unit).trim()
-  if (sourceUnit) {
-    return sourceUnit
-  }
-
-  return DEFAULT_QUANTITY_UNIT
+  return asString(record?.quantityUnit).trim()
 }
 
 /** 判断行是否已选中商品：数量单位是否来自商品据此判定，而不是字符串等于「件」。 */

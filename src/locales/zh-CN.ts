@@ -642,6 +642,8 @@ export const zhCN = {
       edit: '编辑',
       create: '新建',
       title: '{{mode}} — {{title}}',
+      missingQuantityUnit:
+        '商品「{{material}}」未维护数量单位，请先补全商品主数据后再保存',
     },
     itemColumns: {
       brand: '品牌',

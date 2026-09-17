@@ -660,6 +660,8 @@ export const enUS = {
       edit: 'Edit',
       create: 'Create',
       title: '{{mode}} — {{title}}',
+      missingQuantityUnit:
+        'Material "{{material}}" has no quantity unit. Complete the material master data before saving.',
     },
     itemColumns: {
       brand: 'Brand',

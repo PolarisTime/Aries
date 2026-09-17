@@ -89,15 +89,15 @@ describe('商品浮层选择后数量单位跟随商品', () => {
     expect(result.items[0].quantityUnit).toBe('件')
   })
 
-  it('quantityUnit 缺失但 unit=支 时回落「支」', () => {
+  it('quantityUnit 缺失但 unit=支 时数量单位为空, 不回落到物理单位', () => {
     const result = mount()
     act(() => {
       result.select('347011099205312512', material({ unit: '支' }))
     })
-    expect(result.items[0].quantityUnit).toBe('支')
+    expect(result.items[0].quantityUnit).toBe('')
   })
 
-  it('quantityUnit 与 unit 都缺失时回落「件」', () => {
+  it('quantityUnit 与 unit 都缺失时数量单位为空', () => {
     const result = mount()
     act(() => {
       result.select(
@@ -105,6 +105,6 @@ describe('商品浮层选择后数量单位跟随商品', () => {
         material({ quantityUnit: undefined, unit: undefined }),
       )
     })
-    expect(result.items[0].quantityUnit).toBe('件')
+    expect(result.items[0].quantityUnit).toBe('')
   })
 })

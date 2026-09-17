@@ -33,29 +33,27 @@ describe('inferQuantityUnit', () => {
     ).toBe('件')
   })
 
-  it('quantityUnit 缺失时回落商品 unit', () => {
-    expect(inferQuantityUnit(material({ unit: '支' }))).toBe('支')
+  it('quantityUnit 缺失时不再回落到 unit, 返回空串', () => {
+    expect(inferQuantityUnit(material({ unit: '支' }))).toBe('')
   })
 
-  it('quantityUnit 为空/空白时回落商品 unit', () => {
+  it('quantityUnit 为空/空白时不再回落, 返回空串', () => {
     expect(inferQuantityUnit(material({ quantityUnit: '', unit: '支' }))).toBe(
-      '支',
+      '',
     )
     expect(
       inferQuantityUnit(material({ quantityUnit: '   ', unit: '支' })),
-    ).toBe('支')
+    ).toBe('')
   })
 
-  it('quantityUnit 与 unit 都缺失/空/空白时回落「件」', () => {
-    expect(inferQuantityUnit(material({}))).toBe('件')
-    expect(inferQuantityUnit(material({ quantityUnit: '', unit: '' }))).toBe(
-      '件',
-    )
+  it('quantityUnit 缺失/空/空白时返回空串(包括无商品)', () => {
+    expect(inferQuantityUnit(material({}))).toBe('')
+    expect(inferQuantityUnit(material({ quantityUnit: '', unit: '' }))).toBe('')
     expect(
       inferQuantityUnit(material({ quantityUnit: '   ', unit: '   ' })),
-    ).toBe('件')
-    expect(inferQuantityUnit(null)).toBe('件')
-    expect(inferQuantityUnit(undefined)).toBe('件')
+    ).toBe('')
+    expect(inferQuantityUnit(null)).toBe('')
+    expect(inferQuantityUnit(undefined)).toBe('')
   })
 })
 
@@ -85,22 +83,22 @@ describe('applyMaterialToEditorLineItem', () => {
     expect(item.quantityUnit).toBe('件')
   })
 
-  it('quantityUnit 缺失但 unit=支 时行数量单位回落「支」', () => {
+  it('quantityUnit 缺失但 unit=支 时行数量单位为空, 不回落到物理单位', () => {
     const item = applyMaterialToEditorLineItem(
       baseItem(),
       material({ unit: '支' }),
       'sales-order',
     )
-    expect(item.quantityUnit).toBe('支')
+    expect(item.quantityUnit).toBe('')
   })
 
-  it('quantityUnit 与 unit 都缺失时行数量单位回落「件」', () => {
+  it('quantityUnit 与 unit 都缺失时行数量单位为空', () => {
     const item = applyMaterialToEditorLineItem(
       baseItem(),
       material({ quantityUnit: undefined, unit: undefined }),
       'sales-order',
     )
-    expect(item.quantityUnit).toBe('件')
+    expect(item.quantityUnit).toBe('')
   })
 
   it('清空商品时数量单位回落「件」', () => {
