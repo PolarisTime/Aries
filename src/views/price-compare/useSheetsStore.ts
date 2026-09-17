@@ -530,6 +530,12 @@ export function useSheetsStore(options?: {
    * 飞行中的签出响应回到本地时若代次已变化, 说明目标已失效, 丢弃结果并归还锁。
    */
   const lockRequestGenRef = useRef<Map<string, number>>(new Map())
+  /**
+   * 同一 serverId 的锁网络操作串行链: 签出/释放严格按入队顺序执行。
+   * 否则快速"切走→切回"时后发的 POST 可能先于先发的 DELETE 到达服务端,
+   * 导致刚签出的锁被释放请求删除。空闲时同步发起, 保持调用时序。
+   */
+  const lockOpQueueRef = useRef<Map<string, Promise<void>>>(new Map())
   const syncChannelRef = useRef<BroadcastChannel | null>(null)
   const reloadSheetRef = useRef<(sheetId: string) => Promise<void>>(
     async () => {},
@@ -1197,22 +1203,28 @@ export function useSheetsStore(options?: {
     saveConfigNowRef.current = saveConfigNow
   }, [saveSheetNow, saveConfigNow])
 
-  /** 清空防抖 timer 并立即补跑最后一次保存(卸载/页面隐藏时避免丢失编辑)。 */
-  const flushPendingSaves = useCallback(() => {
+  /**
+   * 清空防抖 timer 并补跑最后一次保存(卸载/页面隐藏时避免丢失编辑)。
+   * 返回的 Promise 在全部写请求结束后 resolve, 供释放编辑锁前等待收尾保存落库。
+   */
+  const flushPendingSaves = useCallback(async (): Promise<void> => {
     const sheetIds = [...sheetTimersRef.current.keys()]
     for (const sheetId of sheetIds) {
       const timer = sheetTimersRef.current.get(sheetId)
       if (timer !== undefined) window.clearTimeout(timer)
       sheetTimersRef.current.delete(sheetId)
     }
-    for (const sheetId of sheetIds) void saveSheetNowRef.current(sheetId)
+    const tasks: Promise<unknown>[] = sheetIds.map((sheetId) =>
+      saveSheetNowRef.current(sheetId),
+    )
     if (configTimerRef.current !== null) {
       window.clearTimeout(configTimerRef.current)
       configTimerRef.current = null
     }
     const projectId = configTimerProjectRef.current
     configTimerProjectRef.current = null
-    if (projectId) void saveConfigNowRef.current(projectId)
+    if (projectId) tasks.push(saveConfigNowRef.current(projectId))
+    await Promise.allSettled(tasks)
   }, [])
 
   /** 拉取服务端单据覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
@@ -1431,6 +1443,33 @@ export function useSheetsStore(options?: {
     }
   }, [])
 
+  /**
+   * 同一 serverId 的锁网络操作串行执行。链空闲时同步发起(保持调用时序),
+   * 链繁忙时排到当前链尾之后, 保证释放一定发生在同 serverId 的后续签出之前。
+   */
+  const runLockOp = useCallback(
+    <T,>(serverId: string, op: () => Promise<T>): Promise<T> => {
+      const previous = lockOpQueueRef.current.get(serverId)
+      const start = () => op()
+      const next = previous ? previous.then(start, start) : start()
+      const tail = next.then(
+        () => {
+          if (lockOpQueueRef.current.get(serverId) === tail) {
+            lockOpQueueRef.current.delete(serverId)
+          }
+        },
+        () => {
+          if (lockOpQueueRef.current.get(serverId) === tail) {
+            lockOpQueueRef.current.delete(serverId)
+          }
+        },
+      )
+      lockOpQueueRef.current.set(serverId, tail)
+      return next
+    },
+    [],
+  )
+
   const applyLockState = useCallback(
     (sheetId: string, lock: { mine: boolean; ownerName?: string } | null) => {
       setEditLock(
@@ -1501,12 +1540,17 @@ export function useSheetsStore(options?: {
       )
       if (!serverId) return
       try {
-        await releaseQuoteSheetEditLock(serverId)
+        // 与签出串行: 保证释放发生在同 serverId 的后续签出之前;
+        // 任务内先补跑并等待收尾保存落库, 避免无锁保存被服务端拒绝而丢编辑。
+        await runLockOp(serverId, async () => {
+          await flushPendingSaves()
+          await releaseQuoteSheetEditLock(serverId)
+        })
       } catch (error) {
         if (!isConflictError(error)) console.error('释放编辑锁失败', error)
       }
     },
-    [clearHeldLockTimer],
+    [clearHeldLockTimer, flushPendingSaves, runLockOp],
   )
 
   const acquireEditLock = useCallback(
@@ -1523,7 +1567,10 @@ export function useSheetsStore(options?: {
         disposedRef.current ||
         lockRequestGenRef.current.get(serverId) !== generation
       try {
-        const lock = await acquireQuoteSheetEditLock(serverId, options)
+        // 与释放串行, 避免同一 serverId 的 DELETE 与 POST 交错
+        const lock = await runLockOp(serverId, () =>
+          acquireQuoteSheetEditLock(serverId, options),
+        )
         if (isStale()) {
           // 迟到的签出响应:
           // - 若代次已变化(释放或新一轮签出): 不能归还, 否则会误删新一轮刚签出的锁;
@@ -1532,7 +1579,9 @@ export function useSheetsStore(options?: {
           const generationChanged =
             lockRequestGenRef.current.get(serverId) !== generation
           if (disposedRef.current && !generationChanged) {
-            void releaseQuoteSheetEditLock(serverId).catch(() => {})
+            void runLockOp(serverId, () =>
+              releaseQuoteSheetEditLock(serverId),
+            ).catch(() => {})
           }
           return false
         }
@@ -1574,7 +1623,7 @@ export function useSheetsStore(options?: {
         return true
       }
     },
-    [applyLockState, clearHeldLockTimer],
+    [applyLockState, clearHeldLockTimer, runLockOp],
   )
 
   useEffect(() => {
@@ -1611,11 +1660,15 @@ export function useSheetsStore(options?: {
     }
     if (!hydratedRef.current) return
     const previous = lockedActiveRef.current
-    // 离开比价路由: 清理防抖 timer 并补跑最后保存, 同时归还锁; 返回时由下方分支重新签出
+    // 离开比价路由: 立即入队归还锁(任务内部先等待收尾保存落库), 返回时由下方分支重新签出。
+    // 入队必须同步, 否则重新签出可能先于释放到达服务端而误删新锁。
     if (!routeActive) {
       lockedActiveRef.current = null
-      flushPendingSaves()
-      if (previous) void releaseEditLock(previous)
+      if (previous) {
+        void releaseEditLock(previous)
+      } else {
+        void flushPendingSaves()
+      }
       return
     }
     const target = state.activeId
@@ -1648,7 +1701,7 @@ export function useSheetsStore(options?: {
   // 页面隐藏/卸载: 补跑最后一次防抖保存并释放当前批次锁
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') flushPendingSaves()
+      if (document.visibilityState === 'hidden') void flushPendingSaves()
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
@@ -1659,15 +1712,17 @@ export function useSheetsStore(options?: {
   useEffect(
     () => () => {
       disposedRef.current = true
-      // 先清理 timer 并补跑最后保存, 再归还锁
-      flushPendingSaves()
       const held = heldLockRef.current
-      if (!held) return
-      window.clearInterval(held.timer)
-      // heldLockRef.sheetId 已是 serverId
-      void releaseQuoteSheetEditLock(held.sheetId).catch(() => {})
-      heldLockRef.current = null
-      lockedActiveRef.current = null
+      // 先等待收尾保存落库再归还锁, 否则释放请求会先于写请求到达而被服务端拒绝, 造成丢编辑
+      void flushPendingSaves().finally(() => {
+        if (held) {
+          window.clearInterval(held.timer)
+          // heldLockRef.sheetId 已是 serverId
+          void releaseQuoteSheetEditLock(held.sheetId).catch(() => {})
+        }
+        heldLockRef.current = null
+        lockedActiveRef.current = null
+      })
     },
     [flushPendingSaves],
   )

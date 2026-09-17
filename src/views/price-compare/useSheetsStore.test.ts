@@ -980,7 +980,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.editLock?.sheetId).toBe('9001')
     api.releaseQuoteSheetEditLock.mockClear()
 
-    act(() => {
+    await act(async () => {
       store.current.addSheet(
         '100',
         '云潮筝鸣府',
@@ -988,6 +988,10 @@ describe('useSheetsStore 服务端数据源', () => {
         '2026-09-16',
         '上午',
       )
+      // 释放任务内部先等待收尾保存, 需推进微任务
+      for (let i = 0; i < 4; i += 1) {
+        await Promise.resolve()
+      }
     })
 
     expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
@@ -1001,7 +1005,10 @@ describe('useSheetsStore 服务端数据源', () => {
     })
     api.releaseQuoteSheetEditLock.mockClear()
 
-    act(() => root.unmount())
+    await act(async () => {
+      root.unmount()
+      await vi.advanceTimersByTimeAsync(0)
+    })
     rootUnmounted = true
 
     expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
@@ -1017,7 +1024,11 @@ describe('useSheetsStore 服务端数据源', () => {
     api.releaseQuoteSheetEditLock.mockClear()
     api.acquireQuoteSheetEditLock.mockClear()
 
-    act(() => store.setRouteActive(false))
+    await act(async () => {
+      store.setRouteActive(false)
+      // 释放排在收尾保存之后, 需推进微任务
+      await vi.advanceTimersByTimeAsync(0)
+    })
 
     expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
     expect(store.current.editLock).toBeNull()
@@ -1039,8 +1050,11 @@ describe('useSheetsStore 服务端数据源', () => {
     api.acquireQuoteSheetEditLock.mockClear()
 
     act(() => store.setRouteActive(true))
+    // 释放与重新签出串行: 需推进微任务等待前序释放完成
     await act(async () => {
-      await Promise.resolve()
+      for (let i = 0; i < 8; i += 1) {
+        await Promise.resolve()
+      }
     })
 
     expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith(
@@ -1073,19 +1087,11 @@ describe('useSheetsStore 服务端数据源', () => {
     })
     expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(1)
 
-    // 首次签出响应仍未返回时离开并返回路由(第二次签出走默认成功响应)
+    // 首次签出响应仍未返回时离开并返回路由(释放与第二次签出串行排队在其后)
     act(() => store.setRouteActive(false))
-    // 离开路由自身会归还旧锁: 以此作为基线, 迟到响应不得再追加释放
-    const releaseCallsAfterLeave =
-      api.releaseQuoteSheetEditLock.mock.calls.length
     act(() => store.setRouteActive(true))
-    await act(async () => {
-      await Promise.resolve()
-    })
-    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(2)
-    expect(store.current.editLock?.mine).toBe(true)
 
-    // 迟到的首次响应到达: 目标仍是当前持有的锁, 不得归还或清空状态
+    // 迟到的首次响应到达: 代次已变化, 不得额外归还; 链继续推进释放与第二次签出
     await act(async () => {
       resolveFirst({
         sheetId: '9001',
@@ -1094,12 +1100,15 @@ describe('useSheetsStore 服务端数据源', () => {
         ttlSeconds: 120,
       })
       await pending
+      for (let i = 0; i < 8; i += 1) {
+        await Promise.resolve()
+      }
     })
 
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(2)
     expect(store.current.editLock?.mine).toBe(true)
-    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledTimes(
-      releaseCallsAfterLeave,
-    )
+    // 迟到响应不得追加释放: 仅离开路由自身的一次释放
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledTimes(1)
     // 新锁续约正常: 推进一个周期应再次签出/续约
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000)
@@ -1197,9 +1206,10 @@ describe('useSheetsStore 服务端数据源', () => {
       pending = store.current.acquireEditLock('9001')
     })
 
-    // 迟到响应到达前, 该目标已被释放(代次自增)
-    await act(async () => {
-      await store.current.releaseEditLock('9001')
+    // 迟到响应到达前, 该目标已被释放(代次自增); 释放串行排在迟到的签出之后
+    let releasePromise!: Promise<void>
+    act(() => {
+      releasePromise = store.current.releaseEditLock('9001')
     })
     await act(async () => {
       resolveLock({
@@ -1209,6 +1219,7 @@ describe('useSheetsStore 服务端数据源', () => {
         ttlSeconds: 120,
       })
       await pending
+      await releasePromise
     })
 
     expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
@@ -1339,20 +1350,15 @@ describe('useSheetsStore 服务端数据源', () => {
       pending = store.current.acquireEditLock('9001')
     })
 
-    // A -> B -> A: 切走释放 A, 再回到 A 并成功签出新一轮锁
-    await act(async () => {
+    // A -> B -> A: 切换串行排队在迟到的旧签出之后
+    act(() => {
       store.current.setActiveId('9002')
-      await Promise.resolve()
     })
-    await act(async () => {
+    act(() => {
       store.current.setActiveId('9001')
-      await Promise.resolve()
     })
-    expect(store.current.editLock?.sheetId).toBe('9001')
 
-    api.releaseQuoteSheetEditLock.mockClear()
-
-    // 旧响应此时才回到本地: 代次已过期, 但该锁正由当前这代持有, 不得 DELETE
+    // 旧响应此时才回到本地: 代次已过期, 链继续推进后续切换与新一轮签出
     await act(async () => {
       resolveOld({
         sheetId: '9001',
@@ -1361,10 +1367,14 @@ describe('useSheetsStore 服务端数据源', () => {
         ttlSeconds: 120,
       })
       await pending
+      for (let i = 0; i < 12; i += 1) {
+        await Promise.resolve()
+      }
     })
 
-    expect(api.releaseQuoteSheetEditLock).not.toHaveBeenCalled()
+    // 最终应持有 A 批次(9001), 旧响应不得删除新一轮锁
     expect(store.current.editLock?.sheetId).toBe('9001')
+    expect(store.current.editLock?.mine).toBe(true)
     expect(store.current.readOnly).toBe(false)
   })
 
