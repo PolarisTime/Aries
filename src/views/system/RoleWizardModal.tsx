@@ -28,7 +28,10 @@ export interface RoleWizardSubmit {
 
 interface Props {
   open: boolean
+  /** 编辑目标；为 null 表示新建。 */
   role: RoleResponse | null
+  /** 克隆源：存在时以该角色的信息与权限作为初值，保存为新建角色。 */
+  cloneFrom?: RoleResponse | null
   saving: boolean
   onSave: (submit: RoleWizardSubmit) => void
   onClose: () => void
@@ -36,12 +39,15 @@ interface Props {
 
 /**
  * 角色配置向导：基本信息 → 权限配置。
- * 新建时先创建角色再写入所选权限；编辑时先更新角色再覆盖权限。
+ * - 新建：创建角色后写入所选权限；
+ * - 编辑：更新角色后覆盖权限；
+ * - 克隆：以源角色信息/权限为初值，保存为新角色。
  * 调用方通过 key 在每次打开时重挂载本组件，保证步骤/表单初值重置。
  */
 export function RoleWizardModal({
   open,
   role,
+  cloneFrom = null,
   saving,
   onSave,
   onClose,
@@ -51,15 +57,27 @@ export function RoleWizardModal({
   const [current, setCurrent] = useState(0)
   const selectedRef = useRef<string[]>([])
   const permissionsTouchedRef = useRef(false)
-  const builtin = Boolean(role?.builtin)
+  const cloning = Boolean(cloneFrom)
+  const builtin = !cloning && Boolean(role?.builtin)
+  const sourceRole = cloneFrom ?? role
+  const sourceId = sourceRole?.id ?? ''
 
   const roleQuery = useQuery({
-    queryKey: QUERY_KEYS.role(role?.id ?? ''),
-    queryFn: ({ signal }) => getRole(role?.id ?? '', signal),
-    enabled: open && Boolean(role?.id),
+    queryKey: QUERY_KEYS.role(sourceId),
+    queryFn: ({ signal }) => getRole(sourceId, signal),
+    enabled: open && Boolean(sourceId),
   })
 
   const wildcard = hasWildcardPermission(roleQuery.data?.permissions ?? [])
+  const initialValues: RoleFormValues = cloning
+    ? {
+        code: `${cloneFrom?.code ?? ''}_copy`,
+        name: `${cloneFrom?.name ?? ''}${t('system.role.cloneNameSuffix')}`,
+        description: cloneFrom?.description ?? '',
+      }
+    : role
+      ? roleToFormValues(role)
+      : emptyRoleFormValues()
 
   const goNext = async () => {
     await form.validateFields()
@@ -72,7 +90,7 @@ export function RoleWizardModal({
       ? selectedRef.current
       : (roleQuery.data?.permissions ?? [])
     onSave({
-      id: role?.id,
+      id: cloning ? undefined : (role?.id ?? undefined),
       payload: buildRolePayload(values, builtin),
       permissions: effectivePermissions.filter(
         (code) => !isWildcardPermission(code),
@@ -80,13 +98,19 @@ export function RoleWizardModal({
     })
   }
 
-  const permissionsReady = !role?.id || Boolean(roleQuery.data)
+  const permissionsReady = !sourceId || Boolean(roleQuery.data)
 
   return (
     <Modal
       key={String(open)}
       open={open}
-      title={role ? t('system.role.editRole') : t('system.role.newRole')}
+      title={
+        cloning
+          ? t('system.role.cloneRole')
+          : role
+            ? t('system.role.editRole')
+            : t('system.role.newRole')
+      }
       width={960}
       footer={null}
       onCancel={onClose}
@@ -103,13 +127,7 @@ export function RoleWizardModal({
       />
       <div style={{ marginTop: 16, minHeight: 320 }}>
         <div hidden={current !== 0}>
-          <Form
-            form={form}
-            layout="vertical"
-            initialValues={
-              role ? roleToFormValues(role) : emptyRoleFormValues()
-            }
-          >
+          <Form form={form} layout="vertical" initialValues={initialValues}>
             <Form.Item
               name="code"
               label={t('system.role.code')}
@@ -154,9 +172,9 @@ export function RoleWizardModal({
         <div hidden={current !== 1}>
           {permissionsReady ? (
             <RolePermissionPicker
-              key={role?.id ?? 'new'}
+              key={sourceId || 'new'}
               initialSelected={
-                role?.id ? (roleQuery.data?.permissions ?? []) : []
+                sourceId ? (roleQuery.data?.permissions ?? []) : []
               }
               onSelectedChange={(next) => {
                 permissionsTouchedRef.current = true

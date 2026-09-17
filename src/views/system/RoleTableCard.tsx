@@ -1,4 +1,5 @@
 import {
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
@@ -41,6 +42,7 @@ interface Props {
   onRefresh: () => void
   onCreate: () => void
   onEdit: (role: RoleResponse) => void
+  onClone: (role: RoleResponse) => void
   onPermissions: (role: RoleResponse) => void
   onToggleStatus: (role: RoleResponse) => void
   onDelete: (role: RoleResponse) => void
@@ -64,6 +66,7 @@ export function RoleTableCard({
   onRefresh,
   onCreate,
   onEdit,
+  onClone,
   onPermissions,
   onToggleStatus,
   onDelete,
@@ -145,6 +148,15 @@ export function RoleTableCard({
                 icon={<EditOutlined />}
                 aria-label={t('common.edit')}
                 onClick={() => onEdit(record)}
+              />
+            </Tooltip>
+            <Tooltip title={t('system.role.cloneRole')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined />}
+                aria-label={t('system.role.cloneRole')}
+                onClick={() => onClone(record)}
               />
             </Tooltip>
             <Tooltip title={t('system.role.permissions')}>

@@ -20,6 +20,7 @@ import type {
   UserFormValues,
   UserUpdatePayload,
 } from '@/shared/schemas'
+import { EffectivePermissionsPreview } from '@/views/system/EffectivePermissionsPreview'
 import {
   buildUserCreatePayload,
   buildUserUpdatePayload,
@@ -64,7 +65,7 @@ export function UserAccountWizardModal({
   const [form] = Form.useForm<UserFormValues>()
   const [rolesForm] = Form.useForm<RolesFormValues>()
   const [current, setCurrent] = useState(0)
-  const roleIdsRef = useRef<string[]>([])
+  const [roleIds, setRoleIds] = useState<string[]>([])
   const rolesTouchedRef = useRef(false)
   const editing = Boolean(user)
   const userId = user?.id ?? ''
@@ -92,6 +93,13 @@ export function UserAccountWizardModal({
   const rolesUnavailable = roleOptionsQuery.isError || userRolesQuery.isError
   const rolesLoading = roleOptionsQuery.isPending || userRolesQuery.isPending
 
+  // 有效权限预览的角色来源（编辑态未改动时取已保存角色）。
+  const previewRoleIds = rolesTouchedRef.current
+    ? roleIds
+    : user?.id
+      ? (userRolesQuery.data ?? [])
+      : []
+
   const statusOptions = [
     { value: 'NORMAL', label: t('system.userAccount.statusNormal') },
     { value: 'DISABLED', label: t('system.userAccount.statusDisabled') },
@@ -105,7 +113,7 @@ export function UserAccountWizardModal({
   const submit = async () => {
     const values = await form.validateFields()
     const effectiveRoleIds = rolesTouchedRef.current
-      ? roleIdsRef.current
+      ? roleIds
       : user?.id
         ? (userRolesQuery.data ?? [])
         : []
@@ -226,37 +234,43 @@ export function UserAccountWizardModal({
               message={t('system.userAccount.rolesUnavailable')}
             />
           ) : roleFormReady ? (
-            <Form
-              key={user?.id ?? 'new'}
-              form={rolesForm}
-              layout="vertical"
-              initialValues={{
-                roleIds: user?.id ? (userRolesQuery.data ?? []) : [],
-              }}
-              onValuesChange={(_changed, all) => {
-                rolesTouchedRef.current = true
-                roleIdsRef.current = all.roleIds ?? []
-              }}
-            >
-              <Form.Item
-                name="roleIds"
-                label={t('system.userAccount.rolesLabel')}
+            <>
+              <Form
+                key={user?.id ?? 'new'}
+                form={rolesForm}
+                layout="vertical"
+                initialValues={{
+                  roleIds: user?.id ? (userRolesQuery.data ?? []) : [],
+                }}
+                onValuesChange={(_changed, all) => {
+                  rolesTouchedRef.current = true
+                  setRoleIds(all.roleIds ?? [])
+                }}
               >
-                <Select
-                  id="user-wizard-roleIds"
-                  mode="multiple"
-                  allowClear
-                  loading={rolesLoading}
-                  placeholder={t('system.userAccount.rolesPlaceholder')}
-                  options={(roleOptionsQuery.data?.content ?? []).map(
-                    (role) => ({
-                      value: role.id,
-                      label: `${role.name} (${role.code})`,
-                    }),
-                  )}
-                />
-              </Form.Item>
-            </Form>
+                <Form.Item
+                  name="roleIds"
+                  label={t('system.userAccount.rolesLabel')}
+                >
+                  <Select
+                    id="user-wizard-roleIds"
+                    mode="multiple"
+                    allowClear
+                    loading={rolesLoading}
+                    placeholder={t('system.userAccount.rolesPlaceholder')}
+                    options={(roleOptionsQuery.data?.content ?? []).map(
+                      (role) => ({
+                        value: role.id,
+                        label: `${role.name} (${role.code})`,
+                      }),
+                    )}
+                  />
+                </Form.Item>
+              </Form>
+              <EffectivePermissionsPreview
+                roleIds={previewRoleIds}
+                enabled={open && current === 1}
+              />
+            </>
           ) : (
             <Skeleton active paragraph={{ rows: 4 }} />
           )}

@@ -33,6 +33,7 @@ export function useRoleManagement() {
   const [pageSize, setPageSize] = useState(defaultPageSize)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<RoleResponse | null>(null)
+  const [cloneSource, setCloneSource] = useState<RoleResponse | null>(null)
   const [permissionRole, setPermissionRole] = useState<RoleResponse | null>(
     null,
   )
@@ -111,17 +112,26 @@ export function useRoleManagement() {
 
   const openCreate = () => {
     setEditingRole(null)
+    setCloneSource(null)
     setEditorOpen(true)
   }
 
   const openEdit = (role: RoleResponse) => {
     setEditingRole(role)
+    setCloneSource(null)
+    setEditorOpen(true)
+  }
+
+  const openClone = (role: RoleResponse) => {
+    setEditingRole(null)
+    setCloneSource(role)
     setEditorOpen(true)
   }
 
   const closeEditor = () => {
     setEditorOpen(false)
     setEditingRole(null)
+    setCloneSource(null)
   }
 
   const toggleStatus = (role: RoleResponse) => {
@@ -156,10 +166,12 @@ export function useRoleManagement() {
   return {
     applyKeyword,
     closeEditor,
+    cloneSource,
     deletePending: deleteMutation.isPending,
     editingRole,
     editorOpen,
     handleDelete,
+    openClone,
     isError: roleListQuery.isError,
     isFetching: roleListQuery.isFetching,
     isLoading: roleListQuery.isPending,

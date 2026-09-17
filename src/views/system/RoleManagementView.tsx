@@ -60,15 +60,17 @@ export function RoleManagementView() {
             onRefresh={model.refresh}
             onCreate={model.openCreate}
             onEdit={model.openEdit}
+            onClone={model.openClone}
             onPermissions={model.openPermissions}
             onToggleStatus={model.toggleStatus}
             onDelete={model.handleDelete}
           />
         )}
         <RoleWizardModal
-          key={`${model.editorOpen}-${model.editingRole?.id ?? 'new'}`}
+          key={`${model.editorOpen}-${model.editingRole?.id ?? 'new'}-${model.cloneSource?.id ?? 'none'}`}
           open={model.editorOpen}
           role={model.editingRole}
+          cloneFrom={model.cloneSource}
           saving={model.savePending}
           onSave={model.saveRole}
           onClose={model.closeEditor}

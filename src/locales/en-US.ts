@@ -2034,6 +2034,8 @@ export const enUS = {
       wizardStepPermissions: 'Permissions',
       wizardNext: 'Next',
       wizardPrevious: 'Previous',
+      cloneRole: 'Clone Role',
+      cloneNameSuffix: ' Copy',
       editRole: 'Edit Role',
       deleteRole: 'Delete Role',
       deleteContent: 'Delete role "{{name}}"? This cannot be undone.',
@@ -2105,6 +2107,9 @@ export const enUS = {
       wizardStepRoles: 'Role Assignment',
       wizardNext: 'Next',
       wizardPrevious: 'Previous',
+      effectivePermissions: 'Effective Permissions',
+      effectivePermissionsEmpty: 'No role selected; no effective permissions',
+      effectivePermissionsWildcard: 'Includes all permissions (*)',
       editUser: 'Edit User',
       deleteUser: 'Delete User',
       deleteContent:

@@ -1974,6 +1974,8 @@ export const zhCN = {
       wizardStepPermissions: '权限配置',
       wizardNext: '下一步',
       wizardPrevious: '上一步',
+      cloneRole: '克隆角色',
+      cloneNameSuffix: ' 副本',
       editRole: '编辑角色',
       deleteRole: '删除角色',
       deleteContent: '确定删除角色「{{name}}」吗？删除后不可恢复。',
@@ -2044,6 +2046,9 @@ export const zhCN = {
       wizardStepRoles: '角色分配',
       wizardNext: '下一步',
       wizardPrevious: '上一步',
+      effectivePermissions: '有效权限预览',
+      effectivePermissionsEmpty: '未选择角色，暂无有效权限',
+      effectivePermissionsWildcard: '包含全部权限（*）',
       editUser: '编辑用户',
       deleteUser: '删除用户',
       deleteContent:
