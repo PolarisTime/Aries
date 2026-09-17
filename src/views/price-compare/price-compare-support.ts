@@ -3,6 +3,9 @@ import type { PriceSheet, ProjectOption } from './types'
 
 export const TOUR_KEY = 'aries-price-compare-tour'
 
+/** 报单比价页的路由路径(多标签页 keep-alive 下用于判断是否仍停留在该路由)。 */
+export const PRICE_COMPARE_ROUTE = '/price-compare'
+
 export function projectAbbrOf(
   projects: ProjectOption[],
   projectId: string,

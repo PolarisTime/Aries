@@ -15,6 +15,7 @@ import { projectGroupsOf } from './price-compare-support'
 import { PriceCompareTour } from './price-compare-tour'
 import {
   useInitialProjectAssignment,
+  usePriceCompareRouteActive,
   useSupplierSelectOptions,
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
@@ -37,7 +38,8 @@ export function PriceCompareView() {
     [materialBrands, catalog],
   )
 
-  const store = useSheetsStore()
+  const routeActive = usePriceCompareRouteActive()
+  const store = useSheetsStore({ routeActive })
   const {
     loading,
     sheets,

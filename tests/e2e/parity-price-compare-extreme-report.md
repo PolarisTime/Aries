@@ -2,10 +2,15 @@
 
 - 仓库：`aries`（前端），后端 `leo` 运行于 `http://127.0.0.1:11211`（真实模式）
 - 前端：`http://127.0.0.1:3100`（`E2E_BACKEND_MODE=real`，workers=1）
-- 新增用例：`tests/e2e/parity-price-compare-concurrency.spec.ts`（10 条，全部通过）
-- 修复：`src/views/price-compare/useSheetsStore.ts`（锁定规格数量后撤销/重做的一致性缺陷）
+- 用例：
+  - `tests/e2e/parity-price-compare-concurrency.spec.ts`（10 条，全部通过）
+  - `tests/e2e/parity-price-compare-edit-lock.spec.ts`（6 条，全部通过，多角色编辑锁与路由释放）
+  - 多角色夹具：`tests/e2e/support/multi-role-account.ts`（临时角色 + 用户，用例后清理）
+- 修复：
+  - `src/views/price-compare/useSheetsStore.ts`（锁定规格数量后撤销/重做的一致性缺陷）
+  - 编辑锁：离开 `/price-compare` 路由立即释放并停止续约，返回时重新签出（DEF-2）
 - 运行方式：
-  `E2E_BACKEND_MODE=real E2E_LOGIN_NAME=admin_prod E2E_LOGIN_PASSWORD=123456 pnpm exec playwright test tests/e2e/parity-price-compare-concurrency.spec.ts`
+  `E2E_BACKEND_MODE=real E2E_LOGIN_NAME=admin_prod E2E_LOGIN_PASSWORD=123456 pnpm exec playwright test tests/e2e/parity-price-compare-concurrency.spec.ts tests/e2e/parity-price-compare-edit-lock.spec.ts`
 
 ## 1. 极端情况清单（含实现情况）
 
@@ -24,12 +29,12 @@
 
 | 编号 | 场景 | 状态 | 说明 |
 | --- | --- | --- | --- |
-| B1 | A 签出后 B 打开 → 只读 | ⛔ 未实现 | 需要第二个具备 `quote-sheets:update` 权限的账号；真实库仅有内置 `SUPER_ADMIN` 角色，创建临时用户并授予超管属于侵入性写库，未执行 |
+| B1 | A 签出后 B 打开 → 只读 | ✅ 已实现 | 多角色夹具创建临时普通角色/用户，B 只读且顶部横幅显示占用人 |
 | B2 | A→B→A 快速切换（迟到响应不误删新锁） | ✅ 已实现 | 用 `page.route` 仅延迟首次签出响应 2.5s，确定性复现竞态 |
-| B3 | 签出过期后接管 | ⛔ 未实现 | 服务端 TTL 固定 120s，超出单条用例预算；无法注入 TTL |
-| B4 | 强制接管（force） | ⛔ 未实现 | 同 B1，被其它用户签出才有接管语义 |
-| B5 | 离开页面/卸载后释放锁 | ⚠️ 仅报告 | 见缺陷 DEF-2：SPA 工作区切换路由不卸载视图，锁不释放 |
-| B6 | 续约请求飞行中关闭 | ⛔ 未实现 | 续约间隔 60s，构造「飞行中关闭」需要计时器注入，价值低且易抖动 |
+| B3 | 签出过期后接管 | ✅ 已实现 | 关闭 A 页面后等待服务端 120s TTL 过期，B 无需 force 接管 |
+| B4 | 强制接管（force） | ✅ 已实现 | B 二次确认后 `force=true` 接管成功，A 的后续保存返回 409 |
+| B5 | 离开页面/卸载后释放锁 | ✅ 已实现（含修复） | 切到工作台标签立即 `DELETE` 释放，返回比价标签重新签出；见 DEF-2 |
+| B6 | 续约请求飞行中关闭 | ✅ 已实现 | `page.clock` 推进 60s 触发续约并挂起请求，关闭页面后锁仅按 TTL 释放 |
 
 ### C. 锁定规格数量
 
@@ -72,7 +77,11 @@
 | 文件 | 变更 |
 | --- | --- |
 | `tests/e2e/parity-price-compare-concurrency.spec.ts` | 新增，10 条极端场景 E2E |
-| `src/views/price-compare/useSheetsStore.ts` | 修复：锁定规格数量期间禁用撤销/重做，并同步 `canUndo/canRedo` |
+| `tests/e2e/parity-price-compare-edit-lock.spec.ts` | 新增，6 条多角色编辑锁 / 路由释放 E2E |
+| `tests/e2e/support/multi-role-account.ts` | 新增，临时角色 + 用户夹具（创建/登录/清理） |
+| `src/views/price-compare/useSheetsStore.ts` | 修复：规格数量锁定期间禁用撤销/重做；离开路由释放编辑锁并停止续约 |
+| `src/views/price-compare/price-compare-view-hooks.ts` | 新增 `usePriceCompareRouteActive()`（依据激活标签路径判断路由） |
+| `src/views/price-compare/PriceCompareView.tsx` | 将路由活跃态传入 `useSheetsStore` |
 | `tests/e2e/parity-price-compare-extreme-report.md` | 本报告 |
 
 提交：见本次仓库提交（用例、修复与本报告同一 commit）。
@@ -91,9 +100,16 @@
 | 8 | 项目配置未加载：编辑不丢失，配置就绪后补发 | PASS |
 | 9 | 雪花 ID 全程字符串：响应/行键/请求路径均为字符串 ID | PASS |
 | 10 | 锁定规格数量后撤销不生效：本地与服务端保持一致 | PASS（修复后） |
+| 11 | 他人签出后第二账号只读并显示占用人 | PASS |
+| 12 | 强制接管成功后原持有人保存被 409 | PASS |
+| 13 | SPA 切换到其它标签页立即释放编辑锁, 返回后重新签出 | PASS（DEF-2 修复后） |
+| 14 | 普通用户越权访问受保护报价接口返回 403 | PASS |
+| 15 | 锁 TTL 过期后他人无需 force 即可接管 | PASS（约 2.2m） |
+| 16 | 续约请求飞行中关闭页面: 不再续约且锁按 TTL 释放 | PASS（约 2.1m） |
 
-汇总：10 passed（1.1m）。相关 vitest：`pnpm test` 1011 passed；`pnpm typecheck` 通过；
-`npx eslint tests/e2e` 退出码 0（该目录按规定被忽略）；`npx biome check tests/e2e` 通过。
+汇总：concurrency 10 passed（1.1m）+ edit-lock 6 passed（4.7m）。相关 vitest：`pnpm exec vitest run`
+1014 passed（含新增 3 条路由释放用例，原 1011）；`pnpm typecheck` 通过；
+`npx eslint .` 退出码 0；`npx biome check src tests/e2e` 退出码 0（仅既有 core.spec.ts 的 info）。
 
 ## 4. 发现的真实缺陷
 
@@ -112,22 +128,24 @@
 - 修复：`useSheetsStore.ts` 新增 `activeSheetSpecQuantityLocked(snapshot)`，`undo/redo` 命中即直接返回，
   并让 `canUndo/canRedo` 同步为 false。修复后用例 #10 通过，price-compare 73 条单测全绿。
 
-### DEF-2（P3，仅报告）离开比价视图不释放编辑锁
+### DEF-2（P3，已修复）离开比价视图不释放编辑锁
 
-- 复现：签出批次后 `goto('/dashboard')`，轮询 `GET /quote-sheets/{id}/edit-locks` 30s 仍为 `locked=true`。
+- 复现：签出批次后切到工作台标签（SPA 标签页切换，不卸载视图），轮询 `GET /quote-sheets/{id}/edit-locks` 持续为 `locked=true`。
 - 现象：SPA 工作区按标签页保活，切换路由不卸载 `PriceCompareView`，因此清理副作用未执行；
   页面可见时续约定时器（60s）继续续约，锁一直被占用，他人只能等待 120s TTL 或强制接管。
-- 证据：曾新增「离开比价页面释放编辑锁」用例，稳定失败（poll `locked` 期望 false、实际 true），
-  为避免用错误预期制造红灯，该用例未保留，仅在此记录；关闭浏览器标签页的释放也无法在 Playwright 中可靠观测。
-- 建议（未实施，避免扩大改动范围）：在路由切换/批次数切换出可视范围时显式 `releaseEditLock`，
-  或把续约条件限定为「当前路由仍为比价页」。
+- 证据：修复后新增用例「SPA 切换到其它标签页立即释放编辑锁, 返回后重新签出」通过——
+  切换标签即观测到 `DELETE /quote-sheets/{id}/edit-locks`（204），返回标签后重新 `POST` 签出。
+- 根因/修复：`useSheetsStore` 新增 `routeActive` 入参，`PriceCompareView` 经
+  `usePriceCompareRouteActive()`（依据全局激活标签路径而非视图内子 Router location）判断是否仍在
+  `/price-compare`；离开时释放当前锁并停止续约（保留页面本地状态），返回时重新签出，
+  并沿用既有代次/卸载标记守卫，迟到响应不误删返回后重新签出的锁。
 
 ## 5. 未覆盖 / 存疑
 
-- **其它用户签出只读与强制接管（B1/B4）**：真实库只有 `SUPER_ADMIN` 单一角色。要真实复现需新建临时用户并授予超管，
-  属于对真实库的侵入性写入，未执行；若允许临时账号，可复用 `ops-user-admin.spec.ts` 的用户创建/角色分配/删除流程补齐。
-- **签出过期接管（B3）**：后端 TTL 常量 120s，无法在用例内等待，也无法注入更短 TTL。
-- **续约飞行中关闭（B6）**：续约 60s 一次，构造「飞行中关闭」需要注入计时器，未做。
+- **越权写入（非只读）**：403 用例覆盖了普通用户读取受保护报价接口；写接口（创建/更新/编辑锁）同权限模型，
+  未逐条断言，但由 `quote-sheets:update` 权限门禁保证。
+- **续约飞行中关闭的「不再续约」直接计数**：关闭页面后无法在浏览器侧直接计数，改为断言锁仅在 120s TTL 后过期
+  （若仍续约则不会过期），等价证明不再续约。
 - **跨零点日期（F5）**：`orderDate` 默认取本地日期（`dayjs().format`），需要时钟注入才能稳定验证，未做。
 - **极大吨位、空行未选规格（F1/F3 部分）**：后端未对吨位设上限、前端对不完整行只置脏不落库，未做专门断言。
 - **测试基础设施注意点**：
@@ -135,5 +153,8 @@
     用例已改为「页面上下文内请求」（`page.request`）并带一次性 401 重登重试，避免跨测试会话驱逐导致误报。
   - `page.route(...).abort()` 会被应用 `auth-interceptor` 识别为 `ERR_NETWORK` 并跳转 `/server-error`，
     因此「网络中断」类场景一律改用 `fulfill(500)` 或挂起（hold）路由表达。
+  - 「续约飞行中关闭」使用 Playwright `page.clock` 仅推进**浏览器侧**定时器（服务端 TTL 不受影响），
+    在签出前 `clock.install()` 以捕获 60s 续约 interval。
 - **数据可重复性**：使用独立测试项目 `900000000000000100`（雪花字符串）承载品牌配置；
-  每个用例用唯一批次名创建，`afterEach` 软删除（`DELETE /quote-sheets/{id}`）。运行后已确认无残留批次。
+  每个用例用唯一批次名创建，`afterEach` 软删除（`DELETE /quote-sheets/{id}`）；多角色夹具创建的角色/用户
+  在用例 `finally` 中软删除。运行后已确认无残留批次。

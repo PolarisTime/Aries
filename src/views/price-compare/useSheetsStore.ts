@@ -450,7 +450,15 @@ function activeSheetSpecQuantityLocked(snapshot: Snapshot): boolean {
 }
 
 /** 多单据状态: 服务端为数据源, 本地乐观更新 + 防抖自动保存; 支持撤销/重做。 */
-export function useSheetsStore(): SheetsStore {
+export function useSheetsStore(options?: {
+  /**
+   * 视图当前是否停留在 /price-compare 路由。
+   * keep-alive 多标签架构下切走 Tab 不卸载视图, 由调用方依据路由/标签状态传入,
+   * 离开时立即释放编辑锁并停止续约, 返回时重新签出; 默认 true 保持既有行为。
+   */
+  routeActive?: boolean
+}): SheetsStore {
+  const routeActive = options?.routeActive ?? true
   const token = useAuthStore((state) => state.token)
   const [state, setState] = useState<Snapshot>(defaultState)
   const [loading, setLoading] = useState(true)
@@ -1577,22 +1585,36 @@ export function useSheetsStore(): SheetsStore {
     })
   }, [])
 
-  // 切换批次: 释放上一批次锁(含未落库批次, 避免锁泄漏)并签出新批次(按 serverId 记账)
+  // 切换批次 / 切换路由: 释放上一批次锁并签出新批次(按 serverId 记账)。
+  // 离开 /price-compare 时只释放并停止续约(保留页面本地状态), 不签出新锁。
   useEffect(() => {
     if (loading) return
     if (!token || !hydratedRef.current) return
+    const previous = lockedActiveRef.current
+    // 离开比价路由: 立即归还当前持有的锁, 返回时由下方分支重新签出
+    if (!routeActive) {
+      if (previous) void releaseEditLock(previous)
+      lockedActiveRef.current = null
+      return
+    }
     const target = state.activeId
     if (!target) return
     const targetServerId = serverIdRef.current.get(target)
-    if (targetServerId && lockedActiveRef.current === targetServerId) return
-    const previous = lockedActiveRef.current
+    if (targetServerId && previous === targetServerId) return
     // 未落库批次: 清空持有标记, 待 create 成功后由 saveSheetNow 显式签出
     lockedActiveRef.current = targetServerId ?? null
     // 先释放上一批次锁并停止其续约; 即使目标批次尚未落库也要执行, 否则旧锁会泄漏
     if (previous && previous !== targetServerId) void releaseEditLock(previous)
     if (!targetServerId) return
     void acquireEditLock(target)
-  }, [state.activeId, token, loading, acquireEditLock, releaseEditLock])
+  }, [
+    state.activeId,
+    routeActive,
+    token,
+    loading,
+    acquireEditLock,
+    releaseEditLock,
+  ])
 
   // 页面隐藏/卸载: 补跑最后一次防抖保存并释放当前批次锁
   useEffect(() => {

@@ -175,18 +175,23 @@ describe('useSheetsStore 服务端数据源', () => {
     vi.useRealTimers()
   })
 
-  function renderStore() {
+  function renderStore(routeActive = true) {
     let result!: SheetsStore
-    function Probe() {
-      result = useSheetsStore()
+    function Probe({ active }: { active: boolean }) {
+      result = useSheetsStore({ routeActive: active })
       return null
     }
     act(() => {
-      root.render(createElement(Probe))
+      root.render(createElement(Probe, { active: routeActive }))
     })
     return {
       get current() {
         return result
+      },
+      setRouteActive(next: boolean) {
+        act(() => {
+          root.render(createElement(Probe, { active: next }))
+        })
       },
     }
   }
@@ -947,6 +952,106 @@ describe('useSheetsStore 服务端数据源', () => {
     rootUnmounted = true
 
     expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+  })
+
+  it('离开比价路由立即释放编辑锁且不再续约', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+    })
+    expect(store.current.editLock?.mine).toBe(true)
+    api.releaseQuoteSheetEditLock.mockClear()
+    api.acquireQuoteSheetEditLock.mockClear()
+
+    act(() => store.setRouteActive(false))
+
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledWith('9001')
+    expect(store.current.editLock).toBeNull()
+    // 页面保持可见: 推进多个续约周期也不得再签出/续约
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(180_000)
+    })
+    expect(api.acquireQuoteSheetEditLock).not.toHaveBeenCalled()
+  })
+
+  it('返回比价路由重新签出编辑锁', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.acquireEditLock()
+    })
+    act(() => store.setRouteActive(false))
+    api.releaseQuoteSheetEditLock.mockClear()
+    api.acquireQuoteSheetEditLock.mockClear()
+
+    act(() => store.setRouteActive(true))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledWith(
+      '9001',
+      undefined,
+    )
+    expect(store.current.editLock?.mine).toBe(true)
+    expect(store.current.readOnly).toBe(false)
+  })
+
+  it('离开路由后迟到签出响应不误删返回时重新签出的锁', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    await act(async () => {
+      await store.current.releaseEditLock()
+    })
+    api.acquireQuoteSheetEditLock.mockClear()
+    api.releaseQuoteSheetEditLock.mockClear()
+
+    let resolveFirst!: (value: unknown) => void
+    api.acquireQuoteSheetEditLock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirst = resolve
+        }),
+    )
+    let pending!: Promise<boolean>
+    act(() => {
+      pending = store.current.acquireEditLock('9001')
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(1)
+
+    // 首次签出响应仍未返回时离开并返回路由(第二次签出走默认成功响应)
+    act(() => store.setRouteActive(false))
+    // 离开路由自身会归还旧锁: 以此作为基线, 迟到响应不得再追加释放
+    const releaseCallsAfterLeave =
+      api.releaseQuoteSheetEditLock.mock.calls.length
+    act(() => store.setRouteActive(true))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(2)
+    expect(store.current.editLock?.mine).toBe(true)
+
+    // 迟到的首次响应到达: 目标仍是当前持有的锁, 不得归还或清空状态
+    await act(async () => {
+      resolveFirst({
+        sheetId: '9001',
+        locked: true,
+        mine: true,
+        ttlSeconds: 120,
+      })
+      await pending
+    })
+
+    expect(store.current.editLock?.mine).toBe(true)
+    expect(api.releaseQuoteSheetEditLock).toHaveBeenCalledTimes(
+      releaseCallsAfterLeave,
+    )
+    // 新锁续约正常: 推进一个周期应再次签出/续约
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000)
+    })
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalledTimes(3)
   })
 
   it('规格数量锁定随表头 PUT 携带 specQuantityLocked', async () => {
