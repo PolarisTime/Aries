@@ -6,6 +6,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
+import { saveBusinessModule } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { bindAntdAppApi } from '@/utils/antd-app'
 import { SupplierPage } from './SupplierPage'
@@ -35,6 +36,7 @@ const supplierRows = [
     id: '9001',
     supplierCode: 'SUP0001',
     supplierName: '河北钢铁贸易',
+    shortName: '河钢',
     contactName: '张伟',
     contactPhone: '13800001111',
     city: '石家庄',
@@ -45,6 +47,7 @@ const supplierRows = [
     id: '9002',
     supplierCode: 'SUP0002',
     supplierName: '江苏沙钢物资',
+    shortName: '沙钢',
     contactName: '李娜',
     contactPhone: '13900002222',
     city: '张家港',
@@ -143,8 +146,10 @@ describe('SupplierPage 专属页面', () => {
     )
     expect(container.textContent).toContain('SUP0001')
     expect(container.textContent).toContain('河北钢铁贸易')
+    expect(container.textContent).toContain('河钢')
     expect(container.textContent).toContain('SUP0002')
     expect(container.textContent).toContain('江苏沙钢物资')
+    expect(container.textContent).toContain('沙钢')
     expect(container.textContent).toContain('正常数：1')
   })
 
@@ -163,5 +168,52 @@ describe('SupplierPage 专属页面', () => {
     await flushAsync()
 
     expect(document.body.textContent).toContain('供应商名称')
+  })
+
+  it('编辑抽屉展示供应商简称字段并可回填与保存', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    const row = [...container.querySelectorAll('tr')].find((element) =>
+      element.textContent?.includes('河北钢铁贸易'),
+    )
+    expect(row, '供应商数据行应存在').toBeTruthy()
+    await act(async () => {
+      row!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flushAsync()
+
+    expect(document.body.textContent).toContain('供应商简称')
+    const shortNameInput = [
+      ...document.querySelectorAll<HTMLInputElement>('input'),
+    ].find((input) => input.value === '河钢')
+    expect(shortNameInput, '简称输入框应回填河钢').toBeTruthy()
+
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )
+    await act(async () => {
+      descriptor?.set?.call(shortNameInput, '河钢集团')
+      shortNameInput!.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const saveButton = [...document.querySelectorAll('button')].find(
+      (button) => button.textContent?.replace(/\s/g, '') === '保存',
+    )
+    expect(saveButton, '保存按钮应存在').toBeTruthy()
+    await act(async () => {
+      saveButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flushAsync()
+
+    expect(vi.mocked(saveBusinessModule)).toHaveBeenCalledWith(
+      'supplier',
+      expect.objectContaining({ shortName: '河钢集团' }),
+    )
   })
 })

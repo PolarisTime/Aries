@@ -120,6 +120,19 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     expect(payload.accountId).toBe('1932500000000000123')
   })
 
+  it('supplier 保存载荷保留业务配置白名单内的 shortName 字段', async () => {
+    const payload = (await submitRecord('supplier', {
+      id: '9001',
+      supplierCode: 'SUP0001',
+      supplierName: '河北钢铁贸易',
+      shortName: '河钢',
+      contactName: '张伟',
+      status: '正常',
+    })) as Record<string, unknown>
+
+    expect(payload.shortName).toBe('河钢')
+  })
+
   it('未声明 chargeItem 白名单的模块（sales-outbound）不下发 chargeItems 键', async () => {
     const payload = (await submitRecord('sales-outbound', {
       customerName: '客户A',

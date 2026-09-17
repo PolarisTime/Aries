@@ -34,6 +34,11 @@ export function SupplierPage() {
           width: 180,
         },
         {
+          key: 'shortName',
+          title: t('modules.pages.supplier.colShortName'),
+          width: 120,
+        },
+        {
           key: 'contactName',
           title: t('modules.pages.supplier.colContactName'),
           width: 110,
@@ -72,6 +77,10 @@ export function SupplierPage() {
           label: t('modules.pages.supplier.colSupplierName'),
         },
         {
+          key: 'shortName',
+          label: t('modules.pages.supplier.colShortName'),
+        },
+        {
           key: 'contactName',
           label: t('modules.pages.supplier.colContactName'),
         },
@@ -100,6 +109,11 @@ export function SupplierPage() {
           label: t('modules.pages.supplier.colSupplierName'),
           type: 'input',
           required: true,
+        },
+        {
+          key: 'shortName',
+          label: t('modules.pages.supplier.colShortName'),
+          type: 'input',
         },
         {
           key: 'contactName',
@@ -134,6 +148,7 @@ export function SupplierPage() {
       buildValues: (record) => ({
         supplierCode: asString(record?.supplierCode),
         supplierName: asString(record?.supplierName),
+        shortName: asString(record?.shortName),
         contactName: asString(record?.contactName),
         contactPhone: asString(record?.contactPhone),
         city: asString(record?.city),
@@ -144,6 +159,7 @@ export function SupplierPage() {
         ...(base ?? {}),
         supplierCode: asString(values.supplierCode),
         supplierName: values.supplierName,
+        shortName: values.shortName ?? '',
         contactName: values.contactName ?? '',
         contactPhone: values.contactPhone ?? '',
         city: values.city ?? '',
