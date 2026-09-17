@@ -112,14 +112,15 @@ describe('第一层：字段固有只读', () => {
 })
 
 describe('第二层：状态锁定只能收窄', () => {
-  it('销售订单导入上游后仅单价可编辑，快照列与数量仓库批号全部锁定', () => {
+  it('销售订单导入上游后单价与数量可编辑，快照列与仓库批号仍锁定', () => {
     const locked = { parentImportedItemEditLocked: true }
     expect(editable('sales-order', 'unitPrice', locked)).toBe(true)
+    // 支持部分销售: 导入上游后数量可改（上限由 _maxImportQuantity 兜底）
+    expect(editable('sales-order', 'quantity', locked)).toBe(true)
     for (const columnKey of [
       'materialCode',
       'warehouseName',
       'batchNo',
-      'quantity',
       'brand',
       'spec',
       'weightTon',
