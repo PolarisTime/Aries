@@ -1,27 +1,7 @@
-import { ReloadOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import type { TableColumnsType } from 'antd'
-import {
-  Alert,
-  Button,
-  DatePicker,
-  Empty,
-  Input,
-  Select,
-  Table,
-  Tabs,
-  Tooltip,
-  Typography,
-} from 'antd'
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { Alert, Button, Empty, Table, Tabs } from 'antd'
+import type { RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getInventoryBalances,
@@ -36,9 +16,17 @@ import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useHasPermission } from '@/hooks/usePermission'
 import type { ModuleOverviewItem } from '@/types/module-page'
-import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
+import {
+  InventoryBalancesFilters,
+  InventoryTransactionsFilters,
+} from './InventoryFilters'
+import {
+  buildInventoryBalanceColumns,
+  buildInventoryTransactionColumns,
+  sumColumnWidths,
+} from './inventory-columns'
 
 const TRANSACTION_TYPE_KEYS = [
   'PURCHASE_INBOUND',
@@ -62,19 +50,6 @@ function requestErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message.trim()
     ? error.message
     : fallback
-}
-
-function displayText(value: unknown) {
-  const text = String(value ?? '').trim()
-  return text || '--'
-}
-
-function sumColumnWidths(columns: { width?: unknown }[]): number {
-  return columns.reduce(
-    (total, column) =>
-      total + (typeof column.width === 'number' ? column.width : 0),
-    0,
-  )
 }
 
 function useWarehouseOptions() {
@@ -117,6 +92,55 @@ function useFocusableTableBody(
   })
 }
 
+// ---------- 余额面板状态 ----------
+
+interface BalancesState {
+  page: number
+  pageSizeOverride: number | null
+  keywordInput: string
+  keyword: string
+  warehouseId?: string
+}
+
+type BalancesAction =
+  | { type: 'keywordInput'; value: string }
+  | { type: 'keywordCommit'; value: string }
+  | { type: 'warehouse'; value?: string }
+  | { type: 'reset' }
+  | { type: 'page'; page: number; pageSizeOverride: number | null }
+
+const BALANCES_INITIAL: BalancesState = {
+  page: 1,
+  pageSizeOverride: null,
+  keywordInput: '',
+  keyword: '',
+  warehouseId: undefined,
+}
+
+function balancesReducer(
+  state: BalancesState,
+  action: BalancesAction,
+): BalancesState {
+  switch (action.type) {
+    case 'keywordInput':
+      return { ...state, keywordInput: action.value }
+    case 'keywordCommit':
+      return { ...state, keyword: action.value.trim(), page: 1 }
+    case 'warehouse':
+      return { ...state, warehouseId: action.value, page: 1 }
+    case 'reset':
+      return BALANCES_INITIAL
+    case 'page':
+      return {
+        ...state,
+        page: action.page,
+        pageSizeOverride: action.pageSizeOverride,
+      }
+    default:
+      return state
+  }
+}
+
 function InventoryBalancesPanel() {
   const { t } = useTranslation()
   const defaultPageSize = useDefaultPageSize()
@@ -125,21 +149,17 @@ function InventoryBalancesPanel() {
   useFocusableTableBody(shellRef, t('inventory.tabs.balances'))
   const { options: warehouseOptions, isLoading: warehousesLoading } =
     useWarehouseOptions()
-  const [page, setPage] = useState(1)
-  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null)
-  const effectivePageSize = pageSizeOverride ?? defaultPageSize
-  const [keywordInput, setKeywordInput] = useState('')
-  const [keyword, setKeyword] = useState('')
-  const [warehouseId, setWarehouseId] = useState<string | undefined>()
+  const [state, dispatch] = useReducer(balancesReducer, BALANCES_INITIAL)
+  const effectivePageSize = state.pageSizeOverride ?? defaultPageSize
 
   const queryParams = useMemo(
     () => ({
-      ...(keyword ? { keyword } : {}),
-      ...(warehouseId ? { warehouseId } : {}),
-      page: page - 1,
+      ...(state.keyword ? { keyword: state.keyword } : {}),
+      ...(state.warehouseId ? { warehouseId: state.warehouseId } : {}),
+      page: state.page - 1,
       size: effectivePageSize,
     }),
-    [effectivePageSize, keyword, page, warehouseId],
+    [effectivePageSize, state.keyword, state.page, state.warehouseId],
   )
   const balancesQuery = useQuery({
     queryKey: QUERY_KEYS.inventoryBalances(queryParams),
@@ -149,157 +169,30 @@ function InventoryBalancesPanel() {
   // 字段级权限：无 inventory:read:cost 时隐藏成本列（后端同时脱敏为 null）。
   const canViewCost = useHasPermission('inventory:read:cost')
 
-  const columns = useMemo<TableColumnsType<InventoryBalance>>(() => {
-    const formatNumber = (value: number) => formatCellValue(value, 'number')
-    const formatAmount = (value: number) => formatCellValue(value, 'amount')
-    return [
-      {
-        title: t('inventory.columns.materialCode'),
-        dataIndex: 'materialCode',
-        width: 150,
-        fixed: 'left',
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.brand'),
-        dataIndex: 'brand',
-        width: 110,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.material'),
-        dataIndex: 'material',
-        width: 120,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.spec'),
-        dataIndex: 'spec',
-        width: 100,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.length'),
-        dataIndex: 'length',
-        width: 90,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.unit'),
-        dataIndex: 'unit',
-        width: 80,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.warehouse'),
-        dataIndex: 'warehouseName',
-        width: 140,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.batchNo'),
-        dataIndex: 'batchNo',
-        width: 130,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.quantity'),
-        dataIndex: 'quantity',
-        width: 120,
-        align: 'right',
-        render: formatNumber,
-      },
-      ...(canViewCost
-        ? [
-            {
-              title: t('inventory.columns.avgUnitCost'),
-              dataIndex: 'avgUnitCost',
-              width: 130,
-              align: 'right' as const,
-              render: formatAmount,
-            },
-            {
-              title: t('inventory.columns.amount'),
-              dataIndex: 'amount',
-              width: 140,
-              align: 'right' as const,
-              render: formatAmount,
-            },
-          ]
-        : []),
-    ]
-  }, [canViewCost, formatCellValue, t])
-
+  const columns = useMemo(
+    () => buildInventoryBalanceColumns({ t, formatCellValue, canViewCost }),
+    [canViewCost, formatCellValue, t],
+  )
   const scrollX = useMemo(() => sumColumnWidths(columns), [columns])
   const rows = balancesQuery.data?.content ?? EMPTY_BALANCES
   const total = balancesQuery.data?.totalElements || 0
 
-  const commitKeyword = (value: string) => {
-    setKeyword(value.trim())
-    setPage(1)
-  }
-  const resetFilters = () => {
-    setKeywordInput('')
-    setKeyword('')
-    setWarehouseId(undefined)
-    setPage(1)
-  }
-
   return (
     <div className="module-grid-workspace inventory-workspace">
-      <section className="finance-filter-shell">
-        <div className="finance-filter-primary-row inventory-filter-row">
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">
-              {t('inventory.filters.keyword')}
-            </Typography.Text>
-            <Input
-              aria-label={t('inventory.filters.keyword')}
-              value={keywordInput}
-              allowClear
-              placeholder={t('inventory.filters.balanceKeywordPlaceholder')}
-              onChange={(event) => setKeywordInput(event.target.value)}
-              onBlur={(event) => commitKeyword(event.target.value)}
-              onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
-            />
-          </div>
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">
-              {t('inventory.filters.warehouse')}
-            </Typography.Text>
-            <Select
-              aria-label={t('inventory.filters.warehouse')}
-              value={warehouseId}
-              options={warehouseOptions}
-              loading={warehousesLoading}
-              showSearch={{ optionFilterProp: 'label' }}
-              allowClear
-              placeholder={t('inventory.filters.warehousePlaceholder')}
-              onChange={(value) => {
-                setWarehouseId(value ? String(value) : undefined)
-                setPage(1)
-              }}
-            />
-          </div>
-          <div className="finance-filter-actions">
-            <Button onClick={resetFilters}>{t('common.reset')}</Button>
-            <Tooltip title={t('common.refresh')}>
-              <span>
-                <Button
-                  aria-label={t('inventory.refreshAria')}
-                  icon={<ReloadOutlined />}
-                  loading={balancesQuery.isFetching}
-                  disabled={balancesQuery.isFetching}
-                  onClick={() => void balancesQuery.refetch()}
-                />
-              </span>
-            </Tooltip>
-          </div>
-        </div>
-      </section>
+      <InventoryBalancesFilters
+        keywordInput={state.keywordInput}
+        onKeywordInputChange={(value) =>
+          dispatch({ type: 'keywordInput', value })
+        }
+        onKeywordCommit={(value) => dispatch({ type: 'keywordCommit', value })}
+        warehouseId={state.warehouseId}
+        warehouseOptions={warehouseOptions}
+        warehousesLoading={warehousesLoading}
+        onWarehouseChange={(value) => dispatch({ type: 'warehouse', value })}
+        onReset={() => dispatch({ type: 'reset' })}
+        onRefresh={() => void balancesQuery.refetch()}
+        refreshing={balancesQuery.isFetching}
+      />
 
       {balancesQuery.isError ? (
         <Alert
@@ -350,17 +243,81 @@ function InventoryBalancesPanel() {
 
       <ModuleTablePagination
         total={total}
-        currentPage={page}
+        currentPage={state.page}
         pageSize={effectivePageSize}
         currentItemCount={rows.length}
         overviewItems={EMPTY_OVERVIEW_ITEMS}
-        onPageChange={(nextPage, nextPageSize) => {
-          setPage(nextPageSize === effectivePageSize ? nextPage : 1)
-          setPageSizeOverride(nextPageSize)
-        }}
+        onPageChange={(nextPage, nextPageSize) =>
+          dispatch({
+            type: 'page',
+            page: nextPageSize === effectivePageSize ? nextPage : 1,
+            pageSizeOverride: nextPageSize,
+          })
+        }
       />
     </div>
   )
+}
+
+// ---------- 流水面板状态 ----------
+
+interface TransactionsState {
+  page: number
+  pageSizeOverride: number | null
+  keywordInput: string
+  keyword: string
+  warehouseId?: string
+  transactionType?: string
+  startDate?: string
+  endDate?: string
+}
+
+type TransactionsAction =
+  | { type: 'keywordInput'; value: string }
+  | { type: 'keywordCommit'; value: string }
+  | { type: 'warehouse'; value?: string }
+  | { type: 'transactionType'; value?: string }
+  | { type: 'dateRange'; start?: string; end?: string }
+  | { type: 'reset' }
+  | { type: 'page'; page: number; pageSizeOverride: number | null }
+
+const TRANSACTIONS_INITIAL: TransactionsState = {
+  page: 1,
+  pageSizeOverride: null,
+  keywordInput: '',
+  keyword: '',
+  warehouseId: undefined,
+  transactionType: undefined,
+  startDate: undefined,
+  endDate: undefined,
+}
+
+function transactionsReducer(
+  state: TransactionsState,
+  action: TransactionsAction,
+): TransactionsState {
+  switch (action.type) {
+    case 'keywordInput':
+      return { ...state, keywordInput: action.value }
+    case 'keywordCommit':
+      return { ...state, keyword: action.value.trim(), page: 1 }
+    case 'warehouse':
+      return { ...state, warehouseId: action.value, page: 1 }
+    case 'transactionType':
+      return { ...state, transactionType: action.value, page: 1 }
+    case 'dateRange':
+      return { ...state, startDate: action.start, endDate: action.end, page: 1 }
+    case 'reset':
+      return TRANSACTIONS_INITIAL
+    case 'page':
+      return {
+        ...state,
+        page: action.page,
+        pageSizeOverride: action.pageSizeOverride,
+      }
+    default:
+      return state
+  }
 }
 
 function InventoryTransactionsPanel() {
@@ -372,15 +329,11 @@ function InventoryTransactionsPanel() {
   const { options: warehouseOptions, isLoading: warehousesLoading } =
     useWarehouseOptions()
   const transactionTypeLabel = useTransactionTypeLabel()
-  const [page, setPage] = useState(1)
-  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null)
-  const effectivePageSize = pageSizeOverride ?? defaultPageSize
-  const [keywordInput, setKeywordInput] = useState('')
-  const [keyword, setKeyword] = useState('')
-  const [warehouseId, setWarehouseId] = useState<string | undefined>()
-  const [transactionType, setTransactionType] = useState<string | undefined>()
-  const [startDate, setStartDate] = useState<string | undefined>()
-  const [endDate, setEndDate] = useState<string | undefined>()
+  const [state, dispatch] = useReducer(
+    transactionsReducer,
+    TRANSACTIONS_INITIAL,
+  )
+  const effectivePageSize = state.pageSizeOverride ?? defaultPageSize
 
   const transactionTypeOptions = useMemo(
     () =>
@@ -390,27 +343,27 @@ function InventoryTransactionsPanel() {
       })),
     [t],
   )
-  const dateRangeValue: [Dayjs, Dayjs] | null =
-    startDate && endDate ? [dayjs(startDate), dayjs(endDate)] : null
 
   const queryParams = useMemo(
     () => ({
-      ...(keyword ? { keyword } : {}),
-      ...(warehouseId ? { warehouseId } : {}),
-      ...(transactionType ? { transactionType } : {}),
-      ...(startDate ? { startDate } : {}),
-      ...(endDate ? { endDate } : {}),
-      page: page - 1,
+      ...(state.keyword ? { keyword: state.keyword } : {}),
+      ...(state.warehouseId ? { warehouseId: state.warehouseId } : {}),
+      ...(state.transactionType
+        ? { transactionType: state.transactionType }
+        : {}),
+      ...(state.startDate ? { startDate: state.startDate } : {}),
+      ...(state.endDate ? { endDate: state.endDate } : {}),
+      page: state.page - 1,
       size: effectivePageSize,
     }),
     [
       effectivePageSize,
-      endDate,
-      keyword,
-      page,
-      startDate,
-      transactionType,
-      warehouseId,
+      state.endDate,
+      state.keyword,
+      state.page,
+      state.startDate,
+      state.transactionType,
+      state.warehouseId,
     ],
   )
   const transactionsQuery = useQuery({
@@ -421,221 +374,46 @@ function InventoryTransactionsPanel() {
   // 字段级权限：无 inventory:read:cost 时隐藏成本列（后端同时脱敏为 null）。
   const canViewCost = useHasPermission('inventory:read:cost')
 
-  const columns = useMemo<TableColumnsType<InventoryTransaction>>(() => {
-    const formatNumber = (value: number) => formatCellValue(value, 'number')
-    const formatAmount = (value: number) => formatCellValue(value, 'amount')
-    const formatDateTime = (value: string) => formatCellValue(value, 'datetime')
-    return [
-      {
-        title: t('inventory.columns.transactionNo'),
-        dataIndex: 'transactionNo',
-        width: 180,
-        fixed: 'left',
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.transactionType'),
-        dataIndex: 'transactionType',
-        width: 120,
-        render: (value: string) => transactionTypeLabel(value),
-      },
-      {
-        title: t('inventory.columns.materialCode'),
-        dataIndex: 'materialCode',
-        width: 150,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.brand'),
-        dataIndex: 'brand',
-        width: 110,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.material'),
-        dataIndex: 'material',
-        width: 120,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.spec'),
-        dataIndex: 'spec',
-        width: 100,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.unit'),
-        dataIndex: 'unit',
-        width: 80,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.warehouse'),
-        dataIndex: 'warehouseName',
-        width: 140,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.batchNo'),
-        dataIndex: 'batchNo',
-        width: 130,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.direction'),
-        dataIndex: 'direction',
-        width: 80,
-        render: (value: number) =>
-          value < 0
-            ? t('inventory.direction.out')
-            : t('inventory.direction.in'),
-      },
-      {
-        title: t('inventory.columns.quantity'),
-        dataIndex: 'quantity',
-        width: 120,
-        align: 'right',
-        render: formatNumber,
-      },
-      ...(canViewCost
-        ? [
-            {
-              title: t('inventory.columns.unitCost'),
-              dataIndex: 'unitCost',
-              width: 120,
-              align: 'right' as const,
-              render: formatAmount,
-            },
-            {
-              title: t('inventory.columns.amount'),
-              dataIndex: 'amount',
-              width: 140,
-              align: 'right' as const,
-              render: formatAmount,
-            },
-          ]
-        : []),
-      {
-        title: t('inventory.columns.sourceDocumentNo'),
-        dataIndex: 'sourceDocumentNo',
-        width: 180,
-        ellipsis: true,
-        render: displayText,
-      },
-      {
-        title: t('inventory.columns.occurredAt'),
-        dataIndex: 'occurredAt',
-        width: 170,
-        render: formatDateTime,
-      },
-    ]
-  }, [canViewCost, formatCellValue, t, transactionTypeLabel])
-
+  const columns = useMemo(
+    () =>
+      buildInventoryTransactionColumns({
+        t,
+        formatCellValue,
+        transactionTypeLabel,
+        canViewCost,
+      }),
+    [canViewCost, formatCellValue, t, transactionTypeLabel],
+  )
   const scrollX = useMemo(() => sumColumnWidths(columns), [columns])
   const rows = transactionsQuery.data?.content ?? EMPTY_TRANSACTIONS
   const total = transactionsQuery.data?.totalElements || 0
 
-  const commitKeyword = (value: string) => {
-    setKeyword(value.trim())
-    setPage(1)
-  }
-  const resetFilters = () => {
-    setKeywordInput('')
-    setKeyword('')
-    setWarehouseId(undefined)
-    setTransactionType(undefined)
-    setStartDate(undefined)
-    setEndDate(undefined)
-    setPage(1)
-  }
-
   return (
     <div className="module-grid-workspace inventory-workspace">
-      <section className="finance-filter-shell">
-        <div className="finance-filter-primary-row inventory-filter-row">
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">
-              {t('inventory.filters.keyword')}
-            </Typography.Text>
-            <Input
-              aria-label={t('inventory.filters.keyword')}
-              value={keywordInput}
-              allowClear
-              placeholder={t('inventory.filters.transactionKeywordPlaceholder')}
-              onChange={(event) => setKeywordInput(event.target.value)}
-              onBlur={(event) => commitKeyword(event.target.value)}
-              onPressEnter={(event) => commitKeyword(event.currentTarget.value)}
-            />
-          </div>
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">
-              {t('inventory.filters.warehouse')}
-            </Typography.Text>
-            <Select
-              aria-label={t('inventory.filters.warehouse')}
-              value={warehouseId}
-              options={warehouseOptions}
-              loading={warehousesLoading}
-              showSearch={{ optionFilterProp: 'label' }}
-              allowClear
-              placeholder={t('inventory.filters.warehousePlaceholder')}
-              onChange={(value) => {
-                setWarehouseId(value ? String(value) : undefined)
-                setPage(1)
-              }}
-            />
-          </div>
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">
-              {t('inventory.filters.transactionType')}
-            </Typography.Text>
-            <Select
-              aria-label={t('inventory.filters.transactionType')}
-              value={transactionType}
-              options={transactionTypeOptions}
-              allowClear
-              placeholder={t('inventory.filters.transactionTypePlaceholder')}
-              onChange={(value) => {
-                setTransactionType(value)
-                setPage(1)
-              }}
-            />
-          </div>
-          <div className="finance-overview-filter">
-            <Typography.Text type="secondary">
-              {t('inventory.filters.occurredAt')}
-            </Typography.Text>
-            <DatePicker.RangePicker
-              aria-label={t('inventory.filters.occurredAt')}
-              value={dateRangeValue}
-              format={DISPLAY_DATE_FORMAT}
-              onChange={(dates) => {
-                setStartDate(dates?.[0]?.format('YYYY-MM-DD'))
-                setEndDate(dates?.[1]?.format('YYYY-MM-DD'))
-                setPage(1)
-              }}
-            />
-          </div>
-          <div className="finance-filter-actions">
-            <Button onClick={resetFilters}>{t('common.reset')}</Button>
-            <Tooltip title={t('common.refresh')}>
-              <span>
-                <Button
-                  aria-label={t('inventory.refreshAria')}
-                  icon={<ReloadOutlined />}
-                  loading={transactionsQuery.isFetching}
-                  disabled={transactionsQuery.isFetching}
-                  onClick={() => void transactionsQuery.refetch()}
-                />
-              </span>
-            </Tooltip>
-          </div>
-        </div>
-      </section>
+      <InventoryTransactionsFilters
+        keywordInput={state.keywordInput}
+        onKeywordInputChange={(value) =>
+          dispatch({ type: 'keywordInput', value })
+        }
+        onKeywordCommit={(value) => dispatch({ type: 'keywordCommit', value })}
+        warehouseId={state.warehouseId}
+        warehouseOptions={warehouseOptions}
+        warehousesLoading={warehousesLoading}
+        onWarehouseChange={(value) => dispatch({ type: 'warehouse', value })}
+        transactionType={state.transactionType}
+        transactionTypeOptions={transactionTypeOptions}
+        onTransactionTypeChange={(value) =>
+          dispatch({ type: 'transactionType', value })
+        }
+        startDate={state.startDate}
+        endDate={state.endDate}
+        onDateRangeChange={(start, end) =>
+          dispatch({ type: 'dateRange', start, end })
+        }
+        onReset={() => dispatch({ type: 'reset' })}
+        onRefresh={() => void transactionsQuery.refetch()}
+        refreshing={transactionsQuery.isFetching}
+      />
 
       {transactionsQuery.isError ? (
         <Alert
@@ -686,14 +464,17 @@ function InventoryTransactionsPanel() {
 
       <ModuleTablePagination
         total={total}
-        currentPage={page}
+        currentPage={state.page}
         pageSize={effectivePageSize}
         currentItemCount={rows.length}
         overviewItems={EMPTY_OVERVIEW_ITEMS}
-        onPageChange={(nextPage, nextPageSize) => {
-          setPage(nextPageSize === effectivePageSize ? nextPage : 1)
-          setPageSizeOverride(nextPageSize)
-        }}
+        onPageChange={(nextPage, nextPageSize) =>
+          dispatch({
+            type: 'page',
+            page: nextPageSize === effectivePageSize ? nextPage : 1,
+            pageSizeOverride: nextPageSize,
+          })
+        }
       />
     </div>
   )
@@ -701,9 +482,6 @@ function InventoryTransactionsPanel() {
 
 export function InventoryView() {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<'balances' | 'transactions'>(
-    'balances',
-  )
 
   return (
     <AppProPage
@@ -713,10 +491,7 @@ export function InventoryView() {
     >
       <div className="module-page-stack inventory-page">
         <Tabs
-          activeKey={activeTab}
-          onChange={(key) =>
-            setActiveTab(key === 'transactions' ? 'transactions' : 'balances')
-          }
+          defaultActiveKey="balances"
           items={[
             {
               key: 'balances',
