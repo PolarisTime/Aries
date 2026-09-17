@@ -32,7 +32,9 @@ const rawSupplierOptionSchema = z.object({
   supplierCode: z.string(),
   supplierName: z.string(),
   shortName: z.string().nullable().optional(),
-  brands: z.array(z.string()).nullable().optional(),
+  // 后端新增字段，保持宽松解析：非字符串元素在 normalizeSupplierOptions 中过滤，
+  // 避免单个字段契约漂移导致整个供应商下拉不可用。
+  brands: z.array(z.unknown()).nullable().optional(),
   value: z.string(),
   label: z.string(),
 })
