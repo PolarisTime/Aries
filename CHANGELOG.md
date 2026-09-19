@@ -1,3 +1,29 @@
+# [10.11.0](https://github.com/PolarisTime/Aries/compare/v10.10.0...v10.11.0) (2026-09-19)
+
+
+### Bug Fixes
+
+* **ci:** 修复 biome 格式与 import 顺序以恢复前端流水线 ([7b271f1](https://github.com/PolarisTime/Aries/commit/7b271f189428d17637848d8ab1db28ba29a26689))
+* **editor:** 数量单位缺失不再静默回落, 改为阻止保存并提示补全 ([217cae7](https://github.com/PolarisTime/Aries/commit/217cae71353ebd5f75ad8cb101062475f9c3b1db))
+* **price-compare:** 收敛编辑锁迟到响应与释放竞态 ([4125994](https://github.com/PolarisTime/Aries/commit/4125994051869ce5d824a9baaf9739cb3d851513))
+* **price-compare:** 编辑锁操作串行化并在收尾保存后释放 ([f85d665](https://github.com/PolarisTime/Aries/commit/f85d6659de18a0afadf553998a4864cbb31ec85d))
+* **rbac:** 权限矩阵区分字段级权限, 消除重复的「查看/编辑」 ([2b13dfe](https://github.com/PolarisTime/Aries/commit/2b13dfe69d20f75849e9203c877b6a61ff71631b))
+* **sales-contract:** 修复编辑器误清空项目并接入状态国际化 ([5b9ab04](https://github.com/PolarisTime/Aries/commit/5b9ab043baf23ccfd1da5ef75f7a158143d5e406))
+* **sales-order:** 导入上游后允许调整数量以支持部分销售 ([135fe10](https://github.com/PolarisTime/Aries/commit/135fe105d25ce6dbec1ad722748e64f323400682))
+* **search:** 完善单据流弹窗容错、可访问性与连线去重 ([8a4df4b](https://github.com/PolarisTime/Aries/commit/8a4df4bb72788c79af228c2564bd43cf34f4b971))
+* **supplier:** 供应商下拉品牌字段宽松解析 ([d9a4963](https://github.com/PolarisTime/Aries/commit/d9a496376691eb5acfc2fac32772922f6f84d444))
+
+
+### Features
+
+* **print:** 拆分打印改为逐行勾选并在明细表预览拆分 ([4486d70](https://github.com/PolarisTime/Aries/commit/4486d7003170ba87b9ec818ad2ab278c6e7c9578))
+* **rbac:** 字段级权限前端落地(金额/成本列按权限隐藏, 单价只读) ([cd445f4](https://github.com/PolarisTime/Aries/commit/cd445f42f42c6a60b24ba2d2d2f2d6133b8ac549))
+* **rbac:** 新增前端权限模型并接入菜单与按钮 ([08acece](https://github.com/PolarisTime/Aries/commit/08acece69dd65d1288534c1ae2fc9f0822608368))
+* **rbac:** 用户配置改为「基本信息→角色」两步向导 ([e027c86](https://github.com/PolarisTime/Aries/commit/e027c86e5dbb7205c91f08a127e70c318f4562a2))
+* **rbac:** 角色支持克隆并在用户向导增加有效权限预览 ([a42d25e](https://github.com/PolarisTime/Aries/commit/a42d25e78064547f60dcc6374c91e2ec8c71f224))
+* **rbac:** 角色配置改为「基本信息→权限」两步向导 ([18d5015](https://github.com/PolarisTime/Aries/commit/18d5015c3141fd9a2458d63b27db31971a86b4bc))
+* **system:** 个人账号并入右上角个人设置并移除侧边栏入口 ([4a11919](https://github.com/PolarisTime/Aries/commit/4a119199f01f05a1e6181629fc867cba732c2430))
+
 # [10.10.0](https://github.com/PolarisTime/Aries/compare/v10.9.4...v10.10.0) (2026-09-17)
 
 
