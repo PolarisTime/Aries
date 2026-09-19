@@ -39,15 +39,17 @@ describe('buildAmountRestrictedViewConfig', () => {
   it('同时移除表头/明细的金额与单价列、字段', () => {
     const result = buildAmountRestrictedViewConfig(base)
 
-    expect(result.columns.map((column) => column.dataIndex)).toEqual(['orderNo'])
+    expect(result.columns.map((column) => column.dataIndex)).toEqual([
+      'orderNo',
+    ])
     expect(result.detailFields.map((field) => field.key)).toEqual(['orderNo'])
     expect(result.formFields?.map((field) => field.key)).toEqual(['orderNo'])
     expect(result.itemColumns?.map((column) => column.dataIndex)).toEqual([
       'quantity',
     ])
-    expect(result.detailItemColumns?.map((column) => column.dataIndex)).toEqual([
-      'quantity',
-    ])
+    expect(result.detailItemColumns?.map((column) => column.dataIndex)).toEqual(
+      ['quantity'],
+    )
     expect(result.saveResultItemColumns).toEqual([])
   })
 

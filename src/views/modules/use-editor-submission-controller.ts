@@ -20,13 +20,13 @@ import {
   trimEditorItemsForModule,
 } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
-import { hasMaterialSelection } from '@/module-system/editor/module-editor-shared'
 import {
   getModulePageBehavior,
   isDeliveryVerificationStatus,
 } from '@/module-system/behavior/module-page-behaviors'
 import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
 import type { ModuleKey } from '@/module-system/core/module-key'
+import { hasMaterialSelection } from '@/module-system/editor/module-editor-shared'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import type {

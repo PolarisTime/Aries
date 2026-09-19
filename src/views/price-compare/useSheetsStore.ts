@@ -1448,7 +1448,7 @@ export function useSheetsStore(options?: {
    * 链繁忙时排到当前链尾之后, 保证释放一定发生在同 serverId 的后续签出之前。
    */
   const runLockOp = useCallback(
-    <T,>(serverId: string, op: () => Promise<T>): Promise<T> => {
+    <T>(serverId: string, op: () => Promise<T>): Promise<T> => {
       const previous = lockOpQueueRef.current.get(serverId)
       const start = () => op()
       const next = previous ? previous.then(start, start) : start()
