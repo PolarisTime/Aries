@@ -1,3 +1,10 @@
+# [10.13.0](https://github.com/PolarisTime/Aries/compare/v10.12.0...v10.13.0) (2026-09-20)
+
+
+### Features
+
+* **price-compare:** 报单比价支持隔断行 ([e7d6386](https://github.com/PolarisTime/Aries/commit/e7d6386cedf907489a82a5c892d26874cac7d10e))
+
 # [10.12.0](https://github.com/PolarisTime/Aries/compare/v10.11.1...v10.12.0) (2026-09-20)
 
 
