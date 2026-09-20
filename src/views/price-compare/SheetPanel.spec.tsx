@@ -361,4 +361,37 @@ describe('SheetPanel 指定品牌展示', () => {
       container.querySelector('.price-compare-supplier')?.textContent,
     ).toContain('河钢')
   })
+
+  it('简称下拉支持拼音全拼与首字母索引', async () => {
+    renderStateful(makeSheet(), [{ ...baseRow }], suppliers)
+
+    await openSupplierDropdown()
+
+    const searchInput =
+      document.body.querySelector<HTMLInputElement>(
+        '.price-compare-supplier .ant-select-input',
+      ) ??
+      document.body.querySelector<HTMLInputElement>(
+        '.ant-select-dropdown .ant-select-input',
+      )
+    expect(searchInput).not.toBeNull()
+
+    // 拼音首字母 "hg" 命中"河钢", 过滤掉"沙钢"
+    await act(async () => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.bind(searchInput)
+      setValue?.('hg')
+      searchInput?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(
+      document.body.querySelector('.ant-select-item-option[title="河钢"]'),
+    ).toBeTruthy()
+    expect(
+      document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
+    ).toBeNull()
+  })
 })

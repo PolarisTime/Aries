@@ -29,6 +29,7 @@ import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   CATEGORIES,
   filterSupplierOptionsByBrand,
@@ -55,6 +56,9 @@ import type {
 import './price-compare.css'
 
 const { Text } = Typography
+
+/** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
+const filterSupplierOption = createPinyinFilterOption()
 
 function moveFocus(orderedRows: PriceRow[]) {
   return (brandName: string, rowId: string, delta: number) => {
@@ -602,7 +606,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     title={supplierName}
                     placeholder={t('priceCompare.sheet.supplier')}
                     allowClear
-                    showSearch={{ optionFilterProp: 'label' }}
+                    showSearch={{ filterOption: filterSupplierOption }}
                     options={options}
                     onChange={(value) => {
                       const option = options.find(

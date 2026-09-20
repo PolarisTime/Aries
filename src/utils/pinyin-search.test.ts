@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createStructuredMaterialFilterOption } from './pinyin-search'
+import {
+  createPinyinFilterOption,
+  createStructuredMaterialFilterOption,
+} from './pinyin-search'
 
 const filterMaterial = createStructuredMaterialFilterOption()
+const filterPinyin = createPinyinFilterOption()
 
 const material = (brand: string) => ({
   brand,
@@ -21,5 +25,26 @@ describe('createStructuredMaterialFilterOption', () => {
   it('保留完整拼音和拼音前缀搜索', () => {
     expect(filterMaterial('zhonghang', material('中杭'))).toBe(true)
     expect(filterMaterial('yi', material('益海'))).toBe(true)
+  })
+})
+
+describe('createPinyinFilterOption', () => {
+  it('支持中文原文、全拼与首字母索引', () => {
+    expect(filterPinyin('', { label: '沙钢' })).toBe(true)
+    expect(filterPinyin('沙', { label: '沙钢' })).toBe(true)
+    expect(filterPinyin('shagang', { label: '沙钢' })).toBe(true)
+    expect(filterPinyin('sg', { label: '沙钢' })).toBe(true)
+    expect(filterPinyin('hg', { label: '河钢' })).toBe(true)
+    expect(filterPinyin('sg', { label: '河钢' })).toBe(false)
+  })
+
+  it('多关键词空格分隔按 AND 匹配', () => {
+    expect(filterPinyin('sha gang', { label: '沙钢' })).toBe(true)
+    expect(filterPinyin('sha he', { label: '沙钢' })).toBe(false)
+  })
+
+  it('无 label 或 undefined option 时不误命中', () => {
+    expect(filterPinyin('sg', undefined)).toBe(false)
+    expect(filterPinyin('sg', {})).toBe(false)
   })
 })
