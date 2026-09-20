@@ -123,7 +123,7 @@
   width: 100%;
 }
 
-/* 供应商简称列: 4 个字符的窄列, 压缩内边距与箭头占位 */
+/* 供应商简称列 */
 .price-compare-table .price-compare-supplier {
   width: 100%;
 }
