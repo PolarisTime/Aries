@@ -145,11 +145,12 @@ export function PriceCompareView() {
   ])
 
   useEffect(() => {
-    // 参照锁定期间不得程序化改写 refDate/refPeriod: 绕过锁定会被后端 422 拒绝
-    if (active?.locked) return
     const matches = matchesData
     if (!activeSheetId || !matches?.length) return
+    // 参照锁定仅固定参照日期/时段, 网价仍需随刷新合并; 否则锁定后刷新会丢失网价
     mergeMatches(matches)
+    // 参照锁定期间不得程序化改写 refDate/refPeriod: 绕过锁定会被后端 422 拒绝
+    if (active?.locked) return
     if (isLatestRef) {
       const quoteDate = matches.find((row) => row.quoteDate)?.quoteDate ?? ''
       const period = matches.find((row) => row.period)?.period ?? ''
