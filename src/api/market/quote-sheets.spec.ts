@@ -141,6 +141,7 @@ describe('quote-sheets API', () => {
       brands: [{ brandName: '中天', freight: 30, sortOrder: 0 }],
       items: [
         {
+          rowType: 'PRODUCT',
           category: '螺纹钢',
           material: 'HRB400',
           spec: 12,
@@ -251,6 +252,7 @@ describe('quote-sheets API', () => {
     const created = await addQuoteSheetItem(
       '700500000000000130',
       {
+        rowType: 'PRODUCT',
         category: '螺纹钢',
         material: 'HRB400',
         spec: 12,
@@ -263,6 +265,7 @@ describe('quote-sheets API', () => {
       '700500000000000130',
       '700500000000000140',
       {
+        rowType: 'PRODUCT',
         category: '螺纹钢',
         material: 'HRB400',
         spec: 12,

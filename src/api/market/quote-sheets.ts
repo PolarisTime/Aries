@@ -40,6 +40,7 @@ const priceSchema = z.looseObject({
 
 const itemSchema = z.looseObject({
   id: z.unknown(),
+  rowType: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
   material: z.string().nullable().optional(),
   spec: z.union([z.number(), z.string()]).nullable().optional(),
@@ -85,6 +86,7 @@ export type QuoteSheetPriceRecord = {
 
 export type QuoteSheetItemRecord = {
   id: EntityId
+  rowType?: 'PRODUCT' | 'SEPARATOR'
   category: string
   material: string
   spec?: number
@@ -133,10 +135,11 @@ export type QuoteSheetPayload = {
   remark?: string
   brands: QuoteSheetBrandRecord[]
   items: {
-    category: string
-    material: string
-    spec: number
-    length: string
+    rowType: 'PRODUCT' | 'SEPARATOR'
+    category?: string
+    material?: string
+    spec?: number
+    length?: string
     ton?: number
     prices: {
       brandName: string
@@ -148,10 +151,11 @@ export type QuoteSheetPayload = {
 
 /** 行级保存请求体(整行替换)。 */
 export type QuoteSheetItemPayload = {
-  category: string
-  material: string
-  spec: number
-  length: string
+  rowType: 'PRODUCT' | 'SEPARATOR'
+  category?: string
+  material?: string
+  spec?: number
+  length?: string
   ton?: number
   prices: {
     brandName: string
@@ -200,8 +204,10 @@ function normalizeItem(
   item: z.infer<typeof itemSchema>,
   path: string,
 ): QuoteSheetItemRecord {
+  const rowType = item.rowType === 'SEPARATOR' ? 'SEPARATOR' : 'PRODUCT'
   return {
     id: parseEntityId(item.id, `${path}.id`),
+    rowType,
     category: asString(item.category).trim(),
     material: asString(item.material).trim(),
     length: asString(item.length).trim(),

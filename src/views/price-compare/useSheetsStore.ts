@@ -29,7 +29,7 @@ import {
 } from '@/api/market/quote-sheets'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
-import { DEFAULT_LENGTH_PREMIUM, makeSheet } from './core'
+import { DEFAULT_LENGTH_PREMIUM, isSeparatorRow, makeSheet } from './core'
 import type {
   Brand,
   PriceRow,
@@ -176,17 +176,22 @@ const emptyConfig = (): ProjectConfig => ({
   version: '0',
 })
 
-/** 行是否具备完整商品信息(后端要求 category/material/spec/length 非空)。 */
+/** 行是否具备完整商品信息(商品行后端要求 category/material/spec/length 非空)。 */
 function isCompleteRow(row: PriceRow): boolean {
   return Boolean(row.category && row.material && row.spec && row.length)
 }
 
+/** 行是否可落库: 隔断行总是可落库, 商品行需商品信息完整。 */
+function isPersistableRow(row: PriceRow): boolean {
+  return isSeparatorRow(row) || isCompleteRow(row)
+}
+
 /**
- * 刷新合并行: 未完成行(空行隔断)不落库, 刷新时按本地位次保留本地未完成行;
- * 完整行以服务端为准(其他设备新增的行追加到末尾, 已删除的行丢弃)。
+ * 刷新合并行: 不完整商品行(未选商品的空行)不落库, 刷新时按本地位次保留;
+ * 其余行(完整商品行与隔断行)以服务端为准(其他设备新增的行追加到末尾, 已删除的行丢弃)。
  *
- * 以本地绝对下标把空行插回服务端行列表: 兼容"本地新建单据的本地行 id 尚未
- * 与服务端对齐"的场景, 也能保持空行相对完整行的原始位置。
+ * 以本地绝对下标把不完整行插回服务端行列表: 兼容"本地新建单据的本地行 id 尚未
+ * 与服务端对齐"的场景, 也能保持其相对完整行的原始位置。
  */
 function mergeRowsPreservingIncomplete(
   localRows: PriceRow[],
@@ -195,7 +200,8 @@ function mergeRowsPreservingIncomplete(
   const merged = [...serverRows]
   const emptyRows: { row: PriceRow; index: number }[] = []
   localRows.forEach((row, index) => {
-    if (!isCompleteRow(row)) emptyRows.push({ row, index })
+    if (!isSeparatorRow(row) && !isCompleteRow(row))
+      emptyRows.push({ row, index })
   })
   // 从后往前插入, 保证前面的插入不影响后面记录的下标
   for (let i = emptyRows.length - 1; i >= 0; i -= 1) {
@@ -236,9 +242,12 @@ function buildPayload(
       freight: brand.freight,
       sortOrder: index,
     })),
-    items: sheet.rows.flatMap((row) => {
-      if (!isCompleteRow(row)) return []
-      const prices = brands.flatMap((brand) => {
+    items: sheet.rows.flatMap<QuoteSheetPayload['items'][number]>((row) => {
+      if (!isPersistableRow(row)) return []
+      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR', prices: [] }]
+      const prices = brands.flatMap<
+        QuoteSheetPayload['items'][number]['prices'][number]
+      >((brand) => {
         const input = sheet.inputs[`${brand.name}:${row.id}`]
         if (!input || (input.spot === undefined && !input.supplierId)) return []
         return [
@@ -251,6 +260,7 @@ function buildPayload(
       })
       return [
         {
+          rowType: 'PRODUCT',
           category: row.category,
           material: row.material,
           spec: Number(row.spec),
@@ -280,12 +290,13 @@ function buildHeaderPayload(sheet: PriceSheet): QuoteSheetHeaderPayload {
   }
 }
 
-/** 单行整行替换请求体; 商品信息不完整时返回 null。 */
+/** 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。 */
 function buildItemPayload(
   sheet: PriceSheet,
   row: PriceRow,
   brands: Brand[],
 ): QuoteSheetItemPayload | null {
+  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR', prices: [] }
   if (!isCompleteRow(row)) return null
   const prices = brands.flatMap((brand) => {
     const input = sheet.inputs[`${brand.name}:${row.id}`]
@@ -299,6 +310,7 @@ function buildItemPayload(
     ]
   })
   return {
+    rowType: 'PRODUCT',
     category: row.category,
     material: row.material,
     spec: Number(row.spec),
@@ -313,7 +325,7 @@ function headerSignature(sheet: PriceSheet): string {
   return JSON.stringify(buildHeaderPayload(sheet))
 }
 
-/** 行指纹: 商品字段/吨位/现货价/供应商任一变化即不同。 */
+/** 行指纹: 行类型/商品字段/吨位/现货价/供应商任一变化即不同。 */
 function itemSignature(row: PriceRow, inputs: SheetInputs): string {
   const suffix = `:${row.id}`
   const prices = Object.keys(inputs)
@@ -321,6 +333,7 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     .sort()
     .map((key) => [key, inputs[key] ?? {}])
   return JSON.stringify({
+    rowType: row.rowType ?? 'PRODUCT',
     category: row.category,
     material: row.material,
     spec: row.spec,
@@ -1090,7 +1103,7 @@ export function useSheetsStore(options?: {
         for (const row of sheet.rows) {
           const payload = buildItemPayload(sheet, row, config.brands)
           if (!payload) {
-            // 行不完整无法持久化: 置脏保留本地行, 刷新不得静默丢弃
+            // 未选商品的空行无法持久化: 置脏保留本地行, 刷新不得静默丢弃
             markDirty()
             continue
           }
@@ -1304,9 +1317,13 @@ export function useSheetsStore(options?: {
       ) {
         return local
       }
-      // 空行隔断不落库: 用服务端内容覆盖时保留本地未完成行及其本地位次
+      // 未选商品的空行不落库: 用服务端内容覆盖时保留本地未完成商品行及其本地位次
       const localCounterpart = local ?? localByServerId.get(serverSheet.id)
-      if (localCounterpart?.rows.some((row) => !isCompleteRow(row))) {
+      if (
+        localCounterpart?.rows.some(
+          (row) => !isSeparatorRow(row) && !isCompleteRow(row),
+        )
+      ) {
         return {
           ...serverSheet,
           rows: mergeRowsPreservingIncomplete(
@@ -2131,6 +2148,7 @@ export function useSheetsStore(options?: {
 function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
   const rows: PriceRow[] = record.items.map((item) => ({
     id: item.id,
+    rowType: item.rowType === 'SEPARATOR' ? 'SEPARATOR' : 'PRODUCT',
     category: item.category,
     material: item.material,
     spec: item.spec ?? null,

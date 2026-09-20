@@ -3,6 +3,7 @@ import {
   HolderOutlined,
   InfoCircleOutlined,
   LockOutlined,
+  MinusOutlined,
   ReloadOutlined,
   SettingOutlined,
   TrophyOutlined,
@@ -33,7 +34,9 @@ import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   CATEGORIES,
   filterSupplierOptionsByBrand,
+  isSeparatorRow,
   makeRow,
+  makeSeparatorRow,
   moveItem,
   netPriceWithFallback,
   resolveRef,
@@ -135,7 +138,9 @@ const cellOf = (
   title,
   width,
   align: 'center' as const,
-  render,
+  // 隔断行不参与网价/现货/差价/供应商等任一品牌列
+  render: (value: unknown, row: GridRow) =>
+    isSeparatorRow(row.row) ? null : render(value, row),
 })
 
 const varietyKeyOf = (item: Variety) =>
@@ -305,9 +310,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: SHEET_COLUMN_WIDTH.category,
       fixed: 'left',
       align: 'center',
-      render: (_, row) => (
-        <span className="price-compare-category">{row.row.category}</span>
-      ),
+      render: (_, row) =>
+        isSeparatorRow(row.row) ? (
+          <span className="price-compare-separator-label">
+            {t('priceCompare.sheet.separator')}
+          </span>
+        ) : (
+          <span className="price-compare-category">{row.row.category}</span>
+        ),
     },
     {
       title: t('priceCompare.sheet.columns.variety'),
@@ -316,6 +326,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       fixed: 'left',
       render: (_, row) => {
         const current = row.row
+        if (isSeparatorRow(current)) return null
         const value =
           current && current.material
             ? `${current.category}|${current.material}|${current.spec}|${current.length}`
@@ -349,40 +360,41 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: SHEET_COLUMN_WIDTH.ton,
       fixed: 'left',
       align: 'center',
-      render: (_, row) => (
-        <Input
-          key={`ton:${row.rowId}:${row.row.ton ?? ''}`}
-          className="price-compare-ton"
-          size="small"
-          variant="borderless"
-          inputMode="decimal"
-          disabled={readOnly || Boolean(sheet.specQuantityLocked)}
-          data-ton={row.rowId}
-          defaultValue={row.row.ton === undefined ? '' : String(row.row.ton)}
-          onBlur={(event) => {
-            const raw = event.target.value
-            const value = Number(raw)
-            if (raw !== '' && (Number.isNaN(value) || value <= 0)) {
-              message.warning(t('priceCompare.sheet.tonPositive'))
-              return
-            }
-            patchRow(row.rowId, { ton: raw === '' ? undefined : value })
-          }}
-          onPressEnter={(event) => {
-            const raw = (event.target as HTMLInputElement).value
-            const value = Number(raw)
-            if (raw === '') patchRow(row.rowId, { ton: undefined })
-            else if (!Number.isNaN(value) && value > 0)
-              patchRow(row.rowId, { ton: value })
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Tab') {
-              event.preventDefault()
-              ctx.moveFocusTon(row.rowId, event.shiftKey ? -1 : 1)
-            }
-          }}
-        />
-      ),
+      render: (_, row) =>
+        isSeparatorRow(row.row) ? null : (
+          <Input
+            key={`ton:${row.rowId}:${row.row.ton ?? ''}`}
+            className="price-compare-ton"
+            size="small"
+            variant="borderless"
+            inputMode="decimal"
+            disabled={readOnly || Boolean(sheet.specQuantityLocked)}
+            data-ton={row.rowId}
+            defaultValue={row.row.ton === undefined ? '' : String(row.row.ton)}
+            onBlur={(event) => {
+              const raw = event.target.value
+              const value = Number(raw)
+              if (raw !== '' && (Number.isNaN(value) || value <= 0)) {
+                message.warning(t('priceCompare.sheet.tonPositive'))
+                return
+              }
+              patchRow(row.rowId, { ton: raw === '' ? undefined : value })
+            }}
+            onPressEnter={(event) => {
+              const raw = (event.target as HTMLInputElement).value
+              const value = Number(raw)
+              if (raw === '') patchRow(row.rowId, { ton: undefined })
+              else if (!Number.isNaN(value) && value > 0)
+                patchRow(row.rowId, { ton: value })
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Tab') {
+                event.preventDefault()
+                ctx.moveFocusTon(row.rowId, event.shiftKey ? -1 : 1)
+              }
+            }}
+          />
+        ),
     },
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> => [
@@ -651,10 +663,11 @@ type SheetTableProps = {
   > & { density: 'small' | 'middle' | 'large' }
   onReorderRow: (fromId: string, toId: string, after: boolean) => void
   onAddRow: () => void
+  onAddSeparator: () => void
 }
 
 function SheetTable(props: SheetTableProps) {
-  const { rows, base, onReorderRow, onAddRow } = props
+  const { rows, base, onReorderRow, onAddRow, onAddSeparator } = props
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
   const [dropAfter, setDropAfter] = useState(false)
@@ -708,13 +721,7 @@ function SheetTable(props: SheetTableProps) {
       summary={() => (
         <Table.Summary.Row>
           <Table.Summary.Cell index={0} colSpan={5 + base.brands.length * 4}>
-            <Tooltip
-              title={
-                !base.readOnly && base.sheet.specQuantityLocked
-                  ? rowLockedHint
-                  : undefined
-              }
-            >
+            <Flex gap="small" align="center">
               <Button
                 type="text"
                 size="small"
@@ -725,12 +732,32 @@ function SheetTable(props: SheetTableProps) {
               >
                 {t('priceCompare.sheet.addRow')}
               </Button>
-            </Tooltip>
+              <Tooltip
+                title={
+                  !base.readOnly && base.sheet.specQuantityLocked
+                    ? rowLockedHint
+                    : undefined
+                }
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  block
+                  className="price-compare-add-separator"
+                  icon={<MinusOutlined />}
+                  disabled={rowLocked}
+                  onClick={onAddSeparator}
+                >
+                  {t('priceCompare.sheet.addSeparator')}
+                </Button>
+              </Tooltip>
+            </Flex>
           </Table.Summary.Cell>
         </Table.Summary.Row>
       )}
       rowClassName={(row) => {
         const classes: string[] = []
+        if (isSeparatorRow(row.row)) classes.push('price-compare-separator-row')
         if (row.rowId === dragId) classes.push('price-compare-dragging')
         if (dragId && row.rowId === dropId && row.rowId !== dragId)
           classes.push(
@@ -1230,6 +1257,8 @@ export function SheetPanel(props: Props) {
 
   const addRow = () => setRows((list) => [...list, makeRow()])
 
+  const addSeparator = () => setRows((list) => [...list, makeSeparatorRow()])
+
   const base = {
     sheet,
     t,
@@ -1291,6 +1320,7 @@ export function SheetPanel(props: Props) {
         }}
         onReorderRow={reorderRow}
         onAddRow={addRow}
+        onAddSeparator={addSeparator}
       />
     </>
   )

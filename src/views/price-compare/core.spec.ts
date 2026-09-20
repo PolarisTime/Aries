@@ -5,7 +5,9 @@ import {
   countMissing,
   dataKeyOf,
   filterSupplierOptionsByBrand,
+  isSeparatorRow,
   makeRow,
+  makeSeparatorRow,
   matchesToData,
   mergePriceData,
   moveItem,
@@ -379,9 +381,28 @@ describe('makeRow', () => {
     const row = makeRow()
     expect(row.id).toBeTruthy()
     expect('groupId' in row).toBe(false)
+    expect(row.rowType).toBe('PRODUCT')
     expect(row.category).toBe('')
     expect(row.material).toBe('')
     expect(row.spec).toBeNull()
     expect(row.length).toBe('')
+  })
+})
+
+describe('隔断行', () => {
+  it('makeSeparatorRow 生成 rowType=SEPARATOR 的空行', () => {
+    const row = makeSeparatorRow()
+    expect(row.id).toBeTruthy()
+    expect(row.rowType).toBe('SEPARATOR')
+    expect(row.category).toBe('')
+    expect(row.material).toBe('')
+    expect(row.spec).toBeNull()
+    expect(row.length).toBe('')
+  })
+
+  it('isSeparatorRow 仅对 rowType=SEPARATOR 为真, 缺省视为商品行', () => {
+    expect(isSeparatorRow(makeSeparatorRow())).toBe(true)
+    expect(isSeparatorRow(makeRow())).toBe(false)
+    expect(isSeparatorRow({ rowType: undefined })).toBe(false)
   })
 })

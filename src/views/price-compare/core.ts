@@ -364,11 +364,29 @@ function makeId(): string {
 export function makeRow(): PriceRow {
   return {
     id: makeId(),
+    rowType: 'PRODUCT',
     category: '',
     material: '',
     spec: null,
     length: '',
   }
+}
+
+/** 隔断行: 仅作视觉分组, 不携带商品信息。 */
+export function makeSeparatorRow(): PriceRow {
+  return {
+    id: makeId(),
+    rowType: 'SEPARATOR',
+    category: '',
+    material: '',
+    spec: null,
+    length: '',
+  }
+}
+
+/** 是否隔断行(缺省 rowType 视为商品行)。 */
+export function isSeparatorRow(row: Pick<PriceRow, 'rowType'>): boolean {
+  return row.rowType === 'SEPARATOR'
 }
 
 export const DEFAULT_STATUS = '报价'

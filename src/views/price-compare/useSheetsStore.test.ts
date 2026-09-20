@@ -79,6 +79,7 @@ function sheetRecord(overrides: Record<string, unknown> = {}) {
     items: [
       {
         id: '7001',
+        rowType: 'PRODUCT',
         category: '螺纹钢',
         material: 'HRB400',
         spec: 12,
@@ -390,6 +391,69 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.rows).toHaveLength(2)
     expect(store.current.rows[0].id).toBe('7001')
     expect(store.current.rows[1].id).toBe('local-empty')
+  })
+
+  it('隔断行随行级新增端点落库并携带 rowType', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) => [
+        ...list,
+        {
+          id: 'local-sep',
+          rowType: 'SEPARATOR',
+          category: '',
+          material: '',
+          spec: null,
+          length: '',
+        },
+      ])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.addQuoteSheetItem).toHaveBeenCalledTimes(1)
+    expect(api.addQuoteSheetItem.mock.calls[0][1]).toEqual({
+      rowType: 'SEPARATOR',
+      prices: [],
+    })
+  })
+
+  it('隔断行刷新后按服务端为准保留(rowType 还原)', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({
+        items: [
+          {
+            id: '7001',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400',
+            spec: 12,
+            length: '9米',
+            prices: [],
+          },
+          { id: '7002', rowType: 'SEPARATOR', prices: [] },
+        ],
+      }),
+    ])
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.rows.map((row) => row.rowType)).toEqual([
+      'PRODUCT',
+      'SEPARATOR',
+    ])
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(store.current.rows.map((row) => row.rowType)).toEqual([
+      'PRODUCT',
+      'SEPARATOR',
+    ])
   })
 
   it('行级写后回填服务端权威版本而非本地 +1 猜测', async () => {

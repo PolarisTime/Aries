@@ -2341,6 +2341,8 @@ export const enUS = {
       spotBetter: 'Spot price is better',
       netBetter: 'Market price is better',
       addRow: '+ Add Row',
+      addSeparator: '+ Add Separator',
+      separator: 'Separator',
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',
       unspecifiedProject: 'Unspecified project',
       orderDate: 'Order Date',

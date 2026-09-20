@@ -181,6 +181,42 @@ describe('SheetPanel 指定品牌展示', () => {
     ).toBe(false)
   })
 
+  it('隔断行渲染为分隔带且不渲染商品/吨位/品牌输入', () => {
+    renderStateful({ ...makeSheet() }, [
+      { ...baseRow },
+      {
+        id: 'sep1',
+        rowType: 'SEPARATOR',
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+      },
+    ])
+
+    const separatorRow = container.querySelector('.price-compare-separator-row')
+    expect(separatorRow).not.toBeNull()
+    expect(separatorRow?.textContent).toContain('隔断')
+    expect(separatorRow?.querySelector('input[data-ton]')).toBeNull()
+    expect(separatorRow?.querySelector('input[data-spot]')).toBeNull()
+    expect(separatorRow?.querySelector('.ant-select')).toBeNull()
+  })
+
+  it('点击"添加隔断"追加一行隔断行', () => {
+    const observed = renderStateful({ ...makeSheet() }, [{ ...baseRow }])
+
+    const addSeparator = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('添加隔断'),
+    )
+    expect(addSeparator).toBeTruthy()
+    act(() => {
+      addSeparator?.click()
+    })
+
+    expect(observed.rows).toHaveLength(2)
+    expect(observed.rows[1].rowType).toBe('SEPARATOR')
+  })
+
   it('规格数量锁定后禁用新增/删除/拖拽重排并给出提示', () => {
     renderStateful({ ...makeSheet(), specQuantityLocked: true }, [
       { ...baseRow },

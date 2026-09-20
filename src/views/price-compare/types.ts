@@ -39,8 +39,13 @@ export type ProjectConfig = {
   version?: string
 }
 
+/** 行类型: 商品行(默认)/隔断行。 */
+export type RowType = 'PRODUCT' | 'SEPARATOR'
+
 export type PriceRow = {
   id: string
+  /** 缺省视为 PRODUCT, 兼容历史数据与本地新建行。 */
+  rowType?: RowType
   category: string
   material: string
   spec: number | null

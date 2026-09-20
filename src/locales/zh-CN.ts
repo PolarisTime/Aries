@@ -2271,6 +2271,8 @@ export const zhCN = {
       spotBetter: '现货更划算',
       netBetter: '网价更优',
       addRow: '＋ 添加一行',
+      addSeparator: '＋ 添加隔断',
+      separator: '隔断',
       removeSelectedTitle: '删除选中的 {{selected}} 行？',
       unspecifiedProject: '未指定项目',
       orderDate: '报单日期',
