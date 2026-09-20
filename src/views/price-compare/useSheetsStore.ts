@@ -181,6 +181,30 @@ function isCompleteRow(row: PriceRow): boolean {
   return Boolean(row.category && row.material && row.spec && row.length)
 }
 
+/**
+ * 刷新合并行: 未完成行(空行隔断)不落库, 刷新时按本地位次保留本地未完成行;
+ * 完整行以服务端为准(其他设备新增的行追加到末尾, 已删除的行丢弃)。
+ *
+ * 以本地绝对下标把空行插回服务端行列表: 兼容"本地新建单据的本地行 id 尚未
+ * 与服务端对齐"的场景, 也能保持空行相对完整行的原始位置。
+ */
+function mergeRowsPreservingIncomplete(
+  localRows: PriceRow[],
+  serverRows: PriceRow[],
+): PriceRow[] {
+  const merged = [...serverRows]
+  const emptyRows: { row: PriceRow; index: number }[] = []
+  localRows.forEach((row, index) => {
+    if (!isCompleteRow(row)) emptyRows.push({ row, index })
+  })
+  // 从后往前插入, 保证前面的插入不影响后面记录的下标
+  for (let i = emptyRows.length - 1; i >= 0; i -= 1) {
+    const { row, index } = emptyRows[i]
+    merged.splice(Math.min(index, merged.length), 0, row)
+  }
+  return merged
+}
+
 /** 单据是否可持久化: 有品牌、有完整商品行、参照与报单日期齐备。 */
 function isPersistable(sheet: PriceSheet, config: ProjectConfig): boolean {
   if (!sheet.orderDate || !sheet.refDate || !sheet.refPeriod) return false
@@ -1264,6 +1288,12 @@ export function useSheetsStore(options?: {
     }
     const current = stateRef.current
     const localById = new Map(current.sheets.map((sheet) => [sheet.id, sheet]))
+    // 本地 id 可能尚未与服务端对齐(新建单据): 用 serverId 映射反查本地单据对象
+    const localByServerId = new Map<string, PriceSheet>()
+    for (const sheet of current.sheets) {
+      const serverId = serverIdRef.current.get(sheet.id) ?? sheet.id
+      if (!localByServerId.has(serverId)) localByServerId.set(serverId, sheet)
+    }
     // 待保存编辑的本地内容与服务端不同: 保留本地, 避免静默回滚 (基线仍按服务端保存)
     const mergedServerSheets = serverSheets.map((serverSheet) => {
       const local = localById.get(serverSheet.id)
@@ -1273,6 +1303,17 @@ export function useSheetsStore(options?: {
         sheetContentFingerprint(local) !== sheetContentFingerprint(serverSheet)
       ) {
         return local
+      }
+      // 空行隔断不落库: 用服务端内容覆盖时保留本地未完成行及其本地位次
+      const localCounterpart = local ?? localByServerId.get(serverSheet.id)
+      if (localCounterpart?.rows.some((row) => !isCompleteRow(row))) {
+        return {
+          ...serverSheet,
+          rows: mergeRowsPreservingIncomplete(
+            localCounterpart.rows,
+            serverSheet.rows,
+          ),
+        }
       }
       return serverSheet
     })

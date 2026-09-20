@@ -352,6 +352,46 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.addQuoteSheetItem.mock.calls[0][0]).toBe('9001')
   })
 
+  it('空行不落库, 聚焦刷新后仍在原位置保留', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.rows).toHaveLength(1)
+
+    // 在完整行之后插入一个空行隔断
+    act(() => {
+      store.current.setRows((list) => [
+        ...list,
+        {
+          id: 'local-empty',
+          category: '',
+          material: '',
+          spec: null,
+          length: '',
+        },
+      ])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(store.current.rows).toHaveLength(2)
+    expect(store.current.rows[1].id).toBe('local-empty')
+    expect(api.addQuoteSheetItem).not.toHaveBeenCalled()
+
+    api.fetchQuoteSheets.mockClear()
+
+    // 服务端仍只有完整行: 刷新应执行且空行按原位置保留
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(api.fetchQuoteSheets).toHaveBeenCalledTimes(1)
+    expect(store.current.rows).toHaveLength(2)
+    expect(store.current.rows[0].id).toBe('7001')
+    expect(store.current.rows[1].id).toBe('local-empty')
+  })
+
   it('行级写后回填服务端权威版本而非本地 +1 猜测', async () => {
     api.updateQuoteSheetItem.mockResolvedValue({
       item: {
@@ -662,6 +702,70 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(ids).toContain('9002')
     expect(ids).not.toContain(localId)
     expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+  })
+
+  it('本地新建单据空行隔断刷新后仍保留', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    // 补全默认行使其落库, 再追加一个空行隔断
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      store.current.setRows((list) => [
+        ...list,
+        {
+          id: 'local-empty',
+          category: '',
+          material: '',
+          spec: null,
+          length: '',
+        },
+      ])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord(),
+      sheetRecord({ id: '9002', name: '批次 2' }),
+    ])
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    const emptyRow = store.current.rows.find(
+      (row) => row.category === '' && row.material === '',
+    )
+    expect(emptyRow, '本地新建单据的空行隔断应保留').toBeTruthy()
   })
 
   it('刷新列表缺少已创建单据时保留本地单据与本地→服务端映射', async () => {
