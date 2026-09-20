@@ -1,3 +1,16 @@
+# [10.12.0](https://github.com/PolarisTime/Aries/compare/v10.11.1...v10.12.0) (2026-09-20)
+
+
+### Bug Fixes
+
+* **price-compare:** 空行隔断刷新后不再被静默丢弃 ([c12dcb6](https://github.com/PolarisTime/Aries/commit/c12dcb6ce4bb7e5d84151d64aab26669683fd9d5))
+* **price-compare:** 锁定参照后刷新不再丢失网价 ([1555e92](https://github.com/PolarisTime/Aries/commit/1555e92da384845c08a856866fd19dacb5f0c918))
+
+
+### Features
+
+* **price-compare:** 供应商简称下拉支持拼音索引 ([ae24eca](https://github.com/PolarisTime/Aries/commit/ae24eca82eb215c218ff220aad4eec91ad0768ad))
+
 ## [10.11.1](https://github.com/PolarisTime/Aries/compare/v10.11.0...v10.11.1) (2026-09-20)
 
 
