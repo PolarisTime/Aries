@@ -1,3 +1,10 @@
+## [10.11.1](https://github.com/PolarisTime/Aries/compare/v10.11.0...v10.11.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **price-compare:** 加宽供应商简称列宽度 ([0beeb64](https://github.com/PolarisTime/Aries/commit/0beeb649ee2ed67760316169c1c62912a1b2622b))
+
 # [10.11.0](https://github.com/PolarisTime/Aries/compare/v10.10.0...v10.11.0) (2026-09-19)
 
 
