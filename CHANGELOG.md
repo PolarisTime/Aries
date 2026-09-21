@@ -1,3 +1,10 @@
+# [10.16.0](https://github.com/PolarisTime/Aries/compare/v10.15.0...v10.16.0) (2026-09-21)
+
+
+### Features
+
+* **purchase:** 前端支持多采购订单合并导入 ([0a5a763](https://github.com/PolarisTime/Aries/commit/0a5a763ecf6f77d48d064ccdac7ac35154954708))
+
 # [10.15.0](https://github.com/PolarisTime/Aries/compare/v10.14.1...v10.15.0) (2026-09-21)
 
 
