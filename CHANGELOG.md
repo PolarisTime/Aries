@@ -1,3 +1,10 @@
+## [10.14.1](https://github.com/PolarisTime/Aries/compare/v10.14.0...v10.14.1) (2026-09-21)
+
+
+### Bug Fixes
+
+* **price-compare:** Tab 可穿过隔断行继续移动焦点 ([6b8f752](https://github.com/PolarisTime/Aries/commit/6b8f7528d84e61b7fe649e6bc3cce842ce096171))
+
 # [10.14.0](https://github.com/PolarisTime/Aries/compare/v10.13.0...v10.14.0) (2026-09-21)
 
 
