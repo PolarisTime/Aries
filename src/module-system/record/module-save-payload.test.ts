@@ -154,7 +154,7 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     expect(payload).not.toHaveProperty('chargeItems')
   })
 
-  it('freight-bill 行级保存下发部分导入的数量与重量，支持行级拆分', async () => {
+  it('freight-bill 行级保存下发部分导入数量, 重量由后端按来源件重换算', async () => {
     const payload = (await submitRecord('freight-bill', {
       ...freightBillBaseRecord,
       items: [
@@ -168,7 +168,7 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     })) as Record<string, unknown>
 
     expect(payload.items).toEqual([
-      { sourceSalesOrderItemId: '501', quantity: 4, weightTon: 2 },
+      { sourceSalesOrderItemId: '501', quantity: 4 },
     ])
   })
 })

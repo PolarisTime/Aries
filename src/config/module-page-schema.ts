@@ -339,7 +339,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'unit',
         'remark',
       ],
-      lineItem: ['id', 'sourceSalesOrderItemId', 'quantity', 'weightTon'],
+      lineItem: ['id', 'sourceSalesOrderItemId', 'quantity'],
     },
   },
   receipt: {
