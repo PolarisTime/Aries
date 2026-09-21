@@ -1,3 +1,10 @@
+# [10.14.0](https://github.com/PolarisTime/Aries/compare/v10.13.0...v10.14.0) (2026-09-21)
+
+
+### Features
+
+* **price-compare:** 类别列前新增行备注列并修复吨位列居中 ([76d7ef7](https://github.com/PolarisTime/Aries/commit/76d7ef73aae50a464f11cccf0a24a42e5f3e2837))
+
 # [10.13.0](https://github.com/PolarisTime/Aries/compare/v10.12.0...v10.13.0) (2026-09-20)
 
 
