@@ -153,4 +153,22 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     // strictObject 契约：salesOutboundSaveRequestSchema 不接受未知键。
     expect(payload).not.toHaveProperty('chargeItems')
   })
+
+  it('freight-bill 行级保存下发部分导入的数量与重量，支持行级拆分', async () => {
+    const payload = (await submitRecord('freight-bill', {
+      ...freightBillBaseRecord,
+      items: [
+        {
+          sourceSalesOrderItemId: '501',
+          quantity: 4,
+          weightTon: 2,
+          brand: '品牌甲',
+        },
+      ],
+    })) as Record<string, unknown>
+
+    expect(payload.items).toEqual([
+      { sourceSalesOrderItemId: '501', quantity: 4, weightTon: 2 },
+    ])
+  })
 })

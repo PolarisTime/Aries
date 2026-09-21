@@ -341,6 +341,12 @@ const salesOrderItemSchema = z.strictObject({
    * 销售订单详情与出库来源候选都会返回该明细字段；可空/可缺省。
    */
   outboundRemainingQuantity: optionalNonNegativeIntegerSchema,
+  /**
+   * 物流可导入剩余数量：max(订单数量 − 物流单已占用数量, 0)。
+   * 仅物流单销售订单候选端点返回；销售订单详情不返回，故声明为可空/可缺省，
+   * 保证两个端点复用同一明细 schema 时都能解析。
+   */
+  remainingQuantity: optionalNonNegativeIntegerSchema,
   /** 只读派生数量：已交付 / 已退货 / 净交付（退货上线后由后端聚合返回）。 */
   deliveredQuantity: nonNegativeDecimalSchema.optional(),
   returnedQuantity: nonNegativeDecimalSchema.optional(),

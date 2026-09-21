@@ -109,5 +109,79 @@ describe('freight-operations-rules', () => {
         settlementCompanyName: '主体一',
       })
     })
+
+    it('以行级 remainingQuantity 作为默认数量并按件重换算重量金额与上限', () => {
+      const items = transformSalesOrderItemsToFreightBillItems(
+        recordWith({
+          orderNo: 'SO-9',
+          items: [
+            {
+              id: '1932500000000000005',
+              brand: '品牌甲',
+              quantity: 10,
+              remainingQuantity: 4,
+              pieceWeightTon: 0.5,
+              unitPrice: 100,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({
+        quantity: 4,
+        weightTon: 2,
+        amount: 200,
+        remainingQuantity: 4,
+        remainingWeightTon: 2,
+        remainingAmount: 200,
+      })
+    })
+
+    it('remainingQuantity 为 0 时默认数量为 0 并保留上限交由导入逻辑过滤', () => {
+      const items = transformSalesOrderItemsToFreightBillItems(
+        recordWith({
+          items: [
+            {
+              id: '1932500000000000006',
+              quantity: 3,
+              remainingQuantity: 0,
+              pieceWeightTon: 1,
+              unitPrice: 10,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({
+        quantity: 0,
+        remainingQuantity: 0,
+        remainingWeightTon: 0,
+        remainingAmount: 0,
+      })
+    })
+
+    it('缺少 remainingQuantity 时回退来源数量且不追加派生字段', () => {
+      const items = transformSalesOrderItemsToFreightBillItems(
+        recordWith({
+          orderNo: 'SO-9',
+          items: [
+            {
+              id: '1932500000000000007',
+              brand: '品牌甲',
+              quantity: 8,
+              pieceWeightTon: 2,
+              weightTon: 16,
+              unitPrice: 5,
+              amount: 80,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({
+        quantity: 8,
+        weightTon: 16,
+        amount: 80,
+      })
+      expect(items[0].remainingQuantity).toBeUndefined()
+      expect(items[0].remainingWeightTon).toBeUndefined()
+    })
   })
 })

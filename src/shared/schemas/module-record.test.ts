@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  freightSalesOrderCandidatePageResponseSchema,
   getMainFlowDetailResponseSchema,
   getMainFlowListResponseSchema,
   salesOrderOutboundCandidatePageResponseSchema,
@@ -205,5 +206,70 @@ describe('销售订单明细出库剩余量契约', () => {
     expect(parsed.content[0].items[0].outboundRemainingQuantity).toBe(2)
     expect(parsed.content[0].id).toBe('2')
     expect(parsed.content[0].items[0].id).toBe('21')
+  })
+})
+
+describe('物流候选明细剩余可导入量契约', () => {
+  it('物流候选分页解析 remainingQuantity 且雪花 ID 保持字符串', () => {
+    const parsed = freightSalesOrderCandidatePageResponseSchema.parse({
+      content: [
+        {
+          ...salesOrder,
+          items: [
+            {
+              ...salesOrderItem,
+              remainingQuantity: 3,
+              weightTon: 3,
+            },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 30,
+      hasMore: false,
+    })
+
+    expect(parsed.content[0].items[0].remainingQuantity).toBe(3)
+    expect(parsed.content[0].id).toBe('2')
+    expect(parsed.content[0].items[0].id).toBe('21')
+  })
+
+  it('物流候选明细 remainingQuantity 缺省或为 null 时不影响解析', () => {
+    const missing = freightSalesOrderCandidatePageResponseSchema.parse({
+      content: [{ ...salesOrder, items: [salesOrderItem] }],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 30,
+      hasMore: false,
+    })
+    const nullable = freightSalesOrderCandidatePageResponseSchema.parse({
+      content: [
+        {
+          ...salesOrder,
+          items: [{ ...salesOrderItem, remainingQuantity: null }],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 30,
+      hasMore: false,
+    })
+
+    expect(missing.content[0].items[0].remainingQuantity).toBeUndefined()
+    expect(nullable.content[0].items[0].remainingQuantity).toBeNull()
+  })
+
+  it('销售订单详情不返回 remainingQuantity 也能解析（strictObject 不误拒）', () => {
+    const parsed = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+
+    expect(parsed.items[0].remainingQuantity).toBeUndefined()
   })
 })

@@ -354,7 +354,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       label: '销售订单',
       parentFieldKey: 'sourceOrderNos',
       parentDisplayFieldKey: 'orderNo',
-      buttonText: '选择销售订单导入全部明细',
+      buttonText: '选择销售订单导入（可部分）',
       candidateQueryType: 'freight-sales-order-import',
       allowMultipleSelection: true,
       replaceUnlinkedItemsOnFirstImport: true,

@@ -43,7 +43,7 @@ describe('module-editor-item-behaviors', () => {
     expect(behavior?.itemSort?.directionToggleMode).toBe('billTime')
   })
 
-  it('物流单/物流对账单禁用行拖拽并按来源单分组删除', () => {
+  it('物流单禁用行拖拽并支持单行删除，物流对账单禁用拖拽并按来源单分组删除', () => {
     expect(
       getModuleEditorItemBehavior('freight-bill')?.disablesItemReorder,
     ).toBe(true)
@@ -51,14 +51,9 @@ describe('module-editor-item-behaviors', () => {
       getModuleEditorItemBehavior('freight-statement')?.disablesItemReorder,
     ).toBe(true)
 
-    const billGroupKey =
-      getModuleEditorItemBehavior('freight-bill')?.itemRemovalSourceGroupKey
     expect(
-      billGroupKey?.(
-        lineItem({ id: '1', _parentRelationId: 'P1', sourceNo: 'S1' }),
-      ),
-    ).toBe('P1')
-    expect(billGroupKey?.(lineItem({ id: '2', sourceNo: 'S2' }))).toBe('S2')
+      getModuleEditorItemBehavior('freight-bill')?.itemRemovalSourceGroupKey,
+    ).toBeUndefined()
 
     const statementGroupKey =
       getModuleEditorItemBehavior(

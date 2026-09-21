@@ -49,11 +49,10 @@ const MODULE_EDITOR_ITEM_BEHAVIORS = {
       sort: (items: ModuleLineItem[]) => sortItemsByMaterialDefault(items),
     },
   },
+  // 物流单支持行级拆分/部分导入：删除按单行处理，不再按来源单整组联动移除。
   'freight-bill': {
     supportsExpenseTab: true,
     disablesItemReorder: true,
-    itemRemovalSourceGroupKey: (item: ModuleLineItem) =>
-      String(item._parentRelationId || item.sourceNo || ''),
   },
   'customer-statement': {
     itemSort: {
