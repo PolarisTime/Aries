@@ -202,6 +202,39 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(separatorRow?.querySelector('.ant-select')).toBeNull()
   })
 
+  it('吨位输入按 Tab 可穿过中间隔断行聚焦到下一商品行', () => {
+    renderStateful({ ...makeSheet() }, [
+      { ...baseRow, id: 'r1' },
+      {
+        id: 'sep1',
+        rowType: 'SEPARATOR',
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+      },
+      { ...baseRow, id: 'r2' },
+    ])
+
+    const first = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    expect(first).not.toBeNull()
+    act(() => {
+      first?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(document.activeElement).toBe(
+      container.querySelector<HTMLInputElement>('input[data-ton="r2"]'),
+    )
+  })
+
   it('点击"添加隔断"追加一行隔断行', () => {
     const observed = renderStateful({ ...makeSheet() }, [{ ...baseRow }])
 

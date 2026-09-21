@@ -63,30 +63,48 @@ const { Text } = Typography
 /** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
 const filterSupplierOption = createPinyinFilterOption()
 
-function moveFocus(orderedRows: PriceRow[]) {
-  return (brandName: string, rowId: string, delta: number) => {
-    const index = orderedRows.findIndex((row) => row.id === rowId)
-    const target = orderedRows[index + delta]
-    if (!target) return
+/**
+ * 按方向在行内移动焦点并跳过无法聚焦的中间行(如隔断行缺少输入框),
+ * 保证 Tab/Enter/方向键能穿过隔断继续定位到下一可编辑行。
+ */
+function moveFocusBy(
+  orderedRows: PriceRow[],
+  rowId: string,
+  delta: number,
+  selectorOf: (row: PriceRow) => string,
+) {
+  if (delta === 0) return
+  const index = orderedRows.findIndex((row) => row.id === rowId)
+  if (index < 0) return
+  for (let i = index + delta; i >= 0 && i < orderedRows.length; i += delta) {
     const input = document.querySelector<HTMLInputElement>(
-      `input[data-spot="${brandName}:${target.id}"]`,
+      selectorOf(orderedRows[i]),
     )
-    input?.focus()
-    input?.select()
+    if (!input) continue
+    input.focus()
+    input.select()
+    return
   }
 }
 
-function moveFocusTon(orderedRows: PriceRow[]) {
-  return (rowId: string, delta: number) => {
-    const index = orderedRows.findIndex((row) => row.id === rowId)
-    const target = orderedRows[index + delta]
-    if (!target) return
-    const input = document.querySelector<HTMLInputElement>(
-      `input[data-ton="${target.id}"]`,
+function moveFocus(orderedRows: PriceRow[]) {
+  return (brandName: string, rowId: string, delta: number) =>
+    moveFocusBy(
+      orderedRows,
+      rowId,
+      delta,
+      (row) => `input[data-spot="${brandName}:${row.id}"]`,
     )
-    input?.focus()
-    input?.select()
-  }
+}
+
+function moveFocusTon(orderedRows: PriceRow[]) {
+  return (rowId: string, delta: number) =>
+    moveFocusBy(
+      orderedRows,
+      rowId,
+      delta,
+      (row) => `input[data-ton="${row.id}"]`,
+    )
 }
 
 /* ------------------------------------------------------------------ 列定义 */
