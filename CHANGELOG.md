@@ -1,3 +1,15 @@
+# [10.15.0](https://github.com/PolarisTime/Aries/compare/v10.14.1...v10.15.0) (2026-09-21)
+
+
+### Bug Fixes
+
+* **logistics:** 物流行级保存不下发重量由后端换算 ([89b5870](https://github.com/PolarisTime/Aries/commit/89b5870e497ed84736a2b65780e6bf43cd6e727e))
+
+
+### Features
+
+* **logistics:** 前端适配物流行级拆分与候选剩余量 ([eae1bdb](https://github.com/PolarisTime/Aries/commit/eae1bdb1a748e0d412f4cc89583be2489cc7dd5f))
+
 ## [10.14.1](https://github.com/PolarisTime/Aries/compare/v10.14.0...v10.14.1) (2026-09-21)
 
 
