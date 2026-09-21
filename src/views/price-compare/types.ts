@@ -52,6 +52,8 @@ export type PriceRow = {
   length: string
   /** 报单吨位(手动输入) */
   ton?: number
+  /** 行级备注 */
+  remark?: string
 }
 
 export type SheetInput = {

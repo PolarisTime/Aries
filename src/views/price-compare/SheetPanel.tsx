@@ -256,6 +256,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     brand.categories.includes(category)
   const allChecked = rows.length > 0 && selectedIds.length === rows.length
   const someChecked = selectedIds.length > 0 && !allChecked
+  /** 报单吨位合计: 当前单据全部商品行 ton 之和。 */
+  const tonTotal = rows.reduce((sum, row) => sum + (row.ton ?? 0), 0)
+  const tonTotalText = Number.isFinite(tonTotal)
+    ? String(Number(tonTotal.toFixed(8)))
+    : '0'
 
   return [
     {
@@ -303,6 +308,33 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           </span>
         </Tooltip>
       ),
+    },
+    {
+      title: t('priceCompare.sheet.columns.remark'),
+      dataIndex: 'remark',
+      width: SHEET_COLUMN_WIDTH.remark,
+      fixed: 'left',
+      align: 'center',
+      render: (_, row) =>
+        isSeparatorRow(row.row) ? null : (
+          <Input
+            key={`remark:${row.rowId}:${row.row.remark ?? ''}`}
+            className="price-compare-row-remark"
+            size="small"
+            variant="borderless"
+            disabled={readOnly}
+            maxLength={255}
+            defaultValue={row.row.remark ?? ''}
+            onBlur={(event) =>
+              patchRow(row.rowId, { remark: event.target.value || undefined })
+            }
+            onPressEnter={(event) => {
+              patchRow(row.rowId, {
+                remark: (event.target as HTMLInputElement).value || undefined,
+              })
+            }}
+          />
+        ),
     },
     {
       title: t('priceCompare.sheet.columns.category'),
@@ -356,7 +388,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       },
     },
     {
-      title: t('priceCompare.sheet.columns.ton'),
+      title: (
+        <span className="price-compare-ton-header">
+          <span>{t('priceCompare.sheet.columns.ton')}</span>
+          <span className="price-compare-ton-total">
+            {t('priceCompare.sheet.tonTotal')}: {tonTotalText}
+          </span>
+        </span>
+      ),
       width: SHEET_COLUMN_WIDTH.ton,
       fixed: 'left',
       align: 'center',
@@ -720,7 +759,7 @@ function SheetTable(props: SheetTableProps) {
       pagination={false}
       summary={() => (
         <Table.Summary.Row>
-          <Table.Summary.Cell index={0} colSpan={5 + base.brands.length * 4}>
+          <Table.Summary.Cell index={0} colSpan={6 + base.brands.length * 4}>
             <Flex gap="small" align="center">
               <Button
                 type="text"
@@ -792,6 +831,7 @@ function SheetTable(props: SheetTableProps) {
       })}
       scroll={{
         x:
+          SHEET_COLUMN_WIDTH.remark +
           SHEET_COLUMN_WIDTH.category +
           SHEET_COLUMN_WIDTH.spec +
           SHEET_COLUMN_WIDTH.ton +

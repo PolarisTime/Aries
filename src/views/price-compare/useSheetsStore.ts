@@ -266,6 +266,7 @@ function buildPayload(
           spec: Number(row.spec),
           length: row.length,
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
+          ...(row.remark ? { remark: row.remark } : {}),
           prices,
         },
       ]
@@ -316,6 +317,7 @@ function buildItemPayload(
     spec: Number(row.spec),
     length: row.length,
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
+    ...(row.remark ? { remark: row.remark } : {}),
     prices,
   }
 }
@@ -339,6 +341,7 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     spec: row.spec,
     length: row.length,
     ton: row.ton ?? null,
+    remark: row.remark ?? '',
     prices,
   })
 }
@@ -2154,6 +2157,7 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     spec: item.spec ?? null,
     length: item.length,
     ...(item.ton !== undefined ? { ton: item.ton } : {}),
+    ...(item.remark ? { remark: item.remark } : {}),
   }))
   const inputs: SheetInputs = {}
   for (const item of record.items) {

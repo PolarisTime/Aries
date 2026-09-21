@@ -272,6 +272,51 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.prices[0].supplierId).toBe('5002')
   })
 
+  it('行备注随行级保存下发', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({ ...row, remark: '甲方指定' })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { remark?: string },
+    ]
+    expect(payload.remark).toBe('甲方指定')
+  })
+
+  it('后端返回的行备注回填到本地行', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({
+        items: [
+          {
+            id: '7001',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400',
+            spec: 12,
+            length: '9米',
+            remark: '急单',
+            prices: [],
+          },
+        ],
+      }),
+    ])
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.rows[0].remark).toBe('急单')
+  })
+
   it('不完整单据不触发保存', async () => {
     api.fetchQuoteSheets.mockResolvedValue([])
     const store = renderStore()

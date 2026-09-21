@@ -46,6 +46,7 @@ const itemSchema = z.looseObject({
   spec: z.union([z.number(), z.string()]).nullable().optional(),
   length: z.string().nullable().optional(),
   ton: z.union([z.number(), z.string()]).nullable().optional(),
+  remark: z.string().nullable().optional(),
   prices: z.array(priceSchema).nullable().optional(),
 })
 
@@ -92,6 +93,7 @@ export type QuoteSheetItemRecord = {
   spec?: number
   length: string
   ton?: number
+  remark?: string
   prices: QuoteSheetPriceRecord[]
 }
 
@@ -141,6 +143,7 @@ export type QuoteSheetPayload = {
     spec?: number
     length?: string
     ton?: number
+    remark?: string
     prices: {
       brandName: string
       spotPrice?: number
@@ -157,6 +160,7 @@ export type QuoteSheetItemPayload = {
   spec?: number
   length?: string
   ton?: number
+  remark?: string
   prices: {
     brandName: string
     spotPrice?: number
@@ -217,6 +221,7 @@ function normalizeItem(
     ...(toOptionalNumber(item.ton) !== undefined
       ? { ton: toOptionalNumber(item.ton) }
       : {}),
+    ...(asString(item.remark).trim() ? { remark: asString(item.remark) } : {}),
     prices: (item.prices ?? []).map((price, priceIndex) =>
       normalizePrice(price, priceIndex),
     ),

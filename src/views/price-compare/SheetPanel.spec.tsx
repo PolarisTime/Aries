@@ -430,4 +430,75 @@ describe('SheetPanel 指定品牌展示', () => {
       document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
     ).toBeNull()
   })
+
+  it('在类别列之前渲染行备注列, 且备注显示到输入框', () => {
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow, remark: '急单' }],
+      suppliers,
+    )
+
+    const headerRow =
+      container.querySelectorAll('.ant-table-thead tr')[0]?.textContent ?? ''
+    expect(headerRow).toContain('备注')
+    expect(headerRow.indexOf('备注')).toBeLessThan(headerRow.indexOf('类别'))
+
+    const remarkInput = container.querySelector<HTMLInputElement>(
+      'input.price-compare-row-remark',
+    )
+    expect(remarkInput).not.toBeNull()
+    expect(remarkInput?.value).toBe('急单')
+  })
+
+  it('编辑行备注后持久化到行数据', () => {
+    const observed = renderStateful({ ...makeSheet() }, [{ ...baseRow }])
+
+    const remarkInput = container.querySelector<HTMLInputElement>(
+      'input.price-compare-row-remark',
+    )
+    expect(remarkInput).not.toBeNull()
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.bind(remarkInput)
+      setValue?.('甲方指定')
+      remarkInput?.dispatchEvent(new Event('input', { bubbles: true }))
+      remarkInput?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+
+    expect(observed.rows[0].remark).toBe('甲方指定')
+  })
+
+  it('报单吨位列表头展示当前单据吨位合计', () => {
+    renderStateful({ ...makeSheet() }, [
+      { ...baseRow, id: 'r1', ton: 1.5 },
+      { ...baseRow, id: 'r2', ton: 2.25 },
+    ])
+
+    const headerRow =
+      container.querySelectorAll('.ant-table-thead tr')[0]?.textContent ?? ''
+    expect(headerRow).toContain('报单吨位')
+    const tonTotal = container.querySelector('.price-compare-ton-total')
+    expect(tonTotal?.textContent).toContain('3.75')
+  })
+
+  it('隔断行不渲染备注输入', () => {
+    renderStateful({ ...makeSheet() }, [
+      { ...baseRow },
+      {
+        id: 'sep1',
+        rowType: 'SEPARATOR',
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+      },
+    ])
+
+    const separatorRow = container.querySelector('.price-compare-separator-row')
+    expect(
+      separatorRow?.querySelector('input.price-compare-row-remark'),
+    ).toBeNull()
+  })
 })

@@ -133,6 +133,7 @@ export const DEFAULT_LENGTH_PREMIUM = 30
 
 /** 单据表格固定列宽 */
 export const SHEET_COLUMN_WIDTH = {
+  remark: 140,
   category: 72,
   spec: 200,
   ton: 84,
