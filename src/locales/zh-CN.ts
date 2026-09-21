@@ -1487,6 +1487,12 @@ export const zhCN = {
         formTotalAmount: '总金额',
         parentImportLabel: '采购订单',
         parentImportButton: '导入采购订单明细',
+        validationSameSupplier:
+          '来源采购订单存在不同供应商，不能合并生成采购入库单',
+        validationSameSettlementCompany:
+          '来源采购订单存在不同结算主体，不能合并生成采购入库单',
+        validationPurchaseOrderNoTooLong:
+          '合并后的采购订单号长度不能超过 {{max}} 个字符',
       },
       salesOutbound: {
         title: '销售出库',

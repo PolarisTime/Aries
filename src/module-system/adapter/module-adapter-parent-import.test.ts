@@ -109,3 +109,60 @@ describe('buildParentImportState 数量单位', () => {
     expect(state.nextItems.some((item) => item.id === 'item-blank')).toBe(false)
   })
 })
+
+describe('buildParentImportState 多来源合并表头', () => {
+  const mappedConfig: ModuleParentImportDefinition = {
+    ...parentImportConfig,
+    mapParentToDraft: (record) => ({
+      salesOrderNo: record.orderNo || '',
+      customerName: record.customerName || '',
+    }),
+  }
+
+  it('首个来源回填表头并写入来源单号', () => {
+    const state = buildParentImportState({
+      parentImportConfig: mappedConfig,
+      parentRecord: { ...parentRecord, customerName: '客户甲' },
+      currentParentNos: [],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(state.shouldApplyMappedValues).toBe(true)
+    expect(state.parentNosText).toBe('SO-20260917-001')
+    expect(state.mappedValues.customerName).toBe('客户甲')
+  })
+
+  it('追加来源时拼接单号且不再用新单覆盖表头', () => {
+    const state = buildParentImportState({
+      parentImportConfig: mappedConfig,
+      parentRecord: {
+        ...parentRecord,
+        id: '347011099205312513',
+        orderNo: 'SO-20260917-002',
+        customerName: '客户乙',
+      },
+      currentParentNos: ['SO-20260917-001'],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(state.shouldApplyMappedValues).toBe(false)
+    expect(state.parentNosText).toBe('SO-20260917-001, SO-20260917-002')
+    expect(state.mappedValues.customerName).toBe('客户乙')
+  })
+
+  it('重复导入同一来源不重复累计单号', () => {
+    const state = buildParentImportState({
+      parentImportConfig: mappedConfig,
+      parentRecord,
+      currentParentNos: ['SO-20260917-001'],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(state.hasImportedCurrentParent).toBe(true)
+    expect(state.parentNosText).toBe('SO-20260917-001')
+    expect(state.shouldApplyMappedValues).toBe(true)
+  })
+})

@@ -20,6 +20,7 @@ import {
   buildPurchaseInboundParentFilters,
   mapPurchaseOrderToInboundDraft,
   transformPurchaseOrderItemsToInboundItems,
+  validatePurchaseInboundParentImport,
 } from './purchase-inbound-rules'
 
 // 采购入库明细列：采购列基础上增加结算方式、过磅、调重字段（位于重量吨之后、单价之前）。
@@ -320,11 +321,12 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
     candidateQueryType: 'purchase-order-import',
-    allowMultipleSelection: false,
+    allowMultipleSelection: true,
     remainingQuantityKey: 'remainingQuantity',
     buildParentFilters: buildPurchaseInboundParentFilters,
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: mapPurchaseOrderToInboundDraft,
+    validateParentImport: validatePurchaseInboundParentImport,
     transformItems: transformPurchaseOrderItemsToInboundItems,
   },
   ...purchaseInboundItemColumnOutputs,

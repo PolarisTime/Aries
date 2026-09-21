@@ -1527,6 +1527,12 @@ export const enUS = {
         formTotalAmount: 'Total Amount',
         parentImportLabel: 'Purchase Order',
         parentImportButton: 'Import PO Items',
+        validationSameSupplier:
+          'Cannot merge purchase orders from different suppliers',
+        validationSameSettlementCompany:
+          'Cannot merge purchase orders with different settlement entities',
+        validationPurchaseOrderNoTooLong:
+          'Merged PO number cannot exceed {{max}} characters',
       },
       salesOutbound: {
         title: 'Sales Outbounds',
