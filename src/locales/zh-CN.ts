@@ -2309,6 +2309,11 @@ export const zhCN = {
       specQuantityLockedHint:
         '已锁定规格和数量，暂不可新增、删除或拖动行；解锁后可继续编辑',
       supplier: '供应商',
+      fillSupplier: '批量填入供应商',
+      fillSupplierPick: '选择供应商',
+      fillSupplierBrand: '选择品牌列',
+      fillSupplierColumn: '把所选供应商填入「{{brand}}」列全部商品行',
+      fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
     },
     config: {
       title: '项目配置',

@@ -355,6 +355,40 @@ describe('SheetPanel 指定品牌展示', () => {
     })
   }
 
+  /** 等待下拉选项按 title 出现(轮询, 兼容异步渲染)。 */
+  async function waitForOption(title: string) {
+    for (let i = 0; i < 20; i += 1) {
+      const el = document.body.querySelector(
+        `.ant-select-item-option[title="${title}"]`,
+      )
+      if (el) return el
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+    }
+    return null
+  }
+
+  /** 打开指定下拉(容器内选择器)并点击 title 选项。 */
+  async function pickOption(
+    scope: ParentNode,
+    selectSelector: string,
+    title: string,
+  ) {
+    const select = scope.querySelector(selectSelector)
+    await act(async () => {
+      select?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const option = await waitForOption(title)
+    expect(option).toBeTruthy()
+    await act(async () => {
+      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
   it('品牌分组在差价后新增供应商简称列, 现货单元格不再内嵌供应商下拉', () => {
     renderStateful(
       {
@@ -383,6 +417,109 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(
       container.querySelector('.price-compare-supplier')?.textContent,
     ).toContain('沙钢')
+  })
+
+  it('品牌列头一键填入供应商到该列全部商品行', async () => {
+    const observed = renderStateful(
+      makeSheet(),
+      [
+        { ...baseRow, id: 'r1' },
+        { ...baseRow, id: 'r2' },
+      ],
+      suppliers,
+    )
+
+    const fillBtn = container.querySelector('.price-compare-supplier-fill-btn')
+    expect(fillBtn).not.toBeNull()
+    await act(async () => {
+      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 在弹出层的供应商下拉中选择"河钢"
+    await pickOption(
+      document.body,
+      '.price-compare-supplier-fill-select',
+      '河钢',
+    )
+
+    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
+    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBe('河钢')
+  })
+
+  it('批量填入覆盖已有供应商值(换家重新报价)', async () => {
+    const observed = renderStateful(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
+        },
+      },
+      [
+        { ...baseRow, id: 'r1' },
+        { ...baseRow, id: 'r2' },
+      ],
+      suppliers,
+    )
+
+    const fillBtn = container.querySelector('.price-compare-supplier-fill-btn')
+    await act(async () => {
+      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await pickOption(
+      document.body,
+      '.price-compare-supplier-fill .price-compare-supplier-fill-select',
+      '河钢',
+    )
+
+    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s2')
+    // 现货价不被批量填入改动
+    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3180)
+    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBe('河钢')
+  })
+
+  it('选中行后出现批量填入按钮, 仅填入选中的行', async () => {
+    const observed = renderStateful(
+      makeSheet(),
+      [
+        { ...baseRow, id: 'r1' },
+        { ...baseRow, id: 'r2' },
+      ],
+      suppliers,
+    )
+
+    // 勾选第一行(跳过 antd 隐藏的 measure row)
+    const rowCheckbox = container.querySelector<HTMLInputElement>(
+      '.ant-table-row input[type="checkbox"]',
+    )
+    await act(async () => {
+      rowCheckbox?.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const fillBtn = container.querySelector('.price-compare-fill-selected-btn')
+    expect(fillBtn).not.toBeNull()
+    await act(async () => {
+      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 弹出层: 先选品牌列(唯一品牌 中天), 再选供应商
+    await pickOption(
+      document.body,
+      '.price-compare-supplier-fill-brand',
+      '中天',
+    )
+    await pickOption(
+      document.body,
+      '.price-compare-supplier-fill-select',
+      '河钢',
+    )
+
+    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
+    // 未选中的行不变
+    expect(observed.sheet.inputs['中天:r2']).toBeUndefined()
   })
 
   it('品牌列只显示绑定该品牌的供应商', async () => {

@@ -184,6 +184,32 @@
   font-size: 10px;
 }
 
+/* 供应商列头: 简称标题 + 整列批量填入按钮 */
+.price-compare-supplier-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  justify-content: center;
+}
+
+.price-compare-supplier-header .price-compare-supplier-fill-btn {
+  height: auto;
+  min-height: 0;
+  padding: 0 2px;
+  font-size: 11px;
+  color: var(--ant-color-primary, #1677ff);
+}
+
+/* 批量填入弹出层: 品牌列 + 供应商下拉 */
+.price-compare-supplier-fill {
+  padding: 2px;
+}
+
+.price-compare-supplier-fill-select,
+.price-compare-supplier-fill .ant-select {
+  width: 180px;
+}
+
 .price-compare-drag {
   cursor: grab;
   color: inherit;

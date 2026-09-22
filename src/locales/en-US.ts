@@ -2382,6 +2382,13 @@ export const enUS = {
       specQuantityLockedHint:
         'Spec & quantity locked; adding, deleting, or reordering rows is disabled until unlocked',
       supplier: 'Supplier',
+      fillSupplier: 'Bulk fill supplier',
+      fillSupplierPick: 'Select supplier',
+      fillSupplierBrand: 'Select brand column',
+      fillSupplierColumn:
+        'Fill the selected supplier into all product rows of the "{{brand}}" column',
+      fillSupplierSelected:
+        'Fill the selected supplier into the {{count}} selected rows',
     },
     config: {
       title: 'Project Settings',

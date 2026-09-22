@@ -8,6 +8,7 @@ import {
   SettingOutlined,
   TrophyOutlined,
   UnlockOutlined,
+  VerticalAlignBottomOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -35,6 +36,7 @@ import { message } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   CATEGORIES,
+  fillSupplierInputs,
   filterSupplierOptionsByBrand,
   isSeparatorRow,
   makeRow,
@@ -131,6 +133,12 @@ type ColumnContext = {
     rowId: string,
     option: { value: string; label: string } | undefined,
   ) => void
+  /** 批量填入供应商: 目标行统一改为该供应商(覆盖已有值); undefined 表示清除。 */
+  fillSupplier: (
+    brandName: string,
+    rowIds: string[],
+    option: { value: string; label: string } | undefined,
+  ) => void
   supplierOptions: SupplierSelectOption[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
@@ -157,7 +165,7 @@ type ColumnContext = {
 }
 
 const cellOf = (
-  title: string,
+  title: React.ReactNode,
   width: number,
   render: (value: unknown, row: GridRow) => React.ReactNode,
 ) => ({
@@ -203,6 +211,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     rows,
     getSpot,
     setSpot,
+    supplierOptions,
     patchRow,
     moveFocus,
     selectedIds,
@@ -223,6 +232,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   } = ctx
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
+  /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
+  const productRowIds = rows.flatMap((row) =>
+    isSeparatorRow(row) ? [] : [row.id],
+  )
   /** 锁定规格和数量: 一并禁掉行级增删与拖拽重排(会间接改变规格/数量顺序)。 */
   const quantityLocked = Boolean(sheet.specQuantityLocked)
   const rowInteractionLocked = readOnly || quantityLocked
@@ -689,7 +702,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     },
                   ),
                   cellOf(
-                    t('priceCompare.sheet.columns.supplierShort'),
+                    <SupplierFillHeader
+                      brandName={brand.name}
+                      options={supplierOptions}
+                      disabled={readOnly}
+                      onFill={(option) =>
+                        ctx.fillSupplier(brand.name, productRowIds, option)
+                      }
+                    />,
                     SHEET_COLUMN_WIDTH.supplier,
                     (_, row) => {
                       const current = row.row
@@ -978,6 +998,302 @@ function ColumnSettingsButton({
   )
 }
 
+/**
+ * 供应商批量填入下拉: 选择一个供应商后回调; 用于「整列」与「选中行」两个入口。
+ * 复用与单元格一致的品牌过滤与拼音搜索。
+ */
+function SupplierFillSelect({
+  brandName,
+  options,
+  onPick,
+}: {
+  brandName?: string
+  options: SupplierSelectOption[]
+  onPick: (option: { value: string; label: string } | undefined) => void
+}) {
+  const { t } = useTranslation()
+  const filtered = brandName
+    ? filterSupplierOptionsByBrand(options, brandName)
+    : options
+  return (
+    <Select
+      autoFocus
+      size="small"
+      style={{ width: 180 }}
+      className="price-compare-supplier-fill-select"
+      placeholder={t('priceCompare.sheet.fillSupplierPick')}
+      showSearch={{ filterOption: filterSupplierOption }}
+      options={filtered}
+      onChange={(value) => {
+        const option = filtered.find((item) => item.value === value)
+        onPick(
+          value
+            ? { value: String(value), label: option?.label ?? String(value) }
+            : undefined,
+        )
+      }}
+    />
+  )
+}
+
+/** 品牌列「简称」表头: 一键把所选供应商填到该品牌列全部商品行。 */
+function SupplierFillHeader({
+  brandName,
+  options,
+  disabled,
+  onFill,
+}: {
+  brandName: string
+  options: SupplierSelectOption[]
+  disabled: boolean
+  onFill: (option: { value: string; label: string } | undefined) => void
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const title = t('priceCompare.sheet.fillSupplierColumn', { brand: brandName })
+  return (
+    <span className="price-compare-supplier-header">
+      <span>{t('priceCompare.sheet.columns.supplierShort')}</span>
+      {disabled ? null : (
+        <Popover
+          trigger="click"
+          placement="bottom"
+          open={open}
+          onOpenChange={setOpen}
+          content={
+            <Flex vertical gap={4} className="price-compare-supplier-fill">
+              <Text type="secondary" className="price-compare-sub">
+                {title}
+              </Text>
+              <SupplierFillSelect
+                brandName={brandName}
+                options={options}
+                onPick={(option) => {
+                  onFill(option)
+                  setOpen(false)
+                }}
+              />
+            </Flex>
+          }
+        >
+          <Button
+            type="text"
+            size="small"
+            className="price-compare-supplier-fill-btn"
+            icon={<VerticalAlignBottomOutlined />}
+            aria-label={title}
+          />
+        </Popover>
+      )}
+    </span>
+  )
+}
+
+/** 批量填入「选中行」: 先选品牌列, 再选供应商; 覆盖所选行已有简称。 */
+function SupplierFillSelectedButton({
+  brands,
+  options,
+  selectedCount,
+  disabled,
+  onFill,
+}: {
+  brands: Brand[]
+  options: SupplierSelectOption[]
+  selectedCount: number
+  disabled: boolean
+  onFill: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
+}) {
+  const { t } = useTranslation()
+  const [brandName, setBrandName] = useState<string | undefined>()
+  const [open, setOpen] = useState(false)
+  const title = t('priceCompare.sheet.fillSupplierSelected', {
+    count: selectedCount,
+  })
+  return (
+    <Popover
+      trigger="click"
+      placement="bottom"
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) setBrandName(undefined)
+      }}
+      content={
+        <Flex vertical gap={6} className="price-compare-supplier-fill">
+          <Text type="secondary" className="price-compare-sub">
+            {title}
+          </Text>
+          <Select
+            size="small"
+            style={{ width: 220 }}
+            className="price-compare-supplier-fill-brand"
+            placeholder={t('priceCompare.sheet.fillSupplierBrand')}
+            value={brandName}
+            options={brands.map((brand) => ({
+              value: brand.name,
+              label: brand.name,
+            }))}
+            onChange={(value) => setBrandName(value)}
+          />
+          <SupplierFillSelect
+            brandName={brandName}
+            options={options}
+            onPick={(option) => {
+              if (!brandName) return
+              onFill(brandName, option)
+              setOpen(false)
+            }}
+          />
+        </Flex>
+      }
+    >
+      <Button
+        icon={<VerticalAlignBottomOutlined />}
+        disabled={disabled}
+        className="price-compare-fill-selected-btn"
+      >
+        {t('priceCompare.sheet.fillSupplier')}
+      </Button>
+    </Popover>
+  )
+}
+
+/** 锁定/解锁参照日期与时段。 */
+function LockRefButton({
+  sheet,
+  readOnly,
+  patchSheet,
+}: {
+  sheet: PriceSheet
+  readOnly: boolean
+  patchSheet: (id: string, patch: Partial<PriceSheet>) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <Tooltip
+      title={
+        sheet.locked
+          ? t('priceCompare.sheet.unlockRefTooltip')
+          : t('priceCompare.sheet.lockRefTooltip')
+      }
+    >
+      <Button
+        type={sheet.locked ? 'primary' : 'default'}
+        icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
+        disabled={readOnly}
+        onClick={() => patchSheet(sheet.id, { locked: !sheet.locked })}
+      >
+        {sheet.locked
+          ? t('priceCompare.sheet.unlockRef')
+          : t('priceCompare.sheet.lockRef')}
+      </Button>
+    </Tooltip>
+  )
+}
+
+/** 锁定/解锁规格与数量。 */
+function LockSpecQuantityButton({
+  sheet,
+  readOnly,
+  patchSheet,
+}: {
+  sheet: PriceSheet
+  readOnly: boolean
+  patchSheet: (id: string, patch: Partial<PriceSheet>) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <Tooltip
+      title={
+        sheet.specQuantityLocked
+          ? t('priceCompare.sheet.unlockSpecQuantityTooltip')
+          : t('priceCompare.sheet.lockSpecQuantityTooltip')
+      }
+    >
+      <Button
+        type={sheet.specQuantityLocked ? 'primary' : 'default'}
+        icon={sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />}
+        disabled={readOnly}
+        onClick={() =>
+          patchSheet(sheet.id, {
+            specQuantityLocked: !sheet.specQuantityLocked,
+          })
+        }
+      >
+        {sheet.specQuantityLocked
+          ? t('priceCompare.sheet.unlockSpecQuantity')
+          : t('priceCompare.sheet.lockSpecQuantity')}
+      </Button>
+    </Tooltip>
+  )
+}
+
+/** 选中行后出现的操作: 批量填入供应商 + 删除所选行。 */
+function SelectedRowActions({
+  brands,
+  supplierOptions,
+  selectedCount,
+  readOnly,
+  specQuantityLocked,
+  onFillSupplierSelected,
+  onRemoveSelected,
+}: {
+  brands: Brand[]
+  supplierOptions: SupplierSelectOption[]
+  selectedCount: number
+  readOnly: boolean
+  specQuantityLocked: boolean
+  onFillSupplierSelected: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
+  onRemoveSelected: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <SupplierFillSelectedButton
+        brands={brands}
+        options={supplierOptions}
+        selectedCount={selectedCount}
+        disabled={readOnly || specQuantityLocked}
+        onFill={onFillSupplierSelected}
+      />
+      {readOnly || specQuantityLocked ? (
+        <Tooltip
+          title={
+            !readOnly && specQuantityLocked
+              ? t('priceCompare.sheet.specQuantityLockedHint')
+              : undefined
+          }
+        >
+          <span>
+            <Button danger icon={<DeleteOutlined />} disabled>
+              {t('common.delete')}
+            </Button>
+          </span>
+        </Tooltip>
+      ) : (
+        <Popconfirm
+          title={t('priceCompare.sheet.removeSelectedTitle', {
+            selected: selectedCount,
+          })}
+          okText={t('common.delete')}
+          cancelText={t('common.cancel')}
+          onConfirm={onRemoveSelected}
+        >
+          <Button danger icon={<DeleteOutlined />}>
+            {t('common.delete')}
+          </Button>
+        </Popconfirm>
+      )}
+    </>
+  )
+}
+
 function SheetHeader({
   sheet,
   refDate,
@@ -1002,6 +1318,8 @@ function SheetHeader({
   brands,
   onToggleRemark,
   onToggleBrand,
+  supplierOptions,
+  onFillSupplierSelected,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -1026,6 +1344,11 @@ function SheetHeader({
   brands: Brand[]
   onToggleRemark: (visible: boolean) => void
   onToggleBrand: (brandName: string, visible: boolean) => void
+  supplierOptions: SupplierSelectOption[]
+  onFillSupplierSelected: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
@@ -1164,48 +1487,16 @@ function SheetHeader({
       </Flex>
 
       <Space size={4} wrap className="price-compare-action-row">
-        <Tooltip
-          title={
-            sheet.locked
-              ? t('priceCompare.sheet.unlockRefTooltip')
-              : t('priceCompare.sheet.lockRefTooltip')
-          }
-        >
-          <Button
-            type={sheet.locked ? 'primary' : 'default'}
-            icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
-            disabled={readOnly}
-            onClick={() => patchSheet(sheet.id, { locked: !sheet.locked })}
-          >
-            {sheet.locked
-              ? t('priceCompare.sheet.unlockRef')
-              : t('priceCompare.sheet.lockRef')}
-          </Button>
-        </Tooltip>
-        <Tooltip
-          title={
-            sheet.specQuantityLocked
-              ? t('priceCompare.sheet.unlockSpecQuantityTooltip')
-              : t('priceCompare.sheet.lockSpecQuantityTooltip')
-          }
-        >
-          <Button
-            type={sheet.specQuantityLocked ? 'primary' : 'default'}
-            icon={
-              sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />
-            }
-            disabled={readOnly}
-            onClick={() =>
-              patchSheet(sheet.id, {
-                specQuantityLocked: !sheet.specQuantityLocked,
-              })
-            }
-          >
-            {sheet.specQuantityLocked
-              ? t('priceCompare.sheet.unlockSpecQuantity')
-              : t('priceCompare.sheet.lockSpecQuantity')}
-          </Button>
-        </Tooltip>
+        <LockRefButton
+          sheet={sheet}
+          readOnly={readOnly}
+          patchSheet={patchSheet}
+        />
+        <LockSpecQuantityButton
+          sheet={sheet}
+          readOnly={readOnly}
+          patchSheet={patchSheet}
+        />
         <Button
           type={bestOn ? 'primary' : 'default'}
           icon={<TrophyOutlined />}
@@ -1233,34 +1524,15 @@ function SheetHeader({
           </Button>
         ) : null}
         {selectedCount > 0 ? (
-          readOnly || sheet.specQuantityLocked ? (
-            <Tooltip
-              title={
-                !readOnly && sheet.specQuantityLocked
-                  ? t('priceCompare.sheet.specQuantityLockedHint')
-                  : undefined
-              }
-            >
-              <span>
-                <Button danger icon={<DeleteOutlined />} disabled>
-                  {t('common.delete')}
-                </Button>
-              </span>
-            </Tooltip>
-          ) : (
-            <Popconfirm
-              title={t('priceCompare.sheet.removeSelectedTitle', {
-                selected: selectedCount,
-              })}
-              okText={t('common.delete')}
-              cancelText={t('common.cancel')}
-              onConfirm={onRemoveSelected}
-            >
-              <Button danger icon={<DeleteOutlined />}>
-                {t('common.delete')}
-              </Button>
-            </Popconfirm>
-          )
+          <SelectedRowActions
+            brands={brands}
+            supplierOptions={supplierOptions}
+            selectedCount={selectedCount}
+            readOnly={readOnly}
+            specQuantityLocked={Boolean(sheet.specQuantityLocked)}
+            onFillSupplierSelected={onFillSupplierSelected}
+            onRemoveSelected={onRemoveSelected}
+          />
         ) : null}
       </Space>
     </Flex>
@@ -1421,6 +1693,22 @@ export function SheetPanel(props: Props) {
     patchSheet(sheet.id, { inputs })
   }
 
+  /** 批量填入供应商: 目标行统一改为该供应商(覆盖已有值); 仅改简称, 不动现货价。 */
+  const fillSupplier = (
+    brandName: string,
+    rowIds: string[],
+    option: { value: string; label: string } | undefined,
+  ) => {
+    const inputs = fillSupplierInputs(
+      rows,
+      sheet.inputs,
+      brandName,
+      rowIds,
+      option,
+    )
+    if (inputs !== sheet.inputs) patchSheet(sheet.id, { inputs })
+  }
+
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
       checked
@@ -1471,6 +1759,7 @@ export function SheetPanel(props: Props) {
     setSpot,
     getInput,
     setSupplier,
+    fillSupplier,
     supplierOptions: suppliers,
     patchRow,
     onReorderBrands,
@@ -1517,6 +1806,10 @@ export function SheetPanel(props: Props) {
         brands={brands}
         onToggleRemark={(visible) => setHideRemark(!visible)}
         onToggleBrand={toggleBrandVisible}
+        supplierOptions={suppliers}
+        onFillSupplierSelected={(brandName, option) =>
+          fillSupplier(brandName, selectedIds, option)
+        }
       />
 
       <SheetTable

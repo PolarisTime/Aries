@@ -124,6 +124,59 @@ export function reconcileSpotInputs(
   return changed ? next : inputs
 }
 
+/**
+ * 批量填入同一供应商(仅改供应商简称, 不动现货价)。
+ *
+ * - 覆盖语义: 目标行已有供应商时改为新供应商, 便于换第 N 家重新报价。
+ * - 只处理商品行; 隔断行忽略。
+ * - 供应商置空时等价于清除简称, 与单格清除保持一致(无其它字段则删除该输入)。
+ * 返回新 inputs; 无变化时返回原对象。
+ */
+export function fillSupplierInputs(
+  rows: PriceRow[],
+  inputs: SheetInputs,
+  brandName: string,
+  rowIds: string[],
+  option: { value: string; label: string } | undefined,
+): SheetInputs {
+  const targets = new Set(rowIds)
+  let changed = false
+  const next: SheetInputs = { ...inputs }
+  for (const row of rows) {
+    if (!targets.has(row.id) || isSeparatorRow(row)) continue
+    const key = `${brandName}:${row.id}`
+    const prev = next[key] ?? {}
+    if (option) {
+      if (
+        prev.supplierId === option.value &&
+        prev.supplierName === option.label
+      )
+        continue
+      next[key] = {
+        ...prev,
+        supplierId: option.value,
+        supplierName: option.label,
+      }
+      changed = true
+      continue
+    }
+    if (prev.supplierId === undefined && prev.supplierName === undefined)
+      continue
+    const {
+      supplierId: _supplierId,
+      supplierName: _supplierName,
+      ...rest
+    } = prev
+    if (rest.spot === undefined && rest.ton === undefined) {
+      delete next[key]
+    } else {
+      next[key] = rest
+    }
+    changed = true
+  }
+  return changed ? next : inputs
+}
+
 /** 12米加价生效的品种(业务规则) */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
 /** 现货价合理上限(元/吨), 超出提示 */

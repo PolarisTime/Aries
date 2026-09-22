@@ -4,6 +4,7 @@ import {
   computeSummary,
   countMissing,
   dataKeyOf,
+  fillSupplierInputs,
   filterSupplierOptionsByBrand,
   isSeparatorRow,
   makeRow,
@@ -386,6 +387,94 @@ describe('makeRow', () => {
     expect(row.material).toBe('')
     expect(row.spec).toBeNull()
     expect(row.length).toBe('')
+  })
+})
+
+describe('fillSupplierInputs', () => {
+  const rows: PriceRow[] = [
+    { ...row12, id: 'r1' },
+    { ...row12, id: 'r2' },
+    {
+      id: 'sep1',
+      rowType: 'SEPARATOR',
+      category: '',
+      material: '',
+      spec: null,
+      length: '',
+    },
+    { ...row12, id: 'r3' },
+  ]
+
+  it('按目标行覆盖填入供应商标识, 不动已有现货价', () => {
+    const inputs = { '中天:r1': { spot: 3180 } }
+    const next = fillSupplierInputs(rows, inputs, '中天', ['r1', 'r2'], {
+      value: 's2',
+      label: '河钢',
+    })
+    expect(next['中天:r1']).toEqual({
+      spot: 3180,
+      supplierId: 's2',
+      supplierName: '河钢',
+    })
+    expect(next['中天:r2']).toEqual({ supplierId: 's2', supplierName: '河钢' })
+    // 未选中的行不处理
+    expect(next['中天:r3']).toBeUndefined()
+  })
+
+  it('覆盖已有值为新供应商(支持换第 N 家重新报价)', () => {
+    const inputs = {
+      '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
+    }
+    const next = fillSupplierInputs(rows, inputs, '中天', ['r1'], {
+      value: 's2',
+      label: '河钢',
+    })
+    expect(next['中天:r1']?.supplierId).toBe('s2')
+    expect(next['中天:r1']?.supplierName).toBe('河钢')
+    expect(next['中天:r1']?.spot).toBe(3180)
+  })
+
+  it('忽略隔断行, 且无实际变化时返回原对象', () => {
+    const inputs = { '中天:r1': { supplierId: 's2', supplierName: '河钢' } }
+    // 隔断行虽在目标集合内, 但跳过 → 无变化
+    const same = fillSupplierInputs(rows, inputs, '中天', ['sep1'], {
+      value: 's9',
+      label: '某钢',
+    })
+    expect(same).toBe(inputs)
+    // 已相同的值不再写入
+    const noop = fillSupplierInputs(rows, inputs, '中天', ['r1'], {
+      value: 's2',
+      label: '河钢',
+    })
+    expect(noop).toBe(inputs)
+  })
+
+  it('传入 undefined 等价清除简称, 保留现货价', () => {
+    const inputs = {
+      '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
+      '中天:r2': { supplierId: 's1', supplierName: '沙钢' },
+    }
+    const next = fillSupplierInputs(
+      rows,
+      inputs,
+      '中天',
+      ['r1', 'r2'],
+      undefined,
+    )
+    expect(next['中天:r1']).toEqual({ spot: 3180 })
+    // 无其它字段则删除该输入
+    expect('中天:r2' in next).toBe(false)
+  })
+
+  it('空目标行集合不产生变化', () => {
+    const inputs = {}
+    expect(
+      fillSupplierInputs(rows, inputs, '中天', [], {
+        value: 's1',
+        label: '沙钢',
+      }),
+    ).toBe(inputs)
   })
 })
 
