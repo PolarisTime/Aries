@@ -1,3 +1,10 @@
+# [10.22.0](https://github.com/PolarisTime/Aries/compare/v10.21.1...v10.22.0) (2026-09-22)
+
+
+### Features
+
+* **sales-order:** 交付核定支持选择项目价格规定 ([0d20c3c](https://github.com/PolarisTime/Aries/commit/0d20c3c05c82813f884d8f2ab95c429dfb378821))
+
 ## [10.21.1](https://github.com/PolarisTime/Aries/compare/v10.21.0...v10.21.1) (2026-09-22)
 
 
