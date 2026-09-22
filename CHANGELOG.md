@@ -1,3 +1,10 @@
+# [10.23.0](https://github.com/PolarisTime/Aries/compare/v10.22.0...v10.23.0) (2026-09-22)
+
+
+### Features
+
+* **market:** 项目可配置取价数据源与地区并支持西本取价 ([771c4c7](https://github.com/PolarisTime/Aries/commit/771c4c742acf173f2baad94cd94924d33d8d2879))
+
 # [10.22.0](https://github.com/PolarisTime/Aries/compare/v10.21.1...v10.22.0) (2026-09-22)
 
 
