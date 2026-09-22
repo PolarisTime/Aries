@@ -1,3 +1,10 @@
+# [10.19.0](https://github.com/PolarisTime/Aries/compare/v10.18.0...v10.19.0) (2026-09-22)
+
+
+### Features
+
+* **price-compare:** 批量填入供应商仅更新本次改过价的行 ([d7a2b9f](https://github.com/PolarisTime/Aries/commit/d7a2b9f09d290e5ab5328cd2ae2955fdb5ebda11))
+
 # [10.18.0](https://github.com/PolarisTime/Aries/compare/v10.17.1...v10.18.0) (2026-09-22)
 
 
