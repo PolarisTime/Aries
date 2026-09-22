@@ -169,8 +169,9 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(container.querySelector('.ant-select-disabled')).not.toBeNull()
     // 锁定后控件不可编辑, 但需保留正常外观(不置灰): 依赖该标记类覆盖 disabled 样式
     expect(
-      container.querySelectorAll('.price-compare-locked-field.ant-select-disabled')
-        .length,
+      container.querySelectorAll(
+        '.price-compare-locked-field.ant-select-disabled',
+      ).length,
     ).toBeGreaterThan(0)
     expect(
       container.querySelector<HTMLInputElement>('input[data-ton="r1"]')
