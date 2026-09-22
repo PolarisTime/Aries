@@ -1,3 +1,11 @@
+## [10.17.1](https://github.com/PolarisTime/Aries/compare/v10.17.0...v10.17.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **price-compare:** 锁定后保留控件正常外观 ([5eeedf9](https://github.com/PolarisTime/Aries/commit/5eeedf9ee6b715345172daa417453d4d796b5031))
+* **ui:** 修复下拉选择框清除按钮错位并改为与框体等高 ([a8ebaed](https://github.com/PolarisTime/Aries/commit/a8ebaed521394867b637bb9e7fbec8c87ae1a1eb))
+
 # [10.17.0](https://github.com/PolarisTime/Aries/compare/v10.16.0...v10.17.0) (2026-09-22)
 
 
