@@ -96,6 +96,43 @@
   color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
 }
 
+/* 锁定参照/规格数量后: 控件保持不可编辑, 但外观与可编辑时一致(文字不置灰、不降透明度) */
+.price-compare-locked-field.ant-picker.ant-picker-disabled {
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  opacity: 1;
+}
+
+.price-compare-locked-field.ant-picker.ant-picker-outlined.ant-picker-disabled {
+  background-color: var(--ant-color-bg-container, #fff);
+  border-color: var(--ant-color-border, #d9d9d9);
+}
+
+.price-compare-locked-field.ant-picker .ant-picker-input > input[disabled] {
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+}
+
+.price-compare-locked-field.ant-select.ant-select-disabled {
+  --ant-select-color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  opacity: 1;
+}
+
+.price-compare-locked-field.ant-select.ant-select-outlined.ant-select-disabled {
+  --ant-select-border-color: var(--ant-color-border, #d9d9d9);
+  --ant-select-background-color: var(--ant-color-bg-container, #fff);
+  background-color: var(--ant-color-bg-container, #fff);
+}
+
+.price-compare-locked-field.ant-select.ant-select-disabled .ant-select-content,
+.price-compare-locked-field.ant-select.ant-select-disabled
+  .ant-select-selection-item {
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+}
+
+.price-compare-locked-field.ant-input.ant-input-disabled {
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  opacity: 1;
+}
+
 .price-compare-legend {
   font-size: 11px;
   color: var(--text-placeholder);

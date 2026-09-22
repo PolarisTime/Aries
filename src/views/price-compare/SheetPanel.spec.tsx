@@ -128,6 +128,7 @@ describe('SheetPanel 指定品牌展示', () => {
     brands: { name: string; freight: number }[] = [
       { name: '中天', freight: 30 },
     ],
+    readOnly = false,
   ) {
     const observed = { rows: initialRows, sheet: initialSheet }
     function Harness() {
@@ -151,6 +152,7 @@ describe('SheetPanel 指定品牌展示', () => {
         chrome: false,
         spotRef: { current: null },
         suppliers,
+        readOnly,
       })
     }
     act(() => {
@@ -165,10 +167,20 @@ describe('SheetPanel 指定品牌展示', () => {
     ])
 
     expect(container.querySelector('.ant-select-disabled')).not.toBeNull()
+    // 锁定后控件不可编辑, 但需保留正常外观(不置灰): 依赖该标记类覆盖 disabled 样式
+    expect(
+      container.querySelectorAll('.price-compare-locked-field.ant-select-disabled')
+        .length,
+    ).toBeGreaterThan(0)
     expect(
       container.querySelector<HTMLInputElement>('input[data-ton="r1"]')
         ?.disabled,
     ).toBe(true)
+    expect(
+      container.querySelector(
+        'input[data-ton="r1"].price-compare-locked-field',
+      ),
+    ).not.toBeNull()
 
     const unlock = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('解锁规格和数量'),
@@ -178,10 +190,37 @@ describe('SheetPanel 指定品牌展示', () => {
     })
 
     expect(container.querySelector('.ant-select-disabled')).toBeNull()
+    expect(container.querySelector('.price-compare-locked-field')).toBeNull()
     expect(
       container.querySelector<HTMLInputElement>('input[data-ton="r1"]')
         ?.disabled,
     ).toBe(false)
+  })
+
+  it('参照日期/时段锁定后不可编辑但保留正常外观标记', () => {
+    renderStateful({ ...makeSheet(), locked: true }, [{ ...baseRow }])
+
+    const lockedPickers = container.querySelectorAll(
+      '.price-compare-locked-field.ant-picker-disabled',
+    )
+    expect(lockedPickers.length).toBeGreaterThan(0)
+    expect(
+      container.querySelector(
+        '.price-compare-locked-field.ant-select-disabled',
+      ),
+    ).not.toBeNull()
+  })
+
+  it('只读态不套用锁定外观标记(仍保持置灰表现)', () => {
+    renderStateful(
+      { ...makeSheet(), locked: true, specQuantityLocked: true },
+      [{ ...baseRow }],
+      [],
+      [{ name: '中天', freight: 30 }],
+      true,
+    )
+
+    expect(container.querySelector('.price-compare-locked-field')).toBeNull()
   })
 
   it('隔断行渲染为分隔带且不渲染商品/吨位/品牌输入', () => {

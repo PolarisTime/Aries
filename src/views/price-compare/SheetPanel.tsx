@@ -227,6 +227,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const quantityLocked = Boolean(sheet.specQuantityLocked)
   const rowInteractionLocked = readOnly || quantityLocked
   const rowLockedHint = t('priceCompare.sheet.specQuantityLockedHint')
+  /** 仅由「锁定规格和数量」触发: 保持不可编辑, 但仍以正常文字色显示已保存值。 */
+  const quantityLockClass =
+    quantityLocked && !readOnly ? 'price-compare-locked-field' : undefined
   const enabledCategories = new Set<string>()
   if (!brands.length) {
     for (const category of CATEGORIES) enabledCategories.add(category)
@@ -404,6 +407,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           <Select
             size="small"
             variant="borderless"
+            className={quantityLockClass}
             disabled={readOnly || Boolean(sheet.specQuantityLocked)}
             style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
             placeholder={t('priceCompare.sheet.selectProduct')}
@@ -440,7 +444,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         isSeparatorRow(row.row) ? null : (
           <Input
             key={`ton:${row.rowId}:${row.row.ton ?? ''}`}
-            className="price-compare-ton"
+            className={
+              quantityLockClass
+                ? 'price-compare-ton price-compare-locked-field'
+                : 'price-compare-ton'
+            }
             size="small"
             variant="borderless"
             inputMode="decimal"
@@ -1054,6 +1062,11 @@ function SheetHeader({
             <DatePicker
               size="small"
               style={{ width: 132 }}
+              className={
+                sheet.locked && !readOnly
+                  ? 'price-compare-locked-field'
+                  : undefined
+              }
               value={refDate ? dayjs(refDate) : null}
               format={dateFormat}
               allowClear={false}
@@ -1084,6 +1097,11 @@ function SheetHeader({
             <Select
               size="small"
               style={{ width: 110 }}
+              className={
+                sheet.locked && !readOnly
+                  ? 'price-compare-locked-field'
+                  : undefined
+              }
               value={refPeriod || undefined}
               disabled={readOnly || Boolean(sheet.locked)}
               onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
