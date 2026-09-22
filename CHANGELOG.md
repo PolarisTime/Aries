@@ -1,3 +1,10 @@
+# [10.20.0](https://github.com/PolarisTime/Aries/compare/v10.19.0...v10.20.0) (2026-09-22)
+
+
+### Features
+
+* **price-compare:** 支持标记已采购并遮蔽吨位后的品牌价格列 ([0762e72](https://github.com/PolarisTime/Aries/commit/0762e7251e42c73747fdf5b1a087626fc3ed9ac2))
+
 # [10.19.0](https://github.com/PolarisTime/Aries/compare/v10.18.0...v10.19.0) (2026-09-22)
 
 
