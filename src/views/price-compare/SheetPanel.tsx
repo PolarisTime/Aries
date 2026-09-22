@@ -962,7 +962,6 @@ function ColumnSettingsButton({
     >
       <Tooltip title={t('priceCompare.sheet.columnSettings')}>
         <Button
-          size="small"
           icon={<SettingOutlined />}
           aria-label={t('priceCompare.sheet.columnSettings')}
         />
@@ -1155,7 +1154,6 @@ function SheetHeader({
           }
         >
           <Button
-            size="small"
             type={sheet.locked ? 'primary' : 'default'}
             icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
             disabled={readOnly}
@@ -1174,7 +1172,6 @@ function SheetHeader({
           }
         >
           <Button
-            size="small"
             type={sheet.specQuantityLocked ? 'primary' : 'default'}
             icon={
               sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />
@@ -1192,7 +1189,6 @@ function SheetHeader({
           </Button>
         </Tooltip>
         <Button
-          size="small"
           type={bestOn ? 'primary' : 'default'}
           icon={<TrophyOutlined />}
           onClick={onToggleBest}
@@ -1200,7 +1196,6 @@ function SheetHeader({
           {t('priceCompare.sheet.bestDiff')}
         </Button>
         <Button
-          size="small"
           icon={<ReloadOutlined />}
           loading={refreshing}
           onClick={onRefresh}
@@ -1215,11 +1210,7 @@ function SheetHeader({
           onToggleBrand={onToggleBrand}
         />
         {onOpenConfig ? (
-          <Button
-            size="small"
-            icon={<SettingOutlined />}
-            onClick={onOpenConfig}
-          >
+          <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
             {t('priceCompare.sheet.config')}
           </Button>
         ) : null}
@@ -1233,7 +1224,7 @@ function SheetHeader({
               }
             >
               <span>
-                <Button size="small" danger icon={<DeleteOutlined />} disabled>
+                <Button danger icon={<DeleteOutlined />} disabled>
                   {t('common.delete')}
                 </Button>
               </span>
@@ -1247,7 +1238,7 @@ function SheetHeader({
               cancelText={t('common.cancel')}
               onConfirm={onRemoveSelected}
             >
-              <Button size="small" danger icon={<DeleteOutlined />}>
+              <Button danger icon={<DeleteOutlined />}>
                 {t('common.delete')}
               </Button>
             </Popconfirm>
