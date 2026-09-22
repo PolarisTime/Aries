@@ -1024,7 +1024,7 @@ function SheetHeader({
   const dateFormat = t('priceCompare.sheet.dateFormat')
   return (
     <Flex vertical gap={8} className="price-compare-toolbar">
-      <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+      <Flex align="center" wrap="wrap" gap={8}>
         <Flex gap="small" align="center" wrap="wrap">
           <Text strong>
             {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
@@ -1105,120 +1105,6 @@ function SheetHeader({
             </Tooltip>
           ) : null}
         </Flex>
-
-        <Space size={4} wrap>
-          <Tooltip
-            title={
-              sheet.locked
-                ? t('priceCompare.sheet.unlockRefTooltip')
-                : t('priceCompare.sheet.lockRefTooltip')
-            }
-          >
-            <Button
-              size="small"
-              type={sheet.locked ? 'primary' : 'default'}
-              icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
-              disabled={readOnly}
-              onClick={() => patchSheet(sheet.id, { locked: !sheet.locked })}
-            >
-              {sheet.locked
-                ? t('priceCompare.sheet.unlockRef')
-                : t('priceCompare.sheet.lockRef')}
-            </Button>
-          </Tooltip>
-          <Tooltip
-            title={
-              sheet.specQuantityLocked
-                ? t('priceCompare.sheet.unlockSpecQuantityTooltip')
-                : t('priceCompare.sheet.lockSpecQuantityTooltip')
-            }
-          >
-            <Button
-              size="small"
-              type={sheet.specQuantityLocked ? 'primary' : 'default'}
-              icon={
-                sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />
-              }
-              disabled={readOnly}
-              onClick={() =>
-                patchSheet(sheet.id, {
-                  specQuantityLocked: !sheet.specQuantityLocked,
-                })
-              }
-            >
-              {sheet.specQuantityLocked
-                ? t('priceCompare.sheet.unlockSpecQuantity')
-                : t('priceCompare.sheet.lockSpecQuantity')}
-            </Button>
-          </Tooltip>
-          <Button
-            size="small"
-            type={bestOn ? 'primary' : 'default'}
-            icon={<TrophyOutlined />}
-            onClick={onToggleBest}
-          >
-            {t('priceCompare.sheet.bestDiff')}
-          </Button>
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            loading={refreshing}
-            onClick={onRefresh}
-          >
-            {t('priceCompare.sheet.refreshPrice')}
-          </Button>
-          <ColumnSettingsButton
-            hideRemark={hideRemark}
-            brands={brands}
-            hiddenBrands={hiddenBrands}
-            onToggleRemark={onToggleRemark}
-            onToggleBrand={onToggleBrand}
-          />
-          {onOpenConfig ? (
-            <Button
-              size="small"
-              icon={<SettingOutlined />}
-              onClick={onOpenConfig}
-            >
-              {t('priceCompare.sheet.config')}
-            </Button>
-          ) : null}
-          {selectedCount > 0 ? (
-            readOnly || sheet.specQuantityLocked ? (
-              <Tooltip
-                title={
-                  !readOnly && sheet.specQuantityLocked
-                    ? t('priceCompare.sheet.specQuantityLockedHint')
-                    : undefined
-                }
-              >
-                <span>
-                  <Button
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    disabled
-                  >
-                    {t('common.delete')}
-                  </Button>
-                </span>
-              </Tooltip>
-            ) : (
-              <Popconfirm
-                title={t('priceCompare.sheet.removeSelectedTitle', {
-                  selected: selectedCount,
-                })}
-                okText={t('common.delete')}
-                cancelText={t('common.cancel')}
-                onConfirm={onRemoveSelected}
-              >
-                <Button size="small" danger icon={<DeleteOutlined />}>
-                  {t('common.delete')}
-                </Button>
-              </Popconfirm>
-            )
-          ) : null}
-        </Space>
       </Flex>
 
       <Flex
@@ -1259,6 +1145,115 @@ function SheetHeader({
           )}
         </Space>
       </Flex>
+
+      <Space size={4} wrap className="price-compare-action-row">
+        <Tooltip
+          title={
+            sheet.locked
+              ? t('priceCompare.sheet.unlockRefTooltip')
+              : t('priceCompare.sheet.lockRefTooltip')
+          }
+        >
+          <Button
+            size="small"
+            type={sheet.locked ? 'primary' : 'default'}
+            icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
+            disabled={readOnly}
+            onClick={() => patchSheet(sheet.id, { locked: !sheet.locked })}
+          >
+            {sheet.locked
+              ? t('priceCompare.sheet.unlockRef')
+              : t('priceCompare.sheet.lockRef')}
+          </Button>
+        </Tooltip>
+        <Tooltip
+          title={
+            sheet.specQuantityLocked
+              ? t('priceCompare.sheet.unlockSpecQuantityTooltip')
+              : t('priceCompare.sheet.lockSpecQuantityTooltip')
+          }
+        >
+          <Button
+            size="small"
+            type={sheet.specQuantityLocked ? 'primary' : 'default'}
+            icon={
+              sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />
+            }
+            disabled={readOnly}
+            onClick={() =>
+              patchSheet(sheet.id, {
+                specQuantityLocked: !sheet.specQuantityLocked,
+              })
+            }
+          >
+            {sheet.specQuantityLocked
+              ? t('priceCompare.sheet.unlockSpecQuantity')
+              : t('priceCompare.sheet.lockSpecQuantity')}
+          </Button>
+        </Tooltip>
+        <Button
+          size="small"
+          type={bestOn ? 'primary' : 'default'}
+          icon={<TrophyOutlined />}
+          onClick={onToggleBest}
+        >
+          {t('priceCompare.sheet.bestDiff')}
+        </Button>
+        <Button
+          size="small"
+          icon={<ReloadOutlined />}
+          loading={refreshing}
+          onClick={onRefresh}
+        >
+          {t('priceCompare.sheet.refreshPrice')}
+        </Button>
+        <ColumnSettingsButton
+          hideRemark={hideRemark}
+          brands={brands}
+          hiddenBrands={hiddenBrands}
+          onToggleRemark={onToggleRemark}
+          onToggleBrand={onToggleBrand}
+        />
+        {onOpenConfig ? (
+          <Button
+            size="small"
+            icon={<SettingOutlined />}
+            onClick={onOpenConfig}
+          >
+            {t('priceCompare.sheet.config')}
+          </Button>
+        ) : null}
+        {selectedCount > 0 ? (
+          readOnly || sheet.specQuantityLocked ? (
+            <Tooltip
+              title={
+                !readOnly && sheet.specQuantityLocked
+                  ? t('priceCompare.sheet.specQuantityLockedHint')
+                  : undefined
+              }
+            >
+              <span>
+                <Button size="small" danger icon={<DeleteOutlined />} disabled>
+                  {t('common.delete')}
+                </Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <Popconfirm
+              title={t('priceCompare.sheet.removeSelectedTitle', {
+                selected: selectedCount,
+              })}
+              okText={t('common.delete')}
+              cancelText={t('common.cancel')}
+              onConfirm={onRemoveSelected}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />}>
+                {t('common.delete')}
+              </Button>
+            </Popconfirm>
+          )
+        ) : null}
+      </Space>
     </Flex>
   )
 }

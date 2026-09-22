@@ -81,6 +81,11 @@
   font-size: 12px;
 }
 
+/* 备注栏下方: 操作按钮组 */
+.price-compare-action-row {
+  padding: 2px 0;
+}
+
 .price-compare-meta-input input,
 .price-compare-meta-input.ant-input {
   font-size: 12px;
