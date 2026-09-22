@@ -1,3 +1,10 @@
+# [10.21.0](https://github.com/PolarisTime/Aries/compare/v10.20.0...v10.21.0) (2026-09-22)
+
+
+### Features
+
+* **sales-order:** 交付核定支持整单按网价赋单价 ([4d5cbf8](https://github.com/PolarisTime/Aries/commit/4d5cbf83728c62e50f0ea04d2e7c79f92db25163))
+
 # [10.20.0](https://github.com/PolarisTime/Aries/compare/v10.19.0...v10.20.0) (2026-09-22)
 
 
