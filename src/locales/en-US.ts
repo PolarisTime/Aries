@@ -2389,6 +2389,8 @@ export const enUS = {
         'Fill the selected supplier into all product rows of the "{{brand}}" column',
       fillSupplierSelected:
         'Fill the selected supplier into the {{count}} selected rows',
+      fillSupplierNoChangedRows:
+        'None of the target rows had a spot price changed this session; nothing was modified (only rows with changed prices are updated)',
     },
     config: {
       title: 'Project Settings',

@@ -1609,6 +1609,30 @@ export function SheetPanel(props: Props) {
   const [hideRemark, setHideRemark] = useState(false)
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
   const hiddenBrandSet = new Set(hiddenBrands)
+  /**
+   * 本次会话内现货价被改过的单元格键(`品牌:行id`)。
+   * 批量填入供应商时只作用于这些行, 避免换第 N 家时误改已定价的其它供应商行。
+   */
+  const [spotTouchedKeys, setSpotTouchedKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  )
+  const markSpotsTouched = (keys: string[]) => {
+    if (!keys.length) return
+    setSpotTouchedKeys((current) => {
+      const next = new Set(current)
+      for (const key of keys) next.add(key)
+      return next
+    })
+  }
+  /** 填入完成后消费掉已处理的标记, 避免下一家批量填入时重复命中。 */
+  const consumeSpotsTouched = (keys: string[]) => {
+    if (!keys.length) return
+    setSpotTouchedKeys((current) => {
+      const next = new Set(current)
+      for (const key of keys) next.delete(key)
+      return next
+    })
+  }
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
     setHiddenBrands((current) =>
       visible
@@ -1650,6 +1674,8 @@ export function SheetPanel(props: Props) {
       value,
     )
     patchSheet(sheet.id, { inputs })
+    // 记录本次会话改过现货价的行: 仅这些行参与后续批量填入供应商。
+    markSpotsTouched(targets.map((target) => `${brandName}:${target.id}`))
     const text = value === undefined ? '' : String(value)
     for (const target of targets) {
       if (target.id === rowId) continue
@@ -1693,20 +1719,31 @@ export function SheetPanel(props: Props) {
     patchSheet(sheet.id, { inputs })
   }
 
-  /** 批量填入供应商: 目标行统一改为该供应商(覆盖已有值); 仅改简称, 不动现货价。 */
+  /**
+   * 批量填入供应商: 仅作用于「本次会话内改过现货价」的目标行, 覆盖其已有简称;
+   * 未改价的行保留原简称, 避免换第 N 家时误改已定价的其它供应商行。仅改简称, 不动现货价。
+   */
   const fillSupplier = (
     brandName: string,
     rowIds: string[],
     option: { value: string; label: string } | undefined,
   ) => {
+    const eligibleIds = rowIds.filter((rowId) =>
+      spotTouchedKeys.has(`${brandName}:${rowId}`),
+    )
+    if (!eligibleIds.length) {
+      message.info(t('priceCompare.sheet.fillSupplierNoChangedRows'))
+      return
+    }
     const inputs = fillSupplierInputs(
       rows,
       sheet.inputs,
       brandName,
-      rowIds,
+      eligibleIds,
       option,
     )
     if (inputs !== sheet.inputs) patchSheet(sheet.id, { inputs })
+    consumeSpotsTouched(eligibleIds.map((rowId) => `${brandName}:${rowId}`))
   }
 
   const toggleSelect = (rowId: string, checked: boolean) =>

@@ -2314,6 +2314,8 @@ export const zhCN = {
       fillSupplierBrand: '选择品牌列',
       fillSupplierColumn: '把所选供应商填入「{{brand}}」列全部商品行',
       fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
+      fillSupplierNoChangedRows:
+        '所选范围内没有本次改过现货价的行，未做任何修改（仅更新价格变动过的行）',
     },
     config: {
       title: '项目配置',
