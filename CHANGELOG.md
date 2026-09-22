@@ -1,3 +1,10 @@
+# [10.17.0](https://github.com/PolarisTime/Aries/compare/v10.16.0...v10.17.0) (2026-09-22)
+
+
+### Features
+
+* **price-compare:** 支持临时隐藏备注列与整组品牌列 ([2a7d494](https://github.com/PolarisTime/Aries/commit/2a7d494c40f32c64d876ac50dadcbe7778f4a356))
+
 # [10.16.0](https://github.com/PolarisTime/Aries/compare/v10.15.0...v10.16.0) (2026-09-21)
 
 
