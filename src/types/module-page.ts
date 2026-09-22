@@ -173,6 +173,8 @@ export interface ModuleItemsActionsContext {
   setItems: (updater: (items: ModuleLineItem[]) => ModuleLineItem[]) => void
   /** 保存中（用于禁用按钮）。 */
   saving: boolean
+  /** 写入表单字段（如交付核定所选价格规定 id）。 */
+  setFormValue: (key: string, value: unknown) => void
   /** 当前可选项目（含网价浮动约定）。 */
   projectOptions: ModuleProjectOption[]
 }
@@ -183,6 +185,8 @@ export interface ModuleProjectOption {
   projectName: string
   priceFloatMode?: 'ADD' | 'SUBTRACT'
   priceFloatValue?: number
+  /** 项目上次交付核定使用的价格规定ID。 */
+  lastPriceRuleId?: string
 }
 
 export interface ModulePageConfig {

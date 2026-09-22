@@ -1,5 +1,5 @@
 import type { FormInstance } from 'antd'
-import { Button, Col, Form, Input, InputNumber, Row, Select, Space } from 'antd'
+import { Button, Col, Form, Input, Row, Select, Space } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
@@ -15,6 +15,7 @@ import type {
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
+import { ProjectPriceRuleEditor } from './ProjectPriceRuleEditor'
 
 const MODULE_KEY: ModuleKey = 'project'
 
@@ -29,10 +30,6 @@ export interface ProjectEditorValues {
   projectManager?: string
   projectAddress?: string
   status: string
-  /** 网价浮动方向: ADD加价/SUBTRACT减价; 空表示不浮动。 */
-  priceFloatMode?: string
-  /** 网价固定浮动幅度(元/吨), 非负。 */
-  priceFloatValue?: number
   remark?: string
 }
 
@@ -138,11 +135,6 @@ export function ProjectEditorOverlay({
         projectManager: values.projectManager ?? '',
         projectAddress: values.projectAddress ?? '',
         status: values.status,
-        priceFloatMode: values.priceFloatMode ?? '',
-        priceFloatValue:
-          values.priceFloatMode && values.priceFloatValue !== undefined
-            ? String(values.priceFloatValue)
-            : '',
         remark: values.remark ?? '',
       }
       await saveBusinessModule(MODULE_KEY, draft)
@@ -285,41 +277,6 @@ export function ProjectEditorOverlay({
               <Select options={enabledStatusOptions} />
             </Form.Item>
           </Col>
-          <Col span={6}>
-            <Form.Item
-              name="priceFloatMode"
-              label={t('modules.pages.project.priceFloatMode')}
-            >
-              <Select
-                allowClear
-                options={[
-                  {
-                    label: t('modules.pages.project.priceFloatAdd'),
-                    value: 'ADD',
-                  },
-                  {
-                    label: t('modules.pages.project.priceFloatSubtract'),
-                    value: 'SUBTRACT',
-                  },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item
-              name="priceFloatValue"
-              label={t('modules.pages.project.priceFloatValue')}
-            >
-              <InputNumber
-                min={0}
-                precision={2}
-                style={{ width: '100%' }}
-                placeholder={t(
-                  'modules.pages.project.priceFloatValuePlaceholder',
-                )}
-              />
-            </Form.Item>
-          </Col>
           <Col span={24}>
             <Form.Item
               name="projectAddress"
@@ -328,6 +285,13 @@ export function ProjectEditorOverlay({
               <Input />
             </Form.Item>
           </Col>
+          {editorBaseRecord?.id ? (
+            <Col span={24}>
+              <ProjectPriceRuleEditor
+                projectId={asString(editorBaseRecord.id)}
+              />
+            </Col>
+          ) : null}
           <Col span={24}>
             <Form.Item name="remark" label={t('modules.columns.remark')}>
               <Input.TextArea rows={3} />

@@ -372,6 +372,11 @@ const salesOrderRecordShape = {
   status: salesOrderStatusSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
+  /** 交付核定所用价格规定快照（可空）。 */
+  priceRuleId: nullableEntityIdSchema.optional(),
+  priceRuleName: nullableTextSchema.optional(),
+  priceFloatMode: nullableTextSchema.optional(),
+  priceFloatValue: nullableTextSchema.optional(),
   referencedByFreightBill: z.boolean().default(false),
   referencedBySalesOutbound: z.boolean().default(false),
   referencedBySalesReturn: z.boolean().default(false),
@@ -446,6 +451,8 @@ const salesOrderSaveRequestSchema = z.strictObject({
   salesName: requiredTextSchema,
   status: salesOrderStatusSchema.nullish(),
   remark: optionalTextSchema,
+  /** 交付核定所选价格规定ID（可空）。 */
+  priceRuleId: optionalEntityIdSchema,
   items: z
     .array(salesOrderSaveItemSchema)
     .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,

@@ -70,6 +70,7 @@ export const ENTITY_ID_FIELDS = new Set([
   'materialId',
   'operatorId',
   'parentId',
+  'priceRuleId',
   'projectId',
   'purchaseInboundItemId',
   'purchaseOrderId',

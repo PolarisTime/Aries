@@ -1,4 +1,23 @@
 export const enUS = {
+  priceRule: {
+    title: 'Price Rules',
+    hint: 'Configure multiple net-price adjustments; pick one during delivery verification (single select, no stacking).',
+    name: 'Name',
+    namePlaceholder: 'e.g. Tax-inclusive',
+    adjust: 'Adjust',
+    add: 'Markup',
+    subtract: 'Markdown',
+    amount: 'Amount (CNY/ton)',
+    amountPlaceholder: 'e.g. 30',
+    remark: 'Remark',
+    remarkPlaceholder: 'Optional note',
+    addRow: 'Add rule',
+    remove: 'Remove rule',
+    save: 'Save price rules',
+    saved: 'Price rules saved',
+    nameRequired: 'Please enter a rule name',
+    nameDuplicate: 'Rule names must be unique',
+  },
   appUpdate: {
     title: 'System Updated',
     description:
@@ -1515,6 +1534,10 @@ export const enUS = {
         netPricePeriodAll: 'All periods',
         netPriceApply: 'Fetch and fill',
         netPricePickDate: 'Please pick a net price date',
+        netPriceRule: 'Price rule',
+        netPriceRulePick: 'Select a price rule',
+        netPricePickRule:
+          'This project has multiple price rules; please pick one',
         netPriceFilled: 'Filled unit price for {{count}} rows from net price',
         netPriceNoPrice:
           '{{items}} and {{count}} row(s) have no net price; fill them manually',

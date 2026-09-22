@@ -9,11 +9,15 @@ import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import type { ModuleLineItem } from '@/types/module-page'
 import { SalesOrderNetPriceFiller } from './SalesOrderNetPriceFiller'
 
-const { fetchMaterialPriceMatchesMock, fetchSteelQuoteCalendarsMock } =
-  vi.hoisted(() => ({
-    fetchMaterialPriceMatchesMock: vi.fn(),
-    fetchSteelQuoteCalendarsMock: vi.fn(),
-  }))
+const {
+  fetchMaterialPriceMatchesMock,
+  fetchSteelQuoteCalendarsMock,
+  fetchProjectPriceRulesMock,
+} = vi.hoisted(() => ({
+  fetchMaterialPriceMatchesMock: vi.fn(),
+  fetchSteelQuoteCalendarsMock: vi.fn(),
+  fetchProjectPriceRulesMock: vi.fn(),
+}))
 
 vi.mock('@/api/market/steel-quotes', async (importOriginal) => {
   const actual =
@@ -22,6 +26,15 @@ vi.mock('@/api/market/steel-quotes', async (importOriginal) => {
     ...actual,
     fetchMaterialPriceMatches: fetchMaterialPriceMatchesMock,
     fetchSteelQuoteCalendars: fetchSteelQuoteCalendarsMock,
+  }
+})
+
+vi.mock('@/api/master/project-price-rules', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/api/master/project-price-rules')>()
+  return {
+    ...actual,
+    fetchProjectPriceRules: fetchProjectPriceRulesMock,
   }
 })
 
@@ -44,13 +57,11 @@ const match = (overrides: Partial<MaterialPriceMatch>): MaterialPriceMatch => ({
 function Harness({
   initialItems,
   status,
-  floatMode,
-  floatValue,
+  lastPriceRuleId,
 }: {
   initialItems: ModuleLineItem[]
   status: string
-  floatMode?: 'ADD' | 'SUBTRACT'
-  floatValue?: number
+  lastPriceRuleId?: string
 }) {
   const [items, setItems] = useState(initialItems)
   return createElement(SalesOrderNetPriceFiller, {
@@ -62,13 +73,13 @@ function Harness({
     },
     items,
     setItems: (updater) => setItems((prev) => updater(prev)),
+    setFormValue: () => {},
     saving: false,
     projectOptions: [
       {
         id: 'p1',
         projectName: '项目',
-        ...(floatMode ? { priceFloatMode: floatMode } : {}),
-        ...(floatValue !== undefined ? { priceFloatValue: floatValue } : {}),
+        ...(lastPriceRuleId ? { lastPriceRuleId } : {}),
       },
     ],
   })
@@ -101,6 +112,8 @@ describe('SalesOrderNetPriceFiller', () => {
     }
     fetchMaterialPriceMatchesMock.mockReset()
     fetchSteelQuoteCalendarsMock.mockReset()
+    fetchProjectPriceRulesMock.mockReset()
+    fetchProjectPriceRulesMock.mockResolvedValue([])
     fetchSteelQuoteCalendarsMock.mockResolvedValue([
       { quoteDate: '2026-09-22', periods: ['上午', '下午'] },
     ])
@@ -149,8 +162,13 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(container.textContent).toContain('整单取网价')
   })
 
-  it('取价后按项目 ADD 浮动填入单价, 无网价行保持原值', async () => {
-    const observed: { items: ModuleLineItem[] } = { items: [] }
+  it('取价后按所选价格规定加价填入单价, 无网价行保持原值', async () => {
+    const observed: { items: ModuleLineItem[]; ruleId?: unknown } = {
+      items: [],
+    }
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
     fetchMaterialPriceMatchesMock.mockResolvedValue([
       match({ materialId: 'm1', price: '3400.00' }),
       // m2 无网价
@@ -171,15 +189,11 @@ describe('SalesOrderNetPriceFiller', () => {
         },
         items,
         setItems: (updater) => setItems((prev) => updater(prev)),
+        setFormValue: (_key, value) => {
+          observed.ruleId = value
+        },
         saving: false,
-        projectOptions: [
-          {
-            id: 'p1',
-            projectName: '项目',
-            priceFloatMode: 'ADD',
-            priceFloatValue: 30,
-          },
-        ],
+        projectOptions: [{ id: 'p1', projectName: '项目' }],
       })
     }
 
@@ -207,10 +221,15 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(byId.get('r1')?.unitPrice).toBe(3430)
     // 无网价行保持原值
     expect(byId.get('r2')?.unitPrice).toBe(999)
+    // 所选价格规定写入单据
+    expect(observed.ruleId).toBe('50')
   })
 
-  it('SUBTRACT 浮动减价', async () => {
+  it('所选价格规定为减价时按减价填入', async () => {
     const observed: { items: ModuleLineItem[] } = { items: [] }
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '60', name: '让利', mode: 'SUBTRACT', amount: 20, sortOrder: 0 },
+    ])
     fetchMaterialPriceMatchesMock.mockResolvedValue([
       match({ materialId: 'm1', price: 3400 }),
     ])
@@ -227,15 +246,9 @@ describe('SalesOrderNetPriceFiller', () => {
         },
         items,
         setItems: (updater) => setItems((prev) => updater(prev)),
+        setFormValue: () => {},
         saving: false,
-        projectOptions: [
-          {
-            id: 'p1',
-            projectName: '项目',
-            priceFloatMode: 'SUBTRACT',
-            priceFloatValue: 20,
-          },
-        ],
+        projectOptions: [{ id: 'p1', projectName: '项目' }],
       })
     }
     await act(async () => {
@@ -246,6 +259,7 @@ describe('SalesOrderNetPriceFiller', () => {
       container
         .querySelector<HTMLButtonElement>('button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     const okBtn = await waitForOkButton()

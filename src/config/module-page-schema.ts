@@ -177,6 +177,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'salesName',
         'status',
         'remark',
+        'priceRuleId',
       ],
       chargeItem: [
         'id',

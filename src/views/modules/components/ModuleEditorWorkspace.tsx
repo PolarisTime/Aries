@@ -370,6 +370,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           formValues={editorFormValues}
           projectOptions={projectOptions}
           setItems={setItems}
+          setFormValue={(key, value) => form.setFieldValue(key, value)}
           freightStatementSortDirection={freightStatementSortDirection}
           onAddItem={addItem}
           onAutoSortItems={handleAutoSortItems}

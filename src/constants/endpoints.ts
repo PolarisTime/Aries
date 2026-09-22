@@ -145,6 +145,8 @@ export const ENDPOINTS = {
   CUSTOMERS_OPTIONS: '/customers/options',
   PROJECTS: '/projects',
   PROJECTS_OPTIONS: '/projects/options',
+  PROJECT_PRICE_RULES: (id: string | number) =>
+    `/projects/${pathSegment(id)}/price-rules`,
   SUPPLIERS_OPTIONS: '/suppliers/options',
   CARRIERS_OPTIONS: '/carriers/options',
   MATERIALS: '/materials',

@@ -21,6 +21,8 @@ export type ProjectOption = {
   priceFloatMode?: ProjectPriceFloatMode
   /** 网价固定浮动幅度(元/吨)。 */
   priceFloatValue?: number
+  /** 项目上次交付核定使用的价格规定ID(用于默认选中)。 */
+  lastPriceRuleId?: EntityId
 }
 
 export type ProjectPriceFloatMode = 'ADD' | 'SUBTRACT'
@@ -44,6 +46,7 @@ type RawProjectOption = {
   settlementCompanyName?: unknown
   priceFloatMode?: unknown
   priceFloatValue?: unknown
+  lastPriceRuleId?: unknown
 }
 
 type RawProjectPageRow = {
@@ -66,6 +69,7 @@ const projectOptionsResponseSchema = z.array(
     settlementCompanyName: z.string().nullable().optional(),
     priceFloatMode: z.string().nullable().optional(),
     priceFloatValue: z.union([z.string(), z.number()]).nullable().optional(),
+    lastPriceRuleId: z.union([z.string(), z.number()]).nullable().optional(),
   }),
 )
 
@@ -112,6 +116,10 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
     const settlementCompanyName = asString(row.settlementCompanyName).trim()
     const priceFloatMode = asString(row.priceFloatMode).trim()
     const priceFloatValueNum = Number(row.priceFloatValue)
+    const lastPriceRuleId = parseOptionalEntityId(
+      row.lastPriceRuleId,
+      `projects[${index}].lastPriceRuleId`,
+    )
 
     return {
       id,
@@ -130,6 +138,7 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       ...(Number.isFinite(priceFloatValueNum)
         ? { priceFloatValue: priceFloatValueNum }
         : {}),
+      ...(lastPriceRuleId ? { lastPriceRuleId } : {}),
     }
   })
 }

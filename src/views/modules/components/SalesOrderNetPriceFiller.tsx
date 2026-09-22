@@ -7,7 +7,8 @@ import {
   fetchMaterialPriceMatches,
   fetchSteelQuoteCalendars,
 } from '@/api/market/steel-quotes'
-
+import type { ProjectPriceRule } from '@/api/master/project-price-rules'
+import { fetchProjectPriceRules } from '@/api/master/project-price-rules'
 import type {
   ModuleItemsActionsContext,
   ModuleLineItem,
@@ -26,24 +27,64 @@ const { Text } = Typography
 const DELIVERY_VERIFICATION = '交付核定'
 
 /**
- * 交付核定「整单取网价」：按送货日期+时段匹配网价，叠加项目浮动约定后填入单价。
- * - 无网价的行保持原值并提示，由用户手填；
- * - 浮动方向与幅度取自项目资料（ADD加价 / SUBTRACT减价）。
+ * 交付核定「整单取网价」：选择价格规定 + 日期/时段匹配网价，按规定加/减后填入单价。
+ * - 价格规定单选互斥、不叠加；默认沿用项目上次使用的规定；
+ * - 项目有多条规定时必须选择一条；未配置规定时不浮动；
+ * - 无网价的行保持原值并提示，由用户手填。
  */
 export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const { t } = useTranslation()
-  const { formValues, currentStatus, items, setItems, saving, projectOptions } =
-    props
+  const {
+    formValues,
+    currentStatus,
+    items,
+    setItems,
+    setFormValue,
+    saving,
+    projectOptions,
+  } = props
   const [open, setOpen] = useState(false)
   const [quoteDate, setQuoteDate] = useState('')
   const [period, setPeriod] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rules, setRules] = useState<ProjectPriceRule[]>([])
+  const [ruleId, setRuleId] = useState<string | undefined>()
 
   const deliveryDate = normalizeDateValue(formValues.deliveryDate)
   const projectId = String(formValues.projectId || '').trim()
   const project = projectOptions.find((option) => option.id === projectId)
-  const floatMode = project?.priceFloatMode
-  const floatValue = project?.priceFloatValue
+
+  // 打开弹层时拉取项目价格规定, 并默认选中"上次使用"(回退到唯一一条)。
+  useEffect(() => {
+    if (!open || !projectId) {
+      setRules([])
+      return
+    }
+    let active = true
+    fetchProjectPriceRules(projectId)
+      .then((list) => {
+        if (!active) return
+        setRules(list)
+        setRuleId((current) => {
+          if (current && list.some((rule) => rule.id === current))
+            return current
+          const last = project?.lastPriceRuleId
+          if (last && list.some((rule) => rule.id === last)) return last
+          return list.length === 1 ? list[0].id : undefined
+        })
+      })
+      .catch(() => {
+        if (active) setRules([])
+      })
+    return () => {
+      active = false
+    }
+  }, [open, projectId, project?.lastPriceRuleId])
+
+  const selectedRule = useMemo(
+    () => rules.find((rule) => rule.id === ruleId),
+    [rules, ruleId],
+  )
 
   const openDialog = () => {
     setQuoteDate(deliveryDate || dayjs().format('YYYY-MM-DD'))
@@ -54,6 +95,10 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const applyNetPrices = async () => {
     if (!quoteDate) {
       message.warning(t('modules.pages.salesOrder.netPricePickDate'))
+      return
+    }
+    if (rules.length > 0 && !selectedRule) {
+      message.warning(t('modules.pages.salesOrder.netPricePickRule'))
       return
     }
     setLoading(true)
@@ -77,12 +122,18 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         filled += 1
         nextItems.push({
           ...item,
-          unitPrice: applyNetPriceFloat(price, floatMode, floatValue),
+          unitPrice: applyNetPriceFloat(
+            price,
+            selectedRule?.mode,
+            selectedRule?.amount,
+          ),
         })
       }
 
-      if (filled > 0) setItems(() => nextItems)
       if (filled > 0) {
+        setItems(() => nextItems)
+        // 记录所选价格规定, 保存在单据上(交付核定时快照)。
+        setFormValue('priceRuleId', selectedRule?.id ?? null)
         message.success(
           t('modules.pages.salesOrder.netPriceFilled', { count: filled }),
         )
@@ -128,6 +179,25 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
           <Text type="secondary">
             {t('modules.pages.salesOrder.netPriceHint')}
           </Text>
+          {rules.length > 0 ? (
+            <Space>
+              <Text>{t('modules.pages.salesOrder.netPriceRule')}</Text>
+              <Select
+                style={{ width: 200 }}
+                value={ruleId}
+                placeholder={t('modules.pages.salesOrder.netPriceRulePick')}
+                options={rules.map((rule) => ({
+                  label: `${rule.name}（${t(
+                    rule.mode === 'SUBTRACT'
+                      ? 'modules.pages.project.priceFloatSubtract'
+                      : 'modules.pages.project.priceFloatAdd',
+                  )} ${rule.amount}）`,
+                  value: rule.id,
+                }))}
+                onChange={setRuleId}
+              />
+            </Space>
+          ) : null}
           <Space>
             <Text>{t('modules.pages.salesOrder.netPriceDate')}</Text>
             <DatePicker
@@ -146,16 +216,11 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
               onChange={setPeriod}
             />
           </Space>
-          {floatMode && Number.isFinite(floatValue) ? (
+          {selectedRule ? (
             <Text type="secondary">
-              {t('modules.pages.salesOrder.netPriceFloatHint', {
-                mode: t(
-                  floatMode === 'SUBTRACT'
-                    ? 'modules.pages.project.priceFloatSubtract'
-                    : 'modules.pages.project.priceFloatAdd',
-                ),
-                value: floatValue,
-              })}
+              {selectedRule.remark
+                ? `${selectedRule.name} · ${selectedRule.remark}`
+                : selectedRule.name}
             </Text>
           ) : null}
         </Space>

@@ -11,6 +11,7 @@ interface BuildModuleItemsActionsContext {
   formValues: Record<string, unknown>
   items: ModuleLineItem[]
   setItems: (updater: (items: ModuleLineItem[]) => ModuleLineItem[]) => void
+  setFormValue: (key: string, value: unknown) => void
   saving: boolean
   projectOptions: ProjectOption[]
 }
@@ -28,6 +29,7 @@ export function buildModuleItemsActions(
     formValues: ctx.formValues,
     items: ctx.items,
     setItems: ctx.setItems,
+    setFormValue: ctx.setFormValue,
     saving: ctx.saving,
     projectOptions: ctx.projectOptions.map((option) => ({
       id: option.id,
@@ -37,6 +39,9 @@ export function buildModuleItemsActions(
         : {}),
       ...(option.priceFloatValue !== undefined
         ? { priceFloatValue: option.priceFloatValue }
+        : {}),
+      ...(option.lastPriceRuleId
+        ? { lastPriceRuleId: option.lastPriceRuleId }
         : {}),
     })),
   })
