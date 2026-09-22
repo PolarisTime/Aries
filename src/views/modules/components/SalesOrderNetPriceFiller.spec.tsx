@@ -112,9 +112,9 @@ describe('SalesOrderNetPriceFiller', () => {
   afterEach(() => {
     act(() => root.unmount())
     container.remove()
-    document
-      .querySelectorAll('.ant-modal-root')
-      .forEach((node) => node.remove())
+    document.querySelectorAll('.ant-modal-root').forEach((node) => {
+      node.remove()
+    })
   })
 
   const row = (overrides: Partial<ModuleLineItem>): ModuleLineItem => ({
