@@ -27,7 +27,7 @@ import { useModuleEditorSettlementAccounts } from '@/views/modules/use-module-ed
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorFormArea } from './ModuleEditorFormArea'
-import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
+import { ModuleEditorItemsArea } from './ModuleEditorItemsArea'
 import { SaveResultOverlay } from './SaveResultOverlay'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
@@ -337,13 +337,13 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
         />
 
-        <ModuleEditorItemsSection
+        <ModuleEditorItemsArea
+          open={open}
+          moduleKey={moduleKey}
           config={config}
           items={items}
           expenseItems={expenseItems}
-          expenseSelectedItemIds={expense.expenseSelectedItemIds}
-          expenseMaterialOptions={expense.expenseMaterialOptions}
-          expenseMaterialSearch={expense.expenseMaterialSearch}
+          expense={expense}
           supportsExpenseTab={supportsExpenseTab}
           selectedItemIds={selectedItemIds}
           parentImportVisible={parentImportVisible}
@@ -366,15 +366,12 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           auditLabel={editorAuditLabel}
           saving={saving}
           showFooterActions={!useFinanceEditorLayout}
+          formValues={editorFormValues}
+          projectOptions={projectOptions}
+          setItems={setItems}
+          freightStatementSortDirection={freightStatementSortDirection}
           onAddItem={addItem}
           onAutoSortItems={handleAutoSortItems}
-          freightStatementSortDirection={freightStatementSortDirection}
-          onExpenseSelectedChange={expense.handleExpenseSelectedChange}
-          onExpenseSelectAll={expense.handleExpenseSelectAll}
-          onExpenseChange={expense.handleExpenseChange}
-          onCreateExpense={expense.handleCreateExpense}
-          onExpenseAddItem={expense.handleExpenseAddItem}
-          onExpenseDelete={expense.handleExpenseDelete}
           onCancel={requestCloseEditor}
           onSave={(audit) => {
             void handleSave(audit)

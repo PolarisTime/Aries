@@ -1447,6 +1447,11 @@ export const enUS = {
         settlementCompany: 'Settlement Entity',
         projectManager: 'Project Manager',
         projectAddress: 'Project Address',
+        priceFloatMode: 'Net price float',
+        priceFloatAdd: 'Markup',
+        priceFloatSubtract: 'Markdown',
+        priceFloatValue: 'Float amount (CNY/ton)',
+        priceFloatValuePlaceholder: 'e.g. 30',
       },
       purchaseOrder: {
         title: 'Purchase Orders',
@@ -1501,6 +1506,20 @@ export const enUS = {
         parentImportLabel: 'Purchase Order',
         parentImportButton: 'Import PO Items',
         originalPlannedWeight: 'Original planned {{weight}} t',
+        netPriceFillAll: 'Fill from net price',
+        netPriceTitle: 'Assign unit price from net price',
+        netPriceHint:
+          'Matches net prices by delivery date and period, applies the project markup/markdown, and fills unit prices. Rows without a net price keep their value — fill them manually.',
+        netPriceDate: 'Net price date',
+        netPricePeriod: 'Period',
+        netPricePeriodAll: 'All periods',
+        netPriceApply: 'Fetch and fill',
+        netPricePickDate: 'Please pick a net price date',
+        netPriceFilled: 'Filled unit price for {{count}} rows from net price',
+        netPriceNoPrice:
+          '{{items}} and {{count}} row(s) have no net price; fill them manually',
+        netPriceFailed: 'Failed to fetch net prices, please retry',
+        netPriceFloatHint: 'Project rule: net price {{mode}} {{value}} CNY/ton',
       },
       salesContract: {
         title: 'Sales Contracts',

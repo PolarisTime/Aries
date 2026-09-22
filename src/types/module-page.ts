@@ -161,6 +161,28 @@ export interface ModuleItemColumnConfig<PrivateKey extends string = never> {
   projections?: ModuleItemColumnProjections<PrivateKey>
 }
 
+/** 明细工具栏附加操作的上下文（由编辑器注入）。 */
+export interface ModuleItemsActionsContext {
+  /** 当前单据表单值（含送货日期、项目等）。 */
+  formValues: Record<string, unknown>
+  /** 当前明细行。 */
+  items: ModuleLineItem[]
+  /** 批量更新明细行（传入 updater 返回新数组）。 */
+  setItems: (updater: (items: ModuleLineItem[]) => ModuleLineItem[]) => void
+  /** 保存中（用于禁用按钮）。 */
+  saving: boolean
+  /** 当前可选项目（含网价浮动约定）。 */
+  projectOptions: ModuleProjectOption[]
+}
+
+/** 项目选项最小契约（供明细动作读取网价浮动）。 */
+export interface ModuleProjectOption {
+  id: string
+  projectName: string
+  priceFloatMode?: 'ADD' | 'SUBTRACT'
+  priceFloatValue?: number
+}
+
 export interface ModulePageConfig {
   key: ModuleKey
   title: string
@@ -193,6 +215,8 @@ export interface ModulePageConfig {
   saveResultItemColumns?: ModuleColumnDefinition[]
   data: ModuleRecord[]
   actions?: ModuleActionDefinition[]
+  /** 明细工具栏附加操作（如销售订单交付核定的「整单取网价」）。 */
+  renderItemsActions?: (ctx: ModuleItemsActionsContext) => ReactNode
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
   statusMap?: Record<string, ModuleStatusMeta>
   rowHighlightStatuses?: string[]

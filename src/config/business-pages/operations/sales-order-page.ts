@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { createElement } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
 import {
   getCustomerOptions,
@@ -8,6 +9,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -437,6 +439,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     transformItems: transformPurchaseInboundItemsToSalesOrderItems,
   },
   ...salesOrderItemColumnOutputs,
+  renderItemsActions: (ctx) => createElement(SalesOrderNetPriceFiller, ctx),
   data: [],
   buildOverview: buildSalesOrderOverview,
   statusMap: salesOrderStatusMap,

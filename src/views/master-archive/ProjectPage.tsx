@@ -41,6 +41,33 @@ const DEFAULT_HIDDEN_COLUMN_KEYS = [
 
 type ProjectListRow = LegacyModuleRecord
 
+/** 数值字段归一: 空值/非法值返回 undefined。 */
+function toOptionalNumber(value: unknown): number | undefined {
+  const text = asString(value).trim()
+  if (!text) return undefined
+  const parsed = Number(text)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/** 由列表行构建编辑表单初值。 */
+function toEditorFormValues(record: ProjectListRow) {
+  return {
+    projectCode: asString(record.projectCode),
+    projectName: asString(record.projectName),
+    projectNameAbbr: asString(record.projectNameAbbr),
+    customerId: asString(record.customerId),
+    customerCode: asString(record.customerCode),
+    settlementCompanyId: asString(record.settlementCompanyId),
+    settlementCompanyName: asString(record.settlementCompanyName),
+    projectManager: asString(record.projectManager),
+    projectAddress: asString(record.projectAddress),
+    status: asString(record.status) || '正常',
+    priceFloatMode: asString(record.priceFloatMode),
+    priceFloatValue: toOptionalNumber(record.priceFloatValue),
+    remark: asString(record.remark),
+  }
+}
+
 export function ProjectPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -200,19 +227,7 @@ export function ProjectPage() {
     if (record) {
       setEditorBaseRecord({ ...record })
       form.resetFields()
-      form.setFieldsValue({
-        projectCode: asString(record.projectCode),
-        projectName: asString(record.projectName),
-        projectNameAbbr: asString(record.projectNameAbbr),
-        customerId: asString(record.customerId),
-        customerCode: asString(record.customerCode),
-        settlementCompanyId: asString(record.settlementCompanyId),
-        settlementCompanyName: asString(record.settlementCompanyName),
-        projectManager: asString(record.projectManager),
-        projectAddress: asString(record.projectAddress),
-        status: asString(record.status) || '正常',
-        remark: asString(record.remark),
-      })
+      form.setFieldsValue(toEditorFormValues(record))
       setEditorOpen(true)
       return
     }

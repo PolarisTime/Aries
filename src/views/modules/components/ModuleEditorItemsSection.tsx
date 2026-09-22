@@ -85,6 +85,8 @@ interface Props {
   onItemColumnOrderChange: (order: string[]) => void
   onToggleItemColumn: (key: string) => void
   onRowDragOver: (recordId: string, event: React.DragEvent) => void
+  /** 明细工具栏附加操作（如销售订单交付核定的「整单取网价」）。 */
+  extraActions?: React.ReactNode
 }
 
 export function ModuleEditorItemsSection({
@@ -128,6 +130,7 @@ export function ModuleEditorItemsSection({
   onItemColumnOrderChange,
   onToggleItemColumn,
   onRowDragOver,
+  extraActions,
 }: Props) {
   const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
@@ -305,6 +308,7 @@ export function ModuleEditorItemsSection({
                   open={columnSettingsOpen}
                   onOpenChange={setColumnSettingsOpen}
                 />
+                {extraActions}
                 {selectedItemIds.length > 0 && (
                   <Button
                     danger

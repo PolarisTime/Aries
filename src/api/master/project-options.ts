@@ -17,7 +17,13 @@ export type ProjectOption = {
   projectNameAbbr?: string
   settlementCompanyId?: EntityId
   settlementCompanyName?: string
+  /** 网价浮动方向: ADD加价/SUBTRACT减价; 空表示不浮动。 */
+  priceFloatMode?: ProjectPriceFloatMode
+  /** 网价固定浮动幅度(元/吨)。 */
+  priceFloatValue?: number
 }
+
+export type ProjectPriceFloatMode = 'ADD' | 'SUBTRACT'
 
 export type ProjectAbbreviationOption = {
   value: EntityId
@@ -36,6 +42,8 @@ type RawProjectOption = {
   projectNameAbbr?: unknown
   settlementCompanyId?: unknown
   settlementCompanyName?: unknown
+  priceFloatMode?: unknown
+  priceFloatValue?: unknown
 }
 
 type RawProjectPageRow = {
@@ -56,6 +64,8 @@ const projectOptionsResponseSchema = z.array(
     projectNameAbbr: z.string().nullable().optional(),
     settlementCompanyId: z.string().nullable().optional(),
     settlementCompanyName: z.string().nullable().optional(),
+    priceFloatMode: z.string().nullable().optional(),
+    priceFloatValue: z.union([z.string(), z.number()]).nullable().optional(),
   }),
 )
 
@@ -100,6 +110,8 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       `projects[${index}].settlementCompanyId`,
     )
     const settlementCompanyName = asString(row.settlementCompanyName).trim()
+    const priceFloatMode = asString(row.priceFloatMode).trim()
+    const priceFloatValueNum = Number(row.priceFloatValue)
 
     return {
       id,
@@ -112,6 +124,12 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       ...(projectNameAbbr ? { projectNameAbbr } : {}),
       ...(settlementCompanyId ? { settlementCompanyId } : {}),
       ...(settlementCompanyName ? { settlementCompanyName } : {}),
+      ...(priceFloatMode === 'ADD' || priceFloatMode === 'SUBTRACT'
+        ? { priceFloatMode }
+        : {}),
+      ...(Number.isFinite(priceFloatValueNum)
+        ? { priceFloatValue: priceFloatValueNum }
+        : {}),
     }
   })
 }

@@ -212,6 +212,8 @@ const projectPageConfig: ModulePageConfig = {
       'settlementCompanyId',
       'settlementCompanyName',
       'status',
+      'priceFloatMode',
+      'priceFloatValue',
       'remark',
     ],
   },
