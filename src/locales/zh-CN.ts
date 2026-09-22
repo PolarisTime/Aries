@@ -2264,6 +2264,7 @@ export const zhCN = {
       dragBrand: '拖动调整品牌列顺序',
       columns: {
         remark: '备注',
+        brand: '品牌',
         category: '类别',
         variety: '材质 / 规格 / 长度',
         ton: '报单吨位',
@@ -2273,6 +2274,7 @@ export const zhCN = {
         supplierShort: '简称',
       },
       tonTotal: '合计',
+      columnSettings: '列显示',
       selectProduct: '选择商品',
       tonPositive: '报单吨位需为正数',
       spotOutOfRange: '现货价超出合理范围（0 - {{max}}）',

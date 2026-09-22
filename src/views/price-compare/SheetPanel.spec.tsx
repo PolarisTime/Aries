@@ -125,6 +125,9 @@ describe('SheetPanel 指定品牌展示', () => {
     initialSheet: PriceSheet,
     initialRows: PriceRow[],
     suppliers: { value: string; label: string; brands?: string[] }[] = [],
+    brands: { name: string; freight: number }[] = [
+      { name: '中天', freight: 30 },
+    ],
   ) {
     const observed = { rows: initialRows, sheet: initialSheet }
     function Harness() {
@@ -136,7 +139,7 @@ describe('SheetPanel 指定品牌展示', () => {
         sheet,
         data: null,
         varieties: [variety],
-        brands: [{ name: '中天', freight: 30 }],
+        brands,
         rows,
         density: 'small',
         lengthPremium: 30,
@@ -533,5 +536,74 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(
       separatorRow?.querySelector('input.price-compare-row-remark'),
     ).toBeNull()
+  })
+
+  async function openColumnSettings() {
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[aria-label="列显示"]',
+    )
+    expect(trigger).not.toBeNull()
+    await act(async () => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('列显示可隐藏备注列', async () => {
+    renderStateful({ ...makeSheet() }, [{ ...baseRow }])
+
+    expect(
+      container.querySelector('input.price-compare-row-remark'),
+    ).not.toBeNull()
+
+    await openColumnSettings()
+    const remarkToggle = Array.from(
+      document.body.querySelectorAll<HTMLElement>(
+        '.price-compare-column-settings .ant-checkbox-wrapper',
+      ),
+    ).find((el) => el.textContent?.includes('备注'))
+    expect(remarkToggle).toBeTruthy()
+    await act(async () => {
+      remarkToggle
+        ?.querySelector('input')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(container.querySelector('input.price-compare-row-remark')).toBeNull()
+  })
+
+  it('列显示可整组隐藏某个品牌', async () => {
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow }],
+      [],
+      [
+        { name: '中天', freight: 30 },
+        { name: '沙钢', freight: 20 },
+      ],
+    )
+
+    expect(container.textContent).toContain('中天')
+    expect(container.textContent).toContain('沙钢')
+
+    await openColumnSettings()
+    const brandToggle = Array.from(
+      document.body.querySelectorAll<HTMLElement>(
+        '.price-compare-column-settings .ant-checkbox-wrapper',
+      ),
+    ).find((el) => el.textContent?.trim() === '沙钢')
+    expect(brandToggle).toBeTruthy()
+    await act(async () => {
+      brandToggle
+        ?.querySelector('input')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const headerText =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerText).toContain('中天')
+    expect(headerText).not.toContain('沙钢')
   })
 })

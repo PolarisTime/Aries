@@ -14,9 +14,11 @@ import {
   Card,
   Checkbox,
   DatePicker,
+  Divider,
   Flex,
   Input,
   Popconfirm,
+  Popover,
   Select,
   Space,
   Table,
@@ -146,6 +148,12 @@ type ColumnContext = {
   spotResetNonce: number
   onInvalidSpot: () => void
   spotRef: React.RefObject<HTMLSpanElement | null>
+  /** 仅临时列显隐: 是否隐藏备注列 */
+  hideRemark: boolean
+  /** 仅临时列显隐: 整组隐藏的品牌名 */
+  hiddenBrands: string[]
+  /** 可见品牌列组数量(已排除隐藏品牌), 供 summary colSpan 与 scroll.x 复用 */
+  visibleBrandCount: number
 }
 
 const cellOf = (
@@ -210,7 +218,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     t,
     readOnly,
     sheet,
+    hideRemark,
+    hiddenBrands,
   } = ctx
+  /** 可见品牌(O(1) 查找)。 */
+  const hiddenBrandSet = new Set(hiddenBrands)
   /** 锁定规格和数量: 一并禁掉行级增删与拖拽重排(会间接改变规格/数量顺序)。 */
   const quantityLocked = Boolean(sheet.specQuantityLocked)
   const rowInteractionLocked = readOnly || quantityLocked
@@ -327,33 +339,40 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         </Tooltip>
       ),
     },
-    {
-      title: t('priceCompare.sheet.columns.remark'),
-      dataIndex: 'remark',
-      width: SHEET_COLUMN_WIDTH.remark,
-      fixed: 'left',
-      align: 'center',
-      render: (_, row) =>
-        isSeparatorRow(row.row) ? null : (
-          <Input
-            key={`remark:${row.rowId}:${row.row.remark ?? ''}`}
-            className="price-compare-row-remark"
-            size="small"
-            variant="borderless"
-            disabled={readOnly}
-            maxLength={255}
-            defaultValue={row.row.remark ?? ''}
-            onBlur={(event) =>
-              patchRow(row.rowId, { remark: event.target.value || undefined })
-            }
-            onPressEnter={(event) => {
-              patchRow(row.rowId, {
-                remark: (event.target as HTMLInputElement).value || undefined,
-              })
-            }}
-          />
-        ),
-    },
+    ...(hideRemark
+      ? []
+      : [
+          {
+            title: t('priceCompare.sheet.columns.remark'),
+            dataIndex: 'remark',
+            width: SHEET_COLUMN_WIDTH.remark,
+            fixed: 'left' as const,
+            align: 'center' as const,
+            render: (_: unknown, row: GridRow) =>
+              isSeparatorRow(row.row) ? null : (
+                <Input
+                  key={`remark:${row.rowId}:${row.row.remark ?? ''}`}
+                  className="price-compare-row-remark"
+                  size="small"
+                  variant="borderless"
+                  disabled={readOnly}
+                  maxLength={255}
+                  defaultValue={row.row.remark ?? ''}
+                  onBlur={(event) =>
+                    patchRow(row.rowId, {
+                      remark: event.target.value || undefined,
+                    })
+                  }
+                  onPressEnter={(event) => {
+                    patchRow(row.rowId, {
+                      remark:
+                        (event.target as HTMLInputElement).value || undefined,
+                    })
+                  }}
+                />
+              ),
+          },
+        ]),
     {
       title: t('priceCompare.sheet.columns.category'),
       dataIndex: 'category',
@@ -454,251 +473,274 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         ),
     },
     ...brands.flatMap(
-      (brand, brandIndex): ColumnsType<GridRow> => [
-        {
-          title: (
-            <span
-              className="price-compare-brand-name price-compare-drag"
-              draggable
-              title={t('priceCompare.sheet.dragBrand')}
-              onDragStart={(event) => {
-                event.dataTransfer.effectAllowed = 'move'
-                event.dataTransfer.setData('text/plain', String(brandIndex))
-              }}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault()
-                const from = Number(event.dataTransfer.getData('text/plain'))
-                if (!Number.isNaN(from)) onReorderBrands(from, brandIndex)
-              }}
-            >
-              {brand.name}
-            </span>
-          ),
-          children: [
-            cellOf(
-              t('priceCompare.sheet.columns.net'),
-              SHEET_COLUMN_WIDTH.net,
-              (_, row) => {
-                const resolved = isCategoryEnabled(brand, row.row.category)
-                  ? netPriceWithFallback(
-                      data,
-                      refDate,
-                      refPeriod,
-                      brand.name,
-                      row.row,
-                      lengthPremium,
-                      allowHrb400eFallback,
-                    )
-                  : { value: undefined, fallback: false }
-                const price = resolved.value
-                return price === undefined ? (
-                  <div className="price-compare-num price-compare-sub">-</div>
-                ) : (
-                  <div
-                    className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${resolved.fallback ? ' price-compare-fallback' : ''}`}
-                  >
-                    {resolved.fallback ? (
-                      <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
-                        <span className="price-compare-fallback-value">
-                          {price}
-                          <span className="price-compare-fallback-badge">
-                            E
-                          </span>
-                        </span>
-                      </Tooltip>
-                    ) : (
-                      price
-                    )}
-                  </div>
-                )
-              },
-            ),
-            cellOf(
-              t('priceCompare.sheet.columns.spot'),
-              SHEET_COLUMN_WIDTH.spot,
-              (_, row) => {
-                const current = row.row
-                const spot = getSpot(brand.name, current.id)
-                const isFirst =
-                  attachSpotRef &&
-                  brandIndex === 0 &&
-                  current.id === rows[0]?.id
-                const input = (
-                  <Input
-                    key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
-                    className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                    size="small"
-                    variant="borderless"
-                    inputMode="decimal"
-                    disabled={readOnly}
-                    data-spot={`${brand.name}:${current.id}`}
-                    defaultValue={spot === undefined ? '' : String(spot)}
-                    onBlur={(event) => {
-                      const raw = event.target.value
-                      const value = Number(raw)
-                      if (
-                        raw !== '' &&
-                        (Number.isNaN(value) ||
-                          value <= 0 ||
-                          value > SPOT_PRICE_MAX)
-                      ) {
-                        message.warning(
-                          t('priceCompare.sheet.spotOutOfRange', {
-                            max: SPOT_PRICE_MAX,
-                          }),
-                        )
-                        // 非法输入：触发重挂载，恢复为已保存值
-                        ctx.onInvalidSpot()
-                        return
-                      }
-                      setSpot(
-                        brand.name,
-                        current.id,
-                        raw === '' ? undefined : value,
+      (brand, brandIndex): ColumnsType<GridRow> =>
+        hiddenBrandSet.has(brand.name)
+          ? []
+          : [
+              {
+                title: (
+                  <span
+                    className="price-compare-brand-name price-compare-drag"
+                    draggable
+                    title={t('priceCompare.sheet.dragBrand')}
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = 'move'
+                      event.dataTransfer.setData(
+                        'text/plain',
+                        String(brandIndex),
                       )
                     }}
-                    onPressEnter={(event) => {
-                      const raw = (event.target as HTMLInputElement).value
-                      const value = Number(raw)
-                      if (
-                        raw === '' ||
-                        (!Number.isNaN(value) &&
-                          value > 0 &&
-                          value <= SPOT_PRICE_MAX)
-                      ) {
-                        setSpot(
-                          brand.name,
-                          current.id,
-                          raw === '' ? undefined : value,
-                        )
-                      }
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
                       event.preventDefault()
-                      moveFocus(brand.name, current.id, 1)
+                      const from = Number(
+                        event.dataTransfer.getData('text/plain'),
+                      )
+                      if (!Number.isNaN(from)) onReorderBrands(from, brandIndex)
                     }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'ArrowDown') {
-                        event.preventDefault()
-                        moveFocus(brand.name, current.id, 1)
-                      } else if (event.key === 'ArrowUp') {
-                        event.preventDefault()
-                        moveFocus(brand.name, current.id, -1)
-                      } else if (event.key === 'Tab') {
-                        event.preventDefault()
-                        moveFocus(
-                          brand.name,
-                          current.id,
-                          event.shiftKey ? -1 : 1,
+                  >
+                    {brand.name}
+                  </span>
+                ),
+                children: [
+                  cellOf(
+                    t('priceCompare.sheet.columns.net'),
+                    SHEET_COLUMN_WIDTH.net,
+                    (_, row) => {
+                      const resolved = isCategoryEnabled(
+                        brand,
+                        row.row.category,
+                      )
+                        ? netPriceWithFallback(
+                            data,
+                            refDate,
+                            refPeriod,
+                            brand.name,
+                            row.row,
+                            lengthPremium,
+                            allowHrb400eFallback,
+                          )
+                        : { value: undefined, fallback: false }
+                      const price = resolved.value
+                      return price === undefined ? (
+                        <div className="price-compare-num price-compare-sub">
+                          -
+                        </div>
+                      ) : (
+                        <div
+                          className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${resolved.fallback ? ' price-compare-fallback' : ''}`}
+                        >
+                          {resolved.fallback ? (
+                            <Tooltip
+                              title={t('priceCompare.sheet.fallbackTooltip')}
+                            >
+                              <span className="price-compare-fallback-value">
+                                {price}
+                                <span className="price-compare-fallback-badge">
+                                  E
+                                </span>
+                              </span>
+                            </Tooltip>
+                          ) : (
+                            price
+                          )}
+                        </div>
+                      )
+                    },
+                  ),
+                  cellOf(
+                    t('priceCompare.sheet.columns.spot'),
+                    SHEET_COLUMN_WIDTH.spot,
+                    (_, row) => {
+                      const current = row.row
+                      const spot = getSpot(brand.name, current.id)
+                      const isFirst =
+                        attachSpotRef &&
+                        brandIndex === 0 &&
+                        current.id === rows[0]?.id
+                      const input = (
+                        <Input
+                          key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
+                          className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          size="small"
+                          variant="borderless"
+                          inputMode="decimal"
+                          disabled={readOnly}
+                          data-spot={`${brand.name}:${current.id}`}
+                          defaultValue={spot === undefined ? '' : String(spot)}
+                          onBlur={(event) => {
+                            const raw = event.target.value
+                            const value = Number(raw)
+                            if (
+                              raw !== '' &&
+                              (Number.isNaN(value) ||
+                                value <= 0 ||
+                                value > SPOT_PRICE_MAX)
+                            ) {
+                              message.warning(
+                                t('priceCompare.sheet.spotOutOfRange', {
+                                  max: SPOT_PRICE_MAX,
+                                }),
+                              )
+                              // 非法输入：触发重挂载，恢复为已保存值
+                              ctx.onInvalidSpot()
+                              return
+                            }
+                            setSpot(
+                              brand.name,
+                              current.id,
+                              raw === '' ? undefined : value,
+                            )
+                          }}
+                          onPressEnter={(event) => {
+                            const raw = (event.target as HTMLInputElement).value
+                            const value = Number(raw)
+                            if (
+                              raw === '' ||
+                              (!Number.isNaN(value) &&
+                                value > 0 &&
+                                value <= SPOT_PRICE_MAX)
+                            ) {
+                              setSpot(
+                                brand.name,
+                                current.id,
+                                raw === '' ? undefined : value,
+                              )
+                            }
+                            event.preventDefault()
+                            moveFocus(brand.name, current.id, 1)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'ArrowDown') {
+                              event.preventDefault()
+                              moveFocus(brand.name, current.id, 1)
+                            } else if (event.key === 'ArrowUp') {
+                              event.preventDefault()
+                              moveFocus(brand.name, current.id, -1)
+                            } else if (event.key === 'Tab') {
+                              event.preventDefault()
+                              moveFocus(
+                                brand.name,
+                                current.id,
+                                event.shiftKey ? -1 : 1,
+                              )
+                            }
+                          }}
+                        />
+                      )
+                      return isFirst ? (
+                        <span ref={ctx.spotRef}>{input}</span>
+                      ) : (
+                        input
+                      )
+                    },
+                  ),
+                  cellOf(
+                    t('priceCompare.sheet.columns.diff'),
+                    SHEET_COLUMN_WIDTH.diff,
+                    (_, row) => {
+                      const price = isCategoryEnabled(brand, row.row.category)
+                        ? netPriceWithFallback(
+                            data,
+                            refDate,
+                            refPeriod,
+                            brand.name,
+                            row.row,
+                            lengthPremium,
+                            allowHrb400eFallback,
+                          ).value
+                        : undefined
+                      const spot = getSpot(brand.name, row.row.id)
+                      if (price === undefined || spot === undefined) {
+                        return (
+                          <div className="price-compare-num price-compare-sub">
+                            -
+                          </div>
                         )
                       }
-                    }}
-                  />
-                )
-                return isFirst ? <span ref={ctx.spotRef}>{input}</span> : input
-              },
-            ),
-            cellOf(
-              t('priceCompare.sheet.columns.diff'),
-              SHEET_COLUMN_WIDTH.diff,
-              (_, row) => {
-                const price = isCategoryEnabled(brand, row.row.category)
-                  ? netPriceWithFallback(
-                      data,
-                      refDate,
-                      refPeriod,
-                      brand.name,
-                      row.row,
-                      lengthPremium,
-                      allowHrb400eFallback,
-                    ).value
-                  : undefined
-                const spot = getSpot(brand.name, row.row.id)
-                if (price === undefined || spot === undefined) {
-                  return (
-                    <div className="price-compare-num price-compare-sub">-</div>
-                  )
-                }
-                const diff = price - spot - brand.freight
-                const cls =
-                  diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
-                const best = bestOf(row)
-                return (
-                  <Tooltip
-                    title={
-                      diff >= 0
-                        ? t('priceCompare.sheet.spotBetter')
-                        : t('priceCompare.sheet.netBetter')
-                    }
-                  >
-                    <span
-                      className={`price-compare-diff ${cls}${best === brand.name ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                    >
-                      {diff > 0 ? '+' : ''}
-                      {diff}
-                    </span>
-                  </Tooltip>
-                )
-              },
-            ),
-            cellOf(
-              t('priceCompare.sheet.columns.supplierShort'),
-              SHEET_COLUMN_WIDTH.supplier,
-              (_, row) => {
-                const current = row.row
-                const input = ctx.getInput(brand.name, current.id)
-                const supplierName = input?.supplierName
-                const filtered = filterSupplierOptionsByBrand(
-                  ctx.supplierOptions,
-                  brand.name,
-                )
-                // 保留已选供应商: 若其不属于当前品牌过滤结果, 仍加入选项避免回显丢失,
-                // 不强制清空用户已选值。
-                const options =
-                  input?.supplierId &&
-                  !filtered.some((item) => item.value === input.supplierId)
-                    ? [
-                        {
-                          value: input.supplierId,
-                          label: supplierName || input.supplierId,
-                          brands: [],
-                        },
-                        ...filtered,
-                      ]
-                    : filtered
-                return (
-                  <Select
-                    size="small"
-                    variant="borderless"
-                    className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                    disabled={readOnly}
-                    value={input?.supplierId}
-                    title={supplierName}
-                    placeholder={t('priceCompare.sheet.supplier')}
-                    allowClear
-                    showSearch={{ filterOption: filterSupplierOption }}
-                    options={options}
-                    onChange={(value) => {
-                      const option = options.find(
-                        (item) => item.value === value,
+                      const diff = price - spot - brand.freight
+                      const cls =
+                        diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
+                      const best = bestOf(row)
+                      return (
+                        <Tooltip
+                          title={
+                            diff >= 0
+                              ? t('priceCompare.sheet.spotBetter')
+                              : t('priceCompare.sheet.netBetter')
+                          }
+                        >
+                          <span
+                            className={`price-compare-diff ${cls}${best === brand.name ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          >
+                            {diff > 0 ? '+' : ''}
+                            {diff}
+                          </span>
+                        </Tooltip>
                       )
-                      ctx.setSupplier(
+                    },
+                  ),
+                  cellOf(
+                    t('priceCompare.sheet.columns.supplierShort'),
+                    SHEET_COLUMN_WIDTH.supplier,
+                    (_, row) => {
+                      const current = row.row
+                      const input = ctx.getInput(brand.name, current.id)
+                      const supplierName = input?.supplierName
+                      const filtered = filterSupplierOptionsByBrand(
+                        ctx.supplierOptions,
                         brand.name,
-                        current.id,
-                        value
-                          ? {
-                              value: String(value),
-                              label: option?.label ?? String(value),
-                            }
-                          : undefined,
                       )
-                    }}
-                  />
-                )
+                      // 保留已选供应商: 若其不属于当前品牌过滤结果, 仍加入选项避免回显丢失,
+                      // 不强制清空用户已选值。
+                      const options =
+                        input?.supplierId &&
+                        !filtered.some(
+                          (item) => item.value === input.supplierId,
+                        )
+                          ? [
+                              {
+                                value: input.supplierId,
+                                label: supplierName || input.supplierId,
+                                brands: [],
+                              },
+                              ...filtered,
+                            ]
+                          : filtered
+                      return (
+                        <Select
+                          size="small"
+                          variant="borderless"
+                          className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          disabled={readOnly}
+                          value={input?.supplierId}
+                          title={supplierName}
+                          placeholder={t('priceCompare.sheet.supplier')}
+                          allowClear
+                          showSearch={{ filterOption: filterSupplierOption }}
+                          options={options}
+                          onChange={(value) => {
+                            const option = options.find(
+                              (item) => item.value === value,
+                            )
+                            ctx.setSupplier(
+                              brand.name,
+                              current.id,
+                              value
+                                ? {
+                                    value: String(value),
+                                    label: option?.label ?? String(value),
+                                  }
+                                : undefined,
+                            )
+                          }}
+                        />
+                      )
+                    },
+                  ),
+                ],
               },
-            ),
-          ],
-        },
-      ],
+            ],
     ),
     {
       // 填充列: 宽窗口时吸收剩余宽度, 避免商品列被拉伸
@@ -777,7 +819,10 @@ function SheetTable(props: SheetTableProps) {
       pagination={false}
       summary={() => (
         <Table.Summary.Row>
-          <Table.Summary.Cell index={0} colSpan={6 + base.brands.length * 4}>
+          <Table.Summary.Cell
+            index={0}
+            colSpan={(base.hideRemark ? 5 : 6) + base.visibleBrandCount * 4}
+          >
             <Flex gap="small" align="center">
               <Button
                 type="text"
@@ -849,11 +894,11 @@ function SheetTable(props: SheetTableProps) {
       })}
       scroll={{
         x:
-          SHEET_COLUMN_WIDTH.remark +
+          (base.hideRemark ? 0 : SHEET_COLUMN_WIDTH.remark) +
           SHEET_COLUMN_WIDTH.category +
           SHEET_COLUMN_WIDTH.spec +
           SHEET_COLUMN_WIDTH.ton +
-          base.brands.length *
+          base.visibleBrandCount *
             (SHEET_COLUMN_WIDTH.net +
               SHEET_COLUMN_WIDTH.spot +
               SHEET_COLUMN_WIDTH.diff +
@@ -864,6 +909,67 @@ function SheetTable(props: SheetTableProps) {
 }
 
 /* ---------------------------------------------------------------- 顶部栏 */
+
+/** 列显示设置: 备注列与整组品牌列的临时显隐(不持久化)。 */
+function ColumnSettingsButton({
+  hideRemark,
+  brands,
+  hiddenBrands,
+  onToggleRemark,
+  onToggleBrand,
+}: {
+  hideRemark: boolean
+  brands: Brand[]
+  hiddenBrands: string[]
+  onToggleRemark: (visible: boolean) => void
+  onToggleBrand: (brandName: string, visible: boolean) => void
+}) {
+  const { t } = useTranslation()
+  const hiddenBrandSet = new Set(hiddenBrands)
+  return (
+    <Popover
+      trigger="click"
+      placement="bottomRight"
+      content={
+        <Flex vertical gap={4} className="price-compare-column-settings">
+          <Checkbox
+            checked={!hideRemark}
+            onChange={(event) => onToggleRemark(event.target.checked)}
+          >
+            {t('priceCompare.sheet.columns.remark')}
+          </Checkbox>
+          {brands.length ? (
+            <>
+              <Divider className="my-4" />
+              <Text type="secondary" className="price-compare-sub">
+                {t('priceCompare.sheet.columns.brand')}
+              </Text>
+              {brands.map((brand) => (
+                <Checkbox
+                  key={brand.name}
+                  checked={!hiddenBrandSet.has(brand.name)}
+                  onChange={(event) =>
+                    onToggleBrand(brand.name, event.target.checked)
+                  }
+                >
+                  {brand.name}
+                </Checkbox>
+              ))}
+            </>
+          ) : null}
+        </Flex>
+      }
+    >
+      <Tooltip title={t('priceCompare.sheet.columnSettings')}>
+        <Button
+          size="small"
+          icon={<SettingOutlined />}
+          aria-label={t('priceCompare.sheet.columnSettings')}
+        />
+      </Tooltip>
+    </Popover>
+  )
+}
 
 function SheetHeader({
   sheet,
@@ -884,6 +990,11 @@ function SheetHeader({
   onRemarkChange,
   allowHrb400eFallback = false,
   readOnly = false,
+  hideRemark,
+  hiddenBrands,
+  brands,
+  onToggleRemark,
+  onToggleBrand,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -903,6 +1014,11 @@ function SheetHeader({
   onRemarkChange?: (value: string) => void
   allowHrb400eFallback?: boolean
   readOnly?: boolean
+  hideRemark: boolean
+  hiddenBrands: string[]
+  brands: Brand[]
+  onToggleRemark: (visible: boolean) => void
+  onToggleBrand: (brandName: string, visible: boolean) => void
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
@@ -1051,6 +1167,13 @@ function SheetHeader({
           >
             {t('priceCompare.sheet.refreshPrice')}
           </Button>
+          <ColumnSettingsButton
+            hideRemark={hideRemark}
+            brands={brands}
+            hiddenBrands={hiddenBrands}
+            onToggleRemark={onToggleRemark}
+            onToggleBrand={onToggleBrand}
+          />
           {onOpenConfig ? (
             <Button
               size="small"
@@ -1206,6 +1329,18 @@ export function SheetPanel(props: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bestOn, setBestOn] = useState(false)
   const [spotResetNonce, setSpotResetNonce] = useState(0)
+  /** 仅临时(不持久化)的列显隐: 备注列与整组品牌列。 */
+  const [hideRemark, setHideRemark] = useState(false)
+  const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
+  const hiddenBrandSet = new Set(hiddenBrands)
+  const toggleBrandVisible = (brandName: string, visible: boolean) =>
+    setHiddenBrands((current) =>
+      visible
+        ? current.filter((name) => name !== brandName)
+        : current.includes(brandName)
+          ? current
+          : [...current, brandName],
+    )
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
     () =>
@@ -1344,6 +1479,12 @@ export function SheetPanel(props: Props) {
     onInvalidSpot: () => setSpotResetNonce((nonce) => nonce + 1),
     spotRef,
     readOnly,
+    hideRemark,
+    hiddenBrands,
+    visibleBrandCount: brands.reduce(
+      (count, brand) => (hiddenBrandSet.has(brand.name) ? count : count + 1),
+      0,
+    ),
   }
 
   const content = (
@@ -1367,6 +1508,11 @@ export function SheetPanel(props: Props) {
         onRemarkChange={onRemarkChange}
         allowHrb400eFallback={allowHrb400eFallback}
         readOnly={readOnly}
+        hideRemark={hideRemark}
+        hiddenBrands={hiddenBrands}
+        brands={brands}
+        onToggleRemark={(visible) => setHideRemark(!visible)}
+        onToggleBrand={toggleBrandVisible}
       />
 
       <SheetTable

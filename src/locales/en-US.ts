@@ -2334,6 +2334,7 @@ export const enUS = {
       dragBrand: 'Drag to reorder brand columns',
       columns: {
         remark: 'Remark',
+        brand: 'Brand',
         category: 'Category',
         variety: 'Material / Spec / Length',
         ton: 'Order Tonnage',
@@ -2349,6 +2350,7 @@ export const enUS = {
       netBetter: 'Market price is better',
       addRow: '+ Add Row',
       tonTotal: 'Total',
+      columnSettings: 'Columns',
       addSeparator: '+ Add Separator',
       separator: 'Separator',
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',
