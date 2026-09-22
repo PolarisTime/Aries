@@ -124,21 +124,30 @@ function isConflictError(error: unknown): boolean {
   return isVersionConflict(error) || isLockConflict(error)
 }
 
+/** 西本模式虚拟品牌名(无品牌, 按规格一个价)。 */
+export const STEELX_VIRTUAL_BRAND = '基准价'
+
 /** 服务端项目配置记录 -> 本地配置(无品牌时回退单据品牌快照)。 */
-function buildConfigFromRecord(
+export function buildConfigFromRecord(
   record: QuoteProjectConfigRecord,
   fallbackBrands?: Brand[],
 ): ProjectConfig {
-  const brands: Brand[] = record.brands.length
-    ? record.brands.map((brand) => ({
-        name: brand.brandName,
-        freight: brand.freight,
-        ...(brand.categories.length ? { categories: brand.categories } : {}),
-      }))
-    : (fallbackBrands ?? []).map((brand) => ({
-        name: brand.name,
-        freight: brand.freight,
-      }))
+  // 西本模式无品牌: 归一为单个虚拟品牌, 复用既有列与保存链路。
+  const brands: Brand[] =
+    record.quoteSource === 'STEELX'
+      ? [{ name: STEELX_VIRTUAL_BRAND, freight: 0 }]
+      : record.brands.length
+        ? record.brands.map((brand) => ({
+            name: brand.brandName,
+            freight: brand.freight,
+            ...(brand.categories.length
+              ? { categories: brand.categories }
+              : {}),
+          }))
+        : (fallbackBrands ?? []).map((brand) => ({
+            name: brand.name,
+            freight: brand.freight,
+          }))
   return {
     brands,
     lengthPremium: record.lengthPremium,
@@ -149,6 +158,7 @@ function buildConfigFromRecord(
       : {}),
     ...(record.remark ? { remark: record.remark } : {}),
     version: record.version,
+    ...(record.quoteSource ? { quoteSource: record.quoteSource } : {}),
   }
 }
 
@@ -1834,35 +1844,11 @@ export function useSheetsStore(options?: {
           const sheetBrands = current.sheets.find(
             (sheet) => sheet.projectId === projectId && sheet.brands?.length,
           )?.brands
-          const brands = record.brands.length
-            ? record.brands.map((brand) => ({
-                name: brand.brandName,
-                freight: brand.freight,
-                ...(brand.categories.length
-                  ? { categories: brand.categories }
-                  : {}),
-              }))
-            : (sheetBrands ?? []).map((brand) => ({
-                name: brand.name,
-                freight: brand.freight,
-              }))
           return {
             ...current,
             configs: {
               ...current.configs,
-              [projectId]: {
-                brands,
-                lengthPremium: record.lengthPremium,
-                hrb400eFallback: record.hrb400eFallback,
-                ...(record.products.length
-                  ? { products: record.products }
-                  : {}),
-                ...(record.designatedBrands.length
-                  ? { designatedBrands: record.designatedBrands }
-                  : {}),
-                ...(record.remark ? { remark: record.remark } : {}),
-                version: record.version,
-              },
+              [projectId]: buildConfigFromRecord(record, sheetBrands),
             },
           }
         })

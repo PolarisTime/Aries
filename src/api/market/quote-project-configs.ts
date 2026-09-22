@@ -26,6 +26,7 @@ const configSchema = z.looseObject({
   remark: z.string().nullable().optional(),
   brands: z.array(brandSchema).nullable().optional(),
   version: z.union([z.number(), z.string()]).nullable().optional(),
+  quoteSource: z.string().nullable().optional(),
 })
 
 export type QuoteProjectBrandRecord = {
@@ -45,6 +46,8 @@ export type QuoteProjectConfigRecord = {
   brands: QuoteProjectBrandRecord[]
   /** 服务端权威版本; 未保存过时为 '0'。 */
   version: string
+  /** 项目取价数据源: MYSTEEL/STEELX; STEELX 时无品牌。 */
+  quoteSource?: 'MYSTEEL' | 'STEELX'
 }
 
 export type QuoteProjectConfigPayload = {
@@ -76,6 +79,9 @@ function normalizeConfig(
     })),
     version: normalizeVersion(raw.version) ?? '0',
     ...(raw.remark ? { remark: raw.remark } : {}),
+    ...(raw.quoteSource === 'MYSTEEL' || raw.quoteSource === 'STEELX'
+      ? { quoteSource: raw.quoteSource }
+      : {}),
   }
 }
 

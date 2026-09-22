@@ -1019,4 +1019,23 @@ describe('SheetPanel 指定品牌展示', () => {
       container.querySelector('tr.price-compare-separator-row'),
     ).not.toBeNull()
   })
+
+  it('西本模式(单虚拟品牌「基准价」)只渲染一组价格列', () => {
+    renderStateful(
+      makeSheet(),
+      [{ ...baseRow, id: 'r1' }],
+      [],
+      [{ name: '基准价', freight: 0 }],
+    )
+
+    const thead = container.querySelector('.ant-table-thead')?.textContent ?? ''
+    const headerRow =
+      container.querySelectorAll('.ant-table-thead tr')[1]?.textContent ?? ''
+    // 单组: 网价/现货/差价/简称各一次, 且仅一个品牌分组
+    expect(headerRow.match(/网价/g)?.length).toBe(1)
+    expect(headerRow.match(/现货/g)?.length).toBe(1)
+    expect(headerRow.match(/差价/g)?.length).toBe(1)
+    expect(headerRow.match(/简称/g)?.length).toBe(1)
+    expect(thead).toContain('基准价')
+  })
 })

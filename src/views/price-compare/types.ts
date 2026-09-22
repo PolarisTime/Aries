@@ -37,6 +37,8 @@ export type ProjectConfig = {
   remark?: string
   /** 服务端乐观锁版本号(用于 X-Resource-Version) */
   version?: string
+  /** 项目取价数据源: MYSTEEL/STEELX; STEELX 时无品牌, 按规格一行一价。 */
+  quoteSource?: 'MYSTEEL' | 'STEELX'
 }
 
 /** 行类型: 商品行(默认)/隔断行。 */

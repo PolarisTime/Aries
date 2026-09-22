@@ -5,7 +5,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
-import { type SheetsStore, useSheetsStore } from './useSheetsStore'
+import {
+  buildConfigFromRecord,
+  type SheetsStore,
+  STEELX_VIRTUAL_BRAND,
+  useSheetsStore,
+} from './useSheetsStore'
 
 const api = vi.hoisted(() => ({
   fetchQuoteSheets: vi.fn(),
@@ -1691,5 +1696,32 @@ describe('useSheetsStore 服务端数据源', () => {
       if (originalTz === undefined) delete nodeEnv.TZ
       else nodeEnv.TZ = originalTz
     }
+  })
+})
+
+describe('buildConfigFromRecord 西本归一', () => {
+  const base = {
+    projectId: '1',
+    lengthPremium: 30,
+    hrb400eFallback: false,
+    products: [],
+    designatedBrands: [],
+    brands: [
+      { brandName: '中天', freight: 30, categories: [], sortOrder: 0 },
+      { brandName: '永钢', freight: 20, categories: [], sortOrder: 1 },
+    ],
+    version: '1',
+  }
+
+  it('西本项目忽略品牌配置, 归一为单个虚拟品牌「基准价」', () => {
+    const config = buildConfigFromRecord({ ...base, quoteSource: 'STEELX' })
+    expect(config.brands).toHaveLength(1)
+    expect(config.brands[0].name).toBe(STEELX_VIRTUAL_BRAND)
+    expect(config.quoteSource).toBe('STEELX')
+  })
+
+  it('Mysteel 项目保留原有品牌', () => {
+    const config = buildConfigFromRecord({ ...base, quoteSource: 'MYSTEEL' })
+    expect(config.brands.map((b) => b.name)).toEqual(['中天', '永钢'])
   })
 })
