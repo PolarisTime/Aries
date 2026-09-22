@@ -7,6 +7,7 @@ interface BuildModuleItemsActionsContext {
   open: boolean
   moduleKey: ModuleKey
   config: ModulePageConfig
+  currentStatus: string
   formValues: Record<string, unknown>
   items: ModuleLineItem[]
   setItems: (updater: (items: ModuleLineItem[]) => ModuleLineItem[]) => void
@@ -23,6 +24,7 @@ export function buildModuleItemsActions(
 ): ReactNode {
   if (!ctx.open || !ctx.config.renderItemsActions) return null
   return ctx.config.renderItemsActions({
+    currentStatus: ctx.currentStatus,
     formValues: ctx.formValues,
     items: ctx.items,
     setItems: ctx.setItems,

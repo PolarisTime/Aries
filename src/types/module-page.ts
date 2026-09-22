@@ -165,6 +165,8 @@ export interface ModuleItemColumnConfig<PrivateKey extends string = never> {
 export interface ModuleItemsActionsContext {
   /** 当前单据表单值（含送货日期、项目等）。 */
   formValues: Record<string, unknown>
+  /** 当前单据状态（来自记录，销售订单表单不含状态字段）。 */
+  currentStatus: string
   /** 当前明细行。 */
   items: ModuleLineItem[]
   /** 批量更新明细行（传入 updater 返回新数组）。 */

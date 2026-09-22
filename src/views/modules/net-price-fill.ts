@@ -1,7 +1,33 @@
+import dayjs from 'dayjs'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import type { ModuleLineItem } from '@/types/module-page'
 
 export type PriceFloatMode = 'ADD' | 'SUBTRACT'
+
+/**
+ * 规整日期为 `YYYY-MM-DD`：
+ * 兼容 dayjs 对象、ISO 字符串（含时间）与 `YYYY年M月D日` 等展示格式；无法解析时返回空串。
+ */
+export function normalizeDateValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return ''
+  if (dayjs.isDayjs(value)) {
+    return value.isValid() ? value.format('YYYY-MM-DD') : ''
+  }
+  if (value instanceof Date) {
+    const parsed = dayjs(value)
+    return parsed.isValid() ? parsed.format('YYYY-MM-DD') : ''
+  }
+  const text = String(value).trim()
+  if (!text) return ''
+  const direct = /^(\d{4})-(\d{2})-(\d{2})/.exec(text)
+  if (direct) return `${direct[1]}-${direct[2]}-${direct[3]}`
+  const cn = /^(\d{4})年(\d{1,2})月(\d{1,2})日/.exec(text)
+  if (cn) {
+    return `${cn[1]}-${cn[2].padStart(2, '0')}-${cn[3].padStart(2, '0')}`
+  }
+  const parsed = dayjs(text)
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : ''
+}
 
 /** 按 2 位小数四舍五入（与后端金额精度口径一致）。 */
 export function round2(value: number): number {

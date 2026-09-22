@@ -4,9 +4,29 @@ import type { ModuleLineItem } from '@/types/module-page'
 import {
   applyNetPriceFloat,
   buildNetPriceIndex,
+  normalizeDateValue,
   resolveNetPrice,
   round2,
 } from './net-price-fill'
+
+describe('normalizeDateValue', () => {
+  it('ISO 字符串含时间时取日期部分', () => {
+    expect(normalizeDateValue('2026-09-16 00:00:00')).toBe('2026-09-16')
+    expect(normalizeDateValue('2026-09-16T00:00:00')).toBe('2026-09-16')
+  })
+
+  it('中文展示格式归一', () => {
+    expect(normalizeDateValue('2026年09月16日')).toBe('2026-09-16')
+    expect(normalizeDateValue('2026年9月6日')).toBe('2026-09-06')
+  })
+
+  it('空值与非日期返回空串', () => {
+    expect(normalizeDateValue(null)).toBe('')
+    expect(normalizeDateValue(undefined)).toBe('')
+    expect(normalizeDateValue('')).toBe('')
+    expect(normalizeDateValue('not-a-date')).toBe('')
+  })
+})
 
 describe('applyNetPriceFloat', () => {
   it('ADD 加价 / SUBTRACT 减价', () => {

@@ -68,6 +68,7 @@ interface Props {
   auditLabel?: string
   saving: boolean
   showFooterActions: boolean
+  currentStatus: string
   formValues: Record<string, unknown>
   projectOptions: ProjectOption[]
   setItems: (updater: (items: ModuleLineItem[]) => ModuleLineItem[]) => void
@@ -109,6 +110,7 @@ export function ModuleEditorItemsArea({
   auditLabel,
   saving,
   showFooterActions,
+  currentStatus,
   formValues,
   projectOptions,
   setItems,
@@ -153,6 +155,7 @@ export function ModuleEditorItemsArea({
         open,
         moduleKey,
         config,
+        currentStatus,
         formValues,
         items,
         setItems,

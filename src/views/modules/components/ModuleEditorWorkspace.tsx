@@ -366,6 +366,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           auditLabel={editorAuditLabel}
           saving={saving}
           showFooterActions={!useFinanceEditorLayout}
+          currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}
           setItems={setItems}

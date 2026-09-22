@@ -16,6 +16,7 @@ import { message } from '@/utils/antd-app'
 import {
   applyNetPriceFloat,
   buildNetPriceIndex,
+  normalizeDateValue,
   resolveNetPrice,
 } from '../net-price-fill'
 
@@ -31,14 +32,14 @@ const DELIVERY_VERIFICATION = '交付核定'
  */
 export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const { t } = useTranslation()
-  const { formValues, items, setItems, saving, projectOptions } = props
+  const { formValues, currentStatus, items, setItems, saving, projectOptions } =
+    props
   const [open, setOpen] = useState(false)
   const [quoteDate, setQuoteDate] = useState('')
   const [period, setPeriod] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const status = String(formValues.status || '').trim()
-  const deliveryDate = String(formValues.deliveryDate || '').slice(0, 10)
+  const deliveryDate = normalizeDateValue(formValues.deliveryDate)
   const projectId = String(formValues.projectId || '').trim()
   const project = projectOptions.find((option) => option.id === projectId)
   const floatMode = project?.priceFloatMode
@@ -102,7 +103,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     }
   }
 
-  if (status !== DELIVERY_VERIFICATION) return null
+  if (currentStatus.trim() !== DELIVERY_VERIFICATION) return null
 
   return (
     <>

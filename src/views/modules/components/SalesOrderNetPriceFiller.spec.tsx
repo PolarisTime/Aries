@@ -54,8 +54,8 @@ function Harness({
 }) {
   const [items, setItems] = useState(initialItems)
   return createElement(SalesOrderNetPriceFiller, {
+    currentStatus: status,
     formValues: {
-      status,
       deliveryDate: '2026-09-22',
       projectId: 'p1',
       projectName: '项目',
@@ -164,8 +164,8 @@ describe('SalesOrderNetPriceFiller', () => {
       ])
       observed.items = items
       return createElement(SalesOrderNetPriceFiller, {
+        currentStatus: '交付核定',
         formValues: {
-          status: '交付核定',
           deliveryDate: '2026-09-22',
           projectId: 'p1',
         },
@@ -220,8 +220,8 @@ describe('SalesOrderNetPriceFiller', () => {
       ])
       observed.items = items
       return createElement(SalesOrderNetPriceFiller, {
+        currentStatus: '交付核定',
         formValues: {
-          status: '交付核定',
           deliveryDate: '2026-09-22',
           projectId: 'p1',
         },
