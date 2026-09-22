@@ -2,7 +2,9 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Badge, Button, Flex, Segmented, Select, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { countMissing, resolveRef } from './core'
+import { ProjectConfigModal } from './ProjectConfigModal'
 import { projectAbbrOf } from './price-compare-support'
+import { PriceCompareTour } from './price-compare-tour'
 import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
 
 const { Text } = Typography
@@ -152,5 +154,46 @@ export function PriceCompareBatchBar({
         {t('priceCompare.picker.deleteBatch')}
       </Button>
     </Flex>
+  )
+}
+
+/** 比价页浮层(项目配置弹窗 + 引导)。 */
+export function PriceCompareOverlays({
+  configOpen,
+  onCloseConfig,
+  brandOptions,
+  varieties,
+  config,
+  onSaveConfig,
+  tourOpen,
+  onCloseTour,
+  spotRef,
+}: {
+  configOpen: boolean
+  onCloseConfig: () => void
+  brandOptions: React.ComponentProps<typeof ProjectConfigModal>['brandOptions']
+  varieties: React.ComponentProps<typeof ProjectConfigModal>['varieties']
+  config: React.ComponentProps<typeof ProjectConfigModal>['config']
+  onSaveConfig: React.ComponentProps<typeof ProjectConfigModal>['onSave']
+  tourOpen: boolean
+  onCloseTour: () => void
+  spotRef: React.RefObject<HTMLSpanElement | null>
+}) {
+  return (
+    <>
+      <ProjectConfigModal
+        open={configOpen}
+        brandOptions={brandOptions}
+        varieties={varieties}
+        config={config}
+        onClose={onCloseConfig}
+        onSave={onSaveConfig}
+      />
+      <PriceCompareTour
+        open={tourOpen}
+        onClose={onCloseTour}
+        spotRef={spotRef}
+      />
+    </>
   )
 }

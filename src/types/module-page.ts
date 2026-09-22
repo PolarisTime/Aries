@@ -187,6 +187,10 @@ export interface ModuleProjectOption {
   priceFloatValue?: number
   /** 项目上次交付核定使用的价格规定ID。 */
   lastPriceRuleId?: string
+  /** 默认取价数据源: MYSTEEL/STEELX。 */
+  quoteSource?: 'MYSTEEL' | 'STEELX'
+  /** 默认取价地区(西本城市中文名)。 */
+  quoteRegion?: string
 }
 
 export interface ModulePageConfig {

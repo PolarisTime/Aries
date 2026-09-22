@@ -1430,6 +1430,10 @@ export const zhCN = {
         priceFloatSubtract: '减价',
         priceFloatValue: '浮动幅度（元/吨）',
         priceFloatValuePlaceholder: '如 30',
+        quoteSource: '取价数据源',
+        quoteSourceMysteel: 'Mysteel(网价)',
+        quoteSourceSteelx: '西本新干线',
+        quoteRegion: '取价地区',
       },
       purchaseOrder: {
         title: '采购订单',

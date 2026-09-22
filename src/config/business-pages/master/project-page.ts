@@ -214,6 +214,8 @@ const projectPageConfig: ModulePageConfig = {
       'status',
       'priceFloatMode',
       'priceFloatValue',
+      'quoteSource',
+      'quoteRegion',
       'remark',
     ],
   },

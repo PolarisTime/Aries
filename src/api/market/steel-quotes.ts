@@ -32,9 +32,17 @@ const PAGE_SIZE = 200
  * 拉取商品行情匹配结果(自动翻页)。
  * 后端已按品牌别名/品名映射/规格区间/长度加价完成匹配, 返回每条商品的 basePrice。
  */
+export type MaterialPriceMatchOptions = {
+  /** 数据源: MYSTEEL(默认)/STEELX。 */
+  source?: 'MYSTEEL' | 'STEELX'
+  /** 西本地区(城市中文名)。 */
+  region?: string
+}
+
 export async function fetchMaterialPriceMatches(
   quoteDate: string,
   period?: string,
+  options: MaterialPriceMatchOptions = {},
   signal?: AbortSignal,
 ): Promise<MaterialPriceMatch[]> {
   const all: MaterialPriceMatch[] = []
@@ -42,7 +50,17 @@ export async function fetchMaterialPriceMatches(
     const rows = await apiGet(
       ENDPOINTS.MATERIAL_PRICE_MATCHES,
       z.array(materialPriceMatchSchema),
-      { params: { quoteDate, period, page, size: PAGE_SIZE }, signal },
+      {
+        params: {
+          quoteDate,
+          period,
+          source: options.source,
+          region: options.region,
+          page,
+          size: PAGE_SIZE,
+        },
+        signal,
+      },
     )
     all.push(...rows)
     if (rows.length < PAGE_SIZE) break

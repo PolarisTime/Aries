@@ -43,6 +43,8 @@ export function buildModuleItemsActions(
       ...(option.lastPriceRuleId
         ? { lastPriceRuleId: option.lastPriceRuleId }
         : {}),
+      ...(option.quoteSource ? { quoteSource: option.quoteSource } : {}),
+      ...(option.quoteRegion ? { quoteRegion: option.quoteRegion } : {}),
     })),
   })
 }

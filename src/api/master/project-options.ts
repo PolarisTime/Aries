@@ -23,7 +23,14 @@ export type ProjectOption = {
   priceFloatValue?: number
   /** 项目上次交付核定使用的价格规定ID(用于默认选中)。 */
   lastPriceRuleId?: EntityId
+  /** 默认取价数据源: MYSTEEL/STEELX。 */
+  quoteSource?: ProjectQuoteSource
+  /** 默认取价地区(西本城市中文名)。 */
+  quoteRegion?: string
 }
+
+/** 取价数据源。 */
+export type ProjectQuoteSource = 'MYSTEEL' | 'STEELX'
 
 export type ProjectPriceFloatMode = 'ADD' | 'SUBTRACT'
 
@@ -47,6 +54,8 @@ type RawProjectOption = {
   priceFloatMode?: unknown
   priceFloatValue?: unknown
   lastPriceRuleId?: unknown
+  quoteSource?: unknown
+  quoteRegion?: unknown
 }
 
 type RawProjectPageRow = {
@@ -70,6 +79,8 @@ const projectOptionsResponseSchema = z.array(
     priceFloatMode: z.string().nullable().optional(),
     priceFloatValue: z.union([z.string(), z.number()]).nullable().optional(),
     lastPriceRuleId: z.union([z.string(), z.number()]).nullable().optional(),
+    quoteSource: z.string().nullable().optional(),
+    quoteRegion: z.string().nullable().optional(),
   }),
 )
 
@@ -120,6 +131,8 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       row.lastPriceRuleId,
       `projects[${index}].lastPriceRuleId`,
     )
+    const quoteSource = asString(row.quoteSource).trim()
+    const quoteRegion = asString(row.quoteRegion).trim()
 
     return {
       id,
@@ -139,8 +152,36 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
         ? { priceFloatValue: priceFloatValueNum }
         : {}),
       ...(lastPriceRuleId ? { lastPriceRuleId } : {}),
+      ...(quoteSource === 'MYSTEEL' || quoteSource === 'STEELX'
+        ? { quoteSource }
+        : {}),
+      ...(quoteRegion ? { quoteRegion } : {}),
     }
   })
+}
+
+/** 查询单个项目的取价数据源与地区(比价页按项目 id 取)。 */
+export async function fetchProjectQuoteConfig(
+  projectId: EntityId,
+  signal?: AbortSignal,
+): Promise<{ quoteSource?: ProjectQuoteSource; quoteRegion?: string }> {
+  const id = parseEntityId(projectId, 'projectId')
+  const raw = await apiGet(
+    ENDPOINTS.PROJECT(id),
+    z.looseObject({
+      quoteSource: z.string().nullable().optional(),
+      quoteRegion: z.string().nullable().optional(),
+    }),
+    signal ? { signal } : {},
+  )
+  const source = asString(raw.quoteSource).trim()
+  const region = asString(raw.quoteRegion).trim()
+  return {
+    ...(source === 'MYSTEEL' || source === 'STEELX'
+      ? { quoteSource: source }
+      : {}),
+    ...(region ? { quoteRegion: region } : {}),
+  }
 }
 
 export async function fetchProjectOptions(

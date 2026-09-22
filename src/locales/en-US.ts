@@ -1471,6 +1471,10 @@ export const enUS = {
         priceFloatSubtract: 'Markdown',
         priceFloatValue: 'Float amount (CNY/ton)',
         priceFloatValuePlaceholder: 'e.g. 30',
+        quoteSource: 'Price source',
+        quoteSourceMysteel: 'Mysteel',
+        quoteSourceSteelx: 'SteelX (Xiben)',
+        quoteRegion: 'Region',
       },
       purchaseOrder: {
         title: 'Purchase Orders',

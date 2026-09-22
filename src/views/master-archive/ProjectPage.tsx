@@ -54,6 +54,8 @@ function toEditorFormValues(record: ProjectListRow) {
     projectManager: asString(record.projectManager),
     projectAddress: asString(record.projectAddress),
     status: asString(record.status) || '正常',
+    quoteSource: asString(record.quoteSource) || 'MYSTEEL',
+    quoteRegion: asString(record.quoteRegion),
     remark: asString(record.remark),
   }
 }

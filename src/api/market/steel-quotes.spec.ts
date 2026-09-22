@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { apiPostMock } = vi.hoisted(() => ({ apiPostMock: vi.fn() }))
+const { apiPostMock, apiGetMock } = vi.hoisted(() => ({
+  apiPostMock: vi.fn(),
+  apiGetMock: vi.fn(),
+}))
 
 vi.mock('@/api/core/client', () => ({
-  apiGet: vi.fn(),
+  apiGet: apiGetMock,
   apiPost: apiPostMock,
   downloadGet: vi.fn(),
 }))
@@ -12,7 +15,35 @@ vi.mock('@/api/core/idempotency', () => ({
   withIdempotencyKey: () => ({ headers: {} }),
 }))
 
-import { materialPriceMatchSchema, syncSteelQuotes } from './steel-quotes'
+import {
+  fetchMaterialPriceMatches,
+  materialPriceMatchSchema,
+  syncSteelQuotes,
+} from './steel-quotes'
+
+describe('fetchMaterialPriceMatches 数据源', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+    apiGetMock.mockResolvedValue([])
+  })
+
+  it('透传 source/region 参数(西本按地区取价)', async () => {
+    await fetchMaterialPriceMatches('2026-09-22', undefined, {
+      source: 'STEELX',
+      region: '杭州',
+    })
+    const [, , config] = apiGetMock.mock.calls[0]
+    expect(config.params.source).toBe('STEELX')
+    expect(config.params.region).toBe('杭州')
+  })
+
+  it('未指定时 source/region 为空', async () => {
+    await fetchMaterialPriceMatches('2026-09-22', undefined, {})
+    const [, , config] = apiGetMock.mock.calls[0]
+    expect(config.params.source).toBeUndefined()
+    expect(config.params.region).toBeUndefined()
+  })
+})
 
 describe('materialPriceMatchSchema', () => {
   it('解析匹配结果(含字符串 basePrice / 雪花 materialId)', () => {

@@ -53,6 +53,9 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const deliveryDate = normalizeDateValue(formValues.deliveryDate)
   const projectId = String(formValues.projectId || '').trim()
   const project = projectOptions.find((option) => option.id === projectId)
+  // 数据源与地区取自项目配置: 西本按地区报价。
+  const quoteSource = project?.quoteSource
+  const quoteRegion = project?.quoteRegion
 
   // 打开弹层时拉取项目价格规定, 并默认选中"上次使用"(回退到唯一一条)。
   useEffect(() => {
@@ -106,6 +109,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       const rows = await fetchMaterialPriceMatches(
         quoteDate,
         period || undefined,
+        { source: quoteSource, region: quoteRegion },
       )
       const index = buildNetPriceIndex(rows)
 

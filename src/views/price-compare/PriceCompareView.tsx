@@ -7,13 +7,12 @@ import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
-import { ProjectConfigModal } from './ProjectConfigModal'
 import {
   PriceCompareBatchBar,
+  PriceCompareOverlays,
   PriceCompareProjectPicker,
 } from './price-compare-pickers'
 import { projectGroupsOf } from './price-compare-support'
-import { PriceCompareTour } from './price-compare-tour'
 import {
   useInitialProjectAssignment,
   usePriceCompareRouteActive,
@@ -21,7 +20,10 @@ import {
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
 import { SheetPanel } from './SheetPanel'
-import { usePriceCompareData } from './usePriceCompareData'
+import {
+  useActiveProjectQuoteConfig,
+  usePriceCompareData,
+} from './usePriceCompareData'
 import { usePriceComparePricing } from './usePriceComparePricing'
 import { useSheetsStore } from './useSheetsStore'
 import './price-compare.css'
@@ -74,6 +76,11 @@ export function PriceCompareView() {
   const brandAutoFilledRef = useRef<Set<string>>(new Set())
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
+  const activeProjectQuoteConfig = useActiveProjectQuoteConfig(
+    active?.projectId,
+    isAuthenticated,
+  )
+
   const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
   // 只读态(他人签出)禁用撤销/重做快捷键
@@ -123,7 +130,13 @@ export function PriceCompareView() {
     refPeriods,
     refreshing,
     resolvedRefPeriod,
-  } = usePriceComparePricing({ active, data, isAuthenticated })
+  } = usePriceComparePricing({
+    active,
+    data,
+    isAuthenticated,
+    quoteSource: activeProjectQuoteConfig?.quoteSource,
+    quoteRegion: activeProjectQuoteConfig?.quoteRegion,
+  })
 
   const patchSheetRef = useRef(patchSheet)
   useEffect(() => {
@@ -262,63 +275,134 @@ export function PriceCompareView() {
         />
       ) : null}
 
-      {active ? (
-        <Watermark
-          content={[t('priceCompare.view.watermark'), active.name]}
-          gap={[140, 120]}
-          font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
-        >
-          <SheetPanel
-            key={active.id}
-            sheet={active}
-            data={data}
-            varieties={varieties}
-            brands={brands}
-            rows={rows}
-            density="small"
-            lengthPremium={lengthPremium}
-            patchSheet={patchSheet}
-            setRows={setRows}
-            onReorderBrands={(from, to) =>
-              setBrands((current) => moveItem(current, from, to))
-            }
-            periods={refPeriods}
-            onRefresh={() => {
-              void onRefreshPrice()
-            }}
-            refreshing={refreshing}
-            allowHrb400eFallback={config.hrb400eFallback}
-            allowedProducts={config.products}
-            onOpenConfig={() => setConfigOpen(true)}
-            availability={availability}
-            spotRef={spotRef}
-            designatedBrands={config.designatedBrands}
-            suppliers={supplierSelectOptions}
-            remark={config.remark}
-            onRemarkChange={(value) => setConfig({ remark: value })}
-            readOnly={readOnly}
-          />
-        </Watermark>
-      ) : (
-        <Flex justify="center" style={{ padding: 40 }}>
-          <Empty description={t('priceCompare.view.noBatch')} />
-        </Flex>
-      )}
+      <PriceCompareSheetArea
+        active={active}
+        watermark={t('priceCompare.view.watermark')}
+        noBatchLabel={t('priceCompare.view.noBatch')}
+        data={data}
+        varieties={varieties}
+        brands={brands}
+        rows={rows}
+        lengthPremium={lengthPremium}
+        patchSheet={patchSheet}
+        setRows={setRows}
+        onReorderBrands={(from, to) =>
+          setBrands((current) => moveItem(current, from, to))
+        }
+        refPeriods={refPeriods}
+        onRefreshPrice={onRefreshPrice}
+        refreshing={refreshing}
+        config={config}
+        onOpenConfig={() => setConfigOpen(true)}
+        availability={availability}
+        spotRef={spotRef}
+        supplierSelectOptions={supplierSelectOptions}
+        onSaveConfig={(next) => setConfig(next)}
+        readOnly={readOnly}
+      />
 
-      <ProjectConfigModal
-        open={configOpen}
+      <PriceCompareOverlays
+        configOpen={configOpen}
+        onCloseConfig={() => setConfigOpen(false)}
         brandOptions={brandOptions}
         varieties={varieties}
         config={config}
-        onClose={() => setConfigOpen(false)}
-        onSave={(next) => setConfig(next)}
-      />
-
-      <PriceCompareTour
-        open={tourOpen}
-        onClose={() => setTourOpen(false)}
+        onSaveConfig={(next) => setConfig(next)}
+        tourOpen={tourOpen}
+        onCloseTour={() => setTourOpen(false)}
         spotRef={spotRef}
       />
     </div>
+  )
+}
+
+/** 当前单据的比价表格区(含水印与空态)。 */
+function PriceCompareSheetArea({
+  active,
+  watermark,
+  noBatchLabel,
+  data,
+  varieties,
+  brands,
+  rows,
+  lengthPremium,
+  patchSheet,
+  setRows,
+  onReorderBrands,
+  refPeriods,
+  onRefreshPrice,
+  refreshing,
+  config,
+  onOpenConfig,
+  availability,
+  spotRef,
+  supplierSelectOptions,
+  onSaveConfig,
+  readOnly,
+}: {
+  active: ReturnType<typeof useSheetsStore>['active']
+  watermark: string
+  noBatchLabel: string
+  data: React.ComponentProps<typeof SheetPanel>['data']
+  varieties: React.ComponentProps<typeof SheetPanel>['varieties']
+  brands: React.ComponentProps<typeof SheetPanel>['brands']
+  rows: React.ComponentProps<typeof SheetPanel>['rows']
+  lengthPremium: number
+  patchSheet: React.ComponentProps<typeof SheetPanel>['patchSheet']
+  setRows: React.ComponentProps<typeof SheetPanel>['setRows']
+  onReorderBrands: React.ComponentProps<typeof SheetPanel>['onReorderBrands']
+  refPeriods: string[]
+  onRefreshPrice: () => Promise<void> | void
+  refreshing: boolean
+  config: ReturnType<typeof useSheetsStore>['config']
+  onOpenConfig: () => void
+  availability: React.ComponentProps<typeof SheetPanel>['availability']
+  spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
+  supplierSelectOptions: React.ComponentProps<typeof SheetPanel>['suppliers']
+  onSaveConfig: (next: ReturnType<typeof useSheetsStore>['config']) => void
+  readOnly: boolean
+}) {
+  if (!active) {
+    return (
+      <Flex justify="center" style={{ padding: 40 }}>
+        <Empty description={noBatchLabel} />
+      </Flex>
+    )
+  }
+  return (
+    <Watermark
+      content={[watermark, active.name]}
+      gap={[140, 120]}
+      font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
+    >
+      <SheetPanel
+        key={active.id}
+        sheet={active}
+        data={data}
+        varieties={varieties}
+        brands={brands}
+        rows={rows}
+        density="small"
+        lengthPremium={lengthPremium}
+        patchSheet={patchSheet}
+        setRows={setRows}
+        onReorderBrands={onReorderBrands}
+        periods={refPeriods}
+        onRefresh={() => {
+          void onRefreshPrice()
+        }}
+        refreshing={refreshing}
+        allowHrb400eFallback={config.hrb400eFallback}
+        allowedProducts={config.products}
+        onOpenConfig={onOpenConfig}
+        availability={availability}
+        spotRef={spotRef}
+        designatedBrands={config.designatedBrands}
+        suppliers={supplierSelectOptions}
+        remark={config.remark}
+        onRemarkChange={(value) => onSaveConfig({ ...config, remark: value })}
+        readOnly={readOnly}
+      />
+    </Watermark>
   )
 }

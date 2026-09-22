@@ -15,10 +15,14 @@ export function usePriceComparePricing({
   active,
   data,
   isAuthenticated,
+  quoteSource,
+  quoteRegion,
 }: {
   active: PriceSheet | undefined
   data: PriceData
   isAuthenticated: boolean
+  quoteSource?: 'MYSTEEL' | 'STEELX'
+  quoteRegion?: string
 }) {
   const { t } = useTranslation()
   const [refreshing, setRefreshing] = useState(false)
@@ -80,11 +84,14 @@ export function usePriceComparePricing({
     queryKey: QUERY_KEYS.priceCompare.materialPriceMatches(
       activeRefDate,
       resolvedRefPeriod,
+      quoteSource,
+      quoteRegion,
     ),
     queryFn: ({ signal }) =>
       fetchMaterialPriceMatches(
         activeRefDate,
         activeRefDate ? resolvedRefPeriod : undefined,
+        { source: quoteSource, region: quoteRegion },
         signal,
       ),
     enabled:

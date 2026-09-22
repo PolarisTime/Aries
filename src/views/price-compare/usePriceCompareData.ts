@@ -1,5 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
+import { fetchProjectQuoteConfig } from '@/api/master/project-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_STATIC } from '@/constants/query-policies'
 import { matchesToData, mergePriceData } from './core'
 import brands from './data/brands.json'
 import projects from './data/projects.json'
@@ -49,4 +53,21 @@ export function usePriceCompareData(): PriceCompareData {
     catalog: metadata.catalog,
     mergeMatches,
   }
+}
+
+/**
+ * 当前单据所属项目的取价数据源/地区(按项目 id 查询)。
+ * 比价页项目清单为随包静态数据, 故数据源/地区需按 id 单独查询。
+ */
+export function useActiveProjectQuoteConfig(
+  projectId: string | undefined,
+  enabled: boolean,
+): { quoteSource?: 'MYSTEEL' | 'STEELX'; quoteRegion?: string } {
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.priceCompare.projectQuoteConfig(projectId ?? ''),
+    queryFn: ({ signal }) => fetchProjectQuoteConfig(projectId ?? '', signal),
+    enabled: enabled && Boolean(projectId),
+    staleTime: STALE_STATIC,
+  })
+  return data ?? {}
 }

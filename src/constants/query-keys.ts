@@ -112,8 +112,22 @@ export const QUERY_KEYS = {
     materialBrands: ['price-compare', 'material-brands'] as const,
     steelQuoteCalendars: (from: string, to: string) =>
       ['price-compare', 'steel-quote-calendars', from, to] as const,
-    materialPriceMatches: (quoteDate: string, period: string) =>
-      ['price-compare', 'material-price-matches', quoteDate, period] as const,
+    projectQuoteConfig: (projectId: string) =>
+      ['price-compare', 'project-quote-config', projectId] as const,
+    materialPriceMatches: (
+      quoteDate: string,
+      period: string,
+      source?: string,
+      region?: string,
+    ) =>
+      [
+        'price-compare',
+        'material-price-matches',
+        quoteDate,
+        period,
+        source ?? 'MYSTEEL',
+        region ?? '',
+      ] as const,
   },
 
   // Global search

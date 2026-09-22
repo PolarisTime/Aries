@@ -19,6 +19,9 @@ import { ProjectPriceRuleEditor } from './ProjectPriceRuleEditor'
 
 const MODULE_KEY: ModuleKey = 'project'
 
+/** 西本支持的地区(与后端 steelx-quote.regions 保持一致)。 */
+const QUOTE_REGIONS = ['杭州', '上海', '宁波', '嘉兴', '绍兴']
+
 export interface ProjectEditorValues {
   projectCode?: string
   projectName: string
@@ -30,6 +33,8 @@ export interface ProjectEditorValues {
   projectManager?: string
   projectAddress?: string
   status: string
+  quoteSource?: string
+  quoteRegion?: string
   remark?: string
 }
 
@@ -135,6 +140,8 @@ export function ProjectEditorOverlay({
         projectManager: values.projectManager ?? '',
         projectAddress: values.projectAddress ?? '',
         status: values.status,
+        quoteSource: values.quoteSource ?? '',
+        quoteRegion: values.quoteRegion ?? '',
         remark: values.remark ?? '',
       }
       await saveBusinessModule(MODULE_KEY, draft)
@@ -275,6 +282,40 @@ export function ProjectEditorOverlay({
               initialValue="正常"
             >
               <Select options={enabledStatusOptions} />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="quoteSource"
+              label={t('modules.pages.project.quoteSource')}
+              initialValue="MYSTEEL"
+            >
+              <Select
+                options={[
+                  {
+                    label: t('modules.pages.project.quoteSourceMysteel'),
+                    value: 'MYSTEEL',
+                  },
+                  {
+                    label: t('modules.pages.project.quoteSourceSteelx'),
+                    value: 'STEELX',
+                  },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="quoteRegion"
+              label={t('modules.pages.project.quoteRegion')}
+            >
+              <Select
+                allowClear
+                options={QUOTE_REGIONS.map((region) => ({
+                  label: region,
+                  value: region,
+                }))}
+              />
             </Form.Item>
           </Col>
           <Col span={24}>

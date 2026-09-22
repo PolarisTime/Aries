@@ -6,6 +6,8 @@ vi.mock('@/api/core/client', () => ({ apiGet: apiGetMock }))
 
 import {
   fetchProjectAbbreviationOptions,
+  fetchProjectOptions,
+  fetchProjectQuoteConfig,
   toProjectAbbreviationOptions,
 } from './project-options'
 
@@ -99,5 +101,65 @@ describe('toProjectAbbreviationOptions', () => {
         title: '华东材料配送项目',
       },
     ])
+  })
+})
+
+describe('fetchProjectOptions 取价数据源', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+  })
+
+  it('归一化 quoteSource/quoteRegion', async () => {
+    apiGetMock.mockResolvedValue([
+      {
+        id: '1',
+        value: '1',
+        label: 'P1',
+        customerId: '2',
+        customerCode: 'C1',
+        projectCode: 'P1',
+        projectName: '项目一',
+        quoteSource: 'STEELX',
+        quoteRegion: '杭州',
+      },
+    ])
+    const [option] = await fetchProjectOptions('2')
+    expect(option.quoteSource).toBe('STEELX')
+    expect(option.quoteRegion).toBe('杭州')
+  })
+
+  it('非法数据源被忽略', async () => {
+    apiGetMock.mockResolvedValue([
+      {
+        id: '1',
+        value: '1',
+        label: 'P1',
+        customerId: '2',
+        customerCode: 'C1',
+        projectCode: 'P1',
+        projectName: '项目一',
+        quoteSource: 'UNKNOWN',
+      },
+    ])
+    const [option] = await fetchProjectOptions('2')
+    expect(option.quoteSource).toBeUndefined()
+  })
+})
+
+describe('fetchProjectQuoteConfig', () => {
+  beforeEach(() => {
+    apiGetMock.mockReset()
+  })
+
+  it('返回项目取价数据源与地区', async () => {
+    apiGetMock.mockResolvedValue({ quoteSource: 'STEELX', quoteRegion: '宁波' })
+    const config = await fetchProjectQuoteConfig('9')
+    expect(config).toEqual({ quoteSource: 'STEELX', quoteRegion: '宁波' })
+    expect(apiGetMock.mock.calls[0][0]).toBe('/projects/9')
+  })
+
+  it('缺省返回空对象', async () => {
+    apiGetMock.mockResolvedValue({})
+    expect(await fetchProjectQuoteConfig('9')).toEqual({})
   })
 })
