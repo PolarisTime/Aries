@@ -39,6 +39,11 @@ export function MarketSyncView() {
     syncPeriods,
     setSyncPeriods,
     syncingCell,
+    activePeriods,
+    source,
+    setSource,
+    region,
+    setRegion,
   } = useMarketSync()
 
   return (
@@ -56,6 +61,10 @@ export function MarketSyncView() {
         onBackfill={() => void onBackfill()}
         calendarFetching={calendarQuery.isFetching}
         onRefreshCalendar={() => void calendarQuery.refetch()}
+        source={source}
+        onSourceChange={setSource}
+        region={region}
+        onRegionChange={setRegion}
       />
 
       <MarketSyncStatusBar
@@ -66,6 +75,7 @@ export function MarketSyncView() {
 
       <MarketSyncMatrix
         matrixDays={matrixDays}
+        periods={activePeriods}
         calendars={calendars}
         selected={selected}
         syncingCell={syncingCell}

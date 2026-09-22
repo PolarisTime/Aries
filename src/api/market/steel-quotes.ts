@@ -80,14 +80,19 @@ export type SteelQuoteCalendarItem = z.infer<
   typeof steelQuoteCalendarSchema
 >[number]
 
-/** 行情日历: 指定区间内有行情的日期与可用时段。 */
+/** 行情数据源(Mysteel/西本)。 */
+export type MarketQuoteSource = 'MYSTEEL' | 'STEELX'
+
+/** 行情日历: 指定区间内有行情的日期与可用时段; 可按数据源/地区过滤。 */
 export function fetchSteelQuoteCalendars(
   from: string,
   to: string,
   signal?: AbortSignal,
+  source?: MarketQuoteSource,
+  region?: string,
 ): Promise<SteelQuoteCalendarItem[]> {
   return apiGet(ENDPOINTS.STEEL_QUOTE_CALENDARS, steelQuoteCalendarSchema, {
-    params: { from, to },
+    params: { from, to, source, region },
     signal,
   })
 }
@@ -148,10 +153,18 @@ export type SteelQuote = z.infer<typeof steelQuoteSchema>
 export function syncSteelQuotes(
   date?: string,
   periods?: string[],
+  options: { source?: MarketQuoteSource; region?: string } = {},
 ): Promise<SteelQuoteSyncResult> {
-  const body: { date?: string; periods?: string[] } = {}
+  const body: {
+    date?: string
+    periods?: string[]
+    source?: MarketQuoteSource
+    region?: string
+  } = {}
   if (date) body.date = date
   if (periods && periods.length > 0) body.periods = periods
+  if (options.source) body.source = options.source
+  if (options.region) body.region = options.region
   return apiPost(
     ENDPOINTS.STEEL_QUOTE_SYNCS,
     steelQuoteSyncResponseSchema,
@@ -189,6 +202,8 @@ export async function fetchSteelQuotes(
     direction?: string
     page?: number
     size?: number
+    source?: MarketQuoteSource
+    region?: string
   },
   signal?: AbortSignal,
 ): Promise<{ rows: SteelQuote[]; total: number }> {
@@ -216,11 +231,12 @@ export type SteelQuoteBackfillResult = z.infer<
 /** 触发区间补数(后台异步执行)。 */
 export function backfillSteelQuotes(
   days: number,
+  options: { source?: MarketQuoteSource; region?: string } = {},
 ): Promise<SteelQuoteBackfillResult> {
   return apiPost(
     ENDPOINTS.STEEL_QUOTE_BACKFILLS,
     steelQuoteBackfillResponseSchema,
-    { days },
+    { days, source: options.source, region: options.region },
     withIdempotencyKey(),
   )
 }

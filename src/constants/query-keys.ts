@@ -137,8 +137,20 @@ export const QUERY_KEYS = {
 
   // Market (steel quotes)
   marketCalendarsBase: ['market', 'calendar'] as const,
-  marketCalendar: (from: string, to: string) =>
-    ['market', 'calendar', from, to] as const,
+  marketCalendar: (
+    from: string,
+    to: string,
+    source?: string,
+    region?: string,
+  ) =>
+    [
+      'market',
+      'calendar',
+      from,
+      to,
+      source ?? 'MYSTEEL',
+      region ?? '',
+    ] as const,
   marketQuotes: (query: {
     quoteDate: string
     period: string
@@ -151,6 +163,8 @@ export const QUERY_KEYS = {
     direction?: string
     page: number
     size: number
+    source?: string
+    region?: string
   }) => ['market', 'quotes', query] as const,
   marketBackfillStatus: ['market', 'backfill-status'] as const,
 

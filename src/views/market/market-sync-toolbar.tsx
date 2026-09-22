@@ -13,6 +13,9 @@ import { PERIODS } from './market-sync-model'
 
 const { Text } = Typography
 
+/** 西本支持的地区(与后端 steelx-quote.regions 一致)。 */
+const QUOTE_REGIONS = ['杭州', '上海', '宁波', '嘉兴', '绍兴']
+
 export function MarketSyncToolbar({
   backfillDays,
   backfilling,
@@ -26,6 +29,10 @@ export function MarketSyncToolbar({
   singleDate,
   syncPeriods,
   syncing,
+  source,
+  onSourceChange,
+  region,
+  onRegionChange,
 }: {
   backfillDays: number
   backfilling: boolean
@@ -39,6 +46,10 @@ export function MarketSyncToolbar({
   singleDate: string
   syncPeriods: string[]
   syncing: boolean
+  source: 'MYSTEEL' | 'STEELX'
+  onSourceChange: (source: 'MYSTEEL' | 'STEELX') => void
+  region?: string
+  onRegionChange: (region: string | undefined) => void
 }) {
   return (
     <div className="price-compare-head">
@@ -49,6 +60,35 @@ export function MarketSyncToolbar({
         </span>
       </div>
       <Space wrap size={8}>
+        <Space size={4}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            数据源
+          </Text>
+          <Select
+            size="small"
+            style={{ width: 130 }}
+            value={source}
+            options={[
+              { value: 'MYSTEEL', label: 'Mysteel' },
+              { value: 'STEELX', label: '西本新干线' },
+            ]}
+            onChange={(value) => onSourceChange(value)}
+          />
+          {source === 'STEELX' ? (
+            <Select
+              size="small"
+              style={{ width: 100 }}
+              value={region}
+              placeholder="地区"
+              options={QUOTE_REGIONS.map((item) => ({
+                value: item,
+                label: item,
+              }))}
+              onChange={onRegionChange}
+              allowClear
+            />
+          ) : null}
+        </Space>
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>
             单日
@@ -63,20 +103,22 @@ export function MarketSyncToolbar({
               value && onSingleDateChange(value.format('YYYY-MM-DD'))
             }
           />
-          <Select
-            size="small"
-            mode="multiple"
-            maxTagCount="responsive"
-            style={{ minWidth: 140 }}
-            value={syncPeriods}
-            placeholder="全部时段"
-            allowClear
-            options={PERIODS.map((period) => ({
-              value: period,
-              label: period,
-            }))}
-            onChange={onSyncPeriodsChange}
-          />
+          {source === 'STEELX' ? null : (
+            <Select
+              size="small"
+              mode="multiple"
+              maxTagCount="responsive"
+              style={{ minWidth: 140 }}
+              value={syncPeriods}
+              placeholder="全部时段"
+              allowClear
+              options={PERIODS.map((period) => ({
+                value: period,
+                label: period,
+              }))}
+              onChange={onSyncPeriodsChange}
+            />
+          )}
           <Button
             size="small"
             type="primary"

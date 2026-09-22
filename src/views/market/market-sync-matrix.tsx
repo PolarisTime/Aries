@@ -11,6 +11,7 @@ export function MarketSyncMatrix({
   onSyncDate,
   selected,
   syncingCell,
+  periods = PERIODS,
 }: {
   calendars: CalendarMap
   matrixDays: string[]
@@ -18,6 +19,8 @@ export function MarketSyncMatrix({
   onSyncDate: (date: string, period?: string) => void
   selected: { date: string; period: string }
   syncingCell: string | null
+  /** 矩阵展示的时段; 西本仅「上午」。 */
+  periods?: readonly string[]
 }) {
   return (
     <Card size="small" title="覆盖矩阵（近30天）" style={{ marginBottom: 12 }}>
@@ -36,7 +39,7 @@ export function MarketSyncMatrix({
               <Text strong={date === today()}>{date}</Text>
             ),
           },
-          ...PERIODS.map((p) => ({
+          ...periods.map((p) => ({
             title: p,
             key: p,
             align: 'center' as const,

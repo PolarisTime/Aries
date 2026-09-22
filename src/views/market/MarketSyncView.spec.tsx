@@ -211,4 +211,49 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     })
     expect(api.fetchBackfillStatus).toHaveBeenCalledTimes(2)
   })
+
+  it('切换到西本后按 source=STEELX 查询日历并可同步', async () => {
+    api.fetchSteelQuoteCalendars.mockResolvedValue([])
+    api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })
+    api.fetchBackfillStatus.mockResolvedValue(idleBackfillStatus)
+    api.syncSteelQuotes.mockResolvedValue({
+      articleDate: '2026-09-22',
+      period: '上午',
+      periods: ['上午'],
+      rowCount: 64,
+      created: true,
+    })
+
+    renderView()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // 切换数据源为西本
+    const sourceSelect = container.querySelector('.ant-select')
+    expect(sourceSelect).not.toBeNull()
+    await act(async () => {
+      sourceSelect?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const steelxOption = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    ).find((el) => el.textContent?.includes('西本'))
+    expect(steelxOption).toBeTruthy()
+    await act(async () => {
+      steelxOption?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 再次查询日历时带 source=STEELX
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const lastCall = api.fetchSteelQuoteCalendars.mock.calls.at(-1)
+    expect(lastCall?.[3]).toBe('STEELX')
+  })
 })

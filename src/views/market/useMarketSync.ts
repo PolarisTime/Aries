@@ -10,6 +10,7 @@ import {
   fetchBackfillStatus,
   fetchSteelQuoteCalendars,
   fetchSteelQuotes,
+  type MarketQuoteSource,
   type SteelQuote,
   type SteelQuoteBackfillStatus,
   syncSteelQuotes,
@@ -40,6 +41,8 @@ export function useMarketSync() {
     period: '',
   })
 
+  const [source, setSource] = useState<MarketQuoteSource>('MYSTEEL')
+  const [region, setRegion] = useState<string | undefined>(undefined)
   const [singleDate, setSingleDate] = useState<string>(() => today())
   const [syncPeriods, setSyncPeriods] = useState<string[]>(() => [...PERIODS])
   const [syncing, setSyncing] = useState(false)
@@ -70,9 +73,20 @@ export function useMarketSync() {
   )
 
   const calendarQuery = useQuery({
-    queryKey: QUERY_KEYS.marketCalendar(calendarRange.from, calendarRange.to),
+    queryKey: QUERY_KEYS.marketCalendar(
+      calendarRange.from,
+      calendarRange.to,
+      source,
+      region,
+    ),
     queryFn: ({ signal }) =>
-      fetchSteelQuoteCalendars(calendarRange.from, calendarRange.to, signal),
+      fetchSteelQuoteCalendars(
+        calendarRange.from,
+        calendarRange.to,
+        signal,
+        source,
+        region,
+      ),
     enabled: isAuthenticated,
     staleTime: 60_000,
   })
@@ -110,8 +124,10 @@ export function useMarketSync() {
       direction: sort.order,
       page: quotePage,
       size: PAGE_SIZE,
+      source,
+      region,
     }),
-    [selected.date, selected.period, applied, sort, quotePage],
+    [selected.date, selected.period, applied, sort, quotePage, source, region],
   )
 
   const quotesQuery = useQuery({
@@ -170,6 +186,12 @@ export function useMarketSync() {
     setQuotePage(0)
   }
 
+  /** 该数据源展示的时段: 西本每天仅一个价(上午)。 */
+  const activePeriods = useMemo<readonly string[]>(
+    () => (source === 'STEELX' ? ['上午'] : PERIODS),
+    [source],
+  )
+
   // 概览统计
   const stats = useMemo(() => {
     const weekdays = matrixDays.filter((date) => {
@@ -182,16 +204,23 @@ export function useMarketSync() {
       const entry = calendars[date]
       const count = entry?.periods.length ?? 0
       if (count > 0) covered += 1
-      missingSlots += PERIODS.length - count
+      missingSlots += activePeriods.length - count
     }
     const todayEntry = calendars[today()]
     return { weekdays: weekdays.length, covered, missingSlots, todayEntry }
-  }, [matrixDays, calendars])
+  }, [matrixDays, calendars, activePeriods])
 
   const onSync = async () => {
     setSyncing(true)
     try {
-      const result = await syncSteelQuotes(singleDate || undefined, syncPeriods)
+      const result = await syncSteelQuotes(
+        singleDate || undefined,
+        syncPeriods,
+        {
+          source,
+          region,
+        },
+      )
       const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
         `同步完成：${result.articleDate} ${synced.join('/')}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
@@ -216,7 +245,7 @@ export function useMarketSync() {
   const onBackfill = async () => {
     setBackfilling(true)
     try {
-      const result = await backfillSteelQuotes(backfillDays)
+      const result = await backfillSteelQuotes(backfillDays, { source, region })
       message.success(
         `已受理补数：${result.from} ~ ${result.to}（后台执行，完成后自动刷新）`,
       )
@@ -247,7 +276,7 @@ export function useMarketSync() {
     const periods = period ? [period] : syncPeriods
     setSyncingCell(period ? `${date}|${period}` : date)
     try {
-      const result = await syncSteelQuotes(date, periods)
+      const result = await syncSteelQuotes(date, periods, { source, region })
       const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
         `已同步 ${result.articleDate} ${synced.join('/')}，${result.rowCount} 行`,
@@ -295,6 +324,8 @@ export function useMarketSync() {
           direction: sort.order,
           page,
           size: 200,
+          source,
+          region,
         })
         all.push(...rows)
         if (all.length >= total || rows.length < 200) break
@@ -341,7 +372,12 @@ export function useMarketSync() {
   }
 
   return {
+    activePeriods,
     selected,
+    source,
+    setSource,
+    region,
+    setRegion,
     singleDate,
     setSingleDate,
     syncPeriods,
