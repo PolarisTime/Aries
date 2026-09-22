@@ -1,3 +1,10 @@
+# [10.18.0](https://github.com/PolarisTime/Aries/compare/v10.17.1...v10.18.0) (2026-09-22)
+
+
+### Features
+
+* **price-compare:** 支持按品牌列批量填入供应商 ([7d86f4c](https://github.com/PolarisTime/Aries/commit/7d86f4caae2ccc1c4e7ce21dc70492680a49d113))
+
 ## [10.17.1](https://github.com/PolarisTime/Aries/compare/v10.17.0...v10.17.1) (2026-09-22)
 
 
