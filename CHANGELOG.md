@@ -1,3 +1,10 @@
+# [10.24.0](https://github.com/PolarisTime/Aries/compare/v10.23.0...v10.24.0) (2026-09-22)
+
+
+### Features
+
+* **price-compare:** 西本项目取消品牌列, 按规格单组取价 ([df9c362](https://github.com/PolarisTime/Aries/commit/df9c36261bf0b8ad1d09acb92a59fc7e6b7a5bf8))
+
 # [10.23.0](https://github.com/PolarisTime/Aries/compare/v10.22.0...v10.23.0) (2026-09-22)
 
 
