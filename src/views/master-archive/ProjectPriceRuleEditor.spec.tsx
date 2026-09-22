@@ -54,7 +54,11 @@ describe('ProjectPriceRuleEditor', () => {
     root = createRoot(container)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    // 先冲刷挂起的异步更新, 再卸载, 避免卸载后 React 仍触发更新(window 已销毁)
+    await act(async () => {
+      await Promise.resolve()
+    })
     act(() => root.unmount())
     container.remove()
   })
