@@ -1,3 +1,10 @@
+## [10.21.1](https://github.com/PolarisTime/Aries/compare/v10.21.0...v10.21.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **sales-order:** 取网价按钮改用单据状态并修正日期解析 ([2b0b3d5](https://github.com/PolarisTime/Aries/commit/2b0b3d59afd743f2732f7eb6ed514e31e81f2b68))
+
 # [10.21.0](https://github.com/PolarisTime/Aries/compare/v10.20.0...v10.21.0) (2026-09-22)
 
 
