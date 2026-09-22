@@ -1,3 +1,10 @@
+# [10.25.0](https://github.com/PolarisTime/Aries/compare/v10.24.0...v10.25.0) (2026-09-22)
+
+
+### Features
+
+* **market:** 行情同步页支持切换 Mysteel/西本数据源 ([dfdb88f](https://github.com/PolarisTime/Aries/commit/dfdb88f9a2098b92b3c06ed51a4acef3c9f3553d))
+
 # [10.24.0](https://github.com/PolarisTime/Aries/compare/v10.23.0...v10.24.0) (2026-09-22)
 
 
