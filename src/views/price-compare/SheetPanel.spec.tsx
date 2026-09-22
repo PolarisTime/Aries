@@ -916,4 +916,107 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerText).toContain('中天')
     expect(headerText).not.toContain('沙钢')
   })
+
+  it('勾选行后点击标记为已采购: 行置为已采购并遮蔽吨位后的品牌价格列', async () => {
+    const observed = renderStateful(
+      makeSheet(),
+      [{ ...baseRow, id: 'r1' }],
+      suppliers,
+    )
+
+    // 初始: 现货价输入可见
+    expect(container.querySelector('input[data-spot="中天:r1"]')).not.toBeNull()
+
+    const rowCheckbox = container.querySelector<HTMLInputElement>(
+      '.ant-table-row input[type="checkbox"]',
+    )
+    await act(async () => {
+      rowCheckbox?.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const markBtn = container.querySelector('.price-compare-purchased-btn')
+    expect(markBtn).not.toBeNull()
+    expect(markBtn?.textContent).toContain('标记为已采购')
+    await act(async () => {
+      markBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(observed.rows[0].purchased).toBe(true)
+    // 品牌价格列被遮蔽: 现货输入消失, 出现遮蔽块
+    expect(container.querySelector('input[data-spot="中天:r1"]')).toBeNull()
+    expect(
+      container.querySelectorAll('.price-compare-purchased-mask').length,
+    ).toBeGreaterThan(0)
+    expect(
+      container.querySelector('tr.price-compare-purchased-row'),
+    ).not.toBeNull()
+  })
+
+  it('再次点击可取消已采购并恢复品牌价格列', async () => {
+    const observed = renderStateful(
+      makeSheet(),
+      [{ ...baseRow, id: 'r1', purchased: true }],
+      suppliers,
+    )
+
+    expect(container.querySelector('input[data-spot="中天:r1"]')).toBeNull()
+
+    const rowCheckbox = container.querySelector<HTMLInputElement>(
+      '.ant-table-row input[type="checkbox"]',
+    )
+    await act(async () => {
+      rowCheckbox?.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const unmarkBtn = container.querySelector('.price-compare-purchased-btn')
+    expect(unmarkBtn?.textContent).toContain('取消已采购')
+    await act(async () => {
+      unmarkBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(observed.rows[0].purchased).toBeUndefined()
+    expect(container.querySelector('input[data-spot="中天:r1"]')).not.toBeNull()
+  })
+
+  it('隔断行不参与已采购标记', async () => {
+    const observed = renderStateful(
+      makeSheet(),
+      [
+        { ...baseRow, id: 'r1' },
+        {
+          id: 'sep1',
+          rowType: 'SEPARATOR',
+          category: '',
+          material: '',
+          spec: null,
+          length: '',
+        },
+      ],
+      suppliers,
+    )
+
+    const allCheckbox = container.querySelector<HTMLInputElement>(
+      '.ant-table-thead input[type="checkbox"]',
+    )
+    await act(async () => {
+      allCheckbox?.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const markBtn = container.querySelector('.price-compare-purchased-btn')
+    await act(async () => {
+      markBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(observed.rows[0].purchased).toBe(true)
+    // 隔断行不被标记
+    expect(observed.rows[1].purchased).toBeUndefined()
+    // 隔断行仍渲染分隔带而非遮蔽
+    expect(
+      container.querySelector('tr.price-compare-separator-row'),
+    ).not.toBeNull()
+  })
 })

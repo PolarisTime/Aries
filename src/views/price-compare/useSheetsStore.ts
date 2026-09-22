@@ -267,6 +267,7 @@ function buildPayload(
           length: row.length,
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
+          ...(row.purchased ? { purchased: true } : {}),
           prices,
         },
       ]
@@ -318,6 +319,7 @@ function buildItemPayload(
     length: row.length,
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
+    ...(row.purchased ? { purchased: true } : {}),
     prices,
   }
 }
@@ -342,6 +344,7 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     length: row.length,
     ton: row.ton ?? null,
     remark: row.remark ?? '',
+    purchased: Boolean(row.purchased),
     prices,
   })
 }
@@ -2158,6 +2161,7 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     length: item.length,
     ...(item.ton !== undefined ? { ton: item.ton } : {}),
     ...(item.remark ? { remark: item.remark } : {}),
+    ...(item.purchased ? { purchased: true } : {}),
   }))
   const inputs: SheetInputs = {}
   for (const item of record.items) {

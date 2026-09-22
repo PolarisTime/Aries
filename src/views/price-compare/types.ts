@@ -54,6 +54,8 @@ export type PriceRow = {
   ton?: number
   /** 行级备注 */
   remark?: string
+  /** 已采购: 勾选后前端遮蔽吨位之后的品牌价格列; 隔断行恒为 false。 */
+  purchased?: boolean
 }
 
 export type SheetInput = {

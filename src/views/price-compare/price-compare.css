@@ -224,6 +224,26 @@
   opacity: 0.45;
 }
 
+/* 已采购行: 吨位之后的品牌价格列(网价/现货/差价/简称)整体遮蔽, 不可编辑 */
+.price-compare-table tbody > tr.price-compare-purchased-row > td {
+  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
+}
+
+.price-compare-purchased-mask {
+  display: block;
+  width: 100%;
+  min-width: 24px;
+  height: 18px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.06)) 0,
+    var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.06)) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
 /* 隔断行: 整条分隔带, 弱化背景并隐藏其它列的交互 */
 .price-compare-table .ant-table-tbody > tr.price-compare-separator-row > td {
   height: 14px;

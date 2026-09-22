@@ -443,6 +443,26 @@ export function isSeparatorRow(row: Pick<PriceRow, 'rowType'>): boolean {
   return row.rowType === 'SEPARATOR'
 }
 
+/**
+ * 批量设置指定商品行的「已采购」标记(隔断行忽略)。
+ * 取消标记时删除字段(undefined), 保持与历史数据/请求体口径一致; 无变化时返回原数组。
+ */
+export function applyPurchasedFlag(
+  rows: PriceRow[],
+  rowIds: ReadonlySet<string>,
+  purchased: boolean,
+): PriceRow[] {
+  const next = purchased ? true : undefined
+  let changed = false
+  const result = rows.map((row) => {
+    if (!rowIds.has(row.id) || isSeparatorRow(row)) return row
+    if (row.purchased === next) return row
+    changed = true
+    return { ...row, purchased: next }
+  })
+  return changed ? result : rows
+}
+
 export const DEFAULT_STATUS = '报价'
 
 /** 新建单据默认空行数(由用户自行选择商品)。 */

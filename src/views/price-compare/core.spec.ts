@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyPurchasedFlag,
   canonicalCategory,
   computeSummary,
   countMissing,
@@ -475,6 +476,45 @@ describe('fillSupplierInputs', () => {
         label: '沙钢',
       }),
     ).toBe(inputs)
+  })
+})
+
+describe('applyPurchasedFlag', () => {
+  const rows: PriceRow[] = [
+    { ...row12, id: 'r1' },
+    { ...row12, id: 'r2' },
+    {
+      id: 'sep1',
+      rowType: 'SEPARATOR',
+      category: '',
+      material: '',
+      spec: null,
+      length: '',
+    },
+  ]
+
+  it('标记指定商品行为已采购, 忽略隔断行', () => {
+    const next = applyPurchasedFlag(rows, new Set(['r1', 'sep1']), true)
+    expect(next[0].purchased).toBe(true)
+    expect(next[1].purchased).toBeUndefined()
+    expect(next[2].purchased).toBeUndefined()
+  })
+
+  it('取消标记时删除字段', () => {
+    const marked: PriceRow[] = [{ ...row12, id: 'r1', purchased: true }]
+    const next = applyPurchasedFlag(marked, new Set(['r1']), false)
+    expect(next[0].purchased).toBeUndefined()
+  })
+
+  it('无变化时返回原数组引用', () => {
+    const noop = applyPurchasedFlag(rows, new Set(['r1']), true)
+    expect(noop).not.toBe(rows)
+    const same = applyPurchasedFlag(noop, new Set(['r1']), true)
+    expect(same).toBe(noop)
+  })
+
+  it('空目标集合不产生变化', () => {
+    expect(applyPurchasedFlag(rows, new Set(), true)).toBe(rows)
   })
 })
 

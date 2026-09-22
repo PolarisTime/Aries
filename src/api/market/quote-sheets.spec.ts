@@ -127,6 +127,60 @@ describe('quote-sheets API', () => {
     expect(record.specQuantityLocked).toBe(false)
   })
 
+  it('已采购标记归一化: 缺省为 false, 显式 true 保留', async () => {
+    apiGetMock.mockResolvedValue({
+      content: [
+        {
+          ...page.content[0],
+          items: [
+            { ...page.content[0].items[0], purchased: true },
+            {
+              ...page.content[0].items[0],
+              id: '700500000000000141',
+              purchased: undefined,
+            },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 200,
+      hasMore: false,
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.items[0].purchased).toBe(true)
+    expect(record.items[1].purchased).toBe(false)
+  })
+
+  it('隔断行的已采购标记强制归一为 false', async () => {
+    apiGetMock.mockResolvedValue({
+      content: [
+        {
+          ...page.content[0],
+          items: [
+            {
+              ...page.content[0].items[0],
+              rowType: 'SEPARATOR',
+              purchased: true,
+            },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 200,
+      hasMore: false,
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.items[0].purchased).toBe(false)
+  })
+
   it('更新按路径 ID 提交整体替换请求体', async () => {
     apiPutMock.mockResolvedValue(page.content[0])
 

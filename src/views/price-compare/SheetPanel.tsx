@@ -6,6 +6,7 @@ import {
   MinusOutlined,
   ReloadOutlined,
   SettingOutlined,
+  ShoppingOutlined,
   TrophyOutlined,
   UnlockOutlined,
   VerticalAlignBottomOutlined,
@@ -35,6 +36,7 @@ import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
+  applyPurchasedFlag,
   CATEGORIES,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
@@ -172,9 +174,13 @@ const cellOf = (
   title,
   width,
   align: 'center' as const,
-  // 隔断行不参与网价/现货/差价/供应商等任一品牌列
+  // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购行整体遮蔽该区
   render: (value: unknown, row: GridRow) =>
-    isSeparatorRow(row.row) ? null : render(value, row),
+    isSeparatorRow(row.row) ? null : row.row.purchased ? (
+      <span className="price-compare-purchased-mask" aria-hidden="true" />
+    ) : (
+      render(value, row)
+    ),
 })
 
 const varietyKeyOf = (item: Variety) =>
@@ -888,6 +894,7 @@ function SheetTable(props: SheetTableProps) {
       rowClassName={(row) => {
         const classes: string[] = []
         if (isSeparatorRow(row.row)) classes.push('price-compare-separator-row')
+        else if (row.row.purchased) classes.push('price-compare-purchased-row')
         if (row.rowId === dragId) classes.push('price-compare-dragging')
         if (dragId && row.rowId === dropId && row.rowId !== dragId)
           classes.push(
@@ -1231,14 +1238,17 @@ function LockSpecQuantityButton({
   )
 }
 
-/** 选中行后出现的操作: 批量填入供应商 + 删除所选行。 */
+/** 选中行后出现的操作: 批量填入供应商 + 标记已采购 + 删除所选行。 */
 function SelectedRowActions({
   brands,
   supplierOptions,
   selectedCount,
   readOnly,
   specQuantityLocked,
+  allSelectedPurchased,
+  anySelectedPurchased,
   onFillSupplierSelected,
+  onTogglePurchased,
   onRemoveSelected,
 }: {
   brands: Brand[]
@@ -1246,10 +1256,15 @@ function SelectedRowActions({
   selectedCount: number
   readOnly: boolean
   specQuantityLocked: boolean
+  /** 选中行(商品行)是否已全部标记为已采购。 */
+  allSelectedPurchased: boolean
+  /** 选中行(商品行)是否至少一行已采购。 */
+  anySelectedPurchased: boolean
   onFillSupplierSelected: (
     brandName: string,
     option: { value: string; label: string } | undefined,
   ) => void
+  onTogglePurchased: (purchased: boolean) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
@@ -1262,6 +1277,22 @@ function SelectedRowActions({
         disabled={readOnly || specQuantityLocked}
         onFill={onFillSupplierSelected}
       />
+      <Button
+        type={allSelectedPurchased ? 'primary' : 'default'}
+        icon={<ShoppingOutlined />}
+        disabled={readOnly}
+        className="price-compare-purchased-btn"
+        onClick={() => onTogglePurchased(!allSelectedPurchased)}
+      >
+        {allSelectedPurchased
+          ? t('priceCompare.sheet.unmarkPurchased')
+          : t('priceCompare.sheet.markPurchased')}
+        {anySelectedPurchased && !allSelectedPurchased ? (
+          <span className="price-compare-purchased-partial">
+            {t('priceCompare.sheet.purchasedPartial')}
+          </span>
+        ) : null}
+      </Button>
       {readOnly || specQuantityLocked ? (
         <Tooltip
           title={
@@ -1320,6 +1351,9 @@ function SheetHeader({
   onToggleBrand,
   supplierOptions,
   onFillSupplierSelected,
+  allSelectedPurchased,
+  anySelectedPurchased,
+  onTogglePurchased,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -1349,6 +1383,9 @@ function SheetHeader({
     brandName: string,
     option: { value: string; label: string } | undefined,
   ) => void
+  allSelectedPurchased: boolean
+  anySelectedPurchased: boolean
+  onTogglePurchased: (purchased: boolean) => void
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
@@ -1530,7 +1567,10 @@ function SheetHeader({
             selectedCount={selectedCount}
             readOnly={readOnly}
             specQuantityLocked={Boolean(sheet.specQuantityLocked)}
+            allSelectedPurchased={allSelectedPurchased}
+            anySelectedPurchased={anySelectedPurchased}
             onFillSupplierSelected={onFillSupplierSelected}
+            onTogglePurchased={onTogglePurchased}
             onRemoveSelected={onRemoveSelected}
           />
         ) : null}
@@ -1574,6 +1614,28 @@ type Props = {
 }
 
 /** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
+/**
+ * 本次会话内现货价被改过的单元格键(`品牌:行id`)集合。
+ * 批量填入供应商时只作用于这些行, 避免换第 N 家时误改已定价的其它供应商行;
+ * 填入完成后消费标记, 避免下一家重复命中。
+ */
+function useSpotTouchedKeys() {
+  const [keys, setKeys] = useState<ReadonlySet<string>>(() => new Set())
+  const mark = (next: string[]) => {
+    if (!next.length) return
+    setKeys((current) => new Set([...current, ...next]))
+  }
+  const consume = (next: string[]) => {
+    if (!next.length) return
+    setKeys((current) => {
+      const result = new Set(current)
+      for (const key of next) result.delete(key)
+      return result
+    })
+  }
+  return { keys, mark, consume }
+}
+
 export function SheetPanel(props: Props) {
   const {
     sheet,
@@ -1609,30 +1671,11 @@ export function SheetPanel(props: Props) {
   const [hideRemark, setHideRemark] = useState(false)
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
   const hiddenBrandSet = new Set(hiddenBrands)
-  /**
-   * 本次会话内现货价被改过的单元格键(`品牌:行id`)。
-   * 批量填入供应商时只作用于这些行, 避免换第 N 家时误改已定价的其它供应商行。
-   */
-  const [spotTouchedKeys, setSpotTouchedKeys] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  )
-  const markSpotsTouched = (keys: string[]) => {
-    if (!keys.length) return
-    setSpotTouchedKeys((current) => {
-      const next = new Set(current)
-      for (const key of keys) next.add(key)
-      return next
-    })
-  }
-  /** 填入完成后消费掉已处理的标记, 避免下一家批量填入时重复命中。 */
-  const consumeSpotsTouched = (keys: string[]) => {
-    if (!keys.length) return
-    setSpotTouchedKeys((current) => {
-      const next = new Set(current)
-      for (const key of keys) next.delete(key)
-      return next
-    })
-  }
+  const {
+    keys: spotTouchedKeys,
+    mark: markSpotsTouched,
+    consume: consumeSpotsTouched,
+  } = useSpotTouchedKeys()
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
     setHiddenBrands((current) =>
       visible
@@ -1754,6 +1797,24 @@ export function SheetPanel(props: Props) {
           : [...current, rowId]
         : current.filter((id) => id !== rowId),
     )
+
+  /** 选中行中的商品行(隔断行不参与已采购标记)。 */
+  const selectedIdSet = new Set(selectedIds)
+  const selectedProductRows = rows.filter(
+    (row) => selectedIdSet.has(row.id) && !isSeparatorRow(row),
+  )
+  const allSelectedPurchased =
+    selectedProductRows.length > 0 &&
+    selectedProductRows.every((row) => row.purchased)
+  const anySelectedPurchased = selectedProductRows.some((row) => row.purchased)
+
+  /** 批量标记/取消选中商品行的已采购状态。 */
+  const markSelectedPurchased = (purchased: boolean) => {
+    const ids = new Set(selectedProductRows.map((row) => row.id))
+    if (!ids.size) return
+    setRows((list) => applyPurchasedFlag(list, ids, purchased))
+  }
+
   const removeSelected = () => {
     const ids = new Set(selectedIds)
     if (!ids.size) return
@@ -1847,6 +1908,9 @@ export function SheetPanel(props: Props) {
         onFillSupplierSelected={(brandName, option) =>
           fillSupplier(brandName, selectedIds, option)
         }
+        allSelectedPurchased={allSelectedPurchased}
+        anySelectedPurchased={anySelectedPurchased}
+        onTogglePurchased={markSelectedPurchased}
       />
 
       <SheetTable
