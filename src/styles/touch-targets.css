@@ -1,24 +1,71 @@
 /*
  * 触摸目标热区（WCAG 2.5.8 AA）
  * 通过 ::before 伪元素扩大命中区域，不改变按钮的视觉尺寸。
- * 例外：antd compact 组内 solid 按钮的 ::before 被 antd 用于 1px 连接边框，必须排除。
+ * 例外：
+ *  - antd compact 组内 solid 按钮的 ::before 被 antd 用于 1px 连接边框，必须排除。
+ *  - antd select/picker 的清除按钮由 antd 绝对定位控制，必须排除本规则的
+ *    position: relative，否则会覆盖其定位、使 x 掉到框顶；它们改用下方等高方案。
  */
 
-button:not(.ant-btn-variant-solid.ant-btn-compact-item),
-[role="button"],
-.ant-btn:not(.ant-btn-variant-solid.ant-btn-compact-item) {
+button:not(
+  .ant-btn-variant-solid.ant-btn-compact-item,
+  .ant-select-clear,
+  .ant-picker-clear
+),
+[role="button"]:not(.ant-select-clear, .ant-picker-clear),
+.ant-btn:not(
+  .ant-btn-variant-solid.ant-btn-compact-item,
+  .ant-select-clear,
+  .ant-picker-clear
+) {
   position: relative;
 }
 
-button:not(.ant-btn-variant-solid.ant-btn-compact-item)::before,
-[role="button"]::before,
-.ant-btn:not(.ant-btn-variant-solid.ant-btn-compact-item)::before {
+button:not(
+  .ant-btn-variant-solid.ant-btn-compact-item,
+  .ant-select-clear,
+  .ant-picker-clear
+)::before,
+[role="button"]:not(.ant-select-clear, .ant-picker-clear)::before,
+.ant-btn:not(
+  .ant-btn-variant-solid.ant-btn-compact-item,
+  .ant-select-clear,
+  .ant-picker-clear
+)::before {
   content: "";
   position: absolute;
   top: 50%;
   left: 50%;
   width: max(100%, 24px);
   height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * antd 清除按钮的 x：与控件等高并垂直居中（顺带扩大命中区域），
+ * 图标视觉尺寸保持不变。选择器提高特异性以覆盖 antd 的默认定位。
+ */
+.ant-select.ant-select-allow-clear .ant-select-clear,
+.ant-picker .ant-picker-clear {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  margin-top: 0;
+  transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 清除按钮被上方规则排除后，单独补回至少 24×24 的触摸热区（图标尺寸不变） */
+.ant-select.ant-select-allow-clear .ant-select-clear::before,
+.ant-picker .ant-picker-clear::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: 100%;
   transform: translate(-50%, -50%);
 }
 
