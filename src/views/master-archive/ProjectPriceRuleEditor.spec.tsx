@@ -49,6 +49,9 @@ describe('ProjectPriceRuleEditor', () => {
     }
     fetchMock.mockReset()
     saveMock.mockReset()
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)

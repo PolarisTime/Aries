@@ -44,6 +44,9 @@ describe('usePriceComparePricing 数据源联动', () => {
   beforeEach(() => {
     api.fetchMaterialPriceMatches.mockReset().mockResolvedValue([])
     api.fetchSteelQuoteCalendars.mockReset().mockResolvedValue([])
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
     })
