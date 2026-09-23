@@ -611,8 +611,6 @@ export const enUS = {
       unassignedWarehouse: 'Unassigned Warehouse',
       addGroup: 'Add Group',
       groupLabel: 'Group {{index}}',
-      groupProjectLabel: 'Unloading destination',
-      groupProjectPlaceholder: 'Select project abbreviation',
       groupRemarkPlaceholder: 'Add a group note',
       lockGroup: 'Lock group {{index}}',
       unlockGroup: 'Unlock group {{index}}',
@@ -621,6 +619,12 @@ export const enUS = {
       dragGroup: 'Drag group {{index}}',
       dragRow: 'Drag row {{index}}',
       restoreDefault: 'Restore Default Order',
+      splitItem: 'Split quantity',
+      mergeItem: 'Merge split',
+      splitPartLabel: 'Part {{index}}/{{total}}',
+      removeSplitPart: 'Remove row {{index}}',
+      splitRecorded:
+        'Split quantities are for this view and grouping only, and are not written back to purchase orders.',
     },
     overview: {
       recordCount: 'Records',

@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import type { PurchaseOrderPickupListItem } from '@/api/purchase/purchase-order-pickup-list'
 import {
+  buildDefaultRowIds,
+  buildPickupRows,
+  buildPickupRowsByItem,
+  changePickupRowQuantity,
   createPickupGroup,
   createWarehouseGroups,
   flattenGroupItemIds,
   groupDragId,
   groupIdFromDragId,
+  isSplitValue,
+  removePickupSplitPart,
   reorderGroupedItems,
   reorderGroups,
   resolveDraft,
+  splitPickupItem,
 } from './pickup-list-draft'
 
 function buildItem(
@@ -51,9 +58,18 @@ describe('pickup-list-draft 纯逻辑', () => {
 
   it('createWarehouseGroups 按仓库 id 分组并保持仓库内排序', () => {
     const groups = createWarehouseGroups([
-      buildItem({ itemId: '2', warehouseId: 'w1' }),
-      buildItem({ itemId: '1', warehouseId: 'w1' }),
-      buildItem({ itemId: '3', warehouseId: 'w2' }),
+      buildPickupRows(
+        buildItem({ itemId: '2', warehouseId: 'w1' }),
+        undefined,
+      )[0],
+      buildPickupRows(
+        buildItem({ itemId: '1', warehouseId: 'w1' }),
+        undefined,
+      )[0],
+      buildPickupRows(
+        buildItem({ itemId: '3', warehouseId: 'w2' }),
+        undefined,
+      )[0],
     ])
     expect(groups).toHaveLength(2)
     expect(groups[0].itemIds).toEqual(['2', '1'])
@@ -62,9 +78,15 @@ describe('pickup-list-draft 纯逻辑', () => {
 
   it('createWarehouseGroups 无 id 时按仓库名分组，完全缺失时归入未指定组', () => {
     const groups = createWarehouseGroups([
-      buildItem({ itemId: '1', warehouseName: '仓库A' }),
-      buildItem({ itemId: '2' }),
-      buildItem({ itemId: '3', warehouseName: '仓库A' }),
+      buildPickupRows(
+        buildItem({ itemId: '1', warehouseName: '仓库A' }),
+        undefined,
+      )[0],
+      buildPickupRows(buildItem({ itemId: '2' }), undefined)[0],
+      buildPickupRows(
+        buildItem({ itemId: '3', warehouseName: '仓库A' }),
+        undefined,
+      )[0],
     ])
     expect(groups).toHaveLength(2)
     expect(groups[0].itemIds).toEqual(['1', '3'])
@@ -76,36 +98,91 @@ describe('pickup-list-draft 纯逻辑', () => {
   })
 
   it('resolveDraft 草稿为空或 dataKey 不匹配时回退默认单分组', () => {
-    const draft = resolveDraft(null, 'key', ['1', '2'])
+    const draft = resolveDraft(null, 'key', [
+      buildItem({ itemId: '1' }),
+      buildItem({ itemId: '2' }),
+    ])
     expect(draft.groups).toHaveLength(1)
     expect(draft.groups[0].itemIds).toEqual(['1', '2'])
+    expect(draft.splits).toEqual({})
 
-    const stale = resolveDraft({ dataKey: 'other', groups: [] }, 'key', ['1'])
+    const stale = resolveDraft(
+      { dataKey: 'other', groups: [], splits: {} },
+      'key',
+      [buildItem({ itemId: '1' })],
+    )
     expect(stale.dataKey).toBe('key')
     expect(stale.groups).toHaveLength(1)
   })
 
-  it('resolveDraft 过滤无效与重复 item，未分配项归入第一分组', () => {
-    const base = resolveDraft(null, 'key', ['1', '2', '3'])
+  it('resolveDraft 过滤无效与重复行，未分配项归入第一分组', () => {
+    const items = [
+      buildItem({ itemId: '1' }),
+      buildItem({ itemId: '2' }),
+      buildItem({ itemId: '3' }),
+    ]
+    const base = resolveDraft(null, 'key', items)
     const draft = resolveDraft(
       {
         dataKey: base.dataKey,
+        splits: {},
         groups: [
           { id: 'a', locked: false, remark: '', itemIds: ['1', 'ghost', '2'] },
           { id: 'b', locked: false, remark: '', itemIds: ['2', '3'] },
         ],
       },
       'key',
-      ['1', '2', '3'],
+      items,
     )
     expect(draft.groups[0].itemIds).toEqual(['1', '2'])
     expect(draft.groups[1].itemIds).toEqual(['3'])
   })
 
   it('resolveDraft 空 groups 回退默认分组', () => {
-    const draft = resolveDraft({ dataKey: 'key', groups: [] }, 'key', ['1'])
+    const draft = resolveDraft(
+      { dataKey: 'key', groups: [], splits: {} },
+      'key',
+      [buildItem({ itemId: '1' })],
+    )
     expect(draft.groups).toHaveLength(1)
     expect(draft.groups[0].itemIds).toEqual(['1'])
+  })
+
+  it('resolveDraft 依当前拆分份展开默认行实例并追加新增份', () => {
+    const item = buildItem({ itemId: '1', pickupQuantity: 8 })
+    const base = resolveDraft(null, 'key', [item])
+    const split = resolveDraft({ ...base, splits: { '1': [4, 4] } }, 'key', [
+      item,
+    ])
+    expect(split.groups[0].itemIds).toEqual(['1', '1#1'])
+
+    const grown = resolveDraft(
+      {
+        dataKey: 'key',
+        splits: { '1': [3, 3, 2] },
+        groups: [{ id: 'a', locked: false, remark: '', itemIds: ['1', '1#1'] }],
+      },
+      'key',
+      [item],
+    )
+    expect(grown.groups[0].itemIds).toEqual(['1', '1#1', '1#2'])
+  })
+
+  it('resolveDraft 新增拆分份插到同来源同组行之后而非追加到组尾', () => {
+    const items = [
+      buildItem({ itemId: '1', pickupQuantity: 8 }),
+      buildItem({ itemId: '2', pickupQuantity: 4 }),
+    ]
+    const grown = resolveDraft(
+      {
+        dataKey: 'key',
+        splits: { '1': [4, 4] },
+        groups: [{ id: 'a', locked: false, remark: '', itemIds: ['1', '2'] }],
+      },
+      'key',
+      items,
+    )
+    expect(grown.groups[0].itemIds).toEqual(['1', '1#1', '2'])
   })
 
   it('flattenGroupItemIds 拼接所有分组明细', () => {
@@ -166,5 +243,89 @@ describe('pickup-list-draft 纯逻辑', () => {
     const groups = [{ id: 'a', locked: false, remark: '', itemIds: ['1'] }]
     expect(reorderGroupedItems(groups, 'ghost', '1')).toBe(groups)
     expect(reorderGroupedItems(groups, '1', 'ghost')).toBe(groups)
+  })
+})
+
+describe('提货数量拆分', () => {
+  it('buildPickupRows 未拆分时保持后端数量与重量', () => {
+    const item = buildItem({
+      itemId: '5',
+      pickupQuantity: 8,
+      pickupWeightTon: 1.234,
+    })
+    const rows = buildPickupRows(item, undefined)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].rowId).toBe('5')
+    expect(rows[0].quantity).toBe(8)
+    expect(rows[0].weightTon).toBe(1.234)
+    expect(rows[0].partCount).toBe(1)
+  })
+
+  it('buildPickupRows 拆分后件数守恒且重量按件重比例折算', () => {
+    const item = buildItem({
+      itemId: '5',
+      pickupQuantity: 8,
+      pickupWeightTon: 0.8,
+    })
+    const rows = buildPickupRows(item, [5, 3])
+    expect(rows.map((row) => row.rowId)).toEqual(['5', '5#1'])
+    expect(rows.map((row) => row.quantity)).toEqual([5, 3])
+    expect(rows.reduce((sum, row) => sum + row.quantity, 0)).toBe(8)
+    expect(rows[0].weightTon).toBeCloseTo(0.5, 8)
+    expect(rows[1].weightTon).toBeCloseTo(0.3, 8)
+    expect(rows.reduce((sum, row) => sum + row.weightTon, 0)).toBeCloseTo(
+      0.8,
+      8,
+    )
+    expect(rows.map((row) => row.partIndex)).toEqual([0, 1])
+  })
+
+  it('buildPickupRowsByItem / buildDefaultRowIds 展开全部拆分份', () => {
+    const items = [
+      buildItem({ itemId: '1', pickupQuantity: 4 }),
+      buildItem({ itemId: '2', pickupQuantity: 8 }),
+    ]
+    const splits = { '2': [5, 3] }
+    const rowsById = buildPickupRowsByItem(items, splits)
+    expect([...rowsById.keys()]).toEqual(['1', '2', '2#1'])
+    expect(buildDefaultRowIds(items, splits)).toEqual(['1', '2', '2#1'])
+  })
+
+  it('splitPickupItem 对半拆分且件数守恒，数量不足 2 或已拆分时不变', () => {
+    const single = buildItem({ itemId: '1', pickupQuantity: 1 })
+    expect(splitPickupItem({}, single)).toEqual({})
+
+    const odd = buildItem({ itemId: '2', pickupQuantity: 7 })
+    expect(splitPickupItem({}, odd)).toEqual({ '2': [3, 4] })
+
+    const already = { '2': [3, 4] }
+    expect(splitPickupItem(already, odd)).toBe(already)
+  })
+
+  it('changePickupRowQuantity 差额调整到相邻份并保持守恒', () => {
+    const item = buildItem({ itemId: '1', pickupQuantity: 8 })
+    const moved = changePickupRowQuantity({ '1': [5, 3] }, item, 0, 6)
+    expect(moved).toEqual({ '1': [6, 2] })
+
+    // 末份改动时调整到前一份
+    const tail = changePickupRowQuantity({ '1': [5, 3] }, item, 1, 5)
+    expect(tail).toEqual({ '1': [3, 5] })
+
+    // 相邻份不足 1 件时拒绝
+    expect(changePickupRowQuantity({ '1': [7, 1] }, item, 0, 8)).toEqual({
+      '1': [7, 1],
+    })
+
+    // 未拆分时不变
+    expect(changePickupRowQuantity({}, item, 0, 3)).toEqual({})
+  })
+
+  it('removePickupSplitPart 把件数合并回相邻份，只剩一份时回到未拆分', () => {
+    const merged = removePickupSplitPart({ '1': [5, 3] }, '1', 1)
+    expect(merged).toEqual({})
+
+    const three = removePickupSplitPart({ '1': [3, 3, 2] }, '1', 0)
+    expect(three).toEqual({ '1': [6, 2] })
+    expect(isSplitValue(three['1'])).toBe(true)
   })
 })

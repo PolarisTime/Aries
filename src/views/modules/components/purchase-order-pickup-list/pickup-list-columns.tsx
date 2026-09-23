@@ -1,8 +1,8 @@
 import type { TableColumnsType } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PurchaseOrderPickupListItem } from '@/api/purchase/purchase-order-pickup-list'
 import { formatWeight } from '@/utils/formatters'
+import type { PickupListRow } from './pickup-list-draft'
 import { DragHandle } from './pickup-list-sortable'
 
 function displayText(value: string | null | undefined) {
@@ -10,10 +10,14 @@ function displayText(value: string | null | undefined) {
   return text || '-'
 }
 
+/**
+ * 提货明细列定义：以行实例（PickupListRow）为行模型，
+ * 商品与仓库字段取自 row.item，数量与重量取拆分后的行值。
+ */
 export function usePickupListColumns() {
   const { t } = useTranslation()
 
-  return useMemo<TableColumnsType<PurchaseOrderPickupListItem>>(
+  return useMemo<TableColumnsType<PickupListRow>>(
     () => [
       {
         key: 'drag',
@@ -29,62 +33,68 @@ export function usePickupListColumns() {
       },
       {
         title: t('modules.columns.warehouseName'),
-        dataIndex: 'warehouseName',
+        key: 'warehouseName',
         width: 112,
         align: 'center',
-        render: (value: string | null) => displayText(value),
+        render: (_value, row) => displayText(row.item.warehouseName),
       },
       {
         title: t('modules.columns.brand'),
-        dataIndex: 'brand',
+        key: 'brand',
         width: 80,
         align: 'center',
         ellipsis: true,
+        render: (_value, row) => row.item.brand,
       },
       {
         title: t('modules.purchasePickupList.itemName'),
-        dataIndex: 'category',
+        key: 'category',
         width: 80,
         align: 'center',
         ellipsis: true,
+        render: (_value, row) => row.item.category,
       },
       {
         title: t('modules.columns.material'),
-        dataIndex: 'material',
+        key: 'material',
         width: 80,
         align: 'center',
         ellipsis: true,
+        render: (_value, row) => row.item.material,
       },
       {
         title: t('modules.columns.spec'),
-        dataIndex: 'spec',
+        key: 'spec',
         width: 96,
         align: 'center',
         ellipsis: true,
+        render: (_value, row) => row.item.spec,
       },
       {
         title: t('modules.columns.length'),
-        dataIndex: 'length',
+        key: 'length',
         width: 64,
         align: 'center',
-        render: (value: string | null) => displayText(value),
+        render: (_value, row) => displayText(row.item.length),
       },
       {
         title: t('modules.purchasePickupList.pickupQuantity'),
-        dataIndex: 'pickupQuantity',
-        width: 72,
+        key: 'quantity',
+        dataIndex: 'quantity',
+        width: 132,
         align: 'center',
       },
       {
         title: t('modules.purchasePickupList.pieceWeight'),
-        dataIndex: 'pieceWeightTon',
+        key: 'pieceWeightTon',
         width: 96,
         align: 'center',
-        render: (value: number) => formatWeight(value),
+        render: (_value, row) => formatWeight(row.item.pieceWeightTon),
       },
       {
         title: t('modules.purchasePickupList.pickupWeight'),
-        dataIndex: 'pickupWeightTon',
+        key: 'weightTon',
+        dataIndex: 'weightTon',
         width: 96,
         align: 'center',
         render: (value: number) => formatWeight(value),
