@@ -160,6 +160,51 @@ describe('订单引用状态响应契约', () => {
   })
 })
 
+describe('销售订单价格规定快照契约', () => {
+  it('列表响应 priceFloatValue 为 BigDecimal 数字时正常解析', () => {
+    const response = getMainFlowListResponseSchema('sales-order').parse(
+      page({
+        ...salesOrder,
+        priceRuleId: '1000001',
+        priceRuleName: '默认',
+        priceFloatMode: 'ADD',
+        priceFloatValue: 20,
+      }),
+    )
+
+    expect(response.content[0]).toMatchObject({
+      priceRuleId: '1000001',
+      priceFloatMode: 'ADD',
+      priceFloatValue: 20,
+    })
+  })
+
+  it('详情响应 priceFloatValue 为小数/字符串或为空时均可解析', () => {
+    const decimal = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      priceFloatValue: 20.5,
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+    const numericString = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      priceFloatValue: '30.00',
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+    const nullable = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      priceFloatValue: null,
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+
+    expect(decimal.priceFloatValue).toBe(20.5)
+    expect(numericString.priceFloatValue).toBe(30)
+    expect(nullable.priceFloatValue).toBeNull()
+  })
+})
+
 describe('销售订单明细出库剩余量契约', () => {
   it('详情解析 outboundRemainingQuantity 并保持为数字', () => {
     const parsed = getMainFlowDetailResponseSchema('sales-order').parse({

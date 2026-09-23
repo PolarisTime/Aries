@@ -26,6 +26,13 @@ const decimalSchema = z.number().finite()
 const nonNegativeDecimalSchema = decimalSchema.nonnegative()
 const nullableDecimalSchema = decimalSchema.nullable()
 
+/** 后端 BigDecimal 响应序列化为 JSON number（兼容历史十进制字符串），统一归一化为 number。 */
+const responseDecimalSchema = z.union([
+  decimalSchema,
+  z.string().regex(DECIMAL_PATTERN).transform(Number),
+])
+const nullableResponseDecimalSchema = responseDecimalSchema.nullable()
+
 /** 单据附加费用行（独立于货物 items 的通道）；lineNo 为后端响应回显的行号。 */
 const documentChargeItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
@@ -376,7 +383,7 @@ const salesOrderRecordShape = {
   priceRuleId: nullableEntityIdSchema.optional(),
   priceRuleName: nullableTextSchema.optional(),
   priceFloatMode: nullableTextSchema.optional(),
-  priceFloatValue: nullableTextSchema.optional(),
+  priceFloatValue: nullableResponseDecimalSchema.optional(),
   referencedByFreightBill: z.boolean().default(false),
   referencedBySalesOutbound: z.boolean().default(false),
   referencedBySalesReturn: z.boolean().default(false),
