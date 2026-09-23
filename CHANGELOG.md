@@ -1,3 +1,10 @@
+## [10.25.1](https://github.com/PolarisTime/Aries/compare/v10.25.0...v10.25.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **price-compare:** 切换西本后参照网价未跟随 ([d58ebe3](https://github.com/PolarisTime/Aries/commit/d58ebe3c3ea9f07abfa52fa0c722eca3d54cf991))
+
 # [10.25.0](https://github.com/PolarisTime/Aries/compare/v10.24.0...v10.25.0) (2026-09-22)
 
 
