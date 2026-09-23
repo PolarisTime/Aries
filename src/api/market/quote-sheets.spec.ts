@@ -37,6 +37,7 @@ import {
   createQuoteSheet,
   deleteQuoteSheet,
   deleteQuoteSheetItem,
+  fetchPurchaseOrderTonnages,
   fetchQuoteSheets,
   updateQuoteSheet,
   updateQuoteSheetHeader,
@@ -351,5 +352,115 @@ describe('quote-sheets API', () => {
       headers: Record<string, string>
     }
     expect(deleteConfig.headers['X-Resource-Version']).toBe('6')
+  })
+  it('采购订单关联归一化: purchaseOrderId 转字符串并保留订单号快照', async () => {
+    apiGetMock.mockResolvedValue({
+      content: [
+        {
+          ...page.content[0],
+          items: [
+            {
+              ...page.content[0].items[0],
+              purchaseOrderId: 88,
+              purchaseOrderNo: 'PO-88',
+            },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 200,
+      hasMore: false,
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.items[0].purchaseOrderId).toBe('88')
+    expect(record.items[0].purchaseOrderNo).toBe('PO-88')
+  })
+
+  it('隔断行不解析采购订单关联', async () => {
+    apiGetMock.mockResolvedValue({
+      content: [
+        {
+          ...page.content[0],
+          items: [
+            {
+              ...page.content[0].items[0],
+              rowType: 'SEPARATOR',
+              purchaseOrderId: '88',
+              purchaseOrderNo: 'PO-88',
+            },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 200,
+      hasMore: false,
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.items[0].purchaseOrderId).toBeUndefined()
+    expect(record.items[0].purchaseOrderNo).toBeUndefined()
+  })
+
+  it('采购订单吨位汇总: 解析订货/已开/剩余并拼接查询参数', async () => {
+    apiGetMock.mockResolvedValue([
+      {
+        purchaseOrderId: '88',
+        orderNo: 'PO-88',
+        supplierName: '沙钢',
+        orderedWeight: '40.5',
+        issuedWeight: '30.5',
+        remainingWeight: '10',
+        status: '正常',
+      },
+    ])
+
+    const result = await fetchPurchaseOrderTonnages({
+      keyword: '沙',
+      status: '正常',
+      excludeSheetId: '700500000000000130',
+    })
+
+    expect(apiGetMock.mock.calls[0][0]).toBe(
+      '/quote-sheets/purchase-order-tonnages',
+    )
+    const config = apiGetMock.mock.calls[0][2] as {
+      params: Record<string, unknown>
+    }
+    expect(config.params).toMatchObject({
+      keyword: '沙',
+      status: '正常',
+      excludeSheetId: '700500000000000130',
+    })
+    expect(result[0]).toEqual({
+      purchaseOrderId: '88',
+      orderNo: 'PO-88',
+      supplierName: '沙钢',
+      orderedWeight: 40.5,
+      issuedWeight: 30.5,
+      remainingWeight: 10,
+      status: '正常',
+    })
+  })
+
+  it('采购订单吨位汇总: 传 ids 时按数组去重查询', async () => {
+    apiGetMock.mockResolvedValue([])
+
+    await fetchPurchaseOrderTonnages({
+      purchaseOrderIds: ['88', '99'],
+    })
+
+    const config = apiGetMock.mock.calls[0][2] as {
+      params: Record<string, unknown>
+      paramsSerializer?: unknown
+    }
+    expect(config.params.purchaseOrderIds).toEqual(['88', '99'])
+    expect(config.paramsSerializer).toEqual({ indexes: null })
   })
 })

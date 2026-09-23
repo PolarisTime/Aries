@@ -496,6 +496,43 @@
   white-space: nowrap;
 }
 
+/* 吨位单元格: 报单吨位 + 关联采购订单下拉 + 已开/剩余提示 */
+.price-compare-ton-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.price-compare-purchase-order {
+  width: 100%;
+  min-width: 0;
+}
+
+.price-compare-purchase-order .ant-select-selector {
+  padding-inline: 2px;
+  font-size: 11px;
+}
+
+.price-compare-ton-hint {
+  font-size: 10px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.price-compare-ton-hint--empty {
+  display: block;
+}
+
+.price-compare-ton-hint--over {
+  color: var(--ant-color-error, #ff4d4f);
+  font-weight: 600;
+}
+
 /* 行备注输入 */
 .price-compare-row-remark,
 .price-compare-row-remark input {

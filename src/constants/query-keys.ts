@@ -110,6 +110,10 @@ export const QUERY_KEYS = {
   // Price compare
   priceCompare: {
     materialBrands: ['price-compare', 'material-brands'] as const,
+    purchaseOrderTonnages: [
+      'price-compare',
+      'purchase-order-tonnages',
+    ] as const,
     steelQuoteCalendars: (
       from: string,
       to: string,

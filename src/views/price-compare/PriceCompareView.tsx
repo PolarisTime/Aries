@@ -25,6 +25,7 @@ import {
   usePriceCompareData,
 } from './usePriceCompareData'
 import { usePriceComparePricing } from './usePriceComparePricing'
+import { usePurchaseOrderTonnage } from './usePurchaseOrderTonnage'
 import { useSheetsStore } from './useSheetsStore'
 import './price-compare.css'
 
@@ -137,6 +138,8 @@ export function PriceCompareView() {
     quoteSource: activeProjectQuoteConfig?.quoteSource,
     quoteRegion: activeProjectQuoteConfig?.quoteRegion,
   })
+
+  const purchaseOrderTonnage = usePurchaseOrderTonnage(active, isAuthenticated)
 
   const patchSheetRef = useRef(patchSheet)
   useEffect(() => {
@@ -299,6 +302,7 @@ export function PriceCompareView() {
         supplierSelectOptions={supplierSelectOptions}
         onSaveConfig={(next) => setConfig(next)}
         readOnly={readOnly}
+        purchaseOrderTonnage={purchaseOrderTonnage}
       />
 
       <PriceCompareOverlays
@@ -339,6 +343,7 @@ function PriceCompareSheetArea({
   supplierSelectOptions,
   onSaveConfig,
   readOnly,
+  purchaseOrderTonnage,
 }: {
   active: ReturnType<typeof useSheetsStore>['active']
   watermark: string
@@ -361,6 +366,9 @@ function PriceCompareSheetArea({
   supplierSelectOptions: React.ComponentProps<typeof SheetPanel>['suppliers']
   onSaveConfig: (next: ReturnType<typeof useSheetsStore>['config']) => void
   readOnly: boolean
+  purchaseOrderTonnage: React.ComponentProps<
+    typeof SheetPanel
+  >['purchaseOrderTonnage']
 }) {
   if (!active) {
     return (
@@ -402,6 +410,7 @@ function PriceCompareSheetArea({
         remark={config.remark}
         onRemarkChange={(value) => onSaveConfig({ ...config, remark: value })}
         readOnly={readOnly}
+        purchaseOrderTonnage={purchaseOrderTonnage}
       />
     </Watermark>
   )

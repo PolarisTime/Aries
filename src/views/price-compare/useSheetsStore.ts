@@ -278,6 +278,9 @@ function buildPayload(
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
           ...(row.purchased ? { purchased: true } : {}),
+          ...(row.purchaseOrderId
+            ? { purchaseOrderId: row.purchaseOrderId }
+            : {}),
           prices,
         },
       ]
@@ -330,6 +333,7 @@ function buildItemPayload(
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
     ...(row.purchased ? { purchased: true } : {}),
+    ...(row.purchaseOrderId ? { purchaseOrderId: row.purchaseOrderId } : {}),
     prices,
   }
 }
@@ -355,6 +359,7 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     ton: row.ton ?? null,
     remark: row.remark ?? '',
     purchased: Boolean(row.purchased),
+    purchaseOrderId: row.purchaseOrderId ?? null,
     prices,
   })
 }
@@ -2148,6 +2153,8 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     ...(item.ton !== undefined ? { ton: item.ton } : {}),
     ...(item.remark ? { remark: item.remark } : {}),
     ...(item.purchased ? { purchased: true } : {}),
+    ...(item.purchaseOrderId ? { purchaseOrderId: item.purchaseOrderId } : {}),
+    ...(item.purchaseOrderNo ? { purchaseOrderNo: item.purchaseOrderNo } : {}),
   }))
   const inputs: SheetInputs = {}
   for (const item of record.items) {

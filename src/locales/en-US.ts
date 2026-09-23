@@ -2443,8 +2443,14 @@ export const enUS = {
         'None of the target rows had a spot price changed this session; nothing was modified (only rows with changed prices are updated)',
       markPurchased: 'Mark as purchased',
       unmarkPurchased: 'Unmark purchased',
-      purchasedPartial: ' (partly purchased)',
+      purchasedPartial: '(partly purchased)',
       purchasedRow: 'Purchased',
+      purchaseOrderLabel: 'Linked purchase order',
+      purchaseOrderPlaceholder: 'Link PO',
+      purchaseOrderOptionTitle:
+        '{{orderNo}} · {{supplier}} | ordered {{ordered}}t | remaining {{remaining}}t',
+      purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
+      purchaseOrderOverLimit: '(over)',
     },
     config: {
       title: 'Project Settings',

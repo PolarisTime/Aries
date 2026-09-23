@@ -49,9 +49,15 @@ import {
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
   type SupplierSelectOption,
+  sumTonByPurchaseOrder,
   syncSpotInputs,
 } from './core'
 import { LockableField } from './LockableField'
+import {
+  buildTonColumn,
+  EMPTY_PURCHASE_ORDER_TONNAGE,
+  type PurchaseOrderTonnageDraftInput,
+} from './TonCell'
 import type {
   Brand,
   GridRow,
@@ -145,6 +151,8 @@ type ColumnContext = {
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   moveFocus: (brandName: string, rowId: string, delta: number) => void
   moveFocusTon: (rowId: string, delta: number) => void
+  /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
+  purchaseOrderTonnage: PurchaseOrderTonnageDraftInput
   onReorderBrands: (from: number, to: number) => void
   onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
   onRowDragEnd: () => void
@@ -235,7 +243,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     sheet,
     hideRemark,
     hiddenBrands,
+    purchaseOrderTonnage,
   } = ctx
+  /** 本单据内各采购订单的报单吨位合计(叠加到服务端已开吨位上判断超额)。 */
+  const localTonByOrder = sumTonByPurchaseOrder(rows)
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
   /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
@@ -447,58 +458,19 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         )
       },
     },
-    {
-      title: (
-        <span className="price-compare-ton-header">
-          <span>{t('priceCompare.sheet.columns.ton')}</span>
-          <span className="price-compare-ton-total">
-            {t('priceCompare.sheet.tonTotal')}: {tonTotalText}
-          </span>
-        </span>
-      ),
-      width: SHEET_COLUMN_WIDTH.ton,
-      fixed: 'left',
-      align: 'center',
-      render: (_, row) =>
-        isSeparatorRow(row.row) ? null : (
-          <Input
-            key={`ton:${row.rowId}:${row.row.ton ?? ''}`}
-            className={
-              quantityLockClass
-                ? 'price-compare-ton price-compare-locked-field'
-                : 'price-compare-ton'
-            }
-            size="small"
-            variant="borderless"
-            inputMode="decimal"
-            disabled={readOnly || Boolean(sheet.specQuantityLocked)}
-            data-ton={row.rowId}
-            defaultValue={row.row.ton === undefined ? '' : String(row.row.ton)}
-            onBlur={(event) => {
-              const raw = event.target.value
-              const value = Number(raw)
-              if (raw !== '' && (Number.isNaN(value) || value <= 0)) {
-                message.warning(t('priceCompare.sheet.tonPositive'))
-                return
-              }
-              patchRow(row.rowId, { ton: raw === '' ? undefined : value })
-            }}
-            onPressEnter={(event) => {
-              const raw = (event.target as HTMLInputElement).value
-              const value = Number(raw)
-              if (raw === '') patchRow(row.rowId, { ton: undefined })
-              else if (!Number.isNaN(value) && value > 0)
-                patchRow(row.rowId, { ton: value })
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Tab') {
-                event.preventDefault()
-                ctx.moveFocusTon(row.rowId, event.shiftKey ? -1 : 1)
-              }
-            }}
-          />
-        ),
-    },
+    buildTonColumn({
+      t,
+      sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
+      readOnly,
+      tonTotalText,
+      quantityLockClass,
+      purchaseOrderOptions: purchaseOrderTonnage.options,
+      tonnageByOrderId: purchaseOrderTonnage.tonnageByOrderId,
+      purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
+      localTonByOrder,
+      moveFocusTon: ctx.moveFocusTon,
+      patchRow,
+    }),
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> =>
         hiddenBrandSet.has(brand.name)
@@ -1611,6 +1583,8 @@ type Props = {
   suppliers?: SupplierSelectOption[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
+  /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
+  purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput
 }
 
 /** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
@@ -1662,6 +1636,7 @@ export function SheetPanel(props: Props) {
     onRemarkChange,
     suppliers = [],
     readOnly = false,
+    purchaseOrderTonnage = EMPTY_PURCHASE_ORDER_TONNAGE,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1872,6 +1847,7 @@ export function SheetPanel(props: Props) {
     readOnly,
     hideRemark,
     hiddenBrands,
+    purchaseOrderTonnage,
     visibleBrandCount: brands.reduce(
       (count, brand) => (hiddenBrandSet.has(brand.name) ? count : count + 1),
       0,

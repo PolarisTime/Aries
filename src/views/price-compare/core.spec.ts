@@ -16,6 +16,7 @@ import {
   netPrice,
   netPriceWithFallback,
   reconcileSpotInputs,
+  sumTonByPurchaseOrder,
   syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
@@ -515,6 +516,41 @@ describe('applyPurchasedFlag', () => {
 
   it('空目标集合不产生变化', () => {
     expect(applyPurchasedFlag(rows, new Set(), true)).toBe(rows)
+  })
+})
+
+describe('sumTonByPurchaseOrder', () => {
+  it('按采购订单汇总商品行吨位, 忽略隔断行与未关联行', () => {
+    const totals = sumTonByPurchaseOrder([
+      { ...row12, id: 'r1', ton: 10, purchaseOrderId: 'po1' },
+      { ...row12, id: 'r2', ton: 5.5, purchaseOrderId: 'po1' },
+      { ...row12, id: 'r3', ton: 3, purchaseOrderId: 'po2' },
+      { ...row12, id: 'r4', ton: 99 },
+      {
+        id: 'sep1',
+        rowType: 'SEPARATOR',
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+        ton: 7,
+        purchaseOrderId: 'po1',
+      },
+    ])
+
+    expect(totals.get('po1')).toBe(15.5)
+    expect(totals.get('po2')).toBe(3)
+    expect(totals.has('po3')).toBe(false)
+  })
+
+  it('忽略非正数与缺失吨位, 空输入返回空 Map', () => {
+    const totals = sumTonByPurchaseOrder([
+      { ...row12, id: 'r1', purchaseOrderId: 'po1' },
+      { ...row12, id: 'r2', ton: 0, purchaseOrderId: 'po1' },
+      { ...row12, id: 'r3', ton: -1, purchaseOrderId: 'po1' },
+    ])
+    expect(totals.has('po1')).toBe(false)
+    expect(sumTonByPurchaseOrder([]).size).toBe(0)
   })
 })
 

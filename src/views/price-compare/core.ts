@@ -189,7 +189,8 @@ export const SHEET_COLUMN_WIDTH = {
   remark: 140,
   category: 72,
   spec: 200,
-  ton: 84,
+  /** 吨位列: 报单吨位 + 关联采购订单下拉 + 已开/剩余提示, 需整体加宽。 */
+  ton: 132,
   net: 60,
   spot: 58,
   diff: 50,
@@ -461,6 +462,24 @@ export function applyPurchasedFlag(
     return { ...row, purchased: next }
   })
   return changed ? result : rows
+}
+
+/**
+ * 汇总各采购订单在当前单据内的报单吨位(隔断行不计)。
+ * 用于在前端把"本地未保存吨位"叠加到服务端已开吨位上判断是否超额。
+ */
+export function sumTonByPurchaseOrder(rows: PriceRow[]): Map<string, number> {
+  const totals = new Map<string, number>()
+  for (const row of rows) {
+    if (isSeparatorRow(row) || !row.purchaseOrderId) continue
+    const ton = row.ton ?? 0
+    if (!Number.isFinite(ton) || ton <= 0) continue
+    totals.set(
+      row.purchaseOrderId,
+      (totals.get(row.purchaseOrderId) ?? 0) + ton,
+    )
+  }
+  return totals
 }
 
 export const DEFAULT_STATUS = '报价'

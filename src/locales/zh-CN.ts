@@ -2367,6 +2367,12 @@ export const zhCN = {
       unmarkPurchased: '取消已采购',
       purchasedPartial: '（部分已采购）',
       purchasedRow: '已采购',
+      purchaseOrderLabel: '关联采购订单',
+      purchaseOrderPlaceholder: '关联采购',
+      purchaseOrderOptionTitle:
+        '{{orderNo}} · {{supplier}}｜订货 {{ordered}} 吨｜剩余 {{remaining}} 吨',
+      purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
+      purchaseOrderOverLimit: '（超额）',
     },
     config: {
       title: '项目配置',

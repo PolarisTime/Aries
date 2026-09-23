@@ -48,6 +48,8 @@ const itemSchema = z.looseObject({
   ton: z.union([z.number(), z.string()]).nullable().optional(),
   remark: z.string().nullable().optional(),
   purchased: z.boolean().nullable().optional(),
+  purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
+  purchaseOrderNo: z.string().nullable().optional(),
   prices: z.array(priceSchema).nullable().optional(),
 })
 
@@ -96,6 +98,8 @@ export type QuoteSheetItemRecord = {
   ton?: number
   remark?: string
   purchased: boolean
+  purchaseOrderId?: EntityId
+  purchaseOrderNo?: string
   prices: QuoteSheetPriceRecord[]
 }
 
@@ -147,6 +151,7 @@ export type QuoteSheetPayload = {
     ton?: number
     remark?: string
     purchased?: boolean
+    purchaseOrderId?: EntityId
     prices: {
       brandName: string
       spotPrice?: number
@@ -165,6 +170,7 @@ export type QuoteSheetItemPayload = {
   ton?: number
   remark?: string
   purchased?: boolean
+  purchaseOrderId?: EntityId
   prices: {
     brandName: string
     spotPrice?: number
@@ -227,6 +233,24 @@ function normalizeItem(
       : {}),
     ...(asString(item.remark).trim() ? { remark: asString(item.remark) } : {}),
     purchased: rowType === 'SEPARATOR' ? false : Boolean(item.purchased),
+    ...(rowType === 'SEPARATOR'
+      ? {}
+      : {
+          ...(parseOptionalEntityId(
+            item.purchaseOrderId,
+            `${path}.purchaseOrderId`,
+          )
+            ? {
+                purchaseOrderId: parseOptionalEntityId(
+                  item.purchaseOrderId,
+                  `${path}.purchaseOrderId`,
+                ),
+              }
+            : {}),
+          ...(item.purchaseOrderNo
+            ? { purchaseOrderNo: item.purchaseOrderNo }
+            : {}),
+        }),
     prices: (item.prices ?? []).map((price, priceIndex) =>
       normalizePrice(price, priceIndex),
     ),
@@ -393,4 +417,71 @@ export async function deleteQuoteSheetItem(
       ? { version: readResourceVersionHeader(response.headers) }
       : {}),
   }
+}
+
+/** 采购订单吨位汇总: 订货吨数 - 报单已开吨位 = 剩余可开吨。 */
+export type PurchaseOrderTonnageRecord = {
+  purchaseOrderId: EntityId
+  orderNo: string
+  supplierName: string
+  orderedWeight: number
+  issuedWeight: number
+  remainingWeight: number
+  status: string
+}
+
+const purchaseOrderTonnageSchema = z.looseObject({
+  purchaseOrderId: z.unknown(),
+  orderNo: z.string().nullable().optional(),
+  supplierName: z.string().nullable().optional(),
+  orderedWeight: z.union([z.number(), z.string()]).nullable().optional(),
+  issuedWeight: z.union([z.number(), z.string()]).nullable().optional(),
+  remainingWeight: z.union([z.number(), z.string()]).nullable().optional(),
+  status: z.string().nullable().optional(),
+})
+
+/**
+ * 列出采购订单及其订货/已开/剩余吨位, 供吨位列选择关联并展示。
+ * 传 purchaseOrderIds 按 id 汇总(用于回显已关联订单), 否则按关键字/状态列出选项。
+ * excludeSheetId 排除当前报价单自身已保存吨位, 便于叠加本地未保存吨位。
+ */
+export async function fetchPurchaseOrderTonnages(
+  options: {
+    purchaseOrderIds?: EntityId[]
+    keyword?: string
+    status?: string
+    excludeSheetId?: EntityId
+  },
+  signal?: AbortSignal,
+): Promise<PurchaseOrderTonnageRecord[]> {
+  const params: Record<string, unknown> = {}
+  if (options.purchaseOrderIds?.length) {
+    params.purchaseOrderIds = options.purchaseOrderIds
+  }
+  if (options.keyword) params.keyword = options.keyword
+  if (options.status) params.status = options.status
+  if (options.excludeSheetId) params.excludeSheetId = options.excludeSheetId
+  const response = await apiGet(
+    ENDPOINTS.QUOTE_SHEET_PURCHASE_ORDER_TONNAGES,
+    z.array(purchaseOrderTonnageSchema),
+    {
+      params,
+      ...(options.purchaseOrderIds?.length
+        ? { paramsSerializer: { indexes: null } }
+        : {}),
+      ...(signal ? { signal } : {}),
+    },
+  )
+  return response.map((row, index) => ({
+    purchaseOrderId: parseEntityId(
+      row.purchaseOrderId,
+      `tonnages[${index}].purchaseOrderId`,
+    ),
+    orderNo: asString(row.orderNo),
+    supplierName: asString(row.supplierName),
+    orderedWeight: toOptionalNumber(row.orderedWeight) ?? 0,
+    issuedWeight: toOptionalNumber(row.issuedWeight) ?? 0,
+    remainingWeight: toOptionalNumber(row.remainingWeight) ?? 0,
+    status: asString(row.status),
+  }))
 }
