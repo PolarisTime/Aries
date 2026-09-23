@@ -128,17 +128,19 @@ describe('quote-sheets API', () => {
     expect(record.specQuantityLocked).toBe(false)
   })
 
-  it('已采购标记归一化: 缺省为 false, 显式 true 保留', async () => {
+  it('已采购由采购订单关联派生: 关联为 true, 未关联为 false', async () => {
     apiGetMock.mockResolvedValue({
       content: [
         {
           ...page.content[0],
           items: [
-            { ...page.content[0].items[0], purchased: true },
+            { ...page.content[0].items[0], purchaseOrderId: '88' },
             {
               ...page.content[0].items[0],
               id: '700500000000000141',
-              purchased: undefined,
+              purchaseOrderId: undefined,
+              // 历史 purchased 标记被忽略, 不再影响派生结果
+              purchased: true,
             },
           ],
         },
@@ -154,9 +156,10 @@ describe('quote-sheets API', () => {
 
     expect(record.items[0].purchased).toBe(true)
     expect(record.items[1].purchased).toBe(false)
+    expect(record.items[1].purchaseOrderId).toBeUndefined()
   })
 
-  it('隔断行的已采购标记强制归一为 false', async () => {
+  it('隔断行即使带采购订单也归一为未采购且不保留关联', async () => {
     apiGetMock.mockResolvedValue({
       content: [
         {
@@ -165,7 +168,8 @@ describe('quote-sheets API', () => {
             {
               ...page.content[0].items[0],
               rowType: 'SEPARATOR',
-              purchased: true,
+              purchaseOrderId: '88',
+              purchaseOrderNo: 'PO-88',
             },
           ],
         },
@@ -180,6 +184,7 @@ describe('quote-sheets API', () => {
     const [record] = await fetchQuoteSheets()
 
     expect(record.items[0].purchased).toBe(false)
+    expect(record.items[0].purchaseOrderId).toBeUndefined()
   })
 
   it('更新按路径 ID 提交整体替换请求体', async () => {

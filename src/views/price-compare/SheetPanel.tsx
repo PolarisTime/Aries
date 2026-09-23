@@ -6,7 +6,6 @@ import {
   MinusOutlined,
   ReloadOutlined,
   SettingOutlined,
-  ShoppingOutlined,
   TrophyOutlined,
   UnlockOutlined,
   VerticalAlignBottomOutlined,
@@ -36,10 +35,10 @@ import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
-  applyPurchasedFlag,
   CATEGORIES,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
+  isPurchasedRow,
   isSeparatorRow,
   makeRow,
   makeSeparatorRow,
@@ -57,7 +56,7 @@ import {
   buildTonColumn,
   EMPTY_PURCHASE_ORDER_TONNAGE,
   type PurchaseOrderTonnageDraftInput,
-} from './TonCell'
+} from './ton-column'
 import type {
   Brand,
   GridRow,
@@ -182,9 +181,9 @@ const cellOf = (
   title,
   width,
   align: 'center' as const,
-  // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购行整体遮蔽该区
+  // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购(关联采购订单)行整体遮蔽该区
   render: (value: unknown, row: GridRow) =>
-    isSeparatorRow(row.row) ? null : row.row.purchased ? (
+    isSeparatorRow(row.row) ? null : isPurchasedRow(row.row) ? (
       <span className="price-compare-purchased-mask" aria-hidden="true" />
     ) : (
       render(value, row)
@@ -866,7 +865,8 @@ function SheetTable(props: SheetTableProps) {
       rowClassName={(row) => {
         const classes: string[] = []
         if (isSeparatorRow(row.row)) classes.push('price-compare-separator-row')
-        else if (row.row.purchased) classes.push('price-compare-purchased-row')
+        else if (isPurchasedRow(row.row))
+          classes.push('price-compare-purchased-row')
         if (row.rowId === dragId) classes.push('price-compare-dragging')
         if (dragId && row.rowId === dropId && row.rowId !== dragId)
           classes.push(
@@ -1217,10 +1217,7 @@ function SelectedRowActions({
   selectedCount,
   readOnly,
   specQuantityLocked,
-  allSelectedPurchased,
-  anySelectedPurchased,
   onFillSupplierSelected,
-  onTogglePurchased,
   onRemoveSelected,
 }: {
   brands: Brand[]
@@ -1228,15 +1225,10 @@ function SelectedRowActions({
   selectedCount: number
   readOnly: boolean
   specQuantityLocked: boolean
-  /** 选中行(商品行)是否已全部标记为已采购。 */
-  allSelectedPurchased: boolean
-  /** 选中行(商品行)是否至少一行已采购。 */
-  anySelectedPurchased: boolean
   onFillSupplierSelected: (
     brandName: string,
     option: { value: string; label: string } | undefined,
   ) => void
-  onTogglePurchased: (purchased: boolean) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
@@ -1249,22 +1241,6 @@ function SelectedRowActions({
         disabled={readOnly || specQuantityLocked}
         onFill={onFillSupplierSelected}
       />
-      <Button
-        type={allSelectedPurchased ? 'primary' : 'default'}
-        icon={<ShoppingOutlined />}
-        disabled={readOnly}
-        className="price-compare-purchased-btn"
-        onClick={() => onTogglePurchased(!allSelectedPurchased)}
-      >
-        {allSelectedPurchased
-          ? t('priceCompare.sheet.unmarkPurchased')
-          : t('priceCompare.sheet.markPurchased')}
-        {anySelectedPurchased && !allSelectedPurchased ? (
-          <span className="price-compare-purchased-partial">
-            {t('priceCompare.sheet.purchasedPartial')}
-          </span>
-        ) : null}
-      </Button>
       {readOnly || specQuantityLocked ? (
         <Tooltip
           title={
@@ -1323,9 +1299,6 @@ function SheetHeader({
   onToggleBrand,
   supplierOptions,
   onFillSupplierSelected,
-  allSelectedPurchased,
-  anySelectedPurchased,
-  onTogglePurchased,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -1355,9 +1328,6 @@ function SheetHeader({
     brandName: string,
     option: { value: string; label: string } | undefined,
   ) => void
-  allSelectedPurchased: boolean
-  anySelectedPurchased: boolean
-  onTogglePurchased: (purchased: boolean) => void
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
@@ -1539,10 +1509,7 @@ function SheetHeader({
             selectedCount={selectedCount}
             readOnly={readOnly}
             specQuantityLocked={Boolean(sheet.specQuantityLocked)}
-            allSelectedPurchased={allSelectedPurchased}
-            anySelectedPurchased={anySelectedPurchased}
             onFillSupplierSelected={onFillSupplierSelected}
-            onTogglePurchased={onTogglePurchased}
             onRemoveSelected={onRemoveSelected}
           />
         ) : null}
@@ -1773,23 +1740,6 @@ export function SheetPanel(props: Props) {
         : current.filter((id) => id !== rowId),
     )
 
-  /** 选中行中的商品行(隔断行不参与已采购标记)。 */
-  const selectedIdSet = new Set(selectedIds)
-  const selectedProductRows = rows.filter(
-    (row) => selectedIdSet.has(row.id) && !isSeparatorRow(row),
-  )
-  const allSelectedPurchased =
-    selectedProductRows.length > 0 &&
-    selectedProductRows.every((row) => row.purchased)
-  const anySelectedPurchased = selectedProductRows.some((row) => row.purchased)
-
-  /** 批量标记/取消选中商品行的已采购状态。 */
-  const markSelectedPurchased = (purchased: boolean) => {
-    const ids = new Set(selectedProductRows.map((row) => row.id))
-    if (!ids.size) return
-    setRows((list) => applyPurchasedFlag(list, ids, purchased))
-  }
-
   const removeSelected = () => {
     const ids = new Set(selectedIds)
     if (!ids.size) return
@@ -1884,9 +1834,6 @@ export function SheetPanel(props: Props) {
         onFillSupplierSelected={(brandName, option) =>
           fillSupplier(brandName, selectedIds, option)
         }
-        allSelectedPurchased={allSelectedPurchased}
-        anySelectedPurchased={anySelectedPurchased}
-        onTogglePurchased={markSelectedPurchased}
       />
 
       <SheetTable

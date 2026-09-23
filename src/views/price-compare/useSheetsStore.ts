@@ -277,7 +277,6 @@ function buildPayload(
           length: row.length,
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
-          ...(row.purchased ? { purchased: true } : {}),
           ...(row.purchaseOrderId
             ? { purchaseOrderId: row.purchaseOrderId }
             : {}),
@@ -332,7 +331,6 @@ function buildItemPayload(
     length: row.length,
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
-    ...(row.purchased ? { purchased: true } : {}),
     ...(row.purchaseOrderId ? { purchaseOrderId: row.purchaseOrderId } : {}),
     prices,
   }
@@ -358,7 +356,6 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     length: row.length,
     ton: row.ton ?? null,
     remark: row.remark ?? '',
-    purchased: Boolean(row.purchased),
     purchaseOrderId: row.purchaseOrderId ?? null,
     prices,
   })
@@ -2152,7 +2149,6 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     length: item.length,
     ...(item.ton !== undefined ? { ton: item.ton } : {}),
     ...(item.remark ? { remark: item.remark } : {}),
-    ...(item.purchased ? { purchased: true } : {}),
     ...(item.purchaseOrderId ? { purchaseOrderId: item.purchaseOrderId } : {}),
     ...(item.purchaseOrderNo ? { purchaseOrderNo: item.purchaseOrderNo } : {}),
   }))

@@ -2363,10 +2363,6 @@ export const zhCN = {
       fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
       fillSupplierNoChangedRows:
         '所选范围内没有本次改过现货价的行，未做任何修改（仅更新价格变动过的行）',
-      markPurchased: '标记为已采购',
-      unmarkPurchased: '取消已采购',
-      purchasedPartial: '（部分已采购）',
-      purchasedRow: '已采购',
       purchaseOrderLabel: '关联采购订单',
       purchaseOrderPlaceholder: '关联采购',
       purchaseOrderOptionTitle:

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyPurchasedFlag,
   canonicalCategory,
   computeSummary,
   countMissing,
   dataKeyOf,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
+  isPurchasedRow,
   isSeparatorRow,
   makeRow,
   makeSeparatorRow,
@@ -480,42 +480,27 @@ describe('fillSupplierInputs', () => {
   })
 })
 
-describe('applyPurchasedFlag', () => {
-  const rows: PriceRow[] = [
-    { ...row12, id: 'r1' },
-    { ...row12, id: 'r2' },
-    {
-      id: 'sep1',
-      rowType: 'SEPARATOR',
-      category: '',
-      material: '',
-      spec: null,
-      length: '',
-    },
-  ]
-
-  it('标记指定商品行为已采购, 忽略隔断行', () => {
-    const next = applyPurchasedFlag(rows, new Set(['r1', 'sep1']), true)
-    expect(next[0].purchased).toBe(true)
-    expect(next[1].purchased).toBeUndefined()
-    expect(next[2].purchased).toBeUndefined()
+describe('isPurchasedRow', () => {
+  it('关联了采购订单的商品行视为已采购', () => {
+    expect(isPurchasedRow({ ...row12, purchaseOrderId: 'po1' })).toBe(true)
   })
 
-  it('取消标记时删除字段', () => {
-    const marked: PriceRow[] = [{ ...row12, id: 'r1', purchased: true }]
-    const next = applyPurchasedFlag(marked, new Set(['r1']), false)
-    expect(next[0].purchased).toBeUndefined()
+  it('未关联采购订单的商品行不是已采购', () => {
+    expect(isPurchasedRow({ ...row12 })).toBe(false)
   })
 
-  it('无变化时返回原数组引用', () => {
-    const noop = applyPurchasedFlag(rows, new Set(['r1']), true)
-    expect(noop).not.toBe(rows)
-    const same = applyPurchasedFlag(noop, new Set(['r1']), true)
-    expect(same).toBe(noop)
-  })
-
-  it('空目标集合不产生变化', () => {
-    expect(applyPurchasedFlag(rows, new Set(), true)).toBe(rows)
+  it('隔断行即使带采购订单也恒为未采购', () => {
+    expect(
+      isPurchasedRow({
+        id: 'sep1',
+        rowType: 'SEPARATOR',
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+        purchaseOrderId: 'po1',
+      }),
+    ).toBe(false)
   })
 })
 

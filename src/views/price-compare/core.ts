@@ -445,23 +445,11 @@ export function isSeparatorRow(row: Pick<PriceRow, 'rowType'>): boolean {
 }
 
 /**
- * 批量设置指定商品行的「已采购」标记(隔断行忽略)。
- * 取消标记时删除字段(undefined), 保持与历史数据/请求体口径一致; 无变化时返回原数组。
+ * 商品行是否已采购: 由是否关联采购订单推导(隔断行恒为 false)。
+ * 不再有独立布尔标记, 避免"反标记后刷新又变回已采购"的状态不一致。
  */
-export function applyPurchasedFlag(
-  rows: PriceRow[],
-  rowIds: ReadonlySet<string>,
-  purchased: boolean,
-): PriceRow[] {
-  const next = purchased ? true : undefined
-  let changed = false
-  const result = rows.map((row) => {
-    if (!rowIds.has(row.id) || isSeparatorRow(row)) return row
-    if (row.purchased === next) return row
-    changed = true
-    return { ...row, purchased: next }
-  })
-  return changed ? result : rows
+export function isPurchasedRow(row: PriceRow): boolean {
+  return !isSeparatorRow(row) && Boolean(row.purchaseOrderId)
 }
 
 /**

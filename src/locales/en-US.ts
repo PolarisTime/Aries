@@ -2441,10 +2441,6 @@ export const enUS = {
         'Fill the selected supplier into the {{count}} selected rows',
       fillSupplierNoChangedRows:
         'None of the target rows had a spot price changed this session; nothing was modified (only rows with changed prices are updated)',
-      markPurchased: 'Mark as purchased',
-      unmarkPurchased: 'Unmark purchased',
-      purchasedPartial: '(partly purchased)',
-      purchasedRow: 'Purchased',
       purchaseOrderLabel: 'Linked purchase order',
       purchaseOrderPlaceholder: 'Link PO',
       purchaseOrderOptionTitle:

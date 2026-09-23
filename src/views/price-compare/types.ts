@@ -56,9 +56,7 @@ export type PriceRow = {
   ton?: number
   /** 行级备注 */
   remark?: string
-  /** 已采购: 勾选后前端遮蔽吨位之后的品牌价格列; 隔断行恒为 false。 */
-  purchased?: boolean
-  /** 关联采购订单标识(可空): 该行吨位计入此订单的已开吨位; 隔断行恒为空。 */
+  /** 关联采购订单标识(可空): 非空即视为已采购(遮蔽吨位后品牌列); 隔断行恒为空。 */
   purchaseOrderId?: string
   /** 关联采购订单号快照(保存时写入; 供展示兜底)。 */
   purchaseOrderNo?: string

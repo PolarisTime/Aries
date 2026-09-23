@@ -47,7 +47,6 @@ const itemSchema = z.looseObject({
   length: z.string().nullable().optional(),
   ton: z.union([z.number(), z.string()]).nullable().optional(),
   remark: z.string().nullable().optional(),
-  purchased: z.boolean().nullable().optional(),
   purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
   purchaseOrderNo: z.string().nullable().optional(),
   prices: z.array(priceSchema).nullable().optional(),
@@ -97,6 +96,7 @@ export type QuoteSheetItemRecord = {
   length: string
   ton?: number
   remark?: string
+  /** 是否已采购(由 purchaseOrderId 派生; 隔断行恒为 false)。 */
   purchased: boolean
   purchaseOrderId?: EntityId
   purchaseOrderNo?: string
@@ -150,7 +150,6 @@ export type QuoteSheetPayload = {
     length?: string
     ton?: number
     remark?: string
-    purchased?: boolean
     purchaseOrderId?: EntityId
     prices: {
       brandName: string
@@ -169,7 +168,6 @@ export type QuoteSheetItemPayload = {
   length?: string
   ton?: number
   remark?: string
-  purchased?: boolean
   purchaseOrderId?: EntityId
   prices: {
     brandName: string
@@ -219,6 +217,10 @@ function normalizeItem(
   path: string,
 ): QuoteSheetItemRecord {
   const rowType = item.rowType === 'SEPARATOR' ? 'SEPARATOR' : 'PRODUCT'
+  const purchaseOrderId =
+    rowType === 'SEPARATOR'
+      ? undefined
+      : parseOptionalEntityId(item.purchaseOrderId, `${path}.purchaseOrderId`)
   return {
     id: parseEntityId(item.id, `${path}.id`),
     rowType,
@@ -232,25 +234,12 @@ function normalizeItem(
       ? { ton: toOptionalNumber(item.ton) }
       : {}),
     ...(asString(item.remark).trim() ? { remark: asString(item.remark) } : {}),
-    purchased: rowType === 'SEPARATOR' ? false : Boolean(item.purchased),
-    ...(rowType === 'SEPARATOR'
-      ? {}
-      : {
-          ...(parseOptionalEntityId(
-            item.purchaseOrderId,
-            `${path}.purchaseOrderId`,
-          )
-            ? {
-                purchaseOrderId: parseOptionalEntityId(
-                  item.purchaseOrderId,
-                  `${path}.purchaseOrderId`,
-                ),
-              }
-            : {}),
-          ...(item.purchaseOrderNo
-            ? { purchaseOrderNo: item.purchaseOrderNo }
-            : {}),
-        }),
+    // 已采购由采购订单关联派生, 不再读取独立布尔字段; 隔断行恒为未采购。
+    purchased: purchaseOrderId !== undefined,
+    ...(purchaseOrderId ? { purchaseOrderId } : {}),
+    ...(purchaseOrderId && item.purchaseOrderNo
+      ? { purchaseOrderNo: item.purchaseOrderNo }
+      : {}),
     prices: (item.prices ?? []).map((price, priceIndex) =>
       normalizePrice(price, priceIndex),
     ),
