@@ -38,15 +38,20 @@ export function usePriceComparePricing({
   }, [])
 
   const availabilityQuery = useQuery({
+    // 日历按数据源/地区区分: 西本仅上午, 不能复用 Mysteel 的时段缓存。
     queryKey: QUERY_KEYS.priceCompare.steelQuoteCalendars(
       availabilityRange.from,
       availabilityRange.to,
+      quoteSource,
+      quoteRegion,
     ),
     queryFn: ({ signal }) =>
       fetchSteelQuoteCalendars(
         availabilityRange.from,
         availabilityRange.to,
         signal,
+        quoteSource,
+        quoteRegion,
       ),
     enabled: isAuthenticated,
     staleTime: STALE_STATIC,
@@ -69,10 +74,13 @@ export function usePriceComparePricing({
       ? availability[activeRefDate]
       : Object.keys(data[activeRefDate] ?? {})
     : []
+  // 日历尚未加载(如切换数据源后重新拉取)时回退单据自身时段, 避免发出空时段请求。
   const resolvedRefPeriod = activeRefDate
-    ? activeRefPeriod && calendarPeriods.includes(activeRefPeriod)
+    ? !calendarPeriods.length
       ? activeRefPeriod
-      : (calendarPeriods[0] ?? '')
+      : activeRefPeriod && calendarPeriods.includes(activeRefPeriod)
+        ? activeRefPeriod
+        : (calendarPeriods[0] ?? '')
     : ''
   const hasResolvedPriceData = Boolean(
     activeRefDate &&

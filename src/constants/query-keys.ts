@@ -110,8 +110,20 @@ export const QUERY_KEYS = {
   // Price compare
   priceCompare: {
     materialBrands: ['price-compare', 'material-brands'] as const,
-    steelQuoteCalendars: (from: string, to: string) =>
-      ['price-compare', 'steel-quote-calendars', from, to] as const,
+    steelQuoteCalendars: (
+      from: string,
+      to: string,
+      source?: string,
+      region?: string,
+    ) =>
+      [
+        'price-compare',
+        'steel-quote-calendars',
+        from,
+        to,
+        source ?? 'MYSTEEL',
+        region ?? '',
+      ] as const,
     projectQuoteConfig: (projectId: string) =>
       ['price-compare', 'project-quote-config', projectId] as const,
     materialPriceMatches: (
