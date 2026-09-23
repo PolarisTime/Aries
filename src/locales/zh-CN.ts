@@ -2372,6 +2372,8 @@ export const zhCN = {
       purchaseOrderSavedBasis: '按已保存报单统计，未保存的改动不计入',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
+      purchaseOrderLoadFailed:
+        '采购订单吨位加载失败，已开/剩余吨位暂不可用；不影响吨位填写与保存',
     },
     config: {
       title: '项目配置',

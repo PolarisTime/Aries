@@ -2451,6 +2451,8 @@ export const enUS = {
         'Based on saved sheets only; unsaved edits are not counted',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
+      purchaseOrderLoadFailed:
+        'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
     },
     config: {
       title: 'Project Settings',

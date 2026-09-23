@@ -11,6 +11,8 @@ export interface PurchaseOrderTonnageDraftInput {
   options: PurchaseOrderTonnageRecord[]
   tonnageByOrderId: Map<string, PurchaseOrderTonnageRecord>
   loading: boolean
+  /** 选项加载失败: 供视图层提示"吨位暂不可用"。 */
+  isError: boolean
 }
 
 /** 缺省空数据: 未传入时吨位列仍可编辑吨位, 仅不展示订单关联。 */
@@ -18,6 +20,7 @@ export const EMPTY_PURCHASE_ORDER_TONNAGE: PurchaseOrderTonnageDraftInput = {
   options: [],
   tonnageByOrderId: new Map(),
   loading: false,
+  isError: false,
 }
 
 export interface TonColumnContext {

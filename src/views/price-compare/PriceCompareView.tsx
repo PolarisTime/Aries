@@ -1,4 +1,4 @@
-import { Empty, Flex, Skeleton, Watermark } from 'antd'
+import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -282,6 +282,7 @@ export function PriceCompareView() {
         active={active}
         watermark={t('priceCompare.view.watermark')}
         noBatchLabel={t('priceCompare.view.noBatch')}
+        tonnageLoadFailedLabel={t('priceCompare.sheet.purchaseOrderLoadFailed')}
         data={data}
         varieties={varieties}
         brands={brands}
@@ -325,6 +326,7 @@ function PriceCompareSheetArea({
   active,
   watermark,
   noBatchLabel,
+  tonnageLoadFailedLabel,
   data,
   varieties,
   brands,
@@ -348,6 +350,7 @@ function PriceCompareSheetArea({
   active: ReturnType<typeof useSheetsStore>['active']
   watermark: string
   noBatchLabel: string
+  tonnageLoadFailedLabel: string
   data: React.ComponentProps<typeof SheetPanel>['data']
   varieties: React.ComponentProps<typeof SheetPanel>['varieties']
   brands: React.ComponentProps<typeof SheetPanel>['brands']
@@ -383,6 +386,9 @@ function PriceCompareSheetArea({
       gap={[140, 120]}
       font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
     >
+      {purchaseOrderTonnage?.isError ? (
+        <Alert banner showIcon type="warning" title={tonnageLoadFailedLabel} />
+      ) : null}
       <SheetPanel
         key={active.id}
         sheet={active}

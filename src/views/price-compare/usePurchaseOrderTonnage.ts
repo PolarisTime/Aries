@@ -14,6 +14,8 @@ export interface PurchaseOrderTonnageState {
   /** 供下拉选择的采购订单选项(按 id 倒序)。 */
   options: PurchaseOrderTonnageRecord[]
   loading: boolean
+  /** 选项加载失败: 供 UI 提示"吨位不可用"而非静默为空。 */
+  isError: boolean
 }
 
 /**
@@ -96,5 +98,7 @@ export function usePurchaseOrderTonnage(
     tonnageByOrderId,
     options,
     loading: optionsQuery.isFetching || missingQuery.isFetching,
+    // 选项加载失败优先暴露; 回显失败时已关联订单走快照兜底, 不算整体错误。
+    isError: optionsQuery.isError,
   }
 }
