@@ -55,9 +55,10 @@ describe('ProjectPriceRuleEditor', () => {
   })
 
   afterEach(async () => {
-    // 先冲刷挂起的异步更新, 再卸载, 避免卸载后 React 仍触发更新(window 已销毁)
+    // 用宏任务冲刷 React 调度队列(微任务不足以排空 scheduler),
+    // 再卸载, 避免 jsdom 销毁后 React 仍执行调度任务而报 window is not defined。
     await act(async () => {
-      await Promise.resolve()
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
     act(() => root.unmount())
     container.remove()
