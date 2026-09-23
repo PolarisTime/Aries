@@ -2366,9 +2366,12 @@ export const zhCN = {
       purchaseOrderLabel: '关联采购订单',
       purchaseOrderPlaceholder: '关联采购',
       purchaseOrderOptionTitle:
-        '{{orderNo}} · {{supplier}}｜订货 {{ordered}} 吨｜剩余 {{remaining}} 吨',
+        '{{orderNo}} · {{supplier}}（{{status}}）｜订货 {{ordered}} 吨｜剩余 {{remaining}} 吨',
       purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
       purchaseOrderOverLimit: '（超额）',
+      purchaseOrderSavedBasis: '按已保存报单统计，未保存的改动不计入',
+      purchaseOrderMissing: '{{orderNo}}（订单已删除）',
+      purchaseOrderMissingHint: '关联订单已删除，请重新选择',
     },
     config: {
       title: '项目配置',

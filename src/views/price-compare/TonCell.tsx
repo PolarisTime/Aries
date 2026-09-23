@@ -48,6 +48,11 @@ export function TonCell({
     linked ??
     options.find((option) => option.purchaseOrderId === selectedId) ??
     undefined
+  // 已关联但订单已删除/不可见: 回退到保存时的订单号快照, 避免下拉显示原始雪花 ID。
+  const missingSnapshot =
+    selectedId !== undefined && selected === undefined
+      ? (row.purchaseOrderNo ?? selectedId)
+      : undefined
   // 服务端已开吨位已排除当前单据, 叠加本地未保存吨位后即为实时进度。
   const projectedIssued = selected
     ? selected.issuedWeight + localTonForOrder
@@ -61,10 +66,22 @@ export function TonCell({
     title: t('priceCompare.sheet.purchaseOrderOptionTitle', {
       orderNo: option.orderNo,
       supplier: option.supplierName,
+      status: option.status,
       ordered: tonValueText(option.orderedWeight),
       remaining: tonValueText(option.remainingWeight),
     }),
   }))
+  if (missingSnapshot !== undefined) {
+    selectOptions.unshift({
+      value: selectedId as string,
+      label: t('priceCompare.sheet.purchaseOrderMissing', {
+        orderNo: missingSnapshot,
+      }),
+      title: t('priceCompare.sheet.purchaseOrderMissing', {
+        orderNo: missingSnapshot,
+      }),
+    })
+  }
 
   return (
     <div className="price-compare-ton-cell">
@@ -120,7 +137,11 @@ export function TonCell({
         }
       />
       {selected ? (
-        <Tooltip title={selected.orderNo}>
+        <Tooltip
+          title={`${selected.orderNo}（${selected.status}）· ${t(
+            'priceCompare.sheet.purchaseOrderSavedBasis',
+          )}`}
+        >
           <Typography.Text
             className={
               overLimit
@@ -138,6 +159,13 @@ export function TonCell({
               : ''}
           </Typography.Text>
         </Tooltip>
+      ) : missingSnapshot !== undefined ? (
+        <Typography.Text
+          className="price-compare-ton-hint price-compare-ton-hint--over"
+          title={missingSnapshot}
+        >
+          {t('priceCompare.sheet.purchaseOrderMissingHint')}
+        </Typography.Text>
       ) : (
         <span className="price-compare-ton-hint price-compare-ton-hint--empty" />
       )}

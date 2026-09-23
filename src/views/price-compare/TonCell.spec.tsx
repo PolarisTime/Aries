@@ -124,6 +124,36 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(container.textContent).toContain('已开')
   })
 
+  it('关联订单已删除且无 linked 时回退订单号快照并提示重选', () => {
+    render({
+      row: {
+        ...baseRow,
+        purchaseOrderId: '99',
+        purchaseOrderNo: 'PO-99',
+      },
+      options: [],
+      linked: undefined,
+    })
+    // 下拉展示快照订单号而非原始雪花 ID
+    const select = container.querySelector('.price-compare-purchase-order')
+    expect(select?.textContent).toContain('PO-99')
+    expect(select?.textContent).toContain('订单已删除')
+    expect(container.textContent).toContain('关联订单已删除，请重新选择')
+    // 无可信吨位: 不显示已开/剩余
+    expect(container.textContent).not.toContain('已开')
+  })
+
+  it('关联订单已删除且无快照时回退到订单 ID', () => {
+    render({
+      row: { ...baseRow, purchaseOrderId: '99' },
+      options: [],
+      linked: undefined,
+    })
+    const select = container.querySelector('.price-compare-purchase-order')
+    expect(select?.textContent).toContain('99')
+    expect(container.textContent).toContain('关联订单已删除，请重新选择')
+  })
+
   it('已关联时下拉展示订单号', () => {
     render({ row: { ...baseRow, purchaseOrderId: '88' } })
     const select = container.querySelector('.price-compare-purchase-order')

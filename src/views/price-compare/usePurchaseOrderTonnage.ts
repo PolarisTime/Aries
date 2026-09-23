@@ -5,7 +5,7 @@ import {
   type PurchaseOrderTonnageRecord,
 } from '@/api/market/quote-sheets'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { STALE_STATIC } from '@/constants/query-policies'
+import { STALE_REALTIME } from '@/constants/query-policies'
 import type { PriceSheet } from './types'
 
 export interface PurchaseOrderTonnageState {
@@ -18,8 +18,8 @@ export interface PurchaseOrderTonnageState {
 
 /**
  * 采购订单吨位汇总: 供比价吨位列关联采购订单并展示"已开/剩余"。
- * <p>列表用于下拉选择(排除当前单据自身已保存吨位, 叠加本地未保存吨位后在前端判断超额);
- * 回显字段 purchaseOrderNo 保证订单已删除时仍能显示。</p>
+ * <p>列表用于下拉选择(排除当前单据自身已保存吨位, 叠加本地未保存吨位后在前端判断超额)。
+ * 吨位随他人报单高频变化, 故用实时短缓存而非静态缓存; 订单号快照保证订单删除后仍能回显。</p>
  */
 export function usePurchaseOrderTonnage(
   active: PriceSheet | undefined,
@@ -37,7 +37,7 @@ export function usePurchaseOrderTonnage(
         signal,
       ),
     enabled: isAuthenticated,
-    staleTime: STALE_STATIC,
+    staleTime: STALE_REALTIME,
     retry: 1,
   })
 
@@ -73,7 +73,7 @@ export function usePurchaseOrderTonnage(
         signal,
       ),
     enabled: isAuthenticated && missingOrderIds.length > 0,
-    staleTime: STALE_STATIC,
+    staleTime: STALE_REALTIME,
     retry: 1,
   })
 

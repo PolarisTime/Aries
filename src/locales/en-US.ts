@@ -2444,9 +2444,13 @@ export const enUS = {
       purchaseOrderLabel: 'Linked purchase order',
       purchaseOrderPlaceholder: 'Link PO',
       purchaseOrderOptionTitle:
-        '{{orderNo}} · {{supplier}} | ordered {{ordered}}t | remaining {{remaining}}t',
+        '{{orderNo}} · {{supplier}} ({{status}}) | ordered {{ordered}}t | remaining {{remaining}}t',
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
+      purchaseOrderSavedBasis:
+        'Based on saved sheets only; unsaved edits are not counted',
+      purchaseOrderMissing: '{{orderNo}} (deleted)',
+      purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
     },
     config: {
       title: 'Project Settings',
