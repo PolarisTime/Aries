@@ -1,3 +1,10 @@
+## [10.25.2](https://github.com/PolarisTime/Aries/compare/v10.25.1...v10.25.2) (2026-09-23)
+
+
+### Bug Fixes
+
+* **sales-order:** 修复交付核定后销售订单契约校验失败 ([2a42443](https://github.com/PolarisTime/Aries/commit/2a42443c1b580933f21921247ca31647df3131ff))
+
 ## [10.25.1](https://github.com/PolarisTime/Aries/compare/v10.25.0...v10.25.1) (2026-09-23)
 
 
