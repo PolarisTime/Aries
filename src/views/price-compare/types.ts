@@ -60,6 +60,8 @@ export type PriceRow = {
   purchaseOrderId?: string
   /** 关联采购订单号快照(保存时写入; 供展示兜底)。 */
   purchaseOrderNo?: string
+  /** 关联采购订单明细行标识(按规格扣减已开吨位)。 */
+  purchaseOrderItemId?: string
 }
 
 export type SheetInput = {

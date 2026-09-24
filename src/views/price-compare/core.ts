@@ -4,6 +4,7 @@ import type {
   PriceRow,
   PriceSheet,
   SheetInputs,
+  Variety,
 } from './types'
 
 export const CATEGORIES = ['螺纹钢', '盘螺', '高线', '圆钢']
@@ -453,18 +454,20 @@ export function isPurchasedRow(row: PriceRow): boolean {
 }
 
 /**
- * 汇总各采购订单在当前单据内的报单吨位(隔断行不计)。
- * 用于在前端把"本地未保存吨位"叠加到服务端已开吨位上判断是否超额。
+ * 汇总各采购订单明细行在当前单据内的报单吨位(隔断行/未关联明细行不计)。
+ * 用于在前端把"本地未保存吨位"叠加到服务端已开吨位上判断是否超额(按规格)。
  */
-export function sumTonByPurchaseOrder(rows: PriceRow[]): Map<string, number> {
+export function sumTonByPurchaseOrderItem(
+  rows: PriceRow[],
+): Map<string, number> {
   const totals = new Map<string, number>()
   for (const row of rows) {
-    if (isSeparatorRow(row) || !row.purchaseOrderId) continue
+    if (isSeparatorRow(row) || !row.purchaseOrderItemId) continue
     const ton = row.ton ?? 0
     if (!Number.isFinite(ton) || ton <= 0) continue
     totals.set(
-      row.purchaseOrderId,
-      (totals.get(row.purchaseOrderId) ?? 0) + ton,
+      row.purchaseOrderItemId,
+      (totals.get(row.purchaseOrderItemId) ?? 0) + ton,
     )
   }
   return totals
@@ -500,4 +503,92 @@ export function makeSheet(
     inputs: {},
     rows: defaultSheetRows(),
   }
+}
+
+/** 商品唯一键: 类别|材质|规格|长度。 */
+export function varietyKeyOf(item: Variety): string {
+  return `${item.category}|${item.material}|${item.spec}|${item.length}`
+}
+
+/** 精简展示: 选项只显示 材质/规格/长度(类别单列展示)。 */
+export function varietyDisplay(item: Variety): string {
+  return [item.material, item.spec, item.length === '-' ? '' : item.length]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** 按类别把商品组织为分组下拉选项。 */
+export function buildVarietyOptions(varieties: Variety[]) {
+  return CATEGORIES.reduce<
+    { label: string; options: { value: string; label: string }[] }[]
+  >((groups, category) => {
+    const options: { value: string; label: string }[] = []
+    for (const item of varieties) {
+      if (item.category === category)
+        options.push({ value: varietyKeyOf(item), label: varietyDisplay(item) })
+    }
+    if (options.length) groups.push({ label: category, options })
+    return groups
+  }, [])
+}
+
+/**
+ * 过滤可选商品: 保留启用类别内的商品; 项目配置了可选商品白名单时仅保留白名单项。
+ */
+export function filterVarieties(
+  varieties: Variety[],
+  brands: Brand[],
+  allowedProducts: readonly string[] | undefined,
+): Variety[] {
+  const enabledCategories = new Set<string>()
+  if (!brands.length) {
+    for (const category of CATEGORIES) enabledCategories.add(category)
+  } else {
+    for (const brand of brands) {
+      const list = brand.categories?.length ? brand.categories : CATEGORIES
+      for (const category of list) enabledCategories.add(category)
+    }
+  }
+  const allowedProductSet = new Set(allowedProducts)
+  return varieties.filter(
+    (item) =>
+      enabledCategories.has(item.category) &&
+      (allowedProductSet.size === 0 ||
+        allowedProductSet.has(varietyKeyOf(item))),
+  )
+}
+
+/** 由商品生成一行待新增的报价行(其余字段为空/默认)。 */
+export function buildVarietyRow(variety: Variety): PriceRow {
+  return {
+    ...makeRow(),
+    category: variety.category,
+    material: variety.material,
+    spec: variety.spec,
+    length: variety.length,
+  }
+}
+
+/** 可互切的双长度(9米/12米)。 */
+export const ALT_LENGTHS: readonly [string, string] = ['9米', '12米']
+
+/**
+ * 在给定商品清单中查找指定行的另一长度对应商品。
+ * <p>仅当同类别/材质/规格下同时存在 9米 与 12米 时返回对方长度对应的商品,
+ * 否则返回 undefined(如盘螺长度为 '-', 不参与切换)。</p>
+ */
+export function findAlternateLengthVariety(
+  varieties: Variety[],
+  row: Pick<PriceRow, 'category' | 'material' | 'spec' | 'length'>,
+): Variety | undefined {
+  if (row.spec === null || !ALT_LENGTHS.includes(row.length)) return undefined
+  const targetLength =
+    row.length === ALT_LENGTHS[0] ? ALT_LENGTHS[1] : ALT_LENGTHS[0]
+  return varieties.find(
+    (item) =>
+      item.category === row.category &&
+      item.material === row.material &&
+      item.spec === row.spec &&
+      item.length === targetLength,
+  )
 }

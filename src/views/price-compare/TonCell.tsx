@@ -8,17 +8,17 @@ import type { PriceRow } from './types'
 interface TonCellProps {
   row: PriceRow
   rowId: string
-  /** 全部可选采购订单(含订货/已开/剩余吨位)。 */
+  /** 全部可选采购订单明细行(含订货/已开/剩余吨位)。 */
   options: PurchaseOrderTonnageRecord[]
-  /** 当前关联订单的吨位记录(可能为已不在选项列表中的订单)。 */
+  /** 当前关联明细行的吨位记录(可能为已不在选项列表中的行)。 */
   linked?: PurchaseOrderTonnageRecord
-  /** 本单据内该订单的报单吨位合计(用于叠加判断超额)。 */
-  localTonForOrder: number
+  /** 本单据内该明细行的报单吨位合计(用于叠加判断超额)。 */
+  localTonForItem: number
   disabled: boolean
   loading: boolean
   lockedClassName?: string
   onTonChange: (value: number | undefined, warnPositive: boolean) => void
-  /** 打开采购订单选择弹窗(由 SheetPanel 统一挂载)。 */
+  /** 打开采购订单明细选择弹窗(由 SheetPanel 统一挂载)。 */
   onOpenPicker: () => void
   onMoveFocus: (delta: number) => void
 }
@@ -27,9 +27,16 @@ function tonValueText(value: number) {
   return formatWeight(value)
 }
 
+/** 规格展示: 材质 Φ规格 长度(与订单明细一致)。 */
+function itemSpecText(record: PurchaseOrderTonnageRecord) {
+  return [record.material, record.spec, record.length]
+    .filter((value) => Boolean(value))
+    .join(' ')
+}
+
 /**
  * 吨位单元格: 报单吨位输入 + "已开 X" 数值 + 明细图标, 横向排布不换行。
- * 鼠标悬停明细图标显示订货/已开/剩余 popover, popover 内可打开选择弹窗。
+ * 鼠标悬停明细图标显示该规格行订货/已开/剩余 popover, popover 内可打开选择弹窗。
  * 超额以警告色提示(不拦截保存)。
  */
 export function TonCell({
@@ -37,7 +44,7 @@ export function TonCell({
   rowId,
   options,
   linked,
-  localTonForOrder,
+  localTonForItem,
   disabled,
   loading,
   lockedClassName,
@@ -46,20 +53,18 @@ export function TonCell({
   onMoveFocus,
 }: TonCellProps) {
   const { t } = useTranslation()
-  const selectedId = row.purchaseOrderId
+  const selectedId = row.purchaseOrderItemId
   const selected =
     linked ??
-    options.find((option) => option.purchaseOrderId === selectedId) ??
+    options.find((option) => option.purchaseOrderItemId === selectedId) ??
     undefined
-  // 已关联但订单已删除/不可见: 用保存时的订单号快照兜底展示。
+  // 已关联但明细行不可见: 用保存时的订单号快照兜底展示。
   const missingSnapshot =
     selectedId !== undefined && selected === undefined
       ? (row.purchaseOrderNo ?? selectedId)
       : undefined
   // 服务端已开吨位已排除当前单据, 叠加本地未保存吨位后即为实时进度。
-  const projectedIssued = selected
-    ? selected.issuedWeight + localTonForOrder
-    : 0
+  const projectedIssued = selected ? selected.issuedWeight + localTonForItem : 0
   const overLimit =
     selected !== undefined && projectedIssued > selected.orderedWeight
 
@@ -72,6 +77,12 @@ export function TonCell({
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderSupplier')}</span>
         <span>{selected.supplierName}</span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.variety')}</span>
+        <span>
+          {selected.category} {itemSpecText(selected)}
+        </span>
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderStatus')}</span>
@@ -177,7 +188,7 @@ export function TonCell({
               ? 'price-compare-ton-issued price-compare-ton-hint--over'
               : 'price-compare-ton-issued'
           }
-          title={selected.orderNo}
+          title={`${selected.orderNo} ${itemSpecText(selected)}`}
         >
           {t('priceCompare.sheet.purchaseOrderIssuedShort', {
             issued: tonValueText(projectedIssued),

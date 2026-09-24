@@ -17,7 +17,7 @@ export interface PurchaseOrderPickerController {
 }
 
 /**
- * 采购订单选择弹窗控制器: 收敛弹窗状态与回写逻辑, 避免 SheetPanel 主组件膨胀。
+ * 采购订单明细行选择弹窗控制器: 收敛弹窗状态与回写逻辑, 避免 SheetPanel 主组件膨胀。
  * <p>只负责"选哪一行 + 选中回填 patchRow"; 选项数据来自吨位订阅。</p>
  */
 export function usePurchaseOrderPicker({
@@ -37,11 +37,22 @@ export function usePurchaseOrderPicker({
         loading={tonnage.loading}
         open={pickerRowId !== undefined}
         options={tonnage.options}
-        selectedOrderId={pickerRow?.purchaseOrderId}
+        selectedItemId={pickerRow?.purchaseOrderItemId}
         onClose={() => setPickerRowId(undefined)}
-        onSelect={(purchaseOrderId) => {
+        onSelect={(purchaseOrderItemId) => {
           if (pickerRowId) {
-            patchRow(pickerRowId, { purchaseOrderId })
+            const selected = purchaseOrderItemId
+              ? tonnage.options.find(
+                  (option) =>
+                    option.purchaseOrderItemId === purchaseOrderItemId,
+                )
+              : undefined
+            // 选中明细行时一并写入其所属订单 id 与订单号快照, 断开时一并清空。
+            patchRow(pickerRowId, {
+              purchaseOrderId: selected?.purchaseOrderId,
+              purchaseOrderNo: selected?.orderNo,
+              purchaseOrderItemId,
+            })
           }
           setPickerRowId(undefined)
         }}

@@ -11,8 +11,13 @@ import type { PriceRow } from './types'
 
 const poRecord: PurchaseOrderTonnageRecord = {
   purchaseOrderId: '88',
+  purchaseOrderItemId: '301',
   orderNo: 'PO-88',
   supplierName: '沙钢',
+  category: '螺纹钢',
+  material: 'HRB400E',
+  spec: '12',
+  length: '9米',
   orderedWeight: 40,
   issuedWeight: 30,
   remainingWeight: 10,
@@ -73,7 +78,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       rowId: 'r1',
       options: [poRecord],
       linked: undefined,
-      localTonForOrder: 0,
+      localTonForItem: 0,
       disabled: false,
       loading: false,
       onTonChange: vi.fn(),
@@ -100,8 +105,8 @@ describe('TonCell 吨位 + 采购订单关联', () => {
 
   it('关联后显示"已开 X"(叠加本地未保存吨位)', () => {
     render({
-      row: { ...baseRow, purchaseOrderId: '88' },
-      localTonForOrder: 5,
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 5,
     })
     // 服务端已开 30 + 本地 5 = 35
     expect(container.textContent).toContain('已开 35.000')
@@ -110,8 +115,8 @@ describe('TonCell 吨位 + 采购订单关联', () => {
 
   it('超过订货吨数时"已开"标红', () => {
     render({
-      row: { ...baseRow, purchaseOrderId: '88', ton: 15 },
-      localTonForOrder: 15,
+      row: { ...baseRow, purchaseOrderItemId: '301', ton: 15 },
+      localTonForItem: 15,
     })
     // 30 + 15 = 45 > 40
     expect(
@@ -123,8 +128,8 @@ describe('TonCell 吨位 + 采购订单关联', () => {
 
   it('hover 明细图标显示订单明细 popover', async () => {
     render({
-      row: { ...baseRow, purchaseOrderId: '88' },
-      localTonForOrder: 5,
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 5,
     })
     const icon = container.querySelector(
       '.price-compare-ton-info',
@@ -143,7 +148,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
 
   it('popover 内按钮触发 onOpenPicker', async () => {
     const props = render({
-      row: { ...baseRow, purchaseOrderId: '88' },
+      row: { ...baseRow, purchaseOrderItemId: '301' },
     })
     const icon = container.querySelector(
       '.price-compare-ton-info',
@@ -163,7 +168,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
 
   it('订单已删除时 popover 提示重新选择', async () => {
     render({
-      row: { ...baseRow, purchaseOrderId: '99', purchaseOrderNo: 'PO-99' },
+      row: { ...baseRow, purchaseOrderItemId: '401', purchaseOrderNo: 'PO-99' },
       options: [],
       linked: undefined,
     })

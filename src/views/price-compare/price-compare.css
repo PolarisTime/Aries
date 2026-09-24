@@ -665,3 +665,16 @@
   margin-top: 6px;
   padding-left: 24px;
 }
+
+/* 规格列: 商品选择 + 可选的长度切换按钮(9米↔12米) */
+.price-compare-variety-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.price-compare-variety-switch {
+  flex: 0 0 auto;
+  color: var(--ant-color-primary, #1677ff);
+}

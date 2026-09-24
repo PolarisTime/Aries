@@ -417,8 +417,13 @@ describe('quote-sheets API', () => {
     apiGetMock.mockResolvedValue([
       {
         purchaseOrderId: '88',
+        purchaseOrderItemId: '301',
         orderNo: 'PO-88',
         supplierName: '沙钢',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: '12',
+        length: '9米',
         orderedWeight: '40.5',
         issuedWeight: '30.5',
         remainingWeight: '10',
@@ -445,8 +450,13 @@ describe('quote-sheets API', () => {
     })
     expect(result[0]).toEqual({
       purchaseOrderId: '88',
+      purchaseOrderItemId: '301',
       orderNo: 'PO-88',
       supplierName: '沙钢',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: '12',
+      length: '9米',
       orderedWeight: 40.5,
       issuedWeight: 30.5,
       remainingWeight: 10,
@@ -458,14 +468,14 @@ describe('quote-sheets API', () => {
     apiGetMock.mockResolvedValue([])
 
     await fetchPurchaseOrderTonnages({
-      purchaseOrderIds: ['88', '99'],
+      purchaseOrderItemIds: ['301', '302'],
     })
 
     const config = apiGetMock.mock.calls[0][2] as {
       params: Record<string, unknown>
       paramsSerializer?: unknown
     }
-    expect(config.params.purchaseOrderIds).toEqual(['88', '99'])
+    expect(config.params.purchaseOrderItemIds).toEqual(['301', '302'])
     expect(config.paramsSerializer).toEqual({ indexes: null })
   })
 })

@@ -6,6 +6,7 @@ import {
   MinusOutlined,
   ReloadOutlined,
   SettingOutlined,
+  SwapOutlined,
   TrophyOutlined,
   UnlockOutlined,
   VerticalAlignBottomOutlined,
@@ -34,13 +35,16 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
+import { AddProductRowButton } from './AddProductRowButton'
 import {
-  CATEGORIES,
+  buildVarietyOptions,
+  buildVarietyRow,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
+  filterVarieties,
+  findAlternateLengthVariety,
   isPurchasedRow,
   isSeparatorRow,
-  makeRow,
   makeSeparatorRow,
   moveItem,
   netPriceWithFallback,
@@ -48,7 +52,7 @@ import {
   SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
   type SupplierSelectOption,
-  sumTonByPurchaseOrder,
+  sumTonByPurchaseOrderItem,
   syncSpotInputs,
 } from './core'
 import { LockableField } from './LockableField'
@@ -163,11 +167,14 @@ type ColumnContext = {
   toggleAll: (checked: boolean) => void
   attachSpotRef: boolean
   allowHrb400eFallback: boolean
-  allowedProducts?: string[]
   bestOn: boolean
   spotResetNonce: number
   onInvalidSpot: () => void
   spotRef: React.RefObject<HTMLSpanElement | null>
+  /** 项目可选商品白名单(空表示不限)。 */
+  allowedProducts?: string[]
+  /** 已按项目配置过滤的可选商品(添加行下拉与列内选择共用)。 */
+  varietyOptionsFlat: Variety[]
   /** 仅临时列显隐: 是否隐藏备注列 */
   hideRemark: boolean
   /** 仅临时列显隐: 整组隐藏的品牌名 */
@@ -193,29 +200,6 @@ const cellOf = (
     ),
 })
 
-const varietyKeyOf = (item: Variety) =>
-  `${item.category}|${item.material}|${item.spec}|${item.length}`
-
-/** 精简展示: 类别单列展示, 选项只显示 材质/规格/长度。 */
-const varietyDisplay = (item: Variety) =>
-  [item.material, item.spec, item.length === '-' ? '' : item.length]
-    .filter(Boolean)
-    .join(' ')
-
-function buildVarietyOptions(varieties: Variety[]) {
-  return CATEGORIES.reduce<
-    { label: string; options: { value: string; label: string }[] }[]
-  >((groups, category) => {
-    const options: { value: string; label: string }[] = []
-    for (const item of varieties) {
-      if (item.category === category)
-        options.push({ value: varietyKeyOf(item), label: varietyDisplay(item) })
-    }
-    if (options.length) groups.push({ label: category, options })
-    return groups
-  }, [])
-}
-
 function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const {
     refDate,
@@ -238,8 +222,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     onReorderBrands,
     attachSpotRef,
     allowHrb400eFallback,
-    allowedProducts,
     bestOn,
+    allowedProducts,
     t,
     readOnly,
     sheet,
@@ -249,7 +233,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     openPurchaseOrderPicker,
   } = ctx
   /** 本单据内各采购订单的报单吨位合计(叠加到服务端已开吨位上判断超额)。 */
-  const localTonByOrder = sumTonByPurchaseOrder(rows)
+  const localTonByItemId = sumTonByPurchaseOrderItem(rows)
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
   /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
@@ -263,24 +247,12 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   /** 仅由「锁定规格和数量」触发: 保持不可编辑, 但仍以正常文字色显示已保存值。 */
   const quantityLockClass =
     quantityLocked && !readOnly ? 'price-compare-locked-field' : undefined
-  const enabledCategories = new Set<string>()
-  if (!brands.length) {
-    for (const category of CATEGORIES) enabledCategories.add(category)
-  } else {
-    for (const brand of brands) {
-      const list = brand.categories?.length ? brand.categories : CATEGORIES
-      for (const category of list) enabledCategories.add(category)
-    }
-  }
-  const allowedProductSet = new Set(allowedProducts ?? [])
-  const varietyOptions = buildVarietyOptions(
-    ctx.varieties.filter(
-      (item) =>
-        enabledCategories.has(item.category) &&
-        (allowedProductSet.size === 0 ||
-          allowedProductSet.has(varietyKeyOf(item))),
-    ),
+  const varietyOptionsFlat = filterVarieties(
+    ctx.varieties,
+    brands,
+    allowedProducts,
   )
+  const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
   const bestCache = new Map<string, string | undefined>()
   const bestOf = (row: GridRow): string | undefined => {
     if (!bestOn) return undefined
@@ -436,28 +408,61 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           current && current.material
             ? `${current.category}|${current.material}|${current.spec}|${current.length}`
             : undefined
+        // 仅未关联采购订单(isPurchasedRow=false)且同规格存在另一长度时可切换。
+        const alternate = isPurchasedRow(current)
+          ? undefined
+          : findAlternateLengthVariety(varietyOptionsFlat, current)
+        const selectDisabled = readOnly || Boolean(sheet.specQuantityLocked)
         return (
-          <Select
-            size="small"
-            variant="borderless"
-            className={quantityLockClass}
-            disabled={readOnly || Boolean(sheet.specQuantityLocked)}
-            style={{ width: SHEET_COLUMN_WIDTH.spec - 12 }}
-            placeholder={t('priceCompare.sheet.selectProduct')}
-            showSearch={{ optionFilterProp: 'label' }}
-            value={value}
-            options={varietyOptions}
-            onChange={(key) => {
-              const target = varietyByLabel.get(key)
-              if (!target) return
-              patchRow(row.rowId, {
-                category: target.category,
-                material: target.material,
-                spec: target.spec,
-                length: target.length,
-              })
-            }}
-          />
+          <div className="price-compare-variety-cell">
+            <Select
+              size="small"
+              variant="borderless"
+              className={quantityLockClass}
+              disabled={selectDisabled}
+              style={{ width: SHEET_COLUMN_WIDTH.spec - 36 }}
+              placeholder={t('priceCompare.sheet.selectProduct')}
+              showSearch={{ optionFilterProp: 'label' }}
+              value={value}
+              options={varietyOptions}
+              onChange={(key) => {
+                const target = varietyByLabel.get(key)
+                if (!target) return
+                patchRow(row.rowId, {
+                  category: target.category,
+                  material: target.material,
+                  spec: target.spec,
+                  length: target.length,
+                })
+              }}
+            />
+            {alternate ? (
+              <Tooltip
+                title={t('priceCompare.sheet.switchLength', {
+                  length: alternate.length,
+                })}
+              >
+                <Button
+                  aria-label={t('priceCompare.sheet.switchLength', {
+                    length: alternate.length,
+                  })}
+                  className="price-compare-variety-switch"
+                  disabled={selectDisabled}
+                  icon={<SwapOutlined />}
+                  size="small"
+                  type="text"
+                  onClick={() =>
+                    patchRow(row.rowId, {
+                      category: alternate.category,
+                      material: alternate.material,
+                      spec: alternate.spec,
+                      length: alternate.length,
+                    })
+                  }
+                />
+              </Tooltip>
+            ) : null}
+          </div>
         )
       },
     },
@@ -468,9 +473,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       tonTotalText,
       quantityLockClass,
       purchaseOrderOptions: purchaseOrderTonnage.options,
-      tonnageByOrderId: purchaseOrderTonnage.tonnageByOrderId,
+      tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
       purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-      localTonByOrder,
+      localTonByItemId,
       moveFocusTon: ctx.moveFocusTon,
       patchRow,
       openPurchaseOrderPicker,
@@ -771,12 +776,13 @@ type SheetTableProps = {
     'rows' | 'onRowDragStart' | 'onRowDragEnd' | 'toggleAll' | 'attachSpotRef'
   > & { density: 'small' | 'middle' | 'large' }
   onReorderRow: (fromId: string, toId: string, after: boolean) => void
-  onAddRow: () => void
+  /** 选中商品后追加一行(预填该商品)。 */
+  onAddVariety: (variety: Variety) => void
   onAddSeparator: () => void
 }
 
 function SheetTable(props: SheetTableProps) {
-  const { rows, base, onReorderRow, onAddRow, onAddSeparator } = props
+  const { rows, base, onReorderRow, onAddVariety, onAddSeparator } = props
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
   const [dropAfter, setDropAfter] = useState(false)
@@ -834,16 +840,11 @@ function SheetTable(props: SheetTableProps) {
             colSpan={(base.hideRemark ? 5 : 6) + base.visibleBrandCount * 4}
           >
             <Flex gap="small" align="center">
-              <Button
-                type="text"
-                size="small"
-                block
-                className="price-compare-add-row"
+              <AddProductRowButton
                 disabled={rowLocked}
-                onClick={onAddRow}
-              >
-                {t('priceCompare.sheet.addRow')}
-              </Button>
+                varieties={base.varietyOptionsFlat}
+                onPick={onAddVariety}
+              />
               <Tooltip
                 title={
                   !base.readOnly && base.sheet.specQuantityLocked
@@ -1768,8 +1769,6 @@ export function SheetPanel(props: Props) {
       return moveItem(list, from, insert)
     })
 
-  const addRow = () => setRows((list) => [...list, makeRow()])
-
   const addSeparator = () => setRows((list) => [...list, makeSeparatorRow()])
 
   const purchaseOrderPicker = usePurchaseOrderPicker({
@@ -1800,14 +1799,15 @@ export function SheetPanel(props: Props) {
     selectedIds,
     toggleSelect,
     allowHrb400eFallback,
-    allowedProducts,
     bestOn,
+    allowedProducts,
     spotResetNonce,
     onInvalidSpot: () => setSpotResetNonce((nonce) => nonce + 1),
     spotRef,
     readOnly,
     hideRemark,
     hiddenBrands,
+    varietyOptionsFlat: filterVarieties(varieties, brands, allowedProducts),
     purchaseOrderTonnage,
     openPurchaseOrderPicker: purchaseOrderPicker.open,
     visibleBrandCount: brands.reduce(
@@ -1856,7 +1856,9 @@ export function SheetPanel(props: Props) {
           moveFocusTon: moveFocusTon(rows),
         }}
         onReorderRow={reorderRow}
-        onAddRow={addRow}
+        onAddVariety={(variety) =>
+          setRows((list) => [...list, buildVarietyRow(variety)])
+        }
         onAddSeparator={addSeparator}
       />
       {purchaseOrderPicker.node}

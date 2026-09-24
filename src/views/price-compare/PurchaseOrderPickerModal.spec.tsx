@@ -11,8 +11,13 @@ import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
 const records: PurchaseOrderTonnageRecord[] = [
   {
     purchaseOrderId: '88',
+    purchaseOrderItemId: '301',
     orderNo: 'PO-88',
     supplierName: '沙钢',
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec: '12',
+    length: '9米',
     orderedWeight: 40,
     issuedWeight: 30,
     remainingWeight: 10,
@@ -20,8 +25,13 @@ const records: PurchaseOrderTonnageRecord[] = [
   },
   {
     purchaseOrderId: '99',
+    purchaseOrderItemId: '401',
     orderNo: 'PO-99',
     supplierName: '中天',
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec: '25',
+    length: '9米',
     orderedWeight: 20,
     issuedWeight: 22,
     remainingWeight: -2,
@@ -77,7 +87,7 @@ describe('PurchaseOrderPickerModal', () => {
   ) => {
     const props: Parameters<typeof PurchaseOrderPickerModal>[0] = {
       open: true,
-      selectedOrderId: undefined,
+      selectedItemId: undefined,
       options: records,
       loading: false,
       onSelect: vi.fn(),
@@ -101,14 +111,14 @@ describe('PurchaseOrderPickerModal', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     const modal = document.querySelector('.ant-modal')
-    expect(modal?.textContent).toContain('选择采购订单')
+    expect(modal?.textContent).toContain('选择采购订单规格行')
     expect(modal?.textContent).toContain('PO-88')
     expect(modal?.textContent).toContain('沙钢')
     expect(modal?.textContent).toContain('40.000')
     expect(modal?.textContent).toContain('30.000')
   })
 
-  it('点击行触发 onSelect(订单 id)', async () => {
+  it('点击行触发 onSelect(明细行 id)', async () => {
     const props = render()
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
@@ -119,7 +129,7 @@ describe('PurchaseOrderPickerModal', () => {
     act(() => {
       row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(props.onSelect).toHaveBeenCalledWith('88')
+    expect(props.onSelect).toHaveBeenCalledWith('301')
   })
 
   it('搜索框按单号过滤', async () => {

@@ -49,6 +49,7 @@ const itemSchema = z.looseObject({
   remark: z.string().nullable().optional(),
   purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
   purchaseOrderNo: z.string().nullable().optional(),
+  purchaseOrderItemId: z.union([z.number(), z.string()]).nullable().optional(),
   prices: z.array(priceSchema).nullable().optional(),
 })
 
@@ -100,6 +101,8 @@ export type QuoteSheetItemRecord = {
   purchased: boolean
   purchaseOrderId?: EntityId
   purchaseOrderNo?: string
+  /** 关联采购订单明细行标识(按规格扣减)。 */
+  purchaseOrderItemId?: EntityId
   prices: QuoteSheetPriceRecord[]
 }
 
@@ -151,6 +154,7 @@ export type QuoteSheetPayload = {
     ton?: number
     remark?: string
     purchaseOrderId?: EntityId
+    purchaseOrderItemId?: EntityId
     prices: {
       brandName: string
       spotPrice?: number
@@ -169,6 +173,7 @@ export type QuoteSheetItemPayload = {
   ton?: number
   remark?: string
   purchaseOrderId?: EntityId
+  purchaseOrderItemId?: EntityId
   prices: {
     brandName: string
     spotPrice?: number
@@ -221,6 +226,13 @@ function normalizeItem(
     rowType === 'SEPARATOR'
       ? undefined
       : parseOptionalEntityId(item.purchaseOrderId, `${path}.purchaseOrderId`)
+  const purchaseOrderItemId =
+    rowType === 'SEPARATOR'
+      ? undefined
+      : parseOptionalEntityId(
+          item.purchaseOrderItemId,
+          `${path}.purchaseOrderItemId`,
+        )
   return {
     id: parseEntityId(item.id, `${path}.id`),
     rowType,
@@ -240,6 +252,7 @@ function normalizeItem(
     ...(purchaseOrderId && item.purchaseOrderNo
       ? { purchaseOrderNo: item.purchaseOrderNo }
       : {}),
+    ...(purchaseOrderItemId ? { purchaseOrderItemId } : {}),
     prices: (item.prices ?? []).map((price, priceIndex) =>
       normalizePrice(price, priceIndex),
     ),
@@ -408,11 +421,17 @@ export async function deleteQuoteSheetItem(
   }
 }
 
-/** 采购订单吨位汇总: 订货吨数 - 报单已开吨位 = 剩余可开吨。 */
+/** 采购订单明细行吨位汇总: 该行订货吨数 - 报单已开吨位 = 剩余可开吨。 */
 export type PurchaseOrderTonnageRecord = {
   purchaseOrderId: EntityId
+  /** 采购订单明细行标识(按规格扣减的唯一标识)。 */
+  purchaseOrderItemId: EntityId
   orderNo: string
   supplierName: string
+  category: string
+  material: string
+  spec: string
+  length: string
   orderedWeight: number
   issuedWeight: number
   remainingWeight: number
@@ -421,8 +440,13 @@ export type PurchaseOrderTonnageRecord = {
 
 const purchaseOrderTonnageSchema = z.looseObject({
   purchaseOrderId: z.unknown(),
+  purchaseOrderItemId: z.unknown(),
   orderNo: z.string().nullable().optional(),
   supplierName: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
+  material: z.string().nullable().optional(),
+  spec: z.string().nullable().optional(),
+  length: z.string().nullable().optional(),
   orderedWeight: z.union([z.number(), z.string()]).nullable().optional(),
   issuedWeight: z.union([z.number(), z.string()]).nullable().optional(),
   remainingWeight: z.union([z.number(), z.string()]).nullable().optional(),
@@ -430,32 +454,34 @@ const purchaseOrderTonnageSchema = z.looseObject({
 })
 
 /**
- * 列出采购订单及其订货/已开/剩余吨位, 供吨位列选择关联并展示。
- * 传 purchaseOrderIds 按 id 汇总(用于回显已关联订单), 否则按关键字/状态列出选项。
+ * 列出采购订单明细行(按规格)及其订货/已开/剩余吨位, 供吨位列按规格关联并展示。
+ * 传 purchaseOrderItemIds 按 id 汇总(用于回显已关联行), 否则按 keyword/status/purchaseOrderId 列出选项。
  * excludeSheetId 排除当前报价单自身已保存吨位, 便于叠加本地未保存吨位。
  */
 export async function fetchPurchaseOrderTonnages(
   options: {
-    purchaseOrderIds?: EntityId[]
+    purchaseOrderItemIds?: EntityId[]
     keyword?: string
     status?: string
+    purchaseOrderId?: EntityId
     excludeSheetId?: EntityId
   },
   signal?: AbortSignal,
 ): Promise<PurchaseOrderTonnageRecord[]> {
   const params: Record<string, unknown> = {}
-  if (options.purchaseOrderIds?.length) {
-    params.purchaseOrderIds = options.purchaseOrderIds
+  if (options.purchaseOrderItemIds?.length) {
+    params.purchaseOrderItemIds = options.purchaseOrderItemIds
   }
   if (options.keyword) params.keyword = options.keyword
   if (options.status) params.status = options.status
+  if (options.purchaseOrderId) params.purchaseOrderId = options.purchaseOrderId
   if (options.excludeSheetId) params.excludeSheetId = options.excludeSheetId
   const response = await apiGet(
     ENDPOINTS.QUOTE_SHEET_PURCHASE_ORDER_TONNAGES,
     z.array(purchaseOrderTonnageSchema),
     {
       params,
-      ...(options.purchaseOrderIds?.length
+      ...(options.purchaseOrderItemIds?.length
         ? { paramsSerializer: { indexes: null } }
         : {}),
       ...(signal ? { signal } : {}),
@@ -466,8 +492,16 @@ export async function fetchPurchaseOrderTonnages(
       row.purchaseOrderId,
       `tonnages[${index}].purchaseOrderId`,
     ),
+    purchaseOrderItemId: parseEntityId(
+      row.purchaseOrderItemId,
+      `tonnages[${index}].purchaseOrderItemId`,
+    ),
     orderNo: asString(row.orderNo),
     supplierName: asString(row.supplierName),
+    category: asString(row.category),
+    material: asString(row.material),
+    spec: asString(row.spec),
+    length: asString(row.length),
     orderedWeight: toOptionalNumber(row.orderedWeight) ?? 0,
     issuedWeight: toOptionalNumber(row.issuedWeight) ?? 0,
     remainingWeight: toOptionalNumber(row.remainingWeight) ?? 0,

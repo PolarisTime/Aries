@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildVarietyRow,
   canonicalCategory,
   computeSummary,
   countMissing,
   dataKeyOf,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
+  filterVarieties,
+  findAlternateLengthVariety,
   isPurchasedRow,
   isSeparatorRow,
   makeRow,
@@ -16,10 +19,10 @@ import {
   netPrice,
   netPriceWithFallback,
   reconcileSpotInputs,
-  sumTonByPurchaseOrder,
+  sumTonByPurchaseOrderItem,
   syncSpotInputs,
 } from './core'
-import type { Brand, PriceData, PriceRow, PriceSheet } from './types'
+import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
 const data: PriceData = {
   '2026-09-10': {
@@ -504,12 +507,12 @@ describe('isPurchasedRow', () => {
   })
 })
 
-describe('sumTonByPurchaseOrder', () => {
+describe('sumTonByPurchaseOrderItem', () => {
   it('按采购订单汇总商品行吨位, 忽略隔断行与未关联行', () => {
-    const totals = sumTonByPurchaseOrder([
-      { ...row12, id: 'r1', ton: 10, purchaseOrderId: 'po1' },
-      { ...row12, id: 'r2', ton: 5.5, purchaseOrderId: 'po1' },
-      { ...row12, id: 'r3', ton: 3, purchaseOrderId: 'po2' },
+    const totals = sumTonByPurchaseOrderItem([
+      { ...row12, id: 'r1', ton: 10, purchaseOrderItemId: 'po1' },
+      { ...row12, id: 'r2', ton: 5.5, purchaseOrderItemId: 'po1' },
+      { ...row12, id: 'r3', ton: 3, purchaseOrderItemId: 'po2' },
       { ...row12, id: 'r4', ton: 99 },
       {
         id: 'sep1',
@@ -519,7 +522,7 @@ describe('sumTonByPurchaseOrder', () => {
         spec: null,
         length: '',
         ton: 7,
-        purchaseOrderId: 'po1',
+        purchaseOrderItemId: 'po1',
       },
     ])
 
@@ -529,13 +532,13 @@ describe('sumTonByPurchaseOrder', () => {
   })
 
   it('忽略非正数与缺失吨位, 空输入返回空 Map', () => {
-    const totals = sumTonByPurchaseOrder([
-      { ...row12, id: 'r1', purchaseOrderId: 'po1' },
-      { ...row12, id: 'r2', ton: 0, purchaseOrderId: 'po1' },
-      { ...row12, id: 'r3', ton: -1, purchaseOrderId: 'po1' },
+    const totals = sumTonByPurchaseOrderItem([
+      { ...row12, id: 'r1', purchaseOrderItemId: 'po1' },
+      { ...row12, id: 'r2', ton: 0, purchaseOrderItemId: 'po1' },
+      { ...row12, id: 'r3', ton: -1, purchaseOrderItemId: 'po1' },
     ])
     expect(totals.has('po1')).toBe(false)
-    expect(sumTonByPurchaseOrder([]).size).toBe(0)
+    expect(sumTonByPurchaseOrderItem([]).size).toBe(0)
   })
 })
 
@@ -554,5 +557,147 @@ describe('隔断行', () => {
     expect(isSeparatorRow(makeSeparatorRow())).toBe(true)
     expect(isSeparatorRow(makeRow())).toBe(false)
     expect(isSeparatorRow({ rowType: undefined })).toBe(false)
+  })
+})
+
+describe('filterVarieties 可选商品过滤', () => {
+  const varieties: Variety[] = [
+    {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+      label: 'a',
+    },
+    {
+      category: '盘螺',
+      material: 'HRB400E',
+      spec: 8,
+      length: '9米',
+      label: 'b',
+    },
+  ]
+
+  it('无品牌配置时保留全部类别', () => {
+    expect(filterVarieties(varieties, [], undefined)).toHaveLength(2)
+  })
+
+  it('按品牌启用类别过滤; 品牌未配置类别视为全部启用', () => {
+    const all = filterVarieties(
+      varieties,
+      [{ name: '中天', freight: 0 }],
+      undefined,
+    )
+    expect(all.map((item) => item.category)).toEqual(['螺纹钢', '盘螺'])
+    const onlyThread = filterVarieties(
+      varieties,
+      [{ name: '中天', freight: 0, categories: ['螺纹钢'] }],
+      undefined,
+    )
+    expect(onlyThread.map((item) => item.category)).toEqual(['螺纹钢'])
+  })
+
+  it('项目白名单存在时仅保留白名单商品', () => {
+    const result = filterVarieties(varieties, [], ['盘螺|HRB400E|8|9米'])
+    expect(result.map((item) => item.category)).toEqual(['盘螺'])
+  })
+})
+
+describe('buildVarietyRow 生成新增行', () => {
+  it('预填商品字段且保留默认行结构', () => {
+    const row = buildVarietyRow({
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+      label: 'x',
+    })
+    expect(row.rowType).toBe('PRODUCT')
+    expect(row.category).toBe('螺纹钢')
+    expect(row.material).toBe('HRB400E')
+    expect(row.spec).toBe(12)
+    expect(row.length).toBe('9米')
+    expect(row.id).toBeTruthy()
+  })
+})
+
+describe('findAlternateLengthVariety 长度互切', () => {
+  const pool: Variety[] = [
+    {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+      label: 'a',
+    },
+    {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '12米',
+      label: 'b',
+    },
+    {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 25,
+      length: '9米',
+      label: 'c',
+    },
+    { category: '盘螺', material: 'HRB400E', spec: 8, length: '-', label: 'd' },
+  ]
+
+  it('9米切到同规格的12米', () => {
+    const result = findAlternateLengthVariety(pool, {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+    })
+    expect(result?.length).toBe('12米')
+    expect(result?.spec).toBe(12)
+  })
+
+  it('12米切回同规格的9米', () => {
+    const result = findAlternateLengthVariety(pool, {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '12米',
+    })
+    expect(result?.length).toBe('9米')
+  })
+
+  it('同规格只有一种长度时不返回(Φ25 仅 9米)', () => {
+    expect(
+      findAlternateLengthVariety(pool, {
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 25,
+        length: '9米',
+      }),
+    ).toBeUndefined()
+  })
+
+  it('盘螺(长度 -)不参与切换', () => {
+    expect(
+      findAlternateLengthVariety(pool, {
+        category: '盘螺',
+        material: 'HRB400E',
+        spec: 8,
+        length: '-',
+      }),
+    ).toBeUndefined()
+  })
+
+  it('规格为空时不返回', () => {
+    expect(
+      findAlternateLengthVariety(pool, {
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: null,
+        length: '9米',
+      }),
+    ).toBeUndefined()
   })
 })

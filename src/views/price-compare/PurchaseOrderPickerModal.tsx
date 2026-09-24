@@ -17,22 +17,22 @@ import { formatWeight } from '@/utils/formatters'
 
 interface Props {
   open: boolean
-  /** 当前已关联订单 id(用于高亮)。 */
-  selectedOrderId?: string
+  /** 当前已关联明细行 id(用于高亮与清除)。 */
+  selectedItemId?: string
   options: PurchaseOrderTonnageRecord[]
   loading: boolean
-  /** 选中订单(undefined 表示清除关联); 选择后由调用方关闭弹窗。 */
-  onSelect: (purchaseOrderId: string | undefined) => void
+  /** 选中明细行(undefined 表示清除关联); 选择后由调用方关闭弹窗。 */
+  onSelect: (purchaseOrderItemId: string | undefined) => void
   onClose: () => void
 }
 
 /**
- * 采购订单选择弹窗: 关键字过滤 + 展示订货/已开/剩余吨位。
+ * 采购订单明细行选择弹窗: 关键字过滤 + 展示规格/订货/已开/剩余吨位。
  * 点击行即选中并关闭; 另提供"清除关联"与"取消"。
  */
 export function PurchaseOrderPickerModal({
   open,
-  selectedOrderId,
+  selectedItemId,
   options,
   loading,
   onSelect,
@@ -45,7 +45,9 @@ export function PurchaseOrderPickerModal({
     const text = keyword.trim().toLowerCase()
     if (!text) return options
     return options.filter((option) =>
-      `${option.orderNo} ${option.supplierName}`.toLowerCase().includes(text),
+      `${option.orderNo} ${option.supplierName} ${option.category} ${option.material} ${option.spec} ${option.length}`
+        .toLowerCase()
+        .includes(text),
     )
   }, [options, keyword])
 
@@ -53,14 +55,22 @@ export function PurchaseOrderPickerModal({
     {
       title: t('priceCompare.sheet.columns.purchaseOrderNo'),
       dataIndex: 'orderNo',
-      width: 160,
+      width: 140,
       ellipsis: true,
     },
     {
       title: t('priceCompare.sheet.columns.purchaseOrderSupplier'),
       dataIndex: 'supplierName',
-      width: 140,
+      width: 120,
       ellipsis: true,
+    },
+    {
+      title: t('priceCompare.sheet.columns.variety'),
+      key: 'variety',
+      width: 180,
+      ellipsis: true,
+      render: (_value, record) =>
+        `${record.category} ${record.material} Φ${record.spec} ${record.length}`,
     },
     {
       title: t('priceCompare.sheet.columns.purchaseOrderOrdered'),
@@ -100,14 +110,14 @@ export function PurchaseOrderPickerModal({
     <Modal
       title={t('priceCompare.sheet.purchaseOrderPickerTitle')}
       open={open}
-      width={800}
+      width={920}
       destroyOnHidden
       footer={
         <div className="price-compare-purchase-order-picker-footer">
           <Tooltip title={t('priceCompare.sheet.purchaseOrderPickerClearHint')}>
             <Button
               danger
-              disabled={!selectedOrderId}
+              disabled={!selectedItemId}
               onClick={() => onSelect(undefined)}
             >
               {t('priceCompare.sheet.purchaseOrderPickerClear')}
@@ -130,7 +140,7 @@ export function PurchaseOrderPickerModal({
       <Table<PurchaseOrderTonnageRecord>
         columns={columns}
         dataSource={filtered}
-        rowKey="purchaseOrderId"
+        rowKey="purchaseOrderItemId"
         loading={loading}
         size="small"
         pagination={{ pageSize: 8, size: 'small', showSizeChanger: false }}
@@ -143,11 +153,11 @@ export function PurchaseOrderPickerModal({
           ),
         }}
         onRow={(record) => ({
-          onClick: () => onSelect(record.purchaseOrderId),
+          onClick: () => onSelect(record.purchaseOrderItemId),
           style: {
             cursor: 'pointer',
             background:
-              record.purchaseOrderId === selectedOrderId
+              record.purchaseOrderItemId === selectedItemId
                 ? 'var(--ant-color-primary-bg, #e6f4ff)'
                 : undefined,
           },

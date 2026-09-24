@@ -20,10 +20,15 @@ vi.mock('@/api/market/quote-sheets', async () => {
 
 import { usePurchaseOrderTonnage } from './usePurchaseOrderTonnage'
 
-const record = (id: string, orderNo: string) => ({
-  purchaseOrderId: id,
+const record = (orderId: string, itemId: string, orderNo: string) => ({
+  purchaseOrderId: orderId,
+  purchaseOrderItemId: itemId,
   orderNo,
   supplierName: '沙钢',
+  category: '螺纹钢',
+  material: 'HRB400E',
+  spec: '12',
+  length: '9米',
   orderedWeight: 40,
   issuedWeight: 30,
   remainingWeight: 10,
@@ -104,13 +109,15 @@ describe('usePurchaseOrderTonnage', () => {
   }
 
   it('成功时返回选项与吨位映射, isError=false', async () => {
-    api.fetchPurchaseOrderTonnages.mockResolvedValue([record('88', 'PO-88')])
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      record('88', '301', 'PO-88'),
+    ])
     const get = render(sheetWithRows([]))
     await flush()
 
     const state = get()
     expect(state?.options).toHaveLength(1)
-    expect(state?.tonnageByOrderId.get('88')?.orderNo).toBe('PO-88')
+    expect(state?.tonnageByItemId.get('301')?.orderNo).toBe('PO-88')
     expect(state?.isError).toBe(false)
   })
 
@@ -135,7 +142,7 @@ describe('usePurchaseOrderTonnage', () => {
       // 首次(选项)返回空, 说明订单不在可选项里
       .mockResolvedValueOnce([])
       // 回查按 ids 返回该订单
-      .mockResolvedValueOnce([record('99', 'PO-99')])
+      .mockResolvedValueOnce([record('99', '401', 'PO-99')])
     const get = render(
       sheetWithRows([
         {
@@ -144,16 +151,18 @@ describe('usePurchaseOrderTonnage', () => {
           material: 'HRB400E',
           spec: 12,
           length: '9米',
-          purchaseOrderId: '99',
+          purchaseOrderItemId: '401',
         },
       ]),
     )
     await flush()
 
-    expect(get()?.tonnageByOrderId.get('99')?.orderNo).toBe('PO-99')
+    expect(get()?.tonnageByItemId.get('401')?.orderNo).toBe('PO-99')
     // 第二次调用应为按 id 回查
     const calls = api.fetchPurchaseOrderTonnages.mock.calls
-    expect(calls.some((c) => c[0]?.purchaseOrderIds?.includes('99'))).toBe(true)
+    expect(calls.some((c) => c[0]?.purchaseOrderItemIds?.includes('401'))).toBe(
+      true,
+    )
   })
 
   it('已持久化批次(id 为雪花)传 excludeSheetId 排除自身已保存吨位', async () => {

@@ -9,7 +9,7 @@ import type { GridRow, PriceRow } from './types'
 /** 采购订单吨位数据(选项/回显/加载中), 由视图层透传给吨位列。 */
 export interface PurchaseOrderTonnageDraftInput {
   options: PurchaseOrderTonnageRecord[]
-  tonnageByOrderId: Map<string, PurchaseOrderTonnageRecord>
+  tonnageByItemId: Map<string, PurchaseOrderTonnageRecord>
   loading: boolean
   /** 选项加载失败: 供视图层提示"吨位暂不可用"。 */
   isError: boolean
@@ -18,7 +18,7 @@ export interface PurchaseOrderTonnageDraftInput {
 /** 缺省空数据: 未传入时吨位列仍可编辑吨位, 仅不展示订单关联。 */
 export const EMPTY_PURCHASE_ORDER_TONNAGE: PurchaseOrderTonnageDraftInput = {
   options: [],
-  tonnageByOrderId: new Map(),
+  tonnageByItemId: new Map(),
   loading: false,
   isError: false,
 }
@@ -30,9 +30,9 @@ export interface TonColumnContext {
   tonTotalText: string
   quantityLockClass?: string
   purchaseOrderOptions: PurchaseOrderTonnageRecord[]
-  tonnageByOrderId: Map<string, PurchaseOrderTonnageRecord>
+  tonnageByItemId: Map<string, PurchaseOrderTonnageRecord>
   purchaseOrderTonnageLoading: boolean
-  localTonByOrder: Map<string, number>
+  localTonByItemId: Map<string, number>
   moveFocusTon: (rowId: string, delta: number) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
@@ -59,13 +59,13 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
         <TonCell
           disabled={ctx.readOnly || ctx.sheetSpecQuantityLocked}
           linked={
-            row.row.purchaseOrderId
-              ? ctx.tonnageByOrderId.get(row.row.purchaseOrderId)
+            row.row.purchaseOrderItemId
+              ? ctx.tonnageByItemId.get(row.row.purchaseOrderItemId)
               : undefined
           }
-          localTonForOrder={
-            row.row.purchaseOrderId
-              ? (ctx.localTonByOrder.get(row.row.purchaseOrderId) ?? 0)
+          localTonForItem={
+            row.row.purchaseOrderItemId
+              ? (ctx.localTonByItemId.get(row.row.purchaseOrderItemId) ?? 0)
               : 0
           }
           loading={ctx.purchaseOrderTonnageLoading}
