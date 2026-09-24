@@ -1,3 +1,10 @@
+# [10.29.0](https://github.com/PolarisTime/Aries/compare/v10.28.2...v10.29.0) (2026-09-24)
+
+
+### Features
+
+* **layout:** 新增全局面包屑导航, 与多标签页导航互补 ([35f1298](https://github.com/PolarisTime/Aries/commit/35f1298ce2c8b54c02f892d7d73f02770119bae3))
+
 ## [10.28.2](https://github.com/PolarisTime/Aries/compare/v10.28.1...v10.28.2) (2026-09-24)
 
 
