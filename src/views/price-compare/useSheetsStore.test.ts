@@ -277,6 +277,28 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.prices[0].supplierId).toBe('5002')
   })
 
+  it('单独切换行锁定会下发行级保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({ ...row, locked: true })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { locked?: boolean },
+    ]
+    expect(payload.locked).toBe(true)
+  })
+
   it('行备注随行级保存下发', async () => {
     const store = renderStore()
     await hydrate(store)

@@ -364,6 +364,7 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     length: row.length,
     ton: row.ton ?? null,
     remark: row.remark ?? '',
+    locked: Boolean(row.locked),
     purchaseOrderId: row.purchaseOrderId ?? null,
     purchaseOrderItemId: row.purchaseOrderItemId ?? null,
     prices,
