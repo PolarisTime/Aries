@@ -81,19 +81,48 @@ export function parseRouteParams(searchStr: string) {
   }
 }
 
+/**
+ * 一次性 URL 意图参数登记表。
+ *
+ * <p><b>约定</b>: 任何「带参数跳转后应只生效一次」的 URL 参数都必须在此登记,
+ * 并在对应动作成功后调用 {@link consumeIntentSearch} 消费。</p>
+ *
+ * <p><b>为什么必须消费</b>: 标签页(Tab)的 pathname+search 会持久化到 localStorage,
+ * 且已挂载 Tab 常驻 DOM。未消费的一次性参数会在刷新 / Tab 重挂载(reloadKey 变化)后
+ * 再次命中, 导致重复触发(如重复填入上次明细、详情被反复弹开)。</p>
+ *
+ * <p>注意: 只登记「触发动作」的参数。仅用于预填且不触发副作用的业务字段
+ * (如 counterpartyId/docNo)保留在 URL, 不属于一次性意图; 持续型筛选(docNo/status 等)同理。</p>
+ */
+export const ONE_SHOT_INTENT_PARAMS = {
+  /** 新建弹窗意图。 */
+  create: ['create'],
+  /** 自动打开详情意图; docNo/trackId 同时驱动列表关键字, 故不在此列。 */
+  openDetail: ['openDetail'],
+  /** 父级导入意图(如采购订单 -> 采购入库)。 */
+  parentImport: ['sourceModule', 'sourceRecordId'],
+} as const
+
+/** 通用一次性意图消费: 从查询串移除指定参数, 保留其它业务字段。 */
+export function consumeIntentSearch(
+  searchStr: string,
+  keys: readonly string[],
+): string {
+  const params = new URLSearchParams(searchStr)
+  for (const key of keys) {
+    params.delete(key)
+  }
+  return params.toString()
+}
+
 /** 消费一次性新建意图，保留调用方带入的业务字段。 */
 export function consumeCreateIntentSearch(searchStr: string): string {
-  const params = new URLSearchParams(searchStr)
-  params.delete('create')
-  return params.toString()
+  return consumeIntentSearch(searchStr, ONE_SHOT_INTENT_PARAMS.create)
 }
 
 /** 消费一次性父级导入意图，保留其它业务字段。 */
 export function consumeParentImportIntentSearch(searchStr: string): string {
-  const params = new URLSearchParams(searchStr)
-  params.delete('sourceModule')
-  params.delete('sourceRecordId')
-  return params.toString()
+  return consumeIntentSearch(searchStr, ONE_SHOT_INTENT_PARAMS.parentImport)
 }
 
 /**
@@ -102,9 +131,7 @@ export function consumeParentImportIntentSearch(searchStr: string): string {
  * 再次自动弹开详情。</p>
  */
 export function consumeOpenDetailIntentSearch(searchStr: string): string {
-  const params = new URLSearchParams(searchStr)
-  params.delete('openDetail')
-  return params.toString()
+  return consumeIntentSearch(searchStr, ONE_SHOT_INTENT_PARAMS.openDetail)
 }
 
 function resolveParentImportSource(

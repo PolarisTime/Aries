@@ -7,6 +7,7 @@ import {
   consumeCreateIntentSearch,
   consumeOpenDetailIntentSearch,
   consumeParentImportIntentSearch,
+  ONE_SHOT_INTENT_PARAMS,
   parseRouteParams,
   supportsFilterField,
 } from '@/views/modules/use-business-grid-route-sync'
@@ -121,6 +122,27 @@ describe('parseRouteParams', () => {
 
   it('消费自动打开详情意图后无剩余参数时返回空串', () => {
     expect(consumeOpenDetailIntentSearch('?openDetail=1')).toBe('')
+  })
+
+  it('一次性意图登记表: 所有触发型参数均已登记, 避免遗漏消费', () => {
+    // 这些参数会在动作成功后从 URL 移除; 新增此类参数必须登记在此。
+    expect(ONE_SHOT_INTENT_PARAMS.create).toContain('create')
+    expect(ONE_SHOT_INTENT_PARAMS.openDetail).toContain('openDetail')
+    expect(ONE_SHOT_INTENT_PARAMS.parentImport).toEqual([
+      'sourceModule',
+      'sourceRecordId',
+    ])
+  })
+
+  it('一次性意图消费不误删持续型筛选参数', () => {
+    const search = '?docNo=SO-1&openDetail=1&create=1&status=已审核'
+    const afterDetail = consumeOpenDetailIntentSearch(search)
+    expect(afterDetail).toContain('docNo=SO-1')
+    expect(afterDetail).toContain('status=')
+    expect(afterDetail).not.toContain('openDetail')
+    const afterCreate = consumeCreateIntentSearch(afterDetail)
+    expect(afterCreate).not.toContain('create=1')
+    expect(afterCreate).toContain('docNo=SO-1')
   })
 })
 
