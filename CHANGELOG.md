@@ -1,3 +1,10 @@
+## [10.28.2](https://github.com/PolarisTime/Aries/compare/v10.28.1...v10.28.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* **modules:** 自动打开详情意图打开后清除 openDetail, 避免重复弹开 ([e35d796](https://github.com/PolarisTime/Aries/commit/e35d7964aed55a08715edcdf6dcb1f03442ca22a))
+
 ## [10.28.1](https://github.com/PolarisTime/Aries/compare/v10.28.0...v10.28.1) (2026-09-24)
 
 
