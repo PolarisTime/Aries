@@ -23,6 +23,7 @@ import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type { EntityId } from '@/types/entity-id'
 import { formatWeight } from '@/utils/formatters'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
+import { PickupSplitModal } from './purchase-order-pickup-list/PickupSplitModal'
 import { usePickupListColumns } from './purchase-order-pickup-list/pickup-list-columns'
 import {
   GROUP_DRAG_TYPE,
@@ -31,7 +32,6 @@ import {
   pickupListCollisionDetection,
 } from './purchase-order-pickup-list/pickup-list-draft'
 import { PickupDraftGroupSection } from './purchase-order-pickup-list/pickup-list-drag-rows'
-import { PickupSplitModal } from './purchase-order-pickup-list/PickupSplitModal'
 import { PickupSplitNotice } from './purchase-order-pickup-list/pickup-list-items-table'
 import { SortableRow } from './purchase-order-pickup-list/pickup-list-sortable'
 import { PickupListSummary } from './purchase-order-pickup-list/pickup-list-summary'
