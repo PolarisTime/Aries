@@ -1703,8 +1703,15 @@ export function SheetPanel(props: Props) {
       value,
     )
     patchSheet(sheet.id, { inputs })
-    // 记录本次会话改过现货价的行: 仅这些行参与后续批量填入供应商。
-    markSpotsTouched(targets.map((target) => `${brandName}:${target.id}`))
+    // 仅记录本次会话现货价实际发生变动(新增/改动)的行: 数值未变的不参与后续批量填入供应商。
+    const changedTargets = targets
+      .filter(
+        (target) =>
+          value !== undefined &&
+          sheet.inputs[`${brandName}:${target.id}`]?.spot !== value,
+      )
+      .map((target) => `${brandName}:${target.id}`)
+    markSpotsTouched(changedTargets)
     const text = value === undefined ? '' : String(value)
     for (const target of targets) {
       if (target.id === rowId) continue

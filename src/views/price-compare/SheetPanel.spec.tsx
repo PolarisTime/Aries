@@ -556,6 +556,69 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.sheet.inputs['中天:r2']?.supplierName).toBe('沙钢')
   })
 
+  it('现货价下调同样算改价, 批量填入生效', async () => {
+    const observed = renderStateful(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
+        },
+      },
+      [{ ...baseRow, id: 'r1' }],
+      suppliers,
+    )
+
+    // 下调 3280 → 3200, 属于价格变动
+    await editSpot('中天', 'r1', '3200')
+
+    await act(async () => {
+      container
+        .querySelector('.price-compare-supplier-fill-btn')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await pickOption(
+      document.body,
+      '.price-compare-supplier-fill-select',
+      '河钢',
+    )
+
+    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
+    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
+  })
+
+  it('现货价编辑后数值未变不算改价, 批量填入不生效', async () => {
+    const observed = renderStateful(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
+        },
+      },
+      [{ ...baseRow, id: 'r1' }],
+      suppliers,
+    )
+
+    // 聚焦再失焦, 值仍为 3280(未发生变动)
+    await editSpot('中天', 'r1', '3280')
+
+    await act(async () => {
+      container
+        .querySelector('.price-compare-supplier-fill-btn')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await pickOption(
+      document.body,
+      '.price-compare-supplier-fill-select',
+      '河钢',
+    )
+
+    // 价格未变, 不算改价行, 供应商保持原值
+    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s1')
+    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('沙钢')
+  })
+
   it('所选范围无改价行时批量填入不产生修改', async () => {
     const observed = renderStateful(
       {
