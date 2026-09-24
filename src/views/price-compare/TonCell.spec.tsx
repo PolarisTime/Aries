@@ -46,6 +46,13 @@ describe('TonCell 吨位 + 采购订单关联', () => {
         dispatchEvent: () => false,
       })
     }
+    if (!globalThis.ResizeObserver) {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    }
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
@@ -70,7 +77,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       disabled: false,
       loading: false,
       onTonChange: vi.fn(),
-      onPurchaseOrderChange: vi.fn(),
+      onOpenPicker: vi.fn(),
       onMoveFocus: vi.fn(),
       ...overrides,
     }
@@ -80,83 +87,95 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     return props
   }
 
-  it('渲染吨位输入与采购订单下拉', () => {
+  it('渲染吨位输入与明细图标', () => {
     render()
     expect(container.querySelector('input[data-ton="r1"]')).toBeTruthy()
-    expect(
-      container.querySelector('input[aria-label="关联采购订单"]'),
-    ).toBeTruthy()
+    expect(container.querySelector('.price-compare-ton-info')).toBeTruthy()
   })
 
-  it('未关联订单时不展示已开/剩余提示', () => {
+  it('未关联时不显示已开吨位数值', () => {
     render()
     expect(container.textContent).not.toContain('已开')
   })
 
-  it('关联订单时展示叠加本地吨位后的已开/剩余', () => {
+  it('关联后显示"已开 X"(叠加本地未保存吨位)', () => {
     render({
       row: { ...baseRow, purchaseOrderId: '88' },
       localTonForOrder: 5,
     })
-    // 服务端已开 30 + 本地 5 = 35, 剩余 40 - 35 = 5
-    expect(container.textContent).toContain('已开 35.000 / 剩 5.000')
-    expect(container.textContent).not.toContain('超额')
+    // 服务端已开 30 + 本地 5 = 35
+    expect(container.textContent).toContain('已开 35.000')
+    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
-  it('超过订货吨数时提示超额', () => {
+  it('超过订货吨数时"已开"标红', () => {
     render({
       row: { ...baseRow, purchaseOrderId: '88', ton: 15 },
       localTonForOrder: 15,
     })
-    // 服务端已开 30 + 本地 15 = 45 > 订货 40
-    expect(container.textContent).toContain('超额')
+    // 30 + 15 = 45 > 40
     expect(
-      container.querySelector('.price-compare-ton-hint--over'),
+      container.querySelector(
+        '.price-compare-ton-issued.price-compare-ton-hint--over',
+      ),
     ).toBeTruthy()
   })
 
-  it('关联订单已不在选项列表时使用 linked 回显', () => {
+  it('hover 明细图标显示订单明细 popover', async () => {
     render({
-      row: { ...baseRow, purchaseOrderId: '99' },
-      options: [],
-      linked: { ...poRecord, purchaseOrderId: '99', orderNo: 'PO-99' },
+      row: { ...baseRow, purchaseOrderId: '88' },
+      localTonForOrder: 5,
     })
-    expect(container.textContent).toContain('已开')
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const popover = document.querySelector('.price-compare-ton-popover')
+    expect(popover).toBeTruthy()
+    expect(popover?.textContent).toContain('PO-88')
+    expect(popover?.textContent).toContain('沙钢')
+    expect(popover?.textContent).toContain('40.000')
+    expect(popover?.textContent).toContain('35.000')
   })
 
-  it('关联订单已删除且无 linked 时回退订单号快照并提示重选', () => {
+  it('popover 内按钮触发 onOpenPicker', async () => {
+    const props = render({
+      row: { ...baseRow, purchaseOrderId: '88' },
+    })
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const button = Array.from(
+      document.querySelectorAll('.price-compare-ton-popover button'),
+    )[0] as HTMLButtonElement
+    act(() => {
+      button?.click()
+    })
+    expect(props.onOpenPicker).toHaveBeenCalledTimes(1)
+  })
+
+  it('订单已删除时 popover 提示重新选择', async () => {
     render({
-      row: {
-        ...baseRow,
-        purchaseOrderId: '99',
-        purchaseOrderNo: 'PO-99',
-      },
+      row: { ...baseRow, purchaseOrderId: '99', purchaseOrderNo: 'PO-99' },
       options: [],
       linked: undefined,
     })
-    // 下拉展示快照订单号而非原始雪花 ID
-    const select = container.querySelector('.price-compare-purchase-order')
-    expect(select?.textContent).toContain('PO-99')
-    expect(select?.textContent).toContain('订单已删除')
-    expect(container.textContent).toContain('关联订单已删除，请重新选择')
-    // 无可信吨位: 不显示已开/剩余
-    expect(container.textContent).not.toContain('已开')
-  })
-
-  it('关联订单已删除且无快照时回退到订单 ID', () => {
-    render({
-      row: { ...baseRow, purchaseOrderId: '99' },
-      options: [],
-      linked: undefined,
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
     })
-    const select = container.querySelector('.price-compare-purchase-order')
-    expect(select?.textContent).toContain('99')
-    expect(container.textContent).toContain('关联订单已删除，请重新选择')
-  })
-
-  it('已关联时下拉展示订单号', () => {
-    render({ row: { ...baseRow, purchaseOrderId: '88' } })
-    const select = container.querySelector('.price-compare-purchase-order')
-    expect(select?.textContent).toContain('PO-88')
+    const popover = document.querySelector('.price-compare-ton-popover')
+    expect(popover?.textContent).toContain('PO-99')
+    expect(popover?.textContent).toContain('关联订单已删除，请重新选择')
   })
 })

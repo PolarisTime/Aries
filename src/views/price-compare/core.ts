@@ -189,8 +189,8 @@ export const SHEET_COLUMN_WIDTH = {
   remark: 140,
   category: 72,
   spec: 200,
-  /** 吨位列: 报单吨位(56) + 已开/剩余提示, 横向不换行; 关联采购订单下拉暂隐藏。 */
-  ton: 172,
+  /** 吨位列: 报单吨位(52) + 已开吨位数值 + 明细图标, 横向不换行。 */
+  ton: 156,
   net: 60,
   spot: 58,
   diff: 50,

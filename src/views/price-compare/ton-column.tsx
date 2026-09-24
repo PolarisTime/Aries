@@ -35,9 +35,11 @@ export interface TonColumnContext {
   localTonByOrder: Map<string, number>
   moveFocusTon: (rowId: string, delta: number) => void
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
+  /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
+  openPurchaseOrderPicker: (rowId: string) => void
 }
 
-/** 构建「报单吨位 + 关联采购订单」列, 供比价表格复用。 */
+/** 构建「报单吨位 + 已开吨位 + 明细」列, 供比价表格复用。 */
 export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
   const { t } = ctx
   return {
@@ -71,10 +73,8 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
           options={ctx.purchaseOrderOptions}
           row={row.row}
           rowId={row.rowId}
+          onOpenPicker={() => ctx.openPurchaseOrderPicker(row.rowId)}
           onMoveFocus={(delta) => ctx.moveFocusTon(row.rowId, delta)}
-          onPurchaseOrderChange={(purchaseOrderId) =>
-            ctx.patchRow(row.rowId, { purchaseOrderId })
-          }
           onTonChange={(value, warnPositive) => {
             if (warnPositive) {
               message.warning(t('priceCompare.sheet.tonPositive'))

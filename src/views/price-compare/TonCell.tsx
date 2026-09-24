@@ -1,4 +1,5 @@
-import { Input, Select, Tooltip, Typography } from 'antd'
+import { InfoCircleOutlined } from '@ant-design/icons'
+import { Button, Input, Popover } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
@@ -17,7 +18,8 @@ interface TonCellProps {
   loading: boolean
   lockedClassName?: string
   onTonChange: (value: number | undefined, warnPositive: boolean) => void
-  onPurchaseOrderChange: (purchaseOrderId: string | undefined) => void
+  /** 打开采购订单选择弹窗(由 SheetPanel 统一挂载)。 */
+  onOpenPicker: () => void
   onMoveFocus: (delta: number) => void
 }
 
@@ -26,9 +28,9 @@ function tonValueText(value: number) {
 }
 
 /**
- * 吨位单元格: 报单吨位输入与"已开/剩余"提示横向并排, 不换行。
- * 关联采购订单下拉当前以 CSS 隐藏(保留 DOM 与交互逻辑, 便于恢复)。
- * 超额仅以警告色提示(不拦截保存), 便于按实际业务口径微调。
+ * 吨位单元格: 报单吨位输入 + "已开 X" 数值 + 明细图标, 横向排布不换行。
+ * 鼠标悬停明细图标显示订货/已开/剩余 popover, popover 内可打开选择弹窗。
+ * 超额以警告色提示(不拦截保存)。
  */
 export function TonCell({
   row,
@@ -40,7 +42,7 @@ export function TonCell({
   loading,
   lockedClassName,
   onTonChange,
-  onPurchaseOrderChange,
+  onOpenPicker,
   onMoveFocus,
 }: TonCellProps) {
   const { t } = useTranslation()
@@ -49,7 +51,7 @@ export function TonCell({
     linked ??
     options.find((option) => option.purchaseOrderId === selectedId) ??
     undefined
-  // 已关联但订单已删除/不可见: 回退到保存时的订单号快照, 避免下拉显示原始雪花 ID。
+  // 已关联但订单已删除/不可见: 用保存时的订单号快照兜底展示。
   const missingSnapshot =
     selectedId !== undefined && selected === undefined
       ? (row.purchaseOrderNo ?? selectedId)
@@ -61,28 +63,74 @@ export function TonCell({
   const overLimit =
     selected !== undefined && projectedIssued > selected.orderedWeight
 
-  const selectOptions = options.map((option) => ({
-    value: option.purchaseOrderId,
-    label: `${option.orderNo} · ${option.supplierName}`,
-    title: t('priceCompare.sheet.purchaseOrderOptionTitle', {
-      orderNo: option.orderNo,
-      supplier: option.supplierName,
-      status: option.status,
-      ordered: tonValueText(option.orderedWeight),
-      remaining: tonValueText(option.remainingWeight),
-    }),
-  }))
-  if (missingSnapshot !== undefined) {
-    selectOptions.unshift({
-      value: selectedId as string,
-      label: t('priceCompare.sheet.purchaseOrderMissing', {
-        orderNo: missingSnapshot,
-      }),
-      title: t('priceCompare.sheet.purchaseOrderMissing', {
-        orderNo: missingSnapshot,
-      }),
-    })
-  }
+  const popoverContent = selected ? (
+    <div className="price-compare-ton-popover">
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
+        <strong>{selected.orderNo}</strong>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderSupplier')}</span>
+        <span>{selected.supplierName}</span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderStatus')}</span>
+        <span>{selected.status}</span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
+        <span>{tonValueText(selected.orderedWeight)}</span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderIssued')}</span>
+        <span
+          className={overLimit ? 'price-compare-ton-hint--over' : undefined}
+        >
+          {tonValueText(projectedIssued)}
+        </span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderRemaining')}</span>
+        <span
+          className={overLimit ? 'price-compare-ton-hint--over' : undefined}
+        >
+          {tonValueText(selected.orderedWeight - projectedIssued)}
+        </span>
+      </div>
+      {overLimit ? (
+        <div className="price-compare-ton-popover-over">
+          {t('priceCompare.sheet.purchaseOrderOverLimitLong')}
+        </div>
+      ) : null}
+      <div className="price-compare-ton-popover-basis">
+        {t('priceCompare.sheet.purchaseOrderSavedBasis')}
+      </div>
+      <Button block size="small" type="primary" onClick={onOpenPicker}>
+        {t('priceCompare.sheet.purchaseOrderPickerOpen')}
+      </Button>
+    </div>
+  ) : (
+    <div className="price-compare-ton-popover">
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
+        <span>
+          {missingSnapshot !== undefined
+            ? t('priceCompare.sheet.purchaseOrderMissing', {
+                orderNo: missingSnapshot,
+              })
+            : t('priceCompare.sheet.purchaseOrderUnlinked')}
+        </span>
+      </div>
+      {missingSnapshot !== undefined ? (
+        <div className="price-compare-ton-popover-over">
+          {t('priceCompare.sheet.purchaseOrderMissingHint')}
+        </div>
+      ) : null}
+      <Button block size="small" type="primary" onClick={onOpenPicker}>
+        {t('priceCompare.sheet.purchaseOrderPickerOpen')}
+      </Button>
+    </div>
+  )
 
   return (
     <div className="price-compare-ton-cell">
@@ -122,54 +170,34 @@ export function TonCell({
           }
         }}
       />
-      <Select
-        allowClear
-        aria-label={t('priceCompare.sheet.purchaseOrderLabel')}
-        className="price-compare-purchase-order"
-        disabled={disabled}
-        loading={loading}
-        options={selectOptions}
-        placeholder={t('priceCompare.sheet.purchaseOrderPlaceholder')}
-        showSearch={{ optionFilterProp: 'label' }}
-        size="small"
-        value={selectedId}
-        onChange={(value) =>
-          onPurchaseOrderChange(value ? String(value) : undefined)
-        }
-      />
       {selected ? (
-        <Tooltip
-          title={`${selected.orderNo}（${selected.status}）· ${t(
-            'priceCompare.sheet.purchaseOrderSavedBasis',
-          )}`}
+        <span
+          className={
+            overLimit
+              ? 'price-compare-ton-issued price-compare-ton-hint--over'
+              : 'price-compare-ton-issued'
+          }
+          title={selected.orderNo}
         >
-          <Typography.Text
-            className={
-              overLimit
-                ? 'price-compare-ton-hint price-compare-ton-hint--over'
-                : 'price-compare-ton-hint'
-            }
-            type={overLimit ? undefined : 'secondary'}
-          >
-            {t('priceCompare.sheet.purchaseOrderTonnageHint', {
-              issued: tonValueText(projectedIssued),
-              remaining: tonValueText(selected.orderedWeight - projectedIssued),
-            })}
-            {overLimit
-              ? ` ${t('priceCompare.sheet.purchaseOrderOverLimit')}`
-              : ''}
-          </Typography.Text>
-        </Tooltip>
-      ) : missingSnapshot !== undefined ? (
-        <Typography.Text
-          className="price-compare-ton-hint price-compare-ton-hint--over"
-          title={missingSnapshot}
+          {t('priceCompare.sheet.purchaseOrderIssuedShort', {
+            issued: tonValueText(projectedIssued),
+          })}
+        </span>
+      ) : null}
+      <Popover
+        content={popoverContent}
+        placement="right"
+        trigger="hover"
+        mouseEnterDelay={0.15}
+      >
+        <span
+          aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
+          className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
+          role="img"
         >
-          {t('priceCompare.sheet.purchaseOrderMissingHint')}
-        </Typography.Text>
-      ) : (
-        <span className="price-compare-ton-hint price-compare-ton-hint--empty" />
-      )}
+          <InfoCircleOutlined />
+        </span>
+      </Popover>
     </div>
   )
 }

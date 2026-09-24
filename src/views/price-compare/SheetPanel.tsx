@@ -67,6 +67,7 @@ import type {
   SheetInputs,
   Variety,
 } from './types'
+import { usePurchaseOrderPicker } from './usePurchaseOrderPicker'
 import './price-compare.css'
 
 const { Text } = Typography
@@ -152,6 +153,8 @@ type ColumnContext = {
   moveFocusTon: (rowId: string, delta: number) => void
   /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
   purchaseOrderTonnage: PurchaseOrderTonnageDraftInput
+  /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
+  openPurchaseOrderPicker: (rowId: string) => void
   onReorderBrands: (from: number, to: number) => void
   onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
   onRowDragEnd: () => void
@@ -243,6 +246,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     hideRemark,
     hiddenBrands,
     purchaseOrderTonnage,
+    openPurchaseOrderPicker,
   } = ctx
   /** 本单据内各采购订单的报单吨位合计(叠加到服务端已开吨位上判断超额)。 */
   const localTonByOrder = sumTonByPurchaseOrder(rows)
@@ -469,6 +473,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       localTonByOrder,
       moveFocusTon: ctx.moveFocusTon,
       patchRow,
+      openPurchaseOrderPicker,
     }),
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> =>
@@ -1767,6 +1772,12 @@ export function SheetPanel(props: Props) {
 
   const addSeparator = () => setRows((list) => [...list, makeSeparatorRow()])
 
+  const purchaseOrderPicker = usePurchaseOrderPicker({
+    rows,
+    tonnage: purchaseOrderTonnage,
+    patchRow,
+  })
+
   const base = {
     sheet,
     t,
@@ -1798,6 +1809,7 @@ export function SheetPanel(props: Props) {
     hideRemark,
     hiddenBrands,
     purchaseOrderTonnage,
+    openPurchaseOrderPicker: purchaseOrderPicker.open,
     visibleBrandCount: brands.reduce(
       (count, brand) => (hiddenBrandSet.has(brand.name) ? count : count + 1),
       0,
@@ -1847,6 +1859,7 @@ export function SheetPanel(props: Props) {
         onAddRow={addRow}
         onAddSeparator={addSeparator}
       />
+      {purchaseOrderPicker.node}
     </>
   )
 
