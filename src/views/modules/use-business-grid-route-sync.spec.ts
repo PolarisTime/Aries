@@ -5,6 +5,7 @@ import {
   buildRouteFilterSyncKey,
   buildRouteFilterSyncState,
   consumeCreateIntentSearch,
+  consumeOpenDetailIntentSearch,
   consumeParentImportIntentSearch,
   parseRouteParams,
   supportsFilterField,
@@ -108,6 +109,18 @@ describe('parseRouteParams', () => {
         '?sourceModule=purchase-order&sourceRecordId=361443612338167808',
       ),
     ).toBe('')
+  })
+
+  it('消费自动打开详情意图时仅移除 openDetail, 保留 docNo/trackId 关键字', () => {
+    expect(
+      consumeOpenDetailIntentSearch(
+        '?docNo=SO-1&openDetail=1&trackId=361443612338167808',
+      ),
+    ).toBe('docNo=SO-1&trackId=361443612338167808')
+  })
+
+  it('消费自动打开详情意图后无剩余参数时返回空串', () => {
+    expect(consumeOpenDetailIntentSearch('?openDetail=1')).toBe('')
   })
 })
 

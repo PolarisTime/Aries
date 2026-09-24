@@ -96,6 +96,17 @@ export function consumeParentImportIntentSearch(searchStr: string): string {
   return params.toString()
 }
 
+/**
+ * 消费一次性自动打开详情意图，仅移除 openDetail。
+ * <p>docNo/trackId 同时驱动列表关键字筛选，必须保留；只清 openDetail 避免刷新/重挂载后
+ * 再次自动弹开详情。</p>
+ */
+export function consumeOpenDetailIntentSearch(searchStr: string): string {
+  const params = new URLSearchParams(searchStr)
+  params.delete('openDetail')
+  return params.toString()
+}
+
 function resolveParentImportSource(
   config: ModulePageConfig | undefined,
   sourceModule: string,
@@ -358,8 +369,30 @@ export function useBusinessGridRouteSync({
     }
 
     autoOpenedRouteKeyRef.current = resolvedTarget.nextAutoOpenedRouteKey
-    void openDetail(resolvedTarget.target)
-  }, [config, openDetail, records, rawSearchStr, routeParams.shouldOpenDetail])
+    void (async () => {
+      try {
+        await openDetail(resolvedTarget.target)
+        // 自动打开详情是一次性意图: 打开后清除 openDetail, 避免刷新或 Tab 重挂载时重复弹开。
+        if (location.searchStr !== rawSearchStr) return
+        const nextSearch = consumeOpenDetailIntentSearch(rawSearchStr)
+        const nextHref = nextSearch
+          ? `${location.pathname}?${nextSearch}`
+          : location.pathname
+        router.history.replace(nextHref)
+      } catch {
+        autoOpenedRouteKeyRef.current = ''
+      }
+    })()
+  }, [
+    config,
+    location.pathname,
+    location.searchStr,
+    openDetail,
+    rawSearchStr,
+    records,
+    router,
+    routeParams.shouldOpenDetail,
+  ])
 
   useEffect(() => {
     if (!routeParams.shouldCreate) {
