@@ -1948,9 +1948,12 @@ export const enUS = {
       },
     },
     sideNav: {
-      breadcrumbPrefix: 'Business Center / ',
+      root: 'Business Center',
       apiOnline: 'API Online',
       apiOffline: 'API Offline',
+    },
+    breadcrumb: {
+      ariaLabel: 'Breadcrumb',
     },
     headerSearch: {
       placeholder: 'Search order, contract, or statement number',

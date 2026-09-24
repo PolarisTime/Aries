@@ -1891,9 +1891,12 @@ export const zhCN = {
       },
     },
     sideNav: {
-      breadcrumbPrefix: '业务中心 / ',
+      root: '业务中心',
       apiOnline: 'API 正常',
       apiOffline: 'API 离线',
+    },
+    breadcrumb: {
+      ariaLabel: '当前位置',
     },
     headerSearch: {
       placeholder: '搜索单号、合同号、对账单号',

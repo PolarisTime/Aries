@@ -2,6 +2,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { Layout } from 'antd'
 import { useMemo } from 'react'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
+import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
 import { LayoutTabBar } from '@/layouts/tabs/LayoutTabBar'
 import { attachTabRouter } from '@/layouts/tabs/tab-location-sync'
@@ -32,6 +33,7 @@ export function AppTabContainer() {
   return (
     <Content className="leo-content">
       <LayoutTabBar />
+      <AppBreadcrumb />
       <div className="leo-content-inner leo-tab-viewport">
         {tabs.flatMap((tab) =>
           tab.mountedOnce || tab.id === activeTabId

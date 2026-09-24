@@ -800,6 +800,20 @@
   user-select: none;
 }
 
+/* 全局面包屑：标签栏与内容区之间，展示页面层级归属(与标签互补) */
+.leo-breadcrumb {
+  flex: 0 0 auto;
+  padding: 6px 16px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  background: var(--ant-color-bg-container, #fff);
+}
+
+.leo-breadcrumb .ant-breadcrumb-link {
+  font-size: 12px;
+}
+
 /* 多标签页面板：常驻挂载，hidden 属性切换显隐以保留页面状态 */
 .leo-tab-panel {
   position: relative;
