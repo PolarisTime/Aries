@@ -1,3 +1,10 @@
+## [10.28.1](https://github.com/PolarisTime/Aries/compare/v10.28.0...v10.28.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **purchase:** 前往采购入库不再重复填入上次明细 ([eb7bcb3](https://github.com/PolarisTime/Aries/commit/eb7bcb309f7964ac53f2ed976f51604d08f2b212))
+
 # [10.28.0](https://github.com/PolarisTime/Aries/compare/v10.27.0...v10.28.0) (2026-09-24)
 
 
