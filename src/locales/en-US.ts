@@ -625,6 +625,15 @@ export const enUS = {
       removeSplitPart: 'Remove row {{index}}',
       splitRecorded:
         'Split quantities are for this view and grouping only, and are not written back to purchase orders.',
+      splitTitle: 'Split quantity',
+      splitConfirm: 'Split',
+      splitPieceCountLabel: 'Pieces per part',
+      splitPieceCountPlaceholder: 'Enter pieces per part',
+      splitTotal: '{{total}} pieces in total',
+      splitPreview: 'Split preview',
+      splitPartShort: 'Part {{index}}: {{quantity}} pcs',
+      splitPartTotal: '{{count}} parts (~{{pieceWeight}} t each piece)',
+      splitInvalid: 'Pieces per part must be an integer from 1 to {{max}}',
     },
     overview: {
       recordCount: 'Records',

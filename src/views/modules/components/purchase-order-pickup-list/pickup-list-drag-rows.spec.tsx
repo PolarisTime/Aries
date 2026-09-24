@@ -217,7 +217,17 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
     expect(baseProps.onSplit).toHaveBeenCalledTimes(1)
   })
 
-  it('拆分行渲染份次标签与移除份按钮', () => {
+  it('未拆分行仅展示拆分按钮, 不显示数量输入框', () => {
+    renderSection()
+    expect(
+      container.querySelector('button[aria-label="拆分数量"]'),
+    ).toBeTruthy()
+    expect(
+      container.querySelector('.purchase-pickup-list-quantity-input'),
+    ).toBeNull()
+  })
+
+  it('拆分行渲染份次标签与数量输入框及合并/移除份按钮', () => {
     renderSection({
       rows: [
         buildRow({ rowId: '1', partIndex: 0, partCount: 2, quantity: 1 }),
@@ -226,15 +236,22 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
     })
     expect(container.textContent).toContain('第 1/2 份')
     expect(container.textContent).toContain('第 2/2 份')
-    // 两份时移除某份即回到未拆分，不再单独提供合并按钮
-    expect(container.querySelector('button[aria-label="合并拆分"]')).toBeNull()
+    expect(
+      container.querySelector('.purchase-pickup-list-quantity-input'),
+    ).toBeTruthy()
+    // 拆分行始终提供合并按钮(两份时禁用: 合并即等于移除末份)
+    const mergeButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="合并拆分"]',
+    )
+    expect(mergeButton).toBeTruthy()
+    expect(mergeButton?.disabled).toBe(true)
     expect(
       container.querySelector('button[aria-label="移除第 1 行"]'),
     ).toBeTruthy()
     expect(container.querySelector('button[aria-label="拆分数量"]')).toBeNull()
   })
 
-  it('三份以上时额外提供合并按钮', () => {
+  it('三份以上时合并按钮可用', () => {
     renderSection({
       rows: [
         buildRow({ rowId: '1', partIndex: 0, partCount: 3, quantity: 3 }),
@@ -242,9 +259,11 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
         buildRow({ rowId: '1#2', partIndex: 2, partCount: 3, quantity: 2 }),
       ],
     })
-    expect(
-      container.querySelector('button[aria-label="合并拆分"]'),
-    ).toBeTruthy()
+    const mergeButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="合并拆分"]',
+    )
+    expect(mergeButton).toBeTruthy()
+    expect(mergeButton?.disabled).toBe(false)
   })
 })
 

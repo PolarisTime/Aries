@@ -98,6 +98,10 @@
   width: min(100%, 640px);
 }
 
+.purchase-pickup-list-quantity {
+  font-variant-numeric: tabular-nums;
+}
+
 .purchase-pickup-list-quantity-cell {
   display: inline-flex;
   align-items: center;
@@ -118,6 +122,47 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
+}
+
+/* 拆分弹窗 */
+.purchase-pickup-list-split-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.purchase-pickup-list-split-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.purchase-pickup-list-split-piece-count {
+  width: 120px;
+}
+
+.purchase-pickup-list-split-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
+}
+
+.purchase-pickup-list-split-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.purchase-pickup-list-split-part {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
 }
 
 .purchase-pickup-list-drag-handle {

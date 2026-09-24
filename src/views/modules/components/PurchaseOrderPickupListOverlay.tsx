@@ -13,7 +13,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import type { TableProps } from 'antd'
 import { Alert, Button, Spin } from 'antd'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchPurchaseOrderPickupList } from '@/api/purchase/purchase-order-pickup-list'
 import { ResizableHeaderCell } from '@/components/table/ResizableHeaderCell'
@@ -31,6 +31,7 @@ import {
   pickupListCollisionDetection,
 } from './purchase-order-pickup-list/pickup-list-draft'
 import { PickupDraftGroupSection } from './purchase-order-pickup-list/pickup-list-drag-rows'
+import { PickupSplitModal } from './purchase-order-pickup-list/PickupSplitModal'
 import { PickupSplitNotice } from './purchase-order-pickup-list/pickup-list-items-table'
 import { SortableRow } from './purchase-order-pickup-list/pickup-list-sortable'
 import { PickupListSummary } from './purchase-order-pickup-list/pickup-list-summary'
@@ -49,6 +50,8 @@ export function PurchaseOrderPickupListOverlay({
   onClose,
 }: Props) {
   const { t } = useTranslation()
+  /** 待拆分行(undefined 表示拆分弹窗未打开)。 */
+  const [splitRowId, setSplitRowId] = useState<string | undefined>(undefined)
   const { data, error, isError, isFetching, isPending, refetch } = useQuery({
     queryKey: QUERY_KEYS.purchaseOrderPickupList(orderIds),
     queryFn: ({ signal }) => fetchPurchaseOrderPickupList(orderIds, signal),
@@ -187,12 +190,32 @@ export function PurchaseOrderPickupListOverlay({
                         onRemarkChange={draft.setGroupRemark}
                         onRemove={draft.removeGroup}
                         onRemovePart={draft.removeRowPart}
-                        onSplit={draft.splitRow}
+                        onSplit={(row) => setSplitRowId(row.rowId)}
                       />
                     ))}
                   </div>
                 </SortableContext>
               </DndContext>
+              <PickupSplitModal
+                open={splitRowId !== undefined}
+                row={
+                  splitRowId
+                    ? Array.from(draft.groupedRows.values())
+                        .flat()
+                        .find((row) => row.rowId === splitRowId)
+                    : undefined
+                }
+                onClose={() => setSplitRowId(undefined)}
+                onConfirm={(pieceCount) => {
+                  const target = Array.from(draft.groupedRows.values())
+                    .flat()
+                    .find((row) => row.rowId === splitRowId)
+                  if (target) {
+                    draft.splitRow(target, pieceCount)
+                  }
+                  setSplitRowId(undefined)
+                }}
+              />
             </>
           ) : null}
         </div>

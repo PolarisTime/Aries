@@ -42,7 +42,8 @@ export interface PickupListDraftController {
   addGroup: () => void
   groupByWarehouse: () => void
   resetDraft: () => void
-  splitRow: (row: PickupListRow) => void
+  /** 按每份件数拆分一条明细(一次拆到位)。 */
+  splitRow: (row: PickupListRow, pieceCount: number) => void
   mergeRow: (row: PickupListRow) => void
   removeRowPart: (row: PickupListRow) => void
   changeRowQuantity: (row: PickupListRow, quantity: number) => void
@@ -164,8 +165,10 @@ export function usePickupListDraft(
     })
   }
 
-  const splitRow = (row: PickupListRow) =>
-    applySplits((current) => splitPickupItem(current.splits, row.item))
+  const splitRow = (row: PickupListRow, pieceCount: number) =>
+    applySplits((current) =>
+      splitPickupItem(current.splits, row.item, pieceCount),
+    )
 
   const mergeRow = (row: PickupListRow) =>
     // 合并该来源全部拆分份：清空该明细的拆分记录即可（件数守恒）。

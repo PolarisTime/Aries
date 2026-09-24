@@ -182,19 +182,48 @@ export function buildDefaultRowIds(
   )
 }
 
-/** 拆分一条明细为两份（默认对半），保持件数守恒；已拆分或数量不足 2 时不变。 */
+/**
+ * 按「每份件数」拆分一条明细：逐份取 pieceCount 件, 不足一份的余数单独作为末份,
+ * 件数之和恒等于原始件数（如 8 件每份 3 → 3+3+2）。
+ *
+ * @param pieceCount 每份件数(正整数)。未拆分、每份件数非法或拆不出多份
+ *                   (总数 <= 每份件数)时返回原对象。
+ */
 export function splitPickupItem(
   splits: PickupSplits,
   item: PurchaseOrderPickupListItem,
+  pieceCount: number,
 ): PickupSplits {
-  if (isSplitValue(splits[item.itemId]) || item.pickupQuantity < 2) {
+  if (isSplitValue(splits[item.itemId])) {
     return splits
   }
-  const first = Math.floor(item.pickupQuantity / 2)
-  return {
-    ...splits,
-    [item.itemId]: [first, item.pickupQuantity - first],
+  const total = item.pickupQuantity
+  if (!isValidSplitPieceCount(total, pieceCount)) {
+    return splits
   }
+  const quantities: number[] = []
+  let remaining = total
+  while (remaining > pieceCount) {
+    quantities.push(pieceCount)
+    remaining -= pieceCount
+  }
+  // 余数(1..pieceCount)单独作为末份; 整除时剩余恰为一份。
+  if (remaining > 0) {
+    quantities.push(remaining)
+  }
+  return { ...splits, [item.itemId]: quantities }
+}
+
+/**
+ * 校验每份件数是否合法: 正整数, 且小于总数(总数须 > 每份件数才能拆出多份)。
+ */
+export function isValidSplitPieceCount(
+  total: number,
+  pieceCount: number,
+): boolean {
+  return (
+    Number.isSafeInteger(pieceCount) && pieceCount >= 1 && total > pieceCount
+  )
 }
 
 /**

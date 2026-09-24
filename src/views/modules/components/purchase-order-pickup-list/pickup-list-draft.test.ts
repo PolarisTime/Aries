@@ -11,6 +11,7 @@ import {
   groupDragId,
   groupIdFromDragId,
   isSplitValue,
+  isValidSplitPieceCount,
   removePickupSplitPart,
   reorderGroupedItems,
   reorderGroups,
@@ -291,15 +292,42 @@ describe('提货数量拆分', () => {
     expect(buildDefaultRowIds(items, splits)).toEqual(['1', '2', '2#1'])
   })
 
-  it('splitPickupItem 对半拆分且件数守恒，数量不足 2 或已拆分时不变', () => {
+  it('splitPickupItem 按每份件数拆分, 余数并入最后一份且件数守恒', () => {
+    const eight = buildItem({ itemId: '2', pickupQuantity: 8 })
+    // 每份 3 件: 3+3+2(余数独立成末份)
+    expect(splitPickupItem({}, eight, 3)).toEqual({ '2': [3, 3, 2] })
+    // 每份 2 件: 2+2+2+2
+    expect(splitPickupItem({}, eight, 2)).toEqual({ '2': [2, 2, 2, 2] })
+    // 每份 5 件: 5+3(余数独立成末份, 不并入)
+    expect(splitPickupItem({}, eight, 5)).toEqual({ '2': [5, 3] })
+    // 每份 1 件: 逐件
+    expect(splitPickupItem({}, eight, 1)).toEqual({
+      '2': [1, 1, 1, 1, 1, 1, 1, 1],
+    })
+  })
+
+  it('splitPickupItem 已拆分或参数非法时不变', () => {
+    const eight = buildItem({ itemId: '2', pickupQuantity: 8 })
+    const already = { '2': [3, 3, 2] }
+    expect(splitPickupItem(already, eight, 3)).toBe(already)
+    // 每份 >= 总数: 拆不出多份
+    expect(splitPickupItem({}, eight, 8)).toEqual({})
+    expect(splitPickupItem({}, eight, 20)).toEqual({})
+    // 每份件数非正/非整数
+    expect(splitPickupItem({}, eight, 0)).toEqual({})
+    expect(splitPickupItem({}, eight, -1)).toEqual({})
+    expect(splitPickupItem({}, eight, 2.5)).toEqual({})
+    // 数量不足 2
     const single = buildItem({ itemId: '1', pickupQuantity: 1 })
-    expect(splitPickupItem({}, single)).toEqual({})
+    expect(splitPickupItem({}, single, 1)).toEqual({})
+  })
 
-    const odd = buildItem({ itemId: '2', pickupQuantity: 7 })
-    expect(splitPickupItem({}, odd)).toEqual({ '2': [3, 4] })
-
-    const already = { '2': [3, 4] }
-    expect(splitPickupItem(already, odd)).toBe(already)
+  it('isValidSplitPieceCount 校验每份件数范围', () => {
+    expect(isValidSplitPieceCount(8, 3)).toBe(true)
+    expect(isValidSplitPieceCount(8, 7)).toBe(true)
+    expect(isValidSplitPieceCount(8, 8)).toBe(false)
+    expect(isValidSplitPieceCount(8, 0)).toBe(false)
+    expect(isValidSplitPieceCount(1, 1)).toBe(false)
   })
 
   it('changePickupRowQuantity 差额调整到相邻份并保持守恒', () => {
