@@ -1,3 +1,18 @@
+# [10.26.0](https://github.com/PolarisTime/Aries/compare/v10.25.2...v10.26.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **price-compare:** 已采购合并为采购订单关联推导, 修复反标记刷新复现 ([3f5b168](https://github.com/PolarisTime/Aries/commit/3f5b1689641a382a884926b2425e5acc157023f0))
+* **price-compare:** 订单删除时回退订单号快照, 吨位改用实时缓存 ([0135d66](https://github.com/PolarisTime/Aries/commit/0135d662687500c884f411d61a2a5e6576df38ee))
+* **price-compare:** 采购订单吨位加载失败时给出可见提示 ([482e32e](https://github.com/PolarisTime/Aries/commit/482e32ef5575a768e9742586b252d2cb29ee6ae1))
+
+
+### Features
+
+* **price-compare:** 吨位列关联采购订单并展示已开/剩余吨位 ([3e8002d](https://github.com/PolarisTime/Aries/commit/3e8002dd29b51e266af029494077e91f78ae8350))
+* **purchase:** 提货清单移除卸货目标并支持拆分商品数量 ([f7f2d22](https://github.com/PolarisTime/Aries/commit/f7f2d22a31cfbaa74488870cb096bbaaa9ad3c13))
+
 ## [10.25.2](https://github.com/PolarisTime/Aries/compare/v10.25.1...v10.25.2) (2026-09-23)
 
 
