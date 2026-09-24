@@ -15,6 +15,8 @@ interface TonCellProps {
   /** 本单据内该明细行的报单吨位合计(用于叠加判断超额)。 */
   localTonForItem: number
   disabled: boolean
+  /** 该行是否已锁定: 未锁定不可关联采购订单(按钮禁用并提示先锁定)。 */
+  rowLocked: boolean
   loading: boolean
   lockedClassName?: string
   onTonChange: (value: number | undefined, warnPositive: boolean) => void
@@ -46,6 +48,7 @@ export function TonCell({
   linked,
   localTonForItem,
   disabled,
+  rowLocked,
   loading,
   lockedClassName,
   onTonChange,
@@ -116,9 +119,20 @@ export function TonCell({
       <div className="price-compare-ton-popover-basis">
         {t('priceCompare.sheet.purchaseOrderSavedBasis')}
       </div>
-      <Button block size="small" type="primary" onClick={onOpenPicker}>
+      <Button
+        block
+        disabled={!rowLocked}
+        size="small"
+        type="primary"
+        onClick={onOpenPicker}
+      >
         {t('priceCompare.sheet.purchaseOrderPickerOpen')}
       </Button>
+      {!rowLocked ? (
+        <div className="price-compare-ton-popover-basis">
+          {t('priceCompare.sheet.purchaseOrderLockFirst')}
+        </div>
+      ) : null}
     </div>
   ) : (
     <div className="price-compare-ton-popover">
@@ -137,9 +151,20 @@ export function TonCell({
           {t('priceCompare.sheet.purchaseOrderMissingHint')}
         </div>
       ) : null}
-      <Button block size="small" type="primary" onClick={onOpenPicker}>
+      <Button
+        block
+        disabled={!rowLocked}
+        size="small"
+        type="primary"
+        onClick={onOpenPicker}
+      >
         {t('priceCompare.sheet.purchaseOrderPickerOpen')}
       </Button>
+      {!rowLocked ? (
+        <div className="price-compare-ton-popover-basis">
+          {t('priceCompare.sheet.purchaseOrderLockFirst')}
+        </div>
+      ) : null}
     </div>
   )
 

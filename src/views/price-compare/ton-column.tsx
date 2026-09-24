@@ -68,6 +68,7 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
               ? (ctx.localTonByItemId.get(row.row.purchaseOrderItemId) ?? 0)
               : 0
           }
+          rowLocked={Boolean(row.row.locked)}
           loading={ctx.purchaseOrderTonnageLoading}
           lockedClassName={ctx.quantityLockClass}
           options={ctx.purchaseOrderOptions}

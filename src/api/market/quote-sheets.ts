@@ -47,6 +47,7 @@ const itemSchema = z.looseObject({
   length: z.string().nullable().optional(),
   ton: z.union([z.number(), z.string()]).nullable().optional(),
   remark: z.string().nullable().optional(),
+  locked: z.boolean().nullable().optional(),
   purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
   purchaseOrderNo: z.string().nullable().optional(),
   purchaseOrderItemId: z.union([z.number(), z.string()]).nullable().optional(),
@@ -97,6 +98,8 @@ export type QuoteSheetItemRecord = {
   length: string
   ton?: number
   remark?: string
+  /** 是否锁定(未锁定不可关联采购订单; 隔断行恒为 false)。 */
+  locked: boolean
   /** 是否已采购(由 purchaseOrderId 派生; 隔断行恒为 false)。 */
   purchased: boolean
   purchaseOrderId?: EntityId
@@ -153,6 +156,7 @@ export type QuoteSheetPayload = {
     length?: string
     ton?: number
     remark?: string
+    locked?: boolean
     purchaseOrderId?: EntityId
     purchaseOrderItemId?: EntityId
     prices: {
@@ -172,6 +176,7 @@ export type QuoteSheetItemPayload = {
   length?: string
   ton?: number
   remark?: string
+  locked?: boolean
   purchaseOrderId?: EntityId
   purchaseOrderItemId?: EntityId
   prices: {
@@ -248,6 +253,8 @@ function normalizeItem(
     ...(asString(item.remark).trim() ? { remark: asString(item.remark) } : {}),
     // 已采购由采购订单关联派生, 不再读取独立布尔字段; 隔断行恒为未采购。
     purchased: purchaseOrderId !== undefined,
+    // 隔断行不携带锁定标记。
+    locked: rowType === 'SEPARATOR' ? false : Boolean(item.locked),
     ...(purchaseOrderId ? { purchaseOrderId } : {}),
     ...(purchaseOrderId && item.purchaseOrderNo
       ? { purchaseOrderNo: item.purchaseOrderNo }

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from 'i18next'
 import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -35,6 +36,7 @@ function makeSheet(): PriceSheet {
 describe('SheetPanel 指定品牌展示', () => {
   let container: HTMLDivElement
   let root: Root
+  let queryClient: QueryClient
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
@@ -60,6 +62,9 @@ describe('SheetPanel 指定品牌展示', () => {
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    })
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -78,23 +83,27 @@ describe('SheetPanel 指定品牌展示', () => {
   function render(designatedBrands?: string[]) {
     act(() => {
       root.render(
-        createElement(SheetPanel, {
-          sheet: makeSheet(),
-          data: null,
-          varieties: [],
-          brands: [{ name: '中天', freight: 30 }],
-          rows: [],
-          density: 'small',
-          lengthPremium: 30,
-          patchSheet: () => {},
-          setRows: () => {},
-          onReorderBrands: () => {},
-          periods: [],
-          onRefresh: () => {},
-          chrome: false,
-          spotRef: { current: null },
-          designatedBrands,
-        }),
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(SheetPanel, {
+            sheet: makeSheet(),
+            data: null,
+            varieties: [],
+            brands: [{ name: '中天', freight: 30 }],
+            rows: [],
+            density: 'small',
+            lengthPremium: 30,
+            patchSheet: () => {},
+            setRows: () => {},
+            onReorderBrands: () => {},
+            periods: [],
+            onRefresh: () => {},
+            chrome: false,
+            spotRef: { current: null },
+            designatedBrands,
+          }),
+        ),
       )
     })
   }
@@ -157,7 +166,13 @@ describe('SheetPanel 指定品牌展示', () => {
       })
     }
     act(() => {
-      root.render(createElement(Harness))
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(Harness),
+        ),
+      )
     })
     return observed
   }
@@ -1089,5 +1104,38 @@ describe('SheetPanel 指定品牌展示', () => {
       switchButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(observed.rows[0].length).toBe('12米')
+  })
+  it('每行渲染锁定按钮, 点击切换并回写 locked', () => {
+    const observed = renderStateful(makeSheet(), [{ ...baseRow }])
+    const lockButton = container.querySelector(
+      '.price-compare-row-lock',
+    ) as HTMLButtonElement
+    expect(lockButton).toBeTruthy()
+    act(() => {
+      lockButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(observed.rows[0].locked).toBe(true)
+  })
+
+  it('解锁已关联采购订单的行会清除关联与快照', () => {
+    const observed = renderStateful(makeSheet(), [
+      {
+        ...baseRow,
+        locked: true,
+        purchaseOrderId: '88',
+        purchaseOrderItemId: '301',
+        purchaseOrderNo: 'PO-88',
+      },
+    ])
+    const lockButton = container.querySelector(
+      '.price-compare-row-lock',
+    ) as HTMLButtonElement
+    act(() => {
+      lockButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(observed.rows[0].locked).toBe(false)
+    expect(observed.rows[0].purchaseOrderId).toBeUndefined()
+    expect(observed.rows[0].purchaseOrderItemId).toBeUndefined()
+    expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 })

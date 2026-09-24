@@ -592,3 +592,20 @@ export function findAlternateLengthVariety(
       item.length === targetLength,
   )
 }
+
+/**
+ * 切换行级锁定: 解锁时按流程规范强制清除该行采购订单关联与快照。
+ * <p>锁定表示规格与吨位定稿; 未锁定不可关联采购订单, 已关联的解锁即解除关联。</p>
+ */
+export function applyRowLock(row: PriceRow, locked: boolean): PriceRow {
+  if (locked) {
+    return { ...row, locked: true }
+  }
+  return {
+    ...row,
+    locked: false,
+    purchaseOrderId: undefined,
+    purchaseOrderNo: undefined,
+    purchaseOrderItemId: undefined,
+  }
+}

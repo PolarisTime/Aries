@@ -277,6 +277,7 @@ function buildPayload(
           length: row.length,
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
+          ...(row.locked ? { locked: true } : {}),
           ...(row.purchaseOrderId
             ? { purchaseOrderId: row.purchaseOrderId }
             : {}),
@@ -334,6 +335,7 @@ function buildItemPayload(
     length: row.length,
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
+    ...(row.locked ? { locked: true } : {}),
     ...(row.purchaseOrderId ? { purchaseOrderId: row.purchaseOrderId } : {}),
     ...(row.purchaseOrderItemId
       ? { purchaseOrderItemId: row.purchaseOrderItemId }
@@ -2156,6 +2158,7 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     length: item.length,
     ...(item.ton !== undefined ? { ton: item.ton } : {}),
     ...(item.remark ? { remark: item.remark } : {}),
+    ...(item.locked ? { locked: true } : {}),
     ...(item.purchaseOrderId ? { purchaseOrderId: item.purchaseOrderId } : {}),
     ...(item.purchaseOrderNo ? { purchaseOrderNo: item.purchaseOrderNo } : {}),
     ...(item.purchaseOrderItemId

@@ -37,6 +37,7 @@ import { message } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { AddProductRowButton } from './AddProductRowButton'
 import {
+  applyRowLock,
   buildVarietyOptions,
   buildVarietyRow,
   fillSupplierInputs,
@@ -346,6 +347,43 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           </span>
         </Tooltip>
       ),
+    },
+    {
+      title: '',
+      width: 32,
+      fixed: 'left',
+      align: 'center',
+      render: (_, row) => {
+        if (isSeparatorRow(row.row)) return null
+        const rowLocked = Boolean(row.row.locked)
+        const label = t(
+          rowLocked
+            ? 'priceCompare.sheet.unlockRow'
+            : 'priceCompare.sheet.lockRow',
+        )
+        return (
+          <Tooltip
+            title={
+              !readOnly && sheet.specQuantityLocked
+                ? rowLockedHint
+                : t('priceCompare.sheet.lockRowHint')
+            }
+          >
+            <Button
+              aria-label={label}
+              aria-pressed={rowLocked}
+              className="price-compare-row-lock"
+              disabled={readOnly || Boolean(sheet.specQuantityLocked)}
+              icon={rowLocked ? <LockOutlined /> : <UnlockOutlined />}
+              size="small"
+              type={rowLocked ? 'primary' : 'text'}
+              onClick={() =>
+                patchRow(row.rowId, applyRowLock(row.row, !rowLocked))
+              }
+            />
+          </Tooltip>
+        )
+      },
     },
     ...(hideRemark
       ? []
@@ -1773,7 +1811,7 @@ export function SheetPanel(props: Props) {
 
   const purchaseOrderPicker = usePurchaseOrderPicker({
     rows,
-    tonnage: purchaseOrderTonnage,
+    excludeSheetId: /^[1-9]\d*$/.test(sheet.id) ? sheet.id : undefined,
     patchRow,
   })
 

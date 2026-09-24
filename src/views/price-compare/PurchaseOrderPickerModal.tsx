@@ -1,4 +1,5 @@
 import { SearchOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import {
   Button,
   Empty,
@@ -10,46 +11,72 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
+import {
+  fetchPurchaseOrderTonnages,
+  type PurchaseOrderTonnageRecord,
+} from '@/api/market/quote-sheets'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_REALTIME } from '@/constants/query-policies'
 import { formatWeight } from '@/utils/formatters'
 
 interface Props {
   open: boolean
   /** 当前已关联明细行 id(用于高亮与清除)。 */
   selectedItemId?: string
-  options: PurchaseOrderTonnageRecord[]
-  loading: boolean
+  /** 排除的报价单标识(编辑当前单据时排除自身已保存吨位), 可为空。 */
+  excludeSheetId?: string
   /** 选中明细行(undefined 表示清除关联); 选择后由调用方关闭弹窗。 */
-  onSelect: (purchaseOrderItemId: string | undefined) => void
+  onSelect: (record: PurchaseOrderTonnageRecord | undefined) => void
   onClose: () => void
 }
 
+const SEARCH_DEBOUNCE_MS = 300
+
 /**
- * 采购订单明细行选择弹窗: 关键字过滤 + 展示规格/订货/已开/剩余吨位。
- * 点击行即选中并关闭; 另提供"清除关联"与"取消"。
+ * 采购订单明细行选择弹窗: **服务端**按关键字(单号/供应商/规格)过滤并展示订货/已开/剩余吨位。
+ * <p>搜索下沉到后端, 避免固定条数截断导致匹配行落在窗口外搜不到。</p>
  */
 export function PurchaseOrderPickerModal({
   open,
   selectedItemId,
-  options,
-  loading,
+  excludeSheetId,
   onSelect,
   onClose,
 }: Props) {
   const { t } = useTranslation()
   const [keyword, setKeyword] = useState('')
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
 
-  const filtered = useMemo(() => {
-    const text = keyword.trim().toLowerCase()
-    if (!text) return options
-    return options.filter((option) =>
-      `${option.orderNo} ${option.supplierName} ${option.category} ${option.material} ${option.spec} ${option.length}`
-        .toLowerCase()
-        .includes(text),
+  // 关键字防抖: 避免每次输入都打后端。
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedKeyword(keyword.trim()),
+      SEARCH_DEBOUNCE_MS,
     )
-  }, [options, keyword])
+    return () => window.clearTimeout(timer)
+  }, [keyword])
+
+  const { data = [], isFetching } = useQuery({
+    queryKey: [
+      ...QUERY_KEYS.priceCompare.purchaseOrderTonnages,
+      'picker',
+      debouncedKeyword,
+      excludeSheetId ?? '',
+    ],
+    queryFn: ({ signal }) =>
+      fetchPurchaseOrderTonnages(
+        {
+          ...(debouncedKeyword ? { keyword: debouncedKeyword } : {}),
+          ...(excludeSheetId ? { excludeSheetId } : {}),
+        },
+        signal,
+      ),
+    enabled: open,
+    staleTime: STALE_REALTIME,
+    retry: 1,
+  })
 
   const columns: ColumnsType<PurchaseOrderTonnageRecord> = [
     {
@@ -139,9 +166,9 @@ export function PurchaseOrderPickerModal({
       />
       <Table<PurchaseOrderTonnageRecord>
         columns={columns}
-        dataSource={filtered}
+        dataSource={data}
         rowKey="purchaseOrderItemId"
-        loading={loading}
+        loading={isFetching}
         size="small"
         pagination={{ pageSize: 8, size: 'small', showSizeChanger: false }}
         scroll={{ y: 320 }}
@@ -153,7 +180,7 @@ export function PurchaseOrderPickerModal({
           ),
         }}
         onRow={(record) => ({
-          onClick: () => onSelect(record.purchaseOrderItemId),
+          onClick: () => onSelect(record),
           style: {
             cursor: 'pointer',
             background:

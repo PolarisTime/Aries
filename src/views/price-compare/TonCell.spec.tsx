@@ -80,6 +80,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       linked: undefined,
       localTonForItem: 0,
       disabled: false,
+      rowLocked: true,
       loading: false,
       onTonChange: vi.fn(),
       onOpenPicker: vi.fn(),
@@ -182,5 +183,22 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     const popover = document.querySelector('.price-compare-ton-popover')
     expect(popover?.textContent).toContain('PO-99')
     expect(popover?.textContent).toContain('关联订单已删除，请重新选择')
+  })
+  it('未锁定行禁用关联按钮并提示先锁定', async () => {
+    render({ rowLocked: false })
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const button = document.querySelector(
+      '.price-compare-ton-popover button',
+    ) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    expect(
+      document.querySelector('.price-compare-ton-popover')?.textContent,
+    ).toContain('请先锁定')
   })
 })

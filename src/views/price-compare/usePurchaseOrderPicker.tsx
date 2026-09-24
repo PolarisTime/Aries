@@ -5,7 +5,8 @@ import type { PriceRow } from './types'
 
 interface Options {
   rows: PriceRow[]
-  tonnage: { options: PurchaseOrderTonnageRecord[]; loading: boolean }
+  /** 当前报价单 id(用于排除自身已保存吨位), 未持久化时为 undefined。 */
+  excludeSheetId?: string
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
 }
 
@@ -18,11 +19,11 @@ export interface PurchaseOrderPickerController {
 
 /**
  * 采购订单明细行选择弹窗控制器: 收敛弹窗状态与回写逻辑, 避免 SheetPanel 主组件膨胀。
- * <p>只负责"选哪一行 + 选中回填 patchRow"; 选项数据来自吨位订阅。</p>
+ * <p>选项数据由弹窗自行按关键字从后端查询(服务端过滤), 控制器只负责"选哪一行 + 回填"。</p>
  */
 export function usePurchaseOrderPicker({
   rows,
-  tonnage,
+  excludeSheetId,
   patchRow,
 }: Options): PurchaseOrderPickerController {
   const [pickerRowId, setPickerRowId] = useState<string | undefined>(undefined)
@@ -34,24 +35,17 @@ export function usePurchaseOrderPicker({
     open: (rowId: string) => setPickerRowId(rowId),
     node: (
       <PurchaseOrderPickerModal
-        loading={tonnage.loading}
+        excludeSheetId={excludeSheetId}
         open={pickerRowId !== undefined}
-        options={tonnage.options}
         selectedItemId={pickerRow?.purchaseOrderItemId}
         onClose={() => setPickerRowId(undefined)}
-        onSelect={(purchaseOrderItemId) => {
+        onSelect={(record: PurchaseOrderTonnageRecord | undefined) => {
           if (pickerRowId) {
-            const selected = purchaseOrderItemId
-              ? tonnage.options.find(
-                  (option) =>
-                    option.purchaseOrderItemId === purchaseOrderItemId,
-                )
-              : undefined
             // 选中明细行时一并写入其所属订单 id 与订单号快照, 断开时一并清空。
             patchRow(pickerRowId, {
-              purchaseOrderId: selected?.purchaseOrderId,
-              purchaseOrderNo: selected?.orderNo,
-              purchaseOrderItemId,
+              purchaseOrderId: record?.purchaseOrderId,
+              purchaseOrderNo: record?.orderNo,
+              purchaseOrderItemId: record?.purchaseOrderItemId,
             })
           }
           setPickerRowId(undefined)

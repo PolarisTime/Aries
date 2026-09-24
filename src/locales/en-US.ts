@@ -2413,6 +2413,11 @@ export const enUS = {
       },
       selectProduct: 'Select product',
       switchLength: 'Switch to {{length}}',
+      lockRow: 'Lock row',
+      unlockRow: 'Unlock row',
+      lockRowHint:
+        'Lock to link a purchase order; unlocking clears the linked purchase order',
+      purchaseOrderLockFirst: 'Lock this row before linking a purchase order',
       tonPositive: 'Order tonnage must be a positive number',
       spotOutOfRange: 'Spot price is out of range (0 - {{max}})',
       spotBetter: 'Spot price is better',

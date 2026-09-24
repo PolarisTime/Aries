@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyRowLock,
   buildVarietyRow,
   canonicalCategory,
   computeSummary,
@@ -699,5 +700,37 @@ describe('findAlternateLengthVariety 长度互切', () => {
         length: '9米',
       }),
     ).toBeUndefined()
+  })
+})
+
+describe('applyRowLock 行级锁定', () => {
+  it('锁定保留关联', () => {
+    const row: PriceRow = {
+      ...row12,
+      id: 'r1',
+      purchaseOrderId: '88',
+      purchaseOrderItemId: '301',
+      purchaseOrderNo: 'PO-88',
+    }
+    const next = applyRowLock(row, true)
+    expect(next.locked).toBe(true)
+    expect(next.purchaseOrderId).toBe('88')
+    expect(next.purchaseOrderItemId).toBe('301')
+  })
+
+  it('解锁清除采购订单关联与快照', () => {
+    const row: PriceRow = {
+      ...row12,
+      id: 'r1',
+      locked: true,
+      purchaseOrderId: '88',
+      purchaseOrderItemId: '301',
+      purchaseOrderNo: 'PO-88',
+    }
+    const next = applyRowLock(row, false)
+    expect(next.locked).toBe(false)
+    expect(next.purchaseOrderId).toBeUndefined()
+    expect(next.purchaseOrderItemId).toBeUndefined()
+    expect(next.purchaseOrderNo).toBeUndefined()
   })
 })
