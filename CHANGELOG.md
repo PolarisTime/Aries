@@ -1,3 +1,15 @@
+# [10.27.0](https://github.com/PolarisTime/Aries/compare/v10.26.0...v10.27.0) (2026-09-24)
+
+
+### Bug Fixes
+
+* **price-compare:** 未保存批次不传 excludeSheetId, 修复吨位加载失败 ([f22ef81](https://github.com/PolarisTime/Aries/commit/f22ef81eebf81c7be2cf791f99d0a7c9d8c3eed6))
+
+
+### Features
+
+* **price-compare:** 吨位右侧展示已开吨位, 采购订单改弹窗选择 + 明细 popover ([84d5e5d](https://github.com/PolarisTime/Aries/commit/84d5e5d220347fce6fc18af3f8ff29359d971e54))
+
 # [10.26.0](https://github.com/PolarisTime/Aries/compare/v10.25.2...v10.26.0) (2026-09-24)
 
 
