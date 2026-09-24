@@ -1,3 +1,10 @@
+# [10.28.0](https://github.com/PolarisTime/Aries/compare/v10.27.0...v10.28.0) (2026-09-24)
+
+
+### Features
+
+* **purchase:** 提货清单拆分改为弹窗指定每份件数, 并恢复数量默认只读外观 ([e61ad4a](https://github.com/PolarisTime/Aries/commit/e61ad4a94cbe371b416026e206bd6628e2a2d741))
+
 # [10.27.0](https://github.com/PolarisTime/Aries/compare/v10.26.0...v10.27.0) (2026-09-24)
 
 
