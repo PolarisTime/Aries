@@ -5,6 +5,7 @@ import {
   buildRouteFilterSyncKey,
   buildRouteFilterSyncState,
   consumeCreateIntentSearch,
+  consumeParentImportIntentSearch,
   parseRouteParams,
   supportsFilterField,
 } from '@/views/modules/use-business-grid-route-sync'
@@ -91,6 +92,22 @@ describe('parseRouteParams', () => {
         '?create=1&counterpartyId=100&counterpartyName=客户A',
       ),
     ).toBe('counterpartyId=100&counterpartyName=%E5%AE%A2%E6%88%B7A')
+  })
+
+  it('消费父级导入意图时移除 sourceModule/sourceRecordId, 防止重复填入', () => {
+    expect(
+      consumeParentImportIntentSearch(
+        '?sourceModule=purchase-order&sourceRecordId=361443612338167808&counterpartyId=100',
+      ),
+    ).toBe('counterpartyId=100')
+  })
+
+  it('消费父级导入意图后无剩余参数时返回空串', () => {
+    expect(
+      consumeParentImportIntentSearch(
+        '?sourceModule=purchase-order&sourceRecordId=361443612338167808',
+      ),
+    ).toBe('')
   })
 })
 

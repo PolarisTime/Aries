@@ -88,6 +88,14 @@ export function consumeCreateIntentSearch(searchStr: string): string {
   return params.toString()
 }
 
+/** 消费一次性父级导入意图，保留其它业务字段。 */
+export function consumeParentImportIntentSearch(searchStr: string): string {
+  const params = new URLSearchParams(searchStr)
+  params.delete('sourceModule')
+  params.delete('sourceRecordId')
+  return params.toString()
+}
+
 function resolveParentImportSource(
   config: ModulePageConfig | undefined,
   sourceModule: string,
@@ -402,6 +410,29 @@ export function useBusinessGridRouteSync({
     }
 
     autoOpenedParentImportKeyRef.current = routeKey
-    void openEditor(null, { parentImportSource })
-  }, [config, openEditor, routeParams.sourceModule, routeParams.sourceRecordId])
+    void (async () => {
+      try {
+        await openEditor(null, { parentImportSource })
+        // 父级导入是一次性意图: 打开后清除 URL 参数, 避免 tab 常驻/重挂载时
+        // 再次命中残留的 sourceModule/sourceRecordId 而重复填入上次的明细。
+        if (location.searchStr !== rawSearchStr) return
+        const nextSearch = consumeParentImportIntentSearch(rawSearchStr)
+        const nextHref = nextSearch
+          ? `${location.pathname}?${nextSearch}`
+          : location.pathname
+        router.history.replace(nextHref)
+      } catch {
+        autoOpenedParentImportKeyRef.current = ''
+      }
+    })()
+  }, [
+    config,
+    location.pathname,
+    location.searchStr,
+    openEditor,
+    rawSearchStr,
+    router,
+    routeParams.sourceModule,
+    routeParams.sourceRecordId,
+  ])
 }
