@@ -1,5 +1,11 @@
 /* 报单比价: 使用项目统一样式令牌(theme / ant-color / text 变量), 支持暗色 */
 
+/* 整体等比放大: 比价页内容偏小, 统一按 --price-compare-zoom 缩放(标题/表格/间距同步放大)。
+   仅作用于比价页根容器, 不影响复用 .price-compare-page 的其它页面。 */
+#price-compare-root {
+  zoom: var(--price-compare-zoom, 1.1);
+}
+
 .price-compare-page {
   padding: 12px;
 }
