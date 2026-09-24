@@ -277,6 +277,40 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.prices[0].supplierId).toBe('5002')
   })
 
+  it('解锁行时 payload 必须显式携带 locked=false(否则后端保留原值)', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    // 先锁定
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({ ...row, locked: true })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    api.updateQuoteSheetItem.mockClear()
+
+    // 再解锁
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({ ...row, locked: false })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { locked?: boolean },
+    ]
+    expect(payload.locked).toBe(false)
+  })
+
   it('单独切换行锁定会下发行级保存', async () => {
     const store = renderStore()
     await hydrate(store)

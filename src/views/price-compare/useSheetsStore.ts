@@ -277,7 +277,7 @@ function buildPayload(
           length: row.length,
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
-          ...(row.locked ? { locked: true } : {}),
+          locked: Boolean(row.locked),
           ...(row.purchaseOrderId
             ? { purchaseOrderId: row.purchaseOrderId }
             : {}),
@@ -335,7 +335,7 @@ function buildItemPayload(
     length: row.length,
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
-    ...(row.locked ? { locked: true } : {}),
+    locked: Boolean(row.locked),
     ...(row.purchaseOrderId ? { purchaseOrderId: row.purchaseOrderId } : {}),
     ...(row.purchaseOrderItemId
       ? { purchaseOrderItemId: row.purchaseOrderItemId }
