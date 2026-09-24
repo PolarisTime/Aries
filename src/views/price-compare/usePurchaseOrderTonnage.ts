@@ -27,7 +27,11 @@ export function usePurchaseOrderTonnage(
   active: PriceSheet | undefined,
   isAuthenticated: boolean,
 ): PurchaseOrderTonnageState {
-  const excludeSheetId = active?.id
+  // 新建未保存的批次使用本地临时 id(非雪花 ID): 传给后端会触发参数格式 400,
+  // 故仅在已持久化(纯数字雪花 id)时才传 excludeSheetId。
+  const rawSheetId = active?.id
+  const excludeSheetId =
+    rawSheetId && /^[1-9]\d*$/.test(rawSheetId) ? rawSheetId : undefined
   const optionsQuery = useQuery({
     queryKey: [
       ...QUERY_KEYS.priceCompare.purchaseOrderTonnages,

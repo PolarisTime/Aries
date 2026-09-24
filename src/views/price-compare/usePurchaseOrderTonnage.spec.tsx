@@ -30,9 +30,12 @@ const record = (id: string, orderNo: string) => ({
   status: '正常',
 })
 
-function sheetWithRows(rows: PriceSheet['rows']): PriceSheet {
+function sheetWithRows(
+  rows: PriceSheet['rows'],
+  id = '361443612338167808',
+): PriceSheet {
   return {
-    id: 's1',
+    id,
     name: '批次',
     status: '报价',
     projectId: 'p1',
@@ -153,11 +156,19 @@ describe('usePurchaseOrderTonnage', () => {
     expect(calls.some((c) => c[0]?.purchaseOrderIds?.includes('99'))).toBe(true)
   })
 
-  it('传 excludeSheetId 排除当前单据自身已保存吨位', async () => {
-    render(sheetWithRows([]))
+  it('已持久化批次(id 为雪花)传 excludeSheetId 排除自身已保存吨位', async () => {
+    render(sheetWithRows([], '361443612338167808'))
     await flush()
     expect(api.fetchPurchaseOrderTonnages.mock.calls[0][0]).toMatchObject({
-      excludeSheetId: 's1',
+      excludeSheetId: '361443612338167808',
     })
+  })
+
+  it('未保存批次(本地临时 id)不传 excludeSheetId, 避免参数格式 400', async () => {
+    render(sheetWithRows([], 'k3j9x2'))
+    await flush()
+    expect(api.fetchPurchaseOrderTonnages.mock.calls[0][0]).not.toHaveProperty(
+      'excludeSheetId',
+    )
   })
 })
