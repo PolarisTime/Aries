@@ -26,6 +26,20 @@
   --color-info-bg: var(--ant-color-info-bg, #e6f4ff);
   --color-info-border: var(--ant-color-info-border, #91caff);
 
+  /* 间距阶梯：与 antd margin/padding token 1:1 对齐(4/8/12/16/20/24/32/48), 供布局复用 */
+  --space-xxs: var(--ant-margin-xxs, 4px);
+  --space-xs: var(--ant-margin-xs, 8px);
+  --space-sm: var(--ant-margin-sm, 12px);
+  --space-md: var(--ant-margin, 16px);
+  --space-lg: var(--ant-margin-md, 20px);
+  --space-xl: var(--ant-margin-lg, 24px);
+  --space-2xl: var(--ant-margin-xl, 32px);
+  --space-3xl: var(--ant-margin-xxl, 48px);
+  /* 细粒度间距(非 4px 阶梯但高频): 2/6/10px */
+  --space-2: 2px;
+  --space-6: 6px;
+  --space-10: 10px;
+
   /* 字号阶梯：xs ~ 3xl（与 utilities.css 现有 .text-* 工具类取值一致），优先映射 antd 字号 token */
   --font-size-xs: var(--ant-font-size-sm, 12px);
   --font-size-sm: var(--ant-font-size, 14px);

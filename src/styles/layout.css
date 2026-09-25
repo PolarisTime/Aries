@@ -1,9 +1,9 @@
 .app-dev-refresh-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xxs);
   height: calc(var(--app-header-height) - 14px);
-  padding: 0 10px;
+  padding: 0 var(--space-10);
   color: var(--theme-header-muted);
   font-size: calc(var(--app-font-size) - 1px);
   line-height: 1;
@@ -47,14 +47,14 @@
 }
 
 .leo-top-menu.ant-menu-horizontal > .ant-menu-item {
-  padding-inline: 12px;
+  padding-inline: var(--space-sm);
 }
 
 .leo-top-menu.ant-menu-horizontal
   > .ant-menu-submenu
   > .ant-menu-submenu-title {
   height: var(--app-header-height);
-  padding-inline: 12px !important;
+  padding-inline: var(--space-sm) !important;
   margin: 0;
   line-height: var(--app-header-height);
   border-radius: 0;

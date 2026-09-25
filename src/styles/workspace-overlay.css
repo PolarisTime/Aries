@@ -48,11 +48,11 @@
 }
 
 .workspace-overlay-panel--finance-editor .workspace-overlay-body {
-  padding: 16px;
+  padding: var(--space-md);
 }
 
 .workspace-overlay-panel--finance-editor .workspace-overlay-footer {
-  padding: 10px 16px;
+  padding: var(--space-10) var(--space-md);
 }
 
 @media (max-width: 720px) {
@@ -73,7 +73,7 @@
 .workspace-overlay-panel--parent-selector .workspace-overlay-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 /* 展开按钮：标准 +/- 折叠控件 */
@@ -98,14 +98,14 @@
 
 /* 展开明细面板：与主行保持缩进对齐，摘要行 + 明细卡片一体化 */
 .parent-selector-detail-panel {
-  padding: 8px 12px 12px 84px;
+  padding: var(--space-xs) var(--space-sm) var(--space-sm) 84px;
 }
 
 .parent-selector-detail-summary {
   display: flex;
-  gap: 16px;
+  gap: var(--space-md);
   align-items: center;
-  padding: 8px 14px;
+  padding: var(--space-xs) 14px;
   font-size: 12px;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
   background: var(--ant-color-fill-quaternary, #fafafa);
@@ -131,8 +131,8 @@
 }
 
 .parent-selector-copy-btn {
-  margin-left: 6px;
-  padding: 0 2px;
+  margin-left: var(--space-6);
+  padding: 0 var(--space-2);
   border: none;
   background: none;
   color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
@@ -160,8 +160,8 @@
 }
 
 .parent-selector-selected-panel {
-  margin-bottom: 16px;
-  padding: 12px 16px;
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: var(--ant-border-radius-lg, 8px);
   background: var(--ant-color-fill-quaternary, #fafafa);
@@ -171,8 +171,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .parent-selector-selected-title {
@@ -188,11 +188,11 @@
 .parent-selector-selected-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
   /* 限制已选卡片区高度（约两行卡片），超出在面板内滚动，避免挤压下方列表 */
   max-height: 124px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: var(--space-xxs);
   scrollbar-gutter: stable;
 }
 
@@ -208,10 +208,10 @@
 .parent-selector-selected-chip {
   display: inline-flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
   max-width: min(100%, 420px);
-  padding: 6px 10px;
+  padding: var(--space-6) var(--space-10);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: var(--ant-border-radius, 6px);
   background: var(--ant-color-bg-container, #fff);
@@ -222,20 +222,20 @@
   flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xxs);
 }
 
 .parent-selector-selected-chip-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .parent-selector-selected-chip-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: var(--space-xxs) var(--space-sm);
 }
 
 .parent-selector-selected-chip-title,
@@ -293,7 +293,7 @@
   align-items: center;
   justify-content: space-between;
   min-height: var(--app-overlay-header-height, 56px);
-  padding: 0 16px;
+  padding: 0 var(--space-md);
   border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   background: var(--ant-color-bg-container, #fff);
   flex-shrink: 0;
@@ -311,7 +311,7 @@
   justify-content: center;
   min-width: 32px;
   height: 32px;
-  padding: 0 6px;
+  padding: 0 var(--space-6);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -321,7 +321,7 @@
 }
 
 .workspace-overlay-close .keyboard-shortcut-hint {
-  margin-left: 4px;
+  margin-left: var(--space-xxs);
 }
 
 .workspace-overlay-close:hover {
@@ -352,9 +352,9 @@
 .workspace-overlay-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-xs);
   flex: 0 0 auto;
-  padding: 12px 16px;
+  padding: var(--space-sm) var(--space-md);
   border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   background: var(--ant-color-bg-container, #fff);
 }

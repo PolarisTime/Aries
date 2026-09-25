@@ -57,7 +57,7 @@
 .module-detail-table thead > tr > th,
 .module-detail-table .ant-table-thead > tr > th,
 .module-detail-table .ant-table-thead .ant-table-cell {
-  padding: 8px 12px;
+  padding: var(--space-xs) var(--space-sm);
   font-size: var(--app-font-size);
   font-weight: 600;
   color: var(--text-secondary);
@@ -71,7 +71,7 @@
 .module-detail-table tbody > tr > td,
 .module-detail-table .ant-table-tbody > tr > td,
 .module-detail-table .ant-table-tbody .ant-table-cell {
-  padding: 8px 12px;
+  padding: var(--space-xs) var(--space-sm);
   font-size: var(--app-font-size);
   text-align: center !important;
   vertical-align: middle !important;
@@ -90,14 +90,14 @@
 .personal-setting-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .personal-setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .personal-setting-layout-row {
@@ -116,7 +116,7 @@
 .personal-layout-mode-group {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .personal-layout-mode-desc {
@@ -128,7 +128,7 @@
 .personal-setting-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 @media (max-width: 1440px), (max-height: 900px) {
@@ -139,11 +139,11 @@
   }
 
   .app-top-nav-left {
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .app-top-menu-shell {
-    padding: 0 4px;
+    padding: 0 var(--space-xxs);
   }
 
   .header-global-search {
@@ -159,7 +159,7 @@
   }
 
   .user-wrapper .action {
-    padding: 0 2px;
+    padding: 0 var(--space-2);
   }
 }
 
@@ -173,7 +173,7 @@
     flex-basis: 220px;
     max-width: 300px;
     min-width: 160px;
-    margin-left: 10px;
+    margin-left: var(--space-10);
   }
 
   .header-global-search-top {
@@ -189,7 +189,7 @@
   }
 
   .user-wrapper .action {
-    padding: 0 2px;
+    padding: 0 var(--space-2);
   }
 }
 
@@ -264,7 +264,7 @@
 
 .auth-page-content {
   min-height: 100vh;
-  padding: 48px;
+  padding: var(--space-3xl);
 }
 
 .auth-page-panel {
@@ -278,8 +278,8 @@
 .auth-page-brand-lockup {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-2xl);
 }
 
 .auth-page-brand-mark {
@@ -306,7 +306,7 @@
 
 .auth-page-brand-title.ant-typography {
   max-width: 480px;
-  margin: 0 0 16px;
+  margin: 0 0 var(--space-md);
   color: var(--theme-header-text);
   font-size: 48px;
   line-height: 1.18;
@@ -323,7 +323,7 @@
 .auth-page-brand-rule {
   width: 48px;
   height: 2px;
-  margin: 32px 0 20px;
+  margin: var(--space-2xl) 0 var(--space-lg);
   background: var(--theme-primary);
 }
 
@@ -342,7 +342,7 @@
 }
 
 .initial-setup-workspace .ant-card-body {
-  padding: 32px;
+  padding: var(--space-2xl);
 }
 
 .login-form .ant-input-affix-wrapper,
@@ -359,20 +359,20 @@
 }
 
 .login-form-card .ant-card-body {
-  padding: 24px;
+  padding: var(--space-xl);
 }
 
 .login-skeleton-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
   width: min(100%, 420px);
 }
 
 .login-skeleton-form-title {
   width: 160px;
   height: 34px;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-sm);
 }
 
 .login-skeleton-form-line {
@@ -384,16 +384,16 @@
 .login-skeleton-form-button {
   width: 100%;
   height: 48px;
-  margin-top: 8px;
+  margin-top: var(--space-xs);
   border-radius: var(--ant-border-radius);
 }
 
 .login-step-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  margin-bottom: 16px;
+  gap: var(--space-6);
+  padding: var(--space-2) var(--space-xs);
+  margin-bottom: var(--space-md);
   font-size: 12px;
   line-height: 20px;
   border: 1px solid var(--theme-card-border);
@@ -406,7 +406,7 @@
 }
 
 .login-form-title {
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-xxs);
   color: var(--theme-sider-text);
   font-size: 20px;
   font-weight: 600;
@@ -414,14 +414,14 @@
 }
 
 .login-form-desc {
-  margin: 0 0 24px;
+  margin: 0 0 var(--space-xl);
   font-size: 14px;
   color: var(--theme-sider-muted);
   line-height: 22px;
 }
 
 .login-form .ant-form-item {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-lg);
 }
 
 .login-form .ant-form-item-label > label {
@@ -448,7 +448,7 @@
 .print-template-shell {
   display: grid;
   grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--space-md);
   min-height: 560px;
 }
 
@@ -461,8 +461,8 @@
 }
 
 .print-template-list-item {
-  padding: 12px !important;
-  margin-bottom: 8px;
+  padding: var(--space-sm) !important;
+  margin-bottom: var(--space-xs);
   cursor: pointer;
   border: 1px solid var(--theme-card-border);
   border-radius: var(--ant-border-radius);
@@ -499,7 +499,7 @@
   min-height: 360px;
   max-height: 520px;
   margin: 0;
-  padding: 12px;
+  padding: var(--space-sm);
   overflow: auto;
   color: var(--ant-color-text);
   font-size: 12px;

@@ -4,17 +4,17 @@
 
 .purchase-pickup-list-summary {
   min-height: 52px;
-  padding: 8px 4px;
+  padding: var(--space-xs) var(--space-xxs);
   border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
 }
 
 .purchase-pickup-list-summary + .ant-alert {
-  margin-top: 12px;
+  margin-top: var(--space-sm);
 }
 
 .purchase-pickup-list-split-notice {
   display: block;
-  padding: 4px;
+  padding: var(--space-xxs);
   font-size: 12px;
 }
 
@@ -33,8 +33,8 @@
 .purchase-pickup-list-groups {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-top: 12px;
+  gap: var(--space-xl);
+  margin-top: var(--space-sm);
 }
 
 .purchase-pickup-list-group {
@@ -63,8 +63,8 @@
   min-height: 52px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 10px 4px;
+  gap: var(--space-md);
+  padding: var(--space-10) var(--space-xxs);
 }
 
 .purchase-pickup-list-group-title {
@@ -73,7 +73,7 @@
   flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .purchase-pickup-list-group-total {
@@ -89,7 +89,7 @@
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .purchase-pickup-list-group-remark {
@@ -105,7 +105,7 @@
 .purchase-pickup-list-quantity-cell {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xxs);
 }
 
 .purchase-pickup-list-part-tag {
@@ -121,20 +121,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: var(--space-2);
 }
 
 /* 拆分弹窗 */
 .purchase-pickup-list-split-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
 }
 
 .purchase-pickup-list-split-field {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .purchase-pickup-list-split-piece-count {
@@ -144,8 +144,8 @@
 .purchase-pickup-list-split-preview {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: var(--space-6);
+  padding: var(--space-xs) var(--space-10);
   border-radius: 6px;
   background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
 }
@@ -153,11 +153,11 @@
 .purchase-pickup-list-split-parts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 .purchase-pickup-list-split-part {
-  padding: 2px 8px;
+  padding: var(--space-2) var(--space-xs);
   border-radius: 4px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -184,7 +184,7 @@
 
 @media (max-width: 768px) {
   .purchase-pickup-list-summary-metrics {
-    gap: 8px 16px;
+    gap: var(--space-xs) var(--space-md);
   }
 
   .purchase-pickup-list-group-header {

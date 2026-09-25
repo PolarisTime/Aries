@@ -3,13 +3,13 @@
 .aries-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-sm);
   width: 100%;
 }
 
 .aries-skeleton-row {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: center;
 }
 
@@ -66,7 +66,7 @@
 .aries-skeleton-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-xs);
   flex: 1 1 0;
 }
 
@@ -97,10 +97,10 @@
 .aries-skeleton-detail-section {
   border: 1px solid var(--theme-card-border, #f0f0f0);
   border-radius: 8px;
-  padding: 16px;
+  padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-10);
 }
 
 @keyframes aries-skeleton-shimmer {

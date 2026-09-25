@@ -55,7 +55,7 @@
 
 .app-result--page {
   /* 错误/404 页面卡片: 上下留白随视口缓和增长, 避免大屏卡片被推到页面中部。 */
-  margin-block: clamp(16px, 4vh, 40px);
+  margin-block: clamp(var(--space-md), 4vh, 40px);
   background: var(--ant-color-bg-container, #fff);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: var(--ant-border-radius-lg, 8px);

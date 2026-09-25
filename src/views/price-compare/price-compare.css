@@ -7,16 +7,16 @@
 }
 
 .price-compare-page {
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 .price-compare-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10);
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-xs);
 }
 
 .price-compare-head h1 {
@@ -27,7 +27,7 @@
 }
 
 .price-compare-head .price-compare-desc {
-  margin-left: 8px;
+  margin-left: var(--space-xs);
   font-size: 12px;
   color: var(--text-placeholder);
 }
@@ -45,7 +45,7 @@
 .price-compare-diff {
   display: inline-block;
   min-width: 34px;
-  padding: 0 4px;
+  padding: 0 var(--space-xxs);
   border-radius: var(--ant-border-radius, 6px);
   font-weight: 600;
   text-align: right;
@@ -80,7 +80,7 @@
 
 /* 报单日期下方第二行: 品牌限定 / 备注信息 */
 .price-compare-meta-row {
-  padding: 2px 0;
+  padding: var(--space-2) 0;
 }
 
 .price-compare-meta-field {
@@ -89,7 +89,7 @@
 
 /* 备注栏下方: 操作按钮组 */
 .price-compare-action-row {
-  padding: 2px 0;
+  padding: var(--space-2) 0;
 }
 
 .price-compare-meta-input input,
@@ -146,9 +146,9 @@
 
 .price-compare-legend i {
   font-style: normal;
-  padding: 0 4px;
+  padding: 0 var(--space-xxs);
   border-radius: 3px;
-  margin: 0 2px;
+  margin: 0 var(--space-2);
 }
 
 .price-compare-legend i.is-pos {
@@ -163,7 +163,7 @@
 
 .price-compare-spot input {
   text-align: right;
-  padding-inline: 4px !important;
+  padding-inline: var(--space-xxs) !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -177,12 +177,12 @@
 }
 
 .price-compare-table .price-compare-supplier .ant-select-selector {
-  padding-inline: 2px !important;
+  padding-inline: var(--space-2) !important;
 }
 
 .price-compare-table .price-compare-supplier .ant-select-selection-item,
 .price-compare-table .price-compare-supplier .ant-select-selection-placeholder {
-  padding-inline: 2px 12px !important;
+  padding-inline: var(--space-2) var(--space-sm) !important;
 }
 
 .price-compare-table .price-compare-supplier .ant-select-arrow {
@@ -194,21 +194,21 @@
 .price-compare-supplier-header {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2);
   justify-content: center;
 }
 
 .price-compare-supplier-header .price-compare-supplier-fill-btn {
   height: auto;
   min-height: 0;
-  padding: 0 2px;
+  padding: 0 var(--space-2);
   font-size: 11px;
   color: var(--ant-color-primary, #1677ff);
 }
 
 /* 批量填入弹出层: 品牌列 + 供应商下拉 */
 .price-compare-supplier-fill {
-  padding: 2px;
+  padding: var(--space-2);
 }
 
 .price-compare-supplier-fill-select,
@@ -223,7 +223,7 @@
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2);
 }
 
 .price-compare-dim {
@@ -253,7 +253,7 @@
 /* 隔断行: 整条分隔带, 弱化背景并隐藏其它列的交互 */
 .price-compare-table .ant-table-tbody > tr.price-compare-separator-row > td {
   height: 14px;
-  padding: 0 6px !important;
+  padding: 0 var(--space-6) !important;
   background: var(--theme-table-header-bg, #fafafa) !important;
 }
 
@@ -272,7 +272,7 @@
 /* 紧凑表格: 减小单元格留白与行高 */
 .price-compare-table .ant-table-small .ant-table-tbody > tr > td,
 .price-compare-table .ant-table-small .ant-table-thead > tr > th {
-  padding: 2px 6px !important;
+  padding: var(--space-2) var(--space-6) !important;
   line-height: 22px;
 }
 
@@ -288,7 +288,7 @@
 
 .price-compare-table .ant-table-medium .ant-table-tbody > tr > td,
 .price-compare-table .ant-table-medium .ant-table-thead > tr > th {
-  padding: 6px 8px !important;
+  padding: var(--space-6) var(--space-xs) !important;
 }
 
 .price-compare-table .ant-table-cell .ant-select-selection-item,
@@ -380,7 +380,7 @@
 
 /* 表格底部“添加一行” */
 .price-compare-table .ant-table-summary > tr > td {
-  padding: 2px 6px !important;
+  padding: var(--space-2) var(--space-6) !important;
 }
 
 .price-compare-add-row {
@@ -390,12 +390,12 @@
 
 /* 项目配置弹窗: 品牌列表 */
 .price-compare-config-premium {
-  padding: 6px 10px;
+  padding: var(--space-6) var(--space-10);
   border-radius: var(--ant-border-radius, 6px);
   background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
 }
 .pc-config-card {
-  padding: 12px 16px;
+  padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: 8px;
   background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
@@ -404,7 +404,7 @@
   min-width: 0;
 }
 .pc-brand-row {
-  padding: 8px 12px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: 8px;
   background: var(--theme-surface, #fff);
@@ -419,9 +419,9 @@
 .pc-brand-pool {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
   min-height: 52px;
-  padding: 10px 12px;
+  padding: var(--space-10) var(--space-sm);
   border: 1px dashed var(--ant-color-border, #d9d9d9);
   border-radius: 8px;
 }
@@ -435,7 +435,7 @@
 .price-compare-fallback-value {
   display: inline-flex;
   align-items: baseline;
-  gap: 2px;
+  gap: var(--space-2);
 }
 .price-compare-fallback-badge {
   display: inline-flex;
@@ -454,7 +454,7 @@
 }
 
 .price-compare-config-brand {
-  padding: 2px 10px;
+  padding: var(--space-2) var(--space-10);
   border: 1px solid transparent;
   border-radius: var(--ant-border-radius, 6px);
   transition:
@@ -472,17 +472,17 @@
 }
 
 .price-compare-brand-pool {
-  margin-top: 6px;
+  margin-top: var(--space-6);
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: var(--space-6) 14px;
 }
 
 /* 报单吨位输入: AntD 将 className 落在 input 本身, 选择器需命中 .price-compare-ton 自身 */
 .price-compare-ton,
 .price-compare-ton input {
   text-align: center;
-  padding-inline: 4px !important;
+  padding-inline: var(--space-xxs) !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -507,7 +507,7 @@
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: var(--space-xxs);
   align-items: center;
   justify-content: center;
   min-width: 0;
@@ -556,7 +556,7 @@
 .price-compare-ton-popover {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xxs);
   min-width: 200px;
   font-size: 12px;
 }
@@ -565,7 +565,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .price-compare-ton-popover-row > span:first-child {
@@ -584,7 +584,7 @@
 }
 
 .price-compare-ton-popover .ant-btn {
-  margin-top: 4px;
+  margin-top: var(--space-xxs);
 }
 
 .price-compare-ton-hint--over {
@@ -595,14 +595,14 @@
 .price-compare-purchase-order-picker-footer {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 /* 行备注输入 */
 .price-compare-row-remark,
 .price-compare-row-remark input {
   text-align: left;
-  padding-inline: 4px !important;
+  padding-inline: var(--space-xxs) !important;
 }
 
 /* 参照网价日历: 上/中/下午点位 */
@@ -658,25 +658,25 @@
 .price-compare-product-panel {
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: var(--ant-border-radius, 6px);
-  padding: 8px 10px;
+  padding: var(--space-xs) var(--space-10);
 }
 
 .price-compare-product-group + .price-compare-product-group {
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: var(--space-10);
+  padding-top: var(--space-xs);
   border-top: 1px dashed var(--ant-color-border-secondary, #f0f0f0);
 }
 
 .price-compare-product-items {
-  margin-top: 6px;
-  padding-left: 24px;
+  margin-top: var(--space-6);
+  padding-left: var(--space-xl);
 }
 
 /* 规格列: 商品选择 + 可选的长度切换按钮(9米↔12米) */
 .price-compare-variety-cell {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2);
   width: 100%;
 }
 
