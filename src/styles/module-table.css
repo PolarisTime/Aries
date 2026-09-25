@@ -347,7 +347,7 @@
   width: 56px;
   min-width: 56px;
   height: 56px;
-  color: #fff;
+  color: var(--ant-color-text-light-solid, #fff);
   font-size: 13px;
   font-weight: 600;
   background: var(--ant-color-error);
@@ -694,14 +694,14 @@
 }
 
 .overlay-action-button.ant-btn.ant-btn-primary {
-  color: #fff;
+  color: var(--ant-color-text-light-solid, #fff);
   border-color: var(--theme-primary);
   background: var(--theme-primary);
 }
 
 .overlay-action-button.ant-btn.ant-btn-primary:hover,
 .overlay-action-button.ant-btn.ant-btn-primary:focus {
-  color: #fff;
+  color: var(--ant-color-text-light-solid, #fff);
   border-color: var(--theme-primary-hover);
   background: var(--theme-primary-hover);
 }

@@ -21,12 +21,30 @@ interface Props {
 }
 
 const TYPE_META: Readonly<Record<string, { key: string; color: string }>> = {
-  'purchase-order': { key: 'purchaseOrder', color: '#1677ff' },
-  'purchase-inbound': { key: 'purchaseInbound', color: '#13c2c2' },
-  'sales-order': { key: 'salesOrder', color: '#52c41a' },
-  'sales-outbound': { key: 'salesOutbound', color: '#faad14' },
-  'sales-return': { key: 'salesReturn', color: '#ff4d4f' },
-  'freight-bill': { key: 'freightBill', color: '#722ed1' },
+  'purchase-order': {
+    key: 'purchaseOrder',
+    color: 'var(--ant-color-primary, #1677ff)',
+  },
+  'purchase-inbound': {
+    key: 'purchaseInbound',
+    color: 'var(--ant-cyan-6, #13c2c2)',
+  },
+  'sales-order': {
+    key: 'salesOrder',
+    color: 'var(--ant-color-success, #52c41a)',
+  },
+  'sales-outbound': {
+    key: 'salesOutbound',
+    color: 'var(--ant-color-warning, #faad14)',
+  },
+  'sales-return': {
+    key: 'salesReturn',
+    color: 'var(--ant-color-error, #ff4d4f)',
+  },
+  'freight-bill': {
+    key: 'freightBill',
+    color: 'var(--ant-purple-6, #722ed1)',
+  },
 }
 
 const LINK_TYPE_KEYS: Readonly<Record<string, string>> = {

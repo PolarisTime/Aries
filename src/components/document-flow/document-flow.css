@@ -57,7 +57,7 @@
   border-top: 3px solid var(--ant-color-border, #d9d9d9);
   border-radius: var(--ant-border-radius-lg, 8px);
   background: var(--theme-surface, #fff);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--ant-box-shadow-tertiary, 0 1px 2px rgba(0, 0, 0, 0.03));
   cursor: pointer;
   text-align: left;
   transition:
@@ -68,7 +68,7 @@
 .document-flow-node:hover,
 .document-flow-node:focus-visible {
   border-color: var(--theme-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--ant-box-shadow-secondary, 0 2px 8px rgba(0, 0, 0, 0.08));
 }
 
 .document-flow-node-type {

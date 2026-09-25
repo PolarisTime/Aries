@@ -414,7 +414,7 @@
 }
 .pc-brand-row:hover {
   border-color: var(--ant-color-primary-border-hover, #4096ff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--ant-box-shadow-tertiary, 0 1px 4px rgba(0, 0, 0, 0.04));
 }
 .pc-brand-pool {
   display: flex;
@@ -630,11 +630,11 @@
 }
 
 .ant-picker-cell-selected .price-compare-cal-dots i {
-  background: rgba(255, 255, 255, 0.5);
+  background: color-mix(in srgb, var(--ant-color-text-light-solid, #fff) 50%, transparent);
 }
 
 .ant-picker-cell-selected .price-compare-cal-dots i.is-on {
-  background: #fff;
+  background: var(--ant-color-text-light-solid, #fff);
 }
 
 /* 类别列 */

@@ -89,7 +89,8 @@ export function ReceiptSettlementPreviewCard({
     <div
       className="rounded-lg p-4 text-white"
       style={{
-        background: `linear-gradient(135deg, ${token.colorPrimary} 0%, #08979c 100%)`,
+        background:
+          'linear-gradient(135deg, var(--ant-color-primary, #1677ff) 0%, var(--ant-cyan-7, #08979c) 100%)',
       }}
     >
       <Flex align="center" gap={8} className="mb-3">
@@ -114,7 +115,7 @@ export function ReceiptSettlementPreviewCard({
             <Typography.Text
               strong
               style={{
-                color: '#fff',
+                color: token.colorTextLightSolid,
                 fontSize: token.fontSizeLG,
                 fontVariantNumeric: 'tabular-nums',
               }}
@@ -126,7 +127,8 @@ export function ReceiptSettlementPreviewCard({
       </Flex>
       <Divider
         style={{
-          borderColor: 'rgba(255,255,255,0.3)',
+          borderColor:
+            'color-mix(in srgb, var(--ant-color-text-light-solid, #fff) 30%, transparent)',
           margin: '12px 0 0',
         }}
       />
