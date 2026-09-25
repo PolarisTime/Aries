@@ -1,5 +1,6 @@
 import type { TableColumnsType } from 'antd'
 import { Button, Space } from 'antd'
+import type { TFunction } from 'i18next'
 import type {
   FinanceBalance,
   FinanceDirection,
@@ -11,6 +12,7 @@ function displayText(value: unknown): string {
 }
 
 export function buildBalanceColumns(
+  t: TFunction,
   direction: FinanceDirection,
   formatAmount: (value: number | undefined) => string,
   onLedger: (record: FinanceBalance) => void,
@@ -21,41 +23,50 @@ export function buildBalanceColumns(
 ): TableColumnsType<FinanceBalance> {
   return [
     {
-      title: '往来类型',
+      title: t('financeDetail.counterpartyTypeShort'),
       dataIndex: 'counterpartyType',
       width: 100,
       fixed: 'left',
     },
     {
-      title: '往来方编码',
+      title: t('financeDetail.counterpartyCode'),
       dataIndex: 'counterpartyCode',
       width: 175,
       ellipsis: true,
       render: displayText,
     },
     {
-      title: '往来方',
+      title: t('financeDetail.counterparty'),
       dataIndex: 'counterpartyName',
       width: 220,
       ellipsis: true,
       render: displayText,
     },
     {
-      title: direction === 'RECEIVABLE' ? '应收 (元)' : '应付 (元)',
+      title:
+        direction === 'RECEIVABLE'
+          ? t('financeDetail.receivableYuan')
+          : t('financeDetail.payableYuan'),
       dataIndex: 'recognizedAmount',
       width: 150,
       align: 'right',
       render: formatAmount,
     },
     {
-      title: direction === 'RECEIVABLE' ? '已收 (元)' : '已付 (元)',
+      title:
+        direction === 'RECEIVABLE'
+          ? t('financeDetail.receivedYuan')
+          : t('financeDetail.paidYuan'),
       dataIndex: 'settledAmount',
       width: 150,
       align: 'right',
       render: formatAmount,
     },
     {
-      title: direction === 'RECEIVABLE' ? '未收 (元)' : '未付 (元)',
+      title:
+        direction === 'RECEIVABLE'
+          ? t('financeDetail.unreceivedYuan')
+          : t('financeDetail.unpaidYuan'),
       dataIndex: 'outstandingAmount',
       width: 150,
       align: 'right',
@@ -73,28 +84,31 @@ export function buildBalanceColumns(
       },
     },
     {
-      title: direction === 'RECEIVABLE' ? '预收 (元)' : '预付 (元)',
+      title:
+        direction === 'RECEIVABLE'
+          ? t('financeDetail.prepaidYuan')
+          : t('financeDetail.prepaymentYuan'),
       dataIndex: 'advanceAmount',
       width: 150,
       align: 'right',
       render: formatAmount,
     },
     {
-      title: '结算主体',
+      title: t('financeDetail.settlementCompany'),
       dataIndex: 'settlementCompanyName',
       width: 180,
       ellipsis: true,
       render: displayText,
     },
     {
-      title: '操作',
+      title: t('financeDetail.action'),
       key: 'actions',
       fixed: 'right',
       width: 210,
       render: (_value, record) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => onLedger(record)}>
-            对账明细
+            {t('financeDetail.ledgerDetail')}
           </Button>
           <Button
             type="link"
@@ -106,7 +120,9 @@ export function buildBalanceColumns(
               )
             }
           >
-            {direction === 'RECEIVABLE' ? '去收款' : '去付款'}
+            {direction === 'RECEIVABLE'
+              ? t('financeDetail.goReceipt')
+              : t('financeDetail.goPayment')}
           </Button>
         </Space>
       ),

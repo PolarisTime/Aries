@@ -1,5 +1,6 @@
 import { Button, Card, Table, Tag, Tooltip, Typography } from 'antd'
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import { type CalendarMap, PERIODS, today } from './market-sync-model'
 
 const { Text } = Typography
@@ -22,8 +23,13 @@ export function MarketSyncMatrix({
   /** 矩阵展示的时段; 西本仅「上午」。 */
   periods?: readonly string[]
 }) {
+  const { t } = useTranslation()
   return (
-    <Card size="small" title="覆盖矩阵（近30天）" style={{ marginBottom: 12 }}>
+    <Card
+      size="small"
+      title={t('marketSync.matrixTitle')}
+      style={{ marginBottom: 12 }}
+    >
       <Table
         size="small"
         rowKey="date"
@@ -32,7 +38,7 @@ export function MarketSyncMatrix({
         scroll={{ y: 420 }}
         columns={[
           {
-            title: '日期',
+            title: t('marketSync.matrixDate'),
             dataIndex: 'date',
             width: 130,
             render: (date: string) => (
@@ -50,10 +56,11 @@ export function MarketSyncMatrix({
               const has = entry?.periods.includes(p)
               const rows = entry?.rows[p]
               const active = selected.date === row.date && selected.period === p
-              if (weekend) return <Text type="secondary">休</Text>
+              if (weekend)
+                return <Text type="secondary">{t('marketSync.weekend')}</Text>
               if (!has)
                 return (
-                  <Tooltip title="该时段无行情数据，点击同步该时段">
+                  <Tooltip title={t('marketSync.matrixNoData')}>
                     <Button
                       size="small"
                       type="link"
@@ -62,7 +69,7 @@ export function MarketSyncMatrix({
                       style={{ padding: 0, height: 'auto' }}
                       onClick={() => onSyncDate(row.date, p)}
                     >
-                      缺
+                      {t('marketSync.syncMissing')}
                     </Button>
                   </Tooltip>
                 )
@@ -71,7 +78,7 @@ export function MarketSyncMatrix({
                   checked={active}
                   onChange={() => onSelectQuote(row.date, p)}
                 >
-                  {rows ? `${rows}行` : '✓'}
+                  {rows ? t('marketSync.matrixRows', { rows }) : '✓'}
                 </Tag.CheckableTag>
               )
             },

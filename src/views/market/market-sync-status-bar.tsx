@@ -1,4 +1,5 @@
 import { Flex, Progress, Tag, Tooltip, Typography } from 'antd'
+import { useTranslation } from 'react-i18next'
 import type { SteelQuoteBackfillStatus } from '@/api/market/steel-quotes'
 import { type CalendarMap, PERIODS } from './market-sync-model'
 
@@ -18,31 +19,45 @@ export function MarketSyncStatusBar({
     todayEntry: CalendarMap[string] | undefined
   }
 }) {
+  const { t } = useTranslation()
   return (
     <>
       <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
         <Tag color={stats.missingSlots > 0 ? 'orange' : 'green'}>
-          近30天覆盖 {stats.covered}/{stats.weekdays} 天
+          {t('marketSync.coverage', {
+            covered: stats.covered,
+            weekdays: stats.weekdays,
+          })}
         </Tag>
         <Tag color={stats.missingSlots > 0 ? 'red' : 'green'}>
-          缺失时段 {stats.missingSlots}
+          {t('marketSync.missingSlots', { count: stats.missingSlots })}
         </Tag>
         {backfillStatus?.running ? (
           <Tag color="processing">
-            补数中 {backfillStatus.from} ~ {backfillStatus.to}
+            {t('marketSync.backfilling', {
+              from: backfillStatus.from,
+              to: backfillStatus.to,
+            })}
           </Tag>
         ) : backfillStatus?.finishedAt ? (
           <Tag>
-            上次补数 {backfillStatus.from} ~ {backfillStatus.to}：成功
-            {backfillStatus.syncedDays}天/失败{backfillStatus.failedDays}天/
-            {backfillStatus.totalRows}行
+            {t('marketSync.backfillDone', {
+              from: backfillStatus.from,
+              to: backfillStatus.to,
+              synced: backfillStatus.syncedDays,
+              failed: backfillStatus.failedDays,
+              rows: backfillStatus.totalRows,
+            })}
           </Tag>
         ) : null}
         {PERIODS.map((p) => {
           const has = stats.todayEntry?.periods.includes(p)
           return (
             <Tag key={p} color={has ? 'green' : 'default'}>
-              今日{p} {has ? '✓' : '—'}
+              {t('marketSync.todayPeriod', {
+                period: p,
+                mark: has ? '✓' : '—',
+              })}
             </Tag>
           )
         })}
@@ -58,8 +73,10 @@ export function MarketSyncStatusBar({
               )}
             />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {backfillStatus.syncedDays + backfillStatus.failedDays}/
-              {backfillTotalWeekdays} 天
+              {t('marketSync.backfillProgress', {
+                done: backfillStatus.syncedDays + backfillStatus.failedDays,
+                total: backfillTotalWeekdays,
+              })}
             </Text>
           </Flex>
         ) : null}
@@ -68,7 +85,9 @@ export function MarketSyncStatusBar({
       {backfillStatus && backfillStatus.failures?.length ? (
         <Flex gap={6} wrap="wrap" style={{ marginBottom: 8 }}>
           <Text type="danger" style={{ fontSize: 12 }}>
-            补数失败 {backfillStatus.failures.length} 天：
+            {t('marketSync.backfillFailures', {
+              count: backfillStatus.failures.length,
+            })}
           </Text>
           {backfillStatus.failures.map((failure) => (
             <Tooltip key={failure.date} title={failure.message}>

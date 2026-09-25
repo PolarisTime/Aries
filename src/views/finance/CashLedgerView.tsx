@@ -25,6 +25,7 @@ import {
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import type { TFunction } from 'i18next'
 import { type Dispatch, useMemo, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -54,29 +55,27 @@ import {
 } from '@/views/finance/cash-ledger-state'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 
-const COUNTERPARTY_TYPE_OPTIONS = ['客户', '供应商', '物流商'].map((value) => ({
-  value,
-  label: value,
-}))
-
-const FLOW_TYPE_LABELS: Record<CashLedgerFlowType, string> = {
-  RECEIPT: '收款',
-  PAYMENT: '付款',
-  PAYMENT_REVERSAL: '付款冲销',
-  RECEIPT_REVERSAL: '收款冲销',
+const COUNTERPARTY_TYPE_LABELS: Record<string, string> = {
+  客户: 'financeDetail.counterpartyCustomer',
+  供应商: 'financeDetail.counterpartySupplier',
+  物流商: 'financeDetail.counterpartyCarrier',
 }
 
-const FLOW_TYPE_OPTIONS = Object.entries(FLOW_TYPE_LABELS).map(
-  ([value, label]) => ({ value, label }),
-)
+const FLOW_TYPE_LABEL_KEYS: Record<CashLedgerFlowType, string> = {
+  RECEIPT: 'financeDetail.flowReceipt',
+  PAYMENT: 'financeDetail.flowPayment',
+  PAYMENT_REVERSAL: 'financeDetail.flowPaymentReversal',
+  RECEIPT_REVERSAL: 'financeDetail.flowReceiptReversal',
+}
 
-const PURPOSE_LABELS: Record<string, string> = {
-  CUSTOMER_STATEMENT_SETTLEMENT: '客户结算收款',
-  SUPPLIER_PREPAYMENT_REFUND: '供应商预付款退款',
-  SUPPLIER_OTHER_RECEIPT: '供应商其他收款',
-  STATEMENT_SETTLEMENT: '对账结算',
-  PURCHASE_PREPAYMENT: '采购预付款',
-  SUPPLIER_PAYMENT: '供应商总额付款',
+const PURPOSE_LABEL_KEYS: Record<string, string> = {
+  CUSTOMER_STATEMENT_SETTLEMENT:
+    'financeDetail.purposeCustomerStatementSettlement',
+  SUPPLIER_PREPAYMENT_REFUND: 'financeDetail.purposeSupplierPrepaymentRefund',
+  SUPPLIER_OTHER_RECEIPT: 'financeDetail.purposeSupplierOtherReceipt',
+  STATEMENT_SETTLEMENT: 'financeDetail.purposeStatementSettlement',
+  PURCHASE_PREPAYMENT: 'financeDetail.purposePurchasePrepayment',
+  SUPPLIER_PAYMENT: 'financeDetail.purposeSupplierPayment',
 }
 
 function requestErrorMessage(error: unknown, fallback: string) {
@@ -102,52 +101,55 @@ function formatAmount(
 }
 
 function buildSummaryItems(
+  t: TFunction,
   summary: CashLedgerSummary,
   formatCellValue: FormatCellValue,
 ): DescriptionsProps['items'] {
   return [
     {
       key: 'openingBalance',
-      label: '期初余额',
+      label: t('financeDetail.openingBalance'),
       children: formatAmount(formatCellValue, summary.openingBalance),
     },
     {
       key: 'periodIncome',
-      label: '期间收入',
+      label: t('financeDetail.periodIncome'),
       children: formatAmount(formatCellValue, summary.periodIncome),
     },
     {
       key: 'periodExpense',
-      label: '期间支出',
+      label: t('financeDetail.periodExpense'),
       children: formatAmount(formatCellValue, summary.periodExpense),
     },
     {
       key: 'closingBalance',
-      label: '期末余额',
+      label: t('financeDetail.closingBalance'),
       children: formatAmount(formatCellValue, summary.closingBalance),
     },
   ]
 }
 
 function buildColumns(
+  t: TFunction,
   formatCellValue: FormatCellValue,
 ): TableColumnsType<CashLedgerLine> {
   return [
     {
-      title: '业务日期',
+      title: t('financeDetail.colBusinessDate'),
       dataIndex: 'businessDate',
       width: 120,
       fixed: 'left',
       render: (value) => formatCellValue(value, 'date'),
     },
     {
-      title: '流水类型',
+      title: t('financeDetail.colFlowType'),
       dataIndex: 'flowType',
       width: 120,
-      render: (value: CashLedgerFlowType) => FLOW_TYPE_LABELS[value] || value,
+      render: (value: CashLedgerFlowType) =>
+        FLOW_TYPE_LABEL_KEYS[value] ? t(FLOW_TYPE_LABEL_KEYS[value]) : value,
     },
     {
-      title: '单号',
+      title: t('financeDetail.colDocumentNo'),
       dataIndex: 'documentNo',
       width: 180,
       ellipsis: true,
@@ -157,59 +159,62 @@ function buildColumns(
           moduleKey={
             record.flowType.startsWith('RECEIPT') ? 'receipt' : 'payment'
           }
-          documentLabel="单据"
+          documentLabel={t('financeDetail.document')}
         />
       ),
     },
     {
-      title: '往来方类型',
+      title: t('financeDetail.colCounterpartyType'),
       dataIndex: 'counterpartyType',
       width: 110,
       render: displayText,
     },
     {
-      title: '往来方名称',
+      title: t('financeDetail.colCounterpartyName'),
       dataIndex: 'counterpartyName',
       width: 180,
       ellipsis: true,
       render: displayText,
     },
     {
-      title: '用途',
+      title: t('financeDetail.colPurpose'),
       dataIndex: 'purpose',
       width: 180,
       ellipsis: true,
-      render: (value) => PURPOSE_LABELS[String(value)] || displayText(value),
+      render: (value) =>
+        PURPOSE_LABEL_KEYS[String(value)]
+          ? t(PURPOSE_LABEL_KEYS[String(value)])
+          : displayText(value),
     },
     {
-      title: '收入',
+      title: t('financeDetail.colIncome'),
       dataIndex: 'incomeAmount',
       width: 130,
       align: 'right',
       render: (value) => formatAmount(formatCellValue, value),
     },
     {
-      title: '支出',
+      title: t('financeDetail.colExpense'),
       dataIndex: 'expenseAmount',
       width: 130,
       align: 'right',
       render: (value) => formatAmount(formatCellValue, value),
     },
     {
-      title: '累计余额',
+      title: t('financeDetail.colRunningBalance'),
       dataIndex: 'runningBalance',
       width: 140,
       align: 'right',
       render: (value) => formatAmount(formatCellValue, value),
     },
     {
-      title: '经办人',
+      title: t('financeDetail.colOperator'),
       dataIndex: 'operatorName',
       width: 120,
       render: displayText,
     },
     {
-      title: '备注',
+      title: t('financeDetail.colRemark'),
       dataIndex: 'remark',
       width: 220,
       ellipsis: true,
@@ -244,6 +249,15 @@ interface CashLedgerWorkspaceModel {
 function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
   const { t } = useTranslation()
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
+  const counterpartyTypeOptions = Object.keys(COUNTERPARTY_TYPE_LABELS).map(
+    (value) => ({
+      value,
+      label: t(COUNTERPARTY_TYPE_LABELS[value]),
+    }),
+  )
+  const flowTypeOptions = (
+    Object.keys(FLOW_TYPE_LABEL_KEYS) as CashLedgerFlowType[]
+  ).map((value) => ({ value, label: t(FLOW_TYPE_LABEL_KEYS[value]) }))
   const dateRangeValue: [Dayjs, Dayjs] | null =
     model.state.startDate && model.state.endDate
       ? [dayjs(model.state.startDate), dayjs(model.state.endDate)]
@@ -293,13 +307,13 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
               <div className="cash-ledger-filter">
                 <Typography.Text type="secondary">结算主体</Typography.Text>
                 <Select
-                  aria-label="结算主体"
+                  aria-label={t('financeDetail.settlementCompany')}
                   aria-required="true"
                   value={model.state.settlementCompanyId}
                   options={model.settlementCompanies}
                   loading={model.optionsLoading}
                   showSearch={{ optionFilterProp: 'label' }}
-                  placeholder="请选择结算主体"
+                  placeholder={t('financeDetail.selectSettlementCompany')}
                   onChange={(value) => {
                     model.dispatch({
                       type: 'settlement-company-changed',
@@ -309,9 +323,11 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 />
               </div>
               <div className="cash-ledger-filter">
-                <Typography.Text type="secondary">业务日期</Typography.Text>
+                <Typography.Text type="secondary">
+                  {t('financeDetail.colBusinessDate')}
+                </Typography.Text>
                 <DatePicker.RangePicker
-                  aria-label="业务日期"
+                  aria-label={t('financeDetail.colBusinessDate')}
                   value={dateRangeValue}
                   format={DISPLAY_DATE_FORMAT}
                   onChange={(dates) => {
@@ -324,12 +340,14 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 />
               </div>
               <div className="cash-ledger-filter">
-                <Typography.Text type="secondary">关键字</Typography.Text>
+                <Typography.Text type="secondary">
+                  {t('financeDetail.keyword')}
+                </Typography.Text>
                 <Input
-                  aria-label="关键字"
+                  aria-label={t('financeDetail.keyword')}
                   value={model.state.keywordInput}
                   allowClear
-                  placeholder="单号、往来方、用途、经办人或备注"
+                  placeholder={t('financeDetail.keywordPlaceholder')}
                   onChange={(event) => {
                     model.dispatch({
                       type: 'keyword-input-changed',
@@ -378,13 +396,15 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 id="cash-ledger-advanced-filters"
               >
                 <div className="cash-ledger-filter">
-                  <Typography.Text type="secondary">往来方类型</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {t('financeDetail.colCounterpartyType')}
+                  </Typography.Text>
                   <Select
-                    aria-label="往来方类型"
+                    aria-label={t('financeDetail.colCounterpartyType')}
                     value={model.state.counterpartyType}
-                    options={COUNTERPARTY_TYPE_OPTIONS}
+                    options={counterpartyTypeOptions}
                     allowClear
-                    placeholder="全部往来方类型"
+                    placeholder={t('financeDetail.allCounterpartyTypes')}
                     onChange={(value) => {
                       model.dispatch({
                         type: 'counterparty-type-changed',
@@ -394,9 +414,11 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                   />
                 </div>
                 <div className="cash-ledger-filter">
-                  <Typography.Text type="secondary">往来方</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {t('financeDetail.counterparty')}
+                  </Typography.Text>
                   <Select
-                    aria-label="往来方"
+                    aria-label={t('financeDetail.counterparty')}
                     value={model.state.counterpartyId}
                     options={model.counterpartyOptions}
                     loading={model.optionsLoading}
@@ -404,7 +426,9 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                     showSearch={{ optionFilterProp: 'label' }}
                     allowClear
                     placeholder={
-                      model.state.counterpartyType ? '全部往来方' : '先选择类型'
+                      model.state.counterpartyType
+                        ? t('financeDetail.allCounterparties')
+                        : t('financeDetail.selectTypeFirst')
                     }
                     onChange={(value) => {
                       model.dispatch({
@@ -415,13 +439,15 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                   />
                 </div>
                 <div className="cash-ledger-filter">
-                  <Typography.Text type="secondary">流水类型</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {t('financeDetail.colFlowType')}
+                  </Typography.Text>
                   <Select
-                    aria-label="流水类型"
+                    aria-label={t('financeDetail.colFlowType')}
                     value={model.state.flowType}
-                    options={FLOW_TYPE_OPTIONS}
+                    options={flowTypeOptions}
                     allowClear
-                    placeholder="全部流水类型"
+                    placeholder={t('financeDetail.allFlowTypes')}
                     onChange={(value) => {
                       model.dispatch({ type: 'flow-type-changed', value })
                     }}
@@ -435,9 +461,14 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
             <Alert
               type="error"
               showIcon
-              title="加载资金流水失败"
-              description={requestErrorMessage(model.error, '请稍后重试')}
-              action={<Button onClick={model.onRefresh}>重试</Button>}
+              title={t('financeDetail.loadFailed')}
+              description={requestErrorMessage(
+                model.error,
+                t('financeDetail.retryLater'),
+              )}
+              action={
+                <Button onClick={model.onRefresh}>{t('common.retry')}</Button>
+              }
             />
           ) : null}
 
@@ -447,7 +478,11 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 size="small"
                 bordered
                 column={4}
-                items={buildSummaryItems(model.summary, model.formatCellValue)}
+                items={buildSummaryItems(
+                  t,
+                  model.summary,
+                  model.formatCellValue,
+                )}
               />
             </section>
           ) : null}
@@ -468,12 +503,12 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 emptyText: model.queryEnabled ? (
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="暂无资金流水"
+                    description={t('financeDetail.empty')}
                   />
                 ) : (
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="请选择结算主体"
+                    description={t('financeDetail.selectSettlementCompany')}
                   />
                 ),
               }}
@@ -482,7 +517,7 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 pageSize: model.pageSize,
                 total: model.total,
                 showSizeChanger: true,
-                showTotal: (count) => `共 ${count} 条`,
+                showTotal: (count) => t('financeDetail.total', { count }),
                 onChange: (nextPage, nextPageSize) => {
                   model.dispatch({
                     type: 'pagination-changed',
@@ -500,6 +535,7 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
 }
 
 export function CashLedgerView() {
+  const { t } = useTranslation()
   const defaultPageSize = useDefaultPageSize()
   const [state, dispatch] = useReducer(
     cashLedgerReducer,
@@ -512,8 +548,8 @@ export function CashLedgerView() {
   const pageSize = state.pageSizeOverride ?? defaultPageSize
   const { formatCellValue } = useModuleDisplaySupport()
   const rawColumns = useMemo(
-    () => buildColumns(formatCellValue),
-    [formatCellValue],
+    () => buildColumns(t, formatCellValue),
+    [t, formatCellValue],
   )
   const {
     columnSizes,
@@ -595,16 +631,20 @@ export function CashLedgerView() {
   })
   const exportMutation = useMutation({
     mutationFn: exportCashLedger,
-    onSuccess: () => message.success('资金流水已导出'),
+    onSuccess: () => message.success(t('financeDetail.exported')),
     onError: (error) =>
-      message.error(requestErrorMessage(error, '导出资金流水失败')),
+      message.error(
+        requestErrorMessage(error, t('financeDetail.exportFailed')),
+      ),
   })
   const visibleData = queryEnabled ? ledgerQuery.data : undefined
 
   const handleRefresh = async () => {
     const result = await ledgerQuery.refetch()
     if (result.isError) {
-      message.error(requestErrorMessage(result.error, '刷新资金流水失败'))
+      message.error(
+        requestErrorMessage(result.error, t('financeDetail.refreshFailed')),
+      )
     }
   }
 

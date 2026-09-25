@@ -8,13 +8,12 @@ import { Button, DatePicker, Input, Segmented, Select, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { FinanceDirection } from '@/api/finance/finance-overview'
 import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
 import {
-  DIRECTION_OPTIONS,
+  buildDirectionOptions,
+  buildPayableCounterpartyOptions,
   type FinanceOverviewDispatch,
   type FinanceOverviewState,
-  PAYABLE_COUNTERPARTY_OPTIONS,
 } from './finance-overview-state'
 
 /** 主筛选行 + 高级筛选行；高级区展开状态为组件内部 UI 状态 */
@@ -33,6 +32,8 @@ export function FinanceOverviewFilters({
 }) {
   const { t } = useTranslation()
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
+  const directionOptions = buildDirectionOptions(t)
+  const payableCounterpartyOptions = buildPayableCounterpartyOptions(t)
 
   const commitKeyword = (value: string): void => {
     const normalized = value.trim()
@@ -50,14 +51,14 @@ export function FinanceOverviewFilters({
     <section className="finance-filter-shell finance-overview-toolbar">
       <div className="finance-filter-primary-row finance-overview-primary-row">
         <Segmented
-          aria-label="财务方向"
+          aria-label={t('financeDetail.direction')}
           value={state.direction}
-          options={DIRECTION_OPTIONS}
+          options={directionOptions}
           onChange={(value) => {
             dispatch({
               type: 'update',
               values: {
-                direction: value as FinanceDirection,
+                direction: value,
                 counterpartyType: undefined,
                 page: 1,
               },
@@ -65,15 +66,17 @@ export function FinanceOverviewFilters({
           }}
         />
         <div className="finance-overview-filter">
-          <Typography.Text type="secondary">结算主体</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('financeDetail.settlementCompany')}
+          </Typography.Text>
           <Select
-            aria-label="结算主体"
+            aria-label={t('financeDetail.settlementCompany')}
             aria-required="true"
             value={settlementCompanyId}
             options={settlementCompanies}
             loading={optionsLoading}
             showSearch={{ optionFilterProp: 'label' }}
-            placeholder="请选择结算主体"
+            placeholder={t('financeDetail.selectSettlementCompany')}
             onChange={(value) => {
               dispatch({
                 type: 'update',
@@ -86,12 +89,14 @@ export function FinanceOverviewFilters({
           />
         </div>
         <div className="finance-overview-filter finance-overview-filter--keyword">
-          <Typography.Text type="secondary">往来方</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('financeDetail.counterparty')}
+          </Typography.Text>
           <Input
-            aria-label="往来方"
+            aria-label={t('financeDetail.counterparty')}
             value={state.keywordInput}
             allowClear
-            placeholder="名称、拼音或编码"
+            placeholder={t('financeDetail.counterpartyPlaceholder')}
             onChange={(event) => {
               const value = event.target.value
               if (!value) {
@@ -105,9 +110,11 @@ export function FinanceOverviewFilters({
           />
         </div>
         <div className="finance-overview-filter finance-overview-filter--date">
-          <Typography.Text type="secondary">截止日期</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('financeDetail.dueDate')}
+          </Typography.Text>
           <DatePicker
-            aria-label="截止日期"
+            aria-label={t('financeDetail.dueDate')}
             value={dayjs(state.asOfDate)}
             allowClear={false}
             format={DISPLAY_DATE_FORMAT}
@@ -125,11 +132,11 @@ export function FinanceOverviewFilters({
           />
         </div>
         <Segmented
-          aria-label="余额范围"
+          aria-label={t('financeDetail.balanceRange')}
           value={state.onlyOpen ? 'open' : 'all'}
           options={[
-            { label: '全部', value: 'all' },
-            { label: '有余额', value: 'open' },
+            { label: t('financeDetail.all'), value: 'all' },
+            { label: t('financeDetail.hasBalance'), value: 'open' },
           ]}
           onChange={(value) => {
             dispatch({
@@ -164,11 +171,13 @@ export function FinanceOverviewFilters({
         >
           {state.direction === 'PAYABLE' ? (
             <div className="finance-overview-filter">
-              <Typography.Text type="secondary">往来类型</Typography.Text>
+              <Typography.Text type="secondary">
+                {t('financeDetail.counterpartyTypeShort')}
+              </Typography.Text>
               <Select
-                aria-label="往来类型"
+                aria-label={t('financeDetail.counterpartyTypeShort')}
                 value={state.counterpartyType || ''}
-                options={PAYABLE_COUNTERPARTY_OPTIONS}
+                options={payableCounterpartyOptions}
                 onChange={(value) => {
                   dispatch({
                     type: 'update',

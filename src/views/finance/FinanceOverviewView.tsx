@@ -130,12 +130,13 @@ export function FinanceOverviewView() {
   const columns = useMemo(
     () =>
       buildBalanceColumns(
+        t,
         state.direction,
         formatAmount,
         setLedgerBalance,
         handleQuickCreate,
       ),
-    [formatAmount, handleQuickCreate, state.direction],
+    [t, formatAmount, handleQuickCreate, state.direction],
   )
   const {
     columnSizes,
@@ -155,6 +156,7 @@ export function FinanceOverviewView() {
     resizableColumns.map((column) => column.width),
   )
   const summaryItems = buildSummaryItems(
+    t,
     state.direction,
     overviewQuery.data?.summary,
   )

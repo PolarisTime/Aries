@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import dayjs from 'dayjs'
+import i18next from 'i18next'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   backfillSteelQuotes,
@@ -223,19 +224,28 @@ export function useMarketSync() {
       )
       const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
-        `同步完成：${result.articleDate} ${synced.join('/')}，${result.rowCount} 行${result.created ? '' : '（已存在）'}`,
+        i18next.t('marketSync.syncDone', {
+          date: result.articleDate,
+          periods: synced.join('/'),
+          rows: result.rowCount,
+          exists: result.created ? '' : i18next.t('marketSync.syncDoneExists'),
+        }),
       )
       const syncedSet = new Set(synced)
       const missing = syncPeriods.filter((p) => !syncedSet.has(p))
       if (missing.length > 0) {
-        message.warning(`当天暂无以下时段行情：${missing.join('/')}`)
+        message.warning(
+          i18next.t('marketSync.syncMissingPeriods', {
+            periods: missing.join('/'),
+          }),
+        )
       }
       await calendarQuery.refetch()
       selectQuote(result.articleDate, result.period)
     } catch (error) {
-      console.error('同步失败', error)
+      console.error(i18next.t('marketSync.syncFailed'), error)
       message.error(
-        `同步失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+        `${i18next.t('marketSync.syncFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
     } finally {
       setSyncing(false)
@@ -247,7 +257,10 @@ export function useMarketSync() {
     try {
       const result = await backfillSteelQuotes(backfillDays, { source, region })
       message.success(
-        `已受理补数：${result.from} ~ ${result.to}（后台执行，完成后自动刷新）`,
+        i18next.t('marketSync.backfillAccepted', {
+          from: result.from,
+          to: result.to,
+        }),
       )
       queryClient.setQueryData<SteelQuoteBackfillStatus>(
         QUERY_KEYS.marketBackfillStatus,
@@ -262,9 +275,9 @@ export function useMarketSync() {
       )
       void backfillStatusQuery.refetch()
     } catch (error) {
-      console.error('补数失败', error)
+      console.error(i18next.t('marketSync.backfillFailed'), error)
       message.error(
-        `补数失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+        `${i18next.t('marketSync.backfillFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
     } finally {
       setBackfilling(false)
@@ -279,14 +292,18 @@ export function useMarketSync() {
       const result = await syncSteelQuotes(date, periods, { source, region })
       const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
-        `已同步 ${result.articleDate} ${synced.join('/')}，${result.rowCount} 行`,
+        i18next.t('marketSync.syncedRows', {
+          date: result.articleDate,
+          periods: synced.join('/'),
+          rows: result.rowCount,
+        }),
       )
       await calendarQuery.refetch()
       selectQuote(result.articleDate, result.period)
     } catch (error) {
-      console.error('同步失败', error)
+      console.error(i18next.t('marketSync.syncFailed'), error)
       message.error(
-        `同步失败：${error instanceof Error ? error.message : '请稍后重试'}`,
+        `${i18next.t('marketSync.syncFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
     } finally {
       setSyncingCell(null)
@@ -331,15 +348,15 @@ export function useMarketSync() {
         if (all.length >= total || rows.length < 200) break
       }
       const header = [
-        '日期',
-        '时段',
-        '品牌/钢厂',
-        '品名',
-        '材质',
-        '规格',
-        '价格(元/吨)',
-        '涨跌',
-        '备注',
+        i18next.t('marketSync.matrixDate'),
+        i18next.t('marketSync.period'),
+        i18next.t('marketSync.columnFactory'),
+        i18next.t('marketSync.columnBreed'),
+        i18next.t('marketSync.columnMaterial'),
+        i18next.t('marketSync.columnSpec'),
+        i18next.t('marketSync.columnPrice'),
+        i18next.t('marketSync.columnChange'),
+        i18next.t('marketSync.columnRemark'),
       ]
       const lines = all.map((row) =>
         [
@@ -361,13 +378,16 @@ export function useMarketSync() {
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `行情明细_${selected.date}_${selected.period}.csv`
+      link.download = i18next.t('marketSync.exportFileName', {
+        date: selected.date,
+        period: selected.period,
+      })
       link.click()
       URL.revokeObjectURL(url)
-      message.success(`已导出 ${all.length} 行`)
+      message.success(i18next.t('marketSync.exported', { rows: all.length }))
     } catch (error) {
-      console.error('导出失败', error)
-      message.error('导出失败，请稍后重试')
+      console.error(i18next.t('marketSync.exportFailed'), error)
+      message.error(i18next.t('marketSync.exportFailed'))
     }
   }
 

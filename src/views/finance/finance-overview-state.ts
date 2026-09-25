@@ -1,20 +1,25 @@
 import dayjs from 'dayjs'
+import type { TFunction } from 'i18next'
 import type {
   FinanceDirection,
   FinanceOverviewSummary,
 } from '@/api/finance/finance-overview'
 import type { EntityId } from '@/types/entity-id'
 
-export const DIRECTION_OPTIONS = [
-  { label: '应收', value: 'RECEIVABLE' },
-  { label: '应付', value: 'PAYABLE' },
-]
+export function buildDirectionOptions(t: TFunction) {
+  return [
+    { label: t('financeDetail.receivable'), value: 'RECEIVABLE' as const },
+    { label: t('financeDetail.payable'), value: 'PAYABLE' as const },
+  ]
+}
 
-export const PAYABLE_COUNTERPARTY_OPTIONS = [
-  { label: '全部往来方', value: '' },
-  { label: '供应商', value: '供应商' },
-  { label: '物流商', value: '物流商' },
-]
+export function buildPayableCounterpartyOptions(t: TFunction) {
+  return [
+    { label: t('financeDetail.allCounterparties'), value: '' },
+    { label: t('financeDetail.counterpartySupplier'), value: '供应商' },
+    { label: t('financeDetail.counterpartyCarrier'), value: '物流商' },
+  ]
+}
 
 export interface FinanceOverviewState {
   settlementCompanyId?: EntityId
@@ -70,21 +75,54 @@ export function requestErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function buildSummaryItems(
+  t: TFunction,
   direction: FinanceDirection,
   summary?: FinanceOverviewSummary,
 ): SummaryItem[] {
   if (direction === 'RECEIVABLE') {
     return [
-      { key: 'recognized', label: '应收', value: summary?.receivableAmount },
-      { key: 'settled', label: '已收', value: summary?.receivedAmount },
-      { key: 'outstanding', label: '未收', value: summary?.unreceivedAmount },
-      { key: 'advance', label: '预收', value: summary?.advanceReceiptAmount },
+      {
+        key: 'recognized',
+        label: t('financeDetail.receivable'),
+        value: summary?.receivableAmount,
+      },
+      {
+        key: 'settled',
+        label: t('financeDetail.received'),
+        value: summary?.receivedAmount,
+      },
+      {
+        key: 'outstanding',
+        label: t('financeDetail.unreceived'),
+        value: summary?.unreceivedAmount,
+      },
+      {
+        key: 'advance',
+        label: t('financeDetail.prepaid'),
+        value: summary?.advanceReceiptAmount,
+      },
     ]
   }
   return [
-    { key: 'recognized', label: '应付', value: summary?.payableAmount },
-    { key: 'settled', label: '已付', value: summary?.paidAmount },
-    { key: 'outstanding', label: '未付', value: summary?.unpaidAmount },
-    { key: 'advance', label: '预付', value: summary?.advancePaymentAmount },
+    {
+      key: 'recognized',
+      label: t('financeDetail.payable'),
+      value: summary?.payableAmount,
+    },
+    {
+      key: 'settled',
+      label: t('financeDetail.paid'),
+      value: summary?.paidAmount,
+    },
+    {
+      key: 'outstanding',
+      label: t('financeDetail.unpaid'),
+      value: summary?.unpaidAmount,
+    },
+    {
+      key: 'advance',
+      label: t('financeDetail.prepayment'),
+      value: summary?.advancePaymentAmount,
+    },
   ]
 }

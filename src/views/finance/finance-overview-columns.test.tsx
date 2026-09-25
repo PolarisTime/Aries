@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import i18next from 'i18next'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,8 +43,9 @@ describe('buildBalanceColumns 渲染冒烟', () => {
 
   it('应收方向列标题与操作文案', () => {
     const columns = buildBalanceColumns(
+      i18next.t,
       'RECEIVABLE',
-      (value) => (value == null ? '--' : String(value)),
+      (value: unknown) => (value == null ? '--' : String(value)),
       vi.fn(),
       vi.fn(),
     )
@@ -78,8 +80,9 @@ describe('buildBalanceColumns 渲染冒烟', () => {
 
   it('应付方向显示去付款', () => {
     const columns = buildBalanceColumns(
+      i18next.t,
       'PAYABLE',
-      (value) => (value == null ? '--' : String(value)),
+      (value: unknown) => (value == null ? '--' : String(value)),
       vi.fn(),
       vi.fn(),
     )
@@ -100,8 +103,9 @@ describe('buildBalanceColumns 渲染冒烟', () => {
 
   it('未收列对正余额附加高亮 class', () => {
     const columns = buildBalanceColumns(
+      i18next.t,
       'RECEIVABLE',
-      (value) => (value == null ? '--' : String(value)),
+      (value: unknown) => (value == null ? '--' : String(value)),
       vi.fn(),
       vi.fn(),
     )
@@ -128,8 +132,9 @@ describe('buildBalanceColumns 渲染冒烟', () => {
     const onLedger = vi.fn()
     const onQuickCreate = vi.fn()
     const columns = buildBalanceColumns(
+      i18next.t,
       'RECEIVABLE',
-      (value) => (value == null ? '--' : String(value)),
+      (value: unknown) => (value == null ? '--' : String(value)),
       onLedger,
       onQuickCreate,
     )

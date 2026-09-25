@@ -19,6 +19,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { Dispatch, SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { SteelQuote } from '@/api/market/steel-quotes'
 import {
   BREEDS,
@@ -58,13 +59,23 @@ export function MarketSyncDetailCard({
   selected: { date: string; period: string }
   sort: QuoteSort
 }) {
+  const { t } = useTranslation()
   const columns: ColumnsType<SteelQuote> = [
-    { title: '品牌/钢厂', dataIndex: 'factory', width: 120, fixed: 'left' },
-    { title: '品名', dataIndex: 'breed', width: 90 },
-    { title: '材质', dataIndex: 'material', width: 100 },
-    { title: '规格', dataIndex: 'spec', width: 90 },
     {
-      title: '价格(元/吨)',
+      title: t('marketSync.columnFactory'),
+      dataIndex: 'factory',
+      width: 120,
+      fixed: 'left',
+    },
+    { title: t('marketSync.columnBreed'), dataIndex: 'breed', width: 90 },
+    {
+      title: t('marketSync.columnMaterial'),
+      dataIndex: 'material',
+      width: 100,
+    },
+    { title: t('marketSync.columnSpec'), dataIndex: 'spec', width: 90 },
+    {
+      title: t('marketSync.columnPrice'),
       dataIndex: 'price',
       width: 120,
       align: 'right',
@@ -83,7 +94,7 @@ export function MarketSyncDetailCard({
         ),
     },
     {
-      title: '涨跌',
+      title: t('marketSync.columnChange'),
       dataIndex: 'changeVal',
       width: 90,
       align: 'right',
@@ -102,7 +113,11 @@ export function MarketSyncDetailCard({
         )
       },
     },
-    { title: '备注', dataIndex: 'remark', ellipsis: true },
+    {
+      title: t('marketSync.columnRemark'),
+      dataIndex: 'remark',
+      ellipsis: true,
+    },
   ]
 
   return (
@@ -110,9 +125,9 @@ export function MarketSyncDetailCard({
       size="small"
       title={
         <Space size={6}>
-          <span>行情明细</span>
+          <span>{t('marketSync.detailTitle')}</span>
           <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
-            {selected.date || '未选择'}
+            {selected.date || t('marketSync.notSelected')}
             {selected.period ? ` · ${selected.period}` : ''}
           </Text>
         </Space>
@@ -122,7 +137,7 @@ export function MarketSyncDetailCard({
         <Select
           size="small"
           style={{ width: 110 }}
-          placeholder="品名"
+          placeholder={t('marketSync.columnBreed')}
           allowClear
           value={form.breed}
           onChange={(value) =>
@@ -133,7 +148,7 @@ export function MarketSyncDetailCard({
         <Input
           size="small"
           style={{ width: 110 }}
-          placeholder="材质"
+          placeholder={t('marketSync.columnMaterial')}
           allowClear
           value={form.material}
           onChange={(event) =>
@@ -144,7 +159,7 @@ export function MarketSyncDetailCard({
         <Input
           size="small"
           style={{ width: 120 }}
-          placeholder="品牌/钢厂"
+          placeholder={t('marketSync.columnFactory')}
           allowClear
           value={form.factory}
           onChange={(event) =>
@@ -155,7 +170,7 @@ export function MarketSyncDetailCard({
         <Input
           size="small"
           style={{ width: 90 }}
-          placeholder="规格"
+          placeholder={t('marketSync.columnSpec')}
           allowClear
           value={form.spec}
           onChange={(event) =>
@@ -166,15 +181,15 @@ export function MarketSyncDetailCard({
         <Select
           size="small"
           style={{ width: 100 }}
-          placeholder="涨跌"
+          placeholder={t('marketSync.columnChange')}
           allowClear
           value={form.change}
           onChange={(value) =>
             onFormChange((prev) => ({ ...prev, change: value }))
           }
           options={[
-            { value: 'up', label: '涨' },
-            { value: 'down', label: '跌' },
+            { value: 'up', label: t('marketSync.up') },
+            { value: 'down', label: t('marketSync.down') },
           ]}
         />
         <Button
@@ -183,10 +198,10 @@ export function MarketSyncDetailCard({
           icon={<SearchOutlined />}
           onClick={onApplyFilters}
         >
-          查询
+          {t('marketSync.search')}
         </Button>
         <Button size="small" icon={<ClearOutlined />} onClick={onResetFilters}>
-          重置
+          {t('marketSync.reset')}
         </Button>
         <Button
           size="small"
@@ -194,10 +209,10 @@ export function MarketSyncDetailCard({
           disabled={!selected.date || !selected.period}
           onClick={onExport}
         >
-          导出
+          {t('marketSync.export')}
         </Button>
         {selected.date && selected.period ? (
-          <Tooltip title="打开报单比价并应用该日期/时段">
+          <Tooltip title={t('marketSync.goCompareHint')}>
             <Button
               size="small"
               icon={<ExportOutlined />}
@@ -208,12 +223,12 @@ export function MarketSyncDetailCard({
                 )
               }
             >
-              去比价
+              {t('marketSync.goCompare')}
             </Button>
           </Tooltip>
         ) : null}
         <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
-          共 {quoteTotal} 条
+          {t('marketSync.total', { total: quoteTotal })}
         </Text>
       </Flex>
       {selected.date && selected.period ? (
@@ -255,7 +270,7 @@ export function MarketSyncDetailCard({
       ) : (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="请选择日期时段"
+          description={t('marketSync.selectPeriodHint')}
         />
       )}
     </Card>

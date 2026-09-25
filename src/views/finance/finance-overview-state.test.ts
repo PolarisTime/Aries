@@ -1,4 +1,6 @@
+import i18next from 'i18next'
 import { describe, expect, it } from 'vitest'
+import '@/i18n'
 import {
   buildSummaryItems,
   createInitialState,
@@ -35,12 +37,12 @@ describe('finance-overview-state 纯逻辑', () => {
   })
 
   it('buildSummaryItems 按方向返回对应统计卡', () => {
-    const receivable = buildSummaryItems('RECEIVABLE', {
+    const receivable = buildSummaryItems(i18next.t, 'RECEIVABLE', {
       receivableAmount: 1,
       receivedAmount: 2,
       unreceivedAmount: 3,
       advanceReceiptAmount: 4,
-    } as Parameters<typeof buildSummaryItems>[1])
+    } as Parameters<typeof buildSummaryItems>[2])
     expect(receivable.map((item) => item.label)).toEqual([
       '应收',
       '已收',
@@ -48,7 +50,7 @@ describe('finance-overview-state 纯逻辑', () => {
       '预收',
     ])
 
-    const payable = buildSummaryItems('PAYABLE')
+    const payable = buildSummaryItems(i18next.t, 'PAYABLE')
     expect(payable.map((item) => item.label)).toEqual([
       '应付',
       '已付',
@@ -58,7 +60,7 @@ describe('finance-overview-state 纯逻辑', () => {
   })
 
   it('buildSummaryItems 无 summary 时值为 undefined', () => {
-    const items = buildSummaryItems('RECEIVABLE')
+    const items = buildSummaryItems(i18next.t, 'RECEIVABLE')
     expect(items.every((item) => item.value === undefined)).toBe(true)
   })
 

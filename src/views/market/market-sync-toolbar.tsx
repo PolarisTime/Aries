@@ -9,6 +9,7 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import { PERIODS } from './market-sync-model'
 
 const { Text } = Typography
@@ -51,18 +52,17 @@ export function MarketSyncToolbar({
   region?: string
   onRegionChange: (region: string | undefined) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="price-compare-head">
       <div>
-        <h1>行情同步</h1>
-        <span className="price-compare-desc">
-          近 30 天覆盖监控；缺时段高亮；点击单元格查看该时段明细
-        </span>
+        <h1>{t('marketSync.title')}</h1>
+        <span className="price-compare-desc">{t('marketSync.desc')}</span>
       </div>
       <Space wrap size={8}>
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            数据源
+            {t('marketSync.dataSource')}
           </Text>
           <Select
             size="small"
@@ -79,7 +79,7 @@ export function MarketSyncToolbar({
               size="small"
               style={{ width: 100 }}
               value={region}
-              placeholder="地区"
+              placeholder={t('marketSync.region')}
               options={QUOTE_REGIONS.map((item) => ({
                 value: item,
                 label: item,
@@ -91,7 +91,7 @@ export function MarketSyncToolbar({
         </Space>
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            单日
+            {t('marketSync.singleDay')}
           </Text>
           <DatePicker
             size="small"
@@ -110,7 +110,7 @@ export function MarketSyncToolbar({
               maxTagCount="responsive"
               style={{ minWidth: 140 }}
               value={syncPeriods}
-              placeholder="全部时段"
+              placeholder={t('marketSync.allPeriods')}
               allowClear
               options={PERIODS.map((period) => ({
                 value: period,
@@ -126,12 +126,12 @@ export function MarketSyncToolbar({
             loading={syncing}
             onClick={onSync}
           >
-            同步
+            {t('marketSync.sync')}
           </Button>
         </Space>
         <Space size={4}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            补数
+            {t('marketSync.backfill')}
           </Text>
           <InputNumber
             size="small"
@@ -142,7 +142,7 @@ export function MarketSyncToolbar({
             onChange={(value) => onBackfillDaysChange(value ?? 30)}
           />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            天
+            {t('marketSync.days')}
           </Text>
           <Button
             size="small"
@@ -150,16 +150,16 @@ export function MarketSyncToolbar({
             loading={backfilling}
             onClick={onBackfill}
           >
-            补数
+            {t('marketSync.backfill')}
           </Button>
-          <Tooltip title="只补最近30天缺失的文章(已入库的会跳过)">
+          <Tooltip title={t('marketSync.backfillMissingHint')}>
             <Button
               size="small"
               icon={<SyncOutlined />}
               loading={backfilling}
               onClick={onBackfill}
             >
-              补缺失
+              {t('marketSync.backfillMissing')}
             </Button>
           </Tooltip>
         </Space>
