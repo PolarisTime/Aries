@@ -35,10 +35,10 @@ export function PriceCompareProjectPicker({
       align="center"
       wrap="wrap"
       justify="space-between"
-      style={{ marginBottom: 8 }}
+      style={{ marginBottom: 'var(--space-xs)' }}
     >
       <Flex gap={8} align="center" wrap="wrap">
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
           {t('priceCompare.picker.project')}
         </Text>
         {projectGroups.map((group) => (
@@ -101,8 +101,13 @@ export function PriceCompareBatchBar({
 }) {
   const { t } = useTranslation()
   return (
-    <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
-      <Text type="secondary" style={{ fontSize: 12 }}>
+    <Flex
+      gap={8}
+      align="center"
+      wrap="wrap"
+      style={{ marginBottom: 'var(--space-xs)' }}
+    >
+      <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
         {t('priceCompare.picker.batch')}
       </Text>
       <Segmented

@@ -122,7 +122,7 @@ function SectionHeader({
       <Flex vertical gap={2}>
         <Text strong>{title}</Text>
         {description ? (
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
             {description}
           </Text>
         ) : null}
@@ -228,7 +228,10 @@ function BrandSection({
           description={t('priceCompare.config.brandsHint')}
           extra={
             <Space size={4}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text
+                type="secondary"
+                style={{ fontSize: 'var(--font-size-xs)' }}
+              >
                 {t('priceCompare.config.selectedCount', {
                   selected: draft.brands.length,
                   total: brandOptions.length,
@@ -253,7 +256,7 @@ function BrandSection({
         />
 
         <Flex vertical gap={8}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
             {t('priceCompare.config.selectedBrands', {
               selected: selectedBrands.length,
             })}
@@ -280,7 +283,10 @@ function BrandSection({
                     </Space>
                     <Flex align="center" gap={16} wrap>
                       <Space size={6} align="center">
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text
+                          type="secondary"
+                          style={{ fontSize: 'var(--font-size-xs)' }}
+                        >
                           {t('priceCompare.config.freight')}
                         </Text>
                         <InputNumber
@@ -301,7 +307,10 @@ function BrandSection({
                         />
                       </Space>
                       <Space size={4} align="center">
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text
+                          type="secondary"
+                          style={{ fontSize: 'var(--font-size-xs)' }}
+                        >
                           {t('priceCompare.config.category')}
                         </Text>
                         {CATEGORIES.map((category) => (
@@ -348,7 +357,7 @@ function BrandSection({
           options={brandOptions.map((name) => ({ value: name, label: name }))}
           onChange={(values) => onChange({ designatedBrands: values })}
         />
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
           {t('priceCompare.config.designatedBrandsHint')}
         </Text>
       </Flex>
@@ -369,7 +378,7 @@ function BrandSection({
         />
         <div className="pc-brand-pool">
           {unselected.length === 0 ? (
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
               {t('priceCompare.config.none')}
             </Text>
           ) : (
@@ -454,7 +463,7 @@ function ProductSection({
         description={t('priceCompare.config.productsHint')}
         extra={
           <Space size={4}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
               {t('priceCompare.config.selectedCount', {
                 selected: draft.products.length,
                 total: allKeys.length,
@@ -479,7 +488,7 @@ function ProductSection({
       />
 
       <Flex gap={8} align="center" wrap>
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
           {t('priceCompare.config.material')}
         </Text>
         <Tag.CheckableTag
@@ -532,7 +541,10 @@ function ProductSection({
                   >
                     {group.category}
                   </Checkbox>
-                  <Text type="secondary" style={{ fontSize: 11 }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 'var(--font-size-xs)' }}
+                  >
                     {selectedCount}/{keys.length}
                   </Text>
                 </Flex>
@@ -632,7 +644,11 @@ export function ProjectConfigModal({
       }}
       onCancel={handleCancel}
       styles={{
-        body: { maxHeight: '64vh', overflowY: 'auto', paddingRight: 8 },
+        body: {
+          maxHeight: '64vh',
+          overflowY: 'auto',
+          paddingRight: 'var(--space-xs)',
+        },
       }}
     >
       <Tabs

@@ -126,14 +126,22 @@ export function MarketSyncDetailCard({
       title={
         <Space size={6}>
           <span>{t('marketSync.detailTitle')}</span>
-          <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+          <Text
+            type="secondary"
+            style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400 }}
+          >
             {selected.date || t('marketSync.notSelected')}
             {selected.period ? ` · ${selected.period}` : ''}
           </Text>
         </Space>
       }
     >
-      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+      <Flex
+        gap={8}
+        align="center"
+        wrap="wrap"
+        style={{ marginBottom: 'var(--space-xs)' }}
+      >
         <Select
           size="small"
           style={{ width: 110 }}
@@ -227,7 +235,10 @@ export function MarketSyncDetailCard({
             </Button>
           </Tooltip>
         ) : null}
-        <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
+        <Text
+          type="secondary"
+          style={{ fontSize: 'var(--font-size-xs)', marginLeft: 'auto' }}
+        >
           {t('marketSync.total', { total: quoteTotal })}
         </Text>
       </Flex>

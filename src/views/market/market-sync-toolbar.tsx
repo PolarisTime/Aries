@@ -61,7 +61,7 @@ export function MarketSyncToolbar({
       </div>
       <Space wrap size={8}>
         <Space size={4}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
             {t('marketSync.dataSource')}
           </Text>
           <Select
@@ -90,7 +90,7 @@ export function MarketSyncToolbar({
           ) : null}
         </Space>
         <Space size={4}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
             {t('marketSync.singleDay')}
           </Text>
           <DatePicker
@@ -130,7 +130,7 @@ export function MarketSyncToolbar({
           </Button>
         </Space>
         <Space size={4}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
             {t('marketSync.backfill')}
           </Text>
           <InputNumber
@@ -141,7 +141,7 @@ export function MarketSyncToolbar({
             value={backfillDays}
             onChange={(value) => onBackfillDaysChange(value ?? 30)}
           />
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
             {t('marketSync.days')}
           </Text>
           <Button

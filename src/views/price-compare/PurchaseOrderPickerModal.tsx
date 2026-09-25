@@ -154,7 +154,7 @@ export function PurchaseOrderPickerModal({
         </div>
       }
       onCancel={onClose}
-      styles={{ body: { paddingTop: 8 } }}
+      styles={{ body: { paddingTop: 'var(--space-xs)' } }}
     >
       <Input
         allowClear
@@ -162,7 +162,7 @@ export function PurchaseOrderPickerModal({
         placeholder={t('priceCompare.sheet.purchaseOrderPickerSearch')}
         value={keyword}
         onChange={(event) => setKeyword(event.currentTarget.value)}
-        style={{ marginBottom: 12 }}
+        style={{ marginBottom: 'var(--space-sm)' }}
       />
       <Table<PurchaseOrderTonnageRecord>
         columns={columns}
@@ -190,7 +190,10 @@ export function PurchaseOrderPickerModal({
           },
         })}
       />
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <Typography.Text
+        type="secondary"
+        style={{ fontSize: 'var(--font-size-xs)' }}
+      >
         {t('priceCompare.sheet.purchaseOrderPickerHint')}
       </Typography.Text>
     </Modal>

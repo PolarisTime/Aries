@@ -22,7 +22,12 @@ export function MarketSyncStatusBar({
   const { t } = useTranslation()
   return (
     <>
-      <Flex gap={8} align="center" wrap="wrap" style={{ marginBottom: 8 }}>
+      <Flex
+        gap={8}
+        align="center"
+        wrap="wrap"
+        style={{ marginBottom: 'var(--space-xs)' }}
+      >
         <Tag color={stats.missingSlots > 0 ? 'orange' : 'green'}>
           {t('marketSync.coverage', {
             covered: stats.covered,
@@ -72,7 +77,7 @@ export function MarketSyncStatusBar({
                   100,
               )}
             />
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
               {t('marketSync.backfillProgress', {
                 done: backfillStatus.syncedDays + backfillStatus.failedDays,
                 total: backfillTotalWeekdays,
@@ -83,8 +88,8 @@ export function MarketSyncStatusBar({
       </Flex>
 
       {backfillStatus && backfillStatus.failures?.length ? (
-        <Flex gap={6} wrap="wrap" style={{ marginBottom: 8 }}>
-          <Text type="danger" style={{ fontSize: 12 }}>
+        <Flex gap={6} wrap="wrap" style={{ marginBottom: 'var(--space-xs)' }}>
+          <Text type="danger" style={{ fontSize: 'var(--font-size-xs)' }}>
             {t('marketSync.backfillFailures', {
               count: backfillStatus.failures.length,
             })}
