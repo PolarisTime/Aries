@@ -583,6 +583,8 @@ export function useSheetsStore(options?: {
   const settleConflictRef = useRef<(key: string) => void>(() => {})
   /** 服务端快照基线: 本地单据 id -> 表头/行指纹, 用于行级差异保存。 */
   const baselineRef = useRef<Map<string, SheetBaseline>>(new Map())
+  /** "持久未保存挡住刷新"提示是否已弹过(避免每 30s 轮询重复弹); 刷新成功后可再次提示。 */
+  const stuckNoticeShownRef = useRef(false)
   const [editLock, setEditLock] = useState<EditLockView | null>(null)
   /** 已签出批次的服务端 id 与续约定时器(键统一用映射后的 serverId)。 */
   const heldLockRef = useRef<{ sheetId: string; timer: number } | null>(null)
@@ -1292,29 +1294,43 @@ export function useSheetsStore(options?: {
     await Promise.allSettled(tasks)
   }, [])
 
-  /** 拉取服务端单据覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
-  const refreshSheets = useCallback(async (): Promise<boolean> => {
-    const hasPendingSheetSave = () =>
-      // 配置未加载被跳过、保存失败/行不完整被跳过的编辑同样属于"有未保存改动", 刷新不得覆盖
-      configBlockedSaveRef.current.size > 0 ||
-      dirtySheetsRef.current.size > 0 ||
+  /**
+   * 拉取服务端单据覆盖本地。
+   * <p>返回 `applied` 已应用; `skipped` 因瞬时状态(防抖计时器/请求在途/await 期间有新编辑)
+   * 跳过, 稍后会自动保存完成, 不应提示; `stuck` 因持久未保存(保存失败/配置未加载)跳过,
+   * 本地改动会一直挡住刷新, 需提示用户先保存。</p>
+   */
+  const refreshSheets = useCallback(async (): Promise<
+    'applied' | 'skipped' | 'stuck'
+  > => {
+    // 瞬时未保存: 防抖计时器或保存请求在途, 很快会自动落库, 不据此提示。
+    const hasTransientPendingSave = () =>
       sheetTimersRef.current.size > 0 ||
       [...inflightRef.current, ...pendingRef.current].some((key) =>
         key.startsWith('sheet:'),
       )
-    if (hasPendingSheetSave()) return false
+    // 持久未保存: 保存失败或配置未加载被跳过, 会一直挡住刷新, 需提示。
+    const hasStuckPendingSave = () =>
+      configBlockedSaveRef.current.size > 0 || dirtySheetsRef.current.size > 0
+    const pendingStatus = (): 'skipped' | 'stuck' =>
+      hasStuckPendingSave() ? 'stuck' : 'skipped'
+    if (hasTransientPendingSave() || hasStuckPendingSave()) {
+      return pendingStatus()
+    }
     if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
-      return false
+      return 'skipped'
     }
     const revision = dataRevisionRef.current
     const records = await fetchQuoteSheets()
     // await 期间出现新编辑或新保存/冲突: 放弃本次刷新, 避免覆盖本地改动
-    if (dataRevisionRef.current !== revision) return false
-    if (hasPendingSheetSave()) return false
-    if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
-      return false
+    if (dataRevisionRef.current !== revision) return 'skipped'
+    if (hasTransientPendingSave() || hasStuckPendingSave()) {
+      return pendingStatus()
     }
-    if (!records.length) return true
+    if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
+      return 'skipped'
+    }
+    if (!records.length) return 'applied'
     const serverSheets = records.map(toPriceSheet)
     const serverIds = new Set(serverSheets.map((sheet) => sheet.id))
     // 保留已有"本地 id -> 服务端 id"映射(含服务端列表暂未反映的新建单据),
@@ -1367,7 +1383,7 @@ export function useSheetsStore(options?: {
       return !serverId || !serverIds.has(serverId)
     })
     const next = [...mergedServerSheets, ...localOnly]
-    if (!next.length) return true
+    if (!next.length) return 'applied'
     // 本地 id 可能已被服务端 id 取代: 反查映射后再判断存在性, 避免列表重建时 activeId 回跳
     const activeServerId =
       serverIdRef.current.get(current.activeId) ?? current.activeId
@@ -1378,7 +1394,7 @@ export function useSheetsStore(options?: {
         ? activeServerId
         : next[0].id,
     }))
-    return true
+    return 'applied'
   }, [mutate])
 
   /** 拉取服务端项目配置覆盖本地; 有未保存改动或未决冲突时跳过(返回 false)。 */
@@ -1423,7 +1439,11 @@ export function useSheetsStore(options?: {
     [flushBlockedSaves, mutate],
   )
 
-  /** 聚焦/轮询/跨标签共用的刷新入口: 有未保存改动时轻提示。 */
+  /**
+   * 聚焦/轮询/跨标签共用的刷新入口。
+   * <p>仅在"持久未保存(保存失败/配置未加载)挡住刷新"时提示一次(同一阻塞不重复弹);
+   * 瞬时未保存(防抖/请求在途)与冲突态静默跳过, 避免误报"服务器有更新"。</p>
+   */
   const refreshFromServer = useCallback(async () => {
     if (!token || !hydratedRef.current) return
     try {
@@ -1441,9 +1461,13 @@ export function useSheetsStore(options?: {
         stateRef.current.sheets.find(
           (sheet) => sheet.id === stateRef.current.activeId,
         )?.projectId ?? ''
-      const configFresh = projectId ? await refreshConfig(projectId) : true
-      const sheetsFresh = await refreshSheets()
-      if (!configFresh || !sheetsFresh) {
+      if (projectId) await refreshConfig(projectId)
+      const sheetsStatus = await refreshSheets()
+      if (sheetsStatus === 'applied') {
+        stuckNoticeShownRef.current = false
+      } else if (sheetsStatus === 'stuck' && !stuckNoticeShownRef.current) {
+        // 保存失败/配置未加载会一直挡住刷新, 每轮都弹很吵: 同一阻塞只提示一次。
+        stuckNoticeShownRef.current = true
         message.info({ content: STALE_NOTICE_TEXT, key: STALE_NOTICE_KEY })
       }
     } catch (error) {

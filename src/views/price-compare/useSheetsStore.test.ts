@@ -747,7 +747,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.fetchQuoteSheets).toHaveBeenCalledTimes(1)
   })
 
-  it('聚焦时存在未保存改动仅提示不覆盖本地', async () => {
+  it('防抖窗口内聚焦(瞬时未保存)静默跳过, 不误报服务器更新', async () => {
     const store = renderStore()
     await hydrate(store)
     act(() => {
@@ -761,8 +761,30 @@ describe('useSheetsStore 服务端数据源', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
 
+    // 保存仍在防抖中, 服务器未变: 不刷新也不提示
     expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
-    expect(vi.mocked(message.info)).toHaveBeenCalled()
+    expect(vi.mocked(message.info)).not.toHaveBeenCalled()
+  })
+
+  it('保存失败(持久未保存)挡住刷新时只提示一次', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 500 })
+    const store = renderStore()
+    await hydrate(store)
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    vi.mocked(message.info).mockClear()
+
+    // 连续三轮轮询: 保存一直失败, 服务器未变, 仅首次提示
+    for (let i = 0; i < 3; i += 1) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(31_000)
+      })
+    }
+    expect(vi.mocked(message.info)).toHaveBeenCalledTimes(1)
   })
 
   it('签出成功标记为我正在编辑且可编辑', async () => {
