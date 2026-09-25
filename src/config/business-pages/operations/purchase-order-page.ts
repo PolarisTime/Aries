@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getSettlementCompanyOptions,
   getSupplierOptions,
@@ -106,7 +107,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'segmented',
-      options: buildDocumentStatusOptions('草稿', '已审核', '完成采购'),
+      options: buildDocumentStatusOptions(
+        DOCUMENT_STATUS.DRAFT,
+        DOCUMENT_STATUS.AUDITED,
+        DOCUMENT_STATUS.PURCHASE_COMPLETED,
+      ),
     },
     {
       key: 'settlementCompanyId',
@@ -297,5 +302,5 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildPurchaseOrderOverview,
   statusMap: purchaseOrderStatusMap,
-  rowHighlightStatuses: ['草稿'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
 }

@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
@@ -320,5 +321,5 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildSalesOutboundOverview,
   statusMap,
-  rowHighlightStatuses: ['草稿'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
 }

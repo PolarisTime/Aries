@@ -24,6 +24,7 @@ export const DOCUMENT_STATUS = {
   AUDITED: '已审核',
   PENDING_APPROVAL: '待核准',
   APPROVED: '已核准',
+  UNAPPROVED: '未核准',
   DELIVERY_VERIFICATION: '交付核定',
   PENDING_CONFIRM: '待确认',
   CONFIRMED: '已确认',

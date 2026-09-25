@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
@@ -187,7 +188,7 @@ export const customersPageConfig: ModulePageConfig = {
       key: 'status',
       label: i18next.t('modules.columns.status'),
       type: 'select',
-      defaultValue: '正常',
+      defaultValue: STATUS.NORMAL,
       options: enabledStatusOptions,
       row: 3,
     },
@@ -202,7 +203,7 @@ export const customersPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildMasterOverview,
   statusMap,
-  rowHighlightStatuses: ['禁用'],
+  rowHighlightStatuses: [STATUS.DISABLED],
   saveFields: {
     scalar: [
       'customerCode',

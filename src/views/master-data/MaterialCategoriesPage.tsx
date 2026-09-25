@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
 import type { MasterDataPageSpec } from './master-data-types'
@@ -135,7 +136,7 @@ export function MaterialCategoriesPage() {
           label: t('modules.pages.materialCategories.status'),
           type: 'select',
           required: true,
-          defaultValue: '正常',
+          defaultValue: STATUS.NORMAL,
           options: enabledStatusOptions,
         },
         {
@@ -145,13 +146,13 @@ export function MaterialCategoriesPage() {
           fullRow: true,
         },
       ],
-      rowHighlightStatuses: ['禁用'],
+      rowHighlightStatuses: [STATUS.DISABLED],
       buildValues: (record) => ({
         categoryCode: asString(record?.categoryCode),
         categoryName: asString(record?.categoryName),
         sortOrder: Number(record?.sortOrder ?? 0),
         purchaseWeighRequired: record?.purchaseWeighRequired === true,
-        status: asString(record?.status) || '正常',
+        status: asString(record?.status) || STATUS.NORMAL,
         remark: asString(record?.remark),
       }),
       buildRecord: (values, base) => ({

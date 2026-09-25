@@ -3,7 +3,9 @@
  * 全部收敛到这里，消费方只查表，不再书写 `moduleKey === 'xxx'` 字面量比较。
  * 键为 ModuleKey，值通过 `satisfies Partial<Record<ModuleKey, ...>>` 保证类型安全。
  */
+
 import { completeSalesOrder } from '@/api/sales/document-flow-commands'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { isModuleKey } from '@/module-system/core/module-key'
 import type { RuntimeFeatureConfig } from '@/types/runtime-config'
@@ -49,7 +51,7 @@ export interface ModulePageBehavior {
 const MODULE_PAGE_BEHAVIORS = {
   'sales-order': {
     deliveryVerification: {
-      sourceStatus: '交付核定',
+      sourceStatus: DOCUMENT_STATUS.DELIVERY_VERIFICATION,
       targetStatus: '完成销售',
     },
     confirmsZeroPriceItems: true,

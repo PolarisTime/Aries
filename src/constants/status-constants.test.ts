@@ -38,6 +38,8 @@ describe('DOCUMENT_STATUS 单据状态', () => {
     expect(DOCUMENT_STATUS.SIGNED).toBe('已签署')
     expect(DOCUMENT_STATUS.UNSIGNED).toBe('未签署')
     expect(DOCUMENT_STATUS.EXECUTING).toBe('执行中')
+    expect(DOCUMENT_STATUS.APPROVED).toBe('已核准')
+    expect(DOCUMENT_STATUS.UNAPPROVED).toBe('未核准')
     expect(DOCUMENT_STATUS.ARCHIVED).toBe('已归档')
     expect(DOCUMENT_STATUS.NORMAL).toBe('正常')
     expect(DOCUMENT_STATUS.DISABLED).toBe('禁用')

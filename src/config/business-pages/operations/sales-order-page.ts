@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import { createElement } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
@@ -168,8 +169,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: BILL_STATUS_LABEL,
       type: 'segmented',
       options: buildDocumentStatusOptions(
-        '草稿',
-        '已审核',
+        DOCUMENT_STATUS.DRAFT,
+        DOCUMENT_STATUS.AUDITED,
         '交付核定',
         '完成销售',
       ),
@@ -443,5 +444,5 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildSalesOrderOverview,
   statusMap: salesOrderStatusMap,
-  rowHighlightStatuses: ['草稿'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
 }

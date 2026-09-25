@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCarrierVehiclePlateOptions,
   getSettlementCompanyOptions,
@@ -100,12 +101,12 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'segmented',
         options: withDeletedDocumentStatus([
           {
-            label: '草稿',
-            value: '草稿',
+            label: i18next.t('modules.status.draft'),
+            value: DOCUMENT_STATUS.DRAFT,
           },
           {
             label: i18next.t('modules.pages.freightOperations.audited'),
-            value: '已审核',
+            value: DOCUMENT_STATUS.AUDITED,
           },
         ]),
       },
@@ -367,6 +368,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     data: [],
     buildOverview: buildFreightBillOverview,
     statusMap,
-    rowHighlightStatuses: ['草稿'],
+    rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
   },
 }

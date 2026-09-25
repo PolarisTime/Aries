@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
 import type { MasterDataPageSpec } from './master-data-types'
@@ -176,7 +177,7 @@ export function WarehousePage() {
           key: 'status',
           label: t('modules.pages.masterWarehouse.status'),
           type: 'select',
-          defaultValue: '正常',
+          defaultValue: STATUS.NORMAL,
           options: enabledStatusOptions,
         },
         {
@@ -186,7 +187,7 @@ export function WarehousePage() {
           fullRow: true,
         },
       ],
-      rowHighlightStatuses: ['禁用'],
+      rowHighlightStatuses: [STATUS.DISABLED],
       buildValues: (record) => ({
         warehouseCode: asString(record?.warehouseCode),
         warehouseName: asString(record?.warehouseName),
@@ -195,7 +196,7 @@ export function WarehousePage() {
         contactName: asString(record?.contactName),
         contactPhone: asString(record?.contactPhone),
         address: asString(record?.address),
-        status: asString(record?.status) || '正常',
+        status: asString(record?.status) || STATUS.NORMAL,
         remark: asString(record?.remark),
       }),
       buildRecord: (values, base) => ({

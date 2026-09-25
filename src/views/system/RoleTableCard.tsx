@@ -20,6 +20,7 @@ import {
 } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
+import { STATUS } from '@/constants/status-constants'
 import { useHasPermission } from '@/hooks/usePermission'
 import type { RoleResponse } from '@/shared/schemas'
 import { canDeleteRole } from '@/views/system/role-permission-utils'
@@ -177,7 +178,7 @@ export function RoleTableCard({
                 disabled={record.builtin}
                 onClick={() => onToggleStatus(record)}
               >
-                {record.status === '正常'
+                {record.status === STATUS.NORMAL
                   ? t('system.role.disable')
                   : t('system.role.enable')}
               </Button>
@@ -231,8 +232,11 @@ export function RoleTableCard({
             className="w-160"
             placeholder={t('system.role.statusFilter')}
             options={[
-              { value: '正常', label: t('system.role.statusNormal') },
-              { value: '禁用', label: t('system.role.statusDisabled') },
+              { value: STATUS.NORMAL, label: t('system.role.statusNormal') },
+              {
+                value: STATUS.DISABLED,
+                label: t('system.role.statusDisabled'),
+              },
             ]}
             onChange={(value) => onStatusChange(value)}
           />

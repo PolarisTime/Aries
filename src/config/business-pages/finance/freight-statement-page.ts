@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
 import { getCarrierEntityOptions } from '@/queries/master/carrier-options'
 import type {
@@ -99,12 +100,12 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: withDeletedDocumentStatus([
         {
-          label: '草稿',
-          value: '草稿',
+          label: i18next.t('modules.status.draft'),
+          value: DOCUMENT_STATUS.DRAFT,
         },
         {
           label: i18next.t('modules.pages.freightStatement.audited'),
-          value: '已审核',
+          value: DOCUMENT_STATUS.AUDITED,
         },
       ]),
     },
@@ -336,16 +337,16 @@ export const freightStatementPageConfig: ModulePageConfig = {
       key: 'status',
       label: i18next.t('modules.pages.freightStatement.auditStatus'),
       type: 'select',
-      defaultValue: '草稿',
+      defaultValue: DOCUMENT_STATUS.DRAFT,
       disabled: true,
       options: [
         {
-          label: '草稿',
-          value: '草稿',
+          label: i18next.t('modules.status.draft'),
+          value: DOCUMENT_STATUS.DRAFT,
         },
         {
           label: i18next.t('modules.pages.freightStatement.audited'),
-          value: '已审核',
+          value: DOCUMENT_STATUS.AUDITED,
         },
       ],
       row: 2,
@@ -395,5 +396,5 @@ export const freightStatementPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildFreightStatementOverview,
   statusMap,
-  rowHighlightStatuses: ['草稿'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
 }

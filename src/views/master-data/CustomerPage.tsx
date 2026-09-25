@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STATUS } from '@/constants/status-constants'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
 import type { MasterDataPageSpec } from './master-data-types'
@@ -193,7 +194,7 @@ export function CustomerPage() {
           key: 'status',
           label: t('modules.columns.status'),
           type: 'select',
-          defaultValue: '正常',
+          defaultValue: STATUS.NORMAL,
           options: enabledStatusOptions,
         },
         {
@@ -203,7 +204,7 @@ export function CustomerPage() {
           fullRow: true,
         },
       ],
-      rowHighlightStatuses: ['禁用'],
+      rowHighlightStatuses: [STATUS.DISABLED],
       buildValues: (record) => ({
         customerCode: asString(record?.customerCode),
         customerName: asString(record?.customerName),
@@ -214,7 +215,7 @@ export function CustomerPage() {
         defaultSettlementCompanyId: asString(
           record?.defaultSettlementCompanyId,
         ),
-        status: asString(record?.status) || '正常',
+        status: asString(record?.status) || STATUS.NORMAL,
         remark: asString(record?.remark),
       }),
       buildRecord: (values, base) => ({

@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import {
   getCustomerOptions,
   getSettlementCompanyOptions,
@@ -184,7 +185,7 @@ const projectPageConfig: ModulePageConfig = {
       key: 'status',
       label: i18next.t('modules.columns.status'),
       type: 'select',
-      defaultValue: '正常',
+      defaultValue: STATUS.NORMAL,
       options: enabledStatusOptions,
       row: 2,
     },
@@ -199,7 +200,7 @@ const projectPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildMasterOverview,
   statusMap,
-  rowHighlightStatuses: ['禁用'],
+  rowHighlightStatuses: [STATUS.DISABLED],
   saveFields: {
     scalar: [
       'projectCode',

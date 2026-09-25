@@ -1,11 +1,15 @@
 import i18next from 'i18next'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getSettlementAccountOptions,
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
-import { BILL_STATUS_LABEL } from '../shared/filter-labels'
+import {
+  AUDITED_STATUS_LABEL,
+  BILL_STATUS_LABEL,
+} from '../shared/filter-labels'
 import { statusMap } from '../shared/shared'
 import {
   buildPaymentOverview,
@@ -40,8 +44,11 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: BILL_STATUS_LABEL,
       type: 'select',
       options: withDeletedDocumentStatus([
-        { label: i18next.t('modules.pages.payment.draft'), value: '草稿' },
-        { label: '已审核', value: '已审核' },
+        {
+          label: i18next.t('modules.pages.payment.draft'),
+          value: DOCUMENT_STATUS.DRAFT,
+        },
+        { label: AUDITED_STATUS_LABEL, value: DOCUMENT_STATUS.AUDITED },
       ]),
     },
     {
@@ -265,11 +272,14 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.payment.status'),
       type: 'select',
       disabled: true,
-      defaultValue: '草稿',
+      defaultValue: DOCUMENT_STATUS.DRAFT,
       visibleWhen: () => false,
       options: [
-        { label: i18next.t('modules.pages.payment.draft'), value: '草稿' },
-        { label: '已审核', value: '已审核' },
+        {
+          label: i18next.t('modules.pages.payment.draft'),
+          value: DOCUMENT_STATUS.DRAFT,
+        },
+        { label: AUDITED_STATUS_LABEL, value: DOCUMENT_STATUS.AUDITED },
       ],
       row: 2,
     },
@@ -317,5 +327,5 @@ export const paymentsPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildPaymentOverview,
   statusMap,
-  rowHighlightStatuses: ['草稿'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
 }

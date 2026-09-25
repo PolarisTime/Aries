@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCustomerProjectOptions,
   getSettlementAccountOptions,
@@ -38,10 +39,13 @@ export const receiptsPageConfig: ModulePageConfig = {
       label: BILL_STATUS_LABEL,
       type: 'select',
       options: withDeletedDocumentStatus([
-        { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
+        {
+          label: i18next.t('modules.pages.receipt.draft'),
+          value: DOCUMENT_STATUS.DRAFT,
+        },
         {
           label: i18next.t('modules.filter.auditStatus'),
-          value: '已审核',
+          value: DOCUMENT_STATUS.AUDITED,
         },
       ]),
     },
@@ -278,13 +282,16 @@ export const receiptsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.receipt.status'),
       type: 'select',
       disabled: true,
-      defaultValue: '草稿',
+      defaultValue: DOCUMENT_STATUS.DRAFT,
       visibleWhen: () => false,
       options: [
-        { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
+        {
+          label: i18next.t('modules.pages.receipt.draft'),
+          value: DOCUMENT_STATUS.DRAFT,
+        },
         {
           label: i18next.t('modules.filter.auditStatus'),
-          value: '已审核',
+          value: DOCUMENT_STATUS.AUDITED,
         },
       ],
       row: 2,
@@ -346,5 +353,5 @@ export const receiptsPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildReceiptOverview,
   statusMap,
-  rowHighlightStatuses: ['草稿'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.DRAFT],
 }

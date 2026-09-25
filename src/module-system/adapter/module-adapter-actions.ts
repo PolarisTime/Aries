@@ -1,3 +1,4 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import type {
   ModuleFilterDefinition,
@@ -87,13 +88,19 @@ export function resolveStatusChangeActionKind(
   reverse = false,
 ): StatusChangeActionKind {
   const normalizedTarget = String(targetValue ?? '').trim()
-  if (normalizedTarget === '已确认' || normalizedTarget === '待确认') {
+  if (
+    normalizedTarget === DOCUMENT_STATUS.CONFIRMED ||
+    normalizedTarget === DOCUMENT_STATUS.PENDING_CONFIRM
+  ) {
     return reverse ? 'reverseConfirm' : 'confirm'
   }
-  if (normalizedTarget === '已核准' || normalizedTarget === '未核准') {
+  if (
+    normalizedTarget === DOCUMENT_STATUS.APPROVED ||
+    normalizedTarget === DOCUMENT_STATUS.UNAPPROVED
+  ) {
     return reverse ? 'reverseApprove' : 'approve'
   }
-  if (reverse && normalizedTarget === '交付核定') {
+  if (reverse && normalizedTarget === DOCUMENT_STATUS.DELIVERY_VERIFICATION) {
     return 'reopenDeliveryVerification'
   }
   return reverse ? 'reverseAudit' : 'audit'
@@ -132,13 +139,13 @@ export function buildEditorAuditTarget(
     return { key: 'status', value: auditStatus }
   }
 
-  if (statusOptions.includes('已审核')) {
-    if (normalizedCurrentStatus === '已审核') return null
-    return { key: 'status', value: '已审核' }
+  if (statusOptions.includes(DOCUMENT_STATUS.AUDITED)) {
+    if (normalizedCurrentStatus === DOCUMENT_STATUS.AUDITED) return null
+    return { key: 'status', value: DOCUMENT_STATUS.AUDITED }
   }
-  if (statusOptions.includes('已核准')) {
-    if (normalizedCurrentStatus === '已核准') return null
-    return { key: 'status', value: '已核准' }
+  if (statusOptions.includes(DOCUMENT_STATUS.APPROVED)) {
+    if (normalizedCurrentStatus === DOCUMENT_STATUS.APPROVED) return null
+    return { key: 'status', value: DOCUMENT_STATUS.APPROVED }
   }
 
   return null
@@ -166,7 +173,13 @@ function buildReverseAuditTarget(
     return { key: 'status', value: defaultStatus }
   }
 
-  const fallbackStatuses = ['草稿', '未审核', '待审核', '待确认', '未核准']
+  const fallbackStatuses = [
+    DOCUMENT_STATUS.DRAFT,
+    DOCUMENT_STATUS.UNAUDITED,
+    DOCUMENT_STATUS.PENDING_AUDIT,
+    DOCUMENT_STATUS.PENDING_CONFIRM,
+    DOCUMENT_STATUS.UNAPPROVED,
+  ]
   const fallback = fallbackStatuses.find((status) =>
     statusOptions.includes(status),
   )

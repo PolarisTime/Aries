@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
@@ -170,7 +171,7 @@ export function buildSupplierSpec(
         key: 'status',
         label: t('modules.columns.status'),
         type: 'select',
-        defaultValue: '正常',
+        defaultValue: STATUS.NORMAL,
         options: enabledStatusOptions,
       },
       {
@@ -180,7 +181,7 @@ export function buildSupplierSpec(
         fullRow: true,
       },
     ],
-    rowHighlightStatuses: ['禁用'],
+    rowHighlightStatuses: [STATUS.DISABLED],
     buildValues: (record) => ({
       supplierCode: asString(record?.supplierCode),
       supplierName: asString(record?.supplierName),
@@ -189,7 +190,7 @@ export function buildSupplierSpec(
       contactName: asString(record?.contactName),
       contactPhone: asString(record?.contactPhone),
       city: asString(record?.city),
-      status: asString(record?.status) || '正常',
+      status: asString(record?.status) || STATUS.NORMAL,
       remark: asString(record?.remark),
     }),
     buildRecord: (values, base) => ({

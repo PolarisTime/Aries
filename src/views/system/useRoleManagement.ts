@@ -15,6 +15,7 @@ import {
   updateRoleStatus,
 } from '@/api/system/roles'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STATUS } from '@/constants/status-constants'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useRequestError } from '@/hooks/useRequestError'
 import type { RoleCreatePayload, RoleResponse } from '@/shared/schemas'
@@ -135,10 +136,11 @@ export function useRoleManagement() {
   }
 
   const toggleStatus = (role: RoleResponse) => {
-    const nextStatus = role.status === '正常' ? '禁用' : '正常'
+    const nextStatus =
+      role.status === STATUS.NORMAL ? STATUS.DISABLED : STATUS.NORMAL
     modal.confirm({
       title:
-        nextStatus === '禁用'
+        nextStatus === STATUS.DISABLED
           ? t('system.role.disableConfirmTitle')
           : t('system.role.enableConfirmTitle'),
       content: t('system.role.statusConfirmContent', { name: role.name }),

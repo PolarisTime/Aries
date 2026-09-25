@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-behavior-registry-core'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { findProjectOption } from '@/module-system/core/module-option-resolvers'
@@ -213,10 +214,13 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     lineItemLockSourceModule: 'sales-outbound',
     lineItemLockSourceField: 'salesOrderNo',
     lineItemLockTargetField: 'orderNo',
-    lineItemLockStatuses: ['已审核', '交付核定'],
+    lineItemLockStatuses: [
+      DOCUMENT_STATUS.AUDITED,
+      DOCUMENT_STATUS.DELIVERY_VERIFICATION,
+    ],
     lockedLineItemsNotice:
       '关联销售出库已审核，当前仅允许调整送货日期、备注和单价。',
-    partiallyEditableStatuses: ['交付核定'],
+    partiallyEditableStatuses: [DOCUMENT_STATUS.DELIVERY_VERIFICATION],
   })
 
   registerModuleBehavior('purchase-order', {

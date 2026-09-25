@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
@@ -139,7 +140,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.materialCategories.status'),
       type: 'select',
       required: true,
-      defaultValue: '正常',
+      defaultValue: STATUS.NORMAL,
       options: enabledStatusOptions,
       row: 3,
     },
@@ -153,6 +154,6 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
   ],
   data: [],
   statusMap,
-  rowHighlightStatuses: ['禁用'],
+  rowHighlightStatuses: [STATUS.DISABLED],
   buildOverview: buildMaterialCategoryOverview,
 }
