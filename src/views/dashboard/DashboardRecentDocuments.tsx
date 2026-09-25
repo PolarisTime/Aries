@@ -8,6 +8,7 @@ import {
   fetchDashboardRecentDocuments,
 } from '@/api/system/dashboard-recent'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatAmount, formatDate } from '@/utils/formatters'
 
@@ -21,14 +22,14 @@ const RECENT_TITLE_KEYS: Record<DashboardRecentTab, string> = {
 
 /** 状态 → 徽标色调：处理类橙色、完结类绿色、其余蓝色 */
 function statusBadgeClass(status: string): string {
-  if (status.includes('待') || status.includes('草稿')) {
+  if (status.includes('待') || status.includes(DOCUMENT_STATUS.DRAFT)) {
     return 'dashboard-recent-badge is-pending'
   }
   if (
     status.includes('完成') ||
-    status.includes('已确认') ||
+    status.includes(DOCUMENT_STATUS.CONFIRMED) ||
     status.includes('已入库') ||
-    status.includes('已审核')
+    status.includes(DOCUMENT_STATUS.AUDITED)
   ) {
     return 'dashboard-recent-badge is-done'
   }

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { STATUS } from '@/constants/status-constants'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
@@ -279,7 +280,7 @@ export function ProjectEditorOverlay({
             <Form.Item
               name="status"
               label={t('modules.columns.status')}
-              initialValue="正常"
+              initialValue={STATUS.NORMAL}
             >
               <Select options={enabledStatusOptions} />
             </Form.Item>

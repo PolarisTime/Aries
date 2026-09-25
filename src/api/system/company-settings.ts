@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { STATUS } from '@/constants/status-constants'
 import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import { asId, asString } from '@/utils/type-narrowing'
 
@@ -103,11 +104,11 @@ function normalizeProfile(
           bankName: asString(item.bankName),
           bankAccount: asString(item.bankAccount),
           usageType: asString(item.usageType) || '通用',
-          status: asString(item.status) || '正常',
+          status: asString(item.status) || STATUS.NORMAL,
           remark: asString(item.remark),
         }))
       : [],
-    status: asString(raw.status) || '正常',
+    status: asString(raw.status) || STATUS.NORMAL,
     remark: asString(raw.remark),
   }
 }

@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { STATUS } from '@/constants/status-constants'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
@@ -74,7 +75,7 @@ export function CarrierTableSection({
       {
         label: t('modules.overview.normalCount'),
         value: String(
-          rows.filter((row) => asString(row.status) === '正常').length,
+          rows.filter((row) => asString(row.status) === STATUS.NORMAL).length,
         ),
       },
     ]
@@ -199,7 +200,9 @@ export function CarrierTableSection({
             onChange: onSelectionChange,
           }}
           rowClassName={(record) =>
-            asString(record.status) === '禁用' ? 'table-row-emphasis' : ''
+            asString(record.status) === STATUS.DISABLED
+              ? 'table-row-emphasis'
+              : ''
           }
           expandable={{
             expandedRowKeys,

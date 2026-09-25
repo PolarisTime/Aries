@@ -1,3 +1,4 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -10,7 +11,7 @@ export type ParentSelectorColumn = {
   dataIndex: string
 }
 
-const AUDITED_STATUS = '已审核'
+const AUDITED_STATUS = DOCUMENT_STATUS.AUDITED
 
 export function compactParentSelectorFilters(filters: SearchParams) {
   return Object.fromEntries(

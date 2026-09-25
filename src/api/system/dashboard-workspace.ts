@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { fetchModulePage } from '@/api/business/business-listing-fetch'
 import { fetchCustomerStatementSummary } from '@/api/finance/customer-statement-summary'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   responseDateTimeSchema,
   responseEntityIdSchema,
@@ -73,23 +74,37 @@ export async function fetchDashboardWorkspace(): Promise<DashboardWorkspace> {
     await Promise.all([
       fetchModulePage(
         'purchase-order',
-        { status: '草稿', sortBy: 'orderDate', direction: 'desc' },
+        {
+          status: DOCUMENT_STATUS.DRAFT,
+          sortBy: 'orderDate',
+          direction: 'desc',
+        },
         0,
         DASHBOARD_PAGE_SIZE,
       ),
       fetchModulePage(
         'sales-order',
-        { status: '已审核', sortBy: 'deliveryDate', direction: 'desc' },
+        {
+          status: DOCUMENT_STATUS.AUDITED,
+          sortBy: 'deliveryDate',
+          direction: 'desc',
+        },
         0,
         DASHBOARD_PAGE_SIZE,
       ),
       fetchModulePage(
         'customer-statement',
-        { status: '待确认', sortBy: 'endDate', direction: 'desc' },
+        {
+          status: DOCUMENT_STATUS.PENDING_CONFIRM,
+          sortBy: 'endDate',
+          direction: 'desc',
+        },
         0,
         DASHBOARD_PAGE_SIZE,
       ),
-      fetchCustomerStatementSummary({ status: '待确认' }),
+      fetchCustomerStatementSummary({
+        status: DOCUMENT_STATUS.PENDING_CONFIRM,
+      }),
     ])
 
   const todoItems = [

@@ -1,4 +1,5 @@
 import type { CompanySettlementAccount } from '@/api/system/company-settings'
+import { STATUS } from '@/constants/status-constants'
 
 export type SettlementAccountFormRow = CompanySettlementAccount
 
@@ -8,7 +9,7 @@ export function createEmptySettlementAccount(): SettlementAccountFormRow {
     bankName: '',
     bankAccount: '',
     usageType: '通用',
-    status: '正常',
+    status: STATUS.NORMAL,
     remark: '',
   }
 }
@@ -24,7 +25,7 @@ export function normalizeSettlementAccounts(
     bankName: String(account.bankName || ''),
     bankAccount: String(account.bankAccount || ''),
     usageType: String(account.usageType || '通用'),
-    status: String(account.status || '正常'),
+    status: String(account.status || STATUS.NORMAL),
     remark: String(account.remark || ''),
   }))
 }

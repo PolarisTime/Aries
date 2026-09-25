@@ -2,6 +2,7 @@ import { Form, Space, Tag } from 'antd'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -284,8 +285,14 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
               })}
             </span>
             {useFinanceEditorLayout ? (
-              <Tag color={currentStatus === '已审核' ? 'success' : 'default'}>
-                {currentStatus || '草稿'}
+              <Tag
+                color={
+                  currentStatus === DOCUMENT_STATUS.AUDITED
+                    ? 'success'
+                    : 'default'
+                }
+              >
+                {currentStatus || DOCUMENT_STATUS.DRAFT}
               </Tag>
             ) : null}
           </Space>

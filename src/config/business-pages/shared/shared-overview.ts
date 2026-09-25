@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { STATUS } from '@/constants/status-constants'
 import type { ModuleOverviewItem, ModuleRecord } from '@/types/module-page'
 import { formatAmount, formatInteger, formatWeight } from '@/utils/formatters'
 
@@ -103,7 +104,7 @@ export function buildFinanceOverview(
 export function buildMasterOverview(
   rows: ModuleRecord[],
   activeKey = 'status',
-  activeValue = '正常',
+  activeValue = STATUS.NORMAL,
 ): ModuleOverviewItem[] {
   return [
     {

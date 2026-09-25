@@ -3,6 +3,7 @@ import {
   statementStatusOptions,
   withDeletedDocumentStatus,
 } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
@@ -415,7 +416,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'status',
       label: i18next.t('modules.pages.customerStatement.status'),
       type: 'select',
-      defaultValue: '待确认',
+      defaultValue: DOCUMENT_STATUS.PENDING_CONFIRM,
       options: statementStatusOptions,
       disabled: true,
       row: 3,
@@ -468,5 +469,5 @@ export const customerStatementPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildCustomerStatementOverview,
   statusMap,
-  rowHighlightStatuses: ['待确认'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.PENDING_CONFIRM],
 }

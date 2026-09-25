@@ -117,7 +117,10 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'segmented',
-      options: buildDocumentStatusOptions('草稿', '已审核'),
+      options: buildDocumentStatusOptions(
+        DOCUMENT_STATUS.DRAFT,
+        DOCUMENT_STATUS.AUDITED,
+      ),
     },
     {
       key: 'projectId',

@@ -18,6 +18,7 @@ import {
   STALE_MASTER_OPTIONS,
   STALE_REALTIME,
 } from '@/constants/query-policies'
+import { STATUS } from '@/constants/status-constants'
 import { getMasterOptionQueryKey } from '@/hooks/master-option-cache-refresh'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
@@ -53,7 +54,7 @@ function toEditorFormValues(record: ProjectListRow) {
     settlementCompanyName: asString(record.settlementCompanyName),
     projectManager: asString(record.projectManager),
     projectAddress: asString(record.projectAddress),
-    status: asString(record.status) || '正常',
+    status: asString(record.status) || STATUS.NORMAL,
     quoteSource: asString(record.quoteSource) || 'MYSTEEL',
     quoteRegion: asString(record.quoteRegion),
     remark: asString(record.remark),
@@ -225,7 +226,7 @@ export function ProjectPage() {
     }
     setEditorBaseRecord(null)
     form.resetFields()
-    form.setFieldsValue({ status: '正常', projectCode: '' })
+    form.setFieldsValue({ status: STATUS.NORMAL, projectCode: '' })
     setEditorOpen(true)
     void fetchGeneratedMasterDataCode(MODULE_KEY)
       .then((code) => {

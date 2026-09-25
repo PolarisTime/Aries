@@ -27,6 +27,7 @@ import {
   type SalesReturnSourceSelection,
 } from '@/config/business-pages/operations/sales-return-rules'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { SalesReturnCandidateItem } from '@/shared/schemas/module-record'
 import { message } from '@/utils/antd-app'
 
@@ -34,7 +35,9 @@ interface Props {
   refreshModuleQueries: () => Promise<void>
 }
 
-const AUDITED_OUTBOUND_FILTERS = { status: '已审核' } as const
+const AUDITED_OUTBOUND_FILTERS = {
+  status: DOCUMENT_STATUS.AUDITED,
+} as const
 const OUTBOUND_SEARCH_PAGE_SIZE = 30
 const OUTBOUND_SEARCH_DEBOUNCE_MS = 300
 

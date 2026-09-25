@@ -8,6 +8,7 @@ import type { CustomerOption } from '@/api/master/customer-options'
 import { StatusTag } from '@/components/StatusTag'
 import { resolveProjectCustomerDisplay } from '@/config/business-pages/master/project-page-utils'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { STATUS } from '@/constants/status-constants'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
@@ -78,7 +79,7 @@ export function ProjectTableSection({
       {
         label: t('modules.overview.normalCount'),
         value: String(
-          rows.filter((row) => asString(row.status) === '正常').length,
+          rows.filter((row) => asString(row.status) === STATUS.NORMAL).length,
         ),
       },
     ]
@@ -216,7 +217,9 @@ export function ProjectTableSection({
             onChange: onSelectionChange,
           }}
           rowClassName={(record) =>
-            asString(record.status) === '禁用' ? 'table-row-emphasis' : ''
+            asString(record.status) === STATUS.DISABLED
+              ? 'table-row-emphasis'
+              : ''
           }
           expandable={{
             expandedRowKeys,
