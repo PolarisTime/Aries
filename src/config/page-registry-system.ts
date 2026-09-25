@@ -1,9 +1,10 @@
+import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const systemPageDefinitions: AppPageDefinition[] = [
   {
     key: 'print-template',
-    title: '打印模板',
+    title: i18next.t('pages.print-template'),
     menuKey: '/print-template',
     view: 'print-template',
     icon: 'PrinterOutlined',
@@ -12,7 +13,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'operation-log',
-    title: '操作日志',
+    title: i18next.t('pages.operation-log'),
     menuKey: '/operation-log',
     view: 'business-grid',
     icon: 'FileSearchOutlined',
@@ -22,7 +23,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'role-management',
-    title: '角色管理',
+    title: i18next.t('pages.role-management'),
     menuKey: '/role',
     view: 'role-management',
     icon: 'TeamOutlined',
@@ -31,7 +32,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'user-accounts',
-    title: '用户账号',
+    title: i18next.t('pages.user-accounts'),
     menuKey: '/user-accounts',
     view: 'user-accounts',
     icon: 'UsergroupAddOutlined',
@@ -41,7 +42,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   {
     // 个人账号已并入右上角「个人设置」，此处保留路由与视图以兼容旧链接，菜单隐藏。
     key: 'account',
-    title: '个人账号',
+    title: i18next.t('pages.account'),
     menuKey: '/account',
     view: 'account',
     icon: 'UserOutlined',

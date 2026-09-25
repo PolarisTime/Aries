@@ -1,9 +1,10 @@
+import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const masterPageDefinitions: AppPageDefinition[] = [
   {
     key: 'material',
-    title: '商品资料',
+    title: i18next.t('pages.material'),
     menuKey: '/material',
     view: 'master-material',
     icon: 'DatabaseOutlined',
@@ -12,7 +13,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'material-categories',
-    title: '商品类别',
+    title: i18next.t('pages.material-categories'),
     menuKey: '/material-categories',
     view: 'master-material-categories',
     icon: 'TagsOutlined',
@@ -21,7 +22,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'supplier',
-    title: '供应商资料',
+    title: i18next.t('pages.supplier'),
     menuKey: '/supplier',
     view: 'master-supplier',
     icon: 'TeamOutlined',
@@ -30,7 +31,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'customer',
-    title: '客户资料',
+    title: i18next.t('pages.customer'),
     menuKey: '/customer',
     view: 'master-customer',
     icon: 'UserOutlined',
@@ -39,7 +40,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'project',
-    title: '项目资料',
+    title: i18next.t('pages.project'),
     menuKey: '/project',
     // 试点：按模块拆分的专用页面（阶段 1-2），回滚时将 view 改回 'business-grid' 即可。
     // 旧 BusinessGrid 配置保留在 business-pages/master/project-page.ts，仅供保存载荷(saveFields)复用，不再驱动这两个模块的列表 UI。
@@ -50,7 +51,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'carrier',
-    title: '物流方资料',
+    title: i18next.t('pages.carrier'),
     menuKey: '/carrier',
     // 试点：按模块拆分的专用页面（阶段 1-2），回滚时将 view 改回 'business-grid' 即可。
     // 旧 BusinessGrid 配置保留在 business-pages/master/carrier-page.ts，仅供保存载荷(saveFields)复用，不再驱动这两个模块的列表 UI。
@@ -61,7 +62,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'warehouse',
-    title: '仓库资料',
+    title: i18next.t('pages.warehouse'),
     menuKey: '/warehouse',
     view: 'master-warehouse',
     icon: 'BankOutlined',
@@ -70,7 +71,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'company-setting',
-    title: '结算主体管理',
+    title: i18next.t('pages.company-setting'),
     menuKey: '/company-setting',
     view: 'company-setting',
     icon: 'AccountBookOutlined',

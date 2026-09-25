@@ -1,10 +1,11 @@
+import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 /** 比价模块: 独立分组, 位于基础数据之后。 */
 export const marketPageDefinitions: AppPageDefinition[] = [
   {
     key: 'price-compare',
-    title: '报单比价',
+    title: i18next.t('pages.price-compare'),
     menuKey: '/price-compare',
     view: 'price-compare',
     icon: 'CalculatorOutlined',
@@ -12,7 +13,7 @@ export const marketPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'market-sync',
-    title: '行情同步',
+    title: i18next.t('pages.market-sync'),
     menuKey: '/market-sync',
     view: 'market-sync',
     icon: 'FileSyncOutlined',

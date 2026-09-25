@@ -1,9 +1,10 @@
+import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const financePageDefinitions: AppPageDefinition[] = [
   {
     key: 'customer-statement',
-    title: '客户对账单',
+    title: i18next.t('pages.customer-statement'),
     menuKey: '/customer-statement',
     view: 'business-grid',
     icon: 'FileTextOutlined',
@@ -13,7 +14,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'freight-statement',
-    title: '物流对账单',
+    title: i18next.t('pages.freight-statement'),
     menuKey: '/freight-statement',
     view: 'business-grid',
     icon: 'FileSyncOutlined',
@@ -23,7 +24,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'finance-overview',
-    title: '财务概览',
+    title: i18next.t('pages.finance-overview'),
     menuKey: '/finance-overview',
     view: 'finance-overview',
     icon: 'CalculatorOutlined',
@@ -31,7 +32,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'receipt',
-    title: '收款单',
+    title: i18next.t('pages.receipt'),
     menuKey: '/receipt',
     view: 'business-grid',
     icon: 'AccountBookOutlined',
@@ -41,7 +42,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'payment',
-    title: '付款单',
+    title: i18next.t('pages.payment'),
     menuKey: '/payment',
     view: 'business-grid',
     icon: 'CreditCardOutlined',
@@ -51,7 +52,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'cash-ledger',
-    title: '资金流水',
+    title: i18next.t('pages.cash-ledger'),
     menuKey: '/cash-ledger',
     view: 'cash-ledger',
     icon: 'AccountBookOutlined',

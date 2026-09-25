@@ -1,9 +1,10 @@
+import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const operationPageDefinitions: AppPageDefinition[] = [
   {
     key: 'purchase-order',
-    title: '采购订单',
+    title: i18next.t('pages.purchase-order'),
     menuKey: '/purchase-order',
     view: 'business-grid',
     icon: 'ProfileOutlined',
@@ -13,7 +14,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'purchase-inbound',
-    title: '采购入库',
+    title: i18next.t('pages.purchase-inbound'),
     menuKey: '/purchase-inbound',
     view: 'business-grid',
     icon: 'InboxOutlined',
@@ -23,7 +24,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-order',
-    title: '销售订单',
+    title: i18next.t('pages.sales-order'),
     menuKey: '/sales-order',
     view: 'business-grid',
     icon: 'FileDoneOutlined',
@@ -33,7 +34,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-contract',
-    title: '销售合同',
+    title: i18next.t('pages.sales-contract'),
     menuKey: '/sales-contract',
     view: 'sales-contract',
     icon: 'ProfileOutlined',
@@ -41,7 +42,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-outbound',
-    title: '销售出库',
+    title: i18next.t('pages.sales-outbound'),
     menuKey: '/sales-outbound',
     view: 'business-grid',
     icon: 'SwapOutlined',
@@ -51,7 +52,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-return',
-    title: '销售退货单',
+    title: i18next.t('pages.sales-return'),
     menuKey: '/sales-return',
     view: 'business-grid',
     icon: 'RollbackOutlined',
@@ -61,7 +62,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'inventory',
-    title: '库存查询',
+    title: i18next.t('pages.inventory'),
     menuKey: '/inventory',
     view: 'inventory',
     icon: 'DatabaseOutlined',
@@ -69,7 +70,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'freight-bill',
-    title: '物流单',
+    title: i18next.t('pages.freight-bill'),
     menuKey: '/freight-bill',
     view: 'business-grid',
     icon: 'CarOutlined',
