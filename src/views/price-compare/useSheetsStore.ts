@@ -1038,9 +1038,14 @@ export function useSheetsStore(options?: {
         const fail = (error: unknown, fallback: string) => {
           // 写失败后仍保留本地编辑并置脏: 纳入未保存判定, 聚焦时可重试且不被刷新覆盖
           markDirty()
-          message.error(
-            error instanceof Error ? `${fallback}：${error.message}` : fallback,
-          )
+          // 同一单据保存失败会被刷新反复重试: 用固定 key 覆盖旧提示, 避免叠加多条 error。
+          message.error({
+            content:
+              error instanceof Error
+                ? `${fallback}：${error.message}`
+                : fallback,
+            key: `sheet-save-fail:${sheet.id}`,
+          })
         }
 
         if (!serverId) {
@@ -1296,9 +1301,9 @@ export function useSheetsStore(options?: {
 
   /**
    * 拉取服务端单据覆盖本地。
-   * <p>返回 `applied` 已应用; `skipped` 因瞬时状态(防抖计时器/请求在途/await 期间有新编辑)
-   * 跳过, 稍后会自动保存完成, 不应提示; `stuck` 因持久未保存(保存失败/配置未加载)跳过,
-   * 本地改动会一直挡住刷新, 需提示用户先保存。</p>
+   * <p>返回 `applied` 已应用; `skipped` 因瞬时状态(防抖计时器/请求在途)或保存失败
+   * (错误已另行提示)跳过; `stuck` 因"配置未加载被跳过"这类**无独立报错**的持久阻塞跳过,
+   * 需补一次提示让用户知道刷新被挡住。</p>
    */
   const refreshSheets = useCallback(async (): Promise<
     'applied' | 'skipped' | 'stuck'
@@ -1309,12 +1314,16 @@ export function useSheetsStore(options?: {
       [...inflightRef.current, ...pendingRef.current].some((key) =>
         key.startsWith('sheet:'),
       )
-    // 持久未保存: 保存失败或配置未加载被跳过, 会一直挡住刷新, 需提示。
-    const hasStuckPendingSave = () =>
-      configBlockedSaveRef.current.size > 0 || dirtySheetsRef.current.size > 0
+    // 配置未加载被跳过时 saveSheetNow 静默返回, 用户看不到任何报错, 需在此补提示。
+    const hasStuckPendingSave = () => configBlockedSaveRef.current.size > 0
+    // 保存失败的脏单据已由 error toast 告知, 刷新只需跳过, 不再叠加"服务器有更新"。
+    const hasPendingSheetSave = () =>
+      hasTransientPendingSave() ||
+      hasStuckPendingSave() ||
+      dirtySheetsRef.current.size > 0
     const pendingStatus = (): 'skipped' | 'stuck' =>
       hasStuckPendingSave() ? 'stuck' : 'skipped'
-    if (hasTransientPendingSave() || hasStuckPendingSave()) {
+    if (hasPendingSheetSave()) {
       return pendingStatus()
     }
     if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
@@ -1324,7 +1333,7 @@ export function useSheetsStore(options?: {
     const records = await fetchQuoteSheets()
     // await 期间出现新编辑或新保存/冲突: 放弃本次刷新, 避免覆盖本地改动
     if (dataRevisionRef.current !== revision) return 'skipped'
-    if (hasTransientPendingSave() || hasStuckPendingSave()) {
+    if (hasPendingSheetSave()) {
       return pendingStatus()
     }
     if (activeConflictRef.current || conflictQueueRef.current.length > 0) {
@@ -1466,7 +1475,7 @@ export function useSheetsStore(options?: {
       if (sheetsStatus === 'applied') {
         stuckNoticeShownRef.current = false
       } else if (sheetsStatus === 'stuck' && !stuckNoticeShownRef.current) {
-        // 保存失败/配置未加载会一直挡住刷新, 每轮都弹很吵: 同一阻塞只提示一次。
+        // 配置未加载会一直挡住刷新且无其它报错: 同一阻塞只提示一次。
         stuckNoticeShownRef.current = true
         message.info({ content: STALE_NOTICE_TEXT, key: STALE_NOTICE_KEY })
       }
@@ -1618,7 +1627,11 @@ export function useSheetsStore(options?: {
             // 锁状态刷新失败不影响提示
           }
         }
-        message.warning(LOCK_CONFLICT_TEXT)
+        // 同一单据反复触发锁冲突只保留一条提示, 避免叠加。
+        message.warning({
+          content: LOCK_CONFLICT_TEXT,
+          key: `sheet-lock-conflict:${serverId ?? sheetId}`,
+        })
       })()
     },
     [applyLockState],

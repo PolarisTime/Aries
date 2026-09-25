@@ -766,7 +766,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(vi.mocked(message.info)).not.toHaveBeenCalled()
   })
 
-  it('保存失败(持久未保存)挡住刷新时只提示一次', async () => {
+  it('保存失败挡住刷新时不再叠加"服务器有更新"提示(仅保留 error)', async () => {
     api.updateQuoteSheetHeader.mockRejectedValue({ status: 500 })
     const store = renderStore()
     await hydrate(store)
@@ -776,15 +776,44 @@ describe('useSheetsStore 服务端数据源', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
     })
+    // 保存失败已弹 error; 刷新不得再叠加 info, 否则一次操作出现两条 toast
+    expect(vi.mocked(message.error)).toHaveBeenCalledTimes(1)
     vi.mocked(message.info).mockClear()
+    vi.mocked(message.error).mockClear()
 
-    // 连续三轮轮询: 保存一直失败, 服务器未变, 仅首次提示
+    // 连续三轮轮询: 保存一直失败, 服务器未变
     for (let i = 0; i < 3; i += 1) {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(31_000)
       })
     }
-    expect(vi.mocked(message.info)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(message.info)).not.toHaveBeenCalled()
+    // 重试失败沿用同一 key, 覆盖旧提示而不叠加多条 error
+    expect(vi.mocked(message.error)).toHaveBeenCalledTimes(3)
+    const keys = vi
+      .mocked(message.error)
+      .mock.calls.map((call) => (call[0] as { key?: string }).key)
+    expect(new Set(keys).size).toBe(1)
+  })
+
+  it('同一单据多次锁冲突只保留一条 warning', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    const store = renderStore()
+    await hydrate(store)
+    vi.mocked(message.warning).mockClear()
+    for (let i = 0; i < 3; i += 1) {
+      act(() => {
+        store.current.patchSheet(store.current.activeId, { name: `n${i}` })
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(900)
+      })
+    }
+    expect(vi.mocked(message.warning).mock.calls.length).toBeGreaterThan(0)
+    const keys = vi
+      .mocked(message.warning)
+      .mock.calls.map((call) => (call[0] as { key?: string }).key)
+    expect(new Set(keys).size).toBe(1)
   })
 
   it('签出成功标记为我正在编辑且可编辑', async () => {
