@@ -2,6 +2,7 @@ import { CopyOutlined, DownOutlined, LinkOutlined } from '@ant-design/icons'
 import { Button, Divider, Popover, Tag, Tooltip, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import type { ModulePageConfig } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
@@ -197,6 +198,7 @@ export function DocumentReferencePopover({
 }: DocumentReferencePopoverProps) {
   const openTab = useTabOpen()
   const references = useMemo(() => normalizeDocumentReferences(value), [value])
+  const { t } = useTranslation()
   const label = resolveLabel(moduleKey, documentLabel)
   const summaryText = buildDocumentReferenceSummary(references, {
     documentLabel: label,
@@ -223,9 +225,13 @@ export function DocumentReferencePopover({
       if (!text) return
       try {
         await copyText(text)
-        message.success(items.length > 1 ? '已复制全部单号' : '已复制单号')
+        message.success(
+          items.length > 1
+            ? t('documentReference.copiedAll')
+            : t('documentReference.copiedOne'),
+        )
       } catch {
-        message.error('复制失败，请手动选择单号')
+        message.error(t('documentReference.copyFailed'))
       }
     },
     [],
@@ -242,16 +248,18 @@ export function DocumentReferencePopover({
   const popoverContent = (
     <div className="document-reference-popover-content">
       <div className="document-reference-popover-toolbar">
-        <Typography.Text strong>关联{label}</Typography.Text>
+        <Typography.Text strong>
+          {t('documentReference.related', { label })}
+        </Typography.Text>
         <Button
           type="text"
           size="small"
           icon={<CopyOutlined />}
-          title="复制全部单号"
-          aria-label="复制全部单号"
+          title={t('documentReference.copyAllDocs')}
+          aria-label={t('documentReference.copyAllDocs')}
           onClick={() => void copyReferences(references)}
         >
-          复制全部
+          {t('documentReference.copyAll')}
         </Button>
       </div>
       <Divider className="document-reference-divider" />
@@ -279,8 +287,10 @@ export function DocumentReferencePopover({
                   type="text"
                   size="small"
                   icon={<CopyOutlined />}
-                  title={`复制 ${reference.no}`}
-                  aria-label={`复制 ${reference.no}`}
+                  title={t('documentReference.copy', { no: reference.no })}
+                  aria-label={t('documentReference.copy', {
+                    no: reference.no,
+                  })}
                   onClick={() => void copyReferences([reference])}
                 />
               </div>
@@ -289,7 +299,11 @@ export function DocumentReferencePopover({
                   <span>{itemSummary.counterpartyName}</span>
                 ) : null}
                 {itemSummary.amount !== undefined ? (
-                  <span>金额：{getAmountText(itemSummary.amount)}</span>
+                  <span>
+                    {t('documentReference.amount', {
+                      amount: getAmountText(itemSummary.amount),
+                    })}
+                  </span>
                 ) : null}
                 {itemSummary.status
                   ? renderStatus(itemSummary.status, statusMap)
@@ -333,13 +347,15 @@ export function DocumentReferencePopover({
           </Typography.Text>
         )}
         {references.length === 1 ? (
-          <Tooltip title="复制单号">
+          <Tooltip title={t('documentReference.copyDoc')}>
             <Button
               type="text"
               size="small"
               icon={<CopyOutlined />}
-              title="复制单号"
-              aria-label={`复制 ${references[0].no}`}
+              title={t('documentReference.copyDoc')}
+              aria-label={t('documentReference.copy', {
+                no: references[0].no,
+              })}
               onClick={(event) => {
                 event.stopPropagation()
                 void copyReferences(references)

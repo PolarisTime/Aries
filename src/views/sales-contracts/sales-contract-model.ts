@@ -1,6 +1,7 @@
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
+import i18next from 'i18next'
 import { readRequestError } from '@/api/core/request-errors'
 import type { SalesContractUpsertPayload } from '@/api/sales/sales-contracts'
 import type {
@@ -21,14 +22,6 @@ export const SALES_CONTRACT_STATUS = {
   VOIDED: '作废',
 } as const
 
-export const SALES_CONTRACT_STATUS_OPTIONS = [
-  { label: '草稿', value: SALES_CONTRACT_STATUS.DRAFT },
-  { label: '审核', value: SALES_CONTRACT_STATUS.REVIEWED },
-  { label: '签发', value: SALES_CONTRACT_STATUS.ISSUED },
-  { label: '归档', value: SALES_CONTRACT_STATUS.ARCHIVED },
-  { label: '作废', value: SALES_CONTRACT_STATUS.VOIDED },
-] as const
-
 const SALES_CONTRACT_STATUS_LABEL_KEY: Record<SalesContractStatus, string> = {
   [SALES_CONTRACT_STATUS.DRAFT]: 'modules.status.draft',
   [SALES_CONTRACT_STATUS.REVIEWED]: 'modules.status.reviewed',
@@ -36,6 +29,39 @@ const SALES_CONTRACT_STATUS_LABEL_KEY: Record<SalesContractStatus, string> = {
   [SALES_CONTRACT_STATUS.ARCHIVED]: 'modules.status.archived',
   [SALES_CONTRACT_STATUS.VOIDED]: 'modules.status.voided',
 }
+
+export const SALES_CONTRACT_STATUS_OPTIONS = [
+  {
+    label: i18next.t(
+      SALES_CONTRACT_STATUS_LABEL_KEY[SALES_CONTRACT_STATUS.DRAFT],
+    ),
+    value: SALES_CONTRACT_STATUS.DRAFT,
+  },
+  {
+    label: i18next.t(
+      SALES_CONTRACT_STATUS_LABEL_KEY[SALES_CONTRACT_STATUS.REVIEWED],
+    ),
+    value: SALES_CONTRACT_STATUS.REVIEWED,
+  },
+  {
+    label: i18next.t(
+      SALES_CONTRACT_STATUS_LABEL_KEY[SALES_CONTRACT_STATUS.ISSUED],
+    ),
+    value: SALES_CONTRACT_STATUS.ISSUED,
+  },
+  {
+    label: i18next.t(
+      SALES_CONTRACT_STATUS_LABEL_KEY[SALES_CONTRACT_STATUS.ARCHIVED],
+    ),
+    value: SALES_CONTRACT_STATUS.ARCHIVED,
+  },
+  {
+    label: i18next.t(
+      SALES_CONTRACT_STATUS_LABEL_KEY[SALES_CONTRACT_STATUS.VOIDED],
+    ),
+    value: SALES_CONTRACT_STATUS.VOIDED,
+  },
+] as const
 
 /** 状态展示用 i18n key; 未知状态返回 undefined。 */
 export function getSalesContractStatusLabelKey(

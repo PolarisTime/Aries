@@ -194,7 +194,7 @@ export function FinanceOverviewView() {
             <Alert
               type="error"
               showIcon
-              title="加载财务概览失败"
+              title={t('financeDetail.loadOverviewFailed')}
               description={requestErrorMessage(
                 overviewQuery.error,
                 '请稍后重试',

@@ -1,6 +1,7 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { Button, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import i18next from 'i18next'
 import type { Key, ReactNode } from 'react'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
@@ -304,7 +305,7 @@ function ParentSelectorTable({
       onRow={(record) => ({
         tabIndex: 0,
         'aria-keyshortcuts': 'Enter Space',
-        title: 'Space 选择，Enter 选择',
+        title: i18next.t('moduleSelector.spaceEnterHint'),
         'aria-selected': selectedRowKeys.includes(String(record.id)),
         onClick: (event) => {
           if (shouldIgnoreRowInteraction(event.target)) return

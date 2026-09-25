@@ -7,6 +7,7 @@ import {
   Typography,
   theme,
 } from 'antd'
+import { useTranslation } from 'react-i18next'
 import {
   fmtMoney,
   type StatementItem,
@@ -22,11 +23,14 @@ export function ReceiptDetailDrawer({
   statement: StatementItem | null
 }) {
   const { token } = theme.useToken()
+  const { t } = useTranslation()
   return (
     <Drawer
       title={
         <Space size={8}>
-          <span>对账单明细 · {statement?.statementNo}</span>
+          <span>
+            {t('receiptReconcile.detailTitle')} · {statement?.statementNo}
+          </span>
           {statement && <StatementStatusTag statement={statement} />}
         </Space>
       }
@@ -43,22 +47,22 @@ export function ReceiptDetailDrawer({
             items={[
               {
                 key: 'period',
-                label: '对账周期',
+                label: t('receiptReconcile.period'),
                 children: `${statement.periodStart} ~ ${statement.periodEnd}`,
               },
               {
                 key: 'due',
-                label: '付款到期日',
+                label: t('receiptReconcile.dueDate'),
                 children: statement.dueDate,
               },
               {
                 key: 'total',
-                label: '对账总额',
+                label: t('receiptReconcile.totalAmount'),
                 children: `¥${fmtMoney(statement.totalAmount)}`,
               },
               {
                 key: 'out',
-                label: '未结清待付',
+                label: t('receiptReconcile.outstanding'),
                 children: `¥${fmtMoney(statement.outstandingAmount)}`,
               },
             ]}
@@ -70,7 +74,7 @@ export function ReceiptDetailDrawer({
             dataSource={statement.details}
             columns={[
               {
-                title: '磅单号',
+                title: t('receiptReconcile.slipNo'),
                 dataIndex: 'slipNo',
                 render: (v: string) => (
                   <Typography.Text
@@ -84,29 +88,29 @@ export function ReceiptDetailDrawer({
                 ),
               },
               {
-                title: '品名规格',
+                title: t('receiptReconcile.productSpec'),
                 render: (_, r) => `${r.productName} ${r.spec}`,
               },
               {
-                title: '净重(t)',
+                title: t('receiptReconcile.netWeightTon'),
                 dataIndex: 'netWeight',
                 align: 'right',
                 render: (v: number) => v.toFixed(2),
               },
               {
-                title: '单价',
+                title: t('receiptReconcile.unitPrice'),
                 dataIndex: 'unitPrice',
                 align: 'right',
                 render: (v: number) => fmtMoney(v),
               },
               {
-                title: '小计',
+                title: t('receiptReconcile.subtotal'),
                 dataIndex: 'subtotal',
                 align: 'right',
                 render: (v: number) => fmtMoney(v),
               },
               {
-                title: '扣减说明',
+                title: t('receiptReconcile.deductionNote'),
                 dataIndex: 'deductionNote',
                 render: (v?: string) =>
                   v ? (

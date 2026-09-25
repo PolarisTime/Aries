@@ -4,6 +4,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons'
 import { Alert, Divider, Flex, Typography, theme } from 'antd'
+import { useTranslation } from 'react-i18next'
 import {
   type CustomerData,
   digitToChineseUppercase,
@@ -21,17 +22,28 @@ export function ReceiptModeNotice({
   customerName: string
   mode: Exclude<ReceiptMode, 'reconcile'>
 }) {
+  const { t } = useTranslation()
   return (
     <Alert
       className="mt-4"
       type="info"
       showIcon
       icon={<InfoCircleOutlined />}
-      title={mode === 'prepaid' ? '款项全额转预收定金' : '款项计入履约保证金'}
+      title={
+        mode === 'prepaid'
+          ? t('receiptReconcile.prepaidDepositOption')
+          : t('receiptReconcile.performanceDepositOption')
+      }
       description={
         mode === 'prepaid'
-          ? `实收 ${fmtMoney(amount)} 元将全额转入「${customerName}」的预收定金账户，后续可在出货结算时按单冲抵，不参与本期对账单核销。`
-          : `实收 ${fmtMoney(amount)} 元将作为「${customerName}」的履约保证金暂存，待合作期满或合同履约完成后统一退还或抵扣。`
+          ? t('receiptReconcile.prepaidDepositDesc', {
+              amount: fmtMoney(amount),
+              name: customerName,
+            })
+          : t('receiptReconcile.performanceDepositDesc', {
+              amount: fmtMoney(amount),
+              name: customerName,
+            })
       }
     />
   )
@@ -43,6 +55,7 @@ export function ReceiptCustomerOverviewCard({
   customer: CustomerData
 }) {
   const { token } = theme.useToken()
+  const { t } = useTranslation()
   return (
     <div
       className="rounded-lg p-4"
@@ -50,22 +63,27 @@ export function ReceiptCustomerOverviewCard({
     >
       <Flex align="center" gap={8} className="mb-3">
         <AuditOutlined />
-        <span className="font-semibold">客户对账全景</span>
+        <span className="font-semibold">
+          {t('receiptReconcile.customerOverview')}
+        </span>
       </Flex>
       <Flex vertical gap={10}>
-        <DashboardStat label="合作账期规则" value={customer.creditTerm} />
         <DashboardStat
-          label="已对账未结清总额"
+          label={t('receiptReconcile.creditTerm')}
+          value={customer.creditTerm}
+        />
+        <DashboardStat
+          label={t('receiptReconcile.reconciledUnsettled')}
           value={`¥${fmtMoney(customer.totalOutstanding)}`}
           danger
         />
         <DashboardStat
-          label="其中逾期金额"
+          label={t('receiptReconcile.overdueAmount')}
           value={`¥${fmtMoney(customer.overdueAmount)}`}
           danger={customer.overdueAmount > 0}
         />
         <DashboardStat
-          label="在途送货未对账"
+          label={t('receiptReconcile.inTransitUnreconciled')}
           value={`¥${fmtMoney(customer.inTransitAmount)}`}
         />
       </Flex>
@@ -85,6 +103,7 @@ export function ReceiptSettlementPreviewCard({
   totalAllocated: number
 }) {
   const { token } = theme.useToken()
+  const { t } = useTranslation()
   return (
     <div
       className="rounded-lg p-4 text-white"
@@ -95,18 +114,26 @@ export function ReceiptSettlementPreviewCard({
     >
       <Flex align="center" gap={8} className="mb-3">
         <AccountBookOutlined />
-        <span className="font-semibold">动态核销试算</span>
+        <span className="font-semibold">
+          {t('receiptReconcile.settlementPreview')}
+        </span>
       </Flex>
       <Flex vertical gap={10}>
         {[
-          { label: '实收金额', value: fmtMoney(amount) },
           {
-            label: '冲抵对账单总计',
+            label: t('receiptReconcile.receivedAmount'),
+            value: fmtMoney(amount),
+          },
+          {
+            label: t('receiptReconcile.offsetStatementTotal'),
             value: fmtMoney(totalAllocated),
           },
-          { label: '多收差额（转预收）', value: fmtMoney(toPrepaid) },
           {
-            label: '核销后客户剩余欠款',
+            label: t('receiptReconcile.overpaymentToPrepaid'),
+            value: fmtMoney(toPrepaid),
+          },
+          {
+            label: t('receiptReconcile.remainingDebt'),
             value: fmtMoney(remainingDebt),
           },
         ].map((item) => (
@@ -136,7 +163,8 @@ export function ReceiptSettlementPreviewCard({
         className="mt-2"
         style={{ fontSize: token.fontSizeSM, opacity: 0.85 }}
       >
-        人民币{digitToChineseUppercase(amount ?? 0)}
+        {t('receiptReconcile.rmbPrefix')}
+        {digitToChineseUppercase(amount ?? 0)}
       </div>
     </div>
   )
@@ -147,14 +175,17 @@ export function ReceiptAttachmentNotice({
 }: {
   attachmentCount: number
 }) {
+  const { t } = useTranslation()
   return (
     <Alert
       type={attachmentCount > 0 ? 'success' : 'info'}
       showIcon
       title={
         attachmentCount > 0
-          ? `已上传电子回单 ${attachmentCount} 份`
-          : '建议上传银行电子回单作为核销凭证'
+          ? t('receiptReconcile.uploadedEReceipts', {
+              count: attachmentCount,
+            })
+          : t('receiptReconcile.suggestUploadEReceipt')
       }
     />
   )

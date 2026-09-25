@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import i18next from 'i18next'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { readRequestError } from '@/api/core/request-errors'
 import {
@@ -60,18 +61,17 @@ const PRECONDITION_REQUIRED_CODE = 4280
 const LOCK_CONFLICT_STATUS = 409
 const LOCK_CONFLICT_CODE = 4090
 
-const CONFLICT_TITLE = '单据版本已变更'
-const CONFLICT_CONTENT =
-  '服务器上的内容已被其他设备更新，请选择处理方式。重新加载将丢弃本地改动，以我的覆盖将用当前内容覆盖服务器。'
-const CONFLICT_OVERWRITE_TEXT = '以我的覆盖'
-const CONFLICT_RELOAD_TEXT = '重新加载（丢弃我的改动）'
+const CONFLICT_TITLE = i18next.t('priceCompareStore.conflictTitle')
+const CONFLICT_CONTENT = i18next.t('priceCompareStore.conflictContent')
+const CONFLICT_OVERWRITE_TEXT = i18next.t('priceCompareStore.conflictOverwrite')
+const CONFLICT_RELOAD_TEXT = i18next.t('priceCompareStore.conflictReload')
 /** 覆盖重试后仍冲突时的提示文案(保留同一弹窗)。 */
-const CONFLICT_RETRY_TEXT = '仍在被修改，请稍后重试'
+const CONFLICT_RETRY_TEXT = i18next.t('priceCompareStore.conflictRetry')
 /** "以我的覆盖"最多尝试次数(含首次), 避免无限连环冲突。 */
 const OVERRIDE_MAX_ATTEMPTS = 2
-const STALE_NOTICE_TEXT = '服务器有更新，保存后请刷新'
+const STALE_NOTICE_TEXT = i18next.t('priceCompareStore.serverUpdated')
 /** 他人签出锁冲突提示(与版本冲突文案区分)。 */
-const LOCK_CONFLICT_TEXT = '单据已被他人签出编辑，请稍后重试或申请接管'
+const LOCK_CONFLICT_TEXT = i18next.t('priceCompareStore.lockConflict')
 
 /** 同一资源串行执行: 在飞行中则排队一次, 结束后补跑最新任务。 */
 async function runSerializedTask(
@@ -780,10 +780,10 @@ export function useSheetsStore(options?: {
       setConflict(target)
       const scopeText =
         target.kind === 'config'
-          ? '项目配置'
+          ? i18next.t('priceCompareStore.scopeConfig')
           : target.kind === 'item'
-            ? '某商品行'
-            : '表头'
+            ? i18next.t('priceCompareStore.scopeItem')
+            : i18next.t('priceCompareStore.scopeHeader')
       const instance = modal.confirm({
         title: CONFLICT_TITLE,
         content: `${scopeText}：${CONFLICT_CONTENT}`,
@@ -882,8 +882,8 @@ export function useSheetsStore(options?: {
           ),
         }))
       } catch (error) {
-        console.error('重新加载比价单失败', error)
-        message.error('重新加载比价单失败，请稍后重试')
+        console.error(i18next.t('priceCompareStore.reloadSheetFailed'), error)
+        message.error(i18next.t('priceCompareStore.reloadSheetFailed'))
       }
     },
     [mutate],
@@ -921,8 +921,8 @@ export function useSheetsStore(options?: {
           if (isConflictError(error)) continue
           message.error(
             error instanceof Error
-              ? `保存比价单失败：${error.message}`
-              : '保存比价单失败',
+              ? `${i18next.t('priceCompareStore.saveSheetFailed')}：${error.message}`
+              : i18next.t('priceCompareStore.saveSheetFailed'),
           )
           return 'error'
         }
@@ -949,7 +949,7 @@ export function useSheetsStore(options?: {
         flushBlockedSaves(projectId)
       } catch (error) {
         console.error('重新加载比价配置失败', error)
-        message.error('重新加载比价配置失败，请稍后重试')
+        message.error(i18next.t('priceCompareStore.reloadConfigFailed'))
       }
     },
     [flushBlockedSaves, mutate],
@@ -975,8 +975,8 @@ export function useSheetsStore(options?: {
           if (isConflictError(error)) continue
           message.error(
             error instanceof Error
-              ? `保存比价配置失败：${error.message}`
-              : '保存比价配置失败',
+              ? `${i18next.t('priceCompareStore.saveConfigFailed')}：${error.message}`
+              : i18next.t('priceCompareStore.saveConfigFailed'),
           )
           return 'error'
         }
@@ -1076,7 +1076,7 @@ export function useSheetsStore(options?: {
               void acquireEditLockRef.current(sheet.id)
             }
           } catch (error) {
-            fail(error, '保存比价单失败')
+            fail(error, i18next.t('priceCompareStore.saveSheetFailed'))
           }
           return
         }
@@ -1104,7 +1104,7 @@ export function useSheetsStore(options?: {
               handleLockConflictRef.current(sheetId)
               return
             }
-            fail(error, '保存比价单表头失败')
+            fail(error, i18next.t('priceCompareStore.saveSheetHeaderFailed'))
             return
           }
         }
@@ -1130,7 +1130,7 @@ export function useSheetsStore(options?: {
               handleLockConflictRef.current(sheetId)
               return
             }
-            fail(error, '删除商品行失败')
+            fail(error, i18next.t('priceCompareStore.deleteItemFailed'))
             return
           }
         }
@@ -1187,7 +1187,7 @@ export function useSheetsStore(options?: {
               handleLockConflictRef.current(sheetId)
               return
             }
-            fail(error, '保存商品行失败')
+            fail(error, i18next.t('priceCompareStore.saveItemFailed'))
             return
           }
         }
@@ -1244,8 +1244,8 @@ export function useSheetsStore(options?: {
           }
           message.error(
             error instanceof Error
-              ? `保存比价配置失败：${error.message}`
-              : '保存比价配置失败',
+              ? `${i18next.t('priceCompareStore.saveConfigFailed')}：${error.message}`
+              : i18next.t('priceCompareStore.saveConfigFailed'),
           )
         }
       })
@@ -1547,7 +1547,7 @@ export function useSheetsStore(options?: {
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
           console.error('加载比价单失败', error)
-          message.error('加载比价单失败，请稍后重试')
+          message.error(i18next.t('priceCompareStore.loadSheetsFailed'))
         }
       })
       .finally(() => setLoading(false))
@@ -1756,16 +1756,16 @@ export function useSheetsStore(options?: {
   const takeoverEditLock = useCallback((id?: string) => {
     const target = id ?? stateRef.current.activeId
     modal.confirm({
-      title: '申请接管批次',
-      content:
-        '接管将以当前用户强制取得该批次编辑权，对方正在进行的编辑将被覆盖，服务端会记录接管操作。确认接管？',
-      okText: '强制接管',
-      cancelText: '取消',
+      title: i18next.t('priceCompareStore.takeoverTitle'),
+      content: i18next.t('priceCompareStore.takeoverContent'),
+      okText: i18next.t('priceCompareStore.takeoverOk'),
+      cancelText: i18next.t('common.cancel'),
       onOk: async () => {
         const acquired = await acquireEditLockRef.current(target, {
           force: true,
         })
-        if (!acquired) message.warning('接管失败，请稍后再试')
+        if (!acquired)
+          message.warning(i18next.t('priceCompareStore.takeoverFailedShort'))
       },
     })
   }, [])
@@ -2145,7 +2145,7 @@ export function useSheetsStore(options?: {
     if (serverId) {
       void deleteQuoteSheet(serverId).catch((error) => {
         console.error('删除比价单失败', error)
-        message.error('删除比价单失败，请稍后重试')
+        message.error(i18next.t('priceCompareStore.deleteSheetFailed'))
       })
     }
   }

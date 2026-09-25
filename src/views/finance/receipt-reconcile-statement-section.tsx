@@ -15,6 +15,7 @@ import {
   theme,
 } from 'antd'
 import type { Dispatch, Key, SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fmtMoney, type StatementItem } from './receipt-reconcile-model'
 import { StatementStatusTag } from './receipt-reconcile-support'
 
@@ -46,10 +47,11 @@ export function ReceiptStatementSection({
   totalAllocated: number
 }) {
   const { token } = theme.useToken()
+  const { t } = useTranslation()
 
   const columns: TableColumnsType<StatementItem> = [
     {
-      title: '对账单号',
+      title: t('receiptReconcile.statementNo'),
       dataIndex: 'statementNo',
       width: 170,
       render: (_, record) => (
@@ -64,7 +66,7 @@ export function ReceiptStatementSection({
       ),
     },
     {
-      title: '对账周期',
+      title: t('receiptReconcile.period'),
       width: 130,
       render: (_, record) => (
         <Typography.Text style={{ fontSize: token.fontSizeSM }}>
@@ -73,19 +75,19 @@ export function ReceiptStatementSection({
       ),
     },
     {
-      title: '状态',
+      title: t('receiptReconcile.status'),
       width: 110,
       render: (_, record) => <StatementStatusTag statement={record} />,
     },
     {
-      title: '对账总额',
+      title: t('receiptReconcile.totalAmount'),
       dataIndex: 'totalAmount',
       align: 'right',
       width: 110,
       render: (v: number) => fmtMoney(v),
     },
     {
-      title: '未结清待付',
+      title: t('receiptReconcile.outstanding'),
       dataIndex: 'outstandingAmount',
       align: 'right',
       width: 120,
@@ -96,7 +98,7 @@ export function ReceiptStatementSection({
       ),
     },
     {
-      title: '本次冲抵核销',
+      title: t('receiptReconcile.offsetThisTime'),
       dataIndex: 'allocation',
       align: 'right',
       width: 160,
@@ -127,7 +129,9 @@ export function ReceiptStatementSection({
                 type="danger"
                 style={{ fontSize: token.fontSizeSM }}
               >
-                超出未结余额 {fmtMoney((value ?? 0) - record.outstandingAmount)}
+                {t('receiptReconcile.overOutstanding', {
+                  amount: fmtMoney((value ?? 0) - record.outstandingAmount),
+                })}
               </Typography.Text>
             )}
           </Flex>
@@ -144,12 +148,17 @@ export function ReceiptStatementSection({
       <Flex justify="space-between" align="center" className="mb-2">
         <Flex align="center" gap={8}>
           <AccountBookOutlined />
-          <span className="font-semibold">待核销客户对账单</span>
+          <span className="font-semibold">
+            {t('receiptReconcile.pendingStatements')}
+          </span>
           <Typography.Text
             type="secondary"
             style={{ fontSize: token.fontSizeSM }}
           >
-            {customerName} · 共 {statements.length} 期未结
+            {t('receiptReconcile.unsettledPeriods', {
+              name: customerName,
+              count: statements.length,
+            })}
           </Typography.Text>
         </Flex>
         <Space size={8}>
@@ -158,14 +167,14 @@ export function ReceiptStatementSection({
             icon={<ThunderboltOutlined />}
             onClick={onFifoAllocate}
           >
-            按账期优先自动分配（FIFO）
+            {t('receiptReconcile.fifoAllocate')}
           </Button>
           <Button
             size="small"
             icon={<ClearOutlined />}
             onClick={onClearAllocations}
           >
-            清空分配
+            {t('receiptReconcile.clearAllocations')}
           </Button>
         </Space>
       </Flex>
@@ -185,7 +194,9 @@ export function ReceiptStatementSection({
             <Table.Summary fixed>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={4}>
-                  <Typography.Text strong>合计（未结清）</Typography.Text>
+                  <Typography.Text strong>
+                    {t('receiptReconcile.totalUnsettled')}
+                  </Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
                   <Typography.Text strong>{fmtMoney(total)}</Typography.Text>
@@ -208,7 +219,10 @@ export function ReceiptStatementSection({
           className="mt-2"
           type="warning"
           showIcon
-          title={`本次分配核销总额 ${fmtMoney(totalAllocated)} 已超出实收金额 ${fmtMoney(amount)}，请调整分配金额`}
+          title={t('receiptReconcile.overAllocatedHint', {
+            total: fmtMoney(totalAllocated),
+            amount: fmtMoney(amount),
+          })}
         />
       )}
     </div>

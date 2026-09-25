@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Button, Empty, Modal, Space, Table, Tag } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { getCashLedger } from '@/api/finance/cash-ledger'
 import type { FinanceBalance } from '@/api/finance/finance-overview'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
@@ -20,6 +21,7 @@ export function FinanceCounterpartyLedgerModal({
   onClose: () => void
   open: boolean
 }) {
+  const { t } = useTranslation()
   const queryParams = balance
     ? buildCounterpartyLedgerQuery(balance)
     : undefined
@@ -27,7 +29,7 @@ export function FinanceCounterpartyLedgerModal({
     queryKey: QUERY_KEYS.counterpartyLedger(String(balance?.key ?? '')),
     queryFn: ({ signal }) => {
       if (!queryParams) {
-        throw new Error('缺少往来方信息')
+        throw new Error(t('receiptReconcile.missingCounterparty'))
       }
       return getCashLedger(queryParams, signal)
     },
@@ -44,9 +46,13 @@ export function FinanceCounterpartyLedgerModal({
       title={
         <Space size={8}>
           <span>
-            {balance ? `${balance.counterpartyName} · 对账明细` : '对账明细'}
+            {balance
+              ? t('receiptReconcile.ledgerTitle', {
+                  name: balance.counterpartyName,
+                })
+              : t('receiptReconcile.ledgerDetail')}
           </span>
-          <Tag color="blue">资金流水</Tag>
+          <Tag color="blue">{t('receiptReconcile.flowTitle')}</Tag>
         </Space>
       }
       width={960}
@@ -55,8 +61,12 @@ export function FinanceCounterpartyLedgerModal({
         <Alert
           type="error"
           showIcon
-          title="加载对账明细失败"
-          action={<Button onClick={() => void query.refetch()}>重试</Button>}
+          title={t('receiptReconcile.loadLedgerFailed')}
+          action={
+            <Button onClick={() => void query.refetch()}>
+              {t('common.retry')}
+            </Button>
+          }
         />
       ) : (
         <Table
@@ -75,10 +85,18 @@ export function FinanceCounterpartyLedgerModal({
             ),
           }}
           columns={[
-            { title: '日期', dataIndex: 'businessDate', width: 110 },
-            { title: '流水类型', dataIndex: 'flowType', width: 100 },
             {
-              title: '单号',
+              title: t('receiptReconcile.date'),
+              dataIndex: 'businessDate',
+              width: 110,
+            },
+            {
+              title: t('receiptReconcile.flowType'),
+              dataIndex: 'flowType',
+              width: 100,
+            },
+            {
+              title: t('receiptReconcile.documentNo'),
               dataIndex: 'documentNo',
               width: 160,
               render: (value: string, record: { documentId?: string }) => (
@@ -87,19 +105,19 @@ export function FinanceCounterpartyLedgerModal({
                   moduleKey={
                     balance?.counterpartyType === '客户' ? 'receipt' : 'payment'
                   }
-                  documentLabel="单据"
+                  documentLabel={t('receiptReconcile.document')}
                 />
               ),
             },
             {
-              title: '收入',
+              title: t('receiptReconcile.income'),
               dataIndex: 'incomeAmount',
               align: 'right' as const,
               width: 120,
               render: formatAmount,
             },
             {
-              title: '支出',
+              title: t('receiptReconcile.expense'),
               dataIndex: 'expenseAmount',
               align: 'right' as const,
               width: 120,

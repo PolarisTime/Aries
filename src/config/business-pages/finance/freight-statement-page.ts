@@ -131,7 +131,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       width: 150,
     },
     {
-      title: '关联物流单',
+      title: i18next.t('modules.filter.relatedFreightBill'),
       dataIndex: 'sourceBillNos',
       width: 180,
     },
@@ -204,7 +204,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       key: 'carrierName',
     },
     {
-      label: '关联物流单',
+      label: i18next.t('modules.filter.relatedFreightBill'),
       key: 'sourceBillNos',
     },
     {
@@ -264,7 +264,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
     },
     {
       key: 'sourceBillNos',
-      label: '关联物流单',
+      label: i18next.t('modules.filter.relatedFreightBill'),
       type: 'input',
       disabled: true,
       row: 1,
@@ -380,7 +380,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
   },
   parentImport: {
     parentModuleKey: 'freight-bill',
-    label: '物流单',
+    label: i18next.t('modules.filter.freightBill'),
     parentFieldKey: 'sourceBillNos',
     parentDisplayFieldKey: 'billNo',
     candidateStatementModuleKey: 'freight-statement',

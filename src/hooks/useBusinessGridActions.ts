@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { updateBusinessModuleStatus } from '@/api/business/business-crud'
 import { useBusinessGridBatchActions } from '@/hooks/useBusinessGridBatchActions'
 import { useBusinessGridCustomerActions } from '@/hooks/useBusinessGridCustomerActions'
@@ -130,7 +131,7 @@ export function useBusinessGridActions({
         title: statusCommand.confirmTitle,
         content: statusCommand.confirmContent,
         okText: statusCommand.okText,
-        cancelText: '取消',
+        cancelText: i18next.t('common.cancel'),
         mask: { closable: false },
         onOk: async () => {
           await statusCommand.execute(String(record.id))

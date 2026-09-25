@@ -28,14 +28,21 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
   ],
   filters: [
-    { key: 'keyword', label: '单号/往来方', type: 'input' },
+    {
+      key: 'keyword',
+      label: i18next.t('modules.filter.documentOrCounterparty'),
+      type: 'input',
+    },
     {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
       options: withDeletedDocumentStatus([
         { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
-        { label: '已审核', value: '已审核' },
+        {
+          label: i18next.t('modules.filter.auditStatus'),
+          value: '已审核',
+        },
       ]),
     },
     {
@@ -56,9 +63,21 @@ export const receiptsPageConfig: ModulePageConfig = {
       dataIndex: 'receiptNo',
       width: 170,
     },
-    { title: '往来类型', dataIndex: 'counterpartyType', width: 100 },
-    { title: '往来方编码', dataIndex: 'counterpartyCode', width: 130 },
-    { title: '往来方', dataIndex: 'counterpartyName', width: 180 },
+    {
+      title: i18next.t('modules.filter.counterpartyType'),
+      dataIndex: 'counterpartyType',
+      width: 100,
+    },
+    {
+      title: i18next.t('modules.filter.counterpartyCode'),
+      dataIndex: 'counterpartyCode',
+      width: 130,
+    },
+    {
+      title: i18next.t('modules.filter.counterparty'),
+      dataIndex: 'counterpartyName',
+      width: 180,
+    },
     {
       title: SETTLEMENT_COMPANY_LABEL,
       dataIndex: 'settlementCompanyName',
@@ -112,9 +131,21 @@ export const receiptsPageConfig: ModulePageConfig = {
       key: 'receiptNo',
       row: 1,
     },
-    { label: '往来类型', key: 'counterpartyType', row: 1 },
-    { label: '往来方', key: 'counterpartyName', row: 1 },
-    { label: '往来方编码', key: 'counterpartyCode', row: 1 },
+    {
+      label: i18next.t('modules.filter.counterpartyType'),
+      key: 'counterpartyType',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.filter.counterparty'),
+      key: 'counterpartyName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.filter.counterpartyCode'),
+      key: 'counterpartyCode',
+      row: 1,
+    },
     { label: SETTLEMENT_COMPANY_LABEL, key: 'settlementCompanyName', row: 2 },
     {
       label: i18next.t('modules.pages.receipt.receiptDate'),
@@ -161,20 +192,26 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'counterpartyType',
-      label: '往来类型',
+      label: i18next.t('modules.filter.counterpartyType'),
       type: 'select',
       required: true,
       allowClear: false,
       defaultValue: '客户',
       options: [
-        { label: '客户', value: '客户' },
-        { label: '供应商', value: '供应商' },
+        {
+          label: i18next.t('modules.filter.counterpartyCustomer'),
+          value: '客户',
+        },
+        {
+          label: i18next.t('modules.filter.counterpartySupplier'),
+          value: '供应商',
+        },
       ],
       row: 1,
     },
     {
       key: 'counterpartyId',
-      label: '往来方',
+      label: i18next.t('modules.filter.counterparty'),
       type: 'select',
       required: true,
       options: getReceiptCounterpartyOptions,
@@ -245,13 +282,16 @@ export const receiptsPageConfig: ModulePageConfig = {
       visibleWhen: () => false,
       options: [
         { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
-        { label: '已审核', value: '已审核' },
+        {
+          label: i18next.t('modules.filter.auditStatus'),
+          value: '已审核',
+        },
       ],
       row: 2,
     },
     {
       key: 'projectId',
-      label: '关联合同/项目',
+      label: i18next.t('modules.filter.relatedContractProject'),
       type: 'select',
       options: getCustomerProjectOptions,
       masterOptionRequirements: { customers: true, projects: true },
@@ -273,7 +313,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'attachments',
-      label: '回单/凭证',
+      label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
       row: 5,
       fullRow: true,

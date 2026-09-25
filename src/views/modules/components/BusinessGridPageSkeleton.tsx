@@ -1,10 +1,11 @@
+import i18next from 'i18next'
 export function BusinessGridPageSkeleton() {
   return (
     <div className="page-stack module-page-stack">
       <section
         className="module-page-skeleton"
         aria-busy="true"
-        aria-label="数据加载中"
+        aria-label={i18next.t('common.loading')}
       >
         <div className="module-page-skeleton-region module-page-skeleton-region--filter">
           <div className="module-page-skeleton-row">

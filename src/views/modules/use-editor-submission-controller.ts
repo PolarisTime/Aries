@@ -251,10 +251,12 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
       if (zeroPriceItemCount > 0) {
         const confirmed = await new Promise<boolean>((resolve) => {
           modal.confirm({
-            title: '价格待定提醒',
-            content: `当前 ${zeroPriceItemCount} 条明细单价为 0，将以「待定价」状态保存。确认继续吗？`,
-            okText: '继续保存',
-            cancelText: '返回修改',
+            title: t('moduleEditor.pricePendingTitle'),
+            content: t('moduleEditor.pricePendingContent', {
+              count: zeroPriceItemCount,
+            }),
+            okText: t('moduleEditor.continueSave'),
+            cancelText: t('moduleEditor.backToEdit'),
             onOk: () => resolve(true),
             onCancel: () => resolve(false),
           })

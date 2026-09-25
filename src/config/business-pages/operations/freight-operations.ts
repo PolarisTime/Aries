@@ -351,7 +351,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     },
     parentImport: {
       parentModuleKey: 'sales-order',
-      label: '销售订单',
+      label: i18next.t('modules.filter.salesOrder'),
       parentFieldKey: 'sourceOrderNos',
       parentDisplayFieldKey: 'orderNo',
       buttonText: '选择销售订单导入（可部分）',

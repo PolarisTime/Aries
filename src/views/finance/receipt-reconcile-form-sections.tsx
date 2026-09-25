@@ -13,6 +13,7 @@ import {
   theme,
   Upload,
 } from 'antd'
+import { useTranslation } from 'react-i18next'
 import {
   BANK_ACCOUNTS,
   BIZ_TYPES,
@@ -30,6 +31,7 @@ export function ReceiptAmountField({
   onAmountChange: (value: number | null) => void
 }) {
   const { token } = theme.useToken()
+  const { t } = useTranslation()
   return (
     <div
       className="rounded-lg p-4"
@@ -63,7 +65,7 @@ export function ReceiptAmountField({
               fontSize: token.fontSizeSM,
             }}
           >
-            实收金额（元）
+            {t('receiptReconcile.amountReceivedYuan')}
           </span>
           <div
             className="mt-1 inline-flex items-center rounded-full px-3 py-0.5"
@@ -73,7 +75,8 @@ export function ReceiptAmountField({
               width: 'fit-content',
             }}
           >
-            人民币{digitToChineseUppercase(amount ?? 0)}
+            {t('receiptReconcile.rmbPrefix')}
+            {digitToChineseUppercase(amount ?? 0)}
           </div>
         </Flex>
       </Flex>
@@ -82,12 +85,13 @@ export function ReceiptAmountField({
 }
 
 export function ReceiptBasicInfoFields() {
+  const { t } = useTranslation()
   return (
     <Row gutter={12} className="mt-4">
       <Col span={8}>
         <Form.Item
           name="settlementEntity"
-          label="我方结算主体"
+          label={t('receiptReconcile.ourSettlementCompany')}
           rules={[{ required: true }]}
         >
           <Select
@@ -99,14 +103,18 @@ export function ReceiptBasicInfoFields() {
         </Form.Item>
       </Col>
       <Col span={8}>
-        <Form.Item name="bizType" label="往来类型" rules={[{ required: true }]}>
+        <Form.Item
+          name="bizType"
+          label={t('receiptReconcile.counterpartyType')}
+          rules={[{ required: true }]}
+        >
           <Select options={BIZ_TYPES.map((v) => ({ value: v, label: v }))} />
         </Form.Item>
       </Col>
       <Col span={8}>
         <Form.Item
           name="customerId"
-          label="往来客户"
+          label={t('receiptReconcile.counterpartyCustomer')}
           rules={[{ required: true }]}
         >
           <Select
@@ -120,19 +128,22 @@ export function ReceiptBasicInfoFields() {
       <Col span={8}>
         <Form.Item
           name="receiptDate"
-          label="收款日期"
+          label={t('receiptReconcile.receiptDate')}
           rules={[{ required: true }]}
         >
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
       </Col>
       <Col span={8}>
-        <Form.Item name="receiptMethod" label="收款方式">
+        <Form.Item
+          name="receiptMethod"
+          label={t('receiptReconcile.receiptMethod')}
+        >
           <Select options={PAY_METHODS.map((v) => ({ value: v, label: v }))} />
         </Form.Item>
       </Col>
       <Col span={8}>
-        <Form.Item name="bankAccount" label="入账银行账户">
+        <Form.Item name="bankAccount" label={t('receiptReconcile.bankAccount')}>
           <Select
             options={BANK_ACCOUNTS.map((v) => ({ value: v, label: v }))}
           />
@@ -148,22 +159,23 @@ export function ReceiptVoucherFields({
   onAttachmentsChange: (names: string[]) => void
 }) {
   const { token } = theme.useToken()
+  const { t } = useTranslation()
   return (
     <>
       <Divider titlePlacement="left" plain>
-        凭证与备注
+        {t('receiptReconcile.voucherAndRemark')}
       </Divider>
       <Row gutter={12}>
         <Col span={12}>
-          <Form.Item name="remark" label="备注说明">
+          <Form.Item name="remark" label={t('receiptReconcile.remark')}>
             <Input.TextArea
               rows={3}
-              placeholder="如：承兑汇票贴现、代付说明等"
+              placeholder={t('receiptReconcile.remarkPlaceholder')}
             />
           </Form.Item>
         </Col>
         <Col span={12}>
-          <Form.Item label="电子回单上传">
+          <Form.Item label={t('receiptReconcile.uploadEReceipt')}>
             <Upload.Dragger
               multiple
               maxCount={5}
@@ -180,7 +192,7 @@ export function ReceiptVoucherFields({
                 type="secondary"
                 style={{ fontSize: token.fontSizeSM }}
               >
-                点击或拖拽上传银行电子回单（最多 5 份）
+                {t('receiptReconcile.uploadHint')}
               </Typography.Text>
             </Upload.Dragger>
           </Form.Item>

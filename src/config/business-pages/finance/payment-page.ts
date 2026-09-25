@@ -289,7 +289,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'attachments',
-      label: '回单/凭证',
+      label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
       row: 4,
       fullRow: true,

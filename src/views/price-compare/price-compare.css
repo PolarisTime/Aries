@@ -630,7 +630,11 @@
 }
 
 .ant-picker-cell-selected .price-compare-cal-dots i {
-  background: color-mix(in srgb, var(--ant-color-text-light-solid, #fff) 50%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--ant-color-text-light-solid, #fff) 50%,
+    transparent
+  );
 }
 
 .ant-picker-cell-selected .price-compare-cal-dots i.is-on {
