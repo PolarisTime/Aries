@@ -1,3 +1,24 @@
+# [10.30.0](https://github.com/PolarisTime/Aries/compare/v10.29.0...v10.30.0) (2026-09-26)
+
+
+### Bug Fixes
+
+* **observability:** 业务错误日志改走 logger 上报 Sentry, 性能指标不再用 error ([be4f466](https://github.com/PolarisTime/Aries/commit/be4f466cc0b8aeb52d5e657667cd6a754c42ad15))
+* **react:** 修复 AppResult 子元素间距被 antd 覆盖失效 ([08a32d8](https://github.com/PolarisTime/Aries/commit/08a32d8f7c04b1d72a88ac47523ce284f366471b))
+* **react:** 修复保存失败/锁冲突时 toast 叠加 ([464a53e](https://github.com/PolarisTime/Aries/commit/464a53e64bb659dc2029b0f3c395a20f7ad8221e))
+* **react:** 区分瞬时/持久未保存, 避免误报服务器有更新 ([a736fc2](https://github.com/PolarisTime/Aries/commit/a736fc2cfa230a5db248bcf810a2a4fee9551ae2))
+* **react:** 单独切换行锁定未落库 ([15a6032](https://github.com/PolarisTime/Aries/commit/15a6032003deac67da30c770987ffdda2e9f01e2))
+* **react:** 批量填入供应商改为按现货价实际变动判定 ([7d1ec42](https://github.com/PolarisTime/Aries/commit/7d1ec42e7f237cbe4f32c268ff518ed1f7412277))
+* **react:** 解锁行未下发 locked=false 导致解锁不落库 ([0f55d7f](https://github.com/PolarisTime/Aries/commit/0f55d7f77af21d4cff79b121efe16bbceb97eb5d))
+* **system:** 权限矩阵剔除全局通配 * 分组 ([8d26313](https://github.com/PolarisTime/Aries/commit/8d263139a0bb20114c9e73d335fb42fad8922e9b))
+
+
+### Features
+
+* **price-compare:** 吨位按规格关联采购订单明细行, 添加行改下拉选商品 ([4b9ce97](https://github.com/PolarisTime/Aries/commit/4b9ce973b0f034a8e0c4c65134f69a9c0ff93b26))
+* **print:** 打印模板按项目记忆上次选择 ([c4fd03a](https://github.com/PolarisTime/Aries/commit/c4fd03ad48bd666b20320912e3e43956d070cacb))
+* **react:** 报价明细行级锁定与关联门禁 ([7eab5c0](https://github.com/PolarisTime/Aries/commit/7eab5c00173233ecfa6f36d2153a909668a32592))
+
 # [10.29.0](https://github.com/PolarisTime/Aries/compare/v10.28.2...v10.29.0) (2026-09-24)
 
 
