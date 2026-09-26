@@ -31,6 +31,16 @@ function createApiClient(instance: AxiosInstance) {
     get<T = unknown>(url: string, config?: ApiRequestConfig): Promise<T> {
       return asApiResponse<T>(instance.get<T, T>(url, config))
     },
+    getResponse<T = unknown>(
+      url: string,
+      config?: ApiRequestConfig,
+    ): Promise<AxiosResponse<T>> {
+      const fullResponseConfig: ApiRequestConfig = {
+        ...config,
+        returnFullResponse: true,
+      }
+      return instance.get<T, AxiosResponse<T>>(url, fullResponseConfig)
+    },
     post<T = unknown>(
       url: string,
       data?: unknown,

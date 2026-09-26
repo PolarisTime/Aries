@@ -11,7 +11,6 @@ import {
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintTemplateRecord } from '@/shared/schemas'
-import { pickDefaultPrintTemplate } from '@/utils/print-template'
 import {
   isValidSplitPieceCount,
   type PrintJobFormValues,
@@ -42,7 +41,6 @@ export function PrintJobTemplateOptionsForm({
       initialValues={{
         mergeMode: 'merge',
         printOptions: [],
-        templateId: pickDefaultPrintTemplate(templates)?.id,
       }}
     >
       <Flex align="center" gap="middle" wrap="wrap">

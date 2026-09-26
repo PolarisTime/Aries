@@ -243,6 +243,8 @@ export const QUERY_KEYS = {
     ['print-templates', moduleKey] as const,
   printRecordItems: (moduleKey: string, recordIds: string[]) =>
     ['print-record-items', moduleKey, recordIds.join(',')] as const,
+  printTemplatePreference: (projectId: string, billType: string) =>
+    ['print-template-preference', projectId, billType] as const,
 
   // Parent selector
   parentSelectorListBase: ['parent-selector-list'] as const,

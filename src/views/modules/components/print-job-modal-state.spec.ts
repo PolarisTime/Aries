@@ -23,9 +23,14 @@ function setup(
     onExportPrintXlsx?: (
       options?: SalesOrderPrintXlsxOptions,
     ) => Promise<boolean>
+    onTemplateUsed?: (templateId: string) => void
+    onPrintImpl?: () => Promise<boolean>
   } = {},
 ) {
-  const onPrint = vi.fn().mockResolvedValue(true)
+  const { onPrintImpl, ...actionOverrides } = overrides
+  const onPrint = onPrintImpl
+    ? vi.fn(onPrintImpl)
+    : vi.fn().mockResolvedValue(true)
   const dispatch = vi.fn()
   const actions = createPrintJobOutputActions({
     brandOverrideEnabled: false,
@@ -40,7 +45,7 @@ function setup(
     orderedPrintItemIds: [],
     selectedItemIds: [],
     selectedTemplate: template,
-    ...overrides,
+    ...actionOverrides,
   })
   return { actions, onPrint }
 }
@@ -123,5 +128,39 @@ describe('resolveSplitPieceCount / isValidSplitPieceCount', () => {
     expect(isValidSplitPieceCount(-1)).toBe(false)
     expect(isValidSplitPieceCount(1.2)).toBe(false)
     expect(isValidSplitPieceCount('25')).toBe(false)
+  })
+})
+
+describe('项目级模板偏好回调 onTemplateUsed', () => {
+  it('打印/导出成功后回传所选模板 id', async () => {
+    const onTemplateUsed = vi.fn()
+    const onExportPrintXlsx = vi.fn().mockResolvedValue(true)
+    const { actions } = setup({ onTemplateUsed, onExportPrintXlsx })
+
+    await actions.handlePrint('print')
+    expect(onTemplateUsed).toHaveBeenCalledWith('template-1')
+
+    onTemplateUsed.mockClear()
+    await actions.handleExportPrintXlsx()
+    expect(onTemplateUsed).toHaveBeenCalledWith('template-1')
+  })
+
+  it('预览不记忆模板偏好', async () => {
+    const onTemplateUsed = vi.fn()
+    const { actions } = setup({ onTemplateUsed })
+
+    await actions.handlePrint('preview')
+    expect(onTemplateUsed).not.toHaveBeenCalled()
+  })
+
+  it('打印失败时不记忆模板偏好', async () => {
+    const onTemplateUsed = vi.fn()
+    const { actions } = setup({
+      onTemplateUsed,
+      onPrintImpl: () => Promise.resolve(false),
+    })
+
+    await actions.handlePrint('print')
+    expect(onTemplateUsed).not.toHaveBeenCalled()
   })
 })

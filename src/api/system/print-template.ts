@@ -3,6 +3,7 @@ import { parseApiContract } from '@/api/core/api-contract'
 import {
   apiDeleteNoContent,
   apiGet,
+  apiGetOptional,
   apiPost,
   apiPut,
   downloadPostResponse,
@@ -10,11 +11,12 @@ import {
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { SavePrintTemplatePayload } from '@/shared/schemas'
-import { exactPageSchema } from '@/shared/schemas/api'
+import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import {
   printTemplateRecordSchema,
   savePrintTemplatePayloadSchema,
 } from '@/shared/schemas/print-template'
+import type { EntityId } from '@/types/entity-id'
 
 const printRecordItemSchema = z.object({
   id: z.string(),
@@ -284,5 +286,46 @@ export async function uploadPrintTemplateJson(id: string, file: File) {
     withIdempotencyKey({
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  )
+}
+
+const projectPrintPreferenceSchema = z.object({
+  projectId: responseEntityIdSchema,
+  billType: z.string(),
+  templateId: responseEntityIdSchema,
+  templateName: z.string(),
+})
+
+export type ProjectPrintPreference = z.output<
+  typeof projectPrintPreferenceSchema
+>
+
+/** 查询项目在某单据类型下上次所选打印模板; 无记忆返回 null。 */
+export function fetchPrintTemplatePreference(
+  projectId: EntityId,
+  billType: string,
+  signal?: AbortSignal,
+): Promise<ProjectPrintPreference | null> {
+  return apiGetOptional(
+    ENDPOINTS.PRINT_TEMPLATE_PREFERENCES,
+    projectPrintPreferenceSchema,
+    {
+      params: { projectId, billType },
+      ...(signal ? { signal } : {}),
+    },
+  )
+}
+
+/** 记录项目在某单据类型下本次所选打印模板(幂等新增/更新)。 */
+export function savePrintTemplatePreference(payload: {
+  projectId: EntityId
+  billType: string
+  templateId: EntityId
+}) {
+  return apiPut(
+    ENDPOINTS.PRINT_TEMPLATE_PREFERENCES,
+    projectPrintPreferenceSchema,
+    payload,
+    withIdempotencyKey(),
   )
 }

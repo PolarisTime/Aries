@@ -60,6 +60,7 @@ export const ENDPOINTS = {
     `/print-templates/${pathSegment(id)}`,
   PRINT_TEMPLATE_CONTENT: (id: string | number) =>
     `/print-templates/${pathSegment(id)}/content`,
+  PRINT_TEMPLATE_PREFERENCES: '/print-template-preferences',
 
   // Setup (pure actions → singular)
   SETUP_ACCOUNT: '/setup/account',

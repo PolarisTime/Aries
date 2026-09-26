@@ -12,14 +12,16 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Flex, Form, Modal, Space, Tag, Typography, theme } from 'antd'
 import { Fragment, useEffect, useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  fetchPrintTemplatePreference,
   listPrintRecordItems,
   type PrintRecordItem,
   type SalesOrderPrintXlsxOptions,
+  savePrintTemplatePreference,
 } from '@/api/system/print-template'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -41,6 +43,7 @@ import {
   projectSummary,
   recordCounterparty,
   recordOrderNo,
+  recordProjectId,
   templateTypeLabel,
 } from '@/views/modules/components/print-job-modal-format'
 import {
@@ -156,6 +159,8 @@ interface PrintJobOutputActionsInput {
   mergeEquivalentItemsAvailable: boolean
   onExportPrintXlsx?: Props['onExportPrintXlsx']
   onPrint: Props['onPrint']
+  /** 实际打印/导出成功后回调, 用于记忆项目级模板偏好(预览不记忆)。 */
+  onTemplateUsed?: (templateId: string) => void
   orderedPrintItemIds: string[]
   selectedItemIds: string[]
   selectedTemplate?: PrintTemplateRecord
@@ -174,6 +179,7 @@ export function createPrintJobOutputActions({
   mergeEquivalentItemsAvailable,
   onExportPrintXlsx,
   onPrint,
+  onTemplateUsed,
   orderedPrintItemIds,
   selectedItemIds,
   selectedTemplate,
@@ -256,6 +262,7 @@ export function createPrintJobOutputActions({
       .then((succeeded) => {
         if (succeeded && mode !== 'preview') {
           markSelectedPrintItemsOutput(selectedItemIds)
+          if (template) onTemplateUsed?.(template.id)
         }
       })
       .finally(() => {
@@ -358,18 +365,60 @@ export function PrintJobModal({
     return itemIds
   }, [printItems, splitItemIdSet])
   const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
+
+  // 项目级偏好: 记住该项目在当前单据类型下上次所选模板, 作为默认回填。
+  const projectId = recordProjectId(selectedRows[0])
+  const projectPreferenceQuery = useQuery({
+    queryKey: QUERY_KEYS.printTemplatePreference(projectId, moduleKey),
+    queryFn: ({ signal }) =>
+      fetchPrintTemplatePreference(projectId, moduleKey, signal),
+    enabled: open && Boolean(projectId),
+    staleTime: 60 * 1000,
+  })
+  const preferredTemplate = projectPreferenceQuery.data
+    ? templates.find(
+        (template) => template.id === projectPreferenceQuery.data?.templateId,
+      )
+    : undefined
+  // 打印/导出成功后记忆项目级偏好(预览不记忆); 失败静默, 不影响打印主流程。
+  const queryClient = useQueryClient()
+  const rememberPreference = useMutation({
+    mutationFn: (templateId: string) =>
+      savePrintTemplatePreference({
+        projectId,
+        billType: moduleKey,
+        templateId,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.printTemplatePreference(projectId, moduleKey),
+      })
+    },
+  })
+  const fallbackTemplate = pickDefaultPrintTemplate(templates)
   const selectedTemplate =
     templates.find((template) => template.id === templateIdFromForm) ??
-    pickDefaultPrintTemplate(templates)
+    preferredTemplate ??
+    fallbackTemplate
   // 模板列表晚于弹窗挂载到达时，补写默认模板，保证 Select 与实际输出一致。
+  // 优先项目偏好, 其次 is_default/首个；等偏好查询结束后再补写, 避免先用默认值覆盖。
   useEffect(() => {
     if (!open) return
     const currentTemplateId: unknown = form.getFieldValue('templateId')
-    const defaultTemplate = pickDefaultPrintTemplate(templates)
-    if (!currentTemplateId && defaultTemplate) {
+    if (currentTemplateId) return
+    if (projectId && projectPreferenceQuery.isPending) return
+    const defaultTemplate = preferredTemplate ?? fallbackTemplate
+    if (defaultTemplate) {
       form.setFieldValue('templateId', defaultTemplate.id)
     }
-  }, [form, open, templates])
+  }, [
+    form,
+    open,
+    projectId,
+    preferredTemplate,
+    fallbackTemplate,
+    projectPreferenceQuery.isPending,
+  ])
 
   const primaryRecord = selectedRows[0]
   const orderNo = recordOrderNo(primaryRecord)
@@ -433,6 +482,9 @@ export function PrintJobModal({
     mergeEquivalentItemsAvailable,
     onExportPrintXlsx,
     onPrint,
+    onTemplateUsed: (templateId) => {
+      if (projectId) rememberPreference.mutate(templateId)
+    },
     orderedPrintItemIds,
     selectedItemIds: selectedPrintItems.map((item) => item.id),
     selectedTemplate,

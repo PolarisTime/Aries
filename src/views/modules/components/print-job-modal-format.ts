@@ -45,6 +45,11 @@ export function recordCounterparty(record?: ModuleRecord) {
   return record ? firstText(record, COUNTERPARTY_FIELDS) : ''
 }
 
+/** 记录所属项目 id; 无项目返回空串(此时不记忆打印模板偏好)。 */
+export function recordProjectId(record?: ModuleRecord) {
+  return record ? firstText(record, ['projectId']) : ''
+}
+
 function lookupProjectNameAbbr(record: ModuleRecord) {
   const projectName = firstText(record, PROJECT_NAME_FIELDS)
   if (!projectName) return ''

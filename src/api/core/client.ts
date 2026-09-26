@@ -31,6 +31,19 @@ export function apiGet<Schema extends ZodType>(
   return parseRequest(http.get<unknown>(url, config), schema, `GET ${url}`)
 }
 
+/** GET 可选资源: 204 或空响应返回 null, 否则按 schema 校验返回。 */
+export async function apiGetOptional<Schema extends ZodType>(
+  url: string,
+  schema: Schema,
+  config?: ApiRequestConfig,
+): Promise<output<Schema> | null> {
+  const response = await http.getResponse<unknown>(url, config)
+  if (response.status === 204 || response.data == null) {
+    return null
+  }
+  return parseApiContract(schema, response.data, `GET ${url}`)
+}
+
 export function apiPost<Schema extends ZodType>(
   url: string,
   schema: Schema,
