@@ -234,7 +234,7 @@ export function DocumentReferencePopover({
         message.error(t('documentReference.copyFailed'))
       }
     },
-    [],
+    [t],
   )
 
   if (!references.length) {

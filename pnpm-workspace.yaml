@@ -22,3 +22,7 @@ minimumReleaseAgeExclude:
   - oxlint-plugin-react-doctor
   - react-doctor
 trustPolicy: no-downgrade
+
+allowBuilds:
+  '@sentry/cli': true
+  esbuild: true
