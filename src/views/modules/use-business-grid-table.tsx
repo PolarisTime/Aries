@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
 import {
@@ -43,13 +43,13 @@ function buildAntdColumns({
   columnOrder,
   columnVisibility,
 }: {
-  columnDefs: ColumnDef<ModuleRecord, unknown>[]
+  columnDefs: ColumnDef<StockFeatures, ModuleRecord>[]
   columnOrder: string[]
   columnVisibility: Record<string, boolean>
 }): TableColumnsType<ModuleRecord> {
   const columnMap = new Map(
     columnDefs.map((column) => [
-      (column as ColumnDef<ModuleRecord, unknown> & { id: string }).id,
+      (column as ColumnDef<StockFeatures, ModuleRecord> & { id: string }).id,
       column,
     ]),
   )
@@ -139,7 +139,8 @@ export function useBusinessGridTable({
     onOpenDetail: config ? onOpenDetail : undefined,
   })
   const allColumnIds = columnDefs.map(
-    (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
+    (c) =>
+      (c as ColumnDef<StockFeatures, ModuleRecord> & { id: string }).id || '',
   )
   const columnOrder = mergeColumnOrder(allColumnIds, savedOrder, {
     headId: DETAIL_TOGGLE_COLUMN_ID,

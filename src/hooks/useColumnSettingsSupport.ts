@@ -1,8 +1,8 @@
 import type {
   ColumnOrderState,
+  ColumnVisibilityState,
   OnChangeFn,
   Updater,
-  VisibilityState,
 } from '@tanstack/react-table'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -55,7 +55,7 @@ function toColumnOrderState(settings: ListColumnSettings | null) {
 }
 
 function toVisibilityState(settings: ListColumnSettings | null) {
-  const nextVisibility: VisibilityState = {}
+  const nextVisibility: ColumnVisibilityState = {}
   for (const key of settings?.hiddenKeys || []) {
     nextVisibility[key] = false
   }
@@ -117,9 +117,8 @@ export function useColumnSettingsSupport(
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(() =>
     toColumnOrderState(initialSettings),
   )
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-    () => toVisibilityState(initialSettings),
-  )
+  const [columnVisibility, setColumnVisibility] =
+    useState<ColumnVisibilityState>(() => toVisibilityState(initialSettings))
   // 与 state 同步维护的镜像 ref：事件处理器里先算 next 再 setState，
   // 保证 persist 拿到最新值的同时不把副作用塞进 setState updater
   const columnOrderRef = useRef(columnOrder)
@@ -207,7 +206,7 @@ export function useColumnSettingsSupport(
 
   const persist = async (
     order: ColumnOrderState,
-    visibility: VisibilityState,
+    visibility: ColumnVisibilityState,
     sizes: Record<string, number>,
   ) => {
     const orderedKeys = order.length > 0 ? order : undefined
@@ -290,7 +289,7 @@ export function useColumnSettingsSupport(
     void persist(next, columnVisibilityRef.current, columnSizesRef.current)
   }
 
-  const handleColumnVisibilityChange: OnChangeFn<VisibilityState> = (
+  const handleColumnVisibilityChange: OnChangeFn<ColumnVisibilityState> = (
     updater,
   ) => {
     const next = resolveUpdater(updater, columnVisibilityRef.current)

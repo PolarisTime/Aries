@@ -1,5 +1,5 @@
 import { EyeOutlined } from '@ant-design/icons'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { Button, Tooltip } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -28,7 +28,7 @@ function resolveSummaryAmount(record: ModuleRecord) {
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData, TValue> {
+  interface ColumnMeta<TFeatures, TData, TValue> {
     width?: number | string
     align?: string
     fixed?: string
@@ -55,7 +55,7 @@ export function useGridColumns({
   const { formatCellValue } = useModuleDisplaySupport()
   const { t } = useTranslation()
 
-  const columns: ColumnDef<ModuleRecord>[] = []
+  const columns: ColumnDef<StockFeatures, ModuleRecord>[] = []
 
   for (const colDef of config.columns) {
     columns.push({

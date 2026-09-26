@@ -2,9 +2,10 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { webUpdateNotice } from '@plugin-web-update-notification/vite'
+import babel from '@rolldown/plugin-babel'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
 const packageJson = JSON.parse(
@@ -130,10 +131,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      react({
-        babel: {
-          plugins: [['babel-plugin-react-compiler', { target: '19' }]],
-        },
+      react(),
+      babel({
+        presets: [reactCompilerPreset({ target: '19' })],
       }),
       tailwindcss(),
       webUpdateNotice({
