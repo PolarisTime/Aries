@@ -37,12 +37,16 @@ function compareActions(left: Permission, right: Permission) {
   return rankDiff !== 0 ? rankDiff : left.action.localeCompare(right.action)
 }
 
-/** 按 resource 归组权限码，组间按资源名字典序，组内按标准动作顺序。 */
+/**
+ * 按 resource 归组权限码，组间按资源名字典序，组内按标准动作顺序。
+ * 全局通配 `*` 不进入矩阵（由调用方单独提示），故在此剔除。
+ */
 export function groupPermissionsByResource(
   permissions: Permission[],
 ): PermissionGroup[] {
   const byResource = new Map<string, Permission[]>()
   for (const permission of permissions) {
+    if (isWildcardPermission(permission.code)) continue
     const resource = permission.resource.trim() || OTHER_RESOURCE
     const list = byResource.get(resource)
     if (list) {

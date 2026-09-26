@@ -58,6 +58,17 @@ describe('groupPermissionsByResource', () => {
     ])
   })
 
+  it('全局通配 * 不进入权限矩阵分组', () => {
+    const groups = groupPermissionsByResource([
+      { code: '*', resource: '*', action: '*', field: null, description: null },
+      permission('materials', 'read'),
+    ])
+    expect(groups.map((group) => group.resource)).toEqual(['materials'])
+    expect(
+      groups.flatMap((group) => group.actions.map((item) => item.code)),
+    ).not.toContain('*')
+  })
+
   it('未知动作排在已知动作之后', () => {
     const groups = groupPermissionsByResource([
       permission('materials', 'zzz'),
