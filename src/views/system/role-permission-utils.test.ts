@@ -5,13 +5,16 @@ import {
   canDeleteRole,
   canEditRoleCode,
   getActionLabel,
+  getPermissionCodeLabel,
   getPermissionLabel,
+  getResourceLabel,
   groupPermissionCodes,
   groupPermissionsByResource,
   hasWildcardPermission,
   isGroupFullySelected,
   isGroupPartiallySelected,
   isWildcardPermission,
+  parsePermissionCode,
   toggleGroupSelection,
   togglePermissionSelection,
 } from './role-permission-utils'
@@ -202,5 +205,66 @@ describe('getPermissionLabel', () => {
         t,
       ),
     ).toBe('查看·unknown')
+  })
+})
+
+describe('getResourceLabel', () => {
+  const t = ((key: string) =>
+    ({
+      'system.role.resources.sales-orders': '销售订单',
+    })[key] ?? key) as unknown as TFunction
+
+  it('命中翻译时返回中文资源名', () => {
+    expect(getResourceLabel('sales-orders', t)).toBe('销售订单')
+  })
+
+  it('未登记资源回退资源码', () => {
+    expect(getResourceLabel('unknown-resource', t)).toBe('unknown-resource')
+  })
+})
+
+describe('parsePermissionCode', () => {
+  it('两段码解析资源与动作', () => {
+    expect(parsePermissionCode('sales-orders:read')).toEqual({
+      resource: 'sales-orders',
+      action: 'read',
+      field: undefined,
+    })
+  })
+
+  it('三段码保留字段段', () => {
+    expect(parsePermissionCode('sales-orders:read:amount')).toEqual({
+      resource: 'sales-orders',
+      action: 'read',
+      field: 'amount',
+    })
+  })
+
+  it('空段回退为空串/undefined 而不抛错', () => {
+    expect(parsePermissionCode('')).toEqual({
+      resource: '',
+      action: '',
+      field: undefined,
+    })
+  })
+})
+
+describe('getPermissionCodeLabel', () => {
+  const t = ((key: string) =>
+    ({
+      'system.role.actions.read': '查看',
+      'system.role.actions.update': '编辑',
+      'system.role.fields.amount': '金额',
+    })[key] ?? key) as unknown as TFunction
+
+  it('字段级权限码保留「动作·字段」，与普通权限码区分', () => {
+    expect(getPermissionCodeLabel('sales-orders:read', t)).toBe('查看')
+    expect(getPermissionCodeLabel('sales-orders:read:amount', t)).toBe(
+      '查看·金额',
+    )
+  })
+
+  it('未知动作/字段回退原码', () => {
+    expect(getPermissionCodeLabel('x:zzz:unknown', t)).toBe('zzz·unknown')
   })
 })

@@ -231,7 +231,7 @@ export function UserAccountWizardModal({
             <Alert
               type="warning"
               showIcon
-              message={t('system.userAccount.rolesUnavailable')}
+              title={t('system.userAccount.rolesUnavailable')}
             />
           ) : roleFormReady ? (
             <>

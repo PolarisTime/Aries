@@ -117,6 +117,13 @@ export function getActionLabel(action: string, t: TFunction): string {
   return translated === key ? action : translated
 }
 
+/** 资源分组标题文案；未登记时回退资源码本身。 */
+export function getResourceLabel(resource: string, t: TFunction): string {
+  const key = `system.role.resources.${resource}`
+  const translated = t(key)
+  return translated === key ? resource : translated
+}
+
 /** 字段级权限的字段名文案；未登记时回退字段码本身。 */
 export function getFieldLabel(field: string, t: TFunction): string {
   const key = `system.role.fields.${field}`
@@ -136,6 +143,26 @@ export function getPermissionLabel(
   return permission.field
     ? `${action}·${getFieldLabel(permission.field, t)}`
     : action
+}
+
+/**
+ * 拆解权限码为资源/动作/字段：`资源:动作[:字段]`。
+ * 供有效权限预览等仅持有字符串码的场景复用（避免 `split(':')` 丢弃字段段）。
+ */
+export function parsePermissionCode(code: string): {
+  resource: string
+  action: string
+  field?: string
+} {
+  const [resource = '', action = '', field] = code.split(':')
+  return { resource, action, field: field || undefined }
+}
+
+/** 由权限码得到「动作[·字段]」展示文案（无需完整权限对象）。 */
+export function getPermissionCodeLabel(code: string, t: TFunction): string {
+  const { action, field } = parsePermissionCode(code)
+  const actionLabel = getActionLabel(action, t)
+  return field ? `${actionLabel}·${getFieldLabel(field, t)}` : actionLabel
 }
 
 export const WILDCARD_PERMISSION = '*'

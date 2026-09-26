@@ -510,3 +510,19 @@
   border: 1px solid var(--theme-card-border);
   border-radius: var(--ant-border-radius);
 }
+
+/* 角色权限矩阵：固定高度内滚动，避免 40+ 资源分组撑高弹窗 */
+.role-permission-scroll {
+  max-height: 460px;
+  padding-inline-end: var(--space-xxs);
+  overflow-y: auto;
+}
+
+.role-permission-scroll .ant-collapse-header {
+  align-items: center !important;
+  padding: var(--space-xs) var(--space-sm) !important;
+}
+
+.role-permission-scroll .ant-collapse-content-box {
+  padding: var(--space-sm) !important;
+}

@@ -106,7 +106,7 @@ export function UserRoleAssignmentModal({ user, onSaved, onClose }: Props) {
         <Alert
           type="warning"
           showIcon
-          message={t('system.userAccount.rolesUnavailable')}
+          title={t('system.userAccount.rolesUnavailable')}
         />
       ) : (
         <Form form={form} layout="vertical" preserve={false}>

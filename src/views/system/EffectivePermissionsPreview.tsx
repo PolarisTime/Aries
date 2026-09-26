@@ -1,9 +1,16 @@
 import { useQueries } from '@tanstack/react-query'
-import { Alert, Space, Tag, Typography } from 'antd'
+import { Alert, Flex, Space, Tag, Typography } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getRole } from '@/api/system/roles'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import {
+  getPermissionCodeLabel,
+  getResourceLabel,
+  isWildcardPermission,
+  OTHER_RESOURCE,
+  parsePermissionCode,
+} from '@/views/system/role-permission-utils'
 
 interface Props {
   /** 参与并集计算的角色 ID 列表。 */
@@ -12,9 +19,17 @@ interface Props {
   enabled?: boolean
 }
 
+interface EffectivePermissionGroup {
+  resource: string
+  items: { code: string; label: string }[]
+}
+
 /**
  * 有效权限预览：实时汇总所选角色的权限并集，按资源分组只读展示。
  * 供用户配置向导判断"该用户最终能做什么"。
+ *
+ * <p>展示口径与权限矩阵一致：资源名中文化、字段级权限保留「动作·字段」，
+ * 因此此处复用 {@link getResourceLabel}/{@link getPermissionCodeLabel}。</p>
  */
 export function EffectivePermissionsPreview({
   roleIds,
@@ -41,57 +56,62 @@ export function EffectivePermissionsPreview({
     return [...set].toSorted()
   }, [roleDetailQueries])
 
-  const wildcard = effectivePermissions.includes('*')
+  const wildcard = effectivePermissions.some(isWildcardPermission)
 
-  const groups = useMemo(() => {
-    const map = new Map<string, Set<string>>()
+  const groups = useMemo<EffectivePermissionGroup[]>(() => {
+    const map = new Map<string, { code: string; label: string }[]>()
     for (const code of effectivePermissions) {
-      if (code === '*') continue
-      const [resource, action] = code.split(':')
-      const key = resource || 'other'
-      const actions = map.get(key)
-      if (actions) {
-        actions.add(action)
+      if (isWildcardPermission(code)) continue
+      const { resource } = parsePermissionCode(code)
+      const key = resource || OTHER_RESOURCE
+      const items = map.get(key)
+      const entry = { code, label: getPermissionCodeLabel(code, t) }
+      if (items) {
+        items.push(entry)
       } else {
-        map.set(key, new Set([action]))
+        map.set(key, [entry])
       }
     }
-    return [...map.entries()].map(([resource, actions]) => ({
+    return [...map.entries()].map(([resource, items]) => ({
       resource,
-      actions: [...actions].toSorted(),
+      items,
     }))
-  }, [effectivePermissions])
+  }, [effectivePermissions, t])
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <Typography.Title level={5}>
+    <div className="effective-permissions-preview">
+      <Typography.Title level={5} style={{ marginBlockEnd: 8 }}>
         {t('system.userAccount.effectivePermissions')}
       </Typography.Title>
       {wildcard ? (
         <Alert
           type="info"
           showIcon
-          message={t('system.userAccount.effectivePermissionsWildcard')}
+          title={t('system.userAccount.effectivePermissionsWildcard')}
         />
       ) : groups.length === 0 ? (
         <Typography.Text type="secondary">
           {t('system.userAccount.effectivePermissionsEmpty')}
         </Typography.Text>
       ) : (
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+        <Flex vertical gap={8}>
           {groups.map((group) => (
             <div key={group.resource}>
-              <Typography.Text strong>{group.resource}</Typography.Text>
+              <Typography.Text strong>
+                {getResourceLabel(group.resource, t)}
+              </Typography.Text>
               <div style={{ marginTop: 4 }}>
                 <Space wrap size={4}>
-                  {group.actions.map((action) => (
-                    <Tag key={action}>{action}</Tag>
+                  {group.items.map((item) => (
+                    <Tag key={item.code} title={item.code}>
+                      {item.label}
+                    </Tag>
                   ))}
                 </Space>
               </div>
             </div>
           ))}
-        </Space>
+        </Flex>
       )}
     </div>
   )
