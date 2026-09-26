@@ -11,6 +11,7 @@ import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { downloadBlob } from '@/utils/download'
+import { logger } from '@/utils/logger'
 
 const materialSearchRowSchema = z.looseObject({ id: z.unknown().optional() })
 
@@ -172,7 +173,7 @@ export async function fetchAllMaterialOptions(
   const pagesToFetch = Math.min(totalPages, MATERIAL_OPTIONS_MAX_PAGES)
   if (totalPages > MATERIAL_OPTIONS_MAX_PAGES) {
     // 安全降级: 截断到上限并告警, 保证下拉可用而不是无限翻页
-    console.warn(
+    logger.warn(
       `[materials] 商品选项共 ${totalPages} 页, 超过上限 ${MATERIAL_OPTIONS_MAX_PAGES} 页, 仅加载前 ${MATERIAL_OPTIONS_MAX_PAGES} 页`,
     )
   }

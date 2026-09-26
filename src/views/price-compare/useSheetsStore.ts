@@ -30,6 +30,7 @@ import {
 } from '@/api/market/quote-sheets'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
+import { logger } from '@/utils/logger'
 import { DEFAULT_LENGTH_PREMIUM, isSeparatorRow, makeSheet } from './core'
 import type {
   Brand,
@@ -882,7 +883,7 @@ export function useSheetsStore(options?: {
           ),
         }))
       } catch (error) {
-        console.error(i18next.t('priceCompareStore.reloadSheetFailed'), error)
+        logger.error(i18next.t('priceCompareStore.reloadSheetFailed'), error)
         message.error(i18next.t('priceCompareStore.reloadSheetFailed'))
       }
     },
@@ -948,7 +949,7 @@ export function useSheetsStore(options?: {
         configLoadedRef.current.add(projectId)
         flushBlockedSaves(projectId)
       } catch (error) {
-        console.error('重新加载比价配置失败', error)
+        logger.error('重新加载比价配置失败', error)
         message.error(i18next.t('priceCompareStore.reloadConfigFailed'))
       }
     },
@@ -1480,7 +1481,7 @@ export function useSheetsStore(options?: {
         message.info({ content: STALE_NOTICE_TEXT, key: STALE_NOTICE_KEY })
       }
     } catch (error) {
-      console.error('刷新比价数据失败', error)
+      logger.error('刷新比价数据失败', error)
     }
   }, [refreshConfig, refreshSheets, token])
 
@@ -1546,7 +1547,7 @@ export function useSheetsStore(options?: {
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          console.error('加载比价单失败', error)
+          logger.error('加载比价单失败', error)
           message.error(i18next.t('priceCompareStore.loadSheetsFailed'))
         }
       })
@@ -1670,7 +1671,7 @@ export function useSheetsStore(options?: {
           await releaseQuoteSheetEditLock(serverId)
         })
       } catch (error) {
-        if (!isConflictError(error)) console.error('释放编辑锁失败', error)
+        if (!isConflictError(error)) logger.error('释放编辑锁失败', error)
       }
     },
     [clearHeldLockTimer, flushPendingSaves, runLockOp],
@@ -1905,7 +1906,7 @@ export function useSheetsStore(options?: {
         flushBlockedSaves(projectId)
       } catch (error) {
         if (!controller.signal.aborted) {
-          console.error('加载比价配置失败', error)
+          logger.error('加载比价配置失败', error)
         }
       }
     })()
@@ -2144,7 +2145,7 @@ export function useSheetsStore(options?: {
     })
     if (serverId) {
       void deleteQuoteSheet(serverId).catch((error) => {
-        console.error('删除比价单失败', error)
+        logger.error('删除比价单失败', error)
         message.error(i18next.t('priceCompareStore.deleteSheetFailed'))
       })
     }

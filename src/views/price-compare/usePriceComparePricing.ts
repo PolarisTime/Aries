@@ -9,6 +9,7 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_STATIC } from '@/constants/query-policies'
 import { message } from '@/utils/antd-app'
+import { logger } from '@/utils/logger'
 import type { PriceData, PriceSheet } from './types'
 
 export function usePriceComparePricing({
@@ -136,7 +137,7 @@ export function usePriceComparePricing({
         }),
       )
     } catch (error) {
-      console.error('读取网价失败', error)
+      logger.error('读取网价失败', error)
       message.error(
         t('priceCompare.pricing.refreshFailed', {
           message:

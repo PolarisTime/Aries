@@ -20,6 +20,7 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useAuthStore } from '@/stores/authStore'
 import { message } from '@/utils/antd-app'
+import { logger } from '@/utils/logger'
 import {
   BACKFILL_POLL_INTERVAL_MS,
   type CalendarMap,
@@ -243,7 +244,7 @@ export function useMarketSync() {
       await calendarQuery.refetch()
       selectQuote(result.articleDate, result.period)
     } catch (error) {
-      console.error(i18next.t('marketSync.syncFailed'), error)
+      logger.error(i18next.t('marketSync.syncFailed'), error)
       message.error(
         `${i18next.t('marketSync.syncFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
@@ -275,7 +276,7 @@ export function useMarketSync() {
       )
       void backfillStatusQuery.refetch()
     } catch (error) {
-      console.error(i18next.t('marketSync.backfillFailed'), error)
+      logger.error(i18next.t('marketSync.backfillFailed'), error)
       message.error(
         `${i18next.t('marketSync.backfillFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
@@ -301,7 +302,7 @@ export function useMarketSync() {
       await calendarQuery.refetch()
       selectQuote(result.articleDate, result.period)
     } catch (error) {
-      console.error(i18next.t('marketSync.syncFailed'), error)
+      logger.error(i18next.t('marketSync.syncFailed'), error)
       message.error(
         `${i18next.t('marketSync.syncFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
@@ -386,7 +387,7 @@ export function useMarketSync() {
       URL.revokeObjectURL(url)
       message.success(i18next.t('marketSync.exported', { rows: all.length }))
     } catch (error) {
-      console.error(i18next.t('marketSync.exportFailed'), error)
+      logger.error(i18next.t('marketSync.exportFailed'), error)
       message.error(i18next.t('marketSync.exportFailed'))
     }
   }
