@@ -5,7 +5,7 @@ import { buildVisibleLayoutMenuEntries } from '@/layouts/layout-menu'
 function page(overrides: Partial<AppPageDefinition>): AppPageDefinition {
   return {
     key: 'page',
-    title: '页面',
+    titleKey: 'pages.page',
     menuKey: '/page',
     view: 'business-grid',
     icon: 'FileSearchOutlined',
@@ -50,5 +50,19 @@ describe('buildVisibleLayoutMenuEntries', () => {
       ],
     })
     expect(entries.map((entry) => entry.menuCode)).toEqual(['visible'])
+  })
+
+  it('菜单项只携带 i18n key, 不在构建期翻译', () => {
+    const entries = buildVisibleLayoutMenuEntries({
+      ...baseOptions,
+      appPageDefinitions: [
+        page({ key: 'a', titleKey: 'pages.a' }),
+        page({ key: 'b', titleKey: 'pages.b' }),
+      ],
+    })
+    expect(entries.map((entry) => entry.titleKey)).toEqual([
+      'pages.a',
+      'pages.b',
+    ])
   })
 })

@@ -7,7 +7,10 @@ import {
   listPrintTemplates,
   type SalesOrderPrintXlsxOptions,
 } from '@/api/system/print-template'
-import { printTemplateTargetMap } from '@/config/print-template-targets'
+import {
+  getPrintTemplateTargetTitle,
+  isPrintTemplateTarget,
+} from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
@@ -47,7 +50,7 @@ export function PrintTemplateDropdown({
 }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const supportsPrintTemplate = moduleKey in printTemplateTargetMap
+  const supportsPrintTemplate = isPrintTemplateTarget(moduleKey)
   const { data: templates = [] } = useQuery<PrintTemplateRecord[]>({
     queryKey: QUERY_KEYS.printableTemplates(moduleKey),
     queryFn: ({ signal }) => listPrintTemplates(moduleKey, signal),
@@ -97,7 +100,7 @@ export function PrintTemplateDropdown({
       </Button>
       <PrintJobModal
         moduleKey={moduleKey}
-        moduleTitle={moduleTitle || printTemplateTargetMap[moduleKey]}
+        moduleTitle={moduleTitle || getPrintTemplateTargetTitle(moduleKey, t)}
         onClose={() => setOpen(false)}
         onExportPrintXlsx={onExportPrintXlsx}
         onPrint={handlePrint}

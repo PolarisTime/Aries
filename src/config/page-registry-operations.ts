@@ -1,10 +1,9 @@
-import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const operationPageDefinitions: AppPageDefinition[] = [
   {
     key: 'purchase-order',
-    title: i18next.t('pages.purchase-order'),
+    titleKey: 'pages.purchase-order',
     menuKey: '/purchase-order',
     view: 'business-grid',
     icon: 'ProfileOutlined',
@@ -14,7 +13,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'purchase-inbound',
-    title: i18next.t('pages.purchase-inbound'),
+    titleKey: 'pages.purchase-inbound',
     menuKey: '/purchase-inbound',
     view: 'business-grid',
     icon: 'InboxOutlined',
@@ -24,7 +23,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-order',
-    title: i18next.t('pages.sales-order'),
+    titleKey: 'pages.sales-order',
     menuKey: '/sales-order',
     view: 'business-grid',
     icon: 'FileDoneOutlined',
@@ -34,7 +33,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-contract',
-    title: i18next.t('pages.sales-contract'),
+    titleKey: 'pages.sales-contract',
     menuKey: '/sales-contract',
     view: 'sales-contract',
     icon: 'ProfileOutlined',
@@ -42,7 +41,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-outbound',
-    title: i18next.t('pages.sales-outbound'),
+    titleKey: 'pages.sales-outbound',
     menuKey: '/sales-outbound',
     view: 'business-grid',
     icon: 'SwapOutlined',
@@ -52,7 +51,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'sales-return',
-    title: i18next.t('pages.sales-return'),
+    titleKey: 'pages.sales-return',
     menuKey: '/sales-return',
     view: 'business-grid',
     icon: 'RollbackOutlined',
@@ -62,7 +61,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'inventory',
-    title: i18next.t('pages.inventory'),
+    titleKey: 'pages.inventory',
     menuKey: '/inventory',
     view: 'inventory',
     icon: 'DatabaseOutlined',
@@ -70,7 +69,7 @@ export const operationPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'freight-bill',
-    title: i18next.t('pages.freight-bill'),
+    titleKey: 'pages.freight-bill',
     menuKey: '/freight-bill',
     view: 'business-grid',
     icon: 'CarOutlined',

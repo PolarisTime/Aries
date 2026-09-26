@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   buildMenuEntriesByGroup,
   menuGroupDefinitions,
@@ -23,6 +24,7 @@ interface Options {
 }
 
 export function useAppLayoutMenuState(options: Options) {
+  const { t } = useTranslation()
   const [manualSiderOpenKeys, setManualSiderOpenKeys] = useState<string[]>([])
   const permissions = usePermissions()
   const visibleMenuEntries = buildVisibleLayoutMenuEntries({
@@ -44,9 +46,9 @@ export function useAppLayoutMenuState(options: Options) {
     new Set([...resolvedSiderOpenKeys, ...manualSiderOpenKeys]),
   )
 
-  const sideMenuItems = buildSideMenuItems(visibleMenuEntries)
+  const sideMenuItems = buildSideMenuItems(visibleMenuEntries, t)
 
-  const topMenuItems = buildTopMenuItems(visibleMenuEntries)
+  const topMenuItems = buildTopMenuItems(visibleMenuEntries, t)
 
   const resolveMenuPath = (key: string) => menuPathByKey[key]
 

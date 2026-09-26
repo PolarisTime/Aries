@@ -20,13 +20,13 @@ function normalizePath(pathname: string) {
 
 export function resolveRoutePageContext(
   pathname: string,
-  _t: TFunction,
+  t: TFunction,
 ): RoutePageContext {
   const normalizedPath = normalizePath(pathname)
   const matchedDefinition = pageDefinitionByPath.get(normalizedPath)
   if (matchedDefinition) {
     return {
-      title: matchedDefinition.title,
+      title: t(matchedDefinition.titleKey),
       activeMenuKey:
         matchedDefinition.activeMenuKey || matchedDefinition.menuKey,
     }

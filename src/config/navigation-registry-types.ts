@@ -38,6 +38,7 @@ export type MenuGroupKey =
 
 export interface MenuGroupDefinition {
   key: MenuGroupKey
-  title: string
+  /** 菜单分组标题的 i18n key(如 `navigation.master`)；渲染期用 `t(titleKey)` 解析。 */
+  titleKey: string
   icon: AppIconKey
 }

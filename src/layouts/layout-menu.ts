@@ -7,7 +7,8 @@ import type { AppPageDefinition } from '@/config/page-registry'
 
 export interface LayoutMenuEntry {
   menuCode: string
-  title: string
+  /** 菜单标题的 i18n key；由渲染层用 `t(titleKey)` 解析。 */
+  titleKey: string
   path: string | null
   icon: AppIconKey
   children: LayoutMenuEntry[]
@@ -45,19 +46,19 @@ export function buildVisibleLayoutMenuEntries(
   return [
     ...topLevelMenuEntries.map<LayoutMenuEntry>((entry) => ({
       menuCode: entry.key,
-      title: entry.title,
+      titleKey: entry.titleKey,
       path: resolveEntryPath(entry),
       icon: entry.icon,
       children: [],
     })),
     ...menuGroups.map<LayoutMenuEntry>((group) => ({
       menuCode: group.key,
-      title: group.title,
+      titleKey: group.titleKey,
       path: null,
       icon: group.icon,
       children: group.items.map((entry) => ({
         menuCode: entry.key,
-        title: entry.title,
+        titleKey: entry.titleKey,
         path: resolveEntryPath(entry),
         icon: entry.icon,
         children: [],

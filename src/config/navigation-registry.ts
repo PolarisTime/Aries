@@ -1,4 +1,3 @@
-import i18next from 'i18next'
 import type {
   MenuGroupDefinition,
   MenuGroupKey,
@@ -26,47 +25,47 @@ export const menuGroupOrder: MenuGroupKey[] = [
 export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
   master: {
     key: 'master',
-    title: i18next.t('navigation.master'),
+    titleKey: 'navigation.master',
     icon: 'AppstoreOutlined',
   },
   market: {
     key: 'market',
-    title: i18next.t('navigation.market'),
+    titleKey: 'navigation.market',
     icon: 'CalculatorOutlined',
   },
   purchase: {
     key: 'purchase',
-    title: i18next.t('navigation.purchase'),
+    titleKey: 'navigation.purchase',
     icon: 'ShoppingCartOutlined',
   },
   sales: {
     key: 'sales',
-    title: i18next.t('navigation.sales'),
+    titleKey: 'navigation.sales',
     icon: 'ShopOutlined',
   },
   inventory: {
     key: 'inventory',
-    title: i18next.t('navigation.inventory'),
+    titleKey: 'navigation.inventory',
     icon: 'DatabaseOutlined',
   },
   freight: {
     key: 'freight',
-    title: i18next.t('navigation.freight'),
+    titleKey: 'navigation.freight',
     icon: 'CarOutlined',
   },
   statements: {
     key: 'statements',
-    title: i18next.t('navigation.statements'),
+    titleKey: 'navigation.statements',
     icon: 'FileTextOutlined',
   },
   finance: {
     key: 'finance',
-    title: i18next.t('navigation.finance'),
+    titleKey: 'navigation.finance',
     icon: 'WalletOutlined',
   },
   system: {
     key: 'system',
-    title: i18next.t('navigation.system'),
+    titleKey: 'navigation.system',
     icon: 'SettingOutlined',
   },
 }

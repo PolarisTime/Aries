@@ -28,7 +28,15 @@ export type RouteViewKey =
 
 export interface AppPageDefinition {
   key: string
-  title: string
+  /**
+   * 页面标题的 i18n key(如 `pages.freight-bill`)。
+   *
+   * <p>这里必须存 key 而非已翻译文案：注册表属于 eager 加载模块，在模块顶层调用
+   * `i18next.t()` 会早于 i18n 初始化求值（生产构建中两者被拆进不同 chunk，执行顺序
+   * 不再由 main.tsx 的 import 顺序决定），得到 undefined 标题。请在渲染期
+   * 用 `t(titleKey)` 解析。</p>
+   */
+  titleKey: string
   menuKey: string
   view: RouteViewKey
   icon: AppIconKey

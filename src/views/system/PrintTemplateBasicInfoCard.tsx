@@ -2,7 +2,7 @@ import { FileTextOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import { Card, Col, Form, Input, InputNumber, Row, Select, Space } from 'antd'
 import type { SettlementCompanyOption } from '@/api/system/company-settings'
-import { printTemplateTargetOptions } from '@/config/print-template-targets'
+import { buildPrintTemplateTargetOptions } from '@/config/print-template-targets'
 import {
   defaultEngineForTemplateType,
   findSettlementCompanyOption,
@@ -37,7 +37,7 @@ export function PrintTemplateBasicInfoCard({
             label={t('system.printTemplateEditor.billType')}
             rules={[{ required: true }]}
           >
-            <Select options={printTemplateTargetOptions} />
+            <Select options={buildPrintTemplateTargetOptions(t)} />
           </Form.Item>
         </Col>
         <Col span={12}>

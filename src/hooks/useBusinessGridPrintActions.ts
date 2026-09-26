@@ -8,7 +8,7 @@ import {
   type SalesOrderPrintXlsxOptions,
 } from '@/api/system/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
-import { printTemplateTargetMap } from '@/config/print-template-targets'
+import { isPrintTemplateTarget } from '@/config/print-template-targets'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
@@ -79,7 +79,7 @@ async function pickPrintTemplate(
   t: (key: string) => string,
   selectedRecord?: ModuleRecord,
 ): Promise<PrintTemplateRecord | null> {
-  if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
+  if (!isPrintTemplateTarget(moduleKey)) return null
   const templatesResponse = await listPrintTemplates(moduleKey)
   const templates = filterPrintTemplatesBySettlementCompany(
     templatesResponse.filter(

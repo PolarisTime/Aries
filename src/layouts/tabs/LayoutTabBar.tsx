@@ -20,8 +20,13 @@ import {
   useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
 
-function getTabTitle(tab: LayoutTab): string {
-  return getPageDefinition(tab.pathname)?.title ?? tab.pathname
+function getTabTitle(tab: LayoutTab, t: TFunction): string {
+  const definition = getPageDefinition(tab.pathname)
+  if (!definition) {
+    return tab.pathname
+  }
+  // 标题在渲染期解析: 注册表只存 i18n key, 避免模块顶层 t() 早于 i18n 初始化求值。
+  return t(definition.titleKey)
 }
 
 /** 刷新不依赖组件闭包，直接读取最新 store 状态 */
@@ -135,7 +140,7 @@ export function LayoutTabBar() {
     key: tab.id,
     label: (
       <Dropdown trigger={['contextMenu']} menu={buildContextMenu(tab)}>
-        <span className="leo-tabbar-label">{getTabTitle(tab)}</span>
+        <span className="leo-tabbar-label">{getTabTitle(tab, t)}</span>
       </Dropdown>
     ),
     closable: !tab.pinned,

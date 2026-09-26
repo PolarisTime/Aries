@@ -29,7 +29,7 @@ import type { RcFile } from 'antd/es/upload/interface'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
-import { printTemplateTargetOptions } from '@/config/print-template-targets'
+import { buildPrintTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import { formatDateTime } from '@/utils/formatters'
 import { pickDefaultPrintTemplate } from '@/utils/print-template'
@@ -305,7 +305,7 @@ export function PrintTemplateTableCard({
             value={selectedBillType}
             onChange={onBillTypeChange}
             className="w-240"
-            options={printTemplateTargetOptions}
+            options={buildPrintTemplateTargetOptions(t)}
           />
           <Button
             icon={<ReloadOutlined />}
@@ -433,6 +433,7 @@ export function PrintTemplateTableCard({
                   <Descriptions.Item label={t('system.printTemplate.billType')}>
                     {getPrintTemplateBillTypeLabel(
                       activeTemplate.billType || selectedBillType,
+                      t,
                     )}
                   </Descriptions.Item>
                   <Descriptions.Item

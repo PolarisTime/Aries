@@ -60,9 +60,9 @@ export function resolveBreadcrumbItems(
     const group = menuGroupDefinitions[parentKey]
     if (group) {
       // 分组无独立路由, 仅展示层级不可跳转。
-      items.push({ title: group.title, current: false })
+      items.push({ title: t(group.titleKey), current: false })
     }
   }
-  items.push({ title: definition.title, current: true })
+  items.push({ title: t(definition.titleKey), current: true })
   return items
 }

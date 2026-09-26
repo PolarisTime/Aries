@@ -1,4 +1,5 @@
 import { uniqBy } from 'es-toolkit'
+import type { TFunction } from 'i18next'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import type {
   GlobalSearchResult,
@@ -16,6 +17,8 @@ interface GlobalSearchOptions {
     keyword: string,
   ) => Promise<ModuleSearchResponse>
   buildSummary: (record: ModuleRecord) => string
+  /** 渲染/检索期翻译函数: 模块标题只存 i18n key, 此处解析。 */
+  t: TFunction
 }
 
 export function buildGlobalSearchSummary(record: ModuleRecord) {
@@ -38,6 +41,7 @@ function buildGlobalSearchResult(
   record: ModuleRecord,
   keyword: string,
   buildSummary: (record: ModuleRecord) => string,
+  t: TFunction,
 ): GlobalSearchResult {
   const trackId = String(record.id || '')
   const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
@@ -45,12 +49,13 @@ function buildGlobalSearchResult(
   const matchedByTrackId = Boolean(trackId && trackId === keyword)
   const idText =
     matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
+  const moduleTitle = t(config.titleKey)
 
   return {
     value: `${moduleKey}::${trackId || primaryNo}`,
-    label: `${config.title} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
+    label: `${moduleTitle} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
     moduleKey,
-    title: config.title,
+    title: moduleTitle,
     trackId: String(record.id || ''),
     primaryNo: String(record[config.primaryNoKey || 'id'] || record.id),
     summary: buildSummary(record),
@@ -101,6 +106,7 @@ export async function searchModules(options: GlobalSearchOptions) {
             record,
             normalizedKeyword,
             options.buildSummary,
+            options.t,
           ),
         )
       } catch {

@@ -3,7 +3,8 @@ import { asString } from '@/utils/type-narrowing'
 
 export interface ModulePageMeta {
   key: string
-  title: string
+  /** 模块标题的 i18n key；渲染期用 `t(titleKey)` 解析, 不在模块顶层翻译。 */
+  titleKey: string
   primaryNoKey?: string
 }
 
@@ -36,7 +37,7 @@ export const modulePageMetaMap: Record<string, ModulePageMeta> =
           moduleKey,
           {
             key: moduleKey,
-            title: entry.title,
+            titleKey: entry.titleKey,
             primaryNoKey: primaryNoKeyMap[moduleKey],
           } satisfies ModulePageMeta,
         ],

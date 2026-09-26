@@ -1,10 +1,9 @@
-import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
 export const financePageDefinitions: AppPageDefinition[] = [
   {
     key: 'customer-statement',
-    title: i18next.t('pages.customer-statement'),
+    titleKey: 'pages.customer-statement',
     menuKey: '/customer-statement',
     view: 'business-grid',
     icon: 'FileTextOutlined',
@@ -14,7 +13,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'freight-statement',
-    title: i18next.t('pages.freight-statement'),
+    titleKey: 'pages.freight-statement',
     menuKey: '/freight-statement',
     view: 'business-grid',
     icon: 'FileSyncOutlined',
@@ -24,7 +23,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'finance-overview',
-    title: i18next.t('pages.finance-overview'),
+    titleKey: 'pages.finance-overview',
     menuKey: '/finance-overview',
     view: 'finance-overview',
     icon: 'CalculatorOutlined',
@@ -32,7 +31,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'receipt',
-    title: i18next.t('pages.receipt'),
+    titleKey: 'pages.receipt',
     menuKey: '/receipt',
     view: 'business-grid',
     icon: 'AccountBookOutlined',
@@ -42,7 +41,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'payment',
-    title: i18next.t('pages.payment'),
+    titleKey: 'pages.payment',
     menuKey: '/payment',
     view: 'business-grid',
     icon: 'CreditCardOutlined',
@@ -52,7 +51,7 @@ export const financePageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'cash-ledger',
-    title: i18next.t('pages.cash-ledger'),
+    titleKey: 'pages.cash-ledger',
     menuKey: '/cash-ledger',
     view: 'cash-ledger',
     icon: 'AccountBookOutlined',

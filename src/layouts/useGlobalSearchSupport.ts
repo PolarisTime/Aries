@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { searchGlobalDocuments } from '@/api/system/global-search'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import { modulePageMetaMap } from '@/config/module-page-meta'
@@ -49,6 +50,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
   const searchModule = options.searchModule
   const pageConfigs = options.pageConfigs
   const buildSummary = options.buildSummary
+  const { t } = useTranslation()
 
   const searchDocuments = useCallback(
     async (normalizedKeyword: string, signal?: AbortSignal) => {
@@ -59,11 +61,12 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
           pageConfigs: pageConfigs ?? modulePageMetaMap,
           searchModule,
           buildSummary: buildSummary ?? buildGlobalSearchSummary,
+          t,
         })
       }
       return searchGlobalDocuments(normalizedKeyword, moduleKeys, signal)
     },
-    [buildSummary, moduleKeys, pageConfigs, searchModule],
+    [buildSummary, moduleKeys, pageConfigs, searchModule, t],
   )
 
   const normalizedKeyword = normalizeGlobalSearchKeyword(debouncedKeyword)

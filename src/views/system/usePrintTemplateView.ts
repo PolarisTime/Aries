@@ -17,7 +17,7 @@ import {
   savePrintTemplate,
   uploadPrintTemplateJson,
 } from '@/api/system/print-template'
-import { printTemplateTargetOptions } from '@/config/print-template-targets'
+import { printTemplateTargetKeys } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import type {
@@ -50,7 +50,7 @@ type SavePrintTemplateMutationPayload = SavePrintTemplatePayload & {
 }
 
 const printTemplateInitialState: PrintTemplateState = {
-  selectedBillType: printTemplateTargetOptions[0]?.value || 'purchase-order',
+  selectedBillType: printTemplateTargetKeys[0] || 'purchase-order',
   activeTemplateId: undefined,
   editingBillType: undefined,
   editorDirty: false,

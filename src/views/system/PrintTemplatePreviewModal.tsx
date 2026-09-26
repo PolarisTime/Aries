@@ -24,7 +24,7 @@ export function PrintTemplatePreviewModal({ open, template, onClose }: Props) {
           <Typography.Title level={5}>{template.templateName}</Typography.Title>
           <Typography.Paragraph type="secondary">
             {t('system.printTemplatePreview.billType')}
-            {getPrintTemplateBillTypeLabel(template.billType)}
+            {getPrintTemplateBillTypeLabel(template.billType, t)}
           </Typography.Paragraph>
           <div className="p-16 rounded overflow-auto bg-gray-100 border border-gray-300 max-h-400">
             <pre className="m-0 text-xs whitespace-pre-wrap break-all">

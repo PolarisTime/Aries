@@ -1,4 +1,5 @@
 import type { MenuProps } from 'antd'
+import type { TFunction } from 'i18next'
 import { isKnownAppIconKey, resolveAppIcon } from '@/config/app-icons'
 import type { LayoutMenuEntry } from '@/layouts/layout-menu'
 
@@ -44,6 +45,7 @@ export function findMenuParentKeys(
 
 export function buildSideMenuItems(
   entries: LayoutMenuEntry[],
+  t: TFunction,
 ): NonNullable<MenuProps['items']> {
   return entries.map((entry) => {
     const Icon = isKnownAppIconKey(entry.icon)
@@ -54,7 +56,7 @@ export function buildSideMenuItems(
       return {
         key: entry.menuCode,
         icon: Icon ? <Icon /> : undefined,
-        label: entry.title,
+        label: t(entry.titleKey),
         children: entry.children.map((child) => {
           const ChildIcon = isKnownAppIconKey(child.icon)
             ? resolveAppIcon(child.icon)
@@ -63,7 +65,7 @@ export function buildSideMenuItems(
           return {
             key: child.path || child.menuCode,
             icon: ChildIcon ? <ChildIcon /> : undefined,
-            label: child.title,
+            label: t(child.titleKey),
           }
         }),
       }
@@ -72,21 +74,22 @@ export function buildSideMenuItems(
     return {
       key: entry.path || entry.menuCode,
       icon: Icon ? <Icon /> : undefined,
-      label: entry.title,
+      label: t(entry.titleKey),
     }
   })
 }
 
 export function buildTopMenuItems(
   entries: LayoutMenuEntry[],
+  t: TFunction,
 ): NonNullable<MenuProps['items']> {
   return entries.map((entry) => ({
     key: entry.path || entry.menuCode,
-    label: entry.title,
+    label: t(entry.titleKey),
     children: entry.children.length
       ? entry.children.map((child) => ({
           key: child.path || child.menuCode,
-          label: child.title,
+          label: t(child.titleKey),
         }))
       : undefined,
   }))
