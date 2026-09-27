@@ -2829,6 +2829,8 @@ export const zhCN = {
     amount: '金额：{{amount}}',
   },
   priceCompareStore: {
+    reorderItemsFailed: '保存行顺序失败',
+    reorderItemsPending: '存在尚未落库的新行, 请稍候再试',
     saveSheetHeaderFailed: '保存比价单表头失败',
     deleteItemFailed: '删除商品行失败',
     saveItemFailed: '保存商品行失败',

@@ -24,6 +24,7 @@ import {
   type QuoteSheetItemPayload,
   type QuoteSheetPayload,
   type QuoteSheetRecord,
+  reorderQuoteSheetItems,
   updateQuoteSheet,
   updateQuoteSheetHeader,
   updateQuoteSheetItem,
@@ -248,6 +249,11 @@ function isCompleteRow(row: PriceRow): boolean {
   return Boolean(row.category && row.material && row.spec && row.length)
 }
 
+/** 服务端 id 形态: 雪花 id 的十进制字符串。 */
+function isServerId(id: string): boolean {
+  return /^[1-9]\d*$/.test(id)
+}
+
 /** 行是否可落库: 隔断行总是可落库, 商品行需商品信息完整。 */
 function isPersistableRow(row: PriceRow): boolean {
   return isSeparatorRow(row) || isCompleteRow(row)
@@ -428,7 +434,27 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
   })
 }
 
-type SheetBaseline = { header: string; items: Map<string, string> }
+type SheetBaseline = {
+  header: string
+  items: Map<string, string>
+  /**
+   * 服务端已知的行顺序(可落库行的 id 顺序)。
+   * 行级差异保存只比对内容指纹, 拖动换位不改变任何行内容, 因此必须单独记录顺序,
+   * 否则"本地已换序、服务端未换序", 刷新后会恢复旧顺序。
+   */
+  order: string
+}
+
+/**
+ * 行顺序签名: 只统计可落库行(与服务端一致)。
+ * 本地未完成行(未选商品)不在服务端, 不参与顺序比对。
+ */
+function orderSignature(sheet: PriceSheet): string {
+  return sheet.rows
+    .filter(isPersistableRow)
+    .map((row) => row.id)
+    .join(',')
+}
 
 /** 单据内容指纹: 用于刷新时判断服务端内容是否已不同于本地待保存编辑。 */
 function sheetContentFingerprint(sheet: PriceSheet): string {
@@ -455,7 +481,11 @@ function buildBaseline(sheet: PriceSheet): SheetBaseline {
   for (const row of sheet.rows) {
     items.set(row.id, itemSignature(row, sheet.inputs))
   }
-  return { header: headerSignature(sheet), items }
+  return {
+    header: headerSignature(sheet),
+    items,
+    order: orderSignature(sheet),
+  }
 }
 
 /** 把 inputs 中指向某行的键从 fromId 迁移到 toId。 */
@@ -1485,6 +1515,47 @@ export function useSheetsStore(options?: {
             return
           }
         }
+        // 行顺序需要单独提交: 行级保存不带位置, 拖动换位不会改变任何行内容
+        const currentSheet =
+          stateRef.current.sheets.find((item) => item.id === sheetId) ?? sheet
+        const nextOrder = orderSignature(currentSheet)
+        if (nextOrder && nextOrder !== baseline.order) {
+          const orderIds = currentSheet.rows
+            .filter(isPersistableRow)
+            .map((row) => row.id)
+          if (!orderIds.every(isServerId)) {
+            // 理论上不可达(行级循环已回填服务端行 id): 保守置脏并提示, 绝不假装已保存
+            fail(
+              new Error(i18next.t('priceCompareStore.reorderItemsPending')),
+              i18next.t('priceCompareStore.reorderItemsFailed'),
+            )
+            return
+          }
+          try {
+            const reordered = await reorderQuoteSheetItems(
+              serverId,
+              orderIds,
+              version,
+            )
+            version = reordered.version ?? version
+            applySheetVersion(sheet.id, version)
+            baseline.order = nextOrder
+          } catch (error) {
+            if (isVersionConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
+              handleConflict('sheet', sheetId)
+              return
+            }
+            if (isLockConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
+              handleLockConflictRef.current(sheetId)
+              return
+            }
+            fail(error, i18next.t('priceCompareStore.reorderItemsFailed'))
+            return
+          }
+        }
+
         broadcastSaved()
         // 全部内容已落库: 清除脏标记, 允许后续刷新覆盖
         clearSheetDirty(sheet.id)

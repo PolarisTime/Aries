@@ -411,6 +411,25 @@ export async function updateQuoteSheetItem(
   }
 }
 
+/**
+ * 调整商品行顺序(子资源 item-order), 返回权威单据(含归一化后的行号)。
+ * <p>提交期望顺序(十进制字符串 id); 未提交的行保持相对顺序排在末尾。
+ * 行级差异保存不带位置信息, 顺序变化必须走该接口, 否则刷新会恢复原顺序。</p>
+ */
+export async function reorderQuoteSheetItems(
+  id: EntityId,
+  itemIds: EntityId[],
+  expectedVersion?: string,
+): Promise<QuoteSheetRecord> {
+  const response = await apiPut(
+    ENDPOINTS.QUOTE_SHEET_ITEM_ORDER(id),
+    sheetSchema,
+    { itemIds },
+    withConcurrencyHeaders(expectedVersion),
+  )
+  return normalizeSheet(response, 0)
+}
+
 /** 删除商品行(204), 返回服务端权威单据版本。 */
 export async function deleteQuoteSheetItem(
   id: EntityId,

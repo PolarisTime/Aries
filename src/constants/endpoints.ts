@@ -184,6 +184,8 @@ export const ENDPOINTS = {
     `/quote-sheets/${pathSegment(id)}/items`,
   QUOTE_SHEET_ITEM: (id: string | number, itemId: string | number) =>
     `/quote-sheets/${pathSegment(id)}/items/${pathSegment(itemId)}`,
+  QUOTE_SHEET_ITEM_ORDER: (id: string | number) =>
+    `/quote-sheets/${pathSegment(id)}/item-order`,
   QUOTE_SHEET_EDIT_LOCK: (id: string | number) =>
     `/quote-sheets/${pathSegment(id)}/edit-locks`,
   QUOTE_SHEET_PURCHASE_ORDER_TONNAGES: '/quote-sheets/purchase-order-tonnages',

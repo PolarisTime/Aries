@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
   addQuoteSheetItem: vi.fn(),
   updateQuoteSheetItem: vi.fn(),
   deleteQuoteSheetItem: vi.fn(),
+  reorderQuoteSheetItems: vi.fn(),
   fetchQuoteProjectConfig: vi.fn(),
   saveQuoteProjectConfig: vi.fn(),
   acquireQuoteSheetEditLock: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock('@/api/market/quote-sheets', () => ({
   addQuoteSheetItem: api.addQuoteSheetItem,
   updateQuoteSheetItem: api.updateQuoteSheetItem,
   deleteQuoteSheetItem: api.deleteQuoteSheetItem,
+  reorderQuoteSheetItems: api.reorderQuoteSheetItems,
 }))
 
 vi.mock('@/api/market/quote-edit-locks', () => ({
@@ -152,6 +154,9 @@ describe('useSheetsStore 服务端数据源', () => {
       version: '1',
     })
     api.deleteQuoteSheetItem.mockReset().mockResolvedValue({ version: '1' })
+    api.reorderQuoteSheetItems
+      .mockReset()
+      .mockResolvedValue(sheetRecord({ version: '2' }))
     api.acquireQuoteSheetEditLock.mockReset().mockResolvedValue({
       sheetId: '9001',
       locked: true,
@@ -2002,6 +2007,82 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
     // 行 id 已对齐: 否则后续行级更新会打到 items/{本地 id} 被后端判为非法(400)
     expect(store.current.rows.map((row) => row.id)).toEqual(['7701'])
+  })
+
+  it('行顺序变化时提交 item-order 子资源(拖动换位才会在刷新后保留)', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord(),
+      sheetRecord({
+        id: '9002',
+        name: '批次 2',
+        items: [
+          {
+            id: '7001',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400',
+            spec: 12,
+            length: '9米',
+            prices: [],
+          },
+          { id: '7002', rowType: 'SEPARATOR', prices: [] },
+        ],
+      }),
+    ])
+    const store = renderStore()
+    await hydrate(store)
+    // 切到含隔断行的批次并把它拖到最前(越过隔断行)
+    act(() => store.current.setActiveId('9002'))
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50)
+    })
+    expect(store.current.rows.map((row) => row.id)).toEqual(['7001', '7002'])
+
+    api.reorderQuoteSheetItems.mockClear()
+    act(() => {
+      store.current.setRows((list) => [list[1], list[0]])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.reorderQuoteSheetItems).toHaveBeenCalledTimes(1)
+    expect(api.reorderQuoteSheetItems.mock.calls[0]?.slice(0, 2)).toEqual([
+      '9002',
+      ['7002', '7001'],
+    ])
+    expect(store.current.saveStatus).toBe('saved')
+  })
+
+  it('仅内容变化不提交行顺序, 且重复保存不会重复提交', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    api.reorderQuoteSheetItems.mockClear()
+
+    // 内容编辑(备注)不应触发顺序提交
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { remark: '内容变化' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.reorderQuoteSheetItems).not.toHaveBeenCalled()
+
+    // 换序提交一次后, 顺序基线已更新: 再次保存不重复提交
+    act(() => {
+      store.current.setRows((list) => [...list].reverse())
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    const callsAfterReorder = api.reorderQuoteSheetItems.mock.calls.length
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { remark: '再改一次' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.reorderQuoteSheetItems.mock.calls.length).toBe(callsAfterReorder)
   })
 
   it('撤销/重做可用性来自历史深度镜像, 编辑后可撤销、撤销后可重做', async () => {

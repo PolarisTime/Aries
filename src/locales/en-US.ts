@@ -2920,6 +2920,9 @@ export const enUS = {
     amount: 'Amount: {{amount}}',
   },
   priceCompareStore: {
+    reorderItemsFailed: 'Failed to save row order',
+    reorderItemsPending:
+      'There are rows not yet persisted, please retry shortly',
     saveSheetHeaderFailed: 'Failed to save quote sheet header',
     deleteItemFailed: 'Failed to delete line item',
     saveItemFailed: 'Failed to save line item',
