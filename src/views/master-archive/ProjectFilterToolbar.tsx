@@ -228,6 +228,8 @@ export function ProjectFilterToolbar({
               {t('common.export')}
             </Button>
             <Dropdown
+              // 用 click 触发: hover-only 的菜单键盘打不开(WCAG 2.1.1), 且受控 open 会被悬停状态复位
+              trigger={['click']}
               menu={{
                 multiple: true,
                 selectedKeys: COLUMN_KEYS.filter(

@@ -458,17 +458,18 @@ describe('CarrierPage 主数据拆分试点', () => {
     expect(deleteBusinessModule).toHaveBeenCalledWith('carrier', '8001')
   })
 
-  it('工具栏「列设置」按钮仍可打开弹层(受控开合未破坏原行为)', async () => {
+  it('工具栏「列设置」按钮点击后打开弹层(受控开合并改为 click 触发)', async () => {
     renderPage()
     await flushAsync()
 
-    // antd Dropdown 默认是 hover 触发: 用冒泡的 mouseover 模拟指针进入
+    // 列设置 Dropdown 由 hover 触发改为 click 触发: hover-only 的菜单键盘打不开(WCAG 2.1.1),
+    // 且受控 open 会被悬停状态复位(列头菜单的「列设置…」项因此点不开)
     const trigger = [...container.querySelectorAll('button')].find(
       (button) => button.textContent?.replace(/\s/g, '') === '列设置',
     )
     expect(trigger, '工具栏「列设置」按钮应存在').toBeTruthy()
     await act(async () => {
-      trigger!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      trigger!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 200))
     })
 
