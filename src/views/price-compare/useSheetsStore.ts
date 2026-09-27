@@ -44,6 +44,8 @@ import type {
 const HISTORY_LIMIT = 50
 const COALESCE_MS = 800
 const SAVE_DEBOUNCE_MS = 800
+/** 单据保存的串行队列键前缀: runSerialized 据此识别在途保存属于哪张单据。 */
+const SHEET_SAVE_KEY_PREFIX = 'sheet:'
 /** 跨标签同步频道。 */
 const SYNC_CHANNEL = 'aries-price-compare'
 /** 聚焦/轮询刷新间隔。 */
@@ -178,6 +180,23 @@ function buildConfigPayload(config: ProjectConfig): QuoteProjectConfigPayload {
       sortOrder: index,
     })),
   }
+}
+
+/**
+ * 由保存结论与未保存集合推导单据保存状态。
+ * 优先级: 在途 > 冲突 > 失败 > 新的未落库改动 > 已保存 > 无变化。
+ */
+function deriveSaveStatus(
+  outcome: 'saving' | 'saved' | 'error' | 'conflict' | undefined,
+  unsaved: ReadonlySet<string>,
+  activeId: string,
+): SheetSaveStatus {
+  if (outcome === 'saving') return 'saving'
+  if (outcome === 'conflict') return 'conflict'
+  if (outcome === 'error') return 'error'
+  if (unsaved.has(activeId)) return 'dirty'
+  if (outcome === 'saved') return 'saved'
+  return 'idle'
 }
 
 const emptyConfig = (): ProjectConfig => ({
@@ -448,6 +467,20 @@ export type EditLockView = {
   ownerName?: string
 }
 
+/**
+ * 单据保存状态:
+ * - `idle` 无改动且本会话无保存结论; `dirty` 有改动待落库;
+ * - `saving` 写请求在途; `saved` 已落库; `error` 保存失败可重试;
+ * - `conflict` 版本/锁冲突, 交由冲突弹窗或编辑锁横幅处理。
+ */
+export type SheetSaveStatus =
+  | 'idle'
+  | 'dirty'
+  | 'saving'
+  | 'saved'
+  | 'error'
+  | 'conflict'
+
 export type SheetsStore = {
   loading: boolean
   sheets: PriceSheet[]
@@ -468,6 +501,12 @@ export type SheetsStore = {
   lockConflict: string | null
   /** 当前批次是否只读(被他人签出, 或锁结论未知) */
   readOnly: boolean
+  /** 本页是否存在任一未落库改动(供关闭 Tab/刷新前的未保存拦截) */
+  hasUnsavedChanges: boolean
+  /** 当前批次的保存状态 */
+  saveStatus: SheetSaveStatus
+  /** 手动重试保存当前批次 */
+  retrySave: () => void
   /** 放弃本地未落库改动并重新从服务端加载(用于解开 409 造成的刷新停摆) */
   discardLocalChangesAndReload: (sheetId: string) => void
   setConfig: (patch: Partial<ProjectConfig>) => void
@@ -571,6 +610,23 @@ export function useSheetsStore(options?: {
    * 纳入 `hasPendingSheetSave`, 刷新时按内容指纹比对, 避免静默回滚本地编辑。
    */
   const dirtySheetsRef = useRef<Set<string>>(new Set())
+  /**
+   * UI/会话用的"未落库"集合(比 `dirtySheetsRef` 更宽):
+   * ref 只记录保存失败与被跳过的持久未保存(供刷新跳过与重试), 而指示器与
+   * "关闭 Tab/刷新前确认"必须覆盖防抖窗口内的瞬时编辑, 否则用户刚输入就关标签会静默丢失。
+   */
+  const [unsavedSheetIds, setUnsavedSheetIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  )
+  /**
+   * 每张单据最近一次保存的结果。
+   * 缺失表示本会话尚未产生保存结论(如"配置未加载被跳过"), 由脏标记推导为待保存。
+   */
+  const [saveOutcome, setSaveOutcome] = useState<
+    ReadonlyMap<string, 'saving' | 'saved' | 'error' | 'conflict'>
+  >(() => new Map())
+  /** 每张单据在途/排队的保存任务数, 用于精确收敛"保存中"状态。 */
+  const sheetSaveCountRef = useRef<Map<string, number>>(new Map())
   /** 同一资源(单据/项目配置)串行保存, 避免并发 PUT 触发乐观锁 409。 */
   const inflightRef = useRef<Set<string>>(new Set())
   const pendingRef = useRef<Set<string>>(new Set())
@@ -638,10 +694,91 @@ export function useSheetsStore(options?: {
     (id?: string, options?: { force?: boolean }) => Promise<boolean>
   >(() => Promise.resolve(true))
 
-  const runSerialized = useCallback(
-    (key: string, task: () => Promise<void>) =>
-      runSerializedTask(inflightRef.current, pendingRef.current, key, task),
+  /** 标记单据存在未落库改动(持久脏标记 + UI 未保存集合)。 */
+  const markSheetDirty = useCallback((sheetId: string) => {
+    dirtySheetsRef.current.add(sheetId)
+    setUnsavedSheetIds((prev) =>
+      prev.has(sheetId) ? prev : new Set(prev).add(sheetId),
+    )
+  }, [])
+
+  /** 仅登记 UI 未保存(编辑已发生但尚未落库, 尚未进入失败/跳过状态)。 */
+  const markSheetUnsaved = useCallback((sheetId: string) => {
+    setUnsavedSheetIds((prev) =>
+      prev.has(sheetId) ? prev : new Set(prev).add(sheetId),
+    )
+  }, [])
+
+  /** 清除单据的未落库标记(仅当确实存在时更新 state, 避免无谓重渲染)。 */
+  const clearSheetDirty = useCallback((sheetId: string) => {
+    dirtySheetsRef.current.delete(sheetId)
+    setUnsavedSheetIds((prev) => {
+      if (!prev.has(sheetId)) return prev
+      const next = new Set(prev)
+      next.delete(sheetId)
+      return next
+    })
+  }, [])
+
+  /** 记录单据保存结论; 传 null 表示清除历史结论(回到由脏标记推导)。 */
+  const setSheetSaveOutcome = useCallback(
+    (
+      sheetId: string,
+      outcome: 'saving' | 'saved' | 'error' | 'conflict' | null,
+    ) => {
+      setSaveOutcome((prev) => {
+        if (outcome === null) {
+          if (!prev.has(sheetId)) return prev
+          const next = new Map(prev)
+          next.delete(sheetId)
+          return next
+        }
+        if (prev.get(sheetId) === outcome) return prev
+        return new Map(prev).set(sheetId, outcome)
+      })
+    },
     [],
+  )
+
+  const runSerialized = useCallback(
+    (key: string, task: () => Promise<void>) => {
+      // 单据保存的在途状态由串行队列统一记录, 避免 saveSheetNow 的多个提前
+      // return 路径遗漏清理而长期停留在"保存中"。
+      const sheetId = key.startsWith(SHEET_SAVE_KEY_PREFIX)
+        ? key.slice(SHEET_SAVE_KEY_PREFIX.length)
+        : null
+      if (sheetId) {
+        // 计数而非布尔: 同一单据可能已有任务在跑并排队了新任务, 先结束的任务
+        // 不得把仍在排队的保存提前标记为结束。
+        sheetSaveCountRef.current.set(
+          sheetId,
+          (sheetSaveCountRef.current.get(sheetId) ?? 0) + 1,
+        )
+        setSheetSaveOutcome(sheetId, 'saving')
+      }
+      return runSerializedTask(
+        inflightRef.current,
+        pendingRef.current,
+        key,
+        task,
+      ).finally(() => {
+        if (!sheetId) return
+        const remaining = (sheetSaveCountRef.current.get(sheetId) ?? 1) - 1
+        if (remaining > 0) {
+          sheetSaveCountRef.current.set(sheetId, remaining)
+          return
+        }
+        sheetSaveCountRef.current.delete(sheetId)
+        // 任务已给出结论(saved/error/conflict)时保留结论; 仅清理在途态。
+        setSaveOutcome((prev) => {
+          if (prev.get(sheetId) !== 'saving') return prev
+          const next = new Map(prev)
+          next.delete(sheetId)
+          return next
+        })
+      })
+    },
+    [setSheetSaveOutcome],
   )
 
   /** 静默写入状态(不进入撤销/重做历史), 用于回填服务端版本与刷新。 */
@@ -889,7 +1026,8 @@ export function useSheetsStore(options?: {
         const fresh: PriceSheet = { ...toPriceSheet(record), id: sheetId }
         baselineRef.current.set(sheetId, buildBaseline(fresh))
         // 已丢弃本地改动: 清除脏标记, 否则刷新会被永久关闭
-        dirtySheetsRef.current.delete(sheetId)
+        clearSheetDirty(sheetId)
+        setSheetSaveOutcome(sheetId, null)
         mutate((current) => ({
           ...current,
           sheets: current.sheets.map((sheet) =>
@@ -901,7 +1039,7 @@ export function useSheetsStore(options?: {
         message.error(i18next.t('priceCompareStore.reloadSheetFailed'))
       }
     },
-    [mutate],
+    [clearSheetDirty, mutate, setSheetSaveOutcome],
   )
 
   /** 以我的覆盖: 取服务端最新版本后原样重发本地内容, 冲突时重试一次。 */
@@ -929,7 +1067,8 @@ export function useSheetsStore(options?: {
               version: saved.version ?? sheet.version,
             }),
           )
-          dirtySheetsRef.current.delete(sheetId)
+          clearSheetDirty(sheetId)
+          setSheetSaveOutcome(sheetId, 'saved')
           broadcastSaved()
           return 'ok'
         } catch (error) {
@@ -944,7 +1083,13 @@ export function useSheetsStore(options?: {
       }
       return 'conflict'
     },
-    [applySheetVersion, broadcastSaved, configOf],
+    [
+      applySheetVersion,
+      broadcastSaved,
+      clearSheetDirty,
+      configOf,
+      setSheetSaveOutcome,
+    ],
   )
 
   /** 重新加载(丢弃本地改动)项目配置。 */
@@ -1036,12 +1181,12 @@ export function useSheetsStore(options?: {
 
   const saveSheetNow = useCallback(
     async (sheetId: string) => {
-      await runSerialized(`sheet:${sheetId}`, async () => {
+      await runSerialized(`${SHEET_SAVE_KEY_PREFIX}${sheetId}`, async () => {
         const sheet = stateRef.current.sheets.find(
           (item) => item.id === sheetId,
         )
         if (!sheet) return
-        const markDirty = () => dirtySheetsRef.current.add(sheet.id)
+        const markDirty = () => markSheetDirty(sheet.id)
         // 项目配置未加载完成: 跳过保存并登记补跑, 避免用空品牌清空服务端现货价
         if (sheet.projectId && !configLoadedRef.current.has(sheet.projectId)) {
           configBlockedSaveRef.current.set(sheet.id, sheet.projectId)
@@ -1053,6 +1198,7 @@ export function useSheetsStore(options?: {
         const fail = (error: unknown, fallback: string) => {
           // 写失败后仍保留本地编辑并置脏: 纳入未保存判定, 聚焦时可重试且不被刷新覆盖
           markDirty()
+          setSheetSaveOutcome(sheet.id, 'error')
           // 同一单据保存失败会被刷新反复重试: 用固定 key 覆盖旧提示, 避免叠加多条 error。
           message.error({
             content:
@@ -1078,7 +1224,8 @@ export function useSheetsStore(options?: {
               }),
             )
             broadcastSaved()
-            dirtySheetsRef.current.delete(sheet.id)
+            clearSheetDirty(sheet.id)
+            setSheetSaveOutcome(sheet.id, 'saved')
             // create 只拿到 serverId 就返回, 不会触发依赖 serverIdRef 的切换 effect;
             // 若该单据仍是当前激活批次, 显式补一次签出, 避免新批次无编辑锁。
             // 已离开比价路由时不签出(否则会在后台续约占锁); 返回时由切换 effect 补签。
@@ -1112,10 +1259,12 @@ export function useSheetsStore(options?: {
             baseline.header = headerSignature(sheet)
           } catch (error) {
             if (isVersionConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
               handleConflict('sheet', sheetId)
               return
             }
             if (isLockConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
               handleLockConflictRef.current(sheetId)
               return
             }
@@ -1138,10 +1287,12 @@ export function useSheetsStore(options?: {
             applySheetVersion(sheet.id, version)
           } catch (error) {
             if (isVersionConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
               handleConflict('item', sheetId, itemId)
               return
             }
             if (isLockConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
               handleLockConflictRef.current(sheetId)
               return
             }
@@ -1195,10 +1346,12 @@ export function useSheetsStore(options?: {
             applySheetVersion(sheet.id, version)
           } catch (error) {
             if (isVersionConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
               handleConflict('item', sheetId, row.id)
               return
             }
             if (isLockConflict(error)) {
+              setSheetSaveOutcome(sheetId, 'conflict')
               handleLockConflictRef.current(sheetId)
               return
             }
@@ -1208,21 +1361,35 @@ export function useSheetsStore(options?: {
         }
         broadcastSaved()
         // 全部内容已落库: 清除脏标记, 允许后续刷新覆盖
-        dirtySheetsRef.current.delete(sheet.id)
+        clearSheetDirty(sheet.id)
+        setSheetSaveOutcome(sheet.id, 'saved')
       })
     },
     [
       applySheetVersion,
       broadcastSaved,
+      clearSheetDirty,
       configOf,
       handleConflict,
+      markSheetDirty,
       remapItemId,
       runSerialized,
+      setSheetSaveOutcome,
     ],
   )
 
   const scheduleSaveSheet = useCallback(
     (sheetId: string) => {
+      // 编辑即登记"未保存": 防抖窗口内的编辑也必须被指示器与关闭确认看到。
+      // 无服务端 id 且尚不可持久化的单据(新建空批次)不登记, 否则会长期显示未保存。
+      const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
+      if (
+        sheet &&
+        (serverIdRef.current.has(sheetId) ||
+          isPersistable(sheet, configOf(sheet.projectId)))
+      ) {
+        markSheetUnsaved(sheetId)
+      }
       const existing = sheetTimersRef.current.get(sheetId)
       if (existing) window.clearTimeout(existing)
       const timer = window.setTimeout(() => {
@@ -1231,7 +1398,7 @@ export function useSheetsStore(options?: {
       }, SAVE_DEBOUNCE_MS)
       sheetTimersRef.current.set(sheetId, timer)
     },
-    [saveSheetNow],
+    [configOf, markSheetUnsaved, saveSheetNow],
   )
 
   useEffect(() => {
@@ -1476,7 +1643,7 @@ export function useSheetsStore(options?: {
         if (stateRef.current.sheets.some((sheet) => sheet.id === sheetId)) {
           scheduleSaveSheetRef.current(sheetId)
         } else {
-          dirtySheetsRef.current.delete(sheetId)
+          clearSheetDirty(sheetId)
         }
       }
       // 先就绪项目配置: 配置加载完成会补跑此前被跳过的保存, 再刷新单据列表,
@@ -1497,7 +1664,7 @@ export function useSheetsStore(options?: {
     } catch (error) {
       logger.error('刷新比价数据失败', error)
     }
-  }, [refreshConfig, refreshSheets, token])
+  }, [clearSheetDirty, refreshConfig, refreshSheets, token])
 
   // 聚焦与每 30s 轮询: 无未保存改动时静默刷新, 否则轻提示避免覆盖本地编辑
   useEffect(() => {
@@ -2122,8 +2289,8 @@ export function useSheetsStore(options?: {
     // 清理待保存登记: 已删除单据不应再阻塞刷新或触发补跑
     configBlockedSaveRef.current.delete(id)
     if (serverId) configBlockedSaveRef.current.delete(serverId)
-    dirtySheetsRef.current.delete(id)
-    if (serverId) dirtySheetsRef.current.delete(serverId)
+    clearSheetDirty(id)
+    if (serverId) clearSheetDirty(serverId)
     // 使该单据飞行中的签出请求失效, 并停止其续约定时器, 避免删除后仍续约
     if (serverId) {
       lockRequestGenRef.current.set(
@@ -2179,6 +2346,23 @@ export function useSheetsStore(options?: {
     }
   }
 
+  const saveStatus = deriveSaveStatus(
+    saveOutcome.get(state.activeId),
+    unsavedSheetIds,
+    state.activeId,
+  )
+  /** 本页是否存在任一未落库改动(多批次合并判定)。 */
+  const hasUnsavedChanges = unsavedSheetIds.size > 0
+
+  /** 手动重试当前批次的保存(保存失败后无需等待下一次防抖/轮询)。 */
+  const retrySave = useCallback(() => {
+    const sheetId = stateRef.current.activeId
+    if (!sheetId) return
+    // 先清掉失败结论, 否则重试期间指示器仍显示失败
+    setSheetSaveOutcome(sheetId, null)
+    void saveSheetNowRef.current(sheetId)
+  }, [setSheetSaveOutcome])
+
   /**
    * 放弃本地未落库改动并重新加载。
    * 409 后 dirtySheetsRef 会一直挡住 refreshSheets(静默 skipped), 用户既看不到
@@ -2186,12 +2370,13 @@ export function useSheetsStore(options?: {
    */
   const discardLocalChangesAndReload = useCallback(
     (sheetId: string) => {
-      dirtySheetsRef.current.delete(sheetId)
+      clearSheetDirty(sheetId)
+      setSheetSaveOutcome(sheetId, null)
       configBlockedSaveRef.current.delete(sheetId)
       setLockConflictServerId(null)
       void refreshFromServer()
     },
-    [refreshFromServer],
+    [clearSheetDirty, refreshFromServer, setSheetSaveOutcome],
   )
 
   return {
@@ -2207,6 +2392,9 @@ export function useSheetsStore(options?: {
     lockPending,
     lockConflict: lockConflictServerId,
     readOnly,
+    hasUnsavedChanges,
+    saveStatus,
+    retrySave,
     discardLocalChangesAndReload,
     setConfig,
     setBrands,

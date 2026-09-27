@@ -2453,6 +2453,20 @@ export const enUS = {
         'Takeover acquires the edit right for this batch. If the current editor is still active it will conflict again; retry after the lock expires.',
       takeoverFailed: 'The other user is still editing. Try again later.',
     },
+    saveStatus: {
+      dirty: 'Unsaved',
+      dirtyHint:
+        'Changes are saved automatically after you stop typing; closing the tab or refreshing will ask for confirmation.',
+      saving: 'Saving',
+      saved: 'Saved',
+      error: 'Save failed',
+      errorHint:
+        'Your changes are kept locally. Click retry, or wait for the automatic retry when the page is focused.',
+      conflict: 'Conflict pending',
+      conflictHint:
+        'Another user changed the data version or the edit lock. Resolve it from the notice above by taking over or discarding your local changes.',
+      retry: 'Retry',
+    },
     picker: {
       project: 'Project',
       addProjectBatch: 'Add project batch',

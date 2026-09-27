@@ -1868,6 +1868,114 @@ describe('useSheetsStore 服务端数据源', () => {
       else nodeEnv.TZ = originalTz
     }
   })
+
+  it('编辑后立即进入未保存状态, 落库后转为已保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.saveStatus).toBe('idle')
+    expect(store.current.hasUnsavedChanges).toBe(false)
+
+    // 防抖窗口内(尚未发出任何请求)也必须可见, 否则用户刚输入就关标签会静默丢失
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    expect(store.current.saveStatus).toBe('dirty')
+    expect(store.current.hasUnsavedChanges).toBe(true)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(store.current.saveStatus).toBe('saved')
+    expect(store.current.hasUnsavedChanges).toBe(false)
+  })
+
+  it('保存请求在途时状态为保存中', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    let settleItem!: (value: unknown) => void
+    api.updateQuoteSheetItem.mockReturnValueOnce(
+      new Promise((resolve) => {
+        settleItem = resolve
+      }),
+    )
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { [inputKey]: { spot: 3500, supplierId: '5001' } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(store.current.saveStatus).toBe('saving')
+
+    await act(async () => {
+      settleItem({
+        item: {
+          id: '7001',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [],
+        },
+        version: '1',
+      })
+      await Promise.resolve()
+    })
+    expect(store.current.saveStatus).toBe('saved')
+  })
+
+  it('保存失败后状态为失败并保留未保存, retrySave 重试成功后转已保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    api.updateQuoteSheetHeader.mockRejectedValueOnce(new Error('boom'))
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(store.current.saveStatus).toBe('error')
+    // 失败仍是未保存: 关闭标签页必须继续拦截
+    expect(store.current.hasUnsavedChanges).toBe(true)
+
+    const callsBefore = api.updateQuoteSheetHeader.mock.calls.length
+    act(() => {
+      store.current.retrySave()
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.updateQuoteSheetHeader.mock.calls.length).toBe(callsBefore + 1)
+    expect(store.current.saveStatus).toBe('saved')
+    expect(store.current.hasUnsavedChanges).toBe(false)
+  })
+
+  it('新建批次尚未具备可落库内容时不显示未保存', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    // 空批次(行均为未选商品的空行)不满足 isPersistable: 不应长期显示"未保存"
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.createQuoteSheet).not.toHaveBeenCalled()
+    expect(store.current.saveStatus).toBe('idle')
+    expect(store.current.hasUnsavedChanges).toBe(false)
+  })
 })
 
 describe('buildConfigFromRecord 西本归一', () => {

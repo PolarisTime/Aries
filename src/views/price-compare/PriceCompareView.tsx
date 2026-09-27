@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
+import { PriceCompareSaveStatus } from './PriceCompareSaveStatus'
 import {
   PriceCompareBatchBar,
   PriceCompareOverlays,
@@ -15,6 +16,7 @@ import {
 import { projectGroupsOf } from './price-compare-support'
 import {
   useInitialProjectAssignment,
+  usePriceCompareEditorSession,
   usePriceCompareRouteActive,
   useSupplierSelectOptions,
   useUndoRedoShortcuts,
@@ -66,6 +68,9 @@ export function PriceCompareView() {
     readOnly,
     takeoverEditLock,
     discardLocalChangesAndReload,
+    hasUnsavedChanges,
+    saveStatus,
+    retrySave,
   } = store
 
   const brands = config.brands
@@ -86,6 +91,7 @@ export function PriceCompareView() {
 
   const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
+  usePriceCompareEditorSession(hasUnsavedChanges)
   // 只读态(他人签出)禁用撤销/重做快捷键
   useUndoRedoShortcuts(undo, redo, !readOnly)
 
@@ -235,6 +241,7 @@ export function PriceCompareView() {
         <div>
           <h1>{t('priceCompare.view.title')}</h1>
         </div>
+        <PriceCompareSaveStatus onRetry={retrySave} status={saveStatus} />
       </div>
 
       <PriceCompareProjectPicker

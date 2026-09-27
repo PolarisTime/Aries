@@ -6,6 +6,7 @@ import {
 } from '@/api/master/supplier-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import { useEditorSession } from '@/layouts/editor-session/EditorSessionGuard'
 import {
   normalizeTabPathname,
   useLayoutTabsStore,
@@ -62,6 +63,25 @@ export function usePriceCompareRouteActive(): boolean {
     const activeTab = state.tabs.find((tab) => tab.id === state.activeTabId)
     return normalizeTabPathname(activeTab?.pathname) === PRICE_COMPARE_ROUTE
   })
+}
+
+/**
+ * 把比价页注册为编辑器会话: 存在未落库改动时, 关闭标签页会二次确认、
+ * 刷新/关窗会被浏览器拦截(与模块编辑器共用同一套守卫)。
+ * <p>此前比价页完全没有接入, 编辑后直接关标签会静默丢失改动。</p>
+ */
+export function usePriceCompareEditorSession(hasUnsavedChanges: boolean) {
+  const { beginSession, endSession, setSessionStatus } = useEditorSession()
+
+  useEffect(() => {
+    beginSession({ moduleKey: 'price-compare', mode: 'edit' })
+    return endSession
+  }, [beginSession, endSession])
+
+  useEffect(() => {
+    // 保存请求在途时未保存集合仍为脏, 因此关闭确认会一直生效到真正落库。
+    setSessionStatus(hasUnsavedChanges ? 'dirty' : 'clean')
+  }, [hasUnsavedChanges, setSessionStatus])
 }
 
 /** Ctrl/Cmd+Z 撤销, Ctrl/Cmd+Shift+Z 或 Ctrl/Cmd+Y 重做。只读态禁用。 */

@@ -2379,6 +2379,18 @@ export const zhCN = {
         '接管将取得该批次编辑权；若对方仍在编辑会再次冲突，请等待其签出过期后重试。',
       takeoverFailed: '对方仍在编辑该批次，请稍后再试。',
     },
+    saveStatus: {
+      dirty: '未保存',
+      dirtyHint: '改动会在停止输入后自动保存；关闭标签页或刷新前会再次确认。',
+      saving: '保存中',
+      saved: '已保存',
+      error: '保存失败',
+      errorHint: '改动仍保留在本地，可点击重试；聚焦页面时也会自动重试。',
+      conflict: '存在冲突，待处理',
+      conflictHint:
+        '数据版本或编辑锁已被他人变更，请按上方提示选择接管或放弃本地改动。',
+      retry: '重试',
+    },
     picker: {
       project: '项目',
       addProjectBatch: '新增项目批次',

@@ -32,6 +32,52 @@
   color: var(--text-placeholder);
 }
 
+/*
+ * 保存状态指示灯: 图标承载语义色, 文字用高对比前景色。
+ * 对比度(白底): 正文 --text-primary ≈ 14:1; 失败色 --color-danger-active ≈ 4.6:1;
+ * 图标 success-active ≈ 3.5:1 / info-active ≈ 6.1:1, 均满足非文本 3:1。
+ */
+.price-compare-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+.price-compare-save-status-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.price-compare-save-status-dirty .price-compare-save-status-icon,
+.price-compare-save-status-conflict .price-compare-save-status-icon {
+  color: var(--color-warning-active);
+}
+
+.price-compare-save-status-saving .price-compare-save-status-icon {
+  color: var(--color-info-active);
+}
+
+.price-compare-save-status-saved .price-compare-save-status-icon {
+  color: var(--color-success-active);
+}
+
+.price-compare-save-status-error {
+  color: var(--color-danger-active);
+}
+
+.price-compare-save-status-error .price-compare-save-status-icon {
+  color: var(--color-danger-active);
+}
+
+.price-compare-save-status .ant-btn {
+  padding-inline: 0;
+  font-size: 12px;
+  height: 20px;
+}
+
 .price-compare-num {
   text-align: right;
   font-variant-numeric: tabular-nums;
