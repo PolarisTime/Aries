@@ -1,7 +1,12 @@
 import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
   DeleteOutlined,
+  EyeInvisibleOutlined,
   HolderOutlined,
   InfoCircleOutlined,
+  InsertRowAboveOutlined,
+  InsertRowBelowOutlined,
   LockOutlined,
   MinusOutlined,
   MoreOutlined,
@@ -11,6 +16,7 @@ import {
   TrophyOutlined,
   UnlockOutlined,
   VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -18,7 +24,6 @@ import {
   Checkbox,
   DatePicker,
   Divider,
-  Dropdown,
   Flex,
   Input,
   Popconfirm,
@@ -30,12 +35,14 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
+import type { MenuProps } from 'antd/es/menu'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { message } from '@/utils/antd-app'
+import { ContextMenu } from '@/components/ContextMenu'
+import { message, modal } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
@@ -46,9 +53,6 @@ import {
   findAlternateLengthVariety,
   isPurchasedRow,
   isSeparatorRow,
-  makeRow,
-  makeSeparatorRow,
-  moveItem,
   netPriceWithFallback,
   resolveRef,
   SHEET_COLUMN_WIDTH,
@@ -58,6 +62,7 @@ import {
   syncSpotInputs,
 } from './core'
 import { LockableField } from './LockableField'
+import { withMemberVisibility } from './price-compare-support'
 import {
   buildTonColumn,
   EMPTY_PURCHASE_ORDER_TONNAGE,
@@ -73,6 +78,7 @@ import type {
   SheetInputs,
   Variety,
 } from './types'
+import { useSheetRowOperations } from './use-sheet-row-operations'
 import { usePurchaseOrderPicker } from './usePurchaseOrderPicker'
 import './price-compare.css'
 
@@ -166,6 +172,24 @@ type ColumnContext = {
   /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
   openPurchaseOrderPicker: (rowId: string) => void
   onReorderBrands: (from: number, to: number) => void
+  /** 隐藏/显示整组品牌列(与「列显示」弹层共用同一份显隐状态)。 */
+  onToggleBrand: (brandName: string, visible: boolean) => void
+  /** 当前通过右键菜单打开「一键填入供应商」弹层的品牌列。 */
+  supplierFillBrand?: string
+  setSupplierFillBrand: (brandName: string | undefined) => void
+  /** 行操作菜单当前打开的行(Dropdown 受控开关: 右键行内区域与「更多」按钮共用)。 */
+  contextMenuRowId: string | null
+  onContextMenuRowChange: (rowId: string | null) => void
+  /** 上移/下移一行: 拖拽排序的键盘等价物(delta 为 -1 上移, 1 下移)。 */
+  moveRow: (rowId: string, delta: -1 | 1) => void
+  /** 在指定行上方/下方插入商品行或隔断行(现有 addRow/addSeparator 只能追加)。 */
+  insertRowAt: (
+    rowId: string,
+    kind: 'PRODUCT' | 'SEPARATOR',
+    position: 'above' | 'below',
+  ) => void
+  /** 删除单行(连带清理该行各品牌的现货/供应商输入)。 */
+  deleteRow: (rowId: string) => void
   onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
   onRowDragEnd: () => void
   selectedIds: string[]
@@ -208,6 +232,158 @@ const cellOf = (
       render(value, row)
     ),
 })
+
+/** 行操作单元格需要的数据: 菜单项与开关都由外层表格控件决定, 这里只做渲染。 */
+type RowActionsCellProps = {
+  rowLabel: string
+  locked: boolean
+  /** 只读或「锁定规格和数量」时整体禁用(与现有 lockDisabled 同一口径)。 */
+  disabled: boolean
+  tooltip: string
+  /** 行菜单是否展开(受控), 与「更多」按钮的点击入口共用。 */
+  menuOpen: boolean
+  onMenuOpenChange: (open: boolean) => void
+  /** 首行不可上移 / 末行不可下移: 禁用而不隐藏, 让读屏能发现边界。 */
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onToggleLock: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onInsertRowAbove: () => void
+  onInsertSeparatorBelow: () => void
+  onDelete: () => void
+}
+
+/**
+ * 行操作入口: 保留原有可见「更多」按钮(点击 / 键盘入口), 并让同一份菜单响应右键。
+ * 右键菜单只是补充入口 —— 键盘可达性仍由可见按钮保证(WCAG 2.1.1)。
+ */
+function RowActionsCell({
+  rowLabel,
+  locked,
+  disabled,
+  tooltip,
+  menuOpen,
+  onMenuOpenChange,
+  canMoveUp,
+  canMoveDown,
+  onToggleLock,
+  onMoveUp,
+  onMoveDown,
+  onInsertRowAbove,
+  onInsertSeparatorBelow,
+  onDelete,
+}: RowActionsCellProps) {
+  const { t } = useTranslation()
+  /**
+   * 「删除该行」的二次确认: 用 modal.confirm 而不是 Popconfirm。
+   * Popconfirm 必须能拿到触发元素的 DOM ref 才能定位, 而它现在包在 ContextMenu(组件) 外面,
+   * rc-trigger 量不到目标就把弹层放在 (-16800, -9500) 这类屏幕外坐标, 实测确认框根本点不到。
+   */
+  const confirmRowDelete = () =>
+    modal.confirm({
+      title: t('priceCompare.sheet.contextMenu.removeRowTitle'),
+      content: t('priceCompare.sheet.contextMenu.removeRowContent'),
+      okText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: onDelete,
+    })
+  const lockLabel = t(
+    locked ? 'priceCompare.sheet.unlockRow' : 'priceCompare.sheet.lockRow',
+  )
+  const items: MenuProps['items'] = [
+    {
+      key: 'toggle-row-lock',
+      icon: locked ? <UnlockOutlined /> : <LockOutlined />,
+      label: lockLabel,
+      // 只读/锁定规格数量时整个 Dropdown 已禁用, 这里的禁用只针对行首行尾
+    },
+    { type: 'divider' },
+    {
+      key: 'move-row-up',
+      icon: <ArrowUpOutlined />,
+      label: t('priceCompare.sheet.contextMenu.moveRowUp'),
+      disabled: !canMoveUp,
+    },
+    {
+      key: 'move-row-down',
+      icon: <ArrowDownOutlined />,
+      label: t('priceCompare.sheet.contextMenu.moveRowDown'),
+      disabled: !canMoveDown,
+    },
+    { type: 'divider' },
+    {
+      key: 'insert-row-above',
+      icon: <InsertRowAboveOutlined />,
+      label: t('priceCompare.sheet.contextMenu.insertRowAbove'),
+    },
+    {
+      key: 'insert-separator-below',
+      icon: <InsertRowBelowOutlined />,
+      label: t('priceCompare.sheet.contextMenu.insertSeparatorBelow'),
+    },
+    { type: 'divider' },
+    {
+      key: 'delete-row',
+      danger: true,
+      icon: <DeleteOutlined />,
+      label: t('priceCompare.sheet.contextMenu.deleteRow'),
+    },
+  ]
+
+  const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
+    switch (key) {
+      case 'toggle-row-lock':
+        onToggleLock()
+        break
+      case 'move-row-up':
+        onMoveUp()
+        break
+      case 'move-row-down':
+        onMoveDown()
+        break
+      case 'insert-row-above':
+        onInsertRowAbove()
+        break
+      case 'insert-separator-below':
+        onInsertSeparatorBelow()
+        break
+      case 'delete-row':
+        confirmRowDelete()
+        break
+      default:
+        break
+    }
+  }
+
+  return (
+    <Tooltip title={tooltip}>
+      <ContextMenu
+        ariaLabel={t('priceCompare.sheet.contextMenu.rowLabel', {
+          row: rowLabel,
+        })}
+        disabled={disabled}
+        items={items}
+        onClick={handleMenuClick}
+        open={menuOpen}
+        onOpenChange={onMenuOpenChange}
+        // 可见「更多」按钮与行内右键共用同一份菜单, 也共用焦点进首项/Escape 归还焦点的契约
+        triggers={['click', 'contextMenu']}
+      >
+        <Button
+          aria-haspopup="menu"
+          aria-label={lockLabel}
+          className="price-compare-row-actions"
+          disabled={disabled}
+          icon={locked ? <LockOutlined /> : <MoreOutlined />}
+          size="small"
+          type={locked ? 'primary' : 'text'}
+        />
+      </ContextMenu>
+    </Tooltip>
+  )
+}
 
 function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const {
@@ -370,8 +546,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       ),
     },
     {
-      // 行级操作菜单: 目前承载行级锁定(锁定后才允许关联采购订单)。
-      // 未锁定时用中性的「更多」图标, 已锁定时保持实心锁, 让锁定状态一眼可见。
+      // 行级操作菜单: 承载行级锁定(锁定后才允许关联采购订单)与拖拽的键盘等价物
+      // (上移/下移/插入行/插入隔断/删除该行)。点击可见「更多」按钮与右键行内区域
+      // 打开的是同一份菜单; 未锁定时用中性的「更多」图标, 已锁定时保持实心锁。
       title: '',
       width: 32,
       fixed: 'left',
@@ -380,45 +557,36 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         if (isSeparatorRow(row.row)) return null
         const rowLocked = Boolean(row.row.locked)
         const lockDisabled = readOnly || Boolean(sheet.specQuantityLocked)
-        const label = t(
-          rowLocked
-            ? 'priceCompare.sheet.unlockRow'
-            : 'priceCompare.sheet.lockRow',
-        )
+        const rowIndex = rows.findIndex((item) => item.id === row.rowId)
         return (
-          <Tooltip
-            title={
+          <RowActionsCell
+            rowLabel={rowLabelOf(row)}
+            locked={rowLocked}
+            disabled={lockDisabled}
+            tooltip={
               !readOnly && sheet.specQuantityLocked
                 ? rowLockedHint
                 : t('priceCompare.sheet.lockRowHint')
             }
-          >
-            <Dropdown
-              disabled={lockDisabled}
-              menu={{
-                items: [
-                  {
-                    key: 'toggle-row-lock',
-                    icon: rowLocked ? <UnlockOutlined /> : <LockOutlined />,
-                    label,
-                  },
-                ],
-                onClick: () =>
-                  patchRow(row.rowId, applyRowLock(row.row, !rowLocked)),
-              }}
-              trigger={['click']}
-            >
-              <Button
-                aria-haspopup="menu"
-                aria-label={label}
-                className="price-compare-row-actions"
-                disabled={lockDisabled}
-                icon={rowLocked ? <LockOutlined /> : <MoreOutlined />}
-                size="small"
-                type={rowLocked ? 'primary' : 'text'}
-              />
-            </Dropdown>
-          </Tooltip>
+            menuOpen={ctx.contextMenuRowId === row.rowId}
+            onMenuOpenChange={(open) =>
+              ctx.onContextMenuRowChange(open ? row.rowId : null)
+            }
+            canMoveUp={rowIndex > 0}
+            canMoveDown={rowIndex >= 0 && rowIndex < rows.length - 1}
+            onToggleLock={() =>
+              patchRow(row.rowId, applyRowLock(row.row, !rowLocked))
+            }
+            onMoveUp={() => ctx.moveRow(row.rowId, -1)}
+            onMoveDown={() => ctx.moveRow(row.rowId, 1)}
+            onInsertRowAbove={() =>
+              ctx.insertRowAt(row.rowId, 'PRODUCT', 'above')
+            }
+            onInsertSeparatorBelow={() =>
+              ctx.insertRowAt(row.rowId, 'SEPARATOR', 'below')
+            }
+            onDelete={() => ctx.deleteRow(row.rowId)}
+          />
         )
       },
     },
@@ -576,28 +744,87 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           : [
               {
                 title: (
-                  <span
-                    className="price-compare-brand-name price-compare-drag"
-                    draggable
-                    title={t('priceCompare.sheet.dragBrand')}
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed = 'move'
-                      event.dataTransfer.setData(
-                        'text/plain',
-                        String(brandIndex),
-                      )
-                    }}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => {
-                      event.preventDefault()
-                      const from = Number(
-                        event.dataTransfer.getData('text/plain'),
-                      )
-                      if (!Number.isNaN(from)) onReorderBrands(from, brandIndex)
+                  // 表头标题节点: 保留原有拖拽换序, 并补一个右键菜单(隐藏该列 / 移到最前或最后)
+                  // 作为拖拽的补充入口; 一键填入供应商则复用下方「简称」列的同一个弹层。
+                  <ContextMenu
+                    ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
+                      brand: brand.name,
+                    })}
+                    items={[
+                      {
+                        key: 'fill-supplier-column',
+                        icon: <VerticalAlignBottomOutlined />,
+                        label: t('priceCompare.sheet.contextMenu.fillSupplier'),
+                        // 与「简称」列的一键填入按钮保持同一禁用口径(只读时按钮本身不渲染)
+                        disabled: readOnly,
+                      },
+                      { type: 'divider' },
+                      {
+                        key: 'hide-brand',
+                        icon: <EyeInvisibleOutlined />,
+                        label: t('priceCompare.sheet.contextMenu.hideBrand'),
+                      },
+                      { type: 'divider' },
+                      {
+                        key: 'brand-to-first',
+                        icon: <VerticalAlignTopOutlined />,
+                        label: t(
+                          'priceCompare.sheet.contextMenu.moveBrandFirst',
+                        ),
+                        disabled: brandIndex === 0,
+                      },
+                      {
+                        key: 'brand-to-last',
+                        icon: <VerticalAlignBottomOutlined />,
+                        label: t(
+                          'priceCompare.sheet.contextMenu.moveBrandLast',
+                        ),
+                        disabled: brandIndex === brands.length - 1,
+                      },
+                    ]}
+                    onClick={({ key }) => {
+                      switch (key) {
+                        case 'fill-supplier-column':
+                          ctx.setSupplierFillBrand(brand.name)
+                          break
+                        case 'hide-brand':
+                          ctx.onToggleBrand(brand.name, false)
+                          break
+                        case 'brand-to-first':
+                          onReorderBrands(brandIndex, 0)
+                          break
+                        case 'brand-to-last':
+                          onReorderBrands(brandIndex, brands.length - 1)
+                          break
+                        default:
+                          break
+                      }
                     }}
                   >
-                    {brand.name}
-                  </span>
+                    <span
+                      className="price-compare-brand-name price-compare-drag"
+                      draggable
+                      title={t('priceCompare.sheet.dragBrand')}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = 'move'
+                        event.dataTransfer.setData(
+                          'text/plain',
+                          String(brandIndex),
+                        )
+                      }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        const from = Number(
+                          event.dataTransfer.getData('text/plain'),
+                        )
+                        if (!Number.isNaN(from))
+                          onReorderBrands(from, brandIndex)
+                      }}
+                    >
+                      {brand.name}
+                    </span>
+                  </ContextMenu>
                 ),
                 children: [
                   cellOf(
@@ -788,6 +1015,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       brandName={brand.name}
                       options={supplierOptions}
                       disabled={readOnly}
+                      open={ctx.supplierFillBrand === brand.name}
+                      onOpenChange={(next) =>
+                        ctx.setSupplierFillBrand(next ? brand.name : undefined)
+                      }
                       onFill={(option) =>
                         ctx.fillSupplier(brand.name, productRowIds, option)
                       }
@@ -991,6 +1222,21 @@ function SheetTable(props: SheetTableProps) {
         return classes.join(' ')
       }}
       onRow={(row) => ({
+        /*
+         * 行容器上的右键入口: 右键行内任意位置等同于点该行的「更多」按钮。
+         * 输入类控件必须放行 —— input/textarea/下拉/数字输入有自己的右键菜单
+         * (粘贴、全选等), 命中时直接 return, 既不拦截也不打开行菜单。
+         * 「更多」按钮自身已绑定 contextMenu 触发器, 交给它处理避免重复开合。
+         */
+        onContextMenuCapture: (event) => {
+          const target = event.target as HTMLElement
+          if (target.closest('input,textarea,.ant-select,.ant-input-number'))
+            return
+          if (rowLocked) return
+          if (target.closest('.price-compare-row-actions')) return
+          event.preventDefault()
+          base.onContextMenuRowChange(row.rowId)
+        },
         onDragOver: (event) => {
           if (!dragId || rowLocked) return
           event.preventDefault()
@@ -1134,15 +1380,19 @@ function SupplierFillHeader({
   brandName,
   options,
   disabled,
+  open,
+  onOpenChange,
   onFill,
 }: {
   brandName: string
   options: SupplierSelectOption[]
   disabled: boolean
+  /** 受控开合: 由 SheetPanel 统一管理, 让表头右键菜单也能打开同一个弹层。 */
+  open: boolean
+  onOpenChange: (open: boolean) => void
   onFill: (option: { value: string; label: string } | undefined) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
   const title = t('priceCompare.sheet.fillSupplierColumn', { brand: brandName })
   return (
     <span className="price-compare-supplier-header">
@@ -1152,7 +1402,7 @@ function SupplierFillHeader({
           trigger="click"
           placement="bottom"
           open={open}
-          onOpenChange={setOpen}
+          onOpenChange={onOpenChange}
           content={
             <Flex vertical gap={4} className="price-compare-supplier-fill">
               <Text type="secondary" className="price-compare-sub">
@@ -1163,7 +1413,7 @@ function SupplierFillHeader({
                 options={options}
                 onPick={(option) => {
                   onFill(option)
-                  setOpen(false)
+                  onOpenChange(false)
                 }}
               />
             </Flex>
@@ -1852,6 +2102,12 @@ export function SheetPanel(props: Props) {
   /** 仅临时(不持久化)的列显隐: 备注列与整组品牌列。 */
   const [hideRemark, setHideRemark] = useState(false)
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
+  /** 行操作菜单当前打开的行: 右键行内区域与「更多」按钮共用一个受控开关。 */
+  const [contextMenuRowId, setContextMenuRowId] = useState<string | null>(null)
+  /** 当前通过表头右键菜单打开「一键填入供应商」弹层的品牌列。 */
+  const [supplierFillBrand, setSupplierFillBrand] = useState<
+    string | undefined
+  >()
   const hiddenBrandSet = new Set(hiddenBrands)
   const {
     keys: spotTouchedKeys,
@@ -1860,11 +2116,7 @@ export function SheetPanel(props: Props) {
   } = useSpotTouchedKeys()
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
     setHiddenBrands((current) =>
-      visible
-        ? current.filter((name) => name !== brandName)
-        : current.includes(brandName)
-          ? current
-          : [...current, brandName],
+      withMemberVisibility(current, brandName, visible),
     )
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
@@ -1987,32 +2239,24 @@ export function SheetPanel(props: Props) {
         : current.filter((id) => id !== rowId),
     )
 
-  const removeSelected = () => {
-    const ids = new Set(selectedIds)
-    if (!ids.size) return
-    setRows((list) => list.filter((row) => !ids.has(row.id)))
-    const nextInputs = { ...sheet.inputs }
-    for (const brand of brands) {
-      for (const id of ids) {
-        delete nextInputs[`${brand.name}:${id}`]
-      }
-    }
-    patchSheet(sheet.id, { inputs: nextInputs })
-    setSelectedIds([])
-  }
-
-  const reorderRow = (fromId: string, toId: string, after: boolean) =>
-    setRows((list) => {
-      const from = list.findIndex((row) => row.id === fromId)
-      const to = list.findIndex((row) => row.id === toId)
-      if (from < 0 || to < 0 || from === to) return list
-      const insert = from < to ? (after ? to : to - 1) : after ? to + 1 : to
-      return moveItem(list, from, insert)
-    })
-
-  const addRow = () => setRows((list) => [...list, makeRow()])
-
-  const addSeparator = () => setRows((list) => [...list, makeSeparatorRow()])
+  /** 整行增删/排序(含右键菜单的上移/下移/插入/删除)统一来自该 hook。 */
+  const {
+    removeSelected,
+    reorderRow,
+    addRow,
+    addSeparator,
+    moveRow,
+    insertRowAt,
+    deleteRow,
+  } = useSheetRowOperations({
+    rows,
+    selectedIds,
+    setRows,
+    brands,
+    sheet,
+    patchSheet,
+    setSelectedIds,
+  })
 
   const purchaseOrderPicker = usePurchaseOrderPicker({
     rows,
@@ -2039,6 +2283,14 @@ export function SheetPanel(props: Props) {
     supplierOptions: suppliers,
     patchRow,
     onReorderBrands,
+    onToggleBrand: toggleBrandVisible,
+    supplierFillBrand,
+    setSupplierFillBrand,
+    contextMenuRowId,
+    onContextMenuRowChange: setContextMenuRowId,
+    moveRow,
+    insertRowAt,
+    deleteRow,
     selectedIds,
     toggleSelect,
     allowHrb400eFallback,

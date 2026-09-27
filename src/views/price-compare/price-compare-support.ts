@@ -38,3 +38,16 @@ export function projectGroupsOf(
   }
   return [...byId.values()]
 }
+
+/**
+ * 按值增删一个字符串集合成员(返回新数组, 不改原数组)。
+ * 例: 品牌列显隐 —— visible 为 true 时移除, 为 false 时加入(已存在则原样返回, 保持引用稳定)。
+ */
+export function withMemberVisibility(
+  list: string[],
+  value: string,
+  visible: boolean,
+): string[] {
+  if (visible) return list.filter((item) => item !== value)
+  return list.includes(value) ? list : [...list, value]
+}

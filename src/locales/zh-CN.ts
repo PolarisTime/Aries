@@ -2437,6 +2437,23 @@ export const zhCN = {
         purchaseOrderRemaining: '剩余吨位',
         purchaseOrderStatus: '状态',
       },
+      /** 右键菜单: 行操作与品牌列头操作(与可见按钮共用同一份动作) */
+      contextMenu: {
+        rowLabel: '「{{row}}」行操作菜单',
+        brandLabel: '「{{brand}}」品牌列操作菜单',
+        moveRowUp: '上移',
+        moveRowDown: '下移',
+        insertRowAbove: '在上方插入行',
+        insertSeparatorBelow: '在下方插入隔断',
+        deleteRow: '删除该行…',
+        removeRowTitle: '删除该行？',
+        removeRowContent:
+          '该行的现货价与供应商填写会一并移除，需要保存单据才会生效。',
+        fillSupplier: '一键填入供应商…',
+        hideBrand: '隐藏该列',
+        moveBrandFirst: '移到最前',
+        moveBrandLast: '移到最后',
+      },
       tonTotal: '合计',
       columnSettings: '列显示',
       selectProduct: '选择商品',
