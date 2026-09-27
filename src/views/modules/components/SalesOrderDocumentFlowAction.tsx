@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { getSalesOrderDocumentFlow } from '@/api/sales/sales-order-document-flow'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type {
+  SalesOrderDocumentFlow,
   SalesOrderDocumentFlowLink,
   SalesOrderDocumentFlowNode,
 } from '@/shared/schemas/sales-order-document-flow'
@@ -60,6 +61,156 @@ function resolveLinkNodeLabel(
   return nodeById.get(key)?.no || key
 }
 
+/** 抽屉内容: 负责加载态、错误态、空态与分组/关系两段列表的组装。 */
+function DocumentFlowDrawerBody({
+  data,
+  error,
+  isError,
+  isFetching,
+  isPending,
+  onRetry,
+}: {
+  data: SalesOrderDocumentFlow | undefined
+  error: unknown
+  isError: boolean
+  isFetching: boolean
+  isPending: boolean
+  onRetry: () => void
+}) {
+  const { t } = useTranslation()
+  const nodes = data?.nodes ?? []
+  const links = data?.links ?? []
+  const nodeGroups = useMemo(() => groupNodesByType(nodes), [nodes])
+  const nodeById = useMemo(
+    () => new Map(nodes.map((node) => [String(node.id), node])),
+    [nodes],
+  )
+  const hasContent = nodes.length > 0 || links.length > 0
+  return (
+    <Spin spinning={isPending || isFetching}>
+      {isError ? (
+        <Alert
+          action={
+            <Button size="small" onClick={onRetry}>
+              {t('errorBoundary.retry')}
+            </Button>
+          }
+          title={
+            error instanceof Error
+              ? error.message
+              : t('modules.pages.salesOrder.documentFlow.loadFailed')
+          }
+          showIcon
+          type="error"
+        />
+      ) : null}
+      {!isPending && nodes.length === 0 ? (
+        <Empty description={t('modules.pages.salesOrder.documentFlow.empty')} />
+      ) : null}
+      {nodeGroups.map((group) => (
+        <DocumentFlowNodeGroup key={group.type} group={group} />
+      ))}
+      {!isPending && hasContent ? (
+        <div>
+          <Typography.Title level={5}>
+            {t('modules.pages.salesOrder.documentFlow.relationsTitle')}
+          </Typography.Title>
+          <DocumentFlowRelations links={links} nodeById={nodeById} />
+        </div>
+      ) : null}
+    </Spin>
+  )
+}
+
+/** 单据分组列表: 一组单据(同类型)的明细行。 */
+function DocumentFlowNodeGroup({ group }: { group: NodeGroup }) {
+  const { t } = useTranslation()
+  if (group.nodes.length === 0) {
+    return (
+      <div>
+        <Typography.Title level={5}>{group.type}</Typography.Title>
+        <Typography.Text type="secondary">
+          {t('modules.pages.salesOrder.documentFlow.emptySection')}
+        </Typography.Text>
+      </div>
+    )
+  }
+  return (
+    <div>
+      <Typography.Title level={5}>{group.type}</Typography.Title>
+      {/* List 已废弃, 按官方说明迁到 Listy: dataSource→items、renderItem→itemRender,
+          预设的 List.Item.Meta 用普通标记在 itemRender 内重组。 */}
+      <Listy<SalesOrderDocumentFlowNode>
+        classNames={{ root: 'sales-doc-flow-list' }}
+        items={group.nodes}
+        rowKey="id"
+        itemRender={(node) => (
+          <div className="sales-doc-flow-row">
+            <div className="sales-doc-flow-row-meta">
+              <div className="sales-doc-flow-row-title">
+                {node.no || String(node.id)}
+              </div>
+              <div className="sales-doc-flow-row-desc">{node.date || ''}</div>
+            </div>
+            {node.status ? <Tag>{node.status}</Tag> : null}
+            {node.weight != null ? (
+              <Typography.Text>{String(node.weight)}</Typography.Text>
+            ) : null}
+            {node.amount != null ? (
+              <Typography.Text>{String(node.amount)}</Typography.Text>
+            ) : null}
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+/** 单据关系列表: 关系行没有自有 id, 用两端 + 关系类型组合成稳定 key。 */
+function DocumentFlowRelations({
+  links,
+  nodeById,
+}: {
+  links: SalesOrderDocumentFlowLink[]
+  nodeById: Map<string, SalesOrderDocumentFlowNode>
+}) {
+  const { t } = useTranslation()
+  if (links.length === 0) {
+    return (
+      <Typography.Text type="secondary">
+        {t('modules.pages.salesOrder.documentFlow.relationsEmpty')}
+      </Typography.Text>
+    )
+  }
+  return (
+    <Listy<SalesOrderDocumentFlowLink>
+      classNames={{ root: 'sales-doc-flow-list' }}
+      items={links}
+      rowKey={(link) =>
+        `${link.fromId ?? ''}-${link.toId ?? ''}-${link.linkType ?? ''}`
+      }
+      styles={{ item: { paddingBlock: 'var(--space-xs)' } }}
+      itemRender={(link) => {
+        const fromLabel = resolveLinkNodeLabel(link.fromId, nodeById)
+        const toLabel = resolveLinkNodeLabel(link.toId, nodeById)
+        return (
+          <Space size="small" wrap>
+            {link.fromType ? <Tag>{link.fromType}</Tag> : null}
+            <Typography.Text>{fromLabel}</Typography.Text>
+            <span className="aries-sr-only">
+              {t('modules.pages.salesOrder.documentFlow.relationArrow')}
+            </span>
+            <ArrowRightOutlined aria-hidden="true" />
+            {link.toType ? <Tag>{link.toType}</Tag> : null}
+            <Typography.Text>{toLabel}</Typography.Text>
+            {link.linkType ? <Tag color="blue">{link.linkType}</Tag> : null}
+          </Space>
+        )
+      }}
+    />
+  )
+}
+
 export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -73,13 +224,6 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
     staleTime: 0,
   })
 
-  const nodes = data?.nodes ?? []
-  const links = data?.links ?? []
-  const nodeGroups = useMemo(() => groupNodesByType(nodes), [nodes])
-  const nodeById = useMemo(
-    () => new Map(nodes.map((node) => [String(node.id), node])),
-    [nodes],
-  )
   const documentNo = String(target?.orderNo ?? '')
   const canOpen = selectedRows.length === 1
   const disabledReason = canOpen
@@ -113,112 +257,14 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
         size={640}
         onClose={() => setOpen(false)}
       >
-        <Spin spinning={isPending || isFetching}>
-          {isError ? (
-            <Alert
-              action={
-                <Button size="small" onClick={() => void refetch()}>
-                  {t('errorBoundary.retry')}
-                </Button>
-              }
-              title={
-                error instanceof Error
-                  ? error.message
-                  : t('modules.pages.salesOrder.documentFlow.loadFailed')
-              }
-              showIcon
-              type="error"
-            />
-          ) : null}
-          {!isPending && nodes.length === 0 ? (
-            <Empty
-              description={t('modules.pages.salesOrder.documentFlow.empty')}
-            />
-          ) : null}
-          {nodeGroups.map((group) => (
-            <div key={group.type}>
-              <Typography.Title level={5}>{group.type}</Typography.Title>
-              {group.nodes.length === 0 ? (
-                <Typography.Text type="secondary">
-                  {t('modules.pages.salesOrder.documentFlow.emptySection')}
-                </Typography.Text>
-              ) : (
-                /* List 已废弃, 按官方说明迁到 Listy: dataSource→items, renderItem→itemRender,
-                   预设的 Item.Meta 用普通标记在 itemRender 内重组。 */
-                <Listy<SalesOrderDocumentFlowNode>
-                  classNames={{ root: 'sales-doc-flow-list' }}
-                  items={group.nodes}
-                  rowKey="id"
-                  itemRender={(node) => (
-                    <div className="sales-doc-flow-row">
-                      <div className="sales-doc-flow-row-meta">
-                        <div className="sales-doc-flow-row-title">
-                          {node.no || String(node.id)}
-                        </div>
-                        <div className="sales-doc-flow-row-desc">
-                          {node.date || ''}
-                        </div>
-                      </div>
-                      {node.status ? <Tag>{node.status}</Tag> : null}
-                      {node.weight != null ? (
-                        <Typography.Text>{String(node.weight)}</Typography.Text>
-                      ) : null}
-                      {node.amount != null ? (
-                        <Typography.Text>{String(node.amount)}</Typography.Text>
-                      ) : null}
-                    </div>
-                  )}
-                />
-              )}
-            </div>
-          ))}
-          {!isPending && (nodes.length > 0 || links.length > 0) ? (
-            <div>
-              <Typography.Title level={5}>
-                {t('modules.pages.salesOrder.documentFlow.relationsTitle')}
-              </Typography.Title>
-              {links.length === 0 ? (
-                <Typography.Text type="secondary">
-                  {t('modules.pages.salesOrder.documentFlow.relationsEmpty')}
-                </Typography.Text>
-              ) : (
-                <Listy<SalesOrderDocumentFlowLink>
-                  classNames={{ root: 'sales-doc-flow-list' }}
-                  items={links}
-                  // 关系行没有自有 id: 用两端 + 关系类型组合成稳定 key
-                  rowKey={(link) =>
-                    `${link.fromId ?? ''}-${link.toId ?? ''}-${link.linkType ?? ''}`
-                  }
-                  styles={{ item: { paddingBlock: 'var(--space-xs)' } }}
-                  itemRender={(link) => {
-                    const fromLabel = resolveLinkNodeLabel(
-                      link.fromId,
-                      nodeById,
-                    )
-                    const toLabel = resolveLinkNodeLabel(link.toId, nodeById)
-                    return (
-                      <Space size="small" wrap>
-                        {link.fromType ? <Tag>{link.fromType}</Tag> : null}
-                        <Typography.Text>{fromLabel}</Typography.Text>
-                        <span className="aries-sr-only">
-                          {t(
-                            'modules.pages.salesOrder.documentFlow.relationArrow',
-                          )}
-                        </span>
-                        <ArrowRightOutlined aria-hidden="true" />
-                        {link.toType ? <Tag>{link.toType}</Tag> : null}
-                        <Typography.Text>{toLabel}</Typography.Text>
-                        {link.linkType ? (
-                          <Tag color="blue">{link.linkType}</Tag>
-                        ) : null}
-                      </Space>
-                    )
-                  }}
-                />
-              )}
-            </div>
-          ) : null}
-        </Spin>
+        <DocumentFlowDrawerBody
+          data={data}
+          error={error}
+          isError={isError}
+          isFetching={isFetching}
+          isPending={isPending}
+          onRetry={() => void refetch()}
+        />
       </Drawer>
     </>
   )
