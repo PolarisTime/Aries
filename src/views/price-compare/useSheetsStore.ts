@@ -462,8 +462,14 @@ export type SheetsStore = {
   configLoaded: boolean
   /** 当前批次编辑签出状态; null 表示未签出/降级可编辑 */
   editLock: EditLockView | null
-  /** 当前批次是否只读(被他人签出) */
+  /** 已发起签出但尚未拿到服务端锁结论: 此期间按只读处理(避免锁未知即可编辑) */
+  lockPending: boolean
+  /** 保存遇到 409 锁冲突的批次 serverId; 非 null 时需要给用户"放弃本地改动并重载"的出口 */
+  lockConflict: string | null
+  /** 当前批次是否只读(被他人签出, 或锁结论未知) */
   readOnly: boolean
+  /** 放弃本地未落库改动并重新从服务端加载(用于解开 409 造成的刷新停摆) */
+  discardLocalChangesAndReload: (sheetId: string) => void
   setConfig: (patch: Partial<ProjectConfig>) => void
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   canUndo: boolean
@@ -587,6 +593,14 @@ export function useSheetsStore(options?: {
   /** "持久未保存挡住刷新"提示是否已弹过(避免每 30s 轮询重复弹); 刷新成功后可再次提示。 */
   const stuckNoticeShownRef = useRef(false)
   const [editLock, setEditLock] = useState<EditLockView | null>(null)
+  /** 已发起签出、尚未拿到服务端锁结论的批次(serverId): 此期间按只读处理, 避免 fail-open。 */
+  const [lockPendingServerId, setLockPendingServerId] = useState<string | null>(
+    null,
+  )
+  /** 保存遇到 409 锁冲突的批次(serverId): 本地改动被标脏且刷新被挡住, 需给用户出口。 */
+  const [lockConflictServerId, setLockConflictServerId] = useState<
+    string | null
+  >(null)
   /** 已签出批次的服务端 id 与续约定时器(键统一用映射后的 serverId)。 */
   const heldLockRef = useRef<{ sheetId: string; timer: number } | null>(null)
   /** 当前已签出(或已发起签出)批次的服务端 id, 用于切换检测。 */
@@ -1628,6 +1642,8 @@ export function useSheetsStore(options?: {
             // 锁状态刷新失败不影响提示
           }
         }
+        // 记录冲突批次: 本地改动已被标脏, 会挡住后续刷新; 需要给用户明确的出口。
+        setLockConflictServerId(serverId ?? sheetId)
         // 同一单据反复触发锁冲突只保留一条提示, 避免叠加。
         message.warning({
           content: LOCK_CONFLICT_TEXT,
@@ -1811,7 +1827,14 @@ export function useSheetsStore(options?: {
     // 先释放上一批次锁并停止其续约; 即使目标批次尚未落库也要执行, 否则旧锁会泄漏
     if (previous && previous !== targetServerId) void releaseEditLock(previous)
     if (!targetServerId) return
-    void acquireEditLock(target)
+    // 锁结论未知期间先按只读处理: 否则切到"他人已签出"的批次后, 在收到锁响应之前
+    // 这段时间 UI 是可编辑的, 用户输入会被接受, 随后 409 把整批卡在脏数据里。
+    setLockPendingServerId(targetServerId)
+    void acquireEditLock(target).finally(() => {
+      setLockPendingServerId((current) =>
+        current === targetServerId ? null : current,
+      )
+    })
   }, [
     state.activeId,
     routeActive,
@@ -1867,7 +1890,12 @@ export function useSheetsStore(options?: {
     serverIdRef.current.get(state.activeId) ?? state.activeId
   const activeLock =
     editLock && editLock.sheetId === activeServerId ? editLock : null
-  const readOnly = Boolean(activeLock && activeLock.locked && !activeLock.mine)
+  /** 锁结论未知(已发起签出但服务端尚未返回): 按只读处理, 不做 fail-open。 */
+  const lockPending = Boolean(
+    lockPendingServerId && lockPendingServerId === activeServerId,
+  )
+  const readOnly =
+    lockPending || Boolean(activeLock && activeLock.locked && !activeLock.mine)
   const readOnlyRef = useRef(false)
   useEffect(() => {
     readOnlyRef.current = readOnly
@@ -2151,6 +2179,21 @@ export function useSheetsStore(options?: {
     }
   }
 
+  /**
+   * 放弃本地未落库改动并重新加载。
+   * 409 后 dirtySheetsRef 会一直挡住 refreshSheets(静默 skipped), 用户既看不到
+   * 任何说明也没有出口; 这里清掉脏标记与"配置未加载被跳过"的标记后立刻刷新。
+   */
+  const discardLocalChangesAndReload = useCallback(
+    (sheetId: string) => {
+      dirtySheetsRef.current.delete(sheetId)
+      configBlockedSaveRef.current.delete(sheetId)
+      setLockConflictServerId(null)
+      void refreshFromServer()
+    },
+    [refreshFromServer],
+  )
+
   return {
     loading,
     sheets: state.sheets,
@@ -2161,7 +2204,10 @@ export function useSheetsStore(options?: {
     config,
     configLoaded,
     editLock: activeLock,
+    lockPending,
+    lockConflict: lockConflictServerId,
     readOnly,
+    discardLocalChangesAndReload,
     setConfig,
     setBrands,
     canUndo:

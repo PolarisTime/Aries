@@ -2368,6 +2368,12 @@ export const zhCN = {
       editingByOther: '{{name}} 正在编辑该批次',
       editingByOtherUnknown: '他人正在编辑该批次',
       requestTakeover: '申请接管',
+      lockConflict:
+        '本批次的改动已停止自动保存：编辑锁已被他人接管，请申请接管或放弃本地改动后重新加载。',
+      discardLocalAndReload: '放弃我的改动并重新加载',
+      discardLocalConfirmTitle: '放弃本地未保存的改动？',
+      discardLocalConfirmContent:
+        '将丢弃本批次尚未落库的编辑，并重新从服务端加载最新数据。',
       takeoverConfirmTitle: '确认接管编辑？',
       takeoverConfirmContent:
         '接管将取得该批次编辑权；若对方仍在编辑会再次冲突，请等待其签出过期后重试。',

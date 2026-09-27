@@ -2442,6 +2442,12 @@ export const enUS = {
       editingByOther: '{{name}} is editing this batch',
       editingByOtherUnknown: 'Another user is editing this batch',
       requestTakeover: 'Request takeover',
+      lockConflict:
+        'Automatic saving has stopped for this batch: the edit lock was taken over. Request takeover, or discard your local changes and reload.',
+      discardLocalAndReload: 'Discard my changes and reload',
+      discardLocalConfirmTitle: 'Discard unsaved local changes?',
+      discardLocalConfirmContent:
+        'Unsaved edits in this batch will be discarded and the latest data will be reloaded from the server.',
       takeoverConfirmTitle: 'Take over editing?',
       takeoverConfirmContent:
         'Takeover acquires the edit right for this batch. If the current editor is still active it will conflict again; retry after the lock expires.',

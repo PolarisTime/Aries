@@ -62,8 +62,10 @@ export function PriceCompareView() {
     assignProjectToUnassigned,
     removeSheet,
     editLock,
+    lockConflict,
     readOnly,
     takeoverEditLock,
+    discardLocalChangesAndReload,
   } = store
 
   const brands = config.brands
@@ -271,9 +273,11 @@ export function PriceCompareView() {
         onDeleteBatch={confirmRemoveSheet}
       />
 
-      {active && editLock ? (
+      {active && (editLock || lockConflict) ? (
         <PriceCompareEditLockBanner
+          conflict={Boolean(lockConflict)}
           lock={editLock}
+          onDiscardLocal={() => discardLocalChangesAndReload(active.id)}
           onTakeover={() => takeoverEditLock(active.id)}
         />
       ) : null}

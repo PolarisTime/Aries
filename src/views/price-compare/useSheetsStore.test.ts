@@ -617,6 +617,70 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.editLock?.ownerName).toBe('李四')
   })
 
+  it('签出响应返回前按只读处理(锁状态未知不做 fail-open)', async () => {
+    let settleLock!: (value: unknown) => void
+    api.acquireQuoteSheetEditLock.mockReturnValue(
+      new Promise((resolve) => {
+        settleLock = resolve
+      }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    // 已发起签出但服务端尚未返回: 此时必须只读, 否则用户能编辑"他人已签出"的批次
+    expect(api.acquireQuoteSheetEditLock).toHaveBeenCalled()
+    expect(store.current.lockPending).toBe(true)
+    expect(store.current.readOnly).toBe(true)
+
+    await act(async () => {
+      settleLock({
+        sheetId: '9001',
+        locked: true,
+        mine: true,
+        ttlSeconds: 120,
+      })
+      await Promise.resolve()
+    })
+    expect(store.current.lockPending).toBe(false)
+    expect(store.current.readOnly).toBe(false)
+  })
+
+  it('409 锁冲突后可用 discardLocalChangesAndReload 放弃本地改动并恢复刷新', async () => {
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
+    api.fetchQuoteSheetEditLock.mockResolvedValue({
+      sheetId: '9001',
+      locked: true,
+      mine: false,
+      ownerName: '李四',
+      ttlSeconds: 120,
+    })
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    // 冲突被记录: UI 据此给出"放弃我的改动并重新加载"出口
+    expect(store.current.lockConflict).toBe('9001')
+    expect(store.current.readOnly).toBe(true)
+
+    api.fetchQuoteSheets.mockClear()
+    api.updateQuoteSheetHeader.mockResolvedValue(sheetRecord({ version: '2' }))
+    act(() => {
+      store.current.discardLocalChangesAndReload(store.current.activeId)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50)
+    })
+
+    expect(store.current.lockConflict).toBeNull()
+    // 脏标记被清掉后刷新不再被静默跳过
+    expect(api.fetchQuoteSheets).toHaveBeenCalled()
+  })
+
   it('保存冲突时提示并支持重新加载丢弃本地改动', async () => {
     api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
     const store = renderStore()
