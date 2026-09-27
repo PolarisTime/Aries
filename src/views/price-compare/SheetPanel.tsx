@@ -4,6 +4,7 @@ import {
   InfoCircleOutlined,
   LockOutlined,
   MinusOutlined,
+  MoreOutlined,
   ReloadOutlined,
   SettingOutlined,
   SwapOutlined,
@@ -17,6 +18,7 @@ import {
   Checkbox,
   DatePicker,
   Divider,
+  Dropdown,
   Flex,
   Input,
   Popconfirm,
@@ -348,6 +350,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       ),
     },
     {
+      // 行级操作菜单: 目前承载行级锁定(锁定后才允许关联采购订单)。
+      // 未锁定时用中性的「更多」图标, 已锁定时保持实心锁, 让锁定状态一眼可见。
       title: '',
       width: 32,
       fixed: 'left',
@@ -355,6 +359,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       render: (_, row) => {
         if (isSeparatorRow(row.row)) return null
         const rowLocked = Boolean(row.row.locked)
+        const lockDisabled = readOnly || Boolean(sheet.specQuantityLocked)
         const label = t(
           rowLocked
             ? 'priceCompare.sheet.unlockRow'
@@ -368,18 +373,31 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 : t('priceCompare.sheet.lockRowHint')
             }
           >
-            <Button
-              aria-label={label}
-              aria-pressed={rowLocked}
-              className="price-compare-row-lock"
-              disabled={readOnly || Boolean(sheet.specQuantityLocked)}
-              icon={rowLocked ? <LockOutlined /> : <UnlockOutlined />}
-              size="small"
-              type={rowLocked ? 'primary' : 'text'}
-              onClick={() =>
-                patchRow(row.rowId, applyRowLock(row.row, !rowLocked))
-              }
-            />
+            <Dropdown
+              disabled={lockDisabled}
+              menu={{
+                items: [
+                  {
+                    key: 'toggle-row-lock',
+                    icon: rowLocked ? <UnlockOutlined /> : <LockOutlined />,
+                    label,
+                  },
+                ],
+                onClick: () =>
+                  patchRow(row.rowId, applyRowLock(row.row, !rowLocked)),
+              }}
+              trigger={['click']}
+            >
+              <Button
+                aria-haspopup="menu"
+                aria-label={label}
+                className="price-compare-row-actions"
+                disabled={lockDisabled}
+                icon={rowLocked ? <LockOutlined /> : <MoreOutlined />}
+                size="small"
+                type={rowLocked ? 'primary' : 'text'}
+              />
+            </Dropdown>
           </Tooltip>
         )
       },

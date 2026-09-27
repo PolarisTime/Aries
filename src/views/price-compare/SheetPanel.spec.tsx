@@ -355,6 +355,12 @@ describe('SheetPanel 指定品牌展示', () => {
     )
     expect(addRow?.disabled).toBe(true)
 
+    // 行操作菜单(行级锁定入口)一并禁用
+    expect(
+      container.querySelector<HTMLButtonElement>('.price-compare-row-actions')
+        ?.disabled,
+    ).toBe(true)
+
     // 选中一行后, 删除所选行入口禁用
     const rowCheckbox = container.querySelector<HTMLInputElement>(
       '.ant-table-tbody input[type="checkbox"]',
@@ -1196,19 +1202,46 @@ describe('SheetPanel 指定品牌展示', () => {
     })
     expect(observed.rows[0].length).toBe('12米')
   })
-  it('每行渲染锁定按钮, 点击切换并回写 locked', () => {
-    const observed = renderStateful(makeSheet(), [{ ...baseRow }])
-    const lockButton = container.querySelector(
-      '.price-compare-row-lock',
-    ) as HTMLButtonElement
-    expect(lockButton).toBeTruthy()
-    act(() => {
-      lockButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  /** 打开某行的「更多操作」菜单并点击指定项(antd 弹层挂在 document.body 上)。 */
+  async function clickRowAction(label: string) {
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '.price-compare-row-actions',
+    )
+    expect(trigger).not.toBeNull()
+    await act(async () => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    expect(observed.rows[0].locked).toBe(true)
+    const item = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ).find((node) => node.textContent?.includes(label))
+    expect(item).toBeTruthy()
+    await act(async () => {
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('行级锁定收在行操作菜单里, 未锁定时触发图标为中性的更多操作', () => {
+    renderStateful(makeSheet(), [{ ...baseRow }])
+    const trigger = container.querySelector('.price-compare-row-actions')
+    expect(trigger).toBeTruthy()
+    expect(trigger?.getAttribute('aria-haspopup')).toBe('menu')
+    // 未锁定: 走「更多」图标, 不再常驻一个开锁图标
+    expect(trigger?.querySelector('.anticon-more')).not.toBeNull()
+    expect(trigger?.querySelector('.anticon-lock, .anticon-unlock')).toBeNull()
   })
 
-  it('解锁已关联采购订单的行会清除关联与快照', () => {
+  it('菜单选择「锁定该行」后回写 locked, 触发图标变为实心锁', async () => {
+    const observed = renderStateful(makeSheet(), [{ ...baseRow }])
+    await clickRowAction('锁定该行')
+    expect(observed.rows[0].locked).toBe(true)
+    const trigger = container.querySelector('.price-compare-row-actions')
+    expect(trigger?.querySelector('.anticon-lock')).not.toBeNull()
+  })
+
+  it('解锁已关联采购订单的行会清除关联与快照', async () => {
     const observed = renderStateful(makeSheet(), [
       {
         ...baseRow,
@@ -1218,12 +1251,7 @@ describe('SheetPanel 指定品牌展示', () => {
         purchaseOrderNo: 'PO-88',
       },
     ])
-    const lockButton = container.querySelector(
-      '.price-compare-row-lock',
-    ) as HTMLButtonElement
-    act(() => {
-      lockButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickRowAction('解锁该行')
     expect(observed.rows[0].locked).toBe(false)
     expect(observed.rows[0].purchaseOrderId).toBeUndefined()
     expect(observed.rows[0].purchaseOrderItemId).toBeUndefined()
