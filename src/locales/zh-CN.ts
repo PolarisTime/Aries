@@ -310,6 +310,7 @@ export const zhCN = {
     columnMenu: {
       label: '「{{column}}」列操作菜单',
       hide: '隐藏该列',
+      hidden: '已隐藏「{{column}}」，可在列设置里恢复',
       moveFirst: '移到最前',
       moveLast: '移到最后',
       settings: '列设置…',
@@ -1881,6 +1882,8 @@ export const zhCN = {
     },
     columnSettings: {
       syncRetryLater: '列设置已保存到本地，云同步稍后重试',
+      resetByAbnormalHidden:
+        '检测到该页面的列显示设置异常，已恢复为默认列显示，可在列设置里重新调整',
     },
     statement: {
       noCandidateDocuments: '当前筛选条件下没有可生成的候选单据',

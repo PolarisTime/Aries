@@ -151,4 +151,25 @@ describe('buildRowContextMenus', () => {
     ).not.toThrow()
     expect(onView).not.toHaveBeenCalled()
   })
+
+  it('传入 onMenuOpen 时 config.onOpen 触发并携带该行', () => {
+    const onMenuOpen = vi.fn()
+    const menus = buildRowContextMenus({
+      ...params(() => [{ key: 'view', label: '查看明细', onClick: vi.fn() }]),
+      onMenuOpen,
+    })
+    expect(typeof menus.get('1')?.onOpen).toBe('function')
+    expect(onMenuOpen).not.toHaveBeenCalled()
+
+    menus.get('2')?.onOpen?.()
+    expect(onMenuOpen).toHaveBeenCalledTimes(1)
+    expect(onMenuOpen).toHaveBeenCalledWith(RECORDS[1])
+  })
+
+  it('未传 onMenuOpen 时 config 不带 onOpen(保持既有配置形状)', () => {
+    const menus = buildRowContextMenus(
+      params(() => [{ key: 'view', label: '查看明细', onClick: vi.fn() }]),
+    )
+    expect(menus.get('1')).not.toHaveProperty('onOpen')
+  })
 })

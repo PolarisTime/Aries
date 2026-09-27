@@ -76,28 +76,34 @@ function hasAbnormalHiddenKeys(
   return hiddenKeys.length >= totalColumnCount * 0.6
 }
 
+interface ResolvedInitialSettings {
+  settings: ListColumnSettings | null
+  /** 本地存储里的隐藏比例异常且已静默重置, 调用方需要给出一次可感知提示 */
+  resetByAbnormalHidden: boolean
+}
+
 function resolveInitialSettings(
   pageKey: string,
   userKey: string,
   defaultSettings: ListColumnSettings | null,
   totalColumnCount: number,
-) {
+): ResolvedInitialSettings {
   // config 未就绪时跳过本地存储读取，避免应用旧页面的列设置
   if (totalColumnCount <= 0) {
-    return defaultSettings
+    return { settings: defaultSettings, resetByAbnormalHidden: false }
   }
   const saved = getListColumnSettings(pageKey, userKey)
   if (!saved) {
-    return defaultSettings
+    return { settings: defaultSettings, resetByAbnormalHidden: false }
   }
   if (hasAbnormalHiddenKeys(saved.hiddenKeys, totalColumnCount)) {
     logger.warn(
       `Column settings for "${pageKey}" has abnormal hiddenKeys (${saved.hiddenKeys.length}/${totalColumnCount}), resetting to default`,
     )
     setListColumnSettings(pageKey, { orderedKeys: [], hiddenKeys: [] }, userKey)
-    return defaultSettings
+    return { settings: defaultSettings, resetByAbnormalHidden: true }
   }
-  return saved
+  return { settings: saved, resetByAbnormalHidden: false }
 }
 
 export function useColumnSettingsSupport(
@@ -108,12 +114,28 @@ export function useColumnSettingsSupport(
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const userKey = String(user?.id || user?.loginName || 'anonymous').trim()
-  const initialSettings = resolveInitialSettings(
+  /** 异常隐藏比例重置只提示一次(与 syncWarningShownRef 同一模式) */
+  const abnormalResetWarningShownRef = useRef(false)
+  const resolvedInitialSettings = resolveInitialSettings(
     pageKey,
     userKey,
     buildDefaultSettings(defaultHiddenKeys),
     totalColumnCount,
   )
+  const initialSettings = resolvedInitialSettings.settings
+  /**
+   * 本地存储里的异常隐藏比例(渲染期检测)与远端设置里的异常(异步检测)都汇聚到这里,
+   * 由同一个 effect 给出一次可感知提示, 避免在渲染期直接产生副作用。
+   */
+  const [abnormalHiddenReset, setAbnormalHiddenReset] = useState(
+    resolvedInitialSettings.resetByAbnormalHidden,
+  )
+  useEffect(() => {
+    if (!abnormalHiddenReset) return
+    if (abnormalResetWarningShownRef.current) return
+    abnormalResetWarningShownRef.current = true
+    message.warning(t('hooks.columnSettings.resetByAbnormalHidden'))
+  }, [abnormalHiddenReset, t])
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(() =>
     toColumnOrderState(initialSettings),
   )
@@ -168,6 +190,7 @@ export function useColumnSettingsSupport(
             logger.warn(
               `Remote column settings for "${pageKey}" has abnormal hiddenKeys, resetting`,
             )
+            setAbnormalHiddenReset(true)
             setListColumnSettings(
               pageKey,
               { orderedKeys: [], hiddenKeys: [] },

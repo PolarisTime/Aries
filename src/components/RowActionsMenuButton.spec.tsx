@@ -73,13 +73,17 @@ describe('RowActionsMenuButton 行尾可见「更多」按钮', () => {
     })
   }
 
-  const menusWith = (onView: () => void): RowContextMenuMap =>
+  const menusWith = (
+    onView: () => void,
+    onOpen?: () => void,
+  ): RowContextMenuMap =>
     new Map([
       [
         '1',
         {
           ariaLabel: '「PO-1」行操作菜单',
           items: [{ key: 'view', label: '查看明细' }],
+          ...(onOpen ? { onOpen } : {}),
           onClick: ({ key }) => {
             if (key === 'view') onView()
           },
@@ -134,5 +138,16 @@ describe('RowActionsMenuButton 行尾可见「更多」按钮', () => {
   it('该行没有可用动作时不渲染按钮(避免空菜单)', () => {
     render(new Map(), 'missing')
     expect(button()).toBeNull()
+  })
+
+  it('点击按钮打开菜单时触发 config.onOpen(与行右键同一契约)', async () => {
+    const onOpen = vi.fn()
+    render(menusWith(() => {}, onOpen))
+    act(() => {
+      button()?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+    expect(visibleItems().length).toBeGreaterThan(0)
+    expect(onOpen).toHaveBeenCalledTimes(1)
   })
 })

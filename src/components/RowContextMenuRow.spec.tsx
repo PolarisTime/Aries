@@ -82,13 +82,18 @@ describe('RowContextMenuRow 行右键菜单容器', () => {
     })
   }
 
-  const menuOf = (onClick: () => void, keyed: string): RowContextMenuMap =>
+  const menuOf = (
+    onClick: () => void,
+    keyed: string,
+    onOpen?: () => void,
+  ): RowContextMenuMap =>
     new Map([
       [
         keyed,
         {
           ariaLabel: '「PO-1」行操作菜单',
           items: [{ key: 'view', label: '查看明细' }],
+          ...(onOpen ? { onOpen } : {}),
           onClick: ({ key }) => {
             if (key === 'view') onClick()
           },
@@ -119,6 +124,24 @@ describe('RowContextMenuRow 行右键菜单容器', () => {
     )
     expect(menu?.getAttribute('aria-label')).toBe('「PO-1」行操作菜单')
     expect(visibleItems()[0]).toBe(document.activeElement)
+  })
+
+  it('打开行菜单时触发 config.onOpen(用于同步选中态)', async () => {
+    const onOpen = vi.fn()
+    render(
+      '1',
+      menuOf(() => {}, '1', onOpen),
+    )
+    act(() => {
+      container
+        .querySelector('.cell-text')
+        ?.dispatchEvent(
+          new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+        )
+    })
+    await flush()
+    expect(visibleItems().length).toBeGreaterThan(0)
+    expect(onOpen).toHaveBeenCalledTimes(1)
   })
 
   it('点击菜单项把 key 交给行菜单的回调', async () => {

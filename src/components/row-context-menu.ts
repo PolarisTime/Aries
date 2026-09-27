@@ -14,6 +14,13 @@ export interface RowContextMenuConfig {
   ariaLabel: string
   items: MenuProps['items']
   onClick: MenuProps['onClick']
+  /**
+   * 菜单打开回调(行右键与行尾「更多」按钮共用)。
+   *
+   * <p>打开行菜单即视为"操作目标=该行", 调用方据此把选中态同步到这一行,
+   * 避免菜单里的动作作用在之前选中的另一行上(删错行)。</p>
+   */
+  onOpen?: () => void
 }
 
 /** 行菜单查找表: 键为行 key(String(record.id)), 由表格按 data-row-key 取用。 */
@@ -64,6 +71,8 @@ export interface BuildRowContextMenusParams<Row> {
   ariaLabelOf: (label: string) => string
   okText: string
   cancelText: string
+  /** 菜单打开时回调(用于把选中态同步到该行); 未传时 config 上不带 onOpen */
+  onMenuOpen?: (row: Row) => void
   /** 需要二次确认的动作(如删除)统一走这里, 由调用方注入 modal.confirm */
   requestConfirm: (options: {
     title: string
@@ -89,6 +98,7 @@ export function buildRowContextMenus<Row extends { id: unknown }>({
   ariaLabelOf,
   okText,
   cancelText,
+  onMenuOpen,
   requestConfirm,
 }: BuildRowContextMenusParams<Row>): RowContextMenuMap {
   const menus: RowContextMenuMap = new Map()
@@ -106,6 +116,8 @@ export function buildRowContextMenus<Row extends { id: unknown }>({
         danger: action.danger,
         disabled: action.disabled,
       })),
+      // 没传 onMenuOpen 就不带 onOpen, 保持既有配置形状不变
+      ...(onMenuOpen ? { onOpen: () => onMenuOpen(record) } : {}),
       onClick: ({ key }) => {
         const action = actions.find((item) => item.key === String(key))
         if (!action || action.disabled) return

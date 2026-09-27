@@ -25,7 +25,7 @@ import {
 } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { modal } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import {
   mergeColumnOrder,
   moveColumnKey,
@@ -208,6 +208,14 @@ export function useBusinessGridTable({
       handleColumnVisibilityChange(
         toggleColumnVisibility(columnVisibility, columnId),
       )
+      // 隐藏后列头连同右键入口一起消失, 必须给出可感知反馈并说明恢复位置
+      message.success(
+        t('common.columnMenu.hidden', {
+          column:
+            config?.columns?.find((column) => column.dataIndex === columnId)
+              ?.title ?? columnId,
+        }),
+      )
     },
     onMoveColumn: (columnId, position) => {
       handleColumnOrderChange(moveColumnKey(dataColumnIds, columnId, position))
@@ -240,6 +248,27 @@ export function useBusinessGridTable({
         t('modules.table.rowContextMenuLabel', { title: label }),
       okText: t('common.ok'),
       cancelText: t('common.cancel'),
+      /*
+       * 打开某行菜单即把选中态切到该行: 行菜单里的动作(删除/编辑)作用在
+       * 「菜单所属行」, 若选中集还停留在别的行, 工具栏与菜单的对象就会打架(删错行)。
+       * 该行已在选中集内时保持原有多选, 不打断批量操作。
+       */
+      onMenuOpen: (record) => {
+        const key = String(record.id)
+        if (selectedRowKeys.includes(key)) return
+        const normalizedKeysSet = new Set([key])
+        setSelectedRowKeys([key])
+        setSelectedRowMap((prev) => {
+          const next = { ...prev }
+          for (const existing of Object.keys(next)) {
+            if (!normalizedKeysSet.has(existing)) {
+              delete next[existing]
+            }
+          }
+          next[key] = record
+          return next
+        })
+      },
       requestConfirm: ({ title, okText, cancelText, danger, onOk }) =>
         modal.confirm({
           title,
@@ -249,7 +278,15 @@ export function useBusinessGridTable({
           onOk,
         }),
     })
-  }, [buildActions, config?.primaryNoKey, records, t])
+  }, [
+    buildActions,
+    config?.primaryNoKey,
+    records,
+    selectedRowKeys,
+    setSelectedRowKeys,
+    setSelectedRowMap,
+    t,
+  ])
 
   /** 行容器换成支持右键菜单的包装(保留列宽拖拽注入的其它 components)。 */
   const tableComponents = useMemo(() => {

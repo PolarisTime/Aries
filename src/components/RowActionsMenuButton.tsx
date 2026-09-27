@@ -1,6 +1,6 @@
 import { MoreOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
-import { use } from 'react'
+import { use, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from './ContextMenu'
 import { RowContextMenuContext } from './row-context-menu'
@@ -15,6 +15,7 @@ import { RowContextMenuContext } from './row-context-menu'
 export function RowActionsMenuButton({ rowKey }: { rowKey: string }) {
   const menus = use(RowContextMenuContext)
   const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
   const config = menus?.get(String(rowKey))
   if (!config) return null
 
@@ -23,6 +24,12 @@ export function RowActionsMenuButton({ rowKey }: { rowKey: string }) {
       ariaLabel={config.ariaLabel}
       items={config.items}
       onClick={config.onClick}
+      open={open}
+      onOpenChange={(next) => {
+        // 与行右键同一契约: 打开即把选中态同步到该行
+        if (next) config.onOpen?.()
+        setOpen(next)
+      }}
       triggers={['click', 'contextMenu']}
     >
       <Button

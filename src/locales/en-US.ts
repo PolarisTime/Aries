@@ -314,6 +314,7 @@ export const enUS = {
     columnMenu: {
       label: 'Actions for the "{{column}}" column',
       hide: 'Hide column',
+      hidden: 'Hidden "{{column}}". You can restore it in Column Settings.',
       moveFirst: 'Move to first',
       moveLast: 'Move to last',
       settings: 'Column settings…',
@@ -1935,6 +1936,8 @@ export const enUS = {
     columnSettings: {
       syncRetryLater:
         'Column settings saved locally. Cloud sync will retry later.',
+      resetByAbnormalHidden:
+        'Abnormal column settings were detected for this page and have been reset to the default column visibility. Adjust them again in Column Settings.',
     },
     statement: {
       noCandidateDocuments:

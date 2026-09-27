@@ -39,6 +39,8 @@ export function RowContextMenuRow(props: RowProps) {
       onClick={config.onClick}
       open={open}
       onOpenChange={(next) => {
+        // 打开即把选中态同步到该行(调用方注入), 再走原有开合逻辑
+        if (next) config.onOpen?.()
         if (next && fromRowActionsButtonRef.current) return
         setOpen(next)
       }}
