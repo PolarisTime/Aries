@@ -1,3 +1,11 @@
+## [10.30.2](https://github.com/PolarisTime/Aries/compare/v10.30.1...v10.30.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **price-compare:** 「添加一行」恢复为直接追加空行, 商品在行内搜索选择 ([4704a6a](https://github.com/PolarisTime/Aries/commit/4704a6a9f2898504d01a26e05d6482d9f82ed337))
+* **price-compare:** 行级锁定收入「更多操作」菜单, 取消常驻锁图标 ([db1e541](https://github.com/PolarisTime/Aries/commit/db1e5410038c3a8180e7ed7b04b649c3129238c0))
+
 ## [10.30.1](https://github.com/PolarisTime/Aries/compare/v10.30.0...v10.30.1) (2026-09-27)
 
 
