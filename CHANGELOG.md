@@ -1,3 +1,21 @@
+# [10.31.0](https://github.com/PolarisTime/Aries/compare/v10.30.2...v10.31.0) (2026-09-27)
+
+
+### Bug Fixes
+
+* **i18n:** antd 语言包以官方 zh_CN 为基底, 修复中文界面下的英文回落 ([8c25e93](https://github.com/PolarisTime/Aries/commit/8c25e93e842961bd1486431885ece801e7597dc3))
+* **price-compare:** 修复吨位/现货列的键盘焦点陷阱, 现货价与供应商列恢复 Tab 可达 ([bb2e738](https://github.com/PolarisTime/Aries/commit/bb2e7383d70a884f0901b5983b45525781d35d06))
+* **price-compare:** 拖动调整行顺序后刷新不再恢复原顺序 ([35b5f93](https://github.com/PolarisTime/Aries/commit/35b5f93f8cadb1fe95a4698e6fbf14a975e5c965))
+* **price-compare:** 编辑锁不再 fail-open, 并给 409 锁冲突补"放弃本地改动并重载"出口 ([c81f044](https://github.com/PolarisTime/Aries/commit/c81f044490e349add30638b09b21397f923bdae7))
+* **price-compare:** 补齐表格无障碍名称与 24px 命中区并修正低对比度文字 ([ac69c9d](https://github.com/PolarisTime/Aries/commit/ac69c9d2451daf0490f36c1a09093043e6065ccd))
+* **price-compare:** 采购订单明细入口与选择弹窗改为键盘可达 ([62bae3a](https://github.com/PolarisTime/Aries/commit/62bae3a97082d692d5c861b39bc3dc667c70fc4c))
+* **purchase-pickup-list:** 「拆分数量」操作列移到拖动列右侧 ([f92a707](https://github.com/PolarisTime/Aries/commit/f92a70789cf3051b581b2415475b749bcb993618))
+
+
+### Features
+
+* **price-compare:** 保存状态可见并拦截未保存的标签页关闭 ([c83b719](https://github.com/PolarisTime/Aries/commit/c83b719390787465b87de1f22f2e7911699b8844))
+
 ## [10.30.2](https://github.com/PolarisTime/Aries/compare/v10.30.1...v10.30.2) (2026-09-27)
 
 
