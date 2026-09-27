@@ -5,6 +5,10 @@ Use the shared Ant Design skill at `.agents/skills/antd/SKILL.md` before working
 
 The skill teaches agents when and how to call `@ant-design/cli` commands such as `antd info`, `antd doc`, `antd demo`, `antd token`, `antd semantic`, and `antd changelog`.
 
+修改 antd 代码后必须执行 `pnpm antd:lint`（或至少在暂存范围内执行 `pnpm antd:lint:staged`）；提交钩子（`pnpm hooks:install`）与 CI 的 lint 任务已接入同一检查，a11y 或废弃 API 违规会阻断。`antd lint` 发现违规仍返回 0，判定必须解析输出。
+
+antd 只覆盖设计语言、组件 API 与静态检查；键盘交互与无障碍语义（菜单可访问名、打开后焦点进首项、Escape 归还焦点、禁用项可聚焦、目标 ≥24×24 等）以 W3C ARIA APG 与 WCAG 2.2 AA 为准，需自行实现并补测试。
+
 <!-- antd-cli setup end -->
 
 ## Skill Policy

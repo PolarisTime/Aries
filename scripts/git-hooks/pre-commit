@@ -1,0 +1,69 @@
+#!/bin/sh
+# 版本库统一提交钩子(由 git config core.hooksPath 指向本目录)。
+#
+# 门禁内容:
+#   1) antd 官方 lint(仅暂存文件): a11y + deprecated 两类违规直接阻断提交。
+#      CLI 优先用仓库内依赖, 其次全局命令, 都没有时明确提示跳过而不是静默通过。
+#   2) react-doctor 暂存扫描: 保留既有行为, 只提示不阻断(该工具当前仍会报既存项)。
+#
+# 启用方式: pnpm hooks:install
+
+set -u
+
+failures=''
+
+# ---------------------------------------------------------------- antd lint
+antd_lint_staged() {
+  if [ -x './node_modules/.bin/antd' ]; then
+    './node_modules/.bin/antd' lint --staged
+    return
+  fi
+  if command -v antd >/dev/null 2>&1; then
+    antd lint --staged
+    return
+  fi
+  printf '%s\n' 'antd lint: 未找到 @ant-design/cli, 跳过 antd 规范检查(可执行 npm i -g @ant-design/cli 安装)。'
+  return 0
+}
+
+# 注意: antd lint 即使发现违规也返回 0(只打印结果), 因此必须解析输出判定。
+antd_output=$(antd_lint_staged 2>&1 || true)
+case "$antd_output" in
+  *"⚠"*)
+    printf '%s\n' "$antd_output" >&2
+    failures="${failures}
+antd lint 发现暂存文件中的 antd 违规用法(a11y / 废弃 API), 详见上方输出。"
+    ;;
+esac
+
+# ------------------------------------------------------------ react-doctor
+react_doctor_scan_staged_files() {
+  if [ -x './node_modules/.bin/react-doctor' ]; then
+    './node_modules/.bin/react-doctor' --staged --fail-on warning
+    return
+  fi
+  if command -v react-doctor >/dev/null 2>&1; then
+    react-doctor --staged --fail-on warning
+    return
+  fi
+  printf '%s\n' 'react-doctor: command not found; skipping staged scan.'
+}
+
+if ! react_doctor_output=$(react_doctor_scan_staged_files 2>&1); then
+  printf '%s\n' \
+    'React Doctor found staged regressions.' \
+    'Run react-doctor --staged --fail-on warning to inspect.' >&2
+  if [ -n "${REACT_DOCTOR_STRICT:-}" ]; then
+    failures="${failures}
+react-doctor 发现暂存文件回归:
+${react_doctor_output}"
+  fi
+fi
+
+if [ -n "$failures" ]; then
+  printf '%s\n' "$failures" >&2
+  printf '%s\n' '提交已中止。修复后重试, 或用 git commit --no-verify 跳过(不推荐)。' >&2
+  exit 1
+fi
+
+exit 0

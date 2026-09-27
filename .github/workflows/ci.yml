@@ -41,6 +41,16 @@ jobs:
       - name: Check frontend API contract boundary
         run: pnpm contract:check
 
+      # antd 官方规范检查(a11y / 废弃 API / 用法 / 性能)。
+      # CLI 不是仓库依赖, 这里固定版本临时拉取; 注意 antd lint 发现违规仍返回 0, 必须解析输出。
+      - name: Check antd usage (official lint)
+        run: |
+          npx --yes -p @ant-design/cli@6.6.2 antd lint src | tee /tmp/antd-lint.txt
+          if grep -q '⚠' /tmp/antd-lint.txt; then
+            echo "::error::antd lint 发现违规用法(见上方 a11y / deprecated 明细)"
+            exit 1
+          fi
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
