@@ -57,6 +57,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@ant-design/cli": "6.6.5",
     "@aries/typescript-toolchain": "workspace:*",
     "@biomejs/biome": "^2.5.14",
     "@eslint/js": "^10.0.1",

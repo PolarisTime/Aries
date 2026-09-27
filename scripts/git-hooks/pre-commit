@@ -13,21 +13,29 @@ set -u
 failures=''
 
 # ---------------------------------------------------------------- antd lint
-antd_lint_staged() {
+# CLI 解析顺序: 仓库内依赖 → 全局命令 → 都没有时明确提示并跳过。
+# 注意: 仓库内 CLI 必须优先于全局安装, 避免钩子与 CI 使用不同版本。
+resolve_antd_cli() {
   if [ -x './node_modules/.bin/antd' ]; then
-    './node_modules/.bin/antd' lint --staged
-    return
+    printf '%s\n' './node_modules/.bin/antd'
+    return 0
   fi
   if command -v antd >/dev/null 2>&1; then
-    antd lint --staged
-    return
+    printf '%s\n' 'antd'
+    return 0
   fi
-  printf '%s\n' 'antd lint: 未找到 @ant-design/cli, 跳过 antd 规范检查(可执行 npm i -g @ant-design/cli 安装)。'
-  return 0
+  return 1
 }
 
 # 注意: antd lint 即使发现违规也返回 0(只打印结果), 因此必须解析输出判定。
-antd_output=$(antd_lint_staged 2>&1 || true)
+if antd_cmd=$(resolve_antd_cli); then
+  antd_output=$("$antd_cmd" lint --staged 2>&1 || true)
+else
+  # 该提示必须直接写入 stderr: 若放在命令替换内会被捕获, 用户看不到, 等同于静默跳过。
+  printf '%s\n' 'antd lint: 未安装 @ant-design/cli, 跳过 antd 检查(pnpm add -D @ant-design/cli)' >&2
+  antd_output=''
+fi
+
 case "$antd_output" in
   *"⚠"*)
     printf '%s\n' "$antd_output" >&2
