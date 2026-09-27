@@ -131,6 +131,51 @@ describe('ContextMenu 无障碍契约', () => {
     !document.querySelector('.ant-dropdown-menu') ||
     Boolean(document.querySelector('.ant-dropdown-hidden'))
 
+  it('Tab 关闭菜单并把焦点交还页面(不把用户困在菜单里)', async () => {
+    render()
+    const button = document.createElement('button')
+    button.className = 'tab-button'
+    button.textContent = '首页'
+    document.body.appendChild(button)
+    button.focus()
+    await openByContextMenu()
+    expect(document.activeElement).not.toBe(button)
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+      )
+    })
+    await waitForMenuClosed()
+    expect(isMenuHidden()).toBe(true)
+    expect(document.activeElement).toBe(button)
+    button.remove()
+  })
+
+  it('Shift+Tab 同样关闭菜单并交还焦点', async () => {
+    render()
+    const button = document.createElement('button')
+    button.className = 'tab-button-back'
+    button.textContent = '首页'
+    document.body.appendChild(button)
+    button.focus()
+    await openByContextMenu()
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey: true,
+          bubbles: true,
+        }),
+      )
+    })
+    await waitForMenuClosed()
+    expect(isMenuHidden()).toBe(true)
+    expect(document.activeElement).toBe(button)
+    button.remove()
+  })
+
   it('Escape 关闭菜单并把焦点归还给打开它的元素', async () => {
     render()
     const trigger = container.querySelector<HTMLElement>('.trigger')

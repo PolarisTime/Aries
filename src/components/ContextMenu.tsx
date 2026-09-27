@@ -128,8 +128,19 @@ export function ContextMenu({
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'Escape') return
-    // 焦点在菜单内时由这里收敛: 关闭并把焦点还回调用上下文
+    if (event.key === 'Escape') {
+      // 焦点在菜单内时由这里收敛: 关闭并把焦点还回调用上下文
+      event.stopPropagation()
+      setOpen(false)
+      restoreFocus()
+      return
+    }
+    if (event.key !== 'Tab') return
+    /*
+     * APG: Tab/Shift+Tab 必须关闭菜单并把焦点交还页面顺序。
+     * 这里刻意不 preventDefault —— 先把焦点还给打开者, 浏览器随后照常从它继续移动焦点,
+     * 这样焦点走向与原生 Tab 完全一致(rc-menu 会吞掉 Tab, 所以必须在捕获阶段处理)。
+     */
     event.stopPropagation()
     setOpen(false)
     restoreFocus()
@@ -149,7 +160,7 @@ export function ContextMenu({
         <div
           className="app-context-menu"
           ref={attachPopup}
-          onKeyDown={handleKeyDown}
+          onKeyDownCapture={handleKeyDown}
         >
           {menu}
         </div>
