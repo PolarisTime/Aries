@@ -51,7 +51,7 @@ export function MaterialBatchRollbackButton({
   }
 
   return (
-    <Space direction="vertical" size={4}>
+    <Space orientation="vertical" size={4}>
       <Button danger size="small" loading={rollingBack} onClick={handleClick}>
         {t('modules.pages.material.rollbackAction')}
       </Button>

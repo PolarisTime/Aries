@@ -39,7 +39,7 @@ export function PriceCompareEditLockBanner({
       className="price-compare-edit-lock"
       type={mine && !conflict ? 'success' : 'warning'}
       showIcon
-      message={message}
+      title={message}
       action={
         <Space size="small">
           {mine && !conflict ? null : (

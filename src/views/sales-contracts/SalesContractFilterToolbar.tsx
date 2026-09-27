@@ -94,8 +94,7 @@ export function SalesContractFilterToolbar({
           <Select
             aria-label={t('modules.salesContract.customer')}
             allowClear
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder={t('modules.salesContract.customer')}
             style={{ width: 200 }}
             value={filterCustomerId}
@@ -108,8 +107,7 @@ export function SalesContractFilterToolbar({
           <Select
             aria-label={t('modules.salesContract.project')}
             allowClear
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             loading={filterProjectsLoading}
             placeholder={t('modules.salesContract.project')}
             style={{ width: 200 }}

@@ -130,7 +130,7 @@ export function MaterialImportPreviewModal({
     <Modal
       open={open}
       onCancel={handleClose}
-      maskClosable={false}
+      mask={{ closable: false }}
       footer={
         <Space>
           <Button disabled={importing} onClick={handleClose}>

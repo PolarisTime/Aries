@@ -167,8 +167,7 @@ export function SalesContractEditorOverlay({
               ]}
             >
               <Select
-                showSearch
-                optionFilterProp="label"
+                showSearch={{ optionFilterProp: 'label' }}
                 options={customerOptions.map((option) => ({
                   label: option.customerName || option.label,
                   value: option.id,
@@ -190,8 +189,7 @@ export function SalesContractEditorOverlay({
               ]}
             >
               <Select
-                showSearch
-                optionFilterProp="label"
+                showSearch={{ optionFilterProp: 'label' }}
                 loading={projectsLoading}
                 options={projectOptions.map((option) => ({
                   label: option.projectName || option.label,
@@ -272,7 +270,7 @@ export function SalesContractEditorOverlay({
               <InputNumber
                 min={0}
                 style={{ width: '100%' }}
-                addonAfter={t('modules.units.yuan')}
+                suffix={t('modules.units.yuan')}
               />
             </Form.Item>
           </Col>
@@ -292,7 +290,7 @@ export function SalesContractEditorOverlay({
               <InputNumber
                 min={0}
                 style={{ width: '100%' }}
-                addonAfter={t('modules.units.ton')}
+                suffix={t('modules.units.ton')}
               />
             </Form.Item>
           </Col>

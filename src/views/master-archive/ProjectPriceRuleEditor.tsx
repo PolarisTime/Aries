@@ -122,7 +122,7 @@ export function ProjectPriceRuleEditor({ projectId }: { projectId: EntityId }) {
   }
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size={8}>
+    <Space orientation="vertical" style={{ width: '100%' }} size={8}>
       <Space align="center" size={8}>
         <Text strong>{t('priceRule.title')}</Text>
         <Text type="secondary" style={{ fontSize: 12 }}>

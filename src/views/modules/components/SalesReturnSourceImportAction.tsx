@@ -299,12 +299,13 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
         }}
         destroyOnHidden
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
           <Space wrap>
             <Select
-              showSearch
-              filterOption={false}
-              onSearch={setOutboundKeyword}
+              showSearch={{
+                filterOption: false,
+                onSearch: setOutboundKeyword,
+              }}
               style={{ width: 380 }}
               aria-label={t(
                 'modules.pages.salesReturn.sourceImport.outboundPlaceholder',
@@ -344,7 +345,7 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
             <Alert
               type="error"
               showIcon
-              message={t(
+              title={t(
                 'modules.pages.salesReturn.sourceImport.loadOutboundFailed',
               )}
             />
@@ -353,7 +354,7 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
             <Alert
               type="error"
               showIcon
-              message={t(
+              title={t(
                 'modules.pages.salesReturn.sourceImport.loadCandidatesFailed',
               )}
             />

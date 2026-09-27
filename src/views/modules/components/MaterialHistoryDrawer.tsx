@@ -162,7 +162,7 @@ export function MaterialHistoryDrawer({
           ? `${t('modules.pages.material.versionHistoryTitle')} · ${materialLabel}`
           : t('modules.pages.material.versionHistoryTitle')
       }
-      width={880}
+      size={880}
       onClose={onClose}
       destroyOnHidden
     >
@@ -171,7 +171,7 @@ export function MaterialHistoryDrawer({
           <Alert
             type="error"
             showIcon
-            message={
+            title={
               historyQuery.error instanceof Error
                 ? historyQuery.error.message
                 : t('modules.pages.material.versionHistoryLoadFailed')

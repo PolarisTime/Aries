@@ -109,7 +109,7 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
         title={t('modules.pages.salesOrder.documentFlow.title', {
           no: documentNo || '--',
         })}
-        width={640}
+        size={640}
         onClose={() => setOpen(false)}
       >
         <Spin spinning={isPending || isFetching}>
@@ -120,7 +120,7 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
                   {t('errorBoundary.retry')}
                 </Button>
               }
-              message={
+              title={
                 error instanceof Error
                   ? error.message
                   : t('modules.pages.salesOrder.documentFlow.loadFailed')

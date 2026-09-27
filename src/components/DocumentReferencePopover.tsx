@@ -322,7 +322,7 @@ export function DocumentReferencePopover({
       content={popoverContent}
       trigger={['hover', 'click']}
       placement="bottomLeft"
-      overlayClassName="document-reference-popover"
+      classNames={{ root: 'document-reference-popover' }}
     >
       <span
         className={['document-reference-trigger', className || '']

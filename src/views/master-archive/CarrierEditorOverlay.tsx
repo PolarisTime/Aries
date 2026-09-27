@@ -244,8 +244,7 @@ export function CarrierEditorOverlay({
               ]}
             >
               <Select
-                showSearch
-                optionFilterProp="label"
+                showSearch={{ optionFilterProp: 'label' }}
                 options={settlementCompanyOptions.map((option) => ({
                   label: option.companyName || option.label,
                   value: option.id,

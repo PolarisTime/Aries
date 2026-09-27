@@ -236,8 +236,7 @@ export function ProjectEditorOverlay({
               ]}
             >
               <Select
-                showSearch
-                optionFilterProp="label"
+                showSearch={{ optionFilterProp: 'label' }}
                 options={customerOptions.map((option) => ({
                   label: option.customerName || option.label,
                   value: option.id,
@@ -259,8 +258,7 @@ export function ProjectEditorOverlay({
               ]}
             >
               <Select
-                showSearch
-                optionFilterProp="label"
+                showSearch={{ optionFilterProp: 'label' }}
                 options={settlementCompanyOptions.map((option) => ({
                   label: option.companyName || option.label,
                   value: option.id,

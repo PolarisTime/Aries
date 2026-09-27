@@ -168,8 +168,7 @@ export function ProjectFilterToolbar({
           <Select
             aria-label={t('modules.pages.project.customer')}
             allowClear
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder={t('modules.pages.project.customer')}
             style={{ width: 200 }}
             value={filterCustomerId}

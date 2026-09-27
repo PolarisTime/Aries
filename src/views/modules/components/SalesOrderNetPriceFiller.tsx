@@ -179,7 +179,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         onCancel={() => setOpen(false)}
         destroyOnHidden
       >
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Text type="secondary">
             {t('modules.pages.salesOrder.netPriceHint')}
           </Text>

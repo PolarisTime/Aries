@@ -123,7 +123,7 @@ export function ModuleFilterChip({
       open={open}
       onOpenChange={onToggle}
       content={popoverContent}
-      overlayClassName="module-filter-chip-popover"
+      classNames={{ root: 'module-filter-chip-popover' }}
     >
       <button
         type="button"
@@ -196,7 +196,7 @@ export function ModuleQuickFilterChip({
           }))}
         />
       }
-      overlayClassName="module-filter-chip-popover"
+      classNames={{ root: 'module-filter-chip-popover' }}
     >
       <button
         type="button"
