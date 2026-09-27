@@ -162,22 +162,20 @@ describe('moveColumnKey 基于可见列计算插入点', () => {
   it('隐藏列夹在末尾时, 移到「最后」落在最后一个可见列之后', () => {
     // remark 是默认隐藏列, 完整顺序里排在最后
     const order = ['no', 'supplier', 'remark']
-    expect(moveColumnKey(order, 'supplier', 'last', ['no', 'supplier'])).toEqual([
-      'no',
-      'supplier',
-      'remark',
-    ])
+    expect(
+      moveColumnKey(order, 'supplier', 'last', ['no', 'supplier']),
+    ).toEqual(['no', 'supplier', 'remark'])
     // supplier 已经在最后一个可见位置 → 顺序不变(返回原引用)
-    expect(moveColumnKey(order, 'supplier', 'last', ['no', 'supplier'])).toBe(order)
+    expect(moveColumnKey(order, 'supplier', 'last', ['no', 'supplier'])).toBe(
+      order,
+    )
   })
 
   it('隐藏列夹在开头时, 移到「最前」落在第一个可见列之前', () => {
     const order = ['remark', 'no', 'supplier']
-    expect(moveColumnKey(order, 'supplier', 'first', ['no', 'supplier'])).toEqual([
-      'remark',
-      'supplier',
-      'no',
-    ])
+    expect(
+      moveColumnKey(order, 'supplier', 'first', ['no', 'supplier']),
+    ).toEqual(['remark', 'supplier', 'no'])
   })
 
   it('可见列只有一列时不做任何移动', () => {
