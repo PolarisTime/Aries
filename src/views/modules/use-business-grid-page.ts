@@ -64,7 +64,8 @@ export function useBusinessGridPage({
     setSelectedRowKeys: data.setSelectedRowKeys,
     setSelectedRowMap: data.setSelectedRowMap,
     buildActions: actions.buildActions,
-    showActions: false,
+    // 行尾保留可见「更多」按钮: 与行右键共用菜单, 避免行级动作只剩隐藏的右键入口
+    showActions: true,
     onOpenDetail: editor.openGridDetail,
   })
 

@@ -175,7 +175,6 @@ export function useBusinessGridTable({
   }
   const { columns: columnDefs } = useGridColumns({
     config: config ?? fallbackConfig,
-    rowActions: buildActions,
     canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
     showActions: Boolean(config) && showActions,
     onOpenDetail: config ? onOpenDetail : undefined,

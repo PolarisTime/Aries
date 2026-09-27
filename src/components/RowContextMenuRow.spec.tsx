@@ -142,6 +142,26 @@ describe('RowContextMenuRow 行右键菜单容器', () => {
     expect(onView).toHaveBeenCalledTimes(1)
   })
 
+  it('行尾「更多」按钮上的右键交给按钮自己, 行容器不叠加菜单', async () => {
+    render(
+      '1',
+      menuOf(() => {}, '1'),
+    )
+    const button = document.createElement('button')
+    button.className = 'table-row-actions-btn'
+    button.textContent = '更多'
+    container.querySelector('td')?.appendChild(button)
+
+    act(() => {
+      button.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+    })
+    await flush()
+    expect(visibleItems()).toHaveLength(0)
+    button.remove()
+  })
+
   it('输入控件上的右键完全放行, 不打开行菜单', async () => {
     render(
       '1',

@@ -310,6 +310,7 @@ export const enUS = {
       'This document is being saved. Wait for it to finish before leaving.',
     columnSettings: 'Column Settings',
     /** Table column header context menu */
+    rowActions: 'Row actions',
     columnMenu: {
       label: 'Actions for the "{{column}}" column',
       hide: 'Hide column',

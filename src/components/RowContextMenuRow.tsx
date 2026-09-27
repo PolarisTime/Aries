@@ -1,5 +1,4 @@
-import type { HTMLAttributes } from 'react'
-import { use } from 'react'
+import { type HTMLAttributes, use, useRef, useState } from 'react'
 import { ContextMenu } from './ContextMenu'
 import {
   isNativeContextMenuTarget,
@@ -21,6 +20,13 @@ export function RowContextMenuRow(props: RowProps) {
   const rowKey = props['data-row-key']
   const config = rowKey === undefined ? undefined : menus?.get(String(rowKey))
   const { onContextMenuCapture, ...rest } = props
+  const [open, setOpen] = useState(false)
+  /**
+   * 行尾「更多」按钮自己带 contextMenu 触发器: 该按钮上的右键只应由按钮的菜单响应。
+   * 这里不能用 stopPropagation(捕获阶段截断会让事件根本到不了按钮), 所以改为在
+   * 捕获阶段记下事件来源, 再拒绝行菜单这一次的打开请求。
+   */
+  const fromRowActionsButtonRef = useRef(false)
 
   if (!config) {
     return <tr {...props} />
@@ -31,6 +37,11 @@ export function RowContextMenuRow(props: RowProps) {
       ariaLabel={config.ariaLabel}
       items={config.items}
       onClick={config.onClick}
+      open={open}
+      onOpenChange={(next) => {
+        if (next && fromRowActionsButtonRef.current) return
+        setOpen(next)
+      }}
     >
       <tr
         {...rest}
@@ -39,6 +50,12 @@ export function RowContextMenuRow(props: RowProps) {
             event.stopPropagation()
             return
           }
+          fromRowActionsButtonRef.current = Boolean(
+            (event.target as HTMLElement | null)?.closest(
+              '.table-row-actions-btn',
+            ),
+          )
+          if (fromRowActionsButtonRef.current) return
           onContextMenuCapture?.(event)
         }}
       />

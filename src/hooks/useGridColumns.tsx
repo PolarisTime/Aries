@@ -6,12 +6,14 @@ import { useTranslation } from 'react-i18next'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { isListDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
-import { type ActionItem, TableActions } from '@/components/TableActions'
+import { RowActionsMenuButton } from '@/components/RowActionsMenuButton'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 export const ACTION_COLUMN_WIDTH = 200
+/** 行尾「更多」按钮列的宽度(只放一个 32px 图标按钮) */
+export const ROW_ACTIONS_COLUMN_WIDTH = 44
 export const DETAIL_TOGGLE_COLUMN_ID = 'detail-toggle'
 export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
 
@@ -39,7 +41,6 @@ declare module '@tanstack/react-table' {
 
 interface Props {
   config: ModulePageConfig
-  rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean
   showActions?: boolean
   onOpenDetail?: (record: ModuleRecord) => void
@@ -47,7 +48,6 @@ interface Props {
 
 export function useGridColumns({
   config,
-  rowActions,
   canUpdate: _canUpdate,
   showActions,
   onOpenDetail,
@@ -141,13 +141,15 @@ export function useGridColumns({
       id: 'actions',
       header: t('hooks.gridColumns.actions'),
       meta: {
-        width: ACTION_COLUMN_WIDTH,
+        width: ROW_ACTIONS_COLUMN_WIDTH,
         align: 'center',
         renderCell: (record: ModuleRecord) => (
-          <TableActions items={rowActions(record)} />
+          <RowActionsMenuButton rowKey={String(record.id)} />
         ),
       },
-      cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
+      cell: ({ row }) => (
+        <RowActionsMenuButton rowKey={String(row.original.id)} />
+      ),
     })
   }
 

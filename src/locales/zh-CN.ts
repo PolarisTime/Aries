@@ -306,6 +306,7 @@ export const zhCN = {
     saveInProgressContent: '当前单据正在保存，请等待保存完成后再离开。',
     columnSettings: '列设置',
     /** 表格列头右键菜单 */
+    rowActions: '行操作',
     columnMenu: {
       label: '「{{column}}」列操作菜单',
       hide: '隐藏该列',
