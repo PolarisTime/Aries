@@ -1,16 +1,28 @@
 import type { Locale } from 'antd/es/locale'
 import enUS from 'antd/locale/en_US'
+import zhCN from 'antd/locale/zh_CN'
 
 const typeTemplate = '${label}不是一个有效的${type}'
 
+/**
+ * 中文语言包。
+ *
+ * <p>必须以 antd 官方的 {@link zhCN} 为基底展开: 只写下面这些被定制过的段落时,
+ * 未列出的段落会静默回落到 antd 的英文默认值(实测: DatePicker 占位符显示
+ * "Select date"、首次引导 Tour 的按钮显示 "Next")。当前会受影响的段落包括
+ * Calendar / Carousel / DatePicker / Pagination / TimePicker / Tour / Transfer。</p>
+ */
 export const appAntdLocale: Locale = {
+  ...zhCN,
   locale: 'zh-cn',
   global: {
+    ...zhCN.global,
     placeholder: '请选择',
     close: '关闭',
     sortable: '可排序',
   },
   Table: {
+    ...zhCN.Table,
     filterTitle: '筛选',
     filterConfirm: '确定',
     filterReset: '重置',
@@ -30,15 +42,18 @@ export const appAntdLocale: Locale = {
     cancelSort: '取消排序',
   },
   Modal: {
+    ...zhCN.Modal,
     okText: '确定',
     cancelText: '取消',
     justOkText: '知道了',
   },
   Popconfirm: {
+    ...zhCN.Popconfirm,
     cancelText: '取消',
     okText: '确定',
   },
   Upload: {
+    ...zhCN.Upload,
     uploading: '文件上传中',
     removeFile: '删除文件',
     uploadError: '上传错误',
@@ -46,12 +61,15 @@ export const appAntdLocale: Locale = {
     downloadFile: '下载文件',
   },
   Empty: {
+    ...zhCN.Empty,
     description: '暂无数据',
   },
   Icon: {
+    ...zhCN.Icon,
     icon: '图标',
   },
   Text: {
+    ...zhCN.Text,
     edit: '编辑',
     copy: '复制',
     copied: '复制成功',
@@ -59,8 +77,10 @@ export const appAntdLocale: Locale = {
     collapse: '收起',
   },
   Form: {
+    ...zhCN.Form,
     optional: '（可选）',
     defaultValidateMessages: {
+      ...zhCN.Form?.defaultValidateMessages,
       default: '字段验证错误${label}',
       required: '请输入${label}',
       enum: '${label}必须是其中一个[${enum}]',
@@ -109,11 +129,13 @@ export const appAntdLocale: Locale = {
     },
   },
   QRCode: {
+    ...zhCN.QRCode,
     expired: '二维码过期',
     refresh: '点击刷新',
     scanned: '已扫描',
   },
   ColorPicker: {
+    ...zhCN.ColorPicker,
     presetEmpty: '暂无',
     transparent: '无色',
     singleColor: '单色',
