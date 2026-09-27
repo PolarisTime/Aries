@@ -558,17 +558,6 @@ export function filterVarieties(
   )
 }
 
-/** 由商品生成一行待新增的报价行(其余字段为空/默认)。 */
-export function buildVarietyRow(variety: Variety): PriceRow {
-  return {
-    ...makeRow(),
-    category: variety.category,
-    material: variety.material,
-    spec: variety.spec,
-    length: variety.length,
-  }
-}
-
 /** 可互切的双长度(9米/12米)。 */
 export const ALT_LENGTHS: readonly [string, string] = ['9米', '12米']
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyRowLock,
-  buildVarietyRow,
   canonicalCategory,
   computeSummary,
   countMissing,
@@ -601,24 +600,6 @@ describe('filterVarieties 可选商品过滤', () => {
   it('项目白名单存在时仅保留白名单商品', () => {
     const result = filterVarieties(varieties, [], ['盘螺|HRB400E|8|9米'])
     expect(result.map((item) => item.category)).toEqual(['盘螺'])
-  })
-})
-
-describe('buildVarietyRow 生成新增行', () => {
-  it('预填商品字段且保留默认行结构', () => {
-    const row = buildVarietyRow({
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: 12,
-      length: '9米',
-      label: 'x',
-    })
-    expect(row.rowType).toBe('PRODUCT')
-    expect(row.category).toBe('螺纹钢')
-    expect(row.material).toBe('HRB400E')
-    expect(row.spec).toBe(12)
-    expect(row.length).toBe('9米')
-    expect(row.id).toBeTruthy()
   })
 })
 

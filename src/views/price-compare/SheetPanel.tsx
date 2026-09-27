@@ -35,17 +35,16 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
-import { AddProductRowButton } from './AddProductRowButton'
 import {
   applyRowLock,
   buildVarietyOptions,
-  buildVarietyRow,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
   isPurchasedRow,
   isSeparatorRow,
+  makeRow,
   makeSeparatorRow,
   moveItem,
   netPriceWithFallback,
@@ -814,13 +813,13 @@ type SheetTableProps = {
     'rows' | 'onRowDragStart' | 'onRowDragEnd' | 'toggleAll' | 'attachSpotRef'
   > & { density: 'small' | 'middle' | 'large' }
   onReorderRow: (fromId: string, toId: string, after: boolean) => void
-  /** 选中商品后追加一行(预填该商品)。 */
-  onAddVariety: (variety: Variety) => void
+  /** 点击「添加一行」追加空行, 商品由行内可搜索下拉选择。 */
+  onAddRow: () => void
   onAddSeparator: () => void
 }
 
 function SheetTable(props: SheetTableProps) {
-  const { rows, base, onReorderRow, onAddVariety, onAddSeparator } = props
+  const { rows, base, onReorderRow, onAddRow, onAddSeparator } = props
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
   const [dropAfter, setDropAfter] = useState(false)
@@ -878,11 +877,16 @@ function SheetTable(props: SheetTableProps) {
             colSpan={(base.hideRemark ? 5 : 6) + base.visibleBrandCount * 4}
           >
             <Flex gap="small" align="center">
-              <AddProductRowButton
+              <Button
+                type="text"
+                size="small"
+                block
+                className="price-compare-add-row"
                 disabled={rowLocked}
-                varieties={base.varietyOptionsFlat}
-                onPick={onAddVariety}
-              />
+                onClick={onAddRow}
+              >
+                {t('priceCompare.sheet.addRow')}
+              </Button>
               <Tooltip
                 title={
                   !base.readOnly && base.sheet.specQuantityLocked
@@ -1814,6 +1818,8 @@ export function SheetPanel(props: Props) {
       return moveItem(list, from, insert)
     })
 
+  const addRow = () => setRows((list) => [...list, makeRow()])
+
   const addSeparator = () => setRows((list) => [...list, makeSeparatorRow()])
 
   const purchaseOrderPicker = usePurchaseOrderPicker({
@@ -1901,9 +1907,7 @@ export function SheetPanel(props: Props) {
           moveFocusTon: moveFocusTon(rows),
         }}
         onReorderRow={reorderRow}
-        onAddVariety={(variety) =>
-          setRows((list) => [...list, buildVarietyRow(variety)])
-        }
+        onAddRow={addRow}
         onAddSeparator={addSeparator}
       />
       {purchaseOrderPicker.node}

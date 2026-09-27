@@ -309,6 +309,34 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[1].rowType).toBe('SEPARATOR')
   })
 
+  it('点击"添加一行"直接追加空行, 商品回落到行内可搜索下拉再选', () => {
+    const observed = renderStateful({ ...makeSheet() }, [{ ...baseRow }])
+
+    const addRow = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('添加一行'),
+    )
+    expect(addRow).toBeTruthy()
+    act(() => {
+      addRow?.click()
+    })
+
+    // 空行: 不预填商品, 避免"先选商品才生成行"的长列表交互
+    expect(observed.rows).toHaveLength(2)
+    const added = observed.rows[1]
+    expect(added.rowType).toBe('PRODUCT')
+    expect(added.category).toBe('')
+    expect(added.material).toBe('')
+    expect(added.spec).toBeNull()
+    expect(added.length).toBe('')
+    expect(added.id).not.toBe(observed.rows[0].id)
+
+    // 行内商品下拉(可搜索)每行一个, 新增行同样具备编辑入口
+    const varietySelects = container.querySelectorAll(
+      '.price-compare-variety-cell .ant-select',
+    )
+    expect(varietySelects.length).toBeGreaterThanOrEqual(2)
+  })
+
   it('规格数量锁定后禁用新增/删除/拖拽重排并给出提示', () => {
     renderStateful({ ...makeSheet(), specQuantityLocked: true }, [
       { ...baseRow },
