@@ -421,6 +421,13 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const localTonByItemId = sumTonByPurchaseOrderItem(rows)
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
+  /**
+   * 可见品牌顺序: 「移到最前/最后」的边界与目标下标都基于它。
+   * 否则隐藏了首位/末位品牌时, 最后一列(或第一列)的可点但点了没反应。
+   */
+  const visibleBrandNames = brands
+    .filter((brand) => !hiddenBrandSet.has(brand.name))
+    .map((brand) => brand.name)
   /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
   const productRowIds = rows.flatMap((row) =>
     isSeparatorRow(row) ? [] : [row.id],
@@ -771,7 +778,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         label: t(
                           'priceCompare.sheet.contextMenu.moveBrandFirst',
                         ),
-                        disabled: brandIndex === 0,
+                        disabled: brand.name === visibleBrandNames[0],
                       },
                       {
                         key: 'brand-to-last',
@@ -779,7 +786,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         label: t(
                           'priceCompare.sheet.contextMenu.moveBrandLast',
                         ),
-                        disabled: brandIndex === brands.length - 1,
+                        disabled: brand.name === visibleBrandNames.at(-1),
                       },
                     ]}
                     onClick={({ key }) => {
@@ -791,10 +798,22 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           ctx.onToggleBrand(brand.name, false)
                           break
                         case 'brand-to-first':
-                          onReorderBrands(brandIndex, 0)
+                          onReorderBrands(
+                            brandIndex,
+                            brands.findIndex(
+                              (item) => item.name === visibleBrandNames[0],
+                            ),
+                          )
                           break
                         case 'brand-to-last':
-                          onReorderBrands(brandIndex, brands.length - 1)
+                          onReorderBrands(
+                            brandIndex,
+                            brands.findIndex(
+                              (item) =>
+                                item.name ===
+                                visibleBrandNames[visibleBrandNames.length - 1],
+                            ),
+                          )
                           break
                         default:
                           break
@@ -1229,6 +1248,11 @@ function SheetTable(props: SheetTableProps) {
          * 「更多」按钮自身已绑定 contextMenu 触发器, 交给它处理避免重复开合。
          */
         onContextMenuCapture: (event) => {
+          /*
+           * 分隔行没有操作列(不渲染「更多」), 右键必须完全放行:
+           * 否则原生菜单被 preventDefault 抑制, 又没有任何自定义菜单, 用户以为卡住了。
+           */
+          if (isSeparatorRow(row.row)) return
           const target = event.target as HTMLElement
           if (target.closest('input,textarea,.ant-select,.ant-input-number'))
             return

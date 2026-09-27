@@ -56,15 +56,15 @@ function buildAntdColumns({
   columnDefs,
   columnOrder,
   columnVisibility,
-  dataColumnIds,
+  visibleDataColumnIds,
   onHideColumn,
   onMoveColumn,
 }: {
   columnDefs: ColumnDef<StockFeatures, ModuleRecord>[]
   columnOrder: string[]
   columnVisibility: Record<string, boolean>
-  /** 业务数据列(不含明细按钮列与操作列), 用于判断「移到最前/最后」是否已到边界 */
-  dataColumnIds: string[]
+  /** 可见业务数据列: 「移到最前/最后」的边界与插入点都基于它 */
+  visibleDataColumnIds: string[]
   onHideColumn: (columnId: string) => void
   onMoveColumn: (columnId: string, position: 'first' | 'last') => void
 }): TableColumnsType<ModuleRecord> {
@@ -95,8 +95,8 @@ function buildAntdColumns({
         <ColumnHeaderMenu
           key={columnId}
           columnTitle={typeof rawTitle === 'string' ? rawTitle : columnId}
-          isFirst={dataColumnIds[0] === columnId}
-          isLast={dataColumnIds.at(-1) === columnId}
+          isFirst={visibleDataColumnIds[0] === columnId}
+          isLast={visibleDataColumnIds.at(-1) === columnId}
           onHide={() => onHideColumn(columnId)}
           onMoveFirst={() => onMoveColumn(columnId, 'first')}
           onMoveLast={() => onMoveColumn(columnId, 'last')}
@@ -188,15 +188,23 @@ export function useBusinessGridTable({
     headId: DETAIL_TOGGLE_COLUMN_ID,
     tailId: ACTIONS_COLUMN_ID,
   })
-  /** 业务数据列(剔除固定在首尾的明细按钮列与操作列), 列头菜单据此判断边界。 */
+  /** 业务数据列(剔除固定在首尾的明细按钮列与操作列)。 */
   const dataColumnIds = columnOrder.filter(
     (id) => id !== DETAIL_TOGGLE_COLUMN_ID && id !== ACTIONS_COLUMN_ID,
+  )
+  /**
+   * 可见数据列: 边界判断与移序插入点都必须基于它。
+   * 完整顺序里夹着隐藏列(如默认隐藏的备注列), 否则"移到最后"会挪到隐藏列后面 ——
+   * 可见顺序没变但新顺序已持久化, 用户以为点了没反应。
+   */
+  const visibleDataColumnIds = dataColumnIds.filter(
+    (id) => columnVisibility[id] !== false,
   )
   const computedColumns = buildAntdColumns({
     columnDefs,
     columnOrder,
     columnVisibility,
-    dataColumnIds,
+    visibleDataColumnIds,
     onHideColumn: (columnId) => {
       handleColumnVisibilityChange(
         toggleColumnVisibility(columnVisibility, columnId),

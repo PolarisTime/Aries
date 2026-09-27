@@ -61,16 +61,36 @@ export function toggleColumnVisibility(
 
 /**
  * 把某列移到最前/最后(返回新数组, 不改原数组)。
- * 已经是目标位置或列不在集合中时原样返回, 避免产生无意义的重排与持久化。
+ *
+ * <p>插入点按 `edgeKeys`(用户可见的列顺序)计算, 而不是按完整顺序: 完整顺序里
+ * 可能夹着隐藏列(例如默认隐藏的备注列), 否则"移到最后"会把列挪到隐藏列之后 ——
+ * 可见顺序没变(用户以为点了没反应), 新顺序却已被持久化。</p>
+ *
+ * <p>已经是目标位置、列不在集合中、或可见列不足两列时原样返回, 避免无意义的重排与持久化。</p>
  */
 export function moveColumnKey(
   order: string[],
   key: string,
   position: 'first' | 'last',
+  edgeKeys: string[] = order,
 ): string[] {
   const index = order.indexOf(key)
   if (index < 0) return order
+  const otherVisible = edgeKeys.filter((item) => item !== key)
+  if (!otherVisible.length) return order
   const rest = order.filter((item) => item !== key)
-  const next = position === 'first' ? [key, ...rest] : [...rest, key]
-  return next.every((item, i) => item === order[i]) ? order : next
+  const anchor =
+    position === 'first'
+      ? rest.indexOf(otherVisible[0])
+      : rest.indexOf(otherVisible[otherVisible.length - 1])
+  const insertAt =
+    anchor < 0
+      ? position === 'first'
+        ? 0
+        : rest.length
+      : position === 'first'
+        ? anchor
+        : anchor + 1
+  rest.splice(insertAt, 0, key)
+  return rest.every((item, i) => item === order[i]) ? order : rest
 }

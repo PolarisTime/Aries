@@ -136,6 +136,21 @@ export function BusinessGridTable({
   // 虚拟布局截断展开内容。
   const isVirtual = dataSource.length > 100 && !expandable
 
+  /*
+   * 虚拟滚动时 rc-table 的行容器是 div, 注入真 <tr> 行组件(带行右键菜单的那个)
+   * 会产生非法嵌套并打乱虚拟布局, 因此虚拟模式下退掉行组件 —— 行右键在虚拟列表里不可用,
+   * 行级动作仍可从工具栏(单选/多选后)触达。
+   */
+  const tableComponents = useMemo<
+    TableProps<ModuleRecord>['components']
+  >(() => {
+    if (!isVirtual || !components?.body || !('row' in components.body)) {
+      return components
+    }
+    const { row: _row, ...restBody } = components.body
+    return { ...components, body: restBody }
+  }, [components, isVirtual])
+
   const scrollX = computeTableScrollX({
     columnWidths: [
       SEQUENCE_COLUMN_WIDTH,
@@ -254,7 +269,7 @@ export function BusinessGridTable({
           size="small"
           loading={loading}
           columns={tableColumns}
-          components={components}
+          components={tableComponents}
           dataSource={dataSource}
           rowSelection={rowSelection}
           expandable={
