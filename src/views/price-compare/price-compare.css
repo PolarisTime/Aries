@@ -533,14 +533,25 @@
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
 }
 
-/* 明细图标: 悬停显示采购订单明细 popover */
+/* 明细图标: 悬停/点击(键盘 Enter)打开采购订单明细 popover */
 .price-compare-ton-info {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+  /* 触发器已改为原生 button(键盘可达): 抹掉 UA 默认外观, 保持原图标外观 */
+  background: none;
+  border: 0;
+  padding: 0;
   cursor: pointer;
   color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.35));
   transition: color 0.2s ease;
+}
+
+/* 采购订单选择弹窗: 行可聚焦(键盘 Enter 选中), 需要可见焦点环 */
+.price-compare-purchase-order-picker-row:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid
+    var(--focus-ring-color, var(--theme-highlight-border, #1677ff));
+  outline-offset: calc(-1 * var(--focus-ring-width, 2px));
 }
 
 .price-compare-ton-info:hover {

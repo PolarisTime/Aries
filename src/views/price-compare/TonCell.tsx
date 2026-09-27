@@ -225,16 +225,18 @@ export function TonCell({
       <Popover
         content={popoverContent}
         placement="right"
-        trigger="hover"
+        trigger={['hover', 'click']}
         mouseEnterDelay={0.15}
       >
-        <span
+        {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
+            弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}
+        <button
           aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
           className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
-          role="img"
+          type="button"
         >
           <InfoCircleOutlined />
-        </span>
+        </button>
       </Popover>
     </div>
   )

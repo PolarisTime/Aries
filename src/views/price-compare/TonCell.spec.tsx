@@ -254,4 +254,22 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(props.onMoveFocus).toHaveBeenCalledWith(-1)
     expect(event.defaultPrevented).toBe(false)
   })
+
+  it('明细触发器是键盘可聚焦的原生按钮, 点击即可打开弹层', async () => {
+    render()
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '.price-compare-ton-info',
+    )
+    expect(trigger).not.toBeNull()
+    // 原本是不可聚焦的 span[role=img] + hover-only: 键盘打不开,
+    // 而它是"关联采购订单"的唯一入口
+    expect(trigger?.tagName).toBe('BUTTON')
+    expect(trigger?.getAttribute('aria-label')).toBe('采购订单明细')
+
+    await act(async () => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    expect(document.querySelector('.price-compare-ton-popover')).not.toBeNull()
+  })
 })

@@ -179,16 +179,28 @@ export function PurchaseOrderPickerModal({
             />
           ),
         }}
-        onRow={(record) => ({
-          onClick: () => onSelect(record),
-          style: {
-            cursor: 'pointer',
-            background:
-              record.purchaseOrderItemId === selectedItemId
+        onRow={(record) => {
+          const isSelected = record.purchaseOrderItemId === selectedItemId
+          return {
+            'aria-selected': isSelected,
+            className: 'price-compare-purchase-order-picker-row',
+            onClick: () => onSelect(record),
+            onKeyDown: (event) => {
+              // 行可聚焦: 键盘用户 Tab 到行后按 Enter/Space 选中
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onSelect(record)
+              }
+            },
+            tabIndex: 0,
+            style: {
+              cursor: 'pointer',
+              background: isSelected
                 ? 'var(--ant-color-primary-bg, #e6f4ff)'
                 : undefined,
-          },
-        })}
+            },
+          }
+        }}
       />
       <Typography.Text
         type="secondary"

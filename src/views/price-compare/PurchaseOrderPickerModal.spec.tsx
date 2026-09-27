@@ -136,6 +136,54 @@ describe('PurchaseOrderPickerModal', () => {
     expect(props.onSelect).toHaveBeenCalledWith(records[0])
   })
 
+  it('明细行可键盘聚焦, Enter/Space 触发 onSelect', async () => {
+    const props = render()
+    await flush()
+    await flush()
+    const row = document.querySelector<HTMLElement>(
+      '.ant-table-tbody tr.ant-table-row',
+    )
+    expect(row).not.toBeNull()
+    // 行必须可聚焦, 否则键盘用户能搜、能看、不能选
+    expect(row?.tabIndex).toBe(0)
+    expect(
+      row?.classList.contains('price-compare-purchase-order-picker-row'),
+    ).toBe(true)
+
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      row?.dispatchEvent(enter)
+    })
+    expect(enter.defaultPrevented).toBe(true)
+    expect(props.onSelect).toHaveBeenCalledWith(records[0])
+
+    const space = new KeyboardEvent('keydown', {
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      row?.dispatchEvent(space)
+    })
+    // Enter 与 Space 各触发一次
+    expect(props.onSelect).toHaveBeenCalledTimes(2)
+    expect(props.onSelect).toHaveBeenLastCalledWith(records[0])
+  })
+
+  it('未选中行未标记 aria-selected, 选中行标记为 true', async () => {
+    render({ selectedItemId: records[0].purchaseOrderItemId })
+    await flush()
+    await flush()
+    const row = document.querySelector<HTMLElement>(
+      '.ant-table-tbody tr.ant-table-row',
+    )
+    expect(row?.getAttribute('aria-selected')).toBe('true')
+  })
+
   it('关键字搜索下沉到后端(防抖后带 keyword 请求)', async () => {
     vi.useFakeTimers()
     try {

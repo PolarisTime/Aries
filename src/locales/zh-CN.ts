@@ -2473,7 +2473,7 @@ export const zhCN = {
       purchaseOrderPickerClear: '清除关联',
       purchaseOrderPickerClearHint: '解除本行与采购订单的关联',
       purchaseOrderPickerHint:
-        '点击一行即选中并关联；已开吨位按已保存报单统计。',
+        '点击一行即选中并关联（键盘：Tab 到行后按回车）；已开吨位按已保存报单统计。',
     },
     config: {
       title: '项目配置',

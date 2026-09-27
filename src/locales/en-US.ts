@@ -2554,7 +2554,7 @@ export const enUS = {
       purchaseOrderPickerClear: 'Clear link',
       purchaseOrderPickerClearHint: 'Unlink this row from the purchase order',
       purchaseOrderPickerHint:
-        'Click a row to link it; issued tonnage is based on saved sheets.',
+        'Click a row to link it (keyboard: Tab to a row, then press Enter); issued tonnage is based on saved sheets.',
     },
     config: {
       title: 'Project Settings',
