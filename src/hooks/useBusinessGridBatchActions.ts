@@ -13,6 +13,7 @@ import { resolveModuleRecordCapabilities } from '@/module-system/record/module-r
 import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 
 export interface AuditTarget {
   key: string
@@ -173,6 +174,8 @@ export function useBusinessGridBatchActions({
       title: t('hooks.batchActions.batchDelete'),
       content: t('hooks.batchActions.batchDeleteConfirm', {
         count: eligible.length,
+        /* 列出将被删除的单据号: 批量动作只认选中集, 用户必须能在确认前核对目标 */
+        numbersPart: describeTargetRecords(eligible, t),
         skippedPart:
           skippedCount > 0
             ? t('hooks.batchActions.skippedPart', { count: skippedCount })
@@ -351,4 +354,28 @@ export function useBusinessGridBatchActions({
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
   }
+}
+
+/** 确认框里列出目标单据号(最多 5 条), 让用户在删除前核对批量目标。 */
+export function describeTargetRecords(
+  records: ModuleRecord[],
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  const numbers = records
+    .map(
+      (record) =>
+        asString(record.no) ||
+        asString(record.orderNo) ||
+        asString(record.code) ||
+        String(record.id),
+    )
+    .filter(Boolean)
+  if (!numbers.length) return ''
+  const head = numbers.slice(0, 5).join('、')
+  return numbers.length > 5
+    ? t('hooks.batchActions.targetNumbersMore', {
+        numbers: head,
+        rest: numbers.length - 5,
+      })
+    : t('hooks.batchActions.targetNumbers', { numbers: head })
 }

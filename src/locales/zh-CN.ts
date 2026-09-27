@@ -1788,7 +1788,9 @@ export const zhCN = {
       deleteNotSupported: '勾选单据当前状态不支持删除',
       batchDelete: '批量删除',
       batchDeleteConfirm:
-        '确定删除选中的 {{count}} 条记录吗？此操作不可恢复。{{skippedPart}}',
+        '确定删除选中的 {{count}} 条记录吗？此操作不可恢复。{{numbersPart}}{{skippedPart}}',
+      targetNumbers: '\n将删除：{{numbers}}',
+      targetNumbersMore: '\n将删除：{{numbers}} 等 {{rest}} 条',
       deleteFailed: '删除失败',
       deleteCompletedWithFailures:
         '删除完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',

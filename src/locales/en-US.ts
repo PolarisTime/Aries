@@ -1838,7 +1838,9 @@ export const enUS = {
         'Selected records are in a status that does not support deletion',
       batchDelete: 'Batch Delete',
       batchDeleteConfirm:
-        'Confirm deletion of {{count}} selected record(s)? This action cannot be undone.{{skippedPart}}',
+        'Delete the {{count}} selected record(s)? This cannot be undone.{{numbersPart}}{{skippedPart}}',
+      targetNumbers: '\nDeleting: {{numbers}}',
+      targetNumbersMore: '\nDeleting: {{numbers}} and {{rest}} more',
       deleteFailed: 'Deletion failed',
       deleteCompletedWithFailures:
         'Deletion completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
