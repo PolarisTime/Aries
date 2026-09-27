@@ -1,3 +1,11 @@
+## [10.30.1](https://github.com/PolarisTime/Aries/compare/v10.30.0...v10.30.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **deps:** 修复前端传递依赖安全漏洞 ([c55b130](https://github.com/PolarisTime/Aries/commit/c55b130c92e123cd699dc936892b91b8e957e19b))
+* **i18n:** 修复生产构建页面标题为 undefined 导致标签页显示路由路径 ([3583a59](https://github.com/PolarisTime/Aries/commit/3583a59b5bff16dc3157b931268d5096f3d47d72))
+
 # [10.30.0](https://github.com/PolarisTime/Aries/compare/v10.29.0...v10.30.0) (2026-09-26)
 
 
