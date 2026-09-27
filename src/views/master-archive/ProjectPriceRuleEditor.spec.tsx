@@ -5,6 +5,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
+import { message } from '@/utils/antd-app'
 import { ProjectPriceRuleEditor } from './ProjectPriceRuleEditor'
 
 const { fetchMock, saveMock } = vi.hoisted(() => ({
@@ -21,6 +22,20 @@ vi.mock('@/api/master/project-price-rules', async (importOriginal) => {
     saveProjectPriceRules: saveMock,
   }
 })
+
+/** 排空 React scheduler 的宏任务队列(setImmediate): 仅 await 微任务不足以排空。 */
+async function flushMacrotasks() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  // setImmediate 来自 Node 运行时, 不在 DOM lib 类型里, 故显式取值。
+  const scheduleImmediate = (
+    globalThis as { setImmediate?: (callback: () => void) => unknown }
+  ).setImmediate
+  if (typeof scheduleImmediate === 'function') {
+    await new Promise<void>((resolve) => {
+      scheduleImmediate(() => resolve())
+    })
+  }
+}
 
 describe('ProjectPriceRuleEditor', () => {
   let container: HTMLDivElement
@@ -58,12 +73,18 @@ describe('ProjectPriceRuleEditor', () => {
   })
 
   afterEach(async () => {
-    // 用宏任务冲刷 React 调度队列(微任务不足以排空 scheduler),
-    // 再卸载, 避免 jsdom 销毁后 React 仍执行调度任务而报 window is not defined。
+    // antd 静态 message 会在 document.body 上自建 React 根, 不在下方 root 内。
+    // 不销毁它, 其挂起的状态更新会在 jsdom 环境销毁后由 scheduler 执行, 抛
+    // "ReferenceError: window is not defined" 的 unhandled error, 使整个测试进程 exit≠0。
+    message.destroy()
+    // 用宏任务冲刷 React 调度队列(微任务不足以排空 scheduler), 再卸载。
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await flushMacrotasks()
     })
     act(() => root.unmount())
+    await act(async () => {
+      await flushMacrotasks()
+    })
     container.remove()
   })
 
