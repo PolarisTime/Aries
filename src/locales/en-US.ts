@@ -620,6 +620,12 @@ export const enUS = {
       dragRow: 'Drag row {{index}}',
       restoreDefault: 'Restore Default Order',
       splitItem: 'Split quantity',
+      /** Context menu only: opens the split dialog, so it keeps the APG ellipsis (visible button text unchanged) */
+      splitItemMenuLabel: 'Split quantity…',
+      /** Accessible name of the item row context menu */
+      rowContextMenuLabel: 'Actions for the "{{name}}" item row',
+      /** Accessible name of the group header context menu */
+      groupContextMenuLabel: 'Actions for group {{index}}',
       mergeItem: 'Merge split',
       splitPartLabel: 'Part {{index}}/{{total}}',
       removeSplitPart: 'Remove row {{index}}',

@@ -602,6 +602,12 @@ export const zhCN = {
       dragRow: '拖动第 {{index}} 行',
       restoreDefault: '恢复默认顺序',
       splitItem: '拆分数量',
+      /** 右键菜单专用: 会打开拆分弹窗, 按 APG 惯例带省略号(可见按钮文案保持不变) */
+      splitItemMenuLabel: '拆分数量…',
+      /** 明细行右键菜单的可访问名 */
+      rowContextMenuLabel: '「{{name}}」明细行操作菜单',
+      /** 分组头右键菜单的可访问名 */
+      groupContextMenuLabel: '「分组 {{index}}」操作菜单',
       mergeItem: '合并拆分',
       splitPartLabel: '第 {{index}}/{{total}} 份',
       removeSplitPart: '移除第 {{index}} 行',

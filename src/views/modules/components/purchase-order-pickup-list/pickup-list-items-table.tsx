@@ -4,11 +4,56 @@ import {
   UndoOutlined,
 } from '@ant-design/icons'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import type { TableColumnsType, TableProps } from 'antd'
+import type { MenuProps, TableColumnsType, TableProps } from 'antd'
 import { Button, InputNumber, Table, Tag, Tooltip, Typography } from 'antd'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 import type { PickupListRow } from './pickup-list-draft'
+import {
+  PickupRowMenuContext,
+  type PickupRowMenuMap,
+  preserveNativeContextMenuOnInputs,
+} from './pickup-list-row-menu'
+
+/** 行菜单条目 key: 与行内按钮一一对应。 */
+const ROW_MENU_SPLIT = 'split'
+const ROW_MENU_MERGE = 'merge'
+const ROW_MENU_REMOVE_PART = 'removePart'
+
+/**
+ * 明细行右键菜单条目: 与行内按钮完全一致, 禁用条件复用同一口径。
+ * 未拆分行只有「拆分」, 不出现「移除第 N 份」。
+ */
+function buildRowMenuItems(
+  row: PickupListRow,
+  labels: { split: string; merge: string; removePart: string },
+): MenuProps['items'] {
+  if (row.partCount <= 1) {
+    return [
+      {
+        key: ROW_MENU_SPLIT,
+        label: labels.split,
+        icon: <SplitCellsOutlined />,
+        disabled: row.quantity < 2,
+      },
+    ]
+  }
+  return [
+    {
+      key: ROW_MENU_MERGE,
+      label: labels.merge,
+      icon: <UndoOutlined />,
+      disabled: row.partCount <= 2,
+    },
+    {
+      key: ROW_MENU_REMOVE_PART,
+      label: labels.removePart,
+      icon: <DeleteOutlined />,
+      danger: true,
+    },
+  ]
+}
 
 interface PickupItemsTableProps {
   columns: TableColumnsType<PickupListRow>
@@ -40,6 +85,53 @@ export function PickupItemsTable({
   onRemovePart,
 }: PickupItemsTableProps) {
   const { t } = useTranslation()
+
+  /**
+   * 按行实例(含拆分份)生成右键菜单: 文案与禁用口径直接复用行内按钮的
+   * 现有 locale key 与同一判断条件, 不另立规则。
+   */
+  const rowMenus = useMemo<PickupRowMenuMap>(() => {
+    const menus: PickupRowMenuMap = new Map()
+    rows.forEach((row) => {
+      const itemLabel = [row.item.category, row.item.material]
+        .filter(Boolean)
+        .join(' ')
+      const partLabel =
+        row.partCount > 1
+          ? ` ${t('modules.purchasePickupList.splitPartLabel', {
+              index: row.partIndex + 1,
+              total: row.partCount,
+            })}`
+          : ''
+      menus.set(row.rowId, {
+        // 可访问名带上品名与份次, 读屏用户能区分是「哪一行」的菜单。
+        ariaLabel: t('modules.purchasePickupList.rowContextMenuLabel', {
+          name: `${itemLabel}${partLabel}`,
+        }),
+        items: buildRowMenuItems(row, {
+          split: t('modules.purchasePickupList.splitItemMenuLabel'),
+          merge: t('modules.purchasePickupList.mergeItem'),
+          removePart: t('modules.purchasePickupList.removeSplitPart', {
+            index: row.partIndex + 1,
+          }),
+        }),
+        onClick: ({ key }) => {
+          if (key === ROW_MENU_SPLIT) {
+            onSplit(row)
+            return
+          }
+          if (key === ROW_MENU_MERGE) {
+            onMerge(row)
+            return
+          }
+          if (key === ROW_MENU_REMOVE_PART) {
+            onRemovePart(row)
+          }
+        },
+      })
+    })
+    return menus
+  }, [onMerge, onRemovePart, onSplit, rows, t])
 
   const mergedColumns: TableColumnsType<PickupListRow> = columns.map(
     (column) => {
@@ -160,16 +252,24 @@ export function PickupItemsTable({
       items={rows.map((row) => row.rowId)}
       strategy={verticalListSortingStrategy}
     >
-      <Table<PickupListRow>
-        columns={columnsWithActions}
-        components={components}
-        dataSource={rows}
-        locale={{ emptyText }}
-        pagination={false}
-        rowKey="rowId"
-        scroll={{ x: scrollX }}
-        size="small"
-      />
+      <PickupRowMenuContext.Provider value={rowMenus}>
+        {/* 包裹层: 捕获阶段放行输入控件, 明细行右键菜单挂在行容器 <tr> 上 */}
+        <div
+          className="purchase-pickup-list-items"
+          onContextMenuCapture={preserveNativeContextMenuOnInputs}
+        >
+          <Table<PickupListRow>
+            columns={columnsWithActions}
+            components={components}
+            dataSource={rows}
+            locale={{ emptyText }}
+            pagination={false}
+            rowKey="rowId"
+            scroll={{ x: scrollX }}
+            size="small"
+          />
+        </div>
+      </PickupRowMenuContext.Provider>
     </SortableContext>
   )
 }

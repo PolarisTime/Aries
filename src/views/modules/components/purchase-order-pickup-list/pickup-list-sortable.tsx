@@ -3,11 +3,13 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button, Tooltip } from 'antd'
 import { type CSSProperties, type HTMLAttributes, use, useMemo } from 'react'
+import { ContextMenu } from '@/components/ContextMenu'
 import { ITEM_DRAG_TYPE } from './pickup-list-draft'
 import {
   DragHandleContext,
   type DragHandleContextValue,
 } from './pickup-list-drag-context'
+import { PickupRowMenuContext } from './pickup-list-row-menu'
 
 interface SortableRowProps extends HTMLAttributes<HTMLTableRowElement> {
   'data-row-key': string
@@ -57,15 +59,32 @@ export function SortableRow(props: SortableRowProps) {
     () => ({ attributes, listeners, setActivatorNodeRef }),
     [attributes, listeners, setActivatorNodeRef],
   )
+  const rowMenus = use(PickupRowMenuContext)
+  const rowMenu = rowMenus?.get(props['data-row-key'])
+  // 行菜单挂在 <tr> 自身: Dropdown 以 cloneElement 注入事件, 不会在 tbody 里
+  // 插入非表格元素(避免破坏表格 DOM 结构)。
+  const row = (
+    <tr
+      {...props}
+      ref={setNodeRef}
+      className={`${props.className || ''}${isDragging ? ' purchase-pickup-list-row--dragging' : ''}`}
+      style={style}
+    />
+  )
 
   return (
     <DragHandleContext.Provider value={contextValue}>
-      <tr
-        {...props}
-        ref={setNodeRef}
-        className={`${props.className || ''}${isDragging ? ' purchase-pickup-list-row--dragging' : ''}`}
-        style={style}
-      />
+      {rowMenu ? (
+        <ContextMenu
+          ariaLabel={rowMenu.ariaLabel}
+          items={rowMenu.items}
+          onClick={rowMenu.onClick}
+        >
+          {row}
+        </ContextMenu>
+      ) : (
+        row
+      )}
     </DragHandleContext.Provider>
   )
 }

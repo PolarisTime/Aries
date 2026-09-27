@@ -1,10 +1,11 @@
 import { DeleteOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { TableColumnsType, TableProps } from 'antd'
+import type { MenuProps, TableColumnsType, TableProps } from 'antd'
 import { Button, Input, Tag, Tooltip, Typography } from 'antd'
 import { type CSSProperties, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ContextMenu } from '@/components/ContextMenu'
 import { formatWeight } from '@/utils/formatters'
 import type { PickupDraftGroup, PickupListRow } from './pickup-list-draft'
 import {
@@ -17,7 +18,13 @@ import {
   type DragHandleContextValue,
 } from './pickup-list-drag-context'
 import { PickupItemsTable } from './pickup-list-items-table'
+import { preserveNativeContextMenuOnInputs } from './pickup-list-row-menu'
 import { DragHandle } from './pickup-list-sortable'
+
+/** 分组菜单条目 key: 锁定/解除锁定二选一, 另有移除分组。 */
+const GROUP_MENU_LOCK = 'lock'
+const GROUP_MENU_UNLOCK = 'unlock'
+const GROUP_MENU_REMOVE = 'remove'
 
 interface PickupDraftGroupSectionProps {
   columns: TableColumnsType<PickupListRow>
@@ -104,6 +111,31 @@ export function PickupDraftGroupSection({
       : 'modules.purchasePickupList.lockGroup',
     { index: index + 1 },
   )
+  /** 分组头右键菜单: 条目与分组头按钮一一对应, 禁用口径复用同一条件。 */
+  const groupMenuItems: MenuProps['items'] = [
+    {
+      key: group.locked ? GROUP_MENU_UNLOCK : GROUP_MENU_LOCK,
+      label: lockLabel,
+      icon: group.locked ? <LockOutlined /> : <UnlockOutlined />,
+    },
+    { type: 'divider' },
+    {
+      key: GROUP_MENU_REMOVE,
+      label: removeLabel,
+      icon: <DeleteOutlined />,
+      danger: true,
+      disabled: groupCount === 1,
+    },
+  ]
+  const handleGroupMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === GROUP_MENU_LOCK || key === GROUP_MENU_UNLOCK) {
+      onLockedChange(group.id, !group.locked)
+      return
+    }
+    if (key === GROUP_MENU_REMOVE) {
+      onRemove(group.id)
+    }
+  }
 
   return (
     <DragHandleContext.Provider value={dragHandleContextValue}>
@@ -111,68 +143,80 @@ export function PickupDraftGroupSection({
         ref={setNodeRef}
         className={`purchase-pickup-list-group${isOver ? ' purchase-pickup-list-group--drop-target' : ''}${isDragging ? ' purchase-pickup-list-group--dragging' : ''}`}
         style={style}
+        // 包裹层: 捕获阶段放行输入控件(分组备注等), 右键菜单只挂在分组头上
+        onContextMenuCapture={preserveNativeContextMenuOnInputs}
       >
-        <div className="purchase-pickup-list-group-header">
-          <div className="purchase-pickup-list-group-title">
-            <DragHandle label={dragLabel} />
-            <Typography.Text strong>
-              {t('modules.purchasePickupList.groupLabel', { index: index + 1 })}
-            </Typography.Text>
-            {warehouseLabel ? <Tag color="blue">{warehouseLabel}</Tag> : null}
-            <Tag>
-              {t('modules.purchasePickupList.groupItemCount', {
-                count: sourceItemCount,
-              })}
-            </Tag>
-            <span className="purchase-pickup-list-group-total">
-              <Typography.Text type="secondary">
-                {t('modules.purchasePickupList.groupTotalQuantity')}：
-              </Typography.Text>
-              <Typography.Text strong>{groupTotals.quantity}</Typography.Text>
-            </span>
-            <span className="purchase-pickup-list-group-total">
-              <Typography.Text type="secondary">
-                {t('modules.purchasePickupList.groupTotalWeight')}：
-              </Typography.Text>
+        <ContextMenu
+          ariaLabel={t('modules.purchasePickupList.groupContextMenuLabel', {
+            index: index + 1,
+          })}
+          items={groupMenuItems}
+          onClick={handleGroupMenuClick}
+        >
+          <div className="purchase-pickup-list-group-header">
+            <div className="purchase-pickup-list-group-title">
+              <DragHandle label={dragLabel} />
               <Typography.Text strong>
-                {formatWeight(groupTotals.weightTon)}
-                {t('modules.units.ton')}
+                {t('modules.purchasePickupList.groupLabel', {
+                  index: index + 1,
+                })}
               </Typography.Text>
-            </span>
-          </div>
-          <div className="purchase-pickup-list-group-controls">
-            <Input
-              allowClear
-              className="purchase-pickup-list-group-remark"
-              maxLength={200}
-              placeholder={t(
-                'modules.purchasePickupList.groupRemarkPlaceholder',
-              )}
-              value={group.remark}
-              onChange={(event) =>
-                onRemarkChange(group.id, event.currentTarget.value)
-              }
-            />
-            <Tooltip title={lockLabel}>
-              <Button
-                aria-label={lockLabel}
-                aria-pressed={group.locked}
-                icon={group.locked ? <LockOutlined /> : <UnlockOutlined />}
-                type={group.locked ? 'primary' : 'text'}
-                onClick={() => onLockedChange(group.id, !group.locked)}
+              {warehouseLabel ? <Tag color="blue">{warehouseLabel}</Tag> : null}
+              <Tag>
+                {t('modules.purchasePickupList.groupItemCount', {
+                  count: sourceItemCount,
+                })}
+              </Tag>
+              <span className="purchase-pickup-list-group-total">
+                <Typography.Text type="secondary">
+                  {t('modules.purchasePickupList.groupTotalQuantity')}：
+                </Typography.Text>
+                <Typography.Text strong>{groupTotals.quantity}</Typography.Text>
+              </span>
+              <span className="purchase-pickup-list-group-total">
+                <Typography.Text type="secondary">
+                  {t('modules.purchasePickupList.groupTotalWeight')}：
+                </Typography.Text>
+                <Typography.Text strong>
+                  {formatWeight(groupTotals.weightTon)}
+                  {t('modules.units.ton')}
+                </Typography.Text>
+              </span>
+            </div>
+            <div className="purchase-pickup-list-group-controls">
+              <Input
+                allowClear
+                className="purchase-pickup-list-group-remark"
+                maxLength={200}
+                placeholder={t(
+                  'modules.purchasePickupList.groupRemarkPlaceholder',
+                )}
+                value={group.remark}
+                onChange={(event) =>
+                  onRemarkChange(group.id, event.currentTarget.value)
+                }
               />
-            </Tooltip>
-            <Tooltip title={removeLabel}>
-              <Button
-                aria-label={removeLabel}
-                disabled={groupCount === 1}
-                icon={<DeleteOutlined />}
-                type="text"
-                onClick={() => onRemove(group.id)}
-              />
-            </Tooltip>
+              <Tooltip title={lockLabel}>
+                <Button
+                  aria-label={lockLabel}
+                  aria-pressed={group.locked}
+                  icon={group.locked ? <LockOutlined /> : <UnlockOutlined />}
+                  type={group.locked ? 'primary' : 'text'}
+                  onClick={() => onLockedChange(group.id, !group.locked)}
+                />
+              </Tooltip>
+              <Tooltip title={removeLabel}>
+                <Button
+                  aria-label={removeLabel}
+                  disabled={groupCount === 1}
+                  icon={<DeleteOutlined />}
+                  type="text"
+                  onClick={() => onRemove(group.id)}
+                />
+              </Tooltip>
+            </div>
           </div>
-        </div>
+        </ContextMenu>
         <PickupItemsTable
           columns={columns}
           components={components}
