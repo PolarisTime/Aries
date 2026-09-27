@@ -1927,6 +1927,7 @@ export const zhCN = {
       closeRight: '关闭右侧',
       closeAll: '全部关闭',
       pinDashboard: '工作台固定展示',
+      contextMenuLabel: '「{{name}}」标签操作菜单',
     },
   },
   system: {

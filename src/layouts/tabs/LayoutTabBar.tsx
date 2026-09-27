@@ -1,9 +1,11 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import type { TabsProps } from 'antd'
-import { Dropdown, Tabs } from 'antd'
+import { Tabs } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { TFunction } from 'i18next'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ContextMenu } from '@/components/ContextMenu'
 import { getPageDefinition } from '@/config/page-registry'
 import {
   confirmBatchTabClose,
@@ -52,6 +54,8 @@ function closeManyTabs(
  * 全局多标签页导航条：
  * - antd editable-card Tabs 提供溢出滚动与关闭交互；
  * - 标签右键菜单提供 刷新/关闭/关闭其他/关闭右侧/全部关闭；
+ *   菜单补齐 APG 键盘契约(可访问名 / 打开后焦点进首项 / Escape 归还焦点),
+ *   并支持 Shift+F10 或上下文菜单键对当前聚焦标签唤起同一菜单；
  * - 工作台标签钉选（不可关闭）。
  * 内容区由 AppTabContainer 渲染，本组件仅承载导航。
  */
@@ -59,6 +63,27 @@ export function LayoutTabBar() {
   const { t } = useTranslation()
   const tabs = useLayoutTabsStore((state) => state.tabs)
   const activeTabId = useLayoutTabsStore((state) => state.activeTabId)
+  /** 键盘唤起的右键菜单所属标签(鼠标右键由 antd 自行处理)。 */
+  const [keyboardMenuTabId, setKeyboardMenuTabId] = useState<string | null>(
+    null,
+  )
+
+  /**
+   * 标签本身不是我们的子节点(由 Tabs 渲染), 上下文菜单键落在标签按钮上,
+   * 不会冒泡到菜单触发器, 因此在容器上做一次委托: Shift+F10 / 上下文菜单键
+   * 打开当前聚焦标签的菜单, 保证键盘用户可达"关闭其他/关闭右侧/全部关闭"。
+   */
+  const handleContextKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const isContextKey =
+      event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')
+    if (!isContextKey) return
+    const tabKey = (event.target as HTMLElement)
+      .closest('.ant-tabs-tab')
+      ?.getAttribute('data-node-key')
+    if (!tabKey) return
+    event.preventDefault()
+    setKeyboardMenuTabId(tabKey)
+  }
 
   const handleClose = (tabId: string) => {
     requestEditorSessionClose(t, tabId, () => {
@@ -136,36 +161,52 @@ export function LayoutTabBar() {
     },
   })
 
-  const items: TabsProps['items'] = tabs.map((tab) => ({
-    key: tab.id,
-    label: (
-      <Dropdown trigger={['contextMenu']} menu={buildContextMenu(tab)}>
-        <span className="leo-tabbar-label">{getTabTitle(tab, t)}</span>
-      </Dropdown>
-    ),
-    closable: !tab.pinned,
-  }))
+  const items: TabsProps['items'] = tabs.map((tab) => {
+    const contextMenu = buildContextMenu(tab)
+    const title = getTabTitle(tab, t)
+    return {
+      key: tab.id,
+      label: (
+        <ContextMenu
+          ariaLabel={t('layouts.tabs.contextMenuLabel', { name: title })}
+          items={contextMenu.items ?? []}
+          onClick={contextMenu.onClick}
+          open={keyboardMenuTabId === tab.id}
+          onOpenChange={(next) => setKeyboardMenuTabId(next ? tab.id : null)}
+        >
+          <span className="leo-tabbar-label">{title}</span>
+        </ContextMenu>
+      ),
+      closable: !tab.pinned,
+    }
+  })
 
   return (
-    <Tabs
-      className="leo-tabbar"
-      type="editable-card"
-      hideAdd
-      size="small"
-      /* 内容区由 AppTabContainer 渲染，本组件仅保留导航头部：
-       * 经 v6 语义 styles 内联关闭 nav 默认 margin；
-       * 外层 body-holder 无对应语义 key，经 layout-shell.css 提升特异性隐藏 */
-      styles={{
-        header: { margin: 0 },
-      }}
-      activeKey={activeTabId ?? undefined}
-      items={items}
-      onChange={(key) => useLayoutTabsStore.getState().activateTab(key)}
-      onEdit={(targetKey, action) => {
-        if (action === 'remove') {
-          handleClose(String(targetKey))
-        }
-      }}
-    />
+    // 捕获阶段监听: 上下文菜单键可能被 Tabs 自己的键盘处理消费掉
+    <div
+      className="leo-tabbar-keyboard-host"
+      onKeyDownCapture={handleContextKeyDown}
+    >
+      <Tabs
+        className="leo-tabbar"
+        type="editable-card"
+        hideAdd
+        size="small"
+        /* 内容区由 AppTabContainer 渲染，本组件仅保留导航头部：
+         * 经 v6 语义 styles 内联关闭 nav 默认 margin；
+         * 外层 body-holder 无对应语义 key，经 layout-shell.css 提升特异性隐藏 */
+        styles={{
+          header: { margin: 0 },
+        }}
+        activeKey={activeTabId ?? undefined}
+        items={items}
+        onChange={(key) => useLayoutTabsStore.getState().activateTab(key)}
+        onEdit={(targetKey, action) => {
+          if (action === 'remove') {
+            handleClose(String(targetKey))
+          }
+        }}
+      />
+    </div>
   )
 }
