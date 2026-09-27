@@ -1,3 +1,27 @@
+# [10.32.0](https://github.com/PolarisTime/Aries/compare/v10.31.0...v10.32.0) (2026-09-27)
+
+
+### Bug Fixes
+
+* **components:** 菜单内 Tab/Shift+Tab 关闭菜单并把焦点交还页面 ([ba7ac94](https://github.com/PolarisTime/Aries/commit/ba7ac9477176b749fa9fcfb7d81d08a05dc1f06e))
+* **master-data:** 「列设置」弹层改为 click 触发, 修复列头菜单项点不开 ([99e8189](https://github.com/PolarisTime/Aries/commit/99e8189a78448deeeea4e7eb7af86d6e55f9067a))
+* **modules:** 批量删除确认框列出将被删除的单据号 ([3192109](https://github.com/PolarisTime/Aries/commit/31921090e7e0d83f4e3da59e32cdf670fce77893))
+* **right-click:** 修掉列头移序边界、比价分隔行右键与虚拟行组件三处缺陷 ([ebd6ca0](https://github.com/PolarisTime/Aries/commit/ebd6ca0308850e695d061a72de0702b5be858da0))
+
+
+### Features
+
+* **components:** 列头菜单键盘可达, 比价品牌列头改用共享基元 ([69932e1](https://github.com/PolarisTime/Aries/commit/69932e14fba3b2003a016c3f40d40229878bddcb))
+* **components:** 新增 ContextMenu 基元并补齐标签栏右键菜单键盘契约 ([b41b214](https://github.com/PolarisTime/Aries/commit/b41b214966886048ef3d24f6095c2f6630902abb))
+* **master-data:** 基础数据与资料表列头支持右键菜单 ([b75220a](https://github.com/PolarisTime/Aries/commit/b75220a83595abf7407c55bf9ee9f3184f2e16c5))
+* **modules:** 便利性第一批: 保存快捷键、复制本行、复制单号、附件拖拽多传、导出选中 ([8014326](https://github.com/PolarisTime/Aries/commit/801432661cf654799035f177c2b2f345dc192bc9))
+* **modules:** 右键同步选中态, 并为隐藏列与列设置重置补反馈 ([7db48ca](https://github.com/PolarisTime/Aries/commit/7db48ca56400510c892ec185caf135bd24b2ce08))
+* **modules:** 行尾恢复可见「更多」按钮, 与行右键共用同一份菜单 ([b3d6da4](https://github.com/PolarisTime/Aries/commit/b3d6da403265cf07fe308b6c0d8ec8cb426fde0d))
+* **modules:** 通用业务列表列头支持右键菜单 ([68da5c9](https://github.com/PolarisTime/Aries/commit/68da5c9ce5f794d205ddc9ee19215853aad35fa3))
+* **modules:** 通用业务列表行支持右键菜单 ([9568a14](https://github.com/PolarisTime/Aries/commit/9568a14e694de43d2fd2084059d49c2af55ec691))
+* **price-compare:** 报单比价数据行与品牌列头支持右键菜单 ([5dd68dd](https://github.com/PolarisTime/Aries/commit/5dd68dd2305e9b61862f57bf084f15e55e995297))
+* **purchase-order-pickup-list:** 提货清单明细行与分组头支持右键菜单 ([5334f43](https://github.com/PolarisTime/Aries/commit/5334f43cebe420acb8bfcb86fcad341c7b8f1720))
+
 # [10.31.0](https://github.com/PolarisTime/Aries/compare/v10.30.2...v10.31.0) (2026-09-27)
 
 
