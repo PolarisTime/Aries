@@ -305,6 +305,14 @@
   font-weight: 500;
 }
 
+/* 标题右侧附加控件（详情头部的「复制单号」等）：靠右排布，不与标题抢焦点首项 */
+.workspace-overlay-header-extra {
+  display: flex;
+  align-items: center;
+  margin-inline-start: auto;
+  margin-inline-end: var(--space-xs);
+}
+
 .workspace-overlay-close {
   display: flex;
   align-items: center;

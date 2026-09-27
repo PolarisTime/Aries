@@ -41,6 +41,7 @@ interface Props {
 const BULK_DELETE_ACTION_KEY = 'bulk_delete'
 const BULK_AUDIT_ACTION_KEY = 'bulk_audit'
 const BULK_REVERSE_AUDIT_ACTION_KEY = 'bulk_reverse_audit'
+const EXPORT_SELECTED_ACTION_KEY = 'export_selected'
 
 function isCreateToolbarAction(action: ModuleActionDefinition) {
   return action.key === 'create' || action.key?.startsWith('create_')
@@ -68,6 +69,18 @@ export function useModuleToolbarActions({
           label: t('hooks.toolbarActions.delete'),
           type: 'default',
           danger: true,
+        }
+      : null
+
+  /** 有勾选时才出现的「导出选中 N 条」：只导出勾选记录。 */
+  const exportSelectedAction: ModuleActionDefinition | null =
+    selectedRowCount > 0
+      ? {
+          key: EXPORT_SELECTED_ACTION_KEY,
+          label: t('hooks.toolbarActions.exportSelected', {
+            count: selectedRowCount,
+          }),
+          type: 'default',
         }
       : null
 
@@ -111,6 +124,9 @@ export function useModuleToolbarActions({
     if (bulkDeleteAction) {
       orderedActions.push(bulkDeleteAction)
     }
+    if (exportSelectedAction) {
+      orderedActions.push(exportSelectedAction)
+    }
     orderedActions.push(...bulkToolbarActions, ...remainingActions)
     return orderedActions.flatMap((action) => {
       if (action.key === 'manage_customer_projects') {
@@ -130,6 +146,9 @@ export function useModuleToolbarActions({
         return
       case BULK_DELETE_ACTION_KEY:
         handlers.handleSelectedDeleteRecords()
+        return
+      case EXPORT_SELECTED_ACTION_KEY:
+        await handlers.exportRows('selected')
         return
     }
 

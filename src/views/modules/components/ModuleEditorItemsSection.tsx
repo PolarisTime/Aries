@@ -10,6 +10,7 @@ import { Button, Dropdown, Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
+import type { RowContextMenuMap } from '@/components/row-context-menu'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -53,6 +54,7 @@ interface Props {
   itemColumns: TableColumnsType<ModuleLineItem>
   itemTableComponents: TableProps<ModuleLineItem>['components']
   itemColumnOrder: string[]
+  itemRowMenus?: RowContextMenuMap
   visibleItemColumnKeys: string[]
   capabilities: {
     addManualItems: boolean
@@ -107,6 +109,7 @@ export function ModuleEditorItemsSection({
   itemColumns,
   itemTableComponents,
   itemColumnOrder,
+  itemRowMenus,
   visibleItemColumnKeys,
   capabilities,
   auditLabel,
@@ -341,6 +344,7 @@ export function ModuleEditorItemsSection({
               components={itemTableComponents}
               emptyText={emptyText}
               rowClassName={rowClassName}
+              itemRowMenus={itemRowMenus}
               onRowDragOver={onRowDragOver}
             />
           </ModuleItemsPanel>

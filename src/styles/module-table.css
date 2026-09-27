@@ -297,8 +297,24 @@
   padding: var(--space-sm) 14px;
   margin-bottom: var(--space-sm);
   background: var(--theme-accent-bg);
-  border: 1px dashed var(--theme-accent-border);
+  /* 虚线边框由内部 Upload.Dragger 提供，外壳不再重复画一个拖放框 */
+  border: 0;
   border-radius: var(--ant-border-radius-lg);
+}
+
+/* 附件拖拽上传区：Dragger 自身的虚线框即唯一下拉落点 */
+.module-attachment-upload-dragger .ant-upload-drag {
+  background: transparent;
+}
+
+/*
+ * 触摸热区伪元素（styles/touch-targets.css 的 [role="button"]::before）覆盖在
+ * Dragger 的 drop 区之上；置为 pointer-events: none，确保拖放与点击命中
+ * 始终落到拖拽容器本身，而不是热区伪元素。
+ */
+.module-attachment-upload-dragger [role="button"]::before,
+.module-attachment-upload-dragger .ant-upload-btn::before {
+  pointer-events: none;
 }
 
 .module-attachment-upload-hint {

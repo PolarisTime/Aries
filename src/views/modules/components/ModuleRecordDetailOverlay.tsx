@@ -10,12 +10,14 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
+import { resolveRecordPrimaryNo } from '@/module-system/record/module-record-clipboard'
 import type {
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
+import { CopyDocNoButton } from './CopyDocNoButton'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { buildModuleItemGroups } from './module-item-groups'
@@ -116,6 +118,9 @@ export function ModuleRecordDetailOverlay({
     Math.min(12, 24 / Math.max(1, Math.min(detailFields.length || 1, 4))),
   )
 
+  // 详情头部「复制单号」：只认 primaryNoKey 字段，空值时不渲染
+  const detailPrimaryNo = resolveRecordPrimaryNo(record, config.primaryNoKey)
+
   return (
     <WorkspaceOverlay
       open={open}
@@ -123,6 +128,11 @@ export function ModuleRecordDetailOverlay({
         record
           ? `${config.title}${t('modules.detail.titleSuffix')} - ${getPrimaryNo(record)}`
           : t('modules.detail.recordDetail')
+      }
+      headerExtra={
+        record && detailPrimaryNo ? (
+          <CopyDocNoButton docNo={detailPrimaryNo} size="small" />
+        ) : null
       }
       onClose={onClose}
     >

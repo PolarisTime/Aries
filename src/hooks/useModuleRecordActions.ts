@@ -2,12 +2,16 @@ import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
 import { getModuleDeliveryVerification } from '@/module-system/behavior/module-page-behaviors'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
+import { resolveRecordPrimaryNo } from '@/module-system/record/module-record-clipboard'
 import { isDeletedModuleRecord } from '@/module-system/record/module-record-deletion'
+import { useCopyDocNo } from '@/module-system/record/use-module-record-clipboard'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
   moduleKey: string
   isReadOnly?: boolean
+  /** 主单号字段（config.primaryNoKey）；缺失或无值时不渲染「复制单号」。 */
+  primaryNoKey?: string
   attachmentCounts?: Record<string, number>
   onAttach: (record: ModuleRecord) => void
   onDetail?: (record: ModuleRecord) => void
@@ -20,6 +24,7 @@ interface Props {
 export function useModuleRecordActions({
   moduleKey,
   isReadOnly = false,
+  primaryNoKey,
   attachmentCounts = {},
   onAttach,
   onDetail,
@@ -29,6 +34,7 @@ export function useModuleRecordActions({
   detailActionLabel,
 }: Props) {
   const { t } = useTranslation()
+  const copyDocNo = useCopyDocNo()
 
   const resolveAttachmentCount = (record: ModuleRecord) => {
     const mappedCount = attachmentCounts[String(record.id)]
@@ -52,6 +58,17 @@ export function useModuleRecordActions({
         label: detailActionLabel || t('hooks.recordActions.view'),
         icon: resolveModuleActionIcon(detailActionLabel || '查看'),
         onClick: () => onDetail(record),
+      })
+    }
+    // 复制单号只读也可用（不改变数据），但必须存在真实单号
+    const primaryNo = resolveRecordPrimaryNo(record, primaryNoKey)
+    if (primaryNo) {
+      const copyLabel = t('hooks.recordActions.copyDocNo')
+      items.push({
+        key: 'copy-doc-no',
+        label: copyLabel,
+        icon: resolveModuleActionIcon(copyLabel),
+        onClick: () => copyDocNo(primaryNo),
       })
     }
     if (isReadOnly) {

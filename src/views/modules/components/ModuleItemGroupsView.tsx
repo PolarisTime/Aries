@@ -1,4 +1,5 @@
 import type { TableColumnsType, TableProps } from 'antd'
+import type { RowContextMenuMap } from '@/components/row-context-menu'
 import type { ModuleLineItem } from '@/types/module-page'
 import type { CustomerStatementItemGroup } from '@/views/modules/customer-statement-item-groups'
 import type {
@@ -37,6 +38,8 @@ interface Props {
   emptyText: string
   components?: TableProps<ModuleLineItem>['components']
   rowClassName?: TableProps<ModuleLineItem>['rowClassName']
+  /** 明细行右键菜单（按行 key 注入，与行内按钮共用同一份动作）。 */
+  itemRowMenus?: RowContextMenuMap
   onRowDragOver?: (recordId: string, event: React.DragEvent) => void
 }
 
@@ -48,6 +51,7 @@ export function ModuleItemGroupsView({
   emptyText,
   components,
   rowClassName,
+  itemRowMenus,
   onRowDragOver,
 }: Props) {
   const onRow = onRowDragOver
@@ -74,6 +78,7 @@ export function ModuleItemGroupsView({
                   dataSource={(group as ProjectGroup).items}
                   emptyText={emptyText}
                   rowClassName={rowClassName}
+                  itemRowMenus={itemRowMenus}
                   onRow={onRow}
                 />
               </div>
@@ -95,6 +100,7 @@ export function ModuleItemGroupsView({
                       dataSource={projectGroup.items}
                       emptyText={emptyText}
                       rowClassName={rowClassName}
+                      itemRowMenus={itemRowMenus}
                       onRow={onRow}
                     />
                   </div>
@@ -111,6 +117,7 @@ export function ModuleItemGroupsView({
                   dataSource={group.items}
                   emptyText={emptyText}
                   rowClassName={rowClassName}
+                  itemRowMenus={itemRowMenus}
                   onRow={onRow}
                 />
               </>
@@ -121,6 +128,7 @@ export function ModuleItemGroupsView({
                 dataSource={group.items}
                 emptyText={emptyText}
                 rowClassName={rowClassName}
+                itemRowMenus={itemRowMenus}
                 onRow={onRow}
               />
             )}

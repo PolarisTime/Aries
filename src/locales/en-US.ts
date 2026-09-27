@@ -798,7 +798,7 @@ export const enUS = {
       title: 'Attachments',
       upload: 'Upload',
       uploadHint:
-        'Click to upload, or paste images/files directly in this area',
+        'Click or drag to upload multiple files, or paste images/files directly in this area',
       noPreviewUrl: 'No preview URL available',
       noDownloadUrl: 'No download URL available',
       previewFailed: 'Preview failed',
@@ -991,6 +991,8 @@ export const enUS = {
       expensePanelTitle: 'Charge Items',
       importItems: 'Import {{label}} Items',
       deleteSelected: 'Delete Selected',
+      duplicateItem: 'Duplicate Row',
+      duplicateItemAriaLabel: 'Duplicate row: {{label}}',
       autoSortItems: 'Auto Sort',
       autoSortBySourceNo: 'By bill number',
       autoSortByBillTime: 'Sort by date',
@@ -1045,6 +1047,8 @@ export const enUS = {
       cancel: 'Cancel',
       save: 'Save',
       saveAndAudit: 'Save & Audit',
+      saveShortcutTitle: 'Save ({{shortcut}})',
+      saveAndAuditShortcutTitle: 'Save & Audit ({{shortcut}})',
       saveAndAction: 'Save & {{action}}',
       statusActionConfirm:
         'This action will change the document status to {{targetStatus}} and lock further editing. Continue with {{action}}?',
@@ -1860,6 +1864,9 @@ export const enUS = {
       noPrintContent: 'No print content generated',
       printFailed: 'Print failed',
       exportXlsxFailed: 'Print Excel export failed',
+      exportSelectedUnsupported:
+        'No print template configured for this module; exporting selected records is unavailable',
+      exportSelectedFailed: 'Failed to export the selected records',
     },
     freightActions: {
       noFreightData: 'No freight statement data in the current list',
@@ -1900,11 +1907,15 @@ export const enUS = {
       delete: 'Delete',
       printPreview: 'Print Preview',
       directPrint: 'Direct Print',
+      exportSelected: 'Export {{count}} selected',
       noExtraLogic: '{{label}} has no additional handling logic.',
     },
     recordActions: {
       view: 'View',
       edit: 'Edit',
+      copyDocNo: 'Copy Doc No.',
+      copyDocNoSuccess: 'Document number copied',
+      copyDocNoFailed: 'Copy failed. Please select the number manually',
       attachment: 'Attachments',
       audit: 'Audit',
       reverseAudit: 'Reverse Audit',

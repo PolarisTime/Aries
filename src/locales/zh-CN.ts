@@ -774,7 +774,8 @@ export const zhCN = {
     attachment: {
       title: '附件管理',
       upload: '上传附件',
-      uploadHint: '支持点击上传，也支持在此区域内直接粘贴图片或文件',
+      uploadHint:
+        '支持点击或拖拽上传多个文件，也可在此区域内直接粘贴图片或文件',
       noPreviewUrl: '当前附件暂无预览地址',
       noDownloadUrl: '当前附件暂无下载地址',
       previewFailed: '预览失败',
@@ -963,6 +964,8 @@ export const zhCN = {
       expensePanelTitle: '费用明细',
       importItems: '导入{{label}}明细',
       deleteSelected: '删除选中',
+      duplicateItem: '复制本行',
+      duplicateItemAriaLabel: '复制本行：{{label}}',
       autoSortItems: '自动排序',
       autoSortBySourceNo: '按单号顺序',
       autoSortByBillTime: '按日期排序',
@@ -1016,6 +1019,8 @@ export const zhCN = {
       cancel: '取消',
       save: '保存',
       saveAndAudit: '保存并审核',
+      saveShortcutTitle: '保存（{{shortcut}}）',
+      saveAndAuditShortcutTitle: '保存并审核（{{shortcut}}）',
       saveAndAction: '保存并{{action}}',
       statusActionConfirm:
         '{{action}}后单据状态将变更为{{targetStatus}}，且不可再编辑。确定继续？',
@@ -1807,6 +1812,8 @@ export const zhCN = {
       noPrintContent: '未生成打印内容',
       printFailed: '打印失败',
       exportXlsxFailed: '套打 Excel 导出失败',
+      exportSelectedUnsupported: '当前模块未配置打印模板，暂不支持按勾选导出',
+      exportSelectedFailed: '导出选中记录失败',
     },
     freightActions: {
       noFreightData: '当前列表暂无物流对账单数据',
@@ -1847,11 +1854,15 @@ export const zhCN = {
       delete: '删除',
       printPreview: '打印预览',
       directPrint: '直接打印',
+      exportSelected: '导出选中 {{count}} 条',
       noExtraLogic: '{{label}} 当前没有额外处理逻辑。',
     },
     recordActions: {
       view: '查看',
       edit: '编辑',
+      copyDocNo: '复制单号',
+      copyDocNoSuccess: '单号已复制',
+      copyDocNoFailed: '复制失败，请手动选择单号复制',
       attachment: '附件',
       audit: '审核',
       reverseAudit: '反审核',

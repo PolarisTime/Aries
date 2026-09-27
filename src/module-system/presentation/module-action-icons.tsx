@@ -1,6 +1,7 @@
 import {
   AuditOutlined,
   CloseOutlined,
+  CopyOutlined,
   DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
@@ -40,6 +41,9 @@ export function resolveModuleActionIcon(label: string): ReactNode | undefined {
   }
   if (label.includes('归档') || label.includes('Archive')) {
     return <InboxOutlined />
+  }
+  if (label.includes('复制') || label.includes('Copy')) {
+    return <CopyOutlined />
   }
   if (label.includes('查询')) {
     return <SearchOutlined />

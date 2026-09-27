@@ -16,6 +16,7 @@ const messageInfoMock = vi.hoisted(() => vi.fn())
 const modalConfirmMock = vi.hoisted(() => vi.fn())
 const handlePrintSelectedRecordsMock = vi.hoisted(() => vi.fn())
 const handleExportSalesOrderPrintXlsxMock = vi.hoisted(() => vi.fn())
+const handleExportSelectedRecordsMock = vi.hoisted(() => vi.fn())
 const handleSelectedAuditRecordsMock = vi.hoisted(() => vi.fn())
 const handleSelectedDeleteRecordsMock = vi.hoisted(() => vi.fn())
 const handleSelectedReverseAuditRecordsMock = vi.hoisted(() => vi.fn())
@@ -48,6 +49,7 @@ vi.mock('@/hooks/useBusinessGridPrintActions', () => ({
   useBusinessGridPrintActions: () => ({
     handlePrintSelectedRecords: handlePrintSelectedRecordsMock,
     handleExportSalesOrderPrintXlsx: handleExportSalesOrderPrintXlsxMock,
+    handleExportSelectedRecords: handleExportSelectedRecordsMock,
   }),
 }))
 
@@ -156,6 +158,7 @@ describe('useBusinessGridActions', () => {
       messageInfoMock,
       handlePrintSelectedRecordsMock,
       handleExportSalesOrderPrintXlsxMock,
+      handleExportSelectedRecordsMock,
       handleSelectedAuditRecordsMock,
       handleSelectedDeleteRecordsMock,
       handleSelectedReverseAuditRecordsMock,
@@ -218,6 +221,43 @@ describe('useBusinessGridActions', () => {
       })
     })
     expect(openEditorMock).toHaveBeenCalledWith(record)
+  })
+
+  it('shows the export-selected action only when rows are selected, with the count in the label', () => {
+    expect(
+      latest.visibleToolbarActions.some(
+        (action) => action.key === 'export_selected',
+      ),
+    ).toBe(false)
+
+    selectedRowKeys = ['1', '2']
+    selectedRecords = [{ id: '1' }, { id: '2' }]
+    renderOnce()
+
+    const exportSelected = latest.visibleToolbarActions.find(
+      (action) => action.key === 'export_selected',
+    )
+    expect(exportSelected).toBeDefined()
+    expect(exportSelected?.label).toBe('hooks.toolbarActions.exportSelected')
+  })
+
+  it('routes the export-selected action only to the selected-records export handler', async () => {
+    selectedRowKeys = ['1', '2']
+    selectedRecords = [{ id: '1' }, { id: '2' }]
+    handleExportSelectedRecordsMock.mockResolvedValue(true)
+    renderOnce()
+
+    await act(async () => {
+      await latest.handleAction({
+        key: 'export_selected',
+        label: '导出选中 2 条',
+        type: 'default',
+      })
+    })
+
+    expect(handleExportSelectedRecordsMock).toHaveBeenCalledTimes(1)
+    // 勾选导出不得回退到模块级「导出全部」
+    expect(handleExportMock).not.toHaveBeenCalled()
   })
 
   it('routes list export toolbar actions through the shared export handler', async () => {

@@ -21,6 +21,7 @@ import {
   type EditorFormValues,
   resolvePendingAttachmentFiles,
 } from '@/views/modules/module-editor-workspace-support'
+import { useEditorSaveShortcuts } from '@/views/modules/use-editor-save-shortcuts'
 import { useModuleEditorCapabilityFlags } from '@/views/modules/use-module-editor-capability-flags'
 import { useModuleEditorExpenseItems } from '@/views/modules/use-module-editor-expense-items'
 import { useModuleEditorItemControls } from '@/views/modules/use-module-editor-item-controls'
@@ -221,6 +222,17 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   })
   // oxlint-enable react-doctor/no-event-handler
 
+  // Ctrl/Cmd+S 保存、Ctrl/Cmd+Shift+S 保存并审核；保存中/只读/无权限时忽略。
+  useEditorSaveShortcuts({
+    enabled: open,
+    canSave,
+    canAudit: canSaveAndAuditInEditor,
+    saving,
+    onSave: (audit) => {
+      void handleSave(audit)
+    },
+  })
+
   useEditorSessionLifecycle({
     open,
     moduleKey,
@@ -249,6 +261,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     itemColumns,
     itemTableComponents,
     itemColumnOrder,
+    itemRowMenus,
     onItemColumnOrderChange,
     removeSelectedItems,
     selectedItemIds,
@@ -362,6 +375,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           itemColumns={itemColumns}
           itemTableComponents={itemTableComponents}
           itemColumnOrder={itemColumnOrder}
+          itemRowMenus={itemRowMenus}
           visibleItemColumnKeys={visibleItemColumnKeys}
           capabilities={{
             addManualItems: canAddManualItemsForCurrentRecord,

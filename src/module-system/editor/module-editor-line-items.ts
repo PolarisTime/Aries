@@ -1,5 +1,9 @@
 export { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
 export {
+  type DuplicatedEditorLineItem,
+  duplicateEditorLineItem,
+} from '@/module-system/editor/module-editor-line-item-duplicate'
+export {
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,

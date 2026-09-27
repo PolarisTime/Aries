@@ -149,6 +149,7 @@ export function useBusinessGridActions({
   const { buildActions } = useModuleRecordActions({
     moduleKey,
     isReadOnly: Boolean(config?.readOnly),
+    primaryNoKey: config?.primaryNoKey,
     attachmentCounts,
     onAttach: openAttachment,
     detailActionLabel: config?.detailActionLabel,
@@ -205,12 +206,15 @@ export function useBusinessGridActions({
     await refreshModuleQueries()
   }
 
-  const { handlePrintSelectedRecords, handleExportSalesOrderPrintXlsx } =
-    useBusinessGridPrintActions({
-      moduleKey,
-      selectedRowKeys,
-      selectedRows: selectedRecords,
-    })
+  const {
+    handlePrintSelectedRecords,
+    handleExportSalesOrderPrintXlsx,
+    handleExportSelectedRecords,
+  } = useBusinessGridPrintActions({
+    moduleKey,
+    selectedRowKeys,
+    selectedRows: selectedRecords,
+  })
 
   const {
     handleSelectedAuditRecords,
@@ -260,7 +264,13 @@ export function useBusinessGridActions({
       exportMaterialRows: async () => {
         await handleExport()
       },
-      exportRows: async () => {
+      // mode 决定导出范围：selected 只导出勾选记录（打印导出通道逐条按 id 渲染），
+      // 其余（filtered/page）沿用后端模块级导出。
+      exportRows: async (mode) => {
+        if (mode === 'selected') {
+          await handleExportSelectedRecords()
+          return
+        }
         await handleExport()
       },
       handleSelectedAuditRecords,

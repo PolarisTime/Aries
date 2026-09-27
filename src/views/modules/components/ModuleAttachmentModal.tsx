@@ -40,7 +40,9 @@ export function ModuleAttachmentModal({
         uploadFileName={modal.uploadFileName}
         uploadProgress={modal.uploadProgress}
         pasteZoneRef={modal.pasteZoneRef}
-        onUpload={modal.uploadAndBindAttachment}
+        onUpload={(file) => {
+          void modal.enqueueUpload(file)
+        }}
         t={modal.t}
       />
       <Spin spinning={modal.loading}>

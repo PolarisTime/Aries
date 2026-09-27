@@ -161,6 +161,72 @@ export function useBusinessGridPrintActions({
     }
   }
 
+  /**
+   * 「导出选中 N 条」。
+   *
+   * <p>后端通用导出接口是 <code>POST {module}/export</code>，只接受模块级筛选参数
+   * （nativeFilterKeys 白名单里没有任何 id 集合参数），无法按勾选 id 过滤；因此这里改用
+   * 已有的打印导出资源逐条渲染选中记录：<code>renderPrintRecord</code> 的 recordId 就是
+   * 选中行 id，一次请求对应一条勾选记录，再统一走 download 输出。导出目标严格等于勾选集合，
+   * 不回退导出整页数据。</p>
+   *
+   * <p>模块不在打印模板白名单、未配置模板或模板没有可下载内容时给出明确提示并返回 false。</p>
+   */
+  const handleExportSelectedRecords = async (
+    printOptions?: PrintRenderOptions,
+  ) => {
+    if (!selectedRowKeys.length) {
+      message.warning(t('common.pleaseSelect'))
+      return false
+    }
+
+    if (!isPrintTemplateTarget(moduleKey)) {
+      message.warning(t('hooks.printActions.exportSelectedUnsupported'))
+      return false
+    }
+
+    // 勾选集可能包含重复 key（跨页保留选择），去重后每条记录只导出一次
+    const recordIds = [...new Set(selectedRowKeys.map((key) => String(key)))]
+    const selectedRecord = selectedRows.find((row) =>
+      recordIds.includes(String(row.id)),
+    )
+    const template = await pickPrintTemplate(moduleKey, t, selectedRecord)
+    if (!template) {
+      message.warning(t('hooks.printActions.noPrintTemplateConfigured'))
+      return false
+    }
+
+    try {
+      const results = await Promise.all(
+        recordIds.map((recordId) =>
+          renderPrintRecord(template.id, moduleKey, recordId, printOptions),
+        ),
+      )
+      const runResult = await runPrintOutputs(results, {
+        fallbackTemplateName: template.templateName,
+        mode: 'download',
+        printServiceUnavailableMessage: t(
+          'hooks.printActions.printServiceUnavailable',
+        ),
+      })
+
+      if (runResult.pdfCount) {
+        return true
+      }
+
+      message.warning(t('hooks.printActions.noPrintContent'))
+      return false
+    } catch (err) {
+      message.error(
+        await normalizePdfError(
+          err,
+          t('hooks.printActions.exportSelectedFailed'),
+        ),
+      )
+      return false
+    }
+  }
+
   const handlePrintSelectedRecords = async (
     mode: PrintActionMode,
     selectedTemplate?: PrintTemplateRecord,
@@ -224,5 +290,9 @@ export function useBusinessGridPrintActions({
     }
   }
 
-  return { handlePrintSelectedRecords, handleExportSalesOrderPrintXlsx }
+  return {
+    handlePrintSelectedRecords,
+    handleExportSalesOrderPrintXlsx,
+    handleExportSelectedRecords,
+  }
 }

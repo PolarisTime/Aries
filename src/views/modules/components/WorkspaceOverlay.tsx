@@ -7,6 +7,8 @@ import '@/styles/workspace-overlay.css'
 interface Props {
   open: boolean
   title: React.ReactNode
+  /** 标题右侧、关闭按钮之前的附加控件（如详情头部的「复制单号」）。 */
+  headerExtra?: React.ReactNode
   onClose: () => void
   children: React.ReactNode
   width?: number | string
@@ -31,6 +33,7 @@ function getInitialFocusTarget(panel: HTMLElement) {
 export function WorkspaceOverlay({
   open,
   title,
+  headerExtra,
   onClose,
   children,
   width,
@@ -84,6 +87,11 @@ export function WorkspaceOverlay({
           <span id={titleId} className="workspace-overlay-title">
             {title}
           </span>
+          {headerExtra ? (
+            <span className="workspace-overlay-header-extra">
+              {headerExtra}
+            </span>
+          ) : null}
           <button
             className="workspace-overlay-close"
             type="button"

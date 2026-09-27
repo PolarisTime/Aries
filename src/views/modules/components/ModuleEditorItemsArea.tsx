@@ -1,6 +1,7 @@
 import type { TableColumnsType, TableProps } from 'antd'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
 import type { ProjectOption } from '@/api/master/project-options'
+import type { RowContextMenuMap } from '@/components/row-context-menu'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import type { SearchParams } from '@/types/api-raw'
@@ -57,6 +58,7 @@ interface Props {
   itemColumns: TableColumnsType<ModuleLineItem>
   itemTableComponents: TableProps<ModuleLineItem>['components']
   itemColumnOrder: string[]
+  itemRowMenus?: RowContextMenuMap
   visibleItemColumnKeys: string[]
   capabilities: {
     addManualItems: boolean
@@ -106,6 +108,7 @@ export function ModuleEditorItemsArea({
   itemColumns,
   itemTableComponents,
   itemColumnOrder,
+  itemRowMenus,
   visibleItemColumnKeys,
   capabilities,
   auditLabel,
@@ -148,6 +151,7 @@ export function ModuleEditorItemsArea({
       itemColumns={itemColumns}
       itemTableComponents={itemTableComponents}
       itemColumnOrder={itemColumnOrder}
+      itemRowMenus={itemRowMenus}
       visibleItemColumnKeys={visibleItemColumnKeys}
       capabilities={capabilities}
       auditLabel={auditLabel}

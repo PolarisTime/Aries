@@ -232,14 +232,29 @@ export function useModuleAttachmentModal({
   )
 
   // 上传进度、文件名与 uploading 标志是共享 UI 状态，必须逐个串行上传，避免并行时互相覆盖。
-  const uploadFilesSequentially = useCallback(
-    async (files: readonly File[]) => {
-      await files.reduce<Promise<boolean>>(
-        (previous, file) => previous.then(() => uploadAndBindAttachment(file)),
-        Promise.resolve(false),
+  // 串行队列同时服务三条入口：拖拽/多选（Dragger 逐文件回调）、Ctrl+V 粘贴、初始文件。
+  const uploadQueueRef = useRef<Promise<void>>(Promise.resolve())
+
+  const enqueueUpload = useCallback(
+    (file: File) => {
+      const task = uploadQueueRef.current.then(() =>
+        uploadAndBindAttachment(file),
       )
+      // 队列自身吞掉失败：单个文件失败不阻断后续文件继续上传，便于逐条重试
+      uploadQueueRef.current = task.then(
+        () => undefined,
+        () => undefined,
+      )
+      return task
     },
     [uploadAndBindAttachment],
+  )
+
+  const uploadFilesSequentially = useCallback(
+    async (files: readonly File[]) => {
+      await Promise.all(files.map((file) => enqueueUpload(file)))
+    },
+    [enqueueUpload],
   )
 
   useEffect(() => {
@@ -438,6 +453,7 @@ export function useModuleAttachmentModal({
 
   return {
     attachments,
+    enqueueUpload,
     handleDelete,
     handleDownload,
     handleImagePreviewChange,

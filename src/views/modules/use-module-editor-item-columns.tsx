@@ -1,7 +1,11 @@
+import { CopyOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchMaterialSearch } from '@/api/master/materials'
+import type { RowContextMenuMap } from '@/components/row-context-menu'
+import { buildRowContextMenus } from '@/components/row-context-menu'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
@@ -15,6 +19,7 @@ import {
   buildModuleEditorManagementColumns,
 } from '@/module-system/editor/module-editor-item-column-builders'
 import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module-editor-item-column-handlers'
+import { duplicateEditorLineItem } from '@/module-system/editor/module-editor-line-item-duplicate'
 import { applyMaterialToEditorLineItem } from '@/module-system/editor/module-editor-line-item-utils'
 import {
   buildMaterialSelectOptions,
@@ -33,6 +38,11 @@ import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
 import { asString } from '@/utils/type-narrowing'
 import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
+import { focusFirstEditableItemCell } from './components/module-editor-item-focus'
+import {
+  buildModuleEditorItemDuplicateColumn,
+  EDITOR_ITEM_ACTIONS_COLUMN_KEY,
+} from './components/module-editor-item-row-actions'
 
 interface Props {
   moduleKey: string
@@ -72,6 +82,7 @@ export function useModuleEditorItemColumns({
   onDragEnd,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
+  const { t } = useTranslation()
   const { warehouses, materials } = useMasterOptions({
     warehouses: true,
     materials: true,
@@ -83,6 +94,10 @@ export function useModuleEditorItemColumns({
   const [materialSearchKeyword, setMaterialSearchKeyword] = useState('')
   const [debouncedMaterialSearchKeyword, setDebouncedMaterialSearchKeyword] =
     useState('')
+  /** 刚复制出的新行 id：渲染完成后把焦点落到该行首格。 */
+  const [pendingFocusItemId, setPendingFocusItemId] = useState<string | null>(
+    null,
+  )
   const totalItemColumnCount = config.itemColumns?.length ?? 0
   const defaultHiddenItemColumnKeys = config?.itemColumnConfig?.hiddenByDefault
   const {
@@ -231,6 +246,75 @@ export function useModuleEditorItemColumns({
     )
   }
 
+  /** 行标识：优先商品名称/编码，用于行右键菜单可访问名与按钮 aria-label。 */
+  const resolveItemRowLabel = useCallback(
+    (item: ModuleLineItem) =>
+      asString(item.materialName).trim() ||
+      asString(item.materialCode).trim() ||
+      asString(item.material).trim() ||
+      String(item.id),
+    [],
+  )
+
+  // 复制本行：只读、明细锁定、上游导入锁定或保存中时不可用
+  const canDuplicateItem =
+    canManageItems &&
+    canEditItemColumns &&
+    !lineItemsLocked &&
+    !parentImportedItemEditLocked
+
+  const handleDuplicateItem = useCallback(
+    (itemId: string) => {
+      const duplicated = duplicateEditorLineItem(items, itemId)
+      if (!duplicated) return
+      setItems(duplicated.items)
+      // 焦点落到新行首格须等表格渲染出新行，这里先记下 id
+      setPendingFocusItemId(duplicated.newItemId)
+    },
+    [items, setItems],
+  )
+
+  useEffect(() => {
+    if (!pendingFocusItemId) return
+    const row = document.querySelector<HTMLElement>(
+      `.module-items-table-shell tr[data-row-key="${pendingFocusItemId}"]`,
+    )
+    focusFirstEditableItemCell(row)
+    setPendingFocusItemId(null)
+  }, [pendingFocusItemId])
+
+  const duplicateItemLabel = t('modules.itemsSection.duplicateItem')
+
+  /** 行右键菜单：与行内「复制本行」按钮共用同一份动作与可用性口径。 */
+  const itemRowMenus = useMemo<RowContextMenuMap>(() => {
+    if (!canDuplicateItem) return new Map()
+    return buildRowContextMenus({
+      records: items,
+      buildActions: (item) => [
+        {
+          key: 'duplicate',
+          label: duplicateItemLabel,
+          icon: <CopyOutlined />,
+          onClick: () => handleDuplicateItem(item.id),
+        },
+      ],
+      labelOf: resolveItemRowLabel,
+      ariaLabelOf: (label) =>
+        t('modules.table.rowContextMenuLabel', { title: label }),
+      okText: t('common.ok'),
+      cancelText: t('common.cancel'),
+      // 明细行动作没有二次确认，占位回调不会被执行
+      requestConfirm: () => undefined,
+    })
+  }, [
+    canDuplicateItem,
+    duplicateItemLabel,
+    handleDuplicateItem,
+    items,
+    resolveItemRowLabel,
+    t,
+  ])
+
   const itemColumns: TableColumnsType<ModuleLineItem> = (() => {
     if (!config.itemColumns?.length) return []
 
@@ -269,6 +353,21 @@ export function useModuleEditorItemColumns({
       }),
     )
 
+    if (canManageItems) {
+      cols.push(
+        buildModuleEditorItemDuplicateColumn({
+          title: t('hooks.gridColumns.actions'),
+          actionLabel: duplicateItemLabel,
+          ariaLabelOf: (record) =>
+            t('modules.itemsSection.duplicateItemAriaLabel', {
+              label: resolveItemRowLabel(record),
+            }),
+          disabled: !canDuplicateItem,
+          onDuplicate: handleDuplicateItem,
+        }),
+      )
+    }
+
     return cols
   })()
 
@@ -276,7 +375,7 @@ export function useModuleEditorItemColumns({
     handleColumnVisibilityChange(toggleColumnVisibility(columnVisibility, key))
   }
 
-  // 选择/拖拽/序号列不参与列宽拖拽
+  // 选择/拖拽/序号/行操作列不参与列宽拖拽
   const { columns: resizableItemColumns, components: itemTableComponents } =
     useColumnResizing<ModuleLineItem>({
       columns: itemColumns,
@@ -285,13 +384,16 @@ export function useModuleEditorItemColumns({
       onResizeCommit: handleColumnResizeCommit,
       onResizeReset: handleColumnResizeReset,
       isResizable: (column) =>
-        column.key !== 'selection' && column.key !== '_index',
+        column.key !== 'selection' &&
+        column.key !== '_index' &&
+        column.key !== EDITOR_ITEM_ACTIONS_COLUMN_KEY,
     })
 
   return {
     itemColumns: resizableItemColumns,
     itemTableComponents,
     itemColumnOrder,
+    itemRowMenus,
     onItemColumnOrderChange: handleColumnOrderChange,
     toggleItemColumn,
     visibleItemColumnKeys,

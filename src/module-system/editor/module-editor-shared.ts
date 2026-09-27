@@ -71,7 +71,8 @@ export function hasMaterialSelection(record?: ModuleLineItem | null) {
   )
 }
 
-function buildModuleLineItemId() {
+/** 编辑器明细行的本地临时主键（尚未落库的新行）。 */
+export function createEditorLineItemId() {
   return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
@@ -103,7 +104,7 @@ export function generateBatchNo(): string {
 }
 
 export function buildDefaultEditorLineItem(
-  itemId = buildModuleLineItemId(),
+  itemId = createEditorLineItemId(),
   moduleKey?: string,
 ): ModuleLineItem {
   return {
