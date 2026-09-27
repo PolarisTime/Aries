@@ -294,6 +294,80 @@ describe('SheetPanel 指定品牌展示', () => {
     )
   })
 
+  /**
+   * 回归: 吨位/现货输入曾对 Tab 一律 preventDefault, 到列首/列尾找不到目标时
+   * 焦点原地不动 —— 单行单据下整列变成焦点陷阱, 现货价与供应商列永远到不了。
+   */
+  it('吨位/现货列到边界时放行默认 Tab, 不再形成焦点陷阱', () => {
+    renderStateful({ ...makeSheet() }, [{ ...baseRow, id: 'r1' }])
+
+    const ton = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    const tonTab = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      ton?.dispatchEvent(tonTab)
+    })
+    expect(tonTab.defaultPrevented).toBe(false)
+
+    const spot = container.querySelector<HTMLInputElement>(
+      'input[data-spot="中天:r1"]',
+    )
+    expect(spot).not.toBeNull()
+    const spotTab = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      spot?.dispatchEvent(spotTab)
+    })
+    expect(spotTab.defaultPrevented).toBe(false)
+  })
+
+  it('吨位/现货列内有下一行时仍拦截默认 Tab 并移动焦点', () => {
+    renderStateful({ ...makeSheet() }, [
+      { ...baseRow, id: 'r1' },
+      { ...baseRow, id: 'r2' },
+    ])
+
+    const ton = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    const tonTab = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      ton?.dispatchEvent(tonTab)
+    })
+    expect(tonTab.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(
+      container.querySelector<HTMLInputElement>('input[data-ton="r2"]'),
+    )
+
+    const spot = container.querySelector<HTMLInputElement>(
+      'input[data-spot="中天:r1"]',
+    )
+    const spotTab = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      spot?.dispatchEvent(spotTab)
+    })
+    expect(spotTab.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(
+      container.querySelector<HTMLInputElement>('input[data-spot="中天:r2"]'),
+    )
+  })
+
   it('点击"添加隔断"追加一行隔断行', () => {
     const observed = renderStateful({ ...makeSheet() }, [{ ...baseRow }])
 

@@ -90,10 +90,10 @@ function moveFocusBy(
   rowId: string,
   delta: number,
   selectorOf: (row: PriceRow) => string,
-) {
-  if (delta === 0) return
+): boolean {
+  if (delta === 0) return false
   const index = orderedRows.findIndex((row) => row.id === rowId)
-  if (index < 0) return
+  if (index < 0) return false
   for (let i = index + delta; i >= 0 && i < orderedRows.length; i += delta) {
     const input = document.querySelector<HTMLInputElement>(
       selectorOf(orderedRows[i]),
@@ -101,8 +101,11 @@ function moveFocusBy(
     if (!input) continue
     input.focus()
     input.select()
-    return
+    return true
   }
+  // 边界(列首/列尾): 返回 false, 调用方据此放行浏览器默认 Tab,
+  // 否则 preventDefault 后焦点原地不动, 整列会变成键盘陷阱。
+  return false
 }
 
 function moveFocus(orderedRows: PriceRow[]) {
@@ -155,8 +158,9 @@ type ColumnContext = {
   ) => void
   supplierOptions: SupplierSelectOption[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
-  moveFocus: (brandName: string, rowId: string, delta: number) => void
-  moveFocusTon: (rowId: string, delta: number) => void
+  /** 在品牌列内纵向移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
+  moveFocus: (brandName: string, rowId: string, delta: number) => boolean
+  moveFocusTon: (rowId: string, delta: number) => boolean
   /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
   purchaseOrderTonnage: PurchaseOrderTonnageDraftInput
   /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
@@ -681,12 +685,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                               event.preventDefault()
                               moveFocus(brand.name, current.id, -1)
                             } else if (event.key === 'Tab') {
-                              event.preventDefault()
-                              moveFocus(
+                              // 仅在列内成功移动时拦截默认行为; 到列首/列尾放行,
+                              // 让 Tab 能走到供应商列/下一品牌列, 避免焦点陷阱。
+                              const moved = moveFocus(
                                 brand.name,
                                 current.id,
                                 event.shiftKey ? -1 : 1,
                               )
+                              if (moved) event.preventDefault()
                             }
                           }}
                         />

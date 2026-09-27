@@ -22,7 +22,8 @@ interface TonCellProps {
   onTonChange: (value: number | undefined, warnPositive: boolean) => void
   /** 打开采购订单明细选择弹窗(由 SheetPanel 统一挂载)。 */
   onOpenPicker: () => void
-  onMoveFocus: (delta: number) => void
+  /** 在同一吨位列内移动焦点; 返回 false 表示已到边界。 */
+  onMoveFocus: (delta: number) => boolean
 }
 
 function tonValueText(value: number) {
@@ -200,10 +201,11 @@ export function TonCell({
           )
         }}
         onKeyDown={(event) => {
-          if (event.key === 'Tab') {
-            event.preventDefault()
-            onMoveFocus(event.shiftKey ? -1 : 1)
-          }
+          if (event.key !== 'Tab') return
+          // 只有真的在吨位列内移动了才拦截; 到列首/列尾放行默认 Tab,
+          // 否则(单行单据时)焦点会被永久锁死在这一格。
+          const moved = onMoveFocus(event.shiftKey ? -1 : 1)
+          if (moved) event.preventDefault()
         }}
       />
       {selected ? (

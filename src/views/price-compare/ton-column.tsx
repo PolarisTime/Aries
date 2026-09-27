@@ -33,7 +33,8 @@ export interface TonColumnContext {
   tonnageByItemId: Map<string, PurchaseOrderTonnageRecord>
   purchaseOrderTonnageLoading: boolean
   localTonByItemId: Map<string, number>
-  moveFocusTon: (rowId: string, delta: number) => void
+  /** 在吨位列内移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
+  moveFocusTon: (rowId: string, delta: number) => boolean
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
   openPurchaseOrderPicker: (rowId: string) => void

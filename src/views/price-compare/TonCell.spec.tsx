@@ -201,4 +201,57 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       document.querySelector('.price-compare-ton-popover')?.textContent,
     ).toContain('请先锁定')
   })
+
+  it('列尾按 Tab 不吞键: 放行默认行为, 由浏览器把焦点移出本格', () => {
+    const props = render({ onMoveFocus: vi.fn(() => false) })
+    const input = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      input?.dispatchEvent(event)
+    })
+    expect(props.onMoveFocus).toHaveBeenCalledWith(1)
+    // 关键: 没有 preventDefault, 否则单行单据时焦点会被永久锁死在吨位格
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('列内可移动时拦截默认 Tab, 交给 moveFocus 处理', () => {
+    const props = render({ onMoveFocus: vi.fn(() => true) })
+    const input = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      input?.dispatchEvent(event)
+    })
+    expect(props.onMoveFocus).toHaveBeenCalledWith(1)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('Shift+Tab 反向移动, 边界同样放行', () => {
+    const props = render({ onMoveFocus: vi.fn(() => false) })
+    const input = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      input?.dispatchEvent(event)
+    })
+    expect(props.onMoveFocus).toHaveBeenCalledWith(-1)
+    expect(event.defaultPrevented).toBe(false)
+  })
 })
