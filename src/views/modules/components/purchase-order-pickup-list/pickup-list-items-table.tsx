@@ -40,7 +40,6 @@ export function PickupItemsTable({
   onRemovePart,
 }: PickupItemsTableProps) {
   const { t } = useTranslation()
-  const scrollX = sumColumnWidths(columns.map((column) => column.width))
 
   const mergedColumns: TableColumnsType<PickupListRow> = columns.map(
     (column) => {
@@ -141,13 +140,28 @@ export function PickupItemsTable({
     },
   }
 
+  const scrollX = sumColumnWidths(
+    [...mergedColumns, actionColumn].map((column) => column.width),
+  )
+  // 「拆分数量」操作列紧跟拖动列: 拆分入口与拖动手柄同处行首,
+  // 不随横向滚动被推到最右端(窄屏下原本要点到表格外才能看到)。
+  const dragColumnIndex = mergedColumns.findIndex(
+    (column) => column.key === 'drag',
+  )
+  const columnsWithActions: TableColumnsType<PickupListRow> = [...mergedColumns]
+  columnsWithActions.splice(
+    dragColumnIndex >= 0 ? dragColumnIndex + 1 : columnsWithActions.length,
+    0,
+    actionColumn,
+  )
+
   return (
     <SortableContext
       items={rows.map((row) => row.rowId)}
       strategy={verticalListSortingStrategy}
     >
       <Table<PickupListRow>
-        columns={[...mergedColumns, actionColumn]}
+        columns={columnsWithActions}
         components={components}
         dataSource={rows}
         locale={{ emptyText }}

@@ -11,6 +11,7 @@ import type { PurchaseOrderPickupListItem } from '@/api/purchase/purchase-order-
 import { usePickupListColumns } from './pickup-list-columns'
 import type { PickupListRow } from './pickup-list-draft'
 import { PickupDraftGroupSection } from './pickup-list-drag-rows'
+import { DragHandle } from './pickup-list-sortable'
 
 function buildItem(
   overrides: Partial<PurchaseOrderPickupListItem>,
@@ -215,6 +216,32 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
       splitButton?.click()
     })
     expect(baseProps.onSplit).toHaveBeenCalledTimes(1)
+  })
+
+  it('拆分按钮紧跟拖动按钮(同一行首, 不再落在表格最右端)', () => {
+    // 真实列定义里第一列是拖动列(key: 'drag'), 操作列应插到它右边
+    renderSection({
+      columns: [
+        {
+          key: 'drag',
+          width: 48,
+          render: () => createElement(DragHandle, { label: '拖动第 1 行' }),
+        },
+        { title: '仓库', key: 'warehouseName', width: 112 },
+        { title: '数量', dataIndex: 'quantity', width: 72 },
+      ],
+    })
+    const cells = [
+      ...container.querySelectorAll('.ant-table-tbody tr.ant-table-row td'),
+    ]
+    const classesOf = (cell: Element) =>
+      [...cell.querySelectorAll('button')].map(
+        (button) => button.getAttribute('aria-label') ?? '',
+      )
+    expect(classesOf(cells[0])).toEqual(['拖动第 1 行'])
+    expect(classesOf(cells[1])).toEqual(['拆分数量'])
+    // 操作列不再位于行尾
+    expect(classesOf(cells[cells.length - 1])).toEqual([])
   })
 
   it('未拆分行仅展示拆分按钮, 不显示数量输入框', () => {
