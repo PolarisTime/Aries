@@ -55,6 +55,12 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
     width: SHEET_COLUMN_WIDTH.ton,
     fixed: 'left',
     align: 'center',
+    // 「报单吨位 + 合计」在固定列宽内会被裁切, 补 title 展示完整表头
+    onHeaderCell: () => ({
+      title: `${t('priceCompare.sheet.columns.ton')} ${t(
+        'priceCompare.sheet.tonTotal',
+      )}: ${ctx.tonTotalText}`,
+    }),
     render: (_value, row) =>
       isSeparatorRow(row.row) ? null : (
         <TonCell

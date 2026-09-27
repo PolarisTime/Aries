@@ -29,7 +29,8 @@
 .price-compare-head .price-compare-desc {
   margin-left: var(--space-xs);
   font-size: 12px;
-  color: var(--text-placeholder);
+  /* 对比度: placeholder 色(.25 ≈ 1.9:1)不满足 AA, 说明性文字统一提到 --text-secondary */
+  color: var(--text-secondary);
 }
 
 /*
@@ -110,7 +111,7 @@
 
 .price-compare-diff.is-zero {
   background: var(--ant-color-fill-tertiary, rgba(0, 0, 0, 0.04));
-  color: var(--text-placeholder);
+  color: var(--text-secondary);
 }
 
 .price-compare-brand-name {
@@ -121,7 +122,7 @@
 
 .price-compare-sub {
   font-size: 11px;
-  color: var(--text-placeholder);
+  color: var(--text-secondary);
 }
 
 /* 报单日期下方第二行: 品牌限定 / 备注信息 */
@@ -187,7 +188,7 @@
 
 .price-compare-legend {
   font-size: 11px;
-  color: var(--text-placeholder);
+  color: var(--text-secondary);
 }
 
 .price-compare-legend i {
@@ -245,11 +246,12 @@
 }
 
 .price-compare-supplier-header .price-compare-supplier-fill-btn {
-  height: auto;
-  min-height: 0;
+  /* 表头一键填入: 保持紧凑外观, 但点击区域不得小于 24×24(WCAG 2.2 AA) */
+  min-width: 24px;
+  min-height: 24px;
   padding: 0 var(--space-2);
   font-size: 11px;
-  color: var(--ant-color-primary, #1677ff);
+  color: var(--color-info-active, #0958d9);
 }
 
 /* 批量填入弹出层: 品牌列 + 供应商下拉 */
@@ -272,8 +274,30 @@
   gap: var(--space-2);
 }
 
+/*
+ * 非最优品牌列压暗。
+ * 对比度: 0.45 会把正文压到约 2.8:1(不满足 AA 4.5:1), 提到 0.62 后约 4.7:1,
+ * 视觉上仍明显弱于最优列。
+ */
+/*
+ * 表格内控件命中区与文字对比度补丁(集中一处, 便于复核 WCAG 2.2 AA)。
+ * - 行选择框: 方框保持原尺寸, 但可点区域补足 24×24(2.5.8)。
+ * - Typography 次要文字: antd 用 colorTextDescription(≈3.35:1), 该页 11–12px 需 4.5:1。
+ */
+.price-compare-table .ant-checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.price-compare-page .ant-typography.ant-typography-secondary {
+  color: var(--text-secondary);
+}
+
 .price-compare-dim {
-  opacity: 0.45;
+  opacity: 0.62;
 }
 
 /* 已采购行: 吨位之后的品牌价格列(网价/现货/差价/简称)整体遮蔽, 不可编辑 */
@@ -306,7 +330,7 @@
 .price-compare-separator-label {
   display: block;
   overflow: hidden;
-  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.25));
+  color: var(--text-secondary);
   font-size: 11px;
   font-style: italic;
   line-height: 14px;
@@ -398,7 +422,7 @@
 /* 行拖拽: 手柄样式 / 整行拖起 / 落点指示线 */
 .price-compare-row-drag {
   cursor: grab;
-  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.45));
+  color: var(--text-secondary);
 }
 
 .price-compare-row-drag:active {
@@ -430,7 +454,7 @@
 }
 
 .price-compare-add-row {
-  color: var(--text-placeholder);
+  color: var(--text-secondary);
   justify-content: flex-start;
 }
 
@@ -584,12 +608,17 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+  /* 点击目标: 图标本体仅 14px, 补足到 24×24 满足 WCAG 2.2 AA(2.5.8) */
+  min-width: 24px;
+  min-height: 24px;
+  justify-content: center;
   /* 触发器已改为原生 button(键盘可达): 抹掉 UA 默认外观, 保持原图标外观 */
   background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
-  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.35));
+  /* 图标为可点击控件: 需要 3:1 对比, quaternary(.25 ≈ 1.8:1)不达标 */
+  color: var(--text-secondary);
   transition: color 0.2s ease;
 }
 
@@ -601,12 +630,12 @@
 }
 
 .price-compare-ton-info:hover {
-  color: var(--ant-color-primary, #1677ff);
+  color: var(--color-info-active, #0958d9);
 }
 
 /* 选项加载中: 图标弱化提示 */
 .price-compare-ton-info--loading {
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 /* popover 内容 */
@@ -630,12 +659,12 @@
 }
 
 .price-compare-ton-popover-over {
-  color: var(--ant-color-error, #ff4d4f);
+  color: var(--color-danger-active, #d9363e);
   font-weight: 600;
 }
 
 .price-compare-ton-popover-basis {
-  color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.35));
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.3;
 }
@@ -645,7 +674,7 @@
 }
 
 .price-compare-ton-hint--over {
-  color: var(--ant-color-error, #ff4d4f);
+  color: var(--color-danger-active, #d9363e);
   font-weight: 600;
 }
 
@@ -743,5 +772,5 @@
 
 .price-compare-variety-switch {
   flex: 0 0 auto;
-  color: var(--ant-color-primary, #1677ff);
+  color: var(--color-info-active, #0958d9);
 }

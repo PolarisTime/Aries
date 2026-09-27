@@ -2404,6 +2404,15 @@ export const zhCN = {
       dateFormat: 'YYYY年M月D日',
       dragRow: '拖动调整行顺序',
       dragBrand: '拖动调整品牌列顺序',
+      a11y: {
+        table: '报单比价明细表 {{name}}',
+        selectAllRows: '全选商品行',
+        selectRow: '选择{{row}}',
+        emptyRow: '空行',
+        cell: '{{column}}，{{row}}',
+        projectBatch: '选择项目 / 批次',
+        refPeriod: '参照时段',
+      },
       columns: {
         remark: '备注',
         brand: '品牌',

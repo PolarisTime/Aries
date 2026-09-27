@@ -2480,6 +2480,15 @@ export const enUS = {
       dateFormat: 'YYYY-MM-DD',
       dragRow: 'Drag to reorder rows',
       dragBrand: 'Drag to reorder brand columns',
+      a11y: {
+        table: 'Order price comparison table {{name}}',
+        selectAllRows: 'Select all product rows',
+        selectRow: 'Select {{row}}',
+        emptyRow: 'empty row',
+        cell: '{{column}}, {{row}}',
+        projectBatch: 'Select project / batch',
+        refPeriod: 'Reference period',
+      },
       columns: {
         remark: 'Remark',
         brand: 'Brand',

@@ -173,6 +173,13 @@ export function TonCell({
     <div className="price-compare-ton-cell">
       <Input
         key={`ton:${rowId}:${row.ton ?? ''}`}
+        aria-label={t('priceCompare.sheet.a11y.cell', {
+          column: t('priceCompare.sheet.columns.ton'),
+          row:
+            [row.category, row.material, row.spec, row.length]
+              .filter(Boolean)
+              .join(' ') || t('priceCompare.sheet.a11y.emptyRow'),
+        })}
         className={
           lockedClassName
             ? `price-compare-ton ${lockedClassName}`

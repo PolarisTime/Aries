@@ -800,6 +800,16 @@
   user-select: none;
 }
 
+/* 标签关闭按钮: antd 默认命中区仅 12×12, 不足 WCAG 2.2 AA(2.5.8) 的 24×24 */
+.leo-tabbar .ant-tabs-tab-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  margin-inline-start: 0;
+}
+
 /* 全局面包屑：标签栏与内容区之间，展示页面层级归属(与标签互补) */
 .leo-breadcrumb {
   flex: 0 0 auto;

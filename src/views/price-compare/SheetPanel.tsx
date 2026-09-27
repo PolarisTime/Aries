@@ -197,6 +197,9 @@ const cellOf = (
   title,
   width,
   align: 'center' as const,
+  // 列宽固定且字号小, 表头文案会被裁切: 补 title 让鼠标用户能看到完整列名
+  onHeaderCell: () =>
+    typeof title === 'string' ? { title } : ({} as { title?: string }),
   // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购(关联采购订单)行整体遮蔽该区
   render: (value: unknown, row: GridRow) =>
     isSeparatorRow(row.row) ? null : isPurchasedRow(row.row) ? (
@@ -298,6 +301,15 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     brand.categories.length === 0 ||
     !category ||
     brand.categories.includes(category)
+  /** 行可访问名称: 商品信息文本, 空行回退为「空行」, 供单元格与选择框拼装 aria-label。 */
+  const rowLabelOf = (row: GridRow) =>
+    [row.row.category, row.row.material, row.row.spec, row.row.length]
+      .filter(Boolean)
+      .join(' ') || t('priceCompare.sheet.a11y.emptyRow')
+  /** 单元格编辑器可访问名称: 列名 + 行名, 避免整表出现无名称输入控件。 */
+  const cellLabel = (column: string, row: GridRow) =>
+    t('priceCompare.sheet.a11y.cell', { column, row: rowLabelOf(row) })
+
   const allChecked = rows.length > 0 && selectedIds.length === rows.length
   const someChecked = selectedIds.length > 0 && !allChecked
   /** 报单吨位合计: 当前单据全部商品行 ton 之和。 */
@@ -310,6 +322,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     {
       title: (
         <Checkbox
+          aria-label={t('priceCompare.sheet.a11y.selectAllRows')}
           checked={allChecked}
           indeterminate={someChecked}
           disabled={rows.length === 0}
@@ -321,6 +334,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       align: 'center',
       render: (_, row) => (
         <Checkbox
+          aria-label={t('priceCompare.sheet.a11y.selectRow', {
+            row: rowLabelOf(row),
+          })}
           checked={selectedIds.includes(row.rowId)}
           onChange={(event) => toggleSelect(row.rowId, event.target.checked)}
         />
@@ -413,12 +429,20 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             title: t('priceCompare.sheet.columns.remark'),
             dataIndex: 'remark',
             width: SHEET_COLUMN_WIDTH.remark,
+            // 列名在 154px 内会被裁切: 补 title 提供完整文案(鼠标悬停可见)
+            onHeaderCell: () => ({
+              title: t('priceCompare.sheet.columns.remark'),
+            }),
             fixed: 'left' as const,
             align: 'center' as const,
             render: (_: unknown, row: GridRow) =>
               isSeparatorRow(row.row) ? null : (
                 <Input
                   key={`remark:${row.rowId}:${row.row.remark ?? ''}`}
+                  aria-label={cellLabel(
+                    t('priceCompare.sheet.columns.remark'),
+                    row,
+                  )}
                   className="price-compare-row-remark"
                   size="small"
                   variant="borderless"
@@ -444,6 +468,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       title: t('priceCompare.sheet.columns.category'),
       dataIndex: 'category',
       width: SHEET_COLUMN_WIDTH.category,
+      onHeaderCell: () => ({ title: t('priceCompare.sheet.columns.category') }),
       fixed: 'left',
       align: 'center',
       render: (_, row) =>
@@ -459,6 +484,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       title: t('priceCompare.sheet.columns.variety'),
       dataIndex: 'base',
       width: SHEET_COLUMN_WIDTH.spec,
+      onHeaderCell: () => ({ title: t('priceCompare.sheet.columns.variety') }),
       fixed: 'left',
       render: (_, row) => {
         const current = row.row
@@ -477,6 +503,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             <Select
               size="small"
               variant="borderless"
+              aria-label={cellLabel(
+                t('priceCompare.sheet.columns.variety'),
+                row,
+              )}
               className={quantityLockClass}
               disabled={selectDisabled}
               style={{ width: SHEET_COLUMN_WIDTH.spec - 36 }}
@@ -628,6 +658,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       const input = (
                         <Input
                           key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
+                          aria-label={cellLabel(
+                            `${brand.name} ${t('priceCompare.sheet.columns.spot')}`,
+                            row,
+                          )}
                           className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                           size="small"
                           variant="borderless"
@@ -787,6 +821,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         <Select
                           size="small"
                           variant="borderless"
+                          aria-label={cellLabel(
+                            `${brand.name} ${t('priceCompare.sheet.columns.supplierShort')}`,
+                            row,
+                          )}
                           className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                           disabled={readOnly}
                           value={input?.supplierId}
@@ -887,6 +925,10 @@ function SheetTable(props: SheetTableProps) {
   return (
     <Table<GridRow>
       className="price-compare-table"
+      // 表格没有可见标题: 用 aria-label 给 <table> 一个可访问名称(rc-table 会透传 aria-*)
+      aria-label={t('priceCompare.sheet.a11y.table', {
+        name: base.sheet.name,
+      })}
       size={base.density}
       bordered
       tableLayout="fixed"
@@ -1471,6 +1513,7 @@ function SheetHeader({
             <Select
               size="small"
               style={{ width: 110 }}
+              aria-label={t('priceCompare.sheet.a11y.refPeriod')}
               className={
                 sheet.locked && !readOnly
                   ? 'price-compare-locked-field'

@@ -55,6 +55,7 @@ export function PriceCompareProjectPicker({
         <Select
           size="small"
           style={{ width: 150 }}
+          aria-label={t('priceCompare.sheet.a11y.projectBatch')}
           placeholder={t('priceCompare.picker.addProjectBatch')}
           showSearch={{ optionFilterProp: 'label' }}
           value={null}
