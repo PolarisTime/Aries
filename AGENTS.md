@@ -9,6 +9,8 @@ The skill teaches agents when and how to call `@ant-design/cli` commands such as
 
 antd 只覆盖设计语言、组件 API 与静态检查；键盘交互与无障碍语义（菜单可访问名、打开后焦点进首项、Escape 归还焦点、禁用项可聚焦、目标 ≥24×24 等）以 W3C ARIA APG 与 WCAG 2.2 AA 为准，需自行实现并补测试。
 
+详细规范见 docs/antd-conventions.md。
+
 <!-- antd-cli setup end -->
 
 ## Skill Policy
