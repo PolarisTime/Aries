@@ -38,6 +38,61 @@ function itemSpecText(record: PurchaseOrderTonnageRecord) {
 }
 
 /**
+ * 解析吨位单元格的采购订单视图。
+ * 集中在一处: 关联明细、快照兜底、实时已开吨位与超额判定之间有先后依赖,
+ * 散在组件里会让组件的控制流难以跟进。
+ */
+function resolveTonnageView(
+  row: PriceRow,
+  options: PurchaseOrderTonnageRecord[],
+  linked: PurchaseOrderTonnageRecord | undefined,
+  localTonForItem: number,
+) {
+  const selectedId = row.purchaseOrderItemId
+  const selected =
+    linked ??
+    options.find((option) => option.purchaseOrderItemId === selectedId)
+  // 已关联但明细行不可见: 用保存时的订单号快照兜底展示。
+  const missingSnapshot =
+    selectedId !== undefined && selected === undefined
+      ? (row.purchaseOrderNo ?? selectedId)
+      : undefined
+  // 服务端已开吨位已排除当前单据, 叠加本地未保存吨位后即为实时进度。
+  const projectedIssued = selected ? selected.issuedWeight + localTonForItem : 0
+  const overLimit =
+    selected !== undefined && projectedIssued > selected.orderedWeight
+  return { selected, missingSnapshot, projectedIssued, overLimit }
+}
+
+/** 「已开 X」提示: 无关联订单时不渲染, 超额时用警告色。 */
+function IssuedWeightHint({
+  selected,
+  projectedIssued,
+  overLimit,
+}: {
+  selected: PurchaseOrderTonnageRecord | undefined
+  projectedIssued: number
+  overLimit: boolean
+}) {
+  const { t } = useTranslation()
+  if (!selected) return null
+  return (
+    <span
+      className={
+        overLimit
+          ? 'price-compare-ton-issued price-compare-ton-hint--over'
+          : 'price-compare-ton-issued'
+      }
+      title={`${selected.orderNo} ${itemSpecText(selected)}`}
+    >
+      {t('priceCompare.sheet.purchaseOrderIssuedShort', {
+        issued: tonValueText(projectedIssued),
+      })}
+    </span>
+  )
+}
+
+/**
  * 吨位单元格: 报单吨位输入 + "已开 X" 数值 + 明细图标, 横向排布不换行。
  * 鼠标悬停明细图标显示该规格行订货/已开/剩余 popover, popover 内可打开选择弹窗。
  * 超额以警告色提示(不拦截保存)。
@@ -57,22 +112,112 @@ export function TonCell({
   onMoveFocus,
 }: TonCellProps) {
   const { t } = useTranslation()
-  const selectedId = row.purchaseOrderItemId
-  const selected =
-    linked ??
-    options.find((option) => option.purchaseOrderItemId === selectedId) ??
-    undefined
-  // 已关联但明细行不可见: 用保存时的订单号快照兜底展示。
-  const missingSnapshot =
-    selectedId !== undefined && selected === undefined
-      ? (row.purchaseOrderNo ?? selectedId)
-      : undefined
-  // 服务端已开吨位已排除当前单据, 叠加本地未保存吨位后即为实时进度。
-  const projectedIssued = selected ? selected.issuedWeight + localTonForItem : 0
-  const overLimit =
-    selected !== undefined && projectedIssued > selected.orderedWeight
+  const { selected, missingSnapshot, projectedIssued, overLimit } =
+    resolveTonnageView(row, options, linked, localTonForItem)
 
   const popoverContent = selected ? (
+    <LinkedPurchaseOrderPopover
+      selected={selected}
+      projectedIssued={projectedIssued}
+      overLimit={overLimit}
+      rowLocked={rowLocked}
+      onOpenPicker={onOpenPicker}
+    />
+  ) : (
+    <UnlinkedPurchaseOrderPopover
+      missingSnapshot={missingSnapshot}
+      rowLocked={rowLocked}
+      onOpenPicker={onOpenPicker}
+    />
+  )
+
+  return (
+    <div className="price-compare-ton-cell">
+      <Input
+        key={`ton:${rowId}:${row.ton ?? ''}`}
+        aria-label={t('priceCompare.sheet.a11y.cell', {
+          column: t('priceCompare.sheet.columns.ton'),
+          row:
+            [row.category, row.material, row.spec, row.length]
+              .filter(Boolean)
+              .join(' ') || t('priceCompare.sheet.a11y.emptyRow'),
+        })}
+        className={
+          lockedClassName
+            ? `price-compare-ton ${lockedClassName}`
+            : 'price-compare-ton'
+        }
+        size="small"
+        variant="borderless"
+        inputMode="decimal"
+        disabled={disabled}
+        data-ton={rowId}
+        defaultValue={row.ton === undefined ? '' : String(row.ton)}
+        onBlur={(event) => {
+          const raw = event.target.value
+          const value = Number(raw)
+          onTonChange(
+            raw === '' ? undefined : Number.isNaN(value) ? undefined : value,
+            raw !== '' && (Number.isNaN(value) || value <= 0),
+          )
+        }}
+        onPressEnter={(event) => {
+          const raw = (event.target as HTMLInputElement).value
+          const value = Number(raw)
+          onTonChange(
+            raw === '' || Number.isNaN(value) ? undefined : value,
+            false,
+          )
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') return
+          // 只有真的在吨位列内移动了才拦截; 到列首/列尾放行默认 Tab,
+          // 否则(单行单据时)焦点会被永久锁死在这一格。
+          const moved = onMoveFocus(event.shiftKey ? -1 : 1)
+          if (moved) event.preventDefault()
+        }}
+      />
+      <IssuedWeightHint
+        selected={selected}
+        projectedIssued={projectedIssued}
+        overLimit={overLimit}
+      />
+      <Popover
+        content={popoverContent}
+        placement="right"
+        trigger={['hover', 'click']}
+        mouseEnterDelay={0.15}
+      >
+        {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
+            弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}
+        <button
+          aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
+          className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
+          type="button"
+        >
+          <InfoCircleOutlined />
+        </button>
+      </Popover>
+    </div>
+  )
+}
+
+/** 已关联采购订单的明细弹层: 订货/已开/剩余 + 超额提示。 */
+function LinkedPurchaseOrderPopover({
+  selected,
+  projectedIssued,
+  overLimit,
+  rowLocked,
+  onOpenPicker,
+}: {
+  selected: PurchaseOrderTonnageRecord
+  projectedIssued: number
+  overLimit: boolean
+  rowLocked: boolean
+  onOpenPicker: () => void
+}) {
+  const { t } = useTranslation()
+  return (
     <div className="price-compare-ton-popover">
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
@@ -135,7 +280,21 @@ export function TonCell({
         </div>
       ) : null}
     </div>
-  ) : (
+  )
+}
+
+/** 未关联(或明细已不可见)时的弹层: 说明当前关联状态并提供选择入口。 */
+function UnlinkedPurchaseOrderPopover({
+  missingSnapshot,
+  rowLocked,
+  onOpenPicker,
+}: {
+  missingSnapshot?: string
+  rowLocked: boolean
+  onOpenPicker: () => void
+}) {
+  const { t } = useTranslation()
+  return (
     <div className="price-compare-ton-popover">
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
@@ -166,85 +325,6 @@ export function TonCell({
           {t('priceCompare.sheet.purchaseOrderLockFirst')}
         </div>
       ) : null}
-    </div>
-  )
-
-  return (
-    <div className="price-compare-ton-cell">
-      <Input
-        key={`ton:${rowId}:${row.ton ?? ''}`}
-        aria-label={t('priceCompare.sheet.a11y.cell', {
-          column: t('priceCompare.sheet.columns.ton'),
-          row:
-            [row.category, row.material, row.spec, row.length]
-              .filter(Boolean)
-              .join(' ') || t('priceCompare.sheet.a11y.emptyRow'),
-        })}
-        className={
-          lockedClassName
-            ? `price-compare-ton ${lockedClassName}`
-            : 'price-compare-ton'
-        }
-        size="small"
-        variant="borderless"
-        inputMode="decimal"
-        disabled={disabled}
-        data-ton={rowId}
-        defaultValue={row.ton === undefined ? '' : String(row.ton)}
-        onBlur={(event) => {
-          const raw = event.target.value
-          const value = Number(raw)
-          onTonChange(
-            raw === '' ? undefined : Number.isNaN(value) ? undefined : value,
-            raw !== '' && (Number.isNaN(value) || value <= 0),
-          )
-        }}
-        onPressEnter={(event) => {
-          const raw = (event.target as HTMLInputElement).value
-          const value = Number(raw)
-          onTonChange(
-            raw === '' || Number.isNaN(value) ? undefined : value,
-            false,
-          )
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== 'Tab') return
-          // 只有真的在吨位列内移动了才拦截; 到列首/列尾放行默认 Tab,
-          // 否则(单行单据时)焦点会被永久锁死在这一格。
-          const moved = onMoveFocus(event.shiftKey ? -1 : 1)
-          if (moved) event.preventDefault()
-        }}
-      />
-      {selected ? (
-        <span
-          className={
-            overLimit
-              ? 'price-compare-ton-issued price-compare-ton-hint--over'
-              : 'price-compare-ton-issued'
-          }
-          title={`${selected.orderNo} ${itemSpecText(selected)}`}
-        >
-          {t('priceCompare.sheet.purchaseOrderIssuedShort', {
-            issued: tonValueText(projectedIssued),
-          })}
-        </span>
-      ) : null}
-      <Popover
-        content={popoverContent}
-        placement="right"
-        trigger={['hover', 'click']}
-        mouseEnterDelay={0.15}
-      >
-        {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
-            弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}
-        <button
-          aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
-          className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
-          type="button"
-        >
-          <InfoCircleOutlined />
-        </button>
-      </Popover>
     </div>
   )
 }

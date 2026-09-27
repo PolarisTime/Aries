@@ -1954,6 +1954,82 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.hasUnsavedChanges).toBe(false)
   })
 
+  it('新建单据 create 响应带回的服务端行 id 会立即回填到本地行', async () => {
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({
+        id: '9002',
+        name: '批次 2',
+        items: [
+          {
+            id: '7701',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400E',
+            spec: 12,
+            length: '9米',
+            prices: [],
+          },
+        ],
+      }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+    // 行 id 已对齐: 否则后续行级更新会打到 items/{本地 id} 被后端判为非法(400)
+    expect(store.current.rows.map((row) => row.id)).toEqual(['7701'])
+  })
+
+  it('撤销/重做可用性来自历史深度镜像, 编辑后可撤销、撤销后可重做', async () => {
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.canUndo).toBe(false)
+    expect(store.current.canRedo).toBe(false)
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { remark: '第一次' })
+    })
+    expect(store.current.canUndo).toBe(true)
+    expect(store.current.active.remark).toBe('第一次')
+
+    act(() => {
+      store.current.undo()
+    })
+    expect(store.current.active.remark).toBeUndefined()
+    expect(store.current.canUndo).toBe(false)
+    expect(store.current.canRedo).toBe(true)
+
+    act(() => {
+      store.current.redo()
+    })
+    expect(store.current.active.remark).toBe('第一次')
+    expect(store.current.canRedo).toBe(false)
+  })
+
   it('新建批次尚未具备可落库内容时不显示未保存', async () => {
     const store = renderStore()
     await hydrate(store)

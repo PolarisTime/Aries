@@ -77,7 +77,14 @@ export type SheetInput = {
 export type SheetInputs = Record<string, SheetInput>
 
 export type PriceSheet = {
+  /** 本地单据 id(与服务端 id 对齐前只有本地含义) */
   id: string
+  /**
+   * 服务端单据 id。
+   * 与 id 分开保存是为了让渲染期能直接派生"当前批次的 serverId"(编辑锁按 serverId 记账),
+   * 不必在渲染期读取可变的 serverIdRef —— 那会破坏 React Compiler 的优化前提。
+   */
+  serverId?: string
   name: string
   status: string
   projectId: string

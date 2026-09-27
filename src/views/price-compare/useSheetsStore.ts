@@ -183,6 +183,43 @@ function buildConfigPayload(config: ProjectConfig): QuoteProjectConfigPayload {
 }
 
 /**
+ * 渲染期派生: 当前项目配置、配置是否已加载, 以及编辑锁视图。
+ * <p>集中放在模块级纯函数里有两个目的: 让 hook 本体保持浅层控制流,
+ * 并且避免在渲染期读取可变的 serverIdRef(改由单据自身的 serverId 派生)。</p>
+ */
+function deriveActiveViews(params: {
+  active: PriceSheet | undefined
+  activeId: string
+  configs: Snapshot['configs']
+  editLock: EditLockView | null
+  lockPendingServerId: string | null
+}): {
+  config: ProjectConfig
+  configLoaded: boolean
+  activeLock: EditLockView | null
+  lockPending: boolean
+  readOnly: boolean
+} {
+  const { active, activeId, configs, editLock } = params
+  const projectId = active?.projectId
+  // 注意: 这里直接读 state.configs(而不是 configOf —— 它内部读 stateRef, 渲染期读 ref 会破坏编译器优化)
+  const config = (projectId ? configs[projectId] : undefined) ?? emptyConfig()
+  // 配置已从服务端加载(区分"未初始化"与"用户显式清空品牌")
+  const configLoaded = Boolean(projectId && configs[projectId])
+  // editLock 按 serverId 记账: activeId 可能仍是本地 id, 先取单据自身的 serverId
+  const activeServerId = active?.serverId ?? activeId
+  const activeLock =
+    editLock && editLock.sheetId === activeServerId ? editLock : null
+  // 锁结论未知(已发起签出但服务端尚未返回): 按只读处理, 不做 fail-open
+  const lockPending = Boolean(
+    params.lockPendingServerId && params.lockPendingServerId === activeServerId,
+  )
+  const readOnly =
+    lockPending || Boolean(activeLock && activeLock.locked && !activeLock.mine)
+  return { config, configLoaded, activeLock, lockPending, readOnly }
+}
+
+/**
  * 由保存结论与未保存集合推导单据保存状态。
  * 优先级: 在途 > 冲突 > 失败 > 新的未落库改动 > 已保存 > 无变化。
  */
@@ -577,8 +614,17 @@ export function useSheetsStore(options?: {
   }, [routeActive])
   const token = useAuthStore((state) => state.token)
   const [state, setState] = useState<Snapshot>(defaultState)
-  const [loading, setLoading] = useState(true)
+  /**
+   * 初值直接由 token 推导: 未登录时无需骨架屏, 也就不必在 effect 里同步 setState
+   * (effect 内同步更新会多触发一轮渲染)。
+   */
+  const [loading, setLoading] = useState(() => Boolean(token))
   const [, forceRender] = useState(0)
+  /**
+   * 撤销/重做可用性镜像。
+   * historyRef 是可变的, 渲染期读取会破坏 React Compiler 的优化前提, 因此把深度同步到 state。
+   */
+  const [historyDepth, setHistoryDepth] = useState({ past: 0, future: 0 })
   const stateRef = useRef(state)
   const historyRef = useRef<History>({
     past: [],
@@ -586,6 +632,14 @@ export function useSheetsStore(options?: {
     lastKey: '',
     lastTime: 0,
   })
+  /** 把 historyRef 的深度同步到 state(供渲染期判断撤销/重做可用性)。 */
+  const syncHistoryDepth = useCallback(() => {
+    setHistoryDepth({
+      past: historyRef.current.past.length,
+      future: historyRef.current.future.length,
+    })
+  }, [])
+
   /** 本地单据 id -> 服务端单据 id(新建成功后填充)。 */
   const serverIdRef = useRef<Map<string, string>>(new Map())
   /** 本地数据版本指纹: 每次提交/静默写入自增, 用于刷新期间检测新增编辑。 */
@@ -795,27 +849,31 @@ export function useSheetsStore(options?: {
     stateRef.current = state
   }, [state])
 
-  const commit = useCallback((next: Snapshot, coalesceKey?: string) => {
-    const history = historyRef.current
-    const now = Date.now()
-    const coalesce =
-      Boolean(coalesceKey) &&
-      coalesceKey === history.lastKey &&
-      now - history.lastTime < COALESCE_MS
-    if (!coalesce) {
-      history.past = [
-        ...history.past.slice(-(HISTORY_LIMIT - 1)),
-        stateRef.current,
-      ]
-      history.future = []
-    }
-    history.lastKey = coalesceKey ?? ''
-    history.lastTime = now
-    dataRevisionRef.current += 1
-    stateRef.current = next
-    setState(next)
-    forceRender((version) => version + 1)
-  }, [])
+  const commit = useCallback(
+    (next: Snapshot, coalesceKey?: string) => {
+      const history = historyRef.current
+      const now = Date.now()
+      const coalesce =
+        Boolean(coalesceKey) &&
+        coalesceKey === history.lastKey &&
+        now - history.lastTime < COALESCE_MS
+      if (!coalesce) {
+        history.past = [
+          ...history.past.slice(-(HISTORY_LIMIT - 1)),
+          stateRef.current,
+        ]
+        history.future = []
+        syncHistoryDepth()
+      }
+      history.lastKey = coalesceKey ?? ''
+      history.lastTime = now
+      dataRevisionRef.current += 1
+      stateRef.current = next
+      setState(next)
+      forceRender((version) => version + 1)
+    },
+    [syncHistoryDepth],
+  )
 
   const apply = useCallback(
     (updater: (current: Snapshot) => Snapshot, coalesceKey?: string) => {
@@ -862,6 +920,16 @@ export function useSheetsStore(options?: {
     }
   }, [])
 
+  /**
+   * 丢弃撤销/重做历史。
+   * 初次加载会用 commit 写入快照, 若不清理, 用户打开页面后第一次撤销会回退到
+   * "加载前的空状态"(整表消失), 这是无人期望的"撤销"。
+   */
+  const resetHistory = useCallback(() => {
+    historyRef.current = { past: [], future: [], lastKey: '', lastTime: 0 }
+    syncHistoryDepth()
+  }, [syncHistoryDepth])
+
   /** 回填单据服务端版本(不进入撤销历史)。 */
   const applySheetVersion = useCallback(
     (sheetId: string, version: string | undefined) => {
@@ -870,6 +938,23 @@ export function useSheetsStore(options?: {
         ...current,
         sheets: current.sheets.map((sheet) =>
           sheet.id === sheetId ? { ...sheet, version } : sheet,
+        ),
+      }))
+    },
+    [mutate],
+  )
+
+  /**
+   * 回填单据 serverId(不进入撤销历史)。
+   * 同时写入 ref(命令式路径使用)与 state(渲染期派生 activeServerId 使用, 避免渲染期读 ref)。
+   */
+  const bindSheetServerId = useCallback(
+    (sheetId: string, serverId: string) => {
+      serverIdRef.current.set(sheetId, serverId)
+      mutate((current) => ({
+        ...current,
+        sheets: current.sheets.map((sheet) =>
+          sheet.id === sheetId ? { ...sheet, serverId } : sheet,
         ),
       }))
     },
@@ -1179,6 +1264,42 @@ export function useSheetsStore(options?: {
     [mutate],
   )
 
+  /**
+   * 新建单据成功后用服务端明细回填本地行 id。
+   * <p>create 请求体已带全部可落库行, 服务端会为它们生成服务端 id; 若不同步回本地,
+   * 之后的行级更新会带本地 id 打到 `items/{localId}` 被后端判为参数非法(400)。</p>
+   * <p>匹配策略: 服务端按请求顺序返回明细, 这里逐项校验内容一致才回填; 任何一项对不上
+   * (顺序变化/字段被归一)就整体放弃, 宁可不回填也不能把行 id 张冠李戴。</p>
+   */
+  const alignCreatedRowIds = useCallback(
+    (sheetId: string, items: QuoteSheetRecord['items']) => {
+      const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
+      if (!sheet) return
+      // 与 buildPayload 的过滤/顺序保持一致: 只有可落库行会被提交
+      const localRows = sheet.rows.filter(isPersistableRow)
+      if (localRows.length !== items.length) return
+      const matched = localRows.every((row, index) => {
+        const item = items[index]
+        if (!item) return false
+        const rowType = isSeparatorRow(row) ? 'SEPARATOR' : 'PRODUCT'
+        return (
+          item.rowType === rowType &&
+          (item.category ?? '') === (row.category ?? '') &&
+          (item.material ?? '') === (row.material ?? '') &&
+          (item.length ?? '') === (row.length ?? '')
+        )
+      })
+      if (!matched) return
+      localRows.forEach((row, index) => {
+        const serverId = items[index]?.id
+        if (serverId && serverId !== row.id) {
+          remapItemId(sheetId, row.id, serverId)
+        }
+      })
+    },
+    [remapItemId],
+  )
+
   const saveSheetNow = useCallback(
     async (sheetId: string) => {
       await runSerialized(`${SHEET_SAVE_KEY_PREFIX}${sheetId}`, async () => {
@@ -1214,13 +1335,18 @@ export function useSheetsStore(options?: {
           if (!created) return
           try {
             const saved = await createQuoteSheet(created)
-            serverIdRef.current.set(sheet.id, saved.id)
+            bindSheetServerId(sheet.id, saved.id)
             applySheetVersion(sheet.id, saved.version)
+            // 先对齐行 id, 再基于对齐后的行重建基线(否则基线仍按本地 id 记账)
+            alignCreatedRowIds(sheet.id, saved.items)
+            const aligned =
+              stateRef.current.sheets.find((item) => item.id === sheet.id) ??
+              sheet
             baselineRef.current.set(
               sheet.id,
               buildBaseline({
-                ...sheet,
-                version: saved.version ?? sheet.version,
+                ...aligned,
+                version: saved.version ?? aligned.version,
               }),
             )
             broadcastSaved()
@@ -1366,7 +1492,9 @@ export function useSheetsStore(options?: {
       })
     },
     [
+      alignCreatedRowIds,
       applySheetVersion,
+      bindSheetServerId,
       broadcastSaved,
       clearSheetDirty,
       configOf,
@@ -1706,10 +1834,8 @@ export function useSheetsStore(options?: {
   // 初次加载: 拉取全部单据(服务端为唯一数据源)
   useEffect(() => {
     if (hydratedRef.current) return
-    if (!token) {
-      setLoading(false)
-      return
-    }
+    // 未登录: loading 初值已为 false, 直接返回, 不做同步 setState
+    if (!token) return
     hydratedRef.current = true
     const controller = new AbortController()
     fetchQuoteSheets(controller.signal)
@@ -1725,6 +1851,8 @@ export function useSheetsStore(options?: {
           activeId: sheets[0].id,
           configs: stateRef.current.configs,
         })
+        // 初次加载不是用户编辑: 清掉历史, 避免第一次撤销把整表撤没
+        resetHistory()
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
@@ -1734,7 +1862,7 @@ export function useSheetsStore(options?: {
       })
       .finally(() => setLoading(false))
     return () => controller.abort()
-  }, [token, commit])
+  }, [token, commit, resetHistory])
 
   const clearHeldLockTimer = useCallback(() => {
     const held = heldLockRef.current
@@ -2047,22 +2175,17 @@ export function useSheetsStore(options?: {
       state.sheets[0],
     [state.sheets, state.activeId],
   )
-  const config = configOf(active?.projectId ?? '')
-  /** 当前项目配置是否已从服务端加载(用于区分未初始化与用户显式清空品牌)。 */
-  const configLoaded = Boolean(
-    active?.projectId && state.configs[active.projectId],
-  )
-  // editLock 按 serverId 记账: activeId 可能仍是本地 id, 需先反查映射
-  const activeServerId =
-    serverIdRef.current.get(state.activeId) ?? state.activeId
-  const activeLock =
-    editLock && editLock.sheetId === activeServerId ? editLock : null
-  /** 锁结论未知(已发起签出但服务端尚未返回): 按只读处理, 不做 fail-open。 */
-  const lockPending = Boolean(
-    lockPendingServerId && lockPendingServerId === activeServerId,
-  )
-  const readOnly =
-    lockPending || Boolean(activeLock && activeLock.locked && !activeLock.mine)
+  const { config, configLoaded, activeLock, lockPending, readOnly } =
+    deriveActiveViews({
+      active,
+      activeId: state.activeId,
+      configs: state.configs,
+      editLock,
+      lockPendingServerId,
+    })
+  /** 撤销/重做可用性来自 historyDepth 镜像(渲染期不读 historyRef)。 */
+  const canUndo = historyDepth.past > 0
+  const canRedo = historyDepth.future > 0
   const readOnlyRef = useRef(false)
   useEffect(() => {
     readOnlyRef.current = readOnly
@@ -2084,7 +2207,8 @@ export function useSheetsStore(options?: {
           projectId,
           controller.signal,
         )
-        apply((current) => {
+        // 服务端配置加载不是用户编辑: 静默写入, 不进入撤销历史, 也不据此判定本地有改动
+        mutate((current) => {
           if (current.configs[projectId]) return current
           const sheetBrands = current.sheets.find(
             (sheet) => sheet.projectId === projectId && sheet.brands?.length,
@@ -2106,7 +2230,7 @@ export function useSheetsStore(options?: {
       }
     })()
     return () => controller.abort()
-  }, [token, active?.projectId, state.configs, apply, flushBlockedSaves])
+  }, [active?.projectId, flushBlockedSaves, mutate, state.configs, token])
 
   /** 撤销/重做时保留当前锁字段: 锁是并发控制状态, 不应被历史回滚覆盖。 */
   const preserveLockFields = useCallback((snapshot: Snapshot): Snapshot => {
@@ -2141,6 +2265,7 @@ export function useSheetsStore(options?: {
       HISTORY_LIMIT,
     )
     history.lastKey = ''
+    syncHistoryDepth()
     stateRef.current = target
     setState(target)
     forceRender((version) => version + 1)
@@ -2151,7 +2276,12 @@ export function useSheetsStore(options?: {
       )?.projectId
       if (projectId) scheduleSaveConfig(projectId)
     }
-  }, [preserveLockFields, scheduleSaveSheet, scheduleSaveConfig])
+  }, [
+    preserveLockFields,
+    scheduleSaveConfig,
+    scheduleSaveSheet,
+    syncHistoryDepth,
+  ])
 
   const redo = useCallback(() => {
     // 只读态(他人签出)禁用重做, 且不进入历史回滚
@@ -2167,6 +2297,7 @@ export function useSheetsStore(options?: {
       stateRef.current,
     ]
     history.lastKey = ''
+    syncHistoryDepth()
     stateRef.current = target
     setState(target)
     forceRender((version) => version + 1)
@@ -2177,7 +2308,12 @@ export function useSheetsStore(options?: {
       )?.projectId
       if (projectId) scheduleSaveConfig(projectId)
     }
-  }, [preserveLockFields, scheduleSaveSheet, scheduleSaveConfig])
+  }, [
+    preserveLockFields,
+    scheduleSaveConfig,
+    scheduleSaveSheet,
+    syncHistoryDepth,
+  ])
 
   const setConfig = (patch: Partial<ProjectConfig>) => {
     const projectId = active?.projectId ?? ''
@@ -2398,14 +2534,8 @@ export function useSheetsStore(options?: {
     discardLocalChangesAndReload,
     setConfig,
     setBrands,
-    canUndo:
-      !readOnly &&
-      !active?.specQuantityLocked &&
-      historyRef.current.past.length > 0,
-    canRedo:
-      !readOnly &&
-      !active?.specQuantityLocked &&
-      historyRef.current.future.length > 0,
+    canUndo: canUndo && !readOnly && !active?.specQuantityLocked,
+    canRedo: canRedo && !readOnly && !active?.specQuantityLocked,
     undo,
     redo,
     setRows: updateActiveRows,
@@ -2452,6 +2582,7 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
   }
   return {
     id: record.id,
+    serverId: record.id,
     name: record.name,
     status: record.status ?? '报价',
     projectId: record.projectId ?? '',

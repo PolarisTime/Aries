@@ -1443,193 +1443,318 @@ function SheetHeader({
     option: { value: string; label: string } | undefined,
   ) => void
 }) {
+  return (
+    <Flex vertical gap={8} className="price-compare-toolbar">
+      <SheetDateFields
+        sheet={sheet}
+        refDate={refDate}
+        refPeriod={refPeriod}
+        patchSheet={patchSheet}
+        periods={periods}
+        availability={availability}
+        allowHrb400eFallback={allowHrb400eFallback}
+        readOnly={readOnly}
+      />
+
+      <SheetMetaRow
+        readOnly={readOnly}
+        remark={remark}
+        onRemarkChange={onRemarkChange}
+        designatedBrands={designatedBrands}
+      />
+
+      <SheetActionRow
+        sheet={sheet}
+        readOnly={readOnly}
+        patchSheet={patchSheet}
+        bestOn={bestOn}
+        onToggleBest={onToggleBest}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        hideRemark={hideRemark}
+        brands={brands}
+        hiddenBrands={hiddenBrands}
+        onToggleRemark={onToggleRemark}
+        onToggleBrand={onToggleBrand}
+        onOpenConfig={onOpenConfig}
+        selectedCount={selectedCount}
+        supplierOptions={supplierOptions}
+        onFillSupplierSelected={onFillSupplierSelected}
+        onRemoveSelected={onRemoveSelected}
+      />
+    </Flex>
+  )
+}
+
+/**
+ * 表头第一行: 项目名 + 报单日期 + 参照日期/时段 + E 兜底标记。
+ * 从 SheetHeader 拆出: 该行分支较多, 混在表头里会让表头控制流难以跟进。
+ */
+function SheetDateFields({
+  sheet,
+  refDate,
+  refPeriod,
+  patchSheet,
+  periods,
+  availability,
+  allowHrb400eFallback,
+  readOnly,
+}: {
+  sheet: PriceSheet
+  refDate: string
+  refPeriod: string
+  patchSheet: (id: string, patch: Partial<PriceSheet>) => void
+  periods: string[]
+  availability: Record<string, string[]>
+  allowHrb400eFallback: boolean
+  readOnly: boolean
+}) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
   return (
-    <Flex vertical gap={8} className="price-compare-toolbar">
-      <Flex align="center" wrap="wrap" gap={8}>
-        <Flex gap="small" align="center" wrap="wrap">
-          <Text strong>
-            {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
+    <Flex align="center" wrap="wrap" gap={8}>
+      <Flex gap="small" align="center" wrap="wrap">
+        <Text strong>
+          {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
+        </Text>
+        <Space size="small">
+          <Text type="secondary" className="price-compare-sub">
+            {t('priceCompare.sheet.orderDate')}
           </Text>
-          <Space size="small">
-            <Text type="secondary" className="price-compare-sub">
-              {t('priceCompare.sheet.orderDate')}
-            </Text>
-            <DatePicker
-              size="small"
-              style={{ width: 132 }}
-              value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
-              format={dateFormat}
-              allowClear={false}
-              disabled={readOnly}
-              onChange={(value) =>
-                value &&
-                patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
-              }
-            />
-          </Space>
-          <Space size="small">
-            <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
-              <Text type="secondary" className="price-compare-sub">
-                <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
-              </Text>
-            </Tooltip>
-            <DatePicker
-              size="small"
-              style={{ width: 132 }}
-              className={
-                sheet.locked && !readOnly
-                  ? 'price-compare-locked-field'
-                  : undefined
-              }
-              value={refDate ? dayjs(refDate) : null}
-              format={dateFormat}
-              allowClear={false}
-              disabled={readOnly || Boolean(sheet.locked)}
-              cellRender={(current, info) => {
-                if (info.type !== 'date') return info.originNode
-                const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
-                const periods = availability[key] ?? []
-                return (
-                  <div className="price-compare-cal-cell">
-                    {info.originNode}
-                    <div className="price-compare-cal-dots">
-                      {['上午', '中午', '下午'].map((period) => (
-                        <i
-                          key={period}
-                          className={periods.includes(period) ? 'is-on' : ''}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )
-              }}
-              onChange={(value) => {
-                if (!value) return
-                patchSheet(sheet.id, { refDate: value.format('YYYY-MM-DD') })
-              }}
-            />
-            <Select
-              size="small"
-              style={{ width: 110 }}
-              aria-label={t('priceCompare.sheet.a11y.refPeriod')}
-              className={
-                sheet.locked && !readOnly
-                  ? 'price-compare-locked-field'
-                  : undefined
-              }
-              value={refPeriod || undefined}
-              disabled={readOnly || Boolean(sheet.locked)}
-              onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
-              options={periods.map((period) => ({
-                value: period,
-                label: period,
-              }))}
-            />
-          </Space>
-          {allowHrb400eFallback ? (
-            <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
-              <Space size={4} align="center">
-                <span className="price-compare-fallback-badge">E</span>
-                <Text type="secondary" className="price-compare-sub">
-                  {t('priceCompare.sheet.fallbackLegend')}
-                </Text>
-              </Space>
-            </Tooltip>
-          ) : null}
-        </Flex>
-      </Flex>
-
-      <Flex
-        gap="small"
-        align="center"
-        wrap="wrap"
-        className="price-compare-meta-row"
-      >
-        {readOnly ? (
-          <Space size={4} align="center" className="price-compare-meta-field">
-            <span className="price-compare-sub">
-              {t('priceCompare.sheet.remark')}
-            </span>
-            <Text type="secondary">{remark || '-'}</Text>
-          </Space>
-        ) : (
-          <LockableField
-            label={t('priceCompare.sheet.remark')}
-            value={remark ?? ''}
-            width={220}
-            onConfirm={(value) => onRemarkChange?.(value)}
+          <DatePicker
+            size="small"
+            style={{ width: 132 }}
+            value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
+            format={dateFormat}
+            allowClear={false}
+            disabled={readOnly}
+            onChange={(value) =>
+              value &&
+              patchSheet(sheet.id, { orderDate: value.format('YYYY-MM-DD') })
+            }
           />
-        )}
+        </Space>
+        <Space size="small">
+          <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
+            <Text type="secondary" className="price-compare-sub">
+              <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
+            </Text>
+          </Tooltip>
+          <DatePicker
+            size="small"
+            style={{ width: 132 }}
+            className={
+              sheet.locked && !readOnly
+                ? 'price-compare-locked-field'
+                : undefined
+            }
+            value={refDate ? dayjs(refDate) : null}
+            format={dateFormat}
+            allowClear={false}
+            disabled={readOnly || Boolean(sheet.locked)}
+            cellRender={(current, info) => {
+              if (info.type !== 'date') return info.originNode
+              const key = (current as dayjs.Dayjs).format('YYYY-MM-DD')
+              const periods = availability[key] ?? []
+              return (
+                <div className="price-compare-cal-cell">
+                  {info.originNode}
+                  <div className="price-compare-cal-dots">
+                    {['上午', '中午', '下午'].map((period) => (
+                      <i
+                        key={period}
+                        className={periods.includes(period) ? 'is-on' : ''}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            }}
+            onChange={(value) => {
+              if (!value) return
+              patchSheet(sheet.id, { refDate: value.format('YYYY-MM-DD') })
+            }}
+          />
+          <Select
+            size="small"
+            style={{ width: 110 }}
+            aria-label={t('priceCompare.sheet.a11y.refPeriod')}
+            className={
+              sheet.locked && !readOnly
+                ? 'price-compare-locked-field'
+                : undefined
+            }
+            value={refPeriod || undefined}
+            disabled={readOnly || Boolean(sheet.locked)}
+            onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
+            options={periods.map((period) => ({
+              value: period,
+              label: period,
+            }))}
+          />
+        </Space>
+        {allowHrb400eFallback ? (
+          <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
+            <Space size={4} align="center">
+              <span className="price-compare-fallback-badge">E</span>
+              <Text type="secondary" className="price-compare-sub">
+                {t('priceCompare.sheet.fallbackLegend')}
+              </Text>
+            </Space>
+          </Tooltip>
+        ) : null}
+      </Flex>
+    </Flex>
+  )
+}
+
+/** 表头第二行: 备注(只读态直接展示) + 指定品牌。 */
+function SheetMetaRow({
+  readOnly,
+  remark,
+  onRemarkChange,
+  designatedBrands,
+}: {
+  readOnly: boolean
+  remark?: string
+  onRemarkChange?: (value: string) => void
+  designatedBrands?: string[]
+}) {
+  const { t } = useTranslation()
+  return (
+    <Flex
+      gap="small"
+      align="center"
+      wrap="wrap"
+      className="price-compare-meta-row"
+    >
+      {readOnly ? (
         <Space size={4} align="center" className="price-compare-meta-field">
           <span className="price-compare-sub">
-            {t('priceCompare.config.designatedBrands')}
+            {t('priceCompare.sheet.remark')}
           </span>
-          {designatedBrands?.length ? (
-            <Flex gap={4} wrap="wrap" align="center">
-              {designatedBrands.map((brand) => (
-                <Tag key={brand} color="blue" style={{ marginInlineEnd: 0 }}>
-                  {brand}
-                </Tag>
-              ))}
-            </Flex>
-          ) : (
-            <Text type="secondary">-</Text>
-          )}
+          <Text type="secondary">{remark || '-'}</Text>
         </Space>
-      </Flex>
-
-      <Space size={4} wrap className="price-compare-action-row">
-        <LockRefButton
-          sheet={sheet}
-          readOnly={readOnly}
-          patchSheet={patchSheet}
+      ) : (
+        <LockableField
+          label={t('priceCompare.sheet.remark')}
+          value={remark ?? ''}
+          width={220}
+          onConfirm={(value) => onRemarkChange?.(value)}
         />
-        <LockSpecQuantityButton
-          sheet={sheet}
-          readOnly={readOnly}
-          patchSheet={patchSheet}
-        />
-        <Button
-          type={bestOn ? 'primary' : 'default'}
-          icon={<TrophyOutlined />}
-          onClick={onToggleBest}
-        >
-          {t('priceCompare.sheet.bestDiff')}
-        </Button>
-        <Button
-          icon={<ReloadOutlined />}
-          loading={refreshing}
-          onClick={onRefresh}
-        >
-          {t('priceCompare.sheet.refreshPrice')}
-        </Button>
-        <ColumnSettingsButton
-          hideRemark={hideRemark}
-          brands={brands}
-          hiddenBrands={hiddenBrands}
-          onToggleRemark={onToggleRemark}
-          onToggleBrand={onToggleBrand}
-        />
-        {onOpenConfig ? (
-          <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
-            {t('priceCompare.sheet.config')}
-          </Button>
-        ) : null}
-        {selectedCount > 0 ? (
-          <SelectedRowActions
-            brands={brands}
-            supplierOptions={supplierOptions}
-            selectedCount={selectedCount}
-            readOnly={readOnly}
-            specQuantityLocked={Boolean(sheet.specQuantityLocked)}
-            onFillSupplierSelected={onFillSupplierSelected}
-            onRemoveSelected={onRemoveSelected}
-          />
-        ) : null}
+      )}
+      <Space size={4} align="center" className="price-compare-meta-field">
+        <span className="price-compare-sub">
+          {t('priceCompare.config.designatedBrands')}
+        </span>
+        {designatedBrands?.length ? (
+          <Flex gap={4} wrap="wrap" align="center">
+            {designatedBrands.map((brand) => (
+              <Tag key={brand} color="blue" style={{ marginInlineEnd: 0 }}>
+                {brand}
+              </Tag>
+            ))}
+          </Flex>
+        ) : (
+          <Text type="secondary">-</Text>
+        )}
       </Space>
     </Flex>
+  )
+}
+
+/** 表头操作行: 锁定/最优/刷新/列设置/配置 + 选中行批量操作。 */
+function SheetActionRow({
+  sheet,
+  readOnly,
+  patchSheet,
+  bestOn,
+  onToggleBest,
+  refreshing,
+  onRefresh,
+  hideRemark,
+  brands,
+  hiddenBrands,
+  onToggleRemark,
+  onToggleBrand,
+  onOpenConfig,
+  selectedCount,
+  supplierOptions,
+  onFillSupplierSelected,
+  onRemoveSelected,
+}: {
+  sheet: PriceSheet
+  readOnly: boolean
+  patchSheet: (id: string, patch: Partial<PriceSheet>) => void
+  bestOn: boolean
+  onToggleBest: () => void
+  refreshing: boolean
+  onRefresh: () => void
+  hideRemark: boolean
+  brands: Brand[]
+  hiddenBrands: string[]
+  onToggleRemark: (visible: boolean) => void
+  onToggleBrand: (brandName: string, visible: boolean) => void
+  onOpenConfig?: () => void
+  selectedCount: number
+  supplierOptions: SupplierSelectOption[]
+  onFillSupplierSelected: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
+  onRemoveSelected: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <Space size={4} wrap className="price-compare-action-row">
+      <LockRefButton
+        sheet={sheet}
+        readOnly={readOnly}
+        patchSheet={patchSheet}
+      />
+      <LockSpecQuantityButton
+        sheet={sheet}
+        readOnly={readOnly}
+        patchSheet={patchSheet}
+      />
+      <Button
+        type={bestOn ? 'primary' : 'default'}
+        icon={<TrophyOutlined />}
+        onClick={onToggleBest}
+      >
+        {t('priceCompare.sheet.bestDiff')}
+      </Button>
+      <Button
+        icon={<ReloadOutlined />}
+        loading={refreshing}
+        onClick={onRefresh}
+      >
+        {t('priceCompare.sheet.refreshPrice')}
+      </Button>
+      <ColumnSettingsButton
+        hideRemark={hideRemark}
+        brands={brands}
+        hiddenBrands={hiddenBrands}
+        onToggleRemark={onToggleRemark}
+        onToggleBrand={onToggleBrand}
+      />
+      {onOpenConfig ? (
+        <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
+          {t('priceCompare.sheet.config')}
+        </Button>
+      ) : null}
+      {selectedCount > 0 ? (
+        <SelectedRowActions
+          brands={brands}
+          supplierOptions={supplierOptions}
+          selectedCount={selectedCount}
+          readOnly={readOnly}
+          specQuantityLocked={Boolean(sheet.specQuantityLocked)}
+          onFillSupplierSelected={onFillSupplierSelected}
+          onRemoveSelected={onRemoveSelected}
+        />
+      ) : null}
+    </Space>
   )
 }
 
