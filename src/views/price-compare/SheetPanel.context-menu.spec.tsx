@@ -359,4 +359,69 @@ describe('SheetPanel 右键菜单', () => {
       document.querySelector('.price-compare-supplier-fill'),
     ).not.toBeNull()
   })
+
+  it('品牌列头菜单项顺序为 一键填入供应商…/隐藏该列/移到最前/移到最后', async () => {
+    renderPanel()
+    await rightClick(brandNameNodes()[0])
+    const labels = Array.from(
+      topDropdown()?.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item') ??
+        [],
+    ).map((node) => (node.textContent || '').trim())
+    expect(labels).toEqual([
+      '一键填入供应商…',
+      '隐藏该列',
+      '移到最前',
+      '移到最后',
+    ])
+  })
+
+  it('品牌列头保留 draggable 拖拽换序, 品牌名仍是可聚焦包装的直接子节点', () => {
+    renderPanel()
+    const node = brandNameNodes()[0]
+    expect(node?.getAttribute('draggable')).toBe('true')
+    expect(
+      node?.parentElement?.classList.contains('column-header-menu-trigger'),
+    ).toBe(true)
+  })
+
+  it('品牌列头触发器可聚焦, Shift+F10 可打开菜单且焦点进首项', async () => {
+    renderPanel()
+    const node = brandNameNodes()[0]
+    const trigger = node?.closest<HTMLElement>(
+      '.column-header-menu-trigger[role="button"]',
+    )
+    expect(trigger).not.toBeNull()
+    expect(trigger?.getAttribute('aria-haspopup')).toBe('menu')
+    expect(trigger?.getAttribute('aria-keyshortcuts')).toBe('Shift+F10')
+
+    act(() => {
+      trigger?.focus()
+    })
+    act(() => {
+      trigger?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'F10',
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await flush()
+
+    const items = Array.from(
+      topDropdown()?.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item') ??
+        [],
+    )
+    expect(items.length).toBeGreaterThan(0)
+    expect(document.activeElement).toBe(items[0])
+
+    await act(async () => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 30))
+    })
+    expect(document.activeElement).toBe(trigger)
+  })
 })

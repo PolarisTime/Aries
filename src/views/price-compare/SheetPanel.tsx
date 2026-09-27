@@ -2,7 +2,6 @@ import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   DeleteOutlined,
-  EyeInvisibleOutlined,
   HolderOutlined,
   InfoCircleOutlined,
   InsertRowAboveOutlined,
@@ -16,7 +15,6 @@ import {
   TrophyOutlined,
   UnlockOutlined,
   VerticalAlignBottomOutlined,
-  VerticalAlignTopOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -41,6 +39,7 @@ import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
 import { message, modal } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
@@ -751,13 +750,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           : [
               {
                 title: (
-                  // 表头标题节点: 保留原有拖拽换序, 并补一个右键菜单(隐藏该列 / 移到最前或最后)
-                  // 作为拖拽的补充入口; 一键填入供应商则复用下方「简称」列的同一个弹层。
-                  <ContextMenu
+                  // 表头标题节点: 保留原有拖拽换序, 菜单本身复用共享列头基元
+                  // (隐藏该列 / 移到最前或最后 + 业务追加的「一键填入供应商…」)。
+                  <ColumnHeaderMenu
                     ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
                       brand: brand.name,
                     })}
-                    items={[
+                    columnTitle={brand.name}
+                    extraItems={[
                       {
                         key: 'fill-supplier-column',
                         icon: <VerticalAlignBottomOutlined />,
@@ -765,60 +765,33 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         // 与「简称」列的一键填入按钮保持同一禁用口径(只读时按钮本身不渲染)
                         disabled: readOnly,
                       },
-                      { type: 'divider' },
-                      {
-                        key: 'hide-brand',
-                        icon: <EyeInvisibleOutlined />,
-                        label: t('priceCompare.sheet.contextMenu.hideBrand'),
-                      },
-                      { type: 'divider' },
-                      {
-                        key: 'brand-to-first',
-                        icon: <VerticalAlignTopOutlined />,
-                        label: t(
-                          'priceCompare.sheet.contextMenu.moveBrandFirst',
-                        ),
-                        disabled: brand.name === visibleBrandNames[0],
-                      },
-                      {
-                        key: 'brand-to-last',
-                        icon: <VerticalAlignBottomOutlined />,
-                        label: t(
-                          'priceCompare.sheet.contextMenu.moveBrandLast',
-                        ),
-                        disabled: brand.name === visibleBrandNames.at(-1),
-                      },
                     ]}
-                    onClick={({ key }) => {
-                      switch (key) {
-                        case 'fill-supplier-column':
-                          ctx.setSupplierFillBrand(brand.name)
-                          break
-                        case 'hide-brand':
-                          ctx.onToggleBrand(brand.name, false)
-                          break
-                        case 'brand-to-first':
-                          onReorderBrands(
-                            brandIndex,
-                            brands.findIndex(
-                              (item) => item.name === visibleBrandNames[0],
-                            ),
-                          )
-                          break
-                        case 'brand-to-last':
-                          onReorderBrands(
-                            brandIndex,
-                            brands.findIndex(
-                              (item) =>
-                                item.name ===
-                                visibleBrandNames[visibleBrandNames.length - 1],
-                            ),
-                          )
-                          break
-                        default:
-                          break
+                    isFirst={brand.name === visibleBrandNames[0]}
+                    isLast={brand.name === visibleBrandNames.at(-1)}
+                    onExtraItem={(key) => {
+                      if (key === 'fill-supplier-column') {
+                        ctx.setSupplierFillBrand(brand.name)
                       }
                     }}
+                    onHide={() => ctx.onToggleBrand(brand.name, false)}
+                    onMoveFirst={() =>
+                      onReorderBrands(
+                        brandIndex,
+                        brands.findIndex(
+                          (item) => item.name === visibleBrandNames[0],
+                        ),
+                      )
+                    }
+                    onMoveLast={() =>
+                      onReorderBrands(
+                        brandIndex,
+                        brands.findIndex(
+                          (item) =>
+                            item.name ===
+                            visibleBrandNames[visibleBrandNames.length - 1],
+                        ),
+                      )
+                    }
                   >
                     <span
                       className="price-compare-brand-name price-compare-drag"
@@ -843,7 +816,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     >
                       {brand.name}
                     </span>
-                  </ContextMenu>
+                  </ColumnHeaderMenu>
                 ),
                 children: [
                   cellOf(

@@ -47,6 +47,21 @@ describe('比价页样式无障碍契约', () => {
     expect(block).toMatch(/min-height:\s*24px/)
   })
 
+  it('品牌列头触发器自身不小于 24×24, 且不遮挡 draggable 标题', () => {
+    const trigger = blockOf(
+      pageCss,
+      '.column-header-menu-trigger:has(> .price-compare-brand-name) {',
+    )
+    expect(trigger).toMatch(/min-width:\s*24px/)
+    expect(trigger).toMatch(/min-height:\s*24px/)
+    // 触摸热区伪元素若参与命中测试, HTML5 拖拽就找不到 draggable 的品牌名
+    const hotZone = blockOf(
+      pageCss,
+      '.column-header-menu-trigger:has(> .price-compare-brand-name)::before',
+    )
+    expect(hotZone).toContain('pointer-events: none')
+  })
+
   it('非最优品牌压暗度不低于 0.62(0.45 会把文字压到 2.8:1)', () => {
     const block = blockOf(pageCss, '.price-compare-dim {')
     const opacity = Number(block.match(/opacity:\s*([\d.]+)/)?.[1] ?? '0')

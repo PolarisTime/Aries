@@ -64,17 +64,30 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
       isFirst?: boolean
       isLast?: boolean
       withSettings?: boolean
+      withExtraItems?: boolean
     } = {},
   ) => {
     const onHide = vi.fn()
     const onMoveFirst = vi.fn()
     const onMoveLast = vi.fn()
     const onRequestSettings = vi.fn()
+    const onExtraItem = vi.fn()
     const menu = (
       <ColumnHeaderMenu
         columnTitle="品牌"
+        extraItems={
+          options.withExtraItems
+            ? [
+                {
+                  key: 'fill-supplier-column',
+                  label: '一键填入供应商…',
+                },
+              ]
+            : undefined
+        }
         isFirst={options.isFirst ?? false}
         isLast={options.isLast ?? false}
+        onExtraItem={onExtraItem}
         onHide={onHide}
         onMoveFirst={onMoveFirst}
         onMoveLast={onMoveLast}
@@ -95,8 +108,20 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
         </ConfigProvider>,
       )
     })
-    return { onHide, onMoveFirst, onMoveLast, onRequestSettings }
+    return {
+      onHide,
+      onMoveFirst,
+      onMoveLast,
+      onRequestSettings,
+      onExtraItem,
+    }
   }
+
+  /** 列头触发器: 可聚焦的 role="button" 包装节点。 */
+  const trigger = () =>
+    container.querySelector<HTMLElement>(
+      '.column-header-menu-trigger[role="button"]',
+    )
 
   const openMenu = async () => {
     act(() => {
@@ -190,15 +215,12 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
     expect(handlers.onRequestSettings).toHaveBeenCalledTimes(1)
   })
 
-  it('Escape 关闭菜单并把焦点还给列头节点', async () => {
+  it('Escape 关闭菜单并把焦点还给列头触发器', async () => {
     render()
-    const title = container.querySelector<HTMLElement>('.column-title')
-    if (title) title.tabIndex = 0
-    act(() => {
-      title?.focus()
-    })
+    const node = trigger()
+    if (node) node.focus()
     await openMenu()
-    expect(document.activeElement).not.toBe(title)
+    expect(document.activeElement).not.toBe(node)
 
     act(() => {
       document.activeElement?.dispatchEvent(
@@ -206,6 +228,79 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
       )
     })
     await flush()
-    expect(document.activeElement).toBe(title)
+    expect(document.activeElement).toBe(trigger())
+  })
+
+  it('触发器可聚焦并带 role/aria 契约(右键不是唯一入口)', () => {
+    render()
+    const node = trigger()
+    expect(node).not.toBeNull()
+    expect(node?.tabIndex).toBe(0)
+    expect(node?.getAttribute('role')).toBe('button')
+    expect(node?.getAttribute('aria-haspopup')).toBe('menu')
+    expect(node?.getAttribute('aria-keyshortcuts')).toBe('Shift+F10')
+  })
+
+  it('聚焦触发器后 Shift+F10 打开菜单且焦点进入首项', async () => {
+    render()
+    const node = trigger()
+    act(() => {
+      node?.focus()
+    })
+    act(() => {
+      node?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'F10',
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await flush()
+    expect(visibleMenuItems().length).toBeGreaterThan(0)
+    expect(visibleMenuItems()[0]).toBe(document.activeElement)
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await flush()
+    expect(document.activeElement).toBe(trigger())
+  })
+
+  it('ContextMenu 键等价于 Shift+F10', async () => {
+    render()
+    const node = trigger()
+    act(() => {
+      node?.focus()
+    })
+    act(() => {
+      node?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ContextMenu',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await flush()
+    expect(visibleMenuItems().length).toBeGreaterThan(0)
+  })
+
+  it('extraItems 渲染在「隐藏该列」之前, 非内部 key 交给 onExtraItem', async () => {
+    const handlers = render({ withExtraItems: true })
+    await openMenu()
+    expect(menuItems().map((item) => item.text)).toEqual([
+      '一键填入供应商…',
+      '隐藏该列',
+      '移到最前',
+      '移到最后',
+    ])
+
+    await clickItem('一键填入供应商…')
+    expect(handlers.onExtraItem).toHaveBeenCalledWith('fill-supplier-column')
+    expect(handlers.onHide).not.toHaveBeenCalled()
   })
 })

@@ -120,6 +120,25 @@
   color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
 }
 
+/*
+ * 品牌列头由共享列头基元渲染: 基元把子节点包进 role="button" 的可聚焦包装
+ * (键盘 Shift+F10 打开列菜单)。这带来两个副作用, 必须在这里收口:
+ *  1) 全局触摸热区规则会给 role="button" 注入一个绝对定位的 ::before 伪元素,
+ *     它会盖住 draggable 的品牌名, 使 HTML5 拖拽拿不到拖拽源 —— 品牌换序会
+ *     静默失效, 因此让该伪元素退出命中测试;
+ *  2) 去掉伪元素后热区只能靠包装自身兜底, 所以包装本身撑到 ≥24×24(WCAG 2.5.8 AA)。
+ */
+.column-header-menu-trigger:has(> .price-compare-brand-name) {
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.column-header-menu-trigger:has(> .price-compare-brand-name)::before {
+  pointer-events: none;
+}
+
 .price-compare-sub {
   font-size: 11px;
   color: var(--text-secondary);
