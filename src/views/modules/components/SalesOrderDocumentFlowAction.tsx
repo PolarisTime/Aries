@@ -5,7 +5,7 @@ import {
   Button,
   Drawer,
   Empty,
-  List,
+  Listy,
   Space,
   Spin,
   Tag,
@@ -13,6 +13,7 @@ import {
   Typography,
 } from 'antd'
 import { useMemo, useState } from 'react'
+import '@/styles/sales-doc-flow.css'
 import { useTranslation } from 'react-i18next'
 import { getSalesOrderDocumentFlow } from '@/api/sales/sales-order-document-flow'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -137,30 +138,38 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
           {nodeGroups.map((group) => (
             <div key={group.type}>
               <Typography.Title level={5}>{group.type}</Typography.Title>
-              <List
-                bordered
-                dataSource={group.nodes}
-                locale={{
-                  emptyText: t(
-                    'modules.pages.salesOrder.documentFlow.emptySection',
-                  ),
-                }}
-                renderItem={(node) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={node.no || String(node.id)}
-                      description={node.date || ''}
-                    />
-                    {node.status ? <Tag>{node.status}</Tag> : null}
-                    {node.weight != null ? (
-                      <Typography.Text>{String(node.weight)}</Typography.Text>
-                    ) : null}
-                    {node.amount != null ? (
-                      <Typography.Text>{String(node.amount)}</Typography.Text>
-                    ) : null}
-                  </List.Item>
-                )}
-              />
+              {group.nodes.length === 0 ? (
+                <Typography.Text type="secondary">
+                  {t('modules.pages.salesOrder.documentFlow.emptySection')}
+                </Typography.Text>
+              ) : (
+                /* List 已废弃, 按官方说明迁到 Listy: dataSource→items, renderItem→itemRender,
+                   预设的 Item.Meta 用普通标记在 itemRender 内重组。 */
+                <Listy<SalesOrderDocumentFlowNode>
+                  classNames={{ root: 'sales-doc-flow-list' }}
+                  items={group.nodes}
+                  rowKey="id"
+                  itemRender={(node) => (
+                    <div className="sales-doc-flow-row">
+                      <div className="sales-doc-flow-row-meta">
+                        <div className="sales-doc-flow-row-title">
+                          {node.no || String(node.id)}
+                        </div>
+                        <div className="sales-doc-flow-row-desc">
+                          {node.date || ''}
+                        </div>
+                      </div>
+                      {node.status ? <Tag>{node.status}</Tag> : null}
+                      {node.weight != null ? (
+                        <Typography.Text>{String(node.weight)}</Typography.Text>
+                      ) : null}
+                      {node.amount != null ? (
+                        <Typography.Text>{String(node.amount)}</Typography.Text>
+                      ) : null}
+                    </div>
+                  )}
+                />
+              )}
             </div>
           ))}
           {!isPending && (nodes.length > 0 || links.length > 0) ? (
@@ -168,20 +177,26 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
               <Typography.Title level={5}>
                 {t('modules.pages.salesOrder.documentFlow.relationsTitle')}
               </Typography.Title>
-              <List
-                bordered
-                size="small"
-                dataSource={links}
-                locale={{
-                  emptyText: t(
-                    'modules.pages.salesOrder.documentFlow.relationsEmpty',
-                  ),
-                }}
-                renderItem={(link: SalesOrderDocumentFlowLink) => {
-                  const fromLabel = resolveLinkNodeLabel(link.fromId, nodeById)
-                  const toLabel = resolveLinkNodeLabel(link.toId, nodeById)
-                  return (
-                    <List.Item>
+              {links.length === 0 ? (
+                <Typography.Text type="secondary">
+                  {t('modules.pages.salesOrder.documentFlow.relationsEmpty')}
+                </Typography.Text>
+              ) : (
+                <Listy<SalesOrderDocumentFlowLink>
+                  classNames={{ root: 'sales-doc-flow-list' }}
+                  items={links}
+                  // 关系行没有自有 id: 用两端 + 关系类型组合成稳定 key
+                  rowKey={(link) =>
+                    `${link.fromId ?? ''}-${link.toId ?? ''}-${link.linkType ?? ''}`
+                  }
+                  styles={{ item: { paddingBlock: 'var(--space-xs)' } }}
+                  itemRender={(link) => {
+                    const fromLabel = resolveLinkNodeLabel(
+                      link.fromId,
+                      nodeById,
+                    )
+                    const toLabel = resolveLinkNodeLabel(link.toId, nodeById)
+                    return (
                       <Space size="small" wrap>
                         {link.fromType ? <Tag>{link.fromType}</Tag> : null}
                         <Typography.Text>{fromLabel}</Typography.Text>
@@ -197,10 +212,10 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
                           <Tag color="blue">{link.linkType}</Tag>
                         ) : null}
                       </Space>
-                    </List.Item>
-                  )
-                }}
-              />
+                    )
+                  }}
+                />
+              )}
             </div>
           ) : null}
         </Spin>

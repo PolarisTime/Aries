@@ -1,0 +1,36 @@
+/*
+ * 单据流转清单(销售订单文档流):
+ * antd List 已在 v6 废弃, 按官方迁移说明改用 Listy(dataSource→items, renderItem→itemRender,
+ * List.Item.Meta 用普通标记在 itemRender 内重组)。Listy 自带分隔线与内边距,
+ * 这里补回 bordered 外框与 Meta 的「标题 + 描述」两行布局。
+ * 注意: 类名用 sales-doc-flow-* 前缀 —— src/components/document-flow/document-flow.css
+ * 里的流程图组件已占用 .document-flow-node(absolute 定位), 复用会互相污染。
+ */
+.sales-doc-flow-list {
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: var(--ant-border-radius, 6px);
+  overflow: hidden;
+}
+
+.sales-doc-flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.sales-doc-flow-row-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sales-doc-flow-row-title {
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  overflow-wrap: anywhere;
+}
+
+.sales-doc-flow-row-desc {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+}

@@ -1,5 +1,5 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Card, Empty, List, Space, Tag, Typography } from 'antd'
+import { Button, Card, Empty, Space, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { CompanySettingProfile } from '@/api/system/company-settings'
 import { STATUS } from '@/constants/status-constants'
@@ -34,32 +34,18 @@ export function CompanySubjectList({
       }
     >
       {companies.length > 0 ? (
-        <List
-          className="company-subject-selector-list"
-          dataSource={companies}
-          rowKey={(item) => item.id}
-          split={false}
-          renderItem={(item) => {
+        /*
+         * 卡片网格布局: antd List 已废弃, 而官方迁移说明明确"网格布局不建议迁到 Listy,
+         * 应改用 Row/Col 或普通标记"。这里主题卡已是自定义卡片, 直接以网格容器渲染,
+         * 样式与可访问名称保持不变。
+         */
+        <div className="company-subject-selector-list">
+          {companies.map((item) => {
             const active = item.id === selectedId
             return (
-              <List.Item
-                className={`company-subject-selector-item${active ? ' is-active' : ''}`}
+              <div
                 key={item.id}
-                actions={[
-                  <Button
-                    key="delete"
-                    danger
-                    type="text"
-                    size="small"
-                    loading={deletingId === item.id}
-                    icon={<DeleteOutlined />}
-                    aria-label={t('system.company.deleteSubject')}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onDelete(item.id)
-                    }}
-                  />,
-                ]}
+                className={`company-subject-selector-item${active ? ' is-active' : ''}`}
               >
                 <button
                   type="button"
@@ -84,10 +70,22 @@ export function CompanySubjectList({
                     {item.taxNo || t('system.companySubject.pendingTaxNo')}
                   </Typography.Text>
                 </button>
-              </List.Item>
+                <Button
+                  danger
+                  type="text"
+                  size="small"
+                  loading={deletingId === item.id}
+                  icon={<DeleteOutlined />}
+                  aria-label={t('system.company.deleteSubject')}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onDelete(item.id)
+                  }}
+                />
+              </div>
             )
-          }}
-        />
+          })}
+        </div>
       ) : (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
