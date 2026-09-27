@@ -58,3 +58,19 @@ export function toggleColumnVisibility(
   }
   return next
 }
+
+/**
+ * 把某列移到最前/最后(返回新数组, 不改原数组)。
+ * 已经是目标位置或列不在集合中时原样返回, 避免产生无意义的重排与持久化。
+ */
+export function moveColumnKey(
+  order: string[],
+  key: string,
+  position: 'first' | 'last',
+): string[] {
+  const index = order.indexOf(key)
+  if (index < 0) return order
+  const rest = order.filter((item) => item !== key)
+  const next = position === 'first' ? [key, ...rest] : [...rest, key]
+  return next.every((item, i) => item === order[i]) ? order : next
+}

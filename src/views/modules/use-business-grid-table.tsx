@@ -7,6 +7,7 @@ import {
   type SetStateAction,
   useEffect,
 } from 'react'
+import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -17,7 +18,11 @@ import {
 } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
+import {
+  mergeColumnOrder,
+  moveColumnKey,
+  toggleColumnVisibility,
+} from '@/utils/table-columns'
 
 interface Props {
   moduleKey: ModuleKey
@@ -42,10 +47,17 @@ function buildAntdColumns({
   columnDefs,
   columnOrder,
   columnVisibility,
+  dataColumnIds,
+  onHideColumn,
+  onMoveColumn,
 }: {
   columnDefs: ColumnDef<StockFeatures, ModuleRecord>[]
   columnOrder: string[]
   columnVisibility: Record<string, boolean>
+  /** 业务数据列(不含明细按钮列与操作列), 用于判断「移到最前/最后」是否已到边界 */
+  dataColumnIds: string[]
+  onHideColumn: (columnId: string) => void
+  onMoveColumn: (columnId: string, position: 'first' | 'last') => void
 }): TableColumnsType<ModuleRecord> {
   const columnMap = new Map(
     columnDefs.map((column) => [
@@ -61,8 +73,28 @@ function buildAntdColumns({
     if (!columnDef) {
       return []
     }
-    const title: ReactNode =
+    const rawTitle: ReactNode =
       typeof columnDef.header === 'function' ? '' : columnDef.header
+    /*
+     * 列头挂右键菜单: 隐藏该列 / 移到最前 / 移到最后 / 列设置…
+     * 明细按钮列(空标题)与操作列不参与(隐藏或移动它们没有意义)。
+     */
+    const title =
+      columnId === ACTIONS_COLUMN_ID || rawTitle === '' ? (
+        rawTitle
+      ) : (
+        <ColumnHeaderMenu
+          key={columnId}
+          columnTitle={typeof rawTitle === 'string' ? rawTitle : columnId}
+          isFirst={dataColumnIds[0] === columnId}
+          isLast={dataColumnIds.at(-1) === columnId}
+          onHide={() => onHideColumn(columnId)}
+          onMoveFirst={() => onMoveColumn(columnId, 'first')}
+          onMoveLast={() => onMoveColumn(columnId, 'last')}
+        >
+          <span className="module-table-column-title">{rawTitle}</span>
+        </ColumnHeaderMenu>
+      )
     return [
       {
         title,
@@ -146,10 +178,23 @@ export function useBusinessGridTable({
     headId: DETAIL_TOGGLE_COLUMN_ID,
     tailId: ACTIONS_COLUMN_ID,
   })
+  /** 业务数据列(剔除固定在首尾的明细按钮列与操作列), 列头菜单据此判断边界。 */
+  const dataColumnIds = columnOrder.filter(
+    (id) => id !== DETAIL_TOGGLE_COLUMN_ID && id !== ACTIONS_COLUMN_ID,
+  )
   const computedColumns = buildAntdColumns({
     columnDefs,
     columnOrder,
     columnVisibility,
+    dataColumnIds,
+    onHideColumn: (columnId) => {
+      handleColumnVisibilityChange(
+        toggleColumnVisibility(columnVisibility, columnId),
+      )
+    },
+    onMoveColumn: (columnId, position) => {
+      handleColumnOrderChange(moveColumnKey(dataColumnIds, columnId, position))
+    },
   })
   // 操作列锁定宽度（sticky 固定列），不参与拖拽
   const { columns: resizableColumns, components } =

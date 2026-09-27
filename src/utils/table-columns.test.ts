@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { mergeColumnOrder, toggleColumnVisibility } from './table-columns'
+import {
+  mergeColumnOrder,
+  moveColumnKey,
+  toggleColumnVisibility,
+} from './table-columns'
 
 describe('mergeColumnOrder', () => {
   it('历史顺序保留，新增公共字段追加到末尾', () => {
@@ -114,5 +118,42 @@ describe('toggleColumnVisibility', () => {
 
   it('可见列标记为隐藏', () => {
     expect(toggleColumnVisibility({}, 'brand')).toEqual({ brand: false })
+  })
+})
+
+describe('moveColumnKey', () => {
+  it('移到最前: 其余列相对顺序保持不变', () => {
+    expect(moveColumnKey(['a', 'b', 'c', 'd'], 'c', 'first')).toEqual([
+      'c',
+      'a',
+      'b',
+      'd',
+    ])
+  })
+
+  it('移到最后: 其余列相对顺序保持不变', () => {
+    expect(moveColumnKey(['a', 'b', 'c', 'd'], 'b', 'last')).toEqual([
+      'a',
+      'c',
+      'd',
+      'b',
+    ])
+  })
+
+  it('已经在目标位置时返回原数组引用(不触发无意义的重排与持久化)', () => {
+    const order = ['a', 'b', 'c']
+    expect(moveColumnKey(order, 'a', 'first')).toBe(order)
+    expect(moveColumnKey(order, 'c', 'last')).toBe(order)
+  })
+
+  it('列不存在时原样返回, 不改动顺序', () => {
+    const order = ['a', 'b']
+    expect(moveColumnKey(order, 'missing', 'first')).toBe(order)
+  })
+
+  it('单列数组两个方向都保持自身', () => {
+    const order = ['only']
+    expect(moveColumnKey(order, 'only', 'first')).toBe(order)
+    expect(moveColumnKey(order, 'only', 'last')).toBe(order)
   })
 })

@@ -4,6 +4,7 @@ import type { ColumnsType, TableProps } from 'antd/es/table'
 import { isEqual } from 'es-toolkit'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
@@ -190,29 +191,34 @@ export function BusinessGridContent({
         />
       ) : (
         <>
-          <BusinessGridTable
-            key={moduleKey}
-            moduleKey={moduleKey}
-            columns={columns}
-            components={components}
-            dataSource={records}
-            loading={loading}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            rowSelection={rowSelection}
-            rowClassName={rowClassName}
-            onRowClick={onRowClick}
-            onRowDoubleClick={onRowDoubleClick}
-            expandable={expandable}
-            emptyStateInput={{
-              hasError: hasLoadError,
-              hasFilters: hasActiveFilters,
-              canCreate,
-              onResetFilters: onReset,
-              onCreate,
-              onRetry,
-            }}
-          />
+          {/* 列头右键菜单的「列设置…」复用工具栏这个弹层(开合状态在本组件) */}
+          <ColumnSettingsRequestContext.Provider
+            value={() => setColumnSettingsOpen(true)}
+          >
+            <BusinessGridTable
+              key={moduleKey}
+              moduleKey={moduleKey}
+              columns={columns}
+              components={components}
+              dataSource={records}
+              loading={loading}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              rowSelection={rowSelection}
+              rowClassName={rowClassName}
+              onRowClick={onRowClick}
+              onRowDoubleClick={onRowDoubleClick}
+              expandable={expandable}
+              emptyStateInput={{
+                hasError: hasLoadError,
+                hasFilters: hasActiveFilters,
+                canCreate,
+                onResetFilters: onReset,
+                onCreate,
+                onRetry,
+              }}
+            />
+          </ColumnSettingsRequestContext.Provider>
 
           <ModuleTablePagination
             total={total}

@@ -309,6 +309,14 @@ export const enUS = {
     saveInProgressContent:
       'This document is being saved. Wait for it to finish before leaving.',
     columnSettings: 'Column Settings',
+    /** Table column header context menu */
+    columnMenu: {
+      label: 'Actions for the "{{column}}" column',
+      hide: 'Hide column',
+      moveFirst: 'Move to first',
+      moveLast: 'Move to last',
+      settings: 'Column settings…',
+    },
     resetColumnWidths: 'Reset column widths',
     saveAndAudit: 'Save & Audit',
     auditConfirm:

@@ -305,6 +305,14 @@ export const zhCN = {
     saveInProgressTitle: '正在保存',
     saveInProgressContent: '当前单据正在保存，请等待保存完成后再离开。',
     columnSettings: '列设置',
+    /** 表格列头右键菜单 */
+    columnMenu: {
+      label: '「{{column}}」列操作菜单',
+      hide: '隐藏该列',
+      moveFirst: '移到最前',
+      moveLast: '移到最后',
+      settings: '列设置…',
+    },
     resetColumnWidths: '重置列宽',
     saveAndAudit: '保存并审核',
     auditConfirm: '审核后单据状态将变更为已审核，且不可再编辑。确定继续？',
