@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { Key } from 'react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import { STATUS } from '@/constants/status-constants'
@@ -40,6 +41,8 @@ interface CarrierTableSectionProps {
   onRecordDoubleClick: (record: CarrierListRow) => void
   onPageChange: (page: number, pageSize: number) => void
   onRetry: () => void
+  /** 列头右键菜单「隐藏该列」; 不传时该项不出现 */
+  onHideColumn?: (key: string) => void
 }
 
 export function CarrierTableSection({
@@ -61,6 +64,7 @@ export function CarrierTableSection({
   onRecordDoubleClick,
   onPageChange,
   onRetry,
+  onHideColumn,
 }: CarrierTableSectionProps) {
   const { t } = useTranslation()
   const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
@@ -110,7 +114,17 @@ export function CarrierTableSection({
         continue
       }
       columns.push({
-        title: columnLabels[key],
+        title: (
+          <ColumnHeaderMenu
+            key={key}
+            columnTitle={columnLabels[key]}
+            onHide={onHideColumn ? () => onHideColumn(key) : undefined}
+          >
+            <span className="module-table-column-title">
+              {columnLabels[key]}
+            </span>
+          </ColumnHeaderMenu>
+        ),
         dataIndex: key,
         key,
         width: columnWidths[key],
@@ -128,7 +142,7 @@ export function CarrierTableSection({
       })
     }
     return columns
-  }, [columnLabels, columnWidths, hiddenColumnKeySet])
+  }, [columnLabels, columnWidths, hiddenColumnKeySet, onHideColumn])
 
   const visibleColumns: ColumnsType<CarrierListRow> = useMemo(
     () => [

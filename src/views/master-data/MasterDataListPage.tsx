@@ -1,4 +1,6 @@
+import { useCallback, useState } from 'react'
 import { AppProPage } from '@/components/AppProPage'
+import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
 import { ModuleAttachmentModal } from '@/views/modules/components/ModuleAttachmentModal'
 import { MasterDataEditor } from './MasterDataEditor'
 import { MasterDataTable } from './MasterDataTable'
@@ -8,6 +10,20 @@ import { useMasterDataPage } from './use-master-data-page'
 
 export function MasterDataListPage({ spec }: { spec: MasterDataPageSpec }) {
   const page = useMasterDataPage(spec)
+  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
+  /**
+   * 列显隐切换。列头右键与工具栏「列设置」共用一份实现:
+   * 列头只有在可见时才能被右键, 所以 toggle 在这里等价于「隐藏该列」。
+   */
+  const toggleColumnVisibility = useCallback(
+    (key: string) =>
+      page.setHiddenColumnKeys((previous) =>
+        previous.includes(key)
+          ? previous.filter((item) => item !== key)
+          : [...previous, key],
+      ),
+    [page.setHiddenColumnKeys],
+  )
   return (
     <AppProPage
       className="business-grid-pro-page"
@@ -15,66 +31,68 @@ export function MasterDataListPage({ spec }: { spec: MasterDataPageSpec }) {
       description={spec.description}
     >
       <div className="page-stack module-page-stack">
-        <section className="module-grid-workspace">
-          <MasterDataToolbar
-            keyword={page.keyword}
-            onKeywordChange={page.setKeyword}
-            filters={spec.filters}
-            filterValues={page.filterValues}
-            onFilterChange={page.handleFilterChange}
-            onSearch={page.handleSearch}
-            onReset={page.handleResetFilters}
-            keywordPlaceholder={spec.keywordPlaceholder}
-            onCreate={() => page.openEditor(null)}
-            selectedCount={page.selectedRows.length}
-            onDeleteSelected={page.handleDeleteSelected}
-            canEdit={Boolean(page.singleSelected && page.singleCanEdit)}
-            onEdit={() => page.openEditor(page.singleSelected ?? null)}
-            canAttach={Boolean(page.singleSelected)}
-            onAttachment={page.handleAttachment}
-            exporting={page.exporting}
-            onExport={() => void page.handleExport()}
-            columns={spec.columns}
-            hiddenColumnKeySet={page.hiddenKeySet}
-            onToggleColumn={(key) =>
-              page.setHiddenColumnKeys((previous) =>
-                previous.includes(key)
-                  ? previous.filter((item) => item !== key)
-                  : [...previous, key],
-              )
-            }
-            selectedRowKeysCount={page.selectedRowKeys.length}
-            onClearSelection={page.clearSelection}
-            isFetching={page.listQuery.isFetching}
-            onRefresh={page.handleRefresh}
-            toolbarExtra={spec.renderToolbarExtra?.({
-              refresh: page.handleRefresh,
-              selectedRecord: page.singleSelected,
-              selectedCount: page.selectedRowKeys.length,
-            })}
-          />
-          <MasterDataTable
-            spec={spec}
-            records={page.records}
-            selectedRows={page.selectedRows}
-            total={page.total}
-            page={page.page}
-            pageSize={page.effectivePageSize}
-            hiddenColumnKeySet={page.hiddenKeySet}
-            selectedRowKeys={page.selectedRowKeys}
-            expandedRowKeys={page.expandedRowKeys}
-            isLoading={page.listQuery.isLoading}
-            isFetching={page.listQuery.isFetching}
-            hasListError={page.hasListError}
-            errorMessage={page.listErrorMessage}
-            onSelectionChange={page.setSelectedRowKeys}
-            onExpandedRowKeysChange={page.setExpandedRowKeys}
-            onToggleRecordSelected={page.handleToggleRecordSelected}
-            onRecordDoubleClick={page.handleRecordDoubleClick}
-            onPageChange={page.handlePageChange}
-            onRetry={() => void page.listQuery.refetch()}
-          />
-        </section>
+        {/* 列头右键菜单的「列设置…」复用工具栏这个弹层(开合状态在本组件) */}
+        <ColumnSettingsRequestContext.Provider
+          value={() => setColumnSettingsOpen(true)}
+        >
+          <section className="module-grid-workspace">
+            <MasterDataToolbar
+              keyword={page.keyword}
+              onKeywordChange={page.setKeyword}
+              filters={spec.filters}
+              filterValues={page.filterValues}
+              onFilterChange={page.handleFilterChange}
+              onSearch={page.handleSearch}
+              onReset={page.handleResetFilters}
+              keywordPlaceholder={spec.keywordPlaceholder}
+              onCreate={() => page.openEditor(null)}
+              selectedCount={page.selectedRows.length}
+              onDeleteSelected={page.handleDeleteSelected}
+              canEdit={Boolean(page.singleSelected && page.singleCanEdit)}
+              onEdit={() => page.openEditor(page.singleSelected ?? null)}
+              canAttach={Boolean(page.singleSelected)}
+              onAttachment={page.handleAttachment}
+              exporting={page.exporting}
+              onExport={() => void page.handleExport()}
+              columns={spec.columns}
+              hiddenColumnKeySet={page.hiddenKeySet}
+              onToggleColumn={toggleColumnVisibility}
+              columnSettingsOpen={columnSettingsOpen}
+              onColumnSettingsOpenChange={setColumnSettingsOpen}
+              selectedRowKeysCount={page.selectedRowKeys.length}
+              onClearSelection={page.clearSelection}
+              isFetching={page.listQuery.isFetching}
+              onRefresh={page.handleRefresh}
+              toolbarExtra={spec.renderToolbarExtra?.({
+                refresh: page.handleRefresh,
+                selectedRecord: page.singleSelected,
+                selectedCount: page.selectedRowKeys.length,
+              })}
+            />
+            <MasterDataTable
+              spec={spec}
+              records={page.records}
+              selectedRows={page.selectedRows}
+              total={page.total}
+              page={page.page}
+              pageSize={page.effectivePageSize}
+              hiddenColumnKeySet={page.hiddenKeySet}
+              onHideColumn={toggleColumnVisibility}
+              selectedRowKeys={page.selectedRowKeys}
+              expandedRowKeys={page.expandedRowKeys}
+              isLoading={page.listQuery.isLoading}
+              isFetching={page.listQuery.isFetching}
+              hasListError={page.hasListError}
+              errorMessage={page.listErrorMessage}
+              onSelectionChange={page.setSelectedRowKeys}
+              onExpandedRowKeysChange={page.setExpandedRowKeys}
+              onToggleRecordSelected={page.handleToggleRecordSelected}
+              onRecordDoubleClick={page.handleRecordDoubleClick}
+              onPageChange={page.handlePageChange}
+              onRetry={() => void page.listQuery.refetch()}
+            />
+          </section>
+        </ColumnSettingsRequestContext.Provider>
 
         <MasterDataEditor
           open={page.editorOpen}

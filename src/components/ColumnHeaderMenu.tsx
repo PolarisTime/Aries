@@ -14,11 +14,13 @@ export interface ColumnHeaderMenuProps {
   /** 列标题, 用于拼出菜单的可访问名 */
   columnTitle: string
   /** 该列已经是第一/最后一列: 对应项禁用而不是隐藏, 让读屏用户能发现边界 */
-  isFirst: boolean
-  isLast: boolean
-  onHide: () => void
-  onMoveFirst: () => void
-  onMoveLast: () => void
+  isFirst?: boolean
+  isLast?: boolean
+  /** 隐藏该列; 表格不支持列显隐时不传, 对应项不渲染 */
+  onHide?: () => void
+  /** 移到最前/最后; 表格不支持列排序时不传, 对应项不渲染 */
+  onMoveFirst?: () => void
+  onMoveLast?: () => void
   /** 表头区域节点 */
   children: ReactElement
 }
@@ -41,36 +43,44 @@ export function ColumnHeaderMenu({
   const { t } = useTranslation()
   const requestColumnSettings = use(ColumnSettingsRequestContext)
 
-  const items: MenuProps['items'] = [
-    {
+  const items: MenuProps['items'] = []
+  if (onHide) {
+    items.push({
       key: 'hide',
       icon: <EyeInvisibleOutlined />,
       label: t('common.columnMenu.hide'),
-    },
-    { type: 'divider' },
-    {
-      key: 'move-first',
-      icon: <VerticalAlignTopOutlined />,
-      label: t('common.columnMenu.moveFirst'),
-      disabled: isFirst,
-    },
-    {
-      key: 'move-last',
-      icon: <VerticalAlignBottomOutlined />,
-      label: t('common.columnMenu.moveLast'),
-      disabled: isLast,
-    },
-  ]
-  if (requestColumnSettings) {
-    items.push(
-      { type: 'divider' },
-      {
-        key: 'settings',
-        icon: <SettingOutlined />,
-        label: t('common.columnMenu.settings'),
-      },
-    )
+    })
   }
+  // 只有支持列排序的表才出现这两项(基础数据/资料表只能隐藏, 不能换序)
+  if (onMoveFirst || onMoveLast) {
+    if (items.length) items.push({ type: 'divider' })
+    if (onMoveFirst) {
+      items.push({
+        key: 'move-first',
+        icon: <VerticalAlignTopOutlined />,
+        label: t('common.columnMenu.moveFirst'),
+        disabled: Boolean(isFirst),
+      })
+    }
+    if (onMoveLast) {
+      items.push({
+        key: 'move-last',
+        icon: <VerticalAlignBottomOutlined />,
+        label: t('common.columnMenu.moveLast'),
+        disabled: Boolean(isLast),
+      })
+    }
+  }
+  if (requestColumnSettings) {
+    if (items.length) items.push({ type: 'divider' })
+    items.push({
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: t('common.columnMenu.settings'),
+    })
+  }
+  // 一个可用动作都没有时不要挂菜单: 空菜单比没有菜单更糟(读屏只会念"菜单")
+  if (!items.length) return children
 
   return (
     <ContextMenu
@@ -78,15 +88,15 @@ export function ColumnHeaderMenu({
       items={items}
       onClick={({ key }) => {
         if (key === 'hide') {
-          onHide()
+          onHide?.()
           return
         }
         if (key === 'move-first') {
-          onMoveFirst()
+          onMoveFirst?.()
           return
         }
         if (key === 'move-last') {
-          onMoveLast()
+          onMoveLast?.()
           return
         }
         if (key === 'settings') {

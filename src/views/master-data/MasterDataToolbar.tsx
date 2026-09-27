@@ -30,6 +30,9 @@ interface Props {
   columns: MasterColumnSpec[]
   hiddenColumnKeySet: Set<string>
   onToggleColumn: (key: string) => void
+  /** 「列设置」弹层的受控开合: 让列头右键菜单的「列设置…」项复用它 */
+  columnSettingsOpen?: boolean
+  onColumnSettingsOpenChange?: (open: boolean) => void
   selectedRowKeysCount: number
   onClearSelection: () => void
   isFetching: boolean
@@ -58,6 +61,8 @@ export function MasterDataToolbar({
   columns,
   hiddenColumnKeySet,
   onToggleColumn,
+  columnSettingsOpen,
+  onColumnSettingsOpenChange,
   selectedRowKeysCount,
   onClearSelection,
   isFetching,
@@ -140,6 +145,8 @@ export function MasterDataToolbar({
             </Button>
             {toolbarExtra}
             <Dropdown
+              open={columnSettingsOpen}
+              onOpenChange={onColumnSettingsOpenChange}
               menu={{
                 multiple: true,
                 selectedKeys: columns.flatMap((column) =>

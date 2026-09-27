@@ -5,6 +5,7 @@ import type { Key } from 'react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CustomerOption } from '@/api/master/customer-options'
+import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { StatusTag } from '@/components/StatusTag'
 import { resolveProjectCustomerDisplay } from '@/config/business-pages/master/project-page-utils'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
@@ -43,6 +44,8 @@ interface ProjectTableSectionProps {
   onRecordDoubleClick: (record: ProjectListRow) => void
   onPageChange: (page: number, pageSize: number) => void
   onRetry: () => void
+  /** 列头右键菜单「隐藏该列」; 不传时该项不出现 */
+  onHideColumn?: (key: string) => void
 }
 
 export function ProjectTableSection({
@@ -65,6 +68,7 @@ export function ProjectTableSection({
   onRecordDoubleClick,
   onPageChange,
   onRetry,
+  onHideColumn,
 }: ProjectTableSectionProps) {
   const { t } = useTranslation()
   const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
@@ -127,7 +131,17 @@ export function ProjectTableSection({
         continue
       }
       columns.push({
-        title: columnLabels[key],
+        title: (
+          <ColumnHeaderMenu
+            key={key}
+            columnTitle={columnLabels[key]}
+            onHide={onHideColumn ? () => onHideColumn(key) : undefined}
+          >
+            <span className="module-table-column-title">
+              {columnLabels[key]}
+            </span>
+          </ColumnHeaderMenu>
+        ),
         dataIndex: key,
         key,
         width: columnWidths[key],
@@ -145,7 +159,13 @@ export function ProjectTableSection({
       })
     }
     return columns
-  }, [columnLabels, columnWidths, customerOptions, hiddenColumnKeySet])
+  }, [
+    columnLabels,
+    columnWidths,
+    customerOptions,
+    hiddenColumnKeySet,
+    onHideColumn,
+  ])
 
   const visibleColumns: ColumnsType<ProjectListRow> = useMemo(
     () => [

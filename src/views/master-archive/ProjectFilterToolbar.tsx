@@ -48,6 +48,9 @@ interface ProjectFilterToolbarProps {
   onClearSelection: () => void
   isFetching: boolean
   onRefresh: () => void
+  /** 「列设置」弹层受控开合; 由页面持有, 以便列头右键菜单的「列设置…」复用同一弹层 */
+  columnSettingsOpen?: boolean
+  onColumnSettingsOpenChange?: (open: boolean) => void
 }
 
 export function ProjectFilterToolbar({
@@ -74,6 +77,8 @@ export function ProjectFilterToolbar({
   onClearSelection,
   isFetching,
   onRefresh,
+  columnSettingsOpen,
+  onColumnSettingsOpenChange,
 }: ProjectFilterToolbarProps) {
   const { t } = useTranslation()
   const [exporting, setExporting] = useState(false)
@@ -236,6 +241,8 @@ export function ProjectFilterToolbar({
                   label: columnLabels[key],
                 })),
               }}
+              open={columnSettingsOpen}
+              onOpenChange={onColumnSettingsOpenChange}
             >
               <Button>{t('common.columnSettings')}</Button>
             </Dropdown>

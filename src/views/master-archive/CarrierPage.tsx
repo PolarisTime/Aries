@@ -11,6 +11,7 @@ import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { AppProPage } from '@/components/AppProPage'
+import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
 import { normalizeCarrierEditorRecord } from '@/config/business-pages/master/carrier-vehicle-adapter'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
@@ -57,6 +58,7 @@ export function CarrierPage() {
   const [editorBaseRecord, setEditorBaseRecord] =
     useState<CarrierListRow | null>(null)
   const [attachmentRecordId, setAttachmentRecordId] = useState('')
+  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
   const { data: runtimeConfig } = useQuery({
     queryKey: QUERY_KEYS.runtimeConfig,
@@ -130,6 +132,23 @@ export function CarrierPage() {
   }
 
   const clearSelection = () => setSelectedRowKeys([])
+
+  /**
+   * 列显隐的唯一写入口: 工具栏是开关语义(勾选/取消), 列头右键只有「隐藏」一种动作。
+   * 两者共用一个实现, 避免隐藏规则各写一份而漂移。
+   */
+  const setColumnHidden = (key: string, hidden: boolean) => {
+    setHiddenColumnKeys((previous) => {
+      const next = previous.filter((item) => item !== key)
+      return hidden ? [...next, key] : next
+    })
+  }
+
+  const toggleColumn = (key: string) => {
+    setColumnHidden(key, !hiddenColumnKeys.includes(key))
+  }
+
+  const hideColumn = (key: string) => setColumnHidden(key, true)
 
   const applyFilters = (next: SearchParams) => {
     clearSelection()
@@ -219,65 +238,69 @@ export function CarrierPage() {
     >
       <div className="page-stack module-page-stack">
         <section className="module-grid-workspace">
-          <CarrierFilterToolbar
-            keyword={keyword}
-            onKeywordChange={setKeyword}
-            filterStatus={filterStatus}
-            onFilterStatusChange={(value) =>
-              setFilterStatus(value || undefined)
-            }
-            onSearch={handleSearch}
-            onResetFilters={handleResetFilters}
-            onCreate={() => openEditor(null)}
-            submittedFilters={submittedFilters}
-            selectedRows={selectedRows}
-            onDeleteCompleted={handleEditorSaved}
-            selectedRecord={selectedRecord}
-            selectedRecordCanEdit={selectedRecordCanEdit}
-            onEditSelected={() => openEditor(selectedRecord ?? null)}
-            onAttachmentSelected={() => {
-              if (selectedRecord) {
-                setAttachmentRecordId(String(selectedRecord.id))
+          {/* 列头右键菜单的「列设置…」复用工具栏这个弹层(开合状态在本组件) */}
+          <ColumnSettingsRequestContext.Provider
+            value={() => setColumnSettingsOpen(true)}
+          >
+            <CarrierFilterToolbar
+              keyword={keyword}
+              onKeywordChange={setKeyword}
+              filterStatus={filterStatus}
+              onFilterStatusChange={(value) =>
+                setFilterStatus(value || undefined)
               }
-            }}
-            hiddenColumnKeys={hiddenColumnKeys}
-            onToggleColumn={(key) => {
-              setHiddenColumnKeys((previous) =>
-                previous.includes(key)
-                  ? previous.filter((item) => item !== key)
-                  : [...previous, key],
-              )
-            }}
-            selectedRowKeysCount={selectedRowKeys.length}
-            onClearSelection={clearSelection}
-            isFetching={listQuery.isFetching}
-            onRefresh={handleRefresh}
-          />
+              onSearch={handleSearch}
+              onResetFilters={handleResetFilters}
+              onCreate={() => openEditor(null)}
+              submittedFilters={submittedFilters}
+              selectedRows={selectedRows}
+              onDeleteCompleted={handleEditorSaved}
+              selectedRecord={selectedRecord}
+              selectedRecordCanEdit={selectedRecordCanEdit}
+              onEditSelected={() => openEditor(selectedRecord ?? null)}
+              onAttachmentSelected={() => {
+                if (selectedRecord) {
+                  setAttachmentRecordId(String(selectedRecord.id))
+                }
+              }}
+              hiddenColumnKeys={hiddenColumnKeys}
+              onToggleColumn={toggleColumn}
+              selectedRowKeysCount={selectedRowKeys.length}
+              onClearSelection={clearSelection}
+              isFetching={listQuery.isFetching}
+              onRefresh={handleRefresh}
+              columnSettingsOpen={columnSettingsOpen}
+              onColumnSettingsOpenChange={setColumnSettingsOpen}
+            />
 
-          <CarrierTableSection
-            records={records}
-            selectedRows={selectedRows}
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            hiddenColumnKeys={hiddenColumnKeys}
-            selectedRowKeys={selectedRowKeys}
-            expandedRowKeys={expandedRowKeys}
-            isLoading={listQuery.isLoading}
-            isFetching={listQuery.isFetching}
-            hasListError={hasListError}
-            errorMessage={listErrorMessage}
-            onSelectionChange={(keys) => setSelectedRowKeys(keys.map(String))}
-            onExpandedRowKeysChange={setExpandedRowKeys}
-            onToggleRecordSelected={toggleRecordSelection}
-            onRecordDoubleClick={(record) => {
-              if (resolveModuleRecordCapabilities(record, MODULE_KEY).canEdit) {
-                openEditor(record)
-              }
-            }}
-            onPageChange={handlePageChange}
-            onRetry={() => void listQuery.refetch()}
-          />
+            <CarrierTableSection
+              records={records}
+              selectedRows={selectedRows}
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              hiddenColumnKeys={hiddenColumnKeys}
+              selectedRowKeys={selectedRowKeys}
+              expandedRowKeys={expandedRowKeys}
+              isLoading={listQuery.isLoading}
+              isFetching={listQuery.isFetching}
+              hasListError={hasListError}
+              errorMessage={listErrorMessage}
+              onSelectionChange={(keys) => setSelectedRowKeys(keys.map(String))}
+              onExpandedRowKeysChange={setExpandedRowKeys}
+              onToggleRecordSelected={toggleRecordSelection}
+              onRecordDoubleClick={(record) => {
+                if (
+                  resolveModuleRecordCapabilities(record, MODULE_KEY).canEdit
+                ) {
+                  openEditor(record)
+                }
+              }}
+              onPageChange={handlePageChange}
+              onRetry={() => void listQuery.refetch()}
+              onHideColumn={hideColumn}
+            />
+          </ColumnSettingsRequestContext.Provider>
         </section>
 
         <CarrierEditorOverlay

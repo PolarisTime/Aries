@@ -181,6 +181,9 @@ describe('ProjectPage 主数据拆分试点', () => {
   afterEach(async () => {
     act(() => root.unmount())
     container.remove()
+    document.querySelectorAll('.ant-dropdown').forEach((node) => {
+      node.remove()
+    })
     vi.unstubAllGlobals()
     vi.clearAllMocks()
     await queryClient.cancelQueries()
@@ -249,6 +252,109 @@ describe('ProjectPage 主数据拆分试点', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
   }
+
+  /** 列头右键菜单触发器挂在列标题节点上, 事件必须从该节点冒泡上去。 */
+  const openColumnMenu = async (columnTitle: string) => {
+    const titleNode = [
+      ...container.querySelectorAll<HTMLElement>(
+        '.ant-table-thead .module-table-column-title',
+      ),
+    ].find((node) => node.textContent?.trim() === columnTitle)
+    expect(titleNode, `应存在列头「${columnTitle}」`).toBeTruthy()
+    await act(async () => {
+      titleNode!.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 30))
+    })
+  }
+
+  /** 只取当前可见弹层里的菜单项: antd 关闭后保留隐藏 DOM, 跨次打开会查到旧项。 */
+  const visibleMenuItems = () => [
+    ...document.body.querySelectorAll<HTMLElement>(
+      '.ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu-item',
+    ),
+  ]
+
+  const clickMenuItem = async (label: string) => {
+    const item = visibleMenuItems().find(
+      (node) => node.textContent?.trim() === label,
+    )
+    expect(item, `菜单项 ${label} 应存在`).toBeTruthy()
+    await act(async () => {
+      item!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 30))
+    })
+  }
+
+  const headerTitles = () =>
+    [
+      ...container.querySelectorAll<HTMLElement>(
+        '.ant-table-thead .module-table-column-title',
+      ),
+    ].map((node) => node.textContent?.trim())
+
+  it('右键数据列头弹出「隐藏该列 / 列设置…」菜单', async () => {
+    renderPage()
+    await flushAsync()
+    const columnTitle = i18n.t('modules.pages.project.projectName')
+
+    await openColumnMenu(columnTitle)
+
+    const menu = document.body.querySelector(
+      '.ant-dropdown:not(.ant-dropdown-hidden) .app-context-menu [role="menu"]',
+    )
+    expect(menu?.getAttribute('aria-label')).toBe(
+      `「${columnTitle}」列操作菜单`,
+    )
+    expect(visibleMenuItems().map((node) => node.textContent?.trim())).toEqual([
+      '隐藏该列',
+      '列设置…',
+    ])
+  })
+
+  it('点击「隐藏该列」后该列头消失', async () => {
+    renderPage()
+    await flushAsync()
+    const columnTitle = i18n.t('modules.pages.project.projectName')
+    expect(headerTitles()).toContain(columnTitle)
+
+    await openColumnMenu(columnTitle)
+    await clickMenuItem('隐藏该列')
+
+    expect(headerTitles()).not.toContain(columnTitle)
+  })
+
+  it('点击「列设置…」打开工具栏的列设置弹层', async () => {
+    renderPage()
+    await flushAsync()
+    const columnTitle = i18n.t('modules.pages.project.projectName')
+
+    await openColumnMenu(columnTitle)
+    await clickMenuItem('列设置…')
+
+    const items = visibleMenuItems().map((node) => node.textContent?.trim())
+    expect(items).toContain(columnTitle)
+    expect(items).toContain(i18n.t('modules.pages.project.projectCode'))
+  })
+
+  it('工具栏「列设置」按钮仍可打开弹层(受控开合未破坏原行为)', async () => {
+    renderPage()
+    await flushAsync()
+
+    // antd Dropdown 默认是 hover 触发: 用冒泡的 mouseover 模拟指针进入
+    const trigger = [...container.querySelectorAll('button')].find(
+      (button) => button.textContent?.replace(/\s/g, '') === '列设置',
+    )
+    expect(trigger, '工具栏「列设置」按钮应存在').toBeTruthy()
+    await act(async () => {
+      trigger!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+
+    const items = visibleMenuItems().map((node) => node.textContent?.trim())
+    expect(items).toContain(i18n.t('modules.pages.project.projectName'))
+  })
 
   it('渲染列表列、状态标签与默认隐藏列', async () => {
     renderPage()

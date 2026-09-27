@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { Key } from 'react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { LegacyModuleRecord } from '@/types/module-record'
@@ -22,6 +23,8 @@ interface Props {
   page: number
   pageSize: number
   hiddenColumnKeySet: Set<string>
+  /** 列头右键「隐藏该列」: 该表不支持列排序, 因此只提供隐藏能力 */
+  onHideColumn?: (key: string) => void
   selectedRowKeys: string[]
   expandedRowKeys: string[]
   isLoading: boolean
@@ -68,6 +71,7 @@ export function MasterDataTable({
   page,
   pageSize,
   hiddenColumnKeySet,
+  onHideColumn,
   selectedRowKeys,
   expandedRowKeys,
   isLoading,
@@ -92,7 +96,15 @@ export function MasterDataTable({
         }
         return [
           {
-            title: column.title,
+            title: (
+              <ColumnHeaderMenu
+                key={column.key}
+                columnTitle={column.title}
+                onHide={() => onHideColumn?.(column.key)}
+              >
+                <span className="master-data-column-title">{column.title}</span>
+              </ColumnHeaderMenu>
+            ),
             dataIndex: column.key,
             key: column.key,
             width: column.width,
@@ -153,6 +165,7 @@ export function MasterDataTable({
     t,
     onExpandedRowKeysChange,
     expandedRowKeys,
+    onHideColumn,
   ])
 
   const overviewItems = useMemo(
