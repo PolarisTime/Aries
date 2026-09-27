@@ -6,8 +6,15 @@ import {
   type ReactNode,
   type SetStateAction,
   useEffect,
+  useMemo,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
+import { RowContextMenuRow } from '@/components/RowContextMenuRow'
+import {
+  buildRowContextMenus,
+  type RowContextMenuMap,
+} from '@/components/row-context-menu'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -18,11 +25,13 @@ import {
 } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { modal } from '@/utils/antd-app'
 import {
   mergeColumnOrder,
   moveColumnKey,
   toggleColumnVisibility,
 } from '@/utils/table-columns'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   moduleKey: ModuleKey
@@ -137,6 +146,7 @@ export function useBusinessGridTable({
   showActions,
   onOpenDetail,
 }: Props) {
+  const { t } = useTranslation()
   const totalColumnCount = config?.columns?.length ?? 0
   const {
     columnOrder: savedOrder,
@@ -207,6 +217,41 @@ export function useBusinessGridTable({
       isResizable: (column) => column.key !== ACTIONS_COLUMN_ID,
     })
   const antdColumns = resizableColumns
+  /**
+   * 行右键菜单: 与行内可见按钮(TableActions)共用同一份 ActionItem[],
+   * 因此两个入口的文案、禁用口径、二次确认完全一致。
+   */
+  const rowContextMenus = useMemo<RowContextMenuMap>(() => {
+    const primaryNoKey = config?.primaryNoKey
+    return buildRowContextMenus({
+      records,
+      buildActions,
+      labelOf: (record) =>
+        (primaryNoKey ? asString(record[primaryNoKey]) : '') ||
+        String(record.id),
+      ariaLabelOf: (label) =>
+        t('modules.table.rowContextMenuLabel', { title: label }),
+      okText: t('common.ok'),
+      cancelText: t('common.cancel'),
+      requestConfirm: ({ title, okText, cancelText, danger, onOk }) =>
+        modal.confirm({
+          title,
+          okText,
+          cancelText,
+          ...(danger ? { okButtonProps: { danger: true } } : {}),
+          onOk,
+        }),
+    })
+  }, [buildActions, config?.primaryNoKey, records, t])
+
+  /** 行容器换成支持右键菜单的包装(保留列宽拖拽注入的其它 components)。 */
+  const tableComponents = useMemo(() => {
+    if (!rowContextMenus.size) return components
+    return {
+      ...components,
+      body: { ...components?.body, row: RowContextMenuRow },
+    }
+  }, [components, rowContextMenus])
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined = {
     selectedRowKeys,
     onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
@@ -253,7 +298,8 @@ export function useBusinessGridTable({
   }
   return {
     antdColumns,
-    components,
+    components: tableComponents,
+    rowContextMenus,
     columnOrder,
     columnVisibleKeys,
     toggleColumn,

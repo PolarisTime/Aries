@@ -13,6 +13,10 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/EmptyState'
+import {
+  RowContextMenuContext,
+  type RowContextMenuMap,
+} from '@/components/row-context-menu'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import { type EmptyStateStateInput, useEmptyState } from '@/hooks/useEmptyState'
 import type { ModuleRecord } from '@/types/module-page'
@@ -33,6 +37,8 @@ interface Props {
   moduleKey: string
   columns: ColumnsType<ModuleRecord>
   components?: TableProps<ModuleRecord>['components']
+  /** 行右键菜单查找表; 为空时行容器保持默认渲染 */
+  rowContextMenus?: RowContextMenuMap
   dataSource: ModuleRecord[]
   loading: boolean
   currentPage: number
@@ -59,6 +65,7 @@ export function BusinessGridTable({
   moduleKey,
   columns,
   components,
+  rowContextMenus,
   dataSource,
   loading,
   currentPage,
@@ -239,49 +246,52 @@ export function BusinessGridTable({
 
   return (
     <div ref={shellRef} className="module-table-shell" style={shellStyle}>
-      <Table
-        key={moduleKey}
-        rowKey="id"
-        size="small"
-        loading={loading}
-        columns={tableColumns}
-        components={components}
-        dataSource={dataSource}
-        rowSelection={rowSelection}
-        expandable={
-          expandable
-            ? {
-                ...expandable,
-                expandIcon: ({ expanded, onExpand, record }) => (
-                  <button
-                    type="button"
-                    className="module-table-expand-button"
-                    aria-label={
-                      expanded ? t('common.collapse') : t('common.expand')
-                    }
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onExpand(record, event)
-                    }}
-                  >
-                    {expanded ? (
-                      <MinusSquareOutlined />
-                    ) : (
-                      <PlusSquareOutlined />
-                    )}
-                  </button>
-                ),
-              }
-            : undefined
-        }
-        virtual={isVirtual}
-        tableLayout="fixed"
-        pagination={false}
-        scroll={scroll}
-        rowClassName={resolveRowClassName}
-        onRow={onRow}
-        locale={locale}
-      />
+      {/* 行右键菜单: 行由 components.body.row 渲染, 拿不到行数据, 故用上下文按行 key 注入 */}
+      <RowContextMenuContext.Provider value={rowContextMenus ?? null}>
+        <Table
+          key={moduleKey}
+          rowKey="id"
+          size="small"
+          loading={loading}
+          columns={tableColumns}
+          components={components}
+          dataSource={dataSource}
+          rowSelection={rowSelection}
+          expandable={
+            expandable
+              ? {
+                  ...expandable,
+                  expandIcon: ({ expanded, onExpand, record }) => (
+                    <button
+                      type="button"
+                      className="module-table-expand-button"
+                      aria-label={
+                        expanded ? t('common.collapse') : t('common.expand')
+                      }
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onExpand(record, event)
+                      }}
+                    >
+                      {expanded ? (
+                        <MinusSquareOutlined />
+                      ) : (
+                        <PlusSquareOutlined />
+                      )}
+                    </button>
+                  ),
+                }
+              : undefined
+          }
+          virtual={isVirtual}
+          tableLayout="fixed"
+          pagination={false}
+          scroll={scroll}
+          rowClassName={resolveRowClassName}
+          onRow={onRow}
+          locale={locale}
+        />
+      </RowContextMenuContext.Provider>
     </div>
   )
 }

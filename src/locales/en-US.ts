@@ -1034,6 +1034,8 @@ export const enUS = {
       rowCount: 'Rows',
     },
     table: {
+      /** Accessible name of the row context menu in list grids */
+      rowContextMenuLabel: 'Actions for the "{{title}}" row',
       noData: 'No data',
       sequence: 'No.',
     },

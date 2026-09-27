@@ -5,6 +5,7 @@ import { isEqual } from 'es-toolkit'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
+import type { RowContextMenuMap } from '@/components/row-context-menu'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
@@ -36,6 +37,8 @@ interface Props {
   columnOrder: string[]
   columns: ColumnsType<ModuleRecord>
   components: TableProps<ModuleRecord>['components']
+  /** 行右键菜单查找表(键为行 key); 由表格内部注入 Provider */
+  rowContextMenus?: RowContextMenuMap
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
@@ -92,6 +95,7 @@ export function BusinessGridContent({
   columnOrder,
   columns,
   components,
+  rowContextMenus,
   rowSelection,
   rowClassName,
   onUpdateFilter,
@@ -200,6 +204,7 @@ export function BusinessGridContent({
               moduleKey={moduleKey}
               columns={columns}
               components={components}
+              rowContextMenus={rowContextMenus}
               dataSource={records}
               loading={loading}
               currentPage={currentPage}

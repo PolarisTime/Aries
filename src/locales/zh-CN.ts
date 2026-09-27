@@ -1005,6 +1005,8 @@ export const zhCN = {
       rowCount: '行数',
     },
     table: {
+      /** 通用业务列表的行右键菜单可访问名 */
+      rowContextMenuLabel: '「{{title}}」行操作菜单',
       noData: '暂无数据',
       sequence: '序号',
     },

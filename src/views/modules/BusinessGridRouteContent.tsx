@@ -124,6 +124,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           columnOrder={state.columnOrder}
           columns={state.antdColumns}
           components={state.components}
+          rowContextMenus={state.rowContextMenus}
           rowSelection={state.rowSelection}
           rowClassName={state.getRowClassName}
           onUpdateFilter={state.updateFilter}
