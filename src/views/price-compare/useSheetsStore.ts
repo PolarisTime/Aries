@@ -2644,8 +2644,16 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     for (const price of item.prices) {
       const entry: SheetInput = {}
       if (price.spotPrice !== undefined) entry.spot = price.spotPrice
+      if (price.derivedSpotPrice !== undefined)
+        entry.derivedSpot = price.derivedSpotPrice
+      if (price.spotSource) entry.spotSource = price.spotSource
+      if (price.spotReason) entry.spotReason = price.spotReason
       if (price.supplierId) entry.supplierId = price.supplierId
       if (price.supplierName) entry.supplierName = price.supplierName
+      if (price.priceListId) entry.priceListId = price.priceListId
+      if (price.priceListReleasedAt)
+        entry.priceListReleasedAt = price.priceListReleasedAt
+      // 无价也要建条目: spotSource=NONE + spotReason 是单元格显示「为什么没有价」的唯一依据
       if (Object.keys(entry).length > 0) {
         inputs[`${price.brandName}:${item.id}`] = entry
       }

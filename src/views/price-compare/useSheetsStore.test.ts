@@ -230,6 +230,84 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(localStorage.getItem('aries-price-compare-v5')).toBeNull()
   })
 
+  it('价格表推导的现货价与来源标记回填到单元格(手填覆盖优先)', async () => {
+    const record = sheetRecord({
+      items: [
+        {
+          id: '7001',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              // 最终现货价 = 手填覆盖值; 价格表推导值另存, 供「恢复为价格表价」
+              spotPrice: 3350,
+              derivedSpotPrice: 3320,
+              spotSource: 'MANUAL',
+              supplierId: '5001',
+              supplierName: '杭州物资',
+              freight: 30,
+              priceSource: 'MANUAL',
+              priceListId: '8801',
+              priceListReleasedAt: '2026-09-16T09:30:00',
+            },
+          ],
+        },
+      ],
+    })
+    api.fetchQuoteSheets.mockResolvedValue([record])
+    api.fetchQuoteSheet.mockResolvedValue(record)
+    const store = renderStore()
+    await hydrate(store)
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    expect(store.current.active.inputs[inputKey]).toMatchObject({
+      spot: 3350,
+      derivedSpot: 3320,
+      spotSource: 'MANUAL',
+      supplierId: '5001',
+      supplierName: '杭州物资',
+      priceListId: '8801',
+      priceListReleasedAt: '2026-09-16T09:30:00',
+    })
+  })
+
+  it('无价单元格也回填来源与原因(spotSource=NONE), 让 UI 能说明为什么没有现货价', async () => {
+    const record = sheetRecord({
+      items: [
+        {
+          id: '7001',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              spotSource: 'NONE',
+              spotReason: 'NO_LIST_AT_TIME',
+            },
+          ],
+        },
+      ],
+    })
+    api.fetchQuoteSheets.mockResolvedValue([record])
+    api.fetchQuoteSheet.mockResolvedValue(record)
+    const store = renderStore()
+    await hydrate(store)
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    // 没有 spot 也要建条目, 否则单元格拿不到「该时刻无生效版本」的说明依据
+    expect(store.current.active.inputs[inputKey]).toEqual({
+      spotSource: 'NONE',
+      spotReason: 'NO_LIST_AT_TIME',
+    })
+  })
+
   it('表头变更后防抖只发头字段(不携带 brands/items)', async () => {
     const store = renderStore()
     await hydrate(store)

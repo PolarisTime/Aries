@@ -34,8 +34,23 @@ const brandSchema = z.looseObject({
 const priceSchema = z.looseObject({
   brandName: z.string(),
   spotPrice: z.union([z.number(), z.string()]).nullable().optional(),
+  /**
+   * 价格表推导值(不含手填覆盖), 供「恢复为价格表价」预览。
+   * 现货价不再要求人工填写: 后端按该单据报价时刻生效的供应商价格表推导。
+   */
+  derivedSpotPrice: z.union([z.number(), z.string()]).nullable().optional(),
+  /** 现货价来源: 手填覆盖 / 价格表推导 / 无。 */
+  spotSource: z.string().nullable().optional(),
+  /** 无价原因: 该时刻无生效版本 / 无该条目 / 条目不报价。 */
+  spotReason: z.string().nullable().optional(),
   supplierId: z.union([z.number(), z.string()]).nullable().optional(),
   supplierName: z.string().nullable().optional(),
+  /** 项目级运费(元/吨), 来自项目品牌配置, 不来自价格表。 */
+  freight: z.union([z.number(), z.string()]).nullable().optional(),
+  /** 已落库覆盖行的来源快照。 */
+  priceSource: z.string().nullable().optional(),
+  priceListId: z.union([z.number(), z.string()]).nullable().optional(),
+  priceListReleasedAt: z.string().nullable().optional(),
 })
 
 const itemSchema = z.looseObject({
@@ -82,11 +97,35 @@ const sheetPageSchema = z.looseObject({
   hasMore: z.boolean(),
 })
 
+/** 现货价来源: MANUAL 单据手填/覆盖, PRICE_LIST 由供应商价格表推导, NONE 无价。 */
+export type SpotPriceSource = 'MANUAL' | 'PRICE_LIST' | 'NONE'
+/** 无价原因: 报价时刻无生效价格表版本 / 有版本但无该条目 / 条目存在但不报价。 */
+export type SpotPriceReason = 'NO_LIST_AT_TIME' | 'NO_ITEM' | 'NO_PRICE'
+
+const asSpotSource = (raw: unknown): SpotPriceSource | undefined =>
+  raw === 'MANUAL' || raw === 'PRICE_LIST' || raw === 'NONE' ? raw : undefined
+
+const asSpotReason = (raw: unknown): SpotPriceReason | undefined =>
+  raw === 'NO_LIST_AT_TIME' || raw === 'NO_ITEM' || raw === 'NO_PRICE'
+    ? raw
+    : undefined
+
 export type QuoteSheetPriceRecord = {
   brandName: string
+  /** 最终现货价 = 手填覆盖值(存在时) 否则价格表推导值。 */
   spotPrice?: number
+  /** 价格表推导值(不含手填覆盖)。 */
+  derivedSpotPrice?: number
+  spotSource?: SpotPriceSource
+  spotReason?: SpotPriceReason
   supplierId?: EntityId
   supplierName?: string
+  /** 项目级运费(元/吨)。 */
+  freight?: number
+  /** 覆盖行落库来源: MANUAL 手填覆盖 / PRICE_LIST 已固化的价格表价。 */
+  priceSource?: 'MANUAL' | 'PRICE_LIST'
+  priceListId?: EntityId
+  priceListReleasedAt?: string
 }
 
 export type QuoteSheetItemRecord = {
@@ -205,20 +244,38 @@ function normalizePrice(
   raw: z.infer<typeof priceSchema>,
   index: number,
 ): QuoteSheetPriceRecord {
+  const supplierId = parseOptionalEntityId(
+    raw.supplierId,
+    `prices[${index}].supplierId`,
+  )
+  const priceListId = parseOptionalEntityId(
+    raw.priceListId,
+    `prices[${index}].priceListId`,
+  )
+  const derivedSpotPrice = toOptionalNumber(raw.derivedSpotPrice)
+  const spotSource = asSpotSource(raw.spotSource)
+  const spotReason = asSpotReason(raw.spotReason)
+  const freight = toOptionalNumber(raw.freight)
+  const priceSource =
+    raw.priceSource === 'MANUAL' || raw.priceSource === 'PRICE_LIST'
+      ? raw.priceSource
+      : undefined
   return {
     brandName: raw.brandName,
     ...(toOptionalNumber(raw.spotPrice) !== undefined
       ? { spotPrice: toOptionalNumber(raw.spotPrice) }
       : {}),
-    ...(parseOptionalEntityId(raw.supplierId, `prices[${index}].supplierId`)
-      ? {
-          supplierId: parseOptionalEntityId(
-            raw.supplierId,
-            `prices[${index}].supplierId`,
-          ),
-        }
-      : {}),
+    ...(derivedSpotPrice !== undefined ? { derivedSpotPrice } : {}),
+    ...(spotSource ? { spotSource } : {}),
+    ...(spotReason ? { spotReason } : {}),
+    ...(supplierId ? { supplierId } : {}),
     ...(raw.supplierName ? { supplierName: raw.supplierName } : {}),
+    ...(freight !== undefined ? { freight } : {}),
+    ...(priceSource ? { priceSource } : {}),
+    ...(priceListId ? { priceListId } : {}),
+    ...(raw.priceListReleasedAt
+      ? { priceListReleasedAt: raw.priceListReleasedAt }
+      : {}),
   }
 }
 
