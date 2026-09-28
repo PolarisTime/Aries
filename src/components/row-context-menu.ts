@@ -15,7 +15,7 @@ export interface RowContextMenuConfig {
   items: MenuProps['items']
   onClick: MenuProps['onClick']
   /**
-   * 菜单打开回调(行右键与行尾「更多」按钮共用)。
+   * 菜单打开回调(行右键 / 键盘 Shift+F10 / 触摸长按共用)。
    *
    * <p>打开行菜单即视为"操作目标=该行", 调用方据此把选中态同步到这一行,
    * 避免菜单里的动作作用在之前选中的另一行上(删错行)。</p>
@@ -58,6 +58,58 @@ export function isNativeContextMenuTarget(target: EventTarget | null) {
   return (
     target instanceof Element &&
     Boolean(target.closest(NATIVE_CONTEXT_MENU_SELECTOR))
+  )
+}
+
+/**
+ * 需要保留浏览器原生右键(粘贴/全选)的控件: 只算**文本/数字**输入与下拉。
+ *
+ * <p>刻意排除 `checkbox`/`radio`/`button` 一类"点选型" input —— 它们没有可粘贴的
+ * 文本内容, 却占着行内很显眼的一格(如行选择框), 把它们算作原生目标会让行菜单
+ * 又少一处可点区域。</p>
+ */
+const EDITABLE_FIELD_SELECTOR = [
+  'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"])',
+  'textarea',
+  '[contenteditable="true"]',
+  '.ant-select',
+  '.ant-input-number',
+].join(',')
+
+/** 是否为可读写 disabled/readOnly 的文本类表单元素。 */
+function isTextField(
+  node: Element,
+): node is HTMLInputElement | HTMLTextAreaElement {
+  return node.tagName === 'INPUT' || node.tagName === 'TEXTAREA'
+}
+
+/**
+ * 事件是否落在**正在编辑**(非 disabled/readOnly)的文本/数字输入控件或下拉上。
+ *
+ * <p>与 {@link isNativeContextMenuTarget} 的区别: 后者只看标签名, 会把
+ * 「已禁用/只读」的输入控件也算成原生右键目标。在报单比价这类整行铺满输入控件的
+ * 表格里, 那会让右键菜单几乎无处可点 —— 禁用的控件本身已不可编辑, 不需要原生菜单,
+ * 应改走行菜单(并在菜单里说明禁用原因)。</p>
+ */
+export function isEditableFieldTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  const control = target.closest(EDITABLE_FIELD_SELECTOR)
+  if (!control) return false
+  // 用 tagName 判定而非 instanceof: TS 7 未对 Element 做 instanceof 窄化
+  if (isTextField(control)) return !control.disabled && !control.readOnly
+  if (control.getAttribute('contenteditable') === 'true') return true
+  // antd 下拉/数字输入: 以内层真实 input 的可编辑状态为准
+  const inner = control.querySelector('input,textarea')
+  if (inner) return isTextField(inner) && !inner.disabled && !inner.readOnly
+  /*
+   * 无内层输入(部分禁用态下拉不渲染 input): 退回容器自身的可用状态 ——
+   * antd 把禁用态挂在 `.ant-select-disabled` / `.ant-input-number-disabled` 上,
+   * 忽略它会把"已禁用下拉"误判成可编辑, 右键又回到浏览器原生菜单。
+   */
+  return (
+    control.getAttribute('aria-disabled') !== 'true' &&
+    !control.classList.contains('ant-select-disabled') &&
+    !control.classList.contains('ant-input-number-disabled')
   )
 }
 

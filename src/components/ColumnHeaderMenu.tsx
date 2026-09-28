@@ -77,7 +77,10 @@ export function ColumnHeaderMenu({
       items.push({
         key: 'move-first',
         icon: <VerticalAlignTopOutlined />,
-        label: t('common.columnMenu.moveFirst'),
+        // 已在最前时不禁用隐藏, 而是保留条目并在文案里说明原因(禁用项由 ContextMenu 保证可聚焦)
+        label: isFirst
+          ? t('common.columnMenu.moveFirstDisabled')
+          : t('common.columnMenu.moveFirst'),
         disabled: Boolean(isFirst),
       })
     }
@@ -85,7 +88,9 @@ export function ColumnHeaderMenu({
       items.push({
         key: 'move-last',
         icon: <VerticalAlignBottomOutlined />,
-        label: t('common.columnMenu.moveLast'),
+        label: isLast
+          ? t('common.columnMenu.moveLastDisabled')
+          : t('common.columnMenu.moveLast'),
         disabled: Boolean(isLast),
       })
     }
@@ -142,11 +147,19 @@ export function ColumnHeaderMenu({
         role="button"
         tabIndex={0}
         onKeyDownCapture={(event) => {
-          // APG: Shift+F10 与 ContextMenu 键等价于"在焦点处打开上下文菜单"
+          /*
+           * APG: role="button" 必须同时响应 Enter 与 Space(否则键盘用户打不开这个菜单,
+           * WCAG 2.1.1); Shift+F10 / ContextMenu 键等价于"在焦点处打开上下文菜单"。
+           * Space 必须 preventDefault, 否则会滚动页面。
+           */
+          const activatesButton =
+            event.key === 'Enter' ||
+            event.key === ' ' ||
+            event.key === 'Spacebar'
           const opensContextMenu =
             event.key === 'ContextMenu' ||
             (event.key === 'F10' && event.shiftKey)
-          if (!opensContextMenu) return
+          if (!activatesButton && !opensContextMenu) return
           event.preventDefault()
           event.stopPropagation()
           setOpen(true)

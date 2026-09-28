@@ -168,12 +168,12 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
     expect(visibleMenuItems()[0]).toBe(document.activeElement)
   })
 
-  it('默认提供 隐藏该列 / 移到最前 / 移到最后, 边界处禁用而不隐藏', async () => {
+  it('默认提供 隐藏该列 / 移到最前 / 移到最后, 边界处禁用并说明原因', async () => {
     render({ isFirst: true, isLast: false })
     await openMenu()
     expect(menuItems()).toEqual([
       { text: '隐藏该列', disabled: false },
-      { text: '移到最前', disabled: true },
+      { text: '移到最前（已在最前）', disabled: true },
       { text: '移到最后', disabled: false },
     ])
 
@@ -182,8 +182,57 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
     expect(menuItems()).toEqual([
       { text: '隐藏该列', disabled: false },
       { text: '移到最前', disabled: false },
-      { text: '移到最后', disabled: true },
+      { text: '移到最后（已在最后）', disabled: true },
     ])
+  })
+
+  it('边界处的禁用项仍可聚焦、可被方向键到达且读屏可发现原因', async () => {
+    // jsdom 没有布局: rc-menu 的方向键导航按 offsetParent 判可见性, 不补桩就复现不了真实行为
+    const originalOffsetParent = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'offsetParent',
+    )
+    Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+      configurable: true,
+      get: () => document.body,
+    })
+    try {
+      render({ isFirst: true })
+      await openMenu()
+      const items = visibleMenuItems()
+      expect(items[0]).toBe(document.activeElement)
+
+      act(() => {
+        items[0]?.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'ArrowDown',
+            bubbles: true,
+            cancelable: true,
+            keyCode: 40,
+            which: 40,
+          }),
+        )
+      })
+      await flush()
+
+      const disabledItem = visibleMenuItems().find((node) =>
+        (node.textContent || '').includes('已在最前'),
+      )
+      expect(disabledItem).toBeTruthy()
+      expect(disabledItem?.getAttribute('aria-disabled')).toBe('true')
+      expect(document.activeElement).toBe(disabledItem)
+    } finally {
+      if (originalOffsetParent) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          'offsetParent',
+          originalOffsetParent,
+        )
+      } else {
+        delete (HTMLElement.prototype as { offsetParent?: unknown })
+          .offsetParent
+      }
+    }
   })
 
   it('点击各项调用对应回调: 隐藏 / 移到最前 / 移到最后', async () => {
@@ -286,6 +335,45 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
       )
     })
     await flush()
+    expect(visibleMenuItems().length).toBeGreaterThan(0)
+  })
+
+  it('聚焦触发器后按 Enter 打开菜单且焦点进入首项(WCAG 2.1.1)', async () => {
+    render()
+    const node = trigger()
+    act(() => {
+      node?.focus()
+    })
+    act(() => {
+      node?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await flush()
+    expect(visibleMenuItems().length).toBeGreaterThan(0)
+    expect(visibleMenuItems()[0]).toBe(document.activeElement)
+  })
+
+  it('聚焦触发器后按 Space 打开菜单并阻止页面滚动', async () => {
+    render()
+    const node = trigger()
+    act(() => {
+      node?.focus()
+    })
+    const event = new KeyboardEvent('keydown', {
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      node?.dispatchEvent(event)
+    })
+    await flush()
+    expect(event.defaultPrevented).toBe(true)
     expect(visibleMenuItems().length).toBeGreaterThan(0)
   })
 

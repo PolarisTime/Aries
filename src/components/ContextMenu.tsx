@@ -6,9 +6,51 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
+
+/**
+ * 软禁用标记: rc-menu 的 `disabled` 项不会拿到 tabIndex, 无法聚焦也不在方向键序列里,
+ * 因此本组件不把 `disabled` 透传给 rc-menu, 改由该属性(落到 DOM 的 li 上)表达不可用。
+ */
+const SOFT_DISABLED_ATTR = 'data-menu-item-soft-disabled'
+
+/**
+ * rc-menu 的 disabled 项既不可聚焦, 也会被方向键跳过; APG 要求禁用项可聚焦、可被读屏发现。
+ * 这里把 `disabled: true` 降级为"软禁用": 保留在菜单的键盘序列与 Tab 序列中,
+ * 由 `aria-disabled`(挂载后补写)与点击/回车拦截共同表达"可见但不可用"。
+ */
+function toSoftDisabledItems(items: MenuProps['items']): {
+  items: MenuProps['items']
+  softDisabledKeys: Set<string>
+} {
+  const softDisabledKeys = new Set<string>()
+  const list = items ?? []
+  const normalized = list.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return item
+    const config = item as unknown as Record<string, unknown>
+    if (!config.disabled) return item
+    const key = String(config.key ?? '')
+    if (key) softDisabledKeys.add(key)
+    const { disabled: _softDisabled, ...rest } = config
+    return {
+      ...rest,
+      [SOFT_DISABLED_ATTR]: 'true',
+      className: [rest.className, 'app-context-menu-item-disabled']
+        .filter(Boolean)
+        .join(' '),
+      // rc-menu 的禁用样式走内部 disabled 分支, 这里用内联样式保住"不可用"的视觉提示
+      style: {
+        opacity: 0.45,
+        cursor: 'not-allowed',
+        ...((rest.style ?? {}) as Record<string, unknown>),
+      },
+    } as unknown as (typeof list)[number]
+  })
+  return { items: normalized, softDisabledKeys }
+}
 
 export interface ContextMenuProps {
   /**
@@ -45,7 +87,7 @@ export interface ContextMenuProps {
  * </ol>
  *
  * <p>注意: antd/rc-menu 在方向键导航时会跳过禁用项(APG 建议禁用项可聚焦但不可激活),
- * 这是已知偏差; 禁用项仍带 `aria-disabled="true"` 且视觉可辨。</p>
+ * 本组件在渲染前把 `disabled` 项改写为"软禁用", 让它们仍可聚焦、可被读屏发现, 但激活无效。</p>
  */
 export function ContextMenu({
   ariaLabel,
@@ -61,6 +103,10 @@ export function ContextMenu({
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const open = controlledOpen ?? uncontrolledOpen
   const popupRef = useRef<HTMLDivElement>(null)
+  const { items: normalizedItems, softDisabledKeys } = useMemo(
+    () => toSoftDisabledItems(items),
+    [items],
+  )
   /** 用户已经点过菜单项(可能打开了对话框/确认框), 此时不再抢焦点。 */
   const interactedRef = useRef(false)
   /** 打开菜单时持有焦点的元素(右键场景通常是被右击的元素)。 */
@@ -72,14 +118,33 @@ export function ContextMenu({
     onOpenChange?.(next)
   }
 
-  /** 把焦点放进第一个可用菜单项; 返回是否成功(菜单项可能还没挂载)。 */
+  /** 把焦点放进第一个菜单项; 返回是否成功(菜单项可能还没挂载)。 */
   const focusFirstItem = useCallback(() => {
-    const target = popupRef.current?.querySelector<HTMLElement>(
-      '[role="menuitem"]:not([aria-disabled="true"])',
-    )
+    // 软禁用项同样可聚焦(APG), 因此不按 aria-disabled 过滤
+    const target =
+      popupRef.current?.querySelector<HTMLElement>('[role="menuitem"]')
     if (!target) return false
     target.focus()
     return true
+  }, [])
+
+  /**
+   * 补写软禁用项的 aria-disabled。
+   *
+   * <p>rc-menu 用自己的 `aria-disabled={undefined}` 覆盖 items 上的同名 props,
+   * 无法通过配置声明, 只能在弹层挂载后落到 DOM; React 后续重渲染不会移除该属性
+   * (props 两侧都是 undefined, 不产生 DOM 写入)。</p>
+   */
+  const markSoftDisabledItems = useCallback(() => {
+    const popup = popupRef.current
+    if (!popup) return
+    popup
+      .querySelectorAll<HTMLElement>(`[${SOFT_DISABLED_ATTR}="true"]`)
+      .forEach((node) => {
+        if (node.getAttribute('aria-disabled') !== 'true') {
+          node.setAttribute('aria-disabled', 'true')
+        }
+      })
   }, [])
 
   /** 记录弹层节点; 焦点迁移统一在下面延后执行(见注释)。 */
@@ -88,6 +153,8 @@ export function ContextMenu({
   }
 
   const handleMenuClick: MenuProps['onClick'] = (info) => {
+    // 软禁用项: 可聚焦、可被读屏发现, 但激活(点击/回车)不产生任何动作
+    if (softDisabledKeys.has(String(info.key))) return
     // 点过菜单项后焦点该交给对话框/被操作对象, 看门狗必须停手
     interactedRef.current = true
     onClick?.(info)
@@ -112,6 +179,7 @@ export function ContextMenu({
     const watch = () => {
       if (cancelled || interactedRef.current) return
       const popup = popupRef.current
+      markSoftDisabledItems()
       if (popup && !popup.contains(document.activeElement)) focusFirstItem()
       if (Date.now() < deadline) timer = window.setTimeout(watch, 20)
     }
@@ -120,7 +188,7 @@ export function ContextMenu({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [focusFirstItem, open])
+  }, [focusFirstItem, markSoftDisabledItems, open])
 
   const restoreFocus = () => {
     const target = returnFocusRef?.current ?? openerRef.current
@@ -150,7 +218,7 @@ export function ContextMenu({
     <Dropdown
       disabled={disabled}
       menu={{
-        items,
+        items: normalizedItems,
         ...(onClick ? { onClick: handleMenuClick } : {}),
         'aria-label': ariaLabel,
       }}

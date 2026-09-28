@@ -15,6 +15,39 @@ function menuItems() {
   ]
 }
 
+/**
+ * jsdom 没有布局: rc-menu 的方向键导航按 offsetParent 判可见性,
+ * 不补桩时所有菜单项都会被当成不可见, 方向键用例无法复现真实浏览器行为。
+ */
+function stubOffsetParent() {
+  const original = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetParent',
+  )
+  Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+    configurable: true,
+    get: () => document.body,
+  })
+  return () => {
+    if (original) {
+      Object.defineProperty(HTMLElement.prototype, 'offsetParent', original)
+    } else {
+      delete (HTMLElement.prototype as { offsetParent?: unknown }).offsetParent
+    }
+  }
+}
+
+/** jsdom 的 KeyboardEvent 不带 legacy keyCode, 而 rc-menu 仍按 `which` 判定方向键。 */
+function arrowDownEvent() {
+  return new KeyboardEvent('keydown', {
+    key: 'ArrowDown',
+    bubbles: true,
+    cancelable: true,
+    keyCode: 40,
+    which: 40,
+  })
+}
+
 /** 等 antd 弹层挂载 + rAF 里的焦点迁移落地。 */
 const flush = () =>
   act(async () => {
@@ -106,7 +139,7 @@ describe('ContextMenu 无障碍契约', () => {
     expect(menu?.getAttribute('aria-label')).toBe('「首页」标签操作菜单')
   })
 
-  it('打开后焦点进入第一个可用菜单项(跳过禁用项)', async () => {
+  it('打开后焦点进入第一个菜单项(禁用项同样可聚焦)', async () => {
     render()
     await openByContextMenu()
     const items = [
@@ -115,6 +148,71 @@ describe('ContextMenu 无障碍契约', () => {
     expect(items).toHaveLength(3)
     expect(document.activeElement).toBe(items[0])
     expect(items[1].getAttribute('aria-disabled')).toBe('true')
+  })
+
+  /**
+   * APG: 禁用菜单项应当可聚焦(aria-disabled 而不是从键盘序列里摘掉),
+   * 否则键盘/读屏用户既发现不了它, 也不知道为什么这个动作不出现。
+   */
+  it('禁用项保留 aria-disabled 且可被程序化聚焦', async () => {
+    render()
+    await openByContextMenu()
+    const items = [
+      ...document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ]
+    const disabledItem = items[1]
+    expect(disabledItem.getAttribute('aria-disabled')).toBe('true')
+    expect(disabledItem.className).toContain('app-context-menu-item-disabled')
+
+    act(() => {
+      disabledItem.focus()
+    })
+    expect(document.activeElement).toBe(disabledItem)
+  })
+
+  it('方向键可以从普通项移动到禁用项(禁用项不被跳过)', async () => {
+    const restoreOffsetParent = stubOffsetParent()
+    try {
+      render()
+      await openByContextMenu()
+      const items = [
+        ...document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+      ]
+      expect(document.activeElement).toBe(items[0])
+
+      act(() => {
+        items[0].dispatchEvent(arrowDownEvent())
+      })
+      await flush()
+      expect(document.activeElement).toBe(items[1])
+    } finally {
+      restoreOffsetParent()
+    }
+  })
+
+  it('点击/回车激活禁用项不产生任何动作', async () => {
+    const onClick = render()
+    await openByContextMenu()
+    const items = [
+      ...document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ]
+    const disabledItem = items[1]
+
+    act(() => {
+      disabledItem.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    act(() => {
+      disabledItem.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await flush()
+
+    expect(onClick).not.toHaveBeenCalled()
   })
 
   /** antd 关闭后把弹层置为 ant-dropdown-hidden(保留 DOM), 这里轮询到隐藏为止。 */
