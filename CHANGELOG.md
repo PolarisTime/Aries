@@ -1,3 +1,11 @@
+# [10.36.0](https://github.com/PolarisTime/Aries/compare/v10.35.0...v10.36.0) (2026-09-28)
+
+
+### Features
+
+* **modules:** 行右键菜单新增单条审核与反审核 ([ce7f04d](https://github.com/PolarisTime/Aries/commit/ce7f04da18cf5db95e8934fb725afce0921fa58f))
+* **price-compare:** 现货价改由供应商价格表自动带出并支持显式手填覆盖 ([8a319e2](https://github.com/PolarisTime/Aries/commit/8a319e2163f51ea0f928d26308d37305e940a581))
+
 # [10.35.0](https://github.com/PolarisTime/Aries/compare/v10.34.0...v10.35.0) (2026-09-28)
 
 
