@@ -5,6 +5,16 @@ import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
 import type { PriceRow } from './types'
 
+/**
+ * 吨位列气泡(Tooltip 与 ⓘ popover)共用的根类名。
+ *
+ * <p>antd 默认 Tooltip 用 `colorBgSpotlight`(`rgba(0, 0, 0, 0.85)`), 15% 的透明会让页面里的
+ * 表头、按钮与表格文字透进气泡, 与「报单吨位 / 已开吨位(实际)」等文字叠成重影。类名把两者
+ * 指向 `price-compare.css` 里同一套不透明气泡样式(底色 `--ant-color-bg-elevated` + 浮层阴影
+ * + 圆角), 深浅色模式都跟随主题, 不在组件里写死色值。</p>
+ */
+export const TON_BUBBLE_CLASS = 'price-compare-ton-bubble'
+
 interface TonCellProps {
   row: PriceRow
   rowId: string
@@ -197,7 +207,11 @@ function TonProgress({
   )
 
   return (
-    <Tooltip placement="top" title={detail}>
+    <Tooltip
+      classNames={{ root: TON_BUBBLE_CLASS }}
+      placement="top"
+      title={detail}
+    >
       {/*
         单行结构: 文本单独一层负责省略号, 超额图标放在它外面。
         图标若留在 overflow:hidden + text-overflow:ellipsis 的文本层内, 文本一被截断
@@ -354,7 +368,7 @@ export function TonCell({
       */}
       <div className="price-compare-ton-value">
         {inputDisabled && lockReason ? (
-          <Tooltip title={lockReason}>
+          <Tooltip classNames={{ root: TON_BUBBLE_CLASS }} title={lockReason}>
             {/*
               title 与 Tooltip 双保险: 禁用输入框不派发 mouseenter, Tooltip 需要外层
               span 承接事件; 原生 title 同时让原因在焦点/测试路径下也稳定可读。
@@ -376,10 +390,11 @@ export function TonCell({
         selected={selected}
       />
       <Popover
+        classNames={{ root: TON_BUBBLE_CLASS }}
         content={popoverContent}
+        mouseEnterDelay={0.15}
         placement="right"
         trigger={['hover', 'click']}
-        mouseEnterDelay={0.15}
       >
         {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
             弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}

@@ -767,9 +767,41 @@
 .price-compare-ton-tooltip {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xxs);
+  /* 行距 4 → 8px(仍是 token): 键值成对, 行贴太近时上下两行会读成一行 */
+  gap: var(--space-xs);
   min-width: 180px;
-  font-size: 12px;
+  /* 字号跟随 antd 字号 token(默认 12px), 个人设置放大字号时随之放大, 不写死 */
+  font-size: var(--font-size-xs);
+}
+
+/*
+ * 吨位列气泡(Tooltip 与 ⓘ popover 共用): 完全不透明底 + 浮层阴影 + 圆角。
+ *
+ * antd 默认 Tooltip 底色是 colorBgSpotlight(`rgba(0, 0, 0, 0.85)`), 页面里的表头、按钮与
+ * 表格文字会从那 15% 透明里透出来, 与气泡内的「报单吨位 / 已开吨位(实际)」叠成重影。
+ *
+ * 底色与文字必须走项目自己的 `--theme-overlay-*`(见 styles/variables.css), 不能走
+ * `--ant-*`: 本项目 antd cssVar 只在 `.leo-antd-app` 子树内注册, 弹层 portal 到 body 之后
+ * 取不到变量, `var(--ant-*, 兜底值)` 恒等于兜底值 —— 深色模式会得到纯白底。
+ * 文字色也要显式覆盖: antd Tooltip 的文字默认是配深色底的浅色, 只改底色会变成白底白字。
+ */
+.price-compare-ton-bubble .ant-tooltip-container,
+.price-compare-ton-bubble .ant-popover-container {
+  background: var(--theme-overlay-surface, #ffffff);
+  color: var(--theme-overlay-text, rgba(0, 0, 0, 0.88));
+  border-radius: var(--app-border-radius, 8px);
+  /* 阴影写字面值: --theme-shadow-md 在深色块里存的是颜色而不是阴影, 直接引用会失效 */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+/*
+ * 箭头与气泡同底色: antd 的箭头 `::before` 读的是独立变量(不跟随容器底色), 不覆盖就会
+ * 在气泡边缘留一个半透明缺口。变量名由 antd 的 placementArrow 统一生成(tooltip 与
+ * popover 共用), 在箭头元素上覆盖即可, 不需要提高选择器权重。
+ */
+.price-compare-ton-bubble .ant-tooltip-arrow,
+.price-compare-ton-bubble .ant-popover-arrow {
+  --ant-tooltip-arrow-background-color: var(--theme-overlay-surface, #ffffff);
 }
 
 /* 明细图标: 悬停/点击(键盘 Enter)打开采购订单明细 popover */
@@ -811,9 +843,10 @@
 .price-compare-ton-popover {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xxs);
+  gap: var(--space-xs);
   min-width: 200px;
-  font-size: 12px;
+  /* 与 Tooltip 明细同一口径: 跟随 antd 字号 token, 不写死 12px */
+  font-size: var(--font-size-xs);
 }
 
 .price-compare-ton-popover-row {
@@ -823,13 +856,37 @@
   gap: var(--space-md);
 }
 
+/*
+ * 数值列: 右对齐 + 等宽数字。
+ * 行用 space-between 后数值本来就贴着右边缘, 但数值换行(长供应商名)时行内文字会左对齐,
+ * 与上一行的右边缘错开; 显式右对齐让整列数值共享同一条右基准线, tabular-nums 再让小数点
+ * 上下对齐, 扫读时不必逐行找数字起点。
+ */
+.price-compare-ton-popover-row > :last-child {
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .price-compare-ton-popover-row > span:first-child {
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  /* 气泡表面已统一成 --theme-overlay-surface: 键名色必须跟着走, 否则深色底上是黑字 */
+  color: var(--theme-overlay-text-muted, rgba(0, 0, 0, 0.65));
 }
 
 .price-compare-ton-popover-over {
   color: var(--color-danger-active, #d9363e);
   font-weight: 600;
+}
+
+/*
+ * 深色浮层表面(#1a1f25)比 antd 默认的近黑气泡更亮: --color-danger-active 的兜底 #d9363e
+ * 在它上面只有约 3.6:1, 12px 粗体正文按 WCAG 2.2 AA 需要 4.5:1。深色下把气泡内的超额文字
+ * 改用更亮的红(#ff7875, 约 6.4:1); 浅色下维持原色(#d9363e 对白底约 4.6:1)。
+ * 只改气泡作用域: 表格单元格里的同名类仍走页面底色, 不在本次改动范围。
+ */
+[data-theme="dark"] .price-compare-ton-bubble .price-compare-ton-hint--over,
+[data-theme="dark"] .price-compare-ton-popover-over {
+  color: var(--color-danger-hover, #ff7875);
 }
 
 .price-compare-ton-popover-basis {

@@ -6,7 +6,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
-import { TonCell } from './TonCell'
+import { TON_BUBBLE_CLASS, TonCell } from './TonCell'
 import type { PriceRow } from './types'
 
 const poRecord: PurchaseOrderTonnageRecord = {
@@ -261,6 +261,81 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(text).toContain('剩余吨位（含未保存）')
     expect(text).toContain('-5.000')
     expect(text).toContain('报单吨位已超过订单剩余可开吨')
+  })
+
+  it('悬浮明细与 ⓘ 弹层都带不透明气泡类名(antd 默认 85% 透明会与页面文字叠成重影)', async () => {
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 5,
+    })
+    const meta = container.querySelector(
+      '.price-compare-ton-meta',
+    ) as HTMLElement
+    await act(async () => {
+      meta.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+    // 类名落在 antd 弹层的根节点上: price-compare.css 用它命中 -container / -arrow
+    expect(
+      document.querySelector(`.ant-tooltip.${TON_BUBBLE_CLASS}`),
+    ).not.toBeNull()
+
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    expect(
+      document.querySelector(`.ant-popover.${TON_BUBBLE_CLASS}`),
+    ).not.toBeNull()
+  })
+
+  it('锁定原因气泡(禁用吨位输入的 Tooltip)同样带不透明气泡类名', async () => {
+    render({
+      disabled: true,
+      lockReason: '单据已锁定「规格和数量」',
+      rowLocked: false,
+    })
+    const wrap = container.querySelector(
+      '.price-compare-ton-lock-reason',
+    ) as HTMLElement
+    expect(wrap).not.toBeNull()
+    await act(async () => {
+      wrap.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+    expect(
+      document.querySelector(`.ant-tooltip.${TON_BUBBLE_CLASS}`),
+    ).not.toBeNull()
+  })
+
+  it('悬浮明细的字段顺序固定: 报单吨位 → 订货吨位 → 已开吨位（实际） → 品牌 → 含未保存报单 → 剩余', async () => {
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301', ton: 15 },
+      localTonForItem: 15,
+    })
+    const meta = container.querySelector(
+      '.price-compare-ton-meta',
+    ) as HTMLElement
+    await act(async () => {
+      meta.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+    const labels = [
+      ...document.querySelectorAll(
+        '.price-compare-ton-tooltip .price-compare-ton-popover-row',
+      ),
+    ].map((row) => (row.firstElementChild?.textContent ?? '').trim())
+    expect(labels).toEqual([
+      '报单吨位',
+      '订货吨位',
+      '已开吨位（实际）',
+      '品牌',
+      '含未保存报单',
+      '剩余吨位（含未保存）',
+    ])
   })
 
   it('无本地未保存吨位时明细不出现"含未保存"行, 剩余用普通口径', async () => {

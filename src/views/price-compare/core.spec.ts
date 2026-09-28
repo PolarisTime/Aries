@@ -880,4 +880,38 @@ describe('列宽按字号自适应', () => {
       requiredDiffWidth(SHEET_WIDTH_BASE_FONT_SIZE),
     )
   })
+
+  /*
+   * 吨位列进度小字「已开 0/26 · 中天」的截断阈值契约。
+   *
+   * 真机实测(PingFang SC): 小字固定 11px(不随个人字号缩放), 「已开 0/26」= 50.97px(取 51px 上界),
+   * 品牌后缀「 · 中天」再加约 31px。小字是 `flex: 0 1 auto` 的可收缩项, 抢到的是
+   * 列宽 − 单元格左右留白(13px) − 报单吨位输入框(4.75em) − 明细图标(24px) − 两个 flex gap(8px)。
+   * 留白 ≥ 51px 时用户给的短值示例「已开 0/26」完整可读, 被省略的只有品牌; 156px 的旧列宽只剩
+   * 44.5px, 连「已开 0/2」都会被截成省略号(即用户截图里的现象)。
+   */
+  const ISSUED_SHORT_TEXT_WIDTH = 51
+  const TON_CELL_FIXED_CHROME = 13 + 24 + 8
+  const TON_INPUT_WIDTH_EM = 4.75
+  /** 进度小字实际可用的内容宽(px)。 */
+  const issuedAvailableWidth = (fontSize: number) =>
+    sheetColumnWidths(fontSize).ton -
+    TON_CELL_FIXED_CHROME -
+    TON_INPUT_WIDTH_EM * fontSize
+
+  it('14/16/18 三档下进度小字都容得下「已开 0/26」, 不被省略号截断', () => {
+    for (const fontSize of [14, 16, 18]) {
+      expect(issuedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
+        ISSUED_SHORT_TEXT_WIDTH,
+      )
+    }
+    // 基准字号下的真机余量: 可用 72.5px vs 需求 51px(完整句含品牌需 82px, 由 Tooltip 补齐)
+    expect(issuedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(72.5)
+  })
+
+  it('吨位列宽回归保护: 156 在 14px 下连「已开 0/26」都放不下', () => {
+    expect(156 - TON_CELL_FIXED_CHROME - TON_INPUT_WIDTH_EM * 14).toBeLessThan(
+      ISSUED_SHORT_TEXT_WIDTH,
+    )
+  })
 })
