@@ -878,17 +878,6 @@
   font-weight: 600;
 }
 
-/*
- * 深色浮层表面(#1a1f25)比 antd 默认的近黑气泡更亮: --color-danger-active 的兜底 #d9363e
- * 在它上面只有约 3.6:1, 12px 粗体正文按 WCAG 2.2 AA 需要 4.5:1。深色下把气泡内的超额文字
- * 改用更亮的红(#ff7875, 约 6.4:1); 浅色下维持原色(#d9363e 对白底约 4.6:1)。
- * 只改气泡作用域: 表格单元格里的同名类仍走页面底色, 不在本次改动范围。
- */
-[data-theme="dark"] .price-compare-ton-bubble .price-compare-ton-hint--over,
-[data-theme="dark"] .price-compare-ton-popover-over {
-  color: var(--color-danger-hover, #ff7875);
-}
-
 .price-compare-ton-popover-basis {
   color: var(--text-secondary);
   font-size: 11px;
@@ -902,6 +891,20 @@
 .price-compare-ton-hint--over {
   color: var(--color-danger-active, #d9363e);
   font-weight: 600;
+}
+
+/*
+ * 深色浮层表面(#1a1f25)比 antd 默认的近黑气泡更亮: --color-danger-active 的兜底 #d9363e
+ * 在它上面只有约 3.6:1, 12px 粗体正文按 WCAG 2.2 AA 需要 4.5:1。深色下把气泡内的超额文字
+ * 改用更亮的红(#ff7875, 约 6.4:1); 浅色下维持原色(#d9363e 对白底约 4.6:1)。
+ * 只改气泡作用域: 表格单元格里的同名类仍走页面底色, 不在本次改动范围。
+ *
+ * 位置必须在 `.price-compare-ton-hint--over` 基准规则**之后**: `price-compare-a11y-css.spec.ts`
+ * 按选择器字面量取第一处出现来断言基准色, 规则提前会把基准块挡掉。
+ */
+[data-theme="dark"] .price-compare-ton-bubble .price-compare-ton-hint--over,
+[data-theme="dark"] .price-compare-ton-popover-over {
+  color: var(--color-danger-hover, #ff7875);
 }
 
 .price-compare-purchase-order-picker-footer {
