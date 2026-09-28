@@ -1,3 +1,10 @@
+## [10.33.2](https://github.com/PolarisTime/Aries/compare/v10.33.1...v10.33.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **price-compare:** 吨位气泡改不透明浮层底色, 修复半透明与重影 ([d17b09f](https://github.com/PolarisTime/Aries/commit/d17b09f003c89af8a8dc0cbd0f20b9c26eec24c2))
+
 ## [10.33.1](https://github.com/PolarisTime/Aries/compare/v10.33.0...v10.33.1) (2026-09-28)
 
 
