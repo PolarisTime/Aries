@@ -6,7 +6,9 @@ import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
+import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { SheetPanel } from './SheetPanel'
+import type { PurchaseOrderTonnageDraftInput } from './ton-column'
 import type { PriceRow, PriceSheet, Variety } from './types'
 
 const variety: Variety = {
@@ -139,6 +141,7 @@ describe('SheetPanel 指定品牌展示', () => {
     ],
     readOnly = false,
     varieties: Variety[] = [variety],
+    purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput,
   ) {
     const observed = { rows: initialRows, sheet: initialSheet }
     function Harness() {
@@ -163,6 +166,7 @@ describe('SheetPanel 指定品牌展示', () => {
         spotRef: { current: null },
         suppliers,
         readOnly,
+        ...(purchaseOrderTonnage ? { purchaseOrderTonnage } : {}),
       })
     }
     act(() => {
@@ -429,11 +433,12 @@ describe('SheetPanel 指定品牌展示', () => {
     )
     expect(addRow?.disabled).toBe(true)
 
-    // 行操作菜单(行级锁定入口)一并禁用
+    // 行操作入口: 「锁定规格和数量」只逐项禁用会改动规格/数量的菜单项,
+    // 菜单本身仍可打开(用户点得开、看得见为什么点不动), 因此触发器不禁用
     expect(
       container.querySelector<HTMLButtonElement>('.price-compare-row-actions')
         ?.disabled,
-    ).toBe(true)
+    ).toBe(false)
 
     // 选中一行后, 删除所选行入口禁用
     const rowCheckbox = container.querySelector<HTMLInputElement>(
@@ -1330,5 +1335,62 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderId).toBeUndefined()
     expect(observed.rows[0].purchaseOrderItemId).toBeUndefined()
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
+  })
+
+  it('主流程: 吨位列"已开"取服务端实际值并带品牌, 未保存吨位只进悬浮明细', async () => {
+    const poRecord: PurchaseOrderTonnageRecord = {
+      purchaseOrderId: '88',
+      purchaseOrderItemId: '301',
+      orderNo: 'PO-88',
+      supplierName: '沙钢',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: '12',
+      length: '9米',
+      brand: '中天',
+      orderedWeight: 32.768,
+      issuedWeight: 5,
+      remainingWeight: 27.768,
+      status: '正常',
+    }
+    renderStateful(
+      makeSheet(),
+      [
+        {
+          ...baseRow,
+          // 本单据手填 12: 属于未保存口径, 不得混进"已开"数字
+          ton: 12,
+          locked: true,
+          purchaseOrderId: '88',
+          purchaseOrderItemId: '301',
+          purchaseOrderNo: 'PO-88',
+        },
+      ],
+      [],
+      [{ name: '中天', freight: 30 }],
+      false,
+      [variety],
+      {
+        options: [poRecord],
+        tonnageByItemId: new Map([['301', poRecord]]),
+        loading: false,
+        isError: false,
+      },
+    )
+    const meta = container.querySelector<HTMLElement>('.price-compare-ton-meta')
+    expect(meta?.textContent).toContain('已开 5/32.768')
+    expect(meta?.textContent).not.toContain('17/32.768')
+    expect(meta?.textContent).toContain('中天')
+
+    await act(async () => {
+      meta?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+    const tooltipText =
+      document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
+    expect(tooltipText).toContain('已开吨位（实际）')
+    expect(tooltipText).toContain('5.000')
+    expect(tooltipText).toContain('含未保存报单')
+    expect(tooltipText).toContain('17.000')
   })
 })

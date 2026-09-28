@@ -29,6 +29,7 @@ const record = (orderId: string, itemId: string, orderNo: string) => ({
   material: 'HRB400E',
   spec: '12',
   length: '9米',
+  brand: '中天',
   orderedWeight: 40,
   issuedWeight: 30,
   remainingWeight: 10,

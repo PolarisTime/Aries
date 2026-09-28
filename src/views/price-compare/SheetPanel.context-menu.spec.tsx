@@ -316,10 +316,162 @@ describe('SheetPanel 右键菜单', () => {
     ])
   })
 
-  it('右键输入控件时放行, 不打开行菜单', async () => {
+  it('右键可编辑输入控件时放行原生菜单, 不打开行菜单', async () => {
     renderPanel()
-    await rightClick(container.querySelector('.price-compare-row-remark'))
+    const remark = container.querySelector<HTMLInputElement>(
+      '.price-compare-row-remark',
+    )
+    expect(remark?.disabled).toBe(false)
+    await rightClick(remark)
     expect(document.querySelector('.ant-dropdown')).toBeNull()
+  })
+
+  /*
+   * 放行条件按"是否正在编辑"判定, 而不是只看标签名 —— 否则整行铺满输入控件时
+   * 右键几乎无处可点(实测只有拖拽列等少数非输入格能弹菜单)。
+   */
+  it('右键只读展示格(类别纯文本)打开行菜单', async () => {
+    renderPanel()
+    await rightClick(container.querySelector('.price-compare-category'))
+    const menu = topDropdown()?.querySelector<HTMLElement>('[role="menu"]')
+    expect(menu?.getAttribute('aria-label')).toBe(
+      '「螺纹钢 HRB400E 12 9米」行操作菜单',
+    )
+  })
+
+  it('右键行选择框(checkbox)打开行菜单', async () => {
+    renderPanel()
+    // 必须取数据行内的选择框: antd 的测量行(measure-row)里也有一份全选 checkbox
+    const checkbox = container.querySelector(
+      'tr[data-row-key="r1"] input[type="checkbox"]',
+    )
+    expect(checkbox).not.toBeNull()
+    await rightClick(checkbox)
+    expect(
+      topDropdown()?.querySelector('[role="menu"]')?.getAttribute('aria-label'),
+    ).toBe('「螺纹钢 HRB400E 12 9米」行操作菜单')
+  })
+
+  it('右键行级锁导致的只读控件(规格/吨位)仍打开行菜单', async () => {
+    renderPanel({ rows: [{ ...twoRows()[0], locked: true }] })
+
+    const ton = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    // 行级锁 = 规格与吨位定稿: 控件已不可编辑
+    expect(ton?.disabled).toBe(true)
+    await rightClick(ton)
+    expect(
+      topDropdown()?.querySelector('[role="menu"]')?.getAttribute('aria-label'),
+    ).toBe('「螺纹钢 HRB400E 12 9米」行操作菜单')
+
+    await act(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 30))
+    })
+
+    const specSelect = container.querySelector(
+      '.price-compare-variety-cell .ant-select-disabled',
+    )
+    expect(specSelect).not.toBeNull()
+    await rightClick(specSelect)
+    expect(
+      topDropdown()?.querySelector('[role="menu"]')?.getAttribute('aria-label'),
+    ).toBe('「螺纹钢 HRB400E 12 9米」行操作菜单')
+  })
+
+  it('全局锁定下行菜单仍可打开: 首项是不可点击的锁定原因, 其余项 aria-disabled', async () => {
+    renderPanel({ sheet: makeSheet({ specQuantityLocked: true }) })
+    await rightClick(rowActionTrigger(0))
+
+    const items = Array.from(
+      topDropdown()?.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item') ??
+        [],
+    )
+    expect(items.length).toBeGreaterThan(0)
+    // 首项直接说明"为什么点不动", 而不是一片灰
+    expect(items[0]?.textContent).toContain('已锁定规格和数量')
+    expect(items[0]?.getAttribute('aria-disabled')).toBe('true')
+    // 会改动规格/数量的项逐项软禁用(可聚焦、可被读屏发现)
+    const lockItem = topMenuItem('锁定该行')
+    expect(lockItem.getAttribute('aria-disabled')).toBe('true')
+    const deleteItem = topMenuItem('删除该行')
+    expect(deleteItem.getAttribute('aria-disabled')).toBe('true')
+    // 触发器本身必须可点(否则用户看不到这份说明)
+    expect(rowActionTrigger(0)?.disabled).toBe(false)
+  })
+
+  it('点击原因项不触发任何动作(软禁用项不可激活)', async () => {
+    const observed = renderPanel({
+      sheet: makeSheet({ specQuantityLocked: true }),
+    })
+    await rightClick(rowActionTrigger(0))
+    await clickTopMenuItem('已锁定规格和数量')
+    expect(observed.rows.map((row) => row.id)).toEqual(['r1', 'r2'])
+    expect(confirmOptions).toBeNull()
+  })
+
+  it('触摸长按 600ms 打开同一份行菜单(可访问名一致)', async () => {
+    renderPanel()
+    const cell = container.querySelector('.price-compare-category')
+    expect(cell).not.toBeNull()
+
+    act(() => {
+      const event = new Event('touchstart', { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'touches', {
+        value: [{ clientX: 20, clientY: 20 }],
+      })
+      cell?.dispatchEvent(event)
+    })
+    // 未到 600ms 前不得打开
+    await flush()
+    expect(topDropdown()).toBeNull()
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+    })
+    expect(
+      topDropdown()?.querySelector('[role="menu"]')?.getAttribute('aria-label'),
+    ).toBe('「螺纹钢 HRB400E 12 9米」行操作菜单')
+  })
+
+  it('长按期间手指移动超过阈值即取消(视为滚动)', async () => {
+    renderPanel()
+    const cell = container.querySelector('.price-compare-category')
+    act(() => {
+      const start = new Event('touchstart', { bubbles: true, cancelable: true })
+      Object.defineProperty(start, 'touches', {
+        value: [{ clientX: 20, clientY: 20 }],
+      })
+      cell?.dispatchEvent(start)
+      const move = new Event('touchmove', { bubbles: true, cancelable: true })
+      Object.defineProperty(move, 'touches', {
+        value: [{ clientX: 20, clientY: 120 }],
+      })
+      cell?.dispatchEvent(move)
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+    })
+    expect(topDropdown()).toBeNull()
+  })
+
+  it('可编辑输入控件上不劫持长按(保留文本选择)', async () => {
+    renderPanel()
+    const remark = container.querySelector('.price-compare-row-remark')
+    act(() => {
+      const event = new Event('touchstart', { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'touches', {
+        value: [{ clientX: 20, clientY: 20 }],
+      })
+      remark?.dispatchEvent(event)
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+    })
+    expect(topDropdown()).toBeNull()
   })
 
   it('右键品牌列头显示菜单, 点击「隐藏该列」后该品牌列消失', async () => {
@@ -370,7 +522,8 @@ describe('SheetPanel 右键菜单', () => {
     expect(labels).toEqual([
       '一键填入供应商…',
       '隐藏该列',
-      '移到最前',
+      // 已在最前时不禁用也不隐藏, 而是在文案里说明原因(禁用项仍可被读屏发现)
+      '移到最前（已在最前）',
       '移到最后',
     ])
   })

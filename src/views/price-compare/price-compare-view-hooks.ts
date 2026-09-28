@@ -6,6 +6,10 @@ import {
 } from '@/api/master/supplier-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import {
+  hasShortcutModifier,
+  useGlobalShortcut,
+} from '@/hooks/useGlobalShortcut'
 import { useEditorSession } from '@/layouts/editor-session/EditorSessionGuard'
 import {
   normalizeTabPathname,
@@ -90,20 +94,30 @@ export function useUndoRedoShortcuts(
   redo: () => void,
   enabled = true,
 ) {
-  useEffect(() => {
-    if (!enabled) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return
+  /*
+   * 撤销/重做会直接回滚比价数据, 因此比保存快捷键多两道闸:
+   *   1) 只有本 tab 为当前激活页时才处理 —— 多标签 keep-alive 下切走的 Tab 仍在 DOM 里,
+   *      不加这道判断就会在用户看着 A 页时改掉后台 B 页的比价数据;
+   *   2) 焦点在输入框/可编辑区域(单元格、供应商下拉、批次名等)时不处理, 让位给原生撤销。
+   */
+  const routeActive = usePriceCompareRouteActive()
+
+  useGlobalShortcut({
+    enabled: enabled && routeActive,
+    ignoreEditableTarget: true,
+    match: (event) => {
+      if (!hasShortcutModifier(event)) return false
       const key = event.key.toLowerCase()
-      if (key === 'z' && !event.shiftKey) {
-        event.preventDefault()
-        undo()
-      } else if ((key === 'z' && event.shiftKey) || key === 'y') {
-        event.preventDefault()
+      return key === 'z' || key === 'y'
+    },
+    run: (event) => {
+      event.preventDefault()
+      const key = event.key.toLowerCase()
+      if (key === 'y' || event.shiftKey) {
         redo()
+        return
       }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [undo, redo, enabled])
+      undo()
+    },
+  })
 }

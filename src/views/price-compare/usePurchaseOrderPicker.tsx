@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
 import type { PriceRow } from './types'
@@ -31,11 +31,31 @@ export function usePurchaseOrderPicker({
     ? rows.find((row) => row.id === pickerRowId)
     : undefined
 
+  /*
+   * 本单据内各采购订单明细行已用掉的报单吨位合计。
+   * 服务端 remainingWeight 已排除本单据自身已保存吨位, 因此"本单据还能不能再用这一行"
+   * 必须再减去这里的手填吨位(含未保存草稿), 否则弹窗会把已被本单吃满的行当成可选项。
+   */
+  const linkedTonByItemId = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const row of rows) {
+      if (row.rowType === 'SEPARATOR') continue
+      const itemId = row.purchaseOrderItemId
+      const ton = row.ton
+      if (!itemId || ton === undefined || !Number.isFinite(ton) || ton <= 0) {
+        continue
+      }
+      map.set(itemId, (map.get(itemId) ?? 0) + ton)
+    }
+    return map
+  }, [rows])
+
   return {
     open: (rowId: string) => setPickerRowId(rowId),
     node: (
       <PurchaseOrderPickerModal
         excludeSheetId={excludeSheetId}
+        linkedTonByItemId={linkedTonByItemId}
         open={pickerRowId !== undefined}
         selectedItemId={pickerRow?.purchaseOrderItemId}
         onClose={() => setPickerRowId(undefined)}

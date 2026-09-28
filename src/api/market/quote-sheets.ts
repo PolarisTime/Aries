@@ -458,6 +458,8 @@ export type PurchaseOrderTonnageRecord = {
   material: string
   spec: string
   length: string
+  /** 品牌(采购订单明细自带字段): 供吨位列展示"已开的品牌"与弹窗区分同规格的不同品牌。 */
+  brand: string
   orderedWeight: number
   issuedWeight: number
   remainingWeight: number
@@ -473,6 +475,7 @@ const purchaseOrderTonnageSchema = z.looseObject({
   material: z.string().nullable().optional(),
   spec: z.string().nullable().optional(),
   length: z.string().nullable().optional(),
+  brand: z.string().nullable().optional(),
   orderedWeight: z.union([z.number(), z.string()]).nullable().optional(),
   issuedWeight: z.union([z.number(), z.string()]).nullable().optional(),
   remainingWeight: z.union([z.number(), z.string()]).nullable().optional(),
@@ -528,6 +531,7 @@ export async function fetchPurchaseOrderTonnages(
     material: asString(row.material),
     spec: asString(row.spec),
     length: asString(row.length),
+    brand: asString(row.brand),
     orderedWeight: toOptionalNumber(row.orderedWeight) ?? 0,
     issuedWeight: toOptionalNumber(row.issuedWeight) ?? 0,
     remainingWeight: toOptionalNumber(row.remainingWeight) ?? 0,

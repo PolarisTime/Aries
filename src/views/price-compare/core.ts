@@ -185,12 +185,19 @@ export const SPOT_PRICE_MAX = 20000
 /** 默认 12 米加价(元/吨) */
 export const DEFAULT_LENGTH_PREMIUM = 30
 
-/** 单据表格固定列宽 */
+/**
+ * 单据表格列宽基准。
+ *
+ * <p>这里记录的是**字号 14px 时的像素基准值**, 不是最终列宽。用户在个人设置里把
+ * 字号调到 16/18 后, 文字变宽而列宽不变就会被裁断(「材质 / 规格 / 长度」与
+ * 「供应商简称」最容易中招), 因此实际列宽一律由 {@link sheetColumnWidths}
+ * 按当前字号等比换算。</p>
+ */
 export const SHEET_COLUMN_WIDTH = {
   remark: 140,
   category: 72,
   spec: 200,
-  /** 吨位列: 报单吨位(52) + 已开吨位数值 + 明细图标, 横向不换行。 */
+  /** 吨位列: 报单吨位输入 + 已开/订货进度 + 明细图标。 */
   ton: 156,
   net: 60,
   spot: 58,
@@ -198,6 +205,42 @@ export const SHEET_COLUMN_WIDTH = {
   /** 供应商简称列 */
   supplier: 92,
 } as const
+
+/** {@link SHEET_COLUMN_WIDTH} 的基准字号(px), 也是个人设置未配置时的默认字号。 */
+export const SHEET_WIDTH_BASE_FONT_SIZE = 14
+
+/**
+ * 按字号等比换算列宽。
+ *
+ * <p>等比而不是「只加固定留白」的理由: 列内文字宽度与字号成正比, 只有同样成正比
+ * 的列宽才能让 14/16/18 三档下「文字宽 / 列宽」的比值保持不变, 从而保证基准字号
+ * 下不截断的列在放大字号后依然不截断。</p>
+ *
+ * <p>非法字号(0/负数/NaN/Infinity)一律回落到基准字号, 避免出现 0 宽列。</p>
+ */
+export function scaleSheetColumnWidth(width: number, fontSize: number): number {
+  const safeFontSize =
+    Number.isFinite(fontSize) && fontSize > 0
+      ? fontSize
+      : SHEET_WIDTH_BASE_FONT_SIZE
+  return Math.round((width * safeFontSize) / SHEET_WIDTH_BASE_FONT_SIZE)
+}
+
+/** 按当前字号换算整张单据表格的列宽(键与 {@link SHEET_COLUMN_WIDTH} 一致)。 */
+export function sheetColumnWidths(
+  fontSize: number,
+): Record<keyof typeof SHEET_COLUMN_WIDTH, number> {
+  const entries = Object.entries(SHEET_COLUMN_WIDTH) as [
+    keyof typeof SHEET_COLUMN_WIDTH,
+    number,
+  ][]
+  return Object.fromEntries(
+    entries.map(([key, width]) => [
+      key,
+      scaleSheetColumnWidth(width, fontSize),
+    ]),
+  ) as Record<keyof typeof SHEET_COLUMN_WIDTH, number>
+}
 
 /** 网价: 参照日期+时段, 命中则返回并叠加 12 米加价。 */
 export function netPrice(
@@ -597,4 +640,50 @@ export function applyRowLock(row: PriceRow, locked: boolean): PriceRow {
     purchaseOrderNo: undefined,
     purchaseOrderItemId: undefined,
   }
+}
+
+/* --------------------------------------------------------------- 锁定层级 */
+
+/**
+ * 锁定层级: 单据(全局) > 行 > 单元格。
+ *
+ * <p>三层锁定作用域不同、优先级严格递减, 高优先级只读覆盖低优先级:</p>
+ * <ol>
+ *   <li>`sheet`: `specQuantityLocked`(工具栏「锁定规格和数量」), 冻结整张单据的
+ *       商品规格、报单吨位, 以及会间接改变规格/数量顺序的行增删与拖拽重排;</li>
+ *   <li>`row`: `row.locked`(行操作菜单「锁定该行」), 表示该行规格与吨位定稿,
+ *       只冻结该行的规格与吨位; 未锁定不可关联采购订单, 解锁会清除关联;</li>
+ *   <li>`cell`: 单元格自身的锁(`LockableField`, 如项目备注信息), 只冻结该字段。</li>
+ * </ol>
+ *
+ * <p>改为只读的控件必须能说明原因(层级 → i18n key), 不允许静默禁用。</p>
+ */
+export type LockLevel = 'sheet' | 'row' | 'cell'
+
+export interface LockResolution {
+  locked: boolean
+  /** 决定该字段只读的层级(优先级最高者); 未锁定时为 undefined。 */
+  level?: LockLevel
+}
+
+/** 各层级锁定的原因文案 key(禁用提示统一从这里取, 保证口径一致)。 */
+export const LOCK_REASON_KEYS: Record<LockLevel, string> = {
+  sheet: 'priceCompare.sheet.specQuantityLockedHint',
+  row: 'priceCompare.sheet.rowLockedHint',
+  cell: 'priceCompare.sheet.cellLockedHint',
+}
+
+/**
+ * 解析字段的有效锁定状态: 按 单据 > 行 > 单元格 的优先级取最高层级。
+ * <p>三层同时命中时只返回最高层级的 `level`, 提示文案据此保持单一口径。</p>
+ */
+export function resolveLock(levels: {
+  sheet?: boolean
+  row?: boolean
+  cell?: boolean
+}): LockResolution {
+  if (levels.sheet) return { locked: true, level: 'sheet' }
+  if (levels.row) return { locked: true, level: 'row' }
+  if (levels.cell) return { locked: true, level: 'cell' }
+  return { locked: false }
 }

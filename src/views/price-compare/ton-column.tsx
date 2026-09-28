@@ -2,7 +2,7 @@ import type { ColumnType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { message } from '@/utils/antd-app'
-import { isSeparatorRow, SHEET_COLUMN_WIDTH } from './core'
+import { isSeparatorRow, LOCK_REASON_KEYS, resolveLock } from './core'
 import { TonCell } from './TonCell'
 import type { GridRow, PriceRow } from './types'
 
@@ -28,6 +28,8 @@ export interface TonColumnContext {
   sheetSpecQuantityLocked: boolean
   readOnly: boolean
   tonTotalText: string
+  /** 当前字号下的吨位列宽(由 core.sheetColumnWidths 换算)。 */
+  width: number
   quantityLockClass?: string
   purchaseOrderOptions: PurchaseOrderTonnageRecord[]
   tonnageByItemId: Map<string, PurchaseOrderTonnageRecord>
@@ -40,31 +42,50 @@ export interface TonColumnContext {
   openPurchaseOrderPicker: (rowId: string) => void
 }
 
-/** 构建「报单吨位 + 已开吨位 + 明细」列, 供比价表格复用。 */
+/** 构建「报单吨位 + 已开/订货进度 + 明细」列, 供比价表格复用。 */
 export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
   const { t } = ctx
+  const tonColumnTitle = t('priceCompare.sheet.columns.ton')
+  const tonTotalLabel = t('priceCompare.sheet.tonTotal')
   return {
+    // 表头一行放两段: 左侧列名, 右侧次要的合计; 不再用两行堆叠, 避免列头被挤成
+    // 「报单吨位 / 合计: 5」两行后既占高又对不齐。
     title: (
       <span className="price-compare-ton-header">
-        <span>{t('priceCompare.sheet.columns.ton')}</span>
+        <span className="price-compare-ton-header-title">{tonColumnTitle}</span>
         <span className="price-compare-ton-total">
-          {t('priceCompare.sheet.tonTotal')}: {ctx.tonTotalText}
+          {tonTotalLabel} {ctx.tonTotalText}
         </span>
       </span>
     ),
-    width: SHEET_COLUMN_WIDTH.ton,
+    width: ctx.width,
     fixed: 'left',
     align: 'center',
-    // 「报单吨位 + 合计」在固定列宽内会被裁切, 补 title 展示完整表头
+    // 窄列时表头仍可能被裁切: 补 title 展示完整表头(鼠标悬停可见)
     onHeaderCell: () => ({
-      title: `${t('priceCompare.sheet.columns.ton')} ${t(
-        'priceCompare.sheet.tonTotal',
-      )}: ${ctx.tonTotalText}`,
+      title: `${tonColumnTitle} ${tonTotalLabel} ${ctx.tonTotalText}`,
     }),
-    render: (_value, row) =>
-      isSeparatorRow(row.row) ? null : (
+    render: (_value, row) => {
+      if (isSeparatorRow(row.row)) return null
+      /*
+       * 锁定层级 单据 > 行 > 单元格: 吨位与规格同属「规格和数量」, 行级锁一并冻结。
+       * 原因文案由最高命中层级决定(而不是"谁先命中用谁"), 否则单据锁 + 行锁叠加时
+       * 会显示行级原因, 与工具栏正在生效的全局锁口径不一致。
+       */
+      const lock = resolveLock({
+        sheet: ctx.sheetSpecQuantityLocked,
+        row: Boolean(row.row.locked),
+      })
+      const lockReason = ctx.readOnly
+        ? ctx.t('priceCompare.sheet.readOnlyHint')
+        : lock.level
+          ? ctx.t(LOCK_REASON_KEYS[lock.level])
+          : undefined
+      return (
         <TonCell
           disabled={ctx.readOnly || ctx.sheetSpecQuantityLocked}
+          rowLockDisabled={Boolean(row.row.locked)}
+          lockReason={lockReason}
           linked={
             row.row.purchaseOrderItemId
               ? ctx.tonnageByItemId.get(row.row.purchaseOrderItemId)
@@ -91,6 +112,7 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
             ctx.patchRow(row.rowId, { ton: value })
           }}
         />
-      ),
+      )
+    },
   }
 }

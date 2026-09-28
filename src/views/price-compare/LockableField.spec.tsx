@@ -178,4 +178,41 @@ describe('LockableField 锁定交互', () => {
     })
     expect(getInputs()[0].readOnly).toBe(true)
   })
+
+  it('只读态显式声明 aria-readonly, 读屏不会误认为"没反应"', () => {
+    act(() => {
+      root.render(
+        createElement(LockableField, {
+          label: '备注信息',
+          value: '含运费',
+          onConfirm: () => {},
+        }),
+      )
+    })
+    expect(getInputs()[0].getAttribute('aria-readonly')).toBe('true')
+  })
+
+  it('解锁/清除按钮的可访问名带字段名(同页多字段可区分)', () => {
+    act(() => {
+      root.render(
+        createElement(LockableField, {
+          label: '备注信息',
+          value: '含运费',
+          onConfirm: () => {},
+        }),
+      )
+    })
+    const buttons = [...container.querySelectorAll('button')]
+    const unlock = buttons.find((button) => button.textContent === '解锁')
+    const clear = buttons.find((button) => button.textContent === '清除')
+    expect(unlock?.getAttribute('aria-label')).toBe('解锁「备注信息」')
+    expect(clear?.getAttribute('aria-label')).toBe('清除「备注信息」')
+  })
+
+  it('锁定提示文案指向真实交互(点「解锁」), 不再承诺"点击输入框解锁"', () => {
+    // 组件用 cellLockedHint 作为锁定态提示, 文案必须与"只有点按钮才能解锁"一致
+    expect(i18n.t('priceCompare.sheet.cellLockedHint')).toContain('「解锁」')
+    // 旧的误导文案(点击输入框即可解锁)不得再出现在任何锁提示里
+    expect(i18n.t('priceCompare.sheet.lock')).not.toContain('点击解锁')
+  })
 })

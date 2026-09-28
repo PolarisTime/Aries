@@ -1,9 +1,10 @@
 /* 报单比价: 使用项目统一样式令牌(theme / ant-color / text 变量), 支持暗色 */
 
-/* 整体等比放大: 比价页内容偏小, 统一按 --price-compare-zoom 缩放(标题/表格/间距同步放大)。
-   仅作用于比价页根容器, 不影响复用 .price-compare-page 的其它页面。 */
+/* 缩放开关: 默认不再整体等比放大(1.0), 保持与全局控件密度/字号一致。
+   仍保留 --price-compare-zoom 变量作为逃生舱, 仅作用于比价页根容器,
+   不影响复用 .price-compare-page 的其它页面。 */
 #price-compare-root {
-  zoom: var(--price-compare-zoom, 1.1);
+  zoom: var(--price-compare-zoom, 1);
 }
 
 .price-compare-page {
@@ -380,6 +381,37 @@
   padding: var(--space-6) var(--space-xs) !important;
 }
 
+/*
+ * 行操作列(只放一个 icon-only「更多」按钮): 列宽固定为最小值, 单元格留白必须同步
+ * 收窄, 否则紧凑/中等尺寸的 padding 会把列撑大, 列宽就名不副实。
+ * 内容区仍为 24px, 命中区由 styles/touch-targets.css 的 ::before 保证 ≥24×24。
+ */
+.price-compare-table
+  .ant-table-small
+  .ant-table-tbody
+  > tr
+  > td.price-compare-row-actions-cell,
+.price-compare-table
+  .ant-table-medium
+  .ant-table-tbody
+  > tr
+  > td.price-compare-row-actions-cell,
+.price-compare-table
+  .ant-table-small
+  .ant-table-thead
+  > tr
+  > th.price-compare-row-actions-cell,
+.price-compare-table
+  .ant-table-medium
+  .ant-table-thead
+  > tr
+  > th.price-compare-row-actions-cell {
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  padding-inline: 2px !important;
+}
+
 .price-compare-table .ant-table-cell .ant-select-selection-item,
 .price-compare-table .ant-table-cell .ant-select-selection-placeholder {
   font-size: 12px;
@@ -575,15 +607,30 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 报单吨位列头: 标题 + 合计 */
+/*
+ * 报单吨位列头: 左侧列名 + 右侧次要的合计, 同一行。
+ * 两行堆叠(列名 / 合计在下一行)在窄列里既占高又和数字对不齐, 改成一行后
+ * 合计退居次要文本, 主列名仍完整可读。
+ */
 .price-compare-ton-header {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xxs);
+  width: 100%;
   line-height: 1.2;
 }
 
+.price-compare-ton-header-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .price-compare-ton-total {
+  flex: 0 0 auto;
   font-size: 11px;
   font-weight: 400;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
@@ -591,25 +638,95 @@
   white-space: nowrap;
 }
 
-/* 吨位单元格: 报单吨位 + 已开吨位数值 + 明细图标; 横向排布不换行。 */
+/*
+ * 吨位单元格: 上行报单吨位输入, 下行「已开 / 订货」进度 + 明细入口。
+ * 纵向堆叠 + 右对齐: 数字沿同一列基准线排布, 扫读时不必在两行之间来回找。
+ */
 .price-compare-ton-cell {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   flex-wrap: nowrap;
-  gap: var(--space-xxs);
-  align-items: center;
+  gap: 0;
+  align-items: stretch;
   justify-content: center;
   min-width: 0;
 }
 
-/* 横向布局下吨位输入固定窄宽 */
-.price-compare-ton-cell .price-compare-ton,
-.price-compare-ton-cell .price-compare-ton input {
-  width: 52px;
-  flex: 0 0 52px;
+/* 上行: 报单吨位输入, 独占整行宽度并右对齐 */
+.price-compare-ton-value {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
 }
 
-/* 已开吨位数值: 紧凑展示, 超出订单剩余时标红 */
+/* 吨位输入铺满列宽: 比原来的 52px 固定宽度有更大的可点区域, 右对齐便于对位 */
+.price-compare-ton-cell .price-compare-ton,
+.price-compare-ton-cell .price-compare-ton input {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: right;
+}
+
+/*
+ * 锁定原因提示的包装层
+ * 禁用控件不派发 mouseenter, Tooltip 挂在它上面会静默失效; 包装层只承接事件,
+ * 不改变原有布局(视觉尺寸与位置保持不变)。
+ */
+.price-compare-lock-reason {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 吨位输入被锁定时: 包装层顶替输入占满整行, 保持右对齐 */
+.price-compare-ton-cell .price-compare-ton-lock-reason {
+  display: inline-flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 下行: 进度文本 + 明细图标, 图标靠右与数字同一视觉边缘 */
+.price-compare-ton-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-xxs);
+  min-width: 0;
+  line-height: 1.3;
+}
+
+/* 行操作入口包装层: 承接禁用按钮的 hover, 不改变 24×24 命中区 */
+.price-compare-row-actions-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 禁用但已锁定: 保留主色锁图标, 让"该行已锁定"这一状态在禁用态仍可辨认 */
+.price-compare-row-actions--locked:disabled,
+.price-compare-row-actions--locked.ant-btn-disabled {
+  color: var(--ant-color-primary, #1677ff);
+  border-color: var(--ant-color-primary, #1677ff);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+  opacity: 1;
+}
+
+/* 摘要行的锁定原因说明: 常驻可见, 不依赖 hover(禁用按钮不派发鼠标事件) */
+.price-compare-lock-reason-text {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/*
+ * 进度行「已开 26/84」: 紧凑展示, 超出订单剩余时标红。
+ * 数字用等宽字形(tabular-nums), 多行之间的小数点与位数能对齐, 便于自上而下扫读;
+ * 极窄列下按整格省略号收尾, 精确值由悬浮 Tooltip 给出, 不会留下半个字。
+ */
 .price-compare-ton-issued {
   flex: 1 1 auto;
   min-width: 0;
@@ -620,6 +737,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+}
+
+/* 超额时的警告图标: 与文字同色, 让"超额"不只靠颜色传达(WCAG 1.4.1) */
+.price-compare-ton-over-icon {
+  margin-inline-start: 2px;
+  font-size: 11px;
+  vertical-align: -1px;
+}
+
+/* 未关联采购订单时的占位: 只用来占住进度行的高度, 内容由明细图标说明 */
+.price-compare-ton-meta--empty {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+/* 进度行 Tooltip 明细: 报单 / 订货 / 已开 / 剩余 四行对齐的键值表 */
+.price-compare-ton-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 180px;
+  font-size: 12px;
 }
 
 /* 明细图标: 悬停/点击(键盘 Enter)打开采购订单明细 popover */
@@ -701,6 +841,72 @@
   display: flex;
   justify-content: space-between;
   gap: var(--space-xs);
+}
+
+/* 选择采购订单弹窗: 搜索框 + "显示已关联完"开关同一行, 窄屏允许换行不挤压输入框 */
+.price-compare-purchase-order-picker-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.price-compare-purchase-order-picker-toolbar .ant-input-affix-wrapper {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.price-compare-purchase-order-picker-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/*
+ * 材质/规格/长度 + 品牌标签: 规格文本可省略号收尾, 品牌标签不可压缩,
+ * 保证同一规格多品牌时标签始终可见(区分品牌的唯一线索)。
+ */
+.price-compare-purchase-order-picker-variety {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.price-compare-purchase-order-picker-spec {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.price-compare-purchase-order-picker-variety .ant-tag {
+  flex: 0 0 auto;
+  margin-inline-end: 0;
+}
+
+/* 剩余为 0 的行: 可见但不可选, 用弱化底色明示"只读" */
+.price-compare-purchase-order-picker-row--disabled > td {
+  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
+}
+
+.price-compare-purchase-order-picker-row--disabled
+  .price-compare-purchase-order-picker-spec {
+  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+}
+
+/*
+ * 吨位进度行里的品牌: 与"已开 26/84"同处一行(保持两行结构),
+ * 列宽不足时随整格省略号收尾, 完整品牌由同一格的 Tooltip 给出。
+ */
+.price-compare-ton-brand {
+  white-space: nowrap;
+}
+
+.price-compare-ton-brand-sep {
+  white-space: nowrap;
+  margin-inline: 2px;
 }
 
 /* 行备注输入 */

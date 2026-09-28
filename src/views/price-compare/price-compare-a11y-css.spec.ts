@@ -1,12 +1,14 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH } from './sheet-column-width'
 
 const read = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8')
 
 const pageCss = read('./price-compare.css')
 const shellCss = read('../../styles/layout-shell.css')
+const touchTargetsCss = read('../../styles/touch-targets.css')
 
 /**
  * 样式层的无障碍契约(WCAG 2.2 AA)。
@@ -39,6 +41,31 @@ describe('比价页样式无障碍契约', () => {
     const info = blockOf(pageCss, '.price-compare-ton-info {')
     expect(info).toMatch(/min-width:\s*24px/)
     expect(info).toMatch(/min-height:\s*24px/)
+  })
+
+  it('行操作列收窄到 icon-only 最小值, 且单元格留白不把列撑大', () => {
+    // 列宽在 JS 侧声明(只有 icon-only「更多」按钮), 必须在 icon-only 最小尺寸区间内
+    expect(PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH).toBeGreaterThanOrEqual(24)
+    expect(PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH).toBeLessThanOrEqual(32)
+
+    const cell = blockOf(pageCss, 'td.price-compare-row-actions-cell')
+    // 留白收窄后内容区不小于 24px, 否则按钮会被挤到换行/裁剪
+    expect(cell).toMatch(/padding-inline:\s*2px/)
+    expect(cell).toMatch(
+      new RegExp(
+        `min-width:\\s*${PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH}px\\s*!important`,
+      ),
+    )
+    // 单元格留白不能超过列宽与 24px 命中区之差
+    const padding = Number(cell.match(/padding-inline:\s*(\d+)px/)?.[1] ?? '99')
+    expect(
+      PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH - padding * 2,
+    ).toBeGreaterThanOrEqual(24)
+  })
+
+  it('icon-only 按钮的触摸热区由 ::before 补足到至少 24×24(WCAG 2.5.8)', () => {
+    expect(touchTargetsCss).toMatch(/width:\s*max\(100%,\s*24px\)/)
+    expect(touchTargetsCss).toMatch(/height:\s*max\(100%,\s*24px\)/)
   })
 
   it('行选择框可点区域不小于 24×24', () => {

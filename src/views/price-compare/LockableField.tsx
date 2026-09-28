@@ -15,8 +15,12 @@ type Props = {
 }
 
 /**
- * 可锁定文本输入: 回车或失焦确认后变只读, 需「解锁」再次编辑,
+ * 可锁定单元格字段: 回车或失焦确认后变只读, 需点「解锁」再次编辑,
  * 「清除」可清空; 锁状态仅本地维护, 值由父级按项目存取。
+ *
+ * <p>锁定层级中最内层(单元格级): 只冻结本字段, 与单据级「锁定规格和数量」、
+ * 行级「锁定该行」作用域不重叠, 因此不叠加、也互不覆盖。提示文案必须与实际
+ * 交互一致 —— 锁定态提示"点「解锁」后可编辑", 而不是让用户去点只读输入框。</p>
  */
 export function LockableField({
   label,
@@ -74,7 +78,9 @@ export function LockableField({
   return (
     <Space size="small" align="center" className="price-compare-meta-field">
       <span className="price-compare-sub">{label}</span>
-      <Tooltip title={locked ? t('priceCompare.sheet.lock') : undefined}>
+      <Tooltip
+        title={locked ? t('priceCompare.sheet.cellLockedHint') : undefined}
+      >
         <Input
           ref={inputRef}
           size="small"
@@ -82,6 +88,9 @@ export function LockableField({
           className="price-compare-meta-input"
           value={draft}
           readOnly={locked}
+          // readOnly 的输入框在既有实现里只读但仍会获得焦点: 语义上标明只读,
+          // 让读屏用户知道不是"没反应", 而是被锁定。
+          aria-readonly={locked || undefined}
           placeholder={placeholder}
           aria-label={label}
           onChange={(event) => {
@@ -96,11 +105,21 @@ export function LockableField({
       </Tooltip>
       {locked ? (
         <>
-          <Button size="small" type="link" onClick={unlock}>
+          <Button
+            size="small"
+            type="link"
+            aria-label={t('priceCompare.sheet.unlockField', { label })}
+            onClick={unlock}
+          >
             {t('priceCompare.sheet.unlock')}
           </Button>
           {draft ? (
-            <Button size="small" type="link" onClick={clear}>
+            <Button
+              size="small"
+              type="link"
+              aria-label={t('priceCompare.sheet.clearField', { label })}
+              onClick={clear}
+            >
               {t('priceCompare.sheet.clear')}
             </Button>
           ) : null}

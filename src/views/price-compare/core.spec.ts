@@ -11,6 +11,7 @@ import {
   findAlternateLengthVariety,
   isPurchasedRow,
   isSeparatorRow,
+  LOCK_REASON_KEYS,
   makeRow,
   makeSeparatorRow,
   matchesToData,
@@ -19,6 +20,11 @@ import {
   netPrice,
   netPriceWithFallback,
   reconcileSpotInputs,
+  resolveLock,
+  SHEET_COLUMN_WIDTH,
+  SHEET_WIDTH_BASE_FONT_SIZE,
+  scaleSheetColumnWidth,
+  sheetColumnWidths,
   sumTonByPurchaseOrderItem,
   syncSpotInputs,
 } from './core'
@@ -713,5 +719,115 @@ describe('applyRowLock 行级锁定', () => {
     expect(next.purchaseOrderId).toBeUndefined()
     expect(next.purchaseOrderItemId).toBeUndefined()
     expect(next.purchaseOrderNo).toBeUndefined()
+  })
+})
+
+describe('resolveLock 锁定层级与优先级', () => {
+  it('三种层级都不命中时返回未锁定, 且不带层级', () => {
+    expect(resolveLock({})).toEqual({ locked: false })
+    expect(resolveLock({ sheet: false, row: false, cell: false })).toEqual({
+      locked: false,
+    })
+  })
+
+  it('单层命中时只读并给出该层级', () => {
+    expect(resolveLock({ sheet: true })).toEqual({
+      locked: true,
+      level: 'sheet',
+    })
+    expect(resolveLock({ row: true })).toEqual({ locked: true, level: 'row' })
+    expect(resolveLock({ cell: true })).toEqual({ locked: true, level: 'cell' })
+  })
+
+  it('多层叠加时取优先级最高的层级(单据 > 行 > 单元格)', () => {
+    expect(resolveLock({ sheet: true, row: true, cell: true })).toEqual({
+      locked: true,
+      level: 'sheet',
+    })
+    expect(resolveLock({ row: true, cell: true })).toEqual({
+      locked: true,
+      level: 'row',
+    })
+    expect(resolveLock({ sheet: true, cell: true })).toEqual({
+      locked: true,
+      level: 'sheet',
+    })
+  })
+
+  it('只认严格 true: 缺省/ undefined 不构成锁定', () => {
+    expect(resolveLock({ sheet: undefined, row: undefined })).toEqual({
+      locked: false,
+    })
+  })
+})
+
+describe('LOCK_REASON_KEYS 层级原因文案', () => {
+  it('每个层级都有唯一且稳定的 i18n key', () => {
+    expect(Object.keys(LOCK_REASON_KEYS).sort()).toEqual([
+      'cell',
+      'row',
+      'sheet',
+    ])
+    for (const key of Object.values(LOCK_REASON_KEYS)) {
+      expect(key.startsWith('priceCompare.sheet.')).toBe(true)
+    }
+    expect(new Set(Object.values(LOCK_REASON_KEYS)).size).toBe(3)
+  })
+})
+
+describe('列宽按字号自适应', () => {
+  it('基准字号(14px)下返回原始基准列宽', () => {
+    expect(scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.spec, 14)).toBe(
+      SHEET_COLUMN_WIDTH.spec,
+    )
+    expect(sheetColumnWidths(14)).toEqual({ ...SHEET_COLUMN_WIDTH })
+  })
+
+  it('字号 16/18 等比放大(保留「文字宽 / 列宽」比值)', () => {
+    for (const fontSize of [16, 18]) {
+      const widths = sheetColumnWidths(fontSize)
+      // 「材质 / 规格 / 长度」列放不下时会截断, 必须有足够增量
+      expect(widths.spec).toBe(
+        Math.round((SHEET_COLUMN_WIDTH.spec * fontSize) / 14),
+      )
+      expect(widths.supplier).toBeGreaterThan(SHEET_COLUMN_WIDTH.supplier)
+      // 小字号列也不能被落下: 每个键都按同一比例放大
+      for (const [key, base] of Object.entries(SHEET_COLUMN_WIDTH)) {
+        expect(widths[key as keyof typeof SHEET_COLUMN_WIDTH]).toBe(
+          Math.round((base * fontSize) / 14),
+        )
+      }
+    }
+  })
+
+  it('字号单调递增时列宽单调不减', () => {
+    const widths = [11, 12, 13, 14, 16, 18].map((fontSize) =>
+      sheetColumnWidths(fontSize),
+    )
+    for (let index = 1; index < widths.length; index += 1) {
+      for (const key of Object.keys(SHEET_COLUMN_WIDTH)) {
+        expect(
+          widths[index][key as keyof typeof SHEET_COLUMN_WIDTH],
+        ).toBeGreaterThanOrEqual(
+          widths[index - 1][key as keyof typeof SHEET_COLUMN_WIDTH],
+        )
+      }
+    }
+  })
+
+  it('非法字号回落到基准字号, 不产生 0 宽列', () => {
+    for (const fontSize of [0, -3, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(sheetColumnWidths(fontSize)).toEqual({ ...SHEET_COLUMN_WIDTH })
+    }
+    expect(SHEET_WIDTH_BASE_FONT_SIZE).toBe(14)
+  })
+
+  it('18px 时「材质 / 规格 / 长度」列足以容纳最长商品文案', () => {
+    const widths = sheetColumnWidths(18)
+    // 最长组合: HRB400E(7) + 空格 + 12(2) + 空格 + 9米(2) ≈ 14 个半角宽字符
+    const longestLabelWidthAt14px = 132
+    expect(widths.spec).toBeGreaterThanOrEqual(
+      Math.ceil((longestLabelWidthAt14px * 18) / 14),
+    )
   })
 })

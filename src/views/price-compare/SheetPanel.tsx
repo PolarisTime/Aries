@@ -37,10 +37,11 @@ import type { MenuProps } from 'antd/es/menu'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
+import { isEditableFieldTarget } from '@/components/row-context-menu'
 import { message, modal } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
@@ -52,9 +53,11 @@ import {
   findAlternateLengthVariety,
   isPurchasedRow,
   isSeparatorRow,
+  LOCK_REASON_KEYS,
   netPriceWithFallback,
+  resolveLock,
   resolveRef,
-  SHEET_COLUMN_WIDTH,
+  type SHEET_COLUMN_WIDTH,
   SPOT_PRICE_MAX,
   type SupplierSelectOption,
   sumTonByPurchaseOrderItem,
@@ -62,6 +65,7 @@ import {
 } from './core'
 import { LockableField } from './LockableField'
 import { withMemberVisibility } from './price-compare-support'
+import { PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH } from './sheet-column-width'
 import {
   buildTonColumn,
   EMPTY_PURCHASE_ORDER_TONNAGE,
@@ -77,11 +81,20 @@ import type {
   SheetInputs,
   Variety,
 } from './types'
+import { useSheetColumnWidths } from './use-sheet-column-widths'
 import { useSheetRowOperations } from './use-sheet-row-operations'
 import { usePurchaseOrderPicker } from './usePurchaseOrderPicker'
 import './price-compare.css'
 
 const { Text } = Typography
+
+/**
+ * 选择框(32) / 拖拽手柄(24) / 行操作(28) 三列的总宽。
+ * 这三列只放 icon-only 控件, 尺寸由命中区下限(WCAG 2.5.8)决定, 不随字号变化,
+ * 因此不参与 core.sheetColumnWidths 的等比换算。
+ */
+const SHEET_FIXED_CHROME_WIDTH =
+  32 + 24 + PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH
 
 /** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
 const filterSupplierOption = createPinyinFilterOption()
@@ -138,6 +151,8 @@ function moveFocusTon(orderedRows: PriceRow[]) {
 type ColumnContext = {
   sheet: PriceSheet
   t: TFunction
+  /** 当前字号下的列宽表(见 core.sheetColumnWidths), 所有列宽只能从这里取。 */
+  widths: Record<keyof typeof SHEET_COLUMN_WIDTH, number>
   readOnly: boolean
   refDate: string
   refPeriod: string
@@ -236,9 +251,13 @@ const cellOf = (
 type RowActionsCellProps = {
   rowLabel: string
   locked: boolean
-  /** 只读或「锁定规格和数量」时整体禁用(与现有 lockDisabled 同一口径)。 */
+  /** 只读(被他人签出): 整个入口不可用, 由外层 Tooltip 说明原因。 */
   disabled: boolean
+  /** 「锁定规格和数量」是否生效: 只禁用会改动规格/数量的菜单项, 菜单本身仍可打开。 */
+  specQuantityLocked: boolean
   tooltip: string
+  /** 全局锁定期间菜单顶部展示的原因说明(不可点击)。 */
+  lockReason: string
   /** 行菜单是否展开(受控), 与「更多」按钮的点击入口共用。 */
   menuOpen: boolean
   onMenuOpenChange: (open: boolean) => void
@@ -256,12 +275,24 @@ type RowActionsCellProps = {
 /**
  * 行操作入口: 保留原有可见「更多」按钮(点击 / 键盘入口), 并让同一份菜单响应右键。
  * 右键菜单只是补充入口 —— 键盘可达性仍由可见按钮保证(WCAG 2.1.1)。
+ *
+ * <p>锁定层级与菜单可用性的关系(全局 > 行 > 单元格):</p>
+ * <ul>
+ *   <li>`readOnly`(他人签出): 整表不可写, 按钮禁用; 外层用原生 `title` +
+ *       Tooltip 给出原因, 避免"静默禁用";</li>
+ *   <li>`specQuantityLocked`(全局锁): 菜单**仍可打开**, 但会改动规格/数量的项
+ *       (行级锁定开关、上移/下移、插入行/隔断、删除该行)逐项禁用, 并在菜单顶部
+ *       说明原因 —— 用户点得开、看得见为什么点不动;</li>
+ *   <li>行级锁 `row.locked`: 只影响图标与文案(状态可见), 解锁入口保持可用。</li>
+ * </ul>
  */
 function RowActionsCell({
   rowLabel,
   locked,
   disabled,
+  specQuantityLocked,
   tooltip,
+  lockReason,
   menuOpen,
   onMenuOpenChange,
   canMoveUp,
@@ -291,36 +322,50 @@ function RowActionsCell({
   const lockLabel = t(
     locked ? 'priceCompare.sheet.unlockRow' : 'priceCompare.sheet.lockRow',
   )
+  /** 全局锁定时统一禁用会改动规格/数量的项; 行级锁状态本身也由全局锁保护。 */
+  const mutationDisabled = specQuantityLocked
   const items: MenuProps['items'] = [
+    ...(mutationDisabled
+      ? [
+          {
+            key: 'lock-reason',
+            label: lockReason,
+            disabled: true,
+          },
+          { type: 'divider' as const },
+        ]
+      : []),
     {
       key: 'toggle-row-lock',
       icon: locked ? <UnlockOutlined /> : <LockOutlined />,
       label: lockLabel,
-      // 只读/锁定规格数量时整个 Dropdown 已禁用, 这里的禁用只针对行首行尾
+      disabled: mutationDisabled,
     },
     { type: 'divider' },
     {
       key: 'move-row-up',
       icon: <ArrowUpOutlined />,
       label: t('priceCompare.sheet.contextMenu.moveRowUp'),
-      disabled: !canMoveUp,
+      disabled: mutationDisabled || !canMoveUp,
     },
     {
       key: 'move-row-down',
       icon: <ArrowDownOutlined />,
       label: t('priceCompare.sheet.contextMenu.moveRowDown'),
-      disabled: !canMoveDown,
+      disabled: mutationDisabled || !canMoveDown,
     },
     { type: 'divider' },
     {
       key: 'insert-row-above',
       icon: <InsertRowAboveOutlined />,
       label: t('priceCompare.sheet.contextMenu.insertRowAbove'),
+      disabled: mutationDisabled,
     },
     {
       key: 'insert-separator-below',
       icon: <InsertRowBelowOutlined />,
       label: t('priceCompare.sheet.contextMenu.insertSeparatorBelow'),
+      disabled: mutationDisabled,
     },
     { type: 'divider' },
     {
@@ -328,6 +373,7 @@ function RowActionsCell({
       danger: true,
       icon: <DeleteOutlined />,
       label: t('priceCompare.sheet.contextMenu.deleteRow'),
+      disabled: mutationDisabled,
     },
   ]
 
@@ -358,28 +404,69 @@ function RowActionsCell({
 
   return (
     <Tooltip title={tooltip}>
-      <ContextMenu
-        ariaLabel={t('priceCompare.sheet.contextMenu.rowLabel', {
-          row: rowLabel,
-        })}
-        disabled={disabled}
-        items={items}
-        onClick={handleMenuClick}
-        open={menuOpen}
-        onOpenChange={onMenuOpenChange}
-        // 可见「更多」按钮与行内右键共用同一份菜单, 也共用焦点进首项/Escape 归还焦点的契约
-        triggers={['click', 'contextMenu']}
+      {/*
+        用原生 span 承接鼠标事件: 禁用按钮不派发 mouseenter, Tooltip 挂在按钮上
+        会静默失效 —— 用户只看到灰按钮却不知原因(实测)。span 同时让 title 属性生效。
+      */}
+      <span
+        className={`price-compare-row-actions-wrap${disabled ? ' price-compare-row-actions-wrap--disabled' : ''}`}
+        title={tooltip}
       >
-        <Button
-          aria-haspopup="menu"
-          aria-label={lockLabel}
-          className="price-compare-row-actions"
+        <ContextMenu
+          ariaLabel={t('priceCompare.sheet.contextMenu.rowLabel', {
+            row: rowLabel,
+          })}
           disabled={disabled}
-          icon={locked ? <LockOutlined /> : <MoreOutlined />}
-          size="small"
-          type={locked ? 'primary' : 'text'}
-        />
-      </ContextMenu>
+          items={items}
+          onClick={handleMenuClick}
+          open={menuOpen}
+          onOpenChange={onMenuOpenChange}
+          // 可见「更多」按钮与行内右键共用同一份菜单, 也共用焦点进首项/Escape 归还焦点的契约
+          triggers={['click', 'contextMenu']}
+        >
+          <Button
+            aria-haspopup="menu"
+            aria-label={t('priceCompare.sheet.rowActionsLabel', {
+              row: rowLabel,
+            })}
+            className={`price-compare-row-actions${locked ? ' price-compare-row-actions--locked' : ''}`}
+            disabled={disabled}
+            icon={locked ? <LockOutlined /> : <MoreOutlined />}
+            size="small"
+            type={locked ? 'primary' : 'text'}
+          />
+        </ContextMenu>
+      </span>
+    </Tooltip>
+  )
+}
+
+/**
+ * 锁定原因提示包装。
+ *
+ * <p>被锁定的控件一律 `disabled`/`readOnly`, 而禁用控件不派发 mouseenter,
+ * antd Tooltip 直接挂在它上面会静默失效。这里统一用一层 span 承接事件,
+ * 保证「只读时必须给出原因」这条约束在真机上成立(而不是只写在注释里)。</p>
+ */
+function LockReason({
+  reason,
+  className,
+  children,
+}: {
+  reason?: string
+  className?: string
+  children: React.ReactElement
+}) {
+  if (!reason) return children
+  return (
+    <Tooltip title={reason}>
+      {/*
+        title 与 Tooltip 双保险: Tooltip 是即时反馈, 原生 title 保证在
+        Tooltip 被吞掉/焦点态下仍能读到原因, 也让"原因"可被测试稳定断言。
+      */}
+      <span className={className ?? 'price-compare-lock-reason'} title={reason}>
+        {children}
+      </span>
     </Tooltip>
   )
 }
@@ -415,6 +502,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     hiddenBrands,
     purchaseOrderTonnage,
     openPurchaseOrderPicker,
+    widths,
   } = ctx
   /** 本单据内各采购订单的报单吨位合计(叠加到服务端已开吨位上判断超额)。 */
   const localTonByItemId = sumTonByPurchaseOrderItem(rows)
@@ -555,23 +643,30 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       // 行级操作菜单: 承载行级锁定(锁定后才允许关联采购订单)与拖拽的键盘等价物
       // (上移/下移/插入行/插入隔断/删除该行)。点击可见「更多」按钮与右键行内区域
       // 打开的是同一份菜单; 未锁定时用中性的「更多」图标, 已锁定时保持实心锁。
+      // 列里只有一个 icon-only 按钮, 取最小值; 单元格留白由
+      // .price-compare-row-actions-cell 收窄, 避免把列撑宽。
       title: '',
-      width: 32,
+      className: 'price-compare-row-actions-cell',
+      width: PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH,
       fixed: 'left',
       align: 'center',
       render: (_, row) => {
         if (isSeparatorRow(row.row)) return null
         const rowLocked = Boolean(row.row.locked)
-        const lockDisabled = readOnly || Boolean(sheet.specQuantityLocked)
+        // 只读(他人签出)才整体禁用; 全局锁定改为逐项禁用 + 菜单内说明原因
+        const menuDisabled = readOnly
+        const specQuantityLocked = Boolean(sheet.specQuantityLocked)
         const rowIndex = rows.findIndex((item) => item.id === row.rowId)
         return (
           <RowActionsCell
             rowLabel={rowLabelOf(row)}
             locked={rowLocked}
-            disabled={lockDisabled}
+            disabled={menuDisabled}
+            specQuantityLocked={specQuantityLocked}
+            lockReason={rowLockedHint}
             tooltip={
-              !readOnly && sheet.specQuantityLocked
-                ? rowLockedHint
+              readOnly
+                ? t('priceCompare.sheet.readOnlyHint')
                 : t('priceCompare.sheet.lockRowHint')
             }
             menuOpen={ctx.contextMenuRowId === row.rowId}
@@ -602,7 +697,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           {
             title: t('priceCompare.sheet.columns.remark'),
             dataIndex: 'remark',
-            width: SHEET_COLUMN_WIDTH.remark,
+            width: widths.remark,
             // 列名在 154px 内会被裁切: 补 title 提供完整文案(鼠标悬停可见)
             onHeaderCell: () => ({
               title: t('priceCompare.sheet.columns.remark'),
@@ -641,7 +736,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     {
       title: t('priceCompare.sheet.columns.category'),
       dataIndex: 'category',
-      width: SHEET_COLUMN_WIDTH.category,
+      width: widths.category,
       onHeaderCell: () => ({ title: t('priceCompare.sheet.columns.category') }),
       fixed: 'left',
       align: 'center',
@@ -651,13 +746,15 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             {t('priceCompare.sheet.separator')}
           </span>
         ) : (
-          <span className="price-compare-category">{row.row.category}</span>
+          <span className="price-compare-category" title={row.row.category}>
+            {row.row.category}
+          </span>
         ),
     },
     {
       title: t('priceCompare.sheet.columns.variety'),
       dataIndex: 'base',
-      width: SHEET_COLUMN_WIDTH.spec,
+      width: widths.spec,
       onHeaderCell: () => ({ title: t('priceCompare.sheet.columns.variety') }),
       fixed: 'left',
       render: (_, row) => {
@@ -671,61 +768,83 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         const alternate = isPurchasedRow(current)
           ? undefined
           : findAlternateLengthVariety(varietyOptionsFlat, current)
-        const selectDisabled = readOnly || Boolean(sheet.specQuantityLocked)
+        // 锁定层级 单据 > 行 > 单元格: 行级锁同样冻结本行规格(行锁 = 规格与吨位定稿)。
+        const specLock = resolveLock({
+          sheet: quantityLocked,
+          row: Boolean(current.locked),
+        })
+        const selectDisabled = readOnly || specLock.locked
+        const lockReason = !selectDisabled
+          ? undefined
+          : readOnly
+            ? t('priceCompare.sheet.readOnlyHint')
+            : t(LOCK_REASON_KEYS[specLock.level ?? 'row'])
         return (
-          <div className="price-compare-variety-cell">
-            <Select
-              size="small"
-              variant="borderless"
-              aria-label={cellLabel(
-                t('priceCompare.sheet.columns.variety'),
-                row,
-              )}
-              className={quantityLockClass}
-              disabled={selectDisabled}
-              style={{ width: SHEET_COLUMN_WIDTH.spec - 36 }}
-              placeholder={t('priceCompare.sheet.selectProduct')}
-              showSearch={{ optionFilterProp: 'label' }}
-              value={value}
-              options={varietyOptions}
-              onChange={(key) => {
-                const target = varietyByLabel.get(key)
-                if (!target) return
-                patchRow(row.rowId, {
-                  category: target.category,
-                  material: target.material,
-                  spec: target.spec,
-                  length: target.length,
-                })
-              }}
-            />
-            {alternate ? (
-              <Tooltip
-                title={t('priceCompare.sheet.switchLength', {
-                  length: alternate.length,
-                })}
-              >
-                <Button
-                  aria-label={t('priceCompare.sheet.switchLength', {
+          <LockReason reason={lockReason}>
+            <div className="price-compare-variety-cell">
+              <Select
+                size="small"
+                variant="borderless"
+                aria-label={cellLabel(
+                  t('priceCompare.sheet.columns.variety'),
+                  row,
+                )}
+                className={quantityLockClass}
+                disabled={selectDisabled}
+                style={{ width: widths.spec - 36 }}
+                placeholder={t('priceCompare.sheet.selectProduct')}
+                /*
+                 * 「材质 / 规格 / 长度」是一条拼起来的复合文本, 列宽再宽也可能被更长的
+                 * 材质名撑破。这里给选中项补原生 title: 即使被省略号收尾, 悬停仍能看到
+                 * 完整商品名, 不会只剩半截让人猜。
+                 */
+                labelRender={({ label }) => (
+                  <span title={typeof label === 'string' ? label : undefined}>
+                    {label}
+                  </span>
+                )}
+                showSearch={{ optionFilterProp: 'label' }}
+                value={value}
+                options={varietyOptions}
+                onChange={(key) => {
+                  const target = varietyByLabel.get(key)
+                  if (!target) return
+                  patchRow(row.rowId, {
+                    category: target.category,
+                    material: target.material,
+                    spec: target.spec,
+                    length: target.length,
+                  })
+                }}
+              />
+              {alternate ? (
+                <Tooltip
+                  title={t('priceCompare.sheet.switchLength', {
                     length: alternate.length,
                   })}
-                  className="price-compare-variety-switch"
-                  disabled={selectDisabled}
-                  icon={<SwapOutlined />}
-                  size="small"
-                  type="text"
-                  onClick={() =>
-                    patchRow(row.rowId, {
-                      category: alternate.category,
-                      material: alternate.material,
-                      spec: alternate.spec,
+                >
+                  <Button
+                    aria-label={t('priceCompare.sheet.switchLength', {
                       length: alternate.length,
-                    })
-                  }
-                />
-              </Tooltip>
-            ) : null}
-          </div>
+                    })}
+                    className="price-compare-variety-switch"
+                    disabled={selectDisabled}
+                    icon={<SwapOutlined />}
+                    size="small"
+                    type="text"
+                    onClick={() =>
+                      patchRow(row.rowId, {
+                        category: alternate.category,
+                        material: alternate.material,
+                        spec: alternate.spec,
+                        length: alternate.length,
+                      })
+                    }
+                  />
+                </Tooltip>
+              ) : null}
+            </div>
+          </LockReason>
         )
       },
     },
@@ -734,6 +853,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
       readOnly,
       tonTotalText,
+      width: widths.ton,
       quantityLockClass,
       purchaseOrderOptions: purchaseOrderTonnage.options,
       tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
@@ -821,7 +941,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 children: [
                   cellOf(
                     t('priceCompare.sheet.columns.net'),
-                    SHEET_COLUMN_WIDTH.net,
+                    widths.net,
                     (_, row) => {
                       const resolved = isCategoryEnabled(
                         brand,
@@ -866,7 +986,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   ),
                   cellOf(
                     t('priceCompare.sheet.columns.spot'),
-                    SHEET_COLUMN_WIDTH.spot,
+                    widths.spot,
                     (_, row) => {
                       const current = row.row
                       const spot = getSpot(brand.name, current.id)
@@ -959,7 +1079,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   ),
                   cellOf(
                     t('priceCompare.sheet.columns.diff'),
-                    SHEET_COLUMN_WIDTH.diff,
+                    widths.diff,
                     (_, row) => {
                       const price = isCategoryEnabled(brand, row.row.category)
                         ? netPriceWithFallback(
@@ -1015,7 +1135,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         ctx.fillSupplier(brand.name, productRowIds, option)
                       }
                     />,
-                    SHEET_COLUMN_WIDTH.supplier,
+                    widths.supplier,
                     (_, row) => {
                       const current = row.row
                       const input = ctx.getInput(brand.name, current.id)
@@ -1091,6 +1211,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
 
 /* ------------------------------------------------------------- 单据表格 */
 
+/** 锁定原因可见文案的元素 id(供禁用按钮的 aria-describedby 关联)。 */
+const LOCK_REASON_ID = 'price-compare-lock-reason'
+
+/** 行菜单长按(触摸)打开时长, 与移动端长按唤起上下文菜单的习惯一致。 */
+const ROW_MENU_LONG_PRESS_MS = 600
+/** 长按期间允许的手指抖动像素: 超过即视为滚动, 取消长按。 */
+const ROW_MENU_LONG_PRESS_MOVE_TOLERANCE_PX = 10
+
 type SheetTableProps = {
   rows: PriceRow[]
   base: Omit<
@@ -1112,6 +1240,60 @@ function SheetTable(props: SheetTableProps) {
   /** 只读或被他人签出 / 锁定规格数量时: 禁止行级拖拽重排与新增。 */
   const rowLocked = base.readOnly || Boolean(base.sheet.specQuantityLocked)
   const rowLockedHint = t('priceCompare.sheet.specQuantityLockedHint')
+  /** 行结构被冻结的原因: 只读(他人签出) 与 全局锁定 是两回事, 文案不能混用。 */
+  const rowLockedReason = base.readOnly
+    ? t('priceCompare.sheet.readOnlyHint')
+    : rowLockedHint
+  /** 触摸长按打开行菜单的待决状态(与右键等价, 触屏没有右键)。 */
+  const longPressRef = useRef<{
+    timer: ReturnType<typeof setTimeout>
+    x: number
+    y: number
+  } | null>(null)
+
+  const cancelLongPress = () => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current.timer)
+      longPressRef.current = null
+    }
+  }
+
+  /**
+   * 触摸长按 600ms 打开行菜单(触屏没有右键, 长按是右键的等价物)。
+   * 可编辑的文本/下拉上不劫持: 那里长按是文本选择/放大镜, 与仓库约定
+   * 「不在输入控件内劫持右键」一致, 触屏用户改用可见的「行操作」按钮。
+   */
+  const onRowTouchStart = (
+    rowId: string,
+    event: React.TouchEvent<HTMLElement>,
+  ) => {
+    cancelLongPress()
+    if (rowLocked || event.touches.length !== 1) return
+    if (isEditableFieldTarget(event.target)) return
+    const touch = event.touches[0]
+    const timer = setTimeout(() => {
+      longPressRef.current = null
+      base.onContextMenuRowChange(rowId)
+    }, ROW_MENU_LONG_PRESS_MS)
+    longPressRef.current = { timer, x: touch.clientX, y: touch.clientY }
+  }
+
+  const onRowTouchMove = (event: React.TouchEvent<HTMLElement>) => {
+    const pending = longPressRef.current
+    if (!pending || event.touches.length !== 1) {
+      cancelLongPress()
+      return
+    }
+    const touch = event.touches[0]
+    if (
+      Math.abs(touch.clientX - pending.x) >
+        ROW_MENU_LONG_PRESS_MOVE_TOLERANCE_PX ||
+      Math.abs(touch.clientY - pending.y) >
+        ROW_MENU_LONG_PRESS_MOVE_TOLERANCE_PX
+    ) {
+      cancelLongPress()
+    }
+  }
 
   const onRowDragStart = (
     rowId: string,
@@ -1172,29 +1354,34 @@ function SheetTable(props: SheetTableProps) {
                 block
                 className="price-compare-add-row"
                 disabled={rowLocked}
+                // 原因同时给到可见文案与 AT: 只读时不静默禁用
+                aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
                 onClick={onAddRow}
               >
                 {t('priceCompare.sheet.addRow')}
               </Button>
-              <Tooltip
-                title={
-                  !base.readOnly && base.sheet.specQuantityLocked
-                    ? rowLockedHint
-                    : undefined
-                }
+              <Button
+                type="text"
+                size="small"
+                block
+                className="price-compare-add-separator"
+                icon={<MinusOutlined />}
+                disabled={rowLocked}
+                aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
+                onClick={onAddSeparator}
               >
-                <Button
-                  type="text"
-                  size="small"
-                  block
-                  className="price-compare-add-separator"
-                  icon={<MinusOutlined />}
-                  disabled={rowLocked}
-                  onClick={onAddSeparator}
+                {t('priceCompare.sheet.addSeparator')}
+              </Button>
+              {/* 锁定原因常驻可见(不依赖 hover): 禁用按钮不派发鼠标事件, 仅靠 Tooltip 会静默 */}
+              {rowLocked ? (
+                <Text
+                  id={LOCK_REASON_ID}
+                  type="secondary"
+                  className="price-compare-lock-reason-text"
                 >
-                  {t('priceCompare.sheet.addSeparator')}
-                </Button>
-              </Tooltip>
+                  {rowLockedReason}
+                </Text>
+              ) : null}
             </Flex>
           </Table.Summary.Cell>
         </Table.Summary.Row>
@@ -1216,8 +1403,12 @@ function SheetTable(props: SheetTableProps) {
       onRow={(row) => ({
         /*
          * 行容器上的右键入口: 右键行内任意位置等同于点该行的「更多」按钮。
-         * 输入类控件必须放行 —— input/textarea/下拉/数字输入有自己的右键菜单
-         * (粘贴、全选等), 命中时直接 return, 既不拦截也不打开行菜单。
+         *
+         * 只有**正在编辑**的文本/数字输入控件或下拉才放行原生菜单(粘贴/全选,
+         * 见 docs/antd-conventions.md「不在输入控件内劫持右键」); 只读展示格、
+         * 已禁用/只读的控件、选择框、拖拽列等一律走行菜单 —— 否则整行铺满输入控件时
+         * 右键几乎无处可点(实测只有拖拽列与非输入格能弹菜单)。
+         *
          * 「更多」按钮自身已绑定 contextMenu 触发器, 交给它处理避免重复开合。
          */
         onContextMenuCapture: (event) => {
@@ -1227,13 +1418,20 @@ function SheetTable(props: SheetTableProps) {
            */
           if (isSeparatorRow(row.row)) return
           const target = event.target as HTMLElement
-          if (target.closest('input,textarea,.ant-select,.ant-input-number'))
-            return
-          if (rowLocked) return
           if (target.closest('.price-compare-row-actions')) return
+          if (isEditableFieldTarget(event.target)) return
+          /*
+           * 只读(他人签出)时整表不可写, 行菜单全部不可用: 放行原生菜单,
+           * 原因由可见的「行操作」按钮与摘要行的说明文案给出, 不静默拦截。
+           */
+          if (base.readOnly) return
           event.preventDefault()
           base.onContextMenuRowChange(row.rowId)
         },
+        onTouchStart: (event) => onRowTouchStart(row.rowId, event),
+        onTouchMove: onRowTouchMove,
+        onTouchCancel: cancelLongPress,
+        onTouchEnd: cancelLongPress,
         onDragOver: (event) => {
           if (!dragId || rowLocked) return
           event.preventDefault()
@@ -1257,16 +1455,19 @@ function SheetTable(props: SheetTableProps) {
         },
       })}
       scroll={{
+        // 列宽随字号缩放, 因此 scroll.x 必须用同一份 widths 求和, 否则字号调大后
+        // 表格仍按旧总宽布局, 固定列与内容会错位。
         x:
-          (base.hideRemark ? 0 : SHEET_COLUMN_WIDTH.remark) +
-          SHEET_COLUMN_WIDTH.category +
-          SHEET_COLUMN_WIDTH.spec +
-          SHEET_COLUMN_WIDTH.ton +
+          SHEET_FIXED_CHROME_WIDTH +
+          (base.hideRemark ? 0 : base.widths.remark) +
+          base.widths.category +
+          base.widths.spec +
+          base.widths.ton +
           base.visibleBrandCount *
-            (SHEET_COLUMN_WIDTH.net +
-              SHEET_COLUMN_WIDTH.spot +
-              SHEET_COLUMN_WIDTH.diff +
-              SHEET_COLUMN_WIDTH.supplier),
+            (base.widths.net +
+              base.widths.spot +
+              base.widths.diff +
+              base.widths.supplier),
       }}
     />
   )
@@ -2261,9 +2462,14 @@ export function SheetPanel(props: Props) {
     patchRow,
   })
 
+  /** 当前字号下的列宽(个人设置字号变化时自动重算, 保证文字不被裁断)。 */
+  const columnWidths = useSheetColumnWidths()
+
   const base = {
     sheet,
     t,
+    // 列宽随个人设置字号等比缩放: 字号调大后不再把「材质 / 规格 / 长度」等列裁断
+    widths: columnWidths,
     refDate,
     refPeriod,
     lengthPremium,
