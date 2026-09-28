@@ -1,4 +1,7 @@
-import { useEffect } from 'react'
+import {
+  hasShortcutModifier,
+  useGlobalShortcut,
+} from '@/hooks/useGlobalShortcut'
 
 interface Options {
   /** 编辑器是否处于打开状态；关闭时不注册任何监听。 */
@@ -23,6 +26,9 @@ interface Options {
  * <p>监听挂在 window 捕获阶段，焦点无论落在表单、明细任意输入控件还是弹层内都能命中；
  * 命中后先 <code>preventDefault()</code> 阻止浏览器「保存网页 / 另存为」，再按权限决定
  * 是否真正保存。输入法组合态（<code>isComposing</code>）直接放行，避免打断中文输入。</p>
+ *
+ * <p>守卫口径与其余全局快捷键统一收敛在 {@link useGlobalShortcut}；本快捷键刻意不屏蔽
+ * 可编辑目标 —— 焦点在表单/明细输入框内时也必须能保存。</p>
  */
 export function useEditorSaveShortcuts({
   enabled,
@@ -31,15 +37,12 @@ export function useEditorSaveShortcuts({
   saving,
   onSave,
 }: Options) {
-  useEffect(() => {
-    if (!enabled) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // 中文等输入法组合过程中的按键不参与快捷键判定
-      if (event.isComposing) return
-      if (!(event.ctrlKey || event.metaKey) || event.altKey) return
-      if (event.key.toLowerCase() !== 's') return
-
+  useGlobalShortcut({
+    enabled,
+    ignoreEditableTarget: false,
+    match: (event) =>
+      hasShortcutModifier(event) && event.key.toLowerCase() === 's',
+    run: (event) => {
       // 命中编辑器保存快捷键：阻止浏览器默认的「保存网页」
       event.preventDefault()
 
@@ -48,11 +51,6 @@ export function useEditorSaveShortcuts({
       if (audit ? !canAudit : !canSave) return
 
       onSave(audit)
-    }
-
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown, true)
-    }
-  }, [enabled, canSave, canAudit, saving, onSave])
+    },
+  })
 }

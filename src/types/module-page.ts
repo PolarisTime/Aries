@@ -66,6 +66,8 @@ export interface ModuleActionDefinition {
   danger?: boolean
   disabled?: boolean
   loading?: boolean
+  /** 置灰原因等补充说明; 有值时按钮外层包 Tooltip, 悬停与读屏都能获知限制条件。 */
+  tooltip?: string
 }
 
 export interface ModuleParentImportDefinition {

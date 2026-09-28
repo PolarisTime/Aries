@@ -3,7 +3,7 @@
 import { act, createElement, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useDeferredColumns } from '@/hooks/useDeferredColumns'
+import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import { ModuleItemsTable } from '@/views/modules/components/ModuleItemsTable'
 
 const tablePropsSpy = vi.hoisted(() => vi.fn())
@@ -13,6 +13,15 @@ vi.mock('antd', () => ({
     tablePropsSpy(props)
     return createElement('div', { 'data-testid': 'table' })
   },
+  Empty: Object.assign(
+    (props: Record<string, unknown>) =>
+      createElement(
+        'div',
+        { 'data-testid': 'empty' },
+        props.description as ReactNode,
+      ),
+    { PRESENTED_IMAGE_SIMPLE: 'presented-image-simple' },
+  ),
 }))
 
 describe('表格首帧布局稳定性', () => {
@@ -46,16 +55,31 @@ describe('表格首帧布局稳定性', () => {
       dataIndex: `column-${index}`,
       title: `列 ${index + 1}`,
     }))
-    let renderedColumnCount = 0
 
-    function Probe() {
-      renderedColumnCount = useDeferredColumns(columns).length
-      return null
+    act(() => {
+      root.render(
+        createElement(BusinessGridTable, {
+          moduleKey: 'material',
+          columns,
+          // loading 时 hasData 为 null, 不进入 EmptyState, 只验证列透传
+          dataSource: [],
+          loading: true,
+          currentPage: 1,
+          pageSize: 20,
+          rowClassName: () => '',
+          onRowClick: () => {},
+          onRowDoubleClick: () => {},
+        }),
+      )
+    })
+
+    expect(tablePropsSpy).toHaveBeenCalled()
+    const tableProps = tablePropsSpy.mock.lastCall?.[0] as {
+      columns: typeof columns
     }
-
-    act(() => root.render(createElement(Probe)))
-
-    expect(renderedColumnCount).toBe(columns.length)
+    // 首帧即完整列集合(序号列 + 全部业务列), 不经过延迟裁剪
+    expect(tableProps.columns).toHaveLength(columns.length + 1)
+    expect(tableProps.columns.slice(1)).toEqual(columns)
   })
 
   it('明细表始终使用按列宽计算的稳定横向滚动配置', () => {

@@ -17,7 +17,6 @@ import {
   RowContextMenuContext,
   type RowContextMenuMap,
 } from '@/components/row-context-menu'
-import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import { type EmptyStateStateInput, useEmptyState } from '@/hooks/useEmptyState'
 import type { ModuleRecord } from '@/types/module-page'
 import {
@@ -84,7 +83,6 @@ export function BusinessGridTable({
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const [shellWidth, setShellWidth] = useState(0)
-  const visibleColumns = useDeferredColumns(columns)
   const sequenceStart = (currentPage - 1) * pageSize
   const tableColumns = useMemo<ColumnsType<ModuleRecord>>(() => {
     const sequenceColumn: ColumnsType<ModuleRecord>[number] = {
@@ -95,9 +93,9 @@ export function BusinessGridTable({
       render: (_value, _record, index) => sequenceStart + index + 1,
     }
     return rowSelection
-      ? [sequenceColumn, Table.SELECTION_COLUMN, ...visibleColumns]
-      : [sequenceColumn, ...visibleColumns]
-  }, [rowSelection, sequenceStart, t, visibleColumns])
+      ? [sequenceColumn, Table.SELECTION_COLUMN, ...columns]
+      : [sequenceColumn, ...columns]
+  }, [rowSelection, sequenceStart, t, columns])
 
   useLayoutEffect(() => {
     const shell = shellRef.current
@@ -137,6 +135,15 @@ export function BusinessGridTable({
   const isVirtual = dataSource.length > 100 && !expandable
 
   /*
+   * 虚拟模式下必须退掉行组件(见下方 tableComponents), 行右键菜单因此不再可用。
+   * 这里给出可见说明, 避免用户以为"右键没反应"是故障; 行级动作仍可从工具栏触达。
+   */
+  const virtualModeHint =
+    isVirtual && rowContextMenus?.size
+      ? t('modules.table.virtualModeHint')
+      : null
+
+  /*
    * 虚拟滚动时 rc-table 的行容器是 div, 注入真 <tr> 行组件(带行右键菜单的那个)
    * 会产生非法嵌套并打乱虚拟布局, 因此虚拟模式下退掉行组件 —— 行右键在虚拟列表里不可用,
    * 行级动作仍可从工具栏(单选/多选后)触达。
@@ -152,10 +159,7 @@ export function BusinessGridTable({
   }, [components, isVirtual])
 
   const scrollX = computeTableScrollX({
-    columnWidths: [
-      SEQUENCE_COLUMN_WIDTH,
-      ...visibleColumns.map((col) => col.width),
-    ],
+    columnWidths: [SEQUENCE_COLUMN_WIDTH, ...columns.map((col) => col.width)],
     containerWidth: shellWidth,
     selectionColumnWidth: rowSelection ? 32 : 0,
   })
@@ -261,6 +265,14 @@ export function BusinessGridTable({
 
   return (
     <div ref={shellRef} className="module-table-shell" style={shellStyle}>
+      {virtualModeHint ? (
+        <p
+          className="module-grid-virtual-mode-hint"
+          data-testid="business-grid-virtual-mode-hint"
+        >
+          {virtualModeHint}
+        </p>
+      ) : null}
       {/* 行右键菜单: 行由 components.body.row 渲染, 拿不到行数据, 故用上下文按行 key 注入 */}
       <RowContextMenuContext.Provider value={rowContextMenus ?? null}>
         <Table

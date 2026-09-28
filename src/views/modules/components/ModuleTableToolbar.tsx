@@ -5,7 +5,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons'
 import { Button, Space, Tooltip } from 'antd'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleActionDefinition } from '@/types/module-page'
 
@@ -63,9 +63,8 @@ export function ModuleTableToolbar({
           if (isCreateAction(action)) {
             return null
           }
-          return (
+          const button = (
             <Button
-              key={action.key || action.label}
               type={action.type === 'primary' ? 'primary' : 'default'}
               danger={action.danger}
               disabled={action.disabled}
@@ -81,6 +80,21 @@ export function ModuleTableToolbar({
             >
               {action.label}
             </Button>
+          )
+          const key = action.key || action.label
+          if (!action.tooltip) {
+            return <Fragment key={key}>{button}</Fragment>
+          }
+          /*
+           * 置灰按钮不能再获得鼠标事件(disabled 元素不派发 mouseenter),
+           * 必须套一层 span 才能让 Tooltip 在悬停/聚焦时说明限制原因。
+           */
+          return (
+            <Tooltip key={key} title={action.tooltip}>
+              <span className="module-table-action-tooltip-target">
+                {button}
+              </span>
+            </Tooltip>
           )
         })}
         {canExport && !toolbarActions.some(isExportAction) && (

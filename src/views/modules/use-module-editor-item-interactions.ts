@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { EditorItemDragPosition } from '@/module-system/adapter/module-adapter-editor'
 import { moveEditorLineItemByDrag } from '@/module-system/adapter/module-adapter-editor'
+import { removeEditorLineItems } from '@/module-system/editor/module-editor-line-item-removal'
 import type { ModuleLineItem } from '@/types/module-page'
 
 interface Props {
@@ -21,8 +22,7 @@ export function useModuleEditorItemInteractions({ items, setItems }: Props) {
 
   const removeSelectedItems = () => {
     if (!selectedItemIds.length) return
-    const selectedItemIdSet = new Set(selectedItemIds)
-    setItems((prev) => prev.filter((item) => !selectedItemIdSet.has(item.id)))
+    setItems((prev) => removeEditorLineItems(prev, selectedItemIds))
     setSelectedItemIds([])
   }
 

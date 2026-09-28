@@ -223,6 +223,76 @@ describe('useBusinessGridActions', () => {
     expect(openEditorMock).toHaveBeenCalledWith(record)
   })
 
+  /**
+   * 回归保护: 采购订单/采购入库的「批量审核/反审核」入口曾出现"勾选后不出现"的反馈。
+   * 这里锁死状态机口径 —— 允许审核的记录勾选后出现入口, 终态记录不出现。
+   */
+  it('采购订单: 勾选草稿记录后工具栏出现「审核」', () => {
+    moduleKey = 'purchase-order'
+    config = createConfig({ key: 'purchase-order', title: '采购订单' })
+    selectedRowKeys = ['1']
+    selectedRecords = [{ id: '1', status: '草稿' }]
+    renderOnce()
+
+    const audit = latest.visibleToolbarActions.find(
+      (action) => action.key === 'bulk_audit',
+    )
+    expect(audit).toBeDefined()
+    expect(audit?.label).toBe('modules.statusActions.audit')
+    expect(audit?.disabled).toBeFalsy()
+  })
+
+  it('采购订单: 勾选已审核记录后工具栏出现「反审核」', () => {
+    moduleKey = 'purchase-order'
+    config = createConfig({ key: 'purchase-order', title: '采购订单' })
+    selectedRowKeys = ['1']
+    selectedRecords = [{ id: '1', status: '已审核' }]
+    renderOnce()
+
+    const reverse = latest.visibleToolbarActions.find(
+      (action) => action.key === 'bulk_reverse_audit',
+    )
+    expect(reverse).toBeDefined()
+    expect(reverse?.label).toBe('modules.statusActions.reverseAudit')
+  })
+
+  it('采购订单: 终态「完成采购」记录不出现审核/反审核入口', () => {
+    moduleKey = 'purchase-order'
+    config = createConfig({ key: 'purchase-order', title: '采购订单' })
+    selectedRowKeys = ['1']
+    selectedRecords = [{ id: '1', status: '完成采购' }]
+    renderOnce()
+
+    const keys = latest.visibleToolbarActions.map((action) => action.key)
+    expect(keys).not.toContain('bulk_audit')
+    expect(keys).not.toContain('bulk_reverse_audit')
+  })
+
+  it('采购入库: 勾选一条完成入库记录出现「反审核」, 多选时置灰并给出原因', () => {
+    moduleKey = 'purchase-inbound'
+    config = createConfig({ key: 'purchase-inbound', title: '采购入库' })
+    selectedRowKeys = ['1']
+    selectedRecords = [{ id: '1', status: '完成入库' }]
+    renderOnce()
+    expect(
+      latest.visibleToolbarActions.find(
+        (action) => action.key === 'bulk_reverse_audit',
+      )?.disabled,
+    ).toBeFalsy()
+
+    selectedRowKeys = ['1', '2']
+    selectedRecords = [
+      { id: '1', status: '完成入库' },
+      { id: '2', status: '完成入库' },
+    ]
+    renderOnce()
+    const reverse = latest.visibleToolbarActions.find(
+      (action) => action.key === 'bulk_reverse_audit',
+    )
+    expect(reverse?.disabled).toBe(true)
+    expect(reverse?.tooltip).toBe('hooks.toolbarActions.singleSelectionOnly')
+  })
+
   it('shows the export-selected action only when rows are selected, with the count in the label', () => {
     expect(
       latest.visibleToolbarActions.some(

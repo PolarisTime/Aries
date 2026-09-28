@@ -1,3 +1,4 @@
+import { removeEditorLineItems } from '@/module-system/editor/module-editor-line-item-removal'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { useModuleEditorItemColumns } from '@/views/modules/use-module-editor-item-columns'
@@ -39,6 +40,8 @@ export function useModuleEditorItems({
     items,
     setItems,
   })
+  // 上游导入行同样走这里删除：来源分配由服务端按剩余明细重算，删除即释放，
+  // 不回写其它行的数量或上限，也不要求被删行继续关联采购来源。
   const removeSelectedItems = () => {
     const itemRemovalSourceGroupKey =
       getModuleEditorItemBehavior(moduleKey)?.itemRemovalSourceGroupKey
@@ -46,19 +49,9 @@ export function useModuleEditorItems({
       removeSelectedItemsDirectly()
       return
     }
-    const selectedIds = new Set(selectedItemIds)
-    const sourceGroupKey = itemRemovalSourceGroupKey
-    const selectedSourceIds = new Set<string>()
-    for (const item of items) {
-      if (!selectedIds.has(item.id)) continue
-      const value = sourceGroupKey(item)
-      if (value) selectedSourceIds.add(value)
-    }
     setItems((current) =>
-      current.filter((item) => {
-        if (selectedIds.has(item.id)) return false
-        const groupKey = sourceGroupKey(item)
-        return !groupKey || !selectedSourceIds.has(groupKey)
+      removeEditorLineItems(current, selectedItemIds, {
+        sourceGroupKey: itemRemovalSourceGroupKey,
       }),
     )
     clearSelectedItems()

@@ -204,9 +204,10 @@ export function ModuleEditorItemsSection({
 
   return (
     <>
-      <div className="mt-6">
+      <div className="mt-3">
         {supportsExpenseTab ? (
           <Tabs
+            className="editor-items-tabs"
             activeKey={activeItemTab}
             onChange={(key) => setActiveItemTab(key as 'goods' | 'expenses')}
             items={[

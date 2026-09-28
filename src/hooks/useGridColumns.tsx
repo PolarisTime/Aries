@@ -6,14 +6,10 @@ import { useTranslation } from 'react-i18next'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { isListDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
-import { RowActionsMenuButton } from '@/components/RowActionsMenuButton'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-export const ACTION_COLUMN_WIDTH = 200
-/** 行尾「更多」按钮列的宽度(只放一个 32px 图标按钮) */
-export const ROW_ACTIONS_COLUMN_WIDTH = 44
 export const DETAIL_TOGGLE_COLUMN_ID = 'detail-toggle'
 export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
 
@@ -41,17 +37,10 @@ declare module '@tanstack/react-table' {
 
 interface Props {
   config: ModulePageConfig
-  canUpdate: boolean
-  showActions?: boolean
   onOpenDetail?: (record: ModuleRecord) => void
 }
 
-export function useGridColumns({
-  config,
-  canUpdate: _canUpdate,
-  showActions,
-  onOpenDetail,
-}: Props) {
+export function useGridColumns({ config, onOpenDetail }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
   const { t } = useTranslation()
 
@@ -136,22 +125,11 @@ export function useGridColumns({
     })
   }
 
-  if (showActions) {
-    columns.push({
-      id: 'actions',
-      header: t('hooks.gridColumns.actions'),
-      meta: {
-        width: ROW_ACTIONS_COLUMN_WIDTH,
-        align: 'center',
-        renderCell: (record: ModuleRecord) => (
-          <RowActionsMenuButton rowKey={String(record.id)} />
-        ),
-      },
-      cell: ({ row }) => (
-        <RowActionsMenuButton rowKey={String(row.original.id)} />
-      ),
-    })
-  }
+  /*
+   * 行级动作只保留行右键菜单(与触摸长按)一个入口, 不再渲染行尾「更多」操作列:
+   * 列宽固定 200px 却只放一个 32px 图标按钮, 既浪费横向空间, 又让「列设置」里
+   * 多出一个无法隐藏/移动的伪列。行菜单与键盘/触摸入口见 RowContextMenuRow。
+   */
 
   return { columns }
 }

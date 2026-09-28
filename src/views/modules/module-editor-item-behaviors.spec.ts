@@ -75,6 +75,25 @@ describe('module-editor-item-behaviors', () => {
     ).toBeUndefined()
   })
 
+  it('销售订单导入上游后仍允许选中删除，其它模块保持原锁定口径', () => {
+    expect(
+      getModuleEditorItemBehavior('sales-order')
+        ?.allowsItemRemovalWhenParentImported,
+    ).toBe(true)
+    expect(
+      getModuleEditorItemBehavior('sales-outbound')
+        ?.allowsItemRemovalWhenParentImported,
+    ).toBeUndefined()
+    expect(
+      getModuleEditorItemBehavior('purchase-order')
+        ?.allowsItemRemovalWhenParentImported,
+    ).toBeUndefined()
+    expect(
+      getModuleEditorItemBehavior('unknown-module')
+        ?.allowsItemRemovalWhenParentImported,
+    ).toBeUndefined()
+  })
+
   it('未知模块 key 回退为 undefined，全部走默认行为', () => {
     expect(getModuleEditorItemBehavior('unknown-module')).toBeUndefined()
     expect(

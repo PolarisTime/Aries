@@ -5,8 +5,10 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
@@ -18,11 +20,7 @@ import {
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import {
-  ACTION_COLUMN_WIDTH,
-  DETAIL_TOGGLE_COLUMN_ID,
-  useGridColumns,
-} from '@/hooks/useGridColumns'
+import { DETAIL_TOGGLE_COLUMN_ID, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
@@ -31,13 +29,16 @@ import {
   moveColumnKey,
   toggleColumnVisibility,
 } from '@/utils/table-columns'
+import {
+  buildSelectionA11yProps,
+  describeSelectionRow,
+} from '@/utils/table-selection-a11y'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   moduleKey: ModuleKey
   config: ModulePageConfig | undefined
   records: ModuleRecord[]
-  canUpdateRecord: boolean
   selectedRowKeys: string[]
   setSelectedRowKeys: Dispatch<SetStateAction<string[]>>
   setSelectedRowMap: (
@@ -46,11 +47,8 @@ interface Props {
     ) => Record<string, ModuleRecord>,
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
-  showActions?: boolean
   onOpenDetail?: (record: ModuleRecord) => void
 }
-
-const ACTIONS_COLUMN_ID = 'actions'
 
 function buildAntdColumns({
   columnDefs,
@@ -86,10 +84,10 @@ function buildAntdColumns({
       typeof columnDef.header === 'function' ? '' : columnDef.header
     /*
      * 列头挂右键菜单: 隐藏该列 / 移到最前 / 移到最后 / 列设置…
-     * 明细按钮列(空标题)与操作列不参与(隐藏或移动它们没有意义)。
+     * 明细按钮列(空标题)不参与(隐藏或移动它没有意义)。
      */
     const title =
-      columnId === ACTIONS_COLUMN_ID || rawTitle === '' ? (
+      rawTitle === '' ? (
         rawTitle
       ) : (
         <ColumnHeaderMenu
@@ -109,21 +107,8 @@ function buildAntdColumns({
         title,
         dataIndex: columnId,
         key: columnId,
-        fixed:
-          columnId === ACTIONS_COLUMN_ID
-            ? undefined
-            : (columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed']),
-        className: columnId === 'actions' ? 'sticky-actions-col' : undefined,
-        onCell:
-          columnId === 'actions'
-            ? () => ({ className: 'sticky-actions-col' })
-            : undefined,
-        onHeaderCell:
-          columnId === 'actions'
-            ? () => ({ className: 'sticky-actions-col' })
-            : undefined,
-        width:
-          columnId === 'actions' ? ACTION_COLUMN_WIDTH : columnDef.meta?.width,
+        fixed: columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed'],
+        width: columnDef.meta?.width,
         align: 'center',
         ellipsis: true,
         render: (_: unknown, record: ModuleRecord) => {
@@ -138,12 +123,10 @@ export function useBusinessGridTable({
   moduleKey,
   config,
   records,
-  canUpdateRecord,
   selectedRowKeys,
   setSelectedRowKeys,
   setSelectedRowMap,
   buildActions,
-  showActions,
   onOpenDetail,
 }: Props) {
   const { t } = useTranslation()
@@ -175,37 +158,60 @@ export function useBusinessGridTable({
   }
   const { columns: columnDefs } = useGridColumns({
     config: config ?? fallbackConfig,
-    canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
-    showActions: Boolean(config) && showActions,
     onOpenDetail: config ? onOpenDetail : undefined,
   })
-  const allColumnIds = columnDefs.map(
-    (c) =>
-      (c as ColumnDef<StockFeatures, ModuleRecord> & { id: string }).id || '',
+  const allColumnIds = useMemo(
+    () =>
+      columnDefs.map(
+        (c) =>
+          (c as ColumnDef<StockFeatures, ModuleRecord> & { id: string }).id ||
+          '',
+      ),
+    [columnDefs],
   )
-  const columnOrder = mergeColumnOrder(allColumnIds, savedOrder, {
-    headId: DETAIL_TOGGLE_COLUMN_ID,
-    tailId: ACTIONS_COLUMN_ID,
-  })
-  /** 业务数据列(剔除固定在首尾的明细按钮列与操作列)。 */
-  const dataColumnIds = columnOrder.filter(
-    (id) => id !== DETAIL_TOGGLE_COLUMN_ID && id !== ACTIONS_COLUMN_ID,
+  /*
+   * filterInvalid: 历史版本里业务列表有行尾「操作列」(id=actions), 列顺序可能把它
+   * 持久化在本地; 不过滤掉会让它一直参与"移到最前/最后"的边界判断。
+   */
+  const columnOrder = useMemo(
+    () =>
+      mergeColumnOrder(allColumnIds, savedOrder, {
+        headId: DETAIL_TOGGLE_COLUMN_ID,
+        filterInvalid: true,
+      }),
+    [allColumnIds, savedOrder],
+  )
+  /** 业务数据列(剔除固定在首位的明细按钮列)。 */
+  const dataColumnIds = useMemo(
+    () => columnOrder.filter((id) => id !== DETAIL_TOGGLE_COLUMN_ID),
+    [columnOrder],
   )
   /**
    * 可见数据列: 边界判断与移序插入点都必须基于它。
    * 完整顺序里夹着隐藏列(如默认隐藏的备注列), 否则"移到最后"会挪到隐藏列后面 ——
    * 可见顺序没变但新顺序已持久化, 用户以为点了没反应。
    */
-  const visibleDataColumnIds = dataColumnIds.filter(
-    (id) => columnVisibility[id] !== false,
+  const visibleDataColumnIds = useMemo(
+    () => dataColumnIds.filter((id) => columnVisibility[id] !== false),
+    [dataColumnIds, columnVisibility],
   )
-  const computedColumns = buildAntdColumns({
-    columnDefs,
-    columnOrder,
-    columnVisibility,
-    visibleDataColumnIds,
-    onHideColumn: (columnId) => {
-      handleColumnVisibilityChange(
+  /*
+   * useColumnSettingsSupport 暴露的 handler 每次渲染都是新函数, 直接进 useMemo 依赖
+   * 会让列构建每次都重建; 这里用 ref 读取最新实现, 只让真正影响结果的 state 参与依赖。
+   */
+  const columnHandlersRef = useRef({
+    handleColumnVisibilityChange,
+    handleColumnOrderChange,
+  })
+  useEffect(() => {
+    columnHandlersRef.current = {
+      handleColumnVisibilityChange,
+      handleColumnOrderChange,
+    }
+  })
+  const handleHideColumn = useCallback(
+    (columnId: string) => {
+      columnHandlersRef.current.handleColumnVisibilityChange(
         toggleColumnVisibility(columnVisibility, columnId),
       )
       // 隐藏后列头连同右键入口一起消失, 必须给出可感知反馈并说明恢复位置
@@ -217,11 +223,36 @@ export function useBusinessGridTable({
         }),
       )
     },
-    onMoveColumn: (columnId, position) => {
-      handleColumnOrderChange(moveColumnKey(dataColumnIds, columnId, position))
+    [columnVisibility, config, t],
+  )
+  const handleMoveColumn = useCallback(
+    (columnId: string, position: 'first' | 'last') => {
+      columnHandlersRef.current.handleColumnOrderChange(
+        moveColumnKey(dataColumnIds, columnId, position),
+      )
     },
-  })
-  // 操作列锁定宽度（sticky 固定列），不参与拖拽
+    [dataColumnIds],
+  )
+  const computedColumns = useMemo(
+    () =>
+      buildAntdColumns({
+        columnDefs,
+        columnOrder,
+        columnVisibility,
+        visibleDataColumnIds,
+        onHideColumn: handleHideColumn,
+        onMoveColumn: handleMoveColumn,
+      }),
+    [
+      columnDefs,
+      columnOrder,
+      columnVisibility,
+      visibleDataColumnIds,
+      handleHideColumn,
+      handleMoveColumn,
+    ],
+  )
+  // 所有业务列都参与拖拽(行尾操作列已移除, 不再有固定宽度的例外)
   const { columns: resizableColumns, components } =
     useColumnResizing<ModuleRecord>({
       columns: computedColumns,
@@ -229,12 +260,21 @@ export function useBusinessGridTable({
       onResizePreview: handleColumnResizePreview,
       onResizeCommit: handleColumnResizeCommit,
       onResizeReset: handleColumnResizeReset,
-      isResizable: (column) => column.key !== ACTIONS_COLUMN_ID,
     })
   const antdColumns = resizableColumns
+  /*
+   * 最新选中集的 ref: 行菜单打开回调需要"当前"选中行决定是否保留多选,
+   * 但选中集本身不能作为 rowContextMenus 的依赖 —— 否则每次勾选都会按
+   * O(行数 × 动作数) 重建整表菜单。这里只在打开菜单时读取最新值。
+   */
+  const selectedRowKeysRef = useRef(selectedRowKeys)
+  useEffect(() => {
+    selectedRowKeysRef.current = selectedRowKeys
+  }, [selectedRowKeys])
   /**
-   * 行右键菜单: 与行内可见按钮(TableActions)共用同一份 ActionItem[],
-   * 因此两个入口的文案、禁用口径、二次确认完全一致。
+   * 行右键菜单(鼠标右键 / 键盘 Shift+F10 / 触摸长按共用同一份菜单):
+   * 行级动作只由 `useModuleRecordActions` 产出的 `ActionItem[]` 提供,
+   * 因此菜单项的文案、禁用口径、二次确认只有一处定义。
    */
   const rowContextMenus = useMemo<RowContextMenuMap>(() => {
     const primaryNoKey = config?.primaryNoKey
@@ -255,7 +295,7 @@ export function useBusinessGridTable({
        */
       onMenuOpen: (record) => {
         const key = String(record.id)
-        if (selectedRowKeys.includes(key)) return
+        if (selectedRowKeysRef.current.includes(key)) return
         const normalizedKeysSet = new Set([key])
         setSelectedRowKeys([key])
         setSelectedRowMap((prev) => {
@@ -282,7 +322,6 @@ export function useBusinessGridTable({
     buildActions,
     config?.primaryNoKey,
     records,
-    selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
     t,
@@ -316,6 +355,16 @@ export function useBusinessGridTable({
       })
     },
     preserveSelectedRowKeys: true,
+    /*
+     * antd 默认的 Select all / Select row N 是硬编码英文, 覆盖成本项目 i18n 文案;
+     * 行名优先用模块主单号(config.primaryNoKey), 读屏用户才能分辨勾的是哪一单。
+     */
+    ...buildSelectionA11yProps<ModuleRecord>(
+      t,
+      (record) =>
+        (config?.primaryNoKey ? asString(record[config.primaryNoKey]) : '') ||
+        describeSelectionRow(record),
+    ),
   }
   useEffect(() => {
     if (!selectedRowKeys.length || !records.length) return

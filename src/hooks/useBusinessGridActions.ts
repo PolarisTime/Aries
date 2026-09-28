@@ -264,8 +264,8 @@ export function useBusinessGridActions({
       exportMaterialRows: async () => {
         await handleExport()
       },
-      // mode 决定导出范围：selected 只导出勾选记录（打印导出通道逐条按 id 渲染），
-      // 其余（filtered/page）沿用后端模块级导出。
+      // mode 决定导出范围：selected 只导出勾选记录（优先 POST /module-exports 按 id 过滤，
+      // 服务端未登记该模块时回落到打印链路），其余（filtered/page）沿用后端模块级导出。
       exportRows: async (mode) => {
         if (mode === 'selected') {
           await handleExportSelectedRecords()

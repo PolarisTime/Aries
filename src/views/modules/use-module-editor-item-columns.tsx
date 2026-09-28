@@ -323,7 +323,10 @@ export function useModuleEditorItemColumns({
     if (canManageItems) {
       cols.push(
         ...buildModuleEditorManagementColumns({
+          // 上游导入后行序随上游（销售订单支持自动排序），只放开「选择 + 删除」，
+          // 不放开拖拽排序；未导入时沿用模块行为表的拖拽口径。
           draggable:
+            !parentImportedItemEditLocked &&
             !getModuleEditorItemBehavior(moduleKey)?.disablesItemReorder,
           items,
           selectedItemIds,
@@ -353,7 +356,7 @@ export function useModuleEditorItemColumns({
       }),
     )
 
-    if (canManageItems) {
+    if (canManageItems && (canDuplicateItem || !parentImportedItemEditLocked)) {
       cols.push(
         buildModuleEditorItemDuplicateColumn({
           title: t('hooks.gridColumns.actions'),

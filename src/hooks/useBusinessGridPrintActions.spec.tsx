@@ -10,8 +10,11 @@ const {
   runPrintOutputsMock,
   pickDefaultPrintTemplateMock,
   filterPrintTemplatesBySettlementCompanyMock,
+  supportsRecordIdExportMock,
+  exportModuleRecordsByIdsMock,
   messageWarningMock,
   messageErrorMock,
+  messageSuccessMock,
 } = vi.hoisted(() => ({
   listPrintTemplatesMock: vi.fn(),
   renderPrintRecordMock: vi.fn(),
@@ -20,8 +23,11 @@ const {
   filterPrintTemplatesBySettlementCompanyMock: vi.fn(
     (templates: unknown[]) => templates,
   ),
+  supportsRecordIdExportMock: vi.fn(() => true),
+  exportModuleRecordsByIdsMock: vi.fn(),
   messageWarningMock: vi.fn(),
   messageErrorMock: vi.fn(),
+  messageSuccessMock: vi.fn(),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -29,8 +35,17 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/utils/antd-app', () => ({
-  message: { warning: messageWarningMock, error: messageErrorMock },
+  message: {
+    warning: messageWarningMock,
+    error: messageErrorMock,
+    success: messageSuccessMock,
+  },
   modal: { confirm: vi.fn() },
+}))
+
+vi.mock('@/api/business/common-export', () => ({
+  supportsRecordIdExport: supportsRecordIdExportMock,
+  exportModuleRecordsByIds: exportModuleRecordsByIdsMock,
 }))
 
 vi.mock('@/api/system/print-template', () => ({
@@ -73,10 +88,11 @@ describe('useBusinessGridPrintActions.handleExportSelectedRecords 导出选中�
   let latest: ReturnType<typeof useBusinessGridPrintActions>
   let selectedRowKeys: string[]
   let selectedRows: ModuleRecord[]
+  let moduleKey: string
 
   function Probe() {
     latest = useBusinessGridPrintActions({
-      moduleKey: 'sales-outbound',
+      moduleKey,
       selectedRowKeys,
       selectedRows,
     })
@@ -87,15 +103,21 @@ describe('useBusinessGridPrintActions.handleExportSelectedRecords 导出选中�
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
+    moduleKey = 'sales-outbound'
     selectedRowKeys = []
     selectedRows = []
     listPrintTemplatesMock.mockReset()
     renderPrintRecordMock.mockReset()
     runPrintOutputsMock.mockReset()
     pickDefaultPrintTemplateMock.mockReset()
+    supportsRecordIdExportMock.mockReset()
+    exportModuleRecordsByIdsMock.mockReset()
     messageWarningMock.mockReset()
     messageErrorMock.mockReset()
+    messageSuccessMock.mockReset()
 
+    supportsRecordIdExportMock.mockReturnValue(true)
+    exportModuleRecordsByIdsMock.mockResolvedValue(undefined)
     listPrintTemplatesMock.mockResolvedValue([TEMPLATE])
     pickDefaultPrintTemplateMock.mockReturnValue(TEMPLATE)
     renderPrintRecordMock.mockResolvedValue({ kind: 'PDF', pdfBase64: 'AA==' })
@@ -124,39 +146,38 @@ describe('useBusinessGridPrintActions.handleExportSelectedRecords 导出选中�
     })
   }
 
-  it('无勾选时不发起任何渲染请求', async () => {
+  it('无勾选时不发起任何导出请求', async () => {
     renderWithSelection([])
 
     await act(async () => {
       expect(await latest.handleExportSelectedRecords()).toBe(false)
     })
 
+    expect(exportModuleRecordsByIdsMock).not.toHaveBeenCalled()
     expect(renderPrintRecordMock).not.toHaveBeenCalled()
     expect(messageWarningMock).toHaveBeenCalledWith('common.pleaseSelect')
   })
 
-  it('导出目标只含勾选 id，逐条按 recordId 渲染', async () => {
+  it('走服务端按 id 导出：请求体只含勾选 id，且不进入打印链路', async () => {
     renderWithSelection(['101', '205', '309'])
 
     await act(async () => {
       expect(await latest.handleExportSelectedRecords()).toBe(true)
     })
 
-    expect(renderPrintRecordMock).toHaveBeenCalledTimes(3)
-    expect(renderPrintRecordMock.mock.calls.map((call) => call[2])).toEqual([
-      '101',
-      '205',
-      '309',
-    ])
+    expect(exportModuleRecordsByIdsMock).toHaveBeenCalledTimes(1)
+    expect(exportModuleRecordsByIdsMock).toHaveBeenCalledWith(
+      'sales-outbound',
+      ['101', '205', '309'],
+    )
     // 未选中的记录绝不进入导出集合
-    expect(
-      renderPrintRecordMock.mock.calls.map((call) => call[2]),
-    ).not.toContain('999')
-    expect(runPrintOutputsMock).toHaveBeenCalledTimes(1)
-    expect(runPrintOutputsMock.mock.calls[0][1]).toMatchObject({
-      mode: 'download',
-      fallbackTemplateName: TEMPLATE.templateName,
-    })
+    expect(exportModuleRecordsByIdsMock.mock.calls[0][1]).not.toContain('999')
+    // 拿到的应是 xlsx，不再逐条渲染打印记录
+    expect(renderPrintRecordMock).not.toHaveBeenCalled()
+    expect(runPrintOutputsMock).not.toHaveBeenCalled()
+    expect(messageSuccessMock).toHaveBeenCalledWith(
+      'hooks.printActions.exportSelectedXlsxSuccess',
+    )
   })
 
   it('勾选 key 去重后每条记录只导出一次', async () => {
@@ -166,38 +187,67 @@ describe('useBusinessGridPrintActions.handleExportSelectedRecords 导出选中�
       await latest.handleExportSelectedRecords()
     })
 
+    expect(exportModuleRecordsByIdsMock).toHaveBeenCalledWith(
+      'sales-outbound',
+      ['101', '205'],
+    )
+  })
+
+  it('按 id 导出失败时报错，不回退导出整页或打印链路', async () => {
+    exportModuleRecordsByIdsMock.mockRejectedValue(new Error('boom'))
+    renderWithSelection(['101'])
+
+    await act(async () => {
+      expect(await latest.handleExportSelectedRecords()).toBe(false)
+    })
+
+    expect(messageErrorMock).toHaveBeenCalledWith('boom')
+    expect(renderPrintRecordMock).not.toHaveBeenCalled()
+  })
+
+  it('模块没有服务端按 id 导出端点时保留打印链路回落', async () => {
+    supportsRecordIdExportMock.mockReturnValue(false)
+    renderWithSelection(['101', '205'])
+
+    await act(async () => {
+      expect(await latest.handleExportSelectedRecords()).toBe(true)
+    })
+
+    expect(exportModuleRecordsByIdsMock).not.toHaveBeenCalled()
+    expect(renderPrintRecordMock).toHaveBeenCalledTimes(2)
     expect(renderPrintRecordMock.mock.calls.map((call) => call[2])).toEqual([
       '101',
       '205',
     ])
+    expect(runPrintOutputsMock).toHaveBeenCalledTimes(1)
+    expect(runPrintOutputsMock.mock.calls[0][1]).toMatchObject({
+      mode: 'download',
+      fallbackTemplateName: TEMPLATE.templateName,
+    })
   })
 
-  it('模块不在打印模板白名单时明确提示，不回退导出整页', async () => {
+  it('两条路都不支持时给出明确提示，不回退导出整页', async () => {
+    supportsRecordIdExportMock.mockReturnValue(false)
+    moduleKey = 'material'
     selectedRowKeys = ['101']
     selectedRows = [{ id: '101' }]
-    function OtherProbe() {
-      latest = useBusinessGridPrintActions({
-        moduleKey: 'material',
-        selectedRowKeys,
-        selectedRows,
-      })
-      return null
-    }
     act(() => {
-      root.render(createElement(OtherProbe))
+      root.render(createElement(Probe))
     })
 
     await act(async () => {
       expect(await latest.handleExportSelectedRecords()).toBe(false)
     })
 
+    expect(exportModuleRecordsByIdsMock).not.toHaveBeenCalled()
     expect(renderPrintRecordMock).not.toHaveBeenCalled()
     expect(messageWarningMock).toHaveBeenCalledWith(
       'hooks.printActions.exportSelectedUnsupported',
     )
   })
 
-  it('未配置打印模板时不导出', async () => {
+  it('回落链路未配置打印模板时不导出', async () => {
+    supportsRecordIdExportMock.mockReturnValue(false)
     listPrintTemplatesMock.mockResolvedValue([])
     renderWithSelection(['101'])
 
@@ -211,7 +261,8 @@ describe('useBusinessGridPrintActions.handleExportSelectedRecords 导出选中�
     )
   })
 
-  it('模板无可下载内容时提示未生成打印内容', async () => {
+  it('回落链路模板无可下载内容时提示未生成打印内容', async () => {
+    supportsRecordIdExportMock.mockReturnValue(false)
     runPrintOutputsMock.mockResolvedValue({ pdfCount: 0, coordCount: 0 })
     renderWithSelection(['101'])
 
@@ -224,7 +275,8 @@ describe('useBusinessGridPrintActions.handleExportSelectedRecords 导出选中�
     )
   })
 
-  it('渲染失败时报错并返回 false', async () => {
+  it('回落链路渲染失败时报错并返回 false', async () => {
+    supportsRecordIdExportMock.mockReturnValue(false)
     renderPrintRecordMock.mockRejectedValue(new Error('boom'))
     renderWithSelection(['101'])
 

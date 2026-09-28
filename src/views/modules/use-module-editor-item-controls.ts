@@ -7,6 +7,7 @@ import type {
   FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
 import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
+import { resolveModuleEditorItemCapabilities } from '@/views/modules/module-editor-item-capabilities'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 
 interface Options {
@@ -42,20 +43,25 @@ export function useModuleEditorItemControls({
     editorFormValues,
     config.parentImport?.parentFieldKey,
   )
-  const canManageCurrentItems = canManageItems && !parentImportedItemEditLocked
-  const canAddManualItemsForCurrentRecord =
-    canAddManualItems && !parentImportedItemEditLocked
-  const canImportParentItems =
-    Boolean(config.parentImport) &&
-    !config.readOnly &&
-    canSave &&
-    !lineItemsLocked &&
-    !parentImportedItemEditLocked
+  const {
+    canAddManualItemsForCurrentRecord,
+    canImportParentItems,
+    canManageCurrentItems,
+  } = resolveModuleEditorItemCapabilities({
+    moduleKey,
+    config,
+    parentImportedItemEditLocked,
+    hasItems: items.length > 0,
+    canManageItems,
+    canAddManualItems,
+    canSave,
+    lineItemsLocked,
+  })
+  const editorItemBehavior = getModuleEditorItemBehavior(moduleKey)
   const parentImportVisible = Boolean(
     config.parentImport &&
       (config.parentImport.visibleWhen?.(editorFormValues) ?? true),
   )
-  const editorItemBehavior = getModuleEditorItemBehavior(moduleKey)
   // 附加费用 Tab：采购订单/销售订单/物流单启用（行为表注册）。
   const supportsExpenseTab =
     Boolean(editorItemBehavior?.supportsExpenseTab) &&

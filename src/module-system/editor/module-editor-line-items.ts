@@ -4,6 +4,10 @@ export {
   duplicateEditorLineItem,
 } from '@/module-system/editor/module-editor-line-item-duplicate'
 export {
+  type RemoveEditorLineItemsOptions,
+  removeEditorLineItems,
+} from '@/module-system/editor/module-editor-line-item-removal'
+export {
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,

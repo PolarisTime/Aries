@@ -86,18 +86,32 @@ export function useModuleToolbarActions({
 
   const bulkToolbarActions = (() => {
     const actions: ModuleActionDefinition[] = []
-    const auditSelectionSupported =
-      selectedRowCount > 0 &&
-      (!limitsBulkAuditToSingleSelection(moduleKey) || selectedRowCount === 1)
+    /*
+     * 采购入库等模块的批量审核/反审核只允许单选(状态联动会回写来源采购订单)。
+     * 多选时此前直接不渲染入口, 用户只看到「批量审核/反审核不见了」而没有任何解释;
+     * 现在保留入口并置灰, 用 tooltip 说明限制条件。
+     */
+    const auditSelectionLimited =
+      limitsBulkAuditToSingleSelection(moduleKey) && selectedRowCount > 1
+    const auditSelectionSupported = selectedRowCount > 0
     if (
       canUseBulkAuditAction &&
       auditSelectionSupported &&
       listAuditActionKind
     ) {
+      const label = t(resolveStatusChangeActionLabelKey(listAuditActionKind))
       actions.push({
         key: BULK_AUDIT_ACTION_KEY,
-        label: t(resolveStatusChangeActionLabelKey(listAuditActionKind)),
+        label,
         type: 'default',
+        ...(auditSelectionLimited
+          ? {
+              disabled: true,
+              tooltip: t('hooks.toolbarActions.singleSelectionOnly', {
+                action: label,
+              }),
+            }
+          : {}),
       })
     }
     if (
@@ -105,10 +119,21 @@ export function useModuleToolbarActions({
       auditSelectionSupported &&
       listReverseAuditActionKind
     ) {
+      const label = t(
+        resolveStatusChangeActionLabelKey(listReverseAuditActionKind),
+      )
       actions.push({
         key: BULK_REVERSE_AUDIT_ACTION_KEY,
-        label: t(resolveStatusChangeActionLabelKey(listReverseAuditActionKind)),
+        label,
         type: 'default',
+        ...(auditSelectionLimited
+          ? {
+              disabled: true,
+              tooltip: t('hooks.toolbarActions.singleSelectionOnly', {
+                action: label,
+              }),
+            }
+          : {}),
       })
     }
     return actions

@@ -59,13 +59,10 @@ export function useBusinessGridPage({
     moduleKey,
     config: data.config,
     records: data.records,
-    canUpdateRecord: data.canUpdateRecord,
     selectedRowKeys: data.selectedRowKeys,
     setSelectedRowKeys: data.setSelectedRowKeys,
     setSelectedRowMap: data.setSelectedRowMap,
     buildActions: actions.buildActions,
-    // 行尾保留可见「更多」按钮: 与行右键共用菜单, 避免行级动作只剩隐藏的右键入口
-    showActions: true,
     onOpenDetail: editor.openGridDetail,
   })
 

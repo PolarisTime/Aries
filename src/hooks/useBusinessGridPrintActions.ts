@@ -2,6 +2,10 @@ import axios from 'axios'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  exportModuleRecordsByIds,
+  supportsRecordIdExport,
+} from '@/api/business/common-export'
+import {
   exportSalesOrderPrintXlsx,
   listPrintTemplates,
   renderPrintRecord,
@@ -164,13 +168,12 @@ export function useBusinessGridPrintActions({
   /**
    * 「导出选中 N 条」。
    *
-   * <p>后端通用导出接口是 <code>POST {module}/export</code>，只接受模块级筛选参数
-   * （nativeFilterKeys 白名单里没有任何 id 集合参数），无法按勾选 id 过滤；因此这里改用
-   * 已有的打印导出资源逐条渲染选中记录：<code>renderPrintRecord</code> 的 recordId 就是
-   * 选中行 id，一次请求对应一条勾选记录，再统一走 download 输出。导出目标严格等于勾选集合，
-   * 不回退导出整页数据。</p>
+   * <p>首选服务端按记录 id 集合导出：<code>POST /module-exports</code> 的
+   * <code>recordIds</code> 就是勾选行 id（十进制字符串），响应是真正的 xlsx。
+   * 导出目标严格等于勾选集合，既不回退整页数据，也不再逐条走打印链路。</p>
    *
-   * <p>模块不在打印模板白名单、未配置模板或模板没有可下载内容时给出明确提示并返回 false。</p>
+   * <p>回落：模块不在服务端导出白名单（业务单据默认都在）时，若该模块仍在打印模板白名单内，
+   * 则保留既有逐条渲染的打印导出链路；两者都不支持时给出明确提示并返回 false。</p>
    */
   const handleExportSelectedRecords = async (
     printOptions?: PrintRenderOptions,
@@ -180,13 +183,34 @@ export function useBusinessGridPrintActions({
       return false
     }
 
+    // 勾选集可能包含重复 key（跨页保留选择），去重后每条记录只导出一次
+    const recordIds = [...new Set(selectedRowKeys.map((key) => String(key)))]
+
+    if (supportsRecordIdExport(moduleKey)) {
+      try {
+        await exportModuleRecordsByIds(moduleKey, recordIds)
+        message.success(
+          t('hooks.printActions.exportSelectedXlsxSuccess', {
+            count: recordIds.length,
+          }),
+        )
+        return true
+      } catch (err) {
+        message.error(
+          await normalizePdfError(
+            err,
+            t('hooks.printActions.exportSelectedXlsxFailed'),
+          ),
+        )
+        return false
+      }
+    }
+
     if (!isPrintTemplateTarget(moduleKey)) {
       message.warning(t('hooks.printActions.exportSelectedUnsupported'))
       return false
     }
 
-    // 勾选集可能包含重复 key（跨页保留选择），去重后每条记录只导出一次
-    const recordIds = [...new Set(selectedRowKeys.map((key) => String(key)))]
     const selectedRecord = selectedRows.find((row) =>
       recordIds.includes(String(row.id)),
     )
