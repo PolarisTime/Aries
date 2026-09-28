@@ -1,3 +1,10 @@
+# [10.37.0](https://github.com/PolarisTime/Aries/compare/v10.36.0...v10.37.0) (2026-09-28)
+
+
+### Features
+
+* **deploy:** 新增镜像端口 Nginx 安装脚本(默认 7777 + TLS) ([db19ef6](https://github.com/PolarisTime/Aries/commit/db19ef6191fffef1fc528fc5b86c443e979895ec))
+
 # [10.36.0](https://github.com/PolarisTime/Aries/compare/v10.35.0...v10.36.0) (2026-09-28)
 
 
