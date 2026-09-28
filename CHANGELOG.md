@@ -1,3 +1,12 @@
+# [10.35.0](https://github.com/PolarisTime/Aries/compare/v10.34.0...v10.35.0) (2026-09-28)
+
+
+### Features
+
+* **api:** 新增供应商品牌价格表 API 与编辑器纯逻辑 ([895b532](https://github.com/PolarisTime/Aries/commit/895b5322e2cb518cefba42c7b9b6399dcc032253))
+* **master-data:** 新增供应商价格表维护页与固定规格全集编辑器 ([9843f16](https://github.com/PolarisTime/Aries/commit/9843f16092b916f06b9f964d0bc6c4b10b3f111d))
+* **router:** 注册供应商价格表页面路由与中英文案 ([10c1c5a](https://github.com/PolarisTime/Aries/commit/10c1c5aa0bfdcb7275a845ec2933310ca9f42052))
+
 # [10.34.0](https://github.com/PolarisTime/Aries/compare/v10.33.2...v10.34.0) (2026-09-28)
 
 
