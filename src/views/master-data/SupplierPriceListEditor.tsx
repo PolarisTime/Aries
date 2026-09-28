@@ -419,9 +419,26 @@ export function SupplierPriceListEditor({
         t('supplierPriceList.adjust.success', { count: result.affectedCount }),
       )
       setAdjustOpen(false)
-      // 用服务端结果重建基线，避免把服务端改动误判为未保存编辑
-      initializedRef.current = ''
-      await detailQuery.refetch()
+      /*
+       * 服务端已经落库：直接用响应里的新价格回写草稿并把基线一起前移，
+       * 避免把服务端改动显示成「未保存修改」（也不需要再发一次详情请求）。
+       */
+      const priceById = new Map(
+        result.items.map((item) => [item.id, item.price] as const),
+      )
+      const nextRows = rows.map((row) => {
+        if (!row.itemId) {
+          return row
+        }
+        const nextPrice = priceById.get(row.itemId)
+        return nextPrice === undefined ? row : { ...row, price: nextPrice }
+      })
+      setRows(nextRows)
+      setBaselineSignature(
+        JSON.stringify(
+          buildPriceListPayload(toHeaderDraft(headerValues), nextRows),
+        ),
+      )
     } catch (error) {
       message.error(
         error instanceof Error ? error.message : t('api.saveFailed'),
@@ -938,30 +955,32 @@ export function SupplierPriceListEditor({
         </div>
       </div>
 
-      <SupplierPriceListAdjustModal
-        open={adjustOpen}
-        rows={rows}
-        saving={adjusting}
-        onCancel={() => setAdjustOpen(false)}
-        onSubmit={(adjustMode, amount) =>
-          void handleAdjustSubmit(adjustMode, amount)
-        }
-      />
-      <SupplierPriceListPasteModal
-        open={pasteOpen}
-        rows={rows}
-        initialText={pasteSeed}
-        onCancel={() => setPasteOpen(false)}
-        onApply={(nextRows, result) => {
-          setRows(nextRows)
-          setPasteOpen(false)
-          message.success(
-            t('supplierPriceList.paste.appliedToast', {
-              count: result.appliedCount,
-            }),
-          )
-        }}
-      />
+      {adjustOpen ? (
+        <SupplierPriceListAdjustModal
+          rows={rows}
+          saving={adjusting}
+          onCancel={() => setAdjustOpen(false)}
+          onSubmit={(adjustMode, amount) =>
+            void handleAdjustSubmit(adjustMode, amount)
+          }
+        />
+      ) : null}
+      {pasteOpen ? (
+        <SupplierPriceListPasteModal
+          rows={rows}
+          initialText={pasteSeed}
+          onCancel={() => setPasteOpen(false)}
+          onApply={(nextRows, result) => {
+            setRows(nextRows)
+            setPasteOpen(false)
+            message.success(
+              t('supplierPriceList.paste.appliedToast', {
+                count: result.appliedCount,
+              }),
+            )
+          }}
+        />
+      ) : null}
     </WorkspaceOverlay>
   )
 }

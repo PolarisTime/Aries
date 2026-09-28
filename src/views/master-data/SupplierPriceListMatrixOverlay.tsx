@@ -58,15 +58,17 @@ export function SupplierPriceListMatrixOverlay({
   })
 
   const brandOptions = useMemo(() => {
-    const set = new Set<string>()
+    const selectedSuppliers = new Set(supplierIds)
+    const brands = new Set<string>()
     for (const option of supplierOptions) {
-      if (!supplierIds.length || supplierIds.includes(option.id)) {
-        for (const brand of option.brands ?? []) {
-          set.add(brand)
-        }
+      if (selectedSuppliers.size && !selectedSuppliers.has(option.id)) {
+        continue
+      }
+      for (const brand of option.brands ?? []) {
+        brands.add(brand)
       }
     }
-    return [...set].map((value) => ({ value, label: value }))
+    return [...brands].map((value) => ({ value, label: value }))
   }, [supplierOptions, supplierIds])
 
   const columns = useMemo(() => {

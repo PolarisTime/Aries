@@ -107,7 +107,6 @@ describe('SupplierPriceListAdjustModal 先预览再确认', () => {
       root.render(
         <ConfigProvider>
           <SupplierPriceListAdjustModal
-            open
             rows={rows}
             saving={false}
             onCancel={() => {}}

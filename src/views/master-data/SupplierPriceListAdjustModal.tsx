@@ -1,6 +1,6 @@
 import { Alert, Button, InputNumber, Modal, Radio, Space, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PriceAdjustmentMode } from '@/api/master/supplier-price-lists'
 import {
@@ -11,7 +11,6 @@ import {
 } from './supplier-price-list-editor-model'
 
 interface Props {
-  open: boolean
   rows: PriceDraftRow[]
   saving: boolean
   onCancel: () => void
@@ -23,9 +22,11 @@ interface Props {
  *
  * <p>预览展示影响条目数与加减前后单价；单价为空（不报价）的条目不计入，
  * 减价后出现负数的条目会阻断确认（契约要求 422，前端不静默截断）。</p>
+ *
+ * <p>调用方按需挂载（`{open ? <Modal/> : null}`）：每次打开都是全新实例，
+ * 状态无需在 effect 里重置（避免 set-state-in-effect 与过期预览残留）。</p>
  */
 export function SupplierPriceListAdjustModal({
-  open,
   rows,
   saving,
   onCancel,
@@ -35,15 +36,6 @@ export function SupplierPriceListAdjustModal({
   const [mode, setMode] = useState<PriceAdjustmentMode>('ADD')
   const [amount, setAmount] = useState<number | null>(null)
   const [previewRequested, setPreviewRequested] = useState(false)
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    setMode('ADD')
-    setAmount(null)
-    setPreviewRequested(false)
-  }, [open])
 
   const amountValid = isAdjustmentAmountValid(amount)
   // 方向/金额任一变化都会清掉 previewRequested, 因此不会用过期预览确认
@@ -83,7 +75,7 @@ export function SupplierPriceListAdjustModal({
 
   return (
     <Modal
-      open={open}
+      open
       title={t('supplierPriceList.adjust.title')}
       width={720}
       okText={t('supplierPriceList.adjust.confirm')}

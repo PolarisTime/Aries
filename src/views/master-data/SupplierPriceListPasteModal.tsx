@@ -1,5 +1,5 @@
 import { Alert, Button, Input, Modal, Space } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
 import {
@@ -9,7 +9,6 @@ import {
 } from './supplier-price-list-editor-model'
 
 interface Props {
-  open: boolean
   rows: PriceDraftRow[]
   /** 从网格直接粘贴时带入的原始文本 */
   initialText?: string
@@ -24,25 +23,18 @@ const MAX_VISIBLE_ERRORS = 50
  *
  * <p>解析容错但**不写脏数据**：列数不足、规格非正整数、单价格式错误、无法对齐固定行的行
  * 逐行报错并跳过。单元格留空 = 不报价（绝不写 0）；若粘贴会清掉已有报价，先二次确认。</p>
+ *
+ * <p>调用方按需挂载（`{open ? <Modal/> : null}`），初始文本直接作为 state 初值。</p>
  */
 export function SupplierPriceListPasteModal({
-  open,
   rows,
   initialText = '',
   onCancel,
   onApply,
 }: Props) {
   const { t } = useTranslation()
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText)
   const [parsed, setParsed] = useState<TsvPasteResult | null>(null)
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    setText(initialText)
-    setParsed(null)
-  }, [open, initialText])
 
   const visibleErrors = useMemo(
     () => (parsed ? parsed.errors.slice(0, MAX_VISIBLE_ERRORS) : []),
@@ -71,7 +63,7 @@ export function SupplierPriceListPasteModal({
 
   return (
     <Modal
-      open={open}
+      open
       title={t('supplierPriceList.paste.title')}
       width={720}
       onCancel={onCancel}
