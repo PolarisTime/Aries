@@ -12,11 +12,6 @@
   margin-top: var(--space-sm);
 }
 
-.purchase-pickup-list-split-notice {
-  display: block;
-  padding: var(--space-xxs);
-  font-size: 12px;
-}
 
 .purchase-pickup-list-summary-metrics {
   display: flex;

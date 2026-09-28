@@ -32,7 +32,6 @@ import {
   pickupListCollisionDetection,
 } from './purchase-order-pickup-list/pickup-list-draft'
 import { PickupDraftGroupSection } from './purchase-order-pickup-list/pickup-list-drag-rows'
-import { PickupSplitNotice } from './purchase-order-pickup-list/pickup-list-items-table'
 import { SortableRow } from './purchase-order-pickup-list/pickup-list-sortable'
 import { PickupListSummary } from './purchase-order-pickup-list/pickup-list-summary'
 import { usePickupListDraft } from './purchase-order-pickup-list/use-pickup-list-draft'
@@ -142,7 +141,6 @@ export function PurchaseOrderPickupListOverlay({
                 onGroupByWarehouse={draft.groupByWarehouse}
                 onRestore={draft.resetDraft}
               />
-              <PickupSplitNotice />
               {data.warnings.length ? (
                 <Alert
                   title={data.warnings.join('；')}

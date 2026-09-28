@@ -270,6 +270,12 @@ export const enUS = {
     import: 'Import',
     refresh: 'Refresh',
     submit: 'Submit',
+    table: {
+      /* Override antd v6's hard-coded English checkbox names. */
+      selectAllRows: 'Select all rows on this page',
+      selectRow: 'Select this row',
+      selectRowNamed: 'Select this row: {{label}}',
+    },
     back: 'Back',
     close: 'Close',
     ok: 'OK',
@@ -309,14 +315,15 @@ export const enUS = {
     saveInProgressContent:
       'This document is being saved. Wait for it to finish before leaving.',
     columnSettings: 'Column Settings',
-    /** Table column header context menu */
-    rowActions: 'Row actions',
     columnMenu: {
       label: 'Actions for the "{{column}}" column',
       hide: 'Hide column',
       hidden: 'Hidden "{{column}}". You can restore it in Column Settings.',
       moveFirst: 'Move to first',
       moveLast: 'Move to last',
+      /* Disabled items stay focusable (APG); the label carries the reason for screen readers. */
+      moveFirstDisabled: 'Move to first (already first)',
+      moveLastDisabled: 'Move to last (already last)',
       settings: 'Column settings…',
     },
     resetColumnWidths: 'Reset column widths',
@@ -531,7 +538,6 @@ export const enUS = {
     updateSuccess: 'Updated successfully',
     operationSuccess: 'Operation successful',
     operationFailed: 'Operation failed',
-    readOnly: 'Read-only mode',
   },
   attachment: {
     title: 'Attachments',
@@ -639,8 +645,6 @@ export const enUS = {
       mergeItem: 'Merge split',
       splitPartLabel: 'Part {{index}}/{{total}}',
       removeSplitPart: 'Remove row {{index}}',
-      splitRecorded:
-        'Split quantities are for this view and grouping only, and are not written back to purchase orders.',
       splitTitle: 'Split quantity',
       splitConfirm: 'Split',
       splitPieceCountLabel: 'Pieces per part',
@@ -1844,8 +1848,9 @@ export const enUS = {
       batchDelete: 'Batch Delete',
       batchDeleteConfirm:
         'Delete the {{count}} selected record(s)? This cannot be undone.{{numbersPart}}{{skippedPart}}',
-      targetNumbers: '\nDeleting: {{numbers}}',
-      targetNumbersMore: '\nDeleting: {{numbers}} and {{rest}} more',
+      /* End with a period + newline so the list does not run into skippedPart. */
+      targetNumbers: '\nDeleting: {{numbers}}.\n',
+      targetNumbersMore: '\nDeleting: {{numbers}} and {{rest}} more.\n',
       deleteFailed: 'Deletion failed',
       deleteCompletedWithFailures:
         'Deletion completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
@@ -1864,8 +1869,11 @@ export const enUS = {
       noPrintContent: 'No print content generated',
       printFailed: 'Print failed',
       exportXlsxFailed: 'Print Excel export failed',
+      exportSelectedXlsxSuccess: 'Exported {{count}} selected record(s)',
+      exportSelectedXlsxFailed:
+        'Failed to export the selected records as Excel',
       exportSelectedUnsupported:
-        'No print template configured for this module; exporting selected records is unavailable',
+        'Exporting selected records is not supported for this module',
       exportSelectedFailed: 'Failed to export the selected records',
     },
     freightActions: {
@@ -1908,6 +1916,8 @@ export const enUS = {
       printPreview: 'Print Preview',
       directPrint: 'Direct Print',
       exportSelected: 'Export {{count}} selected',
+      singleSelectionOnly:
+        'Bulk {{action}} supports a single selected record. Select exactly one and try again.',
       noExtraLogic: '{{label}} has no additional handling logic.',
     },
     recordActions: {
@@ -2001,6 +2011,7 @@ export const enUS = {
     },
     headerSearch: {
       placeholder: 'Search order, contract, or statement number',
+      submit: 'Search',
       viewFlow: 'View document flow',
     },
     userInfo: {
@@ -2563,6 +2574,14 @@ export const enUS = {
       unlockRow: 'Unlock row',
       lockRowHint:
         'Lock to link a purchase order; unlocking clears the linked purchase order',
+      rowLockedHint:
+        'This row is locked: spec and tonnage are final. Unlock to edit.',
+      cellLockedHint: 'This field is locked. Choose "Unlock" to edit.',
+      readOnlyHint:
+        'Another user is editing this batch; it is read-only until the edit lock is released',
+      rowActionsLabel: 'Row actions for "{{row}}"',
+      unlockField: 'Unlock "{{label}}"',
+      clearField: 'Clear "{{label}}"',
       purchaseOrderLockFirst: 'Lock this row before linking a purchase order',
       tonPositive: 'Order tonnage must be a positive number',
       spotOutOfRange: 'Spot price is out of range (0 - {{max}})',

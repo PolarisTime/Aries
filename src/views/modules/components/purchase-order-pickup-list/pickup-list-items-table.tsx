@@ -5,7 +5,7 @@ import {
 } from '@ant-design/icons'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { MenuProps, TableColumnsType, TableProps } from 'antd'
-import { Button, InputNumber, Table, Tag, Tooltip, Typography } from 'antd'
+import { Button, InputNumber, Table, Tag, Tooltip } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
@@ -275,14 +275,3 @@ export function PickupItemsTable({
 }
 
 /** 拆分提示：说明本次拆分不会写回采购订单。 */
-export function PickupSplitNotice() {
-  const { t } = useTranslation()
-  return (
-    <Typography.Text
-      className="purchase-pickup-list-split-notice"
-      type="secondary"
-    >
-      {t('modules.purchasePickupList.splitRecorded')}
-    </Typography.Text>
-  )
-}

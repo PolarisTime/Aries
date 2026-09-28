@@ -268,6 +268,12 @@ export const zhCN = {
     import: '导入',
     refresh: '刷新',
     submit: '提交',
+    table: {
+      /* antd v6 把表头/行内复选框的默认可访问名硬编码成英文, 覆盖成本项目 i18n 文案 */
+      selectAllRows: '全选当前页所有行',
+      selectRow: '选择此行',
+      selectRowNamed: '选择此行：{{label}}',
+    },
     back: '返回',
     close: '关闭',
     ok: '确定',
@@ -305,14 +311,15 @@ export const zhCN = {
     saveInProgressTitle: '正在保存',
     saveInProgressContent: '当前单据正在保存，请等待保存完成后再离开。',
     columnSettings: '列设置',
-    /** 表格列头右键菜单 */
-    rowActions: '行操作',
     columnMenu: {
       label: '「{{column}}」列操作菜单',
       hide: '隐藏该列',
       hidden: '已隐藏「{{column}}」，可在列设置里恢复',
       moveFirst: '移到最前',
       moveLast: '移到最后',
+      /* 禁用项仍可聚焦(APG), 文案里说明不可用原因, 保证读屏可发现 */
+      moveFirstDisabled: '移到最前（已在最前）',
+      moveLastDisabled: '移到最后（已在最后）',
       settings: '列设置…',
     },
     resetColumnWidths: '重置列宽',
@@ -516,7 +523,6 @@ export const zhCN = {
     updateSuccess: '更新成功',
     operationSuccess: '操作成功',
     operationFailed: '操作失败',
-    readOnly: '当前模块为只读模式',
   },
   attachment: {
     title: '附件管理',
@@ -621,7 +627,6 @@ export const zhCN = {
       mergeItem: '合并拆分',
       splitPartLabel: '第 {{index}}/{{total}} 份',
       removeSplitPart: '移除第 {{index}} 行',
-      splitRecorded: '拆分数量仅用于本次查看与分组，不会写回采购订单。',
       splitTitle: '拆分数量',
       splitConfirm: '拆分',
       splitPieceCountLabel: '每份件数',
@@ -1795,8 +1800,9 @@ export const zhCN = {
       batchDelete: '批量删除',
       batchDeleteConfirm:
         '确定删除选中的 {{count}} 条记录吗？此操作不可恢复。{{numbersPart}}{{skippedPart}}',
-      targetNumbers: '\n将删除：{{numbers}}',
-      targetNumbersMore: '\n将删除：{{numbers}} 等 {{rest}} 条',
+      /* 末尾补「句号+换行」: 与 skippedPart 直接拼接时不会和单据号粘连 */
+      targetNumbers: '\n将删除：{{numbers}}。\n',
+      targetNumbersMore: '\n将删除：{{numbers}} 等 {{rest}} 条。\n',
       deleteFailed: '删除失败',
       deleteCompletedWithFailures:
         '删除完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
@@ -1812,7 +1818,9 @@ export const zhCN = {
       noPrintContent: '未生成打印内容',
       printFailed: '打印失败',
       exportXlsxFailed: '套打 Excel 导出失败',
-      exportSelectedUnsupported: '当前模块未配置打印模板，暂不支持按勾选导出',
+      exportSelectedXlsxSuccess: '已导出选中 {{count}} 条记录',
+      exportSelectedXlsxFailed: '按勾选导出 Excel 失败',
+      exportSelectedUnsupported: '当前模块暂不支持按勾选导出',
       exportSelectedFailed: '导出选中记录失败',
     },
     freightActions: {
@@ -1855,6 +1863,8 @@ export const zhCN = {
       printPreview: '打印预览',
       directPrint: '直接打印',
       exportSelected: '导出选中 {{count}} 条',
+      singleSelectionOnly:
+        '批量{{action}}仅支持选择 1 条记录，请只勾选一条后重试',
       noExtraLogic: '{{label}} 当前没有额外处理逻辑。',
     },
     recordActions: {
@@ -1944,6 +1954,7 @@ export const zhCN = {
     },
     headerSearch: {
       placeholder: '搜索单号、合同号、对账单号',
+      submit: '搜索',
       viewFlow: '查看单据流向',
     },
     userInfo: {
@@ -2488,6 +2499,17 @@ export const zhCN = {
       lockRow: '锁定该行',
       unlockRow: '解锁该行',
       lockRowHint: '锁定后可关联采购订单；解锁会清除已关联的采购订单',
+      /** 行级锁定的作用域说明（锁定该行 = 该行规格与吨位定稿）。 */
+      rowLockedHint: '该行已锁定：规格与吨位已定稿，解锁后可修改',
+      /** 单元格级锁定的原因说明（与单据级、行级作用域不重叠）。 */
+      cellLockedHint: '该字段已锁定，点「解锁」后可编辑',
+      /** 被他人签出编辑时整表只读的原因。 */
+      readOnlyHint: '该批次正被他人编辑，当前为只读；解除编辑锁后可修改',
+      /** 行操作入口的可访问名（带行标识，读屏可区分操作对象）。 */
+      rowActionsLabel: '「{{row}}」行操作',
+      /** 带字段名的解锁/清除可访问名：同一页面多个可锁定字段时读屏无法区分。 */
+      unlockField: '解锁「{{label}}」',
+      clearField: '清除「{{label}}」',
       purchaseOrderLockFirst: '请先锁定该行再关联采购订单',
       tonPositive: '报单吨位需为正数',
       spotOutOfRange: '现货价超出合理范围（0 - {{max}}）',
@@ -2500,7 +2522,7 @@ export const zhCN = {
       unspecifiedProject: '未指定项目',
       orderDate: '报单日期',
       remark: '备注信息',
-      lock: '已锁定，点击解锁后可编辑',
+      lock: '已锁定，点「解锁」后可编辑',
       unlock: '解锁',
       clear: '清除',
       refPrice: '参照网价',
