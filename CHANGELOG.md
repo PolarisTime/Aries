@@ -1,3 +1,10 @@
+## [10.33.1](https://github.com/PolarisTime/Aries/compare/v10.33.0...v10.33.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **price-compare:** 吨位列改单行紧凑显示并加宽数字列 ([0ae35b7](https://github.com/PolarisTime/Aries/commit/0ae35b70a7f6c1f27939fde95e00017fe10996ed))
+
 # [10.33.0](https://github.com/PolarisTime/Aries/compare/v10.32.0...v10.33.0) (2026-09-28)
 
 
