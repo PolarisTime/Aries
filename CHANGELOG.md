@@ -1,3 +1,15 @@
+# [10.34.0](https://github.com/PolarisTime/Aries/compare/v10.33.2...v10.34.0) (2026-09-28)
+
+
+### Bug Fixes
+
+* **price-compare:** 深色超额色覆盖规则移到基准规则之后 ([7b991f0](https://github.com/PolarisTime/Aries/commit/7b991f01815dbe9bceae436617fbf0142b039609)), closes [#ff7875](https://github.com/PolarisTime/Aries/issues/ff7875) [#d9363e](https://github.com/PolarisTime/Aries/issues/d9363e)
+
+
+### Features
+
+* **price-compare:** 现货价接入供应商价格表推导结果 ([2bc1524](https://github.com/PolarisTime/Aries/commit/2bc1524fceec9d691c2bb2a93a30314099ccfc02))
+
 ## [10.33.2](https://github.com/PolarisTime/Aries/compare/v10.33.1...v10.33.2) (2026-09-28)
 
 
