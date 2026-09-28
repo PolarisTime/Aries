@@ -1,3 +1,49 @@
+# [11.0.0](https://github.com/PolarisTime/Aries/compare/v10.37.0...v11.0.0) (2026-09-28)
+
+
+* refactor(master-data)!: 供应商价格表矩阵转置为「品牌标签页 + 供应商列」 ([d55111a](https://github.com/PolarisTime/Aries/commit/d55111a0193acd6b583f051acc36b29af199f2e6))
+* refactor(price-compare)!: 删除「一键填入供应商」入口与保存载荷 prices[] ([b5f4804](https://github.com/PolarisTime/Aries/commit/b5f4804789b79cfb5b4dbbed2a2c5e3c2e139917))
+* refactor(price-compare)!: 删除现货价手填覆盖, 现货列改为只读展示 ([cc1d2a0](https://github.com/PolarisTime/Aries/commit/cc1d2a0eea91f995c632e0af1ee30f7be0aef156))
+
+
+### Features
+
+* **master-data:** 供应商价格表改为供应商标签页 + 品牌矩阵并取消版本 ([9104970](https://github.com/PolarisTime/Aries/commit/91049704a788b79152419c8693db78a2a6bcae73))
+
+
+### BREAKING CHANGES
+
+* 比价页品牌列头不再有「一键填入供应商」入口, 供应商无法再人工填入;
+单据保存(整体保存与行级保存)请求体不再携带 prices[], 现货价与来源供应商只由供应商
+价格表在读取时推导。
+* 比价页不再支持手填现货价覆盖与「恢复为价格表价」, 旧覆盖接口
+PUT/DELETE /quote-sheets/{sheetId}/items/{itemId}/price-overrides/{brandName}
+在前端不再调用(后端已删除, 返回 404); 已落库的手填价彻底不再参与读路径。
+* 价格表维护页的矩阵轴向与上一版相反——页级维度由供应商改为品牌，
+列由品牌改为供应商。数据键不变（仍是 供应商 + 品牌 + 类别 + 材质 + 规格 + 长度 → 单价），
+后端无 schema 变化；仅前端视图转置，旧的「供应商标签页 + 品牌列」界面不再提供。
+
+- 顶部改为**品牌标签页**（已有价格表的品牌 + 「新增品牌价格表」入口，新建时选品牌名 + 供应商），
+  标签上带该品牌下已维护的供应商数。
+- 表格左侧固定只读列 `类别/材质/规格(直径)/长度`（来自 spec-catalog）不变；
+  右侧每个**供应商**一列，列头是供应商名 + 已填数，列内只填该供应商对该品牌的单价。
+- 默认供应商列 = 经营品牌包含该品牌（md_supplier_brand，经供应商选项接口带出的 brands）
+  且尚无该品牌价格表者，避免几十个空列；其余供应商可手工添加列或整块粘贴。
+- 单元格留空 = 不报价（提交 null，绝不写 0），失焦即按该（供应商, 品牌）表全量替换提交；
+  首次填价时 POST 建表，同键已存在由后端 409，前端兜底取回现表后改用 PUT。
+- **整表加减放到列头菜单**（一次只作用于该供应商的这张价格表）：保留先预览、跳过不报价条目、
+  负数阻断、未落库的价提示先保存；不发明跨供应商批量接口。
+- TSV 粘贴支持两种模式：按列粘贴（选定供应商列）与整块粘贴（供应商 / 材质 / 规格 / 长度 / 单价，
+  按供应商名拆列后各自落表；识别不到的供应商名单独提示且不写入）。
+- 仍**没有版本**：无发布时刻/生效区间/ACTIVE-ARCHIVED/状态列/备注列，展示改用更新时间。
+- 键盘与无障碍：单价列内 Tab/Shift+Tab 纵向连续录入，单价单元格可访问名带供应商 + 行规格，
+  列头菜单触发器 role=button + tabIndex=0（Shift+F10/Enter/Space 打开）、≥24×24，
+  「不报价/未填写」用文字标记而非只靠颜色（WCAG 1.4.1 / 2.5.8）。
+- 文件重命名：SupplierPriceListMatrixEditor.tsx → SupplierPriceListBrandMatrixEditor.tsx（含 spec）。
+
+验证：pnpm typecheck 通过；pnpm lint 0 error；pnpm antd:lint "No issues found"；
+pnpm vitest run 全量 232 文件 / 1810 用例全绿。
+
 # [10.37.0](https://github.com/PolarisTime/Aries/compare/v10.36.0...v10.37.0) (2026-09-28)
 
 
