@@ -1,3 +1,18 @@
+# [10.33.0](https://github.com/PolarisTime/Aries/compare/v10.32.0...v10.33.0) (2026-09-28)
+
+
+### Bug Fixes
+
+* **a11y:** 复选框中文可访问名、搜索按钮名与列表选择语义 ([c11a2c1](https://github.com/PolarisTime/Aries/commit/c11a2c1d919c8039d2bf8c017196a9b8c124365e))
+
+
+### Features
+
+* **components:** 新增右键菜单基元与列头/行菜单键盘交互 ([24aa3f0](https://github.com/PolarisTime/Aries/commit/24aa3f08af8c1c13bb5a0a3196278ddbcc0e46a6))
+* **export:** 导出选中改为服务端按记录 id 生成 xlsx ([825669b](https://github.com/PolarisTime/Aries/commit/825669b8efa7e85aac18ebe6430cc76e0970bd66))
+* **modules:** 列表去操作列并补齐批量/编辑器便利性 ([a3fee79](https://github.com/PolarisTime/Aries/commit/a3fee79cc3d03b016137bb58274e336d7bbb068a))
+* **price-compare:** 锁定层级、列宽自适应与吨位品牌展示 ([18aed4e](https://github.com/PolarisTime/Aries/commit/18aed4eb32dcc95e27c6f0999000baa1c9e8691e))
+
 # [10.32.0](https://github.com/PolarisTime/Aries/compare/v10.31.0...v10.32.0) (2026-09-27)
 
 
