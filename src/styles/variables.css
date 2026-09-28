@@ -18,9 +18,9 @@
   --default-mono-font-family: var(--app-font-family);
   --app-font-size: 14px;
   /* 控件高度以 antd token 为单一来源，自定义元素与 antd 控件保持等高 */
-  --app-control-height: var(--ant-control-height, 34px);
-  --app-control-height-sm: var(--ant-control-height-sm, 26px);
-  --app-control-height-lg: var(--ant-control-height-lg, 42px);
+  --app-control-height: var(--ant-control-height, 32px);
+  --app-control-height-sm: var(--ant-control-height-sm, 24px);
+  --app-control-height-lg: var(--ant-control-height-lg, 40px);
   --app-label-width: 6em;
   --app-editor-label-width: 8.5em;
   --app-border-radius: var(--ant-border-radius-lg, 8px);
@@ -70,10 +70,10 @@
   --app-content-padding: 4px 0px 0px 0px;
   --app-page-gap: 0px;
   --app-card-body-padding: 12px;
-  --app-table-cell-padding-y: 12px;
+  --app-table-cell-padding-y: 8px;
   --app-table-th-padding-y: 10px;
-  --app-overlay-header-height: 55px;
-  --app-overlay-body-padding: 16px;
+  --app-overlay-header-height: 48px;
+  --app-overlay-body-padding: 12px;
   color: var(--text-primary);
   background: var(--theme-shell-bg);
   font-family: var(--app-font-family);

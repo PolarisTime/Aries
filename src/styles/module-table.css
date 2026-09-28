@@ -6,52 +6,25 @@
   background: var(--theme-card-bg);
 }
 
+/* 虚拟滚动行菜单降级说明: 常驻可见, 不参与表格滚动区高度计算 */
+.module-grid-virtual-mode-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: var(--space-xxs) var(--space-md);
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  line-height: 18px;
+  background: var(--theme-surface-hover);
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
 .module-table-shell .ant-table-cell-fix-left-last::after,
 .module-table-shell .ant-table-cell-fix-right-first::after {
   box-shadow: none !important;
 }
 
-.module-table-shell .sticky-actions-col,
-.module-table-shell col.sticky-actions-col,
-.module-table-shell .ant-table-fixed-left .sticky-actions-col,
-.module-table-shell .ant-table-fixed-left col.sticky-actions-col {
-  width: 200px !important;
-  min-width: 200px !important;
-  max-width: 200px !important;
-}
-.module-table-shell .ant-table-thead .sticky-actions-col {
-  background: var(--theme-table-header-bg) !important;
-}
-.module-table-shell .ant-table-tbody .sticky-actions-col {
-  background: var(--theme-card-bg) !important;
-}
-.module-table-shell
-  .ant-table-tbody
-  .ant-table-row:hover
-  > .sticky-actions-col {
-  background: var(
-    --ant-table-row-hover-bg,
-    var(--theme-surface-hover)
-  ) !important;
-}
-.module-table-shell
-  .ant-table-tbody
-  .ant-table-row-selected
-  > .sticky-actions-col {
-  background: var(
-    --ant-table-row-selected-bg,
-    var(--theme-highlight-bg)
-  ) !important;
-}
-.module-table-shell
-  .ant-table-tbody
-  .ant-table-row-selected:hover
-  > .sticky-actions-col {
-  background: var(
-    --ant-table-row-selected-hover-bg,
-    var(--theme-highlight-bg)
-  ) !important;
-}
+/* 行尾「操作列」(sticky-actions-col) 已随行级动作收敛到右键菜单而移除, 相关
+   固定宽度与背景补丁一并删除; 行级动作入口见 RowContextMenuRow。 */
 
 .module-table-shell
   .ant-table-tbody
@@ -512,26 +485,31 @@
 }
 
 .editor-form-shell .ant-form-item-label {
-  flex: 0 0 var(--app-editor-label-width);
-  width: var(--app-editor-label-width);
-  max-width: none;
-  min-width: 0;
+  /* 标签按内容自适应增长(上限 12em), 兜底宽度仍是 8.5em:
+     固定 8.5em 会把 "Purchase Settlement Entity" 这类长标签硬裁成残字。 */
+  flex: 0 1 auto;
+  width: auto;
+  min-width: var(--app-editor-label-width);
+  max-width: 12em;
   height: var(--app-control-height);
   padding: 0;
   margin-right: var(--space-xxs);
   overflow: hidden;
   text-align: right;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .editor-form-shell .ant-form-item-label > label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: var(--app-control-height);
+  /* inline-flex 的匿名弹性项不参与 text-overflow; 用 block 才能省略号截断 */
+  display: block;
+  min-width: 0;
+  height: var(--app-control-height);
+  overflow: hidden;
   color: var(--text-secondary);
   font-size: var(--app-font-size);
+  line-height: var(--app-control-height);
+  text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -573,6 +551,24 @@
 
 .editor-items-head {
   margin-bottom: var(--space-sm);
+}
+
+/*
+ * 编辑器明细 Tab 压缩: antd 默认 .ant-tabs-nav 下边距 16px、.ant-tabs-tab 纵向 padding 12px,
+ * 会把第一行明细整体压下 ~20px。命中区高度保持 ≥24px(tab 高 34px)。
+ */
+.editor-items-tabs .ant-tabs-nav {
+  margin-bottom: var(--space-xs);
+}
+
+.editor-items-tabs .ant-tabs-tab {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-6);
+}
+
+.editor-items-tabs .ant-tabs-tab-btn {
+  min-height: 22px;
+  align-content: center;
 }
 
 .editor-items-head .detail-section-title {
@@ -752,8 +748,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  min-height: 48px;
-  padding: var(--space-xs) var(--space-md);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-md);
   border-top: 1px solid var(--theme-border-subtle);
 }
 

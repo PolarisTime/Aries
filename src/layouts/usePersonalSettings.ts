@@ -15,9 +15,9 @@ interface UsePersonalSettingsOptions {
 
 export function getPersonalControlHeights(fontSize: number) {
   return {
-    controlHeight: Math.max(32, fontSize + 20),
-    controlHeightSM: Math.max(24, fontSize + 12),
-    controlHeightLG: Math.max(40, fontSize + 28),
+    controlHeight: Math.max(28, fontSize + 18),
+    controlHeightSM: Math.max(24, fontSize + 10),
+    controlHeightLG: Math.max(40, fontSize + 26),
   }
 }
 

@@ -1365,14 +1365,14 @@
 
 .module-grid-filter-region {
   flex: 0 0 auto;
-  padding: var(--space-xs) var(--space-md) 0;
+  padding: var(--space-xxs) var(--space-md) 0;
   background: var(--theme-surface-hover);
   border-bottom: 1px solid var(--theme-border-subtle);
 }
 
 .module-grid-command-region {
   flex: 0 0 auto;
-  padding: var(--space-xs) var(--space-md);
+  padding: var(--space-xxs) var(--space-md);
   background: var(--theme-surface);
   border-bottom: 1px solid var(--theme-border-subtle);
 }
@@ -2152,7 +2152,7 @@
 }
 
 .module-filter-toolbar {
-  padding-bottom: var(--space-10);
+  padding-bottom: var(--space-2);
 }
 
 .keyboard-shortcut-hint {
@@ -2177,7 +2177,7 @@
 .module-filter-quick-row,
 .module-filter-chip-row {
   max-width: 100%;
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--space-2);
 }
 
 .module-filter-chip-row {
@@ -2408,8 +2408,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  min-height: 48px;
-  padding: var(--space-xs) var(--space-md);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-md);
   background: var(--theme-surface);
   border-top: 1px solid var(--theme-border-subtle);
 }
