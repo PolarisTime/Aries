@@ -87,6 +87,10 @@ export const ENDPOINTS = {
   MATERIAL_HISTORIES: (id: string | number) =>
     `/materials/${pathSegment(id)}/histories`,
 
+  // Business document exports (export is modelled as a resource:
+  // POST /module-exports with an optional recordIds filter)
+  MODULE_EXPORTS: '/module-exports',
+
   // Import batches (rollback is a rollbacks sub-resource)
   IMPORT_BATCH_ROLLBACKS: (importBatchNo: string) =>
     `/import-batches/${pathSegment(importBatchNo)}/rollbacks`,

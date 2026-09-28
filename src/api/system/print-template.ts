@@ -17,6 +17,7 @@ import {
   savePrintTemplatePayloadSchema,
 } from '@/shared/schemas/print-template'
 import type { EntityId } from '@/types/entity-id'
+import { resolveDownloadFileName } from '@/utils/download'
 
 const printRecordItemSchema = z.object({
   id: z.string(),
@@ -111,16 +112,7 @@ export interface SalesOrderPrintXlsxDownload {
 }
 
 function contentDispositionFileName(value: unknown) {
-  const header = value == null ? '' : String(value)
-  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header)?.[1]
-  if (encoded) {
-    try {
-      return decodeURIComponent(encoded.replace(/^"|"$/g, ''))
-    } catch {
-      // Continue with the plain filename parameter.
-    }
-  }
-  return /filename\s*=\s*"([^"]+)"/i.exec(header)?.[1]
+  return resolveDownloadFileName(value, '') || undefined
 }
 
 function defaultEngineForTemplateType(
