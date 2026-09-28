@@ -1,0 +1,96 @@
+/*
+ * 供应商品牌价格表维护页样式。
+ *
+ * 密度约定: 一律复用 `--app-*` 与 antd token 变量, 不引入新的硬编码高度/间距,
+ * 表格内控件使用 `size="small"`(对应 `--app-control-height-sm` = 24px, 满足 WCAG 2.5.8)。
+ */
+
+.supplier-price-list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.supplier-price-list-editor-header {
+  padding: 4px 0;
+}
+
+.supplier-price-list-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.supplier-price-list-editor-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.supplier-price-list-editor-summary strong {
+  color: var(--text-primary);
+}
+
+.supplier-price-list-editor-table {
+  flex: 1;
+  min-height: 0;
+}
+
+.supplier-price-list-editor-table .ant-table-cell {
+  padding-top: var(--app-table-cell-padding-y);
+  padding-bottom: var(--app-table-cell-padding-y);
+  vertical-align: top;
+}
+
+.supplier-price-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.supplier-price-cell .ant-input-number,
+.supplier-price-cell .ant-select,
+.supplier-price-cell .ant-input {
+  width: 100%;
+}
+
+.supplier-price-row-error {
+  color: var(--ant-color-error, #cf1322);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.supplier-price-row-duplicate {
+  color: var(--ant-color-warning-text, #874d00);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.supplier-price-list-editor-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.supplier-price-adjust-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.supplier-price-matrix-table .ant-table-cell {
+  white-space: nowrap;
+}
+
+.supplier-price-list-editor-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+}

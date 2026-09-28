@@ -107,6 +107,26 @@ export const QUERY_KEYS = {
     warehouse: ['master-options', 'warehouse'] as const,
   },
 
+  // Supplier price lists (供应商品牌价格表)
+  supplierPriceLists: (query: {
+    supplierId?: string
+    brandName?: string
+    status?: string
+    releasedFrom?: string
+    releasedTo?: string
+    page: number
+    size: number
+  }) => ['supplier-price-lists', query] as const,
+  supplierPriceList: (id: string) =>
+    ['supplier-price-lists', 'detail', id] as const,
+  supplierPriceListSpecCatalog: (category: string, material: string) =>
+    ['supplier-price-lists', 'spec-catalog', category, material] as const,
+  supplierPriceListMatrix: (query: {
+    supplierIds: string[]
+    brandNames: string[]
+    category: string
+  }) => ['supplier-price-lists', 'matrix', query] as const,
+
   // Price compare
   priceCompare: {
     materialBrands: ['price-compare', 'material-brands'] as const,
