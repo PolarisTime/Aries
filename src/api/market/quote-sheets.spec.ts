@@ -34,13 +34,11 @@ function versionHeaders(version: string) {
 
 import {
   addQuoteSheetItem,
-  clearQuoteSheetPriceOverride,
   createQuoteSheet,
   deleteQuoteSheet,
   deleteQuoteSheetItem,
   fetchPurchaseOrderTonnages,
   fetchQuoteSheets,
-  saveQuoteSheetPriceOverride,
   updateQuoteSheet,
   updateQuoteSheetHeader,
   updateQuoteSheetItem,
@@ -208,7 +206,7 @@ describe('quote-sheets API', () => {
           material: 'HRB400',
           spec: 12,
           length: '9米',
-          prices: [{ brandName: '中天', spotPrice: 3200, supplierId: '77' }],
+          prices: [{ brandName: '中天', supplierId: '77' }],
         },
       ],
     })
@@ -319,7 +317,7 @@ describe('quote-sheets API', () => {
         material: 'HRB400',
         spec: 12,
         length: '9米',
-        prices: [{ brandName: '中天', spotPrice: 3200 }],
+        prices: [{ brandName: '中天', supplierId: '77' }],
       },
       '4',
     )
@@ -332,7 +330,7 @@ describe('quote-sheets API', () => {
         material: 'HRB400',
         spec: 12,
         length: '9米',
-        prices: [{ brandName: '中天', spotPrice: 3300 }],
+        prices: [{ brandName: '中天', supplierId: '78' }],
       },
       '5',
     )
@@ -468,51 +466,57 @@ describe('quote-sheets API', () => {
     })
   })
 
-  it('单格手填覆盖: 品牌名按路径段编码, PUT 归一来源/推导值并 DELETE 走同一路径', async () => {
-    apiPutMock.mockResolvedValue({
-      brandName: ' 安徽富鑫/铜陵 ',
-      spotPrice: '3450',
-      derivedSpotPrice: 3320,
-      spotSource: 'MANUAL',
-      spotReason: null,
-      supplierId: '5001',
-      supplierName: '杭州物资',
-      priceSource: 'MANUAL',
-      priceListId: null,
-      priceListReleasedAt: null,
+  it('现货价格格只解析价格表来源: NO_LIST 原因入枚举, 不再有手填覆盖/推导快照字段', async () => {
+    apiGetMock.mockResolvedValue({
+      ...page,
+      content: [
+        {
+          ...page.content[0],
+          items: [
+            {
+              ...page.content[0].items[0],
+              prices: [
+                {
+                  brandName: '中天',
+                  spotPrice: null,
+                  spotSource: 'NONE',
+                  spotReason: 'NO_LIST',
+                  supplierId: null,
+                  priceListId: null,
+                  priceListReleasedAt: null,
+                },
+                {
+                  brandName: '沙钢',
+                  spotPrice: '3450.00',
+                  spotSource: 'PRICE_LIST',
+                  spotReason: null,
+                  supplierId: '5001',
+                  supplierName: '杭州物资',
+                  priceListId: '8801',
+                  priceListReleasedAt: '2026-09-16T09:30:00',
+                },
+              ],
+            },
+          ],
+        },
+      ],
     })
-    apiDeleteMock.mockResolvedValue(undefined)
 
-    const cell = await saveQuoteSheetPriceOverride(
-      '700500000000000130',
-      '700500000000000140',
-      ' 安徽富鑫/铜陵 ',
-      { spotPrice: 3450, supplierId: '5001', supplierName: '杭州物资' },
-    )
-    await clearQuoteSheetPriceOverride(
-      '700500000000000130',
-      '700500000000000140',
-      ' 安徽富鑫/铜陵 ',
-    )
+    const [record] = await fetchQuoteSheets()
 
-    // 品牌名含空格与斜杠: 必须整段编码, 否则路径被切断或服务端 422
-    const expectedPath =
-      '/quote-sheets/700500000000000130/items/700500000000000140/price-overrides/%20%E5%AE%89%E5%BE%BD%E5%AF%8C%E9%91%AB%2F%E9%93%9C%E9%99%B5%20'
-    expect(apiPutMock.mock.calls[0][0]).toBe(expectedPath)
-    expect(apiDeleteMock.mock.calls[0][0]).toBe(expectedPath)
-    expect(apiPutMock.mock.calls[0][2]).toEqual({
-      spotPrice: 3450,
-      supplierId: '5001',
-      supplierName: '杭州物资',
+    expect(record.items[0].prices[0]).toEqual({
+      brandName: '中天',
+      spotSource: 'NONE',
+      spotReason: 'NO_LIST',
     })
-    expect(cell).toEqual({
-      brandName: ' 安徽富鑫/铜陵 ',
+    expect(record.items[0].prices[1]).toEqual({
+      brandName: '沙钢',
       spotPrice: 3450,
-      derivedSpotPrice: 3320,
-      spotSource: 'MANUAL',
+      spotSource: 'PRICE_LIST',
       supplierId: '5001',
       supplierName: '杭州物资',
-      priceSource: 'MANUAL',
+      priceListId: '8801',
+      priceListReleasedAt: '2026-09-16T09:30:00',
     })
   })
 

@@ -2724,31 +2724,24 @@ export const zhCN = {
       clearField: '清除「{{label}}」',
       purchaseOrderLockFirst: '请先锁定该行再关联采购订单',
       tonPositive: '报单吨位需为正数',
-      spotOutOfRange: '现货价超出合理范围（0 - {{max}}）',
       spotBetter: '现货更划算',
       netBetter: '网价更优',
       /** 现货价来源标记: 一律用文字, 不靠颜色区分(WCAG 1.4.1)。 */
       spotSource: {
         priceList: '价格表',
-        manual: '手填',
-        manualNote:
-          '手填覆盖：该值优先于价格表推导价；可点右侧按钮恢复为价格表价',
-        restore: '恢复为价格表价',
-        restoreLabel: '恢复「{{cell}}」为价格表价',
         priceListNote: '价格表：{{detail}}',
         unknownSupplier: '供应商未知',
-        unknownReleasedAt: '发布时间未知',
+        unknownReleasedAt: '更新时间未知',
       },
       /** 无现货价的原因(读屏与悬浮都会读到)。 */
       spotReason: {
-        noListAtTime: '无现货价：报价时刻无生效价格表版本',
-        noItem: '无现货价：该价格表无此规格',
+        noList: '无现货价：该品牌暂无供应商价格表',
+        noItem: '无现货价：该价格表无此条目',
         noPrice: '无现货价：该条目不报价',
         unknown: '无现货价：无价格表来源',
       },
       supplierFromPriceList:
-        '供应商由价格表自动带出；如需人工指定，请先在上方「现货」格手填覆盖价',
-      supplierNeedsSpot: '填入现货价后方可人工指定供应商（当前无现货价来源）',
+        '供应商由价格表自动带出；如需人工填写，请用本列表头的「批量填入供应商」',
       addRow: '＋ 添加一行',
       addSeparator: '＋ 添加隔断',
       separator: '隔断',
@@ -2783,8 +2776,6 @@ export const zhCN = {
       fillSupplierBrand: '选择品牌列',
       fillSupplierColumn: '把所选供应商填入「{{brand}}」列全部商品行',
       fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
-      fillSupplierNoChangedRows:
-        '所选范围内没有本次改过现货价的行，未做任何修改（仅更新价格变动过的行）',
       purchaseOrderLabel: '关联采购订单',
       purchaseOrderPlaceholder: '关联采购',
       purchaseOrderOptionTitle:
@@ -3181,8 +3172,6 @@ export const zhCN = {
       '接管将以当前用户强制取得该批次编辑权，对方正在进行的编辑将被覆盖，服务端会记录接管操作。确认接管？',
     takeoverOk: '强制接管',
     takeoverFailedShort: '接管失败，请稍后再试',
-    saveSpotOverrideFailed: '保存现货价手填覆盖失败',
-    clearSpotOverrideFailed: '恢复为价格表价失败',
     refreshRowPriceFailed: '刷新该行价格表价格失败',
   },
   moduleSelector: {

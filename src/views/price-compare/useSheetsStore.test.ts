@@ -23,8 +23,6 @@ const api = vi.hoisted(() => ({
   updateQuoteSheetItem: vi.fn(),
   deleteQuoteSheetItem: vi.fn(),
   reorderQuoteSheetItems: vi.fn(),
-  saveQuoteSheetPriceOverride: vi.fn(),
-  clearQuoteSheetPriceOverride: vi.fn(),
   fetchQuoteProjectConfig: vi.fn(),
   saveQuoteProjectConfig: vi.fn(),
   acquireQuoteSheetEditLock: vi.fn(),
@@ -43,8 +41,6 @@ vi.mock('@/api/market/quote-sheets', () => ({
   updateQuoteSheetItem: api.updateQuoteSheetItem,
   deleteQuoteSheetItem: api.deleteQuoteSheetItem,
   reorderQuoteSheetItems: api.reorderQuoteSheetItems,
-  saveQuoteSheetPriceOverride: api.saveQuoteSheetPriceOverride,
-  clearQuoteSheetPriceOverride: api.clearQuoteSheetPriceOverride,
 }))
 
 vi.mock('@/api/market/quote-edit-locks', () => ({
@@ -161,8 +157,6 @@ describe('useSheetsStore 服务端数据源', () => {
     api.reorderQuoteSheetItems
       .mockReset()
       .mockResolvedValue(sheetRecord({ version: '2' }))
-    api.saveQuoteSheetPriceOverride.mockReset()
-    api.clearQuoteSheetPriceOverride.mockReset().mockResolvedValue(undefined)
     api.acquireQuoteSheetEditLock.mockReset().mockResolvedValue({
       sheetId: '9001',
       locked: true,
@@ -236,7 +230,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(localStorage.getItem('aries-price-compare-v5')).toBeNull()
   })
 
-  it('价格表推导的现货价与来源标记回填到单元格(手填覆盖优先)', async () => {
+  it('现货价与来源标记只按价格表推导回填到单元格(忽略任何历史手填值)', async () => {
     const record = sheetRecord({
       items: [
         {
@@ -249,14 +243,12 @@ describe('useSheetsStore 服务端数据源', () => {
           prices: [
             {
               brandName: '中天',
-              // 最终现货价 = 手填覆盖值; 价格表推导值另存, 供「恢复为价格表价」
-              spotPrice: 3350,
-              derivedSpotPrice: 3320,
-              spotSource: 'MANUAL',
+              // 读路径只认价格表推导值; 后端即便回带历史手填快照字段也不参与展示
+              spotPrice: 3320,
+              spotSource: 'PRICE_LIST',
               supplierId: '5001',
               supplierName: '杭州物资',
               freight: 30,
-              priceSource: 'MANUAL',
               priceListId: '8801',
               priceListReleasedAt: '2026-09-16T09:30:00',
             },
@@ -270,10 +262,9 @@ describe('useSheetsStore 服务端数据源', () => {
     await hydrate(store)
 
     const inputKey = `中天:${store.current.rows[0].id}`
-    expect(store.current.active.inputs[inputKey]).toMatchObject({
-      spot: 3350,
-      derivedSpot: 3320,
-      spotSource: 'MANUAL',
+    expect(store.current.active.inputs[inputKey]).toEqual({
+      spot: 3320,
+      spotSource: 'PRICE_LIST',
       supplierId: '5001',
       supplierName: '杭州物资',
       priceListId: '8801',
@@ -295,7 +286,7 @@ describe('useSheetsStore 服务端数据源', () => {
             {
               brandName: '中天',
               spotSource: 'NONE',
-              spotReason: 'NO_LIST_AT_TIME',
+              spotReason: 'NO_LIST',
             },
           ],
         },
@@ -307,14 +298,14 @@ describe('useSheetsStore 服务端数据源', () => {
     await hydrate(store)
 
     const inputKey = `中天:${store.current.rows[0].id}`
-    // 没有 spot 也要建条目, 否则单元格拿不到「该时刻无生效版本」的说明依据
+    // 没有 spot 也要建条目, 否则单元格拿不到「该品牌暂无价格表」的说明依据
     expect(store.current.active.inputs[inputKey]).toEqual({
       spotSource: 'NONE',
-      spotReason: 'NO_LIST_AT_TIME',
+      spotReason: 'NO_LIST',
     })
   })
 
-  it('常规保存的 prices[] 只回写手填覆盖格, 绝不含价格表推导或无价格', async () => {
+  it('常规保存不写现货价: prices[] 只携带来源供应商, 不含 spotPrice', async () => {
     const record = sheetRecord({
       items: [
         {
@@ -328,7 +319,6 @@ describe('useSheetsStore 服务端数据源', () => {
             {
               brandName: '中天',
               spotPrice: 3320,
-              derivedSpotPrice: 3320,
               spotSource: 'PRICE_LIST',
               supplierId: '5001',
               supplierName: '杭州物资',
@@ -347,12 +337,8 @@ describe('useSheetsStore 服务端数据源', () => {
           prices: [
             {
               brandName: '中天',
-              spotPrice: 3400,
-              derivedSpotPrice: 3360,
-              spotSource: 'MANUAL',
-              priceSource: 'MANUAL',
-              supplierId: '5002',
-              supplierName: '沙钢贸易',
+              spotSource: 'NONE',
+              spotReason: 'NO_ITEM',
             },
           ],
         },
@@ -363,9 +349,7 @@ describe('useSheetsStore 服务端数据源', () => {
           material: 'HRB400',
           spec: 18,
           length: '9米',
-          prices: [
-            { brandName: '中天', spotSource: 'NONE', spotReason: 'NO_ITEM' },
-          ],
+          prices: [],
         },
       ],
     })
@@ -392,157 +376,17 @@ describe('useSheetsStore 服务端数据源', () => {
         ][]
       ).map(([, itemId, payload]) => [itemId, payload]),
     )
-    // 价格表推导格与无价格: 不得进入载荷, 否则每保存一次就把当天推导价冻结成 MANUAL 覆盖
-    expect(byItem.get('7001')?.prices).toEqual([])
-    expect(byItem.get('7003')?.prices).toEqual([])
-    // 手填覆盖格: 必须回写(否则整行替换会把覆盖行清掉)
-    expect(byItem.get('7002')?.prices).toEqual([
-      { brandName: '中天', spotPrice: 3400, supplierId: '5002' },
+    // 现货价不再落库, 仅由价格表推导: 载荷里绝不出现 spotPrice
+    expect(byItem.get('7001')?.prices).toEqual([
+      { brandName: '中天', supplierId: '5001' },
     ])
-  })
-
-  it('手填覆盖走单格覆盖接口, 并回填权威推导值供「恢复为价格表价」', async () => {
-    const record = sheetRecord({
-      items: [
-        {
-          id: '7001',
-          rowType: 'PRODUCT',
-          category: '螺纹钢',
-          material: 'HRB400',
-          spec: 12,
-          length: '9米',
-          prices: [
-            {
-              brandName: '中天',
-              spotPrice: 3320,
-              derivedSpotPrice: 3320,
-              spotSource: 'PRICE_LIST',
-              supplierId: '5001',
-              supplierName: '杭州物资',
-              priceListId: '8801',
-              priceListReleasedAt: '2026-09-16T09:30:00',
-            },
-          ],
-        },
-      ],
-    })
-    api.fetchQuoteSheets.mockResolvedValue([record])
-    api.fetchQuoteSheet.mockResolvedValue(record)
-    api.saveQuoteSheetPriceOverride.mockResolvedValue({
-      brandName: '中天',
-      spotPrice: 3450,
-      derivedSpotPrice: 3320,
-      spotSource: 'MANUAL',
-      priceSource: 'MANUAL',
-      supplierId: '5001',
-      supplierName: '杭州物资',
-    })
-    const store = renderStore()
-    await hydrate(store)
-
-    await act(async () => {
-      await store.current.saveSpotOverride(
-        store.current.activeId,
-        '中天',
-        '7001',
-        3450,
-      )
-    })
-
-    expect(api.saveQuoteSheetPriceOverride).toHaveBeenCalledWith(
-      '9001',
-      '7001',
-      '中天',
-      { spotPrice: 3450, supplierId: '5001', supplierName: '杭州物资' },
-    )
-    expect(store.current.active.inputs['中天:7001']).toMatchObject({
-      spot: 3450,
-      spotSource: 'MANUAL',
-      derivedSpot: 3320,
-      supplierId: '5001',
-    })
-  })
-
-  it('恢复为价格表价: 调 DELETE 覆盖接口并回到 PRICE_LIST 与推导值/自动供应商', async () => {
-    const manualRecord = sheetRecord({
-      items: [
-        {
-          id: '7001',
-          rowType: 'PRODUCT',
-          category: '螺纹钢',
-          material: 'HRB400',
-          spec: 12,
-          length: '9米',
-          prices: [
-            {
-              brandName: '中天',
-              spotPrice: 3450,
-              derivedSpotPrice: 3320,
-              spotSource: 'MANUAL',
-              priceSource: 'MANUAL',
-              supplierId: '5002',
-              supplierName: '沙钢贸易',
-            },
-          ],
-        },
-      ],
-    })
-    const restoredRecord = sheetRecord({
-      items: [
-        {
-          id: '7001',
-          rowType: 'PRODUCT',
-          category: '螺纹钢',
-          material: 'HRB400',
-          spec: 12,
-          length: '9米',
-          prices: [
-            {
-              brandName: '中天',
-              spotPrice: 3320,
-              derivedSpotPrice: 3320,
-              spotSource: 'PRICE_LIST',
-              supplierId: '5001',
-              supplierName: '杭州物资',
-              priceListId: '8801',
-              priceListReleasedAt: '2026-09-16T09:30:00',
-            },
-          ],
-        },
-      ],
-    })
-    api.fetchQuoteSheets.mockResolvedValue([manualRecord])
-    // 删除覆盖后单据详情回到价格表价: 恢复流程会重读该行价格格
-    api.fetchQuoteSheet.mockResolvedValue(restoredRecord)
-    const store = renderStore()
-    await hydrate(store)
-    expect(store.current.active.inputs['中天:7001']).toMatchObject({
-      spot: 3450,
-      spotSource: 'MANUAL',
-    })
-
-    await act(async () => {
-      await store.current.clearSpotOverride(
-        store.current.activeId,
-        '中天',
-        '7001',
-      )
-    })
-
-    expect(api.clearQuoteSheetPriceOverride).toHaveBeenCalledWith(
-      '9001',
-      '7001',
-      '中天',
-    )
-    // 回到推导值 + 价格表带来的供应商(重读服务端后合并)
-    expect(store.current.active.inputs['中天:7001']).toMatchObject({
-      spot: 3320,
-      spotSource: 'PRICE_LIST',
-      derivedSpot: 3320,
-      supplierId: '5001',
-      supplierName: '杭州物资',
-      priceListReleasedAt: '2026-09-16T09:30:00',
-    })
+    expect(byItem.get('7002')?.prices).toEqual([])
+    expect(byItem.get('7003')?.prices).toEqual([])
+    for (const payload of byItem.values()) {
+      for (const price of payload.prices) {
+        expect(price.spotPrice).toBeUndefined()
+      }
+    }
   })
 
   it('表头变更后防抖只发头字段(不携带 brands/items)', async () => {
@@ -567,7 +411,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.items).toBeUndefined()
   })
 
-  it('供应商随现货价一并走行级保存', async () => {
+  it('人工填写供应商随行级保存下发(现货价不再参与)', async () => {
     const store = renderStore()
     await hydrate(store)
 
@@ -594,7 +438,7 @@ describe('useSheetsStore 服务端数据源', () => {
       { prices: { supplierId?: string }[] },
     ]
     expect(itemId).toBe('7001')
-    expect(payload.prices[0].supplierId).toBe('5002')
+    expect(payload.prices).toEqual([{ brandName: '中天', supplierId: '5002' }])
   })
 
   it('解锁行时 payload 必须显式携带 locked=false(否则后端保留原值)', async () => {
@@ -1557,7 +1401,7 @@ describe('useSheetsStore 服务端数据源', () => {
     const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
       store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
+        inputs: { [inputKey]: { spot: 3350, supplierId: '5002' } },
       })
     })
     await act(async () => {
@@ -1583,9 +1427,7 @@ describe('useSheetsStore 服务端数据源', () => {
       },
     ]
     expect(itemId).toBe('7001')
-    expect(payload.prices).toEqual([
-      { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
-    ])
+    expect(payload.prices).toEqual([{ brandName: '中天', supplierId: '5002' }])
   })
 
   it('新建批次 create 成功后自动签出该单据', async () => {
@@ -1952,7 +1794,7 @@ describe('useSheetsStore 服务端数据源', () => {
     const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
       store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
+        inputs: { [inputKey]: { spot: 3350, supplierId: '5002' } },
       })
     })
     await act(async () => {
@@ -1969,7 +1811,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
     expect(store.current.active.inputs[inputKey]).toEqual({
       spot: 3350,
-      supplierId: '5001',
+      supplierId: '5002',
     })
 
     await act(async () => {
@@ -1981,9 +1823,7 @@ describe('useSheetsStore 服务端数据源', () => {
       string,
       { prices: { brandName: string; spotPrice?: number }[] },
     ]
-    expect(payload.prices).toEqual([
-      { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
-    ])
+    expect(payload.prices).toEqual([{ brandName: '中天', supplierId: '5002' }])
   })
 
   it('刷新重建列表时 activeId 跟随本地→服务端映射, 不回跳', async () => {
@@ -2095,7 +1935,7 @@ describe('useSheetsStore 服务端数据源', () => {
     const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
       store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3400, supplierId: '5001' } },
+        inputs: { [inputKey]: { spot: 3400, supplierId: '5002' } },
       })
     })
     await act(async () => {
@@ -2114,7 +1954,7 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
     expect(store.current.active.inputs[inputKey]).toEqual({
       spot: 3400,
-      supplierId: '5001',
+      supplierId: '5002',
     })
 
     // 聚焦触发的重试保存
@@ -2141,7 +1981,7 @@ describe('useSheetsStore 服务端数据源', () => {
     const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
       store.current.patchSheet(sheetId, {
-        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
+        inputs: { [inputKey]: { spot: 3350, supplierId: '5002' } },
       })
     })
     await act(async () => {
@@ -2222,7 +2062,7 @@ describe('useSheetsStore 服务端数据源', () => {
     const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
       store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3500, supplierId: '5001' } },
+        inputs: { [inputKey]: { spot: 3500, supplierId: '5002' } },
       })
     })
     await act(async () => {

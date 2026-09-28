@@ -33,23 +33,18 @@ const brandSchema = z.looseObject({
 
 const priceSchema = z.looseObject({
   brandName: z.string(),
+  /** 现货价: 只来自供应商价格表推导, 手填覆盖已删除。 */
   spotPrice: z.union([z.number(), z.string()]).nullable().optional(),
-  /**
-   * 价格表推导值(不含手填覆盖), 供「恢复为价格表价」预览。
-   * 现货价不再要求人工填写: 后端按该单据报价时刻生效的供应商价格表推导。
-   */
-  derivedSpotPrice: z.union([z.number(), z.string()]).nullable().optional(),
-  /** 现货价来源: 手填覆盖 / 价格表推导 / 无。 */
+  /** 现货价来源: 价格表推导 / 无。 */
   spotSource: z.string().nullable().optional(),
-  /** 无价原因: 该时刻无生效版本 / 无该条目 / 条目不报价。 */
+  /** 无价原因: 该品牌无价格表 / 有表无该条目 / 条目不报价。 */
   spotReason: z.string().nullable().optional(),
   supplierId: z.union([z.number(), z.string()]).nullable().optional(),
   supplierName: z.string().nullable().optional(),
   /** 项目级运费(元/吨), 来自项目品牌配置, 不来自价格表。 */
   freight: z.union([z.number(), z.string()]).nullable().optional(),
-  /** 已落库覆盖行的来源快照。 */
-  priceSource: z.string().nullable().optional(),
   priceListId: z.union([z.number(), z.string()]).nullable().optional(),
+  /** 来源价格表更新时间(字段名兼容保留, 无版本语义)。 */
   priceListReleasedAt: z.string().nullable().optional(),
 })
 
@@ -97,34 +92,29 @@ const sheetPageSchema = z.looseObject({
   hasMore: z.boolean(),
 })
 
-/** 现货价来源: MANUAL 单据手填/覆盖, PRICE_LIST 由供应商价格表推导, NONE 无价。 */
+/** 现货价来源: PRICE_LIST 由供应商价格表推导, NONE 无价; MANUAL 仅兼容保留(读路径不再产生)。 */
 export type SpotPriceSource = 'MANUAL' | 'PRICE_LIST' | 'NONE'
-/** 无价原因: 报价时刻无生效价格表版本 / 有版本但无该条目 / 条目存在但不报价。 */
-export type SpotPriceReason = 'NO_LIST_AT_TIME' | 'NO_ITEM' | 'NO_PRICE'
+/** 无价原因: 该品牌无价格表 / 有表但无该条目 / 条目存在但不报价。 */
+export type SpotPriceReason = 'NO_LIST' | 'NO_ITEM' | 'NO_PRICE'
 
 const asSpotSource = (raw: unknown): SpotPriceSource | undefined =>
   raw === 'MANUAL' || raw === 'PRICE_LIST' || raw === 'NONE' ? raw : undefined
 
 const asSpotReason = (raw: unknown): SpotPriceReason | undefined =>
-  raw === 'NO_LIST_AT_TIME' || raw === 'NO_ITEM' || raw === 'NO_PRICE'
-    ? raw
-    : undefined
+  raw === 'NO_LIST' || raw === 'NO_ITEM' || raw === 'NO_PRICE' ? raw : undefined
 
 export type QuoteSheetPriceRecord = {
   brandName: string
-  /** 最终现货价 = 手填覆盖值(存在时) 否则价格表推导值。 */
+  /** 现货价: 只由供应商价格表推导(手填覆盖已彻底删除)。 */
   spotPrice?: number
-  /** 价格表推导值(不含手填覆盖)。 */
-  derivedSpotPrice?: number
   spotSource?: SpotPriceSource
   spotReason?: SpotPriceReason
   supplierId?: EntityId
   supplierName?: string
   /** 项目级运费(元/吨)。 */
   freight?: number
-  /** 覆盖行落库来源: MANUAL 手填覆盖 / PRICE_LIST 已固化的价格表价。 */
-  priceSource?: 'MANUAL' | 'PRICE_LIST'
   priceListId?: EntityId
+  /** 来源价格表更新时间(后端填 updated_at, 无版本语义)。 */
   priceListReleasedAt?: string
 }
 
@@ -198,9 +188,12 @@ export type QuoteSheetPayload = {
     locked?: boolean
     purchaseOrderId?: EntityId
     purchaseOrderItemId?: EntityId
+    /**
+     * 现货价不再落库, 仅由价格表推导: 这里的 prices[] 只允许携带非现货字段
+     * (品牌名与来源供应商), 不再出现 spotPrice; 后端忽略该字段但保留供应商存在性校验。
+     */
     prices: {
       brandName: string
-      spotPrice?: number
       supplierId?: EntityId
     }[]
   }[]
@@ -218,9 +211,9 @@ export type QuoteSheetItemPayload = {
   locked?: boolean
   purchaseOrderId?: EntityId
   purchaseOrderItemId?: EntityId
+  /** 同上: 现货价不再落库, 仅由价格表推导, prices[] 只携带供应商等非现货字段。 */
   prices: {
     brandName: string
-    spotPrice?: number
     supplierId?: EntityId
   }[]
 }
@@ -252,26 +245,19 @@ function normalizePrice(
     raw.priceListId,
     `prices[${index}].priceListId`,
   )
-  const derivedSpotPrice = toOptionalNumber(raw.derivedSpotPrice)
   const spotSource = asSpotSource(raw.spotSource)
   const spotReason = asSpotReason(raw.spotReason)
   const freight = toOptionalNumber(raw.freight)
-  const priceSource =
-    raw.priceSource === 'MANUAL' || raw.priceSource === 'PRICE_LIST'
-      ? raw.priceSource
-      : undefined
   return {
     brandName: raw.brandName,
     ...(toOptionalNumber(raw.spotPrice) !== undefined
       ? { spotPrice: toOptionalNumber(raw.spotPrice) }
       : {}),
-    ...(derivedSpotPrice !== undefined ? { derivedSpotPrice } : {}),
     ...(spotSource ? { spotSource } : {}),
     ...(spotReason ? { spotReason } : {}),
     ...(supplierId ? { supplierId } : {}),
     ...(raw.supplierName ? { supplierName: raw.supplierName } : {}),
     ...(freight !== undefined ? { freight } : {}),
-    ...(priceSource ? { priceSource } : {}),
     ...(priceListId ? { priceListId } : {}),
     ...(raw.priceListReleasedAt
       ? { priceListReleasedAt: raw.priceListReleasedAt }
@@ -502,44 +488,6 @@ export async function deleteQuoteSheetItem(
       ? { version: readResourceVersionHeader(response.headers) }
       : {}),
   }
-}
-
-/** 单格手填覆盖请求体: 现货价必填; 供应商随覆盖行一并快照。 */
-export type QuoteSheetPriceCellOverridePayload = {
-  spotPrice: number
-  supplierId?: EntityId
-  supplierName?: string
-}
-
-/**
- * 写入/更新某格的手填覆盖价(幂等 PUT)。
- *
- * <p>这是「显式覆盖」的唯一入口: 常规保存不得把价格表推导值写回覆盖行。
- * 品牌名会按路径段编码(可能含中文/特殊字符)。回包与单据读接口的价格格同形。</p>
- */
-export async function saveQuoteSheetPriceOverride(
-  sheetId: EntityId,
-  itemId: EntityId,
-  brandName: string,
-  payload: QuoteSheetPriceCellOverridePayload,
-): Promise<QuoteSheetPriceRecord> {
-  const response = await apiPut(
-    ENDPOINTS.QUOTE_SHEET_ITEM_PRICE_OVERRIDE(sheetId, itemId, brandName),
-    priceSchema,
-    payload,
-  )
-  return normalizePrice(response, 0)
-}
-
-/** 清除某格的手填覆盖(幂等 DELETE, 204); 该格回到价格表推导值。 */
-export async function clearQuoteSheetPriceOverride(
-  sheetId: EntityId,
-  itemId: EntityId,
-  brandName: string,
-): Promise<void> {
-  await apiDeleteNoContent(
-    ENDPOINTS.QUOTE_SHEET_ITEM_PRICE_OVERRIDE(sheetId, itemId, brandName),
-  )
 }
 
 /** 采购订单明细行吨位汇总: 该行订货吨数 - 报单已开吨位 = 剩余可开吨。 */

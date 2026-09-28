@@ -9,7 +9,6 @@ import {
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
-  isManualSpotCell,
   isPurchasedRow,
   isSeparatorRow,
   LOCK_REASON_KEYS,
@@ -20,14 +19,12 @@ import {
   moveItem,
   netPrice,
   netPriceWithFallback,
-  reconcileSpotInputs,
   resolveLock,
   SHEET_COLUMN_WIDTH,
   SHEET_WIDTH_BASE_FONT_SIZE,
   scaleSheetColumnWidth,
   sheetColumnWidths,
   sumTonByPurchaseOrderItem,
-  syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
@@ -227,115 +224,6 @@ describe('countMissing', () => {
         brands,
       ),
     ).toBe(1)
-  })
-})
-
-describe('syncSpotInputs', () => {
-  it('相同 类别/材质/规格/长度 的行同步现货价', () => {
-    const a = { ...row12, id: 'a' }
-    const b = { ...row12, id: 'b' }
-    const c = { ...row12, id: 'c', spec: 16 }
-    const { inputs, targets } = syncSpotInputs([a, b, c], {}, '中天', 'a', 3300)
-    expect(targets.map((row) => row.id).sort()).toEqual(['a', 'b'])
-    expect(inputs['中天:a'].spot).toBe(3300)
-    expect(inputs['中天:b'].spot).toBe(3300)
-    expect(inputs['中天:c']).toBeUndefined()
-  })
-
-  it('未选择商品的空行不联动', () => {
-    const a = makeRow()
-    const b = makeRow()
-    const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
-    expect(targets.map((row) => row.id)).toEqual([a.id])
-  })
-
-  it('手填即覆盖: 同步目标一并置 spotSource=MANUAL', () => {
-    const a = { ...row12, id: 'a' }
-    const b = { ...row12, id: 'b' }
-    const { inputs } = syncSpotInputs([a, b], {}, '中天', 'a', 3300)
-    expect(inputs['中天:a'].spotSource).toBe('MANUAL')
-    expect(inputs['中天:b'].spotSource).toBe('MANUAL')
-  })
-
-  it('清空手填值: 去掉覆盖标记但保留推导值, 供恢复为价格表价', () => {
-    const a = { ...row12, id: 'a' }
-    const { inputs } = syncSpotInputs(
-      [a],
-      {
-        '中天:a': {
-          spot: 3300,
-          spotSource: 'MANUAL',
-          derivedSpot: 3320,
-          supplierId: '5001',
-        },
-      },
-      '中天',
-      'a',
-      undefined,
-    )
-    expect(inputs['中天:a']).toEqual({
-      derivedSpot: 3320,
-      supplierId: '5001',
-    })
-  })
-})
-
-describe('isManualSpotCell', () => {
-  it('只有手填(含本地无来源标记的有价格)允许回写 prices[]', () => {
-    expect(isManualSpotCell({ spot: 3300, spotSource: 'MANUAL' })).toBe(true)
-    // 本地新录入尚无来源标记: 兼容历史本地态, 按手填处理
-    expect(isManualSpotCell({ spot: 3300 })).toBe(true)
-  })
-
-  it('价格表推导格与无价格绝不回写(否则会把当天推导价冻结成手填覆盖)', () => {
-    expect(
-      isManualSpotCell({
-        spot: 3300,
-        derivedSpot: 3300,
-        spotSource: 'PRICE_LIST',
-      }),
-    ).toBe(false)
-    expect(
-      isManualSpotCell({ spotSource: 'NONE', spotReason: 'NO_ITEM' }),
-    ).toBe(false)
-    expect(isManualSpotCell(undefined)).toBe(false)
-    // 只有供应商没有价格: 不构成手填格(单写供应商会把该格变成价格为空的手填覆盖)
-    expect(isManualSpotCell({ supplierId: '5001' })).toBe(false)
-  })
-})
-
-describe('reconcileSpotInputs', () => {
-  it('同商品同品牌缺省行自动套用已有现货价', () => {
-    const a = { ...row12, id: 'a' }
-    const b = { ...row12, id: 'b' }
-    const next = reconcileSpotInputs([a, b], { '中天:a': { spot: 3160 } }, [
-      '中天',
-      '铜陵富鑫',
-    ])
-    expect(next['中天:a'].spot).toBe(3160)
-    expect(next['中天:b'].spot).toBe(3160)
-    // 套用过来的值同样是手填语义(参与常规保存)
-    expect(next['中天:b'].spotSource).toBe('MANUAL')
-    expect(next['铜陵富鑫:a']).toBeUndefined()
-  })
-
-  it('价格表推导值不参与联动(每格独立推导, 套用会被误当手填价回写)', () => {
-    const a = { ...row12, id: 'a' }
-    const b = { ...row12, id: 'b' }
-    const inputs = {
-      '中天:a': {
-        spot: 3320,
-        derivedSpot: 3320,
-        spotSource: 'PRICE_LIST' as const,
-      },
-    }
-    expect(reconcileSpotInputs([a, b], inputs, ['中天'])).toBe(inputs)
-  })
-
-  it('无变化时返回原对象', () => {
-    const a = { ...row12, id: 'a' }
-    const inputs = { '中天:a': { spot: 3160 } }
-    expect(reconcileSpotInputs([a], inputs, ['中天'])).toBe(inputs)
   })
 })
 
@@ -905,19 +793,20 @@ describe('列宽按字号自适应', () => {
    * 数字列(现货价 / 网价 / 差价)按 4 位数字立契约。
    *
    * 真机实测(PingFang SC, tabular-nums): 每位数字宽 0.6em, 14px 字号下 4 位数字 = 33.6px;
-   * 单元格左右留白合计 12px(再加 1px 边框/取整); 现货价的 antd small 输入框左右内边距各 7px
-   * (共 14px, 不随字号缩放), 差价角标左右内边距各 4px(共 8px)。列宽必须覆盖这些固定开销,
-   * 否则末位数字被裁。
+   * 单元格左右留白合计 12px(再加 1px 边框/取整)。现货价已改为只读文本 + 来源标记
+   * (「价格表」三字约 33px 与 4px 间距), 差价角标左右内边距各 4px(共 8px)。
+   * 列宽必须覆盖这些固定开销, 否则末位数字或来源标记被裁。
    */
   const DIGIT_WIDTH_EM = 0.6
   const CELL_CHROME = 13
-  const SPOT_INPUT_PADDING = 14
+  /** 现货价列额外容纳来源标记「价格表」(11px × 3 字 ≈ 33px)与 4px 间距。 */
+  const SPOT_SOURCE_TAG_WIDTH = 37
   const DIFF_CHIP_PADDING = 8
   const digits4Width = (fontSize: number) =>
     Math.ceil(4 * DIGIT_WIDTH_EM * fontSize)
-  /** 现货价: 数字 + 输入框内边距 + 单元格留白。 */
+  /** 现货价: 数字 + 来源标记 + 单元格留白。 */
   const requiredSpotWidth = (fontSize: number) =>
-    digits4Width(fontSize) + SPOT_INPUT_PADDING + CELL_CHROME
+    digits4Width(fontSize) + SPOT_SOURCE_TAG_WIDTH + CELL_CHROME
   /** 网价: 纯文本数字 + 单元格留白。 */
   const requiredNetWidth = (fontSize: number) =>
     digits4Width(fontSize) + CELL_CHROME
@@ -925,7 +814,7 @@ describe('列宽按字号自适应', () => {
   const requiredDiffWidth = (fontSize: number) =>
     digits4Width(fontSize) + DIFF_CHIP_PADDING + CELL_CHROME
 
-  it('14/16/18 三档下 spot/net/diff 都容得下 4 位数字', () => {
+  it('14/16/18 三档下 spot/net/diff 都容得下 4 位数字(现货列还要容下来源标记)', () => {
     for (const fontSize of [14, 16, 18]) {
       const widths = sheetColumnWidths(fontSize)
       expect(widths.spot).toBeGreaterThanOrEqual(requiredSpotWidth(fontSize))
@@ -934,13 +823,13 @@ describe('列宽按字号自适应', () => {
     }
   })
 
-  it('现货价列宽回归保护: 58 在 14px 下不足(实测 input.clientWidth=45 < 48)', () => {
-    // 阈值 61 是「4 位数字 + 输入框内边距 + 单元格留白」在基准字号下的下界
-    expect(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(61)
+  it('现货价列宽回归保护: 只读数字 + 来源标记在 14px 下不被裁', () => {
+    // 阈值 84 是「4 位数字 + 来源标记 + 单元格留白」在基准字号下的下界
+    expect(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(84)
     expect(SHEET_COLUMN_WIDTH.spot).toBeGreaterThanOrEqual(
       requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE),
     )
-    // 旧的 58 会让输入框内容宽只剩 45px, 4 位数字(48px)显示不全
+    // 旧的手填输入列宽 124 在只读展示下仍有余量; 但 58 连 4 位数字都放不下
     expect(58).toBeLessThan(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE))
   })
 

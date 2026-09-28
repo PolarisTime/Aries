@@ -36,8 +36,16 @@ function makeSheet(): PriceSheet {
     refDate: '2026-09-10',
     refPeriod: '9:30 上午',
     lengthPremium: 30,
-    // 手填覆盖格: 供应商手工下拉只在这种格出现(价格表带出的供应商为只读文本)
-    inputs: { '中天:r1': { spot: 3280, spotSource: 'MANUAL' as const } },
+    // 现货价只由价格表推导: 单元格只读展示, 供应商列也是只读文本
+    inputs: {
+      '中天:r1': {
+        spot: 3280,
+        spotSource: 'PRICE_LIST' as const,
+        supplierId: '5001',
+        supplierName: '杭州物资',
+        priceListReleasedAt: '2026-09-10T09:30:00',
+      },
+    },
     rows: [row],
   }
 }
@@ -159,13 +167,17 @@ describe('SheetPanel 无障碍契约', () => {
     expect(labelOf('input.price-compare-ton')).toBe(`报单吨位，${PRODUCT}`)
     // 备注
     expect(labelOf('input.price-compare-row-remark')).toBe(`备注，${PRODUCT}`)
-    // 现货价(带品牌, 同列多品牌时可区分)
-    expect(labelOf('input.price-compare-spot')).toBe(`中天 现货，${PRODUCT}`)
-    // 供应商(antd Select 的名称落在 combobox 上)
-    const supplierLabel = [
-      ...container.querySelectorAll('.price-compare-supplier input'),
-    ][0]?.getAttribute('aria-label')
-    expect(supplierLabel).toBe(`中天 简称，${PRODUCT}`)
+  })
+
+  it('只读现货价对读屏给出「列名+行名+来源」(读屏能知道值从哪来)', () => {
+    render()
+    // 现货价单元格不可聚焦, 可访问描述由 .aries-sr-only 承载(带品牌, 同列多品牌时可区分)
+    const spotText =
+      container.querySelector('.price-compare-spot .aries-sr-only')
+        ?.textContent ?? ''
+    expect(spotText).toContain(`中天 现货，${PRODUCT}`)
+    expect(spotText).toContain('价格表')
+    expect(spotText).toContain('杭州物资')
   })
 
   it('参照时段下拉也有可访问名称', () => {

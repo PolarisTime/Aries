@@ -15,7 +15,6 @@ import {
 } from '@/api/market/quote-project-configs'
 import {
   addQuoteSheetItem,
-  clearQuoteSheetPriceOverride,
   createQuoteSheet,
   deleteQuoteSheet,
   deleteQuoteSheetItem,
@@ -27,7 +26,6 @@ import {
   type QuoteSheetPriceRecord,
   type QuoteSheetRecord,
   reorderQuoteSheetItems,
-  saveQuoteSheetPriceOverride,
   updateQuoteSheet,
   updateQuoteSheetHeader,
   updateQuoteSheetItem,
@@ -35,12 +33,7 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
 import { logger } from '@/utils/logger'
-import {
-  DEFAULT_LENGTH_PREMIUM,
-  isManualSpotCell,
-  isSeparatorRow,
-  makeSheet,
-} from './core'
+import { DEFAULT_LENGTH_PREMIUM, isSeparatorRow, makeSheet } from './core'
 import type {
   Brand,
   PriceRow,
@@ -330,15 +323,9 @@ function buildPayload(
         QuoteSheetPayload['items'][number]['prices'][number]
       >((brand) => {
         const input = sheet.inputs[`${brand.name}:${row.id}`]
-        // 只回写手填覆盖格: 价格表推导/无价格回写会把当次推导价固化成 MANUAL 覆盖
-        if (!isManualSpotCell(input) || !input) return []
-        return [
-          {
-            brandName: brand.name,
-            ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
-            ...(input.supplierId ? { supplierId: input.supplierId } : {}),
-          },
-        ]
+        // 现货价不再落库, 仅由价格表推导: prices[] 只携带来源供应商等非现货字段
+        if (!input?.supplierId) return []
+        return [{ brandName: brand.name, supplierId: input.supplierId }]
       })
       return [
         {
@@ -390,15 +377,9 @@ function buildItemPayload(
   if (!isCompleteRow(row)) return null
   const prices = brands.flatMap((brand) => {
     const input = sheet.inputs[`${brand.name}:${row.id}`]
-    // 只回写手填覆盖格: 价格表推导/无价格回写会把当次推导价固化成 MANUAL 覆盖
-    if (!isManualSpotCell(input) || !input) return []
-    return [
-      {
-        brandName: brand.name,
-        ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
-        ...(input.supplierId ? { supplierId: input.supplierId } : {}),
-      },
-    ]
+    // 现货价不再落库, 仅由价格表推导: prices[] 只携带来源供应商等非现货字段
+    if (!input?.supplierId) return []
+    return [{ brandName: brand.name, supplierId: input.supplierId }]
   })
   return {
     rowType: 'PRODUCT',
@@ -422,13 +403,17 @@ function headerSignature(sheet: PriceSheet): string {
   return JSON.stringify(buildHeaderPayload(sheet))
 }
 
-/** 行指纹: 行类型/商品字段/吨位/现货价/供应商任一变化即不同。 */
+/**
+ * 行指纹: 行类型/商品字段/吨位/来源供应商任一变化即不同。
+ *
+ * <p>现货价只由价格表推导且不再落库, 因此不参与指纹: 价格表调价不该把整张单据置为待保存。</p>
+ */
 function itemSignature(row: PriceRow, inputs: SheetInputs): string {
   const suffix = `:${row.id}`
-  const prices = Object.keys(inputs)
+  const suppliers = Object.keys(inputs)
     .filter((key) => key.endsWith(suffix))
     .sort()
-    .map((key) => [key, inputs[key] ?? {}])
+    .map((key) => [key, inputs[key]?.supplierId ?? null] as const)
   return JSON.stringify({
     rowType: row.rowType ?? 'PRODUCT',
     category: row.category,
@@ -440,7 +425,7 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     locked: Boolean(row.locked),
     purchaseOrderId: row.purchaseOrderId ?? null,
     purchaseOrderItemId: row.purchaseOrderItemId ?? null,
-    prices,
+    suppliers,
   })
 }
 
@@ -599,22 +584,6 @@ export type SheetsStore = {
     patch: Partial<PriceSheet>,
     coalesceKey?: string,
   ) => void
-  /**
-   * 显式手填覆盖某格现货价(本地置 MANUAL, 并在可行时立即走单格覆盖 PUT)。
-   * 常规保存只回写手填格, 因此价格表推导格不会被冻结成覆盖价。
-   */
-  saveSpotOverride: (
-    sheetId: string,
-    brandName: string,
-    rowId: string,
-    value: number,
-  ) => Promise<void>
-  /** 恢复某格为价格表价: 清除手填覆盖并回填推导值与价格表供应商。 */
-  clearSpotOverride: (
-    sheetId: string,
-    brandName: string,
-    rowId: string,
-  ) => Promise<void>
   addSheet: (
     projectId: string,
     projectName: string,
@@ -2477,191 +2446,6 @@ export function useSheetsStore(options?: {
     scheduleSaveSheet(id)
   }
 
-  /**
-   * 把服务端返回的价格格合并回本地 inputs(仅未手填的格子)。
-   *
-   * <p>手填格一律跳过: 覆盖值优先于推导值, 用服务端快照覆盖本地手填会让刚输入的值回跳。</p>
-   */
-  const mergePriceCells = (
-    sheetId: string,
-    fresh: Record<string, SheetInput>,
-  ) => {
-    if (!Object.keys(fresh).length) return
-    mutate((current) => {
-      const sheet = current.sheets.find((item) => item.id === sheetId)
-      if (!sheet) return current
-      const inputs: SheetInputs = { ...sheet.inputs }
-      let changed = false
-      for (const [key, entry] of Object.entries(fresh)) {
-        if (isManualSpotCell(inputs[key])) continue
-        inputs[key] = entry
-        changed = true
-      }
-      if (!changed) return current
-      return {
-        ...current,
-        sheets: current.sheets.map((item) =>
-          item.id === sheetId ? { ...item, inputs } : item,
-        ),
-      }
-    })
-  }
-
-  /** 重新读取某几行的价格格并合并(恢复覆盖后回填推导值与价格表供应商)。 */
-  const refreshRowPriceCells = async (sheetId: string, rowIds: string[]) => {
-    if (!rowIds.length) return
-    const serverId = serverIdRef.current.get(sheetId) ?? sheetId
-    try {
-      const record = await fetchQuoteSheet(serverId)
-      const targets = new Set(rowIds)
-      const fresh: Record<string, SheetInput> = {}
-      for (const item of record.items) {
-        if (!targets.has(item.id)) continue
-        for (const price of item.prices) {
-          const entry = priceRecordToInput(price)
-          if (Object.keys(entry).length === 0) continue
-          fresh[`${price.brandName}:${item.id}`] = entry
-        }
-      }
-      mergePriceCells(sheetId, fresh)
-    } catch (error) {
-      logger.error(i18next.t('priceCompareStore.refreshRowPriceFailed'), error)
-    }
-  }
-
-  /** 该格是否可以走单格覆盖接口: 单据/行必须已落库, 且品牌已存在于服务端品牌快照。 */
-  const isPersistableCell = (
-    sheet: PriceSheet | undefined,
-    brandName: string,
-    rowId: string,
-  ): boolean => {
-    if (!sheet || !isServerId(rowId)) return false
-    return (sheet.brands ?? []).some((brand) => brand.name === brandName)
-  }
-
-  /**
-   * 显式手填覆盖某格现货价。
-   *
-   * <p>先本地置 `spotSource='MANUAL'`(常规保存据此把该格写回, 输入即覆盖);
-   * 单据/行已落库且品牌存在于服务端时再走单格覆盖 PUT, 让值立即落库并拿回权威推导值,
-   * 供「恢复为价格表价」使用。新行/新单据尚未落库时不调接口(会 404), 交由行级保存落库。</p>
-   */
-  const saveSpotOverride = async (
-    sheetId: string,
-    brandName: string,
-    rowId: string,
-    value: number,
-  ) => {
-    if (readOnlyRef.current) return
-    const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
-    if (!sheet) return
-    const key = `${brandName}:${rowId}`
-    const input = sheet.inputs[key]
-    const local: SheetInput = { ...(input ?? {}), spot: value }
-    delete local.spotReason
-    local.spotSource = 'MANUAL'
-    patchSheet(sheetId, { inputs: { ...sheet.inputs, [key]: local } })
-
-    const serverId = serverIdRef.current.get(sheetId)
-    if (!serverId || !isPersistableCell(sheet, brandName, rowId)) return
-    try {
-      const cell = await saveQuoteSheetPriceOverride(
-        serverId,
-        rowId,
-        brandName,
-        {
-          spotPrice: value,
-          ...(input?.supplierId ? { supplierId: input.supplierId } : {}),
-          ...(input?.supplierName ? { supplierName: input.supplierName } : {}),
-        },
-      )
-      const entry = priceRecordToInput(cell)
-      // 期间又改过价则丢弃本次回填, 避免把新输入覆盖回旧值
-      if (
-        entry.spot !== undefined &&
-        stateRef.current.sheets.find((item) => item.id === sheetId)?.inputs[key]
-          ?.spot === value
-      ) {
-        mutate((current) => ({
-          ...current,
-          sheets: current.sheets.map((item) =>
-            item.id === sheetId
-              ? { ...item, inputs: { ...item.inputs, [key]: entry } }
-              : item,
-          ),
-        }))
-      }
-    } catch (error) {
-      logger.error(i18next.t('priceCompareStore.saveSpotOverrideFailed'), error)
-      message.error(
-        error instanceof Error
-          ? `${i18next.t('priceCompareStore.saveSpotOverrideFailed')}：${error.message}`
-          : i18next.t('priceCompareStore.saveSpotOverrideFailed'),
-      )
-    }
-  }
-
-  /**
-   * 恢复某格为价格表价: 清除手填覆盖并回填价格表推导值与自动供应商。
-   *
-   * <p>先本地回到推导快照(derivedSpot 由读接口给出), 再删服务端覆盖行;
-   * 删除成功后重读该行价格格, 拿回权威的推导供应商/发布时刻。删除失败则回滚本地改动,
-   * 保证界面与服务端一致。本地尚无覆盖行(未落库的新行)时只做本地恢复。</p>
-   */
-  const clearSpotOverride = async (
-    sheetId: string,
-    brandName: string,
-    rowId: string,
-  ) => {
-    if (readOnlyRef.current) return
-    const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
-    if (!sheet) return
-    const key = `${brandName}:${rowId}`
-    const prev = sheet.inputs[key]
-    if (!isManualSpotCell(prev) || !prev) return
-    const derived = prev.derivedSpot
-    const restored: SheetInput = { ...prev }
-    // spotSource 由推导结果决定: 有推导值即回到价格表, 否则回到无价(保留原原因)
-    if (derived !== undefined) {
-      restored.spot = derived
-      restored.spotSource = 'PRICE_LIST'
-      delete restored.spotReason
-    } else {
-      delete restored.spot
-      restored.spotSource = 'NONE'
-      if (prev.spotReason) restored.spotReason = prev.spotReason
-    }
-    const patchInputs = (entry: SheetInput) =>
-      patchSheet(sheetId, {
-        inputs: {
-          ...(stateRef.current.sheets.find((item) => item.id === sheetId)
-            ?.inputs ?? {}),
-          [key]: entry,
-        },
-      })
-    patchInputs(restored)
-
-    const serverId = serverIdRef.current.get(sheetId)
-    if (!serverId || !isPersistableCell(sheet, brandName, rowId)) return
-    try {
-      await clearQuoteSheetPriceOverride(serverId, rowId, brandName)
-    } catch (error) {
-      // 删除失败: 回滚本地, 否则界面显示价格表价而服务端仍存覆盖行
-      patchInputs(prev)
-      logger.error(
-        i18next.t('priceCompareStore.clearSpotOverrideFailed'),
-        error,
-      )
-      message.error(
-        error instanceof Error
-          ? `${i18next.t('priceCompareStore.clearSpotOverrideFailed')}：${error.message}`
-          : i18next.t('priceCompareStore.clearSpotOverrideFailed'),
-      )
-      return
-    }
-    await refreshRowPriceCells(sheetId, [rowId])
-  }
-
   const addSheet = (
     projectId: string,
     projectName: string,
@@ -2823,8 +2607,6 @@ export function useSheetsStore(options?: {
     setRows: updateActiveRows,
     setActiveId,
     patchSheet,
-    saveSpotOverride,
-    clearSpotOverride,
     addSheet,
     assignProjectToUnassigned,
     removeSheet,
@@ -2834,12 +2616,10 @@ export function useSheetsStore(options?: {
   }
 }
 
-/** 服务端价格格 -> 本地单元格输入(来源/推导值/供应商/来源价格表一并回填)。 */
+/** 服务端价格格 -> 本地单元格输入(现货价/来源/供应商/来源价格表一并回填, 只读展示用)。 */
 function priceRecordToInput(price: QuoteSheetPriceRecord): SheetInput {
   const entry: SheetInput = {}
   if (price.spotPrice !== undefined) entry.spot = price.spotPrice
-  if (price.derivedSpotPrice !== undefined)
-    entry.derivedSpot = price.derivedSpotPrice
   if (price.spotSource) entry.spotSource = price.spotSource
   if (price.spotReason) entry.spotReason = price.spotReason
   if (price.supplierId) entry.supplierId = price.supplierId

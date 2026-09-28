@@ -228,20 +228,10 @@
   color: var(--color-danger-active, #cf1322);
 }
 
-.price-compare-spot input {
-  text-align: right;
-  padding-inline: var(--space-xxs) !important;
-  font-variant-numeric: tabular-nums;
-}
-
-.price-compare-spot {
-  width: 100%;
-}
-
 /*
- * 现货价格子: 手填输入 + 来源文字标记(价格表/手填) + 「恢复为价格表价」按钮。
+ * 现货价格子: 只读展示价格表推导价(手填覆盖已删除) + 来源文字标记(「价格表」)。
  * - 来源一律用文字而不是只用颜色(WCAG 1.4.1);
- * - 恢复按钮命中区下限 24×24(WCAG 2.2 SC 2.5.8), 视觉尺寸保持紧凑;
+ * - 无价时展示占位「—」, 原因放在 title/aria-label 上;
  * - 文字色用 --text-secondary(该页 11–12px 需 4.5:1), 深浅色主题都由变量兜底。
  */
 .price-compare-spot-cell {
@@ -251,9 +241,10 @@
   width: 100%;
 }
 
-.price-compare-spot-cell .price-compare-spot {
+.price-compare-spot {
   flex: 1 1 auto;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .price-compare-spot-source {
@@ -267,20 +258,12 @@
   white-space: nowrap;
 }
 
-.price-compare-spot-restore.ant-btn {
-  flex: 0 0 auto;
-  min-width: 24px;
-  min-height: 24px;
-  padding: 0;
-  color: var(--text-secondary);
-}
-
 /* 供应商简称列 */
 .price-compare-table .price-compare-supplier {
   width: 100%;
 }
 
-/* 价格表自动带出的供应商(只读展示, 人工指定需先手填现货价) */
+/* 价格表带来的供应商(只读展示; 人工填写走列头「一键填入供应商」) */
 .price-compare-supplier-auto {
   display: inline-flex;
   align-items: center;

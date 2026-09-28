@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from 'i18next'
 import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import { SheetPanel } from './SheetPanel'
 import type { PriceRow, PriceSheet, SheetInput, Variety } from './types'
@@ -27,7 +27,6 @@ const row: PriceRow = {
 
 const PRICE_LIST_INPUT: SheetInput = {
   spot: 3320,
-  derivedSpot: 3320,
   spotSource: 'PRICE_LIST',
   supplierId: '5001',
   supplierName: '杭州物资',
@@ -52,17 +51,14 @@ function makeSheet(inputs: Record<string, SheetInput>): PriceSheet {
 }
 
 /**
- * 批四「现货价自动带出 + 显式手填覆盖」的界面契约:
- * 来源必须是可见文字(WCAG 1.4.1), 无价必须给出可读原因,
- * 手填必须能走覆盖写入路径并能恢复为价格表价。
+ * 契约 §4.6 R2.5「删掉手填覆盖」后的界面契约:
+ * 现货价只读展示价格表推导价, 来源必须是可见文字(WCAG 1.4.1),
+ * 无价必须给出可读原因, 且不再有任何手填输入/「手填」标记/「恢复为价格表价」入口。
  */
-describe('SheetPanel 现货价来源与手填覆盖', () => {
+describe('SheetPanel 现货价只读展示', () => {
   let container: HTMLDivElement
   let root: Root
   let queryClient: QueryClient
-
-  const saveSpotOverride = vi.fn().mockResolvedValue(undefined)
-  const clearSpotOverride = vi.fn().mockResolvedValue(undefined)
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
@@ -88,8 +84,6 @@ describe('SheetPanel 现货价来源与手填覆盖', () => {
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
-    saveSpotOverride.mockClear()
-    clearSpotOverride.mockClear()
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     })
@@ -108,7 +102,6 @@ describe('SheetPanel 现货价来源与手填覆盖', () => {
     container.remove()
   })
 
-  /** 有状态渲染: patchSheet 回写本地 sheet, 便于断言「输入即置 MANUAL」。 */
   function render(inputs: Record<string, SheetInput>) {
     const observed = { sheet: makeSheet(inputs) }
     function Harness() {
@@ -129,8 +122,6 @@ describe('SheetPanel 现货价来源与手填覆盖', () => {
         onRefresh: () => {},
         chrome: false,
         spotRef: { current: null },
-        onSaveSpotOverride: saveSpotOverride,
-        onClearSpotOverride: clearSpotOverride,
       })
     }
     act(() => {
@@ -145,25 +136,35 @@ describe('SheetPanel 现货价来源与手填覆盖', () => {
     return observed
   }
 
-  const spotInput = () =>
-    container.querySelector<HTMLInputElement>('input.price-compare-spot')
+  const spotValue = () =>
+    container.querySelector<HTMLElement>('.price-compare-spot')
+  const spotSrText = () =>
+    container.querySelector('.price-compare-spot .aries-sr-only')
+      ?.textContent ?? ''
   const sourceTags = () =>
     [...container.querySelectorAll('.price-compare-spot-source')].map(
       (node) => node.textContent,
     )
 
-  it('价格表来源: 文字标记「价格表」+ 悬浮给出供应商 · 品牌 · 发布时间', () => {
+  it('现货列是只读文本, 不再渲染任何输入框 / 手填标记 / 恢复按钮', () => {
+    render({ '中天:r1': PRICE_LIST_INPUT })
+
+    expect(spotValue()?.textContent).toContain('3320')
+    expect(container.querySelector('input.price-compare-spot')).toBeNull()
+    expect(container.querySelector('input[data-spot]')).toBeNull()
+    expect(sourceTags()).not.toContain('手填')
+    expect(container.querySelector('.price-compare-spot-restore')).toBeNull()
+  })
+
+  it('价格表来源: 文字标记「价格表」+ 悬浮给出供应商 · 品牌 · 更新时间', () => {
     render({ '中天:r1': PRICE_LIST_INPUT })
 
     expect(sourceTags()).toEqual(['价格表'])
-    const title = spotInput()?.getAttribute('title') ?? ''
+    const title = spotValue()?.getAttribute('title') ?? ''
     expect(title).toContain('价格表')
     expect(title).toContain('杭州物资')
     expect(title).toContain('中天')
     expect(title).toContain('2026-09-16 09:30')
-    // 手填标记与恢复入口不出现
-    expect(sourceTags()).not.toContain('手填')
-    expect(container.querySelector('.price-compare-spot-restore')).toBeNull()
   })
 
   it('价格表来源: 供应商列自动带出该供应商(只读, 不渲染人工下拉)', () => {
@@ -174,86 +175,29 @@ describe('SheetPanel 现货价来源与手填覆盖', () => {
     expect(container.querySelector('.price-compare-supplier')).toBeNull()
   })
 
-  it('手填覆盖: 文字标记「手填」+ 恢复按钮, 点击后请求恢复为价格表价', async () => {
-    render({
-      '中天:r1': {
-        ...PRICE_LIST_INPUT,
-        spot: 3450,
-        spotSource: 'MANUAL',
-        supplierName: '沙钢贸易',
-      },
-    })
-
-    expect(sourceTags()).toContain('手填')
-    const restore = container.querySelector<HTMLElement>(
-      '.price-compare-spot-restore',
-    )
-    const label = restore?.getAttribute('aria-label') ?? ''
-    expect(label).toContain('恢复')
-    expect(label).toContain('价格表价')
-
-    await act(async () => {
-      restore?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    expect(clearSpotOverride).toHaveBeenCalledWith('s1', '中天', 'r1')
-  })
-
-  it('无价: 占位符「—」且原因对读屏可读(报价时刻无生效版本 / 无此规格 / 不报价)', () => {
+  it('无价: 占位「—」且原因对读屏可读(该品牌无价格表 / 无此条目 / 不报价)', () => {
     const reasons = [
-      ['NO_LIST_AT_TIME', '报价时刻无生效价格表版本'],
-      ['NO_ITEM', '该价格表无此规格'],
+      ['NO_LIST', '该品牌暂无供应商价格表'],
+      ['NO_ITEM', '该价格表无此条目'],
       ['NO_PRICE', '该条目不报价'],
     ] as const
     for (const [reason, text] of reasons) {
       render({
         '中天:r1': { spotSource: 'NONE', spotReason: reason },
       })
-      expect(spotInput()?.getAttribute('placeholder')).toBe('—')
-      expect(spotInput()?.getAttribute('title')).toContain(text)
+      expect(spotValue()?.textContent).toContain('—')
+      expect(spotValue()?.getAttribute('title')).toContain(text)
+      expect(spotSrText()).toContain(text)
+      expect(spotValue()?.getAttribute('data-spot-source')).toBe('NONE')
       expect(sourceTags()).toEqual([])
     }
   })
 
-  it('手填现货价即置 MANUAL 并走单格覆盖写入', async () => {
-    const observed = render({ '中天:r1': PRICE_LIST_INPUT })
-    const input = spotInput()
-    expect(input).not.toBeNull()
+  it('无来源信息(未读到价格格)时同样只展示占位, 不产生可编辑入口', () => {
+    render({})
 
-    await act(async () => {
-      const setValue = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value',
-      )?.set?.bind(input)
-      setValue?.('3450')
-      input?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(saveSpotOverride).toHaveBeenCalledWith('s1', '中天', 'r1', 3450)
-    expect(observed.sheet.inputs['中天:r1']).toMatchObject({
-      spot: 3450,
-      spotSource: 'MANUAL',
-    })
-  })
-
-  it('清空手填价且存在推导值时等价于恢复为价格表价', async () => {
-    render({
-      '中天:r1': { ...PRICE_LIST_INPUT, spot: 3450, spotSource: 'MANUAL' },
-    })
-    const input = spotInput()
-
-    await act(async () => {
-      const setValue = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value',
-      )?.set?.bind(input)
-      setValue?.('')
-      input?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(clearSpotOverride).toHaveBeenCalledWith('s1', '中天', 'r1')
-    expect(saveSpotOverride).not.toHaveBeenCalled()
+    expect(spotValue()?.textContent).toContain('—')
+    expect(spotSrText()).toContain('中天 现货')
+    expect(container.querySelector('input[data-spot]')).toBeNull()
   })
 })

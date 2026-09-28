@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
-import { moveItem, reconcileSpotInputs } from './core'
+import { moveItem } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
 import { PriceCompareSaveStatus } from './PriceCompareSaveStatus'
 import {
@@ -60,8 +60,6 @@ export function PriceCompareView() {
     setBrands,
     setActiveId,
     patchSheet,
-    saveSpotOverride,
-    clearSpotOverride,
     addSheet,
     assignProjectToUnassigned,
     removeSheet,
@@ -194,19 +192,6 @@ export function PriceCompareView() {
     mergeMatches,
   ])
 
-  // 对账式现货联动：同商品同品牌已有现货价时自动套用到缺省行，避免重复输入。
-  useEffect(() => {
-    if (!active || !rows.length || !brands.length) return
-    const next = reconcileSpotInputs(
-      rows,
-      active.inputs,
-      brands.map((brand) => brand.name),
-    )
-    if (next !== active.inputs) {
-      patchSheet(active.id, { inputs: next })
-    }
-  }, [active, rows, brands, patchSheet])
-
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =
     projectGroups.find((group) => group.projectId === active?.projectId) ??
@@ -302,8 +287,6 @@ export function PriceCompareView() {
         rows={rows}
         lengthPremium={lengthPremium}
         patchSheet={patchSheet}
-        saveSpotOverride={saveSpotOverride}
-        clearSpotOverride={clearSpotOverride}
         setRows={setRows}
         onReorderBrands={(from, to) =>
           setBrands((current) => moveItem(current, from, to))
@@ -348,8 +331,6 @@ function PriceCompareSheetArea({
   rows,
   lengthPremium,
   patchSheet,
-  saveSpotOverride,
-  clearSpotOverride,
   setRows,
   onReorderBrands,
   refPeriods,
@@ -374,12 +355,6 @@ function PriceCompareSheetArea({
   rows: React.ComponentProps<typeof SheetPanel>['rows']
   lengthPremium: number
   patchSheet: React.ComponentProps<typeof SheetPanel>['patchSheet']
-  saveSpotOverride: React.ComponentProps<
-    typeof SheetPanel
-  >['onSaveSpotOverride']
-  clearSpotOverride: React.ComponentProps<
-    typeof SheetPanel
-  >['onClearSpotOverride']
   setRows: React.ComponentProps<typeof SheetPanel>['setRows']
   onReorderBrands: React.ComponentProps<typeof SheetPanel>['onReorderBrands']
   refPeriods: string[]
@@ -422,8 +397,6 @@ function PriceCompareSheetArea({
         density="small"
         lengthPremium={lengthPremium}
         patchSheet={patchSheet}
-        onSaveSpotOverride={saveSpotOverride}
-        onClearSpotOverride={clearSpotOverride}
         setRows={setRows}
         onReorderBrands={onReorderBrands}
         periods={refPeriods}

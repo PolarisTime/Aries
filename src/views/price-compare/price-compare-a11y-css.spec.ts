@@ -68,15 +68,14 @@ describe('比价页样式无障碍契约', () => {
     expect(touchTargetsCss).toMatch(/height:\s*max\(100%,\s*24px\)/)
   })
 
-  it('现货价来源标记用文字(不靠颜色)且「恢复为价格表价」命中区不小于 24×24', () => {
-    // 来源标记是文字节点(价格表/手填), 样式只做弱化, 不承载语义
+  it('现货价来源标记用文字(不靠颜色), 且已无「恢复为价格表价」按钮样式', () => {
+    // 来源标记是文字节点(价格表), 样式只做弱化, 不承载语义
     const marker = blockOf(pageCss, '.price-compare-spot-source {')
     expect(marker).toMatch(/font-size:\s*11px/)
     expect(marker).toMatch(/color:\s*var\(--text-secondary\)/)
 
-    const restore = blockOf(pageCss, '.price-compare-spot-restore.ant-btn {')
-    expect(restore).toMatch(/min-width:\s*24px/)
-    expect(restore).toMatch(/min-height:\s*24px/)
+    // 手填覆盖已删除: 恢复按钮的样式规则必须一并移除, 避免留下无主样式
+    expect(pageCss).not.toContain('.price-compare-spot-restore')
   })
 
   it('行选择框可点区域不小于 24×24', () => {
