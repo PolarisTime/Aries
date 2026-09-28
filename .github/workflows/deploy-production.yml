@@ -100,6 +100,7 @@ jobs:
           cp -a release-input/frontend/. release/frontend/
           cp scripts/deploy/install-frontend-release.sh release/deploy/
           cp scripts/deploy/install-steelx-nginx-config.sh release/deploy/
+          cp scripts/deploy/install-steelx-mirror-nginx-config.sh release/deploy/
           jq -n \
             --arg releaseId "$release_id" \
             --arg ariesRef "${{ inputs.aries_ref || github.ref_name }}" \
@@ -244,6 +245,7 @@ jobs:
           tar -xzf frontend-release/aries-frontend-release.tar.gz -C frontend-release/extracted
           chmod 0755 frontend-release/extracted/deploy/install-frontend-release.sh
           chmod 0755 frontend-release/extracted/deploy/install-steelx-nginx-config.sh
+          chmod 0755 frontend-release/extracted/deploy/install-steelx-mirror-nginx-config.sh
 
       - name: Install frontend release
         run: |
@@ -267,6 +269,23 @@ jobs:
             --frontend-port "$PROD_NGINX_FRONTEND_PORT" \
             --http-redirect-port "$PROD_NGINX_HTTP_REDIRECT_PORT" \
             --server-name "$PROD_NGINX_SERVER_NAME" \
+            --ssl-certificate "$PROD_NGINX_SSL_CERTIFICATE" \
+            --ssl-certificate-key "$PROD_NGINX_SSL_CERTIFICATE_KEY" \
+            --nginx-worker-user "$PROD_NGINX_WORKER_USER" \
+            --nginx-worker-group "$PROD_NGINX_WORKER_GROUP"
+
+      - name: Install SteelX mirror Nginx config (7777)
+        if: ${{ vars.PROD_INSTALL_NGINX_CONFIG == 'true' }}
+        env:
+          STEELX_SUDO_PASSWORD: ${{ secrets.STEELX_SUDO_PASSWORD }}
+        run: |
+          set -euo pipefail
+          bash frontend-release/extracted/deploy/install-steelx-mirror-nginx-config.sh \
+            --release-root "$PROD_RELEASE_ROOT" \
+            --frontend-root "$PROD_FRONTEND_ROOT" \
+            --backend-port "$PROD_BACKEND_PORT" \
+            --mirror-port "${{ vars.PROD_NGINX_MIRROR_PORT || '7777' }}" \
+            --mirror-server-names "${{ vars.PROD_NGINX_MIRROR_SERVER_NAMES || 'erp-mirror.in1ove.com steelx-mirror.in1ove.com in1ove.com' }}" \
             --ssl-certificate "$PROD_NGINX_SSL_CERTIFICATE" \
             --ssl-certificate-key "$PROD_NGINX_SSL_CERTIFICATE_KEY" \
             --nginx-worker-user "$PROD_NGINX_WORKER_USER" \
