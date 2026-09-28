@@ -6,6 +6,7 @@ import {
 import {
   canAuditFromStatus,
   resolveReverseAuditTargetForStatus,
+  resolveStatusChangeActionKind,
   resolveStatusChangeActionLabelKey,
   type StatusChangeActionKind,
 } from '@/module-system/adapter/module-adapter-actions'
@@ -45,65 +46,51 @@ export function useBusinessGridBatchActions({
 }: Props) {
   const { t } = useTranslation()
 
-  const handleSelectedAuditRecords = () => {
-    const actionLabel = t(
-      resolveStatusChangeActionLabelKey(listAuditActionKind || 'audit'),
-    )
-    if (!selectedRowKeys.length) {
-      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
-      return
-    }
-    if (!listAuditTarget) {
-      message.warning(
-        t('hooks.batchActions.noBatchStatus', { action: actionLabel }),
-      )
-      return
-    }
-
-    const selected = selectedRows
-    const eligible = selected.filter(
-      (record) =>
-        !isDeletedModuleRecord(record) &&
-        canAuditFromStatus(
-          record.status,
-          listAuditTarget,
-          listReverseAuditTarget,
-          listAuditSourceStatuses,
-        ),
-    )
-    const skippedCount = selected.length - eligible.length
-
-    if (!eligible.length) {
-      message.warning(
-        t('hooks.batchActions.actionNotSupported', { action: actionLabel }),
-      )
-      return
-    }
-
+  /**
+   * 审核/反审核共用的执行体：调用方负责逐条校验（删除态 + 状态机）并给出目标状态，
+   * 这里只做「弹确认框 → 并发执行 → 汇总提示」。
+   *
+   * <p>作用域完全由 `targets` 决定：批量入口传选中集，行右键入口只传该行，
+   * 所以行恰好也在多选集合里时不会连带影响其它行。</p>
+   */
+  const confirmAndApplyStatusChanges = (
+    actionLabel: string,
+    targets: Array<{ record: ModuleRecord; targetStatus: string }>,
+    skippedCount: number,
+  ) => {
+    /*
+     * 单条时把目标单号写进标题：多选集合里右键某一行时，用户必须能确认动的是哪一单。
+     * 目标清单本身没有通用文案 key（hooks.batchActions.targetNumbers 是删除专用措辞），
+     * 因此不新增语言包条目，改用「动作 + 单号」的标题表达目标。
+     */
+    const singleTargetNo =
+      targets.length === 1 ? describeTargetRecordNo(targets[0].record) : ''
     modal.confirm({
-      title: t('hooks.batchActions.batchAction', { action: actionLabel }),
+      title: singleTargetNo
+        ? `${actionLabel} ${singleTargetNo}`
+        : t('hooks.batchActions.batchAction', { action: actionLabel }),
       content: t('hooks.batchActions.batchActionConfirm', {
         action: actionLabel,
-        count: eligible.length,
+        count: targets.length,
         skippedPart:
           skippedCount > 0
             ? t('hooks.batchActions.skippedPart', { count: skippedCount })
             : '',
       }),
       onOk: async () => {
-        const auditResults = await Promise.allSettled(
-          eligible.map((record) =>
+        const statusResults = await Promise.allSettled(
+          targets.map(({ record, targetStatus }) =>
             updateBusinessModuleStatus(
               moduleKey,
               String(record.id),
-              listAuditTarget.value,
+              targetStatus,
             ),
           ),
         )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const result of auditResults) {
+        for (const result of statusResults) {
           if (result.status === 'fulfilled') {
             successCount += 1
           } else {
@@ -151,6 +138,58 @@ export function useBusinessGridBatchActions({
         await refreshAndClearSelection()
       },
     })
+  }
+
+  /**
+   * 对给定记录执行审核（批量入口传选中集，行级入口传 `[record]`）。
+   * 校验口径与批量完全一致：删除态与状态机不通过即跳过，并在确认框里说明跳过数。
+   */
+  const runAudit = (records: ModuleRecord[]) => {
+    const actionLabel = t(
+      resolveStatusChangeActionLabelKey(listAuditActionKind || 'audit'),
+    )
+    if (!listAuditTarget) {
+      message.warning(
+        t('hooks.batchActions.noBatchStatus', { action: actionLabel }),
+      )
+      return
+    }
+
+    const eligible = records.filter(
+      (record) =>
+        !isDeletedModuleRecord(record) &&
+        canAuditFromStatus(
+          record.status,
+          listAuditTarget,
+          listReverseAuditTarget,
+          listAuditSourceStatuses,
+        ),
+    )
+    const skippedCount = records.length - eligible.length
+
+    if (!eligible.length) {
+      message.warning(
+        t('hooks.batchActions.actionNotSupported', { action: actionLabel }),
+      )
+      return
+    }
+
+    confirmAndApplyStatusChanges(
+      actionLabel,
+      eligible.map((record) => ({
+        record,
+        targetStatus: listAuditTarget.value,
+      })),
+      skippedCount,
+    )
+  }
+
+  const handleSelectedAuditRecords = () => {
+    if (!selectedRowKeys.length) {
+      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
+      return
+    }
+    runAudit(selectedRows)
   }
 
   const handleSelectedDeleteRecords = () => {
@@ -237,25 +276,24 @@ export function useBusinessGridBatchActions({
     })
   }
 
-  const handleSelectedReverseAuditRecords = () => {
-    const actionLabel = t(
+  /**
+   * 对给定记录执行反审核（批量入口传选中集，行级入口传 `[record]`）。
+   * 目标状态逐行解析：同一批里目标不一致时不猜文案，回落到批量口径。
+   */
+  const runReverseAudit = (records: ModuleRecord[]) => {
+    const fallbackActionLabel = t(
       resolveStatusChangeActionLabelKey(
         listReverseAuditActionKind || 'reverseAudit',
       ),
     )
-    if (!selectedRowKeys.length) {
-      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
-      return
-    }
     if (!listReverseAuditTarget) {
       message.warning(
-        t('hooks.batchActions.noBatchStatus', { action: actionLabel }),
+        t('hooks.batchActions.noBatchStatus', { action: fallbackActionLabel }),
       )
       return
     }
 
-    const selected = selectedRows
-    const eligible = selected.flatMap((record) => {
+    const eligible = records.flatMap((record) => {
       if (isDeletedModuleRecord(record)) {
         return []
       }
@@ -267,93 +305,60 @@ export function useBusinessGridBatchActions({
       )
       return targetStatus ? [{ record, targetStatus }] : []
     })
-    const skippedCount = selected.length - eligible.length
+    const skippedCount = records.length - eligible.length
 
     if (!eligible.length) {
       message.warning(
-        t('hooks.batchActions.actionNotSupported', { action: actionLabel }),
+        t('hooks.batchActions.actionNotSupported', {
+          action: fallbackActionLabel,
+        }),
       )
       return
     }
 
-    modal.confirm({
-      title: t('hooks.batchActions.batchAction', { action: actionLabel }),
-      content: t('hooks.batchActions.batchActionConfirm', {
-        action: actionLabel,
-        count: eligible.length,
-        skippedPart:
-          skippedCount > 0
-            ? t('hooks.batchActions.skippedPart', { count: skippedCount })
-            : '',
-      }),
-      onOk: async () => {
-        const reverseAuditResults = await Promise.allSettled(
-          eligible.map(({ record, targetStatus }) =>
-            updateBusinessModuleStatus(
-              moduleKey,
-              String(record.id),
-              targetStatus,
-            ),
-          ),
-        )
-        let successCount = 0
-        let failedCount = 0
-        let firstError = ''
-        for (const result of reverseAuditResults) {
-          if (result.status === 'fulfilled') {
-            successCount += 1
-          } else {
-            failedCount += 1
-            if (!firstError) {
-              firstError =
-                result.reason instanceof Error
-                  ? result.reason.message
-                  : t('hooks.batchActions.actionFailed', {
-                      action: actionLabel,
-                    })
-            }
-          }
-        }
+    /*
+     * 目标一致时按目标反推文案：销售订单「完成销售」回到「交付核定」其实叫「重新核定」，
+     * 用固定的批量 kind 会把标题写成「反审核」，与实际动作不符。
+     */
+    const targetStatuses = eligible.map((item) => item.targetStatus)
+    const actionKind = targetStatuses.every(
+      (status) => status === targetStatuses[0],
+    )
+      ? resolveStatusChangeActionKind(targetStatuses[0], true)
+      : listReverseAuditActionKind || 'reverseAudit'
 
-        if (failedCount > 0) {
-          message.warning(
-            t('hooks.batchActions.actionCompletedWithFailures', {
-              action: actionLabel,
-              successCount,
-              failedCount,
-              skippedPart:
-                skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', {
-                      count: skippedCount,
-                    })
-                  : '',
-              errorPart: firstError ? `；${firstError}` : '',
-            }),
-          )
-        } else {
-          message.success(
-            t('hooks.batchActions.actionSuccess', {
-              action: actionLabel,
-              successCount,
-              skippedPart:
-                skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', {
-                      count: skippedCount,
-                    })
-                  : '',
-            }),
-          )
-        }
-        await refreshAndClearSelection()
-      },
-    })
+    confirmAndApplyStatusChanges(
+      t(resolveStatusChangeActionLabelKey(actionKind)),
+      eligible,
+      skippedCount,
+    )
+  }
+
+  const handleSelectedReverseAuditRecords = () => {
+    if (!selectedRowKeys.length) {
+      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
+      return
+    }
+    runReverseAudit(selectedRows)
   }
 
   return {
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
+    runAudit,
+    runReverseAudit,
   }
+}
+
+/** 单据号回退顺序: no -> orderNo -> code -> id。 */
+function describeTargetRecordNo(record: ModuleRecord) {
+  return (
+    asString(record.no) ||
+    asString(record.orderNo) ||
+    asString(record.code) ||
+    String(record.id)
+  )
 }
 
 /** 确认框里列出目标单据号(最多 5 条), 让用户在删除前核对批量目标。 */
@@ -361,15 +366,7 @@ export function describeTargetRecords(
   records: ModuleRecord[],
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
-  const numbers = records
-    .map(
-      (record) =>
-        asString(record.no) ||
-        asString(record.orderNo) ||
-        asString(record.code) ||
-        String(record.id),
-    )
-    .filter(Boolean)
+  const numbers = records.map(describeTargetRecordNo).filter(Boolean)
   if (!numbers.length) return ''
   const head = numbers.slice(0, 5).join('、')
   return numbers.length > 5

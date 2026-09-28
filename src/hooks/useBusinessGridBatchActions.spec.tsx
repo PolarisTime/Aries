@@ -13,14 +13,19 @@ const antdAppMock = vi.hoisted(() => ({
   modal: { confirm: vi.fn() },
 }))
 
+const crudMock = vi.hoisted(() => ({
+  deleteBusinessModule: vi.fn(),
+  updateBusinessModuleStatus: vi.fn(),
+}))
+
 vi.mock('@/utils/antd-app', () => ({
   message: antdAppMock.message,
   modal: antdAppMock.modal,
 }))
 
 vi.mock('@/api/business/business-crud', () => ({
-  deleteBusinessModule: vi.fn(),
-  updateBusinessModuleStatus: vi.fn(),
+  deleteBusinessModule: crudMock.deleteBusinessModule,
+  updateBusinessModuleStatus: crudMock.updateBusinessModuleStatus,
 }))
 
 const MODULE_KEY = 'sales-order'
@@ -157,5 +162,148 @@ describe('useBusinessGridBatchActions 批量删除确认文案', () => {
 
     expect(antdAppMock.modal.confirm).not.toHaveBeenCalled()
     expect(antdAppMock.message.warning).toHaveBeenCalledWith('请先选择记录')
+  })
+})
+
+/**
+ * 行级入口（runAudit / runReverseAudit 传 [record]）的作用域回归：
+ * 该行同时属于多选集合时，也只能改这一条。
+ */
+describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
+  const AUDIT_TARGET = { key: 'status', value: '已审核' }
+  const REVERSE_TARGET = { key: 'status', value: '草稿' }
+  const updateStatusMock = crudMock.updateBusinessModuleStatus
+
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh-CN')
+    antdAppMock.message.warning.mockClear()
+    antdAppMock.message.success.mockClear()
+    antdAppMock.modal.confirm.mockClear()
+    updateStatusMock.mockReset()
+    updateStatusMock.mockResolvedValue(undefined)
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  const render = (selectedRows: ModuleRecord[]) => {
+    let captured: BatchActions | null = null
+    function Harness() {
+      captured = useBusinessGridBatchActions({
+        moduleKey: MODULE_KEY,
+        selectedRowKeys: selectedRows.map((item) => String(item.id)),
+        selectedRows,
+        listAuditTarget: AUDIT_TARGET,
+        listReverseAuditTarget: REVERSE_TARGET,
+        listAuditSourceStatuses: undefined,
+        listAuditActionKind: 'audit',
+        listReverseAuditActionKind: 'reverseAudit',
+        refreshAndClearSelection: vi.fn(),
+      })
+      return null
+    }
+    act(() => {
+      root.render(createElement(Harness))
+    })
+    return captured as unknown as BatchActions
+  }
+
+  const lastConfirm = () =>
+    antdAppMock.modal.confirm.mock.calls.at(-1)?.[0] as {
+      title?: unknown
+      content?: unknown
+      onOk?: () => Promise<void>
+    }
+
+  it('多选集合包含该行时, 行级审核只提交该行', async () => {
+    const rows = [
+      record({ id: '1', no: 'SO-1', status: '草稿' }),
+      record({ id: '2', no: 'SO-2', status: '草稿' }),
+      record({ id: '3', no: 'SO-3', status: '草稿' }),
+    ]
+    const actions = render(rows)
+
+    act(() => {
+      actions.runAudit([rows[1]])
+    })
+
+    expect(antdAppMock.modal.confirm).toHaveBeenCalledTimes(1)
+    expect(lastConfirm().title).toBe('审核 SO-2')
+    expect(String(lastConfirm().content)).toBe(
+      '确定对选中的 1 条记录执行审核吗？',
+    )
+
+    await act(async () => {
+      await lastConfirm().onOk?.()
+    })
+    expect(updateStatusMock).toHaveBeenCalledTimes(1)
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '已审核')
+  })
+
+  it('行级反审核逐行解析目标状态, 且只提交该行', async () => {
+    const rows = [
+      record({ id: '1', no: 'SO-1', status: '已审核' }),
+      record({ id: '2', no: 'SO-2', status: '已审核' }),
+    ]
+    const actions = render(rows)
+
+    act(() => {
+      actions.runReverseAudit([rows[1]])
+    })
+
+    expect(lastConfirm().title).toBe('反审核 SO-2')
+    await act(async () => {
+      await lastConfirm().onOk?.()
+    })
+    expect(updateStatusMock).toHaveBeenCalledTimes(1)
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '草稿')
+  })
+
+  it('行级审核遇到不允许的状态: 只提示, 不弹确认框', () => {
+    const actions = render([record({ id: '1', no: 'SO-1', status: '已审核' })])
+
+    act(() => {
+      actions.runAudit([record({ id: '1', no: 'SO-1', status: '已审核' })])
+    })
+
+    expect(antdAppMock.modal.confirm).not.toHaveBeenCalled()
+    expect(antdAppMock.message.warning).toHaveBeenCalledWith(
+      '勾选单据当前状态不支持审核',
+    )
+    expect(updateStatusMock).not.toHaveBeenCalled()
+  })
+
+  it('批量入口仍按选中集提交全部可审核记录', async () => {
+    const rows = [
+      record({ id: '1', no: 'SO-1', status: '草稿' }),
+      record({ id: '2', no: 'SO-2', status: '草稿' }),
+      record({ id: '3', no: 'SO-3', status: '已审核' }),
+    ]
+    const actions = render(rows)
+
+    act(() => {
+      actions.handleSelectedAuditRecords()
+    })
+
+    expect(String(lastConfirm().content)).toBe(
+      '确定对选中的 2 条记录执行审核吗？另有 1 条因状态不支持将跳过。',
+    )
+    await act(async () => {
+      await lastConfirm().onOk?.()
+    })
+    expect(updateStatusMock).toHaveBeenCalledTimes(2)
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '1', '已审核')
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '已审核')
   })
 })

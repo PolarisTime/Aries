@@ -39,6 +39,9 @@ interface OpenEditorOptions {
   initialValues?: Record<string, unknown>
 }
 
+/** 只在行右键菜单暴露的动作：工具栏已有等价批量入口，透传会造成同名重复按钮。 */
+const ROW_ONLY_ACTION_KEYS = new Set(['audit', 'reverse-audit'])
+
 interface Props {
   moduleKey: ModuleKey
   config: ModulePageConfig | undefined
@@ -146,24 +149,6 @@ export function useBusinessGridActions({
     await refreshModuleQueries()
   }
 
-  const { buildActions } = useModuleRecordActions({
-    moduleKey,
-    isReadOnly: Boolean(config?.readOnly),
-    primaryNoKey: config?.primaryNoKey,
-    attachmentCounts,
-    onAttach: openAttachment,
-    detailActionLabel: config?.detailActionLabel,
-    onDetail: recordDetailAction,
-    onEdit: (record) => {
-      void openEditor(record)
-    },
-    canEditRecord: (record) =>
-      resolveModuleRecordCapabilities(record, moduleKey).canEdit,
-    onStatusChange: (record, status) => {
-      void handleStatusChange(record, status)
-    },
-  })
-
   const canUseSelectedBulkAuditAction =
     canUseBulkAuditAction &&
     selectedRecords.some(
@@ -220,6 +205,8 @@ export function useBusinessGridActions({
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
+    runAudit,
+    runReverseAudit,
   } = useBusinessGridBatchActions({
     moduleKey,
     selectedRowKeys,
@@ -230,6 +217,35 @@ export function useBusinessGridActions({
     listAuditActionKind,
     listReverseAuditActionKind: effectiveListReverseAuditActionKind,
     refreshAndClearSelection,
+  })
+
+  /*
+   * 行级动作（含审核/反审核）必须能复用批量核心，所以放到批处理 hook 之后构建。
+   * 行级审核只传 [record]：右键某行时即使该行在多选集合里，也只作用于这一行。
+   */
+  const { buildActions } = useModuleRecordActions({
+    moduleKey,
+    isReadOnly: Boolean(config?.readOnly),
+    primaryNoKey: config?.primaryNoKey,
+    attachmentCounts,
+    onAttach: openAttachment,
+    detailActionLabel: config?.detailActionLabel,
+    onDetail: recordDetailAction,
+    onEdit: (record) => {
+      void openEditor(record)
+    },
+    canEditRecord: (record) =>
+      resolveModuleRecordCapabilities(record, moduleKey).canEdit,
+    onStatusChange: (record, status) => {
+      void handleStatusChange(record, status)
+    },
+    canAuditRecords: canAuditRecord,
+    listAuditTarget,
+    listReverseAuditTarget,
+    listAuditSourceStatuses,
+    listAuditActionKind,
+    onAuditRecord: (record) => runAudit([record]),
+    onReverseAuditRecord: (record) => runReverseAudit([record]),
   })
 
   const { openFreightSummary } = useBusinessGridFreightActions({
@@ -285,16 +301,22 @@ export function useBusinessGridActions({
     },
   })
 
+  /*
+   * 单选时工具栏会复用行级动作，但审核/反审核已由批量入口（bulk_audit /
+   * bulk_reverse_audit）覆盖；直接透传会出现同名重复按钮，因此只在行右键菜单暴露。
+   */
   const selectedRecordActions =
     selectedRecords.length === 1 ? buildActions(selectedRecords[0]) : []
   const selectedRecordToolbarActions: ModuleActionDefinition[] =
-    selectedRecordActions.map((action) => ({
-      key: action.key,
-      label: action.label,
-      type: 'default',
-      danger: action.danger,
-      disabled: action.disabled,
-    }))
+    selectedRecordActions
+      .filter((action) => !ROW_ONLY_ACTION_KEYS.has(action.key))
+      .map((action) => ({
+        key: action.key,
+        label: action.label,
+        type: 'default',
+        danger: action.danger,
+        disabled: action.disabled,
+      }))
   const visibleToolbarActions = [
     ...baseVisibleToolbarActions,
     ...selectedRecordToolbarActions,

@@ -3,6 +3,7 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
 import type { ModuleRecord } from '@/types/module-page'
 
 const { messageSuccessMock, messageWarningMock, modalConfirmMock } = vi.hoisted(
@@ -156,6 +157,165 @@ describe('useModuleRecordActions 复制单号', () => {
 
     expect(messageWarningMock).toHaveBeenCalledWith(
       'hooks.recordActions.copyDocNoFailed',
+    )
+  })
+})
+
+/** 行级审核/反审核：与批量入口同口径，但按「菜单所属的这一行」判定与执行。 */
+describe('useModuleRecordActions 行级审核/反审核', () => {
+  let root: Root
+  let container: HTMLDivElement
+  let latest: ReturnType<typeof useModuleRecordActions>
+  let onAuditRecord: (record: ModuleRecord) => void
+  let onReverseAuditRecord: (record: ModuleRecord) => void
+
+  const AUDIT_TARGET = { key: 'status', value: '已审核' }
+  const REVERSE_TARGET = { key: 'status', value: '草稿' }
+
+  type AuditPropOverrides = Partial<{
+    moduleKey: string
+    isReadOnly: boolean
+    canAuditRecords: boolean
+    listAuditTarget: { key: string; value: string } | null
+    listReverseAuditTarget: { key: string; value: string } | null
+    listAuditSourceStatuses: string[]
+    listAuditActionKind: StatusChangeActionKind | null
+    onAuditRecord: ((record: ModuleRecord) => void) | undefined
+    onReverseAuditRecord: ((record: ModuleRecord) => void) | undefined
+  }>
+
+  beforeEach(() => {
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    onAuditRecord = vi.fn()
+    onReverseAuditRecord = vi.fn()
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    vi.unstubAllGlobals()
+  })
+
+  const renderActions = (
+    record: ModuleRecord,
+    overrides: AuditPropOverrides = {},
+  ) => {
+    function Probe() {
+      latest = useModuleRecordActions({
+        moduleKey: 'purchase-order',
+        primaryNoKey: 'no',
+        onAttach: vi.fn(),
+        canAuditRecords: true,
+        listAuditTarget: AUDIT_TARGET,
+        listReverseAuditTarget: REVERSE_TARGET,
+        listAuditActionKind: 'audit',
+        onAuditRecord,
+        onReverseAuditRecord,
+        ...overrides,
+      })
+      return null
+    }
+    act(() => {
+      root.render(createElement(Probe))
+    })
+    return latest.buildActions(record)
+  }
+
+  it('状态允许审核: 出现「审核」项, 点击只把该行交给行级处理器', () => {
+    const record: ModuleRecord = { id: '7', no: 'PO-7', status: '草稿' }
+    const actions = renderActions(record)
+
+    const audit = actions.find((action) => action.key === 'audit')
+    expect(audit).toBeDefined()
+    expect(audit?.label).toBe('modules.statusActions.audit')
+    expect(audit?.disabled).toBeFalsy()
+
+    act(() => {
+      audit?.onClick()
+    })
+    expect(onAuditRecord).toHaveBeenCalledTimes(1)
+    expect(onAuditRecord).toHaveBeenCalledWith(record)
+    expect(onReverseAuditRecord).not.toHaveBeenCalled()
+  })
+
+  it('状态允许审核: 不出现「反审核」(两项互斥)', () => {
+    const actions = renderActions({ id: '7', status: '草稿' })
+    expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
+  })
+
+  it('状态允许反审核: 出现「反审核」项, 点击只把该行交给反审核处理器', () => {
+    const record: ModuleRecord = { id: '8', status: '已审核' }
+    const actions = renderActions(record)
+
+    expect(actions.some((action) => action.key === 'audit')).toBe(false)
+    const reverse = actions.find((action) => action.key === 'reverse-audit')
+    expect(reverse?.label).toBe('modules.statusActions.reverseAudit')
+
+    act(() => {
+      reverse?.onClick()
+    })
+    expect(onReverseAuditRecord).toHaveBeenCalledWith(record)
+    expect(onAuditRecord).not.toHaveBeenCalled()
+  })
+
+  it('终态记录既不出现「审核」也不出现「反审核」', () => {
+    const actions = renderActions({ id: '9', status: '完成采购' })
+    expect(actions.some((action) => action.key === 'audit')).toBe(false)
+    expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
+  })
+
+  it('已删除记录不出现审核/反审核', () => {
+    const actions = renderActions({
+      id: '10',
+      status: '草稿',
+      deletedFlag: true,
+    })
+    expect(actions.some((action) => action.key === 'audit')).toBe(false)
+    expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
+  })
+
+  it('只读模块不出现审核/反审核', () => {
+    const actions = renderActions(
+      { id: '11', status: '草稿' },
+      { isReadOnly: true },
+    )
+    expect(actions.some((action) => action.key === 'audit')).toBe(false)
+    expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
+  })
+
+  it('无审核权限时不出现审核/反审核', () => {
+    const actions = renderActions(
+      { id: '12', status: '草稿' },
+      { canAuditRecords: false },
+    )
+    expect(actions.some((action) => action.key === 'audit')).toBe(false)
+    expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
+  })
+
+  it('未注入行级处理器时不出现审核/反审核', () => {
+    const actions = renderActions(
+      { id: '13', status: '草稿' },
+      { onAuditRecord: undefined, onReverseAuditRecord: undefined },
+    )
+    expect(actions.some((action) => action.key === 'audit')).toBe(false)
+    expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
+  })
+
+  it('反审核文案跟随该行解析出的目标状态(完成销售 -> 重新核定)', () => {
+    const actions = renderActions(
+      { id: '14', status: '完成销售' },
+      { moduleKey: 'sales-order' },
+    )
+    const reverse = actions.find((action) => action.key === 'reverse-audit')
+    expect(reverse?.label).toBe(
+      'modules.statusActions.reopenDeliveryVerification',
     )
   })
 })

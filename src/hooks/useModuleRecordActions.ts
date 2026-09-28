@@ -1,5 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
+import {
+  canAuditFromStatus,
+  resolveReverseAuditTargetForStatus,
+  resolveStatusChangeActionKind,
+  resolveStatusChangeActionLabelKey,
+  type StatusChangeActionKind,
+} from '@/module-system/adapter/module-adapter-actions'
 import { getModuleDeliveryVerification } from '@/module-system/behavior/module-page-behaviors'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import { resolveRecordPrimaryNo } from '@/module-system/record/module-record-clipboard'
@@ -19,6 +26,19 @@ interface Props {
   canEditRecord?: (record: ModuleRecord) => boolean
   onStatusChange?: (record: ModuleRecord, status: string) => void
   detailActionLabel?: string
+  /** 审核能力：与批量入口同一口径（无权限 / 只读 / 未配置目标时不出现行级审核项）。 */
+  canAuditRecords?: boolean
+  listAuditTarget?: { value: string } | null
+  listReverseAuditTarget?: { value: string } | null
+  listAuditSourceStatuses?: string[]
+  listAuditActionKind?: StatusChangeActionKind | null
+  /**
+   * 行级审核：只对菜单所属的这一行执行（实现上是批量核心的 `runAudit([record])`），
+   * 即使该行同时属于多选集合也不会连带其它行。
+   */
+  onAuditRecord?: (record: ModuleRecord) => void
+  /** 行级反审核：目标状态逐行解析后同样只作用于该行。 */
+  onReverseAuditRecord?: (record: ModuleRecord) => void
 }
 
 export function useModuleRecordActions({
@@ -32,6 +52,13 @@ export function useModuleRecordActions({
   canEditRecord,
   onStatusChange,
   detailActionLabel,
+  canAuditRecords = false,
+  listAuditTarget,
+  listReverseAuditTarget,
+  listAuditSourceStatuses,
+  listAuditActionKind,
+  onAuditRecord,
+  onReverseAuditRecord,
 }: Props) {
   const { t } = useTranslation()
   const copyDocNo = useCopyDocNo()
@@ -80,6 +107,57 @@ export function useModuleRecordActions({
         label: t('hooks.recordActions.edit'),
         icon: resolveModuleActionIcon('编辑'),
         onClick: () => onEdit(record),
+      })
+    }
+    /*
+     * 行级审核/反审核：与批量入口共用同一套状态机判定，但按「菜单所属的这一行」判定与执行。
+     * 允许审核与允许反审核互斥(见 canAuditFromStatus / resolveReverseAuditTargetForStatus)，
+     * 因此同一行不会同时出现两项。
+     */
+    const auditActionLabel = t(
+      resolveStatusChangeActionLabelKey(listAuditActionKind || 'audit'),
+    )
+    if (
+      canAuditRecords &&
+      onAuditRecord &&
+      !isDeletedModuleRecord(record) &&
+      canAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+        listAuditSourceStatuses,
+      )
+    ) {
+      const handleAudit = onAuditRecord
+      items.push({
+        key: 'audit',
+        label: auditActionLabel,
+        icon: resolveModuleActionIcon(auditActionLabel),
+        onClick: () => handleAudit(record),
+      })
+    }
+    const reverseAuditTarget =
+      canAuditRecords && onReverseAuditRecord && !isDeletedModuleRecord(record)
+        ? resolveReverseAuditTargetForStatus(
+            moduleKey,
+            record.status,
+            listAuditTarget,
+            listReverseAuditTarget,
+          )
+        : null
+    if (reverseAuditTarget && onReverseAuditRecord) {
+      const handleReverseAudit = onReverseAuditRecord
+      // 文案跟随该行解析出的目标状态：回到「交付核定」是「重新核定」而不是「反审核」
+      const reverseAuditLabel = t(
+        resolveStatusChangeActionLabelKey(
+          resolveStatusChangeActionKind(reverseAuditTarget, true),
+        ),
+      )
+      items.push({
+        key: 'reverse-audit',
+        label: reverseAuditLabel,
+        icon: resolveModuleActionIcon(reverseAuditLabel),
+        onClick: () => handleReverseAudit(record),
       })
     }
     const deliveryVerification = getModuleDeliveryVerification(moduleKey)

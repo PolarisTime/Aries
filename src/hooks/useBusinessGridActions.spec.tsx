@@ -20,6 +20,8 @@ const handleExportSelectedRecordsMock = vi.hoisted(() => vi.fn())
 const handleSelectedAuditRecordsMock = vi.hoisted(() => vi.fn())
 const handleSelectedDeleteRecordsMock = vi.hoisted(() => vi.fn())
 const handleSelectedReverseAuditRecordsMock = vi.hoisted(() => vi.fn())
+const runAuditMock = vi.hoisted(() => vi.fn())
+const runReverseAuditMock = vi.hoisted(() => vi.fn())
 const openFreightSummaryMock = vi.hoisted(() => vi.fn())
 const openCustomerSummaryMock = vi.hoisted(() => vi.fn())
 const openCustomerProjectsMock = vi.hoisted(() => vi.fn())
@@ -58,6 +60,8 @@ vi.mock('@/hooks/useBusinessGridBatchActions', () => ({
     handleSelectedAuditRecords: handleSelectedAuditRecordsMock,
     handleSelectedDeleteRecords: handleSelectedDeleteRecordsMock,
     handleSelectedReverseAuditRecords: handleSelectedReverseAuditRecordsMock,
+    runAudit: runAuditMock,
+    runReverseAudit: runReverseAuditMock,
   }),
 }))
 
@@ -162,6 +166,8 @@ describe('useBusinessGridActions', () => {
       handleSelectedAuditRecordsMock,
       handleSelectedDeleteRecordsMock,
       handleSelectedReverseAuditRecordsMock,
+      runAuditMock,
+      runReverseAuditMock,
     ]) {
       mock.mockReset()
     }
@@ -355,6 +361,67 @@ describe('useBusinessGridActions', () => {
       })
     })
     expect(handleSelectedDeleteRecordsMock).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * 行级审核/反审核的回归保护:
+   * 右键某一行执行审核时, 作用域必须只有这一行 —— 即使该行也在多选集合里。
+   */
+  it('采购订单: 行级「审核」只把菜单所属行交给 runAudit', () => {
+    moduleKey = 'purchase-order'
+    config = createConfig({ key: 'purchase-order', title: '采购订单' })
+    const target = { id: '2', status: '草稿' } as ModuleRecord
+    selectedRowKeys = ['1', '2', '3']
+    selectedRecords = [
+      { id: '1', status: '草稿' },
+      target,
+      { id: '3', status: '草稿' },
+    ]
+    renderOnce()
+
+    const audit = latest
+      .buildActions(target)
+      .find((action) => action.key === 'audit')
+    expect(audit?.label).toBe('modules.statusActions.audit')
+
+    act(() => {
+      audit?.onClick()
+    })
+    expect(runAuditMock).toHaveBeenCalledTimes(1)
+    expect(runAuditMock).toHaveBeenCalledWith([target])
+  })
+
+  it('采购订单: 行级「反审核」只把菜单所属行交给 runReverseAudit', () => {
+    moduleKey = 'purchase-order'
+    config = createConfig({ key: 'purchase-order', title: '采购订单' })
+    const target = { id: '2', status: '已审核' } as ModuleRecord
+    selectedRowKeys = ['1', '2']
+    selectedRecords = [{ id: '1', status: '已审核' }, target]
+    renderOnce()
+
+    const reverse = latest
+      .buildActions(target)
+      .find((action) => action.key === 'reverse-audit')
+    expect(reverse?.label).toBe('modules.statusActions.reverseAudit')
+
+    act(() => {
+      reverse?.onClick()
+    })
+    expect(runReverseAuditMock).toHaveBeenCalledTimes(1)
+    expect(runReverseAuditMock).toHaveBeenCalledWith([target])
+  })
+
+  it('行级审核/反审核只在右键菜单暴露, 不在工具栏造成同名重复按钮', () => {
+    moduleKey = 'purchase-order'
+    config = createConfig({ key: 'purchase-order', title: '采购订单' })
+    selectedRowKeys = ['1']
+    selectedRecords = [{ id: '1', status: '草稿' }]
+    renderOnce()
+
+    const keys = latest.visibleToolbarActions.map((action) => action.key)
+    expect(keys).toContain('bulk_audit')
+    expect(keys).not.toContain('audit')
+    expect(keys).not.toContain('reverse-audit')
   })
 
   it('routes sales-order delivery confirmation through modal confirm', async () => {
