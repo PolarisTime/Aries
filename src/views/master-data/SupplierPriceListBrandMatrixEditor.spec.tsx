@@ -31,10 +31,12 @@ vi.mock('@/api/master/supplier-price-lists', async (importOriginal) => {
   return { ...actual, ...apiMocks }
 })
 
-import { SupplierPriceListMatrixEditor } from './SupplierPriceListMatrixEditor'
+import { SupplierPriceListBrandMatrixEditor } from './SupplierPriceListBrandMatrixEditor'
 
-const SUPPLIER_ID = '1234567890123456789'
-const LIST_ID = '1900000000000000001'
+const BRAND = '安徽富鑫'
+const SUPPLIER_A = '1000000000000000001'
+const SUPPLIER_B = '1000000000000000002'
+const LIST_A = '1900000000000000001'
 
 const CATALOG: SupplierPriceSpecCatalogEntry[] = [
   {
@@ -54,20 +56,21 @@ const CATALOG: SupplierPriceSpecCatalogEntry[] = [
 ]
 
 const LIST: SupplierPriceListSummary = {
-  id: LIST_ID,
-  supplierId: SUPPLIER_ID,
+  id: LIST_A,
+  supplierId: SUPPLIER_A,
   supplierName: '杭州中金钢铁',
-  brandName: '安徽富鑫',
+  brandName: BRAND,
   updatedAt: '2026-09-28T14:35:00',
-  itemCount: 1,
+  itemCount: 2,
 }
 
 /**
- * 矩阵编辑器的界面契约（R2）:
- * 单元格留空 = 不报价(文字标记, 不靠颜色), 失焦提交 `price: null`(绝不写 0),
- * 单价列内 Tab 纵向连续录入, 左侧固定列可被读屏读出。
+ * 品牌视图矩阵编辑器的界面契约（R2 + 轴向变更）:
+ * 行是规格（只读固定列）、列是供应商；单元格留空 = 不报价（文字标记, 不靠颜色），
+ * 失焦提交 `price: null`（绝不写 0）；单价列内 Tab 纵向连续录入；
+ * 整表加减入口在该列的列头菜单里。
  */
-describe('SupplierPriceListMatrixEditor', () => {
+describe('SupplierPriceListBrandMatrixEditor', () => {
   let container: HTMLDivElement
   let root: Root
   let queryClient: QueryClient
@@ -132,8 +135,9 @@ describe('SupplierPriceListMatrixEditor', () => {
     apiMocks.updateSupplierPriceList.mockResolvedValue({ ...LIST, items: [] })
     apiMocks.createSupplierPriceList.mockResolvedValue({
       ...LIST,
-      id: '1900000000000000002',
-      brandName: '萍钢',
+      id: '1900000000000000009',
+      supplierId: SUPPLIER_B,
+      supplierName: '浙江铁都钢材',
       items: [
         {
           id: '1900000000000000031',
@@ -184,16 +188,16 @@ describe('SupplierPriceListMatrixEditor', () => {
         createElement(
           QueryClientProvider,
           { client: queryClient },
-          createElement(SupplierPriceListMatrixEditor, {
-            supplierId: SUPPLIER_ID,
-            supplierName: '杭州中金钢铁',
-            brands: ['安徽富鑫', '萍钢'],
+          createElement(SupplierPriceListBrandMatrixEditor, {
+            brandName: BRAND,
+            supplierColumns: [
+              { supplierId: SUPPLIER_B, supplierName: '浙江铁都钢材' },
+            ],
             onChanged: () => {},
           }),
         ),
       )
     })
-    // 等两个 query(catalog + lists/detail) 落定
     await act(async () => {
       await new Promise((resolve) => {
         setTimeout(resolve, 30)
@@ -202,18 +206,17 @@ describe('SupplierPriceListMatrixEditor', () => {
   }
 
   const priceInputs = () => [
-    ...container.querySelectorAll<HTMLInputElement>('input[data-brand]'),
+    ...container.querySelectorAll<HTMLInputElement>('input[data-supplier]'),
   ]
 
-  const inputFor = (brand: string, rowIndex: number) =>
+  const inputFor = (supplierId: string, rowIndex: number) =>
     container.querySelector<HTMLInputElement>(
-      `input[data-brand="${brand}"][data-price-row-index="${rowIndex}"]`,
+      `input[data-supplier="${supplierId}"][data-price-row-index="${rowIndex}"]`,
     )
 
-  it('左侧固定列为只读文本，右侧每个品牌一列且单价可访问名带品牌与行', async () => {
+  it('左侧规格为只读列，右侧每个供应商一列，单价可访问名带供应商与行', async () => {
     await render()
 
-    // 左侧固定只读列
     const cells = [...container.querySelectorAll('.ant-table-tbody td')].map(
       (node) => node.textContent ?? '',
     )
@@ -222,32 +225,31 @@ describe('SupplierPriceListMatrixEditor', () => {
     expect(cells.some((text) => text.includes('Φ12'))).toBe(true)
     expect(cells.some((text) => text.includes('9米'))).toBe(true)
 
-    // 品牌列 = 已有价格表的品牌 + 经营品牌
+    // 列 = 该品牌已有价格表的供应商 + 追加供应商
     expect(priceInputs()).toHaveLength(4)
-    const targets = priceInputs().map((input) =>
+    const labels = priceInputs().map((input) =>
       input.getAttribute('aria-label'),
     )
-    expect(targets).toContain('安徽富鑫 螺纹钢 抗震钢E Φ12 9米 单价')
-    expect(targets).toContain('萍钢 螺纹钢 抗震钢E Φ14 9米 单价')
+    expect(labels).toContain('杭州中金钢铁 螺纹钢 抗震钢E Φ12 9米 单价')
+    expect(labels).toContain('浙江铁都钢材 螺纹钢 抗震钢E Φ14 9米 单价')
   })
 
-  it('不报价用文字标记(不靠颜色)；价格表已有的价格被带出', async () => {
+  it('价格表已有价被带出，不报价与未填写用文字标记(不靠颜色)', async () => {
     await render()
-    expect(inputFor('安徽富鑫', 0)?.value).toBe('3220.00')
+    expect(inputFor(SUPPLIER_A, 0)?.value).toBe('3220.00')
     const markers = [
       ...container.querySelectorAll('.supplier-price-cell-marker'),
     ]
       .map((node) => node.textContent ?? '')
       .filter(Boolean)
-    // 有服务端条目但价为 null 的行是「不报价」，尚无价格表的品牌列是「未填写」
     expect(markers).toContain('不报价')
     expect(markers).toContain('未填写')
   })
 
   it('单价列内 Tab 纵向连续录入，Shift+Tab 反向', async () => {
     await render()
-    const first = inputFor('安徽富鑫', 0)
-    const second = inputFor('安徽富鑫', 1)
+    const first = inputFor(SUPPLIER_A, 0)
+    const second = inputFor(SUPPLIER_A, 1)
     expect(first).toBeTruthy()
     expect(second).toBeTruthy()
 
@@ -280,9 +282,8 @@ describe('SupplierPriceListMatrixEditor', () => {
 
   it('清空单价并失焦后按「不报价」提交 null，不写 0', async () => {
     await render()
-    const input = inputFor('安徽富鑫', 0)
+    const input = inputFor(SUPPLIER_A, 0)
     expect(input).toBeTruthy()
-    // React 受控输入: 用原生 setter + input 事件模拟用户清空
     // eslint-disable-next-line @typescript-eslint/unbound-method -- 原生 value setter 必须以输入元素为 receiver 调用
     const setter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
@@ -302,16 +303,16 @@ describe('SupplierPriceListMatrixEditor', () => {
     expect(apiMocks.updateSupplierPriceList).toHaveBeenCalledTimes(1)
     const [calledId, payload] = apiMocks.updateSupplierPriceList.mock
       .calls[0] as [string, { items: SupplierPriceListItemPayload[] }]
-    expect(calledId).toBe(LIST_ID)
+    expect(calledId).toBe(LIST_A)
     // 服务端已有 2 条条目必须原样带上（全量替换），且都不报价 = null 而不是 0
     expect(payload.items).toHaveLength(2)
     expect(payload.items.map((entry) => entry.price)).toEqual([null, null])
     expect(payload.items.every((entry) => entry.price !== 0)).toBe(true)
   })
 
-  it('尚无价格表的品牌列在首次填价时建表（POST），空白失焦不建表', async () => {
+  it('尚无价格表的供应商列首次填价时建表（POST），空白失焦不建表', async () => {
     await render()
-    const blank = inputFor('萍钢', 0)
+    const blank = inputFor(SUPPLIER_B, 0)
     await act(async () => {
       blank?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
       await new Promise((resolve) => {
@@ -343,23 +344,27 @@ describe('SupplierPriceListMatrixEditor', () => {
         items: SupplierPriceListItemPayload[]
       },
     ]
-    expect(payload.brandName).toBe('萍钢')
-    expect(payload.supplierId).toBe(SUPPLIER_ID)
+    // 数据键不变：写入的是该（供应商, 品牌）表
+    expect(payload.brandName).toBe(BRAND)
+    expect(payload.supplierId).toBe(SUPPLIER_B)
     expect(payload.items).toHaveLength(1)
     expect(payload.items[0].price).toBe(3000)
   })
 
-  it('每个品牌列都提供 ≥24×24 的删除入口并带可访问名', async () => {
+  it('列头（整表加减入口所在处）可聚焦且可被读屏念出供应商名', async () => {
     await render()
-    const labels = [
-      ...container.querySelectorAll<HTMLButtonElement>(
-        '.supplier-price-brand-delete',
-      ),
-    ].map((button) => button.getAttribute('aria-label'))
-    // 固定列会渲染吸顶表头副本, 因此同一品牌列可能命中多个按钮; 断言集合而不是次数
-    expect(new Set(labels)).toEqual(
-      new Set(['删除「安徽富鑫」的价格表', '删除「萍钢」的价格表']),
-    )
-    expect(labels.length).toBeGreaterThanOrEqual(2)
+    const triggers = [
+      ...container.querySelectorAll<HTMLElement>('.column-header-menu-trigger'),
+    ]
+    expect(triggers.length).toBeGreaterThanOrEqual(2)
+    // role=button + tabIndex=0: Shift+F10/Enter/Space 可打开列头菜单(内含整表加减)
+    for (const trigger of triggers) {
+      expect(trigger.getAttribute('role')).toBe('button')
+      expect(trigger.getAttribute('tabindex')).toBe('0')
+      expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
+    }
+    const names = triggers.map((node) => node.textContent ?? '')
+    expect(names.some((name) => name.includes('杭州中金钢铁'))).toBe(true)
+    expect(names.some((name) => name.includes('浙江铁都钢材'))).toBe(true)
   })
 })

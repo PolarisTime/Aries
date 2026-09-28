@@ -88,8 +88,9 @@ export type SupplierPriceSpecCatalogEntry = {
 export type SupplierPriceListQuery = {
   supplierId?: EntityId
   brandName?: string
-  page: number
-  size: number
+  /** 缺省 = 1（R2 起一个（供应商, 品牌）只有一张表，品牌视图要按品牌全量拉取） */
+  page?: number
+  size?: number
 }
 
 export type SupplierPriceListPage = {
@@ -384,12 +385,18 @@ function normalizeDetail(
   }
 }
 
+/** 单页最大条数（与后端 `size` 上限一致）。 */
+export const PRICE_LIST_PAGE_SIZE = 200
+
 function buildListQueryParams(query: SupplierPriceListQuery) {
+  const page = query.page ?? 1
+  const size = query.size ?? PRICE_LIST_PAGE_SIZE
   return {
     ...(query.supplierId ? { supplierId: query.supplierId } : {}),
     ...(query.brandName ? { brandName: query.brandName } : {}),
-    page: Math.max(query.page - 1, 0),
-    size: Math.min(Math.max(query.size, 1), 200),
+    page: Math.max(page - 1, 0),
+    // 前端页码 1 基 → 后端 0 基
+    size: Math.min(Math.max(size, 1), PRICE_LIST_PAGE_SIZE),
   }
 }
 
@@ -414,13 +421,6 @@ export async function fetchSupplierPriceLists(
   }
 }
 
-/**
- * 单页最大条数（与 `buildListQueryParams` 的 `size` 上限一致）。
- *
- * <p>取全量时按这个页大小翻页，避免出现「接口允许 200、这里却按 100 翻页」的双份事实。</p>
- */
-const PRICE_LIST_PAGE_SIZE = 200
-
 /** 安全上限：供应商数量级远小于此值，防止后端分页契约异常时无限翻页。 */
 const PRICE_LIST_MAX_PAGES = 50
 
@@ -432,7 +432,7 @@ const PRICE_LIST_MAX_PAGES = 50
  * 直到取满 `totalElements` 或触达安全上限。</p>
  */
 export async function fetchAllSupplierPriceLists(
-  query: { supplierId?: EntityId } = {},
+  query: { supplierId?: EntityId; brandName?: string } = {},
   signal?: AbortSignal,
 ): Promise<SupplierPriceListSummary[]> {
   const collected: SupplierPriceListSummary[] = []
@@ -440,6 +440,7 @@ export async function fetchAllSupplierPriceLists(
     const response = await fetchSupplierPriceLists(
       {
         ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+        ...(query.brandName ? { brandName: query.brandName } : {}),
         page,
         size: PRICE_LIST_PAGE_SIZE,
       },

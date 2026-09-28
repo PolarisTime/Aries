@@ -6,17 +6,18 @@ import type {
 } from '@/api/master/supplier-price-lists'
 import { zhCN } from '@/locales/zh-CN'
 import {
-  addBrandColumn,
-  applyBrandItems,
+  addSupplierColumn,
+  applyColumnItems,
   applyMatrixPaste,
   buildMatrixAdjustmentPreview,
   buildMatrixState,
   buildPriceRowKey,
   buildReplaceItems,
   computeMatrixStats,
-  countFilledForBrand,
+  countFilledForColumn,
+  describePriceColumn,
   describePriceRow,
-  dirtyBrandNames,
+  dirtySupplierIds,
   filterMatrixRows,
   formatUpdatedAt,
   isAdjustmentAmountValid,
@@ -26,14 +27,20 @@ import {
   PRICE_ITEM_STATUS_ORDER,
   PRICE_ITEM_STATUS_ZH_LABELS,
   type PriceMatrixState,
+  parseBlockPasteLayout,
   parsePriceCellText,
-  removeBrandColumn,
+  previewBlockPaste,
+  removeSupplierColumn,
   updateMatrixCell,
   validateMatrixRows,
   wouldPriceGoNegative,
 } from './supplier-price-list-editor-model'
 
-const SUPPLIER_ID = '1234567890123456789'
+const BRAND = '安徽富鑫'
+const SUPPLIER_A = '1000000000000000001'
+const SUPPLIER_B = '1000000000000000002'
+const LIST_A = '1900000000000000001'
+const LIST_B = '1900000000000000002'
 
 const CATALOG: SupplierPriceSpecCatalogEntry[] = [
   {
@@ -61,14 +68,14 @@ const CATALOG: SupplierPriceSpecCatalogEntry[] = [
 ]
 
 function listSummary(
-  brandName: string,
+  supplierId: string,
   overrides: Partial<SupplierPriceListSummary> = {},
 ): SupplierPriceListSummary {
   return {
-    id: `190000000000000006`,
-    supplierId: SUPPLIER_ID,
-    supplierName: '杭州中金钢铁',
-    brandName,
+    id: supplierId === SUPPLIER_A ? LIST_A : LIST_B,
+    supplierId,
+    supplierName: supplierId === SUPPLIER_A ? '杭州中金钢铁' : '浙江铁都钢材',
+    brandName: BRAND,
     updatedAt: '2026-09-28T14:35:00',
     itemCount: 1,
     ...overrides,
@@ -92,11 +99,16 @@ function item(
   }
 }
 
+/**
+ * 品牌视图矩阵：品牌 = 页级标签，列 = 供应商。
+ * fixture 里同一品牌只有 A 有价格表，B 由 extraSuppliers 追加为空列。
+ */
 function buildState(): PriceMatrixState {
   return buildMatrixState({
+    brandName: BRAND,
     catalog: CATALOG,
-    lists: [listSummary('安徽富鑫')],
-    supplierBrands: ['安徽富鑫', '萍钢'],
+    lists: [listSummary(SUPPLIER_A)],
+    extraSuppliers: [{ supplierId: SUPPLIER_B, supplierName: '浙江铁都钢材' }],
   })
 }
 
@@ -175,18 +187,44 @@ describe('单价空值语义', () => {
   })
 })
 
-describe('矩阵构建（供应商 + 品牌 = 一张现表）', () => {
-  it('行来自规格全集，列 = 已有价格表的品牌 ∪ 经营品牌', () => {
+describe('矩阵构建（品牌视图：列 = 供应商）', () => {
+  it('行来自规格全集，列 = 该品牌已有价格表的供应商 ∪ 追加供应商', () => {
     const state = buildState()
+    expect(state.brandName).toBe(BRAND)
     expect(state.rows).toHaveLength(4)
-    expect(state.brandOrder).toEqual(['安徽富鑫', '萍钢'])
-    expect(state.lists['安徽富鑫'].listId).toBe('190000000000000006')
-    expect(state.lists['萍钢'].listId).toBeNull()
+    expect(state.columnOrder).toEqual([SUPPLIER_A, SUPPLIER_B])
+    expect(state.columns[SUPPLIER_A].listId).toBe(LIST_A)
+    expect(state.columns[SUPPLIER_A].supplierName).toBe('杭州中金钢铁')
+    expect(state.columns[SUPPLIER_B].listId).toBeNull()
     expect(state.invalidCatalogCount).toBe(0)
+    expect(describePriceColumn(state.columns[SUPPLIER_A])).toBe('杭州中金钢铁')
+  })
+
+  it('只收同品牌的现表：别的品牌不进当前视图', () => {
+    const state = buildMatrixState({
+      brandName: BRAND,
+      catalog: CATALOG,
+      lists: [
+        listSummary(SUPPLIER_A),
+        listSummary(SUPPLIER_B, { brandName: '萍钢' }),
+      ],
+    })
+    expect(state.columnOrder).toEqual([SUPPLIER_A])
+  })
+
+  it('空品牌视图不生成列，且规格行仍固定', () => {
+    const state = buildMatrixState({
+      brandName: '  ',
+      catalog: CATALOG,
+      lists: [listSummary(SUPPLIER_A)],
+    })
+    expect(state.columnOrder).toEqual([])
+    expect(state.rows).toHaveLength(4)
   })
 
   it('规格无法归一化或归一化后重复的行只保留一条并计数脏行', () => {
     const state = buildMatrixState({
+      brandName: BRAND,
       catalog: [
         ...CATALOG,
         { ...CATALOG[0], sortOrder: 9 },
@@ -205,7 +243,7 @@ describe('矩阵构建（供应商 + 品牌 = 一张现表）', () => {
   })
 
   it('现表条目按归一化键带出单价/条目 ID/状态/备注；不报价仍是 null', () => {
-    const state = applyBrandItems(buildState(), '安徽富鑫', [
+    const state = applyColumnItems(buildState(), SUPPLIER_A, [
       item(),
       item({
         id: '1900000000000000012',
@@ -218,44 +256,58 @@ describe('矩阵构建（供应商 + 品牌 = 一张现表）', () => {
     ])
     const key12 = buildPriceRowKey(CATALOG[0]) as string
     const key14 = buildPriceRowKey(CATALOG[2]) as string
-    expect(state.cells['安徽富鑫'][key12].price).toBe(3220)
-    expect(state.cells['安徽富鑫'][key12].itemId).toBe('1900000000000000011')
-    expect(state.cells['安徽富鑫'][key14].price).toBeNull()
-    expect(state.cells['安徽富鑫'][key14].priceStatus).toBe('OUT_OF_STOCK')
-    expect(state.cells['安徽富鑫'][key14].remark).toBe('无货')
+    expect(state.cells[SUPPLIER_A][key12].price).toBe(3220)
+    expect(state.cells[SUPPLIER_A][key12].itemId).toBe('1900000000000000011')
+    expect(state.cells[SUPPLIER_A][key14].price).toBeNull()
+    expect(state.cells[SUPPLIER_A][key14].priceStatus).toBe('OUT_OF_STOCK')
+    expect(state.cells[SUPPLIER_A][key14].remark).toBe('无货')
   })
 })
 
-describe('品牌列增删与单元格写入', () => {
-  it('添加/移除品牌列不影响其它列，重复添加幂等', () => {
-    const added = addBrandColumn(buildState(), ' 武钢汉钢 ')
-    expect(added.brandOrder).toEqual(['安徽富鑫', '萍钢', '武钢汉钢'])
-    expect(addBrandColumn(added, '武钢汉钢').brandOrder).toEqual(
-      added.brandOrder,
-    )
-    const removed = removeBrandColumn(added, '武钢汉钢')
-    expect(removed.brandOrder).toEqual(['安徽富鑫', '萍钢'])
-    expect(removed.lists['武钢汉钢']).toBeUndefined()
+describe('供应商列增删与单元格写入', () => {
+  it('添加/移除供应商列不影响其它列，重复添加幂等', () => {
+    const added = addSupplierColumn(buildState(), {
+      supplierId: '1000000000000000003',
+      supplierName: ' 武钢汉钢 ',
+    })
+    expect(added.columnOrder).toEqual([
+      SUPPLIER_A,
+      SUPPLIER_B,
+      '1000000000000000003',
+    ])
+    expect(added.columns['1000000000000000003'].supplierName).toBe('武钢汉钢')
+    expect(
+      addSupplierColumn(added, {
+        supplierId: '1000000000000000003',
+        supplierName: '武钢汉钢',
+      }).columnOrder,
+    ).toEqual(added.columnOrder)
+    const removed = removeSupplierColumn(added, '1000000000000000003')
+    expect(removed.columnOrder).toEqual([SUPPLIER_A, SUPPLIER_B])
+    expect(removed.columns['1000000000000000003']).toBeUndefined()
   })
 
-  it('单元格写入只改目标键，空串品牌名不写', () => {
+  it('单元格写入只改目标列，未知/空供应商 ID 不写', () => {
     const key = buildPriceRowKey(CATALOG[0]) as string
-    const next = updateMatrixCell(buildState(), '萍钢', key, { price: 3300 })
-    expect(next.cells['萍钢'][key].price).toBe(3300)
-    expect(next.cells['安徽富鑫']).toBeUndefined()
+    const next = updateMatrixCell(buildState(), SUPPLIER_B, key, {
+      price: 3300,
+    })
+    expect(next.cells[SUPPLIER_B][key].price).toBe(3300)
+    expect(next.cells[SUPPLIER_A]).toEqual({})
     expect(updateMatrixCell(next, '', key, { price: 1 })).toBe(next)
+    expect(updateMatrixCell(next, '999', key, { price: 1 })).toBe(next)
   })
 })
 
 describe('全量替换载荷守卫', () => {
   it('服务端已有条目（含 price 为 null）必须保留，本地新填只带非空价', () => {
-    const state = applyBrandItems(buildState(), '安徽富鑫', [
+    const state = applyColumnItems(buildState(), SUPPLIER_A, [
       item({ price: null }),
       item({ id: '1900000000000000013', spec: 14, length: '9米', price: null }),
     ])
     const key12 = buildPriceRowKey(CATALOG[0]) as string
-    const next = updateMatrixCell(state, '安徽富鑫', key12, { price: 3300 })
-    const items = buildReplaceItems(next, '安徽富鑫')
+    const next = updateMatrixCell(state, SUPPLIER_A, key12, { price: 3300 })
+    const items = buildReplaceItems(next, SUPPLIER_A)
     expect(items).toHaveLength(2)
     expect(items[0].price).toBe(3300)
     expect(items[1].price).toBeNull()
@@ -265,8 +317,8 @@ describe('全量替换载荷守卫', () => {
   it('规格全集外的历史脏键条目通过 preservedItems 保留，不被静默删除', () => {
     const state = buildState()
     const key = buildPriceRowKey(CATALOG[0]) as string
-    const next = updateMatrixCell(state, '安徽富鑫', key, { price: 3300 })
-    const items = buildReplaceItems(next, '安徽富鑫', [
+    const next = updateMatrixCell(state, SUPPLIER_A, key, { price: 3300 })
+    const items = buildReplaceItems(next, SUPPLIER_A, [
       item({
         id: '1900000000000000099',
         category: '螺纹钢',
@@ -282,15 +334,15 @@ describe('全量替换载荷守卫', () => {
     expect(items[1].price).toBe(100)
   })
 
-  it('空价新行不落库：全空品牌列提交空 items', () => {
-    expect(buildReplaceItems(buildState(), '萍钢')).toEqual([])
+  it('空价新行不落库：全空供应商列提交空 items', () => {
+    expect(buildReplaceItems(buildState(), SUPPLIER_B)).toEqual([])
   })
 
   it('itemId 存在但价为 null 的条目仍然提交（表达「不报价」）', () => {
-    const state = applyBrandItems(buildState(), '安徽富鑫', [
+    const state = applyColumnItems(buildState(), SUPPLIER_A, [
       item({ price: null }),
     ])
-    const items = buildReplaceItems(state, '安徽富鑫')
+    const items = buildReplaceItems(state, SUPPLIER_A)
     expect(items).toHaveLength(1)
     expect(items[0].price).toBeNull()
   })
@@ -309,29 +361,29 @@ describe('行级校验与统计', () => {
     )
   })
 
-  it('统计行数/品牌列数/已填与未填', () => {
+  it('统计行数/供应商列数/已填与未填', () => {
     const key = buildPriceRowKey(CATALOG[0]) as string
-    const state = updateMatrixCell(buildState(), '安徽富鑫', key, { price: 0 })
+    const state = updateMatrixCell(buildState(), SUPPLIER_A, key, { price: 0 })
     const stats = computeMatrixStats(state)
     expect(stats.totalRows).toBe(4)
-    expect(stats.brandCount).toBe(2)
+    expect(stats.columnCount).toBe(2)
     // 0 元是真实报价，必须计入已填
     expect(stats.filledTotal).toBe(1)
     expect(stats.emptyTotal).toBe(7)
-    expect(countFilledForBrand(state, '萍钢')).toBe(0)
+    expect(countFilledForColumn(state, SUPPLIER_B)).toBe(0)
     expect(formatUpdatedAt(stats.updatedAt)).toBe('2026-09-28 14:35')
   })
 })
 
 describe('筛选', () => {
-  it('按品牌筛选已填/未填，未指定品牌时按任一品牌已填', () => {
+  it('按供应商筛选已填/未填，未指定供应商时按任一供应商已填', () => {
     const key = buildPriceRowKey(CATALOG[0]) as string
-    const state = updateMatrixCell(buildState(), '安徽富鑫', key, { price: 1 })
+    const state = updateMatrixCell(buildState(), SUPPLIER_A, key, { price: 1 })
     expect(
-      filterMatrixRows(state, { fill: 'FILLED', fillBrand: '安徽富鑫' }),
+      filterMatrixRows(state, { fill: 'FILLED', fillSupplierId: SUPPLIER_A }),
     ).toHaveLength(1)
     expect(
-      filterMatrixRows(state, { fill: 'FILLED', fillBrand: '萍钢' }),
+      filterMatrixRows(state, { fill: 'FILLED', fillSupplierId: SUPPLIER_B }),
     ).toHaveLength(0)
     expect(filterMatrixRows(state, { fill: 'FILLED' })).toHaveLength(1)
     expect(filterMatrixRows(state, { fill: 'UNFILLED' })).toHaveLength(3)
@@ -342,73 +394,67 @@ describe('筛选', () => {
   })
 })
 
-describe('整体加减预览（跨品牌）', () => {
+describe('整体加减预览（按供应商+品牌单表）', () => {
   function stateWithPrices(): PriceMatrixState {
-    const base = buildState()
-    const key14 = buildPriceRowKey(CATALOG[2]) as string
-    let state = applyBrandItems(base, '安徽富鑫', [
+    // A 列：12/9米 有价 3220、8 盘螺 有价 25（减 100 会变负）
+    const state = applyColumnItems(buildState(), SUPPLIER_A, [
       item(),
-      item({ id: '1900000000000000012', spec: 14, length: '9米', price: 30 }),
+      item({
+        id: '1900000000000000013',
+        category: '盘螺',
+        material: '盘螺400E',
+        spec: 8,
+        length: '',
+        price: 25,
+        sortOrder: 3,
+      }),
     ])
-    state = applyBrandItems(state, '萍钢', [
-      item({ id: '1900000000000000021', price: 3000 }),
-    ])
-    state = {
-      ...state,
-      lists: {
-        ...state.lists,
-        萍钢: { ...state.lists['萍钢'], listId: '1900000000000000020' },
-      },
-    }
-    // 萍钢再补一条本地新填（无 itemId）用于 unsaved 断言
-    return updateMatrixCell(state, '萍钢', key14, { price: 3100 })
+    // A 列再补一条本地新填（无 itemId）用于 unsaved 断言
+    const key12m = buildPriceRowKey(CATALOG[1]) as string
+    return updateMatrixCell(state, SUPPLIER_A, key12m, { price: 3100 })
   }
 
-  it('按品牌分组、跳过不报价条目、给出前后价', () => {
-    const preview = buildMatrixAdjustmentPreview(stateWithPrices(), 'ADD', 50, [
-      '安徽富鑫',
-      '萍钢',
-    ])
-    expect(preview.affectedCount).toBe(3)
-    expect(preview.brandPlans.map((plan) => plan.brandName)).toEqual([
-      '安徽富鑫',
-      '萍钢',
-    ])
-    expect(preview.brandPlans[0].itemIds).toEqual([
-      '1900000000000000011',
-      '1900000000000000012',
-    ])
-    // 萍钢：1 条已落库（3000）+ 1 条本地新填（无 itemId）
-    expect(preview.brandPlans[1].itemIds).toEqual(['1900000000000000021'])
-    expect(preview.unsavedCount).toBe(1)
-    const rebar = preview.rows.find(
-      (row) => row.brandName === '安徽富鑫' && row.priceBefore === 3220,
+  it('只作用于目标列：跳过不报价条目、给出前后价与目标价格表', () => {
+    const preview = buildMatrixAdjustmentPreview(
+      stateWithPrices(),
+      SUPPLIER_A,
+      'ADD',
+      50,
     )
-    expect(rebar?.priceAfter).toBe(3270)
-    // 不报价的行只计数不参与
+    expect(preview.target).toEqual({ supplierId: SUPPLIER_A, listId: LIST_A })
+    expect(preview.itemIds).toEqual([
+      '1900000000000000011',
+      '1900000000000000013',
+    ])
+    expect(preview.affectedCount).toBe(2)
+    expect(preview.rows[0].label).toBe('杭州中金钢铁 螺纹钢 抗震钢E Φ12 9米')
+    expect(preview.rows[0].priceAfter).toBe(3270)
+    expect(preview.unsavedCount).toBe(1)
     expect(preview.skippedCount).toBeGreaterThan(0)
     expect(preview.negativeLabels).toEqual([])
+    expect(preview.missingList).toBe(false)
   })
 
   it('减价后为负的条目标记为 negative 且不静默截断', () => {
     const preview = buildMatrixAdjustmentPreview(
       stateWithPrices(),
+      SUPPLIER_A,
       'SUBTRACT',
       100,
-      ['安徽富鑫'],
     )
-    expect(preview.negativeLabels).toEqual(['安徽富鑫 螺纹钢 抗震钢E Φ14 9米'])
+    expect(preview.negativeLabels).toEqual(['杭州中金钢铁 盘螺 盘螺400E Φ8'])
     expect(preview.rows.some((row) => row.priceAfter < 0)).toBe(true)
     expect(wouldPriceGoNegative(30, 'SUBTRACT', 100)).toBe(true)
     expect(wouldPriceGoNegative(30, 'SUBTRACT', 30)).toBe(false)
   })
 
-  it('尚未建表的品牌列单独回报，不参与加减', () => {
-    const preview = buildMatrixAdjustmentPreview(buildState(), 'ADD', 50, [
-      '萍钢',
-    ])
-    expect(preview.brandPlans).toEqual([])
-    expect(preview.brandsWithoutList).toEqual(['萍钢'])
+  it('尚无价格表的供应商列回报 missingList 且没有可执行计划', () => {
+    const key = buildPriceRowKey(CATALOG[0]) as string
+    const state = updateMatrixCell(buildState(), SUPPLIER_B, key, { price: 9 })
+    const preview = buildMatrixAdjustmentPreview(state, SUPPLIER_B, 'ADD', 50)
+    expect(preview.missingList).toBe(true)
+    expect(preview.target).toBeNull()
+    expect(preview.affectedCount).toBe(0)
   })
 
   it('金额必须为正数', () => {
@@ -419,11 +465,11 @@ describe('整体加减预览（跨品牌）', () => {
   })
 })
 
-describe('TSV 粘贴（指定品牌列）', () => {
-  it('按 材质/规格/长度/单价 对齐固定行，落进目标品牌列', () => {
+describe('TSV 粘贴（指定供应商列）', () => {
+  it('按 材质/规格/长度/单价 对齐固定行，落进目标供应商列', () => {
     const result = applyMatrixPaste(
       buildState(),
-      '安徽富鑫',
+      SUPPLIER_A,
       ['抗震钢E\t12\t9米\t3220', '抗震钢E\t14\t9米\t', '盘螺400E\t8\t\t0'].join(
         '\n',
       ),
@@ -432,35 +478,25 @@ describe('TSV 粘贴（指定品牌列）', () => {
     expect(result.appliedCount).toBe(3)
     const key12 = buildPriceRowKey(CATALOG[0]) as string
     const key14 = buildPriceRowKey(CATALOG[2]) as string
-    expect(result.state.cells['安徽富鑫'][key12].price).toBe(3220)
-    expect(result.state.cells['安徽富鑫'][key14].price).toBeNull()
+    expect(result.state.cells[SUPPLIER_A][key12].price).toBe(3220)
+    expect(result.state.cells[SUPPLIER_A][key14].price).toBeNull()
     expect(
-      result.state.cells['安徽富鑫'][buildPriceRowKey(CATALOG[3]) as string]
+      result.state.cells[SUPPLIER_A][buildPriceRowKey(CATALOG[3]) as string]
         .price,
     ).toBe(0)
-    // 其它品牌列不受影响
-    expect(result.state.cells['萍钢']).toBeUndefined()
-  })
-
-  it('目标品牌不存在时先建列再写入', () => {
-    const result = applyMatrixPaste(
-      buildState(),
-      '武钢汉钢',
-      '抗震钢E\t12\t9米\t1',
-    )
-    expect(result.state.brandOrder).toContain('武钢汉钢')
-    expect(result.appliedCount).toBe(1)
+    // 其它供应商列不受影响
+    expect(result.state.cells[SUPPLIER_B]).toEqual({})
   })
 
   it('5 列带类别、多余空行与多余列容错', () => {
     const result = applyMatrixPaste(
       buildState(),
-      '安徽富鑫',
+      SUPPLIER_A,
       ['螺纹钢\t抗震钢E\t12\t12米\t3300\t备注会被忽略', '', '   '].join('\n'),
     )
     expect(result.errors).toEqual([])
     expect(
-      result.state.cells['安徽富鑫'][buildPriceRowKey(CATALOG[1]) as string]
+      result.state.cells[SUPPLIER_A][buildPriceRowKey(CATALOG[1]) as string]
         .price,
     ).toBe(3300)
   })
@@ -468,7 +504,7 @@ describe('TSV 粘贴（指定品牌列）', () => {
   it('格式错误逐行提示且不写入脏数据', () => {
     const result = applyMatrixPaste(
       buildState(),
-      '安徽富鑫',
+      SUPPLIER_A,
       [
         '抗震钢E\t0\t9米\t3220',
         '抗震钢E\tabc\t9米\t3220',
@@ -483,28 +519,70 @@ describe('TSV 粘贴（指定品牌列）', () => {
     expect(result.errors[2].message).toContain('没有匹配的固定行')
     expect(result.errors[3].message).toContain('单价必须是数字')
     expect(result.errors[4].message).toContain('列数不足')
-    expect(result.state.cells['安徽富鑫']).toBeUndefined()
+    expect(result.state.cells[SUPPLIER_A]).toEqual({})
   })
 
   it('粘贴清空已有报价时计数并可被二次确认拦截', () => {
-    const withPrice = applyBrandItems(buildState(), '安徽富鑫', [item()])
-    const result = applyMatrixPaste(withPrice, '安徽富鑫', '抗震钢E\t12\t9米\t')
+    const withPrice = applyColumnItems(buildState(), SUPPLIER_A, [item()])
+    const result = applyMatrixPaste(withPrice, SUPPLIER_A, '抗震钢E\t12\t9米\t')
     expect(result.clearedCount).toBe(1)
     expect(
-      result.state.cells['安徽富鑫'][buildPriceRowKey(CATALOG[0]) as string]
+      result.state.cells[SUPPLIER_A][buildPriceRowKey(CATALOG[0]) as string]
         .price,
     ).toBeNull()
   })
 })
 
+describe('整块粘贴（供应商 × 规格）', () => {
+  const BLOCK = [
+    '供应商\t材质\t规格\t长度\t单价',
+    '杭州中金钢铁\t抗震钢E\t12\t9米\t3220',
+    '浙江铁都钢材\t抗震钢E\t12\t9米\t3180',
+    '不存在的供应商\t抗震钢E\t12\t9米\t1',
+  ].join('\n')
+
+  it('按供应商名拆列，跳过表头与未知供应商', () => {
+    const layout = parseBlockPasteLayout(BLOCK, [
+      { supplierId: SUPPLIER_A, supplierName: '杭州中金钢铁' },
+      { supplierId: SUPPLIER_B, supplierName: '浙江铁都钢材' },
+    ])
+    expect(layout.columns.map((column) => column.supplierId)).toEqual([
+      SUPPLIER_A,
+      SUPPLIER_B,
+    ])
+    expect(layout.unknownSupplierNames).toEqual(['不存在的供应商'])
+  })
+
+  it('预览不改状态，写入时逐列落到各（供应商, 品牌）价格表', () => {
+    const state = buildState()
+    const preview = previewBlockPaste(state, BLOCK)
+    expect(preview.appliedCount).toBe(2)
+    expect(preview.unknownSupplierNames).toEqual(['不存在的供应商'])
+    // 预览是纯读：原状态不被改写
+    expect(state.cells[SUPPLIER_A]).toEqual({})
+
+    const layout = parseBlockPasteLayout(BLOCK, [
+      { supplierId: SUPPLIER_A, supplierName: '杭州中金钢铁' },
+      { supplierId: SUPPLIER_B, supplierName: '浙江铁都钢材' },
+    ])
+    let next = state
+    for (const column of layout.columns) {
+      next = applyMatrixPaste(next, column.supplierId, column.text).state
+    }
+    const key = buildPriceRowKey(CATALOG[0]) as string
+    expect(next.cells[SUPPLIER_A][key].price).toBe(3220)
+    expect(next.cells[SUPPLIER_B][key].price).toBe(3180)
+  })
+})
+
 describe('变更检出', () => {
-  it('未改动的矩阵指纹稳定，改价后仅该品牌列变脏', () => {
+  it('未改动的矩阵指纹稳定，改价后仅该供应商列变脏', () => {
     const state = buildState()
     const signature = matrixSignature(state)
-    expect(dirtyBrandNames(state, signature)).toEqual([])
+    expect(dirtySupplierIds(state, signature)).toEqual([])
     const key = buildPriceRowKey(CATALOG[0]) as string
-    const changed = updateMatrixCell(state, '萍钢', key, { price: 1 })
-    expect(dirtyBrandNames(changed, signature)).toEqual(['萍钢'])
+    const changed = updateMatrixCell(state, SUPPLIER_B, key, { price: 1 })
+    expect(dirtySupplierIds(changed, signature)).toEqual([SUPPLIER_B])
     expect(matrixSignature(state)).toBe(signature)
   })
 

@@ -11,35 +11,37 @@ import {
   type PriceMatrixState,
 } from './supplier-price-list-editor-model'
 
-type BrandPlan = MatrixAdjustmentPreview['brandPlans'][number]
-
 interface Props {
   state: PriceMatrixState
-  /** 参与加减的品牌列（默认全部） */
-  brandNames: string[]
+  /** 目标供应商列（该（供应商, 品牌）价格表） */
+  supplierId: string
+  supplierName: string
+  brandName: string
   saving: boolean
   onCancel: () => void
   onSubmit: (
     mode: PriceAdjustmentMode,
     amount: number,
-    plans: BrandPlan[],
+    preview: MatrixAdjustmentPreview,
   ) => void
 }
 
 /**
  * 整体加减：**必须先预览**再确认。
  *
- * <p>R2 口径：一次预览覆盖当前供应商的全部品牌列（跨列），执行时按品牌分别调用
- * `price-adjustments`（接口是单表粒度）。单价为空（不报价）的条目不参与，减价后出现
- * 负数的条目会阻断确认（契约要求 422，前端不静默截断）；尚未建表/未落库的价格也只能
- * 提示「先保存」，不得静默跳过。</p>
+ * <p>R2 + 轴向变更后，加减接口按**价格表（供应商 + 品牌）**生效，因此入口挂在列头菜单上，
+ * 弹窗一次只作用于该供应商列。单价为空（不报价）的条目不参与；减价后出现负数的条目会阻断
+ * 确认（契约要求 422，前端不静默截断）；该品牌下尚无价格表、或已填价尚未落库的格子会明确
+ * 提示「先保存」，不静默跳过。</p>
  *
  * <p>调用方按需挂载（`{open ? <Modal/> : null}`）：每次打开都是全新实例，
  * 状态无需在 effect 里重置（避免 set-state-in-effect 与过期预览残留）。</p>
  */
 export function SupplierPriceListAdjustModal({
   state,
-  brandNames,
+  supplierId,
+  supplierName,
+  brandName,
   saving,
   onCancel,
   onSubmit,
@@ -47,67 +49,62 @@ export function SupplierPriceListAdjustModal({
   const { t } = useTranslation()
   const [mode, setMode] = useState<PriceAdjustmentMode>('ADD')
   const [amount, setAmount] = useState<number | null>(null)
-  const [previewRequested, setPreviewRequested] = useState(false)
+  const [preview, setPreview] = useState<MatrixAdjustmentPreview | null>(null)
 
   const amountValid = isAdjustmentAmountValid(amount)
-  // 方向/金额任一变化都会清掉 previewRequested, 因此不会用过期预览确认
-  const preview = useMemo(
-    () =>
-      previewRequested && amountValid
-        ? buildMatrixAdjustmentPreview(
-            state,
-            mode,
-            amount as number,
-            brandNames,
-          )
-        : null,
-    [previewRequested, amountValid, state, mode, amount, brandNames],
+
+  const columns: ColumnsType<AdjustmentPreviewRow> = useMemo(
+    () => [
+      {
+        title: t('supplierPriceList.adjust.columns.item'),
+        dataIndex: 'label',
+        ellipsis: true,
+      },
+      {
+        title: t('supplierPriceList.adjust.columns.before'),
+        dataIndex: 'priceBefore',
+        width: 120,
+        align: 'right',
+        render: (value: number) => value.toFixed(2),
+      },
+      {
+        title: t('supplierPriceList.adjust.columns.after'),
+        dataIndex: 'priceAfter',
+        width: 120,
+        align: 'right',
+        render: (value: number) => (
+          <strong
+            className={value < 0 ? 'supplier-price-row-error' : undefined}
+          >
+            {value.toFixed(2)}
+          </strong>
+        ),
+      },
+    ],
+    [t],
   )
 
-  const columns: ColumnsType<AdjustmentPreviewRow> = [
-    {
-      title: t('supplierPriceList.adjust.columns.item'),
-      dataIndex: 'label',
-      ellipsis: true,
-    },
-    {
-      title: t('supplierPriceList.adjust.columns.before'),
-      dataIndex: 'priceBefore',
-      width: 120,
-      align: 'right',
-      render: (value: number) => value.toFixed(2),
-    },
-    {
-      title: t('supplierPriceList.adjust.columns.after'),
-      dataIndex: 'priceAfter',
-      width: 120,
-      align: 'right',
-      render: (value: number) => (
-        <strong className={value < 0 ? 'supplier-price-row-error' : undefined}>
-          {value.toFixed(2)}
-        </strong>
-      ),
-    },
-  ]
+  const canSubmit =
+    Boolean(preview?.target) &&
+    amountValid &&
+    (preview?.negativeLabels.length ?? 1) === 0 &&
+    (preview?.affectedCount ?? 0) > 0
 
   return (
     <Modal
       open
-      title={t('supplierPriceList.adjust.title')}
+      title={t('supplierPriceList.adjust.titleWithTarget', {
+        supplier: supplierName,
+        brand: brandName,
+      })}
       width={760}
       okText={t('supplierPriceList.adjust.confirm')}
       cancelText={t('common.cancel')}
       confirmLoading={saving}
-      okButtonProps={{
-        disabled:
-          !preview ||
-          !amountValid ||
-          preview.negativeLabels.length > 0 ||
-          preview.brandPlans.length === 0,
-      }}
+      okButtonProps={{ disabled: !canSubmit }}
       onOk={() => {
-        if (preview && amountValid && preview.brandPlans.length) {
-          onSubmit(mode, amount as number, preview.brandPlans)
+        if (preview && amountValid && canSubmit) {
+          onSubmit(mode, amount as number, preview)
         }
       }}
       onCancel={onCancel}
@@ -121,7 +118,7 @@ export function SupplierPriceListAdjustModal({
             value={mode}
             onChange={(event) => {
               setMode(event.target.value as PriceAdjustmentMode)
-              setPreviewRequested(false)
+              setPreview(null)
             }}
             options={[
               { value: 'ADD', label: t('supplierPriceList.adjust.add') },
@@ -140,12 +137,21 @@ export function SupplierPriceListAdjustModal({
             value={amount}
             onChange={(value) => {
               setAmount(value)
-              setPreviewRequested(false)
+              setPreview(null)
             }}
           />
           <Button
             disabled={!amountValid}
-            onClick={() => setPreviewRequested(true)}
+            onClick={() =>
+              setPreview(
+                buildMatrixAdjustmentPreview(
+                  state,
+                  supplierId,
+                  mode,
+                  amount as number,
+                ),
+              )
+            }
           >
             {t('supplierPriceList.adjust.preview')}
           </Button>
@@ -178,12 +184,14 @@ export function SupplierPriceListAdjustModal({
                   count: preview.skippedCount,
                 })}
               </span>
-              <span>
-                {t('supplierPriceList.adjust.brandCount', {
-                  count: preview.brandPlans.length,
-                })}
-              </span>
             </div>
+            {preview.missingList ? (
+              <Alert
+                type="warning"
+                showIcon
+                title={t('supplierPriceList.adjust.missingListTitle')}
+              />
+            ) : null}
             {preview.unsavedCount > 0 ? (
               // 有价但没有服务端条目 ID: 必须先保存成价格表条目才能加减
               <Alert
@@ -191,15 +199,6 @@ export function SupplierPriceListAdjustModal({
                 showIcon
                 title={t('supplierPriceList.adjust.unsavedTitle', {
                   count: preview.unsavedCount,
-                })}
-              />
-            ) : null}
-            {preview.brandsWithoutList.length ? (
-              <Alert
-                type="warning"
-                showIcon
-                title={t('supplierPriceList.adjust.noListTitle', {
-                  brands: preview.brandsWithoutList.join('、'),
                 })}
               />
             ) : null}
@@ -213,7 +212,7 @@ export function SupplierPriceListAdjustModal({
                 })}
               />
             ) : null}
-            {preview.brandPlans.length === 0 ? (
+            {preview.affectedCount === 0 ? (
               <Alert
                 type="warning"
                 showIcon

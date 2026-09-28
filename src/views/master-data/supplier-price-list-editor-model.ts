@@ -14,13 +14,16 @@ import type { EntityId } from '@/types/entity-id'
 export { normalizeSpecNumber }
 
 /**
- * 供应商品牌价格表矩阵编辑器的纯逻辑。
+ * 供应商品牌价格表**品牌视图矩阵**的纯逻辑。
  *
- * <p>设计口径（见 `.local/design/supplier-price-list.md` §4.6 修订 R2）：</p>
- * - **取消版本**：一个（供应商 + 品牌）只有一张表，表头不再有发布时刻/生效区间/状态；
+ * <p>设计口径（见 `.local/design/supplier-price-list.md` §4.6 修订 R2，含轴向变更）：</p>
+ * - **取消版本**：一个（供应商 + 品牌）只有一张表；表头没有发布时刻/生效区间/状态；
+ * - 视图按**品牌**分页（品牌 = 标签页），页内**每个供应商一列**；
  * - **行** = 规格全集固定行 `类别 / 材质 / 规格(直径) / 长度`（只读，不自由增行）；
- * - **列** = 每个品牌一列，列内只填「单价」；单元格留空 = 不报价（`null`，绝不写 0）；
- * - 没有任何批量操作（整表加减 / TSV 粘贴）可以把空价写成 0。
+ * - **单元格** = 该（供应商, 品牌）价格表里 `(category, material, spec, length)` 的单价；
+ *   留空 = 不报价（提交 `null`，绝不写 0）；
+ * - 数据键与原来完全一致：`(供应商, 品牌, 类别, 材质, 规格, 长度) → 单价`，只是矩阵转置；
+ * - 整体加减按**价格表（供应商 + 品牌）**生效，因此入口在列头菜单上，不存在跨供应商批量接口。
  *
  * <p>本模块不依赖 React，便于单测覆盖边界。</p>
  */
@@ -113,6 +116,14 @@ export function describePriceRow(row: {
     .join(' ')
 }
 
+/** 列的人类可读标识：`供应商名`（品牌是页级维度，不需要重复进列名）。 */
+export function describePriceColumn(column: {
+  supplierId: EntityId
+  supplierName: string
+}): string {
+  return normalizeText(column.supplierName) || `#${column.supplierId}`
+}
+
 /* ------------------------------------------------------------ 矩阵结构 */
 
 /** 矩阵固定行：规格全集里的定位列（只读）。 */
@@ -133,9 +144,14 @@ export type PriceMatrixRow = {
   sortOrder: number
 }
 
-/** 某个品牌列的状态（`listId` 为空 = 该品牌尚无价格表，首次填价时才建表）。 */
-export type PriceMatrixListInfo = {
-  brandName: string
+/**
+ * 一个**供应商列**在该品牌视图下的状态。
+ *
+ * <p>`listId` 为空 = 该（供应商, 品牌）尚无价格表，首次填价时才建表。</p>
+ */
+export type PriceMatrixColumnInfo = {
+  supplierId: EntityId
+  supplierName: string
   listId: EntityId | null
   /** 列表返回的更新时间（无表时为空串） */
   updatedAt: string
@@ -143,75 +159,67 @@ export type PriceMatrixListInfo = {
   itemCount: number
 }
 
-/** 单个（品牌, 行）单元格。 */
+/** 单个（供应商列, 规格行）单元格。 */
 export type PriceMatrixCell = {
   /** `null` = 不报价；`0` = 真实的 0 元 */
   price: number | null
   /** 服务端条目 ID；仅存在于「从服务端带出的条目」上 */
   itemId?: EntityId
-  /** 服务端条目的状态/备注：维护页不编辑，但 PUT 全量替换时必须原样带回 */
+  /** 服务端条目的状态/备注：维护页不编辑，但全量替换时必须原样带回 */
   priceStatus: SupplierPriceItemStatus
   remark: string | null
 }
 
 /**
- * 矩阵编辑器状态。
+ * 品牌视图矩阵状态。
  *
- * <p>刻意把行（规格全集）与单元格（品牌×行）分开：规格全集数百行 × 多品牌时，
- * 逐行 per-brand 对象会让行渲染依赖整个品牌映射，列内录入的状态更新成本高且不易做
+ * <p>刻意把行（规格全集）与单元格（供应商列×行）分开：规格全集数百行 × 多供应商时，
+ * 逐行 per-supplier 对象会让行渲染依赖整个供应商映射，列内录入的状态更新成本高且不易做
  * 脏值对比。</p>
  */
 export type PriceMatrixState = {
+  /** 视图所属品牌（数据键的第二段；每个单元格都落在某个 (供应商, 品牌) 表里） */
+  brandName: string
   rows: PriceMatrixRow[]
-  /** brandName → 列信息 */
-  lists: Record<string, PriceMatrixListInfo>
-  /** brandName → 行键 → 单元格 */
-  cells: Record<string, Record<string, PriceMatrixCell>>
-  /** 列顺序（品牌列展示顺序；新增品牌列追加到末尾） */
-  brandOrder: string[]
+  /** supplierId → 列信息 */
+  columns: Record<EntityId, PriceMatrixColumnInfo>
+  /** supplierId → 行键 → 单元格 */
+  cells: Record<EntityId, Record<string, PriceMatrixCell>>
+  /** 列顺序（供应商列展示顺序；新增供应商列追加到末尾） */
+  columnOrder: EntityId[]
   /** 规格全集内 spec 无法归一化的脏行数 */
   invalidCatalogCount: number
 }
 
 export type BuildMatrixOptions = {
+  /** 视图所属品牌 */
+  brandName: string
   catalog: SupplierPriceSpecCatalogEntry[]
-  /** 当前供应商的（供应商, 品牌）现表摘要 */
+  /** 该品牌的（供应商, 品牌）现表摘要（`GET /supplier-price-lists?brandName=` 全量） */
   lists: SupplierPriceListSummary[]
-  /** 该供应商经营品牌（`md_supplier_brand`，经供应商选项接口带出） */
-  supplierBrands?: string[]
-  /** 显式追加的品牌列（手输品牌；允许尚无价格表） */
-  extraBrands?: string[]
+  /** 可选的额外供应商列（尚无该品牌价格表，允许先出现空列） */
+  extraSuppliers?: { supplierId: EntityId; supplierName: string }[]
 }
 
 function emptyCell(): PriceMatrixCell {
   return { price: null, priceStatus: 'NORMAL', remark: null }
 }
 
-function upsertRowKey(map: Record<string, number>, key: string, index: number) {
-  if (!(key in map)) {
-    map[key] = index
-  }
-}
-
 /**
- * 由规格全集 + 现表构建矩阵。
+ * 由规格全集 + 该品牌的现表构建矩阵。
  *
- * <p>列来源 = 已有价格表的品牌（按后端返回顺序）∪ 该供应商经营品牌 ∪ 手工追加品牌；
- * 顺序上已有价格表在前（有数据优先可见），其余品牌追加在后。有价格表的品牌会按归一化
- * 条目键带出单价、状态、备注与条目 ID；规格全集外的历史条目既不显示也不在此丢弃，
- * 由 {@link PriceMatrixState} 的使用方通过 `PUT` 全量替换时的条目集合守卫（见
- * `buildReplaceItems`）保证不被静默删除。</p>
+ * <p>列来源 = 已有该品牌价格表的供应商（后端返回顺序）∪ 额外指定的供应商；
+ * `brandName` 归一化后必须非空（页级标签就是品牌，不允许空品牌视图）；空品牌返回空矩阵。</p>
  */
 export function buildMatrixState(
   options: BuildMatrixOptions,
 ): PriceMatrixState {
-  const { catalog, lists } = options
+  const brandName = normalizeText(options.brandName)
   const rows: PriceMatrixRow[] = []
   const keyToRowIndex: Record<string, number> = {}
-  const materialSpecLengthIndexes: Record<string, number[]> = {}
   let invalidCatalogCount = 0
 
-  for (const entry of catalog) {
+  for (const entry of options.catalog) {
     const key = buildPriceRowKey(entry)
     if (!key) {
       invalidCatalogCount += 1
@@ -226,85 +234,92 @@ export function buildMatrixState(
       invalidCatalogCount += 1
       continue
     }
-    const material = normalizeText(entry.material)
-    const length = normalizeText(entry.length)
-    const row: PriceMatrixRow = {
+    keyToRowIndex[key] = rows.length
+    rows.push({
       uid: `${key}#${rows.length}`,
       key,
       category: normalizeText(entry.category),
-      material,
+      material: normalizeText(entry.material),
       spec,
-      length,
+      length: normalizeText(entry.length),
       sortOrder: Number.isFinite(entry.sortOrder)
         ? entry.sortOrder
         : rows.length,
-    }
-    upsertRowKey(keyToRowIndex, key, rows.length)
-    const secondary = buildMaterialSpecLengthKey({ material, spec, length })
-    if (secondary) {
-      const bucket = materialSpecLengthIndexes[secondary] ?? []
-      bucket.push(rows.length)
-      materialSpecLengthIndexes[secondary] = bucket
-    }
-    rows.push(row)
+    })
   }
 
-  const brandOrder: string[] = []
-  const listsByBrand: Record<string, PriceMatrixListInfo> = {}
-  for (const list of lists) {
-    const brand = normalizeText(list.brandName)
-    if (!brand || listsByBrand[brand]) {
-      continue
+  const columnOrder: EntityId[] = []
+  const columns: Record<EntityId, PriceMatrixColumnInfo> = {}
+  const cells: Record<EntityId, Record<string, PriceMatrixCell>> = {}
+
+  const pushColumn = (
+    supplierId: EntityId,
+    supplierName: string,
+    listId: EntityId | null,
+    updatedAt: string,
+    itemCount: number,
+  ) => {
+    if (!supplierId || columns[supplierId]) {
+      return
     }
-    listsByBrand[brand] = {
-      brandName: brand,
-      listId: list.id,
-      updatedAt: list.updatedAt,
-      itemCount: list.itemCount,
+    columns[supplierId] = {
+      supplierId,
+      supplierName,
+      listId,
+      updatedAt,
+      itemCount,
     }
-    brandOrder.push(brand)
+    cells[supplierId] = {}
+    columnOrder.push(supplierId)
   }
 
-  for (const brand of [
-    ...(options.supplierBrands ?? []),
-    ...(options.extraBrands ?? []),
-  ]) {
-    const name = normalizeText(brand)
-    if (!name || brandOrder.includes(name)) {
-      continue
+  if (brandName) {
+    for (const list of options.lists) {
+      if (normalizeText(list.brandName) !== brandName) {
+        continue
+      }
+      pushColumn(
+        list.supplierId,
+        normalizeText(list.supplierName),
+        list.id,
+        list.updatedAt,
+        list.itemCount,
+      )
     }
-    listsByBrand[name] = {
-      brandName: name,
-      listId: null,
-      updatedAt: '',
-      itemCount: 0,
+    for (const extra of options.extraSuppliers ?? []) {
+      pushColumn(
+        extra.supplierId,
+        normalizeText(extra.supplierName),
+        null,
+        '',
+        0,
+      )
     }
-    brandOrder.push(name)
   }
 
   return {
+    brandName,
     rows,
-    lists: listsByBrand,
-    cells: {},
-    brandOrder,
+    columns,
+    cells,
+    columnOrder,
     invalidCatalogCount,
   }
 }
 
 /**
- * 把现表条目灌进给定品牌列。
+ * 把某（供应商, 品牌）现表的条目灌进对应列。
  *
- * <p>`priorItems` 是该（供应商, 品牌）现表的条目全量；规格全集外的条目**不会**进入矩阵，
- * 但调用方必须把它们保留在「全量替换」的提交集合里（见 {@link buildReplaceItems}），
- * 否则用户在矩阵里改一格就会静默删掉历史脏键条目。</p>
+ * <p>`priorItems` 是该现表的条目全量；规格全集外的条目**不会**进入矩阵，但调用方必须把它们
+ * 保留在「全量替换」的提交集合里（见 {@link buildReplaceItems}），否则用户在矩阵里改一格
+ * 就会静默删掉历史脏键条目。</p>
  */
-export function applyBrandItems(
+export function applyColumnItems(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
   priorItems: SupplierPriceListItem[],
 ): PriceMatrixState {
-  const brand = normalizeText(brandName)
-  if (!brand) {
+  if (!supplierId || !state.columns[supplierId]) {
     return state
   }
   const byKey: Record<string, PriceMatrixCell> = {}
@@ -324,10 +339,7 @@ export function applyBrandItems(
     ...state,
     cells: {
       ...state.cells,
-      [brand]: {
-        ...(state.cells[brand] ?? {}),
-        ...byKey,
-      },
+      [supplierId]: { ...(state.cells[supplierId] ?? {}), ...byKey },
     },
   }
 }
@@ -335,102 +347,99 @@ export function applyBrandItems(
 /** 覆盖单个单元格（唯一允许的写入路径，避免多处手改嵌套映射）。 */
 export function updateMatrixCell(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
   rowKey: string,
   patch: Partial<PriceMatrixCell>,
 ): PriceMatrixState {
-  const brand = normalizeText(brandName)
-  if (!brand) {
+  if (!supplierId || !state.columns[supplierId]) {
     return state
   }
-  const brandCells = state.cells[brand] ?? {}
-  const current = brandCells[rowKey] ?? emptyCell()
+  const columnCells = state.cells[supplierId] ?? {}
+  const current = columnCells[rowKey] ?? emptyCell()
   return {
     ...state,
     cells: {
       ...state.cells,
-      [brand]: {
-        ...brandCells,
-        [rowKey]: { ...current, ...patch },
-      },
+      [supplierId]: { ...columnCells, [rowKey]: { ...current, ...patch } },
     },
   }
 }
 
-/** 追加品牌列（手输品牌 / 选择经营品牌）；已存在时原样返回。 */
-export function addBrandColumn(
+/** 追加供应商列（尚无该品牌价格表的供应商）；已存在时原样返回。 */
+export function addSupplierColumn(
   state: PriceMatrixState,
-  brandName: string,
+  supplier: { supplierId: EntityId; supplierName: string },
 ): PriceMatrixState {
-  const brand = normalizeText(brandName)
-  if (!brand || state.lists[brand]) {
+  const supplierId = normalizeText(supplier.supplierId)
+  if (!supplierId || state.columns[supplierId]) {
     return state
   }
   return {
     ...state,
-    lists: {
-      ...state.lists,
-      [brand]: {
-        brandName: brand,
+    columns: {
+      ...state.columns,
+      [supplierId]: {
+        supplierId,
+        supplierName: normalizeText(supplier.supplierName),
         listId: null,
         updatedAt: '',
         itemCount: 0,
       },
     },
-    brandOrder: [...state.brandOrder, brand],
+    cells: { ...state.cells, [supplierId]: {} },
+    columnOrder: [...state.columnOrder, supplierId],
   }
 }
 
-/** 移除品牌列（仅移除展示；删除服务端现表需另行显式操作）。 */
-export function removeBrandColumn(
+/** 移除供应商列（仅移除展示；删除服务端现表需另行显式操作）。 */
+export function removeSupplierColumn(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
 ): PriceMatrixState {
-  const brand = normalizeText(brandName)
-  if (!brand || !state.lists[brand]) {
+  if (!supplierId || !state.columns[supplierId]) {
     return state
   }
-  const lists = { ...state.lists }
-  delete lists[brand]
+  const columns = { ...state.columns }
+  delete columns[supplierId]
   const cells = { ...state.cells }
-  delete cells[brand]
+  delete cells[supplierId]
   return {
     ...state,
-    lists,
+    columns,
     cells,
-    brandOrder: state.brandOrder.filter((name) => name !== brand),
+    columnOrder: state.columnOrder.filter((id) => id !== supplierId),
   }
 }
 
-/** 标记某品牌列已建表（首次填价成功后写入服务端 ID）。 */
-export function markBrandListCreated(
+/** 标记该（供应商, 品牌）已建表（首次填价成功后写入服务端 ID 与权威条目）。 */
+export function markColumnListCreated(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
   detail: {
     listId: EntityId
     updatedAt: string
     items: SupplierPriceListItem[]
   },
 ): PriceMatrixState {
-  const brand = normalizeText(brandName)
-  if (!brand) {
+  const column = state.columns[supplierId]
+  if (!supplierId || !column) {
     return state
   }
   const withList: PriceMatrixState = {
     ...state,
-    lists: {
-      ...state.lists,
-      [brand]: {
-        brandName: brand,
+    columns: {
+      ...state.columns,
+      [supplierId]: {
+        ...column,
         listId: detail.listId,
         updatedAt: detail.updatedAt,
         itemCount: detail.items.filter((item) => item.price !== null).length,
       },
     },
     // 服务端是权威：清掉该列本地草稿，改用响应里的条目（id/状态/备注以它为准）
-    cells: { ...state.cells, [brand]: {} },
+    cells: { ...state.cells, [supplierId]: {} },
   }
-  return applyBrandItems(withList, brand, detail.items)
+  return applyColumnItems(withList, supplierId, detail.items)
 }
 
 /* ------------------------------------------------------------ 校验与统计 */
@@ -499,19 +508,19 @@ export function isCellFilled(cell: PriceMatrixCell | undefined): boolean {
   return Boolean(cell && cell.price !== null)
 }
 
-/** 某品牌已填行数（不报价的行不计入）。 */
-export function countFilledForBrand(
+/** 某供应商列已填行数（不报价的行不计入）。 */
+export function countFilledForColumn(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
 ): number {
-  const brandCells = state.cells[brandName] ?? {}
-  return Object.values(brandCells).filter((cell) => cell.price !== null).length
+  const columnCells = state.cells[supplierId] ?? {}
+  return Object.values(columnCells).filter((cell) => cell.price !== null).length
 }
 
 /** 矩阵概览统计。 */
 export type MatrixStats = {
   totalRows: number
-  brandCount: number
+  columnCount: number
   filledTotal: number
   emptyTotal: number
   updatedAt: string
@@ -519,23 +528,23 @@ export type MatrixStats = {
 
 export function computeMatrixStats(state: PriceMatrixState): MatrixStats {
   let filledTotal = 0
-  for (const brand of state.brandOrder) {
-    filledTotal += countFilledForBrand(state, brand)
+  for (const supplierId of state.columnOrder) {
+    filledTotal += countFilledForColumn(state, supplierId)
   }
-  const brands = state.brandOrder.length
+  const columnCount = state.columnOrder.length
   return {
     totalRows: state.rows.length,
-    brandCount: brands,
+    columnCount,
     filledTotal,
-    emptyTotal: brands * state.rows.length - filledTotal,
+    emptyTotal: columnCount * state.rows.length - filledTotal,
     updatedAt:
-      state.brandOrder
-        .map((brand) => state.lists[brand]?.updatedAt ?? '')
+      state.columnOrder
+        .map((supplierId) => state.columns[supplierId]?.updatedAt ?? '')
         .find(Boolean) ?? '',
   }
 }
 
-/** 行填充过滤：只看「指定品牌已填/未填」。 */
+/** 行填充过滤：只看「指定供应商列已填/未填」。 */
 export type PriceRowFillFilter = 'ALL' | 'FILLED' | 'UNFILLED'
 
 export type MatrixRowFilter = {
@@ -543,8 +552,8 @@ export type MatrixRowFilter = {
   fill?: PriceRowFillFilter
   category?: string
   material?: string
-  /** 填充过滤作用的品牌列；为空时按「任一品牌已填」判断 */
-  fillBrand?: string
+  /** 填充过滤作用的供应商列；为空时按「任一供应商已填」判断 */
+  fillSupplierId?: EntityId
 }
 
 function matchesKeyword(row: PriceMatrixRow, keyword: string): boolean {
@@ -564,19 +573,20 @@ function matchesKeyword(row: PriceMatrixRow, keyword: string): boolean {
     .includes(needle)
 }
 
-/** 矩阵行筛选：关键字 + 类别 + 材质 + 只看已填/未填（按品牌列或任一品牌）。 */
+/** 矩阵行筛选：关键字 + 类别 + 材质 + 只看已填/未填（按供应商列或任一供应商）。 */
 export function filterMatrixRows(
   state: PriceMatrixState,
   filter: MatrixRowFilter,
 ): PriceMatrixRow[] {
   const fill = filter.fill ?? 'ALL'
-  const fillBrand = filter.fillBrand?.trim()
+  const fillSupplierId = filter.fillSupplierId?.trim()
   return state.rows.filter((row) => {
     if (fill !== 'ALL') {
-      const filled = fillBrand
-        ? (state.cells[fillBrand]?.[row.key]?.price ?? null) !== null
-        : state.brandOrder.some(
-            (brand) => (state.cells[brand]?.[row.key]?.price ?? null) !== null,
+      const filled = fillSupplierId
+        ? (state.cells[fillSupplierId]?.[row.key]?.price ?? null) !== null
+        : state.columnOrder.some(
+            (supplierId) =>
+              (state.cells[supplierId]?.[row.key]?.price ?? null) !== null,
           )
       if (fill === 'FILLED' && !filled) {
         return false
@@ -598,7 +608,7 @@ export function filterMatrixRows(
 /* ------------------------------------------------------------ 提交载荷 */
 
 /**
- * 由矩阵生成某品牌的全量条目（`PUT` 语义 = 全量替换，必须包含未改动的条目）。
+ * 由矩阵生成某供应商列的全量条目（`PUT` 语义 = 全量替换，必须包含未改动的条目）。
  *
  * <p>三条守卫：</p>
  * 1. 服务端已存在的条目**无论价格是否为 null 都必须带上**，否则会被全量替换删掉
@@ -608,10 +618,10 @@ export function filterMatrixRows(
  */
 export function buildReplaceItems(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
   preservedItems: SupplierPriceListItem[] = [],
 ): SupplierPriceListItemPayload[] {
-  const brandCells = state.cells[brandName] ?? {}
+  const columnCells = state.cells[supplierId] ?? {}
   const items: SupplierPriceListItemPayload[] = []
   const emitted = new Set<string>()
 
@@ -643,7 +653,7 @@ export function buildReplaceItems(
   }
 
   state.rows.forEach((row, index) => {
-    const cell = brandCells[row.key]
+    const cell = columnCells[row.key]
     const hasItemId = Boolean(cell?.itemId)
     const hasPrice = cell?.price !== null && cell?.price !== undefined
     if (!hasItemId && !hasPrice) {
@@ -694,9 +704,16 @@ export function wouldPriceGoNegative(
 
 /* ------------------------------------------------------------ 整体加减 */
 
+/** 整体加减的目标：一个（供应商, 品牌）价格表（接口是单表粒度）。 */
+export type PriceAdjustTarget = {
+  supplierId: EntityId
+  listId: EntityId
+}
+
 export type AdjustmentPreviewRow = {
   itemId: EntityId
-  brandName: string
+  supplierId: EntityId
+  supplierName: string
   key: string
   label: string
   priceBefore: number
@@ -706,107 +723,83 @@ export type AdjustmentPreviewRow = {
 export type MatrixAdjustmentPreview = {
   mode: PriceAdjustmentMode
   amount: number
-  /** 按品牌分组的可执行加减条目（每个品牌一次 `price-adjustments` 调用） */
-  brandPlans: {
-    brandName: string
-    listId: EntityId
-    itemIds: EntityId[]
-    affectedCount: number
-    skippedCount: number
-  }[]
+  /** 目标价格表（该供应商在该品牌下没有表时为 null） */
+  target: PriceAdjustTarget | null
+  itemIds: EntityId[]
   rows: AdjustmentPreviewRow[]
   affectedCount: number
   /** 单价为空（不报价）的条目不参与加减，仅计数 */
   skippedCount: number
   negativeLabels: string[]
-  /** 有价但服务端尚无表/条目 ID 的行：无法加减，需先保存 */
+  /** 有价但服务端尚无条目的行：无法加减，需先保存（失焦即存） */
   unsavedCount: number
-  /** 品牌列本身未建表时无法参与加减 */
-  brandsWithoutList: string[]
+  /** 目标供应商在该品牌下尚无价格表 */
+  missingList: boolean
 }
 
 /**
- * 整体加减预览：只作用于**已建表且条目已落库**的 `price !== null` 条目。
+ * 整体加减预览：只作用于**目标（供应商, 品牌）价格表里已落库**的 `price !== null` 条目。
  *
- * <p>调用方必须先展示预览再由用户确认；本函数只做计算，不发起请求。跨品牌一次性预览，
- * 执行时按品牌分别调用 `price-adjustments`（接口是单表粒度）。</p>
+ * <p>调用方必须先展示预览再由用户确认；本函数只做计算，不发起请求。加减**按价格表生效**，
+ * 因此不存在跨供应商的批量接口。</p>
  */
 export function buildMatrixAdjustmentPreview(
   state: PriceMatrixState,
+  supplierId: EntityId,
   mode: PriceAdjustmentMode,
   amount: number,
-  brandNames: string[] = state.brandOrder,
 ): MatrixAdjustmentPreview {
-  const previewRows: AdjustmentPreviewRow[] = []
-  const brandPlans: MatrixAdjustmentPreview['brandPlans'] = []
+  const column = state.columns[supplierId]
+  const columnCells = state.cells[supplierId] ?? {}
+  const rows: AdjustmentPreviewRow[] = []
+  const itemIds: EntityId[] = []
   const negativeLabels: string[] = []
-  const brandsWithoutList: string[] = []
   let skippedCount = 0
   let unsavedCount = 0
 
-  for (const brand of brandNames) {
-    const list = state.lists[brand]
-    const brandCells = state.cells[brand] ?? {}
-    const itemIds: EntityId[] = []
-    let affected = 0
-    let skipped = 0
+  const columnLabel = column ? describePriceColumn(column) : `#${supplierId}`
 
-    for (const row of state.rows) {
-      const cell = brandCells[row.key]
-      if (!cell || cell.price === null) {
-        skipped += 1
-        continue
-      }
-      if (!cell.itemId) {
-        unsavedCount += 1
-        continue
-      }
-      if (!list?.listId) {
-        continue
-      }
-      const priceAfter =
-        mode === 'ADD' ? cell.price + amount : cell.price - amount
-      if (priceAfter < 0) {
-        negativeLabels.push(`${brand} ${describePriceRow(row)}`)
-      }
-      itemIds.push(cell.itemId)
-      affected += 1
-      previewRows.push({
-        itemId: cell.itemId,
-        brandName: brand,
-        key: `${brand}${KEY_SEPARATOR}${row.key}`,
-        label: `${brand} ${describePriceRow(row)}`,
-        priceBefore: cell.price,
-        priceAfter,
-      })
-    }
-
-    skippedCount += skipped
-    if (!list?.listId) {
-      if (affected > 0 || skipped > 0) {
-        brandsWithoutList.push(brand)
-      }
+  for (const row of state.rows) {
+    const cell = columnCells[row.key]
+    if (!cell || cell.price === null) {
+      skippedCount += 1
       continue
     }
-    brandPlans.push({
-      brandName: brand,
-      listId: list.listId,
-      itemIds,
-      affectedCount: affected,
-      skippedCount: skipped,
+    if (!cell.itemId) {
+      unsavedCount += 1
+      continue
+    }
+    if (!column?.listId) {
+      continue
+    }
+    const priceAfter =
+      mode === 'ADD' ? cell.price + amount : cell.price - amount
+    if (priceAfter < 0) {
+      negativeLabels.push(`${columnLabel} ${describePriceRow(row)}`)
+    }
+    itemIds.push(cell.itemId)
+    rows.push({
+      itemId: cell.itemId,
+      supplierId,
+      supplierName: columnLabel,
+      key: `${supplierId}${KEY_SEPARATOR}${row.key}`,
+      label: `${columnLabel} ${describePriceRow(row)}`,
+      priceBefore: cell.price,
+      priceAfter,
     })
   }
 
   return {
     mode,
     amount,
-    brandPlans: brandPlans.filter((plan) => plan.affectedCount > 0),
-    rows: previewRows,
-    affectedCount: previewRows.length,
+    target: column?.listId ? { supplierId, listId: column.listId } : null,
+    itemIds,
+    rows,
+    affectedCount: rows.length,
     skippedCount,
     negativeLabels,
     unsavedCount,
-    brandsWithoutList,
+    missingList: !column?.listId,
   }
 }
 
@@ -825,7 +818,7 @@ export type TsvPasteError = {
 
 export type MatrixPasteResult = {
   state: PriceMatrixState
-  brandName: string
+  supplierId: EntityId
   errors: TsvPasteError[]
   appliedCount: number
   /** 由空单价清成「不报价」的单元格数（调用方需要二次确认） */
@@ -835,25 +828,24 @@ export type MatrixPasteResult = {
 }
 
 /**
- * 把一段 TSV 文本写入**指定品牌列**。
+ * 把一段 TSV 文本写入**指定供应商列**（该列所属的（供应商, 品牌）价格表）。
  *
  * <p>列布局（与比价页一致的从 Excel 复制口径）：4 列 = `材质 / 规格 / 长度 / 单价`；
  * 5 列 = `类别 / 材质 / 规格 / 长度 / 单价`。只能对齐到固定规格行；列数不足、规格非正整数、
  * 单价格式错误、无法对齐的行逐行报错且不写入。单价为空 = 不报价（`null`），绝不写 0。</p>
+ *
+ * <p>整块粘贴（多供应商 × 规格）由调用方按列拆分后逐列调用本函数，保证每个单元格都落到
+ * 各自的（供应商, 品牌）价格表，不猜目标。</p>
  */
 export function applyMatrixPaste(
   state: PriceMatrixState,
-  brandName: string,
+  supplierId: EntityId,
   text: string,
 ): MatrixPasteResult {
-  const brand = normalizeText(brandName)
-  let next = state.brandOrder.includes(brand)
-    ? state
-    : addBrandColumn(state, brand)
-
+  let working = state
   const byFullKey = new Map<string, PriceMatrixRow>()
   const byMaterialSpecLength = new Map<string, PriceMatrixRow[]>()
-  for (const row of next.rows) {
+  for (const row of working.rows) {
     const key = buildPriceRowKey(row)
     if (key) {
       byFullKey.set(key, row)
@@ -939,19 +931,21 @@ export function applyMatrixPaste(
       return
     }
 
-    const current = next.cells[brand]?.[target.key]
+    const current = working.cells[supplierId]?.[target.key]
     if (priceParsed.price === null) {
       if (current?.price === null || current === undefined) {
         unchangedEmptyCount += 1
       } else {
         clearedCount += 1
       }
-      next = updateMatrixCell(next, brand, target.key, { price: null })
+      working = updateMatrixCell(working, supplierId, target.key, {
+        price: null,
+      })
       appliedCount += 1
       return
     }
 
-    next = updateMatrixCell(next, brand, target.key, {
+    working = updateMatrixCell(working, supplierId, target.key, {
       price: priceParsed.price,
       // 有价即视为正常报价，否则会出现「无货」却带价的矛盾状态
       priceStatus:
@@ -963,8 +957,8 @@ export function applyMatrixPaste(
   })
 
   return {
-    state: next,
-    brandName: brand,
+    state: working,
+    supplierId,
     errors,
     appliedCount,
     clearedCount,
@@ -972,9 +966,156 @@ export function applyMatrixPaste(
   }
 }
 
+/* ------------------------------------------------------------ 整块粘贴 */
+
+/** 整块粘贴里识别出的一个目标列。 */
+export type BlockPasteColumn = {
+  supplierId: EntityId
+  supplierName: string
+  /** 该列的 TSV（材质 / 规格 / 长度 / 单价，或带类别 5 列） */
+  text: string
+}
+
+export type BlockPasteLayout = {
+  columns: BlockPasteColumn[]
+  /** 无法识别为当前视图任何供应商的列名（跳过而不是乱写） */
+  unknownSupplierNames: string[]
+}
+
+/**
+ * 解析「供应商 × 规格」整块粘贴。
+ *
+ * <p>列布局：`供应商 / 材质 / 规格 / 长度 / 单价`（也允许再带「类别」作为第 4 列）。
+ * 首行第二格不是数字时视为表头行（`供应商 / 材质 / 规格 / 长度 / 单价`）并跳过。
+ * 返回按供应商名匹配到的列；未匹配到的列名单独回报，**不会**猜着写入。</p>
+ */
+export function parseBlockPasteLayout(
+  text: string,
+  suppliers: { supplierId: EntityId; supplierName: string }[],
+): BlockPasteLayout {
+  const byName = new Map<
+    string,
+    { supplierId: EntityId; supplierName: string }
+  >()
+  for (const supplier of suppliers) {
+    const name = normalizeText(supplier.supplierName)
+    if (name) {
+      byName.set(name, supplier)
+    }
+  }
+  const buckets = new Map<EntityId, string[]>()
+  const ordered: EntityId[] = []
+  const matched = new Map<EntityId, string>()
+  const unknownSupplierNames: string[] = []
+
+  const lines = text.split(/\r?\n/)
+  lines.forEach((line, index) => {
+    if (!line.trim()) {
+      return
+    }
+    const cells = line.split('\t').map((cell) => cell.trim())
+    if (cells.length < 5) {
+      return
+    }
+    const [supplierName, ...rest] = cells
+    if (!supplierName) {
+      return
+    }
+    if (index === 0 && normalizeSpecNumber(rest[1]) === null) {
+      // 表头行：供应商 / 材质 / 规格 / 长度 / 单价
+      return
+    }
+    const supplier = byName.get(supplierName)
+    if (!supplier) {
+      if (!unknownSupplierNames.includes(supplierName)) {
+        unknownSupplierNames.push(supplierName)
+      }
+      return
+    }
+    if (!buckets.has(supplier.supplierId)) {
+      buckets.set(supplier.supplierId, [])
+      matched.set(supplier.supplierId, supplier.supplierName)
+      ordered.push(supplier.supplierId)
+    }
+    buckets.get(supplier.supplierId)?.push(rest.join('\t'))
+  })
+
+  return {
+    columns: ordered.map((supplierId) => ({
+      supplierId,
+      supplierName: matched.get(supplierId) ?? `#${supplierId}`,
+      text: (buckets.get(supplierId) ?? []).join('\n'),
+    })),
+    unknownSupplierNames,
+  }
+}
+
+/* ------------------------------------------------------------ 整块粘贴预览 */
+
+/** 整块粘贴的单列预览（不写状态，只算会写多少行、报哪些错）。 */
+export type BlockPasteColumnPreview = {
+  supplierId: EntityId
+  supplierName: string
+  appliedCount: number
+  clearedCount: number
+  errors: TsvPasteError[]
+}
+
+export type BlockPastePreview = {
+  columns: BlockPasteColumnPreview[]
+  appliedCount: number
+  clearedCount: number
+  errorCount: number
+  /** 无法识别为当前视图任何供应商的列名（跳过而不是乱写） */
+  unknownSupplierNames: string[]
+}
+
+/**
+ * 整块粘贴预览：`供应商 / 材质 / 规格 / 长度 / 单价`（可带类别）。
+ *
+ * <p>纯读：按供应商名拆列后逐列调用 {@link applyMatrixPaste} 的计算结果，但**不返回新状态**；
+ * 真正写入时调用方再对原状态逐列 `applyMatrixPaste`，保证写入与预览一致且各自落表。</p>
+ */
+export function previewBlockPaste(
+  state: PriceMatrixState,
+  text: string,
+): BlockPastePreview {
+  const layout = parseBlockPasteLayout(
+    text,
+    state.columnOrder.map((supplierId) => ({
+      supplierId,
+      supplierName: state.columns[supplierId]?.supplierName ?? '',
+    })),
+  )
+  const columns: BlockPasteColumnPreview[] = []
+  let appliedCount = 0
+  let clearedCount = 0
+  let errorCount = 0
+  for (const column of layout.columns) {
+    const result = applyMatrixPaste(state, column.supplierId, column.text)
+    columns.push({
+      supplierId: column.supplierId,
+      supplierName: column.supplierName,
+      appliedCount: result.appliedCount,
+      clearedCount: result.clearedCount,
+      errors: result.errors,
+    })
+    appliedCount += result.appliedCount
+    clearedCount += result.clearedCount
+    errorCount += result.errors.length
+  }
+  return {
+    columns,
+    appliedCount,
+    clearedCount,
+    errorCount,
+    unknownSupplierNames: layout.unknownSupplierNames,
+  }
+}
+
 /* ------------------------------------------------------------ 变更检出 */
 
-/** 单元格指纹：仅包含会随编辑变化的字段（`price` 决定 `PUT` 必要性）。 */
+/** 单元格指纹：仅包含会随编辑变化的字段（`price` 决定提交必要性）。 */
 function cellSignature(cell: PriceMatrixCell | undefined): string {
   if (!cell) {
     return ''
@@ -990,29 +1131,29 @@ function cellSignature(cell: PriceMatrixCell | undefined): string {
 /** 计算当前矩阵的指纹（用于「有未保存修改」判定）。 */
 export function matrixSignature(state: PriceMatrixState): string {
   const parts: string[] = []
-  for (const brand of state.brandOrder) {
-    const brandCells = state.cells[brand] ?? {}
+  for (const supplierId of state.columnOrder) {
+    const columnCells = state.cells[supplierId] ?? {}
     parts.push(
-      `#${brand}|${state.lists[brand]?.listId ?? ''}|${state.rows
-        .map((row) => cellSignature(brandCells[row.key]))
+      `#${supplierId}|${state.columns[supplierId]?.listId ?? ''}|${state.rows
+        .map((row) => cellSignature(columnCells[row.key]))
         .join(',')}`,
     )
   }
   return parts.join('\n')
 }
 
-/** 列级即存：这些品牌列相对基线有改动（含「新填价但尚无表」的品牌）。 */
-export function dirtyBrandNames(
+/** 列级即存：这些供应商列相对基线有改动（含「新填价但尚无表」的列）。 */
+export function dirtySupplierIds(
   state: PriceMatrixState,
   baseline: string,
-): string[] {
+): EntityId[] {
   if (!baseline) {
     return []
   }
   const currentParts = matrixSignature(state).split('\n')
   const baselineParts = baseline.split('\n')
-  return state.brandOrder.filter(
-    (_brand, index) => currentParts[index] !== baselineParts[index],
+  return state.columnOrder.filter(
+    (_supplierId, index) => currentParts[index] !== baselineParts[index],
   )
 }
 

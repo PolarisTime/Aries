@@ -40,33 +40,36 @@ export const enUS = {
       },
     },
     tabs: {
-      label: 'Supplier price list tabs',
-      empty: 'No supplier price list yet. Click "New supplier price list".',
-      selectHint: 'Select or create a supplier price list.',
-      brandCount: '{{count}} brand(s)',
-      add: 'New supplier price list',
-      addTitle: 'New supplier price list',
-      addConfirm: 'Open this supplier',
+      label: 'Brand price list tabs',
+      empty: 'No brand price list yet. Click "New brand price list".',
+      selectHint: 'Select or create a brand price list.',
+      supplierCount: '{{count}} supplier(s)',
+      add: 'New brand price list',
+      addTitle: 'New brand price list',
+      addConfirm: 'Open this brand',
+      brandHint: 'Select or enter a brand name',
       addHint:
-        'Add brand columns as needed: a price list is created only when a brand gets its first unit price; empty cells create nothing.',
+        'Add supplier columns as needed: a price list is created only when a supplier gets its first unit price for this brand; empty cells create nothing.',
     },
-    brandColumn: {
-      add: 'Add brand column',
-      addTitle: 'Add brand column',
+    view: {
+      brandLabel: 'Current brand: {{brand}}',
+    },
+    supplierColumn: {
+      add: 'Add supplier column',
+      addTitle: 'Add a supplier column for "{{brand}}"',
       addHint:
-        'The price list is created when this column gets its first unit price; empty cells create nothing.',
-      selectLabel: 'Brands of this supplier',
-      selectPlaceholder: 'Select a brand',
-      manualLabel: 'Brand name (manual)',
-      manualPlaceholder: 'No brand on file; enter manually',
-      nameRequired: 'Enter or select a brand name',
-      duplicate: 'This brand column already exists',
-      emptyHint: 'No brand column yet. Click "Add brand column" first.',
+        'The price list is created when this column gets its first unit price; empty cells create nothing. The same supplier is never listed twice for one brand (duplicate creation is rejected by the backend with 409).',
+      selectLabel: 'Supplier',
+      selectPlaceholder: 'Select a supplier',
+      selectRequired: 'Please select a supplier',
+      duplicate: 'This supplier column already exists',
+      emptyHint: 'No supplier column yet. Click "Add supplier column" first.',
+      filledCount: 'Filled {{count}}',
       saving: 'Saving',
-      deleteNamed: 'Delete the price list of "{{brand}}"',
-      deleteTitle: 'Delete the price list of "{{brand}}"',
+      delete: 'Delete this supplier price list…',
+      deleteTitle: 'Delete the price list of "{{supplier}} / {{brand}}"',
       deleteContent:
-        'The whole price list of this supplier brand (all unit prices) will be deleted; price compare will stop deriving its spot price.',
+        'The whole price list of this (supplier, brand) pair (all unit prices) will be deleted; price compare will stop deriving its spot price.',
     },
     header: {
       supplier: 'Supplier',
@@ -100,7 +103,7 @@ export const enUS = {
       price: 'Unit price',
       priceStatus: 'Status',
       remark: 'Remark',
-      priceNamed: '{{brand}} {{row}} unit price',
+      priceNamed: '{{supplier}} {{row}} unit price',
       statusNamed: '{{row}} status',
       remarkNamed: '{{row}} remark',
     },
@@ -140,9 +143,8 @@ export const enUS = {
       filtered: 'Filtered {{count}} rows',
       unsaved: 'Unsaved changes',
       totalRows: 'Versions',
-      supplier: 'Supplier: {{name}}',
-      brands: 'Brand columns {{count}}',
-      brandFilled: '{{brand}} filled {{count}}',
+      columns: 'Supplier columns {{count}}',
+      columnFilled: '{{supplier}} filled {{count}}',
       updatedAt: 'Updated {{time}}',
     },
     paginationTotal: '{{count}} rows',
@@ -154,8 +156,8 @@ export const enUS = {
       fillAll: 'All rows',
       fillUnfilled: 'Unfilled only',
       fillFilled: 'Filled only',
-      fillBrand: 'Fill state by brand',
-      fillBrandAll: 'All brands (any filled)',
+      fillSupplier: 'Fill state by supplier',
+      fillSupplierAll: 'All suppliers (any filled)',
       status: 'Version status',
       releasedRange: 'Release time range',
     },
@@ -179,15 +181,14 @@ export const enUS = {
       negativeDetail:
         '{{count}} row(s) would end up with a negative price. Reduce the amount and retry (no silent clamping).',
       success: 'Adjustment applied to {{count}} item(s)',
-      brandCount: 'Brand columns involved: {{count}}',
+      titleWithTarget:
+        'Bulk adjustment: {{supplier}} / {{brand}} (preview first)',
       unsavedTitle:
         '{{count}} filled price(s) are not written to a price list yet. Confirm them in the cells (blur saves) before bulk adjusting.',
-      noListTitle:
-        'These brand columns have no price list or unsaved items, so they are excluded: {{brands}}.',
+      missingListTitle:
+        'This supplier has no price list for this brand yet. Fill one cell first (blur creates the list), then adjust.',
       noneTitle:
         'Nothing to adjust in this preview (rows without a price are excluded). Check the prices and retry.',
-      partialFailed:
-        'Bulk adjustment failed for some brand columns: {{detail}}',
       requiresSavedHint: 'Save the version first, or discard unsaved changes',
       columns: {
         item: 'Item',
@@ -196,13 +197,20 @@ export const enUS = {
       },
     },
     paste: {
-      title: 'TSV paste import',
-      brandLabel: 'Target brand column',
-      hintTitle: 'Copy from Excel and paste into the target brand column',
+      title: 'TSV paste import (brand: {{brand}})',
+      modeLabel: 'Paste mode',
+      modeColumn: 'By column (one supplier)',
+      modeBlock: 'Whole block (supplier × spec)',
+      targetLabel: 'Target supplier column',
+      hintTitleColumn: 'Paste into "{{supplier}}" (brand: {{brand}})',
+      hintTitleBlock: 'Paste a whole block into the brand "{{brand}}"',
       hintDetail:
         'Column order: material / spec / length / price (an optional category column may come first). An empty price means "no quote" and is never written as 0; rows that cannot be matched to fixed rows or contain invalid values are reported and skipped.',
+      hintDetailBlock:
+        'Column order: supplier / material / spec / length / price (the first row may be a header). Columns are split by supplier name and written into each (supplier, brand) price list; unknown supplier names are reported and skipped.',
       textareaLabel: 'Paste area',
       placeholder: 'HRB400E\t12\t9m\t3220',
+      placeholderBlock: 'Hangzhou Zhongjin\tHRB400E\t12\t9m\t3220',
       parse: 'Parse',
       apply: 'Apply to grid',
       applied: '{{count}} row(s) can be written',
@@ -214,6 +222,10 @@ export const enUS = {
       clearConfirmContent:
         '{{count}} pasted row(s) have an empty price; applying will turn them into "no quote" (not 0). Continue?',
       appliedToast: '{{count}} row(s) written',
+      blockApplied: '{{count}} row(s) can be written',
+      blockColumns: 'Supplier columns affected: {{count}}',
+      blockSkipped:
+        'These suppliers are not in the current view and were not written: {{names}}',
     },
     matrix: {
       title: 'Supplier price list matrix (read-only)',

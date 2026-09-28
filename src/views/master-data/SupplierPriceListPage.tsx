@@ -24,23 +24,27 @@ import {
   STALE_REALTIME,
 } from '@/constants/query-policies'
 import type { EntityId } from '@/types/entity-id'
-import { SupplierPriceListMatrixEditor } from './SupplierPriceListMatrixEditor'
+import {
+  type SupplierColumnOption,
+  SupplierPriceListBrandMatrixEditor,
+} from './SupplierPriceListBrandMatrixEditor'
 import { SupplierPriceListMatrixOverlay } from './SupplierPriceListMatrixOverlay'
 import './supplier-price-list.css'
 
 const EMPTY_SUPPLIERS: SupplierOption[] = []
 
-interface AddSupplierFormValues {
+interface AddBrandFormValues {
+  brandName?: string
   supplierId?: EntityId
 }
 
 /**
- * 供应商品牌价格表维护页（R2 形态 = 报单比价的矩阵）。
+ * 供应商品牌价格表维护页（R2 + 轴向变更：**品牌标签页 + 供应商列**）。
  *
- * <p>顶部是**供应商标签页**（已维护价格表的供应商 + 「新增供应商价格表」入口），
- * 标签页下方是矩阵编辑器：左侧固定只读列 `类别/材质/规格(直径)/长度`（来自
- * `GET /supplier-price-lists/spec-catalog`），右侧每个品牌一列，列内只填「单价」。
- * **没有版本**：一个（供应商 + 品牌）只有一张表，用更新时间展示。</p>
+ * <p>顶部是**品牌标签页**（已有价格表的品牌 + 「新增品牌价格表」入口，新建时选品牌名与供应商），
+ * 标签页下方是矩阵：左侧固定只读列 `类别/材质/规格(直径)/长度`（来自
+ * `GET /supplier-price-lists/spec-catalog`），右侧每个供应商一列，列内只填该供应商对该品牌的
+ * 单价。**没有版本**：一个（供应商 + 品牌）只有一张表，用更新时间展示。</p>
  *
  * <p>固定标识见设计契约 4.1：权限资源与菜单 code = `supplier-price-lists`，
  * 路由 `/master-data/supplier-price-lists`。</p>
@@ -48,10 +52,8 @@ interface AddSupplierFormValues {
 export function SupplierPriceListPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [form] = Form.useForm<AddSupplierFormValues>()
-  const [activeSupplierId, setActiveSupplierId] = useState<EntityId | null>(
-    null,
-  )
+  const [form] = Form.useForm<AddBrandFormValues>()
+  const [activeBrand, setActiveBrand] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [matrixOpen, setMatrixOpen] = useState(false)
 
@@ -62,75 +64,100 @@ export function SupplierPriceListPage() {
   })
   const supplierOptions = supplierOptionsQuery.data ?? EMPTY_SUPPLIERS
 
+  // 全量（品牌跨供应商）：标签页与「已有价格表的品牌」都从这里派生
   const listsQuery = useQuery({
-    queryKey: QUERY_KEYS.supplierPriceLists({
-      supplierId: activeSupplierId ?? undefined,
-      page: 1,
-      size: 200,
-    }),
-    queryFn: ({ signal }) =>
-      fetchAllSupplierPriceLists(
-        activeSupplierId ? { supplierId: activeSupplierId } : {},
-        signal,
-      ),
+    queryKey: QUERY_KEYS.supplierPriceLists({ page: 1, size: 200 }),
+    queryFn: ({ signal }) => fetchAllSupplierPriceLists({}, signal),
     staleTime: STALE_REALTIME,
   })
-
   const lists = useMemo(() => listsQuery.data ?? [], [listsQuery.data])
 
   const refresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['supplier-price-lists'] })
   }, [queryClient])
 
-  /** 标签页 = 已有价格表的供应商（按供应商名排序）。 */
+  /** 标签页 = 已有价格表的品牌（按品牌名排序），标签上带该品牌的供应商数。 */
   const tabs = useMemo(() => {
-    const supplierNameById = new Map(
-      supplierOptions.map((option) => [option.id, option.label] as const),
-    )
-    const brandCountById = new Map<EntityId, number>()
+    const supplierIdsByBrand = new Map<string, Set<EntityId>>()
     for (const list of lists) {
-      brandCountById.set(
-        list.supplierId,
-        (brandCountById.get(list.supplierId) ?? 0) + 1,
-      )
+      const brand = list.brandName.trim()
+      if (!brand) {
+        continue
+      }
+      const bucket = supplierIdsByBrand.get(brand) ?? new Set<EntityId>()
+      bucket.add(list.supplierId)
+      supplierIdsByBrand.set(brand, bucket)
     }
-    return [...brandCountById.entries()]
-      .map(([supplierId, brandCount]) => ({
-        supplierId,
-        label: supplierNameById.get(supplierId) ?? `#${supplierId}`,
-        brandCount,
+    return [...supplierIdsByBrand.entries()]
+      .map(([brandName, supplierIds]) => ({
+        brandName,
+        supplierCount: supplierIds.size,
       }))
       .sort((left, right) =>
-        left.label.localeCompare(right.label, 'zh-Hans-CN'),
+        left.brandName.localeCompare(right.brandName, 'zh-Hans-CN'),
       )
-  }, [lists, supplierOptions])
+  }, [lists])
 
-  const activeSupplier = useMemo(
-    () => supplierOptions.find((option) => option.id === activeSupplierId),
-    [supplierOptions, activeSupplierId],
-  )
+  /**
+   * 当前品牌视图里默认出现的供应商列。
+   *
+   * <p>只取「经营品牌包含该品牌」（`md_supplier_brand`，经供应商选项接口带出的 `brands`）
+   * 且尚无该品牌价格表的供应商：把所有供应商都当列会得到几十个空列。其余供应商仍可用
+   * 「添加供应商列」手工加入，或直接粘贴整块数据。</p>
+   */
+  const supplierColumns = useMemo<SupplierColumnOption[]>(() => {
+    const brand = (activeBrand ?? '').trim()
+    const existing = new Set(
+      lists
+        .filter((list) => list.brandName.trim() === brand)
+        .map((list) => list.supplierId),
+    )
+    return supplierOptions
+      .filter(
+        (option) =>
+          !existing.has(option.id) &&
+          (option.brands ?? []).some((value) => value.trim() === brand),
+      )
+      .map((option) => ({
+        supplierId: option.id,
+        supplierName: option.label,
+      }))
+  }, [supplierOptions, lists, activeBrand])
 
-  const activeSupplierName =
-    activeSupplier?.label ??
-    tabs.find((tab) => tab.supplierId === activeSupplierId)?.label ??
-    // 供应商选项尚未加载完时先显示 ID，避免标题闪烁
-    (activeSupplierId ? `#${activeSupplierId}` : '')
-
-  const handleAddSupplier = async () => {
-    let values: AddSupplierFormValues
+  /** 新增品牌价格表：品牌名 + 供应商（真正的建表发生在该列第一次填价时）。 */
+  const handleAddBrand = async () => {
+    let values: AddBrandFormValues
     try {
       values = await form.validateFields()
     } catch {
       return
     }
-    if (!values.supplierId) {
+    const brand = (values.brandName ?? '').trim()
+    if (!brand) {
       return
     }
-    // 选中即成为当前供应商；矩阵里按需添加品牌列（首个报价落在哪一列，就为哪个品牌建表）
-    setActiveSupplierId(values.supplierId)
+    setActiveBrand(brand)
     setAddOpen(false)
     form.resetFields()
   }
+
+  const brandOptions = useMemo(() => {
+    const names = new Set<string>()
+    for (const list of lists) {
+      const brand = list.brandName.trim()
+      if (brand) {
+        names.add(brand)
+      }
+    }
+    for (const option of supplierOptions) {
+      for (const brand of option.brands ?? []) {
+        if (brand.trim()) {
+          names.add(brand.trim())
+        }
+      }
+    }
+    return [...names].map((brand) => ({ value: brand, label: brand }))
+  }, [lists, supplierOptions])
 
   return (
     <AppProPage
@@ -143,17 +170,17 @@ export function SupplierPriceListPage() {
           <div className="supplier-price-list-tabs">
             {tabs.length ? (
               <Tabs
-                activeKey={activeSupplierId ?? tabs[0]?.supplierId}
+                activeKey={activeBrand ?? tabs[0]?.brandName}
                 aria-label={t('supplierPriceList.tabs.label')}
-                onChange={(key) => setActiveSupplierId(key)}
+                onChange={(key) => setActiveBrand(key)}
                 items={tabs.map((tab) => ({
-                  key: tab.supplierId,
+                  key: tab.brandName,
                   label: (
                     <span className="supplier-price-list-tab-label">
-                      <span>{tab.label}</span>
+                      <span>{tab.brandName}</span>
                       <Tag>
-                        {t('supplierPriceList.tabs.brandCount', {
-                          count: tab.brandCount,
+                        {t('supplierPriceList.tabs.supplierCount', {
+                          count: tab.supplierCount,
                         })}
                       </Tag>
                     </span>
@@ -218,12 +245,11 @@ export function SupplierPriceListPage() {
             />
           ) : null}
 
-          {activeSupplierId ? (
-            <SupplierPriceListMatrixEditor
-              key={activeSupplierId}
-              supplierId={activeSupplierId}
-              supplierName={activeSupplierName}
-              brands={activeSupplier?.brands ?? []}
+          {activeBrand ? (
+            <SupplierPriceListBrandMatrixEditor
+              key={activeBrand}
+              brandName={activeBrand}
+              supplierColumns={supplierColumns}
               onChanged={refresh}
             />
           ) : (
@@ -235,7 +261,7 @@ export function SupplierPriceListPage() {
             </div>
           )}
 
-          {listsQuery.isLoading && !activeSupplierId ? (
+          {listsQuery.isLoading && !activeBrand ? (
             <div className="supplier-price-list-placeholder">
               <Spin />
             </div>
@@ -249,7 +275,7 @@ export function SupplierPriceListPage() {
           title={t('supplierPriceList.tabs.addTitle')}
           okText={t('supplierPriceList.tabs.addConfirm')}
           cancelText={t('common.cancel')}
-          onOk={() => void handleAddSupplier()}
+          onOk={() => void handleAddBrand()}
           onCancel={() => setAddOpen(false)}
           destroyOnHidden
         >
@@ -271,6 +297,22 @@ export function SupplierPriceListPage() {
                   value: option.id,
                   label: option.label,
                 }))}
+              />
+            </Form.Item>
+            <Form.Item
+              name="brandName"
+              label={t('supplierPriceList.header.brand')}
+              rules={[
+                {
+                  required: true,
+                  message: t('supplierPriceList.header.brandRequired'),
+                },
+              ]}
+            >
+              <Select
+                showSearch={{ optionFilterProp: 'label' }}
+                placeholder={t('supplierPriceList.tabs.brandHint')}
+                options={brandOptions}
               />
             </Form.Item>
           </Form>
