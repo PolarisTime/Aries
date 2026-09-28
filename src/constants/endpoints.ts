@@ -196,4 +196,17 @@ export const ENDPOINTS = {
   QUOTE_PROJECT_CONFIGS: '/quote-project-configs',
   QUOTE_PROJECT_CONFIG: (projectId: string | number) =>
     `/quote-project-configs/${pathSegment(projectId)}`,
+
+  // Supplier price lists (供应商品牌价格表)
+  SUPPLIER_PRICE_LISTS: '/supplier-price-lists',
+  /** 规格全集(只读): 由 md_material 去重生成, 编辑器据此固定行 */
+  SUPPLIER_PRICE_LIST_SPEC_CATALOG: '/supplier-price-lists/spec-catalog',
+  /** 跨供应商/品牌的只读对照矩阵 */
+  SUPPLIER_PRICE_LIST_MATRIX: '/supplier-price-lists/matrix',
+  SUPPLIER_PRICE_LIST: (id: string | number) =>
+    `/supplier-price-lists/${pathSegment(id)}`,
+  SUPPLIER_PRICE_LIST_ITEMS: (id: string | number) =>
+    `/supplier-price-lists/${pathSegment(id)}/items`,
+  SUPPLIER_PRICE_LIST_PRICE_ADJUSTMENTS: (id: string | number) =>
+    `/supplier-price-lists/${pathSegment(id)}/price-adjustments`,
 } as const
