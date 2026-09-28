@@ -1,11 +1,4 @@
-import type {
-  Brand,
-  PriceData,
-  PriceRow,
-  PriceSheet,
-  SheetInputs,
-  Variety,
-} from './types'
+import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
 export const CATEGORIES = ['螺纹钢', '盘螺', '高线', '圆钢']
 export const SPECS: Record<string, number[]> = {
@@ -36,83 +29,6 @@ export const dataKeyOf = (row: PriceRow) =>
   row.category && row.material
     ? `${canonicalCategory(row.category)}|${row.material}`
     : ''
-
-/** 现货价供应商下拉选项: 携带经营品牌用于按品牌列过滤。 */
-export type SupplierSelectOption = {
-  value: string
-  label: string
-  /** 经营品牌(商品品牌名称), 缺省视为未绑定任何品牌。 */
-  brands?: string[]
-}
-
-/**
- * 按品牌列过滤供应商选项。
- *
- * - 品牌名称为空 → 返回全部(保持兼容)。
- * - 存在至少一个绑定该品牌的供应商 → 只返回绑定供应商。
- * - 无任何供应商绑定该品牌 → 回退返回全部(避免下拉为空)。
- */
-export function filterSupplierOptionsByBrand(
-  options: SupplierSelectOption[],
-  brandName: string | undefined,
-): SupplierSelectOption[] {
-  if (!brandName) return options
-  const bound = options.filter((option) => option.brands?.includes(brandName))
-  return bound.length > 0 ? bound : options
-}
-
-/**
- * 批量填入同一供应商(仅改供应商简称, 不动现货价)。
- *
- * - 覆盖语义: 目标行已有供应商时改为新供应商, 便于换第 N 家重新报价。
- * - 只处理商品行; 隔断行忽略。
- * - 供应商置空时等价于清除简称, 与单格清除保持一致(无其它字段则删除该输入)。
- * 返回新 inputs; 无变化时返回原对象。
- */
-export function fillSupplierInputs(
-  rows: PriceRow[],
-  inputs: SheetInputs,
-  brandName: string,
-  rowIds: string[],
-  option: { value: string; label: string } | undefined,
-): SheetInputs {
-  const targets = new Set(rowIds)
-  let changed = false
-  const next: SheetInputs = { ...inputs }
-  for (const row of rows) {
-    if (!targets.has(row.id) || isSeparatorRow(row)) continue
-    const key = `${brandName}:${row.id}`
-    const prev = next[key] ?? {}
-    if (option) {
-      if (
-        prev.supplierId === option.value &&
-        prev.supplierName === option.label
-      )
-        continue
-      next[key] = {
-        ...prev,
-        supplierId: option.value,
-        supplierName: option.label,
-      }
-      changed = true
-      continue
-    }
-    if (prev.supplierId === undefined && prev.supplierName === undefined)
-      continue
-    const {
-      supplierId: _supplierId,
-      supplierName: _supplierName,
-      ...rest
-    } = prev
-    if (rest.spot === undefined && rest.ton === undefined) {
-      delete next[key]
-    } else {
-      next[key] = rest
-    }
-    changed = true
-  }
-  return changed ? next : inputs
-}
 
 /** 12米加价生效的品种(业务规则) */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])

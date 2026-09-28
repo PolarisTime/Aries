@@ -206,14 +206,16 @@ describe('quote-sheets API', () => {
           material: 'HRB400',
           spec: 12,
           length: '9米',
-          prices: [{ brandName: '中天', supplierId: '77' }],
+          ton: 12,
         },
       ],
     })
 
     const [url, , payload] = apiPutMock.mock.calls[0]
     expect(url).toBe('/quote-sheets/700500000000000130')
-    expect(payload.items[0].prices[0].supplierId).toBe('77')
+    // 现货价与来源供应商不再由单据保存写入: 载荷不携带 prices[]
+    expect(payload.items[0]).not.toHaveProperty('prices')
+    expect(payload.items[0].ton).toBe(12)
   })
 
   it('更新请求携带 X-Resource-Version 版本并抑制 409/412/428 全局提示', async () => {
@@ -317,7 +319,6 @@ describe('quote-sheets API', () => {
         material: 'HRB400',
         spec: 12,
         length: '9米',
-        prices: [{ brandName: '中天', supplierId: '77' }],
       },
       '4',
     )
@@ -330,7 +331,6 @@ describe('quote-sheets API', () => {
         material: 'HRB400',
         spec: 12,
         length: '9米',
-        prices: [{ brandName: '中天', supplierId: '78' }],
       },
       '5',
     )

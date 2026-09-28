@@ -18,7 +18,6 @@ import {
   useInitialProjectAssignment,
   usePriceCompareEditorSession,
   usePriceCompareRouteActive,
-  useSupplierSelectOptions,
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
 import { SheetPanel } from './SheetPanel'
@@ -89,7 +88,6 @@ export function PriceCompareView() {
     isAuthenticated,
   )
 
-  const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
   usePriceCompareEditorSession(hasUnsavedChanges)
   // 只读态(他人签出)禁用撤销/重做快捷键
@@ -298,7 +296,6 @@ export function PriceCompareView() {
         onOpenConfig={() => setConfigOpen(true)}
         availability={availability}
         spotRef={spotRef}
-        supplierSelectOptions={supplierSelectOptions}
         onSaveConfig={(next) => setConfig(next)}
         readOnly={readOnly}
         purchaseOrderTonnage={purchaseOrderTonnage}
@@ -340,7 +337,6 @@ function PriceCompareSheetArea({
   onOpenConfig,
   availability,
   spotRef,
-  supplierSelectOptions,
   onSaveConfig,
   readOnly,
   purchaseOrderTonnage,
@@ -364,7 +360,6 @@ function PriceCompareSheetArea({
   onOpenConfig: () => void
   availability: React.ComponentProps<typeof SheetPanel>['availability']
   spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
-  supplierSelectOptions: React.ComponentProps<typeof SheetPanel>['suppliers']
   onSaveConfig: (next: ReturnType<typeof useSheetsStore>['config']) => void
   readOnly: boolean
   purchaseOrderTonnage: React.ComponentProps<
@@ -410,7 +405,6 @@ function PriceCompareSheetArea({
         availability={availability}
         spotRef={spotRef}
         designatedBrands={config.designatedBrands}
-        suppliers={supplierSelectOptions}
         remark={config.remark}
         onRemarkChange={(value) => onSaveConfig({ ...config, remark: value })}
         readOnly={readOnly}

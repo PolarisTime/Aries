@@ -28,7 +28,6 @@ const row: PriceRow = {
 const PRICE_LIST_INPUT: SheetInput = {
   spot: 3320,
   spotSource: 'PRICE_LIST',
-  supplierId: '5001',
   supplierName: '杭州物资',
   priceListId: '8801',
   priceListReleasedAt: '2026-09-16T09:30:00',

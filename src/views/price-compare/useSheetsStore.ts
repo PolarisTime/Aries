@@ -318,15 +318,11 @@ function buildPayload(
     })),
     items: sheet.rows.flatMap<QuoteSheetPayload['items'][number]>((row) => {
       if (!isPersistableRow(row)) return []
-      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR', prices: [] }]
-      const prices = brands.flatMap<
-        QuoteSheetPayload['items'][number]['prices'][number]
-      >((brand) => {
-        const input = sheet.inputs[`${brand.name}:${row.id}`]
-        // 现货价不再落库, 仅由价格表推导: prices[] 只携带来源供应商等非现货字段
-        if (!input?.supplierId) return []
-        return [{ brandName: brand.name, supplierId: input.supplierId }]
-      })
+      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR' }]
+      /*
+       * 现货价与来源供应商不再由单据保存写入: 两者都只由供应商价格表推导(读时带出),
+       * 因此载荷里不再携带 prices[]。
+       */
       return [
         {
           rowType: 'PRODUCT',
@@ -343,7 +339,6 @@ function buildPayload(
           ...(row.purchaseOrderItemId
             ? { purchaseOrderItemId: row.purchaseOrderItemId }
             : {}),
-          prices,
         },
       ]
     }),
@@ -367,20 +362,13 @@ function buildHeaderPayload(sheet: PriceSheet): QuoteSheetHeaderPayload {
   }
 }
 
-/** 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。 */
-function buildItemPayload(
-  sheet: PriceSheet,
-  row: PriceRow,
-  brands: Brand[],
-): QuoteSheetItemPayload | null {
-  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR', prices: [] }
+/**
+ * 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。
+ * <p>现货价与来源供应商不再由单据保存写入(只由供应商价格表推导), 故不带 prices[]。</p>
+ */
+function buildItemPayload(row: PriceRow): QuoteSheetItemPayload | null {
+  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR' }
   if (!isCompleteRow(row)) return null
-  const prices = brands.flatMap((brand) => {
-    const input = sheet.inputs[`${brand.name}:${row.id}`]
-    // 现货价不再落库, 仅由价格表推导: prices[] 只携带来源供应商等非现货字段
-    if (!input?.supplierId) return []
-    return [{ brandName: brand.name, supplierId: input.supplierId }]
-  })
   return {
     rowType: 'PRODUCT',
     category: row.category,
@@ -394,7 +382,6 @@ function buildItemPayload(
     ...(row.purchaseOrderItemId
       ? { purchaseOrderItemId: row.purchaseOrderItemId }
       : {}),
-    prices,
   }
 }
 
@@ -404,16 +391,12 @@ function headerSignature(sheet: PriceSheet): string {
 }
 
 /**
- * 行指纹: 行类型/商品字段/吨位/来源供应商任一变化即不同。
+ * 行指纹: 行类型/商品字段/吨位/备注/锁定/采购订单关联任一变化即不同。
  *
- * <p>现货价只由价格表推导且不再落库, 因此不参与指纹: 价格表调价不该把整张单据置为待保存。</p>
+ * <p>现货价与来源供应商只由价格表推导、不再随单据保存写入, 因此都不参与指纹:
+ * 价格表调价不该把整张单据置为待保存。</p>
  */
-function itemSignature(row: PriceRow, inputs: SheetInputs): string {
-  const suffix = `:${row.id}`
-  const suppliers = Object.keys(inputs)
-    .filter((key) => key.endsWith(suffix))
-    .sort()
-    .map((key) => [key, inputs[key]?.supplierId ?? null] as const)
+function itemSignature(row: PriceRow): string {
   return JSON.stringify({
     rowType: row.rowType ?? 'PRODUCT',
     category: row.category,
@@ -425,7 +408,6 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     locked: Boolean(row.locked),
     purchaseOrderId: row.purchaseOrderId ?? null,
     purchaseOrderItemId: row.purchaseOrderItemId ?? null,
-    suppliers,
   })
 }
 
@@ -474,7 +456,7 @@ function sheetContentFingerprint(sheet: PriceSheet): string {
 function buildBaseline(sheet: PriceSheet): SheetBaseline {
   const items = new Map<string, string>()
   for (const row of sheet.rows) {
-    items.set(row.id, itemSignature(row, sheet.inputs))
+    items.set(row.id, itemSignature(row))
   }
   return {
     header: headerSignature(sheet),
@@ -1453,13 +1435,13 @@ export function useSheetsStore(options?: {
         }
 
         for (const row of sheet.rows) {
-          const payload = buildItemPayload(sheet, row, config.brands)
+          const payload = buildItemPayload(row)
           if (!payload) {
             // 未选商品的空行无法持久化: 置脏保留本地行, 刷新不得静默丢弃
             markDirty()
             continue
           }
-          const signature = itemSignature(row, sheet.inputs)
+          const signature = itemSignature(row)
           const known = baseline.items.has(row.id)
           if (known && baseline.items.get(row.id) === signature) continue
           try {
@@ -1482,16 +1464,8 @@ export function useSheetsStore(options?: {
               const createdItem = created.item
               if (createdItem) {
                 const remappedRow = { ...row, id: createdItem.id }
-                const remappedInputs = remapInputKeys(
-                  sheet.inputs,
-                  row.id,
-                  createdItem.id,
-                )
                 remapItemId(sheetId, row.id, createdItem.id)
-                baseline.items.set(
-                  createdItem.id,
-                  itemSignature(remappedRow, remappedInputs),
-                )
+                baseline.items.set(createdItem.id, itemSignature(remappedRow))
               }
             }
             applySheetVersion(sheet.id, version)
@@ -2622,7 +2596,6 @@ function priceRecordToInput(price: QuoteSheetPriceRecord): SheetInput {
   if (price.spotPrice !== undefined) entry.spot = price.spotPrice
   if (price.spotSource) entry.spotSource = price.spotSource
   if (price.spotReason) entry.spotReason = price.spotReason
-  if (price.supplierId) entry.supplierId = price.supplierId
   if (price.supplierName) entry.supplierName = price.supplierName
   if (price.priceListId) entry.priceListId = price.priceListId
   if (price.priceListReleasedAt)

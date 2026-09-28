@@ -135,7 +135,6 @@ describe('SheetPanel 指定品牌展示', () => {
   function renderStateful(
     initialSheet: PriceSheet,
     initialRows: PriceRow[],
-    suppliers: { value: string; label: string; brands?: string[] }[] = [],
     brands: { name: string; freight: number }[] = [
       { name: '中天', freight: 30 },
     ],
@@ -164,7 +163,6 @@ describe('SheetPanel 指定品牌展示', () => {
         onRefresh: () => {},
         chrome: false,
         spotRef: { current: null },
-        suppliers,
         readOnly,
         ...(purchaseOrderTonnage ? { purchaseOrderTonnage } : {}),
       })
@@ -236,7 +234,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet(), locked: true, specQuantityLocked: true },
       [{ ...baseRow }],
-      [],
       [{ name: '中天', freight: 30 }],
       true,
     )
@@ -440,45 +437,6 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(addRow?.disabled).toBe(false)
   })
 
-  const suppliers = [
-    { value: 's1', label: '沙钢' },
-    { value: 's2', label: '河钢' },
-  ]
-
-  /** 等待下拉选项按 title 出现(轮询, 兼容异步渲染)。 */
-  async function waitForOption(title: string) {
-    for (let i = 0; i < 20; i += 1) {
-      const el = document.body.querySelector(
-        `.ant-select-item-option[title="${title}"]`,
-      )
-      if (el) return el
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      })
-    }
-    return null
-  }
-
-  /** 打开指定下拉(容器内选择器)并点击 title 选项。 */
-  async function pickOption(
-    scope: ParentNode,
-    selectSelector: string,
-    title: string,
-  ) {
-    const select = scope.querySelector(selectSelector)
-    await act(async () => {
-      select?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    const option = await waitForOption(title)
-    expect(option).toBeTruthy()
-    await act(async () => {
-      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
-
   it('品牌分组在差价后是供应商简称列, 现货单元格只读且不内嵌下拉', () => {
     renderStateful(
       {
@@ -487,13 +445,11 @@ describe('SheetPanel 指定品牌展示', () => {
           '中天:r1': {
             spot: 3280,
             spotSource: 'PRICE_LIST',
-            supplierId: 's1',
             supplierName: '沙钢',
           },
         },
       },
       [{ ...baseRow }],
-      suppliers,
     )
 
     const headerRow =
@@ -517,116 +473,8 @@ describe('SheetPanel 指定品牌展示', () => {
     ).toContain('沙钢')
   })
 
-  it('品牌列头一键填入供应商到该列全部商品行(与现货价无关)', async () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2', spec: 16 },
-      ],
-      suppliers,
-    )
-
-    const fillBtn = container.querySelector('.price-compare-supplier-fill-btn')
-    expect(fillBtn).not.toBeNull()
-    await act(async () => {
-      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    // 在弹出层的供应商下拉中选择"河钢"
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBe('河钢')
-  })
-
-  it('批量填入覆盖已有供应商值(换家重新报价)', async () => {
-    const observed = renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2', spec: 16 },
-      ],
-      suppliers,
-    )
-
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill .price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s2')
-    // 现货价不被批量填入改动
-    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3180)
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBe('河钢')
-  })
-
-  it('选中行后出现批量填入按钮, 只填入选中的行', async () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2' },
-      ],
-      suppliers,
-    )
-
-    // 勾选第一行(跳过 antd 隐藏的 measure row)
-    const rowCheckbox = container.querySelector<HTMLInputElement>(
-      '.ant-table-row input[type="checkbox"]',
-    )
-    await act(async () => {
-      rowCheckbox?.click()
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    const fillBtn = container.querySelector('.price-compare-fill-selected-btn')
-    expect(fillBtn).not.toBeNull()
-    await act(async () => {
-      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    // 弹出层: 先选品牌列(唯一品牌 中天), 再选供应商
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-brand',
-      '中天',
-    )
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    // 未选中的行不变
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBeUndefined()
-  })
-
   it('在类别列之前渲染行备注列, 且备注显示到输入框', () => {
-    renderStateful(
-      { ...makeSheet() },
-      [{ ...baseRow, remark: '急单' }],
-      suppliers,
-    )
+    renderStateful({ ...makeSheet() }, [{ ...baseRow, remark: '急单' }])
 
     const headerRow =
       container.querySelectorAll('.ant-table-thead tr')[0]?.textContent ?? ''
@@ -731,7 +579,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
-      [],
       [
         { name: '中天', freight: 30 },
         { name: '沙钢', freight: 20 },
@@ -762,11 +609,9 @@ describe('SheetPanel 指定品牌展示', () => {
   })
 
   it('关联采购订单后视为已采购并遮蔽吨位后的品牌价格列', () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [{ ...baseRow, id: 'r1', purchaseOrderId: 'po1' }],
-      suppliers,
-    )
+    const observed = renderStateful(makeSheet(), [
+      { ...baseRow, id: 'r1', purchaseOrderId: 'po1' },
+    ])
 
     // 关联采购订单: 现货价单元格被遮蔽, 出现遮蔽块与已采购行样式
     expect(container.querySelector('td .price-compare-spot-cell')).toBeNull()
@@ -781,11 +626,9 @@ describe('SheetPanel 指定品牌展示', () => {
 
   it('解除采购订单关联后不再标记, 品牌价格列恢复(反标记刷新回归)', () => {
     // 反标记后行上 purchaseOrderId 为空: 未采购, 现货价列可见, 不再命中已采购行
-    const observed = renderStateful(
-      makeSheet(),
-      [{ ...baseRow, id: 'r1', purchaseOrderId: undefined }],
-      suppliers,
-    )
+    const observed = renderStateful(makeSheet(), [
+      { ...baseRow, id: 'r1', purchaseOrderId: undefined },
+    ])
 
     expect(observed.rows[0].purchaseOrderId).toBeUndefined()
     expect(
@@ -798,21 +641,17 @@ describe('SheetPanel 指定品牌展示', () => {
   })
 
   it('隔断行即使带采购订单也不视为已采购', () => {
-    renderStateful(
-      makeSheet(),
-      [
-        {
-          id: 'sep1',
-          rowType: 'SEPARATOR',
-          category: '',
-          material: '',
-          spec: null,
-          length: '',
-          purchaseOrderId: 'po1',
-        },
-      ],
-      suppliers,
-    )
+    renderStateful(makeSheet(), [
+      {
+        id: 'sep1',
+        rowType: 'SEPARATOR',
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+        purchaseOrderId: 'po1',
+      },
+    ])
 
     expect(
       container.querySelector('tr.price-compare-separator-row'),
@@ -824,7 +663,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       makeSheet(),
       [{ ...baseRow, id: 'r1' }],
-      [],
       [{ name: '基准价', freight: 0 }],
     )
 
@@ -855,14 +693,7 @@ describe('SheetPanel 指定品牌展示', () => {
         label: 'b',
       },
     ]
-    renderStateful(
-      makeSheet(),
-      [{ ...baseRow }],
-      [],
-      undefined,
-      false,
-      twoLengths,
-    )
+    renderStateful(makeSheet(), [{ ...baseRow }], undefined, false, twoLengths)
     const switchButton = container.querySelector(
       '.price-compare-variety-switch',
     )
@@ -894,7 +725,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       makeSheet(),
       [{ ...baseRow, purchaseOrderId: '88' }],
-      [],
       undefined,
       false,
       twoLengths,
@@ -922,7 +752,6 @@ describe('SheetPanel 指定品牌展示', () => {
     const observed = renderStateful(
       makeSheet(),
       [{ ...baseRow }],
-      [],
       undefined,
       false,
       twoLengths,
@@ -1020,7 +849,6 @@ describe('SheetPanel 指定品牌展示', () => {
           purchaseOrderNo: 'PO-88',
         },
       ],
-      [],
       [{ name: '中天', freight: 30 }],
       false,
       [variety],

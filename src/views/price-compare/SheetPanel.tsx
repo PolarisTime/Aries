@@ -14,7 +14,6 @@ import {
   SwapOutlined,
   TrophyOutlined,
   UnlockOutlined,
-  VerticalAlignBottomOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -43,12 +42,9 @@ import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
 import { modal } from '@/utils/antd-app'
-import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
   buildVarietyOptions,
-  fillSupplierInputs,
-  filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
   isPurchasedRow,
@@ -58,7 +54,6 @@ import {
   resolveLock,
   resolveRef,
   type SHEET_COLUMN_WIDTH,
-  type SupplierSelectOption,
   sumTonByPurchaseOrderItem,
 } from './core'
 import { LockableField } from './LockableField'
@@ -92,9 +87,6 @@ const { Text } = Typography
  */
 const SHEET_FIXED_CHROME_WIDTH =
   32 + 24 + PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH
-
-/** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
-const filterSupplierOption = createPinyinFilterOption()
 
 /**
  * 按方向在行内移动焦点并跳过无法聚焦的中间行(如隔断行缺少输入框),
@@ -152,13 +144,6 @@ type ColumnContext = {
   /** 现货价(价格表推导值), 只读展示用。 */
   getSpot: (brandName: string, rowId: string) => number | undefined
   getInput: (brandName: string, rowId: string) => SheetInput | undefined
-  /** 批量填入供应商: 目标行统一改为该供应商(覆盖已有值); undefined 表示清除。 */
-  fillSupplier: (
-    brandName: string,
-    rowIds: string[],
-    option: { value: string; label: string } | undefined,
-  ) => void
-  supplierOptions: SupplierSelectOption[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
   /** 在吨位列内纵向移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
   moveFocusTon: (rowId: string, delta: number) => boolean
@@ -169,9 +154,6 @@ type ColumnContext = {
   onReorderBrands: (from: number, to: number) => void
   /** 隐藏/显示整组品牌列(与「列显示」弹层共用同一份显隐状态)。 */
   onToggleBrand: (brandName: string, visible: boolean) => void
-  /** 当前通过右键菜单打开「一键填入供应商」弹层的品牌列。 */
-  supplierFillBrand?: string
-  setSupplierFillBrand: (brandName: string | undefined) => void
   /** 行操作菜单当前打开的行(Dropdown 受控开关: 右键行内区域与「更多」按钮共用)。 */
   contextMenuRowId: string | null
   onContextMenuRowChange: (rowId: string | null) => void
@@ -461,7 +443,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     rows,
     getSpot,
     getInput,
-    supplierOptions,
     patchRow,
     selectedIds,
     toggleSelect,
@@ -493,10 +474,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const visibleBrandNames = brands
     .filter((brand) => !hiddenBrandSet.has(brand.name))
     .map((brand) => brand.name)
-  /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
-  const productRowIds = rows.flatMap((row) =>
-    isSeparatorRow(row) ? [] : [row.id],
-  )
   /** 锁定规格和数量: 一并禁掉行级增删与拖拽重排(会间接改变规格/数量顺序)。 */
   const quantityLocked = Boolean(sheet.specQuantityLocked)
   const rowInteractionLocked = readOnly || quantityLocked
@@ -885,28 +862,14 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               {
                 title: (
                   // 表头标题节点: 保留原有拖拽换序, 菜单本身复用共享列头基元
-                  // (隐藏该列 / 移到最前或最后 + 业务追加的「一键填入供应商…」)。
+                  // (隐藏该列 / 移到最前或最后)。
                   <ColumnHeaderMenu
                     ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
                       brand: brand.name,
                     })}
                     columnTitle={brand.name}
-                    extraItems={[
-                      {
-                        key: 'fill-supplier-column',
-                        icon: <VerticalAlignBottomOutlined />,
-                        label: t('priceCompare.sheet.contextMenu.fillSupplier'),
-                        // 与「简称」列的一键填入按钮保持同一禁用口径(只读时按钮本身不渲染)
-                        disabled: readOnly,
-                      },
-                    ]}
                     isFirst={brand.name === visibleBrandNames[0]}
                     isLast={brand.name === visibleBrandNames.at(-1)}
-                    onExtraItem={(key) => {
-                      if (key === 'fill-supplier-column') {
-                        ctx.setSupplierFillBrand(brand.name)
-                      }
-                    }}
                     onHide={() => ctx.onToggleBrand(brand.name, false)}
                     onMoveFirst={() =>
                       onReorderBrands(
@@ -1095,26 +1058,15 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     },
                   ),
                   cellOf(
-                    <SupplierFillHeader
-                      brandName={brand.name}
-                      options={supplierOptions}
-                      disabled={readOnly}
-                      open={ctx.supplierFillBrand === brand.name}
-                      onOpenChange={(next) =>
-                        ctx.setSupplierFillBrand(next ? brand.name : undefined)
-                      }
-                      onFill={(option) =>
-                        ctx.fillSupplier(brand.name, productRowIds, option)
-                      }
-                    />,
+                    t('priceCompare.sheet.columns.supplierShort'),
                     widths.supplier,
                     (_, row) => {
                       const current = row.row
                       const input = ctx.getInput(brand.name, current.id)
                       const supplierName = input?.supplierName
                       /*
-                       * 供应商只作只读展示: PRICE_LIST 时显示价格表带来的来源供应商,
-                       * 人工「一键填入」由列头入口写入本地(与手填现货价无关)。
+                       * 供应商只读展示价格表带来的来源供应商:
+                       * 现货价与来源供应商都不再由人工写入单据。
                        */
                       const hint =
                         input?.spotSource === 'PRICE_LIST'
@@ -1472,173 +1424,6 @@ function ColumnSettingsButton({
   )
 }
 
-/**
- * 供应商批量填入下拉: 选择一个供应商后回调; 用于「整列」与「选中行」两个入口。
- * 复用与单元格一致的品牌过滤与拼音搜索。
- */
-function SupplierFillSelect({
-  brandName,
-  options,
-  onPick,
-}: {
-  brandName?: string
-  options: SupplierSelectOption[]
-  onPick: (option: { value: string; label: string } | undefined) => void
-}) {
-  const { t } = useTranslation()
-  const filtered = brandName
-    ? filterSupplierOptionsByBrand(options, brandName)
-    : options
-  return (
-    <Select
-      autoFocus
-      size="small"
-      style={{ width: 180 }}
-      className="price-compare-supplier-fill-select"
-      placeholder={t('priceCompare.sheet.fillSupplierPick')}
-      showSearch={{ filterOption: filterSupplierOption }}
-      options={filtered}
-      onChange={(value) => {
-        const option = filtered.find((item) => item.value === value)
-        onPick(
-          value
-            ? { value: String(value), label: option?.label ?? String(value) }
-            : undefined,
-        )
-      }}
-    />
-  )
-}
-
-/** 品牌列「简称」表头: 一键把所选供应商填到该品牌列全部商品行。 */
-function SupplierFillHeader({
-  brandName,
-  options,
-  disabled,
-  open,
-  onOpenChange,
-  onFill,
-}: {
-  brandName: string
-  options: SupplierSelectOption[]
-  disabled: boolean
-  /** 受控开合: 由 SheetPanel 统一管理, 让表头右键菜单也能打开同一个弹层。 */
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onFill: (option: { value: string; label: string } | undefined) => void
-}) {
-  const { t } = useTranslation()
-  const title = t('priceCompare.sheet.fillSupplierColumn', { brand: brandName })
-  return (
-    <span className="price-compare-supplier-header">
-      <span>{t('priceCompare.sheet.columns.supplierShort')}</span>
-      {disabled ? null : (
-        <Popover
-          trigger="click"
-          placement="bottom"
-          open={open}
-          onOpenChange={onOpenChange}
-          content={
-            <Flex vertical gap={4} className="price-compare-supplier-fill">
-              <Text type="secondary" className="price-compare-sub">
-                {title}
-              </Text>
-              <SupplierFillSelect
-                brandName={brandName}
-                options={options}
-                onPick={(option) => {
-                  onFill(option)
-                  onOpenChange(false)
-                }}
-              />
-            </Flex>
-          }
-        >
-          <Button
-            type="text"
-            size="small"
-            className="price-compare-supplier-fill-btn"
-            icon={<VerticalAlignBottomOutlined />}
-            aria-label={title}
-          />
-        </Popover>
-      )}
-    </span>
-  )
-}
-
-/** 批量填入「选中行」: 先选品牌列, 再选供应商; 覆盖所选行已有简称。 */
-function SupplierFillSelectedButton({
-  brands,
-  options,
-  selectedCount,
-  disabled,
-  onFill,
-}: {
-  brands: Brand[]
-  options: SupplierSelectOption[]
-  selectedCount: number
-  disabled: boolean
-  onFill: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
-}) {
-  const { t } = useTranslation()
-  const [brandName, setBrandName] = useState<string | undefined>()
-  const [open, setOpen] = useState(false)
-  const title = t('priceCompare.sheet.fillSupplierSelected', {
-    count: selectedCount,
-  })
-  return (
-    <Popover
-      trigger="click"
-      placement="bottom"
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) setBrandName(undefined)
-      }}
-      content={
-        <Flex vertical gap={6} className="price-compare-supplier-fill">
-          <Text type="secondary" className="price-compare-sub">
-            {title}
-          </Text>
-          <Select
-            size="small"
-            style={{ width: 220 }}
-            className="price-compare-supplier-fill-brand"
-            placeholder={t('priceCompare.sheet.fillSupplierBrand')}
-            value={brandName}
-            options={brands.map((brand) => ({
-              value: brand.name,
-              label: brand.name,
-            }))}
-            onChange={(value) => setBrandName(value)}
-          />
-          <SupplierFillSelect
-            brandName={brandName}
-            options={options}
-            onPick={(option) => {
-              if (!brandName) return
-              onFill(brandName, option)
-              setOpen(false)
-            }}
-          />
-        </Flex>
-      }
-    >
-      <Button
-        icon={<VerticalAlignBottomOutlined />}
-        disabled={disabled}
-        className="price-compare-fill-selected-btn"
-      >
-        {t('priceCompare.sheet.fillSupplier')}
-      </Button>
-    </Popover>
-  )
-}
-
 /** 锁定/解锁参照日期与时段。 */
 function LockRefButton({
   sheet,
@@ -1709,37 +1494,21 @@ function LockSpecQuantityButton({
   )
 }
 
-/** 选中行后出现的操作: 批量填入供应商 + 标记已采购 + 删除所选行。 */
+/** 选中行后出现的操作: 标记已采购 + 删除所选行。 */
 function SelectedRowActions({
-  brands,
-  supplierOptions,
   selectedCount,
   readOnly,
   specQuantityLocked,
-  onFillSupplierSelected,
   onRemoveSelected,
 }: {
-  brands: Brand[]
-  supplierOptions: SupplierSelectOption[]
   selectedCount: number
   readOnly: boolean
   specQuantityLocked: boolean
-  onFillSupplierSelected: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
   return (
     <>
-      <SupplierFillSelectedButton
-        brands={brands}
-        options={supplierOptions}
-        selectedCount={selectedCount}
-        disabled={readOnly || specQuantityLocked}
-        onFill={onFillSupplierSelected}
-      />
       {readOnly || specQuantityLocked ? (
         <Tooltip
           title={
@@ -1796,8 +1565,6 @@ function SheetHeader({
   brands,
   onToggleRemark,
   onToggleBrand,
-  supplierOptions,
-  onFillSupplierSelected,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -1822,11 +1589,6 @@ function SheetHeader({
   brands: Brand[]
   onToggleRemark: (visible: boolean) => void
   onToggleBrand: (brandName: string, visible: boolean) => void
-  supplierOptions: SupplierSelectOption[]
-  onFillSupplierSelected: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
 }) {
   return (
     <Flex vertical gap={8} className="price-compare-toolbar">
@@ -1863,8 +1625,6 @@ function SheetHeader({
         onToggleBrand={onToggleBrand}
         onOpenConfig={onOpenConfig}
         selectedCount={selectedCount}
-        supplierOptions={supplierOptions}
-        onFillSupplierSelected={onFillSupplierSelected}
         onRemoveSelected={onRemoveSelected}
       />
     </Flex>
@@ -2064,8 +1824,6 @@ function SheetActionRow({
   onToggleBrand,
   onOpenConfig,
   selectedCount,
-  supplierOptions,
-  onFillSupplierSelected,
   onRemoveSelected,
 }: {
   sheet: PriceSheet
@@ -2082,11 +1840,6 @@ function SheetActionRow({
   onToggleBrand: (brandName: string, visible: boolean) => void
   onOpenConfig?: () => void
   selectedCount: number
-  supplierOptions: SupplierSelectOption[]
-  onFillSupplierSelected: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
@@ -2130,12 +1883,9 @@ function SheetActionRow({
       ) : null}
       {selectedCount > 0 ? (
         <SelectedRowActions
-          brands={brands}
-          supplierOptions={supplierOptions}
           selectedCount={selectedCount}
           readOnly={readOnly}
           specQuantityLocked={Boolean(sheet.specQuantityLocked)}
-          onFillSupplierSelected={onFillSupplierSelected}
           onRemoveSelected={onRemoveSelected}
         />
       ) : null}
@@ -2172,7 +1922,6 @@ type Props = {
   designatedBrands?: string[]
   remark?: string
   onRemarkChange?: (value: string) => void
-  suppliers?: SupplierSelectOption[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
   /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
@@ -2204,7 +1953,6 @@ export function SheetPanel(props: Props) {
     designatedBrands,
     remark,
     onRemarkChange,
-    suppliers = [],
     readOnly = false,
     purchaseOrderTonnage = EMPTY_PURCHASE_ORDER_TONNAGE,
   } = props
@@ -2216,10 +1964,6 @@ export function SheetPanel(props: Props) {
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
   /** 行操作菜单当前打开的行: 右键行内区域与「更多」按钮共用一个受控开关。 */
   const [contextMenuRowId, setContextMenuRowId] = useState<string | null>(null)
-  /** 当前通过表头右键菜单打开「一键填入供应商」弹层的品牌列。 */
-  const [supplierFillBrand, setSupplierFillBrand] = useState<
-    string | undefined
-  >()
   const hiddenBrandSet = new Set(hiddenBrands)
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
     setHiddenBrands((current) =>
@@ -2246,25 +1990,6 @@ export function SheetPanel(props: Props) {
 
   const getInput = (brandName: string, rowId: string) =>
     sheet.inputs[`${brandName}:${rowId}`]
-
-  /**
-   * 批量填入供应商: 覆盖目标行的已有简称(与手填现货价无关, 现货价只由价格表推导)。
-   * 仅改简称, 不动现货价。
-   */
-  const fillSupplier = (
-    brandName: string,
-    rowIds: string[],
-    option: { value: string; label: string } | undefined,
-  ) => {
-    const inputs = fillSupplierInputs(
-      rows,
-      sheet.inputs,
-      brandName,
-      rowIds,
-      option,
-    )
-    if (inputs !== sheet.inputs) patchSheet(sheet.id, { inputs })
-  }
 
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
@@ -2318,13 +2043,9 @@ export function SheetPanel(props: Props) {
     density,
     getSpot,
     getInput,
-    fillSupplier,
-    supplierOptions: suppliers,
     patchRow,
     onReorderBrands,
     onToggleBrand: toggleBrandVisible,
-    supplierFillBrand,
-    setSupplierFillBrand,
     contextMenuRowId,
     onContextMenuRowChange: setContextMenuRowId,
     moveRow,
@@ -2374,10 +2095,6 @@ export function SheetPanel(props: Props) {
         brands={brands}
         onToggleRemark={(visible) => setHideRemark(!visible)}
         onToggleBrand={toggleBrandVisible}
-        supplierOptions={suppliers}
-        onFillSupplierSelected={(brandName, option) =>
-          fillSupplier(brandName, selectedIds, option)
-        }
       />
 
       <SheetTable

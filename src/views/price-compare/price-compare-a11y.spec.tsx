@@ -41,7 +41,6 @@ function makeSheet(): PriceSheet {
       '中天:r1': {
         spot: 3280,
         spotSource: 'PRICE_LIST' as const,
-        supplierId: '5001',
         supplierName: '杭州物资',
         priceListReleasedAt: '2026-09-10T09:30:00',
       },

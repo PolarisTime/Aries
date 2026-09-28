@@ -2782,7 +2782,6 @@ export const enUS = {
         removeRowTitle: 'Delete this row?',
         removeRowContent:
           'Spot prices and suppliers entered for this row are removed too. Save the sheet to apply the change.',
-        fillSupplier: 'Fill supplier…',
         hideBrand: 'Hide column',
         moveBrandFirst: 'Move to first',
         moveBrandLast: 'Move to last',
@@ -2820,7 +2819,7 @@ export const enUS = {
         unknown: 'No spot price: no price-list source',
       },
       supplierFromPriceList:
-        'The supplier comes from the price list automatically; to set it manually, use "Fill supplier" in this column header',
+        'The supplier is derived from the supplier price list; this column is read-only',
       addRow: '+ Add Row',
       tonTotal: 'Total',
       columnSettings: 'Columns',
@@ -2855,13 +2854,6 @@ export const enUS = {
       specQuantityLockedHint:
         'Spec & quantity locked; adding, deleting, or reordering rows is disabled until unlocked',
       supplier: 'Supplier',
-      fillSupplier: 'Bulk fill supplier',
-      fillSupplierPick: 'Select supplier',
-      fillSupplierBrand: 'Select brand column',
-      fillSupplierColumn:
-        'Fill the selected supplier into all product rows of the "{{brand}}" column',
-      fillSupplierSelected:
-        'Fill the selected supplier into the {{count}} selected rows',
       purchaseOrderLabel: 'Linked purchase order',
       purchaseOrderPlaceholder: 'Link PO',
       purchaseOrderOptionTitle:

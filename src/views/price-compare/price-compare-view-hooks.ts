@@ -1,11 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef } from 'react'
-import {
-  fetchSupplierOptions,
-  supplierDisplayName,
-} from '@/api/master/supplier-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import { useEffect, useRef } from 'react'
 import {
   hasShortcutModifier,
   useGlobalShortcut,
@@ -17,25 +10,6 @@ import {
 } from '@/stores/layoutTabsStore'
 import { PRICE_COMPARE_ROUTE, TOUR_KEY } from './price-compare-support'
 import type { ProjectOption } from './types'
-
-/** 供应商下拉选项: 现货价单元格空间有限, 优先展示简称。 */
-export function useSupplierSelectOptions(enabled: boolean) {
-  const { data: supplierOptions = [] } = useQuery({
-    queryKey: QUERY_KEYS.masterOptions.supplier,
-    queryFn: () => fetchSupplierOptions(),
-    enabled,
-    staleTime: STALE_MASTER_OPTIONS,
-  })
-  return useMemo(
-    () =>
-      supplierOptions.map((option) => ({
-        value: option.value,
-        label: supplierDisplayName(option),
-        brands: option.brands ?? [],
-      })),
-    [supplierOptions],
-  )
-}
 
 /** 首次进入时为未归属单据分配第一个项目, 并视情况展示引导。 */
 export function useInitialProjectAssignment(

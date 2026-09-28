@@ -2699,7 +2699,6 @@ export const zhCN = {
         removeRowTitle: '删除该行？',
         removeRowContent:
           '该行的现货价与供应商填写会一并移除，需要保存单据才会生效。',
-        fillSupplier: '一键填入供应商…',
         hideBrand: '隐藏该列',
         moveBrandFirst: '移到最前',
         moveBrandLast: '移到最后',
@@ -2740,8 +2739,7 @@ export const zhCN = {
         noPrice: '无现货价：该条目不报价',
         unknown: '无现货价：无价格表来源',
       },
-      supplierFromPriceList:
-        '供应商由价格表自动带出；如需人工填写，请用本列表头的「批量填入供应商」',
+      supplierFromPriceList: '供应商由供应商价格表自动带出，本列只读',
       addRow: '＋ 添加一行',
       addSeparator: '＋ 添加隔断',
       separator: '隔断',
@@ -2771,11 +2769,6 @@ export const zhCN = {
       specQuantityLockedHint:
         '已锁定规格和数量，暂不可新增、删除或拖动行；解锁后可继续编辑',
       supplier: '供应商',
-      fillSupplier: '批量填入供应商',
-      fillSupplierPick: '选择供应商',
-      fillSupplierBrand: '选择品牌列',
-      fillSupplierColumn: '把所选供应商填入「{{brand}}」列全部商品行',
-      fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
       purchaseOrderLabel: '关联采购订单',
       purchaseOrderPlaceholder: '关联采购',
       purchaseOrderOptionTitle:

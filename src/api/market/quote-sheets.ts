@@ -163,7 +163,12 @@ export type QuoteSheetRecord = {
   version: string
 }
 
-/** 保存请求体(整体替换)。 */
+/**
+ * 保存请求体(整体替换)。
+ *
+ * <p>现货价与来源供应商不再由单据保存写入: 两者都只由供应商价格表在读取时推导,
+ * 因此行内不再携带 `prices[]`(旧字段已被后端忽略)。</p>
+ */
 export type QuoteSheetPayload = {
   name: string
   projectId?: EntityId
@@ -188,18 +193,15 @@ export type QuoteSheetPayload = {
     locked?: boolean
     purchaseOrderId?: EntityId
     purchaseOrderItemId?: EntityId
-    /**
-     * 现货价不再落库, 仅由价格表推导: 这里的 prices[] 只允许携带非现货字段
-     * (品牌名与来源供应商), 不再出现 spotPrice; 后端忽略该字段但保留供应商存在性校验。
-     */
-    prices: {
-      brandName: string
-      supplierId?: EntityId
-    }[]
   }[]
 }
 
-/** 行级保存请求体(整行替换)。 */
+/**
+ * 行级保存请求体(整行替换)。
+ *
+ * <p>现货价与来源供应商不再由单据保存写入: 两者都只由供应商价格表在读取时推导,
+ * 因此不再携带 `prices[]`(旧字段已被后端忽略)。</p>
+ */
 export type QuoteSheetItemPayload = {
   rowType: 'PRODUCT' | 'SEPARATOR'
   category?: string
@@ -211,11 +213,6 @@ export type QuoteSheetItemPayload = {
   locked?: boolean
   purchaseOrderId?: EntityId
   purchaseOrderItemId?: EntityId
-  /** 同上: 现货价不再落库, 仅由价格表推导, prices[] 只携带供应商等非现货字段。 */
-  prices: {
-    brandName: string
-    supplierId?: EntityId
-  }[]
 }
 
 /** 表头保存请求体(不携带 brands/items, 后端仅更新表头字段)。 */

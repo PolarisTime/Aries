@@ -73,10 +73,12 @@ export type PriceRow = {
 
 export type SheetInput = {
   ton?: number
-  /** 现货价: 只由供应商价格表推导, 前端只读展示, 不再有手填覆盖。 */
+  /**
+   * 现货价: 只由供应商价格表推导, 前端只读展示, 不再有手填覆盖,
+   * 也不再随单据保存写入。
+   */
   spot?: number
-  /** 现货价来源供应商(主数据) */
-  supplierId?: string
+  /** 现货价来源供应商名称(价格表版本快照, 只读展示) */
   supplierName?: string
   /**
    * 现货价来源: PRICE_LIST 由供应商价格表推导 / NONE 无价。

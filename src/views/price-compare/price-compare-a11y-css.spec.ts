@@ -30,17 +30,24 @@ describe('比价页样式无障碍契约', () => {
     expect(block).toMatch(/min-height:\s*24px/)
   })
 
-  it('表头一键填入与吨位明细图标命中区不小于 24×24', () => {
-    const fill = blockOf(
-      pageCss,
-      '.price-compare-supplier-header .price-compare-supplier-fill-btn',
-    )
-    expect(fill).toMatch(/min-width:\s*24px/)
-    expect(fill).toMatch(/min-height:\s*24px/)
-
+  it('吨位明细图标命中区不小于 24×24(WCAG 2.5.8)', () => {
     const info = blockOf(pageCss, '.price-compare-ton-info {')
     expect(info).toMatch(/min-width:\s*24px/)
     expect(info).toMatch(/min-height:\s*24px/)
+  })
+
+  it('「一键填入供应商」入口已删除, 且不留下无主样式', () => {
+    for (const selector of [
+      '.price-compare-supplier-header',
+      '.price-compare-supplier-fill',
+      '.price-compare-fill-selected-btn',
+      // 旧的单元格人工选择供应商(Select)样式
+      '.price-compare-supplier .ant-select',
+    ]) {
+      expect(pageCss, `${selector} 的样式应随入口一并删除`).not.toContain(
+        selector,
+      )
+    }
   })
 
   it('行操作列收窄到 icon-only 最小值, 且单元格留白不把列撑大', () => {
@@ -107,11 +114,6 @@ describe('比价页样式无障碍契约', () => {
 
   it('语义色文字使用满足 4.5:1 的深色令牌', () => {
     // antd 默认 primary(#1677ff, 4.1:1) 与 error(#ff4d4f, 3.27:1) 对 11–12px 小字偏低
-    const fill = blockOf(
-      pageCss,
-      '.price-compare-supplier-header .price-compare-supplier-fill-btn',
-    )
-    expect(fill).toContain('var(--color-info-active')
     expect(blockOf(pageCss, '.price-compare-ton-hint--over')).toContain(
       'var(--color-danger-active',
     )
