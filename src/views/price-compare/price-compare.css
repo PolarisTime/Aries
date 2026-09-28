@@ -639,32 +639,37 @@
 }
 
 /*
- * 吨位单元格: 上行报单吨位输入, 下行「已开 / 订货」进度 + 明细入口。
- * 纵向堆叠 + 右对齐: 数字沿同一列基准线排布, 扫读时不必在两行之间来回找。
+ * 吨位单元格: 单行 —— 输入 + 「已开 / 订货 · 品牌」次要小字 + 明细图标。
+ * 两行堆叠会把该行撑高约 24px(实测行高 53 对其它数据行的内容高 24), 压成一行后
+ * 吨位格与同表其它单元格等高, 行高由整行最高的单元格决定。
  */
 .price-compare-ton-cell {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-wrap: nowrap;
-  gap: 0;
-  align-items: stretch;
-  justify-content: center;
+  gap: var(--space-xxs);
+  align-items: center;
+  justify-content: flex-end;
   min-width: 0;
 }
 
-/* 上行: 报单吨位输入, 独占整行宽度并右对齐 */
+/* 报单吨位输入: 固定宽度(em 随字号缩放), 内部数字右对齐同行扫读 */
 .price-compare-ton-value {
   display: flex;
+  flex: 0 0 auto;
   min-width: 0;
   justify-content: flex-end;
 }
 
-/* 吨位输入铺满列宽: 比原来的 52px 固定宽度有更大的可点区域, 右对齐便于对位 */
+/*
+ * 吨位输入宽度: 4.75em 在 14px 下约 66px, 扣掉 antd small 输入框左右各 7px 内边距后
+ * 仍有约 52px, 足够显示 `32.768` 这类三位小数吨位; 用 em 而不是 px 以便随字号等比放大。
+ */
 .price-compare-ton-cell .price-compare-ton,
 .price-compare-ton-cell .price-compare-ton input {
-  width: 100%;
-  min-width: 0;
-  flex: 1 1 auto;
+  width: 4.75em;
+  min-width: 4.75em;
+  flex: 0 0 auto;
   text-align: right;
 }
 
@@ -680,23 +685,26 @@
   min-width: 0;
 }
 
-/* 吨位输入被锁定时: 包装层顶替输入占满整行, 保持右对齐 */
+/* 吨位输入被锁定时: 包装层顶替输入占满自身宽度, 保持右对齐 */
 .price-compare-ton-cell .price-compare-ton-lock-reason {
   display: inline-flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   justify-content: flex-end;
-  width: 100%;
+  width: 4.75em;
   min-width: 0;
 }
 
-/* 下行: 进度文本 + 明细图标, 图标靠右与数字同一视觉边缘 */
-.price-compare-ton-meta-row {
+/*
+ * 进度区: 可省略的文本 + 不可收缩的超额图标。
+ * 图标必须留在省略号层外, 否则文本一被截断图标就被一起裁掉(WCAG 1.4.1 不能只靠颜色)。
+ */
+.price-compare-ton-progress {
   display: flex;
+  flex: 0 1 auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-xxs);
+  gap: 2px;
   min-width: 0;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 /* 行操作入口包装层: 承接禁用按钮的 hover, 不改变 24×24 命中区 */
@@ -723,12 +731,11 @@
 }
 
 /*
- * 进度行「已开 26/84」: 紧凑展示, 超出订单剩余时标红。
- * 数字用等宽字形(tabular-nums), 多行之间的小数点与位数能对齐, 便于自上而下扫读;
- * 极窄列下按整格省略号收尾, 精确值由悬浮 Tooltip 给出, 不会留下半个字。
+ * 次要小字「已开 26/84 · 中天」: 与输入同行, 空间不足时整段省略号收尾(精确值与品牌见 Tooltip)。
+ * 数字用等宽字形(tabular-nums), 多行之间的小数点与位数能对齐, 便于自上而下扫读。
  */
 .price-compare-ton-issued {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   font-size: 11px;
   line-height: 1.2;
@@ -741,13 +748,16 @@
 
 /* 超额时的警告图标: 与文字同色, 让"超额"不只靠颜色传达(WCAG 1.4.1) */
 .price-compare-ton-over-icon {
+  flex: 0 0 auto;
   margin-inline-start: 2px;
   font-size: 11px;
-  vertical-align: -1px;
+  /* 图标在省略号层之外, 不再继承超额文本色, 必须自己带警告色 */
+  color: var(--color-danger-active, #d9363e);
 }
 
-/* 未关联采购订单时的占位: 只用来占住进度行的高度, 内容由明细图标说明 */
+/* 未关联采购订单时的占位: 与输入同行, 内容由明细图标说明 */
 .price-compare-ton-meta--empty {
+  flex: 0 0 auto;
   color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.2;
@@ -897,8 +907,8 @@
 }
 
 /*
- * 吨位进度行里的品牌: 与"已开 26/84"同处一行(保持两行结构),
- * 列宽不足时随整格省略号收尾, 完整品牌由同一格的 Tooltip 给出。
+ * 吨位次要小字里的品牌: 与"已开 26/84"同一行、同一省略号层,
+ * 列宽不足时随整段省略号收尾, 完整品牌由同一格的 Tooltip 给出。
  */
 .price-compare-ton-brand {
   white-space: nowrap;

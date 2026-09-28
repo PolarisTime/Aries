@@ -105,9 +105,13 @@ describe('TonCell 吨位 + 采购订单关联', () => {
   it('未关联时不显示已开吨位数值, 但保留占位保证行高一致', () => {
     render()
     expect(container.textContent).not.toContain('已开')
-    expect(
-      container.querySelector('.price-compare-ton-meta--empty')?.textContent,
-    ).toBe('—')
+    const empty = container.querySelector('.price-compare-ton-meta--empty')
+    expect(empty?.textContent).toBe('—')
+    // 占位与输入同行, 吨位格只有一个行容器(两行结构会把整行撑高)
+    expect(empty?.parentElement).toBe(
+      container.querySelector('.price-compare-ton-cell'),
+    )
+    expect(container.querySelector('.price-compare-ton-meta-row')).toBeNull()
   })
 
   it('关联后进度行显示"已开 实际/订货"并带品牌(本地未保存吨位不进数字)', () => {
@@ -135,19 +139,45 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(meta?.textContent).not.toContain('·')
   })
 
-  it('输入与进度分两行: 数字在独立的上行, 进度与明细图标同行', () => {
+  it('输入与次要文本同一行: 吨位列只有一个可视行容器', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 5,
     })
+    const cell = container.querySelector('.price-compare-ton-cell')
+    expect(cell).not.toBeNull()
+    // 旧的第二行容器必须消失, 否则吨位格又比其它数据行高出约 24px
+    expect(container.querySelector('.price-compare-ton-meta-row')).toBeNull()
+    const input = container.querySelector('input[data-ton="r1"]')
+    const issued = container.querySelector('.price-compare-ton-issued')
+    const info = container.querySelector('.price-compare-ton-info')
+    // 输入 / 次要文本 / 明细图标都是行容器的直接子节点(没有额外的一行)
+    expect(cell?.children.length).toBe(3)
+    expect(cell?.contains(input)).toBe(true)
+    expect(cell?.contains(issued)).toBe(true)
+    expect(cell?.contains(info)).toBe(true)
+    // 同时校验它们分属同一行: 输入不落在次要文本内部, 也不再有子行包裹层
     const valueRow = container.querySelector('.price-compare-ton-value')
-    const metaRow = container.querySelector('.price-compare-ton-meta-row')
-    expect(valueRow?.querySelector('input[data-ton="r1"]')).not.toBeNull()
-    // 明细图标必须与进度同行, 否则窄列时又会被挤到输入框旁边
+    expect(valueRow?.contains(input)).toBe(true)
+    expect(valueRow?.contains(issued)).toBe(false)
     expect(
-      metaRow?.contains(container.querySelector('.price-compare-ton-info')),
+      container.querySelector('.price-compare-ton-progress')?.contains(issued),
     ).toBe(true)
-    expect(valueRow?.querySelector('.price-compare-ton-info')).toBeNull()
+  })
+
+  it('超额警告图标位于可省略文本之外, 文本被截断也不会丢图标', () => {
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301', ton: 15 },
+      localTonForItem: 15,
+    })
+    const issued = container.querySelector('.price-compare-ton-issued')
+    const progress = container.querySelector('.price-compare-ton-progress')
+    const icon = container.querySelector('.price-compare-ton-over-icon')
+    expect(icon).not.toBeNull()
+    // 图标若留在 overflow:hidden + ellipsis 的文本层里, 文本一截断图标就被裁掉
+    expect(issued?.contains(icon)).toBe(false)
+    expect(progress?.contains(icon)).toBe(true)
+    expect(progress?.contains(issued)).toBe(true)
   })
 
   it('超过订货吨数时进度行标红并补警告图标', () => {

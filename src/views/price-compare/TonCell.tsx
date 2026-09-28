@@ -101,7 +101,7 @@ function resolveTonnageView(
 }
 
 /**
- * 进度行: `已开 26/84 · 中天`, 超额时整行转警告色并补警告图标。
+ * 进度文本: `已开 26/84 · 中天`, 超额时文本转警告色并**在文本层之外**补警告图标。
  *
  * <p>数字口径是**实际已开**(服务端已保存报单统计), 本单据未保存的吨位只出现在悬浮明细的
  * 「含未保存报单」行里; 超额仍按含未保存的预计值判定(与保存后的扣减口径一致), 因此可能
@@ -198,35 +198,42 @@ function TonProgress({
 
   return (
     <Tooltip placement="top" title={detail}>
-      <span
-        className={
-          overLimit
-            ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
-            : 'price-compare-ton-meta price-compare-ton-issued'
-        }
-      >
-        {/*
-          视觉上是紧凑的 `已开 35/40 · 中天`, 但对读屏要给出完整口径, 否则"35/40"读不出
-          谁是已开谁是订货、也读不到品牌。aria-label 不能挂在无 role 的 span 上(biome a11y 规则),
-          因此用项目通用的 .aries-sr-only 承载这句完整描述。
-        */}
-        <span className="aries-sr-only">
-          {`${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(actualIssued)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${unsavedTon > 0 ? ` / ${t('priceCompare.sheet.purchaseOrderIssuedProjected')} ${tonValueText(projectedIssued)}` : ''}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}`}
+      {/*
+        单行结构: 文本单独一层负责省略号, 超额图标放在它外面。
+        图标若留在 overflow:hidden + text-overflow:ellipsis 的文本层内, 文本一被截断
+        图标就一起被裁掉 —— "超额"会退化成只剩颜色(WCAG 1.4.1)。
+      */}
+      <span className="price-compare-ton-progress">
+        <span
+          className={
+            overLimit
+              ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
+              : 'price-compare-ton-meta price-compare-ton-issued'
+          }
+        >
+          {/*
+            视觉上是紧凑的 `已开 35/40 · 中天`, 但对读屏要给出完整口径, 否则"35/40"读不出
+            谁是已开谁是订货、也读不到品牌。aria-label 不能挂在无 role 的 span 上(biome a11y 规则),
+            因此用项目通用的 .aries-sr-only 承载这句完整描述。
+          */}
+          <span className="aries-sr-only">
+            {`${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(actualIssued)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${unsavedTon > 0 ? ` / ${t('priceCompare.sheet.purchaseOrderIssuedProjected')} ${tonValueText(projectedIssued)}` : ''}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}`}
+          </span>
+          {t('priceCompare.sheet.purchaseOrderIssuedShort', {
+            issued: `${issuedText}/${orderedText}`,
+          })}
+          {brand ? (
+            <>
+              {/* 分隔符对读屏冗余(品牌已在上面的完整描述里读出来) */}
+              <span aria-hidden="true" className="price-compare-ton-brand-sep">
+                ·
+              </span>
+              <span className="price-compare-ton-brand" title={brand}>
+                {brand}
+              </span>
+            </>
+          ) : null}
         </span>
-        {t('priceCompare.sheet.purchaseOrderIssuedShort', {
-          issued: `${issuedText}/${orderedText}`,
-        })}
-        {brand ? (
-          <>
-            {/* 分隔符对读屏冗余(品牌已在上面的完整描述里读出来) */}
-            <span aria-hidden="true" className="price-compare-ton-brand-sep">
-              ·
-            </span>
-            <span className="price-compare-ton-brand" title={brand}>
-              {brand}
-            </span>
-          </>
-        ) : null}
         {overLimit ? (
           <ExclamationCircleFilled
             aria-hidden="true"
@@ -239,13 +246,15 @@ function TonProgress({
 }
 
 /**
- * 吨位单元格: 上行报单吨位输入(右对齐等宽数字), 下行「已开 / 订货」进度 + 明细入口。
+ * 吨位单元格: 单行 —— 报单吨位输入(右对齐等宽数字) + 次要小字「已开 / 订货 · 品牌」+ 明细入口。
  *
- * <p>拆两行的原因: 原本单行里输入框、`已开 X…`、明细图标互相挤占, 窄列时进度文本被
- * 截成 `已开 26…` 且对齐混乱; 改两行后数字上下对齐、进度完整可读, 超额另有警告色与图标。</p>
+ * <p>单行的原因: 两行结构会把该行撑高(实测行高 53 / 吨位格 48, 比其它数据行多约 24px),
+ * 数字与进度分开后也很难在同一水平线上扫读。压成一行后吨位格与其它单元格同为 24px 内容高,
+ * 行高由整行最高的单元格决定, 不再由吨位列额外撑高。</p>
  *
- * <p>鼠标悬停进度行给出「报单 / 订货 / 已开 / 剩余」精确明细; 悬停明细图标显示该规格行
- * 订货/已开/剩余 popover, popover 内可打开选择弹窗, 超额不拦截保存。</p>
+ * <p>次要小字在列宽不足时省略号收尾(完整口径见进度文本的 Tooltip), 超额警告图标放在
+ * 省略号层之外, 保证被截断时图标仍在; 明细图标悬停/点击给出该规格行的订单 popover,
+ * popover 内可打开选择弹窗, 超额不拦截保存。</p>
  */
 export function TonCell({
   row,
@@ -358,32 +367,30 @@ export function TonCell({
           tonInput
         )}
       </div>
-      {/* 进度行与明细入口同一行: 输入独占上行, 数字纵向对齐便于扫读 */}
-      <div className="price-compare-ton-meta-row">
-        <TonProgress
-          actualIssued={actualIssued}
-          overLimit={overLimit}
-          projectedIssued={projectedIssued}
-          row={row}
-          selected={selected}
-        />
-        <Popover
-          content={popoverContent}
-          placement="right"
-          trigger={['hover', 'click']}
-          mouseEnterDelay={0.15}
+      {/* 单行: 输入 + 「已开 x/y · 品牌」次要小字 + 明细入口同一行, 行高与其它数据行一致 */}
+      <TonProgress
+        actualIssued={actualIssued}
+        overLimit={overLimit}
+        projectedIssued={projectedIssued}
+        row={row}
+        selected={selected}
+      />
+      <Popover
+        content={popoverContent}
+        placement="right"
+        trigger={['hover', 'click']}
+        mouseEnterDelay={0.15}
+      >
+        {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
+            弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}
+        <button
+          aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
+          className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
+          type="button"
         >
-          {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
-              弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}
-          <button
-            aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
-            className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
-            type="button"
-          >
-            <InfoCircleOutlined />
-          </button>
-        </Popover>
-      </div>
+          <InfoCircleOutlined />
+        </button>
+      </Popover>
     </div>
   )
 }

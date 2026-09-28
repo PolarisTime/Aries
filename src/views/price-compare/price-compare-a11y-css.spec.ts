@@ -105,6 +105,10 @@ describe('比价页样式无障碍契约', () => {
     expect(blockOf(pageCss, '.price-compare-ton-hint--over')).toContain(
       'var(--color-danger-active',
     )
+    // 超额图标在省略号层之外, 不再继承文本色, 必须自己带警告色
+    expect(blockOf(pageCss, '.price-compare-ton-over-icon')).toContain(
+      'var(--color-danger-active',
+    )
     expect(blockOf(pageCss, '.price-compare-variety-switch')).toContain(
       'var(--color-info-active',
     )

@@ -830,4 +830,54 @@ describe('列宽按字号自适应', () => {
       Math.ceil((longestLabelWidthAt14px * 18) / 14),
     )
   })
+
+  /*
+   * 数字列(现货价 / 网价 / 差价)按 4 位数字立契约。
+   *
+   * 真机实测(PingFang SC, tabular-nums): 每位数字宽 0.6em, 14px 字号下 4 位数字 = 33.6px;
+   * 单元格左右留白合计 12px(再加 1px 边框/取整); 现货价的 antd small 输入框左右内边距各 7px
+   * (共 14px, 不随字号缩放), 差价角标左右内边距各 4px(共 8px)。列宽必须覆盖这些固定开销,
+   * 否则末位数字被裁。
+   */
+  const DIGIT_WIDTH_EM = 0.6
+  const CELL_CHROME = 13
+  const SPOT_INPUT_PADDING = 14
+  const DIFF_CHIP_PADDING = 8
+  const digits4Width = (fontSize: number) =>
+    Math.ceil(4 * DIGIT_WIDTH_EM * fontSize)
+  /** 现货价: 数字 + 输入框内边距 + 单元格留白。 */
+  const requiredSpotWidth = (fontSize: number) =>
+    digits4Width(fontSize) + SPOT_INPUT_PADDING + CELL_CHROME
+  /** 网价: 纯文本数字 + 单元格留白。 */
+  const requiredNetWidth = (fontSize: number) =>
+    digits4Width(fontSize) + CELL_CHROME
+  /** 差价: 数字 + 角标内边距 + 单元格留白。 */
+  const requiredDiffWidth = (fontSize: number) =>
+    digits4Width(fontSize) + DIFF_CHIP_PADDING + CELL_CHROME
+
+  it('14/16/18 三档下 spot/net/diff 都容得下 4 位数字', () => {
+    for (const fontSize of [14, 16, 18]) {
+      const widths = sheetColumnWidths(fontSize)
+      expect(widths.spot).toBeGreaterThanOrEqual(requiredSpotWidth(fontSize))
+      expect(widths.net).toBeGreaterThanOrEqual(requiredNetWidth(fontSize))
+      expect(widths.diff).toBeGreaterThanOrEqual(requiredDiffWidth(fontSize))
+    }
+  })
+
+  it('现货价列宽回归保护: 58 在 14px 下不足(实测 input.clientWidth=45 < 48)', () => {
+    // 阈值 61 是「4 位数字 + 输入框内边距 + 单元格留白」在基准字号下的下界
+    expect(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(61)
+    expect(SHEET_COLUMN_WIDTH.spot).toBeGreaterThanOrEqual(
+      requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE),
+    )
+    // 旧的 58 会让输入框内容宽只剩 45px, 4 位数字(48px)显示不全
+    expect(58).toBeLessThan(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE))
+  })
+
+  it('差价列宽回归保护: 角标在 14px 下不得越出单元格', () => {
+    expect(requiredDiffWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(55)
+    expect(SHEET_COLUMN_WIDTH.diff).toBeGreaterThanOrEqual(
+      requiredDiffWidth(SHEET_WIDTH_BASE_FONT_SIZE),
+    )
+  })
 })
