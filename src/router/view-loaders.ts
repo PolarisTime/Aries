@@ -46,6 +46,10 @@ export const viewLoaders: Record<
     import('@/views/master-data/WarehousePage').then((m) => ({
       default: m.WarehousePage,
     })),
+  'master-supplier-price-list': () =>
+    import('@/views/master-data/SupplierPriceListPage').then((m) => ({
+      default: m.SupplierPriceListPage,
+    })),
   'sales-contract': () =>
     import('@/views/sales-contracts/SalesContractPage').then((m) => ({
       default: m.SalesContractPage,
