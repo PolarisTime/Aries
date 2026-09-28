@@ -148,6 +148,8 @@ export function AppHeaderSearch({
           className="header-global-search-button"
           loading={loading}
           icon={<SearchOutlined />}
+          /* 只有图标没有文字: 必须给可访问名, 否则读屏只会念「按钮」(WCAG 4.1.2) */
+          aria-label={t('layouts.headerSearch.submit')}
           onClick={() => handleSubmit(keyword)}
         />
       </div>

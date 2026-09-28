@@ -8,6 +8,7 @@ import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { LegacyModuleRecord } from '@/types/module-record'
+import { buildSelectionA11yProps } from '@/utils/table-selection-a11y'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
@@ -200,6 +201,7 @@ export function MasterDataTable({
       <div ref={shellRef} className="module-table-shell" style={shellStyle}>
         <Table<LegacyModuleRecord>
           rowKey={(record) => String(record.id)}
+          size="small"
           columns={visibleColumns}
           dataSource={records}
           loading={isLoading || isFetching}
@@ -208,6 +210,7 @@ export function MasterDataTable({
             selectedRowKeys,
             preserveSelectedRowKeys: true,
             onChange: (keys: Key[]) => onSelectionChange(keys.map(String)),
+            ...buildSelectionA11yProps<LegacyModuleRecord>(t),
           }}
           rowClassName={(record) =>
             (spec.rowHighlightStatuses ?? []).includes(asString(record.status))

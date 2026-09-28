@@ -11,6 +11,7 @@ import { resolveProjectCustomerDisplay } from '@/config/business-pages/master/pr
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import { STATUS } from '@/constants/status-constants'
 import type { LegacyModuleRecord } from '@/types/module-record'
+import { buildSelectionA11yProps } from '@/utils/table-selection-a11y'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
@@ -235,6 +236,12 @@ export function ProjectTableSection({
             selectedRowKeys,
             preserveSelectedRowKeys: true,
             onChange: onSelectionChange,
+            // antd 默认的 Select all / Select row N 是硬编码英文, 覆盖成本项目 i18n 文案
+            ...buildSelectionA11yProps<ProjectListRow>(
+              t,
+              (record) =>
+                asString(record.projectCode) || asString(record.projectName),
+            ),
           }}
           rowClassName={(record) =>
             asString(record.status) === STATUS.DISABLED

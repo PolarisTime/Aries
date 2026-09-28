@@ -1046,6 +1046,9 @@ export const enUS = {
       rowContextMenuLabel: 'Actions for the "{{title}}" row',
       noData: 'No data',
       sequence: 'No.',
+      /** Shown when virtual scrolling disables the row context menu */
+      virtualModeHint:
+        'This list is large and uses virtual scrolling, so the row context menu is unavailable. Select a row and use the toolbar actions instead.',
     },
     editorFooter: {
       cancel: 'Cancel',
@@ -2637,12 +2640,15 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Based on saved sheets only; unsaved edits are not counted',
+        'Issued (actual) counts saved sheets only (unsaved edits of this sheet excluded); "Incl. unsaved" adds what is currently typed here',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       purchaseOrderLoadFailed:
         'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
       purchaseOrderIssuedShort: 'Issued {{issued}}',
+      purchaseOrderIssuedActual: 'Issued (actual)',
+      purchaseOrderIssuedProjected: 'Incl. unsaved',
+      purchaseOrderRemainingProjected: 'Remaining (incl. unsaved)',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
       purchaseOrderOverLimitLong: 'Entry tonnage exceeds the order remaining',
@@ -2650,10 +2656,19 @@ export const enUS = {
       purchaseOrderPickerTitle: 'Select purchase order line',
       purchaseOrderPickerSearch: 'Search order no., supplier or spec',
       purchaseOrderPickerEmpty: 'No purchase orders available',
+      purchaseOrderPickerEmptyAllFullyLinked:
+        'No purchase order with remaining tonnage; tick the switch above to view fully linked lines',
       purchaseOrderPickerClear: 'Clear link',
       purchaseOrderPickerClearHint: 'Unlink this row from the purchase order',
       purchaseOrderPickerHint:
         'Click a row to link it (keyboard: Tab to a row, then press Enter); issued tonnage is based on saved sheets.',
+      purchaseOrderPickerShowFullyLinked:
+        'Show fully linked orders ({{count}})',
+      purchaseOrderPickerFullyLinkedTag: 'Fully linked',
+      purchaseOrderPickerFullyLinkedMine:
+        'This sheet already linked {{ton}} tons',
+      purchaseOrderPickerFullyLinkedHint:
+        'No remaining tonnage to link; selection is disabled but the line stays visible',
     },
     config: {
       title: 'Project Settings',

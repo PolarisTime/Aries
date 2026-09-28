@@ -1019,6 +1019,9 @@ export const zhCN = {
       rowContextMenuLabel: '「{{title}}」行操作菜单',
       noData: '暂无数据',
       sequence: '序号',
+      /** 虚拟滚动时行右键菜单不可用的可见说明 */
+      virtualModeHint:
+        '当前列表数据较多，已启用虚拟滚动：行右键菜单不可用，请选中行后使用工具栏操作。',
     },
     editorFooter: {
       cancel: '取消',
@@ -2557,12 +2560,18 @@ export const zhCN = {
         '{{orderNo}} · {{supplier}}（{{status}}）｜订货 {{ordered}} 吨｜剩余 {{remaining}} 吨',
       purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
       purchaseOrderOverLimit: '（超额）',
-      purchaseOrderSavedBasis: '按已保存报单统计，未保存的改动不计入',
+      purchaseOrderSavedBasis:
+        '「已开吨位（实际）」按已保存报单统计（不含本单据未保存改动）；「含未保存报单」在其上叠加本单据当前填写值',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
       purchaseOrderLoadFailed:
         '采购订单吨位加载失败，已开/剩余吨位暂不可用；不影响吨位填写与保存',
       purchaseOrderIssuedShort: '已开 {{issued}}',
+      /** 吨位进度行的数字口径: 实际已开(服务端已保存报单)。 */
+      purchaseOrderIssuedActual: '已开吨位（实际）',
+      /** 叠加本单据未保存吨位后的预计值, 只在悬浮明细里出现。 */
+      purchaseOrderIssuedProjected: '含未保存报单',
+      purchaseOrderRemainingProjected: '剩余吨位（含未保存）',
       purchaseOrderDetail: '采购订单明细',
       purchaseOrderUnlinked: '未关联采购订单',
       purchaseOrderOverLimitLong: '报单吨位已超过订单剩余可开吨',
@@ -2570,10 +2579,21 @@ export const zhCN = {
       purchaseOrderPickerTitle: '选择采购订单规格行',
       purchaseOrderPickerSearch: '搜索单号、供应商或规格',
       purchaseOrderPickerEmpty: '暂无可选采购订单',
+      /** 有关键字命中但全部"已关联完"被隐藏时的空态, 引导用户用开关查看。 */
+      purchaseOrderPickerEmptyAllFullyLinked:
+        '没有还有剩余可关联吨位的采购订单，可勾选上方开关查看已关联完的明细',
       purchaseOrderPickerClear: '清除关联',
       purchaseOrderPickerClearHint: '解除本行与采购订单的关联',
       purchaseOrderPickerHint:
         '点击一行即选中并关联（键盘：Tab 到行后按回车）；已开吨位按已保存报单统计。',
+      /** 默认隐藏"剩余可关联吨位为 0"的明细行, 开关只在本弹窗内生效。 */
+      purchaseOrderPickerShowFullyLinked: '显示已关联完的订单（{{count}}）',
+      /** 剩余为 0 的行在开关打开后的标记: 可见但不可选。 */
+      purchaseOrderPickerFullyLinkedTag: '已关联完',
+      /** 剩余为 0 且本单据已用掉吨位时的悬浮说明。 */
+      purchaseOrderPickerFullyLinkedMine: '本单据已关联 {{ton}} 吨',
+      purchaseOrderPickerFullyLinkedHint:
+        '剩余可关联吨位为 0，已禁用选择；可继续查看但不占用额度',
     },
     config: {
       title: '项目配置',

@@ -9,6 +9,8 @@ vi.mock('react-i18next', () => ({
 }))
 
 import { AppHeaderSearch } from '@/layouts/AppHeaderSearch'
+import { enUS } from '@/locales/en-US'
+import { zhCN } from '@/locales/zh-CN'
 
 const nextFrame = () =>
   new Promise<void>((resolve) => {
@@ -129,6 +131,21 @@ describe('AppHeaderSearch focus restore', () => {
 
     expect(handlers.onSubmit).toHaveBeenCalledWith('SO-1')
     expect(document.activeElement).toBe(input)
+  })
+
+  /**
+   * 回归: 提交按钮只有放大镜图标, 缺少可访问名时读屏只会念「按钮」(WCAG 4.1.2)。
+   */
+  it('提交按钮带有可访问名(aria-label), 且 zh/en 两种语言都有定义', () => {
+    const button = host.querySelector<HTMLButtonElement>(
+      'button.header-global-search-button',
+    )!
+    expect(button).toBeTruthy()
+    expect(button.getAttribute('aria-label')).toBe(
+      'layouts.headerSearch.submit',
+    )
+    expect(zhCN.layouts.headerSearch.submit).toBe('搜索')
+    expect(enUS.layouts.headerSearch.submit).toBe('Search')
   })
 })
 

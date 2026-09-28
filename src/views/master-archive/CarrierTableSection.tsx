@@ -9,6 +9,7 @@ import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
 import { STATUS } from '@/constants/status-constants'
 import type { LegacyModuleRecord } from '@/types/module-record'
+import { buildSelectionA11yProps } from '@/utils/table-selection-a11y'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
@@ -212,6 +213,12 @@ export function CarrierTableSection({
             selectedRowKeys,
             preserveSelectedRowKeys: true,
             onChange: onSelectionChange,
+            // antd 默认的 Select all / Select row N 是硬编码英文, 覆盖成本项目 i18n 文案
+            ...buildSelectionA11yProps<CarrierListRow>(
+              t,
+              (record) =>
+                asString(record.carrierCode) || asString(record.carrierName),
+            ),
           }}
           rowClassName={(record) =>
             asString(record.status) === STATUS.DISABLED
