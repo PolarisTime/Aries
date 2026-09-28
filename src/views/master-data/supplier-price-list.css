@@ -1,20 +1,69 @@
 /*
- * 供应商品牌价格表维护页样式。
+ * 供应商品牌价格表维护页样式（R2 形态 = 报单比价的矩阵）。
  *
- * 密度约定: 一律复用 `--app-*` 与 antd token 变量, 不引入新的硬编码高度/间距,
+ * 密度约定: 一律复用 `--app-*` 与 antd token 变量, 不引入新的硬编码高度/间距;
  * 表格内控件使用 `size="small"`(对应 `--app-control-height-sm` = 24px, 满足 WCAG 2.5.8)。
+ * 固定左列与滚动壳沿用报单比价页(`price-compare-table`)的既有约定。
  */
+
+.supplier-price-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* 顶部供应商标签页 + 右侧动作(新增/刷新/对照矩阵) */
+.supplier-price-list-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.supplier-price-list-tabs .ant-tabs {
+  flex: 1;
+  min-width: 240px;
+}
+
+.supplier-price-list-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.supplier-price-list-tabs-empty {
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.supplier-price-list-tabs-actions {
+  margin-left: auto;
+}
+
+.supplier-price-list-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* 标签命中区不小于 24px(WCAG 2.5.8) */
+  min-height: 24px;
+}
+
+.supplier-price-list-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 0;
+}
 
 .supplier-price-list-editor {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: 100%;
+  flex: 1;
   min-height: 0;
-}
-
-.supplier-price-list-editor-header {
-  padding: 4px 0;
 }
 
 .supplier-price-list-editor-actions {
@@ -37,15 +86,36 @@
   color: var(--text-primary);
 }
 
-.supplier-price-list-editor-table {
-  flex: 1;
-  min-height: 0;
+.supplier-price-list-dirty {
+  color: var(--color-warning-active);
 }
 
-.supplier-price-list-editor-table .ant-table-cell {
+/*
+ * 矩阵滚动壳: 用 flex 撑满剩余高度, 不写死高度(也不依赖某个具体视口公式)。
+ * 纵向滚由本壳承担, 因此 Table 只声明横向 `scroll.x`(固定左列 + 品牌列横向滚动)。
+ */
+.supplier-price-list-matrix-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.supplier-price-list-editor-table .ant-table-cell,
+.supplier-price-list-matrix-scroll .ant-table-cell {
   padding-top: var(--app-table-cell-padding-y);
   padding-bottom: var(--app-table-cell-padding-y);
   vertical-align: top;
+}
+
+.supplier-price-matrix-table .ant-table-cell {
+  white-space: nowrap;
+}
+
+/* 固定左列的可读文本: 读屏顺序与视觉顺序一致, 不靠位置表达语义 */
+.supplier-price-list-sticky-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .supplier-price-cell {
@@ -60,6 +130,16 @@
   width: 100%;
 }
 
+/*
+ * 空价标记: 「未填写 / 不报价」用文字表达(WCAG 1.4.1, 不得只靠颜色),
+ * 复用次要文字色, 字号与表格内其它小字一致。
+ */
+.supplier-price-cell-marker {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .supplier-price-row-error {
   color: var(--ant-color-error, #cf1322);
   font-size: 12px;
@@ -70,6 +150,50 @@
   color: var(--ant-color-warning-text, #874d00);
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* 品牌列头: 品牌名 + 保存态 + 删除该品牌价格表 */
+.supplier-price-brand-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 24px;
+  width: 100%;
+}
+
+/*
+ * 品牌列头由共享列头基元渲染: 基元把子节点包进 role="button" 的可聚焦包装。
+ * 去掉全局触摸热区伪元素的命中, 并让包装自身撑到 ≥24×24(WCAG 2.5.8)。
+ */
+.column-header-menu-trigger:has(> .supplier-price-brand-header) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.column-header-menu-trigger:has(> .supplier-price-brand-header)::before {
+  pointer-events: none;
+}
+
+.supplier-price-brand-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.supplier-price-brand-state {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.supplier-price-brand-delete.ant-btn {
+  min-width: 24px;
+  min-height: 24px;
 }
 
 .supplier-price-list-editor-pagination {
@@ -84,10 +208,6 @@
   gap: 8px;
   max-height: 320px;
   overflow: auto;
-}
-
-.supplier-price-matrix-table .ant-table-cell {
-  white-space: nowrap;
 }
 
 .supplier-price-list-editor-hint {

@@ -1,44 +1,54 @@
-import { Alert, Button, Input, Modal, Space } from 'antd'
+import { Alert, Button, Input, Modal, Select, Space } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
 import {
-  applyTsvPaste,
-  type PriceDraftRow,
-  type TsvPasteResult,
+  applyMatrixPaste,
+  type MatrixPasteResult,
+  type PriceMatrixState,
 } from './supplier-price-list-editor-model'
 
 interface Props {
-  rows: PriceDraftRow[]
+  /** 目标品牌列（空串 = 由用户在弹窗里选择/输入） */
+  brandName: string
+  state: PriceMatrixState
   /** 从网格直接粘贴时带入的原始文本 */
   initialText?: string
   onCancel: () => void
-  onApply: (rows: PriceDraftRow[], result: TsvPasteResult) => void
+  onApply: (result: MatrixPasteResult) => void
 }
 
 const MAX_VISIBLE_ERRORS = 50
 
 /**
- * TSV 粘贴导入（从 Excel 复制）。
+ * TSV 粘贴导入（从 Excel 复制）到**指定品牌列**。
  *
- * <p>解析容错但**不写脏数据**：列数不足、规格非正整数、单价格式错误、无法对齐固定行的行
+ * <p>R2 口径：矩阵的列就是品牌，因此粘贴必须落到某一列，绝不能猜品牌写入。
+ * 解析容错但**不写脏数据**：列数不足、规格非正整数、单价格式错误、无法对齐固定行的行
  * 逐行报错并跳过。单元格留空 = 不报价（绝不写 0）；若粘贴会清掉已有报价，先二次确认。</p>
  *
  * <p>调用方按需挂载（`{open ? <Modal/> : null}`），初始文本直接作为 state 初值。</p>
  */
 export function SupplierPriceListPasteModal({
-  rows,
+  brandName,
+  state,
   initialText = '',
   onCancel,
   onApply,
 }: Props) {
   const { t } = useTranslation()
   const [text, setText] = useState(initialText)
-  const [parsed, setParsed] = useState<TsvPasteResult | null>(null)
+  const [brand, setBrand] = useState(brandName)
+  const [parsed, setParsed] = useState<MatrixPasteResult | null>(null)
 
   const visibleErrors = useMemo(
     () => (parsed ? parsed.errors.slice(0, MAX_VISIBLE_ERRORS) : []),
     [parsed],
+  )
+
+  const brandOptions = useMemo(
+    () => state.brandOrder.map((name) => ({ value: name, label: name })),
+    [state.brandOrder],
   )
 
   const handleApply = () => {
@@ -54,11 +64,11 @@ export function SupplierPriceListPasteModal({
         okText: t('common.ok'),
         cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
-        onOk: () => onApply(parsed.rows, parsed),
+        onOk: () => onApply(parsed),
       })
       return
     }
-    onApply(parsed.rows, parsed)
+    onApply(parsed)
   }
 
   return (
@@ -73,8 +83,8 @@ export function SupplierPriceListPasteModal({
         </Button>,
         <Button
           key="parse"
-          disabled={!text.trim()}
-          onClick={() => setParsed(applyTsvPaste(rows, text))}
+          disabled={!text.trim() || !brand.trim()}
+          onClick={() => setParsed(applyMatrixPaste(state, brand, text))}
         >
           {t('supplierPriceList.paste.parse')}
         </Button>,
@@ -89,6 +99,18 @@ export function SupplierPriceListPasteModal({
       ]}
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+        <Select
+          showSearch={{ optionFilterProp: 'label' }}
+          style={{ width: '100%' }}
+          aria-label={t('supplierPriceList.paste.brandLabel')}
+          placeholder={t('supplierPriceList.paste.brandLabel')}
+          value={brand || undefined}
+          onChange={(value) => {
+            setBrand(value)
+            setParsed(null)
+          }}
+          options={brandOptions}
+        />
         <Alert
           type="info"
           showIcon

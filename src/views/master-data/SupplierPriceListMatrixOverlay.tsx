@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Alert, DatePicker, Input, Select, Space, Spin, Table, Tag } from 'antd'
+import { Alert, Input, Select, Space, Spin, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs, { type Dayjs } from 'dayjs'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SupplierOption } from '@/api/master/supplier-options'
@@ -12,7 +11,7 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_REALTIME } from '@/constants/query-policies'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
-import { PRICE_ITEM_STATUS_I18N_KEYS } from './supplier-price-list-editor-model'
+import { formatUpdatedAt } from './supplier-price-list-editor-model'
 
 interface Props {
   open: boolean
@@ -21,10 +20,10 @@ interface Props {
 }
 
 /**
- * 只读对照矩阵（P1）：跨供应商/品牌的现货价横向对照。
+ * 只读对照矩阵（P1）：跨供应商/品牌的单价横向对照，作为主矩阵的补充视图。
  *
- * <p>纯读接口 `GET /supplier-price-lists/matrix`，不触发任何写入；用于核对某规格在不同
- * 供应商/品牌下的报价与状态是否一致。</p>
+ * <p>纯读接口 `GET /supplier-price-lists/matrix`，不触发任何写入；R2 起没有版本，
+ * 因此列头只显示「更新时间」而不是发布时刻/生效区间。</p>
  */
 export function SupplierPriceListMatrixOverlay({
   open,
@@ -35,7 +34,6 @@ export function SupplierPriceListMatrixOverlay({
   const [supplierIds, setSupplierIds] = useState<string[]>([])
   const [brandNames, setBrandNames] = useState<string[]>([])
   const [category, setCategory] = useState('')
-  const [asOf, setAsOf] = useState<Dayjs | null>(null)
 
   const matrixQuery = useQuery({
     queryKey: QUERY_KEYS.supplierPriceListMatrix({
@@ -49,7 +47,6 @@ export function SupplierPriceListMatrixOverlay({
           ...(supplierIds.length ? { supplierIds } : {}),
           ...(brandNames.length ? { brandNames } : {}),
           ...(category ? { category } : {}),
-          ...(asOf ? { asOf: asOf.format('YYYY-MM-DDTHH:mm:ss') } : {}),
         },
         signal,
       ),
@@ -101,22 +98,31 @@ export function SupplierPriceListMatrixOverlay({
     const matrixColumns: ColumnsType<SupplierPriceMatrixRow> = (
       matrixQuery.data?.columns ?? []
     ).map((column, index) => ({
-      title: `${column.supplierName || `#${column.supplierId}`} / ${column.brandName}`,
+      title: (
+        <span className="supplier-price-brand-header">
+          <span>
+            {column.supplierName || `#${column.supplierId}`} /{' '}
+            {column.brandName}
+          </span>
+          {column.updatedAt ? (
+            <span className="supplier-price-brand-state">
+              {formatUpdatedAt(column.updatedAt)}
+            </span>
+          ) : null}
+        </span>
+      ),
       key: `${column.supplierId}-${column.brandName}-${index}`,
-      width: 150,
+      width: 160,
       align: 'right',
       render: (_: unknown, row) => {
         const cell = row.cells[index]
         if (!cell) {
-          // 该版本没有这一列（无生效版本/无条目）：用 title 说明，避免无 role 元素挂 aria-label
+          // 该品牌没有这一行（无价格表/无条目）：用 title 说明，避免无 role 元素挂 aria-label
           return <span title={t('supplierPriceList.noQuote')}>-</span>
         }
         if (cell.price === null) {
-          return (
-            <Tag color="default">
-              {t(PRICE_ITEM_STATUS_I18N_KEYS[cell.priceStatus])}
-            </Tag>
-          )
+          // WCAG 1.4.1: 「不报价」用文字而不是只靠颜色
+          return <Tag color="default">{t('supplierPriceList.noQuote')}</Tag>
         }
         return cell.price.toFixed(2)
       },
@@ -166,14 +172,6 @@ export function SupplierPriceListMatrixOverlay({
             placeholder={t('supplierPriceList.matrix.category')}
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-          />
-          <DatePicker
-            showTime={{ format: 'HH:mm' }}
-            format="YYYY-MM-DD HH:mm"
-            aria-label={t('supplierPriceList.matrix.asOf')}
-            placeholder={t('supplierPriceList.matrix.asOf')}
-            value={asOf ?? dayjs()}
-            onChange={(value) => setAsOf(value)}
           />
         </div>
 

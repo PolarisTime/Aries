@@ -5,29 +5,41 @@ import { useTranslation } from 'react-i18next'
 import type { PriceAdjustmentMode } from '@/api/master/supplier-price-lists'
 import {
   type AdjustmentPreviewRow,
-  buildAdjustmentPreview,
+  buildMatrixAdjustmentPreview,
   isAdjustmentAmountValid,
-  type PriceDraftRow,
+  type MatrixAdjustmentPreview,
+  type PriceMatrixState,
 } from './supplier-price-list-editor-model'
 
+type BrandPlan = MatrixAdjustmentPreview['brandPlans'][number]
+
 interface Props {
-  rows: PriceDraftRow[]
+  state: PriceMatrixState
+  /** 参与加减的品牌列（默认全部） */
+  brandNames: string[]
   saving: boolean
   onCancel: () => void
-  onSubmit: (mode: PriceAdjustmentMode, amount: number) => void
+  onSubmit: (
+    mode: PriceAdjustmentMode,
+    amount: number,
+    plans: BrandPlan[],
+  ) => void
 }
 
 /**
  * 整体加减：**必须先预览**再确认。
  *
- * <p>预览展示影响条目数与加减前后单价；单价为空（不报价）的条目不计入，
- * 减价后出现负数的条目会阻断确认（契约要求 422，前端不静默截断）。</p>
+ * <p>R2 口径：一次预览覆盖当前供应商的全部品牌列（跨列），执行时按品牌分别调用
+ * `price-adjustments`（接口是单表粒度）。单价为空（不报价）的条目不参与，减价后出现
+ * 负数的条目会阻断确认（契约要求 422，前端不静默截断）；尚未建表/未落库的价格也只能
+ * 提示「先保存」，不得静默跳过。</p>
  *
  * <p>调用方按需挂载（`{open ? <Modal/> : null}`）：每次打开都是全新实例，
  * 状态无需在 effect 里重置（避免 set-state-in-effect 与过期预览残留）。</p>
  */
 export function SupplierPriceListAdjustModal({
-  rows,
+  state,
+  brandNames,
   saving,
   onCancel,
   onSubmit,
@@ -42,9 +54,14 @@ export function SupplierPriceListAdjustModal({
   const preview = useMemo(
     () =>
       previewRequested && amountValid
-        ? buildAdjustmentPreview(rows, mode, amount as number)
+        ? buildMatrixAdjustmentPreview(
+            state,
+            mode,
+            amount as number,
+            brandNames,
+          )
         : null,
-    [previewRequested, amountValid, rows, mode, amount],
+    [previewRequested, amountValid, state, mode, amount, brandNames],
   )
 
   const columns: ColumnsType<AdjustmentPreviewRow> = [
@@ -77,16 +94,20 @@ export function SupplierPriceListAdjustModal({
     <Modal
       open
       title={t('supplierPriceList.adjust.title')}
-      width={720}
+      width={760}
       okText={t('supplierPriceList.adjust.confirm')}
       cancelText={t('common.cancel')}
       confirmLoading={saving}
       okButtonProps={{
-        disabled: !preview || !amountValid || preview.negativeKeys.length > 0,
+        disabled:
+          !preview ||
+          !amountValid ||
+          preview.negativeLabels.length > 0 ||
+          preview.brandPlans.length === 0,
       }}
       onOk={() => {
-        if (preview && amountValid) {
-          onSubmit(mode, amount as number)
+        if (preview && amountValid && preview.brandPlans.length) {
+          onSubmit(mode, amount as number, preview.brandPlans)
         }
       }}
       onCancel={onCancel}
@@ -157,15 +178,46 @@ export function SupplierPriceListAdjustModal({
                   count: preview.skippedCount,
                 })}
               </span>
+              <span>
+                {t('supplierPriceList.adjust.brandCount', {
+                  count: preview.brandPlans.length,
+                })}
+              </span>
             </div>
-            {preview.negativeKeys.length ? (
+            {preview.unsavedCount > 0 ? (
+              // 有价但没有服务端条目 ID: 必须先保存成价格表条目才能加减
+              <Alert
+                type="warning"
+                showIcon
+                title={t('supplierPriceList.adjust.unsavedTitle', {
+                  count: preview.unsavedCount,
+                })}
+              />
+            ) : null}
+            {preview.brandsWithoutList.length ? (
+              <Alert
+                type="warning"
+                showIcon
+                title={t('supplierPriceList.adjust.noListTitle', {
+                  brands: preview.brandsWithoutList.join('、'),
+                })}
+              />
+            ) : null}
+            {preview.negativeLabels.length ? (
               <Alert
                 type="error"
                 showIcon
                 title={t('supplierPriceList.adjust.negativeTitle')}
                 description={t('supplierPriceList.adjust.negativeDetail', {
-                  count: preview.negativeKeys.length,
+                  count: preview.negativeLabels.length,
                 })}
+              />
+            ) : null}
+            {preview.brandPlans.length === 0 ? (
+              <Alert
+                type="warning"
+                showIcon
+                title={t('supplierPriceList.adjust.noneTitle')}
               />
             ) : null}
             <div className="supplier-price-adjust-preview">

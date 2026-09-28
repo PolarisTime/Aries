@@ -13,14 +13,21 @@ import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 /**
  * 供应商品牌价格表 API。
  *
- * <p>契约见 `.local/design/supplier-price-list.md`：单价 `null` 表示「不报价」，
+ * <p>契约见 `.local/design/supplier-price-list.md` §4.6 修订 R2：**取消版本**，
+ * 一个（供应商 + 品牌）只有一张价格表（唯一键 = `supplier_id + brand_name`）；
+ * 条目只要 `(category, material, spec, length) → price`，`price = null` 表示「不报价」，
  * 与「0 元」严格区分；雪花 ID 全程十进制字符串。</p>
+ *
+ * <p>R2 作废了 `releasedAt` / `status` / `effectiveFrom` / `effectiveTo` 语义：响应里这些字段
+ * 一律不再读取（旧后端字段仍在时仅做兼容忽略），列表每行是一个（供应商, 品牌）现表。</p>
  */
 
-/** 版本状态：生效 / 已归档（同一供应商 + 品牌同一时刻仅一个生效版本）。 */
-export type SupplierPriceListStatus = 'ACTIVE' | 'ARCHIVED'
-
-/** 条目状态枚举，中文展示见 {@link PRICE_ITEM_STATUS_LABELS}。 */
+/**
+ * 条目报价状态。
+ *
+ * <p>R2.2：数据层保留该字段，维护页**不再展示与编辑**；这里保留类型与归一化是为了
+ * `PUT` 全量替换时不把服务端已有语义（无货/价格单议等）丢失。</p>
+ */
 export const PRICE_ITEM_STATUSES = [
   'NORMAL',
   'PENDING',
@@ -48,19 +55,19 @@ export type SupplierPriceListItem = {
   sortOrder: number
 }
 
+/**
+ * 价格表摘要 = 一个（供应商, 品牌）的现表。
+ *
+ * <p>`updatedAt` 取代原「发布时刻」作为展示用的更新时间；`releasedAt` / `status` 仅在
+ * 后端尚未切到 R2 契约时作兼容兜底（前端不展示）。</p>
+ */
 export type SupplierPriceListSummary = {
   id: EntityId
   supplierId: EntityId
   supplierName: string
   brandName: string
-  /** ISO-8601，精确到分（一日可多版） */
-  releasedAt: string
-  effectiveFrom: string
-  /** `null` = 长期有效 */
-  effectiveTo: string | null
-  status: SupplierPriceListStatus
-  warehouse: string | null
-  remark: string | null
+  /** 更新时间（R2 之前为 `released_at`，之后为 `updated_at`） */
+  updatedAt: string
   itemCount: number
   version?: number
 }
@@ -69,7 +76,7 @@ export type SupplierPriceListDetail = SupplierPriceListSummary & {
   items: SupplierPriceListItem[]
 }
 
-/** 规格全集条目：编辑器据此固定行，用户只填价格。 */
+/** 规格全集条目：矩阵固定行，用户只在品牌列里填单价。 */
 export type SupplierPriceSpecCatalogEntry = {
   category: string
   material: string
@@ -81,9 +88,6 @@ export type SupplierPriceSpecCatalogEntry = {
 export type SupplierPriceListQuery = {
   supplierId?: EntityId
   brandName?: string
-  status?: SupplierPriceListStatus
-  releasedFrom?: string
-  releasedTo?: string
   page: number
   size: number
 }
@@ -97,7 +101,7 @@ export type SupplierPriceListPage = {
   hasMore: boolean
 }
 
-/** 创建/更新版本的条目载荷。 */
+/** 创建/全量替换价格表的条目载荷。 */
 export type SupplierPriceListItemPayload = {
   category: string
   material: string
@@ -112,18 +116,7 @@ export type SupplierPriceListItemPayload = {
 export type SupplierPriceListPayload = {
   supplierId: EntityId
   brandName: string
-  releasedAt: string
-  effectiveFrom: string
-  effectiveTo: string | null
-  warehouse: string | null
-  remark: string | null
   items: SupplierPriceListItemPayload[]
-}
-
-export type SupplierPriceListMutationResult = {
-  list: SupplierPriceListDetail
-  /** 创建新版本时被自动归档的旧版本 ID（无则 null） */
-  archivedListId: EntityId | null
 }
 
 export type SupplierPriceAdjustmentPayload = {
@@ -146,7 +139,7 @@ export type SupplierPriceMatrixColumn = {
   supplierName: string
   brandName: string
   listId: EntityId | null
-  releasedAt: string | null
+  updatedAt: string | null
 }
 
 export type SupplierPriceMatrixCell = {
@@ -173,7 +166,6 @@ export type SupplierPriceListMatrixQuery = {
   supplierIds?: EntityId[]
   brandNames?: string[]
   category?: string
-  asOf?: string
 }
 
 const priceItemStatusSchema = z.enum(PRICE_ITEM_STATUSES)
@@ -212,12 +204,9 @@ const summaryFields = {
   supplierId: z.unknown(),
   supplierName: z.string().nullish(),
   brandName: z.string(),
-  releasedAt: z.string(),
-  effectiveFrom: z.string().nullish(),
-  effectiveTo: z.string().nullish(),
-  status: z.string().nullish(),
-  warehouse: z.string().nullish(),
-  remark: z.string().nullish(),
+  // R2: updatedAt 取代 releasedAt；两者都缺时留空字符串（不渲染更新时间）
+  updatedAt: z.string().nullish(),
+  releasedAt: z.string().nullish(),
   itemCount: responseNonNegativeIntegerSchema.nullish(),
   // 兼容后端早期命名；三者取第一个可用值
   itemsCount: responseNonNegativeIntegerSchema.nullish(),
@@ -242,7 +231,6 @@ const itemRowSchema = z.looseObject({
 const detailRowSchema = z.looseObject({
   ...summaryFields,
   items: z.array(itemRowSchema).nullish(),
-  archivedListId: z.unknown().nullish(),
 })
 
 const supplierPriceListPageSchema = exactPageSchema(summaryRowSchema)
@@ -274,6 +262,7 @@ const matrixColumnSchema = z.looseObject({
   supplierName: z.string().nullish(),
   brandName: z.string(),
   listId: z.unknown().nullish(),
+  updatedAt: z.string().nullish(),
   releasedAt: z.string().nullish(),
 })
 
@@ -350,12 +339,6 @@ export function normalizePriceItemStatus(
   return parsed.success ? parsed.data : 'NORMAL'
 }
 
-export function normalizeSupplierPriceListStatus(
-  value: unknown,
-): SupplierPriceListStatus {
-  return value === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE'
-}
-
 type SummaryRaw = z.infer<typeof summaryRowSchema>
 type ItemRaw = z.infer<typeof itemRowSchema>
 
@@ -368,12 +351,8 @@ function normalizeSummary(
     supplierId: parseEntityId(raw.supplierId, `${field}.supplierId`),
     supplierName: raw.supplierName ?? '',
     brandName: raw.brandName,
-    releasedAt: raw.releasedAt,
-    effectiveFrom: raw.effectiveFrom ?? '',
-    effectiveTo: raw.effectiveTo ?? null,
-    status: normalizeSupplierPriceListStatus(raw.status),
-    warehouse: raw.warehouse ?? null,
-    remark: raw.remark ?? null,
+    // R2: 更新时间优先取 updatedAt，旧后端只有 releasedAt 时兜底
+    updatedAt: raw.updatedAt ?? raw.releasedAt ?? '',
     itemCount: raw.itemCount ?? raw.itemsCount ?? raw.itemTotal ?? 0,
     ...(raw.version == null ? {} : { version: raw.version }),
   }
@@ -396,17 +375,12 @@ function normalizeItem(raw: ItemRaw, field: string): SupplierPriceListItem {
 function normalizeDetail(
   raw: z.infer<typeof detailRowSchema>,
   field: string,
-): SupplierPriceListMutationResult {
+): SupplierPriceListDetail {
   return {
-    list: {
-      ...normalizeSummary(raw, field),
-      items: (raw.items ?? []).map((item, index) =>
-        normalizeItem(item, `${field}.items[${index}]`),
-      ),
-    },
-    archivedListId:
-      parseOptionalEntityId(raw.archivedListId, `${field}.archivedListId`) ??
-      null,
+    ...normalizeSummary(raw, field),
+    items: (raw.items ?? []).map((item, index) =>
+      normalizeItem(item, `${field}.items[${index}]`),
+    ),
   }
 }
 
@@ -414,15 +388,12 @@ function buildListQueryParams(query: SupplierPriceListQuery) {
   return {
     ...(query.supplierId ? { supplierId: query.supplierId } : {}),
     ...(query.brandName ? { brandName: query.brandName } : {}),
-    ...(query.status ? { status: query.status } : {}),
-    ...(query.releasedFrom ? { releasedFrom: query.releasedFrom } : {}),
-    ...(query.releasedTo ? { releasedTo: query.releasedTo } : {}),
     page: Math.max(query.page - 1, 0),
     size: Math.min(Math.max(query.size, 1), 200),
   }
 }
 
-/** 分页查询价格表版本（默认排序 `released_at DESC, id DESC`）。 */
+/** 分页查询价格表现表（每行一个「供应商 + 品牌」）。 */
 export async function fetchSupplierPriceLists(
   query: SupplierPriceListQuery,
   signal?: AbortSignal,
@@ -443,7 +414,50 @@ export async function fetchSupplierPriceLists(
   }
 }
 
-/** 读取版本 + 条目全量。 */
+/**
+ * 单页最大条数（与 `buildListQueryParams` 的 `size` 上限一致）。
+ *
+ * <p>取全量时按这个页大小翻页，避免出现「接口允许 200、这里却按 100 翻页」的双份事实。</p>
+ */
+const PRICE_LIST_PAGE_SIZE = 200
+
+/** 安全上限：供应商数量级远小于此值，防止后端分页契约异常时无限翻页。 */
+const PRICE_LIST_MAX_PAGES = 50
+
+/**
+ * 取某供应商（或全部）的价格表**全量**摘要。
+ *
+ * <p>矩阵编辑器需要一次性拿到该供应商全部（品牌）现表：品牌列 = 已有价格表的品牌 ∪
+ * 经营品牌，缺了任何一页都会把已有品牌的列错判成「尚无价格表」。因此这里显式翻页，
+ * 直到取满 `totalElements` 或触达安全上限。</p>
+ */
+export async function fetchAllSupplierPriceLists(
+  query: { supplierId?: EntityId } = {},
+  signal?: AbortSignal,
+): Promise<SupplierPriceListSummary[]> {
+  const collected: SupplierPriceListSummary[] = []
+  for (let page = 1; page <= PRICE_LIST_MAX_PAGES; page += 1) {
+    const response = await fetchSupplierPriceLists(
+      {
+        ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+        page,
+        size: PRICE_LIST_PAGE_SIZE,
+      },
+      signal,
+    )
+    collected.push(...response.content)
+    if (
+      response.content.length === 0 ||
+      collected.length >= response.totalElements ||
+      page >= response.totalPages
+    ) {
+      break
+    }
+  }
+  return collected
+}
+
+/** 读取单个（供应商, 品牌）价格表 + 条目全量。 */
 export async function fetchSupplierPriceList(
   id: EntityId,
   signal?: AbortSignal,
@@ -453,12 +467,12 @@ export async function fetchSupplierPriceList(
     detailRowSchema,
     signal ? { signal } : {},
   )
-  return normalizeDetail(raw, `supplierPriceList[${id}]`).list
+  return normalizeDetail(raw, `supplierPriceList[${id}]`)
 }
 
 /**
  * 规格全集（只读投影）。
- * 编辑器据此固定行，用户只在固定行上填价。
+ * 矩阵编辑器据此固定行，用户只在品牌列里填价。
  */
 export async function fetchSupplierPriceSpecCatalog(
   query: { category?: string; material?: string } = {},
@@ -484,42 +498,37 @@ export async function fetchSupplierPriceSpecCatalog(
   }))
 }
 
-function buildPayloadBody(payload: SupplierPriceListPayload) {
-  return {
-    supplierId: parseEntityId(payload.supplierId, 'supplierId'),
-    brandName: payload.brandName,
-    releasedAt: payload.releasedAt,
-    effectiveFrom: payload.effectiveFrom,
-    effectiveTo: payload.effectiveTo,
-    warehouse: payload.warehouse,
-    remark: payload.remark,
-    items: payload.items.map((item) => ({
-      category: item.category,
-      material: item.material,
-      spec: item.spec,
-      length: item.length,
-      price: item.price,
-      priceStatus: item.priceStatus,
-      remark: item.remark,
-      sortOrder: item.sortOrder,
-    })),
-  }
+function buildItemsBody(items: SupplierPriceListItemPayload[]) {
+  return items.map((item) => ({
+    category: item.category,
+    material: item.material,
+    spec: item.spec,
+    length: item.length,
+    price: item.price,
+    priceStatus: item.priceStatus,
+    remark: item.remark,
+    sortOrder: item.sortOrder,
+  }))
 }
 
-/** 创建新版本（全量 items）；响应含被自动归档的旧版本 ID。 */
+/** 建表（同一供应商 + 品牌已存在未删除现表 → 后端 409）。 */
 export async function createSupplierPriceList(
   payload: SupplierPriceListPayload,
-): Promise<SupplierPriceListMutationResult> {
+): Promise<SupplierPriceListDetail> {
   const raw = await apiPost(
     ENDPOINTS.SUPPLIER_PRICE_LISTS,
     detailRowSchema,
-    buildPayloadBody(payload),
+    {
+      supplierId: parseEntityId(payload.supplierId, 'supplierId'),
+      brandName: payload.brandName,
+      items: buildItemsBody(payload.items),
+    },
     withIdempotencyKey(),
   )
   return normalizeDetail(raw, 'supplierPriceList.create')
 }
 
-/** 全量替换版本（幂等）；ARCHIVED 版本后端返回 409。 */
+/** 全量替换条目（幂等）。 */
 export async function updateSupplierPriceList(
   id: EntityId,
   payload: SupplierPriceListPayload,
@@ -528,13 +537,17 @@ export async function updateSupplierPriceList(
   const raw = await apiPut(
     ENDPOINTS.SUPPLIER_PRICE_LIST(priceListId),
     detailRowSchema,
-    buildPayloadBody(payload),
+    {
+      supplierId: parseEntityId(payload.supplierId, 'supplierId'),
+      brandName: payload.brandName,
+      items: buildItemsBody(payload.items),
+    },
     withIdempotencyKey(),
   )
-  return normalizeDetail(raw, `supplierPriceList[${priceListId}]`).list
+  return normalizeDetail(raw, `supplierPriceList[${priceListId}]`)
 }
 
-/** 软删版本（204）。 */
+/** 删除（软删）单个（供应商, 品牌）价格表。 */
 export async function deleteSupplierPriceList(id: EntityId): Promise<void> {
   await apiDeleteNoContent(
     ENDPOINTS.SUPPLIER_PRICE_LIST(parseEntityId(id, 'priceListId')),
@@ -589,7 +602,6 @@ export async function fetchSupplierPriceListMatrix(
         ? { brandNames: query.brandNames.join(',') }
         : {}),
       ...(query.category ? { category: query.category } : {}),
-      ...(query.asOf ? { asOf: query.asOf } : {}),
     },
     ...(signal ? { signal } : {}),
   })
@@ -606,7 +618,7 @@ export async function fetchSupplierPriceListMatrix(
           column.listId,
           `matrix.columns[${index}].listId`,
         ) ?? null,
-      releasedAt: column.releasedAt ?? null,
+      updatedAt: column.updatedAt ?? column.releasedAt ?? null,
     })),
     rows: raw.rows.map((row, index) => ({
       category: row.category ?? '',

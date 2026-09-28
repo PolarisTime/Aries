@@ -20,7 +20,7 @@ export const zhCN = {
   },
   supplierPriceList: {
     pageDescription:
-      '维护各供应商/品牌的现货价格表版本；规格行由系统固定生成，只需填入单价（留空 = 不报价）。',
+      '按供应商品牌维护现货单价：左侧固定规格（类别/材质/规格/长度），右侧每个品牌一列，单元格留空 = 不报价（不是 0 元）。',
     status: {
       active: '生效',
       archived: '已归档',
@@ -38,6 +38,35 @@ export const zhCN = {
         edit: '编辑价格表版本',
         copy: '另存为新版本',
       },
+    },
+    tabs: {
+      label: '供应商价格表标签页',
+      empty: '还没有任何供应商价格表，请点「新增供应商价格表」。',
+      selectHint: '请选择或新增一个供应商价格表。',
+      brandCount: '{{count}} 个品牌',
+      add: '新增供应商价格表',
+      addTitle: '新增供应商价格表',
+      addConfirm: '打开该供应商',
+      addHint:
+        '打开后按需添加品牌列：某个品牌第一次填上单价时，系统才会为该（供应商 + 品牌）建立价格表；留空不建表。',
+    },
+    brandColumn: {
+      add: '添加品牌列',
+      addTitle: '添加品牌列',
+      addHint:
+        '列内第一次填入单价时会为该（供应商 + 品牌）建表；留空不会建表。',
+      selectLabel: '该供应商的经营品牌',
+      selectPlaceholder: '选择经营品牌',
+      manualLabel: '品牌名（手工输入）',
+      manualPlaceholder: '该供应商暂无经营品牌，可手工输入',
+      nameRequired: '请输入或选择品牌名',
+      duplicate: '该品牌列已存在',
+      emptyHint: '当前没有品牌列，请先点「添加品牌列」。',
+      saving: '保存中',
+      deleteNamed: '删除「{{brand}}」的价格表',
+      deleteTitle: '删除「{{brand}}」的价格表',
+      deleteContent:
+        '该供应商该品牌的整张价格表（含全部单价）将被删除，比价时该品牌将不再自动带出现货价。',
     },
     header: {
       supplier: '供应商',
@@ -70,12 +99,13 @@ export const zhCN = {
       price: '单价',
       priceStatus: '状态',
       remark: '备注',
-      priceNamed: '{{row}} 单价',
+      priceNamed: '{{brand}} {{row}} 单价',
       statusNamed: '{{row}} 状态',
       remarkNamed: '{{row}} 备注',
     },
     priceEmptyHint: '留空 = 不报价',
     noQuote: '不报价',
+    notFilled: '未填写',
     savedWithArchived: '版本已保存，原生效版本已自动归档',
     archivedReadonly: '该版本已归档，不可修改；请另存为新版本。',
     unmatchedPrior:
@@ -106,6 +136,10 @@ export const zhCN = {
       filtered: '当前筛选 {{count}} 行',
       unsaved: '有未保存修改',
       totalRows: '版本数',
+      supplier: '供应商：{{name}}',
+      brands: '品牌列 {{count}}',
+      brandFilled: '{{brand}} 已填 {{count}}',
+      updatedAt: '更新于 {{time}}',
     },
     paginationTotal: '共 {{count}} 行',
     filter: {
@@ -116,6 +150,8 @@ export const zhCN = {
       fillAll: '全部行',
       fillUnfilled: '只看未填',
       fillFilled: '只看已填',
+      fillBrand: '按品牌筛选填写状态',
+      fillBrandAll: '全部品牌（任一已填）',
       status: '版本状态',
       releasedRange: '发布时间区间',
     },
@@ -138,6 +174,14 @@ export const zhCN = {
       negativeDetail:
         '有 {{count}} 条条目减价后单价为负，请减小金额后再试（不会静默截断）。',
       success: '整体加减完成，影响 {{count}} 条条目',
+      brandCount: '涉及品牌列 {{count}}',
+      unsavedTitle:
+        '有 {{count}} 处已填单价尚未写入价格表，请先在单元格里确认（失焦即保存）后再整体加减。',
+      noListTitle:
+        '以下品牌列尚无价格表或条目未落库，本次不参与加减：{{brands}}。',
+      noneTitle:
+        '本次预览没有可执行的条目（不报价的条目不参与加减），请检查单价后再试。',
+      partialFailed: '部分品牌列加减失败：{{detail}}',
       requiresSavedHint: '请先保存版本，或先撤销未保存的修改',
       columns: {
         item: '条目',
@@ -147,7 +191,8 @@ export const zhCN = {
     },
     paste: {
       title: 'TSV 粘贴导入',
-      hintTitle: '从 Excel 复制后粘贴',
+      brandLabel: '目标品牌列',
+      hintTitle: '从 Excel 复制后粘贴到目标品牌列',
       hintDetail:
         '列顺序：材质 / 规格 / 长度 / 单价（也可带「类别」作为第一列）。单价留空 = 不报价，绝不会写成 0；无法对齐固定行或格式错误的行会逐行提示且不写入。',
       textareaLabel: '粘贴区域',
@@ -169,7 +214,6 @@ export const zhCN = {
       suppliers: '供应商',
       brands: '品牌',
       category: '类别',
-      asOf: '参照时刻',
     },
   },
   appUpdate: {

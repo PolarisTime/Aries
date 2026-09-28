@@ -21,6 +21,7 @@ import {
   createSupplierPriceAdjustment,
   createSupplierPriceList,
   deleteSupplierPriceList,
+  fetchAllSupplierPriceLists,
   fetchSupplierPriceList,
   fetchSupplierPriceListMatrix,
   fetchSupplierPriceLists,
@@ -39,12 +40,7 @@ function listRow(overrides: Record<string, unknown> = {}) {
     supplierId: SUPPLIER_ID,
     supplierName: '杭州中金钢铁',
     brandName: '安徽富鑫',
-    releasedAt: '2026-09-28T14:35:00',
-    effectiveFrom: '2026-09-28',
-    effectiveTo: null,
-    status: 'ACTIVE',
-    warehouse: '钢联新安库',
-    remark: null,
+    updatedAt: '2026-09-28T14:35:00',
     itemCount: 3,
     ...overrides,
   }
@@ -53,7 +49,6 @@ function listRow(overrides: Record<string, unknown> = {}) {
 function detailRow(overrides: Record<string, unknown> = {}) {
   return {
     ...listRow(),
-    archivedListId: null,
     items: [
       {
         id: '1900000000000000011',
@@ -131,7 +126,7 @@ describe('supplier-price-lists API', () => {
     expect(apiGetMock.mock.calls[0][2].params.size).toBe(30)
   })
 
-  it('列表携带筛选参数（品牌/状态/发布时间区间）', async () => {
+  it('列表携带筛选参数（供应商/品牌），不再有版本维度', async () => {
     apiGetMock.mockResolvedValue({
       content: [],
       totalElements: 0,
@@ -143,19 +138,64 @@ describe('supplier-price-lists API', () => {
     await fetchSupplierPriceLists({
       supplierId: SUPPLIER_ID,
       brandName: '安徽富鑫',
-      status: 'ARCHIVED',
-      releasedFrom: '2026-09-01T00:00:00',
-      releasedTo: '2026-09-30T23:59:59',
       page: 1,
       size: 30,
     })
-    expect(apiGetMock.mock.calls[0][2].params).toMatchObject({
+    expect(apiGetMock.mock.calls[0][2].params).toEqual({
       supplierId: SUPPLIER_ID,
       brandName: '安徽富鑫',
-      status: 'ARCHIVED',
-      releasedFrom: '2026-09-01T00:00:00',
-      releasedTo: '2026-09-30T23:59:59',
+      page: 0,
+      size: 30,
     })
+  })
+
+  it('R2: 更新时间优先取 updatedAt，后端只有 releasedAt 时兜底', async () => {
+    apiGetMock.mockResolvedValue({
+      content: [
+        listRow(),
+        listRow({
+          id: '1900000000000000002',
+          updatedAt: undefined,
+          releasedAt: '2026-10-01T08:00:00',
+        }),
+      ],
+      totalElements: 2,
+      totalPages: 1,
+      currentPage: 0,
+      pageSize: 30,
+      hasMore: false,
+    })
+    const page = await fetchSupplierPriceLists({ page: 1, size: 30 })
+    expect(page.content[0].updatedAt).toBe('2026-09-28T14:35:00')
+    expect(page.content[1].updatedAt).toBe('2026-10-01T08:00:00')
+  })
+
+  it('全量拉取按页累加直到取满 totalElements', async () => {
+    apiGetMock
+      .mockResolvedValueOnce({
+        content: [listRow(), listRow({ id: '1900000000000000002' })],
+        totalElements: 3,
+        totalPages: 2,
+        currentPage: 0,
+        pageSize: 2,
+        hasMore: true,
+      })
+      .mockResolvedValueOnce({
+        content: [listRow({ id: '1900000000000000003' })],
+        totalElements: 3,
+        totalPages: 2,
+        currentPage: 1,
+        pageSize: 2,
+        hasMore: false,
+      })
+    const all = await fetchAllSupplierPriceLists({ supplierId: SUPPLIER_ID })
+    expect(all.map((row) => row.id)).toEqual([
+      LIST_ID,
+      '1900000000000000002',
+      '1900000000000000003',
+    ])
+    expect(apiGetMock.mock.calls[0][2].params.page).toBe(0)
+    expect(apiGetMock.mock.calls[1][2].params.page).toBe(1)
   })
 
   it('详情区分「不报价(null)」与「0 元」并归一化字符串规格/单价', async () => {
@@ -238,18 +278,11 @@ describe('supplier-price-lists API', () => {
     })
   })
 
-  it('创建版本：不报价条目以 null 提交, 且带幂等键', async () => {
-    apiPostMock.mockResolvedValue(
-      detailRow({ archivedListId: '1900000000000000009' }),
-    )
+  it('建表：不报价条目以 null 提交, 且带幂等键（同键重复由后端 409）', async () => {
+    apiPostMock.mockResolvedValue(detailRow())
     const result = await createSupplierPriceList({
       supplierId: SUPPLIER_ID,
       brandName: '安徽富鑫',
-      releasedAt: '2026-09-28T14:35:00',
-      effectiveFrom: '2026-09-28',
-      effectiveTo: null,
-      warehouse: '钢联新安库',
-      remark: null,
       items: [
         {
           category: '螺纹钢',
@@ -277,32 +310,35 @@ describe('supplier-price-lists API', () => {
     const [url, , body, config] = apiPostMock.mock.calls[0]
     expect(url).toBe('/supplier-price-lists')
     expect(body.supplierId).toBe(SUPPLIER_ID)
+    expect(body.brandName).toBe('安徽富鑫')
     expect(body.items[0].price).toBeNull()
     expect(body.items[1].price).toBe(0)
+    // R2 取消版本: 请求体不得再带发布时刻/生效区间/仓库
+    expect(body).not.toHaveProperty('releasedAt')
+    expect(body).not.toHaveProperty('effectiveFrom')
+    expect(body).not.toHaveProperty('warehouse')
     expect(config.headers['X-Idempotency-Key']).toBeTruthy()
-    expect(result.archivedListId).toBe('1900000000000000009')
-    expect(result.list.id).toBe(LIST_ID)
+    expect(result.id).toBe(LIST_ID)
   })
 
-  it('更新版本：路径带 ID、请求体不重复携带 ID', async () => {
+  it('全量替换条目：路径带 ID、请求体不重复携带 ID', async () => {
     apiPutMock.mockResolvedValue(detailRow())
     await updateSupplierPriceList(LIST_ID, {
       supplierId: SUPPLIER_ID,
       brandName: '安徽富鑫',
-      releasedAt: '2026-09-28T14:35:00',
-      effectiveFrom: '2026-09-28',
-      effectiveTo: '2026-10-31',
-      warehouse: null,
-      remark: '备注',
       items: [],
     })
     const [url, , body] = apiPutMock.mock.calls[0]
     expect(url).toBe(`/supplier-price-lists/${LIST_ID}`)
     expect(body).not.toHaveProperty('id')
-    expect(body.effectiveTo).toBe('2026-10-31')
+    expect(body).toEqual({
+      supplierId: SUPPLIER_ID,
+      brandName: '安徽富鑫',
+      items: [],
+    })
   })
 
-  it('删除版本走 204 无响应体接口', async () => {
+  it('删除现表走 204 无响应体接口', async () => {
     apiDeleteMock.mockResolvedValue(undefined)
     await deleteSupplierPriceList(LIST_ID)
     expect(apiDeleteMock.mock.calls[0][0]).toBe(
