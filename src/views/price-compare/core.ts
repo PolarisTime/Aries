@@ -3,6 +3,7 @@ import type {
   PriceData,
   PriceRow,
   PriceSheet,
+  SheetInput,
   SheetInputs,
   Variety,
 } from './types'
@@ -67,6 +68,19 @@ export const productKeyOf = (row: PriceRow) =>
     ? `${row.category}|${row.material}|${row.spec}|${row.length}`
     : ''
 
+/**
+ * 单元格是否属于「手填覆盖」格: 只有这类格子允许经常规保存回写 `prices[]`。
+ *
+ * <p>价格表推导(PRICE_LIST)与无价(NONE)的格子绝不能回写: 后端行级保存是
+ * 「整行替换现货价」(先清空再按请求重建), 一旦把价格表推导值当手填价写回, 该格就会被
+ * 固化成 `price_source='MANUAL'` 覆盖行 —— 之后价格表调价不再生效, 历史单据也会漂移。
+ * 本地刚录入(尚无来源标记)但有价的格子按手填处理, 兼容历史本地态。</p>
+ */
+export function isManualSpotCell(input: SheetInput | undefined): boolean {
+  if (!input || input.spot === undefined) return false
+  return input.spotSource !== 'PRICE_LIST' && input.spotSource !== 'NONE'
+}
+
 export function syncSpotInputs(
   rows: PriceRow[],
   inputs: SheetInputs,
@@ -83,7 +97,16 @@ export function syncSpotInputs(
   const next: SheetInputs = { ...inputs }
   for (const target of targets) {
     const inputKey = `${brandName}:${target.id}`
-    next[inputKey] = { ...(next[inputKey] ?? {}), spot: value }
+    const prev = next[inputKey] ?? {}
+    if (value === undefined) {
+      // 清空手填值: 去掉覆盖标记(保留价格表推导值/供应商, 供「恢复为价格表价」回退)
+      const { spot: _spot, spotSource: _spotSource, ...rest } = prev
+      if (Object.keys(rest).length === 0) delete next[inputKey]
+      else next[inputKey] = rest
+      continue
+    }
+    // 手填即覆盖: 置 MANUAL, 常规保存只回写这类格子
+    next[inputKey] = { ...prev, spot: value, spotSource: 'MANUAL' }
   }
   return { inputs: next, targets }
 }
@@ -91,6 +114,9 @@ export function syncSpotInputs(
 /**
  * 对账式现货联动：同批次内，若某行某品牌缺现货价，而同商品(类别+材质+规格+长度)的其它行已有现货价，
  * 则自动套用，避免同一商品在不同行重复输入。返回新 inputs；无变化时返回原对象。
+ *
+ * <p>只联动**手填覆盖**的价: 价格表推导是每格按单据报价时刻独立推导的, 把推导值套用到
+ * 其它格子既没有来源依据, 又可能被误当手填价回写(冻结当次推导价), 因此一律不参与联动。</p>
  */
 export function reconcileSpotInputs(
   rows: PriceRow[],
@@ -102,8 +128,9 @@ export function reconcileSpotInputs(
     const key = productKeyOf(row)
     if (!key) continue
     for (const brand of brandNames) {
-      const spot = inputs[`${brand}:${row.id}`]?.spot
-      if (spot !== undefined) spotByProduct.set(`${brand}\u0000${key}`, spot)
+      const entry = inputs[`${brand}:${row.id}`]
+      if (!isManualSpotCell(entry) || entry?.spot === undefined) continue
+      spotByProduct.set(`${brand}\u0000${key}`, entry.spot)
     }
   }
 
@@ -117,7 +144,11 @@ export function reconcileSpotInputs(
       if (next[inputKey]?.spot !== undefined) continue
       const spot = spotByProduct.get(`${brand}\u0000${key}`)
       if (spot !== undefined) {
-        next[inputKey] = { ...(next[inputKey] ?? {}), spot }
+        next[inputKey] = {
+          ...(next[inputKey] ?? {}),
+          spot,
+          spotSource: 'MANUAL',
+        }
         changed = true
       }
     }
@@ -209,13 +240,13 @@ export const SHEET_COLUMN_WIDTH = {
   /** 网价列: 4 位数字(14px 下约 34px) + 单元格左右留白(12px), 60 已足够。 */
   net: 74,
   /**
-   * 现货价列: 4 位数字 + 输入框左右内边距(antd small 各 7px) + 单元格左右留白(12px)。
+   * 现货价列: 手填输入 + 来源文字标记(价格表/手填) + 「恢复为价格表价」按钮。
    *
-   * <p>14px 字号下 4 位数字约 34px, 输入框内容宽需要 34+14=48px; 原来 58 的列宽只能给出
-   * 45px(实测 input.clientWidth), 末位数字被裁成 `353(`。72 留出约 11px 余量, 16/18 档
-   * 按同一比例加宽后同样富余。</p>
+   * <p>14px 字号下 4 位数字约 34px, 输入框内容宽需要 34+14=48px; 来源标记「价格表」三字约
+   * 33px, 恢复按钮命中区下限 24px(WCAG 2.5.8), 再加单元格左右留白 12px:
+   * 48+33+4(间距)+24+12=121, 取 124 留余量。16/18 档按同一比例加宽后同样富余。</p>
    */
-  spot: 72,
+  spot: 124,
   /** 差价列: 4 位数字 + 角标左右内边距(各 4px) + 单元格左右留白(12px), 50 会让角标越出单元格。 */
   diff: 58,
   /** 供应商简称列 */

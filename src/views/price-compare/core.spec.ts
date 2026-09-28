@@ -9,6 +9,7 @@ import {
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
+  isManualSpotCell,
   isPurchasedRow,
   isSeparatorRow,
   LOCK_REASON_KEYS,
@@ -247,6 +248,60 @@ describe('syncSpotInputs', () => {
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
   })
+
+  it('手填即覆盖: 同步目标一并置 spotSource=MANUAL', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const { inputs } = syncSpotInputs([a, b], {}, '中天', 'a', 3300)
+    expect(inputs['中天:a'].spotSource).toBe('MANUAL')
+    expect(inputs['中天:b'].spotSource).toBe('MANUAL')
+  })
+
+  it('清空手填值: 去掉覆盖标记但保留推导值, 供恢复为价格表价', () => {
+    const a = { ...row12, id: 'a' }
+    const { inputs } = syncSpotInputs(
+      [a],
+      {
+        '中天:a': {
+          spot: 3300,
+          spotSource: 'MANUAL',
+          derivedSpot: 3320,
+          supplierId: '5001',
+        },
+      },
+      '中天',
+      'a',
+      undefined,
+    )
+    expect(inputs['中天:a']).toEqual({
+      derivedSpot: 3320,
+      supplierId: '5001',
+    })
+  })
+})
+
+describe('isManualSpotCell', () => {
+  it('只有手填(含本地无来源标记的有价格)允许回写 prices[]', () => {
+    expect(isManualSpotCell({ spot: 3300, spotSource: 'MANUAL' })).toBe(true)
+    // 本地新录入尚无来源标记: 兼容历史本地态, 按手填处理
+    expect(isManualSpotCell({ spot: 3300 })).toBe(true)
+  })
+
+  it('价格表推导格与无价格绝不回写(否则会把当天推导价冻结成手填覆盖)', () => {
+    expect(
+      isManualSpotCell({
+        spot: 3300,
+        derivedSpot: 3300,
+        spotSource: 'PRICE_LIST',
+      }),
+    ).toBe(false)
+    expect(
+      isManualSpotCell({ spotSource: 'NONE', spotReason: 'NO_ITEM' }),
+    ).toBe(false)
+    expect(isManualSpotCell(undefined)).toBe(false)
+    // 只有供应商没有价格: 不构成手填格(单写供应商会把该格变成价格为空的手填覆盖)
+    expect(isManualSpotCell({ supplierId: '5001' })).toBe(false)
+  })
 })
 
 describe('reconcileSpotInputs', () => {
@@ -259,7 +314,22 @@ describe('reconcileSpotInputs', () => {
     ])
     expect(next['中天:a'].spot).toBe(3160)
     expect(next['中天:b'].spot).toBe(3160)
+    // 套用过来的值同样是手填语义(参与常规保存)
+    expect(next['中天:b'].spotSource).toBe('MANUAL')
     expect(next['铜陵富鑫:a']).toBeUndefined()
+  })
+
+  it('价格表推导值不参与联动(每格独立推导, 套用会被误当手填价回写)', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const inputs = {
+      '中天:a': {
+        spot: 3320,
+        derivedSpot: 3320,
+        spotSource: 'PRICE_LIST' as const,
+      },
+    }
+    expect(reconcileSpotInputs([a, b], inputs, ['中天'])).toBe(inputs)
   })
 
   it('无变化时返回原对象', () => {

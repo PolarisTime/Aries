@@ -23,6 +23,8 @@ const api = vi.hoisted(() => ({
   updateQuoteSheetItem: vi.fn(),
   deleteQuoteSheetItem: vi.fn(),
   reorderQuoteSheetItems: vi.fn(),
+  saveQuoteSheetPriceOverride: vi.fn(),
+  clearQuoteSheetPriceOverride: vi.fn(),
   fetchQuoteProjectConfig: vi.fn(),
   saveQuoteProjectConfig: vi.fn(),
   acquireQuoteSheetEditLock: vi.fn(),
@@ -41,6 +43,8 @@ vi.mock('@/api/market/quote-sheets', () => ({
   updateQuoteSheetItem: api.updateQuoteSheetItem,
   deleteQuoteSheetItem: api.deleteQuoteSheetItem,
   reorderQuoteSheetItems: api.reorderQuoteSheetItems,
+  saveQuoteSheetPriceOverride: api.saveQuoteSheetPriceOverride,
+  clearQuoteSheetPriceOverride: api.clearQuoteSheetPriceOverride,
 }))
 
 vi.mock('@/api/market/quote-edit-locks', () => ({
@@ -157,6 +161,8 @@ describe('useSheetsStore 服务端数据源', () => {
     api.reorderQuoteSheetItems
       .mockReset()
       .mockResolvedValue(sheetRecord({ version: '2' }))
+    api.saveQuoteSheetPriceOverride.mockReset()
+    api.clearQuoteSheetPriceOverride.mockReset().mockResolvedValue(undefined)
     api.acquireQuoteSheetEditLock.mockReset().mockResolvedValue({
       sheetId: '9001',
       locked: true,
@@ -305,6 +311,237 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.active.inputs[inputKey]).toEqual({
       spotSource: 'NONE',
       spotReason: 'NO_LIST_AT_TIME',
+    })
+  })
+
+  it('常规保存的 prices[] 只回写手填覆盖格, 绝不含价格表推导或无价格', async () => {
+    const record = sheetRecord({
+      items: [
+        {
+          id: '7001',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              spotPrice: 3320,
+              derivedSpotPrice: 3320,
+              spotSource: 'PRICE_LIST',
+              supplierId: '5001',
+              supplierName: '杭州物资',
+              priceListId: '8801',
+              priceListReleasedAt: '2026-09-16T09:30:00',
+            },
+          ],
+        },
+        {
+          id: '7002',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 16,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              spotPrice: 3400,
+              derivedSpotPrice: 3360,
+              spotSource: 'MANUAL',
+              priceSource: 'MANUAL',
+              supplierId: '5002',
+              supplierName: '沙钢贸易',
+            },
+          ],
+        },
+        {
+          id: '7003',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 18,
+          length: '9米',
+          prices: [
+            { brandName: '中天', spotSource: 'NONE', spotReason: 'NO_ITEM' },
+          ],
+        },
+      ],
+    })
+    api.fetchQuoteSheets.mockResolvedValue([record])
+    api.fetchQuoteSheet.mockResolvedValue(record)
+    const store = renderStore()
+    await hydrate(store)
+    api.updateQuoteSheetItem.mockClear()
+
+    // 三行吨位都有变动 → 三行都会走行级保存
+    act(() => {
+      store.current.setRows((list) => list.map((row) => ({ ...row, ton: 10 })))
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    const byItem = new Map(
+      (
+        api.updateQuoteSheetItem.mock.calls as [
+          string,
+          string,
+          { prices: { brandName: string; spotPrice?: number }[] },
+        ][]
+      ).map(([, itemId, payload]) => [itemId, payload]),
+    )
+    // 价格表推导格与无价格: 不得进入载荷, 否则每保存一次就把当天推导价冻结成 MANUAL 覆盖
+    expect(byItem.get('7001')?.prices).toEqual([])
+    expect(byItem.get('7003')?.prices).toEqual([])
+    // 手填覆盖格: 必须回写(否则整行替换会把覆盖行清掉)
+    expect(byItem.get('7002')?.prices).toEqual([
+      { brandName: '中天', spotPrice: 3400, supplierId: '5002' },
+    ])
+  })
+
+  it('手填覆盖走单格覆盖接口, 并回填权威推导值供「恢复为价格表价」', async () => {
+    const record = sheetRecord({
+      items: [
+        {
+          id: '7001',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              spotPrice: 3320,
+              derivedSpotPrice: 3320,
+              spotSource: 'PRICE_LIST',
+              supplierId: '5001',
+              supplierName: '杭州物资',
+              priceListId: '8801',
+              priceListReleasedAt: '2026-09-16T09:30:00',
+            },
+          ],
+        },
+      ],
+    })
+    api.fetchQuoteSheets.mockResolvedValue([record])
+    api.fetchQuoteSheet.mockResolvedValue(record)
+    api.saveQuoteSheetPriceOverride.mockResolvedValue({
+      brandName: '中天',
+      spotPrice: 3450,
+      derivedSpotPrice: 3320,
+      spotSource: 'MANUAL',
+      priceSource: 'MANUAL',
+      supplierId: '5001',
+      supplierName: '杭州物资',
+    })
+    const store = renderStore()
+    await hydrate(store)
+
+    await act(async () => {
+      await store.current.saveSpotOverride(
+        store.current.activeId,
+        '中天',
+        '7001',
+        3450,
+      )
+    })
+
+    expect(api.saveQuoteSheetPriceOverride).toHaveBeenCalledWith(
+      '9001',
+      '7001',
+      '中天',
+      { spotPrice: 3450, supplierId: '5001', supplierName: '杭州物资' },
+    )
+    expect(store.current.active.inputs['中天:7001']).toMatchObject({
+      spot: 3450,
+      spotSource: 'MANUAL',
+      derivedSpot: 3320,
+      supplierId: '5001',
+    })
+  })
+
+  it('恢复为价格表价: 调 DELETE 覆盖接口并回到 PRICE_LIST 与推导值/自动供应商', async () => {
+    const manualRecord = sheetRecord({
+      items: [
+        {
+          id: '7001',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              spotPrice: 3450,
+              derivedSpotPrice: 3320,
+              spotSource: 'MANUAL',
+              priceSource: 'MANUAL',
+              supplierId: '5002',
+              supplierName: '沙钢贸易',
+            },
+          ],
+        },
+      ],
+    })
+    const restoredRecord = sheetRecord({
+      items: [
+        {
+          id: '7001',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400',
+          spec: 12,
+          length: '9米',
+          prices: [
+            {
+              brandName: '中天',
+              spotPrice: 3320,
+              derivedSpotPrice: 3320,
+              spotSource: 'PRICE_LIST',
+              supplierId: '5001',
+              supplierName: '杭州物资',
+              priceListId: '8801',
+              priceListReleasedAt: '2026-09-16T09:30:00',
+            },
+          ],
+        },
+      ],
+    })
+    api.fetchQuoteSheets.mockResolvedValue([manualRecord])
+    // 删除覆盖后单据详情回到价格表价: 恢复流程会重读该行价格格
+    api.fetchQuoteSheet.mockResolvedValue(restoredRecord)
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.active.inputs['中天:7001']).toMatchObject({
+      spot: 3450,
+      spotSource: 'MANUAL',
+    })
+
+    await act(async () => {
+      await store.current.clearSpotOverride(
+        store.current.activeId,
+        '中天',
+        '7001',
+      )
+    })
+
+    expect(api.clearQuoteSheetPriceOverride).toHaveBeenCalledWith(
+      '9001',
+      '7001',
+      '中天',
+    )
+    // 回到推导值 + 价格表带来的供应商(重读服务端后合并)
+    expect(store.current.active.inputs['中天:7001']).toMatchObject({
+      spot: 3320,
+      spotSource: 'PRICE_LIST',
+      derivedSpot: 3320,
+      supplierId: '5001',
+      supplierName: '杭州物资',
+      priceListReleasedAt: '2026-09-16T09:30:00',
     })
   })
 

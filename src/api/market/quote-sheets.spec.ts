@@ -34,11 +34,13 @@ function versionHeaders(version: string) {
 
 import {
   addQuoteSheetItem,
+  clearQuoteSheetPriceOverride,
   createQuoteSheet,
   deleteQuoteSheet,
   deleteQuoteSheetItem,
   fetchPurchaseOrderTonnages,
   fetchQuoteSheets,
+  saveQuoteSheetPriceOverride,
   updateQuoteSheet,
   updateQuoteSheetHeader,
   updateQuoteSheetItem,
@@ -463,6 +465,54 @@ describe('quote-sheets API', () => {
       issuedWeight: 30.5,
       remainingWeight: 10,
       status: '正常',
+    })
+  })
+
+  it('单格手填覆盖: 品牌名按路径段编码, PUT 归一来源/推导值并 DELETE 走同一路径', async () => {
+    apiPutMock.mockResolvedValue({
+      brandName: ' 安徽富鑫/铜陵 ',
+      spotPrice: '3450',
+      derivedSpotPrice: 3320,
+      spotSource: 'MANUAL',
+      spotReason: null,
+      supplierId: '5001',
+      supplierName: '杭州物资',
+      priceSource: 'MANUAL',
+      priceListId: null,
+      priceListReleasedAt: null,
+    })
+    apiDeleteMock.mockResolvedValue(undefined)
+
+    const cell = await saveQuoteSheetPriceOverride(
+      '700500000000000130',
+      '700500000000000140',
+      ' 安徽富鑫/铜陵 ',
+      { spotPrice: 3450, supplierId: '5001', supplierName: '杭州物资' },
+    )
+    await clearQuoteSheetPriceOverride(
+      '700500000000000130',
+      '700500000000000140',
+      ' 安徽富鑫/铜陵 ',
+    )
+
+    // 品牌名含空格与斜杠: 必须整段编码, 否则路径被切断或服务端 422
+    const expectedPath =
+      '/quote-sheets/700500000000000130/items/700500000000000140/price-overrides/%20%E5%AE%89%E5%BE%BD%E5%AF%8C%E9%91%AB%2F%E9%93%9C%E9%99%B5%20'
+    expect(apiPutMock.mock.calls[0][0]).toBe(expectedPath)
+    expect(apiDeleteMock.mock.calls[0][0]).toBe(expectedPath)
+    expect(apiPutMock.mock.calls[0][2]).toEqual({
+      spotPrice: 3450,
+      supplierId: '5001',
+      supplierName: '杭州物资',
+    })
+    expect(cell).toEqual({
+      brandName: ' 安徽富鑫/铜陵 ',
+      spotPrice: 3450,
+      derivedSpotPrice: 3320,
+      spotSource: 'MANUAL',
+      supplierId: '5001',
+      supplierName: '杭州物资',
+      priceSource: 'MANUAL',
     })
   })
 

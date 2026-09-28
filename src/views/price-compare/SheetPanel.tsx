@@ -51,6 +51,7 @@ import {
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
+  isManualSpotCell,
   isPurchasedRow,
   isSeparatorRow,
   LOCK_REASON_KEYS,
@@ -165,6 +166,8 @@ type ColumnContext = {
   getSpot: (brandName: string, rowId: string) => number | undefined
   setSpot: (brandName: string, rowId: string, value: number | undefined) => void
   getInput: (brandName: string, rowId: string) => SheetInput | undefined
+  /** 恢复某格为价格表价(清除该格的手填覆盖)。 */
+  restoreSpot: (brandName: string, rowId: string) => void
   setSupplier: (
     brandName: string,
     rowId: string,
@@ -482,6 +485,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     rows,
     getSpot,
     setSpot,
+    getInput,
     supplierOptions,
     patchRow,
     moveFocus,
@@ -532,6 +536,45 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowedProducts,
   )
   const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
+  /**
+   * 现货价来源说明(供单元格 title / Tooltip, 同时是读屏可读的悬浮说明)。
+   *
+   * - 手填: 明确这是覆盖价, 优先于价格表推导价;
+   * - 价格表: 「供应商 · 品牌 · 发布时间」便于核对;
+   * - 无价: 给出中文原因(报价时刻无生效版本 / 该价格表无此规格 / 该条目不报价)。
+   */
+  const spotSourceNote = (input: SheetInput | undefined, brandName: string) => {
+    if (!input) return ''
+    if (isManualSpotCell(input))
+      return t('priceCompare.sheet.spotSource.manualNote')
+    if (input.spotSource === 'PRICE_LIST') {
+      const releasedAt = input.priceListReleasedAt
+        ? dayjs(input.priceListReleasedAt).isValid()
+          ? dayjs(input.priceListReleasedAt).format('YYYY-MM-DD HH:mm')
+          : input.priceListReleasedAt
+        : t('priceCompare.sheet.spotSource.unknownReleasedAt')
+      return t('priceCompare.sheet.spotSource.priceListNote', {
+        detail: [
+          input.supplierName ??
+            t('priceCompare.sheet.spotSource.unknownSupplier'),
+          brandName,
+          releasedAt,
+        ].join(' · '),
+      })
+    }
+    if (input.spotSource === 'NONE') {
+      const reasonKey =
+        input.spotReason === 'NO_LIST_AT_TIME'
+          ? 'noListAtTime'
+          : input.spotReason === 'NO_ITEM'
+            ? 'noItem'
+            : input.spotReason === 'NO_PRICE'
+              ? 'noPrice'
+              : 'unknown'
+      return t(`priceCompare.sheet.spotReason.${reasonKey}`)
+    }
+    return ''
+  }
   const bestCache = new Map<string, string | undefined>()
   const bestOf = (row: GridRow): string | undefined => {
     if (!bestOn) return undefined
@@ -989,7 +1032,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     widths.spot,
                     (_, row) => {
                       const current = row.row
-                      const spot = getSpot(brand.name, current.id)
+                      const entry = getInput(brand.name, current.id)
+                      const spot = entry?.spot
+                      const manual = isManualSpotCell(entry)
+                      const note = spotSourceNote(entry, brand.name)
                       const isFirst =
                         attachSpotRef &&
                         brandIndex === 0 &&
@@ -1001,6 +1047,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                             `${brand.name} ${t('priceCompare.sheet.columns.spot')}`,
                             row,
                           )}
+                          // 悬浮/读屏说明: 来源 + 无价原因 + 来源价格表(供应商 · 品牌 · 发布时间)
+                          title={note || undefined}
+                          placeholder={entry?.spotSource === 'NONE' ? '—' : ''}
                           className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                           size="small"
                           variant="borderless"
@@ -1070,10 +1119,59 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           }}
                         />
                       )
-                      return isFirst ? (
-                        <span ref={ctx.spotRef}>{input}</span>
-                      ) : (
-                        input
+                      return (
+                        <span
+                          ref={isFirst ? ctx.spotRef : undefined}
+                          className="price-compare-spot-cell"
+                        >
+                          {input}
+                          {/* 来源标记用文字而非颜色(WCAG 1.4.1): 价格表 / 手填 */}
+                          {entry?.spotSource === 'PRICE_LIST' ? (
+                            <Tooltip title={note}>
+                              <span className="price-compare-spot-source">
+                                {t('priceCompare.sheet.spotSource.priceList')}
+                              </span>
+                            </Tooltip>
+                          ) : null}
+                          {manual ? (
+                            <>
+                              <Tooltip
+                                title={t(
+                                  'priceCompare.sheet.spotSource.manualNote',
+                                )}
+                              >
+                                <span className="price-compare-spot-source">
+                                  {t('priceCompare.sheet.spotSource.manual')}
+                                </span>
+                              </Tooltip>
+                              <Tooltip
+                                title={t(
+                                  'priceCompare.sheet.spotSource.restore',
+                                )}
+                              >
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  className="price-compare-spot-restore"
+                                  icon={<ReloadOutlined />}
+                                  disabled={readOnly}
+                                  aria-label={t(
+                                    'priceCompare.sheet.spotSource.restoreLabel',
+                                    {
+                                      cell: cellLabel(
+                                        `${brand.name} ${t('priceCompare.sheet.columns.spot')}`,
+                                        row,
+                                      ),
+                                    },
+                                  )}
+                                  onClick={() =>
+                                    ctx.restoreSpot(brand.name, current.id)
+                                  }
+                                />
+                              </Tooltip>
+                            </>
+                          ) : null}
+                        </span>
                       )
                     },
                   ),
@@ -1140,6 +1238,28 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       const current = row.row
                       const input = ctx.getInput(brand.name, current.id)
                       const supplierName = input?.supplierName
+                      const manual = isManualSpotCell(input)
+                      /*
+                       * 供应商由价格表自动带出: 价格表格只读展示来源供应商, 人工指定必须先手填
+                       * 现货价(手填格才可编辑) —— 覆盖行必须带现货价, 单独写供应商会把该格
+                       * 变成价格为空的 MANUAL 覆盖, 反而丢掉价格表价。
+                       */
+                      if (!manual) {
+                        const hint =
+                          input?.spotSource === 'PRICE_LIST'
+                            ? t('priceCompare.sheet.supplierFromPriceList')
+                            : t('priceCompare.sheet.supplierNeedsSpot')
+                        return (
+                          <span
+                            className={`price-compare-supplier-auto${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                            title={hint}
+                          >
+                            <span className="price-compare-supplier-auto-name">
+                              {supplierName ?? '—'}
+                            </span>
+                          </span>
+                        )
+                      }
                       const filtered = filterSupplierOptionsByBrand(
                         ctx.supplierOptions,
                         brand.name,
@@ -2240,6 +2360,19 @@ type Props = {
   readOnly?: boolean
   /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
   purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput
+  /** 显式手填覆盖现货价(写单格覆盖行); 缺省时只落本地, 交由常规保存回写。 */
+  onSaveSpotOverride?: (
+    sheetId: string,
+    brandName: string,
+    rowId: string,
+    value: number,
+  ) => Promise<void>
+  /** 恢复某格为价格表价(清除手填覆盖)。 */
+  onClearSpotOverride?: (
+    sheetId: string,
+    brandName: string,
+    rowId: string,
+  ) => Promise<void>
 }
 
 /** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
@@ -2293,6 +2426,7 @@ export function SheetPanel(props: Props) {
     readOnly = false,
     purchaseOrderTonnage = EMPTY_PURCHASE_ORDER_TONNAGE,
   } = props
+  const { onSaveSpotOverride, onClearSpotOverride } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bestOn, setBestOn] = useState(false)
@@ -2341,6 +2475,7 @@ export function SheetPanel(props: Props) {
     rowId: string,
     value: number | undefined,
   ) => {
+    const prev = sheet.inputs[`${brandName}:${rowId}`]
     const { inputs, targets } = syncSpotInputs(
       rows,
       sheet.inputs,
@@ -2366,6 +2501,23 @@ export function SheetPanel(props: Props) {
       )
       if (input) input.value = text
     }
+    if (readOnly) return
+    if (value === undefined) {
+      // 清空手填值: 该格原本是手填覆盖且有价格表推导值时才等价于「恢复为价格表价」,
+      // 否则只清本地值(常规保存的载荷里不再出现该格, 服务端覆盖行随之删除)
+      if (isManualSpotCell(prev) && prev?.derivedSpot !== undefined) {
+        void onClearSpotOverride?.(sheet.id, brandName, rowId)
+      }
+      return
+    }
+    // 显式手填覆盖: 本地已置 MANUAL, 再走单格覆盖写入(立即落库 + 拿回推导值)
+    void onSaveSpotOverride?.(sheet.id, brandName, rowId, value)
+  }
+
+  /** 恢复某格为价格表价(清除手填覆盖, 回到推导值)。 */
+  const restoreSpot = (brandName: string, rowId: string) => {
+    if (readOnly) return
+    void onClearSpotOverride?.(sheet.id, brandName, rowId)
   }
 
   const getInput = (brandName: string, rowId: string) =>
@@ -2481,6 +2633,7 @@ export function SheetPanel(props: Props) {
     getSpot,
     setSpot,
     getInput,
+    restoreSpot,
     setSupplier,
     fillSupplier,
     supplierOptions: suppliers,

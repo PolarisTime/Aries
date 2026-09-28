@@ -2749,6 +2749,30 @@ export const enUS = {
       spotOutOfRange: 'Spot price is out of range (0 - {{max}})',
       spotBetter: 'Spot price is better',
       netBetter: 'Market price is better',
+      /** Spot price source markers: text only, never colour-only (WCAG 1.4.1). */
+      spotSource: {
+        priceList: 'Price list',
+        manual: 'Manual',
+        manualNote:
+          'Manual override: this value takes priority over the price-list price; use the button on the right to restore the price-list price',
+        restore: 'Restore price-list price',
+        restoreLabel: 'Restore "{{cell}}" to the price-list price',
+        priceListNote: 'Price list: {{detail}}',
+        unknownSupplier: 'supplier unknown',
+        unknownReleasedAt: 'release time unknown',
+      },
+      /** Why there is no spot price (read by screen readers and on hover). */
+      spotReason: {
+        noListAtTime:
+          'No spot price: no effective supplier price list at the quote time',
+        noItem: 'No spot price: the price list has no entry for this spec',
+        noPrice: 'No spot price: the entry is not quoted',
+        unknown: 'No spot price: no price-list source',
+      },
+      supplierFromPriceList:
+        'The supplier comes from the price list automatically; to set it manually, first enter an overriding spot price in the column above',
+      supplierNeedsSpot:
+        'Enter a spot price before choosing a supplier manually (no spot price source now)',
       addRow: '+ Add Row',
       tonTotal: 'Total',
       columnSettings: 'Columns',
@@ -3194,6 +3218,9 @@ export const enUS = {
       'Takeover will forcibly acquire edit rights for this batch as the current user; the other party’s in-progress edits will be overwritten and the action is logged. Confirm takeover?',
     takeoverOk: 'Force Takeover',
     takeoverFailedShort: 'Takeover failed, please retry later',
+    saveSpotOverrideFailed: 'Failed to save the spot price override',
+    clearSpotOverrideFailed: 'Failed to restore the price-list price',
+    refreshRowPriceFailed: 'Failed to refresh the row price-list prices',
   },
   moduleSelector: {
     spaceEnterHint: 'Space to select, Enter to choose',

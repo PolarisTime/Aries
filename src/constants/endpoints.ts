@@ -190,6 +190,16 @@ export const ENDPOINTS = {
     `/quote-sheets/${pathSegment(id)}/items/${pathSegment(itemId)}`,
   QUOTE_SHEET_ITEM_ORDER: (id: string | number) =>
     `/quote-sheets/${pathSegment(id)}/item-order`,
+  /**
+   * 单格手填覆盖(现货价): PUT 写/更新覆盖行, DELETE 清除覆盖回到价格表推导值。
+   * 品牌名是资源标识的一部分(V148: 品牌不建主数据), 必须整段编码。
+   */
+  QUOTE_SHEET_ITEM_PRICE_OVERRIDE: (
+    id: string | number,
+    itemId: string | number,
+    brandName: string,
+  ) =>
+    `/quote-sheets/${pathSegment(id)}/items/${pathSegment(itemId)}/price-overrides/${pathSegment(brandName)}`,
   QUOTE_SHEET_EDIT_LOCK: (id: string | number) =>
     `/quote-sheets/${pathSegment(id)}/edit-locks`,
   QUOTE_SHEET_PURCHASE_ORDER_TONNAGES: '/quote-sheets/purchase-order-tonnages',

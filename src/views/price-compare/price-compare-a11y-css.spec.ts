@@ -68,6 +68,17 @@ describe('比价页样式无障碍契约', () => {
     expect(touchTargetsCss).toMatch(/height:\s*max\(100%,\s*24px\)/)
   })
 
+  it('现货价来源标记用文字(不靠颜色)且「恢复为价格表价」命中区不小于 24×24', () => {
+    // 来源标记是文字节点(价格表/手填), 样式只做弱化, 不承载语义
+    const marker = blockOf(pageCss, '.price-compare-spot-source {')
+    expect(marker).toMatch(/font-size:\s*11px/)
+    expect(marker).toMatch(/color:\s*var\(--text-secondary\)/)
+
+    const restore = blockOf(pageCss, '.price-compare-spot-restore.ant-btn {')
+    expect(restore).toMatch(/min-width:\s*24px/)
+    expect(restore).toMatch(/min-height:\s*24px/)
+  })
+
   it('行选择框可点区域不小于 24×24', () => {
     const block = blockOf(pageCss, '.price-compare-table .ant-checkbox-wrapper')
     expect(block).toMatch(/min-width:\s*24px/)

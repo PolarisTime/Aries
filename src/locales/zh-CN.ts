@@ -2672,6 +2672,28 @@ export const zhCN = {
       spotOutOfRange: '现货价超出合理范围（0 - {{max}}）',
       spotBetter: '现货更划算',
       netBetter: '网价更优',
+      /** 现货价来源标记: 一律用文字, 不靠颜色区分(WCAG 1.4.1)。 */
+      spotSource: {
+        priceList: '价格表',
+        manual: '手填',
+        manualNote:
+          '手填覆盖：该值优先于价格表推导价；可点右侧按钮恢复为价格表价',
+        restore: '恢复为价格表价',
+        restoreLabel: '恢复「{{cell}}」为价格表价',
+        priceListNote: '价格表：{{detail}}',
+        unknownSupplier: '供应商未知',
+        unknownReleasedAt: '发布时间未知',
+      },
+      /** 无现货价的原因(读屏与悬浮都会读到)。 */
+      spotReason: {
+        noListAtTime: '无现货价：报价时刻无生效价格表版本',
+        noItem: '无现货价：该价格表无此规格',
+        noPrice: '无现货价：该条目不报价',
+        unknown: '无现货价：无价格表来源',
+      },
+      supplierFromPriceList:
+        '供应商由价格表自动带出；如需人工指定，请先在上方「现货」格手填覆盖价',
+      supplierNeedsSpot: '填入现货价后方可人工指定供应商（当前无现货价来源）',
       addRow: '＋ 添加一行',
       addSeparator: '＋ 添加隔断',
       separator: '隔断',
@@ -3104,6 +3126,9 @@ export const zhCN = {
       '接管将以当前用户强制取得该批次编辑权，对方正在进行的编辑将被覆盖，服务端会记录接管操作。确认接管？',
     takeoverOk: '强制接管',
     takeoverFailedShort: '接管失败，请稍后再试',
+    saveSpotOverrideFailed: '保存现货价手填覆盖失败',
+    clearSpotOverrideFailed: '恢复为价格表价失败',
+    refreshRowPriceFailed: '刷新该行价格表价格失败',
   },
   moduleSelector: {
     spaceEnterHint: 'Space 选择，Enter 选择',

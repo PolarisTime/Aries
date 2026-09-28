@@ -60,6 +60,8 @@ export function PriceCompareView() {
     setBrands,
     setActiveId,
     patchSheet,
+    saveSpotOverride,
+    clearSpotOverride,
     addSheet,
     assignProjectToUnassigned,
     removeSheet,
@@ -300,6 +302,8 @@ export function PriceCompareView() {
         rows={rows}
         lengthPremium={lengthPremium}
         patchSheet={patchSheet}
+        saveSpotOverride={saveSpotOverride}
+        clearSpotOverride={clearSpotOverride}
         setRows={setRows}
         onReorderBrands={(from, to) =>
           setBrands((current) => moveItem(current, from, to))
@@ -344,6 +348,8 @@ function PriceCompareSheetArea({
   rows,
   lengthPremium,
   patchSheet,
+  saveSpotOverride,
+  clearSpotOverride,
   setRows,
   onReorderBrands,
   refPeriods,
@@ -368,6 +374,12 @@ function PriceCompareSheetArea({
   rows: React.ComponentProps<typeof SheetPanel>['rows']
   lengthPremium: number
   patchSheet: React.ComponentProps<typeof SheetPanel>['patchSheet']
+  saveSpotOverride: React.ComponentProps<
+    typeof SheetPanel
+  >['onSaveSpotOverride']
+  clearSpotOverride: React.ComponentProps<
+    typeof SheetPanel
+  >['onClearSpotOverride']
   setRows: React.ComponentProps<typeof SheetPanel>['setRows']
   onReorderBrands: React.ComponentProps<typeof SheetPanel>['onReorderBrands']
   refPeriods: string[]
@@ -410,6 +422,8 @@ function PriceCompareSheetArea({
         density="small"
         lengthPremium={lengthPremium}
         patchSheet={patchSheet}
+        onSaveSpotOverride={saveSpotOverride}
+        onClearSpotOverride={clearSpotOverride}
         setRows={setRows}
         onReorderBrands={onReorderBrands}
         periods={refPeriods}

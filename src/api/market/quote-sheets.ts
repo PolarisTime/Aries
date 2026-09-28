@@ -504,6 +504,44 @@ export async function deleteQuoteSheetItem(
   }
 }
 
+/** 单格手填覆盖请求体: 现货价必填; 供应商随覆盖行一并快照。 */
+export type QuoteSheetPriceCellOverridePayload = {
+  spotPrice: number
+  supplierId?: EntityId
+  supplierName?: string
+}
+
+/**
+ * 写入/更新某格的手填覆盖价(幂等 PUT)。
+ *
+ * <p>这是「显式覆盖」的唯一入口: 常规保存不得把价格表推导值写回覆盖行。
+ * 品牌名会按路径段编码(可能含中文/特殊字符)。回包与单据读接口的价格格同形。</p>
+ */
+export async function saveQuoteSheetPriceOverride(
+  sheetId: EntityId,
+  itemId: EntityId,
+  brandName: string,
+  payload: QuoteSheetPriceCellOverridePayload,
+): Promise<QuoteSheetPriceRecord> {
+  const response = await apiPut(
+    ENDPOINTS.QUOTE_SHEET_ITEM_PRICE_OVERRIDE(sheetId, itemId, brandName),
+    priceSchema,
+    payload,
+  )
+  return normalizePrice(response, 0)
+}
+
+/** 清除某格的手填覆盖(幂等 DELETE, 204); 该格回到价格表推导值。 */
+export async function clearQuoteSheetPriceOverride(
+  sheetId: EntityId,
+  itemId: EntityId,
+  brandName: string,
+): Promise<void> {
+  await apiDeleteNoContent(
+    ENDPOINTS.QUOTE_SHEET_ITEM_PRICE_OVERRIDE(sheetId, itemId, brandName),
+  )
+}
+
 /** 采购订单明细行吨位汇总: 该行订货吨数 - 报单已开吨位 = 剩余可开吨。 */
 export type PurchaseOrderTonnageRecord = {
   purchaseOrderId: EntityId

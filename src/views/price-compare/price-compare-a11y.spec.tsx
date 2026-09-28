@@ -36,7 +36,8 @@ function makeSheet(): PriceSheet {
     refDate: '2026-09-10',
     refPeriod: '9:30 上午',
     lengthPremium: 30,
-    inputs: {},
+    // 手填覆盖格: 供应商手工下拉只在这种格出现(价格表带出的供应商为只读文本)
+    inputs: { '中天:r1': { spot: 3280, spotSource: 'MANUAL' as const } },
     rows: [row],
   }
 }

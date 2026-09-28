@@ -473,6 +473,16 @@ describe('SheetPanel 指定品牌展示', () => {
     { value: 's2', label: '河钢' },
   ]
 
+  /**
+   * 供应商列的手工下拉只在「手填覆盖」格可编辑(价格表自动带出的供应商为只读)，
+   * 因此这里给出前置条件: 该格已有手填现货价。
+   */
+  const manualSpotInput = { spot: 3280, spotSource: 'MANUAL' as const }
+  const sheetWithManualSpot = () => ({
+    ...makeSheet(),
+    inputs: { '中天:r1': { ...manualSpotInput } },
+  })
+
   async function openSupplierDropdown() {
     const supplierSelect = container.querySelector('.price-compare-supplier')
     await act(async () => {
@@ -849,7 +859,7 @@ describe('SheetPanel 指定品牌展示', () => {
 
   it('品牌列只显示绑定该品牌的供应商', async () => {
     renderStateful(
-      makeSheet(),
+      sheetWithManualSpot(),
       [{ ...baseRow }],
       [
         { value: 's1', label: '沙钢', brands: ['中天'] },
@@ -869,7 +879,7 @@ describe('SheetPanel 指定品牌展示', () => {
 
   it('品牌无绑定供应商时回退显示全部', async () => {
     renderStateful(
-      makeSheet(),
+      sheetWithManualSpot(),
       [{ ...baseRow }],
       [
         { value: 's1', label: '沙钢', brands: ['永钢'] },
@@ -908,7 +918,11 @@ describe('SheetPanel 指定品牌展示', () => {
   })
 
   it('在简称列选择供应商后回显简称并持久化到输入', async () => {
-    const observed = renderStateful(makeSheet(), [{ ...baseRow }], suppliers)
+    const observed = renderStateful(
+      sheetWithManualSpot(),
+      [{ ...baseRow }],
+      suppliers,
+    )
 
     const supplierSelect = container.querySelector('.price-compare-supplier')
     expect(supplierSelect).not.toBeNull()
@@ -937,7 +951,7 @@ describe('SheetPanel 指定品牌展示', () => {
   })
 
   it('简称下拉支持拼音全拼与首字母索引', async () => {
-    renderStateful(makeSheet(), [{ ...baseRow }], suppliers)
+    renderStateful(sheetWithManualSpot(), [{ ...baseRow }], suppliers)
 
     await openSupplierDropdown()
 
