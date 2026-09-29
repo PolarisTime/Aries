@@ -14,6 +14,23 @@ import {
 } from '@/stores/layoutTabsStore'
 
 /**
+ * 「Tab 已存在但尚未挂载（无子 Router）」时，是否要把主路由的 pathname+search 写回 Tab 状态。
+ *
+ * <p>未挂载 Tab 的子 Router 在挂载时用 Tab 保存的 href 初始化，因此新一次跳转携带查询串
+ * （父级导入意图 `sourceModule`/`sourceRecordId`、深链 `docNo`/`openDetail` 等）时必须先写回，
+ * 否则挂载后仍按旧 href 渲染，一次性意图被静默丢弃：典型表现是从采购订单保存结果弹窗点击
+ * 「创建采购入库」后，目标页拿到了地址栏参数却不会带入来源明细。</p>
+ *
+ * <p>主地址栏无查询串（菜单点击/页签激活）时保持 Tab 原有筛选状态不变。</p>
+ */
+export function shouldAdoptMainSearchForUnmountedTab(
+  subHref: string | null,
+  mainSearchStr: string,
+): boolean {
+  return subHref === null && normalizeSearch(mainSearchStr).length > 0
+}
+
+/**
  * 主路由（浏览器地址栏）与多标签页状态的协调器：
  * 1. 主路由变化 → 打开/激活对应 Tab，并将外部意图（菜单点击/全局搜索/前进后退/直达 URL）注入子 Router；
  * 2. 激活 Tab 变化（如关闭 Tab 后邻位继承）→ 主地址栏跟随。
@@ -38,8 +55,18 @@ export function useTabRouteReconciliation(): void {
       if (store.activeTabId !== existing.id) {
         store.activateTab(existing.id)
       }
-      // 已挂载的 Tab 才存在子 Router 同步；未挂载 Tab 由 attach 时的初始 href 对齐
+      // 已挂载的 Tab 才存在子 Router 同步；未挂载 Tab 在挂载时用 Tab 保存的 href 对齐。
       const subHref = getTabRouterHref(existing.id)
+      if (shouldAdoptMainSearchForUnmountedTab(subHref, location.searchStr)) {
+        // 未挂载 Tab 必须先把主路由的查询串写回，否则本次跳转携带的一次性意图
+        // （如采购订单 ->「创建采购入库」带入来源明细）会在挂载时被旧 href 覆盖而丢失。
+        store.setTabLocation(existing.id, {
+          pathname,
+          search: location.searchStr,
+        })
+        store.markTabMounted(existing.id)
+        return
+      }
       if (subHref && subHref !== mainHref) {
         if (!normalizeSearch(location.searchStr) && subHref.includes('?')) {
           // 主地址栏无参（激活跳转/菜单点击）而 Tab 保存了内部筛选：
