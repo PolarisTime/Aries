@@ -206,16 +206,14 @@ describe('quote-sheets API', () => {
           material: 'HRB400',
           spec: 12,
           length: '9米',
-          ton: 12,
+          prices: [{ brandName: '中天', spotPrice: 3200, supplierId: '77' }],
         },
       ],
     })
 
     const [url, , payload] = apiPutMock.mock.calls[0]
     expect(url).toBe('/quote-sheets/700500000000000130')
-    // 现货价与来源供应商不再由单据保存写入: 载荷不携带 prices[]
-    expect(payload.items[0]).not.toHaveProperty('prices')
-    expect(payload.items[0].ton).toBe(12)
+    expect(payload.items[0].prices[0].supplierId).toBe('77')
   })
 
   it('更新请求携带 X-Resource-Version 版本并抑制 409/412/428 全局提示', async () => {
@@ -319,6 +317,7 @@ describe('quote-sheets API', () => {
         material: 'HRB400',
         spec: 12,
         length: '9米',
+        prices: [{ brandName: '中天', spotPrice: 3200 }],
       },
       '4',
     )
@@ -331,6 +330,7 @@ describe('quote-sheets API', () => {
         material: 'HRB400',
         spec: 12,
         length: '9米',
+        prices: [{ brandName: '中天', spotPrice: 3300 }],
       },
       '5',
     )
@@ -463,60 +463,6 @@ describe('quote-sheets API', () => {
       issuedWeight: 30.5,
       remainingWeight: 10,
       status: '正常',
-    })
-  })
-
-  it('现货价格格只解析价格表来源: NO_LIST 原因入枚举, 不再有手填覆盖/推导快照字段', async () => {
-    apiGetMock.mockResolvedValue({
-      ...page,
-      content: [
-        {
-          ...page.content[0],
-          items: [
-            {
-              ...page.content[0].items[0],
-              prices: [
-                {
-                  brandName: '中天',
-                  spotPrice: null,
-                  spotSource: 'NONE',
-                  spotReason: 'NO_LIST',
-                  supplierId: null,
-                  priceListId: null,
-                  priceListReleasedAt: null,
-                },
-                {
-                  brandName: '沙钢',
-                  spotPrice: '3450.00',
-                  spotSource: 'PRICE_LIST',
-                  spotReason: null,
-                  supplierId: '5001',
-                  supplierName: '杭州物资',
-                  priceListId: '8801',
-                  priceListReleasedAt: '2026-09-16T09:30:00',
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    })
-
-    const [record] = await fetchQuoteSheets()
-
-    expect(record.items[0].prices[0]).toEqual({
-      brandName: '中天',
-      spotSource: 'NONE',
-      spotReason: 'NO_LIST',
-    })
-    expect(record.items[0].prices[1]).toEqual({
-      brandName: '沙钢',
-      spotPrice: 3450,
-      spotSource: 'PRICE_LIST',
-      supplierId: '5001',
-      supplierName: '杭州物资',
-      priceListId: '8801',
-      priceListReleasedAt: '2026-09-16T09:30:00',
     })
   })
 

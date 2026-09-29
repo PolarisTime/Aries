@@ -1,8 +1,3 @@
-import type {
-  SpotPriceReason,
-  SpotPriceSource,
-} from '@/api/market/quote-sheets'
-
 /** 行情数据源: 日期 -> 时段 -> 品牌 -> "品种|材质" -> 规格 -> 网价 */
 export type PriceData = Record<
   string,
@@ -73,24 +68,10 @@ export type PriceRow = {
 
 export type SheetInput = {
   ton?: number
-  /**
-   * 现货价: 只由供应商价格表推导, 前端只读展示, 不再有手填覆盖,
-   * 也不再随单据保存写入。
-   */
   spot?: number
-  /** 现货价来源供应商名称(价格表版本快照, 只读展示) */
+  /** 现货价来源供应商(主数据) */
+  supplierId?: string
   supplierName?: string
-  /**
-   * 现货价来源: PRICE_LIST 由供应商价格表推导 / NONE 无价。
-   * MANUAL 仅作后端枚举兼容保留, 读路径不再产生。
-   */
-  spotSource?: SpotPriceSource
-  /** 无价原因(仅 spotSource=NONE 时有值): 该品牌无价格表 / 有表无该条目 / 条目不报价。 */
-  spotReason?: SpotPriceReason
-  /** 来源价格表标识(雪花 ID 字符串)。 */
-  priceListId?: string
-  /** 来源价格表更新时间(后端填 updated_at, 无版本语义)。 */
-  priceListReleasedAt?: string
 }
 
 export type SheetInputs = Record<string, SheetInput>

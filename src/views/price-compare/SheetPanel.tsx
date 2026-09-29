@@ -14,6 +14,7 @@ import {
   SwapOutlined,
   TrophyOutlined,
   UnlockOutlined,
+  VerticalAlignBottomOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -41,10 +42,13 @@ import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
-import { modal } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
   buildVarietyOptions,
+  fillSupplierInputs,
+  filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
   isPurchasedRow,
@@ -54,7 +58,10 @@ import {
   resolveLock,
   resolveRef,
   type SHEET_COLUMN_WIDTH,
+  SPOT_PRICE_MAX,
+  type SupplierSelectOption,
   sumTonByPurchaseOrderItem,
+  syncSpotInputs,
 } from './core'
 import { LockableField } from './LockableField'
 import { withMemberVisibility } from './price-compare-support'
@@ -71,6 +78,7 @@ import type {
   PriceRow,
   PriceSheet,
   SheetInput,
+  SheetInputs,
   Variety,
 } from './types'
 import { useSheetColumnWidths } from './use-sheet-column-widths'
@@ -87,6 +95,9 @@ const { Text } = Typography
  */
 const SHEET_FIXED_CHROME_WIDTH =
   32 + 24 + PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH
+
+/** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
+const filterSupplierOption = createPinyinFilterOption()
 
 /**
  * 按方向在行内移动焦点并跳过无法聚焦的中间行(如隔断行缺少输入框),
@@ -115,6 +126,16 @@ function moveFocusBy(
   return false
 }
 
+function moveFocus(orderedRows: PriceRow[]) {
+  return (brandName: string, rowId: string, delta: number) =>
+    moveFocusBy(
+      orderedRows,
+      rowId,
+      delta,
+      (row) => `input[data-spot="${brandName}:${row.id}"]`,
+    )
+}
+
 function moveFocusTon(orderedRows: PriceRow[]) {
   return (rowId: string, delta: number) =>
     moveFocusBy(
@@ -141,11 +162,24 @@ type ColumnContext = {
   varieties: Variety[]
   brands: Brand[]
   rows: PriceRow[]
-  /** 现货价(价格表推导值), 只读展示用。 */
   getSpot: (brandName: string, rowId: string) => number | undefined
+  setSpot: (brandName: string, rowId: string, value: number | undefined) => void
   getInput: (brandName: string, rowId: string) => SheetInput | undefined
+  setSupplier: (
+    brandName: string,
+    rowId: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
+  /** 批量填入供应商: 目标行统一改为该供应商(覆盖已有值); undefined 表示清除。 */
+  fillSupplier: (
+    brandName: string,
+    rowIds: string[],
+    option: { value: string; label: string } | undefined,
+  ) => void
+  supplierOptions: SupplierSelectOption[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
-  /** 在吨位列内纵向移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
+  /** 在品牌列内纵向移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
+  moveFocus: (brandName: string, rowId: string, delta: number) => boolean
   moveFocusTon: (rowId: string, delta: number) => boolean
   /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
   purchaseOrderTonnage: PurchaseOrderTonnageDraftInput
@@ -154,6 +188,9 @@ type ColumnContext = {
   onReorderBrands: (from: number, to: number) => void
   /** 隐藏/显示整组品牌列(与「列显示」弹层共用同一份显隐状态)。 */
   onToggleBrand: (brandName: string, visible: boolean) => void
+  /** 当前通过右键菜单打开「一键填入供应商」弹层的品牌列。 */
+  supplierFillBrand?: string
+  setSupplierFillBrand: (brandName: string | undefined) => void
   /** 行操作菜单当前打开的行(Dropdown 受控开关: 右键行内区域与「更多」按钮共用)。 */
   contextMenuRowId: string | null
   onContextMenuRowChange: (rowId: string | null) => void
@@ -175,6 +212,8 @@ type ColumnContext = {
   attachSpotRef: boolean
   allowHrb400eFallback: boolean
   bestOn: boolean
+  spotResetNonce: number
+  onInvalidSpot: () => void
   spotRef: React.RefObject<HTMLSpanElement | null>
   /** 项目可选商品白名单(空表示不限)。 */
   allowedProducts?: string[]
@@ -442,8 +481,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     brands,
     rows,
     getSpot,
-    getInput,
+    setSpot,
+    supplierOptions,
     patchRow,
+    moveFocus,
     selectedIds,
     toggleSelect,
     toggleAll,
@@ -474,6 +515,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const visibleBrandNames = brands
     .filter((brand) => !hiddenBrandSet.has(brand.name))
     .map((brand) => brand.name)
+  /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
+  const productRowIds = rows.flatMap((row) =>
+    isSeparatorRow(row) ? [] : [row.id],
+  )
   /** 锁定规格和数量: 一并禁掉行级增删与拖拽重排(会间接改变规格/数量顺序)。 */
   const quantityLocked = Boolean(sheet.specQuantityLocked)
   const rowInteractionLocked = readOnly || quantityLocked
@@ -487,42 +532,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowedProducts,
   )
   const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
-  /**
-   * 现货价来源说明(供单元格 title / aria-label, 同时是读屏可读的悬浮说明)。
-   *
-   * - 价格表: 「供应商 · 品牌 · 更新时间」便于核对(现货价只由价格表推导, 不再有手填覆盖);
-   * - 无价: 给出中文原因(该品牌无价格表 / 该价格表无此规格 / 该条目不报价)。
-   */
-  const spotSourceNote = (input: SheetInput | undefined, brandName: string) => {
-    if (!input) return ''
-    if (input.spotSource === 'PRICE_LIST') {
-      const releasedAt = input.priceListReleasedAt
-        ? dayjs(input.priceListReleasedAt).isValid()
-          ? dayjs(input.priceListReleasedAt).format('YYYY-MM-DD HH:mm')
-          : input.priceListReleasedAt
-        : t('priceCompare.sheet.spotSource.unknownReleasedAt')
-      return t('priceCompare.sheet.spotSource.priceListNote', {
-        detail: [
-          input.supplierName ??
-            t('priceCompare.sheet.spotSource.unknownSupplier'),
-          brandName,
-          releasedAt,
-        ].join(' · '),
-      })
-    }
-    if (input.spotSource === 'NONE') {
-      const reasonKey =
-        input.spotReason === 'NO_LIST'
-          ? 'noList'
-          : input.spotReason === 'NO_ITEM'
-            ? 'noItem'
-            : input.spotReason === 'NO_PRICE'
-              ? 'noPrice'
-              : 'unknown'
-      return t(`priceCompare.sheet.spotReason.${reasonKey}`)
-    }
-    return ''
-  }
   const bestCache = new Map<string, string | undefined>()
   const bestOf = (row: GridRow): string | undefined => {
     if (!bestOn) return undefined
@@ -862,14 +871,28 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               {
                 title: (
                   // 表头标题节点: 保留原有拖拽换序, 菜单本身复用共享列头基元
-                  // (隐藏该列 / 移到最前或最后)。
+                  // (隐藏该列 / 移到最前或最后 + 业务追加的「一键填入供应商…」)。
                   <ColumnHeaderMenu
                     ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
                       brand: brand.name,
                     })}
                     columnTitle={brand.name}
+                    extraItems={[
+                      {
+                        key: 'fill-supplier-column',
+                        icon: <VerticalAlignBottomOutlined />,
+                        label: t('priceCompare.sheet.contextMenu.fillSupplier'),
+                        // 与「简称」列的一键填入按钮保持同一禁用口径(只读时按钮本身不渲染)
+                        disabled: readOnly,
+                      },
+                    ]}
                     isFirst={brand.name === visibleBrandNames[0]}
                     isLast={brand.name === visibleBrandNames.at(-1)}
+                    onExtraItem={(key) => {
+                      if (key === 'fill-supplier-column') {
+                        ctx.setSupplierFillBrand(brand.name)
+                      }
+                    }}
                     onHide={() => ctx.onToggleBrand(brand.name, false)}
                     onMoveFirst={() =>
                       onReorderBrands(
@@ -966,49 +989,91 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     widths.spot,
                     (_, row) => {
                       const current = row.row
-                      const entry = getInput(brand.name, current.id)
-                      const spot = entry?.spot
-                      const note = spotSourceNote(entry, brand.name)
+                      const spot = getSpot(brand.name, current.id)
                       const isFirst =
                         attachSpotRef &&
                         brandIndex === 0 &&
                         current.id === rows[0]?.id
-                      const label = cellLabel(
-                        `${brand.name} ${t('priceCompare.sheet.columns.spot')}`,
-                        row,
+                      const input = (
+                        <Input
+                          key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
+                          aria-label={cellLabel(
+                            `${brand.name} ${t('priceCompare.sheet.columns.spot')}`,
+                            row,
+                          )}
+                          className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          size="small"
+                          variant="borderless"
+                          inputMode="decimal"
+                          disabled={readOnly}
+                          data-spot={`${brand.name}:${current.id}`}
+                          defaultValue={spot === undefined ? '' : String(spot)}
+                          onBlur={(event) => {
+                            const raw = event.target.value
+                            const value = Number(raw)
+                            if (
+                              raw !== '' &&
+                              (Number.isNaN(value) ||
+                                value <= 0 ||
+                                value > SPOT_PRICE_MAX)
+                            ) {
+                              message.warning(
+                                t('priceCompare.sheet.spotOutOfRange', {
+                                  max: SPOT_PRICE_MAX,
+                                }),
+                              )
+                              // 非法输入：触发重挂载，恢复为已保存值
+                              ctx.onInvalidSpot()
+                              return
+                            }
+                            setSpot(
+                              brand.name,
+                              current.id,
+                              raw === '' ? undefined : value,
+                            )
+                          }}
+                          onPressEnter={(event) => {
+                            const raw = (event.target as HTMLInputElement).value
+                            const value = Number(raw)
+                            if (
+                              raw === '' ||
+                              (!Number.isNaN(value) &&
+                                value > 0 &&
+                                value <= SPOT_PRICE_MAX)
+                            ) {
+                              setSpot(
+                                brand.name,
+                                current.id,
+                                raw === '' ? undefined : value,
+                              )
+                            }
+                            event.preventDefault()
+                            moveFocus(brand.name, current.id, 1)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'ArrowDown') {
+                              event.preventDefault()
+                              moveFocus(brand.name, current.id, 1)
+                            } else if (event.key === 'ArrowUp') {
+                              event.preventDefault()
+                              moveFocus(brand.name, current.id, -1)
+                            } else if (event.key === 'Tab') {
+                              // 仅在列内成功移动时拦截默认行为; 到列首/列尾放行,
+                              // 让 Tab 能走到供应商列/下一品牌列, 避免焦点陷阱。
+                              const moved = moveFocus(
+                                brand.name,
+                                current.id,
+                                event.shiftKey ? -1 : 1,
+                              )
+                              if (moved) event.preventDefault()
+                            }
+                          }}
+                        />
                       )
-                      const value = (
-                        <span
-                          // 悬浮说明: 来源(供应商 · 品牌 · 更新时间) 或 无价原因
-                          title={note || undefined}
-                          data-spot-source={entry?.spotSource ?? 'NONE'}
-                          className={`price-compare-spot price-compare-num${spot === undefined ? ' price-compare-sub' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                        >
-                          {/*
-                            现货价只读展示, 单元格不可聚焦; aria-label 不能挂在无 role 的 span 上
-                            (biome a11y 规则), 因此用项目通用的 .aries-sr-only 承载「列名+行名+来源/原因」。
-                          */}
-                          <span className="aries-sr-only">
-                            {note ? `${label}，${note}` : label}
-                          </span>
-                          {spot === undefined ? '—' : spot}
-                        </span>
-                      )
-                      return (
-                        <span
-                          ref={isFirst ? ctx.spotRef : undefined}
-                          className="price-compare-spot-cell"
-                        >
-                          {value}
-                          {/* 来源标记用文字而非颜色(WCAG 1.4.1): 现货价只来自价格表 */}
-                          {entry?.spotSource === 'PRICE_LIST' ? (
-                            <Tooltip title={note}>
-                              <span className="price-compare-spot-source">
-                                {t('priceCompare.sheet.spotSource.priceList')}
-                              </span>
-                            </Tooltip>
-                          ) : null}
-                        </span>
+                      return isFirst ? (
+                        <span ref={ctx.spotRef}>{input}</span>
+                      ) : (
+                        input
                       )
                     },
                   ),
@@ -1058,29 +1123,75 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     },
                   ),
                   cellOf(
-                    t('priceCompare.sheet.columns.supplierShort'),
+                    <SupplierFillHeader
+                      brandName={brand.name}
+                      options={supplierOptions}
+                      disabled={readOnly}
+                      open={ctx.supplierFillBrand === brand.name}
+                      onOpenChange={(next) =>
+                        ctx.setSupplierFillBrand(next ? brand.name : undefined)
+                      }
+                      onFill={(option) =>
+                        ctx.fillSupplier(brand.name, productRowIds, option)
+                      }
+                    />,
                     widths.supplier,
                     (_, row) => {
                       const current = row.row
                       const input = ctx.getInput(brand.name, current.id)
                       const supplierName = input?.supplierName
-                      /*
-                       * 供应商只读展示价格表带来的来源供应商:
-                       * 现货价与来源供应商都不再由人工写入单据。
-                       */
-                      const hint =
-                        input?.spotSource === 'PRICE_LIST'
-                          ? t('priceCompare.sheet.supplierFromPriceList')
-                          : ''
+                      const filtered = filterSupplierOptionsByBrand(
+                        ctx.supplierOptions,
+                        brand.name,
+                      )
+                      // 保留已选供应商: 若其不属于当前品牌过滤结果, 仍加入选项避免回显丢失,
+                      // 不强制清空用户已选值。
+                      const options =
+                        input?.supplierId &&
+                        !filtered.some(
+                          (item) => item.value === input.supplierId,
+                        )
+                          ? [
+                              {
+                                value: input.supplierId,
+                                label: supplierName || input.supplierId,
+                                brands: [],
+                              },
+                              ...filtered,
+                            ]
+                          : filtered
                       return (
-                        <span
-                          className={`price-compare-supplier-auto${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                          title={hint || undefined}
-                        >
-                          <span className="price-compare-supplier-auto-name">
-                            {supplierName ?? '—'}
-                          </span>
-                        </span>
+                        <Select
+                          size="small"
+                          variant="borderless"
+                          aria-label={cellLabel(
+                            `${brand.name} ${t('priceCompare.sheet.columns.supplierShort')}`,
+                            row,
+                          )}
+                          className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          disabled={readOnly}
+                          value={input?.supplierId}
+                          title={supplierName}
+                          placeholder={t('priceCompare.sheet.supplier')}
+                          allowClear
+                          showSearch={{ filterOption: filterSupplierOption }}
+                          options={options}
+                          onChange={(value) => {
+                            const option = options.find(
+                              (item) => item.value === value,
+                            )
+                            ctx.setSupplier(
+                              brand.name,
+                              current.id,
+                              value
+                                ? {
+                                    value: String(value),
+                                    label: option?.label ?? String(value),
+                                  }
+                                : undefined,
+                            )
+                          }}
+                        />
                       )
                     },
                   ),
@@ -1424,6 +1535,173 @@ function ColumnSettingsButton({
   )
 }
 
+/**
+ * 供应商批量填入下拉: 选择一个供应商后回调; 用于「整列」与「选中行」两个入口。
+ * 复用与单元格一致的品牌过滤与拼音搜索。
+ */
+function SupplierFillSelect({
+  brandName,
+  options,
+  onPick,
+}: {
+  brandName?: string
+  options: SupplierSelectOption[]
+  onPick: (option: { value: string; label: string } | undefined) => void
+}) {
+  const { t } = useTranslation()
+  const filtered = brandName
+    ? filterSupplierOptionsByBrand(options, brandName)
+    : options
+  return (
+    <Select
+      autoFocus
+      size="small"
+      style={{ width: 180 }}
+      className="price-compare-supplier-fill-select"
+      placeholder={t('priceCompare.sheet.fillSupplierPick')}
+      showSearch={{ filterOption: filterSupplierOption }}
+      options={filtered}
+      onChange={(value) => {
+        const option = filtered.find((item) => item.value === value)
+        onPick(
+          value
+            ? { value: String(value), label: option?.label ?? String(value) }
+            : undefined,
+        )
+      }}
+    />
+  )
+}
+
+/** 品牌列「简称」表头: 一键把所选供应商填到该品牌列全部商品行。 */
+function SupplierFillHeader({
+  brandName,
+  options,
+  disabled,
+  open,
+  onOpenChange,
+  onFill,
+}: {
+  brandName: string
+  options: SupplierSelectOption[]
+  disabled: boolean
+  /** 受控开合: 由 SheetPanel 统一管理, 让表头右键菜单也能打开同一个弹层。 */
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onFill: (option: { value: string; label: string } | undefined) => void
+}) {
+  const { t } = useTranslation()
+  const title = t('priceCompare.sheet.fillSupplierColumn', { brand: brandName })
+  return (
+    <span className="price-compare-supplier-header">
+      <span>{t('priceCompare.sheet.columns.supplierShort')}</span>
+      {disabled ? null : (
+        <Popover
+          trigger="click"
+          placement="bottom"
+          open={open}
+          onOpenChange={onOpenChange}
+          content={
+            <Flex vertical gap={4} className="price-compare-supplier-fill">
+              <Text type="secondary" className="price-compare-sub">
+                {title}
+              </Text>
+              <SupplierFillSelect
+                brandName={brandName}
+                options={options}
+                onPick={(option) => {
+                  onFill(option)
+                  onOpenChange(false)
+                }}
+              />
+            </Flex>
+          }
+        >
+          <Button
+            type="text"
+            size="small"
+            className="price-compare-supplier-fill-btn"
+            icon={<VerticalAlignBottomOutlined />}
+            aria-label={title}
+          />
+        </Popover>
+      )}
+    </span>
+  )
+}
+
+/** 批量填入「选中行」: 先选品牌列, 再选供应商; 覆盖所选行已有简称。 */
+function SupplierFillSelectedButton({
+  brands,
+  options,
+  selectedCount,
+  disabled,
+  onFill,
+}: {
+  brands: Brand[]
+  options: SupplierSelectOption[]
+  selectedCount: number
+  disabled: boolean
+  onFill: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
+}) {
+  const { t } = useTranslation()
+  const [brandName, setBrandName] = useState<string | undefined>()
+  const [open, setOpen] = useState(false)
+  const title = t('priceCompare.sheet.fillSupplierSelected', {
+    count: selectedCount,
+  })
+  return (
+    <Popover
+      trigger="click"
+      placement="bottom"
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) setBrandName(undefined)
+      }}
+      content={
+        <Flex vertical gap={6} className="price-compare-supplier-fill">
+          <Text type="secondary" className="price-compare-sub">
+            {title}
+          </Text>
+          <Select
+            size="small"
+            style={{ width: 220 }}
+            className="price-compare-supplier-fill-brand"
+            placeholder={t('priceCompare.sheet.fillSupplierBrand')}
+            value={brandName}
+            options={brands.map((brand) => ({
+              value: brand.name,
+              label: brand.name,
+            }))}
+            onChange={(value) => setBrandName(value)}
+          />
+          <SupplierFillSelect
+            brandName={brandName}
+            options={options}
+            onPick={(option) => {
+              if (!brandName) return
+              onFill(brandName, option)
+              setOpen(false)
+            }}
+          />
+        </Flex>
+      }
+    >
+      <Button
+        icon={<VerticalAlignBottomOutlined />}
+        disabled={disabled}
+        className="price-compare-fill-selected-btn"
+      >
+        {t('priceCompare.sheet.fillSupplier')}
+      </Button>
+    </Popover>
+  )
+}
+
 /** 锁定/解锁参照日期与时段。 */
 function LockRefButton({
   sheet,
@@ -1494,21 +1772,37 @@ function LockSpecQuantityButton({
   )
 }
 
-/** 选中行后出现的操作: 标记已采购 + 删除所选行。 */
+/** 选中行后出现的操作: 批量填入供应商 + 标记已采购 + 删除所选行。 */
 function SelectedRowActions({
+  brands,
+  supplierOptions,
   selectedCount,
   readOnly,
   specQuantityLocked,
+  onFillSupplierSelected,
   onRemoveSelected,
 }: {
+  brands: Brand[]
+  supplierOptions: SupplierSelectOption[]
   selectedCount: number
   readOnly: boolean
   specQuantityLocked: boolean
+  onFillSupplierSelected: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
   return (
     <>
+      <SupplierFillSelectedButton
+        brands={brands}
+        options={supplierOptions}
+        selectedCount={selectedCount}
+        disabled={readOnly || specQuantityLocked}
+        onFill={onFillSupplierSelected}
+      />
       {readOnly || specQuantityLocked ? (
         <Tooltip
           title={
@@ -1565,6 +1859,8 @@ function SheetHeader({
   brands,
   onToggleRemark,
   onToggleBrand,
+  supplierOptions,
+  onFillSupplierSelected,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -1589,6 +1885,11 @@ function SheetHeader({
   brands: Brand[]
   onToggleRemark: (visible: boolean) => void
   onToggleBrand: (brandName: string, visible: boolean) => void
+  supplierOptions: SupplierSelectOption[]
+  onFillSupplierSelected: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
 }) {
   return (
     <Flex vertical gap={8} className="price-compare-toolbar">
@@ -1625,6 +1926,8 @@ function SheetHeader({
         onToggleBrand={onToggleBrand}
         onOpenConfig={onOpenConfig}
         selectedCount={selectedCount}
+        supplierOptions={supplierOptions}
+        onFillSupplierSelected={onFillSupplierSelected}
         onRemoveSelected={onRemoveSelected}
       />
     </Flex>
@@ -1824,6 +2127,8 @@ function SheetActionRow({
   onToggleBrand,
   onOpenConfig,
   selectedCount,
+  supplierOptions,
+  onFillSupplierSelected,
   onRemoveSelected,
 }: {
   sheet: PriceSheet
@@ -1840,6 +2145,11 @@ function SheetActionRow({
   onToggleBrand: (brandName: string, visible: boolean) => void
   onOpenConfig?: () => void
   selectedCount: number
+  supplierOptions: SupplierSelectOption[]
+  onFillSupplierSelected: (
+    brandName: string,
+    option: { value: string; label: string } | undefined,
+  ) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
@@ -1883,9 +2193,12 @@ function SheetActionRow({
       ) : null}
       {selectedCount > 0 ? (
         <SelectedRowActions
+          brands={brands}
+          supplierOptions={supplierOptions}
           selectedCount={selectedCount}
           readOnly={readOnly}
           specQuantityLocked={Boolean(sheet.specQuantityLocked)}
+          onFillSupplierSelected={onFillSupplierSelected}
           onRemoveSelected={onRemoveSelected}
         />
       ) : null}
@@ -1922,13 +2235,36 @@ type Props = {
   designatedBrands?: string[]
   remark?: string
   onRemarkChange?: (value: string) => void
+  suppliers?: SupplierSelectOption[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
   /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
   purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput
 }
 
-/** 单个报单: 一张扁平表格展示全部行, 现货价由供应商价格表推导并只读展示。 */
+/** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
+/**
+ * 本次会话内现货价被改过的单元格键(`品牌:行id`)集合。
+ * 批量填入供应商时只作用于这些行, 避免换第 N 家时误改已定价的其它供应商行;
+ * 填入完成后消费标记, 避免下一家重复命中。
+ */
+function useSpotTouchedKeys() {
+  const [keys, setKeys] = useState<ReadonlySet<string>>(() => new Set())
+  const mark = (next: string[]) => {
+    if (!next.length) return
+    setKeys((current) => new Set([...current, ...next]))
+  }
+  const consume = (next: string[]) => {
+    if (!next.length) return
+    setKeys((current) => {
+      const result = new Set(current)
+      for (const key of next) result.delete(key)
+      return result
+    })
+  }
+  return { keys, mark, consume }
+}
+
 export function SheetPanel(props: Props) {
   const {
     sheet,
@@ -1953,18 +2289,29 @@ export function SheetPanel(props: Props) {
     designatedBrands,
     remark,
     onRemarkChange,
+    suppliers = [],
     readOnly = false,
     purchaseOrderTonnage = EMPTY_PURCHASE_ORDER_TONNAGE,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bestOn, setBestOn] = useState(false)
+  const [spotResetNonce, setSpotResetNonce] = useState(0)
   /** 仅临时(不持久化)的列显隐: 备注列与整组品牌列。 */
   const [hideRemark, setHideRemark] = useState(false)
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
   /** 行操作菜单当前打开的行: 右键行内区域与「更多」按钮共用一个受控开关。 */
   const [contextMenuRowId, setContextMenuRowId] = useState<string | null>(null)
+  /** 当前通过表头右键菜单打开「一键填入供应商」弹层的品牌列。 */
+  const [supplierFillBrand, setSupplierFillBrand] = useState<
+    string | undefined
+  >()
   const hiddenBrandSet = new Set(hiddenBrands)
+  const {
+    keys: spotTouchedKeys,
+    mark: markSpotsTouched,
+    consume: consumeSpotsTouched,
+  } = useSpotTouchedKeys()
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
     setHiddenBrands((current) =>
       withMemberVisibility(current, brandName, visible),
@@ -1988,8 +2335,98 @@ export function SheetPanel(props: Props) {
       list.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
     )
 
+  /** 现货价联动: 同批次内 品牌+类别+材质+规格+长度 相同则同步。 */
+  const setSpot = (
+    brandName: string,
+    rowId: string,
+    value: number | undefined,
+  ) => {
+    const { inputs, targets } = syncSpotInputs(
+      rows,
+      sheet.inputs,
+      brandName,
+      rowId,
+      value,
+    )
+    patchSheet(sheet.id, { inputs })
+    // 仅记录本次会话现货价实际发生变动(新增/改动)的行: 数值未变的不参与后续批量填入供应商。
+    const changedTargets = targets
+      .filter(
+        (target) =>
+          value !== undefined &&
+          sheet.inputs[`${brandName}:${target.id}`]?.spot !== value,
+      )
+      .map((target) => `${brandName}:${target.id}`)
+    markSpotsTouched(changedTargets)
+    const text = value === undefined ? '' : String(value)
+    for (const target of targets) {
+      if (target.id === rowId) continue
+      const input = document.querySelector<HTMLInputElement>(
+        `input[data-spot="${brandName}:${target.id}"]`,
+      )
+      if (input) input.value = text
+    }
+  }
+
   const getInput = (brandName: string, rowId: string) =>
     sheet.inputs[`${brandName}:${rowId}`]
+
+  /** 记录/清除现货价来源供应商; 无现货也无供应商时删除该输入。 */
+  const setSupplier = (
+    brandName: string,
+    rowId: string,
+    option: { value: string; label: string } | undefined,
+  ) => {
+    const key = `${brandName}:${rowId}`
+    const inputs: SheetInputs = { ...sheet.inputs }
+    const prev = inputs[key] ?? {}
+    if (!option) {
+      const {
+        supplierId: _supplierId,
+        supplierName: _supplierName,
+        ...rest
+      } = prev
+      if (rest.spot === undefined && rest.ton === undefined) {
+        delete inputs[key]
+      } else {
+        inputs[key] = rest
+      }
+    } else {
+      inputs[key] = {
+        ...prev,
+        supplierId: option.value,
+        supplierName: option.label,
+      }
+    }
+    patchSheet(sheet.id, { inputs })
+  }
+
+  /**
+   * 批量填入供应商: 仅作用于「本次会话内改过现货价」的目标行, 覆盖其已有简称;
+   * 未改价的行保留原简称, 避免换第 N 家时误改已定价的其它供应商行。仅改简称, 不动现货价。
+   */
+  const fillSupplier = (
+    brandName: string,
+    rowIds: string[],
+    option: { value: string; label: string } | undefined,
+  ) => {
+    const eligibleIds = rowIds.filter((rowId) =>
+      spotTouchedKeys.has(`${brandName}:${rowId}`),
+    )
+    if (!eligibleIds.length) {
+      message.info(t('priceCompare.sheet.fillSupplierNoChangedRows'))
+      return
+    }
+    const inputs = fillSupplierInputs(
+      rows,
+      sheet.inputs,
+      brandName,
+      eligibleIds,
+      option,
+    )
+    if (inputs !== sheet.inputs) patchSheet(sheet.id, { inputs })
+    consumeSpotsTouched(eligibleIds.map((rowId) => `${brandName}:${rowId}`))
+  }
 
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
@@ -2042,10 +2479,16 @@ export function SheetPanel(props: Props) {
     brands,
     density,
     getSpot,
+    setSpot,
     getInput,
+    setSupplier,
+    fillSupplier,
+    supplierOptions: suppliers,
     patchRow,
     onReorderBrands,
     onToggleBrand: toggleBrandVisible,
+    supplierFillBrand,
+    setSupplierFillBrand,
     contextMenuRowId,
     onContextMenuRowChange: setContextMenuRowId,
     moveRow,
@@ -2056,6 +2499,8 @@ export function SheetPanel(props: Props) {
     allowHrb400eFallback,
     bestOn,
     allowedProducts,
+    spotResetNonce,
+    onInvalidSpot: () => setSpotResetNonce((nonce) => nonce + 1),
     spotRef,
     readOnly,
     hideRemark,
@@ -2095,12 +2540,17 @@ export function SheetPanel(props: Props) {
         brands={brands}
         onToggleRemark={(visible) => setHideRemark(!visible)}
         onToggleBrand={toggleBrandVisible}
+        supplierOptions={suppliers}
+        onFillSupplierSelected={(brandName, option) =>
+          fillSupplier(brandName, selectedIds, option)
+        }
       />
 
       <SheetTable
         rows={rows}
         base={{
           ...base,
+          moveFocus: moveFocus(rows),
           moveFocusTon: moveFocusTon(rows),
         }}
         onReorderRow={reorderRow}

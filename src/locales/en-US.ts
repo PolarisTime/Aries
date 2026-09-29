@@ -18,222 +18,6 @@ export const enUS = {
     nameRequired: 'Please enter a rule name',
     nameDuplicate: 'Rule names must be unique',
   },
-  supplierPriceList: {
-    pageDescription:
-      'Maintain spot unit prices per supplier brand: fixed spec columns on the left (category/material/spec/length) and one column per brand on the right; an empty cell means no quote (not zero).',
-    status: {
-      active: 'Active',
-      archived: 'Archived',
-    },
-    itemStatus: {
-      normal: 'Normal',
-      pending: 'In transit',
-      bundled: 'Bundled',
-      negotiable: 'Negotiable',
-      outOfStock: 'Out of stock',
-    },
-    editor: {
-      title: {
-        create: 'New price list version',
-        edit: 'Edit price list version',
-        copy: 'Save as new version',
-      },
-    },
-    tabs: {
-      label: 'Brand price list tabs',
-      empty: 'No brand price list yet. Click "New brand price list".',
-      selectHint: 'Select or create a brand price list.',
-      supplierCount: '{{count}} supplier(s)',
-      add: 'New brand price list',
-      addTitle: 'New brand price list',
-      addConfirm: 'Open this brand',
-      brandHint: 'Select or enter a brand name',
-      addHint:
-        'Add supplier columns as needed: a price list is created only when a supplier gets its first unit price for this brand; empty cells create nothing.',
-    },
-    view: {
-      brandLabel: 'Current brand: {{brand}}',
-    },
-    supplierColumn: {
-      add: 'Add supplier column',
-      addTitle: 'Add a supplier column for "{{brand}}"',
-      addHint:
-        'The price list is created when this column gets its first unit price; empty cells create nothing. The same supplier is never listed twice for one brand (duplicate creation is rejected by the backend with 409).',
-      selectLabel: 'Supplier',
-      selectPlaceholder: 'Select a supplier',
-      selectRequired: 'Please select a supplier',
-      duplicate: 'This supplier column already exists',
-      emptyHint: 'No supplier column yet. Click "Add supplier column" first.',
-      filledCount: 'Filled {{count}}',
-      saving: 'Saving',
-      delete: 'Delete this supplier price list…',
-      deleteTitle: 'Delete the price list of "{{supplier}} / {{brand}}"',
-      deleteContent:
-        'The whole price list of this (supplier, brand) pair (all unit prices) will be deleted; price compare will stop deriving its spot price.',
-    },
-    header: {
-      supplier: 'Supplier',
-      supplierRequired: 'Please select a supplier',
-      brand: 'Brand (origin)',
-      brandRequired: 'Please select or enter a brand',
-      brandManual: 'No brand on file for this supplier; enter manually',
-      releasedAt: 'Released at',
-      releasedAtRequired: 'Please pick the release time',
-      effectiveFrom: 'Effective from',
-      effectiveFromRequired: 'Please pick the effective start date',
-      effectiveTo: 'Effective to',
-      effectiveToHint: 'Empty = open ended',
-      effectiveToInvalid:
-        'Effective end date cannot be earlier than start date',
-      warehouse: 'Warehouse',
-      warehouseHint: 'e.g. Ganglian Xin’an',
-      remark: 'Remark',
-    },
-    columns: {
-      supplier: 'Supplier',
-      brand: 'Brand (origin)',
-      releasedAt: 'Released at',
-      effectiveRange: 'Effective range',
-      effectiveToForever: 'Open ended',
-      itemCount: 'Items',
-      category: 'Category',
-      material: 'Material',
-      spec: 'Spec (diameter mm)',
-      length: 'Length (fixed)',
-      price: 'Unit price',
-      priceStatus: 'Status',
-      remark: 'Remark',
-      priceNamed: '{{supplier}} {{row}} unit price',
-      statusNamed: '{{row}} status',
-      remarkNamed: '{{row}} remark',
-    },
-    priceEmptyHint: 'Empty = no quote',
-    noQuote: 'No quote',
-    notFilled: 'Not filled',
-    savedWithArchived:
-      'Version saved; the previously active version was archived automatically',
-    archivedReadonly:
-      'This version is archived and cannot be edited. Save as a new version instead.',
-    unmatchedPrior:
-      '{{count}} item(s) from the previous version are not in the current spec catalog and were not carried over.',
-    rowErrorsBlockSave:
-      'Row-level validation failed (spec must be a positive integer, price cannot be negative, no duplicate rows). Fix them first.',
-    allEmptyConfirmTitle: 'No quoted price at all',
-    allEmptyConfirmContent:
-      'This version has no quoted price (equivalent to "no quote today"). Save anyway?',
-    detail: {
-      title: 'Price list version',
-    },
-    actions: {
-      view: 'View',
-      edit: 'Edit',
-      copyAsNew: 'Save as new version',
-      create: 'New version',
-      matrix: 'Matrix',
-      adjust: 'Bulk adjust',
-      paste: 'Paste import',
-    },
-    deleteConfirm:
-      'Delete the price list version for "{{supplier}} / {{brand}}"?',
-    rowMenuLabel: 'Row actions for {{label}}',
-    summary: {
-      total: 'Fixed rows {{count}}',
-      filled: 'Filled {{count}}',
-      empty: 'Empty {{count}}',
-      filtered: 'Filtered {{count}} rows',
-      unsaved: 'Unsaved changes',
-      totalRows: 'Versions',
-      columns: 'Supplier columns {{count}}',
-      columnFilled: '{{supplier}} filled {{count}}',
-      updatedAt: 'Updated {{time}}',
-    },
-    paginationTotal: '{{count}} rows',
-    filter: {
-      keyword: 'Search category/material/spec/length',
-      category: 'Category',
-      material: 'Material',
-      fill: 'Fill state',
-      fillAll: 'All rows',
-      fillUnfilled: 'Unfilled only',
-      fillFilled: 'Filled only',
-      fillSupplier: 'Fill state by supplier',
-      fillSupplierAll: 'All suppliers (any filled)',
-      status: 'Version status',
-      releasedRange: 'Release time range',
-    },
-    adjust: {
-      title: 'Bulk adjustment (preview first)',
-      add: 'Add',
-      subtract: 'Subtract',
-      modeLabel: 'Adjustment direction',
-      amountLabel: 'Amount (CNY/ton)',
-      amountPlaceholder: 'e.g. 50',
-      preview: 'Preview',
-      previewRequired:
-        'Enter an amount and generate the preview before confirming.',
-      confirm: 'Apply',
-      affected: 'Affected items: {{count}}',
-      skipped: 'Skipped (no quote): {{count}}',
-      emptySkippedHint: 'Rows without a price are excluded',
-      emptySkippedDetail:
-        'An empty price means "no quote". Treating it as 0 during adjustment would create a wrong price, so those rows are skipped.',
-      negativeTitle: 'Some rows would become negative',
-      negativeDetail:
-        '{{count}} row(s) would end up with a negative price. Reduce the amount and retry (no silent clamping).',
-      success: 'Adjustment applied to {{count}} item(s)',
-      titleWithTarget:
-        'Bulk adjustment: {{supplier}} / {{brand}} (preview first)',
-      unsavedTitle:
-        '{{count}} filled price(s) are not written to a price list yet. Confirm them in the cells (blur saves) before bulk adjusting.',
-      missingListTitle:
-        'This supplier has no price list for this brand yet. Fill one cell first (blur creates the list), then adjust.',
-      noneTitle:
-        'Nothing to adjust in this preview (rows without a price are excluded). Check the prices and retry.',
-      requiresSavedHint: 'Save the version first, or discard unsaved changes',
-      columns: {
-        item: 'Item',
-        before: 'Price before',
-        after: 'Price after',
-      },
-    },
-    paste: {
-      title: 'TSV paste import (brand: {{brand}})',
-      modeLabel: 'Paste mode',
-      modeColumn: 'By column (one supplier)',
-      modeBlock: 'Whole block (supplier × spec)',
-      targetLabel: 'Target supplier column',
-      hintTitleColumn: 'Paste into "{{supplier}}" (brand: {{brand}})',
-      hintTitleBlock: 'Paste a whole block into the brand "{{brand}}"',
-      hintDetail:
-        'Column order: material / spec / length / price (an optional category column may come first). An empty price means "no quote" and is never written as 0; rows that cannot be matched to fixed rows or contain invalid values are reported and skipped.',
-      hintDetailBlock:
-        'Column order: supplier / material / spec / length / price (the first row may be a header). Columns are split by supplier name and written into each (supplier, brand) price list; unknown supplier names are reported and skipped.',
-      textareaLabel: 'Paste area',
-      placeholder: 'HRB400E\t12\t9m\t3220',
-      placeholderBlock: 'Hangzhou Zhongjin\tHRB400E\t12\t9m\t3220',
-      parse: 'Parse',
-      apply: 'Apply to grid',
-      applied: '{{count}} row(s) can be written',
-      errorCount: '{{count}} row(s) skipped',
-      cleared: '{{count}} existing price(s) will be cleared',
-      errorLine: 'Line {{line}}: {{message}}',
-      moreErrors: '{{count}} more error(s) not shown…',
-      clearConfirmTitle: 'Clear existing prices?',
-      clearConfirmContent:
-        '{{count}} pasted row(s) have an empty price; applying will turn them into "no quote" (not 0). Continue?',
-      appliedToast: '{{count}} row(s) written',
-      blockApplied: '{{count}} row(s) can be written',
-      blockColumns: 'Supplier columns affected: {{count}}',
-      blockSkipped:
-        'These suppliers are not in the current view and were not written: {{names}}',
-    },
-    matrix: {
-      title: 'Supplier price list matrix (read-only)',
-      suppliers: 'Suppliers',
-      brands: 'Brands',
-      category: 'Category',
-    },
-  },
   appUpdate: {
     title: 'System Updated',
     description:
@@ -2782,6 +2566,7 @@ export const enUS = {
         removeRowTitle: 'Delete this row?',
         removeRowContent:
           'Spot prices and suppliers entered for this row are removed too. Save the sheet to apply the change.',
+        fillSupplier: 'Fill supplier…',
         hideBrand: 'Hide column',
         moveBrandFirst: 'Move to first',
         moveBrandLast: 'Move to last',
@@ -2802,24 +2587,9 @@ export const enUS = {
       clearField: 'Clear "{{label}}"',
       purchaseOrderLockFirst: 'Lock this row before linking a purchase order',
       tonPositive: 'Order tonnage must be a positive number',
+      spotOutOfRange: 'Spot price is out of range (0 - {{max}})',
       spotBetter: 'Spot price is better',
       netBetter: 'Market price is better',
-      /** Spot price source markers: text only, never colour-only (WCAG 1.4.1). */
-      spotSource: {
-        priceList: 'Price list',
-        priceListNote: 'Price list: {{detail}}',
-        unknownSupplier: 'supplier unknown',
-        unknownReleasedAt: 'update time unknown',
-      },
-      /** Why there is no spot price (read by screen readers and on hover). */
-      spotReason: {
-        noList: 'No spot price: no supplier price list for this brand',
-        noItem: 'No spot price: the price list has no entry for this item',
-        noPrice: 'No spot price: the entry is not quoted',
-        unknown: 'No spot price: no price-list source',
-      },
-      supplierFromPriceList:
-        'The supplier is derived from the supplier price list; this column is read-only',
       addRow: '+ Add Row',
       tonTotal: 'Total',
       columnSettings: 'Columns',
@@ -2854,6 +2624,15 @@ export const enUS = {
       specQuantityLockedHint:
         'Spec & quantity locked; adding, deleting, or reordering rows is disabled until unlocked',
       supplier: 'Supplier',
+      fillSupplier: 'Bulk fill supplier',
+      fillSupplierPick: 'Select supplier',
+      fillSupplierBrand: 'Select brand column',
+      fillSupplierColumn:
+        'Fill the selected supplier into all product rows of the "{{brand}}" column',
+      fillSupplierSelected:
+        'Fill the selected supplier into the {{count}} selected rows',
+      fillSupplierNoChangedRows:
+        'None of the target rows had a spot price changed this session; nothing was modified (only rows with changed prices are updated)',
       purchaseOrderLabel: 'Linked purchase order',
       purchaseOrderPlaceholder: 'Link PO',
       purchaseOrderOptionTitle:
@@ -2953,7 +2732,6 @@ export const enUS = {
     project: 'Projects',
     carrier: 'Carriers',
     warehouse: 'Warehouses',
-    'supplier-price-lists': 'Supplier Price Lists',
     'company-setting': 'Settlement Entities',
     'customer-statement': 'Customer Statements',
     'freight-statement': 'Freight Statements',
@@ -3256,7 +3034,6 @@ export const enUS = {
       'Takeover will forcibly acquire edit rights for this batch as the current user; the other party’s in-progress edits will be overwritten and the action is logged. Confirm takeover?',
     takeoverOk: 'Force Takeover',
     takeoverFailedShort: 'Takeover failed, please retry later',
-    refreshRowPriceFailed: 'Failed to refresh the row price-list prices',
   },
   moduleSelector: {
     spaceEnterHint: 'Space to select, Enter to choose',

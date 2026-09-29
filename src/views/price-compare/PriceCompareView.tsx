@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useAuthStore } from '@/stores/authStore'
 import { modal } from '@/utils/antd-app'
-import { moveItem } from './core'
+import { moveItem, reconcileSpotInputs } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
 import { PriceCompareSaveStatus } from './PriceCompareSaveStatus'
 import {
@@ -18,6 +18,7 @@ import {
   useInitialProjectAssignment,
   usePriceCompareEditorSession,
   usePriceCompareRouteActive,
+  useSupplierSelectOptions,
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
 import { SheetPanel } from './SheetPanel'
@@ -88,6 +89,7 @@ export function PriceCompareView() {
     isAuthenticated,
   )
 
+  const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
   usePriceCompareEditorSession(hasUnsavedChanges)
   // 只读态(他人签出)禁用撤销/重做快捷键
@@ -189,6 +191,19 @@ export function PriceCompareView() {
     matchesData,
     mergeMatches,
   ])
+
+  // 对账式现货联动：同商品同品牌已有现货价时自动套用到缺省行，避免重复输入。
+  useEffect(() => {
+    if (!active || !rows.length || !brands.length) return
+    const next = reconcileSpotInputs(
+      rows,
+      active.inputs,
+      brands.map((brand) => brand.name),
+    )
+    if (next !== active.inputs) {
+      patchSheet(active.id, { inputs: next })
+    }
+  }, [active, rows, brands, patchSheet])
 
   const projectGroups = projectGroupsOf(sheets)
   const currentGroup =
@@ -296,6 +311,7 @@ export function PriceCompareView() {
         onOpenConfig={() => setConfigOpen(true)}
         availability={availability}
         spotRef={spotRef}
+        supplierSelectOptions={supplierSelectOptions}
         onSaveConfig={(next) => setConfig(next)}
         readOnly={readOnly}
         purchaseOrderTonnage={purchaseOrderTonnage}
@@ -337,6 +353,7 @@ function PriceCompareSheetArea({
   onOpenConfig,
   availability,
   spotRef,
+  supplierSelectOptions,
   onSaveConfig,
   readOnly,
   purchaseOrderTonnage,
@@ -360,6 +377,7 @@ function PriceCompareSheetArea({
   onOpenConfig: () => void
   availability: React.ComponentProps<typeof SheetPanel>['availability']
   spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
+  supplierSelectOptions: React.ComponentProps<typeof SheetPanel>['suppliers']
   onSaveConfig: (next: ReturnType<typeof useSheetsStore>['config']) => void
   readOnly: boolean
   purchaseOrderTonnage: React.ComponentProps<
@@ -405,6 +423,7 @@ function PriceCompareSheetArea({
         availability={availability}
         spotRef={spotRef}
         designatedBrands={config.designatedBrands}
+        suppliers={supplierSelectOptions}
         remark={config.remark}
         onRemarkChange={(value) => onSaveConfig({ ...config, remark: value })}
         readOnly={readOnly}

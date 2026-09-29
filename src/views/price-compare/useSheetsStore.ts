@@ -23,7 +23,6 @@ import {
   type QuoteSheetHeaderPayload,
   type QuoteSheetItemPayload,
   type QuoteSheetPayload,
-  type QuoteSheetPriceRecord,
   type QuoteSheetRecord,
   reorderQuoteSheetItems,
   updateQuoteSheet,
@@ -318,11 +317,20 @@ function buildPayload(
     })),
     items: sheet.rows.flatMap<QuoteSheetPayload['items'][number]>((row) => {
       if (!isPersistableRow(row)) return []
-      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR' }]
-      /*
-       * 现货价与来源供应商不再由单据保存写入: 两者都只由供应商价格表推导(读时带出),
-       * 因此载荷里不再携带 prices[]。
-       */
+      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR', prices: [] }]
+      const prices = brands.flatMap<
+        QuoteSheetPayload['items'][number]['prices'][number]
+      >((brand) => {
+        const input = sheet.inputs[`${brand.name}:${row.id}`]
+        if (!input || (input.spot === undefined && !input.supplierId)) return []
+        return [
+          {
+            brandName: brand.name,
+            ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
+            ...(input.supplierId ? { supplierId: input.supplierId } : {}),
+          },
+        ]
+      })
       return [
         {
           rowType: 'PRODUCT',
@@ -339,6 +347,7 @@ function buildPayload(
           ...(row.purchaseOrderItemId
             ? { purchaseOrderItemId: row.purchaseOrderItemId }
             : {}),
+          prices,
         },
       ]
     }),
@@ -362,13 +371,25 @@ function buildHeaderPayload(sheet: PriceSheet): QuoteSheetHeaderPayload {
   }
 }
 
-/**
- * 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。
- * <p>现货价与来源供应商不再由单据保存写入(只由供应商价格表推导), 故不带 prices[]。</p>
- */
-function buildItemPayload(row: PriceRow): QuoteSheetItemPayload | null {
-  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR' }
+/** 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。 */
+function buildItemPayload(
+  sheet: PriceSheet,
+  row: PriceRow,
+  brands: Brand[],
+): QuoteSheetItemPayload | null {
+  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR', prices: [] }
   if (!isCompleteRow(row)) return null
+  const prices = brands.flatMap((brand) => {
+    const input = sheet.inputs[`${brand.name}:${row.id}`]
+    if (!input || (input.spot === undefined && !input.supplierId)) return []
+    return [
+      {
+        brandName: brand.name,
+        ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
+        ...(input.supplierId ? { supplierId: input.supplierId } : {}),
+      },
+    ]
+  })
   return {
     rowType: 'PRODUCT',
     category: row.category,
@@ -382,6 +403,7 @@ function buildItemPayload(row: PriceRow): QuoteSheetItemPayload | null {
     ...(row.purchaseOrderItemId
       ? { purchaseOrderItemId: row.purchaseOrderItemId }
       : {}),
+    prices,
   }
 }
 
@@ -390,13 +412,13 @@ function headerSignature(sheet: PriceSheet): string {
   return JSON.stringify(buildHeaderPayload(sheet))
 }
 
-/**
- * 行指纹: 行类型/商品字段/吨位/备注/锁定/采购订单关联任一变化即不同。
- *
- * <p>现货价与来源供应商只由价格表推导、不再随单据保存写入, 因此都不参与指纹:
- * 价格表调价不该把整张单据置为待保存。</p>
- */
-function itemSignature(row: PriceRow): string {
+/** 行指纹: 行类型/商品字段/吨位/现货价/供应商任一变化即不同。 */
+function itemSignature(row: PriceRow, inputs: SheetInputs): string {
+  const suffix = `:${row.id}`
+  const prices = Object.keys(inputs)
+    .filter((key) => key.endsWith(suffix))
+    .sort()
+    .map((key) => [key, inputs[key] ?? {}])
   return JSON.stringify({
     rowType: row.rowType ?? 'PRODUCT',
     category: row.category,
@@ -408,6 +430,7 @@ function itemSignature(row: PriceRow): string {
     locked: Boolean(row.locked),
     purchaseOrderId: row.purchaseOrderId ?? null,
     purchaseOrderItemId: row.purchaseOrderItemId ?? null,
+    prices,
   })
 }
 
@@ -456,7 +479,7 @@ function sheetContentFingerprint(sheet: PriceSheet): string {
 function buildBaseline(sheet: PriceSheet): SheetBaseline {
   const items = new Map<string, string>()
   for (const row of sheet.rows) {
-    items.set(row.id, itemSignature(row))
+    items.set(row.id, itemSignature(row, sheet.inputs))
   }
   return {
     header: headerSignature(sheet),
@@ -1435,13 +1458,13 @@ export function useSheetsStore(options?: {
         }
 
         for (const row of sheet.rows) {
-          const payload = buildItemPayload(row)
+          const payload = buildItemPayload(sheet, row, config.brands)
           if (!payload) {
             // 未选商品的空行无法持久化: 置脏保留本地行, 刷新不得静默丢弃
             markDirty()
             continue
           }
-          const signature = itemSignature(row)
+          const signature = itemSignature(row, sheet.inputs)
           const known = baseline.items.has(row.id)
           if (known && baseline.items.get(row.id) === signature) continue
           try {
@@ -1464,8 +1487,16 @@ export function useSheetsStore(options?: {
               const createdItem = created.item
               if (createdItem) {
                 const remappedRow = { ...row, id: createdItem.id }
+                const remappedInputs = remapInputKeys(
+                  sheet.inputs,
+                  row.id,
+                  createdItem.id,
+                )
                 remapItemId(sheetId, row.id, createdItem.id)
-                baseline.items.set(createdItem.id, itemSignature(remappedRow))
+                baseline.items.set(
+                  createdItem.id,
+                  itemSignature(remappedRow, remappedInputs),
+                )
               }
             }
             applySheetVersion(sheet.id, version)
@@ -2590,19 +2621,6 @@ export function useSheetsStore(options?: {
   }
 }
 
-/** 服务端价格格 -> 本地单元格输入(现货价/来源/供应商/来源价格表一并回填, 只读展示用)。 */
-function priceRecordToInput(price: QuoteSheetPriceRecord): SheetInput {
-  const entry: SheetInput = {}
-  if (price.spotPrice !== undefined) entry.spot = price.spotPrice
-  if (price.spotSource) entry.spotSource = price.spotSource
-  if (price.spotReason) entry.spotReason = price.spotReason
-  if (price.supplierName) entry.supplierName = price.supplierName
-  if (price.priceListId) entry.priceListId = price.priceListId
-  if (price.priceListReleasedAt)
-    entry.priceListReleasedAt = price.priceListReleasedAt
-  return entry
-}
-
 /** 服务端记录 -> 本地单据(行 id 用服务端 item id, 保证重新加载后稳定)。 */
 function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
   const rows: PriceRow[] = record.items.map((item) => ({
@@ -2624,8 +2642,10 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
   const inputs: SheetInputs = {}
   for (const item of record.items) {
     for (const price of item.prices) {
-      const entry = priceRecordToInput(price)
-      // 无价也要建条目: spotSource=NONE + spotReason 是单元格显示「为什么没有价」的唯一依据
+      const entry: SheetInput = {}
+      if (price.spotPrice !== undefined) entry.spot = price.spotPrice
+      if (price.supplierId) entry.supplierId = price.supplierId
+      if (price.supplierName) entry.supplierName = price.supplierName
       if (Object.keys(entry).length > 0) {
         inputs[`${price.brandName}:${item.id}`] = entry
       }

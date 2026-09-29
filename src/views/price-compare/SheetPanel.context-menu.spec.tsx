@@ -7,6 +7,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { bindAntdAppApi } from '@/utils/antd-app'
+import type { SupplierSelectOption } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
@@ -122,6 +123,7 @@ describe('SheetPanel 右键菜单', () => {
       sheet?: PriceSheet
       brands?: Brand[]
       readOnly?: boolean
+      suppliers?: SupplierSelectOption[]
       onReorderBrands?: (from: number, to: number) => void
     } = {},
   ) {
@@ -149,6 +151,7 @@ describe('SheetPanel 右键菜单', () => {
         onRefresh: () => {},
         chrome: false,
         spotRef: { current: null },
+        suppliers: options.suppliers,
         readOnly: options.readOnly,
       })
     }
@@ -484,8 +487,10 @@ describe('SheetPanel 右键菜单', () => {
 
     await clickTopMenuItem('隐藏该列')
     expect(brandNameNodes().map((node) => node.textContent)).toEqual(['沙钢'])
-    // 只统计表头行(antd 的测量行在 tbody, 不在此列): 隐藏品牌后只剩一列「简称」
-    expect(container.querySelectorAll('thead th[title="简称"]')).toHaveLength(1)
+    // 只统计表头行: antd 的测量行(ant-table-measure-row)会重复渲染一次列标题
+    expect(
+      container.querySelectorAll('thead .price-compare-supplier-header'),
+    ).toHaveLength(1)
   })
 
   it('右键品牌列头「移到最后」复用 onReorderBrands', async () => {
@@ -497,18 +502,17 @@ describe('SheetPanel 右键菜单', () => {
     expect(onReorderBrands).toHaveBeenCalledWith(0, 1)
   })
 
-  it('品牌列头菜单不再有「一键填入供应商…」入口(现货/供应商只由价格表带出)', async () => {
+  it('右键品牌列头「一键填入供应商…」打开原有弹层', async () => {
     renderPanel()
-    await rightClick(brandNameNodes()[0])
-    const labels = Array.from(
-      topDropdown()?.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item') ??
-        [],
-    ).map((node) => (node.textContent || '').trim())
-    expect(labels).not.toContain('一键填入供应商…')
     expect(document.querySelector('.price-compare-supplier-fill')).toBeNull()
+    await rightClick(brandNameNodes()[0])
+    await clickTopMenuItem('一键填入供应商')
+    expect(
+      document.querySelector('.price-compare-supplier-fill'),
+    ).not.toBeNull()
   })
 
-  it('品牌列头菜单项顺序为 隐藏该列/移到最前/移到最后', async () => {
+  it('品牌列头菜单项顺序为 一键填入供应商…/隐藏该列/移到最前/移到最后', async () => {
     renderPanel()
     await rightClick(brandNameNodes()[0])
     const labels = Array.from(
@@ -516,6 +520,7 @@ describe('SheetPanel 右键菜单', () => {
         [],
     ).map((node) => (node.textContent || '').trim())
     expect(labels).toEqual([
+      '一键填入供应商…',
       '隐藏该列',
       // 已在最前时不禁用也不隐藏, 而是在文案里说明原因(禁用项仍可被读屏发现)
       '移到最前（已在最前）',

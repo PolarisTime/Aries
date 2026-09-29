@@ -228,52 +228,60 @@
   color: var(--color-danger-active, #cf1322);
 }
 
-/*
- * 现货价格子: 只读展示价格表推导价(手填覆盖已删除) + 来源文字标记(「价格表」)。
- * - 来源一律用文字而不是只用颜色(WCAG 1.4.1);
- * - 无价时展示占位「—」, 原因放在 title/aria-label 上;
- * - 文字色用 --text-secondary(该页 11–12px 需 4.5:1), 深浅色主题都由变量兜底。
- */
-.price-compare-spot-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xxs);
-  width: 100%;
+.price-compare-spot input {
+  text-align: right;
+  padding-inline: var(--space-xxs) !important;
+  font-variant-numeric: tabular-nums;
 }
 
 .price-compare-spot {
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
+  width: 100%;
 }
 
-.price-compare-spot-source {
-  flex: 0 0 auto;
-  padding: 0 3px;
-  border: 1px solid var(--theme-border-subtle, rgba(0, 0, 0, 0.12));
-  border-radius: 3px;
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--text-secondary);
-  white-space: nowrap;
+/* 供应商简称列 */
+.price-compare-table .price-compare-supplier {
+  width: 100%;
 }
 
-/* 供应商简称列: 只读展示价格表带来的来源供应商 */
-.price-compare-supplier-auto {
+.price-compare-table .price-compare-supplier .ant-select-selector {
+  padding-inline: var(--space-2) !important;
+}
+
+.price-compare-table .price-compare-supplier .ant-select-selection-item,
+.price-compare-table .price-compare-supplier .ant-select-selection-placeholder {
+  padding-inline: var(--space-2) var(--space-sm) !important;
+}
+
+.price-compare-table .price-compare-supplier .ant-select-arrow {
+  inset-inline-end: 4px;
+  font-size: 10px;
+}
+
+/* 供应商列头: 简称标题 + 整列批量填入按钮 */
+.price-compare-supplier-header {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   justify-content: center;
-  gap: var(--space-xxs);
-  width: 100%;
-  font-size: 12px;
-  color: var(--text-secondary);
 }
 
-.price-compare-supplier-auto-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.price-compare-supplier-header .price-compare-supplier-fill-btn {
+  /* 表头一键填入: 保持紧凑外观, 但点击区域不得小于 24×24(WCAG 2.2 AA) */
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  font-size: 11px;
+  color: var(--color-info-active, #0958d9);
+}
+
+/* 批量填入弹出层: 品牌列 + 供应商下拉 */
+.price-compare-supplier-fill {
+  padding: var(--space-2);
+}
+
+.price-compare-supplier-fill-select,
+.price-compare-supplier-fill .ant-select {
+  width: 180px;
 }
 
 .price-compare-drag {

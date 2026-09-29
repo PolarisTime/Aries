@@ -77,14 +77,4 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     menuParent: 'master',
     moduleKey: 'company-setting',
   },
-  {
-    // 供应商品牌价格表：菜单 code 与权限资源均为 supplier-price-lists，路由 /master-data/supplier-price-lists
-    key: 'supplier-price-lists',
-    titleKey: 'pages.supplier-price-lists',
-    menuKey: '/master-data/supplier-price-lists',
-    view: 'master-supplier-price-list',
-    icon: 'CalculatorOutlined',
-    menuParent: 'master',
-    requiredPermission: 'supplier-price-lists:read',
-  },
 ]

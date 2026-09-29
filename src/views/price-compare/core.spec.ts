@@ -5,6 +5,8 @@ import {
   computeSummary,
   countMissing,
   dataKeyOf,
+  fillSupplierInputs,
+  filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
   isPurchasedRow,
@@ -17,12 +19,14 @@ import {
   moveItem,
   netPrice,
   netPriceWithFallback,
+  reconcileSpotInputs,
   resolveLock,
   SHEET_COLUMN_WIDTH,
   SHEET_WIDTH_BASE_FONT_SIZE,
   scaleSheetColumnWidth,
   sheetColumnWidths,
   sumTonByPurchaseOrderItem,
+  syncSpotInputs,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
@@ -225,6 +229,46 @@ describe('countMissing', () => {
   })
 })
 
+describe('syncSpotInputs', () => {
+  it('相同 类别/材质/规格/长度 的行同步现货价', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const c = { ...row12, id: 'c', spec: 16 }
+    const { inputs, targets } = syncSpotInputs([a, b, c], {}, '中天', 'a', 3300)
+    expect(targets.map((row) => row.id).sort()).toEqual(['a', 'b'])
+    expect(inputs['中天:a'].spot).toBe(3300)
+    expect(inputs['中天:b'].spot).toBe(3300)
+    expect(inputs['中天:c']).toBeUndefined()
+  })
+
+  it('未选择商品的空行不联动', () => {
+    const a = makeRow()
+    const b = makeRow()
+    const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
+    expect(targets.map((row) => row.id)).toEqual([a.id])
+  })
+})
+
+describe('reconcileSpotInputs', () => {
+  it('同商品同品牌缺省行自动套用已有现货价', () => {
+    const a = { ...row12, id: 'a' }
+    const b = { ...row12, id: 'b' }
+    const next = reconcileSpotInputs([a, b], { '中天:a': { spot: 3160 } }, [
+      '中天',
+      '铜陵富鑫',
+    ])
+    expect(next['中天:a'].spot).toBe(3160)
+    expect(next['中天:b'].spot).toBe(3160)
+    expect(next['铜陵富鑫:a']).toBeUndefined()
+  })
+
+  it('无变化时返回原对象', () => {
+    const a = { ...row12, id: 'a' }
+    const inputs = { '中天:a': { spot: 3160 } }
+    expect(reconcileSpotInputs([a], inputs, ['中天'])).toBe(inputs)
+  })
+})
+
 describe('canonicalCategory / dataKeyOf', () => {
   it('螺纹钢 与 直条 归一为同一类别', () => {
     expect(canonicalCategory('直条')).toBe('螺纹钢')
@@ -307,6 +351,34 @@ describe('matchesToData / mergePriceData', () => {
   })
 })
 
+describe('filterSupplierOptionsByBrand', () => {
+  const options = [
+    { value: 's1', label: '沙钢', brands: ['中天', '永钢'] },
+    { value: 's2', label: '河钢', brands: ['沙钢'] },
+    { value: 's3', label: '无品牌' },
+  ]
+
+  it('品牌有绑定供应商时只返回绑定项', () => {
+    const result = filterSupplierOptionsByBrand(options, '中天')
+    expect(result.map((option) => option.value)).toEqual(['s1'])
+  })
+
+  it('品牌无任何绑定供应商时回退返回全部', () => {
+    const result = filterSupplierOptionsByBrand(options, '亚新')
+    expect(result.map((option) => option.value)).toEqual(['s1', 's2', 's3'])
+  })
+
+  it('未选品牌时返回全部, 保持兼容', () => {
+    expect(filterSupplierOptionsByBrand(options, undefined)).toBe(options)
+    expect(filterSupplierOptionsByBrand(options, '')).toBe(options)
+  })
+
+  it('多品牌绑定时返回全部命中项', () => {
+    const result = filterSupplierOptionsByBrand(options, '永钢')
+    expect(result.map((option) => option.value)).toEqual(['s1'])
+  })
+})
+
 describe('moveItem', () => {
   it('按位置移动元素, 越界或同位置时原样返回', () => {
     expect(moveItem(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a'])
@@ -326,6 +398,94 @@ describe('makeRow', () => {
     expect(row.material).toBe('')
     expect(row.spec).toBeNull()
     expect(row.length).toBe('')
+  })
+})
+
+describe('fillSupplierInputs', () => {
+  const rows: PriceRow[] = [
+    { ...row12, id: 'r1' },
+    { ...row12, id: 'r2' },
+    {
+      id: 'sep1',
+      rowType: 'SEPARATOR',
+      category: '',
+      material: '',
+      spec: null,
+      length: '',
+    },
+    { ...row12, id: 'r3' },
+  ]
+
+  it('按目标行覆盖填入供应商标识, 不动已有现货价', () => {
+    const inputs = { '中天:r1': { spot: 3180 } }
+    const next = fillSupplierInputs(rows, inputs, '中天', ['r1', 'r2'], {
+      value: 's2',
+      label: '河钢',
+    })
+    expect(next['中天:r1']).toEqual({
+      spot: 3180,
+      supplierId: 's2',
+      supplierName: '河钢',
+    })
+    expect(next['中天:r2']).toEqual({ supplierId: 's2', supplierName: '河钢' })
+    // 未选中的行不处理
+    expect(next['中天:r3']).toBeUndefined()
+  })
+
+  it('覆盖已有值为新供应商(支持换第 N 家重新报价)', () => {
+    const inputs = {
+      '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
+    }
+    const next = fillSupplierInputs(rows, inputs, '中天', ['r1'], {
+      value: 's2',
+      label: '河钢',
+    })
+    expect(next['中天:r1']?.supplierId).toBe('s2')
+    expect(next['中天:r1']?.supplierName).toBe('河钢')
+    expect(next['中天:r1']?.spot).toBe(3180)
+  })
+
+  it('忽略隔断行, 且无实际变化时返回原对象', () => {
+    const inputs = { '中天:r1': { supplierId: 's2', supplierName: '河钢' } }
+    // 隔断行虽在目标集合内, 但跳过 → 无变化
+    const same = fillSupplierInputs(rows, inputs, '中天', ['sep1'], {
+      value: 's9',
+      label: '某钢',
+    })
+    expect(same).toBe(inputs)
+    // 已相同的值不再写入
+    const noop = fillSupplierInputs(rows, inputs, '中天', ['r1'], {
+      value: 's2',
+      label: '河钢',
+    })
+    expect(noop).toBe(inputs)
+  })
+
+  it('传入 undefined 等价清除简称, 保留现货价', () => {
+    const inputs = {
+      '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
+      '中天:r2': { supplierId: 's1', supplierName: '沙钢' },
+    }
+    const next = fillSupplierInputs(
+      rows,
+      inputs,
+      '中天',
+      ['r1', 'r2'],
+      undefined,
+    )
+    expect(next['中天:r1']).toEqual({ spot: 3180 })
+    // 无其它字段则删除该输入
+    expect('中天:r2' in next).toBe(false)
+  })
+
+  it('空目标行集合不产生变化', () => {
+    const inputs = {}
+    expect(
+      fillSupplierInputs(rows, inputs, '中天', [], {
+        value: 's1',
+        label: '沙钢',
+      }),
+    ).toBe(inputs)
   })
 })
 
@@ -675,20 +835,19 @@ describe('列宽按字号自适应', () => {
    * 数字列(现货价 / 网价 / 差价)按 4 位数字立契约。
    *
    * 真机实测(PingFang SC, tabular-nums): 每位数字宽 0.6em, 14px 字号下 4 位数字 = 33.6px;
-   * 单元格左右留白合计 12px(再加 1px 边框/取整)。现货价已改为只读文本 + 来源标记
-   * (「价格表」三字约 33px 与 4px 间距), 差价角标左右内边距各 4px(共 8px)。
-   * 列宽必须覆盖这些固定开销, 否则末位数字或来源标记被裁。
+   * 单元格左右留白合计 12px(再加 1px 边框/取整); 现货价的 antd small 输入框左右内边距各 7px
+   * (共 14px, 不随字号缩放), 差价角标左右内边距各 4px(共 8px)。列宽必须覆盖这些固定开销,
+   * 否则末位数字被裁。
    */
   const DIGIT_WIDTH_EM = 0.6
   const CELL_CHROME = 13
-  /** 现货价列额外容纳来源标记「价格表」(11px × 3 字 ≈ 33px)与 4px 间距。 */
-  const SPOT_SOURCE_TAG_WIDTH = 37
+  const SPOT_INPUT_PADDING = 14
   const DIFF_CHIP_PADDING = 8
   const digits4Width = (fontSize: number) =>
     Math.ceil(4 * DIGIT_WIDTH_EM * fontSize)
-  /** 现货价: 数字 + 来源标记 + 单元格留白。 */
+  /** 现货价: 数字 + 输入框内边距 + 单元格留白。 */
   const requiredSpotWidth = (fontSize: number) =>
-    digits4Width(fontSize) + SPOT_SOURCE_TAG_WIDTH + CELL_CHROME
+    digits4Width(fontSize) + SPOT_INPUT_PADDING + CELL_CHROME
   /** 网价: 纯文本数字 + 单元格留白。 */
   const requiredNetWidth = (fontSize: number) =>
     digits4Width(fontSize) + CELL_CHROME
@@ -696,7 +855,7 @@ describe('列宽按字号自适应', () => {
   const requiredDiffWidth = (fontSize: number) =>
     digits4Width(fontSize) + DIFF_CHIP_PADDING + CELL_CHROME
 
-  it('14/16/18 三档下 spot/net/diff 都容得下 4 位数字(现货列还要容下来源标记)', () => {
+  it('14/16/18 三档下 spot/net/diff 都容得下 4 位数字', () => {
     for (const fontSize of [14, 16, 18]) {
       const widths = sheetColumnWidths(fontSize)
       expect(widths.spot).toBeGreaterThanOrEqual(requiredSpotWidth(fontSize))
@@ -705,13 +864,13 @@ describe('列宽按字号自适应', () => {
     }
   })
 
-  it('现货价列宽回归保护: 只读数字 + 来源标记在 14px 下不被裁', () => {
-    // 阈值 84 是「4 位数字 + 来源标记 + 单元格留白」在基准字号下的下界
-    expect(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(84)
+  it('现货价列宽回归保护: 58 在 14px 下不足(实测 input.clientWidth=45 < 48)', () => {
+    // 阈值 61 是「4 位数字 + 输入框内边距 + 单元格留白」在基准字号下的下界
+    expect(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(61)
     expect(SHEET_COLUMN_WIDTH.spot).toBeGreaterThanOrEqual(
       requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE),
     )
-    // 旧的手填输入列宽 124 在只读展示下仍有余量; 但 58 连 4 位数字都放不下
+    // 旧的 58 会让输入框内容宽只剩 45px, 4 位数字(48px)显示不全
     expect(58).toBeLessThan(requiredSpotWidth(SHEET_WIDTH_BASE_FONT_SIZE))
   })
 

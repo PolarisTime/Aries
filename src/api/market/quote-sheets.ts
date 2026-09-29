@@ -33,19 +33,9 @@ const brandSchema = z.looseObject({
 
 const priceSchema = z.looseObject({
   brandName: z.string(),
-  /** 现货价: 只来自供应商价格表推导, 手填覆盖已删除。 */
   spotPrice: z.union([z.number(), z.string()]).nullable().optional(),
-  /** 现货价来源: 价格表推导 / 无。 */
-  spotSource: z.string().nullable().optional(),
-  /** 无价原因: 该品牌无价格表 / 有表无该条目 / 条目不报价。 */
-  spotReason: z.string().nullable().optional(),
   supplierId: z.union([z.number(), z.string()]).nullable().optional(),
   supplierName: z.string().nullable().optional(),
-  /** 项目级运费(元/吨), 来自项目品牌配置, 不来自价格表。 */
-  freight: z.union([z.number(), z.string()]).nullable().optional(),
-  priceListId: z.union([z.number(), z.string()]).nullable().optional(),
-  /** 来源价格表更新时间(字段名兼容保留, 无版本语义)。 */
-  priceListReleasedAt: z.string().nullable().optional(),
 })
 
 const itemSchema = z.looseObject({
@@ -92,30 +82,11 @@ const sheetPageSchema = z.looseObject({
   hasMore: z.boolean(),
 })
 
-/** 现货价来源: PRICE_LIST 由供应商价格表推导, NONE 无价; MANUAL 仅兼容保留(读路径不再产生)。 */
-export type SpotPriceSource = 'MANUAL' | 'PRICE_LIST' | 'NONE'
-/** 无价原因: 该品牌无价格表 / 有表但无该条目 / 条目存在但不报价。 */
-export type SpotPriceReason = 'NO_LIST' | 'NO_ITEM' | 'NO_PRICE'
-
-const asSpotSource = (raw: unknown): SpotPriceSource | undefined =>
-  raw === 'MANUAL' || raw === 'PRICE_LIST' || raw === 'NONE' ? raw : undefined
-
-const asSpotReason = (raw: unknown): SpotPriceReason | undefined =>
-  raw === 'NO_LIST' || raw === 'NO_ITEM' || raw === 'NO_PRICE' ? raw : undefined
-
 export type QuoteSheetPriceRecord = {
   brandName: string
-  /** 现货价: 只由供应商价格表推导(手填覆盖已彻底删除)。 */
   spotPrice?: number
-  spotSource?: SpotPriceSource
-  spotReason?: SpotPriceReason
   supplierId?: EntityId
   supplierName?: string
-  /** 项目级运费(元/吨)。 */
-  freight?: number
-  priceListId?: EntityId
-  /** 来源价格表更新时间(后端填 updated_at, 无版本语义)。 */
-  priceListReleasedAt?: string
 }
 
 export type QuoteSheetItemRecord = {
@@ -163,12 +134,7 @@ export type QuoteSheetRecord = {
   version: string
 }
 
-/**
- * 保存请求体(整体替换)。
- *
- * <p>现货价与来源供应商不再由单据保存写入: 两者都只由供应商价格表在读取时推导,
- * 因此行内不再携带 `prices[]`(旧字段已被后端忽略)。</p>
- */
+/** 保存请求体(整体替换)。 */
 export type QuoteSheetPayload = {
   name: string
   projectId?: EntityId
@@ -193,15 +159,15 @@ export type QuoteSheetPayload = {
     locked?: boolean
     purchaseOrderId?: EntityId
     purchaseOrderItemId?: EntityId
+    prices: {
+      brandName: string
+      spotPrice?: number
+      supplierId?: EntityId
+    }[]
   }[]
 }
 
-/**
- * 行级保存请求体(整行替换)。
- *
- * <p>现货价与来源供应商不再由单据保存写入: 两者都只由供应商价格表在读取时推导,
- * 因此不再携带 `prices[]`(旧字段已被后端忽略)。</p>
- */
+/** 行级保存请求体(整行替换)。 */
 export type QuoteSheetItemPayload = {
   rowType: 'PRODUCT' | 'SEPARATOR'
   category?: string
@@ -213,6 +179,11 @@ export type QuoteSheetItemPayload = {
   locked?: boolean
   purchaseOrderId?: EntityId
   purchaseOrderItemId?: EntityId
+  prices: {
+    brandName: string
+    spotPrice?: number
+    supplierId?: EntityId
+  }[]
 }
 
 /** 表头保存请求体(不携带 brands/items, 后端仅更新表头字段)。 */
@@ -234,31 +205,20 @@ function normalizePrice(
   raw: z.infer<typeof priceSchema>,
   index: number,
 ): QuoteSheetPriceRecord {
-  const supplierId = parseOptionalEntityId(
-    raw.supplierId,
-    `prices[${index}].supplierId`,
-  )
-  const priceListId = parseOptionalEntityId(
-    raw.priceListId,
-    `prices[${index}].priceListId`,
-  )
-  const spotSource = asSpotSource(raw.spotSource)
-  const spotReason = asSpotReason(raw.spotReason)
-  const freight = toOptionalNumber(raw.freight)
   return {
     brandName: raw.brandName,
     ...(toOptionalNumber(raw.spotPrice) !== undefined
       ? { spotPrice: toOptionalNumber(raw.spotPrice) }
       : {}),
-    ...(spotSource ? { spotSource } : {}),
-    ...(spotReason ? { spotReason } : {}),
-    ...(supplierId ? { supplierId } : {}),
-    ...(raw.supplierName ? { supplierName: raw.supplierName } : {}),
-    ...(freight !== undefined ? { freight } : {}),
-    ...(priceListId ? { priceListId } : {}),
-    ...(raw.priceListReleasedAt
-      ? { priceListReleasedAt: raw.priceListReleasedAt }
+    ...(parseOptionalEntityId(raw.supplierId, `prices[${index}].supplierId`)
+      ? {
+          supplierId: parseOptionalEntityId(
+            raw.supplierId,
+            `prices[${index}].supplierId`,
+          ),
+        }
       : {}),
+    ...(raw.supplierName ? { supplierName: raw.supplierName } : {}),
   }
 }
 

@@ -1,4 +1,11 @@
-import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
+import type {
+  Brand,
+  PriceData,
+  PriceRow,
+  PriceSheet,
+  SheetInputs,
+  Variety,
+} from './types'
 
 export const CATEGORIES = ['螺纹钢', '盘螺', '高线', '圆钢']
 export const SPECS: Record<string, number[]> = {
@@ -30,8 +37,151 @@ export const dataKeyOf = (row: PriceRow) =>
     ? `${canonicalCategory(row.category)}|${row.material}`
     : ''
 
+/** 现货价供应商下拉选项: 携带经营品牌用于按品牌列过滤。 */
+export type SupplierSelectOption = {
+  value: string
+  label: string
+  /** 经营品牌(商品品牌名称), 缺省视为未绑定任何品牌。 */
+  brands?: string[]
+}
+
+/**
+ * 按品牌列过滤供应商选项。
+ *
+ * - 品牌名称为空 → 返回全部(保持兼容)。
+ * - 存在至少一个绑定该品牌的供应商 → 只返回绑定供应商。
+ * - 无任何供应商绑定该品牌 → 回退返回全部(避免下拉为空)。
+ */
+export function filterSupplierOptionsByBrand(
+  options: SupplierSelectOption[],
+  brandName: string | undefined,
+): SupplierSelectOption[] {
+  if (!brandName) return options
+  const bound = options.filter((option) => option.brands?.includes(brandName))
+  return bound.length > 0 ? bound : options
+}
+
+/** 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。 */
+export const productKeyOf = (row: PriceRow) =>
+  row.category && row.material
+    ? `${row.category}|${row.material}|${row.spec}|${row.length}`
+    : ''
+
+export function syncSpotInputs(
+  rows: PriceRow[],
+  inputs: SheetInputs,
+  brandName: string,
+  rowId: string,
+  value: number | undefined,
+): { inputs: SheetInputs; targets: PriceRow[] } {
+  const source = rows.find((row) => row.id === rowId)
+  if (!source) return { inputs, targets: [] }
+  const key = productKeyOf(source)
+  const targets = rows.filter(
+    (row) => row.id === rowId || (key && productKeyOf(row) === key),
+  )
+  const next: SheetInputs = { ...inputs }
+  for (const target of targets) {
+    const inputKey = `${brandName}:${target.id}`
+    next[inputKey] = { ...(next[inputKey] ?? {}), spot: value }
+  }
+  return { inputs: next, targets }
+}
+
+/**
+ * 对账式现货联动：同批次内，若某行某品牌缺现货价，而同商品(类别+材质+规格+长度)的其它行已有现货价，
+ * 则自动套用，避免同一商品在不同行重复输入。返回新 inputs；无变化时返回原对象。
+ */
+export function reconcileSpotInputs(
+  rows: PriceRow[],
+  inputs: SheetInputs,
+  brandNames: string[],
+): SheetInputs {
+  const spotByProduct = new Map<string, number>()
+  for (const row of rows) {
+    const key = productKeyOf(row)
+    if (!key) continue
+    for (const brand of brandNames) {
+      const spot = inputs[`${brand}:${row.id}`]?.spot
+      if (spot !== undefined) spotByProduct.set(`${brand}\u0000${key}`, spot)
+    }
+  }
+
+  let changed = false
+  const next: SheetInputs = { ...inputs }
+  for (const row of rows) {
+    const key = productKeyOf(row)
+    if (!key) continue
+    for (const brand of brandNames) {
+      const inputKey = `${brand}:${row.id}`
+      if (next[inputKey]?.spot !== undefined) continue
+      const spot = spotByProduct.get(`${brand}\u0000${key}`)
+      if (spot !== undefined) {
+        next[inputKey] = { ...(next[inputKey] ?? {}), spot }
+        changed = true
+      }
+    }
+  }
+  return changed ? next : inputs
+}
+
+/**
+ * 批量填入同一供应商(仅改供应商简称, 不动现货价)。
+ *
+ * - 覆盖语义: 目标行已有供应商时改为新供应商, 便于换第 N 家重新报价。
+ * - 只处理商品行; 隔断行忽略。
+ * - 供应商置空时等价于清除简称, 与单格清除保持一致(无其它字段则删除该输入)。
+ * 返回新 inputs; 无变化时返回原对象。
+ */
+export function fillSupplierInputs(
+  rows: PriceRow[],
+  inputs: SheetInputs,
+  brandName: string,
+  rowIds: string[],
+  option: { value: string; label: string } | undefined,
+): SheetInputs {
+  const targets = new Set(rowIds)
+  let changed = false
+  const next: SheetInputs = { ...inputs }
+  for (const row of rows) {
+    if (!targets.has(row.id) || isSeparatorRow(row)) continue
+    const key = `${brandName}:${row.id}`
+    const prev = next[key] ?? {}
+    if (option) {
+      if (
+        prev.supplierId === option.value &&
+        prev.supplierName === option.label
+      )
+        continue
+      next[key] = {
+        ...prev,
+        supplierId: option.value,
+        supplierName: option.label,
+      }
+      changed = true
+      continue
+    }
+    if (prev.supplierId === undefined && prev.supplierName === undefined)
+      continue
+    const {
+      supplierId: _supplierId,
+      supplierName: _supplierName,
+      ...rest
+    } = prev
+    if (rest.spot === undefined && rest.ton === undefined) {
+      delete next[key]
+    } else {
+      next[key] = rest
+    }
+    changed = true
+  }
+  return changed ? next : inputs
+}
+
 /** 12米加价生效的品种(业务规则) */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
+/** 现货价合理上限(元/吨), 超出提示 */
+export const SPOT_PRICE_MAX = 20000
 /** 默认 12 米加价(元/吨) */
 export const DEFAULT_LENGTH_PREMIUM = 30
 
@@ -59,13 +209,13 @@ export const SHEET_COLUMN_WIDTH = {
   /** 网价列: 4 位数字(14px 下约 34px) + 单元格左右留白(12px), 60 已足够。 */
   net: 74,
   /**
-   * 现货价列: 只读展示价格表推导价 + 来源文字标记(「价格表」), 无价时展示占位「—」。
+   * 现货价列: 4 位数字 + 输入框左右内边距(antd small 各 7px) + 单元格左右留白(12px)。
    *
-   * <p>14px 字号下 4 位数字约 34px; 来源标记「价格表」三字约 33px, 再加单元格左右留白
-   * 12px 与 4px 间距: 34+33+4+12=83, 取 96 留余量(既要容下数字, 也要容下标记)。
-   * 16/18 档按同一比例加宽后同样富余。</p>
+   * <p>14px 字号下 4 位数字约 34px, 输入框内容宽需要 34+14=48px; 原来 58 的列宽只能给出
+   * 45px(实测 input.clientWidth), 末位数字被裁成 `353(`。72 留出约 11px 余量, 16/18 档
+   * 按同一比例加宽后同样富余。</p>
    */
-  spot: 96,
+  spot: 72,
   /** 差价列: 4 位数字 + 角标左右内边距(各 4px) + 单元格左右留白(12px), 50 会让角标越出单元格。 */
   diff: 58,
   /** 供应商简称列 */

@@ -30,24 +30,17 @@ describe('比价页样式无障碍契约', () => {
     expect(block).toMatch(/min-height:\s*24px/)
   })
 
-  it('吨位明细图标命中区不小于 24×24(WCAG 2.5.8)', () => {
+  it('表头一键填入与吨位明细图标命中区不小于 24×24', () => {
+    const fill = blockOf(
+      pageCss,
+      '.price-compare-supplier-header .price-compare-supplier-fill-btn',
+    )
+    expect(fill).toMatch(/min-width:\s*24px/)
+    expect(fill).toMatch(/min-height:\s*24px/)
+
     const info = blockOf(pageCss, '.price-compare-ton-info {')
     expect(info).toMatch(/min-width:\s*24px/)
     expect(info).toMatch(/min-height:\s*24px/)
-  })
-
-  it('「一键填入供应商」入口已删除, 且不留下无主样式', () => {
-    for (const selector of [
-      '.price-compare-supplier-header',
-      '.price-compare-supplier-fill',
-      '.price-compare-fill-selected-btn',
-      // 旧的单元格人工选择供应商(Select)样式
-      '.price-compare-supplier .ant-select',
-    ]) {
-      expect(pageCss, `${selector} 的样式应随入口一并删除`).not.toContain(
-        selector,
-      )
-    }
   })
 
   it('行操作列收窄到 icon-only 最小值, 且单元格留白不把列撑大', () => {
@@ -73,16 +66,6 @@ describe('比价页样式无障碍契约', () => {
   it('icon-only 按钮的触摸热区由 ::before 补足到至少 24×24(WCAG 2.5.8)', () => {
     expect(touchTargetsCss).toMatch(/width:\s*max\(100%,\s*24px\)/)
     expect(touchTargetsCss).toMatch(/height:\s*max\(100%,\s*24px\)/)
-  })
-
-  it('现货价来源标记用文字(不靠颜色), 且已无「恢复为价格表价」按钮样式', () => {
-    // 来源标记是文字节点(价格表), 样式只做弱化, 不承载语义
-    const marker = blockOf(pageCss, '.price-compare-spot-source {')
-    expect(marker).toMatch(/font-size:\s*11px/)
-    expect(marker).toMatch(/color:\s*var\(--text-secondary\)/)
-
-    // 手填覆盖已删除: 恢复按钮的样式规则必须一并移除, 避免留下无主样式
-    expect(pageCss).not.toContain('.price-compare-spot-restore')
   })
 
   it('行选择框可点区域不小于 24×24', () => {
@@ -114,6 +97,11 @@ describe('比价页样式无障碍契约', () => {
 
   it('语义色文字使用满足 4.5:1 的深色令牌', () => {
     // antd 默认 primary(#1677ff, 4.1:1) 与 error(#ff4d4f, 3.27:1) 对 11–12px 小字偏低
+    const fill = blockOf(
+      pageCss,
+      '.price-compare-supplier-header .price-compare-supplier-fill-btn',
+    )
+    expect(fill).toContain('var(--color-info-active')
     expect(blockOf(pageCss, '.price-compare-ton-hint--over')).toContain(
       'var(--color-danger-active',
     )
