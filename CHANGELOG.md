@@ -1,3 +1,16 @@
+## [11.0.1](https://github.com/PolarisTime/Aries/compare/v11.0.0...v11.0.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **modules:** 修复选单器滚动时表格固定列穿透筛选与已选面板 ([3753577](https://github.com/PolarisTime/Aries/commit/37535779b03801bf5f353ce4c19eb8c96a8480a0))
+* **tabs:** 未挂载页签不再丢失跳转携带的一次性意图 ([d3ec440](https://github.com/PolarisTime/Aries/commit/d3ec44095ee105256afe89de49f3eca3226e88d1))
+
+
+### Reverts
+
+* **pricelist:** 回退供应商价格表改造, 比价恢复手填现货价与供应商 ([0016e49](https://github.com/PolarisTime/Aries/commit/0016e497ff66111c7e1158dc190975e72219054d))
+
 # [11.0.0](https://github.com/PolarisTime/Aries/compare/v10.37.0...v11.0.0) (2026-09-28)
 
 
