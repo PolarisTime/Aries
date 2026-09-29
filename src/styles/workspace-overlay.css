@@ -151,7 +151,10 @@
 .parent-selector-top {
   position: sticky;
   top: calc(var(--app-overlay-body-padding, 24px) * -1);
-  z-index: 2;
+  /* 必须高于 antd 表格固定列（.ant-table-cell-fix 为 position: sticky；实测表头 10、
+     数据行 11），否则纵向滚动时表格左侧固定列（勾选列/明细展开列）会穿透筛选与
+     「已选单据」面板，看起来像表头与数据列错位。 */
+  z-index: 20;
   margin: calc(var(--app-overlay-body-padding, 24px) * -1)
     calc(var(--app-overlay-body-padding, 24px) * -1) 0;
   padding: var(--app-overlay-body-padding, 24px)
