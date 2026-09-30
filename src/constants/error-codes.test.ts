@@ -17,6 +17,9 @@ describe('ERROR_CODE', () => {
     expect(ERROR_CODE.NOT_FOUND).toBe(4040)
     expect(ERROR_CODE.CONCURRENT_MODIFICATION).toBe(4090)
     expect(ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT).toBe(4091)
+    // 幂等冲突：与后端 ErrorCode.IDEMPOTENCY_CONFLICT 同步（HTTP 409，
+    // 刻意不复用 4090，因为两者对用户的引导不同：等待 vs 刷新重试）
+    expect(ERROR_CODE.IDEMPOTENCY_CONFLICT).toBe(4092)
   })
 
   it('请求格式与业务错误码', () => {
@@ -28,6 +31,8 @@ describe('ERROR_CODE', () => {
 
   it('服务端错误码', () => {
     expect(ERROR_CODE.INTERNAL_ERROR).toBe(5000)
+    // 依赖服务不可用（Redis 抖动等）为 5030 + HTTP 503，不再伪装成 5000
+    expect(ERROR_CODE.SERVICE_UNAVAILABLE).toBe(5030)
   })
 
   it('错误码互不重复', () => {
