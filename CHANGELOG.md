@@ -1,3 +1,10 @@
+# [11.1.0](https://github.com/PolarisTime/Aries/compare/v11.0.1...v11.1.0) (2026-10-03)
+
+
+### Features
+
+* **constants:** 同步后端错误码 IDEMPOTENCY_CONFLICT 与 SERVICE_UNAVAILABLE ([e8db8a6](https://github.com/PolarisTime/Aries/commit/e8db8a6199e00e0321d4468db2a3080f4c3046d5))
+
 ## [11.0.1](https://github.com/PolarisTime/Aries/compare/v11.0.0...v11.0.1) (2026-09-29)
 
 
