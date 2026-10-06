@@ -218,8 +218,19 @@ export const SHEET_COLUMN_WIDTH = {
   spot: 72,
   /** 差价列: 4 位数字 + 角标左右内边距(各 4px) + 单元格左右留白(12px), 50 会让角标越出单元格。 */
   diff: 58,
-  /** 供应商简称列 */
-  supplier: 92,
+  /**
+   * 供应商简称列: 立约「4 个汉字完整可见」。
+   *
+   * <p>简称是汉字, 宽度恒为 1em, 4 字在 14px 下需要 56px 文本宽。列宽里还有一截固定开销
+   * (单元格左右留白 + antd v6 Select 根节点左右内边距 + `.ant-select-content` 右外边距 +
+   * 尾部箭头): 真机实测为 14px 档 47px、16px 档 49px、18px 档 52px, 因此下界是
+   * 47 + 4×14 = 103px。</p>
+   *
+   * <p>真机实测(PingFang SC, 基准字号): 92px 列宽下简称单元格的 `.ant-select-content`
+   * 只有 45px(clientWidth), 4 字(56px)被省略成「中天钢…」。108px 给出 61px 文本宽,
+   * 余量 5px; 16/18 档按同一比例换算后余量分别约 10px / 15px。</p>
+   */
+  supplier: 108,
 } as const
 
 /** {@link SHEET_COLUMN_WIDTH} 的基准字号(px), 也是个人设置未配置时的默认字号。 */

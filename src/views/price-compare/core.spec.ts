@@ -914,4 +914,43 @@ describe('列宽按字号自适应', () => {
       ISSUED_SHORT_TEXT_WIDTH,
     )
   })
+
+  /*
+   * 供应商简称列「4 个汉字完整可见」的契约。
+   *
+   * 真机实测(PingFang SC, antd v6 Select): 简称显示在 `.ant-select-content` 内, 汉字宽度 = 1em
+   * (14px 下 4 字 = 56px); 列宽里另有一截开销 —— 单元格左右留白 + Select 根节点左右内边距 +
+   * content 右外边距 + 尾部箭头, 实测 14px 档 47px、16px 档 49px、18px 档 52px。
+   * 旧列宽 92px 在基准字号下只给 content 45px(clientWidth), 4 字被省略成「中天钢…」。
+   */
+  const ABBR_CHAR_COUNT = 4
+  const SUPPLIER_CELL_CHROME: Record<number, number> = {
+    14: 47,
+    16: 49,
+    18: 52,
+  }
+  /** 简称列实际可用的文本宽(px), 按实测开销扣除。 */
+  const supplierAvailableWidth = (fontSize: number) =>
+    sheetColumnWidths(fontSize).supplier -
+    (SUPPLIER_CELL_CHROME[fontSize] ?? 52)
+
+  it('14/16/18 三档下简称列都容得下 4 个汉字', () => {
+    for (const fontSize of [14, 16, 18]) {
+      expect(supplierAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
+        ABBR_CHAR_COUNT * fontSize,
+      )
+    }
+    // 与真机 clientWidth 对齐: 108 - 47 = 61px 可用 vs 56px 需求
+    expect(supplierAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(61)
+  })
+
+  it('简称列宽回归保护: 92 在 14px 下放不下 4 个汉字(实测 content.clientWidth=45)', () => {
+    expect(92 - SUPPLIER_CELL_CHROME[SHEET_WIDTH_BASE_FONT_SIZE]).toBeLessThan(
+      ABBR_CHAR_COUNT * SHEET_WIDTH_BASE_FONT_SIZE,
+    )
+    expect(SHEET_COLUMN_WIDTH.supplier).toBeGreaterThanOrEqual(
+      SUPPLIER_CELL_CHROME[SHEET_WIDTH_BASE_FONT_SIZE] +
+        ABBR_CHAR_COUNT * SHEET_WIDTH_BASE_FONT_SIZE,
+    )
+  })
 })
