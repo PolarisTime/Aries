@@ -1,3 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
+import { getRuntimeConfig } from '@/api/system/runtime-config'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_LONG } from '@/constants/query-policies'
 import { MarketSyncDetailCard } from './market-sync-detail-card'
 import { MarketSyncMatrix } from './market-sync-matrix'
 import { MarketSyncStatusBar } from './market-sync-status-bar'
@@ -6,6 +10,12 @@ import { useMarketSync } from './useMarketSync'
 
 /** 行情同步: 覆盖矩阵(近30天) + 内联明细 + 单日/区间补数。 */
 export function MarketSyncView() {
+  const { data: runtimeConfig } = useQuery({
+    queryKey: QUERY_KEYS.runtimeConfig,
+    queryFn: getRuntimeConfig,
+    staleTime: STALE_LONG,
+  })
+
   const {
     applyFilters,
     backfillDays,
@@ -65,6 +75,7 @@ export function MarketSyncView() {
         onSourceChange={setSource}
         region={region}
         onRegionChange={setRegion}
+        quoteRegions={runtimeConfig?.business?.quoteRegions}
       />
 
       <MarketSyncStatusBar

@@ -356,6 +356,7 @@ export function ProjectPage() {
           editorBaseRecord={editorBaseRecord}
           form={form}
           customerOptions={customerOptions}
+          quoteRegions={runtimeConfig?.business?.quoteRegions}
           settlementCompanyOptions={settlementCompanyOptions}
           onClose={closeEditor}
           onSaved={handleEditorSaved}

@@ -21,6 +21,22 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/api/market/steel-quotes', () => api)
 
+vi.mock('@/api/system/runtime-config', () => ({
+  getRuntimeConfig: vi.fn(() =>
+    Promise.resolve({
+      ui: { defaultPageSize: 10, showSnowflakeId: false },
+      business: {
+        statement: { customerReceiptAmountZero: true },
+        quoteRegions: ['杭州', '南京'],
+      },
+      features: {
+        weightOnlyPurchaseInbound: false,
+        weightOnlySalesOutbound: false,
+      },
+    }),
+  ),
+}))
+
 vi.mock('@/utils/antd-app', () => ({
   message: {
     success: vi.fn(),
@@ -255,5 +271,50 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     })
     const lastCall = api.fetchSteelQuoteCalendars.mock.calls.at(-1)
     expect(lastCall?.[3]).toBe('STEELX')
+  })
+
+  it('西本地区下拉使用后端 runtime-config 动态下发的地区', async () => {
+    api.fetchSteelQuoteCalendars.mockResolvedValue([])
+    api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })
+    api.fetchBackfillStatus.mockResolvedValue(idleBackfillStatus)
+
+    renderView()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const sourceSelect = container.querySelector('.ant-select')
+    await act(async () => {
+      sourceSelect?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const steelxOption = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    ).find((el) => el.textContent?.includes('西本'))
+    await act(async () => {
+      steelxOption?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 西本下第二个 select 即地区下拉
+    const regionSelect = container.querySelectorAll('.ant-select')[1]
+    expect(regionSelect).toBeTruthy()
+    await act(async () => {
+      regionSelect?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const optionTexts = [
+      ...document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    ].map((node) => node.textContent?.trim())
+    expect(optionTexts).toContain('南京')
+    expect(optionTexts).not.toContain('绍兴')
   })
 })

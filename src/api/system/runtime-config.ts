@@ -14,6 +14,11 @@ const runtimeConfigResponseSchema = z.object({
     statement: z.object({
       customerReceiptAmountZero: z.boolean(),
     }),
+    // 取价地区权威值来自后端 steelx-quote.regions; 旧版本后端未下发时回退空数组, 由前端兜底默认值。
+    quoteRegions: z
+      .array(z.string())
+      .nullish()
+      .transform((value) => value ?? []),
   }),
   features: z.object({
     weightOnlyPurchaseInbound: z.boolean(),

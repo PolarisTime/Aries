@@ -9,6 +9,8 @@ export interface RuntimeStatementConfig {
 
 export interface RuntimeBusinessConfig {
   statement: RuntimeStatementConfig
+  /** 西本(STEELX)支持的取价地区(城市中文名); 由后端 leo.market.steelx-quote.regions 动态下发。 */
+  quoteRegions: string[]
 }
 
 export interface RuntimeFeatureConfig {

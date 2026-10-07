@@ -1,10 +1,11 @@
 import type { FormInstance } from 'antd'
 import { Button, Col, Form, Input, Row, Select, Space } from 'antd'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { resolveQuoteRegions } from '@/constants/quote-regions'
 import { STATUS } from '@/constants/status-constants'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
@@ -19,9 +20,6 @@ import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 import { ProjectPriceRuleEditor } from './ProjectPriceRuleEditor'
 
 const MODULE_KEY: ModuleKey = 'project'
-
-/** 西本支持的地区(与后端 steelx-quote.regions 保持一致)。 */
-const QUOTE_REGIONS = ['杭州', '上海', '宁波', '嘉兴', '绍兴']
 
 export interface ProjectEditorValues {
   projectCode?: string
@@ -56,6 +54,8 @@ interface ProjectEditorOverlayProps {
   editorBaseRecord: LegacyModuleRecord | null
   form: FormInstance<ProjectEditorValues>
   customerOptions: CustomerOption[]
+  /** 取价地区选项: 来自后端 runtime-config 的 business.quoteRegions。 */
+  quoteRegions?: string[]
   settlementCompanyOptions: Array<{
     id: string
     companyName: string
@@ -70,12 +70,21 @@ export function ProjectEditorOverlay({
   editorBaseRecord,
   form,
   customerOptions,
+  quoteRegions,
   settlementCompanyOptions,
   onClose,
   onSaved,
 }: ProjectEditorOverlayProps) {
   const { t } = useTranslation()
   const [saving, setSaving] = useState(false)
+  const quoteRegionOptions = useMemo(
+    () =>
+      resolveQuoteRegions(quoteRegions).map((region) => ({
+        label: region,
+        value: region,
+      })),
+    [quoteRegions],
+  )
 
   const syncProjectForm = (changed: Record<string, unknown>) => {
     if (Object.hasOwn(changed, 'customerId')) {
@@ -308,13 +317,7 @@ export function ProjectEditorOverlay({
               name="quoteRegion"
               label={t('modules.pages.project.quoteRegion')}
             >
-              <Select
-                allowClear
-                options={QUOTE_REGIONS.map((region) => ({
-                  label: region,
-                  value: region,
-                }))}
-              />
+              <Select allowClear options={quoteRegionOptions} />
             </Form.Item>
           </Col>
           <Col span={24}>

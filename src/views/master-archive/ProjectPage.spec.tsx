@@ -52,7 +52,13 @@ vi.mock('@/queries/system/company-settings', async (importOriginal) => {
 })
 vi.mock('@/api/system/runtime-config', () => ({
   getRuntimeConfig: vi.fn(() =>
-    Promise.resolve({ ui: { defaultPageSize: 10 } }),
+    Promise.resolve({
+      ui: { defaultPageSize: 10 },
+      business: {
+        statement: { customerReceiptAmountZero: true },
+        quoteRegions: ['杭州', '南京'],
+      },
+    }),
   ),
 }))
 vi.mock('@/views/modules/components/ModuleAttachmentModal', () => ({
@@ -497,6 +503,39 @@ describe('ProjectPage 主数据拆分试点', () => {
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
     expect((draft as { id?: string }).id).toBe('9001')
     expect((draft as { projectName?: string }).projectName).toBe('项目一')
+  })
+
+  it('编辑项目资料：取价地区下拉使用后端 runtime-config 动态下发的地区', async () => {
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+    expect(document.body.textContent).toContain('编辑 — 项目资料')
+
+    // 弹层内第 5 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区
+    const overlay = document.body.querySelector('.workspace-overlay')
+    const selectRoots = overlay!.querySelectorAll('.ant-select')
+    await act(async () => {
+      selectRoots[4]?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const optionTexts = [
+      ...document.body.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    ].map((node) => node.textContent?.trim())
+    // 后端下发 ['杭州','南京']: 应出现南京, 且不再使用前端兜底默认里的绍兴
+    expect(optionTexts).toContain('南京')
+    expect(optionTexts).not.toContain('绍兴')
   })
 
   it('勾选记录后执行批量删除', async () => {

@@ -9,13 +9,12 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { resolveQuoteRegions } from '@/constants/quote-regions'
 import { PERIODS } from './market-sync-model'
 
 const { Text } = Typography
-
-/** 西本支持的地区(与后端 steelx-quote.regions 一致)。 */
-const QUOTE_REGIONS = ['杭州', '上海', '宁波', '嘉兴', '绍兴']
 
 export function MarketSyncToolbar({
   backfillDays,
@@ -34,6 +33,7 @@ export function MarketSyncToolbar({
   onSourceChange,
   region,
   onRegionChange,
+  quoteRegions,
 }: {
   backfillDays: number
   backfilling: boolean
@@ -51,8 +51,18 @@ export function MarketSyncToolbar({
   onSourceChange: (source: 'MYSTEEL' | 'STEELX') => void
   region?: string
   onRegionChange: (region: string | undefined) => void
+  /** 取价地区选项: 来自后端 runtime-config 的 business.quoteRegions。 */
+  quoteRegions?: string[]
 }) {
   const { t } = useTranslation()
+  const quoteRegionOptions = useMemo(
+    () =>
+      resolveQuoteRegions(quoteRegions).map((city) => ({
+        value: city,
+        label: city,
+      })),
+    [quoteRegions],
+  )
   return (
     <div className="price-compare-head">
       <div>
@@ -80,10 +90,7 @@ export function MarketSyncToolbar({
               style={{ width: 100 }}
               value={region}
               placeholder={t('marketSync.region')}
-              options={QUOTE_REGIONS.map((item) => ({
-                value: item,
-                label: item,
-              }))}
+              options={quoteRegionOptions}
               onChange={onRegionChange}
               allowClear
             />
