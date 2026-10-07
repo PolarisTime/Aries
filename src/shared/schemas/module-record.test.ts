@@ -112,6 +112,67 @@ const page = (record: object) => ({
   hasMore: false,
 })
 
+describe('采购订单货值与入库进度契约', () => {
+  it('列表响应缺少新字段时仍可解析', () => {
+    const response = getMainFlowListResponseSchema('purchase-order').parse(
+      page(purchaseOrder),
+    )
+
+    expect(response.content[0].totalReceivedQuantity).toBeUndefined()
+    expect(response.content[0].totalActualAmount).toBeUndefined()
+    expect(response.content[0].totalAmountDifference).toBeUndefined()
+  })
+
+  it('详情响应解析实际货值与已入库件数', () => {
+    const parsed = getMainFlowDetailResponseSchema('purchase-order').parse({
+      ...purchaseOrder,
+      totalReceivedQuantity: 7,
+      totalRemainingQuantity: 1,
+      totalActualAmount: 12800.5,
+      totalAmountDifference: 300.25,
+      items: [purchaseOrderItem],
+      chargeItems: [],
+    })
+
+    expect(parsed.totalReceivedQuantity).toBe(7)
+    expect(parsed.totalActualAmount).toBe(12800.5)
+    expect(parsed.totalAmountDifference).toBe(300.25)
+  })
+
+  it('差额为负数（需退款）时保留符号', () => {
+    const parsed = getMainFlowDetailResponseSchema('purchase-order').parse({
+      ...purchaseOrder,
+      totalAmountDifference: -420.75,
+      items: [purchaseOrderItem],
+      chargeItems: [],
+    })
+
+    expect(parsed.totalAmountDifference).toBe(-420.75)
+  })
+
+  it('BigDecimal 以字符串返回时归一化为数字，可空字段保持 null', () => {
+    const fromString = getMainFlowListResponseSchema('purchase-order').parse(
+      page({
+        ...purchaseOrder,
+        totalActualAmount: '9999.10',
+        totalAmountDifference: '-100.00',
+      }),
+    )
+    const nullable = getMainFlowListResponseSchema('purchase-order').parse(
+      page({
+        ...purchaseOrder,
+        totalActualAmount: null,
+        totalAmountDifference: null,
+      }),
+    )
+
+    expect(fromString.content[0].totalActualAmount).toBe(9999.1)
+    expect(fromString.content[0].totalAmountDifference).toBe(-100)
+    expect(nullable.content[0].totalActualAmount).toBeNull()
+    expect(nullable.content[0].totalAmountDifference).toBeNull()
+  })
+})
+
 describe('订单引用状态响应契约', () => {
   it('采购订单列表缺少引用状态时默认为未引用', () => {
     const response = getMainFlowListResponseSchema('purchase-order').parse(

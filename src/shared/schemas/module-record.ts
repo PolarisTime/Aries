@@ -129,6 +129,12 @@ const purchaseOrderRecordShape = {
   referencedByPurchaseInbound: z.boolean().default(false),
   /** 订单级未入库件数：各明细行「订单量 − 已入库量」之和（列表与详情均返回）。 */
   totalRemainingQuantity: optionalNonNegativeIntegerSchema,
+  /** 订单级已入库件数：各明细行已入库量之和（列表与详情均返回，可选）。 */
+  totalReceivedQuantity: optionalNonNegativeIntegerSchema,
+  /** 实际货值 = Σ（过磅实际重 × 单价）；BigDecimal 可序列化为字符串或数字，可空可缺省。 */
+  totalActualAmount: nullableResponseDecimalSchema.optional(),
+  /** 差额（补退）= 实际货值 − 暂定金额；正数为需补款，负数为需退款，可空可缺省。 */
+  totalAmountDifference: nullableResponseDecimalSchema.optional(),
 }
 
 const purchaseOrderListRecordSchema = z

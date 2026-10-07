@@ -21,12 +21,19 @@ import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-util
 import { statusMap as sharedStatusMap } from '../shared/shared-status'
 import {
   buildPurchaseOrderOverview,
+  renderPurchaseOrderActualAmount,
+  renderPurchaseOrderAmountDifference,
   renderPurchaseOrderNo,
+  renderPurchaseOrderReceiptProgress,
+  renderPurchaseOrderTotalAmount,
+  renderPurchaseOrderWeightVariance,
 } from './purchase-order-rules'
 import { renderDerivedQuantity } from './sales-order-rules'
 
 // 行尾只读派生列：未入库件数由后端聚合返回，仅用于展示。
-type PurchaseOrderDerivedItemColumnKey = 'remainingQuantity'
+type PurchaseOrderDerivedItemColumnKey =
+  | 'remainingQuantity'
+  | 'weightVarianceTon'
 
 // 采购订单明细列：批号版结构 + 实际重量列（位于重量吨之后、单价之前）。
 // 行尾追加只读「未入库」件数（订单量 − 已入库量），仅用于展示。
@@ -47,6 +54,7 @@ const purchaseOrderItemColumnConfig: ModuleItemColumnConfig<PurchaseOrderDerived
       'pieceWeightTon',
       'weightTon',
       'actualWeightTon',
+      'weightVarianceTon',
       'unitPrice',
       'amount',
       'remainingQuantity',
@@ -65,7 +73,27 @@ const purchaseOrderItemColumnConfig: ModuleItemColumnConfig<PurchaseOrderDerived
       'unitPrice',
       'amount',
     ],
+    // 采购专属语义：暂定件重/暂定重量按计划计，码头过磅重为实测结果。
+    overrides: {
+      pieceWeightTon: {
+        labelKey: 'modules.pages.purchaseOrder.itemLabelPieceWeightTon',
+      },
+      weightTon: {
+        labelKey: 'modules.pages.purchaseOrder.itemLabelWeightTon',
+      },
+      actualWeightTon: {
+        labelKey: 'modules.pages.purchaseOrder.itemLabelActualWeightTon',
+      },
+    },
     privateColumns: [
+      {
+        title: i18next.t('modules.pages.purchaseOrder.weightVarianceTon'),
+        dataIndex: 'weightVarianceTon',
+        width: 96,
+        align: 'right',
+        type: 'weight',
+        render: renderPurchaseOrderWeightVariance,
+      },
       {
         title: i18next.t('modules.columns.remainingQuantity'),
         dataIndex: 'remainingQuantity',
@@ -75,8 +103,8 @@ const purchaseOrderItemColumnConfig: ModuleItemColumnConfig<PurchaseOrderDerived
         render: renderDerivedQuantity,
       },
     ],
-    // 未入库件数仅在列表展开明细只读展示，采购订单编辑器默认隐藏，避免干扰录单。
-    hiddenByDefault: ['remainingQuantity'],
+    // 未入库件数与磅差列仅在只读展示场景暴露，采购订单编辑器默认隐藏，避免干扰录单。
+    hiddenByDefault: ['remainingQuantity', 'weightVarianceTon'],
     projections: {
       saveResult: [
         'brand',
@@ -194,6 +222,30 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       width: 110,
       align: 'right',
       type: 'amount',
+      render: renderPurchaseOrderTotalAmount,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseOrder.colActualAmount'),
+      dataIndex: 'totalActualAmount',
+      width: 116,
+      align: 'right',
+      type: 'amount',
+      render: renderPurchaseOrderActualAmount,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseOrder.colAmountDifference'),
+      dataIndex: 'totalAmountDifference',
+      width: 120,
+      align: 'right',
+      type: 'amount',
+      render: renderPurchaseOrderAmountDifference,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseOrder.colReceiptProgress'),
+      dataIndex: 'totalReceivedQuantity',
+      width: 120,
+      align: 'center',
+      render: renderPurchaseOrderReceiptProgress,
     },
     {
       title: i18next.t('modules.columns.remainingQuantity'),

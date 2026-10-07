@@ -1,8 +1,19 @@
+import { Tag } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
 import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
+import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleRecord } from '@/types/module-page'
+import { formatAmount, formatWeight } from '@/utils/formatters'
 import { buildAmountWeightOverview } from '../shared/shared'
+
+function toFiniteOrNull(value: unknown): number | null {
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
 
 export function renderPurchaseOrderNo(
   value: unknown,
@@ -39,4 +50,108 @@ export function renderPurchaseOrderNo(
 
 export function buildPurchaseOrderOverview(rows: ModuleRecord[]) {
   return buildAmountWeightOverview(rows, 'totalAmount')
+}
+
+/** 「总金额」列：暂定金额（按暂定件重计）后附「暂定」标签，说明该金额用于打款。 */
+export function renderPurchaseOrderTotalAmount(
+  value: unknown,
+): React.ReactNode {
+  const numericValue = toFiniteOrNull(value)
+  const amount = numericValue === null ? '-' : formatAmount(numericValue)
+  return React.createElement(
+    'span',
+    { className: 'purchase-order-provisional-amount' },
+    amount,
+    React.createElement(
+      Tag,
+      {
+        color: 'orange',
+        className: 'purchase-order-provisional-amount-tag',
+        title: i18next.t('modules.pages.purchaseOrder.provisionalAmountHint'),
+      },
+      i18next.t('modules.pages.purchaseOrder.provisionalAmountTag'),
+    ),
+  )
+}
+
+/** 「实际货值」列：过磅实际重×单价汇总，空值兜底为短横线。 */
+export function renderPurchaseOrderActualAmount(
+  value: unknown,
+): React.ReactNode {
+  const numericValue = toFiniteOrNull(value)
+  return numericValue === null ? '-' : formatAmount(numericValue)
+}
+
+/** 「差额」列：正数=需补款（红），负数=需退款（绿），零/空=不显示标识。 */
+export function renderPurchaseOrderAmountDifference(
+  value: unknown,
+): React.ReactNode {
+  const numericValue = toFiniteOrNull(value)
+  if (numericValue === null) {
+    return '-'
+  }
+  const amount = formatAmount(Math.abs(numericValue))
+  if (numericValue > 0) {
+    return React.createElement(
+      Tag,
+      { color: 'red' },
+      `${i18next.t('modules.pages.purchaseOrder.amountDifferencePay')} ${amount}`,
+    )
+  }
+  if (numericValue < 0) {
+    return React.createElement(
+      Tag,
+      { color: 'green' },
+      `${i18next.t('modules.pages.purchaseOrder.amountDifferenceRefund')} ${amount}`,
+    )
+  }
+  return amount
+}
+
+/** 「入库进度」列：基于已入库件数与未入库件数推导 未入库/部分入库/已入完。 */
+export function renderPurchaseOrderReceiptProgress(
+  value: unknown,
+  record: ModuleRecord,
+): React.ReactNode {
+  const received = toFiniteOrNull(value)
+  const remaining = toFiniteOrNull(record.totalRemainingQuantity)
+  if (received === null && remaining === null) {
+    return '-'
+  }
+  const receivedQuantity = Math.max(received ?? 0, 0)
+  const remainingQuantity = Math.max(remaining ?? 0, 0)
+  const totalQuantity = receivedQuantity + remainingQuantity
+  const done = remainingQuantity === 0
+  const notStarted = receivedQuantity === 0
+  const color = done ? 'green' : notStarted ? 'default' : 'processing'
+  const statusKey = done
+    ? 'receiptProgressDone'
+    : notStarted
+      ? 'receiptProgressNotStarted'
+      : 'receiptProgressPartial'
+  const detail = i18next.t('modules.pages.purchaseOrder.receiptProgressValue', {
+    received: receivedQuantity,
+    total: totalQuantity,
+  })
+  return React.createElement(
+    Tag,
+    { color },
+    `${i18next.t(`modules.pages.purchaseOrder.${statusKey}`)} ${detail}`,
+  )
+}
+
+/** 明细「磅差(吨)」派生列：actualWeightTon − weightTon，在 render 中计算。 */
+export function renderPurchaseOrderWeightVariance(
+  _value: unknown,
+  record: ModuleRecord,
+): React.ReactNode {
+  const actualWeight = toFiniteOrNull(record.actualWeightTon)
+  const plannedWeight = toFiniteOrNull(record.weightTon)
+  if (actualWeight === null || plannedWeight === null) {
+    return '-'
+  }
+  const variance = Number(
+    (actualWeight - plannedWeight).toFixed(DISPLAY_WEIGHT_PRECISION),
+  )
+  return formatWeight(variance)
 }

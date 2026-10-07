@@ -73,7 +73,7 @@ describe('销售订单明细列', () => {
 })
 
 describe('采购订单明细列', () => {
-  it('包含实际重量列，位于重量吨之后、单价之前；未入库列位于行尾', () => {
+  it('包含磅差派生列，位于实际重量之后、单价之前；未入库列位于行尾', () => {
     const keys = dataIndexes(purchaseOrdersPageConfig)
     expect(keys).toEqual([
       'materialCode',
@@ -90,6 +90,7 @@ describe('采购订单明细列', () => {
       'pieceWeightTon',
       'weightTon',
       'actualWeightTon',
+      'weightVarianceTon',
       'unitPrice',
       'amount',
       'remainingQuantity',
@@ -101,6 +102,17 @@ describe('采购订单明细列', () => {
       (item) => item.dataIndex === 'actualWeightTon',
     )
     expect(column?.type).toBe('weight')
+  })
+
+  it('磅差列为只读重量类型且默认隐藏', () => {
+    const column = purchaseOrdersPageConfig.itemColumns?.find(
+      (item) => item.dataIndex === 'weightVarianceTon',
+    )
+    expect(column?.type).toBe('weight')
+    expect(column?.align).toBe('right')
+    expect(
+      purchaseOrdersPageConfig.itemColumnConfig?.hiddenByDefault,
+    ).toContain('weightVarianceTon')
   })
 
   it('未入库列为只读数量类型，位于行尾', () => {
@@ -117,6 +129,45 @@ describe('采购订单明细列', () => {
     )
     expect(column?.type).toBe('count')
     expect(column?.align).toBe('right')
+  })
+
+  it('列表页在总金额后依次展示实际货值、差额与入库进度列', () => {
+    const keys = purchaseOrdersPageConfig.columns.map((item) => item.dataIndex)
+    const totalAmountIndex = keys.indexOf('totalAmount')
+    expect(keys.slice(totalAmountIndex, totalAmountIndex + 5)).toEqual([
+      'totalAmount',
+      'totalActualAmount',
+      'totalAmountDifference',
+      'totalReceivedQuantity',
+      'totalRemainingQuantity',
+    ])
+  })
+
+  it('实际货值与差额均为右对齐金额列', () => {
+    const actual = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalActualAmount',
+    )
+    const difference = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalAmountDifference',
+    )
+    expect(actual?.type).toBe('amount')
+    expect(actual?.align).toBe('right')
+    expect(difference?.type).toBe('amount')
+    expect(difference?.align).toBe('right')
+  })
+
+  it('入库进度列为自定义渲染列', () => {
+    const column = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalReceivedQuantity',
+    )
+    expect(typeof column?.render).toBe('function')
+  })
+
+  it('实际货值、差额与入库进度列默认可见', () => {
+    const hidden = purchaseOrdersPageConfig.defaultHiddenColumnKeys ?? []
+    expect(hidden).not.toContain('totalActualAmount')
+    expect(hidden).not.toContain('totalAmountDifference')
+    expect(hidden).not.toContain('totalReceivedQuantity')
   })
 })
 
