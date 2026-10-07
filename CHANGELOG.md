@@ -1,3 +1,10 @@
+## [11.1.2](https://github.com/PolarisTime/Aries/compare/v11.1.1...v11.1.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **project:** 取价地区下拉改为读取后端动态地区 ([9090d5d](https://github.com/PolarisTime/Aries/commit/9090d5dd64fb0df5b8f3f9c9be1ae47084d93c98))
+
 ## [11.1.1](https://github.com/PolarisTime/Aries/compare/v11.1.0...v11.1.1) (2026-10-07)
 
 
