@@ -1,3 +1,11 @@
+## [11.1.1](https://github.com/PolarisTime/Aries/compare/v11.1.0...v11.1.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **layouts:** 面包屑跳转由整页重载改为客户端路由 ([2b39417](https://github.com/PolarisTime/Aries/commit/2b3941710f43f261388be9685ce8e5d6762f104e))
+* **price-compare:** 简称列加宽到能完整显示 4 个汉字 ([ba8046b](https://github.com/PolarisTime/Aries/commit/ba8046b73fc92877bb6cdfcd5ef3f86562223788))
+
 # [11.1.0](https://github.com/PolarisTime/Aries/compare/v11.0.1...v11.1.0) (2026-10-03)
 
 
