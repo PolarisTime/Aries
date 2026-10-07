@@ -20,7 +20,11 @@ import {
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import { DETAIL_TOGGLE_COLUMN_ID, useGridColumns } from '@/hooks/useGridColumns'
+import {
+  DETAIL_TOGGLE_COLUMN_ID,
+  type DetailToggleVariant,
+  useGridColumns,
+} from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
@@ -48,6 +52,9 @@ interface Props {
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
   onOpenDetail?: (record: ModuleRecord) => void
+  /** 内联展开的行 key；提供时明细按钮渲染加号/减号并体现展开态。 */
+  expandedRowKeys?: string[]
+  detailVariant?: DetailToggleVariant
 }
 
 function buildAntdColumns({
@@ -128,6 +135,8 @@ export function useBusinessGridTable({
   setSelectedRowMap,
   buildActions,
   onOpenDetail,
+  expandedRowKeys,
+  detailVariant,
 }: Props) {
   const { t } = useTranslation()
   const totalColumnCount = config?.columns?.length ?? 0
@@ -159,6 +168,8 @@ export function useBusinessGridTable({
   const { columns: columnDefs } = useGridColumns({
     config: config ?? fallbackConfig,
     onOpenDetail: config ? onOpenDetail : undefined,
+    expandedRowKeys,
+    variant: detailVariant,
   })
   const allColumnIds = useMemo(
     () =>

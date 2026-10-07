@@ -1,4 +1,4 @@
-import { EyeOutlined } from '@ant-design/icons'
+import { EyeOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons'
 import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { Button, Tooltip } from 'antd'
 import type { ReactNode } from 'react'
@@ -12,6 +12,9 @@ import { asString } from '@/utils/type-narrowing'
 
 export const DETAIL_TOGGLE_COLUMN_ID = 'detail-toggle'
 export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
+
+/** 明细按钮的形态：加号/减号（可展开）或眼睛（打开独立详情）。 */
+export type DetailToggleVariant = 'expand' | 'preview'
 
 function resolveSummaryAmount(record: ModuleRecord) {
   const amount =
@@ -38,9 +41,20 @@ declare module '@tanstack/react-table' {
 interface Props {
   config: ModulePageConfig
   onOpenDetail?: (record: ModuleRecord) => void
+  /**
+   * 内联展开的行 key 集合；提供时明细按钮渲染加号/减号并体现展开态，
+   * 缺省时沿用眼睛图标（打开独立详情浮层）。
+   */
+  expandedRowKeys?: string[]
+  variant?: DetailToggleVariant
 }
 
-export function useGridColumns({ config, onOpenDetail }: Props) {
+export function useGridColumns({
+  config,
+  onOpenDetail,
+  expandedRowKeys,
+  variant,
+}: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
   const { t } = useTranslation()
 
@@ -99,27 +113,50 @@ export function useGridColumns({ config, onOpenDetail }: Props) {
   }
 
   if (onOpenDetail) {
+    const useExpandVariant =
+      variant === 'expand' || (variant === undefined && expandedRowKeys != null)
     columns.push({
       id: DETAIL_TOGGLE_COLUMN_ID,
       header: '',
       meta: {
         width: DETAIL_TOGGLE_COLUMN_WIDTH,
         align: 'center',
-        renderCell: (record: ModuleRecord) => (
-          <Tooltip title={t('hooks.gridColumns.detail')}>
-            <Button
-              aria-label={t('hooks.gridColumns.detail')}
-              className="table-detail-toggle-btn"
-              icon={<EyeOutlined />}
-              onClick={(event) => {
-                event.stopPropagation()
-                onOpenDetail(record)
-              }}
-              size="small"
-              type="text"
-            />
-          </Tooltip>
-        ),
+        renderCell: (record: ModuleRecord) => {
+          const expanded = Boolean(expandedRowKeys?.includes(String(record.id)))
+          const label = useExpandVariant
+            ? expanded
+              ? t('modules.parentSelector.collapseDetail')
+              : t('modules.parentSelector.expandDetail')
+            : t('hooks.gridColumns.detail')
+          return (
+            <Tooltip title={label}>
+              <Button
+                aria-label={label}
+                aria-expanded={useExpandVariant ? expanded : undefined}
+                className={`table-detail-toggle-btn${
+                  expanded ? ' is-active' : ''
+                }`}
+                icon={
+                  useExpandVariant ? (
+                    expanded ? (
+                      <MinusOutlined />
+                    ) : (
+                      <PlusOutlined />
+                    )
+                  ) : (
+                    <EyeOutlined />
+                  )
+                }
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onOpenDetail(record)
+                }}
+                size="small"
+                type="text"
+              />
+            </Tooltip>
+          )
+        },
       },
       cell: () => null,
     })

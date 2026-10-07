@@ -1208,6 +1208,7 @@ export const enUS = {
       inboundNo: 'Inbound No',
       outboundNo: 'Outbound No',
       outboundRemainingQuantity: 'Remaining Outbound Qty',
+      remainingQuantity: 'Not Received',
       weighWeight: 'Weigh Weight',
       weightAdjustmentAmount: 'Weight Adj Amount',
       weightAdjustmentTon: 'Weight Adj(ton)',

@@ -64,6 +64,10 @@ export function useBusinessGridPage({
     setSelectedRowMap: data.setSelectedRowMap,
     buildActions: actions.buildActions,
     onOpenDetail: editor.openGridDetail,
+    expandedRowKeys: editor.shouldUseInlineDetail
+      ? editor.inlineExpandedRowKeys
+      : undefined,
+    detailVariant: editor.shouldUseInlineDetail ? 'expand' : 'preview',
   })
 
   return {

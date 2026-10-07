@@ -23,6 +23,7 @@ export const DERIVED_READONLY_ITEM_COLUMN_KEYS = new Set([
   'weightAdjustmentTon',
   'weightAdjustmentAmount',
   'amount',
+  'remainingQuantity',
   'deliveredQuantity',
   'returnedQuantity',
   'deliveredNetQuantity',

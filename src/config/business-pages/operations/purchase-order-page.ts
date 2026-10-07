@@ -23,54 +23,73 @@ import {
   buildPurchaseOrderOverview,
   renderPurchaseOrderNo,
 } from './purchase-order-rules'
+import { renderDerivedQuantity } from './sales-order-rules'
+
+// 行尾只读派生列：未入库件数由后端聚合返回，仅用于展示。
+type PurchaseOrderDerivedItemColumnKey = 'remainingQuantity'
 
 // 采购订单明细列：批号版结构 + 实际重量列（位于重量吨之后、单价之前）。
-const purchaseOrderItemColumnConfig: ModuleItemColumnConfig = {
-  include: [
-    'materialCode',
-    'brand',
-    'category',
-    'material',
-    'spec',
-    'length',
-    'unit',
-    'warehouseName',
-    'batchNo',
-    'quantity',
-    'quantityUnit',
-    'pieceWeightTon',
-    'weightTon',
-    'actualWeightTon',
-    'unitPrice',
-    'amount',
-  ],
-  requiredFieldKeys: [
-    'materialCode',
-    'brand',
-    'category',
-    'material',
-    'spec',
-    'unit',
-    'warehouseName',
-    'quantity',
-    'pieceWeightTon',
-    'weightTon',
-    'unitPrice',
-    'amount',
-  ],
-  projections: {
-    saveResult: [
+// 行尾追加只读「未入库」件数（订单量 − 已入库量），仅用于展示。
+const purchaseOrderItemColumnConfig: ModuleItemColumnConfig<PurchaseOrderDerivedItemColumnKey> =
+  {
+    include: [
+      'materialCode',
       'brand',
+      'category',
       'material',
       'spec',
       'length',
+      'unit',
+      'warehouseName',
+      'batchNo',
       'quantity',
+      'quantityUnit',
+      'pieceWeightTon',
+      'weightTon',
+      'actualWeightTon',
+      'unitPrice',
+      'amount',
+      'remainingQuantity',
+    ],
+    requiredFieldKeys: [
+      'materialCode',
+      'brand',
+      'category',
+      'material',
+      'spec',
+      'unit',
+      'warehouseName',
+      'quantity',
+      'pieceWeightTon',
       'weightTon',
       'unitPrice',
       'amount',
     ],
-  },
-}
+    privateColumns: [
+      {
+        title: i18next.t('modules.columns.remainingQuantity'),
+        dataIndex: 'remainingQuantity',
+        width: 96,
+        align: 'right',
+        type: 'count',
+        render: renderDerivedQuantity,
+      },
+    ],
+    // 未入库件数仅在列表展开明细只读展示，采购订单编辑器默认隐藏，避免干扰录单。
+    hiddenByDefault: ['remainingQuantity'],
+    projections: {
+      saveResult: [
+        'brand',
+        'material',
+        'spec',
+        'length',
+        'quantity',
+        'weightTon',
+        'unitPrice',
+        'amount',
+      ],
+    },
+  }
 const purchaseOrderItemColumnOutputs = resolveModuleItemColumnConfig(
   purchaseOrderItemColumnConfig,
 )
@@ -175,6 +194,13 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       width: 110,
       align: 'right',
       type: 'amount',
+    },
+    {
+      title: i18next.t('modules.columns.remainingQuantity'),
+      dataIndex: 'totalRemainingQuantity',
+      width: 96,
+      align: 'right',
+      type: 'count',
     },
     {
       title: i18next.t('modules.columns.status'),

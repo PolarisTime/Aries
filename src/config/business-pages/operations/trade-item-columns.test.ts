@@ -73,7 +73,7 @@ describe('销售订单明细列', () => {
 })
 
 describe('采购订单明细列', () => {
-  it('包含实际重量列，位于重量吨之后、单价之前', () => {
+  it('包含实际重量列，位于重量吨之后、单价之前；未入库列位于行尾', () => {
     const keys = dataIndexes(purchaseOrdersPageConfig)
     expect(keys).toEqual([
       'materialCode',
@@ -92,6 +92,7 @@ describe('采购订单明细列', () => {
       'actualWeightTon',
       'unitPrice',
       'amount',
+      'remainingQuantity',
     ])
   })
 
@@ -100,6 +101,22 @@ describe('采购订单明细列', () => {
       (item) => item.dataIndex === 'actualWeightTon',
     )
     expect(column?.type).toBe('weight')
+  })
+
+  it('未入库列为只读数量类型，位于行尾', () => {
+    const column = purchaseOrdersPageConfig.itemColumns?.find(
+      (item) => item.dataIndex === 'remainingQuantity',
+    )
+    expect(column?.type).toBe('count')
+    expect(column?.align).toBe('right')
+  })
+
+  it('列表页展示订单级未入库件数列', () => {
+    const column = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalRemainingQuantity',
+    )
+    expect(column?.type).toBe('count')
+    expect(column?.align).toBe('right')
   })
 })
 

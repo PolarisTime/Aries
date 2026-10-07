@@ -1174,6 +1174,7 @@ export const zhCN = {
       inboundNo: '入库单号',
       outboundNo: '出库单号',
       outboundRemainingQuantity: '剩余可出库数量',
+      remainingQuantity: '未入库',
       weighWeight: '过磅重量',
       weightAdjustmentAmount: '重量调整金额',
       weightAdjustmentTon: '重量调整(吨)',

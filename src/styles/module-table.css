@@ -200,6 +200,10 @@
   color: var(--theme-primary);
 }
 
+.table-detail-toggle-btn.is-active {
+  color: var(--ant-color-primary, #1677ff);
+}
+
 .module-table-expand-button {
   display: inline-flex;
   align-items: center;

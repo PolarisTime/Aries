@@ -127,6 +127,8 @@ const purchaseOrderRecordShape = {
   remark: nullableTextSchema,
   referencedBySalesOrder: z.boolean().default(false),
   referencedByPurchaseInbound: z.boolean().default(false),
+  /** 订单级未入库件数：各明细行「订单量 − 已入库量」之和（列表与详情均返回）。 */
+  totalRemainingQuantity: optionalNonNegativeIntegerSchema,
 }
 
 const purchaseOrderListRecordSchema = z
