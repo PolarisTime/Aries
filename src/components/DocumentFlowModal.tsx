@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Button, Empty, Modal, Skeleton, Tag, Tooltip } from 'antd'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getDocumentFlow } from '@/api/system/document-flow'
 import {
   FLOW_NODE_HEIGHT,
   FLOW_NODE_WIDTH,
+  flowNodeKey,
   layoutDocumentFlow,
 } from '@/components/document-flow/flow-layout'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -81,6 +82,28 @@ export function DocumentFlowModal({
     () => layoutDocumentFlow(data?.nodes ?? [], data?.links ?? []),
     [data],
   )
+  const currentNodeKey = useMemo(() => {
+    if (!data) return null
+    const target = data.nodes.find(
+      (item) =>
+        item.no === data.documentNo ||
+        (item.no == null && String(item.id) === data.documentNo),
+    )
+    return target ? flowNodeKey(target) : null
+  }, [data])
+  const currentNodeRef = useRef<HTMLButtonElement | null>(null)
+  // 数据到达后把当前起始单据滚动进可视区并居中。
+  useEffect(() => {
+    if (!open || !currentNodeKey) return
+    const target = currentNodeRef.current
+    if (typeof target?.scrollIntoView === 'function') {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      })
+    }
+  }, [open, currentNodeKey])
   const typeLabelOf = (node: DocumentFlowNode) => {
     const meta = TYPE_META[node.type]
     return meta
@@ -133,8 +156,25 @@ export function DocumentFlowModal({
       {nodes.length > 0 ? (
         <>
           <div className="document-flow-summary">
-            {t('documentFlow.documentCount', { count: nodes.length })}
-            {isFetching ? ' …' : ''}
+            <span className="document-flow-summary-count">
+              {t('documentFlow.documentCount', { count: nodes.length })}
+              {isFetching ? ' …' : ''}
+            </span>
+            <span className="document-flow-legend">
+              <span className="document-flow-legend-item">
+                {t('documentFlow.legendUpstream')}
+              </span>
+              <span
+                className="document-flow-legend-arrow"
+                role="img"
+                aria-label={t('documentFlow.legendLabel')}
+              >
+                →
+              </span>
+              <span className="document-flow-legend-item">
+                {t('documentFlow.legendDownstream')}
+              </span>
+            </span>
           </div>
           <div className="document-flow-viewport">
             <div
@@ -188,12 +228,19 @@ export function DocumentFlowModal({
               </svg>
               {layout.nodes.map((item) => {
                 const meta = TYPE_META[item.node.type]
+                const isCurrent = item.key === currentNodeKey
+                const amountText =
+                  item.node.amount != null ? formatMetric(item.node.amount) : ''
+                const weightText =
+                  item.node.weight != null ? formatMetric(item.node.weight) : ''
                 return (
                   <Tooltip key={item.key} title={nodeTooltip(item.node)}>
                     <button
                       type="button"
-                      className="document-flow-node"
+                      ref={isCurrent ? currentNodeRef : undefined}
+                      className={`document-flow-node${isCurrent ? ' document-flow-node-current' : ''}`}
                       disabled={!onOpenNode}
+                      aria-current={isCurrent ? 'true' : undefined}
                       style={{
                         left: item.x,
                         top: item.y,
@@ -227,6 +274,35 @@ export function DocumentFlowModal({
                         ) : null}
                         {item.node.date ? <span>{item.node.date}</span> : null}
                       </span>
+                      {amountText || weightText ? (
+                        <span className="document-flow-node-metrics">
+                          {amountText ? (
+                            <span className="document-flow-node-metric">
+                              <span className="document-flow-node-metric-label">
+                                {t('documentFlow.amount')}
+                              </span>
+                              <span className="document-flow-node-metric-value">
+                                {amountText}
+                              </span>
+                            </span>
+                          ) : null}
+                          {weightText ? (
+                            <span className="document-flow-node-metric">
+                              <span className="document-flow-node-metric-label">
+                                {t('documentFlow.weight')}
+                              </span>
+                              <span className="document-flow-node-metric-value">
+                                {weightText}
+                              </span>
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
+                      {isCurrent ? (
+                        <span className="document-flow-node-badge">
+                          {t('documentFlow.currentBadge')}
+                        </span>
+                      ) : null}
                     </button>
                   </Tooltip>
                 )

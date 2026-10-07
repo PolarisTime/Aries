@@ -5,7 +5,7 @@ import type {
 
 /** 流程图节点尺寸与间距（像素）。 */
 export const FLOW_NODE_WIDTH = 180
-export const FLOW_NODE_HEIGHT = 72
+export const FLOW_NODE_HEIGHT = 96
 export const FLOW_COLUMN_GAP = 56
 export const FLOW_ROW_GAP = 20
 export const FLOW_CANVAS_PADDING = 16
@@ -45,9 +45,105 @@ function edgeKey(link: DocumentFlowLink): string {
   return `${link.fromType ?? ''}:${link.fromId ?? ''}->${link.toType ?? ''}:${link.toId ?? ''}#${link.linkType ?? ''}`
 }
 
+/** 取一组位置的中位数；无有效邻居时返回 null。 */
+function medianPosition(
+  keys: string[],
+  position: Map<string, number>,
+): number | null {
+  const values: number[] = []
+  for (const key of keys) {
+    const value = position.get(key)
+    if (value !== undefined) values.push(value)
+  }
+  if (values.length === 0) return null
+  values.sort((a, b) => a - b)
+  const mid = Math.floor(values.length / 2)
+  return values.length % 2 === 1
+    ? values[mid]
+    : (values[mid - 1] + values[mid]) / 2
+}
+
+/**
+ * 对单层节点按参考邻居位置的中位数排序；无邻居的节点保留当前相对位置，
+ * 再以原始发现顺序与 key 作为最终兜底，保证排序确定且可复现。
+ */
+function sortLevelByMedian(
+  group: string[],
+  referenceOf: (key: string) => string[],
+  position: Map<string, number>,
+  baseOrder: Map<string, number>,
+): string[] {
+  return [...group].sort((left, right) => {
+    const leftMedian = medianPosition(referenceOf(left), position)
+    const rightMedian = medianPosition(referenceOf(right), position)
+    const leftValue =
+      leftMedian ?? position.get(left) ?? Number.POSITIVE_INFINITY
+    const rightValue =
+      rightMedian ?? position.get(right) ?? Number.POSITIVE_INFINITY
+    if (leftValue !== rightValue) return leftValue - rightValue
+    const leftBase = baseOrder.get(left) ?? 0
+    const rightBase = baseOrder.get(right) ?? 0
+    if (leftBase !== rightBase) return leftBase - rightBase
+    return left < right ? -1 : left > right ? 1 : 0
+  })
+}
+
+/**
+ * 同层防交叉排序：先按上游邻接位置前向扫描，再按下游邻接位置后向扫描，
+ * 每遍都用最新位置重算中位数，逐步减少层间连线交叉。
+ */
+function orderLevels(
+  levelGroups: Map<number, string[]>,
+  predecessors: Map<string, string[]>,
+  successors: Map<string, string[]>,
+  baseOrder: Map<string, number>,
+): Map<number, string[]> {
+  const levels = Array.from(levelGroups.keys()).sort((a, b) => a - b)
+  const groups = new Map<number, string[]>(
+    levels.map((level) => [level, [...(levelGroups.get(level) ?? [])]]),
+  )
+  const collectPositions = () => {
+    const position = new Map<string, number>()
+    for (const level of levels) {
+      const group = groups.get(level) ?? []
+      for (let index = 0; index < group.length; index += 1) {
+        position.set(group[index], index)
+      }
+    }
+    return position
+  }
+
+  let position = collectPositions()
+  for (const level of levels) {
+    groups.set(
+      level,
+      sortLevelByMedian(
+        groups.get(level) ?? [],
+        (key) => predecessors.get(key) ?? [],
+        position,
+        baseOrder,
+      ),
+    )
+    position = collectPositions()
+  }
+  for (const level of [...levels].reverse()) {
+    groups.set(
+      level,
+      sortLevelByMedian(
+        groups.get(level) ?? [],
+        (key) => successors.get(key) ?? [],
+        position,
+        baseOrder,
+      ),
+    )
+    position = collectPositions()
+  }
+  return groups
+}
+
 /**
  * 将扁平的节点/连线整理为分层流程图布局：
- * 按引用方向做最长路径分层（左 → 右），同层节点纵向排列并整体居中。
+ * 按引用方向做最长路径分层（左 → 右），同层节点用 median/barycenter 防交叉排序后纵向排列并整体居中。
  */
 export function layoutDocumentFlow(
   flowNodes: DocumentFlowNode[],
@@ -64,6 +160,7 @@ export function layoutDocumentFlow(
   }
 
   const successors = new Map<string, string[]>()
+  const predecessors = new Map<string, string[]>()
   const indegree = new Map<string, number>()
   const seenEdges = new Set<string>()
   const validEdges: {
@@ -74,6 +171,7 @@ export function layoutDocumentFlow(
   }[] = []
   for (const key of nodesByKey.keys()) {
     successors.set(key, [])
+    predecessors.set(key, [])
     indegree.set(key, 0)
   }
   for (const link of flowLinks) {
@@ -86,6 +184,7 @@ export function layoutDocumentFlow(
     seenEdges.add(key)
     validEdges.push({ key, from, to, link })
     successors.get(from)?.push(to)
+    predecessors.get(to)?.push(from)
     indegree.set(to, (indegree.get(to) ?? 0) + 1)
   }
 
@@ -130,9 +229,15 @@ export function layoutDocumentFlow(
     1,
     ...Array.from(levelGroups.values(), (group) => group.length),
   )
+  const orderedGroups = orderLevels(
+    levelGroups,
+    predecessors,
+    successors,
+    order,
+  )
   const layoutNodes: FlowLayoutNode[] = []
-  for (const level of Array.from(levelGroups.keys()).sort((a, b) => a - b)) {
-    const group = levelGroups.get(level) ?? []
+  for (const level of Array.from(orderedGroups.keys()).sort((a, b) => a - b)) {
+    const group = orderedGroups.get(level) ?? []
     const offset =
       ((maxRowCount - group.length) * (FLOW_NODE_HEIGHT + FLOW_ROW_GAP)) / 2
     group.forEach((key, row) => {

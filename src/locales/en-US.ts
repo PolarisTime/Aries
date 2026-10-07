@@ -2463,6 +2463,10 @@ export const enUS = {
     openDocument: 'Open {{no}}',
     amount: 'Amount',
     weight: 'Weight',
+    legendLabel: 'Flow direction',
+    legendUpstream: 'Upstream',
+    legendDownstream: 'Downstream',
+    currentBadge: 'Current',
     types: {
       purchaseOrder: 'Purchase Order',
       purchaseInbound: 'Purchase Inbound',

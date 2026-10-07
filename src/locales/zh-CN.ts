@@ -2390,6 +2390,10 @@ export const zhCN = {
     openDocument: '打开 {{no}}',
     amount: '金额',
     weight: '重量',
+    legendLabel: '流向方向',
+    legendUpstream: '上游',
+    legendDownstream: '下游',
+    currentBadge: '当前单据',
     types: {
       purchaseOrder: '采购单',
       purchaseInbound: '采购入库单',

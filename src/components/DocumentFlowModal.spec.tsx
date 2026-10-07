@@ -141,4 +141,44 @@ describe('DocumentFlowModal', () => {
 
     expect(document.body.textContent).toContain('网络异常')
   })
+
+  it('高亮当前查询单据节点并标记 aria-current', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal()
+
+    const current = document.body.querySelector('.document-flow-node-current')
+    expect(current).not.toBeNull()
+    expect(current?.getAttribute('aria-current')).toBe('true')
+    expect(current?.textContent).toContain('PO-1')
+    expect(current?.textContent).toContain('当前单据')
+    expect(
+      document.body.querySelectorAll('.document-flow-node-current'),
+    ).toHaveLength(1)
+  })
+
+  it('节点内直接展示金额与重量(仅在存在时)', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal()
+
+    const nodes = document.body.querySelectorAll('.document-flow-node')
+    const orderNode = nodes[0]
+    const inboundNode = nodes[1]
+
+    expect(orderNode.textContent).toContain('金额')
+    expect(orderNode.textContent).toContain('1,000')
+    expect(orderNode.textContent).toContain('重量')
+    expect(orderNode.textContent).toContain('10')
+
+    expect(inboundNode.querySelector('.document-flow-node-metrics')).toBeNull()
+  })
+
+  it('展示上游 → 下游方向图例', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal()
+
+    const legend = document.body.querySelector('.document-flow-legend')
+    expect(legend).not.toBeNull()
+    expect(legend?.textContent).toContain('上游')
+    expect(legend?.textContent).toContain('下游')
+  })
 })
