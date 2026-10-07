@@ -317,7 +317,7 @@ export function ProjectEditorOverlay({
               name="quoteRegion"
               label={t('modules.pages.project.quoteRegion')}
             >
-              <Select allowClear options={quoteRegionOptions} />
+              <Select allowClear showSearch options={quoteRegionOptions} />
             </Form.Item>
           </Col>
           <Col span={24}>

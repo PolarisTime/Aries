@@ -93,6 +93,7 @@ export function MarketSyncToolbar({
               options={quoteRegionOptions}
               onChange={onRegionChange}
               allowClear
+              showSearch
             />
           ) : null}
         </Space>
