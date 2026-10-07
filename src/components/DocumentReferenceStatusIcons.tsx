@@ -12,7 +12,10 @@ interface Props {
   statuses: readonly DocumentReferenceStatus[]
 }
 
-/** 在单号旁展示下游引用状态，仅显示已被引用的图标。 */
+/**
+ * 在单号旁展示下游引用状态，仅显示已被引用的图标。
+ * 图标使用中性文本色，表示「存在下游引用」这一事实，而非「成功」语义。
+ */
 export function DocumentReferenceStatusIcons({ statuses }: Props): ReactNode {
   const referencedStatuses = statuses.filter((status) => status.referenced)
   if (referencedStatuses.length === 0) {
@@ -39,7 +42,7 @@ export function DocumentReferenceStatusIcons({ statuses }: Props): ReactNode {
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 12,
-              color: 'var(--ant-color-success, #389e0d)',
+              color: 'var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45))',
             }}
             role="img"
             aria-label={status.label}

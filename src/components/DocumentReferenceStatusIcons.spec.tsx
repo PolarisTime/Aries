@@ -50,4 +50,29 @@ describe('DocumentReferenceStatusIcons', () => {
     expect(icons).toHaveLength(1)
     expect(icons[0]?.getAttribute('role')).toBe('img')
   })
+
+  it('两个状态都被引用时渲染两枚图标', () => {
+    renderIcons([
+      { key: 'sales-order', label: '已被销售订单引用', referenced: true },
+      { key: 'purchase-inbound', label: '已被采购入库引用', referenced: true },
+    ])
+
+    expect(
+      container.querySelectorAll('[aria-label="已被销售订单引用"]'),
+    ).toHaveLength(1)
+    expect(
+      container.querySelectorAll('[aria-label="已被采购入库引用"]'),
+    ).toHaveLength(1)
+  })
+
+  it('已引用图标使用中性文本色而非成功绿', () => {
+    renderIcons([
+      { key: 'sales-order', label: '已被销售订单引用', referenced: true },
+    ])
+
+    const icon = container.querySelector('[aria-label="已被销售订单引用"]')
+    const style = icon?.getAttribute('style') ?? ''
+    expect(style).toContain('--ant-color-text-tertiary')
+    expect(style).not.toContain('--ant-color-success')
+  })
 })

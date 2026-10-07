@@ -6,6 +6,7 @@ import type { ModuleKey } from '@/module-system/core/module-key'
 import { isModuleKey } from '@/module-system/core/module-key'
 import type { ModuleRecord } from '@/types/module-page'
 import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
+import { PurchaseOrderDocumentFlowAction } from '@/views/modules/components/PurchaseOrderDocumentFlowAction'
 import { PurchaseOrderPickupListAction } from '@/views/modules/components/PurchaseOrderPickupListAction'
 import { SalesOrderDocumentFlowAction } from '@/views/modules/components/SalesOrderDocumentFlowAction'
 import { SalesReturnSourceImportAction } from '@/views/modules/components/SalesReturnSourceImportAction'
@@ -30,10 +31,20 @@ const MODULE_GRID_TOOLBAR_EXTRAS = {
       onImported={refreshModuleQueries}
     />
   ),
-  'purchase-order': ({ selectedRowKeys }: ModuleGridToolbarExtraProps) =>
-    selectedRowKeys.length ? (
-      <PurchaseOrderPickupListAction selectedOrderIds={selectedRowKeys} />
-    ) : null,
+  'purchase-order': ({
+    selectedRowKeys,
+    selectedRows,
+  }: ModuleGridToolbarExtraProps) => (
+    <>
+      {selectedRowKeys.length ? (
+        <PurchaseOrderPickupListAction selectedOrderIds={selectedRowKeys} />
+      ) : null}
+      <PurchaseOrderDocumentFlowAction selectedRows={selectedRows} />
+    </>
+  ),
+  'purchase-inbound': ({ selectedRows }: ModuleGridToolbarExtraProps) => (
+    <PurchaseOrderDocumentFlowAction selectedRows={selectedRows} />
+  ),
   'sales-order': ({ selectedRows }: ModuleGridToolbarExtraProps) => (
     <SalesOrderDocumentFlowAction selectedRows={selectedRows} />
   ),

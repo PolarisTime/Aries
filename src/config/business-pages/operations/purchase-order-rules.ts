@@ -25,6 +25,13 @@ export function renderPurchaseOrderNo(
           ),
           referenced: Boolean(record.referencedBySalesOrder),
         },
+        {
+          key: 'purchase-inbound',
+          label: i18next.t(
+            'modules.pages.purchaseOrder.referencedByPurchaseInbound',
+          ),
+          referenced: Boolean(record.referencedByPurchaseInbound),
+        },
       ],
     }),
   )
