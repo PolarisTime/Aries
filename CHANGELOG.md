@@ -1,3 +1,10 @@
+# [11.2.0](https://github.com/PolarisTime/Aries/compare/v11.1.2...v11.2.0) (2026-10-07)
+
+
+### Features
+
+* **project:** 取价地区下拉支持搜索 ([c035694](https://github.com/PolarisTime/Aries/commit/c035694be9614a4a73fa571a96ee74554e4f8752))
+
 ## [11.1.2](https://github.com/PolarisTime/Aries/compare/v11.1.1...v11.1.2) (2026-10-07)
 
 
