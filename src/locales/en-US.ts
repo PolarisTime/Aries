@@ -2842,10 +2842,13 @@ export const enUS = {
     missingSlots: 'Missing periods {{count}}',
     backfilling: 'Backfilling {{from}} ~ {{to}}',
     backfillDone:
-      'Last backfill {{from}} ~ {{to}}: {{synced}} ok / {{failed}} failed / {{rows}} rows',
+      'Last backfill {{from}} ~ {{to}}: {{synced}} ok / {{skipped}} skipped / {{failed}} failed / {{rows}} rows',
     todayPeriod: 'Today {{period}} {{mark}}',
     backfillProgress: '{{done}}/{{total}} days',
     backfillFailures: 'Backfill failed for {{count}} days:',
+    backfillSkipped: 'Skipped {{count}} days (no quotes published):',
+    backfillSkippedHint:
+      'The site published no quotes that day (market closed / holiday); not a failure',
     syncDone: 'Sync complete: {{date}} {{periods}}, {{rows}} rows{{exists}}',
     syncDoneExists: ' (already exists)',
     syncMissingPeriods: 'No quotes for these periods today: {{periods}}',

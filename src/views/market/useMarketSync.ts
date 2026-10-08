@@ -311,17 +311,10 @@ export function useMarketSync() {
     }
   }
 
-  const backfillTotalWeekdays = (() => {
+  // 补数不再按周末盲跳(节假日/调休并不服从周末规则)，进度分母就是区间总天数。
+  const backfillTotalDays = (() => {
     if (!backfillStatus?.from || !backfillStatus?.to) return 0
-    let count = 0
-    let cursor = dayjs(backfillStatus.from)
-    const end = dayjs(backfillStatus.to)
-    while (!cursor.isAfter(end)) {
-      const dow = cursor.day()
-      if (dow !== 0 && dow !== 6) count += 1
-      cursor = cursor.add(1, 'day')
-    }
-    return count
+    return dayjs(backfillStatus.to).diff(dayjs(backfillStatus.from), 'day') + 1
   })()
 
   /** 导出当前筛选下的全部明细为 CSV。 */
@@ -420,7 +413,7 @@ export function useMarketSync() {
     quotes,
     quoteTotal,
     backfillStatus,
-    backfillTotalWeekdays,
+    backfillTotalDays,
     stats,
     applyFilters,
     resetFilters,

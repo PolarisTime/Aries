@@ -2759,10 +2759,12 @@ export const zhCN = {
     missingSlots: '缺失时段 {{count}}',
     backfilling: '补数中 {{from}} ~ {{to}}',
     backfillDone:
-      '上次补数 {{from}} ~ {{to}}：成功{{synced}}天/失败{{failed}}天/{{rows}}行',
+      '上次补数 {{from}} ~ {{to}}：成功{{synced}}天/跳过{{skipped}}天/失败{{failed}}天/{{rows}}行',
     todayPeriod: '今日{{period}} {{mark}}',
     backfillProgress: '{{done}}/{{total}} 天',
     backfillFailures: '补数失败 {{count}} 天：',
+    backfillSkipped: '跳过 {{count}} 天（该日无行情）：',
+    backfillSkippedHint: '站点该日未发布行情（休市/节假日），不算失败',
     syncDone: '同步完成：{{date}} {{periods}}，{{rows}} 行{{exists}}',
     syncDoneExists: '（已存在）',
     syncMissingPeriods: '当天暂无以下时段行情：{{periods}}',

@@ -248,8 +248,12 @@ const steelQuoteBackfillStatusSchema = z.looseObject({
   startedAt: z.string().nullable().optional(),
   finishedAt: z.string().nullable().optional(),
   syncedDays: z.number(),
+  /** 跳过天数(站点该日未发布行情: 休市/节假日)。 */
+  skippedDays: z.number().optional(),
   failedDays: z.number(),
   totalRows: z.number(),
+  /** 跳过的日期明细(便于核对是休市日还是漏数)。 */
+  skippedDates: z.array(z.string()).optional(),
   failures: z
     .array(z.looseObject({ date: z.string(), message: z.string() }))
     .optional(),

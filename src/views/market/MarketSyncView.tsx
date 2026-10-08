@@ -20,7 +20,7 @@ export function MarketSyncView() {
     applyFilters,
     backfillDays,
     backfillStatus,
-    backfillTotalWeekdays,
+    backfillTotalDays,
     backfilling,
     calendarQuery,
     calendars,
@@ -81,7 +81,7 @@ export function MarketSyncView() {
       <MarketSyncStatusBar
         stats={stats}
         backfillStatus={backfillStatus}
-        backfillTotalWeekdays={backfillTotalWeekdays}
+        backfillTotalDays={backfillTotalDays}
       />
 
       <MarketSyncMatrix

@@ -58,6 +58,7 @@ const idleBackfillStatus = {
   to: '2026-09-11',
   finishedAt: '2026-09-11T00:00:00',
   syncedDays: 0,
+  skippedDays: 0,
   failedDays: 0,
   totalRows: 0,
 }
@@ -226,6 +227,42 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
       await vi.advanceTimersByTimeAsync(9000)
     })
     expect(api.fetchBackfillStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('补数结束后展示跳过天数与跳过日期（该日无行情不算失败）', async () => {
+    api.fetchSteelQuoteCalendars.mockResolvedValue([])
+    api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })
+    api.fetchBackfillStatus.mockResolvedValue({
+      ...idleBackfillStatus,
+      syncedDays: 22,
+      skippedDays: 6,
+      failedDays: 0,
+      totalRows: 900,
+      skippedDates: [
+        '2026-09-25',
+        '2026-10-01',
+        '2026-10-02',
+        '2026-10-05',
+        '2026-10-06',
+        '2026-10-07',
+      ],
+      failures: [],
+    })
+
+    renderView()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const text = document.body.textContent ?? ''
+    // 汇总标签带上跳过天数
+    expect(text).toContain('跳过6天')
+    // 跳过日期明细可见，且不再计入失败
+    expect(text).toContain('跳过 6 天')
+    expect(text).toContain('2026-09-25')
+    expect(text).toContain('2026-10-07')
+    expect(text).not.toContain('补数失败')
   })
 
   it('切换到西本后按 source=STEELX 查询日历并可同步', async () => {
