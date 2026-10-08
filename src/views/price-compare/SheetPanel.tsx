@@ -794,6 +794,13 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 style={{ width: widths.spec - 36 }}
                 placeholder={t('priceCompare.sheet.selectProduct')}
                 /*
+                 * 下拉不能与选择器同宽: 选择器宽度受「规格」列宽约束(60~160px 量级),
+                 * 同宽时选项文本只有约 117px, 「HRB400E 12 12米」这类复合商品名会被
+                 * 省略成「HRB400 10 ...」, 用户看不到完整规格。按内容宽度撑开下拉,
+                 * 让每个选项完整可读(选项数量有限, 关闭虚拟滚动无性能影响)。
+                 */
+                popupMatchSelectWidth={false}
+                /*
                  * 「材质 / 规格 / 长度」是一条拼起来的复合文本, 列宽再宽也可能被更长的
                  * 材质名撑破。这里给选中项补原生 title: 即使被省略号收尾, 悬停仍能看到
                  * 完整商品名, 不会只剩半截让人猜。
@@ -1175,6 +1182,12 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           placeholder={t('priceCompare.sheet.supplier')}
                           allowClear
                           showSearch={{ filterOption: filterSupplierOption }}
+                          /*
+                           * 供应商简称列同样窄(约 100px), 下拉与该列同宽会把
+                           * 「杭州钢材贸易有限公司」这类长名截成「杭州钢材贸…」,
+                           * 无法分辨供应商。按内容宽度撑开下拉。
+                           */
+                          popupMatchSelectWidth={false}
                           options={options}
                           onChange={(value) => {
                             const option = options.find(
@@ -1560,6 +1573,8 @@ function SupplierFillSelect({
       className="price-compare-supplier-fill-select"
       placeholder={t('priceCompare.sheet.fillSupplierPick')}
       showSearch={{ filterOption: filterSupplierOption }}
+      /* 供应商全称可达 15 字以上, 与触发框同宽必然截断, 按内容撑开下拉。 */
+      popupMatchSelectWidth={false}
       options={filtered}
       onChange={(value) => {
         const option = filtered.find((item) => item.value === value)
@@ -1673,6 +1688,8 @@ function SupplierFillSelectedButton({
             className="price-compare-supplier-fill-brand"
             placeholder={t('priceCompare.sheet.fillSupplierBrand')}
             value={brandName}
+            /* 与表内下拉同一契约: 窄选择器不限制下拉宽度, 选项文本不被省略号截断。 */
+            popupMatchSelectWidth={false}
             options={brands.map((brand) => ({
               value: brand.name,
               label: brand.name,
@@ -2034,6 +2051,8 @@ function SheetDateFields({
             }
             value={refPeriod || undefined}
             disabled={readOnly || Boolean(sheet.locked)}
+            /* 同一契约: 固定窄宽选择器不限制下拉宽度(时段名将来变长也不会被截断)。 */
+            popupMatchSelectWidth={false}
             onChange={(value) => patchSheet(sheet.id, { refPeriod: value })}
             options={periods.map((period) => ({
               value: period,
