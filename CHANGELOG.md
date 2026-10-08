@@ -1,3 +1,13 @@
+# [11.3.0](https://github.com/PolarisTime/Aries/compare/v11.2.0...v11.3.0) (2026-10-08)
+
+
+### Features
+
+* **react:** 修正采购订单引用图标并新增单据流入口 ([d809f01](https://github.com/PolarisTime/Aries/commit/d809f01c11650d0155f20c1bdd0c8cf8e8ebc488))
+* **react:** 单据流向图可读性优化 ([a411600](https://github.com/PolarisTime/Aries/commit/a41160067934ddc6c7576f4267f981aaf66e243f))
+* **react:** 采购订单展示实际货值、差额与入库进度 ([62d1ead](https://github.com/PolarisTime/Aries/commit/62d1ead117d34d4bb0abb1e641e7347e0744715f))
+* **react:** 采购订单展示未入库件数并统一明细展开图标 ([e946ba8](https://github.com/PolarisTime/Aries/commit/e946ba8cc6fdf5783ebce741ee29a7e31c632aca))
+
 # [11.2.0](https://github.com/PolarisTime/Aries/compare/v11.1.2...v11.2.0) (2026-10-07)
 
 
