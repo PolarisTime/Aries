@@ -1,3 +1,10 @@
+## [11.3.1](https://github.com/PolarisTime/Aries/compare/v11.3.0...v11.3.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **price-compare:** 修复下拉选项被省略号截断 ([0b4e30b](https://github.com/PolarisTime/Aries/commit/0b4e30b8ead67b5300c487c01e4b84b351d6c228))
+
 # [11.3.0](https://github.com/PolarisTime/Aries/compare/v11.2.0...v11.3.0) (2026-10-08)
 
 
