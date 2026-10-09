@@ -597,6 +597,60 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.active.version).toBe('7')
   })
 
+  it('加载时用服务端 updatedAt 作为当前批次保存时间', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({ updatedAt: '2026-10-09T13:50:43.120000+08:00' }),
+    ])
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.active.savedAt).toBe(
+      '2026-10-09T13:50:43.120000+08:00',
+    )
+  })
+
+  it('表头保存成功后用服务端 updatedAt 刷新保存时间', async () => {
+    api.updateQuoteSheetHeader.mockResolvedValue(
+      sheetRecord({ version: '2', updatedAt: '2026-10-09T14:00:00+08:00' }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.active.savedAt).toBeUndefined()
+
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { locked: true })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(store.current.active.version).toBe('2')
+    expect(store.current.active.savedAt).toBe('2026-10-09T14:00:00+08:00')
+  })
+
+  it('行级写只回传版本时用写成功时刻兜底, 只改单元格也能刷新保存时间', async () => {
+    vi.setSystemTime(new Date('2026-10-09T06:10:00.000Z'))
+    const store = renderStore()
+    await hydrate(store)
+    expect(store.current.active.savedAt).toBeUndefined()
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { [inputKey]: { spot: 3300 } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    // 行级写接口没有 updatedAt: 兜底时刻为写成功时的本地时钟
+    expect(store.current.active.savedAt).toMatch(
+      /^2026-10-09T06:10:0\d\.\d{3}Z$/,
+    )
+  })
+
   it('保存遇到他人签出锁冲突时提示并进入只读(不弹版本冲突窗)', async () => {
     api.updateQuoteSheetHeader.mockRejectedValue({ status: 409, code: 4090 })
     api.fetchQuoteSheetEditLock.mockResolvedValue({

@@ -104,6 +104,12 @@ export type PriceSheet = {
   remark?: string
   /** 服务端乐观锁版本号(用于 X-Resource-Version) */
   version?: string
+  /**
+   * 最后保存时间(ISO 8601)。
+   * <p>加载时取服务端 updatedAt; 行级写接口只回传版本, 因此写成功后用本地时刻兜底,
+   * 保证「仅改单元格」的保存也能刷新保存时间。</p>
+   */
+  savedAt?: string
 }
 
 export type GridRow = {

@@ -8,6 +8,7 @@ import { modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
 import { PriceCompareSaveStatus } from './PriceCompareSaveStatus'
+import { PriceCompareSheetMeta } from './PriceCompareSheetMeta'
 import {
   PriceCompareBatchBar,
   PriceCompareOverlays,
@@ -241,7 +242,15 @@ export function PriceCompareView() {
         <div>
           <h1>{t('priceCompare.view.title')}</h1>
         </div>
-        <PriceCompareSaveStatus onRetry={retrySave} status={saveStatus} />
+        <span className="price-compare-head-status">
+          {active ? (
+            <PriceCompareSheetMeta
+              savedAt={active.savedAt}
+              version={active.version}
+            />
+          ) : null}
+          <PriceCompareSaveStatus onRetry={retrySave} status={saveStatus} />
+        </span>
       </div>
 
       <PriceCompareProjectPicker

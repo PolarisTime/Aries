@@ -2459,6 +2459,10 @@ export const zhCN = {
         '数据版本或编辑锁已被他人变更，请按上方提示选择接管或放弃本地改动。',
       retry: '重试',
     },
+    meta: {
+      savedAt: '保存时间',
+      version: '版本',
+    },
     picker: {
       project: '项目',
       addProjectBatch: '新增项目批次',

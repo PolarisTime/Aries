@@ -2536,6 +2536,10 @@ export const enUS = {
         'Another user changed the data version or the edit lock. Resolve it from the notice above by taking over or discarding your local changes.',
       retry: 'Retry',
     },
+    meta: {
+      savedAt: 'Saved at',
+      version: 'Version',
+    },
     picker: {
       project: 'Project',
       addProjectBatch: 'Add project batch',

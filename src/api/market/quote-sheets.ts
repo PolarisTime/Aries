@@ -70,6 +70,9 @@ const sheetSchema = z.looseObject({
   remark: z.string().nullable().optional(),
   brands: z.array(brandSchema).nullable().optional(),
   items: z.array(itemSchema).nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+  /** 服务端最后落库时间(ISO 8601): 供「保存时间」展示。 */
+  updatedAt: z.string().nullable().optional(),
   version: z.union([z.number(), z.string()]).nullable().optional(),
 })
 
@@ -131,6 +134,10 @@ export type QuoteSheetRecord = {
   remark?: string
   brands: QuoteSheetBrandRecord[]
   items: QuoteSheetItemRecord[]
+  /** 服务端创建时间(ISO 8601)。 */
+  createdAt?: string
+  /** 服务端最后落库时间(ISO 8601): 供「保存时间」展示。 */
+  updatedAt?: string
   version: string
 }
 
@@ -299,6 +306,8 @@ function normalizeSheet(
     ...(raw.projectName ? { projectName: raw.projectName } : {}),
     ...(raw.status ? { status: raw.status } : {}),
     ...(raw.remark ? { remark: raw.remark } : {}),
+    ...(raw.createdAt ? { createdAt: raw.createdAt } : {}),
+    ...(raw.updatedAt ? { updatedAt: raw.updatedAt } : {}),
   }
 }
 

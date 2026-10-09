@@ -960,14 +960,21 @@ export function useSheetsStore(options?: {
     syncHistoryDepth()
   }, [syncHistoryDepth])
 
-  /** 回填单据服务端版本(不进入撤销历史)。 */
-  const applySheetVersion = useCallback(
-    (sheetId: string, version: string | undefined) => {
-      if (!version) return
+  /**
+   * 回填单据服务端版本与保存时间(不进入撤销历史)。
+   * <p>行级写接口只回传版本、拿不到服务端 updatedAt, 因此没有 updatedAt 时用写成功的本地
+   * 时刻兜底 —— 否则"只改单元格"的保存永远刷不出新的保存时间。</p>
+   */
+  const applySheetSaveMeta = useCallback(
+    (sheetId: string, version: string | undefined, updatedAt?: string) => {
+      if (!version && !updatedAt) return
+      const savedAt = updatedAt ?? new Date().toISOString()
       mutate((current) => ({
         ...current,
         sheets: current.sheets.map((sheet) =>
-          sheet.id === sheetId ? { ...sheet, version } : sheet,
+          sheet.id === sheetId
+            ? { ...sheet, ...(version ? { version } : {}), savedAt }
+            : sheet,
         ),
       }))
     },
@@ -1174,7 +1181,7 @@ export function useSheetsStore(options?: {
             payload,
             latest.version,
           )
-          applySheetVersion(sheetId, saved.version)
+          applySheetSaveMeta(sheetId, saved.version, saved.updatedAt)
           baselineRef.current.set(
             sheetId,
             buildBaseline({
@@ -1199,7 +1206,7 @@ export function useSheetsStore(options?: {
       return 'conflict'
     },
     [
-      applySheetVersion,
+      applySheetSaveMeta,
       broadcastSaved,
       clearSheetDirty,
       configOf,
@@ -1366,7 +1373,7 @@ export function useSheetsStore(options?: {
           try {
             const saved = await createQuoteSheet(created)
             bindSheetServerId(sheet.id, saved.id)
-            applySheetVersion(sheet.id, saved.version)
+            applySheetSaveMeta(sheet.id, saved.version, saved.updatedAt)
             // 先对齐行 id, 再基于对齐后的行重建基线(否则基线仍按本地 id 记账)
             alignCreatedRowIds(sheet.id, saved.items)
             const aligned =
@@ -1411,7 +1418,7 @@ export function useSheetsStore(options?: {
               version,
             )
             version = saved.version ?? version
-            applySheetVersion(sheet.id, version)
+            applySheetSaveMeta(sheet.id, version, saved.updatedAt)
             baseline.header = headerSignature(sheet)
           } catch (error) {
             if (isVersionConflict(error)) {
@@ -1440,7 +1447,7 @@ export function useSheetsStore(options?: {
             )
             version = deleted.version ?? version
             baseline.items.delete(itemId)
-            applySheetVersion(sheet.id, version)
+            applySheetSaveMeta(sheet.id, version)
           } catch (error) {
             if (isVersionConflict(error)) {
               setSheetSaveOutcome(sheetId, 'conflict')
@@ -1499,7 +1506,7 @@ export function useSheetsStore(options?: {
                 )
               }
             }
-            applySheetVersion(sheet.id, version)
+            applySheetSaveMeta(sheet.id, version)
           } catch (error) {
             if (isVersionConflict(error)) {
               setSheetSaveOutcome(sheetId, 'conflict')
@@ -1538,7 +1545,7 @@ export function useSheetsStore(options?: {
               version,
             )
             version = reordered.version ?? version
-            applySheetVersion(sheet.id, version)
+            applySheetSaveMeta(sheet.id, version, reordered.updatedAt)
             baseline.order = nextOrder
           } catch (error) {
             if (isVersionConflict(error)) {
@@ -1564,7 +1571,7 @@ export function useSheetsStore(options?: {
     },
     [
       alignCreatedRowIds,
-      applySheetVersion,
+      applySheetSaveMeta,
       bindSheetServerId,
       broadcastSaved,
       clearSheetDirty,
@@ -2672,5 +2679,6 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     })),
     ...(record.remark ? { remark: record.remark } : {}),
     ...(record.version ? { version: record.version } : {}),
+    ...(record.updatedAt ? { savedAt: record.updatedAt } : {}),
   }
 }

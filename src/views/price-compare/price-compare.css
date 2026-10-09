@@ -35,6 +35,49 @@
 }
 
 /*
+ * 标题栏右侧: 落库元信息(保存时间/版本) + 保存状态。
+ * 两者都是 12px 小字, 跟随保存状态同一行展示; 换行时整体折行, 不挤压标题。
+ */
+.price-compare-head-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/*
+ * 落库元信息: 标签用次要前景色, 数值用高对比前景色。
+ * 对比度(白底): --text-primary ≈ 14:1, --text-secondary ≈ 5.7:1, 均满足 AA。
+ */
+.price-compare-sheet-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+.price-compare-sheet-meta-field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.price-compare-sheet-meta-label {
+  color: var(--text-secondary);
+}
+
+/* 数值等宽: 秒数变化时右侧状态灯不会左右抖动。 */
+.price-compare-sheet-meta-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.price-compare-sheet-meta-sep {
+  color: var(--text-secondary);
+}
+
+/*
  * 保存状态指示灯: 图标承载语义色, 文字用高对比前景色。
  * 对比度(白底): 正文 --text-primary ≈ 14:1; 失败色 --color-danger-active ≈ 4.6:1;
  * 图标 success-active ≈ 3.5:1 / info-active ≈ 6.1:1, 均满足非文本 3:1。

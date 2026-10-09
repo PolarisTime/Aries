@@ -128,6 +128,36 @@ describe('quote-sheets API', () => {
     expect(record.specQuantityLocked).toBe(false)
   })
 
+  it('保留服务端创建/更新时间, 供保存时间展示', async () => {
+    apiGetMock.mockResolvedValue({
+      ...page,
+      content: [
+        {
+          ...page.content[0],
+          createdAt: '2026-09-28T18:01:59.737092+08:00',
+          updatedAt: '2026-10-09T13:50:43.120000+08:00',
+        },
+      ],
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.createdAt).toBe('2026-09-28T18:01:59.737092+08:00')
+    expect(record.updatedAt).toBe('2026-10-09T13:50:43.120000+08:00')
+  })
+
+  it('服务端未返回时间时归一为缺省, 不产生空字符串字段', async () => {
+    apiGetMock.mockResolvedValue({
+      ...page,
+      content: [{ ...page.content[0], createdAt: null, updatedAt: null }],
+    })
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.createdAt).toBeUndefined()
+    expect(record.updatedAt).toBeUndefined()
+  })
+
   it('已采购由采购订单关联派生: 关联为 true, 未关联为 false', async () => {
     apiGetMock.mockResolvedValue({
       content: [
