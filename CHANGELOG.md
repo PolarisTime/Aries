@@ -1,3 +1,11 @@
+# [11.4.0](https://github.com/PolarisTime/Aries/compare/v11.3.1...v11.4.0) (2026-10-09)
+
+
+### Features
+
+* **market:** 补数结果区展示跳过天数与跳过日期，进度按区间总天数计算 ([78e5082](https://github.com/PolarisTime/Aries/commit/78e5082ee62bfbabf92e68560723e8a03be61242))
+* **price-compare:** 报单比价展示保存时间与版本 ([c83cf35](https://github.com/PolarisTime/Aries/commit/c83cf35edb8bae214e0b0ca4681cdc65991a5063))
+
 ## [11.3.1](https://github.com/PolarisTime/Aries/compare/v11.3.0...v11.3.1) (2026-10-08)
 
 
