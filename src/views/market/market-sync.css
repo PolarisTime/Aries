@@ -1,0 +1,329 @@
+/* 行情同步: 使用项目统一样式令牌(theme / ant-color / 语义色), 支持暗色 */
+
+/*
+ * 页面根同时是唯一的纵向滚动容器。
+ * 背景: 覆盖矩阵原先自带 scroll={{y:420}} 内部滚动, 而外层 .leo-content-inner 是
+ * overflow: hidden 且自身不滚动 —— 两者叠加会导致底部「行情明细」被裁掉不可达
+ * (低分辨率下实测内容 853px / 可视 571px)。重做后矩阵变为 3 行紧凑带,
+ * 不再需要内部滚动, 页面只保留这一处滚动。
+ */
+.market-sync-page {
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-sm);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 常驻滚动条槽位, 避免滚动条出现/消失时内容横向跳动 */
+  scrollbar-gutter: stable;
+}
+
+/* ── 页首: 标题 + 全局主操作 ── */
+.market-sync-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.market-sync-head h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.market-sync-desc {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  /* 对比度: placeholder 色不满足 AA, 说明性文字统一用 --text-secondary */
+  color: var(--text-secondary);
+}
+
+/* ── 分组操作条 ── */
+.market-sync-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.market-sync-bar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 24px;
+}
+
+.market-sync-bar-group + .market-sync-bar-group {
+  padding-inline-start: var(--space-md);
+  border-inline-start: 1px solid var(--theme-border-subtle);
+}
+
+.market-sync-bar-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── 指标概览 ── */
+.market-sync-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.market-sync-metric .ant-statistic-title {
+  font-size: var(--font-size-xs);
+}
+
+/* 数字是这一屏的主信息, 用强调色而不是默认黑 */
+.market-sync-metric .ant-statistic-content {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.market-sync-metric.is-danger .ant-statistic-content {
+  color: var(--color-danger-active);
+}
+
+.market-sync-metric.is-success .ant-statistic-content {
+  color: var(--color-success-active);
+}
+
+/* 覆盖进度条: 与数字同宽, 不放大会喧宾夺主 */
+.market-sync-metric-progress {
+  margin-top: var(--space-xs);
+}
+
+.market-sync-metric-unit {
+  margin-inline-start: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 今日三个时段: 用可辨的状态点, 不是三行同尺寸 Tag */
+.market-sync-today {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.market-sync-today-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  min-height: 24px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.market-sync-today-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--theme-disabled);
+}
+
+.market-sync-today-item.is-done .market-sync-today-dot {
+  background: var(--color-success);
+}
+
+/* ── 补数进度 / 跳过 / 失败区 ── */
+.market-sync-notices {
+  margin-bottom: var(--space-sm);
+}
+
+.market-sync-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-xs);
+}
+
+/* ── 覆盖矩阵 ── */
+.market-sync-matrix-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.market-sync-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.market-sync-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.market-sync-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.market-sync-legend-swatch.is-synced {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.market-sync-legend-swatch.is-missing {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+}
+
+.market-sync-legend-swatch.is-off {
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  border-color: var(--theme-border-light);
+}
+
+/* 30 列在窄屏仍要可读: 优先整体可见, 真放不下时只横向滚动这一块 */
+.market-sync-grid-wrap {
+  margin-top: var(--space-xs);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.market-sync-grid {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 2px;
+  table-layout: fixed;
+}
+
+.market-sync-grid th {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.market-sync-grid-rowhead {
+  width: 52px;
+  font-size: var(--font-size-xs);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.market-sync-grid-date {
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.market-sync-grid th.is-weekend .market-sync-grid-date {
+  color: var(--text-placeholder);
+}
+
+.market-sync-grid td {
+  padding: 0;
+  text-align: center;
+}
+
+.market-sync-grid th.is-today .market-sync-grid-date {
+  font-weight: 700;
+  color: var(--theme-primary);
+}
+
+/*
+ * 单元格: 视觉是色块, 语义是按钮。
+ * 命中区不小于 24×24(WCAG 2.2 SC 2.5.8), 可访问名由 aria-label 提供
+ * (每个日期×时段都不同, 否则读屏会听到一串无法区分的「缺」)。
+ */
+.market-sync-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  border: 1px solid var(--theme-border-light);
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    filter 0.15s,
+    box-shadow 0.15s;
+}
+
+.market-sync-cell.is-synced {
+  color: var(--color-success-active);
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.market-sync-cell.is-missing {
+  color: var(--color-danger-active);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+}
+
+.market-sync-cell.is-off,
+.market-sync-cell.is-future {
+  color: var(--text-placeholder);
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  border-color: var(--theme-border-light);
+  cursor: default;
+}
+
+.market-sync-cell.is-future {
+  border-style: dashed;
+}
+
+.market-sync-cell.is-selected {
+  box-shadow: 0 0 0 2px var(--theme-primary);
+}
+
+.market-sync-cell:not(:disabled):hover {
+  filter: brightness(0.96);
+}
+
+.market-sync-cell:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 1px;
+}
+
+/* ── 明细抽屉 ── */
+.market-sync-detail-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.market-sync-detail-target {
+  margin-inline-start: auto;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.market-sync-detail-empty {
+  padding: var(--space-xl) 0;
+}
+
+.market-sync-detail-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
