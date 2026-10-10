@@ -163,6 +163,21 @@ describe('采购订单明细列', () => {
     expect(typeof column?.render).toBe('function')
   })
 
+  /**
+   * 这两列已改为书面表述, 文案比早期单字标签更长:
+   * 「未入库 已入库 0 / 20」「需退款 141,120.00」在 120px 下会被截断, 因此锁住最小宽度。
+   */
+  it('入库进度与差额列宽足以容纳书面表述', () => {
+    const progress = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalReceivedQuantity',
+    )
+    const difference = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalAmountDifference',
+    )
+    expect(progress?.width).toBeGreaterThanOrEqual(168)
+    expect(difference?.width).toBeGreaterThanOrEqual(150)
+  })
+
   it('实际货值、差额与入库进度列默认可见', () => {
     const hidden = purchaseOrdersPageConfig.defaultHiddenColumnKeys ?? []
     expect(hidden).not.toContain('totalActualAmount')

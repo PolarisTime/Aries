@@ -235,7 +235,8 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.purchaseOrder.colAmountDifference'),
       dataIndex: 'totalAmountDifference',
-      width: 120,
+      // 「需补款 / 需退款 + 金额」为书面表述, 比单字标签更长, 120 会截断
+      width: 150,
       align: 'right',
       type: 'amount',
       render: renderPurchaseOrderAmountDifference,
@@ -243,7 +244,8 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.purchaseOrder.colReceiptProgress'),
       dataIndex: 'totalReceivedQuantity',
-      width: 120,
+      // 「未入库 已入库 0 / 20」比旧的"已入 0 / 20"更长, 120 会截断末尾件数
+      width: 168,
       align: 'center',
       render: renderPurchaseOrderReceiptProgress,
     },

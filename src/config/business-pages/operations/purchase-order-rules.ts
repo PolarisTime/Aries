@@ -109,7 +109,10 @@ export function renderPurchaseOrderAmountDifference(
 }
 
 /**
- * 「入库进度」列：基于已入库件数与未入库件数推导 未入库/部分入库/已入完。
+ * 「入库进度」列：基于已入库件数与未入库件数推导 未入库/部分入库/已全部入库。
+ *
+ * <p>收满时只给状态（「已全部入库」已含收满之意），不再重复 "已入库 N / N"；未入库与部分入库
+ * 保留件数，便于一眼看出进度。</p>
  *
  * <p>强制结单的订单单独标记：剩余件数是人工作废的，不能与"收满自动完成"混为一谈；
  * 悬浮说明给出作废件数、操作人、时间与原因。</p>
@@ -146,15 +149,15 @@ export function renderPurchaseOrderReceiptProgress(
     : notStarted
       ? 'receiptProgressNotStarted'
       : 'receiptProgressPartial'
+  const statusLabel = i18next.t(`modules.pages.purchaseOrder.${statusKey}`)
+  if (done) {
+    return React.createElement(Tag, { color }, statusLabel)
+  }
   const detail = i18next.t('modules.pages.purchaseOrder.receiptProgressValue', {
     received: receivedQuantity,
     total: totalQuantity,
   })
-  return React.createElement(
-    Tag,
-    { color },
-    `${i18next.t(`modules.pages.purchaseOrder.${statusKey}`)} ${detail}`,
-  )
+  return React.createElement(Tag, { color }, `${statusLabel} ${detail}`)
 }
 
 /** 强制结单悬浮说明；非强制结单返回 null。 */

@@ -150,13 +150,13 @@ describe('采购订单金额与进度派生渲染', () => {
     expect(renderPurchaseOrderActualAmount(undefined)).toBe('-')
   })
 
-  it('差额正数显示补款标识，负数显示退款标识并取绝对值', () => {
+  it('差额正数显示需补款标识，负数显示需退款标识并取绝对值', () => {
     const pay = renderPurchaseOrderAmountDifference(100)
-    expect(collectText(pay)).toContain('补')
+    expect(collectText(pay)).toContain('需补款')
     expect(collectText(pay)).toContain('100.00')
 
     const refund = renderPurchaseOrderAmountDifference(-250.5)
-    expect(collectText(refund)).toContain('退')
+    expect(collectText(refund)).toContain('需退款')
     expect(collectText(refund)).toContain('250.50')
     expect(collectText(refund)).not.toContain('-250')
   })
@@ -166,14 +166,14 @@ describe('采购订单金额与进度派生渲染', () => {
     expect(renderPurchaseOrderAmountDifference(null)).toBe('-')
   })
 
-  it('入库进度根据已入/未入推导未入库、部分入库与已入完', () => {
+  it('入库进度按书面表述推导未入库、部分入库与已全部入库', () => {
     const notStarted = collectText(
       renderPurchaseOrderReceiptProgress(0, {
         totalRemainingQuantity: 8,
       } as unknown as ModuleRecord),
     )
     expect(notStarted).toContain('未入库')
-    expect(notStarted).toContain('已入 0 / 8')
+    expect(notStarted).toContain('已入库 0 / 8')
 
     const partial = collectText(
       renderPurchaseOrderReceiptProgress(7, {
@@ -181,15 +181,16 @@ describe('采购订单金额与进度派生渲染', () => {
       } as unknown as ModuleRecord),
     )
     expect(partial).toContain('部分入库')
-    expect(partial).toContain('已入 7 / 8')
+    expect(partial).toContain('已入库 7 / 8')
 
     const done = collectText(
       renderPurchaseOrderReceiptProgress(8, {
         totalRemainingQuantity: 0,
       } as unknown as ModuleRecord),
     )
-    expect(done).toContain('已入完')
-    expect(done).toContain('已入 8 / 8')
+    // 收满时只给状态: 「已全部入库」已含收满之意, 不重复 "已入库 8 / 8"
+    expect(done).toContain('已全部入库')
+    expect(done).not.toContain('8 / 8')
   })
 
   it('入库进度两项均缺失时回落短横线', () => {
@@ -211,8 +212,8 @@ describe('采购订单金额与进度派生渲染', () => {
 
     const text = collectText(rendered)
     expect(text).toContain('强制结单')
-    // 强制结单不能与"收满自动完成"混为一谈: 不再渲染已入完
-    expect(text).not.toContain('已入完')
+    // 强制结单不能与"收满自动完成"混为一谈: 不再渲染已全部入库
+    expect(text).not.toContain('已全部入库')
 
     const tooltip = elementTitle(rendered)
     expect(tooltip).toContain('剩余 1 件')
@@ -239,7 +240,7 @@ describe('采购订单金额与进度派生渲染', () => {
         forceClose: null,
       } as unknown as ModuleRecord),
     )
-    expect(nullValue).toContain('已入完')
+    expect(nullValue).toContain('已全部入库')
     expect(nullValue).not.toContain('强制结单')
 
     const absent = collectText(
@@ -247,7 +248,7 @@ describe('采购订单金额与进度派生渲染', () => {
         totalRemainingQuantity: 0,
       } as unknown as ModuleRecord),
     )
-    expect(absent).toContain('已入完')
+    expect(absent).toContain('已全部入库')
   })
 
   it('磅差按 实际重 − 暂定重 计算并保留 3 位小数', () => {

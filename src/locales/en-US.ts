@@ -1576,8 +1576,8 @@ export const enUS = {
         colActualAmount: 'Actual Amount',
         colAmountDifference: 'Difference (Adjust)',
         colReceiptProgress: 'Receipt Progress',
-        amountDifferencePay: 'Pay',
-        amountDifferenceRefund: 'Refund',
+        amountDifferencePay: 'Payable',
+        amountDifferenceRefund: 'Refundable',
         provisionalAmountTag: 'Provisional',
         provisionalAmountHint:
           'Calculated from provisional piece weight, used for payment',
