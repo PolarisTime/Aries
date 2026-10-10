@@ -95,6 +95,10 @@ describe('SheetPanel 锁定层级与优先级', () => {
     document.querySelectorAll('.ant-tooltip').forEach((node) => {
       node.remove()
     })
+    // 吨位弹层挂在 body 上, 不清理会污染后续用例的 document.querySelector
+    document.querySelectorAll('.ant-popover').forEach((node) => {
+      node.remove()
+    })
   })
 
   function renderPanel(
@@ -277,6 +281,66 @@ describe('SheetPanel 锁定层级与优先级', () => {
       container.querySelector('#price-compare-lock-reason')?.textContent,
     ).toContain('已锁定规格和数量')
     expect(rowEl('r1')?.querySelector('.anticon-lock')).not.toBeNull()
+  })
+
+  it('全局锁即整单定稿: 未加行级锁的行也能直接关联采购订单', async () => {
+    // 缺陷回归: 工具栏「锁定规格和数量」已冻结整单规格/吨位, 但吨位弹层曾只认行级锁,
+    // 一边禁用「选择采购订单」一边提示"请先锁定该行" —— 而行菜单的「锁定该行」在全局锁下
+    // 又是禁用的, 用户无路可走。单据级锁定必须与吨位输入同口径放行关联。
+    renderPanel(makeSheet({ specQuantityLocked: true }), [{ ...rowA }])
+
+    const info = rowEl('r1')?.querySelector<HTMLElement>(
+      '.price-compare-ton-info',
+    )
+    expect(info).not.toBeNull()
+    await act(async () => {
+      info?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+
+    const popover = document.querySelector('.price-compare-ton-popover')
+    expect(popover).not.toBeNull()
+    expect(popover?.textContent).toContain('未关联采购订单')
+    expect(popover?.textContent).not.toContain('请先锁定')
+    const pickerButton = popover?.querySelector<HTMLButtonElement>('button')
+    expect(pickerButton?.disabled).toBe(false)
+  })
+
+  it('既未加行级锁也未锁单据时, 关联入口仍禁用并提示先锁定', async () => {
+    renderPanel(makeSheet(), [{ ...rowA }])
+
+    const info = rowEl('r1')?.querySelector<HTMLElement>(
+      '.price-compare-ton-info',
+    )
+    await act(async () => {
+      info?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+
+    const popover = document.querySelector('.price-compare-ton-popover')
+    expect(popover?.textContent).toContain('请先锁定')
+    const pickerButton = popover?.querySelector<HTMLButtonElement>('button')
+    expect(pickerButton?.disabled).toBe(true)
+  })
+
+  it('只读(他人签出)时关联入口禁用, 原因指向只读而不是"请先锁定"', async () => {
+    renderPanel(makeSheet({ specQuantityLocked: true }), [{ ...rowA }], {
+      readOnly: true,
+    })
+
+    const info = rowEl('r1')?.querySelector<HTMLElement>(
+      '.price-compare-ton-info',
+    )
+    await act(async () => {
+      info?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    })
+
+    const popover = document.querySelector('.price-compare-ton-popover')
+    const pickerButton = popover?.querySelector<HTMLButtonElement>('button')
+    expect(pickerButton?.disabled).toBe(true)
+    expect(popover?.textContent).toContain('正被他人编辑')
+    expect(popover?.textContent).not.toContain('请先锁定')
   })
 
   it('只读(他人签出)时原因文案是只读原因, 且不套用锁定外观标记', () => {

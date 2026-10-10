@@ -338,6 +338,44 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.locked).toBe(true)
   })
 
+  it('单据级锁定下关联采购订单: locked 与关联必须在同一次行级保存下发', async () => {
+    // 回归: 服务端门禁是「仅锁定行可关联采购订单, 未锁定的行保存时强制清空关联与快照」,
+    // 而单据级「锁定规格和数量」不会给行打 locked 标记。弹层选中订单时补齐 locked,
+    // 否则用户保存后关联会被服务端静默清掉。
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) => ({
+          ...row,
+          locked: true,
+          purchaseOrderId: '88',
+          purchaseOrderNo: 'PO-88',
+          purchaseOrderItemId: '301',
+        })),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      {
+        locked?: boolean
+        purchaseOrderId?: string
+        purchaseOrderNo?: string
+        purchaseOrderItemId?: string
+      },
+    ]
+    expect(payload.locked).toBe(true)
+    expect(payload.purchaseOrderId).toBe('88')
+    expect(payload.purchaseOrderItemId).toBe('301')
+  })
+
   it('行备注随行级保存下发', async () => {
     const store = renderStore()
     await hydrate(store)

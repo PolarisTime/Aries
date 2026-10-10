@@ -61,8 +61,17 @@ export function usePurchaseOrderPicker({
         onClose={() => setPickerRowId(undefined)}
         onSelect={(record: PurchaseOrderTonnageRecord | undefined) => {
           if (pickerRowId) {
-            // 选中明细行时一并写入其所属订单 id 与订单号快照, 断开时一并清空。
+            const target = rows.find((row) => row.id === pickerRowId)
+            /*
+             * 选中明细行时一并写入其所属订单 id 与订单号快照, 断开时一并清空。
+             *
+             * 同时补齐行级锁: 服务端门禁是「仅锁定行可关联采购订单, 未锁定的行保存时会被
+             * 强制清空关联与快照」(QuoteSheetStore#applyItem), 而单据级「锁定规格和数量」
+             * 只冻结规格/吨位、不会给行打 locked 标记。若只写关联不写 locked, 用户点完
+             * 保存后关联会被服务端静默清掉。清除关联(record === undefined)不改锁定状态。
+             */
             patchRow(pickerRowId, {
+              ...(record && !target?.locked ? { locked: true } : {}),
               purchaseOrderId: record?.purchaseOrderId,
               purchaseOrderNo: record?.orderNo,
               purchaseOrderItemId: record?.purchaseOrderItemId,

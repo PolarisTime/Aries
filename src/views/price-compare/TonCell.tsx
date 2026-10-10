@@ -30,8 +30,16 @@ interface TonCellProps {
   rowLockDisabled: boolean
   /** 只读原因提示: 只读/全局锁/行锁时用于说明为什么不可编辑(不静默禁用)。 */
   lockReason?: string
-  /** 该行是否已锁定: 未锁定不可关联采购订单(按钮禁用并提示先锁定)。 */
-  rowLocked: boolean
+  /**
+   * 是否允许关联采购订单: 该行规格与吨位已定稿(行级锁 或 单据级「锁定规格和数量」)且非只读。
+   *
+   * <p>口径必须与吨位输入一致: 单据级锁定同样冻结了规格与吨位, 若这里只认行级锁,
+   * 工具栏「锁定规格和数量」生效后弹层会一边禁用「选择采购订单」一边提示"请先锁定该行",
+   * 而行菜单的「锁定该行」在全局锁下又是禁用的 —— 用户被卡在死路上。</p>
+   */
+  purchaseOrderLinkAllowed: boolean
+  /** 关联被禁用的原因: 未提供时按"未定稿"口径给出兜底文案(禁用不静默)。 */
+  purchaseOrderLinkBlockedReason?: string
   loading: boolean
   lockedClassName?: string
   onTonChange: (value: number | undefined, warnPositive: boolean) => void
@@ -279,7 +287,8 @@ export function TonCell({
   disabled,
   rowLockDisabled,
   lockReason,
-  rowLocked,
+  purchaseOrderLinkAllowed,
+  purchaseOrderLinkBlockedReason,
   loading,
   lockedClassName,
   onTonChange,
@@ -299,16 +308,18 @@ export function TonCell({
 
   const popoverContent = selected ? (
     <LinkedPurchaseOrderPopover
+      linkAllowed={purchaseOrderLinkAllowed}
+      linkBlockedReason={purchaseOrderLinkBlockedReason}
       selected={selected}
       projectedIssued={projectedIssued}
       overLimit={overLimit}
-      rowLocked={rowLocked}
       onOpenPicker={onOpenPicker}
     />
   ) : (
     <UnlinkedPurchaseOrderPopover
+      linkAllowed={purchaseOrderLinkAllowed}
+      linkBlockedReason={purchaseOrderLinkBlockedReason}
       missingSnapshot={missingSnapshot}
-      rowLocked={rowLocked}
       onOpenPicker={onOpenPicker}
     />
   )
@@ -415,13 +426,15 @@ function LinkedPurchaseOrderPopover({
   selected,
   projectedIssued,
   overLimit,
-  rowLocked,
+  linkAllowed,
+  linkBlockedReason,
   onOpenPicker,
 }: {
   selected: PurchaseOrderTonnageRecord
   projectedIssued: number
   overLimit: boolean
-  rowLocked: boolean
+  linkAllowed: boolean
+  linkBlockedReason?: string
   onOpenPicker: () => void
 }) {
   const { t } = useTranslation()
@@ -497,32 +510,61 @@ function LinkedPurchaseOrderPopover({
       <div className="price-compare-ton-popover-basis">
         {t('priceCompare.sheet.purchaseOrderSavedBasis')}
       </div>
+      <PurchaseOrderLinkAction
+        linkAllowed={linkAllowed}
+        linkBlockedReason={linkBlockedReason}
+        onOpenPicker={onOpenPicker}
+      />
+    </div>
+  )
+}
+
+/**
+ * 弹层内的采购订单入口: 未定稿(或只读)时禁用, 并给出被拒原因。
+ *
+ * <p>两个弹层共用同一份渲染, 避免"禁用条件 / 原因文案"两处各写一遍后走偏 —— 这次
+ * 的缺陷正是入口条件与吨位输入口径不一致造成的。</p>
+ */
+function PurchaseOrderLinkAction({
+  linkAllowed,
+  linkBlockedReason,
+  onOpenPicker,
+}: {
+  linkAllowed: boolean
+  linkBlockedReason?: string
+  onOpenPicker: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <>
       <Button
         block
-        disabled={!rowLocked}
+        disabled={!linkAllowed}
         size="small"
         type="primary"
         onClick={onOpenPicker}
       >
         {t('priceCompare.sheet.purchaseOrderPickerOpen')}
       </Button>
-      {!rowLocked ? (
+      {linkAllowed ? null : (
         <div className="price-compare-ton-popover-basis">
-          {t('priceCompare.sheet.purchaseOrderLockFirst')}
+          {linkBlockedReason ?? t('priceCompare.sheet.purchaseOrderLockFirst')}
         </div>
-      ) : null}
-    </div>
+      )}
+    </>
   )
 }
 
 /** 未关联(或明细已不可见)时的弹层: 说明当前关联状态并提供选择入口。 */
 function UnlinkedPurchaseOrderPopover({
   missingSnapshot,
-  rowLocked,
+  linkAllowed,
+  linkBlockedReason,
   onOpenPicker,
 }: {
   missingSnapshot?: string
-  rowLocked: boolean
+  linkAllowed: boolean
+  linkBlockedReason?: string
   onOpenPicker: () => void
 }) {
   const { t } = useTranslation()
@@ -543,20 +585,11 @@ function UnlinkedPurchaseOrderPopover({
           {t('priceCompare.sheet.purchaseOrderMissingHint')}
         </div>
       ) : null}
-      <Button
-        block
-        disabled={!rowLocked}
-        size="small"
-        type="primary"
-        onClick={onOpenPicker}
-      >
-        {t('priceCompare.sheet.purchaseOrderPickerOpen')}
-      </Button>
-      {!rowLocked ? (
-        <div className="price-compare-ton-popover-basis">
-          {t('priceCompare.sheet.purchaseOrderLockFirst')}
-        </div>
-      ) : null}
+      <PurchaseOrderLinkAction
+        linkAllowed={linkAllowed}
+        linkBlockedReason={linkBlockedReason}
+        onOpenPicker={onOpenPicker}
+      />
     </div>
   )
 }

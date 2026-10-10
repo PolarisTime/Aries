@@ -81,6 +81,12 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
         : lock.level
           ? ctx.t(LOCK_REASON_KEYS[lock.level])
           : undefined
+      /*
+       * 关联采购订单与吨位输入同口径: 行级锁与单据级「锁定规格和数量」都表示规格/吨位已定稿,
+       * 两者任一命中即放行。只读(他人签出)时 patchRow 会被丢弃, 弹窗能开却默默不生效,
+       * 因此一并拒绝并给出只读原因 —— 与行菜单"只读整体禁用"的口径保持一致。
+       */
+      const purchaseOrderLinkAllowed = !ctx.readOnly && lock.locked
       return (
         <TonCell
           disabled={ctx.readOnly || ctx.sheetSpecQuantityLocked}
@@ -96,7 +102,8 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
               ? (ctx.localTonByItemId.get(row.row.purchaseOrderItemId) ?? 0)
               : 0
           }
-          rowLocked={Boolean(row.row.locked)}
+          purchaseOrderLinkAllowed={purchaseOrderLinkAllowed}
+          purchaseOrderLinkBlockedReason={ctx.readOnly ? lockReason : undefined}
           loading={ctx.purchaseOrderTonnageLoading}
           lockedClassName={ctx.quantityLockClass}
           options={ctx.purchaseOrderOptions}

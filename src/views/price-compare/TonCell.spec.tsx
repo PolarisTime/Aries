@@ -83,7 +83,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       disabled: false,
       rowLockDisabled: false,
       lockReason: undefined,
-      rowLocked: true,
+      purchaseOrderLinkAllowed: true,
       loading: false,
       onTonChange: vi.fn(),
       onOpenPicker: vi.fn(),
@@ -296,7 +296,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     render({
       disabled: true,
       lockReason: '单据已锁定「规格和数量」',
-      rowLocked: false,
+      purchaseOrderLinkAllowed: false,
     })
     const wrap = container.querySelector(
       '.price-compare-ton-lock-reason',
@@ -417,8 +417,8 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(popover?.textContent).toContain('PO-99')
     expect(popover?.textContent).toContain('关联订单已删除，请重新选择')
   })
-  it('未锁定行禁用关联按钮并提示先锁定', async () => {
-    render({ rowLocked: false })
+  it('未定稿行禁用关联按钮并提示先锁定', async () => {
+    render({ purchaseOrderLinkAllowed: false })
     const icon = container.querySelector(
       '.price-compare-ton-info',
     ) as HTMLElement
@@ -433,6 +433,49 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(
       document.querySelector('.price-compare-ton-popover')?.textContent,
     ).toContain('请先锁定')
+  })
+
+  it('已定稿(行级锁或单据级「锁定规格和数量」)时, 未关联行可直接打开选择弹窗', async () => {
+    // 工具栏「锁定规格和数量」冻结整单规格与吨位, 关联入口必须一并放行,
+    // 否则用户会看到"请先锁定该行"而全局锁下「锁定该行」又是禁用的死路。
+    const props = render()
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const popover = document.querySelector('.price-compare-ton-popover')
+    expect(popover?.textContent).toContain('未关联采购订单')
+    expect(popover?.textContent).not.toContain('请先锁定')
+    const button = popover?.querySelector('button') as HTMLButtonElement
+    expect(button.disabled).toBe(false)
+    act(() => {
+      button.click()
+    })
+    expect(props.onOpenPicker).toHaveBeenCalledTimes(1)
+  })
+
+  it('只读(他人签出)时关联入口禁用, 原因是只读而不是"请先锁定"', async () => {
+    render({
+      purchaseOrderLinkAllowed: false,
+      purchaseOrderLinkBlockedReason:
+        '该批次正被他人编辑，当前为只读；解除编辑锁后可修改',
+    })
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const popover = document.querySelector('.price-compare-ton-popover')
+    const button = popover?.querySelector('button') as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    // 只读时写回会被丢弃, 若仍显示"请先锁定该行"会把用户引向做不到的动作
+    expect(popover?.textContent).toContain('正被他人编辑')
+    expect(popover?.textContent).not.toContain('请先锁定')
   })
 
   it('列尾按 Tab 不吞键: 放行默认行为, 由浏览器把焦点移出本格', () => {
