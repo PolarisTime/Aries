@@ -1,3 +1,17 @@
+# [11.5.0](https://github.com/PolarisTime/Aries/compare/v11.4.0...v11.5.0) (2026-10-10)
+
+
+### Bug Fixes
+
+* **price-compare:** 修复低分辨率下报单比价无法向下滚动 ([6fc10d3](https://github.com/PolarisTime/Aries/commit/6fc10d3b68629204b509bef33bbf40050bae188f)), closes [#price-compare-root](https://github.com/PolarisTime/Aries/issues/price-compare-root)
+* **price-compare:** 锁定规格和数量后无法关联采购订单 ([d015ed4](https://github.com/PolarisTime/Aries/commit/d015ed45b6f51b9274e2b9de8861ada8d0462912))
+
+
+### Features
+
+* **market:** 重做行情同步页布局与覆盖矩阵 ([9226169](https://github.com/PolarisTime/Aries/commit/9226169cb55058f73cfc630ba0fbe74d656700f1))
+* **purchase-order:** 采购订单新增强制结单入口与结单标记 ([d77b9f6](https://github.com/PolarisTime/Aries/commit/d77b9f6ea78e713ac700786b5e1989518fc4b71b))
+
 # [11.4.0](https://github.com/PolarisTime/Aries/compare/v11.3.1...v11.4.0) (2026-10-09)
 
 
