@@ -1,3 +1,15 @@
+# [11.6.0](https://github.com/PolarisTime/Aries/compare/v11.5.0...v11.6.0) (2026-10-10)
+
+
+### Bug Fixes
+
+* **purchase-pickup-list:** 修复换成 MouseSensor 后鼠标整行拖动没接线 ([830b662](https://github.com/PolarisTime/Aries/commit/830b662914ecfc8e2568876f14979336922b4408))
+
+
+### Features
+
+* **purchase-pickup-list:** 移除可见操作图标与拖动手柄，改为整行拖动 ([5c6a489](https://github.com/PolarisTime/Aries/commit/5c6a489998d22804f9860d25b35b0d4d986bb551))
+
 # [11.5.0](https://github.com/PolarisTime/Aries/compare/v11.4.0...v11.5.0) (2026-10-10)
 
 
