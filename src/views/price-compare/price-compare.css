@@ -2,9 +2,20 @@
 
 /* 缩放开关: 默认不再整体等比放大(1.0), 保持与全局控件密度/字号一致。
    仍保留 --price-compare-zoom 变量作为逃生舱, 仅作用于比价页根容器,
-   不影响复用 .price-compare-page 的其它页面。 */
+   不影响复用 .price-compare-page 的其它页面。
+
+   同一容器同时承担纵向滚动, 边界与缩放保持一致(仅比价页):
+   比价表格没有内部滚动(SheetPanel 的 Table 未设 scroll.y 且 pagination=false),
+   内容高度随品种/品牌行数增长; 而外层 .leo-content-inner 是 overflow: hidden
+   且自身不滚动, 溢出部分会被直接裁掉且不出现滚动条 —— 在低分辨率设备上
+   表现为「无法向下拖动」, 表格底部与"新增行"按钮不可达。 */
 #price-compare-root {
   zoom: var(--price-compare-zoom, 1);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 常驻滚动条槽位, 避免滚动条出现/消失时内容横向跳动 */
+  scrollbar-gutter: stable;
 }
 
 .price-compare-page {
