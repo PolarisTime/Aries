@@ -11,7 +11,7 @@ import type { PurchaseOrderPickupListItem } from '@/api/purchase/purchase-order-
 import { usePickupListColumns } from './pickup-list-columns'
 import type { PickupListRow } from './pickup-list-draft'
 import { PickupDraftGroupSection } from './pickup-list-drag-rows'
-import { DragHandle } from './pickup-list-sortable'
+import { SortableRow } from './pickup-list-sortable'
 
 function buildItem(
   overrides: Partial<PurchaseOrderPickupListItem>,
@@ -68,6 +68,8 @@ const baseProps = {
   onRemarkChange: vi.fn(),
   onRemove: vi.fn(),
   onRemovePart: vi.fn(),
+  onMoveGroup: vi.fn(),
+  onMoveRow: vi.fn(),
   onSplit: vi.fn(),
 }
 
@@ -206,55 +208,43 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
     expect(removeButton?.disabled).toBe(true)
   })
 
-  it('未拆分行渲染拆分按钮，点击触发 onSplit', () => {
+  it('未拆分行不再渲染可见操作按钮(图标已移除)', () => {
     renderSection()
-    const splitButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="拆分数量"]',
-    )
-    expect(splitButton).toBeTruthy()
-    act(() => {
-      splitButton?.click()
-    })
-    expect(baseProps.onSplit).toHaveBeenCalledTimes(1)
+    expect(container.querySelector('button[aria-label="拆分数量"]')).toBeNull()
   })
 
-  it('拆分按钮紧跟拖动按钮(同一行首, 不再落在表格最右端)', () => {
-    // 真实列定义里第一列是拖动列(key: 'drag'), 操作列应插到它右边
-    renderSection({
-      columns: [
-        {
-          key: 'drag',
-          width: 48,
-          render: () => createElement(DragHandle, { label: '拖动第 1 行' }),
-        },
-        { title: '仓库', key: 'warehouseName', width: 112 },
-        { title: '数量', dataIndex: 'quantity', width: 72 },
-      ],
-    })
-    const cells = [
-      ...container.querySelectorAll('.ant-table-tbody tr.ant-table-row td'),
-    ]
-    const classesOf = (cell: Element) =>
-      [...cell.querySelectorAll('button')].map(
-        (button) => button.getAttribute('aria-label') ?? '',
-      )
-    expect(classesOf(cells[0])).toEqual(['拖动第 1 行'])
-    expect(classesOf(cells[1])).toEqual(['拆分数量'])
-    // 操作列不再位于行尾
-    expect(classesOf(cells[cells.length - 1])).toEqual([])
-  })
-
-  it('未拆分行仅展示拆分按钮, 不显示数量输入框', () => {
+  it('未拆分行不再渲染拖动列与手柄', () => {
     renderSection()
     expect(
-      container.querySelector('button[aria-label="拆分数量"]'),
-    ).toBeTruthy()
+      container.querySelector('.purchase-pickup-list-drag-handle'),
+    ).toBeNull()
     expect(
-      container.querySelector('.purchase-pickup-list-quantity-input'),
+      container.querySelector('button[aria-label="拖动第 1 行"]'),
     ).toBeNull()
   })
 
-  it('拆分行渲染份次标签与数量输入框及合并/移除份按钮', () => {
+  it('明细行整行可聚焦, 并声明空格拖动与 Shift+F10 快捷键', () => {
+    // 行容器由 antd Table 的 components.body.row 提供(与浮层真实接线一致)
+    renderSection({ components: { body: { row: SortableRow } } })
+    const row = container.querySelector<HTMLTableRowElement>(
+      '.ant-table-tbody tr.ant-table-row',
+    )
+    expect(row).toBeTruthy()
+    expect(row?.getAttribute('tabindex')).toBe('0')
+    expect(row?.getAttribute('aria-keyshortcuts')).toContain('Shift+F10')
+  })
+
+  it('未拆分行展示纯文本数量, 不显示数量输入框', () => {
+    renderSection()
+    expect(
+      container.querySelector('.purchase-pickup-list-quantity-input'),
+    ).toBeNull()
+    expect(
+      container.querySelector('.purchase-pickup-list-quantity')?.textContent,
+    ).toBe('2')
+  })
+
+  it('拆分行展示份次标签与数量输入框, 且不再有可见合并/移除按钮', () => {
     renderSection({
       rows: [
         buildRow({ rowId: '1', partIndex: 0, partCount: 2, quantity: 1 }),
@@ -266,31 +256,22 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
     expect(
       container.querySelector('.purchase-pickup-list-quantity-input'),
     ).toBeTruthy()
-    // 拆分行始终提供合并按钮(两份时禁用: 合并即等于移除末份)
-    const mergeButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="合并拆分"]',
-    )
-    expect(mergeButton).toBeTruthy()
-    expect(mergeButton?.disabled).toBe(true)
+    expect(container.querySelector('button[aria-label="合并拆分"]')).toBeNull()
     expect(
       container.querySelector('button[aria-label="移除第 1 行"]'),
-    ).toBeTruthy()
-    expect(container.querySelector('button[aria-label="拆分数量"]')).toBeNull()
+    ).toBeNull()
   })
 
-  it('三份以上时合并按钮可用', () => {
-    renderSection({
-      rows: [
-        buildRow({ rowId: '1', partIndex: 0, partCount: 3, quantity: 3 }),
-        buildRow({ rowId: '1#1', partIndex: 1, partCount: 3, quantity: 3 }),
-        buildRow({ rowId: '1#2', partIndex: 2, partCount: 3, quantity: 2 }),
-      ],
-    })
-    const mergeButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="合并拆分"]',
+  it('分组标题区是可聚焦的键盘手柄, 并声明快捷键', () => {
+    renderSection()
+    const header = container.querySelector<HTMLElement>(
+      '.purchase-pickup-list-group-title',
     )
-    expect(mergeButton).toBeTruthy()
-    expect(mergeButton?.disabled).toBe(false)
+    expect(header).toBeTruthy()
+    // 原生 button 天然可聚焦, 不需要 tabindex 属性
+    expect(header?.tagName).toBe('BUTTON')
+    expect(header?.getAttribute('aria-keyshortcuts')).toContain('Shift+F10')
+    expect(header?.getAttribute('aria-label')).toContain('拖动分组 1')
   })
 })
 

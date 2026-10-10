@@ -68,6 +68,8 @@ const baseProps = {
   onRemarkChange: vi.fn(),
   onRemove: vi.fn(),
   onRemovePart: vi.fn(),
+  onMoveGroup: vi.fn(),
+  onMoveRow: vi.fn(),
   onSplit: vi.fn(),
 }
 
@@ -197,14 +199,14 @@ describe('提货清单右键菜单', () => {
         '「螺纹钢 HRB400E」明细行操作菜单',
       )
       // 会打开拆分弹窗, 按 APG 惯例带省略号(可见按钮文案仍是「拆分数量」)
-      expect(menuLabels()).toEqual(['拆分数量…'])
+      expect(menuLabels()).toEqual(['拆分数量…', '上移', '下移'])
       expect(menuItems()[0].getAttribute('aria-disabled')).not.toBe('true')
     })
 
     it('未拆分且数量不足 2 件: 拆分项禁用', async () => {
       renderSection({ rows: [buildRow({ quantity: 1 })] })
       await openContextMenu(firstRowCell())
-      expect(menuLabels()).toEqual(['拆分数量…'])
+      expect(menuLabels()).toEqual(['拆分数量…', '上移', '下移'])
       expect(menuItems()[0].getAttribute('aria-disabled')).toBe('true')
     })
 
@@ -226,7 +228,7 @@ describe('提货清单右键菜单', () => {
       expect(menuRoot()?.getAttribute('aria-label')).toBe(
         '「螺纹钢 HRB400E 第 2/2 份」明细行操作菜单',
       )
-      expect(menuLabels()).toEqual(['合并拆分', '移除第 2 行'])
+      expect(menuLabels()).toEqual(['合并拆分', '移除第 2 行', '上移', '下移'])
       const [merge, removePart] = menuItems()
       expect(merge.getAttribute('aria-disabled')).toBe('true')
       expect(removePart.getAttribute('aria-disabled')).not.toBe('true')
@@ -264,6 +266,39 @@ describe('提货清单右键菜单', () => {
       )
       expect(menuRoot()).toBeNull()
     })
+
+    it('行「上移/下移」按边界禁用, 点击可用项回调 onMoveRow', async () => {
+      // 两行: 第一行上移禁用, 第二行下移禁用
+      const rows = [buildRow({ rowId: '1' }), buildRow({ rowId: '2' })]
+      renderSection({
+        rows,
+        group: { id: 'g1', locked: false, remark: '', itemIds: ['1', '2'] },
+      })
+
+      await openContextMenu(rowCell(0))
+      expect(menuItems()[1]?.getAttribute('aria-disabled')).toBe('true')
+      clickMenuItem('下移')
+      expect(baseProps.onMoveRow).toHaveBeenCalledWith(
+        expect.objectContaining({ rowId: '1' }),
+        'down',
+      )
+    })
+
+    it('明细行 Shift+F10 可唤出行菜单(键盘等价路径)', async () => {
+      renderSection()
+      const row = container.querySelector('.ant-table-tbody tr.ant-table-row')
+      act(() => {
+        row?.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'F10',
+            shiftKey: true,
+            bubbles: true,
+          }),
+        )
+      })
+      await flush()
+      expect(menuRoot()?.getAttribute('role')).toBe('menu')
+    })
   })
 
   describe('分组头菜单', () => {
@@ -277,19 +312,57 @@ describe('提货清单右键菜单', () => {
       const menu = menuRoot()
       expect(menu?.getAttribute('role')).toBe('menu')
       expect(menu?.getAttribute('aria-label')).toBe('「分组 1」操作菜单')
-      expect(menuLabels()).toEqual(['锁定分组 1', '移除分组 1'])
-      expect(menuItems()[1].className).toContain(
-        'ant-dropdown-menu-item-danger',
-      )
-      expect(menuItems()[1].getAttribute('aria-disabled')).not.toBe('true')
+      expect(menuLabels()).toEqual([
+        '锁定分组 1',
+        '分组上移',
+        '分组下移',
+        '移除分组 1',
+      ])
+      // 破坏性项按标签定位, 不再依赖下标(菜单中间已插入上移/下移)
+      const removeItem = menuItems().at(-1)
+      expect(removeItem?.className).toContain('ant-dropdown-menu-item-danger')
+      expect(removeItem?.getAttribute('aria-disabled')).not.toBe('true')
     })
 
+    it('分组头 Shift+F10 可唤出分组菜单(键盘等价路径)', async () => {
+      renderSection()
+      act(() => {
+        container
+          .querySelector('.purchase-pickup-list-group-title')
+          ?.dispatchEvent(
+            new KeyboardEvent('keydown', {
+              key: 'F10',
+              shiftKey: true,
+              bubbles: true,
+            }),
+          )
+      })
+      await flush()
+      expect(menuRoot()?.getAttribute('aria-label')).toBe('「分组 1」操作菜单')
+    })
+
+    it('分组「上移/下移」按边界禁用, 点击可用项回调 onMoveGroup', async () => {
+      // index=0 且 groupCount=2: 上移禁用、下移可用
+      renderSection()
+      const header = container.querySelector(
+        '.purchase-pickup-list-group-header',
+      )
+      await openContextMenu(header)
+      expect(menuItems()[1]?.getAttribute('aria-disabled')).toBe('true')
+      clickMenuItem('分组下移')
+      expect(baseProps.onMoveGroup).toHaveBeenCalledWith('g1', 'down')
+    })
     it('已锁定分组提供「解除锁定分组」并调用 onLockedChange(false)', async () => {
       renderSection({
         group: { id: 'g1', locked: true, remark: '', itemIds: ['1'] },
       })
       await openContextMenu(groupHeader())
-      expect(menuLabels()).toEqual(['解除锁定分组 1', '移除分组 1'])
+      expect(menuLabels()).toEqual([
+        '解除锁定分组 1',
+        '分组上移',
+        '分组下移',
+        '移除分组 1',
+      ])
       clickMenuItem('解除锁定分组 1')
       await flush()
       expect(baseProps.onLockedChange).toHaveBeenCalledWith('g1', false)

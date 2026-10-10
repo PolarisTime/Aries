@@ -1,6 +1,7 @@
 import {
   type HTMLAttributes,
   type KeyboardEvent,
+  type Ref,
   type TouchEvent,
   use,
   useCallback,
@@ -16,6 +17,16 @@ import {
 
 type RowProps = HTMLAttributes<HTMLTableRowElement> & {
   'data-row-key'?: string
+  /** 表格行元素引用: 供 dnd-kit 等需要挂节点的场景透传到 <tr>。 */
+  ref?: Ref<HTMLTableRowElement>
+  /**
+   * 是否启用「触摸长按打开菜单」这条入口, 默认开启。
+   *
+   * <p>同一个长按手势只能服务一个动作: 调用方若要把长按让给整行拖动(如提货单
+   * 明细行), 传 false 关闭本入口。此时键盘(Shift+F10)与鼠标右键仍然可用;
+   * 调用方必须另行保证触摸下这组命令有非拖动替代(见 WCAG 2.2 SC 2.5.7)。</p>
+   */
+  longPressToOpen?: boolean
 }
 
 /** 触摸长按打开行菜单的等待时长(与移动端长按唤起菜单的习惯一致)。 */
@@ -34,14 +45,21 @@ export const ROW_CONTEXT_MENU_LONG_PRESS_MOVE_TOLERANCE_PX = 10
  * <ol>
  *   <li>鼠标右键行内区域;</li>
  *   <li>键盘: 行可聚焦(tabIndex=0)后按 Shift+F10 或上下文菜单键;</li>
- *   <li>触摸: 长按 600ms(移动超过阈值、滚动或提前抬手都取消)。</li>
+ *   <li>触摸: 长按 600ms(移动超过阈值、滚动或提前抬手都取消);可用
+ *     {@link RowProps.longPressToOpen} 关闭, 把长按让给其它手势。</li>
  * </ol>
  */
 export function RowContextMenuRow(props: RowProps) {
   const menus = use(RowContextMenuContext)
   const rowKey = props['data-row-key']
   const config = rowKey === undefined ? undefined : menus?.get(String(rowKey))
-  const { onContextMenuCapture, onKeyDown, ...rest } = props
+  const {
+    onContextMenuCapture,
+    onKeyDown,
+    longPressToOpen = true,
+    ref,
+    ...rest
+  } = props
   const [open, setOpen] = useState(false)
   /** 当前开合状态(避免同一轮事件里重复触发 onOpen)。 */
   const openRef = useRef(false)
@@ -95,7 +113,7 @@ export function RowContextMenuRow(props: RowProps) {
 
   if (!config) {
     // 没有菜单的行保持普通 tr(不引入键盘/触摸入口, 也不占用 Tab 序)
-    return <tr {...rest} />
+    return <tr {...rest} ref={ref} />
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
@@ -147,6 +165,19 @@ export function RowContextMenuRow(props: RowProps) {
     .filter(Boolean)
     .join(' ')
 
+  /**
+   * 长按让给别人时不再挂 touch 处理: 否则同一手势会同时触发菜单与拖动。
+   * 键盘(Shift+F10)与鼠标右键不受影响。
+   */
+  const touchHandlers = longPressToOpen
+    ? {
+        onTouchCancel: cancelLongPress,
+        onTouchEnd: cancelLongPress,
+        onTouchMove: handleTouchMove,
+        onTouchStart: handleTouchStart,
+      }
+    : {}
+
   return (
     <ContextMenu
       ariaLabel={config.ariaLabel}
@@ -157,6 +188,8 @@ export function RowContextMenuRow(props: RowProps) {
     >
       <tr
         {...rest}
+        {...touchHandlers}
+        ref={ref}
         aria-keyshortcuts={keyboardShortcuts}
         tabIndex={rest.tabIndex ?? 0}
         onContextMenuCapture={(event) => {
@@ -167,10 +200,6 @@ export function RowContextMenuRow(props: RowProps) {
           onContextMenuCapture?.(event)
         }}
         onKeyDown={handleKeyDown}
-        onTouchCancel={cancelLongPress}
-        onTouchEnd={cancelLongPress}
-        onTouchMove={handleTouchMove}
-        onTouchStart={handleTouchStart}
       />
     </ContextMenu>
   )

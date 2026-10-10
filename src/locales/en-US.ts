@@ -677,6 +677,10 @@ export const enUS = {
       splitPartShort: 'Part {{index}}: {{quantity}} pcs',
       splitPartTotal: '{{count}} parts (~{{pieceWeight}} t each piece)',
       splitInvalid: 'Pieces per part must be an integer from 1 to {{max}}',
+      moveItemUp: 'Move up',
+      moveItemDown: 'Move down',
+      moveGroupUp: 'Move group up',
+      moveGroupDown: 'Move group down',
     },
     overview: {
       recordCount: 'Records',

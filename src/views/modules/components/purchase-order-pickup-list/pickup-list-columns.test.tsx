@@ -79,12 +79,13 @@ describe('usePickupListColumns', () => {
     return () => columns
   }
 
-  it('返回 10 列且包含拖拽把手列与数量/重量列', () => {
+  it('返回 9 列且包含数量/重量列, 不再有拖拽把手列', () => {
     const getColumns = renderColumns()
     const columns = getColumns()
-    expect(columns).toHaveLength(10)
-    expect(columns?.[0]?.key).toBe('drag')
-    const keys = columns?.slice(1).map((column) => column.key)
+    expect(columns).toHaveLength(9)
+    // 排序改为整行拖动, 不再有独立的拖动列
+    expect(columns?.some((column) => column.key === 'drag')).toBe(false)
+    const keys = columns?.map((column) => column.key)
     expect(keys).toEqual([
       'warehouseName',
       'brand',

@@ -68,6 +68,19 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
+  /* 语义上是 button(键盘拖动/菜单手柄), 外观保持纯文本 */
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: grab;
+  background: none;
+  border: 0;
+}
+
+.purchase-pickup-list-group-title:focus-visible {
+  outline: 2px solid var(--theme-primary, #1677ff);
+  outline-offset: 2px;
 }
 
 .purchase-pickup-list-group-total {
@@ -111,13 +124,6 @@
   width: 56px;
 }
 
-.purchase-pickup-list-row-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
 /* 拆分弹窗 */
 .purchase-pickup-list-split-form {
   display: flex;
@@ -159,17 +165,10 @@
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
 }
 
-.purchase-pickup-list-drag-handle {
-  width: 32px;
-  min-width: 32px;
+/* 拖动激活点已改为整行(鼠标按住拖动 / 触摸长按), 用光标给出可拖提示 */
+.purchase-pickup-list-row td,
+.purchase-pickup-list-group-header {
   cursor: grab;
-  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.25));
-  touch-action: none;
-  user-select: none;
-}
-
-.purchase-pickup-list-drag-handle:active {
-  cursor: grabbing;
 }
 
 .purchase-pickup-list-row--dragging > td {

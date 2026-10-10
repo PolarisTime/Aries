@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatWeight } from '@/utils/formatters'
 import type { PickupListRow } from './pickup-list-draft'
-import { DragHandle } from './pickup-list-sortable'
 
 function displayText(value: string | null | undefined) {
   const text = value?.trim()
@@ -13,24 +12,15 @@ function displayText(value: string | null | undefined) {
 /**
  * 提货明细列定义：以行实例（PickupListRow）为行模型，
  * 商品与仓库字段取自 row.item，数量与重量取拆分后的行值。
+ *
+ * 不再包含拖动列：排序改为整行拖动(鼠标按住拖动 / 触摸长按 / 键盘空格),
+ * 顺序微调另有右键菜单的「上移/下移」。见 pickup-list-sortable.tsx。
  */
 export function usePickupListColumns() {
   const { t } = useTranslation()
 
   return useMemo<TableColumnsType<PickupListRow>>(
     () => [
-      {
-        key: 'drag',
-        width: 48,
-        align: 'center',
-        render: (_value, _record, index) => (
-          <DragHandle
-            label={t('modules.purchasePickupList.dragRow', {
-              index: index + 1,
-            })}
-          />
-        ),
-      },
       {
         title: t('modules.columns.warehouseName'),
         key: 'warehouseName',

@@ -1,11 +1,13 @@
 import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
   DeleteOutlined,
   SplitCellsOutlined,
   UndoOutlined,
 } from '@ant-design/icons'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { MenuProps, TableColumnsType, TableProps } from 'antd'
-import { Button, InputNumber, Table, Tag, Tooltip } from 'antd'
+import { InputNumber, Table, Tag } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
@@ -16,19 +18,45 @@ import {
   preserveNativeContextMenuOnInputs,
 } from './pickup-list-row-menu'
 
-/** 行菜单条目 key: 与行内按钮一一对应。 */
+/** 行菜单条目 key。 */
 const ROW_MENU_SPLIT = 'split'
 const ROW_MENU_MERGE = 'merge'
 const ROW_MENU_REMOVE_PART = 'removePart'
+const ROW_MENU_MOVE_UP = 'moveUp'
+const ROW_MENU_MOVE_DOWN = 'moveDown'
 
 /**
- * 明细行右键菜单条目: 与行内按钮完全一致, 禁用条件复用同一口径。
- * 未拆分行只有「拆分」, 不出现「移除第 N 份」。
+ * 明细行右键菜单条目。
+ *
+ * 未拆分行只有「拆分」, 不出现「移除第 N 份」; 两类行都带「上移/下移」——
+ * 取消可见拖动手柄后, 这是顺序调整的**非拖动替代**(WCAG 2.2 SC 2.5.7)。
  */
 function buildRowMenuItems(
   row: PickupListRow,
-  labels: { split: string; merge: string; removePart: string },
+  labels: {
+    split: string
+    merge: string
+    removePart: string
+    moveUp: string
+    moveDown: string
+  },
+  position: { index: number; total: number },
 ): MenuProps['items'] {
+  const moveItems: MenuProps['items'] = [
+    {
+      key: ROW_MENU_MOVE_UP,
+      label: labels.moveUp,
+      icon: <ArrowUpOutlined />,
+      disabled: position.index <= 0,
+    },
+    {
+      key: ROW_MENU_MOVE_DOWN,
+      label: labels.moveDown,
+      icon: <ArrowDownOutlined />,
+      disabled: position.index >= position.total - 1,
+    },
+  ]
+
   if (row.partCount <= 1) {
     return [
       {
@@ -37,6 +65,8 @@ function buildRowMenuItems(
         icon: <SplitCellsOutlined />,
         disabled: row.quantity < 2,
       },
+      { type: 'divider' },
+      ...moveItems,
     ]
   }
   return [
@@ -52,6 +82,8 @@ function buildRowMenuItems(
       icon: <DeleteOutlined />,
       danger: true,
     },
+    { type: 'divider' },
+    ...moveItems,
   ]
 }
 
@@ -68,6 +100,8 @@ interface PickupItemsTableProps {
   onMerge: (row: PickupListRow) => void
   /** 移除某一份（件数合并回相邻份）。 */
   onRemovePart: (row: PickupListRow) => void
+  /** 上移/下移一行(顺序调整的非拖动替代)。 */
+  onMoveRow: (row: PickupListRow, direction: 'up' | 'down') => void
 }
 
 /**
@@ -83,6 +117,7 @@ export function PickupItemsTable({
   onSplit,
   onMerge,
   onRemovePart,
+  onMoveRow,
 }: PickupItemsTableProps) {
   const { t } = useTranslation()
 
@@ -92,7 +127,7 @@ export function PickupItemsTable({
    */
   const rowMenus = useMemo<PickupRowMenuMap>(() => {
     const menus: PickupRowMenuMap = new Map()
-    rows.forEach((row) => {
+    rows.forEach((row, index) => {
       const itemLabel = [row.item.category, row.item.material]
         .filter(Boolean)
         .join(' ')
@@ -108,13 +143,19 @@ export function PickupItemsTable({
         ariaLabel: t('modules.purchasePickupList.rowContextMenuLabel', {
           name: `${itemLabel}${partLabel}`,
         }),
-        items: buildRowMenuItems(row, {
-          split: t('modules.purchasePickupList.splitItemMenuLabel'),
-          merge: t('modules.purchasePickupList.mergeItem'),
-          removePart: t('modules.purchasePickupList.removeSplitPart', {
-            index: row.partIndex + 1,
-          }),
-        }),
+        items: buildRowMenuItems(
+          row,
+          {
+            split: t('modules.purchasePickupList.splitItemMenuLabel'),
+            merge: t('modules.purchasePickupList.mergeItem'),
+            removePart: t('modules.purchasePickupList.removeSplitPart', {
+              index: row.partIndex + 1,
+            }),
+            moveUp: t('modules.purchasePickupList.moveItemUp'),
+            moveDown: t('modules.purchasePickupList.moveItemDown'),
+          },
+          { index, total: rows.length },
+        ),
         onClick: ({ key }) => {
           if (key === ROW_MENU_SPLIT) {
             onSplit(row)
@@ -126,12 +167,20 @@ export function PickupItemsTable({
           }
           if (key === ROW_MENU_REMOVE_PART) {
             onRemovePart(row)
+            return
+          }
+          if (key === ROW_MENU_MOVE_UP) {
+            onMoveRow(row, 'up')
+            return
+          }
+          if (key === ROW_MENU_MOVE_DOWN) {
+            onMoveRow(row, 'down')
           }
         },
       })
     })
     return menus
-  }, [onMerge, onRemovePart, onSplit, rows, t])
+  }, [onMerge, onMoveRow, onRemovePart, onSplit, rows, t])
 
   const mergedColumns: TableColumnsType<PickupListRow> = columns.map(
     (column) => {
@@ -179,73 +228,7 @@ export function PickupItemsTable({
     },
   )
 
-  const actionColumn: TableColumnsType<PickupListRow>[number] = {
-    key: 'splitActions',
-    width: 88,
-    align: 'center',
-    render: (_value, row) => {
-      const removePartLabel = t('modules.purchasePickupList.removeSplitPart', {
-        index: row.partIndex + 1,
-      })
-      const mergeLabel = t('modules.purchasePickupList.mergeItem')
-      // 未拆分: 仅提供「拆分」(打开弹窗指定每份件数)。
-      if (row.partCount <= 1) {
-        return (
-          <div className="purchase-pickup-list-row-actions">
-            <Tooltip title={t('modules.purchasePickupList.splitItem')}>
-              <Button
-                aria-label={t('modules.purchasePickupList.splitItem')}
-                disabled={row.quantity < 2}
-                icon={<SplitCellsOutlined />}
-                size="small"
-                type="text"
-                onClick={() => onSplit(row)}
-              />
-            </Tooltip>
-          </div>
-        )
-      }
-      // 已拆分: 每份均可「移除本份」, 另有「合并全部份」。移除末份或合并都会回到合适态。
-      return (
-        <div className="purchase-pickup-list-row-actions">
-          <Tooltip title={mergeLabel}>
-            <Button
-              aria-label={mergeLabel}
-              disabled={row.partCount <= 2}
-              icon={<UndoOutlined />}
-              size="small"
-              type="text"
-              onClick={() => onMerge(row)}
-            />
-          </Tooltip>
-          <Tooltip title={removePartLabel}>
-            <Button
-              aria-label={removePartLabel}
-              icon={<DeleteOutlined />}
-              size="small"
-              type="text"
-              onClick={() => onRemovePart(row)}
-            />
-          </Tooltip>
-        </div>
-      )
-    },
-  }
-
-  const scrollX = sumColumnWidths(
-    [...mergedColumns, actionColumn].map((column) => column.width),
-  )
-  // 「拆分数量」操作列紧跟拖动列: 拆分入口与拖动手柄同处行首,
-  // 不随横向滚动被推到最右端(窄屏下原本要点到表格外才能看到)。
-  const dragColumnIndex = mergedColumns.findIndex(
-    (column) => column.key === 'drag',
-  )
-  const columnsWithActions: TableColumnsType<PickupListRow> = [...mergedColumns]
-  columnsWithActions.splice(
-    dragColumnIndex >= 0 ? dragColumnIndex + 1 : columnsWithActions.length,
-    0,
-    actionColumn,
-  )
+  const scrollX = sumColumnWidths(mergedColumns.map((column) => column.width))
 
   return (
     <SortableContext
@@ -259,7 +242,7 @@ export function PickupItemsTable({
           onContextMenuCapture={preserveNativeContextMenuOnInputs}
         >
           <Table<PickupListRow>
-            columns={columnsWithActions}
+            columns={mergedColumns}
             components={components}
             dataSource={rows}
             locale={{ emptyText }}

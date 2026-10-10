@@ -61,7 +61,11 @@ CI 里 CLI 不是仓库依赖，固定版本临时拉取，输出被 `tee` 到�
 - **破坏性项用 `danger`**：删除、关闭全部等不可逆操作使用 antd 的 `danger` 语义色。
 - **不在输入控件内劫持右键**：文本框、文本域等需要本机右键菜单（剪切/复制/粘贴），在它们上面不要挂 `trigger={['contextMenu']}`。
 - **Firefox 按住 Shift 右键不触发 `contextmenu`**：Shift+F10 之外的 Shift+右键组合在 Firefox 上不会冒泡出右键菜单，不要依赖它。
-- **触屏没有右键**：右键菜单**只能作为补充**，同一批命令必须保留**可见按钮**入口，满足 WCAG 2.1.1（Keyboard）。键盘路径（`ContextMenu` 键 / Shift+F10）同样必须可用。
+- **触屏没有右键**：右键菜单**只能作为补充**。默认必须保留**可见按钮**入口，同时键盘路径（`ContextMenu` 键 / Shift+F10）可用，满足 WCAG 2.1.1（Keyboard）。
+- **移除可见按钮的前提（例外条款）**：仅在界面简洁性要求更高时允许移除可见按钮，且必须同时满足两条，缺一不可：
+  1. **键盘等价路径**：触发元素可聚焦（`tabIndex=0`）并响应 `Shift+F10` / 上下文菜单键 —— 直接复用 `RowContextMenuRow`（表格行）或按同一契约自行接线；
+  2. **拖动类操作的“非拖动替代”**：若该能力原本靠拖动完成（排序等），菜单里必须提供等价命令（如「上移/下移」），满足 [WCAG 2.2 SC 2.5.7 Dragging Movements](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)。
+  - **已知取舍（提货单拆分弹窗）**：长按手势在触屏上只能服务一个动作。该弹窗把长按让给“整行拖动排序”，因此触摸下**没有**打开行菜单的手势；拆分/合并/移除在触屏上不可用，键盘（Shift+F10）与鼠标右键仍可用。这是有意接受的限制，不是遗漏。
 
 ## 本仓库落地基元
 
@@ -112,6 +116,7 @@ CI 里 CLI 不是仓库依赖，固定版本临时拉取，输出被 `tee` 到�
 - [W3C ARIA APG — Menu and Menubar Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/)（菜单可访问名、焦点进首项、方向键、Escape 归还焦点、禁用项语义）
 - [MDN — Element: contextmenu event](https://developer.mozilla.org/en-US/docs/Web/API/Element/contextmenu_event)
 - [WCAG 2.2 SC 2.5.8 Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)（目标 ≥24×24 CSS px）
-- [WCAG 2.2 SC 2.1.1 Keyboard](https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html)（右键菜单只能补充，必须保留键盘与可见按钮等价路径）
+- [WCAG 2.2 SC 2.1.1 Keyboard](https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html)（右键菜单只能补充，必须保留键盘等价路径；可见按钮例外条款见上文）
+- [WCAG 2.2 SC 2.5.7 Dragging Movements](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)（拖动排序必须提供非拖动替代）
 - [Microsoft Windows 应用设计指南 — Context menus](https://learn.microsoft.com/en-us/windows/apps/design/controls/dialogs-and-flyouts/context-menus)（上下文菜单承载次要命令，主要命令放可见入口）
 - 仓库内：[键盘操作支持实施记录](./keyboard-accessibility-plan.md)

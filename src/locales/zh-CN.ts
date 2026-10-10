@@ -639,7 +639,11 @@ export const zhCN = {
       dragRow: '拖动第 {{index}} 行',
       restoreDefault: '恢复默认顺序',
       splitItem: '拆分数量',
-      /** 右键菜单专用: 会打开拆分弹窗, 按 APG 惯例带省略号(可见按钮文案保持不变) */
+      /**
+       * 行菜单专用: 会打开拆分弹窗, 按 APG 惯例带省略号。
+       * 提货单已移除可见的「拆分数量」按钮(见 docs/antd-conventions.md 的例外条款),
+       * 此键现仅用于行菜单文案。
+       */
       splitItemMenuLabel: '拆分数量…',
       /** 明细行右键菜单的可访问名 */
       rowContextMenuLabel: '「{{name}}」明细行操作菜单',
@@ -657,6 +661,10 @@ export const zhCN = {
       splitPartShort: '第 {{index}} 份：{{quantity}} 件',
       splitPartTotal: '共 {{count}} 份（每件约 {{pieceWeight}} 吨）',
       splitInvalid: '每份件数需为 1 至 {{max}} 之间的整数',
+      moveItemUp: '上移',
+      moveItemDown: '下移',
+      moveGroupUp: '分组上移',
+      moveGroupDown: '分组下移',
     },
     overview: {
       recordCount: '记录数',
