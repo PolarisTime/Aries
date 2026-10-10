@@ -40,9 +40,9 @@ export function MarketSyncMetrics({
     stats.tradingDays > 0
       ? Math.round((stats.covered / stats.tradingDays) * 100)
       : 0
-  const todayDone = periods.filter((p) =>
-    stats.todayEntry?.periods.includes(p),
-  ).length
+  // 已同步时段先转 Set: 下面两处都要在循环里判存在, 数组 includes 是 O(n) 查找
+  const todayPeriodSet = new Set(stats.todayEntry?.periods ?? [])
+  const todayDone = periods.filter((p) => todayPeriodSet.has(p)).length
 
   return (
     <div className="market-sync-metrics">
@@ -98,7 +98,7 @@ export function MarketSyncMetrics({
         />
         <div className="market-sync-today">
           {periods.map((period) => {
-            const done = Boolean(stats.todayEntry?.periods.includes(period))
+            const done = todayPeriodSet.has(period)
             return (
               <span
                 key={period}
