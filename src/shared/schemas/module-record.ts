@@ -147,9 +147,15 @@ const purchaseOrderRecordShape = {
   totalRemainingQuantity: optionalNonNegativeIntegerSchema,
   /** 订单级已入库件数：各明细行已入库量之和（列表与详情均返回，可选）。 */
   totalReceivedQuantity: optionalNonNegativeIntegerSchema,
-  /** 实际货值 = Σ（过磅实际重 × 单价）；BigDecimal 可序列化为字符串或数字，可空可缺省。 */
+  /**
+   * 实际货值 = Σ（已过磅行的 实际重 × 单价，逐行取整到分）；
+   * 一行都未过磅时为 null（未产生实际货值，列表显示 —）。
+   */
   totalActualAmount: nullableResponseDecimalSchema.optional(),
-  /** 差额（补退）= 实际货值 − 暂定金额；正数为需补款，负数为需退款，可空可缺省。 */
+  /**
+   * 差额（补退）= Σ（已过磅行的 实际货值 − 该行暂定金额）；正数为需补款，负数为需退款；
+   * 未有已过磅行时为 null，未入库的货不产生补退。
+   */
   totalAmountDifference: nullableResponseDecimalSchema.optional(),
   /** 强制结单留痕；非强制结单为 null。 */
   forceClose: purchaseOrderForceCloseSchema,
