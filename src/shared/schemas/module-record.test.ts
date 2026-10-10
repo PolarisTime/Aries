@@ -150,6 +150,34 @@ describe('采购订单货值与入库进度契约', () => {
     expect(parsed.totalAmountDifference).toBe(-420.75)
   })
 
+  it('强制结单留痕可空可缺省: 非强制结单为 null, 缺失时不受影响', () => {
+    const list = getMainFlowListResponseSchema('purchase-order')
+    const absent = list.parse(page(purchaseOrder))
+    const nullable = list.parse(page({ ...purchaseOrder, forceClose: null }))
+    const present = list.parse(
+      page({
+        ...purchaseOrder,
+        forceClose: {
+          reason: '剩余 1 件报废',
+          remainingQuantity: 1,
+          operatorId: '332601640831950848',
+          operatorName: '系统管理员',
+          closedAt: '2026-10-09T13:50:43+08:00',
+        },
+      }),
+    )
+
+    expect(absent.content[0].forceClose).toBeUndefined()
+    expect(nullable.content[0].forceClose).toBeNull()
+    expect(present.content[0].forceClose).toMatchObject({
+      reason: '剩余 1 件报废',
+      remainingQuantity: 1,
+      // 雪花 ID 保持字符串
+      operatorId: '332601640831950848',
+      operatorName: '系统管理员',
+    })
+  })
+
   it('BigDecimal 以字符串返回时归一化为数字，可空字段保持 null', () => {
     const fromString = getMainFlowListResponseSchema('purchase-order').parse(
       page({

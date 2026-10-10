@@ -1,10 +1,10 @@
-import { Tag } from 'antd'
+import { Tag, Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
 import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleRecord } from '@/types/module-page'
-import { formatAmount, formatWeight } from '@/utils/formatters'
+import { formatAmount, formatDateTime, formatWeight } from '@/utils/formatters'
 import { buildAmountWeightOverview } from '../shared/shared'
 
 function toFiniteOrNull(value: unknown): number | null {
@@ -108,7 +108,12 @@ export function renderPurchaseOrderAmountDifference(
   return amount
 }
 
-/** 「入库进度」列：基于已入库件数与未入库件数推导 未入库/部分入库/已入完。 */
+/**
+ * 「入库进度」列：基于已入库件数与未入库件数推导 未入库/部分入库/已入完。
+ *
+ * <p>强制结单的订单单独标记：剩余件数是人工作废的，不能与"收满自动完成"混为一谈；
+ * 悬浮说明给出作废件数、操作人、时间与原因。</p>
+ */
 export function renderPurchaseOrderReceiptProgress(
   value: unknown,
   record: ModuleRecord,
@@ -121,6 +126,18 @@ export function renderPurchaseOrderReceiptProgress(
   const receivedQuantity = Math.max(received ?? 0, 0)
   const remainingQuantity = Math.max(remaining ?? 0, 0)
   const totalQuantity = receivedQuantity + remainingQuantity
+  const forceClose = resolveForceCloseHint(record)
+  if (forceClose) {
+    return React.createElement(
+      Tooltip,
+      { title: forceClose },
+      React.createElement(
+        Tag,
+        { color: 'purple' },
+        i18next.t('modules.purchaseForceClose.tag'),
+      ),
+    )
+  }
   const done = remainingQuantity === 0
   const notStarted = receivedQuantity === 0
   const color = done ? 'green' : notStarted ? 'default' : 'processing'
@@ -138,6 +155,36 @@ export function renderPurchaseOrderReceiptProgress(
     { color },
     `${i18next.t(`modules.pages.purchaseOrder.${statusKey}`)} ${detail}`,
   )
+}
+
+/** 强制结单悬浮说明；非强制结单返回 null。 */
+function resolveForceCloseHint(record: ModuleRecord): string | null {
+  const forceClose = record.forceClose
+  if (!forceClose || typeof forceClose !== 'object') {
+    return null
+  }
+  const detail = forceClose as {
+    reason?: unknown
+    remainingQuantity?: unknown
+    operatorName?: unknown
+    closedAt?: unknown
+  }
+  const reason = String(detail.reason ?? '').trim()
+  const operatorName = String(detail.operatorName ?? '').trim()
+  const closedAt =
+    detail.closedAt === null || detail.closedAt === undefined
+      ? ''
+      : formatDateTime(detail.closedAt)
+  const count = toFiniteOrNull(detail.remainingQuantity)
+  if (count === null) {
+    return i18next.t('modules.purchaseForceClose.tagHintNoCount')
+  }
+  return i18next.t('modules.purchaseForceClose.tagHint', {
+    count,
+    operator: operatorName || '—',
+    time: closedAt || '—',
+    reason: reason || '—',
+  })
 }
 
 /** 明细「磅差(吨)」派生列：actualWeightTon − weightTon，在 render 中计算。 */

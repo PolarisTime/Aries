@@ -127,6 +127,15 @@ function collectText(node: unknown): string {
   return ''
 }
 
+/** 读取元素上的 Tooltip 标题（强制结单说明）。 */
+function elementTitle(node: unknown): string {
+  if (!isValidElement(node)) {
+    return ''
+  }
+  const title = (node.props as { title?: unknown }).title
+  return typeof title === 'string' ? title : ''
+}
+
 describe('采购订单金额与进度派生渲染', () => {
   it('总金额渲染附带「暂定」标签', () => {
     const node = renderPurchaseOrderTotalAmount(1234.5)
@@ -187,6 +196,58 @@ describe('采购订单金额与进度派生渲染', () => {
     expect(
       renderPurchaseOrderReceiptProgress(null, {} as unknown as ModuleRecord),
     ).toBe('-')
+  })
+
+  it('强制结单的订单入库进度显示强制结单标记, 并带出作废件数/操作人/原因', () => {
+    const rendered = renderPurchaseOrderReceiptProgress(0, {
+      totalRemainingQuantity: 0,
+      forceClose: {
+        reason: '剩余 1 件报废',
+        remainingQuantity: 1,
+        operatorName: '系统管理员',
+        closedAt: '2026-10-09T13:50:43+08:00',
+      },
+    } as unknown as ModuleRecord)
+
+    const text = collectText(rendered)
+    expect(text).toContain('强制结单')
+    // 强制结单不能与"收满自动完成"混为一谈: 不再渲染已入完
+    expect(text).not.toContain('已入完')
+
+    const tooltip = elementTitle(rendered)
+    expect(tooltip).toContain('剩余 1 件')
+    expect(tooltip).toContain('系统管理员')
+    expect(tooltip).toContain('剩余 1 件报废')
+  })
+
+  it('强制结单缺少件数快照时仍给出可读说明, 不渲染 undefined/NaN', () => {
+    const rendered = renderPurchaseOrderReceiptProgress(9, {
+      totalRemainingQuantity: 0,
+      forceClose: { reason: '整单作废' },
+    } as unknown as ModuleRecord)
+
+    const tooltip = elementTitle(rendered)
+    expect(tooltip).toContain('强制结单')
+    expect(tooltip).not.toContain('undefined')
+    expect(tooltip).not.toContain('NaN')
+  })
+
+  it('forceClose 为 null 或缺失时按普通完成度渲染', () => {
+    const nullValue = collectText(
+      renderPurchaseOrderReceiptProgress(8, {
+        totalRemainingQuantity: 0,
+        forceClose: null,
+      } as unknown as ModuleRecord),
+    )
+    expect(nullValue).toContain('已入完')
+    expect(nullValue).not.toContain('强制结单')
+
+    const absent = collectText(
+      renderPurchaseOrderReceiptProgress(8, {
+        totalRemainingQuantity: 0,
+      } as unknown as ModuleRecord),
+    )
+    expect(absent).toContain('已入完')
   })
 
   it('磅差按 实际重 − 暂定重 计算并保留 3 位小数', () => {

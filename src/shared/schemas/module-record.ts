@@ -33,16 +33,32 @@ const responseDecimalSchema = z.union([
 ])
 const nullableResponseDecimalSchema = responseDecimalSchema.nullable()
 
-/** 单据附加费用行（独立于货物 items 的通道）；lineNo 为后端响应回显的行号。 */
-const documentChargeItemSchema = z.strictObject({
-  id: entityIdSchema.optional(),
-  lineNo: integerSchema.nullish(),
-  chargeName: requiredTextSchema,
-  materialId: entityIdSchema.optional(),
-  amount: z.number().min(0),
-  unit: optionalTextSchema,
-  remark: optionalTextSchema,
-})
+/**
+ * 强制结单留痕：剩余未入库件数作废后由人工把订单置为「完成采购」。
+ * 非强制结单时后端返回 null，因此这里可空；字段可缺省以兼容旧后端。
+ */
+const purchaseOrderForceCloseSchema = z
+  .strictObject({
+    reason: nullableTextSchema.optional(),
+    /** 结单时未入库件数快照（即本次作废件数）。 */
+    remainingQuantity: optionalNonNegativeIntegerSchema,
+    operatorId: optionalEntityIdSchema,
+    operatorName: optionalTextSchema,
+    closedAt: z.string().nullish(),
+  })
+  .nullable()
+  .optional()
+
+/** 单据附加费用行（独立于货物 items 的通道）；lineNo 为后端响应回显的行号。 */ const documentChargeItemSchema =
+  z.strictObject({
+    id: entityIdSchema.optional(),
+    lineNo: integerSchema.nullish(),
+    chargeName: requiredTextSchema,
+    materialId: entityIdSchema.optional(),
+    amount: z.number().min(0),
+    unit: optionalTextSchema,
+    remark: optionalTextSchema,
+  })
 
 const documentChargeItemsSchema = z.array(documentChargeItemSchema)
 
@@ -135,6 +151,8 @@ const purchaseOrderRecordShape = {
   totalActualAmount: nullableResponseDecimalSchema.optional(),
   /** 差额（补退）= 实际货值 − 暂定金额；正数为需补款，负数为需退款，可空可缺省。 */
   totalAmountDifference: nullableResponseDecimalSchema.optional(),
+  /** 强制结单留痕；非强制结单为 null。 */
+  forceClose: purchaseOrderForceCloseSchema,
 }
 
 const purchaseOrderListRecordSchema = z
