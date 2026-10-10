@@ -69,9 +69,7 @@ export function PurchaseOrderPickupListOverlay({
   const moveRow = (row: PickupListRow, direction: 'up' | 'down') => {
     const rowId = row.rowId
     draft.updateDraft((current) => {
-      const group = current.groups.find((item) =>
-        item.itemIds.includes(rowId),
-      )
+      const group = current.groups.find((item) => item.itemIds.includes(rowId))
       if (!group) return current
       const index = group.itemIds.indexOf(rowId)
       const targetId = group.itemIds[direction === 'up' ? index - 1 : index + 1]
