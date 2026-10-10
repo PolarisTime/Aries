@@ -122,10 +122,12 @@ function normalizeAllowedSpec(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
   }
+  const seen = new Set<string>()
   const normalized: string[] = []
   for (const entry of value) {
     const text = asString(entry).trim()
-    if (text && !normalized.includes(text)) {
+    if (text && !seen.has(text)) {
+      seen.add(text)
       normalized.push(text)
     }
   }

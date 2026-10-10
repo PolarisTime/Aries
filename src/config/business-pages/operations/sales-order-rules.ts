@@ -233,18 +233,28 @@ export function collectAllowedSpecViolations(
   if (!brandScope.size && !materialScope.size) {
     return { brands, materials }
   }
+  const seenBrands = new Set<string>()
+  const seenMaterials = new Set<string>()
   for (const item of items ?? []) {
     const brand = asString(item?.brand).trim()
-    if (brandScope.size && brand && !brandScope.has(brand)) {
-      if (!brands.includes(brand)) {
-        brands.push(brand)
-      }
+    if (
+      brandScope.size &&
+      brand &&
+      !brandScope.has(brand) &&
+      !seenBrands.has(brand)
+    ) {
+      seenBrands.add(brand)
+      brands.push(brand)
     }
     const material = asString(item?.material).trim()
-    if (materialScope.size && material && !materialScope.has(material)) {
-      if (!materials.includes(material)) {
-        materials.push(material)
-      }
+    if (
+      materialScope.size &&
+      material &&
+      !materialScope.has(material) &&
+      !seenMaterials.has(material)
+    ) {
+      seenMaterials.add(material)
+      materials.push(material)
     }
   }
   return { brands, materials }
