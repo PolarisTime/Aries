@@ -217,6 +217,8 @@ const projectPageConfig: ModulePageConfig = {
       'priceFloatValue',
       'quoteSource',
       'quoteRegion',
+      'allowedBrands',
+      'allowedMaterials',
       'remark',
     ],
   },

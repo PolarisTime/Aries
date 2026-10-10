@@ -1556,6 +1556,12 @@ export const enUS = {
         quoteSourceMysteel: 'Mysteel',
         quoteSourceSteelx: 'SteelX (Xiben)',
         quoteRegion: 'Region',
+        allowedBrands: 'Allowed brands',
+        allowedMaterials: 'Allowed materials',
+        allowedSpecPlaceholder: 'Leave empty for no restriction',
+        allowedSpecHint:
+          'Checked when sales orders import PO items, mismatches raise a warning',
+        allowedSpecUnlimited: 'No restriction',
       },
       purchaseOrder: {
         title: 'Purchase Orders',
@@ -1644,6 +1650,14 @@ export const enUS = {
           '{{items}} and {{count}} row(s) have no net price; fill them manually',
         netPriceFailed: 'Failed to fetch net prices, please retry',
         netPriceFloatHint: 'Project rule: net price {{mode}} {{value}} CNY/ton',
+        allowedSpecImportWarning:
+          'Project "{{project}}" restricts allowed brands/materials, but this import does not match: {{details}}',
+        allowedSpecImportBrands: 'brands {{values}}',
+        allowedSpecImportMaterials: 'materials {{values}}',
+        allowedSpecImportMore: ' and {{count}} more',
+        allowedSpecImportScope:
+          'Allowed brands: {{brands}}; allowed materials: {{materials}}',
+        allowedSpecImportUnlimited: 'no restriction',
       },
       salesContract: {
         title: 'Sales Contracts',

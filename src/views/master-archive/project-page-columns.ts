@@ -20,6 +20,26 @@ export function displayProjectValue(value: unknown): string {
   return normalized || '-'
 }
 
+/**
+ * 项目允许品牌/材质的多值字段归一化: 只保留去重后的非空字符串, 非数组按「未配置」处理。
+ * <p>
+ * 列表行来自 looseObject 记录, 后端可能返回 null/字符串/数组, 这里统一收敛成数组,
+ * 供编辑表单初值与详情展示共用, 避免两处各写一套判断而漂移。
+ */
+export function toAllowedSpecValues(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const normalized: string[] = []
+  for (const entry of value) {
+    const text = asString(entry).trim()
+    if (text && !normalized.includes(text)) {
+      normalized.push(text)
+    }
+  }
+  return normalized
+}
+
 export function buildProjectColumnLabels(
   t: ReturnType<typeof useTranslation>['t'],
 ): Record<ProjectColumnKey, string> {

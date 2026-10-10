@@ -1518,6 +1518,11 @@ export const zhCN = {
         quoteSourceMysteel: 'Mysteel(网价)',
         quoteSourceSteelx: '西本新干线',
         quoteRegion: '取价地区',
+        allowedBrands: '允许品牌',
+        allowedMaterials: '允许材质',
+        allowedSpecPlaceholder: '不选表示不限制',
+        allowedSpecHint: '销售订单导入采购订单明细时按此校验并预警',
+        allowedSpecUnlimited: '不限制',
       },
       purchaseOrder: {
         title: '采购订单',
@@ -1605,6 +1610,14 @@ export const zhCN = {
         netPriceNoPrice: '{{items}} 等 {{count}} 行无网价，请手工填写',
         netPriceFailed: '取网价失败，请稍后重试',
         netPriceFloatHint: '项目约定：网价{{mode}} {{value}} 元/吨',
+        allowedSpecImportWarning:
+          '项目「{{project}}」约定允许的品牌/材质与本次导入明细不匹配：{{details}}',
+        allowedSpecImportBrands: '品牌 {{values}}',
+        allowedSpecImportMaterials: '材质 {{values}}',
+        allowedSpecImportMore: '等 {{count}} 项',
+        allowedSpecImportScope:
+          '项目允许品牌：{{brands}}；项目允许材质：{{materials}}',
+        allowedSpecImportUnlimited: '不限制',
       },
       salesContract: {
         title: '销售合同',

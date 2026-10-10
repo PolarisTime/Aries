@@ -133,6 +133,40 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     expect(payload.shortName).toBe('河钢')
   })
 
+  it('project 保存载荷保留允许品牌/材质多值字段', async () => {
+    const payload = (await submitRecord('project', {
+      id: '9001',
+      projectCode: 'XM001',
+      projectName: '项目一',
+      customerId: '1001',
+      customerCode: 'KH001',
+      settlementCompanyId: '2001',
+      settlementCompanyName: '结算主体甲',
+      status: '正常',
+      allowedBrands: ['沙钢', '永钢'],
+      allowedMaterials: ['HRB400'],
+    })) as Record<string, unknown>
+
+    expect(payload.allowedBrands).toEqual(['沙钢', '永钢'])
+    expect(payload.allowedMaterials).toEqual(['HRB400'])
+  })
+
+  it('project 未配置允许品牌/材质时下发空数组（后端按不限制处理）', async () => {
+    const payload = (await submitRecord('project', {
+      id: '9001',
+      projectCode: 'XM001',
+      projectName: '项目一',
+      customerId: '1001',
+      customerCode: 'KH001',
+      status: '正常',
+      allowedBrands: [],
+      allowedMaterials: [],
+    })) as Record<string, unknown>
+
+    expect(payload.allowedBrands).toEqual([])
+    expect(payload.allowedMaterials).toEqual([])
+  })
+
   it('未声明 chargeItem 白名单的模块（sales-outbound）不下发 chargeItems 键', async () => {
     const payload = (await submitRecord('sales-outbound', {
       customerName: '客户A',

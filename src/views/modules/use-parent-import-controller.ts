@@ -94,6 +94,9 @@ export function useParentImportController({
       let importedParentCount = 0
       let importedItemCount = 0
       let importValidationError = ''
+      // 导入前的明细行以引用身份判定「本次新增行」: buildParentImportState 复用既有行对象,
+      // 只把新导入的行作为新对象写回, 因此无需按来源 ID 再写一套去重规则。
+      const beforeItemSet = new Set(items)
 
       for (const parentDetail of parentDetails) {
         const parentRecord = parentDetail.data
@@ -158,6 +161,15 @@ export function useParentImportController({
               itemCount: importedItemCount,
             }),
       )
+      // 非阻断预警: 导入已生效, 提示人工复核(如品牌/材质超出项目约定范围)。
+      const importWarning = parentImportConfig.warnParentImport?.({
+        currentRecord: nextValues,
+        importedItems: nextItems.filter((item) => !beforeItemSet.has(item)),
+        parentRecords: parentDetails.map((detail) => detail.data),
+      })
+      if (importWarning) {
+        message.warning(importWarning)
+      }
       setParentImporting(false)
     } catch (error) {
       message.error(

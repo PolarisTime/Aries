@@ -14,6 +14,8 @@ const projectOptions: ProjectOption[] = [
     customerId,
     projectCode: 'DEV-REPAIR-PROJ-001',
     projectName: '苏州欧帝半导体科技有限公司半导体专用设备研发及生产项目',
+    allowedBrands: [],
+    allowedMaterials: [],
   },
 ]
 

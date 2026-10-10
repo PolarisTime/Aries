@@ -6,7 +6,14 @@ import {
   DISPLAY_WEIGHT_PRECISION,
   INTERNAL_WEIGHT_PRECISION,
 } from '@/constants/precision'
-import type { ModuleRecord, ModuleRecordInput } from '@/types/module-page'
+import { findProjectOption } from '@/module-system/core/module-option-resolvers'
+import { parseOptionalEntityId } from '@/types/entity-id'
+import type {
+  ModuleLineItem,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   buildAmountWeightOverview,
   cloneLineItems,
@@ -186,4 +193,151 @@ export function transformPurchaseInboundItemsToSalesOrderItems(
       : [],
     'sales-order-item',
   )
+}
+
+/** 项目约定允许范围之外、但出现在本次导入明细中的品牌/材质。 */
+export interface AllowedSpecViolations {
+  brands: string[]
+  materials: string[]
+}
+
+/** 预警告警明细最多逐个列出的条数, 其余折叠成「等 N 项」。 */
+const ALLOWED_SPEC_DETAIL_LIMIT = 5
+
+function normalizeAllowedValues(values: readonly unknown[] | undefined) {
+  const normalized = new Set<string>()
+  for (const value of values ?? []) {
+    const text = asString(value).trim()
+    if (text) {
+      normalized.add(text)
+    }
+  }
+  return normalized
+}
+
+/**
+ * 收集导入明细里越过项目允许品牌/材质的取值。
+ * <p>
+ * 约定: 允许列表为空表示「不限制」, 明细侧品牌/材质为空表示「未填写」, 两者都不参与判定,
+ * 避免未维护主数据的行被误报。返回去重后的取值集合, 便于提示文案按维度聚合。
+ */
+export function collectAllowedSpecViolations(
+  items: readonly ModuleLineItem[],
+  allowedBrands: readonly unknown[] | undefined,
+  allowedMaterials: readonly unknown[] | undefined,
+): AllowedSpecViolations {
+  const brandScope = normalizeAllowedValues(allowedBrands)
+  const materialScope = normalizeAllowedValues(allowedMaterials)
+  const brands: string[] = []
+  const materials: string[] = []
+  if (!brandScope.size && !materialScope.size) {
+    return { brands, materials }
+  }
+  for (const item of items ?? []) {
+    const brand = asString(item?.brand).trim()
+    if (brandScope.size && brand && !brandScope.has(brand)) {
+      if (!brands.includes(brand)) {
+        brands.push(brand)
+      }
+    }
+    const material = asString(item?.material).trim()
+    if (materialScope.size && material && !materialScope.has(material)) {
+      if (!materials.includes(material)) {
+        materials.push(material)
+      }
+    }
+  }
+  return { brands, materials }
+}
+
+function formatAllowedValues(values: readonly string[]) {
+  if (values.length > ALLOWED_SPEC_DETAIL_LIMIT) {
+    return `${values.slice(0, ALLOWED_SPEC_DETAIL_LIMIT).join('、')}${i18next.t(
+      'modules.pages.salesOrder.allowedSpecImportMore',
+      {
+        count: values.length - ALLOWED_SPEC_DETAIL_LIMIT,
+      },
+    )}`
+  }
+  return values.join('、')
+}
+
+function formatAllowedScope(values: readonly string[]) {
+  return values.length
+    ? formatAllowedValues(values)
+    : i18next.t('modules.pages.salesOrder.allowedSpecImportUnlimited')
+}
+
+/** 组装项目允许品牌/材质不匹配的预警文案(纯函数, 便于直接断言)。 */
+export function buildAllowedSpecImportWarning(args: {
+  projectLabel: string
+  violations: AllowedSpecViolations
+  allowedBrands: readonly string[]
+  allowedMaterials: readonly string[]
+}): string | null {
+  const { violations } = args
+  if (!violations.brands.length && !violations.materials.length) {
+    return null
+  }
+  const details: string[] = []
+  if (violations.brands.length) {
+    details.push(
+      i18next.t('modules.pages.salesOrder.allowedSpecImportBrands', {
+        values: formatAllowedValues(violations.brands),
+      }),
+    )
+  }
+  if (violations.materials.length) {
+    details.push(
+      i18next.t('modules.pages.salesOrder.allowedSpecImportMaterials', {
+        values: formatAllowedValues(violations.materials),
+      }),
+    )
+  }
+  const scope = i18next.t('modules.pages.salesOrder.allowedSpecImportScope', {
+    brands: formatAllowedScope(args.allowedBrands),
+    materials: formatAllowedScope(args.allowedMaterials),
+  })
+  return `${i18next.t('modules.pages.salesOrder.allowedSpecImportWarning', {
+    project: args.projectLabel,
+    details: details.join('；'),
+  })}（${scope}）`
+}
+
+/**
+ * 销售订单导入采购订单明细后的匹配预警: 明细的品牌/材质若超出所选项目约定的允许范围,
+ * 返回预警文案(不阻断导入); 项目未配置、未选择项目或全部匹配时返回 null。
+ */
+export function warnSalesOrderPurchaseSourceImport(args: {
+  currentRecord: ModuleRecordInput
+  importedItems: ModuleLineItem[]
+}): string | null {
+  const projectId = parseOptionalEntityId(
+    args.currentRecord?.projectId,
+    'currentRecord.projectId',
+  )
+  const customerId = parseOptionalEntityId(
+    args.currentRecord?.customerId,
+    'currentRecord.customerId',
+  )
+  if (!projectId || !customerId) {
+    return null
+  }
+  const project = findProjectOption(projectId, customerId)
+  if (!project) {
+    return null
+  }
+  const allowedBrands = project.allowedBrands ?? []
+  const allowedMaterials = project.allowedMaterials ?? []
+  const violations = collectAllowedSpecViolations(
+    args.importedItems,
+    allowedBrands,
+    allowedMaterials,
+  )
+  return buildAllowedSpecImportWarning({
+    projectLabel: project.projectName || project.label || projectId,
+    violations,
+    allowedBrands,
+    allowedMaterials,
+  })
 }

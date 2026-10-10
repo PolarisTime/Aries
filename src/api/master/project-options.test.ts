@@ -128,6 +128,44 @@ describe('fetchProjectOptions 取价数据源', () => {
     expect(option.quoteRegion).toBe('杭州')
   })
 
+  it('归一化 allowedBrands/allowedMaterials，去空白与重复', async () => {
+    apiGetMock.mockResolvedValue([
+      {
+        id: '1',
+        value: '1',
+        label: 'P1',
+        customerId: '2',
+        customerCode: 'C1',
+        projectCode: 'P1',
+        projectName: '项目一',
+        allowedBrands: [' 沙钢 ', '沙钢', '', '永钢'],
+        allowedMaterials: ['HRB400E'],
+      },
+    ])
+    const [option] = await fetchProjectOptions('2')
+    expect(option.allowedBrands).toEqual(['沙钢', '永钢'])
+    expect(option.allowedMaterials).toEqual(['HRB400E'])
+  })
+
+  it('未配置允许品牌/材质时归一化为空数组（表示不限制）', async () => {
+    apiGetMock.mockResolvedValue([
+      {
+        id: '1',
+        value: '1',
+        label: 'P1',
+        customerId: '2',
+        customerCode: 'C1',
+        projectCode: 'P1',
+        projectName: '项目一',
+        allowedBrands: null,
+        allowedMaterials: '沙钢',
+      },
+    ])
+    const [option] = await fetchProjectOptions('2')
+    expect(option.allowedBrands).toEqual([])
+    expect(option.allowedMaterials).toEqual([])
+  })
+
   it('非法数据源被忽略', async () => {
     apiGetMock.mockResolvedValue([
       {

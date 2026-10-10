@@ -14,6 +14,7 @@ import {
 import { listBusinessModule } from '@/api/business/business-listing'
 import { fetchCustomerOptions } from '@/api/master/customer-options'
 import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
+import { fetchMaterialGrades } from '@/api/master/material-grades'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getCustomerOptions } from '@/queries/master/customer-options'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
@@ -33,6 +34,12 @@ vi.mock('@/api/business/common-export', () => ({
 }))
 vi.mock('@/api/master/customer-options', () => ({
   fetchCustomerOptions: vi.fn(),
+}))
+vi.mock('@/api/master/material-grades', () => ({
+  fetchMaterialGrades: vi.fn(),
+}))
+vi.mock('@/hooks/useMaterialBrands', () => ({
+  useMaterialBrands: vi.fn(() => ['沙钢', '永钢', '宝钢']),
 }))
 vi.mock('@/api/master/master-data-codes', () => ({
   fetchGeneratedMasterDataCode: vi.fn(),
@@ -105,6 +112,8 @@ const projectRows = [
     projectManager: '张三',
     projectAddress: '地址一',
     status: '正常',
+    allowedBrands: ['沙钢'],
+    allowedMaterials: ['HRB400'],
     remark: '备注一',
   },
   {
@@ -176,6 +185,10 @@ describe('ProjectPage 主数据拆分试点', () => {
     vi.mocked(fetchGeneratedMasterDataCode).mockResolvedValue(
       '7000000000000000002',
     )
+    vi.mocked(fetchMaterialGrades).mockResolvedValue([
+      { value: 'HRB400', label: 'HRB400' },
+      { value: 'HRB400E', label: 'HRB400E' },
+    ])
     vi.mocked(fetchSettlementCompanyOptions).mockResolvedValue(
       settlementCompanyOptions,
     )
@@ -536,6 +549,88 @@ describe('ProjectPage 主数据拆分试点', () => {
     // 后端下发 ['杭州','南京']: 应出现南京, 且不再使用前端兜底默认里的绍兴
     expect(optionTexts).toContain('南京')
     expect(optionTexts).not.toContain('绍兴')
+  })
+
+  /** 多选下拉：打开指定序号的 Select 后点选指定文本的选项。 */
+  const chooseOverlayMultiSelectOption = async (
+    index: number,
+    optionText: string,
+  ) => {
+    const selectRoots = document.body
+      .querySelector('.workspace-overlay')!
+      .querySelectorAll('.ant-select')
+    await act(async () => {
+      selectRoots[index]?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const option = [
+      ...document.body.querySelectorAll<HTMLElement>(
+        '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option',
+      ),
+    ].find((node) => node.textContent?.trim() === optionText)
+    expect(option, `下拉选项 ${optionText} 应渲染`).toBeTruthy()
+    await act(async () => {
+      option!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('编辑项目资料：回填并保留允许品牌/材质', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+
+    // 弹层内第 6、7 个 select 是允许品牌/材质（客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 之后）。
+    // maxTagCount="responsive" 在 jsdom 里量不到宽度会把标签折叠成「+N ...」，
+    // 因此不断言渲染标签，而是用「保存载荷保留已存值」证明回填链路成立。
+    const overlay = document.body.querySelector('.workspace-overlay')
+    const selectRoots = overlay!.querySelectorAll('.ant-select')
+    expect(selectRoots).toHaveLength(7)
+
+    await clickButtonInOverlay('保存')
+
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      allowedBrands: ['沙钢'],
+      allowedMaterials: ['HRB400'],
+    })
+  })
+
+  it('编辑项目资料：可从主数据多选允许品牌与材质', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+
+    await chooseOverlayMultiSelectOption(5, '永钢')
+    await chooseOverlayMultiSelectOption(6, 'HRB400E')
+    await clickButtonInOverlay('保存')
+
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      allowedBrands: ['沙钢', '永钢'],
+      allowedMaterials: ['HRB400', 'HRB400E'],
+    })
   })
 
   it('勾选记录后执行批量删除', async () => {

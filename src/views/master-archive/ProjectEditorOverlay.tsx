@@ -1,12 +1,17 @@
+import { useQuery } from '@tanstack/react-query'
 import type { FormInstance } from 'antd'
 import { Button, Col, Form, Input, Row, Select, Space } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
+import { fetchMaterialGrades } from '@/api/master/material-grades'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { resolveQuoteRegions } from '@/constants/quote-regions'
 import { STATUS } from '@/constants/status-constants'
+import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
@@ -34,7 +39,27 @@ export interface ProjectEditorValues {
   status: string
   quoteSource?: string
   quoteRegion?: string
+  /** 允许的品牌; 空数组表示不限制。 */
+  allowedBrands?: string[]
+  /** 允许的材质; 空数组表示不限制。 */
+  allowedMaterials?: string[]
   remark?: string
+}
+
+/**
+ * 下拉选项与已保存值的并集: 项目已配置的品牌/材质可能已从商品主数据中移除,
+ * 直接按主数据选项渲染会让这些值在编辑态「消失」(保存后即被静默清空)。
+ */
+function mergeSelectedOptions(
+  options: Array<{ label: string; value: string }>,
+  selected: readonly string[] | undefined,
+) {
+  const known = new Set(options.map((option) => option.value))
+  const missing = (selected ?? [])
+    .map((value) => asString(value).trim())
+    .filter((value) => value && !known.has(value))
+    .map((value) => ({ label: value, value }))
+  return missing.length ? [...options, ...missing] : options
 }
 
 function findSettlementCompanyName(id: unknown, fallback = ''): string {
@@ -84,6 +109,34 @@ export function ProjectEditorOverlay({
         value: region,
       })),
     [quoteRegions],
+  )
+  // 允许品牌来自商品资料去重; 允许材质复用商品资料的「材质」选项, 与明细材质取值同源。
+  const materialBrands = useMaterialBrands()
+  const materialGradeQuery = useQuery({
+    queryKey: QUERY_KEYS.masterOptions.materialGrades,
+    queryFn: () => fetchMaterialGrades(),
+    staleTime: STALE_MASTER_OPTIONS,
+  })
+  const selectedBrands = Form.useWatch('allowedBrands', form)
+  const selectedMaterials = Form.useWatch('allowedMaterials', form)
+  const brandOptions = useMemo(
+    () =>
+      mergeSelectedOptions(
+        materialBrands.map((brand) => ({ label: brand, value: brand })),
+        selectedBrands,
+      ),
+    [materialBrands, selectedBrands],
+  )
+  const materialOptions = useMemo(
+    () =>
+      mergeSelectedOptions(
+        (materialGradeQuery.data ?? []).map((option) => ({
+          label: option.label,
+          value: String(option.value),
+        })),
+        selectedMaterials,
+      ),
+    [materialGradeQuery.data, selectedMaterials],
   )
 
   const syncProjectForm = (changed: Record<string, unknown>) => {
@@ -152,6 +205,8 @@ export function ProjectEditorOverlay({
         status: values.status,
         quoteSource: values.quoteSource ?? '',
         quoteRegion: values.quoteRegion ?? '',
+        allowedBrands: values.allowedBrands ?? [],
+        allowedMaterials: values.allowedMaterials ?? [],
         remark: values.remark ?? '',
       }
       await saveBusinessModule(MODULE_KEY, draft)
@@ -318,6 +373,38 @@ export function ProjectEditorOverlay({
               label={t('modules.pages.project.quoteRegion')}
             >
               <Select allowClear showSearch options={quoteRegionOptions} />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="allowedBrands"
+              label={t('modules.pages.project.allowedBrands')}
+              extra={t('modules.pages.project.allowedSpecHint')}
+            >
+              <Select
+                allowClear
+                maxTagCount="responsive"
+                mode="multiple"
+                options={brandOptions}
+                placeholder={t('modules.pages.project.allowedSpecPlaceholder')}
+                showSearch={{ optionFilterProp: 'label' }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="allowedMaterials"
+              label={t('modules.pages.project.allowedMaterials')}
+              extra={t('modules.pages.project.allowedSpecHint')}
+            >
+              <Select
+                allowClear
+                maxTagCount="responsive"
+                mode="multiple"
+                options={materialOptions}
+                placeholder={t('modules.pages.project.allowedSpecPlaceholder')}
+                showSearch={{ optionFilterProp: 'label' }}
+              />
             </Form.Item>
           </Col>
           <Col span={24}>

@@ -107,6 +107,18 @@ export interface ModuleParentImportDefinition {
     currentParentNos: string[]
     parentRecord: ModuleRecord
   }) => string | null
+  /**
+   * 导入完成后的非阻断预警: 返回提示文案时以 warning 提示，但仍保留已导入明细。
+   * <p>
+   * 与 {@link validateParentImport} 的区别是「语义」而不是「时机」: 前者拦截导入，
+   * 后者只提醒人工复核(如销售订单导入的品牌/材质超出项目约定范围)。
+   */
+  warnParentImport?: (args: {
+    currentRecord: ModuleRecordInput
+    /** 本次新导入的明细行(不含导入前已存在的行)。 */
+    importedItems: ModuleLineItem[]
+    parentRecords: ModuleRecord[]
+  }) => string | null
 }
 
 export interface ModuleParentImportSource {

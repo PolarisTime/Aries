@@ -12,7 +12,10 @@ import type { EntityId } from '@/types/entity-id'
 import type { LegacyModuleRecord } from '@/types/module-record'
 
 import { asString } from '@/utils/type-narrowing'
-import { displayProjectValue as displayValue } from './project-page-columns'
+import {
+  displayProjectValue as displayValue,
+  toAllowedSpecValues,
+} from './project-page-columns'
 
 const MODULE_KEY: ModuleKey = 'project'
 
@@ -79,8 +82,27 @@ export function ProjectInlineDetail({ recordId }: { recordId: EntityId }) {
       label: t('modules.pages.project.projectManager'),
     },
     { key: 'projectAddress', label: t('modules.pages.project.projectAddress') },
+    { key: 'allowedBrands', label: t('modules.pages.project.allowedBrands') },
+    {
+      key: 'allowedMaterials',
+      label: t('modules.pages.project.allowedMaterials'),
+    },
     { key: 'remark', label: t('modules.columns.remark') },
   ]
+
+  // 多值列以顿号拼接展示; 未配置时显示「不限制」而不是空白, 避免被误读成漏配。
+  const renderDetailValue = (field: { key: string; label: string }) => {
+    if (field.key === 'customerCode') {
+      return resolveProjectCustomerDisplay(record, getCustomerOptions())
+    }
+    if (field.key === 'allowedBrands' || field.key === 'allowedMaterials') {
+      const values = toAllowedSpecValues(record[field.key])
+      return values.length
+        ? values.join('、')
+        : t('modules.pages.project.allowedSpecUnlimited')
+    }
+    return displayValue(record[field.key])
+  }
 
   return (
     <div className="module-record-detail-inline module-record-detail-inline-fields">
@@ -90,9 +112,7 @@ export function ProjectInlineDetail({ recordId }: { recordId: EntityId }) {
             <div className="bill-detail-item">
               <span className="bill-detail-label">{field.label}</span>
               <span className="bill-detail-value">
-                {field.key === 'customerCode'
-                  ? resolveProjectCustomerDisplay(record, getCustomerOptions())
-                  : displayValue(record[field.key])}
+                {renderDetailValue(field)}
               </span>
             </div>
           </Col>

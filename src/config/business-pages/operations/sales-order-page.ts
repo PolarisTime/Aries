@@ -30,6 +30,7 @@ import {
   renderSalesOrderNo,
   renderSalesOrderTotalWeight,
   transformPurchaseInboundItemsToSalesOrderItems,
+  warnSalesOrderPurchaseSourceImport,
 } from './sales-order-rules'
 
 // 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
@@ -438,6 +439,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: mapPurchaseInboundToSalesOrderDraft,
     transformItems: transformPurchaseInboundItemsToSalesOrderItems,
+    // 项目资料可维护「允许品牌/允许材质」；导入后超出约定范围只预警不拦截。
+    warnParentImport: warnSalesOrderPurchaseSourceImport,
   },
   ...salesOrderItemColumnOutputs,
   renderItemsActions: (ctx) => createElement(SalesOrderNetPriceFiller, ctx),

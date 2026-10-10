@@ -27,6 +27,10 @@ export type ProjectOption = {
   quoteSource?: ProjectQuoteSource
   /** 默认取价地区(西本城市中文名)。 */
   quoteRegion?: string
+  /** 项目允许的品牌; 空数组表示不限制。 */
+  allowedBrands: string[]
+  /** 项目允许的材质; 空数组表示不限制。 */
+  allowedMaterials: string[]
 }
 
 /** 取价数据源。 */
@@ -56,6 +60,8 @@ type RawProjectOption = {
   lastPriceRuleId?: unknown
   quoteSource?: unknown
   quoteRegion?: unknown
+  allowedBrands?: unknown
+  allowedMaterials?: unknown
 }
 
 type RawProjectPageRow = {
@@ -81,6 +87,8 @@ const projectOptionsResponseSchema = z.array(
     lastPriceRuleId: z.union([z.string(), z.number()]).nullable().optional(),
     quoteSource: z.string().nullable().optional(),
     quoteRegion: z.string().nullable().optional(),
+    allowedBrands: z.array(z.string()).nullable().optional(),
+    allowedMaterials: z.array(z.string()).nullable().optional(),
   }),
 )
 
@@ -107,6 +115,21 @@ export function toProjectAbbreviationOptions(
       title: projectName || label,
     }
   })
+}
+
+/** 允许品牌/材质列表归一化: 只保留去重后的非空字符串, 非数组统一按未配置处理。 */
+function normalizeAllowedSpec(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const normalized: string[] = []
+  for (const entry of value) {
+    const text = asString(entry).trim()
+    if (text && !normalized.includes(text)) {
+      normalized.push(text)
+    }
+  }
+  return normalized
 }
 
 function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
@@ -156,6 +179,8 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
         ? { quoteSource }
         : {}),
       ...(quoteRegion ? { quoteRegion } : {}),
+      allowedBrands: normalizeAllowedSpec(row.allowedBrands),
+      allowedMaterials: normalizeAllowedSpec(row.allowedMaterials),
     }
   })
 }

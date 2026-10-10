@@ -32,6 +32,7 @@ import type { ProjectEditorValues } from './ProjectEditorOverlay'
 import { ProjectEditorOverlay } from './ProjectEditorOverlay'
 import { ProjectFilterToolbar } from './ProjectFilterToolbar'
 import { ProjectTableSection } from './ProjectTableSection'
+import { toAllowedSpecValues } from './project-page-columns'
 
 const MODULE_KEY: ModuleKey = 'project'
 const FALLBACK_PAGE_SIZE = 30
@@ -58,6 +59,8 @@ function toEditorFormValues(record: ProjectListRow) {
     status: asString(record.status) || STATUS.NORMAL,
     quoteSource: asString(record.quoteSource) || 'MYSTEEL',
     quoteRegion: asString(record.quoteRegion),
+    allowedBrands: toAllowedSpecValues(record.allowedBrands),
+    allowedMaterials: toAllowedSpecValues(record.allowedMaterials),
     remark: asString(record.remark),
   }
 }
