@@ -344,6 +344,21 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     })
     const lastCall = api.fetchSteelQuoteCalendars.mock.calls.at(-1)
     expect(lastCall?.[3]).toBe('STEELX')
+
+    // 今日同步口径跟随数据源: 西本每天只有一个价, 分母与圆点都应是「上午」而不是 3 个时段
+    const todayMetric = Array.from(
+      container.querySelectorAll<HTMLElement>('.market-sync-metric'),
+    ).at(-1)
+    expect(todayMetric?.textContent).toContain('/ 1')
+    const todayItems =
+      todayMetric?.querySelectorAll('.market-sync-today-item') ?? []
+    expect(todayItems).toHaveLength(1)
+    const todayLabels = Array.from(todayItems).map((item) =>
+      item
+        .querySelector('span[aria-hidden="true"]:not(.market-sync-today-dot)')
+        ?.textContent?.trim(),
+    )
+    expect(todayLabels).toEqual(['上午'])
   })
 
   it('西本地区下拉使用后端 runtime-config 动态下发的地区', async () => {
@@ -491,6 +506,61 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     expect(api.syncSteelQuotes).toHaveBeenCalled()
     // 缺失格是「同步」而不是「看明细」: 不应弹出抽屉
     expect(document.body.textContent).not.toContain('共 0 条')
+  })
+
+  it('调休上班的周六有行情时按交易日展示与统计, 不再显示成休市', async () => {
+    // 回归: 矩阵曾先按周末判「休市」, 2026-10-10(周六, 调休上班日) 明明已同步 870 行,
+    // 却被显示成不可点的「休」, 覆盖统计也把它当作休息日排除。
+    const window30 = Array.from({ length: 30 }, (_, index) =>
+      dayjs().subtract(index, 'day'),
+    )
+    const saturdayWithData = window30.find((day) => day.day() === 6)
+    const sundayWithoutData = window30.find((day) => day.day() === 0)
+    expect(saturdayWithData).toBeTruthy()
+    expect(sundayWithoutData).toBeTruthy()
+    const withData = saturdayWithData?.format('YYYY-MM-DD') as string
+    const withoutData = sundayWithoutData?.format('YYYY-MM-DD') as string
+    // 交易日分母 = 窗口内工作日 + 这个有行情的周六
+    const weekdayCount = window30.filter(
+      (day) => day.day() !== 0 && day.day() !== 6,
+    ).length
+
+    api.fetchSteelQuoteCalendars.mockResolvedValue([
+      {
+        quoteDate: withData,
+        periods: ['上午'],
+        periodRows: { 上午: 870 },
+      },
+    ])
+    api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })
+    api.fetchBackfillStatus.mockResolvedValue(idleBackfillStatus)
+
+    renderView()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // 有行情的周六: 已同步 + 可点击进明细, 不再是「休」文本
+    const synced = matrixCell(container, withData, '上午')
+    expect(synced.classList.contains('is-synced')).toBe(true)
+    expect(synced.tagName).toBe('BUTTON')
+    const label = synced.getAttribute('aria-label') ?? ''
+    expect(label).toContain('已同步')
+    expect(label).toContain('870 行')
+
+    // 无行情的周日仍是休市文本(周末兜底判据保留)。
+    // 休市格对读屏只提供 sr-only 文案, 没有 aria-label 按钮语义, 因此按 title 定位。
+    const off = Array.from(
+      container.querySelectorAll<HTMLElement>('.market-sync-cell.is-off'),
+    ).find((el) => (el.getAttribute('title') ?? '').includes(withoutData))
+    expect(off).toBeTruthy()
+    expect(off?.tagName).toBe('SPAN')
+    expect(off?.textContent).toContain('休')
+
+    // 覆盖统计口径与矩阵一致: 分母含这个周六
+    const coverage = container.querySelector('.market-sync-metric')?.textContent
+    expect(coverage).toMatch(new RegExp(`1\\s*/\\s*${weekdayCount + 1}`))
   })
 
   it('休市格是非交互文本，不可点击(WCAG 2.1.1 不依赖颜色或悬停)', async () => {

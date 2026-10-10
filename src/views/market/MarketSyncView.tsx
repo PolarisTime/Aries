@@ -91,7 +91,7 @@ export function MarketSyncView() {
         quoteRegions={runtimeConfig?.business?.quoteRegions}
       />
 
-      <MarketSyncMetrics stats={stats} />
+      <MarketSyncMetrics periods={activePeriods} stats={stats} />
 
       <MarketSyncNotices
         backfillStatus={backfillStatus}

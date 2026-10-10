@@ -26,6 +26,7 @@ import {
   type CalendarMap,
   csvCell,
   type Filters,
+  isTradingDay,
   MATRIX_DAYS,
   PAGE_SIZE,
   PERIODS,
@@ -196,20 +197,23 @@ export function useMarketSync() {
 
   // 概览统计
   const stats = useMemo(() => {
-    const weekdays = matrixDays.filter((date) => {
-      const dow = dayjs(date).day()
-      return dow !== 0 && dow !== 6
-    })
+    let tradingDays = 0
     let covered = 0
     let missingSlots = 0
-    for (const date of weekdays) {
+    for (const date of matrixDays) {
       const entry = calendars[date]
-      const count = entry?.periods.length ?? 0
+      const periods = entry?.periods
+      // 交易日判据与覆盖矩阵完全一致: 有行情即交易日; 周末无行情才是休市。
+      // 否则调休上班的周六日即使已同步也不会计入覆盖, 分母还把它当休息日排除。
+      if (!isTradingDay(date, periods)) continue
+      tradingDays += 1
+      const count = periods?.length ?? 0
       if (count > 0) covered += 1
-      missingSlots += activePeriods.length - count
+      // 时段数按展示口径取差; 已同步时段多于展示时段时不产生负数缺口
+      missingSlots += Math.max(activePeriods.length - count, 0)
     }
     const todayEntry = calendars[today()]
-    return { weekdays: weekdays.length, covered, missingSlots, todayEntry }
+    return { tradingDays, covered, missingSlots, todayEntry }
   }, [matrixDays, calendars, activePeriods])
 
   const onSync = async () => {

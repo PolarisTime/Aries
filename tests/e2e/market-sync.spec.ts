@@ -89,6 +89,27 @@ async function stubMarketApis(page: import('@playwright/test').Page) {
   return date
 }
 
+/** 矩阵窗口内最近的周六(调休上班日会有行情, 不能一律当休市)。 */
+function recentSaturday(): string {
+  const cursor = new Date()
+  while (cursor.getDay() !== 6) {
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return fmtLocal(cursor)
+}
+
+/** 矩阵窗口(今天往前 30 天)内的工作日数量。 */
+function weekdayCountInWindow(): number {
+  let count = 0
+  const cursor = new Date()
+  for (let i = 0; i < 30; i += 1) {
+    const day = cursor.getDay()
+    if (day !== 0 && day !== 6) count += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return count
+}
+
 test.describe('行情同步页', () => {
   test('低分辨率下页面可纵向滚动，底部内容可达', async ({ page }) => {
     await page.setViewportSize(LOW_VIEWPORT)
@@ -235,5 +256,57 @@ test.describe('行情同步页', () => {
       expect(cell.insideButton).toBe(false)
       expect(cell.label).toContain('休市')
     }
+  })
+
+  test('调休上班的周六有行情时按交易日计入覆盖, 不再显示成休市', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await loginAsE2eUser(page)
+    // 桩住日历: 周六当天有行情(模拟 2026-10-10 这类调休上班日)
+    const saturday = recentSaturday()
+    await page.route('**/api/v2.0/steel-quote-calendars**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { quoteDate: saturday, periods: ['上午'], periodRows: { 上午: 870 } },
+        ]),
+      }),
+    )
+    await page.route('**/api/v2.0/steel-quotes**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          currentPage: 0,
+          pageSize: 20,
+          hasMore: false,
+        }),
+      }),
+    )
+    await page.route('**/api/v2.0/steel-quote-backfills/current**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ running: false }),
+      }),
+    )
+    await gotoMarketSync(page)
+
+    // 该周六上午格是「已同步」按钮(可点进明细), 不是休市文本
+    const syncedCell = page.locator(
+      `button.market-sync-cell.is-synced[aria-label*="${saturday} 上午"]`,
+    )
+    await expect(syncedCell).toHaveCount(1)
+    await expect(syncedCell).toHaveAttribute('aria-label', /870 行/)
+
+    // 覆盖统计口径同步: 分母 = 窗口内工作日 + 这个有行情的周六
+    await expect(page.locator('.market-sync-metric').first()).toContainText(
+      `1 / ${weekdayCountInWindow() + 1}`,
+    )
   })
 })

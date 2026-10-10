@@ -20,18 +20,27 @@ const { Text } = Typography
  */
 export function MarketSyncMetrics({
   stats,
+  periods = PERIODS,
 }: {
   stats: {
-    weekdays: number
+    /**
+     * 近 30 天内的交易日数: 有行情的日期 ∪ 工作日(待同步)。
+     * 不含"周末且无行情"的休市日 —— 调休上班的周六日有行情时计入。
+     */
+    tradingDays: number
     covered: number
     missingSlots: number
     todayEntry: CalendarMap[string] | undefined
   }
+  /** 当前数据源的展示时段(西本仅「上午」): 今日同步的分母与圆点必须与矩阵口径一致。 */
+  periods?: readonly string[]
 }) {
   const { t } = useTranslation()
   const coveragePercent =
-    stats.weekdays > 0 ? Math.round((stats.covered / stats.weekdays) * 100) : 0
-  const todayDone = PERIODS.filter((p) =>
+    stats.tradingDays > 0
+      ? Math.round((stats.covered / stats.tradingDays) * 100)
+      : 0
+  const todayDone = periods.filter((p) =>
     stats.todayEntry?.periods.includes(p),
   ).length
 
@@ -40,7 +49,7 @@ export function MarketSyncMetrics({
       <Card size="small" className="market-sync-metric">
         <Statistic
           title={t('marketSync.metricCoverageTitle')}
-          value={`${stats.covered} / ${stats.weekdays}`}
+          value={`${stats.covered} / ${stats.tradingDays}`}
           suffix={
             <span className="market-sync-metric-unit">
               {t('marketSync.metricCoverageUnit')}
@@ -52,7 +61,7 @@ export function MarketSyncMetrics({
           percent={coveragePercent}
           size="small"
           showInfo={false}
-          status={stats.covered >= stats.weekdays ? 'success' : 'active'}
+          status={stats.covered >= stats.tradingDays ? 'success' : 'active'}
           aria-label={t('marketSync.metricCoverageTitle')}
         />
       </Card>
@@ -84,11 +93,11 @@ export function MarketSyncMetrics({
           title={t('marketSync.metricTodayTitle')}
           value={todayDone}
           suffix={
-            <span className="market-sync-metric-unit">/ {PERIODS.length}</span>
+            <span className="market-sync-metric-unit">/ {periods.length}</span>
           }
         />
         <div className="market-sync-today">
-          {PERIODS.map((period) => {
+          {periods.map((period) => {
             const done = Boolean(stats.todayEntry?.periods.includes(period))
             return (
               <span
