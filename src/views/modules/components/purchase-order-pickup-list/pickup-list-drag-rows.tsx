@@ -9,12 +9,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { MenuProps, TableColumnsType, TableProps } from 'antd'
 import { Button, Input, Tag, Tooltip, Typography } from 'antd'
-import type {
-  CSSProperties,
-  KeyboardEvent,
-  PointerEvent,
-  TouchEvent,
-} from 'react'
+import type { CSSProperties, KeyboardEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
@@ -25,7 +20,7 @@ import {
   groupDragId,
   resolveWarehouseLabel,
 } from './pickup-list-draft'
-import { guard, type Listener } from './pickup-list-drag-activation'
+import { forwardDragListeners } from './pickup-list-drag-activation'
 import { PickupItemsTable } from './pickup-list-items-table'
 import { preserveNativeContextMenuOnInputs } from './pickup-list-row-menu'
 
@@ -96,20 +91,12 @@ export function PickupDraftGroupSection({
    * 与明细行一致, 刻意不透传 dnd-kit 的 attributes(带 role="button")。
    */
   const dragListeners = useMemo(
-    () => ({
-      onPointerDown: guard(
-        listeners?.onPointerDown as Listener<PointerEvent<HTMLDivElement>>,
-      ),
-      onTouchStart: guard(
-        listeners?.onTouchStart as Listener<TouchEvent<HTMLDivElement>>,
-      ),
-      // 键盘手柄是标题区的 <button>; 指针/触摸激活点才是整个分组头
-      onKeyDown: listeners?.onKeyDown as Listener<
-        KeyboardEvent<HTMLButtonElement>
-      >,
-    }),
+    () => forwardDragListeners(listeners),
     [listeners],
   )
+  // 键盘监听落在真正获得焦点的标题按钮上, 指针/触摸覆盖整个分组头
+  const { onKeyDown: dragKeyDown, ...pointerTouchListeners } = dragListeners
+
   /** 分组菜单受控开合: 键盘 Shift+F10 需要主动置开。 */
   const [menuOpen, setMenuOpen] = useState(false)
   const openMenuByKeyboard = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -215,8 +202,7 @@ export function PickupDraftGroupSection({
            * 键盘可访问名与焦点另放在标题区: 非交互 div 既不能挂 aria-label,
            * 也不应带 tabIndex(biome a11y), 标题区才是语义上的“手柄”。
            */
-          onPointerDown={dragListeners.onPointerDown}
-          onTouchStart={dragListeners.onTouchStart}
+          {...pointerTouchListeners}
         >
           {/* 用真实 button 承载键盘手柄: 可访问名、Tab 序与 Space 激活都是原生语义,
               在 div 上补 role 会被 antd lint 的 useSemanticElements 拒绝。
@@ -227,7 +213,12 @@ export function PickupDraftGroupSection({
             aria-keyshortcuts="Space Shift+F10"
             aria-label={dragLabel}
             onKeyDown={(event) => {
-              dragListeners.onKeyDown?.(event)
+              // 转发的是 dnd-kit 的不透明处理器(签名随传感器而定), 按实际事件类型调用
+              ;(
+                dragKeyDown as
+                  | ((e: KeyboardEvent<HTMLButtonElement>) => void)
+                  | undefined
+              )?.(event)
               openMenuByKeyboard(event)
             }}
           >

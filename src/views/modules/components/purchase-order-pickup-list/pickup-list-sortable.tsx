@@ -1,16 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type {
-  CSSProperties,
-  HTMLAttributes,
-  KeyboardEvent,
-  PointerEvent,
-  TouchEvent,
-} from 'react'
+import type { CSSProperties, HTMLAttributes } from 'react'
 import { useMemo } from 'react'
 import { RowContextMenuRow } from '@/components/RowContextMenuRow'
 import { ITEM_DRAG_TYPE } from './pickup-list-draft'
-import { guard, type Listener } from './pickup-list-drag-activation'
+import { forwardDragListeners } from './pickup-list-drag-activation'
 
 interface SortableRowProps extends HTMLAttributes<HTMLTableRowElement> {
   'data-row-key': string
@@ -45,21 +39,11 @@ export function SortableRow(props: SortableRowProps) {
   })
 
   /**
-   * 输入控件上不启动拖动: 行内铺满数量/备注等输入, 在它们上长按或按住拖动
-   * 应当仍然用于选择文本与编辑, 而不是把整行拖走。
+   * 拖动激活监听: 按传感器实际声明的键整体转发(见 forwardDragListeners 的说明,
+   * 硬编码键名会在更换传感器时静默失效), 输入控件上一律放行。
    */
   const dragListeners = useMemo(
-    () => ({
-      onPointerDown: guard(
-        listeners?.onPointerDown as Listener<PointerEvent<HTMLTableRowElement>>,
-      ),
-      onTouchStart: guard(
-        listeners?.onTouchStart as Listener<TouchEvent<HTMLTableRowElement>>,
-      ),
-      onKeyDown: listeners?.onKeyDown as Listener<
-        KeyboardEvent<HTMLTableRowElement>
-      >,
-    }),
+    () => forwardDragListeners(listeners),
     [listeners],
   )
 
