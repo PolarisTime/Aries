@@ -244,18 +244,8 @@ function TonProgress({
           {t('priceCompare.sheet.purchaseOrderIssuedShort', {
             issued: `${issuedText}/${orderedText}`,
           })}
-          {brand ? (
-            <>
-              {/* 分隔符对读屏冗余(品牌已在上面的完整描述里读出来) */}
-              <span aria-hidden="true" className="price-compare-ton-brand-sep">
-                ·
-              </span>
-              <span className="price-compare-ton-brand" title={brand}>
-                {brand}
-              </span>
-            </>
-          ) : null}
         </span>
+        {brand ? <TonIssuedBrand brand={brand} overLimit={overLimit} /> : null}
         {overLimit ? (
           <ExclamationCircleFilled
             aria-hidden="true"
@@ -268,13 +258,50 @@ function TonProgress({
 }
 
 /**
+ * 已开品牌层: 与比值层分开的弹性项, 收缩优先级远高于比值层。
+ *
+ * <p>两者同层时省略号会先吃掉比值(11/12px 档实测「已开 0/12」被截成「已开 0/1…」),
+ * 而"比值可读、只省略品牌"才是契约: 列宽不足时先省略品牌, 品牌被压到 0 之后比值层
+ * 才退化为省略号(极端窄列兜底)。</p>
+ *
+ * <p>分隔符与品牌同处一个省略号层, 省略号作用于整串「· 中天」: 分隔符若独立成兄弟
+ * 节点, 品牌被压没后会只剩一个悬空的「·」。超额时整层一起转警告色。</p>
+ */
+function TonIssuedBrand({
+  brand,
+  overLimit,
+}: {
+  brand: string
+  overLimit: boolean
+}) {
+  return (
+    <span
+      className={
+        overLimit
+          ? 'price-compare-ton-brand-group price-compare-ton-hint--over'
+          : 'price-compare-ton-brand-group'
+      }
+    >
+      <span className="price-compare-ton-brand" title={brand}>
+        {/* 分隔符对读屏冗余(品牌已在比值层的完整描述里读出来) */}
+        <span aria-hidden="true" className="price-compare-ton-brand-sep">
+          ·
+        </span>
+        {brand}
+      </span>
+    </span>
+  )
+}
+
+/**
  * 吨位单元格: 单行 —— 报单吨位输入(右对齐等宽数字) + 次要小字「已开 / 订货 · 品牌」+ 明细入口。
  *
  * <p>单行的原因: 两行结构会把该行撑高(实测行高 53 / 吨位格 48, 比其它数据行多约 24px),
  * 数字与进度分开后也很难在同一水平线上扫读。压成一行后吨位格与其它单元格同为 24px 内容高,
  * 行高由整行最高的单元格决定, 不再由吨位列额外撑高。</p>
  *
- * <p>次要小字在列宽不足时省略号收尾(完整口径见进度文本的 Tooltip), 超额警告图标放在
+ * <p>次要小字分两层: 比值层(「已开 x/y」, 硬契约)与品牌层(可省)。列宽不足时品牌层
+ * 先收缩并省略号收尾, 比值层保持完整, 完整口径仍见进度文本的 Tooltip; 超额警告图标放在
  * 省略号层之外, 保证被截断时图标仍在; 明细图标悬停/点击给出该规格行的订单 popover,
  * popover 内可打开选择弹窗, 超额不拦截保存。</p>
  */

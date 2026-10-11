@@ -204,6 +204,9 @@ export const SHEET_COLUMN_WIDTH = {
    * 留给「已开 5/32.768 · 中天」约 45px(实测 11px 字号下整句约 105px), 省略后只剩「已开 5…」;
    * 184 给出约 74px, 比值可读、只省略品牌, 完整口径仍在 Tooltip 里。行高不受列宽影响
    * (吨位格内容高始终是输入框的 24px)。</p>
+   *
+   * <p>这里只是基准字号下的取值: 明细图标、单元格留白与固定 11px 的进度小字不随个人字号
+   * 缩放, 11/12/13px 档必须由 {@link requiredTonColumnWidth} 兜底, 见 {@link sheetColumnWidths}。</p>
    */
   ton: 184,
   /** 网价列: 4 位数字(14px 下约 34px) + 单元格左右留白(12px), 60 已足够。 */
@@ -246,11 +249,62 @@ export const SHEET_WIDTH_BASE_FONT_SIZE = 14
  * <p>非法字号(0/负数/NaN/Infinity)一律回落到基准字号, 避免出现 0 宽列。</p>
  */
 export function scaleSheetColumnWidth(width: number, fontSize: number): number {
-  const safeFontSize =
-    Number.isFinite(fontSize) && fontSize > 0
-      ? fontSize
-      : SHEET_WIDTH_BASE_FONT_SIZE
-  return Math.round((width * safeFontSize) / SHEET_WIDTH_BASE_FONT_SIZE)
+  return Math.round(
+    (width * normalizeFontSize(fontSize)) / SHEET_WIDTH_BASE_FONT_SIZE,
+  )
+}
+
+/** 非法字号(0/负数/NaN/Infinity)一律回落到基准字号, 避免出现 0 宽列。 */
+function normalizeFontSize(fontSize: number): number {
+  return Number.isFinite(fontSize) && fontSize > 0
+    ? fontSize
+    : SHEET_WIDTH_BASE_FONT_SIZE
+}
+
+/**
+ * 报单吨位输入框宽度(em): 4.75em 在 14px 下约 66px, 扣掉 antd small 内边距后
+ * 仍容得下「32.768」这类三位小数吨位。用 em 是为了随个人字号等比放大。
+ */
+export const TON_INPUT_WIDTH_EM = 4.75
+
+/**
+ * 吨位格内**不随个人字号缩放**的固定开销(px)。
+ *
+ * <p>等比换算只对文字宽度成立: 单元格左右留白(13)、输入框与进度/明细图标之间的两个
+ * flex gap(8)、icon-only 的明细按钮(24, 由 24×24 命中区下限决定)都是固定尺寸。</p>
+ */
+export const TON_CELL_FIXED_CHROME = 13 + 8 + 24
+
+/**
+ * 吨位进度小字(固定 11px, 不随个人字号缩放)里「已开 0/26」的宽度上界(px)。
+ *
+ * <p>比值是进度行的硬契约: 列宽不足时只允许省略品牌, 比值必须完整可读
+ * (PingFang SC 11px 下实测「已开 0/26」= 51px)。</p>
+ */
+export const TON_ISSUED_RATIO_WIDTH = 51
+
+/** 超额警告图标挤占的宽度(px): 图标 11px 字号下约 13 + 外边距 2 + 进度行内两个 gap 4。 */
+export const TON_OVER_LIMIT_ICON_WIDTH = 19
+
+/** 取整与字体渲染差异的余量(px)。 */
+const TON_WIDTH_SAFETY = 2
+
+/**
+ * 吨位列宽度下界: 输入框(随字号) + 固定开销 + 超额图标 + 进度比值 + 余量。
+ *
+ * <p>只按字号等比换算会在**小字号档**出错: 11/12/13px 时列宽被等比压小, 但明细图标、
+ * 单元格留白、超额图标与固定 11px 的进度小字都不会一起变小, 留给比值的宽度被挤到
+ * 51px 以下, 用户看到的是「已开 0/1…」而不是完整的「已开 0/12」—— 比值不可读,
+ * 违反「列宽不足只省略品牌」的契约。因此吨位列取等比换算与该下界的较大值。</p>
+ */
+export function requiredTonColumnWidth(fontSize: number): number {
+  return (
+    Math.ceil(TON_INPUT_WIDTH_EM * normalizeFontSize(fontSize)) +
+    TON_CELL_FIXED_CHROME +
+    TON_OVER_LIMIT_ICON_WIDTH +
+    TON_ISSUED_RATIO_WIDTH +
+    TON_WIDTH_SAFETY
+  )
 }
 
 /** 按当前字号换算整张单据表格的列宽(键与 {@link SHEET_COLUMN_WIDTH} 一致)。 */
@@ -264,7 +318,13 @@ export function sheetColumnWidths(
   return Object.fromEntries(
     entries.map(([key, width]) => [
       key,
-      scaleSheetColumnWidth(width, fontSize),
+      // 吨位列还要兜住不随字号缩放的固定开销, 小字号档才不会被等比换算压到截断比值
+      key === 'ton'
+        ? Math.max(
+            scaleSheetColumnWidth(width, fontSize),
+            requiredTonColumnWidth(fontSize),
+          )
+        : scaleSheetColumnWidth(width, fontSize),
     ]),
   ) as Record<keyof typeof SHEET_COLUMN_WIDTH, number>
 }

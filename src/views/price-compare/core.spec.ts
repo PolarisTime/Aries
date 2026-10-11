@@ -20,6 +20,7 @@ import {
   netPrice,
   netPriceWithFallback,
   reconcileSpotInputs,
+  requiredTonColumnWidth,
   resolveLock,
   SHEET_COLUMN_WIDTH,
   SHEET_WIDTH_BASE_FONT_SIZE,
@@ -27,6 +28,10 @@ import {
   sheetColumnWidths,
   sumTonByPurchaseOrderItem,
   syncSpotInputs,
+  TON_CELL_FIXED_CHROME,
+  TON_INPUT_WIDTH_EM,
+  TON_ISSUED_RATIO_WIDTH,
+  TON_OVER_LIMIT_ICON_WIDTH,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
@@ -885,33 +890,69 @@ describe('列宽按字号自适应', () => {
    * 吨位列进度小字「已开 0/26 · 中天」的截断阈值契约。
    *
    * 真机实测(PingFang SC): 小字固定 11px(不随个人字号缩放), 「已开 0/26」= 50.97px(取 51px 上界),
-   * 品牌后缀「 · 中天」再加约 31px。小字是 `flex: 0 1 auto` 的可收缩项, 抢到的是
-   * 列宽 − 单元格左右留白(13px) − 报单吨位输入框(4.75em) − 明细图标(24px) − 两个 flex gap(8px)。
-   * 留白 ≥ 51px 时用户给的短值示例「已开 0/26」完整可读, 被省略的只有品牌; 156px 的旧列宽只剩
-   * 44.5px, 连「已开 0/2」都会被截成省略号(即用户截图里的现象)。
+   * 品牌后缀「 · 中天」再加约 31px。比值层抢到的是
+   * 列宽 − 单元格左右留白(13px) − 报单吨位输入框(4.75em) − 明细图标(24px) − 两个 flex gap(8px);
+   * 超额时还要再扣掉警告图标与其间距(19px)。留白 ≥ 51px 时「已开 0/26」完整可读, 被省略的
+   * 只有品牌; 156px 的旧列宽只剩 44.5px, 连「已开 0/2」都会被截成省略号。
+   *
+   * 小字号档(11/12/13)是等比换算的盲区: 明细图标、单元格留白与固定 11px 的小字都不随字号
+   * 缩小, 等比压小列宽会让比值可用宽跌破 51px —— 线上实测 12px 档 + 面板窄于表格总宽时
+   * 「已开 0/12」被截成「已开 0/1…」, 超额行更只剩「已开 …」。{@link requiredTonColumnWidth}
+   * 就是这个小字号档下界。
    */
-  const ISSUED_SHORT_TEXT_WIDTH = 51
-  const TON_CELL_FIXED_CHROME = 13 + 24 + 8
-  const TON_INPUT_WIDTH_EM = 4.75
   /** 进度小字实际可用的内容宽(px)。 */
   const issuedAvailableWidth = (fontSize: number) =>
     sheetColumnWidths(fontSize).ton -
     TON_CELL_FIXED_CHROME -
     TON_INPUT_WIDTH_EM * fontSize
 
-  it('14/16/18 三档下进度小字都容得下「已开 0/26」, 不被省略号截断', () => {
-    for (const fontSize of [14, 16, 18]) {
+  /** 超额行里比值实际可用的内容宽(px): 再扣掉警告图标与进度行内间距。 */
+  const issuedAvailableWidthOverLimit = (fontSize: number) =>
+    issuedAvailableWidth(fontSize) - TON_OVER_LIMIT_ICON_WIDTH
+
+  it('11/12/13/14/16/18 六档下比值都容得下「已开 0/26」, 不被省略号截断', () => {
+    for (const fontSize of [11, 12, 13, 14, 16, 18]) {
       expect(issuedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
-        ISSUED_SHORT_TEXT_WIDTH,
+        TON_ISSUED_RATIO_WIDTH,
+      )
+      // 超额行同样要读得出比值: 这是用户最需要数字的时候
+      expect(issuedAvailableWidthOverLimit(fontSize)).toBeGreaterThanOrEqual(
+        TON_ISSUED_RATIO_WIDTH,
       )
     }
     // 基准字号下的真机余量: 可用 72.5px vs 需求 51px(完整句含品牌需 82px, 由 Tooltip 补齐)
     expect(issuedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(72.5)
   })
 
+  it('小字号档由不随字号缩放的固定开销兜底(等比换算会压掉比值)', () => {
+    // 等比换算在 11/12/13 档给出的宽度不足以容纳比值 + 固定开销
+    for (const fontSize of [11, 12, 13]) {
+      const scaled = scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize)
+      expect(scaled).toBeLessThan(requiredTonColumnWidth(fontSize))
+      // 兜底后: 列宽 = 下界, 且恰好是等比换算与下界的较大值
+      expect(sheetColumnWidths(fontSize).ton).toBe(
+        requiredTonColumnWidth(fontSize),
+      )
+    }
+    // 基准字号及放大档仍走等比换算, 不因兜底而变宽
+    for (const fontSize of [14, 16, 18]) {
+      expect(sheetColumnWidths(fontSize).ton).toBe(
+        scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize),
+      )
+    }
+    // 下界在基准字号下正好等于列宽常量本身(4.75em 输入框 + 固定开销 + 比值 + 余量)
+    expect(requiredTonColumnWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(
+      SHEET_COLUMN_WIDTH.ton,
+    )
+    expect(TON_ISSUED_RATIO_WIDTH).toBe(51)
+    expect(TON_CELL_FIXED_CHROME).toBe(45)
+    expect(TON_OVER_LIMIT_ICON_WIDTH).toBe(19)
+    expect(TON_INPUT_WIDTH_EM).toBe(4.75)
+  })
+
   it('吨位列宽回归保护: 156 在 14px 下连「已开 0/26」都放不下', () => {
     expect(156 - TON_CELL_FIXED_CHROME - TON_INPUT_WIDTH_EM * 14).toBeLessThan(
-      ISSUED_SHORT_TEXT_WIDTH,
+      TON_ISSUED_RATIO_WIDTH,
     )
   })
 

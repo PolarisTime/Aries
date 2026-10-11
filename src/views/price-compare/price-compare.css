@@ -1021,13 +1021,37 @@
 }
 
 /*
- * 吨位次要小字里的品牌: 与"已开 26/84"同一行、同一省略号层,
- * 列宽不足时随整段省略号收尾, 完整品牌由同一格的 Tooltip 给出。
+ * 吨位次要小字里的品牌层: 与比值「已开 26/84」分成两个弹性项, 有自己的省略号层。
+ *
+ * 收缩额度按 flex-shrink × flex-basis 分配, 品牌取极大的 flex-shrink 让它几乎独占缺口:
+ * 列宽不足时先省略品牌, 比值保持完整可读(两者同层时省略号会先吃掉比值 —— 11/12px 档
+ * 实测「已开 0/12」被截成「已开 0/1…」)。品牌被压到 0 之后才轮到比值层退化为省略号。
  */
+.price-compare-ton-brand-group {
+  display: inline-flex;
+  flex: 0 9999 auto;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+}
+
+/* 品牌文本: 品牌层内的省略号层, 完整品牌由同一格的 Tooltip 给出 */
 .price-compare-ton-brand {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/*
+ * 分隔符: 与品牌同处品牌的省略号层(不设独立弹性行为), 省略号作用于整串「· 中天」,
+ * 只省略品牌、不留孤立标点。分隔符对读屏冗余, 品牌已在上面的完整描述里读出来。
+ */
 .price-compare-ton-brand-sep {
   white-space: nowrap;
   margin-inline: 2px;

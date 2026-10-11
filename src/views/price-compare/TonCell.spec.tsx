@@ -123,9 +123,38 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     const meta = container.querySelector('.price-compare-ton-meta')
     expect(meta?.textContent).toContain('已开 30/40')
     expect(meta?.textContent).not.toContain('35/40')
-    // 已开的品牌直接跟在进度后面
-    expect(meta?.textContent).toContain('中天')
+    // 已开的品牌跟在进度后面(独立品牌层)
+    const progress = container.querySelector('.price-compare-ton-progress')
+    expect(progress?.textContent).toContain('中天')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
+  })
+
+  it('比值层与品牌层分开: 品牌层先让位, 比值层不被品牌挤出省略号', () => {
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 5,
+    })
+    const issued = container.querySelector('.price-compare-ton-issued')
+    const brandGroup = container.querySelector('.price-compare-ton-brand-group')
+    // 比值层只承载比值: 品牌与它同层时省略号会先吃掉比值(11/12px 档线上实测)
+    const visibleOf = (node: Element | null) => {
+      const clone = node?.cloneNode(true) as HTMLElement | undefined
+      clone?.querySelector('.aries-sr-only')?.remove()
+      return clone?.textContent ?? ''
+    }
+    expect(visibleOf(issued)).toBe('已开 30/40')
+    // 读屏用的完整口径仍在比值层里(品牌不会被拆掉而读不到)
+    expect(issued?.querySelector('.aries-sr-only')?.textContent).toContain(
+      '中天',
+    )
+    // 品牌(含分隔符)整层搬到了比值层之外, 且是比值层的兄弟节点
+    expect(brandGroup?.textContent).toBe('·中天')
+    expect(brandGroup?.previousElementSibling).toBe(issued)
+    expect(issued?.contains(brandGroup ?? null)).toBe(false)
+    expect(brandGroup?.classList.contains('price-compare-ton-hint--over')).toBe(
+      false,
+    )
+    expect(brandGroup?.querySelector('.price-compare-ton-brand')).not.toBeNull()
   })
 
   it('品牌缺失时进度行不出现多余分隔符', () => {
@@ -136,7 +165,10 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     const meta = container.querySelector('.price-compare-ton-meta')
     expect(meta?.textContent).toContain('已开 30/40')
     expect(container.querySelector('.price-compare-ton-brand')).toBeNull()
-    expect(meta?.textContent).not.toContain('·')
+    expect(container.querySelector('.price-compare-ton-brand-group')).toBeNull()
+    expect(
+      container.querySelector('.price-compare-ton-progress')?.textContent,
+    ).not.toContain('·')
   })
 
   it('输入与次要文本同一行: 吨位列只有一个可视行容器', () => {
@@ -189,6 +221,12 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(
       container.querySelector(
         '.price-compare-ton-issued.price-compare-ton-hint--over',
+      ),
+    ).toBeTruthy()
+    // 标红要覆盖整个进度小字: 品牌层独立成层后也要一起转警告色
+    expect(
+      container.querySelector(
+        '.price-compare-ton-brand-group.price-compare-ton-hint--over',
       ),
     ).toBeTruthy()
     expect(
