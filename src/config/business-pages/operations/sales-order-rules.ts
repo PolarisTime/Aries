@@ -1,6 +1,7 @@
 import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
+import { normalizeScopeEnforcement } from '@/api/master/project-options'
 import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import {
   DISPLAY_WEIGHT_PRECISION,
@@ -314,14 +315,35 @@ export function buildAllowedSpecImportWarning(args: {
   })}（${scope}）`
 }
 
-/**
- * 销售订单导入采购订单明细后的匹配预警: 明细的品牌/材质若超出所选项目约定的允许范围,
- * 返回预警文案(不阻断导入); 项目未配置、未选择项目或全部匹配时返回 null。
- */
-export function warnSalesOrderPurchaseSourceImport(args: {
+/** 导入侧的范围判定结果: 力度决定「拦住还是只提醒」。 */
+export interface AllowedSpecImportCheck {
+  /** 是否阻断导入（项目把对应维度配成 BLOCK 且确有越界）。 */
+  blocked: boolean
+  /** 待提示文案；无越界或力度为 OFF 时为 null。 */
+  message: string | null
+  /** 结构化的越界结果与项目范围，供调用方自行组装文案（阻断文案与提醒文案措辞不同）。 */
+  projectLabel: string
+  violations: AllowedSpecViolations
+  allowedBrands: string[]
+  allowedMaterials: string[]
+}
+
+/** 无越界/未配置时的空结果，避免调用方到处判 null。 */
+function emptyAllowedSpecImportCheck(): AllowedSpecImportCheck {
+  return {
+    blocked: false,
+    message: null,
+    projectLabel: '',
+    violations: { brands: [], materials: [] },
+    allowedBrands: [],
+    allowedMaterials: [],
+  }
+}
+
+function resolveProjectScope(args: {
   currentRecord: ModuleRecordInput
   importedItems: ModuleLineItem[]
-}): string | null {
+}) {
   const projectId = parseOptionalEntityId(
     args.currentRecord?.projectId,
     'currentRecord.projectId',
@@ -337,17 +359,122 @@ export function warnSalesOrderPurchaseSourceImport(args: {
   if (!project) {
     return null
   }
-  const allowedBrands = project.allowedBrands ?? []
-  const allowedMaterials = project.allowedMaterials ?? []
+  return {
+    projectLabel: project.projectName || project.label || projectId,
+    allowedBrands: project.allowedBrands ?? [],
+    allowedMaterials: project.allowedMaterials ?? [],
+    // 清单为空 → 不限制; 未下发力度 → 归一到「提醒」（与后端读路径一致）。
+    brandEnforcement: project.allowedBrands?.length
+      ? normalizeScopeEnforcement(project.allowedBrandSeverity)
+      : 'OFF',
+    materialEnforcement: project.allowedMaterials?.length
+      ? normalizeScopeEnforcement(project.allowedMaterialSeverity)
+      : 'OFF',
+  } as const
+}
+
+/**
+ * 销售订单导入采购订单明细时的项目范围判定（单一判据，供导入前后两处共用）。
+ *
+ * <p>力度语义：BLOCK 拦住导入（前端先挡一次，服务端保存时再挡一次，两端不可互相替代）；
+ * WARN 只提示；OFF 完全不校验。项目未选择、未配置清单、或明细全部匹配时都不产生提示。
+ */
+export function resolveSalesOrderPurchaseSourceImportCheck(args: {
+  currentRecord: ModuleRecordInput
+  importedItems: ModuleLineItem[]
+}): AllowedSpecImportCheck {
+  const empty = emptyAllowedSpecImportCheck()
+  const scope = resolveProjectScope(args)
+  if (!scope) {
+    return empty
+  }
+  const checksBrands = scope.brandEnforcement !== 'OFF'
+  const checksMaterials = scope.materialEnforcement !== 'OFF'
+  if (!checksBrands && !checksMaterials) {
+    return empty
+  }
   const violations = collectAllowedSpecViolations(
     args.importedItems,
-    allowedBrands,
-    allowedMaterials,
+    checksBrands ? scope.allowedBrands : [],
+    checksMaterials ? scope.allowedMaterials : [],
   )
-  return buildAllowedSpecImportWarning({
-    projectLabel: project.projectName || project.label || projectId,
+  const warning = buildAllowedSpecImportWarning({
+    projectLabel: scope.projectLabel,
     violations,
-    allowedBrands,
-    allowedMaterials,
+    allowedBrands: scope.allowedBrands,
+    allowedMaterials: scope.allowedMaterials,
   })
+  if (!warning) {
+    return empty
+  }
+  const blocked =
+    (violations.brands.length > 0 && scope.brandEnforcement === 'BLOCK') ||
+    (violations.materials.length > 0 && scope.materialEnforcement === 'BLOCK')
+  return {
+    blocked,
+    message: warning,
+    projectLabel: scope.projectLabel,
+    violations,
+    allowedBrands: scope.allowedBrands,
+    allowedMaterials: scope.allowedMaterials,
+  }
+}
+
+/**
+ * 导入后预警（WARN 档）：返回文案即提示人工复核，不阻断导入。
+ *
+ * <p>BLOCK 档在前置校验里已经拦下，因此这里只为「提醒」档发声，避免同一件事弹两条消息。
+ */
+export function warnSalesOrderPurchaseSourceImport(args: {
+  currentRecord: ModuleRecordInput
+  importedItems: ModuleLineItem[]
+}): string | null {
+  const check = resolveSalesOrderPurchaseSourceImportCheck(args)
+  return check.blocked ? null : check.message
+}
+
+/**
+ * 导入前校验（BLOCK 档）：返回文案即阻止导入。
+ *
+ * <p>必须在导入前判定：越界行一旦落进草稿，用户看到的是一张已经写脏的单据，
+ * 「先导入再报错」既没省事也容易让人忽略提示。</p>
+ */
+export function validateSalesOrderPurchaseSourceImport(args: {
+  currentRecord: ModuleRecordInput
+  parentRecord: ModuleRecord
+}): string | null {
+  const check = resolveSalesOrderPurchaseSourceImportCheck({
+    currentRecord: args.currentRecord,
+    // 校验发生在导入之前, 必须自己把来源明细按同一变换展开, 否则判的是空集合。
+    importedItems: transformPurchaseInboundItemsToSalesOrderItems(
+      args.parentRecord,
+    ),
+  })
+  if (!check.blocked || !check.message) {
+    return null
+  }
+  return i18next.t('modules.pages.salesOrder.allowedSpecImportBlocked', {
+    project: check.projectLabel,
+    details: formatViolationDetails(check.violations),
+  })
+}
+
+/** 阻断文案里的越界明细：与提示文案同源，避免两处格式各写一套。 */
+function formatViolationDetails(violations: AllowedSpecViolations): string {
+  const details: string[] = []
+  if (violations.brands.length) {
+    details.push(
+      i18next.t('modules.pages.salesOrder.allowedSpecImportBrands', {
+        values: formatAllowedValues(violations.brands),
+      }),
+    )
+  }
+  if (violations.materials.length) {
+    details.push(
+      i18next.t('modules.pages.salesOrder.allowedSpecImportMaterials', {
+        values: formatAllowedValues(violations.materials),
+      }),
+    )
+  }
+  return details.join('；')
 }

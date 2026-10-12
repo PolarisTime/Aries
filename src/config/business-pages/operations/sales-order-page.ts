@@ -30,6 +30,7 @@ import {
   renderSalesOrderNo,
   renderSalesOrderTotalWeight,
   transformPurchaseInboundItemsToSalesOrderItems,
+  validateSalesOrderPurchaseSourceImport,
   warnSalesOrderPurchaseSourceImport,
 } from './sales-order-rules'
 
@@ -439,7 +440,9 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: mapPurchaseInboundToSalesOrderDraft,
     transformItems: transformPurchaseInboundItemsToSalesOrderItems,
-    // 项目资料可维护「允许品牌/允许材质」；导入后超出约定范围只预警不拦截。
+    // 项目资料可维护「允许品牌/允许材质」与处理方式：BLOCK 挡在导入前，WARN 导入后再提示。
+    // 前端拦截只是体验层，服务端保存时还会再判一次（见 SalesOrderProjectScopeGuard）。
+    validateParentImport: validateSalesOrderPurchaseSourceImport,
     warnParentImport: warnSalesOrderPurchaseSourceImport,
   },
   ...salesOrderItemColumnOutputs,

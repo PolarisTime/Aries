@@ -25,6 +25,8 @@ import { salesOrdersPageConfig } from './sales-order-page'
 import {
   buildAllowedSpecImportWarning,
   collectAllowedSpecViolations,
+  resolveSalesOrderPurchaseSourceImportCheck,
+  validateSalesOrderPurchaseSourceImport,
   warnSalesOrderPurchaseSourceImport,
 } from './sales-order-rules'
 
@@ -34,7 +36,12 @@ function item(overrides: Record<string, unknown>): ModuleLineItem {
   return { id: '1932500000000000001', ...overrides }
 }
 
-function projectOption(allowedBrands: string[], allowedMaterials: string[]) {
+function projectOption(
+  allowedBrands: string[],
+  allowedMaterials: string[],
+  allowedBrandSeverity?: 'OFF' | 'WARN' | 'BLOCK',
+  allowedMaterialSeverity?: 'OFF' | 'WARN' | 'BLOCK',
+) {
   return {
     id: '9001',
     value: '9001',
@@ -44,6 +51,18 @@ function projectOption(allowedBrands: string[], allowedMaterials: string[]) {
     projectName: '项目甲',
     allowedBrands,
     allowedMaterials,
+    ...(allowedBrandSeverity ? { allowedBrandSeverity } : {}),
+    ...(allowedMaterialSeverity ? { allowedMaterialSeverity } : {}),
+  }
+}
+
+/** 采购来源父单：导入前的判定基于它的明细，所以这里按真实来源行的形状构造。 */
+function purchaseSourceRecord(items: ModuleLineItem[]) {
+  return {
+    id: '5001',
+    orderNo: 'PO-1',
+    purchaseOrderNo: 'PO-1',
+    items,
   }
 }
 
@@ -229,5 +248,124 @@ describe('销售订单导入采购订单明细的预警接线', () => {
     expect(salesOrdersPageConfig.parentImport?.warnParentImport).toBe(
       warnSalesOrderPurchaseSourceImport,
     )
+  })
+
+  describe('项目范围力度(severity)分流', () => {
+    beforeEach(() => {
+      findProjectOptionMock.mockReset()
+    })
+
+    it('BLOCK 档在导入前拦住并给出可操作文案', () => {
+      findProjectOptionMock.mockReturnValue(
+        projectOption(['沙钢'], [], 'BLOCK', 'WARN'),
+      )
+
+      const blocked = validateSalesOrderPurchaseSourceImport({
+        currentRecord,
+        parentRecord: purchaseSourceRecord([item({ brand: '宝钢' })]),
+      })
+
+      expect(blocked).toContain('项目甲')
+      expect(blocked).toContain('宝钢')
+      // 合规底线：必须保留「或同等档次」的例外通道，不能写成没有出路的绝对禁止
+      expect(blocked).toContain('或同等档次')
+    })
+
+    it('BLOCK 档命中允许范围时不拦', () => {
+      findProjectOptionMock.mockReturnValue(
+        projectOption(['沙钢'], [], 'BLOCK', 'WARN'),
+      )
+
+      expect(
+        validateSalesOrderPurchaseSourceImport({
+          currentRecord,
+          parentRecord: purchaseSourceRecord([item({ brand: '沙钢' })]),
+        }),
+      ).toBeNull()
+    })
+
+    it('WARN 档不拦但导入后提示', () => {
+      findProjectOptionMock.mockReturnValue(
+        projectOption(['沙钢'], [], 'WARN', 'WARN'),
+      )
+      const args = {
+        currentRecord,
+        importedItems: [item({ brand: '宝钢' })],
+      }
+
+      expect(
+        validateSalesOrderPurchaseSourceImport({
+          currentRecord,
+          parentRecord: purchaseSourceRecord([{ id: '1', brand: '宝钢' }]),
+        }),
+      ).toBeNull()
+      expect(warnSalesOrderPurchaseSourceImport(args)).toContain('宝钢')
+    })
+
+    it('BLOCK 档阻断时不再重复提示(避免同一件事两条消息)', () => {
+      findProjectOptionMock.mockReturnValue(
+        projectOption(['沙钢'], [], 'BLOCK', 'WARN'),
+      )
+
+      expect(
+        warnSalesOrderPurchaseSourceImport({
+          currentRecord,
+          importedItems: [item({ brand: '宝钢' })],
+        }),
+      ).toBeNull()
+    })
+
+    it('OFF 档完全不校验(清单仅作参考)', () => {
+      findProjectOptionMock.mockReturnValue(
+        projectOption(['沙钢'], ['HRB400'], 'OFF', 'OFF'),
+      )
+      const check = resolveSalesOrderPurchaseSourceImportCheck({
+        currentRecord,
+        importedItems: [item({ brand: '宝钢', material: 'HRB500' })],
+      })
+
+      expect(check).toMatchObject({ blocked: false, message: null })
+      expect(
+        warnSalesOrderPurchaseSourceImport({
+          currentRecord,
+          importedItems: [item({ brand: '宝钢', material: 'HRB500' })],
+        }),
+      ).toBeNull()
+    })
+
+    it('维度力度互相独立: 品牌阻断不影响材质提醒', () => {
+      findProjectOptionMock.mockReturnValue(
+        projectOption(['沙钢'], ['HRB400'], 'BLOCK', 'WARN'),
+      )
+
+      const check = resolveSalesOrderPurchaseSourceImportCheck({
+        currentRecord,
+        importedItems: [item({ brand: '沙钢', material: 'HRB500' })],
+      })
+
+      expect(check.blocked).toBe(false)
+      expect(check.message).toContain('HRB500')
+    })
+
+    it('后端未下发力度时按提醒处理(兼容升级前数据)', () => {
+      findProjectOptionMock.mockReturnValue(projectOption(['沙钢'], []))
+
+      const check = resolveSalesOrderPurchaseSourceImportCheck({
+        currentRecord,
+        importedItems: [item({ brand: '宝钢' })],
+      })
+
+      expect(check.blocked).toBe(false)
+      expect(check.message).toContain('宝钢')
+    })
+
+    it('销售订单父单导入同时挂载阻断与提醒两个挂载点', () => {
+      expect(salesOrdersPageConfig.parentImport?.validateParentImport).toBe(
+        validateSalesOrderPurchaseSourceImport,
+      )
+      expect(salesOrdersPageConfig.parentImport?.warnParentImport).toBe(
+        warnSalesOrderPurchaseSourceImport,
+      )
+    })
   })
 })

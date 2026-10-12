@@ -31,7 +31,21 @@ export type ProjectOption = {
   allowedBrands: string[]
   /** 项目允许的材质; 空数组表示不限制。 */
   allowedMaterials: string[]
+  /** 允许品牌不匹配时的处理方式; 清单为空或未配置时缺省, 由调用方按 WARN 处理。 */
+  allowedBrandSeverity?: ProjectScopeEnforcement
+  /** 允许材质不匹配时的处理方式; 清单为空或未配置时缺省, 由调用方按 WARN 处理。 */
+  allowedMaterialSeverity?: ProjectScopeEnforcement
 }
+
+/**
+ * 项目采购范围的处理方式(力度可配)。
+ * <p>
+ * OFF 保留清单但关闭校验, WARN 只提醒, BLOCK 阻断保存 —— 同一份规则换力度不改代码。
+ */
+export type ProjectScopeEnforcement = 'OFF' | 'WARN' | 'BLOCK'
+
+/** 处理方式选项的默认档: 清单非空但后端没给力度时按「提醒」处理, 与后端读路径口径一致。 */
+export const DEFAULT_SCOPE_ENFORCEMENT: ProjectScopeEnforcement = 'WARN'
 
 /** 取价数据源。 */
 export type ProjectQuoteSource = 'MYSTEEL' | 'STEELX'
@@ -62,6 +76,8 @@ type RawProjectOption = {
   quoteRegion?: unknown
   allowedBrands?: unknown
   allowedMaterials?: unknown
+  allowedBrandSeverity?: unknown
+  allowedMaterialSeverity?: unknown
 }
 
 type RawProjectPageRow = {
@@ -89,6 +105,8 @@ const projectOptionsResponseSchema = z.array(
     quoteRegion: z.string().nullable().optional(),
     allowedBrands: z.array(z.string()).nullable().optional(),
     allowedMaterials: z.array(z.string()).nullable().optional(),
+    allowedBrandSeverity: z.string().nullable().optional(),
+    allowedMaterialSeverity: z.string().nullable().optional(),
   }),
 )
 
@@ -134,6 +152,32 @@ function normalizeAllowedSpec(value: unknown): string[] {
   return normalized
 }
 
+/**
+ * 处理方式归一化: 只认三个字面量(大小写不敏感), 其余(含 null/未知值)按默认「提醒」处理。
+ * <p>
+ * 读路径刻意宽松: 后端已经用 CHECK 约束与写路径校验挡住脏数据, 客户端再严格一次只会
+ * 因为一个字段漂移就让整个项目下拉不可用。
+ */
+export function normalizeScopeEnforcement(
+  value: unknown,
+): ProjectScopeEnforcement {
+  const text = asString(value).trim().toUpperCase()
+  return text === 'OFF' || text === 'WARN' || text === 'BLOCK'
+    ? text
+    : DEFAULT_SCOPE_ENFORCEMENT
+}
+
+/** 清单为空(不限制)时力度无意义: 此时不下发力度, 避免调用方误判「配置了限制」。 */
+function resolveScopeEnforcement(
+  value: unknown,
+  allowedValues: string[],
+): ProjectScopeEnforcement | undefined {
+  if (!allowedValues.length) {
+    return undefined
+  }
+  return normalizeScopeEnforcement(value)
+}
+
 function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
   return rows.map((row, index) => {
     const id = parseEntityId(row.id, `projects[${index}].project.id`)
@@ -159,6 +203,17 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
     const quoteSource = asString(row.quoteSource).trim()
     const quoteRegion = asString(row.quoteRegion).trim()
 
+    const allowedBrands = normalizeAllowedSpec(row.allowedBrands)
+    const allowedMaterials = normalizeAllowedSpec(row.allowedMaterials)
+    const allowedBrandSeverity = resolveScopeEnforcement(
+      row.allowedBrandSeverity,
+      allowedBrands,
+    )
+    const allowedMaterialSeverity = resolveScopeEnforcement(
+      row.allowedMaterialSeverity,
+      allowedMaterials,
+    )
+
     return {
       id,
       value: id,
@@ -181,8 +236,10 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
         ? { quoteSource }
         : {}),
       ...(quoteRegion ? { quoteRegion } : {}),
-      allowedBrands: normalizeAllowedSpec(row.allowedBrands),
-      allowedMaterials: normalizeAllowedSpec(row.allowedMaterials),
+      allowedBrands,
+      allowedMaterials,
+      ...(allowedBrandSeverity ? { allowedBrandSeverity } : {}),
+      ...(allowedMaterialSeverity ? { allowedMaterialSeverity } : {}),
     }
   })
 }

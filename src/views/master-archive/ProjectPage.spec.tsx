@@ -114,6 +114,8 @@ const projectRows = [
     status: '正常',
     allowedBrands: ['沙钢'],
     allowedMaterials: ['HRB400'],
+    allowedBrandSeverity: 'BLOCK',
+    allowedMaterialSeverity: 'WARN',
     remark: '备注一',
   },
   {
@@ -592,12 +594,13 @@ describe('ProjectPage 主数据拆分试点', () => {
     await clickButton('编辑')
     await flushAsync()
 
-    // 弹层内第 6、7 个 select 是允许品牌/材质（客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 之后）。
+    // 弹层内共 9 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 /
+    // 允许品牌 / 处理方式 / 允许材质 / 处理方式。
     // maxTagCount="responsive" 在 jsdom 里量不到宽度会把标签折叠成「+N ...」，
     // 因此不断言渲染标签，而是用「保存载荷保留已存值」证明回填链路成立。
     const overlay = document.body.querySelector('.workspace-overlay')
     const selectRoots = overlay!.querySelectorAll('.ant-select')
-    expect(selectRoots).toHaveLength(7)
+    expect(selectRoots).toHaveLength(9)
 
     await clickButtonInOverlay('保存')
 
@@ -605,7 +608,31 @@ describe('ProjectPage 主数据拆分试点', () => {
     expect(draft).toMatchObject({
       allowedBrands: ['沙钢'],
       allowedMaterials: ['HRB400'],
+      allowedBrandSeverity: 'BLOCK',
+      allowedMaterialSeverity: 'WARN',
     })
+  })
+
+  it('编辑项目资料：处理方式可切换为阻断并随保存下发', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+
+    // 第 7 个 select 是允许品牌的处理方式（第 6 个是品牌多选本身）
+    await chooseOverlayMultiSelectOption(6, '阻断（不可保存）')
+    await clickButtonInOverlay('保存')
+
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({ allowedBrandSeverity: 'BLOCK' })
   })
 
   it('编辑项目资料：可从主数据多选允许品牌与材质', async () => {
@@ -622,8 +649,9 @@ describe('ProjectPage 主数据拆分试点', () => {
     await clickButton('编辑')
     await flushAsync()
 
+    // 第 6 个 select 是品牌多选、第 8 个是材质多选（中间插入了两个「处理方式」下拉）
     await chooseOverlayMultiSelectOption(5, '永钢')
-    await chooseOverlayMultiSelectOption(6, 'HRB400E')
+    await chooseOverlayMultiSelectOption(7, 'HRB400E')
     await clickButtonInOverlay('保存')
 
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]

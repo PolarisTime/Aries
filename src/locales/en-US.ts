@@ -1562,6 +1562,12 @@ export const enUS = {
         allowedSpecHint:
           'Checked when sales orders import PO items, mismatches raise a warning',
         allowedSpecUnlimited: 'No restriction',
+        scopeEnforcement: 'Enforcement',
+        scopeEnforcementHint:
+          'What happens on a mismatch (ignored when the list is empty)',
+        scopeEnforcementWarn: 'Warn (continue)',
+        scopeEnforcementBlock: 'Block (cannot save)',
+        scopeEnforcementOff: 'Off (keep list)',
       },
       purchaseOrder: {
         title: 'Purchase Orders',
@@ -1658,6 +1664,8 @@ export const enUS = {
         allowedSpecImportScope:
           'Allowed brands: {{brands}}; allowed materials: {{materials}}',
         allowedSpecImportUnlimited: 'no restriction',
+        allowedSpecImportBlocked:
+          'Project "{{project}}" restricts allowed brands/materials, and this import does not match: {{details}}. Adjust the items, maintain the allowed scope first, or request an equal-grade exception.',
       },
       salesContract: {
         title: 'Sales Contracts',

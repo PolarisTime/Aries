@@ -32,7 +32,10 @@ import type { ProjectEditorValues } from './ProjectEditorOverlay'
 import { ProjectEditorOverlay } from './ProjectEditorOverlay'
 import { ProjectFilterToolbar } from './ProjectFilterToolbar'
 import { ProjectTableSection } from './ProjectTableSection'
-import { toAllowedSpecValues } from './project-page-columns'
+import {
+  toAllowedSpecSeverity,
+  toAllowedSpecValues,
+} from './project-page-columns'
 
 const MODULE_KEY: ModuleKey = 'project'
 const FALLBACK_PAGE_SIZE = 30
@@ -46,6 +49,8 @@ type ProjectListRow = LegacyModuleRecord
 
 /** 由列表行构建编辑表单初值。 */
 function toEditorFormValues(record: ProjectListRow) {
+  const allowedBrands = toAllowedSpecValues(record.allowedBrands)
+  const allowedMaterials = toAllowedSpecValues(record.allowedMaterials)
   return {
     projectCode: asString(record.projectCode),
     projectName: asString(record.projectName),
@@ -59,8 +64,16 @@ function toEditorFormValues(record: ProjectListRow) {
     status: asString(record.status) || STATUS.NORMAL,
     quoteSource: asString(record.quoteSource) || 'MYSTEEL',
     quoteRegion: asString(record.quoteRegion),
-    allowedBrands: toAllowedSpecValues(record.allowedBrands),
-    allowedMaterials: toAllowedSpecValues(record.allowedMaterials),
+    allowedBrands: allowedBrands,
+    allowedMaterials: allowedMaterials,
+    allowedBrandSeverity: toAllowedSpecSeverity(
+      record.allowedBrandSeverity,
+      allowedBrands,
+    ),
+    allowedMaterialSeverity: toAllowedSpecSeverity(
+      record.allowedMaterialSeverity,
+      allowedMaterials,
+    ),
     remark: asString(record.remark),
   }
 }

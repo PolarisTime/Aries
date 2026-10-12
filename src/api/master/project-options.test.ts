@@ -8,6 +8,7 @@ import {
   fetchProjectAbbreviationOptions,
   fetchProjectOptions,
   fetchProjectQuoteConfig,
+  normalizeScopeEnforcement,
   toProjectAbbreviationOptions,
 } from './project-options'
 
@@ -199,5 +200,80 @@ describe('fetchProjectQuoteConfig', () => {
   it('缺省返回空对象', async () => {
     apiGetMock.mockResolvedValue({})
     expect(await fetchProjectQuoteConfig('9')).toEqual({})
+  })
+
+  describe('项目采购范围力度', () => {
+    beforeEach(() => {
+      apiGetMock.mockReset()
+    })
+
+    function optionWith(overrides: Record<string, unknown>) {
+      return {
+        id: '1',
+        value: '1',
+        label: 'P1',
+        customerId: '2',
+        customerCode: 'C1',
+        projectCode: 'P1',
+        projectName: '项目一',
+        ...overrides,
+      }
+    }
+
+    it('归一化三个字面量并容忍大小写', async () => {
+      apiGetMock.mockResolvedValue([
+        optionWith({
+          allowedBrands: ['沙钢'],
+          allowedMaterials: ['HRB400'],
+          allowedBrandSeverity: 'block',
+          allowedMaterialSeverity: 'OFF',
+        }),
+      ])
+
+      const [option] = await fetchProjectOptions('2')
+
+      expect(option.allowedBrandSeverity).toBe('BLOCK')
+      expect(option.allowedMaterialSeverity).toBe('OFF')
+    })
+
+    it('未下发或非法力度按提醒处理', async () => {
+      apiGetMock.mockResolvedValue([
+        optionWith({
+          allowedBrands: ['沙钢'],
+          allowedMaterials: ['HRB400'],
+          allowedBrandSeverity: null,
+          allowedMaterialSeverity: 'DISABLED',
+        }),
+      ])
+
+      const [option] = await fetchProjectOptions('2')
+
+      expect(option.allowedBrandSeverity).toBe('WARN')
+      expect(option.allowedMaterialSeverity).toBe('WARN')
+    })
+
+    it('清单为空时不下发力度(不限制)', async () => {
+      apiGetMock.mockResolvedValue([
+        optionWith({
+          allowedBrands: [],
+          allowedMaterials: [],
+          allowedBrandSeverity: 'BLOCK',
+          allowedMaterialSeverity: 'BLOCK',
+        }),
+      ])
+
+      const [option] = await fetchProjectOptions('2')
+
+      expect(option.allowedBrandSeverity).toBeUndefined()
+      expect(option.allowedMaterialSeverity).toBeUndefined()
+    })
+
+    it('normalizeScopeEnforcement 对未知值回落到默认档', () => {
+      expect(normalizeScopeEnforcement(undefined)).toBe('WARN')
+      expect(normalizeScopeEnforcement('  ')).toBe('WARN')
+      expect(normalizeScopeEnforcement('unknown')).toBe('WARN')
+      expect(normalizeScopeEnforcement('Warn')).toBe('WARN')
+      expect(normalizeScopeEnforcement('BLOCK')).toBe('BLOCK')
+    })
   })
 })

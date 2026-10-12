@@ -1,4 +1,9 @@
 import type { useTranslation } from 'react-i18next'
+import {
+  DEFAULT_SCOPE_ENFORCEMENT,
+  normalizeScopeEnforcement,
+  type ProjectScopeEnforcement,
+} from '@/api/master/project-options'
 import { asString } from '@/utils/type-narrowing'
 
 export const PROJECT_COLUMN_KEYS = [
@@ -40,6 +45,25 @@ export function toAllowedSpecValues(value: unknown): string[] {
     }
   }
   return normalized
+}
+
+/**
+ * 列表行的处理方式归一化: 清单为空(不限制)时返回 null, 由表单回落到「提醒」默认值。
+ * <p>
+ * 与 {@link toAllowedSpecValues} 配套使用: 两者都只依赖列表行原始值, 供编辑表单初值与
+ * 保存载荷共用, 避免「回填一套、保存另一套」的漂移。
+ */
+export function toAllowedSpecSeverity(
+  value: unknown,
+  allowedValues: readonly string[],
+): ProjectScopeEnforcement | null {
+  if (!allowedValues.length) {
+    return null
+  }
+  if (value == null || asString(value).trim() === '') {
+    return DEFAULT_SCOPE_ENFORCEMENT
+  }
+  return normalizeScopeEnforcement(value)
 }
 
 export function buildProjectColumnLabels(

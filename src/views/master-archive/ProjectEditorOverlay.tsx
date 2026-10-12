@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
 import { fetchMaterialGrades } from '@/api/master/material-grades'
+import type { ProjectScopeEnforcement } from '@/api/master/project-options'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
@@ -43,6 +44,10 @@ export interface ProjectEditorValues {
   allowedBrands?: string[]
   /** 允许的材质; 空数组表示不限制。 */
   allowedMaterials?: string[]
+  /** 允许品牌不匹配时的处理方式: OFF不校验/WARN提醒/BLOCK阻断。 */
+  allowedBrandSeverity?: ProjectScopeEnforcement | null
+  /** 允许材质不匹配时的处理方式: OFF不校验/WARN提醒/BLOCK阻断。 */
+  allowedMaterialSeverity?: ProjectScopeEnforcement | null
   remark?: string
 }
 
@@ -117,6 +122,17 @@ export function ProjectEditorOverlay({
     queryFn: () => fetchMaterialGrades(),
     staleTime: STALE_MASTER_OPTIONS,
   })
+  const enforcementOptions = useMemo(
+    () => [
+      { label: t('modules.pages.project.scopeEnforcementWarn'), value: 'WARN' },
+      {
+        label: t('modules.pages.project.scopeEnforcementBlock'),
+        value: 'BLOCK',
+      },
+      { label: t('modules.pages.project.scopeEnforcementOff'), value: 'OFF' },
+    ],
+    [t],
+  )
   const selectedBrands = Form.useWatch('allowedBrands', form)
   const selectedMaterials = Form.useWatch('allowedMaterials', form)
   const brandOptions = useMemo(
@@ -207,6 +223,8 @@ export function ProjectEditorOverlay({
         quoteRegion: values.quoteRegion ?? '',
         allowedBrands: values.allowedBrands ?? [],
         allowedMaterials: values.allowedMaterials ?? [],
+        allowedBrandSeverity: values.allowedBrandSeverity ?? null,
+        allowedMaterialSeverity: values.allowedMaterialSeverity ?? null,
         remark: values.remark ?? '',
       }
       await saveBusinessModule(MODULE_KEY, draft)
@@ -393,6 +411,15 @@ export function ProjectEditorOverlay({
           </Col>
           <Col span={6}>
             <Form.Item
+              name="allowedBrandSeverity"
+              label={t('modules.pages.project.scopeEnforcement')}
+              extra={t('modules.pages.project.scopeEnforcementHint')}
+            >
+              <Select options={enforcementOptions} />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
               name="allowedMaterials"
               label={t('modules.pages.project.allowedMaterials')}
               extra={t('modules.pages.project.allowedSpecHint')}
@@ -405,6 +432,15 @@ export function ProjectEditorOverlay({
                 placeholder={t('modules.pages.project.allowedSpecPlaceholder')}
                 showSearch={{ optionFilterProp: 'label' }}
               />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="allowedMaterialSeverity"
+              label={t('modules.pages.project.scopeEnforcement')}
+              extra={t('modules.pages.project.scopeEnforcementHint')}
+            >
+              <Select options={enforcementOptions} />
             </Form.Item>
           </Col>
           <Col span={24}>

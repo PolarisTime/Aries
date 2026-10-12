@@ -1523,6 +1523,11 @@ export const zhCN = {
         allowedSpecPlaceholder: '不选表示不限制',
         allowedSpecHint: '销售订单导入采购订单明细时按此校验并预警',
         allowedSpecUnlimited: '不限制',
+        scopeEnforcement: '处理方式',
+        scopeEnforcementHint: '不匹配时如何处理（清单为空时不生效）',
+        scopeEnforcementWarn: '提醒（可继续）',
+        scopeEnforcementBlock: '阻断（不可保存）',
+        scopeEnforcementOff: '不校验（保留清单）',
       },
       purchaseOrder: {
         title: '采购订单',
@@ -1618,6 +1623,8 @@ export const zhCN = {
         allowedSpecImportScope:
           '项目允许品牌：{{brands}}；项目允许材质：{{materials}}',
         allowedSpecImportUnlimited: '不限制',
+        allowedSpecImportBlocked:
+          '项目「{{project}}」约定允许的品牌/材质与本次导入明细不匹配，已阻止导入：{{details}}。如需使用，请先在项目资料中维护允许范围；如属合同约定的「或同等档次」品牌，请走例外审批。',
       },
       salesContract: {
         title: '销售合同',

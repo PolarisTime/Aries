@@ -219,6 +219,8 @@ const projectPageConfig: ModulePageConfig = {
       'quoteRegion',
       'allowedBrands',
       'allowedMaterials',
+      'allowedBrandSeverity',
+      'allowedMaterialSeverity',
       'remark',
     ],
   },
