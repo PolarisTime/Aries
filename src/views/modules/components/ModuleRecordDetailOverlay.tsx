@@ -1,26 +1,9 @@
-import { ReloadOutlined } from '@ant-design/icons'
-import type { TableColumnsType } from 'antd'
-import { Button, Col, Empty, Flex, Row, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { AppResult } from '@/components/AppResult'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
-import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
-import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
-import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
-import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import { resolveRecordPrimaryNo } from '@/module-system/record/module-record-clipboard'
-import type {
-  ModuleLineItem,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
-import { padLabel } from '@/utils/label-utils'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { CopyDocNoButton } from './CopyDocNoButton'
-import { ModuleItemGroupsView } from './ModuleItemGroupsView'
-import { ModuleItemsPanel } from './ModuleItemsPanel'
-import { buildModuleItemGroups } from './module-item-groups'
+import { ModuleRecordDetailContent } from './ModuleRecordDetailContent'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -34,16 +17,15 @@ interface Props {
   onRetry: () => void
 }
 
-function getDetailErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim()
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim()
-  }
-  return fallback
-}
-
+/**
+ * 单据详情弹窗的外壳：标题、复制单号入口与关闭。
+ *
+ * <p>加载态、详情字段网格与只读明细已移到 ModuleRecordDetailContent，只读列的
+ * 构建与单据引用摘要移到 module-record-detail-columns.tsx。原因：原来三态渲染与
+ * 字段取值都内联在这里，嵌套深度达到 5，控制流复杂度也越界
+ * (react-doctor/no-high-complexity-react-function)。外壳只保留「打开/关闭 + 头部」，
+ * WorkspaceOverlay 的 DOM 与 aria 契约不变。</p>
+ */
 export function ModuleRecordDetailOverlay({
   open,
   config,
@@ -55,69 +37,10 @@ export function ModuleRecordDetailOverlay({
   onRetry,
 }: Props) {
   const { t } = useTranslation()
-  const { formatCellValue } = useModuleDisplaySupport()
   const { getPrimaryNo } = useModuleRecordHelpers({
     moduleKey: config.key,
     config,
   })
-  const detailItemColumns = config.detailItemColumns || config.itemColumns || []
-  const detailItemGroups = buildModuleItemGroups(
-    config.key,
-    record?.items || [],
-  )
-  const detailTableColumns: TableColumnsType<ModuleLineItem> =
-    detailItemColumns.map((column) => ({
-      title: column.title,
-      dataIndex: column.dataIndex,
-      key: column.dataIndex,
-      width: column.width,
-      align: column.align || 'center',
-      render: (value: unknown, record: ModuleLineItem) => {
-        if (
-          column.dataIndex === 'pieceWeightTon' &&
-          shouldDisplayPieceWeightAsDash(record)
-        ) {
-          return '-'
-        }
-        if (isDocumentReferenceField(column.dataIndex)) {
-          return (
-            <DocumentReferencePopover
-              value={value}
-              fieldKey={column.dataIndex}
-              contextModuleKey={config.key}
-              documentLabel={column.title}
-              summary={{
-                counterpartyName:
-                  typeof record.customerName === 'string'
-                    ? record.customerName
-                    : typeof record.supplierName === 'string'
-                      ? record.supplierName
-                      : typeof record.carrierName === 'string'
-                        ? record.carrierName
-                        : undefined,
-                amount:
-                  typeof record.amount === 'number' ||
-                  typeof record.amount === 'string'
-                    ? record.amount
-                    : undefined,
-                status:
-                  typeof record.status === 'string' ? record.status : undefined,
-              }}
-            />
-          )
-        }
-        if (column.render) {
-          return column.render(value, record)
-        }
-        return formatCellValue(value, column.type)
-      },
-    }))
-  const detailFields = config.detailFields || []
-  const colSpan = Math.max(
-    6,
-    Math.min(12, 24 / Math.max(1, Math.min(detailFields.length || 1, 4))),
-  )
-
   // 详情头部「复制单号」：只认 primaryNoKey 字段，空值时不渲染
   const detailPrimaryNo = resolveRecordPrimaryNo(record, config.primaryNoKey)
 
@@ -136,151 +59,15 @@ export function ModuleRecordDetailOverlay({
       }
       onClose={onClose}
     >
-      {loading ? (
-        <Flex justify="center" align="center" className="py-64">
-          <Spin />
-        </Flex>
-      ) : error != null ? (
-        <AppResult
-          className="app-result--workspace"
-          status="error"
-          title={t('api.loadFailed')}
-          subTitle={getDetailErrorMessage(error, t('result.error.subTitle'))}
-          extra={
-            <Button type="primary" icon={<ReloadOutlined />} onClick={onRetry}>
-              {t('errorBoundary.retry')}
-            </Button>
-          }
-        />
-      ) : !record ? (
-        <Empty description={t('modules.detail.noData')} />
-      ) : (
-        <>
-          {detailFields.length ? (
-            <Row gutter={[12, 12]}>
-              {detailFields.map((field) => {
-                const colDef = config.columns.find(
-                  (c) => c.dataIndex === field.key,
-                )
-                const fieldType = colDef?.type || field.type
-                return (
-                  <Col key={field.key} span={field.fullRow ? 24 : colSpan}>
-                    <div className="bill-detail-item">
-                      <span className="bill-detail-label">
-                        {padLabel(field.label)}
-                      </span>
-                      <span className="bill-detail-value">
-                        {field.key === 'pieceWeightTon' &&
-                        shouldDisplayPieceWeightAsDash(record) ? (
-                          '-'
-                        ) : isDocumentReferenceField(field.key) ? (
-                          <DocumentReferencePopover
-                            value={record[field.key]}
-                            fieldKey={field.key}
-                            moduleKey={config.key}
-                            contextModuleKey={config.key}
-                            documentLabel={field.label}
-                            summary={{
-                              counterpartyName:
-                                typeof record.counterpartyName === 'string'
-                                  ? record.counterpartyName
-                                  : typeof record.customerName === 'string'
-                                    ? record.customerName
-                                    : typeof record.supplierName === 'string'
-                                      ? record.supplierName
-                                      : typeof record.carrierName === 'string'
-                                        ? record.carrierName
-                                        : undefined,
-                              amount:
-                                typeof record.amount === 'number' ||
-                                typeof record.amount === 'string'
-                                  ? record.amount
-                                  : typeof record.totalAmount === 'number' ||
-                                      typeof record.totalAmount === 'string'
-                                    ? record.totalAmount
-                                    : undefined,
-                              status:
-                                typeof record.status === 'string'
-                                  ? record.status
-                                  : undefined,
-                            }}
-                            statusMap={config.statusMap}
-                          />
-                        ) : fieldType === 'status' ? (
-                          renderModuleRecordStatus({
-                            record,
-                            statusKey: field.key,
-                            statusMap: config.statusMap,
-                            renderFallback: (status) =>
-                              formatCellValue(status, fieldType),
-                          })
-                        ) : colDef?.render ? (
-                          colDef.render(record[field.key], record)
-                        ) : (
-                          formatCellValue(record[field.key], fieldType)
-                        )}
-                      </span>
-                    </div>
-                  </Col>
-                )
-              })}
-            </Row>
-          ) : null}
-
-          {detailItemColumns.length ? (
-            <ModuleItemsPanel
-              title={config.detailItemTitle}
-              className="module-detail-items-panel"
-              items={record.items || []}
-              itemColumns={detailItemColumns}
-              actions={
-                <>
-                  <Button
-                    className="overlay-action-button"
-                    icon={resolveModuleActionIcon('关闭')}
-                    onClick={onClose}
-                  >
-                    {t('modules.detail.close')}
-                  </Button>
-                  {canPrint ? (
-                    <Button
-                      className="overlay-action-button"
-                      icon={resolveModuleActionIcon('打印')}
-                    >
-                      {t('modules.detail.print')}
-                    </Button>
-                  ) : null}
-                </>
-              }
-            >
-              <ModuleItemGroupsView
-                groups={detailItemGroups}
-                moduleKey={config.key}
-                columns={detailTableColumns}
-                emptyText={t('modules.detail.noDetailItems')}
-              />
-            </ModuleItemsPanel>
-          ) : (
-            <div className="mt-20">
-              <Button
-                className="overlay-action-button"
-                icon={resolveModuleActionIcon('关闭')}
-                onClick={onClose}
-              >
-                {t('modules.detail.close')}
-              </Button>
-              {canPrint && (
-                <Button
-                  className="overlay-action-button ml-8"
-                  icon={resolveModuleActionIcon('打印')}
-                >
-                  {t('modules.detail.print')}
-                </Button>
-              )}
-            </div>
-          )}
-        </>
-      )}
+      <ModuleRecordDetailContent
+        config={config}
+        error={error}
+        loading={loading}
+        onClose={onClose}
+        onRetry={onRetry}
+        record={record}
+        canPrint={canPrint}
+      />
     </WorkspaceOverlay>
   )
 }

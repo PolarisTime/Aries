@@ -1,8 +1,6 @@
-import { Form, Space, Tag } from 'antd'
+import { Form } from 'antd'
 import { useCallback, useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
 import { ERROR_CODE } from '@/constants/error-codes'
-import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -30,7 +28,15 @@ import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-work
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorFormArea } from './ModuleEditorFormArea'
 import { ModuleEditorItemsArea } from './ModuleEditorItemsArea'
-import { SaveResultOverlay } from './SaveResultOverlay'
+import { ModuleEditorSaveResultHost } from './ModuleEditorSaveResultHost'
+import { ModuleEditorWorkspaceTitle } from './ModuleEditorWorkspaceTitle'
+import {
+  isFinanceDocumentModule,
+  resolveEditorCustomerId,
+  resolveEditorPresentation,
+  resolveEditorSessionIds,
+  shouldAutoInsertBlankItemOnCreate,
+} from './module-editor-workspace-presentation'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props<Key extends ModuleKey> {
@@ -49,8 +55,6 @@ interface Props<Key extends ModuleKey> {
   onSaved: () => void
   onCreateAnother: () => void
 }
-
-const FINANCE_DOCUMENT_MODULES = new Set(['receipt', 'payment'])
 
 function useEditorSessionActions(onClose: () => void) {
   const { endSession, requestClose, setSessionStatus } = useEditorSession()
@@ -126,6 +130,15 @@ function useEditorSessionLifecycle({
   }, [open, saveErrorCode, saveStatus, saving, setSessionStatus])
 }
 
+/**
+ * 模块编辑器工作区（弹层外壳）。
+ *
+ * <p>本轮重构把外壳里三块内容移出本组件：标题抽到 ModuleEditorWorkspaceTitle，
+ * 保存回执宿主抽到 ModuleEditorSaveResultHost，布局/客户 id/会话 id 等纯判断抽到
+ * module-editor-workspace-presentation.ts。原因：本组件同时在 no-giant-component
+ * (>300 行) 与 no-high-complexity-react-function 名单里，而这三块恰好既有分支又占行数。
+ * 弹层结构、子组件 props、快捷键与编辑会话语义保持不变。</p>
+ */
 export function ModuleEditorWorkspace<Key extends ModuleKey>({
   open,
   config,
@@ -142,8 +155,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   onSaved,
   onCreateAnother,
 }: Props<Key>) {
-  const { t } = useTranslation()
   const [form] = Form.useForm<EditorFormValues>()
+  const presentation = resolveEditorPresentation(config, moduleKey)
   const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
     useEditorSessionActions(onClose)
   const watchedSettlementCompanyId = Form.useWatch('settlementCompanyId', form)
@@ -152,13 +165,11 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   const { projects: projectOptions } = useMasterOptions(
     resolveMasterOptionRequirements(formFields),
     open,
-    typeof watchedCustomerId === 'string' && watchedCustomerId
-      ? watchedCustomerId
-      : undefined,
+    resolveEditorCustomerId(watchedCustomerId),
   )
   const settlementAccountOptions = useModuleEditorSettlementAccounts({
     open,
-    enabled: FINANCE_DOCUMENT_MODULES.has(moduleKey),
+    enabled: isFinanceDocumentModule(moduleKey),
     settlementCompanyId: watchedSettlementCompanyId,
   })
 
@@ -217,8 +228,10 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     onClose: finishAndCloseEditor,
     onDirty: markEditorDirty,
     onSaved,
-    autoInsertBlankItemOnCreate:
-      Boolean(config.itemColumns?.length) && canAddManualItems,
+    autoInsertBlankItemOnCreate: shouldAutoInsertBlankItemOnCreate(
+      config,
+      canAddManualItems,
+    ),
   })
   // oxlint-enable react-doctor/no-event-handler
 
@@ -237,7 +250,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     open,
     moduleKey,
     isEdit,
-    ...(record?.id ? { recordId: String(record.id) } : {}),
+    ...resolveEditorSessionIds(record),
     saving,
     saveStatus: saveResult?.status,
     saveErrorCode: saveResult?.errorCode,
@@ -281,43 +294,22 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     canEditItemColumns,
   })
 
-  const useFinanceEditorLayout = FINANCE_DOCUMENT_MODULES.has(moduleKey)
-
   return (
     <>
       <WorkspaceOverlay
         open={open}
         title={
-          <Space size={8}>
-            <span>
-              {t('modules.editor.title', {
-                mode: isEdit
-                  ? t('modules.editor.edit')
-                  : t('modules.editor.create'),
-                title: config.title,
-              })}
-            </span>
-            {useFinanceEditorLayout ? (
-              <Tag
-                color={
-                  currentStatus === DOCUMENT_STATUS.AUDITED
-                    ? 'success'
-                    : 'default'
-                }
-              >
-                {currentStatus || DOCUMENT_STATUS.DRAFT}
-              </Tag>
-            ) : null}
-          </Space>
+          <ModuleEditorWorkspaceTitle
+            config={config}
+            currentStatus={currentStatus}
+            financeLayout={presentation.financeLayout}
+            isEdit={isEdit}
+          />
         }
         onClose={requestCloseEditor}
-        className={
-          useFinanceEditorLayout
-            ? 'workspace-overlay-panel--finance-editor'
-            : undefined
-        }
+        className={presentation.overlayClassName}
         footer={
-          useFinanceEditorLayout ? (
+          presentation.showFooterActions ? (
             <EditorFooterActions
               canSave={canSave}
               canAudit={canSaveAndAuditInEditor}
@@ -342,7 +334,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
             canSave,
             canAudit: canSaveAndAuditInEditor,
             saving,
-            visible: !useFinanceEditorLayout && !config.itemColumns?.length,
+            visible: presentation.formActionsVisible,
             onCancel: requestCloseEditor,
             onSave: (audit) => {
               void handleSave(audit)
@@ -351,7 +343,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           editorState={{ isEdit, lineItemsLocked }}
           lockedLineItemsNotice={lockedLineItemsNotice}
           authoritativePrimaryNo={authoritativePrimaryNo}
-          layoutVariant={useFinanceEditorLayout ? 'finance' : 'default'}
+          layoutVariant={presentation.layoutVariant}
           onValuesChange={(changedValues) => {
             handleFormValuesChange(changedValues)
           }}
@@ -386,7 +378,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           auditLabel={editorAuditLabel}
           saving={saving}
-          showFooterActions={!useFinanceEditorLayout}
+          showFooterActions={!presentation.financeLayout}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}
@@ -412,30 +404,22 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         />
       </WorkspaceOverlay>
 
-      {saveResult ? (
-        <SaveResultOverlay
-          saveResult={saveResult}
-          config={config}
-          moduleKey={moduleKey}
-          canCreateAnother={canCreateAnother}
-          resolvingConflict={saving}
-          onClear={() => {
-            clearSaveResult()
-            if (saveResult.status !== 'error') finishAndCloseEditor()
-          }}
-          onResolveConflict={() => {
-            void reloadAfterConflict()
-          }}
-          onCreateAnother={() => {
-            clearSaveResult()
-            finishAndCloseEditor()
-            onCreateAnother()
-          }}
-          pendingFiles={resolvePendingAttachmentFiles(
-            form.getFieldValue('attachments'),
-          )}
-        />
-      ) : null}
+      <ModuleEditorSaveResultHost
+        saveResult={saveResult}
+        config={config}
+        moduleKey={moduleKey}
+        canCreateAnother={canCreateAnother}
+        resolvingConflict={saving}
+        onClearSaveResult={clearSaveResult}
+        onCloseEditor={finishAndCloseEditor}
+        onResolveConflict={() => {
+          void reloadAfterConflict()
+        }}
+        onCreateAnother={onCreateAnother}
+        resolvePendingFiles={() =>
+          resolvePendingAttachmentFiles(form.getFieldValue('attachments'))
+        }
+      />
     </>
   )
 }

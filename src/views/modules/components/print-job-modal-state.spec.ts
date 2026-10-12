@@ -3,11 +3,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SalesOrderPrintXlsxOptions } from '@/api/system/print-template'
 import type { PrintTemplateRecord } from '@/shared/schemas'
-import { createPrintJobOutputActions } from '@/views/modules/components/PrintJobModal'
 import {
   isValidSplitPieceCount,
   resolveSplitPieceCount,
 } from '@/views/modules/components/print-job-modal-state'
+import { createPrintJobOutputActions } from '@/views/modules/components/print-job-output-actions'
 
 const template: PrintTemplateRecord = {
   id: 'template-1',

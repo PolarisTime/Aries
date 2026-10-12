@@ -17,7 +17,9 @@ const config = {
         rules: ['deslop/unused-dev-dependency'],
       },
       {
-        files: ['src/components/ColumnHeaderMenu.tsx'],
+        // 用与扫描根无关的 glob: 指定单文件路径时匹配 'src/components/...',
+        // 扫描目录时匹配的是相对该目录的 'components/...', 写死前缀会漏掉豁免。
+        files: ['**/ColumnHeaderMenu.tsx'],
         rules: ['react-doctor/prefer-tag-over-role'],
       },
     ],

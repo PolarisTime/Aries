@@ -1,12 +1,5 @@
-import {
-  DeleteOutlined,
-  DownOutlined,
-  ImportOutlined,
-  PlusOutlined,
-  SortAscendingOutlined,
-} from '@ant-design/icons'
-import type { MenuProps, TableColumnsType, TableProps } from 'antd'
-import { Button, Dropdown, Tabs } from 'antd'
+import type { TableColumnsType, TableProps } from 'antd'
+import { Tabs } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
@@ -23,12 +16,11 @@ import type {
   FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
-import { ColumnSettingsPopover } from './ColumnSettingsPopover'
-import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorExpensePanel } from './ModuleEditorExpensePanel'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
-import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
+import { ModuleItemsToolbarActions } from './ModuleItemsToolbarActions'
+import { ModuleParentSelectorHost } from './ModuleParentSelectorHost'
 import { buildModuleItemGroups } from './module-item-groups'
 
 interface Props {
@@ -91,6 +83,15 @@ interface Props {
   extraActions?: React.ReactNode
 }
 
+/**
+ * 编辑器明细区：货物/费用页签 + 明细工具栏 + 明细分组表 + 父单选择弹层。
+ *
+ * <p>本轮重构把两块分支密集的区块移出本组件：明细工具栏操作区拆到
+ * ModuleItemsToolbarActions（按钮守卫 + 列设置临时状态），父单选择弹层拆到
+ * ModuleParentSelectorHost（配置回退链）。原因是这些守卫内联后本函数控制流
+ * 复杂度超出 react-doctor 阈值 (no-high-complexity-react-function)。
+ * 页签结构、空态文案、分组表的 props 与父单弹层的挂载位置保持逐字不变。</p>
+ */
 export function ModuleEditorItemsSection({
   config,
   items,
@@ -145,20 +146,6 @@ export function ModuleEditorItemsSection({
       sum + (Number.isFinite(Number(item.amount)) ? Number(item.amount) : 0),
     0,
   )
-  const freightStatementSortMenuItems: MenuProps['items'] = [
-    {
-      key: 'sourceNo',
-      label: t('modules.itemsSection.autoSortBySourceNo'),
-    },
-    {
-      key: 'billTime',
-      label: t(
-        freightStatementSortDirection === 'asc'
-          ? 'modules.itemsSection.autoSortByBillTimeAscending'
-          : 'modules.itemsSection.autoSortByBillTimeDescending',
-      ),
-    },
-  ]
   const itemGroups = useMemo(
     () => buildModuleItemGroups(config.key, items),
     [config.key, items],
@@ -173,30 +160,17 @@ export function ModuleEditorItemsSection({
     ? t('modules.itemsSection.emptyTextWithImport')
     : t('modules.itemsSection.emptyText')
 
-  const parentSelector = config.parentImport ? (
-    <ModuleParentSelectorOverlay
+  const parentSelector = (
+    <ModuleParentSelectorHost
+      config={config}
       open={parentSelectorOpen}
-      parentModuleKey={
-        parentSelectorModuleKey || config.parentImport.parentModuleKey
-      }
-      parentDisplayFieldKey={
-        parentSelectorDisplayFieldKey ||
-        config.parentImport.parentDisplayFieldKey
-      }
-      allowMultipleSelection={config.parentImport.allowMultipleSelection}
-      candidateStatementModuleKey={
-        config.parentImport.candidateStatementModuleKey
-      }
-      candidateQueryType={config.parentImport.candidateQueryType}
-      hiddenSelectorColumnKeys={config.parentImport.hiddenSelectorColumnKeys}
-      fixedFilters={parentSelectorFilters}
-      title={t('modules.itemsSection.selectParent', {
-        label: config.parentImport.label || t('modules.itemsSection.parentDoc'),
-      })}
-      onSelect={onImportParentRecord}
-      onClose={onCloseParentSelector}
+      parentSelectorDisplayFieldKey={parentSelectorDisplayFieldKey}
+      parentSelectorFilters={parentSelectorFilters}
+      parentSelectorModuleKey={parentSelectorModuleKey}
+      onImportParentRecord={onImportParentRecord}
+      onCloseParentSelector={onCloseParentSelector}
     />
-  ) : null
+  )
 
   if (!config.itemColumns?.length) {
     return parentSelector
@@ -246,96 +220,30 @@ export function ModuleEditorItemsSection({
               supportsExpenseTab ? expenseTotalAmount : undefined
             }
             actions={
-              <>
-                {capabilities.addManualItems && (
-                  <Button
-                    type="primary"
-                    className="overlay-action-button"
-                    icon={<PlusOutlined />}
-                    disabled={saving}
-                    onClick={onAddItem}
-                  >
-                    {t('modules.itemsSection.addItem')}
-                  </Button>
-                )}
-                {parentImportVisible && (
-                  <Button
-                    className="overlay-action-button"
-                    icon={<ImportOutlined />}
-                    loading={parentImporting}
-                    disabled={saving || !capabilities.importParentItems}
-                    onClick={onOpenParentSelector}
-                  >
-                    {config.parentImport?.buttonText ||
-                      t('modules.itemsSection.importItems', {
-                        label:
-                          config.parentImport?.label ||
-                          t('modules.itemsSection.parentDoc'),
-                      })}
-                  </Button>
-                )}
-                {capabilities.autoSortItems &&
-                  (config.key === 'freight-statement' ? (
-                    <Dropdown
-                      menu={{
-                        items: freightStatementSortMenuItems,
-                        onClick: ({ key }) =>
-                          onAutoSortItems(key as FreightStatementSortMode),
-                      }}
-                      trigger={['click']}
-                    >
-                      <Button
-                        className="overlay-action-button"
-                        icon={<SortAscendingOutlined />}
-                        disabled={saving}
-                      >
-                        {t('modules.itemsSection.autoSortItems')}
-                        <DownOutlined />
-                      </Button>
-                    </Dropdown>
-                  ) : (
-                    <Button
-                      className="overlay-action-button"
-                      icon={<SortAscendingOutlined />}
-                      disabled={saving}
-                      onClick={() => onAutoSortItems()}
-                    >
-                      {t('modules.itemsSection.autoSortItems')}
-                    </Button>
-                  ))}
-                <ColumnSettingsPopover
-                  columns={config.itemColumns}
-                  orderedKeys={itemColumnOrder}
-                  visibleKeys={visibleItemColumnKeys}
-                  onToggle={onToggleItemColumn}
-                  onOrderChange={onItemColumnOrderChange}
-                  open={columnSettingsOpen}
-                  onOpenChange={setColumnSettingsOpen}
-                />
-                {extraActions}
-                {selectedItemIds.length > 0 && (
-                  <Button
-                    danger
-                    className="overlay-action-button"
-                    icon={<DeleteOutlined />}
-                    disabled={saving}
-                    onClick={onRemoveSelectedItems}
-                  >
-                    {t('modules.itemsSection.deleteSelected')} (
-                    {selectedItemIds.length})
-                  </Button>
-                )}
-                {showFooterActions ? (
-                  <EditorFooterActions
-                    canSave={capabilities.save}
-                    canAudit={capabilities.audit}
-                    auditLabel={auditLabel}
-                    saving={saving}
-                    onCancel={onCancel}
-                    onSave={onSave}
-                  />
-                ) : null}
-              </>
+              <ModuleItemsToolbarActions
+                auditLabel={auditLabel}
+                capabilities={capabilities}
+                columnSettingsOpen={columnSettingsOpen}
+                config={config}
+                extraActions={extraActions}
+                freightStatementSortDirection={freightStatementSortDirection}
+                itemColumnOrder={itemColumnOrder}
+                onAddItem={onAddItem}
+                onAutoSortItems={onAutoSortItems}
+                onCancel={onCancel}
+                onColumnSettingsOpenChange={setColumnSettingsOpen}
+                onItemColumnOrderChange={onItemColumnOrderChange}
+                onOpenParentSelector={onOpenParentSelector}
+                onRemoveSelectedItems={onRemoveSelectedItems}
+                onSave={onSave}
+                onToggleItemColumn={onToggleItemColumn}
+                parentImportVisible={parentImportVisible}
+                parentImporting={parentImporting}
+                saving={saving}
+                selectedItemCount={selectedItemIds.length}
+                showFooterActions={showFooterActions}
+                visibleItemColumnKeys={visibleItemColumnKeys}
+              />
             }
           >
             <ModuleItemGroupsView

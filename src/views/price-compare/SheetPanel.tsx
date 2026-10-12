@@ -47,7 +47,6 @@ import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
   buildVarietyOptions,
-  fillSupplierInputs,
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
@@ -61,7 +60,6 @@ import {
   SPOT_PRICE_MAX,
   type SupplierSelectOption,
   sumTonByPurchaseOrderItem,
-  syncSpotInputs,
 } from './core'
 import { LockableField } from './LockableField'
 import { withMemberVisibility } from './price-compare-support'
@@ -78,10 +76,10 @@ import type {
   PriceRow,
   PriceSheet,
   SheetInput,
-  SheetInputs,
   Variety,
 } from './types'
 import { useSheetColumnWidths } from './use-sheet-column-widths'
+import { useSheetPanelInputActions } from './use-sheet-panel-inputs'
 import { useSheetRowOperations } from './use-sheet-row-operations'
 import { usePurchaseOrderPicker } from './usePurchaseOrderPicker'
 import './price-compare.css'
@@ -2347,105 +2345,19 @@ export function SheetPanel(props: Props) {
     [varieties],
   )
 
-  const getSpot = (brandName: string, rowId: string) =>
-    sheet.inputs[`${brandName}:${rowId}`]?.spot
-  const patchRow = (rowId: string, patch: Partial<PriceRow>) =>
-    setRows((list) =>
-      list.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
-    )
-
-  /** 现货价联动: 同批次内 品牌+类别+材质+规格+长度 相同则同步。 */
-  const setSpot = (
-    brandName: string,
-    rowId: string,
-    value: number | undefined,
-  ) => {
-    const { inputs, targets } = syncSpotInputs(
+  // 单元格输入动作(现货价/供应商简称/批量填入)抽到 use-sheet-panel-inputs.ts:
+  // 这 6 个回调约占 100 行, 是 no-giant-component 的主要行数来源, 且与渲染无关。
+  const { getSpot, patchRow, setSpot, getInput, setSupplier, fillSupplier } =
+    useSheetPanelInputActions({
+      consumeSpotsTouched,
+      markSpotsTouched,
+      patchSheet,
       rows,
-      sheet.inputs,
-      brandName,
-      rowId,
-      value,
-    )
-    patchSheet(sheet.id, { inputs })
-    // 仅记录本次会话现货价实际发生变动(新增/改动)的行: 数值未变的不参与后续批量填入供应商。
-    const changedTargets = targets
-      .filter(
-        (target) =>
-          value !== undefined &&
-          sheet.inputs[`${brandName}:${target.id}`]?.spot !== value,
-      )
-      .map((target) => `${brandName}:${target.id}`)
-    markSpotsTouched(changedTargets)
-    const text = value === undefined ? '' : String(value)
-    for (const target of targets) {
-      if (target.id === rowId) continue
-      const input = document.querySelector<HTMLInputElement>(
-        `input[data-spot="${brandName}:${target.id}"]`,
-      )
-      if (input) input.value = text
-    }
-  }
-
-  const getInput = (brandName: string, rowId: string) =>
-    sheet.inputs[`${brandName}:${rowId}`]
-
-  /** 记录/清除现货价来源供应商; 无现货也无供应商时删除该输入。 */
-  const setSupplier = (
-    brandName: string,
-    rowId: string,
-    option: { value: string; label: string } | undefined,
-  ) => {
-    const key = `${brandName}:${rowId}`
-    const inputs: SheetInputs = { ...sheet.inputs }
-    const prev = inputs[key] ?? {}
-    if (!option) {
-      const {
-        supplierId: _supplierId,
-        supplierName: _supplierName,
-        ...rest
-      } = prev
-      if (rest.spot === undefined && rest.ton === undefined) {
-        delete inputs[key]
-      } else {
-        inputs[key] = rest
-      }
-    } else {
-      inputs[key] = {
-        ...prev,
-        supplierId: option.value,
-        supplierName: option.label,
-      }
-    }
-    patchSheet(sheet.id, { inputs })
-  }
-
-  /**
-   * 批量填入供应商: 仅作用于「本次会话内改过现货价」的目标行, 覆盖其已有简称;
-   * 未改价的行保留原简称, 避免换第 N 家时误改已定价的其它供应商行。仅改简称, 不动现货价。
-   */
-  const fillSupplier = (
-    brandName: string,
-    rowIds: string[],
-    option: { value: string; label: string } | undefined,
-  ) => {
-    const eligibleIds = rowIds.filter((rowId) =>
-      spotTouchedKeys.has(`${brandName}:${rowId}`),
-    )
-    if (!eligibleIds.length) {
-      message.info(t('priceCompare.sheet.fillSupplierNoChangedRows'))
-      return
-    }
-    const inputs = fillSupplierInputs(
-      rows,
-      sheet.inputs,
-      brandName,
-      eligibleIds,
-      option,
-    )
-    if (inputs !== sheet.inputs) patchSheet(sheet.id, { inputs })
-    consumeSpotsTouched(eligibleIds.map((rowId) => `${brandName}:${rowId}`))
-  }
+      setRows,
+      sheet,
+      spotTouchedKeys,
+      t,
+    })
 
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>

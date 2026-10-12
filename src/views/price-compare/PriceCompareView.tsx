@@ -23,6 +23,7 @@ import {
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
 import { SheetPanel } from './SheetPanel'
+import { usePriceCompareReferenceSync } from './use-price-compare-reference-sync'
 import {
   useActiveProjectQuoteConfig,
   usePriceCompareData,
@@ -150,48 +151,18 @@ export function PriceCompareView() {
 
   const purchaseOrderTonnage = usePurchaseOrderTonnage(active, isAuthenticated)
 
-  const patchSheetRef = useRef(patchSheet)
-  useEffect(() => {
-    patchSheetRef.current = patchSheet
-  }, [patchSheet])
-
-  useEffect(() => {
-    // 参照锁定期间不得程序化改写 refPeriod: 绕过锁定会被后端 422 拒绝
-    if (active?.locked) return
-    if (!activeSheetId || !activeRefDate || !resolvedRefPeriod) return
-    if (resolvedRefPeriod !== activeRefPeriod)
-      patchSheetRef.current(activeSheetId, { refPeriod: resolvedRefPeriod })
-  }, [
-    active?.locked,
-    activeSheetId,
+  // 参照日期/时段回填与网价合并, 详见 use-price-compare-reference-sync.ts
+  usePriceCompareReferenceSync({
+    active,
     activeRefDate,
     activeRefPeriod,
-    resolvedRefPeriod,
-  ])
-
-  useEffect(() => {
-    const matches = matchesData
-    if (!activeSheetId || !matches?.length) return
-    // 参照锁定仅固定参照日期/时段, 网价仍需随刷新合并; 否则锁定后刷新会丢失网价
-    mergeMatches(matches)
-    // 参照锁定期间不得程序化改写 refDate/refPeriod: 绕过锁定会被后端 422 拒绝
-    if (active?.locked) return
-    if (isLatestRef) {
-      const quoteDate = matches.find((row) => row.quoteDate)?.quoteDate ?? ''
-      const period = matches.find((row) => row.period)?.period ?? ''
-      patchSheetRef.current(activeSheetId, {
-        refDate: quoteDate,
-        ...(activeRefPeriod ? {} : { refPeriod: period }),
-      })
-    }
-  }, [
-    active?.locked,
     activeSheetId,
-    activeRefPeriod,
     isLatestRef,
     matchesData,
     mergeMatches,
-  ])
+    patchSheet,
+    resolvedRefPeriod,
+  })
 
   // 对账式现货联动：同商品同品牌已有现货价时自动套用到缺省行，避免重复输入。
   useEffect(() => {

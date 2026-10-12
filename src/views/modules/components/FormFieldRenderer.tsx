@@ -1,37 +1,26 @@
-import {
-  AutoComplete,
-  Button,
-  DatePicker,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Upload,
-} from 'antd'
-import type { UploadFile } from 'antd/es/upload/interface'
+import { Form } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import { AccessibleFormItem } from '@/components/AccessibleFormItem'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
-import {
-  getCustomerProjectOptions,
-  getSettlementAccountOptions,
-} from '@/module-system/core/module-option-resolvers'
 import type {
   ModuleFormFieldDefinition,
   ModuleFormFieldOption,
 } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
-import {
-  DISPLAY_DATE_FORMAT,
-  DISPLAY_DATE_TIME_FORMAT,
-} from '@/utils/formatters'
 import { padLabel } from '@/utils/label-utils'
-import { createPinyinFilterOption } from '@/utils/pinyin-search'
-import { asString } from '@/utils/type-narrowing'
+import { ModuleFormFieldControl } from './FormFieldControls'
+import {
+  buildAutoCompleteOptions,
+  buildFormFieldRules,
+  buildFormItemClassName,
+  buildSelectOptions,
+  resolveFieldOptions,
+  resolveFormFieldItemExtras,
+} from './form-field-renderer-utils'
 
 interface Props {
   field: ModuleFormFieldDefinition
@@ -44,56 +33,17 @@ interface Props {
 
 const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
 
-type SelectOptionValue = string | number | boolean
-
-function normalizeOptionValue(value: unknown): SelectOptionValue {
-  return typeof value === 'number' || typeof value === 'boolean'
-    ? value
-    : asString(value)
-}
-
-function normalizeAutoCompleteOptionValue(value: unknown) {
-  return typeof value === 'number' || typeof value === 'boolean'
-    ? String(value)
-    : asString(value)
-}
-
-function getLabelValue(value: unknown) {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const candidate = value as Record<string, unknown>
-    if ('value' in candidate) {
-      return asString(candidate.value)
-    }
-  }
-  return normalizeOptionValue(value)
-}
-
-function getSnapshotLabelKey(fieldKey: string) {
-  return fieldKey.endsWith('Id') ? fieldKey.replace(/Id$/, 'Name') : ''
-}
-
-function withCurrentSnapshotOption(
-  fieldKey: string,
-  options: Array<{ label: string; value: SelectOptionValue }>,
-  formValues: Record<string, unknown>,
-) {
-  const value = getLabelValue(formValues[fieldKey])
-  if (value === '') {
-    return options
-  }
-  if (options.some((option) => String(option.value) === String(value))) {
-    return options
-  }
-
-  const labelKey = getSnapshotLabelKey(fieldKey)
-  const label = labelKey ? asString(formValues[labelKey]).trim() : ''
-  if (!label) {
-    return options
-  }
-
-  return [{ label, value }, ...options]
-}
-
+/**
+ * 动态表单字段渲染器。
+ *
+ * <p>职责在本次重构后收敛为三件事：把字段定义解析成选项/校验规则、套上无障碍表单项
+ * 外壳、把控件渲染委派给 FormFieldControls。此前「选项解析 + 校验规则 + 类名拼装 +
+ * 8 个控件分支」全在一个函数里，控制流复杂度 29，超出 react-doctor 阈值
+ * (no-high-complexity-react-function)。</p>
+ *
+ * <p>DOM 结构、aria 契约、类名与文案保持逐字不变：AccessibleFormItem 仍是唯一外壳，
+ * 取值桥接（upload 的 fileList）仍走同一个 itemProps。</p>
+ */
 export function FormFieldRenderer({
   field,
   moduleKey,
@@ -112,49 +62,16 @@ export function FormFieldRenderer({
     t('modules.formField.inputPlaceholder', { label: field.label })
   const allowClear = field.allowClear !== false
   const fieldId = buildFormControlId('module-form', field.key)
-  const resolvedOptions =
-    typeof field.options === 'function'
-      ? field.options === getCustomerProjectOptions
-        ? getCustomerProjectOptions(formValues, projectOptions)
-        : field.options === getSettlementAccountOptions
-          ? settlementAccountOptions
-          : field.options(formValues)
-      : field.options || []
-  const selectOptions = Array.isArray(resolvedOptions)
-    ? resolvedOptions.map((opt) => ({
-        label: String(opt.label),
-        value: normalizeOptionValue(opt.value),
-      }))
-    : []
-  const autoCompleteOptions = Array.isArray(resolvedOptions)
-    ? resolvedOptions.map((opt) => ({
-        label: String(opt.label),
-        value: normalizeAutoCompleteOptionValue(opt.value),
-      }))
-    : []
+  const resolvedOptions = resolveFieldOptions({
+    field,
+    formValues,
+    projectOptions,
+    settlementAccountOptions,
+  })
+  const rules = buildFormFieldRules(field, t)
+  const { extraClassName, itemProps } = resolveFormFieldItemExtras(field.type)
 
-  const rules = field.required
-    ? [
-        {
-          required: true,
-          message:
-            field.type === 'select' ||
-            field.type === 'multiSelect' ||
-            field.type === 'date'
-              ? t('modules.formField.selectRequired', { label: field.label })
-              : t('modules.formField.inputRequired', { label: field.label }),
-        },
-      ]
-    : undefined
-
-  const renderFormItem = (
-    children: ReactNode,
-    extraClassName?: string,
-    itemProps?: {
-      valuePropName?: string
-      getValueFromEvent?: (event: unknown) => unknown
-    },
-  ) => (
+  const renderFormItem = (children: ReactNode) => (
     <AccessibleFormItem
       key={field.key}
       name={field.key}
@@ -165,156 +82,34 @@ export function FormFieldRenderer({
       })}
       rules={rules}
       {...itemProps}
-      className={[
-        'editor-form-item',
-        field.type === 'textarea' ? 'editor-form-item--textarea' : '',
-        extraClassName || '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      className={buildFormItemClassName(field.type, extraClassName)}
     >
       {children}
     </AccessibleFormItem>
   )
 
-  if (disabledValue && isDocumentReferenceField(field.key)) {
-    return renderFormItem(
+  // 只读的单据引用字段用弹层展示关联单号，其余字段一律交给控件分发。
+  const control =
+    disabledValue && isDocumentReferenceField(field.key) ? (
       <DocumentReferencePopover
         value={formValues[field.key]}
         fieldKey={field.key}
         moduleKey={moduleKey}
         contextModuleKey={moduleKey}
         documentLabel={field.label}
-      />,
+      />
+    ) : (
+      <ModuleFormFieldControl
+        field={field}
+        fieldId={fieldId}
+        disabledValue={disabledValue}
+        placeholder={placeholder}
+        allowClear={allowClear}
+        formValues={formValues}
+        selectOptions={buildSelectOptions(resolvedOptions)}
+        autoCompleteOptions={buildAutoCompleteOptions(resolvedOptions)}
+      />
     )
-  }
 
-  switch (field.type) {
-    case 'number':
-      return renderFormItem(
-        <InputNumber
-          id={fieldId}
-          name={field.key}
-          placeholder={placeholder}
-          disabled={disabledValue}
-          min={field.min}
-          precision={field.precision ?? 2}
-          step={field.step}
-          controls={field.controls}
-          prefix={field.key === 'amount' ? '¥' : undefined}
-          className="w-full"
-        />,
-      )
-
-    case 'select':
-      return renderFormItem(
-        <Select
-          id={fieldId}
-          placeholder={placeholder}
-          allowClear={allowClear}
-          disabled={disabledValue}
-          showSearch={{ filterOption: createPinyinFilterOption() }}
-          optionLabelProp="label"
-          options={withCurrentSnapshotOption(
-            field.key,
-            selectOptions,
-            formValues,
-          )}
-        />,
-      )
-
-    case 'multiSelect':
-      return renderFormItem(
-        <Select
-          id={fieldId}
-          placeholder={placeholder}
-          allowClear={allowClear}
-          disabled={disabledValue}
-          mode="multiple"
-          showSearch={{ filterOption: createPinyinFilterOption() }}
-          optionLabelProp="label"
-          options={selectOptions}
-        />,
-      )
-
-    case 'date':
-      return renderFormItem(
-        <DatePicker
-          id={fieldId}
-          placeholder={placeholder}
-          allowClear={allowClear}
-          disabled={disabledValue}
-          format={
-            field.dateFormat ||
-            (field.showTime === true
-              ? DISPLAY_DATE_TIME_FORMAT
-              : DISPLAY_DATE_FORMAT)
-          }
-          showTime={field.showTime === true ? { format: 'HH:mm:ss' } : false}
-          className="w-full"
-        />,
-      )
-
-    case 'textarea':
-      return renderFormItem(
-        <Input.TextArea
-          id={fieldId}
-          name={field.key}
-          placeholder={placeholder}
-          allowClear={allowClear}
-          disabled={disabledValue}
-          maxLength={field.maxLength}
-          showCount={field.showCount}
-          rows={4}
-        />,
-      )
-
-    case 'upload':
-      return renderFormItem(
-        <Upload
-          accept="image/*,.pdf,application/pdf"
-          beforeUpload={() => false}
-          maxCount={5}
-          multiple
-          listType="text"
-          disabled={disabledValue}
-        >
-          <Button type="dashed" block>
-            选择回单或凭证
-          </Button>
-        </Upload>,
-        'editor-form-item--upload',
-        {
-          valuePropName: 'fileList',
-          getValueFromEvent: (event) => {
-            const fileList = (event as { fileList?: UploadFile[] })?.fileList
-            return Array.isArray(fileList) ? fileList : []
-          },
-        },
-      )
-
-    case 'autoComplete':
-      return renderFormItem(
-        <AutoComplete
-          id={fieldId}
-          placeholder={placeholder}
-          allowClear={allowClear}
-          disabled={disabledValue}
-          showSearch={{ filterOption: createPinyinFilterOption() }}
-          options={autoCompleteOptions}
-        />,
-      )
-
-    default:
-      return renderFormItem(
-        <Input
-          id={fieldId}
-          name={field.key}
-          placeholder={placeholder}
-          allowClear={allowClear}
-          disabled={disabledValue}
-          maxLength={field.maxLength}
-        />,
-      )
-  }
+  return renderFormItem(control)
 }

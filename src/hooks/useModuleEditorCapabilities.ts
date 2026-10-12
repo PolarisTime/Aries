@@ -1,20 +1,16 @@
 import {
-  buildEditorAuditTarget,
-  buildListAuditTargets,
-  resolveStatusChangeActionKind,
-  resolveStatusOptions,
-} from '@/module-system/adapter/module-adapter-actions'
-import {
-  canManageEditorLineItems,
-  isModuleLineItemsLocked,
-} from '@/module-system/adapter/module-adapter-editor'
+  resolveBulkActionAvailability,
+  resolveEditorAuditPlan,
+  resolveLineItemsLocked,
+  resolveListAuditPlan,
+} from '@/hooks/module-editor-capabilities-utils'
+import { canManageEditorLineItems } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import type {
   ModuleFilterDefinition,
   ModuleFormFieldDefinition,
   ModuleRecord,
 } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   moduleKey: string
@@ -49,62 +45,48 @@ export function useModuleEditorCapabilities({
   isReadOnly,
   resolveModuleStatusOptions,
 }: Props) {
-  const lineItemsLocked =
-    typeof lineItemsLockedOverride === 'boolean'
-      ? lineItemsLockedOverride
-      : isModuleLineItemsLocked(moduleKey, [
-          currentStatus ? asString(currentStatus) : '',
-          ...lineItemLockRelatedRows.map((record) => asString(record.status)),
-        ])
-
-  const editorAuditTarget = (() => {
-    const statusField = formFields.find((field) => field.key === 'status')
-    return buildEditorAuditTarget(
-      moduleKey,
-      resolveModuleStatusOptions(statusField),
-      currentStatus,
-    )
-  })()
-
-  const effectiveListStatusFields = listStatusFields || formFields
-  const listStatusField = effectiveListStatusFields.find(
-    (field) => field.key === 'status',
-  )
-  const listStatusOptions = resolveStatusOptions({
-    fields: effectiveListStatusFields,
-  })
-  const listPreferredStatus =
-    listStatusField && 'defaultValue' in listStatusField
-      ? listStatusField.defaultValue
-      : undefined
-  const {
-    auditTarget: listAuditTarget,
-    reverseAuditTarget: listReverseAuditTarget,
-    auditSourceStatuses: listAuditSourceStatuses,
-  } = buildListAuditTargets({
+  // 四块派生计算分别由 module-editor-capabilities-utils.ts 的纯函数承担:
+  // 这里只做「调用 + 汇总」, 不再让锁行判定/审核目标/批量可用性共享同一个分支体。
+  const lineItemsLocked = resolveLineItemsLocked({
     moduleKey,
-    statusOptions: listStatusOptions,
-    preferredStatus: listPreferredStatus,
+    lineItemsLockedOverride,
+    currentStatus,
+    lineItemLockRelatedRows,
   })
 
-  const canUseBulkAuditAction =
-    !isReadOnly && canAuditRecords && Boolean(listAuditTarget)
-  const canUseBulkReverseAuditAction =
-    !isReadOnly && canAuditRecords && Boolean(listReverseAuditTarget)
-  const canUseBulkPrintActions = canPrintRecords
-  const canUseBulkDeleteActions = !isReadOnly && canDeleteRecords
+  const { editorAuditTarget, editorAuditActionKind } = resolveEditorAuditPlan({
+    moduleKey,
+    formFields,
+    currentStatus,
+    resolveModuleStatusOptions,
+  })
+
+  const {
+    listStatusOptions,
+    listAuditTarget,
+    listReverseAuditTarget,
+    listAuditSourceStatuses,
+    listAuditActionKind,
+    listReverseAuditActionKind,
+  } = resolveListAuditPlan({ moduleKey, formFields, listStatusFields })
+
+  const {
+    canUseBulkAuditAction,
+    canUseBulkReverseAuditAction,
+    canUseBulkPrintActions,
+    canUseBulkDeleteActions,
+  } = resolveBulkActionAvailability({
+    isReadOnly,
+    canAuditRecords,
+    canPrintRecords,
+    canDeleteRecords,
+    listAuditTarget,
+    listReverseAuditTarget,
+  })
+
   const canAuditEditor = Boolean(editorAuditTarget)
   const canSaveAndAuditCurrentEditor =
     canSaveCurrentEditor && canAuditRecords && canAuditEditor
-  const editorAuditActionKind = editorAuditTarget
-    ? resolveStatusChangeActionKind(editorAuditTarget.value)
-    : null
-  const listAuditActionKind = listAuditTarget
-    ? resolveStatusChangeActionKind(listAuditTarget.value)
-    : null
-  const listReverseAuditActionKind = listReverseAuditTarget
-    ? resolveStatusChangeActionKind(listReverseAuditTarget.value, true)
-    : null
 
   const canManageEditorItems = canManageEditorLineItems(
     moduleKey,

@@ -1,68 +1,37 @@
-import type { DragEndEvent } from '@dnd-kit/core'
 import {
-  closestCenter,
-  DndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Flex, Form, Modal, Space, Tag, Typography, theme } from 'antd'
-import { Fragment, useEffect, useMemo, useReducer } from 'react'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { useQuery } from '@tanstack/react-query'
+import { Form, Modal } from 'antd'
+import { useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  fetchPrintTemplatePreference,
   listPrintRecordItems,
   type PrintRecordItem,
   type SalesOrderPrintXlsxOptions,
-  savePrintTemplatePreference,
 } from '@/api/system/print-template'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
-import { formatDate } from '@/utils/formatters'
-import {
-  getPrintItemFields,
-  isStatementPrintModule as isStatementPrintModuleForModule,
-  supportsSalesOrderPrintOption,
-} from '@/utils/print-module-config'
-import { pickDefaultPrintTemplate } from '@/utils/print-template'
-import {
-  fieldText,
-  isPdfTemplate,
-  numericTotal,
-  projectSummary,
-  recordCounterparty,
-  recordOrderNo,
-  recordProjectId,
-  templateTypeLabel,
-} from '@/views/modules/components/print-job-modal-format'
+import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
+import { PrintJobModalBody } from '@/views/modules/components/PrintJobModalBody'
+import { PrintJobModalFooter } from '@/views/modules/components/PrintJobModalFooter'
+import { recordProjectId } from '@/views/modules/components/print-job-modal-format'
 import {
   INITIAL_PRINT_JOB_MODAL_STATE,
-  type PendingOutputAction,
   type PrintJobFormValues,
   printJobModalReducer,
   resolveSplitPieceCount,
 } from '@/views/modules/components/print-job-modal-state'
-import {
-  buildPrintItemMergeGroups,
-  reorderPrintItemIds,
-  togglePrintItemSplitIds,
-} from '@/views/modules/components/print-job-modal-utils'
-import { usePrintJobItems } from '@/views/modules/use-print-job-items'
-import { PrintJobItemsSection } from './PrintJobItemsSection'
-import { PrintJobModalFooter } from './PrintJobModalFooter'
-import { PrintJobModalSummaryBar } from './PrintJobModalSummaryBar'
-import { PrintJobTemplateOptionsForm } from './PrintJobTemplateOptionsForm'
+import { createPrintJobOutputActions } from '@/views/modules/components/print-job-output-actions'
+import { usePrintJobModalItems } from '@/views/modules/components/use-print-job-modal-items'
+import { usePrintTemplatePreference } from '@/views/modules/components/use-print-template-preference'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []
 const EMPTY_PRINT_OPTIONS: PrintJobFormValues['printOptions'] = []
@@ -86,217 +55,16 @@ interface Props {
   ) => Promise<boolean>
 }
 
-function PrintJobHeader({
-  counterpartyName,
-  moduleKey,
-  moduleTitle,
-  orderNo,
-  projectSummaryText,
-  selectedTemplate,
-  t,
-}: {
-  counterpartyName: string
-  moduleKey: string
-  moduleTitle?: string
-  orderNo: string
-  projectSummaryText: string
-  selectedTemplate?: PrintTemplateRecord
-  t: (key: string, values?: Record<string, unknown>) => string
-}) {
-  const { token } = theme.useToken()
-  const summaryParts = [
-    { key: 'counterparty', text: counterpartyName },
-    { key: 'project', text: projectSummaryText },
-  ].filter((part) => part.text)
-  return (
-    <Flex vertical gap={token.marginXS}>
-      <Flex align="center" gap="middle" wrap="wrap">
-        <Typography.Text strong style={{ fontSize: token.fontSizeLG }}>
-          {moduleTitle || t('modules.print.currentModule')}
-        </Typography.Text>
-        {orderNo ? (
-          <DocumentReferencePopover
-            value={orderNo}
-            moduleKey={moduleKey}
-            documentLabel={moduleTitle || t('modules.print.currentModule')}
-          />
-        ) : null}
-        {selectedTemplate ? (
-          <Tag color={isPdfTemplate(selectedTemplate) ? 'blue' : 'green'}>
-            {templateTypeLabel(selectedTemplate, t)}
-          </Tag>
-        ) : null}
-      </Flex>
-      {summaryParts.length ? (
-        <Flex align="center" gap="small" wrap="wrap">
-          {summaryParts.map((part, index) => (
-            <Fragment key={part.key}>
-              {index > 0 ? (
-                <Typography.Text type="secondary">/</Typography.Text>
-              ) : null}
-              <Typography.Text
-                ellipsis={{ tooltip: true }}
-                style={{ maxWidth: 420 }}
-              >
-                {part.text}
-              </Typography.Text>
-            </Fragment>
-          ))}
-        </Flex>
-      ) : null}
-    </Flex>
-  )
-}
-
-interface PrintJobOutputActionsInput {
-  brandOverrideEnabled: boolean
-  brandOverridesByItemId: Record<string, string>
-  dispatch: React.Dispatch<Parameters<typeof printJobModalReducer>[1]>
-  hideRemark: boolean
-  hideUnitPrice: boolean
-  itemSelectionEnabled: boolean
-  mergeEquivalentItems: boolean
-  mergeEquivalentItemsAvailable: boolean
-  onExportPrintXlsx?: Props['onExportPrintXlsx']
-  onPrint: Props['onPrint']
-  /** 实际打印/导出成功后回调, 用于记忆项目级模板偏好(预览不记忆)。 */
-  onTemplateUsed?: (templateId: string) => void
-  orderedPrintItemIds: string[]
-  selectedItemIds: string[]
-  selectedTemplate?: PrintTemplateRecord
-  splitItemIds?: string[]
-  splitPieceCount?: number
-}
-
-export function createPrintJobOutputActions({
-  brandOverrideEnabled,
-  brandOverridesByItemId,
-  dispatch,
-  hideRemark,
-  hideUnitPrice,
-  itemSelectionEnabled,
-  mergeEquivalentItems,
-  mergeEquivalentItemsAvailable,
-  onExportPrintXlsx,
-  onPrint,
-  onTemplateUsed,
-  orderedPrintItemIds,
-  selectedItemIds,
-  selectedTemplate,
-  splitItemIds,
-  splitPieceCount,
-}: PrintJobOutputActionsInput) {
-  const currentBrandOverridesByItemId = () => {
-    const normalizedBrandOverridesByItemId: Record<string, string> = {}
-    for (const [itemId, value] of Object.entries(brandOverridesByItemId)) {
-      const trimmed = value.trim()
-      if (trimmed) {
-        normalizedBrandOverridesByItemId[itemId] = trimmed
-      }
-    }
-    return brandOverrideEnabled &&
-      Object.keys(normalizedBrandOverridesByItemId).length
-      ? normalizedBrandOverridesByItemId
-      : undefined
-  }
-
-  // 三通道共享的打印选项：hideRemark/选中项/行序/品牌覆盖全通道一致，
-  // mergeEquivalentItems 仅 LODOP/PDF 渲染通道支持（xlsx 导出无合并语义）。
-  const currentOutputOptions = (): PrintRenderOptions &
-    SalesOrderPrintXlsxOptions => {
-    return {
-      hideUnitPrice,
-      hideRemark,
-      ...(mergeEquivalentItemsAvailable ? { mergeEquivalentItems } : {}),
-      ...(itemSelectionEnabled ? { selectedItemIds } : {}),
-      ...(orderedPrintItemIds.length ? { itemOrder: orderedPrintItemIds } : {}),
-      ...(currentBrandOverridesByItemId()
-        ? { brandOverridesByItemId: currentBrandOverridesByItemId() }
-        : {}),
-      // 拆分件数与逐行拆分集合必须成对下传：空数组表示勾选了拆分打印但没有勾选任何行。
-      ...(splitPieceCount
-        ? { splitPieceCount, splitItemIds: splitItemIds ?? [] }
-        : {}),
-    }
-  }
-
-  /** xlsx 导出选项：剥离渲染通道专属的合并开关。 */
-  const toXlsxOptions = (
-    options: PrintRenderOptions,
-  ): SalesOrderPrintXlsxOptions => {
-    const { mergeEquivalentItems: _mergeEquivalentItems, ...xlsxOptions } =
-      options
-    void _mergeEquivalentItems
-    return xlsxOptions
-  }
-
-  const markSelectedPrintItemsOutput = (itemIds: string[]) => {
-    if (!itemSelectionEnabled || !itemIds.length) return
-    dispatch({ type: 'markPrintItemsOutput', itemIds })
-  }
-
-  /**
-   * 三通道统一输出入口：preview/print/download 走渲染通道，xlsx 走导出通道。
-   * 防重入、已打印标记与状态清理逻辑单一实现。
-   */
-  const handleOutput = (mode: PendingOutputAction): Promise<void> => {
-    const exportHandler = onExportPrintXlsx
-    if (mode !== 'xlsx' && !selectedTemplate) {
-      return Promise.resolve()
-    }
-    if (mode === 'xlsx' && !exportHandler) {
-      return Promise.resolve()
-    }
-    // 守卫已保证：xlsx 分支必有 exportHandler、渲染分支必有 template；
-    // 先于 dispatch 捕获快照，避免重渲染后引用变化。
-    const template = selectedTemplate
-    const options = currentOutputOptions()
-    dispatch({ type: 'setPendingOutputAction', value: mode })
-    const run =
-      mode === 'xlsx'
-        ? (exportHandler as NonNullable<typeof exportHandler>)(
-            toXlsxOptions(options),
-          )
-        : onPrint(mode, template as NonNullable<typeof template>, options)
-    return run
-      .then((succeeded) => {
-        if (succeeded && mode !== 'preview') {
-          markSelectedPrintItemsOutput(selectedItemIds)
-          if (template) onTemplateUsed?.(template.id)
-        }
-      })
-      .finally(() => {
-        dispatch({ type: 'setPendingOutputAction' })
-      })
-  }
-
-  return {
-    handleExportPrintXlsx: () => handleOutput('xlsx'),
-    handlePrint: (mode: PrintActionMode) => handleOutput(mode),
-  }
-}
-
-function normalizePrintItemOrder(
-  currentOrder: string[],
-  printItems: PrintRecordItem[],
-) {
-  const itemIds = printItems.map((item) => item.id)
-  const itemIdSet = new Set(itemIds)
-  const result: string[] = []
-  for (const itemId of currentOrder) {
-    if (itemIdSet.has(itemId)) {
-      result.push(itemId)
-    }
-  }
-  const existing = new Set(result)
-  for (const itemId of itemIds) {
-    if (!existing.has(itemId)) {
-      result.push(itemId)
-    }
-  }
-  return result
-}
-
+/**
+ * 打印作业弹窗：查询待打印明细、编排打印选项与输出动作。
+ *
+ * <p>本轮重构的目标是同时摘掉 no-giant-component (>300 行) 与
+ * no-high-complexity-react-function 两个告警，做法是把内容区拆成
+ * PrintJobModalBody、页头拆成 PrintJobHeader、明细派生状态抽成
+ * usePrintJobModalItems、模板偏好抽成 usePrintTemplatePreference。
+ * 弹窗自身只保留「查询 + 表单选项 + 输出动作 + Modal 外壳」，
+ * 关闭确认、防重入与拆分件数校验的语义完全不变。</p>
+ */
 export function PrintJobModal({
   open,
   moduleKey,
@@ -333,7 +101,6 @@ export function PrintJobModal({
     staleTime: 30 * 1000,
   })
   const printItems = fetchedPrintItems ?? EMPTY_PRINT_ITEMS
-  const templateIdFromForm = Form.useWatch('templateId', form)
   const printOptionsFromForm =
     Form.useWatch('printOptions', form) ?? EMPTY_PRINT_OPTIONS
   const splitPieceCountFromForm = Form.useWatch('splitPieceCount', form)
@@ -353,124 +120,37 @@ export function PrintJobModal({
   )
   const splitPieceCountInvalid =
     splitPrintEnabled && splitPieceCount === undefined
-  const splitItemIdSet = useMemo(
-    () => new Set(state.splitItemIds),
-    [state.splitItemIds],
-  )
-  const effectiveSplitItemIds = useMemo(() => {
-    const itemIds: string[] = []
-    for (const item of printItems) {
-      if (splitItemIdSet.has(item.id)) itemIds.push(item.id)
-    }
-    return itemIds
-  }, [printItems, splitItemIdSet])
   const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
-
-  // 项目级偏好: 记住该项目在当前单据类型下上次所选模板, 作为默认回填。
-  const projectId = recordProjectId(selectedRows[0])
-  const projectPreferenceQuery = useQuery({
-    queryKey: QUERY_KEYS.printTemplatePreference(projectId, moduleKey),
-    queryFn: ({ signal }) =>
-      fetchPrintTemplatePreference(projectId, moduleKey, signal),
-    enabled: open && Boolean(projectId),
-    staleTime: 60 * 1000,
-  })
-  const preferredTemplate = projectPreferenceQuery.data
-    ? templates.find(
-        (template) => template.id === projectPreferenceQuery.data?.templateId,
-      )
-    : undefined
-  // 打印/导出成功后记忆项目级偏好(预览不记忆); 失败静默, 不影响打印主流程。
-  const queryClient = useQueryClient()
-  const rememberPreference = useMutation({
-    mutationFn: (templateId: string) =>
-      savePrintTemplatePreference({
-        projectId,
-        billType: moduleKey,
-        templateId,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.printTemplatePreference(projectId, moduleKey),
-      })
-    },
-  })
-  const fallbackTemplate = pickDefaultPrintTemplate(templates)
-  const selectedTemplate =
-    templates.find((template) => template.id === templateIdFromForm) ??
-    preferredTemplate ??
-    fallbackTemplate
-  // 模板列表晚于弹窗挂载到达时，补写默认模板，保证 Select 与实际输出一致。
-  // 优先项目偏好, 其次 is_default/首个；等偏好查询结束后再补写, 避免先用默认值覆盖。
-  useEffect(() => {
-    if (!open) return
-    const currentTemplateId: unknown = form.getFieldValue('templateId')
-    if (currentTemplateId) return
-    if (projectId && projectPreferenceQuery.isPending) return
-    const defaultTemplate = preferredTemplate ?? fallbackTemplate
-    if (defaultTemplate) {
-      form.setFieldValue('templateId', defaultTemplate.id)
-    }
-  }, [
-    form,
-    open,
-    projectId,
-    preferredTemplate,
-    fallbackTemplate,
-    projectPreferenceQuery.isPending,
-  ])
+  const mergeEquivalentItemsAvailable = supportsSalesOrderPrintOption(moduleKey)
 
   const primaryRecord = selectedRows[0]
-  const orderNo = recordOrderNo(primaryRecord)
-  const counterpartyName = recordCounterparty(primaryRecord)
-  const projectSummaryText = projectSummary(primaryRecord)
-  const recordDeliveryDate = formatDate(primaryRecord?.deliveryDate, '-')
-  const recordRemark = fieldText(primaryRecord?.remark)
-  const settlementCompanyName = fieldText(primaryRecord?.settlementCompanyName)
-  const templateOptions = useMemo(
-    () =>
-      templates.map((template) => ({
-        label: (
-          <Space size={8}>
-            <span>{template.templateName}</span>
-            <Tag>{templateTypeLabel(template, t)}</Tag>
-          </Space>
-        ),
-        value: template.id,
-      })),
-    [t, templates],
+  const projectId = recordProjectId(primaryRecord)
+  const { selectedTemplate, rememberTemplateUsed } = usePrintTemplatePreference(
+    {
+      form,
+      moduleKey,
+      open,
+      projectId,
+      templates,
+    },
   )
 
-  const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
-  const statementPrintModule = isStatementPrintModuleForModule(moduleKey)
-  const printItemFields = useMemo(
-    () => getPrintItemFields(moduleKey),
-    [moduleKey],
-  )
-  const mergeEquivalentItemsAvailable = isSalesOrder
-  const showMergeGroup = mergeEquivalentItemsAvailable && mergeEquivalentItems
-  const {
-    effectiveOrderedPrintItemIds: orderedPrintItemIds,
-    mergeMarkersByItemId,
-    orderedPrintItems,
-    outputPrintItemIdSet,
-    selectedPrintItems,
-  } = usePrintJobItems({
-    printItems,
-    orderedPrintItemIds: state.orderedPrintItemIds,
-    excludedPrintItemIds: state.excludedPrintItemIds,
-    outputPrintItemIds: state.outputPrintItemIds,
-    itemSelectionEnabled,
+  const itemState = usePrintJobModalItems({
     brandOverrideEnabled,
     brandOverridesByItemId: state.brandOverridesByItemId,
-    showMergeGroup,
+    dispatch: dispatchPrintJobModal,
+    excludedPrintItemIds: state.excludedPrintItemIds,
+    itemSelectionEnabled,
+    mergeEquivalentItems,
+    mergeEquivalentItemsAvailable,
+    orderedPrintItemIds: state.orderedPrintItemIds,
+    outputPrintItemIds: state.outputPrintItemIds,
+    printItems,
+    splitItemIds: state.splitItemIds,
+    splitPieceCount,
+    splitPrintEnabled,
   })
-  const totalQuantity = numericTotal(
-    selectedPrintItems.map((item) => item.quantity),
-  )
-  const totalWeight = numericTotal(
-    selectedPrintItems.map((item) => item.weightTon),
-  )
+
   const { handleExportPrintXlsx, handlePrint } = createPrintJobOutputActions({
     brandOverrideEnabled,
     brandOverridesByItemId: state.brandOverridesByItemId,
@@ -482,59 +162,13 @@ export function PrintJobModal({
     mergeEquivalentItemsAvailable,
     onExportPrintXlsx,
     onPrint,
-    onTemplateUsed: (templateId) => {
-      if (projectId) rememberPreference.mutate(templateId)
-    },
-    orderedPrintItemIds,
-    selectedItemIds: selectedPrintItems.map((item) => item.id),
+    onTemplateUsed: rememberTemplateUsed,
+    orderedPrintItemIds: itemState.orderedPrintItemIds,
+    selectedItemIds: itemState.selectedPrintItems.map((item) => item.id),
     selectedTemplate,
-    splitItemIds: effectiveSplitItemIds,
+    splitItemIds: itemState.effectiveSplitItemIds,
     splitPieceCount,
   })
-
-  const mergeGroupByItemId = useMemo(() => {
-    const groupByItemId: Record<string, string[]> = {}
-    if (!showMergeGroup) return groupByItemId
-    const groups = buildPrintItemMergeGroups(
-      selectedPrintItems,
-      brandOverrideEnabled ? state.brandOverridesByItemId : {},
-    )
-    for (const memberIds of groups) {
-      for (const itemId of memberIds) {
-        groupByItemId[itemId] = memberIds
-      }
-    }
-    return groupByItemId
-  }, [
-    brandOverrideEnabled,
-    selectedPrintItems,
-    showMergeGroup,
-    state.brandOverridesByItemId,
-  ])
-
-  const handleToggleSplitItem = (itemId: string) => {
-    // 合并模式下拆分作用于整个同款组：勾选任一行即勾选全组，取消同理。
-    const memberIds = mergeGroupByItemId[itemId] ?? [itemId]
-    dispatchPrintJobModal({
-      type: 'setSplitItemIds',
-      itemIds: togglePrintItemSplitIds(state.splitItemIds, memberIds),
-    })
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) {
-      return
-    }
-    dispatchPrintJobModal({
-      type: 'setOrderedPrintItemIds',
-      itemIds: reorderPrintItemIds(
-        normalizePrintItemOrder(state.orderedPrintItemIds, printItems),
-        String(active.id),
-        String(over.id),
-      ),
-    })
-  }
 
   const handleRequestClose = () => {
     modal.confirm({
@@ -556,12 +190,13 @@ export function PrintJobModal({
     return false
   }
 
-  const canExportPrintXlsx = isSalesOrder && Boolean(onExportPrintXlsx)
+  const canExportPrintXlsx =
+    mergeEquivalentItemsAvailable && Boolean(onExportPrintXlsx)
   const pendingOutputAction = state.pendingOutputAction
   const hasSelectedPrintItems =
     !itemSelectionEnabled ||
     printItems.length === 0 ||
-    selectedPrintItems.length > 0
+    itemState.selectedPrintItems.length > 0
 
   return (
     <Modal
@@ -595,100 +230,27 @@ export function PrintJobModal({
       }
       width={1440}
     >
-      <Flex vertical gap="middle">
-        <PrintJobHeader
-          counterpartyName={counterpartyName}
-          moduleKey={moduleKey}
-          moduleTitle={moduleTitle}
-          orderNo={orderNo}
-          projectSummaryText={projectSummaryText}
-          selectedTemplate={selectedTemplate}
-          t={t}
-        />
-        <PrintJobTemplateOptionsForm
-          form={form}
-          templates={templates}
-          templateOptions={templateOptions}
-          isSalesOrder={isSalesOrder}
-        />
-        <PrintJobModalSummaryBar
-          recordDeliveryDate={recordDeliveryDate}
-          recordRemark={recordRemark}
-          settlementCompanyName={settlementCompanyName}
-          totalQuantity={totalQuantity}
-          totalWeight={totalWeight}
-        />
-        <Flex justify="space-between" align="center" gap="small" wrap="wrap">
-          <Typography.Text type="secondary">
-            {itemSelectionEnabled
-              ? t('modules.print.selectedItemsCount', {
-                  count: selectedPrintItems.length,
-                })
-              : t('modules.print.totalItemsCount', {
-                  count: printItems.length,
-                })}
-          </Typography.Text>
-          {mergeEquivalentItemsAvailable ? (
-            <Flex gap="small">
-              <Button
-                size="small"
-                type={mergeEquivalentItems ? 'primary' : 'default'}
-                onClick={() => form.setFieldValue('mergeMode', 'merge')}
-              >
-                {t('modules.print.mergeEquivalentItems')}
-              </Button>
-              <Button
-                size="small"
-                type={mergeEquivalentItems ? 'default' : 'primary'}
-                onClick={() => form.setFieldValue('mergeMode', 'split')}
-              >
-                {t('modules.print.splitEquivalentItems')}
-              </Button>
-            </Flex>
-          ) : null}
-        </Flex>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={orderedPrintItemIds}
-            strategy={verticalListSortingStrategy}
-          >
-            <div
-              className={
-                statementPrintModule ? 'print-job-items-scroll' : undefined
-              }
-            >
-              <PrintJobItemsSection
-                moduleKey={moduleKey}
-                printItems={printItems}
-                orderedPrintItems={orderedPrintItems}
-                orderedPrintItemIds={orderedPrintItemIds}
-                selectedPrintItems={selectedPrintItems}
-                outputPrintItemIdSet={outputPrintItemIdSet}
-                mergeMarkersByItemId={mergeMarkersByItemId}
-                showMergeGroup={showMergeGroup}
-                brandOverrideEnabled={brandOverrideEnabled}
-                brandOverridesByItemId={state.brandOverridesByItemId}
-                dispatch={dispatchPrintJobModal}
-                isStatementPrintModule={statementPrintModule}
-                itemSelectionEnabled={itemSelectionEnabled}
-                printItemFields={printItemFields}
-                printItemsError={printItemsError}
-                onRetryPrintItems={() => {
-                  void refetchPrintItems()
-                }}
-                splitColumnEnabled={splitPrintEnabled}
-                splitPieceCount={splitPieceCount}
-                splitItemIds={effectiveSplitItemIds}
-                onToggleSplitItem={handleToggleSplitItem}
-              />
-            </div>
-          </SortableContext>
-        </DndContext>
-      </Flex>
+      <PrintJobModalBody
+        brandOverrideEnabled={brandOverrideEnabled}
+        brandOverridesByItemId={state.brandOverridesByItemId}
+        dispatch={dispatchPrintJobModal}
+        form={form}
+        itemSelectionEnabled={itemSelectionEnabled}
+        itemState={itemState}
+        mergeEquivalentItems={mergeEquivalentItems}
+        moduleKey={moduleKey}
+        moduleTitle={moduleTitle}
+        onDragEnd={itemState.handleDragEnd}
+        onRetryPrintItems={() => {
+          void refetchPrintItems()
+        }}
+        primaryRecord={primaryRecord}
+        printItems={printItems}
+        printItemsError={printItemsError}
+        sensors={sensors}
+        selectedTemplate={selectedTemplate}
+        templates={templates}
+      />
     </Modal>
   )
 }

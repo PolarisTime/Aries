@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { DocumentFlowModal } from '@/components/DocumentFlowModal'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
-import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
+import { AppLayoutHeaderArea } from '@/layouts/AppLayoutHeaderArea'
 import {
   buildAppLayoutStyles,
   buildAppLayoutUserInfo,
@@ -38,7 +38,7 @@ import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
 import type { ThemeMode } from '@/utils/storage'
 
-const { Header, Sider } = Layout
+const { Sider } = Layout
 
 type SideNavigationProps = {
   collapsed: boolean
@@ -333,6 +333,22 @@ export function AppLayout() {
     isTopNavigationLayout,
   })
 
+  // 顶栏搜索框的受控属性: 顶部/侧边两种布局共用同一份对象(改造前两侧各写一遍)。
+  const headerSearch = {
+    keyword: globalSearchKeyword,
+    options: globalSearchOptions,
+    open: searchOpen,
+    loading: globalSearchLoading,
+    onBlur: handleGlobalSearchBlur,
+    onKeywordChange: setGlobalSearchKeyword,
+    onOpen: () => setSearchOpen(true),
+    onOpenChange: setSearchOpen,
+    onSearch: handleGlobalSearch,
+    onSelect: handleGlobalSearchSelect,
+    onSubmit: handleGlobalSearchSubmit,
+    onOpenFlow: handleOpenSearchResultFlow,
+  }
+
   const layoutShell = (
     <Layout className={rootClassName} style={shellFontStyle}>
       <div className="leo-page-loader" />
@@ -354,64 +370,26 @@ export function AppLayout() {
         className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}`}
         style={mainStyle}
       >
-        <Header className={headerClassName} style={fixedWidthStyle}>
-          {isTopNavigationLayout ? (
-            <AppLayoutHeader
-              kind="top"
-              selectedKeys={selectedKeys}
-              topMenuItems={topMenuItems}
-              onMenuClick={handleMenuClick}
-              onDashboardClick={() => openTab({ pathname: '/dashboard' })}
-              topBrandMark={topBrandMark}
-              shellFontStyle={shellFontStyle}
-              clockDisplay={clockDisplay}
-              currentUserName={currentUserName}
-              currentUserLoginName={currentUserLoginName}
-              onOpenPersonalSettings={handleOpenPersonalSettings}
-              onSignOut={handleSignOut}
-              search={{
-                keyword: globalSearchKeyword,
-                options: globalSearchOptions,
-                open: searchOpen,
-                loading: globalSearchLoading,
-                onBlur: handleGlobalSearchBlur,
-                onKeywordChange: setGlobalSearchKeyword,
-                onOpen: () => setSearchOpen(true),
-                onOpenChange: setSearchOpen,
-                onSearch: handleGlobalSearch,
-                onSelect: handleGlobalSearchSelect,
-                onSubmit: handleGlobalSearchSubmit,
-                onOpenFlow: handleOpenSearchResultFlow,
-              }}
-            />
-          ) : (
-            <AppLayoutHeader
-              kind="side"
-              collapsed={collapsed}
-              onToggleCollapsed={() => setCollapsed((value) => !value)}
-              backendOnline={backendOnline}
-              shellFontStyle={shellFontStyle}
-              clockDisplay={clockDisplay}
-              currentUserName={currentUserName}
-              onOpenPersonalSettings={handleOpenPersonalSettings}
-              onSignOut={handleSignOut}
-              search={{
-                keyword: globalSearchKeyword,
-                options: globalSearchOptions,
-                open: searchOpen,
-                loading: globalSearchLoading,
-                onBlur: handleGlobalSearchBlur,
-                onKeywordChange: setGlobalSearchKeyword,
-                onOpen: () => setSearchOpen(true),
-                onOpenChange: setSearchOpen,
-                onSearch: handleGlobalSearch,
-                onSelect: handleGlobalSearchSelect,
-                onSubmit: handleGlobalSearchSubmit,
-                onOpenFlow: handleOpenSearchResultFlow,
-              }}
-            />
-          )}
-        </Header>
+        <AppLayoutHeaderArea
+          backendOnline={backendOnline}
+          clockDisplay={clockDisplay}
+          collapsed={collapsed}
+          currentUserLoginName={currentUserLoginName}
+          currentUserName={currentUserName}
+          fixedWidthStyle={fixedWidthStyle}
+          headerClassName={headerClassName}
+          isTopNavigationLayout={isTopNavigationLayout}
+          onDashboardClick={() => openTab({ pathname: '/dashboard' })}
+          onMenuClick={handleMenuClick}
+          onOpenPersonalSettings={handleOpenPersonalSettings}
+          onSignOut={handleSignOut}
+          onToggleCollapsed={() => setCollapsed((value) => !value)}
+          search={headerSearch}
+          selectedKeys={selectedKeys}
+          shellFontStyle={shellFontStyle}
+          topBrandMark={topBrandMark}
+          topMenuItems={topMenuItems}
+        />
 
         <AppTabContainer />
       </Layout>

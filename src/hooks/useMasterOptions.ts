@@ -17,10 +17,7 @@ import {
   fetchAllMaterialOptions,
   type MaterialSearchResponse,
 } from '@/api/master/materials'
-import {
-  fetchProjectOptions,
-  type ProjectOption,
-} from '@/api/master/project-options'
+import type { ProjectOption } from '@/api/master/project-options'
 import {
   fetchSupplierOptions,
   type SupplierOption,
@@ -35,6 +32,10 @@ import {
 } from '@/api/system/company-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import {
+  fetchProjectOptionsFor,
+  normalizeMasterOptionRequirements,
+} from '@/hooks/master-options-utils'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -155,38 +156,31 @@ export function useMasterOptions(
   customerId?: EntityId,
 ) {
   const token = useAuthStore((s) => s.token)
-  const normalizedRequirements = {
-    suppliers: Boolean(requirements.suppliers),
-    customers: Boolean(requirements.customers),
-    projects: Boolean(requirements.projects),
-    carriers: Boolean(requirements.carriers),
-    settlementCompanies: Boolean(requirements.settlementCompanies),
-    warehouses: Boolean(requirements.warehouses),
-    materialCategories: Boolean(requirements.materialCategories),
-    materialGrades: Boolean(requirements.materialGrades),
-    materials: Boolean(requirements.materials),
-  }
+  const normalizedRequirements = normalizeMasterOptionRequirements(requirements)
 
-  const queryEnabled = enabled && !!token
+  const queryEnabled = enabled && Boolean(token)
+  // 「总开关 && 该主数据被需要」收敛成一次调用: 否则 9 个 useQuery 会摊开
+  // 9 份重复的 && 分支, 把本 hook 的控制流复杂度顶过阈值。
+  const supports = (required: boolean) => queryEnabled && required
 
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.supplier,
     queryFn: fetchSupplierOptions,
-    enabled: queryEnabled && normalizedRequirements.suppliers,
+    enabled: supports(normalizedRequirements.suppliers),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.customer,
     queryFn: fetchCustomerOptions,
-    enabled: queryEnabled && normalizedRequirements.customers,
+    enabled: supports(normalizedRequirements.customers),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: carriers = [], isLoading: carriersLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.carrier,
     queryFn: fetchCarrierOptions,
-    enabled: queryEnabled && normalizedRequirements.carriers,
+    enabled: supports(normalizedRequirements.carriers),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
@@ -196,7 +190,7 @@ export function useMasterOptions(
   } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
     queryFn: ({ signal }) => fetchSettlementCompanyOptions(signal),
-    enabled: queryEnabled && normalizedRequirements.settlementCompanies,
+    enabled: supports(normalizedRequirements.settlementCompanies),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
@@ -204,14 +198,14 @@ export function useMasterOptions(
     useQuery({
       queryKey: QUERY_KEYS.masterOptions.materialGrades,
       queryFn: fetchMaterialGrades,
-      enabled: queryEnabled && normalizedRequirements.materialGrades,
+      enabled: supports(normalizedRequirements.materialGrades),
       staleTime: STALE_MASTER_OPTIONS,
     })
 
   const { data: warehouses = [], isLoading: warehousesLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.warehouse,
     queryFn: fetchWarehouseOptions,
-    enabled: queryEnabled && normalizedRequirements.warehouses,
+    enabled: supports(normalizedRequirements.warehouses),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
@@ -221,25 +215,36 @@ export function useMasterOptions(
   } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.materialCategories,
     queryFn: fetchMaterialCategories,
-    enabled: queryEnabled && normalizedRequirements.materialCategories,
+    enabled: supports(normalizedRequirements.materialCategories),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: materials = [], isLoading: materialsLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.material,
     queryFn: () => fetchAllMaterialOptions(),
-    enabled: queryEnabled && normalizedRequirements.materials,
+    enabled: supports(normalizedRequirements.materials),
     staleTime: STALE_MASTER_OPTIONS,
   })
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: QUERY_KEYS.masterOptions.project(customerId || 'none'),
-    queryFn: () =>
-      customerId ? fetchProjectOptions(customerId) : Promise.resolve([]),
-    enabled:
-      queryEnabled && normalizedRequirements.projects && Boolean(customerId),
+    queryFn: () => fetchProjectOptionsFor(customerId),
+    enabled: supports(normalizedRequirements.projects && Boolean(customerId)),
     staleTime: STALE_MASTER_OPTIONS,
   })
+
+  // 9 个 loading 用 some(Boolean) 合并: 串成 || 会再摊开 9 个分支。
+  const isLoading = [
+    suppliersLoading,
+    customersLoading,
+    projectsLoading,
+    carriersLoading,
+    settlementCompaniesLoading,
+    warehousesLoading,
+    materialCategoriesLoading,
+    materialGradesLoading,
+    materialsLoading,
+  ].some(Boolean)
 
   return {
     suppliers,
@@ -251,15 +256,6 @@ export function useMasterOptions(
     materialCategories,
     materialGrades,
     materials,
-    isLoading:
-      suppliersLoading ||
-      customersLoading ||
-      projectsLoading ||
-      carriersLoading ||
-      settlementCompaniesLoading ||
-      warehousesLoading ||
-      materialCategoriesLoading ||
-      materialGradesLoading ||
-      materialsLoading,
+    isLoading,
   } satisfies MasterOptions & { isLoading: boolean }
 }

@@ -1,13 +1,12 @@
-import {
-  EyeInvisibleOutlined,
-  SettingOutlined,
-  VerticalAlignBottomOutlined,
-  VerticalAlignTopOutlined,
-} from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { type ReactElement, use, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from './ContextMenu'
+import {
+  buildColumnHeaderMenuItems,
+  isColumnHeaderMenuActivationKey,
+  resolveColumnHeaderMenuAction,
+} from './column-header-menu-utils'
 import { ColumnSettingsRequestContext } from './column-settings-request-context'
 
 export interface ColumnHeaderMenuProps {
@@ -39,6 +38,9 @@ export interface ColumnHeaderMenuProps {
  *
  * <p>右键是隐藏技能, 因此触发器本身是键盘可达的(WCAG 2.1.1): 聚焦后按
  * Shift+F10 或 ContextMenu 键即可打开菜单, Escape 关闭后焦点回到该列头。</p>
+ *
+ * <p>菜单项装配、key 分发与按键判定已抽到 column-header-menu-utils.tsx:
+ * 组件只保留受控开关与 DOM 结构, 避免一个组件里同时塞进口述式的分支链。</p>
  */
 export function ColumnHeaderMenu({
   columnTitle,
@@ -57,52 +59,16 @@ export function ColumnHeaderMenu({
   const triggerRef = useRef<HTMLSpanElement>(null)
   const [open, setOpen] = useState(false)
 
-  const items: MenuProps['items'] = []
-  // 业务追加项(如「一键填入供应商…」)排在基元项之前
-  if (extraItems?.length) {
-    items.push(...extraItems)
-  }
-  if (onHide) {
-    if (items.length) items.push({ type: 'divider' })
-    items.push({
-      key: 'hide',
-      icon: <EyeInvisibleOutlined />,
-      label: t('common.columnMenu.hide'),
-    })
-  }
-  // 只有支持列排序的表才出现这两项(基础数据/资料表只能隐藏, 不能换序)
-  if (onMoveFirst || onMoveLast) {
-    if (items.length) items.push({ type: 'divider' })
-    if (onMoveFirst) {
-      items.push({
-        key: 'move-first',
-        icon: <VerticalAlignTopOutlined />,
-        // 已在最前时不禁用隐藏, 而是保留条目并在文案里说明原因(禁用项由 ContextMenu 保证可聚焦)
-        label: isFirst
-          ? t('common.columnMenu.moveFirstDisabled')
-          : t('common.columnMenu.moveFirst'),
-        disabled: Boolean(isFirst),
-      })
-    }
-    if (onMoveLast) {
-      items.push({
-        key: 'move-last',
-        icon: <VerticalAlignBottomOutlined />,
-        label: isLast
-          ? t('common.columnMenu.moveLastDisabled')
-          : t('common.columnMenu.moveLast'),
-        disabled: Boolean(isLast),
-      })
-    }
-  }
-  if (requestColumnSettings) {
-    if (items.length) items.push({ type: 'divider' })
-    items.push({
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: t('common.columnMenu.settings'),
-    })
-  }
+  const items = buildColumnHeaderMenuItems({
+    onHide,
+    onMoveFirst,
+    onMoveLast,
+    isFirst,
+    isLast,
+    hasColumnSettings: Boolean(requestColumnSettings),
+    extraItems,
+    t,
+  })
   // 一个可用动作都没有时不要挂菜单: 空菜单比没有菜单更糟(读屏只会念"菜单")
   if (!items.length) return children
 
@@ -116,27 +82,15 @@ export function ColumnHeaderMenu({
       onOpenChange={setOpen}
       // Escape 关闭后焦点归还列头, 而不是打开菜单时恰好持有焦点的任意元素
       returnFocusRef={triggerRef}
-      onClick={({ key }) => {
-        const itemKey = String(key)
-        if (itemKey === 'hide') {
-          onHide?.()
-          return
-        }
-        if (itemKey === 'move-first') {
-          onMoveFirst?.()
-          return
-        }
-        if (itemKey === 'move-last') {
-          onMoveLast?.()
-          return
-        }
-        if (itemKey === 'settings') {
-          requestColumnSettings?.()
-          return
-        }
-        // 内部 key 上面都已 return, 其余一律交给业务方
-        onExtraItem?.(itemKey)
-      }}
+      onClick={({ key }) =>
+        resolveColumnHeaderMenuAction(String(key), {
+          onHide,
+          onMoveFirst,
+          onMoveLast,
+          onRequestColumnSettings: requestColumnSettings ?? undefined,
+          onExtraItem,
+        })
+      }
     >
       {/* biome-ignore lint/a11y/useSemanticElements: 列头需要保持表格标题的既有版式, 不能换成原生 button; role="button" 是项目既有可聚焦包装模式 */}
       <span
@@ -147,19 +101,8 @@ export function ColumnHeaderMenu({
         role="button"
         tabIndex={0}
         onKeyDownCapture={(event) => {
-          /*
-           * APG: role="button" 必须同时响应 Enter 与 Space(否则键盘用户打不开这个菜单,
-           * WCAG 2.1.1); Shift+F10 / ContextMenu 键等价于"在焦点处打开上下文菜单"。
-           * Space 必须 preventDefault, 否则会滚动页面。
-           */
-          const activatesButton =
-            event.key === 'Enter' ||
-            event.key === ' ' ||
-            event.key === 'Spacebar'
-          const opensContextMenu =
-            event.key === 'ContextMenu' ||
-            (event.key === 'F10' && event.shiftKey)
-          if (!activatesButton && !opensContextMenu) return
+          if (!isColumnHeaderMenuActivationKey(event)) return
+          // Space 必须 preventDefault, 否则会滚动页面。
           event.preventDefault()
           event.stopPropagation()
           setOpen(true)
