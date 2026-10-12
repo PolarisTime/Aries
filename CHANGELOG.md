@@ -1,3 +1,19 @@
+# [11.7.0](https://github.com/PolarisTime/Aries/compare/v11.6.0...v11.7.0) (2026-10-12)
+
+
+### Bug Fixes
+
+* **market-sync:** 覆盖矩阵把有行情的调休上班日显示成休市 ([a5ed2dd](https://github.com/PolarisTime/Aries/commit/a5ed2ddf06c1cb818b24ce12108407d4ee6f2bf9))
+* **price-compare:** 吨位列按单据实际内容定宽, 已开进度与品牌完整显示 ([51a60b4](https://github.com/PolarisTime/Aries/commit/51a60b46856bbae083caf2ab7c18013245e663ab))
+* **price-compare:** 小字号档吨位进度比值被省略号截断 ([a148171](https://github.com/PolarisTime/Aries/commit/a1481714f5fe76bb32aaa6ef5964210e17d78e6a))
+
+
+### Features
+
+* **market-sync:** 按后端休市标记渲染休市, 并清掉 React Compiler 违规 ([624dcf7](https://github.com/PolarisTime/Aries/commit/624dcf70142ecd8b768e19df01847b66eef8fa34))
+* **project:** 项目资料支持维护允许品牌与材质并在导入采购订单时预警 ([12ab046](https://github.com/PolarisTime/Aries/commit/12ab046446059dcb49cdbc69789a4f510b82e16b))
+* **project:** 项目资料支持配置允许范围的处理方式并据此阻断或提醒导入 ([d5f04f6](https://github.com/PolarisTime/Aries/commit/d5f04f61327e680fe76a1654b8b7a0044549eeb0))
+
 # [11.6.0](https://github.com/PolarisTime/Aries/compare/v11.5.0...v11.6.0) (2026-10-10)
 
 
