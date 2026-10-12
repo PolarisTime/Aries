@@ -10,7 +10,8 @@ import { saveBusinessModule } from '@/api/business/business-crud'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { bindAntdAppApi } from '@/utils/antd-app'
 import type { MasterOption } from './master-data-types'
-import { buildSupplierSpec, SupplierPage } from './SupplierPage'
+import { SupplierPage } from './SupplierPage'
+import { buildSupplierSpec } from './supplier-page-spec'
 
 vi.mock('@/api/business/business-listing', () => ({
   listBusinessModule: vi.fn(),

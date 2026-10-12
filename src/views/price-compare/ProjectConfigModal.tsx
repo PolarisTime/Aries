@@ -19,13 +19,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
 import { CATEGORIES } from './core'
-import type { Brand, ProjectConfig, Variety } from './types'
+import {
+  createDraft,
+  DEFAULT_FREIGHT,
+  draftToConfig,
+  type ProjectConfigDraft,
+  varietyKey,
+} from './project-config-draft'
+import type { ProjectConfig, Variety } from './types'
 
 const { Text } = Typography
-const DEFAULT_FREIGHT = 30
-
-const varietyKey = (item: Variety) =>
-  `${item.category}|${item.material}|${item.spec}|${item.length}`
 
 const varietyLabel = (item: Variety) =>
   [item.material, item.spec, item.length === '-' ? '' : item.length]
@@ -37,74 +40,6 @@ const varietyShort = (item: Variety) =>
 
 const matchesVarietyKeyword = (item: Variety, query: string) =>
   !query || varietyLabel(item).includes(query)
-
-export type ProjectConfigDraft = {
-  brands: string[]
-  freightMap: Record<string, number>
-  categoryMap: Record<string, string[]>
-  premium: number
-  hrb400eFallback: boolean
-  products: string[]
-  designatedBrands: string[]
-}
-
-export function createDraft(
-  config: ProjectConfig,
-  brandOptions: string[],
-  varieties: Variety[],
-): ProjectConfigDraft {
-  const names = config.brands.map((brand) => brand.name)
-  const brandByName = new Map<string, Brand>()
-  for (const brand of config.brands) {
-    if (!brandByName.has(brand.name)) brandByName.set(brand.name, brand)
-  }
-  const freightMap: Record<string, number> = {}
-  const categoryMap: Record<string, string[]> = {}
-  for (const name of brandOptions) {
-    const brand = brandByName.get(name)
-    freightMap[name] = brand?.freight ?? DEFAULT_FREIGHT
-    categoryMap[name] = brand?.categories ?? CATEGORIES
-  }
-  return {
-    brands: names.length ? names : brandOptions,
-    freightMap,
-    categoryMap,
-    premium: config.lengthPremium,
-    hrb400eFallback: config.hrb400eFallback,
-    products: config.products?.length
-      ? config.products
-      : varieties.map(varietyKey),
-    designatedBrands: config.designatedBrands ?? [],
-  }
-}
-
-export function draftToConfig(
-  draft: ProjectConfigDraft,
-  varieties: Variety[],
-): ProjectConfig {
-  const brands: Brand[] = draft.brands.map((name) => {
-    const categories = draft.categoryMap[name] ?? CATEGORIES
-    const enabled =
-      categories.length === 0 || categories.length === CATEGORIES.length
-        ? undefined
-        : categories
-    return {
-      name,
-      freight: draft.freightMap[name] ?? DEFAULT_FREIGHT,
-      categories: enabled,
-    }
-  })
-  return {
-    brands,
-    lengthPremium: draft.premium,
-    hrb400eFallback: draft.hrb400eFallback,
-    products:
-      draft.products.length === varieties.length ? undefined : draft.products,
-    designatedBrands: draft.designatedBrands.length
-      ? draft.designatedBrands
-      : undefined,
-  }
-}
 
 /* ------------------------------------------------------------------ 通用 */
 

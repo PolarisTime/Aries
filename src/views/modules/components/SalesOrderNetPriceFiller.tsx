@@ -26,6 +26,10 @@ const { Text } = Typography
 /** 交付核定状态（仅此状态显示「整单取网价」）。 */
 const DELIVERY_VERIFICATION = '交付核定'
 
+/** 空列表常量：派生回退时保持引用稳定，避免下游 memo 每次失效。 */
+const EMPTY_RULES: ProjectPriceRule[] = []
+const EMPTY_PERIODS: string[] = []
+
 /**
  * 交付核定「整单取网价」：选择价格规定 + 日期/时段匹配网价，按规定加/减后填入单价。
  * - 价格规定单选互斥、不叠加；默认沿用项目上次使用的规定；
@@ -47,7 +51,14 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const [quoteDate, setQuoteDate] = useState('')
   const [period, setPeriod] = useState('')
   const [loading, setLoading] = useState(false)
-  const [rules, setRules] = useState<ProjectPriceRule[]>([])
+  /**
+   * 已拉取的项目价格规定及其所属项目：项目被清空/切换时派生结果自动回退为空，
+   * 不需要在 effect 里同步 setRules([])（同步 setState 会触发级联渲染）。
+   */
+  const [rulesState, setRulesState] = useState<{
+    projectId: string
+    rules: ProjectPriceRule[]
+  } | null>(null)
   const [ruleId, setRuleId] = useState<string | undefined>()
 
   const deliveryDate = normalizeDateValue(formValues.deliveryDate)
@@ -56,18 +67,19 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   // 数据源与地区取自项目配置: 西本按地区报价。
   const quoteSource = project?.quoteSource
   const quoteRegion = project?.quoteRegion
+  const rules =
+    rulesState && rulesState.projectId === projectId
+      ? rulesState.rules
+      : EMPTY_RULES
 
   // 打开弹层时拉取项目价格规定, 并默认选中"上次使用"(回退到唯一一条)。
   useEffect(() => {
-    if (!open || !projectId) {
-      setRules([])
-      return
-    }
+    if (!open || !projectId) return undefined
     let active = true
     fetchProjectPriceRules(projectId)
       .then((list) => {
         if (!active) return
-        setRules(list)
+        setRulesState({ projectId, rules: list })
         setRuleId((current) => {
           if (current && list.some((rule) => rule.id === current))
             return current
@@ -77,7 +89,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         })
       })
       .catch(() => {
-        if (active) setRules([])
+        if (active) setRulesState({ projectId, rules: EMPTY_RULES })
       })
     return () => {
       active = false
@@ -245,20 +257,22 @@ function PeriodSelect({
   onChange: (value: string) => void
 }) {
   const { t } = useTranslation()
-  const [periods, setPeriods] = useState<string[]>([])
+  /**
+   * 已拉取到的时段：日期被清空时派生回退为空，
+   * 不需要在 effect 里同步 setPeriods([])（同步 setState 会触发级联渲染）。
+   */
+  const [loadedPeriods, setLoadedPeriods] = useState<string[]>([])
+  const periods = quoteDate ? loadedPeriods : EMPTY_PERIODS
 
   useEffect(() => {
-    if (!quoteDate) {
-      setPeriods([])
-      return
-    }
+    if (!quoteDate) return undefined
     let active = true
     fetchSteelQuoteCalendars(quoteDate, quoteDate)
       .then((items) => {
-        if (active) setPeriods(items[0]?.periods ?? [])
+        if (active) setLoadedPeriods(items[0]?.periods ?? [])
       })
       .catch(() => {
-        if (active) setPeriods([])
+        if (active) setLoadedPeriods(EMPTY_PERIODS)
       })
     return () => {
       active = false

@@ -7,10 +7,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
-import {
-  PurchaseOrderPickerModal,
-  remainingLinkableTon,
-} from './PurchaseOrderPickerModal'
+import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
+import { remainingLinkableTon } from './purchase-order-picker-tonnage'
 
 const api = vi.hoisted(() => ({ fetchPurchaseOrderTonnages: vi.fn() }))
 vi.mock('@/api/market/quote-sheets', async () => {

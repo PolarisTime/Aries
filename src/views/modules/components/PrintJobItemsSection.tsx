@@ -17,6 +17,7 @@ import {
   createContext,
   type Dispatch,
   type HTMLAttributes,
+  useCallback,
   useContext,
   useMemo,
 } from 'react'
@@ -59,6 +60,18 @@ const RowDragContext = createContext<RowDragContextValue | null>(null)
 function DragHandle({ label }: { label: string }) {
   const { token } = theme.useToken()
   const context = useContext(RowDragContext)
+  /*
+   * 直接把 context 里的 ref setter 交给 JSX 的 ref 属性, 编译器会把整个 context 值
+   * 推断成 ref, 于是渲染期读取 dragAttributes/dragListeners 都会报「Cannot access refs
+   * during render」; 这里包一层本地回调: 回调引用随 context 变化(它在 SortableRow 里已
+   * 被 memo), 行为与直接透传 setActivatorNodeRef 完全一致。
+   */
+  const attachActivatorNode = useCallback(
+    (element: HTMLElement | null) => {
+      context?.activatorNodeRef(element)
+    },
+    [context],
+  )
   if (!context) return null
   return (
     <button
@@ -66,7 +79,7 @@ function DragHandle({ label }: { label: string }) {
       {...(context.dragListeners ?? {})}
       aria-label={label}
       className="inline-flex cursor-grab items-center border-0 bg-transparent p-0"
-      ref={context.activatorNodeRef}
+      ref={attachActivatorNode}
       style={{ color: token.colorTextTertiary }}
       title={label}
       type="button"
@@ -174,6 +187,77 @@ function getStatementPrintItemGroups(
         >
       >
     )[moduleKey]?.groupItems(items) ?? []
+  )
+}
+
+/**
+ * 合并/拆分预览表: 挂在代表行下方, 按实际存在的字段动态补出重量/金额列。
+ * 抽成独立组件(而不是留在明细区里的渲染函数), 主组件才不会被撑成巨型组件。
+ */
+function PrintJobSplitPartsTable({
+  itemId,
+  parts,
+}: {
+  itemId: string
+  parts: PrintItemSplitPart[]
+}) {
+  const { t } = useTranslation()
+  if (!parts.length) {
+    return (
+      <Typography.Text type="secondary">
+        {t('modules.print.splitNotNeeded')}
+      </Typography.Text>
+    )
+  }
+  const hasWeight = parts.some((part) => part.weightTon !== undefined)
+  const hasAmount = parts.some((part) => part.amount !== undefined)
+  return (
+    <Table<PrintItemSplitPart>
+      columns={[
+        {
+          key: 'part',
+          width: 96,
+          align: 'center',
+          title: t('modules.print.splitPartIndex'),
+          render: (_, part) => `${part.index} / ${part.total}`,
+        },
+        {
+          key: 'quantity',
+          width: 96,
+          align: 'right',
+          title: t('modules.print.itemQuantity'),
+          render: (_, part) => part.quantity,
+        },
+        ...(hasWeight
+          ? [
+              {
+                key: 'weightTon',
+                width: 120,
+                align: 'right' as const,
+                title: t('modules.print.itemWeight'),
+                render: (_: unknown, part: PrintItemSplitPart) =>
+                  part.weightTon ?? '-',
+              },
+            ]
+          : []),
+        ...(hasAmount
+          ? [
+              {
+                key: 'amount',
+                width: 120,
+                align: 'right' as const,
+                title: t('modules.print.itemAmount'),
+                render: (_: unknown, part: PrintItemSplitPart) =>
+                  part.amount ?? '-',
+              },
+            ]
+          : []),
+      ]}
+      dataSource={parts}
+      pagination={false}
+      rowKey={(part) => `${itemId}-${part.index}`}
+      size="small"
+    />
   )
 }
 
@@ -377,73 +461,17 @@ export function PrintJobItemsSection({
     t('modules.print.noPrintItems')
   )
 
-  const renderSplitParts = (item: PrintRecordItem) => {
-    const parts = splitPartsByItemId[item.id]
-    if (!parts?.length) {
-      return (
-        <Typography.Text type="secondary">
-          {t('modules.print.splitNotNeeded')}
-        </Typography.Text>
-      )
-    }
-    const hasWeight = parts.some((part) => part.weightTon !== undefined)
-    const hasAmount = parts.some((part) => part.amount !== undefined)
-    return (
-      <Table<PrintItemSplitPart>
-        columns={[
-          {
-            key: 'part',
-            width: 96,
-            align: 'center',
-            title: t('modules.print.splitPartIndex'),
-            render: (_, part) => `${part.index} / ${part.total}`,
-          },
-          {
-            key: 'quantity',
-            width: 96,
-            align: 'right',
-            title: t('modules.print.itemQuantity'),
-            render: (_, part) => part.quantity,
-          },
-          ...(hasWeight
-            ? [
-                {
-                  key: 'weightTon',
-                  width: 120,
-                  align: 'right' as const,
-                  title: t('modules.print.itemWeight'),
-                  render: (_: unknown, part: PrintItemSplitPart) =>
-                    part.weightTon ?? '-',
-                },
-              ]
-            : []),
-          ...(hasAmount
-            ? [
-                {
-                  key: 'amount',
-                  width: 120,
-                  align: 'right' as const,
-                  title: t('modules.print.itemAmount'),
-                  render: (_: unknown, part: PrintItemSplitPart) =>
-                    part.amount ?? '-',
-                },
-              ]
-            : []),
-        ]}
-        dataSource={parts}
-        pagination={false}
-        rowKey={(part) => `${item.id}-${part.index}`}
-        size="small"
-      />
-    )
-  }
-
   const expandedSplitRowKeys = Object.keys(splitPartsByItemId)
   const splitExpandable: TableProps<PrintRecordItem>['expandable'] =
     splitColumnEnabled
       ? {
           expandedRowKeys: expandedSplitRowKeys,
-          expandedRowRender: (item) => renderSplitParts(item),
+          expandedRowRender: (item) => (
+            <PrintJobSplitPartsTable
+              itemId={item.id}
+              parts={splitPartsByItemId[item.id] ?? []}
+            />
+          ),
           rowExpandable: (item) => item.id in splitPartsByItemId,
           showExpandColumn: false,
         }

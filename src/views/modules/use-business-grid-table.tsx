@@ -126,6 +126,32 @@ function buildAntdColumns({
   })
 }
 
+/**
+ * 把「每次渲染都是新实例」的回调收敛成稳定引用。
+ * ref 的读写全部留在组件外: 组件渲染期不再直接访问 ref.current, 否则 React Compiler
+ * 会判定 refs 违规(连「把读 ref 的函数传给别的函数」也会命中)并放弃对这个列表的优化。
+ */
+function useLatestCallback<T extends (...args: never[]) => void>(
+  callback: T,
+): T {
+  const callbackRef = useRef(callback)
+  useEffect(() => {
+    callbackRef.current = callback
+  })
+  return useCallback((...args: Parameters<T>) => {
+    callbackRef.current(...args)
+  }, []) as T
+}
+
+/** 读取最新值的稳定访问器: 让事件回调读到「当前」状态, 又不让该状态成为 memo 依赖。 */
+function useLatestValueGetter<T>(value: T): () => T {
+  const valueRef = useRef(value)
+  useEffect(() => {
+    valueRef.current = value
+  }, [value])
+  return useCallback(() => valueRef.current, [])
+}
+
 export function useBusinessGridTable({
   moduleKey,
   config,
@@ -208,21 +234,16 @@ export function useBusinessGridTable({
   )
   /*
    * useColumnSettingsSupport 暴露的 handler 每次渲染都是新函数, 直接进 useMemo 依赖
-   * 会让列构建每次都重建; 这里用 ref 读取最新实现, 只让真正影响结果的 state 参与依赖。
+   * 会让列构建每次都重建; 这里用「最新回调」包装成稳定引用, 只让真正影响结果的 state
+   * 参与依赖(包装函数本身恒定, 不会引入多余依赖)。
    */
-  const columnHandlersRef = useRef({
+  const applyColumnVisibilityChange = useLatestCallback(
     handleColumnVisibilityChange,
-    handleColumnOrderChange,
-  })
-  useEffect(() => {
-    columnHandlersRef.current = {
-      handleColumnVisibilityChange,
-      handleColumnOrderChange,
-    }
-  })
+  )
+  const applyColumnOrderChange = useLatestCallback(handleColumnOrderChange)
   const handleHideColumn = useCallback(
     (columnId: string) => {
-      columnHandlersRef.current.handleColumnVisibilityChange(
+      applyColumnVisibilityChange(
         toggleColumnVisibility(columnVisibility, columnId),
       )
       // 隐藏后列头连同右键入口一起消失, 必须给出可感知反馈并说明恢复位置
@@ -234,15 +255,13 @@ export function useBusinessGridTable({
         }),
       )
     },
-    [columnVisibility, config, t],
+    [applyColumnVisibilityChange, columnVisibility, config, t],
   )
   const handleMoveColumn = useCallback(
     (columnId: string, position: 'first' | 'last') => {
-      columnHandlersRef.current.handleColumnOrderChange(
-        moveColumnKey(dataColumnIds, columnId, position),
-      )
+      applyColumnOrderChange(moveColumnKey(dataColumnIds, columnId, position))
     },
-    [dataColumnIds],
+    [applyColumnOrderChange, dataColumnIds],
   )
   const computedColumns = useMemo(
     () =>
@@ -274,14 +293,11 @@ export function useBusinessGridTable({
     })
   const antdColumns = resizableColumns
   /*
-   * 最新选中集的 ref: 行菜单打开回调需要"当前"选中行决定是否保留多选,
-   * 但选中集本身不能作为 rowContextMenus 的依赖 —— 否则每次勾选都会按
-   * O(行数 × 动作数) 重建整表菜单。这里只在打开菜单时读取最新值。
+   * 行菜单打开回调需要"当前"选中行决定是否保留多选, 但选中集本身不能作为
+   * rowContextMenus 的依赖 —— 否则每次勾选都会按 O(行数 × 动作数) 重建整表菜单。
+   * 用稳定访问器在打开菜单时读取最新值, 依赖保持不变。
    */
-  const selectedRowKeysRef = useRef(selectedRowKeys)
-  useEffect(() => {
-    selectedRowKeysRef.current = selectedRowKeys
-  }, [selectedRowKeys])
+  const getSelectedRowKeys = useLatestValueGetter(selectedRowKeys)
   /**
    * 行右键菜单(鼠标右键 / 键盘 Shift+F10 / 触摸长按共用同一份菜单):
    * 行级动作只由 `useModuleRecordActions` 产出的 `ActionItem[]` 提供,
@@ -306,7 +322,7 @@ export function useBusinessGridTable({
        */
       onMenuOpen: (record) => {
         const key = String(record.id)
-        if (selectedRowKeysRef.current.includes(key)) return
+        if (getSelectedRowKeys().includes(key)) return
         const normalizedKeysSet = new Set([key])
         setSelectedRowKeys([key])
         setSelectedRowMap((prev) => {
@@ -332,6 +348,7 @@ export function useBusinessGridTable({
   }, [
     buildActions,
     config?.primaryNoKey,
+    getSelectedRowKeys,
     records,
     setSelectedRowKeys,
     setSelectedRowMap,

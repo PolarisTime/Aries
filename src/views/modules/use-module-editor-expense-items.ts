@@ -57,12 +57,16 @@ export function useModuleEditorExpenseItems({
     staleTime: STALE_MASTER_OPTIONS,
   })
 
+  // 清空关键词时立即复位防抖值: 复位放在输入事件里而不是 effect 体内同步 setState,
+  // 既保持"清空即回到全量候选"的既有语义, 又避免级联渲染。
+  const handleMaterialSearchKeywordChange = (keyword: string) => {
+    setMaterialSearchKeyword(keyword)
+    if (!keyword.trim()) setDebouncedMaterialSearchKeyword('')
+  }
+
   useEffect(() => {
     const keyword = materialSearchKeyword.trim()
-    if (!keyword) {
-      setDebouncedMaterialSearchKeyword('')
-      return
-    }
+    if (!keyword) return undefined
     const timer = window.setTimeout(
       () => setDebouncedMaterialSearchKeyword(keyword),
       MATERIAL_SEARCH_DEBOUNCE_MS,
@@ -116,7 +120,7 @@ export function useModuleEditorExpenseItems({
 
   const expenseMaterialSearch: MaterialSearchController = {
     searching: isExpenseSearchFetching,
-    onSearch: (keyword) => setMaterialSearchKeyword(keyword),
+    onSearch: handleMaterialSearchKeywordChange,
     onClose: () => {
       setMaterialSearchKeyword('')
       setDebouncedMaterialSearchKeyword('')

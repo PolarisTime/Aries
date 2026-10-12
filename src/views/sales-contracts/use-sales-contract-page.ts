@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { Form } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchCustomerOptions } from '@/api/master/customer-options'
 import { fetchProjectOptions } from '@/api/master/project-options'
@@ -52,7 +52,19 @@ export function useSalesContractPage() {
   const defaultPageSize = useDefaultPageSize()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(defaultPageSize)
+  /**
+   * 每页条数：默认跟随运行时配置的 defaultPageSize，用户改过则用其覆盖值。
+   * 覆盖值记录了它基于的默认值，默认值一变即作废（等价于原 effect 的重置），
+   * 因此在渲染期派生即可，不需要用 effect 同步 setState。
+   */
+  const [pageSizeOverride, setPageSizeOverride] = useState<{
+    base: number
+    value: number
+  } | null>(null)
+  const pageSize =
+    pageSizeOverride && pageSizeOverride.base === defaultPageSize
+      ? pageSizeOverride.value
+      : defaultPageSize
   const [keyword, setKeyword] = useState('')
   const [filterCustomerId, setFilterCustomerId] = useState<string | undefined>()
   const [filterProjectId, setFilterProjectId] = useState<string | undefined>()
@@ -67,10 +79,6 @@ export function useSalesContractPage() {
     useState<SalesContractResponse | null>(null)
   const [editorCustomerId, setEditorCustomerId] = useState('')
   const [detailContractId, setDetailContractId] = useState('')
-
-  useEffect(() => {
-    setPageSize(defaultPageSize)
-  }, [defaultPageSize])
 
   const customerQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.customer,
@@ -182,7 +190,7 @@ export function useSalesContractPage() {
 
   const handlePageChange = (nextPage: number, nextPageSize: number) => {
     if (nextPageSize !== pageSize) {
-      setPageSize(nextPageSize)
+      setPageSizeOverride({ base: defaultPageSize, value: nextPageSize })
     }
     setPage(nextPage)
     clearSelection()

@@ -1,6 +1,6 @@
 import { SearchOutlined } from '@ant-design/icons'
 import { Button, Form, Input } from 'antd'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   resolveMasterOptionRequirements,
@@ -32,6 +32,24 @@ interface Props {
 
 const EMPTY_FILTERS: SearchParams = {}
 
+/** 文本提交的最小节流间隔(毫秒): 连续回车/失焦不重复触发查询。 */
+const TEXT_COMMIT_THROTTLE_MS = 100
+
+/**
+ * 文本提交节流器: 间隔内的重复提交直接丢弃。
+ * 时间戳与 Date.now() 都封装在闭包里 —— 组件渲染期既不读 ref 也不调用不纯函数,
+ * React Compiler 才能优化本组件; 事件回调里的节流口径与原先逐字一致。
+ */
+function createTextCommitThrottle() {
+  let lastCommittedAt = 0
+  return (commit: () => void) => {
+    const now = Date.now()
+    if (now - lastCommittedAt < TEXT_COMMIT_THROTTLE_MS) return
+    lastCommittedAt = now
+    commit()
+  }
+}
+
 function isSameFilterPreset(left: SearchParams, right: SearchParams) {
   const leftEntries = Object.entries(normalizeFilters(left)).toSorted()
   const rightEntries = Object.entries(normalizeFilters(right)).toSorted()
@@ -55,7 +73,8 @@ export function ModuleFilterToolbar({
   onReset,
 }: Props) {
   const { t } = useTranslation()
-  const lastTextCommitAtRef = useRef(0)
+  // 惰性初始化: 节流时钟在整个生命周期内是同一个实例, 等价于原来的 ref
+  const [runThrottledCommit] = useState(createTextCommitThrottle)
   const optionRequirements = resolveMasterOptionRequirements(config.filters)
   const customerId = asString(filters.customerId).trim() || undefined
   const { projects: projectOptions } = useMasterOptions(
@@ -87,30 +106,28 @@ export function ModuleFilterToolbar({
     onApplyFilters(buildNextFilters(submittedFilters, key, value, resetKeys))
   }
   const commitTextFilter = (key: string, value: string) => {
-    const now = Date.now()
-    if (now - lastTextCommitAtRef.current < 100) return
-    lastTextCommitAtRef.current = now
-
-    const normalizedValue = value.trim()
-    onUpdateFilter(key, normalizedValue)
-    onApplyFilters(
-      buildNextFilters(
-        {
-          ...submittedFilters,
-          ...normalizeFilters(
-            Object.fromEntries(
-              Object.entries(filters).filter(
-                ([filterKey]) =>
-                  config.filters.find((field) => field.key === filterKey)
-                    ?.type !== 'input',
+    runThrottledCommit(() => {
+      const normalizedValue = value.trim()
+      onUpdateFilter(key, normalizedValue)
+      onApplyFilters(
+        buildNextFilters(
+          {
+            ...submittedFilters,
+            ...normalizeFilters(
+              Object.fromEntries(
+                Object.entries(filters).filter(
+                  ([filterKey]) =>
+                    config.filters.find((field) => field.key === filterKey)
+                      ?.type !== 'input',
+                ),
               ),
             ),
-          ),
-        },
-        key,
-        normalizedValue,
-      ),
-    )
+          },
+          key,
+          normalizedValue,
+        ),
+      )
+    })
   }
 
   const hasConfigKeywordFilter = config.filters.some(

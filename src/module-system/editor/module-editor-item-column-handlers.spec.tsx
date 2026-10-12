@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, createElement, useState } from 'react'
+import { act, createElement, useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module-editor-item-column-handlers'
@@ -32,12 +32,25 @@ function Probe({ result }: { result: ProbeResult }) {
     setItems,
   })
 
-  result.items = items
-  result.select = (materialId, materialRecord) => {
-    handleMaterialSelect('item-1', materialId, materialRecord, (item, record) =>
-      applyMaterialToEditorLineItem(item, record, 'sales-order'),
-    )
-  }
+  /*
+   * 测试句柄包成 ref 后再回写: 渲染期直接改 props 对象会被 React Compiler 判为
+   * immutability 违规, 渲染期访问 ref 又是 refs 违规, 因此统一放在 effect 里,
+   * 测试仍然在 act 结束后读取同一份结果, 断言不变。
+   */
+  const resultRef = useRef(result)
+  useEffect(() => {
+    resultRef.current.items = items
+    resultRef.current.select = (materialId, materialRecord) => {
+      handleMaterialSelect(
+        'item-1',
+        materialId,
+        materialRecord,
+        (item, record) =>
+          applyMaterialToEditorLineItem(item, record, 'sales-order'),
+      )
+    }
+  }, [items, handleMaterialSelect])
+
   return null
 }
 

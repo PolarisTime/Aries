@@ -2,7 +2,6 @@ import {
   CloseOutlined,
   DownloadOutlined,
   PlusOutlined,
-  ReloadOutlined,
 } from '@ant-design/icons'
 import { Button, Space, Tooltip } from 'antd'
 import { Fragment, type ReactNode } from 'react'
@@ -11,6 +10,7 @@ import type { ModuleActionDefinition } from '@/types/module-page'
 
 const EMPTY_TOOLBAR_ACTIONS: never[] = []
 
+import { ModuleTableUtilities } from '@/components/ModuleTableUtilities'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 
 function isCreateAction(action: ModuleActionDefinition) {
@@ -108,37 +108,13 @@ export function ModuleTableToolbar({
         )}
         {extra}
       </Space>
-      <div className="module-table-utilities">
-        {selectedCount > 0 ? (
-          <>
-            <span className="module-table-selected-count" aria-live="polite">
-              {t('common.selected', { count: selectedCount })}
-            </span>
-            {onClearSelection ? (
-              <Tooltip title={t('common.clearSelection')}>
-                <Button
-                  type="text"
-                  size="small"
-                  className="module-table-clear-selection-button"
-                  aria-label={t('common.clearSelection')}
-                  icon={<CloseOutlined />}
-                  onClick={onClearSelection}
-                />
-              </Tooltip>
-            ) : null}
-          </>
-        ) : null}
-        <Tooltip title={t('common.refresh')}>
-          <Button
-            type="text"
-            className="module-table-refresh-button"
-            aria-label={t('common.refresh')}
-            icon={<ReloadOutlined />}
-            onClick={onRefresh}
-            loading={loading}
-          />
-        </Tooltip>
-      </div>
+      <ModuleTableUtilities
+        selectedCount={selectedCount}
+        onClearSelection={onClearSelection}
+        clearSelectionIcon={<CloseOutlined />}
+        isFetching={loading}
+        onRefresh={onRefresh}
+      />
     </div>
   )
 }

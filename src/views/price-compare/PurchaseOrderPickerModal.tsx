@@ -21,6 +21,7 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_REALTIME } from '@/constants/query-policies'
 import { formatWeight } from '@/utils/formatters'
+import { remainingLinkableTon } from './purchase-order-picker-tonnage'
 
 interface Props {
   open: boolean
@@ -39,25 +40,8 @@ interface Props {
   onClose: () => void
 }
 
+/** 关键字防抖时长: 避免每次输入都打后端。 */
 const SEARCH_DEBOUNCE_MS = 300
-
-/**
- * 该明细行剩余可关联吨位(吨) = 服务端剩余吨位 - 本单据已关联吨位。
- *
- * <p>服务端 `remainingWeight` 在传入 excludeSheetId 时已排除本单据已保存吨位, 但本单据
- * 页面上手填(含未保存)的吨位不在服务端统计内, 因此这里再扣一次本单据的已关联合计。
- * 缺失/非法 remainingWeight 时回退到 `订货 - 已开`, 不用 0 兜底(0 会把行误判成已关联完)。</p>
- */
-export function remainingLinkableTon(
-  record: PurchaseOrderTonnageRecord,
-  linkedTonByItemId?: Map<string, number>,
-): number {
-  const base = Number.isFinite(record.remainingWeight)
-    ? record.remainingWeight
-    : record.orderedWeight - record.issuedWeight
-  const linkedHere = linkedTonByItemId?.get(record.purchaseOrderItemId) ?? 0
-  return base - linkedHere
-}
 
 /**
  * 采购订单明细行选择弹窗: **服务端**按关键字(单号/供应商/规格)过滤并展示订货/已开/剩余吨位。

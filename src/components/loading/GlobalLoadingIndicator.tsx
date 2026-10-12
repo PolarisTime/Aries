@@ -30,25 +30,22 @@ export function GlobalLoadingIndicator({
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (active) {
-      if (showDelayMs <= 0) {
-        setVisible(true)
-        return undefined
-      }
-      const timer = window.setTimeout(() => {
-        setVisible(true)
-      }, showDelayMs)
-      return () => {
-        window.clearTimeout(timer)
-      }
-    }
-    if (hideDelayMs <= 0) {
-      setVisible(false)
+    // 延迟阈值为 0 时立即落定: 用微任务而不是在 effect 体内同步 setState —
+    // 后者会触发级联渲染, React Compiler 也会因此跳过本组件的自动记忆化;
+    // 微任务仍在同一帧内(先于浏览器绘制)执行, 对用户可见时机没有影响。
+    const immediate = active ? showDelayMs <= 0 : hideDelayMs <= 0
+    if (immediate) {
+      queueMicrotask(() => {
+        setVisible(active)
+      })
       return undefined
     }
-    const timer = window.setTimeout(() => {
-      setVisible(false)
-    }, hideDelayMs)
+    const timer = window.setTimeout(
+      () => {
+        setVisible(active)
+      },
+      active ? showDelayMs : hideDelayMs,
+    )
     return () => {
       window.clearTimeout(timer)
     }

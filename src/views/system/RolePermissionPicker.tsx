@@ -14,7 +14,8 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import type { TFunction } from 'i18next'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listPermissions } from '@/api/system/permissions'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -38,6 +39,35 @@ interface Props {
   wildcard?: boolean
   /** 只读（如内置角色）。 */
   disabled?: boolean
+}
+
+type PermissionGroup = ReturnType<typeof groupPermissionsByResource>[number]
+
+/**
+ * 按关键字过滤资源分组：资源名或资源展示名命中则整组保留，否则只保留命中的权限项。
+ * 抽成纯函数，供渲染期派生与输入事件共用同一口径。
+ */
+function filterPermissionGroups(
+  groups: PermissionGroup[],
+  normalizedKeyword: string,
+  t: TFunction,
+): PermissionGroup[] {
+  if (!normalizedKeyword) return groups
+  return groups.flatMap((group) => {
+    const resourceLabel = getResourceLabel(group.resource, t)
+    const resourceMatched =
+      group.resource.toLowerCase().includes(normalizedKeyword) ||
+      resourceLabel.toLowerCase().includes(normalizedKeyword)
+    if (resourceMatched) return [group]
+    const actions = group.actions.filter((permission) => {
+      const label = getPermissionLabel(permission, t)
+      return (
+        permission.code.toLowerCase().includes(normalizedKeyword) ||
+        label.toLowerCase().includes(normalizedKeyword)
+      )
+    })
+    return actions.length ? [{ ...group, actions }] : []
+  })
 }
 
 /**
@@ -71,32 +101,24 @@ export function RolePermissionPicker({
   )
 
   const normalizedKeyword = keyword.trim().toLowerCase()
-  const visibleGroups = useMemo(() => {
-    if (!normalizedKeyword) return groups
-    return groups.flatMap((group) => {
-      const resourceLabel = getResourceLabel(group.resource, t)
-      const resourceMatched =
-        group.resource.toLowerCase().includes(normalizedKeyword) ||
-        resourceLabel.toLowerCase().includes(normalizedKeyword)
-      if (resourceMatched) return [group]
-      const actions = group.actions.filter((permission) => {
-        const label = getPermissionLabel(permission, t)
-        return (
-          permission.code.toLowerCase().includes(normalizedKeyword) ||
-          label.toLowerCase().includes(normalizedKeyword)
-        )
-      })
-      return actions.length ? [{ ...group, actions }] : []
-    })
-  }, [groups, normalizedKeyword, t])
+  const visibleGroups = useMemo(
+    () => filterPermissionGroups(groups, normalizedKeyword, t),
+    [groups, normalizedKeyword, t],
+  )
 
-  // 关键字过滤时自动展开命中分组；否则折叠，避免 40+ 分组撑高弹窗。
+  // 关键字过滤时自动展开命中分组；否则保持折叠，避免 40+ 分组撑高弹窗。
   const [activeKeys, setActiveKeys] = useState<string[]>([])
-  useEffect(() => {
-    if (normalizedKeyword) {
-      setActiveKeys(visibleGroups.map((group) => group.resource))
-    }
-  }, [normalizedKeyword, visibleGroups])
+  const handleKeywordChange = (next: string) => {
+    setKeyword(next)
+    const normalized = next.trim().toLowerCase()
+    if (!normalized) return
+    // 展开命中的分组放在输入事件里做，而不是在 effect 里同步 setState（会多一次级联渲染）
+    setActiveKeys(
+      filterPermissionGroups(groups, normalized, t).map(
+        (group) => group.resource,
+      ),
+    )
+  }
 
   const update = (next: Set<string>) => {
     setSelected(next)
@@ -212,7 +234,7 @@ export function RolePermissionPicker({
           prefix={<SearchOutlined />}
           placeholder={t('system.role.permissionSearchPlaceholder')}
           value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
+          onChange={(event) => handleKeywordChange(event.target.value)}
           style={{ maxWidth: 280 }}
         />
         <Space>

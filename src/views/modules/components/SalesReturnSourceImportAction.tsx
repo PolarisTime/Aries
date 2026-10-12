@@ -1,17 +1,14 @@
 import { ImportOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import type { TableProps } from 'antd'
 import {
   Alert,
   Button,
   DatePicker,
   Empty,
-  InputNumber,
   Modal,
   Select,
   Space,
   Spin,
-  Table,
   Typography,
 } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -28,8 +25,14 @@ import {
 } from '@/config/business-pages/operations/sales-return-rules'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
-import type { SalesReturnCandidateItem } from '@/shared/schemas/module-record'
 import { message } from '@/utils/antd-app'
+import { SalesReturnSourceImportActionTable } from './SalesReturnSourceImportActionTable'
+import {
+  buildDefaultSelection,
+  isItemQuantityOutOfRange,
+  isSelectionDraftForSource,
+  type SalesReturnSelectionDraft,
+} from './sales-return-source-import-utils'
 
 interface Props {
   refreshModuleQueries: () => Promise<void>
@@ -49,8 +52,6 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
   const [debouncedOutboundKeyword, setDebouncedOutboundKeyword] = useState('')
   // 惰性初始化: dayjs() 每次渲染都新建会被丢弃(react-doctor rerender-lazy-state-init)
   const [returnDate, setReturnDate] = useState<Dayjs>(() => dayjs())
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [quantityById, setQuantityById] = useState<Record<string, number>>({})
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
@@ -95,30 +96,38 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
     [candidates],
   )
 
-  const isQuantityInvalid = (item: SalesReturnCandidateItem) => {
-    const value = quantityById[item.sourceSalesOutboundItemId]
-    if (value === undefined) return false
-    return (
-      !Number.isFinite(value) || value < 0 || value > item.returnableQuantity
-    )
-  }
-  const hasInvalidQuantity = returnableItems.some(isQuantityInvalid)
+  /**
+   * 勾选与退货数量的本地草稿。草稿记录了它所基于的候选数据对象：候选一变
+   * （重新拉取或换出库单）即作废，自动回退到默认值（全部勾选、数量取可退数量），
+   * 因此不需要用 effect 把查询结果同步进 state。
+   */
+  const [draft, setDraft] = useState<SalesReturnSelectionDraft | null>(null)
 
-  useEffect(() => {
-    if (!candidates) {
-      return
-    }
-    const items = candidates.items.filter((item) => item.returnableQuantity > 0)
-    setSelectedIds(items.map((item) => item.sourceSalesOutboundItemId))
-    setQuantityById(
-      Object.fromEntries(
-        items.map((item) => [
-          item.sourceSalesOutboundItemId,
-          item.returnableQuantity,
-        ]),
-      ),
-    )
-  }, [candidates])
+  const defaultSelection = useMemo(
+    () => buildDefaultSelection(returnableItems),
+    [returnableItems],
+  )
+  const { selectedIds, quantityById } = isSelectionDraftForSource(
+    draft,
+    candidates,
+  )
+    ? draft
+    : defaultSelection
+
+  const handleSelectedIdsChange = (ids: string[]) => {
+    setDraft({ source: candidates, selectedIds: ids, quantityById })
+  }
+  const handleQuantityChange = (itemId: string, quantity: number) => {
+    setDraft({
+      source: candidates,
+      selectedIds,
+      quantityById: { ...quantityById, [itemId]: quantity },
+    })
+  }
+
+  const hasInvalidQuantity = returnableItems.some((item) =>
+    isItemQuantityOutOfRange(item, quantityById),
+  )
 
   const outboundOptions = useMemo(
     () =>
@@ -141,8 +150,7 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
     setOutboundKeyword('')
     setDebouncedOutboundKeyword('')
     setReturnDate(dayjs())
-    setSelectedIds([])
-    setQuantityById({})
+    setDraft(null)
     setCreating(false)
   }
 
@@ -191,95 +199,6 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
       setCreating(false)
     }
   }
-
-  const columns: TableProps<SalesReturnCandidateItem>['columns'] = [
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colMaterialCode'),
-      dataIndex: 'materialCode',
-      width: 140,
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colBrand'),
-      dataIndex: 'brand',
-      width: 90,
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colMaterial'),
-      dataIndex: 'material',
-      width: 100,
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colSpec'),
-      dataIndex: 'spec',
-      width: 90,
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colOutboundQuantity'),
-      dataIndex: 'outboundQuantity',
-      width: 100,
-      align: 'right',
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colReturnedQuantity'),
-      dataIndex: 'returnedQuantity',
-      width: 100,
-      align: 'right',
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colReturnableQuantity'),
-      dataIndex: 'returnableQuantity',
-      width: 100,
-      align: 'right',
-    },
-    {
-      title: t('modules.pages.salesReturn.sourceImport.colReturnQuantity'),
-      dataIndex: 'sourceSalesOutboundItemId',
-      width: 160,
-      render: (_value, item, index) => {
-        const inputId = `sales-return-quantity-${item.sourceSalesOutboundItemId}`
-        const errorId = `${inputId}-error`
-        const invalid = isQuantityInvalid(item)
-        return (
-          <div>
-            <InputNumber
-              id={inputId}
-              min={0}
-              max={item.returnableQuantity}
-              precision={0}
-              status={invalid ? 'error' : undefined}
-              aria-label={t(
-                'modules.pages.salesReturn.sourceImport.quantityAriaLabel',
-                { index: index + 1 },
-              )}
-              aria-invalid={invalid || undefined}
-              aria-describedby={invalid ? errorId : undefined}
-              value={quantityById[item.sourceSalesOutboundItemId] ?? 0}
-              onChange={(value) =>
-                setQuantityById((current) => ({
-                  ...current,
-                  [item.sourceSalesOutboundItemId]: Number(value ?? 0),
-                }))
-              }
-              style={{ width: '100%' }}
-            />
-            {invalid ? (
-              <Typography.Text
-                id={errorId}
-                role="alert"
-                type="danger"
-                style={{ display: 'block', fontSize: 12 }}
-              >
-                {t(
-                  'modules.pages.salesReturn.sourceImport.quantityOutOfRange',
-                  { max: item.returnableQuantity },
-                )}
-              </Typography.Text>
-            ) : null}
-          </div>
-        )
-      },
-    },
-  ]
 
   return (
     <>
@@ -377,17 +296,12 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
                   .filter(Boolean)
                   .join(' · ')}
               </Typography.Text>
-              <Table<SalesReturnCandidateItem>
-                rowKey="sourceSalesOutboundItemId"
-                size="small"
-                columns={columns}
-                dataSource={returnableItems}
-                pagination={false}
-                scroll={{ y: 320 }}
-                rowSelection={{
-                  selectedRowKeys: selectedIds,
-                  onChange: (keys) => setSelectedIds(keys.map(String)),
-                }}
+              <SalesReturnSourceImportActionTable
+                items={returnableItems}
+                selectedIds={selectedIds}
+                quantityById={quantityById}
+                onSelectedIdsChange={handleSelectedIdsChange}
+                onQuantityChange={handleQuantityChange}
               />
             </>
           ) : null}

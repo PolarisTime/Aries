@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import i18n from 'i18next'
-import { act, createElement, useState } from 'react'
+import { act, createElement, useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
@@ -180,7 +180,17 @@ describe('SalesOrderNetPriceFiller', () => {
         row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
         row({ id: 'r2', materialId: 'm2', unitPrice: 999 }),
       ])
-      observed.items = items
+      const [lastRuleId, setLastRuleId] = useState<unknown>(undefined)
+      /*
+       * 观测句柄包成 ref、回写统一放在 effect 里: 渲染期直接改外层变量会被 React Compiler
+       * 判为 immutability 违规, 渲染期访问 ref 又是 refs 违规; setFormValue 只落一次 state,
+       * 断言读到的仍是同一个 observed 对象。
+       */
+      const observedRef = useRef(observed)
+      useEffect(() => {
+        observedRef.current.items = items
+        observedRef.current.ruleId = lastRuleId
+      }, [items, lastRuleId])
       return createElement(SalesOrderNetPriceFiller, {
         currentStatus: '交付核定',
         formValues: {
@@ -190,7 +200,7 @@ describe('SalesOrderNetPriceFiller', () => {
         items,
         setItems: (updater) => setItems((prev) => updater(prev)),
         setFormValue: (_key, value) => {
-          observed.ruleId = value
+          setLastRuleId(value)
         },
         saving: false,
         projectOptions: [{ id: 'p1', projectName: '项目' }],
@@ -237,7 +247,11 @@ describe('SalesOrderNetPriceFiller', () => {
       const [items, setItems] = useState<ModuleLineItem[]>([
         row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
       ])
-      observed.items = items
+      // 同上: 观测句柄包成 ref, 在 effect 里回写, 避免渲染期修改外层变量
+      const observedRef = useRef(observed)
+      useEffect(() => {
+        observedRef.current.items = items
+      }, [items])
       return createElement(SalesOrderNetPriceFiller, {
         currentStatus: '交付核定',
         formValues: {

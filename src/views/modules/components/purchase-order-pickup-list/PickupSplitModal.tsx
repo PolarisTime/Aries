@@ -1,5 +1,5 @@
 import { InputNumber, Modal, Typography } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatWeight } from '@/utils/formatters'
 import type { PickupListRow } from './pickup-list-draft'
@@ -72,19 +72,35 @@ function SplitPreview({
  */
 export function PickupSplitModal({ row, open, onConfirm, onClose }: Props) {
   const { t } = useTranslation()
-  const [pieceCount, setPieceCount] = useState<number | null>(null)
-
-  // 每次打开时重置为默认每份件数(总数对半, 至少 1)。
-  useEffect(() => {
-    if (!open || !row) return
-    setPieceCount(Math.max(1, Math.floor(row.item.pickupQuantity / 2)))
-  }, [open, row])
+  /**
+   * 每份件数草稿；记录它所属的行与开合状态，二者任一变化即作废。
+   * 默认值(总数对半, 至少 1)在渲染期派生，因此每次打开都会自动回到默认值，
+   * 不需要用 effect 同步 setState。
+   */
+  const [pieceCountDraft, setPieceCountDraft] = useState<{
+    row: PickupListRow
+    open: boolean
+    value: number | null
+  } | null>(null)
 
   if (!row) {
     return null
   }
 
   const total = row.item.pickupQuantity
+  const defaultPieceCount = Math.max(1, Math.floor(total / 2))
+  // 只有"同一行 + 同一开合状态"的草稿才有效，否则用本次的默认值
+  const activeDraft =
+    pieceCountDraft &&
+    pieceCountDraft.row === row &&
+    pieceCountDraft.open === open
+      ? pieceCountDraft
+      : null
+  const pieceCount = activeDraft
+    ? activeDraft.value
+    : open
+      ? defaultPieceCount
+      : null
   const parts = pieceCount === null ? [] : previewParts(total, pieceCount)
   const valid = pieceCount !== null && isValidSplitPieceCount(total, pieceCount)
 
@@ -114,7 +130,7 @@ export function PickupSplitModal({ row, open, onConfirm, onClose }: Props) {
               'modules.purchasePickupList.splitPieceCountPlaceholder',
             )}
             value={pieceCount}
-            onChange={(value) => setPieceCount(value)}
+            onChange={(value) => setPieceCountDraft({ row, open, value })}
           />
         </div>
         <Typography.Text type="secondary">

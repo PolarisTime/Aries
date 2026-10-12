@@ -1,30 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
-import { Button, Form, Input, Modal, Skeleton, Space, Steps } from 'antd'
+import { Form, Input, Modal, Skeleton, Steps } from 'antd'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getRole } from '@/api/system/roles'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import type {
-  RoleFormValues,
-  RoleResponse,
-  RoleUpdatePayload,
-} from '@/shared/schemas'
+import type { RoleFormValues, RoleResponse } from '@/shared/schemas'
 import { RolePermissionPicker } from '@/views/system/RolePermissionPicker'
+import { hasWildcardPermission } from '@/views/system/role-permission-utils'
 import {
-  buildRolePayload,
-  emptyRoleFormValues,
-  roleToFormValues,
-} from '@/views/system/role-form-utils'
-import {
-  hasWildcardPermission,
-  isWildcardPermission,
-} from '@/views/system/role-permission-utils'
+  buildRoleWizardInitialValues,
+  buildRoleWizardSubmit,
+  type RoleWizardSubmit,
+  resolveRoleWizardSourceId,
+  resolveRoleWizardTitleKey,
+} from '@/views/system/role-wizard-model'
+import { WizardFooterActions } from './wizard-footer-actions'
 
-export interface RoleWizardSubmit {
-  id?: string
-  payload: RoleUpdatePayload
-  permissions: string[]
-}
+export type { RoleWizardSubmit }
 
 interface Props {
   open: boolean
@@ -59,8 +51,13 @@ export function RoleWizardModal({
   const permissionsTouchedRef = useRef(false)
   const cloning = Boolean(cloneFrom)
   const builtin = !cloning && Boolean(role?.builtin)
-  const sourceRole = cloneFrom ?? role
-  const sourceId = sourceRole?.id ?? ''
+  const sourceId = resolveRoleWizardSourceId(role, cloneFrom)
+  const initialValues = buildRoleWizardInitialValues({
+    cloning,
+    role,
+    cloneFrom,
+    t,
+  })
 
   const roleQuery = useQuery({
     queryKey: QUERY_KEYS.role(sourceId),
@@ -69,15 +66,6 @@ export function RoleWizardModal({
   })
 
   const wildcard = hasWildcardPermission(roleQuery.data?.permissions ?? [])
-  const initialValues: RoleFormValues = cloning
-    ? {
-        code: `${cloneFrom?.code ?? ''}_copy`,
-        name: `${cloneFrom?.name ?? ''}${t('system.role.cloneNameSuffix')}`,
-        description: cloneFrom?.description ?? '',
-      }
-    : role
-      ? roleToFormValues(role)
-      : emptyRoleFormValues()
 
   const goNext = async () => {
     await form.validateFields()
@@ -86,31 +74,29 @@ export function RoleWizardModal({
 
   const submit = async () => {
     const values = await form.validateFields()
-    const effectivePermissions = permissionsTouchedRef.current
-      ? selectedRef.current
-      : (roleQuery.data?.permissions ?? [])
-    onSave({
-      id: cloning ? undefined : (role?.id ?? undefined),
-      payload: buildRolePayload(values, builtin),
-      permissions: effectivePermissions.filter(
-        (code) => !isWildcardPermission(code),
-      ),
-    })
+    onSave(
+      buildRoleWizardSubmit({
+        cloning,
+        roleId: role?.id,
+        builtin,
+        values,
+        permissionsTouched: permissionsTouchedRef.current,
+        selectedPermissions: selectedRef.current,
+        rolePermissions: roleQuery.data?.permissions,
+      }),
+    )
   }
 
-  const permissionsReady = !sourceId || Boolean(roleQuery.data)
+  const handlePermissionsChange = (next: string[]) => {
+    permissionsTouchedRef.current = true
+    selectedRef.current = next
+  }
 
   return (
     <Modal
       key={String(open)}
       open={open}
-      title={
-        cloning
-          ? t('system.role.cloneRole')
-          : role
-            ? t('system.role.editRole')
-            : t('system.role.newRole')
-      }
+      title={t(resolveRoleWizardTitleKey(cloning, Boolean(role)))}
       width={960}
       footer={null}
       onCancel={onClose}
@@ -170,53 +156,58 @@ export function RoleWizardModal({
           </Form>
         </div>
         <div hidden={current !== 1}>
-          {permissionsReady ? (
-            <RolePermissionPicker
-              key={sourceId || 'new'}
-              initialSelected={
-                sourceId ? (roleQuery.data?.permissions ?? []) : []
-              }
-              onSelectedChange={(next) => {
-                permissionsTouchedRef.current = true
-                selectedRef.current = next
-              }}
-              wildcard={wildcard}
-            />
-          ) : (
-            <Skeleton active paragraph={{ rows: 8 }} />
-          )}
+          <RoleWizardPermissionsStep
+            sourceId={sourceId}
+            permissions={roleQuery.data?.permissions}
+            wildcard={wildcard}
+            onSelectedChange={handlePermissionsChange}
+          />
         </div>
       </div>
-      <div style={{ marginTop: 16, textAlign: 'right' }}>
-        <Space>
-          {current === 1 ? (
-            <Button onClick={() => setCurrent(0)}>
-              {t('system.role.wizardPrevious')}
-            </Button>
-          ) : null}
-          {current === 0 ? (
-            <Button
-              type="primary"
-              onClick={() => {
-                void goNext()
-              }}
-            >
-              {t('system.role.wizardNext')}
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              loading={saving}
-              onClick={() => {
-                void submit()
-              }}
-            >
-              {t('common.save')}
-            </Button>
-          )}
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-        </Space>
-      </div>
+      <WizardFooterActions
+        current={current}
+        saving={saving}
+        previousLabel={t('system.role.wizardPrevious')}
+        nextLabel={t('system.role.wizardNext')}
+        onPrevious={() => setCurrent(0)}
+        onNext={() => {
+          void goNext()
+        }}
+        onSubmit={() => {
+          void submit()
+        }}
+        onClose={onClose}
+      />
     </Modal>
   )
 }
+
+/**
+ * 权限步骤：来源角色的权限还没加载完时先占位，
+ * 避免用空权限渲染出"这个角色没有任何权限"的假象。
+ */
+function RoleWizardPermissionsStep({
+  sourceId,
+  permissions,
+  wildcard,
+  onSelectedChange,
+}: {
+  sourceId: string
+  permissions: string[] | undefined
+  wildcard: boolean
+  onSelectedChange: (permissions: string[]) => void
+}) {
+  if (sourceId && permissions === undefined) {
+    return <Skeleton active paragraph={{ rows: 8 }} />
+  }
+  return (
+    <RolePermissionPicker
+      key={sourceId || 'new'}
+      initialSelected={permissions ?? []}
+      onSelectedChange={onSelectedChange}
+      wildcard={wildcard}
+    />
+  )
+}
+
+/** 向导页脚：上一步 / 下一步 / 保存 / 取消。 */

@@ -152,12 +152,16 @@ export function useModuleEditorItemColumns({
     )
   }
 
+  // 清空关键词时立即复位防抖值: 复位放在输入事件里而不是 effect 体内同步 setState,
+  // 既保持"清空即回到全量候选"的既有语义, 又避免级联渲染。
+  const handleMaterialSearchKeywordChange = (keyword: string) => {
+    setMaterialSearchKeyword(keyword)
+    if (!keyword.trim()) setDebouncedMaterialSearchKeyword('')
+  }
+
   useEffect(() => {
     const keyword = materialSearchKeyword.trim()
-    if (!keyword) {
-      setDebouncedMaterialSearchKeyword('')
-      return
-    }
+    if (!keyword) return undefined
     const timer = window.setTimeout(
       () => setDebouncedMaterialSearchKeyword(keyword),
       MATERIAL_SEARCH_DEBOUNCE_MS,
@@ -207,7 +211,7 @@ export function useModuleEditorItemColumns({
 
   const materialSearch: MaterialSearchController = {
     searching: isMaterialSearchFetching,
-    onSearch: (keyword) => setMaterialSearchKeyword(keyword),
+    onSearch: handleMaterialSearchKeywordChange,
     onClose: () => {
       setMaterialSearchKeyword('')
       setDebouncedMaterialSearchKeyword('')
@@ -275,12 +279,20 @@ export function useModuleEditorItemColumns({
   )
 
   useEffect(() => {
-    if (!pendingFocusItemId) return
-    const row = document.querySelector<HTMLElement>(
-      `.module-items-table-shell tr[data-row-key="${pendingFocusItemId}"]`,
-    )
-    focusFirstEditableItemCell(row)
-    setPendingFocusItemId(null)
+    if (!pendingFocusItemId) return undefined
+    // 落焦点是 DOM 副作用：放到 rAF 回调里执行，既保证新行已渲染，
+    // 又不把"清标记"的 setState 放在 effect 体内（同步 setState 会触发级联渲染，
+    // React Compiler 也会因此跳过本组件的自动记忆化）。
+    const frame = window.requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(
+        `.module-items-table-shell tr[data-row-key="${pendingFocusItemId}"]`,
+      )
+      focusFirstEditableItemCell(row)
+      setPendingFocusItemId(null)
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
   }, [pendingFocusItemId])
 
   const duplicateItemLabel = t('modules.itemsSection.duplicateItem')

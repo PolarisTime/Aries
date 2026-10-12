@@ -1,5 +1,5 @@
-import { EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Input, Select, Space, Tooltip } from 'antd'
+import { EyeOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Input, Select, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { CustomerOption } from '@/api/master/customer-options'
 import type { ProjectOption } from '@/api/master/project-options'
@@ -7,6 +7,7 @@ import type {
   SalesContractResponse,
   SalesContractStatus,
 } from '@/api/sales/sales-contracts'
+import { ModuleTableUtilities } from '@/components/ModuleTableUtilities'
 import {
   getSalesContractStatusLabelKey,
   SALES_CONTRACT_STATUS_OPTIONS,
@@ -181,39 +182,12 @@ export function SalesContractFilterToolbar({
               </Button>
             ) : null}
           </Space>
-          <div className="module-table-utilities">
-            {selectedRowKeysCount ? (
-              <>
-                <span
-                  className="module-table-selected-count"
-                  aria-live="polite"
-                >
-                  {t('common.selected', { count: selectedRowKeysCount })}
-                </span>
-                <Tooltip title={t('common.clearSelection')}>
-                  <Button
-                    size="small"
-                    type="text"
-                    className="module-table-clear-selection-button"
-                    aria-label={t('common.clearSelection')}
-                    onClick={onClearSelection}
-                  >
-                    ✕
-                  </Button>
-                </Tooltip>
-              </>
-            ) : null}
-            <Tooltip title={t('common.refresh')}>
-              <Button
-                type="text"
-                className="module-table-refresh-button"
-                aria-label={t('common.refresh')}
-                icon={<ReloadOutlined />}
-                loading={isFetching}
-                onClick={onRefresh}
-              />
-            </Tooltip>
-          </div>
+          <ModuleTableUtilities
+            selectedCount={selectedRowKeysCount}
+            onClearSelection={onClearSelection}
+            isFetching={isFetching}
+            onRefresh={onRefresh}
+          />
         </div>
       </div>
     </>

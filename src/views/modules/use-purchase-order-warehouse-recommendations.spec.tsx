@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, createElement, useState } from 'react'
+import { act, createElement, useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -37,7 +37,15 @@ function Probe({
     items,
     setItems,
   })
-  result.items = items
+  /*
+   * 测试句柄包成 ref 后再回写: 渲染期直接修改 props 对象会被 React Compiler 判为
+   * immutability 违规, 渲染期访问 ref 又是 refs 违规, 因此放到 effect 里执行,
+   * 断言读取的仍是同一个 result 对象。
+   */
+  const resultRef = useRef(result)
+  useEffect(() => {
+    resultRef.current.items = items
+  }, [items])
   return null
 }
 

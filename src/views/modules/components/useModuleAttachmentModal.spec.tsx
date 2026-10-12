@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, createElement, useRef } from 'react'
+import { act, createElement, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -34,22 +34,29 @@ vi.mock('@/api/business/business-attachments', () => ({
 import { useModuleAttachmentModal } from './useModuleAttachmentModal'
 
 interface HarnessProps {
-  latest: { current: ReturnType<typeof useModuleAttachmentModal> | null }
+  /**
+   * 记录 hook 结果。用回调而不是直接写 props 对象: 渲染期修改父级持有的对象属于副作用,
+   * 交给 effect 回写才符合「组件与 Hook 必须是纯函数」的约束。
+   */
+  onModalReady: (modal: ReturnType<typeof useModuleAttachmentModal>) => void
 }
 
-function Harness({ latest }: HarnessProps) {
+function Harness({ onModalReady }: HarnessProps) {
   const modal = useModuleAttachmentModal({
     open: true,
     moduleKey: 'sales-order',
     recordId: '9',
   })
-  latest.current = modal
-  const zoneRef = useRef<HTMLDivElement | null>(null)
-  // 复用真实 hook 的 pasteZoneRef，模拟附件弹窗的上传区域
+  useEffect(() => {
+    onModalReady(modal)
+  }, [modal, onModalReady])
+  // 复用真实 hook 的 pasteZoneRef，模拟附件弹窗的上传区域。
+  // 外层区域只按 #outer 定位即可, 不挂 ref: createElement 的 props 对象里带 useRef 的值
+  // 会被 React Compiler 判定成「渲染期把 ref 传给函数」。
   return createElement(
     'div',
     null,
-    createElement('div', { ref: zoneRef, id: 'outer' }, 'drop-zone'),
+    createElement('div', { id: 'outer' }, 'drop-zone'),
     createElement(
       'div',
       { ref: modal.pasteZoneRef, id: 'paste-zone' },
@@ -107,7 +114,13 @@ describe('useModuleAttachmentModal Ctrl+V 粘贴上传', () => {
     root = createRoot(container)
     // 首屏的附件列表请求在挂载后异步返回，需在同一 act 内排空
     await act(async () => {
-      root.render(createElement(Harness, { latest }))
+      root.render(
+        createElement(Harness, {
+          onModalReady: (modal) => {
+            latest.current = modal
+          },
+        }),
+      )
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
   })

@@ -14,6 +14,19 @@ type Props = {
   onConfirm: (value: string) => void
 }
 
+interface FieldState {
+  /** 派生该草稿时的父级 value: 不一致说明父级换了值(切项目/回填), 当前本地编辑作废。 */
+  base: string
+  draft: string
+  locked: boolean
+}
+
+const createFieldState = (value: string): FieldState => ({
+  base: value,
+  draft: value,
+  locked: Boolean(value.trim()),
+})
+
 /**
  * 可锁定单元格字段: 回车或失焦确认后变只读, 需点「解锁」再次编辑,
  * 「清除」可清空; 锁状态仅本地维护, 值由父级按项目存取。
@@ -21,6 +34,9 @@ type Props = {
  * <p>锁定层级中最内层(单元格级): 只冻结本字段, 与单据级「锁定规格和数量」、
  * 行级「锁定该行」作用域不重叠, 因此不叠加、也互不覆盖。提示文案必须与实际
  * 交互一致 —— 锁定态提示"点「解锁」后可编辑", 而不是让用户去点只读输入框。</p>
+ *
+ * <p>草稿以父级 value 为基线在渲染期派生: 父级换值(切项目/回填)时自动回到新基线,
+ * 不需要用 effect 同步 setState 再触发一次渲染。</p>
  */
 export function LockableField({
   label,
@@ -30,25 +46,30 @@ export function LockableField({
   onConfirm,
 }: Props) {
   const { t } = useTranslation()
-  const [draft, setDraft] = useState(value)
-  const [locked, setLocked] = useState(() => Boolean(value.trim()))
+  const [field, setField] = useState<FieldState>(() => createFieldState(value))
+  // value 变化即视为新基线, 本地未提交的编辑随之作废(与原实现一致)
+  const current = field.base === value ? field : createFieldState(value)
+  const { draft, locked } = current
   const lockedRef = useRef(locked)
-  const draftRef = useRef(value)
+  const draftRef = useRef(draft)
   const inputRef = useRef<InputRef | null>(null)
 
+  // ref 只服务事件回调读取最新值(回调可能晚于渲染触发), 不参与渲染
   useEffect(() => {
     lockedRef.current = locked
   }, [locked])
 
   useEffect(() => {
-    setDraft(value)
-    draftRef.current = value
-    setLocked(Boolean(value.trim()))
-  }, [value])
+    draftRef.current = draft
+  }, [draft])
 
   useEffect(() => {
     if (!locked) inputRef.current?.focus()
   }, [locked])
+
+  const patchField = (patch: Partial<FieldState>) => {
+    setField({ ...current, base: value, ...patch })
+  }
 
   const commit = (raw?: string) => {
     if (lockedRef.current) return
@@ -57,21 +78,19 @@ export function LockableField({
     if (next.trim() === '') return
     lockedRef.current = true
     draftRef.current = next
-    setDraft(next)
-    setLocked(true)
+    patchField({ draft: next, locked: true })
     if (next !== value) onConfirm(next)
   }
 
   const unlock = () => {
     lockedRef.current = false
-    setLocked(false)
+    patchField({ locked: false })
   }
 
   const clear = () => {
     lockedRef.current = false
     draftRef.current = ''
-    setDraft('')
-    setLocked(false)
+    patchField({ draft: '', locked: false })
     onConfirm('')
   }
 
@@ -95,7 +114,7 @@ export function LockableField({
           aria-label={label}
           onChange={(event) => {
             draftRef.current = event.target.value
-            setDraft(event.target.value)
+            patchField({ draft: event.target.value })
           }}
           onPressEnter={(event) =>
             commit((event.target as HTMLInputElement).value)

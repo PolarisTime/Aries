@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { createDraft, draftToConfig } from './ProjectConfigModal'
+import { createDraft, draftToConfig } from './project-config-draft'
 import type { ProjectConfig, Variety } from './types'
 
 const varieties: Variety[] = [

@@ -8,7 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { bindAntdAppApi } from '@/utils/antd-app'
-import { buildMaterialFormFields, MaterialPage } from './MaterialPage'
+import { MaterialPage } from './MaterialPage'
+import { buildMaterialFormFields } from './material-page-fields'
 
 vi.mock('@/api/business/business-listing', () => ({
   listBusinessModule: vi.fn(),

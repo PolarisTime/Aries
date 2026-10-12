@@ -12,6 +12,63 @@ import { message } from '@/utils/antd-app'
 import { logger } from '@/utils/logger'
 import type { PriceData, PriceSheet } from './types'
 
+/** 网价日历查询窗口: 近 120 天 ~ 未来 14 天。 */
+const AVAILABILITY_PAST_DAYS = 120
+const AVAILABILITY_FUTURE_DAYS = 14
+const DAY_MS = 86400000
+type AvailabilityRange = { from: string; to: string }
+type AvailabilityMap = Record<string, string[]>
+
+/**
+ * 日历窗口按首次渲染时刻计算。
+ * `Date.now()` 不能出现在组件/Hook 里(渲染期调用不纯函数, 用 useMemo 掩盖同样属于渲染期),
+ * 因此把取值整体放到组件外的普通函数, 再由 useState 惰性初始化调用一次。
+ */
+function buildAvailabilityRange(): AvailabilityRange {
+  const now = Date.now()
+  // 本地时区日期, 避免 UTC 偏移导致边界日期错位
+  const iso = (ms: number) => dayjs(ms).format('YYYY-MM-DD')
+  return {
+    from: iso(now - AVAILABILITY_PAST_DAYS * DAY_MS),
+    to: iso(now + AVAILABILITY_FUTURE_DAYS * DAY_MS),
+  }
+}
+
+/** 日历时段优先; 日历未加载时回退单据自身含有的时段。 */
+function resolveCalendarPeriods(
+  activeRefDate: string,
+  availability: AvailabilityMap,
+  data: PriceData,
+): string[] {
+  if (!activeRefDate) return []
+  if (availability[activeRefDate]?.length) return availability[activeRefDate]
+  return Object.keys(data[activeRefDate] ?? {})
+}
+
+/** 最终参照时段: 日历里有该时段就沿用, 否则取日历首个时段; 日历缺失时用单据自身时段。 */
+function resolveRefPeriod(
+  activeRefDate: string,
+  activeRefPeriod: string,
+  calendarPeriods: string[],
+): string {
+  if (!activeRefDate) return ''
+  if (!calendarPeriods.length) return activeRefPeriod
+  if (activeRefPeriod && calendarPeriods.includes(activeRefPeriod)) {
+    return activeRefPeriod
+  }
+  return calendarPeriods[0] ?? ''
+}
+
+/** 参照日期对应的可选时段列表。 */
+function resolveRefPeriods(
+  refDate: string | undefined,
+  availability: AvailabilityMap,
+  data: PriceData,
+): string[] {
+  if (!refDate) return []
+  return availability[refDate] ?? Object.keys(data[refDate] ?? {})
+}
+
 export function usePriceComparePricing({
   active,
   data,
@@ -28,15 +85,7 @@ export function usePriceComparePricing({
   const { t } = useTranslation()
   const [refreshing, setRefreshing] = useState(false)
 
-  const availabilityRange = useMemo(() => {
-    const now = Date.now()
-    // 本地时区日期, 避免 UTC 偏移导致边界日期错位
-    const iso = (ms: number) => dayjs(ms).format('YYYY-MM-DD')
-    return {
-      from: iso(now - 120 * 86400000),
-      to: iso(now + 14 * 86400000),
-    }
-  }, [])
+  const [availabilityRange] = useState(() => buildAvailabilityRange())
 
   const availabilityQuery = useQuery({
     // 日历按数据源/地区区分: 西本仅上午, 不能复用 Mysteel 的时段缓存。
@@ -70,19 +119,17 @@ export function usePriceComparePricing({
   const activeRefDate = active?.refDate ?? ''
   const activeRefPeriod = active?.refPeriod ?? ''
   const isLatestRef = Boolean(active) && !activeRefDate
-  const calendarPeriods = activeRefDate
-    ? availability[activeRefDate]?.length
-      ? availability[activeRefDate]
-      : Object.keys(data[activeRefDate] ?? {})
-    : []
+  const calendarPeriods = resolveCalendarPeriods(
+    activeRefDate,
+    availability,
+    data,
+  )
   // 日历尚未加载(如切换数据源后重新拉取)时回退单据自身时段, 避免发出空时段请求。
-  const resolvedRefPeriod = activeRefDate
-    ? !calendarPeriods.length
-      ? activeRefPeriod
-      : activeRefPeriod && calendarPeriods.includes(activeRefPeriod)
-        ? activeRefPeriod
-        : (calendarPeriods[0] ?? '')
-    : ''
+  const resolvedRefPeriod = resolveRefPeriod(
+    activeRefDate,
+    activeRefPeriod,
+    calendarPeriods,
+  )
   const hasResolvedPriceData = Boolean(
     activeRefDate &&
       resolvedRefPeriod &&
@@ -111,9 +158,7 @@ export function usePriceComparePricing({
     retry: 1,
   })
 
-  const refPeriods = active?.refDate
-    ? (availability[active.refDate] ?? Object.keys(data[active.refDate] ?? {}))
-    : []
+  const refPeriods = resolveRefPeriods(active?.refDate, availability, data)
 
   /** 刷新失败的统一提示: 手动判定出的错误与网络异常走同一条路径。 */
   const reportRefreshFailure = (error: unknown) => {
