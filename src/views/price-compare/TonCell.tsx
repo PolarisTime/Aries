@@ -3,6 +3,7 @@ import { Button, Input, Popover, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
+import { issuedBrandText, tonProgressTextParts } from './ton-progress-text'
 import type { PriceRow } from './types'
 
 /**
@@ -53,29 +54,11 @@ function tonValueText(value: number) {
   return formatWeight(value)
 }
 
-/**
- * 紧凑吨位: 去掉无意义的小数尾零(`26.000` → `26`), 供单元格内的进度行扫读。
- * 明细(tooltip / popover)仍用 {@link tonValueText} 的精确值, 两种口径分工明确。
- */
-function compactTonText(value: number) {
-  return tonValueText(value).replace(/\.?0+$/, '')
-}
-
 /** 规格展示: 材质 Φ规格 长度(与订单明细一致)。 */
 function itemSpecText(record: PurchaseOrderTonnageRecord) {
   return [record.material, record.spec, record.length]
     .filter((value) => Boolean(value))
     .join(' ')
-}
-
-/**
- * 该行「已开」涉及的品牌集合。
- *
- * <p>数据粒度是**采购订单明细行**: 一行报单只关联一个明细行, 因此集合通常只有一个元素;
- * 仍按集合去重并用 `、` 拼接, 上游若放宽到多明细行时展示层不必再改。</p>
- */
-function issuedBrandText(record: PurchaseOrderTonnageRecord): string {
-  return [...new Set([(record.brand ?? '').trim()].filter(Boolean))].join('、')
 }
 
 /**
@@ -155,9 +138,8 @@ function TonProgress({
   }
 
   const remaining = selected.orderedWeight - projectedIssued
-  const issuedText = compactTonText(actualIssued)
-  const orderedText = compactTonText(selected.orderedWeight)
-  const brand = issuedBrandText(selected)
+  // 进度小字文案与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
+  const { ratio: ratioText, brand } = tonProgressTextParts(t, selected)
   // 本单据未保存的吨位(>0 时才单独成行说明, 否则与实际已开完全一致, 徒增噪音)
   const unsavedTon = Math.max(projectedIssued - actualIssued, 0)
   const detail = (
@@ -241,9 +223,7 @@ function TonProgress({
           <span className="aries-sr-only">
             {`${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(actualIssued)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${unsavedTon > 0 ? ` / ${t('priceCompare.sheet.purchaseOrderIssuedProjected')} ${tonValueText(projectedIssued)}` : ''}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}`}
           </span>
-          {t('priceCompare.sheet.purchaseOrderIssuedShort', {
-            issued: `${issuedText}/${orderedText}`,
-          })}
+          {ratioText}
         </span>
         {brand ? <TonIssuedBrand brand={brand} overLimit={overLimit} /> : null}
         {overLimit ? (

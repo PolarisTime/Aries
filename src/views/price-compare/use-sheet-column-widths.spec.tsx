@@ -1,18 +1,52 @@
 // @vitest-environment jsdom
 
+import i18next from 'i18next'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import '@/i18n'
+import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
-import { SHEET_COLUMN_WIDTH } from './core'
+import {
+  requiredTonColumnWidth,
+  SHEET_COLUMN_WIDTH,
+  tonIssuedLineWidth,
+} from './core'
+import { tonProgressTextParts } from './ton-progress-text'
 import { useSheetColumnWidths } from './use-sheet-column-widths'
+
+/** 明细行工厂: 只覆盖断言关心的字段。 */
+function poRecord(
+  overrides: Partial<PurchaseOrderTonnageRecord> = {},
+): PurchaseOrderTonnageRecord {
+  return {
+    purchaseOrderId: '1',
+    purchaseOrderItemId: '301',
+    orderNo: 'PO-1',
+    supplierName: '沙钢',
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec: '12',
+    length: '9米',
+    brand: '中天',
+    orderedWeight: 12,
+    issuedWeight: 0,
+    remainingWeight: 12,
+    status: '正常',
+    ...overrides,
+  }
+}
 
 /**
  * 探针组件: 把 hook 结果序列化进 DOM。
  * 不在渲染期写外部变量(组件必须保持纯函数), 断言统一从 container.textContent 读取。
  */
-function Probe() {
-  const widths = useSheetColumnWidths()
+function Probe({
+  records = [],
+}: {
+  records?: readonly PurchaseOrderTonnageRecord[]
+}) {
+  const widths = useSheetColumnWidths(records)
   return createElement('output', null, JSON.stringify(widths))
 }
 
@@ -20,7 +54,8 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   let container: HTMLDivElement
   let root: Root
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18next.changeLanguage('zh-CN')
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
@@ -39,9 +74,9 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   const widthsNow = () =>
     JSON.parse(container.textContent ?? '{}') as Record<string, number>
 
-  const render = () => {
+  const render = (records: readonly PurchaseOrderTonnageRecord[] = []) => {
     act(() => {
-      root.render(createElement(Probe))
+      root.render(createElement(Probe, { records }))
     })
     return widthsNow()
   }
@@ -74,5 +109,45 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     for (const value of Object.values(widths)) {
       expect(value).toBeGreaterThan(0)
     }
+  })
+
+  it('吨位列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
+    const widths = render([poRecord({ brand: '中天钢铁' })])
+    const ratioOnly = requiredTonColumnWidth(
+      14,
+      tonIssuedLineWidth('已开 0/12', ''),
+    )
+    expect(widths.ton).toBe(
+      requiredTonColumnWidth(14, tonIssuedLineWidth('已开 0/12', '中天钢铁')),
+    )
+    // 定宽必须真的比"只兜比值"的旧口径宽, 否则品牌还是会被裁
+    expect(widths.ton).toBeGreaterThan(ratioOnly)
+    // 其余列不受内容影响
+    expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
+  })
+
+  it('取单据里最长的一条进度小字定宽', () => {
+    const short = poRecord({ purchaseOrderItemId: '301', brand: '中天' })
+    const long = poRecord({
+      purchaseOrderItemId: '302',
+      brand: '中天钢铁',
+      orderedWeight: 128,
+      issuedWeight: 12.5,
+    })
+    const widths = render([short, long])
+    const longParts = tonProgressTextParts(i18next.t, long)
+    expect(widths.ton).toBe(
+      requiredTonColumnWidth(
+        14,
+        tonIssuedLineWidth(longParts.ratio, longParts.brand),
+      ),
+    )
+    expect(widths.ton).toBeGreaterThan(
+      requiredTonColumnWidth(14, tonIssuedLineWidth('已开 0/12', '中天')),
+    )
+  })
+
+  it('没有吨位数据时回落到只兜比值的下界', () => {
+    expect(render([]).ton).toBe(requiredTonColumnWidth(14, 0))
   })
 })

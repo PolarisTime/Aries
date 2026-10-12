@@ -7,6 +7,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
+import { requiredTonColumnWidth, tonIssuedLineWidth } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { PurchaseOrderTonnageDraftInput } from './ton-column'
 import type { PriceRow, PriceSheet, Variety } from './types'
@@ -1392,5 +1393,57 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(tooltipText).toContain('5.000')
     expect(tooltipText).toContain('含未保存报单')
     expect(tooltipText).toContain('17.000')
+  })
+
+  it('吨位列按单据实际品牌定宽: 长品牌的「已开 x/y · 品牌」不再被裁', () => {
+    const poRecord: PurchaseOrderTonnageRecord = {
+      purchaseOrderId: '88',
+      purchaseOrderItemId: '301',
+      orderNo: 'PO-88',
+      supplierName: '沙钢',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: '12',
+      length: '9米',
+      brand: '中天钢铁',
+      orderedWeight: 128,
+      issuedWeight: 12.5,
+      remainingWeight: 115.5,
+      status: '正常',
+    }
+    renderStateful(
+      makeSheet(),
+      [
+        {
+          ...baseRow,
+          locked: true,
+          purchaseOrderId: '88',
+          purchaseOrderItemId: '301',
+          purchaseOrderNo: 'PO-88',
+        },
+      ],
+      [],
+      [{ name: '中天', freight: 30 }],
+      false,
+      [variety],
+      {
+        options: [poRecord],
+        tonnageByItemId: new Map([['301', poRecord]]),
+        loading: false,
+        isError: false,
+      },
+    )
+
+    // 列宽必须覆盖整段「已开 12.5/128 · 中天钢铁」, 而不是只兜住比值
+    const needed = requiredTonColumnWidth(
+      14,
+      tonIssuedLineWidth('已开 12.5/128', '中天钢铁'),
+    )
+    const colStyles = [...container.querySelectorAll('colgroup col')].map(
+      (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
+    )
+    expect(colStyles).toContain(`width:${needed}px;`)
+    // 只兜比值的旧口径更窄, 说明这次确实按真实内容加宽了
+    expect(needed).toBeGreaterThan(requiredTonColumnWidth(14, 0))
   })
 })
