@@ -25,9 +25,10 @@ export function LoginView() {
       await navigate({ to: buildPostLoginTarget() })
     } catch (err) {
       showError(err, t('auth.loginFailed'))
-    } finally {
-      setLoading(false)
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo), 命中后组件会失去自动记忆化;
+    // 此处无提前 return, 清理语句跟在 try/catch 之后即可保持等价。
+    setLoading(false)
   }
   return (
     <AuthPageShell>

@@ -115,6 +115,19 @@ export function usePriceComparePricing({
     ? (availability[active.refDate] ?? Object.keys(data[active.refDate] ?? {}))
     : []
 
+  /** 刷新失败的统一提示: 手动判定出的错误与网络异常走同一条路径。 */
+  const reportRefreshFailure = (error: unknown) => {
+    logger.error('读取网价失败', error)
+    message.error(
+      t('priceCompare.pricing.refreshFailed', {
+        message:
+          error instanceof Error
+            ? error.message
+            : t('priceCompare.pricing.retryLater'),
+      }),
+    )
+  }
+
   /** 刷新读取: 重新拉取当前参照日期/时段的后端网价(不对后端做同步操作)。 */
   const onRefreshPrice = async () => {
     if (!isAuthenticated) {
@@ -124,31 +137,28 @@ export function usePriceComparePricing({
     setRefreshing(true)
     try {
       await availabilityQuery.refetch()
-      if (!active) return
-      const result = await matchesQuery.refetch()
-      if (result.error) throw result.error
-      if (!activeRefDate) {
-        message.success(t('priceCompare.pricing.refreshedLatest'))
-        return
+      // 参照对象已失效时不再提示, 但下面的收尾照旧执行(与原来的 finally 等价)。
+      if (active) {
+        const result = await matchesQuery.refetch()
+        if (result.error) {
+          // 不用 throw: try 内抛错会命中「ThrowStatement inside of try/catch」,
+          // 也会让这个 Hook 无法被编译器优化。
+          reportRefreshFailure(result.error)
+        } else if (!activeRefDate) {
+          message.success(t('priceCompare.pricing.refreshedLatest'))
+        } else {
+          message.success(
+            t('priceCompare.pricing.refreshedWithRef', {
+              ref: `${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''}`,
+            }),
+          )
+        }
       }
-      message.success(
-        t('priceCompare.pricing.refreshedWithRef', {
-          ref: `${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''}`,
-        }),
-      )
     } catch (error) {
-      logger.error('读取网价失败', error)
-      message.error(
-        t('priceCompare.pricing.refreshFailed', {
-          message:
-            error instanceof Error
-              ? error.message
-              : t('priceCompare.pricing.retryLater'),
-        }),
-      )
-    } finally {
-      setRefreshing(false)
+      reportRefreshFailure(error)
     }
+    // 不用 try/finally: React Compiler 不支持带 finally 的 TryStatement(react-hooks-js/todo)。
+    setRefreshing(false)
   }
 
   return {

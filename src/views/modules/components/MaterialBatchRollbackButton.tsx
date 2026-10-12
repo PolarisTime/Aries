@@ -34,9 +34,10 @@ export function MaterialBatchRollbackButton({
           ? error.message
           : t('modules.pages.material.rollbackFailed'),
       )
-    } finally {
-      setRollingBack(false)
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo), 命中后组件会失去自动记忆化;
+    // 此处无提前 return, 清理语句跟在 try/catch 之后即可保持等价。
+    setRollingBack(false)
   }
 
   const handleClick = () => {

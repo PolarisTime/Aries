@@ -39,6 +39,7 @@ import {
   readAntdFormValidationErrorFields,
 } from '@/utils/form-control-a11y'
 import { asString } from '@/utils/type-narrowing'
+import { withFinally } from '@/utils/with-finally'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 import {
   buildEditorSubmissionDraft,
@@ -179,257 +180,267 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
     setSaving(true)
     let mutationAttempted = false
 
-    try {
-      const effectiveAuthoritativePrimaryNo =
-        authoritativePrimaryNo ||
-        getAuthoritativePrimaryNo(moduleKey, config.primaryNoKey, record)
+    // try/finally 交给 withFinally: React Compiler 不支持带 finally 的 TryStatement,
+    // 命中后整个 Hook 会失去自动记忆化。包一层箭头函数后, 内部的提前 return 依旧会执行收尾。
+    await withFinally(
+      async () => {
+        try {
+          const effectiveAuthoritativePrimaryNo =
+            authoritativePrimaryNo ||
+            getAuthoritativePrimaryNo(moduleKey, config.primaryNoKey, record)
 
-      if (config.primaryNoKey && effectiveAuthoritativePrimaryNo) {
-        form.setFieldsValue({
-          [config.primaryNoKey]: effectiveAuthoritativePrimaryNo,
-        })
-      }
+          if (config.primaryNoKey && effectiveAuthoritativePrimaryNo) {
+            form.setFieldsValue({
+              [config.primaryNoKey]: effectiveAuthoritativePrimaryNo,
+            })
+          }
 
-      const validatedFields = await form.validateFields()
-      const validatedValues = applyAuthoritativePrimaryNo(
-        { ...form.getFieldsValue(true), ...validatedFields },
-        config.primaryNoKey,
-        effectiveAuthoritativePrimaryNo,
-      )
-      const values = mergeDateOnlyFieldTimesForSave(
-        config,
-        validatedValues,
-        record,
-      )
-      const trimmedItems = trimEditorItemsForModule(moduleKey, items)
+          const validatedFields = await form.validateFields()
+          const validatedValues = applyAuthoritativePrimaryNo(
+            { ...form.getFieldsValue(true), ...validatedFields },
+            config.primaryNoKey,
+            effectiveAuthoritativePrimaryNo,
+          )
+          const values = mergeDateOnlyFieldTimesForSave(
+            config,
+            validatedValues,
+            record,
+          )
+          const trimmedItems = trimEditorItemsForModule(moduleKey, items)
 
-      const validationMessage = getEditorValidationMessage({
-        moduleKey,
-        fields: config.formFields || [],
-        editorForm: values,
-        hasItemColumns: Boolean(config.itemColumns?.length),
-        itemColumns: config.itemColumns,
-        items: trimmedItems,
-        itemCount: trimmedItems.length,
-        skipRequiredFieldKeys:
-          config.primaryNoKey &&
-          usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
-            ? [config.primaryNoKey]
-            : [],
-        collectAll: true,
-      })
-      if (validationMessage) {
-        message.warning(validationMessage)
-        invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-        return
-      }
-
-      // 数量单位真源为商品主数据 quantityUnit: 缺失时禁止保存并提示补全, 不做静默回落
-      const itemMissingQuantityUnit = trimmedItems.find(
-        (item) =>
-          hasMaterialSelection(item) && !asString(item.quantityUnit).trim(),
-      )
-      if (itemMissingQuantityUnit) {
-        message.warning(
-          t('modules.editor.missingQuantityUnit', {
-            material:
-              asString(itemMissingQuantityUnit.materialName) ||
-              asString(itemMissingQuantityUnit.materialCode) ||
-              asString(itemMissingQuantityUnit.material) ||
-              '--',
-          }),
-        )
-        invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-        return
-      }
-
-      const zeroPriceItemCount = pageBehavior?.confirmsZeroPriceItems
-        ? trimmedItems.filter(
-            (item) => !item.unitPrice || Number(item.unitPrice) === 0,
-          ).length
-        : 0
-      if (zeroPriceItemCount > 0) {
-        const confirmed = await new Promise<boolean>((resolve) => {
-          modal.confirm({
-            title: t('moduleEditor.pricePendingTitle'),
-            content: t('moduleEditor.pricePendingContent', {
-              count: zeroPriceItemCount,
-            }),
-            okText: t('moduleEditor.continueSave'),
-            cancelText: t('moduleEditor.backToEdit'),
-            onOk: () => resolve(true),
-            onCancel: () => resolve(false),
+          const validationMessage = getEditorValidationMessage({
+            moduleKey,
+            fields: config.formFields || [],
+            editorForm: values,
+            hasItemColumns: Boolean(config.itemColumns?.length),
+            itemColumns: config.itemColumns,
+            items: trimmedItems,
+            itemCount: trimmedItems.length,
+            skipRequiredFieldKeys:
+              config.primaryNoKey &&
+              usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
+                ? [config.primaryNoKey]
+                : [],
+            collectAll: true,
           })
-        })
-        if (!confirmed) {
-          invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-          return
-        }
-      }
+          if (validationMessage) {
+            message.warning(validationMessage)
+            invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+            return
+          }
 
-      if (confirmDeliveryVerification || (audit && editorAuditTarget)) {
-        const statusActionLabel = t(
-          resolveStatusChangeActionLabelKey(editorAuditActionKind || 'audit'),
-        )
-        const confirmed = await new Promise<boolean>((resolve) => {
-          modal.confirm({
-            title: confirmDeliveryVerification
-              ? t('modules.editorFooter.confirmDeliveryVerification')
-              : t('modules.editorFooter.saveAndAction', {
-                  action: statusActionLabel,
+          // 数量单位真源为商品主数据 quantityUnit: 缺失时禁止保存并提示补全, 不做静默回落
+          const itemMissingQuantityUnit = trimmedItems.find(
+            (item) =>
+              hasMaterialSelection(item) && !asString(item.quantityUnit).trim(),
+          )
+          if (itemMissingQuantityUnit) {
+            message.warning(
+              t('modules.editor.missingQuantityUnit', {
+                material:
+                  asString(itemMissingQuantityUnit.materialName) ||
+                  asString(itemMissingQuantityUnit.materialCode) ||
+                  asString(itemMissingQuantityUnit.material) ||
+                  '--',
+              }),
+            )
+            invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+            return
+          }
+
+          const zeroPriceItemCount = pageBehavior?.confirmsZeroPriceItems
+            ? trimmedItems.filter(
+                (item) => !item.unitPrice || Number(item.unitPrice) === 0,
+              ).length
+            : 0
+          if (zeroPriceItemCount > 0) {
+            const confirmed = await new Promise<boolean>((resolve) => {
+              modal.confirm({
+                title: t('moduleEditor.pricePendingTitle'),
+                content: t('moduleEditor.pricePendingContent', {
+                  count: zeroPriceItemCount,
                 }),
-            content: confirmDeliveryVerification
-              ? t('modules.editorFooter.confirmDeliveryVerificationContent')
-              : t('modules.editorFooter.statusActionConfirm', {
-                  action: statusActionLabel,
-                  targetStatus: editorAuditTarget?.value || '',
-                }),
-            okText: confirmDeliveryVerification
-              ? t('modules.editorFooter.confirmDeliveryVerification')
-              : t('modules.editorFooter.confirmStatusAction', {
-                  action: statusActionLabel,
-                }),
-            cancelText: t('common.cancel'),
-            onOk: () => resolve(true),
-            onCancel: () => resolve(false),
+                okText: t('moduleEditor.continueSave'),
+                cancelText: t('moduleEditor.backToEdit'),
+                onOk: () => resolve(true),
+                onCancel: () => resolve(false),
+              })
+            })
+            if (!confirmed) {
+              invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+              return
+            }
+          }
+
+          if (confirmDeliveryVerification || (audit && editorAuditTarget)) {
+            const statusActionLabel = t(
+              resolveStatusChangeActionLabelKey(
+                editorAuditActionKind || 'audit',
+              ),
+            )
+            const confirmed = await new Promise<boolean>((resolve) => {
+              modal.confirm({
+                title: confirmDeliveryVerification
+                  ? t('modules.editorFooter.confirmDeliveryVerification')
+                  : t('modules.editorFooter.saveAndAction', {
+                      action: statusActionLabel,
+                    }),
+                content: confirmDeliveryVerification
+                  ? t('modules.editorFooter.confirmDeliveryVerificationContent')
+                  : t('modules.editorFooter.statusActionConfirm', {
+                      action: statusActionLabel,
+                      targetStatus: editorAuditTarget?.value || '',
+                    }),
+                okText: confirmDeliveryVerification
+                  ? t('modules.editorFooter.confirmDeliveryVerification')
+                  : t('modules.editorFooter.confirmStatusAction', {
+                      action: statusActionLabel,
+                    }),
+                cancelText: t('common.cancel'),
+                onOk: () => resolve(true),
+                onCancel: () => resolve(false),
+              })
+            })
+            if (!confirmed) {
+              invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+              return
+            }
+          }
+
+          const draftRecord: EditorFormValues = {
+            ...(record ? toEditorFormState(record).values : {}),
+            ...values,
+            id: record?.id || '',
+            items: trimmedItems,
+          }
+          applyAuthoritativePrimaryNo(
+            draftRecord,
+            config.primaryNoKey,
+            effectiveAuthoritativePrimaryNo,
+          )
+
+          normalizeDraftRecordForModule({
+            moduleKey,
+            record: draftRecord,
+            items: trimmedItems,
+            primaryNoKey: config.primaryNoKey,
+            currentOperatorName: getCurrentOperatorName(),
+            sumLineItemsBy,
+            formFields: config.formFields,
+            chargeTotal: sumChargeItemAmount(expenseItems),
           })
-        })
-        if (!confirmed) {
+
+          if (audit && editorAuditTarget && !confirmDeliveryVerification) {
+            const submittedStatus = asString(
+              draftRecord[editorAuditTarget.key],
+            ).trim()
+            if (submittedStatus === editorAuditTarget.value) {
+              const existingStatus = asString(
+                readModuleRecordField(record, editorAuditTarget.key),
+              ).trim()
+              const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
+              const draftStatus =
+                existingStatus && existingStatus !== editorAuditTarget.value
+                  ? existingStatus
+                  : typeof defaultStatus === 'string'
+                    ? defaultStatus.trim()
+                    : ''
+              if (draftStatus) {
+                draftRecord[editorAuditTarget.key] = draftStatus
+              } else {
+                delete draftRecord[editorAuditTarget.key]
+              }
+            }
+          }
+
+          if (moduleKey === 'sales-order') {
+            const contractDecision = await runSalesOrderContractCheck(
+              draftRecord,
+              t,
+              {
+                fetchCheck: (params) => fetchSalesOrderContractCheck(params),
+                confirm: (options) =>
+                  new Promise<boolean>((resolve) => {
+                    modal.confirm({
+                      title: options.title,
+                      content: createElement(
+                        'div',
+                        { style: { whiteSpace: 'pre-line' } },
+                        options.content.join('\n'),
+                      ),
+                      okText: options.okText,
+                      cancelText: options.cancelText,
+                      onOk: () => resolve(true),
+                      onCancel: () => resolve(false),
+                    })
+                  }),
+                warn: (text) => message.warning(text),
+              },
+            )
+            if (contractDecision === 'abort') {
+              invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+              return
+            }
+          }
+
+          mutationAttempted = true
+          const savedResult = await executeEditorSubmission(moduleKey, {
+            action: submissionAction,
+            values: draftRecord,
+            items: trimmedItems,
+            chargeItems: expenseItems,
+            idempotencyKey,
+          })
           invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-          return
-        }
-      }
-
-      const draftRecord: EditorFormValues = {
-        ...(record ? toEditorFormState(record).values : {}),
-        ...values,
-        id: record?.id || '',
-        items: trimmedItems,
-      }
-      applyAuthoritativePrimaryNo(
-        draftRecord,
-        config.primaryNoKey,
-        effectiveAuthoritativePrimaryNo,
-      )
-
-      normalizeDraftRecordForModule({
-        moduleKey,
-        record: draftRecord,
-        items: trimmedItems,
-        primaryNoKey: config.primaryNoKey,
-        currentOperatorName: getCurrentOperatorName(),
-        sumLineItemsBy,
-        formFields: config.formFields,
-        chargeTotal: sumChargeItemAmount(expenseItems),
-      })
-
-      if (audit && editorAuditTarget && !confirmDeliveryVerification) {
-        const submittedStatus = asString(
-          draftRecord[editorAuditTarget.key],
-        ).trim()
-        if (submittedStatus === editorAuditTarget.value) {
-          const existingStatus = asString(
-            readModuleRecordField(record, editorAuditTarget.key),
-          ).trim()
-          const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
-          const draftStatus =
-            existingStatus && existingStatus !== editorAuditTarget.value
-              ? existingStatus
-              : typeof defaultStatus === 'string'
-                ? defaultStatus.trim()
-                : ''
-          if (draftStatus) {
-            draftRecord[editorAuditTarget.key] = draftStatus
+          const savedRecord = savedResult
+          try {
+            await refreshModuleQueries()
+          } catch (refreshError) {
+            message.error(
+              refreshError instanceof Error
+                ? refreshError.message
+                : t('common.loadFailed'),
+            )
+          }
+          onSaved()
+          setSaveResult({
+            status: 'success',
+            message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
+            record: savedRecord,
+          })
+        } catch (error) {
+          if (!mutationAttempted) {
+            invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
+          }
+          if (isAntdFormValidationError(error)) {
+            // Form 已内联展示校验错误，不重复提示。
+            const validationErrorFields =
+              readAntdFormValidationErrorFields(error)
+            if (validationErrorFields) {
+              focusFirstInvalidField(form, validationErrorFields)
+            }
+          } else if (error instanceof Error) {
+            const { code, traceId } = readRequestError(error)
+            const baseErrorMessage = error.message || t('common.saveFailed')
+            setSaveResult({
+              status: 'error',
+              message: baseErrorMessage,
+              traceId,
+              ...(code !== undefined ? { errorCode: code } : {}),
+            })
           } else {
-            delete draftRecord[editorAuditTarget.key]
+            setSaveResult({
+              status: 'error',
+              message: t('common.saveFailedRetry'),
+            })
           }
         }
-      }
-
-      if (moduleKey === 'sales-order') {
-        const contractDecision = await runSalesOrderContractCheck(
-          draftRecord,
-          t,
-          {
-            fetchCheck: (params) => fetchSalesOrderContractCheck(params),
-            confirm: (options) =>
-              new Promise<boolean>((resolve) => {
-                modal.confirm({
-                  title: options.title,
-                  content: createElement(
-                    'div',
-                    { style: { whiteSpace: 'pre-line' } },
-                    options.content.join('\n'),
-                  ),
-                  okText: options.okText,
-                  cancelText: options.cancelText,
-                  onOk: () => resolve(true),
-                  onCancel: () => resolve(false),
-                })
-              }),
-            warn: (text) => message.warning(text),
-          },
-        )
-        if (contractDecision === 'abort') {
-          invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-          return
-        }
-      }
-
-      mutationAttempted = true
-      const savedResult = await executeEditorSubmission(moduleKey, {
-        action: submissionAction,
-        values: draftRecord,
-        items: trimmedItems,
-        chargeItems: expenseItems,
-        idempotencyKey,
-      })
-      invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-      const savedRecord = savedResult
-      try {
-        await refreshModuleQueries()
-      } catch (refreshError) {
-        message.error(
-          refreshError instanceof Error
-            ? refreshError.message
-            : t('common.loadFailed'),
-        )
-      }
-      onSaved()
-      setSaveResult({
-        status: 'success',
-        message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
-        record: savedRecord,
-      })
-    } catch (error) {
-      if (!mutationAttempted) {
-        invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
-      }
-      if (isAntdFormValidationError(error)) {
-        // Form 已内联展示校验错误，不重复提示。
-        const validationErrorFields = readAntdFormValidationErrorFields(error)
-        if (validationErrorFields) {
-          focusFirstInvalidField(form, validationErrorFields)
-        }
-      } else if (error instanceof Error) {
-        const { code, traceId } = readRequestError(error)
-        const baseErrorMessage = error.message || t('common.saveFailed')
-        setSaveResult({
-          status: 'error',
-          message: baseErrorMessage,
-          traceId,
-          ...(code !== undefined ? { errorCode: code } : {}),
-        })
-      } else {
-        setSaveResult({
-          status: 'error',
-          message: t('common.saveFailedRetry'),
-        })
-      }
-    } finally {
-      submissionRef.current.inFlight = false
-      setSaving(false)
-    }
+      },
+      () => {
+        submissionRef.current.inFlight = false
+        setSaving(false)
+      },
+    )
   }
 
   const reloadAfterConflict = async (): Promise<void> => {
@@ -446,9 +457,10 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
       message.error(
         error instanceof Error ? error.message : t('common.loadFailed'),
       )
-    } finally {
-      setSaving(false)
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo), 命中后组件会失去自动记忆化;
+    // 此处无提前 return, 清理语句跟在 try/catch 之后即可保持等价。
+    setSaving(false)
   }
 
   return {

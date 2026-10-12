@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
+import { withFinally } from '@/utils/with-finally'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
 
 interface MaterialOption {
@@ -66,20 +67,24 @@ function ChargeNameSelect({
       return
     }
     creatingRef.current = true
-    try {
-      const created = await onCreateExpense(name)
-      // 快捷新增建项后回填当前行，避免用户再次手动选择。
-      if (created) {
-        onChange({
-          materialId: created.id,
-          chargeName: created.name,
-          unit: created.unit || item.unit,
-        })
-      }
-      setSearchText('')
-    } finally {
-      creatingRef.current = false
-    }
+    // try/finally 交给 withFinally: React Compiler 不支持带 finally 的 TryStatement。
+    await withFinally(
+      async () => {
+        const created = await onCreateExpense(name)
+        // 快捷新增建项后回填当前行，避免用户再次手动选择。
+        if (created) {
+          onChange({
+            materialId: created.id,
+            chargeName: created.name,
+            unit: created.unit || item.unit,
+          })
+        }
+        setSearchText('')
+      },
+      () => {
+        creatingRef.current = false
+      },
+    )
   }
 
   // 服务端搜索未完成时不展示快捷新增，避免主数据已有同名项却建成重复数据。

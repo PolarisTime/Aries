@@ -233,13 +233,14 @@ export function useModuleAttachmentModal({
 
   // 上传进度、文件名与 uploading 标志是共享 UI 状态，必须逐个串行上传，避免并行时互相覆盖。
   // 串行队列同时服务三条入口：拖拽/多选（Dragger 逐文件回调）、Ctrl+V 粘贴、初始文件。
-  const uploadQueueRef = useRef<Promise<void>>(Promise.resolve())
+  // 惰性初始化: 每次渲染都新建 Promise 会被立即丢弃(react-doctor rerender-lazy-ref-init)
+  const uploadQueueRef = useRef<Promise<void> | null>(null)
 
   const enqueueUpload = useCallback(
     (file: File) => {
-      const task = uploadQueueRef.current.then(() =>
-        uploadAndBindAttachment(file),
-      )
+      const queue = uploadQueueRef.current ?? Promise.resolve()
+      uploadQueueRef.current = queue
+      const task = queue.then(() => uploadAndBindAttachment(file))
       // 队列自身吞掉失败：单个文件失败不阻断后续文件继续上传，便于逐条重试
       uploadQueueRef.current = task.then(
         () => undefined,

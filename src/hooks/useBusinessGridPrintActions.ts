@@ -211,8 +211,10 @@ export function useBusinessGridPrintActions({
       return false
     }
 
+    // Set 查找: 勾选行是逐行比对的, 数组 includes 会退化成 O(n²)
+    const recordIdSet = new Set(recordIds)
     const selectedRecord = selectedRows.find((row) =>
-      recordIds.includes(String(row.id)),
+      recordIdSet.has(String(row.id)),
     )
     const template = await pickPrintTemplate(moduleKey, t, selectedRecord)
     if (!template) {

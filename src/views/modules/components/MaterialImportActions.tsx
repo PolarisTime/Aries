@@ -63,9 +63,10 @@ export function MaterialImportActions({
           ? error.message
           : t('modules.pages.material.templateDownloadFailed'),
       )
-    } finally {
-      setDownloading(false)
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo), 命中后组件会失去自动记忆化;
+    // 此处无提前 return, 清理语句跟在 try/catch 之后即可保持等价。
+    setDownloading(false)
   }
 
   /** 导入前先做 dry-run 预览，用户确认差异后再执行正式导入。 */
@@ -83,9 +84,10 @@ export function MaterialImportActions({
           ? error.message
           : t('modules.pages.material.importPreviewFailed'),
       )
-    } finally {
-      setPreviewing(false)
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo), 命中后组件会失去自动记忆化;
+    // 此处无提前 return, 清理语句跟在 try/catch 之后即可保持等价。
+    setPreviewing(false)
   }
 
   const handleConfirmImport = async () => {
@@ -124,9 +126,10 @@ export function MaterialImportActions({
           ? error.message
           : t('modules.pages.material.importFailed'),
       )
-    } finally {
-      setImporting(false)
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo), 命中后组件会失去自动记忆化;
+    // 此处无提前 return, 清理语句跟在 try/catch 之后即可保持等价。
+    setImporting(false)
   }
 
   const handleClosePreview = () => {

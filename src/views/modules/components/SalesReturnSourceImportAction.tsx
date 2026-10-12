@@ -47,7 +47,8 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
   const [outboundId, setOutboundId] = useState('')
   const [outboundKeyword, setOutboundKeyword] = useState('')
   const [debouncedOutboundKeyword, setDebouncedOutboundKeyword] = useState('')
-  const [returnDate, setReturnDate] = useState<Dayjs>(dayjs())
+  // 惰性初始化: dayjs() 每次渲染都新建会被丢弃(react-doctor rerender-lazy-state-init)
+  const [returnDate, setReturnDate] = useState<Dayjs>(() => dayjs())
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [quantityById, setQuantityById] = useState<Record<string, number>>({})
   const [creating, setCreating] = useState(false)
@@ -154,8 +155,10 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
     if (!candidates) {
       return
     }
+    // Set 查找: 候选行逐行比对勾选集, 数组 includes 会退化成 O(n²)
+    const selectedIdSet = new Set(selectedIds)
     const selections: SalesReturnSourceSelection[] = returnableItems
-      .filter((item) => selectedIds.includes(item.sourceSalesOutboundItemId))
+      .filter((item) => selectedIdSet.has(item.sourceSalesOutboundItemId))
       .map((item) => ({
         item,
         quantity: quantityById[item.sourceSalesOutboundItemId] ?? 0,

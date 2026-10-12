@@ -14,6 +14,7 @@ import {
   readAntdFormValidationErrorFields,
 } from '@/utils/form-control-a11y'
 import { asString } from '@/utils/type-narrowing'
+import { withFinally } from '@/utils/with-finally'
 
 export const SETUP_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}=?$/
 
@@ -53,57 +54,64 @@ export function useInitialSetupState() {
     if (!setupToken) {
       return
     }
-    try {
-      const values = (await form.validateFields([
-        'setupToken',
-        'accountLoginName',
-        'accountPassword',
-        'accountConfirmPassword',
-        'accountUserName',
-      ])) as unknown as AccountFormValues
+    // try/catch/finally 交给 withFinally: React Compiler 不支持带 finally 的 TryStatement,
+    // 而把清理语句直接挪到 try/catch 之后又会在 catch 内 return 时漏执行(react-doctor 也会提示)。
+    await withFinally(
+      async () => {
+        try {
+          const values = (await form.validateFields([
+            'setupToken',
+            'accountLoginName',
+            'accountPassword',
+            'accountConfirmPassword',
+            'accountUserName',
+          ])) as unknown as AccountFormValues
 
-      if (values.accountPassword !== values.accountConfirmPassword) {
-        message.error(t('auth.initialsetup.passwordMismatch'))
-        return
-      }
-      setLoadingAccount(true)
-      await submitInitialAccount(
-        {
-          account: {
-            loginName: values.accountLoginName.trim(),
-            password: values.accountPassword,
-            userName: (
-              values.accountUserName ||
-              t('auth.initialsetup.defaultAccountUserName')
-            ).trim(),
-          },
-        },
-        setupToken,
-      )
-      message.success(t('auth.initialsetup.accountCreateSuccess'))
-      const completedStatus: InitialSetupStatus = {
-        setupRequired: false,
-        accountConfigured: true,
-      }
-      useSetupStore.getState().setStatus(completedStatus)
-      queryClient.setQueryData<RuntimeConfigResponse>(
-        QUERY_KEYS.runtimeConfig,
-        (current) =>
-          current ? { ...current, setup: completedStatus } : current,
-      )
-      void navigate({ to: '/login' })
-    } catch (error) {
-      const validationErrorFields = readAntdFormValidationErrorFields(error)
-      if (validationErrorFields) {
-        focusFirstInvalidField(form, validationErrorFields)
-        return
-      }
-      message.error(
-        getErrorMessage(error, t('auth.initialsetup.operationFailed')),
-      )
-    } finally {
-      setLoadingAccount(false)
-    }
+          if (values.accountPassword !== values.accountConfirmPassword) {
+            message.error(t('auth.initialsetup.passwordMismatch'))
+            return
+          }
+          setLoadingAccount(true)
+          await submitInitialAccount(
+            {
+              account: {
+                loginName: values.accountLoginName.trim(),
+                password: values.accountPassword,
+                userName: (
+                  values.accountUserName ||
+                  t('auth.initialsetup.defaultAccountUserName')
+                ).trim(),
+              },
+            },
+            setupToken,
+          )
+          message.success(t('auth.initialsetup.accountCreateSuccess'))
+          const completedStatus: InitialSetupStatus = {
+            setupRequired: false,
+            accountConfigured: true,
+          }
+          useSetupStore.getState().setStatus(completedStatus)
+          queryClient.setQueryData<RuntimeConfigResponse>(
+            QUERY_KEYS.runtimeConfig,
+            (current) =>
+              current ? { ...current, setup: completedStatus } : current,
+          )
+          void navigate({ to: '/login' })
+        } catch (error) {
+          const validationErrorFields = readAntdFormValidationErrorFields(error)
+          if (validationErrorFields) {
+            focusFirstInvalidField(form, validationErrorFields)
+            return
+          }
+          message.error(
+            getErrorMessage(error, t('auth.initialsetup.operationFailed')),
+          )
+        }
+      },
+      () => {
+        setLoadingAccount(false)
+      },
+    )
   }
 
   return {

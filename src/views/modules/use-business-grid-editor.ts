@@ -196,11 +196,13 @@ export function useBusinessGridEditor({
         showError(error)
       }
       return
-    } finally {
-      setEditorLockLoading((current) =>
-        version === openVersionRef.current ? false : current,
-      )
     }
+    // 不用 try/finally: React Compiler 不支持该语法(react-hooks-js/todo)。
+    // 上面的提前 return 都落在「已有更新的 openEditor 在途」分支, 此时 version 守卫会让本次调用
+    // 返回原值(与 finally 里那一支等价), 因此把清理语句放到 try/catch 之后即可。
+    setEditorLockLoading((current) =>
+      version === openVersionRef.current ? false : current,
+    )
   }
 
   const closeEditor = useCallback(() => {

@@ -171,9 +171,11 @@ export function usePickupListDraft(
     )
 
   const mergeRow = (row: PickupListRow) =>
-    // 合并该来源全部拆分份：清空该明细的拆分记录即可（件数守恒）。
+    // 合并该来源全部拆分份：删除该明细的拆分记录即可（件数守恒）。
+    // 不用计算属性解构（React Compiler 不支持 ObjectPattern 的计算键），改为浅拷贝后 delete。
     applySplits((current) => {
-      const { [row.baseItemId]: _removed, ...splits } = current.splits
+      const splits = { ...current.splits }
+      delete splits[row.baseItemId]
       return splits
     })
 

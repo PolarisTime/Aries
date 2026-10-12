@@ -80,10 +80,15 @@ function DocumentFlowDrawerBody({
   const { t } = useTranslation()
   const nodes = data?.nodes ?? []
   const links = data?.links ?? []
-  const nodeGroups = useMemo(() => groupNodesByType(nodes), [nodes])
+  // 依赖 data 而不是 nodes/links: 后两者每次渲染都是新数组, 会让 memo 形同虚设
+  // (react-doctor exhaustive-deps: "nodes is rebuilt every render")。
+  const nodeGroups = useMemo(() => groupNodesByType(data?.nodes ?? []), [data])
   const nodeById = useMemo(
-    () => new Map(nodes.map((node) => [String(node.id), node])),
-    [nodes],
+    () =>
+      new Map(
+        (data?.nodes ?? []).map((node) => [String(node.id), node] as const),
+      ),
+    [data],
   )
   const hasContent = nodes.length > 0 || links.length > 0
   return (
