@@ -128,9 +128,10 @@ export function CarrierEditorOverlay({
       message.error(
         error instanceof Error ? error.message : t('api.saveFailed'),
       )
-    } finally {
-      setSaving(false)
     }
+    // 不用 try/finally: React Compiler 不支持带 finally 的 TryStatement,
+    // 命中后整个组件会失去自动记忆化(react-hooks-js/todo)。正常与异常都走到这里收尾。
+    setSaving(false)
   }
 
   return (

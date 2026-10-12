@@ -1,9 +1,4 @@
-import {
-  DownloadOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons'
-import { Button, Dropdown, Input, Select, Space, Tooltip } from 'antd'
+import { Button, Input, Select, Space } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { deleteBusinessModule } from '@/api/business/business-crud'
@@ -16,6 +11,7 @@ import type { SearchParams } from '@/types/api-raw'
 import type { EntityId } from '@/types/entity-id'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { message, modal } from '@/utils/antd-app'
+import { ArchiveToolbarCommandRegion } from './ArchiveToolbarCommandRegion'
 import type { ProjectColumnKey } from './project-page-columns'
 import {
   buildProjectColumnLabels,
@@ -99,9 +95,10 @@ export function ProjectFilterToolbar({
           ? error.message
           : t('hooks.excelExport.exportFailed'),
       )
-    } finally {
-      setExporting(false)
     }
+    // 不用 try/finally: React Compiler 不支持带 finally 的 TryStatement,
+    // 命中后整个组件会失去自动记忆化(react-hooks-js/todo)。正常与异常都走到这里收尾。
+    setExporting(false)
   }
 
   const handleDeleteSelected = () => {
@@ -199,91 +196,27 @@ export function ProjectFilterToolbar({
         </Space>
       </div>
 
-      <div className="module-grid-command-region">
-        <div className="module-table-toolbar">
-          <Space wrap className="module-table-actions">
-            <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-              {t('common.create')}
-            </Button>
-            {selectedRows.length ? (
-              <Button danger onClick={handleDeleteSelected}>
-                {t('hooks.toolbarActions.delete')}
-              </Button>
-            ) : null}
-            {selectedRecord && selectedRecordCanEdit ? (
-              <Button onClick={onEditSelected}>
-                {t('hooks.recordActions.edit')}
-              </Button>
-            ) : null}
-            {selectedRecord ? (
-              <Button onClick={onAttachmentSelected}>
-                {t('hooks.recordActions.attachment')}
-              </Button>
-            ) : null}
-            <Button
-              icon={<DownloadOutlined />}
-              loading={exporting}
-              onClick={() => void handleExport()}
-            >
-              {t('common.export')}
-            </Button>
-            <Dropdown
-              // 用 click 触发: hover-only 的菜单键盘打不开(WCAG 2.1.1), 且受控 open 会被悬停状态复位
-              trigger={['click']}
-              menu={{
-                multiple: true,
-                selectedKeys: COLUMN_KEYS.filter(
-                  (key) => !hiddenColumnKeys.includes(key),
-                ),
-                onClick: ({ key }) => {
-                  onToggleColumn(key)
-                },
-                items: COLUMN_KEYS.map((key) => ({
-                  key,
-                  label: columnLabels[key],
-                })),
-              }}
-              open={columnSettingsOpen}
-              onOpenChange={onColumnSettingsOpenChange}
-            >
-              <Button>{t('common.columnSettings')}</Button>
-            </Dropdown>
-          </Space>
-          <div className="module-table-utilities">
-            {selectedRowKeysCount ? (
-              <>
-                <span
-                  className="module-table-selected-count"
-                  aria-live="polite"
-                >
-                  {t('common.selected', { count: selectedRowKeysCount })}
-                </span>
-                <Tooltip title={t('common.clearSelection')}>
-                  <Button
-                    size="small"
-                    type="text"
-                    className="module-table-clear-selection-button"
-                    aria-label={t('common.clearSelection')}
-                    onClick={onClearSelection}
-                  >
-                    ✕
-                  </Button>
-                </Tooltip>
-              </>
-            ) : null}
-            <Tooltip title={t('common.refresh')}>
-              <Button
-                type="text"
-                className="module-table-refresh-button"
-                aria-label={t('common.refresh')}
-                icon={<ReloadOutlined />}
-                loading={isFetching}
-                onClick={onRefresh}
-              />
-            </Tooltip>
-          </div>
-        </div>
-      </div>
+      <ArchiveToolbarCommandRegion
+        columnKeys={COLUMN_KEYS}
+        columnLabels={columnLabels}
+        hiddenColumnKeys={hiddenColumnKeys}
+        onToggleColumn={onToggleColumn}
+        columnSettingsOpen={columnSettingsOpen}
+        onColumnSettingsOpenChange={onColumnSettingsOpenChange}
+        onCreate={onCreate}
+        showDelete={Boolean(selectedRows.length)}
+        onDeleteSelected={handleDeleteSelected}
+        showEdit={Boolean(selectedRecord && selectedRecordCanEdit)}
+        onEditSelected={onEditSelected}
+        showAttachment={Boolean(selectedRecord)}
+        onAttachmentSelected={onAttachmentSelected}
+        exporting={exporting}
+        onExport={() => void handleExport()}
+        selectedRowKeysCount={selectedRowKeysCount}
+        onClearSelection={onClearSelection}
+        isFetching={isFetching}
+        onRefresh={onRefresh}
+      />
     </>
   )
 }

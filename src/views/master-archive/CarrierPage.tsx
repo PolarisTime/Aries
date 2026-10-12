@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { Form } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
@@ -45,7 +45,9 @@ export function CarrierPage() {
   const [form] = Form.useForm<CarrierEditorValues>()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(FALLBACK_PAGE_SIZE)
+  // 用户显式改过每页条数才记 override: 运行配置晚到不会覆盖用户选择,
+  // 也因此不需要「effect 里 setState」——那种写法会多渲染一次(react-hooks-js/set-state-in-effect)。
+  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null)
   const [keyword, setKeyword] = useState('')
   const [filterStatus, setFilterStatus] = useState<string | undefined>()
   const [submittedFilters, setSubmittedFilters] = useState<SearchParams>({})
@@ -65,12 +67,12 @@ export function CarrierPage() {
     queryFn: getRuntimeConfig,
     staleTime: STALE_LONG,
   })
-  useEffect(() => {
-    const value = Number(runtimeConfig?.ui.defaultPageSize)
-    if (Number.isFinite(value) && value > 0) {
-      setPageSize(Math.floor(value))
-    }
-  }, [runtimeConfig?.ui.defaultPageSize])
+  const configuredPageSize = Number(runtimeConfig?.ui.defaultPageSize)
+  const defaultPageSize =
+    Number.isFinite(configuredPageSize) && configuredPageSize > 0
+      ? Math.floor(configuredPageSize)
+      : FALLBACK_PAGE_SIZE
+  const pageSize = pageSizeOverride ?? defaultPageSize
 
   const settlementCompanyQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.settlementCompany,
@@ -176,7 +178,7 @@ export function CarrierPage() {
 
   const handlePageChange = (nextPage: number, nextPageSize: number) => {
     if (nextPageSize !== pageSize) {
-      setPageSize(nextPageSize)
+      setPageSizeOverride(nextPageSize)
     }
     setPage(nextPage)
     clearSelection()

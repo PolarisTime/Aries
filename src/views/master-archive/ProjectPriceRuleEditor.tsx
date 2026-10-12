@@ -44,12 +44,16 @@ function toRows(rules: ProjectPriceRulePayload[]): RuleRow[] {
 export function ProjectPriceRuleEditor({ projectId }: { projectId: EntityId }) {
   const { t } = useTranslation()
   const [rows, setRows] = useState<RuleRow[]>([])
-  const [loading, setLoading] = useState(false)
+  const [savedProjectId, setSavedProjectId] = useState<EntityId | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // 「加载中」由 projectId 派生: 已拿到的数据不属于当前项目即视为加载中。
+  // 这样 effect 里不再有同步 setState(那会多渲染一次, react-hooks-js/set-state-in-effect),
+  // 且切换项目时旧数据不会与新项目的加载态错配。
+  const loading = savedProjectId !== projectId
 
   useEffect(() => {
     let active = true
-    setLoading(true)
     fetchProjectPriceRules(projectId)
       .then((rules) => {
         if (active) setRows(toRows(rules))
@@ -58,7 +62,7 @@ export function ProjectPriceRuleEditor({ projectId }: { projectId: EntityId }) {
         if (active) setRows([])
       })
       .finally(() => {
-        if (active) setLoading(false)
+        if (active) setSavedProjectId(projectId)
       })
     return () => {
       active = false
@@ -116,9 +120,9 @@ export function ProjectPriceRuleEditor({ projectId }: { projectId: EntityId }) {
       message.error(
         error instanceof Error ? error.message : t('api.saveFailed'),
       )
-    } finally {
-      setSaving(false)
     }
+    // 同上: 避免 try/finally 让组件失去自动记忆化。
+    setSaving(false)
   }
 
   return (
