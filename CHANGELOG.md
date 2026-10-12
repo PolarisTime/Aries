@@ -1,3 +1,10 @@
+# [11.9.0](https://github.com/PolarisTime/Aries/compare/v11.8.0...v11.9.0) (2026-10-12)
+
+
+### Features
+
+* **sales-order:** 新增可编辑的报单日期字段(默认落单当天) ([ffb2a8c](https://github.com/PolarisTime/Aries/commit/ffb2a8c79a982be8817a7dece804d8e36ff58181))
+
 # [11.8.0](https://github.com/PolarisTime/Aries/compare/v11.7.0...v11.8.0) (2026-10-12)
 
 
