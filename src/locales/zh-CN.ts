@@ -1599,6 +1599,7 @@ export const zhCN = {
         colCustomerName: '客户名称',
         colProjectName: '项目名称',
         colSalesName: '销售员',
+        colOrderDate: '报单日期',
         colDeliveryDate: '交货日期',
         referencedByFreightBill: '已被物流单引用',
         referencedBySalesOutbound: '已被销售出库引用',

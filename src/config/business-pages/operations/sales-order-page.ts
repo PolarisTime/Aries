@@ -234,6 +234,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 110,
     },
     {
+      title: i18next.t('modules.pages.salesOrder.colOrderDate'),
+      dataIndex: 'orderDate',
+      width: 120,
+      type: 'date',
+    },
+    {
       title: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       dataIndex: 'deliveryDate',
       width: 120,
@@ -324,6 +330,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      label: i18next.t('modules.pages.salesOrder.colOrderDate'),
+      key: 'orderDate',
+      type: 'date',
+      row: 2,
+    },
+    {
       label: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       key: 'deliveryDate',
       type: 'date',
@@ -391,6 +403,13 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerProjectOptions,
+      row: 1,
+    },
+    {
+      key: 'orderDate',
+      label: i18next.t('modules.pages.salesOrder.colOrderDate'),
+      type: 'date',
+      required: true,
       row: 1,
     },
     {

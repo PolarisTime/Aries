@@ -1643,6 +1643,7 @@ export const enUS = {
         colCustomerName: 'Customer',
         colProjectName: 'Project',
         colSalesName: 'Salesperson',
+        colOrderDate: 'Order date',
         colDeliveryDate: 'Delivery Date',
         referencedByFreightBill: 'Referenced by freight bill',
         referencedBySalesOutbound: 'Referenced by sales outbound',

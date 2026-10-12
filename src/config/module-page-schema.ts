@@ -203,6 +203,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'projectName',
         'settlementCompanyId',
         'settlementCompanyName',
+        'orderDate',
         'deliveryDate',
         'salesName',
         'status',

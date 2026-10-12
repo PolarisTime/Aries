@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { describe, expect, it } from 'vitest'
 import { toSaveRequest } from '@/module-system/record/module-save-payload'
 
@@ -211,6 +212,7 @@ describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
   const salesOrderBaseRecord: Record<string, unknown> = {
     customerName: '客户A',
     projectName: '项目A',
+    orderDate: '2026-10-08 00:00:00',
     deliveryDate: '2026-10-09 00:00:00',
     salesName: '销售员',
     items: [
@@ -249,6 +251,23 @@ describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
       priceDateOffsetDays: 2,
       priceClosedSettlePrev: true,
     })
+  })
+
+  it('sales-order 报单日期进入保存载荷（新建默认值为 dayjs 时按契约格式化）', async () => {
+    const payload = (await submitRecord('sales-order', {
+      ...salesOrderBaseRecord,
+      // 新建草稿的 orderDate 默认值由 defaultDraftValues 提供，此处是 dayjs 对象而非字符串。
+      orderDate: dayjs('2026-10-08'),
+    })) as Record<string, unknown>
+
+    expect(payload.orderDate).toBe('2026-10-08 00:00:00')
+
+    const persisted = (await submitRecord(
+      'sales-order',
+      salesOrderBaseRecord,
+    )) as Record<string, unknown>
+
+    expect(persisted.orderDate).toBe('2026-10-08 00:00:00')
   })
 
   it('未取价的单据不下发快照键(后端按「未记录取价过程」清空)', async () => {

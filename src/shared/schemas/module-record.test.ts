@@ -3,6 +3,7 @@ import {
   freightSalesOrderCandidatePageResponseSchema,
   getMainFlowDetailResponseSchema,
   getMainFlowListResponseSchema,
+  parseMainFlowSaveRequest,
   salesOrderOutboundCandidatePageResponseSchema,
 } from './module-record'
 
@@ -35,7 +36,8 @@ const salesOrder = {
   projectName: '项目',
   settlementCompanyId: null,
   settlementCompanyName: null,
-  deliveryDate: '2026-09-01',
+  orderDate: '2026-09-01',
+  deliveryDate: '2026-09-02',
   salesName: '销售员',
   totalWeight: 0,
   totalAmount: 0,
@@ -405,5 +407,75 @@ describe('物流候选明细剩余可导入量契约', () => {
     })
 
     expect(parsed.items[0].remainingQuantity).toBeUndefined()
+  })
+})
+
+describe('销售订单报单日期契约', () => {
+  /** 最小可保存的销售订单请求：只保留 saveRequestSchema 必填字段。 */
+  const salesOrderSavePayload = {
+    customerName: '客户',
+    projectName: '项目',
+    orderDate: '2026-09-01',
+    deliveryDate: '2026-09-02',
+    salesName: '销售员',
+    items: [
+      {
+        materialCode: 'M-1',
+        brand: '品牌',
+        category: '品类',
+        material: '材质',
+        spec: '规格',
+        unit: '吨',
+        warehouseName: '仓库',
+        quantity: 1,
+        pieceWeightTon: 1,
+        piecesPerBundle: 0,
+        unitPrice: 3400,
+      },
+    ],
+  }
+
+  it('列表与详情响应含 orderDate 时各自解析出该字段', () => {
+    const list = getMainFlowListResponseSchema('sales-order').parse(
+      page(salesOrder),
+    )
+    const detail = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+
+    expect(list.content[0].orderDate).toBe('2026-09-01')
+    expect(detail.orderDate).toBe('2026-09-01')
+    // 报单日期与交货日期是两个独立字段，不得互相顶替。
+    expect(detail.deliveryDate).toBe('2026-09-02')
+  })
+
+  it('响应缺少必填的 orderDate 时按契约报错', () => {
+    const { orderDate: _orderDate, ...withoutOrderDate } = salesOrder
+
+    expect(() =>
+      getMainFlowListResponseSchema('sales-order').parse(
+        page(withoutOrderDate),
+      ),
+    ).toThrow()
+    expect(() =>
+      getMainFlowDetailResponseSchema('sales-order').parse({
+        ...withoutOrderDate,
+        items: [salesOrderItem],
+        chargeItems: [],
+      }),
+    ).toThrow()
+  })
+
+  it('保存请求携带 orderDate 时可解析，缺失时按契约报错', () => {
+    expect(
+      parseMainFlowSaveRequest('sales-order', salesOrderSavePayload).orderDate,
+    ).toBe('2026-09-01')
+
+    const { orderDate: _orderDate, ...withoutOrderDate } = salesOrderSavePayload
+    expect(() =>
+      parseMainFlowSaveRequest('sales-order', withoutOrderDate),
+    ).toThrow()
   })
 })

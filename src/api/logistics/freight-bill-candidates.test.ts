@@ -29,6 +29,7 @@ const candidatePage = {
       projectName: '海宁市红宝热电有限公司等容量改造提升项目',
       settlementCompanyId: '332601703884922880',
       settlementCompanyName: '颖捷建材',
+      orderDate: '2026-08-24',
       deliveryDate: '2026-08-25',
       salesName: '系统管理员',
       totalWeight: 46.739,

@@ -386,7 +386,11 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   })
   registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
   registerModuleBehavior('sales-order', {
-    defaultDraftValues: () => ({ deliveryDate: currentDateTime() }),
+    // 报单日期与交货日期同为业务日期字段：新建时默认当天，编辑既有单据时后端回传值优先。
+    defaultDraftValues: () => ({
+      orderDate: currentDateTime(),
+      deliveryDate: currentDateTime(),
+    }),
     // 导入上游采购来源后行项目随上游锁定，允许调整单价（销售定价）与数量（支持部分销售：
     // 如入库 7 件只销售 4 件）；数量上限由 _maxImportQuantity（来源剩余可销 + 本单已分配）
     // 兜底，后端 SalesOrderSourceAllocationService 再校验可关联数量。
