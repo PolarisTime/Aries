@@ -1,18 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
 import type { FormInstance } from 'antd'
 import { Button, Col, Form, Input, Row, Select, Space } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
-import { fetchMaterialGrades } from '@/api/master/material-grades'
 import type { ProjectScopeEnforcement } from '@/api/master/project-options'
 import { enabledStatusOptions } from '@/constants/module-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { resolveQuoteRegions } from '@/constants/quote-regions'
 import { STATUS } from '@/constants/status-constants'
-import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { getSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
@@ -23,6 +18,7 @@ import type {
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
+import { ProjectAllowedSpecFields } from './ProjectAllowedSpecFields'
 import { ProjectPriceRuleEditor } from './ProjectPriceRuleEditor'
 
 const MODULE_KEY: ModuleKey = 'project'
@@ -49,22 +45,6 @@ export interface ProjectEditorValues {
   /** 允许材质不匹配时的处理方式: OFF不校验/WARN提醒/BLOCK阻断。 */
   allowedMaterialSeverity?: ProjectScopeEnforcement | null
   remark?: string
-}
-
-/**
- * 下拉选项与已保存值的并集: 项目已配置的品牌/材质可能已从商品主数据中移除,
- * 直接按主数据选项渲染会让这些值在编辑态「消失」(保存后即被静默清空)。
- */
-function mergeSelectedOptions(
-  options: Array<{ label: string; value: string }>,
-  selected: readonly string[] | undefined,
-) {
-  const known = new Set(options.map((option) => option.value))
-  const missing = (selected ?? [])
-    .map((value) => asString(value).trim())
-    .filter((value) => value && !known.has(value))
-    .map((value) => ({ label: value, value }))
-  return missing.length ? [...options, ...missing] : options
 }
 
 function findSettlementCompanyName(id: unknown, fallback = ''): string {
@@ -95,6 +75,46 @@ interface ProjectEditorOverlayProps {
   onSaved: () => Promise<void>
 }
 
+/**
+ * 由表单值组装保存载荷。
+ *
+ * <p>抽成纯函数而不是留在组件里: 保存流程因此只剩「校验 → 保存 → 收尾」三步,
+ * 载荷字段的增删也不再需要一个 300 行的组件来承载。</p>
+ */
+function buildProjectDraft(args: {
+  values: ProjectEditorValues
+  editorBaseRecord: LegacyModuleRecord | null
+  customerOptions: CustomerOption[]
+}): LegacyModuleRecordInput {
+  const { values, editorBaseRecord, customerOptions } = args
+  const customer = values.customerId
+    ? customerOptions.find((option) => option.id === values.customerId)
+    : undefined
+  return {
+    ...(editorBaseRecord ?? {}),
+    projectCode: values.projectCode ?? '',
+    projectName: values.projectName,
+    projectNameAbbr: values.projectNameAbbr ?? '',
+    customerId: values.customerId,
+    customerCode: customer ? asString(customer.customerCode).trim() : '',
+    settlementCompanyId: values.settlementCompanyId,
+    settlementCompanyName: findSettlementCompanyName(
+      values.settlementCompanyId,
+      asString(values.settlementCompanyName),
+    ),
+    projectManager: values.projectManager ?? '',
+    projectAddress: values.projectAddress ?? '',
+    status: values.status,
+    quoteSource: values.quoteSource ?? '',
+    quoteRegion: values.quoteRegion ?? '',
+    allowedBrands: values.allowedBrands ?? [],
+    allowedMaterials: values.allowedMaterials ?? [],
+    allowedBrandSeverity: values.allowedBrandSeverity ?? null,
+    allowedMaterialSeverity: values.allowedMaterialSeverity ?? null,
+    remark: values.remark ?? '',
+  }
+}
+
 export function ProjectEditorOverlay({
   open,
   editorBaseRecord,
@@ -115,46 +135,6 @@ export function ProjectEditorOverlay({
       })),
     [quoteRegions],
   )
-  // 允许品牌来自商品资料去重; 允许材质复用商品资料的「材质」选项, 与明细材质取值同源。
-  const materialBrands = useMaterialBrands()
-  const materialGradeQuery = useQuery({
-    queryKey: QUERY_KEYS.masterOptions.materialGrades,
-    queryFn: () => fetchMaterialGrades(),
-    staleTime: STALE_MASTER_OPTIONS,
-  })
-  const enforcementOptions = useMemo(
-    () => [
-      { label: t('modules.pages.project.scopeEnforcementWarn'), value: 'WARN' },
-      {
-        label: t('modules.pages.project.scopeEnforcementBlock'),
-        value: 'BLOCK',
-      },
-      { label: t('modules.pages.project.scopeEnforcementOff'), value: 'OFF' },
-    ],
-    [t],
-  )
-  const selectedBrands = Form.useWatch('allowedBrands', form)
-  const selectedMaterials = Form.useWatch('allowedMaterials', form)
-  const brandOptions = useMemo(
-    () =>
-      mergeSelectedOptions(
-        materialBrands.map((brand) => ({ label: brand, value: brand })),
-        selectedBrands,
-      ),
-    [materialBrands, selectedBrands],
-  )
-  const materialOptions = useMemo(
-    () =>
-      mergeSelectedOptions(
-        (materialGradeQuery.data ?? []).map((option) => ({
-          label: option.label,
-          value: String(option.value),
-        })),
-        selectedMaterials,
-      ),
-    [materialGradeQuery.data, selectedMaterials],
-  )
-
   const syncProjectForm = (changed: Record<string, unknown>) => {
     if (Object.hasOwn(changed, 'customerId')) {
       const nextCustomerId = asString(changed.customerId).trim()
@@ -192,42 +172,19 @@ export function ProjectEditorOverlay({
   }
 
   const handleEditorSave = async () => {
-    let values: ProjectEditorValues
-    try {
-      values = await form.validateFields()
-    } catch {
-      // 必填校验失败时 antd 已内联提示，直接返回，避免未处理的 Promise rejection。
+    // 必填校验失败时 antd 已内联提示：吞掉 rejection 后直接返回。
+    // 刻意不用 try/finally —— React Compiler 目前不支持带 finally 的 TryStatement，
+    // 命中后整个组件会失去自动记忆化（react-hooks-js/todo）。改为两条路径各自收尾。
+    const values = await form.validateFields().catch(() => null)
+    if (!values) {
       return
     }
     setSaving(true)
     try {
-      const customer = values.customerId
-        ? customerOptions.find((option) => option.id === values.customerId)
-        : undefined
-      const draft: LegacyModuleRecordInput = {
-        ...(editorBaseRecord ?? {}),
-        projectCode: values.projectCode ?? '',
-        projectName: values.projectName,
-        projectNameAbbr: values.projectNameAbbr ?? '',
-        customerId: values.customerId,
-        customerCode: customer ? asString(customer.customerCode).trim() : '',
-        settlementCompanyId: values.settlementCompanyId,
-        settlementCompanyName: findSettlementCompanyName(
-          values.settlementCompanyId,
-          asString(values.settlementCompanyName),
-        ),
-        projectManager: values.projectManager ?? '',
-        projectAddress: values.projectAddress ?? '',
-        status: values.status,
-        quoteSource: values.quoteSource ?? '',
-        quoteRegion: values.quoteRegion ?? '',
-        allowedBrands: values.allowedBrands ?? [],
-        allowedMaterials: values.allowedMaterials ?? [],
-        allowedBrandSeverity: values.allowedBrandSeverity ?? null,
-        allowedMaterialSeverity: values.allowedMaterialSeverity ?? null,
-        remark: values.remark ?? '',
-      }
-      await saveBusinessModule(MODULE_KEY, draft)
+      await saveBusinessModule(
+        MODULE_KEY,
+        buildProjectDraft({ values, editorBaseRecord, customerOptions }),
+      )
       message.success(t('modules.saveResult.success'))
       onClose()
       await onSaved()
@@ -235,9 +192,8 @@ export function ProjectEditorOverlay({
       message.error(
         error instanceof Error ? error.message : t('api.saveFailed'),
       )
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   return (
@@ -393,56 +349,7 @@ export function ProjectEditorOverlay({
               <Select allowClear showSearch options={quoteRegionOptions} />
             </Form.Item>
           </Col>
-          <Col span={6}>
-            <Form.Item
-              name="allowedBrands"
-              label={t('modules.pages.project.allowedBrands')}
-              extra={t('modules.pages.project.allowedSpecHint')}
-            >
-              <Select
-                allowClear
-                maxTagCount="responsive"
-                mode="multiple"
-                options={brandOptions}
-                placeholder={t('modules.pages.project.allowedSpecPlaceholder')}
-                showSearch={{ optionFilterProp: 'label' }}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item
-              name="allowedBrandSeverity"
-              label={t('modules.pages.project.scopeEnforcement')}
-              extra={t('modules.pages.project.scopeEnforcementHint')}
-            >
-              <Select options={enforcementOptions} />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item
-              name="allowedMaterials"
-              label={t('modules.pages.project.allowedMaterials')}
-              extra={t('modules.pages.project.allowedSpecHint')}
-            >
-              <Select
-                allowClear
-                maxTagCount="responsive"
-                mode="multiple"
-                options={materialOptions}
-                placeholder={t('modules.pages.project.allowedSpecPlaceholder')}
-                showSearch={{ optionFilterProp: 'label' }}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item
-              name="allowedMaterialSeverity"
-              label={t('modules.pages.project.scopeEnforcement')}
-              extra={t('modules.pages.project.scopeEnforcementHint')}
-            >
-              <Select options={enforcementOptions} />
-            </Form.Item>
-          </Col>
+          <ProjectAllowedSpecFields form={form} />
           <Col span={24}>
             <Form.Item
               name="projectAddress"

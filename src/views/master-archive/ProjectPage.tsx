@@ -4,11 +4,10 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { Form } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business/business-listing'
 import { fetchCustomerOptions } from '@/api/master/customer-options'
-import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { AppProPage } from '@/components/AppProPage'
@@ -19,23 +18,19 @@ import {
   STALE_MASTER_OPTIONS,
   STALE_REALTIME,
 } from '@/constants/query-policies'
-import { STATUS } from '@/constants/status-constants'
 import { getMasterOptionQueryKey } from '@/hooks/master-option-cache-refresh'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
 import type { SearchParams } from '@/types/api-raw'
 import type { EntityId } from '@/types/entity-id'
 import type { LegacyModuleRecord } from '@/types/module-record'
-import { asString } from '@/utils/type-narrowing'
 import { ModuleAttachmentModal } from '@/views/modules/components/ModuleAttachmentModal'
 import type { ProjectEditorValues } from './ProjectEditorOverlay'
 import { ProjectEditorOverlay } from './ProjectEditorOverlay'
 import { ProjectFilterToolbar } from './ProjectFilterToolbar'
 import { ProjectTableSection } from './ProjectTableSection'
-import {
-  toAllowedSpecSeverity,
-  toAllowedSpecValues,
-} from './project-page-columns'
+import { useProjectColumnVisibility } from './useProjectColumnVisibility'
+import { useProjectEditor } from './useProjectEditor'
 
 const MODULE_KEY: ModuleKey = 'project'
 const FALLBACK_PAGE_SIZE = 30
@@ -47,44 +42,15 @@ const DEFAULT_HIDDEN_COLUMN_KEYS = [
 
 type ProjectListRow = LegacyModuleRecord
 
-/** 由列表行构建编辑表单初值。 */
-function toEditorFormValues(record: ProjectListRow) {
-  const allowedBrands = toAllowedSpecValues(record.allowedBrands)
-  const allowedMaterials = toAllowedSpecValues(record.allowedMaterials)
-  return {
-    projectCode: asString(record.projectCode),
-    projectName: asString(record.projectName),
-    projectNameAbbr: asString(record.projectNameAbbr),
-    customerId: asString(record.customerId),
-    customerCode: asString(record.customerCode),
-    settlementCompanyId: asString(record.settlementCompanyId),
-    settlementCompanyName: asString(record.settlementCompanyName),
-    projectManager: asString(record.projectManager),
-    projectAddress: asString(record.projectAddress),
-    status: asString(record.status) || STATUS.NORMAL,
-    quoteSource: asString(record.quoteSource) || 'MYSTEEL',
-    quoteRegion: asString(record.quoteRegion),
-    allowedBrands: allowedBrands,
-    allowedMaterials: allowedMaterials,
-    allowedBrandSeverity: toAllowedSpecSeverity(
-      record.allowedBrandSeverity,
-      allowedBrands,
-    ),
-    allowedMaterialSeverity: toAllowedSpecSeverity(
-      record.allowedMaterialSeverity,
-      allowedMaterials,
-    ),
-    remark: asString(record.remark),
-  }
-}
-
 export function ProjectPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [form] = Form.useForm<ProjectEditorValues>()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(FALLBACK_PAGE_SIZE)
+  // 用户显式改过每页条数才记 override: 运行配置晚到不会覆盖用户选择,
+  // 也因此不需要「effect 里 setState」——那种写法会多渲染一次（react-hooks-js/set-state-in-effect）。
+  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null)
   const [keyword, setKeyword] = useState('')
   const [filterCustomerId, setFilterCustomerId] = useState<
     EntityId | undefined
@@ -92,13 +58,7 @@ export function ProjectPage() {
   const [filterStatus, setFilterStatus] = useState<string | undefined>()
   const [submittedFilters, setSubmittedFilters] = useState<SearchParams>({})
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
-  const [hiddenColumnKeys, setHiddenColumnKeys] = useState<string[]>(
-    DEFAULT_HIDDEN_COLUMN_KEYS,
-  )
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editorBaseRecord, setEditorBaseRecord] =
-    useState<ProjectListRow | null>(null)
   const [attachmentRecordId, setAttachmentRecordId] = useState('')
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
@@ -107,12 +67,12 @@ export function ProjectPage() {
     queryFn: getRuntimeConfig,
     staleTime: STALE_LONG,
   })
-  useEffect(() => {
-    const value = Number(runtimeConfig?.ui.defaultPageSize)
-    if (Number.isFinite(value) && value > 0) {
-      setPageSize(Math.floor(value))
-    }
-  }, [runtimeConfig?.ui.defaultPageSize])
+  const configuredPageSize = Number(runtimeConfig?.ui.defaultPageSize)
+  const defaultPageSize =
+    Number.isFinite(configuredPageSize) && configuredPageSize > 0
+      ? Math.floor(configuredPageSize)
+      : FALLBACK_PAGE_SIZE
+  const pageSize = pageSizeOverride ?? defaultPageSize
 
   const customerQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.customer,
@@ -188,24 +148,10 @@ export function ProjectPage() {
     ])
   }
 
+  const { hiddenColumnKeys, toggleColumn, hideColumn } =
+    useProjectColumnVisibility(DEFAULT_HIDDEN_COLUMN_KEYS)
+
   const clearSelection = () => setSelectedRowKeys([])
-
-  /**
-   * 列显隐的唯一写入口: 工具栏是开关语义(勾选/取消), 列头右键只有「隐藏」一种动作。
-   * 两者共用一个实现, 避免隐藏规则各写一份而漂移。
-   */
-  const setColumnHidden = (key: string, hidden: boolean) => {
-    setHiddenColumnKeys((previous) => {
-      const next = previous.filter((item) => item !== key)
-      return hidden ? [...next, key] : next
-    })
-  }
-
-  const toggleColumn = (key: string) => {
-    setColumnHidden(key, !hiddenColumnKeys.includes(key))
-  }
-
-  const hideColumn = (key: string) => setColumnHidden(key, true)
 
   const applyFilters = (next: SearchParams) => {
     clearSelection()
@@ -235,7 +181,7 @@ export function ProjectPage() {
 
   const handlePageChange = (nextPage: number, nextPageSize: number) => {
     if (nextPageSize !== pageSize) {
-      setPageSize(nextPageSize)
+      setPageSizeOverride(nextPageSize)
     }
     setPage(nextPage)
     clearSelection()
@@ -250,38 +196,18 @@ export function ProjectPage() {
     )
   }
 
-  const openEditor = (record: ProjectListRow | null) => {
-    setExpandedRowKeys([])
-    if (record) {
-      setEditorBaseRecord({ ...record })
-      form.resetFields()
-      form.setFieldsValue(toEditorFormValues(record))
-      setEditorOpen(true)
-      return
-    }
-    setEditorBaseRecord(null)
-    form.resetFields()
-    form.setFieldsValue({ status: STATUS.NORMAL, projectCode: '' })
-    setEditorOpen(true)
-    void fetchGeneratedMasterDataCode(MODULE_KEY)
-      .then((code) => {
-        form.setFieldsValue({ projectCode: code })
-      })
-      .catch(() => {
-        // 编码签发失败时留空，保存时由后端必填校验兜底。
-      })
-  }
-
-  const closeEditor = () => {
-    setEditorOpen(false)
-    setEditorBaseRecord(null)
-    form.resetFields()
-  }
-
-  const handleEditorSaved = async () => {
-    clearSelection()
-    await refreshModuleQueries()
-  }
+  const {
+    editorOpen,
+    editorBaseRecord,
+    openEditor,
+    closeEditor,
+    handleEditorSaved,
+  } = useProjectEditor({
+    form,
+    collapseExpandedRows: () => setExpandedRowKeys([]),
+    clearSelection,
+    refreshModuleQueries,
+  })
 
   const selectedRecord = selectedRows.length === 1 ? selectedRows[0] : undefined
   const selectedRecordCanEdit = selectedRecord
