@@ -47,6 +47,38 @@ export type ProjectScopeEnforcement = 'OFF' | 'WARN' | 'BLOCK'
 /** 处理方式选项的默认档: 清单非空但后端没给力度时按「提醒」处理, 与后端读路径口径一致。 */
 export const DEFAULT_SCOPE_ENFORCEMENT: ProjectScopeEnforcement = 'WARN'
 
+/**
+ * 项目取价基准日期口径。
+ * <p>
+ * DELIVERY 按送货日期取价; ORDER 按报单日期加 N 个交易日取价; MANUAL 每次交付核定手工选择。
+ */
+export type ProjectPriceDateBasis = 'DELIVERY' | 'ORDER' | 'MANUAL'
+
+/** 取价基准日期默认档: 与后端默认一致, 缺省按「送货日期」取价。 */
+export const DEFAULT_PRICE_DATE_BASIS: ProjectPriceDateBasis = 'DELIVERY'
+
+/** 报单日期基准可顺延的交易日数上限; 与后端 0..30 的校验区间一致。 */
+export const MAX_PRICE_DATE_OFFSET_DAYS = 30
+
+/**
+ * 项目取价时段策略。
+ * <p>
+ * AUTO 自动取当日最新时段; FIXED 固定取 {@link ProjectPricePeriod} 指定时段; MANUAL 每次手工选择。
+ */
+export type ProjectPricePeriodPolicy = 'AUTO' | 'FIXED' | 'MANUAL'
+
+/** 取价时段策略默认档: 与后端默认一致, 缺省自动取当日最新时段。 */
+export const DEFAULT_PRICE_PERIOD_POLICY: ProjectPricePeriodPolicy = 'AUTO'
+
+/**
+ * 固定取价时段的可选值。
+ * <p>
+ * 中文文案本身就是落库枚举值(与后端一致), 因此这里不做翻译, 展示层另按 key 取文案。
+ */
+export const PRICE_PERIOD_OPTIONS = ['上午', '中午', '下午'] as const
+
+export type ProjectPricePeriod = (typeof PRICE_PERIOD_OPTIONS)[number]
+
 /** 取价数据源。 */
 export type ProjectQuoteSource = 'MYSTEEL' | 'STEELX'
 
@@ -165,6 +197,64 @@ export function normalizeScopeEnforcement(
   return text === 'OFF' || text === 'WARN' || text === 'BLOCK'
     ? text
     : DEFAULT_SCOPE_ENFORCEMENT
+}
+
+/**
+ * 取价基准归一化: 只认三个字面量(大小写不敏感), 其余(含 null/未知值)按默认「送货日期」处理。
+ * <p>
+ * 与 {@link normalizeScopeEnforcement} 同一口径: 读路径宽松, 一个字段漂移不该让整条记录不可用。
+ */
+export function normalizePriceDateBasis(value: unknown): ProjectPriceDateBasis {
+  const text = asString(value).trim().toUpperCase()
+  return text === 'DELIVERY' || text === 'ORDER' || text === 'MANUAL'
+    ? text
+    : DEFAULT_PRICE_DATE_BASIS
+}
+
+/**
+ * 报单日期顺延交易日数归一化: 取整后夹到 0..{@link MAX_PRICE_DATE_OFFSET_DAYS}。
+ * <p>
+ * 非法值(含 null/布尔/非数字字符串)一律回落到 0, 避免把 NaN 或越界值下发到后端。
+ */
+export function normalizePriceDateOffsetDays(value: unknown): number {
+  const text = typeof value === 'string' ? value.trim() : value
+  if (typeof text !== 'number' && typeof text !== 'string') {
+    return 0
+  }
+  const parsed = Number(text)
+  if (!Number.isFinite(parsed)) {
+    return 0
+  }
+  return Math.min(Math.max(Math.trunc(parsed), 0), MAX_PRICE_DATE_OFFSET_DAYS)
+}
+
+/**
+ * 休市取前一交易日归一化: 只认布尔真值。
+ * <p>
+ * 刻意不用 truthy 判断: 后端若把 false 序列化成字符串 'false', 宽松转换会把它读成 true。
+ */
+export function normalizePriceClosedDayPrevSettle(value: unknown): boolean {
+  return value === true
+}
+
+/** 取价时段策略归一化: 只认三个字面量(大小写不敏感), 其余(含 null/未知值)按默认「自动」处理。 */
+export function normalizePricePeriodPolicy(
+  value: unknown,
+): ProjectPricePeriodPolicy {
+  const text = asString(value).trim().toUpperCase()
+  return text === 'AUTO' || text === 'FIXED' || text === 'MANUAL'
+    ? text
+    : DEFAULT_PRICE_PERIOD_POLICY
+}
+
+/** 固定取价时段归一化: 只认「上午/中午/下午」, 其余(含 null/未知值)按未选择(null)处理。 */
+export function normalizePricePeriodFixed(
+  value: unknown,
+): ProjectPricePeriod | null {
+  const text = asString(value).trim()
+  return PRICE_PERIOD_OPTIONS.some((period) => period === text)
+    ? (text as ProjectPricePeriod)
+    : null
 }
 
 /** 清单为空(不限制)时力度无意义: 此时不下发力度, 避免调用方误判「配置了限制」。 */

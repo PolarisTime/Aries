@@ -206,3 +206,73 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
     ])
   })
 })
+
+describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
+  const salesOrderBaseRecord: Record<string, unknown> = {
+    customerName: '客户A',
+    projectName: '项目A',
+    deliveryDate: '2026-10-09 00:00:00',
+    salesName: '销售员',
+    items: [
+      {
+        materialCode: 'M-1',
+        brand: '中天',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: '12',
+        unit: '吨',
+        warehouseName: '一号库',
+        quantity: 1,
+        pieceWeightTon: 1,
+        piecesPerBundle: 0,
+        unitPrice: 3400,
+      },
+    ],
+  }
+
+  it('sales-order 保存载荷保留 6 个取价快照字段(与后端 DTO 同名)', async () => {
+    const payload = (await submitRecord('sales-order', {
+      ...salesOrderBaseRecord,
+      priceTargetDate: '2026-10-09',
+      priceQuoteDate: '2026-10-13',
+      priceQuotePeriod: '中午',
+      priceDateBasis: 'ORDER',
+      priceDateOffsetDays: 2,
+      priceClosedSettlePrev: true,
+    })) as Record<string, unknown>
+
+    expect(payload).toMatchObject({
+      priceTargetDate: '2026-10-09',
+      priceQuoteDate: '2026-10-13',
+      priceQuotePeriod: '中午',
+      priceDateBasis: 'ORDER',
+      priceDateOffsetDays: 2,
+      priceClosedSettlePrev: true,
+    })
+  })
+
+  it('未取价的单据不下发快照键(后端按「未记录取价过程」清空)', async () => {
+    const payload = (await submitRecord(
+      'sales-order',
+      salesOrderBaseRecord,
+    )) as Record<string, unknown>
+
+    expect(payload).not.toHaveProperty('priceTargetDate')
+    expect(payload).not.toHaveProperty('priceQuotePeriod')
+    expect(payload).not.toHaveProperty('priceDateOffsetDays')
+    expect(payload).not.toHaveProperty('priceClosedSettlePrev')
+  })
+
+  it('顺延交易日数越过 0..30 契约时被拒绝', async () => {
+    await expect(
+      submitRecord('sales-order', {
+        ...salesOrderBaseRecord,
+        priceTargetDate: '2026-10-09',
+        priceQuoteDate: '2026-10-13',
+        priceQuotePeriod: '中午',
+        priceDateBasis: 'ORDER',
+        priceDateOffsetDays: 31,
+      }),
+    ).rejects.toThrow()
+  })
+})

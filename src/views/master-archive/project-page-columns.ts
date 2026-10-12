@@ -1,7 +1,15 @@
 import type { useTranslation } from 'react-i18next'
 import {
   DEFAULT_SCOPE_ENFORCEMENT,
+  normalizePriceClosedDayPrevSettle,
+  normalizePriceDateBasis,
+  normalizePriceDateOffsetDays,
+  normalizePricePeriodFixed,
+  normalizePricePeriodPolicy,
   normalizeScopeEnforcement,
+  type ProjectPriceDateBasis,
+  type ProjectPricePeriod,
+  type ProjectPricePeriodPolicy,
   type ProjectScopeEnforcement,
 } from '@/api/master/project-options'
 import { asString } from '@/utils/type-narrowing'
@@ -64,6 +72,49 @@ export function toAllowedSpecSeverity(
     return DEFAULT_SCOPE_ENFORCEMENT
   }
   return normalizeScopeEnforcement(value)
+}
+
+/**
+ * 列表行的取价基准归一化: 缺省或非法值回落到「送货日期」。
+ * <p>
+ * 与 {@link toAllowedSpecSeverity} 同为「记录→表单值」入口, 编辑回填与保存载荷共用同一口径,
+ * 避免出现「回填显示送货日期、保存却下发未知值」的漂移。
+ */
+export function toPriceDateBasis(value: unknown): ProjectPriceDateBasis {
+  return normalizePriceDateBasis(value)
+}
+
+/**
+ * 列表行的顺延交易日数归一化: 基准不是「报单日期」时归 0。
+ * <p>
+ * 该字段只在报单日期基准下有意义, 历史数据即使留了偏移, 回填与下发也一律按 0 处理。
+ */
+export function toPriceDateOffsetDays(
+  value: unknown,
+  basis: ProjectPriceDateBasis,
+): number {
+  return basis === 'ORDER' ? normalizePriceDateOffsetDays(value) : 0
+}
+
+/** 列表行的「休市取前一交易日」归一化: 基准不是「报单日期」时归 false。 */
+export function toPriceClosedDayPrevSettle(
+  value: unknown,
+  basis: ProjectPriceDateBasis,
+): boolean {
+  return basis === 'ORDER' && normalizePriceClosedDayPrevSettle(value)
+}
+
+/** 列表行的取价时段策略归一化: 缺省或非法值回落到「自动取当日最新时段」。 */
+export function toPricePeriodPolicy(value: unknown): ProjectPricePeriodPolicy {
+  return normalizePricePeriodPolicy(value)
+}
+
+/** 列表行的固定取价时段归一化: 策略不是「固定时段」时归 null(不限制具体时段)。 */
+export function toPricePeriodFixed(
+  value: unknown,
+  policy: ProjectPricePeriodPolicy,
+): ProjectPricePeriod | null {
+  return policy === 'FIXED' ? normalizePricePeriodFixed(value) : null
 }
 
 export function buildProjectColumnLabels(

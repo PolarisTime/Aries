@@ -156,6 +156,8 @@ export const ENDPOINTS = {
   PROJECT: (id: string | number) => `/projects/${pathSegment(id)}`,
   PROJECT_PRICE_RULES: (id: string | number) =>
     `/projects/${pathSegment(id)}/price-rules`,
+  PROJECT_PRICING_QUOTE_RESOLUTIONS: (id: string | number) =>
+    `/projects/${pathSegment(id)}/pricing-quote-resolutions`,
   SUPPLIERS_OPTIONS: '/suppliers/options',
   CARRIERS_OPTIONS: '/carriers/options',
   MATERIALS: '/materials',

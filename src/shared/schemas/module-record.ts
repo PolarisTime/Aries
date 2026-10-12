@@ -416,6 +416,13 @@ const salesOrderRecordShape = {
   priceRuleName: nullableTextSchema.optional(),
   priceFloatMode: nullableTextSchema.optional(),
   priceFloatValue: nullableResponseDecimalSchema.optional(),
+  /** 交付核定取价快照：未记录取价过程时后端返回 null。 */
+  priceTargetDate: nullableTextSchema.optional(),
+  priceQuoteDate: nullableTextSchema.optional(),
+  priceQuotePeriod: nullableTextSchema.optional(),
+  priceDateBasis: nullableTextSchema.optional(),
+  priceDateOffsetDays: optionalNonNegativeIntegerSchema,
+  priceClosedSettlePrev: z.boolean().nullable().optional(),
   referencedByFreightBill: z.boolean().default(false),
   referencedBySalesOutbound: z.boolean().default(false),
   referencedBySalesReturn: z.boolean().default(false),
@@ -492,6 +499,19 @@ const salesOrderSaveRequestSchema = z.strictObject({
   remark: optionalTextSchema,
   /** 交付核定所选价格规定ID（可空）。 */
   priceRuleId: optionalEntityIdSchema,
+  /**
+   * 交付核定取价快照（camelCase，与后端 SalesOrderRequest 一致）。
+   *
+   * <p>后端是「全有或全无」契约：携带任意一项就必须同时给出基准日、实际取价日、实际时段与基准，
+   * 这里保持同样的可选性，由调用方保证完整性（见 buildSalesOrderPricingSnapshot）。</p>
+   */
+  priceTargetDate: optionalTextSchema,
+  priceQuoteDate: optionalTextSchema,
+  priceQuotePeriod: optionalTextSchema,
+  priceDateBasis: optionalTextSchema,
+  /** 顺延交易日数：与后端 CHECK 一致，0..30。 */
+  priceDateOffsetDays: nonNegativeIntegerSchema.max(30).nullish(),
+  priceClosedSettlePrev: z.boolean().nullish(),
   items: z
     .array(salesOrderSaveItemSchema)
     .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,

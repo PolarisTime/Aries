@@ -8,6 +8,11 @@ import {
   fetchProjectAbbreviationOptions,
   fetchProjectOptions,
   fetchProjectQuoteConfig,
+  normalizePriceClosedDayPrevSettle,
+  normalizePriceDateBasis,
+  normalizePriceDateOffsetDays,
+  normalizePricePeriodFixed,
+  normalizePricePeriodPolicy,
   normalizeScopeEnforcement,
   toProjectAbbreviationOptions,
 } from './project-options'
@@ -275,5 +280,70 @@ describe('fetchProjectQuoteConfig', () => {
       expect(normalizeScopeEnforcement('Warn')).toBe('WARN')
       expect(normalizeScopeEnforcement('BLOCK')).toBe('BLOCK')
     })
+  })
+})
+
+describe('项目取价基准与时段归一化', () => {
+  it('normalizePriceDateBasis 只认三个字面量并容忍大小写', () => {
+    expect(normalizePriceDateBasis('order')).toBe('ORDER')
+    expect(normalizePriceDateBasis(' MANUAL ')).toBe('MANUAL')
+    expect(normalizePriceDateBasis('DELIVERY')).toBe('DELIVERY')
+  })
+
+  it('normalizePriceDateBasis 对未知值回落到送货日期', () => {
+    expect(normalizePriceDateBasis(undefined)).toBe('DELIVERY')
+    expect(normalizePriceDateBasis(null)).toBe('DELIVERY')
+    expect(normalizePriceDateBasis('')).toBe('DELIVERY')
+    expect(normalizePriceDateBasis('UNKNOWN')).toBe('DELIVERY')
+  })
+
+  it('normalizePriceDateOffsetDays 取整并夹到 0..30', () => {
+    expect(normalizePriceDateOffsetDays(5)).toBe(5)
+    expect(normalizePriceDateOffsetDays('7')).toBe(7)
+    expect(normalizePriceDateOffsetDays(3.9)).toBe(3)
+    expect(normalizePriceDateOffsetDays(-2)).toBe(0)
+    expect(normalizePriceDateOffsetDays(31)).toBe(30)
+    expect(normalizePriceDateOffsetDays(Number.MAX_SAFE_INTEGER)).toBe(30)
+  })
+
+  it('normalizePriceDateOffsetDays 对非法值回落到 0', () => {
+    expect(normalizePriceDateOffsetDays(undefined)).toBe(0)
+    expect(normalizePriceDateOffsetDays(null)).toBe(0)
+    expect(normalizePriceDateOffsetDays('')).toBe(0)
+    expect(normalizePriceDateOffsetDays('abc')).toBe(0)
+    expect(normalizePriceDateOffsetDays(Number.NaN)).toBe(0)
+    expect(normalizePriceDateOffsetDays(Number.POSITIVE_INFINITY)).toBe(0)
+    // 布尔与对象不能被 Number() 隐式转成 1 或 0
+    expect(normalizePriceDateOffsetDays(true)).toBe(0)
+    expect(normalizePriceDateOffsetDays({})).toBe(0)
+  })
+
+  it('normalizePriceClosedDayPrevSettle 只认布尔真值', () => {
+    expect(normalizePriceClosedDayPrevSettle(true)).toBe(true)
+    expect(normalizePriceClosedDayPrevSettle(false)).toBe(false)
+    expect(normalizePriceClosedDayPrevSettle(undefined)).toBe(false)
+    expect(normalizePriceClosedDayPrevSettle(null)).toBe(false)
+    // 字符串 'false' 是 truthy, 宽松判断会把休市口径读反
+    expect(normalizePriceClosedDayPrevSettle('false')).toBe(false)
+    expect(normalizePriceClosedDayPrevSettle('true')).toBe(false)
+    expect(normalizePriceClosedDayPrevSettle(1)).toBe(false)
+  })
+
+  it('normalizePricePeriodPolicy 只认三个字面量, 未知值回落到自动', () => {
+    expect(normalizePricePeriodPolicy('fixed')).toBe('FIXED')
+    expect(normalizePricePeriodPolicy('Manual')).toBe('MANUAL')
+    expect(normalizePricePeriodPolicy('AUTO')).toBe('AUTO')
+    expect(normalizePricePeriodPolicy(undefined)).toBe('AUTO')
+    expect(normalizePricePeriodPolicy('UNKNOWN')).toBe('AUTO')
+  })
+
+  it('normalizePricePeriodFixed 只认上午/中午/下午, 其余按未选择处理', () => {
+    expect(normalizePricePeriodFixed('上午')).toBe('上午')
+    expect(normalizePricePeriodFixed(' 下午 ')).toBe('下午')
+    expect(normalizePricePeriodFixed('中午')).toBe('中午')
+    expect(normalizePricePeriodFixed(null)).toBeNull()
+    expect(normalizePricePeriodFixed(undefined)).toBeNull()
+    expect(normalizePricePeriodFixed('')).toBeNull()
+    expect(normalizePricePeriodFixed('夜间')).toBeNull()
   })
 })

@@ -1568,6 +1568,32 @@ export const enUS = {
         scopeEnforcementWarn: 'Warn (continue)',
         scopeEnforcementBlock: 'Block (cannot save)',
         scopeEnforcementOff: 'Off (keep list)',
+        priceDateBasis: 'Price date basis',
+        priceDateBasisHint:
+          'Determines which day’s quote is used during delivery verification',
+        priceDateBasisDelivery: 'Delivery date',
+        priceDateBasisOrder: 'Order date + N trading days',
+        priceDateBasisManual: 'Choose manually each time',
+        priceDateOffsetDays: 'Trading days deferred',
+        priceDateOffsetDaysHint:
+          'Applies to the order-date basis only, range 0-30',
+        priceClosedDayPrevSettle: 'Use previous trading day when closed',
+        priceClosedDayPrevSettleHint:
+          'Applies to the order-date basis only; when off, the Nth later trading day is used',
+        pricePeriodPolicy: 'Quote period policy',
+        pricePeriodPolicyHint:
+          'Determines which period’s quote is used during delivery verification',
+        pricePeriodPolicyAuto: 'Latest period of the day',
+        pricePeriodPolicyFixed: 'Fixed period',
+        pricePeriodPolicyManual: 'Choose manually each time',
+        pricePeriodFixed: 'Fixed quote period',
+        pricePeriodFixedHint:
+          'Applies to the fixed-period policy only, and is required',
+        pricePeriodFixedRequired:
+          'A specific quote period is required when the fixed-period policy is selected',
+        pricePeriodMorning: 'Morning',
+        pricePeriodMidday: 'Midday',
+        pricePeriodAfternoon: 'Afternoon',
       },
       purchaseOrder: {
         title: 'Purchase Orders',
@@ -1641,12 +1667,11 @@ export const enUS = {
         netPriceFillAll: 'Fill from net price',
         netPriceTitle: 'Assign unit price from net price',
         netPriceHint:
-          'Matches net prices by delivery date and period, applies the project markup/markdown, and fills unit prices. Rows without a net price keep their value — fill them manually.',
-        netPriceDate: 'Net price date',
-        netPricePeriod: 'Period',
-        netPricePeriodAll: 'All periods',
+          'Resolves the pricing basis from the project config (or this document override) first, then matches net prices by the resolved date and period, applies the price rule markup/markdown, and fills unit prices. Rows without a net price keep their value — fill them manually.',
+        netPricePeriod: 'Quote period',
         netPriceApply: 'Fetch and fill',
-        netPricePickDate: 'Please pick a net price date',
+        netPricePickDate:
+          'No quotable date and period resolved yet; resolve the pricing basis first',
         netPriceRule: 'Price rule',
         netPriceRulePick: 'Select a price rule',
         netPricePickRule:
@@ -1656,6 +1681,22 @@ export const enUS = {
           '{{items}} and {{count}} row(s) have no net price; fill them manually',
         netPriceFailed: 'Failed to fetch net prices, please retry',
         netPriceFloatHint: 'Project rule: net price {{mode}} {{value}} CNY/ton',
+        netPriceResolving: 'Resolving the pricing basis…',
+        netPriceResolveFailed: 'Failed to resolve the pricing basis',
+        netPriceBasisLabel: 'Pricing basis',
+        netPriceTargetDate: 'Basis date',
+        netPriceActualDate: 'Actual quote date',
+        netPriceActualPeriod: 'Actual quote period',
+        netPricePeriodUnavailable: 'No period available',
+        netPriceDateFallback: 'Quote date was rolled back',
+        netPricePeriodFallback: 'Quote period was rolled back',
+        netPriceNoQuote: 'No quote published on the actual quote date',
+        netPriceAvailablePeriods: 'Periods available that day: {{periods}}',
+        netPriceAdoptSuggestedDate: 'Use suggested date {{date}}',
+        netPriceOverrideTitle:
+          'Overrides for this document only (project config untouched)',
+        netPriceOverrideReset: 'Reset to project config',
+        netPriceManualDate: 'Quote date',
         allowedSpecImportWarning:
           'Project "{{project}}" restricts allowed brands/materials, but this import does not match: {{details}}',
         allowedSpecImportBrands: 'brands {{values}}',

@@ -116,6 +116,11 @@ const projectRows = [
     allowedMaterials: ['HRB400'],
     allowedBrandSeverity: 'BLOCK',
     allowedMaterialSeverity: 'WARN',
+    priceDateBasis: 'ORDER',
+    priceDateOffsetDays: 7,
+    priceClosedDayPrevSettle: true,
+    pricePeriodPolicy: 'AUTO',
+    pricePeriodFixed: null,
     remark: '备注一',
   },
   {
@@ -253,21 +258,60 @@ describe('ProjectPage 主数据拆分试点', () => {
     })
   }
 
-  const chooseOverlaySelectOption = async (index: number) => {
-    const selectRoots = document.body
-      .querySelector('.workspace-overlay')!
-      .querySelectorAll('.ant-select')
+  /**
+   * 定位弹层内某个字段的下拉根节点。
+   * <p>
+   * 刻意不用 `.ant-select` 序号: 每新增一个字段序号就会整体位移, 断言会在无关改动上炸掉,
+   * 且失败信息无法指出是哪个字段。Form.Item 会把字段名注入控件 id, 按 id 定位既稳定又可读。
+   */
+  const overlaySelect = (fieldName: string): HTMLElement => {
+    const control = document.body.querySelector<HTMLElement>(
+      `.workspace-overlay input#${fieldName}`,
+    )
+    expect(control, `字段 ${fieldName} 的下拉输入应存在`).toBeTruthy()
+    const root = control?.closest<HTMLElement>('.ant-select')
+    expect(root, `字段 ${fieldName} 应是下拉控件`).toBeTruthy()
+    return root as HTMLElement
+  }
+
+  /** 打开字段对应的下拉。 */
+  const openOverlaySelect = async (fieldName: string) => {
+    const root = overlaySelect(fieldName)
     await act(async () => {
-      selectRoots[index]?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true }),
-      )
+      root.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
+  }
+
+  /** 只取当前可见下拉里的选项: antd 关闭后保留隐藏 DOM, 跨次打开会查到旧选项。 */
+  const visibleSelectOption = (optionText: string) =>
+    [
+      ...document.body.querySelectorAll<HTMLElement>(
+        '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option',
+      ),
+    ].find((node) => node.textContent?.trim() === optionText)
+
+  const chooseOverlaySelectOption = async (fieldName: string) => {
+    await openOverlaySelect(fieldName)
     const option =
       document.body.querySelector('.ant-select-item-option') ??
       document.body.querySelector('[role="option"]')
     expect(option, '下拉选项应渲染').toBeTruthy()
+    await act(async () => {
+      option!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  /** 按字段名与选项文本选中下拉项(单选/多选通用)。 */
+  const chooseOverlaySelectOptionByText = async (
+    fieldName: string,
+    optionText: string,
+  ) => {
+    await openOverlaySelect(fieldName)
+    const option = visibleSelectOption(optionText)
+    expect(option, `字段 ${fieldName} 的选项 ${optionText} 应渲染`).toBeTruthy()
     await act(async () => {
       option!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
@@ -477,8 +521,8 @@ describe('ProjectPage 主数据拆分试点', () => {
       '.workspace-overlay input#projectName',
     ) as HTMLInputElement
     setTextValue(nameInput, '项目三')
-    await chooseOverlaySelectOption(0)
-    await chooseOverlaySelectOption(1)
+    await chooseOverlaySelectOption('customerId')
+    await chooseOverlaySelectOption('settlementCompanyId')
 
     await clickButtonInOverlay('保存')
 
@@ -534,51 +578,18 @@ describe('ProjectPage 主数据拆分试点', () => {
     await flushAsync()
     expect(document.body.textContent).toContain('编辑 — 项目资料')
 
-    // 弹层内第 5 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区
-    const overlay = document.body.querySelector('.workspace-overlay')
-    const selectRoots = overlay!.querySelectorAll('.ant-select')
-    await act(async () => {
-      selectRoots[4]?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
+    // 按字段名定位「取价地区」下拉, 不再依赖弹层内 select 的排列序号
+    await openOverlaySelect('quoteRegion')
 
     const optionTexts = [
-      ...document.body.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+      ...document.body.querySelectorAll<HTMLElement>(
+        '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option',
+      ),
     ].map((node) => node.textContent?.trim())
     // 后端下发 ['杭州','南京']: 应出现南京, 且不再使用前端兜底默认里的绍兴
     expect(optionTexts).toContain('南京')
     expect(optionTexts).not.toContain('绍兴')
   })
-
-  /** 多选下拉：打开指定序号的 Select 后点选指定文本的选项。 */
-  const chooseOverlayMultiSelectOption = async (
-    index: number,
-    optionText: string,
-  ) => {
-    const selectRoots = document.body
-      .querySelector('.workspace-overlay')!
-      .querySelectorAll('.ant-select')
-    await act(async () => {
-      selectRoots[index]?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    const option = [
-      ...document.body.querySelectorAll<HTMLElement>(
-        '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option',
-      ),
-    ].find((node) => node.textContent?.trim() === optionText)
-    expect(option, `下拉选项 ${optionText} 应渲染`).toBeTruthy()
-    await act(async () => {
-      option!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
 
   it('编辑项目资料：回填并保留允许品牌/材质', async () => {
     vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
@@ -594,13 +605,13 @@ describe('ProjectPage 主数据拆分试点', () => {
     await clickButton('编辑')
     await flushAsync()
 
-    // 弹层内共 9 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 /
-    // 允许品牌 / 处理方式 / 允许材质 / 处理方式。
     // maxTagCount="responsive" 在 jsdom 里量不到宽度会把标签折叠成「+N ...」，
     // 因此不断言渲染标签，而是用「保存载荷保留已存值」证明回填链路成立。
+    // 弹层内共 12 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 /
+    // 允许品牌 / 处理方式 / 允许材质 / 处理方式 / 取价基准 / 时段策略 / 固定时段。
     const overlay = document.body.querySelector('.workspace-overlay')
     const selectRoots = overlay!.querySelectorAll('.ant-select')
-    expect(selectRoots).toHaveLength(9)
+    expect(selectRoots).toHaveLength(12)
 
     await clickButtonInOverlay('保存')
 
@@ -627,8 +638,10 @@ describe('ProjectPage 主数据拆分试点', () => {
     await clickButton('编辑')
     await flushAsync()
 
-    // 第 7 个 select 是允许品牌的处理方式（第 6 个是品牌多选本身）
-    await chooseOverlayMultiSelectOption(6, '阻断（不可保存）')
+    await chooseOverlaySelectOptionByText(
+      'allowedBrandSeverity',
+      '阻断（不可保存）',
+    )
     await clickButtonInOverlay('保存')
 
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
@@ -649,15 +662,127 @@ describe('ProjectPage 主数据拆分试点', () => {
     await clickButton('编辑')
     await flushAsync()
 
-    // 第 6 个 select 是品牌多选、第 8 个是材质多选（中间插入了两个「处理方式」下拉）
-    await chooseOverlayMultiSelectOption(5, '永钢')
-    await chooseOverlayMultiSelectOption(7, 'HRB400E')
+    await chooseOverlaySelectOptionByText('allowedBrands', '永钢')
+    await chooseOverlaySelectOptionByText('allowedMaterials', 'HRB400E')
     await clickButtonInOverlay('保存')
 
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
     expect(draft).toMatchObject({
       allowedBrands: ['沙钢', '永钢'],
       allowedMaterials: ['HRB400', 'HRB400E'],
+    })
+  })
+
+  it('新建项目：取价基准与时段策略按默认档下发', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9003' })
+    renderPage()
+    await flushAsync()
+
+    await clickButton('新增')
+    await flushAsync()
+
+    const nameInput = document.body.querySelector(
+      '.workspace-overlay input#projectName',
+    ) as HTMLInputElement
+    setTextValue(nameInput, '项目三')
+    await chooseOverlaySelectOption('customerId')
+    await chooseOverlaySelectOption('settlementCompanyId')
+
+    await clickButtonInOverlay('保存')
+
+    expect(saveBusinessModule).toHaveBeenCalledTimes(1)
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    // 5 个字段必须始终出现在载荷里, 且条件字段按主字段口径复位
+    expect(draft).toMatchObject({
+      priceDateBasis: 'DELIVERY',
+      priceDateOffsetDays: 0,
+      priceClosedDayPrevSettle: false,
+      pricePeriodPolicy: 'AUTO',
+      pricePeriodFixed: null,
+    })
+  })
+
+  it('编辑项目资料：切到非报单基准时顺延天数与休市开关被复位并禁用', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+
+    const offsetInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceDateOffsetDays',
+    )
+    const prevSettleSwitch = document.body.querySelector<HTMLButtonElement>(
+      '.workspace-overlay button#priceClosedDayPrevSettle',
+    )
+    // 记录里基准是「报单日期」: 两个条件字段可编辑且回填历史值
+    expect(offsetInput?.disabled).toBe(false)
+    expect(offsetInput?.value).toBe('7')
+    expect(prevSettleSwitch?.disabled).toBe(false)
+    expect(prevSettleSwitch?.getAttribute('aria-checked')).toBe('true')
+
+    await chooseOverlaySelectOptionByText('priceDateBasis', '每次手工选择')
+
+    expect(offsetInput?.value).toBe('0')
+    expect(offsetInput?.disabled).toBe(true)
+    expect(prevSettleSwitch?.getAttribute('aria-checked')).toBe('false')
+    expect(prevSettleSwitch?.disabled).toBe(true)
+
+    await clickButtonInOverlay('保存')
+
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      priceDateBasis: 'MANUAL',
+      priceDateOffsetDays: 0,
+      priceClosedDayPrevSettle: false,
+      pricePeriodFixed: null,
+    })
+  })
+
+  it('编辑项目资料：固定时段策略未选具体时段时阻止保存', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+
+    // 记录里策略是「自动取当日最新时段」: 具体时段控件禁用, 不参与校验
+    const fixedSelectInput =
+      overlaySelect('pricePeriodFixed').querySelector('input')
+    expect(fixedSelectInput?.disabled).toBe(true)
+
+    await chooseOverlaySelectOptionByText('pricePeriodPolicy', '固定时段')
+    expect(fixedSelectInput?.disabled).toBe(false)
+
+    await clickButtonInOverlay('保存')
+    await flushAsync()
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain(
+      i18n.t('modules.pages.project.pricePeriodFixedRequired'),
+    )
+
+    await chooseOverlaySelectOptionByText('pricePeriodFixed', '下午')
+    await clickButtonInOverlay('保存')
+
+    expect(saveBusinessModule).toHaveBeenCalledTimes(1)
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      pricePeriodPolicy: 'FIXED',
+      pricePeriodFixed: '下午',
     })
   })
 

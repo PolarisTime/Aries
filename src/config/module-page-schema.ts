@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { SALES_ORDER_PRICING_SNAPSHOT_FIELDS } from '@/config/business-pages/operations/sales-order-price-snapshot'
 import type { ModuleFilterDefinition } from '@/types/module-page'
 
 interface ModuleSaveFieldSchema {
@@ -207,6 +208,8 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'status',
         'remark',
         'priceRuleId',
+        // 交付核定取价快照: 字段清单与单据侧写入共用同一常量, 避免两处各写一份。
+        ...SALES_ORDER_PRICING_SNAPSHOT_FIELDS,
       ],
       chargeItem: [
         'id',

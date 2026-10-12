@@ -4,7 +4,19 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
-import type { ProjectScopeEnforcement } from '@/api/master/project-options'
+import type {
+  ProjectPriceDateBasis,
+  ProjectPricePeriod,
+  ProjectPricePeriodPolicy,
+  ProjectScopeEnforcement,
+} from '@/api/master/project-options'
+import {
+  normalizePriceClosedDayPrevSettle,
+  normalizePriceDateBasis,
+  normalizePriceDateOffsetDays,
+  normalizePricePeriodFixed,
+  normalizePricePeriodPolicy,
+} from '@/api/master/project-options'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { resolveQuoteRegions } from '@/constants/quote-regions'
 import { STATUS } from '@/constants/status-constants'
@@ -20,6 +32,7 @@ import { asString } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 import { ProjectAllowedSpecFields } from './ProjectAllowedSpecFields'
 import { ProjectPriceRuleEditor } from './ProjectPriceRuleEditor'
+import { ProjectPricingBasisFields } from './ProjectPricingBasisFields'
 
 const MODULE_KEY: ModuleKey = 'project'
 
@@ -44,6 +57,16 @@ export interface ProjectEditorValues {
   allowedBrandSeverity?: ProjectScopeEnforcement | null
   /** 允许材质不匹配时的处理方式: OFF不校验/WARN提醒/BLOCK阻断。 */
   allowedMaterialSeverity?: ProjectScopeEnforcement | null
+  /** 取价基准日期: DELIVERY送货日期/ORDER报单日期+N个交易日/MANUAL每次手工选择。 */
+  priceDateBasis: ProjectPriceDateBasis
+  /** 报单日期基准顺延的交易日数(0-30); 仅基准为 ORDER 时有意义。 */
+  priceDateOffsetDays: number
+  /** 报单日为休市时是否按前一个交易日结算; 仅基准为 ORDER 时有意义。 */
+  priceClosedDayPrevSettle: boolean
+  /** 取价时段策略: AUTO自动取当日最新时段/FIXED固定时段/MANUAL每次手工选择。 */
+  pricePeriodPolicy: ProjectPricePeriodPolicy
+  /** 固定取价时段(上午/中午/下午); 仅策略为 FIXED 时必填, 其余固定传 null。 */
+  pricePeriodFixed: ProjectPricePeriod | null
   remark?: string
 }
 
@@ -90,6 +113,10 @@ function buildProjectDraft(args: {
   const customer = values.customerId
     ? customerOptions.find((option) => option.id === values.customerId)
     : undefined
+  // 取价基准/时段先归一化再装配: 条件字段必须与主字段口径一致, 否则「非 ORDER 却带偏移」这类
+  // 历史脏值会被原样下发。保存载荷里这 5 个字段始终存在(非 FIXED 时 pricePeriodFixed 传 null)。
+  const priceDateBasis = normalizePriceDateBasis(values.priceDateBasis)
+  const pricePeriodPolicy = normalizePricePeriodPolicy(values.pricePeriodPolicy)
   return {
     ...(editorBaseRecord ?? {}),
     projectCode: values.projectCode ?? '',
@@ -111,6 +138,19 @@ function buildProjectDraft(args: {
     allowedMaterials: values.allowedMaterials ?? [],
     allowedBrandSeverity: values.allowedBrandSeverity ?? null,
     allowedMaterialSeverity: values.allowedMaterialSeverity ?? null,
+    priceDateBasis,
+    priceDateOffsetDays:
+      priceDateBasis === 'ORDER'
+        ? normalizePriceDateOffsetDays(values.priceDateOffsetDays)
+        : 0,
+    priceClosedDayPrevSettle:
+      priceDateBasis === 'ORDER' &&
+      normalizePriceClosedDayPrevSettle(values.priceClosedDayPrevSettle),
+    pricePeriodPolicy,
+    pricePeriodFixed:
+      pricePeriodPolicy === 'FIXED'
+        ? normalizePricePeriodFixed(values.pricePeriodFixed)
+        : null,
     remark: values.remark ?? '',
   }
 }
@@ -168,6 +208,22 @@ export function ProjectEditorOverlay({
           asString(form.getFieldValue('settlementCompanyName')),
         ),
       })
+    }
+    if (Object.hasOwn(changed, 'priceDateBasis')) {
+      // 基准不是「报单日期」时, 顺延交易日数与休市口径都无意义: 立刻复位,
+      // 免得禁用控件上残留 5/true 这类值, 让人以为还在生效。
+      if (normalizePriceDateBasis(changed.priceDateBasis) !== 'ORDER') {
+        form.setFieldsValue({
+          priceDateOffsetDays: 0,
+          priceClosedDayPrevSettle: false,
+        })
+      }
+    }
+    if (Object.hasOwn(changed, 'pricePeriodPolicy')) {
+      // 同理: 策略不是「固定时段」时清掉具体时段, 保存载荷按 null 下发。
+      if (normalizePricePeriodPolicy(changed.pricePeriodPolicy) !== 'FIXED') {
+        form.setFieldsValue({ pricePeriodFixed: null })
+      }
     }
   }
 
@@ -350,6 +406,7 @@ export function ProjectEditorOverlay({
             </Form.Item>
           </Col>
           <ProjectAllowedSpecFields form={form} />
+          <ProjectPricingBasisFields form={form} />
           <Col span={24}>
             <Form.Item
               name="projectAddress"

@@ -1,14 +1,11 @@
 import { ThunderboltOutlined } from '@ant-design/icons'
-import { Button, DatePicker, Modal, Select, Space, Typography } from 'antd'
-import dayjs from 'dayjs'
+import { Button, Modal, Select, Space, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  fetchMaterialPriceMatches,
-  fetchSteelQuoteCalendars,
-} from '@/api/market/steel-quotes'
+import { fetchMaterialPriceMatches } from '@/api/market/steel-quotes'
 import type { ProjectPriceRule } from '@/api/master/project-price-rules'
 import { fetchProjectPriceRules } from '@/api/master/project-price-rules'
+import { buildSalesOrderPricingSnapshot } from '@/config/business-pages/operations/sales-order-price-snapshot'
 import type {
   ModuleItemsActionsContext,
   ModuleLineItem,
@@ -20,6 +17,9 @@ import {
   normalizeDateValue,
   resolveNetPrice,
 } from '../net-price-fill'
+import { PricingQuoteResolutionOverrides } from './PricingQuoteResolutionOverrides'
+import { PricingQuoteResolutionSummary } from './PricingQuoteResolutionSummary'
+import { usePricingQuoteResolution } from './use-pricing-quote-resolution'
 
 const { Text } = Typography
 
@@ -28,12 +28,15 @@ const DELIVERY_VERIFICATION = '交付核定'
 
 /** 空列表常量：派生回退时保持引用稳定，避免下游 memo 每次失效。 */
 const EMPTY_RULES: ProjectPriceRule[] = []
-const EMPTY_PERIODS: string[] = []
 
 /**
- * 交付核定「整单取网价」：选择价格规定 + 日期/时段匹配网价，按规定加/减后填入单价。
+ * 交付核定「整单取网价」：先按项目配置（或本次单据级覆盖）解析取价基准，
+ * 再按规定加/减后填入单价。
+ *
+ * - 解析接口负责回答「取哪天、哪个时段」并说明回退原因，解析结果即取价入参；
+ * - 人工可临时改基准/顺延交易日数/时段策略/时段/手工日期，改任一项即按覆盖值重新解析；
+ * - 该日无行情（quoteAvailable=false）时不静默取价：提示并提供「采纳建议日期」；
  * - 价格规定单选互斥、不叠加；默认沿用项目上次使用的规定；
- * - 项目有多条规定时必须选择一条；未配置规定时不浮动；
  * - 无网价的行保持原值并提示，由用户手填。
  */
 export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
@@ -48,8 +51,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     projectOptions,
   } = props
   const [open, setOpen] = useState(false)
-  const [quoteDate, setQuoteDate] = useState('')
-  const [period, setPeriod] = useState('')
   const [loading, setLoading] = useState(false)
   /**
    * 已拉取的项目价格规定及其所属项目：项目被清空/切换时派生结果自动回退为空，
@@ -62,6 +63,8 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const [ruleId, setRuleId] = useState<string | undefined>()
 
   const deliveryDate = normalizeDateValue(formValues.deliveryDate)
+  // 报单日期：销售订单表单当前未注册该字段，存在则透传，缺失时由解析接口按基准给出 422 说明。
+  const orderDate = normalizeDateValue(formValues.orderDate)
   const projectId = String(formValues.projectId || '').trim()
   const project = projectOptions.find((option) => option.id === projectId)
   // 数据源与地区取自项目配置: 西本按地区报价。
@@ -71,6 +74,16 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     rulesState && rulesState.projectId === projectId
       ? rulesState.rules
       : EMPTY_RULES
+
+  const {
+    resolution,
+    resolving,
+    error: resolutionError,
+    controls,
+    updateControls,
+    resetControls,
+    adoptSuggestedDate,
+  } = usePricingQuoteResolution({ open, projectId, orderDate, deliveryDate })
 
   // 打开弹层时拉取项目价格规定, 并默认选中"上次使用"(回退到唯一一条)。
   useEffect(() => {
@@ -102,14 +115,22 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   )
 
   const openDialog = () => {
-    setQuoteDate(deliveryDate || dayjs().format('YYYY-MM-DD'))
-    setPeriod('')
+    // 每次打开都从项目配置重新解析, 不沿用上一次打开时的临时覆盖。
+    resetControls()
     setOpen(true)
   }
 
   const applyNetPrices = async () => {
-    if (!quoteDate) {
+    // 未解析出取价入参时不允许静默取价: 先提示, 由用户调整覆盖值后重新解析。
+    if (!resolution) {
       message.warning(t('modules.pages.salesOrder.netPricePickDate'))
+      return
+    }
+    const quoteDate = resolution.quoteDate ?? ''
+    const period = resolution.period ?? ''
+    // 该日无行情时同样不取价: 提示并提供「采纳建议日期」, 由用户重新解析后再取。
+    if (!resolution.quoteAvailable || !quoteDate || !period) {
+      message.warning(t('modules.pages.salesOrder.netPriceNoQuote'))
       return
     }
     if (rules.length > 0 && !selectedRule) {
@@ -118,11 +139,10 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     }
     setLoading(true)
     try {
-      const rows = await fetchMaterialPriceMatches(
-        quoteDate,
-        period || undefined,
-        { source: quoteSource, region: quoteRegion },
-      )
+      const rows = await fetchMaterialPriceMatches(quoteDate, period, {
+        source: quoteSource,
+        region: quoteRegion,
+      })
       const index = buildNetPriceIndex(rows)
 
       const nextItems: ModuleLineItem[] = []
@@ -150,6 +170,16 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         setItems(() => nextItems)
         // 记录所选价格规定, 保存在单据上(交付核定时快照)。
         setFormValue('priceRuleId', selectedRule?.id ?? null)
+        // 取价快照随单据保存: 后端要求四项同时提供, 不完整时宁可不带(见快照构造器)。
+        const snapshot = buildSalesOrderPricingSnapshot(resolution)
+        if (snapshot) {
+          setFormValue('priceTargetDate', snapshot.priceTargetDate)
+          setFormValue('priceQuoteDate', snapshot.priceQuoteDate)
+          setFormValue('priceQuotePeriod', snapshot.priceQuotePeriod)
+          setFormValue('priceDateBasis', snapshot.priceDateBasis)
+          setFormValue('priceDateOffsetDays', snapshot.priceDateOffsetDays)
+          setFormValue('priceClosedSettlePrev', snapshot.priceClosedSettlePrev)
+        }
         message.success(
           t('modules.pages.salesOrder.netPriceFilled', { count: filled }),
         )
@@ -200,6 +230,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
             <Space>
               <Text>{t('modules.pages.salesOrder.netPriceRule')}</Text>
               <Select
+                aria-label={t('modules.pages.salesOrder.netPriceRule')}
                 style={{ width: 200 }}
                 value={ruleId}
                 placeholder={t('modules.pages.salesOrder.netPriceRulePick')}
@@ -215,24 +246,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
               />
             </Space>
           ) : null}
-          <Space>
-            <Text>{t('modules.pages.salesOrder.netPriceDate')}</Text>
-            <DatePicker
-              value={quoteDate ? dayjs(quoteDate) : null}
-              allowClear={false}
-              onChange={(value) =>
-                setQuoteDate(value ? value.format('YYYY-MM-DD') : '')
-              }
-            />
-          </Space>
-          <Space>
-            <Text>{t('modules.pages.salesOrder.netPricePeriod')}</Text>
-            <PeriodSelect
-              quoteDate={quoteDate}
-              value={period}
-              onChange={setPeriod}
-            />
-          </Space>
           {selectedRule ? (
             <Text type="secondary">
               {selectedRule.remark
@@ -240,58 +253,20 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
                 : selectedRule.name}
             </Text>
           ) : null}
+          <PricingQuoteResolutionSummary
+            resolution={resolution}
+            resolving={resolving}
+            error={resolutionError}
+            onAdoptSuggestedDate={adoptSuggestedDate}
+          />
+          <PricingQuoteResolutionOverrides
+            resolution={resolution}
+            controls={controls}
+            onChange={updateControls}
+            onReset={resetControls}
+          />
         </Space>
       </Modal>
     </>
-  )
-}
-
-/** 时段下拉：按所选日期拉取可用时段。 */
-function PeriodSelect({
-  quoteDate,
-  value,
-  onChange,
-}: {
-  quoteDate: string
-  value: string
-  onChange: (value: string) => void
-}) {
-  const { t } = useTranslation()
-  /**
-   * 已拉取到的时段：日期被清空时派生回退为空，
-   * 不需要在 effect 里同步 setPeriods([])（同步 setState 会触发级联渲染）。
-   */
-  const [loadedPeriods, setLoadedPeriods] = useState<string[]>([])
-  const periods = quoteDate ? loadedPeriods : EMPTY_PERIODS
-
-  useEffect(() => {
-    if (!quoteDate) return undefined
-    let active = true
-    fetchSteelQuoteCalendars(quoteDate, quoteDate)
-      .then((items) => {
-        if (active) setLoadedPeriods(items[0]?.periods ?? [])
-      })
-      .catch(() => {
-        if (active) setLoadedPeriods(EMPTY_PERIODS)
-      })
-    return () => {
-      active = false
-    }
-  }, [quoteDate])
-
-  const options = useMemo(
-    () => periods.map((p) => ({ label: p, value: p })),
-    [periods],
-  )
-
-  return (
-    <Select
-      style={{ width: 160 }}
-      placeholder={t('modules.pages.salesOrder.netPricePeriodAll')}
-      value={value || undefined}
-      options={options}
-      onChange={onChange}
-      allowClear
-    />
   )
 }

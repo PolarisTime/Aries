@@ -9,6 +9,11 @@ import type { ProjectEditorValues } from './ProjectEditorOverlay'
 import {
   toAllowedSpecSeverity,
   toAllowedSpecValues,
+  toPriceClosedDayPrevSettle,
+  toPriceDateBasis,
+  toPriceDateOffsetDays,
+  toPricePeriodFixed,
+  toPricePeriodPolicy,
 } from './project-page-columns'
 
 const MODULE_KEY: ModuleKey = 'project'
@@ -19,6 +24,8 @@ type ProjectListRow = LegacyModuleRecord
 function toEditorFormValues(record: ProjectListRow) {
   const allowedBrands = toAllowedSpecValues(record.allowedBrands)
   const allowedMaterials = toAllowedSpecValues(record.allowedMaterials)
+  const priceDateBasis = toPriceDateBasis(record.priceDateBasis)
+  const pricePeriodPolicy = toPricePeriodPolicy(record.pricePeriodPolicy)
   return {
     projectCode: asString(record.projectCode),
     projectName: asString(record.projectName),
@@ -41,6 +48,20 @@ function toEditorFormValues(record: ProjectListRow) {
     allowedMaterialSeverity: toAllowedSpecSeverity(
       record.allowedMaterialSeverity,
       allowedMaterials,
+    ),
+    priceDateBasis,
+    priceDateOffsetDays: toPriceDateOffsetDays(
+      record.priceDateOffsetDays,
+      priceDateBasis,
+    ),
+    priceClosedDayPrevSettle: toPriceClosedDayPrevSettle(
+      record.priceClosedDayPrevSettle,
+      priceDateBasis,
+    ),
+    pricePeriodPolicy,
+    pricePeriodFixed: toPricePeriodFixed(
+      record.pricePeriodFixed,
+      pricePeriodPolicy,
     ),
     remark: asString(record.remark),
   }
