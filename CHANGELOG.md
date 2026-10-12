@@ -1,3 +1,10 @@
+# [11.8.0](https://github.com/PolarisTime/Aries/compare/v11.7.0...v11.8.0) (2026-10-12)
+
+
+### Features
+
+* **sales-order:** 项目取价基准配置与交付核定按日期自动取价 ([5ce01a8](https://github.com/PolarisTime/Aries/commit/5ce01a853856f7d28b3efce69224141b678f4b47))
+
 # [11.7.0](https://github.com/PolarisTime/Aries/compare/v11.6.0...v11.7.0) (2026-10-12)
 
 
