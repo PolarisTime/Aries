@@ -309,4 +309,61 @@ test.describe('行情同步页', () => {
       `1 / ${weekdayCountInWindow() + 1}`,
     )
   })
+
+  test('后端标记的节假日按休市渲染, 不再当作可同步的缺失', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await loginAsE2eUser(page)
+    // 桩住日历: 某个工作日本身是节假日(站点未发布行情), 后端以 closed 返回
+    const holiday = recentWeekday()
+    await page.route('**/api/v2.0/steel-quote-calendars**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { quoteDate: holiday, periods: [], periodRows: {}, closed: true },
+        ]),
+      }),
+    )
+    await page.route('**/api/v2.0/steel-quotes**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          currentPage: 0,
+          pageSize: 20,
+          hasMore: false,
+        }),
+      }),
+    )
+    await page.route('**/api/v2.0/steel-quote-backfills/current**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ running: false }),
+      }),
+    )
+    await gotoMarketSync(page)
+
+    // 该工作日显示为休市文本, 且不存在可点击的「缺」按钮(矩阵是 3 个时段 → 3 格)
+    const holidayOff = page.locator(
+      `.market-sync-cell.is-off[title*="${holiday}"]`,
+    )
+    await expect(holidayOff).toHaveCount(3)
+    await expect(holidayOff.first().locator('.aries-sr-only')).toContainText(
+      '休市',
+    )
+    await expect(
+      page.locator(
+        `button.market-sync-cell.is-missing[aria-label*="${holiday}"]`,
+      ),
+    ).toHaveCount(0)
+
+    // 休市日不占交易日分母: 30 天窗口内少一个工作日
+    await expect(page.locator('.market-sync-metric').first()).toContainText(
+      `0 / ${weekdayCountInWindow() - 1}`,
+    )
+  })
 })

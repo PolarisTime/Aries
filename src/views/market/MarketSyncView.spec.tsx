@@ -563,6 +563,49 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     expect(coverage).toMatch(new RegExp(`1\\s*/\\s*${weekdayCount + 1}`))
   })
 
+  it('后端标记的节假日(工作日)显示休市而不是缺失, 且不计入覆盖分母', async () => {
+    // 国庆 10-01~10-07 这类节假日推不出来, 由后端在"站点未发布行情"时落库并经日历返回 closed。
+    // 修复前它们一律显示成「缺(可同步)」, 用户点进去只会得到一次失败。
+    const window30 = Array.from({ length: 30 }, (_, index) =>
+      dayjs().subtract(index, 'day'),
+    )
+    const holiday = window30.find((day) => day.day() !== 0 && day.day() !== 6)
+    expect(holiday).toBeTruthy()
+    const holidayDate = holiday?.format('YYYY-MM-DD') as string
+
+    api.fetchSteelQuoteCalendars.mockResolvedValue([
+      { quoteDate: holidayDate, periods: [], periodRows: {}, closed: true },
+    ])
+    api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })
+    api.fetchBackfillStatus.mockResolvedValue(idleBackfillStatus)
+
+    renderView()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // 该工作日是休市文本(不可点), 不是「缺」
+    const off = Array.from(
+      container.querySelectorAll<HTMLElement>('.market-sync-cell.is-off'),
+    ).find((el) => (el.getAttribute('title') ?? '').includes(holidayDate))
+    expect(off).toBeTruthy()
+    expect(off?.tagName).toBe('SPAN')
+    expect(off?.querySelector('.aries-sr-only')?.textContent).toContain('休市')
+    expect(
+      container.querySelector(
+        `button.market-sync-cell.is-missing[aria-label*="${holidayDate}"]`,
+      ),
+    ).toBeNull()
+
+    // 休市日不占交易日分母: 30 天窗口里少一个工作日
+    const weekdayCount = window30.filter(
+      (day) => day.day() !== 0 && day.day() !== 6,
+    ).length
+    const coverage = container.querySelector('.market-sync-metric')?.textContent
+    expect(coverage).toMatch(new RegExp(`0\\s*/\\s*${weekdayCount - 1}\\b`))
+  })
+
   it('休市格是非交互文本，不可点击(WCAG 2.1.1 不依赖颜色或悬停)', async () => {
     api.fetchSteelQuoteCalendars.mockResolvedValue([])
     api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })

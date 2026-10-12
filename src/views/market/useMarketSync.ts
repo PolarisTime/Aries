@@ -39,10 +39,10 @@ export function useMarketSync() {
   const isPageVisible = usePageVisibility()
   const queryClient = useQueryClient()
 
-  const [selected, setSelected] = useState<{ date: string; period: string }>({
-    date: '',
-    period: '',
-  })
+  const [selectedIntent, setSelected] = useState<{
+    date: string
+    period: string
+  }>({ date: '', period: '' })
 
   const [source, setSource] = useState<MarketQuoteSource>('MYSTEEL')
   const [region, setRegion] = useState<string | undefined>(undefined)
@@ -100,19 +100,29 @@ export function useMarketSync() {
       map[row.quoteDate] = {
         periods: row.periods,
         rows: row.periodRows ?? {},
+        closed: Boolean(row.closed),
       }
     return map
   }, [calendarQuery.data])
 
-  useEffect(() => {
-    if (!calendarQuery.data) return
-    setSelected((current) => {
-      if (current.date && calendars[current.date]) return current
-      const latest = Object.keys(calendars).sort().reverse()[0]
-      if (!latest) return current
-      return { date: latest, period: calendars[latest]?.periods[0] ?? '' }
-    })
-  }, [calendarQuery.data, calendars])
+  /**
+   * 日历数据到达后自动选中最新时段。
+   *
+   * <p>改为**渲染期派生**而不是在 effect 里 setState: 后者会先渲染一次空选中、再因
+   * setState 触发第二次渲染(react-doctor 的 set-state-in-effect), 而这里完全可以从
+   * 现有数据推出结果, 不需要额外一轮。</p>
+   */
+  const latestSelection = useMemo(() => {
+    const latest = Object.keys(calendars).sort().reverse()[0]
+    if (!latest) return undefined
+    return { date: latest, period: calendars[latest]?.periods[0] ?? '' }
+  }, [calendars])
+
+  /** 用户点选过的日期失效时(已被删除/换数据源)回退到最新可用时段。 */
+  const selected =
+    selectedIntent.date && calendars[selectedIntent.date]
+      ? selectedIntent
+      : (latestSelection ?? selectedIntent)
 
   const quotesParams = useMemo(
     () => ({
@@ -202,12 +212,11 @@ export function useMarketSync() {
     let missingSlots = 0
     for (const date of matrixDays) {
       const entry = calendars[date]
-      const periods = entry?.periods
-      // 交易日判据与覆盖矩阵完全一致: 有行情即交易日; 周末无行情才是休市。
-      // 否则调休上班的周六日即使已同步也不会计入覆盖, 分母还把它当休息日排除。
-      if (!isTradingDay(date, periods)) continue
+      // 交易日判据与覆盖矩阵完全一致: 有行情即交易日; 后端标记的休市日与"周末且无行情"都不是。
+      // 后端标记的休市日(节假日)不占分母, 否则会把"本来就没有行情"算成漏数。
+      if (!isTradingDay(date, entry)) continue
       tradingDays += 1
-      const count = periods?.length ?? 0
+      const count = entry?.periods.length ?? 0
       if (count > 0) covered += 1
       // 时段数按展示口径取差; 已同步时段多于展示时段时不产生负数缺口
       missingSlots += Math.max(activePeriods.length - count, 0)
@@ -252,9 +261,15 @@ export function useMarketSync() {
       message.error(
         `${i18next.t('marketSync.syncFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
-    } finally {
-      setSyncing(false)
+      /*
+       * 失败也要刷新日历: 「站点该日未发布行情」会被后端记为休市日, 刷新后该格才会从
+       * 「缺(可同步)」变成「休市」, 否则用户看到的还是那个点不动的缺失格。
+       */
+      void calendarQuery.refetch()
     }
+    // 收尾放在 try/catch 之外而不是 finally: React Compiler 遇到 try/finally 会直接
+    // 放弃整段函数的自动记忆化(BuildHIR::lowerStatement), 这三种回调都受影响。
+    setSyncing(false)
   }
 
   const onBackfill = async () => {
@@ -284,9 +299,9 @@ export function useMarketSync() {
       message.error(
         `${i18next.t('marketSync.backfillFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
-    } finally {
-      setBackfilling(false)
     }
+    // 同上: 避免 try/finally 让编译器放弃该函数的自动记忆化
+    setBackfilling(false)
   }
 
   /** 同步某天(可指定时段); 矩阵缺失格子点击时只同步该日该时段。 */
@@ -310,9 +325,11 @@ export function useMarketSync() {
       message.error(
         `${i18next.t('marketSync.syncFailed')}：${error instanceof Error ? error.message : i18next.t('marketSync.retryLater')}`,
       )
-    } finally {
-      setSyncingCell(null)
+      // 该日被后端判定为休市(节假日)时, 刷新后这一格才会显示「休市」而不是继续显示「缺」
+      void calendarQuery.refetch()
     }
+    // 同上: 避免 try/finally 让编译器放弃该函数的自动记忆化
+    setSyncingCell(null)
   }
 
   // 补数不再按周末盲跳(节假日/调休并不服从周末规则)，进度分母就是区间总天数。

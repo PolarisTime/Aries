@@ -65,14 +65,15 @@ export function MarketSyncMatrix({
   const todayDate = today()
 
   /**
-   * 单元格状态: 有行情即「已同步」; 否则交易日为「缺失」, 非交易日(周末且无行情)才是「休市」。
+   * 单元格状态: 有行情即「已同步」; 后端标记的休市日与周末(无行情)是「休市」;
+   * 其余交易日为「缺失」。
    *
    * <p>判据顺序不能反: 先按周末判"休市"会把调休上班的周六日(有行情)显示成休市, 该格既不可点
    * 也看不到已同步状态 —— 覆盖矩阵与覆盖统计必须用同一口径({@link isTradingDay})。</p>
    */
   const stateOf = (date: string, period: string): CellState => {
     if (calendars[date]?.periods.includes(period)) return 'synced'
-    return isTradingDay(date, calendars[date]?.periods) ? 'missing' : 'off'
+    return isTradingDay(date, calendars[date]) ? 'missing' : 'off'
   }
 
   const labelOf = (date: string, period: string, state: CellState) => {

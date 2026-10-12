@@ -41,17 +41,31 @@ describe('market-sync-model 交易日判定', () => {
 
   it('有行情即交易日: 调休上班的周六有行情时不能判为休市', () => {
     // 2026-10-10 是周六, 但站点照常发布行情(西本当天有 870 行) —— 数据优先于星期
-    expect(isTradingDay('2026-10-10', ['上午'])).toBe(true)
+    expect(isTradingDay('2026-10-10', { periods: ['上午'] })).toBe(true)
   })
 
   it('周末且无行情才是休市', () => {
-    expect(isTradingDay('2026-10-10', [])).toBe(false)
+    expect(isTradingDay('2026-10-10', { periods: [] })).toBe(false)
     expect(isTradingDay('2026-10-10', undefined)).toBe(false)
   })
 
+  it('后端标记的休市日(节假日)不是交易日, 即使那天是工作日', () => {
+    // 国庆 10-01(周四): 站点确实没发布行情, 由后端落库后经日历接口返回 closed
+    expect(isTradingDay('2026-10-01', { periods: [], closed: true })).toBe(
+      false,
+    )
+  })
+
+  it('真实数据优先于休市标记', () => {
+    // 后端抓到行情时会撤销标记; 万一标记残留, 也不该把已有行情压成休市、从覆盖统计里抹掉
+    expect(
+      isTradingDay('2026-10-01', { periods: ['上午'], closed: true }),
+    ).toBe(true)
+  })
+
   it('工作日即使暂无行情也按待同步的交易日处理', () => {
-    // 法定节假日无法由星期推出, 后端记录"站点未发布"前仍按待同步展示(与补数口径一致)
-    expect(isTradingDay('2026-10-09', [])).toBe(true)
+    // 后端还没记录"站点未发布"之前, 工作日按待同步展示(与补数口径一致)
+    expect(isTradingDay('2026-10-09', { periods: [] })).toBe(true)
     expect(isTradingDay('2026-10-01', undefined)).toBe(true)
   })
 })

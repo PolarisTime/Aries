@@ -73,6 +73,11 @@ const steelQuoteCalendarSchema = z.array(
     quoteDate: z.string(),
     periods: z.array(z.string()),
     periodRows: z.record(z.string(), z.number()).optional(),
+    /**
+     * 该日站点未发布行情(休市/节假日): 由后端在同步/补数判定后落库, 前端无法自行推算 ——
+     * 法定节假日与调休并不服从「周六周日无行情」的直觉。
+     */
+    closed: z.boolean().optional(),
   }),
 )
 
@@ -83,7 +88,7 @@ export type SteelQuoteCalendarItem = z.infer<
 /** 行情数据源(Mysteel/西本)。 */
 export type MarketQuoteSource = 'MYSTEEL' | 'STEELX'
 
-/** 行情日历: 指定区间内有行情的日期与可用时段; 可按数据源/地区过滤。 */
+/** 行情日历: 指定区间内有行情的日期与可用时段(含休市日标记); 可按数据源/地区过滤。 */
 export function fetchSteelQuoteCalendars(
   from: string,
   to: string,
