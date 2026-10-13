@@ -2787,6 +2787,13 @@ export const enUS = {
       purchaseOrderUnlinked: 'No linked purchase order',
       purchaseOrderOverOrderedLong:
         'Unopened {{unopened}}t: issued tonnage already exceeds the ordered tonnage of this PO line',
+      /** Anomaly: tonnage issued by other sheets exceeds this sheet reported tonnage. */
+      purchaseOrderOverIssuedLong:
+        'Issued {{issued}}t exceeds this sheet reported {{reported}}t',
+      /** PO line linked but the reported tonnage is still empty. */
+      purchaseOrderMissingTonShort: 'No tonnage',
+      purchaseOrderMissingTonHint:
+        'Fill in the reported tonnage and lock the row first; then link a PO line via ⓘ',
       purchaseOrderPickerOpen: 'Select purchase order',
       purchaseOrderPickerTitle: 'Select purchase order line',
       purchaseOrderPickerSearch: 'Search order no., supplier or spec',

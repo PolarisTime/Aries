@@ -1343,7 +1343,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 
-  it('主流程: 未开吨位列显示 订货 − 已开, 已开吨位单独成列', async () => {
+  it('主流程: 未开吨位列显示 锁定后报单 − 已开, 已开吨位单独成列', async () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1383,11 +1383,11 @@ describe('SheetPanel 指定品牌展示', () => {
         isError: false,
       },
     )
-    // 订货 32.768 − 已开 5 = 未开 27.768
+    // 本单据报 12 吨(锁定) − 已开 5 = 未开 7
     const unopened = container.querySelector<HTMLElement>(
       '.price-compare-ton-issued',
     )
-    expect(unopened?.textContent).toContain('27.768')
+    expect(unopened?.textContent).toContain('7')
     expect(
       container.querySelector('.price-compare-ton-progress')?.textContent,
     ).toContain('中天')
@@ -1407,14 +1407,15 @@ describe('SheetPanel 指定品牌展示', () => {
     })
     const tooltipText =
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
-    expect(tooltipText).toContain('订货吨位')
-    expect(tooltipText).toContain('32.768')
+    // 口径顺序: 本单报单 → 已开(实际) → 未开 → 订货(参考)
+    expect(tooltipText).toContain('本单该明细行报单')
+    expect(tooltipText).toContain('12.000')
     expect(tooltipText).toContain('已开吨位（实际）')
     expect(tooltipText).toContain('5.000')
     expect(tooltipText).toContain('未开吨位')
-    expect(tooltipText).toContain('27.768')
-    // 本行吨位与本单该明细行合计一致(都是 12) ⇒ 不重复给合计行
-    expect(tooltipText).not.toContain('本单该明细行报单')
+    expect(tooltipText).toContain('7.000')
+    expect(tooltipText).toContain('订货吨位')
+    expect(tooltipText).toContain('32.768')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
@@ -1458,9 +1459,9 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
 
-    // 列宽必须覆盖整段「115.5 · 中天钢铁」(未开 = 128 − 12.5), 而不是只兜数字下界
-    const parts = tonProgressTextParts(poRecord)
-    expect(parts.primary).toBe('115.5')
+    // 列宽必须覆盖整段「107.5 · 中天钢铁」(未开 = 本单报 120 − 已开 12.5)
+    const parts = tonProgressTextParts(poRecord, 120)
+    expect(parts.primary).toBe('107.5')
     // 未开吨位列取"等比换算 184"与"内容宽"的较大值
     const needed = Math.max(
       SHEET_COLUMN_WIDTH.unopenedTon,

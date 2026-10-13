@@ -101,26 +101,36 @@ function TonFigure({ value }: { value: number }) {
 }
 
 /**
- * 没有口径可算时的短状态: 「未关联」(该行还没选订单明细行)或「已删除」(关联的订单没了)。
+ * 没有口径可算时的短状态: 「未关联」(还没选订单明细行)、「已删除」(关联的订单没了)、
+ * 「未填吨位」(已关联但报单吨位为 0, 没有可减的基数)。
  *
  * <p>不显示 `0.000` —— 没有关联不等于"已经开了 0 吨", 用明确的短状态给出原因; 完整说明在
  * 悬浮提示里(点 ⓘ 即可选择订单明细行)。</p>
  */
-function TonStateLabel({ state }: { state: 'notLinked' | 'missing' }) {
+const TON_STATE_KEYS = {
+  notLinked: {
+    label: 'priceCompare.sheet.purchaseOrderNotLinkedShort',
+    hint: 'priceCompare.sheet.purchaseOrderNotLinkedHint',
+  },
+  missing: {
+    label: 'priceCompare.sheet.purchaseOrderMissingShort',
+    hint: 'priceCompare.sheet.purchaseOrderMissingHint',
+  },
+  /** 已关联订单明细行, 但报单吨位还没填/为 0: 没有可减的基数。 */
+  missingTon: {
+    label: 'priceCompare.sheet.purchaseOrderMissingTonShort',
+    hint: 'priceCompare.sheet.purchaseOrderMissingTonHint',
+  },
+} as const
+
+function TonStateLabel({ state }: { state: keyof typeof TON_STATE_KEYS }) {
   const { t } = useTranslation()
-  const label = t(
-    state === 'notLinked'
-      ? 'priceCompare.sheet.purchaseOrderNotLinkedShort'
-      : 'priceCompare.sheet.purchaseOrderMissingShort',
-  )
-  const hint = t(
-    state === 'notLinked'
-      ? 'priceCompare.sheet.purchaseOrderNotLinkedHint'
-      : 'priceCompare.sheet.purchaseOrderMissingHint',
-  )
+  const { label, hint } = TON_STATE_KEYS[state]
+  const labelText = t(label)
+  const hintText = t(hint)
   return (
-    <Tooltip classNames={{ root: TON_BUBBLE_CLASS }} title={hint}>
-      <span className="price-compare-ton-state">{label}</span>
+    <Tooltip classNames={{ root: TON_BUBBLE_CLASS }} title={hintText}>
+      <span className="price-compare-ton-state">{labelText}</span>
     </Tooltip>
   )
 }
@@ -232,19 +242,19 @@ export function TonUnopenedCell({
     )
   }
 
-  const unopened = selected.orderedWeight - selected.issuedWeight
-  // 已开量超过订货量: 唯一需要标红的情形(订货量已被算进这个差值)
-  const overOpened = unopened < 0
+  // 未开吨位 = 锁定后的报单吨位 − 已开吨位(两个操作数就是左边两列已经显示的数)
+  const unopened = localTonForItem - selected.issuedWeight
+  // 报单还没填(<=0)时没有可减的基数: 显示短状态, 不显示负值误导
+  const reportedMissing = localTonForItem <= 0
+  // 已开量超过本单报的量: 唯一需要标红的情形
+  const overReported = !reportedMissing && unopened < 0
   // 可见数字与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
-  const { primary, brand } = tonProgressTextParts(selected)
-  // 本行吨位与本单该明细行合计不一致时(同明细行多行)才单独说明合计, 避免重复行
-  const itemReportedDiffers =
-    row.ton !== undefined && Math.abs(row.ton - localTonForItem) > 0.000_1
+  const { primary, brand } = tonProgressTextParts(selected, localTonForItem)
   const detail = (
     <div className="price-compare-ton-tooltip">
       <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
-        <span>{tonValueText(selected.orderedWeight)}</span>
+        <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
+        <span>{tonValueText(localTonForItem)}</span>
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
@@ -253,27 +263,26 @@ export function TonUnopenedCell({
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.unopenedTon')}</span>
         <span
-          className={overOpened ? 'price-compare-ton-hint--over' : undefined}
+          className={overReported ? 'price-compare-ton-hint--over' : undefined}
         >
           {tonValueText(unopened)}
         </span>
       </div>
-      {itemReportedDiffers ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
-          <span>{tonValueText(localTonForItem)}</span>
-        </div>
-      ) : null}
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
+        <span>{tonValueText(selected.orderedWeight)}</span>
+      </div>
       {brand ? (
         <div className="price-compare-ton-popover-row">
           <span>{t('priceCompare.sheet.columns.brand')}</span>
           <span>{brand}</span>
         </div>
       ) : null}
-      {overOpened ? (
+      {overReported ? (
         <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderOverOrderedLong', {
-            unopened: tonValueText(unopened),
+          {t('priceCompare.sheet.purchaseOrderOverIssuedLong', {
+            issued: tonValueText(selected.issuedWeight),
+            reported: tonValueText(localTonForItem),
           })}
         </div>
       ) : null}
@@ -289,22 +298,28 @@ export function TonUnopenedCell({
       >
         {/*
           数字与品牌两层各自负责省略号: 列宽不足时品牌先让位, 数字必须完整可读。
-          读屏口径把订货/已开/未开一次说清, 否则单看一个数字读不出是谁的口径。
+          读屏口径把报单/已开/未开/订货量一次说清, 否则单看一个数字读不出是谁的口径。
         */}
         <span className="price-compare-ton-progress">
-          <span
-            className={
-              overOpened
-                ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
-                : 'price-compare-ton-meta price-compare-ton-issued'
-            }
-          >
-            <span className="aries-sr-only">
-              {`${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(selected.issuedWeight)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(unopened)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overOpened ? ` / ${t('priceCompare.sheet.purchaseOrderOverOrderedLong', { unopened: tonValueText(unopened) })}` : ''}`}
+          {reportedMissing ? (
+            <TonStateLabel state="missingTon" />
+          ) : (
+            <span
+              className={
+                overReported
+                  ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
+                  : 'price-compare-ton-meta price-compare-ton-issued'
+              }
+            >
+              <span className="aries-sr-only">
+                {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(localTonForItem)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(selected.issuedWeight)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(unopened)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overReported ? ` / ${t('priceCompare.sheet.purchaseOrderOverIssuedLong', { issued: tonValueText(selected.issuedWeight), reported: tonValueText(localTonForItem) })}` : ''}`}
+              </span>
+              {primary}
             </span>
-            {primary}
-          </span>
-          {brand ? <TonIssuedBrand brand={brand} over={overOpened} /> : null}
+          )}
+          {reportedMissing ? null : brand ? (
+            <TonIssuedBrand brand={brand} over={overReported} />
+          ) : null}
         </span>
       </Tooltip>
       {infoButton}

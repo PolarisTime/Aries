@@ -2706,6 +2706,13 @@ export const zhCN = {
       purchaseOrderUnlinked: '未关联采购订单',
       purchaseOrderOverOrderedLong:
         '未开吨位 {{unopened}} 吨：已开吨位已超过该订单明细的订货量',
+      /** 异常态: 其他单据已开吨位超过本单据报单吨位。 */
+      purchaseOrderOverIssuedLong:
+        '已开吨位 {{issued}} 吨已超过本单据报单吨位 {{reported}} 吨',
+      /** 已关联订单明细行但报单吨位还没填: 未开吨位没有可减的基数。 */
+      purchaseOrderMissingTonShort: '未填吨位',
+      purchaseOrderMissingTonHint:
+        '请先填写报单吨位并锁定该行；锁定后可点右侧 ⓘ 关联订单明细行',
       purchaseOrderPickerOpen: '选择采购订单',
       purchaseOrderPickerTitle: '选择采购订单规格行',
       purchaseOrderPickerSearch: '搜索单号、供应商或规格',

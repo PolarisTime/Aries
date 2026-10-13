@@ -59,46 +59,48 @@ describe('吨位进度列文案(未开吨位)', () => {
     )
   })
 
-  it('未开吨位 = 订货吨位 − 已开吨位(订货量必须算进来)', () => {
+  it('未开吨位 = 锁定后的报单吨位 − 已开吨位', () => {
+    // 报 12 吨、已开 0 ⇒ 未开 12(用户截图那一行)
     expect(
-      tonProgressTextParts(poRecord({ orderedWeight: 40, issuedWeight: 30 }))
-        .primary,
+      tonProgressTextParts(poRecord({ issuedWeight: 0 }), 12).primary,
+    ).toBe('12')
+    // 报 40 吨、已开 30 ⇒ 未开 10
+    expect(
+      tonProgressTextParts(
+        poRecord({ orderedWeight: 40, issuedWeight: 30 }),
+        40,
+      ).primary,
     ).toBe('10')
-    expect(
-      tonProgressTextParts(poRecord({ orderedWeight: 10.19, issuedWeight: 0 }))
-        .primary,
-    ).toBe('10.19')
-    expect(
-      tonProgressTextParts(poRecord({ orderedWeight: 12, issuedWeight: 0 }))
-        .brand,
-    ).toBe('中天')
-  })
-
-  it('回归: 报 12 吨而订单订货量 10.19 吨时, 未开吨位仍是 10.19(不再替用户下结论)', () => {
-    // 报单吨位由相邻列单独给出, 这里只负责"订单还没开多少"
-    const parts = tonProgressTextParts(
-      poRecord({ orderedWeight: 10.19, issuedWeight: 0 }),
+    expect(tonProgressTextParts(poRecord({ issuedWeight: 0 }), 12).brand).toBe(
+      '中天',
     )
-    expect(parts.primary).toBe('10.19')
-    expect(parts.primary).not.toContain('超')
   })
 
-  it('已开超过订货量时给负值(由单元格标红说明)', () => {
+  it('订货量不参与这个减法(只作参考与选择依据)', () => {
+    // 订货 10.19 但报 30: 未开仍是 30 − 0 = 30
     expect(
-      tonProgressTextParts(poRecord({ orderedWeight: 10, issuedWeight: 30 }))
-        .primary,
+      tonProgressTextParts(
+        poRecord({ orderedWeight: 10.19, issuedWeight: 0 }),
+        30,
+      ).primary,
+    ).toBe('30')
+  })
+
+  it('已开超过本单据报的量时给负值(由单元格标红说明)', () => {
+    expect(
+      tonProgressTextParts(poRecord({ issuedWeight: 30 }), 10).primary,
     ).toBe('-20')
   })
 
   it('三位小数吨位不被截断成整数', () => {
     expect(
-      tonProgressTextParts(poRecord({ orderedWeight: 32.768, issuedWeight: 0 }))
-        .primary,
+      tonProgressTextParts(
+        poRecord({ orderedWeight: 32.768, issuedWeight: 0 }),
+        32.768,
+      ).primary,
     ).toBe('32.768')
     expect(
-      tonProgressTextParts(
-        poRecord({ orderedWeight: 33, issuedWeight: 32.768 }),
-      ).primary,
+      tonProgressTextParts(poRecord({ issuedWeight: 32.768 }), 33).primary,
     ).toBe('0.232')
   })
 
@@ -114,18 +116,19 @@ describe('吨位进度列文案(未开吨位)', () => {
     ]
     const widthOf = (parts: { primary: string; brand: string }) =>
       (parts.primary + parts.brand).length
-    // 未开 115.5 + 中天钢铁
-    expect(maxTonProgressTextWidth(records, widthOf)).toBe(
-      '115.5中天钢铁'.length,
-    )
+    // 本单据给明细 2 报 115.5 吨: 未开 115.5 − 12.5 = 103
+    expect(
+      maxTonProgressTextWidth(records, new Map([['2', 115.5]]), widthOf),
+    ).toBe('103中天钢铁'.length)
     // 千分位吨位(如 8,884.5)也要被覆盖
     expect(
       maxTonProgressTextWidth(
         [poRecord({ orderedWeight: 8884.5, issuedWeight: 0 })],
+        new Map([['301', 8884.5]]),
         widthOf,
       ),
     ).toBe('8,884.5中天'.length)
     // 空列表不产生宽度
-    expect(maxTonProgressTextWidth([], () => 0)).toBe(0)
+    expect(maxTonProgressTextWidth([], new Map(), () => 0)).toBe(0)
   })
 })

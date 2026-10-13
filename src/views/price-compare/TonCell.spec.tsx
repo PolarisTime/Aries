@@ -92,7 +92,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       rowId: 'r1',
       options: [poRecord] as PurchaseOrderTonnageRecord[],
       linked: undefined as PurchaseOrderTonnageRecord | undefined,
-      localTonForItem: 0,
+      localTonForItem: 40,
       disabled: false,
       rowLockDisabled: false,
       lockReason: undefined as string | undefined,
@@ -156,9 +156,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(states).toHaveLength(2)
     for (const state of states) expect(state.textContent).toBe('未关联')
     // 悬浮提示说明怎么才有的数(antd Tooltip 走浮层, 断言文案键本身)
-    expect(
-      i18n.t('priceCompare.sheet.purchaseOrderNotLinkedHint'),
-    ).toContain('未关联采购订单')
+    expect(i18n.t('priceCompare.sheet.purchaseOrderNotLinkedHint')).toContain(
+      '未关联采购订单',
+    )
     expect(container.querySelector('.price-compare-ton-issued')).toBeNull()
     expect(container.querySelector('.price-compare-ton-figure')).toBeNull()
     expect(container.querySelector('input[data-ton="r1"]')).toBeTruthy()
@@ -251,12 +251,12 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(cells[2]?.querySelector('.price-compare-ton-issued')).toBeTruthy()
     expect(cells[2]?.querySelector('.price-compare-ton-info')).toBeTruthy()
   })
-  it('未开为负时只用文字表达, 不补感叹号图标', () => {
+  it('已开超过本单报单量时未开为负, 只用文字表达不补图标', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
-      options: [{ ...poRecord, orderedWeight: 10, issuedWeight: 30 }],
+      localTonForItem: 10,
     })
-    // 已开 30 > 订货 10 ⇒ 未开 −20; 文字本身说明问题, 不需要图标重复提示
+    // 报 10 吨 / 已开 30 ⇒ 未开 −20
     expect(container.querySelector('.price-compare-ton-over-icon')).toBeNull()
     const value = container.querySelector('.price-compare-ton-issued')
     expect(value?.textContent).toContain('-20')
@@ -264,10 +264,10 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       container.querySelector('.price-compare-ton-progress')?.contains(value),
     ).toBe(true)
   })
-  it('已开超过订货量时未开吨位标红', () => {
+  it('已开超过本单报单量时未开吨位标红', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
-      options: [{ ...poRecord, orderedWeight: 10, issuedWeight: 30 }],
+      localTonForItem: 10,
     })
     expect(
       container.querySelector(
@@ -290,9 +290,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(value?.textContent).toContain('0')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
-  it('同明细行多行时悬浮明细给出本单报单合计', async () => {
+  it('同明细行多行时悬浮明细给出本单报单合计(基数)', async () => {
     render({
-      row: { ...baseRow, purchaseOrderItemId: '301', ton: 15 },
+      row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 45,
     })
     const value = container.querySelector(
@@ -306,9 +306,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
     expect(text).toContain('本单该明细行报单')
     expect(text).toContain('45.000')
-    // 未开吨位只按订货 − 已开算, 不受本单已报量影响
+    // 未开 = 报单合计 45 − 已开 30 = 15
     expect(text).toContain('未开吨位')
-    expect(text).toContain('10.000')
+    expect(text).toContain('15.000')
   })
   it('悬浮明细给出订货/已开(实际)/未开/品牌完整口径', async () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
@@ -332,10 +332,10 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     // 订货量 40 > 已开 30, 不是异常, 不给红字结论
     expect(text).not.toContain('已超过该订单明细的订货量')
   })
-  it('已开超过订货量时悬浮明细把差额说明白', async () => {
+  it('已开超过本单报单量时悬浮明细把两个数说明白', async () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
-      options: [{ ...poRecord, orderedWeight: 10, issuedWeight: 30 }],
+      localTonForItem: 10,
     })
     const value = container.querySelector(
       '.price-compare-ton-issued',
@@ -348,9 +348,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
     expect(text).toContain('未开吨位')
     expect(text).toContain('-20.000')
-    expect(text).toContain(
-      '未开吨位 -20.000 吨：已开吨位已超过该订单明细的订货量',
-    )
+    expect(text).toContain('已开吨位 30.000 吨已超过本单据报单吨位 10.000 吨')
   })
   it('悬浮明细与 ⓘ 弹层都带不透明气泡类名(antd 默认 85% 透明会与页面文字叠成重影)', async () => {
     render({
@@ -400,9 +398,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     ).not.toBeNull()
   })
 
-  it('悬浮明细字段顺序固定: 订货 → 已开(实际) → 未开 → 本单报单 → 品牌', async () => {
+  it('悬浮明细字段顺序固定: 本单报单 → 已开(实际) → 未开 → 订货(参考) → 品牌', async () => {
     render({
-      row: { ...baseRow, purchaseOrderItemId: '301', ton: 15 },
+      row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 45,
     })
     const value = container.querySelector(
@@ -418,43 +416,44 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       ),
     ].map((row) => (row.firstElementChild?.textContent ?? '').trim())
     expect(labels).toEqual([
-      '订货吨位',
+      '本单该明细行报单',
       '已开吨位（实际）',
       '未开吨位',
-      '本单该明细行报单',
+      '订货吨位',
       '品牌',
     ])
   })
-  it('本行吨位与本单该明细行合计一致时不重复给合计行', async () => {
-    // baseRow.ton = 5, 本单据该明细行合计也是 5 ⇒ 单独一行没有新信息
+  it('未填报单吨位时不显示负值, 而是给出「未填吨位」短状态', () => {
     render({
-      row: { ...baseRow, purchaseOrderItemId: '301' },
-      localTonForItem: 5,
-    })
-    const value = container.querySelector(
-      '.price-compare-ton-issued',
-    ) as HTMLElement
-    await act(async () => {
-      value.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 250))
-    })
-    const labels = [
-      ...document.querySelectorAll(
-        '.price-compare-ton-tooltip .price-compare-ton-popover-row',
-      ),
-    ].map((row) => (row.firstElementChild?.textContent ?? '').trim())
-    expect(labels).toEqual(['订货吨位', '已开吨位（实际）', '未开吨位', '品牌'])
-  })
-  it('本单据报多少不影响未开吨位(两列各自独立)', () => {
-    render({
-      row: { ...baseRow, purchaseOrderItemId: '301' },
+      row: { ...baseRow, purchaseOrderItemId: '301', ton: undefined },
       localTonForItem: 0,
     })
-    // 未开只按订货 − 已开: 40 − 30 = 10, 与本单据填了多少无关
+    const state = container.querySelector('.price-compare-ton-state')
+    expect(state?.textContent).toBe('未填吨位')
+    expect(container.querySelector('.price-compare-ton-issued')).toBeNull()
+    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
+    // 已开吨位列仍然照常显示(它有独立口径, 不依赖本单据报了多少)
+    expect(
+      container.querySelector('.price-compare-ton-figure')?.textContent,
+    ).toBe('30.000')
+  })
+  it('未开吨位随本单据报单量变化(基数就是报单吨位)', () => {
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 40,
+    })
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
     ).toContain('10')
-    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
+    act(() => root.unmount())
+    root = createRoot(container)
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 100,
+    })
+    expect(
+      container.querySelector('.price-compare-ton-issued')?.textContent,
+    ).toContain('70')
   })
   it('hover 明细图标显示订单明细 popover', async () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })

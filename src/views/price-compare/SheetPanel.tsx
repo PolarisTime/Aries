@@ -2467,7 +2467,14 @@ export function SheetPanel(props: Props) {
     ],
     [purchaseOrderTonnage.options, purchaseOrderTonnage.tonnageByItemId],
   )
-  const columnWidths = useSheetColumnWidths(tonnageRecordsForWidth)
+  const localTonByItemId = useMemo(
+    () => sumTonByPurchaseOrderItem(rows),
+    [rows],
+  )
+  const columnWidths = useSheetColumnWidths(
+    tonnageRecordsForWidth,
+    localTonByItemId,
+  )
 
   const base = {
     sheet,

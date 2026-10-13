@@ -43,10 +43,12 @@ function poRecord(
  */
 function Probe({
   records = [],
+  localTonByItemId = new Map<string, number>(),
 }: {
   records?: readonly PurchaseOrderTonnageRecord[]
+  localTonByItemId?: ReadonlyMap<string, number>
 }) {
-  const widths = useSheetColumnWidths(records)
+  const widths = useSheetColumnWidths(records, localTonByItemId)
   return createElement('output', null, JSON.stringify(widths))
 }
 
@@ -74,9 +76,12 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   const widthsNow = () =>
     JSON.parse(container.textContent ?? '{}') as Record<string, number>
 
-  const render = (records: readonly PurchaseOrderTonnageRecord[] = []) => {
+  const render = (
+    records: readonly PurchaseOrderTonnageRecord[] = [],
+    localTonByItemId: ReadonlyMap<string, number> = new Map(),
+  ) => {
     act(() => {
-      root.render(createElement(Probe, { records }))
+      root.render(createElement(Probe, { records, localTonByItemId }))
     })
     return widthsNow()
   }
@@ -130,7 +135,7 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
   })
 
-  it('取单据里最长的一条未开吨位文案定宽', () => {
+  it('取单据里最长的一条未开吨位文案定宽(报单 − 已开)', () => {
     const short = poRecord({ purchaseOrderItemId: '301', brand: '中天' })
     const long = poRecord({
       purchaseOrderItemId: '302',
@@ -139,9 +144,9 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
       issuedWeight: 12.5,
     })
     // 明细 302 未开 115.5; 千分位吨位(8,884.5)也要能被覆盖
-    const widths = render([short, long])
-    const parts = tonProgressTextParts(long)
-    expect(parts.primary).toBe('115.5')
+    const widths = render([short, long], new Map([['302', 120]]))
+    const parts = tonProgressTextParts(long, 120)
+    expect(parts.primary).toBe('107.5')
     expect(widths.unopenedTon).toBe(
       Math.max(
         SHEET_COLUMN_WIDTH.unopenedTon,
@@ -151,7 +156,7 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
       ),
     )
     expect(widths.unopenedTon).toBeGreaterThan(
-      requiredTonColumnWidth(tonProgressLineWidth('115.5', '中天')),
+      requiredTonColumnWidth(tonProgressLineWidth('107.5', '中天')),
     )
   })
 
