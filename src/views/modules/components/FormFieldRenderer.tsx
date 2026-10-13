@@ -12,7 +12,7 @@ import type {
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
-import { ModuleFormFieldControl } from './FormFieldControls'
+import { renderModuleFormFieldControl } from './FormFieldControls'
 import {
   buildAutoCompleteOptions,
   buildFormFieldRules,
@@ -99,16 +99,16 @@ export function FormFieldRenderer({
         documentLabel={field.label}
       />
     ) : (
-      <ModuleFormFieldControl
-        field={field}
-        fieldId={fieldId}
-        disabledValue={disabledValue}
-        placeholder={placeholder}
-        allowClear={allowClear}
-        formValues={formValues}
-        selectOptions={buildSelectOptions(resolvedOptions)}
-        autoCompleteOptions={buildAutoCompleteOptions(resolvedOptions)}
-      />
+      renderModuleFormFieldControl({
+        field,
+        fieldId,
+        disabledValue,
+        placeholder,
+        allowClear,
+        formValues,
+        selectOptions: buildSelectOptions(resolvedOptions),
+        autoCompleteOptions: buildAutoCompleteOptions(resolvedOptions),
+      })
     )
 
   return renderFormItem(control)

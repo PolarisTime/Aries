@@ -7,6 +7,7 @@ import {
   Select,
   Upload,
 } from 'antd'
+import type { ReactElement } from 'react'
 import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import {
   DISPLAY_DATE_FORMAT,
@@ -23,9 +24,12 @@ import {
  * FormFieldRenderer 的控件层：按字段类型渲染对应的 antd 控件。
  *
  * <p>抽出原因：原来 8 个 case 的 JSX 与选项解析、校验规则挤在一个函数里，
- * 控制流复杂度 29 (react-doctor/no-high-complexity-react-function)。
- * 每个控件只有 0~2 个分支，拆开后父组件只做「选项 + 分发」，也更容易单独核对
- * 每个控件的 props 是否与改造前一致（DOM/aria/类名必须逐字不变）。</p>
+ * 控制流复杂度 29 (react-doctor/no-high-complexity-react-function)。</p>
+ *
+ * <p><b>必须返回元素而不是渲染组件</b>：Form.Item 通过 cloneElement 把 `value`/`onChange`
+ * 注入到它的**直接子元素**上。若这些分支返回 `<XxxFieldControl/>` 这类自定义组件元素，
+ * 注入会落在中间组件上并被 props 解构丢掉，控件变成非受控 —— 用户选了下拉只看到标签，
+ * 表单里始终没有值，依赖该值的下游查询（按客户拉项目）永不触发且没有任何报错。</p>
  */
 
 interface BaseControlProps {
@@ -43,12 +47,12 @@ interface OptionsControlProps extends BaseControlProps {
   autoCompleteOptions: AutoCompleteOption[]
 }
 
-function NumberFieldControl({
+function numberFieldElement({
   field,
   fieldId,
   disabledValue,
   placeholder,
-}: BaseControlProps) {
+}: BaseControlProps): ReactElement {
   return (
     <InputNumber
       id={fieldId}
@@ -65,7 +69,7 @@ function NumberFieldControl({
   )
 }
 
-function SelectFieldControl({
+function selectFieldElement({
   field,
   fieldId,
   disabledValue,
@@ -73,7 +77,7 @@ function SelectFieldControl({
   allowClear,
   selectOptions,
   formValues,
-}: OptionsControlProps) {
+}: OptionsControlProps): ReactElement {
   return (
     <Select
       id={fieldId}
@@ -87,13 +91,13 @@ function SelectFieldControl({
   )
 }
 
-function MultiSelectFieldControl({
+function multiSelectFieldElement({
   fieldId,
   disabledValue,
   placeholder,
   allowClear,
   selectOptions,
-}: OptionsControlProps) {
+}: OptionsControlProps): ReactElement {
   return (
     <Select
       id={fieldId}
@@ -108,13 +112,13 @@ function MultiSelectFieldControl({
   )
 }
 
-function DateFieldControl({
+function dateFieldElement({
   field,
   fieldId,
   disabledValue,
   placeholder,
   allowClear,
-}: BaseControlProps) {
+}: BaseControlProps): ReactElement {
   return (
     <DatePicker
       id={fieldId}
@@ -133,13 +137,13 @@ function DateFieldControl({
   )
 }
 
-function TextareaFieldControl({
+function textareaFieldElement({
   field,
   fieldId,
   disabledValue,
   placeholder,
   allowClear,
-}: BaseControlProps) {
+}: BaseControlProps): ReactElement {
   return (
     <Input.TextArea
       id={fieldId}
@@ -154,7 +158,7 @@ function TextareaFieldControl({
   )
 }
 
-function UploadFieldControl({ disabledValue }: BaseControlProps) {
+function uploadFieldElement({ disabledValue }: BaseControlProps): ReactElement {
   return (
     <Upload
       accept="image/*,.pdf,application/pdf"
@@ -171,13 +175,13 @@ function UploadFieldControl({ disabledValue }: BaseControlProps) {
   )
 }
 
-function AutoCompleteFieldControl({
+function autoCompleteFieldElement({
   fieldId,
   disabledValue,
   placeholder,
   allowClear,
   autoCompleteOptions,
-}: OptionsControlProps) {
+}: OptionsControlProps): ReactElement {
   return (
     <AutoComplete
       id={fieldId}
@@ -190,13 +194,13 @@ function AutoCompleteFieldControl({
   )
 }
 
-function TextFieldControl({
+function textFieldElement({
   field,
   fieldId,
   disabledValue,
   placeholder,
   allowClear,
-}: BaseControlProps) {
+}: BaseControlProps): ReactElement {
   return (
     <Input
       id={fieldId}
@@ -209,24 +213,33 @@ function TextFieldControl({
   )
 }
 
-/** 按字段类型分发控件；未知类型回落到普通文本输入。 */
-export function ModuleFormFieldControl(props: OptionsControlProps) {
+/**
+ * 按字段类型分发控件；未知类型回落到普通文本输入。
+ *
+ * <p>必须以**函数调用**方式使用（见 FormFieldRenderer：`renderModuleFormFieldControl(props)`）。
+ * Form.Item 通过 cloneElement 向它的**直接子元素**注入 `value`/`onChange`；若这里返回自定义组件
+ * 元素，注入会落在中间组件上并被 props 解构丢掉，控件随即变成非受控——下拉只显示标签、
+ * 表单里永远没有值，依赖该值的下游查询（按客户拉项目）永不触发。</p>
+ */
+export function renderModuleFormFieldControl(
+  props: OptionsControlProps,
+): ReactElement {
   switch (props.field.type) {
     case 'number':
-      return <NumberFieldControl {...props} />
+      return numberFieldElement(props)
     case 'select':
-      return <SelectFieldControl {...props} />
+      return selectFieldElement(props)
     case 'multiSelect':
-      return <MultiSelectFieldControl {...props} />
+      return multiSelectFieldElement(props)
     case 'date':
-      return <DateFieldControl {...props} />
+      return dateFieldElement(props)
     case 'textarea':
-      return <TextareaFieldControl {...props} />
+      return textareaFieldElement(props)
     case 'upload':
-      return <UploadFieldControl {...props} />
+      return uploadFieldElement(props)
     case 'autoComplete':
-      return <AutoCompleteFieldControl {...props} />
+      return autoCompleteFieldElement(props)
     default:
-      return <TextFieldControl {...props} />
+      return textFieldElement(props)
   }
 }
