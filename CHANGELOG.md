@@ -1,3 +1,16 @@
+# [11.12.0](https://github.com/PolarisTime/Aries/compare/v11.11.0...v11.12.0) (2026-10-13)
+
+
+### Bug Fixes
+
+* **price-compare:** 未开吨位改按「锁定后的报单吨位 − 已开吨位」, 订货量退回参考位 ([289c1c4](https://github.com/PolarisTime/Aries/commit/289c1c4c74c5c66cb0132bd25dc1d64e2125ac33))
+
+
+### Features
+
+* **price-compare:** 吨位口径两列未关联时给出「未关联/已删除」短状态 ([524e298](https://github.com/PolarisTime/Aries/commit/524e2989b564deb924aa99ae8a9e53c5e2473585))
+* **sales-order:** 交付核定状态允许编辑报单日期 ([6b85cf5](https://github.com/PolarisTime/Aries/commit/6b85cf5425bff448fd9cd14ab1a08dfd5e7484df))
+
 # [11.11.0](https://github.com/PolarisTime/Aries/compare/v11.10.1...v11.11.0) (2026-10-13)
 
 
