@@ -8,11 +8,11 @@ import {
 } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { Button, Empty, Flex, Input, Select, Space, Table, Tooltip } from 'antd'
-import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { useHasPermission } from '@/hooks/usePermission'
 import type { UserAccountResponse } from '@/shared/schemas'
+import { formatDateTime } from '@/utils/formatters'
 
 interface Props {
   users: UserAccountResponse[]
@@ -39,9 +39,7 @@ interface Props {
 }
 
 function formatLastLogin(value: string | null | undefined): string {
-  if (!value) return '--'
-  const parsed = dayjs(value)
-  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm') : '--'
+  return formatDateTime(value, '--')
 }
 
 export function UserAccountTableCard({

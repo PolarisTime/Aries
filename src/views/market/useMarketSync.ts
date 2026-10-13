@@ -20,6 +20,7 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useAuthStore } from '@/stores/authStore'
 import { message } from '@/utils/antd-app'
+import { formatDate } from '@/utils/formatters'
 import { logger } from '@/utils/logger'
 import {
   BACKFILL_POLL_INTERVAL_MS,
@@ -239,7 +240,7 @@ export function useMarketSync() {
       const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
         i18next.t('marketSync.syncDone', {
-          date: result.articleDate,
+          date: formatDate(result.articleDate),
           periods: synced.join('/'),
           rows: result.rowCount,
           exists: result.created ? '' : i18next.t('marketSync.syncDoneExists'),
@@ -278,8 +279,8 @@ export function useMarketSync() {
       const result = await backfillSteelQuotes(backfillDays, { source, region })
       message.success(
         i18next.t('marketSync.backfillAccepted', {
-          from: result.from,
-          to: result.to,
+          from: formatDate(result.from),
+          to: formatDate(result.to),
         }),
       )
       queryClient.setQueryData<SteelQuoteBackfillStatus>(
@@ -313,7 +314,7 @@ export function useMarketSync() {
       const synced = result.periods?.length ? result.periods : [result.period]
       message.success(
         i18next.t('marketSync.syncedRows', {
-          date: result.articleDate,
+          date: formatDate(result.articleDate),
           periods: synced.join('/'),
           rows: result.rowCount,
         }),
@@ -375,7 +376,7 @@ export function useMarketSync() {
       ]
       const lines = all.map((row) =>
         [
-          row.quoteDate,
+          formatDate(row.quoteDate),
           row.period,
           row.factory,
           row.breed,
@@ -394,7 +395,7 @@ export function useMarketSync() {
       const link = document.createElement('a')
       link.href = url
       link.download = i18next.t('marketSync.exportFileName', {
-        date: selected.date,
+        date: formatDate(selected.date),
         period: selected.period,
       })
       link.click()

@@ -16,6 +16,7 @@ import {
 } from 'antd'
 import type { Dispatch, Key, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '@/utils/formatters'
 import { fmtMoney, type StatementItem } from './receipt-reconcile-model'
 import { StatementStatusTag } from './receipt-reconcile-support'
 
@@ -70,7 +71,7 @@ export function ReceiptStatementSection({
       width: 130,
       render: (_, record) => (
         <Typography.Text style={{ fontSize: token.fontSizeSM }}>
-          {record.periodStart.slice(5)} ~ {record.periodEnd.slice(5)}
+          {formatDate(record.periodStart)} ~ {formatDate(record.periodEnd)}
         </Typography.Text>
       ),
     },

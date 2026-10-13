@@ -10,6 +10,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/authStore'
+import { formatDate } from '@/utils/formatters'
 import { MarketSyncView } from '@/views/market/MarketSyncView'
 
 const api = vi.hoisted(() => ({
@@ -135,19 +136,17 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     })
   }
 
-  /** 矩阵单元格: 按「日期 + 时段」定位, 不依赖行列下标。 */
+  /** 矩阵单元格: 按「日期 + 时段」定位, 不依赖行列下标(可访问名用中文日期口径)。 */
   const matrixCell = (
     scope: HTMLElement,
     date: string,
     period: string,
   ): HTMLElement => {
+    const label = `${formatDate(date)} ${period}`
     const found = Array.from(
       scope.querySelectorAll<HTMLElement>('.market-sync-cell'),
-    ).find(
-      (el) =>
-        el.getAttribute('aria-label')?.includes(`${date} ${period}`) ?? false,
-    )
-    if (!found) throw new Error(`未找到矩阵单元格 ${date} ${period}`)
+    ).find((el) => el.getAttribute('aria-label')?.includes(label) ?? false)
+    if (!found) throw new Error(`未找到矩阵单元格 ${label}`)
     return found
   }
 
@@ -296,8 +295,8 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     expect(text).toContain('跳过6天')
     // 跳过日期明细可见，且不再计入失败
     expect(text).toContain('跳过 6 天')
-    expect(text).toContain('2026-09-25')
-    expect(text).toContain('2026-10-07')
+    expect(text).toContain('2026年09月25日')
+    expect(text).toContain('2026年10月07日')
     expect(text).not.toContain('补数失败')
   })
 
@@ -553,7 +552,9 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     // 休市格对读屏只提供 sr-only 文案, 没有 aria-label 按钮语义, 因此按 title 定位。
     const off = Array.from(
       container.querySelectorAll<HTMLElement>('.market-sync-cell.is-off'),
-    ).find((el) => (el.getAttribute('title') ?? '').includes(withoutData))
+    ).find((el) =>
+      (el.getAttribute('title') ?? '').includes(formatDate(withoutData)),
+    )
     expect(off).toBeTruthy()
     expect(off?.tagName).toBe('SPAN')
     expect(off?.textContent).toContain('休')
@@ -588,13 +589,15 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
     // 该工作日是休市文本(不可点), 不是「缺」
     const off = Array.from(
       container.querySelectorAll<HTMLElement>('.market-sync-cell.is-off'),
-    ).find((el) => (el.getAttribute('title') ?? '').includes(holidayDate))
+    ).find((el) =>
+      (el.getAttribute('title') ?? '').includes(formatDate(holidayDate)),
+    )
     expect(off).toBeTruthy()
     expect(off?.tagName).toBe('SPAN')
     expect(off?.querySelector('.aries-sr-only')?.textContent).toContain('休市')
     expect(
       container.querySelector(
-        `button.market-sync-cell.is-missing[aria-label*="${holidayDate}"]`,
+        `button.market-sync-cell.is-missing[aria-label*="${formatDate(holidayDate)}"]`,
       ),
     ).toBeNull()
 

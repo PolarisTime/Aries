@@ -28,6 +28,22 @@ describe('antd 中文语言包', () => {
     )
   })
 
+  it('日期选择器默认展示中文口径(月/日补零), 并兼容 ISO 手输', () => {
+    // rc-picker 的 locale 兜底是 ISO; 这里锁住「未传 format 也显示 X年X月X日」这一契约。
+    expect(appAntdLocale.DatePicker?.lang?.fieldDateFormat).toBe(
+      'YYYY年MM月DD日',
+    )
+    expect(appAntdLocale.DatePicker?.lang?.fieldDateTimeFormat).toBe(
+      'YYYY年MM月DD日 HH:mm:ss',
+    )
+    expect(appAntdLocale.DatePicker?.lang?.fieldMonthFormat).toBe('YYYY年MM月')
+    expect(appAntdLocale.DatePicker?.lang?.fieldYearFormat).toBe('YYYY年')
+    // 英文语言包同样遵循系统的中文日期展示口径(与表格 formatDate 一致)。
+    expect(getAntdLocale('en-US').DatePicker?.lang?.fieldDateFormat).toBe(
+      'YYYY年MM月DD日',
+    )
+  })
+
   it('英文语言返回官方 en_US(不做中文定制)', () => {
     expect(getAntdLocale('en-US').Table?.emptyText).toBe('No data')
     expect(getAntdLocale('en').Tour?.Next).toBe('Next')

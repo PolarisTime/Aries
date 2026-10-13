@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { PricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
 import type { ProjectPriceDateBasis } from '@/api/master/project-options'
+import { formatDate } from '@/utils/formatters'
 import {
   PRICE_BASIS_LABEL_KEYS,
   translatePricePeriod,
@@ -68,12 +69,12 @@ export function PricingQuoteResolutionSummary({
           {
             key: 'targetDate',
             label: t('modules.pages.salesOrder.netPriceTargetDate'),
-            children: resolution.targetDate ?? '—',
+            children: formatDate(resolution.targetDate),
           },
           {
             key: 'quoteDate',
             label: t('modules.pages.salesOrder.netPriceActualDate'),
-            children: resolution.quoteDate ?? '—',
+            children: formatDate(resolution.quoteDate),
           },
           {
             key: 'period',
@@ -117,7 +118,7 @@ export function PricingQuoteResolutionSummary({
             suggestedDate ? (
               <Button size="small" onClick={onAdoptSuggestedDate}>
                 {t('modules.pages.salesOrder.netPriceAdoptSuggestedDate', {
-                  date: suggestedDate,
+                  date: formatDate(suggestedDate),
                 })}
               </Button>
             ) : undefined

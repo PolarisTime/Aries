@@ -14,6 +14,7 @@ import {
   Upload,
 } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import {
   BANK_ACCOUNTS,
   BIZ_TYPES,
@@ -131,7 +132,7 @@ export function ReceiptBasicInfoFields() {
           label={t('receiptReconcile.receiptDate')}
           rules={[{ required: true }]}
         >
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker style={{ width: '100%' }} format={DATE_PICKER_FORMATS} />
         </Form.Item>
       </Col>
       <Col span={8}>

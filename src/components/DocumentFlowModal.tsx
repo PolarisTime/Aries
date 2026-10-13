@@ -11,6 +11,7 @@ import {
 } from '@/components/document-flow/flow-layout'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
+import { formatDate } from '@/utils/formatters'
 import './document-flow/document-flow.css'
 
 interface Props {
@@ -272,7 +273,9 @@ export function DocumentFlowModal({
                             {item.node.status}
                           </Tag>
                         ) : null}
-                        {item.node.date ? <span>{item.node.date}</span> : null}
+                        {item.node.date ? (
+                          <span>{formatDate(item.node.date)}</span>
+                        ) : null}
                       </span>
                       {amountText || weightText ? (
                         <span className="document-flow-node-metrics">

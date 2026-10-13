@@ -10,6 +10,7 @@ import {
 } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { SteelQuoteBackfillStatus } from '@/api/market/steel-quotes'
+import { formatDate } from '@/utils/formatters'
 import { type CalendarMap, PERIODS } from './market-sync-model'
 
 const { Text } = Typography
@@ -152,8 +153,8 @@ export function MarketSyncNotices({
           showIcon
           type="info"
           title={t('marketSync.backfilling', {
-            from: backfillStatus.from,
-            to: backfillStatus.to,
+            from: formatDate(backfillStatus.from),
+            to: formatDate(backfillStatus.to),
           })}
           description={
             backfillTotalDays > 0 ? (
@@ -182,8 +183,8 @@ export function MarketSyncNotices({
           showIcon
           type={backfillStatus.failedDays > 0 ? 'warning' : 'success'}
           title={t('marketSync.backfillDone', {
-            from: backfillStatus.from,
-            to: backfillStatus.to,
+            from: formatDate(backfillStatus.from),
+            to: formatDate(backfillStatus.to),
             synced: backfillStatus.syncedDays,
             skipped: backfillStatus.skippedDays ?? 0,
             failed: backfillStatus.failedDays,
@@ -204,7 +205,7 @@ export function MarketSyncNotices({
             <div className="market-sync-tag-list">
               {backfillStatus.failures.map((failure) => (
                 <Tooltip key={failure.date} title={failure.message}>
-                  <Tag color="red">{failure.date}</Tag>
+                  <Tag color="red">{formatDate(failure.date)}</Tag>
                 </Tooltip>
               ))}
             </div>
@@ -224,7 +225,7 @@ export function MarketSyncNotices({
             <div className="market-sync-tag-list">
               {backfillStatus.skippedDates.map((date) => (
                 <Tooltip key={date} title={t('marketSync.backfillSkippedHint')}>
-                  <Tag>{date}</Tag>
+                  <Tag>{formatDate(date)}</Tag>
                 </Tooltip>
               ))}
             </div>

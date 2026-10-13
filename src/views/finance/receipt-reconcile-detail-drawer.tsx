@@ -8,6 +8,7 @@ import {
   theme,
 } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '@/utils/formatters'
 import {
   fmtMoney,
   type StatementItem,
@@ -48,12 +49,12 @@ export function ReceiptDetailDrawer({
               {
                 key: 'period',
                 label: t('receiptReconcile.period'),
-                children: `${statement.periodStart} ~ ${statement.periodEnd}`,
+                children: `${formatDate(statement.periodStart)} ~ ${formatDate(statement.periodEnd)}`,
               },
               {
                 key: 'due',
                 label: t('receiptReconcile.dueDate'),
-                children: statement.dueDate,
+                children: formatDate(statement.dueDate),
               },
               {
                 key: 'total',

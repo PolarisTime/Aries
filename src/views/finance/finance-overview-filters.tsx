@@ -8,7 +8,7 @@ import { Button, DatePicker, Input, Segmented, Select, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import {
   buildDirectionOptions,
   buildPayableCounterpartyOptions,
@@ -117,7 +117,7 @@ export function FinanceOverviewFilters({
             aria-label={t('financeDetail.dueDate')}
             value={dayjs(state.asOfDate)}
             allowClear={false}
-            format={DISPLAY_DATE_FORMAT}
+            format={DATE_PICKER_FORMATS}
             onChange={(value) => {
               if (value) {
                 dispatch({

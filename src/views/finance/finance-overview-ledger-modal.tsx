@@ -5,6 +5,7 @@ import { getCashLedger } from '@/api/finance/cash-ledger'
 import type { FinanceBalance } from '@/api/finance/finance-overview'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { formatDate } from '@/utils/formatters'
 import {
   buildCounterpartyLedgerQuery,
   COUNTERPARTY_LEDGER_EMPTY_DESCRIPTION,
@@ -89,6 +90,7 @@ export function FinanceCounterpartyLedgerModal({
               title: t('receiptReconcile.date'),
               dataIndex: 'businessDate',
               width: 110,
+              render: (value: string) => formatDate(value),
             },
             {
               title: t('receiptReconcile.flowType'),

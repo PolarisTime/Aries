@@ -1521,6 +1521,11 @@ export const zhCN = {
         allowedBrands: '允许品牌',
         allowedMaterials: '允许材质',
         allowedSpecPlaceholder: '不选表示不限制',
+        /** 编辑弹层内的区块标题(按 antd 亲密性原则分组, 见 docs/spec/proximity) */
+        sectionBasic: '基本信息',
+        sectionPricing: '取价规则',
+        sectionScope: '范围与校验',
+        sectionOther: '其他',
         allowedSpecHint: '销售订单导入采购订单明细时按此校验并预警',
         allowedSpecUnlimited: '不限制',
         scopeEnforcement: '处理方式',
@@ -2562,7 +2567,7 @@ export const zhCN = {
       deleteCurrentBatch: '删除当前批次',
     },
     sheet: {
-      dateFormat: 'YYYY年M月D日',
+      dateFormat: 'YYYY年MM月DD日',
       dragRow: '拖动调整行顺序',
       dragBrand: '拖动调整品牌列顺序',
       a11y: {

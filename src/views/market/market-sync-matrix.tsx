@@ -1,5 +1,6 @@
 import { Card, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '@/utils/formatters'
 import {
   type CalendarMap,
   isTradingDay,
@@ -77,15 +78,18 @@ export function MarketSyncMatrix({
   }
 
   const labelOf = (date: string, period: string, state: CellState) => {
-    if (state === 'off') return t('marketSync.matrixCellOff', { date, period })
+    // 读屏文案与 Tooltip 用完整中文日期(月/日补零); 表头格子仍用紧凑的 MM-DD 以免撑爆矩阵列宽。
+    const shownDate = formatDate(date)
+    if (state === 'off')
+      return t('marketSync.matrixCellOff', { date: shownDate, period })
     if (state === 'synced') {
       return t('marketSync.matrixCellSynced', {
-        date,
+        date: shownDate,
         period,
         rows: calendars[date]?.rows[period] ?? 0,
       })
     }
-    return t('marketSync.matrixCellMissing', { date, period })
+    return t('marketSync.matrixCellMissing', { date: shownDate, period })
   }
 
   return (
@@ -121,7 +125,7 @@ export function MarketSyncMatrix({
                       .filter(Boolean)
                       .join(' ')}
                   >
-                    <Tooltip title={date}>
+                    <Tooltip title={formatDate(date)}>
                       <span className="market-sync-grid-date">
                         {date.slice(5)}
                       </span>

@@ -21,6 +21,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SteelQuote } from '@/api/market/steel-quotes'
+import { formatDate } from '@/utils/formatters'
 import {
   BREEDS,
   type Filters,
@@ -145,7 +146,9 @@ export function MarketSyncDetailDrawer({
             type="secondary"
             style={{ fontSize: 'var(--font-size-xs)', fontWeight: 400 }}
           >
-            {selected.date || t('marketSync.notSelected')}
+            {selected.date
+              ? formatDate(selected.date)
+              : t('marketSync.notSelected')}
             {selected.period ? ` · ${selected.period}` : ''}
           </Text>
         </Space>

@@ -217,7 +217,7 @@ describe('SalesOrderNetPriceFiller', () => {
     period: '下午',
     quoteAvailable: true,
     suggestedDate: null,
-    explanation: '送货日期 2026-09-22 为交易日, 直接取当日行情',
+    explanation: '送货日期 2026年09月22日 为交易日, 直接取当日行情',
     dateFallback: null,
     periodFallback: null,
     availablePeriods: ['上午', '下午'],
@@ -434,7 +434,7 @@ describe('SalesOrderNetPriceFiller', () => {
         period: '中午',
         availablePeriods: ['上午', '中午'],
         explanation:
-          '报单日期 2026-10-09 为交易日, 取之后第 2 个交易日 2026-10-13',
+          '报单日期 2026年10月09日 为交易日, 取之后第 2 个交易日 2026年10月13日',
       }),
     )
     const observed = createObserved()
@@ -443,13 +443,13 @@ describe('SalesOrderNetPriceFiller', () => {
 
     const modal = document.querySelector('.ant-modal')
     expect(modal?.textContent).toContain('取价基准日')
-    expect(modal?.textContent).toContain('2026-10-09')
+    expect(modal?.textContent).toContain('2026年10月09日')
     expect(modal?.textContent).toContain('实际取价日')
-    expect(modal?.textContent).toContain('2026-10-13')
+    expect(modal?.textContent).toContain('2026年10月13日')
     expect(modal?.textContent).toContain('实际取价时段')
     expect(modal?.textContent).toContain('中午')
     expect(modal?.textContent).toContain(
-      '报单日期 2026-10-09 为交易日, 取之后第 2 个交易日 2026-10-13',
+      '报单日期 2026年10月09日 为交易日, 取之后第 2 个交易日 2026年10月13日',
     )
   })
 
@@ -464,7 +464,7 @@ describe('SalesOrderNetPriceFiller', () => {
           from: '2026-09-21',
           to: '2026-09-18',
           reason:
-            '送货日期 2026-09-21 无行情(休市或未发布), 按最近的前一个交易日结算',
+            '送货日期 2026年09月21日 无行情(休市或未发布), 按最近的前一个交易日结算',
         },
       }),
     )
@@ -475,7 +475,7 @@ describe('SalesOrderNetPriceFiller', () => {
     const modal = document.querySelector('.ant-modal')
     expect(modal?.textContent).toContain('取价日期已回退')
     expect(modal?.textContent).toContain(
-      '送货日期 2026-09-21 无行情(休市或未发布), 按最近的前一个交易日结算',
+      '送货日期 2026年09月21日 无行情(休市或未发布), 按最近的前一个交易日结算',
     )
   })
 
@@ -607,7 +607,7 @@ describe('SalesOrderNetPriceFiller', () => {
               quoteDate: '2026-10-09',
               period: '中午',
               availablePeriods: ['上午', '中午'],
-              explanation: '手工指定取价日期 2026-10-09',
+              explanation: '手工指定取价日期 2026年10月09日',
             }),
           )
         }
@@ -622,7 +622,7 @@ describe('SalesOrderNetPriceFiller', () => {
             suggestedDate: '2026-10-09',
             availablePeriods: [],
             explanation:
-              '手工指定取价日期 2026-10-11 当日无行情, 建议改为 2026-10-09',
+              '手工指定取价日期 2026年10月11日 当日无行情, 建议改为 2026年10月09日',
           }),
         )
       },

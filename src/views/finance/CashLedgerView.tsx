@@ -46,7 +46,7 @@ import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { message } from '@/utils/antd-app'
-import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import {
   type CashLedgerAction,
   type CashLedgerState,
@@ -329,7 +329,7 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
                 <DatePicker.RangePicker
                   aria-label={t('financeDetail.colBusinessDate')}
                   value={dateRangeValue}
-                  format={DISPLAY_DATE_FORMAT}
+                  format={DATE_PICKER_FORMATS}
                   onChange={(dates) => {
                     model.dispatch({
                       type: 'date-range-changed',

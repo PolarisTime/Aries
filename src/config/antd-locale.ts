@@ -1,8 +1,64 @@
 import type { Locale } from 'antd/es/locale'
 import enUS from 'antd/locale/en_US'
 import zhCN from 'antd/locale/zh_CN'
+import {
+  DISPLAY_DATE_FORMAT,
+  DISPLAY_DATE_TIME_FORMAT,
+} from '@/utils/formatters'
 
 const typeTemplate = '${label}不是一个有效的${type}'
+
+/**
+ * 日期输入框（DatePicker / RangePicker / showTime）的默认展示格式。
+ *
+ * <p>rc-picker 在 locale 未给 {@code fieldDateFormat} 时会回落到 ISO `YYYY-MM-DD`，
+ * 于是所有不显式传 `format` 的日期选择器都会显示成 ISO；这里统一改写为
+ * {@link DISPLAY_DATE_FORMAT}（`X年X月X日`，月/日补零），避免逐处传 `format` 漂移。</p>
+ */
+const datePickerLang = {
+  fieldDateFormat: DISPLAY_DATE_FORMAT,
+  fieldDateTimeFormat: DISPLAY_DATE_TIME_FORMAT,
+  /** 月份/年份面板的输入框同样走中文口径（默认 `YYYY-MM` / `YYYY`）。 */
+  fieldMonthFormat: 'YYYY年MM月',
+  fieldYearFormat: 'YYYY年',
+} as const
+
+/**
+ * 给任意 antd 语言包补齐统一的日期输入框展示格式（`X年X月X日`，月/日补零）。
+ *
+ * <p>不做这个改写时，未显式传 `format` 的日期选择器会回落到 rc-picker 的 ISO 默认值，
+ * 界面里就会一半中文日期、一半 ISO —— 表格走 {@code formatDate}，选择器走 locale。</p>
+ *
+ * <p><b>必须同时补 DatePicker 与 Calendar 两段</b>：antd 的单日期 DatePicker 读
+ * {@code useLocale('DatePicker')}，而 **RangePicker 读的是 {@code useLocale('Calendar')}**
+ * （见 antd 的 generateRangePicker），只补前者会让区间选择器继续显示 ISO。</p>
+ */
+function withDisplayDatePicker(locale: Locale): Locale {
+  const datePicker = locale.DatePicker
+  const calendar = locale.Calendar
+  return {
+    ...locale,
+    ...(datePicker
+      ? {
+          DatePicker: {
+            ...datePicker,
+            lang: { ...datePicker.lang, ...datePickerLang },
+          },
+        }
+      : {}),
+    ...(calendar
+      ? {
+          Calendar: {
+            ...calendar,
+            lang: { ...calendar.lang, ...datePickerLang },
+          },
+        }
+      : {}),
+  }
+}
+
+/** 英文语言包同样遵循系统的中文日期展示口径（与表格 formatDate 保持一致）。 */
+const enUsLocale: Locale = withDisplayDatePicker(enUS)
 
 /**
  * 中文语言包。
@@ -12,7 +68,7 @@ const typeTemplate = '${label}不是一个有效的${type}'
  * "Select date"、首次引导 Tour 的按钮显示 "Next")。当前会受影响的段落包括
  * Calendar / Carousel / DatePicker / Pagination / TimePicker / Tour / Transfer。</p>
  */
-export const appAntdLocale: Locale = {
+export const appAntdLocale: Locale = withDisplayDatePicker({
   ...zhCN,
   locale: 'zh-cn',
   global: {
@@ -141,9 +197,11 @@ export const appAntdLocale: Locale = {
     singleColor: '单色',
     gradientColor: '渐变色',
   },
-}
+})
 
-/** 依据 i18n 语言返回 antd 组件语言包（中文用定制版，其余用英文默认）。 */
+/** 依据 i18n 语言返回 antd 组件语言包（中文用定制版，其余用英文默认 + 统一日期展示口径）。 */
 export function getAntdLocale(language: string | undefined): Locale {
-  return (language ?? '').toLowerCase().startsWith('en') ? enUS : appAntdLocale
+  return (language ?? '').toLowerCase().startsWith('en')
+    ? enUsLocale
+    : appAntdLocale
 }

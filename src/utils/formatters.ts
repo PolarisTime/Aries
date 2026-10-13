@@ -5,6 +5,18 @@ export const DISPLAY_DATE_FORMAT = 'YYYY年MM月DD日'
 export const DISPLAY_DATE_TIME_FORMAT = 'YYYY年MM月DD日 HH:mm:ss'
 
 /**
+ * 日期（时间）选择器的格式列表：**第一个用于展示**，其余用于解析。
+ *
+ * <p>展示统一走中文口径；同时保留 ISO 作为手输兼容格式 —— rc-picker 严格按列表里的格式解析，
+ * 只给中文格式会让沿用 ISO 习惯直接键入的用户「输了但没生效」。</p>
+ */
+export const DATE_PICKER_FORMATS = [DISPLAY_DATE_FORMAT, 'YYYY-MM-DD']
+export const DATE_TIME_PICKER_FORMATS = [
+  DISPLAY_DATE_TIME_FORMAT,
+  'YYYY-MM-DD HH:mm:ss',
+]
+
+/**
  * 格式化整数
  */
 export function formatInteger(value: number): string {

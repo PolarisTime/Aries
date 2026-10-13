@@ -3,7 +3,7 @@ import { Button, DatePicker, Input, Select, Tooltip, Typography } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 
 export interface SelectOption {
   value: string
@@ -176,7 +176,7 @@ export function InventoryTransactionsFilters({
           <DatePicker.RangePicker
             aria-label={t('inventory.filters.occurredAt')}
             value={dateRangeValue}
-            format={DISPLAY_DATE_FORMAT}
+            format={DATE_PICKER_FORMATS}
             onChange={(dates) =>
               onDateRangeChange(
                 dates?.[0]?.format('YYYY-MM-DD'),

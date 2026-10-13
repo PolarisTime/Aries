@@ -9,6 +9,7 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_STATIC } from '@/constants/query-policies'
 import { message } from '@/utils/antd-app'
+import { formatDate } from '@/utils/formatters'
 import { logger } from '@/utils/logger'
 import type { PriceData, PriceSheet } from './types'
 
@@ -194,7 +195,7 @@ export function usePriceComparePricing({
         } else {
           message.success(
             t('priceCompare.pricing.refreshedWithRef', {
-              ref: `${activeRefDate}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''}`,
+              ref: `${formatDate(activeRefDate)}${resolvedRefPeriod ? ` ${resolvedRefPeriod}` : ''}`,
             }),
           )
         }

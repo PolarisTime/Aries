@@ -21,6 +21,7 @@ import {
   updateSalesContract,
 } from '@/api/sales/sales-contracts'
 import { message } from '@/utils/antd-app'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 import {
@@ -212,7 +213,10 @@ export function SalesContractEditorOverlay({
                 },
               ]}
             >
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker
+                style={{ width: '100%' }}
+                format={DATE_PICKER_FORMATS}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -220,7 +224,10 @@ export function SalesContractEditorOverlay({
               name="startDate"
               label={t('modules.salesContract.startDate')}
             >
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker
+                style={{ width: '100%' }}
+                format={DATE_PICKER_FORMATS}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -246,6 +253,7 @@ export function SalesContractEditorOverlay({
             >
               <DatePicker
                 style={{ width: '100%' }}
+                format={DATE_PICKER_FORMATS}
                 disabledDate={(current) => {
                   const start = dayjs(form.getFieldValue('startDate') as string)
                   return (

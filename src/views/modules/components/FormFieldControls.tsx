@@ -10,8 +10,8 @@ import {
 import type { ReactElement } from 'react'
 import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import {
-  DISPLAY_DATE_FORMAT,
-  DISPLAY_DATE_TIME_FORMAT,
+  DATE_PICKER_FORMATS,
+  DATE_TIME_PICKER_FORMATS,
 } from '@/utils/formatters'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
@@ -128,8 +128,8 @@ function dateFieldElement({
       format={
         field.dateFormat ||
         (field.showTime === true
-          ? DISPLAY_DATE_TIME_FORMAT
-          : DISPLAY_DATE_FORMAT)
+          ? DATE_TIME_PICKER_FORMATS
+          : DATE_PICKER_FORMATS)
       }
       showTime={field.showTime === true ? { format: 'HH:mm:ss' } : false}
       className="w-full"

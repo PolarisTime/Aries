@@ -6,7 +6,7 @@ import type { ProjectOption } from '@/api/master/project-options'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleFilterDefinition } from '@/types/module-page'
 import { buildFormControlId } from '@/utils/form-control-id'
-import { DISPLAY_DATE_FORMAT } from '@/utils/formatters'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import type { ModuleDateRangePreset } from '@/views/modules/components/module-date-range'
 import { resolveFilterOptions } from '@/views/modules/components/module-filter-options'
@@ -73,7 +73,7 @@ export function ModuleFilterField({
         }}
         aria-label={field.label}
         value={rangeValue}
-        format={DISPLAY_DATE_FORMAT}
+        format={DATE_PICKER_FORMATS}
         presets={datePresets.map(({ label, value }) => ({ label, value }))}
         style={{ width: '100%' }}
         onChange={(dates) => {

@@ -12,6 +12,7 @@ import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { resolveQuoteRegions } from '@/constants/quote-regions'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import { PERIODS } from './market-sync-model'
 
 const { Text } = Typography
@@ -135,7 +136,7 @@ export function MarketSyncToolbar({
           size="small"
           style={{ width: 130 }}
           value={singleDate ? dayjs(singleDate) : null}
-          format="YYYY-MM-DD"
+          format={DATE_PICKER_FORMATS}
           allowClear={false}
           onChange={(value) =>
             value && onSingleDateChange(value.format('YYYY-MM-DD'))

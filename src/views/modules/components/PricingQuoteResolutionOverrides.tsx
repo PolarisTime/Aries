@@ -21,6 +21,7 @@ import {
   normalizePricePeriodFixed,
   normalizePricePeriodPolicy,
 } from '@/api/master/project-options'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import {
   PRICE_BASIS_LABEL_KEYS,
   PRICE_BASIS_OPTIONS,
@@ -184,6 +185,7 @@ export function PricingQuoteResolutionOverrides({
               <DatePicker
                 aria-label={t('modules.pages.salesOrder.netPriceManualDate')}
                 style={{ width: '100%' }}
+                format={DATE_PICKER_FORMATS}
                 value={effective.quoteDate ? dayjs(effective.quoteDate) : null}
                 onChange={(value) =>
                   onChange({

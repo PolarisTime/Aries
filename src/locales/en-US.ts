@@ -1559,6 +1559,10 @@ export const enUS = {
         allowedBrands: 'Allowed brands',
         allowedMaterials: 'Allowed materials',
         allowedSpecPlaceholder: 'Leave empty for no restriction',
+        sectionBasic: 'Basic information',
+        sectionPricing: 'Pricing rules',
+        sectionScope: 'Scope & validation',
+        sectionOther: 'Other',
         allowedSpecHint:
           'Checked when sales orders import PO items, mismatches raise a warning',
         allowedSpecUnlimited: 'No restriction',
@@ -2645,7 +2649,7 @@ export const enUS = {
       deleteCurrentBatch: 'Delete current batch',
     },
     sheet: {
-      dateFormat: 'YYYY-MM-DD',
+      dateFormat: 'YYYY年MM月DD日',
       dragRow: 'Drag to reorder rows',
       dragBrand: 'Drag to reorder brand columns',
       a11y: {

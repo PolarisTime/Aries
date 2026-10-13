@@ -26,6 +26,7 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { message } from '@/utils/antd-app'
+import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import { SalesReturnSourceImportActionTable } from './SalesReturnSourceImportActionTable'
 import {
   buildDefaultSelection,
@@ -259,6 +260,7 @@ export function SalesReturnSourceImportAction({ refreshModuleQueries }: Props) {
               aria-label={t(
                 'modules.pages.salesReturn.sourceImport.returnDateLabel',
               )}
+              format={DATE_PICKER_FORMATS}
               value={returnDate}
               onChange={(value) => setReturnDate(value ?? dayjs())}
             />
