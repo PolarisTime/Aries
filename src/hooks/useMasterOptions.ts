@@ -36,6 +36,7 @@ import {
   fetchProjectOptionsFor,
   normalizeMasterOptionRequirements,
 } from '@/hooks/master-options-utils'
+import { readMasterOptionRequirements } from '@/module-system/core/master-option-requirement-tag'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -99,6 +100,15 @@ export function resolveMasterOptionRequirements(
 
     const options = definition.options
     if (typeof options !== 'function') {
+      continue
+    }
+
+    // 标记优先: 打包分块会复制函数对象, 只靠引用相等会静默失效(下拉为空且无任何报错)。
+    const tagged = readMasterOptionRequirements(options)
+    if (tagged) {
+      for (const key of tagged) {
+        requirements[key] = true
+      }
       continue
     }
 

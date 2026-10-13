@@ -3,20 +3,46 @@ import type { MaterialGradeOption } from '@/api/master/material-grades'
 import type { ProjectOption } from '@/api/master/project-options'
 import { createOptionList } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { tagMasterOptionRequirements } from '@/module-system/core/master-option-requirement-tag'
+import {
+  getCarrierOptions as rawCarrierOptions,
+  getCarrierVehiclePlateOptions as rawCarrierVehiclePlateOptions,
+} from '@/queries/master/carrier-options'
+import { getCustomerOptions as rawCustomerOptions } from '@/queries/master/customer-options'
+import { getSupplierOptions as rawSupplierOptions } from '@/queries/master/supplier-options'
+import { getWarehouseOptions as rawWarehouseOptions } from '@/queries/master/warehouse-options'
 import { getCachedQueryData } from '@/queries/query-cached-options'
+import { getSettlementCompanyOptions as rawSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModuleRecordInput } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-export {
-  getCarrierOptions,
-  getCarrierVehiclePlateOptions,
-} from '@/queries/master/carrier-options'
-export { getCustomerOptions } from '@/queries/master/customer-options'
-export { getSupplierOptions } from '@/queries/master/supplier-options'
-export { getWarehouseOptions } from '@/queries/master/warehouse-options'
-export { getSettlementCompanyOptions } from '@/queries/system/company-settings'
+// 每个解析器都带上「需要哪些主数据」的打包安全标记，避免只靠函数引用相等判定（见标记模块注释）。
+export const getCarrierOptions = tagMasterOptionRequirements(
+  rawCarrierOptions,
+  ['carriers'],
+)
+export const getCarrierVehiclePlateOptions = tagMasterOptionRequirements(
+  rawCarrierVehiclePlateOptions,
+  ['carriers'],
+)
+export const getCustomerOptions = tagMasterOptionRequirements(
+  rawCustomerOptions,
+  ['customers'],
+)
+export const getSupplierOptions = tagMasterOptionRequirements(
+  rawSupplierOptions,
+  ['suppliers'],
+)
+export const getWarehouseOptions = tagMasterOptionRequirements(
+  rawWarehouseOptions,
+  ['warehouses'],
+)
+export const getSettlementCompanyOptions = tagMasterOptionRequirements(
+  rawSettlementCompanyOptions,
+  ['settlementCompanies'],
+)
 
 const materialCategoryFallbackOptions: MaterialCategoryOption[] = [
   '螺纹钢',
@@ -45,12 +71,17 @@ function optionalId(value: unknown, field: string): EntityId | undefined {
   }
 }
 
-export function materialCategoryOptions(): MaterialCategoryOption[] {
+function rawMaterialCategoryOptions(): MaterialCategoryOption[] {
   const options = cachedOptions<MaterialCategoryOption>(
     QUERY_KEYS.masterOptions.materialCategories,
   )
   return options.length ? options : materialCategoryFallbackOptions
 }
+
+export const materialCategoryOptions = tagMasterOptionRequirements(
+  rawMaterialCategoryOptions,
+  ['materialCategories'],
+)
 
 export const getMaterialCategoryOptions = materialCategoryOptions
 
@@ -66,14 +97,19 @@ export function isPurchaseWeighRequiredCategory(category: unknown): boolean {
   )
 }
 
-export function materialGradeOptions(): MaterialGradeOption[] {
+function rawMaterialGradeOptions(): MaterialGradeOption[] {
   const options = cachedOptions<MaterialGradeOption>(
     QUERY_KEYS.masterOptions.materialGrades,
   )
   return options.length ? options : materialGradeFallbackOptions
 }
 
-export function getCustomerProjectOptions(
+export const materialGradeOptions = tagMasterOptionRequirements(
+  rawMaterialGradeOptions,
+  ['materialGrades'],
+)
+
+function rawCustomerProjectOptions(
   form?: ModuleRecordInput,
   loadedOptions?: readonly ProjectOption[],
 ): ProjectOption[] {
@@ -92,6 +128,11 @@ export function getCustomerProjectOptions(
     cachedOptions<ProjectOption>(QUERY_KEYS.masterOptions.project(customerId))
   return options.filter((option) => option.customerId === customerId)
 }
+
+export const getCustomerProjectOptions = tagMasterOptionRequirements(
+  rawCustomerProjectOptions,
+  ['customers', 'projects'],
+)
 
 export function findProjectOption(
   projectId: unknown,

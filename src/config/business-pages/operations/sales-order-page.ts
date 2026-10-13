@@ -395,6 +395,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerOptions,
+      masterOptionRequirements: { customers: true },
       row: 1,
     },
     {
@@ -403,6 +404,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerProjectOptions,
+      masterOptionRequirements: { customers: true, projects: true },
       row: 1,
     },
     {
