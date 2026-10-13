@@ -215,7 +215,7 @@ export function CompanySettingsForm({
       }
     >
       <div className="company-settings-page">
-        <Row gutter={[12, 12]} align="top">
+        <Row gutter={[16, 16]} align="top">
           <Col span={6}>
             <CompanySubjectList
               companies={companies}

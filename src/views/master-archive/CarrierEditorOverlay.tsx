@@ -135,8 +135,22 @@ export function CarrierEditorOverlay({
   }
 
   return (
+    /* 与项目资料/供应商等主数据编辑页共用同一套排版(--form-dialog + master-form) */
     <WorkspaceOverlay
       open={open}
+      className="workspace-overlay-panel--form-dialog"
+      footer={
+        <Space>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button
+            type="primary"
+            loading={saving}
+            onClick={() => void handleEditorSave()}
+          >
+            {t('common.save')}
+          </Button>
+        </Space>
+      }
       title={
         <Space size={8}>
           <span>
@@ -152,6 +166,7 @@ export function CarrierEditorOverlay({
       onClose={onClose}
     >
       <Form
+        className="master-form"
         form={form}
         layout="vertical"
         disabled={saving}
@@ -159,7 +174,7 @@ export function CarrierEditorOverlay({
           syncCarrierForm(allValues as unknown as Record<string, unknown>)
         }
       >
-        <Row gutter={[12, 12]}>
+        <Row gutter={[16, 8]}>
           <Col span={6}>
             <Form.Item
               name="carrierCode"
@@ -269,18 +284,6 @@ export function CarrierEditorOverlay({
           </Col>
         </Row>
       </Form>
-      <div className="workspace-overlay-footer">
-        <Space>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button
-            type="primary"
-            loading={saving}
-            onClick={() => void handleEditorSave()}
-          >
-            {t('common.save')}
-          </Button>
-        </Space>
-      </div>
     </WorkspaceOverlay>
   )
 }

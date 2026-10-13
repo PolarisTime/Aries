@@ -68,28 +68,34 @@
  * 全屏(1553px)时 4 列字段各占约 370px, 输入框被拉得过宽、右侧与下方留出大片空白;
  * 收到 1040px 后单列约 245px, 一屏基本放得下全部字段, 与小屏一致地按视口收敛。
  */
-/* 尺寸按**覆盖层容器**(内容区)算, 不用 100vh —— 覆盖层位于顶栏与页签之下,
-   用视口高度会让面板底部超出内容区, 取消/保存按钮被裁在屏幕外(实测 780px 面板底边 904px)。 */
-.workspace-overlay-panel--project-editor {
+/*
+ * 主数据类「新建/编辑」对话框的统一尺寸: 项目资料 / 供应商 / 客户 / 物流商 / 仓库 / 材料…
+ *
+ * 尺寸按**覆盖层容器**(内容区)算, 不用 100vh —— 覆盖层位于顶栏与页签之下, 用视口高度会让
+ * 面板底部超出内容区(实测 780px 面板底边 904px, 取消/保存被裁在屏幕外)。
+ * 高度跟着内容走: 字段少的表单(客户 9 个字段)不该被撑成整屏留一大片空白, 字段多的
+ * (项目资料 20 个)才用满上限于是滚动 —— 上限 840 让 1080p 下一屏放得下, 小屏由容器封顶。
+ */
+.workspace-overlay-panel--form-dialog {
   width: min(1040px, calc(100% - 24px));
-  /* 上限放到 840: 1080p 下正好一屏放下全部字段(不滚动), 小屏仍由容器高度封顶 */
-  height: min(840px, calc(100% - 24px));
+  height: auto;
+  max-height: min(840px, calc(100% - 24px));
   border-radius: var(--ant-border-radius-lg, 8px);
 }
 
 @media (max-width: 1040px) {
-  .workspace-overlay-panel--project-editor {
+  .workspace-overlay-panel--form-dialog {
     width: calc(100% - 12px);
-    height: calc(100% - 12px);
+    max-height: calc(100% - 12px);
   }
 }
 
 /*
- * 项目资料表单: 纵向节奏交给 Row 的 gutter(16px), 字段自身不再叠加 margin ——
- * 两者同时生效会得到 20px 这种既非 8 倍数、又难解释的间距。
- * 16px 与区块间的 24px 都取自 antd 的间距规格(docs/spec/proximity: 8/16/24)。
+ * 主数据表单(master-form): 纵向节奏交给 Row 的 gutter(横向 16px = 中号间距, 纵向 8px = 小号间距),
+ * 字段自身不再叠加 antd 默认的 24px 下边距 —— 两者同时生效会得到 20px 这种既非 8 倍数、
+ * 又难解释的间距。区块之间的 24px 由分割线给出。全部取自 antd 间距规格(8/16/24)。
  */
-.project-editor-form .ant-form-item {
+.master-form .ant-form-item {
   margin-bottom: 0;
 }
 
@@ -99,7 +105,7 @@
  * 读屏用户照旧能听到说明, 视觉上则不再为每个字段多占一行(行高 62 → 44px)。
  * 只收 extra, 不动 .ant-form-item-explain(校验错误必须可见)。
  */
-.project-editor-form .ant-form-item-extra {
+.master-form .ant-form-item-extra {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -129,7 +135,7 @@
 }
 
 /* 标签旁的 ⓘ 与文字留一点间隔, 不要挤在一起 */
-.project-editor-form .ant-form-item-label .ant-form-item-tooltip {
+.master-form .ant-form-item-label .ant-form-item-tooltip {
   margin-inline-start: 4px;
   color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.45));
 }

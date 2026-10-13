@@ -282,13 +282,13 @@ export function ProjectEditorOverlay({
 
   return (
     /*
-      尺寸与紧凑排版都在 CSS 里(workspace-overlay.css): 全屏铺开时 4 列字段各占约 370px
+      尺寸与紧凑排版都在 CSS 里(workspace-overlay.css 的 --form-dialog / master-form): 全屏铺开时 4 列字段各占约 370px
       并留下大片空白, 收成居中对话框后单列约 245px; 按钮走 footer 槽固定在面板底部,
       否则 20 个字段加价格规定滚动时会把它滚出屏幕(实测按钮落在 y=978, 面板底边 880)。
     */
     <WorkspaceOverlay
       open={open}
-      className="workspace-overlay-panel--project-editor"
+      className="workspace-overlay-panel--form-dialog"
       footer={
         <Space>
           <Button onClick={onClose}>{t('common.cancel')}</Button>
@@ -318,7 +318,7 @@ export function ProjectEditorOverlay({
       <Form
         form={form}
         layout="vertical"
-        className="project-editor-form"
+        className="master-form"
         disabled={saving}
         onValuesChange={(_, allValues) =>
           syncProjectForm(allValues as unknown as Record<string, unknown>)

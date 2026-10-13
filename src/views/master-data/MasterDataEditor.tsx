@@ -66,14 +66,32 @@ export function MasterDataEditor({
     !field.visibleWhen || field.visibleWhen(formValues) ? [field] : [],
   )
   return (
-    <WorkspaceOverlay open={open} title={title} onClose={onClose}>
+    /*
+      与项目资料编辑页同一套排版: 居中对话框(--form-dialog, 尺寸在 workspace-overlay.css)、
+      表单节奏 master-form(横向 16 纵向 8)、按钮走 footer 槽固定在面板底部。
+    */
+    <WorkspaceOverlay
+      open={open}
+      title={title}
+      className="workspace-overlay-panel--form-dialog"
+      footer={
+        <Space>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button type="primary" loading={saving} onClick={onSave}>
+            {t('common.save')}
+          </Button>
+        </Space>
+      }
+      onClose={onClose}
+    >
       <Form
+        className="master-form"
         form={form}
         layout="vertical"
         disabled={saving}
         onValuesChange={(_, allValues) => onValuesChange(allValues)}
       >
-        <Row gutter={[12, 12]}>
+        <Row gutter={[16, 8]}>
           {visibleFields.map((field) => (
             <Col key={field.key} span={field.fullRow ? 24 : 6}>
               <Form.Item
@@ -99,14 +117,6 @@ export function MasterDataEditor({
           ))}
         </Row>
       </Form>
-      <div className="workspace-overlay-footer">
-        <Space>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="primary" loading={saving} onClick={onSave}>
-            {t('common.save')}
-          </Button>
-        </Space>
-      </div>
     </WorkspaceOverlay>
   )
 }
