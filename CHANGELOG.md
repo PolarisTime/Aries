@@ -1,3 +1,22 @@
+# [11.13.0](https://github.com/PolarisTime/Aries/compare/v11.12.0...v11.13.0) (2026-10-13)
+
+
+### Bug Fixes
+
+* **hooks:** pre-commit 的 react-doctor 加 --no-telemetry, 修复提交无限挂起 ([59fc49c](https://github.com/PolarisTime/Aries/commit/59fc49cd0ff0468d27dcea9d05e1f612f83e7518))
+* **styles:** 接入苹方 500/600/700 真字面并子集化, 三个字重合计比原先更小 ([bc9cfc3](https://github.com/PolarisTime/Aries/commit/bc9cfc38ed32ce112513e0c713f313592d2662db))
+* **styles:** 苹方字体补全中文回退链, 避免未安装苹方时落到浏览器默认字体 ([4fbc9c2](https://github.com/PolarisTime/Aries/commit/4fbc9c2ce201d4aed57e94224683f0719d4ea6b9))
+* **tabs:** 批量关闭确认框取消后不再切走当前标签 ([79eeeba](https://github.com/PolarisTime/Aries/commit/79eeebaf1735932bc4f303ad14506e41469b1096))
+* **tabs:** 标签超上限淘汰不再静默丢弃未保存内容 ([cedcfda](https://github.com/PolarisTime/Aries/commit/cedcfda3fbea9210e05fdfd9e79a0e22b528156b))
+* **tabs:** 面板外壳常驻修复 ARIA 悬空引用, 键盘关闭交还框架 ([8c373b5](https://github.com/PolarisTime/Aries/commit/8c373b52f5ba2b28840fb0fd34bfd1da952a255c))
+
+
+### Features
+
+* **master-data:** 主数据编辑弹层按语义分区, 与项目资料页排版对齐 ([b55c301](https://github.com/PolarisTime/Aries/commit/b55c30169e0685fdbd1190140172b439c7ad47d9))
+* **tabs:** 补齐标签超限的用户可见反馈与中英文案 ([8c72f36](https://github.com/PolarisTime/Aries/commit/8c72f368790a1649a8bc5a49b86e1f8a4834e598))
+* **tabs:** 重建标签与真实内容面板的 ARIA 关联并补 Delete 关闭 ([4eaec13](https://github.com/PolarisTime/Aries/commit/4eaec13e4cc41a6f377397e1d7ec44ea4eae995a))
+
 # [11.12.0](https://github.com/PolarisTime/Aries/compare/v11.11.0...v11.12.0) (2026-10-13)
 
 
