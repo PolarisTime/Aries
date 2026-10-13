@@ -584,7 +584,6 @@ export const zhCN = {
     },
   },
   modules: {
-
     /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
     formSections: {
       basic: '基本信息',
@@ -2094,6 +2093,9 @@ export const zhCN = {
       closeAll: '全部关闭',
       pinDashboard: '工作台固定展示',
       contextMenuLabel: '「{{name}}」标签操作菜单',
+      evicted: '标签数已达上限，已自动关闭最早的 {{n}} 个标签',
+      overLimitHint:
+        '标签数已超出上限（{{current}}/{{max}}）。含未保存内容的标签不会被自动关闭，请手动关闭部分标签',
     },
   },
   system: {

@@ -1,9 +1,9 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import type { TabsProps } from 'antd'
-import { Tabs } from 'antd'
+import { Tabs, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { TFunction } from 'i18next'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
 import { getPageDefinition } from '@/config/page-registry'
@@ -19,8 +19,10 @@ import {
   buildTabHref,
   getNextActiveTabAfterClose,
   type LayoutTab,
+  MAX_LAYOUT_TABS,
   useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
+import { message } from '@/utils/antd-app'
 
 function getTabTitle(tab: LayoutTab, t: TFunction): string {
   const definition = getPageDefinition(tab.pathname)
@@ -181,6 +183,29 @@ export function LayoutTabBar() {
     }
   })
 
+  /**
+   * 候选标签全被保护（持有未保存编辑会话）时淘汰会停止，标签数因此可能超过上限。
+   * 这是刻意的降级，但必须让用户看得见并知道要手动清理，否则会被当成「标签自己没了」。
+   */
+  const overLimit = tabs.length > MAX_LAYOUT_TABS
+  const overLimitHint = t('layouts.tabs.overLimitHint', {
+    current: tabs.length,
+    max: MAX_LAYOUT_TABS,
+  })
+
+  /*
+   * 淘汰因保护而停止时 evictedIds 为空，调用点不会弹任何提示——超限由此成为用户唯一
+   * 的异常信号。因此这里在「首次进入超限」时主动说明一次：角标本身只承载计数，
+   * 完整解释不能只依赖鼠标悬停（键盘用户拿不到 Tooltip）。
+   */
+  const wasOverLimitRef = useRef(false)
+  useEffect(() => {
+    if (overLimit && !wasOverLimitRef.current) {
+      message.warning(overLimitHint)
+    }
+    wasOverLimitRef.current = overLimit
+  }, [overLimit, overLimitHint])
+
   return (
     // 捕获阶段监听: 上下文菜单键可能被 Tabs 自己的键盘处理消费掉
     <div
@@ -192,6 +217,23 @@ export function LayoutTabBar() {
         type="editable-card"
         hideAdd
         size="small"
+        tabBarExtraContent={
+          overLimit ? (
+            <Tooltip title={overLimitHint}>
+              {/* 非交互元素不进入 Tab 序列（避免死停靠点）；完整说明由首次超限的
+                  提示与 aria-label 承载，Tooltip 只服务鼠标用户 */}
+              <span
+                className="leo-tabbar-overlimit"
+                role="status"
+                aria-label={overLimitHint}
+              >
+                <Tag color="warning" aria-hidden>
+                  {`${tabs.length}/${MAX_LAYOUT_TABS}`}
+                </Tag>
+              </span>
+            </Tooltip>
+          ) : undefined
+        }
         /* 内容区由 AppTabContainer 渲染，本组件仅保留导航头部：
          * 经 v6 语义 styles 内联关闭 nav 默认 margin；
          * 外层 body-holder 无对应语义 key，经 layout-shell.css 提升特异性隐藏 */

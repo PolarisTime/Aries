@@ -5,7 +5,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
-import { useLayoutTabsStore } from '@/stores/layoutTabsStore'
+import { MAX_LAYOUT_TABS, useLayoutTabsStore } from '@/stores/layoutTabsStore'
 import { LayoutTabBar } from './LayoutTabBar'
 
 const TABS = [
@@ -141,5 +141,39 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     expect(
       document.querySelector('.ant-dropdown-menu')?.getAttribute('aria-label'),
     ).toBe('「报单比价」标签操作菜单')
+  })
+
+  it('标签数未超上限时不显示超限指示器', () => {
+    render()
+    expect(container.querySelector('.leo-tabbar-overlimit')).toBeNull()
+  })
+
+  it('标签数超出上限时显示带说明的超限指示器', () => {
+    render()
+    act(() => {
+      useLayoutTabsStore.setState({
+        tabs: [
+          ...TABS,
+          ...Array.from({ length: MAX_LAYOUT_TABS }, (_, index) => ({
+            id: `extra-${index}`,
+            pathname: `/page-${index}`,
+            search: '',
+            pinned: false,
+            mountedOnce: false,
+            reloadKey: 0,
+          })),
+        ],
+        activeTabId: 'tab-price-compare',
+      })
+    })
+
+    const indicator = container.querySelector<HTMLElement>(
+      '.leo-tabbar-overlimit',
+    )
+    expect(indicator, '未渲染超限指示器').toBeTruthy()
+    // 完整解释挂在 aria-label 上（角标只显示计数）；非交互元素不得进入 Tab 序列
+    expect(indicator?.getAttribute('aria-label')).toContain('超出上限')
+    expect(indicator?.getAttribute('tabindex')).toBeNull()
+    expect(indicator?.textContent).toContain(`/${MAX_LAYOUT_TABS}`)
   })
 })

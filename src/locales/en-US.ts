@@ -602,7 +602,6 @@ export const enUS = {
     },
   },
   modules: {
-
     /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
     formSections: {
       basic: 'Basic information',
@@ -2157,6 +2156,10 @@ export const enUS = {
       closeAll: 'Close all tabs',
       pinDashboard: 'Dashboard is pinned',
       contextMenuLabel: 'Actions for the {{name}} tab',
+      evicted:
+        'Tab limit reached; automatically closed the earliest {{n}} tab(s)',
+      overLimitHint:
+        'Over the tab limit ({{current}}/{{max}}). Tabs with unsaved changes are never closed automatically — please close some tabs manually',
     },
   },
   system: {

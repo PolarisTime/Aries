@@ -1,5 +1,7 @@
 import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
+import { notifyEvictedTabs } from '@/layouts/tabs/evicted-tabs'
 import {
   getTabRouterHref,
   pushExternalIntent,
@@ -33,45 +35,51 @@ export interface TabOpenTarget {
  * 多标签页双层路由架构下会丢失深链参数（详见 Git 历史缺陷记录）。
  */
 export function useTabOpen() {
-  return useCallback((target: TabOpenTarget) => {
-    const store = useLayoutTabsStore.getState()
-    const pathname = normalizeTabPathname(target.pathname)
-    const search = target.search ?? ''
-    const existing = store.tabs.find((tab) => tab.pathname === pathname)
-    const href = buildTabHref(pathname, search)
+  const { t } = useTranslation()
 
-    if (!existing) {
-      // 淘汰上限触发时不得丢弃持有未保存编辑会话的 Tab（宁可暂时超限）
-      store.openTab(
-        { pathname, search },
-        {
-          isProtected: (tabId) =>
-            editorSessionStore.requiresConfirmation(tabId),
-        },
-      )
-      mainRouter.history.push(href)
-      return
-    }
+  return useCallback(
+    (target: TabOpenTarget) => {
+      const store = useLayoutTabsStore.getState()
+      const pathname = normalizeTabPathname(target.pathname)
+      const search = target.search ?? ''
+      const existing = store.tabs.find((tab) => tab.pathname === pathname)
+      const href = buildTabHref(pathname, search)
 
-    if (target.forceSearch) {
-      // 外部意图覆盖 Tab 状态：先更新保存的查询串，再把新 href 注入已挂载的子
-      // Router（未挂载 Tab 由 attach 时的初始 href 对齐），最后同步地址栏。
-      store.setTabLocation(existing.id, { pathname, search })
-      pushExternalIntent(existing.id, href)
-      if (mainRouter.state.location.href !== href) {
+      if (!existing) {
+        // 淘汰上限触发时不得丢弃持有未保存编辑会话的 Tab（宁可暂时超限）
+        const { evictedIds } = store.openTab(
+          { pathname, search },
+          {
+            isProtected: (tabId) =>
+              editorSessionStore.requiresConfirmation(tabId),
+          },
+        )
+        notifyEvictedTabs(evictedIds, t)
         mainRouter.history.push(href)
+        return
       }
-      return
-    }
 
-    // 非 forceSearch：激活并保留 Tab 内部状态，地址栏跟随 Tab 保存的完整 href
-    //（含其内部筛选），不能推无参 href——否则协调层会清掉 Tab 保存的状态。
-    store.activateTab(existing.id)
-    const preservedHref =
-      getTabRouterHref(existing.id) ??
-      buildTabHref(existing.pathname, existing.search)
-    if (mainRouter.state.location.href !== preservedHref) {
-      mainRouter.history.push(preservedHref)
-    }
-  }, [])
+      if (target.forceSearch) {
+        // 外部意图覆盖 Tab 状态：先更新保存的查询串，再把新 href 注入已挂载的子
+        // Router（未挂载 Tab 由 attach 时的初始 href 对齐），最后同步地址栏。
+        store.setTabLocation(existing.id, { pathname, search })
+        pushExternalIntent(existing.id, href)
+        if (mainRouter.state.location.href !== href) {
+          mainRouter.history.push(href)
+        }
+        return
+      }
+
+      // 非 forceSearch：激活并保留 Tab 内部状态，地址栏跟随 Tab 保存的完整 href
+      //（含其内部筛选），不能推无参 href——否则协调层会清掉 Tab 保存的状态。
+      store.activateTab(existing.id)
+      const preservedHref =
+        getTabRouterHref(existing.id) ??
+        buildTabHref(existing.pathname, existing.search)
+      if (mainRouter.state.location.href !== preservedHref) {
+        mainRouter.history.push(preservedHref)
+      }
+    },
+    [t],
+  )
 }

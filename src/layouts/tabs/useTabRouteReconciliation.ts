@@ -1,6 +1,8 @@
 import { useLocation } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
+import { notifyEvictedTabs } from '@/layouts/tabs/evicted-tabs'
 import {
   getTabRouterHref,
   pushExternalIntent,
@@ -39,9 +41,20 @@ export function shouldAdoptMainSearchForUnmountedTab(
  */
 export function useTabRouteReconciliation(): void {
   const location = useLocation()
+  const { t } = useTranslation()
   const activeTab = useLayoutTabsStore((state) =>
     state.tabs.find((tab) => tab.id === state.activeTabId),
   )
+
+  /**
+   * 用 ref 承接 `t`：下面的协调 effect 依赖是围绕「主路由 ↔ 子 Router 乒乓」调过的，
+   * 把 `t` 加进依赖数组会让切换语言时重跑整套协调逻辑。ref 是稳定引用，既拿到最新文案
+   * 又不改变 effect 的触发条件。
+   */
+  const tRef = useRef(t)
+  useEffect(() => {
+    tRef.current = t
+  }, [t])
 
   useEffect(() => {
     const store = useLayoutTabsStore.getState()
@@ -86,12 +99,13 @@ export function useTabRouteReconciliation(): void {
       return
     }
 
-    const { tabId } = store.openTab(
+    const { tabId, evictedIds } = store.openTab(
       { pathname, search: location.searchStr },
       {
         isProtected: (id) => editorSessionStore.requiresConfirmation(id),
       },
     )
+    notifyEvictedTabs(evictedIds, tRef.current)
     store.markTabMounted(tabId)
     // href 已涵盖 pathname+searchStr，显式列出以满足依赖完整性检查
   }, [location.href, location.pathname, location.searchStr])
