@@ -45,13 +45,17 @@ antd lint 发现暂存文件中的 antd 违规用法(a11y / 废弃 API), 详见�
 esac
 
 # ------------------------------------------------------------ react-doctor
+# 必须带 --no-telemetry: 扫描完成后 react-doctor 会 fork 一个上报进程并让它继承 stdout,
+# 而本钩子把它包在命令替换 $(...) 里 —— 命令替换要等管道所有持有者关闭, 于是永久等待。
+# 该上报进程在无外网(CI/沙箱/内网)环境下永不退出, 实测提交会无限挂起。
+# --no-telemetry 只跳过 score API / share URL / crash reporting, 不影响扫描本身。
 react_doctor_scan_staged_files() {
   if [ -x './node_modules/.bin/react-doctor' ]; then
-    './node_modules/.bin/react-doctor' --staged --fail-on warning
+    './node_modules/.bin/react-doctor' --staged --no-telemetry --fail-on warning
     return
   fi
   if command -v react-doctor >/dev/null 2>&1; then
-    react-doctor --staged --fail-on warning
+    react-doctor --staged --no-telemetry --fail-on warning
     return
   fi
   printf '%s\n' 'react-doctor: command not found; skipping staged scan.'
