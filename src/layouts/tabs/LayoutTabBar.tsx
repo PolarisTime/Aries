@@ -233,23 +233,6 @@ export function LayoutTabBar() {
         type="editable-card"
         hideAdd
         size="small"
-        tabBarExtraContent={
-          overLimit ? (
-            <Tooltip title={overLimitHint}>
-              {/* 非交互元素不进入 Tab 序列（避免死停靠点）；完整说明由首次超限的
-                  提示与 aria-label 承载，Tooltip 只服务鼠标用户 */}
-              <span
-                className="leo-tabbar-overlimit"
-                role="status"
-                aria-label={overLimitHint}
-              >
-                <Tag color="warning" aria-hidden>
-                  {`${tabs.length}/${MAX_LAYOUT_TABS}`}
-                </Tag>
-              </span>
-            </Tooltip>
-          ) : undefined
-        }
         /* 内容区由 AppTabContainer 渲染，本组件仅保留导航头部：
          * 经 v6 语义 styles 内联关闭 nav 默认 margin；
          * 外层 body-holder 无对应语义 key，经 layout-shell.css 提升特异性隐藏 */
@@ -265,6 +248,25 @@ export function LayoutTabBar() {
           }
         }}
       />
+      {/* 超限指示器必须是 Tabs 的兄弟节点，不能放进 tabBarExtraContent：
+          rc-tabs 把 extraContent 渲染在 role="tablist" 内部（上游 open 缺陷 #1013，
+          重述了 antd #49502/#53584），会让 tablist 拥有非 tab 子元素，触发
+          aria-required-children 违规。放在这里可保持视觉相邻但无障碍归属隔离。 */}
+      {overLimit ? (
+        <Tooltip title={overLimitHint}>
+          {/* 非交互元素不进入 Tab 序列（避免死停靠点）；完整说明由首次超限的
+              提示与 aria-label 承载，Tooltip 只服务鼠标用户 */}
+          <span
+            className="leo-tabbar-overlimit"
+            role="status"
+            aria-label={overLimitHint}
+          >
+            <Tag color="warning" aria-hidden>
+              {`${tabs.length}/${MAX_LAYOUT_TABS}`}
+            </Tag>
+          </span>
+        </Tooltip>
+      ) : null}
     </div>
   )
 }

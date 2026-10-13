@@ -199,6 +199,16 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     expect(indicator?.getAttribute('aria-label')).toContain('超出上限')
     expect(indicator?.getAttribute('tabindex')).toBeNull()
     expect(indicator?.textContent).toContain(`/${MAX_LAYOUT_TABS}`)
+    // rc-tabs 把 tabBarExtraContent 渲染在 role="tablist" 内部（上游 open 缺陷 #1013，
+    // 重述 antd #49502/#53584），会让 tablist 拥有非 tab 子元素并触发
+    // aria-required-children 违规。指示器必须留在 tablist 之外。
+    expect(
+      indicator?.closest('[role="tablist"]'),
+      '超限指示器不得位于 tablist 内部',
+    ).toBeNull()
+    expect(indicator?.parentElement?.className).toContain(
+      'leo-tabbar-keyboard-host',
+    )
   })
 
   it('tablist 带可访问名、标签 aria-controls 指向真实面板、关闭按钮用中文可访问名', async () => {

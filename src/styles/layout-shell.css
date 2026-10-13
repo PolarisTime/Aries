@@ -767,8 +767,17 @@
 }
 
 /* ===== 全局多标签页导航条（Header 正下方、内容区正上方，常规流内布局） ===== */
+
+/* 标签栏宿主：Tabs 与超限指示器并排。指示器必须在 tablist 之外（见 LayoutTabBar 注释）。 */
+.leo-tabbar-keyboard-host {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .leo-tabbar {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   height: var(--app-tabbar-height);
   overflow: hidden;
 }
@@ -811,11 +820,14 @@
 }
 
 /* 超限指示器：候选标签全被保护时淘汰停止、标签数刻意超出上限，必须让用户看见。
-   它是非交互状态元素，不进入 Tab 序列，因此不需要焦点环。 */
-.leo-tabbar .leo-tabbar-overlimit {
+   它是非交互状态元素，不进入 Tab 序列，因此不需要焦点环。
+   选择器不带 .leo-tabbar 前缀 —— 它是 Tabs 的兄弟节点，不在 tablist 内。 */
+.leo-tabbar-keyboard-host .leo-tabbar-overlimit {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   margin-inline-start: var(--space-xs);
+  padding-inline-end: var(--space-xs);
   cursor: help;
 }
 
