@@ -141,4 +141,9 @@ export interface ModuleFormFieldDefinition {
   row?: number
   colSpan?: number
   fullRow?: boolean
+  /**
+   * 所属区块标题(已翻译文案)。相邻且相同的字段在编辑弹层里归为一组并渲染分割线；
+   * 不声明则保持平铺，未分区的模块不受影响。
+   */
+  section?: string
 }

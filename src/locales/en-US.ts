@@ -602,6 +602,15 @@ export const enUS = {
     },
   },
   modules: {
+
+    /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
+    formSections: {
+      basic: 'Basic information',
+      contact: 'Contact',
+      vehicle: 'Vehicles & drivers',
+      settlement: 'Settlement',
+      other: 'Other',
+    },
     actions: {
       create: 'Create',
       export: 'Export',

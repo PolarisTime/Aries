@@ -50,6 +50,8 @@ export interface MasterFormFieldSpec {
   precision?: number
   options?: MasterOption[]
   visibleWhen?: (values: Record<string, unknown>) => boolean
+  /** 所属区块标题; 相邻且相同的字段归为一组, 不声明则不渲染区块标题(保持平铺)。 */
+  section?: string
 }
 
 export type MasterFormValues = Record<string, unknown>

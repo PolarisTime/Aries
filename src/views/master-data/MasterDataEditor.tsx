@@ -1,5 +1,15 @@
 import type { FormInstance } from 'antd'
-import { Button, Col, Form, Input, InputNumber, Row, Select, Space } from 'antd'
+import {
+  Button,
+  Col,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
+} from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
@@ -65,6 +75,17 @@ export function MasterDataEditor({
   const visibleFields = formFields.flatMap((field) =>
     !field.visibleWhen || field.visibleWhen(formValues) ? [field] : [],
   )
+  // 按声明顺序分区: section 相同且相邻的字段归为一组; 未声明 section 的字段不渲染区块标题,
+  // 这样材料资料等尚未分区的模块保持原样(平铺), 不影响本次改动的范围。
+  const groups: Array<{ section?: string; fields: MasterFormFieldSpec[] }> = []
+  for (const field of visibleFields) {
+    const last = groups.at(-1)
+    if (last && last.section === field.section) {
+      last.fields.push(field)
+    } else {
+      groups.push({ section: field.section, fields: [field] })
+    }
+  }
   return (
     /*
       与项目资料编辑页同一套排版: 居中对话框(--form-dialog, 尺寸在 workspace-overlay.css)、
@@ -91,31 +112,47 @@ export function MasterDataEditor({
         disabled={saving}
         onValuesChange={(_, allValues) => onValuesChange(allValues)}
       >
-        <Row gutter={[16, 8]}>
-          {visibleFields.map((field) => (
-            <Col key={field.key} span={field.fullRow ? 24 : 6}>
-              <Form.Item
-                name={field.key}
-                label={field.label}
-                initialValue={field.defaultValue}
-                rules={
-                  field.required
-                    ? [
-                        {
-                          required: true,
-                          message: t('modules.formField.inputRequired', {
-                            label: field.label,
-                          }),
-                        },
-                      ]
-                    : undefined
-                }
+        {groups.map((group, index) => (
+          <section
+            key={group.section ?? `ungrouped-${index}`}
+            className="master-form-section"
+          >
+            {group.section ? (
+              <Divider
+                className="master-section-divider"
+                plain
+                titlePlacement="start"
               >
-                {renderFieldControl(field)}
-              </Form.Item>
-            </Col>
-          ))}
-        </Row>
+                {group.section}
+              </Divider>
+            ) : null}
+            <Row gutter={[16, 8]}>
+              {group.fields.map((field) => (
+                <Col key={field.key} span={field.fullRow ? 24 : 6}>
+                  <Form.Item
+                    name={field.key}
+                    label={field.label}
+                    initialValue={field.defaultValue}
+                    rules={
+                      field.required
+                        ? [
+                            {
+                              required: true,
+                              message: t('modules.formField.inputRequired', {
+                                label: field.label,
+                              }),
+                            },
+                          ]
+                        : undefined
+                    }
+                  >
+                    {renderFieldControl(field)}
+                  </Form.Item>
+                </Col>
+              ))}
+            </Row>
+          </section>
+        ))}
       </Form>
     </WorkspaceOverlay>
   )

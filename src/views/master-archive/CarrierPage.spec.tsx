@@ -205,14 +205,22 @@ describe('CarrierPage 主数据拆分试点', () => {
     })
   }
 
-  const chooseOverlaySelectOption = async (index: number) => {
-    const selectRoots = document.body
-      .querySelector('.workspace-overlay')!
-      .querySelectorAll('.ant-select')
+  /**
+   * 按**字段名**选中下拉项, 而不是按第几个下拉。
+   *
+   * <p>弹层里的字段会随排版调整改变顺序(例如「状态」移入基本信息区块), 按下标定位会静默
+   * 选错字段 —— 实测把必填的「默认结算主体」漏掉、保存被校验拦住却看不出原因。
+   * Form.Item 会把字段名注入控件 id, 按 id 定位既稳定又可读。</p>
+   */
+  const chooseOverlaySelectOption = async (fieldName: string) => {
+    const control = document.body.querySelector<HTMLElement>(
+      `.workspace-overlay input#${fieldName}`,
+    )
+    expect(control, `字段 ${fieldName} 的下拉输入应存在`).toBeTruthy()
+    const selectRoot = control?.closest<HTMLElement>('.ant-select')
+    expect(selectRoot, `字段 ${fieldName} 应是下拉控件`).toBeTruthy()
     await act(async () => {
-      selectRoots[index]?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true }),
-      )
+      selectRoot!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
@@ -387,7 +395,7 @@ describe('CarrierPage 主数据拆分试点', () => {
       '.workspace-overlay input#vehiclePlate',
     ) as HTMLInputElement
     setTextValue(plateInput, '京b22222')
-    await chooseOverlaySelectOption(0)
+    await chooseOverlaySelectOption('defaultSettlementCompanyId')
 
     await clickButton('保存', document.body)
 

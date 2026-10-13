@@ -83,12 +83,13 @@
  * 尺寸按**覆盖层容器**(内容区)算, 不用 100vh —— 覆盖层位于顶栏与页签之下, 用视口高度会让
  * 面板底部超出内容区(实测 780px 面板底边 904px, 取消/保存被裁在屏幕外)。
  * 高度跟着内容走: 字段少的表单(客户 9 个字段)不该被撑成整屏留一大片空白, 字段多的
- * (项目资料 20 个)才用满上限于是滚动 —— 上限 840 让 1080p 下一屏放得下, 小屏由容器封顶。
+ * (物流商 19 个字段含 5 个分区)才用满上限 —— 上限 900 在 1080p(内容区 939)下正好一屏
+ * 放得下, 小屏由容器封顶。
  */
 .workspace-overlay-panel--form-dialog {
   width: min(1040px, calc(100% - 24px));
   height: auto;
-  max-height: min(840px, calc(100% - 24px));
+  max-height: min(900px, calc(100% - 24px));
   border-radius: var(--ant-border-radius-lg, 8px);
 }
 
@@ -129,15 +130,15 @@
 /*
  * 区块标题: 首块不带顶部间距(紧跟弹层头部), 其余块 24px; 标题下 16px 接字段。
  */
-.project-section-divider.ant-divider {
+.master-section-divider.ant-divider {
   margin: 24px 0 16px;
 }
 
-.project-editor-section:first-child .project-section-divider.ant-divider {
+.master-form-section:first-child .master-section-divider.ant-divider {
   margin-top: 0;
 }
 
-.project-section-divider.ant-divider .ant-divider-inner-text {
+.master-section-divider.ant-divider .ant-divider-inner-text {
   font-size: 12px;
   font-weight: 600;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));

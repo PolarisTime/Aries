@@ -584,6 +584,15 @@ export const zhCN = {
     },
   },
   modules: {
+
+    /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
+    formSections: {
+      basic: '基本信息',
+      contact: '联系方式',
+      vehicle: '车辆与司机',
+      settlement: '结算信息',
+      other: '其他',
+    },
     actions: {
       create: '新增',
       export: '导出',

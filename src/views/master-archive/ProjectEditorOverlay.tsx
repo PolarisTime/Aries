@@ -89,8 +89,8 @@ function ProjectSection({
   children: React.ReactNode
 }) {
   return (
-    <section className="project-editor-section">
-      <Divider className="project-section-divider" plain titlePlacement="start">
+    <section className="master-form-section">
+      <Divider className="master-section-divider" plain titlePlacement="start">
         {title}
       </Divider>
       <Row gutter={[16, 8]}>{children}</Row>
