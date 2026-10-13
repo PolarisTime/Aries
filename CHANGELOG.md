@@ -1,3 +1,10 @@
+# [11.10.0](https://github.com/PolarisTime/Aries/compare/v11.9.0...v11.10.0) (2026-10-13)
+
+
+### Features
+
+* **sales-order:** 手工加行/改品牌材质时即时提示项目允许范围 ([75ba02b](https://github.com/PolarisTime/Aries/commit/75ba02b663f920e6d04cf2c1bbfe46231a1713bb))
+
 # [11.9.0](https://github.com/PolarisTime/Aries/compare/v11.8.0...v11.9.0) (2026-10-12)
 
 
