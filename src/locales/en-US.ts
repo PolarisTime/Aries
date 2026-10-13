@@ -2670,6 +2670,9 @@ export const enUS = {
         purchaseOrderNo: 'Order No.',
         purchaseOrderSupplier: 'Supplier',
         purchaseOrderOrdered: 'Ordered',
+        /** Tonnage trio: order (input) / issued / unopened (= ordered − issued). */
+        issuedTon: 'Issued',
+        unopenedTon: 'Unopened',
         purchaseOrderIssued: 'Issued',
         purchaseOrderRemaining: 'Remaining',
         purchaseOrderStatus: 'Status',
@@ -2763,7 +2766,7 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Issued (actual) counts other saved sheets only (this sheet excluded); remaining = this sheet reported tonnage − issued. The purchase-order ordered weight is for reference only',
+        'Issued counts other saved sheets only (this sheet excluded); unopened = ordered − issued',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       purchaseOrderLoadFailed:
@@ -2771,15 +2774,13 @@ export const enUS = {
       purchaseOrderIssuedShort: 'Issued {{issued}}',
       /** Visible cell text: remaining = this sheet reported tonnage − issued. */
       purchaseOrderRemainingShort: 'Remaining {{weight}}',
-      /** Anomaly: tonnage issued by other sheets exceeds this sheet reported tonnage. */
-      purchaseOrderIssuedOverShort: 'Opened over by {{weight}}',
       /** Tooltip row: tonnage this sheet reported on the linked PO line. */
       purchaseOrderSheetReported: 'This sheet (PO line)',
       purchaseOrderIssuedActual: 'Issued (actual)',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
-      purchaseOrderIssuedOverLong:
-        'Opened {{issued}}t exceeds this sheet reported {{reported}}t',
+      purchaseOrderOverOrderedLong:
+        'Unopened {{unopened}}t: issued tonnage already exceeds the ordered tonnage of this PO line',
       purchaseOrderPickerOpen: 'Select purchase order',
       purchaseOrderPickerTitle: 'Select purchase order line',
       purchaseOrderPickerSearch: 'Search order no., supplier or spec',

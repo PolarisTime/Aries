@@ -43,12 +43,10 @@ function poRecord(
  */
 function Probe({
   records = [],
-  localTonByItemId = new Map<string, number>(),
 }: {
   records?: readonly PurchaseOrderTonnageRecord[]
-  localTonByItemId?: ReadonlyMap<string, number>
 }) {
-  const widths = useSheetColumnWidths(records, localTonByItemId)
+  const widths = useSheetColumnWidths(records)
   return createElement('output', null, JSON.stringify(widths))
 }
 
@@ -76,12 +74,9 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   const widthsNow = () =>
     JSON.parse(container.textContent ?? '{}') as Record<string, number>
 
-  const render = (
-    records: readonly PurchaseOrderTonnageRecord[] = [],
-    localTonByItemId: ReadonlyMap<string, number> = new Map(),
-  ) => {
+  const render = (records: readonly PurchaseOrderTonnageRecord[] = []) => {
     act(() => {
-      root.render(createElement(Probe, { records, localTonByItemId }))
+      root.render(createElement(Probe, { records }))
     })
     return widthsNow()
   }
@@ -116,26 +111,26 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     }
   })
 
-  it('吨位列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
-    // 本单据该明细行报 40 吨(issued 0) ⇒ 文案「剩余 40 · 中天钢铁」
-    const widths = render(
-      [poRecord({ issuedWeight: 0, brand: '中天钢铁' })],
-      new Map([['301', 40]]),
+  it('未开吨位列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
+    // 该明细行订货 40 / 已开 0 ⇒ 文案「40 · 中天钢铁」
+    const widths = render([
+      poRecord({ orderedWeight: 40, issuedWeight: 0, brand: '中天钢铁' }),
+    ])
+    const numberOnly = requiredTonColumnWidth(tonProgressLineWidth('40', ''))
+    // 内容宽超过基准字号比例值(184)时按内容顶起, 否则取比例值
+    expect(widths.unopenedTon).toBe(
+      Math.max(
+        SHEET_COLUMN_WIDTH.unopenedTon,
+        requiredTonColumnWidth(tonProgressLineWidth('40', '中天钢铁')),
+      ),
     )
-    const primaryOnly = requiredTonColumnWidth(
-      14,
-      tonProgressLineWidth('剩余 40', ''),
-    )
-    expect(widths.ton).toBe(
-      requiredTonColumnWidth(14, tonProgressLineWidth('剩余 40', '中天钢铁')),
-    )
-    // 定宽必须真的比"只兜主段"的下界宽, 否则品牌还是会被裁
-    expect(widths.ton).toBeGreaterThan(primaryOnly)
+    // 定宽必须真的比"只兜数字"的下界宽, 否则品牌还是会被裁
+    expect(widths.unopenedTon).toBeGreaterThan(numberOnly)
     // 其余列不受内容影响
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
   })
 
-  it('取单据里最长的一条进度小字定宽(含本单据报单吨位)', () => {
+  it('取单据里最长的一条未开吨位文案定宽', () => {
     const short = poRecord({ purchaseOrderItemId: '301', brand: '中天' })
     const long = poRecord({
       purchaseOrderItemId: '302',
@@ -143,24 +138,29 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
       orderedWeight: 128,
       issuedWeight: 12.5,
     })
-    // 本单据给明细 302 报 9000 吨: 「剩余 8,987.5」(带千分位)比只报 40 吨更长
-    const widths = render([short, long], new Map([['302', 9000]]))
-    const parts = tonProgressTextParts(i18next.t, long, 9000)
-    expect(parts.primary).toBe('剩余 8,987.5')
-    expect(widths.ton).toBe(
-      requiredTonColumnWidth(
-        14,
-        tonProgressLineWidth(parts.primary, parts.brand),
+    // 明细 302 未开 115.5; 千分位吨位(8,884.5)也要能被覆盖
+    const widths = render([short, long])
+    const parts = tonProgressTextParts(long)
+    expect(parts.primary).toBe('115.5')
+    expect(widths.unopenedTon).toBe(
+      Math.max(
+        SHEET_COLUMN_WIDTH.unopenedTon,
+        requiredTonColumnWidth(
+          tonProgressLineWidth(parts.primary, parts.brand),
+        ),
       ),
     )
-    expect(widths.ton).toBeGreaterThan(
-      requiredTonColumnWidth(14, tonProgressLineWidth('剩余 40', '中天')),
+    expect(widths.unopenedTon).toBeGreaterThan(
+      requiredTonColumnWidth(tonProgressLineWidth('115.5', '中天')),
     )
   })
 
-  it('没有吨位数据时回落到基准字号列宽(不被主段下界压低)', () => {
+  it('没有吨位数据时未开吨位列回落到基准字号列宽', () => {
     const widths = render([])
+    expect(widths.unopenedTon).toBe(SHEET_COLUMN_WIDTH.unopenedTon)
+    expect(widths.unopenedTon).toBeGreaterThanOrEqual(requiredTonColumnWidth())
+    // 报单/已开两列纯等比换算, 与内容无关
     expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
-    expect(widths.ton).toBeGreaterThanOrEqual(requiredTonColumnWidth(14, 0))
+    expect(widths.issuedTon).toBe(SHEET_COLUMN_WIDTH.issuedTon)
   })
 })

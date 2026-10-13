@@ -16,21 +16,37 @@ import type { PriceRow } from './types'
  */
 export const TON_BUBBLE_CLASS = 'price-compare-ton-bubble'
 
-interface TonCellProps {
+/**
+ * 报单吨位输入单元格的 props。
+ *
+ * <p>吨位信息已按业务要求拆成三列: 「报单吨位」(本组件, 手填输入框)、「已开吨位」与
+ * 「未开吨位」(见 {@link IssuedTonCell} / {@link TonUnopenedCell})。</p>
+ */
+export interface TonCellProps {
   row: PriceRow
   rowId: string
-  /** 全部可选采购订单明细行(含订货/已开/剩余吨位)。 */
-  options: PurchaseOrderTonnageRecord[]
-  /** 当前关联明细行的吨位记录(可能为已不在选项列表中的行)。 */
-  linked?: PurchaseOrderTonnageRecord
-  /** 本单据内该明细行的报单吨位合计(用于叠加判断超额)。 */
-  localTonForItem: number
   /** 单据级不可编辑(只读或被他人签出 / 锁定规格和数量)。 */
   disabled: boolean
   /** 该行已锁定(锁定该行 = 规格与吨位定稿): 吨位输入一并只读。 */
   rowLockDisabled: boolean
   /** 只读原因提示: 只读/全局锁/行锁时用于说明为什么不可编辑(不静默禁用)。 */
   lockReason?: string
+  lockedClassName?: string
+  onTonChange: (value: number | undefined, warnPositive: boolean) => void
+  /** 在同一吨位列内移动焦点; 返回 false 表示已到边界。 */
+  onMoveFocus: (delta: number) => boolean
+}
+
+/** 采购订单口径的两列(已开吨位 / 未开吨位)共用的 props。 */
+export interface TonOrderCellProps {
+  row: PriceRow
+  /** 全部可选采购订单明细行(含订货/已开/剩余吨位)。 */
+  options: PurchaseOrderTonnageRecord[]
+  /** 当前关联明细行的吨位记录(可能为已不在选项列表中的行)。 */
+  linked?: PurchaseOrderTonnageRecord
+  /** 本单据内该明细行的报单吨位合计(悬浮明细里作为"本单报单"给出)。 */
+  localTonForItem: number
+  loading: boolean
   /**
    * 是否允许关联采购订单: 该行规格与吨位已定稿(行级锁 或 单据级「锁定规格和数量」)且非只读。
    *
@@ -41,13 +57,8 @@ interface TonCellProps {
   purchaseOrderLinkAllowed: boolean
   /** 关联被禁用的原因: 未提供时按"未定稿"口径给出兜底文案(禁用不静默)。 */
   purchaseOrderLinkBlockedReason?: string
-  loading: boolean
-  lockedClassName?: string
-  onTonChange: (value: number | undefined, warnPositive: boolean) => void
   /** 打开采购订单明细选择弹窗(由 SheetPanel 统一挂载)。 */
   onOpenPicker: () => void
-  /** 在同一吨位列内移动焦点; 返回 false 表示已到边界。 */
-  onMoveFocus: (delta: number) => boolean
 }
 
 function tonValueText(value: number) {
@@ -62,15 +73,15 @@ function itemSpecText(record: PurchaseOrderTonnageRecord) {
 }
 
 /**
- * 解析吨位单元格的采购订单视图。
- * 集中在一处: 关联明细、快照兜底、实时已开吨位与超额判定之间有先后依赖,
- * 散在组件里会让组件的控制流难以跟进。
+ * 解析吨位相关单元格的采购订单视图(关联明细 + 快照兜底)。
+ *
+ * <p>「已开吨位」「未开吨位」两列与报单吨位格共用同一份解析, 避免三处各查一次选项列表
+ * 后出现"某列认得关联、某列显示未关联"的漂移。</p>
  */
-function resolveTonnageView(
+export function resolveTonnageView(
   row: PriceRow,
   options: PurchaseOrderTonnageRecord[],
   linked: PurchaseOrderTonnageRecord | undefined,
-  localTonForItem: number,
 ) {
   const selectedId = row.purchaseOrderItemId
   const selected =
@@ -81,114 +92,171 @@ function resolveTonnageView(
     selectedId !== undefined && selected === undefined
       ? (row.purchaseOrderNo ?? selectedId)
       : undefined
-  /*
-   * 口径(业务确认): **剩余吨位 = 本单据该订单明细行的报单吨位 − 已开吨位**。
-   * - reportedTon: 本单据里关联这条订单明细行的报单吨位合计(锁定后即为定稿值), 是基数;
-   * - actualIssued: 服务端按"已保存报单"统计的已开吨位(已排除本单据, 避免自证);
-   * - issuedOver: 只有"已开 > 本单报单"才是异常, 这时整行转警告色。
-   *   采购订单的订货量只是参考信息(报单可以先于采购), 不再作为上限参与判定 —— 早期版本
-   *   用"订货量 − 已开"当剩余, 于是"报 12 吨、订单 10 吨"被判成超额, 用户反馈逻辑不对。
-   */
-  const actualIssued = selected ? selected.issuedWeight : 0
-  const reportedTon = selected ? localTonForItem : 0
-  const issuedOver =
-    selected !== undefined && reportedTon > 0 && actualIssued > reportedTon
-  return {
-    selected,
-    missingSnapshot,
-    actualIssued,
-    reportedTon,
-    issuedOver,
-  }
+  return { selected, missingSnapshot }
+}
+
+/** 数字格(已开吨位)的只读数值样式: 与未开吨位列同左起点, 便于整列竖向扫读。 */
+function TonFigure({ value }: { value: number }) {
+  return <span className="price-compare-ton-figure">{tonValueText(value)}</span>
+}
+
+/** 未关联采购订单时两列共用的占位(保持行高与列宽一致, 不显示 0 误导)。 */
+function EmptyFigure() {
+  return (
+    <span
+      aria-hidden="true"
+      className="price-compare-ton-meta price-compare-ton-meta--empty"
+    >
+      —
+    </span>
+  )
 }
 
 /**
- * 进度文本: `剩余 12 · 中天`, 已开超过本单报单量时转警告色并改说`已开超 x`。
+ * 「已开吨位」单元格: 服务端按**其他已保存报单**统计的已开吨位(不含本单据)。
  *
- * <p>数字口径: **本单据该明细行的报单吨位 − 已开吨位 = 剩余吨位**。基数是本单据报的量
- * (锁定后定稿), 已开是服务端按其他已保存报单统计的量; 只有"已开 > 本单报单"才标红。</p>
- *
- * <p>品牌取所关联采购订单明细行的品牌字段; 列宽不足时品牌层先省略, 完整品牌与精确吨位
- * 由悬浮明细补齐(不留下半个字)。</p>
+ * <p>只读数字, 保留三位小数(与明细一致): 用户要拿它与「报单吨位」「未开吨位」并排核对,
+ * 因此不做 26.000 → 26 的紧凑化, 也不在这里做任何结论性标红。</p>
  */
-function TonProgress({
+export function IssuedTonCell({
   row,
-  selected,
-  actualIssued,
-  reportedTon,
-  issuedOver,
-}: {
-  row: PriceRow
-  selected: PurchaseOrderTonnageRecord | undefined
-  actualIssued: number
-  reportedTon: number
-  issuedOver: boolean
-}) {
+  options,
+  linked,
+}: Pick<TonOrderCellProps, 'row' | 'options' | 'linked'>) {
   const { t } = useTranslation()
-  if (!selected) {
-    /*
-      未关联时保留占位: 关联行与未关联行高度一致, 表格不会高低不齐。
-      占位同样放在进度层里 —— 该层 flex-grow 吃掉整格余量, 未关联行的报单吨位
-      输入框才会和关联行落在同一个竖列上, 不会因为少了一段文字而右移。
-    */
-    return (
-      <span className="price-compare-ton-progress">
-        <span
-          aria-hidden="true"
-          className="price-compare-ton-meta price-compare-ton-meta--empty"
+  const { selected } = resolveTonnageView(row, options, linked)
+  return (
+    <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
+      {selected ? (
+        <Tooltip
+          classNames={{ root: TON_BUBBLE_CLASS }}
+          title={t('priceCompare.sheet.purchaseOrderSavedBasis')}
         >
-          —
+          <TonFigure value={selected.issuedWeight} />
+        </Tooltip>
+      ) : (
+        <EmptyFigure />
+      )}
+    </div>
+  )
+}
+
+/**
+ * 「未开吨位」单元格: **未开吨位 = 订货吨位 − 已开吨位**, 并承载品牌与明细入口。
+ *
+ * <p>数字口径(业务确认): 订货吨位是该采购订单明细行锁定后的订货量, 已开吨位是其他已保存
+ * 报单占用该明细行的量, 两者相减就是这条明细还没开的量 —— 订货量必须算进来。本单据这一行
+ * 报了多少吨由相邻的「报单吨位」列给出, 两个数并排即可看出"报的量是否超过订单还没开的量",
+ * 因此这里不再用一行文字下"超额/剩余"的结论。</p>
+ *
+ * <p>负值只可能来自"已开量超过订货量", 属于真正的异常, 此时数字转警告色并在悬浮明细里
+ * 用两个具体数字说明; 品牌取所关联明细行的品牌, 列宽不足时品牌层先省略(数字是硬契约)。</p>
+ */
+export function TonUnopenedCell({
+  row,
+  options,
+  linked,
+  localTonForItem,
+  loading,
+  purchaseOrderLinkAllowed,
+  purchaseOrderLinkBlockedReason,
+  onOpenPicker,
+}: TonOrderCellProps) {
+  const { t } = useTranslation()
+  const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
+
+  const popoverContent = selected ? (
+    <LinkedPurchaseOrderPopover
+      selected={selected}
+      localTonForItem={localTonForItem}
+      linkAllowed={purchaseOrderLinkAllowed}
+      linkBlockedReason={purchaseOrderLinkBlockedReason}
+      onOpenPicker={onOpenPicker}
+    />
+  ) : (
+    <UnlinkedPurchaseOrderPopover
+      missingSnapshot={missingSnapshot}
+      linkAllowed={purchaseOrderLinkAllowed}
+      linkBlockedReason={purchaseOrderLinkBlockedReason}
+      onOpenPicker={onOpenPicker}
+    />
+  )
+
+  /*
+    用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
+    弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。
+  */
+  const infoButton = (
+    <Popover
+      classNames={{ root: TON_BUBBLE_CLASS }}
+      content={popoverContent}
+      mouseEnterDelay={0.15}
+      placement="right"
+      trigger={['hover', 'click']}
+    >
+      <button
+        aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
+        className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
+        type="button"
+      >
+        <InfoCircleOutlined />
+      </button>
+    </Popover>
+  )
+
+  if (!selected) {
+    return (
+      <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
+        <span className="price-compare-ton-progress">
+          <EmptyFigure />
         </span>
-      </span>
+        {infoButton}
+      </div>
     )
   }
 
-  // 剩余吨位 = 本单据该明细行报单吨位 − 已开吨位(可为负, 负值即"已开超")
-  const remaining = reportedTon - actualIssued
-  // 可见文案与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
-  const { primary, brand } = tonProgressTextParts(t, selected, reportedTon)
+  const unopened = selected.orderedWeight - selected.issuedWeight
+  // 已开量超过订货量: 唯一需要标红的情形(订货量已被算进这个差值)
+  const overOpened = unopened < 0
+  // 可见数字与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
+  const { primary, brand } = tonProgressTextParts(selected)
   // 本行吨位与本单该明细行合计不一致时(同明细行多行)才单独说明合计, 避免重复行
   const itemReportedDiffers =
-    row.ton !== undefined && Math.abs(row.ton - reportedTon) > 0.000_1
+    row.ton !== undefined && Math.abs(row.ton - localTonForItem) > 0.000_1
   const detail = (
     <div className="price-compare-ton-tooltip">
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.ton')}</span>
-        <span>{row.ton === undefined ? '—' : tonValueText(row.ton)}</span>
-      </div>
-      {itemReportedDiffers ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
-          <span>{tonValueText(reportedTon)}</span>
-        </div>
-      ) : null}
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-        <span>{tonValueText(actualIssued)}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderRemaining')}</span>
-        <span
-          className={issuedOver ? 'price-compare-ton-hint--over' : undefined}
-        >
-          {tonValueText(remaining)}
-        </span>
-      </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
         <span>{tonValueText(selected.orderedWeight)}</span>
       </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
+        <span>{tonValueText(selected.issuedWeight)}</span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.unopenedTon')}</span>
+        <span
+          className={overOpened ? 'price-compare-ton-hint--over' : undefined}
+        >
+          {tonValueText(unopened)}
+        </span>
+      </div>
+      {itemReportedDiffers ? (
+        <div className="price-compare-ton-popover-row">
+          <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
+          <span>{tonValueText(localTonForItem)}</span>
+        </div>
+      ) : null}
       {brand ? (
         <div className="price-compare-ton-popover-row">
           <span>{t('priceCompare.sheet.columns.brand')}</span>
           <span>{brand}</span>
         </div>
       ) : null}
-      {issuedOver ? (
+      {overOpened ? (
         <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderIssuedOverLong', {
-            issued: tonValueText(actualIssued),
-            reported: tonValueText(reportedTon),
+          {t('priceCompare.sheet.purchaseOrderOverOrderedLong', {
+            unopened: tonValueText(unopened),
           })}
         </div>
       ) : null}
@@ -196,38 +264,34 @@ function TonProgress({
   )
 
   return (
-    <Tooltip
-      classNames={{ root: TON_BUBBLE_CLASS }}
-      placement="top"
-      title={detail}
-    >
-      {/*
-        单行结构: 主段(剩余/已开超)+品牌两层各自负责省略号; 不用图标重复提示 ——
-        "已开超 1.81"这段文字本身已经说明问题(颜色不是唯一线索, 读屏口径与悬浮明细里
-        都有完整描述, 满足 WCAG 1.4.1)。
-      */}
-      <span className="price-compare-ton-progress">
-        <span
-          className={
-            issuedOver
-              ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
-              : 'price-compare-ton-meta price-compare-ton-issued'
-          }
-        >
-          {/*
-            视觉上只有一句「剩余 12 · 中天」(已开超时报「已开超 1.81 · 中天」), 但对读屏要把
-            报单(本单据该明细行合计)/已开(实际)/剩余/订货量(参考)一次说清, 否则数字读不出是谁的口径。
-            aria-label 不能挂在无 role 的 span 上(biome a11y 规则), 因此用项目通用的
-            .aries-sr-only 承载这句完整描述。
-          */}
-          <span className="aries-sr-only">
-            {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(reportedTon)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(actualIssued)} / ${t('priceCompare.sheet.columns.purchaseOrderRemaining')} ${tonValueText(remaining)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${issuedOver ? ` / ${t('priceCompare.sheet.purchaseOrderIssuedOverLong', { issued: tonValueText(actualIssued), reported: tonValueText(reportedTon) })}` : ''}`}
+    <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
+      <Tooltip
+        classNames={{ root: TON_BUBBLE_CLASS }}
+        placement="top"
+        title={detail}
+      >
+        {/*
+          数字与品牌两层各自负责省略号: 列宽不足时品牌先让位, 数字必须完整可读。
+          读屏口径把订货/已开/未开一次说清, 否则单看一个数字读不出是谁的口径。
+        */}
+        <span className="price-compare-ton-progress">
+          <span
+            className={
+              overOpened
+                ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
+                : 'price-compare-ton-meta price-compare-ton-issued'
+            }
+          >
+            <span className="aries-sr-only">
+              {`${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(selected.issuedWeight)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(unopened)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overOpened ? ` / ${t('priceCompare.sheet.purchaseOrderOverOrderedLong', { unopened: tonValueText(unopened) })}` : ''}`}
+            </span>
+            {primary}
           </span>
-          {primary}
+          {brand ? <TonIssuedBrand brand={brand} over={overOpened} /> : null}
         </span>
-        {brand ? <TonIssuedBrand brand={brand} over={issuedOver} /> : null}
-      </span>
-    </Tooltip>
+      </Tooltip>
+      {infoButton}
+    </div>
   )
 }
 
@@ -262,56 +326,28 @@ function TonIssuedBrand({ brand, over }: { brand: string; over: boolean }) {
 }
 
 /**
- * 吨位单元格: 单行 —— 报单吨位输入(右对齐等宽数字) + 次要小字「剩余 · 品牌」+ 明细入口。
+ * 「报单吨位」单元格: 手填吨位输入框(右对齐等宽数字)。
  *
- * <p>单行的原因: 两行结构会把该行撑高(实测行高 53 / 吨位格 48, 比其它数据行多约 24px),
- * 数字与进度分开后也很难在同一水平线上扫读。压成一行后吨位格与其它单元格同为 24px 内容高,
- * 行高由整行最高的单元格决定, 不再由吨位列额外撑高。</p>
+ * <p>吨位信息按业务要求拆成三列: 本列只放输入框, 「已开吨位」与「未开吨位」由
+ * {@link IssuedTonCell} / {@link TonUnopenedCell} 两列承载 —— 三者并排后用户不必在
+ * 一行小字里做心算, 也不会因为一行放不下而被省略号收尾。</p>
  *
- * <p>次要小字分两层: 结论层(「剩余 x」/「已开超 x」, 硬契约)与品牌层(可省)。列宽不足时
- * 品牌层先收缩并省略号收尾, 结论层保持完整, 完整口径仍见进度文本的 Tooltip; 明细图标
- * 悬停/点击给出该规格行的订单 popover, popover 内可打开选择弹窗, 文案只提示不拦截保存。</p>
+ * <p>锁定原因统一走外层 span: 禁用输入框不派发 mouseenter, Tooltip 直接挂在输入框上会
+ * 静默失效(实测), 用户只看到不可编辑却不知原因。</p>
  */
 export function TonCell({
   row,
   rowId,
-  options,
-  linked,
-  localTonForItem,
   disabled,
   rowLockDisabled,
   lockReason,
-  purchaseOrderLinkAllowed,
-  purchaseOrderLinkBlockedReason,
-  loading,
   lockedClassName,
   onTonChange,
-  onOpenPicker,
   onMoveFocus,
 }: TonCellProps) {
   const { t } = useTranslation()
-  const { selected, missingSnapshot, actualIssued, reportedTon, issuedOver } =
-    resolveTonnageView(row, options, linked, localTonForItem)
   /** 单据不可编辑或该行已锁定: 吨位输入只读(与规格同一锁定口径)。 */
   const inputDisabled = disabled || rowLockDisabled
-
-  const popoverContent = selected ? (
-    <LinkedPurchaseOrderPopover
-      linkAllowed={purchaseOrderLinkAllowed}
-      linkBlockedReason={purchaseOrderLinkBlockedReason}
-      selected={selected}
-      reportedTon={reportedTon}
-      issuedOver={issuedOver}
-      onOpenPicker={onOpenPicker}
-    />
-  ) : (
-    <UnlinkedPurchaseOrderPopover
-      linkAllowed={purchaseOrderLinkAllowed}
-      linkBlockedReason={purchaseOrderLinkBlockedReason}
-      missingSnapshot={missingSnapshot}
-      onOpenPicker={onOpenPicker}
-    />
-  )
 
   const tonInput = (
     <Input
@@ -381,55 +417,28 @@ export function TonCell({
           tonInput
         )}
       </div>
-      {/* 单行: 输入 + 「剩余 x · 品牌」次要小字 + 明细入口同一行, 行高与其它数据行一致 */}
-      <TonProgress
-        actualIssued={actualIssued}
-        issuedOver={issuedOver}
-        reportedTon={reportedTon}
-        row={row}
-        selected={selected}
-      />
-      <Popover
-        classNames={{ root: TON_BUBBLE_CLASS }}
-        content={popoverContent}
-        mouseEnterDelay={0.15}
-        placement="right"
-        trigger={['hover', 'click']}
-      >
-        {/* 用原生 button 而非 span: 键盘可聚焦、Enter/Space 可打开弹层;
-            弹层内的「选择采购订单」是关联订单的唯一入口, 原本 hover-only 对键盘不可达。 */}
-        <button
-          aria-label={t('priceCompare.sheet.purchaseOrderDetail')}
-          className={`price-compare-ton-info${loading ? ' price-compare-ton-info--loading' : ''}`}
-          type="button"
-        >
-          <InfoCircleOutlined />
-        </button>
-      </Popover>
     </div>
   )
 }
 
-/** 已关联采购订单的明细弹层: 品牌/订货(参考)/已开(实际)/本单报单/剩余 + 已开超提示。 */
+/** 已关联采购订单的明细弹层: 订货/已开(实际)/未开吨位/本单报单/品牌 + 已开超订货提示。 */
 function LinkedPurchaseOrderPopover({
   selected,
-  reportedTon,
-  issuedOver,
+  localTonForItem,
   linkAllowed,
   linkBlockedReason,
   onOpenPicker,
 }: {
   selected: PurchaseOrderTonnageRecord
-  reportedTon: number
-  issuedOver: boolean
+  localTonForItem: number
   linkAllowed: boolean
   linkBlockedReason?: string
   onOpenPicker: () => void
 }) {
   const { t } = useTranslation()
-  // 口径: 剩余 = 本单据该明细行报单吨位 − 已开吨位(订货量只是参考)
-  const actualIssued = selected.issuedWeight
-  const remaining = reportedTon - actualIssued
+  // 口径: 未开吨位 = 订货吨位 − 已开吨位(订货量必须算进来)
+  const unopened = selected.orderedWeight - selected.issuedWeight
+  const overOpened = unopened < 0
   const brand = issuedBrandText(selected)
   return (
     <div className="price-compare-ton-popover">
@@ -458,30 +467,31 @@ function LinkedPurchaseOrderPopover({
         <span>{selected.status}</span>
       </div>
       <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
-        <span>{tonValueText(reportedTon)}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-        <span>{tonValueText(actualIssued)}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderRemaining')}</span>
-        <span
-          className={issuedOver ? 'price-compare-ton-hint--over' : undefined}
-        >
-          {tonValueText(remaining)}
-        </span>
-      </div>
-      <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
         <span>{tonValueText(selected.orderedWeight)}</span>
       </div>
-      {issuedOver ? (
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
+        <span>{tonValueText(selected.issuedWeight)}</span>
+      </div>
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.unopenedTon')}</span>
+        <span
+          className={overOpened ? 'price-compare-ton-hint--over' : undefined}
+        >
+          {tonValueText(unopened)}
+        </span>
+      </div>
+      {localTonForItem > 0 ? (
+        <div className="price-compare-ton-popover-row">
+          <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
+          <span>{tonValueText(localTonForItem)}</span>
+        </div>
+      ) : null}
+      {overOpened ? (
         <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderIssuedOverLong', {
-            issued: tonValueText(actualIssued),
-            reported: tonValueText(reportedTon),
+          {t('priceCompare.sheet.purchaseOrderOverOrderedLong', {
+            unopened: tonValueText(unopened),
           })}
         </div>
       ) : null}

@@ -65,7 +65,9 @@ import { LockableField } from './LockableField'
 import { withMemberVisibility } from './price-compare-support'
 import { PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH } from './sheet-column-width'
 import {
+  buildIssuedTonColumn,
   buildTonColumn,
+  buildUnopenedTonColumn,
   EMPTY_PURCHASE_ORDER_TONNAGE,
   type PurchaseOrderTonnageDraftInput,
 } from './ton-column'
@@ -879,6 +881,42 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       readOnly,
       tonTotalText,
       width: widths.ton,
+      issuedWidth: widths.issuedTon,
+      unopenedWidth: widths.unopenedTon,
+      quantityLockClass,
+      purchaseOrderOptions: purchaseOrderTonnage.options,
+      tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
+      purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
+      localTonByItemId,
+      moveFocusTon: ctx.moveFocusTon,
+      patchRow,
+      openPurchaseOrderPicker,
+    }),
+    buildIssuedTonColumn({
+      t,
+      sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
+      readOnly,
+      tonTotalText,
+      width: widths.ton,
+      issuedWidth: widths.issuedTon,
+      unopenedWidth: widths.unopenedTon,
+      quantityLockClass,
+      purchaseOrderOptions: purchaseOrderTonnage.options,
+      tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
+      purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
+      localTonByItemId,
+      moveFocusTon: ctx.moveFocusTon,
+      patchRow,
+      openPurchaseOrderPicker,
+    }),
+    buildUnopenedTonColumn({
+      t,
+      sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
+      readOnly,
+      tonTotalText,
+      width: widths.ton,
+      issuedWidth: widths.issuedTon,
+      unopenedWidth: widths.unopenedTon,
       quantityLockClass,
       purchaseOrderOptions: purchaseOrderTonnage.options,
       tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
@@ -1494,6 +1532,8 @@ function SheetTable(props: SheetTableProps) {
           base.widths.category +
           base.widths.spec +
           base.widths.ton +
+          base.widths.issuedTon +
+          base.widths.unopenedTon +
           base.visibleBrandCount *
             (base.widths.net +
               base.widths.spot +
@@ -2414,16 +2454,12 @@ export function SheetPanel(props: Props) {
   })
 
   /**
-   * 吨位列定宽依据: 本单据**实际会出现**的进度小字(选项列表 + 已关联明细)。
+   * 未开吨位列的定宽依据: 本单据**实际会出现**的明细行(选项列表 + 已关联明细)。
    *
-   * <p>进度小字固定 11px、宽度随吨位位数与品牌名长度变化, 已开超时还会换成「已开超 1.81」,
-   * 只按字号换算算不出「剩余 10.19 · 中天」需要多宽; 连同本单据未保存吨位一起传给
-   * useSheetColumnWidths, 由它取最宽一条定宽, 避免文字被省略号收尾。</p>
+   * <p>数字与品牌固定 11px、宽度随订货/已开吨位位数与品牌名长度变化, 只按字号换算算不出
+   * 「10.19 · 中天」需要多宽; 传进来后由 useSheetColumnWidths 取最宽一条定宽, 避免数字或
+   * 品牌被省略号收尾。</p>
    */
-  const localTonByItemId = useMemo(
-    () => sumTonByPurchaseOrderItem(rows),
-    [rows],
-  )
   const tonnageRecordsForWidth = useMemo(
     () => [
       ...purchaseOrderTonnage.options,
@@ -2431,15 +2467,7 @@ export function SheetPanel(props: Props) {
     ],
     [purchaseOrderTonnage.options, purchaseOrderTonnage.tonnageByItemId],
   )
-
-  /**
-   * 当前字号下的列宽(个人设置字号变化时自动重算, 保证文字不被裁断);
-   * 吨位列再按上面那份真实内容兜底。
-   */
-  const columnWidths = useSheetColumnWidths(
-    tonnageRecordsForWidth,
-    localTonByItemId,
-  )
+  const columnWidths = useSheetColumnWidths(tonnageRecordsForWidth)
 
   const base = {
     sheet,

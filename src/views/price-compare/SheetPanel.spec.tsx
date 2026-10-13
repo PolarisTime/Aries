@@ -7,7 +7,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
-import { requiredTonColumnWidth, tonProgressLineWidth } from './core'
+import {
+  requiredTonColumnWidth,
+  SHEET_COLUMN_WIDTH,
+  tonProgressLineWidth,
+} from './core'
 import { SheetPanel } from './SheetPanel'
 import type { PurchaseOrderTonnageDraftInput } from './ton-column'
 import { tonProgressTextParts } from './ton-progress-text'
@@ -1339,7 +1343,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 
-  it('主流程: 吨位列显示剩余吨位(本单报单 − 已开)并带品牌', async () => {
+  it('主流程: 未开吨位列显示 订货 − 已开, 已开吨位单独成列', async () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1360,7 +1364,7 @@ describe('SheetPanel 指定品牌展示', () => {
       [
         {
           ...baseRow,
-          // 本单据手填 12: 属于未保存口径, 不得混进"已开"数字
+          // 本单据手填 12: 只影响「报单吨位」列, 不进"已开/未开"两个口径
           ton: 12,
           locked: true,
           purchaseOrderId: '88',
@@ -1379,26 +1383,38 @@ describe('SheetPanel 指定品牌展示', () => {
         isError: false,
       },
     )
-    const meta = container.querySelector<HTMLElement>('.price-compare-ton-meta')
-    // 本单据报 12 / 其他单据已开 5 ⇒ 剩余 7; 订货 32.768 只是参考, 不参与判定
-    expect(meta?.textContent).toContain('剩余 7')
-    expect(meta?.textContent).toContain('中天')
+    // 订货 32.768 − 已开 5 = 未开 27.768
+    const unopened = container.querySelector<HTMLElement>(
+      '.price-compare-ton-issued',
+    )
+    expect(unopened?.textContent).toContain('27.768')
+    expect(
+      container.querySelector('.price-compare-ton-progress')?.textContent,
+    ).toContain('中天')
+    // 已开吨位单独一列, 精确值 5.000
+    expect(
+      container.querySelector('.price-compare-ton-figure')?.textContent,
+    ).toBe('5.000')
+    // 报单吨位列只放输入框
+    const tonInput = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    expect(tonInput?.value).toBe('12')
 
     await act(async () => {
-      meta?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      unopened?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 250))
     })
     const tooltipText =
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
-    expect(tooltipText).toContain('报单吨位')
-    expect(tooltipText).toContain('12.000')
-    expect(tooltipText).toContain('已开吨位（实际）')
-    expect(tooltipText).toContain('5.000')
-    expect(tooltipText).toContain('剩余吨位')
-    expect(tooltipText).toContain('7.000')
-    // 订货量仍在明细里作为参考, 但不产生"超额"结论
     expect(tooltipText).toContain('订货吨位')
     expect(tooltipText).toContain('32.768')
+    expect(tooltipText).toContain('已开吨位（实际）')
+    expect(tooltipText).toContain('5.000')
+    expect(tooltipText).toContain('未开吨位')
+    expect(tooltipText).toContain('27.768')
+    // 本行吨位与本单该明细行合计一致(都是 12) ⇒ 不重复给合计行
+    expect(tooltipText).not.toContain('本单该明细行报单')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
@@ -1442,18 +1458,19 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
 
-    // 列宽必须覆盖整段「剩余 107.5 · 中天钢铁」(本单报 120 − 已开 12.5), 而不是只兜主段下界
-    const parts = tonProgressTextParts(i18n.t, poRecord, 120)
-    expect(parts.primary).toBe('剩余 107.5')
-    const needed = requiredTonColumnWidth(
-      14,
-      tonProgressLineWidth(parts.primary, parts.brand),
+    // 列宽必须覆盖整段「115.5 · 中天钢铁」(未开 = 128 − 12.5), 而不是只兜数字下界
+    const parts = tonProgressTextParts(poRecord)
+    expect(parts.primary).toBe('115.5')
+    // 未开吨位列取"等比换算 184"与"内容宽"的较大值
+    const needed = Math.max(
+      SHEET_COLUMN_WIDTH.unopenedTon,
+      requiredTonColumnWidth(tonProgressLineWidth(parts.primary, parts.brand)),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
     )
     expect(colStyles).toContain(`width:${needed}px;`)
     // 只兜主段下界的口径更窄, 说明这次确实按真实内容加宽了
-    expect(needed).toBeGreaterThan(requiredTonColumnWidth(14, 0))
+    expect(needed).toBeGreaterThan(requiredTonColumnWidth())
   })
 })

@@ -1,17 +1,16 @@
-import type { TFunction } from 'i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
 
 /**
- * 吨位进度小字的文案与宽度口径(渲染与列宽计算共用的**唯一**来源)。
+ * 吨位进度列的文案与宽度口径(渲染与列宽计算共用的**唯一**来源)。
  *
- * <p>可见文案只说一句话: 「剩余 10.19 · 中天」—— 基数固定为**本单据该订单明细行的报单
- * 吨位**, 减去已开吨位即为剩余。早期版本分别用过「已开 0/10.19」斜杠比值与「订货量 − 已开」
- * 两种口径, 前者要用户自己心算, 后者把采购订单的订货量当成了上限(报 12 吨、订单 10 吨会被
- * 误判超额), 均已废弃; 订货量/已开/报单合计等完整口径由悬浮明细与 ⓘ 弹层承载。</p>
+ * <p>可见数字只有一句: 「未开吨位 = 订货吨位 − 已开吨位」(如 `10.19`), 品牌跟在后面。
+ * 本单据报了多少吨由相邻的「报单吨位」列给出 —— 两个数并排, 用户自己就能看出"报的量是否
+ * 超过订单还没开的量", 不再由一行文字替用户下结论。历史口径(「已开 0/10.19」斜杠比值、
+ * 以及把报单量当基数的「剩余」)均已废弃。</p>
  *
- * <p>这里的函数同时被 {@link TonCell} 的渲染与 `useSheetColumnWidths` 的定宽调用,
- * 避免两处各写一套格式化逻辑后逐渐漂移(列宽按 A 算、渲染成 B 就会被裁)。</p>
+ * <p>这里的函数同时被进度单元格的渲染与 `useSheetColumnWidths` 的定宽调用, 避免两处各写
+ * 一套格式化逻辑后逐渐漂移(列宽按 A 算、渲染成 B 就会被裁)。</p>
  */
 
 /**
@@ -32,78 +31,47 @@ export function issuedBrandText(record: PurchaseOrderTonnageRecord): string {
   return [...new Set([(record.brand ?? '').trim()].filter(Boolean))].join('、')
 }
 
-/** 进度小字的可见文案: 主段(剩余吨位 / 已开超量 / 已开量)与品牌段。 */
+/** 吨位进度小字的可见文案: 数字段(未开吨位)与品牌段。 */
 export interface TonProgressTextParts {
-  /** 主段: 正常时是剩余吨位, 已开超时报超出量, 本单据未报量时报已开量。 */
+  /** 数字段: 未开吨位 = 订货吨位 − 已开吨位(可为负, 表示已开超过订货量)。 */
   primary: string
   /** 品牌段, 可省: 列宽不足时先省略品牌。 */
   brand: string
 }
 
 /**
- * 进度小字的三态文案(与单元格渲染逐字一致)。
+ * 「未开吨位」列的可见文案(与单元格渲染逐字一致)。
  *
- * <p>口径按业务确认改为「**锁定后的报单吨位 − 已开吨位 = 剩余吨位**」: 报单吨位(本单据该
- * 订单明细行的报单合计)是这一批要开的量, 已开吨位是**其他已保存报单**占用该明细行的量,
- * 两者相减就是还剩多少没开。采购订单的订货量只是参考信息, 不再作为上限参与判定 ——
- * 早期版本用「订货量 − 已开」当剩余, 于是"报 12 吨、订单 10 吨"会被判成超额, 用户反馈
- * 逻辑不对(报单本来就可能先于采购)。</p>
+ * <p>口径(业务确认): **未开吨位 = 订货吨位 − 已开吨位**。订货量是该采购订单明细行的
+ * 订货量(锁定/定稿后的量), 已开吨位是**其他已保存报单**占用该明细行的量(本单据自身被
+ * 排除, 避免自证); 两者相减就是这条明细还没开的量。本单据这一行报了多少吨由「报单吨位」
+ * 列单独给出, 两个数并排就能看出"报的量是否超过了订单还没开的量", 不再由一行文字下结论。</p>
  *
- * <p>三种状态:</p>
- * <ol>
- *   <li>报单 > 已开: 「剩余 x」—— 还能开多少;</li>
- *   <li>报单 &lt; 已开: 「已开超 x」—— 别人已经开的量超过了本单据报的量(真正的异常);</li>
- *   <li>本单据尚未报量(报单为 0): 「已开 x」—— 只说明这条明细已被开了多少。</li>
- * </ol>
+ * <p>负值只可能来自"已开量超过订货量", 属于真正的异常, 由单元格标红并在悬浮明细里说明。</p>
  */
 export function tonProgressTextParts(
-  t: TFunction,
   record: PurchaseOrderTonnageRecord,
-  reportedTon: number,
 ): TonProgressTextParts {
-  // 容错: 吨位输入框可能给出空值/NaN, 一律按"本单据尚未报量"处理, 不把 NaN 显示给用户
-  const reported = Number.isFinite(reportedTon) ? reportedTon : 0
-  const issued = record.issuedWeight
-  const remaining = reported - issued
+  const unopened = record.orderedWeight - record.issuedWeight
   return {
-    primary:
-      reported <= 0
-        ? t('priceCompare.sheet.purchaseOrderIssuedShort', {
-            issued: compactTonText(issued),
-          })
-        : remaining < 0
-          ? t('priceCompare.sheet.purchaseOrderIssuedOverShort', {
-              weight: compactTonText(-remaining),
-            })
-          : t('priceCompare.sheet.purchaseOrderRemainingShort', {
-              weight: compactTonText(remaining),
-            }),
+    primary: compactTonText(unopened),
     brand: issuedBrandText(record),
   }
 }
 
 /**
- * 一组明细行里最宽的一条进度小字(px)。
+ * 一组明细行里最宽的一条未开吨位文案(px)。
  *
- * <p>用作吨位列的定宽依据: 列宽只需覆盖**本单据实际会出现**的最长文案, 既不会把
- * 「剩余 27.768 · 中天钢铁」裁断, 也不会为用不到的品牌长度白留空白。本单据当前报单量与
- * "尚未报量"两种状态都参与比较, 三种状态之间切换时列宽不会突然不够。</p>
+ * <p>用作未开吨位列的定宽依据: 列宽只需覆盖**本单据实际会出现**的吨位位数与品牌长度,
+ * 不会把「10.19 · 中天钢铁」裁断, 也不会为用不到的品牌长度白留空白。</p>
  */
 export function maxTonProgressTextWidth(
-  t: TFunction,
   records: readonly PurchaseOrderTonnageRecord[],
-  localTonByItemId: ReadonlyMap<string, number>,
   measure: (parts: TonProgressTextParts) => number,
 ): number {
   let max = 0
   for (const record of records) {
-    const reportedTon = localTonByItemId.get(record.purchaseOrderItemId) ?? 0
-    max = Math.max(
-      max,
-      measure(tonProgressTextParts(t, record, reportedTon)),
-      // "本单据尚未报量"状态(文案变成「已开 issued」)也要覆盖
-      measure(tonProgressTextParts(t, record, 0)),
-    )
+    max = Math.max(max, measure(tonProgressTextParts(record)))
   }
   return max
 }

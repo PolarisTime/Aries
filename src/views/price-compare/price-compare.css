@@ -693,9 +693,8 @@
 }
 
 /*
- * 吨位单元格: 单行 —— 输入 + 「已开 / 订货 · 品牌」次要小字 + 明细图标。
- * 两行堆叠会把该行撑高约 24px(实测行高 53 对其它数据行的内容高 24), 压成一行后
- * 吨位格与同表其它单元格等高, 行高由整行最高的单元格决定。
+ * 吨位三列: 「报单吨位」(输入) / 「已开吨位」(只读数字) / 「未开吨位」(数字·品牌 + 明细入口)。
+ * 三列都是单行、与同表其它单元格等高(两行堆叠会把整行撑高约 24px)。
  */
 .price-compare-ton-cell {
   display: flex;
@@ -705,6 +704,25 @@
   align-items: center;
   justify-content: flex-end;
   min-width: 0;
+}
+
+/*
+ * 已开/未开两列的单元格: 只读数字, 内容从单元格左起点排 —— 与报单吨位输入框、
+ * 未开吨位数字共用同一个左起点, 三列数字在竖直方向对齐, 便于整列扫读比对。
+ */
+.price-compare-ton-cell--readonly {
+  justify-content: flex-start;
+}
+
+/*
+ * 只读吨位数字(已开吨位列): 固定 11px 次要小字, 不随个人字号缩放(与未开吨位列同口径),
+ * 用等宽数字保证同行数字位数对齐。
+ */
+.price-compare-ton-figure {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ant-color-text-secondary);
+  white-space: nowrap;
 }
 
 /* 报单吨位输入: 固定宽度(em 随字号缩放), 内部数字右对齐同行扫读 */
