@@ -10,6 +10,7 @@ vi.mock('@/api/core/client', () => ({
   apiGet: apiGetMock,
 }))
 
+import { freightSalesOrderCandidatePageResponseSchema } from '@/shared/schemas/module-record'
 import { listFreightSalesOrderCandidatePage } from './freight-bill-candidates'
 
 const TARGET_ORDER_ID = '350692799655452672'
@@ -94,5 +95,22 @@ describe('物流单销售订单候选接口', () => {
 
     expect(response.data?.rows?.[0]?.id).toBe(TARGET_ORDER_ID)
     expect(response.data?.rows?.[0]?.items?.[0]?.id).toBe(TARGET_ITEM_ID)
+  })
+
+  it('候选响应缺少 orderDate 时必须判定为契约失败（后端漏传会让候选列表整页静默为空）', () => {
+    const { orderDate: _omitted, ...rowWithoutOrderDate } =
+      candidatePage.content[0]
+
+    const result = freightSalesOrderCandidatePageResponseSchema.safeParse({
+      ...candidatePage,
+      content: [rowWithoutOrderDate],
+    })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(
+        result.error.issues.map((issue) => issue.path.join('.')),
+      ).toContain('content.0.orderDate')
+    }
   })
 })
