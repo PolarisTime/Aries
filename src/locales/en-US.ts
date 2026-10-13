@@ -2693,10 +2693,11 @@ export const enUS = {
       },
       selectProduct: 'Select product',
       switchLength: 'Switch to {{length}}',
-      lockRow: 'Lock row',
-      unlockRow: 'Unlock row',
+      /** Row-level lock is the same concept as the toolbar "lock spec & quantity", scoped to one row. */
+      lockRow: 'Lock row spec & quantity',
+      unlockRow: 'Unlock row spec & quantity',
       lockRowHint:
-        'Lock to link a purchase order; unlocking clears the linked purchase order',
+        'Locking this row spec & quantity enables purchase-order linking; unlocking clears the link',
       rowLockedHint:
         'This row is locked: spec and tonnage are final. Unlock to edit.',
       cellLockedHint: 'This field is locked. Choose "Unlock" to edit.',
@@ -2743,6 +2744,8 @@ export const enUS = {
       unlockSpecQuantityTooltip: 'Unlock to edit product spec and quantity',
       specQuantityLockedHint:
         'Spec & quantity locked; adding, deleting, or reordering rows is disabled until unlocked',
+      /** Short state label used in the row menu while the sheet-level lock applies. */
+      specQuantityLockedShort: 'Spec & quantity locked',
       supplier: 'Supplier',
       fillSupplier: 'Bulk fill supplier',
       fillSupplierPick: 'Select supplier',

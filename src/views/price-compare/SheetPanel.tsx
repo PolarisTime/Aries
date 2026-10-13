@@ -248,7 +248,8 @@ const cellOf = (
 /** 行操作单元格需要的数据: 菜单项与开关都由外层表格控件决定, 这里只做渲染。 */
 type RowActionsCellProps = {
   rowLabel: string
-  locked: boolean
+  /** 行级锁 `row.locked`: 只影响该行的规格/吨位与关联前置条件。 */
+  rowLocked: boolean
   /** 只读(被他人签出): 整个入口不可用, 由外层 Tooltip 说明原因。 */
   disabled: boolean
   /** 「锁定规格和数量」是否生效: 只禁用会改动规格/数量的菜单项, 菜单本身仍可打开。 */
@@ -278,6 +279,8 @@ type RowActionsCellProps = {
  * <ul>
  *   <li>`readOnly`(他人签出): 整表不可写, 按钮禁用; 外层用原生 `title` +
  *       Tooltip 给出原因, 避免"静默禁用";</li>
+ *   <li>`rowLocked` 与 `specQuantityLocked` 是同一套「锁定规格和数量」的两种范围(行 / 整单):
+ *       入口图标与状态文案都按**有效锁定**取, 行级锁不影响打开菜单;</li>
  *   <li>`specQuantityLocked`(全局锁): 菜单**仍可打开**, 但会改动规格/数量的项
  *       (行级锁定开关、上移/下移、插入行/隔断、删除该行)逐项禁用, 并在菜单顶部
  *       说明原因 —— 用户点得开、看得见为什么点不动;</li>
@@ -286,7 +289,7 @@ type RowActionsCellProps = {
  */
 function RowActionsCell({
   rowLabel,
-  locked,
+  rowLocked,
   disabled,
   specQuantityLocked,
   tooltip,
@@ -317,11 +320,26 @@ function RowActionsCell({
       okButtonProps: { danger: true },
       onOk: onDelete,
     })
-  const lockLabel = t(
-    locked ? 'priceCompare.sheet.unlockRow' : 'priceCompare.sheet.lockRow',
-  )
+  /**
+   * 有效锁定状态: 单据级「锁定规格和数量」与行级锁是同一件事的两种范围, 状态可见性必须一致 ——
+   * 只按 row.locked 画图标会让整单锁定时每行仍显示"更多", 用户看不出规格/吨位已被冻结。
+   */
+  const effectiveLocked = rowLocked || specQuantityLocked
+  /*
+   * 层级文案: 单据级锁生效时说明"整单已锁定规格和数量", 不再显示「解锁该行」——
+   * 那个入口此刻是禁用的, 显示解锁动作会把用户引向做不到的操作(与工具栏口径不一致)。
+   */
+  const lockLabel = specQuantityLocked
+    ? t('priceCompare.sheet.specQuantityLockedShort')
+    : t(
+        rowLocked
+          ? 'priceCompare.sheet.unlockRow'
+          : 'priceCompare.sheet.lockRow',
+      )
   /** 全局锁定时统一禁用会改动规格/数量的项; 行级锁状态本身也由全局锁保护。 */
   const mutationDisabled = specQuantityLocked
+  /** 单据级锁生效时, 行锁入口已被"整单锁定"接管, 保持禁用且不重复展示解锁动作。 */
+  const toggleDisabled = mutationDisabled || specQuantityLocked
   const items: MenuProps['items'] = [
     ...(mutationDisabled
       ? [
@@ -335,9 +353,9 @@ function RowActionsCell({
       : []),
     {
       key: 'toggle-row-lock',
-      icon: locked ? <UnlockOutlined /> : <LockOutlined />,
+      icon: effectiveLocked ? <UnlockOutlined /> : <LockOutlined />,
       label: lockLabel,
-      disabled: mutationDisabled,
+      disabled: toggleDisabled,
     },
     { type: 'divider' },
     {
@@ -427,11 +445,11 @@ function RowActionsCell({
             aria-label={t('priceCompare.sheet.rowActionsLabel', {
               row: rowLabel,
             })}
-            className={`price-compare-row-actions${locked ? ' price-compare-row-actions--locked' : ''}`}
+            className={`price-compare-row-actions${effectiveLocked ? ' price-compare-row-actions--locked' : ''}`}
             disabled={disabled}
-            icon={locked ? <LockOutlined /> : <MoreOutlined />}
+            icon={effectiveLocked ? <LockOutlined /> : <MoreOutlined />}
             size="small"
-            type={locked ? 'primary' : 'text'}
+            type={effectiveLocked ? 'primary' : 'text'}
           />
         </ContextMenu>
       </span>
@@ -658,14 +676,16 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         return (
           <RowActionsCell
             rowLabel={rowLabelOf(row)}
-            locked={rowLocked}
+            rowLocked={rowLocked}
             disabled={menuDisabled}
             specQuantityLocked={specQuantityLocked}
             lockReason={rowLockedHint}
             tooltip={
               readOnly
                 ? t('priceCompare.sheet.readOnlyHint')
-                : t('priceCompare.sheet.lockRowHint')
+                : specQuantityLocked
+                  ? rowLockedHint
+                  : t('priceCompare.sheet.lockRowHint')
             }
             menuOpen={ctx.contextMenuRowId === row.rowId}
             onMenuOpenChange={(open) =>

@@ -2612,9 +2612,11 @@ export const zhCN = {
       columnSettings: '列显示',
       selectProduct: '选择商品',
       switchLength: '切换为{{length}}',
-      lockRow: '锁定该行',
-      unlockRow: '解锁该行',
-      lockRowHint: '锁定后可关联采购订单；解锁会清除已关联的采购订单',
+      /** 行级锁与工具栏「锁定规格和数量」是同一件事, 只是范围 = 一行, 文案保持同词根。 */
+      lockRow: '锁定该行规格和数量',
+      unlockRow: '解锁该行规格和数量',
+      lockRowHint:
+        '锁定该行规格和数量后可关联采购订单；解锁会清除已关联的采购订单',
       /** 行级锁定的作用域说明（锁定该行 = 该行规格与吨位定稿）。 */
       rowLockedHint: '该行已锁定：规格与吨位已定稿，解锁后可修改',
       /** 单元格级锁定的原因说明（与单据级、行级作用域不重叠）。 */
@@ -2659,6 +2661,8 @@ export const zhCN = {
       unlockSpecQuantityTooltip: '解锁后可修改商品规格与数量',
       specQuantityLockedHint:
         '已锁定规格和数量，暂不可新增、删除或拖动行；解锁后可继续编辑',
+      /** 单据级锁生效时, 行菜单里那一项的短状态文案(替代会误导的"解锁该行")。 */
+      specQuantityLockedShort: '已锁定规格和数量',
       supplier: '供应商',
       fillSupplier: '批量填入供应商',
       fillSupplierPick: '选择供应商',

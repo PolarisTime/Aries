@@ -394,13 +394,31 @@ describe('SheetPanel 右键菜单', () => {
     // 首项直接说明"为什么点不动", 而不是一片灰
     expect(items[0]?.textContent).toContain('已锁定规格和数量')
     expect(items[0]?.getAttribute('aria-disabled')).toBe('true')
-    // 会改动规格/数量的项逐项软禁用(可聚焦、可被读屏发现)
-    const lockItem = topMenuItem('锁定该行')
+    // 行锁入口与整单锁是同一件事: 不再显示会误导的"解锁该行", 而是整单锁定状态
+    const lockItem = topMenuItem('已锁定规格和数量')
     expect(lockItem.getAttribute('aria-disabled')).toBe('true')
     const deleteItem = topMenuItem('删除该行')
     expect(deleteItem.getAttribute('aria-disabled')).toBe('true')
     // 触发器本身必须可点(否则用户看不到这份说明)
-    expect(rowActionTrigger(0)?.disabled).toBe(false)
+    const trigger = rowActionTrigger(0)
+    expect(trigger?.disabled).toBe(false)
+    /*
+     * 状态可见性统一: 该行自身没打 row.locked, 但规格/吨位已被整单锁冻结 ——
+     * 入口必须显示实心锁与锁定外观, 而不是"更多"(否则用户看不出已经被锁)。
+     */
+    expect(trigger?.querySelector('.anticon-lock')).not.toBeNull()
+    expect(trigger?.className).toContain('price-compare-row-actions--locked')
+  })
+
+  it('行级锁与整单锁共用同一套锁定状态: 行入口显示实心锁', async () => {
+    renderPanel({ rows: [{ ...twoRows()[0], locked: true }] })
+    const trigger = rowActionTrigger(0)
+    expect(trigger?.querySelector('.anticon-lock')).not.toBeNull()
+    expect(trigger?.className).toContain('price-compare-row-actions--locked')
+    // 行级锁下"解锁该行规格和数量"入口保持可用(与工具栏解锁是两种范围)
+    await rightClick(trigger)
+    const lockItem = topMenuItem('解锁该行规格和数量')
+    expect(lockItem.getAttribute('aria-disabled')).toBe('false')
   })
 
   it('点击原因项不触发任何动作(软禁用项不可激活)', async () => {
