@@ -690,7 +690,7 @@
 .app-top-user-trigger {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-10);
+  gap: var(--space-xs);
   min-width: 0;
   height: calc(var(--app-header-height) - 12px);
   padding: 0 14px 0 var(--space-10);
@@ -1614,7 +1614,7 @@
 .dashboard-metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-10);
+  gap: var(--space-md);
 }
 
 .dashboard-metric-card {
@@ -1939,7 +1939,7 @@
 .dashboard-skeleton-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-10);
+  gap: var(--space-xs);
 }
 
 .dashboard-skeleton-chip {
@@ -2266,7 +2266,7 @@
 .module-filter-chip-options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-xs);
 }
 
 .module-filter-chip-options .ant-radio-wrapper {
