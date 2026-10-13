@@ -34,6 +34,12 @@ const PRICE_PERIOD_LABEL_KEYS = {
  *
  * <p>这里只负责取值联动(禁用), 真正的清空/复位放在表单的 onValuesChange 与保存载荷装配处:
  * 编辑回填的历史脏值不会触发 onValuesChange, 只在渲染层复位会漏掉这类记录。</p>
+ *
+ * <p>列宽按预期输入给: 基准日期是下拉给 8 列(送货日期/报单日期+N 个交易日/每次手工选择),
+ * 顺延交易日数只是 0-30 的数字给 4 列, 休市口径是开关+长文案给 12 列(它的标签本身就有 11 字)。</p>
+ *
+ * <p>排列顺序按「同一件事挨在一起」: 取价数据源/取价地区/取价时段策略/固定取价时段 占满第一行,
+ * 基准日期 8 + 顺延 4 + 休市口径 12 占满第二行 —— 两者都是同一批 24 栅格, 不出现半行空洞。</p>
  */
 export function ProjectPricingBasisFields({
   form,
@@ -91,46 +97,9 @@ export function ProjectPricingBasisFields({
     <>
       <Col span={6}>
         <Form.Item
-          name="priceDateBasis"
-          label={t('modules.pages.project.priceDateBasis')}
-          extra={t('modules.pages.project.priceDateBasisHint')}
-          initialValue={DEFAULT_PRICE_DATE_BASIS}
-        >
-          <Select options={dateBasisOptions} />
-        </Form.Item>
-      </Col>
-      <Col span={6}>
-        <Form.Item
-          name="priceDateOffsetDays"
-          label={t('modules.pages.project.priceDateOffsetDays')}
-          extra={t('modules.pages.project.priceDateOffsetDaysHint')}
-          initialValue={0}
-        >
-          <InputNumber
-            className="w-full"
-            disabled={!isOrderBasis}
-            max={MAX_PRICE_DATE_OFFSET_DAYS}
-            min={0}
-            precision={0}
-            step={1}
-          />
-        </Form.Item>
-      </Col>
-      <Col span={6}>
-        <Form.Item
-          name="priceClosedDayPrevSettle"
-          label={t('modules.pages.project.priceClosedDayPrevSettle')}
-          extra={t('modules.pages.project.priceClosedDayPrevSettleHint')}
-          initialValue={false}
-          valuePropName="checked"
-        >
-          <Switch disabled={!isOrderBasis} />
-        </Form.Item>
-      </Col>
-      <Col span={6}>
-        <Form.Item
           name="pricePeriodPolicy"
           label={t('modules.pages.project.pricePeriodPolicy')}
+          tooltip={t('modules.pages.project.pricePeriodPolicyHint')}
           extra={t('modules.pages.project.pricePeriodPolicyHint')}
           initialValue={DEFAULT_PRICE_PERIOD_POLICY}
         >
@@ -141,6 +110,7 @@ export function ProjectPricingBasisFields({
         <Form.Item
           name="pricePeriodFixed"
           label={t('modules.pages.project.pricePeriodFixed')}
+          tooltip={t('modules.pages.project.pricePeriodFixedHint')}
           extra={t('modules.pages.project.pricePeriodFixedHint')}
           initialValue={null}
           // 策略变化要重跑校验: 从 FIXED 切走时未选具体时段不该再拦住保存。
@@ -169,6 +139,47 @@ export function ProjectPricingBasisFields({
             disabled={!isFixedPeriod}
             options={periodOptions}
           />
+        </Form.Item>
+      </Col>
+      <Col span={8}>
+        <Form.Item
+          name="priceDateBasis"
+          label={t('modules.pages.project.priceDateBasis')}
+          tooltip={t('modules.pages.project.priceDateBasisHint')}
+          extra={t('modules.pages.project.priceDateBasisHint')}
+          initialValue={DEFAULT_PRICE_DATE_BASIS}
+        >
+          <Select options={dateBasisOptions} />
+        </Form.Item>
+      </Col>
+      <Col span={4}>
+        <Form.Item
+          name="priceDateOffsetDays"
+          label={t('modules.pages.project.priceDateOffsetDays')}
+          tooltip={t('modules.pages.project.priceDateOffsetDaysHint')}
+          extra={t('modules.pages.project.priceDateOffsetDaysHint')}
+          initialValue={0}
+        >
+          <InputNumber
+            className="w-full"
+            disabled={!isOrderBasis}
+            max={MAX_PRICE_DATE_OFFSET_DAYS}
+            min={0}
+            precision={0}
+            step={1}
+          />
+        </Form.Item>
+      </Col>
+      <Col span={12}>
+        <Form.Item
+          name="priceClosedDayPrevSettle"
+          label={t('modules.pages.project.priceClosedDayPrevSettle')}
+          tooltip={t('modules.pages.project.priceClosedDayPrevSettleHint')}
+          extra={t('modules.pages.project.priceClosedDayPrevSettleHint')}
+          initialValue={false}
+          valuePropName="checked"
+        >
+          <Switch disabled={!isOrderBasis} />
         </Form.Item>
       </Col>
     </>

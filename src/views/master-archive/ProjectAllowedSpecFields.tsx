@@ -31,6 +31,9 @@ function mergeSelectedOptions(
  *
  * <p>单独成组件有两个原因: 一是它自带数据依赖(品牌取商品资料去重、材质取商品资料牌号),
  * 二是项目编辑器本身已接近可读性上限, 把这组字段抽出来避免继续膨胀。</p>
+ *
+ * <p>列宽按预期输入给(NN/g 表单建议: 输入框宽度应与内容相称): 品牌/材质是多选下拉, 给 8 列;
+ * 处理方式只有三个固定档位, 给 4 列即够, 两个「处理方式」紧跟在各自的多选之后成对出现。</p>
  */
 export function ProjectAllowedSpecFields({
   form,
@@ -80,10 +83,11 @@ export function ProjectAllowedSpecFields({
 
   return (
     <>
-      <Col span={6}>
+      <Col span={8}>
         <Form.Item
           name="allowedBrands"
           label={t('modules.pages.project.allowedBrands')}
+          tooltip={t('modules.pages.project.allowedSpecHint')}
           extra={t('modules.pages.project.allowedSpecHint')}
         >
           <Select
@@ -96,19 +100,21 @@ export function ProjectAllowedSpecFields({
           />
         </Form.Item>
       </Col>
-      <Col span={6}>
+      <Col span={4}>
         <Form.Item
           name="allowedBrandSeverity"
           label={t('modules.pages.project.scopeEnforcement')}
+          tooltip={t('modules.pages.project.scopeEnforcementHint')}
           extra={t('modules.pages.project.scopeEnforcementHint')}
         >
           <Select options={enforcementOptions} />
         </Form.Item>
       </Col>
-      <Col span={6}>
+      <Col span={8}>
         <Form.Item
           name="allowedMaterials"
           label={t('modules.pages.project.allowedMaterials')}
+          tooltip={t('modules.pages.project.allowedSpecHint')}
           extra={t('modules.pages.project.allowedSpecHint')}
         >
           <Select
@@ -121,10 +127,11 @@ export function ProjectAllowedSpecFields({
           />
         </Form.Item>
       </Col>
-      <Col span={6}>
+      <Col span={4}>
         <Form.Item
           name="allowedMaterialSeverity"
           label={t('modules.pages.project.scopeEnforcement')}
+          tooltip={t('modules.pages.project.scopeEnforcementHint')}
           extra={t('modules.pages.project.scopeEnforcementHint')}
         >
           <Select options={enforcementOptions} />

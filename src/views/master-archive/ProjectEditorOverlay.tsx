@@ -1,5 +1,5 @@
 import type { FormInstance } from 'antd'
-import { Button, Col, Form, Input, Row, Select, Space } from 'antd'
+import { Button, Col, Divider, Form, Input, Row, Select, Space } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
@@ -68,6 +68,30 @@ export interface ProjectEditorValues {
   /** 固定取价时段(上午/中午/下午); 仅策略为 FIXED 时必填, 其余固定传 null。 */
   pricePeriodFixed: ProjectPricePeriod | null
   remark?: string
+}
+
+/**
+ * 编辑弹层里的一个字段区块。
+ *
+ * <p>分组依据是 antd 的「亲密性」原则(docs/spec/proximity): 关联性高的字段距离更近、
+ * 构成一个视觉单元; 区块之间用分割线 + 24px 拉开层次。区块内横向 16px(中号间距)、
+ * 纵向 8px(小号间距), 全部取自 8 的倍数规格(docs/spec/layout 的网格基数)。</p>
+ */
+function ProjectSection({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="project-editor-section">
+      <Divider className="project-section-divider" plain titlePlacement="start">
+        {title}
+      </Divider>
+      <Row gutter={[16, 8]}>{children}</Row>
+    </section>
+  )
 }
 
 function findSettlementCompanyName(id: unknown, fallback = ''): string {
@@ -296,8 +320,8 @@ export function ProjectEditorOverlay({
           syncProjectForm(allValues as unknown as Record<string, unknown>)
         }
       >
-        <Row gutter={[12, 8]}>
-          <Col span={6}>
+        <ProjectSection title={t('modules.pages.project.sectionBasic')}>
+          <Col span={5}>
             <Form.Item
               name="projectCode"
               label={t('modules.pages.project.projectCode')}
@@ -311,23 +335,21 @@ export function ProjectEditorOverlay({
               />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={8}>
             <Form.Item
               name="projectName"
               label={t('modules.pages.project.projectName')}
               rules={[
                 {
                   required: true,
-                  message: t('modules.formField.inputRequired', {
-                    label: t('modules.pages.project.projectName'),
-                  }),
+                  message: t('modules.pages.project.projectNameRequired'),
                 },
               ]}
             >
               <Input />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Form.Item
               name="projectNameAbbr"
               label={t('modules.pages.project.projectNameAbbr')}
@@ -335,16 +357,14 @@ export function ProjectEditorOverlay({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={7}>
             <Form.Item
               name="customerId"
               label={t('modules.pages.project.customer')}
               rules={[
                 {
                   required: true,
-                  message: t('modules.formField.selectRequired', {
-                    label: t('modules.pages.project.customer'),
-                  }),
+                  message: t('modules.pages.project.customerRequired'),
                 },
               ]}
             >
@@ -357,16 +377,14 @@ export function ProjectEditorOverlay({
               />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={8}>
             <Form.Item
               name="settlementCompanyId"
               label={t('modules.pages.project.settlementCompany')}
               rules={[
                 {
                   required: true,
-                  message: t('modules.formField.selectRequired', {
-                    label: t('modules.pages.project.settlementCompany'),
-                  }),
+                  message: t('modules.pages.project.settlementCompanyRequired'),
                 },
               ]}
             >
@@ -379,7 +397,7 @@ export function ProjectEditorOverlay({
               />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Form.Item
               name="projectManager"
               label={t('modules.pages.project.projectManager')}
@@ -387,7 +405,7 @@ export function ProjectEditorOverlay({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Form.Item
               name="status"
               label={t('modules.columns.status')}
@@ -396,6 +414,17 @@ export function ProjectEditorOverlay({
               <Select options={enabledStatusOptions} />
             </Form.Item>
           </Col>
+          <Col span={8}>
+            <Form.Item
+              name="projectAddress"
+              label={t('modules.pages.project.projectAddress')}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+        </ProjectSection>
+
+        <ProjectSection title={t('modules.pages.project.sectionPricing')}>
           <Col span={6}>
             <Form.Item
               name="quoteSource"
@@ -424,16 +453,7 @@ export function ProjectEditorOverlay({
               <Select allowClear showSearch options={quoteRegionOptions} />
             </Form.Item>
           </Col>
-          <ProjectAllowedSpecFields form={form} />
           <ProjectPricingBasisFields form={form} />
-          <Col span={24}>
-            <Form.Item
-              name="projectAddress"
-              label={t('modules.pages.project.projectAddress')}
-            >
-              <Input />
-            </Form.Item>
-          </Col>
           {editorBaseRecord?.id ? (
             <Col span={24}>
               <ProjectPriceRuleEditor
@@ -441,12 +461,19 @@ export function ProjectEditorOverlay({
               />
             </Col>
           ) : null}
+        </ProjectSection>
+
+        <ProjectSection title={t('modules.pages.project.sectionScope')}>
+          <ProjectAllowedSpecFields form={form} />
+        </ProjectSection>
+
+        <ProjectSection title={t('modules.pages.project.sectionOther')}>
           <Col span={24}>
             <Form.Item name="remark" label={t('modules.columns.remark')}>
-              <Input.TextArea rows={3} />
+              <Input.TextArea rows={2} />
             </Form.Item>
           </Col>
-        </Row>
+        </ProjectSection>
       </Form>
     </WorkspaceOverlay>
   )
