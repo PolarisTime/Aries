@@ -90,25 +90,15 @@ function lockView(ctx: TonColumnContext, row: GridRow) {
 export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
   const { t } = ctx
   const tonColumnTitle = t('priceCompare.sheet.columns.ton')
-  const tonTotalLabel = t('priceCompare.sheet.tonTotal')
   return {
-    // 表头一行放两段: 左侧列名, 右侧次要的合计; 不再用两行堆叠, 避免列头被挤成
-    // 「报单吨位 / 合计: 5」两行后既占高又对不齐。
-    title: (
-      <span className="price-compare-ton-header">
-        <span className="price-compare-ton-header-title">{tonColumnTitle}</span>
-        <span className="price-compare-ton-total">
-          {tonTotalLabel} {ctx.tonTotalText}
-        </span>
-      </span>
-    ),
+    // 表头只放列名; 合计吨位改由表格底部的合计行承载(挤在表头里会把「报单吨位」截断)。
+    key: 'ton',
+    title: tonColumnTitle,
     width: ctx.width,
     fixed: 'left',
     align: 'center',
-    // 窄列时表头仍可能被裁切: 补 title 展示完整表头(鼠标悬停可见)
-    onHeaderCell: () => ({
-      title: `${tonColumnTitle} ${tonTotalLabel} ${ctx.tonTotalText}`,
-    }),
+    // 窄列时表头仍可能被裁切: 补 title 展示完整列名(鼠标悬停可见)
+    onHeaderCell: () => ({ title: tonColumnTitle }),
     render: (_value, row) => {
       if (isSeparatorRow(row.row)) return null
       const view = lockView(ctx, row)

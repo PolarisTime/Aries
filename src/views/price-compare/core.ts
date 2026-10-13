@@ -399,11 +399,20 @@ export const TON_PROGRESS_TEXT_MAX_WIDTH = 220
  *
  * <p>数字固定 11px、不随个人字号缩放, 因此不做等比换算 —— 列宽完全跟着内容走。</p>
  */
-export function requiredIssuedTonColumnWidth(textWidth = 0): number {
+/**
+ * 「已开吨位」列宽 = 单元格留白 + max(内容宽, 表头宽, 下限) + 安全余量。
+ *
+ * <p>表头(「已开吨位」4 个汉字)按当前个人字号渲染、内容数字固定 11px, 因此表头往往是
+ * 更宽的一方 —— 不把表头算进来, 列头就会被折成两行或被省略号收尾。</p>
+ */
+export function requiredIssuedTonColumnWidth(
+  textWidth = 0,
+  headerWidth = 0,
+): number {
   return (
     TON_CELL_PADDING +
     Math.max(
-      Math.min(textWidth, TON_PROGRESS_TEXT_MAX_WIDTH),
+      Math.min(Math.max(textWidth, headerWidth), TON_PROGRESS_TEXT_MAX_WIDTH),
       TON_PROGRESS_MIN_TEXT_WIDTH,
     ) +
     TON_WIDTH_SAFETY
@@ -422,11 +431,17 @@ export function requiredIssuedTonColumnWidth(textWidth = 0): number {
  * 单元格留白与固定 11px 的数字都不一起变小; 品牌名较长时即便基准字号也放不下。因此取
  * 等比换算与该下界的较大值。</p>
  */
-export function requiredTonColumnWidth(progressTextWidth = 0): number {
+export function requiredTonColumnWidth(
+  progressTextWidth = 0,
+  headerWidth = 0,
+): number {
   return (
     TON_CELL_FIXED_CHROME +
     Math.max(
-      Math.min(progressTextWidth, TON_PROGRESS_TEXT_MAX_WIDTH),
+      Math.min(
+        Math.max(progressTextWidth, headerWidth),
+        TON_PROGRESS_TEXT_MAX_WIDTH,
+      ),
       TON_PROGRESS_MIN_TEXT_WIDTH,
     ) +
     TON_WIDTH_SAFETY
@@ -442,9 +457,20 @@ export function requiredTonColumnWidth(progressTextWidth = 0): number {
  */
 export function sheetColumnWidths(
   fontSize: number,
-  tonTextWidths: { issued?: number; unopened?: number } = {},
+  tonTextWidths: {
+    issued?: number
+    unopened?: number
+    /** 两列表头在当前字号下的宽度: 表头比 11px 的内容更容易成为列宽下限。 */
+    issuedHeader?: number
+    unopenedHeader?: number
+  } = {},
 ): Record<keyof typeof SHEET_COLUMN_WIDTH, number> {
-  const { issued = 0, unopened = 0 } = tonTextWidths
+  const {
+    issued = 0,
+    unopened = 0,
+    issuedHeader = 0,
+    unopenedHeader = 0,
+  } = tonTextWidths
   const entries = Object.entries(SHEET_COLUMN_WIDTH) as [
     keyof typeof SHEET_COLUMN_WIDTH,
     number,
@@ -456,9 +482,9 @@ export function sheetColumnWidths(
        * 内容短时不留空白, 长吨位/长品牌也裁不到。其余列仍按字号等比换算。
        */
       if (key === 'issuedTon')
-        return [key, requiredIssuedTonColumnWidth(issued)]
+        return [key, requiredIssuedTonColumnWidth(issued, issuedHeader)]
       if (key === 'unopenedTon') {
-        return [key, requiredTonColumnWidth(unopened)]
+        return [key, requiredTonColumnWidth(unopened, unopenedHeader)]
       }
       return [key, scaleSheetColumnWidth(width, fontSize)]
     }),

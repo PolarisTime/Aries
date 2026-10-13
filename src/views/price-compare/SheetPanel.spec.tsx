@@ -1016,17 +1016,24 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].remark).toBe('甲方指定')
   })
 
-  it('报单吨位列表头展示当前单据吨位合计', () => {
+  it('报单吨位合计放在表格最后一行的合计行里, 不再挤在列头', () => {
     renderStateful({ ...makeSheet() }, [
       { ...baseRow, id: 'r1', ton: 1.5 },
       { ...baseRow, id: 'r2', ton: 2.25 },
     ])
 
+    // 列头只留列名: 早先「报单吨位 合计 260」两段挤一行, 列名被省略号截成「报..合计 260」
     const headerRow =
       container.querySelectorAll('.ant-table-thead tr')[0]?.textContent ?? ''
     expect(headerRow).toContain('报单吨位')
-    const tonTotal = container.querySelector('.price-compare-ton-total')
-    expect(tonTotal?.textContent).toContain('3.75')
+    expect(headerRow).not.toContain('合计')
+
+    // 合计行是表格最后一行(summary 的第二个 Row), 数值填在吨位列下
+    const summaryRows = container.querySelectorAll('.ant-table-summary tr')
+    const totalRow = summaryRows[summaryRows.length - 1]
+    expect(totalRow?.className).toContain('price-compare-ton-total-row')
+    expect(totalRow?.textContent).toContain('合计')
+    expect(totalRow?.textContent).toContain('3.75')
   })
 
   it('隔断行不渲染备注输入', () => {
@@ -1464,19 +1471,28 @@ describe('SheetPanel 指定品牌展示', () => {
     // 列宽必须覆盖整段「107.5 · 中天钢铁」(未开 = 本单报 120 − 已开 12.5)
     const parts = tonProgressTextParts(poRecord, 120)
     expect(parts.primary).toBe('107.5')
-    // 列宽完全按内容: 未开吨位列给到「107.5 · 中天钢铁」的内容宽, 已开吨位列给到数字宽
+    // 列宽 = max(内容宽, 表头宽): 表头「已开吨位」「未开吨位」按个人字号渲染,
+    // 内容数字固定 11px, 表头常常是更宽的一方(不算进来列头会折行)
+    const headerFontSize = 14
     const needed = requiredTonColumnWidth(
       tonProgressLineWidth(parts.primary, parts.brand),
+      estimateSheetTextWidth('未开吨位', headerFontSize),
     )
     const issuedNeeded = requiredIssuedTonColumnWidth(
       estimateSheetTextWidth('12.500', TON_PROGRESS_FONT_SIZE),
+      estimateSheetTextWidth('已开吨位', headerFontSize),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
     )
     expect(colStyles).toContain(`width:${needed}px;`)
     expect(colStyles).toContain(`width:${issuedNeeded}px;`)
-    // 只兜主段下界的口径更窄, 说明这次确实按真实内容加宽了
-    expect(needed).toBeGreaterThan(requiredTonColumnWidth())
+    // 只兜下界的口径更窄, 说明这次确实按真实内容加宽了
+    expect(needed).toBeGreaterThan(
+      requiredTonColumnWidth(
+        0,
+        estimateSheetTextWidth('未开吨位', headerFontSize),
+      ),
+    )
   })
 })

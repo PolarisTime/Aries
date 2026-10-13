@@ -63,7 +63,6 @@ import {
 } from './core'
 import { LockableField } from './LockableField'
 import { withMemberVisibility } from './price-compare-support'
-import { PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH } from './sheet-column-width'
 import {
   buildIssuedTonColumn,
   buildTonColumn,
@@ -89,12 +88,14 @@ import './price-compare.css'
 const { Text } = Typography
 
 /**
- * 选择框(32) / 拖拽手柄(24) / 行操作(28) 三列的总宽。
- * 这三列只放 icon-only 控件, 尺寸由命中区下限(WCAG 2.5.8)决定, 不随字号变化,
+ * 选择框(32) / 拖拽手柄(24) 两列的总宽。
+ * 这两列只放 icon-only 控件, 尺寸由命中区下限(WCAG 2.5.8)决定, 不随字号变化,
  * 因此不参与 core.sheetColumnWidths 的等比换算。
+ *
+ * <p>「行操作」列(锁定/更多按钮)已移除: 行级锁定与行操作统一走右键菜单与工具栏入口,
+ * 单独的一列只在窄屏挤占宽度。</p>
  */
-const SHEET_FIXED_CHROME_WIDTH =
-  32 + 24 + PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH
+const SHEET_FIXED_CHROME_WIDTH = 32 + 24
 
 /** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
 const filterSupplierOption = createPinyinFilterOption()
@@ -259,6 +260,11 @@ type RowActionsCellProps = {
   tooltip: string
   /** 全局锁定期间菜单顶部展示的原因说明(不可点击)。 */
   lockReason: string
+  /**
+   * 触发器只对读屏/键盘可见(sr-only): 行操作列已并入勾选列, 视觉上不再单独占一列宽度,
+   * 但按钮仍是可聚焦、有可访问名的菜单入口。
+   */
+  srOnlyTrigger?: boolean
   /** 行菜单是否展开(受控), 与「更多」按钮的点击入口共用。 */
   menuOpen: boolean
   onMenuOpenChange: (open: boolean) => void
@@ -296,6 +302,7 @@ function RowActionsCell({
   specQuantityLocked,
   tooltip,
   lockReason,
+  srOnlyTrigger,
   menuOpen,
   onMenuOpenChange,
   canMoveUp,
@@ -447,7 +454,7 @@ function RowActionsCell({
             aria-label={t('priceCompare.sheet.rowActionsLabel', {
               row: rowLabel,
             })}
-            className={`price-compare-row-actions${effectiveLocked ? ' price-compare-row-actions--locked' : ''}`}
+            className={`price-compare-row-actions${effectiveLocked ? ' price-compare-row-actions--locked' : ''}${srOnlyTrigger ? ' aries-sr-only' : ''}`}
             disabled={disabled}
             icon={effectiveLocked ? <LockOutlined /> : <MoreOutlined />}
             size="small"
@@ -600,6 +607,52 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
 
   const allChecked = rows.length > 0 && selectedIds.length === rows.length
   const someChecked = selectedIds.length > 0 && !allChecked
+  /**
+   * 行操作菜单宿主。
+   *
+   * <p>原先它是一个独立列(锁定/更多按钮)。该列只剩一个 icon-only 按钮, 在窄屏白占 28px;
+   * 去掉列之后把菜单宿主放进勾选列, 触发器设为 sr-only —— 视觉上不占位, 但仍是可聚焦、
+   * 有可访问名的入口(键盘等价物), 行内右键继续走同一份受控菜单。</p>
+   */
+  const renderRowMenuHost = (row: GridRow) => {
+    if (isSeparatorRow(row.row)) return null
+    const rowLocked = Boolean(row.row.locked)
+    const specQuantityLocked = Boolean(sheet.specQuantityLocked)
+    const rowIndex = rows.findIndex((item) => item.id === row.rowId)
+    return (
+      <RowActionsCell
+        srOnlyTrigger
+        rowLabel={rowLabelOf(row)}
+        rowLocked={rowLocked}
+        disabled={readOnly}
+        specQuantityLocked={specQuantityLocked}
+        lockReason={rowLockedHint}
+        tooltip={
+          readOnly
+            ? t('priceCompare.sheet.readOnlyHint')
+            : specQuantityLocked
+              ? rowLockedHint
+              : t('priceCompare.sheet.lockRowHint')
+        }
+        menuOpen={ctx.contextMenuRowId === row.rowId}
+        onMenuOpenChange={(open) =>
+          ctx.onContextMenuRowChange(open ? row.rowId : null)
+        }
+        canMoveUp={rowIndex > 0}
+        canMoveDown={rowIndex >= 0 && rowIndex < rows.length - 1}
+        onToggleLock={() =>
+          patchRow(row.rowId, applyRowLock(row.row, !rowLocked))
+        }
+        onMoveUp={() => ctx.moveRow(row.rowId, -1)}
+        onMoveDown={() => ctx.moveRow(row.rowId, 1)}
+        onInsertRowAbove={() => ctx.insertRowAt(row.rowId, 'PRODUCT', 'above')}
+        onInsertSeparatorBelow={() =>
+          ctx.insertRowAt(row.rowId, 'SEPARATOR', 'below')
+        }
+        onDelete={() => ctx.deleteRow(row.rowId)}
+      />
+    )
+  }
   /** 报单吨位合计: 当前单据全部商品行 ton 之和。 */
   const tonTotal = rows.reduce((sum, row) => sum + (row.ton ?? 0), 0)
   const tonTotalText = Number.isFinite(tonTotal)
@@ -621,13 +674,16 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       fixed: 'left',
       align: 'center',
       render: (_, row) => (
-        <Checkbox
-          aria-label={t('priceCompare.sheet.a11y.selectRow', {
-            row: rowLabelOf(row),
-          })}
-          checked={selectedIds.includes(row.rowId)}
-          onChange={(event) => toggleSelect(row.rowId, event.target.checked)}
-        />
+        <span className="price-compare-row-select">
+          <Checkbox
+            aria-label={t('priceCompare.sheet.a11y.selectRow', {
+              row: rowLabelOf(row),
+            })}
+            checked={selectedIds.includes(row.rowId)}
+            onChange={(event) => toggleSelect(row.rowId, event.target.checked)}
+          />
+          {renderRowMenuHost(row)}
+        </span>
       ),
     },
     {
@@ -656,60 +712,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           </span>
         </Tooltip>
       ),
-    },
-    {
-      // 行级操作菜单: 承载行级锁定(锁定后才允许关联采购订单)与拖拽的键盘等价物
-      // (上移/下移/插入行/插入隔断/删除该行)。点击可见「更多」按钮与右键行内区域
-      // 打开的是同一份菜单; 未锁定时用中性的「更多」图标, 已锁定时保持实心锁。
-      // 列里只有一个 icon-only 按钮, 取最小值; 单元格留白由
-      // .price-compare-row-actions-cell 收窄, 避免把列撑宽。
-      title: '',
-      className: 'price-compare-row-actions-cell',
-      width: PRICE_COMPARE_ROW_ACTIONS_COLUMN_WIDTH,
-      fixed: 'left',
-      align: 'center',
-      render: (_, row) => {
-        if (isSeparatorRow(row.row)) return null
-        const rowLocked = Boolean(row.row.locked)
-        // 只读(他人签出)才整体禁用; 全局锁定改为逐项禁用 + 菜单内说明原因
-        const menuDisabled = readOnly
-        const specQuantityLocked = Boolean(sheet.specQuantityLocked)
-        const rowIndex = rows.findIndex((item) => item.id === row.rowId)
-        return (
-          <RowActionsCell
-            rowLabel={rowLabelOf(row)}
-            rowLocked={rowLocked}
-            disabled={menuDisabled}
-            specQuantityLocked={specQuantityLocked}
-            lockReason={rowLockedHint}
-            tooltip={
-              readOnly
-                ? t('priceCompare.sheet.readOnlyHint')
-                : specQuantityLocked
-                  ? rowLockedHint
-                  : t('priceCompare.sheet.lockRowHint')
-            }
-            menuOpen={ctx.contextMenuRowId === row.rowId}
-            onMenuOpenChange={(open) =>
-              ctx.onContextMenuRowChange(open ? row.rowId : null)
-            }
-            canMoveUp={rowIndex > 0}
-            canMoveDown={rowIndex >= 0 && rowIndex < rows.length - 1}
-            onToggleLock={() =>
-              patchRow(row.rowId, applyRowLock(row.row, !rowLocked))
-            }
-            onMoveUp={() => ctx.moveRow(row.rowId, -1)}
-            onMoveDown={() => ctx.moveRow(row.rowId, 1)}
-            onInsertRowAbove={() =>
-              ctx.insertRowAt(row.rowId, 'PRODUCT', 'above')
-            }
-            onInsertSeparatorBelow={() =>
-              ctx.insertRowAt(row.rowId, 'SEPARATOR', 'below')
-            }
-            onDelete={() => ctx.deleteRow(row.rowId)}
-          />
-        )
-      },
     },
     ...(hideRemark
       ? []
@@ -1391,6 +1393,11 @@ function SheetTable(props: SheetTableProps) {
       for (const row of rows) toggleSelect(row.id, checked)
     },
   })
+  /** 报单吨位合计: 与列头口径一致(全部商品行 ton 之和), 现在渲染在表格最后一行。 */
+  const tonTotalText = useMemo(() => {
+    const total = rows.reduce((sum, row) => sum + (row.ton ?? 0), 0)
+    return Number.isFinite(total) ? String(Number(total.toFixed(8))) : '0'
+  }, [rows])
   const dataSource = useMemo<GridRow[]>(
     () => rows.map((row) => ({ key: row.id, rowId: row.id, row })),
     [rows],
@@ -1411,49 +1418,66 @@ function SheetTable(props: SheetTableProps) {
       dataSource={dataSource}
       pagination={false}
       summary={() => (
-        <Table.Summary.Row>
-          <Table.Summary.Cell
-            index={0}
-            colSpan={(base.hideRemark ? 5 : 6) + base.visibleBrandCount * 4}
-          >
-            <Flex gap="small" align="center">
-              <Button
-                type="text"
-                size="small"
-                block
-                className="price-compare-add-row"
-                disabled={rowLocked}
-                // 原因同时给到可见文案与 AT: 只读时不静默禁用
-                aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
-                onClick={onAddRow}
-              >
-                {t('priceCompare.sheet.addRow')}
-              </Button>
-              <Button
-                type="text"
-                size="small"
-                block
-                className="price-compare-add-separator"
-                icon={<MinusOutlined />}
-                disabled={rowLocked}
-                aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
-                onClick={onAddSeparator}
-              >
-                {t('priceCompare.sheet.addSeparator')}
-              </Button>
-              {/* 锁定原因常驻可见(不依赖 hover): 禁用按钮不派发鼠标事件, 仅靠 Tooltip 会静默 */}
-              {rowLocked ? (
-                <Text
-                  id={LOCK_REASON_ID}
-                  type="secondary"
-                  className="price-compare-lock-reason-text"
+        <>
+          <Table.Summary.Row>
+            <Table.Summary.Cell
+              index={0}
+              colSpan={(base.hideRemark ? 4 : 5) + base.visibleBrandCount * 4}
+            >
+              <Flex gap="small" align="center">
+                <Button
+                  type="text"
+                  size="small"
+                  block
+                  className="price-compare-add-row"
+                  disabled={rowLocked}
+                  // 原因同时给到可见文案与 AT: 只读时不静默禁用
+                  aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
+                  onClick={onAddRow}
                 >
-                  {rowLockedReason}
-                </Text>
-              ) : null}
-            </Flex>
-          </Table.Summary.Cell>
-        </Table.Summary.Row>
+                  {t('priceCompare.sheet.addRow')}
+                </Button>
+                <Button
+                  type="text"
+                  size="small"
+                  block
+                  className="price-compare-add-separator"
+                  icon={<MinusOutlined />}
+                  disabled={rowLocked}
+                  aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
+                  onClick={onAddSeparator}
+                >
+                  {t('priceCompare.sheet.addSeparator')}
+                </Button>
+                {/* 锁定原因常驻可见(不依赖 hover): 禁用按钮不派发鼠标事件, 仅靠 Tooltip 会静默 */}
+                {rowLocked ? (
+                  <Text
+                    id={LOCK_REASON_ID}
+                    type="secondary"
+                    className="price-compare-lock-reason-text"
+                  >
+                    {rowLockedReason}
+                  </Text>
+                ) : null}
+              </Flex>
+            </Table.Summary.Cell>
+          </Table.Summary.Row>
+          {/* 合计行: 报单吨位合计原先挤在列头里(「报单吨位 合计 260」会把列名截断),
+            现在移到表格最下面单独成行, 只填在吨位列下, 其余列留空。 */}
+          <Table.Summary.Row className="price-compare-ton-total-row">
+            {columns.map((column, index) => (
+              <Table.Summary.Cell
+                key={column.key ?? index}
+                index={index}
+                align={column.key === 'ton' ? 'center' : undefined}
+              >
+                {column.key === 'ton'
+                  ? `${t('priceCompare.sheet.tonTotal')} ${tonTotalText}`
+                  : null}
+              </Table.Summary.Cell>
+            ))}
+          </Table.Summary.Row>
+        </>
       )}
       rowClassName={(row) => {
         const classes: string[] = []
@@ -2474,6 +2498,10 @@ export function SheetPanel(props: Props) {
   const columnWidths = useSheetColumnWidths(
     tonnageRecordsForWidth,
     localTonByItemId,
+    {
+      issued: t('priceCompare.sheet.columns.issuedTon'),
+      unopened: t('priceCompare.sheet.columns.unopenedTon'),
+    },
   )
 
   const base = {

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import {
+  estimateSheetTextWidth,
   SHEET_WIDTH_BASE_FONT_SIZE,
   sheetColumnWidths,
   tonProgressLineWidth,
@@ -14,6 +15,11 @@ import {
 /** 无采购订单数据时的占位: 稳定引用, 避免每次渲染都触发重算。 */
 const NO_TONNAGE_RECORDS: readonly PurchaseOrderTonnageRecord[] = []
 const NO_LOCAL_TON: ReadonlyMap<string, number> = new Map()
+/** 两列的表头文案(用于把表头宽度算进列宽下限)。 */
+export interface SheetTonHeaderTexts {
+  issued: string
+  unopened: string
+}
 
 /**
  * 单据表格列宽(随个人设置字号自适应, 未开吨位列再按单据实际内容兜底)。
@@ -33,10 +39,13 @@ const NO_LOCAL_TON: ReadonlyMap<string, number> = new Map()
 export function useSheetColumnWidths(
   tonnageRecords: readonly PurchaseOrderTonnageRecord[] = NO_TONNAGE_RECORDS,
   localTonByItemId: ReadonlyMap<string, number> = NO_LOCAL_TON,
+  headerTexts?: SheetTonHeaderTexts,
 ) {
   const fontSize = useUiSettingsStore(
     (state) => state.settings?.fontSize ?? SHEET_WIDTH_BASE_FONT_SIZE,
   )
+  const issuedHeader = headerTexts?.issued ?? ''
+  const unopenedHeader = headerTexts?.unopened ?? ''
   const tonTextWidths = useMemo(
     () => ({
       issued: maxIssuedTonTextWidth(tonnageRecords),
@@ -45,8 +54,11 @@ export function useSheetColumnWidths(
         localTonByItemId,
         (parts) => tonProgressLineWidth(parts.primary, parts.brand),
       ),
+      // 表头跟着个人字号缩放, 内容固定 11px ⇒ 表头常常是更宽的一方
+      issuedHeader: estimateSheetTextWidth(issuedHeader, fontSize),
+      unopenedHeader: estimateSheetTextWidth(unopenedHeader, fontSize),
     }),
-    [tonnageRecords, localTonByItemId],
+    [tonnageRecords, localTonByItemId, issuedHeader, unopenedHeader, fontSize],
   )
   return useMemo(
     () => sheetColumnWidths(fontSize, tonTextWidths),
