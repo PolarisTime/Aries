@@ -42,6 +42,85 @@ Full-stack, architecture, and quality skills:
 - `docker-expert`, `deployment-engineer`, `deployment-procedures`
 - `bash-defensive-patterns`, `bash-pro`, `mcp-builder`, `mcp-tool-developer`
 
+## 主数据表单与弹层排版规范
+
+主数据类「新建 / 编辑」界面（项目资料、供应商资料、客户资料、物流商资料、仓库资料、材料资料…）
+统一按本节排版。改动这些页面之前先读本节，不要再各自发明尺寸。
+
+依据：[antd 布局（网格基数 8）](https://github.com/ant-design/ant-design/blob/master/docs/spec/layout.zh-CN.md)、
+[antd 亲密性（8 / 16 / 24）](https://github.com/ant-design/ant-design/blob/master/docs/spec/proximity.zh-CN.md)、
+[antd 数据录入（长说明用信息图标）](https://github.com/ant-design/ant-design/blob/master/docs/spec/data-entry.zh-CN.md)、
+[NN/g 表单十条](https://www.nngroup.com/articles/web-form-design/)。
+
+### 结构与类名
+
+- 弹层用 `WorkspaceOverlay`，面板加 `className="workspace-overlay-panel--form-dialog"`：居中对话框、圆角、
+  宽 `min(1040px, 100% - 24px)`、高 `auto` + `max-height: min(900px, 100% - 24px)`。
+- 尺寸按**覆盖层容器**算，禁止用 `100vh`：覆盖层位于顶栏与页签之下，用视口高度会让底边超出内容区，
+  把「取消 / 保存」裁到屏幕外。
+- 表单加 `className="master-form"`，字段栅格用 `<Row gutter={[16, 8]}>`。
+- 高度跟内容走：字段少（如客户 9 个）不该被撑成整屏留一大片空白；字段多（物流商 19 个）用满上限。
+  1080p（内容区 939px）下上限 900px 正好一屏放得下，小屏由容器封顶。
+- 取消 / 保存**走 `WorkspaceOverlay` 的 `footer` 槽**固定在面板底部；写在表单末尾会随表单滚走。
+- 控件密度沿用全局 `--app-control-height`，不要单独给某一页加 `size="small"`。
+
+### 间距：只用 8 的倍数
+
+- 区块内横向 16px（中号间距）、纵向 8px（小号间距），区块之间 24px（大号间距）。
+- 字段自身不得再叠加 antd 默认的 `margin-bottom: 24px`（`master-form` 已置 0），否则会出现 20px 这种
+  既非 8 的倍数、又难解释的间距。
+
+### 列宽：只用 24 栅格的整数倍
+
+- 普通字段一律 `span={6}`（四等分）；只有「一件占一行」的字段用 `span={12}` / `span={24}`。
+- 禁止 5 / 7 / 8 / 4 这类按内容微调的宽度：各行竖边落在不同位置，扫读时显得零碎。
+- 确需按内容给宽度时用「合并多列」表达：例如标签有 11 个汉字的「休市按前一交易日结算」用 `span={12}`。
+
+### 分区（区块标题）
+
+- 语义相关的字段放同一区块：区块标题用
+  `<Divider className="master-section-divider" plain titlePlacement="start">`，外层包
+  `<section className="master-form-section">`（首个区块标题不带顶部间距）。
+- 配置驱动的表单（`MasterDataEditor`）给字段声明 `section`：相邻且相同的 `section` 自动归为一组，
+  **未声明则保持平铺** —— 未分区的模块不会因此改变外观。`section` 已打通
+  `ModuleFormFieldDefinition`（配置侧）与 `MasterFormFieldSpec`（编辑器侧）两处类型。
+- 区块标题文案共用 `modules.formSections.{basic,contact,settlement,vehicle,other}`，不要各页另造 key。
+- 字段少（≤9）且语义单一时可以不分区，不要为分区而分区。
+
+### 字段说明
+
+- **长说明**（一句话及以上）用 `Form.Item` 的 `tooltip` 做成标签旁的 ⓘ；同一份文案**同时**作为 `extra`
+  下发 —— CSS 会把 `extra` 视觉收起，但 antd 会把它写进控件的 `aria-describedby`，读屏用户照旧能听到。
+  只写 `tooltip` 会让读屏用户拿不到说明，只写 `extra` 会让每个字段多占一行。
+- **短提示**（短于一句、输入格式要求）才直接放 `extra`。
+
+### 遮罩
+
+- 遮罩 = 压暗 + 背景虚化：`background: var(--ant-color-bg-mask)` + `backdrop-filter: blur(4px)`，
+  让背后密集的表格退成色块、前景对话框浮起来。
+- 遮罩是 `<button class="workspace-overlay-mask">`，靠 `position: absolute; inset: 0` 铺满内容区。
+  **任何给 `button` 加 `position: relative` 的全局补丁都必须排除它**（`src/styles/touch-targets.css` 已排除）：
+  被覆盖后遮罩会塌成 0×0，背景既不被压暗也不被虚化。
+
+### 无障碍与文案
+
+- label 方向全站统一 `layout="vertical"`（antd：同一系统内必须保持一致），不要单独把某一页改成横向标签。
+- 命中区 ≥24×24（WCAG 2.5.8），沿用 `touch-targets.css` 的补丁，不要为某个页面关掉它。
+- 新增文案（区块标题、说明、按钮）必须同时补 `zh-CN` 与 `en-US`。
+
+### 测试写法
+
+- 弹层内定位控件**按字段名**，不要按顺序：antd 会把字段名注入控件 id，用
+  `input#<fieldName>` 再 `closest('.ant-select')` 之类定位。按下标（第几个下拉 / 第几个输入框）定位会在
+  排版调整后静默选错字段 —— 实测曾把必填项漏掉，保存被校验拦住却看不出原因。
+- 排版改动后至少断言：面板尺寸、是否溢出、字段数、区块标题、按钮是否在面板内。
+
+### 自检清单（改完必做）
+
+1. 在 3100 的真实环境逐页打开弹层截图，确认居中、按钮固定、背景虚化、分区正确、无横向滚动；
+2. 记录面板尺寸与 `body.scrollHeight / clientHeight`：溢出应为 0，确因内容过多而滚动时要在说明里给出原因；
+3. `pnpm antd:lint` 必须解析输出（它发现违规仍返回 0）；`tsc`、`biome`、`eslint`、`vitest` 全绿后再提交。
+
 ## Mandatory Pre-Development Check
 
 在开始任何前端代码修改、调试、重启服务、提交或部署前，必须先完成开发前检查；检查未完成时不得改文件、启动长任务或执行提交/部署。
