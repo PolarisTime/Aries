@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
+import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import {
   getTabRouterHref,
   pushExternalIntent,
@@ -85,7 +86,12 @@ export function useTabRouteReconciliation(): void {
       return
     }
 
-    const tabId = store.openTab({ pathname, search: location.searchStr })
+    const { tabId } = store.openTab(
+      { pathname, search: location.searchStr },
+      {
+        isProtected: (id) => editorSessionStore.requiresConfirmation(id),
+      },
+    )
     store.markTabMounted(tabId)
     // href 已涵盖 pathname+searchStr，显式列出以满足依赖完整性检查
   }, [location.href, location.pathname, location.searchStr])

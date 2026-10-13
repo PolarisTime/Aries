@@ -1,11 +1,15 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { Layout } from 'antd'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
+import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import { LayoutTabBar } from '@/layouts/tabs/LayoutTabBar'
-import { attachTabRouter } from '@/layouts/tabs/tab-location-sync'
+import {
+  attachTabRouter,
+  detachTabRouter,
+} from '@/layouts/tabs/tab-location-sync'
 import { useTabRouteReconciliation } from '@/layouts/tabs/useTabRouteReconciliation'
 import { type LayoutTab, useLayoutTabsStore } from '@/stores/layoutTabsStore'
 
@@ -29,6 +33,29 @@ export function AppTabContainer() {
   const activeTabId = useLayoutTabsStore((state) => state.activeTabId)
 
   useTabRouteReconciliation()
+
+  /**
+   * 兜底资源回收：任何让 Tab 消失的路径（关闭、超上限淘汰、hydration 截断、切换用户）
+   * 都要释放它的子 Router 与编辑器会话槽。
+   *
+   * <p>关闭路径已在 LayoutTabBar 显式 detach；这里再收敛一次是为了覆盖「超上限淘汰」——
+   * 淘汰发生在 store 内部，调用方拿不到时机。放在 effect 而非调用点，可保证 React 完成
+   * 卸载后才 dispose，不会对已销毁的 Router 继续渲染。</p>
+   *
+   * <p>`detachTabRouter` 与 `endSession` 都是幂等的（对不存在的 id 是 no-op），
+   * 因此与关闭路径重复执行无害。</p>
+   */
+  const previousTabIdsRef = useRef<string[]>([])
+  useEffect(() => {
+    const currentIds = new Set(tabs.map((tab) => tab.id))
+    for (const tabId of previousTabIdsRef.current) {
+      if (!currentIds.has(tabId)) {
+        detachTabRouter(tabId)
+        editorSessionStore.endSession(tabId)
+      }
+    }
+    previousTabIdsRef.current = tabs.map((tab) => tab.id)
+  }, [tabs])
 
   return (
     <Content className="leo-content">

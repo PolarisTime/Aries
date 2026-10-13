@@ -33,6 +33,14 @@ export interface OpenTabTarget {
   search?: string
 }
 
+export interface OpenTabOptions {
+  /**
+   * 判断某 Tab 是否不可被自动淘汰（典型实现是 `editorSessionStore.requiresConfirmation`）。
+   * 由调用方注入而非本模块直接依赖编辑器会话，避免 stores/ 反向依赖 layouts/。
+   */
+  isProtected?: (tabId: string) => boolean
+}
+
 interface LayoutTabsState {
   tabs: LayoutTab[]
   activeTabId: string | null
@@ -40,7 +48,10 @@ interface LayoutTabsState {
     userId?: string,
     currentLocation?: { pathname: string; search: string },
   ) => void
-  openTab: (target: OpenTabTarget) => string
+  openTab: (
+    target: OpenTabTarget,
+    options?: OpenTabOptions,
+  ) => { tabId: string; evictedIds: string[] }
   activateTab: (id: string) => void
   setTabLocation: (
     id: string,
@@ -112,23 +123,42 @@ function createTab(target: OpenTabTarget): LayoutTab {
   }
 }
 
-/** 超上限时淘汰最早的未激活非钉选 Tab（从 index 1 起找） */
-function evictOverflow(tabs: LayoutTab[], activeTabId: string): LayoutTab[] {
+/**
+ * 超上限时淘汰最早的未激活非钉选 Tab（从 index 1 起找）。
+ *
+ * <p>`isProtected` 用于排除不可丢弃的 Tab（典型是持有未保存编辑会话者）。候选全被保护时
+ * 停止淘汰并允许暂时超限——宁可暂时超过 {@link MAX_LAYOUT_TABS}，也不能静默丢弃用户
+ * 尚未保存的内容。</p>
+ *
+ * @returns 淘汰后的 Tab 列表，以及被淘汰的 Tab id；调用方须据此回收子 Router 与编辑器会话
+ */
+function evictOverflow(
+  tabs: LayoutTab[],
+  activeTabId: string,
+  isProtected?: (tabId: string) => boolean,
+): { tabs: LayoutTab[]; evictedIds: string[] } {
+  const evictedIds: string[] = []
   let next = tabs
   while (next.length > MAX_LAYOUT_TABS) {
     const evictIndex = next.findIndex(
-      (tab, index) => index >= 1 && !tab.pinned && tab.id !== activeTabId,
+      (tab, index) =>
+        index >= 1 &&
+        !tab.pinned &&
+        tab.id !== activeTabId &&
+        !(isProtected?.(tab.id) ?? false),
     )
     if (evictIndex < 0) break
+    evictedIds.push(next[evictIndex].id)
     next = next.filter((_, index) => index !== evictIndex)
   }
-  return next
+  return { tabs: next, evictedIds }
 }
 
 export function openTabIn(
   tabs: LayoutTab[],
   target: OpenTabTarget,
-): { tabs: LayoutTab[]; activeTabId: string } {
+  isProtected?: (tabId: string) => boolean,
+): { tabs: LayoutTab[]; activeTabId: string; evictedIds: string[] } {
   const pathname = normalizeTabPathname(target.pathname)
   const search = normalizeSearch(target.search)
   const existingIndex = tabs.findIndex((tab) => tab.pathname === pathname)
@@ -139,17 +169,21 @@ export function openTabIn(
     const nextSearch =
       search && search !== existing.search ? search : existing.search
     if (nextSearch === existing.search) {
-      return { tabs, activeTabId: existing.id }
+      return { tabs, activeTabId: existing.id, evictedIds: [] }
     }
     const nextTabs = tabs.map((tab, index) =>
       index === existingIndex ? { ...tab, search: nextSearch } : tab,
     )
-    return { tabs: nextTabs, activeTabId: existing.id }
+    return { tabs: nextTabs, activeTabId: existing.id, evictedIds: [] }
   }
 
   const tab = createTab({ pathname, search })
-  const nextTabs = evictOverflow([...tabs, tab], tab.id)
-  return { tabs: nextTabs, activeTabId: tab.id }
+  const { tabs: nextTabs, evictedIds } = evictOverflow(
+    [...tabs, tab],
+    tab.id,
+    isProtected,
+  )
+  return { tabs: nextTabs, activeTabId: tab.id, evictedIds }
 }
 
 export function removeTabFrom(
@@ -364,7 +398,8 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
         activeTabId = existing.id
       } else {
         const tab = createTab({ pathname: currentPath, search: currentSearch })
-        tabs = evictOverflow([...tabs, tab], tab.id)
+        // hydration 阶段尚无任何挂载的编辑器会话，被截断的 Tab 不存在未保存内容
+        tabs = evictOverflow([...tabs, tab], tab.id).tabs
         activeTabId = tab.id
       }
     }
@@ -372,10 +407,14 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
     set({ tabs, activeTabId })
   },
 
-  openTab: (target) => {
-    const { tabs, activeTabId } = openTabIn(get().tabs, target)
+  openTab: (target, options) => {
+    const { tabs, activeTabId, evictedIds } = openTabIn(
+      get().tabs,
+      target,
+      options?.isProtected,
+    )
     set({ tabs, activeTabId })
-    return activeTabId
+    return { tabId: activeTabId, evictedIds }
   },
 
   activateTab: (id) => {

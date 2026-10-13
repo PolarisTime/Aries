@@ -80,6 +80,57 @@ describe('openTabIn', () => {
     expect(tabs.some((tab) => tab.pathname === '/page-0')).toBe(false)
     expect(tabs.some((tab) => tab.pathname === DASHBOARD_TAB_PATH)).toBe(true)
   })
+
+  /** dashboard(钉选) + 10 个非钉选页 = 11 个，恰为「已满」状态 */
+  function makeFullTabs(): LayoutTab[] {
+    return [
+      makeTab({ id: 'dashboard', pathname: DASHBOARD_TAB_PATH, pinned: true }),
+      ...Array.from({ length: MAX_LAYOUT_TABS }, (_, index) =>
+        makeTab({ id: `p${index}`, pathname: `/page-${index}` }),
+      ),
+    ]
+  }
+
+  it('未传 isProtected 时保持既有淘汰行为，并回传被淘汰的 id', () => {
+    // 11 → 新增 1 个 = 12，须淘汰 2 个才回到上限 10
+    const result = openTabIn(makeFullTabs(), { pathname: '/page-new' })
+    expect(result.tabs).toHaveLength(MAX_LAYOUT_TABS)
+    expect(result.evictedIds).toEqual(['p0', 'p1'])
+  })
+
+  it('受保护的 Tab 不被淘汰，淘汰顺延到下一个候选', () => {
+    // p0 最旧但持有未保存内容 → 跳过它，淘汰 p1、p2
+    const result = openTabIn(
+      makeFullTabs(),
+      { pathname: '/page-new' },
+      (tabId) => tabId === 'p0',
+    )
+    expect(result.tabs.some((tab) => tab.id === 'p0')).toBe(true)
+    expect(result.tabs.some((tab) => tab.id === 'p1')).toBe(false)
+    expect(result.evictedIds).toEqual(['p1', 'p2'])
+  })
+
+  it('候选全被保护时停止淘汰并允许暂时超限，绝不静默丢弃未保存内容', () => {
+    const result = openTabIn(
+      makeFullTabs(),
+      { pathname: '/page-new' },
+      () => true,
+    )
+    expect(result.evictedIds).toEqual([])
+    // 超限是刻意的降级：dashboard + 10 个受保护页 + 新页
+    expect(result.tabs).toHaveLength(MAX_LAYOUT_TABS + 2)
+    expect(result.tabs.some((tab) => tab.id === 'p0')).toBe(true)
+  })
+
+  it('工作台钉选标签在任何情况下都不被淘汰，也不计入 evictedIds', () => {
+    const result = openTabIn(
+      makeFullTabs(),
+      { pathname: '/page-new' },
+      () => false,
+    )
+    expect(result.tabs.some((tab) => tab.pinned)).toBe(true)
+    expect(result.evictedIds).not.toContain('dashboard')
+  })
 })
 
 describe('removeTabFrom', () => {

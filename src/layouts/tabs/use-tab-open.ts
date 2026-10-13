@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import {
   getTabRouterHref,
   pushExternalIntent,
@@ -40,7 +41,14 @@ export function useTabOpen() {
     const href = buildTabHref(pathname, search)
 
     if (!existing) {
-      store.openTab({ pathname, search })
+      // 淘汰上限触发时不得丢弃持有未保存编辑会话的 Tab（宁可暂时超限）
+      store.openTab(
+        { pathname, search },
+        {
+          isProtected: (tabId) =>
+            editorSessionStore.requiresConfirmation(tabId),
+        },
+      )
       mainRouter.history.push(href)
       return
     }
