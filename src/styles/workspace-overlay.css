@@ -17,7 +17,16 @@
   inset: 0;
   padding: 0;
   border: 0;
+  /*
+   * 遮罩 = 压暗 + 背景虚化。
+   *
+   * 只压暗时, 背后密集的表格(十几列数字)仍会透过半透明遮罩抢注意力, 与对话框里的表单
+   * 混在一起; 加 4px 虚化后背景退成色块, 前景对话框自然浮起来。遮罩覆盖的是内容区,
+   * 顶栏与页签在覆盖层容器之外, 因此保持清晰(与原先只压暗时的范围一致)。
+   */
   background: var(--ant-color-bg-mask, rgba(0, 0, 0, 0.45));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   cursor: default;
 }
 

@@ -5,12 +5,16 @@
  *  - antd compact 组内 solid 按钮的 ::before 被 antd 用于 1px 连接边框，必须排除。
  *  - antd select/picker 的清除按钮由 antd 绝对定位控制，必须排除本规则的
  *    position: relative，否则会覆盖其定位、使 x 掉到框顶；它们改用下方等高方案。
+ *  - 弹层遮罩(.workspace-overlay-mask)整块就是命中区，不需要热区补丁；更要紧的是它靠
+ *    position: absolute + inset: 0 铺满内容区，本规则的 position: relative 会把它覆盖成
+ *    0×0，背景就既不被压暗也不虚化（实测遮罩 rect 0×0）。
  */
 
 button:not(
   .ant-btn-variant-solid.ant-btn-compact-item,
   .ant-select-clear,
-  .ant-picker-clear
+  .ant-picker-clear,
+  .workspace-overlay-mask
 ),
 [role="button"]:not(.ant-select-clear, .ant-picker-clear),
 .ant-btn:not(
@@ -24,7 +28,8 @@ button:not(
 button:not(
   .ant-btn-variant-solid.ant-btn-compact-item,
   .ant-select-clear,
-  .ant-picker-clear
+  .ant-picker-clear,
+  .workspace-overlay-mask
 )::before,
 [role="button"]:not(.ant-select-clear, .ant-picker-clear)::before,
 .ant-btn:not(
