@@ -2769,6 +2769,12 @@ export const enUS = {
         'Issued counts other saved sheets only (this sheet excluded); unopened = ordered − issued',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
+      /** Short state for the tonnage columns when the row has no linked PO line yet. */
+      purchaseOrderNotLinkedShort: 'Not linked',
+      purchaseOrderNotLinkedHint:
+        'This row has no linked purchase-order line yet; choose one via ⓘ to see issued/unopened tonnage',
+      /** Short state when the linked line is gone (order deleted). */
+      purchaseOrderMissingShort: 'Deleted',
       purchaseOrderLoadFailed:
         'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
       purchaseOrderIssuedShort: 'Issued {{issued}}',

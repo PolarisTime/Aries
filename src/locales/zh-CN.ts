@@ -2684,6 +2684,12 @@ export const zhCN = {
         '「已开吨位」按其他已保存报单统计（不含本单据）；「未开吨位」= 订货吨位 − 已开吨位',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
+      /** 吨位口径两列的短状态: 该行还没关联订单明细行, 因此没有已开/未开口径。 */
+      purchaseOrderNotLinkedShort: '未关联',
+      purchaseOrderNotLinkedHint:
+        '该行还未关联采购订单明细行；点右侧 ⓘ 选择后显示已开吨位与未开吨位',
+      /** 关联的明细行已不在选项里(订单被删)时的短状态。 */
+      purchaseOrderMissingShort: '已删除',
       purchaseOrderLoadFailed:
         '采购订单吨位加载失败，已开/剩余吨位暂不可用；不影响吨位填写与保存',
       purchaseOrderIssuedShort: '已开 {{issued}}',

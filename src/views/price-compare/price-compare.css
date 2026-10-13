@@ -715,6 +715,19 @@
 }
 
 /*
+ * 没有口径可算时的短状态(「未关联」/「已删除」): 与数字同字号同色, 用一个弱化底色提示
+ * 这不是"数量为 0", 而是"还没有可算的口径"。
+ */
+.price-compare-ton-state {
+  font-size: 11px;
+  color: var(--ant-color-text-tertiary);
+  background: var(--ant-color-fill-quaternary);
+  border-radius: var(--radius-xs, 4px);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+/*
  * 只读吨位数字(已开吨位列): 固定 11px 次要小字, 不随个人字号缩放(与未开吨位列同口径),
  * 用等宽数字保证同行数字位数对齐。
  */

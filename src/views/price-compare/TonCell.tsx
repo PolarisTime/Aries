@@ -100,15 +100,28 @@ function TonFigure({ value }: { value: number }) {
   return <span className="price-compare-ton-figure">{tonValueText(value)}</span>
 }
 
-/** 未关联采购订单时两列共用的占位(保持行高与列宽一致, 不显示 0 误导)。 */
-function EmptyFigure() {
+/**
+ * 没有口径可算时的短状态: 「未关联」(该行还没选订单明细行)或「已删除」(关联的订单没了)。
+ *
+ * <p>不显示 `0.000` —— 没有关联不等于"已经开了 0 吨", 用明确的短状态给出原因; 完整说明在
+ * 悬浮提示里(点 ⓘ 即可选择订单明细行)。</p>
+ */
+function TonStateLabel({ state }: { state: 'notLinked' | 'missing' }) {
+  const { t } = useTranslation()
+  const label = t(
+    state === 'notLinked'
+      ? 'priceCompare.sheet.purchaseOrderNotLinkedShort'
+      : 'priceCompare.sheet.purchaseOrderMissingShort',
+  )
+  const hint = t(
+    state === 'notLinked'
+      ? 'priceCompare.sheet.purchaseOrderNotLinkedHint'
+      : 'priceCompare.sheet.purchaseOrderMissingHint',
+  )
   return (
-    <span
-      aria-hidden="true"
-      className="price-compare-ton-meta price-compare-ton-meta--empty"
-    >
-      —
-    </span>
+    <Tooltip classNames={{ root: TON_BUBBLE_CLASS }} title={hint}>
+      <span className="price-compare-ton-state">{label}</span>
+    </Tooltip>
   )
 }
 
@@ -124,7 +137,7 @@ export function IssuedTonCell({
   linked,
 }: Pick<TonOrderCellProps, 'row' | 'options' | 'linked'>) {
   const { t } = useTranslation()
-  const { selected } = resolveTonnageView(row, options, linked)
+  const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
   return (
     <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
       {selected ? (
@@ -135,7 +148,9 @@ export function IssuedTonCell({
           <TonFigure value={selected.issuedWeight} />
         </Tooltip>
       ) : (
-        <EmptyFigure />
+        <TonStateLabel
+          state={missingSnapshot !== undefined ? 'missing' : 'notLinked'}
+        />
       )}
     </div>
   )
@@ -208,7 +223,9 @@ export function TonUnopenedCell({
     return (
       <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
         <span className="price-compare-ton-progress">
-          <EmptyFigure />
+          <TonStateLabel
+            state={missingSnapshot !== undefined ? 'missing' : 'notLinked'}
+          />
         </span>
         {infoButton}
       </div>

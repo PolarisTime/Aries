@@ -148,22 +148,28 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(container.querySelector('.price-compare-ton-info')).toBeTruthy()
   })
 
-  it('未关联时三列都占位, 不显示 0 误导', () => {
+  it('未关联时两列给出"未关联"短状态, 不显示 0 误导', () => {
     render()
     expect(container.textContent).not.toContain('已开')
-    // 已开/未开两列各一个占位; 输入格仍可编辑
-    const empties = container.querySelectorAll('.price-compare-ton-meta--empty')
-    expect(empties).toHaveLength(2)
-    for (const empty of empties) expect(empty.textContent).toBe('—')
+    // 已开/未开两列都说清原因(而不是 0.000 或莫名其妙的「—」)
+    const states = container.querySelectorAll('.price-compare-ton-state')
+    expect(states).toHaveLength(2)
+    for (const state of states) expect(state.textContent).toBe('未关联')
+    // 悬浮提示说明怎么才有的数(antd Tooltip 走浮层, 断言文案键本身)
+    expect(
+      i18n.t('priceCompare.sheet.purchaseOrderNotLinkedHint'),
+    ).toContain('未关联采购订单')
     expect(container.querySelector('.price-compare-ton-issued')).toBeNull()
+    expect(container.querySelector('.price-compare-ton-figure')).toBeNull()
     expect(container.querySelector('input[data-ton="r1"]')).toBeTruthy()
-    // 未开吨位列的占位仍落在进度层内(与有值时的左起点一致, 竖列不跳)
+    // 未开吨位列的短状态仍落在进度层内(与有值时的左起点一致, 竖列不跳)
     expect(
       container
         .querySelector('.price-compare-ton-progress')
-        ?.querySelector('.price-compare-ton-meta--empty'),
+        ?.querySelector('.price-compare-ton-state'),
     ).toBeTruthy()
   })
+
   it('未开吨位 = 订货 − 已开, 已开吨位单独成列', () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
     // 订货 40 / 已开 30 ⇒ 未开 10
