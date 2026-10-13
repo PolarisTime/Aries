@@ -53,7 +53,7 @@ export function ModuleTableToolbar({
   const { t } = useTranslation()
   return (
     <div className="module-table-toolbar">
-      <Space wrap className="module-table-actions">
+      <Space wrap className="module-table-actions" size={16}>
         {canCreate && (
           <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
             {t('common.create')}

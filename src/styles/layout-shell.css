@@ -2161,7 +2161,8 @@
 }
 
 .module-filter-toolbar {
-  padding-bottom: var(--space-2);
+  /* 工具栏与表格之间按中号间距(16px)留白; 原先 2px 属于「细粒度非阶梯值」, 贴在一起显得拥挤 */
+  padding-bottom: var(--space-md);
 }
 
 .keyboard-shortcut-hint {
@@ -2186,20 +2187,23 @@
 .module-filter-quick-row,
 .module-filter-chip-row {
   max-width: 100%;
-  margin-bottom: var(--space-2);
+  /* 筛选行与操作行之间 16px: 2px 会让两行看起来黏在一起 */
+  margin-bottom: var(--space-md);
 }
 
 .module-filter-chip-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-10);
+  /* 筛选条件之间用中号间距(16px): 10px 属于细粒度非阶梯值, 相邻控件几乎贴在一起 */
+  gap: var(--space-md);
 }
 
 .module-filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
+  /* 图标与文字之间小号间距(8px) */
+  gap: var(--space-xs);
   height: var(--app-control-height);
   padding: 0 14px;
   color: var(--ant-color-text-secondary);
