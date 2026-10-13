@@ -1,3 +1,11 @@
+## [11.10.1](https://github.com/PolarisTime/Aries/compare/v11.10.0...v11.10.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **module-system:** 主数据下拉需求判定改用打包安全标记 ([3760dbc](https://github.com/PolarisTime/Aries/commit/3760dbc1065b90fc6ef0a2668fa514fab780dbe5))
+* **module-system:** 修复编辑器表单控件非受控导致下拉值不进表单 ([7319feb](https://github.com/PolarisTime/Aries/commit/7319feb0a7c05ebad136b7b42f759cccd83e7e66))
+
 # [11.10.0](https://github.com/PolarisTime/Aries/compare/v11.9.0...v11.10.0) (2026-10-13)
 
 
