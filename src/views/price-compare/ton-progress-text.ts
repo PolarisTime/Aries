@@ -5,10 +5,10 @@ import { formatWeight } from '@/utils/formatters'
 /**
  * 吨位进度小字的文案与宽度口径(渲染与列宽计算共用的**唯一**来源)。
  *
- * <p>可见文案只说一句话: 「剩余 10.19 · 中天」—— 直接回答"这条订单明细还能开多少"。
- * 早期版本显示的是「已开 0/10.19」这种"已开 / 订货"斜杠比值, 用户得自己心算剩余、
- * 还要先分清哪个数在前, 实测反馈"难以理解"; 订货/已开/含未保存/超额量等完整口径
- * 改由悬浮明细与 ⓘ 弹层承载(悬停或点一下即可, 不占列宽)。</p>
+ * <p>可见文案只说一句话: 「剩余 10.19 · 中天」—— 基数固定为**本单据该订单明细行的报单
+ * 吨位**, 减去已开吨位即为剩余。早期版本分别用过「已开 0/10.19」斜杠比值与「订货量 − 已开」
+ * 两种口径, 前者要用户自己心算, 后者把采购订单的订货量当成了上限(报 12 吨、订单 10 吨会被
+ * 误判超额), 均已废弃; 订货量/已开/报单合计等完整口径由悬浮明细与 ⓘ 弹层承载。</p>
  *
  * <p>这里的函数同时被 {@link TonCell} 的渲染与 `useSheetColumnWidths` 的定宽调用,
  * 避免两处各写一套格式化逻辑后逐渐漂移(列宽按 A 算、渲染成 B 就会被裁)。</p>
@@ -32,40 +32,52 @@ export function issuedBrandText(record: PurchaseOrderTonnageRecord): string {
   return [...new Set([(record.brand ?? '').trim()].filter(Boolean))].join('、')
 }
 
-/** 该明细行的剩余可开吨 = 订货吨位 − 实际已开吨位(不含本单据未保存吨位)。 */
-export function remainingWeightOf(record: PurchaseOrderTonnageRecord): number {
-  return record.orderedWeight - record.issuedWeight
-}
-
-/** 进度小字的可见文案: 主段(剩余可开吨 / 超额量)与品牌段。 */
+/** 进度小字的可见文案: 主段(剩余吨位 / 已开超量 / 已开量)与品牌段。 */
 export interface TonProgressTextParts {
-  /** 主段: 正常时是剩余可开吨, 超额时是超出部分。 */
+  /** 主段: 正常时是剩余吨位, 已开超时报超出量, 本单据未报量时报已开量。 */
   primary: string
   /** 品牌段, 可省: 列宽不足时先省略品牌。 */
   brand: string
 }
 
 /**
- * 构造某条采购订单明细行的进度小字文案(与单元格渲染逐字一致)。
+ * 进度小字的三态文案(与单元格渲染逐字一致)。
  *
- * <p>超额时主段换成「超额 1.81」: 这一刻用户最需要的是"超了多少"(本行吨位就在左侧输入框
- * 里), 剩余可开吨在同一格的悬浮明细里; 用同一个数字段承载两种状态, 列宽不随状态跳动。</p>
+ * <p>口径按业务确认改为「**锁定后的报单吨位 − 已开吨位 = 剩余吨位**」: 报单吨位(本单据该
+ * 订单明细行的报单合计)是这一批要开的量, 已开吨位是**其他已保存报单**占用该明细行的量,
+ * 两者相减就是还剩多少没开。采购订单的订货量只是参考信息, 不再作为上限参与判定 ——
+ * 早期版本用「订货量 − 已开」当剩余, 于是"报 12 吨、订单 10 吨"会被判成超额, 用户反馈
+ * 逻辑不对(报单本来就可能先于采购)。</p>
+ *
+ * <p>三种状态:</p>
+ * <ol>
+ *   <li>报单 > 已开: 「剩余 x」—— 还能开多少;</li>
+ *   <li>报单 &lt; 已开: 「已开超 x」—— 别人已经开的量超过了本单据报的量(真正的异常);</li>
+ *   <li>本单据尚未报量(报单为 0): 「已开 x」—— 只说明这条明细已被开了多少。</li>
+ * </ol>
  */
 export function tonProgressTextParts(
   t: TFunction,
   record: PurchaseOrderTonnageRecord,
-  projectedIssued: number,
+  reportedTon: number,
 ): TonProgressTextParts {
-  const overWeight = projectedIssued - record.orderedWeight
+  // 容错: 吨位输入框可能给出空值/NaN, 一律按"本单据尚未报量"处理, 不把 NaN 显示给用户
+  const reported = Number.isFinite(reportedTon) ? reportedTon : 0
+  const issued = record.issuedWeight
+  const remaining = reported - issued
   return {
     primary:
-      overWeight > 0
-        ? t('priceCompare.sheet.purchaseOrderOverLimitShort', {
-            weight: compactTonText(overWeight),
+      reported <= 0
+        ? t('priceCompare.sheet.purchaseOrderIssuedShort', {
+            issued: compactTonText(issued),
           })
-        : t('priceCompare.sheet.purchaseOrderRemainingShort', {
-            weight: compactTonText(remainingWeightOf(record)),
-          }),
+        : remaining < 0
+          ? t('priceCompare.sheet.purchaseOrderIssuedOverShort', {
+              weight: compactTonText(-remaining),
+            })
+          : t('priceCompare.sheet.purchaseOrderRemainingShort', {
+              weight: compactTonText(remaining),
+            }),
     brand: issuedBrandText(record),
   }
 }
@@ -74,8 +86,8 @@ export function tonProgressTextParts(
  * 一组明细行里最宽的一条进度小字(px)。
  *
  * <p>用作吨位列的定宽依据: 列宽只需覆盖**本单据实际会出现**的最长文案, 既不会把
- * 「剩余 27.768 · 中天钢铁」裁断, 也不会为用不到的品牌长度白留空白。未超额与超额
- * 两种文案都参与比较(超额量取"本单据未保存吨位"算出的真实值), 状态切换时列宽不抖。</p>
+ * 「剩余 27.768 · 中天钢铁」裁断, 也不会为用不到的品牌长度白留空白。本单据当前报单量与
+ * "尚未报量"两种状态都参与比较, 三种状态之间切换时列宽不会突然不够。</p>
  */
 export function maxTonProgressTextWidth(
   t: TFunction,
@@ -85,12 +97,12 @@ export function maxTonProgressTextWidth(
 ): number {
   let max = 0
   for (const record of records) {
-    const localTon = localTonByItemId.get(record.purchaseOrderItemId) ?? 0
+    const reportedTon = localTonByItemId.get(record.purchaseOrderItemId) ?? 0
     max = Math.max(
       max,
-      measure(tonProgressTextParts(t, record, record.issuedWeight + localTon)),
-      // 未超额口径(未保存吨位为 0)也要覆盖: 明细行可能尚未在本单据里填吨位
-      measure(tonProgressTextParts(t, record, record.issuedWeight)),
+      measure(tonProgressTextParts(t, record, reportedTon)),
+      // "本单据尚未报量"状态(文案变成「已开 issued」)也要覆盖
+      measure(tonProgressTextParts(t, record, 0)),
     )
   }
   return max

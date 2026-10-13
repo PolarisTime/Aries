@@ -69,7 +69,7 @@ describe('吨位进度小字层结构契约', () => {
     // 小字固定 11px(不随个人字号缩放), 拆层后品牌不能退回继承字号
     expect(brandGroup).toContain('font-size: 11px')
     expect(brandGroup).toContain('var(--ant-color-text-secondary')
-    // 超额时品牌同样转警告色(TonCell 会把 hint--over 加到品牌层上)
+    // 已开超时品牌同样转警告色(TonCell 会把 hint--over 加到品牌层上)
     expect(blockOf('.price-compare-ton-hint--over')).toContain(
       'var(--color-danger-active',
     )

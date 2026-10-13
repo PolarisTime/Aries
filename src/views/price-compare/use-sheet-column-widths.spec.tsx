@@ -117,13 +117,17 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   })
 
   it('吨位列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
-    const widths = render([poRecord({ orderedWeight: 128, brand: '中天钢铁' })])
+    // 本单据该明细行报 40 吨(issued 0) ⇒ 文案「剩余 40 · 中天钢铁」
+    const widths = render(
+      [poRecord({ issuedWeight: 0, brand: '中天钢铁' })],
+      new Map([['301', 40]]),
+    )
     const primaryOnly = requiredTonColumnWidth(
       14,
-      tonProgressLineWidth('剩余 128', ''),
+      tonProgressLineWidth('剩余 40', ''),
     )
     expect(widths.ton).toBe(
-      requiredTonColumnWidth(14, tonProgressLineWidth('剩余 128', '中天钢铁')),
+      requiredTonColumnWidth(14, tonProgressLineWidth('剩余 40', '中天钢铁')),
     )
     // 定宽必须真的比"只兜主段"的下界宽, 否则品牌还是会被裁
     expect(widths.ton).toBeGreaterThan(primaryOnly)
@@ -131,7 +135,7 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
   })
 
-  it('取单据里最长的一条进度小字定宽(含本单据超额文案)', () => {
+  it('取单据里最长的一条进度小字定宽(含本单据报单吨位)', () => {
     const short = poRecord({ purchaseOrderItemId: '301', brand: '中天' })
     const long = poRecord({
       purchaseOrderItemId: '302',
@@ -139,18 +143,18 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
       orderedWeight: 128,
       issuedWeight: 12.5,
     })
-    // 本单据给明细 302 填了 9000 吨: 超额文案「超额 8,884.5」比未超额更长
+    // 本单据给明细 302 报 9000 吨: 「剩余 8,987.5」(带千分位)比只报 40 吨更长
     const widths = render([short, long], new Map([['302', 9000]]))
-    const overParts = tonProgressTextParts(i18next.t, long, 12.5 + 9000)
-    expect(overParts.primary).toContain('超额')
+    const parts = tonProgressTextParts(i18next.t, long, 9000)
+    expect(parts.primary).toBe('剩余 8,987.5')
     expect(widths.ton).toBe(
       requiredTonColumnWidth(
         14,
-        tonProgressLineWidth(overParts.primary, overParts.brand),
+        tonProgressLineWidth(parts.primary, parts.brand),
       ),
     )
     expect(widths.ton).toBeGreaterThan(
-      requiredTonColumnWidth(14, tonProgressLineWidth('剩余 115.5', '中天')),
+      requiredTonColumnWidth(14, tonProgressLineWidth('剩余 40', '中天')),
     )
   })
 

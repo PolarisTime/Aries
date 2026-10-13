@@ -901,7 +901,7 @@ describe('列宽按字号自适应', () => {
    * 小字号档(11/12/13)是等比换算的盲区: 明细图标、单元格留白与固定 11px 的小字都不随字号
    * 缩小, 等比压小列宽会让主段可用宽跌破 51px —— 线上实测 12px 档 + 面板窄于表格总宽时
    * 「已开 0/12」被截成「已开 0/1…」, 超额行更只剩「已开 …」。{@link requiredTonColumnWidth}
-   * 就是这个小字号档下界(主段文案现已改为「剩余 x / 超额 x」, 真实宽度按单据内容算)。
+   * 就是这个小字号档下界(主段文案现已改为「剩余 x / 已开超 x」, 真实宽度按单据内容算)。
    */
   /** 进度小字实际可用的内容宽(px)。 */
   const issuedAvailableWidth = (fontSize: number) =>
@@ -911,7 +911,7 @@ describe('列宽按字号自适应', () => {
 
   it('11/12/13/14/16/18 六档下主段都容得下「剩余 26」, 不被省略号截断', () => {
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
-      // 超额行与普通行共用同一段文字布局(超额时只是文案换成「超额 x」), 因此同一个下界
+      // 已开超与普通行共用同一段文字布局(只是文案换成「已开超 x」), 因此同一个下界
       expect(issuedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
         TON_PROGRESS_MIN_TEXT_WIDTH,
       )
@@ -1016,7 +1016,7 @@ describe('列宽按字号自适应', () => {
   })
 
   it('长品牌定宽后仍能守住小字号档: 11/12/13px 取内容下界', () => {
-    const progressWidth = tonProgressLineWidth('超额 8,884.5', '中天钢铁')
+    const progressWidth = tonProgressLineWidth('已开超 8,884.5', '中天钢铁')
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
       const ton = sheetColumnWidths(fontSize, progressWidth).ton
       expect(ton).toBeGreaterThanOrEqual(

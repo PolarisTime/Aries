@@ -502,7 +502,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     openPurchaseOrderPicker,
     widths,
   } = ctx
-  /** 本单据内各采购订单的报单吨位合计(叠加到服务端已开吨位上判断超额)。 */
+  /** 本单据内各采购订单明细行的报单吨位合计(与已开吨位相减得到剩余吨位)。 */
   const localTonByItemId = sumTonByPurchaseOrderItem(rows)
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
@@ -2396,7 +2396,7 @@ export function SheetPanel(props: Props) {
   /**
    * 吨位列定宽依据: 本单据**实际会出现**的进度小字(选项列表 + 已关联明细)。
    *
-   * <p>进度小字固定 11px、宽度随吨位位数与品牌名长度变化, 超额时还会换成「超额 1.81」,
+   * <p>进度小字固定 11px、宽度随吨位位数与品牌名长度变化, 已开超时还会换成「已开超 1.81」,
    * 只按字号换算算不出「剩余 10.19 · 中天」需要多宽; 连同本单据未保存吨位一起传给
    * useSheetColumnWidths, 由它取最宽一条定宽, 避免文字被省略号收尾。</p>
    */

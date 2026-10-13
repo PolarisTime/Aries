@@ -10,6 +10,7 @@ import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { requiredTonColumnWidth, tonProgressLineWidth } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { PurchaseOrderTonnageDraftInput } from './ton-column'
+import { tonProgressTextParts } from './ton-progress-text'
 import type { PriceRow, PriceSheet, Variety } from './types'
 
 const variety: Variety = {
@@ -1338,7 +1339,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 
-  it('主流程: 吨位列显示服务端剩余可开吨并带品牌, 未保存吨位只进悬浮明细', async () => {
+  it('主流程: 吨位列显示剩余吨位(本单报单 − 已开)并带品牌', async () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1379,10 +1380,8 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
     const meta = container.querySelector<HTMLElement>('.price-compare-ton-meta')
-    // 服务端订货 32.768 / 实际已开 5 ⇒ 剩余 27.768; 本单据未保存的 12 吨不得混进这个数字
-    // (若混进就会变成 32.768 − 17 = 15.768)
-    expect(meta?.textContent).toContain('剩余 27.768')
-    expect(meta?.textContent).not.toContain('15.768')
+    // 本单据报 12 / 其他单据已开 5 ⇒ 剩余 7; 订货 32.768 只是参考, 不参与判定
+    expect(meta?.textContent).toContain('剩余 7')
     expect(meta?.textContent).toContain('中天')
 
     await act(async () => {
@@ -1391,10 +1390,16 @@ describe('SheetPanel 指定品牌展示', () => {
     })
     const tooltipText =
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
+    expect(tooltipText).toContain('报单吨位')
+    expect(tooltipText).toContain('12.000')
     expect(tooltipText).toContain('已开吨位（实际）')
     expect(tooltipText).toContain('5.000')
-    expect(tooltipText).toContain('含未保存报单')
-    expect(tooltipText).toContain('17.000')
+    expect(tooltipText).toContain('剩余吨位')
+    expect(tooltipText).toContain('7.000')
+    // 订货量仍在明细里作为参考, 但不产生"超额"结论
+    expect(tooltipText).toContain('订货吨位')
+    expect(tooltipText).toContain('32.768')
+    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
   it('吨位列按单据实际品牌定宽: 长品牌的「剩余 x · 品牌」不再被裁', () => {
@@ -1418,6 +1423,7 @@ describe('SheetPanel 指定品牌展示', () => {
       [
         {
           ...baseRow,
+          ton: 120,
           locked: true,
           purchaseOrderId: '88',
           purchaseOrderItemId: '301',
@@ -1436,10 +1442,12 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
 
-    // 列宽必须覆盖整段「剩余 115.5 · 中天钢铁」, 而不是只兜住主段下界
+    // 列宽必须覆盖整段「剩余 107.5 · 中天钢铁」(本单报 120 − 已开 12.5), 而不是只兜主段下界
+    const parts = tonProgressTextParts(i18n.t, poRecord, 120)
+    expect(parts.primary).toBe('剩余 107.5')
     const needed = requiredTonColumnWidth(
       14,
-      tonProgressLineWidth('剩余 115.5', '中天钢铁'),
+      tonProgressLineWidth(parts.primary, parts.brand),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),

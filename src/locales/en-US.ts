@@ -2760,23 +2760,23 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Issued (actual) counts saved sheets only (unsaved edits of this sheet excluded); "Incl. unsaved" adds what is currently typed here',
+        'Issued (actual) counts other saved sheets only (this sheet excluded); remaining = this sheet reported tonnage − issued. The purchase-order ordered weight is for reference only',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       purchaseOrderLoadFailed:
         'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
       purchaseOrderIssuedShort: 'Issued {{issued}}',
-      /** Visible cell text: state what is still available instead of an "issued / ordered" ratio. */
+      /** Visible cell text: remaining = this sheet reported tonnage − issued. */
       purchaseOrderRemainingShort: 'Remaining {{weight}}',
-      /** Visible cell text when over: state the exceeded amount directly. */
-      purchaseOrderOverLimitShort: 'Over by {{weight}}',
+      /** Anomaly: tonnage issued by other sheets exceeds this sheet reported tonnage. */
+      purchaseOrderIssuedOverShort: 'Opened over by {{weight}}',
+      /** Tooltip row: tonnage this sheet reported on the linked PO line. */
+      purchaseOrderSheetReported: 'This sheet (PO line)',
       purchaseOrderIssuedActual: 'Issued (actual)',
-      purchaseOrderIssuedProjected: 'Incl. unsaved',
-      purchaseOrderRemainingProjected: 'Remaining (incl. unsaved)',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
-      purchaseOrderOverLimitLong:
-        'Entry tonnage exceeds the order remaining by {{weight}}',
+      purchaseOrderIssuedOverLong:
+        'Opened {{issued}}t exceeds this sheet reported {{reported}}t',
       purchaseOrderPickerOpen: 'Select purchase order',
       purchaseOrderPickerTitle: 'Select purchase order line',
       purchaseOrderPickerSearch: 'Search order no., supplier or spec',

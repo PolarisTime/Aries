@@ -274,7 +274,7 @@ export const TON_INPUT_WIDTH_EM = 4.75
 export const TON_CELL_FIXED_CHROME = 13 + 8 + 24
 
 /**
- * 吨位进度小字主段(「剩余 10.19」/「超额 1.81」)的宽度下界(px)。
+ * 吨位进度小字主段(「剩余 12」/「已开超 6.5」/「已开 3」)的宽度下界(px)。
  *
  * <p>主段是进度行的硬契约: 列宽不足时只允许省略品牌, 主段必须完整可读。真实宽度由
  * {@link tonProgressLineWidth} 按单据实际吨位算出并传入; 这个 51px 是**无数据时的兜底**
@@ -350,7 +350,7 @@ export function estimateSheetTextWidth(text: string, fontSize: number): number {
 /**
  * 进度小字整行(主段 + 分隔符 + 品牌)的宽度(px)。
  *
- * <p>组成与 DOM 一致: 主段(「剩余 10.19」/「超额 1.81」) + 进度行的 flex gap +
+ * <p>组成与 DOM 一致: 主段(「剩余 12」/「已开超 6.5」/「已开 3」) + 进度行的 flex gap +
  * 品牌层的分隔符(含其左右 margin) + 品牌文本。品牌为空时只剩主段。</p>
  */
 export function tonProgressLineWidth(
@@ -687,7 +687,7 @@ export function isPurchasedRow(row: PriceRow): boolean {
 
 /**
  * 汇总各采购订单明细行在当前单据内的报单吨位(隔断行/未关联明细行不计)。
- * 用于在前端把"本地未保存吨位"叠加到服务端已开吨位上判断是否超额(按规格)。
+ * 用于在前端取"本单据该明细行报单吨位合计", 与已开吨位相减得到剩余吨位(按规格)。
  */
 export function sumTonByPurchaseOrderItem(
   rows: PriceRow[],
