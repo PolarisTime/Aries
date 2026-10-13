@@ -1,7 +1,12 @@
 import { type ThemeConfig, theme } from 'antd'
 import { getPersonalControlHeights } from '@/layouts/usePersonalSettings'
 
-const ANT_DESIGN_FONT_FAMILY = '"PingFang SC"'
+/**
+ * 与 variables.css 的 --app-font-family 保持一致: 首选捆绑/本机苹方, 其后是各平台中文黑体,
+ * 避免未安装苹方的环境落到浏览器默认字体后字宽漂移(列宽/截断按苹方基准标定)。
+ */
+const ANT_DESIGN_FONT_FAMILY =
+  '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif'
 
 interface BuildAntdThemeOptions {
   borderRadius: number

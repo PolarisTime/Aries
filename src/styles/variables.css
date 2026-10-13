@@ -10,7 +10,15 @@
 
 :root {
   --app-desktop-min-width: 1200px;
-  --app-font-family: "PingFang SC";
+  /*
+   * 字体栈: 首选应用内捆绑的苹方(见上面的 @font-face, 只有 Regular 一个字面),
+   * 其后是各平台常见中文黑体 —— 单一族名在未安装苹方的 Windows/Linux 上会直接落到
+   * 浏览器默认(中文常退化为宋体), 字宽与设计基准(0.6em 数字 / 1em 汉字)都会漂,
+   * 因此显式给出回退链; 末尾保留 system-ui / sans-serif 兜底。
+   */
+  --app-font-family:
+    "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
+    system-ui, sans-serif;
   --font-sans: var(--app-font-family);
   --font-serif: var(--app-font-family);
   --font-mono: var(--app-font-family);
