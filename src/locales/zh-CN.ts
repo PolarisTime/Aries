@@ -1660,6 +1660,9 @@ export const zhCN = {
         allowedSpecImportUnlimited: '不限制',
         allowedSpecImportBlocked:
           '项目「{{project}}」约定允许的品牌/材质与本次导入明细不匹配，已阻止导入：{{details}}。如需使用，请先在项目资料中维护允许范围；如属合同约定的「或同等档次」品牌，请走例外审批。',
+        allowedSpecItemWarning:
+          '项目「{{project}}」约定允许的品牌/材质与该行明细不匹配：{{details}}',
+        allowedSpecItemBlockedSuffix: '，保存时会被拦截。',
       },
       salesContract: {
         title: '销售合同',

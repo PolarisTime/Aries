@@ -279,40 +279,54 @@ function formatAllowedScope(values: readonly string[]) {
     : i18next.t('modules.pages.salesOrder.allowedSpecImportUnlimited')
 }
 
-/** 组装项目允许品牌/材质不匹配的预警文案(纯函数, 便于直接断言)。 */
-export function buildAllowedSpecImportWarning(args: {
+export interface AllowedSpecWarningArgs {
   projectLabel: string
   violations: AllowedSpecViolations
   allowedBrands: readonly string[]
   allowedMaterials: readonly string[]
-}): string | null {
+}
+
+/**
+ * 组装项目允许品牌/材质不匹配的提示文案(纯函数, 便于直接断言)。
+ *
+ * <p>导入与单行明细共用「越界明细 + 项目允许范围」两段结构, 只有首句措辞不同,
+ * 因此把话术收敛到 <code>messageKey</code> 一个入参上, 避免两处各写一套格式。</p>
+ */
+function buildAllowedSpecWarning(
+  args: AllowedSpecWarningArgs & { messageKey: string },
+): string | null {
   const { violations } = args
   if (!violations.brands.length && !violations.materials.length) {
     return null
-  }
-  const details: string[] = []
-  if (violations.brands.length) {
-    details.push(
-      i18next.t('modules.pages.salesOrder.allowedSpecImportBrands', {
-        values: formatAllowedValues(violations.brands),
-      }),
-    )
-  }
-  if (violations.materials.length) {
-    details.push(
-      i18next.t('modules.pages.salesOrder.allowedSpecImportMaterials', {
-        values: formatAllowedValues(violations.materials),
-      }),
-    )
   }
   const scope = i18next.t('modules.pages.salesOrder.allowedSpecImportScope', {
     brands: formatAllowedScope(args.allowedBrands),
     materials: formatAllowedScope(args.allowedMaterials),
   })
-  return `${i18next.t('modules.pages.salesOrder.allowedSpecImportWarning', {
+  return `${i18next.t(args.messageKey, {
     project: args.projectLabel,
-    details: details.join('；'),
+    details: formatViolationDetails(violations),
   })}（${scope}）`
+}
+
+/** 组装项目允许品牌/材质不匹配的导入预警文案(纯函数, 便于直接断言)。 */
+export function buildAllowedSpecImportWarning(
+  args: AllowedSpecWarningArgs,
+): string | null {
+  return buildAllowedSpecWarning({
+    ...args,
+    messageKey: 'modules.pages.salesOrder.allowedSpecImportWarning',
+  })
+}
+
+/** 组装单行明细(手工加行/改品牌材质)的项目允许范围提示文案。 */
+export function buildAllowedSpecItemWarning(
+  args: AllowedSpecWarningArgs,
+): string | null {
+  return buildAllowedSpecWarning({
+    ...args,
+    messageKey: 'modules.pages.salesOrder.allowedSpecItemWarning',
+  })
 }
 
 /** 导入侧的范围判定结果: 力度决定「拦住还是只提醒」。 */
@@ -340,10 +354,8 @@ function emptyAllowedSpecImportCheck(): AllowedSpecImportCheck {
   }
 }
 
-function resolveProjectScope(args: {
-  currentRecord: ModuleRecordInput
-  importedItems: ModuleLineItem[]
-}) {
+/** 从当前单据读取项目范围；项目未选择或查不到项目时返回 null（不判定）。 */
+function resolveProjectScope(args: { currentRecord: ModuleRecordInput }) {
   const projectId = parseOptionalEntityId(
     args.currentRecord?.projectId,
     'currentRecord.projectId',
@@ -373,6 +385,54 @@ function resolveProjectScope(args: {
   } as const
 }
 
+/** 项目范围判定的中间结果：项目范围 + 越界取值 + 各维度是否阻断，文案由调用方按场景组装。 */
+interface AllowedSpecScopeCheck {
+  projectLabel: string
+  violations: AllowedSpecViolations
+  allowedBrands: string[]
+  allowedMaterials: string[]
+  blocked: boolean
+}
+
+/**
+ * 项目范围判定的唯一内核（导入多行与单行明细共用）。
+ *
+ * <p>返回 null 表示「不提示」：项目未选择/查不到项目、两个维度力度都为 OFF、或明细全部命中。
+ * 调用方只决定文案话术，判定语义不允许各写一套。</p>
+ */
+function resolveAllowedSpecScopeCheck(args: {
+  currentRecord: ModuleRecordInput
+  items: readonly ModuleLineItem[]
+}): AllowedSpecScopeCheck | null {
+  const scope = resolveProjectScope({ currentRecord: args.currentRecord })
+  if (!scope) {
+    return null
+  }
+  const checksBrands = scope.brandEnforcement !== 'OFF'
+  const checksMaterials = scope.materialEnforcement !== 'OFF'
+  if (!checksBrands && !checksMaterials) {
+    return null
+  }
+  const violations = collectAllowedSpecViolations(
+    args.items,
+    checksBrands ? scope.allowedBrands : [],
+    checksMaterials ? scope.allowedMaterials : [],
+  )
+  if (!violations.brands.length && !violations.materials.length) {
+    return null
+  }
+  return {
+    projectLabel: scope.projectLabel,
+    violations,
+    allowedBrands: scope.allowedBrands,
+    allowedMaterials: scope.allowedMaterials,
+    blocked:
+      (violations.brands.length > 0 && scope.brandEnforcement === 'BLOCK') ||
+      (violations.materials.length > 0 &&
+        scope.materialEnforcement === 'BLOCK'),
+  }
+}
+
 /**
  * 销售订单导入采购订单明细时的项目范围判定（单一判据，供导入前后两处共用）。
  *
@@ -384,39 +444,97 @@ export function resolveSalesOrderPurchaseSourceImportCheck(args: {
   importedItems: ModuleLineItem[]
 }): AllowedSpecImportCheck {
   const empty = emptyAllowedSpecImportCheck()
-  const scope = resolveProjectScope(args)
-  if (!scope) {
+  const check = resolveAllowedSpecScopeCheck({
+    currentRecord: args.currentRecord,
+    items: args.importedItems,
+  })
+  if (!check) {
     return empty
   }
-  const checksBrands = scope.brandEnforcement !== 'OFF'
-  const checksMaterials = scope.materialEnforcement !== 'OFF'
-  if (!checksBrands && !checksMaterials) {
-    return empty
-  }
-  const violations = collectAllowedSpecViolations(
-    args.importedItems,
-    checksBrands ? scope.allowedBrands : [],
-    checksMaterials ? scope.allowedMaterials : [],
-  )
   const warning = buildAllowedSpecImportWarning({
-    projectLabel: scope.projectLabel,
-    violations,
-    allowedBrands: scope.allowedBrands,
-    allowedMaterials: scope.allowedMaterials,
+    projectLabel: check.projectLabel,
+    violations: check.violations,
+    allowedBrands: check.allowedBrands,
+    allowedMaterials: check.allowedMaterials,
   })
   if (!warning) {
     return empty
   }
-  const blocked =
-    (violations.brands.length > 0 && scope.brandEnforcement === 'BLOCK') ||
-    (violations.materials.length > 0 && scope.materialEnforcement === 'BLOCK')
   return {
-    blocked,
+    blocked: check.blocked,
     message: warning,
-    projectLabel: scope.projectLabel,
-    violations,
-    allowedBrands: scope.allowedBrands,
-    allowedMaterials: scope.allowedMaterials,
+    projectLabel: check.projectLabel,
+    violations: check.violations,
+    allowedBrands: check.allowedBrands,
+    allowedMaterials: check.allowedMaterials,
+  }
+}
+
+/** 单行明细的范围判定结果：力度决定文案措辞，行级提示一律不阻断编辑。 */
+export interface AllowedSpecItemCheck {
+  /** 越界维度里存在 BLOCK 力度；只影响文案，不阻断编辑。 */
+  blocked: boolean
+  /** 待提示文案；不提示（清单为空/力度 OFF/该维度无值/全部命中）时为 null。 */
+  message: string | null
+  /** 结构化的越界取值，供调用方按「行 + 维度 + 值」去重。 */
+  violations: AllowedSpecViolations
+  projectLabel: string
+  allowedBrands: string[]
+  allowedMaterials: string[]
+}
+
+/** 无越界/未配置时的空结果，避免调用方到处判 null。 */
+function emptyAllowedSpecItemCheck(): AllowedSpecItemCheck {
+  return {
+    blocked: false,
+    message: null,
+    projectLabel: '',
+    violations: { brands: [], materials: [] },
+    allowedBrands: [],
+    allowedMaterials: [],
+  }
+}
+
+/**
+ * 单行明细的项目范围判定（手工加行 / 改品牌材质时的即时提示用）。
+ *
+ * <p>判定内核与导入路径完全共用（{@link resolveAllowedSpecScopeCheck}），因此清单为空、力度 OFF、
+ * 该维度无值、全部命中都不提示。与导入路径的差别只有两点：文案不写「导入明细」（改为「该行明细」），
+ * 以及 BLOCK 档在提示里补一句「保存时会被拦截」——行级提示不阻断编辑（表格式录入打断成本高），
+ * 最终仍由服务端 422 兜底。</p>
+ */
+export function resolveSalesOrderItemScopeCheck(args: {
+  currentRecord: ModuleRecordInput
+  item: ModuleLineItem
+}): AllowedSpecItemCheck {
+  const empty = emptyAllowedSpecItemCheck()
+  const check = resolveAllowedSpecScopeCheck({
+    currentRecord: args.currentRecord,
+    items: [args.item],
+  })
+  if (!check) {
+    return empty
+  }
+  const warning = buildAllowedSpecItemWarning({
+    projectLabel: check.projectLabel,
+    violations: check.violations,
+    allowedBrands: check.allowedBrands,
+    allowedMaterials: check.allowedMaterials,
+  })
+  if (!warning) {
+    return empty
+  }
+  return {
+    blocked: check.blocked,
+    message: check.blocked
+      ? `${warning}${i18next.t(
+          'modules.pages.salesOrder.allowedSpecItemBlockedSuffix',
+        )}`
+      : warning,
+    projectLabel: check.projectLabel,
+    violations: check.violations,
+    allowedBrands: check.allowedBrands,
+    allowedMaterials: check.allowedMaterials,
   }
 }
 

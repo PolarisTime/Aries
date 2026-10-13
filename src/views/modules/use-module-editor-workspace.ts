@@ -3,6 +3,7 @@ import i18next from 'i18next'
 import {
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useEffect,
   useReducer,
   useRef,
@@ -51,6 +52,7 @@ import {
 } from '@/views/modules/module-editor-workspace-support'
 import { useEditorSubmissionController } from '@/views/modules/use-editor-submission-controller'
 import { useParentImportController } from '@/views/modules/use-parent-import-controller'
+import { useProjectScopeItemHint } from '@/views/modules/use-project-scope-item-hint'
 
 interface EditorWorkspaceState {
   items: ModuleLineItem[]
@@ -198,6 +200,16 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
         invalidateSubmissionIntent(submissionRef.current),
       onDirty,
     },
+  })
+
+  // 明细行的项目允许范围即时提示：改写发生时读当前单据（与导入路径同源）。
+  const resolveScopeCurrentRecord = useCallback(
+    () => form.getFieldsValue(true),
+    [form],
+  )
+  const hintItemScopes = useProjectScopeItemHint({
+    moduleKey,
+    resolveCurrentRecord: resolveScopeCurrentRecord,
   })
 
   const shouldGeneratePrimaryNo =
@@ -404,6 +416,8 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
       ...items,
       buildDefaultEditorLineItem(undefined, moduleKey),
     ]
+    // 新增行同样过一遍范围提示：空白行的品牌/材质为空，规则本身不判定，不会产生噪音提示。
+    hintItemScopes(items, nextItems)
     invalidateSubmissionIntent(submissionRef.current)
     onDirty()
     dispatchWorkspaceState({ items: nextItems })
@@ -451,6 +465,9 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     if (resolvedItems === items) {
       return
     }
+    // 明细列的所有手工写入（品牌输入、材质选择、复制本行…）都从这里过，
+    // 因此只需在这一个写入点做项目范围即时提示；上游导入走 replaceItems，不会重复弹消息。
+    hintItemScopes(items, resolvedItems)
     invalidateSubmissionIntent(submissionRef.current)
     onDirty()
     dispatchWorkspaceState({ items: resolvedItems })

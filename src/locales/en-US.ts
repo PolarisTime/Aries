@@ -1708,6 +1708,10 @@ export const enUS = {
         allowedSpecImportUnlimited: 'no restriction',
         allowedSpecImportBlocked:
           'Project "{{project}}" restricts allowed brands/materials, and this import does not match: {{details}}. Adjust the items, maintain the allowed scope first, or request an equal-grade exception.',
+        allowedSpecItemWarning:
+          'Project "{{project}}" restricts allowed brands/materials, but this line does not match: {{details}}',
+        allowedSpecItemBlockedSuffix:
+          ' It will be rejected when the document is saved.',
       },
       salesContract: {
         title: 'Sales Contracts',
