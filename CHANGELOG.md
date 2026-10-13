@@ -1,3 +1,15 @@
+# [11.11.0](https://github.com/PolarisTime/Aries/compare/v11.10.1...v11.11.0) (2026-10-13)
+
+
+### Bug Fixes
+
+* **price-compare:** 剩余吨位改按「本单报单吨位 − 已开吨位」口径, 修正报 12 吨被判超额 ([aef9b44](https://github.com/PolarisTime/Aries/commit/aef9b4444351d52ca2b217479b05b5e0cac64414))
+
+
+### Features
+
+* **price-compare:** 吨位列拆成报单吨位/已开吨位/未开吨位三列 ([121dcf2](https://github.com/PolarisTime/Aries/commit/121dcf2b413c2511ad8d5f2a390c3866fb73dd51))
+
 ## [11.10.1](https://github.com/PolarisTime/Aries/compare/v11.10.0...v11.10.1) (2026-10-13)
 
 
