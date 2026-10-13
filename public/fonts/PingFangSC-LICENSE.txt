@@ -22,3 +22,7 @@ SOFTWARE.
 
 Source: https://github.com/refinec/PingFangSC
 Commit: ec0d24064c7573bea6416b00d719d4ba5342a452
+
+本目录下的 PingFangSC-{Regular,Medium,Semibold}.woff2 是上游 ttf/*.ttf 的子集:
+字符集 = GB2312 全量 + 本仓库源码用字 + 常用符号区, 由 scripts/fonts/build-pingfang-subset.sh 生成
+(单字重 10.4MB TTF → 1.1MB woff2)。

@@ -35,3 +35,7 @@ coverage-e2e/
 *.njsproj
 *.sln
 *.sw?
+
+# Python 缓存(scripts/fonts 下的构建脚本)
+__pycache__/
+*.pyc

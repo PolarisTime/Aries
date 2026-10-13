@@ -1,10 +1,48 @@
 @import "tailwindcss";
 
+/*
+ * 苹方(苹方-简)三个字重: 400 常规 / 500 中黑 / 600·700 中粗。
+ *
+ * 来源 https://github.com/refinec/PingFangSC (MIT, 见同目录 PingFangSC-LICENSE.txt),
+ * 已按项目字符集子集化(单字重 10.4MB TTF → 1.1MB woff2, 三个字重合计 3.5MB, 比原先只带
+ * 一个字重的 5.2MB 更小)。原先只声明 400 一个字面, 界面里 52 处 500/600/700 全是浏览器
+ * 在常规字面上合成的伪粗体(笔画发虚、字宽不同于真字面), 现在都有真字面。
+ *
+ * `local()` 放在最前: 本机装了苹方(如 macOS)时直接用系统字面 —— 覆盖面完整、零下载;
+ * 未安装时才下载子集。子集只覆盖 GB2312 + 源码用字 + 常用符号, 生僻字会回退到字体栈的
+ * 下一个族(见 --app-font-family), 需要扩大时改 scripts/fonts/build-pingfang-subset.sh。
+ */
 @font-face {
   font-family: "PingFang SC";
-  src: url("/fonts/PingFangSC-Regular.woff2") format("woff2");
+  src:
+    local("PingFangSC-Regular"),
+    local("PingFang SC Regular"),
+    url("/fonts/PingFangSC-Regular.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PingFang SC";
+  src:
+    local("PingFangSC-Medium"),
+    local("PingFang SC Medium"),
+    url("/fonts/PingFangSC-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PingFang SC";
+  /* 600 与 700 共用中粗字面: 显式给到 700, 避免浏览器在 600 上再合成更粗的伪粗体 */
+  src:
+    local("PingFangSC-Semibold"),
+    local("PingFang SC Semibold"),
+    url("/fonts/PingFangSC-Semibold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600 700;
   font-display: swap;
 }
 
