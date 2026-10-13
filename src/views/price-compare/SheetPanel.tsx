@@ -2396,9 +2396,14 @@ export function SheetPanel(props: Props) {
   /**
    * 吨位列定宽依据: 本单据**实际会出现**的进度小字(选项列表 + 已关联明细)。
    *
-   * <p>进度小字固定 11px、宽度随吨位位数与品牌名长度变化, 只按字号换算算不出「已开 0/12 ·
-   * 中天」需要多宽; 传进来后由 useSheetColumnWidths 取最长一条定宽, 避免品牌被省略号收尾。</p>
+   * <p>进度小字固定 11px、宽度随吨位位数与品牌名长度变化, 超额时还会换成「超额 1.81」,
+   * 只按字号换算算不出「剩余 10.19 · 中天」需要多宽; 连同本单据未保存吨位一起传给
+   * useSheetColumnWidths, 由它取最宽一条定宽, 避免文字被省略号收尾。</p>
    */
+  const localTonByItemId = useMemo(
+    () => sumTonByPurchaseOrderItem(rows),
+    [rows],
+  )
   const tonnageRecordsForWidth = useMemo(
     () => [
       ...purchaseOrderTonnage.options,
@@ -2411,7 +2416,10 @@ export function SheetPanel(props: Props) {
    * 当前字号下的列宽(个人设置字号变化时自动重算, 保证文字不被裁断);
    * 吨位列再按上面那份真实内容兜底。
    */
-  const columnWidths = useSheetColumnWidths(tonnageRecordsForWidth)
+  const columnWidths = useSheetColumnWidths(
+    tonnageRecordsForWidth,
+    localTonByItemId,
+  )
 
   const base = {
     sheet,

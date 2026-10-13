@@ -2766,12 +2766,17 @@ export const enUS = {
       purchaseOrderLoadFailed:
         'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
       purchaseOrderIssuedShort: 'Issued {{issued}}',
+      /** Visible cell text: state what is still available instead of an "issued / ordered" ratio. */
+      purchaseOrderRemainingShort: 'Remaining {{weight}}',
+      /** Visible cell text when over: state the exceeded amount directly. */
+      purchaseOrderOverLimitShort: 'Over by {{weight}}',
       purchaseOrderIssuedActual: 'Issued (actual)',
       purchaseOrderIssuedProjected: 'Incl. unsaved',
       purchaseOrderRemainingProjected: 'Remaining (incl. unsaved)',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
-      purchaseOrderOverLimitLong: 'Entry tonnage exceeds the order remaining',
+      purchaseOrderOverLimitLong:
+        'Entry tonnage exceeds the order remaining by {{weight}}',
       purchaseOrderPickerOpen: 'Select purchase order',
       purchaseOrderPickerTitle: 'Select purchase order line',
       purchaseOrderPickerSearch: 'Search order no., supplier or spec',

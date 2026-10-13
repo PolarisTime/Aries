@@ -274,12 +274,13 @@ export const TON_INPUT_WIDTH_EM = 4.75
 export const TON_CELL_FIXED_CHROME = 13 + 8 + 24
 
 /**
- * 吨位进度小字(固定 11px, 不随个人字号缩放)里「已开 0/26」的宽度上界(px)。
+ * 吨位进度小字主段(「剩余 10.19」/「超额 1.81」)的宽度下界(px)。
  *
- * <p>比值是进度行的硬契约: 列宽不足时只允许省略品牌, 比值必须完整可读
- * (PingFang SC 11px 下实测「已开 0/26」= 51px)。</p>
+ * <p>主段是进度行的硬契约: 列宽不足时只允许省略品牌, 主段必须完整可读。真实宽度由
+ * {@link tonProgressLineWidth} 按单据实际吨位算出并传入; 这个 51px 是**无数据时的兜底**
+ * (沿用真机实测的「已开 0/26」宽度口径, 对「剩余 26」这类更短的主段同样安全)。</p>
  */
-export const TON_ISSUED_RATIO_WIDTH = 51
+export const TON_PROGRESS_MIN_TEXT_WIDTH = 51
 
 /** 超额警告图标挤占的宽度(px): 图标 11px 字号下约 13 + 外边距 2 + 进度行内两个 gap 4。 */
 export const TON_OVER_LIMIT_ICON_WIDTH = 19
@@ -290,7 +291,7 @@ const TON_WIDTH_SAFETY = 2
 /** 吨位进度小字的字号(px): 固定值, 不随个人字号缩放。 */
 export const TON_PROGRESS_FONT_SIZE = 11
 
-/** 进度小字里比值层与品牌层之间的 flex gap(px)。 */
+/** 进度小字里主段层与品牌层之间的 flex gap(px)。 */
 const TON_PROGRESS_GAP = 2
 
 /** 品牌层内分隔符「·」两侧的 margin(px)。 */
@@ -350,19 +351,19 @@ export function estimateSheetTextWidth(text: string, fontSize: number): number {
 }
 
 /**
- * 进度小字整行(比值 + 分隔符 + 品牌)的宽度(px)。
+ * 进度小字整行(主段 + 分隔符 + 品牌)的宽度(px)。
  *
- * <p>组成与 DOM 一致: 比值段 + 进度行的 flex gap + 品牌层的分隔符(含其左右 margin)
- * + 品牌文本。品牌为空时只剩比值段。</p>
+ * <p>组成与 DOM 一致: 主段(「剩余 10.19」/「超额 1.81」) + 进度行的 flex gap +
+ * 品牌层的分隔符(含其左右 margin) + 品牌文本。品牌为空时只剩主段。</p>
  */
-export function tonIssuedLineWidth(
-  ratioText: string,
+export function tonProgressLineWidth(
+  primaryText: string,
   brandText: string,
 ): number {
-  const ratio = estimateSheetTextWidth(ratioText, TON_PROGRESS_FONT_SIZE)
-  if (!brandText) return ratio
+  const primary = estimateSheetTextWidth(primaryText, TON_PROGRESS_FONT_SIZE)
+  if (!brandText) return primary
   return (
-    ratio +
+    primary +
     TON_PROGRESS_GAP +
     TON_BRAND_SEP_MARGIN +
     estimateSheetTextWidth(TON_BRAND_SEPARATOR, TON_PROGRESS_FONT_SIZE) +
@@ -371,7 +372,7 @@ export function tonIssuedLineWidth(
 }
 
 /**
- * 进度小字宽度上限(px, ≈ 14 个汉字品牌 + 比值段)。
+ * 进度小字宽度上限(px, ≈ 14 个汉字品牌 + 主段)。
  *
  * <p>品牌名是采购订单里的自由文本, 万一被填成公司全称, 列宽不能跟着无限膨胀 ——
  * 超出上限后该行退回省略号收尾, 完整值仍在悬浮明细与 ⓘ 弹层里。真实品牌(2~4 字)
@@ -383,8 +384,8 @@ export const TON_PROGRESS_TEXT_MAX_WIDTH = 220
  * 吨位列宽度下界: 输入框(随字号) + 固定开销 + 超额图标 + 进度小字 + 余量。
  *
  * <p>`progressTextWidth` 是**按单据实际内容**估出的进度小字整行宽度(见
- * {@link tonIssuedLineWidth}); 不传时只兜住比值「已开 0/26」(51px), 即退化到
- * "只省略品牌"的旧口径; 超过 {@link TON_PROGRESS_TEXT_MAX_WIDTH} 时按上限取值。</p>
+ * {@link tonProgressLineWidth}); 不传或比主段下界还窄时取
+ * {@link TON_PROGRESS_MIN_TEXT_WIDTH}; 超过 {@link TON_PROGRESS_TEXT_MAX_WIDTH} 时按上限取值。</p>
  *
  * <p>只按字号等比换算在两个方向上都会出错: 小字号(11/12/13px)时列宽被等比压小, 而
  * 明细图标、单元格留白、超额图标与固定 11px 的小字都不一起变小; 品牌名较长时即便
@@ -400,7 +401,7 @@ export function requiredTonColumnWidth(
     TON_OVER_LIMIT_ICON_WIDTH +
     Math.max(
       Math.min(progressTextWidth, TON_PROGRESS_TEXT_MAX_WIDTH),
-      TON_ISSUED_RATIO_WIDTH,
+      TON_PROGRESS_MIN_TEXT_WIDTH,
     ) +
     TON_WIDTH_SAFETY
   )
@@ -410,7 +411,7 @@ export function requiredTonColumnWidth(
  * 按当前字号换算整张单据表格的列宽(键与 {@link SHEET_COLUMN_WIDTH} 一致)。
  *
  * <p>`tonProgressTextWidth`: 本单据实际会出现的最先进度小字宽度(px), 由
- * {@link tonIssuedLineWidth} 按真实吨位与品牌算出; 省略时吨位列只按字号与比值下界定宽。</p>
+ * {@link tonProgressLineWidth} 按真实吨位与品牌算出; 省略时吨位列只按字号与比值下界定宽。</p>
  */
 export function sheetColumnWidths(
   fontSize: number,

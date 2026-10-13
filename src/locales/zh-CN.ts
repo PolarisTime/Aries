@@ -2680,6 +2680,13 @@ export const zhCN = {
       purchaseOrderLoadFailed:
         '采购订单吨位加载失败，已开/剩余吨位暂不可用；不影响吨位填写与保存',
       purchaseOrderIssuedShort: '已开 {{issued}}',
+      /**
+       * 吨位格可见文案: 直接给"还能开多少", 不让用户在「已开 / 订货」两个数之间心算。
+       * 超额时这段文字转警告色并补图标; 完整口径(订货/已开/含未保存/超额量)在悬浮明细里。
+       */
+      purchaseOrderRemainingShort: '剩余 {{weight}}',
+      /** 超额时吨位格的可见主段: 直接给"超了多少", 用户不必自己减。 */
+      purchaseOrderOverLimitShort: '超额 {{weight}}',
       /** 吨位进度行的数字口径: 实际已开(服务端已保存报单)。 */
       purchaseOrderIssuedActual: '已开吨位（实际）',
       /** 叠加本单据未保存吨位后的预计值, 只在悬浮明细里出现。 */
@@ -2687,7 +2694,7 @@ export const zhCN = {
       purchaseOrderRemainingProjected: '剩余吨位（含未保存）',
       purchaseOrderDetail: '采购订单明细',
       purchaseOrderUnlinked: '未关联采购订单',
-      purchaseOrderOverLimitLong: '报单吨位已超过订单剩余可开吨',
+      purchaseOrderOverLimitLong: '报单吨位已超过订单剩余可开吨 {{weight}}',
       purchaseOrderPickerOpen: '选择采购订单',
       purchaseOrderPickerTitle: '选择采购订单规格行',
       purchaseOrderPickerSearch: '搜索单号、供应商或规格',

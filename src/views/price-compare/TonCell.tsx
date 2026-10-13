@@ -138,8 +138,10 @@ function TonProgress({
   }
 
   const remaining = selected.orderedWeight - projectedIssued
-  // 进度小字文案与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
-  const { ratio: ratioText, brand } = tonProgressTextParts(t, selected)
+  // 超额量: 只在本行(含未保存吨位)超过订货吨位时为正
+  const overWeight = Math.max(projectedIssued - selected.orderedWeight, 0)
+  // 可见文案与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
+  const { primary, brand } = tonProgressTextParts(t, selected, projectedIssued)
   // 本单据未保存的吨位(>0 时才单独成行说明, 否则与实际已开完全一致, 徒增噪音)
   const unsavedTon = Math.max(projectedIssued - actualIssued, 0)
   const detail = (
@@ -190,7 +192,9 @@ function TonProgress({
       </div>
       {overLimit ? (
         <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderOverLimitLong')}
+          {t('priceCompare.sheet.purchaseOrderOverLimitLong', {
+            weight: tonValueText(overWeight),
+          })}
         </div>
       ) : null}
     </div>
@@ -216,14 +220,15 @@ function TonProgress({
           }
         >
           {/*
-            视觉上是紧凑的 `已开 35/40 · 中天`, 但对读屏要给出完整口径, 否则"35/40"读不出
-            谁是已开谁是订货、也读不到品牌。aria-label 不能挂在无 role 的 span 上(biome a11y 规则),
-            因此用项目通用的 .aries-sr-only 承载这句完整描述。
+            视觉上只有一句「剩余 10.19 · 中天」(超额时「超额 1.81 · 中天」), 但对读屏要把
+            订货/已开(实际)/含未保存/剩余/超额量一次说清, 否则数字读不出是谁的口径。
+            aria-label 不能挂在无 role 的 span 上(biome a11y 规则), 因此用项目通用的
+            .aries-sr-only 承载这句完整描述。
           */}
           <span className="aries-sr-only">
-            {`${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(actualIssued)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${unsavedTon > 0 ? ` / ${t('priceCompare.sheet.purchaseOrderIssuedProjected')} ${tonValueText(projectedIssued)}` : ''}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}`}
+            {`${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(actualIssued)} / ${t('priceCompare.sheet.columns.purchaseOrderRemaining')} ${tonValueText(selected.orderedWeight - actualIssued)}${unsavedTon > 0 ? ` / ${t('priceCompare.sheet.purchaseOrderIssuedProjected')} ${tonValueText(projectedIssued)}` : ''}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overLimit ? ` / ${t('priceCompare.sheet.purchaseOrderOverLimitLong', { weight: tonValueText(overWeight) })}` : ''}`}
           </span>
-          {ratioText}
+          {primary}
         </span>
         {brand ? <TonIssuedBrand brand={brand} overLimit={overLimit} /> : null}
         {overLimit ? (
@@ -448,6 +453,8 @@ function LinkedPurchaseOrderPopover({
   // 实际已开(服务端已保存口径)与含未保存的预计值分开呈现, 避免把草稿值读成已开量。
   const actualIssued = selected.issuedWeight
   const unsavedTon = Math.max(projectedIssued - actualIssued, 0)
+  // 超额量: 只在本行(含未保存吨位)超过订货吨位时为正
+  const overWeight = Math.max(projectedIssued - selected.orderedWeight, 0)
   const brand = issuedBrandText(selected)
   return (
     <div className="price-compare-ton-popover">
@@ -511,7 +518,9 @@ function LinkedPurchaseOrderPopover({
       </div>
       {overLimit ? (
         <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderOverLimitLong')}
+          {t('priceCompare.sheet.purchaseOrderOverLimitLong', {
+            weight: tonValueText(overWeight),
+          })}
         </div>
       ) : null}
       <div className="price-compare-ton-popover-basis">

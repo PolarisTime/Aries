@@ -31,10 +31,10 @@ import {
   syncSpotInputs,
   TON_CELL_FIXED_CHROME,
   TON_INPUT_WIDTH_EM,
-  TON_ISSUED_RATIO_WIDTH,
   TON_OVER_LIMIT_ICON_WIDTH,
+  TON_PROGRESS_MIN_TEXT_WIDTH,
   TON_PROGRESS_TEXT_MAX_WIDTH,
-  tonIssuedLineWidth,
+  tonProgressLineWidth,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
@@ -890,18 +890,19 @@ describe('列宽按字号自适应', () => {
   })
 
   /*
-   * 吨位列进度小字「已开 0/26 · 中天」的截断阈值契约。
+   * 吨位列进度小字「剩余 27.768 · 中天」的截断阈值契约。
    *
-   * 真机实测(PingFang SC): 小字固定 11px(不随个人字号缩放), 「已开 0/26」= 50.97px(取 51px 上界),
-   * 品牌后缀「 · 中天」再加约 31px。比值层抢到的是
+   * 真机实测(PingFang SC): 小字固定 11px(不随个人字号缩放), 旧口径「已开 0/26」= 50.97px
+   * (取 51px 作为主段下界),
+   * 品牌后缀「 · 中天」再加约 31px。主段层抢到的是
    * 列宽 − 单元格左右留白(13px) − 报单吨位输入框(4.75em) − 明细图标(24px) − 两个 flex gap(8px);
-   * 超额时还要再扣掉警告图标与其间距(19px)。留白 ≥ 51px 时「已开 0/26」完整可读, 被省略的
-   * 只有品牌; 156px 的旧列宽只剩 44.5px, 连「已开 0/2」都会被截成省略号。
+   * 超额时还要再扣掉警告图标与其间距(19px)。留白 ≥ 51px 时主段完整可读, 被省略的只有品牌;
+   * 156px 的旧列宽只剩 44.5px, 连「剩余 26」都会被截成省略号。
    *
    * 小字号档(11/12/13)是等比换算的盲区: 明细图标、单元格留白与固定 11px 的小字都不随字号
-   * 缩小, 等比压小列宽会让比值可用宽跌破 51px —— 线上实测 12px 档 + 面板窄于表格总宽时
+   * 缩小, 等比压小列宽会让主段可用宽跌破 51px —— 线上实测 12px 档 + 面板窄于表格总宽时
    * 「已开 0/12」被截成「已开 0/1…」, 超额行更只剩「已开 …」。{@link requiredTonColumnWidth}
-   * 就是这个小字号档下界。
+   * 就是这个小字号档下界(主段文案现已改为「剩余 x / 超额 x」, 真实宽度按单据内容算)。
    */
   /** 进度小字实际可用的内容宽(px)。 */
   const issuedAvailableWidth = (fontSize: number) =>
@@ -909,26 +910,26 @@ describe('列宽按字号自适应', () => {
     TON_CELL_FIXED_CHROME -
     TON_INPUT_WIDTH_EM * fontSize
 
-  /** 超额行里比值实际可用的内容宽(px): 再扣掉警告图标与进度行内间距。 */
+  /** 超额行里主段实际可用的内容宽(px): 再扣掉警告图标与进度行内间距。 */
   const issuedAvailableWidthOverLimit = (fontSize: number) =>
     issuedAvailableWidth(fontSize) - TON_OVER_LIMIT_ICON_WIDTH
 
-  it('11/12/13/14/16/18 六档下比值都容得下「已开 0/26」, 不被省略号截断', () => {
+  it('11/12/13/14/16/18 六档下主段都容得下「剩余 26」, 不被省略号截断', () => {
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
       expect(issuedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
-        TON_ISSUED_RATIO_WIDTH,
+        TON_PROGRESS_MIN_TEXT_WIDTH,
       )
-      // 超额行同样要读得出比值: 这是用户最需要数字的时候
+      // 超额行同样要读得出主段: 这是用户最需要数字的时候
       expect(issuedAvailableWidthOverLimit(fontSize)).toBeGreaterThanOrEqual(
-        TON_ISSUED_RATIO_WIDTH,
+        TON_PROGRESS_MIN_TEXT_WIDTH,
       )
     }
     // 基准字号下的真机余量: 可用 72.5px vs 需求 51px(完整句含品牌需 82px, 由 Tooltip 补齐)
     expect(issuedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(72.5)
   })
 
-  it('小字号档由不随字号缩放的固定开销兜底(等比换算会压掉比值)', () => {
-    // 等比换算在 11/12/13 档给出的宽度不足以容纳比值 + 固定开销
+  it('小字号档由不随字号缩放的固定开销兜底(等比换算会压掉主段)', () => {
+    // 等比换算在 11/12/13 档给出的宽度不足以容纳主段 + 固定开销
     for (const fontSize of [11, 12, 13]) {
       const scaled = scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize)
       expect(scaled).toBeLessThan(requiredTonColumnWidth(fontSize))
@@ -943,68 +944,73 @@ describe('列宽按字号自适应', () => {
         scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize),
       )
     }
-    // 下界在基准字号下正好等于列宽常量本身(4.75em 输入框 + 固定开销 + 比值 + 余量)
+    // 下界在基准字号下正好等于列宽常量本身(4.75em 输入框 + 固定开销 + 主段 + 余量)
     expect(requiredTonColumnWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(
       SHEET_COLUMN_WIDTH.ton,
     )
-    expect(TON_ISSUED_RATIO_WIDTH).toBe(51)
+    expect(TON_PROGRESS_MIN_TEXT_WIDTH).toBe(51)
     expect(TON_CELL_FIXED_CHROME).toBe(45)
     expect(TON_OVER_LIMIT_ICON_WIDTH).toBe(19)
     expect(TON_INPUT_WIDTH_EM).toBe(4.75)
   })
 
-  it('吨位列宽回归保护: 156 在 14px 下连「已开 0/26」都放不下', () => {
+  it('吨位列宽回归保护: 156 在 14px 下连主段下界都放不下', () => {
     expect(156 - TON_CELL_FIXED_CHROME - TON_INPUT_WIDTH_EM * 14).toBeLessThan(
-      TON_ISSUED_RATIO_WIDTH,
+      TON_PROGRESS_MIN_TEXT_WIDTH,
     )
   })
 
   /*
-   * 进度小字按**单据实际内容**定宽: 「已开 0/12 · 中天」比「已开 0/26」宽, 长品牌名更宽,
+   * 进度小字按**单据实际内容**定宽: 「剩余 27.768 · 中天」比「剩余 26」宽, 长品牌名更宽,
    * 只按字号换算推不出来。宽度来自 estimateSheetTextWidth 的分字符系数
    * (汉字 1em / 数字 0.6em, 与真机实测同口径), 这里锁定它的量级与保守性。
    */
   it('文本宽度估算: 汉字 1em、数字 0.6em, 且不小于真机实测值', () => {
-    // 真机实测(PingFang SC 11px, tabular-nums):「已开 0/26」= 50.97px
+    // 真机实测(PingFang SC 11px, tabular-nums): 旧口径「已开 0/26」= 50.97px
     expect(estimateSheetTextWidth('已开 0/26', 11)).toBeGreaterThanOrEqual(51)
     // 汉字恒为 1em: 4 个汉字在 11px 下不少于 44px
     expect(estimateSheetTextWidth('中天钢铁', 11)).toBeGreaterThanOrEqual(44)
     // 估算必须单调: 更长/更大的文本不会算出更窄的宽度
-    expect(estimateSheetTextWidth('已开 0/128', 11)).toBeGreaterThan(
-      estimateSheetTextWidth('已开 0/12', 11),
+    expect(estimateSheetTextWidth('剩余 27.768', 11)).toBeGreaterThan(
+      estimateSheetTextWidth('剩余 10', 11),
     )
-    expect(estimateSheetTextWidth('已开 0/12', 22)).toBeGreaterThan(
-      estimateSheetTextWidth('已开 0/12', 11),
+    expect(estimateSheetTextWidth('剩余 10', 22)).toBeGreaterThan(
+      estimateSheetTextWidth('剩余 10', 11),
+    )
+    // 千分位分隔符也要计入, 不能算窄
+    expect(estimateSheetTextWidth('剩余 1,234.5', 11)).toBeGreaterThan(
+      estimateSheetTextWidth('剩余 1234.5', 11),
     )
     expect(estimateSheetTextWidth('', 11)).toBe(0)
   })
 
-  it('进度整行宽度 = 比值 + gap + 分隔符(含 margin) + 品牌', () => {
-    const ratioOnly = tonIssuedLineWidth('已开 0/12', '')
-    expect(ratioOnly).toBe(estimateSheetTextWidth('已开 0/12', 11))
-    const withBrand = tonIssuedLineWidth('已开 0/12', '中天')
-    expect(withBrand).toBeGreaterThan(ratioOnly)
+  it('进度整行宽度 = 主段 + gap + 分隔符(含 margin) + 品牌', () => {
+    const primaryOnly = tonProgressLineWidth('剩余 27.768', '')
+    expect(primaryOnly).toBe(estimateSheetTextWidth('剩余 27.768', 11))
+    const withBrand = tonProgressLineWidth('剩余 27.768', '中天')
+    expect(withBrand).toBeGreaterThan(primaryOnly)
     // 品牌越长整行越宽
-    expect(tonIssuedLineWidth('已开 0/12', '中天钢铁')).toBeGreaterThan(
+    expect(tonProgressLineWidth('剩余 27.768', '中天钢铁')).toBeGreaterThan(
       withBrand,
     )
   })
 
-  it('传入实际内容宽后吨位列随之定宽, 且不低于比值下界', () => {
-    const ratioOnly = requiredTonColumnWidth(14, 0)
+  it('传入实际内容宽后吨位列随之定宽, 且不低于主段下界', () => {
+    const primaryOnly = requiredTonColumnWidth(14, 0)
     const withBrand = requiredTonColumnWidth(
       14,
-      tonIssuedLineWidth('已开 0/12', '中天钢铁'),
+      tonProgressLineWidth('剩余 27.768', '中天钢铁'),
     )
     // 内容更宽 ⇒ 列更宽, 且差值等于多出来的文本宽
-    expect(withBrand - ratioOnly).toBe(
-      tonIssuedLineWidth('已开 0/12', '中天钢铁') - TON_ISSUED_RATIO_WIDTH,
+    expect(withBrand - primaryOnly).toBe(
+      tonProgressLineWidth('剩余 27.768', '中天钢铁') -
+        TON_PROGRESS_MIN_TEXT_WIDTH,
     )
     expect(
-      sheetColumnWidths(14, tonIssuedLineWidth('已开 0/12', '中天')).ton,
-    ).toBe(requiredTonColumnWidth(14, tonIssuedLineWidth('已开 0/12', '中天')))
-    // 内容比比值还窄时不得把列压到比值下界之下
-    expect(sheetColumnWidths(14, 10).ton).toBe(ratioOnly)
+      sheetColumnWidths(14, tonProgressLineWidth('剩余 10', '中天')).ton,
+    ).toBe(requiredTonColumnWidth(14, tonProgressLineWidth('剩余 10', '中天')))
+    // 内容比主段下界还窄时不得把列压到下界之下
+    expect(sheetColumnWidths(14, 10).ton).toBe(primaryOnly)
     // 其余列与内容无关
     expect(sheetColumnWidths(14, 200).spec).toBe(SHEET_COLUMN_WIDTH.spec)
   })
@@ -1012,13 +1018,13 @@ describe('列宽按字号自适应', () => {
   it('内容宽超过上限时列宽不再膨胀(品牌是自由文本, 防止把表格撑爆)', () => {
     const capped = requiredTonColumnWidth(14, TON_PROGRESS_TEXT_MAX_WIDTH)
     expect(requiredTonColumnWidth(14, 10_000)).toBe(capped)
-    // 上限本身仍明显宽于比值下界, 否则等于把"完整显示"又退回去
+    // 上限本身仍明显宽于主段下界, 否则等于把"完整显示"又退回去
     expect(capped).toBeGreaterThan(requiredTonColumnWidth(14, 0))
     expect(TON_PROGRESS_TEXT_MAX_WIDTH).toBe(220)
   })
 
   it('长品牌定宽后仍能守住小字号档: 11/12/13px 取内容下界', () => {
-    const progressWidth = tonIssuedLineWidth('已开 12.5/128', '中天钢铁')
+    const progressWidth = tonProgressLineWidth('超额 8,884.5', '中天钢铁')
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
       const ton = sheetColumnWidths(fontSize, progressWidth).ton
       expect(ton).toBeGreaterThanOrEqual(

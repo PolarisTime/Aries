@@ -7,7 +7,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
-import { requiredTonColumnWidth, tonIssuedLineWidth } from './core'
+import { requiredTonColumnWidth, tonProgressLineWidth } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { PurchaseOrderTonnageDraftInput } from './ton-column'
 import type { PriceRow, PriceSheet, Variety } from './types'
@@ -1338,7 +1338,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 
-  it('主流程: 吨位列"已开"取服务端实际值并带品牌, 未保存吨位只进悬浮明细', async () => {
+  it('主流程: 吨位列显示服务端剩余可开吨并带品牌, 未保存吨位只进悬浮明细', async () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1379,8 +1379,10 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
     const meta = container.querySelector<HTMLElement>('.price-compare-ton-meta')
-    expect(meta?.textContent).toContain('已开 5/32.768')
-    expect(meta?.textContent).not.toContain('17/32.768')
+    // 服务端订货 32.768 / 实际已开 5 ⇒ 剩余 27.768; 本单据未保存的 12 吨不得混进这个数字
+    // (若混进就会变成 32.768 − 17 = 15.768)
+    expect(meta?.textContent).toContain('剩余 27.768')
+    expect(meta?.textContent).not.toContain('15.768')
     expect(meta?.textContent).toContain('中天')
 
     await act(async () => {
@@ -1395,7 +1397,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(tooltipText).toContain('17.000')
   })
 
-  it('吨位列按单据实际品牌定宽: 长品牌的「已开 x/y · 品牌」不再被裁', () => {
+  it('吨位列按单据实际品牌定宽: 长品牌的「剩余 x · 品牌」不再被裁', () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1434,16 +1436,16 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
 
-    // 列宽必须覆盖整段「已开 12.5/128 · 中天钢铁」, 而不是只兜住比值
+    // 列宽必须覆盖整段「剩余 115.5 · 中天钢铁」, 而不是只兜住主段下界
     const needed = requiredTonColumnWidth(
       14,
-      tonIssuedLineWidth('已开 12.5/128', '中天钢铁'),
+      tonProgressLineWidth('剩余 115.5', '中天钢铁'),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
     )
     expect(colStyles).toContain(`width:${needed}px;`)
-    // 只兜比值的旧口径更窄, 说明这次确实按真实内容加宽了
+    // 只兜主段下界的口径更窄, 说明这次确实按真实内容加宽了
     expect(needed).toBeGreaterThan(requiredTonColumnWidth(14, 0))
   })
 })

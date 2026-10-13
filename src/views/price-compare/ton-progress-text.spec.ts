@@ -6,6 +6,7 @@ import {
   compactTonText,
   issuedBrandText,
   maxTonProgressTextWidth,
+  remainingWeightOf,
   tonProgressTextParts,
 } from './ton-progress-text'
 
@@ -32,7 +33,9 @@ function poRecord(
 
 /**
  * 进度小字文案口径: 渲染与列宽定宽共用同一份(见 ton-progress-text.ts)。
- * 这里锁定"两处不会再各写一套"的关键行为: 紧凑吨位、品牌去重、最长文案。
+ *
+ * <p>可见文案是「剩余 10.19 · 中天」这种一句话 —— 直接回答"还能开多少"; 超额时换成
+ * 「超额 1.81」直接回答"超了多少"。不再用「已开 0/10.19」这种要用户自己心算的斜杠比值。</p>
  */
 describe('吨位进度小字文案', () => {
   beforeEach(async () => {
@@ -46,7 +49,7 @@ describe('吨位进度小字文案', () => {
     expect(compactTonText(0)).toBe('0')
   })
 
-  it('品牌去重并用顿号拼接, 空品牌返回空串', () => {
+  it('品牌去重并保留原文, 空品牌返回空串', () => {
     expect(issuedBrandText(poRecord({ brand: '中天' }))).toBe('中天')
     expect(issuedBrandText(poRecord({ brand: ' 中天 ' }))).toBe('中天')
     expect(issuedBrandText(poRecord({ brand: '' }))).toBe('')
@@ -55,24 +58,48 @@ describe('吨位进度小字文案', () => {
     )
   })
 
-  it('比值段用紧凑吨位渲染「已开 实际/订货」', () => {
-    const parts = tonProgressTextParts(
-      i18next.t,
-      poRecord({ issuedWeight: 30, orderedWeight: 40 }),
-    )
-    expect(parts.ratio).toBe('已开 30/40')
+  it('剩余可开吨 = 订货 − 已开(实际), 不含本单据未保存吨位', () => {
+    expect(
+      remainingWeightOf(poRecord({ orderedWeight: 40, issuedWeight: 30 })),
+    ).toBe(10)
+    expect(
+      remainingWeightOf(poRecord({ orderedWeight: 10.19, issuedWeight: 0 })),
+    ).toBeCloseTo(10.19, 5)
+  })
+
+  it('未超额时显示剩余可开吨: 「剩余 10.19」', () => {
+    const record = poRecord({ orderedWeight: 10.19, issuedWeight: 0 })
+    // 本行填 8 吨: 8 ≤ 10.19, 不超额
+    const parts = tonProgressTextParts(i18next.t, record, 8)
+    expect(parts.primary).toBe('剩余 10.19')
     expect(parts.brand).toBe('中天')
   })
 
-  it('三位小数吨位不被截断成整数', () => {
-    const parts = tonProgressTextParts(
-      i18next.t,
-      poRecord({ issuedWeight: 5.5, orderedWeight: 32.768 }),
-    )
-    expect(parts.ratio).toBe('已开 5.5/32.768')
+  it('超额时直接给超出量: 「超额 1.81」', () => {
+    const record = poRecord({ orderedWeight: 10.19, issuedWeight: 0 })
+    // 本行填 12 吨: 0 + 12 > 10.19, 超 1.81
+    const parts = tonProgressTextParts(i18next.t, record, 12)
+    expect(parts.primary).toBe('超额 1.81')
   })
 
-  it('最长文案取自全部明细行', () => {
+  it('三位小数吨位不被截断成整数', () => {
+    const record = poRecord({ orderedWeight: 32.768, issuedWeight: 0 })
+    expect(tonProgressTextParts(i18next.t, record, 6).primary).toBe(
+      '剩余 32.768',
+    )
+    expect(tonProgressTextParts(i18next.t, record, 33).primary).toBe(
+      '超额 0.232',
+    )
+  })
+
+  it('恰好等于订货吨位不算超额(边界)', () => {
+    const record = poRecord({ orderedWeight: 10.19, issuedWeight: 0 })
+    expect(tonProgressTextParts(i18next.t, record, 10.19).primary).toBe(
+      '剩余 10.19',
+    )
+  })
+
+  it('取全部明细行中最宽的一条文案(未超额与超额两种都算)', () => {
     const records = [
       poRecord({ purchaseOrderItemId: '1', brand: '中天' }),
       poRecord({
@@ -82,12 +109,27 @@ describe('吨位进度小字文案', () => {
         issuedWeight: 12.5,
       }),
     ]
-    const widthOf = (text: string) => text.length
-    const max = maxTonProgressTextWidth(i18next.t, records, (parts) =>
-      widthOf(parts.ratio + parts.brand),
+    const widthOf = (parts: { primary: string; brand: string }) =>
+      (parts.primary + parts.brand).length
+    // 没有未保存吨位: 明细 2 是「剩余 115.5」+「中天钢铁」= 12 个字符
+    expect(
+      maxTonProgressTextWidth(i18next.t, records, new Map(), widthOf),
+    ).toBe('剩余 115.5中天钢铁'.length)
+    expect('剩余 115.5中天钢铁'.length).toBe(12)
+    // 本单据给明细 2 填 9000 吨: 超额文案比未超额更长, 且四位吨位带千分位, 也要覆盖
+    expect(
+      maxTonProgressTextWidth(
+        i18next.t,
+        records,
+        new Map([['2', 9000]]),
+        widthOf,
+      ),
+    ).toBe('超额 8,884.5中天钢铁'.length)
+    // 千分位分隔符确实进了文案(宽度估算按 0.3em 计入, 不会算窄)
+    expect('超额 8,884.5中天钢铁'.length).toBeGreaterThan(
+      '剩余 115.5中天钢铁'.length,
     )
-    expect(max).toBe('已开 12.5/128'.length + '中天钢铁'.length)
     // 空列表不产生宽度
-    expect(maxTonProgressTextWidth(i18next.t, [], () => 0)).toBe(0)
+    expect(maxTonProgressTextWidth(i18next.t, [], new Map(), () => 0)).toBe(0)
   })
 })

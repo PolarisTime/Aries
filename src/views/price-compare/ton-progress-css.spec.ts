@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { TON_ISSUED_RATIO_WIDTH } from './core'
+import { TON_PROGRESS_MIN_TEXT_WIDTH } from './core'
 
 const pageCss = readFileSync(
   new URL('./price-compare.css', import.meta.url),
@@ -68,7 +68,7 @@ describe('吨位进度小字层结构契约', () => {
   })
 
   it('比值宽度契约与样式层一致: 11px 小字「已开 0/26」上界 51px', () => {
-    expect(TON_ISSUED_RATIO_WIDTH).toBe(51)
+    expect(TON_PROGRESS_MIN_TEXT_WIDTH).toBe(51)
     expect(blockOf('.price-compare-ton-issued {')).toContain('font-size: 11px')
   })
 })
