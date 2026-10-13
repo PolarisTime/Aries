@@ -63,33 +63,37 @@ export function AppTabContainer() {
       <LayoutTabBar />
       <AppBreadcrumb />
       <div className="leo-content-inner leo-tab-viewport">
-        {tabs.flatMap((tab) =>
-          tab.mountedOnce || tab.id === activeTabId
-            ? [
-                <div
-                  key={tab.id}
-                  /* 真实内容面板才是 tab 的 panel：rc-tabs 自己渲染的面板是空的,
-                     且被 CSS 整体隐藏(见 layout-shell.css 的 .ant-tabs-body-holder)。
-                     刻意不加 tabIndex —— APG 只在面板内无可聚焦元素时才要求 tabindex="0",
-                     而本项目面板内有表单与表格, Tab 键会自然落到其中。 */
-                  id={tabPanelDomId(tab.id)}
-                  role="tabpanel"
-                  aria-labelledby={tabLabelDomId(tab.id)}
-                  hidden={tab.id !== activeTabId}
-                  className="leo-tab-panel"
-                >
-                  <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
-                    <EditorSessionScopeProvider tabId={tab.id}>
-                      <TabPanelRouter
-                        key={`${tab.id}:${tab.reloadKey}`}
-                        tab={tab}
-                      />
-                    </EditorSessionScopeProvider>
-                  </AppErrorBoundary>
-                </div>,
-              ]
-            : [],
-        )}
+        {tabs.map((tab) => {
+          const mounted = tab.mountedOnce || tab.id === activeTabId
+          return (
+            <div
+              key={tab.id}
+              /* 真实内容面板才是 tab 的 panel：rc-tabs 自己渲染的面板是空的,
+                 且被 CSS 整体隐藏(见 layout-shell.css 的 .ant-tabs-body-holder)。
+                 刻意不加 tabIndex —— APG 只在面板内无可聚焦元素时才要求 tabindex="0",
+                 而本项目面板内有表单与表格, Tab 键会自然落到其中。 */
+              id={tabPanelDomId(tab.id)}
+              role="tabpanel"
+              aria-labelledby={tabLabelDomId(tab.id)}
+              hidden={tab.id !== activeTabId}
+              className="leo-tab-panel"
+            >
+              {/* 面板外壳始终存在, 内容仍按需挂载(恢复自持久化的标签保持惰性)。
+                 若外壳也惰性渲染, 非激活标签的 aria-controls 会指向不存在的元素,
+                 形成悬空引用 —— 实测 Playwright 可复现。 */}
+              {mounted ? (
+                <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
+                  <EditorSessionScopeProvider tabId={tab.id}>
+                    <TabPanelRouter
+                      key={`${tab.id}:${tab.reloadKey}`}
+                      tab={tab}
+                    />
+                  </EditorSessionScopeProvider>
+                </AppErrorBoundary>
+              ) : null}
+            </div>
+          )
+        })}
       </div>
     </Content>
   )

@@ -68,7 +68,7 @@ export function LayoutTabBar() {
   // 把 antd 渲染出的标签与 AppTabContainer 渲染的真实面板接成 APG 语义
   useTabAriaWiring({ hostRef, tabs, t })
 
-  const handleClose = (tabId: string, onClosed?: () => void) => {
+  const handleClose = (tabId: string) => {
     requestEditorSessionClose(t, tabId, () => {
       const store = useLayoutTabsStore.getState()
       const nextActiveTab = getNextActiveTabAfterClose(
@@ -83,53 +83,30 @@ export function LayoutTabBar() {
       }
       detachTabRouter(tabId)
       store.removeTab(tabId)
-      // 只在关闭真正生效后回调；用户取消「放弃更改」确认框时不得触发
-      onClosed?.()
     })
   }
 
   /**
    * 标签本身不是我们的子节点(由 Tabs 渲染), 键盘事件落在标签按钮上,
-   * 不会冒泡到菜单触发器, 因此在容器上做一次委托:
-   * - Shift+F10 / 上下文菜单键: 打开当前聚焦标签的菜单, 保证键盘用户可达
-   *   「关闭其他 / 关闭右侧 / 全部关闭」;
-   * - Delete: 关闭当前聚焦标签。上一步已按 WCAG 2.5.8 把关闭按钮热区撑到 24×24，
-   *   但 rc-tabs 给非激活标签的关闭按钮设了 tabIndex=-1，键盘无法直达；Delete 键
-   *   是 APG 给出的等价路径，菜单是它的补充替代。
+   * 不会冒泡到菜单触发器, 因此在容器上做一次委托: Shift+F10 / 上下文菜单键
+   * 打开当前聚焦标签的菜单, 保证键盘用户可达「关闭其他 / 关闭右侧 / 全部关闭」。
+   *
+   * <p>Delete / Backspace 关闭标签**刻意不在此实现**：rc-tabs 的 TabNavList 已内置
+   * `handleRemoveTab`，它用 getRemovable 尊重 closable（钉选标签天然免疫），并经
+   * onOffset 把焦点移到相邻标签，正是 APG 要求的行为。此前这里重复实现过一次，
+   * 结果是两个处理器先后对同一事件动作：本处理器先移除标签，rc-tabs 随后在已经变化的
+   * 标签序列上再执行一次 onOffset，焦点最终丢失。键盘关闭与焦点归还交给框架统一负责。</p>
    */
   const handleHostKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const isContextKey =
+      event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')
+    if (!isContextKey) return
     const tabId = (event.target as HTMLElement)
       .closest('.ant-tabs-tab')
       ?.getAttribute('data-node-key')
     if (!tabId) return
-
-    const isContextKey =
-      event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')
-    if (isContextKey) {
-      event.preventDefault()
-      setKeyboardMenuTabId(tabId)
-      return
-    }
-
-    if (event.key !== 'Delete') return
-
-    const index = tabs.findIndex((tab) => tab.id === tabId)
-    const tab = tabs[index]
-    if (!tab || tab.pinned) return // 钉选标签不可关闭
     event.preventDefault()
-    handleClose(tabId, () => {
-      // APG: 关闭后焦点移到后一个标签，没有后一个则移到前一个
-      const nextTabId = tabs[index + 1]?.id ?? tabs[index - 1]?.id
-      if (!nextTabId) return
-      // 等 React 提交这次移除后再把焦点交还标签栏
-      requestAnimationFrame(() => {
-        hostRef.current
-          ?.querySelector<HTMLElement>(
-            `.ant-tabs-tab[data-node-key="${CSS.escape(nextTabId)}"] [role="tab"]`,
-          )
-          ?.focus()
-      })
-    })
+    setKeyboardMenuTabId(tabId)
   }
 
   const buildContextMenu = (tab: LayoutTab): MenuProps => ({

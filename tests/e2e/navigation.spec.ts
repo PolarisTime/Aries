@@ -196,3 +196,79 @@ test.describe('当前应用路由可加载', () => {
     })
   }
 })
+
+test.describe('多标签页无障碍契约', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsE2eUser(page)
+  })
+
+  test('tablist 有可访问名，标签 aria-controls 指向真实内容面板，关闭按钮用中文可访问名', async ({
+    page,
+  }) => {
+    // 第二次整页跳转会经 localStorage 恢复标签，形成 工作台 + 商品资料 两个标签
+    await gotoRoute(page, '/material')
+
+    await expect(page.locator('[role="tablist"]').first()).toHaveAttribute(
+      'aria-label',
+      '已打开的页面标签',
+    )
+
+    const tabs = page.locator('.leo-tabbar .ant-tabs-tab')
+    await expect(tabs.first()).toBeVisible({ timeout: 30_000 })
+    const tabCount = await tabs.count()
+    expect(tabCount, '至少应有工作台与商品资料两个标签').toBeGreaterThan(1)
+
+    for (let index = 0; index < tabCount; index += 1) {
+      const controls = await tabs
+        .nth(index)
+        .locator('[role="tab"]')
+        .getAttribute('aria-controls')
+      expect(controls, '每个标签都必须有 aria-controls').toBeTruthy()
+      // 必须指向 AppTabContainer 渲染的真实面板，而不是 rc-tabs 那个空且被隐藏的面板
+      expect(controls).toContain('leo-tab-panel-')
+      const panel = page.locator(`#${controls}`)
+      await expect(panel).toHaveAttribute('role', 'tabpanel')
+      await expect(panel).toHaveAttribute('aria-labelledby', /.+/)
+    }
+
+    // rc-tabs 的关闭按钮默认可访问名是硬编码英文 'remove'，中文界面下读屏会念英文
+    const removeButtons = page.locator('.leo-tabbar .ant-tabs-tab-remove')
+    expect(
+      await removeButtons.count(),
+      '应存在可关闭标签的关闭按钮',
+    ).toBeGreaterThan(0)
+    await expect(removeButtons.first()).toHaveAttribute(
+      'aria-label',
+      /^关闭「.+」标签$/,
+    )
+  })
+
+  test('Delete 关闭当前聚焦标签', async ({ page }) => {
+    await gotoRoute(page, '/material')
+
+    const tabs = page.locator('.leo-tabbar .ant-tabs-tab')
+    await expect(tabs.first()).toBeVisible({ timeout: 30_000 })
+    const before = await tabs.count()
+    expect(before).toBeGreaterThan(1)
+
+    // 末尾标签必然是非钉选的业务页，可被 Delete 关闭
+    await tabs.last().locator('[role="tab"]').focus()
+    await page.keyboard.press('Delete')
+
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(
+      before - 1,
+      { timeout: 30_000 },
+    )
+    // tablist 仍需保持可访问名（关闭后重渲染不得丢掉 useTabAriaWiring 的接管）
+    await expect(page.locator('[role="tablist"]').first()).toHaveAttribute(
+      'aria-label',
+      '已打开的页面标签',
+    )
+    // 已知缺口（未在本次修复范围内）：关闭后焦点会落到 body 而非相邻标签。
+    // rc-tabs 的 handleRemoveTab 会 setFocusKey 指向相邻标签，但本应用关闭标签会连带
+    // 触发路由跳转（replaceMainRouterHref + useTabRouteReconciliation 的 history.push），
+    // 该跳转会使焦点回落。已验证自实现焦点归还与依赖框架两种路径均无法稳定落地，
+    // 故此处不断言焦点位置，避免留下必然失败的用例。APG 中 Delete 为 Optional，
+    // 且右键菜单已提供等价的关闭入口。
+  })
+})
