@@ -62,6 +62,44 @@
   }
 }
 
+/*
+ * 项目资料编辑: 由全屏铺开收成居中对话框。
+ *
+ * 全屏(1553px)时 4 列字段各占约 370px, 输入框被拉得过宽、右侧与下方留出大片空白;
+ * 收到 1040px 后单列约 245px, 一屏基本放得下全部字段, 与小屏一致地按视口收敛。
+ */
+/* 尺寸按**覆盖层容器**(内容区)算, 不用 100vh —— 覆盖层位于顶栏与页签之下,
+   用视口高度会让面板底部超出内容区, 取消/保存按钮被裁在屏幕外(实测 780px 面板底边 904px)。 */
+.workspace-overlay-panel--project-editor {
+  width: min(1040px, calc(100% - 24px));
+  height: min(780px, calc(100% - 24px));
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+@media (max-width: 1040px) {
+  .workspace-overlay-panel--project-editor {
+    width: calc(100% - 12px);
+    height: calc(100% - 12px);
+  }
+}
+
+/* 项目资料表单: 纵向节奏收紧(antd 默认 24px 下, 20 个字段会多出近 100px 空白) */
+.project-editor-form .ant-form-item {
+  margin-bottom: 12px;
+}
+
+/* 字段说明与控件贴紧, 说明本身不撑高行 */
+.project-editor-form .ant-form-item-extra {
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* 多行文本(备注)在紧凑布局下不必留 3 行的默认高度 */
+.project-editor-form .ant-input {
+  font-size: inherit;
+}
+
 .workspace-overlay-panel--parent-selector {
   width: 100%;
   max-width: none !important;

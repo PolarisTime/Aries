@@ -253,8 +253,26 @@ export function ProjectEditorOverlay({
   }
 
   return (
+    /*
+      尺寸与紧凑排版都在 CSS 里(workspace-overlay.css): 全屏铺开时 4 列字段各占约 370px
+      并留下大片空白, 收成居中对话框后单列约 245px; 按钮走 footer 槽固定在面板底部,
+      否则 20 个字段加价格规定滚动时会把它滚出屏幕(实测按钮落在 y=978, 面板底边 880)。
+    */
     <WorkspaceOverlay
       open={open}
+      className="workspace-overlay-panel--project-editor"
+      footer={
+        <Space>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button
+            type="primary"
+            loading={saving}
+            onClick={() => void handleEditorSave()}
+          >
+            {t('common.save')}
+          </Button>
+        </Space>
+      }
       title={
         <Space size={8}>
           <span>
@@ -272,12 +290,13 @@ export function ProjectEditorOverlay({
       <Form
         form={form}
         layout="vertical"
+        className="project-editor-form"
         disabled={saving}
         onValuesChange={(_, allValues) =>
           syncProjectForm(allValues as unknown as Record<string, unknown>)
         }
       >
-        <Row gutter={[12, 12]}>
+        <Row gutter={[12, 8]}>
           <Col span={6}>
             <Form.Item
               name="projectCode"
@@ -429,18 +448,6 @@ export function ProjectEditorOverlay({
           </Col>
         </Row>
       </Form>
-      <div className="workspace-overlay-footer">
-        <Space>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button
-            type="primary"
-            loading={saving}
-            onClick={() => void handleEditorSave()}
-          >
-            {t('common.save')}
-          </Button>
-        </Space>
-      </div>
     </WorkspaceOverlay>
   )
 }
