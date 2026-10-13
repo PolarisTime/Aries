@@ -208,7 +208,8 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   })
 
   registerModuleBehavior('sales-order', {
-    editableLockedFields: ['deliveryDate', 'remark'],
+    // 交付核定状态允许调整的字段：送货日期、报单日期（取价基准 ORDER 的锚点）、备注。
+    editableLockedFields: ['deliveryDate', 'orderDate', 'remark'],
     editableLockedItemColumns: ['unitPrice'],
     locksLineItemsWhenRecordLocked: true,
     lineItemLockSourceModule: 'sales-outbound',
