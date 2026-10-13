@@ -282,9 +282,6 @@ export const TON_CELL_FIXED_CHROME = 13 + 8 + 24
  */
 export const TON_PROGRESS_MIN_TEXT_WIDTH = 51
 
-/** 超额警告图标挤占的宽度(px): 图标 11px 字号下约 13 + 外边距 2 + 进度行内两个 gap 4。 */
-export const TON_OVER_LIMIT_ICON_WIDTH = 19
-
 /** 取整与字体渲染差异的余量(px)。 */
 const TON_WIDTH_SAFETY = 2
 
@@ -381,14 +378,14 @@ export function tonProgressLineWidth(
 export const TON_PROGRESS_TEXT_MAX_WIDTH = 220
 
 /**
- * 吨位列宽度下界: 输入框(随字号) + 固定开销 + 超额图标 + 进度小字 + 余量。
+ * 吨位列宽度下界: 输入框(随字号) + 固定开销 + 进度小字 + 余量。
  *
  * <p>`progressTextWidth` 是**按单据实际内容**估出的进度小字整行宽度(见
  * {@link tonProgressLineWidth}); 不传或比主段下界还窄时取
  * {@link TON_PROGRESS_MIN_TEXT_WIDTH}; 超过 {@link TON_PROGRESS_TEXT_MAX_WIDTH} 时按上限取值。</p>
  *
  * <p>只按字号等比换算在两个方向上都会出错: 小字号(11/12/13px)时列宽被等比压小, 而
- * 明细图标、单元格留白、超额图标与固定 11px 的小字都不一起变小; 品牌名较长时即便
+ * 明细图标、单元格留白与固定 11px 的小字都不一起变小; 品牌名较长时即便
  * 基准字号也放不下。因此吨位列取等比换算与该下界的较大值。</p>
  */
 export function requiredTonColumnWidth(
@@ -398,7 +395,6 @@ export function requiredTonColumnWidth(
   return (
     Math.ceil(TON_INPUT_WIDTH_EM * normalizeFontSize(fontSize)) +
     TON_CELL_FIXED_CHROME +
-    TON_OVER_LIMIT_ICON_WIDTH +
     Math.max(
       Math.min(progressTextWidth, TON_PROGRESS_TEXT_MAX_WIDTH),
       TON_PROGRESS_MIN_TEXT_WIDTH,

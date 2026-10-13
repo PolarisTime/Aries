@@ -44,6 +44,14 @@ describe('吨位进度小字层结构契约', () => {
     expect(brand).toContain('min-width: 0')
   })
 
+  it('进度层吃掉整格余量, 报单吨位与数字在各行之间成竖列', () => {
+    const progress = blockOf('.price-compare-ton-progress {')
+    // flex-grow > 0: 位置与宽度只由列宽决定, 不随各行文字长短变化
+    expect(progress).toMatch(/flex:\s*1\s+1\s+auto/)
+    // 输入框与明细按钮都固定宽度, 加上上面这条就保证吨位列里两段数字各自对齐
+    expect(blockOf('.price-compare-ton-value {')).toContain('flex: 0 0 auto')
+  })
+
   it('品牌层先让位: 收缩因子远大于比值层', () => {
     const brandShrink = flexShrinkOf('.price-compare-ton-brand-group {')
     const issuedShrink = flexShrinkOf('.price-compare-ton-issued {')

@@ -1,4 +1,4 @@
-import { ExclamationCircleFilled, InfoCircleOutlined } from '@ant-design/icons'
+import { InfoCircleOutlined } from '@ant-design/icons'
 import { Button, Input, Popover, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
@@ -126,13 +126,19 @@ function TonProgress({
 }) {
   const { t } = useTranslation()
   if (!selected) {
-    // 未关联时保留占位: 关联行与未关联行高度一致, 表格不会高低不齐
+    /*
+      未关联时保留占位: 关联行与未关联行高度一致, 表格不会高低不齐。
+      占位同样放在进度层里 —— 该层 flex-grow 吃掉整格余量, 未关联行的报单吨位
+      输入框才会和关联行落在同一个竖列上, 不会因为少了一段文字而右移。
+    */
     return (
-      <span
-        aria-hidden="true"
-        className="price-compare-ton-meta price-compare-ton-meta--empty"
-      >
-        —
+      <span className="price-compare-ton-progress">
+        <span
+          aria-hidden="true"
+          className="price-compare-ton-meta price-compare-ton-meta--empty"
+        >
+          —
+        </span>
       </span>
     )
   }
@@ -207,9 +213,9 @@ function TonProgress({
       title={detail}
     >
       {/*
-        单行结构: 文本单独一层负责省略号, 超额图标放在它外面。
-        图标若留在 overflow:hidden + text-overflow:ellipsis 的文本层内, 文本一被截断
-        图标就一起被裁掉 —— "超额"会退化成只剩颜色(WCAG 1.4.1)。
+        单行结构: 主段(剩余/超额)+品牌两层各自负责省略号, 行容器不再放超额图标 ——
+        "超额 1.81"这段文字本身已经说明问题, 不必再用图标重复提示(颜色也不是唯一线索,
+        读屏口径与悬浮明细里都有完整描述, 满足 WCAG 1.4.1)。
       */}
       <span className="price-compare-ton-progress">
         <span
@@ -231,12 +237,6 @@ function TonProgress({
           {primary}
         </span>
         {brand ? <TonIssuedBrand brand={brand} overLimit={overLimit} /> : null}
-        {overLimit ? (
-          <ExclamationCircleFilled
-            aria-hidden="true"
-            className="price-compare-ton-over-icon"
-          />
-        ) : null}
       </span>
     </Tooltip>
   )

@@ -154,7 +154,9 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     )
   })
 
-  it('没有吨位数据时回落到只兜主段的下界', () => {
-    expect(render([]).ton).toBe(requiredTonColumnWidth(14, 0))
+  it('没有吨位数据时回落到基准字号列宽(不被主段下界压低)', () => {
+    const widths = render([])
+    expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
+    expect(widths.ton).toBeGreaterThanOrEqual(requiredTonColumnWidth(14, 0))
   })
 })

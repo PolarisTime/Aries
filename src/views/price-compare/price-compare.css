@@ -749,12 +749,15 @@
 }
 
 /*
- * 进度区: 可省略的文本 + 不可收缩的超额图标。
- * 图标必须留在省略号层外, 否则文本一被截断图标就被一起裁掉(WCAG 1.4.1 不能只靠颜色)。
+ * 进度区: 主段(剩余 x / 超额 x) + 品牌层。
+ *
+ * flex-grow 吃掉整格余量, 让这一层的位置与宽度只由列宽决定, 不随各行文字长短变化 ——
+ * 否则每行文本一长, 它左侧的报单吨位输入框就被推着左右移动, 整列的吨位数字对不齐。
+ * 未关联行的占位「—」也放在这一层里, 保证同样落位。
  */
 .price-compare-ton-progress {
   display: flex;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   align-items: center;
   gap: 2px;
   min-width: 0;
@@ -798,15 +801,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
-}
-
-/* 超额时的警告图标: 与文字同色, 让"超额"不只靠颜色传达(WCAG 1.4.1) */
-.price-compare-ton-over-icon {
-  flex: 0 0 auto;
-  margin-inline-start: 2px;
-  font-size: 11px;
-  /* 图标在省略号层之外, 不再继承超额文本色, 必须自己带警告色 */
-  color: var(--color-danger-active, #d9363e);
 }
 
 /* 未关联采购订单时的占位: 与输入同行, 内容由明细图标说明 */

@@ -102,13 +102,17 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(container.querySelector('.price-compare-ton-info')).toBeTruthy()
   })
 
-  it('未关联时不显示已开吨位数值, 但保留占位保证行高一致', () => {
+  it('未关联时不显示吨位数值, 占位落在同一进度层保证竖列对齐', () => {
     render()
     expect(container.textContent).not.toContain('已开')
     const empty = container.querySelector('.price-compare-ton-meta--empty')
     expect(empty?.textContent).toBe('—')
-    // 占位与输入同行, 吨位格只有一个行容器(两行结构会把整行撑高)
+    // 占位与关联行的数字同处进度层: 该层 flex-grow 吃掉整格余量, 报单吨位输入框
+    // 在关联行/未关联行里落在同一个竖列上(否则未关联行会右移)
     expect(empty?.parentElement).toBe(
+      container.querySelector('.price-compare-ton-progress'),
+    )
+    expect(empty?.parentElement?.parentElement).toBe(
       container.querySelector('.price-compare-ton-cell'),
     )
     expect(container.querySelector('.price-compare-ton-meta-row')).toBeNull()
@@ -197,19 +201,18 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     ).toBe(true)
   })
 
-  it('超额警告图标位于可省略文本之外, 文本被截断也不会丢图标', () => {
+  it('超额只用文字表达, 不再补感叹号图标', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301', ton: 15 },
       localTonForItem: 15,
     })
+    // 「超额 x」这段文字本身已说明问题, 不需要图标重复提示(读屏与悬浮明细另有完整口径)
+    expect(container.querySelector('.price-compare-ton-over-icon')).toBeNull()
     const issued = container.querySelector('.price-compare-ton-issued')
-    const progress = container.querySelector('.price-compare-ton-progress')
-    const icon = container.querySelector('.price-compare-ton-over-icon')
-    expect(icon).not.toBeNull()
-    // 图标若留在 overflow:hidden + ellipsis 的文本层里, 文本一截断图标就被裁掉
-    expect(issued?.contains(icon)).toBe(false)
-    expect(progress?.contains(icon)).toBe(true)
-    expect(progress?.contains(issued)).toBe(true)
+    expect(issued?.textContent).toContain('超额')
+    expect(
+      container.querySelector('.price-compare-ton-progress')?.contains(issued),
+    ).toBe(true)
   })
 
   it('超过订货吨数时进度行标红并补警告图标', () => {
@@ -229,9 +232,8 @@ describe('TonCell 吨位 + 采购订单关联', () => {
         '.price-compare-ton-brand-group.price-compare-ton-hint--over',
       ),
     ).toBeTruthy()
-    expect(
-      container.querySelector('.price-compare-ton-over-icon'),
-    ).not.toBeNull()
+    // 文字已写明「超额」, 不再需要额外图标
+    expect(container.querySelector('.price-compare-ton-over-icon')).toBeNull()
   })
 
   it('多张采购单叠加: 未超额显示剩余可开吨, 超额改显示超出量', () => {

@@ -31,7 +31,6 @@ import {
   syncSpotInputs,
   TON_CELL_FIXED_CHROME,
   TON_INPUT_WIDTH_EM,
-  TON_OVER_LIMIT_ICON_WIDTH,
   TON_PROGRESS_MIN_TEXT_WIDTH,
   TON_PROGRESS_TEXT_MAX_WIDTH,
   tonProgressLineWidth,
@@ -895,8 +894,8 @@ describe('列宽按字号自适应', () => {
    * 真机实测(PingFang SC): 小字固定 11px(不随个人字号缩放), 旧口径「已开 0/26」= 50.97px
    * (取 51px 作为主段下界),
    * 品牌后缀「 · 中天」再加约 31px。主段层抢到的是
-   * 列宽 − 单元格左右留白(13px) − 报单吨位输入框(4.75em) − 明细图标(24px) − 两个 flex gap(8px);
-   * 超额时还要再扣掉警告图标与其间距(19px)。留白 ≥ 51px 时主段完整可读, 被省略的只有品牌;
+   * 列宽 − 单元格左右留白(13px) − 报单吨位输入框(4.75em) − 明细图标(24px) − 两个 flex gap(8px)。
+   * 留白 ≥ 51px 时主段完整可读, 被省略的只有品牌;
    * 156px 的旧列宽只剩 44.5px, 连「剩余 26」都会被截成省略号。
    *
    * 小字号档(11/12/13)是等比换算的盲区: 明细图标、单元格留白与固定 11px 的小字都不随字号
@@ -910,17 +909,10 @@ describe('列宽按字号自适应', () => {
     TON_CELL_FIXED_CHROME -
     TON_INPUT_WIDTH_EM * fontSize
 
-  /** 超额行里主段实际可用的内容宽(px): 再扣掉警告图标与进度行内间距。 */
-  const issuedAvailableWidthOverLimit = (fontSize: number) =>
-    issuedAvailableWidth(fontSize) - TON_OVER_LIMIT_ICON_WIDTH
-
   it('11/12/13/14/16/18 六档下主段都容得下「剩余 26」, 不被省略号截断', () => {
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
+      // 超额行与普通行共用同一段文字布局(超额时只是文案换成「超额 x」), 因此同一个下界
       expect(issuedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
-        TON_PROGRESS_MIN_TEXT_WIDTH,
-      )
-      // 超额行同样要读得出主段: 这是用户最需要数字的时候
-      expect(issuedAvailableWidthOverLimit(fontSize)).toBeGreaterThanOrEqual(
         TON_PROGRESS_MIN_TEXT_WIDTH,
       )
     }
@@ -928,29 +920,28 @@ describe('列宽按字号自适应', () => {
     expect(issuedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(72.5)
   })
 
-  it('小字号档由不随字号缩放的固定开销兜底(等比换算会压掉主段)', () => {
-    // 等比换算在 11/12/13 档给出的宽度不足以容纳主段 + 固定开销
-    for (const fontSize of [11, 12, 13]) {
-      const scaled = scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize)
-      expect(scaled).toBeLessThan(requiredTonColumnWidth(fontSize))
-      // 兜底后: 列宽 = 下界, 且恰好是等比换算与下界的较大值
-      expect(sheetColumnWidths(fontSize).ton).toBe(
-        requiredTonColumnWidth(fontSize),
-      )
-    }
-    // 基准字号及放大档仍走等比换算, 不因兜底而变宽
-    for (const fontSize of [14, 16, 18]) {
+  it('小字号档由不随字号缩放的固定开销兜底(11px 档等比换算不够)', () => {
+    // 11px 档: 等比换算 145px 连"输入框 + 固定开销 + 主段下界"都不够, 取内容下界
+    expect(scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, 11)).toBeLessThan(
+      requiredTonColumnWidth(11),
+    )
+    expect(sheetColumnWidths(11).ton).toBe(requiredTonColumnWidth(11))
+    // 12px 及以上: 等比换算本身已覆盖下界, 不因兜底额外变宽
+    for (const fontSize of [12, 13, 14, 16, 18]) {
       expect(sheetColumnWidths(fontSize).ton).toBe(
         scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize),
       )
+      expect(sheetColumnWidths(fontSize).ton).toBeGreaterThanOrEqual(
+        requiredTonColumnWidth(fontSize),
+      )
     }
-    // 下界在基准字号下正好等于列宽常量本身(4.75em 输入框 + 固定开销 + 主段 + 余量)
-    expect(requiredTonColumnWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(
+    // 基准字号下界(4.75em 输入框 + 固定开销 + 主段 + 余量)不高于列宽常量本身
+    expect(requiredTonColumnWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(165)
+    expect(requiredTonColumnWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBeLessThan(
       SHEET_COLUMN_WIDTH.ton,
     )
     expect(TON_PROGRESS_MIN_TEXT_WIDTH).toBe(51)
     expect(TON_CELL_FIXED_CHROME).toBe(45)
-    expect(TON_OVER_LIMIT_ICON_WIDTH).toBe(19)
     expect(TON_INPUT_WIDTH_EM).toBe(4.75)
   })
 
@@ -1009,8 +1000,9 @@ describe('列宽按字号自适应', () => {
     expect(
       sheetColumnWidths(14, tonProgressLineWidth('剩余 10', '中天')).ton,
     ).toBe(requiredTonColumnWidth(14, tonProgressLineWidth('剩余 10', '中天')))
-    // 内容比主段下界还窄时不得把列压到下界之下
-    expect(sheetColumnWidths(14, 10).ton).toBe(primaryOnly)
+    // 内容很窄时列宽回落到基准字号的比例值(184), 不会被下界压低
+    expect(sheetColumnWidths(14, 10).ton).toBe(SHEET_COLUMN_WIDTH.ton)
+    expect(primaryOnly).toBeLessThan(SHEET_COLUMN_WIDTH.ton)
     // 其余列与内容无关
     expect(sheetColumnWidths(14, 200).spec).toBe(SHEET_COLUMN_WIDTH.spec)
   })
@@ -1028,10 +1020,7 @@ describe('列宽按字号自适应', () => {
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
       const ton = sheetColumnWidths(fontSize, progressWidth).ton
       expect(ton).toBeGreaterThanOrEqual(
-        TON_INPUT_WIDTH_EM * fontSize +
-          TON_CELL_FIXED_CHROME +
-          TON_OVER_LIMIT_ICON_WIDTH +
-          progressWidth,
+        TON_INPUT_WIDTH_EM * fontSize + TON_CELL_FIXED_CHROME + progressWidth,
       )
     }
   })
