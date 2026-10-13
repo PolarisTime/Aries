@@ -2158,6 +2158,8 @@ export const enUS = {
       contextMenuLabel: 'Actions for the {{name}} tab',
       evicted:
         'Tab limit reached; automatically closed the earliest {{n}} tab(s)',
+      tablistLabel: 'Open page tabs',
+      closeTab: 'Close the {{name}} tab',
       overLimitHint:
         'Over the tab limit ({{current}}/{{max}}). Tabs with unsaved changes are never closed automatically — please close some tabs manually',
     },

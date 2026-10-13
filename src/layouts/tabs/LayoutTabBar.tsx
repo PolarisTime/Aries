@@ -6,15 +6,17 @@ import type { TFunction } from 'i18next'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
-import { getPageDefinition } from '@/config/page-registry'
 import {
   confirmBatchTabClose,
   requestEditorSessionClose,
 } from '@/layouts/editor-session/request-close'
+import { tabLabelDomId } from '@/layouts/tabs/tab-aria-ids'
 import {
   detachTabRouter,
   replaceMainRouterHref,
 } from '@/layouts/tabs/tab-location-sync'
+import { getTabTitle } from '@/layouts/tabs/tab-title'
+import { useTabAriaWiring } from '@/layouts/tabs/useTabAriaWiring'
 import {
   buildTabHref,
   getNextActiveTabAfterClose,
@@ -23,15 +25,6 @@ import {
   useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
 import { message } from '@/utils/antd-app'
-
-function getTabTitle(tab: LayoutTab, t: TFunction): string {
-  const definition = getPageDefinition(tab.pathname)
-  if (!definition) {
-    return tab.pathname
-  }
-  // 标题在渲染期解析: 注册表只存 i18n key, 避免模块顶层 t() 早于 i18n 初始化求值。
-  return t(definition.titleKey)
-}
 
 /** 刷新不依赖组件闭包，直接读取最新 store 状态 */
 function handleRefresh(tabId: string) {
@@ -70,24 +63,12 @@ export function LayoutTabBar() {
     null,
   )
 
-  /**
-   * 标签本身不是我们的子节点(由 Tabs 渲染), 上下文菜单键落在标签按钮上,
-   * 不会冒泡到菜单触发器, 因此在容器上做一次委托: Shift+F10 / 上下文菜单键
-   * 打开当前聚焦标签的菜单, 保证键盘用户可达"关闭其他/关闭右侧/全部关闭"。
-   */
-  const handleContextKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const isContextKey =
-      event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')
-    if (!isContextKey) return
-    const tabKey = (event.target as HTMLElement)
-      .closest('.ant-tabs-tab')
-      ?.getAttribute('data-node-key')
-    if (!tabKey) return
-    event.preventDefault()
-    setKeyboardMenuTabId(tabKey)
-  }
+  const hostRef = useRef<HTMLDivElement>(null)
 
-  const handleClose = (tabId: string) => {
+  // 把 antd 渲染出的标签与 AppTabContainer 渲染的真实面板接成 APG 语义
+  useTabAriaWiring({ hostRef, tabs, t })
+
+  const handleClose = (tabId: string, onClosed?: () => void) => {
     requestEditorSessionClose(t, tabId, () => {
       const store = useLayoutTabsStore.getState()
       const nextActiveTab = getNextActiveTabAfterClose(
@@ -102,6 +83,52 @@ export function LayoutTabBar() {
       }
       detachTabRouter(tabId)
       store.removeTab(tabId)
+      // 只在关闭真正生效后回调；用户取消「放弃更改」确认框时不得触发
+      onClosed?.()
+    })
+  }
+
+  /**
+   * 标签本身不是我们的子节点(由 Tabs 渲染), 键盘事件落在标签按钮上,
+   * 不会冒泡到菜单触发器, 因此在容器上做一次委托:
+   * - Shift+F10 / 上下文菜单键: 打开当前聚焦标签的菜单, 保证键盘用户可达
+   *   「关闭其他 / 关闭右侧 / 全部关闭」;
+   * - Delete: 关闭当前聚焦标签。上一步已按 WCAG 2.5.8 把关闭按钮热区撑到 24×24，
+   *   但 rc-tabs 给非激活标签的关闭按钮设了 tabIndex=-1，键盘无法直达；Delete 键
+   *   是 APG 给出的等价路径，菜单是它的补充替代。
+   */
+  const handleHostKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const tabId = (event.target as HTMLElement)
+      .closest('.ant-tabs-tab')
+      ?.getAttribute('data-node-key')
+    if (!tabId) return
+
+    const isContextKey =
+      event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')
+    if (isContextKey) {
+      event.preventDefault()
+      setKeyboardMenuTabId(tabId)
+      return
+    }
+
+    if (event.key !== 'Delete') return
+
+    const index = tabs.findIndex((tab) => tab.id === tabId)
+    const tab = tabs[index]
+    if (!tab || tab.pinned) return // 钉选标签不可关闭
+    event.preventDefault()
+    handleClose(tabId, () => {
+      // APG: 关闭后焦点移到后一个标签，没有后一个则移到前一个
+      const nextTabId = tabs[index + 1]?.id ?? tabs[index - 1]?.id
+      if (!nextTabId) return
+      // 等 React 提交这次移除后再把焦点交还标签栏
+      requestAnimationFrame(() => {
+        hostRef.current
+          ?.querySelector<HTMLElement>(
+            `.ant-tabs-tab[data-node-key="${CSS.escape(nextTabId)}"] [role="tab"]`,
+          )
+          ?.focus()
+      })
     })
   }
 
@@ -176,7 +203,10 @@ export function LayoutTabBar() {
           open={keyboardMenuTabId === tab.id}
           onOpenChange={(next) => setKeyboardMenuTabId(next ? tab.id : null)}
         >
-          <span className="leo-tabbar-label">{title}</span>
+          {/* 该 span 的 id 是真实面板 aria-labelledby 的目标（见 AppTabContainer） */}
+          <span id={tabLabelDomId(tab.id)} className="leo-tabbar-label">
+            {title}
+          </span>
         </ContextMenu>
       ),
       closable: !tab.pinned,
@@ -207,10 +237,11 @@ export function LayoutTabBar() {
   }, [overLimit, overLimitHint])
 
   return (
-    // 捕获阶段监听: 上下文菜单键可能被 Tabs 自己的键盘处理消费掉
+    // 捕获阶段监听: 上下文菜单键与 Delete 键可能被 Tabs 自己的键盘处理消费掉
     <div
+      ref={hostRef}
       className="leo-tabbar-keyboard-host"
-      onKeyDownCapture={handleContextKeyDown}
+      onKeyDownCapture={handleHostKeyDown}
     >
       <Tabs
         className="leo-tabbar"

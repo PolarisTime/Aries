@@ -176,4 +176,84 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     expect(indicator?.getAttribute('tabindex')).toBeNull()
     expect(indicator?.textContent).toContain(`/${MAX_LAYOUT_TABS}`)
   })
+
+  it('tablist 带可访问名、标签 aria-controls 指向真实面板、关闭按钮用中文可访问名', async () => {
+    render()
+    // rc-tabs 会在自身重渲染时覆盖 aria-controls，等 MutationObserver 重夺后再断言
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30))
+    })
+
+    expect(
+      container.querySelector('[role="tablist"]')?.getAttribute('aria-label'),
+    ).toBe('已打开的页面标签')
+
+    // 指向 .leo-tab-panel 的 id，而不是 rc-tabs 那个空且被隐藏的面板
+    expect(
+      container
+        .querySelector('[data-node-key="tab-price-compare"] [role="tab"]')
+        ?.getAttribute('aria-controls'),
+    ).toBe('leo-tab-panel-tab-price-compare')
+
+    // rc-tabs 默认是硬编码英文 'remove'，中文界面下读屏会念英文
+    expect(
+      container
+        .querySelector(
+          '[data-node-key="tab-price-compare"] .ant-tabs-tab-remove',
+        )
+        ?.getAttribute('aria-label'),
+    ).toBe('关闭「报单比价」标签')
+  })
+
+  it('Delete 关闭当前聚焦标签并把焦点交还相邻标签', async () => {
+    render()
+    const button = tabButton('报单比价')
+    expect(button, '未找到报单比价标签').toBeTruthy()
+    button?.focus()
+
+    act(() => {
+      button?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Delete',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(tabButton('报单比价'), '标签应已被 Delete 关闭').toBeUndefined()
+    expect(
+      document.activeElement
+        ?.closest('.ant-tabs-tab')
+        ?.getAttribute('data-node-key'),
+      '焦点应移到前一个（此处唯一剩余的）标签',
+    ).toBe('tab-workbench')
+  })
+
+  it('Delete 不关闭钉选标签', () => {
+    render()
+    const pinned = container.querySelector<HTMLElement>(
+      '[data-node-key="tab-workbench"] [role="tab"]',
+    )
+    expect(pinned, '未找到钉选的工作台标签').toBeTruthy()
+    pinned?.focus()
+
+    act(() => {
+      pinned?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Delete',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(
+      container.querySelector('[data-node-key="tab-workbench"]'),
+      '钉选标签不得被 Delete 关闭',
+    ).toBeTruthy()
+  })
 })

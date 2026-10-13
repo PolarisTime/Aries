@@ -6,6 +6,7 @@ import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import { LayoutTabBar } from '@/layouts/tabs/LayoutTabBar'
+import { tabLabelDomId, tabPanelDomId } from '@/layouts/tabs/tab-aria-ids'
 import {
   attachTabRouter,
   detachTabRouter,
@@ -67,6 +68,13 @@ export function AppTabContainer() {
             ? [
                 <div
                   key={tab.id}
+                  /* 真实内容面板才是 tab 的 panel：rc-tabs 自己渲染的面板是空的,
+                     且被 CSS 整体隐藏(见 layout-shell.css 的 .ant-tabs-body-holder)。
+                     刻意不加 tabIndex —— APG 只在面板内无可聚焦元素时才要求 tabindex="0",
+                     而本项目面板内有表单与表格, Tab 键会自然落到其中。 */
+                  id={tabPanelDomId(tab.id)}
+                  role="tabpanel"
+                  aria-labelledby={tabLabelDomId(tab.id)}
                   hidden={tab.id !== activeTabId}
                   className="leo-tab-panel"
                 >
