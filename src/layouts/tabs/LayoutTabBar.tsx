@@ -156,21 +156,27 @@ export function LayoutTabBar() {
           break
         }
         case 'closeOthers': {
-          store.activateTab(tab.id)
           const removeIds = tabs.flatMap((item) =>
             !item.pinned && item.id !== tab.id ? [item.id] : [],
           )
-          closeManyTabs(t, removeIds, () => store.removeOtherTabs(tab.id))
+          // 激活必须放在确认之后：confirmBatchTabClose 是异步的，先切换会让用户
+          // 点「取消」时仍被切走，并顺带推出一条本不该产生的浏览器历史
+          closeManyTabs(t, removeIds, () => {
+            store.activateTab(tab.id)
+            store.removeOtherTabs(tab.id)
+          })
           break
         }
         case 'closeRight': {
           const tabIndex = tabs.findIndex((item) => item.id === tab.id)
           if (tabIndex < 0) break
-          store.activateTab(tab.id)
           const removeIds = tabs.flatMap((item, itemIndex) =>
             itemIndex > tabIndex && !item.pinned ? [item.id] : [],
           )
-          closeManyTabs(t, removeIds, () => store.removeRightTabs(tab.id))
+          closeManyTabs(t, removeIds, () => {
+            store.activateTab(tab.id)
+            store.removeRightTabs(tab.id)
+          })
           break
         }
         case 'closeAll': {
@@ -178,10 +184,12 @@ export function LayoutTabBar() {
             !item.pinned ? [item.id] : [],
           )
           const dashboardId = tabs.find((item) => item.pinned)?.id
-          if (dashboardId) {
-            store.activateTab(dashboardId)
-          }
-          closeManyTabs(t, removeIds, () => store.removeAllTabs())
+          closeManyTabs(t, removeIds, () => {
+            if (dashboardId) {
+              store.activateTab(dashboardId)
+            }
+            store.removeAllTabs()
+          })
           break
         }
         default:

@@ -5,8 +5,32 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
+import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import { MAX_LAYOUT_TABS, useLayoutTabsStore } from '@/stores/layoutTabsStore'
 import { LayoutTabBar } from './LayoutTabBar'
+
+const { modalConfirmMock } = vi.hoisted(() => ({ modalConfirmMock: vi.fn() }))
+
+// 接管确认框：测试里只捕获配置、不自动确认，等价于「用户点了取消」。
+// 不 mock 的话 modal.confirm 在未绑定 antd App 上下文时是空操作，afterClose 永不执行，
+// 会让 request-close 的模块级 confirming 标记永久为 true 并污染后续用例。
+vi.mock('@/utils/antd-app', () => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(),
+    destroy: vi.fn(),
+  },
+  modal: {
+    confirm: modalConfirmMock,
+    info: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+  },
+}))
 
 const TABS = [
   {
@@ -255,5 +279,85 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
       container.querySelector('[data-node-key="tab-workbench"]'),
       '钉选标签不得被 Delete 关闭',
     ).toBeTruthy()
+  })
+
+  it('「关闭其他」确认框被取消时不移除任何标签', async () => {
+    // 三标签场景：对非激活的 tab-extra 执行「关闭其他」，其待关闭集合里有脏的 tab-price-compare。
+    // 不能用 focus 打开菜单 —— antd Tabs 聚焦即激活，会先把前提破坏掉，因此走鼠标右键。
+    useLayoutTabsStore.setState({
+      tabs: [
+        ...TABS,
+        {
+          id: 'tab-extra',
+          pathname: '/material',
+          search: '',
+          pinned: false,
+          mountedOnce: false,
+          reloadKey: 0,
+        },
+      ],
+      activeTabId: 'tab-price-compare',
+    })
+    editorSessionStore.beginSession('tab-price-compare', {
+      moduleKey: 'price-compare',
+      mode: 'edit',
+    })
+    editorSessionStore.setSessionStatus('tab-price-compare', 'dirty')
+    modalConfirmMock.mockClear()
+    expect(
+      editorSessionStore.requiresConfirmation('tab-price-compare'),
+      '前置条件：tab-price-compare 必须处于需确认状态',
+    ).toBe(true)
+
+    render()
+    expect(
+      useLayoutTabsStore.getState().activeTabId,
+      '渲染后激活项不应变化',
+    ).toBe('tab-price-compare')
+
+    const label = container.querySelector<HTMLElement>(
+      '[data-node-key="tab-extra"] .leo-tabbar-label',
+    )
+    expect(label, '未找到 tab-extra 标签').toBeTruthy()
+    act(() => {
+      label?.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(
+      useLayoutTabsStore.getState().activeTabId,
+      '右键打开菜单本身不应切换标签',
+    ).toBe('tab-price-compare')
+
+    const closeOthers = [
+      ...document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ].find((element) => element.textContent?.includes('关闭其他'))
+    expect(closeOthers, '未找到「关闭其他」菜单项').toBeTruthy()
+    act(() => {
+      closeOthers?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(modalConfirmMock, '存在脏会话时应弹出确认框').toHaveBeenCalled()
+    // 取消（不调用 onOk）：不得移除任何标签。
+    // 这里刻意不断言 activeTabId —— 菜单关闭时会把焦点还给触发器（标签内的 label span），
+    // 而 antd Tabs 聚焦即激活，因此该标签会因「焦点归还」而非关闭逻辑被切到。这是独立于
+    // 本次修复的既有行为，断言它会让本用例测不到真正想测的东西。
+    expect(
+      useLayoutTabsStore.getState().tabs,
+      '取消后不得移除任何标签',
+    ).toHaveLength(TABS.length + 1)
+
+    // 复位 request-close 的模块级 confirming 标记并清理会话，避免污染后续用例
+    const lastConfirm = modalConfirmMock.mock.calls.at(-1)?.[0] as
+      | { afterClose?: () => void }
+      | undefined
+    lastConfirm?.afterClose?.()
+    editorSessionStore.endSession('tab-price-compare')
   })
 })
