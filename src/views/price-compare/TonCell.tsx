@@ -453,7 +453,7 @@ export function TonCell({
   )
 }
 
-/** 已关联采购订单的明细弹层: 订货/已开(实际)/未开吨位/本单报单/品牌 + 已开超订货提示。 */
+/** 已关联采购订单的明细弹层: 本单报单/已开(实际)/未开吨位/订货吨位/品牌 + 已开超报单提示。 */
 function LinkedPurchaseOrderPopover({
   selected,
   localTonForItem,
@@ -468,9 +468,12 @@ function LinkedPurchaseOrderPopover({
   onOpenPicker: () => void
 }) {
   const { t } = useTranslation()
-  // 口径: 未开吨位 = 订货吨位 − 已开吨位(订货量必须算进来)
-  const unopened = selected.orderedWeight - selected.issuedWeight
-  const overOpened = unopened < 0
+  // 口径必须与相邻的吨位列一致: 未开吨位 = 本单据该明细行报单吨位 − 已开吨位。
+  // 早先这里按「订货吨位 − 已开吨位」算, 同一行的弹层与列会给出两个不同数字
+  // (实测: 该明细行订货 10.24 / 报单 12, 列上显示 12.000 而弹层显示 10.240)。
+  const reportedMissing = localTonForItem <= 0
+  const unopened = localTonForItem - selected.issuedWeight
+  const overOpened = !reportedMissing && unopened < 0
   const brand = issuedBrandText(selected)
   return (
     <div className="price-compare-ton-popover">
@@ -498,32 +501,37 @@ function LinkedPurchaseOrderPopover({
         <span>{t('priceCompare.sheet.columns.purchaseOrderStatus')}</span>
         <span>{selected.status}</span>
       </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
-        <span>{tonValueText(selected.orderedWeight)}</span>
-      </div>
+      {!reportedMissing ? (
+        <div className="price-compare-ton-popover-row">
+          <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
+          <span>{tonValueText(localTonForItem)}</span>
+        </div>
+      ) : null}
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
         <span>{tonValueText(selected.issuedWeight)}</span>
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.unopenedTon')}</span>
-        <span
-          className={overOpened ? 'price-compare-ton-hint--over' : undefined}
-        >
-          {tonValueText(unopened)}
-        </span>
+        {reportedMissing ? (
+          <span>{t('priceCompare.sheet.purchaseOrderMissingTonShort')}</span>
+        ) : (
+          <span
+            className={overOpened ? 'price-compare-ton-hint--over' : undefined}
+          >
+            {tonValueText(unopened)}
+          </span>
+        )}
       </div>
-      {localTonForItem > 0 ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
-          <span>{tonValueText(localTonForItem)}</span>
-        </div>
-      ) : null}
+      <div className="price-compare-ton-popover-row">
+        <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
+        <span>{tonValueText(selected.orderedWeight)}</span>
+      </div>
       {overOpened ? (
         <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderOverOrderedLong', {
-            unopened: tonValueText(unopened),
+          {t('priceCompare.sheet.purchaseOrderOverIssuedLong', {
+            issued: tonValueText(selected.issuedWeight),
+            reported: tonValueText(localTonForItem),
           })}
         </div>
       ) : null}

@@ -2699,7 +2699,7 @@ export const zhCN = {
       purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
       purchaseOrderOverLimit: '（超额）',
       purchaseOrderSavedBasis:
-        '「已开吨位」按其他已保存报单统计（不含本单据）；「未开吨位」= 订货吨位 − 已开吨位',
+        '「已开吨位」按其他已保存报单统计（不含本单据）；「未开吨位」= 本单该明细行报单吨位 − 已开吨位',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
       /** 吨位口径两列的短状态: 该行还没关联订单明细行, 因此没有已开/未开口径。 */
@@ -2722,8 +2722,6 @@ export const zhCN = {
       purchaseOrderIssuedActual: '已开吨位（实际）',
       purchaseOrderDetail: '采购订单明细',
       purchaseOrderUnlinked: '未关联采购订单',
-      purchaseOrderOverOrderedLong:
-        '未开吨位 {{unopened}} 吨：已开吨位已超过该订单明细的订货量',
       /** 异常态: 其他单据已开吨位超过本单据报单吨位。 */
       purchaseOrderOverIssuedLong:
         '已开吨位 {{issued}} 吨已超过本单据报单吨位 {{reported}} 吨',

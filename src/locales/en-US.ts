@@ -2784,7 +2784,7 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Issued counts other saved sheets only (this sheet excluded); unopened = ordered − issued',
+        'Issued counts other saved sheets only (this sheet excluded); unopened = this sheet reported tonnage − issued',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       /** Short state for the tonnage columns when the row has no linked PO line yet. */
@@ -2803,8 +2803,6 @@ export const enUS = {
       purchaseOrderIssuedActual: 'Issued (actual)',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
-      purchaseOrderOverOrderedLong:
-        'Unopened {{unopened}}t: issued tonnage already exceeds the ordered tonnage of this PO line',
       /** Anomaly: tonnage issued by other sheets exceeds this sheet reported tonnage. */
       purchaseOrderOverIssuedLong:
         'Issued {{issued}}t exceeds this sheet reported {{reported}}t',

@@ -170,9 +170,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     ).toBeTruthy()
   })
 
-  it('未开吨位 = 订货 − 已开, 已开吨位单独成列', () => {
+  it('未开吨位 = 本单该明细行报单 − 已开, 已开吨位单独成列', () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
-    // 订货 40 / 已开 30 ⇒ 未开 10
+    // 该明细行报单 40 / 已开 30 ⇒ 未开 10
     const unopened = container.querySelector('.price-compare-ton-issued')
     expect(unopened?.textContent).toContain('10')
     // 已开吨位列给出服务端口径的精确值
@@ -191,7 +191,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       options: [{ ...poRecord, orderedWeight: 10.19, issuedWeight: 0 }],
       localTonForItem: 12,
     })
-    // 未开吨位按订货量算: 10.19 − 0 = 10.19; 报单吨位在相邻列(12), 由用户自行比对
+    // 未开吨位按本单报单量算: 12 − 0 = 12; 订货量 10.19 不再参与未开口径
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
     ).toContain('10.19')
@@ -475,6 +475,53 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(popover?.textContent).toContain('10.000')
     expect(popover?.textContent).toContain('品牌')
     expect(popover?.textContent).toContain('中天')
+  })
+  it('弹层未开吨位与相邻列同口径: 报单 − 已开(不是订货 − 已开)', async () => {
+    // 订货 40 / 报单 45 / 已开 30: 旧口径(订货−已开)会给出 10.000, 与列上的 15.000 打架
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 45,
+    })
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const popover = document.querySelector('.price-compare-ton-popover')
+    const text = popover?.textContent ?? ''
+    expect(text).toContain('本单该明细行报单')
+    expect(text).toContain('45.000')
+    expect(text).toContain('未开吨位')
+    expect(text).toContain('15.000')
+    // 列上的数字与弹层一致
+    expect(
+      container.querySelector('.price-compare-ton-issued')?.textContent,
+    ).toContain('15')
+    // 口径说明也必须写明基数
+    expect(text).toContain('本单该明细行报单吨位 − 已开吨位')
+  })
+  it('已开吨位未超过本单报单吨位时不判超额(哪怕超过订货量)', async () => {
+    // 订货 40 / 报单 45 / 已开 42: 已开超过订货量, 但没超过本单报单量 ⇒ 不应报超额
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      localTonForItem: 45,
+      options: [{ ...poRecord, orderedWeight: 40, issuedWeight: 42 }],
+    })
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    const popover = document.querySelector('.price-compare-ton-popover')
+    const text = popover?.textContent ?? ''
+    expect(text).toContain('未开吨位')
+    expect(text).toContain('3.000')
+    expect(text).not.toContain('已超过本单据报单吨位')
+    expect(popover?.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
   it('popover 内按钮触发 onOpenPicker', async () => {
     const props = render({
