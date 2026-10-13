@@ -8,6 +8,7 @@ import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import {
+  requiredIssuedTonColumnWidth,
   requiredTonColumnWidth,
   SHEET_COLUMN_WIDTH,
   tonProgressLineWidth,
@@ -86,8 +87,13 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     return widthsNow()
   }
 
-  it('未配置字号时使用 14px 基准列宽', () => {
-    expect(render()).toEqual({ ...SHEET_COLUMN_WIDTH })
+  it('未配置字号时使用 14px 基准列宽(吨位两列按内容)', () => {
+    const widths = render()
+    expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
+    expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
+    // 已开/未开两列无内容时取数字下界, 不为固定基准白留空白
+    expect(widths.issuedTon).toBe(requiredIssuedTonColumnWidth())
+    expect(widths.unopenedTon).toBe(requiredTonColumnWidth())
   })
 
   it('字号 16/18 时列宽等比放大', () => {
@@ -117,19 +123,17 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   })
 
   it('未开吨位列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
-    // 该明细行订货 40 / 已开 0 ⇒ 文案「40 · 中天钢铁」
-    const widths = render([
-      poRecord({ orderedWeight: 40, issuedWeight: 0, brand: '中天钢铁' }),
-    ])
-    const numberOnly = requiredTonColumnWidth(tonProgressLineWidth('40', ''))
-    // 内容宽超过基准字号比例值(184)时按内容顶起, 否则取比例值
-    expect(widths.unopenedTon).toBe(
-      Math.max(
-        SHEET_COLUMN_WIDTH.unopenedTon,
-        requiredTonColumnWidth(tonProgressLineWidth('40', '中天钢铁')),
-      ),
+    // 本单据报 40 吨 / 已开 0 ⇒ 文案「40 · 中天钢铁」
+    const widths = render(
+      [poRecord({ orderedWeight: 40, issuedWeight: 0, brand: '中天钢铁' })],
+      new Map([['301', 40]]),
     )
-    // 定宽必须真的比"只兜数字"的下界宽, 否则品牌还是会被裁
+    const numberOnly = requiredTonColumnWidth(tonProgressLineWidth('40', ''))
+    // 列宽完全按内容: 「40 · 中天钢铁」需要多宽就给多宽
+    expect(widths.unopenedTon).toBe(
+      requiredTonColumnWidth(tonProgressLineWidth('40', '中天钢铁')),
+    )
+    // 必须真的比"只兜数字"的下界宽, 否则品牌还是会被裁
     expect(widths.unopenedTon).toBeGreaterThan(numberOnly)
     // 其余列不受内容影响
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
@@ -148,24 +152,18 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     const parts = tonProgressTextParts(long, 120)
     expect(parts.primary).toBe('107.5')
     expect(widths.unopenedTon).toBe(
-      Math.max(
-        SHEET_COLUMN_WIDTH.unopenedTon,
-        requiredTonColumnWidth(
-          tonProgressLineWidth(parts.primary, parts.brand),
-        ),
-      ),
+      requiredTonColumnWidth(tonProgressLineWidth(parts.primary, parts.brand)),
     )
     expect(widths.unopenedTon).toBeGreaterThan(
       requiredTonColumnWidth(tonProgressLineWidth('107.5', '中天')),
     )
   })
 
-  it('没有吨位数据时未开吨位列回落到基准字号列宽', () => {
+  it('没有吨位数据时两列都回落到数字下界', () => {
     const widths = render([])
-    expect(widths.unopenedTon).toBe(SHEET_COLUMN_WIDTH.unopenedTon)
-    expect(widths.unopenedTon).toBeGreaterThanOrEqual(requiredTonColumnWidth())
-    // 报单/已开两列纯等比换算, 与内容无关
+    expect(widths.unopenedTon).toBe(requiredTonColumnWidth())
+    expect(widths.issuedTon).toBe(requiredIssuedTonColumnWidth())
+    // 报单吨位列按字号固定, 不受内容影响
     expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
-    expect(widths.issuedTon).toBe(SHEET_COLUMN_WIDTH.issuedTon)
   })
 })

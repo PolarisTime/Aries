@@ -208,16 +208,17 @@ export const SHEET_COLUMN_WIDTH = {
   /**
    * 已开吨位列: 服务端已保存报单占用该订单明细行的吨位。
    *
-   * <p>三位小数 + 千分位最长形如 `8,884.500`(9 字符, 基准字号下约 76px), 加单元格留白 13px
-   * 取 92px; 按字号等比换算即可。</p>
+   * <p>该列只放固定 11px 的只读数字, 因此列宽**按内容给**(见
+   * {@link requiredIssuedTonColumnWidth}): 数字短时不白留空白, 长到 `8,884.500` 也裁不到。
+   * 这里的 92 仅作为"无数据时的下限"。对。</p>
    */
   issuedTon: 92,
   /**
-   * 未开吨位列: `订货吨位 − 已开吨位`, 并承载品牌与明细图标。
+   * 未开吨位列: `锁定后的报单吨位 − 已开吨位`, 并承载品牌与明细图标。
    *
-   * <p>基准值 184 只是下限: 真实列宽由 {@link sheetColumnWidths} 取"等比换算"与
-   * {@link requiredTonColumnWidth}(按单据真实吨位与品牌估出的内容宽 + 固定开销)的较大值,
-   * 否则品牌名一长(「中天钢铁」)就被省略号收尾。</p>
+   * <p>该列内容(数字 + 品牌)固定 11px、不随个人字号缩放, 因此列宽**按内容给**(见
+   * {@link requiredTonColumnWidth}): 内容短时不留空白, 品牌名一长(「中天钢铁」)也不会被
+   * 省略号收尾。这里的 184 仅作为"无数据时的下限"。</p>
    */
   unopenedTon: 184,
   /** 网价列: 4 位数字(14px 下约 34px) + 单元格左右留白(12px), 60 已足够。 */
@@ -285,6 +286,9 @@ export const TON_INPUT_WIDTH_EM = 4.75
  * flex gap(8)、icon-only 的明细按钮(24, 由 24×24 命中区下限决定)都是固定尺寸。</p>
  */
 export const TON_CELL_FIXED_CHROME = 13 + 8 + 24
+
+/** 单元格左右留白(px): 只放数字的两列(已开吨位)用得上。 */
+export const TON_CELL_PADDING = 13
 
 /**
  * 未开吨位数字(如「10.19」「-1.81」)的宽度下界(px)。
@@ -391,7 +395,23 @@ export function tonProgressLineWidth(
 export const TON_PROGRESS_TEXT_MAX_WIDTH = 220
 
 /**
- * 未开吨位列宽度下界: 单元格留白 + 明细图标 + 数字 + 余量。
+ * 已开吨位列宽度: 单元格留白 + 数字 + 余量(该列没有明细图标)。
+ *
+ * <p>数字固定 11px、不随个人字号缩放, 因此不做等比换算 —— 列宽完全跟着内容走。</p>
+ */
+export function requiredIssuedTonColumnWidth(textWidth = 0): number {
+  return (
+    TON_CELL_PADDING +
+    Math.max(
+      Math.min(textWidth, TON_PROGRESS_TEXT_MAX_WIDTH),
+      TON_PROGRESS_MIN_TEXT_WIDTH,
+    ) +
+    TON_WIDTH_SAFETY
+  )
+}
+
+/**
+ * 未开吨位列宽度: 单元格留白 + 明细图标 + 数字/品牌 + 余量。
  *
  * <p>该列没有输入框: 固定开销只有单元格左右留白(13)、数字与明细图标之间的 gap(8) 与
  * icon-only 明细按钮(24), 即 {@link TON_CELL_FIXED_CHROME}; 文字部分由
@@ -416,28 +436,32 @@ export function requiredTonColumnWidth(progressTextWidth = 0): number {
 /**
  * 按当前字号换算整张单据表格的列宽(键与 {@link SHEET_COLUMN_WIDTH} 一致)。
  *
- * <p>`tonProgressTextWidth`: 本单据实际会出现的未开吨位文案宽度(px), 由
- * {@link tonProgressLineWidth} 按真实吨位与品牌算出; 省略时未开吨位列按数字下界定宽。</p>
+ * <p>`tonTextWidths`: 本单据实际会出现的已开/未开两列内容宽度(px), 由
+ * {@link maxIssuedTonTextWidth} 与 {@link maxTonProgressTextWidth} 按真实吨位与品牌算出;
+ * 省略时两列按数字下界定宽。</p>
  */
 export function sheetColumnWidths(
   fontSize: number,
-  tonProgressTextWidth = 0,
+  tonTextWidths: { issued?: number; unopened?: number } = {},
 ): Record<keyof typeof SHEET_COLUMN_WIDTH, number> {
+  const { issued = 0, unopened = 0 } = tonTextWidths
   const entries = Object.entries(SHEET_COLUMN_WIDTH) as [
     keyof typeof SHEET_COLUMN_WIDTH,
     number,
   ][]
   return Object.fromEntries(
-    entries.map(([key, width]) => [
-      key,
-      // 未开吨位列还要兜住固定开销与实际内容宽, 否则字号调小或品牌变长都会截断数字/品牌
-      key === 'unopenedTon'
-        ? Math.max(
-            scaleSheetColumnWidth(width, fontSize),
-            requiredTonColumnWidth(tonProgressTextWidth),
-          )
-        : scaleSheetColumnWidth(width, fontSize),
-    ]),
+    entries.map(([key, width]) => {
+      /*
+       * 已开/未开两列的内容是固定 11px 的只读文字(不随个人字号缩放), 因此列宽**按内容**给:
+       * 内容短时不留空白, 长吨位/长品牌也裁不到。其余列仍按字号等比换算。
+       */
+      if (key === 'issuedTon')
+        return [key, requiredIssuedTonColumnWidth(issued)]
+      if (key === 'unopenedTon') {
+        return [key, requiredTonColumnWidth(unopened)]
+      }
+      return [key, scaleSheetColumnWidth(width, fontSize)]
+    }),
   ) as Record<keyof typeof SHEET_COLUMN_WIDTH, number>
 }
 

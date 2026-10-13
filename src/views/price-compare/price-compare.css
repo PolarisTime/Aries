@@ -702,16 +702,17 @@
   flex-wrap: nowrap;
   gap: var(--space-xxs);
   align-items: center;
-  justify-content: flex-end;
+  /* 三列内容都居中(与表头对齐): 报单吨位输入框、已开/未开数字 */
+  justify-content: center;
   min-width: 0;
 }
 
 /*
- * 已开/未开两列的单元格: 只读数字, 内容从单元格左起点排 —— 与报单吨位输入框、
- * 未开吨位数字共用同一个左起点, 三列数字在竖直方向对齐, 便于整列扫读比对。
+ * 已开/未开两列: 只读数字, 内容与报单吨位一样居中; 未开吨位列里数字与品牌作为一个
+ * 整体居中, 明细入口固定在单元格右端。
  */
 .price-compare-ton-cell--readonly {
-  justify-content: flex-start;
+  flex: 1 1 auto;
 }
 
 /*
@@ -755,7 +756,8 @@
   width: 4.75em;
   min-width: 4.75em;
   flex: 0 0 auto;
-  text-align: right;
+  /* 数字居中: 与相邻的已开/未开两列同一观感(表头也居中) */
+  text-align: center;
 }
 
 /*
@@ -790,6 +792,8 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
+  /* 数字与品牌作为整体居中(明细入口固定在右端, 因此相对整格略微偏左) */
+  justify-content: center;
   gap: 2px;
   min-width: 0;
   line-height: 1.2;

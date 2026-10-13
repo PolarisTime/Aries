@@ -8,8 +8,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import {
+  estimateSheetTextWidth,
+  requiredIssuedTonColumnWidth,
   requiredTonColumnWidth,
-  SHEET_COLUMN_WIDTH,
+  TON_PROGRESS_FONT_SIZE,
   tonProgressLineWidth,
 } from './core'
 import { SheetPanel } from './SheetPanel'
@@ -1462,15 +1464,18 @@ describe('SheetPanel 指定品牌展示', () => {
     // 列宽必须覆盖整段「107.5 · 中天钢铁」(未开 = 本单报 120 − 已开 12.5)
     const parts = tonProgressTextParts(poRecord, 120)
     expect(parts.primary).toBe('107.5')
-    // 未开吨位列取"等比换算 184"与"内容宽"的较大值
-    const needed = Math.max(
-      SHEET_COLUMN_WIDTH.unopenedTon,
-      requiredTonColumnWidth(tonProgressLineWidth(parts.primary, parts.brand)),
+    // 列宽完全按内容: 未开吨位列给到「107.5 · 中天钢铁」的内容宽, 已开吨位列给到数字宽
+    const needed = requiredTonColumnWidth(
+      tonProgressLineWidth(parts.primary, parts.brand),
+    )
+    const issuedNeeded = requiredIssuedTonColumnWidth(
+      estimateSheetTextWidth('12.500', TON_PROGRESS_FONT_SIZE),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
     )
     expect(colStyles).toContain(`width:${needed}px;`)
+    expect(colStyles).toContain(`width:${issuedNeeded}px;`)
     // 只兜主段下界的口径更窄, 说明这次确实按真实内容加宽了
     expect(needed).toBeGreaterThan(requiredTonColumnWidth())
   })

@@ -1,5 +1,6 @@
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
+import { estimateSheetTextWidth, TON_PROGRESS_FONT_SIZE } from './core'
 
 /**
  * 吨位进度列的文案与宽度口径(渲染与列宽计算共用的**唯一**来源)。
@@ -78,6 +79,28 @@ export function maxTonProgressTextWidth(
     // 报单为 0 时单元格显示的是短状态标签(「未填吨位」), 不参与数字宽度比较
     if (reportedTon <= 0) continue
     max = Math.max(max, measure(tonProgressTextParts(record, reportedTon)))
+  }
+  return max
+}
+
+/**
+ * 「已开吨位」列的内容宽(px): 按单据里最长的一条三位小数吨位估算。
+ *
+ * <p>该列只放一个固定 11px 的只读数字(不随个人字号缩放), 因此列宽按内容给即可 ——
+ * 数字短(如 `0.000`)时不留空白, 数字长(如 `8,884.500`)时也裁不到。</p>
+ */
+export function maxIssuedTonTextWidth(
+  records: readonly PurchaseOrderTonnageRecord[],
+): number {
+  let max = 0
+  for (const record of records) {
+    max = Math.max(
+      max,
+      estimateSheetTextWidth(
+        formatWeight(record.issuedWeight),
+        TON_PROGRESS_FONT_SIZE,
+      ),
+    )
   }
   return max
 }

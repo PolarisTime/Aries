@@ -144,7 +144,7 @@ export function buildIssuedTonColumn(
     title: label,
     className: 'price-compare-cell--number',
     width: ctx.issuedWidth,
-    align: 'right',
+    align: 'center',
     onHeaderCell: () => ({ title: label }),
     render: (_value, row) => {
       if (isSeparatorRow(row.row)) return null
@@ -174,6 +174,7 @@ export function buildUnopenedTonColumn(
   return {
     title: label,
     width: ctx.unopenedWidth,
+    align: 'center',
     onHeaderCell: () => ({ title: label }),
     render: (_value, row) => {
       if (isSeparatorRow(row.row)) return null

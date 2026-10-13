@@ -21,6 +21,7 @@ import {
   netPrice,
   netPriceWithFallback,
   reconcileSpotInputs,
+  requiredIssuedTonColumnWidth,
   requiredTonColumnWidth,
   resolveLock,
   SHEET_COLUMN_WIDTH,
@@ -783,14 +784,19 @@ describe('LOCK_REASON_KEYS 层级原因文案', () => {
 })
 
 describe('列宽按字号自适应', () => {
-  it('基准字号(14px)下返回原始基准列宽', () => {
+  it('基准字号(14px)下: 等比列取基准值, 吨位两列取内容下界', () => {
     expect(scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.spec, 14)).toBe(
       SHEET_COLUMN_WIDTH.spec,
     )
-    expect(sheetColumnWidths(14)).toEqual({ ...SHEET_COLUMN_WIDTH })
+    const widths = sheetColumnWidths(14)
+    expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
+    expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
+    // 已开/未开两列不随字号缩放: 无内容时取数字下界(13/45 + 51 + 2)
+    expect(widths.issuedTon).toBe(66)
+    expect(widths.unopenedTon).toBe(98)
   })
 
-  it('字号 16/18 等比放大(保留「文字宽 / 列宽」比值)', () => {
+  it('字号 16/18 等比放大(吨位两列按内容, 不随字号变宽)', () => {
     for (const fontSize of [16, 18]) {
       const widths = sheetColumnWidths(fontSize)
       // 「材质 / 规格 / 长度」列放不下时会截断, 必须有足够增量
@@ -798,11 +804,14 @@ describe('列宽按字号自适应', () => {
         Math.round((SHEET_COLUMN_WIDTH.spec * fontSize) / 14),
       )
       expect(widths.supplier).toBeGreaterThan(SHEET_COLUMN_WIDTH.supplier)
-      // 小字号列也不能被落下: 每个键都按同一比例放大
+      // 逐键校验: 吨位两列是固定 11px 内容, 其余列按同一比例放大
       for (const [key, base] of Object.entries(SHEET_COLUMN_WIDTH)) {
-        expect(widths[key as keyof typeof SHEET_COLUMN_WIDTH]).toBe(
-          Math.round((base * fontSize) / 14),
-        )
+        const width = widths[key as keyof typeof SHEET_COLUMN_WIDTH]
+        if (key === 'issuedTon' || key === 'unopenedTon') {
+          expect(width).toBe(sheetColumnWidths(14)[key])
+        } else {
+          expect(width).toBe(Math.round((base * fontSize) / 14))
+        }
       }
     }
   })
@@ -824,7 +833,7 @@ describe('列宽按字号自适应', () => {
 
   it('非法字号回落到基准字号, 不产生 0 宽列', () => {
     for (const fontSize of [0, -3, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(sheetColumnWidths(fontSize)).toEqual({ ...SHEET_COLUMN_WIDTH })
+      expect(sheetColumnWidths(fontSize)).toEqual(sheetColumnWidths(14))
     }
     expect(SHEET_WIDTH_BASE_FONT_SIZE).toBe(14)
   })
@@ -905,14 +914,16 @@ describe('列宽按字号自适应', () => {
   const unopenedAvailableWidth = (fontSize: number) =>
     sheetColumnWidths(fontSize).unopenedTon - TON_CELL_FIXED_CHROME
 
-  it('11/12/13/14/16/18 六档下未开吨位数字都完整可读', () => {
+  it('六档字号下未开吨位数字都完整可读(列宽按内容, 与字号无关)', () => {
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
       expect(unopenedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
         TON_PROGRESS_MIN_TEXT_WIDTH,
       )
     }
-    // 基准字号: 184 − 45 = 139px 可用, 足够「115.5 · 中天钢铁」
-    expect(unopenedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(139)
+    // 无内容时列宽 = 固定开销 45 + 数字下界 51 + 余量 2 ⇒ 可用宽 53px
+    expect(unopenedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(
+      TON_PROGRESS_MIN_TEXT_WIDTH + 2,
+    )
   })
 
   it('三列宽度: 报单输入 / 已开数字 / 未开数字+品牌', () => {
@@ -930,18 +941,20 @@ describe('列宽按字号自适应', () => {
     expect(TON_INPUT_WIDTH_EM).toBe(4.75)
   })
 
-  it('小字号档回落到等比换算, 不被数字下界压低', () => {
-    // 11px 档: 等比换算 145px 仍高于数字下界(45 + 51 + 2 = 98), 取等比换算
-    expect(scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.unopenedTon, 11)).toBe(145)
+  it('吨位三列: 报单输入按字号缩放, 已开/未开按内容', () => {
     expect(requiredTonColumnWidth()).toBe(98)
-    expect(sheetColumnWidths(11).unopenedTon).toBe(145)
-    // 报单/已开两列纯等比换算, 与内容无关
+    expect(requiredIssuedTonColumnWidth()).toBe(66)
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
+      // 报单吨位列放的是随字号缩放的输入框
       expect(sheetColumnWidths(fontSize).ton).toBe(
         scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize),
       )
+      // 已开/未开两列内容固定 11px: 不随字号变化
       expect(sheetColumnWidths(fontSize).issuedTon).toBe(
-        scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.issuedTon, fontSize),
+        requiredIssuedTonColumnWidth(),
+      )
+      expect(sheetColumnWidths(fontSize).unopenedTon).toBe(
+        requiredTonColumnWidth(),
       )
     }
   })
@@ -993,19 +1006,16 @@ describe('列宽按字号自适应', () => {
       tonProgressLineWidth('115.5', '中天钢铁') - TON_PROGRESS_MIN_TEXT_WIDTH,
     )
     const brandWidth = tonProgressLineWidth('115.5', '中天')
-    expect(sheetColumnWidths(14, brandWidth).unopenedTon).toBe(
-      Math.max(
-        scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.unopenedTon, 14),
-        requiredTonColumnWidth(brandWidth),
-      ),
+    // 列宽完全按内容: 「115.5 · 中天」需要多宽就给多宽
+    expect(sheetColumnWidths(14, { unopened: brandWidth }).unopenedTon).toBe(
+      requiredTonColumnWidth(brandWidth),
     )
-    // 内容很窄时列宽回落到基准字号的比例值(184), 不会被下界压低
-    expect(sheetColumnWidths(14, 10).unopenedTon).toBe(
-      SHEET_COLUMN_WIDTH.unopenedTon,
-    )
-    expect(numberOnly).toBeLessThan(SHEET_COLUMN_WIDTH.unopenedTon)
+    // 内容很短时回落到数字下界, 不为固定基准白留空白
+    expect(sheetColumnWidths(14, { unopened: 10 }).unopenedTon).toBe(numberOnly)
     // 其余列与内容无关
-    expect(sheetColumnWidths(14, 200).spec).toBe(SHEET_COLUMN_WIDTH.spec)
+    expect(sheetColumnWidths(14, { unopened: 200 }).spec).toBe(
+      SHEET_COLUMN_WIDTH.spec,
+    )
   })
 
   it('内容宽超过上限时列宽不再膨胀(品牌是自由文本, 防止把表格撑爆)', () => {
@@ -1016,30 +1026,15 @@ describe('列宽按字号自适应', () => {
     expect(TON_PROGRESS_TEXT_MAX_WIDTH).toBe(220)
   })
 
-  it('长品牌定宽后仍能守住小字号档: 11/12/13px 取内容下界', () => {
+  it('长吨位/长品牌在任何字号下都不会被裁(列宽只跟内容走)', () => {
     const progressWidth = tonProgressLineWidth('8,884.5', '中天钢铁')
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
-      const scaled = scaleSheetColumnWidth(
-        SHEET_COLUMN_WIDTH.unopenedTon,
-        fontSize,
-      )
-      const width = sheetColumnWidths(fontSize, progressWidth).unopenedTon
-      // 长内容顶起列宽: 取等比换算与内容宽的较大值, 数字/品牌都不会被裁
-      expect(width).toBe(
-        Math.max(scaled, requiredTonColumnWidth(progressWidth)),
-      )
-      expect(width).toBeGreaterThanOrEqual(
-        requiredTonColumnWidth(progressWidth),
+      const widths = sheetColumnWidths(fontSize, { unopened: progressWidth })
+      expect(widths.unopenedTon).toBe(requiredTonColumnWidth(progressWidth))
+      expect(widths.unopenedTon - TON_CELL_FIXED_CHROME).toBeGreaterThanOrEqual(
+        progressWidth,
       )
     }
-    // 11px 档: 内容宽确实顶起了等比换算(证明兜底生效)
-    expect(
-      scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.unopenedTon, 11),
-    ).toBeLessThan(requiredTonColumnWidth(progressWidth))
-    // 大字号档等比换算已覆盖内容宽, 不再按内容硬顶
-    expect(
-      sheetColumnWidths(18, progressWidth).unopenedTon,
-    ).toBeGreaterThanOrEqual(requiredTonColumnWidth(progressWidth))
   })
 
   /*
