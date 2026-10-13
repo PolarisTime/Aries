@@ -1,13 +1,17 @@
 import {
   Button,
+  Col,
   DatePicker,
+  Flex,
   InputNumber,
+  Row,
   Select,
   Space,
   Switch,
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
 import {
@@ -44,6 +48,9 @@ interface Props {
  *
  * <p>覆盖只作用于本次交付核定，不改项目配置；展示值优先取解析结果回显的「本次生效值」，
  * 因此覆盖生效后用户看到的是后端真正采用的口径。</p>
+ *
+ * <p>排版：标题与「恢复项目配置」同排一行，字段两列栅格 + 标签在上、控件占满列宽 ——
+ * 条件字段增删只影响栅格，不会像行内标签那样把控件挤到下一行。</p>
  */
 export function PricingQuoteResolutionOverrides({
   resolution,
@@ -59,125 +66,151 @@ export function PricingQuoteResolutionOverrides({
     effective.periodPolicy === 'MANUAL' && availablePeriods.length > 0
       ? availablePeriods
       : PRICE_PERIOD_FALLBACK_OPTIONS
+  const showOrderFields = effective.basis === 'ORDER'
 
   return (
-    <Space orientation="vertical" style={{ width: '100%' }}>
-      <Space wrap>
-        <Text type="secondary">
+    <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+      <Flex align="center" justify="space-between" gap={8}>
+        <Text strong>
           {t('modules.pages.salesOrder.netPriceOverrideTitle')}
         </Text>
         <Button size="small" onClick={onReset}>
           {t('modules.pages.salesOrder.netPriceOverrideReset')}
         </Button>
-      </Space>
+      </Flex>
 
-      <Space wrap>
-        <Text>{t('modules.pages.salesOrder.netPriceBasisLabel')}</Text>
-        <Select
-          aria-label={t('modules.pages.salesOrder.netPriceBasisLabel')}
-          style={{ width: 200 }}
-          value={effective.basis}
-          options={PRICE_BASIS_OPTIONS.map((value) => ({
-            value,
-            label: t(PRICE_BASIS_LABEL_KEYS[value]),
-          }))}
-          onChange={(value: string) =>
-            onChange({ basis: normalizePriceDateBasis(value) })
-          }
-        />
-
-        <Text>{t('modules.pages.project.pricePeriodPolicy')}</Text>
-        <Select
-          aria-label={t('modules.pages.project.pricePeriodPolicy')}
-          style={{ width: 200 }}
-          value={effective.periodPolicy}
-          options={PRICE_PERIOD_POLICY_OPTIONS.map((value) => ({
-            value,
-            label: t(PRICE_PERIOD_POLICY_LABEL_KEYS[value]),
-          }))}
-          onChange={(value: string) =>
-            onChange({ periodPolicy: normalizePricePeriodPolicy(value) })
-          }
-        />
-      </Space>
-
-      <Space wrap>
-        {effective.basis === 'ORDER' ? (
-          <OrderBasisControls
-            offsetDays={effective.offsetDays}
-            settlePrevOnClosed={effective.settlePrevOnClosed}
-            onChange={onChange}
-          />
-        ) : null}
-
-        {effective.basis === 'MANUAL' ? (
-          <Space wrap>
-            <Text>{t('modules.pages.salesOrder.netPriceManualDate')}</Text>
-            <DatePicker
-              aria-label={t('modules.pages.salesOrder.netPriceManualDate')}
-              value={effective.quoteDate ? dayjs(effective.quoteDate) : null}
-              onChange={(value) =>
-                onChange({ quoteDate: value ? value.format('YYYY-MM-DD') : '' })
+      <Row gutter={[16, 12]}>
+        <Col span={12}>
+          <OverrideField
+            label={t('modules.pages.salesOrder.netPriceBasisLabel')}
+          >
+            <Select
+              aria-label={t('modules.pages.salesOrder.netPriceBasisLabel')}
+              style={{ width: '100%' }}
+              value={effective.basis}
+              options={PRICE_BASIS_OPTIONS.map((value) => ({
+                value,
+                label: t(PRICE_BASIS_LABEL_KEYS[value]),
+              }))}
+              onChange={(value: string) =>
+                onChange({ basis: normalizePriceDateBasis(value) })
               }
             />
-          </Space>
+          </OverrideField>
+        </Col>
+
+        <Col span={12}>
+          <OverrideField label={t('modules.pages.project.pricePeriodPolicy')}>
+            <Select
+              aria-label={t('modules.pages.project.pricePeriodPolicy')}
+              style={{ width: '100%' }}
+              value={effective.periodPolicy}
+              options={PRICE_PERIOD_POLICY_OPTIONS.map((value) => ({
+                value,
+                label: t(PRICE_PERIOD_POLICY_LABEL_KEYS[value]),
+              }))}
+              onChange={(value: string) =>
+                onChange({ periodPolicy: normalizePricePeriodPolicy(value) })
+              }
+            />
+          </OverrideField>
+        </Col>
+
+        {showOrderFields ? (
+          <>
+            <Col span={12}>
+              <OverrideField
+                label={t('modules.pages.project.priceDateOffsetDays')}
+              >
+                <InputNumber
+                  aria-label={t('modules.pages.project.priceDateOffsetDays')}
+                  style={{ width: '100%' }}
+                  min={0}
+                  max={MAX_PRICE_DATE_OFFSET_DAYS}
+                  value={effective.offsetDays}
+                  onChange={(value) =>
+                    onChange({
+                      offsetDays: normalizePriceDateOffsetDays(value),
+                    })
+                  }
+                />
+              </OverrideField>
+            </Col>
+
+            <Col span={12}>
+              <OverrideField
+                label={t('modules.pages.project.priceClosedDayPrevSettle')}
+              >
+                <Switch
+                  aria-label={t(
+                    'modules.pages.project.priceClosedDayPrevSettle',
+                  )}
+                  checked={effective.settlePrevOnClosed}
+                  onChange={(checked) =>
+                    onChange({ settlePrevOnClosed: checked })
+                  }
+                />
+              </OverrideField>
+            </Col>
+          </>
         ) : null}
 
         {effective.periodPolicy === 'AUTO' ? null : (
-          <Space wrap>
-            <Text>{t('modules.pages.salesOrder.netPricePeriod')}</Text>
-            <Select
-              aria-label={t('modules.pages.salesOrder.netPricePeriod')}
-              style={{ width: 160 }}
-              value={effective.period ?? undefined}
-              options={periodOptions.map((value) => ({
-                value,
-                label: translatePricePeriod(t, value),
-              }))}
-              onChange={(value: string) =>
-                onChange({
-                  period: normalizePricePeriodFixed(value) ?? undefined,
-                })
-              }
-            />
-          </Space>
+          <Col span={12}>
+            <OverrideField label={t('modules.pages.salesOrder.netPricePeriod')}>
+              <Select
+                aria-label={t('modules.pages.salesOrder.netPricePeriod')}
+                style={{ width: '100%' }}
+                value={effective.period ?? undefined}
+                options={periodOptions.map((value) => ({
+                  value,
+                  label: translatePricePeriod(t, value),
+                }))}
+                onChange={(value: string) =>
+                  onChange({
+                    period: normalizePricePeriodFixed(value) ?? undefined,
+                  })
+                }
+              />
+            </OverrideField>
+          </Col>
         )}
-      </Space>
+
+        {effective.basis === 'MANUAL' ? (
+          <Col span={12}>
+            <OverrideField
+              label={t('modules.pages.salesOrder.netPriceManualDate')}
+            >
+              <DatePicker
+                aria-label={t('modules.pages.salesOrder.netPriceManualDate')}
+                style={{ width: '100%' }}
+                value={effective.quoteDate ? dayjs(effective.quoteDate) : null}
+                onChange={(value) =>
+                  onChange({
+                    quoteDate: value ? value.format('YYYY-MM-DD') : '',
+                  })
+                }
+              />
+            </OverrideField>
+          </Col>
+        ) : null}
+      </Row>
     </Space>
   )
 }
 
-interface OrderBasisControlsProps {
-  offsetDays: number
-  settlePrevOnClosed: boolean
-  onChange: (patch: PricingQuoteControls) => void
-}
-
-/** 仅「报单日期」基准有意义的两个覆盖项：顺延交易日数与休市取前一交易日。 */
-function OrderBasisControls({
-  offsetDays,
-  settlePrevOnClosed,
-  onChange,
-}: OrderBasisControlsProps) {
-  const { t } = useTranslation()
+/** 覆盖项字段：标签在上、控件在下，控件占满所在列宽，六项口径纵向节奏一致。 */
+function OverrideField({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
   return (
-    <Space wrap>
-      <Text>{t('modules.pages.project.priceDateOffsetDays')}</Text>
-      <InputNumber
-        aria-label={t('modules.pages.project.priceDateOffsetDays')}
-        min={0}
-        max={MAX_PRICE_DATE_OFFSET_DAYS}
-        value={offsetDays}
-        onChange={(value) =>
-          onChange({ offsetDays: normalizePriceDateOffsetDays(value) })
-        }
-      />
-      <Text>{t('modules.pages.project.priceClosedDayPrevSettle')}</Text>
-      <Switch
-        aria-label={t('modules.pages.project.priceClosedDayPrevSettle')}
-        checked={settlePrevOnClosed}
-        onChange={(checked) => onChange({ settlePrevOnClosed: checked })}
-      />
+    <Space orientation="vertical" size={4} style={{ width: '100%' }}>
+      <Text type="secondary">{label}</Text>
+      {children}
     </Space>
   )
 }

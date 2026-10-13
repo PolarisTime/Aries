@@ -1,4 +1,4 @@
-import { Alert, Button, Space, Typography } from 'antd'
+import { Alert, Button, Descriptions, Space, Typography } from 'antd'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { PricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
@@ -21,6 +21,8 @@ interface Props {
 /**
  * 解析结果摘要：基准口径 / 基准日 / 实际取价日 / 实际取价时段 / 中文说明，
  * 以及日期回退、时段回退、当日无行情三类「醒目但非阻断」提示。
+ *
+ * <p>口径用双列描述列表呈现：四项等宽对齐、四行压成两行，弹窗不必再靠密集小字堆叠。</p>
  */
 export function PricingQuoteResolutionSummary({
   resolution,
@@ -52,27 +54,36 @@ export function PricingQuoteResolutionSummary({
   const availablePeriods = resolution.availablePeriods ?? []
 
   return (
-    <Space orientation="vertical" style={{ width: '100%' }}>
-      <Space wrap>
-        <Text>
-          {t('modules.pages.salesOrder.netPriceBasisLabel')}：
-          {translatePriceBasis(t, resolution.basis)}
-        </Text>
-        <Text>
-          {t('modules.pages.salesOrder.netPriceTargetDate')}：
-          {resolution.targetDate ?? '—'}
-        </Text>
-        <Text>
-          {t('modules.pages.salesOrder.netPriceActualDate')}：
-          {resolution.quoteDate ?? '—'}
-        </Text>
-        <Text>
-          {t('modules.pages.salesOrder.netPriceActualPeriod')}：
-          {resolution.period
-            ? translatePricePeriod(t, resolution.period)
-            : t('modules.pages.salesOrder.netPricePeriodUnavailable')}
-        </Text>
-      </Space>
+    <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+      <Descriptions
+        colon={false}
+        column={2}
+        size="small"
+        items={[
+          {
+            key: 'basis',
+            label: t('modules.pages.salesOrder.netPriceBasisLabel'),
+            children: translatePriceBasis(t, resolution.basis),
+          },
+          {
+            key: 'targetDate',
+            label: t('modules.pages.salesOrder.netPriceTargetDate'),
+            children: resolution.targetDate ?? '—',
+          },
+          {
+            key: 'quoteDate',
+            label: t('modules.pages.salesOrder.netPriceActualDate'),
+            children: resolution.quoteDate ?? '—',
+          },
+          {
+            key: 'period',
+            label: t('modules.pages.salesOrder.netPriceActualPeriod'),
+            children: resolution.period
+              ? translatePricePeriod(t, resolution.period)
+              : t('modules.pages.salesOrder.netPricePeriodUnavailable'),
+          },
+        ]}
+      />
 
       {resolution.explanation ? (
         <Text type="secondary">{resolution.explanation}</Text>

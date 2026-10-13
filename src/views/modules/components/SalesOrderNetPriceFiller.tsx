@@ -1,5 +1,5 @@
 import { ThunderboltOutlined } from '@ant-design/icons'
-import { Button, Modal, Select, Space, Typography } from 'antd'
+import { Button, Divider, Modal, Select, Space, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMaterialPriceMatches } from '@/api/market/steel-quotes'
@@ -216,22 +216,25 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       <Modal
         open={open}
         title={t('modules.pages.salesOrder.netPriceTitle')}
+        width={640}
         okText={t('modules.pages.salesOrder.netPriceApply')}
         confirmLoading={loading}
         onOk={() => void applyNetPrices()}
         onCancel={() => setOpen(false)}
         destroyOnHidden
       >
-        <Space orientation="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" size={16} style={{ width: '100%' }}>
           <Text type="secondary">
             {t('modules.pages.salesOrder.netPriceHint')}
           </Text>
           {rules.length > 0 ? (
-            <Space>
-              <Text>{t('modules.pages.salesOrder.netPriceRule')}</Text>
+            <Space orientation="vertical" size={4} style={{ width: '100%' }}>
+              <Text type="secondary">
+                {t('modules.pages.salesOrder.netPriceRule')}
+              </Text>
               <Select
                 aria-label={t('modules.pages.salesOrder.netPriceRule')}
-                style={{ width: 200 }}
+                style={{ width: '100%' }}
                 value={ruleId}
                 placeholder={t('modules.pages.salesOrder.netPriceRulePick')}
                 options={rules.map((rule) => ({
@@ -244,21 +247,23 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
                 }))}
                 onChange={setRuleId}
               />
+              {selectedRule ? (
+                <Text type="secondary">
+                  {selectedRule.remark
+                    ? `${selectedRule.name} · ${selectedRule.remark}`
+                    : selectedRule.name}
+                </Text>
+              ) : null}
             </Space>
           ) : null}
-          {selectedRule ? (
-            <Text type="secondary">
-              {selectedRule.remark
-                ? `${selectedRule.name} · ${selectedRule.remark}`
-                : selectedRule.name}
-            </Text>
-          ) : null}
+          <Divider style={{ margin: 0 }} />
           <PricingQuoteResolutionSummary
             resolution={resolution}
             resolving={resolving}
             error={resolutionError}
             onAdoptSuggestedDate={adoptSuggestedDate}
           />
+          <Divider style={{ margin: 0 }} />
           <PricingQuoteResolutionOverrides
             resolution={resolution}
             controls={controls}
