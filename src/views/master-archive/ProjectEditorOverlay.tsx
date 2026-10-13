@@ -76,6 +76,10 @@ export interface ProjectEditorValues {
  * <p>分组依据是 antd 的「亲密性」原则(docs/spec/proximity): 关联性高的字段距离更近、
  * 构成一个视觉单元; 区块之间用分割线 + 24px 拉开层次。区块内横向 16px(中号间距)、
  * 纵向 8px(小号间距), 全部取自 8 的倍数规格(docs/spec/layout 的网格基数)。</p>
+ *
+ * <p>列宽只用 24 栅格的**整数倍**: 普通字段 6 列(四等分)、需要整行的 24 列。此前按预期输入
+ * 给 5/7/8/4 这类宽度, 各行的竖边对不齐, 扫读时显得零碎; 统一到网格后列边界一致, 宽度差异
+ * 只保留在「一件占一行」的字段上。</p>
  */
 function ProjectSection({
   title,
@@ -321,7 +325,7 @@ export function ProjectEditorOverlay({
         }
       >
         <ProjectSection title={t('modules.pages.project.sectionBasic')}>
-          <Col span={5}>
+          <Col span={6}>
             <Form.Item
               name="projectCode"
               label={t('modules.pages.project.projectCode')}
@@ -335,7 +339,7 @@ export function ProjectEditorOverlay({
               />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item
               name="projectName"
               label={t('modules.pages.project.projectName')}
@@ -349,7 +353,7 @@ export function ProjectEditorOverlay({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <Form.Item
               name="projectNameAbbr"
               label={t('modules.pages.project.projectNameAbbr')}
@@ -357,7 +361,7 @@ export function ProjectEditorOverlay({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={7}>
+          <Col span={6}>
             <Form.Item
               name="customerId"
               label={t('modules.pages.project.customer')}
@@ -377,7 +381,7 @@ export function ProjectEditorOverlay({
               />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item
               name="settlementCompanyId"
               label={t('modules.pages.project.settlementCompany')}
@@ -397,7 +401,7 @@ export function ProjectEditorOverlay({
               />
             </Form.Item>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <Form.Item
               name="projectManager"
               label={t('modules.pages.project.projectManager')}
@@ -405,7 +409,7 @@ export function ProjectEditorOverlay({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <Form.Item
               name="status"
               label={t('modules.columns.status')}
@@ -414,7 +418,7 @@ export function ProjectEditorOverlay({
               <Select options={enabledStatusOptions} />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item
               name="projectAddress"
               label={t('modules.pages.project.projectAddress')}

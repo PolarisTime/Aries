@@ -35,8 +35,8 @@ const PRICE_PERIOD_LABEL_KEYS = {
  * <p>这里只负责取值联动(禁用), 真正的清空/复位放在表单的 onValuesChange 与保存载荷装配处:
  * 编辑回填的历史脏值不会触发 onValuesChange, 只在渲染层复位会漏掉这类记录。</p>
  *
- * <p>列宽按预期输入给: 基准日期是下拉给 8 列(送货日期/报单日期+N 个交易日/每次手工选择),
- * 顺延交易日数只是 0-30 的数字给 4 列, 休市口径是开关+长文案给 12 列(它的标签本身就有 11 字)。</p>
+ * <p>列宽只用 24 栅格的整数倍: 前四个字段各 6 列(四等分), 休市口径的标签本身有 11 个汉字,
+ * 给 12 列(两格)才不会折行 —— 它右边没有别的字段, 因此不破坏整行的列边界。</p>
  *
  * <p>排列顺序按「同一件事挨在一起」: 取价数据源/取价地区/取价时段策略/固定取价时段 占满第一行,
  * 基准日期 8 + 顺延 4 + 休市口径 12 占满第二行 —— 两者都是同一批 24 栅格, 不出现半行空洞。</p>
@@ -141,7 +141,7 @@ export function ProjectPricingBasisFields({
           />
         </Form.Item>
       </Col>
-      <Col span={8}>
+      <Col span={6}>
         <Form.Item
           name="priceDateBasis"
           label={t('modules.pages.project.priceDateBasis')}
@@ -152,7 +152,7 @@ export function ProjectPricingBasisFields({
           <Select options={dateBasisOptions} />
         </Form.Item>
       </Col>
-      <Col span={4}>
+      <Col span={6}>
         <Form.Item
           name="priceDateOffsetDays"
           label={t('modules.pages.project.priceDateOffsetDays')}

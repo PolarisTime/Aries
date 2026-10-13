@@ -32,8 +32,8 @@ function mergeSelectedOptions(
  * <p>单独成组件有两个原因: 一是它自带数据依赖(品牌取商品资料去重、材质取商品资料牌号),
  * 二是项目编辑器本身已接近可读性上限, 把这组字段抽出来避免继续膨胀。</p>
  *
- * <p>列宽按预期输入给(NN/g 表单建议: 输入框宽度应与内容相称): 品牌/材质是多选下拉, 给 8 列;
- * 处理方式只有三个固定档位, 给 4 列即够, 两个「处理方式」紧跟在各自的多选之后成对出现。</p>
+ * <p>四个字段统一 6 列(四等分): 与弹层内其他区块的列边界一致, 两个「处理方式」紧跟在各自的
+ * 多选之后成对出现; 品牌/材质是多选, 标签过多时由 maxTagCount="responsive" 自行折叠。</p>
  */
 export function ProjectAllowedSpecFields({
   form,
@@ -83,7 +83,7 @@ export function ProjectAllowedSpecFields({
 
   return (
     <>
-      <Col span={8}>
+      <Col span={6}>
         <Form.Item
           name="allowedBrands"
           label={t('modules.pages.project.allowedBrands')}
@@ -100,7 +100,7 @@ export function ProjectAllowedSpecFields({
           />
         </Form.Item>
       </Col>
-      <Col span={4}>
+      <Col span={6}>
         <Form.Item
           name="allowedBrandSeverity"
           label={t('modules.pages.project.scopeEnforcement')}
@@ -110,7 +110,7 @@ export function ProjectAllowedSpecFields({
           <Select options={enforcementOptions} />
         </Form.Item>
       </Col>
-      <Col span={8}>
+      <Col span={6}>
         <Form.Item
           name="allowedMaterials"
           label={t('modules.pages.project.allowedMaterials')}
@@ -127,7 +127,7 @@ export function ProjectAllowedSpecFields({
           />
         </Form.Item>
       </Col>
-      <Col span={4}>
+      <Col span={6}>
         <Form.Item
           name="allowedMaterialSeverity"
           label={t('modules.pages.project.scopeEnforcement')}
