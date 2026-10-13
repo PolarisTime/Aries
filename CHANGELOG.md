@@ -1,3 +1,11 @@
+## [11.13.1](https://github.com/PolarisTime/Aries/compare/v11.13.0...v11.13.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **price-compare:** 吨位弹层未开吨位改回「本单报单 − 已开」, 与相邻列同口径 ([e17fea3](https://github.com/PolarisTime/Aries/commit/e17fea30f44626cf1dc97d3369a41c85d90edcea))
+* **tabs:** 超限指示器移出 tablist, 修掉 tabBarExtraContent 的 aria-required-children 违规 ([438ca87](https://github.com/PolarisTime/Aries/commit/438ca87df22492d8591bf8680554beeba5db979c)), closes [react-component/tabs#1013](https://github.com/react-component/tabs/issues/1013) [antd#49502](https://github.com/antd/issues/49502) [antd#53584](https://github.com/antd/issues/53584)
+
 # [11.13.0](https://github.com/PolarisTime/Aries/compare/v11.12.0...v11.13.0) (2026-10-13)
 
 
