@@ -3,7 +3,7 @@ import type { TabsProps } from 'antd'
 import { Tabs, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { TFunction } from 'i18next'
-import { useEffect, useRef, useState } from 'react'
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
 import {
@@ -64,6 +64,48 @@ export function LayoutTabBar() {
   )
 
   const hostRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * 菜单关闭（Escape / 点击别处）时的焦点兜底目标：**当前激活标签**的 tab 元素。
+   *
+   * <p>必须惰性求值（getter）而不能在渲染期固化节点引用：激活标签随点击变化，
+   * 缓存的旧节点会变成已脱离文档的僵尸元素。ContextMenu 只在打开前焦点元素已不存在、
+   * 或焦点本就不在可停靠元素上（body）时才回退到这里。</p>
+   */
+  const activeTabReturnFocusRef = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        return (
+          hostRef.current?.querySelector<HTMLElement>(
+            '.ant-tabs-tab-active [role="tab"]',
+          ) ?? null
+        )
+      },
+    }),
+    [],
+  )
+
+  /**
+   * 右键**不得**把焦点移到被点的标签上。
+   *
+   * <p>浏览器默认行为是 mousedown 即聚焦被点元素，右键也不例外。被点标签一旦拿到焦点，
+   * 菜单关闭时"归还给打开前的焦点元素"就会把焦点还给这个标签——既让键盘用户停在非激活
+   * 标签上，也把"右键只是看看菜单"变成了对被点标签的隐式选中。阻止 mousedown 默认行为
+   * 可让焦点原地不动，菜单关闭后自然回到右键前的焦点元素（ContextMenu 的 openerRef）。</p>
+   *
+   * <p>之所以不依赖"聚焦即激活"来兜底：antd Tabs 的 `activeKey` 由 store 受控，
+   * rc-tabs 的 onFocus 只改内部 focusKey，实测程序化 focus 非激活标签不会激活它。
+   * 真正会切走标签的是菜单项点击事件沿 React 树冒泡到标签 onClick（见 ContextMenu）。</p>
+   *
+   * <p>仅拦右键：左键点击标签仍须照常获得焦点，键盘用户随后可用方向键在标签间移动。</p>
+   */
+  const handleHostMouseDownCapture = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (event.button === 2) {
+      event.preventDefault()
+    }
+  }
 
   // 把 antd 渲染出的标签与 AppTabContainer 渲染的真实面板接成 APG 语义
   useTabAriaWiring({ hostRef, tabs, t })
@@ -187,6 +229,7 @@ export function LayoutTabBar() {
           onClick={contextMenu.onClick}
           open={keyboardMenuTabId === tab.id}
           onOpenChange={(next) => setKeyboardMenuTabId(next ? tab.id : null)}
+          returnFocusRef={activeTabReturnFocusRef}
         >
           {/* 该 span 的 id 是真实面板 aria-labelledby 的目标（见 AppTabContainer） */}
           <span id={tabLabelDomId(tab.id)} className="leo-tabbar-label">
@@ -227,6 +270,7 @@ export function LayoutTabBar() {
       ref={hostRef}
       className="leo-tabbar-keyboard-host"
       onKeyDownCapture={handleHostKeyDown}
+      onMouseDownCapture={handleHostMouseDownCapture}
     >
       <Tabs
         className="leo-tabbar"

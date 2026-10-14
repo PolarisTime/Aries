@@ -295,12 +295,9 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
    * <p>这是「取消后不切走当前标签、不多推历史」唯一真实守护 —— LayoutTabBar 的单测里
    * 不渲染 useTabRouteReconciliation，多推历史那条链路只有整页 e2e 能覆盖。</p>
    *
-   * <p>为什么用「全部关闭」而不是「关闭其他」：右键一个**非激活**标签后，菜单关闭会把焦点
-   * 归还给该标签，而 antd Tabs 聚焦即激活，于是无论如何都会切过去 —— 这条既有行为会掩盖
-   * 「取消不得先 activateTab」的可观测差异（实测：修复后的实现点「关闭其他」再取消，地址栏
-   * 同样会变成被右键标签）。「全部关闭」在**激活标签**上触发，焦点归还目标是它自己（无差异），
-   * 而修复前后唯一差异恰好是「确认前是否先切到工作台」，因此能真实区分对错。
-   * 单测里用「关闭其他」在弹框时刻采样 activeTabId，覆盖同一代码路径的另一半。</p>
+   * <p>本用例在**激活**标签上触发「全部关闭」：唯一差异是「确认前是否先切到工作台」。
+   * 「右键**非激活**标签 → 关闭其他 → 取消」那条更贴近真实操作的路径由 P2-22 单独守护
+   * （它同时钉住菜单项点击不得沿 React 树冒泡激活被右键标签这一根因）。</p>
    */
   test('「全部关闭」确认框取消后不切走当前标签、地址与历史长度不变', async ({
     page,
@@ -389,6 +386,118 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
     ).toBe(historyBefore)
     await expect(
       page.locator('.ant-tabs-tab-active .leo-tabbar-label'),
+    ).toHaveText('供应商资料')
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    await assertNoFatalUiErrors()
+  })
+
+  /**
+   * P2-22 的真实浏览器守护：右键**非激活**标签 →「关闭其他」→ 取消，必须什么都不发生。
+   *
+   * <p>为什么这条路径必须单独守护：菜单弹层是 React portal，点击菜单项的事件会沿 **React 树**
+   * 继续冒泡到被右键标签的 `onClick`（antd Dropdown 是标签 label 的父级），命中 rc-tabs
+   * `TabNode` 的 `[role="tab"]` onClick → `onInternalTabClick` → `onChange` → `activateTab`。
+   * 于是「关闭其他」在被右键标签上**必然把它激活**：URL 切到该标签、history +1、激活标签改名，
+   * 且确认框点「取消」也回不去 —— 与「取消后不得切走」这一缺陷的可观测效果完全相同，
+   * 所以修复前后必须靠这条断言区分：修复后取消必须是原断言全等。</p>
+   *
+   * <p>用「关闭其他」而不是「全部关闭」：后者的焦点/激活目标就是被右键的激活标签（无差异），
+   * 只能覆盖「确认前是否先 activateTab」；前者才能覆盖「右键非激活标签不得被菜单点击激活」。</p>
+   */
+  test('右键非激活标签的「关闭其他」取消后不切走当前标签、地址与历史长度不变', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    await gotoRoute(page, '/sales-order')
+    await expectModuleHeading(page, '销售订单')
+    await expectGridTable(page)
+    const tabLabel = (title: string) =>
+      page.locator('.leo-tabbar-label').filter({ hasText: title }).first()
+
+    // 1) SPA 内多开「供应商资料」标签
+    await page
+      .getByRole('menuitem', { name: '基础数据', exact: true })
+      .first()
+      .click()
+    const supplierMenuItem = page
+      .locator(
+        '.ant-menu-submenu-popup:visible .ant-menu-item, .ant-menu-popup:visible .ant-menu-item',
+      )
+      .filter({ hasText: '供应商资料' })
+      .first()
+    await expect(supplierMenuItem).toBeVisible({ timeout: 15_000 })
+    await supplierMenuItem.click()
+    await expectModuleHeading(page, '供应商资料')
+    await expectGridTable(page)
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    // 2) 回到销售订单，开新增编辑器改字段 → 该标签持有未保存会话（「关闭其他」会弹确认框）
+    await tabLabel('销售订单').click()
+    await expectModuleHeading(page, '销售订单')
+    await page
+      .getByRole('button', { name: /新\s*增|新\s*建/ })
+      .first()
+      .click()
+    const overlay = page.locator('.workspace-overlay-panel:visible').last()
+    await expect(overlay).toBeVisible({ timeout: 30_000 })
+    const remark = overlay
+      .locator('input#module-form-remark:visible, input#remark:visible')
+      .first()
+    await expect(remark, '销售订单编辑器应有备注输入框').toBeVisible({
+      timeout: 15_000,
+    })
+    await remark.fill(`E2E-未保存-${Date.now()}`)
+    await remark.blur()
+
+    // 3) 切到供应商资料（激活标签）并取基线
+    await tabLabel('供应商资料').click()
+    await expectModuleHeading(page, '供应商资料')
+    await page.waitForTimeout(300)
+    const urlBefore = page.url()
+    const historyBefore = await page.evaluate(() => window.history.length)
+
+    // 4) 右键**非激活**的工作台标签（前置校验：它确实不是激活标签）→「关闭其他」
+    await expect(
+      page.locator('.ant-tabs-tab-active .leo-tabbar-label'),
+      '前置条件：当前激活标签必须是供应商资料',
+    ).toHaveText('供应商资料')
+    await tabLabel('工作台').click({ button: 'right' })
+    const closeOthers = page
+      .locator('.ant-dropdown-menu-item')
+      .filter({ hasText: '关闭其他' })
+      .first()
+    await expect(closeOthers).toBeVisible({ timeout: 15_000 })
+    await closeOthers.click()
+
+    // 5) 待关闭集合含脏的销售订单 → 弹确认框；点「取消」
+    const confirmModal = page.locator('.ant-modal:visible').first()
+    await expect(
+      confirmModal,
+      '存在未保存会话时必须弹确认框，而不是直接关闭',
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(confirmModal).toContainText('存在未保存的修改')
+    await confirmModal
+      .getByRole('button', { name: /取\s*消/ })
+      .first()
+      .click()
+    await expect(confirmModal).toBeHidden({ timeout: 15_000 })
+
+    // 6) 取消后一切原样：地址、历史长度、激活标签、标签数量。
+    //    修复前菜单项点击会经 React 树冒泡激活「工作台」：URL 变 /dashboard、history +1、
+    //    激活标签变工作台，三条断言同时变红。
+    await page.waitForTimeout(800)
+    expect(
+      page.url(),
+      '取消后地址栏必须停在原标签（不得被右键标签激活而切走）',
+    ).toBe(urlBefore)
+    expect(
+      await page.evaluate(() => window.history.length),
+      '取消不得多推浏览器历史',
+    ).toBe(historyBefore)
+    await expect(
+      page.locator('.ant-tabs-tab-active .leo-tabbar-label'),
+      '取消后激活标签必须仍是供应商资料',
     ).toHaveText('供应商资料')
     await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
 

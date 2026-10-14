@@ -314,6 +314,112 @@ describe('ContextMenu 无障碍契约', () => {
     expect(onClick.mock.calls[0]?.[0]?.key).toBe('b')
   })
 
+  /**
+   * 回归守护（标签栏「右键非激活标签 → 关闭其他 → 取消仍被切走」的根因）：
+   * 弹层是 React portal，事件会沿 **React 树**（而不是 DOM 树）冒泡到触发器祖先。
+   * 触发器嵌在 antd Tabs 标签里时，菜单项点击会命中 rc-tabs `[role="tab"]` 的 onClick
+   * → onInternalTabClick → onChange → 激活被右键标签；按键则命中其 onKeyDown
+   * （Enter 激活 / Delete 关闭标签）。菜单是独立 widget，事件必须止于弹层。
+   */
+  it('弹层事件不沿 React 树泄漏给触发器祖先（点击与按键都不得穿透）', async () => {
+    const ancestorClick = vi.fn()
+    const ancestorKeyDown = vi.fn()
+    const menuClick = vi.fn()
+    act(() => {
+      root.render(
+        <ConfigProvider theme={{ token: { motion: false } }}>
+          {/* 模拟 antd Tabs 标签：ContextMenu 的触发器是它的子节点 */}
+          <span
+            className="tab-like-ancestor"
+            onClick={ancestorClick}
+            onKeyDown={ancestorKeyDown}
+          >
+            <ContextMenu
+              ariaLabel="「首页」标签操作菜单"
+              items={menuItems()}
+              onClick={menuClick}
+            >
+              <span className="trigger">首页</span>
+            </ContextMenu>
+          </span>
+        </ConfigProvider>,
+      )
+    })
+    await openByContextMenu()
+
+    const items = [
+      ...document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ]
+    act(() => {
+      items[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+    // 菜单自己的动作必须照常执行，只是不得继续冒泡到祖先
+    expect(menuClick).toHaveBeenCalledTimes(1)
+    expect(ancestorClick).not.toHaveBeenCalled()
+
+    act(() => {
+      items[0].dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await flush()
+    expect(ancestorKeyDown).not.toHaveBeenCalled()
+  })
+
+  it('打开前的焦点元素已不存在时, 焦点归还给 returnFocusRef 指定的兜底目标', async () => {
+    const fallback = document.createElement('button')
+    fallback.className = 'fallback-target'
+    document.body.appendChild(fallback)
+    const returnFocusRef = { current: fallback }
+    render({ returnFocusRef })
+
+    // 打开菜单前把焦点放在一个随后会被移除的元素上（等价于"打开上下文已消失"）
+    const transient = document.createElement('button')
+    transient.className = 'transient'
+    document.body.appendChild(transient)
+    transient.focus()
+    await openByContextMenu()
+    expect(document.activeElement).not.toBe(transient)
+    transient.remove()
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await waitForMenuClosed()
+    expect(document.activeElement).toBe(fallback)
+    fallback.remove()
+  })
+
+  it('打开前焦点在 body 上时, 焦点归还给 returnFocusRef 而不是留在 body', async () => {
+    const fallback = document.createElement('button')
+    fallback.className = 'fallback-from-body'
+    document.body.appendChild(fallback)
+    render({ returnFocusRef: { current: fallback } })
+
+    // 焦点停在 body = "当前没有焦点"，不是可停靠的归还目标
+    act(() => {
+      ;(document.activeElement as HTMLElement | null)?.blur()
+    })
+    expect(document.activeElement).toBe(document.body)
+
+    await openByContextMenu()
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await waitForMenuClosed()
+    expect(document.activeElement).toBe(fallback)
+    fallback.remove()
+  })
+
   it('受控打开时可由外部(键盘)唤起同一菜单', async () => {
     render({ open: true })
     await flush()

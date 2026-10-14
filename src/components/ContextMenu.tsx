@@ -4,6 +4,7 @@ import {
   type KeyboardEvent,
   type ReactElement,
   type RefObject,
+  type SyntheticEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -16,6 +17,21 @@ import {
  * 因此本组件不把 `disabled` 透传给 rc-menu, 改由该属性(落到 DOM 的 li 上)表达不可用。
  */
 const SOFT_DISABLED_ATTR = 'data-menu-item-soft-disabled'
+
+/**
+ * 该元素能否作为焦点归还目标：必须在文档中，且不是 body/documentElement——
+ * 后两者表示"当前没有焦点"，把焦点"还"给它们等于让键盘用户丢失位置。
+ */
+function isUsableFocusTarget(
+  element: HTMLElement | null,
+): element is HTMLElement {
+  return (
+    !!element &&
+    element.isConnected &&
+    element !== document.body &&
+    element !== document.documentElement
+  )
+}
 
 /**
  * rc-menu 的 disabled 项既不可聚焦, 也会被方向键跳过; APG 要求禁用项可聚焦、可被读屏发现。
@@ -191,8 +207,36 @@ export function ContextMenu({
   }, [focusFirstItem, markSoftDisabledItems, open])
 
   const restoreFocus = () => {
-    const target = returnFocusRef?.current ?? openerRef.current
+    const opener = openerRef.current
+    const fallback = returnFocusRef?.current ?? null
+    /*
+     * body/documentElement 不是可停靠的焦点目标：焦点落在它们上面等价于"没有焦点"，
+     * 键盘用户会因此丢失所在位置。此时改用调用方指定的兜底目标（标签栏传"当前激活标签"）。
+     */
+    const target = isUsableFocusTarget(opener)
+      ? opener
+      : isUsableFocusTarget(fallback)
+        ? fallback
+        : null
     target?.focus?.()
+  }
+
+  /**
+   * 菜单弹层是 React portal：事件会沿 **React 树**（而不是 DOM 树）继续冒泡到触发器的祖先。
+   *
+   * <p>标签栏的触发器嵌在 antd Tabs 标签内部，不拦截就会实测出两类事故：</p>
+   * <ol>
+   *   <li>点击菜单项 → 命中 rc-tabs `TabNode` 的 `[role="tab"]` onClick → `onInternalTabClick`
+   *       → `onChange` → **激活被右键的标签**：URL 与 history 随之改变，之后点确认框的「取消」
+   *       也回不去（"右键非激活标签 → 关闭其他 → 取消"的既有缺陷）；</li>
+   *   <li>菜单项持焦点时按 Enter / Delete → 命中 rc-tabs 的 onKeyDown → 激活标签 / 关闭标签。</li>
+   * </ol>
+   *
+   * <p>菜单是独立 widget，其事件必须止于弹层。刻意用**冒泡阶段**：rc-menu 自己的项点击、
+   * 方向键与 Enter 处理都更深一层，先跑完再由这里截断。</p>
+   */
+  const containWidgetEvent = (event: SyntheticEvent) => {
+    event.stopPropagation()
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -229,6 +273,10 @@ export function ContextMenu({
           className="app-context-menu"
           ref={attachPopup}
           onKeyDownCapture={handleKeyDown}
+          onClick={containWidgetEvent}
+          onMouseDown={containWidgetEvent}
+          onMouseUp={containWidgetEvent}
+          onKeyDown={containWidgetEvent}
         >
           {menu}
         </div>

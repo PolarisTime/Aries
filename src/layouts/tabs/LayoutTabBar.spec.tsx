@@ -168,6 +168,119 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     ).toBe('「报单比价」标签操作菜单')
   })
 
+  /**
+   * 浏览器默认行为是 mousedown 即聚焦被点元素：右键若把焦点挪到被点标签上，
+   * 菜单关闭时"归还打开前的焦点元素"就会把焦点还给这个（非激活）标签。
+   * 因此右键必须在捕获阶段就阻止默认聚焦，左键不得受影响。
+   */
+  it('右键阻止 mousedown 默认聚焦，左键不阻止', () => {
+    render()
+    const label = container.querySelector<HTMLElement>(
+      '[data-node-key="tab-price-compare"] .leo-tabbar-label',
+    )
+    expect(label, '未找到报单比价标签').toBeTruthy()
+
+    const rightDown = new MouseEvent('mousedown', {
+      button: 2,
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      label?.dispatchEvent(rightDown)
+    })
+    expect(rightDown.defaultPrevented, '右键必须阻止默认聚焦').toBe(true)
+
+    const leftDown = new MouseEvent('mousedown', {
+      button: 0,
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      label?.dispatchEvent(leftDown)
+    })
+    expect(leftDown.defaultPrevented, '左键必须保持默认聚焦行为').toBe(false)
+  })
+
+  /** APG: Escape 关闭菜单并把焦点归还给"打开前的焦点元素"，而不是被右键的标签。 */
+  it('Escape 关闭菜单后焦点归还给打开前的焦点元素', async () => {
+    render()
+    // 模拟"右键前焦点在别处"（例如内容区的编辑器输入框）
+    const opener = document.createElement('button')
+    opener.className = 'pre-open-opener'
+    document.body.appendChild(opener)
+    opener.focus()
+    expect(document.activeElement).toBe(opener)
+
+    const label = container.querySelector<HTMLElement>(
+      '[data-node-key="tab-price-compare"] .leo-tabbar-label',
+    )
+    act(() => {
+      label?.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(document.activeElement).not.toBe(opener)
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(
+      document.activeElement,
+      'Escape 必须把焦点还给打开前的焦点元素',
+    ).toBe(opener)
+    expect(document.activeElement, '焦点不得落在被右键的标签上').not.toBe(label)
+    opener.remove()
+  })
+
+  it('打开前的焦点元素已消失时 Escape 把焦点归还给当前激活标签', async () => {
+    render()
+    const transient = document.createElement('button')
+    transient.className = 'transient-opener'
+    document.body.appendChild(transient)
+    transient.focus()
+
+    // 右键非激活的工作台标签；当前激活标签是 tab-price-compare
+    const label = container.querySelector<HTMLElement>(
+      '[data-node-key="tab-workbench"] .leo-tabbar-label',
+    )
+    expect(label, '未找到工作台标签').toBeTruthy()
+    act(() => {
+      label?.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    // 打开菜单后把原焦点元素移除，等价于"打开上下文已消失"
+    transient.remove()
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(
+      document.activeElement,
+      '兜底目标必须是当前激活标签的 tab 元素',
+    ).toBe(
+      container.querySelector(
+        '[data-node-key="tab-price-compare"] [role="tab"]',
+      ),
+    )
+  })
+
   it('标签数未超上限时不显示超限指示器', () => {
     render()
     expect(container.querySelector('.leo-tabbar-overlimit')).toBeNull()
@@ -272,7 +385,9 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
 
   it('「关闭其他」确认框被取消时不移标签、不切走当前标签、不多推历史', async () => {
     // 三标签场景：对非激活的 tab-extra 执行「关闭其他」，其待关闭集合里有脏的 tab-price-compare。
-    // 不能用 focus 打开菜单 —— antd Tabs 聚焦即激活，会先把前提破坏掉，因此走鼠标右键。
+    // 用鼠标右键打开菜单：这是缺陷的真实路径（键盘唤起时焦点本就在标签上，不会改变激活项）。
+    // 注：antd Tabs 的 activeKey 由 store 受控，rc-tabs 的 onFocus 只改内部 focusKey，
+    // 程序化 focus 非激活标签并不会激活它——真正会激活的是菜单项点击沿 React 树的冒泡。
     useLayoutTabsStore.setState({
       tabs: [
         ...TABS,
@@ -327,10 +442,11 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     expect(closeOthers, '未找到「关闭其他」菜单项').toBeTruthy()
     const pushSpy = vi.spyOn(mainRouter.history, 'push')
     /*
-     * 「取消」的可观测点只能在弹确认框的那一刻采样：菜单项点击后 antd/rc-tabs 会把焦点
-     * 归还到被操作的标签并顺带激活它（既有行为，与本修复无关），点击返回后 activeTabId
-     * 已被它改成 tab-extra。修复前的实现是在 closeManyTabs **之前**同步 activateTab，
-     * 因此确认框弹出时激活项已经变了；修复后只有在用户点「确定」后才切换。
+     * 双重守护：确认框弹出时刻的 activeTabId 必须仍是 tab-price-compare。
+     * 一条是修复 79eeebaf 修掉的"先 activateTab 再弹框"；另一条（本条用例真正要钉住的）
+     * 是菜单项点击事件沿 React 树冒泡到被右键标签 onClick 导致的隐式激活 —— 由
+     * ContextMenu 在弹层截断事件解决，真实浏览器里表现为 URL 被切走（见
+     * tests/e2e/navigation.spec.ts 的 P2-22）。
      */
     let activeTabIdWhenConfirming: string | null = null
     modalConfirmMock.mockImplementation(() => {
