@@ -2741,6 +2741,10 @@ export const zhCN = {
       purchaseOrderPickerHint:
         '点击一行即选中并关联（键盘：Tab 到行后按回车）；已开吨位按已保存报单统计。',
       /** 默认隐藏"剩余可关联吨位为 0"的明细行, 开关只在本弹窗内生效。 */
+      purchaseOrderPickerShowOtherVarieties:
+        '显示材质/规格不一致的行（{{count}}）',
+      purchaseOrderPickerEmptyVariety:
+        '没有与当前行材质 / 规格 / 长度一致的采购订单明细行，可勾选上方开关查看其他规格',
       purchaseOrderPickerShowFullyLinked: '显示已关联完的订单（{{count}}）',
       /** 剩余为 0 的行在开关打开后的标记: 可见但不可选。 */
       purchaseOrderPickerFullyLinkedTag: '已关联完',

@@ -19,3 +19,47 @@ export function remainingLinkableTon(
   const linkedHere = linkedTonByItemId?.get(record.purchaseOrderItemId) ?? 0
   return base - linkedHere
 }
+
+/** 报价行的「材质 / 规格 / 长度」目标值(选单自动筛选用)。 */
+export interface PickerVarietyTarget {
+  material?: string | null
+  spec?: string | number | null
+  length?: string | null
+}
+
+/**
+ * 归一化比较用文本: 去空白、统一大写、把数值写法收敛(「16.0」与「16」视为同一规格)。
+ * 空值与占位符「-」归一为 '', 表示"该项不参与比较"。
+ */
+function normalizeVarietyText(
+  value: string | number | null | undefined,
+): string {
+  const text = String(value ?? '')
+    .replace(/\s+/g, '')
+    .toUpperCase()
+  if (!text || text === '-') return ''
+  if (/^-?\d+(\.\d+)?$/.test(text)) return String(Number(text))
+  return text
+}
+
+/**
+ * 该采购订单明细行是否与报价行的「材质 / 规格 / 长度」一致。
+ *
+ * <p>任一项目标值为空(或「-」)时不参与筛选 —— 盘螺这类订单行没有长度, 若把空值当作
+ * "必须等于空"会把可选项全过滤掉。</p>
+ */
+export function matchesPickerVariety(
+  record: PurchaseOrderTonnageRecord,
+  target?: PickerVarietyTarget,
+): boolean {
+  if (!target) return true
+  const pairs: [string, string][] = [
+    [
+      normalizeVarietyText(target.material),
+      normalizeVarietyText(record.material),
+    ],
+    [normalizeVarietyText(target.spec), normalizeVarietyText(record.spec)],
+    [normalizeVarietyText(target.length), normalizeVarietyText(record.length)],
+  ]
+  return pairs.every(([want, got]) => !want || want === got)
+}

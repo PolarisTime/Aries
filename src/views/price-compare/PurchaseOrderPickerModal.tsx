@@ -21,7 +21,11 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_REALTIME } from '@/constants/query-policies'
 import { formatWeight } from '@/utils/formatters'
-import { remainingLinkableTon } from './purchase-order-picker-tonnage'
+import {
+  matchesPickerVariety,
+  type PickerVarietyTarget,
+  remainingLinkableTon,
+} from './purchase-order-picker-tonnage'
 
 interface Props {
   open: boolean
@@ -35,6 +39,11 @@ interface Props {
    * 否则已被本单吃满的行仍会被当成可选项。</p>
    */
   linkedTonByItemId?: Map<string, number>
+  /**
+   * 当前报价行的材质/规格/长度: 弹窗默认只列与之一致的订单明细行(自动筛选), 避免用户
+   * 关联到别的规格(实测踩过: HRB400E 20 9米 的行关联到了 HRB400E 16 9米 的明细行)。
+   */
+  matchVariety?: PickerVarietyTarget
   /** 选中明细行(undefined 表示清除关联); 选择后由调用方关闭弹窗。 */
   onSelect: (record: PurchaseOrderTonnageRecord | undefined) => void
   onClose: () => void
@@ -51,6 +60,7 @@ export function PurchaseOrderPickerModal({
   open,
   selectedItemId,
   excludeSheetId,
+  matchVariety,
   linkedTonByItemId,
   onSelect,
   onClose,
@@ -60,6 +70,8 @@ export function PurchaseOrderPickerModal({
   const [debouncedKeyword, setDebouncedKeyword] = useState('')
   /** 是否显示"剩余可关联吨位已用尽"的行: 默认隐藏, 仅本弹窗内状态, 不回传后端。 */
   const [showFullyLinked, setShowFullyLinked] = useState(false)
+  /** 是否显示"材质/规格/长度不一致"的行: 默认隐藏(自动筛选), 需要借用别的规格时可打开。 */
+  const [showOtherVarieties, setShowOtherVarieties] = useState(false)
 
   // 关键字防抖: 避免每次输入都打后端。
   useEffect(() => {
@@ -94,18 +106,41 @@ export function PurchaseOrderPickerModal({
    * 剩余可关联吨位 <= 0 的行默认隐藏: 这些行已无额度可选, 留在列表里只会稀释搜索结果。
    * 开关只改本弹窗的可见集合, 不改查询参数; 当前已关联行始终保留, 避免用户以为关联丢了。
    */
-  const { visibleData, fullyLinkedCount } = useMemo(() => {
-    let hiddenCount = 0
-    const rows: PurchaseOrderTonnageRecord[] = []
-    for (const record of data) {
-      const fullyLinked =
-        remainingLinkableTon(record, linkedTonByItemId) <= 0 &&
-        record.purchaseOrderItemId !== selectedItemId
-      if (fullyLinked) hiddenCount += 1
-      if (showFullyLinked || !fullyLinked) rows.push(record)
-    }
-    return { visibleData: rows, fullyLinkedCount: hiddenCount }
-  }, [data, linkedTonByItemId, selectedItemId, showFullyLinked])
+  const { visibleData, fullyLinkedCount, varietyMismatchCount } =
+    useMemo(() => {
+      let hiddenCount = 0
+      let mismatchCount = 0
+      const rows: PurchaseOrderTonnageRecord[] = []
+      for (const record of data) {
+        const fullyLinked =
+          remainingLinkableTon(record, linkedTonByItemId) <= 0 &&
+          record.purchaseOrderItemId !== selectedItemId
+        if (fullyLinked) hiddenCount += 1
+        if (fullyLinked && !showFullyLinked) continue
+        /*
+         * 自动筛选: 只列与当前行材质/规格/长度一致的明细行。当前已关联行始终保留
+         * (否则用户会以为关联被清掉了), 不一致的行由开关放行。
+         */
+        const varietyMismatch =
+          record.purchaseOrderItemId !== selectedItemId &&
+          !matchesPickerVariety(record, matchVariety)
+        if (varietyMismatch) mismatchCount += 1
+        if (varietyMismatch && !showOtherVarieties) continue
+        rows.push(record)
+      }
+      return {
+        visibleData: rows,
+        fullyLinkedCount: hiddenCount,
+        varietyMismatchCount: mismatchCount,
+      }
+    }, [
+      data,
+      linkedTonByItemId,
+      selectedItemId,
+      showFullyLinked,
+      showOtherVarieties,
+      matchVariety,
+    ])
 
   const columns: ColumnsType<PurchaseOrderTonnageRecord> = [
     {
@@ -242,6 +277,16 @@ export function PurchaseOrderPickerModal({
             count: fullyLinkedCount,
           })}
         </Checkbox>
+        {/* 自动筛选的兜底出口: 默认只列同材质/规格/长度的行, 确需借用别的规格时在这里放行 */}
+        <Checkbox
+          checked={showOtherVarieties}
+          className="price-compare-purchase-order-picker-toggle"
+          onChange={(event) => setShowOtherVarieties(event.target.checked)}
+        >
+          {t('priceCompare.sheet.purchaseOrderPickerShowOtherVarieties', {
+            count: varietyMismatchCount,
+          })}
+        </Checkbox>
       </div>
       <Table<PurchaseOrderTonnageRecord>
         columns={columns}
@@ -258,7 +303,9 @@ export function PurchaseOrderPickerModal({
                 // 有命中行但被"已关联完"过滤掉时, 不能只说"暂无采购订单", 否则像是数据丢了
                 fullyLinkedCount > 0
                   ? 'priceCompare.sheet.purchaseOrderPickerEmptyAllFullyLinked'
-                  : 'priceCompare.sheet.purchaseOrderPickerEmpty',
+                  : varietyMismatchCount > 0
+                    ? 'priceCompare.sheet.purchaseOrderPickerEmptyVariety'
+                    : 'priceCompare.sheet.purchaseOrderPickerEmpty',
               )}
             />
           ),

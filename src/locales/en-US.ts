@@ -2820,6 +2820,10 @@ export const enUS = {
       purchaseOrderPickerClearHint: 'Unlink this row from the purchase order',
       purchaseOrderPickerHint:
         'Click a row to link it (keyboard: Tab to a row, then press Enter); issued tonnage is based on saved sheets.',
+      purchaseOrderPickerShowOtherVarieties:
+        'Show rows with a different material / spec ({{count}})',
+      purchaseOrderPickerEmptyVariety:
+        "No purchase-order line matches this row's material / spec / length. Use the toggle above to show other specs.",
       purchaseOrderPickerShowFullyLinked:
         'Show fully linked orders ({{count}})',
       purchaseOrderPickerFullyLinkedTag: 'Fully linked',

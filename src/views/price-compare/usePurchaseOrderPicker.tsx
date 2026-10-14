@@ -58,6 +58,15 @@ export function usePurchaseOrderPicker({
         linkedTonByItemId={linkedTonByItemId}
         open={pickerRowId !== undefined}
         selectedItemId={pickerRow?.purchaseOrderItemId}
+        matchVariety={
+          pickerRow
+            ? {
+                material: pickerRow.material,
+                spec: pickerRow.spec,
+                length: pickerRow.length,
+              }
+            : undefined
+        }
         onClose={() => setPickerRowId(undefined)}
         onSelect={(record: PurchaseOrderTonnageRecord | undefined) => {
           if (pickerRowId) {

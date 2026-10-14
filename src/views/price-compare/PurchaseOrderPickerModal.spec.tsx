@@ -188,6 +188,109 @@ describe('PurchaseOrderPickerModal', () => {
     expect(props.onSelect).not.toHaveBeenCalled()
   })
 
+  it('默认只列与当前行材质/规格/长度一致的明细行, 开关放行其他规格', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      {
+        ...records[0],
+        purchaseOrderItemId: '301',
+        orderNo: 'PO-301',
+        material: 'HRB400E',
+        spec: '16',
+        length: '9米',
+      },
+      {
+        ...records[0],
+        purchaseOrderItemId: '302',
+        orderNo: 'PO-302',
+        material: 'HRB400E',
+        spec: '12',
+        length: '9米',
+      },
+      {
+        ...records[0],
+        purchaseOrderItemId: '303',
+        orderNo: 'PO-303',
+        material: 'HRB400E',
+        spec: '16',
+        length: '12米',
+      },
+      {
+        ...records[0],
+        purchaseOrderItemId: '304',
+        orderNo: 'PO-304',
+        material: 'HRB400',
+      },
+    ])
+    // 当前行: HRB400E / 16 / 9米
+    render({ matchVariety: { material: 'HRB400E', spec: 16, length: '9米' } })
+    await flush()
+    await flush()
+
+    const textOf = () => tableRows().map((row) => row.textContent ?? '')
+    expect(textOf().some((text) => text.includes('PO-301'))).toBe(true)
+    expect(textOf().some((text) => text.includes('PO-302'))).toBe(false)
+    expect(textOf().some((text) => text.includes('PO-303'))).toBe(false)
+    expect(textOf().some((text) => text.includes('PO-304'))).toBe(false)
+
+    // 开关文案带出被筛掉的条数, 勾选后其他规格的行可以放行
+    const toggles = [
+      ...document.querySelectorAll<HTMLInputElement>(
+        '.price-compare-purchase-order-picker-toggle input[type="checkbox"]',
+      ),
+    ]
+    const varietyToggle = toggles.find((input) =>
+      (input.closest('label')?.textContent ?? '').includes('材质/规格不一致'),
+    )
+    expect(varietyToggle).toBeTruthy()
+    act(() => {
+      varietyToggle?.click()
+    })
+    await flush()
+    const after = textOf()
+    expect(after.some((text) => text.includes('PO-302'))).toBe(true)
+    expect(after.some((text) => text.includes('PO-303'))).toBe(true)
+    expect(after.some((text) => text.includes('PO-304'))).toBe(true)
+  })
+
+  it('未传 matchVariety 时不筛选(保持原行为)', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      { ...records[0], purchaseOrderItemId: '301', orderNo: 'PO-301' },
+      {
+        ...records[0],
+        purchaseOrderItemId: '302',
+        orderNo: 'PO-302',
+        spec: '12',
+      },
+    ])
+    render()
+    await flush()
+    await flush()
+    const texts = tableRows().map((row) => row.textContent ?? '')
+    expect(texts.some((text) => text.includes('PO-301'))).toBe(true)
+    expect(texts.some((text) => text.includes('PO-302'))).toBe(true)
+  })
+
+  it('matchVariety 值为空或占位符「-」的项不参与筛选', async () => {
+    // 盘螺这类订单行没有长度: 长度目标为空时不应把可选项全部筛掉
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      {
+        ...records[0],
+        purchaseOrderItemId: '301',
+        orderNo: 'PO-301',
+        material: 'HRB400',
+        spec: '8',
+        length: '-',
+      },
+    ])
+    render({
+      matchVariety: { material: 'HRB400', spec: 8, length: '-' },
+    })
+    await flush()
+    await flush()
+    const texts = tableRows().map((row) => row.textContent ?? '')
+    expect(texts.some((text) => text.includes('PO-301'))).toBe(true)
+  })
+
   it('全部行都已关联完时给出可操作的空态提示(而非"暂无采购订单")', async () => {
     api.fetchPurchaseOrderTonnages.mockResolvedValue([doneRecord])
     render()
