@@ -10,6 +10,7 @@ import {
   removeRightTabsFrom,
   removeTabFrom,
   sanitizePersistedTabs,
+  useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
 import { getLayoutTabsStorageKey } from '@/utils/storage'
 
@@ -23,6 +24,29 @@ function makeTab(overrides: Partial<LayoutTab> = {}): LayoutTab {
     reloadKey: 0,
     ...overrides,
   }
+}
+
+/**
+ * 取自 page-registry 的真实已注册路径：`sanitizePersistedTabs` 会按路径白名单过滤，
+ * 用虚构的 `/page-N` 会被整个丢掉，测不到截断行为。
+ */
+const KNOWN_PATHS = [
+  '/material',
+  '/supplier',
+  '/customer',
+  '/project',
+  '/carrier',
+  '/warehouse',
+  '/purchase-order',
+  '/purchase-inbound',
+  '/sales-order',
+  '/price-compare',
+  '/receipt',
+  '/payment',
+] as const
+
+function knownPath(index: number): string {
+  return KNOWN_PATHS[index % KNOWN_PATHS.length]
 }
 
 describe('openTabIn', () => {
@@ -270,6 +294,155 @@ describe('sanitizePersistedTabs', () => {
     const result = sanitizePersistedTabs(raw)
     expect(result.length).toBeLessThanOrEqual(MAX_LAYOUT_TABS)
     expect(result[0]?.pathname).toBe(DASHBOARD_TAB_PATH)
+  })
+
+  it('超限恢复按「不可丢弃者优先」截断: 先丢最早的未标记标签', () => {
+    // 工作台排在末尾(真实持久化里它可能被 unshift 过), 11 个业务页里有 2 个持有未保存
+    // 编辑会话而在淘汰中幸存: 它们排在尾部 —— 直接 slice(0, MAX) 恰好会把它们截掉。
+    const raw = [
+      ...Array.from({ length: MAX_LAYOUT_TABS + 1 }, (_, index) => ({
+        id: `p${index}`,
+        pathname: knownPath(index),
+        search: '',
+        pinned: false,
+        protectedFromEviction: index >= MAX_LAYOUT_TABS - 2,
+      })),
+      { id: 'd', pathname: '/dashboard', search: '', pinned: true },
+    ]
+
+    const result = sanitizePersistedTabs(raw)
+    const ids = result.map((tab) => tab.id)
+
+    // 剩几条: 工作台 + 上限内的业务页
+    expect(result).toHaveLength(MAX_LAYOUT_TABS)
+    expect(result[0]?.pathname).toBe(DASHBOARD_TAB_PATH)
+    // 保留的是哪些: 两个受保护标签必须还在, 让位的是最早的未保护标签
+    expect(ids).toContain('p10')
+    expect(ids).toContain('p9')
+    expect(ids).not.toContain('p0')
+    expect(ids).not.toContain('p1')
+    // 其余标签保持原有相对顺序(恢复不重排用户心智中的打开顺序)
+    expect(ids).toEqual([
+      'd',
+      'p2',
+      'p3',
+      'p4',
+      'p5',
+      'p6',
+      'p7',
+      'p8',
+      'p9',
+      'p10',
+    ])
+  })
+
+  it('未标记标签足够让位时不动受保护标签', () => {
+    const raw = [
+      { id: 'd', pathname: '/dashboard', search: '', pinned: true },
+      ...Array.from({ length: MAX_LAYOUT_TABS - 1 }, (_, index) => ({
+        id: `plain-${index}`,
+        pathname: knownPath(index),
+        search: '',
+        pinned: false,
+      })),
+      {
+        id: 'dirty',
+        pathname: knownPath(11),
+        search: '',
+        pinned: false,
+        protectedFromEviction: true,
+      },
+    ]
+
+    const result = sanitizePersistedTabs(raw)
+
+    expect(result).toHaveLength(MAX_LAYOUT_TABS)
+    expect(result.map((tab) => tab.id)).toContain('dirty')
+    expect(result.map((tab) => tab.id)).not.toContain('plain-0')
+  })
+})
+
+describe('受保护标签的重载恢复', () => {
+  it('候选全受保护而超限保存后, 重载恢复仍保留受保护标签且不超上限', () => {
+    const values = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    })
+    vi.useFakeTimers()
+    try {
+      useLayoutTabsStore.setState({
+        tabs: [
+          makeTab({
+            id: 'dashboard',
+            pathname: DASHBOARD_TAB_PATH,
+            pinned: true,
+          }),
+          ...Array.from({ length: MAX_LAYOUT_TABS }, (_, index) =>
+            makeTab({ id: `p${index}`, pathname: knownPath(index) }),
+          ),
+        ],
+        activeTabId: 'dashboard',
+      })
+
+      // 新页与 10 个业务页: 候选（p0..p9）全部持有未保存编辑会话 → 淘汰停止, 刻意超限
+      useLayoutTabsStore
+        .getState()
+        .openTab(
+          { pathname: knownPath(11) },
+          { isProtected: (tabId) => tabId.startsWith('p') },
+        )
+      const tabs = useLayoutTabsStore.getState().tabs
+      expect(tabs).toHaveLength(MAX_LAYOUT_TABS + 2)
+      expect(
+        tabs.filter((tab) => tab.protectedFromEviction).map((tab) => tab.id),
+      ).toEqual(Array.from({ length: MAX_LAYOUT_TABS }, (_, i) => `p${i}`))
+
+      // 防抖落盘（未限制长度: 上层要保留受保护标签的标记）
+      vi.runAllTimers()
+      const raw = values.get(getLayoutTabsStorageKey('anonymous'))
+      expect(raw, '未写入持久化数据').toBeTruthy()
+      const persisted = JSON.parse(String(raw)) as {
+        tabs: Array<{ id: string }>
+      }
+      expect(persisted.tabs).toHaveLength(MAX_LAYOUT_TABS + 2)
+
+      // 模拟刷新: store 回到初始态后按持久化数据恢复（此时编辑器会话已全部消失）
+      useLayoutTabsStore.setState({
+        tabs: [
+          makeTab({
+            id: 'fresh-dashboard',
+            pathname: DASHBOARD_TAB_PATH,
+            pinned: true,
+          }),
+        ],
+        activeTabId: null,
+      })
+      useLayoutTabsStore.getState().hydrateForUser('anonymous')
+      const restored = useLayoutTabsStore.getState().tabs
+
+      // 重载后还剩几条
+      expect(restored).toHaveLength(MAX_LAYOUT_TABS)
+      // 保留的是哪些: 尾部那个刚被保护的 p9 不能消失（旧实现按顺序截断会丢掉它）
+      expect(restored.map((tab) => tab.id)).toContain('p9')
+      expect(restored.map((tab) => tab.id)).not.toContain('p0')
+      expect(restored.some((tab) => tab.pathname === knownPath(11))).toBe(false)
+      expect(restored[0]?.pathname).toBe(DASHBOARD_TAB_PATH)
+    } finally {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+      useLayoutTabsStore.setState({
+        tabs: [
+          makeTab({
+            id: 'dashboard',
+            pathname: DASHBOARD_TAB_PATH,
+            pinned: true,
+          }),
+        ],
+        activeTabId: null,
+      })
+    }
   })
 })
 

@@ -16,6 +16,13 @@ export interface LayoutTab {
   search: string
   /** 工作台为 true，不可关闭、不可淘汰 */
   pinned: boolean
+  /**
+   * 曾因持有未保存编辑会话（`isProtected`）在超限淘汰中幸存。
+   *
+   * <p>**需要持久化**：受保护时 store 刻意允许暂时超限，刷新后若按「保留最早 N 个」截断，
+   * 这些刚被保护的标签会静默消失。恢复阶段据此把它们排在未标记标签之前保留。</p>
+   */
+  protectedFromEviction?: boolean
   /** 会话内是否已挂载过（惰性挂载标记），不持久化 */
   mountedOnce: boolean
   /** 「刷新当前页」计数，变化时重建子 Router，不持久化 */
@@ -25,7 +32,7 @@ export interface LayoutTab {
 /** 持久化到 localStorage 的字段子集 */
 export type PersistedTab = Pick<
   LayoutTab,
-  'id' | 'pathname' | 'search' | 'pinned'
+  'id' | 'pathname' | 'search' | 'pinned' | 'protectedFromEviction'
 >
 
 export interface OpenTabTarget {
@@ -118,6 +125,7 @@ function createTab(target: OpenTabTarget): LayoutTab {
     pathname,
     search: normalizeSearch(target.search),
     pinned: pathname === DASHBOARD_TAB_PATH,
+    protectedFromEviction: false,
     mountedOnce: false,
     reloadKey: 0,
   }
@@ -130,6 +138,10 @@ function createTab(target: OpenTabTarget): LayoutTab {
  * 停止淘汰并允许暂时超限——宁可暂时超过 {@link MAX_LAYOUT_TABS}，也不能静默丢弃用户
  * 尚未保存的内容。</p>
  *
+ * <p>真正发生超限时，同步给所有仍受保护的标签打上 {@link LayoutTab.protectedFromEviction}
+ * 标记：若候选全被保护，列表会带着超过上限的长度被持久化，恢复阶段必须据此优先保留它们，
+ * 否则 `slice(0, MAX)` 会把刚被保护的标签静默截掉。</p>
+ *
  * @returns 淘汰后的 Tab 列表，以及被淘汰的 Tab id；调用方须据此回收子 Router 与编辑器会话
  */
 function evictOverflow(
@@ -139,6 +151,13 @@ function evictOverflow(
 ): { tabs: LayoutTab[]; evictedIds: string[] } {
   const evictedIds: string[] = []
   let next = tabs
+  if (next.length > MAX_LAYOUT_TABS && isProtected) {
+    next = next.map((tab) =>
+      !tab.pinned && !tab.protectedFromEviction && isProtected(tab.id)
+        ? { ...tab, protectedFromEviction: true }
+        : tab,
+    )
+  }
   while (next.length > MAX_LAYOUT_TABS) {
     const evictIndex = next.findIndex(
       (tab, index) =>
@@ -243,19 +262,50 @@ export function removeAllTabsFrom(tabs: LayoutTab[]): LayoutTab[] {
   return tabs.filter((tab) => tab.pinned)
 }
 
-/** 清洗持久化数据：白名单过滤未知路径、去重、保证工作台在 index 0、截断上限 */
+/**
+ * 从最早的匹配项开始丢弃，最多 `count` 个，返回剩余列表与实际丢弃数量。
+ * 保留其余项的原有相对顺序（标签顺序即用户心智中的打开顺序）。
+ */
+function dropOldest(
+  tabs: LayoutTab[],
+  count: number,
+  shouldDrop: (tab: LayoutTab) => boolean,
+): { tabs: LayoutTab[]; dropped: number } {
+  if (count <= 0) {
+    return { tabs, dropped: 0 }
+  }
+  const kept: LayoutTab[] = []
+  let remaining = count
+  for (const tab of tabs) {
+    if (remaining > 0 && shouldDrop(tab)) {
+      remaining -= 1
+      continue
+    }
+    kept.push(tab)
+  }
+  return { tabs: kept, dropped: count - remaining }
+}
+
+/**
+ * 清洗持久化数据：白名单过滤未知路径、去重、保证工作台在 index 0、截断上限。
+ *
+ * <p>截断按「不可丢弃者优先」：先丢最早的**未**标记 {@link LayoutTab.protectedFromEviction}
+ * 的标签，仍然超限时才丢最早的受保护标签。受保护的标签是持有未保存编辑会话、store 刻意
+ * 允许超限保存的那些，直接 `slice(0, MAX)` 会把它们（通常排在末尾）静默截掉。</p>
+ *
+ * <p>工作台占一个名额（`pinned` 永不被丢），因此其余标签的容量是 `MAX_LAYOUT_TABS - 1`。</p>
+ */
 export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
-  const result: LayoutTab[] = []
+  const candidates: LayoutTab[] = []
   if (Array.isArray(value)) {
     const seenPaths = new Set<string>()
     for (const item of value) {
-      if (result.length >= MAX_LAYOUT_TABS) break
       if (!item || typeof item !== 'object' || Array.isArray(item)) continue
       const candidate = item as Partial<PersistedTab>
       const pathname = normalizeTabPathname(candidate.pathname)
       if (!isKnownPagePath(pathname) || seenPaths.has(pathname)) continue
       seenPaths.add(pathname)
-      result.push({
+      candidates.push({
         id:
           typeof candidate.id === 'string' && candidate.id
             ? candidate.id
@@ -264,22 +314,34 @@ export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
         search: normalizeSearch(candidate.search),
         // 钉选是工作台的固定布局属性，不信任持久化数据中的任意路径标记。
         pinned: pathname === DASHBOARD_TAB_PATH,
+        protectedFromEviction: candidate.protectedFromEviction === true,
         mountedOnce: false,
         reloadKey: 0,
       })
     }
   }
 
-  const dashboardIndex = result.findIndex(
-    (tab) => tab.pathname === DASHBOARD_TAB_PATH,
-  )
-  if (dashboardIndex < 0) {
-    result.unshift(createTab({ pathname: DASHBOARD_TAB_PATH }))
-  } else if (dashboardIndex > 0) {
-    const [dashboardTab] = result.splice(dashboardIndex, 1)
-    result.unshift(dashboardTab)
+  const dashboardTab =
+    candidates.find((tab) => tab.pathname === DASHBOARD_TAB_PATH) ??
+    createTab({ pathname: DASHBOARD_TAB_PATH })
+  let rest = candidates.filter((tab) => tab.pathname !== DASHBOARD_TAB_PATH)
+
+  const capacity = Math.max(0, MAX_LAYOUT_TABS - 1)
+  const overflow = rest.length - capacity
+  if (overflow > 0) {
+    const discardableFirst = dropOldest(
+      rest,
+      overflow,
+      (tab) => tab.protectedFromEviction !== true,
+    )
+    rest = discardableFirst.tabs
+    const stillOver = overflow - discardableFirst.dropped
+    if (stillOver > 0) {
+      rest = dropOldest(rest, stillOver, () => true).tabs
+    }
   }
-  return result.slice(0, MAX_LAYOUT_TABS)
+
+  return [dashboardTab, ...rest]
 }
 
 interface PersistedTabsPayload {
@@ -338,12 +400,15 @@ export function clearPersistedLayoutTabs(userId?: string): void {
 function persistTabs(): void {
   const { tabs, activeTabId } = useLayoutTabsStore.getState()
   const payload: PersistedTabsPayload = {
-    tabs: tabs.map(({ id, pathname, search, pinned }) => ({
-      id,
-      pathname,
-      search,
-      pinned,
-    })),
+    tabs: tabs.map(
+      ({ id, pathname, search, pinned, protectedFromEviction }) => ({
+        id,
+        pathname,
+        search,
+        pinned,
+        protectedFromEviction,
+      }),
+    ),
     activeTabId,
   }
   try {
