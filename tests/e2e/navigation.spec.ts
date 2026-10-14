@@ -1,6 +1,17 @@
 import { expect } from '@playwright/test'
-import { gotoRoute, loginAsE2eUser } from './support/business-e2e'
+import {
+  expectGridTable,
+  expectModuleHeading,
+  gotoRoute,
+  loginAsE2eUser,
+} from './support/business-e2e'
 import { test } from './support/test'
+
+/** 与 src/stores/layoutTabsStore.ts 的 MAX_LAYOUT_TABS 保持一致。 */
+const MAX_LAYOUT_TABS = 10
+
+/** 标签页持久化存储键前缀（见 src/constants/storage.ts）。 */
+const LAYOUT_TABS_STORAGE_PREFIX = 'aries-layout-tabs:'
 
 interface RouteCase {
   path: string
@@ -270,5 +281,215 @@ test.describe('多标签页无障碍契约', () => {
     // 该跳转会使焦点回落。已验证自实现焦点归还与依赖框架两种路径均无法稳定落地，
     // 故此处不断言焦点位置，避免留下必然失败的用例。APG 中 Delete 为 Optional，
     // 且右键菜单已提供等价的关闭入口。
+  })
+})
+
+test.describe('批量关闭取消路径与标签持久化恢复', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsE2eUser(page)
+  })
+
+  /**
+   * P2-21 的真实浏览器守护：确认框点「取消」必须什么都不发生。
+   *
+   * <p>这是「取消后不切走当前标签、不多推历史」唯一真实守护 —— LayoutTabBar 的单测里
+   * 不渲染 useTabRouteReconciliation，多推历史那条链路只有整页 e2e 能覆盖。</p>
+   *
+   * <p>为什么用「全部关闭」而不是「关闭其他」：右键一个**非激活**标签后，菜单关闭会把焦点
+   * 归还给该标签，而 antd Tabs 聚焦即激活，于是无论如何都会切过去 —— 这条既有行为会掩盖
+   * 「取消不得先 activateTab」的可观测差异（实测：修复后的实现点「关闭其他」再取消，地址栏
+   * 同样会变成被右键标签）。「全部关闭」在**激活标签**上触发，焦点归还目标是它自己（无差异），
+   * 而修复前后唯一差异恰好是「确认前是否先切到工作台」，因此能真实区分对错。
+   * 单测里用「关闭其他」在弹框时刻采样 activeTabId，覆盖同一代码路径的另一半。</p>
+   */
+  test('「全部关闭」确认框取消后不切走当前标签、地址与历史长度不变', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    // 用销售订单页做脏会话载体：它的编辑器走 ModuleEditorWorkspace，会向
+    // editorSessionStore 注册会话；主数据页的编辑浮层不注册会话（关闭时不会弹确认框）。
+    await gotoRoute(page, '/sales-order')
+    await expectModuleHeading(page, '销售订单')
+    await expectGridTable(page)
+    const tabLabel = (title: string) =>
+      page.locator('.leo-tabbar-label').filter({ hasText: title }).first()
+
+    // 1) 先经顶部菜单在 SPA 内多开一个「供应商资料」标签（整页跳转会丢掉待会儿的脏会话）
+    await page
+      .getByRole('menuitem', { name: '基础数据', exact: true })
+      .first()
+      .click()
+    const supplierMenuItem = page
+      .locator(
+        '.ant-menu-submenu-popup:visible .ant-menu-item, .ant-menu-popup:visible .ant-menu-item',
+      )
+      .filter({ hasText: '供应商资料' })
+      .first()
+    await expect(supplierMenuItem).toBeVisible({ timeout: 15_000 })
+    await supplierMenuItem.click()
+    await expectModuleHeading(page, '供应商资料')
+    await expectGridTable(page)
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    // 2) 切回销售订单，打开「新增」编辑器并改一个字段 → 该标签持有未保存会话
+    await tabLabel('销售订单').click()
+    await expectModuleHeading(page, '销售订单')
+    await page
+      .getByRole('button', { name: /新\s*增|新\s*建/ })
+      .first()
+      .click()
+    const overlay = page.locator('.workspace-overlay-panel:visible').last()
+    await expect(overlay).toBeVisible({ timeout: 30_000 })
+    const remark = overlay
+      .locator('input#module-form-remark:visible, input#remark:visible')
+      .first()
+    await expect(remark, '销售订单编辑器应有备注输入框').toBeVisible({
+      timeout: 15_000,
+    })
+    await remark.fill(`E2E-未保存-${Date.now()}`)
+    await remark.blur()
+
+    // 3) 切到供应商资料（让它在确认框触发时是激活标签），再取基线
+    await tabLabel('供应商资料').click()
+    await expectModuleHeading(page, '供应商资料')
+    await page.waitForTimeout(300)
+    const urlBefore = page.url()
+    const historyBefore = await page.evaluate(() => window.history.length)
+
+    // 4) 在激活的供应商资料标签上右键 →「全部关闭」：待关闭集合含持有未保存会话的销售订单。
+    //    浮层遮罩只覆盖内容区，页签在其容器之外，仍可右键。
+    await tabLabel('供应商资料').click({ button: 'right' })
+    const closeAll = page
+      .locator('.ant-dropdown-menu-item')
+      .filter({ hasText: '全部关闭' })
+      .first()
+    await expect(closeAll).toBeVisible({ timeout: 15_000 })
+    await closeAll.click()
+
+    // 5) 存在未保存会话 → 弹确认框（这同时是「会话确实脏」的前置校验）；点「取消」。
+    const confirmModal = page.locator('.ant-modal:visible').first()
+    await expect(
+      confirmModal,
+      '存在未保存会话时必须弹确认框，而不是直接关闭全部标签',
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(confirmModal).toContainText('存在未保存的修改')
+    await confirmModal
+      .getByRole('button', { name: /取\s*消/ })
+      .first()
+      .click()
+    await expect(confirmModal).toBeHidden({ timeout: 15_000 })
+
+    // 6) 取消后：地址、历史长度、激活标签、标签数量都必须原样。
+    //    修复前 activateTab(工作台) 在弹框之前同步执行，这里会变成 /dashboard 且历史 +1。
+    await page.waitForTimeout(800)
+    expect(page.url(), '取消后地址栏必须停在原标签').toBe(urlBefore)
+    expect(
+      await page.evaluate(() => window.history.length),
+      '取消不得多推浏览器历史',
+    ).toBe(historyBefore)
+    await expect(
+      page.locator('.ant-tabs-tab-active .leo-tabbar-label'),
+    ).toHaveText('供应商资料')
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    await assertNoFatalUiErrors()
+  })
+
+  /**
+   * P2-8 的浏览器层恢复守护：持久化清单超过上限且尾部为「不可丢弃」标签时，
+   * 整页刷新必须按「不可丢弃者优先」截断，而不是直接丢尾部。
+   *
+   * <p>浏览器里要自然制造 10 个同时持有未保存会话的标签成本极高（每个标签都要开编辑器
+   * 并改字段），因此这里直接按 store 的持久化契约注入超限清单，验证真实的
+   * `hydrateForUser → sanitizePersistedTabs` 恢复路径。旧实现按顺序 slice 会丢掉
+   * 排在最末的两个受保护标签，本用例会变红。</p>
+   */
+  test('刷新恢复超限清单时优先保留受保护标签', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    await gotoRoute(page, '/dashboard')
+    await page.waitForFunction(
+      (prefix) => {
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index)
+          if (key?.startsWith(prefix)) return true
+        }
+        return false
+      },
+      LAYOUT_TABS_STORAGE_PREFIX,
+      { timeout: 30_000 },
+    )
+    const storageKey = await page.evaluate((prefix) => {
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index)
+        if (key?.startsWith(prefix)) return key
+      }
+      return null
+    }, LAYOUT_TABS_STORAGE_PREFIX)
+    expect(storageKey, '未找到标签页持久化键').not.toBeNull()
+
+    // 工作台 + 11 个业务页 = 12 > 上限 10；尾部两个标记为受保护（曾持有未保存会话）
+    const dashboardTabId = 'e2e-dashboard'
+    const businessPaths = [
+      '/material',
+      '/supplier',
+      '/customer',
+      '/project',
+      '/carrier',
+      '/warehouse',
+      '/purchase-order',
+      '/purchase-inbound',
+      '/sales-order',
+      '/material-categories',
+      '/price-compare',
+    ]
+    const tabs = [
+      {
+        id: dashboardTabId,
+        pathname: '/dashboard',
+        search: '',
+        pinned: true,
+        protectedFromEviction: false,
+      },
+      ...businessPaths.map((pathname, index) => ({
+        id: `e2e-p${index}`,
+        pathname,
+        search: '',
+        pinned: false,
+        // 尾部两个 = 「不可丢弃」：旧实现 slice(0, MAX) 恰好把它们截掉
+        protectedFromEviction: index >= businessPaths.length - 2,
+      })),
+    ]
+
+    // 用 initScript 在应用启动前写入：避免当前会话的防抖持久化把注入清单覆盖掉
+    await page.addInitScript(
+      ({ key, value }) => {
+        try {
+          localStorage.setItem(key, value)
+        } catch {
+          // 忽略存储不可用
+        }
+      },
+      {
+        key: storageKey as string,
+        value: JSON.stringify({ tabs, activeTabId: dashboardTabId }),
+      },
+    )
+    await page.reload({ waitUntil: 'domcontentloaded' })
+
+    const labels = page.locator('.leo-tabbar-label')
+    await expect(labels.first()).toBeVisible({ timeout: 30_000 })
+
+    // 剩几条：工作台 + 上限内的 9 个业务页
+    await expect(labels).toHaveCount(MAX_LAYOUT_TABS)
+    // 保留的是哪些：两个受保护标签（商品类别 / 报单比价）必须还在
+    await expect(labels.filter({ hasText: '商品类别' })).toHaveCount(1)
+    await expect(labels.filter({ hasText: '报单比价' })).toHaveCount(1)
+    // 最早的未标记标签（商品资料 / 供应商资料）让位被截断
+    await expect(labels.filter({ hasText: '商品资料' })).toHaveCount(0)
+    await expect(labels.filter({ hasText: '供应商资料' })).toHaveCount(0)
+
+    await assertNoFatalUiErrors()
   })
 })
