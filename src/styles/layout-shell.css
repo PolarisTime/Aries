@@ -2199,7 +2199,19 @@
 .module-filter-quick-row,
 .module-filter-chip-row {
   max-width: 100%;
-  /* 筛选行与操作行之间 16px: 2px 会让两行看起来黏在一起 */
+}
+
+/*
+ * 末行筛选控件不再自带下边距：筛选区与命令区之间的留白由容器
+ * `.module-filter-toolbar` 的 padding-bottom 统一给出。
+ *
+ * 原先 :2175（容器 padding-bottom）与 :2200（本行 margin-bottom）各写了 16px 且注释是同一个
+ * 意图，于是「筛选栏 → 表格」被算了两遍，实测 37px；边界留白挂在最后一行控件上还会带来
+ * 「再加一行筛选就又多一份」的隐患。
+ * `.module-filter-quick-row` 已无渲染点（快捷筛选改在 chip row 内联渲染），保留选择器不动。
+ */
+.module-filter-quick-row {
+  /* 仅用于「快捷筛选行 → 下一行」的行间留白；末行边界留白见容器。 */
   margin-bottom: var(--space-md);
 }
 
