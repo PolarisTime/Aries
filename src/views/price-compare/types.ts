@@ -62,8 +62,18 @@ export type PriceRow = {
   purchaseOrderId?: string
   /** 关联采购订单号快照(保存时写入; 供展示兜底)。 */
   purchaseOrderNo?: string
-  /** 关联采购订单明细行标识(按规格扣减已开吨位)。 */
+  /** 关联采购订单明细行标识(按规格扣减已开吨位); 等于 purchaseOrderLinks[0]。 */
   purchaseOrderItemId?: string
+  /** 多行关联: 一行可挂多张采购订单明细行, 每条带本次开出吨位。 */
+  purchaseOrderLinks?: PriceRowPurchaseOrderLink[]
+}
+
+/** 行级关联: allocatedTon 是本次在该订单明细行开出的吨位。 */
+export type PriceRowPurchaseOrderLink = {
+  purchaseOrderId: string
+  purchaseOrderNo?: string
+  purchaseOrderItemId: string
+  allocatedTon: number
 }
 
 export type SheetInput = {

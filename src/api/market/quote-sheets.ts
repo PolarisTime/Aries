@@ -51,6 +51,19 @@ const itemSchema = z.looseObject({
   purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
   purchaseOrderNo: z.string().nullable().optional(),
   purchaseOrderItemId: z.union([z.number(), z.string()]).nullable().optional(),
+  /** 多行关联: 一行可挂多张采购订单明细行, 每条带本次开出吨位。 */
+  purchaseOrderLinks: z
+    .array(
+      z.looseObject({
+        purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
+        purchaseOrderNo: z.string().nullable().optional(),
+        purchaseOrderItemId: z.union([z.number(), z.string()]).nullable().optional(),
+        allocatedTon: z.union([z.number(), z.string()]).nullable().optional(),
+        sortNo: z.union([z.number(), z.string()]).nullable().optional(),
+      }),
+    )
+    .nullable()
+    .optional(),
   prices: z.array(priceSchema).nullable().optional(),
 })
 
@@ -92,6 +105,61 @@ export type QuoteSheetPriceRecord = {
   supplierName?: string
 }
 
+/** 行级关联的采购订单明细行: allocatedTon 是本次在该明细行开出的吨位。 */
+export type QuoteSheetItemPurchaseOrderRecord = {
+  purchaseOrderId: EntityId
+  purchaseOrderNo?: string
+  purchaseOrderItemId: EntityId
+  allocatedTon: number
+}
+
+/**
+ * 归一多行关联: 服务端返回列表时以列表为准; 只返回旧单值三列时合成一条, 分配吨位取本行吨位
+ * (等价于"这一行全部开在这张明细行上")。订单级关联(未选明细行)不产生关联行。
+ */
+function normalizePurchaseOrderLinks(
+  links: readonly unknown[] | null | undefined,
+  purchaseOrderId: EntityId | undefined,
+  purchaseOrderNo: unknown,
+  purchaseOrderItemId: EntityId | undefined,
+  ton: number | undefined,
+  path: string,
+): QuoteSheetItemPurchaseOrderRecord[] {
+  const rows = (links ?? []).flatMap((raw, index) => {
+    if (raw === null || typeof raw !== 'object') return []
+    const link = raw as Record<string, unknown>
+    const orderId = parseOptionalEntityId(
+      link.purchaseOrderId,
+      `${path}[${index}].purchaseOrderId`,
+    )
+    const itemId = parseOptionalEntityId(
+      link.purchaseOrderItemId,
+      `${path}[${index}].purchaseOrderItemId`,
+    )
+    if (!orderId || !itemId) return []
+    const orderNo = asString(link.purchaseOrderNo).trim()
+    return [
+      {
+        purchaseOrderId: orderId,
+        ...(orderNo ? { purchaseOrderNo: orderNo } : {}),
+        purchaseOrderItemId: itemId,
+        allocatedTon: toOptionalNumber(link.allocatedTon) ?? 0,
+      },
+    ]
+  })
+  if (rows.length > 0) return rows
+  if (!purchaseOrderId || !purchaseOrderItemId) return []
+  const orderNo = asString(purchaseOrderNo).trim()
+  return [
+    {
+      purchaseOrderId,
+      ...(orderNo ? { purchaseOrderNo: orderNo } : {}),
+      purchaseOrderItemId,
+      allocatedTon: ton ?? 0,
+    },
+  ]
+}
+
 export type QuoteSheetItemRecord = {
   id: EntityId
   rowType?: 'PRODUCT' | 'SEPARATOR'
@@ -107,8 +175,10 @@ export type QuoteSheetItemRecord = {
   purchased: boolean
   purchaseOrderId?: EntityId
   purchaseOrderNo?: string
-  /** 关联采购订单明细行标识(按规格扣减)。 */
+  /** 关联采购订单明细行标识(按规格扣减); 等于 purchaseOrderLinks[0]。 */
   purchaseOrderItemId?: EntityId
+  /** 多行关联(以服务端为准; 单值三列是其第一条的镜像); 归一化后必定存在。 */
+  purchaseOrderLinks?: QuoteSheetItemPurchaseOrderRecord[]
   prices: QuoteSheetPriceRecord[]
 }
 
@@ -186,6 +256,12 @@ export type QuoteSheetItemPayload = {
   locked?: boolean
   purchaseOrderId?: EntityId
   purchaseOrderItemId?: EntityId
+  /** 多行关联: 整组替换; 不带时服务端按单值三列合成一条。 */
+  purchaseOrderLinks?: {
+    purchaseOrderId: EntityId
+    purchaseOrderItemId: EntityId
+    allocatedTon?: number
+  }[]
   prices: {
     brandName: string
     spotPrice?: number
@@ -267,6 +343,14 @@ function normalizeItem(
       ? { purchaseOrderNo: item.purchaseOrderNo }
       : {}),
     ...(purchaseOrderItemId ? { purchaseOrderItemId } : {}),
+    purchaseOrderLinks: normalizePurchaseOrderLinks(
+      item.purchaseOrderLinks,
+      purchaseOrderId,
+      item.purchaseOrderNo,
+      purchaseOrderItemId,
+      toOptionalNumber(item.ton),
+      `${path}.purchaseOrderLinks`,
+    ),
     prices: (item.prices ?? []).map((price, priceIndex) =>
       normalizePrice(price, priceIndex),
     ),

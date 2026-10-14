@@ -747,7 +747,20 @@ export function isPurchasedRow(row: PriceRow): boolean {
 }
 
 /**
- * 该行是否已被所关联的采购订单明细行**覆盖**(订货量 ≥ 本行报单吨位)。
+ * 该行关联的采购订单明细行 id(去重)。
+ *
+ * <p>多行关联优先; 没有列表时回退到单值列 —— 历史数据与旧请求都只有单值三列。</p>
+ */
+export function linkedPurchaseOrderItemIds(row: PriceRow): string[] {
+  const ids = (row.purchaseOrderLinks ?? [])
+    .map((link) => link.purchaseOrderItemId)
+    .filter((id) => Boolean(id))
+  if (ids.length > 0) return [...new Set(ids)]
+  return row.purchaseOrderItemId ? [row.purchaseOrderItemId] : []
+}
+
+/**
+ * 该行是否已被所关联的采购订单明细行**覆盖**(订货量合计 ≥ 本行报单吨位)。
  *
  * <p>遮蔽品牌价格的前提是"这条明细行的量已经被订单锁定"。只关联一张订货量不足的明细行
  * 不构成覆盖 —— 实测 130 吨的报单挂到一条订货 10 吨的明细行上, 整个品牌价格区就被遮掉,
@@ -757,13 +770,17 @@ export function isOrderTonnageCovered(
   row: PriceRow,
   options: readonly PurchaseOrderTonnageRecord[],
 ): boolean {
-  if (!row.purchaseOrderItemId) return false
-  const record = options.find(
-    (item) => item.purchaseOrderItemId === row.purchaseOrderItemId,
-  )
-  if (!record) return false
+  const itemIds = linkedPurchaseOrderItemIds(row)
+  if (itemIds.length === 0) return false
   const reported = row.ton ?? 0
-  return reported > 0 && record.orderedWeight >= reported
+  if (!(reported > 0)) return false
+  // 多行关联: 累计各关联明细行的订货量, 够覆盖本行报单吨位才算"已被订单锁定"
+  let ordered = 0
+  for (const itemId of itemIds) {
+    const record = options.find((item) => item.purchaseOrderItemId === itemId)
+    if (record) ordered += record.orderedWeight
+  }
+  return ordered >= reported
 }
 
 /**
@@ -775,13 +792,13 @@ export function sumTonByPurchaseOrderItem(
 ): Map<string, number> {
   const totals = new Map<string, number>()
   for (const row of rows) {
-    if (isSeparatorRow(row) || !row.purchaseOrderItemId) continue
+    if (isSeparatorRow(row)) continue
     const ton = row.ton ?? 0
     if (!Number.isFinite(ton) || ton <= 0) continue
-    totals.set(
-      row.purchaseOrderItemId,
-      (totals.get(row.purchaseOrderItemId) ?? 0) + ton,
-    )
+    // 多行关联: 该行吨位对每一张已关联明细行都计入一次(与服务端汇总口径一致)
+    for (const itemId of linkedPurchaseOrderItemIds(row)) {
+      totals.set(itemId, (totals.get(itemId) ?? 0) + ton)
+    }
   }
   return totals
 }

@@ -403,6 +403,16 @@ function buildItemPayload(
     ...(row.purchaseOrderItemId
       ? { purchaseOrderItemId: row.purchaseOrderItemId }
       : {}),
+    // 多行关联整组下发; 服务端按第一条镜像旧三列
+    ...(row.purchaseOrderLinks?.length
+      ? {
+          purchaseOrderLinks: row.purchaseOrderLinks.map((link) => ({
+            purchaseOrderId: link.purchaseOrderId,
+            purchaseOrderItemId: link.purchaseOrderItemId,
+            allocatedTon: link.allocatedTon,
+          })),
+        }
+      : {}),
     prices,
   }
 }
@@ -430,6 +440,12 @@ function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     locked: Boolean(row.locked),
     purchaseOrderId: row.purchaseOrderId ?? null,
     purchaseOrderItemId: row.purchaseOrderItemId ?? null,
+    // 关联集合参与指纹: 增删关联或改分配吨位都要触发保存
+    purchaseOrderLinks: (row.purchaseOrderLinks ?? []).map((link) => ({
+      purchaseOrderId: link.purchaseOrderId,
+      purchaseOrderItemId: link.purchaseOrderItemId,
+      allocatedTon: link.allocatedTon,
+    })),
     prices,
   })
 }
@@ -2644,6 +2660,10 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     ...(item.purchaseOrderNo ? { purchaseOrderNo: item.purchaseOrderNo } : {}),
     ...(item.purchaseOrderItemId
       ? { purchaseOrderItemId: item.purchaseOrderItemId }
+      : {}),
+    // 多行关联原样带入本地模型(为空时不落字段, 保持"未关联"语义)
+    ...(item.purchaseOrderLinks?.length
+      ? { purchaseOrderLinks: item.purchaseOrderLinks }
       : {}),
   }))
   const inputs: SheetInputs = {}
