@@ -444,13 +444,29 @@ export function buildModuleEditorDataColumns({
     handleWarehouseSelect,
   })
 
-  return itemColumns.map((column) => ({
-    title: column.title,
-    dataIndex: column.dataIndex,
-    key: column.dataIndex,
-    width: resolveEditorItemColumnWidth(column),
-    align: column.align || 'center',
-    ellipsis: true,
-    render: renderEditableColumn(column),
-  }))
+  return itemColumns.map((column) => {
+    /*
+     * 列显式声明 `renderInEditor` 时, 编辑器明细表的**只读**单元格交给列自己的 render。
+     *
+     * <p>默认仍然走统一只读格式化: 派生数量这类列的行值本来就在行上, 输出保持不变;
+     * 而"值不在明细行上"的列(如销售订单「网价匹配」状态快照, 按行 id 订阅页面级 store)
+     * 只能靠列渲染, 不声明就只会显示一个 '-'。声明了 editor 或该行可编辑的列一律不受影响,
+     * 编辑控件不会被自定义渲染抢走。</p>
+     */
+    const customRender: ModuleColumnDefinition['render'] = column.renderInEditor
+      ? column.render
+      : undefined
+    return {
+      title: column.title,
+      dataIndex: column.dataIndex,
+      key: column.dataIndex,
+      width: resolveEditorItemColumnWidth(column),
+      align: column.align || 'center',
+      ellipsis: true,
+      render: (value: unknown, record: ModuleLineItem) =>
+        customRender && !isItemColumnEditable(column.dataIndex, record)
+          ? customRender(value, record)
+          : renderEditableColumn(column)(value, record),
+    }
+  })
 }

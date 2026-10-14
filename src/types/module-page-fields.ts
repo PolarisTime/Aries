@@ -112,6 +112,17 @@ export interface ModuleColumnDefinition {
   required?: boolean
   editor?: TradeLineItemEditorSemantics
   render?: (value: unknown, record: ModuleRecord) => ReactNode
+  /**
+   * 编辑器明细表里也让只读单元格走本列的 {@link ModuleColumnDefinition.render}。
+   *
+   * <p>缺省(false)时编辑器明细表沿用统一的只读格式化(`formatCellValue`), 这是历史行为:
+   * 派生数量一类列照旧显示行上的值, 输出不变。**显式声明**才交给列自己的渲染 ——
+   * 给"值不在明细行上"的列用, 例如销售订单的「网价匹配」状态列(匹配结果是页面级核查快照、
+   * 不写进明细行, 靠列渲染按行 id 订阅), 不声明时只会显示 '-'。</p>
+   *
+   * <p>只对只读单元格生效: 声明了 editor 或该行可编辑的列仍渲染编辑控件。</p>
+   */
+  renderInEditor?: boolean
 }
 
 export interface ModuleDetailField {
