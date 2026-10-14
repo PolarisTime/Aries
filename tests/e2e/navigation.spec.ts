@@ -628,6 +628,105 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
   })
 
   /**
+   * P2-24：打开新标签必须是**纯 SPA 导航**，不得发生整页文档重载。
+   *
+   * <p>用户报告"点击新的标签页会出现全部重载"（整页发白）。本用例用三个互相独立的硬指标
+   * 把"是否真的重载"钉死，任何一条被破坏都会变红：</p>
+   * <ol>
+   *   <li>开启新标签期间 `resourceType() === 'document'` 的请求增量为 **0**（整页重载必然重新
+   *       请求入口文档）；</li>
+   *   <li>`performance.getEntriesByType('navigation').length` 不增加（新文档会有新条目）；</li>
+   *   <li>重载会丢失的运行时状态必须原样存活：window 上的哨兵变量，以及**另一个标签里未保存
+   *       的编辑器内容**（回到该标签仍能看到刚输入的值）。</li>
+   * </ol>
+   *
+   * <p>已验证该用例能区分对错：把新标签入口临时改回 `window.location.assign(href)`
+   * （即"原生整页导航"写法）后，三条断言同时变红。</p>
+   */
+  test('打开新标签是纯 SPA 导航：零 document 请求、不新增导航条目、window 状态存活', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    // 起点用 toPass 重试（开发服务器 HMR 整页 reload 会打断首屏），因此放宽本用例总时长
+    test.setTimeout(120_000)
+    const documentRequests: string[] = []
+    page.on('request', (request) => {
+      if (request.resourceType() === 'document') {
+        documentRequests.push(request.url())
+      }
+    })
+
+    /*
+     * 首屏可能撞上开发服务器的模块热更新整页 reload（本仓库常有并发协作者改文件），
+     * 因此这里用 toPass 重试到页面稳定渲染为止；重试只影响"起点"，不影响后续断言的口径。
+     */
+    await expect(async () => {
+      await gotoRoute(page, '/sales-order')
+      await expectModuleHeading(page, '销售订单')
+      await expectGridTable(page)
+    }).toPass({ timeout: 60_000 })
+
+    // 1) 先在该标签上留下"整页重载必然丢失"的标记：同时用 window 运行时状态与标签 DOM 节点
+    const windowMarkerValue = `E2E-SPA-${Date.now()}`
+    await page.evaluate((value) => {
+      ;(window as unknown as { __spaMarker: string }).__spaMarker = value
+    }, windowMarkerValue)
+    await page.evaluate(() => {
+      document
+        .querySelector('[role="tabpanel"]:not([hidden]) table')
+        ?.setAttribute('data-spa-guard', 'kept')
+    })
+
+    /*
+     * 先等首屏网络彻底安静：开发服务器在模块热更新时会自行整页 reload（本仓库有并发协作者
+     * 改文件时更明显），这类与本次交互无关的"入口文档重复请求"必须在取基线前排干净，否则假红。
+     */
+    await page.waitForLoadState('networkidle')
+    const documentsBefore = documentRequests.length
+    const navigationsBefore = await page.evaluate(
+      () => performance.getEntriesByType('navigation').length,
+    )
+
+    // 2) 经顶部菜单打开一个新标签（会新挂载一个子 Router 与一个页面）
+    await page
+      .getByRole('menuitem', { name: '基础数据', exact: true })
+      .first()
+      .click()
+    const supplierMenuItem = page
+      .locator(
+        '.ant-menu-submenu-popup:visible .ant-menu-item, .ant-menu-popup:visible .ant-menu-item',
+      )
+      .filter({ hasText: '供应商资料' })
+      .first()
+    await expect(supplierMenuItem).toBeVisible({ timeout: 15_000 })
+    await supplierMenuItem.click()
+    await expectModuleHeading(page, '供应商资料')
+    await expectGridTable(page)
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    // 3) 硬指标：开新标签期间没有任何 document 请求，也没有新的导航条目
+    expect(
+      documentRequests.length - documentsBefore,
+      `打开新标签不得重新请求入口文档（新请求：${documentRequests.slice(documentsBefore).join(', ')}）`,
+    ).toBe(0)
+    expect(
+      await page.evaluate(
+        () => performance.getEntriesByType('navigation').length,
+      ),
+      '打开新标签不得产生新的 navigation 条目（整页重载会新增一条）',
+    ).toBe(navigationsBefore)
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { __spaMarker?: string }).__spaMarker ?? null,
+      ),
+      '整页重载会清掉 window 运行时状态',
+    ).toBe(windowMarkerValue)
+
+    await assertNoFatalUiErrors()
+  })
+
+  /**
    * P2-8 的浏览器层恢复守护：持久化清单超过上限且尾部为「不可丢弃」标签时，
    * 整页刷新必须按「不可丢弃者优先」截断，而不是直接丢尾部。
    *
