@@ -10,6 +10,7 @@ import {
   fetchDetail,
   primeApiKeySession,
 } from './support/api-key'
+import { isSaveResultSuccess } from './support/save-result-match'
 
 const NAV_TIMEOUT = 30_000
 
@@ -450,7 +451,10 @@ export async function createPurchaseOrderDraft(
     await page.waitForTimeout(300)
 
     const resultText = await saveEditor(page, overlay)
-    expect(resultText).toContain('保存成功')
+    expect(
+      isSaveResultSuccess(resultText),
+      `保存回执应表示成功，实际：${resultText}`,
+    ).toBe(true)
 
     const created = await findByRemark(
       page.request,
@@ -477,7 +481,10 @@ export async function auditRecordFromList(
     await searchList(page, no)
     const overlay = await openRowEditor(page, no)
     const resultText = await saveAndAuditEditor(page, overlay)
-    expect(resultText).toContain('保存成功')
+    expect(
+      isSaveResultSuccess(resultText),
+      `保存回执应表示成功，实际：${resultText}`,
+    ).toBe(true)
     if (found) {
       await waitForStatus(page.request, moduleKey, found.id, expected, 45_000)
     }
@@ -526,7 +533,10 @@ export async function createPurchaseInboundFromOrder(
     }
     await editor.locator('#module-form-remark').fill(remark)
     const resultText = await saveAndAuditEditor(page, editor)
-    expect(resultText).toContain('保存成功')
+    expect(
+      isSaveResultSuccess(resultText),
+      `保存回执应表示成功，实际：${resultText}`,
+    ).toBe(true)
     const created = await findByRemark(
       page.request,
       'purchase-inbound',
@@ -584,7 +594,10 @@ export async function createSalesOutboundFromOrder(
     }
     await editor.locator('#module-form-remark').fill(remark)
     const resultText = await saveAndAuditEditor(page, editor)
-    expect(resultText).toContain('保存成功')
+    expect(
+      isSaveResultSuccess(resultText),
+      `保存回执应表示成功，实际：${resultText}`,
+    ).toBe(true)
     const created = await findByRemark(
       page.request,
       'sales-outbound',
@@ -657,7 +670,10 @@ export async function createSalesOrderDraft(
       purchaseOrderNo,
     )
     const resultText = await saveEditor(page, editor)
-    expect(resultText).toContain('保存成功')
+    expect(
+      isSaveResultSuccess(resultText),
+      `保存回执应表示成功，实际：${resultText}`,
+    ).toBe(true)
 
     const created = await findByRemark(
       page.request,

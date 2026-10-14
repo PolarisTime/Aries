@@ -10,6 +10,10 @@ import {
   gotoRoute as baseGotoRoute,
   loginAsE2eUser as baseLoginAsE2eUser,
 } from './support/business-e2e'
+import {
+  isSaveResultSuccess,
+  SAVE_RESULT_SUCCESS_PATTERN,
+} from './support/save-result-match'
 
 export const E2E_PREFIX = `E2E-C-${Date.now()}`
 
@@ -177,7 +181,7 @@ export interface SaveOutcome {
 export async function expectSaveSuccess(page: Page): Promise<SaveOutcome> {
   const panel = saveResultPanel(page)
   await expect(panel).toBeVisible({ timeout: 30_000 })
-  await expect(panel).toContainText(/保存成功|已确认|已审核/, {
+  await expect(panel).toContainText(SAVE_RESULT_SUCCESS_PATTERN, {
     timeout: 30_000,
   })
   const panelText = (await panel.textContent()) || ''
@@ -214,7 +218,7 @@ export async function observeSaveResult(
     }
   }
   const panelText = (await panel.textContent()) || ''
-  return { success: /保存成功/.test(panelText), panelText }
+  return { success: isSaveResultSuccess(panelText), panelText }
 }
 
 export async function dismissSaveResult(page: Page): Promise<void> {
