@@ -3,6 +3,7 @@ import { Button, Input, Popover, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
+import { linkedPurchaseOrderItemIds } from './core'
 import {
   issuedBrandText,
   tonProgressTextParts,
@@ -82,6 +83,38 @@ function itemSpecText(record: PurchaseOrderTonnageRecord) {
  * <p>「已开吨位」「未开吨位」两列与报单吨位格共用同一份解析, 避免三处各查一次选项列表
  * 后出现"某列认得关联、某列显示未关联"的漂移。</p>
  */
+/**
+ * 行级吨位合计: 一行可关联多张订单明细行, 订货量与「其他报单已开」都按**关联行合计**。
+ *
+ * <p>只有一条关联时合计等于该条, 历史行为完全不变; 未关联或明细行已不可见时 records 为空。</p>
+ */
+export function resolveLinkedTonnageTotals(
+  row: PriceRow,
+  options: PurchaseOrderTonnageRecord[],
+  linked: PurchaseOrderTonnageRecord | undefined,
+) {
+  const records = linkedPurchaseOrderItemIds(row)
+    .map(
+      (itemId) =>
+        options.find((option) => option.purchaseOrderItemId === itemId) ??
+        (linked?.purchaseOrderItemId === itemId ? linked : undefined),
+    )
+    .filter(
+      (record): record is PurchaseOrderTonnageRecord => record !== undefined,
+    )
+  return {
+    records,
+    orderedTotal: records.reduce(
+      (sum, record) => sum + record.orderedWeight,
+      0,
+    ),
+    otherIssuedTotal: records.reduce(
+      (sum, record) => sum + record.issuedWeight,
+      0,
+    ),
+  }
+}
+
 export function resolveTonnageView(
   row: PriceRow,
   options: PurchaseOrderTonnageRecord[],
@@ -150,8 +183,9 @@ export function IssuedTonCell({
   const { t } = useTranslation()
   const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
   // 剩余未开吨位 = 订货吨位 − 已开吨位(已开含本单据这一行报的量), 负值表示这条明细行被超开
+  const totals = resolveLinkedTonnageTotals(row, options, linked)
   const remaining = selected
-    ? selected.orderedWeight - (selected.issuedWeight + localTonForItem)
+    ? totals.orderedTotal - (totals.otherIssuedTotal + localTonForItem)
     : 0
   const over = selected !== undefined && remaining < 0
   return (
@@ -258,16 +292,17 @@ export function TonUnopenedCell({
   }
 
   // 已开吨位 = 本单据该明细行报单合计 + 其他已保存报单占用(服务端只给"其他")
-  const issuedTotal = selected.issuedWeight + localTonForItem
+  const totals = resolveLinkedTonnageTotals(row, options, linked)
+  const issuedTotal = totals.otherIssuedTotal + localTonForItem
   // 剩余未开吨位 = 订货吨位 − 已开吨位(负值表示这条明细行被超开)
-  const remaining = selected.orderedWeight - issuedTotal
+  const remaining = totals.orderedTotal - issuedTotal
   // 报单还没填(<=0)时没有基数可言: 显示短状态, 不显示误导性的合计
   const reportedMissing = localTonForItem <= 0
   // 已开合计超过订货吨位: 唯一需要标红的情形
   const overReported =
     !reportedMissing &&
-    selected.orderedWeight > 0 &&
-    issuedTotal > selected.orderedWeight
+    totals.orderedTotal > 0 &&
+    issuedTotal > totals.orderedTotal
   // 可见数字与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
   const { primary, brand } = tonProgressTextParts(selected, localTonForItem)
   const detail = (
@@ -294,7 +329,7 @@ export function TonUnopenedCell({
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
-        <span>{tonValueText(selected.orderedWeight)}</span>
+        <span>{tonValueText(totals.orderedTotal)}</span>
       </div>
       {brand ? (
         <div className="price-compare-ton-popover-row">
@@ -306,7 +341,7 @@ export function TonUnopenedCell({
         <div className="price-compare-ton-popover-over">
           {t('priceCompare.sheet.purchaseOrderOverIssuedLong', {
             issued: tonValueText(issuedTotal),
-            ordered: tonValueText(selected.orderedWeight),
+            ordered: tonValueText(totals.orderedTotal),
           })}
         </div>
       ) : null}
@@ -336,7 +371,7 @@ export function TonUnopenedCell({
               }
             >
               <span className="aries-sr-only">
-                {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(localTonForItem)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(selected.issuedWeight)} / ${t('priceCompare.sheet.columns.issuedTon')} ${tonValueText(issuedTotal)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(remaining)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(selected.orderedWeight)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overReported ? ` / ${t('priceCompare.sheet.purchaseOrderOverIssuedLong', { issued: tonValueText(issuedTotal), ordered: tonValueText(selected.orderedWeight) })}` : ''}`}
+                {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(localTonForItem)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(totals.otherIssuedTotal)} / ${t('priceCompare.sheet.columns.issuedTon')} ${tonValueText(issuedTotal)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(remaining)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(totals.orderedTotal)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overReported ? ` / ${t('priceCompare.sheet.purchaseOrderOverIssuedLong', { issued: tonValueText(issuedTotal), ordered: tonValueText(selected.orderedWeight) })}` : ''}`}
               </span>
               {primary}
             </span>
