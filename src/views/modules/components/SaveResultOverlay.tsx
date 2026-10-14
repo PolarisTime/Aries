@@ -82,6 +82,7 @@ export function SaveResultOverlay<Key extends ModuleKey>({
     isSuccess,
     t,
     action: saveResult.action,
+    auditActionKind: saveResult.auditActionKind,
     documentNo: saveResult.documentNo,
   })
 

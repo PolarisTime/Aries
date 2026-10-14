@@ -89,6 +89,11 @@ export interface EditorSaveResult<Key extends ModuleKey> {
    * 三种动作都是 success。缺省表示未知来源，回执退回通用成功文案（兼容旧调用）。</p>
    */
   action?: SubmissionAction
+  /**
+   * 「保存并审核」这一类动作的具体种类：动作词与编辑器主按钮同源，
+   * 因此客户对账单（按钮「保存并确认」）的回执不会写成「提交审核」。
+   */
+  auditActionKind?: StatusChangeActionKind
   /** 保存后单据所处的状态（后端回执里的 status），用于文案里点明「草稿 / 已审核」。 */
   resultStatus?: string
   /** 保存后单据的主单号，回执文案带上它，便于用户确认「刚存的是哪一张」。 */
@@ -435,6 +440,8 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
             // 把「本次是保存草稿还是保存并审核」带进回执：三种动作都是 success，
             // 不带这个信息回执只能给一套通用文案与按钮。
             action: submissionAction,
+            // 与主按钮同一个取值来源（下方 editorAuditActionKind 即按钮文案所用）。
+            auditActionKind: editorAuditActionKind || 'audit',
             resultStatus: asString(savedRecord?.status).trim(),
             documentNo: readSavedDocumentNo(savedRecord, config.primaryNoKey),
           })

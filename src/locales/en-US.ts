@@ -787,8 +787,9 @@ export const enUS = {
       pageSuccess: '{{title}} saved successfully',
       // The three submission actions must be distinguishable in the receipt.
       savedAsDraft: '{{title}} {{no}} saved as draft',
-      savedAndAudited: '{{title}} {{no}} saved and submitted for audit',
-      verifiedAndAudited: '{{title}} {{no}} verified and submitted for audit',
+      // The action word comes from the same source as the editor primary button.
+      savedAndAction: '{{title}} {{no}} saved & {{action}}',
+      verifiedAndCompleted: '{{title}} {{no}} verified and sale completed',
       error: 'Save Failed',
       conflict: 'This data was updated by another operation',
       backToEdit: 'Back to Edit',

@@ -770,8 +770,9 @@ export const zhCN = {
       pageSuccess: '{{title}}保存成功',
       // 三种提交动作在回执里必须可区分：草稿 / 已提交审核 / 已核定并提交审核。
       savedAsDraft: '{{title}}{{no}}已保存为草稿',
-      savedAndAudited: '{{title}}{{no}}已保存并提交审核',
-      verifiedAndAudited: '{{title}}{{no}}已核定并提交审核',
+      // 动作词与编辑器主按钮同源（modules.statusActions.*），不写死「审核」。
+      savedAndAction: '{{title}}{{no}}已保存并{{action}}',
+      verifiedAndCompleted: '{{title}}{{no}}已核定并完成销售',
       error: '保存失败',
       conflict: '数据已被其他操作更新',
       backToEdit: '返回编辑',

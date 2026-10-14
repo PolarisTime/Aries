@@ -1,5 +1,9 @@
 import type { TableColumnsType } from 'antd'
 import type { TFunction } from 'i18next'
+import {
+  resolveStatusChangeActionLabelKey,
+  type StatusChangeActionKind,
+} from '@/module-system/adapter/module-adapter-actions'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import type { ModulePageConfig } from '@/types/module-page'
 import type { ModuleLineItem } from '@/types/module-record'
@@ -58,6 +62,12 @@ export interface SaveResultTitleInput {
   t: TFunction
   /** 本次提交动作；缺省表示来源不明，退回通用成功文案。 */
   action?: SubmissionAction
+  /**
+   * 「保存并审核」这一类动作的具体种类（audit / confirm / approve）。
+   * 与编辑器主按钮取词同源（同一 `resolveStatusChangeActionLabelKey`），
+   * 因此回执标题里的动作词永远等于按钮上的动作词，不会各写一份。
+   */
+  auditActionKind?: StatusChangeActionKind
   /** 保存后的主单号，用于文案里点明「刚存的是哪一张」。 */
   documentNo?: string
 }
@@ -65,8 +75,13 @@ export interface SaveResultTitleInput {
 /**
  * 回执标题：按「本次动作 + 单据变成什么状态」区分，而不是三种动作共用一句「保存成功」。
  *
- * <p>草稿保存、保存并审核、核定并审核在回执里必须一眼可区分：用户要知道自己刚才只是存了
- * 草稿，还是已经提交了审核。文案带上单号，避免连点多次后分不清是哪一张。</p>
+ * <p>草稿保存、保存并审核、核定并完成销售在回执里必须一眼可区分：用户要知道自己刚才只是存了
+ * 草稿，还是已经提交了审核/确认。文案带上单号，避免连点多次后分不清是哪一张。</p>
+ *
+ * <p>「保存并审核」这一类的动作词不写死「审核」：它取决于该模块的审核目标状态
+ * （`已确认` → 确认、`已核准` → 核准、其余 → 审核），因此复用编辑器主按钮的同一取词函数
+ * `resolveStatusChangeActionLabelKey`。客户对账单等模块的按钮是「保存并确认」，
+ * 回执若写死「提交审核」就与按钮自相矛盾。</p>
  */
 export function resolveSaveResultTitle({
   config,
@@ -74,15 +89,22 @@ export function resolveSaveResultTitle({
   isSuccess,
   t,
   action,
+  auditActionKind,
   documentNo,
 }: SaveResultTitleInput) {
   if (isSuccess) {
     const params = { title: config.title, no: documentNo || '' }
     if (action === 'save-and-audit') {
-      return t('modules.saveResult.savedAndAudited', params)
+      return t('modules.saveResult.savedAndAction', {
+        ...params,
+        action: t(
+          resolveStatusChangeActionLabelKey(auditActionKind || 'audit'),
+        ),
+      })
     }
     if (action === 'save-and-complete') {
-      return t('modules.saveResult.verifiedAndAudited', params)
+      // 交付核定特例：动作（确认核定）与结果状态（完成销售）都唯一，保留专用文案。
+      return t('modules.saveResult.verifiedAndCompleted', params)
     }
     if (action === 'save') {
       return t('modules.saveResult.savedAsDraft', params)
