@@ -1,6 +1,3 @@
-import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
 import { expect, type Page } from '@playwright/test'
 import {
   buttonName,
@@ -9,6 +6,7 @@ import {
   gotoRoute,
   loginAsE2eUser,
 } from './support/business-e2e'
+import { captureRunArtifact, writeRunFixture } from './support/run-output'
 import { test } from './support/test'
 
 /**
@@ -108,14 +106,13 @@ test.describe('商品资料导入预览弹层的超框防护', () => {
       })
       await loginAsE2eUser(page)
 
-      // 夹具不能用 testInfo.outputPath(): playwright 每次运行都会清空整个 test-results/,
-      // 同一仓库里并行的另一次 playwright 运行会把它删掉(实测: 运行中取文件报 ENOENT),
-      // 因此数据文件写进独立临时目录。
-      const csvPath = path.join(
-        await fs.mkdtemp(path.join(os.tmpdir(), 'material-import-preview-')),
+      // 夹具写进本轮 run 独立的产物目录（见 tests/e2e/README.md「产物目录与并发」）：
+      // outputDir 每次 run 启动即被清空，共用 test-results 会让并发 run 互删夹具。
+      const csvPath = await writeRunFixture(
+        testInfo,
         `material-import-overflow-${viewport.width}x${viewport.height}.csv`,
+        buildCsv(),
       )
-      await fs.writeFile(csvPath, buildCsv(), 'utf8')
 
       await openImportPreview(page, csvPath)
 
@@ -186,16 +183,13 @@ test.describe('商品资料导入预览弹层的超框防护', () => {
       expect(metrics, '未找到覆盖层容器或导入预览对话框').not.toBeNull()
       if (!metrics) return
 
-      // 默认落在本用例的 test-results 目录；设置 E2E_ARTIFACT_DIR 时改写稳定目录，
-      // 便于并行运行(其他 playwright 运行会清空 test-results/)时留存截图证据。
-      await page.screenshot({
-        path: process.env.E2E_ARTIFACT_DIR
-          ? path.join(
-              process.env.E2E_ARTIFACT_DIR,
-              `import-preview-${viewport.width}x${viewport.height}.png`,
-            )
-          : testInfo.outputPath(`import-preview-${viewport.width}.png`),
-      })
+      // 截图同样落在本轮 run 目录内；outputDir 已按 run 派生，无需 E2E_ARTIFACT_DIR
+      // 这类旁路目录来规避并发 run 的清理。
+      await captureRunArtifact(
+        page,
+        testInfo,
+        `import-preview-${viewport.width}x${viewport.height}.png`,
+      )
 
       // 1) 面板必须长在覆盖层容器里，而不是挂到 body 上按视口定位
       expect(metrics.inWorkspaceOverlay).toBe(true)
