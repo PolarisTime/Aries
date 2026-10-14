@@ -400,6 +400,11 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     if (shouldClearLineItems && items.length) {
       dispatchWorkspaceState({ items: [], expenseItems: [] })
     }
+    if (changedKeys.has('projectId')) {
+      // 项目允许清单是整单级的：换项目后既有明细必须按新项目重判，
+      // 否则切项目后品牌/材质越界要等到下一次明细改写（甚至保存 422）才提示。
+      hintItemScopes(nextItems, nextItems, { reevaluateAll: true })
+    }
     syncEditorFormValues({
       config,
       form,

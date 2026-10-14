@@ -18,11 +18,26 @@ const PROJECT_SCOPE_SPEC_DIMENSIONS: readonly ProjectScopeSpecDimension[] = [
 /** 行级即时提示只对销售订单生效；其它模块（采购订单/入库/退货…）零影响。 */
 const PROJECT_SCOPE_HINT_MODULE_KEY = 'sales-order'
 
-/** 已提示过的越界取值：行 id → 维度 → 取值。 */
+/** 已提示过的越界取值：`projectId\u0000itemId` → 维度 → 取值。 */
 type HintedSpecValues = Map<
   string,
   Partial<Record<ProjectScopeSpecDimension, string>>
 >
+
+const HINT_KEY_SEPARATOR = '\u0000'
+
+/**
+ * 去重键必须带上 projectId：同一行明细在不同项目下是两套完全不同的允许清单，
+ * 只按 itemId 去重会让「切到新项目后同一越界值」被当成已提示过而静默不报。
+ */
+function scopeHintKey(projectId: string, itemId: string): string {
+  return `${projectId}${HINT_KEY_SEPARATOR}${itemId}`
+}
+
+/** 当前单据的项目 id（未选择时为空串，规则本身不做判定）。 */
+function readScopeProjectId(record: ModuleRecordInput): string {
+  return asString(record.projectId).trim()
+}
 
 function readSpecValue(
   item: ModuleLineItem | undefined,
@@ -54,18 +69,22 @@ export function collectSpecRewriteItems(
   })
 }
 
-/** 行被删除后重置去重状态：去重表只保留仍然存在的行。 */
+/** 行被删除后重置去重状态：去重表只保留当前项目里仍然存在的行。 */
 function resetRemovedItems(
   hinted: HintedSpecValues,
+  projectId: string,
   nextItems: readonly ModuleLineItem[],
 ) {
   if (!hinted.size) {
     return
   }
-  const aliveIds = new Set(nextItems.map((item) => String(item.id)))
-  for (const itemId of [...hinted.keys()]) {
-    if (!aliveIds.has(itemId)) {
-      hinted.delete(itemId)
+  const aliveKeys = new Set(
+    nextItems.map((item) => scopeHintKey(projectId, String(item.id))),
+  )
+  const projectPrefix = `${projectId}${HINT_KEY_SEPARATOR}`
+  for (const key of [...hinted.keys()]) {
+    if (key.startsWith(projectPrefix) && !aliveKeys.has(key)) {
+      hinted.delete(key)
     }
   }
 }
@@ -97,10 +116,10 @@ function collectViolatedSpecValues(
  */
 function hasUnhintedViolation(
   hinted: HintedSpecValues,
-  item: ModuleLineItem,
+  hintKey: string,
   violated: Partial<Record<ProjectScopeSpecDimension, string>>,
 ): boolean {
-  const previouslyHinted = hinted.get(String(item.id))
+  const previouslyHinted = hinted.get(hintKey)
   return PROJECT_SCOPE_SPEC_DIMENSIONS.some(
     (dimension) =>
       Boolean(violated[dimension]) &&
@@ -114,6 +133,15 @@ export interface ProjectScopeItemHintOptions {
   resolveCurrentRecord: () => ModuleRecordInput
 }
 
+/** 一次判定可以显式要求「重判全部明细」，见 {@link useProjectScopeItemHint}。 */
+export interface ProjectScopeHintPassOptions {
+  /**
+   * 项目变更时重判**当前全部明细**：不受「本回合品牌/材质是否被改写」限制。
+   * 项目允许清单是整单级的，切换项目后既有明细必须按新项目重新判定。
+   */
+  reevaluateAll?: boolean
+}
+
 /**
  * 销售订单明细的「项目允许范围」即时提示：手工加行 / 改品牌材质时立刻提醒，不等保存。
  *
@@ -125,6 +153,10 @@ export interface ProjectScopeItemHintOptions {
  * <p>接线口径：只在销售订单生效；调用方在「明细被改写」的写入点上把改写前后的数组交给返回函数，
  * 由它自己挑出品牌/材质真的变了的行。导入路径（{@link useParentImportController} 的 replaceItems）
  * 不经过这里，因此不会与导入预警重复弹两条消息。</p>
+ *
+ * <p>去重键是「projectId + 行 id + 维度 + 越界值」：切换项目后项目允许清单整体变化，既有明细
+ * 必须按新项目重判，调用方在项目字段变更时用 <code>{ reevaluateAll: true }</code> 触发一次
+ * 全明细重判（见 use-module-editor-workspace 的 handleFormValuesChange）。</p>
  */
 export function useProjectScopeItemHint({
   moduleKey,
@@ -136,30 +168,35 @@ export function useProjectScopeItemHint({
     (
       prevItems: readonly ModuleLineItem[],
       nextItems: readonly ModuleLineItem[],
+      pass?: ProjectScopeHintPassOptions,
     ) => {
       if (moduleKey !== PROJECT_SCOPE_HINT_MODULE_KEY) {
         return
       }
       const hinted = hintedSpecValuesRef.current
-      resetRemovedItems(hinted, nextItems)
-      const rewrittenItems = collectSpecRewriteItems(prevItems, nextItems)
-      if (!rewrittenItems.length) {
+      const currentRecord = resolveCurrentRecord()
+      const projectId = readScopeProjectId(currentRecord)
+      resetRemovedItems(hinted, projectId, nextItems)
+      const candidates = pass?.reevaluateAll
+        ? [...nextItems]
+        : collectSpecRewriteItems(prevItems, nextItems)
+      if (!candidates.length) {
         return
       }
-      const currentRecord = resolveCurrentRecord()
-      for (const item of rewrittenItems) {
+      for (const item of candidates) {
         const check = resolveSalesOrderItemScopeCheck({ currentRecord, item })
+        const hintKey = scopeHintKey(projectId, String(item.id))
         if (!check.message) {
           // 改回允许范围或清空后重置，便于再次越界时重新提示。
-          hinted.delete(String(item.id))
+          hinted.delete(hintKey)
           continue
         }
         const violated = collectViolatedSpecValues(check.violations)
-        if (!hasUnhintedViolation(hinted, item, violated)) {
+        if (!hasUnhintedViolation(hinted, hintKey, violated)) {
           continue
         }
         message.warning(check.message)
-        hinted.set(String(item.id), violated)
+        hinted.set(hintKey, violated)
       }
     },
     [moduleKey, resolveCurrentRecord],

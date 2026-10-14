@@ -110,6 +110,8 @@ const FORM_VALUES = { id: '8001', customerId: '1001', projectId: '9001' }
 interface HarnessApi {
   setItems: (updater: (items: ModuleLineItem[]) => ModuleLineItem[]) => void
   addItem: () => void
+  /** 模拟表单把项目字段改成另一个项目(触发 handleFormValuesChange 的重判分支) */
+  changeProject: (projectId: string) => void
   items: () => ModuleLineItem[]
 }
 
@@ -120,6 +122,17 @@ interface ProbeProps {
   apiRef: { current: HarnessApi | null }
 }
 
+/** 项目乙：同样不允许宝钢，但 id/名称不同，确保判定上下文真的换了。 */
+function otherProjectOption() {
+  return {
+    ...projectOption(['沙钢'], []),
+    id: '9002',
+    value: '9002',
+    label: '项目乙',
+    projectName: '项目乙',
+  }
+}
+
 function Probe({ moduleKey, config, initialItems, apiRef }: ProbeProps) {
   const [record] = useState({
     id: '8001',
@@ -127,9 +140,16 @@ function Probe({ moduleKey, config, initialItems, apiRef }: ProbeProps) {
     projectId: '9001',
     items: initialItems,
   })
+  /*
+   * 表单桩要能改 projectId：真实 antd 表单在 onValuesChange 触发时新值已经生效，
+   * resolveCurrentRecord 读到的就是新项目，否则重判用的还是旧项目。
+   */
+  const [formState] = useState(() => ({
+    values: { ...FORM_VALUES } as Record<string, unknown>,
+  }))
   const [form] = useState(() => ({
-    validateFields: () => Promise.resolve(FORM_VALUES),
-    getFieldsValue: () => FORM_VALUES,
+    validateFields: () => Promise.resolve({ ...formState.values }),
+    getFieldsValue: () => formState.values,
     setFieldsValue: () => undefined,
     resetFields: () => undefined,
     focusField: () => undefined,
@@ -148,10 +168,15 @@ function Probe({ moduleKey, config, initialItems, apiRef }: ProbeProps) {
     onSaved: () => undefined,
     autoInsertBlankItemOnCreate: false,
   })
-  const { addItem, items, setItems } = workspace
+  const { addItem, handleFormValuesChange, items, setItems } = workspace
+  const changeProject = (projectId: string) => {
+    formState.values.projectId = projectId
+    handleFormValuesChange({ projectId })
+  }
   useEffect(() => {
     apiRef.current = {
       addItem,
+      changeProject,
       items: () => items,
       setItems: (updater) => setItems(updater),
     }
@@ -280,5 +305,26 @@ describe('useModuleEditorWorkspace 项目允许范围即时提示接线', () => 
 
     expect(antdAppMock.message.warning).not.toHaveBeenCalled()
     expect(findProjectOptionMock).not.toHaveBeenCalled()
+  })
+
+  it('项目字段变更时按新项目重判既有明细(不依赖明细再次改写)', () => {
+    findProjectOptionMock.mockImplementation((projectId) =>
+      projectId === '9001' ? projectOption(['沙钢'], []) : otherProjectOption(),
+    )
+    render('sales-order', [{ id: '1', brand: '宝钢' }])
+
+    // 项目甲下存量明细是初始化带进来的, 本回合没有改写 → 不做判定
+    expect(antdAppMock.message.warning).not.toHaveBeenCalled()
+
+    act(() => {
+      apiRef.current?.changeProject('9002')
+    })
+
+    // 项目乙同样不允许宝钢: 换项目后 handleFormValuesChange 必须触发全明细重判
+    expect(antdAppMock.message.warning).toHaveBeenCalledTimes(1)
+    expect(String(antdAppMock.message.warning.mock.calls[0]?.[0])).toContain(
+      '宝钢',
+    )
+    expect(currentItems()[0]?.brand).toBe('宝钢')
   })
 })
