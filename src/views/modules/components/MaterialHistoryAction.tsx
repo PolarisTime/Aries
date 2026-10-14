@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { asString } from '@/utils/type-narrowing'
-import { MaterialHistoryDrawer } from './MaterialHistoryDrawer'
+import { MaterialHistoryDialog } from './MaterialHistoryDialog'
 
 interface Props {
   selectedRecord?: LegacyModuleRecord
@@ -43,14 +43,22 @@ export function MaterialHistoryAction({ selectedRecord, onRolledBack }: Props) {
           {t('modules.pages.material.versionHistoryAction')}
         </Button>
       </Tooltip>
-      <MaterialHistoryDrawer
-        key={materialId}
-        open={open}
-        materialId={materialId}
-        materialLabel={materialLabel}
-        onClose={() => setOpen(false)}
-        onRolledBack={onRolledBack}
-      />
+      {/*
+        只在打开时挂载：`useTableBodyScrollY` 在挂载期量取 `.module-table-shell` 的高度，
+        而 WorkspaceOverlay 在 open=false 时不渲染内容节点 —— 常驻挂载会让量取永久停在
+        最小高度（表体只有 120px，一条多行「字段差异」看不到一半）。关闭即卸载保证每次
+        打开都重新量取。
+      */}
+      {open ? (
+        <MaterialHistoryDialog
+          key={materialId}
+          open
+          materialId={materialId}
+          materialLabel={materialLabel}
+          onClose={() => setOpen(false)}
+          onRolledBack={onRolledBack}
+        />
+      ) : null}
     </>
   )
 }

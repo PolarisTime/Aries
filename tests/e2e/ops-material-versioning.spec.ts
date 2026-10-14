@@ -40,7 +40,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     await chooser.setFiles(templatePath)
 
     const previewModal = page
-      .locator('.ant-modal:visible')
+      .locator('.workspace-overlay-panel:visible')
       .filter({ hasText: '导入预览' })
     await expect(previewModal).toBeVisible({ timeout: 30_000 })
 
@@ -89,7 +89,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
       await chooser.setFiles(templatePath)
 
       const previewModal = page
-        .locator('.ant-modal:visible')
+        .locator('.workspace-overlay-panel:visible')
         .filter({ hasText: '导入预览' })
       await expect(previewModal).toBeVisible({ timeout: 30_000 })
 
@@ -113,7 +113,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
       expect(importedCode).toBeTruthy()
 
       const resultModal = page
-        .locator('.ant-modal:visible')
+        .locator('.workspace-overlay-panel:visible')
         .filter({ hasText: '导入结果' })
       await expect(resultModal).toBeVisible({ timeout: 30_000 })
       await resultModal
@@ -137,19 +137,17 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
         .getByRole('button', { name: buttonName('版本历史') })
         .first()
         .click()
-      const drawer = page
-        .locator('.ant-drawer:visible')
-        .filter({ hasText: '商品版本历史' })
-      await expect(drawer).toBeVisible({ timeout: 30_000 })
-      const historyRow = drawer
+      const dialog = page.locator('.workspace-overlay-panel--material-history')
+      await expect(dialog).toBeVisible({ timeout: 30_000 })
+      const historyRow = dialog
         .locator('tbody tr:not(.ant-table-measure-row)')
         .first()
       await expect(historyRow).toBeVisible({ timeout: 30_000 })
       await expect(historyRow).toContainText('导入')
-      await expect(drawer).toContainText('回滚该批次')
+      await expect(dialog).toContainText('回滚该批次')
 
       // 执行批次回滚
-      await drawer
+      await dialog
         .getByRole('button', { name: buttonName('回滚该批次') })
         .first()
         .click()
@@ -165,7 +163,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
 
       // 回滚后该批次新建的商品被软删除，列表搜索不再命中（净清理）
       await page.keyboard.press('Escape')
-      await expect(drawer).toBeHidden({ timeout: 30_000 })
+      await expect(dialog).toBeHidden({ timeout: 30_000 })
       await keywordInput.fill(importedCode)
       await keywordInput.press('Enter')
       await expect(

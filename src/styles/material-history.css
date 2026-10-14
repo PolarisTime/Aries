@@ -1,0 +1,62 @@
+/*
+ * 商品版本历史弹层（material-history）
+ *
+ * 该弹层是「主数据对话框」尺寸（见 workspace-overlay.css 的 --form-dialog），
+ * 内部由三块组成：可选的错误提示、可纵向滚动的历史表格、固定在底部的分页。
+ *
+ * 两条硬约束（对应修复前的实际缺陷）：
+ * 1) 空态/有数据都不能出现横向滚动条 —— 表体只挂 `scroll.y`，没有 `scroll.x`；
+ * 2) 「字段差异」是多行长文本，必须单元格内换行完整可见 —— 全局
+ *    `.module-table-shell` 把单元格统一设为 nowrap（列表页的紧凑单行需要它），
+ *    在历史弹层里会把这一列撑出容器右侧被裁切。这里只对历史弹层放开换行。
+ */
+
+.workspace-overlay-panel--material-history {
+  /*
+   * 历史弹层是表格型内容: 高度不能跟着内容走 —— 单条 CREATED 的「字段差异」可能有
+   * 十几行, 面板会被撑到 max-height 后表体只剩半行可见。给它一个稳定的高度(仍受
+   * 覆盖层容器约束, 不用 100vh), 让表体拿到可滚动空间, 分页固定在底部。
+   */
+  height: min(680px, calc(100% - 24px));
+}
+
+.workspace-overlay-panel--material-history .workspace-overlay-body {
+  display: flex;
+  flex-direction: column;
+  /* 纵向滚动交给表格表体，分页固定在弹层底部，整层不滚 */
+  overflow: hidden;
+}
+
+.material-history-dialog {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+  min-height: 0;
+}
+
+.material-history-table {
+  flex: 1 1 auto;
+  min-height: 240px;
+}
+
+.module-table-shell.material-history-table .ant-table-tbody > tr > td {
+  white-space: normal;
+  /*
+   * 全局列表样式把单元格设为垂直居中（module-table.css 带 !important），但历史行的
+   * 「字段差异」可能十几行，垂直居中会让时间/来源/类型浮在整行中间，与第一行差异错位。
+   * 全局规则同为 !important，这里靠双类选择器把特异性抬高一档，与样式加载顺序无关。
+   */
+  vertical-align: top !important;
+}
+
+.material-history-table .ant-table-cell {
+  overflow-wrap: anywhere;
+}
+
+/* 批次号是数据：12px 等宽 + 允许断行，保证 19~21 位雪花号完整可见（不是被省略号吃掉） */
+.material-history-batch-no {
+  font-family: var(--ant-font-family-code, ui-monospace, monospace);
+  font-size: 12px;
+  word-break: break-all;
+}

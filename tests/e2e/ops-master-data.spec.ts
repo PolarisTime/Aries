@@ -77,17 +77,15 @@ test.describe('基础资料真实操作', () => {
         .getByRole('button', { name: buttonName('版本历史') })
         .first()
         .click()
-      const drawer = page
-        .locator('.ant-drawer:visible')
-        .filter({ hasText: '商品版本历史' })
-      await expect(drawer).toBeVisible({ timeout: 30_000 })
-      const historyRow = drawer
+      const dialog = page.locator('.workspace-overlay-panel--material-history')
+      await expect(dialog).toBeVisible({ timeout: 30_000 })
+      const historyRow = dialog
         .locator('tbody tr:not(.ant-table-measure-row)')
         .first()
       await expect(historyRow).toBeVisible({ timeout: 30_000 })
-      await expect(drawer).toContainText('更新')
+      await expect(dialog).toContainText('更新')
       await page.keyboard.press('Escape')
-      await expect(drawer).toBeHidden({ timeout: 30_000 })
+      await expect(dialog).toBeHidden({ timeout: 30_000 })
 
       await assertNoFatalUiErrors()
     } finally {
