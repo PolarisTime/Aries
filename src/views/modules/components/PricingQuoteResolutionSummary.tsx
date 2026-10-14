@@ -1,5 +1,6 @@
 import { Alert, Button, Descriptions, Space, Typography } from 'antd'
 import type { TFunction } from 'i18next'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
 import type { ProjectPriceDateBasis } from '@/api/master/project-options'
@@ -28,10 +29,13 @@ interface Props {
  *
  * <p><b>高度稳定</b>：每次改覆盖值(基准 / 时段策略 / 时段 / 顺延天数 / 休市开关)都会重新解析，
  * 而弹层高度完全由内容决定 —— 若"一行正在解析…"与"四行结果"各自撑高度，弹层就会上下缩放
- * 一次(用户实测反馈: "下拉选择时窗口会上下缩放一下")。因此未拿到解析结果时渲染**同构骨架**:
- * 同样的四行描述(值占位「—」) + 同一行说明位(占位文案), 状态切换只换文字不换行数;
- * 说明位即使为空也保留一行(`.pricing-quote-summary-explanation` 的 min-height)。
- * 真正需要更多空间的回退/无行情提示仍会把面板撑高一次(信息不隐藏)。</p>
+ * 一次(用户实测反馈: "下拉选择时窗口会上下缩放一下")。因此三种状态渲染**同构骨架**:
+ * 同样的四行描述(值占位「—」) + 同一行说明位(见 pricing-quote-modal.css 的固定 1.5em 高度)。
+ * 解析失败也**不再另起一行**：错误文案就地替换说明位、与说明共用同一个槽位，
+ * 于是「解析中 / 解析结果 / 解析失败」三态的面板高度逐像素一致。</p>
+ *
+ * <p><b>说明折叠</b>：说明位默认压成一行(超出省略号)，长说明与长错误由键盘可达的
+ * 展开按钮按需展开；错误同时带 role="alert"，读屏用户不展开也能听全。</p>
  */
 export function PricingQuoteResolutionSummary({
   resolution,
@@ -40,19 +44,9 @@ export function PricingQuoteResolutionSummary({
   onAdoptSuggestedDate,
 }: Props) {
   const { t } = useTranslation()
-
-  if (error) {
-    return (
-      <div className="pricing-quote-summary">
-        <Alert
-          type="error"
-          showIcon
-          title={t('modules.pages.salesOrder.netPriceResolveFailed')}
-          description={error}
-        />
-      </div>
-    )
-  }
+  /** 说明位折叠状态：默认收起为一行，保证三态同高；展开是用户动作，高度变化由用户触发。 */
+  const [explanationExpanded, setExplanationExpanded] = useState(false)
+  const explanationId = useId()
 
   const suggestedDate = resolution?.suggestedDate ?? ''
   const availablePeriods = resolution?.availablePeriods ?? []
@@ -89,21 +83,55 @@ export function PricingQuoteResolutionSummary({
         : placeholder,
     },
   ]
-  /** 说明位: 结果态给后端说明, 解析中给进度文案, 其余留空(高度由 CSS 保留)。 */
+  /** 说明位: 结果态给后端说明, 解析中给进度文案, 其余留空(高度由 CSS 的固定行高保留)。 */
   const explanation = resolution
     ? (resolution.explanation ?? '')
     : resolving
       ? t('modules.pages.salesOrder.netPriceResolving')
       : ''
+  /**
+   * 错误就地替换说明文案: 两者共用同一个槽位、同一行高。
+   * 过去用 Alert 另起一行, 失败态会比结果态高出一截, 面板跟着跳。
+   */
+  const slotText = error
+    ? `${t('modules.pages.salesOrder.netPriceResolveFailed')}：${error}`
+    : explanation
 
   return (
     <div className="pricing-quote-summary">
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         <Descriptions colon={false} column={2} size="small" items={items} />
 
-        <Text className="pricing-quote-summary-explanation" type="secondary">
-          {explanation}
-        </Text>
+        <div
+          className={
+            explanationExpanded
+              ? 'pricing-quote-summary-explanation pricing-quote-summary-explanation--expanded'
+              : 'pricing-quote-summary-explanation'
+          }
+        >
+          <Text
+            className="pricing-quote-summary-explanation-text"
+            id={explanationId}
+            role={error ? 'alert' : undefined}
+            title={slotText || undefined}
+            type={error ? 'danger' : 'secondary'}
+          >
+            {slotText}
+          </Text>
+          {/* 说明 / 错误全文的展开开关: Button ⇒ Tab 可达、Enter/Space 可操作 */}
+          {slotText && !resolving ? (
+            <Button
+              aria-controls={explanationId}
+              aria-expanded={explanationExpanded}
+              className="pricing-quote-summary-explanation-toggle"
+              onClick={() => setExplanationExpanded((current) => !current)}
+              size="small"
+              type="link"
+            >
+              {t(explanationExpanded ? 'common.collapse' : 'common.expand')}
+            </Button>
+          ) : null}
+        </div>
 
         {resolution?.dateFallback?.applied ? (
           <Alert

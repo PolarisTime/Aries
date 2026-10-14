@@ -774,6 +774,24 @@ describe('SalesOrderNetPriceFiller', () => {
   })
 
   /**
+   * 面板高度预算: jsdom 不做布局(所有元素 rect 都是 0), 因此用信息区里的**块级行结构**代表高度
+   * —— 字段行数 / 说明(错误)槽位数 / 提示行数 / Space 块数。三态预算完全相同, 面板高度才可能差 0;
+   * 一旦把错误"另起一行"(多一个槽位或 Alert 块), 预算立刻不等 ⇒ 用例变红。
+   */
+  const summaryHeightBudget = () => {
+    const summary = document.querySelector('.pricing-quote-summary')
+    expect(summary, '解析信息区容器不存在').not.toBeNull()
+    return {
+      blocks: summary?.querySelectorAll(':scope > .ant-space > .ant-space-item')
+        .length,
+      fields: summary?.querySelectorAll('.ant-descriptions-item').length,
+      slots: summary?.querySelectorAll('.pricing-quote-summary-explanation')
+        .length,
+      alerts: summary?.querySelectorAll('.ant-alert').length,
+    }
+  }
+
+  /**
    * 高度稳定性: 面板高度由内容决定, 而每次改覆盖值都会重新解析 ——
    * 「解析中」与「解析结果」必须是**同构骨架**(同样的四行描述 + 同一行说明位),
    * 否则弹层会随解析状态上下缩放一次(用户实测反馈: "下拉选择时窗口会上下缩放一下")。
@@ -806,6 +824,7 @@ describe('SalesOrderNetPriceFiller', () => {
     // 骨架: 解析中就已经有四行口径(值为占位), 高度与结果态一致
     const resolvingLabels = labelsOf()
     expect(resolvingLabels).toHaveLength(4)
+    const resolvingBudget = summaryHeightBudget()
     const resolvingValues = Array.from(
       document.querySelectorAll(
         '.pricing-quote-summary .ant-descriptions-item-content',
@@ -831,18 +850,99 @@ describe('SalesOrderNetPriceFiller', () => {
         ?.textContent,
     ).toContain('送货日期 2026年09月22日 为交易日')
     expect(document.querySelectorAll('.pricing-quote-summary')).toHaveLength(1)
+    // 高度预算逐项相同(块 / 字段行 / 说明位槽 / 提示行)
+    expect(summaryHeightBudget()).toEqual(resolvingBudget)
   })
 
-  it('解析失败提示同样落在信息区容器里(不会把面板压短)', async () => {
-    fetchPricingQuoteResolutionMock.mockRejectedValue(new Error('boom'))
+  /**
+   * 错误态位移: 解析失败过去会把整块信息换成 Alert(四行口径消失、多出一个提示块), 面板上下跳一次。
+   * 现在错误文案**就地替换说明位**、与说明共用同一个槽位, 所以失败态与结果态的面板高度预算必须
+   * 完全相同; 若把错误改回"另起一行", 下面的预算断言立刻变红。
+   */
+  it('解析失败就地替换说明位: 错误态与结果态的面板高度差为 0(另起一行则变红)', async () => {
     const observed = createObserved()
     await mountObserved(observed)
     await openNetPriceDialog()
 
+    // 先落地结果态, 记住高度预算
+    expect(
+      document.querySelector(
+        '.pricing-quote-summary .pricing-quote-summary-explanation',
+      )?.textContent,
+    ).toContain('为交易日')
+    const resolvedBudget = summaryHeightBudget()
+    expect(resolvedBudget).toEqual({
+      blocks: 2,
+      fields: 4,
+      slots: 1,
+      alerts: 0,
+    })
+
+    // 解析接口打挂(用户场景: 后端 500 / 断网), 再改一项覆盖值触发重新解析 ⇒ 失败态
+    fetchPricingQuoteResolutionMock.mockRejectedValue(new Error('boom'))
+    await pickSelectOption(modalSelect(0), '每次手工选择')
+
     const box = document.querySelector('.pricing-quote-summary')
-    expect(box).not.toBeNull()
     expect(box?.textContent).toContain('取价基准解析失败')
-    expect(box?.querySelector('.ant-alert')).not.toBeNull()
+    expect(box?.textContent).toContain('boom')
+    // 就地替换: 错误落在说明位同一个槽位里, 不另起 Alert / 不新增块
+    const slot = box?.querySelector('.pricing-quote-summary-explanation')
+    expect(slot?.textContent).toContain('取价基准解析失败：boom')
+    expect(slot?.querySelector('[role="alert"]')).not.toBeNull()
+    expect(box?.querySelector('.ant-alert')).toBeNull()
+    // 面板高度差 0: 块数 / 字段行数 / 槽位数 / 提示行数逐项相同
+    expect(summaryHeightBudget()).toEqual(resolvedBudget)
+  })
+
+  /**
+   * 说明折叠: 说明位默认收起成一行(长说明超出省略号), 用户按需展开看全文。
+   * 展开开关必须是键盘可达的控件(WCAG 2.1.1), 并用 aria-expanded / aria-controls 说明状态与目标。
+   */
+  it('说明位可折叠: 默认一行, 展开开关可键盘聚焦且 aria-expanded 同步', async () => {
+    const observed = createObserved()
+    await mountObserved(observed)
+    await openNetPriceDialog()
+
+    const toggleOf = () =>
+      document.querySelector<HTMLButtonElement>(
+        '.pricing-quote-summary-explanation-toggle',
+      )
+    const toggle = toggleOf()
+    expect(toggle, '结果态应给出展开开关').not.toBeNull()
+    expect(toggle?.tagName).toBe('BUTTON')
+    // 收起态: 说明压成一行, aria-expanded=false 指向说明文案
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false')
+    expect(toggle?.textContent?.replace(/\s+/g, '')).toBe('展开')
+    const textId = toggle?.getAttribute('aria-controls') ?? ''
+    expect(textId).not.toBe('')
+    expect(document.getElementById(textId)?.textContent).toContain('为交易日')
+    expect(
+      document.querySelector('.pricing-quote-summary-explanation--expanded'),
+    ).toBeNull()
+
+    // 键盘可达: 开关可聚焦(Enter/Space 的原生激活等价于 click, jsdom 不实现键盘激活)
+    await act(async () => {
+      toggle?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(document.activeElement).toBe(toggle)
+
+    await act(async () => {
+      toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(
+      document.querySelector('.pricing-quote-summary-explanation--expanded'),
+    ).not.toBeNull()
+    expect(toggleOf()?.getAttribute('aria-expanded')).toBe('true')
+    expect(toggleOf()?.textContent?.replace(/\s+/g, '')).toBe('收起')
+    // 展开态仍是同一个槽位、仍只有一行 ⇒ 高度预算的"槽位数"不变
+    expect(summaryHeightBudget()).toEqual({
+      blocks: 2,
+      fields: 4,
+      slots: 1,
+      alerts: 0,
+    })
   })
 
   async function waitForOkButton() {

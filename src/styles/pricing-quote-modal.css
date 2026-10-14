@@ -2,24 +2,66 @@
  * 「按网价赋单价」弹层的高度稳定性。
  *
  * 背景(用户实测反馈: "下拉选择时窗口会上下缩放一下, 不能这样"):
- * 该弹层用 antd Modal(高度完全由内容决定), 而解析信息块在两种状态之间来回切换 ——
- *   - 解析中: 过去只渲染一行「正在解析取价基准…」;
- *   - 解析完成: 双列描述(两行) + 说明行(可能再叠加回退/无行情提示)。
- * 每改一项覆盖值(基准 / 时段策略 / 时段 / 顺延天数 / 休市开关)都会重新解析, 行数随之变化
- * ⇒ 弹层上下缩放一次。
+ * 该弹层用 antd Modal(高度完全由内容决定), 而解析信息块在三种状态之间来回切换 ——
+ *   解析中 / 解析结果 / 解析失败；
+ * 每改一项覆盖值(基准 / 时段策略 / 时段 / 顺延天数 / 休市开关)都会重新解析,
+ * 行数随之变化 ⇒ 弹层上下缩放一次。
  *
- * 修法: 组件在所有状态下渲染**同构骨架**(同样的四行描述 + 同一行说明位, 见
- * PricingQuoteResolutionSummary), 这里再补两件样式层的事:
- *   1. 说明位即使为空也保留一行高度 —— 结果态没有 explanation 时不会比"解析中"矮一行;
- *   2. 信息区是一个稳定的块级容器, 状态切换只换文字, 不换盒子。
- * 真正需要更多空间的回退/无行情提示仍会把面板撑高一次(信息不隐藏)。
+ * 修法分两层:
+ *   1. 组件在所有状态下渲染**同构骨架**: 同样的四行描述(值占位「—」) + 同一行说明位
+ *      (见 PricingQuoteResolutionSummary);
+ *   2. 说明位是**固定一行高度**的槽位(1.5em, 随字号等比缩放): 解析失败不再另起 Alert 行,
+ *      而是就地替换说明文案、共用同一个槽位 ⇒ 「解析中 / 结果 / 失败」三态面板高度逐像素一致。
+ * 说明与错误默认压成一行(超出省略号), 由键盘可达的展开按钮按需展开;
+ * 回退/无行情提示仍会把面板撑高一次(信息不隐藏)。
  */
 .pricing-quote-summary {
   display: block;
 }
 
-/* 说明位: 空文案也占一行, 否则"解析中(有文案) ↔ 结果无说明(空)"之间会差一行 */
+/*
+ * 说明位: 固定高度而不是 min-height —— 说明或错误再长也只占这一行, 三种状态同高。
+ * 用 em 而不是 px: 个人设置放大字号时预留空间等比缩放。
+ */
 .pricing-quote-summary .pricing-quote-summary-explanation {
-  display: block;
-  min-height: 1.5em;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 1.5em;
+  line-height: 1.5em;
+}
+
+/* 收起态: 说明 / 错误文案压成一行, 超出省略号(展开按钮在旁边) */
+.pricing-quote-summary .pricing-quote-summary-explanation-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* 行框与槽位等高(1.5em), 不让 antd 正文行高把文字撑出固定的槽位 */
+  line-height: inherit;
+}
+
+/* 展开态: 全文换行显示(用户主动展开, 高度变化由用户触发) */
+.pricing-quote-summary .pricing-quote-summary-explanation--expanded {
+  height: auto;
+}
+
+.pricing-quote-summary
+  .pricing-quote-summary-explanation--expanded
+  .pricing-quote-summary-explanation-text {
+  overflow: visible;
+  white-space: normal;
+}
+
+/*
+ * 折叠开关: 视觉高度不超过槽位行高(高度交给文字行, 不撑高槽位);
+ * ≥24×24 的命中区由 touch-targets.css 的 ::before 补丁提供, 不靠放大视觉尺寸。
+ */
+.pricing-quote-summary .pricing-quote-summary-explanation-toggle {
+  flex: 0 0 auto;
+  height: auto;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
 }
