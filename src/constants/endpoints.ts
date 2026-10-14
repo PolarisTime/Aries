@@ -34,6 +34,15 @@ export const ENDPOINTS = {
   VALUE_ALIASES: '/value-aliases',
   VALUE_ALIAS: (id: string | number) => `/value-aliases/${pathSegment(id)}`,
 
+  // Quote regions (取价地区维护: 西本行情抓取的城市清单与子域名)
+  QUOTE_REGIONS: '/quote-regions',
+  QUOTE_REGION: (id: string | number) => `/quote-regions/${pathSegment(id)}`,
+
+  // Length premiums (定尺加价维护: 定尺每吨加价, 允许为负表示优惠)
+  LENGTH_PREMIUMS: '/length-premiums',
+  LENGTH_PREMIUM: (id: string | number) =>
+    `/length-premiums/${pathSegment(id)}`,
+
   // Health (pure action → singular)
   HEALTH: '/health',
   VERSION: '/version',

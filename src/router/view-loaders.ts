@@ -50,6 +50,14 @@ export const viewLoaders: Record<
     import('@/views/master-data/ValueAliasPage').then((m) => ({
       default: m.ValueAliasPage,
     })),
+  'master-quote-region': () =>
+    import('@/views/master-data/QuoteRegionPage').then((m) => ({
+      default: m.QuoteRegionPage,
+    })),
+  'master-length-premium': () =>
+    import('@/views/master-data/LengthPremiumPage').then((m) => ({
+      default: m.LengthPremiumPage,
+    })),
   'sales-contract': () =>
     import('@/views/sales-contracts/SalesContractPage').then((m) => ({
       default: m.SalesContractPage,

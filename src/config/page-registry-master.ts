@@ -88,4 +88,27 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     menuParent: 'master',
     requiredPermission: 'value-aliases:read',
   },
+  {
+    // 取价地区维护：西本行情抓取的城市清单与子域名，原写在 application.yml，
+    // 新增城市要改配置并重启，现由业务自行维护（停用不必删除）。
+    // 无 moduleKey（不是业务单据模块），权限码与后端 QUOTE_REGIONS_READ 对齐。
+    key: 'quote-region',
+    titleKey: 'pages.quote-region',
+    menuKey: '/quote-region',
+    view: 'master-quote-region',
+    icon: 'ShopOutlined',
+    menuParent: 'master',
+    requiredPermission: 'quote-regions:read',
+  },
+  {
+    // 定尺加价维护：定尺（如 12 米）每吨加价规则，原同时写在 yml 与 Java 默认值里。
+    // 无 moduleKey（不是业务单据模块），权限码与后端 LENGTH_PREMIUMS_READ 对齐。
+    key: 'length-premium',
+    titleKey: 'pages.length-premium',
+    menuKey: '/length-premium',
+    view: 'master-length-premium',
+    icon: 'CalculatorOutlined',
+    menuParent: 'master',
+    requiredPermission: 'length-premiums:read',
+  },
 ]

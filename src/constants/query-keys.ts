@@ -243,6 +243,24 @@ export const QUERY_KEYS = {
   }) => ['value-aliases', query] as const,
   valueAlias: (id: string) => ['value-aliases', 'detail', id] as const,
 
+  // 取价地区维护（西本行情抓取的城市清单）
+  quoteRegions: (query: {
+    keyword?: string
+    status?: string
+    page: number
+    size: number
+  }) => ['quote-regions', query] as const,
+  quoteRegion: (id: string) => ['quote-regions', 'detail', id] as const,
+
+  // 定尺加价维护（定尺每吨加价）
+  lengthPremiums: (query: {
+    keyword?: string
+    status?: string
+    page: number
+    size: number
+  }) => ['length-premiums', query] as const,
+  lengthPremium: (id: string) => ['length-premiums', 'detail', id] as const,
+
   // Print
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>
