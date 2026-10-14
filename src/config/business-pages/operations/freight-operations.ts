@@ -311,6 +311,8 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
             value: FREIGHT_SETTLEMENT_MODE_FIXED,
           },
         ],
+        // 两个选项文案较长，按 24 栅格合并两列（6 列会把「按吨位结算」截断成「按吨位…」）。
+        colSpan: 12,
         row: 2,
       },
       {
@@ -353,7 +355,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         extra: i18next.t(
           'modules.pages.freightOperations.fixedFreightAmountHelp',
         ),
-        row: 2,
+        row: 3,
       },
       {
         key: 'settlementCompanyId',
