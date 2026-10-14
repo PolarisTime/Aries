@@ -40,6 +40,18 @@ const baseRow: PriceRow = {
   ton: 5,
 }
 
+/**
+ * 元素里**可见**的数字层文本。
+ *
+ * <p>`textContent` 会把数字层内 `.aries-sr-only` 的完整口径串（含「本单该明细行报单 12」）
+ * 一起算进来，用它断言时可见数字即使写成旧口径也照样变绿 —— 必须先把读屏层摘掉。</p>
+ */
+function visibleTextOf(node: Element | null): string {
+  const clone = node?.cloneNode(true) as HTMLElement | undefined
+  clone?.querySelector('.aries-sr-only')?.remove()
+  return clone?.textContent ?? ''
+}
+
 describe('TonCell 吨位 + 采购订单关联', () => {
   let container: HTMLDivElement
   let root: Root
@@ -192,9 +204,17 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       localTonForItem: 12,
     })
     // 已开合计 = 本单报单 12 + 其他 0
-    expect(
-      container.querySelector('.price-compare-ton-issued')?.textContent,
-    ).toContain('12')
+    const issued = container.querySelector('.price-compare-ton-issued')
+    // 断言**可见数字层**: 用 textContent 会命中 .aries-sr-only 里的「报单 12」,
+    // 可见数字改成旧口径（只算其他报单 = 0）也照样绿。
+    expect(visibleTextOf(issued)).toBe('12')
+    // 读屏用的完整口径单独断言（报单 / 其他报单已开 / 已开 / 未开 / 订货 一次说清）
+    const screenReaderText =
+      issued?.querySelector('.aries-sr-only')?.textContent ?? ''
+    expect(screenReaderText).toContain('本单该明细行报单 12')
+    expect(screenReaderText).toContain('已开吨位 12')
+    expect(screenReaderText).toContain('剩余未开吨位 -1.81')
+    expect(screenReaderText).toContain('订货吨位 10.19')
     // 剩余未开 = 订货 10.19 − 已开 12 = −1.81, 这是真正需要提示的"超开"
     expect(
       container.querySelector('.price-compare-ton-figure')?.textContent,
