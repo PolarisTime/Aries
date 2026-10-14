@@ -6,6 +6,7 @@ import type {
   ProjectPricePeriodPolicy,
 } from '@/api/master/project-options'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { strictResponseEntityIdSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
 
@@ -23,9 +24,13 @@ export const pricingQuoteFallbackSchema = z.looseObject({
  * 本接口只回答「取哪天、哪个时段」，不含具体价格；取价仍走
  * {@code GET /material-price-matches?quoteDate&period&source&region}。
  * 日期为 ISO 字符串（yyyy-MM-dd），雪花 ID 为十进制字符串。
+ *
+ * <p>`projectId` 用严格响应 schema：只接受十进制字符串。原先允许数值形式
+ * （`z.union([z.string(), z.number()])`），会把数值雪花 ID 固化进契约——
+ * 19 位雪花 ID 转 Number 静默丢低位，之后的回填/比较都基于错误的 id。</p>
  */
 export const pricingQuoteResolutionSchema = z.looseObject({
-  projectId: z.union([z.string(), z.number()]),
+  projectId: strictResponseEntityIdSchema,
   /** 本次生效的基准口径：DELIVERY/ORDER/MANUAL。 */
   basis: z.string(),
   /** 本次生效的顺延交易日数（仅 ORDER 有意义）。 */

@@ -21,6 +21,16 @@ export const responseEntityIdSchema = z
   .union([responseEntityIdStringSchema, z.number().int().positive().safe()])
   .transform(String)
 
+/**
+ * 严格响应侧实体 ID：只接受十进制字符串，**不接受任何数值形式**。
+ *
+ * <p>用于已确认后端按 `JacksonConfig` 输出字符串的响应。数值形式哪怕落在
+ * `Number.MAX_SAFE_INTEGER` 内，一旦被 schema 接受就会把数值雪花 ID 固化进契约；
+ * 19 位雪花 ID 转 Number 会静默丢低位，之后按错误的 id 查询/更新/删除。
+ * 仍需过渡兼容的历史响应请显式使用 {@link responseEntityIdSchema} 并记录迁移计划。</p>
+ */
+export const strictResponseEntityIdSchema = responseEntityIdStringSchema
+
 /** 客户端传入的实体 ID 必须为十进制字符串（雪花 ID 不做 JSON number）。 */
 export const requestEntityIdSchema = z
   .string()

@@ -168,12 +168,61 @@ describe('pricingQuoteResolutionSchema', () => {
     expect(parsed.availablePeriods).toBeUndefined()
   })
 
-  it('projectId 为旧版数值时仍解析(雪花 ID 精度由解析层把关)', () => {
+  it('projectId 为数值时被拒（响应雪花 ID 必须为十进制字符串）', () => {
+    // 9007199254740991 是 Number.MAX_SAFE_INTEGER：数值形式即使「安全」也不能被接受，
+    // 否则数值雪花 ID 会被固化进契约，19 位 id 转 Number 静默丢低位。
+    expect(() =>
+      pricingQuoteResolutionSchema.parse(
+        resolution({ projectId: 9007199254740991 }),
+      ),
+    ).toThrow()
+
+    // 真实线上形态：后端把 19 位雪花 ID 输出成 JSON number，JSON.parse 已经丢过精度。
+    const wireWithNumericId = JSON.parse(
+      '{"projectId":1234567890123456789}',
+    ) as { projectId: number }
+    expect(() =>
+      pricingQuoteResolutionSchema.parse(
+        resolution({ projectId: wireWithNumericId.projectId }),
+      ),
+    ).toThrow()
+
+    expect(() =>
+      pricingQuoteResolutionSchema.parse(resolution({ projectId: 1 })),
+    ).toThrow()
+  })
+
+  it('projectId 为 19 位十进制字符串时原样保留（不经过 Number）', () => {
     const parsed = pricingQuoteResolutionSchema.parse(
-      resolution({ projectId: 9007199254740991 }),
+      resolution({ projectId: '9223372036854775806' }),
     )
 
-    expect(String(parsed.projectId)).toBe('9007199254740991')
+    expect(parsed.projectId).toBe('9223372036854775806')
+    expect(typeof parsed.projectId).toBe('string')
+  })
+
+  it('projectId 非法字符串（0/负数/非数字/空）被拒', () => {
+    for (const projectId of ['0', '-1', 'abc', '123abc', '']) {
+      expect(
+        () => pricingQuoteResolutionSchema.parse(resolution({ projectId })),
+        `projectId=${JSON.stringify(projectId)} 应被拒`,
+      ).toThrow()
+    }
+  })
+
+  it('projectId 超出 Long 上界的字符串被拒', () => {
+    // Long.MAX_VALUE = 9223372036854775807，超一位即越界。
+    expect(() =>
+      pricingQuoteResolutionSchema.parse(
+        resolution({ projectId: '9223372036854775808' }),
+      ),
+    ).toThrow()
+
+    expect(
+      pricingQuoteResolutionSchema.parse(
+        resolution({ projectId: '9223372036854775807' }),
+      ).projectId,
+    ).toBe('9223372036854775807')
   })
 
   it('缺必需字段时契约校验失败', () => {
