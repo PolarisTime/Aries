@@ -6,7 +6,7 @@ import type { ModuleLineItem } from '@/types/module-page'
 interface Props {
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
-  /** 是否允许拖动排序(只读/上游导入锁定/模块显式禁用时为 false)。 */
+  /** 是否允许拖动排序(判定见 canReorderModuleEditorItems: 只读/模块显式禁用时为 false)。 */
   canReorderItems: boolean
 }
 

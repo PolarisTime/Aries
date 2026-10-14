@@ -90,8 +90,8 @@ interface Props {
   onImportParentRecord: (records: ModuleRecord[]) => void
   onItemColumnOrderChange: (order: string[]) => void
   onToggleItemColumn: (key: string) => void
-  /** 明细行序变化(整行长按拖动/键盘 Alt+↑↓ 落位): 新的 id 顺序即最终顺序。 */
-  onItemsReorder: (nextIds: string[]) => void
+  /** 明细行序变化(整行长按拖动/键盘 Alt+↑↓ 落位): 新的 id 顺序即最终顺序; 不传=不可排序。 */
+  onItemsReorder?: (nextIds: string[]) => void
 }
 
 /** 编辑器明细区（含费用页签与工具栏附加操作）：从工作区组件抽出以保持其精简。 */

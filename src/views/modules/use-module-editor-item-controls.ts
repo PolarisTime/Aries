@@ -74,7 +74,11 @@ export function useModuleEditorItemControls({
 
   const [freightStatementSortDirection, setFreightStatementSortDirection] =
     useState<FreightStatementSortDirection>('asc')
-  // 导入上游后行序随上游：销售订单按商品资料规则，客户对账单按交货日期整理。
+  /*
+   * 自动排序(工具栏按钮): 行序默认可自由拖动调整(导入态也一样), 这个入口用来把明细
+   * 重新排回业务默认顺序 —— 销售订单按商品资料规则、客户对账单按交货日期,
+   * 物流/运费对账单还支持时间维度的升降序切换。
+   */
   const handleAutoSortItems = (mode?: FreightStatementSortMode) => {
     const effectiveMode = mode ?? 'sourceNo'
     const itemSortBehavior = editorItemBehavior?.itemSort

@@ -1,6 +1,7 @@
 import { removeEditorLineItems } from '@/module-system/editor/module-editor-line-item-removal'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
+import { canReorderModuleEditorItems } from '@/views/modules/module-editor-item-capabilities'
 import { useModuleEditorItemColumns } from '@/views/modules/use-module-editor-item-columns'
 import { useModuleEditorItemInteractions } from '@/views/modules/use-module-editor-item-interactions'
 
@@ -27,9 +28,22 @@ export function useModuleEditorItems({
   moduleKey,
   supplierId,
 }: Props) {
+  /*
+   * 行序判定统一走 canReorderModuleEditorItems(单一口径, 不要在调用点另加条件):
+   * 能管理明细 + 模块行为表未显式禁用拖拽排序。
+   *
+   * <p>上游导入锁定**不**参与判定: 导入态已经允许「删除选中行」(删除即释放来源分配),
+   * 行序管理与它同级; 拖动只改数组顺序, 不改任何导入字段值与来源分配, 服务端按
+   * `line_no = 下标 + 1` 重编。要回到上游顺序用工具栏的「自动排序」。</p>
+   */
+  const itemReorderEnabled = canReorderModuleEditorItems({
+    moduleKey,
+    canManageItems,
+    parentImportedItemEditLocked,
+  })
   const {
     clearSelectedItems,
-    handleRowReorder,
+    handleRowReorder: reorderItems,
     handleSelectAll,
     handleSelectItem,
     removeSelectedItems: removeSelectedItemsDirectly,
@@ -37,15 +51,13 @@ export function useModuleEditorItems({
   } = useModuleEditorItemInteractions({
     items,
     setItems,
-    /*
-     * 行序可改的前提与「管理列是否出现」同源: 能管理明细、上游导入未锁死、
-     * 且模块行为表没有显式禁用拖拽排序(物流单/运费对账单的行序由上游单据决定)。
-     */
-    canReorderItems:
-      canManageItems &&
-      !parentImportedItemEditLocked &&
-      !getModuleEditorItemBehavior(moduleKey)?.disablesItemReorder,
+    canReorderItems: itemReorderEnabled,
   })
+  /*
+   * 关掉拖动时返回 undefined(而不是"能拖但落位被忽略"): 上层据此不挂任何拖动监听,
+   * 行既不会出现拖起态, 也不会在长按拖动后毫无反应。
+   */
+  const handleRowReorder = itemReorderEnabled ? reorderItems : undefined
   // 上游导入行同样走这里删除：来源分配由服务端按剩余明细重算，删除即释放，
   // 不回写其它行的数量或上限，也不要求被删行继续关联采购来源。
   const removeSelectedItems = () => {

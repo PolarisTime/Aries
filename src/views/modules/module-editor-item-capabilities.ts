@@ -71,3 +71,43 @@ export function resolveModuleEditorItemCapabilities({
       !parentImportedItemAreaLocked,
   }
 }
+
+export interface ModuleItemReorderCapabilityOptions {
+  moduleKey: string
+  /** 能管理明细(调用方已收窄只读/保存中)。 */
+  canManageItems: boolean
+  /**
+   * 上游导入锁定。
+   *
+   * <p><b>刻意不参与判定</b>, 只作为入参留痕, 让"哪些开关被考虑过"在类型上可见:
+   * 导入态已经允许「删除选中行」(删除即把该行占用的来源数量释放回来源单),
+   * 行序管理与它同级 —— 一个能删行的表不允许换行顺序在语义上说不通。</p>
+   */
+  parentImportedItemEditLocked?: boolean
+}
+
+/**
+ * 明细行序(整行长按拖动)是否可用。
+ *
+ * <p>三个理由说明为什么把行序从"上游导入锁定"里摘出来:</p>
+ * <ol>
+ *   <li>拖动**不改任何导入字段值与来源分配**: 只重排数组, 服务端按
+ *       `line_no = 下标 + 1` 重编号, 分配量与来源关系一个都不动;</li>
+ *   <li>导入态**已经允许「删除选中行」**(`allowsItemRemovalWhenParentImported`),
+ *       行序管理与之同级, 不该比删行更受限;</li>
+ *   <li>用户诉求就是"销售订单编辑允许拖动行位置" —— 而销售订单明细只能来自上游导入,
+ *       若沿用"导入即禁拖", 这条诉求在销售订单上等于永远不成立。</li>
+ * </ol>
+ *
+ * <p>仍然尊重模块的**设计性**禁拖: 物流单/运费对账单由 `disablesItemReorder` 关闭
+ * (它们的行序由上游单据/项目分组决定)。要回到"上游顺序"用工具栏的「自动排序」。</p>
+ */
+export function canReorderModuleEditorItems({
+  moduleKey,
+  canManageItems,
+}: ModuleItemReorderCapabilityOptions): boolean {
+  return (
+    canManageItems &&
+    !getModuleEditorItemBehavior(moduleKey)?.disablesItemReorder
+  )
+}

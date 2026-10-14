@@ -55,6 +55,8 @@ const MODULE_EDITOR_ITEM_BEHAVIORS = {
     supportsExpenseTab: true,
     // 导入上游采购来源后行区锁定，但仍允许选中删除：删除即把该行占用的来源数量释放回来源单，
     // 否则用户无法移除导入错的行，只能改数量/改来源，保存时被来源校验拦下。
+    // 行序同样可自由调整(与删行同级, 见 canReorderModuleEditorItems): 拖动只重排数组、
+    // 服务端按下标重编 line_no, 不改导入字段值与来源分配; 想回到上游顺序用「自动排序」。
     allowsItemRemovalWhenParentImported: true,
     itemSort: {
       sort: (items: ModuleLineItem[]) => sortItemsByMaterialDefault(items),

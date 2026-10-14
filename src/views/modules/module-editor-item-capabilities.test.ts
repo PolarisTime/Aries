@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { ModulePageConfig } from '@/types/module-page'
-import { resolveModuleEditorItemCapabilities } from './module-editor-item-capabilities'
+import {
+  canReorderModuleEditorItems,
+  resolveModuleEditorItemCapabilities,
+} from './module-editor-item-capabilities'
 
 function createConfig(
   overrides: Partial<ModulePageConfig> = {},
@@ -144,5 +147,60 @@ describe('resolveModuleEditorItemCapabilities', () => {
 
   it('没有配置上游导入的模块不提供导入能力', () => {
     expect(resolve({ config: createConfig() }).canImportParentItems).toBe(false)
+  })
+})
+
+/**
+ * 行序(整行长按拖动)可用性口径。
+ *
+ * <p>业务背景: 用户诉求是"**销售订单**编辑允许拖动行位置", 而销售订单明细只能来自上游
+ * 采购来源导入 —— 若沿用"导入即禁拖", 这条诉求在销售订单上永远不成立。行序因此从
+ * "上游导入锁定"里摘出来: 拖动只重排数组、服务端按下标重编 `line_no`, 不改任何导入字段值
+ * 与来源分配; 且导入态本就允许「删除选中行」, 行序管理与它同级。</p>
+ *
+ * <p>红验证: 在该判定里加回 `!parentImportedItemEditLocked` 后, 第一条用例(导入锁定态
+ * 仍可排序)立即变红。</p>
+ */
+describe('明细行序可用性', () => {
+  it('销售订单导入锁定态(行来自上游)仍可拖动排序', () => {
+    expect(
+      canReorderModuleEditorItems({
+        moduleKey: 'sales-order',
+        canManageItems: true,
+        parentImportedItemEditLocked: true,
+      }),
+    ).toBe(true)
+  })
+
+  it('物流单/运费对账单的设计性禁拖不被放宽', () => {
+    for (const moduleKey of ['freight-bill', 'freight-statement']) {
+      expect(
+        canReorderModuleEditorItems({
+          moduleKey,
+          canManageItems: true,
+          parentImportedItemEditLocked: false,
+        }),
+        `${moduleKey} 应保持禁拖`,
+      ).toBe(false)
+    }
+  })
+
+  it('只读/保存中等不可管理明细时不可排序(不挂拖动, 而不是"能拖但落位被忽略")', () => {
+    expect(
+      canReorderModuleEditorItems({
+        moduleKey: 'sales-order',
+        canManageItems: false,
+        parentImportedItemEditLocked: false,
+      }),
+    ).toBe(false)
+  })
+
+  it('未注册行为表的模块按默认可排序处理', () => {
+    expect(
+      canReorderModuleEditorItems({
+        moduleKey: 'purchase-order',
+        canManageItems: true,
+      }),
+    ).toBe(true)
   })
 })
