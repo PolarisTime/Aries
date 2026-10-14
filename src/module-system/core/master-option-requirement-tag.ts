@@ -39,7 +39,7 @@ export function tagMasterOptionRequirements<
   return resolver
 }
 
-/** 读取解析器上的需求标记；未打标记时返回 undefined，由调用方回退到引用相等判定。 */
+/** 读取解析器上的需求标记；未打标记（含标记为空数组）时返回 undefined，由调用方回退到引用相等判定。 */
 export function readMasterOptionRequirements(
   resolver: unknown,
 ): MasterOptionRequirementsTag | undefined {
@@ -49,7 +49,10 @@ export function readMasterOptionRequirements(
   const tagged = (resolver as unknown as Record<symbol, unknown>)[
     MASTER_OPTION_REQUIREMENTS_TAG
   ]
-  return Array.isArray(tagged)
-    ? (tagged as MasterOptionRequirementsTag)
-    : undefined
+  // 空数组必须按「未打标记」处理：调用方看到标记就跳过引用相等兜底，
+  // 空的 `[]` 会让兜底被吞掉，需求判定全部为 false（下拉静默为空）。
+  if (!Array.isArray(tagged) || tagged.length === 0) {
+    return undefined
+  }
+  return tagged as MasterOptionRequirementsTag
 }
