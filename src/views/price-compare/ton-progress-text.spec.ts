@@ -5,8 +5,12 @@ import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import {
   compactTonText,
   issuedBrandText,
+  issuedTonTotal,
   maxRemainingTonTextWidth,
   maxTonProgressTextWidth,
+  remainingTonTotal,
+  tonProgressDetailRows,
+  tonProgressDetailText,
   tonProgressTextParts,
   tonRemainingText,
 } from './ton-progress-text'
@@ -161,5 +165,94 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
       ),
     ).toBeGreaterThan(0)
     expect(maxRemainingTonTextWidth([], new Map())).toBe(0)
+  })
+
+  /**
+   * 口径单一来源: 加法/减法只在这里实现一次, 弹层逐行与读屏整句同源。
+   * 这几条用例钉住"同一行不会出现两个数字"——各自内联算式时最容易在这里漂移。
+   */
+  it('已开/剩余的加数与减数只有一处实现', () => {
+    // 已开 = 其他报单占用 + 本单报单
+    expect(issuedTonTotal(30, 40)).toBe(70)
+    // 剩余 = 订货 − 已开(可为负)
+    expect(remainingTonTotal(40, 30, 40)).toBe(-30)
+    expect(compactTonText(remainingTonTotal(15.992, 0, 20))).toBe('-4.008')
+    // 非有限值按 0 处理, 不把 NaN 带进列文案
+    expect(issuedTonTotal(Number.NaN, 12)).toBe(12)
+    expect(remainingTonTotal(40, Number.NaN, Number.NaN)).toBe(40)
+    // 与列文案口径一致: 已开 70 / 剩余 −30
+    expect(
+      tonProgressTextParts(
+        poRecord({ orderedWeight: 40, issuedWeight: 30 }),
+        40,
+      ).primary,
+    ).toBe('70')
+    expect(
+      tonRemainingText(poRecord({ orderedWeight: 40, issuedWeight: 30 }), 40),
+    ).toBe('-30')
+  })
+
+  it('弹层明细行与读屏整句共用同一份取值与行序', () => {
+    const detail = {
+      reportedTon: 20,
+      otherIssuedTon: 0,
+      issuedTon: 20,
+      remainingTon: -4.008,
+      orderedTon: 15.992,
+      brand: '中天',
+      overIssued: true,
+    }
+    const rows = tonProgressDetailRows(detail)
+    expect(rows.map((row) => row.labelKey)).toEqual([
+      'priceCompare.sheet.purchaseOrderSheetReported',
+      'priceCompare.sheet.purchaseOrderIssuedActual',
+      'priceCompare.sheet.columns.issuedTon',
+      'priceCompare.sheet.columns.unopenedTon',
+      'priceCompare.sheet.columns.purchaseOrderOrdered',
+      'priceCompare.sheet.columns.brand',
+    ])
+    expect(rows.map((row) => row.value)).toEqual([
+      '20.000',
+      '0.000',
+      '20.000',
+      '-4.008',
+      '15.992',
+      '中天',
+    ])
+    // 只有"已开"那一行可能标红
+    expect(rows.filter((row) => row.over).map((row) => row.labelKey)).toEqual([
+      'priceCompare.sheet.columns.issuedTon',
+    ])
+
+    const overIssuedText = i18next.t(
+      'priceCompare.sheet.purchaseOrderOverIssuedLong',
+      { issued: '20.000', ordered: '15.992' },
+    )
+    const aria = tonProgressDetailText(
+      detail,
+      (key) => i18next.t(key),
+      overIssuedText,
+    )
+    // 读屏文案必须逐段等于弹层的行(顺序与取值都一样), 超开说明追加在末尾
+    expect(aria).toBe(
+      `${rows
+        .map((row) => `${i18next.t(row.labelKey)} ${row.value}`)
+        .join(' / ')} / ${overIssuedText}`,
+    )
+
+    // 没有品牌时不追加品牌行; 未超开时没有超开说明
+    const plain = tonProgressDetailRows({
+      ...detail,
+      brand: undefined,
+      overIssued: false,
+    })
+    expect(plain).toHaveLength(5)
+    expect(
+      tonProgressDetailText({ ...detail, brand: undefined }, (key) =>
+        i18next.t(key),
+      ),
+    ).toBe(
+      plain.map((row) => `${i18next.t(row.labelKey)} ${row.value}`).join(' / '),
+    )
   })
 })

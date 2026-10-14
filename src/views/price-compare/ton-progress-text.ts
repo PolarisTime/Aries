@@ -40,7 +40,36 @@ export interface TonProgressTextParts {
 }
 
 /**
- * 「已开吨位」列的可见文案(与单元格渲染逐字一致)。
+ * 已开吨位(合计) = 其他已保存报单占用 + 本单据该明细行报单合计。
+ *
+ * <p>三列、ⓘ 弹层与读屏文案共用这一处加法: 各自内联 `other + reported` 时, 改了一处就会
+ * 出现"列上 20、弹层 18"这种同一行两个数字打架。</p>
+ */
+export function issuedTonTotal(
+  otherIssuedTotal: number,
+  reportedTon: number,
+): number {
+  const other = Number.isFinite(otherIssuedTotal) ? otherIssuedTotal : 0
+  const reported = Number.isFinite(reportedTon) ? reportedTon : 0
+  return other + reported
+}
+
+/**
+ * 剩余未开吨位 = 订货吨位合计 − 已开吨位合计(负值表示这条明细行被超开)。
+ *
+ * <p>基数必须是**订货吨位合计**(ΣorderedWeight), 不是本单据报的量。</p>
+ */
+export function remainingTonTotal(
+  orderedTotal: number,
+  otherIssuedTotal: number,
+  reportedTon: number,
+): number {
+  const ordered = Number.isFinite(orderedTotal) ? orderedTotal : 0
+  return ordered - issuedTonTotal(otherIssuedTotal, reportedTon)
+}
+
+/**
+ * 已开吨位列的可见文案(与单元格渲染逐字一致)。
  *
  * <p>口径(业务确认, 2026-10-14 修正): **已开吨位 = 本单据该订单明细行的报单吨位合计 +
  * 其他已保存报单占用**。关联了有效订单明细行之后, 这一列就是要回答"这条明细行开出了多少",
@@ -53,9 +82,8 @@ export function tonProgressTextParts(
   record: PurchaseOrderTonnageRecord,
   reportedTon: number,
 ): TonProgressTextParts {
-  const reported = Number.isFinite(reportedTon) ? reportedTon : 0
   return {
-    primary: compactTonText(record.issuedWeight + reported),
+    primary: compactTonText(issuedTonTotal(record.issuedWeight, reportedTon)),
     brand: issuedBrandText(record),
   }
 }
@@ -70,8 +98,92 @@ export function tonRemainingText(
   record: PurchaseOrderTonnageRecord,
   reportedTon: number,
 ): string {
-  const reported = Number.isFinite(reportedTon) ? reportedTon : 0
-  return compactTonText(record.orderedWeight - (record.issuedWeight + reported))
+  return compactTonText(
+    remainingTonTotal(record.orderedWeight, record.issuedWeight, reportedTon),
+  )
+}
+
+/** 吨位口径明细的一行: label 为 i18n key, value 为已格式化的数值/文本。 */
+export interface TonProgressDetailRow {
+  labelKey: string
+  value: string
+  /** 该行数值需要转警告色(已开合计超过订货吨位)。 */
+  over?: boolean
+}
+
+/** 吨位口径明细的输入(三列与 ⓘ 弹层同源)。 */
+export interface TonProgressDetail {
+  /** 本单据该明细行(合计)的报单吨位。 */
+  reportedTon: number
+  /** 其他已保存报单占用。 */
+  otherIssuedTon: number
+  /** 已开吨位合计 = 报单 + 其他占用。 */
+  issuedTon: number
+  /** 剩余未开吨位 = 订货吨位合计 − 已开吨位合计。 */
+  remainingTon: number
+  /** 关联明细行的订货吨位合计。 */
+  orderedTon: number
+  brand?: string
+  /** 已开合计超过订货吨位: 已开那一行转警告色。 */
+  overIssued?: boolean
+}
+
+/**
+ * 吨位口径明细(唯一来源): ⓘ/悬浮弹层逐行渲染与读屏整句文案都由它派生。
+ *
+ * <p>两处各自内联算式时, 改了一处就会让"看得见的数字"和"读出来的数字"打架 —— 这里把
+ * 行序与取值定死, 渲染只负责把 key 翻成文案。</p>
+ */
+export function tonProgressDetailRows(
+  detail: TonProgressDetail,
+): TonProgressDetailRow[] {
+  const rows: TonProgressDetailRow[] = [
+    {
+      labelKey: 'priceCompare.sheet.purchaseOrderSheetReported',
+      value: formatWeight(detail.reportedTon),
+    },
+    {
+      labelKey: 'priceCompare.sheet.purchaseOrderIssuedActual',
+      value: formatWeight(detail.otherIssuedTon),
+    },
+    {
+      labelKey: 'priceCompare.sheet.columns.issuedTon',
+      value: formatWeight(detail.issuedTon),
+      over: detail.overIssued,
+    },
+    {
+      labelKey: 'priceCompare.sheet.columns.unopenedTon',
+      value: formatWeight(detail.remainingTon),
+    },
+    {
+      labelKey: 'priceCompare.sheet.columns.purchaseOrderOrdered',
+      value: formatWeight(detail.orderedTon),
+    },
+  ]
+  if (detail.brand) {
+    rows.push({
+      labelKey: 'priceCompare.sheet.columns.brand',
+      value: detail.brand,
+    })
+  }
+  return rows
+}
+
+/**
+ * 读屏整句: 同一份明细行按「标签 值 / 标签 值 …」串联(超开说明追加在末尾)。
+ *
+ * <p>与弹层共用 {@link tonProgressDetailRows}, 因此"读出来的"与"看到的"必然一致。</p>
+ */
+export function tonProgressDetailText(
+  detail: TonProgressDetail,
+  translate: (key: string) => string,
+  overIssuedText?: string,
+): string {
+  const parts = tonProgressDetailRows(detail).map(
+    (row) => `${translate(row.labelKey)} ${row.value}`,
+  )
+  if (overIssuedText) parts.push(overIssuedText)
+  return parts.join(' / ')
 }
 
 /**

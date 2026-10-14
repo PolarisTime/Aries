@@ -227,6 +227,12 @@ type ColumnContext = {
   hiddenBrands: string[]
   /** 可见品牌列组数量(已排除隐藏品牌), 供 summary colSpan 与 scroll.x 复用 */
   visibleBrandCount: number
+  /**
+   * 本单据各采购订单明细行的报单吨位合计(聚合只算一次: 视图层 useMemo)。
+   *
+   * <p>吨位三列共用同一份, 单元格内不再各自重算。</p>
+   */
+  localTonByItemId: Map<string, number>
 }
 
 const cellOf = (
@@ -538,9 +544,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     purchaseOrderTonnage,
     openPurchaseOrderPicker,
     widths,
+    // 报单吨位合计: 由视图层算一次传入(这里不再重复聚合)
+    localTonByItemId,
   } = ctx
-  /** 本单据内各采购订单明细行的报单吨位合计(与已开吨位相减得到剩余吨位)。 */
-  const localTonByItemId = sumTonByPurchaseOrderItem(rows)
   /**
    * 行是否"已采购"(品牌价格列整体遮蔽)。
    * <p>必须同时满足: 已关联订单明细行, 且该明细行订货量 ≥ 本行报单吨位 —— 只看"已关联"
@@ -673,11 +679,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       />
     )
   }
-  /** 报单吨位合计: 当前单据全部商品行 ton 之和。 */
-  const tonTotal = rows.reduce((sum, row) => sum + (row.ton ?? 0), 0)
-  const tonTotalText = Number.isFinite(tonTotal)
-    ? String(Number(tonTotal.toFixed(8)))
-    : '0'
 
   return [
     {
@@ -901,7 +902,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       t,
       sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
       readOnly,
-      tonTotalText,
       width: widths.ton,
       issuedWidth: widths.issuedTon,
       unopenedWidth: widths.unopenedTon,
@@ -919,7 +919,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       t,
       sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
       readOnly,
-      tonTotalText,
       width: widths.ton,
       issuedWidth: widths.issuedTon,
       unopenedWidth: widths.unopenedTon,
@@ -937,7 +936,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       t,
       sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
       readOnly,
-      tonTotalText,
       width: widths.ton,
       issuedWidth: widths.issuedTon,
       unopenedWidth: widths.unopenedTon,
@@ -2576,6 +2574,8 @@ export function SheetPanel(props: Props) {
     hideRemark,
     hiddenBrands,
     varietyOptionsFlat: filterVarieties(varieties, brands, allowedProducts),
+    // 报单吨位合计: 视图层算一次, 吨位三列与列宽计算共用同一份
+    localTonByItemId,
     purchaseOrderTonnage,
     openPurchaseOrderPicker: purchaseOrderPicker.open,
     visibleBrandCount: brands.reduce(

@@ -27,7 +27,6 @@ export interface TonColumnContext {
   t: TFunction
   sheetSpecQuantityLocked: boolean
   readOnly: boolean
-  tonTotalText: string
   /** 当前字号下的报单吨位列宽(由 core.sheetColumnWidths 换算)。 */
   width: number
   /** 当前字号下的已开吨位列宽。 */
@@ -43,6 +42,12 @@ export interface TonColumnContext {
    * 非就绪时吨位两列不能断言关联明细行「已删除」(那只是还没加载到)。
    */
   purchaseOrderTonnageError?: boolean
+  /**
+   * 本单据各采购订单明细行的报单吨位合计。
+   *
+   * <p>聚合只算一次(视图层 useMemo), 三列共用同一份; 各处在单元格里重算会让"某列认得关联、
+   * 某列不认得"或同一行两个合计打架。这里只读。</p>
+   */
   localTonByItemId: Map<string, number>
   /** 在吨位列内移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
   moveFocusTon: (rowId: string, delta: number) => boolean

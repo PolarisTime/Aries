@@ -8,6 +8,10 @@ import { linkedPurchaseOrderItemIds } from './core'
 import {
   compactTonText,
   issuedBrandText,
+  issuedTonTotal,
+  remainingTonTotal,
+  tonProgressDetailRows,
+  tonProgressDetailText,
   tonProgressTextParts,
   tonRemainingText,
 } from './ton-progress-text'
@@ -312,7 +316,11 @@ export function IssuedTonCell({
   // 剩余未开吨位 = 订货吨位 − 已开吨位(已开含本单据这一行报的量), 负值表示这条明细行被超开
   const totals = resolveLinkedTonnageTotals(row, options, linked)
   const remaining = selected
-    ? totals.orderedTotal - (totals.otherIssuedTotal + localTonForItem)
+    ? remainingTonTotal(
+        totals.orderedTotal,
+        totals.otherIssuedTotal,
+        localTonForItem,
+      )
     : 0
   const over = selected !== undefined && remaining < 0
   return (
@@ -452,9 +460,13 @@ export function TonUnopenedCell({
   }
 
   // 已开吨位 = 本单据该明细行报单合计 + 其他已保存报单占用(服务端只给"其他")
-  const issuedTotal = totals.otherIssuedTotal + localTonForItem
+  const issuedTotal = issuedTonTotal(totals.otherIssuedTotal, localTonForItem)
   // 剩余未开吨位 = 订货吨位 − 已开吨位(负值表示这条明细行被超开)
-  const remaining = totals.orderedTotal - issuedTotal
+  const remaining = remainingTonTotal(
+    totals.orderedTotal,
+    totals.otherIssuedTotal,
+    localTonForItem,
+  )
   // 报单还没填(<=0)时没有基数可言: 显示短状态, 不显示误导性的合计
   const reportedMissing = localTonForItem <= 0
   // 已开合计超过订货吨位: 唯一需要标红的情形
@@ -464,45 +476,44 @@ export function TonUnopenedCell({
     issuedTotal > totals.orderedTotal
   // 可见数字与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
   const { primary, brand } = tonProgressTextParts(selected, localTonForItem)
+  /*
+   * 弹层逐行与读屏整句共用同一份明细(口径函数只此一处), 否则"看到的"与"读出来的"会漂移。
+   */
+  const detailInput = {
+    reportedTon: localTonForItem,
+    otherIssuedTon: totals.otherIssuedTotal,
+    issuedTon: issuedTotal,
+    remainingTon: remaining,
+    orderedTon: totals.orderedTotal,
+    brand: brand || undefined,
+    overIssued: overReported,
+  }
+  const detailRows = tonProgressDetailRows(detailInput)
+  const overIssuedText = overReported
+    ? t('priceCompare.sheet.purchaseOrderOverIssuedLong', {
+        issued: tonValueText(issuedTotal),
+        ordered: tonValueText(totals.orderedTotal),
+      })
+    : undefined
+  const ariaDetailText = tonProgressDetailText(
+    detailInput,
+    (key) => t(key),
+    overIssuedText,
+  )
   const detail = (
     <div className="price-compare-ton-tooltip">
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
-        <span>{tonValueText(localTonForItem)}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-        <span>{tonValueText(totals.otherIssuedTotal)}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.issuedTon')}</span>
-        <span
-          className={overReported ? 'price-compare-ton-hint--over' : undefined}
-        >
-          {tonValueText(issuedTotal)}
-        </span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.unopenedTon')}</span>
-        <span>{tonValueText(remaining)}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
-        <span>{tonValueText(totals.orderedTotal)}</span>
-      </div>
-      {brand ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.columns.brand')}</span>
-          <span>{brand}</span>
+      {detailRows.map((row) => (
+        <div className="price-compare-ton-popover-row" key={row.labelKey}>
+          <span>{t(row.labelKey)}</span>
+          <span
+            className={row.over ? 'price-compare-ton-hint--over' : undefined}
+          >
+            {row.value}
+          </span>
         </div>
-      ) : null}
-      {overReported ? (
-        <div className="price-compare-ton-popover-over">
-          {t('priceCompare.sheet.purchaseOrderOverIssuedLong', {
-            issued: tonValueText(issuedTotal),
-            ordered: tonValueText(totals.orderedTotal),
-          })}
-        </div>
+      ))}
+      {overIssuedText ? (
+        <div className="price-compare-ton-popover-over">{overIssuedText}</div>
       ) : null}
     </div>
   )
@@ -529,9 +540,7 @@ export function TonUnopenedCell({
                   : 'price-compare-ton-meta price-compare-ton-issued'
               }
             >
-              <span className="aries-sr-only">
-                {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(localTonForItem)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(totals.otherIssuedTotal)} / ${t('priceCompare.sheet.columns.issuedTon')} ${tonValueText(issuedTotal)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(remaining)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(totals.orderedTotal)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overReported ? ` / ${t('priceCompare.sheet.purchaseOrderOverIssuedLong', { issued: tonValueText(issuedTotal), ordered: tonValueText(totals.orderedTotal) })}` : ''}`}
-              </span>
+              <span className="aries-sr-only">{ariaDetailText}</span>
               {primary}
             </span>
           )}
@@ -712,8 +721,12 @@ function LinkedPurchaseOrderPopover({
   //   已开吨位 = 本单据该明细行报单合计 + 其他已保存报单占用(服务端 issuedWeight 只含"其他")
   //   剩余未开吨位 = 订货吨位合计 − 已开吨位(负值 = 超开)
   const reportedMissing = localTonForItem <= 0
-  const issuedTotal = otherIssuedTotal + localTonForItem
-  const remaining = orderedTotal - issuedTotal
+  const issuedTotal = issuedTonTotal(otherIssuedTotal, localTonForItem)
+  const remaining = remainingTonTotal(
+    orderedTotal,
+    otherIssuedTotal,
+    localTonForItem,
+  )
   const overOpened =
     !reportedMissing && orderedTotal > 0 && issuedTotal > orderedTotal
   const issuedMissing = reportedMissing
