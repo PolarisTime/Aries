@@ -106,19 +106,20 @@ export function RolePermissionPicker({
     [groups, normalizedKeyword, t],
   )
 
-  // 关键字过滤时自动展开命中分组；否则保持折叠，避免 40+ 分组撑高弹窗。
-  const [activeKeys, setActiveKeys] = useState<string[]>([])
-  const handleKeywordChange = (next: string) => {
-    setKeyword(next)
-    const normalized = next.trim().toLowerCase()
-    if (!normalized) return
-    // 展开命中的分组放在输入事件里做，而不是在 effect 里同步 setState（会多一次级联渲染）
-    setActiveKeys(
-      filterPermissionGroups(groups, normalized, t).map(
-        (group) => group.resource,
-      ),
-    )
-  }
+  // 关键字过滤时命中分组自动展开；否则保持折叠，避免 40+ 分组撑高弹窗。
+  //
+  // 展开态由 `visibleGroups` **渲染期派生**，而不是在输入事件里算一次：权限数据晚于关键字
+  // 到达（慢请求/缓存未就绪）时可见分组会变化，事件里算出的结果会停留在过滤前的空集，
+  // 命中分组保持折叠；清空关键字也不会复位。用 useMemo 派生既跟随可见分组，又不引入
+  // effect 级联 setState。
+  const [manualActiveKeys, setManualActiveKeys] = useState<string[]>([])
+  const activeKeys = useMemo(
+    () =>
+      normalizedKeyword
+        ? visibleGroups.map((group) => group.resource)
+        : manualActiveKeys,
+    [normalizedKeyword, visibleGroups, manualActiveKeys],
+  )
 
   const update = (next: Set<string>) => {
     setSelected(next)
@@ -234,7 +235,7 @@ export function RolePermissionPicker({
           prefix={<SearchOutlined />}
           placeholder={t('system.role.permissionSearchPlaceholder')}
           value={keyword}
-          onChange={(event) => handleKeywordChange(event.target.value)}
+          onChange={(event) => setKeyword(event.target.value)}
           style={{ maxWidth: 280 }}
         />
         <Space>
@@ -268,7 +269,13 @@ export function RolePermissionPicker({
           <Collapse
             size="small"
             activeKey={activeKeys}
-            onChange={(keys) => setActiveKeys(keys)}
+            onChange={(keys) => {
+              // 过滤期间展开态由 visibleGroups 派生；若此时写入手动值，清空关键字后会
+              // 冒出过滤前的陈旧展开项，因此只在未过滤时接受手动展开/折叠。
+              if (!normalizedKeyword) {
+                setManualActiveKeys(keys)
+              }
+            }}
             items={collapseItems}
           />
         </div>
