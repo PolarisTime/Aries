@@ -158,6 +158,48 @@ function snapshotSupplierIdentity(editorForm: Record<string, unknown>) {
   editorForm.supplierName = asString(supplier.supplierName).trim()
 }
 
+/**
+ * 「关联销售出库已审核」锁定下允许调整的销售订单字段白名单。
+ * 提示文案由本白名单派生（见 {@link editableLockedFieldsNotice}），不再各写一份。
+ */
+export const SALES_ORDER_LOCKED_FIELD_KEYS = [
+  'deliveryDate',
+  'orderDate',
+  'remark',
+] as const
+
+/** 同上，锁定下允许调整的明细列白名单。 */
+export const SALES_ORDER_LOCKED_ITEM_COLUMN_KEYS = ['unitPrice'] as const
+
+/** 白名单字段 → 界面文案；缺映射时回退字段键，由守卫测试立刻发现（不允许界面上出现字段键）。 */
+const LOCKED_FIELD_LABELS: Record<string, string> = {
+  deliveryDate: '送货日期',
+  orderDate: '报单日期',
+  remark: '备注',
+}
+
+const LOCKED_ITEM_COLUMN_LABELS: Record<string, string> = {
+  unitPrice: '单价',
+}
+
+/**
+ * 由白名单派生「仅允许调整…」提示文案。
+ *
+ * <p>原先文案是与白名单并排硬编码的字面量：白名单加了 `orderDate`（取价基准 ORDER 的锚点），
+ * 文案仍写「仅允许调整送货日期、备注和单价」，用户看到的说明与真实可编辑范围相反。
+ * 改成派生后，白名单增删字段时文案自动跟上。</p>
+ */
+export function editableLockedFieldsNotice(
+  fieldKeys: readonly string[],
+  itemColumnKeys: readonly string[] = [],
+): string {
+  const labels = [
+    ...fieldKeys.map((key) => LOCKED_FIELD_LABELS[key] ?? key),
+    ...itemColumnKeys.map((key) => LOCKED_ITEM_COLUMN_LABELS[key] ?? key),
+  ]
+  return `关联销售出库已审核，当前仅允许调整${labels.join('、')}。`
+}
+
 export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   registerModuleBehavior,
 ) => {
@@ -209,8 +251,8 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
 
   registerModuleBehavior('sales-order', {
     // 交付核定状态允许调整的字段：送货日期、报单日期（取价基准 ORDER 的锚点）、备注。
-    editableLockedFields: ['deliveryDate', 'orderDate', 'remark'],
-    editableLockedItemColumns: ['unitPrice'],
+    editableLockedFields: [...SALES_ORDER_LOCKED_FIELD_KEYS],
+    editableLockedItemColumns: [...SALES_ORDER_LOCKED_ITEM_COLUMN_KEYS],
     locksLineItemsWhenRecordLocked: true,
     lineItemLockSourceModule: 'sales-outbound',
     lineItemLockSourceField: 'salesOrderNo',
@@ -219,8 +261,10 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
       DOCUMENT_STATUS.AUDITED,
       DOCUMENT_STATUS.DELIVERY_VERIFICATION,
     ],
-    lockedLineItemsNotice:
-      '关联销售出库已审核，当前仅允许调整送货日期、备注和单价。',
+    lockedLineItemsNotice: editableLockedFieldsNotice(
+      SALES_ORDER_LOCKED_FIELD_KEYS,
+      SALES_ORDER_LOCKED_ITEM_COLUMN_KEYS,
+    ),
     partiallyEditableStatuses: [DOCUMENT_STATUS.DELIVERY_VERIFICATION],
   })
 
