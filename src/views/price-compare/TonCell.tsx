@@ -165,14 +165,29 @@ const TON_STATE_KEYS = {
   },
 } as const
 
+/**
+ * 短状态标签: 标签文字常驻可见, 完整说明在悬浮/聚焦气泡里。
+ *
+ * <p>纯键盘可达: 用原生 `button` 承担提示触发器(APG tooltip 模式的标准触发元素), 天然
+ * 进入 Tab 序列; 并让 Tooltip 响应 `focus` —— antd Tooltip 默认只认 `hover`
+ * (@rc-component/trigger 的 hover 动作不含 focus), 只把元素变可聚焦会让键盘用户 Tab 到
+ * 一个气泡永不打开的位置。配套的可见焦点环见 `price-compare.css` 的
+ * `.price-compare-ton-state:focus-visible`(WCAG 2.4.7)。</p>
+ */
 function TonStateLabel({ state }: { state: keyof typeof TON_STATE_KEYS }) {
   const { t } = useTranslation()
   const { label, hint } = TON_STATE_KEYS[state]
   const labelText = t(label)
   const hintText = t(hint)
   return (
-    <Tooltip classNames={{ root: TON_BUBBLE_CLASS }} title={hintText}>
-      <span className="price-compare-ton-state">{labelText}</span>
+    <Tooltip
+      classNames={{ root: TON_BUBBLE_CLASS }}
+      title={hintText}
+      trigger={['hover', 'focus']}
+    >
+      <button className="price-compare-ton-state" type="button">
+        {labelText}
+      </button>
     </Tooltip>
   )
 }

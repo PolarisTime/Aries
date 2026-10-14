@@ -718,14 +718,27 @@
 /*
  * 没有口径可算时的短状态(「未关联」/「已删除」): 与数字同字号同色, 用一个弱化底色提示
  * 这不是"数量为 0", 而是"还没有可算的口径"。
+ *
+ * 它是原生 button(提示触发器, 键盘可聚焦), 因此先重置 UA 外观再按原 span 的版式画,
+ * 视觉与改造前一致; 键盘聚焦时必须给出明确焦点环, 否则等于制造了一个新的"焦点不可见"。
  */
 .price-compare-ton-state {
+  border: 0;
+  margin: 0;
+  font-family: inherit;
   font-size: 11px;
+  line-height: inherit;
   color: var(--ant-color-text-tertiary);
   background: var(--ant-color-fill-quaternary);
   border-radius: var(--radius-xs, 4px);
   padding: 0 4px;
   white-space: nowrap;
+  cursor: help;
+}
+
+.price-compare-ton-state:focus-visible {
+  outline: 2px solid var(--ant-color-primary, #1677ff);
+  outline-offset: 1px;
 }
 
 /*
