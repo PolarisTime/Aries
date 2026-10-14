@@ -5,7 +5,12 @@ import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
-import { ROW_DRAG_LONG_PRESS_MS } from './row-drag-config'
+import {
+  ROW_DRAG_KEYBOARD_SHORTCUTS,
+  ROW_DRAG_LONG_PRESS_MS,
+  rowDragAriaKeyshortcuts,
+  rowDragKeyboardHintText,
+} from './row-drag-config'
 import { RowDragSortRow, RowDragSortScope } from './row-drag-sort'
 
 interface Row {
@@ -350,6 +355,29 @@ describe('整行长按拖动排序', () => {
     // 首行再往上: 不越界, 不产生新的顺序写回
     expect(onReorder).toHaveBeenCalledTimes(1)
     expect(order()).toEqual(['a', 'c', 'b'])
+  })
+
+  it('行声明 aria-keyshortcuts, 且与键位清单同源(不再有空格拾起)', () => {
+    const { rows } = render()
+    const keyshortcuts = rows[0].getAttribute('aria-keyshortcuts') ?? ''
+    // 行上没有行菜单时, 声明的键位就应当**只有**清单里那一套(不含任何手写补充)
+    expect(keyshortcuts).toBe(rowDragAriaKeyshortcuts())
+    expect(keyshortcuts).not.toContain('Space')
+    for (const entry of ROW_DRAG_KEYBOARD_SHORTCUTS) {
+      expect(keyshortcuts).toContain(entry.ariaKeyshortcuts)
+    }
+  })
+
+  it('读屏提示文案由键位清单插值(声明与文档同源)', () => {
+    render()
+    const hint = container.querySelector('.aries-sr-only')?.textContent ?? ''
+    expect(hint).toBe(
+      i18n.t('common.rowDragSort.keyboardHint', {
+        shortcuts: rowDragKeyboardHintText(),
+      }),
+    )
+    expect(hint).toContain('Alt+↑')
+    expect(hint).not.toMatch(/Space|空格/)
   })
 
   it('未按 Alt 的方向键不移动行(避免抢走表格内的正常方向键)', async () => {

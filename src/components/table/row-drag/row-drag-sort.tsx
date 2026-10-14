@@ -4,16 +4,13 @@ import {
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
-  KeyboardSensor,
   MouseSensor,
-  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
@@ -37,7 +34,13 @@ import {
 import { useTranslation } from 'react-i18next'
 import { RowContextMenuRow } from '@/components/RowContextMenuRow'
 import { forwardDragListeners } from './row-drag-activation'
-import { rowDragActivationConstraint } from './row-drag-config'
+import {
+  ROW_DRAG_KEYBOARD_SHORTCUTS,
+  rowDragActivationConstraint,
+  rowDragAriaKeyshortcuts,
+  rowDragKeyboardDelta,
+  rowDragKeyboardHintText,
+} from './row-drag-config'
 import '@/styles/row-drag-sort.css'
 
 /** 落位结果: `nextIds` 已是新顺序, 三个索引供调用方写回行模型并播报。 */
@@ -85,10 +88,15 @@ export interface RowDragSortScopeProps {
  *       位移超过 {@link ROW_DRAG_MOVE_TOLERANCE_PX} 像素(滚动/选文本)即取消长按;</li>
  *   <li><b>不抢编辑</b>: 输入框/下拉/数字输入/按钮/选择框上的按下直接放行, 见
  *       {@link isRowDragBlockedTarget};</li>
- *   <li><b>键盘等价</b>: 行内可聚焦元素上 Alt+↑/Alt+↓ 上移/下移; 落位与键盘移动都通过
+ *   <li><b>键盘等价</b>: 行内可聚焦元素上 Alt+↑/Alt+↓ 上移/下移(键位清单只在
+ *       {@link ROW_DRAG_KEYBOARD_SHORTCUTS} 一份, 声明与实现同源); 落位与键盘移动都通过
  *       `aria-live` 播报, 焦点保持在被移动的那一行;</li>
  *   <li><b>顺序写回行模型</b>: 只回调新 id 顺序, 由调用方改表单状态, 保存时按数组顺序下发。</li>
  * </ol>
+ *
+ * <p>输入方式只有鼠标一套(应用只在 Windows/macOS + Chrome/Firefox 使用): 不注册
+ * TouchSensor, 也不注册 dnd-kit 的 KeyboardSensor(空格拾起已作废, 键盘调整顺序走上面的
+ * Alt+↑/↓)。因此 `aria-keyshortcuts` 里也不会再出现 `Space`。</p>
  */
 export function RowDragSortScope({
   rowIds,
@@ -110,15 +118,10 @@ export function RowDragSortScope({
   rowIdsRef.current = rowIds
 
   const sensors = useSensors(
-    // 鼠标与触摸同一口径: 长按起拖, 阈值内位移过大即取消(触摸因此不劫持列表滚动)
+    // 单一鼠标口径(见 row-drag-config): 长按 380ms 起拖, 阈值内位移过大即取消。
+    // 不再注册 TouchSensor(无触摸场景), 也不再注册 KeyboardSensor(空格拾起作废)
     useSensor(MouseSensor, {
       activationConstraint: rowDragActivationConstraint(),
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: rowDragActivationConstraint(),
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
 
@@ -220,7 +223,9 @@ export function RowDragSortScope({
 
   const activeDescendantNote = enabled ? (
     <span className="aries-sr-only" id={hintId}>
-      {t('common.rowDragSort.keyboardHint')}
+      {t('common.rowDragSort.keyboardHint', {
+        shortcuts: rowDragKeyboardHintText(),
+      })}
     </span>
   ) : null
 
@@ -294,12 +299,11 @@ function useRowDragSortItem(rowId: string | undefined) {
     if (!enabled || !rowId || !context) return
     // dnd-kit 键盘拖动进行中时由它接管方向键, 此时不再二次移动(否则一次按键移动两格)
     if (context.activeId !== null) return
-    // 只认 Alt+↑/↓: 与 dnd-kit 的空格拾取、antd 数字输入的 ↑/↓ 调值都不冲突
-    if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
-      return
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+    // 键位只有 row-drag-config 一个出口: 只认清单里的组合, 空格/单独方向键一律不处理
+    const delta = rowDragKeyboardDelta(event)
+    if (delta === undefined) return
     event.preventDefault()
-    context.moveByKeyboard(rowId, event.key === 'ArrowUp' ? -1 : 1)
+    context.moveByKeyboard(rowId, delta)
   }
 
   /** 插入位置指示线: 向上拖画在目标行上方, 向下拖画在下方(落位方向与线一致)。 */
@@ -346,11 +350,10 @@ function rowDragAria(
 ) {
   return {
     'aria-describedby': enabled ? hintId : undefined,
-    /* 键盘用户要能在行上按 Alt+↑/↓: 行本身可聚焦, 行内控件聚焦时按键同样冒泡到这里 */
+    /* 键盘用户要能在行上按 Alt+↑/↓: 行本身可聚焦, 行内控件聚焦时按键同样冒泡到这里。
+       声明直接由键位清单拼出(见 row-dragAriaKeyshortcuts), 不再手写一套键位 */
     'aria-keyshortcuts': enabled
-      ? ['Alt+ArrowUp', 'Alt+ArrowDown', 'Space', originalShortcuts]
-          .filter(Boolean)
-          .join(' ')
+      ? rowDragAriaKeyshortcuts(originalShortcuts)
       : originalShortcuts,
   }
 }
@@ -360,7 +363,9 @@ function rowDragAria(
  *
  * <p>刻意**不透传 dnd-kit 的 `attributes`**: 它带 `role="button"`, 挂在 `&lt;tr&gt;`
  * 上会破坏表格语义(行必须是 row), 读屏将读不出表格结构。键盘操作因此不走 dnd-kit 的
- * "空格拾起", 而是 Alt+↑/Alt+↓ 直接移动 —— 与拖动等价且不需要进入拖动模式。</p>
+ * "空格拾起"(KeyboardSensor 已不再注册), 而是 Alt+↑/Alt+↓ 直接移动 —— 与拖动等价且不需要
+ * 进入拖动模式。`aria-keyshortcuts` 与提示文案都由键位清单派生, 见
+ * {@link ROW_DRAG_KEYBOARD_SHORTCUTS}。</p>
  */
 export function RowDragSortRow(props: RowDragSortRowProps) {
   const item = useRowDragSortItem(props['data-row-key'])

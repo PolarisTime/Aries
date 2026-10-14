@@ -7,9 +7,13 @@ import {
   isRowDragBlockedTarget,
 } from './row-drag-activation'
 import {
+  ROW_DRAG_KEYBOARD_SHORTCUTS,
   ROW_DRAG_LONG_PRESS_MS,
   ROW_DRAG_MOVE_TOLERANCE_PX,
   rowDragActivationConstraint,
+  rowDragAriaKeyshortcuts,
+  rowDragKeyboardDelta,
+  rowDragKeyboardHintText,
 } from './row-drag-config'
 
 /**
@@ -36,6 +40,63 @@ describe('行拖动长按口径', () => {
       delay: ROW_DRAG_LONG_PRESS_MS,
       tolerance: ROW_DRAG_MOVE_TOLERANCE_PX,
     })
+  })
+})
+
+/**
+ * 键位清单的**单一出口**契约。
+ *
+ * <p>回退验证: 把清单改回"双套"(再补一个 `Space` 拾起键)时, 下面"只有 Alt+↑/↓ 一套"
+ * 与"aria-keyshortcuts 不含 Space"两条立即变红; 把实现里的键位判断改回手写一套(不经过
+ * {@link rowDragKeyboardDelta})时, 按键判定用例变红。</p>
+ */
+describe('行拖动键位清单', () => {
+  it('只有 Alt+↑/↓ 一套: 不再有 Space 等第二套拾起键', () => {
+    expect(ROW_DRAG_KEYBOARD_SHORTCUTS).toHaveLength(2)
+    expect(
+      ROW_DRAG_KEYBOARD_SHORTCUTS.map((entry) => entry.ariaKeyshortcuts),
+    ).toEqual(['Alt+ArrowUp', 'Alt+ArrowDown'])
+  })
+
+  it('aria-keyshortcuts 由清单派生, 并追加调用方原有快捷键', () => {
+    expect(rowDragAriaKeyshortcuts()).toBe('Alt+ArrowUp Alt+ArrowDown')
+    expect(rowDragAriaKeyshortcuts('Shift+F10')).toBe(
+      'Alt+ArrowUp Alt+ArrowDown Shift+F10',
+    )
+    expect(rowDragAriaKeyshortcuts()).not.toContain('Space')
+  })
+
+  it('提示文案与清单同源: 逐个列出清单里的键位写法', () => {
+    const hint = rowDragKeyboardHintText()
+    for (const entry of ROW_DRAG_KEYBOARD_SHORTCUTS) {
+      expect(hint).toContain(entry.label)
+    }
+    expect(hint).not.toMatch(/Space|空格/)
+  })
+
+  it('按键判定只认清单: Alt+↑/↓ 出增量, 空格与单独方向键不出', () => {
+    const base = { ctrlKey: false, metaKey: false, shiftKey: false }
+    expect(
+      rowDragKeyboardDelta({ ...base, key: 'ArrowUp', altKey: true }),
+    ).toBe(-1)
+    expect(
+      rowDragKeyboardDelta({ ...base, key: 'ArrowDown', altKey: true }),
+    ).toBe(1)
+    // 空格不再拾起拖动: 清单里没有它, 因此这里必须不处理
+    expect(rowDragKeyboardDelta({ ...base, key: ' ', altKey: false })).toBe(
+      undefined,
+    )
+    expect(
+      rowDragKeyboardDelta({ ...base, key: 'ArrowDown', altKey: false }),
+    ).toBe(undefined)
+    expect(
+      rowDragKeyboardDelta({
+        ...base,
+        key: 'ArrowDown',
+        altKey: true,
+        ctrlKey: true,
+      }),
+    ).toBe(undefined)
   })
 })
 

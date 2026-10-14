@@ -2,7 +2,6 @@ import {
   DndContext,
   KeyboardSensor,
   MouseSensor,
-  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -18,6 +17,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchPurchaseOrderPickupList } from '@/api/purchase/purchase-order-pickup-list'
 import { ResizableHeaderCell } from '@/components/table/ResizableHeaderCell'
+import { rowDragActivationConstraint } from '@/components/table/row-drag/row-drag-config'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -94,16 +94,16 @@ export function PurchaseOrderPickupListOverlay({
     })
   }
   /*
-   * 取消可见拖动手柄后, 整行/整分组头就是拖动激活点, 三个传感器各司其职:
-   *  - 鼠标: 按住后移动 8px 起拖, 单纯点击不受影响;
-   *  - 触摸: 长按 250ms 起拖(不用 PointerSensor: 它在触摸下要求 touch-action:none,
-   *    那会让列表无法用手指滚动); 长按期间移动超过容差即取消, 保留滚动;
-   *  - 键盘: 聚焦后用空格拾起、方向键移动、空格放下。
+   * 取消可见拖动手柄后, 整行/整分组头就是拖动激活点:
+   *  - 鼠标: 长按 380ms 起拖 —— 阈值取共享的 rowDragActivationConstraint(), 不再自写一套;
+   *  - 不再注册 TouchSensor: 应用只在 Windows/macOS + Chrome/Firefox 使用, 那份
+   *    250ms 触摸阈值已作废(见 row-drag-config 的口径说明);
+   *  - 键盘: 本表格自己的 dnd-kit KeyboardSensor(空格拾起/方向键移动/空格放下), 行上的
+   *    aria-keyshortcuts 与之一致; 这个 DndContext 不重写。
    */
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 8 },
+    useSensor(MouseSensor, {
+      activationConstraint: rowDragActivationConstraint(),
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,

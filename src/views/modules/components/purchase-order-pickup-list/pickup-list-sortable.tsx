@@ -15,8 +15,9 @@ interface SortableRowProps extends HTMLAttributes<HTMLTableRowElement> {
  *
  * <p>设计取舍(取消可见拖动手柄后):</p>
  * <ul>
- *   <li>鼠标: 按住后移动 8px 起拖, 单纯点击不受影响;</li>
- *   <li>触摸: 长按 250ms 起拖, 期间移动超过容差即取消, 因此不影响列表滚动;</li>
+ *   <li>鼠标: 长按 380ms 起拖(阈值取共享的 rowDragActivationConstraint(), 与整行拖动同一套),
+ *     期间位移超过容差即取消, 单纯点击不受影响;</li>
+ *   <li>无触摸版: 应用只在 Windows/macOS + Chrome/Firefox 使用, 不再注册 TouchSensor;</li>
  *   <li>键盘: 行可聚焦, 空格拾起、方向键移动、空格放下(dnd-kit KeyboardSensor);</li>
  *   <li>长按让给拖动, 因此关闭行菜单的长按入口 —— 菜单仍可用鼠标右键与 Shift+F10,
  *     顺序调整另有右键菜单的「上移/下移」作为非拖动替代(WCAG 2.2 SC 2.5.7)。</li>

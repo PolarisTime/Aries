@@ -87,14 +87,14 @@ export function PickupDraftGroupSection({
   }
   /**
    * 分组头自身即拖动激活点(取消可见手柄后):
-   * 鼠标按住拖动 / 触摸长按 / 键盘空格, 输入控件上放行。
+   * 鼠标长按 380ms 起拖(共享阈值口径) / 键盘空格, 输入控件上放行。
    * 与明细行一致, 刻意不透传 dnd-kit 的 attributes(带 role="button")。
    */
   const dragListeners = useMemo(
     () => forwardDragListeners(listeners),
     [listeners],
   )
-  // 键盘监听落在真正获得焦点的标题按钮上, 指针/触摸覆盖整个分组头
+  // 键盘监听落在真正获得焦点的标题按钮上, 指针手势覆盖整个分组头
   const { onKeyDown: dragKeyDown, ...pointerTouchListeners } = dragListeners
 
   /** 分组菜单受控开合: 键盘 Shift+F10 需要主动置开。 */
