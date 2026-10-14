@@ -1124,11 +1124,47 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerText).not.toContain('沙钢')
   })
 
-  it('关联采购订单后视为已采购并遮蔽吨位后的品牌价格列', () => {
+  const tonnageInputOf = (orderedWeight: number, itemId = '301') => {
+    const record: PurchaseOrderTonnageRecord = {
+      purchaseOrderId: '88',
+      purchaseOrderItemId: itemId,
+      orderNo: 'PO-88',
+      supplierName: '沙钢',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: '12',
+      length: '9米',
+      brand: '中天',
+      orderedWeight,
+      issuedWeight: 0,
+      remainingWeight: orderedWeight,
+      status: '正常',
+    }
+    return {
+      options: [record],
+      tonnageByItemId: new Map([[itemId, record]]),
+      loading: false,
+      isError: false,
+    }
+  }
+
+  it('关联采购订单且订货量覆盖本行报单吨位后才视为已采购并遮蔽价格列', () => {
     const observed = renderStateful(
       makeSheet(),
-      [{ ...baseRow, id: 'r1', purchaseOrderId: 'po1' }],
+      [
+        {
+          ...baseRow,
+          id: 'r1',
+          ton: 12,
+          purchaseOrderId: '88',
+          purchaseOrderItemId: '301',
+        },
+      ],
       suppliers,
+      [{ name: '中天', freight: 30 }],
+      undefined,
+      [variety],
+      tonnageInputOf(20),
     )
 
     // 关联采购订单: 现货价输入被遮蔽, 出现遮蔽块与已采购行样式
@@ -1139,7 +1175,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(
       container.querySelector('tr.price-compare-purchased-row'),
     ).not.toBeNull()
-    expect(observed.rows[0].purchaseOrderId).toBe('po1')
+    expect(observed.rows[0].purchaseOrderId).toBe('88')
   })
 
   it('解除采购订单关联后不再标记, 品牌价格列恢复(反标记刷新回归)', () => {
@@ -1235,6 +1271,33 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(container.querySelector('.price-compare-variety-switch')).toBeNull()
   })
 
+  it('只关联一张订货量不足的明细行时不遮蔽价格(130 吨报单挂 10 吨明细行)', () => {
+    renderStateful(
+      makeSheet(),
+      [
+        {
+          ...baseRow,
+          id: 'r1',
+          ton: 130,
+          purchaseOrderId: '88',
+          purchaseOrderItemId: '301',
+        },
+      ],
+      suppliers,
+      [{ name: '中天', freight: 30 }],
+      undefined,
+      [variety],
+      tonnageInputOf(10),
+    )
+
+    // 订货 10 < 报单 130: 还没被覆盖, 保留比价区让用户继续处理
+    expect(container.querySelector('input[data-spot="中天:r1"]')).not.toBeNull()
+    expect(container.querySelector('tr.price-compare-purchased-row')).toBeNull()
+    expect(
+      container.querySelectorAll('.price-compare-purchased-mask').length,
+    ).toBe(0)
+  })
+
   it('已关联采购订单(已采购完)的行不显示长度切换按钮', () => {
     const twoLengths: Variety[] = [
       {
@@ -1254,11 +1317,19 @@ describe('SheetPanel 指定品牌展示', () => {
     ]
     renderStateful(
       makeSheet(),
-      [{ ...baseRow, purchaseOrderId: '88' }],
+      [
+        {
+          ...baseRow,
+          ton: 12,
+          purchaseOrderId: '88',
+          purchaseOrderItemId: '301',
+        },
+      ],
       [],
       undefined,
       false,
       twoLengths,
+      tonnageInputOf(20),
     )
     expect(container.querySelector('.price-compare-variety-switch')).toBeNull()
   })

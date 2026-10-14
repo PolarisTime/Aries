@@ -50,6 +50,7 @@ import {
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
+  isOrderTonnageCovered,
   isPurchasedRow,
   isSeparatorRow,
   LOCK_REASON_KEYS,
@@ -232,6 +233,11 @@ const cellOf = (
   title: React.ReactNode,
   width: number,
   render: (value: unknown, row: GridRow) => React.ReactNode,
+  /**
+   * 该行是否遮蔽此格(仅品牌价格列传)。默认按"已关联采购订单"遮蔽; 品牌价格列传入更严格的
+   * "已关联且订货量覆盖本行报单吨位", 避免 130 吨报单挂到订货 10 吨的明细行后比价区被遮掉。
+   */
+  isMasked: (row: GridRow) => boolean = (row) => isPurchasedRow(row.row),
 ) => ({
   title,
   width,
@@ -239,9 +245,9 @@ const cellOf = (
   // 列宽固定且字号小, 表头文案会被裁切: 补 title 让鼠标用户能看到完整列名
   onHeaderCell: () =>
     typeof title === 'string' ? { title } : ({} as { title?: string }),
-  // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购(关联采购订单)行整体遮蔽该区
+  // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购(已关联且被订货量覆盖)行整体遮蔽该区
   render: (value: unknown, row: GridRow) =>
-    isSeparatorRow(row.row) ? null : isPurchasedRow(row.row) ? (
+    isSeparatorRow(row.row) ? null : isMasked(row) ? (
       <span className="price-compare-purchased-mask" aria-hidden="true" />
     ) : (
       render(value, row)
@@ -531,6 +537,15 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   } = ctx
   /** 本单据内各采购订单明细行的报单吨位合计(与已开吨位相减得到剩余吨位)。 */
   const localTonByItemId = sumTonByPurchaseOrderItem(rows)
+  /**
+   * 行是否"已采购"(品牌价格列整体遮蔽)。
+   * <p>必须同时满足: 已关联订单明细行, 且该明细行订货量 ≥ 本行报单吨位 —— 只看"已关联"
+   * 会让 130 吨的报单挂到一条订货 10 吨的明细行上就失去整个比价区。</p>
+   */
+  const coveredByOrder = (row: PriceRow) =>
+    isPurchasedRow(row) &&
+    isOrderTonnageCovered(row, purchaseOrderTonnage.options)
+  const purchasedRowOf = (row: GridRow) => coveredByOrder(row.row)
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
   /**
@@ -786,8 +801,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           current && current.material
             ? `${current.category}|${current.material}|${current.spec}|${current.length}`
             : undefined
-        // 仅未关联采购订单(isPurchasedRow=false)且同规格存在另一长度时可切换。
-        const alternate = isPurchasedRow(current)
+        // 仅未采购(未关联, 或订货量还没覆盖本行报单吨位)且同规格存在另一长度时可切换。
+        const alternate = coveredByOrder(current)
           ? undefined
           : findAlternateLengthVariety(varietyOptionsFlat, current)
         // 锁定层级 单据 > 行 > 单元格: 行级锁同样冻结本行规格(行锁 = 规格与吨位定稿)。
@@ -1048,6 +1063,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         </div>
                       )
                     },
+                    purchasedRowOf,
                   ),
                   cellOf(
                     t('priceCompare.sheet.columns.spot'),
@@ -1141,6 +1157,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         input
                       )
                     },
+                    purchasedRowOf,
                   ),
                   cellOf(
                     t('priceCompare.sheet.columns.diff'),
@@ -1186,6 +1203,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         </Tooltip>
                       )
                     },
+                    purchasedRowOf,
                   ),
                   cellOf(
                     <SupplierFillHeader
@@ -1265,6 +1283,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         />
                       )
                     },
+                    purchasedRowOf,
                   ),
                 ],
               },
@@ -1482,7 +1501,11 @@ function SheetTable(props: SheetTableProps) {
       rowClassName={(row) => {
         const classes: string[] = []
         if (isSeparatorRow(row.row)) classes.push('price-compare-separator-row')
-        else if (isPurchasedRow(row.row))
+        else if (
+          isPurchasedRow(row.row) &&
+          // 只关联一张订货量不足的明细行不遮蔽价格: 否则 130 吨的报单会失去整个比价区
+          isOrderTonnageCovered(row.row, base.purchaseOrderTonnage.options)
+        )
           classes.push('price-compare-purchased-row')
         if (row.rowId === dragId) classes.push('price-compare-dragging')
         if (dragId && row.rowId === dropId && row.rowId !== dragId)

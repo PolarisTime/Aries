@@ -1,3 +1,4 @@
+import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import type {
   Brand,
   PriceData,
@@ -743,6 +744,26 @@ export function isSeparatorRow(row: Pick<PriceRow, 'rowType'>): boolean {
  */
 export function isPurchasedRow(row: PriceRow): boolean {
   return !isSeparatorRow(row) && Boolean(row.purchaseOrderId)
+}
+
+/**
+ * 该行是否已被所关联的采购订单明细行**覆盖**(订货量 ≥ 本行报单吨位)。
+ *
+ * <p>遮蔽品牌价格的前提是"这条明细行的量已经被订单锁定"。只关联一张订货量不足的明细行
+ * 不构成覆盖 —— 实测 130 吨的报单挂到一条订货 10 吨的明细行上, 整个品牌价格区就被遮掉,
+ * 用户没法继续比价。多行关联落地后这里改为按关联行的订货量合计判断。</p>
+ */
+export function isOrderTonnageCovered(
+  row: PriceRow,
+  options: readonly PurchaseOrderTonnageRecord[],
+): boolean {
+  if (!row.purchaseOrderItemId) return false
+  const record = options.find(
+    (item) => item.purchaseOrderItemId === row.purchaseOrderItemId,
+  )
+  if (!record) return false
+  const reported = row.ton ?? 0
+  return reported > 0 && record.orderedWeight >= reported
 }
 
 /**
