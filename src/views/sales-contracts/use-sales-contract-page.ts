@@ -79,6 +79,8 @@ export function useSalesContractPage() {
     useState<SalesContractResponse | null>(null)
   const [editorCustomerId, setEditorCustomerId] = useState('')
   const [detailContractId, setDetailContractId] = useState('')
+  /** 附件弹层绑定的合同记录 ID; 空串表示弹层关闭。 */
+  const [attachmentRecordId, setAttachmentRecordId] = useState('')
 
   const customerQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.customer,
@@ -301,6 +303,15 @@ export function useSalesContractPage() {
     }
   }
 
+  /** 附件以「选中单条合同」为目标记录, 多选或未选中时不进入弹层。 */
+  const handleAttachmentSelected = () => {
+    if (selectedRecord) {
+      setAttachmentRecordId(String(selectedRecord.id))
+    }
+  }
+
+  const handleCloseAttachment = () => setAttachmentRecordId('')
+
   return {
     t,
     form,
@@ -332,6 +343,7 @@ export function useSalesContractPage() {
     editorProjectsLoading: editorProjectsQuery.isFetching,
     detailContractId,
     setDetailContractId,
+    attachmentRecordId,
     setEditorCustomerId,
     handleFilterCustomerChange,
     handleSearch,
@@ -345,6 +357,8 @@ export function useSalesContractPage() {
     handleRecordDoubleClick,
     handleDeleteSelected,
     handleViewDetailSelected,
+    handleAttachmentSelected,
+    handleCloseAttachment,
     performStatusChange,
     clearSelection,
   }

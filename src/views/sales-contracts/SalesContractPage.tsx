@@ -1,8 +1,10 @@
 import { AppProPage } from '@/components/AppProPage'
+import { ModuleAttachmentModal } from '@/views/modules/components/ModuleAttachmentModal'
 import { SalesContractDetailOverlay } from './SalesContractDetailOverlay'
 import { SalesContractEditorOverlay } from './SalesContractEditorOverlay'
 import { SalesContractFilterToolbar } from './SalesContractFilterToolbar'
 import { SalesContractTable } from './SalesContractTable'
+import { SALES_CONTRACT_MODULE_KEY } from './sales-contract-model'
 import { useSalesContractPage } from './use-sales-contract-page'
 
 export function SalesContractPage() {
@@ -37,6 +39,7 @@ export function SalesContractPage() {
     editorProjectsLoading,
     detailContractId,
     setDetailContractId,
+    attachmentRecordId,
     setEditorCustomerId,
     handleFilterCustomerChange,
     handleSearch,
@@ -50,6 +53,8 @@ export function SalesContractPage() {
     handleRecordDoubleClick,
     handleDeleteSelected,
     handleViewDetailSelected,
+    handleAttachmentSelected,
+    handleCloseAttachment,
     performStatusChange,
     clearSelection,
   } = useSalesContractPage()
@@ -85,6 +90,7 @@ export function SalesContractPage() {
             capabilities={capabilities}
             onViewDetailSelected={handleViewDetailSelected}
             onEditSelected={() => openEditor(selectedRecord ?? null)}
+            onAttachmentSelected={handleAttachmentSelected}
             onDeleteSelected={handleDeleteSelected}
             onAuditSelected={() => performStatusChange('audit')}
             onIssueSelected={() => performStatusChange('issue')}
@@ -132,6 +138,13 @@ export function SalesContractPage() {
             onClose={() => setDetailContractId('')}
           />
         ) : null}
+
+        <ModuleAttachmentModal
+          open={Boolean(attachmentRecordId)}
+          moduleKey={SALES_CONTRACT_MODULE_KEY}
+          recordId={attachmentRecordId}
+          onClose={handleCloseAttachment}
+        />
       </div>
     </AppProPage>
   )

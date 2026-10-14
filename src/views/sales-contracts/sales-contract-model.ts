@@ -11,6 +11,13 @@ import type {
 import { asString } from '@/utils/type-narrowing'
 
 /**
+ * 附件绑定的模块键。
+ * 必须与后端 ModuleKeys.SALES_CONTRACT / ModuleCatalog 注册保持一致:
+ * 后端以 moduleKey 校验附件归属, 不一致会以「当前模块不支持附件」拒绝读写。
+ */
+export const SALES_CONTRACT_MODULE_KEY = 'sales-contract'
+
+/**
  * 销售合同状态(后端定稿): 草稿 / 审核 / 签发 / 归档 / 作废。
  * 流转 草稿 → 审核 → 签发 → 归档; 作废仅自 草稿 / 审核 / 归档, 签发不可作废。
  */

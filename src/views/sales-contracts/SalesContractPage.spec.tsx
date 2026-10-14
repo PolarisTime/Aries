@@ -16,6 +16,25 @@ import {
 import { bindAntdAppApi } from '@/utils/antd-app'
 import { SalesContractPage } from './SalesContractPage'
 
+interface AttachmentModalProps {
+  open: boolean
+  moduleKey: string
+  recordId: string
+  onClose: () => void
+}
+
+/** 附件弹层在页面里始终挂载，这里只记录最近一次收到的 props 用于断言目标合同。 */
+const attachmentModalSpy = vi.hoisted(() => ({
+  latest: null as AttachmentModalProps | null,
+}))
+
+vi.mock('@/views/modules/components/ModuleAttachmentModal', () => ({
+  ModuleAttachmentModal: (props: AttachmentModalProps) => {
+    attachmentModalSpy.latest = props
+    return null
+  },
+}))
+
 vi.mock('@/api/sales/sales-contracts', () => ({
   listSalesContracts: vi.fn(),
   getSalesContract: vi.fn(),
@@ -132,6 +151,7 @@ describe('SalesContractPage 销售合同页', () => {
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
+    attachmentModalSpy.latest = null
     if (!window.matchMedia) {
       window.matchMedia = (query: string) => ({
         matches: false,
@@ -314,5 +334,59 @@ describe('SalesContractPage 销售合同页', () => {
     expect(labels).not.toContain('归档')
     expect(labels).not.toContain('作废')
     expect(labels).not.toContain('编辑')
+  })
+
+  it('附件弹层默认关闭且不带目标合同', async () => {
+    renderPage()
+    await flushAsync()
+
+    expect(attachmentModalSpy.latest).toMatchObject({
+      open: false,
+      moduleKey: 'sales-contract',
+      recordId: '',
+    })
+  })
+
+  it('未选中记录时不提供附件入口', async () => {
+    renderPage()
+    await flushAsync()
+
+    expect(toolbarLabels()).not.toContain('附件')
+  })
+
+  it('选中归档合同后可打开附件弹层并绑定该合同', async () => {
+    renderPage()
+    await flushAsync()
+
+    // 归档合同不可编辑，但附件仍应可管理: 入口只看单条选中, 不受状态机只读约束。
+    await selectRow(3)
+    expect(toolbarLabels()).toContain('附件')
+
+    await clickButton('附件')
+
+    expect(attachmentModalSpy.latest).toMatchObject({
+      open: true,
+      moduleKey: 'sales-contract',
+      recordId: '9000000000000000004',
+    })
+  })
+
+  it('关闭附件弹层后清空目标合同', async () => {
+    renderPage()
+    await flushAsync()
+
+    await selectRow(0)
+    await clickButton('附件')
+    expect(attachmentModalSpy.latest?.recordId).toBe('9000000000000000001')
+
+    await act(async () => {
+      attachmentModalSpy.latest?.onClose()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(attachmentModalSpy.latest).toMatchObject({
+      open: false,
+      recordId: '',
+    })
   })
 })

@@ -35,6 +35,7 @@ interface SalesContractFilterToolbarProps {
   capabilities: SalesContractCapabilities
   onViewDetailSelected: () => void
   onEditSelected: () => void
+  onAttachmentSelected: () => void
   onDeleteSelected: () => void
   onAuditSelected: () => void
   onIssueSelected: () => void
@@ -66,6 +67,7 @@ export function SalesContractFilterToolbar({
   capabilities,
   onViewDetailSelected,
   onEditSelected,
+  onAttachmentSelected,
   onDeleteSelected,
   onAuditSelected,
   onIssueSelected,
@@ -154,6 +156,11 @@ export function SalesContractFilterToolbar({
             {selectedRecord && canEdit ? (
               <Button onClick={onEditSelected}>
                 {t('hooks.recordActions.edit')}
+              </Button>
+            ) : null}
+            {selectedRecord ? (
+              <Button onClick={onAttachmentSelected}>
+                {t('hooks.recordActions.attachment')}
               </Button>
             ) : null}
             {selectedRecord && canAudit ? (
