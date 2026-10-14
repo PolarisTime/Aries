@@ -8,32 +8,27 @@ import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { buildRouterHref } from '@/utils/router-search'
+import {
+  NEXT_MODULE_PATHS,
+  type SaveResultActionKind,
+} from './save-result-overlay-utils'
 
 /**
  * 保存回执的操作区。
  *
  * <p>从 SaveResultOverlay 抽出的原因：这里同时承担「下一模块快捷跳转」「继续新建」
  * 「并发冲突重载」「上传回单」四类动作与它们的状态守卫，内联在弹窗里会把弹窗的
- * 控制流复杂度推过 react-doctor 阈值 (no-high-complexity-react-function)。
- * 按钮顺序、文案与主题色保持逐字不变。</p>
+ * 控制流复杂度推过 react-doctor 阈值 (no-high-complexity-react-function)。</p>
+ *
+ * <p>本次改造：按钮集合不再写死，改由 {@link resolveSaveResultActions} 按
+ * 「本次动作 + 单据是否已生效」派生后传入。原先无论草稿保存还是保存并审核都渲染同一组按钮，
+ * 草稿也会出现「创建下一模块」——而下游单据无法关联一张尚未生效的草稿。</p>
  */
 
-const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
-  'purchase-order': {
-    labelKey: 'modules.nextModule.createPurchaseInbound',
-    path: '/purchase-inbound',
-  },
-  'sales-order': {
-    labelKey: 'modules.nextModule.createSalesOutbound',
-    path: '/sales-outbound',
-  },
-}
-
 interface Props<Key extends ModuleKey> {
-  canCreateAnother: boolean
-  canUploadAttachment: boolean
+  /** 本次回执允许出现的动作（顺序即渲染顺序，由共享派生函数给出）。 */
+  actions: readonly SaveResultActionKind[]
   isConflict: boolean
-  isSuccess: boolean
   moduleKey: Key
   onClear: () => void
   onCreateAnother: () => void
@@ -45,10 +40,8 @@ interface Props<Key extends ModuleKey> {
 }
 
 export function SaveResultActionBar<Key extends ModuleKey>({
-  canCreateAnother,
-  canUploadAttachment,
+  actions,
   isConflict,
-  isSuccess,
   moduleKey,
   onClear,
   onCreateAnother,
@@ -61,7 +54,7 @@ export function SaveResultActionBar<Key extends ModuleKey>({
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const nextModuleTemplate = isSuccess ? NEXT_MODULE_PATHS[moduleKey] : null
+  const nextModuleTemplate = NEXT_MODULE_PATHS[moduleKey]
   const nextModule = nextModuleTemplate
     ? { label: t(nextModuleTemplate.labelKey), path: nextModuleTemplate.path }
     : null
@@ -78,10 +71,10 @@ export function SaveResultActionBar<Key extends ModuleKey>({
 
   return (
     <>
-      {canUploadAttachment ? (
+      {actions.includes('upload-attachment') ? (
         <Button onClick={onOpenAttachments}>上传回单/凭证</Button>
       ) : null}
-      {nextModule ? (
+      {actions.includes('next-module') && nextModule ? (
         <Button
           type="primary"
           icon={<ArrowRightOutlined />}
@@ -90,23 +83,25 @@ export function SaveResultActionBar<Key extends ModuleKey>({
           {nextModule.label}
         </Button>
       ) : null}
-      {isSuccess && canCreateAnother ? (
+      {actions.includes('create-another') ? (
         <Button icon={<PlusOutlined />} onClick={onCreateAnother}>
           {t('modules.saveResult.createAnother')}
         </Button>
       ) : null}
-      <Button
-        type="primary"
-        icon={isConflict ? <ReloadOutlined /> : undefined}
-        loading={isConflict && resolvingConflict}
-        onClick={isConflict ? onResolveConflict : onClear}
-      >
-        {isConflict
-          ? t('modules.saveResult.reloadLatest')
-          : status === 'error'
-            ? t('modules.saveResult.backToEdit')
-            : t('modules.saveResult.close')}
-      </Button>
+      {actions.includes('close') ? (
+        <Button
+          type="primary"
+          icon={isConflict ? <ReloadOutlined /> : undefined}
+          loading={isConflict && resolvingConflict}
+          onClick={isConflict ? onResolveConflict : onClear}
+        >
+          {isConflict
+            ? t('modules.saveResult.reloadLatest')
+            : status === 'error'
+              ? t('modules.saveResult.backToEdit')
+              : t('modules.saveResult.close')}
+        </Button>
+      ) : null}
     </>
   )
 }

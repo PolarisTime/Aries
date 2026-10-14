@@ -62,12 +62,37 @@ import {
 } from '@/views/modules/module-editor-workspace-support'
 import { runSalesOrderContractCheck } from '@/views/modules/sales-order-contract-check'
 
+/**
+ * 保存回执里的主单号：主单号字段由各模块配置声明（如 freight-bill 的 billNo），
+ * 回执对象是各模块 DTO 的联合类型，没有统一索引签名，因此在这里做一次安全读取。
+ */
+function readSavedDocumentNo(
+  record: unknown,
+  primaryNoKey: string | undefined,
+): string {
+  if (!primaryNoKey || !record || typeof record !== 'object') {
+    return ''
+  }
+  return asString((record as Record<string, unknown>)[primaryNoKey]).trim()
+}
+
 export interface EditorSaveResult<Key extends ModuleKey> {
   status: 'success' | 'error' | 'warning'
   message: string
   traceId?: string
   errorCode?: number
   record?: ModuleDetailRecordFor<Key>
+  /**
+   * 本次提交是「保存草稿 / 保存并审核 / 核定并审核」中的哪一种。
+   *
+   * <p>回执页要按「从哪来、单据变成什么状态」渲染标题与按钮，光看 status 区分不出来：
+   * 三种动作都是 success。缺省表示未知来源，回执退回通用成功文案（兼容旧调用）。</p>
+   */
+  action?: SubmissionAction
+  /** 保存后单据所处的状态（后端回执里的 status），用于文案里点明「草稿 / 已审核」。 */
+  resultStatus?: string
+  /** 保存后单据的主单号，回执文案带上它，便于用户确认「刚存的是哪一张」。 */
+  documentNo?: string
 }
 
 interface SubmissionSession<Key extends ModuleKey> {
@@ -407,6 +432,11 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
             status: 'success',
             message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
             record: savedRecord,
+            // 把「本次是保存草稿还是保存并审核」带进回执：三种动作都是 success，
+            // 不带这个信息回执只能给一套通用文案与按钮。
+            action: submissionAction,
+            resultStatus: asString(savedRecord?.status).trim(),
+            documentNo: readSavedDocumentNo(savedRecord, config.primaryNoKey),
           })
         } catch (error) {
           if (!mutationAttempted) {

@@ -768,6 +768,10 @@ export const zhCN = {
     saveResult: {
       success: '保存成功',
       pageSuccess: '{{title}}保存成功',
+      // 三种提交动作在回执里必须可区分：草稿 / 已提交审核 / 已核定并提交审核。
+      savedAsDraft: '{{title}}{{no}}已保存为草稿',
+      savedAndAudited: '{{title}}{{no}}已保存并提交审核',
+      verifiedAndAudited: '{{title}}{{no}}已核定并提交审核',
       error: '保存失败',
       conflict: '数据已被其他操作更新',
       backToEdit: '返回编辑',

@@ -13,6 +13,8 @@ import { SaveResultFieldSummary } from './SaveResultFieldSummary'
 import { SaveResultItemGroups } from './SaveResultItemGroups'
 import {
   buildSaveResultItemColumns,
+  NEXT_MODULE_PATHS,
+  resolveSaveResultActions,
   resolveSaveResultItems,
   resolveSaveResultTitle,
 } from './save-result-overlay-utils'
@@ -65,6 +67,23 @@ export function SaveResultOverlay<Key extends ModuleKey>({
   const canUploadAttachment = Boolean(isSuccess && saveResult.record?.id)
   const itemColumns = buildSaveResultItemColumns(config, formatCellValue)
   const itemGroups = buildModuleItemGroups(moduleKey, items)
+  // 按钮集合按「本次动作 + 单据是否已生效」派生：草稿回执不给下游入口，也不给审核类动作。
+  const actions = resolveSaveResultActions({
+    action: saveResult.action,
+    canCreateAnother,
+    canUploadAttachment,
+    hasNextModule: Boolean(NEXT_MODULE_PATHS[moduleKey]),
+    isSuccess,
+  })
+
+  const title = resolveSaveResultTitle({
+    config,
+    isConflict,
+    isSuccess,
+    t,
+    action: saveResult.action,
+    documentNo: saveResult.documentNo,
+  })
 
   return (
     <WorkspaceOverlay
@@ -73,18 +92,25 @@ export function SaveResultOverlay<Key extends ModuleKey>({
       onClose={isConflict ? onResolveConflict : onClear}
       className="save-result-overlay"
     >
+      {/* 结果页是新插入的内容，读屏不会自动播报：用 sr-only 的 live region 播报标题。 */}
+      <div
+        className="aries-sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {title}
+      </div>
       <AppResult
         className="app-result--workspace"
         status={saveResult.status}
-        title={resolveSaveResultTitle({ config, isConflict, isSuccess, t })}
+        title={title}
         subTitle={saveResult.message}
         traceId={saveResult.traceId}
         extra={
           <SaveResultActionBar
-            canCreateAnother={canCreateAnother}
-            canUploadAttachment={canUploadAttachment}
+            actions={actions}
             isConflict={isConflict}
-            isSuccess={isSuccess}
             moduleKey={moduleKey}
             onClear={onClear}
             onCreateAnother={onCreateAnother}
