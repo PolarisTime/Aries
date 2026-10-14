@@ -737,12 +737,16 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
    * `layoutTabsStore.ensureTabForLocation`（建标签幂等入口）；`AppTabContainer` 的
    * "激活即已挂载"不变式保留为结果兜底。</p>
    *
-   * <p>本用例是**浏览器层回归守护**，不跟随实现：三条断言分别钉住三件不可恢复的东西——面板 DOM
+   * <p>本用例是**浏览器层回归守护**，不跟随实现：断言分别钉住三件不可恢复的东西——面板 DOM
    * 节点（是否被重建）、编辑器草稿（组件状态）、未保存会话（store 状态）。把恢复改回父组件的
    * 被动 effect（或在 hydrate 中各自建标签），本用例就会变红。</p>
    *
    * <p>显隐做了两轮：反复切走再切回也必须原样保留草稿与会话（面板一旦被卸载重建，
-   * 第二轮就会先红）。</p>
+   * 第二轮就会先红）。非激活面板现已由 React 19 的 `Activity` 承载（见
+   * `AppTabContainer` 的 `TAB_PANEL_ACTIVITY_ENABLED`），所以本用例同时是 Activity 的
+   * 语义守护：`Activity` 隐藏时会**销毁子树 effect**，把初始化写成"挂载即初始化"就会在第 3 步
+   * 把草稿重置掉（Step 2b 先用"DOM 保留但不可见"锁住隐藏语义，Step 4 再用未保存会话锁住
+   * 会话槽没有随隐藏被清掉）。</p>
    */
   test('开新标签后深链落地标签的面板、草稿与未保存会话都不得被重建', async ({
     page,
@@ -772,14 +776,21 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
     await expect(remark, '销售订单编辑器应有备注输入框').toBeVisible({
       timeout: 15_000,
     })
+    /** 不带 :visible 的同名定位器：用来断言"面板被隐藏但 DOM 保留"。 */
+    const remarkInputs = page.locator('input#module-form-remark, input#remark')
     const remarkValue = `E2E-KEEP-${Date.now()}`
     await remark.fill(remarkValue)
     await remark.blur()
     expect(
       await page.evaluate(() => {
-        const table = document.querySelector(
-          '[role="tabpanel"]:not([hidden]) table',
+        /* 按"持有编辑器输入框的面板"定位，而不是靠 :not([hidden])：
+           非激活面板可能由 Activity 的 display:none 隐藏（没有 hidden 属性），
+           纯属性选择器会误选到别的面板的表格。 */
+        const input = document.querySelector(
+          'input#module-form-remark, input#remark',
         )
+        const panel = input?.closest('[role="tabpanel"]')
+        const table = panel?.querySelector('table')
         table?.setAttribute('data-keep-node', 'kept')
         return Boolean(table)
       }),
@@ -802,6 +813,17 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
     await expectModuleHeading(page, '供应商资料')
     await expectGridTable(page)
     await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    // 2b) 隐藏态收口：非激活面板连同其内的编辑浮层（含 portal 到 body 的 Modal/Dropdown）
+    //     必须整体不可见，但 DOM 必须保留 —— 两条合起来才等于「隐藏」而不是「卸载重建」。
+    await expect(
+      remarkInputs,
+      '非激活面板里的编辑器 DOM 必须保留（卸载重建就会丢草稿）',
+    ).toHaveCount(1)
+    await expect(
+      remarkInputs,
+      '非激活面板里的编辑浮层必须不可见（Activity 会连同子树里的 portal 一起隐藏）',
+    ).toBeHidden()
 
     // 3) 切回销售订单：面板必须是原来那一块，草稿必须还在
     await tabLabel('销售订单').click()

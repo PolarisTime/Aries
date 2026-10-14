@@ -1,6 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { Layout } from 'antd'
-import { useEffect, useMemo, useRef } from 'react'
+import { Activity, useEffect, useMemo, useRef } from 'react'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
@@ -16,6 +16,22 @@ import { type LayoutTab, useLayoutTabsStore } from '@/stores/layoutTabsStore'
 
 const { Content } = Layout
 
+/**
+ * 非激活面板是否改用 React 19 的 `Activity` 承载。
+ *
+ * <p><b>语义边界（官方语义，实测一致）</b>：`Activity` 在 hidden 时用
+ * `display: none !important` 隐藏子树，**销毁子树 effect**，组件 state 与 DOM 全部保留；
+ * 恢复时按新挂载重跑一遍 effect setup。它不仅隐藏宿主节点，连子树里的 portal（Modal、
+ * Dropdown 等 body 级弹层）也一起隐藏，所以隐藏态的面板在视觉、鼠标与键盘上都不可达。
+ * 代价是「只在挂载时跑一次」的 effect 会被重跑，因此**任何初始化都必须是幂等的**：
+ * 编辑器初始化已按会话 key 收口（见 src/views/modules/use-module-editor-workspace.ts
+ * 的 `initializedEditorKeyRef`），effect 重入不再覆盖用户已改的值。</p>
+ *
+ * <p>出问题时可以把开关拨回 `false`：退回「已挂载面板常驻 DOM + `hidden` 属性显隐」的旧行为，
+ * 其余逻辑（激活即已挂载不变式、Router 回收）两条路径共用。</p>
+ */
+export const TAB_PANEL_ACTIVITY_ENABLED = true
+
 /** 单个面板内的子 Router 挂载点；reloadKey 变化时经 key 重建（「刷新当前页」） */
 function TabPanelRouter({ tab }: { tab: LayoutTab }) {
   // attach 幂等：同 tabId 返回既有实例；reloadKey 变化时内部先 detach 再重建
@@ -25,19 +41,24 @@ function TabPanelRouter({ tab }: { tab: LayoutTab }) {
 
 /**
  * 多标签页内容容器：替代原 <Outlet key={openPageKey}> 强制重挂载方案。
- * 已挂载过的 Tab 常驻 DOM（hidden 切换显隐），实现表单/筛选/滚动位置保留；
+ * 已挂载过的 Tab 常驻 DOM（非激活时隐藏），实现表单/筛选/滚动位置保留；
  * 当前激活的 Tab 无论是否挂载过都立即渲染（激活即挂载），
  * 其余恢复自持久化的 Tab 保持惰性，首次激活才创建子 Router。
  *
- * <p><b>为什么本次没有改用 React 19 的 Activity 承载非激活面板（已评估，暂缓）</b>：Activity
- * 的 `hidden` 会**销毁子树 effect**（DOM 与组件 state 保留）。本项目多处依赖"effect 只在真正
- * 挂载时跑一次"：`useModuleEditorWorkspace` 的初始化 effect（见
- * src/views/modules/use-module-editor-workspace.ts 的 initializeEditor）会在 effect 重入时
- * `form.resetFields()` 重建表单，编辑器会话生命周期也挂在 effect 清理上（`return endSession`）。
- * 实测把面板套进 `<Activity mode="hidden">` 后，tests/e2e/navigation.spec.ts 的 P2-25 在
- * "切回后草稿仍在"这一步直接变红（remark 被重置为空）。因此本次只收口竞态本体
- * （hydrate 前移 + 建标签幂等入口），Activity 需先让编辑器初始化与会话生命周期对 effect 重入
- * 幂等，再单独立项接入。</p>
+ * <p><b>非激活面板已由 React 19 的 `Activity` 收口</b>（开关见
+ * {@link TAB_PANEL_ACTIVITY_ENABLED}）。此前记录的「已知瑕疵」——Activity 会销毁子树 effect，
+ * 把面板套进 `<Activity mode="hidden">` 后 tests/e2e/navigation.spec.ts 的 P2-25 在
+ * 「切回后草稿仍在」变红——已经定位为**真 bug 而非 Activity 的副作用**：编辑器初始化写成
+ * 「挂载即初始化」（setup 里 `form.resetFields()` + 灌默认值），任何 effect 重入
+ * （StrictMode 双调用、Activity 隐藏→恢复、父级重渲染换 config 身份）都会把用户已改的值重置。
+ * 收口方式：初始化按会话 key（`moduleKey:实体 id:open`，见
+ * use-module-editor-workspace.ts 的 `initializeEditor`）幂等，重置移到「会话结束（open 收回 false）」
+ * 的清理侧。因此 Activity 带来的语义变化只有一条：**state/DOM 保留、effect 销毁重跑**，
+ * 凡是挂在 effect 上的初始化都必须幂等，不要再写「挂载即初始化」。</p>
+ *
+ * <p>隐藏态的两个附带要求同样由 Activity 的语义满足：面板内的 Modal/Dropdown（portal 到 body）
+ * 随子树一起被 `display:none` 隐藏，视觉、指针与键盘都不可达；面板的焦点陷阱
+ * （useFocusTrap）随 effect 销毁而摘掉监听，不会在别的标签里抢 Tab 键，恢复时才重新武装。</p>
  */
 export function AppTabContainer() {
   const tabs = useLayoutTabsStore((state) => state.tabs)
@@ -93,6 +114,17 @@ export function AppTabContainer() {
       <div className="leo-content-inner leo-tab-viewport">
         {tabs.map((tab) => {
           const mounted = tab.mountedOnce || tab.id === activeTabId
+          const isActive = tab.id === activeTabId
+          /* 面板外壳始终存在, 内容仍按需挂载(恢复自持久化的标签保持惰性)。
+             若外壳也惰性渲染, 非激活标签的 aria-controls 会指向不存在的元素,
+             形成悬空引用 —— 实测 Playwright 可复现。 */
+          const content = mounted ? (
+            <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
+              <EditorSessionScopeProvider tabId={tab.id}>
+                <TabPanelRouter key={`${tab.id}:${tab.reloadKey}`} tab={tab} />
+              </EditorSessionScopeProvider>
+            </AppErrorBoundary>
+          ) : null
           return (
             <div
               key={tab.id}
@@ -103,22 +135,21 @@ export function AppTabContainer() {
               id={tabPanelDomId(tab.id)}
               role="tabpanel"
               aria-labelledby={tabLabelDomId(tab.id)}
-              hidden={tab.id !== activeTabId}
+              /* 走 Activity 时显隐交给 Activity 的内联 display:none !important，这里**不能**
+                 再设 hidden 属性：Activity 恢复只清内联 display，属性还留着的话恢复后依旧不可见；
+                 关掉开关时退回属性显隐。另给出「哪个面板是激活的」稳定锚点：
+                 Activity 隐藏态没有 hidden 属性可判，纯 DOM 查询会误选隐藏面板。 */
+              hidden={TAB_PANEL_ACTIVITY_ENABLED ? undefined : !isActive}
+              data-tab-active={isActive ? 'true' : undefined}
               className="leo-tab-panel"
             >
-              {/* 面板外壳始终存在, 内容仍按需挂载(恢复自持久化的标签保持惰性)。
-                 若外壳也惰性渲染, 非激活标签的 aria-controls 会指向不存在的元素,
-                 形成悬空引用 —— 实测 Playwright 可复现。 */}
-              {mounted ? (
-                <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
-                  <EditorSessionScopeProvider tabId={tab.id}>
-                    <TabPanelRouter
-                      key={`${tab.id}:${tab.reloadKey}`}
-                      tab={tab}
-                    />
-                  </EditorSessionScopeProvider>
-                </AppErrorBoundary>
-              ) : null}
+              {TAB_PANEL_ACTIVITY_ENABLED ? (
+                <Activity mode={isActive ? 'visible' : 'hidden'}>
+                  {content}
+                </Activity>
+              ) : (
+                content
+              )}
             </div>
           )
         })}

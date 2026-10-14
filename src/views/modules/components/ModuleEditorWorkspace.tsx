@@ -1,5 +1,5 @@
 import { Form } from 'antd'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef } from 'react'
 import { ERROR_CODE } from '@/constants/error-codes'
 import {
   resolveMasterOptionRequirements,
@@ -93,6 +93,19 @@ function useEditorSessionLifecycle({
 }: EditorSessionLifecycleOptions) {
   const { beginSession, endSession, setSessionStatus } = useEditorSession()
   const wasSavingRef = useRef(false)
+  /**
+   * 会话宿主哨兵节点的 id：只用于在 effect 清理时区分**隐藏**与**卸载**。
+   *
+   * <p>React 19 的 `Activity` 隐藏面板时用 `display:none` 隐藏子树、销毁子树 effect，
+   * **并把子树里 host node 的 ref 置空**（实测 `ref.current === null`），但 DOM 节点仍在文档里；
+   * 真正卸载（关闭编辑器、刷新标签、路由换页、标签被回收）时节点已从文档移除。
+   * 因此不能用 ref 判断，只能用「哨兵节点还在不在文档里」判断。`useId()` 是组件 state，
+   * 隐藏时保留、卸载时随实例销毁，正好做这个身份标记。</p>
+   *
+   * <p>这条判定的意义：隐藏不得结束会话，否则恢复后脏状态被重置为 clean，
+   * 关闭标签的「存在未保存的修改」守卫就失效了（e2e P2-25 第 4 步会变红）。</p>
+   */
+  const sessionSentinelId = useId()
 
   useEffect(() => {
     if (!open) return
@@ -101,8 +114,22 @@ function useEditorSessionLifecycle({
       mode: isEdit ? 'edit' : 'create',
       ...(recordId ? { recordId } : {}),
     })
-    return endSession
-  }, [beginSession, endSession, isEdit, moduleKey, open, recordId])
+    return () => {
+      if (document.getElementById(sessionSentinelId)) {
+        // 只是被隐藏（Activity hidden）：保留会话槽与其状态。
+        return
+      }
+      endSession()
+    }
+  }, [
+    beginSession,
+    endSession,
+    isEdit,
+    moduleKey,
+    open,
+    recordId,
+    sessionSentinelId,
+  ])
 
   useEffect(() => {
     if (!open) return
@@ -128,6 +155,8 @@ function useEditorSessionLifecycle({
     }
     if (nextStatus) setSessionStatus(nextStatus)
   }, [open, saveErrorCode, saveStatus, saving, setSessionStatus])
+
+  return { sessionSentinelId }
 }
 
 /**
@@ -246,7 +275,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     },
   })
 
-  useEditorSessionLifecycle({
+  const { sessionSentinelId } = useEditorSessionLifecycle({
     open,
     moduleKey,
     isEdit,
@@ -296,6 +325,10 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
 
   return (
     <>
+      {/* 会话宿主哨兵：见 useEditorSessionLifecycle 里的 sessionSentinelId。
+          本身 hidden、不承载任何子节点，因此不参与布局、不进无障碍树；
+          只用来在 effect 清理时判断「子树被 Activity 隐藏（节点还在文档里）」还是「真的卸载」。 */}
+      <span id={sessionSentinelId} hidden aria-hidden="true" />
       <WorkspaceOverlay
         open={open}
         title={
