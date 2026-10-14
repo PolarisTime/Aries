@@ -135,6 +135,32 @@ describe('RolePermissionPicker', () => {
   const isGroupExpanded = (label: string) =>
     groupHeader(label)?.getAttribute('aria-expanded') === 'true'
 
+  /** 按分组标题点击 header（鼠标路径）。 */
+  const clickGroupHeader = async (label: string) => {
+    const header = groupHeader(label)
+    if (!header) {
+      throw new Error(`未找到分组标题：${label}`)
+    }
+    await act(async () => {
+      header.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    })
+  }
+
+  /** 按分组标题在 header 上按 Enter（键盘路径，APG 要求可聚焦控件键盘等价）。 */
+  const pressEnterOnGroupHeader = async (label: string) => {
+    const header = groupHeader(label)
+    if (!header) {
+      throw new Error(`未找到分组标题：${label}`)
+    }
+    await act(async () => {
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    })
+  }
+
   it('资源分组标题显示中文名而非英文资源码', async () => {
     await render()
     expect(container.textContent).toContain('销售订单')
@@ -203,5 +229,39 @@ describe('RolePermissionPicker', () => {
     expect(callCount).toBeGreaterThan(1)
     expect(container.textContent).toContain('商品资料')
     expect(isGroupExpanded('商品资料')).toBe(true)
+  })
+
+  it('过滤期间分组标题仍可操作：点击/回车折叠并同步 aria-expanded', async () => {
+    await render()
+    await setSearchKeyword('read')
+
+    // 'read' 同时命中「销售订单」与「商品资料」，两者在过滤期默认展开。
+    expect(isGroupExpanded('销售订单')).toBe(true)
+    expect(isGroupExpanded('商品资料')).toBe(true)
+
+    // header 是可聚焦的 role=button，就必须真的能操作，而不是聚焦后按下无响应。
+    expect(groupHeader('销售订单')?.getAttribute('role')).toBe('button')
+
+    await clickGroupHeader('销售订单')
+    expect(isGroupExpanded('销售订单')).toBe(false)
+    // 只折叠被点击的那一组，其余命中分组不受影响。
+    expect(isGroupExpanded('商品资料')).toBe(true)
+
+    await pressEnterOnGroupHeader('销售订单')
+    expect(isGroupExpanded('销售订单')).toBe(true)
+  })
+
+  it('过滤期间显式折叠不污染未过滤展开态：清空关键字后无陈旧展开项', async () => {
+    await render()
+    await setSearchKeyword('read')
+    await clickGroupHeader('销售订单')
+    expect(isGroupExpanded('销售订单')).toBe(false)
+
+    await setSearchKeyword('')
+
+    // 折叠是过滤期的显式选择，清空后回到未过滤态（默认全折叠），
+    // 且未被子折叠的那一组也不能因为「回传整份可见 key」而变成展开。
+    expect(isGroupExpanded('销售订单')).toBe(false)
+    expect(isGroupExpanded('商品资料')).toBe(false)
   })
 })

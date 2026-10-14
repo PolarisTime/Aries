@@ -112,14 +112,44 @@ export function RolePermissionPicker({
   // 到达（慢请求/缓存未就绪）时可见分组会变化，事件里算出的结果会停留在过滤前的空集，
   // 命中分组保持折叠；清空关键字也不会复位。用 useMemo 派生既跟随可见分组，又不引入
   // effect 级联 setState。
-  const [manualActiveKeys, setManualActiveKeys] = useState<string[]>([])
+  //
+  // 过滤期的 header 仍是 `role="button"` 且可聚焦，因此不能丢弃它的 onChange：可聚焦控件
+  // 按下无响应违反 APG。用户的显式折叠落到 `userCollapsedKeys`，展开态照旧在渲染期派生，
+  // 于是「默认全展开 + 可逐组折叠」成立；清空关键字后回到未过滤的 `userExpandedKeys`。
+  const [userExpandedKeys, setUserExpandedKeys] = useState<string[]>([])
+  const [userCollapsedKeys, setUserCollapsedKeys] = useState<Set<string>>(
+    () => new Set(),
+  )
   const activeKeys = useMemo(
     () =>
       normalizedKeyword
-        ? visibleGroups.map((group) => group.resource)
-        : manualActiveKeys,
-    [normalizedKeyword, visibleGroups, manualActiveKeys],
+        ? visibleGroups
+            .map((group) => group.resource)
+            .filter((resource) => !userCollapsedKeys.has(resource))
+        : userExpandedKeys,
+    [normalizedKeyword, visibleGroups, userCollapsedKeys, userExpandedKeys],
   )
+
+  const handleActiveKeysChange = (keys: string[]) => {
+    if (!normalizedKeyword) {
+      setUserExpandedKeys(keys)
+      return
+    }
+    // 过滤期只按可见分组对齐显式折叠位：绝不把 antd 回传的整份可见 key 写进未过滤态的
+    // 展开集，否则用户只折叠了一组，清空关键字后却冒出多组陈旧展开项。
+    const nextActive = new Set(keys)
+    setUserCollapsedKeys((prev) => {
+      const next = new Set(prev)
+      for (const group of visibleGroups) {
+        if (nextActive.has(group.resource)) {
+          next.delete(group.resource)
+        } else {
+          next.add(group.resource)
+        }
+      }
+      return next
+    })
+  }
 
   const update = (next: Set<string>) => {
     setSelected(next)
@@ -269,13 +299,7 @@ export function RolePermissionPicker({
           <Collapse
             size="small"
             activeKey={activeKeys}
-            onChange={(keys) => {
-              // 过滤期间展开态由 visibleGroups 派生；若此时写入手动值，清空关键字后会
-              // 冒出过滤前的陈旧展开项，因此只在未过滤时接受手动展开/折叠。
-              if (!normalizedKeyword) {
-                setManualActiveKeys(keys)
-              }
-            }}
+            onChange={handleActiveKeysChange}
             items={collapseItems}
           />
         </div>
