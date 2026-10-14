@@ -124,6 +124,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
             row: merged.row,
             options: merged.options,
             linked: merged.linked,
+            localTonForItem: merged.localTonForItem,
           }),
           createElement(TonUnopenedCell, {
             row: merged.row,
@@ -170,36 +171,46 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     ).toBeTruthy()
   })
 
-  it('未开吨位 = 本单该明细行报单 − 已开, 已开吨位单独成列', () => {
+  it('已开吨位 = 本单报单 + 其他报单, 剩余未开 = 订货 − 已开', () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
-    // 该明细行报单 40 / 已开 30 ⇒ 未开 10
-    const unopened = container.querySelector('.price-compare-ton-issued')
-    expect(unopened?.textContent).toContain('10')
-    // 已开吨位列给出服务端口径的精确值
+    // 该明细行报单 40 / 其他报单已开 30 ⇒ 已开合计 70; 订货 40 ⇒ 剩余 −30(超开)
+    const issued = container.querySelector('.price-compare-ton-issued')
+    expect(issued?.textContent).toContain('70')
+    // 相邻格给出剩余未开吨位(订货 40 − 已开 70)
     expect(
       container.querySelector('.price-compare-ton-figure')?.textContent,
-    ).toBe('30.000')
-    // 品牌跟在数字后面(独立品牌层)
+    ).toBe('-30')
+    // 品牌跟在已开数字后面(独立品牌层)
     expect(
       container.querySelector('.price-compare-ton-progress')?.textContent,
     ).toContain('中天')
-    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
-  it('回归: 报 12 吨、订单订货量 10.19 吨时只给数字不下"超额"结论', () => {
+  it('回归: 本单报 12 吨、订单只订了 10.19 吨时, 已开 12 且剩余 −1.81 标红', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301', ton: 12 },
       options: [{ ...poRecord, orderedWeight: 10.19, issuedWeight: 0 }],
       localTonForItem: 12,
     })
-    // 未开吨位按本单报单量算: 12 − 0 = 12; 订货量 10.19 不再参与未开口径
+    // 已开合计 = 本单报单 12 + 其他 0
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
-    ).toContain('10.19')
-    expect(container.textContent).not.toContain('超额')
-    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
+    ).toContain('12')
+    // 剩余未开 = 订货 10.19 − 已开 12 = −1.81, 这是真正需要提示的"超开"
+    expect(
+      container.querySelector('.price-compare-ton-figure')?.textContent,
+    ).toBe('-1.81')
+    expect(
+      container.querySelector(
+        '.price-compare-ton-figure.price-compare-ton-hint--over',
+      ),
+    ).toBeTruthy()
   })
   it('数字层与品牌层分开: 品牌层先让位, 数字不被品牌挤出省略号', () => {
-    render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
+    // 订货给到 100, 保持"未超开"的前提(已开合计 70)
+    render({
+      row: { ...baseRow, purchaseOrderItemId: '301' },
+      options: [{ ...poRecord, orderedWeight: 100 }],
+    })
     const value = container.querySelector('.price-compare-ton-issued')
     const brandGroup = container.querySelector('.price-compare-ton-brand-group')
     // 数字层只承载数字: 品牌与它同层时省略号会先吃掉数字(11/12px 档线上实测)
@@ -208,7 +219,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       clone?.querySelector('.aries-sr-only')?.remove()
       return clone?.textContent ?? ''
     }
-    expect(visibleOf(value)).toBe('10')
+    expect(visibleOf(value)).toBe('70')
     // 读屏用的完整口径仍在数字层里(品牌不会被拆掉而读不到)
     expect(value?.querySelector('.aries-sr-only')?.textContent).toContain(
       '中天',
@@ -229,7 +240,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     })
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
-    ).toContain('10')
+    ).toContain('70')
     expect(container.querySelector('.price-compare-ton-brand')).toBeNull()
     expect(container.querySelector('.price-compare-ton-brand-group')).toBeNull()
     expect(
@@ -251,22 +262,22 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(cells[2]?.querySelector('.price-compare-ton-issued')).toBeTruthy()
     expect(cells[2]?.querySelector('.price-compare-ton-info')).toBeTruthy()
   })
-  it('已开超过本单报单量时未开为负, 只用文字表达不补图标', () => {
+  it('已开合计超过订货量时剩余为负, 只用文字表达不补图标', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
+      options: [{ ...poRecord, orderedWeight: 12, issuedWeight: 30 }],
       localTonForItem: 10,
     })
-    // 报 10 吨 / 已开 30 ⇒ 未开 −20
+    // 已开合计 = 10 + 30 = 40; 订货 12 ⇒ 剩余 −28
     expect(container.querySelector('.price-compare-ton-over-icon')).toBeNull()
-    const value = container.querySelector('.price-compare-ton-issued')
-    expect(value?.textContent).toContain('-20')
-    expect(
-      container.querySelector('.price-compare-ton-progress')?.contains(value),
-    ).toBe(true)
+    const value = container.querySelector('.price-compare-ton-figure')
+    expect(value?.textContent).toBe('-28')
+    expect(value?.classList.contains('price-compare-ton-hint--over')).toBe(true)
   })
-  it('已开超过本单报单量时未开吨位标红', () => {
+  it('超过订货量时已开吨位数字也标红', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
+      options: [{ ...poRecord, orderedWeight: 12, issuedWeight: 30 }],
       localTonForItem: 10,
     })
     expect(
@@ -281,13 +292,16 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       ),
     ).toBeTruthy()
   })
-  it('已开恰好等于订货量时未开为 0 且不标红(边界)', () => {
+  it('已开恰好等于订货量时剩余为 0 且不标红(边界)', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
-      options: [{ ...poRecord, orderedWeight: 30, issuedWeight: 30 }],
+      options: [{ ...poRecord, orderedWeight: 40, issuedWeight: 30 }],
+      localTonForItem: 10,
     })
-    const value = container.querySelector('.price-compare-ton-issued')
-    expect(value?.textContent).toContain('0')
+    // 已开合计 = 10 + 30 = 40 = 订货量 ⇒ 剩余 0
+    expect(
+      container.querySelector('.price-compare-ton-figure')?.textContent,
+    ).toBe('0')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
   it('同明细行多行时悬浮明细给出本单报单合计(基数)', async () => {
@@ -306,9 +320,11 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
     expect(text).toContain('本单该明细行报单')
     expect(text).toContain('45.000')
-    // 未开 = 报单合计 45 − 已开 30 = 15
-    expect(text).toContain('未开吨位')
-    expect(text).toContain('15.000')
+    // 已开合计 = 本单报单合计 45 + 其他报单已开 30 = 75; 剩余未开 = 订货 40 − 75 = −35
+    expect(text).toContain('已开吨位')
+    expect(text).toContain('75.000')
+    expect(text).toContain('剩余未开吨位')
+    expect(text).toContain('-35.000')
   })
   it('悬浮明细给出订货/已开(实际)/未开/品牌完整口径', async () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
@@ -323,18 +339,19 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
     expect(text).toContain('订货吨位')
     expect(text).toContain('40.000')
-    expect(text).toContain('已开吨位（实际）')
+    expect(text).toContain('其他报单已开')
     expect(text).toContain('30.000')
-    expect(text).toContain('未开吨位')
-    expect(text).toContain('10.000')
+    expect(text).toContain('已开吨位')
+    expect(text).toContain('70.000')
+    expect(text).toContain('剩余未开吨位')
+    expect(text).toContain('-30.000')
     expect(text).toContain('品牌')
     expect(text).toContain('中天')
-    // 订货量 40 > 已开 30, 不是异常, 不给红字结论
-    expect(text).not.toContain('已超过该订单明细的订货量')
   })
-  it('已开超过本单报单量时悬浮明细把两个数说明白', async () => {
+  it('已开合计超过订货量时悬浮明细把两个数说明白', async () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
+      options: [{ ...poRecord, orderedWeight: 20 }],
       localTonForItem: 10,
     })
     const value = container.querySelector(
@@ -346,9 +363,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     })
     const text =
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
-    expect(text).toContain('未开吨位')
+    expect(text).toContain('剩余未开吨位')
     expect(text).toContain('-20.000')
-    expect(text).toContain('已开吨位 30.000 吨已超过本单据报单吨位 10.000 吨')
+    expect(text).toContain('已开吨位 40.000 吨已超过订货吨位 20.000 吨')
   })
   it('悬浮明细与 ⓘ 弹层都带不透明气泡类名(antd 默认 85% 透明会与页面文字叠成重影)', async () => {
     render({
@@ -398,7 +415,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     ).not.toBeNull()
   })
 
-  it('悬浮明细字段顺序固定: 本单报单 → 已开(实际) → 未开 → 订货(参考) → 品牌', async () => {
+  it('悬浮明细字段顺序固定: 本单报单 → 其他报单已开 → 已开吨位 → 剩余未开 → 订货(参考) → 品牌', async () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 45,
@@ -417,8 +434,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     ].map((row) => (row.firstElementChild?.textContent ?? '').trim())
     expect(labels).toEqual([
       '本单该明细行报单',
-      '已开吨位（实际）',
-      '未开吨位',
+      '其他报单已开',
+      '已开吨位',
+      '剩余未开吨位',
       '订货吨位',
       '品牌',
     ])
@@ -432,19 +450,19 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(state?.textContent).toBe('未填吨位')
     expect(container.querySelector('.price-compare-ton-issued')).toBeNull()
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
-    // 已开吨位列仍然照常显示(它有独立口径, 不依赖本单据报了多少)
+    // 剩余未开列仍然照常显示(订货 − 已开, 不依赖本单据报了多少)
     expect(
       container.querySelector('.price-compare-ton-figure')?.textContent,
-    ).toBe('30.000')
+    ).toBe('10')
   })
-  it('未开吨位随本单据报单量变化(基数就是报单吨位)', () => {
+  it('已开吨位随本单据报单量变化(基数就是本单据报单合计)', () => {
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 40,
     })
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
-    ).toContain('10')
+    ).toContain('70')
     act(() => root.unmount())
     root = createRoot(container)
     render({
@@ -453,7 +471,7 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     })
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
-    ).toContain('70')
+    ).toContain('130')
   })
   it('hover 明细图标显示订单明细 popover', async () => {
     render({ row: { ...baseRow, purchaseOrderItemId: '301' } })
@@ -469,15 +487,17 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(popover?.textContent).toContain('沙钢')
     expect(popover?.textContent).toContain('订货吨位')
     expect(popover?.textContent).toContain('40.000')
-    expect(popover?.textContent).toContain('已开吨位（实际）')
+    expect(popover?.textContent).toContain('其他报单已开')
     expect(popover?.textContent).toContain('30.000')
-    expect(popover?.textContent).toContain('未开吨位')
-    expect(popover?.textContent).toContain('10.000')
+    expect(popover?.textContent).toContain('已开吨位')
+    expect(popover?.textContent).toContain('70.000')
+    expect(popover?.textContent).toContain('剩余未开吨位')
+    expect(popover?.textContent).toContain('-30.000')
     expect(popover?.textContent).toContain('品牌')
     expect(popover?.textContent).toContain('中天')
   })
-  it('弹层未开吨位与相邻列同口径: 报单 − 已开(不是订货 − 已开)', async () => {
-    // 订货 40 / 报单 45 / 已开 30: 旧口径(订货−已开)会给出 10.000, 与列上的 15.000 打架
+  it('弹层已开吨位与相邻列同口径: 本单报单 + 其他报单', async () => {
+    // 订货 40 / 报单 45 / 其他报单已开 30 ⇒ 已开合计 75, 剩余未开 40 − 75 = −35
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 45,
@@ -493,21 +513,23 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     const text = popover?.textContent ?? ''
     expect(text).toContain('本单该明细行报单')
     expect(text).toContain('45.000')
-    expect(text).toContain('未开吨位')
-    expect(text).toContain('15.000')
+    expect(text).toContain('已开吨位')
+    expect(text).toContain('75.000')
+    expect(text).toContain('剩余未开吨位')
+    expect(text).toContain('-35.000')
     // 列上的数字与弹层一致
     expect(
       container.querySelector('.price-compare-ton-issued')?.textContent,
-    ).toContain('15')
-    // 口径说明也必须写明基数
-    expect(text).toContain('本单该明细行报单吨位 − 已开吨位')
+    ).toContain('75')
+    // 口径说明必须写明"已开 = 本单报单 + 其他报单"
+    expect(text).toContain('本单据该明细行报单吨位 + 其他已保存报单占用')
   })
-  it('已开吨位未超过本单报单吨位时不判超额(哪怕超过订货量)', async () => {
-    // 订货 40 / 报单 45 / 已开 42: 已开超过订货量, 但没超过本单报单量 ⇒ 不应报超额
+  it('已开合计未超过订货量时不判超开(订货量给足)', async () => {
+    // 订货 100 / 报单 45 / 其他报单已开 42 ⇒ 已开合计 87 ≤ 100, 不应报超开
     render({
       row: { ...baseRow, purchaseOrderItemId: '301' },
       localTonForItem: 45,
-      options: [{ ...poRecord, orderedWeight: 40, issuedWeight: 42 }],
+      options: [{ ...poRecord, orderedWeight: 100, issuedWeight: 42 }],
     })
     const icon = container.querySelector(
       '.price-compare-ton-info',
@@ -518,9 +540,9 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     })
     const popover = document.querySelector('.price-compare-ton-popover')
     const text = popover?.textContent ?? ''
-    expect(text).toContain('未开吨位')
-    expect(text).toContain('3.000')
-    expect(text).not.toContain('已超过本单据报单吨位')
+    expect(text).toContain('剩余未开吨位')
+    expect(text).toContain('13.000')
+    expect(text).not.toContain('已超过订货吨位')
     expect(popover?.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
   it('popover 内按钮触发 onOpenPicker', async () => {

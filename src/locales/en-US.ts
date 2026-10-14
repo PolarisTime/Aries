@@ -2690,7 +2690,7 @@ export const enUS = {
         purchaseOrderOrdered: 'Ordered',
         /** Tonnage trio: order (input) / issued / unopened (= ordered − issued). */
         issuedTon: 'Issued',
-        unopenedTon: 'Unopened',
+        unopenedTon: 'Remaining unissued',
         purchaseOrderIssued: 'Issued',
         purchaseOrderRemaining: 'Remaining',
         purchaseOrderStatus: 'Status',
@@ -2784,7 +2784,7 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Issued counts other saved sheets only (this sheet excluded); unopened = this sheet reported tonnage − issued',
+        'Issued = this sheet reported + other saved sheets; remaining unissued = ordered − issued',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       /** Short state for the tonnage columns when the row has no linked PO line yet. */
@@ -2800,12 +2800,12 @@ export const enUS = {
       purchaseOrderRemainingShort: 'Remaining {{weight}}',
       /** Tooltip row: tonnage this sheet reported on the linked PO line. */
       purchaseOrderSheetReported: 'This sheet (PO line)',
-      purchaseOrderIssuedActual: 'Issued (actual)',
+      purchaseOrderIssuedActual: 'Issued by other sheets',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
       /** Anomaly: tonnage issued by other sheets exceeds this sheet reported tonnage. */
       purchaseOrderOverIssuedLong:
-        'Issued {{issued}}t exceeds this sheet reported {{reported}}t',
+        'Issued {{issued}} t exceeds the ordered tonnage {{ordered}} t',
       /** PO line linked but the reported tonnage is still empty. */
       purchaseOrderMissingTonShort: 'No tonnage',
       purchaseOrderMissingTonHint:

@@ -129,7 +129,10 @@ export function buildIssuedTonColumn(
   ctx: TonColumnContext,
 ): ColumnType<GridRow> {
   const { t } = ctx
-  const label = t('priceCompare.sheet.columns.issuedTon')
+  // 2026-10-14 口径修正: 本列显示「剩余未开吨位 = 订货吨位 − 已开吨位」; 「已开吨位」移到相邻
+  // 的下一列(buildUnopenedTonColumn 渲染)。函数名与列宽来源(ctx.issuedWidth)保留, 其宽度
+  // 计算口径已同步改为"剩余吨位文本"。
+  const label = t('priceCompare.sheet.columns.unopenedTon')
   return {
     title: label,
     className: 'price-compare-cell--number',
@@ -142,6 +145,7 @@ export function buildIssuedTonColumn(
       return (
         <IssuedTonCell
           linked={view.linkedItem}
+          localTonForItem={view.localTonForItem}
           options={ctx.purchaseOrderOptions}
           row={row.row}
         />
@@ -160,7 +164,8 @@ export function buildUnopenedTonColumn(
   ctx: TonColumnContext,
 ): ColumnType<GridRow> {
   const { t } = ctx
-  const label = t('priceCompare.sheet.columns.unopenedTon')
+  // 2026-10-14 口径修正: 本列显示「已开吨位 = 本单据该明细行报单吨位 + 其他已保存报单占用」
+  const label = t('priceCompare.sheet.columns.issuedTon')
   return {
     title: label,
     width: ctx.unopenedWidth,

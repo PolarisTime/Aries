@@ -2609,7 +2609,7 @@ export const zhCN = {
         purchaseOrderRemaining: '剩余吨位',
         /** 吨位三列: 报单吨位(输入) / 已开吨位 / 未开吨位(订货 − 已开)。 */
         issuedTon: '已开吨位',
-        unopenedTon: '未开吨位',
+        unopenedTon: '剩余未开吨位',
         purchaseOrderStatus: '状态',
       },
       /** 右键菜单: 行操作与品牌列头操作(与可见按钮共用同一份动作) */
@@ -2699,7 +2699,7 @@ export const zhCN = {
       purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
       purchaseOrderOverLimit: '（超额）',
       purchaseOrderSavedBasis:
-        '「已开吨位」按其他已保存报单统计（不含本单据）；「未开吨位」= 本单该明细行报单吨位 − 已开吨位',
+        '「已开吨位」= 本单据该明细行报单吨位 + 其他已保存报单占用（不含本单据的话是「其他报单已开」）；「剩余未开吨位」= 订货吨位 − 已开吨位',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
       /** 吨位口径两列的短状态: 该行还没关联订单明细行, 因此没有已开/未开口径。 */
@@ -2719,12 +2719,12 @@ export const zhCN = {
       /** 悬浮明细里的本单据口径: 该订单明细行在本单据的报单吨位合计。 */
       purchaseOrderSheetReported: '本单该明细行报单',
       /** 吨位进度行的数字口径: 实际已开(服务端已保存报单)。 */
-      purchaseOrderIssuedActual: '已开吨位（实际）',
+      purchaseOrderIssuedActual: '其他报单已开',
       purchaseOrderDetail: '采购订单明细',
       purchaseOrderUnlinked: '未关联采购订单',
       /** 异常态: 其他单据已开吨位超过本单据报单吨位。 */
       purchaseOrderOverIssuedLong:
-        '已开吨位 {{issued}} 吨已超过本单据报单吨位 {{reported}} 吨',
+        '已开吨位 {{issued}} 吨已超过订货吨位 {{ordered}} 吨',
       /** 已关联订单明细行但报单吨位还没填: 未开吨位没有可减的基数。 */
       purchaseOrderMissingTonShort: '未填吨位',
       purchaseOrderMissingTonHint:

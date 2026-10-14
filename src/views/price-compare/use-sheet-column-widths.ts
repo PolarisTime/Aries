@@ -8,7 +8,7 @@ import {
   tonProgressLineWidth,
 } from './core'
 import {
-  maxIssuedTonTextWidth,
+  maxRemainingTonTextWidth,
   maxTonProgressTextWidth,
 } from './ton-progress-text'
 
@@ -48,7 +48,7 @@ export function useSheetColumnWidths(
   const unopenedHeader = headerTexts?.unopened ?? ''
   const tonTextWidths = useMemo(
     () => ({
-      issued: maxIssuedTonTextWidth(tonnageRecords),
+      issued: maxRemainingTonTextWidth(tonnageRecords, localTonByItemId),
       unopened: maxTonProgressTextWidth(
         tonnageRecords,
         localTonByItemId,

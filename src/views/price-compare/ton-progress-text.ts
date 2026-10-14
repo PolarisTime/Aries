@@ -5,9 +5,9 @@ import { estimateSheetTextWidth, TON_PROGRESS_FONT_SIZE } from './core'
 /**
  * 吨位进度列的文案与宽度口径(渲染与列宽计算共用的**唯一**来源)。
  *
- * <p>可见数字只有一句: 「未开吨位 = 锁定后的报单吨位 − 已开吨位」(如 `10.19`), 品牌跟在
- * 后面。它的两个操作数就是左边两列已经显示出来的数(手填并锁定的报单吨位、已开吨位),
- * 用户不必再心算; 采购订单的订货量只作参考与选择依据。</p>
+ * <p>可见数字只有一句: **「已开吨位 = 本单据该明细行报单吨位 + 其他已保存报单占用」**(如
+ * `20`), 品牌跟在后面 —— 用户关联了订单明细行后, 这一列直接回答"这条明细行开出了多少"。
+ * 「剩余未开吨位」= 订货吨位 − 已开吨位, 是同一份口径的另一半(见 tonRemainingText)。</p>
  *
  * <p>这里的函数同时被进度单元格的渲染与 `useSheetColumnWidths` 的定宽调用, 避免两处各写
  * 一套格式化逻辑后逐渐漂移(列宽按 A 算、渲染成 B 就会被裁)。</p>
@@ -31,24 +31,23 @@ export function issuedBrandText(record: PurchaseOrderTonnageRecord): string {
   return [...new Set([(record.brand ?? '').trim()].filter(Boolean))].join('、')
 }
 
-/** 吨位进度小字的可见文案: 数字段(未开吨位)与品牌段。 */
+/** 吨位进度小字的可见文案: 数字段(已开吨位)与品牌段。 */
 export interface TonProgressTextParts {
-  /** 数字段: 未开吨位 = 锁定后的报单吨位 − 已开吨位(可为负, 表示已开超过本单报的量)。 */
+  /** 数字段: 已开吨位 = 本单据报单吨位 + 其他已保存报单占用(含本单据自己那一份)。 */
   primary: string
   /** 品牌段, 可省: 列宽不足时先省略品牌。 */
   brand: string
 }
 
 /**
- * 「未开吨位」列的可见文案(与单元格渲染逐字一致)。
+ * 「已开吨位」列的可见文案(与单元格渲染逐字一致)。
  *
- * <p>口径(业务确认): **未开吨位 = 锁定后的报单吨位 − 已开吨位**。基数就是本单据这一行
- * 手填并锁定后的报单吨位(同一订单明细行在本单据内有多行时取各行合计), 已开吨位是
- * 「已开吨位」列显示的那个数(其他已保存报单占用该明细行的量)。两个已显示的数列相减,
- * 用户不必再心算; 采购订单的订货量只作参考与选择依据, 不进这个减法。</p>
+ * <p>口径(业务确认, 2026-10-14 修正): **已开吨位 = 本单据该订单明细行的报单吨位合计 +
+ * 其他已保存报单占用**。关联了有效订单明细行之后, 这一列就是要回答"这条明细行开出了多少",
+ * 因此必须把本单据自己报的量算进去; `record.issuedWeight` 来自服务端, 只含**其他**报单。</p>
  *
- * <p>负值只可能来自"已开量超过本单报的量", 属于真正的异常, 由单元格标红并在悬浮明细里
- * 用两个具体数字说明。</p>
+ * <p>负值不会出现(两项都非负); 真正需要标红的是"已开合计 > 订货吨位", 由单元格用
+ * {@link tonRemainingText} 的负值判断并说明。</p>
  */
 export function tonProgressTextParts(
   record: PurchaseOrderTonnageRecord,
@@ -56,9 +55,23 @@ export function tonProgressTextParts(
 ): TonProgressTextParts {
   const reported = Number.isFinite(reportedTon) ? reportedTon : 0
   return {
-    primary: compactTonText(reported - record.issuedWeight),
+    primary: compactTonText(record.issuedWeight + reported),
     brand: issuedBrandText(record),
   }
+}
+
+/**
+ * 「剩余未开吨位」列的可见文案: **订货吨位 − 已开吨位**(可为负, 表示这条明细行被超开)。
+ *
+ * <p>订货吨位来自采购订单明细行本身, 不是本单据报的量 —— 本单据报多少已经在
+ * 「报单吨位」列显示, 这里显示的是订单侧还剩多少可开。</p>
+ */
+export function tonRemainingText(
+  record: PurchaseOrderTonnageRecord,
+  reportedTon: number,
+): string {
+  const reported = Number.isFinite(reportedTon) ? reportedTon : 0
+  return compactTonText(record.orderedWeight - (record.issuedWeight + reported))
 }
 
 /**
@@ -84,20 +97,22 @@ export function maxTonProgressTextWidth(
 }
 
 /**
- * 「已开吨位」列的内容宽(px): 按单据里最长的一条三位小数吨位估算。
+ * 「剩余未开吨位」列的内容宽(px): 按单据里最长的一条剩余吨位估算。
  *
  * <p>该列只放一个固定 11px 的只读数字(不随个人字号缩放), 因此列宽按内容给即可 ——
- * 数字短(如 `0.000`)时不留空白, 数字长(如 `8,884.500`)时也裁不到。</p>
+ * 数字短(如 `0.7`)时不留空白, 负数(超开)或长吨位也裁不到。</p>
  */
-export function maxIssuedTonTextWidth(
+export function maxRemainingTonTextWidth(
   records: readonly PurchaseOrderTonnageRecord[],
+  localTonByItemId: ReadonlyMap<string, number>,
 ): number {
   let max = 0
   for (const record of records) {
+    const reportedTon = localTonByItemId.get(record.purchaseOrderItemId) ?? 0
     max = Math.max(
       max,
       estimateSheetTextWidth(
-        formatWeight(record.issuedWeight),
+        tonRemainingText(record, reportedTon),
         TON_PROGRESS_FONT_SIZE,
       ),
     )

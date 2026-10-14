@@ -1352,7 +1352,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 
-  it('主流程: 未开吨位列显示 锁定后报单 − 已开, 已开吨位单独成列', async () => {
+  it('主流程: 已开吨位 = 锁定后报单 + 其他报单, 剩余未开 = 订货 − 已开', async () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1392,18 +1392,18 @@ describe('SheetPanel 指定品牌展示', () => {
         isError: false,
       },
     )
-    // 本单据报 12 吨(锁定) − 已开 5 = 未开 7
-    const unopened = container.querySelector<HTMLElement>(
+    // 本单据报 12 吨(锁定) + 其他报单已开 5 = 已开合计 17
+    const issuedCell = container.querySelector<HTMLElement>(
       '.price-compare-ton-issued',
     )
-    expect(unopened?.textContent).toContain('7')
+    expect(issuedCell?.textContent).toContain('17')
     expect(
       container.querySelector('.price-compare-ton-progress')?.textContent,
     ).toContain('中天')
-    // 已开吨位单独一列, 精确值 5.000
+    // 剩余未开单独一列: 订货 32.768 − 已开 17 = 15.768
     expect(
       container.querySelector('.price-compare-ton-figure')?.textContent,
-    ).toBe('5.000')
+    ).toBe('15.768')
     // 报单吨位列只放输入框
     const tonInput = container.querySelector<HTMLInputElement>(
       'input[data-ton="r1"]',
@@ -1411,24 +1411,26 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(tonInput?.value).toBe('12')
 
     await act(async () => {
-      unopened?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      issuedCell?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 250))
     })
     const tooltipText =
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
-    // 口径顺序: 本单报单 → 已开(实际) → 未开 → 订货(参考)
+    // 口径顺序: 本单报单 → 其他报单已开 → 已开吨位 → 剩余未开 → 订货(参考)
     expect(tooltipText).toContain('本单该明细行报单')
     expect(tooltipText).toContain('12.000')
-    expect(tooltipText).toContain('已开吨位（实际）')
+    expect(tooltipText).toContain('其他报单已开')
     expect(tooltipText).toContain('5.000')
-    expect(tooltipText).toContain('未开吨位')
-    expect(tooltipText).toContain('7.000')
+    expect(tooltipText).toContain('已开吨位')
+    expect(tooltipText).toContain('17.000')
+    expect(tooltipText).toContain('剩余未开吨位')
+    expect(tooltipText).toContain('15.768')
     expect(tooltipText).toContain('订货吨位')
     expect(tooltipText).toContain('32.768')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
-  it('吨位列按单据实际品牌定宽: 长品牌的「剩余 x · 品牌」不再被裁', () => {
+  it('吨位列按单据实际品牌定宽: 长品牌的「已开 x · 品牌」不再被裁', () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1468,9 +1470,9 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
 
-    // 列宽必须覆盖整段「107.5 · 中天钢铁」(未开 = 本单报 120 − 已开 12.5)
+    // 列宽必须覆盖整段「132.5 · 中天钢铁」(已开 = 本单报 120 + 其他报单 12.5)
     const parts = tonProgressTextParts(poRecord, 120)
-    expect(parts.primary).toBe('107.5')
+    expect(parts.primary).toBe('132.5')
     // 列宽 = max(内容宽, 表头宽): 表头「已开吨位」「未开吨位」按个人字号渲染,
     // 内容数字固定 11px, 表头常常是更宽的一方(不算进来列头会折行)
     const headerFontSize = 14

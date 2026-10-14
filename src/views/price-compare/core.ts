@@ -452,7 +452,7 @@ export function requiredTonColumnWidth(
  * 按当前字号换算整张单据表格的列宽(键与 {@link SHEET_COLUMN_WIDTH} 一致)。
  *
  * <p>`tonTextWidths`: 本单据实际会出现的已开/未开两列内容宽度(px), 由
- * {@link maxIssuedTonTextWidth} 与 {@link maxTonProgressTextWidth} 按真实吨位与品牌算出;
+ * {@link maxRemainingTonTextWidth} 与 {@link maxTonProgressTextWidth} 按真实吨位与品牌算出;
  * 省略时两列按数字下界定宽。</p>
  */
 export function sheetColumnWidths(
