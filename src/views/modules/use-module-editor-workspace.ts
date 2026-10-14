@@ -228,6 +228,17 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     sessionKey: string
     value: string
   }>({ sessionKey: '', value: '' })
+  /**
+   * 初始化账本：记录「已经按哪个会话 key 完成过初始化」。
+   *
+   * <p>会话 key 由实体身份驱动（`moduleKey:实体 id:open`，见 {@link editorSessionKey}）。
+   * 同一个 key 的 effect 重入**必须直接 no-op**：一旦再跑一遍
+   * `form.resetFields()` + 默认值，用户已经改好的值就被覆盖。重入的真实来源有三类——
+   * StrictMode 双调用、React 19 `Activity` 隐藏后恢复（隐藏销毁子树 effect，恢复重跑 setup）、
+   * 父级重渲染导致 `config`/`record` 换身份。所以「挂载即初始化」不是 Activity 的副作用，
+   * 它本身就是丢用户输入的 bug。</p>
+   */
+  const initializedEditorKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     const submission = submissionRef.current
@@ -240,10 +251,10 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     }
 
     let active = true
-    const initializeEditor = () => {
-      if (!active) {
-        return
-      }
+    const sessionKey = editorSessionKey
+
+    if (initializedEditorKeyRef.current !== sessionKey) {
+      initializedEditorKeyRef.current = sessionKey
 
       if (record) {
         const editorFormState = toEditorFormState(record)
@@ -252,6 +263,9 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
           config.primaryNoKey,
           record,
         )
+        // 新会话的起点：先清掉上一会话可能残留在同一 form 实例里的字段，再灌入实体值。
+        // 同 key 重入到不了这里，所以「重入」永远不会触发这次重置。
+        form.resetFields()
         form.setFieldsValue(
           normalizeRecordForEditor(config, editorFormState.values),
         )
@@ -260,30 +274,27 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
           expenseItems: editorFormState.chargeItems,
           authoritativePrimaryNo: nextAuthoritativePrimaryNo,
         })
-        return
+      } else {
+        form.resetFields()
+        const defaultDraft: EditorFormValues = {}
+        applyFormFieldDefaultDraftValues(defaultDraft, config.formFields)
+        applyModuleDefaultEditorDraft(
+          moduleKey,
+          defaultDraft,
+          getCurrentOperatorName(),
+        )
+        form.setFieldsValue({ ...defaultDraft, ...(initialEditorValues || {}) })
+        applyDefaultSettlementCompany(moduleKey, form, () => active)
+        const draftItems = autoInsertBlankItemOnCreate
+          ? [buildDefaultEditorLineItem(undefined, moduleKey)]
+          : []
+        dispatchWorkspaceState({
+          items: draftItems,
+          expenseItems: [],
+          authoritativePrimaryNo: '',
+        })
       }
-
-      form.resetFields()
-      const defaultDraft: EditorFormValues = {}
-      applyFormFieldDefaultDraftValues(defaultDraft, config.formFields)
-      applyModuleDefaultEditorDraft(
-        moduleKey,
-        defaultDraft,
-        getCurrentOperatorName(),
-      )
-      form.setFieldsValue({ ...defaultDraft, ...(initialEditorValues || {}) })
-      applyDefaultSettlementCompany(moduleKey, form, () => active)
-      const draftItems = autoInsertBlankItemOnCreate
-        ? [buildDefaultEditorLineItem(undefined, moduleKey)]
-        : []
-      dispatchWorkspaceState({
-        items: draftItems,
-        expenseItems: [],
-        authoritativePrimaryNo: '',
-      })
     }
-
-    initializeEditor()
 
     return () => {
       active = false
@@ -298,6 +309,37 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     record,
     initialEditorValues,
   ])
+
+  /**
+   * 会话结束清理（cleanup 侧）：`open` 由 true 收回 false 表示这次编辑会话真的结束了
+   * （关闭弹层 / 提交成功），此时才复位表单、工作区与初始化账本 —— 于是下一次打开
+   * **即使是同一条单据**也必须重新按实体数据初始化，不残留上一会话的用户输入（「提交成功后必须被清」）。
+   *
+   * <p>为什么重置不放在初始化 effect 的 setup 里：Activity 隐藏、StrictMode 重入都会重跑那个
+   * setup，在那里重置会把用户草稿清空；本 effect 只在 open 真的收回到 false 时动作，
+   * 隐藏/重入时 `open` 仍为 true，不会误清。用 `wasOpenRef` 而不是直接判 `!open`，是为了让
+   * 「挂载时就处于关闭态」不产生多余的重置与重渲染。</p>
+   */
+  const wasOpenRef = useRef(false)
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true
+      return
+    }
+    if (!wasOpenRef.current) {
+      return
+    }
+    wasOpenRef.current = false
+    initializedEditorKeyRef.current = null
+    autoImportedParentRef.current = ''
+    appliedGeneratedPrimaryNoRef.current = { sessionKey: '', value: '' }
+    form.resetFields()
+    dispatchWorkspaceState({
+      items: [],
+      expenseItems: [],
+      authoritativePrimaryNo: '',
+    })
+  }, [form, open])
 
   const generatedPrimaryNo = generatedPrimaryNoQuery.data
   const generatedPrimaryNoKey = config.primaryNoKey
