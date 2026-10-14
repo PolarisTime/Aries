@@ -226,6 +226,23 @@ describe('SheetPanel 右键菜单', () => {
     )
   })
 
+  it('行操作触发器并入勾选列后仍可键盘聚焦且有可访问名(WCAG 2.1.1 / 2.4.7)', () => {
+    renderPanel()
+    const trigger = rowActionTrigger(0)
+    // 视觉隐藏(并入勾选列), 但必须保留在 Tab 序列里 —— 它是该行菜单唯一的键盘入口
+    expect(trigger.classList.contains('aries-sr-only')).toBe(true)
+    expect(trigger.hasAttribute('tabindex')).toBe(false)
+    expect(trigger.disabled).toBe(false)
+    // 可访问名按行给出, 读屏能辨认"这是哪一行的菜单"
+    expect(trigger.getAttribute('aria-label')).toBe(
+      '「螺纹钢 HRB400E 12 9米」行操作',
+    )
+    act(() => {
+      trigger.focus()
+    })
+    expect(document.activeElement).toBe(trigger)
+  })
+
   it('行菜单满足 APG 契约: 打开后焦点进首项, Escape 关闭并把焦点还给「更多」按钮', async () => {
     renderPanel()
     const trigger = rowActionTrigger(0)

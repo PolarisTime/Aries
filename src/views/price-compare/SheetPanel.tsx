@@ -268,7 +268,8 @@ type RowActionsCellProps = {
   lockReason: string
   /**
    * 触发器只对读屏/键盘可见(sr-only): 行操作列已并入勾选列, 视觉上不再单独占一列宽度,
-   * 但按钮仍是可聚焦、有可访问名的菜单入口。
+   * 但按钮仍是可聚焦、有可访问名的菜单入口; 键盘聚焦时由 `:focus-visible` 还原为可见
+   * 小按钮(否则焦点落在 1×1 裁剪处, 等于没有焦点指示)。
    */
   srOnlyTrigger?: boolean
   /** 行菜单是否展开(受控), 与「更多」按钮的点击入口共用。 */
@@ -287,7 +288,10 @@ type RowActionsCellProps = {
 
 /**
  * 行操作入口: 保留原有可见「更多」按钮(点击 / 键盘入口), 并让同一份菜单响应右键。
- * 右键菜单只是补充入口 —— 键盘可达性仍由可见按钮保证(WCAG 2.1.1)。
+ * 右键菜单只是补充入口 —— 键盘可达性由触发器自身保证(WCAG 2.1.1): 它在行操作列并入
+ * 勾选列后视觉隐藏(`aries-sr-only`), 但仍然可 Tab 聚焦; 为避免焦点落在看不见的位置
+ * (WCAG 2.4.7), `.aries-sr-only:focus-visible` 会在键盘聚焦时把它还原为可见小按钮
+ * (见 `src/styles/loading.css` 与 `price-compare.css` 的浮层落位)。
  *
  * <p>锁定层级与菜单可用性的关系(全局 > 行 > 单元格):</p>
  * <ul>
@@ -627,7 +631,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
    *
    * <p>原先它是一个独立列(锁定/更多按钮)。该列只剩一个 icon-only 按钮, 在窄屏白占 28px;
    * 去掉列之后把菜单宿主放进勾选列, 触发器设为 sr-only —— 视觉上不占位, 但仍是可聚焦、
-   * 有可访问名的入口(键盘等价物), 行内右键继续走同一份受控菜单。</p>
+   * 有可访问名的入口(键盘等价物), 键盘聚焦时经 `:focus-visible` 还原为可见按钮,
+   * 行内右键继续走同一份受控菜单。</p>
    */
   const renderRowMenuHost = (row: GridRow) => {
     if (isSeparatorRow(row.row)) return null

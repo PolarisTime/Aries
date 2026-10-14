@@ -799,11 +799,49 @@
   line-height: 1.2;
 }
 
+/*
+ * 勾选格: 既放行选择框, 也承载并入本列的 sr-only 行操作触发器。
+ * `position: relative` 让触发器聚焦还原时能浮在本格之上(定位上下文), 不改变列宽;
+ * inline-flex 保证"选择框 + 触发器"始终垂直居中, 与原来的行内排列视觉一致。
+ */
+.price-compare-row-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
 /* 行操作入口包装层: 承接禁用按钮的 hover, 不改变 24×24 命中区 */
 .price-compare-row-actions-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/*
+ * 行操作触发器默认 sr-only(并入勾选列, 视觉不占位), 但它是该行菜单唯一的键盘入口:
+ * 勾选列只有 32px, 聚焦还原若走文档流会把列撑宽并压住相邻列, 因此这里把还原后的按钮
+ * 绝对定位浮在勾选格中央(布局零位移), 并给足 24×24 命中区与不透明底色, 让焦点位置
+ * 在密集表格里一眼可见(WCAG 2.4.7)。
+ */
+.price-compare-row-actions.aries-sr-only:focus-visible {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 50%;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  background: var(--ant-color-bg-elevated, #fff);
+  border-radius: var(--radius-xs, 4px);
+  box-shadow: var(--ant-box-shadow-secondary, 0 2px 8px rgba(0, 0, 0, 0.15));
+  outline: 2px solid var(--ant-color-primary, #1677ff);
+  outline-offset: 2px;
 }
 
 /* 禁用但已锁定: 保留主色锁图标, 让"该行已锁定"这一状态在禁用态仍可辨认 */

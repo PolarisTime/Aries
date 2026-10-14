@@ -160,6 +160,29 @@
   border: 0;
 }
 
+/*
+ * 「视觉隐藏但仍可聚焦」的元素(例如并入勾选列的行操作菜单触发器): 键盘 Tab 到它时
+ * 必须给出可见焦点, 否则焦点落在一个 1×1 裁剪的位置上 —— 控件与焦点都看不到
+ * (WCAG 2.4.7 焦点可见)。只在 :focus-visible(键盘/辅助技术路径)还原为可见,
+ * 鼠标与触摸路径保持完全不占位。
+ *
+ * 这里只做通用还原(解除裁剪 + 焦点环); 具体落位与尺寸由使用方覆盖, 免得撑破窄列
+ * (比价页的行操作触发器就是浮在 32px 勾选格上, 见 price-compare.css)。
+ */
+.aries-sr-only:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  outline: 2px solid var(--ant-color-primary, #1677ff);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .aries-skeleton-block,
   .aries-global-loading-bar {

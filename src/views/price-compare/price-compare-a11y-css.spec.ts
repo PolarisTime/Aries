@@ -9,6 +9,7 @@ const read = (path: string) =>
 const pageCss = read('./price-compare.css')
 const shellCss = read('../../styles/layout-shell.css')
 const touchTargetsCss = read('../../styles/touch-targets.css')
+const loadingCss = read('../../styles/loading.css')
 
 /**
  * 样式层的无障碍契约(WCAG 2.2 AA)。
@@ -66,6 +67,35 @@ describe('比价页样式无障碍契约', () => {
   it('icon-only 按钮的触摸热区由 ::before 补足到至少 24×24(WCAG 2.5.8)', () => {
     expect(touchTargetsCss).toMatch(/width:\s*max\(100%,\s*24px\)/)
     expect(touchTargetsCss).toMatch(/height:\s*max\(100%,\s*24px\)/)
+  })
+
+  it('sr-only 触发器在键盘聚焦时还原为可见按钮(WCAG 2.4.7)', () => {
+    // 默认仍是视觉隐藏: 裁剪必须保留, 否则全仓 sr-only 文本会直接显示出来
+    const hidden = blockOf(loadingCss, '.aries-sr-only {')
+    expect(hidden).toMatch(/clip:\s*rect\(0 0 0 0\)/)
+    expect(hidden).toMatch(/width:\s*1px/)
+    expect(hidden).toMatch(/height:\s*1px/)
+
+    // 聚焦还原: 解除 1×1 裁剪并给出可见焦点环, 否则焦点落在看不见的位置
+    const restore = blockOf(loadingCss, '.aries-sr-only:focus-visible')
+    expect(restore).toMatch(/position:\s*static/)
+    expect(restore).toMatch(/width:\s*auto/)
+    expect(restore).toMatch(/height:\s*auto/)
+    expect(restore).toMatch(/clip:\s*auto/)
+    expect(restore).toMatch(/clip-path:\s*none/)
+    expect(restore).toMatch(/outline:\s*2px solid/)
+
+    // 比价页覆盖落位: 勾选列只有 32px, 还原后的按钮必须绝对定位(布局零位移)且 ≥24×24
+    const cell = blockOf(pageCss, '.price-compare-row-select')
+    expect(cell).toMatch(/position:\s*relative/)
+    const overlay = blockOf(
+      pageCss,
+      '.price-compare-row-actions.aries-sr-only:focus-visible',
+    )
+    expect(overlay).toMatch(/position:\s*absolute/)
+    expect(overlay).toMatch(/min-width:\s*24px/)
+    expect(overlay).toMatch(/min-height:\s*24px/)
+    expect(overlay).toMatch(/outline:\s*2px solid/)
   })
 
   it('行选择框可点区域不小于 24×24', () => {
