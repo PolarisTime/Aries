@@ -6,6 +6,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
+import { router as mainRouter } from '@/router'
 import { MAX_LAYOUT_TABS, useLayoutTabsStore } from '@/stores/layoutTabsStore'
 import { LayoutTabBar } from './LayoutTabBar'
 
@@ -269,7 +270,7 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     ).toBeTruthy()
   })
 
-  it('「关闭其他」确认框被取消时不移除任何标签', async () => {
+  it('「关闭其他」确认框被取消时不移标签、不切走当前标签、不多推历史', async () => {
     // 三标签场景：对非激活的 tab-extra 执行「关闭其他」，其待关闭集合里有脏的 tab-price-compare。
     // 不能用 focus 打开菜单 —— antd Tabs 聚焦即激活，会先把前提破坏掉，因此走鼠标右键。
     useLayoutTabsStore.setState({
@@ -324,22 +325,39 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
       ...document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
     ].find((element) => element.textContent?.includes('关闭其他'))
     expect(closeOthers, '未找到「关闭其他」菜单项').toBeTruthy()
+    const pushSpy = vi.spyOn(mainRouter.history, 'push')
+    /*
+     * 「取消」的可观测点只能在弹确认框的那一刻采样：菜单项点击后 antd/rc-tabs 会把焦点
+     * 归还到被操作的标签并顺带激活它（既有行为，与本修复无关），点击返回后 activeTabId
+     * 已被它改成 tab-extra。修复前的实现是在 closeManyTabs **之前**同步 activateTab，
+     * 因此确认框弹出时激活项已经变了；修复后只有在用户点「确定」后才切换。
+     */
+    let activeTabIdWhenConfirming: string | null = null
+    modalConfirmMock.mockImplementation(() => {
+      activeTabIdWhenConfirming = useLayoutTabsStore.getState().activeTabId
+    })
     act(() => {
       closeOthers?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
+
+    expect(modalConfirmMock, '存在脏会话时应弹出确认框').toHaveBeenCalled()
+    expect(
+      activeTabIdWhenConfirming,
+      '取消前不得先切走当前标签（修复前 activateTab 在弹框之前执行）',
+    ).toBe('tab-price-compare')
+
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 60))
     })
 
-    expect(modalConfirmMock, '存在脏会话时应弹出确认框').toHaveBeenCalled()
-    // 取消（不调用 onOk）：不得移除任何标签。
-    // 这里刻意不断言 activeTabId —— 菜单关闭时会把焦点还给触发器（标签内的 label span），
-    // 而 antd Tabs 聚焦即激活，因此该标签会因「焦点归还」而非关闭逻辑被切到。这是独立于
-    // 本次修复的既有行为，断言它会让本用例测不到真正想测的东西。
+    // 取消（不调用 onOk）：不得移除任何标签，也不得多推浏览器历史。
+    // 修复前切换激活项会经 useTabRouteReconciliation 顺带推出一条本不该产生的历史。
     expect(
       useLayoutTabsStore.getState().tabs,
       '取消后不得移除任何标签',
     ).toHaveLength(TABS.length + 1)
+    expect(pushSpy, '取消后不得多推浏览器历史').not.toHaveBeenCalled()
+    pushSpy.mockRestore()
 
     // 复位 request-close 的模块级 confirming 标记并清理会话，避免污染后续用例
     const lastConfirm = modalConfirmMock.mock.calls.at(-1)?.[0] as
