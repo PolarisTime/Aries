@@ -38,6 +38,11 @@ export function shouldAdoptMainSearchForUnmountedTab(
  * 1. 主路由变化 → 打开/激活对应 Tab，并将外部意图（菜单点击/全局搜索/前进后退/直达 URL）注入子 Router；
  * 2. 激活 Tab 变化（如关闭 Tab 后邻位继承）→ 主地址栏跟随。
  * 子 Router 内导航漂移由 tab-location-sync 的订阅反向同步，此处不处理。
+ *
+ * <p>建标签统一走 {@link useLayoutTabsStore.ensureTabForLocation}（与 `hydrateForUser`
+ * 同一个幂等入口），因此"同一 pathname 已有标签"时只激活/补挂载标记，不会重复创建对象。
+ * 恢复持久化清单的 hydrate 由 {@link useLayoutTabsHydration} 在布局阶段先行完成，
+ * 严格早于本文件的定位 effect。</p>
  */
 export function useTabRouteReconciliation(): void {
   const location = useLocation()
@@ -99,7 +104,7 @@ export function useTabRouteReconciliation(): void {
       return
     }
 
-    const { tabId, evictedIds } = store.openTab(
+    const { tabId, evictedIds } = store.ensureTabForLocation(
       { pathname, search: location.searchStr },
       {
         isProtected: (id) => editorSessionStore.requiresConfirmation(id),

@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { Layout, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentFlowModal } from '@/components/DocumentFlowModal'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
@@ -16,7 +16,7 @@ import { EditorSessionGuard } from '@/layouts/editor-session/EditorSessionGuard'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { AppTabContainer } from '@/layouts/tabs/AppTabContainer'
-import { detachAllTabRouters } from '@/layouts/tabs/tab-location-sync'
+import { useLayoutTabsHydration } from '@/layouts/tabs/use-layout-tabs-hydration'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
 import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
@@ -29,10 +29,6 @@ import {
 } from '@/layouts/usePersonalSettings'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { useAuthStore } from '@/stores/authStore'
-import {
-  normalizeTabPathname,
-  useLayoutTabsStore,
-} from '@/stores/layoutTabsStore'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
@@ -176,25 +172,15 @@ export function AppLayout() {
 
   const openTab = useTabOpen()
 
-  // 登录用户就绪后恢复其持久化的标签页清单
+  // 登录用户就绪后恢复其持久化的标签页清单。
+  // 必须在**布局阶段**完成：AppTabContainer 是子节点，它的定位 effect 会先于父组件的被动
+  // effect 运行，恢复若放在 useLayoutEffect 之外就会造成"子先建标签、父后覆盖"的竞态。
   const userId = user?.id ?? ''
-  const hydratedUserRef = useRef('')
-  useEffect(() => {
-    if (!authReady || !userId) {
-      hydratedUserRef.current = ''
-      return
-    }
-    if (hydratedUserRef.current === userId) {
-      return
-    }
-    hydratedUserRef.current = userId
-    // 切换用户/重新登录时销毁上一会话残留的子 Router 实例，避免内存泄漏
-    detachAllTabRouters()
-    useLayoutTabsStore.getState().hydrateForUser(userId, {
-      pathname: normalizeTabPathname(location.pathname),
-      search: location.searchStr,
-    })
-  }, [authReady, location.pathname, location.searchStr, userId])
+  useLayoutTabsHydration({
+    authReady,
+    userId,
+    location: { pathname: location.pathname, searchStr: location.searchStr },
+  })
 
   const {
     sideMenuItems,

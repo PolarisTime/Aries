@@ -28,6 +28,16 @@ function TabPanelRouter({ tab }: { tab: LayoutTab }) {
  * 已挂载过的 Tab 常驻 DOM（hidden 切换显隐），实现表单/筛选/滚动位置保留；
  * 当前激活的 Tab 无论是否挂载过都立即渲染（激活即挂载），
  * 其余恢复自持久化的 Tab 保持惰性，首次激活才创建子 Router。
+ *
+ * <p><b>为什么本次没有改用 React 19 的 Activity 承载非激活面板（已评估，暂缓）</b>：Activity
+ * 的 `hidden` 会**销毁子树 effect**（DOM 与组件 state 保留）。本项目多处依赖"effect 只在真正
+ * 挂载时跑一次"：`useModuleEditorWorkspace` 的初始化 effect（见
+ * src/views/modules/use-module-editor-workspace.ts 的 initializeEditor）会在 effect 重入时
+ * `form.resetFields()` 重建表单，编辑器会话生命周期也挂在 effect 清理上（`return endSession`）。
+ * 实测把面板套进 `<Activity mode="hidden">` 后，tests/e2e/navigation.spec.ts 的 P2-25 在
+ * "切回后草稿仍在"这一步直接变红（remark 被重置为空）。因此本次只收口竞态本体
+ * （hydrate 前移 + 建标签幂等入口），Activity 需先让编辑器初始化与会话生命周期对 effect 重入
+ * 幂等，再单独立项接入。</p>
  */
 export function AppTabContainer() {
   const tabs = useLayoutTabsStore((state) => state.tabs)
@@ -39,16 +49,14 @@ export function AppTabContainer() {
    * 不变式：**激活的标签一定"已挂载过"**。
    *
    * <p>本组件在激活时无条件渲染该标签的面板（见下方 `mounted` 计算），因此提交后必须把它记为
-   * {@link LayoutTab.mountedOnce}，否则会漏掉一条路径：`hydrateForUser` 为当前深链新建/选中的
-   * 标签。原因是 React **先跑子组件 effect**（AppTabContainer 是 AppLayout 的子节点），
-   * `useTabRouteReconciliation` 的定位 effect 在 hydrate 之前就已跑完，而它的依赖
-   * `location.href/pathname/searchStr` 之后不再变化，于是 hydrate 出来的那个标签永远不会被
-   * `markTabMounted`。后果是该标签一旦转成非激活，面板就被**卸载重建**，它的筛选草稿、
+   * {@link LayoutTab.mountedOnce}，否则该标签一旦转成非激活，面板就被**卸载重建**，它的筛选草稿、
    * 已打开的编辑浮层与未保存编辑会话一起丢失（用户口述的"点新标签后整页重载"）。</p>
    *
-   * <p>放在这里而不是改协调层的依赖数组：协调 effect 的依赖是围绕"主路由↔子 Router 乒乓"
-   * 调过的，加依赖会让切换语言/重复渲染重跑整套协调逻辑；而"激活即已挂载"本就是本组件自己
-   * 的事实，记在自己这里最贴近真相。`markTabMounted` 对已标记者是 no-op，不会形成渲染环。</p>
+   * <p>原先漏记的那条路径（`hydrateForUser` 为当前深链新建/选中的标签）已由两处根治：
+   * hydrate 改在布局阶段执行（use-layout-tabs-hydration.ts，严格早于本组件的被动 effect），
+   * 建标签统一走幂等入口 `ensureTabForLocation`（同 pathname 只会有一个标签对象）。这里保留
+   * "激活即已挂载"作为结果不变式，与上述两处互为保险。`markTabMounted` 对已标记者是 no-op，
+   * 不会形成渲染环。</p>
    */
   useEffect(() => {
     if (!activeTabId) return

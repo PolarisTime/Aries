@@ -727,17 +727,22 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
   })
 
   /**
-   * P2-25：**深链落地标签的面板不得因转非激活而被卸载重建**。
+   * P2-25：**深链落地标签的面板、草稿与未保存会话都不得因转非激活而丢失**。
    *
-   * <p>根因（F1）：`AppTabContainer` 是 `AppLayout` 的子节点，React 先跑子组件 effect，因此
-   * `useTabRouteReconciliation` 的定位 effect 在 `hydrateForUser` **之前**跑完；hydrate 为当前
-   * 深链新建/选中的标签（`mountedOnce` 恒为 false）之后不再触发该 effect（依赖 location 未变），
-   * 于是它永远不会被 `markTabMounted`。该标签一旦转成非激活，`mounted = mountedOnce ||
-   * 是激活项` 判定为 false → 整块面板卸载重建，筛选草稿、已打开的编辑浮层与未保存会话一起丢失
-   * ——这正是用户口述"点击新的标签页出现全部重载"的可观测形态。</p>
+   * <p>原根因（竞态已收口）：`AppTabContainer` 是 `AppLayout` 的子节点，React 先跑子组件 effect，
+   * 因此 `useTabRouteReconciliation` 的定位 effect 曾在 `hydrateForUser` **之前**跑完；hydrate 为
+   * 当前深链新建/选中的标签（`mountedOnce` 恒为 false）之后不再触发该 effect（依赖 location 未变），
+   * 于是它永远不会被 `markTabMounted`，一转非激活就整块面板卸载重建。收口方式见
+   * `use-layout-tabs-hydration.ts`（恢复移到布局阶段，严格早于子容器 effect）与
+   * `layoutTabsStore.ensureTabForLocation`（建标签幂等入口）；`AppTabContainer` 的
+   * "激活即已挂载"不变式保留为结果兜底。</p>
    *
-   * <p>三条断言分别钉住三件不可恢复的东西：面板 DOM 节点（是否被重建）、编辑器草稿（组件状态）、
-   * 未保存会话（store 状态）。回退 `AppTabContainer` 的"激活即已挂载"效应后三条同时变红。</p>
+   * <p>本用例是**浏览器层回归守护**，不跟随实现：三条断言分别钉住三件不可恢复的东西——面板 DOM
+   * 节点（是否被重建）、编辑器草稿（组件状态）、未保存会话（store 状态）。把恢复改回父组件的
+   * 被动 effect（或在 hydrate 中各自建标签），本用例就会变红。</p>
+   *
+   * <p>显隐做了两轮：反复切走再切回也必须原样保留草稿与会话（面板一旦被卸载重建，
+   * 第二轮就会先红）。</p>
    */
   test('开新标签后深链落地标签的面板、草稿与未保存会话都不得被重建', async ({
     page,
@@ -811,6 +816,21 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
       remark,
       '原标签的编辑器草稿必须还在（面板被重建就会清空）',
     ).toHaveValue(remarkValue)
+
+    // 3b) 第二轮显隐：覆盖 Activity 重新激活时子树 effect 重建的路径
+    await tabLabel('供应商资料').click()
+    await expectModuleHeading(page, '供应商资料')
+    await tabLabel('销售订单').click()
+    await expectModuleHeading(page, '销售订单')
+    expect(
+      await page.evaluate(
+        () => document.querySelector('[data-keep-node]') !== null,
+      ),
+      '反复显隐后面板 DOM 仍不得被重建',
+    ).toBe(true)
+    await expect(remark, '反复显隐后编辑器草稿仍必须还在').toHaveValue(
+      remarkValue,
+    )
 
     // 4) 未保存会话仍必须拦住关闭：点 × 要弹「存在未保存的修改」
     await page

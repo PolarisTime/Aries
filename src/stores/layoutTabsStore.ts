@@ -85,6 +85,14 @@ interface LayoutTabsState {
     target: OpenTabTarget,
     options?: OpenTabOptions,
   ) => { tabId: string; evictedIds: string[] }
+  /**
+   * 「按 location 建/选标签」的唯一幂等入口，供路由协调层使用。
+   * 与 {@link hydrateForUser} 共用 {@link ensureTabIn}，同一 pathname 只会有一个标签对象。
+   */
+  ensureTabForLocation: (
+    location: OpenTabTarget,
+    options?: OpenTabOptions,
+  ) => { tabId: string; created: boolean; evictedIds: string[] }
   activateTab: (id: string) => void
   setTabLocation: (
     id: string,
@@ -233,6 +241,50 @@ export function openTabIn(
     isProtected,
   )
   return { tabs: nextTabs, activeTabId: tab.id, evictedIds }
+}
+
+export interface EnsureTabResult {
+  tabs: LayoutTab[]
+  activeTabId: string
+  tabId: string
+  /** 本次是否新建了标签对象；幂等命中原有标签时为 false */
+  created: boolean
+  /** 触发上限淘汰时被丢掉的标签 id；调用方须据此回收子 Router 与编辑器会话 */
+  evictedIds: string[]
+}
+
+/**
+ * 「按 location 建/选标签」的唯一幂等入口（纯函数）。
+ *
+ * <p>路由协调层（地址栏变化 → 定位 effect）与 {@link LayoutTabsState.hydrateForUser}
+ * （恢复持久化清单时发现当前深链）**必须**都走这里，而不是各自 `createTab`：两条路径各自
+ * 建标签时，同一 pathname 会先后存在两个标签对象——React 先跑子组件 effect，因此总由定位
+ * effect 先建 X，随后 hydrate 再建 Y 并整体覆盖，X 连同它的 `mountedOnce` 被静默丢弃。
+ * 收成单一入口后，"同一 location 只对应一个标签对象"成为结构性事实，不再依赖调用顺序。</p>
+ *
+ * <p>幂等语义与 {@link openTabIn} 同源（本函数即在其上加一层"是否新建"的观测）：同
+ * pathname 已有标签时复用其 id；携带非空查询串且与已有值不同才更新，空查询串保留标签
+ * 既有筛选状态（避免菜单点击清掉深链或页内筛选）。</p>
+ */
+export function ensureTabIn(
+  tabs: LayoutTab[],
+  location: OpenTabTarget,
+  isProtected?: (tabId: string) => boolean,
+): EnsureTabResult {
+  const pathname = normalizeTabPathname(location.pathname)
+  const created = !tabs.some((tab) => tab.pathname === pathname)
+  const {
+    tabs: nextTabs,
+    activeTabId,
+    evictedIds,
+  } = openTabIn(tabs, location, isProtected)
+  return {
+    tabs: nextTabs,
+    activeTabId,
+    tabId: activeTabId,
+    created,
+    evictedIds,
+  }
 }
 
 export function removeTabFrom(
@@ -485,13 +537,22 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
   /**
    * 恢复某个用户的标签页清单，并让"首次打开的深链"优先于上次工作区。
    *
-   * <p><b>已知结构性瑕疵（本次刻意不重构，后续单独立项）</b>：本方法会用恢复结果整体覆盖 store，
-   * 而 {@link useTabRouteReconciliation} 的定位 effect 可能**已经**为当前深链建过一个标签——
-   * React 先跑子组件 effect（AppTabContainer 是 AppLayout 的子节点），因此 hydrate 总是发生在它
-   * 之后。同一个路径于是可能先后存在两个标签对象（X 由定位 effect 建、Y 由本方法建），X 连同它
-   * 的 `mountedOnce` 标记被静默丢弃；且本方法返回后不再有 location 变化，定位 effect 不会再跑，
-   * Y 也就拿不到"已挂载"标记。当前由 {@link AppTabContainer} 的"激活即已挂载"不变式兜住后果，
-   * 但"同一路径被建两次"这一竞态本身仍在，需要按"先 hydrate 再协调"的顺序重构才能根治。</p>
+   * <p><b>竞态已收口（原"已知结构性瑕疵"）</b>：改造前本方法用恢复结果整体覆盖 store，而
+   * {@link useTabRouteReconciliation} 的定位 effect 可能**已经**为当前深链建过一个标签——
+   * React 先跑子组件 effect（AppTabContainer 是 AppLayout 的子节点），hydrate 总是发生在它之后。
+   * 同一路径于是先后存在两个标签对象（X 由定位 effect 建、Y 由本方法建），X 连同它的
+   * `mountedOnce` 被静默丢弃；hydrate 返回后不再有 location 变化，定位 effect 不会再跑，Y 也
+   * 拿不到"已挂载"标记，该标签一转非激活就整块面板卸载重建。收口由两处配合完成：</p>
+   * <ul>
+   *   <li>恢复改在 AppLayout 的**布局阶段**（{@link useLayoutTabsHydration}）完成，严格早于
+   *       AppTabContainer 的被动 effect，不再有"子先建、父后覆盖"的顺序；</li>
+   *   <li>深链建标签复用 {@link ensureTabIn}——与定位 effect 同一个幂等入口，同 pathname 只会
+   *       有一个标签对象，顺序即使反转也只会复用而不会重复创建。</li>
+   * </ul>
+   *
+   * <p>AppTabContainer 的"激活即已挂载"不变式继续保留为结果兜底；改用 React Activity 承载
+   * 非激活面板的方案已评估并暂缓（Activity 的 hidden 会销毁子树 effect，与本项目按 effect
+   * 初始化表单/挂会话生命周期的实现冲突），理由与实测证据见 AppTabContainer 的类注释。</p>
    */
   hydrateForUser: (userId, currentLocation) => {
     currentUserId = String(userId || 'anonymous').trim() || 'anonymous'
@@ -506,30 +567,20 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
           null)
 
     // 首次打开的深链优先于持久化的上次工作区，避免 hydration 将外部意图丢失。
+    // 与路由协调层共用 ensureTabIn：已在清单中的路径复用原标签与查询串，不在清单中才新建。
     const currentPath = normalizeTabPathname(currentLocation?.pathname)
     if (
       currentLocation &&
       currentPath !== DASHBOARD_TAB_PATH &&
       isRegisteredPagePath(currentPath)
     ) {
-      const currentSearch = normalizeSearch(currentLocation.search)
-      const existingIndex = tabs.findIndex(
-        (tab) => tab.pathname === currentPath,
-      )
-      if (existingIndex >= 0) {
-        const existing = tabs[existingIndex]
-        if (currentSearch && existing.search !== currentSearch) {
-          tabs = tabs.map((tab, index) =>
-            index === existingIndex ? { ...tab, search: currentSearch } : tab,
-          )
-        }
-        activeTabId = existing.id
-      } else {
-        const tab = createTab({ pathname: currentPath, search: currentSearch })
-        // hydration 阶段尚无任何挂载的编辑器会话，被截断的 Tab 不存在未保存内容
-        tabs = evictOverflow([...tabs, tab], tab.id).tabs
-        activeTabId = tab.id
-      }
+      // hydration 阶段尚无任何挂载的编辑器会话，被截断的 Tab 不存在未保存内容
+      const ensured = ensureTabIn(tabs, {
+        pathname: currentPath,
+        search: normalizeSearch(currentLocation.search),
+      })
+      tabs = ensured.tabs
+      activeTabId = ensured.activeTabId
     }
 
     set({ tabs, activeTabId })
@@ -543,6 +594,18 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
     )
     set({ tabs, activeTabId })
     return { tabId: activeTabId, evictedIds }
+  },
+
+  ensureTabForLocation: (location, options) => {
+    const { tabs, activeTabId, tabId, created, evictedIds } = ensureTabIn(
+      get().tabs,
+      location,
+      options?.isProtected,
+    )
+    if (tabs !== get().tabs || activeTabId !== get().activeTabId) {
+      set({ tabs, activeTabId })
+    }
+    return { tabId, created, evictedIds }
   },
 
   activateTab: (id) => {

@@ -161,10 +161,10 @@ describe('AppTabContainer 激活即已挂载', () => {
   })
 
   /**
-   * F1 回归守护（浏览器层由 tests/e2e/navigation.spec.ts 的 P2-25 覆盖可观测后果）：
-   * `hydrateForUser` 为当前深链新建/选中的标签 `mountedOnce` 恒为 false，而协调层的定位 effect
-   * 在此之前已跑完且依赖不再变化，不会替它补标记。本组件在激活时无条件渲染该标签的面板，
-   * 因此必须在提交后把它记为已挂载——否则它一转非激活就会被卸载重建。
+   * 「激活即已挂载」不变式守护（浏览器层由 tests/e2e/navigation.spec.ts 的 P2-25 覆盖可观测后果）：
+   * 竞态本体已收口（hydrate 移到布局阶段 + 建标签收成幂等入口），本用例守住结果不变式——
+   * 任何来源（含 `mountedOnce=false` 的恢复标签）只要成为激活项，就必须在提交后被记为已挂载。
+   * 本组件在激活时无条件渲染该标签的面板，若漏记，它一转非激活面板就会被卸载重建。
    */
   it('激活的标签(即使 mountedOnce=false)在渲染后被记为已挂载', () => {
     useLayoutTabsStore.setState({
@@ -186,7 +186,7 @@ describe('AppTabContainer 激活即已挂载', () => {
       useLayoutTabsStore
         .getState()
         .tabs.find((tab) => tab.id === 'tab-hydrated')?.mountedOnce,
-      '激活的标签必须被记为已挂载（F1 根因）',
+      '激活的标签必须被记为已挂载',
     ).toBe(true)
 
     // 转非激活后常驻：子 Router 不被销毁（面板由 mountedOnce 决定是否保留）
