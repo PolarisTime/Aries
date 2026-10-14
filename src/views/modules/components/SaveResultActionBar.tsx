@@ -5,6 +5,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from 'antd'
+import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { buildRouterHref } from '@/utils/router-search'
@@ -69,39 +70,51 @@ export function SaveResultActionBar<Key extends ModuleKey>({
     } as never)
   }
 
-  return (
-    <>
-      {actions.includes('upload-attachment') ? (
-        <Button onClick={onOpenAttachments}>上传回单/凭证</Button>
-      ) : null}
-      {actions.includes('next-module') && nextModule ? (
-        <Button
-          type="primary"
-          icon={<ArrowRightOutlined />}
-          onClick={() => handleCreateNext(nextModule)}
-        >
-          {nextModule.label}
-        </Button>
-      ) : null}
-      {actions.includes('create-another') ? (
-        <Button icon={<PlusOutlined />} onClick={onCreateAnother}>
-          {t('modules.saveResult.createAnother')}
-        </Button>
-      ) : null}
-      {actions.includes('close') ? (
-        <Button
-          type="primary"
-          icon={isConflict ? <ReloadOutlined /> : undefined}
-          loading={isConflict && resolvingConflict}
-          onClick={isConflict ? onResolveConflict : onClear}
-        >
-          {isConflict
-            ? t('modules.saveResult.reloadLatest')
-            : status === 'error'
-              ? t('modules.saveResult.backToEdit')
-              : t('modules.saveResult.close')}
-        </Button>
-      ) : null}
-    </>
-  )
+  const closeLabel = isConflict
+    ? t('modules.saveResult.reloadLatest')
+    : status === 'error'
+      ? t('modules.saveResult.backToEdit')
+      : t('modules.saveResult.close')
+
+  // 每个动作一个元素，最后按共享派生给出的顺序取用：把「动作 → 按钮」的映射与
+  // 「哪些动作出现」解耦，避免在 JSX 里堆叠 includes 条件把本函数的控制流推过阈值。
+  const elements: Partial<Record<SaveResultActionKind, ReactElement>> = {
+    'upload-attachment': (
+      <Button key="upload-attachment" onClick={onOpenAttachments}>
+        上传回单/凭证
+      </Button>
+    ),
+    'next-module': nextModule ? (
+      <Button
+        key="next-module"
+        type="primary"
+        icon={<ArrowRightOutlined />}
+        onClick={() => handleCreateNext(nextModule)}
+      >
+        {nextModule.label}
+      </Button>
+    ) : undefined,
+    'create-another': (
+      <Button
+        key="create-another"
+        icon={<PlusOutlined />}
+        onClick={onCreateAnother}
+      >
+        {t('modules.saveResult.createAnother')}
+      </Button>
+    ),
+    close: (
+      <Button
+        key="close"
+        type="primary"
+        icon={isConflict ? <ReloadOutlined /> : undefined}
+        loading={isConflict && resolvingConflict}
+        onClick={isConflict ? onResolveConflict : onClear}
+      >
+        {closeLabel}
+      </Button>
+    ),
+  }
+
+  return <>{actions.map((action) => elements[action] ?? null)}</>
 }
