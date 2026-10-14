@@ -2799,6 +2799,12 @@ export const enUS = {
       purchaseOrderLoadFailed:
         'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
       purchaseOrderIssuedShort: 'Issued {{issued}}',
+      /**
+       * Shortfall notice: this row's reported tonnage − the allocated tonnage of its linked
+       * lines (under-allocation is legal; this only informs, it does not block saving).
+       */
+      purchaseOrderUnallocatedTon:
+        '{{ton}} t is not allocated to any purchase-order line',
       /** Visible cell text: remaining = this sheet reported tonnage − issued. */
       purchaseOrderRemainingShort: 'Remaining {{weight}}',
       /** Tooltip row: tonnage this sheet reported on the linked PO line. */

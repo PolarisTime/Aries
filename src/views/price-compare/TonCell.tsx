@@ -6,6 +6,7 @@ import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
 import { linkedPurchaseOrderItemIds } from './core'
 import {
+  compactTonText,
   issuedBrandText,
   tonProgressTextParts,
   tonRemainingText,
@@ -53,6 +54,8 @@ export interface TonOrderCellProps {
   /** 本单据内该明细行的报单吨位合计(悬浮明细里作为"本单报单"给出)。 */
   localTonForItem: number
   loading: boolean
+  /** 选项查询失败: 与"加载中"一样, 此时不能断言关联明细行已被删除(缺省 false)。 */
+  isError?: boolean
   /**
    * 是否允许关联采购订单: 该行规格与吨位已定稿(行级锁 或 单据级「锁定规格和数量」)且非只读。
    *
@@ -125,6 +128,25 @@ export function resolveLinkedTonnageTotals(
   }
 }
 
+/**
+ * 本行报单吨位里**没有落到订单明细行上**的量: `ton − ΣpurchaseOrderLinks[].allocatedTon`。
+ *
+ * <p>与「Σ订货量」不是同一个量: Σ订货量用于遮蔽判定(订单给不给得了这么多), 这里回答的是
+ * "本行还有多少吨没摊到订单上"(欠额合法, 只做提示)。历史单值行只有三列、没有
+ * `purchaseOrderLinks`, 视为本行报单量已整体落在唯一那条明细行上, 缺口为 0。</p>
+ */
+export function unallocatedTonOf(row: PriceRow): number {
+  if (!row.purchaseOrderLinks) return 0
+  const allocated = row.purchaseOrderLinks.reduce(
+    (sum, link) =>
+      sum + (Number.isFinite(link.allocatedTon) ? link.allocatedTon : 0),
+    0,
+  )
+  const ton = Number.isFinite(row.ton) ? (row.ton as number) : 0
+  // 前端按 min(剩余, 订货量) 就地分摊, Σ ≤ ton 恒成立; 仍夹一次下界, 免得异常数据出现负缺口
+  return Math.max(0, ton - allocated)
+}
+
 export function resolveTonnageView(
   row: PriceRow,
   options: PurchaseOrderTonnageRecord[],
@@ -166,6 +188,46 @@ const TON_STATE_KEYS = {
 } as const
 
 /**
+ * 采购订单吨位选项的可用性三态: 加载中 / 加载失败 / 已就绪。
+ *
+ * <p>只有 `ready` 才允许对"选项里找不到关联明细行"下结论 —— 否则首屏与查询失败期间会对
+ * 所有已关联行误报「已删除」。</p>
+ */
+export type TonnageOptionsPhase = 'loading' | 'error' | 'ready'
+
+export function tonnageOptionsPhase({
+  loading,
+  isError,
+}: {
+  loading: boolean
+  isError?: boolean
+}): TonnageOptionsPhase {
+  if (loading) return 'loading'
+  if (isError) return 'error'
+  return 'ready'
+}
+
+/** 取不到关联明细行时的短状态: 未关联 / 选项未就绪(占位) / 关联明细行真的被删了。 */
+export type TonLinkedState = 'notLinked' | 'pending' | 'missing'
+
+/**
+ * 关联明细行取不到时的三态判定。
+ *
+ * <p>「行没关联」与选项无关, 任何时候都说「未关联」; 行已关联但选项未就绪时只能说
+ * "还不知道"(占位「—」), 不能断言「已删除」; 只有选项已就绪却仍找不到才是真的被删除。</p>
+ */
+export function resolveMissingLinkedState(
+  row: Pick<PriceRow, 'purchaseOrderItemId'>,
+  phase: TonnageOptionsPhase,
+): TonLinkedState {
+  if (row.purchaseOrderItemId === undefined) return 'notLinked'
+  return phase === 'ready' ? 'missing' : 'pending'
+}
+
+/** 选项未就绪时的占位短状态: 与页面其它缺省值同口径用「—」, 不新增 i18n key。 */
+const TON_PENDING_SHORT = '—'
+
+/**
  * 短状态标签: 标签文字常驻可见, 完整说明在悬浮/聚焦气泡里。
  *
  * <p>纯键盘可达: 用原生 `button` 承担提示触发器(APG tooltip 模式的标准触发元素), 天然
@@ -174,21 +236,56 @@ const TON_STATE_KEYS = {
  * 一个气泡永不打开的位置。配套的可见焦点环见 `price-compare.css` 的
  * `.price-compare-ton-state:focus-visible`(WCAG 2.4.7)。</p>
  */
-function TonStateLabel({ state }: { state: keyof typeof TON_STATE_KEYS }) {
-  const { t } = useTranslation()
-  const { label, hint } = TON_STATE_KEYS[state]
-  const labelText = t(label)
-  const hintText = t(hint)
+function TonStateLabel({ label, hint }: { label: string; hint: string }) {
   return (
     <Tooltip
       classNames={{ root: TON_BUBBLE_CLASS }}
-      title={hintText}
+      title={hint}
       trigger={['hover', 'focus']}
     >
       <button className="price-compare-ton-state" type="button">
-        {labelText}
+        {label}
       </button>
     </Tooltip>
+  )
+}
+
+/** 按 i18n key 渲染短状态(说明可由调用方覆盖)。 */
+function TonStateByKey({
+  state,
+  hint,
+}: {
+  state: keyof typeof TON_STATE_KEYS
+  hint?: string
+}) {
+  const { t } = useTranslation()
+  const keys = TON_STATE_KEYS[state]
+  return <TonStateLabel hint={hint ?? t(keys.hint)} label={t(keys.label)} />
+}
+
+/**
+ * 取不到关联明细行时的短状态标签。
+ *
+ * <p>pending 态的说明必须区分"加载中"与"加载失败", 不能笼统说"已删除"。</p>
+ */
+function LinkedStateLabel({
+  state,
+  phase,
+}: {
+  state: TonLinkedState
+  phase: TonnageOptionsPhase
+}) {
+  const { t } = useTranslation()
+  if (state !== 'pending') return <TonStateByKey state={state} />
+  return (
+    <TonStateLabel
+      hint={
+        phase === 'error'
+          ? t('priceCompare.sheet.purchaseOrderLoadFailed')
+          : t('common.loadingIndicatorAnnouncing')
+      }
+      label={TON_PENDING_SHORT}
+    />
   )
 }
 
@@ -204,9 +301,14 @@ export function IssuedTonCell({
   options,
   linked,
   localTonForItem,
-}: Pick<TonOrderCellProps, 'row' | 'options' | 'linked' | 'localTonForItem'>) {
+  loading = false,
+  isError,
+}: Pick<TonOrderCellProps, 'row' | 'options' | 'linked' | 'localTonForItem'> &
+  Partial<Pick<TonOrderCellProps, 'loading' | 'isError'>>) {
+  // 选项未就绪(加载中/失败)时不能断言「已删除」: 那只是"还没加载到"
   const { t } = useTranslation()
-  const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
+  const phase = tonnageOptionsPhase({ loading, isError })
+  const { selected } = resolveTonnageView(row, options, linked)
   // 剩余未开吨位 = 订货吨位 − 已开吨位(已开含本单据这一行报的量), 负值表示这条明细行被超开
   const totals = resolveLinkedTonnageTotals(row, options, linked)
   const remaining = selected
@@ -231,8 +333,9 @@ export function IssuedTonCell({
           </span>
         </Tooltip>
       ) : (
-        <TonStateLabel
-          state={missingSnapshot !== undefined ? 'missing' : 'notLinked'}
+        <LinkedStateLabel
+          phase={phase}
+          state={resolveMissingLinkedState(row, phase)}
         />
       )}
     </div>
@@ -257,11 +360,13 @@ export function TonUnopenedCell({
   linked,
   localTonForItem,
   loading,
+  isError,
   purchaseOrderLinkAllowed,
   purchaseOrderLinkBlockedReason,
   onOpenPicker,
 }: TonOrderCellProps) {
   const { t } = useTranslation()
+  const phase = tonnageOptionsPhase({ loading, isError })
   const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
   // 合计口径只算一次: 弹层、气泡、列上数字与读屏文案全部取这一份, 避免多处各算一遍走偏
   const totals = resolveLinkedTonnageTotals(row, options, linked)
@@ -273,8 +378,16 @@ export function TonUnopenedCell({
   for (const link of row.purchaseOrderLinks ?? []) {
     allocatedTonByItemId.set(link.purchaseOrderItemId, link.allocatedTon)
   }
-  // 明细行已不可见时不能静默少算: 用「已删除」短状态明示, 合计里缺了哪一条
-  const missingCount = totals.missingItemIds.length
+  /*
+   * 明细行已不可见时不能静默少算: 用「已删除」短状态明示, 合计里缺了哪一条。
+   * 选项未就绪时 missingItemIds 必然把全部关联行都算成缺失, 此时不能下"已删除"的结论。
+   */
+  const missingCount = phase === 'ready' ? totals.missingItemIds.length : 0
+  /** 选项未就绪时的说明: 加载中与加载失败必须说清是哪种。 */
+  const pendingHint =
+    phase === 'error'
+      ? t('priceCompare.sheet.purchaseOrderLoadFailed')
+      : t('common.loadingIndicatorAnnouncing')
 
   const popoverContent = selected ? (
     <LinkedPurchaseOrderPopover
@@ -283,13 +396,19 @@ export function TonUnopenedCell({
       otherIssuedTotal={totals.otherIssuedTotal}
       allocatedTonByItemId={allocatedTonByItemId}
       localTonForItem={localTonForItem}
+      unallocatedTon={unallocatedTonOf(row)}
       linkAllowed={purchaseOrderLinkAllowed}
       linkBlockedReason={purchaseOrderLinkBlockedReason}
       onOpenPicker={onOpenPicker}
     />
   ) : (
     <UnlinkedPurchaseOrderPopover
-      missingSnapshot={missingSnapshot}
+      missingSnapshot={phase === 'ready' ? missingSnapshot : undefined}
+      pendingHint={
+        phase === 'ready' || row.purchaseOrderItemId === undefined
+          ? undefined
+          : pendingHint
+      }
       linkAllowed={purchaseOrderLinkAllowed}
       linkBlockedReason={purchaseOrderLinkBlockedReason}
       onOpenPicker={onOpenPicker}
@@ -322,8 +441,9 @@ export function TonUnopenedCell({
     return (
       <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
         <span className="price-compare-ton-progress">
-          <TonStateLabel
-            state={missingSnapshot !== undefined ? 'missing' : 'notLinked'}
+          <LinkedStateLabel
+            phase={phase}
+            state={resolveMissingLinkedState(row, phase)}
           />
         </span>
         {infoButton}
@@ -400,7 +520,7 @@ export function TonUnopenedCell({
         */}
         <span className="price-compare-ton-progress">
           {reportedMissing ? (
-            <TonStateLabel state="missingTon" />
+            <TonStateByKey state="missingTon" />
           ) : (
             <span
               className={
@@ -421,7 +541,7 @@ export function TonUnopenedCell({
         </span>
       </Tooltip>
       {/* 有关联明细行已不可见: 合计少算了哪一条必须当场说出来, 不能静默少算 */}
-      {missingCount > 0 ? <TonStateLabel state="missing" /> : null}
+      {missingCount > 0 ? <TonStateByKey state="missing" /> : null}
       {infoButton}
     </div>
   )
@@ -566,6 +686,7 @@ function LinkedPurchaseOrderPopover({
   otherIssuedTotal,
   allocatedTonByItemId,
   localTonForItem,
+  unallocatedTon,
   linkAllowed,
   linkBlockedReason,
   onOpenPicker,
@@ -578,6 +699,8 @@ function LinkedPurchaseOrderPopover({
   /** 每条明细行"本次开出"的分配吨位(多行关联时逐条给出)。 */
   allocatedTonByItemId: Map<string, number>
   localTonForItem: number
+  /** 本行报单吨位里还没落到订单明细行上的量(`ton − Σ分配量`, 欠额合法但要说清)。 */
+  unallocatedTon: number
   linkAllowed: boolean
   linkBlockedReason?: string
   onOpenPicker: () => void
@@ -690,6 +813,17 @@ function LinkedPurchaseOrderPopover({
           <span>{tonValueText(otherIssuedTotal)}</span>
         </div>
       ) : null}
+      {/*
+        欠额提示(只在多行分区): 报单吨位没被分配量合计吃满时, 差额既不在"已开"里也不在
+        "剩余"里, 不说清用户会以为分摊漏了。Σ分配量 ≠ Σ订货量, 缺口只减分配量。
+      */}
+      {multi && unallocatedTon > 0 ? (
+        <div className="price-compare-ton-popover-shortfall">
+          {t('priceCompare.sheet.purchaseOrderUnallocatedTon', {
+            ton: compactTonText(unallocatedTon),
+          })}
+        </div>
+      ) : null}
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.issuedTon')}</span>
         {issuedMissing ? (
@@ -772,32 +906,44 @@ function PurchaseOrderLinkAction({
   )
 }
 
-/** 未关联(或明细已不可见)时的弹层: 说明当前关联状态并提供选择入口。 */
+/**
+ * 未关联(或明细已不可见)时的弹层: 说明当前关联状态并提供选择入口。
+ *
+ * <p>`pendingHint` 用于"选项还没就绪"的场合: 这时既不能显示订单号快照, 也不能说
+ * 关联已删除, 只能说明数据正在加载 / 加载失败(否则等于对用户撒谎)。</p>
+ */
 function UnlinkedPurchaseOrderPopover({
   missingSnapshot,
+  pendingHint,
   linkAllowed,
   linkBlockedReason,
   onOpenPicker,
 }: {
   missingSnapshot?: string
+  pendingHint?: string
   linkAllowed: boolean
   linkBlockedReason?: string
   onOpenPicker: () => void
 }) {
   const { t } = useTranslation()
+  const pending = pendingHint !== undefined
   return (
     <div className="price-compare-ton-popover">
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
         <span>
-          {missingSnapshot !== undefined
-            ? t('priceCompare.sheet.purchaseOrderMissing', {
-                orderNo: missingSnapshot,
-              })
-            : t('priceCompare.sheet.purchaseOrderUnlinked')}
+          {pending
+            ? TON_PENDING_SHORT
+            : missingSnapshot !== undefined
+              ? t('priceCompare.sheet.purchaseOrderMissing', {
+                  orderNo: missingSnapshot,
+                })
+              : t('priceCompare.sheet.purchaseOrderUnlinked')}
         </span>
       </div>
-      {missingSnapshot !== undefined ? (
+      {pending ? (
+        <div className="price-compare-ton-popover-basis">{pendingHint}</div>
+      ) : missingSnapshot !== undefined ? (
         <div className="price-compare-ton-popover-over">
           {t('priceCompare.sheet.purchaseOrderMissingHint')}
         </div>

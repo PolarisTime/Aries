@@ -38,6 +38,11 @@ export interface TonColumnContext {
   purchaseOrderOptions: PurchaseOrderTonnageRecord[]
   tonnageByItemId: Map<string, PurchaseOrderTonnageRecord>
   purchaseOrderTonnageLoading: boolean
+  /**
+   * 采购订单吨位选项查询失败。与 `purchaseOrderTonnageLoading` 一起构成"选项三态":
+   * 非就绪时吨位两列不能断言关联明细行「已删除」(那只是还没加载到)。
+   */
+  purchaseOrderTonnageError?: boolean
   localTonByItemId: Map<string, number>
   /** 在吨位列内移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
   moveFocusTon: (rowId: string, delta: number) => boolean
@@ -147,6 +152,8 @@ export function buildIssuedTonColumn(
           linked={view.linkedItem}
           localTonForItem={view.localTonForItem}
           options={ctx.purchaseOrderOptions}
+          isError={ctx.purchaseOrderTonnageError}
+          loading={ctx.purchaseOrderTonnageLoading}
           row={row.row}
         />
       )
@@ -178,6 +185,7 @@ export function buildUnopenedTonColumn(
         <TonUnopenedCell
           linked={view.linkedItem}
           loading={ctx.purchaseOrderTonnageLoading}
+          isError={ctx.purchaseOrderTonnageError}
           localTonForItem={view.localTonForItem}
           options={ctx.purchaseOrderOptions}
           purchaseOrderLinkAllowed={view.purchaseOrderLinkAllowed}

@@ -1018,6 +1018,20 @@
   line-height: 1.3;
 }
 
+/*
+ * 欠额提示: 关联明细行的分配量合计小于本行报单吨位时, 差额既不在「已开」也不在「未开」里,
+ * 必须在弹层里说清"还有多少没落到订单上"(欠额合法, 只提示不阻断保存)。
+ */
+.price-compare-ton-popover-shortfall {
+  color: var(--color-warning-active, #d48806);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+[data-theme="dark"] .price-compare-ton-popover-shortfall {
+  color: var(--color-warning-hover, #ffc53d);
+}
+
 .price-compare-ton-popover .ant-btn {
   margin-top: var(--space-xxs);
 }
