@@ -3,9 +3,12 @@ import {
   clearPersistedLayoutTabs,
   DASHBOARD_TAB_PATH,
   getNextActiveTabAfterClose,
+  isTabPinned,
   type LayoutTab,
   MAX_LAYOUT_TABS,
   openTabIn,
+  removeAllTabsFrom,
+  removeLeftTabsFrom,
   removeOtherTabsFrom,
   removeRightTabsFrom,
   removeTabFrom,
@@ -224,6 +227,117 @@ describe('批量移除', () => {
     const result = removeRightTabsFrom(tabs, 'a')
     expect(result.map((tab) => tab.id)).toEqual(['dashboard', 'a'])
   })
+
+  it('关闭左侧：保留目标及其右侧（含钉选），只丢左侧可关闭项', () => {
+    const result = removeLeftTabsFrom(tabs, 'b')
+    expect(result.map((tab) => tab.id)).toEqual(['dashboard', 'b', 'c'])
+  })
+
+  it('关闭左侧：目标不存在时原样返回（不做任何移除）', () => {
+    expect(removeLeftTabsFrom(tabs, 'missing')).toBe(tabs)
+  })
+
+  it('用户固定的标签不被「关闭其他 / 关闭左侧 / 关闭右侧 / 全部关闭」移除', () => {
+    const pinnedByUser = tabs.map((tab) =>
+      tab.id === 'b' ? { ...tab, userPinned: true } : tab,
+    )
+    // 保留目标 'a' + 结构钉选的工作台 + 用户固定的 'b'；只有 'c' 被关掉
+    expect(removeOtherTabsFrom(pinnedByUser, 'a').map((tab) => tab.id)).toEqual(
+      ['dashboard', 'a', 'b'],
+    )
+    expect(removeLeftTabsFrom(pinnedByUser, 'c').map((tab) => tab.id)).toEqual([
+      'dashboard',
+      'b',
+      'c',
+    ])
+    expect(removeRightTabsFrom(pinnedByUser, 'a').map((tab) => tab.id)).toEqual(
+      ['dashboard', 'a', 'b'],
+    )
+    expect(removeAllTabsFrom(pinnedByUser).map((tab) => tab.id)).toEqual([
+      'dashboard',
+      'b',
+    ])
+  })
+
+  it('用户固定的标签不可被单独关闭（removeTabFrom 与工作台同口径）', () => {
+    const pinnedByUser = tabs.map((tab) =>
+      tab.id === 'b' ? { ...tab, userPinned: true } : tab,
+    )
+    const result = removeTabFrom(pinnedByUser, 'b', 'b')
+    expect(result.tabs.map((tab) => tab.id)).toContain('b')
+    expect(result.nextActiveTabId).toBe('b')
+  })
+})
+
+describe('用户固定（右键菜单「固定标签页 / 取消固定」）', () => {
+  it('isTabPinned 同时覆盖工作台的结构钉选与用户显式固定', () => {
+    expect(isTabPinned(makeTab({ pinned: true }))).toBe(true)
+    expect(isTabPinned(makeTab({ userPinned: true }))).toBe(true)
+    expect(isTabPinned(makeTab({ userPinned: false }))).toBe(false)
+    expect(isTabPinned(makeTab())).toBe(false)
+  })
+
+  it('setTabPinned 固定与取消固定业务标签', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+        makeTab({ id: 'sales-order', pathname: '/sales-order' }),
+      ],
+      activeTabId: 'sales-order',
+    })
+
+    useLayoutTabsStore.getState().setTabPinned('sales-order', true)
+    expect(
+      useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'sales-order')
+        ?.userPinned,
+    ).toBe(true)
+    // 固定不改动激活项（用户只是想把它钉住）
+    expect(useLayoutTabsStore.getState().activeTabId).toBe('sales-order')
+
+    useLayoutTabsStore.getState().setTabPinned('sales-order', false)
+    expect(
+      useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'sales-order')
+        ?.userPinned,
+    ).toBe(false)
+  })
+
+  it('工作台的结构钉选不可被取消（无「取消固定」入口，store 也拒绝）', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+      ],
+      activeTabId: 'dashboard',
+    })
+
+    useLayoutTabsStore.getState().setTabPinned('dashboard', false)
+    const dashboard = useLayoutTabsStore.getState().tabs[0]
+    expect(dashboard?.pinned).toBe(true)
+    expect(dashboard?.userPinned, '工作台不得被标成用户固定').not.toBe(true)
+    expect(isTabPinned(dashboard as LayoutTab)).toBe(true)
+  })
+
+  it('固定后超限淘汰会跳过它（与结构钉选同口径）', () => {
+    const tabs = Array.from({ length: MAX_LAYOUT_TABS + 1 }, (_, index) =>
+      makeTab({
+        id: `tab-${index}`,
+        pathname: index === 0 ? DASHBOARD_TAB_PATH : knownPath(index),
+        pinned: index === 0,
+        // 最早的非钉选标签才是默认淘汰候选；这里把它固定住，淘汰必须顺延
+        userPinned: index === 1,
+      }),
+    )
+    const { tabs: next, evictedIds } = openTabIn(tabs, { pathname: '/receipt' })
+    expect(next.map((tab) => tab.id)).toContain('tab-1')
+    expect(evictedIds).not.toContain('tab-1')
+  })
 })
 
 describe('sanitizePersistedTabs', () => {
@@ -360,9 +474,139 @@ describe('sanitizePersistedTabs', () => {
     expect(result.map((tab) => tab.id)).toContain('dirty')
     expect(result.map((tab) => tab.id)).not.toContain('plain-0')
   })
+
+  /**
+   * 用户固定是显式意图，必须与「结构钉选」分开处理：
+   * - `pinned` 仍只认工作台（上一条用例锁定该契约）；
+   * - `userPinned` 必须按布尔白名单恢复，否则刷新后"固定"静默失效；
+   * - 工作台不接受 `userPinned` 标记（它没有"取消固定"入口）。
+   */
+  it('用户固定的业务标签可跨刷新恢复，工作台不接受用户固定标记', () => {
+    const result = sanitizePersistedTabs([
+      {
+        id: 'd',
+        pathname: DASHBOARD_TAB_PATH,
+        search: '',
+        pinned: true,
+        userPinned: true,
+      },
+      {
+        id: 'pinned-user',
+        pathname: '/sales-order',
+        search: '',
+        pinned: false,
+        userPinned: true,
+      },
+      {
+        id: 'plain',
+        pathname: '/material',
+        search: '',
+        pinned: false,
+        userPinned: 'yes',
+      },
+    ])
+
+    const dashboard = result.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)
+    expect(dashboard?.pinned).toBe(true)
+    expect(dashboard?.userPinned, '工作台不得接受用户固定标记').not.toBe(true)
+
+    const userPinned = result.find((tab) => tab.id === 'pinned-user')
+    expect(userPinned?.userPinned).toBe(true)
+    expect(userPinned && isTabPinned(userPinned)).toBe(true)
+
+    // 非布尔脏数据不得被当成"已固定"
+    const plain = result.find((tab) => tab.id === 'plain')
+    expect(plain?.userPinned).toBe(false)
+    expect(plain && isTabPinned(plain)).toBe(false)
+  })
+
+  it('超限恢复优先保留用户固定的标签', () => {
+    const raw = [
+      { id: 'd', pathname: '/dashboard', search: '', pinned: true },
+      ...Array.from({ length: MAX_LAYOUT_TABS + 1 }, (_, index) => ({
+        id: `u${index}`,
+        pathname: knownPath(index),
+        search: '',
+        pinned: false,
+        // 排在末尾的用户固定标签：旧的「按顺序截断」会把它丢掉
+        userPinned: index > MAX_LAYOUT_TABS - 2,
+      })),
+    ]
+
+    const result = sanitizePersistedTabs(raw)
+    const ids = result.map((tab) => tab.id)
+
+    expect(result).toHaveLength(MAX_LAYOUT_TABS)
+    expect(ids).toContain('u10')
+    expect(ids).not.toContain('u0')
+  })
 })
 
 describe('受保护标签的重载恢复', () => {
+  it('用户固定标记随防抖落盘并能在重载后恢复', () => {
+    const values = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    })
+    vi.useFakeTimers()
+    try {
+      useLayoutTabsStore.setState({
+        tabs: [
+          makeTab({
+            id: 'dashboard',
+            pathname: DASHBOARD_TAB_PATH,
+            pinned: true,
+          }),
+          makeTab({ id: 'supplier', pathname: '/supplier' }),
+        ],
+        activeTabId: 'supplier',
+      })
+      useLayoutTabsStore.getState().setTabPinned('supplier', true)
+
+      vi.runAllTimers()
+      const raw = values.get(getLayoutTabsStorageKey('anonymous'))
+      const persisted = JSON.parse(String(raw)) as {
+        tabs: Array<{ id: string; userPinned?: boolean }>
+      }
+      expect(
+        persisted.tabs.find((tab) => tab.id === 'supplier')?.userPinned,
+        '用户固定必须落盘，否则刷新后静默失效',
+      ).toBe(true)
+
+      // 模拟刷新：store 回初始态后按持久化数据恢复
+      useLayoutTabsStore.setState({
+        tabs: [
+          makeTab({
+            id: 'fresh-dashboard',
+            pathname: DASHBOARD_TAB_PATH,
+            pinned: true,
+          }),
+        ],
+        activeTabId: null,
+      })
+      useLayoutTabsStore.getState().hydrateForUser('anonymous')
+      const restored = useLayoutTabsStore
+        .getState()
+        .tabs.find((tab) => tab.id === 'supplier')
+      expect(restored && isTabPinned(restored)).toBe(true)
+    } finally {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+      useLayoutTabsStore.setState({
+        tabs: [
+          makeTab({
+            id: 'dashboard',
+            pathname: DASHBOARD_TAB_PATH,
+            pinned: true,
+          }),
+        ],
+        activeTabId: null,
+      })
+    }
+  })
+
   it('候选全受保护而超限保存后, 重载恢复仍保留受保护标签且不超上限', () => {
     const values = new Map<string, string>()
     vi.stubGlobal('localStorage', {

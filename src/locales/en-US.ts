@@ -2155,8 +2155,11 @@ export const enUS = {
       refresh: 'Refresh page',
       close: 'Close tab',
       closeOthers: 'Close other tabs',
+      closeLeft: 'Close tabs to the left',
       closeRight: 'Close tabs to the right',
       closeAll: 'Close all tabs',
+      pin: 'Pin tab',
+      unpin: 'Unpin tab',
       pinDashboard: 'Dashboard is pinned',
       contextMenuLabel: 'Actions for the {{name}} tab',
       evicted:

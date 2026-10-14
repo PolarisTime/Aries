@@ -85,6 +85,16 @@ export interface ContextMenuProps {
   /** 菜单关闭后焦点归还的目标; 缺省回到"打开菜单时持有焦点的元素"(APG: 归还调用上下文) */
   returnFocusRef?: RefObject<HTMLElement | null>
   /**
+   * 兜底归还目标的**惰性**解析: 每次关闭菜单时现取, 适合"目标随交互变化"的调用方
+   * (标签栏要的是"当前激活标签", 而激活项会被点来点去)。优先级低于打开前的焦点元素,
+   * 高于 {@link ContextMenuProps.returnFocusRef} 的静态引用。
+   *
+   * <p>为什么不复用 `returnFocusRef`: 那是个 `{ current }` 容器, 调用方若想惰性求值就得写
+   * 带 getter 的对象字面量——React Compiler 不支持该语法(会整段放弃该组件的自动记忆化),
+   * 传函数则没有这个问题。</p>
+   */
+  resolveReturnFocus?: () => HTMLElement | null
+  /**
    * 触发器: 默认只响应右键(纯右键菜单)。与可见"更多"按钮共用同一份菜单时传入
    * `['click', 'contextMenu']`, 这样点击按钮与右键都走本组件的无障碍契约。
    */
@@ -114,6 +124,7 @@ export function ContextMenu({
   open: controlledOpen,
   onOpenChange,
   returnFocusRef,
+  resolveReturnFocus,
   triggers,
 }: ContextMenuProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
@@ -208,7 +219,7 @@ export function ContextMenu({
 
   const restoreFocus = () => {
     const opener = openerRef.current
-    const fallback = returnFocusRef?.current ?? null
+    const fallback = resolveReturnFocus?.() ?? returnFocusRef?.current ?? null
     /*
      * body/documentElement 不是可停靠的焦点目标：焦点落在它们上面等价于"没有焦点"，
      * 键盘用户会因此丢失所在位置。此时改用调用方指定的兜底目标（标签栏传"当前激活标签"）。
@@ -269,9 +280,14 @@ export function ContextMenu({
       open={open}
       onOpenChange={setOpen}
       popupRender={(menu) => (
+        /*
+         * 该包裹层是纯呈现性事件边界：它自身不承载交互（交互都在其内的 role="menu" 上），
+         * role="presentation" 明确这一点，免得读屏把带事件处理器的静态 div 当成可交互元素。
+         */
         <div
           className="app-context-menu"
           ref={attachPopup}
+          role="presentation"
           onKeyDownCapture={handleKeyDown}
           onClick={containWidgetEvent}
           onMouseDown={containWidgetEvent}

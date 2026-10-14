@@ -17,6 +17,22 @@ export interface LayoutTab {
   /** 工作台为 true，不可关闭、不可淘汰 */
   pinned: boolean
   /**
+   * 用户经右键菜单显式「固定」的标签页。
+   *
+   * <p>与 {@link LayoutTab.pinned} 同为不可关闭、不可淘汰、不被批量关闭的语义，统一由
+   * {@link isTabPinned} 判定；区别在来源与生命周期：</p>
+   * <ul>
+   *   <li>`pinned` 由路径派生（只有工作台），用户不可增减，持久化时强制重算；</li>
+   *   <li>`userPinned` 是用户显式意图，必须持久化，且菜单必须有对应的「取消固定」入口
+   *       （否则用户会被自己钉死的标签困住）。</li>
+   * </ul>
+   *
+   * <p>为什么不直接复用 `pinned`：{@link sanitizePersistedTabs} 有一条明确契约——持久化
+   * 数据里的任意路径标记不足以让业务标签变成"不可关闭"（见对应单测）。把用户固定混进
+   * `pinned` 会让那条契约失去意义，因此单列字段。</p>
+   */
+  userPinned?: boolean
+  /**
    * 曾因持有未保存编辑会话（`isProtected`）在超限淘汰中幸存。
    *
    * <p>**需要持久化**：受保护时 store 刻意允许暂时超限，刷新后若按「保留最早 N 个」截断，
@@ -29,10 +45,20 @@ export interface LayoutTab {
   reloadKey: number
 }
 
+/** 标签是否受钉选保护：工作台的**结构钉选**或用户**显式固定**，两者对关闭/淘汰完全等价。 */
+export function isTabPinned(tab: LayoutTab): boolean {
+  return tab.pinned || tab.userPinned === true
+}
+
 /** 持久化到 localStorage 的字段子集 */
 export type PersistedTab = Pick<
   LayoutTab,
-  'id' | 'pathname' | 'search' | 'pinned' | 'protectedFromEviction'
+  | 'id'
+  | 'pathname'
+  | 'search'
+  | 'pinned'
+  | 'userPinned'
+  | 'protectedFromEviction'
 >
 
 export interface OpenTabTarget {
@@ -69,8 +95,11 @@ interface LayoutTabsState {
   /** 纯移除（脏检查由调用方负责），返回下一个应激活的 Tab id */
   removeTab: (id: string) => string | null
   removeOtherTabs: (id: string) => void
+  removeLeftTabs: (id: string) => void
   removeRightTabs: (id: string) => void
   removeAllTabs: () => void
+  /** 用户固定/取消固定（工作台等结构钉选标签被拒绝，见 {@link isTabPinned}） */
+  setTabPinned: (id: string, pinned: boolean) => void
 }
 
 /** 去尾斜杠归一化路径（供 Tab 协调层与守卫复用） */
@@ -125,6 +154,7 @@ function createTab(target: OpenTabTarget): LayoutTab {
     pathname,
     search: normalizeSearch(target.search),
     pinned: pathname === DASHBOARD_TAB_PATH,
+    userPinned: false,
     protectedFromEviction: false,
     mountedOnce: false,
     reloadKey: 0,
@@ -153,7 +183,7 @@ function evictOverflow(
   let next = tabs
   if (next.length > MAX_LAYOUT_TABS && isProtected) {
     next = next.map((tab) =>
-      !tab.pinned && !tab.protectedFromEviction && isProtected(tab.id)
+      !isTabPinned(tab) && !tab.protectedFromEviction && isProtected(tab.id)
         ? { ...tab, protectedFromEviction: true }
         : tab,
     )
@@ -162,7 +192,7 @@ function evictOverflow(
     const evictIndex = next.findIndex(
       (tab, index) =>
         index >= 1 &&
-        !tab.pinned &&
+        !isTabPinned(tab) &&
         tab.id !== activeTabId &&
         !(isProtected?.(tab.id) ?? false),
     )
@@ -211,7 +241,7 @@ export function removeTabFrom(
   activeTabId: string | null,
 ): { tabs: LayoutTab[]; nextActiveTabId: string | null } {
   const index = tabs.findIndex((tab) => tab.id === id)
-  if (index < 0 || tabs[index].pinned) {
+  if (index < 0 || isTabPinned(tabs[index])) {
     return { tabs, nextActiveTabId: activeTabId }
   }
   const next = tabs.filter((tab) => tab.id !== id)
@@ -246,7 +276,13 @@ export function removeOtherTabsFrom(
   tabs: LayoutTab[],
   keepId: string,
 ): LayoutTab[] {
-  return tabs.filter((tab) => tab.pinned || tab.id === keepId)
+  return tabs.filter((tab) => isTabPinned(tab) || tab.id === keepId)
+}
+
+export function removeLeftTabsFrom(tabs: LayoutTab[], id: string): LayoutTab[] {
+  const index = tabs.findIndex((tab) => tab.id === id)
+  if (index < 0) return tabs
+  return tabs.filter((tab, tabIndex) => tabIndex >= index || isTabPinned(tab))
 }
 
 export function removeRightTabsFrom(
@@ -255,11 +291,11 @@ export function removeRightTabsFrom(
 ): LayoutTab[] {
   const index = tabs.findIndex((tab) => tab.id === id)
   if (index < 0) return tabs
-  return tabs.filter((tab, tabIndex) => tabIndex <= index || tab.pinned)
+  return tabs.filter((tab, tabIndex) => tabIndex <= index || isTabPinned(tab))
 }
 
 export function removeAllTabsFrom(tabs: LayoutTab[]): LayoutTab[] {
-  return tabs.filter((tab) => tab.pinned)
+  return tabs.filter((tab) => isTabPinned(tab))
 }
 
 /**
@@ -289,11 +325,12 @@ function dropOldest(
 /**
  * 清洗持久化数据：白名单过滤未知路径、去重、保证工作台在 index 0、截断上限。
  *
- * <p>截断按「不可丢弃者优先」：先丢最早的**未**标记 {@link LayoutTab.protectedFromEviction}
- * 的标签，仍然超限时才丢最早的受保护标签。受保护的标签是持有未保存编辑会话、store 刻意
- * 允许超限保存的那些，直接 `slice(0, MAX)` 会把它们（通常排在末尾）静默截掉。</p>
+ * <p>截断按「不可丢弃者优先」：先丢最早的、既未标记 {@link LayoutTab.protectedFromEviction}
+ * 又未被用户固定（{@link LayoutTab.userPinned}）的标签，仍然超限时才丢最早的这类标签。
+ * 受保护标签是持有未保存编辑会话、store 刻意允许超限保存的那些；用户固定标签则是用户的
+ * 显式意图——两者被 `slice(0, MAX)` 静默截掉时通常正排在末尾。</p>
  *
- * <p>工作台占一个名额（`pinned` 永不被丢），因此其余标签的容量是 `MAX_LAYOUT_TABS - 1`。</p>
+ * <p>工作台占一个名额（结构钉选永不被丢），因此其余标签的容量是 `MAX_LAYOUT_TABS - 1`。</p>
  */
 export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
   const candidates: LayoutTab[] = []
@@ -312,8 +349,11 @@ export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
             : createTabId(),
         pathname,
         search: normalizeSearch(candidate.search),
-        // 钉选是工作台的固定布局属性，不信任持久化数据中的任意路径标记。
+        // 结构钉选是工作台的固定布局属性，不信任持久化数据中的任意路径标记；
+        // 用户显式固定（userPinned）则是货真价实的用户意图，必须按布尔白名单原样恢复，
+        // 否则刷新后"固定"会静默失效。
         pinned: pathname === DASHBOARD_TAB_PATH,
+        userPinned: candidate.userPinned === true,
         protectedFromEviction: candidate.protectedFromEviction === true,
         mountedOnce: false,
         reloadKey: 0,
@@ -321,9 +361,13 @@ export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
     }
   }
 
-  const dashboardTab =
-    candidates.find((tab) => tab.pathname === DASHBOARD_TAB_PATH) ??
-    createTab({ pathname: DASHBOARD_TAB_PATH })
+  const dashboardTab = {
+    ...(candidates.find((tab) => tab.pathname === DASHBOARD_TAB_PATH) ??
+      createTab({ pathname: DASHBOARD_TAB_PATH })),
+    // 工作台恒为结构钉选，且不接受任何"用户固定"标记（它没有"取消固定"入口）
+    pinned: true,
+    userPinned: false,
+  }
   let rest = candidates.filter((tab) => tab.pathname !== DASHBOARD_TAB_PATH)
 
   const capacity = Math.max(0, MAX_LAYOUT_TABS - 1)
@@ -332,7 +376,7 @@ export function sanitizePersistedTabs(value: unknown): LayoutTab[] {
     const discardableFirst = dropOldest(
       rest,
       overflow,
-      (tab) => tab.protectedFromEviction !== true,
+      (tab) => tab.protectedFromEviction !== true && tab.userPinned !== true,
     )
     rest = discardableFirst.tabs
     const stillOver = overflow - discardableFirst.dropped
@@ -401,11 +445,19 @@ function persistTabs(): void {
   const { tabs, activeTabId } = useLayoutTabsStore.getState()
   const payload: PersistedTabsPayload = {
     tabs: tabs.map(
-      ({ id, pathname, search, pinned, protectedFromEviction }) => ({
+      ({
         id,
         pathname,
         search,
         pinned,
+        userPinned,
+        protectedFromEviction,
+      }) => ({
+        id,
+        pathname,
+        search,
+        pinned,
+        userPinned,
         protectedFromEviction,
       }),
     ),
@@ -547,6 +599,11 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
     set({ tabs, activeTabId: nextActiveId(tabs, get().activeTabId) })
   },
 
+  removeLeftTabs: (id) => {
+    const tabs = removeLeftTabsFrom(get().tabs, id)
+    set({ tabs, activeTabId: nextActiveId(tabs, get().activeTabId) })
+  },
+
   removeRightTabs: (id) => {
     const tabs = removeRightTabsFrom(get().tabs, id)
     set({ tabs, activeTabId: nextActiveId(tabs, get().activeTabId) })
@@ -555,6 +612,22 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
   removeAllTabs: () => {
     const tabs = removeAllTabsFrom(get().tabs)
     set({ tabs, activeTabId: nextActiveId(tabs, get().activeTabId) })
+  },
+
+  setTabPinned: (id, pinned) => {
+    const target = get().tabs.find((tab) => tab.id === id)
+    // 工作台是结构钉选标签：没有"取消固定"入口，这里也必须拒绝，避免绕过 UI 把它变成可关闭
+    if (!target || target.pinned) {
+      return
+    }
+    if ((target.userPinned === true) === pinned) {
+      return
+    }
+    set({
+      tabs: get().tabs.map((tab) =>
+        tab.id === id ? { ...tab, userPinned: pinned } : tab,
+      ),
+    })
   },
 }))
 

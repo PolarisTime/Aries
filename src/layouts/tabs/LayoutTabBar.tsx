@@ -1,9 +1,8 @@
-import { ReloadOutlined } from '@ant-design/icons'
 import type { TabsProps } from 'antd'
 import { Tabs, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { TFunction } from 'i18next'
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
 import {
@@ -11,6 +10,12 @@ import {
   requestEditorSessionClose,
 } from '@/layouts/editor-session/request-close'
 import { tabLabelDomId } from '@/layouts/tabs/tab-aria-ids'
+import {
+  applyTabContextMenuAction,
+  buildTabContextMenuItems,
+  resolveTabCloseTargets,
+  type TabCloseKind,
+} from '@/layouts/tabs/tab-context-menu'
 import {
   detachTabRouter,
   replaceMainRouterHref,
@@ -20,6 +25,7 @@ import { useTabAriaWiring } from '@/layouts/tabs/useTabAriaWiring'
 import {
   buildTabHref,
   getNextActiveTabAfterClose,
+  isTabPinned,
   type LayoutTab,
   MAX_LAYOUT_TABS,
   useLayoutTabsStore,
@@ -68,20 +74,15 @@ export function LayoutTabBar() {
   /**
    * 菜单关闭（Escape / 点击别处）时的焦点兜底目标：**当前激活标签**的 tab 元素。
    *
-   * <p>必须惰性求值（getter）而不能在渲染期固化节点引用：激活标签随点击变化，
-   * 缓存的旧节点会变成已脱离文档的僵尸元素。ContextMenu 只在打开前焦点元素已不存在、
-   * 或焦点本就不在可停靠元素上（body）时才回退到这里。</p>
+   * <p>必须惰性解析而不能在渲染期固化节点引用：激活标签随点击变化，缓存的旧节点会变成
+   * 已脱离文档的僵尸元素。ContextMenu 只在打开前焦点元素已不存在、或焦点本就不在可停靠
+   * 元素上（body）时才回退到这里。</p>
    */
-  const activeTabReturnFocusRef = useMemo<RefObject<HTMLElement | null>>(
-    () => ({
-      get current() {
-        return (
-          hostRef.current?.querySelector<HTMLElement>(
-            '.ant-tabs-tab-active [role="tab"]',
-          ) ?? null
-        )
-      },
-    }),
+  const resolveActiveTabReturnFocus = useCallback(
+    () =>
+      hostRef.current?.querySelector<HTMLElement>(
+        '.ant-tabs-tab-active [role="tab"]',
+      ) ?? null,
     [],
   )
 
@@ -151,71 +152,54 @@ export function LayoutTabBar() {
     setKeyboardMenuTabId(tabId)
   }
 
-  const buildContextMenu = (tab: LayoutTab): MenuProps => ({
-    items: [
-      {
-        key: 'refresh',
-        icon: <ReloadOutlined />,
-        label: t('layouts.tabs.refresh'),
-      },
-      ...(tab.pinned ? [] : [{ key: 'close', label: t('layouts.tabs.close') }]),
-      { key: 'closeOthers', label: t('layouts.tabs.closeOthers') },
-      { key: 'closeRight', label: t('layouts.tabs.closeRight') },
-      { key: 'closeAll', label: t('layouts.tabs.closeAll') },
-    ],
-    onClick: ({ key }) => {
-      const store = useLayoutTabsStore.getState()
-      switch (key) {
-        case 'refresh': {
-          handleRefresh(tab.id)
-          break
+  /**
+   * 批量关闭的落点：脏检查确认后按范围移除标签。
+   *
+   * <p>激活必须放在确认之后：confirmBatchTabClose 是异步的，先切换会让用户点「取消」时
+   * 仍被切走，并顺带推出一条本不该产生的浏览器历史。</p>
+   */
+  const handleCloseMany = (
+    tabId: string,
+    ids: string[],
+    kind: TabCloseKind,
+  ): void => {
+    const store = useLayoutTabsStore.getState()
+    closeManyTabs(t, ids, () => {
+      if (kind === 'all') {
+        // 全部关闭后落到工作台（它是唯一的结构钉选标签）
+        const dashboardId = tabs.find((item) => item.pinned)?.id
+        if (dashboardId) {
+          store.activateTab(dashboardId)
         }
-        case 'close': {
-          handleClose(tab.id)
-          break
-        }
-        case 'closeOthers': {
-          const removeIds = tabs.flatMap((item) =>
-            !item.pinned && item.id !== tab.id ? [item.id] : [],
-          )
-          // 激活必须放在确认之后：confirmBatchTabClose 是异步的，先切换会让用户
-          // 点「取消」时仍被切走，并顺带推出一条本不该产生的浏览器历史
-          closeManyTabs(t, removeIds, () => {
-            store.activateTab(tab.id)
-            store.removeOtherTabs(tab.id)
-          })
-          break
-        }
-        case 'closeRight': {
-          const tabIndex = tabs.findIndex((item) => item.id === tab.id)
-          if (tabIndex < 0) break
-          const removeIds = tabs.flatMap((item, itemIndex) =>
-            itemIndex > tabIndex && !item.pinned ? [item.id] : [],
-          )
-          closeManyTabs(t, removeIds, () => {
-            store.activateTab(tab.id)
-            store.removeRightTabs(tab.id)
-          })
-          break
-        }
-        case 'closeAll': {
-          const removeIds = tabs.flatMap((item) =>
-            !item.pinned ? [item.id] : [],
-          )
-          const dashboardId = tabs.find((item) => item.pinned)?.id
-          closeManyTabs(t, removeIds, () => {
-            if (dashboardId) {
-              store.activateTab(dashboardId)
-            }
-            store.removeAllTabs()
-          })
-          break
-        }
-        default:
-          break
+        store.removeAllTabs()
+        return
       }
-    },
-  })
+      store.activateTab(tabId)
+      if (kind === 'others') {
+        store.removeOtherTabs(tabId)
+      } else if (kind === 'left') {
+        store.removeLeftTabs(tabId)
+      } else {
+        store.removeRightTabs(tabId)
+      }
+    })
+  }
+
+  /** 菜单项装配与 key→动作的映射都在 tab-context-menu 里（纯函数，便于单测与边界复用）。 */
+  const buildContextMenu = (tab: LayoutTab): MenuProps => {
+    const targets = resolveTabCloseTargets(tabs, tab.id)
+    return {
+      items: buildTabContextMenuItems({ tab, t, targets }),
+      onClick: ({ key }) =>
+        applyTabContextMenuAction(String(key), tab, targets, {
+          onRefresh: handleRefresh,
+          onClose: handleClose,
+          onSetPinned: (tabId, pinned) =>
+            useLayoutTabsStore.getState().setTabPinned(tabId, pinned),
+          onCloseMany: handleCloseMany,
+        }),
+    }
+  }
 
   const items: TabsProps['items'] = tabs.map((tab) => {
     const contextMenu = buildContextMenu(tab)
@@ -229,7 +213,7 @@ export function LayoutTabBar() {
           onClick={contextMenu.onClick}
           open={keyboardMenuTabId === tab.id}
           onOpenChange={(next) => setKeyboardMenuTabId(next ? tab.id : null)}
-          returnFocusRef={activeTabReturnFocusRef}
+          resolveReturnFocus={resolveActiveTabReturnFocus}
         >
           {/* 该 span 的 id 是真实面板 aria-labelledby 的目标（见 AppTabContainer） */}
           <span id={tabLabelDomId(tab.id)} className="leo-tabbar-label">
@@ -237,7 +221,7 @@ export function LayoutTabBar() {
           </span>
         </ContextMenu>
       ),
-      closable: !tab.pinned,
+      closable: !isTabPinned(tab),
     }
   })
 

@@ -505,6 +505,129 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
   })
 
   /**
+   * P2-23：右键菜单补齐项在真实浏览器里的行为与禁用边界。
+   *
+   * <p>三标签（工作台 + 商品资料 + 供应商资料，最后一个激活）逐个覆盖：</p>
+   * <ol>
+   *   <li>「关闭左侧」在左侧只剩钉选工作台时禁用（软禁用：仍在键盘序列里、带 aria-disabled），
+   *       点击不产生任何动作；</li>
+   *   <li>「关闭左侧」在左侧有可关闭业务标签时可用，且只关左侧、不动目标与激活项；</li>
+   *   <li>「固定标签页」把标签变成不可关闭（单个关闭按钮消失），并**跨整页刷新保活**——
+   *       旧实现只认工作台的结构钉选，业务标签的固定会被 sanitize 丢掉。</li>
+   * </ol>
+   */
+  test('右键菜单「关闭左侧」边界与「固定标签页」跨刷新保活', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    await gotoRoute(page, '/material')
+    await expectModuleHeading(page, '商品资料')
+    await expectGridTable(page)
+
+    const tabLabel = (title: string) =>
+      page.locator('.leo-tabbar-label').filter({ hasText: title }).first()
+    const menuItem = (title: string) =>
+      page
+        .locator(
+          '.ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu-item',
+        )
+        .filter({ hasText: title })
+        .last()
+    const activeLabel = page.locator('.ant-tabs-tab-active .leo-tabbar-label')
+
+    // SPA 内多开「供应商资料」：工作台 + 商品资料 + 供应商资料，后者激活
+    await page
+      .getByRole('menuitem', { name: '基础数据', exact: true })
+      .first()
+      .click()
+    const supplierMenuItem = page
+      .locator(
+        '.ant-menu-submenu-popup:visible .ant-menu-item, .ant-menu-popup:visible .ant-menu-item',
+      )
+      .filter({ hasText: '供应商资料' })
+      .first()
+    await expect(supplierMenuItem).toBeVisible({ timeout: 15_000 })
+    await supplierMenuItem.click()
+    await expectModuleHeading(page, '供应商资料')
+    await expectGridTable(page)
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    // 1) 中间标签（商品资料）：左侧只有钉选工作台 → 「关闭左侧」必须禁用
+    await tabLabel('商品资料').click({ button: 'right' })
+    const closeLeftDisabled = menuItem('关闭左侧')
+    await expect(closeLeftDisabled).toBeVisible({ timeout: 15_000 })
+    await expect(
+      closeLeftDisabled,
+      '左侧只剩钉选工作台时必须软禁用（可见但不可用）',
+    ).toHaveAttribute('aria-disabled', 'true')
+    const urlBeforeDisabledClick = page.url()
+    // Playwright 把 aria-disabled 视为不可点击并拒绝 click；真实鼠标仍然点得到这个"软禁用"项
+    // （它保留在菜单里、仍可聚焦，正是为了能被读屏发现），因此这里用 force 模拟真实鼠标点击，
+    // 断言的是"点了也没反应"这一行为契约。
+    await closeLeftDisabled.click({ force: true })
+    await page.waitForTimeout(500)
+    await expect(
+      page.locator('.leo-tabbar .ant-tabs-tab'),
+      '点击禁用的「关闭左侧」不得移除任何标签',
+    ).toHaveCount(3)
+    expect(page.url(), '点击禁用的「关闭左侧」不得改变地址').toBe(
+      urlBeforeDisabledClick,
+    )
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+
+    // 2) 末个标签（供应商资料）：左侧有可关闭的商品资料 → 「关闭左侧」可用
+    await tabLabel('供应商资料').click({ button: 'right' })
+    const closeLeft = menuItem('关闭左侧')
+    await expect(closeLeft).toBeVisible({ timeout: 15_000 })
+    await expect(closeLeft).not.toHaveAttribute('aria-disabled', 'true')
+    await closeLeft.click()
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(2, {
+      timeout: 15_000,
+    })
+    await expect(tabLabel('商品资料')).toHaveCount(0)
+    await expect(activeLabel, '关闭左侧不得切走当前标签').toHaveText(
+      '供应商资料',
+    )
+
+    // 3) 固定供应商资料：单个关闭按钮消失，且菜单改为「取消固定」
+    const supplierTab = page
+      .locator('.leo-tabbar .ant-tabs-tab')
+      .filter({ hasText: '供应商资料' })
+    await expect(supplierTab.locator('.ant-tabs-tab-remove')).toHaveCount(1)
+    await tabLabel('供应商资料').click({ button: 'right' })
+    const pinItem = menuItem('固定标签页')
+    await expect(pinItem).toBeVisible({ timeout: 15_000 })
+    await pinItem.click()
+    await expect(
+      supplierTab.locator('.ant-tabs-tab-remove'),
+      '固定后不得再有单个关闭按钮',
+    ).toHaveCount(0, { timeout: 15_000 })
+
+    await tabLabel('供应商资料').click({ button: 'right' })
+    await expect(menuItem('取消固定')).toBeVisible({ timeout: 15_000 })
+    await expect(menuItem('关闭标签页')).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    // 4) 整页刷新：用户固定必须随持久化恢复（旧实现只认工作台的结构钉选）
+    await page.waitForTimeout(600)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(2, {
+      timeout: 30_000,
+    })
+    await expect(
+      page
+        .locator('.leo-tabbar .ant-tabs-tab')
+        .filter({ hasText: '供应商资料' })
+        .locator('.ant-tabs-tab-remove'),
+      '刷新后用户固定的标签仍必须不可关闭',
+    ).toHaveCount(0)
+    await expect(activeLabel).toHaveText('供应商资料')
+
+    await assertNoFatalUiErrors()
+  })
+
+  /**
    * P2-8 的浏览器层恢复守护：持久化清单超过上限且尾部为「不可丢弃」标签时，
    * 整页刷新必须按「不可丢弃者优先」截断，而不是直接丢尾部。
    *

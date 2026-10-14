@@ -420,6 +420,39 @@ describe('ContextMenu 无障碍契约', () => {
     fallback.remove()
   })
 
+  /**
+   * resolveReturnFocus 是 returnFocusRef 的惰性替代（标签栏要"当前激活标签"，值随交互变化，
+   * 用对象字面量 getter 会触发 React Compiler 的不支持语法）。语义：优先于静态 returnFocusRef，
+   * 但仍低于"打开前持有焦点的元素"。
+   */
+  it('resolveReturnFocus 惰性解析兜底目标, 且优先于静态 returnFocusRef', async () => {
+    const staticTarget = document.createElement('button')
+    staticTarget.className = 'static-target'
+    document.body.appendChild(staticTarget)
+    const resolved = document.createElement('button')
+    resolved.className = 'resolved-target'
+    document.body.appendChild(resolved)
+    const resolveReturnFocus = vi.fn(() => resolved)
+    render({ returnFocusRef: { current: staticTarget }, resolveReturnFocus })
+
+    // 焦点停在 body → 需要兜底目标
+    act(() => {
+      ;(document.activeElement as HTMLElement | null)?.blur()
+    })
+    await openByContextMenu()
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await waitForMenuClosed()
+
+    expect(resolveReturnFocus, '关闭时必须现取兜底目标').toHaveBeenCalled()
+    expect(document.activeElement).toBe(resolved)
+    staticTarget.remove()
+    resolved.remove()
+  })
+
   it('受控打开时可由外部(键盘)唤起同一菜单', async () => {
     render({ open: true })
     await flush()

@@ -483,3 +483,349 @@ describe('LayoutTabBar 右键菜单键盘契约', () => {
     editorSessionStore.endSession('tab-price-compare')
   })
 })
+
+describe('LayoutTabBar 右键菜单补齐项与禁用边界', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    )
+    if (!window.matchMedia) {
+      window.matchMedia = (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })
+    }
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    modalConfirmMock.mockClear()
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30))
+    })
+    act(() => root.unmount())
+    container.remove()
+    vi.unstubAllGlobals()
+    document.querySelectorAll('.ant-dropdown').forEach((el) => {
+      el.remove()
+    })
+  })
+
+  const render = () => {
+    act(() => {
+      root.render(
+        createElement(
+          ConfigProvider,
+          { theme: { token: { motion: false } } },
+          createElement(LayoutTabBar),
+        ),
+      )
+    })
+  }
+
+  const menuItems = () => {
+    const popups = [...document.querySelectorAll<HTMLElement>('.ant-dropdown')]
+    const root = popups.at(-1)
+    return [
+      ...(root?.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item') ?? []),
+    ]
+  }
+  const menuTexts = () => menuItems().map((el) => el.textContent?.trim() ?? '')
+  const menuItem = (text: string) =>
+    menuItems().find((element) => element.textContent?.includes(text))
+  const disabledTexts = () =>
+    menuItems()
+      .filter((el) => el.getAttribute('aria-disabled') === 'true')
+      .map((el) => el.textContent?.trim() ?? '')
+
+  const openTabMenu = async (tabId: string) => {
+    const label = container.querySelector<HTMLElement>(
+      `[data-node-key="${tabId}"] .leo-tabbar-label`,
+    )
+    expect(label, `未找到 ${tabId} 标签`).toBeTruthy()
+    act(() => {
+      label?.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+  }
+
+  it('末个标签：关闭右侧禁用、关闭左侧与关闭其他可用，固定项为「固定标签页」', async () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        ...TABS,
+        {
+          id: 'tab-supplier',
+          pathname: '/supplier',
+          search: '',
+          pinned: false,
+          mountedOnce: false,
+          reloadKey: 0,
+        },
+      ],
+      activeTabId: 'tab-price-compare',
+    })
+    render()
+    await openTabMenu('tab-supplier')
+
+    // 每个补齐项都在，且是中文文案
+    expect(menuTexts()).toEqual(
+      expect.arrayContaining([
+        '刷新页面',
+        '固定标签页',
+        '关闭标签页',
+        '关闭其他',
+        '关闭左侧',
+        '关闭右侧',
+        '全部关闭',
+      ]),
+    )
+    // 未固定时只出现「固定标签页」
+    expect(menuTexts()).not.toContain('取消固定')
+
+    // 边界：自身是最后一个标签 → 右侧无可关闭项；左侧有可关闭的业务标签 → 可用
+    expect(disabledTexts()).toContain('关闭右侧')
+    expect(menuItem('关闭左侧')?.getAttribute('aria-disabled')).not.toBe('true')
+    expect(menuItem('关闭其他')?.getAttribute('aria-disabled')).not.toBe('true')
+    expect(menuItem('全部关闭')?.getAttribute('aria-disabled')).not.toBe('true')
+  })
+
+  it('仅剩一个可关闭标签时三个批量项全部禁用，且点击禁用项不产生任何动作', async () => {
+    useLayoutTabsStore.setState({
+      tabs: TABS,
+      activeTabId: 'tab-price-compare',
+    })
+    render()
+    await openTabMenu('tab-price-compare')
+
+    // 另一条标签是钉选的工作台 → 没有可关闭的邻居
+    expect(disabledTexts()).toEqual(
+      expect.arrayContaining(['关闭其他', '关闭左侧', '关闭右侧']),
+    )
+
+    for (const text of ['关闭其他', '关闭右侧', '关闭左侧']) {
+      act(() => {
+        menuItem(text)?.dispatchEvent(
+          new MouseEvent('click', { bubbles: true }),
+        )
+      })
+    }
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(
+      useLayoutTabsStore.getState().tabs.map((tab) => tab.id),
+      '禁用项不得移除任何标签',
+    ).toEqual(['tab-workbench', 'tab-price-compare'])
+    expect(
+      useLayoutTabsStore.getState().activeTabId,
+      '禁用项不得把激活项切到被右键标签',
+    ).toBe('tab-price-compare')
+    expect(modalConfirmMock).not.toHaveBeenCalled()
+  })
+
+  it('钉选标签（工作台）不出现关闭类与固定类项，右侧可关闭项使「关闭右侧」可用', async () => {
+    useLayoutTabsStore.setState({
+      tabs: TABS,
+      activeTabId: 'tab-price-compare',
+    })
+    render()
+    await openTabMenu('tab-workbench')
+
+    const texts = menuTexts()
+    expect(texts).toContain('刷新页面')
+    // 不可关闭标签不出现删除类项，也没有可解除的固定
+    expect(texts).not.toContain('关闭标签页')
+    expect(texts).not.toContain('固定标签页')
+    expect(texts).not.toContain('取消固定')
+    // 它排在首位：左侧无任何标签 → 禁用；右侧有可关闭的业务标签 → 可用
+    expect(disabledTexts()).toContain('关闭左侧')
+    expect(menuItem('关闭右侧')?.getAttribute('aria-disabled')).not.toBe('true')
+    expect(menuItem('关闭其他')?.getAttribute('aria-disabled')).not.toBe('true')
+  })
+
+  it('「关闭左侧」只移除左侧可关闭标签，保留目标与其右侧', async () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        ...TABS,
+        {
+          id: 'tab-supplier',
+          pathname: '/supplier',
+          search: '',
+          pinned: false,
+          mountedOnce: false,
+          reloadKey: 0,
+        },
+      ],
+      activeTabId: 'tab-supplier',
+    })
+    render()
+    await openTabMenu('tab-supplier')
+
+    const closeLeft = menuItem('关闭左侧')
+    expect(closeLeft?.getAttribute('aria-disabled')).not.toBe('true')
+    act(() => {
+      closeLeft?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(
+      useLayoutTabsStore.getState().tabs.map((tab) => tab.id),
+      '只关闭左侧的业务标签，工作台（钉选）与目标保留',
+    ).toEqual(['tab-workbench', 'tab-supplier'])
+    expect(useLayoutTabsStore.getState().activeTabId).toBe('tab-supplier')
+  })
+
+  it('左侧只有用户固定的标签时「关闭左侧」禁用（固定标签不参与批量关闭）', async () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        TABS[0],
+        { ...TABS[1], userPinned: true },
+        {
+          id: 'tab-supplier',
+          pathname: '/supplier',
+          search: '',
+          pinned: false,
+          mountedOnce: false,
+          reloadKey: 0,
+        },
+      ],
+      activeTabId: 'tab-supplier',
+    })
+    render()
+    await openTabMenu('tab-supplier')
+
+    expect(disabledTexts(), '左侧只剩用户固定标签时必须禁用').toContain(
+      '关闭左侧',
+    )
+    const closeLeft = menuItem('关闭左侧')
+    act(() => {
+      closeLeft?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(
+      useLayoutTabsStore.getState().tabs.map((tab) => tab.id),
+      '禁用后点击不得移除任何标签',
+    ).toEqual(['tab-workbench', 'tab-price-compare', 'tab-supplier'])
+  })
+
+  it('「刷新页面」只递增该标签的 reloadKey（重建子 Router，不做整页 reload）', async () => {
+    useLayoutTabsStore.setState({
+      tabs: TABS,
+      activeTabId: 'tab-price-compare',
+    })
+    render()
+    await openTabMenu('tab-price-compare')
+
+    act(() => {
+      menuItem('刷新页面')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    const tabs = useLayoutTabsStore.getState().tabs
+    expect(
+      tabs.find((tab) => tab.id === 'tab-price-compare')?.reloadKey,
+      '目标标签的 reloadKey 必须递增（attachTabRouter 据此重建子 Router）',
+    ).toBe(1)
+    expect(
+      tabs.find((tab) => tab.id === 'tab-workbench')?.reloadKey,
+      '不得连带刷新其它标签',
+    ).toBe(0)
+  })
+
+  it('固定标签页后该标签不可关闭、菜单改为「取消固定」，取消后恢复可关闭', async () => {
+    useLayoutTabsStore.setState({
+      tabs: TABS,
+      activeTabId: 'tab-price-compare',
+    })
+    render()
+
+    // 固定前：该标签有关闭按钮（closable）
+    expect(
+      container.querySelector(
+        '[data-node-key="tab-price-compare"] .ant-tabs-tab-remove',
+      ),
+      '前置条件：固定前应有关闭按钮',
+    ).toBeTruthy()
+
+    await openTabMenu('tab-price-compare')
+    act(() => {
+      menuItem('固定标签页')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(
+      useLayoutTabsStore
+        .getState()
+        .tabs.find((tab) => tab.id === 'tab-price-compare')?.userPinned,
+      '固定必须落到 store',
+    ).toBe(true)
+    expect(
+      container.querySelector(
+        '[data-node-key="tab-price-compare"] .ant-tabs-tab-remove',
+      ),
+      '固定后不得再有单个关闭按钮',
+    ).toBeNull()
+
+    // 再次打开：出现「取消固定」，且不再出现「关闭标签页」
+    await openTabMenu('tab-price-compare')
+    expect(menuTexts()).toContain('取消固定')
+    expect(menuTexts()).not.toContain('固定标签页')
+    expect(menuTexts()).not.toContain('关闭标签页')
+
+    act(() => {
+      menuItem('取消固定')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(
+      useLayoutTabsStore
+        .getState()
+        .tabs.find((tab) => tab.id === 'tab-price-compare')?.userPinned,
+    ).toBe(false)
+    expect(
+      container.querySelector(
+        '[data-node-key="tab-price-compare"] .ant-tabs-tab-remove',
+      ),
+      '取消固定后关闭按钮必须回来',
+    ).toBeTruthy()
+  })
+})
