@@ -31,6 +31,10 @@ interface Props {
   onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   onExpenseAddItem: () => void
   onExpenseDelete: (index: number) => void
+  /** 附加费用行序变化(整行长按拖动 / 键盘 Alt+↑↓)。 */
+  onExpenseReorder: (nextRowKeys: string[]) => void
+  /** 附加费用行 key(顺序与 expenseItems 一致)。 */
+  expenseRowKeys: string[]
 }
 
 /** 编辑器“附加费用”Tab 内容：工具栏、汇总条与费用明细表。 */
@@ -47,8 +51,12 @@ export function ModuleEditorExpensePanel({
   onCreateExpense,
   onExpenseAddItem,
   onExpenseDelete,
+  onExpenseReorder,
+  expenseRowKeys,
 }: Props) {
   const { t } = useTranslation()
+  // 保存中不允许改行序: 与"保存期间的明细改动会被丢弃"同一口径
+  const expenseReorder = saving ? undefined : onExpenseReorder
 
   return (
     <ModuleItemsPanel
@@ -97,6 +105,7 @@ export function ModuleEditorExpensePanel({
     >
       <ModuleExpenseItemsTable
         expenseItems={expenseItems}
+        rowKeys={expenseRowKeys}
         materialOptions={expenseMaterialOptions}
         materialSearch={expenseMaterialSearch}
         selectedItemIds={expenseSelectedItemIds}
@@ -105,6 +114,7 @@ export function ModuleEditorExpensePanel({
         onChange={onExpenseChange}
         onCreateExpense={onCreateExpense}
         onDelete={onExpenseDelete}
+        onReorder={expenseReorder}
       />
     </ModuleItemsPanel>
   )

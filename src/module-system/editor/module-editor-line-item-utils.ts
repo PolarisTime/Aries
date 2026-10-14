@@ -146,20 +146,22 @@ export function moveEditorLineItemByDrag(
  * 每次拖动都换新引用会让整张表无谓重渲染。传入的 id 里若有当前不存在的(竞态删除),
  * 直接忽略; 数组里没被提到的行按原相对顺序追加在末尾, 不静默丢行。</p>
  */
-export function applyEditorLineItemOrder<T extends { id: string }>(
+export function applyEditorLineItemOrder<T extends { id?: string }>(
   items: T[],
   orderedIds: string[],
+  /** 行 key 取值: 默认业务 id; 无 id 的草稿行(如附加费用手工新增行)传自己的稳定 key。 */
+  keyOf: (item: T) => string = (item) => String(item.id),
 ): T[] {
-  const byId = new Map(items.map((item) => [String(item.id), item]))
+  const byId = new Map(items.map((item) => [keyOf(item), item]))
   const nextItems: T[] = []
   for (const id of orderedIds) {
-    const item = byId.get(String(id))
+    const item = byId.get(id)
     if (item === undefined) continue
-    byId.delete(String(id))
+    byId.delete(id)
     nextItems.push(item)
   }
   for (const item of items) {
-    if (byId.has(String(item.id))) nextItems.push(item)
+    if (byId.has(keyOf(item))) nextItems.push(item)
   }
   const unchanged =
     nextItems.length === items.length &&

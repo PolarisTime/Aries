@@ -38,6 +38,10 @@ interface ExpenseController {
   ) => Promise<CreatedExpenseMaterial | undefined>
   handleExpenseAddItem: () => void
   handleExpenseDelete: (index: number) => void
+  /** 附加费用行序变化(整行长按拖动 / 键盘 Alt+↑↓)。 */
+  handleExpenseReorder: (nextRowKeys: string[]) => void
+  /** 附加费用行 key(顺序与 expenseItems 一致): 草稿行也有稳定 key。 */
+  expenseRowKeys: string[]
 }
 
 interface Props {
@@ -179,6 +183,8 @@ export function ModuleEditorItemsArea({
       onCreateExpense={expense.handleCreateExpense}
       onExpenseAddItem={expense.handleExpenseAddItem}
       onExpenseDelete={expense.handleExpenseDelete}
+      onExpenseReorder={expense.handleExpenseReorder}
+      expenseRowKeys={expense.expenseRowKeys}
       onCancel={onCancel}
       onSave={onSave}
       onOpenParentSelector={onOpenParentSelector}

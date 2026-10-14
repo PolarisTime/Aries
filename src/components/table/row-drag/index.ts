@@ -11,6 +11,8 @@ export {
   rowDragActivationConstraint,
 } from './row-drag-config'
 export {
+  RowDragSortItem,
+  type RowDragSortItemProps,
   type RowDragSortMove,
   RowDragSortRow,
   RowDragSortScope,

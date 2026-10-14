@@ -70,6 +70,10 @@ interface Props {
   onCreateExpense: (name: string) => Promise<CreatedExpenseMaterial | undefined>
   onExpenseAddItem: () => void
   onExpenseDelete: (index: number) => void
+  /** 附加费用行序变化(整行长按拖动 / 键盘 Alt+↑↓)。 */
+  onExpenseReorder: (nextRowKeys: string[]) => void
+  /** 附加费用行 key(顺序与 expenseItems 一致)。 */
+  expenseRowKeys: string[]
   onCancel: () => void
   onSave: (audit: boolean) => void
   onOpenParentSelector: () => void
@@ -126,6 +130,8 @@ export function ModuleEditorItemsSection({
   onCreateExpense,
   onExpenseAddItem,
   onExpenseDelete,
+  onExpenseReorder,
+  expenseRowKeys,
   onCancel,
   onSave,
   onOpenParentSelector,
@@ -211,6 +217,8 @@ export function ModuleEditorItemsSection({
             onCreateExpense={onCreateExpense}
             onExpenseAddItem={onExpenseAddItem}
             onExpenseDelete={onExpenseDelete}
+            onExpenseReorder={onExpenseReorder}
+            expenseRowKeys={expenseRowKeys}
           />
         ) : null}
         {!supportsExpenseTab || activeItemTab === 'goods' ? (

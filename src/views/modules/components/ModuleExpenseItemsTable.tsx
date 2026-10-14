@@ -1,8 +1,8 @@
-import { HolderOutlined } from '@ant-design/icons'
 import { Checkbox, Input, InputNumber, Select, Spin, Typography } from 'antd'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
+import { RowDragSortItem, RowDragSortScope } from '@/components/table/row-drag'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { withFinally } from '@/utils/with-finally'
@@ -185,6 +185,10 @@ const EXPENSE_GRID_STYLE = {
 
 export interface ModuleExpenseItemsTableProps {
   expenseItems: DocumentChargeItemDraft[]
+  /** 行 key(顺序与 expenseItems 一致): 草稿行也有稳定 key, 拖动重排后才认得同一行。 */
+  rowKeys: string[]
+  /** 行序变化(整行长按拖动 / 键盘 Alt+↑↓); 不传表示当前不允许调序(如保存中)。 */
+  onReorder?: (nextRowKeys: string[]) => void
   materialOptions: MaterialOption[]
   materialSearch: MaterialSearchController
   selectedItemIds: string[]
@@ -201,6 +205,8 @@ export interface ModuleExpenseItemsTableProps {
  */
 export function ModuleExpenseItemsTable({
   expenseItems,
+  rowKeys,
+  onReorder,
   materialOptions,
   materialSearch,
   selectedItemIds,
@@ -214,110 +220,110 @@ export function ModuleExpenseItemsTable({
   const allSelected =
     expenseItems.length > 0 && selectedItemIds.length === expenseItems.length
 
-  // 行 key：持久化行用业务 id；手工新增行无稳定业务 key，
-  // 退化为「稳定前缀 + 位置」组合，与原 `new-${index}` 行为等价。
-  // 预生成数组避免在 JSX key 里直接引用 map 的 index。
-  const rowKeys = useMemo(
-    () =>
-      expenseItems.map(
-        (item, rowIndex) => item.id ?? `expense-draft-row-${rowIndex}`,
-      ),
-    [expenseItems],
-  )
   const selectedItemIdsSet = useMemo(
     () => new Set(selectedItemIds),
     [selectedItemIds],
   )
 
   return (
-    <div className="overflow-auto rounded border border-gray-200 bg-gray-50">
-      <div
-        className="grid items-center gap-4 bg-gray-100 px-3 py-2 font-medium text-gray-600"
-        style={EXPENSE_GRID_STYLE}
-      >
-        <span className="flex items-center justify-center">
-          <Checkbox
-            checked={allSelected}
-            onChange={(event) => onSelectAll(event.target.checked)}
-            aria-label={t('modules.expense.selectAllAriaLabel')}
-          />
-        </span>
-        <span className="flex items-center justify-center gap-1 text-gray-400">
-          <HolderOutlined />
-          <span>#</span>
-        </span>
-        <span>{t('modules.expense.chargeName')}</span>
-        <span className="text-right">{t('modules.expense.amount')}</span>
-        <span>{t('modules.expense.unit')}</span>
-        <span>{t('modules.expense.remark')}</span>
-        <span>{t('common.actions')}</span>
-      </div>
-      {!expenseItems.length ? (
-        <div className="px-3 py-6 text-center text-gray-500">
-          {t('modules.expense.emptyHint')}
-        </div>
-      ) : null}
-      {expenseItems.map((item, index) => (
+    <RowDragSortScope
+      enabled={Boolean(onReorder)}
+      rowIds={rowKeys}
+      onReorder={(nextRowKeys) => onReorder?.(nextRowKeys)}
+    >
+      <div className="overflow-auto rounded border border-gray-200 bg-gray-50">
         <div
-          key={rowKeys[index]}
-          className="grid items-center gap-4 border-b border-gray-200 px-3 py-2"
+          className="grid items-center gap-4 bg-gray-100 px-3 py-2 font-medium text-gray-600"
           style={EXPENSE_GRID_STYLE}
         >
           <span className="flex items-center justify-center">
             <Checkbox
-              checked={selectedItemIdsSet.has(item.id ?? '')}
-              onChange={(event) =>
-                onSelectedChange(item.id ?? '', event.target.checked)
-              }
+              checked={allSelected}
+              onChange={(event) => onSelectAll(event.target.checked)}
+              aria-label={t('modules.expense.selectAllAriaLabel')}
             />
           </span>
-          <span className="flex items-center justify-center gap-1 text-gray-400">
-            <HolderOutlined />
-            <span>{index + 1}</span>
+          {/* 序号列: 不再放拖动抓手 —— 整行长按即可拖动(共享能力), 抓手在此处从无实现 */}
+          <span className="flex items-center justify-center text-gray-400">
+            <span>#</span>
           </span>
-          <ChargeNameSelect
-            item={item}
-            materialOptions={materialOptions}
-            materialSearch={materialSearch}
-            onChange={(patch) => onChange(index, patch)}
-            onCreateExpense={onCreateExpense}
-            t={t}
-          />
-          <InputNumber
-            value={item.amount}
-            min={0}
-            precision={2}
-            className="w-full"
-            onChange={(value) =>
-              onChange(index, { amount: typeof value === 'number' ? value : 0 })
-            }
-          />
-          <Input
-            value={item.unit ?? ''}
-            placeholder={t('modules.expense.unitPlaceholder')}
-            onChange={(event) => onChange(index, { unit: event.target.value })}
-          />
-          <Input
-            value={item.remark ?? ''}
-            onChange={(event) =>
-              onChange(index, { remark: event.target.value })
-            }
-          />
-          <span className="text-center">
-            <button
-              type="button"
-              className="text-red-500 hover:text-red-700"
-              onClick={() => onDelete(index)}
-              aria-label={t('modules.expense.deleteRowAriaLabel', {
-                index: index + 1,
-              })}
-            >
-              🗑
-            </button>
-          </span>
+          <span>{t('modules.expense.chargeName')}</span>
+          <span className="text-right">{t('modules.expense.amount')}</span>
+          <span>{t('modules.expense.unit')}</span>
+          <span>{t('modules.expense.remark')}</span>
+          <span>{t('common.actions')}</span>
         </div>
-      ))}
-    </div>
+        {!expenseItems.length ? (
+          <div className="px-3 py-6 text-center text-gray-500">
+            {t('modules.expense.emptyHint')}
+          </div>
+        ) : null}
+        {expenseItems.map((item, index) => (
+          <RowDragSortItem
+            key={rowKeys[index]}
+            rowKey={rowKeys[index]}
+            className="grid items-center gap-4 border-b border-gray-200 px-3 py-2"
+            style={EXPENSE_GRID_STYLE}
+          >
+            <span className="flex items-center justify-center">
+              <Checkbox
+                checked={selectedItemIdsSet.has(item.id ?? '')}
+                onChange={(event) =>
+                  onSelectedChange(item.id ?? '', event.target.checked)
+                }
+              />
+            </span>
+            <span className="flex items-center justify-center text-gray-400">
+              <span>{index + 1}</span>
+            </span>
+            <ChargeNameSelect
+              item={item}
+              materialOptions={materialOptions}
+              materialSearch={materialSearch}
+              onChange={(patch) => onChange(index, patch)}
+              onCreateExpense={onCreateExpense}
+              t={t}
+            />
+            <InputNumber
+              value={item.amount}
+              min={0}
+              precision={2}
+              className="w-full"
+              onChange={(value) =>
+                onChange(index, {
+                  amount: typeof value === 'number' ? value : 0,
+                })
+              }
+            />
+            <Input
+              value={item.unit ?? ''}
+              placeholder={t('modules.expense.unitPlaceholder')}
+              onChange={(event) =>
+                onChange(index, { unit: event.target.value })
+              }
+            />
+            <Input
+              value={item.remark ?? ''}
+              onChange={(event) =>
+                onChange(index, { remark: event.target.value })
+              }
+            />
+            <span className="text-center">
+              <button
+                type="button"
+                className="text-red-500 hover:text-red-700"
+                onClick={() => onDelete(index)}
+                aria-label={t('modules.expense.deleteRowAriaLabel', {
+                  index: index + 1,
+                })}
+              >
+                🗑
+              </button>
+            </span>
+          </RowDragSortItem>
+        ))}
+      </div>
+    </RowDragSortScope>
   )
 }
 

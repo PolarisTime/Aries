@@ -265,31 +265,31 @@ interface RowDragSortRowProps extends HTMLAttributes<HTMLTableRowElement> {
   'data-row-key'?: string
 }
 
+/** 网格行(非表格)的 props: 与表格行同一套拖动/键盘契约。 */
+export interface RowDragSortItemProps extends HTMLAttributes<HTMLDivElement> {
+  /** 行标识: 与传给 scope 的 rowIds 一一对应。 */
+  rowKey: string
+}
+
 /**
- * 可排序行: 挂在 antd Table 的 `components.body.row` 上。
+ * 行级可排序状态: 表格行与网格行共用的同一份实现。
  *
- * <p>刻意**不透传 dnd-kit 的 `attributes`**: 它带 `role="button"`, 挂在 `&lt;tr&gt;`
- * 上会破坏表格语义(行必须是 row), 读屏将读不出表格结构。键盘操作因此不走 dnd-kit 的
- * "空格拾起", 而是 Alt+↑/Alt+↓ 直接移动 —— 与拖动等价且不需要进入拖动模式。</p>
+ * <p>明细不一定长在 antd Table 里(附加费用是 grid 布局的 div 行), 但"长按拖动 +
+ * Alt+↑↓ + 播报 + 焦点保持"的口径必须完全一致, 因此这里只抽状态与副作用,
+ * 元素形态由两个薄封装({@link RowDragSortRow} / {@link RowDragSortItem})决定。</p>
  */
-export function RowDragSortRow(props: RowDragSortRowProps) {
+function useRowDragSortItem(rowId: string | undefined) {
   const context = use(RowDragSortContext)
-  const rowId = props['data-row-key']
   const enabled = Boolean(context?.enabled && rowId)
   const { listeners, setNodeRef, transform, transition, isDragging, isOver } =
-    useSortable({
-      id: rowId ?? '',
-      disabled: !enabled,
-    })
+    useSortable({ id: rowId ?? '', disabled: !enabled })
 
   const dragListeners = useMemo(
     () => forwardDragListeners(listeners),
     [listeners],
   )
 
-  const { onKeyDown, ...rest } = props
-  const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
-    onKeyDown?.(event)
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.defaultPrevented) return
     if (!enabled || !rowId || !context) return
     // dnd-kit 键盘拖动进行中时由它接管方向键, 此时不再二次移动(否则一次按键移动两格)
@@ -302,14 +302,6 @@ export function RowDragSortRow(props: RowDragSortRowProps) {
     context.moveByKeyboard(rowId, event.key === 'ArrowUp' ? -1 : 1)
   }
 
-  const style: CSSProperties = {
-    ...rest.style,
-    transform: transform
-      ? CSS.Transform.toString({ ...transform, x: 0 })
-      : undefined,
-    transition,
-  }
-
   /** 插入位置指示线: 向上拖画在目标行上方, 向下拖画在下方(落位方向与线一致)。 */
   const insertion =
     enabled && isOver && !isDragging && context
@@ -320,33 +312,116 @@ export function RowDragSortRow(props: RowDragSortRowProps) {
           : ''
       : ''
 
+  const className = [
+    enabled ? 'row-drag-sort-row' : '',
+    isDragging ? 'row-drag-sort-row--dragging' : '',
+    insertion,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const style: CSSProperties = {
+    transform: transform
+      ? CSS.Transform.toString({ ...transform, x: 0 })
+      : undefined,
+    transition,
+  }
+
+  return {
+    context,
+    dragListeners,
+    enabled,
+    handleKeyDown,
+    className,
+    style,
+    setNodeRef,
+  }
+}
+
+/** 拖动相关无障碍属性的公共拼装(表格行与网格行一致)。 */
+function rowDragAria(
+  enabled: boolean,
+  hintId: string | undefined,
+  originalShortcuts: string | undefined,
+) {
+  return {
+    'aria-describedby': enabled ? hintId : undefined,
+    /* 键盘用户要能在行上按 Alt+↑/↓: 行本身可聚焦, 行内控件聚焦时按键同样冒泡到这里 */
+    'aria-keyshortcuts': enabled
+      ? ['Alt+ArrowUp', 'Alt+ArrowDown', 'Space', originalShortcuts]
+          .filter(Boolean)
+          .join(' ')
+      : originalShortcuts,
+  }
+}
+
+/**
+ * 可排序表格行: 挂在 antd Table 的 `components.body.row` 上。
+ *
+ * <p>刻意**不透传 dnd-kit 的 `attributes`**: 它带 `role="button"`, 挂在 `&lt;tr&gt;`
+ * 上会破坏表格语义(行必须是 row), 读屏将读不出表格结构。键盘操作因此不走 dnd-kit 的
+ * "空格拾起", 而是 Alt+↑/Alt+↓ 直接移动 —— 与拖动等价且不需要进入拖动模式。</p>
+ */
+export function RowDragSortRow(props: RowDragSortRowProps) {
+  const item = useRowDragSortItem(props['data-row-key'])
+  const { onKeyDown, ...rest } = props
+
   return (
     <RowContextMenuRow
       {...rest}
-      {...dragListeners}
-      ref={setNodeRef}
-      aria-describedby={enabled ? context?.hintId : rest['aria-describedby']}
-      /* 键盘用户要能在行上按 Alt+↑/↓: 行本身可聚焦, 行内控件聚焦时按键同样冒泡到这里 */
-      aria-keyshortcuts={
-        enabled
-          ? ['Alt+ArrowUp', 'Alt+ArrowDown', 'Space', rest['aria-keyshortcuts']]
-              .filter(Boolean)
-              .join(' ')
-          : rest['aria-keyshortcuts']
-      }
-      className={[
-        rest.className,
-        enabled ? 'row-drag-sort-row' : '',
-        isDragging ? 'row-drag-sort-row--dragging' : '',
-        insertion,
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      {...item.dragListeners}
+      {...rowDragAria(
+        item.enabled,
+        item.context?.hintId,
+        rest['aria-keyshortcuts'],
+      )}
+      ref={item.setNodeRef}
+      className={[rest.className, item.className].filter(Boolean).join(' ')}
       // 长按让给整行拖动, 因此关闭行菜单的触摸长按入口(右键与 Shift+F10 仍在)
-      longPressToOpen={!enabled}
-      style={style}
-      tabIndex={enabled ? (rest.tabIndex ?? 0) : rest.tabIndex}
-      onKeyDown={handleKeyDown}
+      longPressToOpen={!item.enabled}
+      style={{ ...rest.style, ...item.style }}
+      tabIndex={item.enabled ? (rest.tabIndex ?? 0) : rest.tabIndex}
+      onKeyDown={(event) => {
+        onKeyDown?.(event)
+        item.handleKeyDown(event)
+      }}
     />
+  )
+}
+
+/**
+ * 可排序网格行: 明细不是 antd Table 而是 div 网格时用它(如附加费用明细)。
+ *
+ * <p>与表格行共用同一份拖动激活、键盘替代与播报口径, 区别只在元素形态 ——
+ * 这样"所有明细表都能长按拖动"才是同一套行为, 而不是每张表各写一遍。</p>
+ */
+export function RowDragSortItem({
+  rowKey,
+  children,
+  ...rest
+}: RowDragSortItemProps) {
+  const item = useRowDragSortItem(rowKey)
+  const { onKeyDown, ...restProps } = rest
+
+  return (
+    <div
+      {...restProps}
+      {...item.dragListeners}
+      {...rowDragAria(
+        item.enabled,
+        item.context?.hintId,
+        rest['aria-keyshortcuts'],
+      )}
+      ref={item.setNodeRef}
+      className={[rest.className, item.className].filter(Boolean).join(' ')}
+      style={{ ...rest.style, ...item.style }}
+      tabIndex={item.enabled ? (rest.tabIndex ?? 0) : rest.tabIndex}
+      onKeyDown={(event) => {
+        onKeyDown?.(event)
+        item.handleKeyDown(event)
+      }}
+    >
+      {children}
+    </div>
   )
 }

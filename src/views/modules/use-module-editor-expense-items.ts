@@ -3,7 +3,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type CreatedExpenseMaterial,
   createExpenseMaterial,
@@ -12,6 +12,7 @@ import {
 } from '@/api/master/materials'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import { applyEditorLineItemOrder } from '@/module-system/adapter/module-adapter-editor'
 import {
   MATERIAL_SEARCH_DEBOUNCE_MS,
   mergeMaterialRecords,
@@ -172,6 +173,39 @@ export function useModuleEditorExpenseItems({
     )
   }
 
+  /*
+   * 行 key: 持久化行用业务 id; 手工新增行没有 id, 用「对象身份 → 生成 key」的 WeakMap 记住,
+   * 保证拖动重排后 key 跟着同一行对象走(用下标当 key 时, 重排后焦点保持会落到别的行上)。
+   */
+  const draftRowKeysRef = useRef(new WeakMap<DocumentChargeItemDraft, string>())
+  const draftRowSeqRef = useRef(0)
+  const expenseRowKeyOf = useCallback((item: DocumentChargeItemDraft) => {
+    if (item.id) return String(item.id)
+    const cached = draftRowKeysRef.current.get(item)
+    if (cached !== undefined) return cached
+    draftRowSeqRef.current += 1
+    const key = `expense-draft-row-${draftRowSeqRef.current}`
+    draftRowKeysRef.current.set(item, key)
+    return key
+  }, [])
+
+  /**
+   * 附加费用行序变化(整行长按拖动 / 键盘 Alt+↑↓): 只按新顺序重排数组, 不改行内容。
+   * <p>后端口径是「items 数组顺序即最终顺序」, 且 `bd_document_charge_item.line_no` 由服务端
+   * 按下标重编号(两阶段重编号解决唯一键冲突), 因此前端只需整组按新顺序下发。</p>
+   */
+  const handleExpenseReorder = (nextRowKeys: string[]) => {
+    updateExpenseItems((current) =>
+      applyEditorLineItemOrder(current, nextRowKeys, expenseRowKeyOf),
+    )
+  }
+
+  /** 当前费用的行 key(顺序与 expenseItems 一致): 拖动作用域与行都用它做身份。 */
+  const expenseRowKeys = useMemo(
+    () => expenseItems.map(expenseRowKeyOf),
+    [expenseItems, expenseRowKeyOf],
+  )
+
   const handleExpenseAddItem = () => {
     updateExpenseItems((current) => [...current, { chargeName: '', amount: 0 }])
   }
@@ -182,8 +216,11 @@ export function useModuleEditorExpenseItems({
     expenseSelectedItemIds,
     handleCreateExpense,
     handleExpenseAddItem,
+    expenseRowKeys,
+    expenseRowKeyOf,
     handleExpenseChange,
     handleExpenseDelete,
+    handleExpenseReorder,
     handleExpenseSelectAll,
     handleExpenseSelectedChange,
   }
