@@ -3,37 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { fetchBackendInfo } from '@/api/auth/auth-api'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_LONG } from '@/constants/query-policies'
+import { formatBuildMomentForDisplay } from '@/utils/buildInfo'
 import {
   frontendBuildTime,
   frontendGitCommit,
   frontendVersion,
 } from '@/utils/env'
-
-const shanghaiBuildTimeFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Shanghai',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hourCycle: 'h23',
-})
-
-function formatBuildTime(value: string) {
-  const trimmed = value.trim()
-  if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)) {
-    const parsed = new Date(trimmed)
-    if (!Number.isNaN(parsed.getTime())) {
-      const parts = shanghaiBuildTimeFormatter.formatToParts(parsed)
-      const part = (type: Intl.DateTimeFormatPartTypes) =>
-        parts.find((item) => item.type === type)?.value || ''
-      return `${part('year')}年${part('month')}月${part('day')}日 ${part('hour')}:${part('minute')}:${part('second')}`
-    }
-  }
-  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2}:\d{2})/)
-  return match ? `${match[1]}年${match[2]}月${match[3]}日 ${match[4]}` : trimmed
-}
 
 function resolveDisplayValue(
   value: string | null | undefined,
@@ -48,7 +23,10 @@ function resolveDisplayValue(
 
 function resolveBuildTime(value: string | null | undefined, fallback: string) {
   const resolved = resolveDisplayValue(value, fallback)
-  return resolved === fallback ? fallback : formatBuildTime(resolved)
+  // 展示口径(含 UTC→业务时区换算)统一在 utils/buildInfo 里, 这里不再另写一份。
+  return resolved === fallback
+    ? fallback
+    : formatBuildMomentForDisplay(resolved, fallback)
 }
 
 function resolveGitCommit(value: string | null | undefined, fallback: string) {

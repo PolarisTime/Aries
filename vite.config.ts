@@ -8,26 +8,12 @@ import tailwindcss from '@tailwindcss/vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
+import { resolveBuildMoment } from './src/utils/buildInfo.ts'
+
 const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string }
 const appVersion = packageJson.version || '0.0.0'
-
-function formatLocalDateTime(date: Date) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date)
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((item) => item.type === type)?.value || ''
-  return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:${part('second')}`
-}
 
 function resolveGitCommit() {
   const envCommit = process.env.VITE_APP_COMMIT || process.env.GITHUB_SHA
@@ -168,8 +154,10 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
+      // 构建时刻单一来源: resolveBuildMoment 会校验 VITE_APP_BUILD_TIME, 是占位/哨兵
+      // (如 Maven 可复现构建的 1980-02-01T00:00:00Z)或非法值时改用本次构建真实时刻。
       __APP_BUILD_TIME__: JSON.stringify(
-        process.env.VITE_APP_BUILD_TIME || formatLocalDateTime(new Date()),
+        resolveBuildMoment(process.env.VITE_APP_BUILD_TIME),
       ),
       __APP_COMMIT__: JSON.stringify(gitCommit),
     },

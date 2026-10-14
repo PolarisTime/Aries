@@ -1,7 +1,15 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+import { resolveBuildMoment } from './src/utils/buildInfo.ts'
+
 export default defineConfig({
+  // 与 vite 构建同一条注入口径: 用例据此断言"被注入的编译时刻是真实值、不是占位/哨兵"。
+  define: {
+    __APP_BUILD_TIME__: JSON.stringify(
+      resolveBuildMoment(process.env.VITE_APP_BUILD_TIME),
+    ),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
