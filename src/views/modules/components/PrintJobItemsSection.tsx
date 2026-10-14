@@ -1,4 +1,9 @@
-import { CheckCircleFilled, HolderOutlined } from '@ant-design/icons'
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  CheckCircleFilled,
+  HolderOutlined,
+} from '@ant-design/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { TableProps } from 'antd'
@@ -23,6 +28,11 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintRecordItem } from '@/api/system/print-template'
+import { RowContextMenuRow } from '@/components/RowContextMenuRow'
+import {
+  RowContextMenuContext,
+  type RowContextMenuMap,
+} from '@/components/row-context-menu'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { isModuleKey } from '@/module-system/core/module-key'
 import type { PrintItemFieldSpec } from '@/utils/print-module-config'
@@ -33,12 +43,19 @@ import {
 import type { PrintItemSplitPart } from '@/views/modules/components/print-item-split'
 import { buildPrintItemSplitPreviews } from '@/views/modules/components/print-item-split'
 import {
+  printItemRowName,
+  resolvePrintItemRowNumber,
+} from '@/views/modules/components/print-job-item-drag-a11y'
+import {
   fieldText,
   printItemCellText,
 } from '@/views/modules/components/print-job-modal-format'
 import type { PrintJobModalAction } from '@/views/modules/components/print-job-modal-state'
 import type { PrintItemMergeMarker } from '@/views/modules/components/print-job-modal-utils'
-import { buildPrintItemMergeGroups } from '@/views/modules/components/print-job-modal-utils'
+import {
+  buildPrintItemMergeGroups,
+  reorderPrintItemIds,
+} from '@/views/modules/components/print-job-modal-utils'
 import type { CustomerStatementItemGroup } from '@/views/modules/customer-statement-item-groups'
 import { groupCustomerStatementItems } from '@/views/modules/customer-statement-item-groups'
 import type { FreightStatementItemGroup } from '@/views/modules/freight-statement-item-groups'
@@ -113,7 +130,12 @@ function SortableRow({ children, ...props }: SortableRowProps) {
   )
   return (
     <RowDragContext.Provider value={contextValue}>
-      <tr
+      {/*
+       * 行容器交给 RowContextMenuRow: 右键 / Shift+F10 打开的「上移 / 下移」是
+       * WCAG 2.2 SC 2.5.7 要求的单指针非拖动替代(只挂 KeyboardSensor 不算替代),
+       * 与提货单明细行共用同一套行菜单口径。
+       */}
+      <RowContextMenuRow
         {...props}
         ref={setNodeRef}
         style={{
@@ -124,10 +146,14 @@ function SortableRow({ children, ...props }: SortableRowProps) {
         }}
       >
         {children}
-      </tr>
+      </RowContextMenuRow>
     </RowDragContext.Provider>
   )
 }
+
+/** 明细行菜单的「上移 / 下移」键: 与拖动共用同一份顺序写回口径。 */
+const PRINT_ITEM_MOVE_UP = 'moveUp'
+const PRINT_ITEM_MOVE_DOWN = 'moveDown'
 
 interface Props {
   moduleKey: string
@@ -325,15 +351,89 @@ export function PrintJobItemsSection({
     },
   }
 
+  /**
+   * 行号: 有序集合 → 明细原始位次 → 表格行号逐级兜底。
+   *
+   * <p>`orderedPrintItemIds.indexOf(id)` 在明细不在有序集合里时返回 -1, 直接 +1 会
+   * 让序号列显示「0」并让拖动按钮读成「拖动第 0 行」, 因此统一走
+   * {@link resolvePrintItemRowNumber}。</p>
+   */
+  const printItemRowNumber = useCallback(
+    (itemId: string, tableRowIndex: number) =>
+      resolvePrintItemRowNumber(
+        orderedPrintItemIds,
+        printItems,
+        itemId,
+        tableRowIndex,
+      ),
+    [orderedPrintItemIds, printItems],
+  )
+
+  /**
+   * 行菜单里的「上移 / 下移」: 与拖动落位共用 {@link reorderPrintItemIds},
+   * 因此不会出现「菜单能移、拖动不能移」的口径漂移。
+   */
+  const movePrintItem = useCallback(
+    (itemId: string, delta: -1 | 1) => {
+      const fromIndex = orderedPrintItemIds.indexOf(itemId)
+      if (fromIndex < 0) return
+      const targetId = orderedPrintItemIds[fromIndex + delta]
+      if (!targetId) return
+      dispatch({
+        type: 'setOrderedPrintItemIds',
+        itemIds: reorderPrintItemIds(orderedPrintItemIds, itemId, targetId),
+      })
+    },
+    [dispatch, orderedPrintItemIds],
+  )
+
+  /**
+   * 明细行右键菜单(与提货单明细行同一套口径): 顺序调整的**非拖动替代**。
+   *
+   * <p>WCAG 2.2 SC 2.5.7 要求拖动功能能用单指针在不拖动的情况下完成 —— 右键点开菜单
+   * 选「上移 / 下移」即满足; 边界项按位次禁用, 元素上的键位说明由
+   * `RowContextMenuRow` 补 Shift+F10。</p>
+   */
+  const rowMenus = useMemo<RowContextMenuMap>(() => {
+    const menus: RowContextMenuMap = new Map()
+    orderedPrintItems.forEach((item, index) => {
+      menus.set(item.id, {
+        // 可访问名带行名, 读屏用户能区分是「哪一行」的菜单
+        ariaLabel: t('modules.print.rowContextMenuLabel', {
+          name: printItemRowName(item, t),
+        }),
+        items: [
+          {
+            key: PRINT_ITEM_MOVE_UP,
+            label: t('modules.print.moveItemUp'),
+            icon: <ArrowUpOutlined />,
+            disabled: index <= 0,
+          },
+          {
+            key: PRINT_ITEM_MOVE_DOWN,
+            label: t('modules.print.moveItemDown'),
+            icon: <ArrowDownOutlined />,
+            disabled: index >= orderedPrintItems.length - 1,
+          },
+        ],
+        onClick: ({ key }) => {
+          if (key === PRINT_ITEM_MOVE_UP) movePrintItem(item.id, -1)
+          if (key === PRINT_ITEM_MOVE_DOWN) movePrintItem(item.id, 1)
+        },
+      })
+    })
+    return menus
+  }, [movePrintItem, orderedPrintItems, t])
+
   const columns: TableProps<PrintRecordItem>['columns'] = [
     {
       key: 'drag',
       width: 36,
       align: 'center',
-      render: (_, item) => (
+      render: (_, item, index) => (
         <DragHandle
           label={t('modules.print.dragRowAriaLabel', {
-            index: orderedPrintItemIds.indexOf(item.id) + 1,
+            index: printItemRowNumber(item.id, index),
           })}
         />
       ),
@@ -343,9 +443,9 @@ export function PrintJobItemsSection({
       width: 56,
       align: 'center',
       title: t('modules.print.itemSequence'),
-      render: (_, item) => (
+      render: (_, item, index) => (
         <Space size={4}>
-          <span>{orderedPrintItemIds.indexOf(item.id) + 1}</span>
+          <span>{printItemRowNumber(item.id, index)}</span>
           {outputPrintItemIdSet.has(item.id) ? (
             <Tooltip title={t('modules.print.outputted')}>
               <CheckCircleFilled style={{ color: token.colorSuccess }} />
@@ -501,36 +601,44 @@ export function PrintJobItemsSection({
     orderedPrintItems as PrintGroupItem[],
   )
 
-  return statementGroups.length ? (
-    <div className="module-items-groups">
-      {statementGroups.map((group) => (
-        <div className="module-items-group" key={group.key}>
-          {'projectGroups' in group ? (
-            <>
-              <FreightStatementItemGroupHeader group={group} />
-              {group.projectGroups.map((projectGroup) => (
-                <div
-                  className="module-items-project-group"
-                  key={projectGroup.key}
-                >
-                  <FreightStatementProjectGroupHeader
-                    group={projectGroup}
-                    showSubtotal={false}
-                  />
-                  {printItemsTable(projectGroup.items as PrintRecordItem[])}
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              <CustomerStatementItemGroupHeader group={group} />
-              {printItemsTable(group.items as PrintRecordItem[])}
-            </>
-          )}
-        </div>
-      ))}
-    </div>
-  ) : (
-    printItemsTable(orderedPrintItems)
+  const table =
+    statementGroups.length > 0 ? (
+      <div className="module-items-groups">
+        {statementGroups.map((group) => (
+          <div className="module-items-group" key={group.key}>
+            {'projectGroups' in group ? (
+              <>
+                <FreightStatementItemGroupHeader group={group} />
+                {group.projectGroups.map((projectGroup) => (
+                  <div
+                    className="module-items-project-group"
+                    key={projectGroup.key}
+                  >
+                    <FreightStatementProjectGroupHeader
+                      group={projectGroup}
+                      showSubtotal={false}
+                    />
+                    {printItemsTable(projectGroup.items as PrintRecordItem[])}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <CustomerStatementItemGroupHeader group={group} />
+                {printItemsTable(group.items as PrintRecordItem[])}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      printItemsTable(orderedPrintItems)
+    )
+
+  // 行菜单挂在行容器上(components.body.row), 由行按 data-row-key 取用, 故按行 key 注入。
+  return (
+    <RowContextMenuContext.Provider value={rowMenus}>
+      {table}
+    </RowContextMenuContext.Provider>
   )
 }

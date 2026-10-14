@@ -17,6 +17,7 @@ import { PrintJobHeader } from '@/views/modules/components/PrintJobHeader'
 import { PrintJobItemsSection } from '@/views/modules/components/PrintJobItemsSection'
 import { PrintJobModalSummaryBar } from '@/views/modules/components/PrintJobModalSummaryBar'
 import { PrintJobTemplateOptionsForm } from '@/views/modules/components/PrintJobTemplateOptionsForm'
+import { buildPrintJobDragAccessibility } from '@/views/modules/components/print-job-item-drag-a11y'
 import {
   fieldText,
   numericTotal,
@@ -113,6 +114,14 @@ export function PrintJobModalBody({
   const totalWeight = numericTotal(
     itemState.selectedPrintItems.map((item) => item.weightTon),
   )
+  /*
+   * 明细区 DndContext 的读屏产物: 中文操作说明 + 只播报「第 N 行 + 物料名 + 位次」的
+   * 播报器(dnd-kit 默认文案会把 19 位雪花 id 念出来, 用户对不回是哪一行)。
+   */
+  const dragAccessibility = useMemo(
+    () => buildPrintJobDragAccessibility(itemState.orderedPrintItems, t),
+    [itemState.orderedPrintItems, t],
+  )
 
   return (
     <Flex vertical gap="middle">
@@ -168,6 +177,7 @@ export function PrintJobModalBody({
         ) : null}
       </Flex>
       <DndContext
+        accessibility={dragAccessibility}
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={onDragEnd}

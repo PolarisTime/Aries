@@ -996,6 +996,20 @@ export const enUS = {
       noPrintItems: 'No printable line items found',
       printItemsLoadFailed: 'Failed to load print items',
       dragRowAriaLabel: 'Drag print item row {{index}}',
+      /** Screen-reader strings for row drag sort: row number and material name only, never raw ids. */
+      dragScreenReaderInstructions:
+        'Press Space to pick up the current print item row, use the up/down arrow keys to move it, press Space again to drop it, or press Escape to cancel. You can also right-click the row or press Shift+F10 and choose "Move up" / "Move down".',
+      dragAnnounceRow: 'Row {{index}} {{name}}',
+      dragAnnounceStart:
+        'Picked up {{row}}. Use the up/down arrow keys to move it, then press Space to drop it',
+      dragAnnounceOver: '{{row}} moved to position {{position}}',
+      dragAnnounceDroppedAt: '{{row}} dropped at position {{position}}',
+      dragAnnounceDropped: '{{row}} dropped, order unchanged',
+      dragAnnounceCancel: 'Move cancelled, {{row}} order unchanged',
+      dragAnnounceUnknownRow: 'this print item row',
+      rowContextMenuLabel: 'Actions menu for "{{name}}"',
+      moveItemUp: 'Move up',
+      moveItemDown: 'Move down',
       deliveryDate: 'Delivery Date',
       recordRemark: 'Document Remark',
       totalQuantity: 'Total Qty',
