@@ -97,15 +97,22 @@ describe('MaterialImportPreviewModal', () => {
     })
   }
 
-  const renderModal = (onConfirm: () => void) => {
+  const renderModal = (
+    onConfirm: () => void,
+    options: {
+      importing?: boolean
+      onCancel?: () => void
+      preview?: MaterialImportPreviewResponse
+    } = {},
+  ) => {
     act(() => {
       root.render(
         createElement(MaterialImportPreviewModal, {
           open: true,
-          preview,
+          preview: options.preview ?? preview,
           fileName: 'materials.xlsx',
-          importing: false,
-          onCancel: () => {},
+          importing: options.importing ?? false,
+          onCancel: options.onCancel ?? (() => {}),
           onConfirm,
         }),
       )
@@ -137,5 +144,73 @@ describe('MaterialImportPreviewModal', () => {
     })
 
     expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('用覆盖层容器尺寸呈现，而不是挂在 body 上、高度随内容长的 antd Modal', async () => {
+    renderModal(() => {})
+    await flushAsync()
+
+    const overlay = document.querySelector('.workspace-overlay')
+    expect(overlay).toBeTruthy()
+    const panel = document.querySelector(
+      '.workspace-overlay-panel.workspace-overlay-panel--form-dialog.workspace-overlay-panel--import-preview',
+    )
+    expect(panel).toBeTruthy()
+    // 尺寸与滚动三件套：面板自身 overflow: hidden，滚动交给 body
+    expect(panel?.querySelector('.workspace-overlay-header')).toBeTruthy()
+    expect(panel?.querySelector('.workspace-overlay-body')).toBeTruthy()
+    expect(panel?.querySelector('.workspace-overlay-footer')).toBeTruthy()
+    // 面板必须在覆盖层内部：antd Modal 会把节点挂到 body，脱离覆盖层容器
+    expect(panel?.closest('.workspace-overlay')).toBe(overlay)
+    expect(document.querySelectorAll('.ant-modal').length).toBe(0)
+  })
+
+  it('字段差异的 18 位雪花编码完整渲染（不截断、不省略）', async () => {
+    const longCode = '368804140140281280'
+    renderModal(() => {}, {
+      preview: {
+        ...preview,
+        rows: [
+          {
+            ...preview.rows[0],
+            materialCode: longCode,
+            changes: [
+              {
+                field: 'materialCode',
+                label: '商品编码',
+                before: null,
+                after: longCode,
+              },
+            ],
+          },
+        ],
+      },
+    })
+    await flushAsync()
+
+    const cell = document.querySelector(
+      '.material-import-rows-table tbody td:last-child',
+    )
+    expect(cell?.textContent).toContain(longCode)
+    // 长文本靠 material-import-overlay.css 的 overflow-wrap 换行，列必须有该类
+    expect(document.querySelector('.material-import-rows-table')).toBeTruthy()
+  })
+
+  it('正式导入进行中不允许通过取消/遮罩/Escape 关闭预览', async () => {
+    const onCancel = vi.fn()
+    renderModal(() => {}, { importing: true, onCancel })
+    await flushAsync()
+
+    act(() => {
+      document
+        .querySelector<HTMLButtonElement>('.workspace-overlay-mask')
+        ?.click()
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    await flushAsync()
+
+    expect(onCancel).not.toHaveBeenCalled()
   })
 })

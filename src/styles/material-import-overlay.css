@@ -1,0 +1,43 @@
+/*
+ * 商品资料导入弹层（导入预览 / 导入结果）的排版与滚动分工。
+ *
+ * 尺寸沿用「主数据对话框」——workspace-overlay.css 的 `--form-dialog`：
+ * 宽 `min(1040px, calc(100% - 24px))`、高 `auto` + `max-height: min(900px, calc(100% - 24px))`，
+ * 全部按**覆盖层容器**（内容区）算，不使用任何视口单位。
+ *
+ * 修复前的实测缺陷（真机 3100，1280×800，35 行预览）：弹层还是 antd Modal（width=920），
+ * `.ant-modal` 高度跟内容长到 3845px、顶边 top=-1522，而覆盖层容器只有 1233×655 —— 标题
+ * （y=-1470）与「取消 / 确认导入」（y=2271）都落在覆盖层外，右侧还透出底层列表页的表格与
+ * 分页。Modal 的 body 自身 `overflow: visible`，长内容只能靠 `100vh` 级别的整层滚动兜着。
+ * 换用 WorkspaceOverlay 后高度由容器封顶，超出部分由 `.workspace-overlay-body` 在面板内部
+ * 滚动，头尾始终可见。
+ *
+ * 「字段差异」一列每行是一条 `before → after` 长文本（含 18 位雪花编码与长中文备注），必须
+ * 允许换行；万一出现无法断行的超长串，横向滚动也只发生在表格自身容器里，绝不越过面板右边界。
+ */
+
+.material-import-overlay-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+  min-width: 0;
+}
+
+/* antd Paragraph 自带 1em 下边距，会与容器 gap 叠加成非 8 倍数的行距 */
+.material-import-overlay-body > .ant-typography {
+  margin-bottom: 0;
+}
+
+.material-import-rows-table {
+  min-width: 0;
+}
+
+/* 长单行文本不换行是把面板撑破的直接原因：显式允许在任意字符处换行 */
+.material-import-rows-table .ant-table-cell {
+  overflow-wrap: anywhere;
+}
+
+/* 兜底：真需要横向滚动时，滚动条留在表格自己的容器内，不外溢到面板外 */
+.material-import-rows-table .ant-table-content {
+  overflow-x: auto;
+}

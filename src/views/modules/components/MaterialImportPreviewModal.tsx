@@ -1,5 +1,5 @@
 import type { TableProps } from 'antd'
-import { Button, Modal, Segmented, Space, Table, Tag, Typography } from 'antd'
+import { Button, Segmented, Space, Table, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -7,7 +7,9 @@ import type {
   MaterialImportPreviewResponse,
   MaterialImportPreviewRow,
 } from '@/api/master/materials'
+import '@/styles/material-import-overlay.css'
 import { MaterialFieldChanges } from './MaterialFieldChanges'
+import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
   open: boolean
@@ -35,7 +37,15 @@ const OUTCOME_FILTERS: readonly OutcomeFilter[] = [
   'FAILED',
 ]
 
-/** 导入前差异预览：展示每行新建/更新/跳过/失败与字段差异，确认后再执行正式导入。 */
+/**
+ * 导入前差异预览：展示每行新建/更新/跳过/失败与字段差异，确认后再执行正式导入。
+ *
+ * <p>用 {@link WorkspaceOverlay} 的「主数据对话框」尺寸（宽 `min(1040px, 100% - 24px)`、
+ * 高 `max-height: min(900px, 100% - 24px)`）呈现，而非 antd Modal：Modal 挂在 body 上、
+ * 遮罩与容器按视口定位，弹层高度只能跟内容长（实测 35 行预览长到 3845px，标题与
+ * 「取消 / 确认导入」被顶到覆盖层外，右侧还透出底层列表页表格）。WorkspaceOverlay 的
+ * 尺寸按覆盖层容器算，超出部分由面板内部滚动。组件名沿用 Modal 以保持既有引用不变。</p>
+ */
 export function MaterialImportPreviewModal({
   open,
   preview,
@@ -84,7 +94,8 @@ export function MaterialImportPreviewModal({
     {
       title: t('modules.pages.material.materialCode'),
       dataIndex: 'materialCode',
-      width: 150,
+      // 176 = 18 位雪花编码(约 151px) + 单元格内边距，固定布局下也不会被折成两行
+      width: 176,
       render: (value: string | null) => value ?? '-',
     },
     {
@@ -110,6 +121,7 @@ export function MaterialImportPreviewModal({
     {
       title: t('modules.pages.material.importPreviewColumnChanges'),
       dataIndex: 'changes',
+      // 列宽交给剩余空间，文本在单元格内换行（见 material-import-overlay.css）
       render: (_: unknown, row: MaterialImportPreviewRow) =>
         row.changes.length ? (
           <MaterialFieldChanges changes={row.changes} />
@@ -122,15 +134,24 @@ export function MaterialImportPreviewModal({
   ]
 
   const handleClose = () => {
+    // 正式导入进行中不允许关闭：遮罩点击、Esc 与关闭按钮共用这条出口
+    if (importing) {
+      return
+    }
     setFilter('ALL')
     onCancel()
   }
 
   return (
-    <Modal
+    <WorkspaceOverlay
       open={open}
-      onCancel={handleClose}
-      mask={{ closable: false }}
+      title={
+        fileName
+          ? `${t('modules.pages.material.importPreviewTitle')} · ${fileName}`
+          : t('modules.pages.material.importPreviewTitle')
+      }
+      className="workspace-overlay-panel--form-dialog workspace-overlay-panel--import-preview"
+      onClose={handleClose}
       footer={
         <Space>
           <Button disabled={importing} onClick={handleClose}>
@@ -146,16 +167,9 @@ export function MaterialImportPreviewModal({
           </Button>
         </Space>
       }
-      title={
-        fileName
-          ? `${t('modules.pages.material.importPreviewTitle')} · ${fileName}`
-          : t('modules.pages.material.importPreviewTitle')
-      }
-      width={920}
-      destroyOnHidden
     >
       {preview ? (
-        <div className="flex flex-col gap-3">
+        <div className="material-import-overlay-body">
           <Typography.Paragraph
             type={preview.failedCount > 0 ? 'warning' : undefined}
           >
@@ -174,8 +188,10 @@ export function MaterialImportPreviewModal({
             onChange={(value) => setFilter(String(value) as OutcomeFilter)}
           />
           <Table<MaterialImportPreviewRow>
+            className="material-import-rows-table"
             rowKey="rowNumber"
             size="small"
+            tableLayout="fixed"
             columns={columns}
             dataSource={filteredRows}
             locale={{
@@ -185,6 +201,6 @@ export function MaterialImportPreviewModal({
           />
         </div>
       ) : null}
-    </Modal>
+    </WorkspaceOverlay>
   )
 }

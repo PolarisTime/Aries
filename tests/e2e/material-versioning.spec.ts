@@ -29,7 +29,7 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     await loginAsE2eUser(page)
   })
 
-  test('选中商品后可打开版本历史抽屉', async ({
+  test('选中商品后可打开版本历史弹层，且不新增标签页、无横向滚动条', async ({
     page,
     assertNoFatalUiErrors,
   }) => {
@@ -45,18 +45,38 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
 
     const historyButton = page.getByRole('button', { name: '版本历史' }).first()
     await expect(historyButton).toBeVisible({ timeout: 30_000 })
+    const tabCountBefore = await page
+      .locator('.leo-tabbar .ant-tabs-tab')
+      .count()
     await historyButton.click()
 
-    const drawer = page.locator('.ant-drawer:visible').filter({
-      hasText: '商品版本历史',
-    })
-    await expect(drawer).toBeVisible({ timeout: 30_000 })
-    await expect(drawer.locator('table').first()).toBeVisible({
+    // 版本历史是弹层对话框，不是右侧抽屉、也不占标签栏的新页签
+    const dialog = page.locator('.workspace-overlay-panel--material-history')
+    await expect(dialog).toBeVisible({ timeout: 30_000 })
+    await expect(dialog).toHaveAttribute('role', 'dialog')
+    await expect(page.locator('.ant-drawer')).toHaveCount(0)
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(
+      tabCountBefore,
+      { timeout: 15_000 },
+    )
+    await expect(dialog.locator('table').first()).toBeVisible({
       timeout: 30_000,
     })
 
+    // 空态（首行商品未必有历史）同样不得出现横向滚动条
+    const overflow = await dialog.evaluate((panel) => {
+      const shell = panel.querySelector('.module-table-shell')
+      const body = panel.querySelector('.ant-table-body')
+      return {
+        shell: shell ? shell.scrollWidth - shell.clientWidth : 0,
+        body: body ? body.scrollWidth - body.clientWidth : 0,
+      }
+    })
+    expect(overflow.shell, '弹层表格容器不得横向溢出').toBeLessThanOrEqual(0)
+    expect(overflow.body, '弹层表体不得横向溢出').toBeLessThanOrEqual(0)
+
     await page.keyboard.press('Escape')
-    await expect(drawer).toBeHidden({ timeout: 30_000 })
+    await expect(dialog).toBeHidden({ timeout: 30_000 })
 
     await assertNoFatalUiErrors()
   })
@@ -83,9 +103,12 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     const chooser = await chooserPromise
     await chooser.setFiles(templatePath)
 
-    const previewModal = page.locator('.ant-modal:visible').filter({
-      hasText: '导入预览',
-    })
+    // 导入预览已由 antd Modal 改为 WorkspaceOverlay（容器内尺寸 + 面板内部滚动）
+    const previewModal = page
+      .locator('.workspace-overlay-panel:visible')
+      .filter({
+        hasText: '导入预览',
+      })
     await expect(previewModal).toBeVisible({ timeout: 30_000 })
     await expect(
       previewModal.locator('tbody tr:not(.ant-table-measure-row)').first(),
@@ -122,9 +145,11 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     const chooser = await chooserPromise
     await chooser.setFiles(templatePath)
 
-    const previewModal = page.locator('.ant-modal:visible').filter({
-      hasText: '导入预览',
-    })
+    const previewModal = page
+      .locator('.workspace-overlay-panel:visible')
+      .filter({
+        hasText: '导入预览',
+      })
     await expect(previewModal).toBeVisible({ timeout: 30_000 })
 
     const importResponsePromise = page.waitForResponse(
@@ -142,9 +167,11 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     const materialCode = String(importPayload.rows?.[0]?.materialCode || '')
     expect(materialCode).toBeTruthy()
 
-    const resultModal = page.locator('.ant-modal:visible').filter({
-      hasText: '导入结果',
-    })
+    const resultModal = page
+      .locator('.workspace-overlay-panel:visible')
+      .filter({
+        hasText: '导入结果',
+      })
     await expect(resultModal).toBeVisible({ timeout: 30_000 })
     await resultModal
       .getByRole('button', { name: buttonName('关闭') })
@@ -166,12 +193,41 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
     const historyButton = page.getByRole('button', { name: '版本历史' }).first()
     await historyButton.click()
 
-    const drawer = page.locator('.ant-drawer:visible').filter({
-      hasText: '商品版本历史',
-    })
-    await expect(drawer).toBeVisible({ timeout: 30_000 })
+    const dialog = page.locator('.workspace-overlay-panel--material-history')
+    await expect(dialog).toBeVisible({ timeout: 30_000 })
 
-    const rollbackButton = drawer
+    // 有数据时的列语义: 批次号在「导入批次」列可见, 危险动作在独立的「操作」列
+    const firstHistoryRow = dialog
+      .locator('.ant-table-tbody tr:not(.ant-table-measure-row)')
+      .first()
+    await expect(firstHistoryRow).toBeVisible({ timeout: 30_000 })
+    const historyCells = firstHistoryRow.locator('td')
+    await expect(historyCells.nth(3)).toHaveText(/^\d{15,21}$/)
+    await expect(historyCells.nth(3)).not.toContainText('回滚该批次')
+    await expect(historyCells.nth(6)).toContainText('回滚该批次')
+
+    // 「字段差异」完整可见: 最后一项变更也读到, 且弹层/表体/该单元格都没有横向裁切
+    await expect(historyCells.nth(5)).toContainText('商品类型')
+    await expect(historyCells.nth(5)).toContainText(materialCode)
+    const layout = await dialog.evaluate((panel) => {
+      const shell = panel.querySelector('.module-table-shell')
+      const body = panel.querySelector('.ant-table-body')
+      const diffCells = [
+        ...panel.querySelectorAll('.ant-table-tbody tr td:nth-child(6)'),
+      ]
+      return {
+        shell: shell ? shell.scrollWidth - shell.clientWidth : 0,
+        body: body ? body.scrollWidth - body.clientWidth : 0,
+        clippedDiffCells: diffCells.filter(
+          (cell) => cell.scrollWidth > cell.clientWidth + 1,
+        ).length,
+      }
+    })
+    expect(layout.shell, '弹层表格容器不得横向溢出').toBeLessThanOrEqual(0)
+    expect(layout.body, '弹层表体不得横向溢出').toBeLessThanOrEqual(0)
+    expect(layout.clippedDiffCells, '字段差异单元格不得被裁切').toBe(0)
+
+    const rollbackButton = dialog
       .getByRole('button', { name: '回滚该批次' })
       .first()
     await expect(rollbackButton).toBeVisible({ timeout: 30_000 })

@@ -1,5 +1,5 @@
 import type { TableProps } from 'antd'
-import { Button, Modal, Segmented, Space, Table, Tag, Typography } from 'antd'
+import { Button, Segmented, Space, Table, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -7,7 +7,9 @@ import type {
   MaterialImportResponse,
   MaterialImportRowResult,
 } from '@/api/master/materials'
+import '@/styles/material-import-overlay.css'
 import { MaterialBatchRollbackButton } from '@/views/modules/components/MaterialBatchRollbackButton'
+import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
   open: boolean
@@ -35,6 +37,15 @@ const OUTCOME_FILTERS: readonly OutcomeFilter[] = [
   'FAILED',
 ]
 
+/**
+ * 导入结果弹层：逐行列出新建/更新/跳过/失败与原因，并提供批次回滚入口。
+ *
+ * <p>与 {@link MaterialImportPreviewModal} 同根因同修法：原来是 antd Modal（width=880），
+ * 高度跟内容长、`body` 不滚，行数一多标题与「关闭」就跑到覆盖层外；这里统一改用
+ * {@link WorkspaceOverlay} 的「主数据对话框」尺寸（宽 `min(1040px, 100% - 24px)`、
+ * 高 `max-height: min(900px, 100% - 24px)`），超出部分在面板内部滚动。组件名沿用 Modal
+ * 以保持既有引用不变。</p>
+ */
 export function MaterialImportResultModal({
   open,
   result,
@@ -81,7 +92,8 @@ export function MaterialImportResultModal({
     {
       title: t('modules.pages.material.materialCode'),
       dataIndex: 'materialCode',
-      width: 160,
+      // 176 = 18 位雪花编码(约 151px) + 单元格内边距，固定布局下也不会被折成两行
+      width: 176,
       render: (value: string | null) => value ?? '-',
     },
     {
@@ -119,6 +131,7 @@ export function MaterialImportResultModal({
     {
       title: t('modules.pages.material.importColumnReason'),
       dataIndex: 'reason',
+      // 失败原因可能很长，列宽交给剩余空间，文本在单元格内换行（见 material-import-overlay.css）
       render: (reason: string | null) => reason ?? '-',
     },
   ]
@@ -129,20 +142,19 @@ export function MaterialImportResultModal({
   }
 
   return (
-    <Modal
+    <WorkspaceOverlay
       open={open}
-      onCancel={handleClose}
+      title={t('modules.pages.material.importResultTitle')}
+      className="workspace-overlay-panel--form-dialog workspace-overlay-panel--import-result"
+      onClose={handleClose}
       footer={
         <Button type="primary" onClick={handleClose}>
           {t('common.close')}
         </Button>
       }
-      title={t('modules.pages.material.importResultTitle')}
-      width={880}
-      destroyOnHidden
     >
       {result ? (
-        <div className="flex flex-col gap-3">
+        <div className="material-import-overlay-body">
           {importBatchNo ? (
             <Space wrap>
               <Typography.Text>
@@ -175,14 +187,16 @@ export function MaterialImportResultModal({
             onChange={(value) => setFilter(String(value) as OutcomeFilter)}
           />
           <Table<MaterialImportRowResult>
+            className="material-import-rows-table"
             rowKey="rowNumber"
             size="small"
+            tableLayout="fixed"
             columns={columns}
             dataSource={filteredRows}
             pagination={{ pageSize: 10, showSizeChanger: false }}
           />
         </div>
       ) : null}
-    </Modal>
+    </WorkspaceOverlay>
   )
 }
