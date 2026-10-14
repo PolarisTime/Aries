@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
-import { linkedPurchaseOrderItemIds, sumTonByPurchaseOrderItem } from './core'
+import {
+  linkedPurchaseOrderItemIds,
+  sumTonByPurchaseOrderItem,
+  unlinkPurchaseOrderPatch,
+} from './core'
 import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
 import type { PriceRow, PriceRowPurchaseOrderLink } from './types'
 
@@ -105,20 +109,34 @@ export function usePurchaseOrderPicker({
         onSelect={(record: PurchaseOrderTonnageRecord | undefined) => {
           if (pickerRowId) {
             const target = rows.find((row) => row.id === pickerRowId)
-            /*
-             * 选中明细行时一并写入其所属订单 id 与订单号快照, 断开时一并清空。
-             *
-             * 同时补齐行级锁: 服务端门禁是「仅锁定行可关联采购订单, 未锁定的行保存时会被
-             * 强制清空关联与快照」(QuoteSheetStore#applyItem), 而单据级「锁定规格和数量」
-             * 只冻结规格/吨位、不会给行打 locked 标记。若只写关联不写 locked, 用户点完
-             * 保存后关联会被服务端静默清掉。清除关联(record === undefined)不改锁定状态。
-             */
-            patchRow(pickerRowId, {
-              ...(record && !target?.locked ? { locked: true } : {}),
-              purchaseOrderId: record?.purchaseOrderId,
-              purchaseOrderNo: record?.orderNo,
-              purchaseOrderItemId: record?.purchaseOrderItemId,
-            })
+            if (!record) {
+              /*
+               * 清除关联: 三列快照与多行关联集合必须一起清 —— 只清三列而省略集合时,
+               * 保存载荷仍带旧关联列表, 服务端会把旧关联原样镜像回三列(见
+               * unlinkPurchaseOrderPatch 的说明)。清除关联不改锁定状态。
+               */
+              patchRow(pickerRowId, unlinkPurchaseOrderPatch(target ?? {}))
+            } else {
+              /*
+               * 单选明细行: links 与三列是同一份关联的两种表示, 必须一起改。
+               * 只写三列会留下旧 links, 保存时服务端按旧 links 把三列镜像回去, 用户的
+               * 单选被静默回滚。单选同样按分摊口径给出该条明细行的分配吨位。
+               *
+               * 同时补齐行级锁: 服务端门禁是「仅锁定行可关联采购订单, 未锁定的行保存时会被
+               * 强制清空关联与快照」(QuoteSheetStore#applyItem), 而单据级「锁定规格和数量」
+               * 只冻结规格/吨位、不会给行打 locked 标记。若只写关联不写 locked, 用户点完
+               * 保存后关联会被服务端静默清掉。
+               */
+              const links = allocateLinks([record], target?.ton ?? 0)
+              const [first] = links
+              patchRow(pickerRowId, {
+                ...(first && !target?.locked ? { locked: true } : {}),
+                purchaseOrderLinks: links,
+                purchaseOrderId: first?.purchaseOrderId,
+                purchaseOrderNo: first?.purchaseOrderNo,
+                purchaseOrderItemId: first?.purchaseOrderItemId,
+              })
+            }
           }
           setPickerRowId(undefined)
         }}

@@ -371,8 +371,12 @@ function buildHeaderPayload(sheet: PriceSheet): QuoteSheetHeaderPayload {
   }
 }
 
-/** 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。 */
-function buildItemPayload(
+/**
+ * 单行整行替换请求体; 商品行信息不完整且非隔断行时返回 null。
+ *
+ * <p>导出供行级关联载荷的用例直接断言(纯函数, 无副作用)。</p>
+ */
+export function buildItemPayload(
   sheet: PriceSheet,
   row: PriceRow,
   brands: Brand[],
@@ -403,8 +407,15 @@ function buildItemPayload(
     ...(row.purchaseOrderItemId
       ? { purchaseOrderItemId: row.purchaseOrderItemId }
       : {}),
-    // 多行关联整组下发; 服务端按第一条镜像旧三列
-    ...(row.purchaseOrderLinks?.length
+    /*
+     * 多行关联整组下发; 服务端按第一条镜像旧三列。
+     *
+     * 判据是"字段是否存在"而不是"长度是否非空": 后端语义为「未携带 = 不改关联、
+     * 显式 [] = 清空」, 只判长度会让"清除关联"的保存载荷省略该字段 ⇒ 旧关联被原样
+     * 保留, 服务端随后还把旧关联镜像回三列(实测)。从未关联过的行保持 undefined,
+     * 载荷继续省略该字段, 不把每行都塞一个空数组。
+     */
+    ...(row.purchaseOrderLinks
       ? {
           purchaseOrderLinks: row.purchaseOrderLinks.map((link) => ({
             purchaseOrderId: link.purchaseOrderId,
@@ -422,8 +433,12 @@ function headerSignature(sheet: PriceSheet): string {
   return JSON.stringify(buildHeaderPayload(sheet))
 }
 
-/** 行指纹: 行类型/商品字段/吨位/现货价/供应商任一变化即不同。 */
-function itemSignature(row: PriceRow, inputs: SheetInputs): string {
+/**
+ * 行指纹: 行类型/商品字段/吨位/现货价/供应商任一变化即不同。
+ *
+ * <p>导出供脏检查用例直接断言(纯函数, 无副作用)。</p>
+ */
+export function itemSignature(row: PriceRow, inputs: SheetInputs): string {
   const suffix = `:${row.id}`
   const prices = Object.keys(inputs)
     .filter((key) => key.endsWith(suffix))

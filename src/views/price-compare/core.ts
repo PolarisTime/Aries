@@ -913,8 +913,38 @@ export function findAlternateLengthVariety(
 }
 
 /**
+ * 解除关联的行补丁: 旧三列快照(订单 id / 订单号 / 明细行 id)与多行关联集合**必须一起清**。
+ *
+ * <p>后端语义是「未携带 purchaseOrderLinks = 不改关联, 显式 `[]` = 清空」(`8c918fa4`)。
+ * 只清三列而省略集合, 保存载荷会带着旧关联列表, 服务端随后又把旧关联镜像回三列 ——
+ * 用户点「清除关联」再保存, 关联原样还在(实测)。</p>
+ *
+ * <p>因此对**曾有关联**的行显式下发 `[]`; 从未关联过的行保持 `undefined`, 载荷继续省略该
+ * 字段, 不把每行都塞一个空数组。</p>
+ */
+export function unlinkPurchaseOrderPatch(
+  row: Pick<
+    PriceRow,
+    'purchaseOrderId' | 'purchaseOrderItemId' | 'purchaseOrderLinks'
+  >,
+): Partial<PriceRow> {
+  const wasLinked =
+    row.purchaseOrderId !== undefined ||
+    row.purchaseOrderItemId !== undefined ||
+    row.purchaseOrderLinks !== undefined
+  return {
+    purchaseOrderId: undefined,
+    purchaseOrderNo: undefined,
+    purchaseOrderItemId: undefined,
+    ...(wasLinked ? { purchaseOrderLinks: [] } : {}),
+  }
+}
+
+/**
  * 切换行级锁定: 解锁时按流程规范强制清除该行采购订单关联与快照。
- * <p>锁定表示规格与吨位定稿; 未锁定不可关联采购订单, 已关联的解锁即解除关联。</p>
+ * <p>锁定表示规格与吨位定稿; 未锁定不可关联采购订单, 已关联的解锁即解除关联。
+ * 服务端在"未锁定行被保存"时同样会强制清空关联, 本地必须镜像同一结果 —— 含
+ * `purchaseOrderLinks` 集合, 否则保存载荷里的旧集合会把服务端刚清掉的关联又镜像回来。</p>
  */
 export function applyRowLock(row: PriceRow, locked: boolean): PriceRow {
   if (locked) {
@@ -923,9 +953,7 @@ export function applyRowLock(row: PriceRow, locked: boolean): PriceRow {
   return {
     ...row,
     locked: false,
-    purchaseOrderId: undefined,
-    purchaseOrderNo: undefined,
-    purchaseOrderItemId: undefined,
+    ...unlinkPurchaseOrderPatch(row),
   }
 }
 

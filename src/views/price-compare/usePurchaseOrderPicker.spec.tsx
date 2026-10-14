@@ -200,8 +200,17 @@ describe('usePurchaseOrderPicker 关联回写', () => {
 
     expect(patches).toHaveLength(1)
     expect(patches[0].rowId).toBe('r1')
+    // 关联集合与三列是同一份关联的两种表示: 必须一起写, 否则保存时服务端按旧集合镜像回三列
     expect(patches[0].patch).toEqual({
       locked: true,
+      purchaseOrderLinks: [
+        {
+          purchaseOrderId: '88',
+          purchaseOrderNo: 'PO-88',
+          purchaseOrderItemId: '301',
+          allocatedTon: 5,
+        },
+      ],
       purchaseOrderId: '88',
       purchaseOrderNo: 'PO-88',
       purchaseOrderItemId: '301',
@@ -216,10 +225,62 @@ describe('usePurchaseOrderPicker 关联回写', () => {
     expect(patches).toHaveLength(1)
     expect(patches[0].patch).not.toHaveProperty('locked')
     expect(patches[0].patch).toEqual({
+      purchaseOrderLinks: [
+        {
+          purchaseOrderId: '88',
+          purchaseOrderNo: 'PO-88',
+          purchaseOrderItemId: '301',
+          allocatedTon: 5,
+        },
+      ],
       purchaseOrderId: '88',
       purchaseOrderNo: 'PO-88',
       purchaseOrderItemId: '301',
     })
+  })
+
+  it('已有多条关联的行单选另一张明细行时, 关联集合被覆盖为这一条(不能只改三列)', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([secondLinkable])
+    render([
+      {
+        ...baseRow,
+        locked: true,
+        purchaseOrderId: '88',
+        purchaseOrderNo: 'PO-88',
+        purchaseOrderItemId: '301',
+        purchaseOrderLinks: [
+          {
+            purchaseOrderId: '88',
+            purchaseOrderNo: 'PO-88',
+            purchaseOrderItemId: '301',
+            allocatedTon: 3,
+          },
+          {
+            purchaseOrderId: '99',
+            purchaseOrderNo: 'PO-99',
+            purchaseOrderItemId: '302',
+            allocatedTon: 2,
+          },
+        ],
+      },
+    ])
+    await openPicker()
+    clickFirstRow()
+
+    expect(patches).toHaveLength(1)
+    const patch = patches[0].patch
+    // 只覆盖三列会让旧集合在保存时把三列镜像回去, 用户的单选被静默回滚
+    expect(patch.purchaseOrderLinks).toEqual([
+      {
+        purchaseOrderId: '99',
+        purchaseOrderNo: 'PO-99',
+        purchaseOrderItemId: '302',
+        allocatedTon: 5,
+      },
+    ])
+    expect(patch.purchaseOrderId).toBe('99')
+    expect(patch.purchaseOrderNo).toBe('PO-99')
+    expect(patch.purchaseOrderItemId).toBe('302')
   })
 
   it('清除关联只断开订单, 不改动行级锁定状态', async () => {
@@ -237,10 +298,12 @@ describe('usePurchaseOrderPicker 关联回写', () => {
 
     expect(patches).toHaveLength(1)
     expect(patches[0].patch).not.toHaveProperty('locked')
+    // 显式 [] 才能表达"清空关联": 后端语义是"未携带 = 不改"
     expect(patches[0].patch).toEqual({
       purchaseOrderId: undefined,
       purchaseOrderNo: undefined,
       purchaseOrderItemId: undefined,
+      purchaseOrderLinks: [],
     })
   })
 
