@@ -30,6 +30,10 @@ export const ENDPOINTS = {
   COMPANY_SETTINGS_CURRENT: '/company-settings/current',
   COMPANY_SETTINGS_OPTIONS: '/company-settings/options',
 
+  // Value aliases (值映射/别名维护: 同义归一)
+  VALUE_ALIASES: '/value-aliases',
+  VALUE_ALIAS: (id: string | number) => `/value-aliases/${pathSegment(id)}`,
+
   // Health (pure action → singular)
   HEALTH: '/health',
   VERSION: '/version',

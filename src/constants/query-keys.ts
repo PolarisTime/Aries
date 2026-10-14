@@ -234,6 +234,15 @@ export const QUERY_KEYS = {
   }) => ['users', query] as const,
   user: (id: string) => ['users', 'detail', id] as const,
 
+  // 值映射/别名维护（同义归一）
+  valueAliases: (query: {
+    dimension?: string
+    keyword?: string
+    page: number
+    size: number
+  }) => ['value-aliases', query] as const,
+  valueAlias: (id: string) => ['value-aliases', 'detail', id] as const,
+
   // Print
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>

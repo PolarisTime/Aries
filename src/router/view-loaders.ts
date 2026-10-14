@@ -46,6 +46,10 @@ export const viewLoaders: Record<
     import('@/views/master-data/WarehousePage').then((m) => ({
       default: m.WarehousePage,
     })),
+  'master-value-alias': () =>
+    import('@/views/master-data/ValueAliasPage').then((m) => ({
+      default: m.ValueAliasPage,
+    })),
   'sales-contract': () =>
     import('@/views/sales-contracts/SalesContractPage').then((m) => ({
       default: m.SalesContractPage,

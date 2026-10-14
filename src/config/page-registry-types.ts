@@ -14,6 +14,7 @@ export type RouteViewKey =
   | 'master-supplier'
   | 'master-customer'
   | 'master-warehouse'
+  | 'master-value-alias'
   | 'sales-contract'
   | 'price-compare'
   | 'market-sync'

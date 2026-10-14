@@ -77,4 +77,15 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     menuParent: 'master',
     moduleKey: 'company-setting',
   },
+  {
+    // 值映射/别名维护：把「同一含义多种写法」归一，规则由业务维护而非改代码。
+    // 无 moduleKey（不是业务单据模块），权限码与后端 VALUE_ALIASES_READ 对齐。
+    key: 'value-alias',
+    titleKey: 'pages.value-alias',
+    menuKey: '/value-alias',
+    view: 'master-value-alias',
+    icon: 'SwapOutlined',
+    menuParent: 'master',
+    requiredPermission: 'value-aliases:read',
+  },
 ]
