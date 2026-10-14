@@ -727,6 +727,114 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
   })
 
   /**
+   * P2-25：**深链落地标签的面板不得因转非激活而被卸载重建**。
+   *
+   * <p>根因（F1）：`AppTabContainer` 是 `AppLayout` 的子节点，React 先跑子组件 effect，因此
+   * `useTabRouteReconciliation` 的定位 effect 在 `hydrateForUser` **之前**跑完；hydrate 为当前
+   * 深链新建/选中的标签（`mountedOnce` 恒为 false）之后不再触发该 effect（依赖 location 未变），
+   * 于是它永远不会被 `markTabMounted`。该标签一旦转成非激活，`mounted = mountedOnce ||
+   * 是激活项` 判定为 false → 整块面板卸载重建，筛选草稿、已打开的编辑浮层与未保存会话一起丢失
+   * ——这正是用户口述"点击新的标签页出现全部重载"的可观测形态。</p>
+   *
+   * <p>三条断言分别钉住三件不可恢复的东西：面板 DOM 节点（是否被重建）、编辑器草稿（组件状态）、
+   * 未保存会话（store 状态）。回退 `AppTabContainer` 的"激活即已挂载"效应后三条同时变红。</p>
+   */
+  test('开新标签后深链落地标签的面板、草稿与未保存会话都不得被重建', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    // 起点用 toPass 重试（开发服务器 HMR 整页 reload 会打断首屏），故放宽本用例总时长
+    test.setTimeout(120_000)
+    await expect(async () => {
+      await gotoRoute(page, '/sales-order')
+      await expectModuleHeading(page, '销售订单')
+      await expectGridTable(page)
+    }).toPass({ timeout: 60_000 })
+
+    const tabLabel = (title: string) =>
+      page.locator('.leo-tabbar-label').filter({ hasText: title }).first()
+
+    // 1) 该标签里留下三样"重挂载就会丢"的东西：面板 DOM 标记 + 未保存的编辑器草稿
+    await page
+      .getByRole('button', { name: /新\s*增|新\s*建/ })
+      .first()
+      .click()
+    const overlay = page.locator('.workspace-overlay-panel:visible').last()
+    await expect(overlay).toBeVisible({ timeout: 30_000 })
+    const remark = overlay
+      .locator('input#module-form-remark:visible, input#remark:visible')
+      .first()
+    await expect(remark, '销售订单编辑器应有备注输入框').toBeVisible({
+      timeout: 15_000,
+    })
+    const remarkValue = `E2E-KEEP-${Date.now()}`
+    await remark.fill(remarkValue)
+    await remark.blur()
+    expect(
+      await page.evaluate(() => {
+        const table = document.querySelector(
+          '[role="tabpanel"]:not([hidden]) table',
+        )
+        table?.setAttribute('data-keep-node', 'kept')
+        return Boolean(table)
+      }),
+      '前置条件：销售订单面板应已渲染表格',
+    ).toBe(true)
+
+    // 2) 经顶部菜单打开一个新标签（原标签转成非激活）
+    await page
+      .getByRole('menuitem', { name: '基础数据', exact: true })
+      .first()
+      .click()
+    const supplierMenuItem = page
+      .locator(
+        '.ant-menu-submenu-popup:visible .ant-menu-item, .ant-menu-popup:visible .ant-menu-item',
+      )
+      .filter({ hasText: '供应商资料' })
+      .first()
+    await expect(supplierMenuItem).toBeVisible({ timeout: 15_000 })
+    await supplierMenuItem.click()
+    await expectModuleHeading(page, '供应商资料')
+    await expectGridTable(page)
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    // 3) 切回销售订单：面板必须是原来那一块，草稿必须还在
+    await tabLabel('销售订单').click()
+    await expectModuleHeading(page, '销售订单')
+    expect(
+      await page.evaluate(
+        () => document.querySelector('[data-keep-node]') !== null,
+      ),
+      '切回后原面板 DOM 不得被卸载重建（重建即丢失全部标签内状态）',
+    ).toBe(true)
+    await expect(
+      remark,
+      '原标签的编辑器草稿必须还在（面板被重建就会清空）',
+    ).toHaveValue(remarkValue)
+
+    // 4) 未保存会话仍必须拦住关闭：点 × 要弹「存在未保存的修改」
+    await page
+      .locator('.leo-tabbar .ant-tabs-tab')
+      .filter({ hasText: '销售订单' })
+      .locator('.ant-tabs-tab-remove')
+      .click()
+    const confirmModal = page.locator('.ant-modal:visible').first()
+    await expect(
+      confirmModal,
+      '开新标签后未保存会话必须仍在（面板被卸载重建会连会话一起丢）',
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(confirmModal).toContainText('存在未保存的修改')
+    await confirmModal
+      .getByRole('button', { name: /取\s*消/ })
+      .first()
+      .click()
+    await expect(confirmModal).toBeHidden({ timeout: 15_000 })
+    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(3)
+
+    await assertNoFatalUiErrors()
+  })
+
+  /**
    * P2-8 的浏览器层恢复守护：持久化清单超过上限且尾部为「不可丢弃」标签时，
    * 整页刷新必须按「不可丢弃者优先」截断，而不是直接丢尾部。
    *

@@ -137,3 +137,65 @@ describe('AppTabContainer 资源回收', () => {
     expect(getTabRouterHref('tab-dashboard')).not.toBeNull()
   })
 })
+
+describe('AppTabContainer 激活即已挂载', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    editorSessionStore.clearAll()
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    editorSessionStore.clearAll()
+  })
+
+  /**
+   * F1 回归守护（浏览器层由 tests/e2e/navigation.spec.ts 的 P2-25 覆盖可观测后果）：
+   * `hydrateForUser` 为当前深链新建/选中的标签 `mountedOnce` 恒为 false，而协调层的定位 effect
+   * 在此之前已跑完且依赖不再变化，不会替它补标记。本组件在激活时无条件渲染该标签的面板，
+   * 因此必须在提交后把它记为已挂载——否则它一转非激活就会被卸载重建。
+   */
+  it('激活的标签(即使 mountedOnce=false)在渲染后被记为已挂载', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab('tab-dashboard', DASHBOARD_TAB_PATH, true),
+        { ...makeTab('tab-hydrated', '/material'), mountedOnce: false },
+      ],
+      activeTabId: 'tab-hydrated',
+    })
+
+    act(() => {
+      root.render(createElement(AppTabContainer))
+    })
+
+    // 激活即挂载：面板已渲染并建立子 Router
+    expect(getTabRouterHref('tab-hydrated')).not.toBeNull()
+    // 且该事实必须被记录，否则转非激活后面板会被卸载重建
+    expect(
+      useLayoutTabsStore
+        .getState()
+        .tabs.find((tab) => tab.id === 'tab-hydrated')?.mountedOnce,
+      '激活的标签必须被记为已挂载（F1 根因）',
+    ).toBe(true)
+
+    // 转非激活后常驻：子 Router 不被销毁（面板由 mountedOnce 决定是否保留）
+    act(() => {
+      useLayoutTabsStore.setState({ activeTabId: 'tab-dashboard' })
+    })
+    expect(
+      getTabRouterHref('tab-hydrated'),
+      '已挂载标签转非激活后必须常驻',
+    ).not.toBeNull()
+  })
+})

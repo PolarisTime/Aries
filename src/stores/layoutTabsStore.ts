@@ -482,6 +482,17 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
   tabs: [createTab({ pathname: DASHBOARD_TAB_PATH })],
   activeTabId: null,
 
+  /**
+   * 恢复某个用户的标签页清单，并让"首次打开的深链"优先于上次工作区。
+   *
+   * <p><b>已知结构性瑕疵（本次刻意不重构，后续单独立项）</b>：本方法会用恢复结果整体覆盖 store，
+   * 而 {@link useTabRouteReconciliation} 的定位 effect 可能**已经**为当前深链建过一个标签——
+   * React 先跑子组件 effect（AppTabContainer 是 AppLayout 的子节点），因此 hydrate 总是发生在它
+   * 之后。同一个路径于是可能先后存在两个标签对象（X 由定位 effect 建、Y 由本方法建），X 连同它
+   * 的 `mountedOnce` 标记被静默丢弃；且本方法返回后不再有 location 变化，定位 effect 不会再跑，
+   * Y 也就拿不到"已挂载"标记。当前由 {@link AppTabContainer} 的"激活即已挂载"不变式兜住后果，
+   * 但"同一路径被建两次"这一竞态本身仍在，需要按"先 hydrate 再协调"的顺序重构才能根治。</p>
+   */
   hydrateForUser: (userId, currentLocation) => {
     currentUserId = String(userId || 'anonymous').trim() || 'anonymous'
     const persisted = readPersistedTabs(currentUserId)

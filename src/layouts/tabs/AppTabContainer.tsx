@@ -36,6 +36,26 @@ export function AppTabContainer() {
   useTabRouteReconciliation()
 
   /**
+   * 不变式：**激活的标签一定"已挂载过"**。
+   *
+   * <p>本组件在激活时无条件渲染该标签的面板（见下方 `mounted` 计算），因此提交后必须把它记为
+   * {@link LayoutTab.mountedOnce}，否则会漏掉一条路径：`hydrateForUser` 为当前深链新建/选中的
+   * 标签。原因是 React **先跑子组件 effect**（AppTabContainer 是 AppLayout 的子节点），
+   * `useTabRouteReconciliation` 的定位 effect 在 hydrate 之前就已跑完，而它的依赖
+   * `location.href/pathname/searchStr` 之后不再变化，于是 hydrate 出来的那个标签永远不会被
+   * `markTabMounted`。后果是该标签一旦转成非激活，面板就被**卸载重建**，它的筛选草稿、
+   * 已打开的编辑浮层与未保存编辑会话一起丢失（用户口述的"点新标签后整页重载"）。</p>
+   *
+   * <p>放在这里而不是改协调层的依赖数组：协调 effect 的依赖是围绕"主路由↔子 Router 乒乓"
+   * 调过的，加依赖会让切换语言/重复渲染重跑整套协调逻辑；而"激活即已挂载"本就是本组件自己
+   * 的事实，记在自己这里最贴近真相。`markTabMounted` 对已标记者是 no-op，不会形成渲染环。</p>
+   */
+  useEffect(() => {
+    if (!activeTabId) return
+    useLayoutTabsStore.getState().markTabMounted(activeTabId)
+  }, [activeTabId])
+
+  /**
    * 兜底资源回收：任何让 Tab 消失的路径（关闭、超上限淘汰、hydration 截断、切换用户）
    * 都要释放它的子 Router 与编辑器会话槽。
    *
