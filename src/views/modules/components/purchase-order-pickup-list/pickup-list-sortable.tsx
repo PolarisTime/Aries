@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type { CSSProperties, HTMLAttributes } from 'react'
 import { useMemo } from 'react'
 import { RowContextMenuRow } from '@/components/RowContextMenuRow'
+import { rowDragAriaKeyshortcuts } from '@/components/table/row-drag'
 import { ITEM_DRAG_TYPE } from './pickup-list-draft'
 import { forwardDragListeners } from './pickup-list-drag-activation'
 
@@ -65,8 +66,8 @@ export function SortableRow(props: SortableRowProps) {
       className={`${props.className || ''}${isDragging ? ' purchase-pickup-list-row--dragging' : ''}`}
       longPressToOpen={false}
       style={style}
-      // 键盘拖动用空格拾起, 与行菜单的 Shift+F10 一并声明
-      aria-keyshortcuts="Space Shift+F10"
+      // 键位从共享常量派生(拾起键 + 可选 Alt 直移键), 再追加行菜单的 Shift+F10
+      aria-keyshortcuts={rowDragAriaKeyshortcuts('Shift+F10')}
     />
   )
 }

@@ -276,12 +276,28 @@ export const enUS = {
       selectRow: 'Select this row',
       selectRowNamed: 'Select this row: {{label}}',
     },
-    /** Long-press row drag sort (shared): screen-reader announcements and keyboard hint.
-     * {{shortcuts}} is interpolated from the single key list in row-drag-config. */
+    /** Long-press row drag sort (shared): screen-reader announcements, keyboard instructions
+     * and the non-drag buttons. Every shortcut is interpolated from the single key model. */
     rowDragSort: {
       rowLabel: 'Row {{index}}',
+      rowWithName: '{{name}} (row {{index}})',
+      unknownRow: 'Current row',
       moved: '{{row}} moved to position {{position}}',
-      keyboardHint: 'Press {{shortcuts}} to move this row',
+      keyboardHint:
+        'Keyboard sorting: {{shortcuts}}; press {{direct}} to move the row directly',
+      screenReaderInstructions:
+        'Press {{pickUp}} to pick up this row, use {{move}} to move, press {{drop}} to drop, press {{cancel}} to cancel. You can also press {{direct}} to move directly, or use the inline "{{moveUp}}/{{moveDown}}" buttons.',
+      dragStart:
+        'Picked up {{row}}, use the arrow keys to move, press the pick-up key to drop',
+      dragOver: '{{row}} will move to position {{position}}',
+      dragDroppedAt: '{{row}} dropped, now at position {{position}}',
+      dragDropped: '{{row}} dropped, order unchanged',
+      dragCancel: 'Move cancelled, {{row}} order unchanged',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
+      moveUpAria: 'Move up {{row}}',
+      moveDownAria: 'Move down {{row}}',
+      moveColumnTitle: 'Order',
     },
     back: 'Back',
     close: 'Close',
@@ -696,6 +712,9 @@ export const enUS = {
       moveItemDown: 'Move down',
       moveGroupUp: 'Move group up',
       moveGroupDown: 'Move group down',
+      /** Fallbacks for drag announcements: never read out the row instance id. */
+      dragUnknownRow: 'this item row',
+      dragUnknownGroup: 'the current group',
     },
     overview: {
       recordCount: 'Records',
@@ -999,10 +1018,10 @@ export const enUS = {
       dragRowAriaLabel: 'Drag print item row {{index}}',
       /** Screen-reader strings for row drag sort: row number and material name only, never raw ids. */
       dragScreenReaderInstructions:
-        'Press Space to pick up the current print item row, use the up/down arrow keys to move it, press Space again to drop it, or press Escape to cancel. You can also right-click the row or press Shift+F10 and choose "Move up" / "Move down".',
+        'Press {{pickUp}} to pick up the current print item row, use {{move}} to move it, press {{drop}} to drop it, press {{cancel}} to cancel. You can also press {{direct}} to move it directly, or use the inline "Move up/Move down" buttons.',
       dragAnnounceRow: 'Row {{index}} {{name}}',
       dragAnnounceStart:
-        'Picked up {{row}}. Use the up/down arrow keys to move it, then press Space to drop it',
+        'Picked up {{row}}. Use the arrow keys to move it, then press the pick-up key to drop it',
       dragAnnounceOver: '{{row}} moved to position {{position}}',
       dragAnnounceDroppedAt: '{{row}} dropped at position {{position}}',
       dragAnnounceDropped: '{{row}} dropped, order unchanged',

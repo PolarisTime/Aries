@@ -119,8 +119,13 @@ export function PrintJobModalBody({
    * 播报器(dnd-kit 默认文案会把 19 位雪花 id 念出来, 用户对不回是哪一行)。
    */
   const dragAccessibility = useMemo(
-    () => buildPrintJobDragAccessibility(itemState.orderedPrintItems, t),
-    [itemState.orderedPrintItems, t],
+    () =>
+      buildPrintJobDragAccessibility(
+        itemState.orderedPrintItems,
+        t,
+        printItems,
+      ),
+    [itemState.orderedPrintItems, printItems, t],
   )
 
   return (

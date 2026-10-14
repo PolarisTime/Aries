@@ -1,7 +1,13 @@
-import type { TableColumnsType, TableProps } from 'antd'
+import type { TableColumnsType, TableColumnType, TableProps } from 'antd'
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { RowContextMenuMap } from '@/components/row-context-menu'
-import { RowDragSortRow, RowDragSortScope } from '@/components/table/row-drag'
+import {
+  type RowDragDescribeRow,
+  RowDragSortMoveButtons,
+  RowDragSortRow,
+  RowDragSortScope,
+} from '@/components/table/row-drag'
 import type { ModuleLineItem } from '@/types/module-page'
 import type { CustomerStatementItemGroup } from '@/views/modules/customer-statement-item-groups'
 import type {
@@ -48,8 +54,8 @@ interface Props {
    * 此时不挂任何拖动监听, 行序完全由上游/自动排序决定。</p>
    */
   onItemsReorder?: (nextIds: string[]) => void
-  /** 播报用的行名, 默认「第 N 行」。 */
-  describeRow?: (index: number) => string
+  /** 播报与按钮可访问名用的行名(物料名), 默认「第 N 行」。**禁止返回 id**。 */
+  describeRow?: RowDragDescribeRow
 }
 
 /** 分组行摊平: 普通分组直接取 items, 物流对账单分组要再摊平 projectGroups。 */
@@ -81,6 +87,7 @@ export function ModuleItemGroupsView({
   const rowIds = groups.flatMap((group) =>
     flattenGroupItems(group).map((item) => item.id),
   )
+  const { t } = useTranslation()
   const dragEnabled = Boolean(onItemsReorder)
   const rowComponents = useMemo<TableProps<ModuleLineItem>['components']>(
     () =>
@@ -91,6 +98,27 @@ export function ModuleItemGroupsView({
           }
         : components,
     [components, dragEnabled],
+  )
+
+  /**
+   * 顺序列: **可点击的上移/下移按钮**(WCAG 2.2 SC 2.5.7 要求的非拖动替代)。
+   *
+   * <p>只给拖拽 + 键盘拖拽并不满足该条 —— 它要求"功能可用单指针、且不做拖动操作"
+   * 就能完成。按钮与拖动落位共用同一份 moveRow, 因此不会出现两套顺序口径。</p>
+   */
+  const reorderColumn = useMemo<TableColumnType<ModuleLineItem>>(
+    () => ({
+      key: 'rowReorder',
+      width: 76,
+      align: 'center',
+      title: t('common.rowDragSort.moveColumnTitle'),
+      render: (_value, item) => <RowDragSortMoveButtons rowId={item.id} />,
+    }),
+    [t],
+  )
+  const tableColumns = useMemo(
+    () => (dragEnabled ? [...columns, reorderColumn] : columns),
+    [columns, dragEnabled, reorderColumn],
   )
 
   const body = (
@@ -105,7 +133,7 @@ export function ModuleItemGroupsView({
                   group={group as ProjectGroup}
                 />
                 <ModuleItemsTable
-                  columns={columns}
+                  columns={tableColumns}
                   components={rowComponents}
                   dataSource={(group as ProjectGroup).items}
                   emptyText={emptyText}
@@ -126,7 +154,7 @@ export function ModuleItemGroupsView({
                       showSubtotal={false}
                     />
                     <ModuleItemsTable
-                      columns={columns}
+                      columns={tableColumns}
                       components={rowComponents}
                       dataSource={projectGroup.items}
                       emptyText={emptyText}
@@ -142,7 +170,7 @@ export function ModuleItemGroupsView({
                   group={group as CustomerStatementItemGroup<ModuleLineItem>}
                 />
                 <ModuleItemsTable
-                  columns={columns}
+                  columns={tableColumns}
                   components={rowComponents}
                   dataSource={group.items}
                   emptyText={emptyText}
@@ -152,7 +180,7 @@ export function ModuleItemGroupsView({
               </>
             ) : (
               <ModuleItemsTable
-                columns={columns}
+                columns={tableColumns}
                 components={rowComponents}
                 dataSource={group.items}
                 emptyText={emptyText}

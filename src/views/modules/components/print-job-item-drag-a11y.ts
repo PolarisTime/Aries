@@ -1,6 +1,10 @@
 import type { Announcements } from '@dnd-kit/core'
 import type { TFunction } from 'i18next'
 import type { PrintRecordItem } from '@/api/system/print-template'
+import {
+  rowDragDirectMoveHintText,
+  rowDragKeyboardModelLabels,
+} from '@/components/table/row-drag'
 
 /**
  * 打印作业明细拖动排序的无障碍产物(纯逻辑, 与 React 无关, 便于直接单测)。
@@ -53,31 +57,51 @@ export function printItemRowName(
   return name || t('modules.print.dragAnnounceUnknownRow')
 }
 
-/** 拖动排序的播报器与操作说明: 播报内容只含行号、物料名与位次。 */
+/**
+ * 拖动排序的播报器与操作说明: 播报内容只含行号、物料名与位次。
+ *
+ * <p>`fallbackItems` 是**行号兜底**: 明细不在有序集合里时 `indexOf` 返回 -1, 直接 +1 会得到
+ * 0(读成「第 0 行」)。这里退回明细原始位次, 仍定位不到才播报「该明细行」——
+ * 任何回调都不会把雪花 id 读出来。</p>
+ */
 export function buildPrintJobDragAccessibility(
   orderedPrintItems: PrintRecordItem[],
   t: TFunction,
+  fallbackItems: PrintRecordItem[] = [],
 ): PrintJobDragAccessibility {
   const indexOf = (id: unknown) =>
     orderedPrintItems.findIndex((item) => item.id === String(id ?? ''))
 
+  const rowNumber = (id: unknown): number | undefined => {
+    const index = indexOf(id)
+    if (index >= 0) return index + 1
+    const fallbackIndex = fallbackItems.findIndex(
+      (item) => item.id === String(id ?? ''),
+    )
+    return fallbackIndex >= 0 ? fallbackIndex + 1 : undefined
+  }
+
   const rowLabel = (id: unknown): string => {
     const index = indexOf(id)
-    if (index < 0) return t('modules.print.dragAnnounceUnknownRow')
+    const number = rowNumber(id)
+    if (number === undefined) return t('modules.print.dragAnnounceUnknownRow')
     return t('modules.print.dragAnnounceRow', {
-      index: index + 1,
-      name: printItemRowName(orderedPrintItems[index], t),
+      index: number,
+      name: printItemRowName(
+        index >= 0 ? orderedPrintItems[index] : undefined,
+        t,
+      ),
     })
   }
 
-  const positionOf = (id: unknown): number | undefined => {
-    const index = indexOf(id)
-    return index < 0 ? undefined : index + 1
-  }
+  const positionOf = (id: unknown): number | undefined => rowNumber(id)
 
   return {
     screenReaderInstructions: {
-      draggable: t('modules.print.dragScreenReaderInstructions'),
+      draggable: t('modules.print.dragScreenReaderInstructions', {
+        ...rowDragKeyboardModelLabels(),
+        direct: rowDragDirectMoveHintText(),
+      }),
     },
     announcements: {
       onDragStart: ({ active }) =>

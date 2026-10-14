@@ -10,8 +10,10 @@ import type { MenuProps, TableColumnsType, TableProps } from 'antd'
 import { InputNumber, Table, Tag } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { RowReorderButtons } from '@/components/table/row-drag'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
 import type { PickupListRow } from './pickup-list-draft'
+import { pickupListRowName } from './pickup-list-drag-a11y'
 import {
   PickupRowMenuContext,
   type PickupRowMenuMap,
@@ -182,6 +184,30 @@ export function PickupItemsTable({
     return menus
   }, [onMerge, onMoveRow, onRemovePart, onSplit, rows, t])
 
+  /**
+   * 行内「上移 / 下移」列: 拖动排序的**单指针非拖动替代**(WCAG 2.2 SC 2.5.7)。
+   *
+   * <p>与行菜单、拖动共用同一个 {@link onMoveRow}, 首/末项 `aria-disabled`。
+   * 行名取「品名 + 规格 + 份次」, 不含 id。</p>
+   */
+  const reorderColumn: TableColumnsType<PickupListRow>[number] = {
+    key: 'rowReorder',
+    width: 76,
+    align: 'center',
+    title: t('common.rowDragSort.moveColumnTitle'),
+    render: (_value, row, index) => (
+      <RowReorderButtons
+        canMoveDown={index < rows.length - 1}
+        canMoveUp={index > 0}
+        label={t('common.rowDragSort.rowWithName', {
+          index: index + 1,
+          name: pickupListRowName(row, t),
+        })}
+        onMove={(delta) => onMoveRow(row, delta === -1 ? 'up' : 'down')}
+      />
+    ),
+  }
+
   const mergedColumns: TableColumnsType<PickupListRow> = columns.map(
     (column) => {
       if (!('dataIndex' in column) || column.dataIndex !== 'quantity') {
@@ -228,7 +254,11 @@ export function PickupItemsTable({
     },
   )
 
-  const scrollX = sumColumnWidths(mergedColumns.map((column) => column.width))
+  const tableColumns: TableColumnsType<PickupListRow> = [
+    reorderColumn,
+    ...mergedColumns,
+  ]
+  const scrollX = sumColumnWidths(tableColumns.map((column) => column.width))
 
   return (
     <SortableContext
@@ -242,7 +272,7 @@ export function PickupItemsTable({
           onContextMenuCapture={preserveNativeContextMenuOnInputs}
         >
           <Table<PickupListRow>
-            columns={mergedColumns}
+            columns={tableColumns}
             components={components}
             dataSource={rows}
             locale={{ emptyText }}

@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchPurchaseOrderPickupList } from '@/api/purchase/purchase-order-pickup-list'
 import { ResizableHeaderCell } from '@/components/table/ResizableHeaderCell'
+import { rowDragKeyboardCodes } from '@/components/table/row-drag'
 import { rowDragActivationConstraint } from '@/components/table/row-drag/row-drag-config'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
@@ -34,6 +35,7 @@ import {
   reorderGroupedItems,
   reorderGroups,
 } from './purchase-order-pickup-list/pickup-list-draft'
+import { buildPickupListDragAccessibility } from './purchase-order-pickup-list/pickup-list-drag-a11y'
 import { PickupDraftGroupSection } from './purchase-order-pickup-list/pickup-list-drag-rows'
 import { SortableRow } from './purchase-order-pickup-list/pickup-list-sortable'
 import { PickupListSummary } from './purchase-order-pickup-list/pickup-list-summary'
@@ -98,16 +100,30 @@ export function PurchaseOrderPickupListOverlay({
    *  - 鼠标: 长按 380ms 起拖 —— 阈值取共享的 rowDragActivationConstraint(), 不再自写一套;
    *  - 不再注册 TouchSensor: 应用只在 Windows/macOS + Chrome/Firefox 使用, 那份
    *    250ms 触摸阈值已作废(见 row-drag-config 的口径说明);
-   *  - 键盘: 本表格自己的 dnd-kit KeyboardSensor(空格拾起/方向键移动/空格放下), 行上的
-   *    aria-keyshortcuts 与之一致; 这个 DndContext 不重写。
+   *  - 键盘: Space/Enter 拾起 → 方向键移动 → Space/Enter 放下, Esc 取消。键位与行上
+   *    aria-keyshortcuts 同源(row-drag-config 的单一键位模型);
+   *  - 读屏: 覆写 accessibility, 播报「分组第 N 个 / 物料名 + 第 N 行」, 绝不播报行实例 id;
+   *  - 非拖动替代: 分组头与明细行都有可点击的上移/下移按钮(SC 2.5.7)。
    */
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: rowDragActivationConstraint(),
     }),
     useSensor(KeyboardSensor, {
+      keyboardCodes: rowDragKeyboardCodes(),
       coordinateGetter: sortableKeyboardCoordinates,
     }),
+  )
+  const dragAccessibility = useMemo(
+    () =>
+      buildPickupListDragAccessibility({
+        groupIds: draft.activeDraft.groups.map((group) => group.id),
+        rows: draft.activeDraft.groups.flatMap(
+          (group) => draft.groupedRows.get(group.id) ?? [],
+        ),
+        t,
+      }),
+    [draft.activeDraft.groups, draft.groupedRows, t],
   )
   const columns = usePickupListColumns()
   const {
@@ -194,6 +210,7 @@ export function PurchaseOrderPickupListOverlay({
                 />
               ) : null}
               <DndContext
+                accessibility={dragAccessibility}
                 sensors={sensors}
                 collisionDetection={pickupListCollisionDetection}
                 onDragEnd={({ active, over }) => {

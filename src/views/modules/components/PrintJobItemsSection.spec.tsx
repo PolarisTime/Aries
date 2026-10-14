@@ -8,6 +8,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PrintRecordItem } from '@/api/system/print-template'
+import { rowDragAriaKeyshortcuts } from '@/components/table/row-drag'
 import { getPrintItemFields } from '@/utils/print-module-config'
 import { PrintJobItemsSection } from './PrintJobItemsSection'
 import type { PrintJobModalAction } from './print-job-modal-state'
@@ -20,12 +21,16 @@ import type { PrintJobModalAction } from './print-job-modal-state'
  * <ol>
  *   <li>行上右键(单指针)能开出「上移 / 下移」菜单, 边界项软禁用;</li>
  *   <li>**不发起任何拖拽**的前提下, 只靠右键 + 点菜单项就能完成一次重排(顺序真的写回);</li>
+ *   <li>每行另有**可见、可点击**的上移/下移按钮: 单指针点一下、纯键盘回车都能重排
+ *       (SC 2.5.7 的替代入口不能只藏在右键菜单里);</li>
  *   <li>明细不在有序集合里时行号兜底为 ≥1, 序号列不出现 0。</li>
  * </ol>
  *
  * <p>回退验证(实际改错跑过): 把 {@link PrintJobItemsSection} 的
  * `RowContextMenuContext.Provider` 去掉(菜单不再挂到行上)时, 「右键开出上移/下移」
- * 「仅单指针完成一次重排」「Shift+F10 键盘路径」共 3 条变红。</p>
+ * 「仅单指针完成一次重排」「Shift+F10 键盘路径」共 3 条变红;
+ * 去掉行内顺序列(顺序列 render 返回 null)时, 「仅单指针点按钮」「仅键盘回车」
+ * 「按钮边界与命中区」「可访问名带行名」共 4 条变红。</p>
  */
 
 const SNOWFLAKE_A = '1834671234567890123'
@@ -282,6 +287,95 @@ describe('打印明细行的非拖动重排替代', () => {
     clickMenuItem('下移')
     await flush()
     expect(onDispatch).not.toHaveBeenCalled()
+  })
+
+  /** 行内「上移/下移」按钮: 不需要右键、不需要拖动, 单指针直接点。 */
+  const moveButton = (rowKey: string, label: string) =>
+    Array.from(
+      container
+        .querySelector<HTMLTableRowElement>(`tr[data-row-key="${rowKey}"]`)
+        ?.querySelectorAll<HTMLButtonElement>('button') ?? [],
+    ).find((button) =>
+      (button.getAttribute('aria-label') ?? '').startsWith(label),
+    )
+
+  it('仅单指针: 点击行内「下移」按钮完成一次重排, 全程不发起拖拽', async () => {
+    const onDragStart = vi.fn()
+    const onDragEnd = vi.fn()
+    const { onDispatch } = render({
+      items: [ITEM_A, ITEM_B],
+      onDragEnd,
+      onDragStart,
+    })
+
+    await act(async () => {
+      moveButton(SNOWFLAKE_A, '下移')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+
+    expect(onDispatch).toHaveBeenCalledWith({
+      type: 'setOrderedPrintItemIds',
+      itemIds: [SNOWFLAKE_B, SNOWFLAKE_A],
+    })
+    expect(rowKeys()).toEqual([SNOWFLAKE_B, SNOWFLAKE_A])
+    expect(onDragStart).not.toHaveBeenCalled()
+    expect(onDragEnd).not.toHaveBeenCalled()
+  })
+
+  it('仅键盘: 聚焦行内「上移」按钮按回车完成一次重排', async () => {
+    const { onDispatch } = render({ items: [ITEM_A, ITEM_B] })
+    const button = moveButton(SNOWFLAKE_B, '上移')
+    expect(button).toBeDefined()
+    act(() => button?.focus())
+
+    await act(async () => {
+      button?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onDispatch).toHaveBeenCalledWith({
+      type: 'setOrderedPrintItemIds',
+      itemIds: [SNOWFLAKE_B, SNOWFLAKE_A],
+    })
+    expect(rowKeys()).toEqual([SNOWFLAKE_B, SNOWFLAKE_A])
+  })
+
+  it('替代按钮首/末项 aria-disabled、目标 ≥24×24、可访问名带行名', async () => {
+    render({ items: [ITEM_A, ITEM_B] })
+
+    const firstUp = moveButton(SNOWFLAKE_A, '上移')
+    const firstDown = moveButton(SNOWFLAKE_A, '下移')
+    const lastDown = moveButton(SNOWFLAKE_B, '下移')
+
+    expect(firstUp?.getAttribute('aria-disabled')).toBe('true')
+    expect(firstDown?.getAttribute('aria-disabled')).toBe('false')
+    expect(lastDown?.getAttribute('aria-disabled')).toBe('true')
+    expect(firstUp?.style.minWidth).toBe('24px')
+    expect(firstUp?.style.minHeight).toBe('24px')
+    expect(firstDown?.getAttribute('aria-label')).toBe(
+      '下移 螺纹钢 HRB400E 12（第 1 行）',
+    )
+    // 可访问名里不得出现雪花 id
+    expect(firstDown?.getAttribute('aria-label')).not.toContain(SNOWFLAKE_A)
+  })
+
+  it('拖动把手声明 aria-keyshortcuts, 且与共享键位常量同源', async () => {
+    render({ items: [ITEM_A, ITEM_B] })
+    const handle = container.querySelector<HTMLButtonElement>(
+      `tr[data-row-key="${SNOWFLAKE_A}"] button`,
+    )
+    expect(handle?.getAttribute('aria-keyshortcuts')).toBe(
+      rowDragAriaKeyshortcuts(),
+    )
+    expect(handle?.getAttribute('aria-keyshortcuts')).toContain('Space')
   })
 
   it('明细不在有序集合里时行号兜底为 1, 不显示 0', async () => {

@@ -2,7 +2,11 @@ import { Checkbox, Input, InputNumber, Select, Spin, Typography } from 'antd'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CreatedExpenseMaterial } from '@/api/master/materials'
-import { RowDragSortItem, RowDragSortScope } from '@/components/table/row-drag'
+import {
+  RowDragSortItem,
+  RowDragSortMoveButtons,
+  RowDragSortScope,
+} from '@/components/table/row-drag'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { withFinally } from '@/utils/with-finally'
@@ -176,7 +180,7 @@ const EXPENSE_GRID_COLUMNS = [
   '140px',
   '120px',
   'minmax(160px, 1fr)',
-  '64px',
+  '128px',
 ]
 
 const EXPENSE_GRID_STYLE = {
@@ -308,7 +312,9 @@ export function ModuleExpenseItemsTable({
                 onChange(index, { remark: event.target.value })
               }
             />
-            <span className="text-center">
+            <span className="flex items-center justify-center gap-1">
+              {/* 拖动排序的非拖动替代(WCAG 2.2 SC 2.5.7): 点击即可上移/下移, 不用拖 */}
+              <RowDragSortMoveButtons rowId={rowKeys[index]} />
               <button
                 type="button"
                 className="text-red-500 hover:text-red-700"

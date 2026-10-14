@@ -1,3 +1,5 @@
+import { KeyboardCode } from '@dnd-kit/core'
+
 /**
  * 行拖动排序的共享激活参数(取消可见拖动手柄后的"长按起拖"口径)。
  *
@@ -46,17 +48,82 @@ export function rowDragActivationConstraint(): RowDragActivationConstraint {
 }
 
 /**
- * 键盘移动的**单一键位清单**: 实现(按键匹配)、声明(`aria-keyshortcuts`)与提示文案
- * (locales 的 `common.rowDragSort.keyboardHint`)都只从这一份派生。
+ * 键盘模型里的单个键: 实现(dnd-kit 按 `event.code` 注册)、声明(`aria-keyshortcuts`)
+ * 与提示文案三处写法都从这里派生, 三者不可能再分叉。
+ */
+export interface RowDragKeyboardModelEntry {
+  /** `KeyboardEvent.code`: dnd-kit 的 KeyboardSensor 按物理键码比对。 */
+  code: KeyboardCode
+  /** `aria-keyshortcuts` 的写法(ARIA 键盘快捷键语法, 语言无关)。 */
+  ariaKeyshortcuts: string
+  /** 中文提示文案里的写法。 */
+  label: string
+}
+
+/**
+ * 主键盘模型(ARIA APG「可拖动/可排序列表」惯例): **Space 或 Enter 拾起 → 方向键移动
+ * → Space 或 Enter 放下 → Esc 取消**。
  *
- * <p>背景: 此前文档只写 Alt+↑/↓, 代码却同时注册了 dnd-kit 的"空格拾起"(KeyboardSensor)
- * 并把 `Space` 写进 `aria-keyshortcuts` —— 声明的键位与真正生效的键位是两套。现在统一为
- * **只有 Alt+↑/↓ 一套**: 空格不再拾起拖动, 也不出现在任何声明里。</p>
+ * <p>背景: 此前只提供 Alt+↑/↓ 一条键盘路径, 文档、`aria-keyshortcuts` 与实现还互不一致
+ * (文档写 Alt+↑/↓, 代码却注册了 dnd-kit 的空格拾起)。只给键盘拖动本身也不满足
+ * WCAG 2.2 SC 2.5.7 —— 该条要求"功能可用单指针、无需拖动完成", 因此另配了行内可点击的
+ * 上移/下移按钮(见 row-reorder-buttons), 键盘模型则回归 APG 惯例。</p>
+ */
+export const ROW_DRAG_KEYBOARD_MODEL = {
+  pickUp: [
+    { code: KeyboardCode.Space, ariaKeyshortcuts: 'Space', label: '空格' },
+    { code: KeyboardCode.Enter, ariaKeyshortcuts: 'Enter', label: '回车' },
+  ],
+  /** 放下键与拾起键同一组(APG: 同一键切换拾起/放下)。 */
+  drop: [
+    { code: KeyboardCode.Space, ariaKeyshortcuts: 'Space', label: '空格' },
+    { code: KeyboardCode.Enter, ariaKeyshortcuts: 'Enter', label: '回车' },
+  ],
+  cancel: [
+    { code: KeyboardCode.Esc, ariaKeyshortcuts: 'Escape', label: 'Esc' },
+  ],
+  move: [
+    { code: KeyboardCode.Up, ariaKeyshortcuts: 'ArrowUp', label: '↑' },
+    { code: KeyboardCode.Down, ariaKeyshortcuts: 'ArrowDown', label: '↓' },
+  ],
+} as const satisfies {
+  pickUp: readonly RowDragKeyboardModelEntry[]
+  drop: readonly RowDragKeyboardModelEntry[]
+  cancel: readonly RowDragKeyboardModelEntry[]
+  move: readonly RowDragKeyboardModelEntry[]
+}
+
+/** dnd-kit `KeyboardSensor` 的 `keyboardCodes` 取值(与 {@link ROW_DRAG_KEYBOARD_MODEL} 同源)。 */
+export interface RowDragKeyboardCodes {
+  start: KeyboardCode[]
+  cancel: KeyboardCode[]
+  end: KeyboardCode[]
+}
+
+/**
+ * KeyboardSensor 的注册键位: 由 {@link ROW_DRAG_KEYBOARD_MODEL} 派生。
+ *
+ * <p>不直接用 dnd-kit 的默认值, 是为了让"声明的键位"和"真正注册的键位"读同一份常量 ——
+ * 否则改一处忘一处, 读屏用户听到的键位与能用的键位又会不一致。</p>
+ */
+export function rowDragKeyboardCodes(): RowDragKeyboardCodes {
+  return {
+    start: ROW_DRAG_KEYBOARD_MODEL.pickUp.map((entry) => entry.code),
+    cancel: ROW_DRAG_KEYBOARD_MODEL.cancel.map((entry) => entry.code),
+    end: ROW_DRAG_KEYBOARD_MODEL.drop.map((entry) => entry.code),
+  }
+}
+
+/**
+ * 可选附加直移键: **Alt+↑ / Alt+↓**。
+ *
+ * <p>它只是"少按两次键"的加速路径, 不再是唯一键盘路径 —— 主路径是上面那套 Space/Enter
+ * 状态机。方向键在不按 Alt 时留给表格与数字输入, 因此这一组必须带 Alt。</p>
  */
 export interface RowDragKeyboardShortcut {
   /** `KeyboardEvent.key` 的取值: 实现按它匹配。 */
   key: 'ArrowUp' | 'ArrowDown'
-  /** 需要按住的修饰键: 统一为 Alt(单独的方向键要留给表格与数字输入)。 */
+  /** 需要按住的修饰键: 统一为 Alt。 */
   altKey: true
   /** 行内移动增量: -1 上移 / +1 下移。 */
   delta: -1 | 1
@@ -66,46 +133,76 @@ export interface RowDragKeyboardShortcut {
   label: string
 }
 
-export const ROW_DRAG_KEYBOARD_SHORTCUTS: readonly RowDragKeyboardShortcut[] = [
-  {
-    key: 'ArrowUp',
-    altKey: true,
-    delta: -1,
-    ariaKeyshortcuts: 'Alt+ArrowUp',
-    label: 'Alt+↑',
-  },
-  {
-    key: 'ArrowDown',
-    altKey: true,
-    delta: 1,
-    ariaKeyshortcuts: 'Alt+ArrowDown',
-    label: 'Alt+↓',
-  },
-]
+export const ROW_DRAG_DIRECT_MOVE_SHORTCUTS: readonly RowDragKeyboardShortcut[] =
+  [
+    {
+      key: 'ArrowUp',
+      altKey: true,
+      delta: -1,
+      ariaKeyshortcuts: 'Alt+ArrowUp',
+      label: 'Alt+↑',
+    },
+    {
+      key: 'ArrowDown',
+      altKey: true,
+      delta: 1,
+      ariaKeyshortcuts: 'Alt+ArrowDown',
+      label: 'Alt+↓',
+    },
+  ]
 
 /**
- * `aria-keyshortcuts` 取值: 由键位清单拼出, 再追加调用方原有的快捷键(如行菜单的
- * Shift+F10)。声明里的键位因此不可能与清单分叉。
+ * `aria-keyshortcuts` 取值: 由**同一份键位常量**拼出(拾起键 + 可选直移键), 再追加调用方
+ * 原有的快捷键(如行菜单的 Shift+F10)。声明里的键位因此不可能与注册的键位分叉。
  */
 export function rowDragAriaKeyshortcuts(original?: string): string {
   return [
-    ...ROW_DRAG_KEYBOARD_SHORTCUTS.map((entry) => entry.ariaKeyshortcuts),
+    ...ROW_DRAG_KEYBOARD_MODEL.pickUp.map((entry) => entry.ariaKeyshortcuts),
+    ...ROW_DRAG_DIRECT_MOVE_SHORTCUTS.map((entry) => entry.ariaKeyshortcuts),
     original,
   ]
     .filter(Boolean)
     .join(' ')
 }
 
-/** 提示文案里的键位写法(如 `Alt+↑ / Alt+↓`): 供 locale 的 keyboardHint 插值, 与清单同源。 */
+/** 键位模型里各组的**中文写法**(由同一份常量派生), 供提示与读屏说明插值。 */
+export function rowDragKeyboardModelLabels(): {
+  pickUp: string
+  drop: string
+  move: string
+  cancel: string
+} {
+  const labels = (entries: readonly RowDragKeyboardModelEntry[]) =>
+    entries.map((entry) => entry.label).join('/')
+  return {
+    pickUp: labels(ROW_DRAG_KEYBOARD_MODEL.pickUp),
+    drop: labels(ROW_DRAG_KEYBOARD_MODEL.drop),
+    move: labels(ROW_DRAG_KEYBOARD_MODEL.move),
+    cancel: labels(ROW_DRAG_KEYBOARD_MODEL.cancel),
+  }
+}
+
+/** 提示文案里的**主键盘模型**写法(由模型派生): 例 `空格/回车 拾起 · ↑/↓ 移动 · …`。 */
 export function rowDragKeyboardHintText(): string {
-  return ROW_DRAG_KEYBOARD_SHORTCUTS.map((entry) => entry.label).join(' / ')
+  const { pickUp, move, cancel } = rowDragKeyboardModelLabels()
+  return `${pickUp} 拾起 · ${move} 移动 · ${pickUp} 放下 · ${cancel} 取消`
+}
+
+/** 提示文案里的**可选直移键**写法(由同一份常量派生): 例 `Alt+↑ / Alt+↓`。 */
+export function rowDragDirectMoveHintText(): string {
+  return ROW_DRAG_DIRECT_MOVE_SHORTCUTS.map((entry) => entry.label).join(' / ')
 }
 
 /**
- * 按键 → 行内移动增量: 只认键位清单里的组合。
+ * 按键 → 行内移动增量: 只认 {@link ROW_DRAG_DIRECT_MOVE_SHORTCUTS} 里的组合。
  *
- * <p>返回 `undefined` 即"不处理" —— 空格、单独的方向键、带 Ctrl/Meta/Shift 的组合都走这里,
- * 因此"哪些键能移动行"始终只有清单一个出口。</p>
+ * <p>返回 `undefined` 即"不处理", 调用方据此**不调用 preventDefault**, 事件原样交还浏览器。
+ * 因此下面这些一律放行:</p>
+ * <ul>
+ *   <li>单独的方向键(留给表格/数字输入)与空格/回车(留给拾起状态机);</li>
+ *   <li>带 Ctrl / Meta / Shift 的组合 —— 判定恒为 `!ctrl &amp;&amp; !meta &amp;&amp; !shift`;</li>
+ *   <li>Alt+← / Alt+→ 等不在这份清单里的方向键(浏览器后退/前进、macOS 的按词移动)。</li>
+ * </ul>
  */
 export function rowDragKeyboardDelta(event: {
   key: string
@@ -115,8 +212,25 @@ export function rowDragKeyboardDelta(event: {
   shiftKey: boolean
 }): -1 | 1 | undefined {
   if (event.ctrlKey || event.metaKey || event.shiftKey) return undefined
-  const match = ROW_DRAG_KEYBOARD_SHORTCUTS.find(
+  const match = ROW_DRAG_DIRECT_MOVE_SHORTCUTS.find(
     (entry) => entry.key === event.key && entry.altKey === event.altKey,
   )
   return match?.delta
+}
+
+/**
+ * 行号(1 起算)兜底: 有序位次拿不到时(`indexOf` 为 -1)退回调用方给的兜底位次。
+ *
+ * <p>直接把 `indexOf` 的结果 +1 会得到 0 —— 序号列会显示「0」, 可访问名会读成
+ * 「拖动第 0 行」。这里返回 `undefined` 表示"真的定位不到", 由调用方给固定文案,
+ * 绝不把雪花 id 当作行号或行名播报出去。</p>
+ */
+export function resolveRowNumber(
+  rowIds: readonly string[],
+  rowId: string,
+  fallbackIndex = -1,
+): number | undefined {
+  const index = rowIds.indexOf(rowId)
+  if (index >= 0) return index + 1
+  return fallbackIndex >= 0 ? fallbackIndex + 1 : undefined
 }

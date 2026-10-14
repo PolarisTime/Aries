@@ -262,6 +262,98 @@ describe('PickupDraftGroupSection 渲染冒烟', () => {
     ).toBeNull()
   })
 
+  /**
+   * 拖动排序的**单指针非拖动替代**: 分组头与明细行都必须有可点击的上移/下移按钮。
+   * 去掉按钮(或只保留右键菜单)时本组用例立即变红。
+   */
+  const moveButton = (root: ParentNode, label: string) =>
+    Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(
+      (button) => (button.getAttribute('aria-label') ?? '').startsWith(label),
+    )
+
+  it('仅单指针: 点击分组头的「下移」按钮回调 onMoveGroup', () => {
+    renderSection()
+    const controls = container.querySelector(
+      '.purchase-pickup-list-group-controls',
+    )
+    const down = controls ? moveButton(controls, '下移') : undefined
+    expect(down).toBeDefined()
+    expect(down?.getAttribute('aria-disabled')).toBe('false')
+    act(() => {
+      down?.click()
+    })
+    expect(baseProps.onMoveGroup).toHaveBeenCalledWith('g1', 'down')
+  })
+
+  it('分组头「上移」按钮在首个分组时 aria-disabled(仍可聚焦)', () => {
+    renderSection()
+    const controls = container.querySelector(
+      '.purchase-pickup-list-group-controls',
+    )
+    const up = controls ? moveButton(controls, '上移') : undefined
+    expect(up?.getAttribute('aria-disabled')).toBe('true')
+    expect(up?.hasAttribute('disabled')).toBe(false)
+    act(() => {
+      up?.click()
+    })
+    expect(baseProps.onMoveGroup).not.toHaveBeenCalled()
+    expect(up?.style.minWidth).toBe('24px')
+    expect(up?.style.minHeight).toBe('24px')
+  })
+
+  it('仅键盘: 聚焦分组头「下移」按钮按回车回调 onMoveGroup', () => {
+    renderSection()
+    const controls = container.querySelector(
+      '.purchase-pickup-list-group-controls',
+    )
+    const down = controls ? moveButton(controls, '下移') : undefined
+    act(() => down?.focus())
+    act(() => {
+      down?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+      down?.click()
+    })
+    expect(baseProps.onMoveGroup).toHaveBeenCalledWith('g1', 'down')
+  })
+
+  it('明细行也有可点击的上移/下移按钮, 回调 onMoveRow', () => {
+    renderSection({
+      components: { body: { row: SortableRow } },
+      rows: [
+        buildRow({ rowId: '1' }),
+        buildRow({ rowId: '2', item: buildItem({ itemId: '2' }) }),
+      ],
+    })
+    const rows = Array.from(
+      container.querySelectorAll<HTMLTableRowElement>(
+        '.ant-table-tbody tr.ant-table-row',
+      ),
+    )
+    expect(rows.length).toBe(2)
+    const firstDown = moveButton(rows[0], '下移')
+    expect(firstDown).toBeDefined()
+    expect(firstDown?.getAttribute('aria-disabled')).toBe('false')
+    expect(moveButton(rows[0], '上移')?.getAttribute('aria-disabled')).toBe(
+      'true',
+    )
+    expect(moveButton(rows[1], '下移')?.getAttribute('aria-disabled')).toBe(
+      'true',
+    )
+    act(() => {
+      firstDown?.click()
+    })
+    expect(baseProps.onMoveRow).toHaveBeenCalledWith(
+      expect.objectContaining({ rowId: '1' }),
+      'down',
+    )
+  })
+
   it('分组标题区是可聚焦的键盘手柄, 并声明快捷键', () => {
     renderSection()
     const header = container.querySelector<HTMLElement>(

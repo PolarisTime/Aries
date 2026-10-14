@@ -13,6 +13,10 @@ import type { CSSProperties, KeyboardEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
+import {
+  RowReorderButtons,
+  rowDragAriaKeyshortcuts,
+} from '@/components/table/row-drag'
 import { formatWeight } from '@/utils/formatters'
 import type { PickupDraftGroup, PickupListRow } from './pickup-list-draft'
 import {
@@ -210,7 +214,7 @@ export function PickupDraftGroupSection({
           <button
             type="button"
             className="purchase-pickup-list-group-title"
-            aria-keyshortcuts="Space Shift+F10"
+            aria-keyshortcuts={rowDragAriaKeyshortcuts('Shift+F10')}
             aria-label={dragLabel}
             onKeyDown={(event) => {
               // 转发的是 dnd-kit 的不透明处理器(签名随传感器而定), 按实际事件类型调用
@@ -250,6 +254,17 @@ export function PickupDraftGroupSection({
             </span>
           </button>
           <div className="purchase-pickup-list-group-controls">
+            {/* 分组排序的非拖动替代(WCAG 2.2 SC 2.5.7): 点击即可上移/下移分组 */}
+            <RowReorderButtons
+              canMoveDown={index < groupCount - 1}
+              canMoveUp={index > 0}
+              label={t('modules.purchasePickupList.groupLabel', {
+                index: index + 1,
+              })}
+              onMove={(delta) =>
+                onMoveGroup(group.id, delta === -1 ? 'up' : 'down')
+              }
+            />
             <Input
               allowClear
               className="purchase-pickup-list-group-remark"

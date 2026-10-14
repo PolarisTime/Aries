@@ -14,6 +14,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PrintRecordItem } from '@/api/system/print-template'
+import { rowDragKeyboardModelLabels } from '@/components/table/row-drag'
 import { PrintJobModalBody } from './PrintJobModalBody'
 import type { PrintJobFormValues } from './print-job-modal-state'
 import type { PrintJobItemsState } from './use-print-job-modal-items'
@@ -147,9 +148,31 @@ describe('打印明细区 DndContext 的读屏接线', () => {
     })
 
     const text = container.textContent ?? ''
-    expect(text).toContain('按空格键拾起当前明细行')
-    // 说明里同时给出鼠标右键/Shift+F10 的非拖动替代入口
-    expect(text).toContain('Shift+F10')
+    // 键位写法由 row-drag-config 的单一键位模型插值, 不再在文案里手写一套
+    const { pickUp, move, cancel } = rowDragKeyboardModelLabels()
+    expect(text).toContain(`按 ${pickUp} 拾起当前明细行`)
+    expect(text).toContain(`用 ${move} 移动`)
+    expect(text).toContain(cancel)
+    // 非拖动替代: 行内「上移/下移」按钮
+    expect(text).toContain('上移/下移')
     expect(text).not.toContain('To pick up a draggable item')
+  })
+
+  it('每行渲染可点击的上移/下移按钮(单指针非拖动替代, SC 2.5.7)', () => {
+    act(() => {
+      root.render(createElement(BodyHarness))
+    })
+
+    const rows = Array.from(
+      container.querySelectorAll<HTMLTableRowElement>('tbody tr[data-row-key]'),
+    )
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) {
+      const labels = Array.from(row.querySelectorAll('button')).map(
+        (button) => button.getAttribute('aria-label') ?? '',
+      )
+      expect(labels.some((label) => label.startsWith('上移'))).toBe(true)
+      expect(labels.some((label) => label.startsWith('下移'))).toBe(true)
+    }
   })
 })

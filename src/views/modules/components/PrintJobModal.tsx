@@ -14,6 +14,7 @@ import {
   type PrintRecordItem,
   type SalesOrderPrintXlsxOptions,
 } from '@/api/system/print-template'
+import { rowDragKeyboardCodes } from '@/components/table/row-drag'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
@@ -85,6 +86,8 @@ export function PrintJobModal({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
+      // 拾起/放下/取消的键位与行上 aria-keyshortcuts 同源(row-drag-config 的单一键位模型)
+      keyboardCodes: rowDragKeyboardCodes(),
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )

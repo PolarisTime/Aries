@@ -274,12 +274,26 @@ export const zhCN = {
       selectRow: '选择此行',
       selectRowNamed: '选择此行：{{label}}',
     },
-    /** 整行长按拖动排序(共享能力): 读屏播报与键盘操作说明。
-     * keyboardHint 的 {{shortcuts}} 由 row-drag-config 的键位清单插值, 不再在文案里另写一套键位。 */
+    /** 整行长按拖动排序(共享能力): 读屏播报、键盘操作说明与非拖动替代按钮。
+     * 键位一律由 row-drag-config 的单一键位常量插值, 不在文案里另写一套。 */
     rowDragSort: {
       rowLabel: '第 {{index}} 行',
+      rowWithName: '{{name}}（第 {{index}} 行）',
+      unknownRow: '当前行',
       moved: '{{row}}已移动到第 {{position}} 位',
-      keyboardHint: '按 {{shortcuts}} 上移或下移该行',
+      keyboardHint: '键盘排序：{{shortcuts}}；也可按 {{direct}} 直接上移或下移',
+      screenReaderInstructions:
+        '按 {{pickUp}} 拾起该行，用 {{move}} 移动，再按 {{drop}} 放下，按 {{cancel}} 取消；也可按 {{direct}} 直接上移或下移，或用行内的「{{moveUp}}/{{moveDown}}」按钮调整顺序。',
+      dragStart: '已拾起{{row}}，用方向键移动，再按拾起键放下',
+      dragOver: '{{row}}将移动到第 {{position}} 位',
+      dragDroppedAt: '{{row}}已放下，现在第 {{position}} 位',
+      dragDropped: '{{row}}已放下，顺序未变',
+      dragCancel: '已取消移动，{{row}}顺序未变',
+      moveUp: '上移',
+      moveDown: '下移',
+      moveUpAria: '上移 {{row}}',
+      moveDownAria: '下移 {{row}}',
+      moveColumnTitle: '顺序',
     },
     back: '返回',
     close: '关闭',
@@ -680,6 +694,9 @@ export const zhCN = {
       moveItemDown: '下移',
       moveGroupUp: '分组上移',
       moveGroupDown: '分组下移',
+      /** 拖动播报的行名/分组名兜底: 定位不到时用固定文案, 绝不播报行实例 id。 */
+      dragUnknownRow: '该明细行',
+      dragUnknownGroup: '当前分组',
     },
     overview: {
       recordCount: '记录数',
@@ -976,9 +993,9 @@ export const zhCN = {
       dragRowAriaLabel: '拖动第 {{index}} 行打印明细',
       /** 明细行拖动的读屏文案: 只播报行号与物料名, 绝不播报雪花 id。 */
       dragScreenReaderInstructions:
-        '按空格键拾起当前明细行，用上/下方向键移动，再按空格放下，按 Escape 取消。也可以用鼠标右键或 Shift+F10 打开行菜单，选择「上移」「下移」调整顺序。',
+        '按 {{pickUp}} 拾起当前明细行，用 {{move}} 移动，再按 {{drop}} 放下，按 {{cancel}} 取消；也可按 {{direct}} 直接上移或下移，或用行内的「上移/下移」按钮调整顺序。',
       dragAnnounceRow: '第 {{index}} 行 {{name}}',
-      dragAnnounceStart: '已拾起{{row}}，用上/下方向键移动，空格放下',
+      dragAnnounceStart: '已拾起{{row}}，用方向键移动，再按拾起键放下',
       dragAnnounceOver: '{{row}}移动到第 {{position}} 位',
       dragAnnounceDroppedAt: '{{row}}已放下，现在第 {{position}} 位',
       dragAnnounceDropped: '{{row}}已放下，顺序未变',

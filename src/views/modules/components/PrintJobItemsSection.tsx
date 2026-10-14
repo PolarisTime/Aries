@@ -33,6 +33,10 @@ import {
   RowContextMenuContext,
   type RowContextMenuMap,
 } from '@/components/row-context-menu'
+import {
+  RowReorderButtons,
+  rowDragAriaKeyshortcuts,
+} from '@/components/table/row-drag'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { isModuleKey } from '@/module-system/core/module-key'
 import type { PrintItemFieldSpec } from '@/utils/print-module-config'
@@ -94,6 +98,7 @@ function DragHandle({ label }: { label: string }) {
     <button
       {...context.dragAttributes}
       {...(context.dragListeners ?? {})}
+      aria-keyshortcuts={rowDragAriaKeyshortcuts()}
       aria-label={label}
       className="inline-flex cursor-grab items-center border-0 bg-transparent p-0"
       ref={attachActivatorNode}
@@ -437,6 +442,34 @@ export function PrintJobItemsSection({
           })}
         />
       ),
+    },
+    {
+      /*
+       * 顺序列: 可点击的上移/下移 —— WCAG 2.2 SC 2.5.7 要求的"单指针、非拖动"替代。
+       * 右键行菜单里也有同一组动作, 但菜单要求按次要键, 不能单独作为替代。
+       */
+      key: 'rowReorder',
+      width: 76,
+      align: 'center',
+      title: t('common.rowDragSort.moveColumnTitle'),
+      render: (_, item, index) => {
+        const itemIndex = orderedPrintItems.findIndex(
+          (entry) => entry.id === item.id,
+        )
+        // 不在有序集合里(上游刚换数据)时不渲染按钮, 而不是给两个永远禁用的按钮
+        if (itemIndex < 0) return null
+        return (
+          <RowReorderButtons
+            canMoveDown={itemIndex < orderedPrintItems.length - 1}
+            canMoveUp={itemIndex > 0}
+            label={t('common.rowDragSort.rowWithName', {
+              index: printItemRowNumber(item.id, index),
+              name: printItemRowName(item, t),
+            })}
+            onMove={(delta) => movePrintItem(item.id, delta)}
+          />
+        )
+      },
     },
     {
       key: 'sequence',

@@ -7,13 +7,17 @@ import {
   isRowDragBlockedTarget,
 } from './row-drag-activation'
 import {
-  ROW_DRAG_KEYBOARD_SHORTCUTS,
+  ROW_DRAG_DIRECT_MOVE_SHORTCUTS,
+  ROW_DRAG_KEYBOARD_MODEL,
   ROW_DRAG_LONG_PRESS_MS,
   ROW_DRAG_MOVE_TOLERANCE_PX,
   rowDragActivationConstraint,
   rowDragAriaKeyshortcuts,
+  rowDragDirectMoveHintText,
+  rowDragKeyboardCodes,
   rowDragKeyboardDelta,
   rowDragKeyboardHintText,
+  rowDragKeyboardModelLabels,
 } from './row-drag-config'
 
 /**
@@ -44,34 +48,69 @@ describe('行拖动长按口径', () => {
 })
 
 /**
- * 键位清单的**单一出口**契约。
+ * 键位的**单一出口**契约: 注册的键位、`aria-keyshortcuts`、提示文案三者读同一份常量。
  *
- * <p>回退验证: 把清单改回"双套"(再补一个 `Space` 拾起键)时, 下面"只有 Alt+↑/↓ 一套"
- * 与"aria-keyshortcuts 不含 Space"两条立即变红; 把实现里的键位判断改回手写一套(不经过
- * {@link rowDragKeyboardDelta})时, 按键判定用例变红。</p>
+ * <p>回退验证(实际改错跑过): 把 `aria-keyshortcuts` 改回手写字符串、或让实现不经过
+ * {@link rowDragKeyboardDelta} 自己判断 `event.altKey`, 下面几条立即变红。</p>
  */
-describe('行拖动键位清单', () => {
-  it('只有 Alt+↑/↓ 一套: 不再有 Space 等第二套拾起键', () => {
-    expect(ROW_DRAG_KEYBOARD_SHORTCUTS).toHaveLength(2)
+describe('行拖动键位模型', () => {
+  it('主键盘模型是 ARIA APG 惯例: Space/Enter 拾起与放下, 方向键移动, Esc 取消', () => {
+    expect(ROW_DRAG_KEYBOARD_MODEL.pickUp.map((entry) => entry.code)).toEqual([
+      'Space',
+      'Enter',
+    ])
+    expect(ROW_DRAG_KEYBOARD_MODEL.drop.map((entry) => entry.code)).toEqual([
+      'Space',
+      'Enter',
+    ])
+    expect(ROW_DRAG_KEYBOARD_MODEL.move.map((entry) => entry.code)).toEqual([
+      'ArrowUp',
+      'ArrowDown',
+    ])
+    expect(ROW_DRAG_KEYBOARD_MODEL.cancel.map((entry) => entry.code)).toEqual([
+      'Escape',
+    ])
+  })
+
+  it('KeyboardSensor 注册的键位由模型派生(不再是"文档一套、代码一套")', () => {
+    expect(rowDragKeyboardCodes()).toEqual({
+      start: ['Space', 'Enter'],
+      cancel: ['Escape'],
+      end: ['Space', 'Enter'],
+    })
+  })
+
+  it('Alt+↑/↓ 降级为可选附加键: 只有这两个, 且不再是唯一键盘路径', () => {
+    expect(ROW_DRAG_DIRECT_MOVE_SHORTCUTS).toHaveLength(2)
     expect(
-      ROW_DRAG_KEYBOARD_SHORTCUTS.map((entry) => entry.ariaKeyshortcuts),
+      ROW_DRAG_DIRECT_MOVE_SHORTCUTS.map((entry) => entry.ariaKeyshortcuts),
     ).toEqual(['Alt+ArrowUp', 'Alt+ArrowDown'])
+    // 主路径必须存在: 拾起键不能是空的
+    expect(ROW_DRAG_KEYBOARD_MODEL.pickUp.length).toBeGreaterThan(0)
   })
 
-  it('aria-keyshortcuts 由清单派生, 并追加调用方原有快捷键', () => {
-    expect(rowDragAriaKeyshortcuts()).toBe('Alt+ArrowUp Alt+ArrowDown')
-    expect(rowDragAriaKeyshortcuts('Shift+F10')).toBe(
-      'Alt+ArrowUp Alt+ArrowDown Shift+F10',
+  it('aria-keyshortcuts 由同一份常量派生: 拾起键 + 可选直移键 + 调用方原有快捷键', () => {
+    expect(rowDragAriaKeyshortcuts()).toBe(
+      'Space Enter Alt+ArrowUp Alt+ArrowDown',
     )
-    expect(rowDragAriaKeyshortcuts()).not.toContain('Space')
+    expect(rowDragAriaKeyshortcuts('Shift+F10')).toBe(
+      'Space Enter Alt+ArrowUp Alt+ArrowDown Shift+F10',
+    )
+    // 声明的拾起键必须与注册的 start 键一致
+    for (const code of rowDragKeyboardCodes().start) {
+      expect(rowDragAriaKeyshortcuts()).toContain(code)
+    }
   })
 
-  it('提示文案与清单同源: 逐个列出清单里的键位写法', () => {
+  it('提示文案与键位模型同源: 逐个列出模型里的写法', () => {
+    const { pickUp, move, cancel } = rowDragKeyboardModelLabels()
     const hint = rowDragKeyboardHintText()
-    for (const entry of ROW_DRAG_KEYBOARD_SHORTCUTS) {
-      expect(hint).toContain(entry.label)
+    expect(hint).toContain(pickUp)
+    expect(hint).toContain(move)
+    expect(hint).toContain(cancel)
+    for (const entry of ROW_DRAG_DIRECT_MOVE_SHORTCUTS) {
+      expect(rowDragDirectMoveHintText()).toContain(entry.label)
     }
-    expect(hint).not.toMatch(/Space|空格/)
   })
 
   it('按键判定只认清单: Alt+↑/↓ 出增量, 空格与单独方向键不出', () => {
@@ -82,21 +121,57 @@ describe('行拖动键位清单', () => {
     expect(
       rowDragKeyboardDelta({ ...base, key: 'ArrowDown', altKey: true }),
     ).toBe(1)
-    // 空格不再拾起拖动: 清单里没有它, 因此这里必须不处理
+    // 空格/回车属于拾起状态机, 不由"直移键"处理
     expect(rowDragKeyboardDelta({ ...base, key: ' ', altKey: false })).toBe(
+      undefined,
+    )
+    expect(rowDragKeyboardDelta({ ...base, key: 'Enter', altKey: false })).toBe(
       undefined,
     )
     expect(
       rowDragKeyboardDelta({ ...base, key: 'ArrowDown', altKey: false }),
     ).toBe(undefined)
+  })
+
+  /**
+   * 回归: 带修饰键的方向键必须**一律交还浏览器**。
+   *
+   * <p>Alt/Ctrl/Meta/Shift + ←/→ 在 Windows/macOS 上是浏览器后退前进、输入框内的按词
+   * 移动; 一旦被行拖动截走, 用户在备注框里就没法按词移动光标, 甚至误触发整行重排。</p>
+   */
+  it('带修饰键的方向键一律不处理(交还浏览器)', () => {
+    const base = {
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    }
+    // Alt 加左右: 浏览器后退/前进、macOS 按词移动
     expect(
-      rowDragKeyboardDelta({
-        ...base,
-        key: 'ArrowDown',
-        altKey: true,
-        ctrlKey: true,
-      }),
+      rowDragKeyboardDelta({ ...base, altKey: true, key: 'ArrowLeft' }),
     ).toBe(undefined)
+    expect(
+      rowDragKeyboardDelta({ ...base, altKey: true, key: 'ArrowRight' }),
+    ).toBe(undefined)
+    // 有修饰键时, 即使是 Alt+↑/↓ 也不处理
+    for (const extra of ['ctrlKey', 'metaKey', 'shiftKey'] as const) {
+      expect(
+        rowDragKeyboardDelta({
+          ...base,
+          altKey: true,
+          key: 'ArrowUp',
+          [extra]: true,
+        }),
+      ).toBe(undefined)
+      expect(
+        rowDragKeyboardDelta({
+          ...base,
+          altKey: true,
+          key: 'ArrowDown',
+          [extra]: true,
+        }),
+      ).toBe(undefined)
+    }
   })
 })
 

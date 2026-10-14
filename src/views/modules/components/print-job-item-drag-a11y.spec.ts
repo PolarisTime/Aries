@@ -4,6 +4,7 @@ import i18n from 'i18next'
 import { beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { PrintRecordItem } from '@/api/system/print-template'
+import { rowDragKeyboardModelLabels } from '@/components/table/row-drag'
 import {
   buildPrintJobDragAccessibility,
   printItemRowName,
@@ -182,11 +183,14 @@ describe('打印明细读屏播报', () => {
     }
   })
 
-  it('操作说明是中文, 且同时给出拖动与「上移/下移」菜单两条路径', () => {
+  it('操作说明是中文, 键位由共享键位模型插值, 且给出可点击的「上移/下移」替代', () => {
     const { screenReaderInstructions } = build()
-    expect(screenReaderInstructions.draggable).toContain('空格')
-    expect(screenReaderInstructions.draggable).toContain('Shift+F10')
-    expect(screenReaderInstructions.draggable).toContain('上移')
+    const { pickUp, move, cancel } = rowDragKeyboardModelLabels()
+    // 键位不再在文案里手写一套: 与 KeyboardSensor 注册的键位同源
+    expect(screenReaderInstructions.draggable).toContain(pickUp)
+    expect(screenReaderInstructions.draggable).toContain(move)
+    expect(screenReaderInstructions.draggable).toContain(cancel)
+    expect(screenReaderInstructions.draggable).toContain('上移/下移')
     // 不能还是 dnd-kit 的英文默认文案
     expect(screenReaderInstructions.draggable).not.toContain('draggable item')
   })
