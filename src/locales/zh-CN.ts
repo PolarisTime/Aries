@@ -1683,6 +1683,39 @@ export const zhCN = {
         netPriceOverrideTitle: '本次取价覆盖（不改项目配置）',
         netPriceOverrideReset: '恢复项目配置',
         netPriceManualDate: '取价日期',
+        netPriceStatusDisabled: '仅草稿与交付核定状态可整单取网价',
+        netPriceConfirmTitle: '确认整单取网价？',
+        netPriceConfirmOverwrite:
+          '将按解析口径改写 {{count}} 行单价（本单共 {{total}} 行）',
+        netPriceConfirmNoPrice: '其中 {{count}} 行无网价，将保持原值',
+        netPriceApplyResultTitle: '取价结果',
+        netPriceApplyResult:
+          '成功 {{filled}} 行 · 无网价 {{noPrice}} 行（保持原值，请手工填写）· 跳过 {{skipped}} 行',
+        /** 明细行「网价匹配」列: 图标 + 文字双通道, 不以颜色为唯一区分(WCAG 1.4.1)。 */
+        netPriceMatchColumn: '网价匹配',
+        netPriceMatchMatched: '匹配',
+        netPriceMatchMismatch: '不匹配',
+        netPriceMatchNoPrice: '无网价',
+        netPriceMatchUnchecked: '未核查',
+        netPriceMatchMatchedDetail: '当前单价与网价（含加价/减价）一致',
+        netPriceMatchMismatchDetail:
+          '网价应为 {{expected}}，当前单价 {{current}}',
+        netPriceMatchCurrentEmpty: '空',
+        netPriceMatchNoPriceDetail: '该取价日/时段没有这一行的网价，请手工填写',
+        netPriceMatchUncheckedDetail: '尚未核查，点「重新核查网价」',
+        netPriceMatchRecheck: '重新核查网价',
+        netPriceMatchJump: '定位到该行',
+        netPriceMatchProblemsTitle: '网价匹配明细',
+        netPriceMatchProblemsButton: '网价匹配明细（{{count}} 行待处理）',
+        netPriceMatchEmpty: '本单暂无明细行',
+        netPriceMatchSummaryUnchecked: '网价匹配：{{total}} 行未核查',
+        netPriceMatchAllMatched: '本单 {{total}} 行单价均与网价一致',
+        netPriceMatchNoMismatchNoPrice:
+          '本单 {{total}} 行单价均与网价一致（{{noPrice}} 行无网价，请手工填写）',
+        netPriceMatchSummary:
+          '本单 {{total}} 行，{{mismatch}} 行单价与网价不一致',
+        netPriceMatchCheckFailed: '网价核查失败，请稍后重试',
+        netPriceMatchNeedProject: '请先选择项目后再核查网价',
         allowedSpecImportWarning:
           '项目「{{project}}」约定允许的品牌/材质与本次导入明细不匹配：{{details}}',
         allowedSpecImportBrands: '品牌 {{values}}',

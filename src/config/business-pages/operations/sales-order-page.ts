@@ -10,6 +10,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
 import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
 import {
   BILL_STATUS_LABEL,
@@ -34,6 +35,14 @@ import {
   warnSalesOrderPurchaseSourceImport,
 } from './sales-order-rules'
 
+/**
+ * 网价匹配状态列 key。
+ *
+ * <p>匹配状态不落在明细行上（那会把单据标脏并可能混入保存载荷），而是由取价组件写入
+ * 页面级快照（{@link useNetPriceMatchStore}），本列只按行 id 订阅渲染标识。</p>
+ */
+const NET_PRICE_MATCH_COLUMN_KEY = '_netPriceMatch' as const
+
 // 销售订单明细列：仓库放在品牌前，商品编码与批号不进入默认页面白名单（永久不可见）。
 // 末端三个派生数量列由后端聚合返回，仅用于只读展示。
 type SalesOrderDerivedItemColumnKey =
@@ -41,6 +50,7 @@ type SalesOrderDerivedItemColumnKey =
   | 'returnedQuantity'
   | 'deliveredNetQuantity'
   | 'outboundRemainingQuantity'
+  | typeof NET_PRICE_MATCH_COLUMN_KEY
 
 const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemColumnKey> =
   {
@@ -58,6 +68,8 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
       'weightTon',
       'unitPrice',
       'amount',
+      // 网价匹配状态列紧邻单价/金额: 判断"单价是否落在网价口径上"时就在价格旁边
+      NET_PRICE_MATCH_COLUMN_KEY,
       'deliveredQuantity',
       'returnedQuantity',
       'deliveredNetQuantity',
@@ -117,6 +129,19 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         align: 'right',
         type: 'count',
         render: renderDerivedQuantity,
+      },
+      {
+        title: i18next.t('modules.pages.salesOrder.netPriceMatchColumn'),
+        dataIndex: NET_PRICE_MATCH_COLUMN_KEY,
+        width: 104,
+        align: 'center',
+        // 匹配状态是页面级核查快照(见 net-price-match-store), 不写进明细行:
+        // 由组件按行 id 订阅, 避免把单据标脏、避免混入保存载荷。
+        // .ts 配置不能用 JSX, 用 createElement 渲染行内标识。
+        render: (_value, record) =>
+          createElement(NetPriceMatchChip, { itemId: String(record.id) }),
+        // 匹配状态不在明细行上(按行 id 订阅页面级 store), 必须显式声明由列渲染接管只读单元格。
+        renderInEditor: true,
       },
     ],
     projections: {

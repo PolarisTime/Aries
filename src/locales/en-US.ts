@@ -1732,6 +1732,47 @@ export const enUS = {
           'Overrides for this document only (project config untouched)',
         netPriceOverrideReset: 'Reset to project config',
         netPriceManualDate: 'Quote date',
+        netPriceStatusDisabled:
+          'Filling unit prices from net price is available for draft and delivery-verification orders only',
+        netPriceConfirmTitle: 'Fill unit prices from net price?',
+        netPriceConfirmOverwrite:
+          'This will rewrite {{count}} of {{total}} unit prices using the resolved pricing basis',
+        netPriceConfirmNoPrice:
+          '{{count}} row(s) have no net price and will keep their current values',
+        netPriceApplyResultTitle: 'Result',
+        netPriceApplyResult:
+          'Filled {{filled}} · No net price {{noPrice}} (kept) · Skipped {{skipped}}',
+        /** "Net price match" column: icon + text, never colour alone (WCAG 1.4.1). */
+        netPriceMatchColumn: 'Net price match',
+        netPriceMatchMatched: 'Matched',
+        netPriceMatchMismatch: 'Mismatch',
+        netPriceMatchNoPrice: 'No net price',
+        netPriceMatchUnchecked: 'Not checked',
+        netPriceMatchMatchedDetail:
+          'Unit price equals the net price with the price rule applied',
+        netPriceMatchMismatchDetail:
+          'Expected {{expected}}, current unit price {{current}}',
+        netPriceMatchCurrentEmpty: 'empty',
+        netPriceMatchNoPriceDetail:
+          'No net price for this row on the resolved date/period; fill it in manually',
+        netPriceMatchUncheckedDetail:
+          'Not checked yet — use "Re-check net prices"',
+        netPriceMatchRecheck: 'Re-check net prices',
+        netPriceMatchJump: 'Go to row',
+        netPriceMatchProblemsTitle: 'Net price match details',
+        netPriceMatchProblemsButton:
+          'Net price details ({{count}} need attention)',
+        netPriceMatchEmpty: 'This order has no line items',
+        netPriceMatchSummaryUnchecked:
+          'Net price match: {{total}} row(s) not checked',
+        netPriceMatchAllMatched:
+          'All {{total}} unit prices match the net price',
+        netPriceMatchNoMismatchNoPrice:
+          'All {{total}} unit prices match the net price ({{noPrice}} row(s) have no net price — fill them in manually)',
+        netPriceMatchSummary:
+          '{{mismatch}} of {{total}} unit prices differ from the net price',
+        netPriceMatchCheckFailed: 'Net price check failed, please retry',
+        netPriceMatchNeedProject: 'Select a project before checking net prices',
         allowedSpecImportWarning:
           'Project "{{project}}" restricts allowed brands/materials, but this import does not match: {{details}}',
         allowedSpecImportBrands: 'brands {{values}}',

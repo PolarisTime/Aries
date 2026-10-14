@@ -27,6 +27,8 @@ describe('销售订单明细列', () => {
       'weightTon',
       'unitPrice',
       'amount',
+      // 网价匹配状态列(私有列): 紧邻单价/金额, 行内标识与工具栏汇总提示配套
+      '_netPriceMatch',
       'deliveredQuantity',
       'returnedQuantity',
       'deliveredNetQuantity',

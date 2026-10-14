@@ -1,0 +1,76 @@
+/*
+ * 「网价匹配」汇总提示与问题行清单。
+ *
+ * 汇总提示是明细工具栏里与按钮同行的文字(不换行撑高工具栏); 问题行清单放在受控弹层里,
+ * 因此这里只负责"同行文字 + 清单排版", 不承载面板高度。
+ */
+.net-price-match-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* 「取价结果」紧随汇总提示, 用分隔点连读; 与汇总同字号, 不抢按钮视觉权重 */
+.net-price-match-summary .net-price-apply-result {
+  display: inline;
+}
+
+.net-price-problems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.net-price-problems li {
+  /* 两行栅格: 首行"状态 + 行名 + 定位", 次行把差额铺满, 长文案不再挤成窄条 */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xxs) var(--space-xs);
+}
+
+/* 物料名可能很长(品牌 + 规格 + 长度): 允许换行, 不用省略号藏信息 */
+.net-price-problems-label {
+  color: var(--ant-color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* 定位按钮保证 ≥24×24 触达面积(WCAG 2.5.8), 行高不足时用 padding 补足 */
+.net-price-problems .ant-btn {
+  flex: none;
+  min-height: 24px;
+  padding-inline: var(--space-xs);
+}
+
+/*
+ * 非草稿/交付核定状态下的「整单取网价」: 视觉置灰但仍可聚焦。
+ * 原生 disabled 会让按钮不可聚焦, 键盘用户读不到"为什么不能用"; 这里只用样式表达不可用,
+ * 语义交给 aria-disabled(NET_PRICE_MATCH_APPLY 的说明通过 Tooltip 的 hover/focus 双触发给出)。
+ */
+.net-price-match-apply-disabled[aria-disabled="true"] {
+  color: var(--ant-color-text-disabled, rgb(0 0 0 / 25%));
+  background: var(--ant-color-bg-container-disabled, rgb(0 0 0 / 4%));
+  border-color: var(--ant-color-border, #d9d9d9);
+  cursor: not-allowed;
+}
+
+.net-price-match-apply-disabled[aria-disabled="true"]:hover {
+  color: var(--ant-color-text-disabled, rgb(0 0 0 / 25%));
+  border-color: var(--ant-color-border, #d9d9d9);
+}
+
+/* 问题行说明(应有价/当前价): 与行名同排, 窄屏可换行 */
+.net-price-problems-detail {
+  grid-column: 2 / -1;
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

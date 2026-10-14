@@ -8,14 +8,28 @@ import '@/i18n'
 import type { PricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import type { ModuleLineItem } from '@/types/module-page'
+import { bindAntdAppApi } from '@/utils/antd-app'
+import { useNetPriceMatchStore } from '../net-price-match-store'
 import { SalesOrderNetPriceFiller } from './SalesOrderNetPriceFiller'
 
+/** 二次确认弹层的最小契约(modal.confirm 的入参)。 */
+interface ConfirmOptions {
+  title?: unknown
+  content?: unknown
+  onOk?: () => void
+  onCancel?: () => void
+}
+
 const {
+  confirmMock,
+  confirmCalls,
   fetchMaterialPriceMatchesMock,
   fetchSteelQuoteCalendarsMock,
   fetchProjectPriceRulesMock,
   fetchPricingQuoteResolutionMock,
 } = vi.hoisted(() => ({
+  confirmCalls: [] as ConfirmOptions[],
+  confirmMock: vi.fn(),
   fetchMaterialPriceMatchesMock: vi.fn(),
   fetchSteelQuoteCalendarsMock: vi.fn(),
   fetchProjectPriceRulesMock: vi.fn(),
@@ -103,6 +117,8 @@ function Harness({
 interface ObservedState {
   items: ModuleLineItem[]
   fields: Record<string, unknown>
+  /** 用例侧改写明细的入口(模拟用户手工改单价)。 */
+  replaceItems?: (items: ModuleLineItem[]) => void
 }
 
 /**
@@ -111,24 +127,33 @@ interface ObservedState {
  * <p>回写统一放在 effect 里（渲染期改外层变量会被 React Compiler 判为 immutability 违规，
  * 渲染期访问 ref 又是 refs 违规）；setFormValue 逐次合并 state，因此快照字段可整体断言。</p>
  */
-function ObservedFiller({ observed }: { observed: ObservedState }) {
-  const [items, setItems] = useState<ModuleLineItem[]>([
-    {
-      id: 'r1',
-      materialId: 'm1',
-      brand: '中天',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: '12',
-      length: '9米',
-      unitPrice: 1,
-    },
-  ])
+function ObservedFiller({
+  observed,
+  initialItems,
+}: {
+  observed: ObservedState
+  initialItems?: ModuleLineItem[]
+}) {
+  const [items, setItems] = useState<ModuleLineItem[]>(
+    initialItems ?? [
+      {
+        id: 'r1',
+        materialId: 'm1',
+        brand: '中天',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: '12',
+        length: '9米',
+        unitPrice: 1,
+      },
+    ],
+  )
   const [fields, setFields] = useState<Record<string, unknown>>({})
   const observedRef = useRef(observed)
   useEffect(() => {
     observedRef.current.items = items
     observedRef.current.fields = fields
+    observedRef.current.replaceItems = setItems
   }, [items, fields])
   return createElement(SalesOrderNetPriceFiller, {
     currentStatus: '交付核定',
@@ -145,6 +170,8 @@ function ObservedFiller({ observed }: { observed: ObservedState }) {
 describe('SalesOrderNetPriceFiller', () => {
   let container: HTMLDivElement
   let root: Root
+  /** accept: 自动点确认; manual: 用例自行决定确认/取消。 */
+  let confirmMode: 'accept' | 'manual'
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
@@ -171,6 +198,19 @@ describe('SalesOrderNetPriceFiller', () => {
     fetchSteelQuoteCalendarsMock.mockReset()
     fetchProjectPriceRulesMock.mockReset()
     fetchPricingQuoteResolutionMock.mockReset()
+    confirmCalls.length = 0
+    confirmMode = 'accept'
+    confirmMock.mockReset()
+    confirmMock.mockImplementation((options: ConfirmOptions) => {
+      confirmCalls.push(options)
+      // 默认自动确认(等价于用户点"取价并填入"); 需要验证"取消不改写"的用例切到 manual。
+      if (confirmMode === 'accept') options.onOk?.()
+    })
+    // modal.confirm 没有静态回退: 生产由 AppAntdProvider 绑定, 测试里显式绑定。
+    bindAntdAppApi({
+      modal: { confirm: confirmMock },
+    } as never)
+    useNetPriceMatchStore.getState().clear()
     fetchProjectPriceRulesMock.mockResolvedValue([])
     fetchSteelQuoteCalendarsMock.mockResolvedValue([
       { quoteDate: '2026-09-22', periods: ['上午', '下午'] },
@@ -182,6 +222,8 @@ describe('SalesOrderNetPriceFiller', () => {
   })
 
   afterEach(() => {
+    bindAntdAppApi(null)
+    useNetPriceMatchStore.getState().clear()
     act(() => root.unmount())
     container.remove()
     document.querySelectorAll('.ant-modal-root').forEach((node) => {
@@ -224,11 +266,20 @@ describe('SalesOrderNetPriceFiller', () => {
     ...overrides,
   })
 
+  /** 按可见文字找工具栏按钮(工具栏里同时有「整单取网价」「重新核查网价」)。 */
+  const buttonByText = (text: string) =>
+    Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find(
+      (node) => node.textContent?.includes(text),
+    )
+
   const createObserved = (): ObservedState => ({ items: [], fields: {} })
 
-  const mountObserved = async (observed: ObservedState) => {
+  const mountObserved = async (
+    observed: ObservedState,
+    initialItems?: ModuleLineItem[],
+  ) => {
     await act(async () => {
-      root.render(createElement(ObservedFiller, { observed }))
+      root.render(createElement(ObservedFiller, { observed, initialItems }))
       await Promise.resolve()
     })
   }
@@ -247,6 +298,18 @@ describe('SalesOrderNetPriceFiller', () => {
     const okBtn = await waitForOkButton()
     await act(async () => {
       okBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  /** 点工具栏「重新核查网价」并等异步核查落地。 */
+  const clickRecheck = async () => {
+    await act(async () => {
+      buttonByText('重新核查网价')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
@@ -279,14 +342,60 @@ describe('SalesOrderNetPriceFiller', () => {
     })
   }
 
-  it('非交付核定状态不渲染取价按钮', async () => {
+  it('非草稿/交付核定状态: 按钮置灰但可聚焦, 失焦前用 tooltip 说明原因(不静默禁用)', async () => {
     await act(async () => {
       root.render(
         createElement(Harness, { initialItems: [row({})], status: '已审核' }),
       )
       await Promise.resolve()
     })
-    expect(container.querySelector('button')).toBeNull()
+    const applyBtn = buttonByText('整单取网价')
+    expect(applyBtn, '仍要渲染按钮, 只是不可用').toBeTruthy()
+    // aria-disabled 而非原生 disabled: 键盘用户仍能聚焦并读到原因(WCAG 2.5.8 命中区 + 说明可达)
+    expect(applyBtn?.getAttribute('aria-disabled')).toBe('true')
+    expect(applyBtn?.disabled).toBe(false)
+    await act(async () => {
+      applyBtn?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(document.body.textContent).toContain(
+      '仅草稿与交付核定状态可整单取网价',
+    )
+    // 点击不打开取价弹层
+    expect(document.body.textContent).not.toContain('按网价赋单价')
+  })
+
+  it('已审核状态点击整单取网价不会打开弹层', async () => {
+    await act(async () => {
+      root.render(
+        createElement(Harness, { initialItems: [row({})], status: '已审核' }),
+      )
+      await Promise.resolve()
+    })
+    await act(async () => {
+      buttonByText('整单取网价')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(document.querySelector('.ant-modal')).toBeNull()
+  })
+
+  it('草稿状态可用: 点击打开取价弹层', async () => {
+    await act(async () => {
+      root.render(
+        createElement(Harness, { initialItems: [row({})], status: '草稿' }),
+      )
+      await Promise.resolve()
+    })
+    const applyBtn = buttonByText('整单取网价')
+    expect(applyBtn?.getAttribute('aria-disabled')).toBe('false')
+    await act(async () => {
+      applyBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(document.body.textContent).toContain('按网价赋单价')
   })
 
   it('交付核定状态渲染「整单取网价」按钮', async () => {
@@ -748,4 +857,195 @@ describe('SalesOrderNetPriceFiller', () => {
     }
     throw new Error('确认按钮未出现')
   }
+
+  it('整单取价前二次确认: 会改写多少行写进确认框, 取消则一行都不改', async () => {
+    confirmMode = 'manual'
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
+    ])
+    await openNetPriceDialog()
+    await clickOk()
+
+    expect(confirmCalls).toHaveLength(1)
+    expect(String(confirmCalls[0].title)).toContain('确认整单取网价')
+    expect(String(confirmCalls[0].content)).toContain('改写 1 行单价')
+    expect(String(confirmCalls[0].content)).toContain('本单共 1 行')
+
+    await act(async () => {
+      confirmCalls[0].onCancel?.()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // 取消 = 不改写, 也只关闭了确认框(弹层仍开着由用户决定)
+    expect(observed.items[0].unitPrice).toBe(1)
+    expect(observed.fields.priceRuleId).toBeUndefined()
+  })
+
+  it('确认后整单写入并给出结果摘要(成功 / 无网价保持原值 / 跳过)', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+      match({ materialId: 'm2', price: null, status: '无网价' }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
+      row({ id: 'r2', materialId: 'm2', material: 'HRB500', unitPrice: 999 }),
+      // 空行(没有物料身份)既不计成功也不计无网价, 计入"跳过"
+      { id: 'r3' } as ModuleLineItem,
+    ])
+    await openNetPriceDialog()
+    await clickOk()
+    // 默认 confirmMode=accept: 确认框自动点确定
+    expect(observed.items.map((item) => item.unitPrice)).toEqual([
+      3430,
+      999,
+      undefined,
+    ])
+    expect(confirmCalls).toHaveLength(1)
+    expect(String(confirmCalls[0].content)).toContain('改写 1 行')
+    expect(container.textContent).toContain('取价结果')
+    expect(container.textContent).toContain(
+      '成功 1 行 · 无网价 1 行（保持原值，请手工填写）· 跳过 1 行',
+    )
+  })
+
+  it('单价已等于网价时不弹二次确认(没有行会被改写)', async () => {
+    confirmMode = 'manual'
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 3430 }),
+    ])
+    await openNetPriceDialog()
+    await clickOk()
+
+    expect(confirmCalls).toHaveLength(0)
+    expect(observed.items[0].unitPrice).toBe(3430)
+    expect(container.textContent).toContain('成功 1 行')
+  })
+
+  it('网价核查: 未核查 → 重查给出汇总, 手工改单价后重查数字随之变化', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+      match({ materialId: 'm2', price: null, status: '无网价' }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      // r1 单价已经是网价 + 加价 30
+      row({ id: 'r1', materialId: 'm1', unitPrice: 3430 }),
+      row({ id: 'r2', materialId: 'm2', unitPrice: 999 }),
+    ])
+    expect(container.textContent).toContain('网价匹配：2 行未核查')
+
+    await clickRecheck()
+    expect(container.textContent).toContain(
+      '本单 2 行单价均与网价一致（1 行无网价，请手工填写）',
+    )
+    expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MATCHED')
+    expect(useNetPriceMatchStore.getState().entries.r2?.state).toBe('NO_PRICE')
+
+    // 手工把 r1 改成与网价不一致: 汇总仍显示"上次核查"的结果(核查是显式动作, 不随输入自动漂移)
+    await act(async () => {
+      observed.replaceItems?.([
+        row({ id: 'r1', materialId: 'm1', unitPrice: 3200 }),
+        row({ id: 'r2', materialId: 'm2', unitPrice: 999 }),
+      ])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(container.textContent).toContain(
+      '本单 2 行单价均与网价一致（1 行无网价，请手工填写）',
+    )
+
+    // 重查后数字才变化: 1 行与网价不一致
+    await clickRecheck()
+    expect(container.textContent).toContain('本单 2 行，1 行单价与网价不一致')
+    expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MISMATCH')
+    // 问题行清单: 数量与可访问入口
+    expect(container.textContent).toContain('网价匹配明细（1 行待处理）')
+  })
+
+  it('问题行清单在受控弹层里列出不匹配行', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', material: 'HRB400E', unitPrice: 3200 }),
+    ])
+    await clickRecheck()
+    expect(container.textContent).toContain('本单 1 行，1 行单价与网价不一致')
+
+    await act(async () => {
+      buttonByText('网价匹配明细')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const modal = Array.from(document.querySelectorAll('.ant-modal')).find(
+      (m) => m.textContent?.includes('网价匹配明细'),
+    )
+    expect(modal).toBeTruthy()
+    expect(modal?.textContent).toContain('HRB400E')
+    // 差额是文字而非只放在悬浮提示里(键盘/读屏可达): 应有 3,430.00, 当前 3,200.00
+    expect(modal?.textContent).toContain('3,430.00')
+    expect(modal?.textContent).toContain('3,200.00')
+    expect(modal?.textContent).toContain('定位到该行')
+  })
+
+  it('整单取价后自动重查一次: 行内标识与汇总立即反映新单价', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
+    ])
+    expect(container.textContent).toContain('网价匹配：1 行未核查')
+
+    await openNetPriceDialog()
+    await clickOk()
+
+    // 取价后自动重查: 写入的单价就是网价口径 ⇒ 立即变成"一致"
+    expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MATCHED')
+    expect(container.textContent).toContain('本单 1 行单价均与网价一致')
+  })
+
+  it('核查失败(该日无行情)时给出原因, 不改动已有匹配结果', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([])
+    fetchPricingQuoteResolutionMock.mockResolvedValue(
+      resolution({ quoteAvailable: false, period: null }),
+    )
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
+    ])
+    await clickRecheck()
+    expect(container.textContent).toContain('实际取价日没有行情，无法取价')
+    expect(useNetPriceMatchStore.getState().entries.r1).toBeUndefined()
+  })
 })
