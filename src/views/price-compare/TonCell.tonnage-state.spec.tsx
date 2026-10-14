@@ -333,4 +333,73 @@ describe('吨位关联的三态与欠额展示', () => {
       i18n.t('priceCompare.sheet.purchaseOrderUnallocatedTon', { ton: '70' }),
     )
   })
+
+  /**
+   * 「剩余未开吨位」列的渲染口径(回归: 多行关联时只算第一条, 与同格弹层的合计值打架)。
+   *
+   * <p>实测: ton=20 + 两张订货各 7.996 ⇒ 单条口径 −12.004(7.996 − 20), 合计口径
+   * −4.008(15.992 − 20), 同一格两个数字。列上必须给合计值, 且与标红判定、ⓘ 弹层一致。</p>
+   */
+  it('多行关联时「剩余未开吨位」列按关联行合计渲染(不是只算第一条)', () => {
+    const recordA: PurchaseOrderTonnageRecord = {
+      ...linkedRecord,
+      orderedWeight: 7.996,
+      issuedWeight: 0,
+    }
+    const recordB: PurchaseOrderTonnageRecord = {
+      ...secondRecord,
+      orderedWeight: 7.996,
+      issuedWeight: 0,
+    }
+    render(
+      {
+        ...baseRow,
+        ton: 20,
+        purchaseOrderItemId: '301',
+        purchaseOrderNo: 'PO-88',
+        purchaseOrderLinks: [
+          {
+            purchaseOrderId: '88',
+            purchaseOrderNo: 'PO-88',
+            purchaseOrderItemId: '301',
+            allocatedTon: 7.996,
+          },
+          {
+            purchaseOrderId: '99',
+            purchaseOrderNo: 'PO-99',
+            purchaseOrderItemId: '302',
+            allocatedTon: 7.996,
+          },
+        ],
+      },
+      [recordA, recordB],
+      { loading: false, localTonForItem: 20 },
+    )
+    const figure = container.querySelector<HTMLElement>(
+      '.price-compare-ton-figure',
+    )
+    // 合计: 订货 7.996 + 7.996 − 已开(0 + 0 + 20) = −4.008
+    expect(figure?.textContent).toBe('-4.008')
+    // 单条口径会得到 −12.004; 这条断言就是"改回单条口径必须变红"的钉子
+    expect(figure?.textContent).not.toBe('-12.004')
+    // 标红判定与列上数字同源
+    expect(figure?.className).toContain('price-compare-ton-hint--over')
+  })
+
+  it('单条关联的「剩余未开吨位」逐字不变(合计 = 该条)', () => {
+    render(
+      {
+        ...baseRow,
+        ton: 40,
+        purchaseOrderItemId: '301',
+        purchaseOrderNo: 'PO-88',
+      },
+      [{ ...linkedRecord, orderedWeight: 40, issuedWeight: 30 }],
+      { loading: false, localTonForItem: 40 },
+    )
+    expect(
+      container.querySelector<HTMLElement>('.price-compare-ton-figure')
+        ?.textContent,
+    ).toBe('-30')
+  })
 })

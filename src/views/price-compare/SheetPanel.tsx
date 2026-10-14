@@ -54,6 +54,7 @@ import {
   isPurchasedRow,
   isSeparatorRow,
   LOCK_REASON_KEYS,
+  linkedPurchaseOrderItemIds,
   netPriceWithFallback,
   resolveLock,
   resolveRef,
@@ -64,6 +65,7 @@ import {
 } from './core'
 import { LockableField } from './LockableField'
 import { withMemberVisibility } from './price-compare-support'
+import { resolveLinkedTonnageTotals } from './TonCell'
 import {
   buildIssuedTonColumn,
   buildTonColumn,
@@ -71,6 +73,7 @@ import {
   EMPTY_PURCHASE_ORDER_TONNAGE,
   type PurchaseOrderTonnageDraftInput,
 } from './ton-column'
+import { remainingTonText } from './ton-progress-text'
 import type {
   Brand,
   GridRow,
@@ -2524,6 +2527,40 @@ export function SheetPanel(props: Props) {
     () => sumTonByPurchaseOrderItem(rows),
     [rows],
   )
+  /**
+   * 多行关联行的「剩余未开吨位」候选文案。
+   *
+   * <p>这类行在列上按关联行**合计**渲染(见 remainingTonText), 合计值可能比任何单条明细行
+   * 候选更宽; 单条关联行由 maxRemainingTonTextWidth 的单条候选覆盖, 这里只补多行的。</p>
+   */
+  const multiLinkRemainingTexts = useMemo(
+    () =>
+      rows.flatMap((row) => {
+        if (linkedPurchaseOrderItemIds(row).length < 2) return []
+        const totals = resolveLinkedTonnageTotals(
+          row,
+          purchaseOrderTonnage.options,
+          row.purchaseOrderItemId
+            ? purchaseOrderTonnage.tonnageByItemId.get(row.purchaseOrderItemId)
+            : undefined,
+        )
+        return [
+          remainingTonText(
+            totals.orderedTotal,
+            totals.otherIssuedTotal,
+            row.purchaseOrderItemId
+              ? (localTonByItemId.get(row.purchaseOrderItemId) ?? 0)
+              : 0,
+          ),
+        ]
+      }),
+    [
+      rows,
+      purchaseOrderTonnage.options,
+      purchaseOrderTonnage.tonnageByItemId,
+      localTonByItemId,
+    ],
+  )
   const columnWidths = useSheetColumnWidths(
     tonnageRecordsForWidth,
     localTonByItemId,
@@ -2531,6 +2568,7 @@ export function SheetPanel(props: Props) {
       issued: t('priceCompare.sheet.columns.issuedTon'),
       unopened: t('priceCompare.sheet.columns.unopenedTon'),
     },
+    multiLinkRemainingTexts,
   )
 
   const base = {

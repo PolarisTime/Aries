@@ -8,6 +8,7 @@ import {
   issuedTonTotal,
   maxRemainingTonTextWidth,
   maxTonProgressTextWidth,
+  remainingTonText,
   remainingTonTotal,
   tonProgressDetailRows,
   tonProgressDetailText,
@@ -190,6 +191,37 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
     expect(
       tonRemainingText(poRecord({ orderedWeight: 40, issuedWeight: 30 }), 40),
     ).toBe('-30')
+  })
+
+  it('剩余未开吨位按关联行合计给文案(列上渲染与定宽共用)', () => {
+    // 列上: 合计 = 订货合计 − 已开合计
+    expect(remainingTonText(15.992, 0, 20)).toBe('-4.008')
+    // 只算第一条会得到 −12.004(7.996 − 20): 两者必须可区分
+    expect(remainingTonText(15.992, 0, 20)).not.toBe(
+      tonRemainingText(poRecord({ orderedWeight: 7.996, issuedWeight: 0 }), 20),
+    )
+    // 单条关联时合计 = 该条, 历史值逐字不变
+    expect(remainingTonText(40, 30, 40)).toBe(
+      tonRemainingText(poRecord({ orderedWeight: 40, issuedWeight: 30 }), 40),
+    )
+  })
+
+  it('多行关联的合计文案可参与「剩余未开吨位」定宽', () => {
+    const records = [
+      poRecord({
+        purchaseOrderItemId: '301',
+        orderedWeight: 7.996,
+        issuedWeight: 0,
+      }),
+    ]
+    const local = new Map([['301', 20]])
+    const single = maxRemainingTonTextWidth(records, local)
+    // 不传候选时行为与以前一致(向后兼容: 旧调用点不受影响)
+    expect(maxRemainingTonTextWidth(records, local, [])).toBe(single)
+    // 合计文案更宽时必须撑开列宽, 否则会被省略号收尾
+    expect(
+      maxRemainingTonTextWidth(records, local, ['-4.008', '17,769.5']),
+    ).toBeGreaterThan(single)
   })
 
   it('弹层明细行与读屏整句共用同一份取值与行序', () => {

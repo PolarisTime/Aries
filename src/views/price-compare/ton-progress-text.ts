@@ -89,7 +89,24 @@ export function tonProgressTextParts(
 }
 
 /**
- * 「剩余未开吨位」列的可见文案: **订货吨位 − 已开吨位**(可为负, 表示这条明细行被超开)。
+ * 「剩余未开吨位」列的可见文案(**按关联行合计**): 订货吨位合计 − 已开吨位合计。
+ *
+ * <p>一行可挂多张订单明细行, 此时列上必须给合计值 —— 只算第一条会让同一格出现两个数字:
+ * 列上 `7.996 − 20 = −12.004`, 而同格 ⓘ 弹层的 `剩余未开` 是 `15.992 − 20 = −4.008`(实测)。
+ * 单条关联时合计等于该条, 历史值逐字不变。</p>
+ */
+export function remainingTonText(
+  orderedTotal: number,
+  otherIssuedTotal: number,
+  reportedTon: number,
+): string {
+  return compactTonText(
+    remainingTonTotal(orderedTotal, otherIssuedTotal, reportedTon),
+  )
+}
+
+/**
+ * 「剩余未开吨位」列的可见文案(单条明细行口径)。
  *
  * <p>订货吨位来自采购订单明细行本身, 不是本单据报的量 —— 本单据报多少已经在
  * 「报单吨位」列显示, 这里显示的是订单侧还剩多少可开。</p>
@@ -98,8 +115,10 @@ export function tonRemainingText(
   record: PurchaseOrderTonnageRecord,
   reportedTon: number,
 ): string {
-  return compactTonText(
-    remainingTonTotal(record.orderedWeight, record.issuedWeight, reportedTon),
+  return remainingTonText(
+    record.orderedWeight,
+    record.issuedWeight,
+    reportedTon,
   )
 }
 
@@ -213,10 +232,14 @@ export function maxTonProgressTextWidth(
  *
  * <p>该列只放一个固定 11px 的只读数字(不随个人字号缩放), 因此列宽按内容给即可 ——
  * 数字短(如 `0.7`)时不留空白, 负数(超开)或长吨位也裁不到。</p>
+ *
+ * <p>`extraTexts` 用于**多行关联**行: 这些行在列上按「关联行合计」渲染(见
+ * {@link remainingTonText}), 合计值可能比任何单条候选更宽, 不补进来就会被省略号收尾。</p>
  */
 export function maxRemainingTonTextWidth(
   records: readonly PurchaseOrderTonnageRecord[],
   localTonByItemId: ReadonlyMap<string, number>,
+  extraTexts: readonly string[] = [],
 ): number {
   let max = 0
   for (const record of records) {
@@ -228,6 +251,9 @@ export function maxRemainingTonTextWidth(
         TON_PROGRESS_FONT_SIZE,
       ),
     )
+  }
+  for (const text of extraTexts) {
+    max = Math.max(max, estimateSheetTextWidth(text, TON_PROGRESS_FONT_SIZE))
   }
   return max
 }

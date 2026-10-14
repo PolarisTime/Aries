@@ -15,6 +15,7 @@ import {
 /** 无采购订单数据时的占位: 稳定引用, 避免每次渲染都触发重算。 */
 const NO_TONNAGE_RECORDS: readonly PurchaseOrderTonnageRecord[] = []
 const NO_LOCAL_TON: ReadonlyMap<string, number> = new Map()
+const NO_EXTRA_REMAINING_TEXTS: readonly string[] = []
 /** 两列的表头文案(用于把表头宽度算进列宽下限)。 */
 export interface SheetTonHeaderTexts {
   issued: string
@@ -40,6 +41,11 @@ export function useSheetColumnWidths(
   tonnageRecords: readonly PurchaseOrderTonnageRecord[] = NO_TONNAGE_RECORDS,
   localTonByItemId: ReadonlyMap<string, number> = NO_LOCAL_TON,
   headerTexts?: SheetTonHeaderTexts,
+  /**
+   * 多行关联行的「剩余未开吨位」候选文案: 这些行在列上按关联行合计渲染, 合计值可能比任何
+   * 单条明细行候选更宽, 不补进来就会被省略号收尾(见 maxRemainingTonTextWidth)。
+   */
+  extraRemainingTexts: readonly string[] = NO_EXTRA_REMAINING_TEXTS,
 ) {
   const fontSize = useUiSettingsStore(
     (state) => state.settings?.fontSize ?? SHEET_WIDTH_BASE_FONT_SIZE,
@@ -48,7 +54,11 @@ export function useSheetColumnWidths(
   const unopenedHeader = headerTexts?.unopened ?? ''
   const tonTextWidths = useMemo(
     () => ({
-      issued: maxRemainingTonTextWidth(tonnageRecords, localTonByItemId),
+      issued: maxRemainingTonTextWidth(
+        tonnageRecords,
+        localTonByItemId,
+        extraRemainingTexts,
+      ),
       unopened: maxTonProgressTextWidth(
         tonnageRecords,
         localTonByItemId,
@@ -58,7 +68,14 @@ export function useSheetColumnWidths(
       issuedHeader: estimateSheetTextWidth(issuedHeader, fontSize),
       unopenedHeader: estimateSheetTextWidth(unopenedHeader, fontSize),
     }),
-    [tonnageRecords, localTonByItemId, issuedHeader, unopenedHeader, fontSize],
+    [
+      tonnageRecords,
+      localTonByItemId,
+      extraRemainingTexts,
+      issuedHeader,
+      unopenedHeader,
+      fontSize,
+    ],
   )
   return useMemo(
     () => sheetColumnWidths(fontSize, tonTextWidths),

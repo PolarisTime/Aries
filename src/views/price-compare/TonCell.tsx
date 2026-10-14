@@ -9,11 +9,11 @@ import {
   compactTonText,
   issuedBrandText,
   issuedTonTotal,
+  remainingTonText,
   remainingTonTotal,
   tonProgressDetailRows,
   tonProgressDetailText,
   tonProgressTextParts,
-  tonRemainingText,
 } from './ton-progress-text'
 import type { PriceRow } from './types'
 
@@ -313,7 +313,12 @@ export function IssuedTonCell({
   const { t } = useTranslation()
   const phase = tonnageOptionsPhase({ loading, isError })
   const { selected } = resolveTonnageView(row, options, linked)
-  // 剩余未开吨位 = 订货吨位 − 已开吨位(已开含本单据这一行报的量), 负值表示这条明细行被超开
+  /*
+   * 剩余未开吨位 = 订货吨位**合计** − 已开吨位合计(已开含本单据这一行报的量)。
+   * 一行可挂多张明细行: 只算第一条会让列上与同格 ⓘ 弹层出现两个数字(实测
+   * 列上 −12.004 = 7.996 − 20, 弹层 −4.008 = 15.992 − 20), 因此列上渲染、标红判定
+   * 与弹层都必须走同一份合计口径(单条关联时合计 = 该条, 历史值逐字不变)。
+   */
   const totals = resolveLinkedTonnageTotals(row, options, linked)
   const remaining = selected
     ? remainingTonTotal(
@@ -337,7 +342,11 @@ export function IssuedTonCell({
                 : 'price-compare-ton-figure'
             }
           >
-            {tonRemainingText(selected, localTonForItem)}
+            {remainingTonText(
+              totals.orderedTotal,
+              totals.otherIssuedTotal,
+              localTonForItem,
+            )}
           </span>
         </Tooltip>
       ) : (
