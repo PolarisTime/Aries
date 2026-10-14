@@ -5,10 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { ModuleLineItem, ModuleRecordInput } from '@/types/module-page'
 
-vi.mock('@/components/DocumentReferenceStatusIcons', () => ({
-  DocumentReferenceStatusIcons: () => null,
-}))
-
 vi.mock(
   '@/module-system/core/module-option-resolvers',
   async (importOriginal) => {

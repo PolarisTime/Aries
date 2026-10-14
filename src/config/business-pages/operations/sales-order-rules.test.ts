@@ -1,8 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('@/components/DocumentReferenceStatusIcons', () => ({
-  DocumentReferenceStatusIcons: () => null,
-}))
+import { describe, expect, it } from 'vitest'
 
 import type { ModuleRecord } from '@/types/module-page'
 import {
@@ -95,13 +91,12 @@ describe('sales-order-rules', () => {
   })
 
   describe('renderSalesOrderNo', () => {
-    it('返回 React 元素并透传单号', () => {
-      const node = renderSalesOrderNo(
-        'SO-1',
-        recordWith({ referencedByFreightBill: true }),
-      )
+    it('返回 React 元素并透传单号（单号列不再带下游引用图标，渲染断言见同名 jsdom 用例）', () => {
+      const node = renderSalesOrderNo('SO-1') as {
+        props: { children: unknown }
+      }
       expect(node).toBeTruthy()
-      expect(node).toHaveProperty('props')
+      expect(node.props.children).toBeTruthy()
     })
   })
 

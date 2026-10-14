@@ -2,7 +2,6 @@ import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
 import { normalizeScopeEnforcement } from '@/api/master/project-options'
-import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import {
   DISPLAY_WEIGHT_PRECISION,
   INTERNAL_WEIGHT_PRECISION,
@@ -29,10 +28,14 @@ export function renderDerivedQuantity(value: unknown): React.ReactNode {
   return Number.isFinite(parsed) ? formatInteger(parsed) : null
 }
 
-export function renderSalesOrderNo(
-  value: unknown,
-  record: ModuleRecord,
-): React.ReactNode {
+/**
+ * 销售订单「订单编号」列：只渲染单号本身（外层类名供单据流弹层触发使用）。
+ *
+ * <p>原先在单号后追加下游引用状态图标（已被物流单/销售出库/销售退货引用），按产品要求整体下线：
+ * 图标与 tooltip 都不再渲染。行级字段 `referencedByFreightBill` 等仍保留在响应 schema 中
+ * （后端仍返回，strictObject 下删声明会让整页解析失败），但前端已无消费方。</p>
+ */
+export function renderSalesOrderNo(value: unknown): React.ReactNode {
   return React.createElement(
     'span',
     { className: 'document-reference-trigger' },
@@ -41,27 +44,6 @@ export function renderSalesOrderNo(
       { className: 'document-reference-link' },
       String(value ?? ''),
     ),
-    React.createElement(DocumentReferenceStatusIcons, {
-      statuses: [
-        {
-          key: 'freight-bill',
-          label: i18next.t('modules.pages.salesOrder.referencedByFreightBill'),
-          referenced: Boolean(record.referencedByFreightBill),
-        },
-        {
-          key: 'sales-outbound',
-          label: i18next.t(
-            'modules.pages.salesOrder.referencedBySalesOutbound',
-          ),
-          referenced: Boolean(record.referencedBySalesOutbound),
-        },
-        {
-          key: 'sales-return',
-          label: i18next.t('modules.pages.salesOrder.referencedBySalesReturn'),
-          referenced: Boolean(record.referencedBySalesReturn),
-        },
-      ],
-    }),
   )
 }
 
