@@ -224,12 +224,13 @@ function Harness({
   apiRef,
   strict = false,
 }: HarnessProps) {
-  const boundary = createElement(
-    Activity,
-    { mode: visible ? 'visible' : 'hidden' },
-    createElement(Probe, { open, record, config, apiRef }),
-    createElement(EffectProbe, { observable }),
-  )
+  const boundary = createElement(Activity, {
+    mode: visible ? 'visible' : 'hidden',
+    children: [
+      createElement(Probe, { key: 'probe', open, record, config, apiRef }),
+      createElement(EffectProbe, { key: 'effect-probe', observable }),
+    ],
+  })
   return strict ? createElement(StrictMode, null, boundary) : boundary
 }
 
