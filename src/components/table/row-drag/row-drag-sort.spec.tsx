@@ -125,7 +125,9 @@ describe('整行长按拖动排序', () => {
     vi.clearAllMocks()
   })
 
-  const render = (options: { enabled?: boolean; onReorder?: (ids: string[]) => void } = {}) => {
+  const render = (
+    options: { enabled?: boolean; onReorder?: (ids: string[]) => void } = {},
+  ) => {
     const onReorder = options.onReorder ?? vi.fn()
     act(() => {
       root.render(

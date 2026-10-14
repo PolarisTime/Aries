@@ -62,13 +62,12 @@ describe('行拖动放行判定', () => {
     expect(
       isRowDragBlockedTarget(target('<button type="button">删除</button>')),
     ).toBe(true)
-    expect(
-      isRowDragBlockedTarget(target('<a href="/x">打开</a>')),
-    ).toBe(true)
+    expect(isRowDragBlockedTarget(target('<a href="/x">打开</a>'))).toBe(true)
     expect(
       isRowDragBlockedTarget(
-        target('<label class="ant-checkbox-wrapper"><input type="checkbox" /></label>')
-          ?.querySelector('input') ?? null,
+        target(
+          '<label class="ant-checkbox-wrapper"><input type="checkbox" /></label>',
+        )?.querySelector('input') ?? null,
       ),
     ).toBe(true)
   })
@@ -79,9 +78,7 @@ describe('行拖动放行判定', () => {
         target('<button type="button" disabled>删除</button>'),
       ),
     ).toBe(false)
-    expect(
-      isRowDragBlockedTarget(target('<input disabled />')),
-    ).toBe(false)
+    expect(isRowDragBlockedTarget(target('<input disabled />'))).toBe(false)
   })
 
   it('普通单元格/空目标放行(整行都是拖动区)', () => {
