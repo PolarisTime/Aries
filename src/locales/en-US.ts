@@ -2819,7 +2819,10 @@ export const enUS = {
       purchaseOrderPickerClear: 'Clear link',
       purchaseOrderPickerClearHint: 'Unlink this row from the purchase order',
       purchaseOrderPickerHint:
-        'Click a row to link it (keyboard: Tab to a row, then press Enter); issued tonnage is based on saved sheets.',
+        'Click a row to link it (keyboard: Tab to a row, then press Enter); or tick several rows and press "Confirm" to link them in tick order, allocating the tonnage across them by each line ordered weight. Issued tonnage is based on saved sheets.',
+      /** Multi-select column: header title and the "Confirm (n)" button. */
+      purchaseOrderPickerChoose: 'Select',
+      purchaseOrderPickerConfirm: 'Confirm ({{count}})',
       purchaseOrderPickerShowOtherVarieties:
         'Show rows with a different material / spec ({{count}})',
       purchaseOrderPickerEmptyVariety:
@@ -2831,6 +2834,10 @@ export const enUS = {
         'This sheet already linked {{ton}} tons',
       purchaseOrderPickerFullyLinkedHint:
         'No remaining tonnage to link; selection is disabled but the line stays visible',
+      /** ⓘ popover with several linked lines: section titles and per-line allocation. */
+      purchaseOrderLinkedLines: 'Linked PO lines ({{count}})',
+      purchaseOrderLinkedTotal: 'Linked total',
+      purchaseOrderAllocatedTon: 'Allocated here',
     },
     config: {
       title: 'Project Settings',

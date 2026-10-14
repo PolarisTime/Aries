@@ -12,7 +12,7 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   fetchPurchaseOrderTonnages,
@@ -31,6 +31,11 @@ interface Props {
   open: boolean
   /** 当前已关联明细行 id(用于高亮与清除)。 */
   selectedItemId?: string
+  /**
+   * 当前行已关联的全部明细行 id: 打开弹窗时回填勾选态(多选叠加)。
+   * <p>不传时勾选态为空, 行为与旧的单选路径完全一致。</p>
+   */
+  selectedItemIds?: string[]
   /** 排除的报价单标识(编辑当前单据时排除自身已保存吨位), 可为空。 */
   excludeSheetId?: string
   /**
@@ -46,6 +51,11 @@ interface Props {
   matchVariety?: PickerVarietyTarget
   /** 选中明细行(undefined 表示清除关联); 选择后由调用方关闭弹窗。 */
   onSelect: (record: PurchaseOrderTonnageRecord | undefined) => void
+  /**
+   * 确认勾选的多张明细行(按勾选顺序, 只含当前可见的行); 由调用方关闭弹窗。
+   * <p>不传时「确认」按钮只禁用不派发(保持既有单选调用方零改动)。</p>
+   */
+  onConfirmLinks?: (records: PurchaseOrderTonnageRecord[]) => void
   onClose: () => void
 }
 
@@ -59,10 +69,12 @@ const SEARCH_DEBOUNCE_MS = 300
 export function PurchaseOrderPickerModal({
   open,
   selectedItemId,
+  selectedItemIds,
   excludeSheetId,
   matchVariety,
   linkedTonByItemId,
   onSelect,
+  onConfirmLinks,
   onClose,
 }: Props) {
   const { t } = useTranslation()
@@ -72,6 +84,32 @@ export function PurchaseOrderPickerModal({
   const [showFullyLinked, setShowFullyLinked] = useState(false)
   /** 是否显示"材质/规格/长度不一致"的行: 默认隐藏(自动筛选), 需要借用别的规格时可打开。 */
   const [showOtherVarieties, setShowOtherVarieties] = useState(false)
+  /** 勾选的明细行 id: 数组保序, 顺序即"确认"后的关联顺序。 */
+  const [checkedItemIds, setCheckedItemIds] = useState<string[]>([])
+
+  /*
+   * 打开时用当前行已关联的明细行回填勾选态。
+   *
+   * <p>只在 `open` 由假变真那一次回填: 打开期间行数据改动(自动保存/他人编辑)会换掉
+   * `selectedItemIds` 的引用, 若按引用联动就会把用户刚勾上的选择冲掉。ref 承接最新值,
+   * 保证回填的始终是打开那一刻的关联集合。</p>
+   */
+  const selectedItemIdsRef = useRef(selectedItemIds ?? [])
+  useEffect(() => {
+    selectedItemIdsRef.current = selectedItemIds ?? []
+  }, [selectedItemIds])
+  useEffect(() => {
+    if (!open) return
+    setCheckedItemIds(selectedItemIdsRef.current)
+  }, [open])
+
+  const toggleChecked = (itemId: string, checked: boolean) => {
+    setCheckedItemIds((prev) => {
+      if (!checked) return prev.filter((id) => id !== itemId)
+      // 保序去重: 重复勾选同一行不改变首次勾选的位置(关联顺序稳定)
+      return prev.includes(itemId) ? prev : [...prev, itemId]
+    })
+  }
 
   // 关键字防抖: 避免每次输入都打后端。
   useEffect(() => {
@@ -103,6 +141,18 @@ export function PurchaseOrderPickerModal({
   })
 
   /*
+   * 已关联的明细行 id 集合(多选时是全部关联行, 旧调用方只给单选那一列)。
+   * 这些行必须始终保留在可见集合里: 它们默认已勾选, 一旦被"已关联完"/自动筛选藏起来,
+   * 用户点「确认」就会在毫不知情的情况下把这条隐藏的关联丢掉。
+   */
+  const preselectedIds = useMemo(() => {
+    const ids = new Set(selectedItemIds ?? [])
+    // 兼容旧调用方: 只给单选那一列时, 那一行同样不能因为"已关联完"被藏起来
+    if (selectedItemId !== undefined) ids.add(selectedItemId)
+    return ids
+  }, [selectedItemIds, selectedItemId])
+
+  /*
    * 剩余可关联吨位 <= 0 的行默认隐藏: 这些行已无额度可选, 留在列表里只会稀释搜索结果。
    * 开关只改本弹窗的可见集合, 不改查询参数; 当前已关联行始终保留, 避免用户以为关联丢了。
    */
@@ -112,9 +162,9 @@ export function PurchaseOrderPickerModal({
       let mismatchCount = 0
       const rows: PurchaseOrderTonnageRecord[] = []
       for (const record of data) {
+        const preselected = preselectedIds.has(record.purchaseOrderItemId)
         const fullyLinked =
-          remainingLinkableTon(record, linkedTonByItemId) <= 0 &&
-          record.purchaseOrderItemId !== selectedItemId
+          remainingLinkableTon(record, linkedTonByItemId) <= 0 && !preselected
         if (fullyLinked) hiddenCount += 1
         if (fullyLinked && !showFullyLinked) continue
         /*
@@ -122,8 +172,7 @@ export function PurchaseOrderPickerModal({
          * (否则用户会以为关联被清掉了), 不一致的行由开关放行。
          */
         const varietyMismatch =
-          record.purchaseOrderItemId !== selectedItemId &&
-          !matchesPickerVariety(record, matchVariety)
+          !preselected && !matchesPickerVariety(record, matchVariety)
         if (varietyMismatch) mismatchCount += 1
         if (varietyMismatch && !showOtherVarieties) continue
         rows.push(record)
@@ -136,13 +185,60 @@ export function PurchaseOrderPickerModal({
     }, [
       data,
       linkedTonByItemId,
-      selectedItemId,
+      preselectedIds,
       showFullyLinked,
       showOtherVarieties,
       matchVariety,
     ])
 
+  /*
+   * 已勾选且当前可见的记录(按勾选顺序)。被开关藏起来的勾选行不算数: 确认后写回的就是
+   * 用户眼前能核对的那几条, 不把不可见的行也一并写进去。
+   */
+  const checkedRecords = useMemo(
+    () =>
+      checkedItemIds
+        .map((itemId) =>
+          visibleData.find((record) => record.purchaseOrderItemId === itemId),
+        )
+        .filter(
+          (record): record is PurchaseOrderTonnageRecord =>
+            record !== undefined,
+        ),
+    [checkedItemIds, visibleData],
+  )
+
   const columns: ColumnsType<PurchaseOrderTonnageRecord> = [
+    {
+      // 多选列: 勾选多行后走工具栏「确认（n）」按勾选顺序一次关联多张明细行。
+      // 点击/按键必须阻止冒泡, 否则会触发行的"点一行=选一张"路径并直接关闭弹窗。
+      key: 'choose',
+      title: t('priceCompare.sheet.purchaseOrderPickerChoose'),
+      width: 56,
+      align: 'center',
+      render: (_value, record) => {
+        const checked = checkedItemIds.includes(record.purchaseOrderItemId)
+        // 与"点行选中"同一口径: 剩余可关联吨位为 0 的行可见但不可勾选, 已勾选的行仍可取消
+        const selectable =
+          checked || remainingLinkableTon(record, linkedTonByItemId) > 0
+        return (
+          <span
+            className="price-compare-purchase-order-picker-check"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <Checkbox
+              aria-label={record.orderNo}
+              checked={checked}
+              disabled={!selectable}
+              onChange={(event) =>
+                toggleChecked(record.purchaseOrderItemId, event.target.checked)
+              }
+            />
+          </span>
+        )
+      },
+    },
     {
       title: t('priceCompare.sheet.columns.purchaseOrderNo'),
       dataIndex: 'orderNo',
@@ -287,6 +383,17 @@ export function PurchaseOrderPickerModal({
             count: varietyMismatchCount,
           })}
         </Checkbox>
+        {/* 多选出口: 0 张禁用, 不派发空的确认(清除关联有独立的按钮) */}
+        <Button
+          className="price-compare-purchase-order-picker-confirm"
+          disabled={checkedRecords.length === 0}
+          type="primary"
+          onClick={() => onConfirmLinks?.(checkedRecords)}
+        >
+          {t('priceCompare.sheet.purchaseOrderPickerConfirm', {
+            count: checkedRecords.length,
+          })}
+        </Button>
       </div>
       <Table<PurchaseOrderTonnageRecord>
         columns={columns}

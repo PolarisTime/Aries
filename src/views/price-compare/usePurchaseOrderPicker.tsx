@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
+import { linkedPurchaseOrderItemIds, sumTonByPurchaseOrderItem } from './core'
 import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
-import type { PriceRow } from './types'
+import type { PriceRow, PriceRowPurchaseOrderLink } from './types'
 
 interface Options {
   rows: PriceRow[]
@@ -20,6 +21,8 @@ export interface PurchaseOrderPickerController {
 /**
  * 采购订单明细行选择弹窗控制器: 收敛弹窗状态与回写逻辑, 避免 SheetPanel 主组件膨胀。
  * <p>选项数据由弹窗自行按关键字从后端查询(服务端过滤), 控制器只负责"选哪一行 + 回填"。</p>
+ *
+ * <p>两条回写路径: 点行=选一张(旧路径, 单选覆盖), 勾选多行后「确认」=按勾选顺序挂多张并分配吨位。</p>
  */
 export function usePurchaseOrderPicker({
   rows,
@@ -35,29 +38,60 @@ export function usePurchaseOrderPicker({
    * 本单据内各采购订单明细行已用掉的报单吨位合计。
    * 服务端 remainingWeight 已排除本单据自身已保存吨位, 因此"本单据还能不能再用这一行"
    * 必须再减去这里的手填吨位(含未保存草稿), 否则弹窗会把已被本单吃满的行当成可选项。
+   * 口径与吨位列/服务端一致: 一行挂多张明细行时, 该行吨位对每张明细行都计入一次。
    */
-  const linkedTonByItemId = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const row of rows) {
-      if (row.rowType === 'SEPARATOR') continue
-      const itemId = row.purchaseOrderItemId
-      const ton = row.ton
-      if (!itemId || ton === undefined || !Number.isFinite(ton) || ton <= 0) {
-        continue
+  const linkedTonByItemId = useMemo(
+    () => sumTonByPurchaseOrderItem(rows),
+    [rows],
+  )
+
+  /*
+   * 当前行已关联的明细行 id: 打开弹窗时回填勾选态。用 useMemo 稳住引用 —— 弹窗按引用
+   * 承接这个 prop, 每次渲染新数组会让它误以为关联集合变了。
+   */
+  const selectedItemIds = useMemo(
+    () => (pickerRow ? linkedPurchaseOrderItemIds(pickerRow) : []),
+    [pickerRow],
+  )
+
+  /** 打开弹窗: 记录待回写行(同 id 重复打开时 setState 自身会跳过重渲染)。 */
+  const open = (rowId: string) => setPickerRowId(rowId)
+
+  /**
+   * 单条分配: allocated = max(0, min(剩余, 该明细行订货量)), 逐条扣减剩余。
+   *
+   * <p>剩余初值 = 本行报单吨位(ton ?? 0), 即"这一行要开的量"按勾选顺序依次分摊到各明细行;
+   * 订货量不够的行只吃到自己的订货量, 后续行继续吃剩下的额度。</p>
+   */
+  const allocateLinks = (
+    records: PurchaseOrderTonnageRecord[],
+    reportedTon: number,
+  ): PriceRowPurchaseOrderLink[] => {
+    let remaining = Number.isFinite(reportedTon) ? Math.max(0, reportedTon) : 0
+    return records.map((record) => {
+      const ordered = Number.isFinite(record.orderedWeight)
+        ? Math.max(0, record.orderedWeight)
+        : 0
+      const allocatedTon = Math.max(0, Math.min(remaining, ordered))
+      remaining -= allocatedTon
+      return {
+        purchaseOrderId: record.purchaseOrderId,
+        purchaseOrderNo: record.orderNo,
+        purchaseOrderItemId: record.purchaseOrderItemId,
+        allocatedTon,
       }
-      map.set(itemId, (map.get(itemId) ?? 0) + ton)
-    }
-    return map
-  }, [rows])
+    })
+  }
 
   return {
-    open: (rowId: string) => setPickerRowId(rowId),
+    open,
     node: (
       <PurchaseOrderPickerModal
         excludeSheetId={excludeSheetId}
         linkedTonByItemId={linkedTonByItemId}
         open={pickerRowId !== undefined}
         selectedItemId={pickerRow?.purchaseOrderItemId}
+        selectedItemIds={selectedItemIds}
         matchVariety={
           pickerRow
             ? {
@@ -84,6 +118,25 @@ export function usePurchaseOrderPicker({
               purchaseOrderId: record?.purchaseOrderId,
               purchaseOrderNo: record?.orderNo,
               purchaseOrderItemId: record?.purchaseOrderItemId,
+            })
+          }
+          setPickerRowId(undefined)
+        }}
+        onConfirmLinks={(records: PurchaseOrderTonnageRecord[]) => {
+          if (pickerRowId && records.length > 0) {
+            const target = rows.find((row) => row.id === pickerRowId)
+            const links = allocateLinks(records, target?.ton ?? 0)
+            const [first] = links
+            /*
+             * 多行关联整组写回, 旧三列镜像第一条(与服务端 QuoteSheetStore 的镜像口径一致),
+             * 并沿用"关联必须锁定"的门禁: 未锁定的行保存时关联会被服务端清空。
+             */
+            patchRow(pickerRowId, {
+              ...(first && !target?.locked ? { locked: true } : {}),
+              purchaseOrderLinks: links,
+              purchaseOrderId: first?.purchaseOrderId,
+              purchaseOrderNo: first?.purchaseOrderNo,
+              purchaseOrderItemId: first?.purchaseOrderItemId,
             })
           }
           setPickerRowId(undefined)

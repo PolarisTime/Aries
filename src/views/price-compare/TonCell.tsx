@@ -1,5 +1,6 @@
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { Button, Input, Popover, Tooltip } from 'antd'
+import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
@@ -86,24 +87,33 @@ function itemSpecText(record: PurchaseOrderTonnageRecord) {
 /**
  * 行级吨位合计: 一行可关联多张订单明细行, 订货量与「其他报单已开」都按**关联行合计**。
  *
- * <p>只有一条关联时合计等于该条, 历史行为完全不变; 未关联或明细行已不可见时 records 为空。</p>
+ * <p>只有一条关联时合计等于该条, 历史行为完全不变; 未关联时 records 为空。</p>
+ *
+ * <p>关联的明细行已不可见(订单被删 / 换规格导致不在选项里)时不再静默少算: 这些 id 由
+ * `missingItemIds` 返回, 由调用方给出「已删除」之类的可读状态, 否则用户看到的是一个
+ * 少算了缺失明细行的合计而毫无提示。</p>
  */
 export function resolveLinkedTonnageTotals(
   row: PriceRow,
   options: PurchaseOrderTonnageRecord[],
   linked: PurchaseOrderTonnageRecord | undefined,
 ) {
-  const records = linkedPurchaseOrderItemIds(row)
-    .map(
-      (itemId) =>
-        options.find((option) => option.purchaseOrderItemId === itemId) ??
-        (linked?.purchaseOrderItemId === itemId ? linked : undefined),
-    )
-    .filter(
-      (record): record is PurchaseOrderTonnageRecord => record !== undefined,
-    )
+  // 按 id 建一次索引: 关联行数固定, 逐条 find 是 O(关联数 × 选项数), 明明只需扫一遍
+  const optionByItemId = new Map(
+    options.map((option) => [option.purchaseOrderItemId, option]),
+  )
+  const records: PurchaseOrderTonnageRecord[] = []
+  const missingItemIds: string[] = []
+  for (const itemId of linkedPurchaseOrderItemIds(row)) {
+    const record =
+      optionByItemId.get(itemId) ??
+      (linked?.purchaseOrderItemId === itemId ? linked : undefined)
+    if (record) records.push(record)
+    else missingItemIds.push(itemId)
+  }
   return {
     records,
+    missingItemIds,
     orderedTotal: records.reduce(
       (sum, record) => sum + record.orderedWeight,
       0,
@@ -238,10 +248,25 @@ export function TonUnopenedCell({
 }: TonOrderCellProps) {
   const { t } = useTranslation()
   const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
+  // 合计口径只算一次: 弹层、气泡、列上数字与读屏文案全部取这一份, 避免多处各算一遍走偏
+  const totals = resolveLinkedTonnageTotals(row, options, linked)
+  /*
+   * 每条关联明细行"本次开出"的分配吨位(弹层多行时逐条给出)。历史数据只有单值三列、
+   * 没有 purchaseOrderLinks: 那时本行报单吨位就整体算在这一条上。
+   */
+  const allocatedTonByItemId = new Map<string, number>()
+  for (const link of row.purchaseOrderLinks ?? []) {
+    allocatedTonByItemId.set(link.purchaseOrderItemId, link.allocatedTon)
+  }
+  // 明细行已不可见时不能静默少算: 用「已删除」短状态明示, 合计里缺了哪一条
+  const missingCount = totals.missingItemIds.length
 
   const popoverContent = selected ? (
     <LinkedPurchaseOrderPopover
-      selected={selected}
+      records={totals.records.length > 0 ? totals.records : [selected]}
+      orderedTotal={totals.orderedTotal}
+      otherIssuedTotal={totals.otherIssuedTotal}
+      allocatedTonByItemId={allocatedTonByItemId}
       localTonForItem={localTonForItem}
       linkAllowed={purchaseOrderLinkAllowed}
       linkBlockedReason={purchaseOrderLinkBlockedReason}
@@ -292,7 +317,6 @@ export function TonUnopenedCell({
   }
 
   // 已开吨位 = 本单据该明细行报单合计 + 其他已保存报单占用(服务端只给"其他")
-  const totals = resolveLinkedTonnageTotals(row, options, linked)
   const issuedTotal = totals.otherIssuedTotal + localTonForItem
   // 剩余未开吨位 = 订货吨位 − 已开吨位(负值表示这条明细行被超开)
   const remaining = totals.orderedTotal - issuedTotal
@@ -313,7 +337,7 @@ export function TonUnopenedCell({
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-        <span>{tonValueText(selected.issuedWeight)}</span>
+        <span>{tonValueText(totals.otherIssuedTotal)}</span>
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.issuedTon')}</span>
@@ -371,7 +395,7 @@ export function TonUnopenedCell({
               }
             >
               <span className="aries-sr-only">
-                {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(localTonForItem)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(totals.otherIssuedTotal)} / ${t('priceCompare.sheet.columns.issuedTon')} ${tonValueText(issuedTotal)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(remaining)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(totals.orderedTotal)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overReported ? ` / ${t('priceCompare.sheet.purchaseOrderOverIssuedLong', { issued: tonValueText(issuedTotal), ordered: tonValueText(selected.orderedWeight) })}` : ''}`}
+                {`${t('priceCompare.sheet.purchaseOrderSheetReported')} ${tonValueText(localTonForItem)} / ${t('priceCompare.sheet.purchaseOrderIssuedActual')} ${tonValueText(totals.otherIssuedTotal)} / ${t('priceCompare.sheet.columns.issuedTon')} ${tonValueText(issuedTotal)} / ${t('priceCompare.sheet.columns.unopenedTon')} ${tonValueText(remaining)} / ${t('priceCompare.sheet.columns.purchaseOrderOrdered')} ${tonValueText(totals.orderedTotal)}${brand ? ` / ${t('priceCompare.sheet.columns.brand')} ${brand}` : ''}${overReported ? ` / ${t('priceCompare.sheet.purchaseOrderOverIssuedLong', { issued: tonValueText(issuedTotal), ordered: tonValueText(totals.orderedTotal) })}` : ''}`}
               </span>
               {primary}
             </span>
@@ -381,6 +405,8 @@ export function TonUnopenedCell({
           ) : null}
         </span>
       </Tooltip>
+      {/* 有关联明细行已不可见: 合计少算了哪一条必须当场说出来, 不能静默少算 */}
+      {missingCount > 0 ? <TonStateLabel state="missing" /> : null}
       {infoButton}
     </div>
   )
@@ -512,69 +538,143 @@ export function TonCell({
   )
 }
 
-/** 已关联采购订单的明细弹层: 本单报单/已开(实际)/未开吨位/订货吨位/品牌 + 已开超报单提示。 */
+/**
+ * 已关联采购订单的明细弹层。
+ *
+ * <p>单条关联保持原样(订单号 / 供应商 / 规格 / 品牌 / 状态 + 吨位口径行)。多行关联时头部
+ * 不再只报第一条 `selected` —— 那样会出现"订单号是第一条、数字却是合计"的两处打架:
+ * 逐条列出订单号 / 规格 / 订货量 / 其他已开 / 本次开出, 再给出 Σ 口径的关联合计。</p>
+ */
 function LinkedPurchaseOrderPopover({
-  selected,
+  records,
+  orderedTotal,
+  otherIssuedTotal,
+  allocatedTonByItemId,
   localTonForItem,
   linkAllowed,
   linkBlockedReason,
   onOpenPicker,
 }: {
-  selected: PurchaseOrderTonnageRecord
+  records: PurchaseOrderTonnageRecord[]
+  /** 关联明细行的订货量合计(与相邻两列同源: 由 resolveLinkedTonnageTotals 给出)。 */
+  orderedTotal: number
+  /** 关联明细行的其他已保存报单占用合计(同上)。 */
+  otherIssuedTotal: number
+  /** 每条明细行"本次开出"的分配吨位(多行关联时逐条给出)。 */
+  allocatedTonByItemId: Map<string, number>
   localTonForItem: number
   linkAllowed: boolean
   linkBlockedReason?: string
   onOpenPicker: () => void
 }) {
   const { t } = useTranslation()
+  const selected = records[0]
+  const multi = records.length > 1
   // 口径必须与相邻两个吨位列逐字一致, 否则同一行会出现三个数字打架(实测踩过):
   //   已开吨位 = 本单据该明细行报单合计 + 其他已保存报单占用(服务端 issuedWeight 只含"其他")
-  //   剩余未开吨位 = 订货吨位 − 已开吨位(负值 = 超开)
+  //   剩余未开吨位 = 订货吨位合计 − 已开吨位(负值 = 超开)
   const reportedMissing = localTonForItem <= 0
-  const issuedTotal = selected.issuedWeight + localTonForItem
-  const remaining = selected.orderedWeight - issuedTotal
+  const issuedTotal = otherIssuedTotal + localTonForItem
+  const remaining = orderedTotal - issuedTotal
   const overOpened =
-    !reportedMissing &&
-    selected.orderedWeight > 0 &&
-    issuedTotal > selected.orderedWeight
+    !reportedMissing && orderedTotal > 0 && issuedTotal > orderedTotal
   const issuedMissing = reportedMissing
   const brand = issuedBrandText(selected)
   return (
     <div className="price-compare-ton-popover">
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
-        <strong>{selected.orderNo}</strong>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderSupplier')}</span>
-        <span>{selected.supplierName}</span>
-      </div>
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.variety')}</span>
-        <span>
-          {selected.category} {itemSpecText(selected)}
-        </span>
-      </div>
-      {brand ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.columns.brand')}</span>
-          <span>{brand}</span>
-        </div>
-      ) : null}
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.columns.purchaseOrderStatus')}</span>
-        <span>{selected.status}</span>
-      </div>
-      {!reportedMissing ? (
+      {multi ? (
+        <>
+          <div className="price-compare-ton-popover-basis">
+            {t('priceCompare.sheet.purchaseOrderLinkedLines', {
+              count: records.length,
+            })}
+          </div>
+          {records.map((record) => (
+            <Fragment key={record.purchaseOrderItemId}>
+              <div className="price-compare-ton-popover-row">
+                <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
+                <strong>{record.orderNo}</strong>
+              </div>
+              <div className="price-compare-ton-popover-row">
+                <span>{t('priceCompare.sheet.columns.variety')}</span>
+                <span>
+                  {record.category} {itemSpecText(record)}
+                </span>
+              </div>
+              <div className="price-compare-ton-popover-row">
+                <span>
+                  {t('priceCompare.sheet.columns.purchaseOrderOrdered')}
+                </span>
+                <span>{tonValueText(record.orderedWeight)}</span>
+              </div>
+              <div className="price-compare-ton-popover-row">
+                <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
+                <span>{tonValueText(record.issuedWeight)}</span>
+              </div>
+              <div className="price-compare-ton-popover-row">
+                <span>{t('priceCompare.sheet.purchaseOrderAllocatedTon')}</span>
+                <span>
+                  {tonValueText(
+                    allocatedTonByItemId.get(record.purchaseOrderItemId) ?? 0,
+                  )}
+                </span>
+              </div>
+            </Fragment>
+          ))}
+          <div className="price-compare-ton-popover-basis">
+            {t('priceCompare.sheet.purchaseOrderLinkedTotal')}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="price-compare-ton-popover-row">
+            <span>{t('priceCompare.sheet.purchaseOrderLabel')}</span>
+            <strong>{selected.orderNo}</strong>
+          </div>
+          <div className="price-compare-ton-popover-row">
+            <span>{t('priceCompare.sheet.columns.purchaseOrderSupplier')}</span>
+            <span>{selected.supplierName}</span>
+          </div>
+          <div className="price-compare-ton-popover-row">
+            <span>{t('priceCompare.sheet.columns.variety')}</span>
+            <span>
+              {selected.category} {itemSpecText(selected)}
+            </span>
+          </div>
+          {brand ? (
+            <div className="price-compare-ton-popover-row">
+              <span>{t('priceCompare.sheet.columns.brand')}</span>
+              <span>{brand}</span>
+            </div>
+          ) : null}
+          <div className="price-compare-ton-popover-row">
+            <span>{t('priceCompare.sheet.columns.purchaseOrderStatus')}</span>
+            <span>{selected.status}</span>
+          </div>
+          {!reportedMissing ? (
+            <div className="price-compare-ton-popover-row">
+              <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
+              <span>{tonValueText(localTonForItem)}</span>
+            </div>
+          ) : null}
+          <div className="price-compare-ton-popover-row">
+            <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
+            <span>{tonValueText(otherIssuedTotal)}</span>
+          </div>
+        </>
+      )}
+      {multi && !reportedMissing ? (
         <div className="price-compare-ton-popover-row">
           <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
           <span>{tonValueText(localTonForItem)}</span>
         </div>
       ) : null}
-      <div className="price-compare-ton-popover-row">
-        <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-        <span>{tonValueText(selected.issuedWeight)}</span>
-      </div>
+      {multi ? (
+        <div className="price-compare-ton-popover-row">
+          <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
+          <span>{tonValueText(otherIssuedTotal)}</span>
+        </div>
+      ) : null}
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.issuedTon')}</span>
         {issuedMissing ? (
@@ -593,13 +693,19 @@ function LinkedPurchaseOrderPopover({
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
-        <span>{tonValueText(selected.orderedWeight)}</span>
+        <span>{tonValueText(orderedTotal)}</span>
       </div>
+      {multi && brand ? (
+        <div className="price-compare-ton-popover-row">
+          <span>{t('priceCompare.sheet.columns.brand')}</span>
+          <span>{brand}</span>
+        </div>
+      ) : null}
       {overOpened ? (
         <div className="price-compare-ton-popover-over">
           {t('priceCompare.sheet.purchaseOrderOverIssuedLong', {
             issued: tonValueText(issuedTotal),
-            ordered: tonValueText(selected.orderedWeight),
+            ordered: tonValueText(orderedTotal),
           })}
         </div>
       ) : null}

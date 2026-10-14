@@ -160,6 +160,39 @@ describe('usePurchaseOrderPicker 关联回写', () => {
     })
   }
 
+  /** 两张可关联的明细行(订货 60 / 70), 用于多选分配吨位的用例。 */
+  const firstLinkable: PurchaseOrderTonnageRecord = {
+    ...record,
+    orderedWeight: 60,
+    issuedWeight: 20,
+    remainingWeight: 40,
+  }
+  const secondLinkable: PurchaseOrderTonnageRecord = {
+    ...record,
+    purchaseOrderId: '99',
+    purchaseOrderItemId: '302',
+    orderNo: 'PO-99',
+    orderedWeight: 70,
+    issuedWeight: 0,
+    remainingWeight: 70,
+  }
+
+  const checkInput = (orderNo: string) =>
+    document.querySelector<HTMLInputElement>(
+      `.price-compare-purchase-order-picker-check input[aria-label="${orderNo}"]`,
+    )
+
+  const confirmButton = () =>
+    document.querySelector<HTMLButtonElement>(
+      '.price-compare-purchase-order-picker-confirm',
+    )
+
+  const check = (orderNo: string) => {
+    act(() => {
+      checkInput(orderNo)?.click()
+    })
+  }
+
   it('未锁定行选中订单时同笔写入 locked=true, 否则服务端会清空关联', async () => {
     render([{ ...baseRow }])
     await openPicker()
@@ -209,5 +242,118 @@ describe('usePurchaseOrderPicker 关联回写', () => {
       purchaseOrderNo: undefined,
       purchaseOrderItemId: undefined,
     })
+  })
+
+  it('勾选两张明细行后确认: 按勾选顺序分配吨位, 旧三列镜像第一条', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      firstLinkable,
+      secondLinkable,
+    ])
+    render([{ ...baseRow, ton: 130 }])
+    await openPicker()
+    // 勾选顺序与列表顺序相反: 分配顺序必须跟勾选顺序走
+    check('PO-99')
+    check('PO-88')
+    act(() => {
+      confirmButton()?.click()
+    })
+
+    expect(patches).toHaveLength(1)
+    expect(patches[0].rowId).toBe('r1')
+    expect(patches[0].patch).toEqual({
+      locked: true,
+      purchaseOrderLinks: [
+        {
+          purchaseOrderId: '99',
+          purchaseOrderNo: 'PO-99',
+          purchaseOrderItemId: '302',
+          allocatedTon: 70,
+        },
+        {
+          purchaseOrderId: '88',
+          purchaseOrderNo: 'PO-88',
+          purchaseOrderItemId: '301',
+          allocatedTon: 60,
+        },
+      ],
+      purchaseOrderId: '99',
+      purchaseOrderNo: 'PO-99',
+      purchaseOrderItemId: '302',
+    })
+  })
+
+  it('报单吨位不足时逐条扣减剩余额度, 最后一条只吃到剩下的量', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      firstLinkable,
+      secondLinkable,
+    ])
+    render([{ ...baseRow, ton: 100 }])
+    await openPicker()
+    check('PO-88')
+    check('PO-99')
+    act(() => {
+      confirmButton()?.click()
+    })
+
+    expect(patches).toHaveLength(1)
+    expect(patches[0].patch.purchaseOrderLinks).toEqual([
+      {
+        purchaseOrderId: '88',
+        purchaseOrderNo: 'PO-88',
+        purchaseOrderItemId: '301',
+        allocatedTon: 60,
+      },
+      {
+        purchaseOrderId: '99',
+        purchaseOrderNo: 'PO-99',
+        purchaseOrderItemId: '302',
+        allocatedTon: 40,
+      },
+    ])
+    // 旧三列镜像第一条
+    expect(patches[0].patch.purchaseOrderItemId).toBe('301')
+    expect(patches[0].patch.purchaseOrderNo).toBe('PO-88')
+  })
+
+  it('报单吨位超过订货量合计时每条只吃到自己的订货量(不超发)', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      firstLinkable,
+      secondLinkable,
+    ])
+    render([{ ...baseRow, ton: 200 }])
+    await openPicker()
+    check('PO-88')
+    check('PO-99')
+    act(() => {
+      confirmButton()?.click()
+    })
+
+    expect(
+      (patches[0].patch.purchaseOrderLinks ?? []).map(
+        (link) => link.allocatedTon,
+      ),
+    ).toEqual([60, 70])
+  })
+
+  it('已锁定行确认多选时不再重复写 locked', async () => {
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([
+      firstLinkable,
+      secondLinkable,
+    ])
+    render([{ ...baseRow, ton: 130, locked: true }])
+    await openPicker()
+    check('PO-88')
+    check('PO-99')
+    act(() => {
+      confirmButton()?.click()
+    })
+
+    expect(patches).toHaveLength(1)
+    expect(patches[0].patch).not.toHaveProperty('locked')
+    expect(
+      (patches[0].patch.purchaseOrderLinks ?? []).map(
+        (link) => link.allocatedTon,
+      ),
+    ).toEqual([60, 70])
   })
 })

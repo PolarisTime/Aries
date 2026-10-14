@@ -713,4 +713,126 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     })
     expect(document.querySelector('.price-compare-ton-popover')).not.toBeNull()
   })
+
+  /** 打开 ⓘ 弹层(与既有用例同一路径: hover 明细图标)。 */
+  const openPopover = async () => {
+    const icon = container.querySelector(
+      '.price-compare-ton-info',
+    ) as HTMLElement
+    await act(async () => {
+      icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    })
+    return document.querySelector('.price-compare-ton-popover')
+  }
+
+  /** 弹层里某一行标签对应的数值(逐条明细行会重复出现同名标签, 必须按标签取值)。 */
+  const popoverValuesOf = (popover: Element | null, label: string) =>
+    Array.from(
+      popover?.querySelectorAll('.price-compare-ton-popover-row') ?? [],
+    )
+      .filter((row) => row.firstElementChild?.textContent === label)
+      .map((row) => row.lastElementChild?.textContent ?? '')
+
+  it('多行关联时 ⓘ 弹层逐条列出订单号/规格/订货量/其他已开/本次开出', async () => {
+    const second: PurchaseOrderTonnageRecord = {
+      ...poRecord,
+      purchaseOrderId: '99',
+      purchaseOrderItemId: '302',
+      orderNo: 'PO-99',
+      spec: '14',
+      brand: '永钢',
+      orderedWeight: 70,
+      issuedWeight: 20,
+      remainingWeight: 50,
+    }
+    render({
+      row: {
+        ...baseRow,
+        purchaseOrderItemId: '301',
+        purchaseOrderNo: 'PO-88',
+        purchaseOrderLinks: [
+          {
+            purchaseOrderId: '88',
+            purchaseOrderNo: 'PO-88',
+            purchaseOrderItemId: '301',
+            allocatedTon: 60,
+          },
+          {
+            purchaseOrderId: '99',
+            purchaseOrderNo: 'PO-99',
+            purchaseOrderItemId: '302',
+            allocatedTon: 70,
+          },
+        ],
+      },
+      options: [poRecord, second],
+      linked: poRecord,
+      localTonForItem: 130,
+    })
+    const popover = await openPopover()
+    const text = popover?.textContent ?? ''
+
+    // 头部不再只报第一条: 两条明细行逐条给出
+    expect(text).toContain('关联明细行（2 条）')
+    expect(popoverValuesOf(popover, '关联采购订单')).toEqual(['PO-88', 'PO-99'])
+    expect(popoverValuesOf(popover, '材质 / 规格 / 长度')).toEqual([
+      '螺纹钢 HRB400E 12 9米',
+      '螺纹钢 HRB400E 14 9米',
+    ])
+    // 逐条明细行在前, 其后是 Σ 口径的关联合计(同名标签会再出现一次)
+    expect(popoverValuesOf(popover, '订货吨位')).toEqual([
+      '40.000',
+      '70.000',
+      '110.000',
+    ])
+    expect(popoverValuesOf(popover, '其他报单已开')).toEqual([
+      '30.000',
+      '20.000',
+      '50.000',
+    ])
+    expect(popoverValuesOf(popover, '本次开出')).toEqual(['60.000', '70.000'])
+    // 合计口径与相邻两列同源: 订货 110 / 其他已开 50 / 已开 = 50 + 130 = 180
+    expect(text).toContain('关联合计')
+    expect(popoverValuesOf(popover, '已开吨位')).toEqual(['180.000'])
+    expect(popoverValuesOf(popover, '剩余未开吨位')).toEqual(['-70.000'])
+    expect(
+      container.querySelector('.price-compare-ton-issued')?.textContent,
+    ).toContain('180')
+  })
+
+  it('关联的明细行已不可见时不再静默少算: 第三列给出「已删除」状态', () => {
+    render({
+      row: {
+        ...baseRow,
+        purchaseOrderItemId: '301',
+        purchaseOrderNo: 'PO-88',
+        purchaseOrderLinks: [
+          {
+            purchaseOrderId: '88',
+            purchaseOrderNo: 'PO-88',
+            purchaseOrderItemId: '301',
+            allocatedTon: 60,
+          },
+          {
+            purchaseOrderId: '99',
+            purchaseOrderNo: 'PO-99',
+            purchaseOrderItemId: '302',
+            allocatedTon: 40,
+          },
+        ],
+      },
+      options: [poRecord],
+      localTonForItem: 100,
+    })
+    const third = container.querySelectorAll('.price-compare-ton-cell')[2]
+    // 明细行 302 已不在选项里: 只算得到 301 的订货 40 / 其他已开 30
+    expect(
+      third?.querySelector('.price-compare-ton-issued')?.textContent,
+    ).toContain('130')
+    // 少算了哪一条必须当场说出来(复用「已删除」短状态), 不能静默显示少算的合计
+    expect(third?.querySelector('.price-compare-ton-state')?.textContent).toBe(
+      '已删除',
+    )
+  })
 })

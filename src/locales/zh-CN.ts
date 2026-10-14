@@ -2739,7 +2739,10 @@ export const zhCN = {
       purchaseOrderPickerClear: '清除关联',
       purchaseOrderPickerClearHint: '解除本行与采购订单的关联',
       purchaseOrderPickerHint:
-        '点击一行即选中并关联（键盘：Tab 到行后按回车）；已开吨位按已保存报单统计。',
+        '点击一行即选中并关联（键盘：Tab 到行后按回车）；也可勾选多行后点「确认」，按勾选顺序一次关联多张明细行并按订货量依次分配吨位。已开吨位按已保存报单统计。',
+      /** 多选列: 勾选列标题与"确认（n）"按钮(按勾选顺序关联多张明细行)。 */
+      purchaseOrderPickerChoose: '选择',
+      purchaseOrderPickerConfirm: '确认（{{count}}）',
       /** 默认隐藏"剩余可关联吨位为 0"的明细行, 开关只在本弹窗内生效。 */
       purchaseOrderPickerShowOtherVarieties:
         '显示材质/规格不一致的行（{{count}}）',
@@ -2752,6 +2755,10 @@ export const zhCN = {
       purchaseOrderPickerFullyLinkedMine: '本单据已关联 {{ton}} 吨',
       purchaseOrderPickerFullyLinkedHint:
         '剩余可关联吨位为 0，已禁用选择；可继续查看但不占用额度',
+      /** ⓘ 弹层多行关联: 分区标题 / 单条"本次开出" / 合计标题。 */
+      purchaseOrderLinkedLines: '关联明细行（{{count}} 条）',
+      purchaseOrderLinkedTotal: '关联合计',
+      purchaseOrderAllocatedTon: '本次开出',
     },
     config: {
       title: '项目配置',

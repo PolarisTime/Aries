@@ -129,6 +129,17 @@ describe('PurchaseOrderPickerModal', () => {
   const tableRows = () =>
     Array.from(document.querySelectorAll('.ant-table-tbody tr.ant-table-row'))
 
+  /** 多选列的复选框: aria-label 用订单号(同一规格多品牌时唯一的可读标识)。 */
+  const checkInput = (orderNo: string) =>
+    document.querySelector<HTMLInputElement>(
+      `.price-compare-purchase-order-picker-check input[aria-label="${orderNo}"]`,
+    )
+
+  const confirmButton = () =>
+    document.querySelector<HTMLButtonElement>(
+      '.price-compare-purchase-order-picker-confirm',
+    )
+
   it('材质/规格/长度列同时展示品牌', async () => {
     render()
     await flush()
@@ -445,5 +456,128 @@ describe('PurchaseOrderPickerModal', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('未勾选任何明细行时「确认（0）」按钮禁用', async () => {
+    render({ onConfirmLinks: vi.fn() })
+    await flush()
+    await flush()
+    const confirm = confirmButton()
+    expect(confirm).not.toBeNull()
+    expect(confirm?.textContent).toContain('确认（0）')
+    expect(confirm?.disabled).toBe(true)
+  })
+
+  it('勾选两张后确认按勾选顺序回调, 且不触发"点行=选一张"的旧路径', async () => {
+    const second: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      purchaseOrderId: '99',
+      purchaseOrderItemId: '302',
+      orderNo: 'PO-302',
+      brand: '永钢',
+      orderedWeight: 70,
+      issuedWeight: 0,
+      remainingWeight: 70,
+    }
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
+    const props = render({ onConfirmLinks: vi.fn() })
+    await flush()
+    await flush()
+
+    expect(confirmButton()?.disabled).toBe(true)
+    // 先勾第二张、再勾第一张: 回调顺序必须是勾选顺序, 不是列表顺序
+    act(() => {
+      checkInput('PO-302')?.click()
+    })
+    act(() => {
+      checkInput('PO-88')?.click()
+    })
+    await flush()
+    expect(confirmButton()?.disabled).toBe(false)
+    expect(confirmButton()?.textContent).toContain('确认（2）')
+
+    act(() => {
+      confirmButton()?.click()
+    })
+    expect(props.onConfirmLinks).toHaveBeenCalledTimes(1)
+    expect(props.onConfirmLinks).toHaveBeenCalledWith([second, records[0]])
+    // 勾选在单元格内被截住: 否则会顺带触发行的单选路径并关闭弹窗
+    expect(props.onSelect).not.toHaveBeenCalled()
+  })
+
+  it('打开时用当前行已关联的明细行回填勾选态', async () => {
+    const second: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      purchaseOrderId: '99',
+      purchaseOrderItemId: '302',
+      orderNo: 'PO-302',
+      orderedWeight: 70,
+      issuedWeight: 0,
+      remainingWeight: 70,
+    }
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
+    render({
+      selectedItemId: '301',
+      selectedItemIds: ['302'],
+      onConfirmLinks: vi.fn(),
+    })
+    await flush()
+    await flush()
+
+    expect(checkInput('PO-302')?.checked).toBe(true)
+    expect(checkInput('PO-302')?.getAttribute('aria-label')).toBe('PO-302')
+    expect(checkInput('PO-88')?.checked).toBe(false)
+    expect(confirmButton()?.textContent).toContain('确认（1）')
+    expect(confirmButton()?.disabled).toBe(false)
+  })
+
+  it('取消勾选后计数回落, 归零时按钮重新禁用', async () => {
+    render({ onConfirmLinks: vi.fn() })
+    await flush()
+    await flush()
+    act(() => {
+      checkInput('PO-88')?.click()
+    })
+    expect(confirmButton()?.textContent).toContain('确认（1）')
+
+    act(() => {
+      checkInput('PO-88')?.click()
+    })
+    expect(confirmButton()?.textContent).toContain('确认（0）')
+    expect(confirmButton()?.disabled).toBe(true)
+  })
+
+  it('已关联行被本单据吃满也保持可见, 确认不会把隐藏的关联丢掉', async () => {
+    const second: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      purchaseOrderId: '99',
+      purchaseOrderItemId: '302',
+      orderNo: 'PO-302',
+      brand: '永钢',
+      orderedWeight: 20,
+      issuedWeight: 0,
+      remainingWeight: 20,
+    }
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
+    const props = render({
+      selectedItemId: '301',
+      selectedItemIds: ['301', '302'],
+      // 本单据已把两张明细行的额度都用尽: 旧逻辑会把 302 藏进"已关联完"开关后面
+      linkedTonByItemId: new Map([
+        ['301', 10],
+        ['302', 20],
+      ]),
+      onConfirmLinks: vi.fn(),
+    })
+    await flush()
+    await flush()
+
+    expect(tableRows()).toHaveLength(2)
+    expect(confirmButton()?.textContent).toContain('确认（2）')
+    act(() => {
+      confirmButton()?.click()
+    })
+    // 勾选集合来自打开时的回填: 两条都还在, 不会静默掉一条
+    expect(props.onConfirmLinks).toHaveBeenCalledWith([records[0], second])
   })
 })
