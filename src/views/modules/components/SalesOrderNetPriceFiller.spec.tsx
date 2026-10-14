@@ -664,6 +664,78 @@ describe('SalesOrderNetPriceFiller', () => {
     ])
   })
 
+  /**
+   * 高度稳定性: 面板高度由内容决定, 而每次改覆盖值都会重新解析 ——
+   * 「解析中」与「解析结果」必须是**同构骨架**(同样的四行描述 + 同一行说明位),
+   * 否则弹层会随解析状态上下缩放一次(用户实测反馈: "下拉选择时窗口会上下缩放一下")。
+   */
+  it('解析信息区在「解析中」与「解析结果」两态同构(行数一致, 不会撑高/压短面板)', async () => {
+    let resolveRequest: ((value: PricingQuoteResolution) => void) | undefined
+    fetchPricingQuoteResolutionMock.mockReturnValue(
+      new Promise<PricingQuoteResolution>((resolve) => {
+        resolveRequest = resolve
+      }),
+    )
+    const observed = createObserved()
+    await mountObserved(observed)
+    await openNetPriceDialog()
+
+    const summary = () => document.querySelector('.pricing-quote-summary')
+    const labelsOf = () =>
+      Array.from(
+        document.querySelectorAll(
+          '.pricing-quote-summary .ant-descriptions-item-label',
+        ),
+      ).map((node) => node.textContent)
+
+    const resolvingBox = summary()
+    expect(resolvingBox, '解析中必须落在信息区容器里').not.toBeNull()
+    expect(
+      resolvingBox?.querySelector('.pricing-quote-summary-explanation')
+        ?.textContent,
+    ).toContain('正在解析取价基准…')
+    // 骨架: 解析中就已经有四行口径(值为占位), 高度与结果态一致
+    const resolvingLabels = labelsOf()
+    expect(resolvingLabels).toHaveLength(4)
+    const resolvingValues = Array.from(
+      document.querySelectorAll(
+        '.pricing-quote-summary .ant-descriptions-item-content',
+      ),
+    ).map((node) => node.textContent)
+    expect(resolvingValues).toEqual(['—', '—', '—', '—'])
+
+    await act(async () => {
+      resolveRequest?.(resolution())
+      await Promise.resolve()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const resolvedBox = summary()
+    expect(resolvedBox).toBe(resolvingBox)
+    // 行数与标签逐字相同 ⇒ 解析落地时面板高度不变
+    expect(labelsOf()).toEqual(resolvingLabels)
+    expect(
+      resolvedBox?.querySelectorAll('.ant-descriptions-item'),
+    ).toHaveLength(4)
+    expect(
+      resolvedBox?.querySelector('.pricing-quote-summary-explanation')
+        ?.textContent,
+    ).toContain('送货日期 2026年09月22日 为交易日')
+    expect(document.querySelectorAll('.pricing-quote-summary')).toHaveLength(1)
+  })
+
+  it('解析失败提示同样落在信息区容器里(不会把面板压短)', async () => {
+    fetchPricingQuoteResolutionMock.mockRejectedValue(new Error('boom'))
+    const observed = createObserved()
+    await mountObserved(observed)
+    await openNetPriceDialog()
+
+    const box = document.querySelector('.pricing-quote-summary')
+    expect(box).not.toBeNull()
+    expect(box?.textContent).toContain('取价基准解析失败')
+    expect(box?.querySelector('.ant-alert')).not.toBeNull()
+  })
+
   async function waitForOkButton() {
     for (let i = 0; i < 30; i += 1) {
       const btn = document.querySelector<HTMLButtonElement>(
