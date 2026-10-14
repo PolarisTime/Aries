@@ -117,6 +117,49 @@ export function resolveSaveResultTitle({
   return t('modules.saveResult.error')
 }
 
+export interface SaveResultSubtitleInput {
+  /** 本次提交动作；缺省表示来源不明，沿用通用文案。 */
+  action?: SubmissionAction
+  /** 「保存并审核」这类动作的具体种类，与主按钮取词同源。 */
+  auditActionKind?: StatusChangeActionKind
+  /** 通用回退文案（新增成功 / 编辑成功，或错误原文）。 */
+  fallback: string
+  isSuccess: boolean
+  t: TFunction
+}
+
+/**
+ * 回执副标题：说明「这次动作意味着什么」。
+ *
+ * <p>标题只回答「哪张单发生了什么」，副标题补上「单据接下来处于什么阶段」。
+ * 三种动作若共用「新增成功 / 编辑成功」，用户在回执里仍然看不出草稿保存与提交审核的区别
+ * （需求原话就是「按钮与文字都是一样的」）——所以这里按动作给三套文案。
+ * 失败/冲突不套用，仍展示后端原文或通用失败文案。</p>
+ */
+export function resolveSaveResultSubtitle({
+  action,
+  auditActionKind,
+  fallback,
+  isSuccess,
+  t,
+}: SaveResultSubtitleInput): string {
+  if (!isSuccess) {
+    return fallback
+  }
+  if (action === 'save') {
+    return t('modules.saveResult.subtitleDraft')
+  }
+  if (action === 'save-and-audit') {
+    return t('modules.saveResult.subtitleSavedAndAction', {
+      action: t(resolveStatusChangeActionLabelKey(auditActionKind || 'audit')),
+    })
+  }
+  if (action === 'save-and-complete') {
+    return t('modules.saveResult.subtitleVerifiedAndCompleted')
+  }
+  return fallback
+}
+
 /** 回执操作区可出现的动作种类（顺序由 {@link resolveSaveResultActions} 决定）。 */
 export type SaveResultActionKind =
   | 'upload-attachment'

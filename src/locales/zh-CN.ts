@@ -773,6 +773,10 @@ export const zhCN = {
       // 动作词与编辑器主按钮同源（modules.statusActions.*），不写死「审核」。
       savedAndAction: '{{title}}{{no}}已保存并{{action}}',
       verifiedAndCompleted: '{{title}}{{no}}已核定并完成销售',
+      // 副标题按动作区分「单据接下来处于什么阶段」，不再三态共用「新增成功/编辑成功」。
+      subtitleDraft: '已保存为草稿，尚未提交审核',
+      subtitleSavedAndAction: '已保存并{{action}}，单据进入后续流程',
+      subtitleVerifiedAndCompleted: '已按交付核定完成销售，销售流程结束',
       error: '保存失败',
       conflict: '数据已被其他操作更新',
       backToEdit: '返回编辑',

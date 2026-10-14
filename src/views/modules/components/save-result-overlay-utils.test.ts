@@ -7,6 +7,7 @@ import { salesOrdersPageConfig } from '@/config/business-pages/operations/sales-
 import type { StatusChangeActionKind } from '@/module-system/adapter/module-adapter-actions'
 import {
   resolveSaveResultActions,
+  resolveSaveResultSubtitle,
   resolveSaveResultTitle,
 } from '@/views/modules/components/save-result-overlay-utils'
 import type { SubmissionAction } from '@/views/modules/module-editor-workspace-support'
@@ -190,5 +191,58 @@ describe('保存回执按钮集合按动作区分', () => {
     expect(actions('save-and-audit', { hasNextModule: false })).not.toContain(
       'next-module',
     )
+  })
+})
+
+describe('保存回执副标题按动作区分（不再三态共用「编辑成功」）', () => {
+  const subtitle = (
+    action: SubmissionAction | undefined,
+    options: {
+      auditActionKind?: StatusChangeActionKind
+      isSuccess?: boolean
+    } = {},
+  ) =>
+    resolveSaveResultSubtitle({
+      action,
+      auditActionKind: options.auditActionKind,
+      fallback: '编辑成功',
+      isSuccess: options.isSuccess ?? true,
+      t: i18next.t,
+    })
+
+  it('草稿保存：副标题写明「尚未提交审核」', () => {
+    expect(subtitle('save')).toContain('尚未提交审核')
+  })
+
+  it('保存并审核：副标题跟随动作词（客户对账单为「确认」）', () => {
+    expect(subtitle('save-and-audit')).toContain('已保存并审核')
+    expect(
+      subtitle('save-and-audit', { auditActionKind: 'confirm' }),
+    ).toContain('已保存并确认')
+  })
+
+  it('交付核定：副标题写明完成销售', () => {
+    expect(subtitle('save-and-complete')).toContain('完成销售')
+  })
+
+  it('三态副标题两两不同，且都不等于通用「编辑成功」', () => {
+    const subtitles = [
+      subtitle('save'),
+      subtitle('save-and-audit'),
+      subtitle('save-and-complete'),
+    ]
+    expect(new Set(subtitles).size).toBe(3)
+    for (const text of subtitles) {
+      expect(text).not.toBe('编辑成功')
+      expect(text.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('失败态仍用回退文案（不套用成功话术）', () => {
+    expect(subtitle('save', { isSuccess: false })).toBe('编辑成功')
+  })
+
+  it('来源不明时仍用回退文案（兼容旧调用）', () => {
+    expect(subtitle(undefined)).toBe('编辑成功')
   })
 })

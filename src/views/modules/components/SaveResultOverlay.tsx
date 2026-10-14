@@ -16,6 +16,7 @@ import {
   NEXT_MODULE_PATHS,
   resolveSaveResultActions,
   resolveSaveResultItems,
+  resolveSaveResultSubtitle,
   resolveSaveResultTitle,
 } from './save-result-overlay-utils'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -106,7 +107,13 @@ export function SaveResultOverlay<Key extends ModuleKey>({
         className="app-result--workspace"
         status={saveResult.status}
         title={title}
-        subTitle={saveResult.message}
+        subTitle={resolveSaveResultSubtitle({
+          action: saveResult.action,
+          auditActionKind: saveResult.auditActionKind,
+          fallback: saveResult.message,
+          isSuccess,
+          t,
+        })}
         traceId={saveResult.traceId}
         extra={
           <SaveResultActionBar

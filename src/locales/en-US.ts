@@ -790,6 +790,11 @@ export const enUS = {
       // The action word comes from the same source as the editor primary button.
       savedAndAction: '{{title}} {{no}} saved & {{action}}',
       verifiedAndCompleted: '{{title}} {{no}} verified and sale completed',
+      subtitleDraft: 'Saved as a draft. Not submitted for audit.',
+      subtitleSavedAndAction:
+        'Saved & {{action}}. The document has moved to the next stage.',
+      subtitleVerifiedAndCompleted:
+        'Delivery verification confirmed and the sale is completed.',
       error: 'Save Failed',
       conflict: 'This data was updated by another operation',
       backToEdit: 'Back to Edit',
