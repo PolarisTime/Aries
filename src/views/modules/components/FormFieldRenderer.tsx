@@ -19,6 +19,7 @@ import {
   buildFormItemClassName,
   buildSelectOptions,
   resolveFieldOptions,
+  resolveFormFieldHint,
   resolveFormFieldItemExtras,
 } from './form-field-renderer-utils'
 
@@ -68,7 +69,9 @@ export function FormFieldRenderer({
     projectOptions,
     settlementAccountOptions,
   })
-  const rules = buildFormFieldRules(field, t)
+  const rules = buildFormFieldRules(field, t, formValues)
+  const extra = resolveFormFieldHint(field.extra, formValues)
+  const tooltip = resolveFormFieldHint(field.tooltip, formValues)
   const { extraClassName, itemProps } = resolveFormFieldItemExtras(field.type)
 
   const renderFormItem = (children: ReactNode) => (
@@ -81,6 +84,8 @@ export function FormFieldRenderer({
         htmlFor: fieldId,
       })}
       rules={rules}
+      extra={extra}
+      tooltip={tooltip}
       {...itemProps}
       className={buildFormItemClassName(field.type, extraClassName)}
     >

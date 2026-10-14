@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { FREIGHT_SETTLEMENT_MODES } from '@/constants/freight-settlement'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import {
   exactPageSchema,
@@ -93,6 +94,9 @@ export const salesOrderStatusSchema = z.enum([
 export const salesOutboundStatusSchema = z.enum(['草稿', '已审核'])
 export const salesReturnStatusSchema = z.enum(['草稿', '已审核'])
 export const freightBillStatusSchema = z.enum(['草稿', '已审核'])
+
+/** 物流单结算方式：后端字符串枚举，取值必须与 `FREIGHT_SETTLEMENT_MODES` 完全一致。 */
+const freightBillSettlementModeSchema = z.enum(FREIGHT_SETTLEMENT_MODES)
 
 // Purchase order
 
@@ -880,6 +884,13 @@ const freightBillRecordShape = {
   unitPrice: nonNegativeDecimalSchema,
   totalWeight: nonNegativeDecimalSchema,
   totalFreight: decimalSchema,
+  // 结算方式与固定运费：后端本次新增（V184）。strictObject 下未声明的字段会让整页解析失败，
+  // 因此这里先按**可缺省**声明，保证旧后端（无这三个字段）与新后端都能解析；
+  // 后端上线后由响应 owner 收紧为必填。缺省时前端按「按吨位」处理，与改造前行为一致。
+  settlementMode: freightBillSettlementModeSchema.optional(),
+  fixedFreightAmount: nullableDecimalSchema.optional(),
+  /** 只读参考值：按吨位口径的运费（单价 × 吨位），由后端算好，固定运费模式下供界面提示。 */
+  tonnageFreightAmount: nonNegativeDecimalSchema.optional(),
   status: freightBillStatusSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
@@ -948,6 +959,13 @@ const freightBillSaveRequestSchema = z.strictObject({
   vehiclePlate: optionalTextSchema,
   billTime: responseDateTimeSchema,
   unitPrice: requestNonNegativeDecimalSchema,
+  /**
+   * 结算方式与固定运费：前端**始终显式**提交 settlementMode；按吨位模式下
+   * fixedFreightAmount 显式传 null（后端在该模式下把非 null 视为互斥冲突 422，
+   * 而 null 用于清空库里遗留的固定金额）。声明 nullish 以兼容「省略即保持原值」的语义。
+   */
+  settlementMode: freightBillSettlementModeSchema.nullish(),
+  fixedFreightAmount: requestDecimalSchema.nullish(),
   status: freightBillStatusSchema.nullish(),
   remark: optionalTextSchema,
   items: z

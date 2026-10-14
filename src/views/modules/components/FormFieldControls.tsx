@@ -4,6 +4,7 @@ import {
   DatePicker,
   Input,
   InputNumber,
+  Segmented,
   Select,
   Upload,
 } from 'antd'
@@ -108,6 +109,28 @@ function multiSelectFieldElement({
       showSearch={{ filterOption: createPinyinFilterOption() }}
       optionLabelProp="label"
       options={selectOptions}
+    />
+  )
+}
+
+/**
+ * 少量互斥选项用分段控制器：antd Segmented 的 `onChange` 直接给值（不是事件对象），
+ * Form.Item 的默认取值桥接在「没有 target 时原样返回值」，因此无需额外 itemProps。
+ */
+function segmentedFieldElement({
+  fieldId,
+  disabledValue,
+  selectOptions,
+}: OptionsControlProps): ReactElement {
+  return (
+    <Segmented
+      id={fieldId}
+      block
+      disabled={disabledValue}
+      options={selectOptions.map((option) => ({
+        label: option.label,
+        value: String(option.value),
+      }))}
     />
   )
 }
@@ -231,6 +254,8 @@ export function renderModuleFormFieldControl(
       return selectFieldElement(props)
     case 'multiSelect':
       return multiSelectFieldElement(props)
+    case 'segmented':
+      return segmentedFieldElement(props)
     case 'date':
       return dateFieldElement(props)
     case 'textarea':

@@ -418,6 +418,8 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'vehiclePlate',
         'billTime',
         'unitPrice',
+        'settlementMode',
+        'fixedFreightAmount',
         'status',
         'remark',
       ],

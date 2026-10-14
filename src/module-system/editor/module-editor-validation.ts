@@ -1,5 +1,10 @@
 import i18next from 'i18next'
 import {
+  FIXED_FREIGHT_AMOUNT_FIELD,
+  isFixedFreightSettlement,
+  isValidFixedFreightAmount,
+} from '@/constants/freight-settlement'
+import {
   isPurchaseInbound,
   isPurchaseOrder,
   isSalesOutbound,
@@ -120,6 +125,26 @@ function getLineItemValidationMessages(
   return messages
 }
 
+/** 空值交给「必填」提示；这里只拦「填了但不大于 0」的情况，避免同一问题报两条文案。 */
+function getFreightBillSettlementMessage(
+  moduleKey: string | undefined,
+  editorForm: ModuleRecordInput,
+): string | null {
+  if (moduleKey !== 'freight-bill') {
+    return null
+  }
+  if (!isFixedFreightSettlement(editorForm)) {
+    return null
+  }
+  const amount = editorForm[FIXED_FREIGHT_AMOUNT_FIELD]
+  if (!hasEditorValue(amount)) {
+    return null
+  }
+  return isValidFixedFreightAmount(amount)
+    ? null
+    : i18next.t('modules.validation.fixedFreightAmountPositive')
+}
+
 export function getEditorValidationMessage(options: {
   fields: ModuleFormFieldDefinition[]
   editorForm: ModuleRecordInput
@@ -166,6 +191,15 @@ export function getEditorValidationMessage(options: {
   if (hasItemColumns && itemCount === 0) {
     if (!collectAll) return i18next.t('modules.validation.minOneItem')
     allErrors.push(i18next.t('modules.validation.minOneItem'))
+  }
+
+  const freightBillMessage = getFreightBillSettlementMessage(
+    options.moduleKey,
+    editorForm,
+  )
+  if (freightBillMessage) {
+    if (!collectAll) return freightBillMessage
+    allErrors.push(freightBillMessage)
   }
 
   if (hasItemColumns) {

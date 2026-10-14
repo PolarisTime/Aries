@@ -1204,6 +1204,8 @@ export const enUS = {
         'Row {{row}}: outbound quantity must be at least one quantity unit',
       purchaseInboundMixedSource:
         'A purchase inbound can reference only one purchase order',
+      fixedFreightAmountPositive:
+        'Fixed freight settlement requires a fixed freight amount greater than 0',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',
       fieldRequired: 'Please enter {{label}}',
       minOneItem: 'Please add at least one line item',
@@ -1477,6 +1479,16 @@ export const enUS = {
         totalWeight: 'Total weight (t)',
         unitPrice: 'Unit price',
         totalFreight: 'Total freight',
+        settlementMode: 'Settlement mode',
+        settlementModeByTonnage: 'By tonnage',
+        settlementModeFixed: 'Fixed freight',
+        fixedFreightAmount: 'Fixed freight amount (CNY)',
+        fixedFreightAmountHelp:
+          'The settlement amount is this fixed value, independent of tonnage.',
+        unitPriceNotSettlementBasis:
+          'Under fixed freight the unit price is still saved, but for reference only — it is not the settlement basis.',
+        totalFreightFromTonnage: 'Calculated as unit price × total weight',
+        totalFreightFromFixed: 'Equals the fixed freight amount',
         customerName: 'Customer',
         projectName: 'Project',
         auditStatus: 'Audit status',

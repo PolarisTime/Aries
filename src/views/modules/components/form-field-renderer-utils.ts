@@ -8,6 +8,7 @@ import {
 } from '@/module-system/core/module-option-resolvers'
 import type {
   ModuleFormFieldDefinition,
+  ModuleFormFieldHint,
   ModuleFormFieldOption,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -142,22 +143,52 @@ export function buildAutoCompleteOptions(
 export function buildFormFieldRules(
   field: ModuleFormFieldDefinition,
   t: TFunction,
+  formValues: Record<string, unknown> = {},
 ): FormItemProps['rules'] {
-  if (!field.required) {
-    return undefined
-  }
-  const selectLike =
-    field.type === 'select' ||
-    field.type === 'multiSelect' ||
-    field.type === 'date'
-  return [
-    {
+  const rules: NonNullable<FormItemProps['rules']> = []
+  if (field.required) {
+    const selectLike =
+      field.type === 'select' ||
+      field.type === 'multiSelect' ||
+      field.type === 'segmented' ||
+      field.type === 'date'
+    rules.push({
       required: true,
       message: selectLike
         ? t('modules.formField.selectRequired', { label: field.label })
         : t('modules.formField.inputRequired', { label: field.label }),
-    },
-  ]
+    })
+  }
+
+  // 字段级业务校验（如「固定运费金额需大于 0」）：返回文案即不通过。
+  const validate = field.validate
+  if (validate) {
+    rules.push({
+      validator: async (_rule, value) => {
+        const message = validate(value, formValues)
+        if (message) {
+          // antd 用 reject 表达校验不通过，文案直接作为表单错误展示。
+          throw new Error(message)
+        }
+      },
+    })
+  }
+
+  return rules.length ? rules : undefined
+}
+
+/**
+ * 字段说明文案：静态串直接返回；函数形式按当前表单值求值，用于随其它字段切换的提示
+ * （例如「固定运费模式下单价不作为结算依据」）。空串/null/undefined 一律不展示。
+ */
+export function resolveFormFieldHint(
+  hint: ModuleFormFieldHint | undefined,
+  formValues: Record<string, unknown> = {},
+): string | undefined {
+  if (typeof hint !== 'function') {
+    return hint || undefined
+  }
+  return hint(formValues) || undefined
 }
 
 /** 表单项外壳类名: textarea 需要额外的纵向留白, 控件可再追加自己的类名。 */

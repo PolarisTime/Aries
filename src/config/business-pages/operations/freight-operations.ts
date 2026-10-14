@@ -1,4 +1,12 @@
 import i18next from 'i18next'
+import {
+  FIXED_FREIGHT_AMOUNT_FIELD,
+  FREIGHT_SETTLEMENT_MODE_BY_TONNAGE,
+  FREIGHT_SETTLEMENT_MODE_FIXED,
+  isFixedFreightSettlement,
+  isValidFixedFreightAmount,
+  SETTLEMENT_MODE_FIELD,
+} from '@/constants/freight-settlement'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
@@ -270,6 +278,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
+        key: 'carrierCode',
+        label: i18next.t('modules.pages.freightStatement.carrierCode'),
+        type: 'input',
+        disabled: true,
+        row: 1,
+      },
+      {
         key: 'billTime',
         label: i18next.t('modules.pages.freightOperations.documentDate'),
         type: 'date',
@@ -277,20 +292,67 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 2,
       },
       {
+        key: SETTLEMENT_MODE_FIELD,
+        label: i18next.t('modules.pages.freightOperations.settlementMode'),
+        type: 'segmented',
+        required: true,
+        defaultValue: FREIGHT_SETTLEMENT_MODE_BY_TONNAGE,
+        options: [
+          {
+            label: i18next.t(
+              'modules.pages.freightOperations.settlementModeByTonnage',
+            ),
+            value: FREIGHT_SETTLEMENT_MODE_BY_TONNAGE,
+          },
+          {
+            label: i18next.t(
+              'modules.pages.freightOperations.settlementModeFixed',
+            ),
+            value: FREIGHT_SETTLEMENT_MODE_FIXED,
+          },
+        ],
+        row: 2,
+      },
+      {
         key: 'unitPrice',
         label: i18next.t('modules.pages.freightOperations.unitPrice'),
         type: 'number',
+        // 固定运费模式下单价仍必填并照旧存储（后端 @NotNull / unit_price NOT NULL），
+        // 只是不再作为结算依据，因此用 extra + tooltip 明确标注而不隐藏、不清空。
         required: true,
         min: 0,
         precision: 2,
         defaultValue: 0,
+        extra: (form) =>
+          isFixedFreightSettlement(form)
+            ? i18next.t(
+                'modules.pages.freightOperations.unitPriceNotSettlementBasis',
+              )
+            : undefined,
+        tooltip: (form) =>
+          isFixedFreightSettlement(form)
+            ? i18next.t(
+                'modules.pages.freightOperations.unitPriceNotSettlementBasis',
+              )
+            : undefined,
         row: 2,
       },
       {
-        key: 'carrierCode',
-        label: i18next.t('modules.pages.freightStatement.carrierCode'),
-        type: 'input',
-        disabled: true,
+        key: FIXED_FREIGHT_AMOUNT_FIELD,
+        label: i18next.t('modules.pages.freightOperations.fixedFreightAmount'),
+        type: 'number',
+        // 只在固定运费模式出现：其余模式下整块 Form.Item 被卸载，既不会用不存在的金额拦住提交，
+        // 也不会把切模式前残留的必填错误留在界面上。
+        required: true,
+        visibleWhen: isFixedFreightSettlement,
+        precision: 2,
+        validate: (value: unknown) =>
+          isValidFixedFreightAmount(value)
+            ? undefined
+            : i18next.t('modules.validation.fixedFreightAmountPositive'),
+        extra: i18next.t(
+          'modules.pages.freightOperations.fixedFreightAmountHelp',
+        ),
         row: 2,
       },
       {
@@ -299,13 +361,29 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'select',
         options: getSettlementCompanyOptions,
         disabled: true,
-        row: 2,
+        row: 3,
+      },
+      {
+        key: 'totalFreight',
+        label: i18next.t('modules.pages.freightOperations.totalFreight'),
+        type: 'number',
+        precision: 2,
+        controls: false,
+        // 结算金额由 normalizer 按结算方式算好后写回表单；服务端同样计算，不参与提交载荷。
+        disabled: true,
+        extra: (form) =>
+          i18next.t(
+            isFixedFreightSettlement(form)
+              ? 'modules.pages.freightOperations.totalFreightFromFixed'
+              : 'modules.pages.freightOperations.totalFreightFromTonnage',
+          ),
+        row: 3,
       },
       {
         key: 'remark',
         label: i18next.t('modules.pages.freightOperations.remark'),
         type: 'input',
-        row: 3,
+        row: 4,
         fullRow: true,
       },
     ],
@@ -320,6 +398,8 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         'vehiclePlate',
         'billTime',
         'unitPrice',
+        SETTLEMENT_MODE_FIELD,
+        FIXED_FREIGHT_AMOUNT_FIELD,
         'status',
         'remark',
       ],

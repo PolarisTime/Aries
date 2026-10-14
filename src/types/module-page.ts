@@ -29,6 +29,7 @@ export type {
   ModuleFilterOptionResolver,
   ModuleFilterType,
   ModuleFormFieldDefinition,
+  ModuleFormFieldHint,
   ModuleFormFieldOption,
   ModuleFormFieldOptionResolver,
   ModuleFormFieldType,
