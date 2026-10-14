@@ -8,6 +8,7 @@ export {
   removeEditorLineItems,
 } from '@/module-system/editor/module-editor-line-item-removal'
 export {
+  applyEditorLineItemOrder,
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,

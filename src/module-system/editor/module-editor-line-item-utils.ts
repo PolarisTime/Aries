@@ -136,6 +136,37 @@ export function moveEditorLineItemByDrag(
   return nextItems
 }
 
+/**
+ * 按给定 id 顺序重排明细行(整行长按拖动 / Alt+↑↓ 落位后写回行模型)。
+ *
+ * <p>后端口径是「items 数组顺序即最终顺序, 服务端按 `line_no = 下标 + 1` 重编号」,
+ * 因此这里只按 id 重新排列数组, 不改任何行字段, 也不产生新 id —— 服务端按 id 复用实体。</p>
+ *
+ * <p>顺序未变时**原样返回同一个数组**: 上层的 `setItems` 依赖引用判断是否需要重渲染,
+ * 每次拖动都换新引用会让整张表无谓重渲染。传入的 id 里若有当前不存在的(竞态删除),
+ * 直接忽略; 数组里没被提到的行按原相对顺序追加在末尾, 不静默丢行。</p>
+ */
+export function applyEditorLineItemOrder<T extends { id: string }>(
+  items: T[],
+  orderedIds: string[],
+): T[] {
+  const byId = new Map(items.map((item) => [String(item.id), item]))
+  const nextItems: T[] = []
+  for (const id of orderedIds) {
+    const item = byId.get(String(id))
+    if (item === undefined) continue
+    byId.delete(String(id))
+    nextItems.push(item)
+  }
+  for (const item of items) {
+    if (byId.has(String(item.id))) nextItems.push(item)
+  }
+  const unchanged =
+    nextItems.length === items.length &&
+    nextItems.every((item, index) => item === items[index])
+  return unchanged ? items : nextItems
+}
+
 export function applyMaterialToEditorLineItem(
   item: ModuleLineItem,
   materialRecord?: ModuleRecord | null,

@@ -78,7 +78,8 @@ interface Props {
   onImportParentRecord: (records: ModuleRecord[]) => void
   onItemColumnOrderChange: (order: string[]) => void
   onToggleItemColumn: (key: string) => void
-  onRowDragOver: (recordId: string, event: React.DragEvent) => void
+  /** 明细行序变化(整行长按拖动/键盘 Alt+↑↓ 落位): 新的 id 顺序即最终顺序。 */
+  onItemsReorder: (nextIds: string[]) => void
   /** 明细工具栏附加操作（如销售订单交付核定的「整单取网价」）。 */
   extraActions?: React.ReactNode
 }
@@ -133,7 +134,7 @@ export function ModuleEditorItemsSection({
   onImportParentRecord,
   onItemColumnOrderChange,
   onToggleItemColumn,
-  onRowDragOver,
+  onItemsReorder,
   extraActions,
 }: Props) {
   const { t } = useTranslation()
@@ -254,7 +255,7 @@ export function ModuleEditorItemsSection({
               emptyText={emptyText}
               rowClassName={rowClassName}
               itemRowMenus={itemRowMenus}
-              onRowDragOver={onRowDragOver}
+              onItemsReorder={onItemsReorder}
             />
           </ModuleItemsPanel>
         ) : null}

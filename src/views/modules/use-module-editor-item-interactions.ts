@@ -1,20 +1,28 @@
 import { useState } from 'react'
-import type { EditorItemDragPosition } from '@/module-system/adapter/module-adapter-editor'
-import { moveEditorLineItemByDrag } from '@/module-system/adapter/module-adapter-editor'
+import { applyEditorLineItemOrder } from '@/module-system/adapter/module-adapter-editor'
 import { removeEditorLineItems } from '@/module-system/editor/module-editor-line-item-removal'
 import type { ModuleLineItem } from '@/types/module-page'
 
 interface Props {
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
+  /** 是否允许拖动排序(只读/上游导入锁定/模块显式禁用时为 false)。 */
+  canReorderItems: boolean
 }
 
-export function useModuleEditorItemInteractions({ items, setItems }: Props) {
+/**
+ * 编辑器明细行的行级交互: 选中/删除 + 整行长按拖动排序。
+ *
+ * <p>拖动排序已从「HTML5 draggable 的手柄列」换成共享的整行长按拖动
+ * ({@link @/components/table/row-drag}): 不占单独的拖动列, 行序变化只回调新的 id 顺序,
+ * 由这里写回行模型数组 —— 后端口径是「items 数组顺序即最终顺序」, 保存时按数组顺序下发。</p>
+ */
+export function useModuleEditorItemInteractions({
+  items,
+  setItems,
+  canReorderItems,
+}: Props) {
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
-  const [dragSourceId, setDragSourceId] = useState<string | null>(null)
-  const [dragTargetId, setDragTargetId] = useState<string | null>(null)
-  const [dragPosition, setDragPosition] =
-    useState<EditorItemDragPosition>('before')
 
   const clearSelectedItems = () => {
     setSelectedItemIds([])
@@ -26,36 +34,14 @@ export function useModuleEditorItemInteractions({ items, setItems }: Props) {
     setSelectedItemIds([])
   }
 
-  const handleDragStart = (itemId: string, e: React.DragEvent) => {
-    setDragSourceId(itemId)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', itemId)
-  }
-
-  const handleDragOver = (itemId: string, e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    if (dragSourceId && dragSourceId !== itemId) {
-      setDragTargetId(itemId)
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-      const midY = rect.top + rect.height / 2
-      setDragPosition(e.clientY < midY ? 'before' : 'after')
-    }
-  }
-
-  const handleDragEnd = () => {
-    if (dragSourceId && dragTargetId && dragSourceId !== dragTargetId) {
-      setItems((prev) =>
-        moveEditorLineItemByDrag(
-          prev,
-          dragSourceId,
-          dragTargetId,
-          dragPosition,
-        ),
-      )
-    }
-    setDragSourceId(null)
-    setDragTargetId(null)
+  /**
+   * 拖动落位 / 键盘 Alt+↑↓ 落位后写回行模型。
+   *
+   * <p>只按 id 重排数组, 不改行字段: 服务端按 id 复用实体并以数组下标重编 `line_no`。</p>
+   */
+  const handleRowReorder = (nextIds: string[]) => {
+    if (!canReorderItems) return
+    setItems((prev) => applyEditorLineItemOrder(prev, nextIds))
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -70,9 +56,7 @@ export function useModuleEditorItemInteractions({ items, setItems }: Props) {
 
   return {
     clearSelectedItems,
-    handleDragEnd,
-    handleDragOver,
-    handleDragStart,
+    handleRowReorder,
     handleSelectAll,
     handleSelectItem,
     removeSelectedItems,

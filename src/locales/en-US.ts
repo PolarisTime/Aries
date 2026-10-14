@@ -276,6 +276,12 @@ export const enUS = {
       selectRow: 'Select this row',
       selectRowNamed: 'Select this row: {{label}}',
     },
+    /** Long-press row drag sort (shared): screen-reader announcements and keyboard hint. */
+    rowDragSort: {
+      rowLabel: 'Row {{index}}',
+      moved: '{{row}} moved to position {{position}}',
+      keyboardHint: 'Press Alt+Up or Alt+Down to move this row',
+    },
     back: 'Back',
     close: 'Close',
     ok: 'OK',

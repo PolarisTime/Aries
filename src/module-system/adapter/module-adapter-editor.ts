@@ -12,6 +12,7 @@ export {
   syncDerivedEditorFormValuesForModule,
 } from '@/module-system/editor/module-editor-draft'
 export {
+  applyEditorLineItemOrder,
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,

@@ -29,9 +29,7 @@ export function useModuleEditorItems({
 }: Props) {
   const {
     clearSelectedItems,
-    handleDragEnd,
-    handleDragOver,
-    handleDragStart,
+    handleRowReorder,
     handleSelectAll,
     handleSelectItem,
     removeSelectedItems: removeSelectedItemsDirectly,
@@ -39,6 +37,14 @@ export function useModuleEditorItems({
   } = useModuleEditorItemInteractions({
     items,
     setItems,
+    /*
+     * 行序可改的前提与「管理列是否出现」同源: 能管理明细、上游导入未锁死、
+     * 且模块行为表没有显式禁用拖拽排序(物流单/运费对账单的行序由上游单据决定)。
+     */
+    canReorderItems:
+      canManageItems &&
+      !parentImportedItemEditLocked &&
+      !getModuleEditorItemBehavior(moduleKey)?.disablesItemReorder,
   })
   // 上游导入行同样走这里删除：来源分配由服务端按剩余明细重算，删除即释放，
   // 不回写其它行的数量或上限，也不要求被删行继续关联采购来源。
@@ -77,14 +83,11 @@ export function useModuleEditorItems({
     selectedItemIds,
     onSelectAll: handleSelectAll,
     onSelectItem: handleSelectItem,
-    onDragStart: handleDragStart,
-    onDragOver: handleDragOver,
-    onDragEnd: handleDragEnd,
   })
 
   return {
     clearSelectedItems,
-    handleDragOver,
+    handleRowReorder,
     itemColumns,
     itemTableComponents,
     itemColumnOrder,

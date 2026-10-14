@@ -1,0 +1,63 @@
+/*
+ * 整行长按拖动排序(共享能力)的拖起态与插入位置指示线。
+ *
+ * 口径: 不加拖动手柄列 —— 整行即拖动区, 因此必须靠样式把"正在拖哪一行"和"会落到哪里"
+ * 讲清楚, 否则用户松开前看不出结果:
+ *   - 拖起态: 抬高的底色 + 浮层阴影 + grabbing 光标;
+ *   - 落位线: 目标行上/下沿 2px 主题色线, 方向与拖动方向一致。
+ * 颜色一律取 antd 语义 token, 深浅色模式都跟随主题, 不在组件里写死色值。
+ */
+
+/* 整行即拖动区: 光标提示可抓取(行内输入控件会覆盖为自己的光标) */
+.row-drag-sort-scope .ant-table-tbody > tr.row-drag-sort-row {
+  cursor: grab;
+}
+
+/* 插入位置线要相对行定位: 行与拖起态都需要 position: relative 的包含块 */
+.row-drag-sort-scope .ant-table-tbody > tr.row-drag-sort-row--over-above,
+.row-drag-sort-scope .ant-table-tbody > tr.row-drag-sort-row--over-below,
+.row-drag-sort-scope .ant-table-tbody > tr.row-drag-sort-row--dragging {
+  position: relative;
+}
+
+.row-drag-sort-scope .ant-table-tbody > tr.row-drag-sort-row--dragging {
+  z-index: 3;
+  cursor: grabbing;
+  /* 长按阈值(380ms)内浏览器可能已经起了选区: 拖动期间一律禁止连续选择 */
+  user-select: none;
+  opacity: 0.92;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+}
+
+.row-drag-sort-scope .ant-table-tbody > tr.row-drag-sort-row--dragging > td {
+  background: var(--ant-color-bg-elevated, #fff);
+}
+
+.row-drag-sort-scope
+  .ant-table-tbody
+  > tr.row-drag-sort-row--over-above::before,
+.row-drag-sort-scope
+  .ant-table-tbody
+  > tr.row-drag-sort-row--over-below::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ant-color-primary, #1677ff);
+  /* 指示线不能吃掉指针事件, 否则 dnd-kit 的命中的行会被线抢走 */
+  pointer-events: none;
+}
+
+.row-drag-sort-scope
+  .ant-table-tbody
+  > tr.row-drag-sort-row--over-above::before {
+  top: -1px;
+}
+
+.row-drag-sort-scope
+  .ant-table-tbody
+  > tr.row-drag-sort-row--over-below::after {
+  bottom: -1px;
+}

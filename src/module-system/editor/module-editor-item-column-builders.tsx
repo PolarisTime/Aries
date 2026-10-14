@@ -1,4 +1,3 @@
-import { MenuOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { Checkbox, Input, InputNumber, Select } from 'antd'
 import i18next from 'i18next'
@@ -59,14 +58,10 @@ interface EditableRenderOptions {
 }
 
 interface ManagementColumnOptions {
-  draggable?: boolean
   items: ModuleLineItem[]
   selectedItemIds: string[]
   onSelectAll: (checked: boolean) => void
   onSelectItem: (itemId: string, checked: boolean) => void
-  onDragStart: (itemId: string, event: React.DragEvent) => void
-  onDragOver: (itemId: string, event: React.DragEvent) => void
-  onDragEnd: () => void
 }
 
 const NUMBER_COLUMN_DATA_ATTRIBUTE = 'data-module-editor-number-column'
@@ -370,15 +365,18 @@ function buildEditableColumnRender({
     }
 }
 
+/**
+ * 管理列: 行选择框 + 序号。
+ *
+ * <p>序号列**不再兼作拖动手柄**: 行列顺序改由整行长按拖动(共享能力
+ * `@/components/table/row-drag`)承担, 因此这里只保留序号本身, 不再挂
+ * `draggable` / drag 事件, 也不再多占一列用于拖动。</p>
+ */
 export function buildModuleEditorManagementColumns({
-  draggable = true,
   items,
   selectedItemIds,
   onSelectAll,
   onSelectItem,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
 }: ManagementColumnOptions): TableColumnsType<ModuleLineItem> {
   return [
     {
@@ -409,23 +407,8 @@ export function buildModuleEditorManagementColumns({
       width: 56,
       fixed: 'left',
       align: 'center',
-      render: (_: unknown, record: ModuleLineItem, index: number) => (
-        <span
-          draggable={draggable}
-          onDragStart={
-            draggable ? (event) => onDragStart(record.id, event) : undefined
-          }
-          onDragOver={
-            draggable ? (event) => onDragOver(record.id, event) : undefined
-          }
-          onDragEnd={draggable ? onDragEnd : undefined}
-          className={draggable ? 'cursor-grab' : undefined}
-        >
-          {draggable ? (
-            <MenuOutlined className="mr-4 opacity-45 text-xs" />
-          ) : null}
-          {index + 1}
-        </span>
+      render: (_: unknown, _record: ModuleLineItem, index: number) => (
+        <span>{index + 1}</span>
       ),
     },
   ]

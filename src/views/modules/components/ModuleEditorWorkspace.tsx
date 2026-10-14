@@ -270,7 +270,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     parentImportVisible,
     supportsExpenseTab,
     clearSelectedItems,
-    handleDragOver,
+    handleRowReorder,
     itemColumns,
     itemTableComponents,
     itemColumnOrder,
@@ -400,7 +400,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           onItemColumnOrderChange={onItemColumnOrderChange}
           onToggleItemColumn={toggleItemColumn}
-          onRowDragOver={handleDragOver}
+          onItemsReorder={handleRowReorder}
         />
       </WorkspaceOverlay>
 

@@ -112,8 +112,12 @@ export function RowContextMenuRow(props: RowProps) {
   )
 
   if (!config) {
-    // 没有菜单的行保持普通 tr(不引入键盘/触摸入口, 也不占用 Tab 序)
-    return <tr {...rest} ref={ref} />
+    /*
+     * 没有菜单的行保持普通 tr(不引入键盘/触摸入口, 也不占用 Tab 序);
+     * 但调用方自己传的 onKeyDown 必须原样保留 —— 整行长按拖动排序就靠它接
+     * Alt+↑/↓(行上没有菜单时若把键盘处理器丢掉, 键盘用户就完全无法调整行序)。
+     */
+    return <tr {...rest} onKeyDown={onKeyDown} ref={ref} />
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {

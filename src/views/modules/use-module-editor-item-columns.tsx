@@ -57,9 +57,6 @@ interface Props {
   selectedItemIds: string[]
   onSelectAll: (checked: boolean) => void
   onSelectItem: (itemId: string, checked: boolean) => void
-  onDragStart: (itemId: string, event: React.DragEvent) => void
-  onDragOver: (itemId: string, event: React.DragEvent) => void
-  onDragEnd: () => void
 }
 
 type MaterialLookupEntry = readonly [string, ModuleRecord]
@@ -77,9 +74,6 @@ export function useModuleEditorItemColumns({
   selectedItemIds,
   onSelectAll,
   onSelectItem,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
   const { t } = useTranslation()
@@ -335,18 +329,14 @@ export function useModuleEditorItemColumns({
     if (canManageItems) {
       cols.push(
         ...buildModuleEditorManagementColumns({
-          // 上游导入后行序随上游（销售订单支持自动排序），只放开「选择 + 删除」，
-          // 不放开拖拽排序；未导入时沿用模块行为表的拖拽口径。
-          draggable:
-            !parentImportedItemEditLocked &&
-            !getModuleEditorItemBehavior(moduleKey)?.disablesItemReorder,
+          /*
+           * 取消可见拖动手柄后, 管理列只剩「选择 + 序号」; 排行走整行长按拖动
+           * (共享能力 useRowDragSort / RowDragSortScope), 不再是这一列的 draggable 把手。
+           */
           items,
           selectedItemIds,
           onSelectAll,
           onSelectItem,
-          onDragStart,
-          onDragOver,
-          onDragEnd,
         }),
       )
     }

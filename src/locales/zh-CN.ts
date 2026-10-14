@@ -274,6 +274,12 @@ export const zhCN = {
       selectRow: '选择此行',
       selectRowNamed: '选择此行：{{label}}',
     },
+    /** 整行长按拖动排序(共享能力): 读屏播报与键盘操作说明。 */
+    rowDragSort: {
+      rowLabel: '第 {{index}} 行',
+      moved: '{{row}}已移动到第 {{position}} 位',
+      keyboardHint: '按 Alt+上箭头 / Alt+下箭头 上移或下移该行',
+    },
     back: '返回',
     close: '关闭',
     ok: '确定',
