@@ -25,6 +25,13 @@ export function buildAntdTheme(options: BuildAntdThemeOptions): ThemeConfig {
       fontSize: options.fontSize,
       fontFamily: ANT_DESIGN_FONT_FAMILY,
       fontFamilyCode: ANT_DESIGN_FONT_FAMILY,
+      /*
+       * 展开类动效提速: antd 默认 fast=.1s / mid=.2s, 下拉、气泡、浮层都走 mid ——
+       * 0.2s 再叠上 zoom 起手, 频繁开关时主观上是"慢半拍"。这里只收快 fast/mid 两档,
+       * Modal/Drawer 用的 slow 保持默认: 大面板的展开幅度大, 收太快反而发飘。
+       */
+      motionDurationFast: '0.08s',
+      motionDurationMid: '0.12s',
       // 对比度需满足 WCAG 1.4.3 AA；暗色取值与 variables.css 的暗色变量保持一致
       colorTextSecondary: options.darkMode ? '#a0aec0' : 'rgba(0, 0, 0, 0.7)',
       colorTextPlaceholder: options.darkMode
