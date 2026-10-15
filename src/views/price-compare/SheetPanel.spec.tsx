@@ -43,12 +43,21 @@ function makeSheet(): PriceSheet {
   }
 }
 
+/** 列显示偏好的本地存储 key(未登录时 userKey 为 anonymous, 与 useColumnSettingsSupport 一致)。 */
+const COLUMN_SETTINGS_KEY =
+  'aries-list-column-settings:anonymous:price-compare-sheet'
+
 describe('SheetPanel 指定品牌展示', () => {
   let container: HTMLDivElement
   let root: Root
   let queryClient: QueryClient
 
   beforeEach(async () => {
+    // 列显隐已改为用户偏好持久化(本地存储): 上一个用例隐藏过的列会带到这里,
+    // 因此每个用例开始前清掉本页的列设置, 保证用例之间互相隔离。
+    window.localStorage.removeItem(
+      'aries-list-column-settings:anonymous:price-compare-sheet',
+    )
     await i18n.changeLanguage('zh-CN')
     if (!window.matchMedia) {
       window.matchMedia = (query: string) => ({
@@ -1230,6 +1239,81 @@ describe('SheetPanel 指定品牌展示', () => {
       container.querySelector('.ant-table-thead')?.textContent ?? ''
     expect(headerText).toContain('中天')
     expect(headerText).not.toContain('沙钢')
+  })
+
+  it('列显示可隐藏「已占用」与「剩余可开」两个吨位列', async () => {
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow }],
+      [],
+      [
+        { name: '中天', freight: 30 },
+        { name: '沙钢', freight: 20 },
+        { name: '永钢', freight: 10 },
+      ],
+    )
+    const headerTextOf = () =>
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerTextOf()).toContain('已占用')
+    expect(headerTextOf()).toContain('剩余可开')
+
+    await openColumnSettings()
+    for (const label of ['已占用', '剩余可开']) {
+      const toggle = Array.from(
+        document.body.querySelectorAll<HTMLElement>(
+          '.price-compare-column-settings .ant-checkbox-wrapper',
+        ),
+      ).find((el) => el.textContent?.includes(label))
+      expect(toggle, `未找到「${label}」开关`).toBeTruthy()
+      await act(async () => {
+        toggle
+          ?.querySelector('input')
+          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+    }
+
+    expect(headerTextOf()).not.toContain('已占用')
+    expect(headerTextOf()).not.toContain('剩余可开')
+    // 报单吨位列是必填列, 不参与显隐
+    expect(headerTextOf()).toContain('报单吨位')
+
+    // 隐藏结果写入用户偏好(本地存储), 刷新时由同一份记录恢复 —— 这正是本次要修的缺陷
+    const stored = JSON.parse(
+      window.localStorage.getItem(COLUMN_SETTINGS_KEY) ?? '{}',
+    )
+    expect(stored.hiddenKeys).toEqual(
+      expect.arrayContaining(['ton:issued', 'ton:unopened']),
+    )
+    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
+  })
+
+  it('本地已有隐藏记录时, 重新打开页面默认就是隐藏的(刷新不再复位)', () => {
+    window.localStorage.setItem(
+      COLUMN_SETTINGS_KEY,
+      JSON.stringify({
+        orderedKeys: [],
+        hiddenKeys: ['ton:issued', 'ton:unopened'],
+      }),
+    )
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow }],
+      [],
+      [
+        { name: '中天', freight: 30 },
+        { name: '沙钢', freight: 20 },
+        { name: '永钢', freight: 10 },
+      ],
+    )
+
+    const headerText =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerText).not.toContain('已占用')
+    expect(headerText).not.toContain('剩余可开')
+    expect(headerText).toContain('报单吨位')
+
+    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
   })
 
   const tonnageInputOf = (orderedWeight: number, itemId = '301') => {

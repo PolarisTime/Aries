@@ -2788,6 +2788,7 @@ export const enUS = {
       },
       columns: {
         remark: 'Remark',
+        tonnage: 'Tonnage columns',
         brand: 'Brand',
         category: 'Category',
         variety: 'Material / Spec / Length',

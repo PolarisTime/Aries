@@ -58,6 +58,11 @@ describe('SheetPanel 右键菜单', () => {
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
+    // 列显隐已改为用户偏好持久化(本地存储): 上一个用例隐藏过的列会带到这里,
+    // 因此每个用例开始前清掉本页的列设置, 保证用例之间互相隔离。
+    window.localStorage.removeItem(
+      'aries-list-column-settings:anonymous:price-compare-sheet',
+    )
     confirmOptions = null
     bindAntdAppApi({
       modal: {

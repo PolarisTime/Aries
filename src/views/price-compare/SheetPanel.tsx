@@ -42,6 +42,7 @@ import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
+import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { message, modal } from '@/utils/antd-app'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
@@ -56,15 +57,16 @@ import {
   LOCK_REASON_KEYS,
   linkedPurchaseOrderItemIds,
   netPriceWithFallback,
+  PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   resolveLock,
   resolveRef,
   type SHEET_COLUMN_WIDTH,
+  SHEET_HIDEABLE_COLUMN,
   SPOT_PRICE_MAX,
   type SupplierSelectOption,
   sumTonByPurchaseOrderItem,
 } from './core'
 import { LockableField } from './LockableField'
-import { withMemberVisibility } from './price-compare-support'
 import { resolveLinkedTonnageTotals } from './TonCell'
 import {
   buildIssuedTonColumn,
@@ -228,9 +230,13 @@ type ColumnContext = {
   allowedProducts?: string[]
   /** 已按项目配置过滤的可选商品(添加行下拉与列内选择共用)。 */
   varietyOptionsFlat: Variety[]
-  /** 仅临时列显隐: 是否隐藏备注列 */
+  /** 是否隐藏备注列(列设置弹层可切换, 走用户偏好持久化)。 */
   hideRemark: boolean
-  /** 仅临时列显隐: 整组隐藏的品牌名 */
+  /** 是否隐藏「已占用」列。 */
+  hideIssuedTon: boolean
+  /** 是否隐藏「剩余可开」列。 */
+  hideUnopenedTon: boolean
+  /** 整组隐藏的品牌名。 */
   hiddenBrands: string[]
   /** 可见品牌列组数量(已排除隐藏品牌), 供 summary colSpan 与 scroll.x 复用 */
   visibleBrandCount: number
@@ -556,6 +562,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     readOnly,
     sheet,
     hideRemark,
+    hideIssuedTon,
+    hideUnopenedTon,
     hiddenBrands,
     purchaseOrderTonnage,
     openPurchaseOrderPicker,
@@ -931,40 +939,50 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       patchRow,
       openPurchaseOrderPicker,
     }),
-    buildIssuedTonColumn({
-      t,
-      sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
-      readOnly,
-      width: widths.ton,
-      issuedWidth: widths.issuedTon,
-      unopenedWidth: widths.unopenedTon,
-      quantityLockClass,
-      purchaseOrderOptions: purchaseOrderTonnage.options,
-      tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
-      purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-      purchaseOrderTonnageError: purchaseOrderTonnage.isError,
-      localTonByItemId,
-      moveFocusTon: ctx.moveFocusTon,
-      patchRow,
-      openPurchaseOrderPicker,
-    }),
-    buildUnopenedTonColumn({
-      t,
-      sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
-      readOnly,
-      width: widths.ton,
-      issuedWidth: widths.issuedTon,
-      unopenedWidth: widths.unopenedTon,
-      quantityLockClass,
-      purchaseOrderOptions: purchaseOrderTonnage.options,
-      tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
-      purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-      purchaseOrderTonnageError: purchaseOrderTonnage.isError,
-      localTonByItemId,
-      moveFocusTon: ctx.moveFocusTon,
-      patchRow,
-      openPurchaseOrderPicker,
-    }),
+    ...(hideIssuedTon
+      ? []
+      : [
+          buildIssuedTonColumn({
+            t,
+            sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
+            readOnly,
+            width: widths.ton,
+            issuedWidth: widths.issuedTon,
+            unopenedWidth: widths.unopenedTon,
+            quantityLockClass,
+            purchaseOrderOptions: purchaseOrderTonnage.options,
+            tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
+            purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
+            purchaseOrderTonnageError: purchaseOrderTonnage.isError,
+            localTonByItemId,
+            moveFocusTon: ctx.moveFocusTon,
+            patchRow,
+            openPurchaseOrderPicker,
+          }),
+        ]),
+
+    ...(hideUnopenedTon
+      ? []
+      : [
+          buildUnopenedTonColumn({
+            t,
+            sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
+            readOnly,
+            width: widths.ton,
+            issuedWidth: widths.issuedTon,
+            unopenedWidth: widths.unopenedTon,
+            quantityLockClass,
+            purchaseOrderOptions: purchaseOrderTonnage.options,
+            tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
+            purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
+            purchaseOrderTonnageError: purchaseOrderTonnage.isError,
+            localTonByItemId,
+            moveFocusTon: ctx.moveFocusTon,
+            patchRow,
+            openPurchaseOrderPicker,
+          }),
+        ]),
+
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> =>
         hiddenBrandSet.has(brand.name)
@@ -1642,8 +1660,8 @@ function SheetTable(props: SheetTableProps) {
           base.widths.category +
           base.widths.spec +
           base.widths.ton +
-          base.widths.issuedTon +
-          base.widths.unopenedTon +
+          (base.hideIssuedTon ? 0 : base.widths.issuedTon) +
+          (base.hideUnopenedTon ? 0 : base.widths.unopenedTon) +
           base.visibleBrandCount *
             (base.widths.net +
               base.widths.spot +
@@ -1656,51 +1674,75 @@ function SheetTable(props: SheetTableProps) {
 
 /* ---------------------------------------------------------------- 顶部栏 */
 
-/** 列显示设置: 备注列与整组品牌列的临时显隐(不持久化)。 */
+/**
+ * 列显示设置: 备注列、两个吨位列与整组品牌列的显隐。
+ *
+ * <p>所有开关都只调用 {@link onToggle} 并带上 {@link SHEET_HIDEABLE_COLUMN} 的 key ——
+ * 显隐状态本身由 SheetPanel 持有并持久化(本地 + 云漫游), 这里只负责呈现与派发。</p>
+ */
 function ColumnSettingsButton({
   hideRemark,
+  hideIssuedTon,
+  hideUnopenedTon,
   brands,
   hiddenBrands,
-  onToggleRemark,
-  onToggleBrand,
+  onToggle,
 }: {
   hideRemark: boolean
+  hideIssuedTon: boolean
+  hideUnopenedTon: boolean
   brands: Brand[]
   hiddenBrands: string[]
-  onToggleRemark: (visible: boolean) => void
-  onToggleBrand: (brandName: string, visible: boolean) => void
+  onToggle: (key: string, visible: boolean) => void
 }) {
   const { t } = useTranslation()
   const hiddenBrandSet = new Set(hiddenBrands)
+  const checkbox = (checked: boolean, label: string, key: string) => (
+    <Checkbox
+      checked={checked}
+      onChange={(event) => onToggle(key, event.target.checked)}
+    >
+      {label}
+    </Checkbox>
+  )
   return (
     <Popover
       trigger="click"
       placement="bottomRight"
       content={
         <Flex vertical gap={4} className="price-compare-column-settings">
-          <Checkbox
-            checked={!hideRemark}
-            onChange={(event) => onToggleRemark(event.target.checked)}
-          >
-            {t('priceCompare.sheet.columns.remark')}
-          </Checkbox>
+          {checkbox(
+            !hideRemark,
+            t('priceCompare.sheet.columns.remark'),
+            SHEET_HIDEABLE_COLUMN.remark,
+          )}
+          <Divider className="my-4" />
+          <Text type="secondary" className="price-compare-sub">
+            {t('priceCompare.sheet.columns.tonnage')}
+          </Text>
+          {checkbox(
+            !hideIssuedTon,
+            t('priceCompare.sheet.columns.issuedTon'),
+            SHEET_HIDEABLE_COLUMN.issuedTon,
+          )}
+          {checkbox(
+            !hideUnopenedTon,
+            t('priceCompare.sheet.columns.unopenedTon'),
+            SHEET_HIDEABLE_COLUMN.unopenedTon,
+          )}
           {brands.length ? (
             <>
               <Divider className="my-4" />
               <Text type="secondary" className="price-compare-sub">
                 {t('priceCompare.sheet.columns.brand')}
               </Text>
-              {brands.map((brand) => (
-                <Checkbox
-                  key={brand.name}
-                  checked={!hiddenBrandSet.has(brand.name)}
-                  onChange={(event) =>
-                    onToggleBrand(brand.name, event.target.checked)
-                  }
-                >
-                  {brand.name}
-                </Checkbox>
-              ))}
+              {brands.map((brand) =>
+                checkbox(
+                  !hiddenBrandSet.has(brand.name),
+                  brand.name,
+                  SHEET_HIDEABLE_COLUMN.brand(brand.name),
+                ),
+              )}
             </>
           ) : null}
         </Flex>
@@ -2039,11 +2081,8 @@ function SheetHeader({
   onRemarkChange,
   allowHrb400eFallback = false,
   readOnly = false,
-  hideRemark,
-  hiddenBrands,
   brands,
-  onToggleRemark,
-  onToggleBrand,
+  columnSettingsSlot,
   supplierOptions,
   onFillSupplierSelected,
 }: {
@@ -2065,11 +2104,9 @@ function SheetHeader({
   onRemarkChange?: (value: string) => void
   allowHrb400eFallback?: boolean
   readOnly?: boolean
-  hideRemark: boolean
-  hiddenBrands: string[]
   brands: Brand[]
-  onToggleRemark: (visible: boolean) => void
-  onToggleBrand: (brandName: string, visible: boolean) => void
+  /** 列显示设置按钮: 由 SheetPanel 构造后作为节点下传(不再逐层透传 5 个 props)。 */
+  columnSettingsSlot: React.ReactNode
   supplierOptions: SupplierSelectOption[]
   onFillSupplierSelected: (
     brandName: string,
@@ -2104,11 +2141,8 @@ function SheetHeader({
         onToggleBest={onToggleBest}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        hideRemark={hideRemark}
         brands={brands}
-        hiddenBrands={hiddenBrands}
-        onToggleRemark={onToggleRemark}
-        onToggleBrand={onToggleBrand}
+        columnSettingsSlot={columnSettingsSlot}
         onOpenConfig={onOpenConfig}
         selectedCount={selectedCount}
         supplierOptions={supplierOptions}
@@ -2307,11 +2341,8 @@ function SheetActionRow({
   onToggleBest,
   refreshing,
   onRefresh,
-  hideRemark,
   brands,
-  hiddenBrands,
-  onToggleRemark,
-  onToggleBrand,
+  columnSettingsSlot,
   onOpenConfig,
   selectedCount,
   supplierOptions,
@@ -2325,11 +2356,8 @@ function SheetActionRow({
   onToggleBest: () => void
   refreshing: boolean
   onRefresh: () => void
-  hideRemark: boolean
   brands: Brand[]
-  hiddenBrands: string[]
-  onToggleRemark: (visible: boolean) => void
-  onToggleBrand: (brandName: string, visible: boolean) => void
+  columnSettingsSlot: React.ReactNode
   onOpenConfig?: () => void
   selectedCount: number
   supplierOptions: SupplierSelectOption[]
@@ -2366,13 +2394,7 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshPrice')}
       </Button>
-      <ColumnSettingsButton
-        hideRemark={hideRemark}
-        brands={brands}
-        hiddenBrands={hiddenBrands}
-        onToggleRemark={onToggleRemark}
-        onToggleBrand={onToggleBrand}
-      />
+      {columnSettingsSlot}
       {onOpenConfig ? (
         <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
           {t('priceCompare.sheet.config')}
@@ -2485,8 +2507,39 @@ export function SheetPanel(props: Props) {
   const [bestOn, setBestOn] = useState(false)
   const [spotResetNonce, setSpotResetNonce] = useState(0)
   /** 仅临时(不持久化)的列显隐: 备注列与整组品牌列。 */
-  const [hideRemark, setHideRemark] = useState(false)
-  const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
+  /**
+   * 列显隐(备注 / 已占用 / 剩余可开 / 整组品牌)走统一的用户偏好持久化: 本地立即写入 +
+   * 云端漫游同步, 刷新与换设备都保留。
+   *
+   * <p>此前是纯内存 state(注释自称"仅临时列显隐"), 用户隐藏列后一刷新就复位 ——
+   * 这正是本次要修的缺陷。key 统一来自 {@link SHEET_HIDEABLE_COLUMN}, 避免列设置弹层、
+   * 品牌列头菜单与持久化各写一套字符串。</p>
+   */
+  const columnSettings = useColumnSettingsSupport(
+    PRICE_COMPARE_COLUMN_SETTINGS_KEY,
+    [],
+    /* 分母是表格的**总列数**(勾选/行操作/备注/类别/规格/三个吨位列 + 每个品牌 4 列) ——
+       它是 hook 判定「隐藏比例异常」的基数。传「可显隐列数」会把正常操作误判成脏数据:
+       例如 3 个品牌时隐藏备注与两个品牌组就是 3/6, 直接触发静默重置。 */
+    8 + brands.length * 4,
+  )
+  const columnVisibility = columnSettings.columnVisibility
+  const setColumnVisible = (key: string, visible: boolean) =>
+    columnSettings.handleColumnVisibilityChange((current) => ({
+      ...current,
+      [key]: visible,
+    }))
+  const hideRemark = columnVisibility[SHEET_HIDEABLE_COLUMN.remark] === false
+  const hideIssuedTon =
+    columnVisibility[SHEET_HIDEABLE_COLUMN.issuedTon] === false
+  const hideUnopenedTon =
+    columnVisibility[SHEET_HIDEABLE_COLUMN.unopenedTon] === false
+  const hiddenBrands = brands
+    .filter(
+      (brand) =>
+        columnVisibility[SHEET_HIDEABLE_COLUMN.brand(brand.name)] === false,
+    )
+    .map((brand) => brand.name)
   /** 行操作菜单当前打开的行: 右键行内区域与「更多」按钮共用一个受控开关。 */
   const [contextMenuRowId, setContextMenuRowId] = useState<string | null>(null)
   /** 当前通过表头右键菜单打开「一键填入供应商」弹层的品牌列。 */
@@ -2500,9 +2553,7 @@ export function SheetPanel(props: Props) {
     consume: consumeSpotsTouched,
   } = useSpotTouchedKeys()
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
-    setHiddenBrands((current) =>
-      withMemberVisibility(current, brandName, visible),
-    )
+    setColumnVisible(SHEET_HIDEABLE_COLUMN.brand(brandName), visible)
   const { refDate, refPeriod } = resolveRef(data, sheet)
   const varietyByLabel = useMemo(
     () =>
@@ -2683,6 +2734,8 @@ export function SheetPanel(props: Props) {
     spotRef,
     readOnly,
     hideRemark,
+    hideIssuedTon,
+    hideUnopenedTon,
     hiddenBrands,
     varietyOptionsFlat: filterVarieties(varieties, brands, allowedProducts),
     // 报单吨位合计: 视图层算一次, 吨位三列与列宽计算共用同一份
@@ -2716,11 +2769,17 @@ export function SheetPanel(props: Props) {
         onRemarkChange={onRemarkChange}
         allowHrb400eFallback={allowHrb400eFallback}
         readOnly={readOnly}
-        hideRemark={hideRemark}
-        hiddenBrands={hiddenBrands}
         brands={brands}
-        onToggleRemark={(visible) => setHideRemark(!visible)}
-        onToggleBrand={toggleBrandVisible}
+        columnSettingsSlot={
+          <ColumnSettingsButton
+            hideRemark={hideRemark}
+            hideIssuedTon={hideIssuedTon}
+            hideUnopenedTon={hideUnopenedTon}
+            brands={brands}
+            hiddenBrands={hiddenBrands}
+            onToggle={setColumnVisible}
+          />
+        }
         supplierOptions={suppliers}
         onFillSupplierSelected={(brandName, option) =>
           fillSupplier(brandName, selectedIds, option)

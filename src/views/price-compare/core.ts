@@ -194,6 +194,28 @@ export const DEFAULT_LENGTH_PREMIUM = 30
  * 「供应商简称」最容易中招), 因此实际列宽一律由 {@link sheetColumnWidths}
  * 按当前字号等比换算。</p>
  */
+/**
+ * 比价表格里「可显隐列」的稳定 key。
+ *
+ * <p>列设置弹层、品牌列头的「隐藏该列」、以及用户偏好持久化必须共用同一份 key ——
+ * 任一处另起一套字符串, 就会出现「勾选状态与列的实际显隐对不上」, 且刷新后必然分叉。</p>
+ */
+export const SHEET_HIDEABLE_COLUMN = {
+  remark: 'remark',
+  issuedTon: 'ton:issued',
+  unopenedTon: 'ton:unopened',
+  /** 品牌列是动态列(随项目配置变化), key 带品牌名后缀。 */
+  brand: (name: string) => `brand:${name}`,
+} as const
+
+/**
+ * 列显示偏好的页面 key。
+ *
+ * <p>与模块表格的列设置走同一套机制(本地立即写入 + 云端漫游同步), 因此同一用户在多台
+ * 设备上看到的列显隐一致; 换用户或未登录时只落本地。</p>
+ */
+export const PRICE_COMPARE_COLUMN_SETTINGS_KEY = 'price-compare-sheet'
+
 export const SHEET_COLUMN_WIDTH = {
   remark: 140,
   category: 72,

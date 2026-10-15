@@ -2691,6 +2691,7 @@ export const zhCN = {
       },
       columns: {
         remark: '备注',
+        tonnage: '吨位列',
         brand: '品牌',
         category: '类别',
         variety: '材质 / 规格 / 长度',
