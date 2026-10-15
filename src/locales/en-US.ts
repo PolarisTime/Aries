@@ -2799,8 +2799,8 @@ export const enUS = {
         purchaseOrderSupplier: 'Supplier',
         purchaseOrderOrdered: 'Ordered',
         /** Tonnage trio: order (input) / issued / unopened (= ordered − issued). */
-        issuedTon: 'Issued',
-        unopenedTon: 'Remaining unissued',
+        issuedTon: 'Occupied (incl. this sheet)',
+        unopenedTon: 'Open for this sheet',
         purchaseOrderIssued: 'Issued',
         purchaseOrderRemaining: 'Remaining',
         purchaseOrderStatus: 'Status',
@@ -2894,7 +2894,7 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Issued = this sheet reported + other saved sheets; remaining unissued = ordered − issued',
+        'Occupied = other sheets + this sheet allocation; open for this sheet = PO allowance − occupied; the reported request is separate',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       /** Short state for the tonnage columns when the row has no linked PO line yet. */
@@ -2916,12 +2916,23 @@ export const enUS = {
       purchaseOrderRemainingShort: 'Remaining {{weight}}',
       /** Tooltip row: tonnage this sheet reported on the linked PO line. */
       purchaseOrderSheetReported: 'This sheet (PO line)',
-      purchaseOrderIssuedActual: 'Issued by other sheets',
+      purchaseOrderIssuedActual: 'Occupied by other sheets',
+      /** The part allocated by this sheet (allocated_ton). */
+      purchaseOrderSelfAllocated: 'Allocated by this sheet',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
-      /** Anomaly: tonnage issued by other sheets exceeds this sheet reported tonnage. */
-      purchaseOrderOverIssuedLong:
-        'Issued {{issued}} t exceeds the ordered tonnage {{ordered}} t',
+      /**
+       * Over-issued: the remaining column never shows a negative number; this short text
+       * carries the excess. Excess = issued total − linked PO allowance (same source as
+       * remainingTonDisplay).
+       */
+      purchaseOrderOverIssuedShort: 'Over-issued {{over}} t',
+      /** Over-occupied explanation (single source): occupied, allowance and excess. */
+      purchaseOrderOverIssuedDetail:
+        'Occupied {{issued}} t > linked PO allowance {{ordered}} t ⇒ exceeds by {{over}} t',
+      /** Over-request explanation (single source): request exceeds allowance; unrelated to remaining. */
+      purchaseOrderOverReportedDetail:
+        'Reported request {{reported}} t > linked PO allowance {{ordered}} t ⇒ exceeds by {{over}} t',
       /** PO line linked but the reported tonnage is still empty. */
       purchaseOrderMissingTonShort: 'No tonnage',
       purchaseOrderMissingTonHint:

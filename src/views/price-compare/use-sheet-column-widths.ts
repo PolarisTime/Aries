@@ -46,6 +46,11 @@ export function useSheetColumnWidths(
    * 单条明细行候选更宽, 不补进来就会被省略号收尾(见 maxRemainingTonTextWidth)。
    */
   extraRemainingTexts: readonly string[] = NO_EXTRA_REMAINING_TEXTS,
+  /**
+   * 超开短文案生成器(如「超开 10.02 吨」): 超开行在同一格里多一段文案, 不补进列宽会被省略号收尾。
+   * 由调用方注入带翻译的实现, 本 hook 不持有语言。
+   */
+  formatOverText?: (overTon: number) => string,
 ) {
   const fontSize = useUiSettingsStore(
     (state) => state.settings?.fontSize ?? SHEET_WIDTH_BASE_FONT_SIZE,
@@ -58,6 +63,7 @@ export function useSheetColumnWidths(
         tonnageRecords,
         localTonByItemId,
         extraRemainingTexts,
+        formatOverText,
       ),
       unopened: maxTonProgressTextWidth(
         tonnageRecords,
@@ -72,6 +78,7 @@ export function useSheetColumnWidths(
       tonnageRecords,
       localTonByItemId,
       extraRemainingTexts,
+      formatOverText,
       issuedHeader,
       unopenedHeader,
       fontSize,

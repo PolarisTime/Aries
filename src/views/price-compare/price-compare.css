@@ -1241,3 +1241,23 @@
   flex: 0 0 auto;
   color: var(--color-info-active, #0958d9);
 }
+
+/*
+ * 「剩余未开吨位」= 0 + 超开短文案(WCAG 1.4.1: 不只靠颜色)。
+ *
+ * <p>「剩余」不显示负数: 超开时数字位显示 0, 同行再给一段明确文案(「超开 10.02 吨」),
+ * 两者一起转警告色。列宽已把这段文案算进 `maxRemainingTonTextWidth`, 不会被省略号收尾。</p>
+ */
+.price-compare-ton-remaining {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-xxs);
+  max-width: 100%;
+}
+
+.price-compare-ton-over-flag {
+  flex: none;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}

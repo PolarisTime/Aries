@@ -73,7 +73,11 @@ import {
   EMPTY_PURCHASE_ORDER_TONNAGE,
   type PurchaseOrderTonnageDraftInput,
 } from './ton-column'
-import { remainingTonText } from './ton-progress-text'
+import {
+  compactTonText,
+  remainingTonDisplay,
+  remainingTonText,
+} from './ton-progress-text'
 import type {
   Brand,
   GridRow,
@@ -2537,25 +2541,40 @@ export function SheetPanel(props: Props) {
     () =>
       rows.flatMap((row) => {
         if (linkedPurchaseOrderItemIds(row).length < 2) return []
+        const localReportedTon = row.purchaseOrderItemId
+          ? (localTonByItemId.get(row.purchaseOrderItemId) ?? 0)
+          : 0
         const totals = resolveLinkedTonnageTotals(
           row,
           purchaseOrderTonnage.options,
           row.purchaseOrderItemId
             ? purchaseOrderTonnage.tonnageByItemId.get(row.purchaseOrderItemId)
             : undefined,
+          localReportedTon,
         )
+        // 方案 A: 已占用取"本单分配合计"(allocated_ton), 不是本行报单量
+        const display = remainingTonDisplay(
+          totals.orderedTotal,
+          totals.otherIssuedTotal,
+          totals.selfAllocatedTotal,
+        )
+        // 超占用行在 0 之后还有一段「超开 X 吨」, 列宽候选必须与渲染同源
         return [
-          remainingTonText(
-            totals.orderedTotal,
-            totals.otherIssuedTotal,
-            row.purchaseOrderItemId
-              ? (localTonByItemId.get(row.purchaseOrderItemId) ?? 0)
-              : 0,
-          ),
+          display.overTon > 0
+            ? `${display.text} ${t(
+                'priceCompare.sheet.purchaseOrderOverIssuedShort',
+                { over: compactTonText(display.overTon) },
+              )}`
+            : remainingTonText(
+                totals.orderedTotal,
+                totals.otherIssuedTotal,
+                totals.selfAllocatedTotal,
+              ),
         ]
       }),
     [
       rows,
+      t,
       purchaseOrderTonnage.options,
       purchaseOrderTonnage.tonnageByItemId,
       localTonByItemId,
@@ -2569,6 +2588,10 @@ export function SheetPanel(props: Props) {
       unopened: t('priceCompare.sheet.columns.unopenedTon'),
     },
     multiLinkRemainingTexts,
+    (overTon) =>
+      t('priceCompare.sheet.purchaseOrderOverIssuedShort', {
+        over: compactTonText(overTon),
+      }),
   )
 
   const base = {

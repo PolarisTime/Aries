@@ -1490,11 +1490,11 @@ describe('SheetPanel 指定品牌展示', () => {
     // 口径顺序: 本单报单 → 其他报单已开 → 已开吨位 → 剩余未开 → 订货(参考)
     expect(tooltipText).toContain('本单该明细行报单')
     expect(tooltipText).toContain('12.000')
-    expect(tooltipText).toContain('其他报单已开')
+    expect(tooltipText).toContain('其他单据占用')
     expect(tooltipText).toContain('5.000')
-    expect(tooltipText).toContain('已开吨位')
+    expect(tooltipText).toContain('已占用（含本单分配）')
     expect(tooltipText).toContain('17.000')
-    expect(tooltipText).toContain('剩余未开吨位')
+    expect(tooltipText).toContain('剩余可开')
     expect(tooltipText).toContain('15.768')
     expect(tooltipText).toContain('订货吨位')
     expect(tooltipText).toContain('32.768')
@@ -1553,7 +1553,7 @@ describe('SheetPanel 指定品牌展示', () => {
     )
     const issuedNeeded = requiredIssuedTonColumnWidth(
       estimateSheetTextWidth('12.500', TON_PROGRESS_FONT_SIZE),
-      estimateSheetTextWidth('已开吨位', headerFontSize),
+      estimateSheetTextWidth('已占用（含本单分配）', headerFontSize),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),

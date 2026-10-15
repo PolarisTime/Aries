@@ -2704,8 +2704,8 @@ export const zhCN = {
         purchaseOrderIssued: '已开吨位',
         purchaseOrderRemaining: '剩余吨位',
         /** 吨位三列: 报单吨位(输入) / 已开吨位 / 未开吨位(订货 − 已开)。 */
-        issuedTon: '已开吨位',
-        unopenedTon: '剩余未开吨位',
+        issuedTon: '已占用（含本单分配）',
+        unopenedTon: '剩余可开',
         purchaseOrderStatus: '状态',
       },
       /** 右键菜单: 行操作与品牌列头操作(与可见按钮共用同一份动作) */
@@ -2795,7 +2795,7 @@ export const zhCN = {
       purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
       purchaseOrderOverLimit: '（超额）',
       purchaseOrderSavedBasis:
-        '「已开吨位」= 本单据该明细行报单吨位 + 其他已保存报单占用（不含本单据的话是「其他报单已开」）；「剩余未开吨位」= 订货吨位 − 已开吨位',
+        '已占用 = 其他单据占用 + 本单分配（本次开出）；剩余可开 = 关联订单额度 − 已占用；报单请求另计',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
       /** 吨位口径两列的短状态: 该行还没关联订单明细行, 因此没有已开/未开口径。 */
@@ -2819,13 +2819,23 @@ export const zhCN = {
       purchaseOrderRemainingShort: '剩余 {{weight}}',
       /** 悬浮明细里的本单据口径: 该订单明细行在本单据的报单吨位合计。 */
       purchaseOrderSheetReported: '本单该明细行报单',
-      /** 吨位进度行的数字口径: 实际已开(服务端已保存报单)。 */
-      purchaseOrderIssuedActual: '其他报单已开',
+      /** 已占用里"其他单据"那一份(服务端 issuedWeight, 不含本单据)。 */
+      purchaseOrderIssuedActual: '其他单据占用',
+      /** 本单据在这条明细行上"本次开出"的分配量(allocated_ton 口径)。 */
+      purchaseOrderSelfAllocated: '本单分配（本次开出）',
       purchaseOrderDetail: '采购订单明细',
       purchaseOrderUnlinked: '未关联采购订单',
-      /** 异常态: 其他单据已开吨位超过本单据报单吨位。 */
-      purchaseOrderOverIssuedLong:
-        '已开吨位 {{issued}} 吨已超过订货吨位 {{ordered}} 吨',
+      /**
+       * 「剩余可开」下限 0 的兜底文案: 历史脏数据(已占用 > 额度)才用这段短文案独立表达。
+       * 差额 = 已占用合计 − 关联订单额度(与 remainingTonDisplay 同源)。
+       */
+      purchaseOrderOverIssuedShort: '超开 {{over}} 吨',
+      /** 超占用说明(唯一来源): 已占用、关联订单额度、差额三个数一次摆清。 */
+      purchaseOrderOverIssuedDetail:
+        '已占用 {{issued}} 吨 > 关联订单额度 {{ordered}} 吨 ⇒ 超出 {{over}} 吨',
+      /** 超报单请求说明(唯一来源): 请求量超过额度, 与"剩余可开"是两件事。 */
+      purchaseOrderOverReportedDetail:
+        '报单请求 {{reported}} 吨 > 关联订单额度 {{ordered}} 吨 ⇒ 超出 {{over}} 吨',
       /** 已关联订单明细行但报单吨位还没填: 未开吨位没有可减的基数。 */
       purchaseOrderMissingTonShort: '未填吨位',
       purchaseOrderMissingTonHint:

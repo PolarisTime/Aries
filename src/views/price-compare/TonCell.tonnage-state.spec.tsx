@@ -158,6 +158,54 @@ describe('吨位关联的三态与欠额展示', () => {
     })
   }
 
+  it('超开时「剩余未开」显示 0 + 超开短文案, 不再显示负的剩余', async () => {
+    // 关联订单额度 19.98、本单据报单 30、其他占用 0 ⇒ 数学上超开 10.02
+    const overRow: PriceRow = {
+      ...baseRow,
+      ton: 30,
+      purchaseOrderItemId: '301',
+      purchaseOrderNo: 'PO-88',
+    }
+    const overRecord: PurchaseOrderTonnageRecord = {
+      ...linkedRecord,
+      orderedWeight: 19.98,
+      issuedWeight: 0,
+      remainingWeight: 19.98,
+    }
+    render(overRow, [overRecord], { loading: false, localTonForItem: 30 })
+
+    // 用户实测反馈: 「剩余 −10.02」无法理解 —— 列上必须下限 0
+    expect(container.textContent).not.toContain('-10.02')
+    expect(
+      container.querySelector('.price-compare-ton-remaining')?.textContent,
+    ).toBe('0超开 10.02 吨')
+
+    // 悬浮说明把三个数一次摆清: 报单请求 / 关联订单额度 / 差额
+    const bubble = await bubbleTextOf(
+      container.querySelector<HTMLElement>('.price-compare-ton-remaining') ??
+        container,
+    )
+    // 本单分配(兜底为报单量 30) > 额度 19.98 ⇒ 既超占用也超报单请求, 两句都给
+    expect(bubble).toContain(
+      '已占用 30.000 吨 > 关联订单额度 19.980 吨 ⇒ 超出 10.020 吨',
+    )
+    expect(bubble).toContain(
+      '报单请求 30.000 吨 > 关联订单额度 19.980 吨 ⇒ 超出 10.020 吨',
+    )
+  })
+
+  it('未超开时「剩余未开」仍按原值显示, 没有超开文案', () => {
+    // 订货 60、报单 5、其他 20 ⇒ 剩余 35
+    render(
+      { ...baseRow, purchaseOrderItemId: '301', purchaseOrderNo: 'PO-88' },
+      [linkedRecord],
+      { loading: false, localTonForItem: 5 },
+    )
+    const cell = container.querySelector('.price-compare-ton-remaining')
+    expect(cell?.textContent).toBe('35')
+    expect(container.textContent).not.toContain('超开')
+  })
+
   /** 悬浮/聚焦短状态标签, 读出气泡文案。 */
   const bubbleTextOf = async (node: HTMLElement) => {
     await act(async () => {
@@ -368,22 +416,28 @@ describe('吨位关联的三态与欠额展示', () => {
             purchaseOrderId: '99',
             purchaseOrderNo: 'PO-99',
             purchaseOrderItemId: '302',
-            allocatedTon: 7.996,
+            // 第二条只分配一部分: 这样"合计口径"与"只算第一条"必然给出不同的数
+            allocatedTon: 3,
           },
         ],
       },
       [recordA, recordB],
       { loading: false, localTonForItem: 20 },
     )
-    const figure = container.querySelector<HTMLElement>(
-      '.price-compare-ton-figure',
+    const cell = container.querySelector<HTMLElement>(
+      '.price-compare-ton-remaining',
     )
-    // 合计: 订货 7.996 + 7.996 − 已开(0 + 0 + 20) = −4.008
-    expect(figure?.textContent).toBe('-4.008')
-    // 单条口径会得到 −12.004; 这条断言就是"改回单条口径必须变红"的钉子
-    expect(figure?.textContent).not.toBe('-12.004')
-    // 标红判定与列上数字同源
-    expect(figure?.className).toContain('price-compare-ton-hint--over')
+    /*
+     * 方案 A 合计口径: 额度 7.996 + 7.996 = 15.992, 已占用 = 本单分配(7.996 + 3) + 其他 0
+     * = 10.996 ⇒ 剩余 4.996。只算第一条会得到 7.996 − 7.996 = 0 —— 两者必须可区分。
+     */
+    expect(cell?.textContent).toBe('4.996')
+    expect(cell?.textContent).not.toBe('0')
+    // 未超占用: 不标红、无超开徽标
+    expect(container.querySelector('.price-compare-ton-over-flag')).toBeNull()
+    expect(
+      container.querySelector('.price-compare-ton-figure')?.className,
+    ).not.toContain('price-compare-ton-hint--over')
   })
 
   it('单条关联的「剩余未开吨位」逐字不变(合计 = 该条)', () => {
@@ -397,9 +451,10 @@ describe('吨位关联的三态与欠额展示', () => {
       [{ ...linkedRecord, orderedWeight: 40, issuedWeight: 30 }],
       { loading: false, localTonForItem: 40 },
     )
+    // 超开: 列上 0 + 超开 30, 不再显示 −30
     expect(
-      container.querySelector<HTMLElement>('.price-compare-ton-figure')
+      container.querySelector<HTMLElement>('.price-compare-ton-remaining')
         ?.textContent,
-    ).toBe('-30')
+    ).toBe('0超开 30 吨')
   })
 })
