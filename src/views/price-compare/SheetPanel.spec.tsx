@@ -1338,12 +1338,12 @@ describe('SheetPanel 指定品牌展示', () => {
       '.ant-table-tbody tr:not(.ant-table-measure-row)',
     )
 
-  it('整行任意位置都能起拖(不再只认那个手柄)', async () => {
+  it('整行任意位置都能起拖(不再只认那个手柄)', () => {
     renderStateful(makeSheet(), [{ ...baseRow }])
     const tr = dataRow()
     expect(tr?.getAttribute('draggable')).toBe('true')
 
-    await act(async () => {
+    act(() => {
       // 在没有任何控件的单元格上按下(事件目标就是行本身)
       tr?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
       tr?.dispatchEvent(dragStartEvent())
@@ -1352,7 +1352,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(tr?.className).toContain('price-compare-dragging')
   })
 
-  it('在输入控件上按下时不拖行, 把原生行为让给文本选择/下拉', async () => {
+  it('在输入控件上按下时不拖行, 把原生行为让给文本选择/下拉', () => {
     renderStateful(makeSheet(), [{ ...baseRow }])
     const tr = dataRow()
     const control = container.querySelector<HTMLElement>(
@@ -1361,7 +1361,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(control, '前置条件: 行内应有可编辑输入控件').not.toBeNull()
 
     let prevented = false
-    await act(async () => {
+    act(() => {
       control?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
       const event = dragStartEvent()
       tr?.dispatchEvent(event)

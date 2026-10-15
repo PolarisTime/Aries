@@ -184,14 +184,14 @@ describe('报单比价 项目/批次选择控件契约', () => {
     ).not.toBeNull()
   })
 
-  it('只剩一个批次时, 「更多」里的删除项被禁用(至少保留一个批次)', async () => {
+  it('只剩一个批次时, 「更多」里的删除项被禁用(至少保留一个批次)', () => {
     renderBatchBar([projectGroups[0].sheets[0]], 's1')
 
     const trigger = container.querySelector(
       '[aria-label="更多批次操作"]',
     ) as HTMLElement
     expect(trigger).not.toBeNull()
-    await act(async () => {
+    act(() => {
       trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
       trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })

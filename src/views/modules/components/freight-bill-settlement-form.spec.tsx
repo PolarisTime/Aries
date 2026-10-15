@@ -71,8 +71,15 @@ describe('新建物流单结算方式联动', () => {
     root = createRoot(container)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     act(() => root.unmount())
+    /*
+     * rc 的延迟状态(useDelayState: Tooltip / Popover 一类)在 unmount 之后仍会留下一个短
+     * 定时器; 一旦它晚于 jsdom 环境销毁才触发, React 会在调度入口读 window 并抛
+     * "ReferenceError: window is not defined" —— 断言全过, 但整个 run 的 exit≠0(CI 判红)。
+     * 这里在 jsdom 还活着的时候把它排空。
+     */
+    await new Promise((resolve) => setTimeout(resolve, 250))
     container.remove()
   })
 

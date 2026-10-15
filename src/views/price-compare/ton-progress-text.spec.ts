@@ -119,8 +119,7 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
     expect(
       tonProgressOverReportedText(
         { reportedTon: 130, orderedTon: 108.544 },
-        (key, options) =>
-          i18next.t(key, options as Record<string, unknown> | undefined),
+        (key, options) => i18next.t(key, options),
       ),
     ).toContain('超出 21.456 吨')
   })
@@ -163,8 +162,7 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
   it('超占用说明用"已占用 / 关联额度 / 差额"三个数(不再是报单请求)', () => {
     const text = tonProgressOverIssuedText(
       { orderedTon: 100, issuedTon: 108.544 },
-      (key, options) =>
-        i18next.t(key, options as Record<string, unknown> | undefined),
+      (key, options) => i18next.t(key, options),
     )
     expect(text).toBe(
       '已占用 108.544 吨 > 关联订单额度 100.000 吨 ⇒ 超出 8.544 吨',
@@ -172,8 +170,7 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
     expect(
       tonProgressOverIssuedText(
         { orderedTon: 40, issuedTon: 12 },
-        (key, options) =>
-          i18next.t(key, options as Record<string, unknown> | undefined),
+        (key, options) => i18next.t(key, options),
       ),
     ).toBeNull()
   })
@@ -181,8 +178,7 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
   it('超报单请求另给提示: 报单请求 > 关联额度 ⇒ 超出 X 吨', () => {
     const text = tonProgressOverReportedText(
       { reportedTon: 130, orderedTon: 108.544 },
-      (key, options) =>
-        i18next.t(key, options as Record<string, unknown> | undefined),
+      (key, options) => i18next.t(key, options),
     )
     expect(text).toBe(
       '报单请求 130.000 吨 > 关联订单额度 108.544 吨 ⇒ 超出 21.456 吨',
@@ -191,8 +187,7 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
     expect(
       tonProgressOverReportedText(
         { reportedTon: 12, orderedTon: 40 },
-        (key, options) =>
-          i18next.t(key, options as Record<string, unknown> | undefined),
+        (key, options) => i18next.t(key, options),
       ),
     ).toBeNull()
     // 与"剩余可开"互不影响: 请求超出 21.456, 但剩余仍是 0(分配吃满额度)
@@ -409,7 +404,7 @@ describe('吨位进度列文案(已开 / 剩余未开)', () => {
     // 超占用说明取同一个出口(不在这里另拼文案)
     const overIssuedText =
       tonProgressOverIssuedText(detail, (key, options) =>
-        i18next.t(key, options as Record<string, unknown> | undefined),
+        i18next.t(key, options),
       ) ?? ''
     expect(overIssuedText).toBe(
       '已占用 20.000 吨 > 关联订单额度 15.992 吨 ⇒ 超出 4.008 吨',

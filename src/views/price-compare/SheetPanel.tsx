@@ -1466,6 +1466,7 @@ function SheetTable(props: SheetTableProps) {
 
   /** 行集合变化(增删/换单/重排)后旧的落点没有意义: 一起清掉, 免得指向已不存在的行。 */
   const rowIdsKey = useMemo(() => rows.map((row) => row.id).join('|'), [rows])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: rowIdsKey 变化本身就是「行集合已变、旧落点作废」的信号, 效果体内无需读它 —— 与 row-drag-sort.tsx 同一写法
   useEffect(() => {
     resetDragState()
   }, [rowIdsKey, resetDragState])
