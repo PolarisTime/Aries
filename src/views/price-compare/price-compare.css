@@ -1261,3 +1261,25 @@
   line-height: 1.2;
   white-space: nowrap;
 }
+
+/*
+ * 未聚焦的 sr-only 行操作触发器不得画任何背景/投影。
+ *
+ * <p>触发器只有 1px 高(`.aries-sr-only`), 而且全局 `touch-targets.css` 给按钮加了
+ * `position: relative` —— 按规范 `clip` 只对绝对定位元素生效, 于是
+ * `clip: rect(0,0,0,0)` 失效: 锁定态的 `type="primary"` 实心主色背景 + 2px 主色投影
+ * 会被画成一条 24×1 的蓝色细线, 看起来像勾选格右边多了一条"下横线"(真机实测)。</p>
+ */
+.price-compare-row-actions.aries-sr-only:not(:focus-visible) {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+/*
+ * 聚焦还原为可见时(键盘路径): 锁定态保留主色锁图标 —— antd 的 primary 变体给的是白字,
+ * 而还原态背景被覆盖成白色, 不指定颜色会白底白字看不见。
+ */
+.price-compare-row-actions--locked.aries-sr-only:focus-visible {
+  color: var(--ant-color-primary, #1677ff);
+}

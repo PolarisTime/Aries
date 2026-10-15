@@ -25,6 +25,26 @@ const blockOf = (css: string, selector: string) => {
 }
 
 describe('比价页样式无障碍契约', () => {
+  it('sr-only 行操作触发器未聚焦时不画背景/投影(否则 1px 高会画成一条蓝色下横线)', () => {
+    const block = blockOf(
+      pageCss,
+      '.price-compare-row-actions.aries-sr-only:not(:focus-visible)',
+    )
+    // 真机实测: 锁定态该触发器 rect 24×1, position:relative 让 clip 失效 → 背景成线
+    expect(block).toMatch(/background-color:\s*transparent/)
+    expect(block).toMatch(/box-shadow:\s*none/)
+    // 不允许再有"主色实心背景"这类会被画成细线的声明
+    expect(block).not.toMatch(/background(-color)?:\s*var\(--ant-color-primary/)
+  })
+
+  it('锁定态触发器聚焦还原时给主色锁图标(白底上白字会看不见)', () => {
+    const block = blockOf(
+      pageCss,
+      '.price-compare-row-actions--locked.aries-sr-only:focus-visible',
+    )
+    expect(block).toMatch(/color:\s*var\(--ant-color-primary/)
+  })
+
   it('标签关闭按钮命中区不小于 24×24(WCAG 2.5.8)', () => {
     const block = blockOf(shellCss, '.leo-tabbar .ant-tabs-tab-remove')
     expect(block).toMatch(/min-width:\s*24px/)
