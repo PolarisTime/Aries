@@ -1,3 +1,85 @@
+# [12.0.0](https://github.com/PolarisTime/Aries/compare/v11.13.1...v12.0.0) (2026-10-15)
+
+
+* fix(price-compare)!: 吨位两列语义对调 —— 已开吨位显示开出了多少, 剩余未开显示订单还能开多少 ([ee8745c](https://github.com/PolarisTime/Aries/commit/ee8745c229460778145300f5a85421702df8fc84))
+
+
+### Bug Fixes
+
+* **ci:** 修掉 Lint 门禁的 Biome 3 处与 ESLint 37 处报错 ([2d2d11c](https://github.com/PolarisTime/Aries/commit/2d2d11c56cd246950709017e94a124cd9e2f7eed))
+* **e2e:** outputDir 按 run 派生以隔离并发产物 ([98276f2](https://github.com/PolarisTime/Aries/commit/98276f2dcea401a2e16042eeb19ef7f23385e02c))
+* **editor:** 编辑器初始化改幂等, 表单重置移到会话清理侧 ([91f5c2c](https://github.com/PolarisTime/Aries/commit/91f5c2cbd398a3550b46eab6cbc1c6ec955b64c9))
+* **freight-bill:** 结算方式分段控件按 24 栅格合并两列 ([1070d6a](https://github.com/PolarisTime/Aries/commit/1070d6af400665d670f73d16b29cdc9d0cd01140))
+* **market:** 取价基准响应 projectId 收紧为十进制雪花 ID 字符串 ([75f658e](https://github.com/PolarisTime/Aries/commit/75f658ed26b3574f6620b13b59fcb7110021ad51))
+* **master-archive:** 补齐项目弹层必填提示的 i18n key ([a8d7e2a](https://github.com/PolarisTime/Aries/commit/a8d7e2a9018915a0797779dcba6b23e96e98f54d))
+* **master-data:** 商品版本历史改为弹层对话框并修好表格布局与显示 ([f90e7e1](https://github.com/PolarisTime/Aries/commit/f90e7e12eb91f0b569a20ae5ecdbfa6af82f6d0d))
+* **master-options:** 承运商实体下拉解析器补主数据需求标记 ([b7a7e9f](https://github.com/PolarisTime/Aries/commit/b7a7e9f8f5f4554a4045cd1b383a36484f72fb3c))
+* **material:** 导入预览与导入结果弹层改为覆盖层容器内尺寸并内部滚动 ([cbcfdf4](https://github.com/PolarisTime/Aries/commit/cbcfdf47c84276a8012ec10e39e0a712776bb9f0))
+* **module-system:** 交付核定提示文案改由白名单派生 ([0b42aca](https://github.com/PolarisTime/Aries/commit/0b42aca6470d66f65d178b257a580eb5eac6656d))
+* **modules:** 保存回执副标题按动作区分，不再三态共用「编辑成功」 ([f88d948](https://github.com/PolarisTime/Aries/commit/f88d94866b7083c26198f902657dbd74a6ef1671))
+* **modules:** 保存回执按提交动作与结果状态区分标题与按钮 ([f19107c](https://github.com/PolarisTime/Aries/commit/f19107cc4ff7dd528656b5060abc7b9b9a16e7f6))
+* **modules:** 回执标题动作词与主按钮同源，核定文案改为完成销售 ([3f3dca9](https://github.com/PolarisTime/Aries/commit/3f3dca96f4a8e6736ee2adfe2fb5d7dd5c4dc590))
+* **modules:** 项目允许范围提示去重键加入 projectId 并按新项目重判 ([a4b5603](https://github.com/PolarisTime/Aries/commit/a4b5603abe116e2478084f4a36692749018986b3))
+* **price-compare:** sr-only 行操作触发器在键盘聚焦时还原可见 ([adcf298](https://github.com/PolarisTime/Aries/commit/adcf298c1e634cb940c10408259d82c06d44873e))
+* **price-compare:** 剩余未开吨位列改按关联行合计渲染 ([5ce26fa](https://github.com/PolarisTime/Aries/commit/5ce26fa19d5d8f148deed326890bf8b3223a6194))
+* **price-compare:** 吨位关联改三态判定并给出欠额提示 ([31d67f6](https://github.com/PolarisTime/Aries/commit/31d67f61af745e26154243432903275114b77f1e))
+* **price-compare:** 吨位短状态与主数据长说明改为键盘可达 ([4d4f7fe](https://github.com/PolarisTime/Aries/commit/4d4f7fe8a8164f55fb939cba2863d3738a33e6d8))
+* **price-compare:** 品牌价格列只在订货量覆盖本行报单吨位后才遮蔽 ([67b296a](https://github.com/PolarisTime/Aries/commit/67b296abe3445cbdeb83d6344ccd06abfd84e776))
+* **price-compare:** 清除关联与单选不再保留旧关联集合 ([7611ef4](https://github.com/PolarisTime/Aries/commit/7611ef415e8d20c1be7f54822466d4e5aeaf7b10))
+* **sales-order:** 取价弹层说明块可折叠, 错误就地替换说明位消除错误态位移 ([b065429](https://github.com/PolarisTime/Aries/commit/b06542995ee5fcd7dc3df9f84245f9b103e6db2d))
+* **sales-order:** 取价弹层高度不再随解析状态上下缩放 ([2018430](https://github.com/PolarisTime/Aries/commit/20184304c7ef6632f5e18b5eba74e72733eb9836))
+* **styles:** 列表页筛选区到表格的纵向留白被算了两遍 ([c7da681](https://github.com/PolarisTime/Aries/commit/c7da6815a839ed21aebd386e6523f7cfde17a8e0))
+* **system:** 权限选择器恢复「过滤时展开命中分组」的派生逻辑 ([002b2a6](https://github.com/PolarisTime/Aries/commit/002b2a64bf86f73a69beed066429a23566448a38))
+* **system:** 角色权限选择器过滤期折叠标题改为可操作 ([a3d2121](https://github.com/PolarisTime/Aries/commit/a3d21212e7de359df48ee1b2f9dc5c6d7761c771))
+* **tabs:** 右键菜单不再激活被右键标签并修正焦点归还 ([cb156a5](https://github.com/PolarisTime/Aries/commit/cb156a5a05df9e2c9652100cdaefd4aad6392b74))
+* **tabs:** 深链标签初始化竞态收口, hydrate 前移并统一幂等建标签入口 ([c485637](https://github.com/PolarisTime/Aries/commit/c4856378aae00ba765253b5e02a721160ff59985))
+* **tabs:** 深链落地标签转非激活时不再卸载重建面板 ([8fe9430](https://github.com/PolarisTime/Aries/commit/8fe943034a560ce3c1faf2a0b2a740f237c11817))
+* **tabs:** 超限淘汰的受保护标签不再被重载截断 ([3c7edc8](https://github.com/PolarisTime/Aries/commit/3c7edc8dcea4d7a63cb3fbb6ea664c9496f183a8))
+* **version:** 编译时间注入改为单一来源并对占位值免疫, 渲染口径收敛到一处 ([33af601](https://github.com/PolarisTime/Aries/commit/33af601f3a52ee1a7d26e962a13744f087b8c13d))
+* **表格:** 明细行序从「上游导入锁定」里取出, 销售订单编辑态可拖动排序 ([2c15001](https://github.com/PolarisTime/Aries/commit/2c15001e3b557cc8c4bf42953965f49bd8ff911a))
+* **表格:** 编辑器明细列支持声明式自定义渲染(renderInEditor) ([dcb37ff](https://github.com/PolarisTime/Aries/commit/dcb37ffb975a306892c05284194a9103152cb95d))
+
+
+### Features
+
+* **freight-bill:** 新建物流单增加结算方式（按吨位 / 固定运费） ([543bb2c](https://github.com/PolarisTime/Aries/commit/543bb2c04ac9fc35c5e671f2d3592454deb38df3))
+* **master-data:** 新增取价地区与定尺加价维护页 ([88e555c](https://github.com/PolarisTime/Aries/commit/88e555c351893ce77879c2577d7f417254cd682a))
+* **modules:** 打印明细行补单指针重排替代与中文读屏播报 ([890a813](https://github.com/PolarisTime/Aries/commit/890a81368240cf9d3da6501c01a0a103cdc99023))
+* **price-compare:** 关联采购订单时按行的材质/规格/长度自动筛选候选明细行 ([26ae969](https://github.com/PolarisTime/Aries/commit/26ae9697aeef349093f5268bf8fd82fcfe5ac996))
+* **price-compare:** 吨位两列改按关联行合计计算(支持一行挂多张明细行) ([7215141](https://github.com/PolarisTime/Aries/commit/7215141f27daf38201ef16b535b4a1836d73eae9))
+* **price-compare:** 吨位关联打通多张订单明细行(模型/接口/累计口径) ([ac10f4c](https://github.com/PolarisTime/Aries/commit/ac10f4c96564b29316f0ae372d5d01f0a178433c))
+* **price-compare:** 选单器支持勾选多张订单明细行并自动分摊吨位 ([7c687e7](https://github.com/PolarisTime/Aries/commit/7c687e7f138d43ac366c5f540725b9863663adbb))
+* **row-drag:** 明细排序补可点击上移下移并把键盘统一到 Space/Enter 状态机 ([c80cdd8](https://github.com/PolarisTime/Aries/commit/c80cdd8c7f02c792dfa753bea7c6e18831a53c12))
+* **sales-contract:** 销售合同增加附件功能 ([1dd2953](https://github.com/PolarisTime/Aries/commit/1dd2953e6cae64cbe04af3b3185266a9c38c71f0))
+* **sales-order:** 草稿订单支持整单去网价并提示网价匹配状态 ([1cde6f7](https://github.com/PolarisTime/Aries/commit/1cde6f70a55cd2f48590c5af61abdb9a98fe4203))
+* **tabs:** 标签右键菜单补齐关闭左侧与固定标签页 ([2be89fe](https://github.com/PolarisTime/Aries/commit/2be89fe05893ed57c09ceeb6b1b371b009fd56df))
+* **tabs:** 非激活面板接入 React Activity, 隐藏态与会话生命周期收口 ([600fbb3](https://github.com/PolarisTime/Aries/commit/600fbb3d649eabba2e7ca56df6b0a79b4832f2eb))
+* **value-alias:** 新增值映射/别名维护页 ([4ab0df8](https://github.com/PolarisTime/Aries/commit/4ab0df8f84d88c179038fd25df65d07108b4b7d3))
+* **表格:** 可编辑明细表支持整行长按拖动排序(共享能力, 先落地模块编辑器) ([e228151](https://github.com/PolarisTime/Aries/commit/e228151238b5a48783d25b2b4580bc762ca419e9))
+* **表格:** 附加费用明细接入整行长按拖动(去掉假抓手)并补网格行封装 ([fcf4447](https://github.com/PolarisTime/Aries/commit/fcf4447a11b9784e79a0422e95df76261b8556e2))
+
+
+### BREAKING CHANGES
+
+* 「已开吨位」与「剩余未开吨位」两列的口径互换, 依赖旧数字的下游需按新口径解读。
+
+原口径下「已开吨位」只显示**其他**报单占用量, 于是关联了有效订单明细行之后这一列常年是
+0.000, 而「未开吨位」显示的是"本单报单 − 其他报单"—— 用户直读语义完全对不上:
+已经开出的货没有出现在"已开"列里。
+
+新口径(业务确认):
+- 已开吨位 = 本单据该明细行报单吨位合计 + 其他已保存报单占用(服务端 issuedWeight 只含"其他")
+- 剩余未开吨位 = 订货吨位 − 已开吨位(负值 = 这条明细行被超开, 唯一需要干预的状态)
+
+因此:
+- 三列并排即为「报单吨位」(本行报了多少) →「剩余未开吨位」(订单还能开多少) →「已开吨位」(开出了多少)
+- 标红条件从"已开 > 本单报单"改为"已开合计 > 订货吨位"(超开)
+- ⓘ 弹层与悬浮明细行序同步: 本单报单 → 其他报单已开 → 已开吨位 → 剩余未开 → 订货吨位 → 品牌
+- 口径说明文案改写; 列宽按新文案重算(已开列含品牌、剩余列只放数字)
+- 全部相关断言按新口径重写(含边界: 已开恰好等于订货量 ⇒ 剩余 0 不标红)
+
+验证: 356 项比价用例与全量 2040 项通过; 真实环境表头实测为「报单吨位 | 剩余未开吨位 | 已开吨位」。
+
 ## [11.13.1](https://github.com/PolarisTime/Aries/compare/v11.13.0...v11.13.1) (2026-10-13)
 
 
