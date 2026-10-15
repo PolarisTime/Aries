@@ -216,8 +216,6 @@ type ColumnContext = {
   ) => void
   /** 删除单行(连带清理该行各品牌的现货/供应商输入)。 */
   deleteRow: (rowId: string) => void
-  onRowDragStart: (rowId: string, event: React.DragEvent<HTMLElement>) => void
-  onRowDragEnd: () => void
   selectedIds: string[]
   toggleSelect: (rowId: string, checked: boolean) => void
   toggleAll: (checked: boolean) => void
@@ -552,8 +550,6 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     selectedIds,
     toggleSelect,
     toggleAll,
-    onRowDragStart,
-    onRowDragEnd,
     onReorderBrands,
     attachSpotRef,
     allowHrb400eFallback,
@@ -737,22 +733,18 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       width: 24,
       fixed: 'left',
       align: 'center',
-      render: (_, row) => (
+      render: () => (
         <Tooltip title={rowInteractionLocked ? rowLockedHint : undefined}>
+          {/* 手柄只作为「这行可以拖」的视觉提示: 真正承载拖拽的是 <tr>(整行可拖),
+              两个元素各自 draggable 会让从手柄起拖时触发两遍 dragstart。 */}
           <span
             className={`price-compare-row-drag${rowInteractionLocked ? ' price-compare-row-drag-disabled' : ''}`}
-            draggable={!rowInteractionLocked}
             aria-disabled={rowInteractionLocked}
             title={
               rowInteractionLocked
                 ? rowLockedHint
                 : t('priceCompare.sheet.dragRow')
             }
-            onDragStart={(event) => {
-              if (rowInteractionLocked) return
-              onRowDragStart(row.rowId, event)
-            }}
-            onDragEnd={onRowDragEnd}
           >
             <HolderOutlined />
           </span>
@@ -1352,10 +1344,9 @@ const ROW_MENU_LONG_PRESS_MOVE_TOLERANCE_PX = 10
 
 type SheetTableProps = {
   rows: PriceRow[]
-  base: Omit<
-    ColumnContext,
-    'rows' | 'onRowDragStart' | 'onRowDragEnd' | 'toggleAll' | 'attachSpotRef'
-  > & { density: 'small' | 'middle' | 'large' }
+  base: Omit<ColumnContext, 'rows' | 'toggleAll' | 'attachSpotRef'> & {
+    density: 'small' | 'middle' | 'large'
+  }
   onReorderRow: (fromId: string, toId: string, after: boolean) => void
   /** 点击「添加一行」追加空行, 商品由行内可搜索下拉选择。 */
   onAddRow: () => void
@@ -1376,6 +1367,14 @@ function SheetTable(props: SheetTableProps) {
     ? t('priceCompare.sheet.readOnlyHint')
     : rowLockedHint
   /** 触摸长按打开行菜单的待决状态(与右键等价, 触屏没有右键)。 */
+  /**
+   * 本次 mousedown 是否落在输入控件上(输入框/可编辑下拉/数字输入)。
+   *
+   * <p>整行可拖之后, 在输入框里按下再移动会被浏览器当成"拖这一行" —— 用户就没法在
+   * 文本框里拖选文字了。mousedown 一定早于 dragstart, 因此在这里记一笔, dragstart 时
+   * 据此放行。用 ref 而不是 state: 两者之间没有渲染机会, state 更新来不及。</p>
+   */
+  const dragFromEditableRef = useRef(false)
   const longPressRef = useRef<{
     timer: ReturnType<typeof setTimeout>
     x: number
@@ -1488,8 +1487,6 @@ function SheetTable(props: SheetTableProps) {
     ...base,
     rows,
     attachSpotRef: true,
-    onRowDragStart,
-    onRowDragEnd,
     toggleAll: (checked) => {
       for (const row of rows) toggleSelect(row.id, checked)
     },
@@ -1636,6 +1633,22 @@ function SheetTable(props: SheetTableProps) {
           event.preventDefault()
           base.onContextMenuRowChange(row.rowId)
         },
+        /*
+         * 整行可拖: 拖拽由 <tr> 承载, 不要求用户先找到那个 24px 的手柄。
+         * 唯一的例外是「按下点落在输入控件上」—— 那里应该拖选文本, 见 ref 的注释。
+         */
+        draggable: !rowLocked,
+        onMouseDown: (event) => {
+          dragFromEditableRef.current = isEditableFieldTarget(event.target)
+        },
+        onDragStart: (event) => {
+          if (rowLocked || dragFromEditableRef.current) {
+            event.preventDefault()
+            return
+          }
+          onRowDragStart(row.rowId, event)
+        },
+        onDragEnd: onRowDragEnd,
         onTouchStart: (event) => onRowTouchStart(row.rowId, event),
         onTouchMove: onRowTouchMove,
         onTouchCancel: cancelLongPress,

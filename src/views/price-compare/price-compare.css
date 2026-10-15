@@ -499,6 +499,26 @@
   line-height: 18px;
 }
 
+/* 整行可拖: 行上给出抓取光标作为提示; 落在输入控件上时恢复常规光标,
+   否则文本框里也会显示"抓手", 反而让人不敢拖选文字。 */
+.price-compare-table .ant-table-tbody > tr[draggable="true"] {
+  cursor: grab;
+}
+
+.price-compare-table
+  .ant-table-tbody
+  > tr[draggable="true"]
+  :is(
+    input,
+    textarea,
+    .ant-select,
+    .ant-input-number,
+    .ant-checkbox-wrapper,
+    button
+  ) {
+  cursor: auto;
+}
+
 .price-compare-table .ant-table-tbody > tr:hover > td {
   background: var(--theme-surface-hover) !important;
 }

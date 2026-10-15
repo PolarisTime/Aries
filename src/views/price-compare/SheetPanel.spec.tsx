@@ -545,12 +545,16 @@ describe('SheetPanel 指定品牌展示', () => {
       { ...baseRow },
     ])
 
-    // 拖拽手柄不可拖拽并降级样式
-    const drag = container.querySelector('.price-compare-row-drag')
-    expect(drag?.getAttribute('draggable')).toBe('false')
-    expect(drag?.classList.contains('price-compare-row-drag-disabled')).toBe(
-      true,
+    // 整行不可拖(拖拽由 <tr> 承载), 手柄降级为禁用样式
+    const row = container.querySelector(
+      '.ant-table-tbody tr:not(.ant-table-measure-row)',
     )
+    expect(row?.getAttribute('draggable')).toBe('false')
+    expect(
+      container
+        .querySelector('.price-compare-row-drag')
+        ?.classList.contains('price-compare-row-drag-disabled'),
+    ).toBe(true)
 
     // 新增行入口禁用
     const addRow = Array.from(container.querySelectorAll('button')).find(
@@ -581,11 +585,15 @@ describe('SheetPanel 指定品牌展示', () => {
   it('解锁规格数量后恢复新增与拖拽入口', () => {
     renderStateful(makeSheet(), [{ ...baseRow }])
 
-    const drag = container.querySelector('.price-compare-row-drag')
-    expect(drag?.getAttribute('draggable')).toBe('true')
-    expect(drag?.classList.contains('price-compare-row-drag-disabled')).toBe(
-      false,
+    const row = container.querySelector(
+      '.ant-table-tbody tr:not(.ant-table-measure-row)',
     )
+    expect(row?.getAttribute('draggable')).toBe('true')
+    expect(
+      container
+        .querySelector('.price-compare-row-drag')
+        ?.classList.contains('price-compare-row-drag-disabled'),
+    ).toBe(false)
 
     const addRow = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('添加一行'),
@@ -1314,6 +1322,54 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerText).toContain('报单吨位')
 
     window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
+  })
+
+  /** 构造一个带 dataTransfer 的 dragstart(jsdom 不实现 DragEvent 的该属性)。 */
+  const dragStartEvent = () => {
+    const event = new Event('dragstart', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'dataTransfer', {
+      value: { setData: () => {}, setDragImage: () => {}, effectAllowed: '' },
+    })
+    return event
+  }
+
+  const dataRow = () =>
+    container.querySelector<HTMLElement>(
+      '.ant-table-tbody tr:not(.ant-table-measure-row)',
+    )
+
+  it('整行任意位置都能起拖(不再只认那个手柄)', async () => {
+    renderStateful(makeSheet(), [{ ...baseRow }])
+    const tr = dataRow()
+    expect(tr?.getAttribute('draggable')).toBe('true')
+
+    await act(async () => {
+      // 在没有任何控件的单元格上按下(事件目标就是行本身)
+      tr?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      tr?.dispatchEvent(dragStartEvent())
+    })
+
+    expect(tr?.className).toContain('price-compare-dragging')
+  })
+
+  it('在输入控件上按下时不拖行, 把原生行为让给文本选择/下拉', async () => {
+    renderStateful(makeSheet(), [{ ...baseRow }])
+    const tr = dataRow()
+    const control = container.querySelector<HTMLElement>(
+      '.ant-table-tbody input:not([type="checkbox"])',
+    )
+    expect(control, '前置条件: 行内应有可编辑输入控件').not.toBeNull()
+
+    let prevented = false
+    await act(async () => {
+      control?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      const event = dragStartEvent()
+      tr?.dispatchEvent(event)
+      prevented = event.defaultPrevented
+    })
+
+    expect(prevented, 'dragstart 必须被阻止').toBe(true)
+    expect(tr?.className).not.toContain('price-compare-dragging')
   })
 
   const tonnageInputOf = (orderedWeight: number, itemId = '301') => {
