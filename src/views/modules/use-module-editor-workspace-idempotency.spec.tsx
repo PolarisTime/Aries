@@ -103,7 +103,7 @@ function buildRecord(remark: string): PersistedModuleEditorDraftFor<ModuleKey> {
     id: '5001',
     remark,
     items: [],
-  } as unknown as PersistedModuleEditorDraftFor<ModuleKey>
+  }
 }
 
 /** 观测点：Activity 恢复是否真的重跑了 setup，以及每轮 setup 的订阅/定时器是否配平。 */
@@ -188,7 +188,7 @@ function Probe({ open, record, config, apiRef }: ProbeProps) {
   useEffect(() => {
     apiRef.current = {
       authoritativePrimaryNo: () => workspace.authoritativePrimaryNo,
-      form: form as unknown as FormInstance,
+      form: form,
       items: () => workspace.items,
     }
   })
@@ -224,13 +224,21 @@ function Harness({
   apiRef,
   strict = false,
 }: HarnessProps) {
-  const boundary = createElement(Activity, {
-    mode: visible ? 'visible' : 'hidden',
-    children: [
-      createElement(Probe, { key: 'probe', open, record, config, apiRef }),
-      createElement(EffectProbe, { key: 'effect-probe', observable }),
-    ],
-  })
+  // Activity 的 props 类型把 children 声明为必填：createElement + 可变参数在 React 19
+  // 的类型下会报「Property 'children' is missing」；JSX 由编译器把子节点并入 props，
+  // 既满足类型，也不会触发 Biome noChildrenProp（该规则只禁 children prop 写法）。
+  const boundary = (
+    <Activity mode={visible ? 'visible' : 'hidden'}>
+      <Probe
+        key="probe"
+        open={open}
+        record={record}
+        config={config}
+        apiRef={apiRef}
+      />
+      <EffectProbe key="effect-probe" observable={observable} />
+    </Activity>
+  )
   return strict ? createElement(StrictMode, null, boundary) : boundary
 }
 

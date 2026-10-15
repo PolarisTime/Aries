@@ -33,7 +33,7 @@ const businessPageModules = import.meta.glob(
     '!../config/business-pages/**/*.test.ts',
   ],
   { eager: true },
-) as Record<string, Record<string, unknown>>
+)
 
 /**
  * 主数据解析器的来源模块：这几个模块里的解析器读的是主数据查询缓存，
@@ -46,7 +46,7 @@ const masterResolverModules = import.meta.glob(
     '../module-system/core/module-option-resolvers.ts',
   ],
   { eager: true },
-) as Record<string, Record<string, unknown>>
+)
 
 /**
  * 明确「不需要主数据」的解析器——本守卫唯一的放行口，新增一项必须写明理由。
@@ -92,6 +92,9 @@ function collectPageConfigs(
 function pageConfigs(): Array<{ where: string; config: ModulePageConfig }> {
   const found: Array<{ where: string; config: ModulePageConfig }> = []
   for (const [path, moduleExports] of Object.entries(businessPageModules)) {
+    if (typeof moduleExports !== 'object' || moduleExports === null) {
+      continue
+    }
     for (const [exportName, value] of Object.entries(moduleExports)) {
       collectPageConfigs(value, `${path}#${exportName}`, found)
     }
@@ -110,6 +113,9 @@ function pageConfigs(): Array<{ where: string; config: ModulePageConfig }> {
 function masterDataResolvers(): Map<unknown, string> {
   const found = new Map<unknown, string>()
   for (const [path, moduleExports] of Object.entries(masterResolverModules)) {
+    if (typeof moduleExports !== 'object' || moduleExports === null) {
+      continue
+    }
     for (const [exportName, value] of Object.entries(moduleExports)) {
       if (typeof value === 'function') {
         found.set(value, `${path}#${exportName}`)

@@ -1001,7 +1001,7 @@ describe('SalesOrderNetPriceFiller', () => {
       row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
       row({ id: 'r2', materialId: 'm2', material: 'HRB500', unitPrice: 999 }),
       // 空行(没有物料身份)既不计成功也不计无网价, 计入"跳过"
-      { id: 'r3' } as ModuleLineItem,
+      { id: 'r3' },
     ])
     await openNetPriceDialog()
     await clickOk()

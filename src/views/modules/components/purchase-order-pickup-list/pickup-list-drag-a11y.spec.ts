@@ -13,7 +13,7 @@ import {
 } from './pickup-list-drag-a11y'
 
 const t = (key: string, options?: Record<string, unknown>) =>
-  i18n.t(key, options) as string
+  i18n.t(key, options)
 const tf = t as unknown as TFunction
 
 const SNOWFLAKE_A = '1834671234567890123'

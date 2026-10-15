@@ -200,7 +200,8 @@ describe('打印明细行的非拖动重排替代', () => {
   const rowCell = (rowIndex: number) =>
     container
       .querySelectorAll('.ant-table-tbody tr.ant-table-row')
-      [rowIndex]?.querySelector('td') ?? null
+      .item(rowIndex)
+      ?.querySelector('td') ?? null
 
   const openContextMenu = async (target: Element | null) => {
     act(() => {
@@ -299,7 +300,7 @@ describe('打印明细行的非拖动重排替代', () => {
       (button.getAttribute('aria-label') ?? '').startsWith(label),
     )
 
-  it('仅单指针: 点击行内「下移」按钮完成一次重排, 全程不发起拖拽', async () => {
+  it('仅单指针: 点击行内「下移」按钮完成一次重排, 全程不发起拖拽', () => {
     const onDragStart = vi.fn()
     const onDragEnd = vi.fn()
     const { onDispatch } = render({
@@ -308,7 +309,7 @@ describe('打印明细行的非拖动重排替代', () => {
       onDragStart,
     })
 
-    await act(async () => {
+    act(() => {
       moveButton(SNOWFLAKE_A, '下移')?.dispatchEvent(
         new MouseEvent('click', { bubbles: true }),
       )
@@ -323,13 +324,13 @@ describe('打印明细行的非拖动重排替代', () => {
     expect(onDragEnd).not.toHaveBeenCalled()
   })
 
-  it('仅键盘: 聚焦行内「上移」按钮按回车完成一次重排', async () => {
+  it('仅键盘: 聚焦行内「上移」按钮按回车完成一次重排', () => {
     const { onDispatch } = render({ items: [ITEM_A, ITEM_B] })
     const button = moveButton(SNOWFLAKE_B, '上移')
     expect(button).toBeDefined()
     act(() => button?.focus())
 
-    await act(async () => {
+    act(() => {
       button?.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',
@@ -348,7 +349,7 @@ describe('打印明细行的非拖动重排替代', () => {
     expect(rowKeys()).toEqual([SNOWFLAKE_B, SNOWFLAKE_A])
   })
 
-  it('替代按钮首/末项 aria-disabled、目标 ≥24×24、可访问名带行名', async () => {
+  it('替代按钮首/末项 aria-disabled、目标 ≥24×24、可访问名带行名', () => {
     render({ items: [ITEM_A, ITEM_B] })
 
     const firstUp = moveButton(SNOWFLAKE_A, '上移')
@@ -367,7 +368,7 @@ describe('打印明细行的非拖动重排替代', () => {
     expect(firstDown?.getAttribute('aria-label')).not.toContain(SNOWFLAKE_A)
   })
 
-  it('拖动把手声明 aria-keyshortcuts, 且与共享键位常量同源', async () => {
+  it('拖动把手声明 aria-keyshortcuts, 且与共享键位常量同源', () => {
     render({ items: [ITEM_A, ITEM_B] })
     const handle = container.querySelector<HTMLButtonElement>(
       `tr[data-row-key="${SNOWFLAKE_A}"] button`,
@@ -378,7 +379,7 @@ describe('打印明细行的非拖动重排替代', () => {
     expect(handle?.getAttribute('aria-keyshortcuts')).toContain('Space')
   })
 
-  it('明细不在有序集合里时行号兜底为 1, 不显示 0', async () => {
+  it('明细不在有序集合里时行号兜底为 1, 不显示 0', () => {
     // 构造"有序集合缺了这一行"的输入: 行号不能再由 indexOf(...)+1 得到
     render({ items: [ITEM_A, ITEM_B], orderedIds: [SNOWFLAKE_B] })
 

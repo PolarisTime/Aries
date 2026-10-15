@@ -444,7 +444,7 @@ describe('整行长按拖动排序', () => {
         setTimeout(resolve, ROW_DRAG_LONG_PRESS_MS + 40),
       )
     })
-    await act(async () => {
+    act(() => {
       document.dispatchEvent(
         new MouseEvent('mousemove', {
           bubbles: true,
@@ -479,7 +479,7 @@ describe('整行长按拖动排序', () => {
         setTimeout(resolve, ROW_DRAG_LONG_PRESS_MS + 40),
       )
     })
-    await act(async () => {
+    act(() => {
       document.dispatchEvent(
         new MouseEvent('mousemove', {
           bubbles: true,
@@ -496,11 +496,11 @@ describe('整行长按拖动排序', () => {
     expect(onReorder).toHaveBeenCalledWith(['b', 'a', 'c'])
   })
 
-  it('Alt+↓ 下移一行(可选附加键): 与拖动等价, 播报并把焦点留在该行', async () => {
+  it('Alt+↓ 下移一行(可选附加键): 与拖动等价, 播报并把焦点留在该行', () => {
     const { onReorder, rows } = render()
     act(() => rows[0].focus())
 
-    await act(async () => {
+    act(() => {
       rows[0].dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'ArrowDown',
@@ -519,11 +519,11 @@ describe('整行长按拖动排序', () => {
     )
   })
 
-  it('Alt+↑ 上移一行, 首行时越界不写回', async () => {
+  it('Alt+↑ 上移一行, 首行时越界不写回', () => {
     const { onReorder, rows } = render()
     act(() => rows[2].focus())
 
-    await act(async () => {
+    act(() => {
       rows[2].dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'ArrowUp',
@@ -537,7 +537,7 @@ describe('整行长按拖动排序', () => {
 
     const first = rowAt(0)
     act(() => first.focus())
-    await act(async () => {
+    act(() => {
       first.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'ArrowUp',
@@ -632,7 +632,7 @@ describe('整行长按拖动排序', () => {
     await movePointerTo(1)
     await releasePointer()
     act(() => rows[0].focus())
-    await act(async () => {
+    act(() => {
       rows[0].dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'ArrowDown',
@@ -735,13 +735,13 @@ describe('整行长按拖动排序', () => {
   })
 
   /** 仅单指针: 点一下「下移」就完成一次重排, 不需要任何拖动操作。 */
-  it('仅单指针: 点击「下移」按钮完成一次重排并写回行模型', async () => {
+  it('仅单指针: 点击「下移」按钮完成一次重排并写回行模型', () => {
     const onSave = vi.fn()
     const { onReorder } = render({ onSave })
     const button = findMoveButton('a', '下移')
     expect(button).toBeDefined()
 
-    await act(async () => {
+    act(() => {
       button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
@@ -753,20 +753,20 @@ describe('整行长按拖动排序', () => {
     const save = container.querySelector<HTMLButtonElement>(
       '[data-row-action="c"]',
     )
-    await act(async () => {
+    act(() => {
       save?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(onSave).toHaveBeenCalledWith(['b', 'a', 'c'])
   })
 
   /** 仅键盘: 焦点落在替代按钮上按回车, 同样完成一次重排。 */
-  it('仅键盘: 聚焦「下移」按钮按回车完成一次重排', async () => {
+  it('仅键盘: 聚焦「下移」按钮按回车完成一次重排', () => {
     const { onReorder } = render()
     const button = findMoveButton('c', '上移')
     expect(button).toBeDefined()
     act(() => button?.focus())
 
-    await act(async () => {
+    act(() => {
       button?.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',
@@ -782,7 +782,7 @@ describe('整行长按拖动排序', () => {
     expect(order()).toEqual(['a', 'c', 'b'])
   })
 
-  it('首/末项的替代按钮 aria-disabled 但仍可聚焦(读屏能听到边界)', async () => {
+  it('首/末项的替代按钮 aria-disabled 但仍可聚焦(读屏能听到边界)', () => {
     render()
     const firstUp = findMoveButton('a', '上移')
     const firstDown = findMoveButton('a', '下移')
@@ -806,10 +806,10 @@ describe('整行长按拖动排序', () => {
     expect(button?.getAttribute('aria-label')).toBe('下移 螺纹钢（第 1 行）')
   })
 
-  it('click 边界项按钮不写回顺序(按钮与拖动同一份边界判定)', async () => {
+  it('click 边界项按钮不写回顺序(按钮与拖动同一份边界判定)', () => {
     const { onReorder } = render()
     const firstUp = findMoveButton('a', '上移')
-    await act(async () => {
+    act(() => {
       firstUp?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(onReorder).not.toHaveBeenCalled()

@@ -15,7 +15,7 @@ import {
 } from './row-drag-config'
 
 const t = (key: string, options?: Record<string, unknown>) =>
-  i18n.t(key, options) as string
+  i18n.t(key, options)
 
 const ROW_IDS = [
   '1834000000000000001',

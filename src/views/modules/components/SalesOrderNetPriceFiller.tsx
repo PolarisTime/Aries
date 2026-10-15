@@ -264,6 +264,16 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     [quoteSource, quoteRegion],
   )
 
+  /**
+   * 项目最近一次使用的价格规则 id。
+   *
+   * <p>先取出标量再进 useCallback：React Compiler 会把依赖推断成更粗粒度的 `project`，
+   * 与手写的 `project?.lastPriceRuleId` 不一致时会跳过整个组件的编译（ESLint 报
+   * 「Existing memoization could not be preserved」）。依赖口径收敛到这里的这一个变量，
+   * 既保住原依赖粒度（只认这个字段），也让推断依赖与手写依赖一致。</p>
+   */
+  const projectLastPriceRuleId = project?.lastPriceRuleId
+
   /** 核查当前整单的网价匹配状态, 并把结果写入页面级快照(行内标识据此刷新)。 */
   const runMatchCheck = useCallback(
     async (checkItems?: ModuleLineItem[]) => {
@@ -294,7 +304,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         }
         const rule = pickEffectiveRule(list, [
           String(formValues.priceRuleId ?? ''),
-          project?.lastPriceRuleId,
+          projectLastPriceRuleId,
         ])
         if (list.length > 0 && !rule) {
           setCheckError(t('modules.pages.salesOrder.netPricePickRule'))
@@ -324,7 +334,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       deliveryDate,
       rulesState,
       formValues.priceRuleId,
-      project?.lastPriceRuleId,
+      projectLastPriceRuleId,
       loadMatchIndex,
       items,
       documentKey,

@@ -55,9 +55,15 @@ const itemSchema = z.looseObject({
   purchaseOrderLinks: z
     .array(
       z.looseObject({
-        purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
+        purchaseOrderId: z
+          .union([z.number(), z.string()])
+          .nullable()
+          .optional(),
         purchaseOrderNo: z.string().nullable().optional(),
-        purchaseOrderItemId: z.union([z.number(), z.string()]).nullable().optional(),
+        purchaseOrderItemId: z
+          .union([z.number(), z.string()])
+          .nullable()
+          .optional(),
         allocatedTon: z.union([z.number(), z.string()]).nullable().optional(),
         sortNo: z.union([z.number(), z.string()]).nullable().optional(),
       }),

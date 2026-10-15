@@ -164,11 +164,23 @@ export function buildFormFieldRules(
   const validate = field.validate
   if (validate) {
     rules.push({
-      validator: async (_rule, value) => {
-        const message = validate(value, formValues)
-        if (message) {
-          // antd 用 reject 表达校验不通过，文案直接作为表单错误展示。
-          throw new Error(message)
+      /*
+       * 不用 async，但必须保持「任何失败都以 reject 表达」：
+       * 校验不通过 → reject(文案)；validate 自身抛错 → 也转成 reject。
+       * 若让异常同步抛出，async-validator 会额外 console.error 并 setTimeout 把异常重抛成
+       * 未捕获异常（见 @rc-component/async-validator 的 rule.validator 调用点），
+       * 改造前的 async 版本不会走到那条路径。
+       */
+      validator: (_rule, value) => {
+        try {
+          const message = validate(value, formValues)
+          return message
+            ? Promise.reject(new Error(message))
+            : Promise.resolve()
+        } catch (cause) {
+          return Promise.reject(
+            cause instanceof Error ? cause : new Error(String(cause)),
+          )
         }
       },
     })

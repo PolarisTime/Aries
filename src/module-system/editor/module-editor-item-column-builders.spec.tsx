@@ -49,7 +49,7 @@ describe('编辑器明细列自定义渲染', () => {
       handleMaterialSelect: vi.fn(),
       handleSettlementModeChange: vi.fn(),
       handleWarehouseSelect: vi.fn(),
-    } as never) as ColumnsType<ModuleLineItem>
+    } as never)
 
   const renderCell = (
     columns: ColumnsType<ModuleLineItem>,

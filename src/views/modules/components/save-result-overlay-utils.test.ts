@@ -72,7 +72,7 @@ describe('保存回执标题按动作与结果状态区分', () => {
   it('客户对账单（按钮是「保存并确认」）：标题写「已保存并确认」，不得写「提交审核」', () => {
     const text = title('save-and-audit', {
       auditActionKind: 'confirm',
-      config: customerStatementConfig as typeof config,
+      config: customerStatementConfig,
       documentNo: 'DZ20261014001',
     })
 

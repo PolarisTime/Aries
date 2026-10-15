@@ -3,7 +3,7 @@
 import type { FormInstance } from 'antd'
 import { Form } from 'antd'
 import dayjs from 'dayjs'
-import { act, createElement } from 'react'
+import { act, createElement, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
@@ -81,7 +81,12 @@ describe('新建物流单结算方式联动', () => {
     let captured: FormInstance | undefined
     const Capture = () => {
       const [formInstance] = Form.useForm()
-      captured = formInstance
+      // 实例在 effect 里交给用例：渲染期写外部变量会被 React Compiler 判为副作用
+      // （react-hooks/globals「Cannot reassign variables declared outside of the
+      // component/hook」）。act 会同步冲刷 effect，render 返回后即可用。
+      useEffect(() => {
+        captured = formInstance
+      }, [formInstance])
       return createElement(EditorForm, { form: formInstance })
     }
 

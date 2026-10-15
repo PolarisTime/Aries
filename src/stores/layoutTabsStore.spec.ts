@@ -321,7 +321,7 @@ describe('用户固定（右键菜单「固定标签页 / 取消固定」）', (
     const dashboard = useLayoutTabsStore.getState().tabs[0]
     expect(dashboard?.pinned).toBe(true)
     expect(dashboard?.userPinned, '工作台不得被标成用户固定').not.toBe(true)
-    expect(isTabPinned(dashboard as LayoutTab)).toBe(true)
+    expect(isTabPinned(dashboard)).toBe(true)
   })
 
   it('固定后超限淘汰会跳过它（与结构钉选同口径）', () => {

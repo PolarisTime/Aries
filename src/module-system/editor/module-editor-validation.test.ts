@@ -105,7 +105,7 @@ describe('getEditorValidationMessage 物流单结算方式', () => {
     getEditorValidationMessage({
       moduleKey: 'freight-bill',
       fields: freightBillFields,
-      editorForm: { ...freightBillBase, ...editorForm } as never,
+      editorForm: { ...freightBillBase, ...editorForm },
       hasItemColumns: false,
       items: [],
       itemCount: 0,

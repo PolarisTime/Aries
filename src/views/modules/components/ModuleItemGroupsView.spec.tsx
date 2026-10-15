@@ -78,7 +78,7 @@ describe('模块编辑器明细表拖动接线', () => {
     act(() => {
       root.render(
         createElement(ModuleItemGroupsView, {
-          groups: groups as never,
+          groups: groups,
           moduleKey: 'sales-order',
           columns: [],
           emptyText: '暂无数据',
@@ -113,13 +113,13 @@ describe('模块编辑器明细表拖动接线', () => {
     }
   })
 
-  it('键盘 Alt+↓ 回调新的 id 顺序(与拖动等价, 保存按该顺序下发)', async () => {
+  it('键盘 Alt+↓ 回调新的 id 顺序(与拖动等价, 保存按该顺序下发)', () => {
     const onItemsReorder = vi.fn()
     render(onItemsReorder)
 
     const first = rows()[0]
     act(() => first.focus())
-    await act(async () => {
+    act(() => {
       first.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'ArrowDown',
@@ -139,7 +139,9 @@ describe('模块编辑器明细表拖动接线', () => {
       container
         .querySelector<HTMLTableRowElement>(`tr[data-row-key="${rowKey}"]`)
         ?.querySelectorAll<HTMLButtonElement>('button') ?? [],
-    ).find((button) => (button.getAttribute('aria-label') ?? '').startsWith(label))
+    ).find((button) =>
+      (button.getAttribute('aria-label') ?? '').startsWith(label),
+    )
 
   it('每行都有可点击的上移/下移按钮(单指针非拖动替代)', () => {
     render(vi.fn())
@@ -149,7 +151,9 @@ describe('模块编辑器明细表拖动接线', () => {
       expect(up, `第 ${index + 1} 行上移`).toBeDefined()
       expect(down, `第 ${index + 1} 行下移`).toBeDefined()
       // 首/末项按边界 aria-disabled, 其余可点
-      expect(up?.getAttribute('aria-disabled')).toBe(index === 0 ? 'true' : 'false')
+      expect(up?.getAttribute('aria-disabled')).toBe(
+        index === 0 ? 'true' : 'false',
+      )
       expect(down?.getAttribute('aria-disabled')).toBe(
         index === 2 ? 'true' : 'false',
       )
@@ -158,11 +162,11 @@ describe('模块编辑器明细表拖动接线', () => {
     }
   })
 
-  it('仅单指针: 点击「下移」按钮完成一次重排', async () => {
+  it('仅单指针: 点击「下移」按钮完成一次重排', () => {
     const onItemsReorder = vi.fn()
     render(onItemsReorder)
 
-    await act(async () => {
+    act(() => {
       moveButton('a', '下移')?.dispatchEvent(
         new MouseEvent('click', { bubbles: true }),
       )
@@ -171,13 +175,13 @@ describe('模块编辑器明细表拖动接线', () => {
     expect(onItemsReorder).toHaveBeenCalledWith(['b', 'a', 'c'])
   })
 
-  it('仅键盘: 聚焦「上移」按钮按回车完成一次重排', async () => {
+  it('仅键盘: 聚焦「上移」按钮按回车完成一次重排', () => {
     const onItemsReorder = vi.fn()
     render(onItemsReorder)
     const up = moveButton('c', '上移')
     act(() => up?.focus())
 
-    await act(async () => {
+    act(() => {
       up?.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',

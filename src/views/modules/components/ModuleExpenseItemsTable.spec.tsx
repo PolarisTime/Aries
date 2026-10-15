@@ -96,13 +96,13 @@ describe('附加费用明细行序', () => {
     expect(rows()).toHaveLength(2)
   })
 
-  it('Alt+↓ 把首行下移一位: 回调新的行 key 顺序并播报', async () => {
+  it('Alt+↓ 把首行下移一位: 回调新的行 key 顺序并播报', () => {
     const onReorder = vi.fn()
     render({ onReorder })
 
     const first = rows()[0]
     act(() => first.focus())
-    await act(async () => {
+    act(() => {
       first.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'ArrowDown',

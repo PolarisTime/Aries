@@ -145,7 +145,7 @@ function Probe({ moduleKey, config, initialItems, apiRef }: ProbeProps) {
    * resolveCurrentRecord 读到的就是新项目，否则重判用的还是旧项目。
    */
   const [formState] = useState(() => ({
-    values: { ...FORM_VALUES } as Record<string, unknown>,
+    values: { ...FORM_VALUES },
   }))
   const [form] = useState(() => ({
     validateFields: () => Promise.resolve({ ...formState.values }),
