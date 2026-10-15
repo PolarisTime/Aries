@@ -2668,10 +2668,12 @@ export const zhCN = {
       /** 项目下拉选项后缀: 该项目已有几个批次 / 还没建过批次(选中即建)。 */
       batchCount: '（{{n}} 个批次）',
       noBatch: '（未建批次）',
+      newBatch: '新建批次',
+      deleteCurrentBatch: '删除当前批次',
       a11y: {
         project: '项目切换',
         batchList: '批次页签',
-        closeBatch: '删除「{{name}}」批次',
+        more: '更多批次操作',
       },
     },
     sheet: {

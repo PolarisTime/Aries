@@ -2765,10 +2765,12 @@ export const enUS = {
       /** Suffix of a project option: how many batches it has / it has none yet. */
       batchCount: ' ({{n}} batches)',
       noBatch: ' (no batch yet)',
+      newBatch: 'New batch',
+      deleteCurrentBatch: 'Delete current batch',
       a11y: {
         project: 'Project switch',
         batchList: 'Batch tabs',
-        closeBatch: 'Delete batch {{name}}',
+        more: 'More batch actions',
       },
     },
     sheet: {

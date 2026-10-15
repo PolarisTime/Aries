@@ -224,9 +224,15 @@ export function PriceCompareView() {
         </span>
       </div>
 
-      {/* 项目 / 批次两行同属「当前单据的上下文」, 收进一个分组容器里,
-          与下方编辑区在视觉上分开(样式见 price-compare-context-bar.css)。 */}
-      <Flex className="price-compare-context-bar" vertical gap={8}>
+      {/* 项目 / 批次是同一个上下文的两级, 合成一行工具条:
+          项目用下拉、批次用下划线页签, 页签行右侧是新建与更多(删除)。
+          不再给这一行套卡片/灰底容器 —— 卡片式页签落在浅底上就是「框套框」。 */}
+      <Flex
+        className="price-compare-context-bar"
+        align="center"
+        gap={16}
+        wrap="wrap"
+      >
         <PriceCompareProjectPicker
           projects={projects}
           projectGroups={projectGroups}

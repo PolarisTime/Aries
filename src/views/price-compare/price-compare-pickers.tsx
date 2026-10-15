@@ -1,4 +1,5 @@
-import { Badge, Flex, Select, Tabs } from 'antd'
+import { DeleteOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons'
+import { Badge, Button, Dropdown, Flex, Select, Tabs } from 'antd'
 import { useLayoutEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { countMissing, resolveRef } from './core'
@@ -143,19 +144,21 @@ export function PriceCompareBatchBar({
   const hostRef = useRef<HTMLDivElement>(null)
   const listLabel = t('priceCompare.picker.a11y.batchList')
   /**
-   * 批次页签。
+   * 批次切换条。
    *
-   * <p>重构前这里是「一排分段控件 + 两个常驻按钮（新批次 / 删除批次）」：新建与删除本来
-   * 就是挂在「批次」这个对象上的动作，摊成两个按钮既占地方，又把「删除」摆成常驻的危险色
-   * 按钮，容易被当成这一屏的主操作。</p>
+   * <p>形态依据（saasui.design 的 tabs/segmented 指南、NN/g「Tabs, Used Right」）：
+   * ① 一个对象下的**平级分面**才用 tabs —— 批次是同一项目下各自独立的报价单，符合；
+   * ② 活动项要有**两个以上**识别信号（下划线 + 字重/颜色对比），不能只靠颜色；
+   * ③ 溢出要显式处理，且活动项必须始终可见（antd line tabs 自带折叠与滚动进视野）；
+   * ④ **不要给页签再套一层卡片或灰底容器** —— 卡片式页签落在浅灰底上就是「框套框」，
+   *    一排小卡片会显得很吵（上一版正是这个毛病）。</p>
    *
-   * <p>改成可关闭页签后，两件事回到对象本身：末尾的 `+` 新建，每个页签上的 × 删除
-   * （仍走原有的二次确认），只剩一个批次时不给关闭。缺项角标照旧跟在批次名后面。</p>
+   * <p>于是：页签用 line 型（下划线指示器），新建放在页签行右侧直接可见，删除收进行尾的
+   * 「更多」菜单 —— 把 × 挂在每个页签上会让整行都是删除入口，低频动作占了高频位置。</p>
    */
   useLayoutEffect(() => {
-    /* antd 6.6.4 的 Tabs 不透传关闭按钮可访问名（rc-tabs 硬编码英文 `remove`），
-       tablist 自身也没有可访问名 —— 与顶部页面标签栏同一处理：落到 DOM 上接管，
-       并在 rc-tabs 重渲染（标签增删/切换）后重写。写前先比对现值，避免自触发循环。 */
+    /* tablist 自身没有可访问名（rc-tabs 只写 role 与 aria-orientation），落到 DOM 上补，
+       并在 rc-tabs 重渲染（页签增删/切换）后重写；写前比对现值避免自触发循环。 */
     const host = hostRef.current
     if (!host) {
       return
@@ -164,17 +167,6 @@ export function PriceCompareBatchBar({
       const nav = host.querySelector('[role="tablist"]')
       if (nav && nav.getAttribute('aria-label') !== listLabel) {
         nav.setAttribute('aria-label', listLabel)
-      }
-      for (const button of host.querySelectorAll('.ant-tabs-tab-remove')) {
-        const name =
-          button
-            .closest('.ant-tabs-tab')
-            ?.querySelector('.ant-tabs-tab-btn')
-            ?.textContent?.trim() ?? ''
-        const label = t('priceCompare.picker.a11y.closeBatch', { name })
-        if (button.getAttribute('aria-label') !== label) {
-          button.setAttribute('aria-label', label)
-        }
       }
     }
     sync()
@@ -186,7 +178,9 @@ export function PriceCompareBatchBar({
       attributeFilter: ['aria-label'],
     })
     return () => observer.disconnect()
-  }, [listLabel, t])
+  }, [listLabel])
+
+  const canDelete = sheets.length > 1 && Boolean(activeId)
 
   return (
     <Flex
@@ -200,19 +194,10 @@ export function PriceCompareBatchBar({
       </span>
       <div className="price-compare-batch-tabs" ref={hostRef}>
         <Tabs
-          type="editable-card"
+          type="line"
           size="small"
           activeKey={activeId}
           onChange={(key) => onSelectSheet(key)}
-          onEdit={(targetKey, action) => {
-            if (action === 'add') {
-              onAddBatch()
-              return
-            }
-            if (typeof targetKey === 'string') {
-              onDeleteBatch(targetKey)
-            }
-          }}
           items={(currentGroup?.sheets ?? []).map((sheet) => {
             const missing = countMissing(
               data,
@@ -222,7 +207,6 @@ export function PriceCompareBatchBar({
             )
             return {
               key: sheet.id,
-              closable: sheets.length > 1,
               label: (
                 <span>
                   {sheet.name}
@@ -240,6 +224,41 @@ export function PriceCompareBatchBar({
           })}
         />
       </div>
+      <Button
+        className="price-compare-batch-add"
+        size="small"
+        type="text"
+        icon={<PlusOutlined />}
+        onClick={onAddBatch}
+      >
+        {t('priceCompare.picker.newBatch')}
+      </Button>
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items: [
+            {
+              key: 'delete',
+              icon: <DeleteOutlined />,
+              label: t('priceCompare.picker.deleteCurrentBatch'),
+              danger: true,
+              disabled: !canDelete,
+            },
+          ],
+          onClick: ({ key }) => {
+            if (key === 'delete' && canDelete) {
+              onDeleteBatch(activeId)
+            }
+          },
+        }}
+      >
+        <Button
+          size="small"
+          type="text"
+          icon={<MoreOutlined />}
+          aria-label={t('priceCompare.picker.a11y.more')}
+        />
+      </Dropdown>
     </Flex>
   )
 }

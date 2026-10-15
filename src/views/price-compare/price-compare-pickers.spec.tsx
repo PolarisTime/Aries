@@ -165,27 +165,39 @@ describe('报单比价 项目/批次选择控件契约', () => {
     )
   })
 
-  it('批次行渲染可关闭页签: 一个批次一个页签, 关闭入口有中文可访问名', () => {
+  it('批次行是一排下划线页签, 一个批次一个页签且可访问名可区分', () => {
     renderBatchBar(projectGroups[0].sheets, 's1')
 
     expect(container.querySelectorAll('.ant-tabs-tab')).toHaveLength(2)
     expect(
       container.querySelector('[role="tablist"]')?.getAttribute('aria-label'),
     ).toBe('批次页签')
-
-    const removes = container.querySelectorAll('.ant-tabs-tab-remove')
-    expect(removes, '每个批次页签都要有关闭入口').toHaveLength(2)
-    expect(removes[0].getAttribute('aria-label')).toBe('删除「批次 1」批次')
-    expect(removes[1].getAttribute('aria-label')).toBe('删除「批次 2」批次')
+    // line 型页签: 活动项靠「下划线 + 字重」两个信号辨认, 不渲染关闭按钮
+    expect(container.querySelectorAll('.ant-tabs-tab-remove')).toHaveLength(0)
+    // 新建与删除是两个独立入口: 新建直接可见, 删除收进「更多」
+    expect(
+      container.querySelector('.price-compare-batch-add')?.textContent,
+    ).toContain('新建批次')
+    expect(
+      container.querySelector('[aria-label="更多批次操作"]'),
+      '「更多」入口必须存在',
+    ).not.toBeNull()
   })
 
-  it('只剩一个批次时不给关闭入口(至少保留一个批次)', () => {
+  it('只剩一个批次时, 「更多」里的删除项被禁用(至少保留一个批次)', async () => {
     renderBatchBar([projectGroups[0].sheets[0]], 's1')
 
-    expect(container.querySelectorAll('.ant-tabs-tab')).toHaveLength(1)
-    expect(
-      container.querySelectorAll('.ant-tabs-tab-remove'),
-      '最后一个批次不允许被关闭',
-    ).toHaveLength(0)
+    const trigger = container.querySelector(
+      '[aria-label="更多批次操作"]',
+    ) as HTMLElement
+    expect(trigger).not.toBeNull()
+    await act(async () => {
+      trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const item = document.querySelector('.ant-dropdown-menu-item')
+    expect(item, '「更多」菜单应已展开').not.toBeNull()
+    expect(item?.getAttribute('aria-disabled')).toBe('true')
   })
 })
