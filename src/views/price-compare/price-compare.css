@@ -482,6 +482,24 @@
   font-weight: 500;
 }
 
+/*
+ * 两级表头: 品牌分组行读作「分组标签」, 子列行才是列名。
+ *
+ * 两级同款(同底色、同字重)时, 左侧那排跨两行的列名(th[rowspan])会在分组行里留出一条
+ * 空带, 表头因此比数据行还重、左上角一片空白。NN/g 对数据表的建议是让分组行更轻、
+ * 把最高对比度留给「列名」这一层(见 Data Tables: Four Major User Tasks 的定位与比较章节)。
+ * scope="colgroup" 是 antd 给分组表头单元格写死的属性, 用它精确选中分组行, 不误伤跨行单元格。
+ */
+.price-compare-table .ant-table-thead > tr > th[scope='colgroup'] {
+  padding-block: 1px !important;
+  background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 2%)) !important;
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+
 .price-compare-table .ant-table-tbody > tr:hover > td {
   background: var(--theme-surface-hover) !important;
 }
@@ -576,9 +594,11 @@
   opacity: 0.55;
 }
 
-/* 表格底部“添加一行” */
+/* 表格底部「添加一行 / 添加隔断 / 合计」都是 summary 行。
+   原先透明底, 与数据行分不开, 会被读成"多出来的一行数据"; 给一层浅底读作表尾操作区。 */
 .price-compare-table .ant-table-summary > tr > td {
   padding: var(--space-2) var(--space-6) !important;
+  background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 2%));
 }
 
 .price-compare-add-row {

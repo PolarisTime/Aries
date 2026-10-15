@@ -1174,7 +1174,7 @@ describe('SheetPanel 指定品牌展示', () => {
 
   async function openColumnSettings() {
     const trigger = container.querySelector<HTMLButtonElement>(
-      '[aria-label="列显示"]',
+      '[aria-label^="列显示"]',
     )
     expect(trigger).not.toBeNull()
     await act(async () => {

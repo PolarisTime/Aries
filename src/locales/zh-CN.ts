@@ -2729,6 +2729,7 @@ export const zhCN = {
       },
       tonTotal: '合计',
       columnSettings: '列显示',
+      columnSettingsHidden: '列显示（已隐藏 {{n}} 列）',
       selectProduct: '选择商品',
       switchLength: '切换为{{length}}',
       /** 行级锁与工具栏「锁定规格和数量」是同一件事, 只是范围 = 一行, 文案保持同词根。 */

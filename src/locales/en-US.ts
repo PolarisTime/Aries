@@ -2847,6 +2847,7 @@ export const enUS = {
       addRow: '+ Add Row',
       tonTotal: 'Total',
       columnSettings: 'Columns',
+      columnSettingsHidden: 'Columns ({{n}} hidden)',
       addSeparator: '+ Add Separator',
       separator: 'Separator',
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',

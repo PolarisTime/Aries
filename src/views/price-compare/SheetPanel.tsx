@@ -17,6 +17,7 @@ import {
   VerticalAlignBottomOutlined,
 } from '@ant-design/icons'
 import {
+  Badge,
   Button,
   Card,
   Checkbox,
@@ -1697,8 +1698,20 @@ function ColumnSettingsButton({
 }) {
   const { t } = useTranslation()
   const hiddenBrandSet = new Set(hiddenBrands)
+  /* 隐藏列数: NN/g 的表格指南要求「列被隐藏」必须有可见的状态指示 —— 否则用户关掉弹层后
+     完全没有线索, 只能靠"感觉少了一列"。徽标与可访问名同时给出这个数。 */
+  const hiddenCount =
+    (hideRemark ? 1 : 0) +
+    (hideIssuedTon ? 1 : 0) +
+    (hideUnopenedTon ? 1 : 0) +
+    hiddenBrands.length
+  const settingsLabel =
+    hiddenCount > 0
+      ? t('priceCompare.sheet.columnSettingsHidden', { n: hiddenCount })
+      : t('priceCompare.sheet.columnSettings')
   const checkbox = (checked: boolean, label: string, key: string) => (
     <Checkbox
+      key={key}
       checked={checked}
       onChange={(event) => onToggle(key, event.target.checked)}
     >
@@ -1748,11 +1761,10 @@ function ColumnSettingsButton({
         </Flex>
       }
     >
-      <Tooltip title={t('priceCompare.sheet.columnSettings')}>
-        <Button
-          icon={<SettingOutlined />}
-          aria-label={t('priceCompare.sheet.columnSettings')}
-        />
+      <Tooltip title={settingsLabel}>
+        <Badge count={hiddenCount} size="small" offset={[-2, 2]}>
+          <Button icon={<SettingOutlined />} aria-label={settingsLabel} />
+        </Badge>
       </Tooltip>
     </Popover>
   )
