@@ -224,41 +224,45 @@ export function PriceCompareView() {
         </span>
       </div>
 
-      <PriceCompareProjectPicker
-        projects={projects}
-        projectGroups={projectGroups}
-        currentGroup={currentGroup}
-        onSelectSheet={setActiveId}
-        onAddProject={(project) =>
-          addSheet(
-            project.id,
-            project.abbr || project.name,
-            today,
-            defaultRefDate,
-            defaultRefPeriod,
-          )
-        }
-      />
+      {/* 项目 / 批次两行同属「当前单据的上下文」, 收进一个分组容器里,
+          与下方编辑区在视觉上分开(样式见 price-compare-context-bar.css)。 */}
+      <Flex className="price-compare-context-bar" vertical gap={8}>
+        <PriceCompareProjectPicker
+          projects={projects}
+          projectGroups={projectGroups}
+          currentGroup={currentGroup}
+          onSelectSheet={setActiveId}
+          onAddProject={(project) =>
+            addSheet(
+              project.id,
+              project.abbr || project.name,
+              today,
+              defaultRefDate,
+              defaultRefPeriod,
+            )
+          }
+        />
 
-      <PriceCompareBatchBar
-        active={active}
-        activeId={activeId}
-        brands={brands}
-        currentGroup={currentGroup}
-        data={data}
-        sheets={sheets}
-        onSelectSheet={setActiveId}
-        onAddBatch={() =>
-          addSheet(
-            currentGroup?.projectId ?? '',
-            currentGroup?.projectName ?? '',
-            today,
-            defaultRefDate,
-            defaultRefPeriod,
-          )
-        }
-        onDeleteBatch={confirmRemoveSheet}
-      />
+        <PriceCompareBatchBar
+          active={active}
+          activeId={activeId}
+          brands={brands}
+          currentGroup={currentGroup}
+          data={data}
+          sheets={sheets}
+          onSelectSheet={setActiveId}
+          onAddBatch={() =>
+            addSheet(
+              currentGroup?.projectId ?? '',
+              currentGroup?.projectName ?? '',
+              today,
+              defaultRefDate,
+              defaultRefPeriod,
+            )
+          }
+          onDeleteBatch={confirmRemoveSheet}
+        />
+      </Flex>
 
       {active && (editLock || lockConflict) ? (
         <PriceCompareEditLockBanner

@@ -1,13 +1,12 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Badge, Button, Flex, Segmented, Select, Tag, Typography } from 'antd'
+import { Badge, Button, Flex, Segmented, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { countMissing, resolveRef } from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
 import { projectAbbrOf } from './price-compare-support'
 import { PriceCompareTour } from './price-compare-tour'
 import type { Brand, PriceData, PriceSheet, ProjectOption } from './types'
-
-const { Text } = Typography
+import './price-compare-context-bar.css'
 
 type ProjectGroup = {
   projectId: string
@@ -31,50 +30,56 @@ export function PriceCompareProjectPicker({
   const { t } = useTranslation()
   return (
     <Flex
+      className="price-compare-context-row"
       gap={8}
       align="center"
       wrap="wrap"
-      justify="space-between"
-      style={{ marginBottom: 'var(--space-xs)' }}
     >
-      <Flex gap={8} align="center" wrap="wrap">
-        <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
-          {t('priceCompare.picker.project')}
-        </Text>
-        {projectGroups.map((group) => (
-          <Tag.CheckableTag
-            key={group.projectId}
-            checked={group.projectId === currentGroup?.projectId}
-            onChange={() =>
-              group.sheets[0] && onSelectSheet(group.sheets[0].id)
-            }
-          >
-            {projectAbbrOf(projects, group.projectId, group.projectName)}
-          </Tag.CheckableTag>
-        ))}
-        <Select
+      <span className="price-compare-context-label">
+        {t('priceCompare.picker.project')}
+      </span>
+      {/* 项目与批次同为「互斥单选」, 统一用 Segmented: 原先项目行是可勾选胶囊(Tag),
+          未选中态几乎没有边界, 与批次行的分段控件也不一致。 */}
+      <div className="price-compare-context-scroll">
+        <Segmented
           size="small"
-          style={{ width: 150 }}
-          aria-label={t('priceCompare.sheet.a11y.projectBatch')}
-          placeholder={t('priceCompare.picker.addProjectBatch')}
-          showSearch={{ optionFilterProp: 'label' }}
-          value={null}
-          options={projects.flatMap((project) =>
-            projectGroups.some((group) => group.projectId === project.id)
-              ? []
-              : [
-                  {
-                    value: project.id,
-                    label: `${project.abbr} · ${project.name}`,
-                  },
-                ],
-          )}
+          className="price-compare-project-segmented"
+          aria-label={t('priceCompare.picker.a11y.project')}
+          value={currentGroup?.projectId}
           onChange={(projectId) => {
-            const project = projects.find((item) => item.id === projectId)
-            if (project) onAddProject(project)
+            const group = projectGroups.find(
+              (item) => item.projectId === String(projectId),
+            )
+            if (group?.sheets[0]) onSelectSheet(group.sheets[0].id)
           }}
+          options={projectGroups.map((group) => ({
+            value: group.projectId,
+            label: projectAbbrOf(projects, group.projectId, group.projectName),
+          }))}
         />
-      </Flex>
+      </div>
+      <Select
+        size="small"
+        style={{ width: 150 }}
+        aria-label={t('priceCompare.sheet.a11y.projectBatch')}
+        placeholder={t('priceCompare.picker.addProjectBatch')}
+        showSearch={{ optionFilterProp: 'label' }}
+        value={null}
+        options={projects.flatMap((project) =>
+          projectGroups.some((group) => group.projectId === project.id)
+            ? []
+            : [
+                {
+                  value: project.id,
+                  label: `${project.abbr} · ${project.name}`,
+                },
+              ],
+        )}
+        onChange={(projectId) => {
+          const project = projects.find((item) => item.id === projectId)
+          if (project) onAddProject(project)
+        }}
+      />
     </Flex>
   )
 }
@@ -103,45 +108,49 @@ export function PriceCompareBatchBar({
   const { t } = useTranslation()
   return (
     <Flex
+      className="price-compare-context-row"
       gap={8}
       align="center"
       wrap="wrap"
-      style={{ marginBottom: 'var(--space-xs)' }}
     >
-      <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
+      <span className="price-compare-context-label">
         {t('priceCompare.picker.batch')}
-      </Text>
-      <Segmented
-        size="small"
-        value={activeId}
-        onChange={(value) => onSelectSheet(String(value))}
-        options={(currentGroup?.sheets ?? []).map((sheet) => ({
-          value: sheet.id,
-          label: (
-            <span>
-              {sheet.name}
-              {countMissing(
-                data,
-                { ...sheet, ...resolveRef(data, sheet) },
-                sheet.rows,
-                brands,
-              ) > 0 ? (
-                <Badge
-                  count={countMissing(
-                    data,
-                    { ...sheet, ...resolveRef(data, sheet) },
-                    sheet.rows,
-                    brands,
-                  )}
-                  size="small"
-                  color="var(--color-warning)"
-                  style={{ marginLeft: 6 }}
-                />
-              ) : null}
-            </span>
-          ),
-        }))}
-      />
+      </span>
+      <div className="price-compare-context-scroll">
+        <Segmented
+          size="small"
+          className="price-compare-batch-segmented"
+          aria-label={t('priceCompare.picker.a11y.batch')}
+          value={activeId}
+          onChange={(value) => onSelectSheet(String(value))}
+          options={(currentGroup?.sheets ?? []).map((sheet) => ({
+            value: sheet.id,
+            label: (
+              <span>
+                {sheet.name}
+                {countMissing(
+                  data,
+                  { ...sheet, ...resolveRef(data, sheet) },
+                  sheet.rows,
+                  brands,
+                ) > 0 ? (
+                  <Badge
+                    count={countMissing(
+                      data,
+                      { ...sheet, ...resolveRef(data, sheet) },
+                      sheet.rows,
+                      brands,
+                    )}
+                    size="small"
+                    color="var(--color-warning)"
+                    style={{ marginLeft: 6 }}
+                  />
+                ) : null}
+              </span>
+            ),
+          }))}
+        />
+      </div>
       <Button size="small" icon={<PlusOutlined />} onClick={onAddBatch}>
         {t('priceCompare.picker.newBatch')}
       </Button>

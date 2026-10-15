@@ -2670,6 +2670,10 @@ export const zhCN = {
       deleteBatch: '删除批次',
       keepOneBatch: '至少保留一个批次',
       deleteCurrentBatch: '删除当前批次',
+      a11y: {
+        project: '项目切换',
+        batch: '批次切换',
+      },
     },
     sheet: {
       dateFormat: 'YYYY年MM月DD日',

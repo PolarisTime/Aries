@@ -254,8 +254,10 @@ async function newLoggedInPage(
 }
 
 async function selectBatch(page: Page, name: string) {
+  // 限定在批次分段控件内: 页面上还有「项目」分段控件, 按文本子串匹配 + .first()
+  // 会在项目简称与批次名重叠时静默点到项目上。
   const option = page
-    .locator('.ant-segmented-item')
+    .locator('.price-compare-batch-segmented .ant-segmented-item')
     .filter({ hasText: name })
     .first()
   await expect(option).toBeVisible({ timeout: NAV_TIMEOUT })

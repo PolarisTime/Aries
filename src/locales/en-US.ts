@@ -2767,6 +2767,10 @@ export const enUS = {
       deleteBatch: 'Delete Batch',
       keepOneBatch: 'Keep at least one batch',
       deleteCurrentBatch: 'Delete current batch',
+      a11y: {
+        project: 'Project switch',
+        batch: 'Batch switch',
+      },
     },
     sheet: {
       dateFormat: 'YYYY年MM月DD日',
