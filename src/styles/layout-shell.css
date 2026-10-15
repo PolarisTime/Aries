@@ -853,6 +853,17 @@
   min-height: 0;
 }
 
+/* 非激活面板的**外壳**也必须整体退出布局，否则激活页面会被按标签序号整体下推。
+   面板是 .leo-content-inner 的直接子项(见下方 `> *` 的 flex: 1 1 auto)，而 Activity 只把
+   **子树**置为内联 display:none —— 外壳本身仍是可见的 flex item，会按 flex-grow 分走内容区
+   剩余高度：实测 7 个标签 / 1280×720 时 6 个空壳各吃 23px，激活面板 top 从 129 被推到 269；
+   视口越高、标签越多、当前页面越矮（basis 越小 → 剩余空间越大），顶部空白越夸张，表现为
+   「内容整体错位到页面下半部」。判据用 data-tab-active —— 它是「哪个面板激活」的唯一锚点，
+   与 Activity 的显隐同帧更新；外壳 display:none 不销毁 DOM 与子 Router 实例。 */
+.leo-tab-panel:not([data-tab-active="true"]) {
+  display: none;
+}
+
 .leo-tab-panel[hidden] {
   display: none;
 }

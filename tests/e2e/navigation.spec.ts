@@ -974,3 +974,72 @@ test.describe('批量关闭取消路径与标签持久化恢复', () => {
     await assertNoFatalUiErrors()
   })
 })
+
+test.describe('多标签页布局契约', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsE2eUser(page)
+  })
+
+  /**
+   * 回归守护（2026-10-15 缺陷）：非激活标签的面板外壳曾作为**可增长 flex item** 占据
+   * `.leo-content-inner` 的高度 —— Activity 只把子树 display:none，外壳仍在参与分配，
+   * 把激活页面按标签序号整体下推。标签越多、视口越高、当前页面越矮，顶部空白越大，
+   * 表现为「内容整体错位到页面下半屏」。
+   */
+  test('非激活标签的面板不占布局，激活页面贴住内容区顶部并撑满', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    const routes = [
+      '/material',
+      '/material-categories',
+      '/supplier',
+      '/customer',
+    ]
+    for (const route of routes) {
+      await gotoRoute(page, route)
+      await expect(
+        page.locator('table:visible, h1:visible').first(),
+      ).toBeVisible({ timeout: 30_000 })
+      await page.waitForTimeout(500)
+    }
+    await expect(page.locator('[data-tab-active="true"]')).toHaveCount(1, {
+      timeout: 30_000,
+    })
+
+    const metrics = await page.evaluate(() => {
+      const inner = document.querySelector('.leo-content-inner')
+      const panels = [...document.querySelectorAll('.leo-tab-panel')]
+      const active = document.querySelector('[data-tab-active="true"]')
+      if (!inner || !active) {
+        throw new Error('内容区或激活面板缺失')
+      }
+      const rectOf = (el: Element) => el.getBoundingClientRect()
+      return {
+        panelCount: panels.length,
+        inactiveHeights: panels
+          .filter((panel) => panel !== active)
+          .map((panel) => Math.round(rectOf(panel).height)),
+        topGap: Math.round(rectOf(active).top - rectOf(inner).top),
+        activeHeight: Math.round(rectOf(active).height),
+        innerHeight: Math.round(rectOf(inner).height),
+      }
+    })
+
+    expect(metrics.panelCount, '前置条件：必须形成多个标签').toBeGreaterThan(1)
+    expect(
+      metrics.inactiveHeights,
+      '非激活面板必须整体退出布局（display:none），不得作为 flex item 占位',
+    ).toEqual(metrics.inactiveHeights.map(() => 0))
+    expect(
+      metrics.topGap,
+      '激活页面必须贴住内容区顶部（只允许内容区 padding 的差值）',
+    ).toBeLessThanOrEqual(16)
+    expect(
+      metrics.activeHeight,
+      '激活面板应吃满内容区剩余高度',
+    ).toBeGreaterThan(metrics.innerHeight - 32)
+
+    await assertNoFatalUiErrors()
+  })
+})
