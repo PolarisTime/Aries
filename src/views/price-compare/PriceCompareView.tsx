@@ -244,7 +244,6 @@ export function PriceCompareView() {
         />
 
         <PriceCompareBatchBar
-          active={active}
           activeId={activeId}
           brands={brands}
           currentGroup={currentGroup}

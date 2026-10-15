@@ -2761,15 +2761,14 @@ export const enUS = {
     },
     picker: {
       project: 'Project',
-      addProjectBatch: 'Add project batch',
       batch: 'Batch',
-      newBatch: 'New Batch',
-      deleteBatch: 'Delete Batch',
-      keepOneBatch: 'Keep at least one batch',
-      deleteCurrentBatch: 'Delete current batch',
+      /** Suffix of a project option: how many batches it has / it has none yet. */
+      batchCount: ' ({{n}} batches)',
+      noBatch: ' (no batch yet)',
       a11y: {
         project: 'Project switch',
-        batch: 'Batch switch',
+        batchList: 'Batch tabs',
+        closeBatch: 'Delete batch {{name}}',
       },
     },
     sheet: {

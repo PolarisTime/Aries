@@ -1,45 +1,27 @@
 /**
- * 报单比价 · 顶部「项目 / 批次」上下文切换条。
+ * 报单比价 · 顶部「项目 / 批次」上下文区。
  *
- * 两行原先各自是一排散落的胶囊与分段控件，行首标签只有 12px 次级灰字，也没有分组边界，
- * 「当前选中哪个项目/批次」要逐个辨认。这里把两行收进一个浅底描边容器：标签统一为正文
- * 字号 + 中等字重，选择控件统一用 antd `Segmented`（互斥单选，自带键盘与读屏语义）。
+ * 两行分别是一次「选择」：项目决定在哪个项目下工作，批次决定打开哪一张报价单。
+ * 这里只提供分组边界与控件贴合，选中态一律沿用 antd 自己的设计语言
+ * （项目用 Select，批次用可关闭页签），不再自造实心配色。
  *
- * 颜色一律走 antd 语义变量与 tokens.css 的字号/间距阶梯，暗色主题自动适配。
+ * 颜色走 antd 语义变量，字号/间距走 tokens.css 的阶梯，暗色主题自动适配。
  */
 .price-compare-context-bar {
   margin-bottom: var(--space-xs);
   padding: var(--space-xs) var(--space-sm);
-  /* 边框取 border(#d9d9d9) 而不是 border-secondary(#f0f0f0): 后者在白底页面上几乎看不见,
-     分组边界形同虚设(实测计算样式可见, 肉眼不可见)。 */
+  /* 边框取 border(#d9d9d9) 而不是 border-secondary(#f0f0f0): 后者在白底页面上
+     计算样式存在但肉眼不可见, 分组边界形同虚设。 */
   border: 1px solid var(--ant-color-border, #d9d9d9);
   border-radius: var(--ant-border-radius-lg, 8px);
   background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 2%));
-}
-
-/* 选中态用主题色实底: 与页面原有的项目选中视觉一致(蓝底白字), 让「当前项目/批次」
-   在一排分段里一眼可见 —— antd 默认的白底选中块落在浅色轨道上对比偏弱。 */
-.price-compare-context-bar .ant-segmented-item-selected {
-  background: var(--ant-color-primary, #1677ff);
-  color: var(--ant-color-text-light-solid, #fff);
-  font-weight: 500;
-}
-
-.price-compare-context-bar .ant-segmented-item-selected:hover {
-  background: var(--ant-color-primary-hover, #4096ff);
-  color: var(--ant-color-text-light-solid, #fff);
-}
-
-/* 滑块(切换动画期间跟随鼠标的那个块)必须同色, 否则动画里会露出一个白块 */
-.price-compare-context-bar .ant-segmented-thumb {
-  background: var(--ant-color-primary, #1677ff);
 }
 
 .price-compare-context-row {
   min-width: 0;
 }
 
-/* 行首标签: 固定宽度让「项目 / 批次」两行的控件左边缘对齐 */
+/* 行首标签: 固定宽度让「项目 / 批次」两行左边缘对齐 */
 .price-compare-context-label {
   flex: 0 0 auto;
   min-width: 2.5em;
@@ -49,17 +31,25 @@
   line-height: 1.4;
 }
 
-/* 项目/批次数量多时横向滚动: 不撑破分组容器, 也不把两行挤成多行。
-   纵向留 2px, 避免 Segmented 选中块的阴影被滚动容器裁掉。 */
-.price-compare-context-scroll {
-  max-width: 100%;
-  padding-block: 2px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
+/* 项目选择器: 选项文案自带「N 个批次 / 未建批次」, 给一个下限宽度避免闪烁 */
+.price-compare-project-select {
+  min-width: 200px;
 }
 
-.price-compare-context-scroll .ant-segmented {
-  max-width: 100%;
+/* 批次页签: 去掉 antd Tabs 默认的导航外边距与下边框, 让它贴合分组容器 */
+.price-compare-batch-tabs .ant-tabs-nav {
+  margin: 0;
+}
+
+.price-compare-batch-tabs .ant-tabs-nav::before {
+  border-bottom: none;
+}
+
+/* 关闭按钮命中区不小于 24×24(WCAG 2.5.8): antd 默认只有图标本身大小 */
+.price-compare-batch-tabs .ant-tabs-tab-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
 }
