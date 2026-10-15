@@ -490,7 +490,7 @@
  * 把最高对比度留给「列名」这一层(见 Data Tables: Four Major User Tasks 的定位与比较章节)。
  * scope="colgroup" 是 antd 给分组表头单元格写死的属性, 用它精确选中分组行, 不误伤跨行单元格。
  */
-.price-compare-table .ant-table-thead > tr > th[scope='colgroup'] {
+.price-compare-table .ant-table-thead > tr > th[scope="colgroup"] {
   padding-block: 1px !important;
   background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 2%)) !important;
   color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
@@ -498,7 +498,6 @@
   font-weight: 400;
   line-height: 18px;
 }
-
 
 .price-compare-table .ant-table-tbody > tr:hover > td {
   background: var(--theme-surface-hover) !important;
@@ -594,16 +593,28 @@
   opacity: 0.55;
 }
 
-/* 表格底部「添加一行 / 添加隔断 / 合计」都是 summary 行。
-   原先透明底, 与数据行分不开, 会被读成"多出来的一行数据"; 给一层浅底读作表尾操作区。 */
+/*
+ * 表格底部「添加一行 / 添加隔断 / 合计」都是 summary 行。
+ *
+ * 这里**不给整行加底色**: 宽窗口下列宽之和(864)远小于容器宽度(2273), 表格元素被
+ * min-width:100% 拉满而多出的宽度不属于任何列 —— 底色只会铺到列宽之和就断掉, 看起来
+ * 像"只铺了一半"。改回透明, 靠 bordered 表格自带的边框与数据行分开(边框本来就止于
+ * 列边界, 不会出现半截色块)。
+ */
 .price-compare-table .ant-table-summary > tr > td {
   padding: var(--space-2) var(--space-6) !important;
-  background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 2%));
 }
 
-.price-compare-add-row {
+/* 表尾两个添加入口相邻左对齐(不用 block 平分整行, 否则「添加隔断」会被推到表格中间),
+   并按主次分级: 添加一行是常用动作, 添加隔断是低频动作, 用更弱的颜色。 */
+.price-compare-add-row,
+.price-compare-add-separator {
+  padding-inline: var(--space-6);
   color: var(--text-secondary);
-  justify-content: flex-start;
+}
+
+.price-compare-add-separator {
+  color: var(--theme-text-muted-light);
 }
 
 /* 项目配置弹窗: 品牌列表 */

@@ -1523,13 +1523,24 @@ function SheetTable(props: SheetTableProps) {
           <Table.Summary.Row>
             <Table.Summary.Cell
               index={0}
-              colSpan={(base.hideRemark ? 4 : 5) + base.visibleBrandCount * 4}
+              /* 跨列数必须等于这一行左侧的全部列: 固定列 + 吨位列 + 品牌列。
+                 原式漏了吨位三列, 于是这一格的背景只铺到「材质/规格」列就在吨位处断掉,
+                 整行像被切了一刀(有了浅底之后尤其明显)。吨位里只有「报单吨位」必显,
+                 已占用/剩余可开可被隐藏, 因此逐列计数而不是写死 3。 */
+              colSpan={
+                (base.hideRemark ? 4 : 5) +
+                1 +
+                (base.hideIssuedTon ? 0 : 1) +
+                (base.hideUnopenedTon ? 0 : 1) +
+                base.visibleBrandCount * 4
+              }
             >
               <Flex gap="small" align="center">
+                {/* 不用 block: 两个入口平分整行宽度会把「添加隔断」推到表格中间,
+                    与「添加一行」之间隔着半张表。改为相邻左对齐。 */}
                 <Button
                   type="text"
                   size="small"
-                  block
                   className="price-compare-add-row"
                   disabled={rowLocked}
                   // 原因同时给到可见文案与 AT: 只读时不静默禁用
@@ -1541,7 +1552,6 @@ function SheetTable(props: SheetTableProps) {
                 <Button
                   type="text"
                   size="small"
-                  block
                   className="price-compare-add-separator"
                   icon={<MinusOutlined />}
                   disabled={rowLocked}
