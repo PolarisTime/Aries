@@ -37,7 +37,7 @@ import type { MenuProps } from 'antd/es/menu'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
@@ -477,6 +477,15 @@ function RowActionsCell({
             aria-label={t('priceCompare.sheet.rowActionsLabel', {
               row: rowLabel,
             })}
+            /*
+             * sr-only + primary 变体的可见像素陷阱(真机实测过一条"下横线"):
+             * `.aries-sr-only` 靠 `clip` 裁剪, 而**按规范 `clip` 只对绝对定位元素生效** ——
+             * 全局 `touch-targets.css` 给按钮加了 `position: relative`, 裁剪因此失效, 盒子
+             * 只剩 1px 高(antd icon-only 的 min-width 仍把它撑到 24px 宽), `type="primary"`
+             * 的实心主色背景 + 2px 主色投影就会被画成 24×1 的蓝线。
+             * 因此未聚焦的 sr-only 触发器由 `price-compare.css` 强制无背景/无投影;
+             * 改这里的 type 或给这个按钮加背景前, 先确认未聚焦态不会画出可见像素。
+             */
             className={`price-compare-row-actions${effectiveLocked ? ' price-compare-row-actions--locked' : ''}${srOnlyTrigger ? ' aries-sr-only' : ''}`}
             disabled={disabled}
             icon={effectiveLocked ? <LockOutlined /> : <MoreOutlined />}
@@ -1409,11 +1418,52 @@ function SheetTable(props: SheetTableProps) {
     const tr = event.currentTarget.closest('tr')
     if (tr) event.dataTransfer.setDragImage(tr, 24, tr.offsetHeight / 2)
   }
-  const onRowDragEnd = () => {
+  /**
+   * 拖拽状态的**唯一出口**: 结束、取消与"数据/锁定态变化"的所有路径都必须走它。
+   *
+   * <p>HTML5 的 `dragend` 在真实浏览器里**可能丢失**: 拖拽中途组件重渲染把被拖的节点换掉、
+   * 切到锁定态、窗口失焦、按 Escape 取消 —— 任一条漏掉都会让 `dragId/dropId/dropAfter`
+   * 永久残留, 于是行上一直挂着 `price-compare-dragging` 与 2px 主色落点线(用户截图实测过
+   * "锁定态行左端一条蓝线")。这里把清理收成一个出口, 禁止在多处各清一半。</p>
+   */
+  const resetDragState = useCallback(() => {
     setDragId(null)
     setDropId(null)
     setDropAfter(false)
-  }
+  }, [])
+
+  /** 拖拽中挂全局兜底: Escape 取消与窗口失焦都不会派发 dragend。 */
+  useEffect(() => {
+    if (!dragId) return undefined
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') resetDragState()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('blur', resetDragState)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('blur', resetDragState)
+    }
+  }, [dragId, resetDragState])
+
+  /** 行集合变化(增删/换单/重排)后旧的落点没有意义: 一起清掉, 免得指向已不存在的行。 */
+  const rowIdsKey = useMemo(() => rows.map((row) => row.id).join('|'), [rows])
+  useEffect(() => {
+    resetDragState()
+  }, [rowIdsKey, resetDragState])
+
+  /** 切换(进入)锁定态: 锁定时正在拖的行已经没有落点可言, 不清就会留下落点线。 */
+  useEffect(() => {
+    if (rowLocked) resetDragState()
+  }, [rowLocked, resetDragState])
+
+  /**
+   * 卸载兜底: 本实例的 state 会随组件销毁, 但"所有生命周期路径都过唯一出口"这条约束
+   * 要立住 —— 以后若把这三项状态提升到 store/ref, 这里就是必须的清理点。
+   */
+  useEffect(() => () => resetDragState(), [resetDragState])
+
+  const onRowDragEnd = resetDragState
 
   const columns = buildSheetColumns({
     ...base,
@@ -1575,12 +1625,12 @@ function SheetTable(props: SheetTableProps) {
         onDrop: (event) => {
           event.preventDefault()
           if (rowLocked) {
-            onRowDragEnd()
+            resetDragState()
             return
           }
           const fromId = event.dataTransfer.getData('text/row-id')
           if (fromId) onReorderRow(fromId, row.rowId, dropAfter)
-          onRowDragEnd()
+          resetDragState()
         },
       })}
       scroll={{

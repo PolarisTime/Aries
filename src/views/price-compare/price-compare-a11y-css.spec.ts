@@ -25,6 +25,64 @@ const blockOf = (css: string, selector: string) => {
 }
 
 describe('比价页样式无障碍契约', () => {
+  /**
+   * 选择器特异性(ids, classes, elements 的粗略计数)。
+   *
+   * <p>这里只用于比较"谁是 `!important` 之争的胜者": 两条都是 `!important` 时,
+   * 特异性高者生效 —— 拖拽落点线就曾因此永远画不出来。</p>
+   */
+  const specificityOf = (selector: string): [number, number, number] => {
+    const ids = (selector.match(/#[\w-]+/g) ?? []).length
+    const classes = (
+      selector.match(/\.[\w-]+|\[[^\]]+\]|:(?!:)[a-z-]+(?:\([^)]*\))?/g) ?? []
+    ).length
+    const types = (selector.match(/(?:^|[\s>+~])[a-z][\w-]*/g) ?? []).length
+    return [ids, classes, types]
+  }
+  const atLeastAsSpecific = (
+    a: [number, number, number],
+    b: [number, number, number],
+  ) =>
+    a[0] > b[0] ||
+    (a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] >= b[2])))
+
+  /** 取包含某片段的那条规则的选择器(规则块从上一个 } 或注释结束处开始)。 */
+  const ruleSelectorContaining = (css: string, fragment: string) => {
+    const index = css.indexOf(fragment)
+    expect(index, `未找到规则片段 ${fragment}`).toBeGreaterThan(-1)
+    const start = Math.max(
+      css.lastIndexOf('}', index),
+      css.lastIndexOf('*/', index),
+    )
+    return css
+      .slice(start + 1, css.indexOf('{', index))
+      .trim()
+      .replace(/\s+/g, ' ')
+  }
+
+  it('拖拽落点线的特异性不低于通用单元格边框(否则 2px 主色线被 1px 灰线压掉, 落点线画不出来)', () => {
+    const genericRule = ruleSelectorContaining(
+      pageCss,
+      'ant-table-bordered\n  > .ant-table-container',
+    )
+    const generic = genericRule
+      .split(',')
+      .map((part) => part.trim())
+      .find((part) => part.includes('tbody'))
+    expect(generic).toBeTruthy()
+    for (const marker of [
+      'tr.price-compare-drop-after',
+      'tr.price-compare-drop-before',
+    ]) {
+      const selector = ruleSelectorContaining(pageCss, marker)
+      expect(selector).toContain('.ant-table.ant-table-bordered')
+      expect(
+        atLeastAsSpecific(specificityOf(selector), specificityOf(generic!)),
+        `${marker} 的选择器特异性不足: ${selector}`,
+      ).toBe(true)
+    }
+  })
+
   it('sr-only 行操作触发器未聚焦时不画背景/投影(否则 1px 高会画成一条蓝色下横线)', () => {
     const block = blockOf(
       pageCss,

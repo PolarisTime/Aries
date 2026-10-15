@@ -516,6 +516,37 @@
   border-bottom: 1px solid var(--ant-color-border, #d9d9d9) !important;
 }
 
+/*
+ * 拖拽落点线。
+ *
+ * <p>注意特异性: 上面的通用单元格规则用 `!important` 画 1px 灰线, 且选择器更长
+ * (`.price-compare-table .ant-table.ant-table-bordered > .ant-table-container … > td`, 5 个类);
+ * 两条都是 `!important` 时
+ * 特异性高者胜, 所以这里必须带上同一段容器链, 否则 2px 主色落点线**永远画不出来**
+ * (真机实测: 行上有 `price-compare-drop-after` 类, 但计算出的 border-bottom 仍是 1px 灰)。</p>
+ */
+.price-compare-table
+  .ant-table.ant-table-bordered
+  > .ant-table-container
+  > .ant-table-content
+  > table
+  > tbody
+  > tr.price-compare-drop-before
+  > td {
+  border-top: 2px solid var(--theme-primary) !important;
+}
+
+.price-compare-table
+  .ant-table.ant-table-bordered
+  > .ant-table-container
+  > .ant-table-content
+  > table
+  > tbody
+  > tr.price-compare-drop-after
+  > td {
+  border-bottom: 2px solid var(--theme-primary) !important;
+}
+
 /* 品牌列组之间用略深的框线分隔 */
 .price-compare-table
   .ant-table-thead
@@ -543,14 +574,6 @@
 .price-compare-table .ant-table-tbody > tr.price-compare-dragging > td {
   background: var(--theme-highlight-bg) !important;
   opacity: 0.55;
-}
-
-.price-compare-table .ant-table-tbody > tr.price-compare-drop-before > td {
-  border-top: 2px solid var(--theme-primary) !important;
-}
-
-.price-compare-table .ant-table-tbody > tr.price-compare-drop-after > td {
-  border-bottom: 2px solid var(--theme-primary) !important;
 }
 
 /* 表格底部“添加一行” */

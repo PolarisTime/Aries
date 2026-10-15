@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from 'i18next'
-import { act, createElement, useState } from 'react'
+import { act, createElement, useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
@@ -151,12 +151,24 @@ describe('SheetPanel 指定品牌展示', () => {
     varieties: Variety[] = [variety],
     purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput,
   ) {
-    const observed = { rows: initialRows, sheet: initialSheet }
+    const observed = {
+      rows: initialRows,
+      sheet: initialSheet,
+      /** 测试里直接切锁定态/换行集合的句柄(拖拽状态残留用例需要"不派发 dragend 就改数据")。 */
+      patchSheet: (_patch: Partial<PriceSheet>) => {},
+      replaceRows: (_updater: (rows: PriceRow[]) => PriceRow[]) => {},
+    }
     function Harness() {
       const [sheet, setSheet] = useState(initialSheet)
       const [rows, setRows] = useState(initialRows)
-      observed.rows = rows
-      observed.sheet = sheet
+      // 回写放在 effect 里: 渲染期改外层变量会被 React Compiler 判为 immutability 违规
+      useEffect(() => {
+        observed.rows = rows
+        observed.sheet = sheet
+        observed.patchSheet = (patch) =>
+          setSheet((prev) => ({ ...prev, ...patch }))
+        observed.replaceRows = setRows
+      }, [rows, sheet])
       return createElement(SheetPanel, {
         sheet,
         data: null,
@@ -421,6 +433,102 @@ describe('SheetPanel 指定品牌展示', () => {
       '.price-compare-variety-cell .ant-select',
     )
     expect(varietySelects.length).toBeGreaterThanOrEqual(2)
+  })
+
+  /**
+   * 合成一次 HTML5 拖拽: `dragstart` + 目标行下半的 `dragover`, **刻意不派发 `dragend`**。
+   *
+   * <p>真实浏览器就是这样丢掉 `dragend` 的(拖拽中途被锁定、被拖节点被重建、窗口失焦),
+   * 于是 `dragId/dropId/dropAfter` 会永久残留成行上的落点线与 dragging 类。</p>
+   */
+  function startRowDragWithoutDragEnd() {
+    const rowNodes = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>(
+          '.price-compare-tbody > tr.ant-table-row, .price-compare-table .ant-table-tbody > tr.ant-table-row',
+        ),
+      )
+    expect(rowNodes().length).toBeGreaterThanOrEqual(2)
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setData: () => {},
+      getData: () => 'r1',
+      setDragImage: () => {},
+    }
+    const fire = (element: Element, type: string, clientY: number) => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      // jsdom 没有 DragEvent/DataTransfer: 按原生事件形状补上 React 合成事件读取的字段
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+      Object.defineProperty(event, 'clientY', { value: clientY })
+      element.dispatchEvent(event)
+    }
+    act(() => {
+      const handle = rowNodes()[0].querySelector('.price-compare-row-drag')
+      expect(handle).not.toBeNull()
+      fire(handle as Element, 'dragstart', 0)
+    })
+    act(() => {
+      fire(rowNodes()[1], 'dragover', 100)
+    })
+  }
+
+  const dragResidueCount = () =>
+    container.querySelectorAll(
+      'tr.price-compare-dragging, tr.price-compare-drop-after, tr.price-compare-drop-before',
+    ).length
+
+  it('拖拽中途切换锁定态: 没收到 dragend 也必须清掉 dragging 与落点类', () => {
+    const observed = renderStateful({ ...makeSheet() }, [
+      { ...baseRow },
+      { ...baseRow, id: 'r2' },
+    ])
+    startRowDragWithoutDragEnd()
+    expect(container.querySelector('tr.price-compare-dragging')).not.toBeNull()
+    expect(
+      container.querySelector(
+        'tr.price-compare-drop-after, tr.price-compare-drop-before',
+      ),
+    ).not.toBeNull()
+
+    // 真实路径: 拖拽中途点「锁定规格和数量」→ 浏览器可能不再派发 dragend
+    act(() => observed.patchSheet({ specQuantityLocked: true }))
+    expect(dragResidueCount()).toBe(0)
+  })
+
+  it('拖拽中途行集合变化(增删行/换单): 没收到 dragend 也要清掉落点类', () => {
+    const observed = renderStateful({ ...makeSheet() }, [
+      { ...baseRow },
+      { ...baseRow, id: 'r2' },
+    ])
+    startRowDragWithoutDragEnd()
+    expect(dragResidueCount()).toBeGreaterThan(0)
+
+    act(() => {
+      observed.replaceRows((prev) => [...prev, { ...baseRow, id: 'r3' }])
+    })
+    expect(dragResidueCount()).toBe(0)
+  })
+
+  it('Escape 与窗口失焦都会清掉拖拽状态(丢 dragend 的两条常见路径)', () => {
+    renderStateful({ ...makeSheet() }, [
+      { ...baseRow },
+      { ...baseRow, id: 'r2' },
+    ])
+    startRowDragWithoutDragEnd()
+    expect(dragResidueCount()).toBeGreaterThan(0)
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+    expect(dragResidueCount()).toBe(0)
+
+    // 再拖一次, 改用窗口失焦(切标签/点桌面)
+    startRowDragWithoutDragEnd()
+    expect(dragResidueCount()).toBeGreaterThan(0)
+    act(() => {
+      window.dispatchEvent(new Event('blur'))
+    })
+    expect(dragResidueCount()).toBe(0)
   })
 
   it('规格数量锁定后禁用新增/删除/拖拽重排并给出提示', () => {
