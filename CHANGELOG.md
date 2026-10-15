@@ -1,3 +1,26 @@
+# [12.1.0](https://github.com/PolarisTime/Aries/compare/v12.0.0...v12.1.0) (2026-10-15)
+
+
+### Bug Fixes
+
+* **ci:** 修掉阻断 CI 的三类问题: biome 依赖告警 / rc 延迟定时器 / eslint 断言与 async ([7569829](https://github.com/PolarisTime/Aries/commit/756982983f260e7da8d5e10eefbd8db7362b4fa4))
+* **price-compare:** 去掉锁定态勾选格右侧那条"蓝色下横线" ([a3b6184](https://github.com/PolarisTime/Aries/commit/a3b6184a502016740e4185ff63c5d85778d8f7bf))
+* **price-compare:** 吨位列可隐藏并持久化, 修掉刷新后列显隐复位 ([bff32de](https://github.com/PolarisTime/Aries/commit/bff32de5f2ffa97a33dfbd3bff85f70784add194))
+* **price-compare:** 吨位改按「已占用(本单分配+其他单据)」口径, 剩余可开不再出现负值 ([a51cdd3](https://github.com/PolarisTime/Aries/commit/a51cdd36c81697fca7c676454ae2bb7997fbdecb))
+* **price-compare:** 拖拽状态收敛到唯一出口 resetDragState, 并让落点线真正画出来 ([2237633](https://github.com/PolarisTime/Aries/commit/2237633b824f104bd39b58fda41730fd4ae63b3b))
+* **tabs:** 非激活面板外壳退出布局, 修掉多标签下页面内容整体下移 ([27366ed](https://github.com/PolarisTime/Aries/commit/27366ed8fe383748d9230626b4677a124b284896))
+
+
+### Features
+
+* **price-compare:** 明细表整行任意位置可拖拽排序 ([eafff41](https://github.com/PolarisTime/Aries/commit/eafff417a8f6206862149168d84279e82548acaf))
+* **price-compare:** 项目/批次两行统一为分段控件并分组, 突出当前选中 ([9f621fc](https://github.com/PolarisTime/Aries/commit/9f621fcbadad9d8ac7024abb5ede0083f3af1b2e)), closes [#d9d9d9](https://github.com/PolarisTime/Aries/issues/d9d9d9) [#f0f0f0](https://github.com/PolarisTime/Aries/issues/f0f0f0)
+
+
+### Performance Improvements
+
+* **theme:** 展开类动效提速, 下拉与浮层不再「慢半拍」 ([52c193f](https://github.com/PolarisTime/Aries/commit/52c193f3ba2b2ef68678e4095454478f87131f66))
+
 # [12.0.0](https://github.com/PolarisTime/Aries/compare/v11.13.1...v12.0.0) (2026-10-15)
 
 
