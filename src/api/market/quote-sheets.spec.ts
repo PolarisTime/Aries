@@ -458,6 +458,9 @@ describe('quote-sheets API', () => {
         orderedWeight: '40.5',
         issuedWeight: '30.5',
         remainingWeight: '10',
+        // 真实已开货(入库回写)与"报单占用"刻意取不同值, 解析后必须各归各位
+        actualWeightTon: '12.25',
+        issuedDone: true,
         status: '正常',
       },
     ])
@@ -492,6 +495,9 @@ describe('quote-sheets API', () => {
       orderedWeight: 40.5,
       issuedWeight: 30.5,
       remainingWeight: 10,
+      // 真实已开货解析为独立字段, 不覆盖也不回退到 issuedWeight
+      actualWeightTon: 12.25,
+      issuedDone: true,
       status: '正常',
     })
   })

@@ -33,6 +33,8 @@ const records: PurchaseOrderTonnageRecord[] = [
     orderedWeight: 40,
     issuedWeight: 30,
     remainingWeight: 10,
+    actualWeightTon: null,
+    issuedDone: false,
     status: '正常',
   },
 ]
@@ -47,6 +49,8 @@ const doneRecord: PurchaseOrderTonnageRecord = {
   orderedWeight: 20,
   issuedWeight: 20,
   remainingWeight: 0,
+  actualWeightTon: null,
+  issuedDone: false,
 }
 
 describe('PurchaseOrderPickerModal', () => {
@@ -349,6 +353,8 @@ describe('PurchaseOrderPickerModal', () => {
           orderedWeight: 40,
           issuedWeight: 30,
           remainingWeight: Number.NaN,
+          actualWeightTon: null,
+          issuedDone: false,
         },
         new Map([['301', 4]]),
       ),
@@ -478,6 +484,8 @@ describe('PurchaseOrderPickerModal', () => {
       orderedWeight: 70,
       issuedWeight: 0,
       remainingWeight: 70,
+      actualWeightTon: null,
+      issuedDone: false,
     }
     api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
     const props = render({ onConfirmLinks: vi.fn() })
@@ -514,6 +522,8 @@ describe('PurchaseOrderPickerModal', () => {
       orderedWeight: 70,
       issuedWeight: 0,
       remainingWeight: 70,
+      actualWeightTon: null,
+      issuedDone: false,
     }
     api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
     render({
@@ -557,6 +567,8 @@ describe('PurchaseOrderPickerModal', () => {
       orderedWeight: 20,
       issuedWeight: 0,
       remainingWeight: 20,
+      actualWeightTon: null,
+      issuedDone: false,
     }
     api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
     const props = render({

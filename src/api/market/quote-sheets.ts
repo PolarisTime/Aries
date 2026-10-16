@@ -546,7 +546,13 @@ export async function deleteQuoteSheetItem(
   }
 }
 
-/** 采购订单明细行吨位汇总: 该行订货吨数 - 报单已开吨位 = 剩余可开吨。 */
+/**
+ * 采购订单明细行吨位汇总。
+ *
+ * <p><b>两个"已开"是不同的量, 不可互相替代</b>: `issuedWeight` 是**其他报价单的报单占用**
+ * (报单需求量之和), 用于选单判断"这条订单行的额度还能不能再报"; `actualWeightTon` 是
+ * **真实已开货**(入库审核回写), 用于吨位列回答"这条明细行已经开出去多少货"。</p>
+ */
 export type PurchaseOrderTonnageRecord = {
   purchaseOrderId: EntityId
   /** 采购订单明细行标识(按规格扣减的唯一标识)。 */
@@ -560,8 +566,14 @@ export type PurchaseOrderTonnageRecord = {
   /** 品牌(采购订单明细自带字段): 供吨位列展示"已开的品牌"与弹窗区分同规格的不同品牌。 */
   brand: string
   orderedWeight: number
+  /** 其他报价单在该明细行上的报单占用(选单额度口径)。 */
   issuedWeight: number
+  /** 剩余可开 = 订货吨位 − 报单占用。 */
   remainingWeight: number
+  /** 真实已开货吨位(入库回写); null = 还没有任何到货记录(区别于"开了 0 吨")。 */
+  actualWeightTon: number | null
+  /** 人工裁定的「已开完」标记: 与吨位无关, 不根据 actualWeightTon 自动判定。 */
+  issuedDone: boolean
   status: string
 }
 
@@ -578,11 +590,13 @@ const purchaseOrderTonnageSchema = z.looseObject({
   orderedWeight: z.union([z.number(), z.string()]).nullable().optional(),
   issuedWeight: z.union([z.number(), z.string()]).nullable().optional(),
   remainingWeight: z.union([z.number(), z.string()]).nullable().optional(),
+  actualWeightTon: z.union([z.number(), z.string()]).nullable().optional(),
+  issuedDone: z.boolean().nullable().optional(),
   status: z.string().nullable().optional(),
 })
 
 /**
- * 列出采购订单明细行(按规格)及其订货/已开/剩余吨位, 供吨位列按规格关联并展示。
+ * 列出采购订单明细行(按规格)及其订货/报单占用/剩余吨位与真实已开货, 供吨位列按规格关联并展示。
  * 传 purchaseOrderItemIds 按 id 汇总(用于回显已关联行), 否则按 keyword/status/purchaseOrderId 列出选项。
  * excludeSheetId 排除当前报价单自身已保存吨位, 便于叠加本地未保存吨位。
  */
@@ -634,6 +648,9 @@ export async function fetchPurchaseOrderTonnages(
     orderedWeight: toOptionalNumber(row.orderedWeight) ?? 0,
     issuedWeight: toOptionalNumber(row.issuedWeight) ?? 0,
     remainingWeight: toOptionalNumber(row.remainingWeight) ?? 0,
+    // 保持 null 语义: "还没有到货记录"与"开了 0 吨"在展示与判断上不等价
+    actualWeightTon: toOptionalNumber(row.actualWeightTon) ?? null,
+    issuedDone: Boolean(row.issuedDone),
     status: asString(row.status),
   }))
 }

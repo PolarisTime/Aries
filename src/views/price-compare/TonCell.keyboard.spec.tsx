@@ -31,6 +31,8 @@ const poRecord: PurchaseOrderTonnageRecord = {
   orderedWeight: 40,
   issuedWeight: 30,
   remainingWeight: 10,
+  actualWeightTon: null,
+  issuedDone: false,
   status: '正常',
 }
 

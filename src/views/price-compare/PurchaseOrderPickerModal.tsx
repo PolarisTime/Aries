@@ -6,6 +6,7 @@ import {
   Empty,
   Input,
   Modal,
+  Switch,
   Table,
   Tag,
   Tooltip,
@@ -18,14 +19,17 @@ import {
   fetchPurchaseOrderTonnages,
   type PurchaseOrderTonnageRecord,
 } from '@/api/market/quote-sheets'
+import { setPurchaseOrderItemIssuedDone } from '@/api/purchase/purchase-order-item-issued-done'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_REALTIME } from '@/constants/query-policies'
+import { message } from '@/utils/antd-app'
 import { formatWeight } from '@/utils/formatters'
 import {
   matchesPickerVariety,
   type PickerVarietyTarget,
   remainingLinkableTon,
 } from './purchase-order-picker-tonnage'
+import { actualShippedTonOf } from './ton-progress-text'
 
 interface Props {
   open: boolean
@@ -84,6 +88,15 @@ export function PurchaseOrderPickerModal({
   const [showFullyLinked, setShowFullyLinked] = useState(false)
   /** 是否显示"材质/规格/长度不一致"的行: 默认隐藏(自动筛选), 需要借用别的规格时可打开。 */
   const [showOtherVarieties, setShowOtherVarieties] = useState(false)
+  /** 是否显示人工标记「已开完」的行: 默认隐藏(该明细行已被判定不用再开)。 */
+  const [showIssuedDone, setShowIssuedDone] = useState(false)
+  /**
+   * 「已开完」开关的乐观覆盖值: 标记成功后立即变更可见状态, 避免等待重新查询(慢且会闪)。
+   * 失败时回滚这一条, 并给出错误提示 —— 不静默丢弃用户的点击。
+   */
+  const [issuedDoneOverride, setIssuedDoneOverride] = useState<
+    Map<string, boolean>
+  >(new Map())
   /** 勾选的明细行 id: 数组保序, 顺序即"确认"后的关联顺序。 */
   const [checkedItemIds, setCheckedItemIds] = useState<string[]>([])
 
@@ -109,6 +122,31 @@ export function PurchaseOrderPickerModal({
       // 保序去重: 重复勾选同一行不改变首次勾选的位置(关联顺序稳定)
       return prev.includes(itemId) ? prev : [...prev, itemId]
     })
+  }
+
+  /** 该行是否已被人工标记「已开完」(乐观覆盖优先于服务端返回值)。 */
+  const isIssuedDone = (record: PurchaseOrderTonnageRecord) =>
+    issuedDoneOverride.get(record.purchaseOrderItemId) ?? record.issuedDone
+
+  /**
+   * 切换「已开完」标记: 乐观更新 + 失败回滚。
+   *
+   * <p>这是人工裁定"该明细行不用再开了", 与吨位列的自动数字无关; 后端留痕(谁/何时)。
+   * 失败必须回滚并提示, 否则用户会以为标记成功了(下次打开又变回去)。</p>
+   */
+  const toggleIssuedDone = async (
+    record: PurchaseOrderTonnageRecord,
+    next: boolean,
+  ) => {
+    const itemId = record.purchaseOrderItemId
+    const previous = isIssuedDone(record)
+    setIssuedDoneOverride((current) => new Map(current).set(itemId, next))
+    try {
+      await setPurchaseOrderItemIssuedDone(itemId, next)
+    } catch {
+      setIssuedDoneOverride((current) => new Map(current).set(itemId, previous))
+      message.error(t('priceCompare.sheet.purchaseOrderPickerIssuedDoneFailed'))
+    }
   }
 
   // 关键字防抖: 避免每次输入都打后端。
@@ -156,40 +194,56 @@ export function PurchaseOrderPickerModal({
    * 剩余可关联吨位 <= 0 的行默认隐藏: 这些行已无额度可选, 留在列表里只会稀释搜索结果。
    * 开关只改本弹窗的可见集合, 不改查询参数; 当前已关联行始终保留, 避免用户以为关联丢了。
    */
-  const { visibleData, fullyLinkedCount, varietyMismatchCount } =
-    useMemo(() => {
-      let hiddenCount = 0
-      let mismatchCount = 0
-      const rows: PurchaseOrderTonnageRecord[] = []
-      for (const record of data) {
-        const preselected = preselectedIds.has(record.purchaseOrderItemId)
-        const fullyLinked =
-          remainingLinkableTon(record, linkedTonByItemId) <= 0 && !preselected
-        if (fullyLinked) hiddenCount += 1
-        if (fullyLinked && !showFullyLinked) continue
-        /*
-         * 自动筛选: 只列与当前行材质/规格/长度一致的明细行。当前已关联行始终保留
-         * (否则用户会以为关联被清掉了), 不一致的行由开关放行。
-         */
-        const varietyMismatch =
-          !preselected && !matchesPickerVariety(record, matchVariety)
-        if (varietyMismatch) mismatchCount += 1
-        if (varietyMismatch && !showOtherVarieties) continue
-        rows.push(record)
-      }
-      return {
-        visibleData: rows,
-        fullyLinkedCount: hiddenCount,
-        varietyMismatchCount: mismatchCount,
-      }
-    }, [
-      data,
-      linkedTonByItemId,
-      preselectedIds,
-      showFullyLinked,
-      showOtherVarieties,
-      matchVariety,
-    ])
+  const {
+    visibleData,
+    fullyLinkedCount,
+    varietyMismatchCount,
+    issuedDoneCount,
+  } = useMemo(() => {
+    let hiddenCount = 0
+    let mismatchCount = 0
+    let doneCount = 0
+    const rows: PurchaseOrderTonnageRecord[] = []
+    for (const record of data) {
+      const preselected = preselectedIds.has(record.purchaseOrderItemId)
+      const isDone =
+        issuedDoneOverride.get(record.purchaseOrderItemId) ?? record.issuedDone
+      if (isDone) doneCount += 1
+      /*
+       * 人工标记「已开完」的行默认隐藏(该明细行已被判定不用再开)。当前已关联行始终保留 ——
+       * 用户已选过的行被藏起来会让他在点「确认」时静默丢掉这条关联。
+       */
+      if (isDone && !preselected && !showIssuedDone) continue
+      const fullyLinked =
+        remainingLinkableTon(record, linkedTonByItemId) <= 0 && !preselected
+      if (fullyLinked) hiddenCount += 1
+      if (fullyLinked && !showFullyLinked) continue
+      /*
+       * 自动筛选: 只列与当前行材质/规格/长度一致的明细行。当前已关联行始终保留
+       * (否则用户会以为关联被清掉了), 不一致的行由开关放行。
+       */
+      const varietyMismatch =
+        !preselected && !matchesPickerVariety(record, matchVariety)
+      if (varietyMismatch) mismatchCount += 1
+      if (varietyMismatch && !showOtherVarieties) continue
+      rows.push(record)
+    }
+    return {
+      visibleData: rows,
+      fullyLinkedCount: hiddenCount,
+      varietyMismatchCount: mismatchCount,
+      issuedDoneCount: doneCount,
+    }
+  }, [
+    data,
+    linkedTonByItemId,
+    preselectedIds,
+    showFullyLinked,
+    showOtherVarieties,
+    showIssuedDone,
+    issuedDoneOverride,
+    matchVariety,
+  ])
 
   /*
    * 已勾选且当前可见的记录(按勾选顺序)。被开关藏起来的勾选行不算数: 确认后写回的就是
@@ -324,6 +378,39 @@ export function PurchaseOrderPickerModal({
       ),
     },
     {
+      // 真实已开货(入库回写): 与"已开(报单占用)"是两回事, 必须分列展示
+      title: t('priceCompare.sheet.purchaseOrderIssuedActual'),
+      key: 'actualWeightTon',
+      width: 104,
+      align: 'right',
+      render: (_value, record) =>
+        formatWeight(actualShippedTonOf(record.actualWeightTon)),
+    },
+    {
+      /*
+        人工裁定「已开完」: 与吨位无关, 不根据 actualWeightTon 自动判定。
+        开关外层拦截点击与按键冒泡, 避免点开关顺带选中该行(键盘 Enter/Space 同理)。
+      */
+      title: t('priceCompare.sheet.purchaseOrderPickerIssuedDone'),
+      key: 'issuedDone',
+      width: 84,
+      align: 'center',
+      render: (_value, record) => (
+        <span
+          className="price-compare-purchase-order-picker-issued-done"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <Switch
+            aria-label={`${record.orderNo} 已开完`}
+            checked={isIssuedDone(record)}
+            size="small"
+            onChange={(checked) => void toggleIssuedDone(record, checked)}
+          />
+        </span>
+      ),
+    },
+    {
       title: t('priceCompare.sheet.columns.purchaseOrderStatus'),
       dataIndex: 'status',
       width: 88,
@@ -381,6 +468,16 @@ export function PurchaseOrderPickerModal({
         >
           {t('priceCompare.sheet.purchaseOrderPickerShowOtherVarieties', {
             count: varietyMismatchCount,
+          })}
+        </Checkbox>
+        {/* 人工标记「已开完」的行默认隐藏: 该明细行已被判定不用再开, 需要复查时在这里放行 */}
+        <Checkbox
+          checked={showIssuedDone}
+          className="price-compare-purchase-order-picker-toggle"
+          onChange={(event) => setShowIssuedDone(event.target.checked)}
+        >
+          {t('priceCompare.sheet.purchaseOrderPickerShowIssuedDone', {
+            count: issuedDoneCount,
           })}
         </Checkbox>
         {/* 多选出口: 0 张禁用, 不派发空的确认(清除关联有独立的按钮) */}

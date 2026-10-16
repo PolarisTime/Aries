@@ -134,14 +134,16 @@ export function buildTonColumn(ctx: TonColumnContext): ColumnType<GridRow> {
   }
 }
 
-/** 「已开吨位」列: 服务端按其他已保存报单统计的量, 只读。 */
+/** 「剩余未开」列: 报单吨位 − 真实已开货(入库回写), 只读。 */
 export function buildIssuedTonColumn(
   ctx: TonColumnContext,
 ): ColumnType<GridRow> {
   const { t } = ctx
-  // 2026-10-14 口径修正: 本列显示「剩余未开吨位 = 订货吨位 − 已开吨位」; 「已开吨位」移到相邻
-  // 的下一列(buildUnopenedTonColumn 渲染)。函数名与列宽来源(ctx.issuedWidth)保留, 其宽度
-  // 计算口径已同步改为"剩余吨位文本"。
+  /*
+   * 2026-10-16 口径修正(方案 B): 本列显示「剩余未开 = 本单据报单吨位 − 真实已开货」;
+   * 「已开货」由相邻的下一列(buildUnopenedTonColumn)渲染。函数名与列宽来源(ctx.issuedWidth)
+   * 保留, 其宽度计算口径已同步改为"剩余未开文本"。
+   */
   const label = t('priceCompare.sheet.columns.unopenedTon')
   return {
     title: label,
@@ -167,16 +169,16 @@ export function buildIssuedTonColumn(
 }
 
 /**
- * 「未开吨位」列: 订货吨位 − 已开吨位, 并承载品牌与采购订单明细入口。
+ * 「已开货」列: 关联明细行的真实已开货合计(入库审核回写), 并承载品牌与采购订单明细入口。
  *
- * <p>关联入口(ⓘ)留在这里: 明细弹层要展示订货/已开/未开与"选择采购订单"动作,
+ * <p>关联入口(ⓘ)留在这里: 明细弹层要展示报单/已开货/剩余未开与"选择采购订单"动作,
  * 与这一列的数出口径完全一致; 报单吨位列只留输入框, 不再被次要文字挤占。</p>
  */
 export function buildUnopenedTonColumn(
   ctx: TonColumnContext,
 ): ColumnType<GridRow> {
   const { t } = ctx
-  // 2026-10-14 口径修正: 本列显示「已开吨位 = 本单据该明细行报单吨位 + 其他已保存报单占用」
+  // 2026-10-16 口径修正(方案 B): 本列显示「已开货 = 关联明细行的真实已开货合计(入库回写)」
   const label = t('priceCompare.sheet.columns.issuedTon')
   return {
     title: label,

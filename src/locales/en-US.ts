@@ -2801,8 +2801,9 @@ export const enUS = {
         purchaseOrderSupplier: 'Supplier',
         purchaseOrderOrdered: 'Ordered',
         /** Tonnage trio: order (input) / issued / unopened (= ordered − issued). */
-        issuedTon: 'Occupied (incl. this sheet)',
-        unopenedTon: 'Open for this sheet',
+        /** Tonnage columns: reported (input) / issued (actual inbound) / unopened (reported − issued). */
+        issuedTon: 'Issued (actual)',
+        unopenedTon: 'Unopened',
         purchaseOrderIssued: 'Issued',
         purchaseOrderRemaining: 'Remaining',
         purchaseOrderStatus: 'Status',
@@ -2897,7 +2898,7 @@ export const enUS = {
       purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
       purchaseOrderOverLimit: '(over)',
       purchaseOrderSavedBasis:
-        'Occupied = other sheets + this sheet allocation; open for this sheet = PO allowance − occupied; the reported request is separate',
+        'Issued = actual inbound total of the linked PO lines (written back on inbound audit); unopened = reported tonnage − issued; ordered tonnage is reference only',
       purchaseOrderMissing: '{{orderNo}} (deleted)',
       purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
       /** Short state for the tonnage columns when the row has no linked PO line yet. */
@@ -2907,7 +2908,7 @@ export const enUS = {
       /** Short state when the linked line is gone (order deleted). */
       purchaseOrderMissingShort: 'Deleted',
       purchaseOrderLoadFailed:
-        'Failed to load purchase-order tonnage; issued/remaining is unavailable (entry and saving are unaffected)',
+        'Failed to load purchase-order tonnage; issued/unopened is unavailable (entry and saving are unaffected)',
       purchaseOrderIssuedShort: 'Issued {{issued}}',
       /**
        * Shortfall notice: this row's reported tonnage − the allocated tonnage of its linked
@@ -2915,27 +2916,24 @@ export const enUS = {
        */
       purchaseOrderUnallocatedTon:
         '{{ton}} t is not allocated to any purchase-order line',
-      /** Visible cell text: remaining = this sheet reported tonnage − issued. */
+      /** Visible cell text: unopened = this sheet reported tonnage − actual issued. */
       purchaseOrderRemainingShort: 'Remaining {{weight}}',
       /** Tooltip row: tonnage this sheet reported on the linked PO line. */
       purchaseOrderSheetReported: 'This sheet (PO line)',
-      purchaseOrderIssuedActual: 'Occupied by other sheets',
-      /** The part allocated by this sheet (allocated_ton). */
-      purchaseOrderSelfAllocated: 'Allocated by this sheet',
+      /** Source of the issued figure: actualWeightTon, written back on inbound audit. */
+      purchaseOrderIssuedActual: 'Actual issued',
+      /** Ordered tonnage of the PO line (reference only; not part of the unopened maths). */
+      purchaseOrderSelfAllocated: 'Ordered tonnage (reference)',
       purchaseOrderDetail: 'Purchase order details',
       purchaseOrderUnlinked: 'No linked purchase order',
       /**
-       * Over-issued: the remaining column never shows a negative number; this short text
-       * carries the excess. Excess = issued total − linked PO allowance (same source as
-       * remainingTonDisplay).
+       * Over-issued: actual issued exceeds this sheet's reported tonnage (the PO line is
+       * shared or this sheet reported only part of it). Shows the negative remainder as-is.
        */
       purchaseOrderOverIssuedShort: 'Over-issued {{over}} t',
-      /** Over-occupied explanation (single source): occupied, allowance and excess. */
-      purchaseOrderOverIssuedDetail:
-        'Occupied {{issued}} t > linked PO allowance {{ordered}} t ⇒ exceeds by {{over}} t',
-      /** Over-request explanation (single source): request exceeds allowance; unrelated to remaining. */
-      purchaseOrderOverReportedDetail:
-        'Reported request {{reported}} t > linked PO allowance {{ordered}} t ⇒ exceeds by {{over}} t',
+      /** Over-issued explanation (single source): issued, reported and excess. */
+      purchaseOrderOverShippedDetail:
+        'Issued {{shipped}} t > this sheet reported {{reported}} t ⇒ exceeds by {{over}} t (inbound already covers what this sheet reported)',
       /** PO line linked but the reported tonnage is still empty. */
       purchaseOrderMissingTonShort: 'No tonnage',
       purchaseOrderMissingTonHint:
@@ -2960,6 +2958,13 @@ export const enUS = {
       purchaseOrderPickerShowFullyLinked:
         'Show fully linked orders ({{count}})',
       purchaseOrderPickerFullyLinkedTag: 'Fully linked',
+      /** Manually marked "issued done" lines are hidden by default; the toggle is modal-local. */
+      purchaseOrderPickerShowIssuedDone: 'Show issued-done orders ({{count}})',
+      /** Column name for the manual "issued done" toggle (a human decision, unrelated to tonnage). */
+      purchaseOrderPickerIssuedDone: 'Issued done',
+      /** Mark/unmark failed and the switch was rolled back; say so instead of failing silently. */
+      purchaseOrderPickerIssuedDoneFailed:
+        'Failed to update the "issued done" mark; please retry',
       purchaseOrderPickerFullyLinkedMine:
         'This sheet already linked {{ton}} tons',
       purchaseOrderPickerFullyLinkedHint:

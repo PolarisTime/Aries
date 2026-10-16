@@ -6,16 +6,15 @@ import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { formatWeight } from '@/utils/formatters'
 import { linkedPurchaseOrderItemIds } from './core'
 import {
+  actualShippedTonOf,
   compactTonText,
   issuedBrandText,
-  issuedTonTotal,
   remainingTonDisplay,
-  remainingTonTotal,
-  selfAllocatedTonOf,
+  remainingUnshippedTon,
+  shippedTonTotal,
   tonProgressDetailRows,
   tonProgressDetailText,
-  tonProgressOverIssuedText,
-  tonProgressOverReportedText,
+  tonProgressOverShippedText,
   tonProgressTextParts,
 } from './ton-progress-text'
 import type { PriceRow } from './types'
@@ -95,24 +94,22 @@ function itemSpecText(record: PurchaseOrderTonnageRecord) {
  * 后出现"某列认得关联、某列显示未关联"的漂移。</p>
  */
 /**
- * 行级吨位合计: 一行可关联多张订单明细行, 订货量与「其他报单已开」都按**关联行合计**。
+ * 行级吨位合计: 一行可关联多张订单明细行, 订货量、报单占用与**真实已开货**都按关联行合计。
  *
- * <p>只有一条关联时合计等于该条, 历史行为完全不变; 未关联时 records 为空。</p>
+ * <p>只有一条关联时合计等于该条; 未关联时 records 为空。</p>
  *
  * <p>关联的明细行已不可见(订单被删 / 换规格导致不在选项里)时不再静默少算: 这些 id 由
  * `missingItemIds` 返回, 由调用方给出「已删除」之类的可读状态, 否则用户看到的是一个
  * 少算了缺失明细行的合计而毫无提示。</p>
+ *
+ * <p><b>三个吨位量各司其职, 不要混用</b>: `shippedTotal`(真实已开货, 入库回写)供已开货/剩余未开
+ * 两列; `issuedWeightTotal`(其他报价单的报单占用)只用于选单额度判断; `orderedTotal` 是订货额度,
+ * 在吨位列里只作参考。</p>
  */
 export function resolveLinkedTonnageTotals(
   row: PriceRow,
   options: PurchaseOrderTonnageRecord[],
   linked: PurchaseOrderTonnageRecord | undefined,
-  /**
-   * 本行当前报单吨位(编辑器里的本地值, 未保存也算)。
-   * 仅用于 `allocatedTon` 缺失时的兜底(历史单值三列形态: 本行报单量整体算在这一条上),
-   * 方案 A 下正常数据都带分配量, 不会走到这里。
-   */
-  reportedTon: number = row.ton ?? 0,
 ) {
   // 按 id 建一次索引: 关联行数固定, 逐条 find 是 O(关联数 × 选项数), 明明只需扫一遍
   const optionByItemId = new Map(
@@ -134,24 +131,13 @@ export function resolveLinkedTonnageTotals(
       (sum, record) => sum + record.orderedWeight,
       0,
     ),
-    otherIssuedTotal: records.reduce(
-      (sum, record) => sum + record.issuedWeight,
-      0,
+    /** 真实已开货合计(入库审核回写口径): 已开货列与剩余未开列的基数。 */
+    shippedTotal: shippedTonTotal(
+      records.map((record) => actualShippedTonOf(record.actualWeightTon)),
     ),
-    /*
-     * 本单据在这几条明细行上"本次开出"的分配量合计(方案 A 里"已占用"的本单那一份)。
-     * 取 purchaseOrderLinks[].allocatedTon; 缺失时按"等于本行报单量"兜底(历史单值三列形态),
-     * 于是单条关联的已占用/剩余与旧口径逐字相同(见 selfAllocatedTonOf)。
-     */
-    selfAllocatedTotal: linkedPurchaseOrderItemIds(row).reduce(
-      (sum, itemId) =>
-        sum +
-        selfAllocatedTonOf(
-          row.purchaseOrderLinks?.find(
-            (link) => link.purchaseOrderItemId === itemId,
-          )?.allocatedTon,
-          reportedTon,
-        ),
+    /** 其他报价单的报单占用合计: 只给选单/额度口径用, 不进吨位列的减法。 */
+    issuedWeightTotal: records.reduce(
+      (sum, record) => sum + record.issuedWeight,
       0,
     ),
   }
@@ -319,11 +305,14 @@ function LinkedStateLabel({
 }
 
 /**
- * 「剩余可开」单元格(方案 A): 剩余可开 = 关联订单额度合计 − 已占用合计。
+ * 「剩余未开」单元格(方案 B): 剩余未开 = 本单据报单吨位合计 − 真实已开货合计。
  *
- * <p>已占用 = 其他单据占用 + **本单据在该明细行的分配量**; 报单请求量不进这个减法
- * (它是需求)。列上保留紧凑写法(去尾零)并与「报单吨位」「已占用」并排核对; 若历史脏数据
- * 让已占用超过额度, 列上下限 0 并用「超开 X 吨」说明(超报单请求另有提示, 见 ⓘ)。</p>
+ * <p>基数必须是**本单据的报单吨位**(需求), 不是订单额度、也不是订货量 —— 那两者回答的是
+ * "订单还能开多少", 与"我报的量还差多少没开货"是两件事。已开货取关联明细行的
+ * `actualWeightTon`(入库审核回写), <b>不是</b> `issuedWeight`(别家报价单的报单占用)。</p>
+ *
+ * <p>已开货是订单行级事实、报单是单据级需求: 订单行被多张单据共享或本单只报一部分时,
+ * 剩余必然为负。业务明确要求原样显示负值并标红(不夹到 0), 由「已开超 X 吨」短语说明差额来源。</p>
  */
 export function IssuedTonCell({
   row,
@@ -339,52 +328,30 @@ export function IssuedTonCell({
   const phase = tonnageOptionsPhase({ loading, isError })
   const { selected } = resolveTonnageView(row, options, linked)
   /*
-   * 剩余可开 = 额度合计 − 已占用合计(已占用 = 其他单据占用 + 本单分配)。
+   * 剩余未开 = 报单吨位合计 − 已开货合计。
    * 一行可挂多张明细行: 只算第一条会让列上与同格 ⓘ 弹层出现两个数字(实测), 因此列上渲染、
-   * 标红判定与弹层都必须走同一份合计口径(单条关联时合计 = 该条, 历史值逐字不变)。
+   * 标红判定与弹层都必须走同一份合计口径(单条关联时合计 = 该条)。
    */
-  const totals = resolveLinkedTonnageTotals(
-    row,
-    options,
-    linked,
-    localTonForItem,
-  )
-  /*
-   * 「剩余」不显示负数: 方案 A 之后正常数据不会为负, 负值只可能来自历史脏数据; 列上下限 0,
-   * 超出量用独立短文案表达 —— 展示口径只此一处(remainingTonDisplay)。
-   */
-  const display = remainingTonDisplay(
-    totals.orderedTotal,
-    totals.otherIssuedTotal,
-    totals.selfAllocatedTotal,
-  )
+  const totals = resolveLinkedTonnageTotals(row, options, linked)
+  const display = remainingTonDisplay(localTonForItem, totals.shippedTotal)
   const overText =
     selected && display.overTon > 0
       ? t('priceCompare.sheet.purchaseOrderOverIssuedShort', {
           over: compactTonText(display.overTon),
         })
       : null
-  // 超占用(历史脏数据)与超报单请求是两件事: 前者解释"剩余为什么是 0", 后者说清"本单要多了"
+  // 已开超(订单到货已覆盖本单报的量): 说清差额来源, 而不是让用户自己猜为什么是负数
   const overSentence = selected
-    ? tonProgressOverIssuedText(
+    ? tonProgressOverShippedText(
         {
-          orderedTon: totals.orderedTotal,
-          issuedTon: issuedTonTotal(
-            totals.otherIssuedTotal,
-            totals.selfAllocatedTotal,
-          ),
+          reportedTon: localTonForItem,
+          shippedTon: totals.shippedTotal,
         },
         (key, options) => (options ? t(key, options) : t(key)),
       )
     : null
-  const overReportedSentence = selected
-    ? tonProgressOverReportedText(
-        { reportedTon: localTonForItem, orderedTon: totals.orderedTotal },
-        (key, options) => (options ? t(key, options) : t(key)),
-      )
-    : null
   const tooltipTitle =
-    [overSentence, overReportedSentence].filter(Boolean).join(' ') || null
+    overSentence ?? t('priceCompare.sheet.purchaseOrderSavedBasis')
   return (
     <div className="price-compare-ton-cell price-compare-ton-cell--readonly">
       {selected ? (
@@ -448,20 +415,7 @@ export function TonUnopenedCell({
   const phase = tonnageOptionsPhase({ loading, isError })
   const { selected, missingSnapshot } = resolveTonnageView(row, options, linked)
   // 合计口径只算一次: 弹层、气泡、列上数字与读屏文案全部取这一份, 避免多处各算一遍走偏
-  const totals = resolveLinkedTonnageTotals(
-    row,
-    options,
-    linked,
-    localTonForItem,
-  )
-  /*
-   * 每条关联明细行"本次开出"的分配吨位(弹层多行时逐条给出)。历史数据只有单值三列、
-   * 没有 purchaseOrderLinks: 那时本行报单吨位就整体算在这一条上。
-   */
-  const allocatedTonByItemId = new Map<string, number>()
-  for (const link of row.purchaseOrderLinks ?? []) {
-    allocatedTonByItemId.set(link.purchaseOrderItemId, link.allocatedTon)
-  }
+  const totals = resolveLinkedTonnageTotals(row, options, linked)
   /*
    * 明细行已不可见时不能静默少算: 用「已删除」短状态明示, 合计里缺了哪一条。
    * 选项未就绪时 missingItemIds 必然把全部关联行都算成缺失, 此时不能下"已删除"的结论。
@@ -477,8 +431,6 @@ export function TonUnopenedCell({
     <LinkedPurchaseOrderPopover
       records={totals.records.length > 0 ? totals.records : [selected]}
       orderedTotal={totals.orderedTotal}
-      otherIssuedTotal={totals.otherIssuedTotal}
-      allocatedTonByItemId={allocatedTonByItemId}
       localTonForItem={localTonForItem}
       unallocatedTon={unallocatedTonOf(row)}
       linkAllowed={purchaseOrderLinkAllowed}
@@ -535,58 +487,40 @@ export function TonUnopenedCell({
     )
   }
 
-  // 已占用 = 其他单据占用 + 本单据在该明细行的分配量(方案 A; 报单请求量不进这里)
-  const issuedTotal = issuedTonTotal(
-    totals.otherIssuedTotal,
-    totals.selfAllocatedTotal,
-  )
-  // 剩余可开 = 额度合计 − 已占用合计(正常数据不为负)
-  const remaining = remainingTonTotal(
-    totals.orderedTotal,
-    totals.otherIssuedTotal,
-    totals.selfAllocatedTotal,
-  )
+  // 已开货 = 关联明细行的真实已开货合计(入库回写口径; 不是别家报价单的报单占用)
+  const shipped = totals.shippedTotal
+  // 剩余未开 = 报单吨位 − 已开货(可为负: 订单到货已覆盖本单报的量)
+  const remaining = remainingUnshippedTon(localTonForItem, shipped)
   // 报单还没填(<=0)时没有基数可言: 显示短状态, 不显示误导性的合计
   const reportedMissing = localTonForItem <= 0
-  // 已占用超过额度(历史脏数据): 已占用那一行标红
-  const overIssued =
-    !reportedMissing &&
-    totals.orderedTotal > 0 &&
-    issuedTotal > totals.orderedTotal
-  // 报单请求超过额度: 另给提示, 不影响已占用/剩余
-  const overReported =
-    !reportedMissing &&
-    totals.orderedTotal > 0 &&
-    localTonForItem > totals.orderedTotal
+  /*
+   * 已开超: 该明细行的真实到货超过本单报单吨位。已开货是订单行级、报单是单据级, 订单行被多张
+   * 单据共享或本单只报一部分时必然出现, 属正常业务态; 按业务要求标红并原样显示负值。
+   */
+  const overShipped = !reportedMissing && shipped > localTonForItem
   // 可见数字与列宽计算共用同一份口径(ton-progress-text), 避免两处漂移
-  const { primary, brand } = tonProgressTextParts(
-    selected,
-    totals.selfAllocatedTotal,
-  )
+  const { primary, brand } = tonProgressTextParts(selected)
   /*
    * 弹层逐行与读屏整句共用同一份明细(口径函数只此一处), 否则"看到的"与"读出来的"会漂移。
    */
   const detailInput = {
     reportedTon: localTonForItem,
-    selfAllocatedTon: totals.selfAllocatedTotal,
-    otherIssuedTon: totals.otherIssuedTotal,
-    issuedTon: issuedTotal,
+    shippedTon: shipped,
     remainingTon: remaining,
     orderedTon: totals.orderedTotal,
     brand: brand || undefined,
-    overIssued,
-    overReported,
+    overShipped,
   }
   const detailRows = tonProgressDetailRows(detailInput)
-  // 超开说明只在一处生成(报单请求 / 关联订单额度 / 差额三个数), 弹层与读屏共用
-  const overIssuedText =
-    tonProgressOverIssuedText(detailInput, (key, options) =>
+  // 已开超说明只在一处生成(已开货 / 本单报单 / 差额三个数), 弹层与读屏共用
+  const overShippedText =
+    tonProgressOverShippedText(detailInput, (key, options) =>
       options ? t(key, options) : t(key),
     ) ?? undefined
   const ariaDetailText = tonProgressDetailText(
     detailInput,
     (key) => t(key),
-    overIssuedText,
+    overShippedText,
   )
   const detail = (
     <div className="price-compare-ton-tooltip">
@@ -600,8 +534,8 @@ export function TonUnopenedCell({
           </span>
         </div>
       ))}
-      {overIssuedText ? (
-        <div className="price-compare-ton-popover-over">{overIssuedText}</div>
+      {overShippedText ? (
+        <div className="price-compare-ton-popover-over">{overShippedText}</div>
       ) : null}
     </div>
   )
@@ -623,7 +557,7 @@ export function TonUnopenedCell({
           ) : (
             <span
               className={
-                overIssued
+                overShipped
                   ? 'price-compare-ton-meta price-compare-ton-issued price-compare-ton-hint--over'
                   : 'price-compare-ton-meta price-compare-ton-issued'
               }
@@ -633,7 +567,7 @@ export function TonUnopenedCell({
             </span>
           )}
           {reportedMissing ? null : brand ? (
-            <TonIssuedBrand brand={brand} over={overIssued} />
+            <TonIssuedBrand brand={brand} over={overShipped} />
           ) : null}
         </span>
       </Tooltip>
@@ -773,15 +707,14 @@ export function TonCell({
 /**
  * 已关联采购订单的明细弹层。
  *
- * <p>单条关联保持原样(订单号 / 供应商 / 规格 / 品牌 / 状态 + 吨位口径行)。多行关联时头部
- * 不再只报第一条 `selected` —— 那样会出现"订单号是第一条、数字却是合计"的两处打架:
- * 逐条列出订单号 / 规格 / 订货量 / 其他已开 / 本次开出, 再给出 Σ 口径的关联合计。</p>
+ * <p>口径与相邻两列逐字一致(同一行出现两个数字打架是实测踩过的坑):
+ * 已开货 = 关联明细行的真实已开货合计; 剩余未开 = 报单吨位 − 已开货。</p>
+ *
+ * <p>多行关联时头部逐条列出订单号 / 规格 / 订货量 / 真实已开货, 再给出 Σ 口径的关联合计。</p>
  */
 function LinkedPurchaseOrderPopover({
   records,
   orderedTotal,
-  otherIssuedTotal,
-  allocatedTonByItemId,
   localTonForItem,
   unallocatedTon,
   linkAllowed,
@@ -789,12 +722,8 @@ function LinkedPurchaseOrderPopover({
   onOpenPicker,
 }: {
   records: PurchaseOrderTonnageRecord[]
-  /** 关联明细行的订货量合计(与相邻两列同源: 由 resolveLinkedTonnageTotals 给出)。 */
+  /** 关联明细行的订货量合计(参考值, 不进剩余未开的减法)。 */
   orderedTotal: number
-  /** 关联明细行的其他已保存报单占用合计(同上)。 */
-  otherIssuedTotal: number
-  /** 每条明细行"本次开出"的分配吨位(多行关联时逐条给出)。 */
-  allocatedTonByItemId: Map<string, number>
   localTonForItem: number
   /** 本行报单吨位里还没落到订单明细行上的量(`ton − Σ分配量`, 欠额合法但要说清)。 */
   unallocatedTon: number
@@ -805,36 +734,17 @@ function LinkedPurchaseOrderPopover({
   const { t } = useTranslation()
   const selected = records[0]
   const multi = records.length > 1
-  // 口径必须与相邻两个吨位列逐字一致, 否则同一行会出现三个数字打架(实测踩过):
-  //   已开吨位 = 本单据该明细行报单合计 + 其他已保存报单占用(服务端 issuedWeight 只含"其他")
-  //   剩余未开吨位 = 订货吨位合计 − 已开吨位(负值 = 超开)
+  // 口径必须与相邻两个吨位列逐字一致, 否则同一行会出现三个数字打架(实测踩过)
   const reportedMissing = localTonForItem <= 0
   /*
-   * 方案 A: 已占用 = 其他单据占用 + 本单据在这几条明细行上的分配量合计。
-   * 弹层逐条列出"本次开出"用的就是 allocated_ton(见上面 per-link 行), 合计必须同源 ——
-   * 否则弹层合计数与逐条相加不相等(历史实测踩过"列上 20、弹层 18")。
+   * 已开货合计 = 各关联明细行的真实已开货之和(入库回写口径)。弹层逐条列出的"真实已开货"
+   * 必须与这个合计同源 —— 否则弹层合计数与逐条相加不相等(历史实测踩过"列上 20、弹层 18")。
    */
-  const selfAllocatedTotal = records.reduce(
-    (sum, record) =>
-      sum +
-      selfAllocatedTonOf(
-        allocatedTonByItemId.get(record.purchaseOrderItemId),
-        localTonForItem,
-      ),
-    0,
+  const shippedTotal = shippedTonTotal(
+    records.map((record) => actualShippedTonOf(record.actualWeightTon)),
   )
-  const issuedTotal = issuedTonTotal(otherIssuedTotal, selfAllocatedTotal)
-  const remaining = remainingTonTotal(
-    orderedTotal,
-    otherIssuedTotal,
-    selfAllocatedTotal,
-  )
-  const overOpened =
-    !reportedMissing && orderedTotal > 0 && issuedTotal > orderedTotal
-  // 报单请求超过额度: 与"已占用/剩余"分开表达
-  const overReported =
-    !reportedMissing && orderedTotal > 0 && localTonForItem > orderedTotal
-  const issuedMissing = reportedMissing
+  const remaining = remainingUnshippedTon(localTonForItem, shippedTotal)
+  const overShipped = !reportedMissing && shippedTotal > localTonForItem
   const brand = issuedBrandText(selected)
   return (
     <div className="price-compare-ton-popover">
@@ -865,14 +775,8 @@ function LinkedPurchaseOrderPopover({
               </div>
               <div className="price-compare-ton-popover-row">
                 <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-                <span>{tonValueText(record.issuedWeight)}</span>
-              </div>
-              <div className="price-compare-ton-popover-row">
-                <span>{t('priceCompare.sheet.purchaseOrderAllocatedTon')}</span>
                 <span>
-                  {tonValueText(
-                    allocatedTonByItemId.get(record.purchaseOrderItemId) ?? 0,
-                  )}
+                  {tonValueText(actualShippedTonOf(record.actualWeightTon))}
                 </span>
               </div>
             </Fragment>
@@ -907,64 +811,34 @@ function LinkedPurchaseOrderPopover({
             <span>{t('priceCompare.sheet.columns.purchaseOrderStatus')}</span>
             <span>{selected.status}</span>
           </div>
-          {!reportedMissing ? (
-            <div className="price-compare-ton-popover-row">
-              <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
-              <span>{tonValueText(localTonForItem)}</span>
-            </div>
-          ) : null}
-          <div className="price-compare-ton-popover-row">
-            <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-            <span>{tonValueText(otherIssuedTotal)}</span>
-          </div>
         </>
       )}
-      {multi && !reportedMissing ? (
+      {!reportedMissing ? (
         <div className="price-compare-ton-popover-row">
           <span>{t('priceCompare.sheet.purchaseOrderSheetReported')}</span>
           <span>{tonValueText(localTonForItem)}</span>
         </div>
       ) : null}
-      {multi ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
-          <span>{tonValueText(otherIssuedTotal)}</span>
-        </div>
-      ) : null}
-      {/*
-        欠额提示(只在多行分区): 报单吨位没被分配量合计吃满时, 差额既不在"已开"里也不在
-        "剩余"里, 不说清用户会以为分摊漏了。Σ分配量 ≠ Σ订货量, 缺口只减分配量。
-      */}
-      {multi && unallocatedTon > 0 ? (
-        <div className="price-compare-ton-popover-shortfall">
-          {t('priceCompare.sheet.purchaseOrderUnallocatedTon', {
-            ton: compactTonText(unallocatedTon),
-          })}
-        </div>
-      ) : null}
-      {/* 本单分配(方案 A 里"已占用"的本单那一份): 与报单请求并列, 说清请求 vs 实际分配 */}
-      {!reportedMissing ? (
-        <div className="price-compare-ton-popover-row">
-          <span>{t('priceCompare.sheet.purchaseOrderSelfAllocated')}</span>
-          <span>{tonValueText(selfAllocatedTotal)}</span>
-        </div>
-      ) : null}
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.issuedTon')}</span>
-        {issuedMissing ? (
+        {reportedMissing ? (
           <span>{t('priceCompare.sheet.purchaseOrderMissingTonShort')}</span>
         ) : (
           <span
-            className={overOpened ? 'price-compare-ton-hint--over' : undefined}
+            className={overShipped ? 'price-compare-ton-hint--over' : undefined}
           >
-            {tonValueText(issuedTotal)}
+            {tonValueText(shippedTotal)}
           </span>
         )}
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.unopenedTon')}</span>
-        {/* 同"剩余"口径: 下限 0, 超开量由下方专句解释(三个数) */}
-        <span>{tonValueText(Math.max(0, remaining))}</span>
+        {/* 已开超时按业务要求原样显示负值, 差额由下方专句解释(三个数) */}
+        <span
+          className={overShipped ? 'price-compare-ton-hint--over' : undefined}
+        >
+          {tonValueText(remaining)}
+        </span>
       </div>
       <div className="price-compare-ton-popover-row">
         <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
@@ -976,19 +850,23 @@ function LinkedPurchaseOrderPopover({
           <span>{brand}</span>
         </div>
       ) : null}
-      {overOpened ? (
-        <div className="price-compare-ton-popover-over">
-          {tonProgressOverIssuedText(
-            { orderedTon: orderedTotal, issuedTon: issuedTotal },
-            (key, options) => (options ? t(key, options) : t(key)),
-          )}
+      {/*
+        欠额提示(多行关联): 报单吨位没被分配量合计吃满时, 差额既不在"已开货"里也不在
+        "剩余未开"里(剩余未开只减已开货), 不说清用户会以为分摊漏了。
+        与「Σ订货量」无关 —— 缺口只减分配量。
+      */}
+      {multi && unallocatedTon > 0 ? (
+        <div className="price-compare-ton-popover-shortfall">
+          {t('priceCompare.sheet.purchaseOrderUnallocatedTon', {
+            ton: compactTonText(unallocatedTon),
+          })}
         </div>
       ) : null}
-      {/* 超报单请求: 本单要的比这条订货行给的多, 与剩余可开是两件事 */}
-      {overReported ? (
+      {/* 已开超: 该明细行的到货已覆盖本单报的量, 说清差额来源 */}
+      {overShipped ? (
         <div className="price-compare-ton-popover-over">
-          {tonProgressOverReportedText(
-            { reportedTon: localTonForItem, orderedTon: orderedTotal },
+          {tonProgressOverShippedText(
+            { reportedTon: localTonForItem, shippedTon: shippedTotal },
             (key, options) => (options ? t(key, options) : t(key)),
           )}
         </div>

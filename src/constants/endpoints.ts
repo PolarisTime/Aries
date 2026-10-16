@@ -120,6 +120,9 @@ export const ENDPOINTS = {
   /** 强制结单子资源：POST 结单（剩余未入库件数作废），DELETE 撤销结单。 */
   PURCHASE_ORDER_FORCE_CLOSURES: (id: string | number) =>
     `/purchase-orders/${pathSegment(id)}/force-closures`,
+  /** 采购订单明细行「已开完」手动标记: PUT 设置(200) / DELETE 取消(204)。 */
+  PURCHASE_ORDER_ITEM_ISSUED_DONE: (itemId: string | number) =>
+    `/purchase-order-items/${pathSegment(itemId)}/issued-done`,
 
   // Sales orders
   SALES_ORDER_PURCHASE_SOURCE_CANDIDATES: '/sales-orders/source-candidates',

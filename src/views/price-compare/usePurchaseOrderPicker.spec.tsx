@@ -32,6 +32,8 @@ const record: PurchaseOrderTonnageRecord = {
   orderedWeight: 40,
   issuedWeight: 30,
   remainingWeight: 10,
+  actualWeightTon: null,
+  issuedDone: false,
   status: '正常',
 }
 
@@ -166,6 +168,8 @@ describe('usePurchaseOrderPicker 关联回写', () => {
     orderedWeight: 60,
     issuedWeight: 20,
     remainingWeight: 40,
+    actualWeightTon: null,
+    issuedDone: false,
   }
   const secondLinkable: PurchaseOrderTonnageRecord = {
     ...record,
@@ -175,6 +179,8 @@ describe('usePurchaseOrderPicker 关联回写', () => {
     orderedWeight: 70,
     issuedWeight: 0,
     remainingWeight: 70,
+    actualWeightTon: null,
+    issuedDone: false,
   }
 
   const checkInput = (orderNo: string) =>

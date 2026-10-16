@@ -36,6 +36,8 @@ function poRecord(
     orderedWeight: 12,
     issuedWeight: 0,
     remainingWeight: 12,
+    actualWeightTon: null,
+    issuedDone: false,
     status: '正常',
     ...overrides,
   }
@@ -125,10 +127,10 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     }
   })
 
-  it('未开吨位列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
-    // 本单据报 40 吨 / 已开 0 ⇒ 文案「40 · 中天钢铁」
+  it('已开货列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
+    // 真实已开货 40 吨 ⇒ 文案「40 · 中天钢铁」
     const widths = render(
-      [poRecord({ orderedWeight: 40, issuedWeight: 0, brand: '中天钢铁' })],
+      [poRecord({ actualWeightTon: 40, brand: '中天钢铁' })],
       new Map([['301', 40]]),
     )
     const numberOnly = requiredTonColumnWidth(tonProgressLineWidth('40', ''))
@@ -142,31 +144,31 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
   })
 
-  it('取单据里最长的一条已开吨位文案定宽(本单报单 + 其他报单)', () => {
+  it('取单据里最长的一条已开货文案定宽(真实入库)', () => {
     const short = poRecord({ purchaseOrderItemId: '301', brand: '中天' })
     const long = poRecord({
       purchaseOrderItemId: '302',
       brand: '中天钢铁',
       orderedWeight: 128,
-      issuedWeight: 12.5,
+      actualWeightTon: 132.5,
     })
-    // 明细 302 已开 120 + 12.5 = 132.5; 千分位吨位(8,884.5)也要能被覆盖
+    // 明细 302 的真实已开货 132.5; 千分位吨位(8,884.5)也要能被覆盖
     const widths = render([short, long], new Map([['302', 120]]))
-    const parts = tonProgressTextParts(long, 120)
+    const parts = tonProgressTextParts(long)
     expect(parts.primary).toBe('132.5')
     expect(widths.unopenedTon).toBe(
       requiredTonColumnWidth(
         tonProgressLineWidth(parts.primary, parts.brand),
-        estimateSheetTextWidth('已开吨位', SHEET_WIDTH_BASE_FONT_SIZE),
+        estimateSheetTextWidth('已开货', SHEET_WIDTH_BASE_FONT_SIZE),
       ),
     )
     expect(widths.unopenedTon).toBeGreaterThan(
       requiredTonColumnWidth(tonProgressLineWidth('132.5', '中天')),
     )
-    // 剩余未开列按最长的一条剩余吨位定宽(订货 128 − 已开 132.5 = −4.5)
+    // 剩余未开列按最长的一条剩余吨位定宽(报单 120 − 已开货 132.5 = −12.5)
     expect(widths.issuedTon).toBe(
       requiredIssuedTonColumnWidth(
-        estimateSheetTextWidth('-4.5', TON_PROGRESS_FONT_SIZE),
+        estimateSheetTextWidth('-12.5', TON_PROGRESS_FONT_SIZE),
       ),
     )
   })

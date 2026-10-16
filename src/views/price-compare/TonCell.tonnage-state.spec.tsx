@@ -36,6 +36,8 @@ const linkedRecord: PurchaseOrderTonnageRecord = {
   orderedWeight: 60,
   issuedWeight: 20,
   remainingWeight: 40,
+  actualWeightTon: null,
+  issuedDone: false,
   status: '正常',
 }
 
@@ -47,6 +49,8 @@ const secondRecord: PurchaseOrderTonnageRecord = {
   orderedWeight: 70,
   issuedWeight: 0,
   remainingWeight: 70,
+  actualWeightTon: null,
+  issuedDone: false,
 }
 
 const baseRow: PriceRow = {
@@ -158,52 +162,72 @@ describe('吨位关联的三态与欠额展示', () => {
     })
   }
 
-  it('超开时「剩余未开」显示 0 + 超开短文案, 不再显示负的剩余', async () => {
-    // 关联订单额度 19.98、本单据报单 30、其他占用 0 ⇒ 数学上超开 10.02
-    const overRow: PriceRow = {
+  it('已开货小于本单报单吨位时「剩余未开」为正, 无已开超短文案', () => {
+    // 报单 30、真实已开货 19.98 ⇒ 剩余 10.02(未超出, 不标红)
+    const row: PriceRow = {
       ...baseRow,
       ton: 30,
       purchaseOrderItemId: '301',
       purchaseOrderNo: 'PO-88',
     }
-    const overRecord: PurchaseOrderTonnageRecord = {
+    const record: PurchaseOrderTonnageRecord = {
       ...linkedRecord,
       orderedWeight: 19.98,
       issuedWeight: 0,
       remainingWeight: 19.98,
+      actualWeightTon: 19.98,
+      issuedDone: false,
     }
-    render(overRow, [overRecord], { loading: false, localTonForItem: 30 })
+    render(row, [record], { loading: false, localTonForItem: 30 })
 
-    // 用户实测反馈: 「剩余 −10.02」无法理解 —— 列上必须下限 0
-    expect(container.textContent).not.toContain('-10.02')
     expect(
       container.querySelector('.price-compare-ton-remaining')?.textContent,
-    ).toBe('0超开 10.02 吨')
-
-    // 悬浮说明把三个数一次摆清: 报单请求 / 关联订单额度 / 差额
-    const bubble = await bubbleTextOf(
-      container.querySelector<HTMLElement>('.price-compare-ton-remaining') ??
-        container,
-    )
-    // 本单分配(兜底为报单量 30) > 额度 19.98 ⇒ 既超占用也超报单请求, 两句都给
-    expect(bubble).toContain(
-      '已占用 30.000 吨 > 关联订单额度 19.980 吨 ⇒ 超出 10.020 吨',
-    )
-    expect(bubble).toContain(
-      '报单请求 30.000 吨 > 关联订单额度 19.980 吨 ⇒ 超出 10.020 吨',
-    )
+    ).toBe('10.02')
+    expect(container.querySelector('.price-compare-ton-over-flag')).toBeNull()
   })
 
-  it('未超开时「剩余未开」仍按原值显示, 没有超开文案', () => {
-    // 订货 60、报单 5、其他 20 ⇒ 剩余 35
+  it('已开货 > 本单报单吨位时剩余原样显示负值并标红(方案 B 的核心变更)', () => {
+    /*
+     * 真实数据形态: 订单行 344131687053008896 真实已开货 32.768, 而本单据报单只有 17
+     * (订单行被多张单据共享)。已开货是订单行级事实, 因此剩余必然为负 —— 业务明确要求
+     * 原样显示负值并标红, 不夹到 0。
+     */
+    const overRow: PriceRow = {
+      ...baseRow,
+      ton: 17,
+      purchaseOrderItemId: '301',
+      purchaseOrderNo: 'PO-88',
+    }
+    const overRecord: PurchaseOrderTonnageRecord = {
+      ...linkedRecord,
+      actualWeightTon: 32.768,
+      issuedWeight: 999,
+    }
+    render(overRow, [overRecord], { loading: false, localTonForItem: 17 })
+
+    const cell = container.querySelector('.price-compare-ton-remaining')
+    // 17 − 32.768 = −15.768, 必须原样显示(夹到 0 的实现会得到 '0已开超 15.768 吨')
+    expect(cell?.textContent).toContain('-15.768')
+    expect(cell?.textContent).not.toContain('0已开超')
+    // 已开超必须标红 + 给短文案
+    expect(cell?.textContent).toContain('已开超 15.768 吨')
+    expect(
+      container.querySelector('.price-compare-ton-figure')?.className,
+    ).toContain('price-compare-ton-hint--over')
+    // issuedWeight(999)绝不参与: 谁把它接进已开货, 这里会变成 -982
+    expect(cell?.textContent).not.toContain('982')
+  })
+
+  it('未已开超时「剩余未开」仍按原值显示, 没有已开超文案', () => {
+    // 报单 40、真实已开货 12 ⇒ 剩余 28(与 issuedWeight 30 无关)
     render(
       { ...baseRow, purchaseOrderItemId: '301', purchaseOrderNo: 'PO-88' },
-      [linkedRecord],
-      { loading: false, localTonForItem: 5 },
+      [{ ...linkedRecord, actualWeightTon: 12, issuedWeight: 30 }],
+      { loading: false, localTonForItem: 40 },
     )
     const cell = container.querySelector('.price-compare-ton-remaining')
-    expect(cell?.textContent).toBe('35')
-    expect(container.textContent).not.toContain('超开')
+    expect(cell?.textContent).toBe('28')
+    expect(container.textContent).not.toContain('已开超')
   })
 
   /** 悬浮/聚焦短状态标签, 读出气泡文案。 */
@@ -385,19 +409,22 @@ describe('吨位关联的三态与欠额展示', () => {
   /**
    * 「剩余未开吨位」列的渲染口径(回归: 多行关联时只算第一条, 与同格弹层的合计值打架)。
    *
-   * <p>实测: ton=20 + 两张订货各 7.996 ⇒ 单条口径 −12.004(7.996 − 20), 合计口径
-   * −4.008(15.992 − 20), 同一格两个数字。列上必须给合计值, 且与标红判定、ⓘ 弹层一致。</p>
+   * <p>方案 B: 已开货取各关联明细行的**真实已开货合计**。一行挂两条时必须给合计值, 只算
+   * 第一条会让同一格的两个出口出现不同数字。两条明细行的已开货刻意取不同值(7.996 / 2),
+   * 合计 9.996 ⇒ 剩余 20 − 9.996 = 10.004; 只算第一条会得到 12.004 —— 两者必须可区分。</p>
    */
-  it('多行关联时「剩余未开吨位」列按关联行合计渲染(不是只算第一条)', () => {
+  it('多行关联时「剩余未开吨位」列按关联行已开货合计渲染(不是只算第一条)', () => {
     const recordA: PurchaseOrderTonnageRecord = {
       ...linkedRecord,
       orderedWeight: 7.996,
       issuedWeight: 0,
+      actualWeightTon: 7.996,
     }
     const recordB: PurchaseOrderTonnageRecord = {
       ...secondRecord,
       orderedWeight: 7.996,
       issuedWeight: 0,
+      actualWeightTon: 2,
     }
     render(
       {
@@ -416,7 +443,6 @@ describe('吨位关联的三态与欠额展示', () => {
             purchaseOrderId: '99',
             purchaseOrderNo: 'PO-99',
             purchaseOrderItemId: '302',
-            // 第二条只分配一部分: 这样"合计口径"与"只算第一条"必然给出不同的数
             allocatedTon: 3,
           },
         ],
@@ -427,20 +453,15 @@ describe('吨位关联的三态与欠额展示', () => {
     const cell = container.querySelector<HTMLElement>(
       '.price-compare-ton-remaining',
     )
-    /*
-     * 方案 A 合计口径: 额度 7.996 + 7.996 = 15.992, 已占用 = 本单分配(7.996 + 3) + 其他 0
-     * = 10.996 ⇒ 剩余 4.996。只算第一条会得到 7.996 − 7.996 = 0 —— 两者必须可区分。
-     */
-    expect(cell?.textContent).toBe('4.996')
-    expect(cell?.textContent).not.toBe('0')
-    // 未超占用: 不标红、无超开徽标
+    // 合计口径: 20 − (7.996 + 2) = 10.004
+    expect(cell?.textContent).toBe('10.004')
+    // 只算第一条会得到 20 − 7.996 = 12.004, 必须能区分
+    expect(cell?.textContent).not.toBe('12.004')
+    // 未已开超: 不标红、无短文案
     expect(container.querySelector('.price-compare-ton-over-flag')).toBeNull()
-    expect(
-      container.querySelector('.price-compare-ton-figure')?.className,
-    ).not.toContain('price-compare-ton-hint--over')
   })
 
-  it('单条关联的「剩余未开吨位」逐字不变(合计 = 该条)', () => {
+  it('单条关联时剩余未开 = 报单吨位 − 该明细行真实已开货', () => {
     render(
       {
         ...baseRow,
@@ -448,13 +469,21 @@ describe('吨位关联的三态与欠额展示', () => {
         purchaseOrderItemId: '301',
         purchaseOrderNo: 'PO-88',
       },
-      [{ ...linkedRecord, orderedWeight: 40, issuedWeight: 30 }],
+      // 真实已开货 12(issuedWeight 30 是别家报单占用, 绝不能进这个减法)
+      [
+        {
+          ...linkedRecord,
+          orderedWeight: 40,
+          issuedWeight: 30,
+          actualWeightTon: 12,
+        },
+      ],
       { loading: false, localTonForItem: 40 },
     )
-    // 超开: 列上 0 + 超开 30, 不再显示 −30
+    // 40 − 12 = 28; 误用 issuedWeight 会得到 10
     expect(
       container.querySelector<HTMLElement>('.price-compare-ton-remaining')
         ?.textContent,
-    ).toBe('0超开 30 吨')
+    ).toBe('28')
   })
 })

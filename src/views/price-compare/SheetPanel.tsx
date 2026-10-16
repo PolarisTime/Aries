@@ -2687,26 +2687,20 @@ export function SheetPanel(props: Props) {
           row.purchaseOrderItemId
             ? purchaseOrderTonnage.tonnageByItemId.get(row.purchaseOrderItemId)
             : undefined,
-          localReportedTon,
         )
-        // 方案 A: 已占用取"本单分配合计"(allocated_ton), 不是本行报单量
+        // 方案 B: 剩余未开 = 本行报单吨位 − 真实已开货(入库回写), 与列上渲染同源
         const display = remainingTonDisplay(
-          totals.orderedTotal,
-          totals.otherIssuedTotal,
-          totals.selfAllocatedTotal,
+          localReportedTon,
+          totals.shippedTotal,
         )
-        // 超占用行在 0 之后还有一段「超开 X 吨」, 列宽候选必须与渲染同源
+        // 已开超行在负值之后还有一段「已开超 X 吨」, 列宽候选必须与渲染同源
         return [
           display.overTon > 0
             ? `${display.text} ${t(
                 'priceCompare.sheet.purchaseOrderOverIssuedShort',
                 { over: compactTonText(display.overTon) },
               )}`
-            : remainingTonText(
-                totals.orderedTotal,
-                totals.otherIssuedTotal,
-                totals.selfAllocatedTotal,
-              ),
+            : remainingTonText(localReportedTon, totals.shippedTotal),
         ]
       }),
     [

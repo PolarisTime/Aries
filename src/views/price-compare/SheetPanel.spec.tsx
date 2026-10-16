@@ -1249,7 +1249,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerText).not.toContain('沙钢')
   })
 
-  it('列显示可隐藏「已占用」与「剩余可开」两个吨位列', async () => {
+  it('列显示可隐藏「已开货」与「剩余未开」两个吨位列', async () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
@@ -1262,11 +1262,11 @@ describe('SheetPanel 指定品牌展示', () => {
     )
     const headerTextOf = () =>
       container.querySelector('.ant-table-thead')?.textContent ?? ''
-    expect(headerTextOf()).toContain('已占用')
-    expect(headerTextOf()).toContain('剩余可开')
+    expect(headerTextOf()).toContain('已开货')
+    expect(headerTextOf()).toContain('剩余未开')
 
     await openColumnSettings()
-    for (const label of ['已占用', '剩余可开']) {
+    for (const label of ['已开货', '剩余未开']) {
       const toggle = Array.from(
         document.body.querySelectorAll<HTMLElement>(
           '.price-compare-column-settings .ant-checkbox-wrapper',
@@ -1281,8 +1281,8 @@ describe('SheetPanel 指定品牌展示', () => {
       })
     }
 
-    expect(headerTextOf()).not.toContain('已占用')
-    expect(headerTextOf()).not.toContain('剩余可开')
+    expect(headerTextOf()).not.toContain('已开货')
+    expect(headerTextOf()).not.toContain('剩余未开')
     // 报单吨位列是必填列, 不参与显隐
     expect(headerTextOf()).toContain('报单吨位')
 
@@ -1386,6 +1386,8 @@ describe('SheetPanel 指定品牌展示', () => {
       orderedWeight,
       issuedWeight: 0,
       remainingWeight: orderedWeight,
+      actualWeightTon: null,
+      issuedDone: false,
       status: '正常',
     }
     return {
@@ -1671,7 +1673,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
   })
 
-  it('主流程: 已开吨位 = 锁定后报单 + 其他报单, 剩余未开 = 订货 − 已开', async () => {
+  it('主流程: 已开货 = 该明细行真实入库, 剩余未开 = 锁定后报单 − 已开货', async () => {
     const poRecord: PurchaseOrderTonnageRecord = {
       purchaseOrderId: '88',
       purchaseOrderItemId: '301',
@@ -1683,8 +1685,12 @@ describe('SheetPanel 指定品牌展示', () => {
       length: '9米',
       brand: '中天',
       orderedWeight: 32.768,
-      issuedWeight: 5,
-      remainingWeight: 27.768,
+      // issuedWeight 是别家报价单的报单占用(选单额度口径), 刻意与真实已开货取不同值:
+      // 吨位列只认 actualWeightTon, 谁把它接回 issuedWeight, 下面的 5/7 就必然变红
+      issuedWeight: 20,
+      remainingWeight: 12.768,
+      actualWeightTon: 5,
+      issuedDone: false,
       status: '正常',
     }
     renderStateful(
@@ -1692,7 +1698,7 @@ describe('SheetPanel 指定品牌展示', () => {
       [
         {
           ...baseRow,
-          // 本单据手填 12: 只影响「报单吨位」列, 不进"已开/未开"两个口径
+          // 本单据手填 12: 只影响「报单吨位」列, 不进"已开货/剩余未开"两个口径
           ton: 12,
           locked: true,
           purchaseOrderId: '88',
@@ -1711,18 +1717,25 @@ describe('SheetPanel 指定品牌展示', () => {
         isError: false,
       },
     )
-    // 本单据报 12 吨(锁定) + 其他报单已开 5 = 已开合计 17
+    // 已开货 = 该明细行真实入库 5 吨(方案 B; 不是"报单 + 别家占用")
     const issuedCell = container.querySelector<HTMLElement>(
       '.price-compare-ton-issued',
     )
-    expect(issuedCell?.textContent).toContain('17')
+    /*
+     * 已开货单元格含读屏全文 + 可见数字, 因此用"必须出现 5、绝不出现 17"来区分新旧口径:
+     * 旧口径(本单报单 12 + 别家占用 5)会得到 17, 新口径只认真实入库 5。
+     */
+    expect(issuedCell?.textContent).toContain('5')
+    expect(issuedCell?.textContent).not.toContain('17')
+    // 可见数字紧跟读屏文本, 末位即品牌前的数字
+    expect(issuedCell?.textContent?.endsWith('5')).toBe(true)
     expect(
       container.querySelector('.price-compare-ton-progress')?.textContent,
     ).toContain('中天')
-    // 剩余未开单独一列: 订货 32.768 − 已开 17 = 15.768
+    // 剩余未开单独一列: 报单 12 − 已开货 5 = 7(订货 32.768 只作参考, 不进这个减法)
     expect(
       container.querySelector('.price-compare-ton-figure')?.textContent,
-    ).toBe('15.768')
+    ).toBe('7')
     // 报单吨位列只放输入框
     const tonInput = container.querySelector<HTMLInputElement>(
       'input[data-ton="r1"]',
@@ -1735,17 +1748,17 @@ describe('SheetPanel 指定品牌展示', () => {
     })
     const tooltipText =
       document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
-    // 口径顺序: 本单报单 → 其他报单已开 → 已开吨位 → 剩余未开 → 订货(参考)
+    // 口径顺序: 本单报单 → 已开货 → 剩余未开 → 订货(参考)
     expect(tooltipText).toContain('本单该明细行报单')
     expect(tooltipText).toContain('12.000')
-    expect(tooltipText).toContain('其他单据占用')
+    expect(tooltipText).toContain('已开货')
     expect(tooltipText).toContain('5.000')
-    expect(tooltipText).toContain('已占用（含本单分配）')
-    expect(tooltipText).toContain('17.000')
-    expect(tooltipText).toContain('剩余可开')
-    expect(tooltipText).toContain('15.768')
+    expect(tooltipText).toContain('剩余未开')
+    expect(tooltipText).toContain('7.000')
     expect(tooltipText).toContain('订货吨位')
     expect(tooltipText).toContain('32.768')
+    // 别家报价单的报单占用(20)不得出现在吨位弹层里
+    expect(tooltipText).not.toContain('20.000')
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
@@ -1763,6 +1776,8 @@ describe('SheetPanel 指定品牌展示', () => {
       orderedWeight: 128,
       issuedWeight: 12.5,
       remainingWeight: 115.5,
+      actualWeightTon: 132.5,
+      issuedDone: false,
       status: '正常',
     }
     renderStateful(
@@ -1789,19 +1804,19 @@ describe('SheetPanel 指定品牌展示', () => {
       },
     )
 
-    // 列宽必须覆盖整段「132.5 · 中天钢铁」(已开 = 本单报 120 + 其他报单 12.5)
-    const parts = tonProgressTextParts(poRecord, 120)
+    // 列宽必须覆盖整段「132.5 · 中天钢铁」(已开货 = 该明细行真实入库 132.5)
+    const parts = tonProgressTextParts(poRecord)
     expect(parts.primary).toBe('132.5')
-    // 列宽 = max(内容宽, 表头宽): 表头「已开吨位」「未开吨位」按个人字号渲染,
+    // 列宽 = max(内容宽, 表头宽): 表头「已开货」「剩余未开」按个人字号渲染,
     // 内容数字固定 11px, 表头常常是更宽的一方(不算进来列头会折行)
     const headerFontSize = 14
     const needed = requiredTonColumnWidth(
       tonProgressLineWidth(parts.primary, parts.brand),
-      estimateSheetTextWidth('未开吨位', headerFontSize),
+      estimateSheetTextWidth('已开货', headerFontSize),
     )
     const issuedNeeded = requiredIssuedTonColumnWidth(
-      estimateSheetTextWidth('12.500', TON_PROGRESS_FONT_SIZE),
-      estimateSheetTextWidth('已占用（含本单分配）', headerFontSize),
+      estimateSheetTextWidth('-12.5', TON_PROGRESS_FONT_SIZE),
+      estimateSheetTextWidth('剩余未开', headerFontSize),
     )
     const colStyles = [...container.querySelectorAll('colgroup col')].map(
       (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
@@ -1812,7 +1827,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(needed).toBeGreaterThan(
       requiredTonColumnWidth(
         0,
-        estimateSheetTextWidth('未开吨位', headerFontSize),
+        estimateSheetTextWidth('已开货', headerFontSize),
       ),
     )
   })

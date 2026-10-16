@@ -2705,9 +2705,9 @@ export const zhCN = {
         purchaseOrderOrdered: '订货吨位',
         purchaseOrderIssued: '已开吨位',
         purchaseOrderRemaining: '剩余吨位',
-        /** 吨位三列: 报单吨位(输入) / 已开吨位 / 未开吨位(订货 − 已开)。 */
-        issuedTon: '已占用（含本单分配）',
-        unopenedTon: '剩余可开',
+        /** 吨位三列: 报单吨位(输入) / 已开货(真实入库) / 剩余未开(报单 − 已开货)。 */
+        issuedTon: '已开货',
+        unopenedTon: '剩余未开',
         purchaseOrderStatus: '状态',
       },
       /** 右键菜单: 行操作与品牌列头操作(与可见按钮共用同一份动作) */
@@ -2798,47 +2798,44 @@ export const zhCN = {
       purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
       purchaseOrderOverLimit: '（超额）',
       purchaseOrderSavedBasis:
-        '已占用 = 其他单据占用 + 本单分配（本次开出）；剩余可开 = 关联订单额度 − 已占用；报单请求另计',
+        '已开货 = 关联明细行的真实入库合计（入库审核回写）；剩余未开 = 报单吨位 − 已开货；订货吨位仅作参考',
       purchaseOrderMissing: '{{orderNo}}（订单已删除）',
       purchaseOrderMissingHint: '关联订单已删除，请重新选择',
       /** 吨位口径两列的短状态: 该行还没关联订单明细行, 因此没有已开/未开口径。 */
       purchaseOrderNotLinkedShort: '未关联',
       purchaseOrderNotLinkedHint:
-        '该行还未关联采购订单明细行；点右侧 ⓘ 选择后显示已开吨位与未开吨位',
+        '该行还未关联采购订单明细行；点右侧 ⓘ 选择后显示已开货与剩余未开',
       /** 关联的明细行已不在选项里(订单被删)时的短状态。 */
       purchaseOrderMissingShort: '已删除',
       purchaseOrderLoadFailed:
-        '采购订单吨位加载失败，已开/剩余吨位暂不可用；不影响吨位填写与保存',
-      purchaseOrderIssuedShort: '已开 {{issued}}',
+        '采购订单吨位加载失败，已开货/剩余未开暂不可用；不影响吨位填写与保存',
+      purchaseOrderIssuedShort: '已开货 {{issued}}',
       /**
        * 欠额提示: 本行报单吨位 − 已关联明细行的分配量合计(欠额合法, 只提示不阻断保存)。
        * 与「Σ订货量」无关 —— 那个量用于遮蔽判定。
        */
       purchaseOrderUnallocatedTon: '还有 {{ton}} 吨未落到订单上',
       /**
-       * 吨位格可见文案: 剩余 = 本单据该明细行报单吨位 − 已开吨位, 直接给"还能开多少"。
-       * 已开超过本单报单量时改说「已开超 {{weight}}」并转警告色; 完整口径在悬浮明细里。
+       * 吨位格可见文案: 剩余未开 = 本单据该明细行报单吨位 − 已开货, 直接给"还差多少没开货"。
+       * 已开货超过本单报单量时原样显示负值并转警告色; 完整口径在悬浮明细里。
        */
       purchaseOrderRemainingShort: '剩余 {{weight}}',
       /** 悬浮明细里的本单据口径: 该订单明细行在本单据的报单吨位合计。 */
       purchaseOrderSheetReported: '本单该明细行报单',
-      /** 已占用里"其他单据"那一份(服务端 issuedWeight, 不含本单据)。 */
-      purchaseOrderIssuedActual: '其他单据占用',
-      /** 本单据在这条明细行上"本次开出"的分配量(allocated_ton 口径)。 */
-      purchaseOrderSelfAllocated: '本单分配（本次开出）',
+      /** 已开货的来源: 服务端 actualWeightTon(入库审核回写, Σ生效入库单过磅重量)。 */
+      purchaseOrderIssuedActual: '真实已开货',
+      /** 采购订单该明细行的订货吨位(参考值, 不参与剩余未开的减法)。 */
+      purchaseOrderSelfAllocated: '订货吨位（参考）',
       purchaseOrderDetail: '采购订单明细',
       purchaseOrderUnlinked: '未关联采购订单',
       /**
-       * 「剩余可开」下限 0 的兜底文案: 历史脏数据(已占用 > 额度)才用这段短文案独立表达。
-       * 差额 = 已占用合计 − 关联订单额度(与 remainingTonDisplay 同源)。
+       * 已开超短文案: 已开货超过本单报单吨位(订单行被别人共享或本单只报一部分时必然出现)。
+       * 差额 = 已开货合计 − 本单报单吨位(与 remainingTonDisplay 同源)。
        */
-      purchaseOrderOverIssuedShort: '超开 {{over}} 吨',
-      /** 超占用说明(唯一来源): 已占用、关联订单额度、差额三个数一次摆清。 */
-      purchaseOrderOverIssuedDetail:
-        '已占用 {{issued}} 吨 > 关联订单额度 {{ordered}} 吨 ⇒ 超出 {{over}} 吨',
-      /** 超报单请求说明(唯一来源): 请求量超过额度, 与"剩余可开"是两件事。 */
-      purchaseOrderOverReportedDetail:
-        '报单请求 {{reported}} 吨 > 关联订单额度 {{ordered}} 吨 ⇒ 超出 {{over}} 吨',
+      purchaseOrderOverIssuedShort: '已开超 {{over}} 吨',
+      /** 已开超说明(唯一来源): 已开货、本单报单吨位、差额三个数一次摆清。 */
+      purchaseOrderOverShippedDetail:
+        '已开货 {{shipped}} 吨 > 本单报单吨位 {{reported}} 吨 ⇒ 超出 {{over}} 吨（该明细行的到货已覆盖本单报的量）',
       /** 已关联订单明细行但报单吨位还没填: 未开吨位没有可减的基数。 */
       purchaseOrderMissingTonShort: '未填吨位',
       purchaseOrderMissingTonHint:
@@ -2865,6 +2862,12 @@ export const zhCN = {
       purchaseOrderPickerShowFullyLinked: '显示已关联完的订单（{{count}}）',
       /** 剩余为 0 的行在开关打开后的标记: 可见但不可选。 */
       purchaseOrderPickerFullyLinkedTag: '已关联完',
+      /** 人工标记「已开完」的行默认隐藏; 开关只在本弹窗内生效。 */
+      purchaseOrderPickerShowIssuedDone: '显示已开完的订单（{{count}}）',
+      /** 「已开完」开关列名(人工裁定, 与吨位无关)。 */
+      purchaseOrderPickerIssuedDone: '已开完',
+      /** 标记/取消标记失败: 开关已回滚, 必须说出来而不是静默。 */
+      purchaseOrderPickerIssuedDoneFailed: '「已开完」标记失败，请重试',
       /** 剩余为 0 且本单据已用掉吨位时的悬浮说明。 */
       purchaseOrderPickerFullyLinkedMine: '本单据已关联 {{ton}} 吨',
       purchaseOrderPickerFullyLinkedHint:
