@@ -408,6 +408,48 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(container.textContent).toContain('整单取网价')
   })
 
+  /**
+   * 新建销售订单(状态为空串)时按钮必须可用。
+   *
+   * <p>回归的真实缺陷: 销售订单表单不含状态字段，`currentStatus` 取自记录，而新建时记录是空的，
+   * 于是状态是空串。空串既不等于「草稿」也不等于「交付核定」，按钮被永久置灰并提示"仅草稿与
+   * 交付核定状态可整单取网价" —— 可用户看到的状态下拉明明就是「草稿」，是条自相矛盾的死路。
+   *
+   * <p>反例钉: 若把空状态直接从可用集合里排除(即只认字面量「草稿」)，本用例必然变红。</p>
+   */
+  it('新建单据(状态为空串)时按钮可用, 不因未落库被置灰', async () => {
+    await act(async () => {
+      root.render(
+        createElement(Harness, { initialItems: [row({})], status: '' }),
+      )
+      await Promise.resolve()
+    })
+    const applyBtn = buttonByText('整单取网价')
+    expect(applyBtn, '新建单据也该渲染按钮').toBeTruthy()
+    // 空状态按草稿处理 ⇒ 可用; 直接排除空串会得到 'true'
+    expect(applyBtn?.getAttribute('aria-disabled')).toBe('false')
+
+    // 可用就必须真的能打开取价弹层(不只是不变灰)
+    await act(async () => {
+      applyBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(document.body.textContent).toContain('按网价赋单价')
+  })
+
+  it('新建单据(状态带空白)时同样可用, 前后空格不影响判定', async () => {
+    await act(async () => {
+      root.render(
+        createElement(Harness, { initialItems: [row({})], status: '   ' }),
+      )
+      await Promise.resolve()
+    })
+    expect(buttonByText('整单取网价')?.getAttribute('aria-disabled')).toBe(
+      'false',
+    )
+  })
+
   it('取价后按所选价格规定加价填入单价, 无网价行保持原值', async () => {
     const observed: { items: ModuleLineItem[]; ruleId?: unknown } = {
       items: [],

@@ -126,7 +126,17 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       : EMPTY_RULES
   /** 单据键：核查结果按单据隔离（新建单据回退到订单号）。 */
   const documentKey = String(formValues.id ?? formValues.orderNo ?? '')
-  const status = currentStatus.trim()
+  /*
+   * 状态为空 = 新建单据尚未落库。
+   *
+   * <p>销售订单表单本身不含状态字段，`currentStatus` 取自记录；新建时记录还是空的(null)，
+   * 于是状态是空串。空状态按「草稿」处理才有正确语义 —— 后端保存时也把新销售订单统一写成
+   * 草稿(`SalesOrderService` 明确"新销售订单只能保存为草稿")，两者口径一致。</p>
+   *
+   * <p>不这样兜底时，新建单据打开后「整单取网价」会一直灰着并提示"仅草稿与交付核定状态可
+   * 整单取网价"，而用户看到的状态下拉明明就是「草稿」，属于自相矛盾的死路(实测复现)。</p>
+   */
+  const status = currentStatus.trim() || DRAFT
   /** 仅草稿与交付核定可整单取网价：其余状态置灰并给出原因。 */
   const canApplyNetPrice = status === DRAFT || status === DELIVERY_VERIFICATION
 
