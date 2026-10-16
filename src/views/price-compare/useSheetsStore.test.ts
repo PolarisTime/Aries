@@ -895,6 +895,95 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.conflict).not.toBeNull()
   })
 
+  it('「以我的覆盖」带回的服务端行 id 会回填, 后续行级写不再带本地临时 id(400 回归)', async () => {
+    // 新增行落库失败: 本地临时行 id 保留在本地(未被服务端接纳)
+    api.addQuoteSheetItem.mockRejectedValue(new Error('boom'))
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.setRows((list) => [
+        ...list,
+        {
+          id: 'abc123',
+          rowType: 'PRODUCT',
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        },
+      ])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(store.current.rows.map((row) => row.id)).toEqual(['7001', 'abc123'])
+
+    // 表头冲突 → 「以我的覆盖」整单 PUT: 服务端为本地新增行生成雪花 id 9999
+    api.updateQuoteSheetHeader.mockRejectedValue({ status: 412, code: 4120 })
+    act(() => {
+      store.current.patchSheet(store.current.activeId, { name: '批次 1 改' })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(vi.mocked(modal.confirm)).toHaveBeenCalledTimes(1)
+
+    api.updateQuoteSheet.mockResolvedValue(
+      sheetRecord({
+        name: '批次 1 改',
+        version: '9',
+        items: [
+          {
+            id: '7001',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400',
+            spec: 12,
+            length: '9米',
+            prices: [],
+          },
+          {
+            id: '9999',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400E',
+            spec: 12,
+            length: '9米',
+            prices: [],
+          },
+        ],
+      }),
+    )
+    const options = vi.mocked(modal.confirm).mock.calls[0][0] as {
+      onOk: () => Promise<void>
+    }
+    await act(async () => {
+      await options.onOk()
+    })
+
+    // 覆盖响应里的服务端行 id 必须已回填到本地行
+    expect(store.current.rows.map((row) => row.id)).toEqual(['7001', '9999'])
+
+    // 再改这一行的现货价触发行级写: itemId 必须是服务端 id
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: { '中天:9999': { spot: 3300 } },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    const writtenIds = [
+      ...api.updateQuoteSheetItem.mock.calls.map((call) => call[1]),
+      ...api.deleteQuoteSheetItem.mock.calls.map((call) => call[1]),
+    ]
+    expect(writtenIds).toContain('9999')
+    // 本地临时 id 绝不允许作为 itemId 发出去(后端按 Long 解析会 400)
+    expect(writtenIds).not.toContain('abc123')
+  })
+
   it('聚焦时无未保存改动则静默刷新', async () => {
     const store = renderStore()
     await hydrate(store)

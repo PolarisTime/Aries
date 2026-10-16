@@ -1195,6 +1195,78 @@ export function useSheetsStore(options?: {
     [clearSheetDirty, mutate, setSheetSaveOutcome],
   )
 
+  /** 新增行拿到服务端 id 后, 把本地行 id 与 inputs 键迁移到服务端 id。 */
+  const remapItemId = useCallback(
+    (sheetId: string, fromId: string, toId: string) => {
+      mutate((current) => ({
+        ...current,
+        sheets: current.sheets.map((sheet) =>
+          sheet.id === sheetId
+            ? {
+                ...sheet,
+                rows: sheet.rows.map((row) =>
+                  row.id === fromId ? { ...row, id: toId } : row,
+                ),
+                inputs: remapInputKeys(sheet.inputs, fromId, toId),
+              }
+            : sheet,
+        ),
+      }))
+    },
+    [mutate],
+  )
+
+  /**
+   * 写成功后用服务端明细回填本地行 id(该出口是行 id 对齐的唯一实现)。
+   *
+   * <p>为什么必须有: 服务端在「按位置复用既有行」的整单 PUT 中, 只对本地新增、服务端
+   * 尚无对应行的位置生成新雪花 id; 本地临时行 id(如 {@code abc123})会保留在本地。若不同步
+   * 回填, 后续行级写会带该临时 id 打到 {@code items/{localId}}, 被后端
+   * {@code MethodArgumentTypeMismatchException} 判为参数非法 → 400(cannot parse to Long),
+   * 且不会再有任何新增请求帮它对齐, 该单据的行级保存将永久失败。</p>
+   *
+   * <p>两条写路径(create 与 override 整单 PUT)共用本出口: 匹配策略为逐项校验行类型与商品
+   * 字段一致才回填; 任何一项对不上(行数变化/顺序变化/字段被归一)就整体放弃, 宁可不回填
+   * 也不能把行 id 张冠李戴。</p>
+   *
+   * @return 对齐后的本地单据(未对齐或单据不存在时返回原对象), 供调用方直接重建基线,
+   *         避免在重试循环内再查一次列表
+   */
+  const alignRowIds = useCallback(
+    (
+      sheetId: string,
+      items: QuoteSheetRecord['items'],
+    ): PriceSheet | undefined => {
+      const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
+      if (!sheet) return undefined
+      // 与 buildPayload 的过滤/顺序保持一致: 只有可落库行会被提交
+      const localRows = sheet.rows.filter(isPersistableRow)
+      if (localRows.length !== items.length) return sheet
+      const matched = localRows.every((row, index) => {
+        const item = items[index]
+        if (!item) return false
+        const rowType = isSeparatorRow(row) ? 'SEPARATOR' : 'PRODUCT'
+        return (
+          item.rowType === rowType &&
+          (item.category ?? '') === (row.category ?? '') &&
+          (item.material ?? '') === (row.material ?? '') &&
+          (item.length ?? '') === (row.length ?? '')
+        )
+      })
+      if (!matched) return sheet
+      localRows.forEach((row, index) => {
+        const serverId = items[index]?.id
+        if (serverId && serverId !== row.id) {
+          remapItemId(sheetId, row.id, serverId)
+        }
+      })
+      return (
+        stateRef.current.sheets.find((item) => item.id === sheetId) ?? sheet
+      )
+    },
+    [remapItemId],
+  )
+
   /** 以我的覆盖: 取服务端最新版本后原样重发本地内容, 冲突时重试一次。 */
   const overrideSheet = useCallback(
     async (sheetId: string): Promise<ConflictResolution> => {
@@ -1213,11 +1285,15 @@ export function useSheetsStore(options?: {
             latest.version,
           )
           applySheetSaveMeta(sheetId, saved.version, saved.updatedAt)
+          // 先按服务端明细回填行 id, 再基于对齐后的行重建基线:
+          // 否则本地临时行 id 既留在行上, 又被基线记成"已保存", 之后的行级写会打到
+          // items/{localId} 被后端判为参数非法(400), 且不会再有新增请求帮它对齐。
+          const aligned = alignRowIds(sheetId, saved.items ?? []) ?? sheet
           baselineRef.current.set(
             sheetId,
             buildBaseline({
-              ...sheet,
-              version: saved.version ?? sheet.version,
+              ...aligned,
+              version: saved.version ?? aligned.version,
             }),
           )
           clearSheetDirty(sheetId)
@@ -1237,6 +1313,7 @@ export function useSheetsStore(options?: {
       return 'conflict'
     },
     [
+      alignRowIds,
       applySheetSaveMeta,
       broadcastSaved,
       clearSheetDirty,
@@ -1311,63 +1388,6 @@ export function useSheetsStore(options?: {
     settleConflictRef.current = settleConflict
   }, [openConflict, settleConflict])
 
-  /** 新增行拿到服务端 id 后, 把本地行 id 与 inputs 键迁移到服务端 id。 */
-  const remapItemId = useCallback(
-    (sheetId: string, fromId: string, toId: string) => {
-      mutate((current) => ({
-        ...current,
-        sheets: current.sheets.map((sheet) =>
-          sheet.id === sheetId
-            ? {
-                ...sheet,
-                rows: sheet.rows.map((row) =>
-                  row.id === fromId ? { ...row, id: toId } : row,
-                ),
-                inputs: remapInputKeys(sheet.inputs, fromId, toId),
-              }
-            : sheet,
-        ),
-      }))
-    },
-    [mutate],
-  )
-
-  /**
-   * 新建单据成功后用服务端明细回填本地行 id。
-   * <p>create 请求体已带全部可落库行, 服务端会为它们生成服务端 id; 若不同步回本地,
-   * 之后的行级更新会带本地 id 打到 `items/{localId}` 被后端判为参数非法(400)。</p>
-   * <p>匹配策略: 服务端按请求顺序返回明细, 这里逐项校验内容一致才回填; 任何一项对不上
-   * (顺序变化/字段被归一)就整体放弃, 宁可不回填也不能把行 id 张冠李戴。</p>
-   */
-  const alignCreatedRowIds = useCallback(
-    (sheetId: string, items: QuoteSheetRecord['items']) => {
-      const sheet = stateRef.current.sheets.find((item) => item.id === sheetId)
-      if (!sheet) return
-      // 与 buildPayload 的过滤/顺序保持一致: 只有可落库行会被提交
-      const localRows = sheet.rows.filter(isPersistableRow)
-      if (localRows.length !== items.length) return
-      const matched = localRows.every((row, index) => {
-        const item = items[index]
-        if (!item) return false
-        const rowType = isSeparatorRow(row) ? 'SEPARATOR' : 'PRODUCT'
-        return (
-          item.rowType === rowType &&
-          (item.category ?? '') === (row.category ?? '') &&
-          (item.material ?? '') === (row.material ?? '') &&
-          (item.length ?? '') === (row.length ?? '')
-        )
-      })
-      if (!matched) return
-      localRows.forEach((row, index) => {
-        const serverId = items[index]?.id
-        if (serverId && serverId !== row.id) {
-          remapItemId(sheetId, row.id, serverId)
-        }
-      })
-    },
-    [remapItemId],
-  )
-
   const saveSheetNow = useCallback(
     async (sheetId: string) => {
       await runSerialized(`${SHEET_SAVE_KEY_PREFIX}${sheetId}`, async () => {
@@ -1406,10 +1426,7 @@ export function useSheetsStore(options?: {
             bindSheetServerId(sheet.id, saved.id)
             applySheetSaveMeta(sheet.id, saved.version, saved.updatedAt)
             // 先对齐行 id, 再基于对齐后的行重建基线(否则基线仍按本地 id 记账)
-            alignCreatedRowIds(sheet.id, saved.items)
-            const aligned =
-              stateRef.current.sheets.find((item) => item.id === sheet.id) ??
-              sheet
+            const aligned = alignRowIds(sheet.id, saved.items ?? []) ?? sheet
             baselineRef.current.set(
               sheet.id,
               buildBaseline({
@@ -1601,7 +1618,7 @@ export function useSheetsStore(options?: {
       })
     },
     [
-      alignCreatedRowIds,
+      alignRowIds,
       applySheetSaveMeta,
       bindSheetServerId,
       broadcastSaved,
