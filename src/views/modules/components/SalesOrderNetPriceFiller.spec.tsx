@@ -1056,9 +1056,15 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(confirmCalls).toHaveLength(1)
     expect(String(confirmCalls[0].content)).toContain('改写 1 行')
     expect(container.textContent).toContain('取价结果')
+    /*
+     * 结果按项拆成独立标签(重设计): 三项各有自己的视觉位置, 不再拼成一条长句。
+     * 逐项断言同时也钉住"三项都在", 避免拆标签时漏掉某一项。
+     */
+    expect(container.textContent).toContain('成功 1 行')
     expect(container.textContent).toContain(
-      '成功 1 行 · 无网价 1 行（保持原值，请手工填写）· 跳过 1 行',
+      '无网价 1 行（保持原值，请手工填写）',
     )
+    expect(container.textContent).toContain('跳过 1 行')
   })
 
   it('单价已等于网价时不弹二次确认(没有行会被改写)', async () => {
@@ -1079,6 +1085,36 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(confirmCalls).toHaveLength(0)
     expect(observed.items[0].unitPrice).toBe(3430)
     expect(container.textContent).toContain('成功 1 行')
+  })
+
+  /**
+   * 零值结果项不显示。
+   *
+   * <p>重设计前的文案是固定模板, 全部取价成功时也会写出"无网价 0 行 · 跳过 0 行",
+   * 尾部挂一串 0, 用户得读完才知道没事 —— 零值不是信息。</p>
+   *
+   * <p>反例钉: 改回固定模板拼串会让这两条断言立即变红。</p>
+   */
+  it('取价结果只显示非零项: 全部成功时不出现「无网价 0 行」「跳过 0 行」', async () => {
+    confirmMode = 'accept'
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 999 }),
+    ])
+    await openNetPriceDialog()
+    await clickOk()
+
+    // 成功项在
+    expect(container.textContent).toContain('成功 1 行')
+    // 零值项一律不出现在界面上
+    expect(container.textContent).not.toContain('无网价 0 行')
+    expect(container.textContent).not.toContain('跳过 0 行')
   })
 
   it('网价核查: 未核查 → 重查给出汇总, 手工改单价后重查数字随之变化', async () => {

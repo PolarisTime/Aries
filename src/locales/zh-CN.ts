@@ -1725,8 +1725,13 @@ export const zhCN = {
           '将按解析口径改写 {{count}} 行单价（本单共 {{total}} 行）',
         netPriceConfirmNoPrice: '其中 {{count}} 行无网价，将保持原值',
         netPriceApplyResultTitle: '取价结果',
-        netPriceApplyResult:
-          '成功 {{filled}} 行 · 无网价 {{noPrice}} 行（保持原值，请手工填写）· 跳过 {{skipped}} 行',
+        /**
+         * 取价结果按项拆分, 只显示非零项: 原文案把"无网价 0 行 · 跳过 0 行"也写出来,
+         * 全部成功时尾部挂一串 0, 用户得读完才知道没事。零值不是信息。
+         */
+        netPriceApplyFilled: '成功 {{count}} 行',
+        netPriceApplyNoPrice: '无网价 {{count}} 行（保持原值，请手工填写）',
+        netPriceApplySkipped: '跳过 {{count}} 行',
         /** 明细行「网价匹配」列: 图标 + 文字双通道, 不以颜色为唯一区分(WCAG 1.4.1)。 */
         netPriceMatchColumn: '网价匹配',
         netPriceMatchMatched: '匹配',

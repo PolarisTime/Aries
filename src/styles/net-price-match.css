@@ -1,21 +1,110 @@
 /*
- * 「网价匹配」汇总提示与问题行清单。
+ * 「网价匹配」工具栏与结论区。
  *
- * 汇总提示是明细工具栏里与按钮同行的文字(不换行撑高工具栏); 问题行清单放在受控弹层里,
- * 因此这里只负责"同行文字 + 清单排版", 不承载面板高度。
+ * 重设计前: 状态句 / 取价结果 / 明细入口以同一字重挤在一行, 用户扫不出结论, 且零值项
+ * ("无网价 0 行 · 跳过 0 行")也照写, 正常取价时尾部拖一串 0。
+ * 重设计后分两层: 左侧成组操作按钮, 右侧结论区(结论 → 取价结果 → 明细入口)依次降权,
+ * 每块各有自己的视觉位置, 不必在一行文字里找重点。
  */
-.net-price-match-summary {
-  display: inline-flex;
+.net-price-toolbar {
+  display: flex;
   align-items: center;
-  gap: var(--space-xxs);
-  max-width: 100%;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-md);
+  flex-wrap: wrap;
+}
+
+/*
+ * 结论区: 内部按"块"折行, 不把句子切碎。
+ * `flex-wrap: wrap` 让整个「取价结果」分组在宽度不足时整体落到第二行, 而不是
+ * "成功 3 行"留在上行、"跳过 1 行"掉到下行 —— 后者是最难看的结果(换行位置随文案长度乱跳)。
+ */
+.net-price-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  min-width: 0;
   font-size: 12px;
   line-height: 1.4;
 }
 
-/* 「取价结果」紧随汇总提示, 用分隔点连读; 与汇总同字号, 不抢按钮视觉权重 */
-.net-price-match-summary .net-price-apply-result {
-  display: inline;
+/* 结论文案: 图标 + 文字成组, 不拆行 */
+.net-price-summary-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+/*
+ * 结论图标: 语义色只做辅助, 真值信息仍由文字表达(「均与网价一致」/「N 行未核查」),
+ * 因此色觉障碍用户读文字即可, 不以颜色为唯一区分(WCAG 1.4.1)。
+ */
+.net-price-summary-icon {
+  font-size: 13px;
+  flex: none;
+}
+
+.net-price-summary-icon--success {
+  color: var(--ant-color-success);
+}
+
+.net-price-summary-icon--warning {
+  color: var(--ant-color-warning);
+}
+
+.net-price-summary-icon--muted {
+  color: var(--ant-color-text-quaternary);
+}
+
+/* 取价结果: 比核查结论低一级(次要色 + 前置分隔), 只在有结果时出现 */
+.net-price-apply-result {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.net-price-apply-result-title {
+  font-size: 12px;
+}
+
+/*
+ * 结果分项: 成功/无网价/跳过各是一个紧凑标签, 一眼分清"哪些要处理"。
+ * 零值项由渲染层过滤, 不在这里用 CSS 藏(隐藏文字仍会被读屏读到, 那是假隐藏)。
+ */
+.net-price-apply-result-part {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-xs);
+  height: 20px;
+  border-radius: var(--ant-border-radius-sm);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.net-price-apply-result-part--success {
+  color: var(--ant-color-success-text, var(--ant-color-success));
+  background: var(--ant-color-success-bg);
+}
+
+.net-price-apply-result-part--warning {
+  color: var(--ant-color-warning-text, var(--ant-color-warning));
+  background: var(--ant-color-warning-bg);
+}
+
+.net-price-apply-result-part--muted {
+  color: var(--ant-color-text-secondary);
+  background: var(--ant-color-fill-quaternary);
+}
+
+/*
+ * 明细入口: 靠右独立成操作, 不再紧贴正文连排(原样式让链接看起来像句子的一部分)。
+ * 命中区 ≥24×24 沿用全局 touch-targets 补丁, 这里只保证垂直居中。
+ */
+.net-price-problems-entry {
+  flex: none;
+  padding-inline: var(--space-xs);
 }
 
 .net-price-problems {

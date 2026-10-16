@@ -1780,8 +1780,10 @@ export const enUS = {
         netPriceConfirmNoPrice:
           '{{count}} row(s) have no net price and will keep their current values',
         netPriceApplyResultTitle: 'Result',
-        netPriceApplyResult:
-          'Filled {{filled}} · No net price {{noPrice}} (kept) · Skipped {{skipped}}',
+        /** Split result parts; only non-zero ones render (a trailing "0 skipped" is noise). */
+        netPriceApplyFilled: 'Filled {{count}}',
+        netPriceApplyNoPrice: 'No net price {{count}} (kept, fill manually)',
+        netPriceApplySkipped: 'Skipped {{count}}',
         /** "Net price match" column: icon + text, never colour alone (WCAG 1.4.1). */
         netPriceMatchColumn: 'Net price match',
         netPriceMatchMatched: 'Matched',

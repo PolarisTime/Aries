@@ -1,4 +1,9 @@
-import { ThunderboltOutlined } from '@ant-design/icons'
+import {
+  CheckCircleFilled,
+  ExclamationCircleFilled,
+  MinusCircleFilled,
+  ThunderboltOutlined,
+} from '@ant-design/icons'
 import {
   Button,
   Divider,
@@ -454,76 +459,132 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     </Button>
   )
 
-  /**
-   * 问题行(不匹配 + 无网价, 按明细顺序去重): 汇总提示里给出数量, 逐条定位放在 portal 弹层里,
-   * 不把明细工具栏撑成多行。
-   */
+  /** 问题行(不匹配 + 无网价, 按明细顺序去重): 汇总提示里给出数量, 逐条定位放在 portal 弹层里。 */
   const problemIds = [
     ...new Set([...summary.mismatchIds, ...(applySummary?.noPriceIds ?? [])]),
   ]
-  const applyResultText = applySummary
-    ? t('modules.pages.salesOrder.netPriceApplyResult', {
-        filled: applySummary.filled,
-        noPrice: applySummary.noPrice.length,
-        skipped: applySummary.skipped,
-      })
-    : null
+  /*
+   * 取价结果按"只报非零项"拆开: 原文案把"无网价 0 行 · 跳过 0 行"也写出来, 正常取价(全部成功)
+   * 时尾部挂着一串 0, 用户要读完才知道没事 —— 零值不是信息, 不显示。
+   */
+  const applyResultParts = applySummary
+    ? [
+        {
+          key: 'filled',
+          count: applySummary.filled,
+          text: t('modules.pages.salesOrder.netPriceApplyFilled', {
+            count: applySummary.filled,
+          }),
+          tone: 'success' as const,
+        },
+        {
+          key: 'noPrice',
+          count: applySummary.noPrice.length,
+          text: t('modules.pages.salesOrder.netPriceApplyNoPrice', {
+            count: applySummary.noPrice.length,
+          }),
+          tone: 'warning' as const,
+        },
+        {
+          key: 'skipped',
+          count: applySummary.skipped,
+          text: t('modules.pages.salesOrder.netPriceApplySkipped', {
+            count: applySummary.skipped,
+          }),
+          tone: 'muted' as const,
+        },
+      ].filter((part) => part.count > 0)
+    : []
+  /*
+   * 核查结论三态: 全一致(成功) / 有差异(需处理) / 未核查(中性)。
+   * 图标 + 文案双通道, 不以颜色为唯一区分(WCAG 1.4.1); 结论在前, 明细数字在后。
+   */
+  const summaryTone: 'success' | 'warning' | 'muted' = checkError
+    ? 'warning'
+    : summary.total === 0 || summary.unchecked === summary.total
+      ? 'muted'
+      : summary.mismatch > 0
+        ? 'warning'
+        : 'success'
+  const summaryIcon =
+    summaryTone === 'success' ? (
+      <CheckCircleFilled className="net-price-summary-icon net-price-summary-icon--success" />
+    ) : summaryTone === 'warning' ? (
+      <ExclamationCircleFilled className="net-price-summary-icon net-price-summary-icon--warning" />
+    ) : (
+      <MinusCircleFilled className="net-price-summary-icon net-price-summary-icon--muted" />
+    )
 
   return (
     <>
-      <Space align="center" size={8} wrap>
-        {/* 非草稿/交付核定: 禁用不静默, tooltip 说清可用状态 */}
-        {canApplyNetPrice ? (
-          applyButton
-        ) : (
-          <Tooltip title={statusHint} trigger={['hover', 'focus']}>
-            {applyButton}
-          </Tooltip>
-        )}
-        <Button
-          disabled={saving || checking}
-          loading={checking}
-          onClick={() => void runMatchCheck()}
-          size="small"
-        >
-          {t('modules.pages.salesOrder.netPriceMatchRecheck')}
-        </Button>
-        {/*
-          汇总提示(含取价结果): aria-live 播报, 读屏用户不必主动回看;
-          行内标识另有「网价匹配」列(图标 + 文字, 不靠颜色区分)。
-        */}
-        <span
-          aria-live="polite"
-          className="net-price-match-summary"
-          role="status"
-        >
-          {checkError ? (
-            <Text type="danger">{checkError}</Text>
+      {/* 第一层: 操作区。按钮成组, 与右侧结论区分离, 不再让文字挤在按钮之间 */}
+      <div className="net-price-toolbar">
+        <Space align="center" size={8} wrap>
+          {/* 非草稿/交付核定: 禁用不静默, tooltip 说清可用状态 */}
+          {canApplyNetPrice ? (
+            applyButton
           ) : (
-            <Text type="secondary">{describeSummary(t, summary)}</Text>
+            <Tooltip title={statusHint} trigger={['hover', 'focus']}>
+              {applyButton}
+            </Tooltip>
           )}
-          {applyResultText ? (
-            <>
-              {' '}
-              <Text strong>
-                {t('modules.pages.salesOrder.netPriceApplyResultTitle')}
-              </Text>{' '}
-              <Text type="secondary">{applyResultText}</Text>
-            </>
-          ) : null}
-        </span>
-        {items.length > 0 ? (
           <Button
-            onClick={() => setProblemsOpen(true)}
+            disabled={saving || checking}
+            loading={checking}
+            onClick={() => void runMatchCheck()}
             size="small"
-            type="link"
           >
-            {t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
-              count: problemIds.length,
-            })}
+            {t('modules.pages.salesOrder.netPriceMatchRecheck')}
           </Button>
-        ) : null}
-      </Space>
+        </Space>
+        {/*
+          第二层: 结论区。结论(图标 + 一句话)在前、取价结果在后、明细入口靠右, 三块各有自己的
+          视觉层级 —— 原文案把三者以同一字重连排成一行, 用户扫不出"到底有没有问题"。
+          aria-live 播报让读屏用户不必主动回看; 行内标识另有「网价匹配」列。
+        */}
+        <div aria-live="polite" className="net-price-summary" role="status">
+          {checkError ? (
+            <span className="net-price-summary-line">
+              <ExclamationCircleFilled className="net-price-summary-icon net-price-summary-icon--warning" />
+              <Text type="danger">{checkError}</Text>
+            </span>
+          ) : (
+            <span className="net-price-summary-line">
+              {summaryIcon}
+              <Text>{describeSummary(t, summary)}</Text>
+            </span>
+          )}
+          {applyResultParts.length > 0 ? (
+            <span className="net-price-apply-result">
+              {/* antd 6: Divider 用 orientation 取代已废弃的 type(见 antd changelog) */}
+              <Divider orientation="vertical" />
+              <Text type="secondary" className="net-price-apply-result-title">
+                {t('modules.pages.salesOrder.netPriceApplyResultTitle')}
+              </Text>
+              {applyResultParts.map((part) => (
+                <Text
+                  className={`net-price-apply-result-part net-price-apply-result-part--${part.tone}`}
+                  key={part.key}
+                >
+                  {part.text}
+                </Text>
+              ))}
+            </span>
+          ) : null}
+          {items.length > 0 ? (
+            <Button
+              className="net-price-problems-entry"
+              onClick={() => setProblemsOpen(true)}
+              size="small"
+              type="link"
+            >
+              {t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
+                count: problemIds.length,
+              })}
+            </Button>
+          ) : null}
+        </div>
+      </div>
       <Modal
         afterClose={() => {
           const target = pendingJumpRef.current
