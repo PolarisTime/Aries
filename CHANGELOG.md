@@ -1,3 +1,38 @@
+# [13.0.0](https://github.com/PolarisTime/Aries/compare/v12.1.0...v13.0.0) (2026-10-16)
+
+
+* fix(price-compare)!: 已开货改取真实入库量, 剩余未开 = 锁定的报单吨位 − 已开货 ([d2f71b4](https://github.com/PolarisTime/Aries/commit/d2f71b4b4f9b81ef73d384114a828d242e60e947))
+
+
+### Bug Fixes
+
+* **price-compare:** 整单覆盖后回填服务端行 id, 修掉行级保存 400 ([4746322](https://github.com/PolarisTime/Aries/commit/4746322074cdfe6d258aba868660d68a719f0d05))
+
+
+### BREAKING CHANGES
+
+* 「已开货」与「剩余未开」两列的数据源从"别家报价单的报单占用"
+(issuedWeight) 改为"该明细行的真实已开货"(actualWeightTon, 入库审核回写)。
+依赖旧数字的下游需按新口径解读。
+
+用户澄清的原始口径: 填报单吨位并锁定后关联订单行, 已开列显示真实开出去多少货,
+剩余列显示"我报的量还差多少没开货"。此前三次改口径(10-13 报单−已开、10-14 订货−已开、
+10-15 额度−已占用)都在调基准, 却始终把 issuedWeight 当成"已开货" —— 数据源错了, 换基准
+只是换一种错法; 这也解释了为什么会出现 −10.02 与"报单请求超额度 21.456"这类读不懂的数字。
+
+- 已开货 = 关联明细行 actualWeightTon(Σ生效入库单过磅重量)合计; null 按 0, 不回退到
+  订货量或 issuedWeight;
+- 剩余未开 = 本单据报单吨位合计 − 已开货合计, 可为负(已开货是订单行级事实、报单是单据级
+  需求, 订单行被多张单据共享或本单只报一部分时必然为负), 按业务要求原样显示负值并标红;
+- 订货吨位退回参考位(仅弹层展示), 不再参与剩余未开的减法;
+- 选单弹窗继续用 issuedWeight/remainingWeight 判断额度, 不受影响;
+- 恢复采购订单明细行的「已开完」手动开关(默认隐藏已开完的行); 该标记是人工裁定,
+  与吨位无关, 不根据已开货自动判定;
+- 口径仍收敛在 ton-progress-text.ts 单一出口, 渲染/弹层/读屏/列宽四处同源。
+
+验证: 比价与 API 定向集 621 项全绿; 新增区分性用例(报单占用与真实已开货刻意取不同值,
+把已开货接回 issuedWeight 或把剩余夹到 0 都必然变红); tsc、biome、eslint、antd lint 均通过。
+
 # [12.1.0](https://github.com/PolarisTime/Aries/compare/v12.0.0...v12.1.0) (2026-10-15)
 
 
