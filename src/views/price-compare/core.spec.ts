@@ -20,6 +20,7 @@ import {
   moveItem,
   netPrice,
   netPriceWithFallback,
+  pickBestDiffBrands,
   reconcileSpotInputs,
   requiredIssuedTonColumnWidth,
   requiredTonColumnWidth,
@@ -1074,5 +1075,96 @@ describe('列宽按字号自适应', () => {
       SUPPLIER_CELL_CHROME[SHEET_WIDTH_BASE_FONT_SIZE] +
         ABBR_CHAR_COUNT * SHEET_WIDTH_BASE_FONT_SIZE,
     )
+  })
+})
+
+/**
+ * 差价最优的并列判定。
+ *
+ * <p>回归的真实缺陷: 旧实现用 `diff > bestVal` 逐个比较并只记住一个品牌, 差价相同时
+ * 只有遍历到的第一个被标蓝, 其余并列者被丢掉 —— 用户看到"明明一样便宜, 却只高亮一家"。</p>
+ */
+describe('pickBestDiffBrands', () => {
+  it('差价唯一最高时只返回该品牌', () => {
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: 20 },
+        { brand: '沙钢', diff: 30 },
+        { brand: '永钢', diff: 10 },
+      ]),
+    ).toEqual(['沙钢'])
+  })
+
+  it('差价并列最高时全部返回(不因先后顺序丢弃后来者)', () => {
+    // 反例钉: 只记住第一个的实现会返回 ['中天']
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: 30 },
+        { brand: '沙钢', diff: 30 },
+      ]),
+    ).toEqual(['中天', '沙钢'])
+    // 三家并列同样都要在
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: 30 },
+        { brand: '沙钢', diff: 30 },
+        { brand: '永钢', diff: 30 },
+      ]),
+    ).toEqual(['中天', '沙钢', '永钢'])
+  })
+
+  it('低于最优的品牌不返回(并列只认最高档)', () => {
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: 30 },
+        { brand: '沙钢', diff: 30 },
+        { brand: '永钢', diff: 20 },
+      ]),
+    ).toEqual(['中天', '沙钢'])
+  })
+
+  it('浮点末位误差不破坏并列判定', () => {
+    // 20 与 20.000000000000004 业务上是同一档, 不能因浮点误差拆成两个最优
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: 20 },
+        { brand: '沙钢', diff: 20.000000000000004 },
+      ]),
+    ).toEqual(['中天', '沙钢'])
+  })
+
+  it('真实价差(超过半分钱)仍按不同档处理', () => {
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: 20 },
+        { brand: '沙钢', diff: 20.01 },
+      ]),
+    ).toEqual(['沙钢'])
+  })
+
+  it('无有效报价的品牌被跳过; 全无报价时返回空数组', () => {
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: undefined },
+        { brand: '沙钢', diff: 30 },
+      ]),
+    ).toEqual(['沙钢'])
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: undefined },
+        { brand: '沙钢', diff: undefined },
+      ]),
+    ).toEqual([])
+    expect(pickBestDiffBrands([])).toEqual([])
+  })
+
+  it('负差价同样按"最高"比较(全为负时取最接近 0 的)', () => {
+    expect(
+      pickBestDiffBrands([
+        { brand: '中天', diff: -30 },
+        { brand: '沙钢', diff: -10 },
+        { brand: '永钢', diff: -10 },
+      ]),
+    ).toEqual(['沙钢', '永钢'])
   })
 })

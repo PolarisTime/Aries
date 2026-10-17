@@ -59,6 +59,7 @@ import {
   linkedPurchaseOrderItemIds,
   netPriceWithFallback,
   PRICE_COMPARE_COLUMN_SETTINGS_KEY,
+  pickBestDiffBrands,
   resolveLock,
   resolveRef,
   type SHEET_COLUMN_WIDTH,
@@ -603,12 +604,19 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowedProducts,
   )
   const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
-  const bestCache = new Map<string, string | undefined>()
-  const bestOf = (row: GridRow): string | undefined => {
-    if (!bestOn) return undefined
-    if (bestCache.has(row.rowId)) return bestCache.get(row.rowId)
-    let best: string | undefined
-    let bestVal = Number.NEGATIVE_INFINITY
+  /*
+   * 每行"差价最优"的品牌集合(并列时可能多家)。
+   *
+   * 返回 Set 而不是单个名字: 差价完全相同的多家都是最优报价, 旧实现用 `diff > bestVal`
+   * 只留住了遍历到的第一个, 用户看到"明明一样便宜却只有一家标蓝"。
+   */
+  const bestCache = new Map<string, ReadonlySet<string>>()
+  const EMPTY_BEST: ReadonlySet<string> = new Set()
+  const bestOf = (row: GridRow): ReadonlySet<string> => {
+    if (!bestOn) return EMPTY_BEST
+    const cached = bestCache.get(row.rowId)
+    if (cached) return cached
+    const cands: { brand: string; diff: number | undefined }[] = []
     for (const brand of brands) {
       const price = isCategoryEnabled(brand, row.row.category)
         ? netPriceWithFallback(
@@ -623,18 +631,19 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         : undefined
       const spot = getSpot(brand.name, row.row.id)
       if (price === undefined || spot === undefined) continue
-      const diff = price - spot - brand.freight
-      if (diff > bestVal) {
-        bestVal = diff
-        best = brand.name
-      }
+      cands.push({ brand: brand.name, diff: price - spot - brand.freight })
     }
+    const best: ReadonlySet<string> = new Set(pickBestDiffBrands(cands))
     bestCache.set(row.rowId, best)
     return best
   }
+  /*
+   * 非最优品牌淡出。并列最优的品牌**都不淡出**: 它们同为可选方案, 把并列者变灰等于
+   * 又回到"只承认一个最优"的旧表现。
+   */
   const isDimmed = (row: GridRow, brandName: string) => {
     const best = bestOf(row)
-    return best !== undefined && best !== brandName
+    return best.size > 0 && !best.has(brandName)
   }
 
   const isCategoryEnabled = (brand: Brand, category: string) =>
@@ -1228,7 +1237,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           }
                         >
                           <span
-                            className={`price-compare-diff ${cls}${best === brand.name ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                            className={`price-compare-diff ${cls}${best.has(brand.name) ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                           >
                             {diff > 0 ? '+' : ''}
                             {diff}

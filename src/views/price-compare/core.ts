@@ -1024,3 +1024,47 @@ export function resolveLock(levels: {
   if (levels.cell) return { locked: true, level: 'cell' }
   return { locked: false }
 }
+
+/**
+ * 差价并列判定的容差(元)。
+ *
+ * <p>差价是"网价 - 现货价 - 运费"的相减结果, 参与方都是两位小数, 因此真正的并列误差远小于
+ * 分; 取半分钱, 既能吸收浮点末位误差, 又不会把 0.001 元的真实价差误判成并列。</p>
+ */
+export const PRICE_TIE_EPSILON = 0.005
+
+/**
+ * 差价最优: 在给定候选里选出"差价最高"的**全部**品牌。
+ *
+ * <p>为什么不返回单个品牌: 「差价最优」是并列概念, 多家的差价完全相同时都是最优报价。
+ * 原实现用 `diff > bestVal` 逐个比较并只记一个品牌, 相同差价下只有遍历到的第一个品牌被
+ * 记住, 其余并列的都被丢掉 —— 用户看到的是"明明一样便宜, 却只有一家标蓝"。</p>
+ *
+ * <p>浮点差价先按 {@link PRICE_TIE_EPSILON} 归一档位再比较: 差价由
+ * `网价 - 现货价 - 运费` 相减得出, 数学上相等的两组值可能差在末位误差上(如 20 与
+ * 20.000000000000004), 直接比大小会破坏并列判定。</p>
+ *
+ * @param cands 候选品牌及其差价; 差价为 undefined 表示该品牌本行无有效报价, 不参与比较
+ * @returns 差价最高的一批品牌名(可能多个); 无有效候选时为空数组
+ */
+export function pickBestDiffBrands(
+  cands: readonly { brand: string; diff: number | undefined }[],
+): string[] {
+  let bestVal = Number.NEGATIVE_INFINITY
+  let best: string[] = []
+  for (const cand of cands) {
+    const { diff } = cand
+    if (diff === undefined || !Number.isFinite(diff)) continue
+    if (best.length === 0 || diff > bestVal + PRICE_TIE_EPSILON) {
+      // 严格更高: 开新一批
+      bestVal = diff
+      best = [cand.brand]
+      continue
+    }
+    if (Math.abs(diff - bestVal) <= PRICE_TIE_EPSILON) {
+      // 与当前最优并列: 追加而不是替换, 也不因"先到"而丢弃后来者
+      best.push(cand.brand)
+    }
+  }
+  return best
+}

@@ -1832,3 +1832,146 @@ describe('SheetPanel 指定品牌展示', () => {
     )
   })
 })
+
+/**
+ * 「差价最优」并列高亮的渲染级回归。
+ *
+ * <p>真实缺陷: 差价相同时只有遍历到的第一个品牌被标蓝, 其余并列品牌既不标蓝、还会被
+ * 当成"非最优"淡出。这里走完整渲染 + 真实点击, 断言并列品牌**全部**拿到 `is-best`
+ * 且都不被淡出 —— 纯函数单测只看返回值, 挡不住"渲染层又只认一个"的回退。</p>
+ */
+describe('SheetPanel 差价最优并列高亮', () => {
+  let container: HTMLDivElement
+  let root: Root
+  let queryClient: QueryClient
+
+  beforeEach(async () => {
+    window.localStorage.removeItem(
+      'aries-list-column-settings:anonymous:price-compare-sheet',
+    )
+    await i18n.changeLanguage('zh-CN')
+    if (!window.matchMedia) {
+      window.matchMedia = (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })
+    }
+    if (!globalThis.ResizeObserver) {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    }
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    })
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    act(() => root.unmount())
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 25)
+      })
+    })
+    container.remove()
+  })
+
+  /*
+   * 三个品牌、同一行、网价与现货价都相同 ⇒ 三家差价完全相等(都为 100-90-0=10)。
+   * 若实现只认一个最优, 只会有一个 .is-best。
+   */
+  function renderTiedRow() {
+    const priceRow: PriceRow = {
+      id: 'r1',
+      rowType: 'PRODUCT',
+      category: '螺纹钢',
+      material: 'HRB400',
+      spec: 16,
+      length: '9米',
+      ton: 10,
+      locked: false,
+    }
+    const sheet: PriceSheet = {
+      ...makeSheet(),
+      rows: [priceRow],
+      inputs: {
+        '中天:r1': { spot: 90 },
+        '沙钢:r1': { spot: 90 },
+        '永钢:r1': { spot: 90 },
+      },
+    }
+    const data = {
+      '2026-09-10': {
+        '9:30 上午': {
+          中天: { '螺纹钢|HRB400': { '16': 100 } },
+          沙钢: { '螺纹钢|HRB400': { '16': 100 } },
+          永钢: { '螺纹钢|HRB400': { '16': 100 } },
+        },
+      },
+    }
+    act(() => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(SheetPanel, {
+            sheet,
+            data,
+            varieties: [variety],
+            brands: [
+              { name: '中天', freight: 0 },
+              { name: '沙钢', freight: 0 },
+              { name: '永钢', freight: 0 },
+            ],
+            rows: [priceRow],
+            density: 'small',
+            lengthPremium: 30,
+            patchSheet: () => {},
+            setRows: () => {},
+            onReorderBrands: () => {},
+            periods: [],
+            onRefresh: () => {},
+            chrome: false,
+            spotRef: { current: null },
+          }),
+        ),
+      )
+    })
+  }
+
+  it('三家差价并列时全部高亮, 且都不被淡出', () => {
+    renderTiedRow()
+    // 开启「差价最优」
+    const bestBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('差价最优'),
+    )
+    expect(bestBtn, '未找到「差价最优」按钮').toBeTruthy()
+    act(() => bestBtn?.click())
+
+    const cells = Array.from(
+      container.querySelectorAll('.price-compare-diff'),
+    )
+    expect(cells.length, '应渲染 3 个差价单元格').toBe(3)
+    // 反例钉: 旧实现这里只会有 1 个 is-best
+    const bestCells = cells.filter((cell) => cell.classList.contains('is-best'))
+    expect(bestCells).toHaveLength(3)
+    // 并列最优都不应被淡出(淡出等于又只承认一个最优)
+    expect(
+      bestCells.filter((cell) => cell.classList.contains('price-compare-dim')),
+    ).toHaveLength(0)
+  })
+})
