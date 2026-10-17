@@ -1,3 +1,10 @@
+## [13.2.1](https://github.com/PolarisTime/Aries/compare/v13.2.0...v13.2.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **price-compare:** 差价最优并列时全部高亮, 不再只标第一个品牌 ([f05f2b9](https://github.com/PolarisTime/Aries/commit/f05f2b9adbb24d5b176ddddcbc7fe6ce872ab816))
+
 # [13.2.0](https://github.com/PolarisTime/Aries/compare/v13.1.0...v13.2.0) (2026-10-17)
 
 
