@@ -12,7 +12,14 @@ import {
 
 /** 固定"当前时刻"，避免用例随真实时间漂移。 */
 const NOW = new Date('2026-10-14T12:00:00Z')
-const TOMORROW = new Date(NOW.getTime() + 24 * 60 * 60 * 1000)
+
+/**
+ * "不在未来"的上界必须按**真实**当前时刻算：`__APP_BUILD_TIME__` 是本次构建/运行的真实时刻，
+ * 若拿上面固定的 NOW 推导上界，断言会随日历推移必然过期（踩过：固定 +1 天写成 2026-10-15 后，
+ * 三天后这条断言天天变红，把 Lint/Release 一起卡住）。这里与 `isUsableBuildMoment` 内部的
+ * `upperBoundDate` 保持同一口径：当前时刻 + 24 小时，给时区/时钟偏差留余量。
+ */
+const NOT_IN_FUTURE = new Date(Date.now() + 24 * 60 * 60 * 1000)
   .toISOString()
   .slice(0, 10)
 
@@ -27,7 +34,7 @@ describe('buildInfo 注入口径', () => {
     expect(isPlaceholderBuildMoment(injected)).toBe(false)
     expect(isUsableBuildMoment(injected)).toBe(true)
     expect(injected.slice(0, 10) >= MIN_BUILD_DATE).toBe(true)
-    expect(injected.slice(0, 10) <= TOMORROW).toBe(true)
+    expect(injected.slice(0, 10) <= NOT_IN_FUTURE).toBe(true)
     expect(injected).not.toContain('1980')
   })
 

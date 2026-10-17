@@ -1962,9 +1962,7 @@ describe('SheetPanel 差价最优并列高亮', () => {
     expect(bestBtn, '未找到「差价最优」按钮').toBeTruthy()
     act(() => bestBtn?.click())
 
-    const cells = Array.from(
-      container.querySelectorAll('.price-compare-diff'),
-    )
+    const cells = Array.from(container.querySelectorAll('.price-compare-diff'))
     expect(cells.length, '应渲染 3 个差价单元格').toBe(3)
     // 反例钉: 旧实现这里只会有 1 个 is-best
     const bestCells = cells.filter((cell) => cell.classList.contains('is-best'))
