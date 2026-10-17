@@ -478,3 +478,33 @@
   border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   background: var(--ant-color-bg-container, #fff);
 }
+
+/*
+ * 表单下拉的字段级空态(字段声明了 emptyHint 时)。
+ *
+ * 下拉面板宽度默认跟着输入框(约 200px), 一句话会被折成四五行、每行三四个字, 比"暂无数据"
+ * 更难读。这里给图标 + 短句的两段式排版: 图标固定不换行, 文案独占剩余宽度并限制行数以保持
+ * 紧凑; 面板最小宽度由 Select 的 popupMatchSelectWidth 保证(字段侧声明 320)。
+ */
+.module-select-empty-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-xxs);
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+/* 图标只做语义提示(这是说明不是数据), 不参与换行 */
+.module-select-empty-hint .anticon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ant-color-text-quaternary, rgb(0 0 0 / 25%));
+}
+
+.module-select-empty-hint span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

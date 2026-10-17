@@ -138,6 +138,13 @@ export interface ModuleFormFieldDefinition {
   label: string
   type: ModuleFormFieldType
   placeholder?: string
+  /**
+   * 下拉无选项时的空态文案(仅对 select/multiSelect 生效)。
+   *
+   * <p>antd 默认只说"暂无数据", 用户分不清是"确实没有数据"还是"要先完成上游字段"。声明本字段
+   * 后空态可以说清前置条件(例如项目下拉: "请先选择客户"); 未声明时保持 antd 默认表现。</p>
+   */
+  emptyHint?: string
   options?: ModuleFormFieldOption[] | ModuleFormFieldOptionResolver
   masterOptionRequirements?: ModuleMasterOptionRequirements
   required?: boolean

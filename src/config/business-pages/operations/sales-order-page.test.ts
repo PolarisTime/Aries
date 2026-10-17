@@ -57,4 +57,20 @@ describe('销售订单报单日期配置', () => {
       ),
     ).toBe(false)
   })
+
+  /**
+   * 项目下拉的空态必须说明前置条件。
+   *
+   * <p>项目按客户过滤(未选客户时列表必然为空)。antd 默认只说"暂无数据", 用户分不清是确实
+   * 没有项目还是要先选客户 —— 实测新建销售订单时项目下拉就是 0 项, 只报"暂无数据"。
+   * 空态写成"请先选择客户"才指向可执行的下一步。</p>
+   */
+  it('项目字段的下拉空态说明"先选客户"这一前置条件', () => {
+    const projectField = (salesOrdersPageConfig.formFields ?? []).find(
+      (field) => field.key === 'projectId',
+    )
+    expect(projectField, '项目字段必须存在').toBeTruthy()
+    expect(projectField?.emptyHint).toBeTruthy()
+    expect(projectField?.emptyHint).toContain('客户')
+  })
 })

@@ -430,6 +430,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       required: true,
       options: getCustomerProjectOptions,
       masterOptionRequirements: { customers: true, projects: true },
+      // 项目按客户过滤: 未选客户时下拉必然为空, 空态要说明这个前置条件, 不能只说"暂无数据"
+      emptyHint: i18next.t('modules.pages.salesOrder.projectEmptyHint'),
       row: 1,
     },
     {

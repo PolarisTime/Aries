@@ -1,3 +1,4 @@
+import { InfoCircleOutlined } from '@ant-design/icons'
 import {
   AutoComplete,
   Button,
@@ -79,15 +80,38 @@ function selectFieldElement({
   selectOptions,
   formValues,
 }: OptionsControlProps): ReactElement {
+  const options = withCurrentSnapshotOption(
+    field.key,
+    selectOptions,
+    formValues,
+  )
+  /*
+   * 空态文案: antd 默认只说"暂无数据", 用户看不出是"确实没数据"还是"要先选上游字段"。
+   * 字段可声明 emptyHint, 没声明时保持 antd 默认行为(不改变其它字段的既有表现)。
+   *
+   * 用 InfoCircle 图标 + 短句而不是裸文本: 下拉面板默认宽度跟着输入框走(约 200px), 一句话
+   * 会被折成四五行、每行三四个字, 反而更难读。图标给出"这是说明"的语义, 配合 CSS 的
+   * 最小宽度让整句在有限行内读完。
+   */
+  const emptyHint = field.emptyHint
   return (
     <Select
       id={fieldId}
+      popupMatchSelectWidth={emptyHint ? 320 : undefined}
+      notFoundContent={
+        options.length === 0 && emptyHint ? (
+          <div className="module-select-empty-hint">
+            <InfoCircleOutlined aria-hidden="true" />
+            <span>{emptyHint}</span>
+          </div>
+        ) : undefined
+      }
       placeholder={placeholder}
       allowClear={allowClear}
       disabled={disabledValue}
       showSearch={{ filterOption: createPinyinFilterOption() }}
       optionLabelProp="label"
-      options={withCurrentSnapshotOption(field.key, selectOptions, formValues)}
+      options={options}
     />
   )
 }

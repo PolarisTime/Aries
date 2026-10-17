@@ -1715,6 +1715,9 @@ export const enUS = {
         filterProductKeyword: 'Product Keyword',
         filterDeliveryDate: 'Delivery Date',
         filterProjectName: 'Project',
+        /** Empty state for the project select: projects are scoped to the chosen customer. */
+        projectEmptyHint:
+          'Select a customer first — projects belong to customers',
         colPurchaseOrderNo: 'PO Number',
         colOrderNo: 'Order No',
         colCustomerName: 'Customer',

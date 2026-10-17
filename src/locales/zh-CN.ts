@@ -1666,6 +1666,11 @@ export const zhCN = {
         filterProductKeyword: '商品关键字',
         filterDeliveryDate: '交货日期',
         filterProjectName: '项目名称',
+        /**
+         * 项目下拉的空态: 项目按客户过滤(未选客户时必然为空)。只说"暂无数据"用户看不出
+         * 是没数据还是要先选客户, 于是把前置条件直接写进空态。
+         */
+        projectEmptyHint: '请先选择客户，项目按客户归属',
         colPurchaseOrderNo: '采购订单号',
         colOrderNo: '订单编号',
         colCustomerName: '客户名称',
