@@ -67,17 +67,90 @@ export function buildNetPriceIndex(rows: MaterialPriceMatch[]): {
   return { byId, byKey }
 }
 
+/**
+ * 「抗震牌号」替代候选：HRB400 → HRB400E、HRB335 → HRB335E 这类"加 E"的同强度牌号。
+ *
+ * <p>业务背景: 项目报的是 HRB400, 但现货市场只有 HRB400E(抗震), 实际按 400E 供货、按 400E
+ * 网价结算。库里实测 HRB400 报单行 124 条, 而商品资料里 HRB400E 有 239 个、HRB400 仅 63 个,
+ * 现货以 400E 为主 —— 报 400 的行取不到价是常态。</p>
+ *
+ * <p>只认"补 E"这一种关系(不做 400→500、400→300 之类的跨强度替换): 跨强度是改设计强度,
+ * 属另一件事, 不能由取价逻辑替用户决定。返回 null 表示该材质没有可替代的抗震牌号。</p>
+ */
+export function substituteMaterialOf(material: unknown): string | null {
+  const text = String(material ?? '')
+    .trim()
+    .toUpperCase()
+  if (!text) return null
+  // 已经是抗震牌号(以 E 结尾)就没有替代候选, 避免 400E → 400EE
+  if (text.endsWith('E')) return null
+  // 仅匹配 HRB/HRBF 系列的普通牌号, 其余材质(盘螺 HPB300 等)不做替代
+  if (!/^HRB[F]?\d{3}$/.test(text)) return null
+  return `${text}E`
+}
+
+/** 单次取价命中的来源: 本行材质 / 替代抗震牌号。 */
+export interface NetPriceHit {
+  price: number
+  /** 命中的材质(替代时为 400E 之类), 供结果摘要说明"按哪个牌号取的价"。 */
+  matchedMaterial?: string
+  /**
+   * 命中的是替代牌号(本行材质其实没有网价)。
+   * 渲染层据此在该行给出「已按 400E 取价」的可见说明 —— 不能静默替换。
+   */
+  substituted?: boolean
+}
+
+/**
+ * 解析某明细行的网价命中(含抗震牌号替代): 先按 materialId, 再按商品维度键,
+ * 最后按"补 E"的替代牌号重试一次。
+ */
+export function resolveNetPriceHit(
+  item: ModuleLineItem,
+  index: { byId: Map<string, number>; byKey: Map<string, number> },
+): NetPriceHit | undefined {
+  const materialId = String(item.materialId ?? '').trim()
+  if (materialId) {
+    const byMaterialId = index.byId.get(materialId)
+    if (byMaterialId !== undefined) {
+      return {
+        price: byMaterialId,
+        ...(item.material ? { matchedMaterial: String(item.material) } : {}),
+      }
+    }
+  }
+  const direct = index.byKey.get(itemMatchKey(item))
+  if (direct !== undefined) {
+    return {
+      price: direct,
+      ...(item.material ? { matchedMaterial: String(item.material) } : {}),
+    }
+  }
+  /*
+   * 本行材质无网价: 尝试抗震牌号(HRB400 → HRB400E)。
+   *
+   * 业务上这就是"400 没货用 400E 代替", 且按 400E 的实际网价结算(不减价差) ——
+   * 实际采购的就是 400E, 成本就是它的价。因此这里直接返回 400E 的价, 不做任何金额调整。
+   */
+  const substitute = substituteMaterialOf(item.material)
+  if (!substitute) return undefined
+  const substitutedPrice = index.byKey.get(
+    itemMatchKey({ ...item, material: substitute }),
+  )
+  if (substitutedPrice === undefined) return undefined
+  return {
+    price: substitutedPrice,
+    matchedMaterial: substitute,
+    substituted: true,
+  }
+}
+
 /** 解析某明细行的网价：先按 materialId 命中，否则按商品维度键命中。 */
 export function resolveNetPrice(
   item: ModuleLineItem,
   index: { byId: Map<string, number>; byKey: Map<string, number> },
 ): number | undefined {
-  const materialId = String(item.materialId ?? '').trim()
-  if (materialId) {
-    const byMaterialId = index.byId.get(materialId)
-    if (byMaterialId !== undefined) return byMaterialId
-  }
-  return index.byKey.get(itemMatchKey(item))
+  return resolveNetPriceHit(item, index)?.price
 }
 
 function matchKey(row: {
@@ -133,6 +206,13 @@ export interface NetPriceMatchEntry {
   expectedPrice?: number
   /** 当前单价(空值不下发)。 */
   currentPrice?: number
+  /**
+   * 本行取价用的是抗震牌号替代(如报 HRB400、按 HRB400E 取价)。
+   *
+   * <p>替代必须一路可见到行内: 报单写的是 400, 网价却来自 400E, 用户要在行上直接看到,
+   * 而不是只能靠结果摘要里的一个条数去猜是哪几行。</p>
+   */
+  substitutedMaterial?: string
 }
 
 /** 金额比较容差: 单价为两位小数, 半分以内视为同值。 */
@@ -170,16 +250,21 @@ export function evaluateNetPriceMatch(
   rule?: NetPriceRule,
 ): NetPriceMatchEntry {
   const currentPrice = toFiniteNumber(item.unitPrice)
-  const netPrice = resolveNetPrice(item, index)
-  if (netPrice === undefined) {
+  const hit = resolveNetPriceHit(item, index)
+  if (hit === undefined) {
     return {
       state: 'NO_PRICE',
       ...(currentPrice === undefined ? {} : { currentPrice }),
     }
   }
-  const expectedPrice = applyNetPriceFloat(netPrice, rule?.mode, rule?.amount)
+  const expectedPrice = applyNetPriceFloat(hit.price, rule?.mode, rule?.amount)
+  // 替代牌号随结果一起带出, 行内标识据此说明"本行按哪个牌号取的价"
+  const substituted =
+    hit.substituted && hit.matchedMaterial
+      ? { substitutedMaterial: hit.matchedMaterial }
+      : {}
   if (currentPrice === undefined) {
-    return { state: 'MISMATCH', expectedPrice }
+    return { state: 'MISMATCH', expectedPrice, ...substituted }
   }
   return {
     state:
@@ -188,6 +273,7 @@ export function evaluateNetPriceMatch(
         : 'MISMATCH',
     expectedPrice,
     currentPrice,
+    ...substituted,
   }
 }
 
@@ -246,6 +332,13 @@ export interface NetPriceApplyOutcome {
   skipped: number
   /** 本次单价被改写的行 id(供"覆盖了手工单价"的确认与结果定位)。 */
   overwrittenIds: string[]
+  /**
+   * 按抗震牌号替代取价的行: { 行id: 实际命中的牌号(如 HRB400E) }。
+   *
+   * <p>替代必须可见: 用户报的是 HRB400, 系统却按 HRB400E 的价填单, 不说明就是"悄悄改了
+   * 计价口径"。渲染层据此在该行标注, 结果摘要也给出条数。</p>
+   */
+  substitutedIds: Record<string, string>
 }
 
 /**
@@ -263,6 +356,7 @@ export function applyNetPricesToItems(
   const noPrice: string[] = []
   const noPriceIds: string[] = []
   const overwrittenIds: string[] = []
+  const substitutedIds: Record<string, string> = {}
   let filled = 0
   let skipped = 0
   for (const item of items) {
@@ -271,19 +365,31 @@ export function applyNetPricesToItems(
       nextItems.push(item)
       continue
     }
-    const price = resolveNetPrice(item, index)
-    if (price === undefined) {
+    const hit = resolveNetPriceHit(item, index)
+    if (hit === undefined) {
       noPrice.push(netPriceItemLabel(item))
       noPriceIds.push(String(item.id))
       nextItems.push(item)
       continue
     }
-    const nextPrice = applyNetPriceFloat(price, rule?.mode, rule?.amount)
+    // 替代牌号的行按 400E 的实际网价结算(不减价差): 实际买的就是 400E
+    const nextPrice = applyNetPriceFloat(hit.price, rule?.mode, rule?.amount)
     if (toFiniteNumber(item.unitPrice) !== nextPrice) {
       overwrittenIds.push(String(item.id))
+    }
+    if (hit.substituted && hit.matchedMaterial) {
+      substitutedIds[String(item.id)] = hit.matchedMaterial
     }
     filled += 1
     nextItems.push({ ...item, unitPrice: nextPrice })
   }
-  return { nextItems, filled, noPrice, noPriceIds, skipped, overwrittenIds }
+  return {
+    nextItems,
+    filled,
+    noPrice,
+    noPriceIds,
+    skipped,
+    overwrittenIds,
+    substitutedIds,
+  }
 }

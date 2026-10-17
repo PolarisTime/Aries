@@ -62,9 +62,28 @@ export function NetPriceMatchChip({ itemId }: { itemId: string }) {
 /** 悬浮说明: 说清"差在哪"(应有单价 vs 当前单价), 而不是只给一个状态词。 */
 function describeEntry(
   t: (key: string, options?: Record<string, unknown>) => string,
-  entry: { expectedPrice?: number; currentPrice?: number } | undefined,
+  entry:
+    | {
+        expectedPrice?: number
+        currentPrice?: number
+        substitutedMaterial?: string
+      }
+    | undefined,
   state: NetPriceMatchState,
 ): string {
+  /*
+   * 抗震牌号替代说明: 无论匹配与否都要说清"这一行是按 400E 取的价"。
+   * 用户报的是 400, 网价来自 400E —— 不说就是悄悄换了计价口径。
+   */
+  if (entry?.substitutedMaterial) {
+    return t('modules.pages.salesOrder.netPriceMatchSubstitutedDetail', {
+      material: entry.substitutedMaterial,
+      expected:
+        entry.expectedPrice === undefined
+          ? t('modules.pages.salesOrder.netPriceMatchCurrentEmpty')
+          : formatAmount(entry.expectedPrice),
+    })
+  }
   if (state === 'MISMATCH') {
     if (entry?.expectedPrice === undefined) {
       return t('modules.pages.salesOrder.netPriceMatchMismatchDetail')

@@ -114,6 +114,8 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     noPrice: string[]
     noPriceIds: string[]
     skipped: number
+    /** 按抗震牌号替代取价的行: { 行id: 实际命中的牌号 }。 */
+    substitutedIds: Record<string, string>
   } | null>(null)
   const mountedRef = useRef(true)
 
@@ -421,11 +423,24 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
           }),
         )
       }
+      /*
+       * 按抗震牌号替代取价必须说出来: 用户报的是 HRB400, 系统按 HRB400E 的价填了单,
+       * 不提示就是悄悄换了计价口径。条数进摘要, 具体行在内联标识里看得见。
+       */
+      const substitutedCount = Object.keys(outcome.substitutedIds).length
+      if (substitutedCount > 0) {
+        message.info(
+          t('modules.pages.salesOrder.netPriceSubstituted', {
+            count: substitutedCount,
+          }),
+        )
+      }
       setApplySummary({
         filled: outcome.filled,
         noPrice: outcome.noPrice,
         noPriceIds: outcome.noPriceIds,
         skipped: outcome.skipped,
+        substitutedIds: outcome.substitutedIds,
       })
       // 整单取价后自动重查一次: 行内标识与汇总提示立即反映新单价(用刚写入的明细)。
       if (mountedRef.current) void runMatchCheck(outcome.nextItems)
@@ -492,6 +507,15 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
             count: applySummary.skipped,
           }),
           tone: 'muted' as const,
+        },
+        {
+          // 替代取价单独成项: 用户必须能看到"有 N 行是按 400E 代取的"
+          key: 'substituted',
+          count: Object.keys(applySummary.substitutedIds).length,
+          text: t('modules.pages.salesOrder.netPriceApplySubstituted', {
+            count: Object.keys(applySummary.substitutedIds).length,
+          }),
+          tone: 'warning' as const,
         },
       ].filter((part) => part.count > 0)
     : []

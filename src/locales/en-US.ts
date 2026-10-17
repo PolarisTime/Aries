@@ -1787,6 +1787,10 @@ export const enUS = {
         netPriceApplyFilled: 'Filled {{count}}',
         netPriceApplyNoPrice: 'No net price {{count}} (kept, fill manually)',
         netPriceApplySkipped: 'Skipped {{count}}',
+        /** Seismic-grade substitution: reported HRB400 but only HRB400E is traded. */
+        netPriceApplySubstituted: 'Substituted grade {{count}}',
+        netPriceSubstituted:
+          '{{count}} row(s) priced using the seismic grade (e.g. HRB400E): no quote for the reported material, so the same-strength seismic grade was used',
         /** "Net price match" column: icon + text, never colour alone (WCAG 1.4.1). */
         netPriceMatchColumn: 'Net price match',
         netPriceMatchMatched: 'Matched',
@@ -1795,6 +1799,9 @@ export const enUS = {
         netPriceMatchUnchecked: 'Not checked',
         netPriceMatchMatchedDetail:
           'Unit price equals the net price with the price rule applied',
+        /** Seismic-grade substitution: no quote for the reported material, HRB400E was used. */
+        netPriceMatchSubstitutedDetail:
+          'No quote for the reported material; priced with the seismic grade {{material}} (expected {{expected}})',
         netPriceMatchMismatchDetail:
           'Expected {{expected}}, current unit price {{current}}',
         netPriceMatchCurrentEmpty: 'empty',

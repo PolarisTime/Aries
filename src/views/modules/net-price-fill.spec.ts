@@ -9,7 +9,9 @@ import {
   hasItemIdentity,
   normalizeDateValue,
   resolveNetPrice,
+  resolveNetPriceHit,
   round2,
+  substituteMaterialOf,
   summarizeNetPriceMatch,
 } from './net-price-fill'
 
@@ -298,5 +300,105 @@ describe('hasItemIdentity', () => {
     expect(hasItemIdentity(item({ brand: '中天' }))).toBe(true)
     expect(hasItemIdentity(item({}))).toBe(false)
     expect(hasItemIdentity(item({ material: '  ' }))).toBe(false)
+  })
+})
+
+/**
+ * 抗震牌号替代取价(业务: 项目报 HRB400, 但现货只有 HRB400E, 实际按 400E 网价结算)。
+ *
+ * <p>库里实测: 报单行 HRB400 有 124 条, 而商品资料里 HRB400E 239 个、HRB400 仅 63 个 ——
+ * 报 400 的行取不到价是常态。替代必须"能取到价"且"一路可见", 不能静默换口径。</p>
+ */
+describe('抗震牌号替代取价', () => {
+  const base = {
+    brand: '中天',
+    category: '螺纹钢',
+    spec: '16',
+    length: '9米',
+  }
+
+  it('普通牌号补 E: HRB400 → HRB400E, 其他情况不替代', () => {
+    expect(substituteMaterialOf('HRB400')).toBe('HRB400E')
+    expect(substituteMaterialOf('hrb400')).toBe('HRB400E')
+    expect(substituteMaterialOf(' HRB400 ')).toBe('HRB400E')
+    expect(substituteMaterialOf('HRB335')).toBe('HRB335E')
+    // 已是抗震牌号不再补 E(否则 400E → 400EE)
+    expect(substituteMaterialOf('HRB400E')).toBeNull()
+    // 跨强度替换不归取价管(那是改设计强度), 一律不替代
+    expect(substituteMaterialOf('HPB300')).toBeNull()
+    expect(substituteMaterialOf('')).toBeNull()
+    expect(substituteMaterialOf(null)).toBeNull()
+  })
+
+  it('本行材质无网价时用同强度抗震牌号的价, 并标记 substituted', () => {
+    const index = buildNetPriceIndex([
+      row({ ...base, material: 'HRB400E', price: '3420' }),
+    ])
+    const hit = resolveNetPriceHit(item({ ...base, material: 'HRB400' }), index)
+    expect(hit?.price).toBe(3420)
+    expect(hit?.substituted).toBe(true)
+    expect(hit?.matchedMaterial).toBe('HRB400E')
+    // 反例钉: 不能把别人的 400 价当成命中(这里 400 根本没数据)
+    expect(hit?.price).not.toBe(3400)
+  })
+
+  it('本行材质自己有网价时优先用自己, 不做替代', () => {
+    const index = buildNetPriceIndex([
+      row({ ...base, material: 'HRB400', price: '3400' }),
+      row({ ...base, material: 'HRB400E', price: '3420' }),
+    ])
+    const hit = resolveNetPriceHit(item({ ...base, material: 'HRB400' }), index)
+    // 400 有价就用 400 的 3400, 不该跳到 400E 的 3420
+    expect(hit?.price).toBe(3400)
+    expect(hit?.substituted).toBeUndefined()
+  })
+
+  it('两者都没有网价时返回 undefined(交给"无网价, 请手工填写")', () => {
+    const index = buildNetPriceIndex([])
+    expect(
+      resolveNetPriceHit(item({ ...base, material: 'HRB400' }), index),
+    ).toBeUndefined()
+  })
+
+  it('整单取价把替代行单独记进 substitutedIds, 且单价用 400E 的价', () => {
+    const index = buildNetPriceIndex([
+      row({ ...base, material: 'HRB400E', price: '3420' }),
+    ])
+    const outcome = applyNetPricesToItems(
+      [
+        item({ id: 'a', ...base, material: 'HRB400' }),
+        item({ id: 'b', ...base, material: 'HRB400E' }),
+      ],
+      index,
+    )
+    // 两行都取到价: 400 行靠替代, 400E 行靠自身
+    expect(outcome.filled).toBe(2)
+    expect(outcome.noPrice).toHaveLength(0)
+    // 只有 400 那行被标记为替代
+    expect(outcome.substitutedIds).toEqual({ a: 'HRB400E' })
+    expect(outcome.nextItems[0].unitPrice).toBe(3420)
+    expect(outcome.nextItems[1].unitPrice).toBe(3420)
+  })
+
+  it('核查结果带上 substitutedMaterial, 行内标识才能说明按哪个牌号取的价', () => {
+    const index = buildNetPriceIndex([
+      row({ ...base, material: 'HRB400E', price: '3420' }),
+    ])
+    const entry = evaluateNetPriceMatch(
+      item({ ...base, material: 'HRB400', unitPrice: 3420 }),
+      index,
+    )
+    expect(entry.state).toBe('MATCHED')
+    expect(entry.substitutedMaterial).toBe('HRB400E')
+
+    const ownIndex = buildNetPriceIndex([
+      row({ ...base, material: 'HRB400', price: '3400' }),
+    ])
+    const ownEntry = evaluateNetPriceMatch(
+      item({ ...base, material: 'HRB400', unitPrice: 3400 }),
+      ownIndex,
+    )
+    // 自己有价时不该被标成替代
+    expect(ownEntry.substitutedMaterial).toBeUndefined()
   })
 })

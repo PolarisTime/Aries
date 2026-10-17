@@ -1737,6 +1737,13 @@ export const zhCN = {
         netPriceApplyFilled: '成功 {{count}} 行',
         netPriceApplyNoPrice: '无网价 {{count}} 行（保持原值，请手工填写）',
         netPriceApplySkipped: '跳过 {{count}} 行',
+        /**
+         * 抗震牌号替代取价: 报的是 HRB400, 但现货只有 HRB400E, 实际按 400E 网价结算。
+         * 必须显式告知 —— 不说明就等于悄悄换了计价口径。
+         */
+        netPriceApplySubstituted: '按抗震牌号代取 {{count}} 行',
+        netPriceSubstituted:
+          '{{count}} 行按抗震牌号（如 HRB400E）取了价：该材质现货无网价，已用同强度抗震牌号代替',
         /** 明细行「网价匹配」列: 图标 + 文字双通道, 不以颜色为唯一区分(WCAG 1.4.1)。 */
         netPriceMatchColumn: '网价匹配',
         netPriceMatchMatched: '匹配',
@@ -1744,6 +1751,9 @@ export const zhCN = {
         netPriceMatchNoPrice: '无网价',
         netPriceMatchUnchecked: '未核查',
         netPriceMatchMatchedDetail: '当前单价与网价（含加价/减价）一致',
+        /** 抗震牌号替代: 报的是 HRB400, 网价实际取自 HRB400E。 */
+        netPriceMatchSubstitutedDetail:
+          '本行报的材质无网价，已按抗震牌号 {{material}} 取价（应为 {{expected}}）',
         netPriceMatchMismatchDetail:
           '网价应为 {{expected}}，当前单价 {{current}}',
         netPriceMatchCurrentEmpty: '空',
