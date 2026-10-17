@@ -1,3 +1,10 @@
+# [13.2.0](https://github.com/PolarisTime/Aries/compare/v13.1.0...v13.2.0) (2026-10-17)
+
+
+### Features
+
+* **modules:** 整单取价支持抗震牌号代取, 报 HRB400 可按 HRB400E 取价 ([5035dd7](https://github.com/PolarisTime/Aries/commit/5035dd728c01f9b66611c728f204c8965ce4e085))
+
 # [13.1.0](https://github.com/PolarisTime/Aries/compare/v13.0.1...v13.1.0) (2026-10-17)
 
 
