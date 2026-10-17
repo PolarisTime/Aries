@@ -460,7 +460,13 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
    */
   const applyButton = (
     <Button
-      aria-disabled={!canApplyNetPrice}
+      /*
+       * 只在确实不可用时输出 aria-disabled: 写成 `aria-disabled={!canApply}` 会渲染
+       * `aria-disabled="false"`, 与同时存在的 `disabled`(saving) 一起形成
+       * `aria-disabled="false" disabled=""` 的矛盾状态(SC 4.1.2)。可用时留空, 让
+       * 原生 disabled 单独表达「保存中」。
+       */
+      aria-disabled={canApplyNetPrice ? undefined : true}
       className={
         canApplyNetPrice
           ? 'overlay-action-button'
@@ -530,18 +536,39 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       : summary.mismatch > 0
         ? 'warning'
         : 'success'
+  /*
+   * 结论图标是装饰(真值由后面的文案表达), 统一 aria-hidden —— 否则 antd 图标默认
+   * role="img" + aria-label, 读屏会把结论念成"check-circle 本单 4 行…"。
+   */
   const summaryIcon =
     summaryTone === 'success' ? (
-      <CheckCircleFilled className="net-price-summary-icon net-price-summary-icon--success" />
+      <CheckCircleFilled
+        aria-hidden="true"
+        className="net-price-summary-icon net-price-summary-icon--success"
+      />
     ) : summaryTone === 'warning' ? (
-      <ExclamationCircleFilled className="net-price-summary-icon net-price-summary-icon--warning" />
+      <ExclamationCircleFilled
+        aria-hidden="true"
+        className="net-price-summary-icon net-price-summary-icon--warning"
+      />
     ) : (
-      <MinusCircleFilled className="net-price-summary-icon net-price-summary-icon--muted" />
+      <MinusCircleFilled
+        aria-hidden="true"
+        className="net-price-summary-icon net-price-summary-icon--muted"
+      />
     )
 
   return (
     <>
-      {/* 第一层: 操作区。按钮成组, 与右侧结论区分离, 不再让文字挤在按钮之间 */}
+      {/*
+       * 单行工具栏: 左侧动作组(全部 32px 同高、只有「整单取网价」一个强调层),
+       * 右侧纯结论区(aria-live 只包文本, 不放可聚焦控件)。
+       *
+       * 重排前的问题: 动作组里主按钮 32px、次按钮 24px(size="small")、明细入口
+       * 又是 24px 的 link 蓝字 —— 同一行三种控件高度/三种强调档位; 明细入口还嵌在
+       * role="status" 里, 每次变更都会连按钮文案一起被播报。现在明细入口回到动作组,
+       * 与「重新核查网价」同形, 结论区只剩文本。
+       */}
       <div className="net-price-toolbar">
         <Space align="center" size={8} wrap>
           {/* 非草稿/交付核定: 禁用不静默, tooltip 说清可用状态 */}
@@ -556,20 +583,40 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
             disabled={saving || checking}
             loading={checking}
             onClick={() => void runMatchCheck()}
-            size="small"
           >
             {t('modules.pages.salesOrder.netPriceMatchRecheck')}
           </Button>
+          {/*
+           * 明细入口: 条件是"有没有明细行"(没有明细就没有可看的清单), 不是"有没有问题行"。
+           * 零值不在按钮上重复计数 —— 「0 行待处理」既不是信息, 又会让强调色指向"没事",
+           * 且与左侧「N 行未核查」并排时容易被读成自相矛盾的两个数字。
+           */}
+          {items.length > 0 ? (
+            <Button
+              className="net-price-problems-entry"
+              onClick={() => setProblemsOpen(true)}
+            >
+              {problemIds.length > 0
+                ? t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
+                    count: problemIds.length,
+                  })
+                : t(
+                    'modules.pages.salesOrder.netPriceMatchProblemsButtonEmpty',
+                  )}
+            </Button>
+          ) : null}
         </Space>
         {/*
-          第二层: 结论区。结论(图标 + 一句话)在前、取价结果在后、明细入口靠右, 三块各有自己的
-          视觉层级 —— 原文案把三者以同一字重连排成一行, 用户扫不出"到底有没有问题"。
-          aria-live 播报让读屏用户不必主动回看; 行内标识另有「网价匹配」列。
+          结论区只放文本: `role="status"` 已隐含 aria-live=polite, 不必重复声明;
+          内部不再有按钮, 读屏播报的就是结论本身。行内标识另有「网价匹配」列。
         */}
-        <div aria-live="polite" className="net-price-summary" role="status">
+        <div className="net-price-summary" role="status">
           {checkError ? (
             <span className="net-price-summary-line">
-              <ExclamationCircleFilled className="net-price-summary-icon net-price-summary-icon--warning" />
+              <ExclamationCircleFilled
+                aria-hidden="true"
+                className="net-price-summary-icon net-price-summary-icon--warning"
+              />
               <Text type="danger">{checkError}</Text>
             </span>
           ) : (
@@ -595,18 +642,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
               ))}
             </span>
           ) : null}
-          {items.length > 0 ? (
-            <Button
-              className="net-price-problems-entry"
-              onClick={() => setProblemsOpen(true)}
-              size="small"
-              type="link"
-            >
-              {t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
-                count: problemIds.length,
-              })}
-            </Button>
-          ) : null}
         </div>
       </div>
       <Modal
@@ -623,7 +658,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         destroyOnHidden
       >
         <ul className="net-price-problems">
-          {items.map((item) => {
+          {problemRowsFirst(items, problemIds).map((item) => {
             const itemId = String(item.id)
             return (
               <li key={itemId}>
@@ -808,6 +843,26 @@ function describeProblem(
     return t('modules.pages.salesOrder.netPriceMatchNoPriceDetail')
   }
   return ''
+}
+
+/**
+ * 弹层行序: 待处理行(不匹配 / 无网价)置顶, 其余按明细顺序跟在后面。
+ *
+ * <p>唯一来源: 按钮计数(`problemIds`)与弹层排序都用这一份 id 集合, 不再各算一遍 ——
+ * 之前按钮写"N 行待处理"、弹层却按明细顺序列全部行, 用户点进去看不到"N"行在哪。</p>
+ */
+function problemRowsFirst(
+  items: readonly ModuleLineItem[],
+  problemIds: readonly string[],
+): ModuleLineItem[] {
+  const problemSet = new Set(problemIds)
+  const problems: ModuleLineItem[] = []
+  const others: ModuleLineItem[] = []
+  for (const item of items) {
+    if (problemSet.has(String(item.id))) problems.push(item)
+    else others.push(item)
+  }
+  return [...problems, ...others]
 }
 
 /** 二次确认：说清会改写多少行（其中多少行原本没有网价），取消即不改写。 */

@@ -389,7 +389,14 @@ describe('SalesOrderNetPriceFiller', () => {
       await Promise.resolve()
     })
     const applyBtn = buttonByText('整单取网价')
-    expect(applyBtn?.getAttribute('aria-disabled')).toBe('false')
+    /*
+     * 可用时**不输出** aria-disabled(而不是输出 "false")。
+     *
+     * <p>同时存在 `disabled={saving}` 时, 写成 `aria-disabled={!canApply}` 会渲染
+     * `<button aria-disabled="false" disabled="">` —— 一边说可用、一边是原生禁用,
+     * 读屏拿到的状态自相矛盾(SC 4.1.2)。因此只断"没有被标成不可用"。</p>
+     */
+    expect(applyBtn?.getAttribute('aria-disabled')).not.toBe('true')
     await act(async () => {
       applyBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
@@ -427,7 +434,7 @@ describe('SalesOrderNetPriceFiller', () => {
     const applyBtn = buttonByText('整单取网价')
     expect(applyBtn, '新建单据也该渲染按钮').toBeTruthy()
     // 空状态按草稿处理 ⇒ 可用; 直接排除空串会得到 'true'
-    expect(applyBtn?.getAttribute('aria-disabled')).toBe('false')
+    expect(applyBtn?.getAttribute('aria-disabled')).not.toBe('true')
 
     // 可用就必须真的能打开取价弹层(不只是不变灰)
     await act(async () => {
@@ -445,8 +452,8 @@ describe('SalesOrderNetPriceFiller', () => {
       )
       await Promise.resolve()
     })
-    expect(buttonByText('整单取网价')?.getAttribute('aria-disabled')).toBe(
-      'false',
+    expect(buttonByText('整单取网价')?.getAttribute('aria-disabled')).not.toBe(
+      'true',
     )
   })
 
@@ -1225,5 +1232,120 @@ describe('SalesOrderNetPriceFiller', () => {
     await clickRecheck()
     expect(container.textContent).toContain('实际取价日没有行情，无法取价')
     expect(useNetPriceMatchStore.getState().entries.r1).toBeUndefined()
+  })
+
+  /**
+   * 工具栏形态契约: 动作组按钮同高、只有一档强调、结论区不含可聚焦控件。
+   *
+   * <p>回归的真实缺陷(实测截图): 主按钮 32px、次按钮 24px("small")、明细入口又是
+   * 24px 的 link 蓝字 —— 同一行三种高度/三种档位; 且明细入口嵌在 role="status" 里,
+   * 每次结论变化都会连按钮文案一起被播报。</p>
+   */
+  it('工具栏动作组按钮同高同形态, 结论区 status 内不含按钮', async () => {
+    fetchPricingQuoteResolutionMock.mockResolvedValue(resolution())
+    const observed = createObserved()
+    await mountObserved(observed, [row({ id: 'r1', materialId: 'm1' })])
+
+    const toolbar = container.querySelector('.net-price-toolbar')
+    expect(toolbar).toBeTruthy()
+    const actionButtons = Array.from(
+      toolbar?.querySelectorAll<HTMLButtonElement>('.ant-space button') ?? [],
+    )
+    expect(actionButtons.length).toBeGreaterThanOrEqual(3)
+
+    // 1) 不再混用 small 档: small 是 24px, 与 32px 主按钮并排会一高一低
+    for (const button of actionButtons) {
+      expect(button.className).not.toContain('ant-btn-sm')
+      expect(button.className).not.toContain('ant-btn-link')
+    }
+
+    // 2) 强调层只有「整单取网价」一个(软蓝底); 其余不得再带同一强调类
+    const emphasized = actionButtons.filter((button) =>
+      button.classList.contains('overlay-action-button'),
+    )
+    expect(emphasized).toHaveLength(1)
+    expect(emphasized[0].textContent).toContain('整单取网价')
+
+    // 3) role="status" 只播报文本: 里面不能有可聚焦控件(否则变更时会重播按钮文案)
+    const status = container.querySelector('[role="status"]')
+    expect(status).toBeTruthy()
+    expect(status?.querySelector('button')).toBeNull()
+    expect(status?.textContent).toContain('网价匹配：1 行未核查')
+  })
+
+  /**
+   * 零值不在入口上重复计数。
+   *
+   * <p>「（0 行待处理）」既不是信息, 又让强调色指向"没事"; 与「N 行未核查」并排时
+   * 两个数字容易被读成自相矛盾。零值时入口仍保留(用户要能打开清单), 但不带计数。</p>
+   */
+  it('零待处理行时明细入口不带计数, 有待处理行时才带', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    // 网价 3400 + 加价 30 = 3430: 单价填 3430 才是"一致"
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 3430 }),
+    ])
+    await clickRecheck()
+
+    // 单价与网价一致 ⇒ 0 行待处理
+    const entryButton = buttonByText('网价匹配明细')
+    expect(entryButton).toBeTruthy()
+    expect(entryButton?.textContent).not.toContain('待处理')
+
+    // 改成不一致后重查 ⇒ 1 行待处理, 计数才出现
+    await act(async () => {
+      observed.replaceItems?.([
+        row({ id: 'r1', materialId: 'm1', unitPrice: 3200 }),
+      ])
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickRecheck()
+    expect(container.textContent).toContain('网价匹配明细（1 行待处理）')
+  })
+
+  /**
+   * 明细弹层的行序: 待处理行置顶。
+   *
+   * <p>按钮写「N 行待处理」而弹层按明细顺序列全部行时, 用户点进去看不到那 N 行在哪;
+   * 现在两边共用同一份 problemIds(唯一来源)。</p>
+   */
+  it('明细弹层把待处理行排在最前面', async () => {
+    fetchProjectPriceRulesMock.mockResolvedValue([
+      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
+    ])
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
+    const observed = createObserved()
+    // r2 在前且一致(3430 = 3400 + 30), r1 在后且不一致 ⇒ 弹层里 r1 必须被提到第一位
+    await mountObserved(observed, [
+      row({ id: 'r2', materialId: 'm1', material: 'HRB400', unitPrice: 3430 }),
+      row({ id: 'r1', materialId: 'm1', material: 'HRB400E', unitPrice: 3200 }),
+    ])
+    await clickRecheck()
+    expect(container.textContent).toContain('网价匹配明细（1 行待处理）')
+
+    await act(async () => {
+      buttonByText('网价匹配明细')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const modal = Array.from(document.querySelectorAll('.ant-modal')).find(
+      (m) => m.textContent?.includes('网价匹配明细'),
+    )
+    expect(modal).toBeTruthy()
+    const labels = Array.from(
+      modal?.querySelectorAll('.net-price-problems-label') ?? [],
+    ).map((node) => node.textContent ?? '')
+    expect(labels).toHaveLength(2)
+    // 待处理行(HRB400E, 单价 3200 与应有 3430 不一致)排第一
+    expect(labels[0]).toContain('HRB400E')
   })
 })

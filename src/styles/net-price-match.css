@@ -3,14 +3,18 @@
  *
  * 重设计前: 状态句 / 取价结果 / 明细入口以同一字重挤在一行, 用户扫不出结论, 且零值项
  * ("无网价 0 行 · 跳过 0 行")也照写, 正常取价时尾部拖一串 0。
- * 重设计后分两层: 左侧成组操作按钮, 右侧结论区(结论 → 取价结果 → 明细入口)依次降权,
+ * 重设计后分两层: 左侧成组操作按钮, 右侧结论区(结论 → 取价结果)依次降权,
  * 每块各有自己的视觉位置, 不必在一行文字里找重点。
+ *
+ * 明细入口已从左栏外侧移回动作组(见 SalesOrderNetPriceFiller 顶部注释):
+ * 结论区只留文本, role="status" 里不再有可聚焦控件。
  */
 .net-price-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-xs) var(--space-md);
+  /* 单值: 横纵同一档, 避免与 Space 的内边距再叠一次(Flex 的 gap 只有一个口径)。 */
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
@@ -25,8 +29,16 @@
   gap: var(--space-sm);
   flex-wrap: wrap;
   min-width: 0;
-  font-size: 12px;
-  line-height: 1.4;
+  /*
+   * 字号走 14px(与按钮文字同阶), 不再压到 12px。
+   *
+   * <p>压到 12px 时层级没有变成"结论小而次要", 而是变成"结论与按钮不同号却同在一条中线",
+   * 加上按钮本身 24px 高, 结论文字只剩一条细缝; 而 antd 的 Typography 自带 font-size
+   * 声明, 父级 12px 对 `<Text>` 根本不生效, 实际渲染仍是 14px —— 同一块里图标 12px、
+   * 文字 14px, 等于写了一份没生效的样式。层级改由「灰 vs 蓝」「图标语义色」表达。</p>
+   */
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
 }
 
 /* 结论文案: 图标 + 文字成组, 不拆行 */
@@ -65,13 +77,10 @@
   flex-wrap: wrap;
 }
 
-.net-price-apply-result-title {
-  font-size: 12px;
-}
-
 /*
  * 结果分项: 成功/无网价/跳过各是一个紧凑标签, 一眼分清"哪些要处理"。
  * 零值项由渲染层过滤, 不在这里用 CSS 藏(隐藏文字仍会被读屏读到, 那是假隐藏)。
+ * 字号沿用结论区(继承 .net-price-summary), 不再单独写第二份 12px。
  */
 .net-price-apply-result-part {
   display: inline-flex;
@@ -79,7 +88,6 @@
   padding: 0 var(--space-xs);
   height: 20px;
   border-radius: var(--ant-border-radius-sm);
-  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -99,12 +107,12 @@
 }
 
 /*
- * 明细入口: 靠右独立成操作, 不再紧贴正文连排(原样式让链接看起来像句子的一部分)。
- * 命中区 ≥24×24 沿用全局 touch-targets 补丁, 这里只保证垂直居中。
+ * 明细入口: 已并入左侧动作组, 与「重新核查网价」同形(default 32px 按钮)。
+ * 这里不再做任何定位/内边距覆盖 —— 间距唯一来源是动作组自己的 Space gap,
+ * 叠加 padding-inline 曾把「结论文字 → 入口」撑到 22px, 反比跨组 16px 还宽。
  */
 .net-price-problems-entry {
   flex: none;
-  padding-inline: var(--space-xs);
 }
 
 .net-price-problems {

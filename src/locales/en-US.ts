@@ -1814,6 +1814,8 @@ export const enUS = {
         netPriceMatchProblemsTitle: 'Net price match details',
         netPriceMatchProblemsButton:
           'Net price details ({{count}} need attention)',
+        /** Zero-attention entry: no count (zero is not information). */
+        netPriceMatchProblemsButtonEmpty: 'Net price match details',
         netPriceMatchEmpty: 'This order has no line items',
         netPriceMatchSummaryUnchecked:
           'Net price match: {{total}} row(s) not checked',
