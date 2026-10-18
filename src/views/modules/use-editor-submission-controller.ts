@@ -34,6 +34,7 @@ import type {
   PersistedModuleEditorDraftFor,
 } from '@/types/module-record'
 import { message, modal } from '@/utils/antd-app'
+import { confirmDanger } from '@/utils/confirm-danger'
 import {
   focusFirstInvalidField,
   readAntdFormValidationErrorFields,
@@ -308,8 +309,12 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
                 editorAuditActionKind || 'audit',
               ),
             )
+            /*
+             * 「保存并审核 / 确认发货核验」会把单据推到不可回退的状态，属破坏性操作：
+             * 走 confirmDanger 保证默认焦点在「取消」，回车不会直接推进状态。
+             */
             const confirmed = await new Promise<boolean>((resolve) => {
-              modal.confirm({
+              confirmDanger({
                 title: confirmDeliveryVerification
                   ? t('modules.editorFooter.confirmDeliveryVerification')
                   : t('modules.editorFooter.saveAndAction', {

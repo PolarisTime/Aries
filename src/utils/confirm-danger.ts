@@ -48,7 +48,13 @@ export function confirmDanger(options: ConfirmDangerOptions): void {
     /*
      * 显式放在展开之后：即使调用方传了 autoFocusButton 也不能覆盖成确认侧，
      * 否则本出口的"默认安全"保证就漏了。
+     *
+     * 两处都写：
+     * - `focusable.autoFocusButton` 是 antd 6 的新 API（antd 内部优先读它）；
+     * - 顶层 `autoFocusButton` 在 antd 6 已标 @deprecated 但仍被读取，
+     *   保留它可使 5.x 语义与调用方既有断言（含本仓库测试）继续成立。
      */
+    focusable: { autoFocusButton: 'cancel' },
     autoFocusButton: 'cancel',
     okButtonProps: danger ? { danger: true } : undefined,
   } as ModalFuncProps)
