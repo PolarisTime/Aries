@@ -5,7 +5,9 @@ import type { Key } from 'react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SalesContractResponse } from '@/api/sales/sales-contracts'
+import { EmptyState } from '@/components/EmptyState'
 import { StatusTag } from '@/components/StatusTag'
+import { useEmptyState } from '@/hooks/useEmptyState'
 import { SALES_CONTRACT_QUOTA_STATUSES } from '@/shared/schemas/sales-contract'
 import type { ModuleStatusMeta } from '@/types/module-page'
 import { formatAmount, formatDate, formatWeight } from '@/utils/formatters'
@@ -192,6 +194,22 @@ export function SalesContractTable({
     ]
   }, [statusMap, t])
 
+  /*
+   * 与模块列表页共用同一个空态出口：状态未知（加载中）不判空，加载完成且无记录时
+   * 给"还没有任何数据"与下一步动作，而不是 antd 默认的「暂无数据」。
+   */
+  const emptyStateView = useEmptyState({
+    hasData: isLoading || isFetching ? null : records.length > 0,
+  })
+  const emptyText = emptyStateView ? (
+    <EmptyState
+      type={emptyStateView.type}
+      title={emptyStateView.title}
+      description={emptyStateView.description}
+      hint={emptyStateView.hint}
+    />
+  ) : null
+
   if (hasListError) {
     return (
       <Alert
@@ -238,6 +256,12 @@ export function SalesContractTable({
             onDoubleClick: () => onRecordDoubleClick(record),
           })}
           scroll={{ x: 'max-content', y: scrollY }}
+          /*
+           * 空态收敛到共享 EmptyState：此前这里没传 locale，antd 会兜底成一朵灰云
+           * 「暂无数据」，与模块列表页的「还没有任何数据 + 创建第一条记录」两套观感。
+           * 同一个系统里"没数据"应当只有一种说法与一个下一步动作。
+           */
+          locale={{ emptyText }}
         />
       </div>
       <ModuleTablePagination

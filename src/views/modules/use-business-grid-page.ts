@@ -108,6 +108,7 @@ export function useBusinessGridPage({
     handleSearch: data.searchGrid,
     isFetching: data.isFetching,
     isLoading: data.isLoading,
+    isRetrying: data.isRetrying,
     listErrorMessage: data.listErrorMessage,
     listHasError: data.listHasError,
     lockedLineItemsNotice: actions.lockedLineItemsNotice,

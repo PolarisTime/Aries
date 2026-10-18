@@ -19,7 +19,8 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import { message, modal } from '@/utils/antd-app'
+import { message } from '@/utils/antd-app'
+import { confirmDanger } from '@/utils/confirm-danger'
 import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
 import { PrintJobModalBody } from '@/views/modules/components/PrintJobModalBody'
 import { PrintJobModalFooter } from '@/views/modules/components/PrintJobModalFooter'
@@ -174,12 +175,12 @@ export function PrintJobModal({
   })
 
   const handleRequestClose = () => {
-    modal.confirm({
+    // 关闭打印弹层会丢弃已排好的打印项：不可逆，默认焦点必须在「继续」而非「关闭」
+    confirmDanger({
       title: t('modules.print.closeConfirmTitle'),
       content: t('modules.print.closeConfirmContent'),
       okText: t('common.close'),
       cancelText: t('modules.print.continueJob'),
-      okButtonProps: { danger: true },
       onOk: () => {
         dispatchPrintJobModal({ type: 'reset' })
         onClose()

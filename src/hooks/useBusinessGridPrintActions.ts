@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { createElement } from 'react'
+import { createElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   exportModuleRecordsByIds,
@@ -129,6 +129,16 @@ export function useBusinessGridPrintActions({
   selectedRowKeys,
   selectedRows = [],
 }: Props) {
+  /**
+   * 导出/打印的进行中标记。
+   *
+   * <p>「导出选中 N 条」此前全程没有任何反馈：点下去到文件落地之间界面毫无变化，
+   * 用户会以为没生效而**重复点击**，于是并发发起多次导出（服务端渲染队列被同一批
+   * 单据打满）。这里统一给两个入口上锁，并在按钮侧用 loading 表达进度。</p>
+   */
+  const [exportingSelected, setExportingSelected] = useState(false)
+  const [printingSelected, setPrintingSelected] = useState(false)
+
   const { t } = useTranslation()
 
   const handleExportSalesOrderPrintXlsx = async (
@@ -182,7 +192,19 @@ export function useBusinessGridPrintActions({
       message.warning(t('common.pleaseSelect'))
       return false
     }
+    // 进行中直接忽略重复点击：否则会并发发起多次导出
+    if (exportingSelected) return false
+    setExportingSelected(true)
+    try {
+      return await runExportSelectedRecords(printOptions)
+    } finally {
+      setExportingSelected(false)
+    }
+  }
 
+  const runExportSelectedRecords = async (
+    printOptions?: PrintRenderOptions,
+  ) => {
     // 勾选集可能包含重复 key（跨页保留选择），去重后每条记录只导出一次
     const recordIds = [...new Set(selectedRowKeys.map((key) => String(key)))]
 
@@ -262,7 +284,21 @@ export function useBusinessGridPrintActions({
       message.warning(t('common.pleaseSelect'))
       return false
     }
+    // 打印/下载进行中忽略重复点击：一次只渲染一单，重复点只会排队
+    if (printingSelected) return false
+    setPrintingSelected(true)
+    try {
+      return await runPrintSelectedRecords(mode, selectedTemplate, printOptions)
+    } finally {
+      setPrintingSelected(false)
+    }
+  }
 
+  const runPrintSelectedRecords = async (
+    mode: PrintActionMode,
+    selectedTemplate?: PrintTemplateRecord,
+    printOptions?: PrintRenderOptions,
+  ) => {
     if (selectedRowKeys.length > 1) {
       message.warning(t('hooks.printActions.singleRecordOnly'))
       return false
@@ -320,5 +356,10 @@ export function useBusinessGridPrintActions({
     handlePrintSelectedRecords,
     handleExportSalesOrderPrintXlsx,
     handleExportSelectedRecords,
+    /** 导出选中进行中（按钮 loading 用） */
+    exportingSelected,
+    /** 打印选中进行中（按钮 loading 用） */
+    printingSelected,
+    setPrintingSelected,
   }
 }

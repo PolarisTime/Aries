@@ -183,7 +183,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-xxs);
-  color: var(--theme-primary);
+  color: var(--theme-primary-text);
   text-decoration: none;
   cursor: pointer;
 }
@@ -197,7 +197,7 @@
 }
 
 .table-detail-toggle-btn:hover {
-  color: var(--theme-primary);
+  color: var(--theme-primary-text);
 }
 
 .table-detail-toggle-btn.is-active {
@@ -218,7 +218,7 @@
 }
 
 .module-table-expand-button:hover {
-  color: var(--theme-primary);
+  color: var(--theme-primary-text);
 }
 
 .module-table-expand-button:focus-visible {
@@ -354,7 +354,7 @@
   width: 56px;
   min-width: 56px;
   height: 56px;
-  color: var(--theme-primary);
+  color: var(--theme-primary-text);
   font-size: 18px;
   background: var(--theme-primary-soft);
   border-radius: var(--ant-border-radius-lg);

@@ -108,7 +108,11 @@ export function AppTabContainer() {
   }, [tabs])
 
   return (
-    <Content className="leo-content">
+    /*
+     * `id` + `tabIndex={-1}` 是 Skip link 的落点：跳转后焦点必须真的进到内容区，
+     * 否则键盘用户按「跳到主要内容」后焦点仍停在页眉，等于没跳。
+     */
+    <Content id="main-content" tabIndex={-1} className="leo-content">
       <LayoutTabBar />
       <AppBreadcrumb />
       <div className="leo-content-inner leo-tab-viewport">

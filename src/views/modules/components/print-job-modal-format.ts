@@ -1,6 +1,7 @@
 import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
+import { formatAmount as formatAmountValue } from '@/utils/formatters'
 import type {
   PrintItemFieldKey,
   PrintItemFieldSpec,
@@ -115,10 +116,17 @@ export function formattedTotal(value: number | null, fractionDigits = 3) {
   return fixed.replace(/\.?0+$/, '')
 }
 
-/** 金额、单价统一两位小数展示。 */
+/**
+ * 金额、单价展示：委托给全站唯一出口 {@link formatAmount}。
+ *
+ * <p>这里原本是 `numeric.toFixed(2)`，不带千分位，与表格列（`utils/formatters.ts`
+ * 的 `formatAmount`）渲染出两种样子 —— 同一笔金额在打印弹层是 `1234567.00`、
+ * 在列表是 `1,234,567.00`。打印件与屏幕对不上账，用户会怀疑数据错。
+ * 现在只保留"空值 → `-`"这层打印语义，数字格式统一由全局出口决定。</p>
+ */
 export function formatAmount(value: unknown) {
   const numeric = toNumberOrNull(value)
-  return numeric == null ? '-' : numeric.toFixed(2)
+  return numeric == null ? '-' : formatAmountValue(numeric)
 }
 
 /** 按字段语义格式化明细单元格：件数取整、重量三位去尾零、金额两位小数。 */

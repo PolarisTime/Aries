@@ -27,7 +27,8 @@ import {
 } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { message, modal } from '@/utils/antd-app'
+import { message } from '@/utils/antd-app'
+import { confirmDanger } from '@/utils/confirm-danger'
 import {
   mergeColumnOrder,
   moveColumnKey,
@@ -336,12 +337,16 @@ export function useBusinessGridTable({
           return next
         })
       },
+      /*
+       * 行级危险动作（删除等）的二次确认：统一走 confirmDanger，
+       * 保证默认焦点落在「取消」侧（antd 默认聚焦确认按钮，回车即执行）。
+       */
       requestConfirm: ({ title, okText, cancelText, danger, onOk }) =>
-        modal.confirm({
+        confirmDanger({
           title,
           okText,
           cancelText,
-          ...(danger ? { okButtonProps: { danger: true } } : {}),
+          danger,
           onOk,
         }),
     })

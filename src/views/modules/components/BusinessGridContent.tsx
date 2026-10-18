@@ -25,6 +25,8 @@ interface Props {
   defaultFilters: SearchParams
   submittedFilters: SearchParams
   loading: boolean
+  /** 失败后正在自动重试的窗口（见 BusinessGridTable 的 isRetrying 说明） */
+  isRetrying?: boolean
   hasLoadError: boolean
   loadErrorMessage: string
   exporting: boolean
@@ -83,6 +85,7 @@ export function BusinessGridContent({
   defaultFilters,
   submittedFilters,
   loading,
+  isRetrying,
   hasLoadError,
   loadErrorMessage,
   exporting,
@@ -207,6 +210,9 @@ export function BusinessGridContent({
               rowContextMenus={rowContextMenus}
               dataSource={records}
               loading={loading}
+              isRetrying={isRetrying}
+              /* 表格用途名（业务名，非内部 key）：读屏区分主表/明细表 */
+              tableLabel={t('modules.table.gridLabel', { title: config.title })}
               currentPage={currentPage}
               pageSize={pageSize}
               rowSelection={rowSelection}

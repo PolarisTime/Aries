@@ -324,6 +324,7 @@ export const enUS = {
     pleaseSelect: 'Please select',
     pleaseInput: 'Please input',
     confirmLogout: 'Confirm Logout',
+    skipToContent: 'Skip to main content',
     logout: 'Sign Out',
     saveSuccess: 'Saved Successfully',
     addSuccess: 'Added Successfully',
@@ -694,6 +695,10 @@ export const enUS = {
       splitItemMenuLabel: 'Split quantity…',
       /** Accessible name of the item row context menu */
       rowContextMenuLabel: 'Actions for the "{{name}}" item row',
+      /** Accessible name for the data grid (distinguishes main vs detail tables) */
+      gridLabel: '{{title}} list',
+      /** Screen-reader column name for the detail-expand column */
+      expandDetailColumn: 'Expand detail',
       /** Accessible name of the group header context menu */
       groupContextMenuLabel: 'Actions for group {{index}}',
       mergeItem: 'Merge split',
@@ -984,6 +989,9 @@ export const enUS = {
     },
     print: {
       noTemplate: 'No templates available',
+      /** Accessible name for a detail-row checkbox */
+      selectItemRow: 'Select item: {{label}}',
+      selectAllItemRows: 'Select all item rows',
       preview: 'Print Preview',
       directPrint: 'Direct Print',
       downloadPdf: 'Export PDF',

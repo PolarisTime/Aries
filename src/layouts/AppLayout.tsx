@@ -338,6 +338,14 @@ export function AppLayout() {
   const layoutShell = (
     <Layout className={rootClassName} style={shellFontStyle}>
       <div className="leo-page-loader" />
+      {/*
+       * Skip link（WCAG 2.4.1 Bypass Blocks）：此前从页眉到正文要按 7 次 Tab
+       * （品牌按钮 → 顶栏菜单 → 刷新 → 搜索框 → 搜索按钮 → 用户菜单 → 页签）。
+       * 这是全站第一个可聚焦元素，平时视觉隐藏、聚焦时显形。
+       */}
+      <a className="skip-to-content-link" href="#main-content">
+        {t('common.skipToContent')}
+      </a>
 
       {!isTopNavigationLayout ? (
         <SideNavigation

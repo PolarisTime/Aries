@@ -80,28 +80,36 @@ export function buildTabContextMenuItems({
           },
         ]),
     { type: 'divider' },
-    // 不可关闭的标签不出现「关闭当前标签」这一删除类项
+    /*
+     * 关闭类都是不可逆操作（标签里的未保存编辑会丢），统一用 danger 语义色，
+     * 与「刷新/固定」这类非破坏性项区分开（AGENTS.md 上下文菜单契约：破坏性项用 danger）。
+     * 不可关闭的标签不出现「关闭当前标签」这一删除类项。
+     */
     ...(isTabPinned(tab)
       ? []
-      : [{ key: 'close', label: t('layouts.tabs.close') }]),
+      : [{ key: 'close', label: t('layouts.tabs.close'), danger: true }]),
     {
       key: 'closeOthers',
       label: t('layouts.tabs.closeOthers'),
+      danger: true,
       disabled: targets.others.length === 0,
     },
     {
       key: 'closeLeft',
       label: t('layouts.tabs.closeLeft'),
+      danger: true,
       disabled: targets.left.length === 0,
     },
     {
       key: 'closeRight',
       label: t('layouts.tabs.closeRight'),
+      danger: true,
       disabled: targets.right.length === 0,
     },
     {
       key: 'closeAll',
       label: t('layouts.tabs.closeAll'),
+      danger: true,
       disabled: targets.all.length === 0,
     },
   ]

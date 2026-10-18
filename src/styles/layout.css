@@ -72,7 +72,7 @@
 .leo-top-menu.ant-menu-horizontal > .ant-menu-submenu:hover,
 .leo-top-menu.ant-menu-horizontal > .ant-menu-item-active,
 .leo-top-menu.ant-menu-horizontal > .ant-menu-submenu-active {
-  color: var(--theme-primary) !important;
+  color: var(--theme-primary-text) !important;
   background: transparent;
 }
 
@@ -83,7 +83,7 @@
 
 .leo-top-menu.ant-menu-horizontal > .ant-menu-item-selected,
 .leo-top-menu.ant-menu-horizontal > .ant-menu-submenu-selected {
-  color: var(--theme-primary) !important;
+  color: var(--theme-primary-text) !important;
   font-weight: 600;
   background: transparent;
   box-shadow: none;

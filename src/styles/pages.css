@@ -401,7 +401,7 @@
 }
 
 .login-step-tag.is-password {
-  color: var(--theme-primary);
+  color: var(--theme-primary-text);
   background: var(--theme-highlight-bg);
 }
 

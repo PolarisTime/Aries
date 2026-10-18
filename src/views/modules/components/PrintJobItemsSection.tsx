@@ -341,8 +341,23 @@ export function PrintJobItemsSection({
   const rowSelection: TableProps<PrintRecordItem>['rowSelection'] = {
     align: 'center',
     columnWidth: 40,
-    getCheckboxProps: () => ({ disabled: !itemSelectionEnabled }),
-    getTitleCheckboxProps: () => ({ disabled: !itemSelectionEnabled }),
+    /*
+     * 明细行复选框必须带可访问名：否则读屏在每一行都只念「复选框」，
+     * 用户无法判断勾的是哪一条物料（WCAG 4.1.2）。名称带行内物料标识。
+     */
+    getCheckboxProps: (record) => ({
+      disabled: !itemSelectionEnabled,
+      'aria-label': t('modules.print.selectItemRow', {
+        // PrintRecordItem 没有 materialName/Code：用 品牌+材质+规格 拼出可辨认的行标识
+        label: [record.brand, record.material, record.spec]
+          .filter(Boolean)
+          .join(' / '),
+      }),
+    }),
+    getTitleCheckboxProps: () => ({
+      disabled: !itemSelectionEnabled,
+      'aria-label': t('modules.print.selectAllItemRows'),
+    }),
     preserveSelectedRowKeys: true,
     selectedRowKeys: selectedPrintItems.map((item) => item.id),
     onChange: (keys) => {

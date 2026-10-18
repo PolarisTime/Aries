@@ -32,8 +32,15 @@ declare module '@tanstack/react-table' {
   interface ColumnMeta<TFeatures, TData, TValue> {
     width?: number | string
     align?: string
-    fixed?: string
-    ellipsis?: string
+    /**
+     * 固定列方向: `left` 固定左侧、`right` 固定右侧。
+     *
+     * <p>必须由列定义透传到 antd 列上: 光在 `meta` 里写 `fixed` 不会生效 ——
+     * `buildAntdColumns` 只读 `columnDef.meta?.fixed`, 而这里的 meta 原先只写
+     * width/align/renderCell, 于是业务网格所有页面的固定列恒为 0, 横向滚动时
+     * 首列整列滚出视野(实测 `firstCellLeft = -317`)。</p>
+     */
+    fixed?: 'left' | 'right'
     renderCell?: (record: ModuleRecord) => ReactNode
   }
 }

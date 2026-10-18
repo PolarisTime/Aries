@@ -320,6 +320,7 @@ export const zhCN = {
     pleaseSelect: '请选择',
     pleaseInput: '请输入',
     confirmLogout: '确认退出',
+    skipToContent: '跳到主要内容',
     logout: '退出登录',
     saveSuccess: '保存成功',
     addSuccess: '新增成功',
@@ -958,6 +959,9 @@ export const zhCN = {
       exceededTonnage: '本次超出吨位：{{value}}',
     },
     print: {
+      /** 明细行复选框的可访问名：读屏要能分辨勾的是哪一条物料 */
+      selectItemRow: '选择明细：{{label}}',
+      selectAllItemRows: '全选明细行',
       noTemplate: '无可用模板',
       preview: '打印预览',
       directPrint: '直接打印',
@@ -1100,6 +1104,10 @@ export const zhCN = {
     table: {
       /** 通用业务列表的行右键菜单可访问名 */
       rowContextMenuLabel: '「{{title}}」行操作菜单',
+      /** 表格的可访问名：读屏用它区分同页的主表/明细表（WCAG 1.3.1） */
+      gridLabel: '{{title}}列表',
+      /** 明细展开列的读屏列名（表头视觉为空，按钮靠 aria-label 表达） */
+      expandDetailColumn: '明细展开',
       noData: '暂无数据',
       sequence: '序号',
       /** 虚拟滚动时行右键菜单不可用的可见说明 */

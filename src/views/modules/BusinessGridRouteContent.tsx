@@ -112,6 +112,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           loading={
             state.isLoading || state.isFetching || state.editorLockLoading
           }
+          isRetrying={state.isRetrying}
           loadErrorMessage={state.listErrorMessage}
           hasLoadError={state.listHasError}
           exporting={state.exporting}

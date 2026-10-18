@@ -8,6 +8,7 @@ import {
   RowDragSortScope,
 } from '@/components/table/row-drag'
 import type { MaterialSearchController } from '@/module-system/editor/module-editor-material-select'
+import { formatAmount } from '@/utils/formatters'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { withFinally } from '@/utils/with-finally'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
@@ -346,10 +347,7 @@ export function ExpenseItemsSummaryBar({
       {t('modules.expense.rowCount', { count })} ·{' '}
       {t('modules.expense.totalAmount')}：
       <Typography.Text strong>
-        {(totalExpenseAmount ?? 0).toLocaleString('zh-CN', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
+        {formatAmount(totalExpenseAmount ?? 0)}
       </Typography.Text>
     </Typography.Text>
   )

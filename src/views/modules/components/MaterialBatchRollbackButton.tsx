@@ -5,7 +5,8 @@ import {
   type MaterialBatchRollbackResult,
   rollbackMaterialImportBatch,
 } from '@/api/master/materials'
-import { message, modal } from '@/utils/antd-app'
+import { message } from '@/utils/antd-app'
+import { confirmDanger } from '@/utils/confirm-danger'
 
 interface Props {
   importBatchNo: string
@@ -41,12 +42,12 @@ export function MaterialBatchRollbackButton({
   }
 
   const handleClick = () => {
-    modal.confirm({
+    // 批量回滚不可逆：走 confirmDanger 保证默认焦点在「取消」，回车不会直接回滚
+    confirmDanger({
       title: t('modules.pages.material.rollbackConfirmTitle'),
       content: t('modules.pages.material.rollbackConfirmContent', {
         batchNo: importBatchNo,
       }),
-      okButtonProps: { danger: true },
       onOk: execute,
     })
   }

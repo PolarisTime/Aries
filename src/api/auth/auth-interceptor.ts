@@ -21,7 +21,6 @@ import { apiProblemSchema } from '@/shared/schemas/api'
 import { message } from '@/utils/antd-app'
 import { apiBaseUrl } from '@/utils/env'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
-import { navigateToServerErrorPage } from '@/utils/server-error-navigation'
 import { getToken } from '@/utils/storage'
 
 type BackendErrorResponse = {
@@ -143,7 +142,6 @@ function attachResponseMetadataToError(
 
 type GuardedAxiosInstance = AxiosInstance & {
   __leoAuthInterceptorsSetup?: boolean
-  __leoBackendOfflineNavigationStarted?: boolean
 }
 
 function isBackendUnavailableError(error: unknown): boolean {
@@ -210,7 +208,6 @@ export function setupAuthInterceptors(http: AxiosInstance) {
 
   http.interceptors.response.use(
     (response) => {
-      guardedInstance.__leoBackendOfflineNavigationStarted = false
       return (response.config as { returnFullResponse?: boolean })
         .returnFullResponse
         ? response
@@ -238,13 +235,21 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       if (isBackendUnavailableError(error)) {
         const description = normalizeErrorMessage(error.message, status)
         markHandledRequestError(error)
-        if (!guardedInstance.__leoBackendOfflineNavigationStarted) {
-          guardedInstance.__leoBackendOfflineNavigationStarted =
-            navigateToServerErrorPage()
-        }
         const networkErr = new Error(description)
         attachResponseMetadataToError(networkErr, error)
         markHandledRequestError(networkErr)
+        /*
+         * 后端不可达**不再整页跳 /server-error**。
+         *
+         * <p>原来的 `navigateToServerErrorPage()` 会 `location.assign` 整页导航：
+         * 所有页签、筛选条件、已填未保存的表单全部丢失，用户点一次浏览器返回也回不到
+         * 原上下文（多标签页 store 已随页面销毁）。而 5xx 的错误响应走的是"页面内
+         * Alert + 重试"（见 BusinessGridContent 的 hasLoadError 分支），
+         * 同一类故障出现两套完全不同的表现。</p>
+         *
+         * <p>现在两条路径统一为就地提示：错误对象照常向上抛，由页面渲染可重试的错误态；
+         * 页签、URL 与筛选条件都保留。只有登录态失效（401）才需要离开当前页。</p>
+         */
         return Promise.reject(networkErr)
       }
 
