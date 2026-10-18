@@ -173,3 +173,14 @@ export function getStatusColor(label: string): StatusColor {
     ? DOCUMENT_STATUS_REGISTRY[label].color
     : FALLBACK_STATUS_COLOR
 }
+
+/**
+ * 获取状态文案的 i18n key（未知状态返回 null，由调用方决定回退）。
+ *
+ * <p>审核确认框需要把「从什么状态 → 审到什么状态」说清楚，而状态文案本身只在
+ * {@link DOCUMENT_STATUS_REGISTRY} 里登记了一次。这里导出 key 而不是拼好的字符串，
+ * 是为了让调用方用自己的 `t()`（带当前语言）翻译，而不是在常量层写死某一种语言。</p>
+ */
+export function getStatusI18nKey(label: string): string | null {
+  return isKnownStatus(label) ? DOCUMENT_STATUS_REGISTRY[label].i18nKey : null
+}

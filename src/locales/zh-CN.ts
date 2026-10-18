@@ -750,6 +750,22 @@ export const zhCN = {
     statusActions: {
       audit: '审核',
       reverseAudit: '反审核',
+      /*
+       * 审核/反审核的二次确认文案。审核不是删除：不套"不可恢复"的删除语义。
+       * 可逆性由调用方按模块能力（supportsReverseAudit / 反审核目标）二选一：
+       *  - Reversible：能反审核退回，文案要明确告知退路；
+       *  - Final：无退回路径（如收付款单），文案必须说清"没有退回入口"。
+       */
+      confirmAuditTitle: '确认审核该单据？',
+      confirmAuditContentReversible:
+        '「{{no}}」将从「{{from}}」变为「{{to}}」。审核后单据进入后续流程；若需退回，可用「反审核」撤销。',
+      confirmAuditContentFinal:
+        '「{{no}}」将从「{{from}}」变为「{{to}}」。审核后单据进入后续流程，且本模块没有反审核入口，无法退回。',
+      confirmAuditOk: '审核',
+      confirmReverseAuditTitle: '确认反审核该单据？',
+      confirmReverseAuditContent:
+        '「{{no}}」将从「{{from}}」退回「{{to}}」。反审核会撤销已生效的审核，单据需要重新走审核流程。',
+      confirmReverseAuditOk: '反审核',
       confirm: '确认',
       reverseConfirm: '反确认',
       approve: '核准',
@@ -2061,6 +2077,15 @@ export const zhCN = {
       batchAction: '批量{{action}}',
       batchActionConfirm:
         '确定对选中的 {{count}} 条记录执行{{action}}吗？{{skippedPart}}',
+      /*
+       * 单条状态变更的确认文案：必须说清「哪张单 / 从什么状态 / 到什么状态 / 能否退回」。
+       * 可逆性按行解析（receipt/payment 没有反审核入口），因此两种措辞二选一，
+       * 不会对终态模块承诺"可以退回"。
+       */
+      statusChangeConfirmReversible:
+        '「{{no}}」将从「{{from}}」变为「{{to}}」。确认后单据进入后续流程；若需退回，可用「反审核」撤销。',
+      statusChangeConfirmFinal:
+        '「{{no}}」将从「{{from}}」变为「{{to}}」。确认后单据进入后续流程，且本模块没有反审核入口，无法退回。',
       actionFailed: '{{action}}失败',
       actionCompletedWithFailures:
         '{{action}}完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',

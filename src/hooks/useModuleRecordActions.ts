@@ -128,12 +128,22 @@ export function useModuleRecordActions({
         listAuditSourceStatuses,
       )
     ) {
-      const handleAudit = onAuditRecord
+      /*
+       * 审核的二次确认不在这里做。
+       *
+       * <p>行级审核最终走 `onAuditRecord(record)` → `runAudit([record])`，而
+       * `useBusinessGridBatchActions` 的 `runAudit` 内部已经通过
+       * `confirmAndApplyStatusChanges` 弹确认框。此前审查报告说"审核点下去直接执行"，
+       * 实测是**误判**：确认框确实存在，问题出在它（1）默认焦点在「确定」、
+       * （2）文案是通用的「确定对选中的 N 条记录执行审核吗？」，既不写单据号也不说明
+       * 状态怎么变、能否退回。修法是在那个唯一出口收敛，而不是在行级再加一层 ——
+       * 两层确认会让用户连点两次，且第二层文案才是决定性的。</p>
+       */
       items.push({
         key: 'audit',
         label: auditActionLabel,
         icon: resolveModuleActionIcon(auditActionLabel),
-        onClick: () => handleAudit(record),
+        onClick: () => onAuditRecord(record),
       })
     }
     const reverseAuditTarget =
@@ -146,7 +156,6 @@ export function useModuleRecordActions({
           )
         : null
     if (reverseAuditTarget && onReverseAuditRecord) {
-      const handleReverseAudit = onReverseAuditRecord
       // 文案跟随该行解析出的目标状态：回到「交付核定」是「重新核定」而不是「反审核」
       const reverseAuditLabel = t(
         resolveStatusChangeActionLabelKey(
@@ -157,7 +166,8 @@ export function useModuleRecordActions({
         key: 'reverse-audit',
         label: reverseAuditLabel,
         icon: resolveModuleActionIcon(reverseAuditLabel),
-        onClick: () => handleReverseAudit(record),
+        // 确认同样由 runReverseAudit → confirmAndApplyStatusChanges 统一负责
+        onClick: () => onReverseAuditRecord(record),
       })
     }
     const deliveryVerification = getModuleDeliveryVerification(moduleKey)

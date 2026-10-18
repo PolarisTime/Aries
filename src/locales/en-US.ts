@@ -772,6 +772,16 @@ export const enUS = {
     statusActions: {
       audit: 'Audit',
       reverseAudit: 'Reverse Audit',
+      confirmAuditTitle: 'Audit this document?',
+      confirmAuditContentReversible:
+        '"{{no}}" will change from "{{from}}" to "{{to}}". The document then enters the downstream flow; you can undo it later via "Reverse Audit".',
+      confirmAuditContentFinal:
+        '"{{no}}" will change from "{{from}}" to "{{to}}". The document then enters the downstream flow, and this module has no reverse-audit entry, so it cannot be rolled back.',
+      confirmAuditOk: 'Audit',
+      confirmReverseAuditTitle: 'Reverse the audit of this document?',
+      confirmReverseAuditContent:
+        '"{{no}}" will move back from "{{from}}" to "{{to}}". This revokes the effective audit; the document must go through auditing again.',
+      confirmReverseAuditOk: 'Reverse Audit',
       confirm: 'Confirm',
       reverseConfirm: 'Reverse Confirmation',
       approve: 'Approve',
@@ -2108,6 +2118,10 @@ export const enUS = {
       batchAction: 'Batch {{action}}',
       batchActionConfirm:
         'Apply {{action}} to {{count}} selected record(s)?{{skippedPart}}',
+      statusChangeConfirmReversible:
+        '"{{no}}" will change from "{{from}}" to "{{to}}". The document then enters the downstream flow; you can undo it later via "Reverse audit".',
+      statusChangeConfirmFinal:
+        '"{{no}}" will change from "{{from}}" to "{{to}}". The document then enters the downstream flow, and this module has no reverse-audit entry, so it cannot be rolled back.',
       actionFailed: '{{action}} failed',
       actionCompletedWithFailures:
         '{{action}} completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',

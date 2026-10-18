@@ -3,6 +3,7 @@ import {
   deleteBusinessModule,
   updateBusinessModuleStatus,
 } from '@/api/business/business-crud'
+import { getStatusI18nKey } from '@/constants/document-status'
 import {
   canAuditFromStatus,
   resolveReverseAuditTargetForStatus,
@@ -47,6 +48,19 @@ export function useBusinessGridBatchActions({
   const { t } = useTranslation()
 
   /**
+   * 状态中文值 → 当前语言下的状态名。
+   *
+   * <p>状态文案只在 `DOCUMENT_STATUS_REGISTRY` 登记一次（i18nKey），这里用调用方的
+   * `t()` 翻译；未登记的状态原样返回，避免把信息吞成空白。</p>
+   */
+  const statusLabel = (status: unknown) => {
+    const label = String(status ?? '').trim()
+    if (!label) return ''
+    const key = getStatusI18nKey(label)
+    return key ? t(key) : label
+  }
+
+  /**
    * 审核/反审核共用的执行体：调用方负责逐条校验（删除态 + 状态机）并给出目标状态，
    * 这里只做「弹确认框 → 并发执行 → 汇总提示」。
    *
@@ -65,79 +79,138 @@ export function useBusinessGridBatchActions({
      */
     const singleTargetNo =
       targets.length === 1 ? describeTargetRecordNo(targets[0].record) : ''
-    modal.confirm({
-      title: singleTargetNo
-        ? `${actionLabel} ${singleTargetNo}`
-        : t('hooks.batchActions.batchAction', { action: actionLabel }),
-      content: t('hooks.batchActions.batchActionConfirm', {
-        action: actionLabel,
-        count: targets.length,
-        skippedPart:
-          skippedCount > 0
-            ? t('hooks.batchActions.skippedPart', { count: skippedCount })
-            : '',
-      }),
-      onOk: async () => {
-        const statusResults = await Promise.allSettled(
-          targets.map(({ record, targetStatus }) =>
-            updateBusinessModuleStatus(
-              moduleKey,
-              String(record.id),
-              targetStatus,
-            ),
+    /*
+     * 单条审核要把后果说清楚：哪张单、从什么状态、到什么状态、能不能退回。
+     * 原来的通用文案「确定对选中的 1 条记录执行审核吗？」没有状态信息，
+     * 用户无法判断这次操作会把单据推进到哪一步。
+     *
+     * 可逆性**按行解析**而不是写死：`receipt` / `payment` 明确
+     * `supportsReverseAudit: false`，对它们不能承诺"可以用反审核退回"。
+     */
+    const singleTarget = targets.length === 1 ? targets[0] : null
+    const singleFromStatus = singleTarget
+      ? statusLabel(singleTarget.record.status)
+      : ''
+    const singleToStatus = singleTarget
+      ? statusLabel(singleTarget.targetStatus)
+      : ''
+    const singleCanReverse = singleTarget
+      ? Boolean(
+          resolveReverseAuditTargetForStatus(
+            moduleKey,
+            singleTarget.targetStatus,
+            listAuditTarget,
+            listReverseAuditTarget,
           ),
         )
-        let successCount = 0
-        let failedCount = 0
-        let firstError = ''
-        for (const result of statusResults) {
-          if (result.status === 'fulfilled') {
-            successCount += 1
-          } else {
-            failedCount += 1
-            if (!firstError) {
-              firstError =
-                result.reason instanceof Error
-                  ? result.reason.message
-                  : t('hooks.batchActions.actionFailed', {
-                      action: actionLabel,
-                    })
+      : false
+    /*
+     * 推迟一个宏任务再弹确认框。
+     *
+     * <p><b>实测到的真实缺陷</b>：用键盘在行菜单里按 Enter 选「审核」时，确认框会
+     * **闪现约 180ms 后自己消失**（MutationObserver：add=1870ms / del=2048ms），
+     * 而鼠标点同一个菜单项则正常停留、焦点在「取消」。原因不是没弹出来，而是：
+     * 菜单项 onClick 在 Enter 的 keydown 里同步执行 → 弹层立即挂载 →
+     * `autoFocusButton:'cancel'` 把焦点移到「取消」→ **同一个 Enter keydown 的默认动作
+     * 正好"点击"这个刚拿到焦点的按钮** → 取消 → 弹层关闭。键鼠差异正来自 keydown。</p>
+     *
+     * <p>推迟到当前事件序列之后，Enter 的默认动作已经在原焦点上完成，
+     * 不会落到新出现的按钮上；`setTimeout(0)` 即可，无可感知延迟。</p>
+     */
+    setTimeout(() => {
+      modal.confirm({
+        title: singleTargetNo
+          ? `${actionLabel} ${singleTargetNo}`
+          : t('hooks.batchActions.batchAction', { action: actionLabel }),
+        content: singleTarget
+          ? t(
+              singleCanReverse
+                ? 'hooks.batchActions.statusChangeConfirmReversible'
+                : 'hooks.batchActions.statusChangeConfirmFinal',
+              {
+                no: singleTargetNo,
+                from: singleFromStatus,
+                to: singleToStatus,
+                action: actionLabel,
+              },
+            )
+          : t('hooks.batchActions.batchActionConfirm', {
+              action: actionLabel,
+              count: targets.length,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedPart', { count: skippedCount })
+                  : '',
+            }),
+        /*
+         * 破坏性确认的默认焦点必须在「取消」侧：antd 默认聚焦确认按钮，
+         * 用户手还在回车键上时按一次就把单据推进了状态。
+         * 同时用 antd 6 的新 API（focusable）与仍被读取的顶层字段，避免 5.x 语义漂移。
+         */
+        focusable: { autoFocusButton: 'cancel' },
+        autoFocusButton: 'cancel',
+        onOk: async () => {
+          const statusResults = await Promise.allSettled(
+            targets.map(({ record, targetStatus }) =>
+              updateBusinessModuleStatus(
+                moduleKey,
+                String(record.id),
+                targetStatus,
+              ),
+            ),
+          )
+          let successCount = 0
+          let failedCount = 0
+          let firstError = ''
+          for (const result of statusResults) {
+            if (result.status === 'fulfilled') {
+              successCount += 1
+            } else {
+              failedCount += 1
+              if (!firstError) {
+                firstError =
+                  result.reason instanceof Error
+                    ? result.reason.message
+                    : t('hooks.batchActions.actionFailed', {
+                        action: actionLabel,
+                      })
+              }
             }
           }
-        }
 
-        if (failedCount > 0) {
-          message.warning(
-            t('hooks.batchActions.actionCompletedWithFailures', {
-              action: actionLabel,
-              successCount,
-              failedCount,
-              skippedPart:
-                skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', {
-                      count: skippedCount,
-                    })
-                  : '',
-              errorPart: firstError ? `；${firstError}` : '',
-            }),
-          )
-        } else {
-          message.success(
-            t('hooks.batchActions.actionSuccess', {
-              action: actionLabel,
-              successCount,
-              skippedPart:
-                skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', {
-                      count: skippedCount,
-                    })
-                  : '',
-            }),
-          )
-        }
-        await refreshAndClearSelection()
-      },
-    })
+          if (failedCount > 0) {
+            message.warning(
+              t('hooks.batchActions.actionCompletedWithFailures', {
+                action: actionLabel,
+                successCount,
+                failedCount,
+                skippedPart:
+                  skippedCount > 0
+                    ? t('hooks.batchActions.skippedCount', {
+                        count: skippedCount,
+                      })
+                    : '',
+                errorPart: firstError ? `；${firstError}` : '',
+              }),
+            )
+          } else {
+            message.success(
+              t('hooks.batchActions.actionSuccess', {
+                action: actionLabel,
+                successCount,
+                skippedPart:
+                  skippedCount > 0
+                    ? t('hooks.batchActions.skippedCount', {
+                        count: skippedCount,
+                      })
+                    : '',
+              }),
+            )
+          }
+          await refreshAndClearSelection()
+        },
+      })
+    }, 0)
   }
 
   /**

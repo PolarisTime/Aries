@@ -6,7 +6,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { ModuleRecord } from '@/types/module-page'
-import { useBusinessGridBatchActions } from './useBusinessGridBatchActions'
+import {
+  type AuditTarget,
+  useBusinessGridBatchActions,
+} from './useBusinessGridBatchActions'
 
 const antdAppMock = vi.hoisted(() => ({
   message: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
@@ -37,6 +40,13 @@ type BatchActions = ReturnType<typeof useBusinessGridBatchActions>
 
 function record(patch: Partial<ModuleRecord>): ModuleRecord {
   return patch as ModuleRecord
+}
+
+/** 确认框被推迟一个宏任务（避免 Enter 的默认动作命中取消按钮），测试需等待它出现。 */
+async function flushConfirm() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
 }
 
 /** 取最后一次 modal.confirm 的 content 文本(确认框正文拼接结果)。 */
@@ -197,7 +207,13 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
     container.remove()
   })
 
-  const render = (selectedRows: ModuleRecord[]) => {
+  const render = (
+    selectedRows: ModuleRecord[],
+    overrides: {
+      listReverseAuditTarget?: AuditTarget | null
+      listAuditSourceStatuses?: string[]
+    } = {},
+  ) => {
     let captured: BatchActions | null = null
     function Harness() {
       captured = useBusinessGridBatchActions({
@@ -205,8 +221,11 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
         selectedRowKeys: selectedRows.map((item) => String(item.id)),
         selectedRows,
         listAuditTarget: AUDIT_TARGET,
-        listReverseAuditTarget: REVERSE_TARGET,
-        listAuditSourceStatuses: undefined,
+        listReverseAuditTarget:
+          overrides.listReverseAuditTarget === undefined
+            ? REVERSE_TARGET
+            : overrides.listReverseAuditTarget,
+        listAuditSourceStatuses: overrides.listAuditSourceStatuses,
         listAuditActionKind: 'audit',
         listReverseAuditActionKind: 'reverseAudit',
         refreshAndClearSelection: vi.fn(),
@@ -224,6 +243,8 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
       title?: unknown
       content?: unknown
       onOk?: () => Promise<void>
+      autoFocusButton?: string | null
+      focusable?: { autoFocusButton?: string | null }
     }
 
   it('多选集合包含该行时, 行级审核只提交该行', async () => {
@@ -237,18 +258,42 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
     act(() => {
       actions.runAudit([rows[1]])
     })
+    await flushConfirm()
 
     expect(antdAppMock.modal.confirm).toHaveBeenCalledTimes(1)
     expect(lastConfirm().title).toBe('审核 SO-2')
-    expect(String(lastConfirm().content)).toBe(
-      '确定对选中的 1 条记录执行审核吗？',
-    )
+    // 单条审核文案要说清状态变化（而不是通用的「对 N 条记录执行审核」）
+    expect(String(lastConfirm().content)).toContain('草稿')
+    expect(String(lastConfirm().content)).toContain('已审核')
+    // 默认焦点必须在取消侧
+    expect(lastConfirm().autoFocusButton).toBe('cancel')
 
     await act(async () => {
       await lastConfirm().onOk?.()
     })
     expect(updateStatusMock).toHaveBeenCalledTimes(1)
     expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '已审核')
+  })
+
+  it('无退回路径的模块: 审核文案不承诺"可反审核退回"', async () => {
+    // 模拟 receipt/payment（supportsReverseAudit:false）：没有反审核目标
+    const rows = [record({ id: '1', no: 'SO-1', status: '草稿' })]
+    const actions = render(rows, {
+      listReverseAuditTarget: null,
+      // 没有反审核目标时，审核放行条件由 auditSourceStatuses 提供（与真实终态模块一致）
+      listAuditSourceStatuses: ['草稿'],
+    })
+
+    act(() => {
+      actions.runAudit([rows[0]])
+    })
+    await flushConfirm()
+
+    const content = String(lastConfirm().content)
+    // 不能承诺"可以退回"（那是误导），必须明确"无法退回"
+    expect(content).not.toContain('可用「反审核」撤销')
+    expect(content).toContain('没有反审核入口')
+    expect(content).toContain('无法退回')
   })
 
   it('行级反审核逐行解析目标状态, 且只提交该行', async () => {
@@ -261,8 +306,10 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
     act(() => {
       actions.runReverseAudit([rows[1]])
     })
+    await flushConfirm()
 
     expect(lastConfirm().title).toBe('反审核 SO-2')
+    expect(lastConfirm().autoFocusButton).toBe('cancel')
     await act(async () => {
       await lastConfirm().onOk?.()
     })
@@ -295,6 +342,7 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
     act(() => {
       actions.handleSelectedAuditRecords()
     })
+    await flushConfirm()
 
     expect(String(lastConfirm().content)).toBe(
       '确定对选中的 2 条记录执行审核吗？另有 1 条因状态不支持将跳过。',
