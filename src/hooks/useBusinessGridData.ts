@@ -117,6 +117,17 @@ export function useBusinessGridData({
     currentPage,
     // react-doctor: intentional callback, not event handler
     pageSize,
+    /*
+     * 页面级默认排序的唯一消费点(`ModulePageConfig.defaultSort`)。
+     * 缺省时不传, 由后端各接口的 `PageQuery.toPageable(defaultSortBy)` 决定 ——
+     * 前端不重复声明默认排序, 也不猜字段名。
+     */
+    ...(resolvedConfig.defaultSort
+      ? {
+          sortBy: resolvedConfig.defaultSort.field,
+          sortDirection: resolvedConfig.defaultSort.direction,
+        }
+      : {}),
   })
   const recordIdsKey = records.map((record) => record.id).join(',')
 

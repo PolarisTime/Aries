@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
 import type { RowContextMenuMap } from '@/components/row-context-menu'
+import { buildScopedOverview } from '@/config/business-pages/shared/shared-overview'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
@@ -14,6 +15,7 @@ import type {
 } from '@/types/module-page'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
+import { ModuleFilterActiveSummary } from '@/views/modules/components/ModuleFilterActiveSummary'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
@@ -45,7 +47,13 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
   onApplyFilters: (filters: SearchParams) => void
+  /** 重置筛选: 清本地 state; 传了 `onClearRouteFilters` 时调用方已保证 URL 同步清掉 */
   onReset: () => void
+  /**
+   * 清掉 URL 里驱动筛选的参数(实现在路由层, 见 `consumeRouteFilterSearch`)。
+   * 有值时「重置」会先清 URL 再清 state, 两者同一动作, 避免刷新后筛选静默复活。
+   */
+  onClearRouteFilters?: () => void
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
@@ -104,6 +112,7 @@ export function BusinessGridContent({
   onUpdateFilter,
   onApplyFilters,
   onReset,
+  onClearRouteFilters,
   onCreate,
   onExport,
   onRefresh,
@@ -129,8 +138,28 @@ export function BusinessGridContent({
     () => hasNonDefaultFilters(submittedFilters, defaultFilters),
     [submittedFilters, defaultFilters],
   )
-  const overviewItems = config.buildOverview(
-    selectedRows.length ? selectedRows : records,
+  /*
+   * 「重置」= 清 URL 筛选参数 + 清本地筛选 state, 两者是同一个动作的两个出口。
+   * 只清 state 会让 URL 里的 docNo 在刷新/切回页签/重挂载时被重新灌回界面
+   * (实测: 清空后 30 条, 刷新后只剩 1 条)。URL 侧的清理实现与路由同步同源。
+   */
+  const handleResetFilters = () => {
+    onClearRouteFilters?.()
+    onReset()
+  }
+  /*
+   * 汇总口径必须显式带标签: 勾选行后数据源会从"本页"换成"仅选中",
+   * 静默换数会让「单据数量」在同一屏读出两个数(见 buildScopedOverview)。
+   * 这里只把两批行交给唯一出口, 不在本组件里另写"选没选"的判断。
+   */
+  const overviewItems = useMemo(
+    () =>
+      buildScopedOverview({
+        buildItems: config.buildOverview,
+        pageRows: records,
+        selectedRows,
+      }),
+    [config.buildOverview, records, selectedRows],
   )
 
   return (
@@ -143,7 +172,13 @@ export function BusinessGridContent({
           submittedFilters={submittedFilters}
           onUpdateFilter={onUpdateFilter}
           onApplyFilters={onApplyFilters}
-          onReset={onReset}
+          onReset={handleResetFilters}
+        />
+        {/* 筛选生效提示: 只显示与默认值不同的条件数, 0 项时不渲染 */}
+        <ModuleFilterActiveSummary
+          submittedFilters={submittedFilters}
+          defaultFilters={defaultFilters}
+          onClear={handleResetFilters}
         />
       </div>
 
@@ -224,7 +259,7 @@ export function BusinessGridContent({
                 hasError: hasLoadError,
                 hasFilters: hasActiveFilters,
                 canCreate,
-                onResetFilters: onReset,
+                onResetFilters: handleResetFilters,
                 onCreate,
                 onRetry,
               }}

@@ -243,6 +243,22 @@ export interface ModulePageConfig {
   /** 明细工具栏附加操作（如销售订单交付核定的「整单取网价」）。 */
   renderItemsActions?: (ctx: ModuleItemsActionsContext) => ReactNode
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
+  /**
+   * 列表默认服务端排序（`sortBy` + `direction`，字段必须在后端
+   * `PageSortFieldCatalog` 的白名单内）。
+   *
+   * <p>语义: **缺省由后端决定** —— 各接口自行调用 `PageQuery.toPageable('xxx')`
+   * 给出默认排序字段, 前端不重复声明, 也不猜测。只有"后端默认排序不符合业务习惯"
+   * 的页面才在这里覆盖。</p>
+   *
+   * <p>消费点唯一: `useBusinessGridData` 读取后透传给 `useInfiniteBusinessItems`
+   * （→ `buildQueryParams` → `sortBy`/`direction` 查询参数）。不要在其它 hook 里
+   * 再读一次, 否则同一排序会有两个出口。</p>
+   *
+   * <p>当前唯一覆盖: `/operation-log` —— 审计日志的默认任务是"看最新发生了什么",
+   * 而后端默认按 `operationTime` 升序, 26 万条数据下最新日志落在最后一页, 等于不可用。</p>
+   */
+  defaultSort?: { field: string; direction: 'asc' | 'desc' }
   statusMap?: Record<string, ModuleStatusMeta>
   rowHighlightStatuses?: string[]
   saveFields?: {

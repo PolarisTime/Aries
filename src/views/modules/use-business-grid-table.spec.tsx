@@ -13,7 +13,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { ActionItem } from '@/components/TableActions'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { useBusinessGridTable } from './use-business-grid-table'
+import {
+  MORE_ACTIONS_COLUMN_ID,
+  MORE_ACTIONS_COLUMN_WIDTH,
+  resolveRowMenuSelection,
+  useBusinessGridTable,
+} from './use-business-grid-table'
 
 /** 隐藏列回调是基元内部闭包, 这里用假 antd app api 捕获提示文案。 */
 const antdAppMock = vi.hoisted(() => ({
@@ -295,5 +300,158 @@ describe('useBusinessGridTable 列头/行菜单联动', () => {
     expect(table.rowSelection?.getCheckboxProps?.({ id: 'r9' })).toEqual({
       'aria-label': '选择此行：r9',
     })
+  })
+})
+
+describe('resolveRowMenuSelection —— 行菜单对选中集的唯一口径', () => {
+  const record = { id: 'r2' } as unknown as ModuleRecord
+
+  it('分支 1: 菜单所属行已在选中集内时保持多选, 不缩成单行', () => {
+    const setSelectedRowKeys = vi.fn()
+    const setSelectedRowMap = vi.fn()
+
+    resolveRowMenuSelection({
+      record,
+      selectedRowKeys: ['r1', 'r2', 'r3'],
+      setSelectedRowKeys,
+      setSelectedRowMap,
+    })
+
+    // 关键断言: 一个 setter 都不能被调用 —— 批量目标保持不变
+    expect(setSelectedRowKeys).not.toHaveBeenCalled()
+    expect(setSelectedRowMap).not.toHaveBeenCalled()
+  })
+
+  it('分支 2: 行不在选中集内时把选中集切换为该行', () => {
+    const setSelectedRowKeys = vi.fn()
+    const setSelectedRowMap = vi.fn()
+
+    resolveRowMenuSelection({
+      record,
+      selectedRowKeys: ['r1', 'r3'],
+      setSelectedRowKeys,
+      setSelectedRowMap,
+    })
+
+    expect(setSelectedRowKeys).toHaveBeenCalledWith(['r2'])
+    // 选中行映射必须只剩目标行, 否则工具栏会以为还选着别的行
+    const updater = setSelectedRowMap.mock.calls[0][0] as (
+      prev: Record<string, ModuleRecord>,
+    ) => Record<string, ModuleRecord>
+    expect(updater({ r1: { id: 'r1' } as ModuleRecord })).toEqual({
+      r2: record,
+    })
+  })
+
+  it('分支 2: 空选中集时同样切换为该行', () => {
+    const setSelectedRowKeys = vi.fn()
+    resolveRowMenuSelection({
+      record,
+      selectedRowKeys: [],
+      setSelectedRowKeys,
+      setSelectedRowMap: vi.fn(),
+    })
+    expect(setSelectedRowKeys).toHaveBeenCalledWith(['r2'])
+  })
+})
+
+describe('行尾「更多操作」列 —— 触屏可见入口(WCAG 2.2 SC 2.1.1)', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh-CN')
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  function renderWithSelection(): TableResult {
+    let captured: TableResult | null = null
+    function Harness() {
+      captured = useBusinessGridTable({
+        moduleKey: CONFIG.key,
+        config: CONFIG,
+        records: RECORDS,
+        selectedRowKeys: [],
+        setSelectedRowKeys: vi.fn() as unknown as Dispatch<
+          SetStateAction<string[]>
+        >,
+        setSelectedRowMap: vi.fn() as unknown as (
+          updater: (
+            prev: Record<string, ModuleRecord>,
+          ) => Record<string, ModuleRecord>,
+        ) => void,
+        buildActions: (record) => [
+          { key: 'edit', label: `编辑${String(record.id)}`, onClick: vi.fn() },
+        ],
+      })
+      return null
+    }
+    act(() => root.render(createElement(Harness)))
+    return captured as unknown as TableResult
+  }
+
+  it('列固定右侧, 且宽度取 40(24px 命中区 + 左右各 8px)', () => {
+    const table = renderWithSelection()
+    const column = table.antdColumns.find(
+      (item) => item.key === MORE_ACTIONS_COLUMN_ID,
+    )
+    expect(column).toBeTruthy()
+    expect(column?.fixed).toBe('right')
+    expect(column?.width).toBe(MORE_ACTIONS_COLUMN_WIDTH)
+    // 40 是 8 的倍数(间距规范), 且刚好容纳 24px 命中区 + 两侧内边距
+    expect(MORE_ACTIONS_COLUMN_WIDTH).toBe(40)
+    expect(MORE_ACTIONS_COLUMN_WIDTH % 8).toBe(0)
+  })
+
+  it('每行渲染一个带可访问名的可见按钮(与行菜单同一份配置)', () => {
+    const table = renderWithSelection()
+    const column = table.antdColumns.find(
+      (item) => item.key === MORE_ACTIONS_COLUMN_ID,
+    )
+    const render = column?.render as (
+      value: unknown,
+      record: ModuleRecord,
+    ) => ReactElement<{ children?: unknown }>
+    const node = render(null, RECORDS[0])
+    // ContextMenu 触发器的可访问名来自同一份 rowContextMenus
+    const menuAriaLabel = table.rowContextMenus.get('r1')?.ariaLabel
+    expect(menuAriaLabel).toBeTruthy()
+    expect(node).toBeTruthy()
+    const trigger = (node as unknown as { props: { children: ReactElement } })
+      .props.children
+    const triggerProps = trigger.props as {
+      'aria-label'?: string
+      'aria-haspopup'?: string
+    }
+    expect(triggerProps['aria-haspopup']).toBe('menu')
+    expect(triggerProps['aria-label']).toBe(menuAriaLabel)
+  })
+
+  it('没有菜单配置的行不渲染按钮(避免空按钮)', () => {
+    const table = renderWithSelection()
+    const column = table.antdColumns.find(
+      (item) => item.key === MORE_ACTIONS_COLUMN_ID,
+    )
+    const render = column?.render as (
+      value: unknown,
+      record: ModuleRecord,
+    ) => unknown
+    expect(render(null, { id: 'unknown-row' } as ModuleRecord)).toBeNull()
+  })
+
+  it('勾选列固定左侧且表头有可访问名(走 rowSelection 官方 API)', () => {
+    const table = renderWithSelection()
+    expect(table.rowSelection?.fixed).toBe('start')
+    expect(table.rowSelection?.columnTitle).toBe('全选当前页所有行')
   })
 })

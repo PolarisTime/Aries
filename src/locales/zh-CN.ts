@@ -710,6 +710,10 @@ export const zhCN = {
       settledAmount: '已结算金额',
       statementCount: '对账单数',
       balance: '余额',
+      /* 汇总口径前缀: 勾选行后范围从"本页"切到"仅选中", 标签必须跟着换,
+         否则同一标签在同一屏能读出两个数(实测 30 张 vs 2 张, 同时写着共 88 条)。 */
+      scopePage: '本页合计',
+      scopeSelection: '已选 {{count}} 项',
     },
     status: {
       draft: '草稿',
@@ -911,6 +915,9 @@ export const zhCN = {
       freightBill: '物流单',
       salesOrder: '销售订单',
       activeCount: '已启用 {{count}} 项',
+      /* 筛选生效提示: 只统计与默认值不同的条件, 让"现在有几项在生效"可见可清空。 */
+      activeFilterCount: '已筛选 {{count}} 项',
+      clearActiveFilters: '清空筛选',
     },
     formField: {
       inputPlaceholder: '请输入{{label}}',
@@ -1120,6 +1127,9 @@ export const zhCN = {
       expandDetailColumn: '明细展开',
       noData: '暂无数据',
       sequence: '序号',
+      /* 行尾「更多操作」列的表头。列里是行菜单的可见入口 —— 触屏没有右键,
+         这是编辑/审核/附件等行级命令的唯一可发现入口(WCAG 2.2 SC 2.1.1)。 */
+      moreActionsColumn: '操作',
       /** 虚拟滚动时行右键菜单不可用的可见说明 */
       virtualModeHint:
         '当前列表数据较多，已启用虚拟滚动：行右键菜单不可用，请选中行后使用工具栏操作。',

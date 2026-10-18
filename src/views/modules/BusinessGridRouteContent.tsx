@@ -32,7 +32,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     config: state.config,
   })
 
-  useBusinessGridRouteSync({
+  const { clearRouteFilters } = useBusinessGridRouteSync({
     location,
     config: state.config,
     records: state.records,
@@ -131,6 +131,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           onUpdateFilter={state.updateFilter}
           onApplyFilters={state.applyFilters}
           onReset={state.handleReset}
+          onClearRouteFilters={clearRouteFilters}
           onCreate={() => {
             if (canCreateRecord) {
               void state.openEditor(null)

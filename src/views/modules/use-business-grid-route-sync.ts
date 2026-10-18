@@ -1,6 +1,6 @@
 import type { ParsedLocation } from '@tanstack/react-router'
 import { useRouter } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type {
@@ -132,6 +132,37 @@ export function consumeParentImportIntentSearch(searchStr: string): string {
  */
 export function consumeOpenDetailIntentSearch(searchStr: string): string {
   return consumeIntentSearch(searchStr, ONE_SHOT_INTENT_PARAMS.openDetail)
+}
+
+/**
+ * URL 里的**持续型筛选参数**清单(唯一来源)。
+ *
+ * <p>这些参数会驱动列表筛选(`buildRouteFilterSyncState` 消费), 与一次性意图不同:
+ * 它们不消费, 而是每次路由同步都重新生效 —— 因此「重置筛选」必须把 URL 一起清掉,
+ * 否则刷新 / 切回页签 / 重挂载都会把它们静默灌回界面。</p>
+ *
+ * <p>实测缺陷: 由「采购入库」点引用跳转进入 `/purchase-order?docNo=…`, 手动清空筛选框
+ * 后点「重置」—— 界面清空、列表恢复 30 条, 但 URL 仍带 `docNo`; 按 F5 后筛选框被
+ * 自动填回、列表只剩 1 条, 用户第一反应是"数据丢了"。根因就是「重置」只清本地 state。</p>
+ *
+ * @see buildRouteFilterSyncState —— 上述参数的唯一消费点(两处共用同一份清单)
+ */
+export const ROUTE_FILTER_PARAMS = [
+  'docNo',
+  'trackId',
+  'customerId',
+  'status',
+  'referencedBy',
+] as const
+
+/**
+ * 清掉 URL 里的持续型筛选参数, 保留一次性意图与业务字段。
+ *
+ * <p>与 {@link consumeIntentSearch} 同源(同一实现、不同清单), 避免两处各写一份
+ * "要清哪些参数"的判断。重置按钮调用它, 让 URL 与界面同步清空。</p>
+ */
+export function consumeRouteFilterSearch(searchStr: string): string {
+  return consumeIntentSearch(searchStr, ROUTE_FILTER_PARAMS)
 }
 
 function resolveParentImportSource(
@@ -495,4 +526,28 @@ export function useBusinessGridRouteSync({
     routeParams.sourceModule,
     routeParams.sourceRecordId,
   ])
+
+  /**
+   * 清掉 URL 里驱动筛选的参数(供「重置」调用)。
+   *
+   * <p>与上面三个一次性意图消费同走 `router.history.replace`, 但语义不同:
+   * 这是一次**用户主动的重置**, 不是自动消费, 因此不判断 `searchStr` 是否变化、
+   * 也不消费意图参数 —— 只把 {@link ROUTE_FILTER_PARAMS} 摘掉, 保留 `create` /
+   * `openDetail` 等一次性意图与 `counterpartyId` 一类预填字段。</p>
+   */
+  const clearRouteFilters = useCallback(() => {
+    const nextSearch = consumeRouteFilterSearch(router.state.location.searchStr)
+    if (
+      nextSearch ===
+      new URLSearchParams(router.state.location.searchStr).toString()
+    ) {
+      return
+    }
+    const nextHref = nextSearch
+      ? `${router.state.location.pathname}?${nextSearch}`
+      : router.state.location.pathname
+    router.history.replace(nextHref)
+  }, [router])
+
+  return { clearRouteFilters }
 }

@@ -7,8 +7,10 @@ import {
   consumeCreateIntentSearch,
   consumeOpenDetailIntentSearch,
   consumeParentImportIntentSearch,
+  consumeRouteFilterSearch,
   ONE_SHOT_INTENT_PARAMS,
   parseRouteParams,
+  ROUTE_FILTER_PARAMS,
   supportsFilterField,
 } from '@/views/modules/use-business-grid-route-sync'
 
@@ -252,5 +254,57 @@ describe('router search serialization', () => {
     ).toBe(
       '/sales-outbound?sourceModule=sales-order&sourceRecordId=350692799655452672',
     )
+  })
+})
+
+describe('重置筛选必须同时清 URL —— 否则刷新后筛选静默复活', () => {
+  /*
+   * 实测缺陷: 由「采购入库」点引用跳转进入 /purchase-order?docNo=368855989580988416,
+   * 手动清空筛选框后点「重置」—— 界面清空、列表恢复 30 条, 但 URL 仍带 docNo;
+   * 按 F5 后筛选框被自动填回、列表只剩 1 条。
+   */
+  it('清掉 docNo 这类持续型筛选参数', () => {
+    expect(consumeRouteFilterSearch('?docNo=368855989580988416')).toBe('')
+  })
+
+  it('docNo / trackId / customerId / status / referencedBy 全部清掉', () => {
+    const search =
+      '?docNo=PO-1&trackId=361443612338167808&customerId=1983421000000000001&status=待审核&referencedBy=freight-bill'
+    expect(consumeRouteFilterSearch(search)).toBe('')
+  })
+
+  it('保留一次性意图参数(重置不是消费意图, 不能顺手删掉 create/openDetail)', () => {
+    const next = consumeRouteFilterSearch('?docNo=PO-1&create=1&openDetail=1')
+    expect(next).toContain('create=1')
+    expect(next).toContain('openDetail=1')
+    expect(next).not.toContain('docNo')
+  })
+
+  it('保留预填型业务字段(如 counterpartyId), 它们不属于筛选', () => {
+    const next = consumeRouteFilterSearch(
+      '?docNo=PO-1&counterpartyId=1983421000000000001&counterpartyName=%E5%AE%A2%E6%88%B7A',
+    )
+    expect(next).toContain('counterpartyId=1983421000000000001')
+    expect(next).toContain('counterpartyName=%E5%AE%A2%E6%88%B7A')
+    expect(next).not.toContain('docNo')
+  })
+
+  it('没有筛选参数时原样返回(幂等, 避免无谓的 history.replace)', () => {
+    expect(consumeRouteFilterSearch('?create=1')).toBe('create=1')
+    expect(consumeRouteFilterSearch('')).toBe('')
+  })
+
+  it('参数清单是唯一来源: 每个参数都在 ROUTE_FILTER_PARAMS 里', () => {
+    expect(ROUTE_FILTER_PARAMS).toEqual([
+      'docNo',
+      'trackId',
+      'customerId',
+      'status',
+      'referencedBy',
+    ])
+    // 逐项验证: 清单里的每个参数都能被单独清掉
+    for (const key of ROUTE_FILTER_PARAMS) {
+      expect(consumeRouteFilterSearch(`?${key}=x`)).toBe('')
+    }
   })
 })

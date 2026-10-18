@@ -1016,3 +1016,49 @@
   flex: none;
   min-width: 0;
 }
+
+/* ===== 筛选生效提示（「已筛选 N 项 · 清空筛选」）=====
+ * 放在筛选区内、筛选行之下：说明「当前有几项条件在生效」并给出一键清空。
+ * 行级留白只用 8 的倍数阶梯：与筛选行之间 8px（--space-xs）；与表格之间的留白
+ * 由 `.module-filter-toolbar` 既有 padding-bottom 统一给出，这里不再叠加。
+ */
+.module-filter-active-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.module-filter-active-summary-text {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-xs);
+  color: var(--theme-primary-text);
+  font-weight: 500;
+  background: var(--theme-primary-soft);
+  border-radius: 999px;
+}
+
+.module-filter-active-clear.ant-btn {
+  height: 20px;
+  padding: 0 var(--space-xxs);
+  font-size: 12px;
+}
+
+/* ===== 行尾「更多操作」列 =====
+ * 触屏没有右键, 行级命令(编辑/审核/附件/复制单号)需要可见入口(WCAG 2.2 SC 2.1.1)。
+ * 列宽 40 = 24px 命中区 + 左右各 8px 单元格内边距, 按钮自身不再叠加内边距。
+ */
+.module-table-shell .module-row-more-actions.ant-btn {
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--theme-text-muted);
+}
+
+.module-table-shell .module-row-more-actions.ant-btn:hover {
+  color: var(--theme-primary-text);
+}

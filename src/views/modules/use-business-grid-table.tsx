@@ -1,6 +1,9 @@
+import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
+import { Button } from 'antd'
 import type { ColumnType } from 'antd/es/table'
+import i18next from 'i18next'
 import {
   type Dispatch,
   type ReactNode,
@@ -12,6 +15,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
+import { ContextMenu } from '@/components/ContextMenu'
 import { RowContextMenuRow } from '@/components/RowContextMenuRow'
 import {
   buildRowContextMenus,
@@ -58,6 +62,17 @@ interface Props {
   detailVariant?: DetailToggleVariant
 }
 
+/** 行尾「更多操作」列的列 key(不参与「列设置」, 也不进列顺序持久化)。 */
+export const MORE_ACTIONS_COLUMN_ID = '__row-more-actions'
+/**
+ * 行尾「更多操作」列宽: 24px 图标 + 单元格左右各 8px 内边距 = 40px。
+ *
+ * <p>取 40 而不是与明细列同宽的 48: 40 本身是 8 的倍数(满足间距规范),
+ * 又是"24px 命中区 + 两侧 8px"的**实际最小需求**, 不为了对称多占 8px 横向预算 ——
+ * 业务网格本来就有 11 个页面横向溢出, 这 8px 是白拿的。</p>
+ */
+export const MORE_ACTIONS_COLUMN_WIDTH = 40
+
 function buildAntdColumns({
   columnDefs,
   columnOrder,
@@ -94,9 +109,17 @@ function buildAntdColumns({
      * 列头挂右键菜单: 隐藏该列 / 移到最前 / 移到最后 / 列设置…
      * 明细按钮列(空标题)不参与(隐藏或移动它没有意义)。
      */
+    /*
+     * 明细展开列的 header 是空串(按钮图标自带 aria-label), 但空 title 会让 antd 渲出
+     * 一个无文本、无 aria-label 的 `<th>`, axe 报 empty-table-header, 读屏在表头行里
+     * 遇到空单元格无法判断用途。这里把"空标题"换成只对读屏可见的列名, 视觉仍为空。
+     * key 属于 `modules.table`(不是 `common.table`), 写错命名空间会渲染出原始 key。
+     */
     const title =
       rawTitle === '' ? (
-        rawTitle
+        <span key={columnId} className="aries-sr-only">
+          {i18next.t('modules.table.expandDetailColumn')}
+        </span>
       ) : (
         <ColumnHeaderMenu
           key={columnId}
@@ -151,6 +174,44 @@ function useLatestValueGetter<T>(value: T): () => T {
     valueRef.current = value
   }, [value])
   return useCallback(() => valueRef.current, [])
+}
+
+/**
+ * 行菜单打开时的选中集变更 —— **唯一来源**(右键 / 触摸长按 / Shift+F10 / 行尾
+ * 「更多操作」按钮四条入口共用, 见 `onMenuOpen`)。
+ *
+ * <p>规则(两分支都必须被测试锁定):</p>
+ * <ol>
+ *   <li><b>菜单所属行已在选中集内</b>: **保持原有多选**。用户勾了 2 行再右键其中一行
+ *     查看菜单, 批量目标不能被缩成 1 行(实测缺陷: 「导出选中 2 条」变「导出选中 1 条」,
+ *     且没有任何提示)。</li>
+ *   <li><b>行不在选中集内</b>: 把选中集**切换为该行**。行菜单里的动作(删除/编辑)
+ *     作用在「菜单所属行」, 若选中集还停在别的行, 工具栏与菜单的对象就会打架(删错行)。
+ *     这里刻意不做"保留多选 + 文字说明": 右键一个没勾的行却对别的行执行操作,
+ *     比缩小选中集更危险。</li>
+ * </ol>
+ */
+export function resolveRowMenuSelection({
+  record,
+  selectedRowKeys,
+  setSelectedRowKeys,
+  setSelectedRowMap,
+}: {
+  record: ModuleRecord
+  selectedRowKeys: string[]
+  setSelectedRowKeys: Dispatch<SetStateAction<string[]>>
+  setSelectedRowMap: (
+    updater: (
+      prev: Record<string, ModuleRecord>,
+    ) => Record<string, ModuleRecord>,
+  ) => void
+}) {
+  const key = String(record.id)
+  // 分支 1: 已在选中集内 —— 保持多选, 不打断批量操作
+  if (selectedRowKeys.includes(key)) return
+  // 分支 2: 不在选中集内 —— 选中集切换为这一行
+  setSelectedRowKeys([key])
+  setSelectedRowMap(() => ({ [key]: record }))
 }
 
 export function useBusinessGridTable({
@@ -292,7 +353,6 @@ export function useBusinessGridTable({
       onResizeCommit: handleColumnResizeCommit,
       onResizeReset: handleColumnResizeReset,
     })
-  const antdColumns = resizableColumns
   /*
    * 行菜单打开回调需要"当前"选中行决定是否保留多选, 但选中集本身不能作为
    * rowContextMenus 的依赖 —— 否则每次勾选都会按 O(行数 × 动作数) 重建整表菜单。
@@ -317,26 +377,16 @@ export function useBusinessGridTable({
       okText: t('common.ok'),
       cancelText: t('common.cancel'),
       /*
-       * 打开某行菜单即把选中态切到该行: 行菜单里的动作(删除/编辑)作用在
-       * 「菜单所属行」, 若选中集还停留在别的行, 工具栏与菜单的对象就会打架(删错行)。
-       * 该行已在选中集内时保持原有多选, 不打断批量操作。
+       * 打开某行菜单(右键 / 长按 / Shift+F10 / 行尾「更多操作」按钮)即同步操作目标,
+       * 规则收敛在 resolveRowMenuSelection 一处, 四条入口不再各写一份。
        */
-      onMenuOpen: (record) => {
-        const key = String(record.id)
-        if (getSelectedRowKeys().includes(key)) return
-        const normalizedKeysSet = new Set([key])
-        setSelectedRowKeys([key])
-        setSelectedRowMap((prev) => {
-          const next = { ...prev }
-          for (const existing of Object.keys(next)) {
-            if (!normalizedKeysSet.has(existing)) {
-              delete next[existing]
-            }
-          }
-          next[key] = record
-          return next
-        })
-      },
+      onMenuOpen: (record) =>
+        resolveRowMenuSelection({
+          record,
+          selectedRowKeys: getSelectedRowKeys(),
+          setSelectedRowKeys,
+          setSelectedRowMap,
+        }),
       /*
        * 行级危险动作（删除等）的二次确认：统一走 confirmDanger，
        * 保证默认焦点落在「取消」侧（antd 默认聚焦确认按钮，回车即执行）。
@@ -359,6 +409,58 @@ export function useBusinessGridTable({
     setSelectedRowMap,
     t,
   ])
+
+  /*
+   * 行尾「更多操作」列: 把行菜单**同一份**配置(`rowContextMenus`)挂成可见按钮。
+   *
+   * <p>为什么必须有: 触屏没有右键, 长按既不可发现又只能服务一个动作; 只看得到
+   * 「展开明细」的行, 编辑/审核/附件在触屏上等于不存在(WCAG 2.2 SC 2.1.1)。
+   * 菜单不另建一份 —— 按钮与右键/长按/Shift+F10 共用 `buildRowContextMenus`
+   * 的同一份 items/onClick/ariaLabel, 因此不会出现"按钮能点、右键点不动"的漂移。</p>
+   *
+   * <p>固定右侧且不参与列宽拖拽: 横向滚动时行操作入口始终可用; 它也不进「列设置」,
+   * 避免变成一个可隐藏的伪业务列。</p>
+   */
+  const moreActionsColumn = useMemo<
+    TableColumnsType<ModuleRecord>[number]
+  >(() => {
+    return {
+      key: MORE_ACTIONS_COLUMN_ID,
+      title: t('modules.table.moreActionsColumn'),
+      width: MORE_ACTIONS_COLUMN_WIDTH,
+      fixed: 'right',
+      align: 'center',
+      render: (_value: unknown, record: ModuleRecord) => {
+        const menu = rowContextMenus.get(String(record.id))
+        if (!menu) return null
+        return (
+          <ContextMenu
+            ariaLabel={menu.ariaLabel}
+            items={menu.items}
+            onClick={menu.onClick}
+            onOpenChange={(next) => {
+              if (next) menu.onOpen?.()
+            }}
+            // 可见按钮与右键共用同一份菜单与其无障碍契约(焦点进首项 / Escape 归还焦点)
+            triggers={['click', 'contextMenu']}
+          >
+            <Button
+              aria-haspopup="menu"
+              aria-label={menu.ariaLabel}
+              className="module-row-more-actions"
+              icon={<MoreOutlined />}
+              size="small"
+              type="text"
+            />
+          </ContextMenu>
+        )
+      },
+    }
+  }, [rowContextMenus, t])
+  const antdColumns = useMemo(
+    () => [...resizableColumns, moreActionsColumn],
+    [moreActionsColumn, resizableColumns],
+  )
 
   /** 行容器换成支持右键菜单的包装(保留列宽拖拽注入的其它 components)。 */
   const tableComponents = useMemo(() => {
@@ -388,6 +490,17 @@ export function useBusinessGridTable({
       })
     },
     preserveSelectedRowKeys: true,
+    /*
+     * 勾选列固定左侧 + 表头文案, 都走 antd 的 rowSelection 官方 API。
+     *
+     * <p>**不能**在 columns 里展开 `Table.SELECTION_COLUMN` 来加这两个属性 —— 它是
+     * antd 的哨兵对象(`{}`), useSelection 用 `cloneColumns.includes(SELECTION_COLUMN)`
+     * 靠**对象身份**识别。展开成新对象后身份判断失效, antd 会再插入一列真实勾选列,
+     * 于是多出一个 0 宽幽灵表头(实测: class 带 fix-start、width=0、文本是"全选当前页
+     * 所有行", 还把左侧固定块的偏移撑乱)。</p>
+     */
+    fixed: 'start',
+    columnTitle: t('common.table.selectAllRows'),
     /*
      * antd 默认的 Select all / Select row N 是硬编码英文, 覆盖成本项目 i18n 文案;
      * 行名优先用模块主单号(config.primaryNoKey), 读屏用户才能分辨勾的是哪一单。

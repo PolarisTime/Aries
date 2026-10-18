@@ -13,6 +13,13 @@ export const operationLogsPageConfig: ModulePageConfig = {
   kicker: 'System',
   description: i18next.t('modules.pages.operationLog.operationLogDesc'),
   readOnly: true,
+  /*
+   * 审计日志的默认任务是"看最新发生了什么": 后端该接口默认按 `operationTime`
+   * **升序**(`PageQuery.toPageable("operationTime")`), 26 万条数据下最新日志落在
+   * 最后一页, 等于不可用(实测第 1 页是 07-18, 最后一页才是 10-18)。
+   * 这里显式声明倒序; 字段在后端 `PageSortFieldCatalog` 的 operation-log 白名单内。
+   */
+  defaultSort: { field: 'operationTime', direction: 'desc' },
   actions: [
     {
       key: 'export',

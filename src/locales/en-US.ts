@@ -732,6 +732,10 @@ export const enUS = {
       settledAmount: 'Settled',
       statementCount: 'Statements',
       balance: 'Balance',
+      /* Summary scope prefixes: selecting rows switches scope from "this page"
+         to "selection only", so the label must change with the numbers. */
+      scopePage: 'This page',
+      scopeSelection: '{{count}} selected',
     },
     status: {
       draft: 'Draft',
@@ -939,6 +943,9 @@ export const enUS = {
       freightBill: 'Freight Bill',
       salesOrder: 'Sales Order',
       activeCount: '{{count}} active',
+      /* Filter-in-effect hint: counts only conditions differing from defaults. */
+      activeFilterCount: '{{count}} filter(s) applied',
+      clearActiveFilters: 'Clear filters',
     },
     formField: {
       inputPlaceholder: 'Enter {{label}}',
@@ -1146,6 +1153,10 @@ export const enUS = {
       rowContextMenuLabel: 'Actions for the "{{title}}" row',
       noData: 'No data',
       sequence: 'No.',
+      /* Header of the trailing row-actions column: the visible entry to the row menu.
+         Touch devices have no right-click, so this is the only discoverable entry
+         to row-level commands such as edit/audit/attachments (WCAG 2.2 SC 2.1.1). */
+      moreActionsColumn: 'Actions',
       /** Shown when virtual scrolling disables the row context menu */
       virtualModeHint:
         'This list is large and uses virtual scrolling, so the row context menu is unavailable. Select a row and use the toolbar actions instead.',
