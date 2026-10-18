@@ -2820,6 +2820,12 @@ export const enUS = {
         unopenedTon: 'Unopened',
         purchaseOrderIssued: 'Issued',
         purchaseOrderRemaining: 'Remaining',
+        /**
+         * Picker quota column: "Linkable" (how much this sheet may still link), kept distinct
+         * from the sheet column "Unopened" (reported − issued). Both used to read "Remaining",
+         * which made the two numbers look like a calculation error.
+         */
+        purchaseOrderLinkable: 'Linkable remaining',
         purchaseOrderStatus: 'Status',
       },
       /** Context menu: row actions and brand header actions (same actions as the visible buttons) */

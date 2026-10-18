@@ -1317,10 +1317,92 @@ describe('SheetPanel 指定品牌展示', () => {
 
     const headerText =
       container.querySelector('.ant-table-thead')?.textContent ?? ''
-    expect(headerText).not.toContain('已占用')
-    expect(headerText).not.toContain('剩余可开')
+    /*
+     * 断言当前真实列名。原断言写的是 '已占用' / '剩余可开' —— 那是 `d2f71b4b` 前的旧文案,
+     * 早已不存在, 于是 `not.toContain` 变成了永远成立的空断言(隐藏失效也抓不到)。
+     */
+    expect(headerText).not.toContain('已开货')
+    expect(headerText).not.toContain('剩余未开')
     expect(headerText).toContain('报单吨位')
 
+    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
+  })
+
+  /**
+   * 交叉错位回归: 只关一个开关时, 消失的必须**正是那一列**。
+   *
+   * <p>原用例两个开关都关掉, 无论是否错位结果都一样(前后都没有这两个表头), 因此抓不到
+   * `d2f71b4b` 之后「勾『已开货』关掉『剩余未开』」的缺陷 —— 必须逐列单独验。</p>
+   */
+  it('单独关掉某一个吨位列时, 消失的正是该开关对应的那一列(不误伤另一列)', async () => {
+    const toggleOne = async (label: string) => {
+      await openColumnSettings()
+      const toggle = Array.from(
+        document.body.querySelectorAll<HTMLElement>(
+          '.price-compare-column-settings .ant-checkbox-wrapper',
+        ),
+      ).find((el) => el.textContent?.trim() === label)
+      expect(toggle, `未找到「${label}」开关`).toBeTruthy()
+      await act(async () => {
+        toggle
+          ?.querySelector('input')
+          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+    }
+    // 单个用例内先关「已开货」再关「剩余未开」, 每一步都断言另一列仍在。
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow }],
+      [],
+      [{ name: '中天', freight: 30 }],
+    )
+    const headerTextOf = () =>
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerTextOf()).toContain('已开货')
+    expect(headerTextOf()).toContain('剩余未开')
+
+    // 关「已开货」: 只应少了「已开货」, 另一列必须还在
+    await toggleOne('已开货')
+    const afterHidingShipped = headerTextOf()
+    expect(afterHidingShipped, '关「已开货」后「已开货」应消失').not.toContain(
+      '已开货',
+    )
+    expect(
+      afterHidingShipped,
+      '关「已开货」不该连带隐藏「剩余未开」(两处门禁交叉错位的旧缺陷)',
+    ).toContain('剩余未开')
+
+    // 再关「剩余未开」: 两列都没了, 报单吨位仍在
+    await toggleOne('剩余未开')
+    const afterHidingBoth = headerTextOf()
+    expect(afterHidingBoth).not.toContain('已开货')
+    expect(afterHidingBoth).not.toContain('剩余未开')
+    expect(afterHidingBoth).toContain('报单吨位')
+
+    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
+  })
+
+  it('列显示开关的文案与它控制的列同名(勾选框标签 = 列头文案)', async () => {
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow }],
+      [],
+      [{ name: '中天', freight: 30 }],
+    )
+    await openColumnSettings()
+    const labels = Array.from(
+      document.body.querySelectorAll<HTMLElement>(
+        '.price-compare-column-settings .ant-checkbox-wrapper',
+      ),
+    ).map((el) => el.textContent?.trim() ?? '')
+    const headerText =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    // 两个吨位开关的文案必须都能在表头里找到同名文本: 文案与列同一来源。
+    for (const label of ['已开货', '剩余未开']) {
+      expect(labels).toContain(label)
+      expect(headerText).toContain(label)
+    }
     window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
   })
 

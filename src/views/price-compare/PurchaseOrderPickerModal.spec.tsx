@@ -8,7 +8,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
-import { remainingLinkableTon } from './purchase-order-picker-tonnage'
+import {
+  remainingLinkableQuota,
+  remainingLinkableTon,
+} from './purchase-order-picker-tonnage'
 
 const api = vi.hoisted(() => ({ fetchPurchaseOrderTonnages: vi.fn() }))
 vi.mock('@/api/market/quote-sheets', async () => {
@@ -361,6 +364,95 @@ describe('PurchaseOrderPickerModal', () => {
     ).toBe(6)
     // 无本单据关联时直接用服务端剩余
     expect(remainingLinkableTon(records[0], undefined)).toBe(10)
+  })
+
+  /**
+   * P1-11 回归: 额度用尽的行不允许「显示一个正数 + 打『已关联完』标签」同屏矛盾。
+   *
+   * <p>数据取自实测的单据 C: 采购订单明细行 订货 2.300 / 已开 0, 而本单据已在它上面
+   * 关联了 5 吨(手填未保存)。旧实现直接渲染服务端 `remainingWeight = 2.300`, 同时用
+   * `remainingLinkableTon = 2.300 − 5 = −2.7 <= 0` 打上「已关联完」标签 —— 同一行既说
+   * 「还剩 2.300」又说「已关联完」。修复后单元格取同一个出口 `remainingLinkableQuota`。</p>
+   *
+   * <p>注意是「本单已关联 5」这个差额让两种口径区分开: 若本单没关联过任何吨位, 服务端剩余
+   * 与可关联额度同值, 这个用例就会变成"恰好通过"的空断言。</p>
+   */
+  it('额度用尽时额度列显示 0, 不与「已关联完」标签同屏出现正数', async () => {
+    const exhausting: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      purchaseOrderItemId: '356133791502172160',
+      orderNo: 'PO-C-1',
+      brand: '永钢',
+      orderedWeight: 2.3,
+      issuedWeight: 0,
+      remainingWeight: 2.3,
+      actualWeightTon: 0,
+      issuedDone: false,
+    }
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([exhausting])
+    render({
+      linkedTonByItemId: new Map([[exhausting.purchaseOrderItemId, 5]]),
+    })
+    await flush()
+    await flush()
+
+    // 额度用尽 → 默认隐藏; 打开开关让它可见
+    const toggle = document.querySelector<HTMLInputElement>(
+      '.price-compare-purchase-order-picker-toggle input[type="checkbox"]',
+    )
+    expect(toggle).not.toBeNull()
+    act(() => {
+      toggle?.click()
+    })
+
+    const row = tableRows()[0] as HTMLElement
+    expect(row).toBeTruthy()
+    const rowText = row.textContent ?? ''
+    // 标签在: 额度已用尽(本单据已关联 5 > 可关联 2.3)
+    expect(rowText).toContain('已关联完')
+
+    /*
+     * 只取「额度」那一格来断言, 不能拿整行文本: 同一行的「订货吨位」本来就是 2.300,
+     * 整行 `not.toContain('2.300')` 会误判(实测第一次跑就踩到)。按表头列名定位单元格。
+     */
+    const modalTable = document.querySelector('.ant-modal .ant-table')
+    const headers = Array.from(
+      modalTable?.querySelectorAll('thead th') ?? [],
+    ).map((th) => th.textContent?.trim() ?? '')
+    const quotaIndex = headers.indexOf('剩余可关联吨位')
+    expect(
+      quotaIndex,
+      `未找到「剩余可关联吨位」列头, 实得 ${JSON.stringify(headers)}`,
+    ).toBeGreaterThan(-1)
+    const quotaCell = row.querySelectorAll('td')[quotaIndex] as HTMLElement
+    expect(quotaCell).toBeTruthy()
+    expect(
+      (quotaCell.textContent ?? '').trim(),
+      '额度用尽的行该格必须是 0, 不能是服务端 remainingWeight 2.300',
+    ).toBe('0.000')
+  })
+
+  it('remainingLinkableQuota: 数值 / 已关联量 / 是否用尽 由同一次计算给出', () => {
+    const record: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      orderedWeight: 2.3,
+      issuedWeight: 0,
+      remainingWeight: 2.3,
+      actualWeightTon: 0,
+    }
+    const quota = remainingLinkableQuota(record, new Map([['301', 5]]))
+    expect(quota.remaining).toBeCloseTo(-2.7, 8)
+    expect(quota.linkedHere).toBe(5)
+    expect(quota.exhausted).toBe(true)
+    // 未用尽的情形同样收敛在同一处
+    const fresh = remainingLinkableQuota(record, undefined)
+    expect(fresh.remaining).toBeCloseTo(2.3, 8)
+    expect(fresh.exhausted).toBe(false)
+    // 标量出口与结构化出口必须一致(前者是后者的投影, 不是第二份实现)
+    expect(remainingLinkableTon(record, new Map([['301', 5]]))).toBeCloseTo(
+      quota.remaining,
+      8,
+    )
   })
 
   it('打开时从后端拉取并渲染明细行, 展示规格/订货/已开/剩余', async () => {

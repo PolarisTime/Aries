@@ -27,6 +27,7 @@ import { formatWeight } from '@/utils/formatters'
 import {
   matchesPickerVariety,
   type PickerVarietyTarget,
+  remainingLinkableQuota,
   remainingLinkableTon,
 } from './purchase-order-picker-tonnage'
 import { actualShippedTonOf } from './ton-progress-text'
@@ -310,9 +311,8 @@ export function PurchaseOrderPickerModal({
       key: 'variety',
       width: 240,
       render: (_value, record) => {
-        const fullyLinked = remainingLinkableTon(record, linkedTonByItemId) <= 0
-        const linkedHere =
-          linkedTonByItemId?.get(record.purchaseOrderItemId) ?? 0
+        const quota = remainingLinkableQuota(record, linkedTonByItemId)
+        const fullyLinked = quota.exhausted
         return (
           // 同一「材质/规格/长度」可能对应多个品牌的多张订单: 品牌按行展示并作为标签,
           // 用户按行就能区分, 不必再靠单号去猜品牌。
@@ -331,10 +331,10 @@ export function PurchaseOrderPickerModal({
             {fullyLinked ? (
               <Tooltip
                 title={
-                  linkedHere > 0
+                  quota.linkedHere > 0
                     ? t(
                         'priceCompare.sheet.purchaseOrderPickerFullyLinkedMine',
-                        { ton: formatWeight(linkedHere) },
+                        { ton: formatWeight(quota.linkedHere) },
                       )
                     : t('priceCompare.sheet.purchaseOrderPickerFullyLinkedHint')
                 }
@@ -367,15 +367,25 @@ export function PurchaseOrderPickerModal({
       render: (value: number) => formatWeight(value),
     },
     {
-      title: t('priceCompare.sheet.columns.purchaseOrderRemaining'),
-      dataIndex: 'remainingWeight',
-      width: 96,
+      /*
+       * 额度列: 显示「本单据还能在这一行上关联多少吨」(remainingLinkableQuota 的唯一出口),
+       * 不是服务端原始 remainingWeight —— 后者不含本单据未保存的手填吨位, 直接渲染会让
+       * "额度已用尽、打了『已关联完』标签"的行同时显示一个正数(实测「剩余 2.300」+「已关联完」
+       * 同屏矛盾)。用尽即 0；本单据超关联时也不显示负数(列名是"还能关联", 负数读不通),
+       * 超出的量由「已关联完」标签的悬浮说明据实给出。
+       */
+      title: t('priceCompare.sheet.columns.purchaseOrderLinkable'),
+      key: 'remainingLinkable',
+      width: 120,
       align: 'right',
-      render: (value: number) => (
-        <Typography.Text type={value < 0 ? 'danger' : undefined}>
-          {formatWeight(value)}
-        </Typography.Text>
-      ),
+      render: (_value, record) => {
+        const quota = remainingLinkableQuota(record, linkedTonByItemId)
+        return (
+          <Typography.Text type={quota.remaining < 0 ? 'warning' : undefined}>
+            {formatWeight(Math.max(quota.remaining, 0))}
+          </Typography.Text>
+        )
+      },
     },
     {
       // 真实已开货(入库回写): 与"已开(报单占用)"是两回事, 必须分列展示

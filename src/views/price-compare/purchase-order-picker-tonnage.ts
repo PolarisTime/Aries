@@ -1,23 +1,59 @@
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 
 /**
- * 该明细行剩余可关联吨位(吨) = 服务端剩余吨位 - 本单据已关联吨位。
+ * 该明细行**还能被本单据关联多少吨** —— 选单弹窗"额度"口径的**唯一出口**。
  *
- * <p>服务端 `remainingWeight` 在传入 excludeSheetId 时已排除本单据已保存吨位, 但本单据
- * 页面上手填(含未保存)的吨位不在服务端统计内, 因此这里再扣一次本单据的已关联合计。
+ * <p><b>这不是「剩余未开」。</b>表格列上的「剩余未开」= 本单据该明细行的报单吨位 − 真实已开货
+ * (`ton-progress-text.remainingTonDisplay`); 本函数算的是**采购订单侧还能不能再挂一次**,
+ * 两者分母与业务含义都不同:</p>
+ * - 「剩余未开」分母是**本单据的报单吨位**(报单视角的进度, 与用户手填有关);
+ * - 本函数分母是**采购订单明细行的剩余可开量**(订单视角的余量, 与手填无关)。
+ *
+ * <p>实测踩过的坑: 同一行在选单弹窗显示「剩余 2.300」、表格列显示「剩余未开 5」, 用户以为
+ * 其中一个算错了 —— 其实两个都对, 但"剩余"这个词在两处指的不是同一件事, 且弹窗里还同时
+ * 打了「已关联完」标签(额度已用尽), 变成「剩 2.300 + 已关联完」的自相矛盾同屏。修法是:
+ * 额度口径收敛到本函数一处(标签判定与数值单元格**共用**它), 列名与文案各自带上作用域。</p>
+ *
+ * <p>算法 = 服务端剩余 − 本单据已关联。服务端 `remainingWeight` 在传入 excludeSheetId 时已
+ * 排除本单据**已保存**吨位, 但页面上手填(含未保存)的吨位不在服务端统计内, 因此这里再扣一次。
  * 缺失/非法 remainingWeight 时回退到 `订货 - 已开`, 不用 0 兜底(0 会把行误判成已关联完)。</p>
  *
- * <p>放在非组件模块：这是纯吨位换算，弹窗与它的测试都直接引用同一份实现。</p>
+ * <p>放在非组件模块: 这是纯吨位换算, 弹窗与它的测试都直接引用同一份实现。</p>
  */
 export function remainingLinkableTon(
   record: PurchaseOrderTonnageRecord,
   linkedTonByItemId?: Map<string, number>,
 ): number {
+  return remainingLinkableQuota(record, linkedTonByItemId).remaining
+}
+
+/** 额度口径的完整结果: 数值 + 本单据是否已用尽 + 本单据已关联量(供悬浮说明复用)。 */
+export interface LinkableQuota {
+  /** 还能关联的吨位(可能为负: 本单据已超关联)。 */
+  remaining: number
+  /** 本单据在该明细行上已关联的吨位合计。 */
+  linkedHere: number
+  /** 额度已用尽(<= 0): 「已关联完」标签与"不可选"判定的唯一依据。 */
+  exhausted: boolean
+}
+
+/**
+ * 额度口径的**结构化出口**: 数值、已关联量、是否用尽三者由同一次计算给出。
+ *
+ * <p>为什么不让各处各取所需: 「已关联完」标签曾用 `remainingLinkableTon(...) <= 0` 判定,
+ * 而同一行的吨位单元格直接渲染服务端 `remainingWeight`, 于是出现"单元格 2.300、标签已关联完"
+ * 的同屏矛盾。现在单元格渲染 `quota.remaining`、标签用 `quota.exhausted`, 两者同源。</p>
+ */
+export function remainingLinkableQuota(
+  record: PurchaseOrderTonnageRecord,
+  linkedTonByItemId?: Map<string, number>,
+): LinkableQuota {
   const base = Number.isFinite(record.remainingWeight)
     ? record.remainingWeight
     : record.orderedWeight - record.issuedWeight
   const linkedHere = linkedTonByItemId?.get(record.purchaseOrderItemId) ?? 0
-  return base - linkedHere
+  const remaining = base - linkedHere
+  return { remaining, linkedHere, exhausted: remaining <= 0 }
 }
 
 /** 报价行的「材质 / 规格 / 长度」目标值(选单自动筛选用)。 */

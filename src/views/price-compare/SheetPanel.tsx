@@ -71,11 +71,16 @@ import {
 import { LockableField } from './LockableField'
 import { resolveLinkedTonnageTotals } from './TonCell'
 import {
-  buildIssuedTonColumn,
   buildTonColumn,
-  buildUnopenedTonColumn,
+  buildTonColumns,
   EMPTY_PURCHASE_ORDER_TONNAGE,
   type PurchaseOrderTonnageDraftInput,
+  SHEET_TON_COLUMN,
+  SHEET_TON_COLUMN_ORDER,
+  type SheetTonColumnId,
+  tonColumnHeader,
+  tonColumnKey,
+  tonColumnWidth,
 } from './ton-column'
 import {
   compactTonText,
@@ -232,10 +237,13 @@ type ColumnContext = {
   varietyOptionsFlat: Variety[]
   /** 是否隐藏备注列(列设置弹层可切换, 走用户偏好持久化)。 */
   hideRemark: boolean
-  /** 是否隐藏「已占用」列。 */
-  hideIssuedTon: boolean
-  /** 是否隐藏「剩余可开」列。 */
-  hideUnopenedTon: boolean
+  /**
+   * 当前可见的吨位列 id 列表(由 {@link SHEET_TON_COLUMN} 注册表派生)。
+   *
+   * <p>只传"哪些可见"而不是两个 hideXxx 布尔值: 布尔值由调用方手写两遍门禁, 正是
+   * 「勾『已开货』关掉『剩余未开』」的成因。列构建遍历注册表, 不存在第二个映射。</p>
+   */
+  visibleTonColumnIds: readonly SheetTonColumnId[]
   /** 整组隐藏的品牌名。 */
   hiddenBrands: string[]
   /** 可见品牌列组数量(已排除隐藏品牌), 供 summary colSpan 与 scroll.x 复用 */
@@ -560,8 +568,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     readOnly,
     sheet,
     hideRemark,
-    hideIssuedTon,
-    hideUnopenedTon,
+    visibleTonColumnIds,
     hiddenBrands,
     purchaseOrderTonnage,
     openPurchaseOrderPicker,
@@ -604,6 +611,27 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowedProducts,
   )
   const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
+  /**
+   * 吨位三列共用的构建上下文: 只构造一次, 三列(A/B/C)读同一份。
+   *
+   * <p>列宽不再拆成 `issuedWidth` / `unopenedWidth` 两个易混参数 —— 哪一列取哪个宽度由
+   * {@link SHEET_TON_COLUMN} 的 `widthKey` 决定, 这里只传整张宽度表。</p>
+   */
+  const tonColumnCtx = {
+    t,
+    sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
+    readOnly,
+    widths,
+    quantityLockClass,
+    purchaseOrderOptions: purchaseOrderTonnage.options,
+    tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
+    purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
+    purchaseOrderTonnageError: purchaseOrderTonnage.isError,
+    localTonByItemId,
+    moveFocusTon: ctx.moveFocusTon,
+    patchRow,
+    openPurchaseOrderPicker,
+  }
   /*
    * 每行"差价最优"的品牌集合(并列时可能多家)。
    *
@@ -924,66 +952,12 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         )
       },
     },
-    buildTonColumn({
-      t,
-      sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
-      readOnly,
-      width: widths.ton,
-      issuedWidth: widths.issuedTon,
-      unopenedWidth: widths.unopenedTon,
-      quantityLockClass,
-      purchaseOrderOptions: purchaseOrderTonnage.options,
-      tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
-      purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-      purchaseOrderTonnageError: purchaseOrderTonnage.isError,
-      localTonByItemId,
-      moveFocusTon: ctx.moveFocusTon,
-      patchRow,
-      openPurchaseOrderPicker,
-    }),
-    ...(hideIssuedTon
-      ? []
-      : [
-          buildIssuedTonColumn({
-            t,
-            sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
-            readOnly,
-            width: widths.ton,
-            issuedWidth: widths.issuedTon,
-            unopenedWidth: widths.unopenedTon,
-            quantityLockClass,
-            purchaseOrderOptions: purchaseOrderTonnage.options,
-            tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
-            purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-            purchaseOrderTonnageError: purchaseOrderTonnage.isError,
-            localTonByItemId,
-            moveFocusTon: ctx.moveFocusTon,
-            patchRow,
-            openPurchaseOrderPicker,
-          }),
-        ]),
-
-    ...(hideUnopenedTon
-      ? []
-      : [
-          buildUnopenedTonColumn({
-            t,
-            sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
-            readOnly,
-            width: widths.ton,
-            issuedWidth: widths.issuedTon,
-            unopenedWidth: widths.unopenedTon,
-            quantityLockClass,
-            purchaseOrderOptions: purchaseOrderTonnage.options,
-            tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
-            purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-            purchaseOrderTonnageError: purchaseOrderTonnage.isError,
-            localTonByItemId,
-            moveFocusTon: ctx.moveFocusTon,
-            patchRow,
-            openPurchaseOrderPicker,
-          }),
-        ]),
+    buildTonColumn(tonColumnCtx),
+    /*
+     * 两个可显隐吨位列: 顺序 / key / 表头 / 列宽全部来自 SHEET_TON_COLUMN 注册表 ——
+     * 这里不再按 hideXxx 布尔值各写一段门禁(那正是「勾『已开货』关掉『剩余未开』」的成因)。
+     */
+    ...buildTonColumns(tonColumnCtx, (id) => visibleTonColumnIds.includes(id)),
 
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> =>
@@ -1332,7 +1306,17 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             ],
     ),
     {
-      // 填充列: 宽窗口时吸收剩余宽度, 避免商品列被拉伸
+      /*
+       * 填充列 —— **有意保留, 不是残留**(审查报告 P2-8 说的「409px 空表头 + 空单元格」即此列,
+       * 实测宽 409px)。作用: 宽窗口下吸收表格右侧的剩余宽度, 不让最后一个品牌组被拉伸变形。
+       *
+       * 为什么不直接去掉: 窄窗口时它的宽度本就是 0 看不出来; 一旦窗口拉宽而没有这一列,
+       * 品牌列(网价/现货/差价/简称)会各自变宽, 列对齐关系随窗口大小漂移。
+       *
+       * 已知代价: 表头与单元格都是空白, 读屏表格导航会经过一个无名单元格。不用 `aria-hidden`
+       * 隐藏它 —— 那会让 rc-table 的列对齐计算与实际渲染脱节; 保持空文本即可, 空单元格
+       * 不会打断读屏的表格导航。
+       */
       key: '__filler__',
       title: '',
       align: 'left',
@@ -1533,12 +1517,11 @@ function SheetTable(props: SheetTableProps) {
               /* 跨列数必须等于这一行左侧的全部列: 固定列 + 吨位列 + 品牌列。
                  原式漏了吨位三列, 于是这一格的背景只铺到「材质/规格」列就在吨位处断掉,
                  整行像被切了一刀(有了浅底之后尤其明显)。吨位里只有「报单吨位」必显,
-                 已占用/剩余可开可被隐藏, 因此逐列计数而不是写死 3。 */
+                 两个可显隐吨位列逐列计数(读的是同一份 visibleTonColumnIds, 不另写门禁)。 */
               colSpan={
                 (base.hideRemark ? 4 : 5) +
                 1 +
-                (base.hideIssuedTon ? 0 : 1) +
-                (base.hideUnopenedTon ? 0 : 1) +
+                base.visibleTonColumnIds.length +
                 base.visibleBrandCount * 4
               }
             >
@@ -1694,8 +1677,11 @@ function SheetTable(props: SheetTableProps) {
           base.widths.category +
           base.widths.spec +
           base.widths.ton +
-          (base.hideIssuedTon ? 0 : base.widths.issuedTon) +
-          (base.hideUnopenedTon ? 0 : base.widths.unopenedTon) +
+          /* 可显隐吨位列的宽度也来自同一份注册表(tonColumnWidth), 不手写第二个映射。 */
+          base.visibleTonColumnIds.reduce(
+            (sum, id) => sum + tonColumnWidth(id, base.widths),
+            0,
+          ) +
           base.visibleBrandCount *
             (base.widths.net +
               base.widths.spot +
@@ -1713,31 +1699,34 @@ function SheetTable(props: SheetTableProps) {
  *
  * <p>所有开关都只调用 {@link onToggle} 并带上 {@link SHEET_HIDEABLE_COLUMN} 的 key ——
  * 显隐状态本身由 SheetPanel 持有并持久化(本地 + 云漫游), 这里只负责呈现与派发。</p>
+ *
+ * <p><b>吨位两列的勾选框遍历 {@link SHEET_TON_COLUMN} 生成</b>: 文案、key、勾选态三者同源,
+ * 因此不可能再出现「勾『已开货』关掉的却是『剩余未开』」—— 那是两处门禁各自手写造成的。</p>
  */
 function ColumnSettingsButton({
   hideRemark,
-  hideIssuedTon,
-  hideUnopenedTon,
+  visibleTonColumnIds,
   brands,
   hiddenBrands,
   onToggle,
 }: {
   hideRemark: boolean
-  hideIssuedTon: boolean
-  hideUnopenedTon: boolean
+  /** 当前可见的吨位列(唯一来源: SHEET_TON_COLUMN 注册表)。 */
+  visibleTonColumnIds: readonly SheetTonColumnId[]
   brands: Brand[]
   hiddenBrands: string[]
   onToggle: (key: string, visible: boolean) => void
 }) {
   const { t } = useTranslation()
   const hiddenBrandSet = new Set(hiddenBrands)
+  const visibleTonSet = new Set<SheetTonColumnId>(visibleTonColumnIds)
   /* 隐藏列数: NN/g 的表格指南要求「列被隐藏」必须有可见的状态指示 —— 否则用户关掉弹层后
      完全没有线索, 只能靠"感觉少了一列"。徽标与可访问名同时给出这个数。 */
+  const hiddenTonCount = SHEET_TON_COLUMN_ORDER.filter(
+    (id) => !visibleTonSet.has(id),
+  ).length
   const hiddenCount =
-    (hideRemark ? 1 : 0) +
-    (hideIssuedTon ? 1 : 0) +
-    (hideUnopenedTon ? 1 : 0) +
-    hiddenBrands.length
+    (hideRemark ? 1 : 0) + hiddenTonCount + hiddenBrands.length
   const settingsLabel =
     hiddenCount > 0
       ? t('priceCompare.sheet.columnSettingsHidden', { n: hiddenCount })
@@ -1766,15 +1755,13 @@ function ColumnSettingsButton({
           <Text type="secondary" className="price-compare-sub">
             {t('priceCompare.sheet.columns.tonnage')}
           </Text>
-          {checkbox(
-            !hideIssuedTon,
-            t('priceCompare.sheet.columns.issuedTon'),
-            SHEET_HIDEABLE_COLUMN.issuedTon,
-          )}
-          {checkbox(
-            !hideUnopenedTon,
-            t('priceCompare.sheet.columns.unopenedTon'),
-            SHEET_HIDEABLE_COLUMN.unopenedTon,
+          {/* 文案取 tonColumnHeader、key 取 tonColumnKey: 与列头/渲染同源, 不存在第二个映射。 */}
+          {SHEET_TON_COLUMN_ORDER.map((id) =>
+            checkbox(
+              visibleTonSet.has(id),
+              tonColumnHeader(id, t),
+              tonColumnKey(id),
+            ),
           )}
           {brands.length ? (
             <>
@@ -2575,10 +2562,15 @@ export function SheetPanel(props: Props) {
       [key]: visible,
     }))
   const hideRemark = columnVisibility[SHEET_HIDEABLE_COLUMN.remark] === false
-  const hideIssuedTon =
-    columnVisibility[SHEET_HIDEABLE_COLUMN.issuedTon] === false
-  const hideUnopenedTon =
-    columnVisibility[SHEET_HIDEABLE_COLUMN.unopenedTon] === false
+  /**
+   * 可见吨位列: 唯一的显隐判定, 由注册表的 key 逐个查偏好。
+   *
+   * <p>不拆成两个 hideXxx 布尔值 —— 列构建、summary 跨列数、scroll.x 求和、勾选框四处
+   * 都读这一份列表, 因此「勾选框控制的列」与「实际渲染的列」在结构上不可能错位。</p>
+   */
+  const visibleTonColumnIds = SHEET_TON_COLUMN_ORDER.filter(
+    (id) => columnVisibility[tonColumnKey(id)] !== false,
+  )
   const hiddenBrands = brands
     .filter(
       (brand) =>
@@ -2773,8 +2765,7 @@ export function SheetPanel(props: Props) {
     spotRef,
     readOnly,
     hideRemark,
-    hideIssuedTon,
-    hideUnopenedTon,
+    visibleTonColumnIds,
     hiddenBrands,
     varietyOptionsFlat: filterVarieties(varieties, brands, allowedProducts),
     // 报单吨位合计: 视图层算一次, 吨位三列与列宽计算共用同一份
@@ -2812,8 +2803,7 @@ export function SheetPanel(props: Props) {
         columnSettingsSlot={
           <ColumnSettingsButton
             hideRemark={hideRemark}
-            hideIssuedTon={hideIssuedTon}
-            hideUnopenedTon={hideUnopenedTon}
+            visibleTonColumnIds={visibleTonColumnIds}
             brands={brands}
             hiddenBrands={hiddenBrands}
             onToggle={setColumnVisible}

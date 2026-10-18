@@ -2732,6 +2732,11 @@ export const zhCN = {
         purchaseOrderOrdered: '订货吨位',
         purchaseOrderIssued: '已开吨位',
         purchaseOrderRemaining: '剩余吨位',
+        /**
+         * 选单弹窗的额度列名: 明确写成「剩余可关联吨位」(这一行还能再挂多少吨), 不与表格列
+         * 的「剩余未开」(报单 − 已开货) 共用「剩余」二字 —— 两者分母不同, 曾让用户以为算错。
+         */
+        purchaseOrderLinkable: '剩余可关联吨位',
         /** 吨位三列: 报单吨位(输入) / 已开货(真实入库) / 剩余未开(报单 − 已开货)。 */
         issuedTon: '已开货',
         unopenedTon: '剩余未开',
