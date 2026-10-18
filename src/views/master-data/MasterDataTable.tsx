@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { useMeasureRowA11y } from '@/hooks/useMeasureRowA11y'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { buildSelectionA11yProps } from '@/utils/table-selection-a11y'
 import { asString } from '@/utils/type-narrowing'
@@ -88,6 +89,8 @@ export function MasterDataTable({
 }: Props) {
   const { t } = useTranslation()
   const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
+  // 测量行(aria-hidden + 0 高)内的可聚焦元素全部退出 Tab 序列; 唯一实现在该 hook 内
+  useMeasureRowA11y(shellRef)
 
   const visibleColumns: ColumnsType<LegacyModuleRecord> = useMemo(() => {
     const dataColumns: ColumnsType<LegacyModuleRecord> = spec.columns.flatMap(

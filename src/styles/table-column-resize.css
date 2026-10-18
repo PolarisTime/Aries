@@ -8,6 +8,14 @@
   top: 0;
   right: 0;
   bottom: 0;
+  /*
+   * 必须显式声明 height，否则 top:0 + bottom:0 的拉伸被 antd reset 的
+   * `hr { height: 0; }`（node_modules/antd/dist/reset.css）覆盖，把手塌成 8×0：
+   * elementFromPoint 命中的是 TH（鼠标拖不动列宽），键盘聚焦后焦点环面积也是 0。
+   * `height: auto` 让绝对定位的 top/bottom 重新生效，把手高度跟随表头单元格。
+   */
+  height: auto;
+  box-sizing: border-box;
   width: 8px;
   margin: 0;
   padding: 0;

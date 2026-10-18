@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
 import { ConfigProvider } from 'antd'
-import TableMeasureRowContext from 'antd/es/table/TableMeasureRowContext'
 import i18n from 'i18next'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -394,37 +393,12 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
   })
 
   /*
-   * P0-1：antd 的测量行会把列头 title 原样克隆一份到
-   * `<tr aria-hidden="true" style="height:0">` 里。克隆体若仍带 tabIndex=0，
-   * 键盘 Tab 就会掉进这块视觉不可见、读屏静默的区域。
-   * antd 渲染测量行时用 TableMeasureRowContext 标记子树，组件据此在**源头**退出交互语义。
+   * 测量行（`aria-hidden` + 0 高）里的克隆体由宿主上的 useMeasureRowA11y 统一接管，
+   * 组件本身不再为此分叉（antd 未暴露可用的上下文入口：TableMeasureRowContext 只有
+   * default 导出，deep import 会被 antd:lint 判 performance 违规）。
+   * 这里只锁定「非测量行」的常态语义，接管行为见 useMeasureRowA11y.spec.tsx。
    */
-  it('渲染进 antd 测量行时代理节点退出 Tab 序列与按钮语义', () => {
-    act(() => {
-      root.render(
-        <ConfigProvider theme={{ token: { motion: false } }}>
-          <TableMeasureRowContext.Provider value>
-            <ColumnHeaderMenu columnTitle="品牌" onHide={() => {}}>
-              <span className="column-title">品牌</span>
-            </ColumnHeaderMenu>
-          </TableMeasureRowContext.Provider>
-        </ConfigProvider>,
-      )
-    })
-
-    const node = container.querySelector<HTMLElement>(
-      '.column-header-menu-trigger',
-    )
-    expect(node, '测量行里仍渲染触发器').toBeTruthy()
-    expect(node?.getAttribute('tabindex'), '必须退出 Tab 序列').toBe('-1')
-    expect(
-      node?.getAttribute('role'),
-      '不可聚焦的克隆体不应再声明 role=button',
-    ).toBeNull()
-    expect(node?.getAttribute('aria-haspopup')).toBeNull()
-  })
-
-  it('不在测量行时仍保持可聚焦的 role=button 触发器', () => {
+  it('常态下列头触发器保持可聚焦的 role=button 语义', () => {
     render()
     const node = trigger()
     expect(node?.getAttribute('tabindex')).toBe('0')
