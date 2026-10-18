@@ -48,6 +48,7 @@ export function useModuleEditorCapabilityFlags({
   const {
     canAddManualEditorItems,
     canManageEditorItems,
+    canReorderEditorItems,
     canSaveAndAuditCurrentEditor,
     editorAuditActionKind,
     editorAuditTarget,
@@ -84,6 +85,7 @@ export function useModuleEditorCapabilityFlags({
     canConfirmDeliveryVerification,
     canEditItemColumns: canSave && Boolean(config.itemColumns?.length),
     canManageItems: canManageEditorItems,
+    canReorderItems: canReorderEditorItems,
     canSaveAndAuditInEditor,
     currentStatus,
     editorAuditActionKind,

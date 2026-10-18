@@ -2,6 +2,7 @@ export {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
   canManageEditorLineItems,
+  canReorderEditorLineItems,
   isEditorFieldDisabledForModule,
   isEditorItemColumnEditableForModule,
   isModuleLineItemsLocked,

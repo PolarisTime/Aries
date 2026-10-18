@@ -84,6 +84,17 @@ export interface ModuleItemReorderCapabilityOptions {
    * 行序管理与它同级 —— 一个能删行的表不允许换行顺序在语义上说不通。</p>
    */
   parentImportedItemEditLocked?: boolean
+  /**
+   * 单据是否处于「明细行锁定」态(如销售订单的交付核定)。
+   *
+   * <p><b>刻意不参与判定</b>: 明细行锁定锁的是**行内字段值**(销售订单锁 `unitPrice`
+   * 等白名单列), 而拖动排序只重排数组下标、不改任何字段值, 服务端按
+   * `line_no = 下标 + 1` 重编。把两者绑在同一个开关上会让「交付核定」状态连行序
+   * 都不能调 —— 这正是用户报的问题。</p>
+   *
+   * <p>保留为入参只是留痕: 让"哪些开关被考虑过"在类型上可见。</p>
+   */
+  lineItemsLocked?: boolean
 }
 
 /**
@@ -101,6 +112,11 @@ export interface ModuleItemReorderCapabilityOptions {
  *
  * <p>仍然尊重模块的**设计性**禁拖: 物流单/运费对账单由 `disablesItemReorder` 关闭
  * (它们的行序由上游单据/项目分组决定)。要回到"上游顺序"用工具栏的「自动排序」。</p>
+ *
+ * <p><b>与「明细行锁定」解耦</b>: 单据进入交付核定等锁定态时, 锁的是行内字段值
+ * (销售订单锁 `unitPrice` 等白名单列), 而拖动只重排数组下标 —— 两者不是一回事。
+ * 因此本判定只看「能不能管理明细的**行集合**」与「模块是否设计性禁拖」,
+ * 不看 `lineItemsLocked`。详见 {@link ModuleItemReorderCapabilityOptions.lineItemsLocked}。</p>
  */
 export function canReorderModuleEditorItems({
   moduleKey,

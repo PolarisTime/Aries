@@ -68,10 +68,12 @@ describe('销售订单交付核定提示文案与白名单一致', () => {
     // 只有送货日期 + 备注时，正是修复前漏掉报单日期的那句文案。
     expect(
       editableLockedFieldsNotice(['deliveryDate', 'remark'], ['unitPrice']),
-    ).toBe('关联销售出库已审核，当前仅允许调整送货日期、备注、单价。')
+    ).toBe(
+      '关联销售出库已审核，当前仅允许调整送货日期、备注、单价，以及明细行顺序。',
+    )
 
     expect(editableLockedFieldsNotice(SALES_ORDER_LOCKED_FIELD_KEYS)).toBe(
-      '关联销售出库已审核，当前仅允许调整送货日期、报单日期、备注。',
+      '关联销售出库已审核，当前仅允许调整送货日期、报单日期、备注，以及明细行顺序。',
     )
 
     expect(
@@ -80,5 +82,13 @@ describe('销售订单交付核定提示文案与白名单一致', () => {
         SALES_ORDER_LOCKED_ITEM_COLUMN_KEYS,
       ),
     ).not.toBe('关联销售出库已审核，当前仅允许调整送货日期、备注和单价。')
+  })
+
+  it('锁定态提示必须说明「行序仍可调」—— 行序与字段锁定解耦', () => {
+    // 交付核定锁的是行内字段值（单价等），而拖动只重排数组下标、不改字段值。
+    // 提示若不提行序，用户会以为整张明细都动不了。
+    expect(editableLockedFieldsNotice(SALES_ORDER_LOCKED_FIELD_KEYS)).toContain(
+      '明细行顺序',
+    )
   })
 })

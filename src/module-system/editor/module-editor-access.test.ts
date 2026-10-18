@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canManageEditorLineItems,
+  canReorderEditorLineItems,
   isEditorItemColumnEditableForModule,
   isModuleLineItemsLocked,
 } from '@/module-system/editor/module-editor-access'
@@ -170,5 +172,48 @@ describe('行项目锁定状态判定', () => {
 
   it('未配置锁定状态的模块永不锁定', () => {
     expect(isModuleLineItemsLocked('material', ['已审核'])).toBe(false)
+  })
+})
+
+/**
+ * 「行序可调」与「行内字段可编辑」解耦的回归测试。
+ *
+ * <p>背景（用户报的问题）：销售订单处于「交付核定」状态时明细行被标记为锁定，
+ * 而锁定原本同时关掉了行序 —— 于是交付核定状态无法拖拽调整行顺序。</p>
+ *
+ * <p>正确的口径：锁定态锁的是**行内字段值**（`SALES_ORDER_LOCKED_ITEM_COLUMN_KEYS`
+ * 里的 `unitPrice` 等），而拖动排序只重排数组下标、不改任何字段值，服务端按
+ * `line_no = 下标 + 1` 重编。因此行序不应随字段锁定一起关闭。</p>
+ */
+describe('行序可调与行内字段锁定解耦（canReorderEditorLineItems）', () => {
+  it('销售订单交付核定（明细锁定）时，行内字段不可编辑', () => {
+    expect(canManageEditorLineItems('sales-order', true, true, true)).toBe(
+      false,
+    )
+  })
+
+  it('同一状态下，行序仍然可调 —— 这是本次修复的核心', () => {
+    expect(canReorderEditorLineItems('sales-order', true, true)).toBe(true)
+  })
+
+  it('对照：草稿态两者都可用', () => {
+    expect(canManageEditorLineItems('sales-order', true, true, false)).toBe(
+      true,
+    )
+    expect(canReorderEditorLineItems('sales-order', true, true)).toBe(true)
+  })
+
+  it('单据不可保存时行序也不提供（改了也存不下去）', () => {
+    expect(canReorderEditorLineItems('sales-order', true, false)).toBe(false)
+  })
+
+  it('模块明细整体只读时行序关闭', () => {
+    expect(canReorderEditorLineItems('customer-statement', true, true)).toBe(
+      false,
+    )
+  })
+
+  it('没有明细列的模块行序关闭', () => {
+    expect(canReorderEditorLineItems('sales-order', false, true)).toBe(false)
   })
 })

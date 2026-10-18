@@ -4,7 +4,10 @@ import {
   resolveLineItemsLocked,
   resolveListAuditPlan,
 } from '@/hooks/module-editor-capabilities-utils'
-import { canManageEditorLineItems } from '@/module-system/adapter/module-adapter-editor'
+import {
+  canManageEditorLineItems,
+  canReorderEditorLineItems,
+} from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import type {
   ModuleFilterDefinition,
@@ -94,6 +97,16 @@ export function useModuleEditorCapabilities({
     canSaveCurrentEditor,
     lineItemsLocked,
   )
+  /*
+   * 行序可调**独立于**行内字段可编辑: 交付核定这类锁定态锁的是字段值(单价等),
+   * 而拖动只重排数组下标、不改字段, 服务端按 line_no = 下标 + 1 重编。
+   * 详见 canReorderEditorLineItems 的注释。
+   */
+  const canReorderEditorItems = canReorderEditorLineItems(
+    moduleKey,
+    canEditLineItems,
+    canSaveCurrentEditor,
+  )
   const canAddManualEditorItems =
     canManageEditorItems &&
     getBehaviorValue(moduleKey, 'allowsManualLineItems') !== false
@@ -105,6 +118,7 @@ export function useModuleEditorCapabilities({
     canAddManualEditorItems,
     canAuditEditor,
     canManageEditorItems,
+    canReorderEditorItems,
     canSaveAndAuditCurrentEditor,
     canUseBulkAuditAction,
     canUseBulkReverseAuditAction,

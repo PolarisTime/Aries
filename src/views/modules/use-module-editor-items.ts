@@ -12,6 +12,11 @@ interface Props {
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
   canManageItems: boolean
+  /**
+   * 行序是否可调。**与 {@link canManageItems} 分开**: 后者会因「明细行锁定」
+   * (销售订单交付核定等)变 false, 而拖动只重排数组下标、不改字段值, 不应随之关闭。
+   */
+  canReorderItems: boolean
   lineItemsLocked: boolean
   canEditItemColumns: boolean
   parentImportedItemEditLocked: boolean
@@ -22,6 +27,7 @@ export function useModuleEditorItems({
   items,
   setItems,
   canManageItems,
+  canReorderItems,
   lineItemsLocked,
   canEditItemColumns,
   parentImportedItemEditLocked,
@@ -30,16 +36,21 @@ export function useModuleEditorItems({
 }: Props) {
   /*
    * 行序判定统一走 canReorderModuleEditorItems(单一口径, 不要在调用点另加条件):
-   * 能管理明细 + 模块行为表未显式禁用拖拽排序。
+   * 行集合可管理 + 模块行为表未显式禁用拖拽排序。
    *
    * <p>上游导入锁定**不**参与判定: 导入态已经允许「删除选中行」(删除即释放来源分配),
    * 行序管理与它同级; 拖动只改数组顺序, 不改任何导入字段值与来源分配, 服务端按
    * `line_no = 下标 + 1` 重编。要回到上游顺序用工具栏的「自动排序」。</p>
+   *
+   * <p>「明细行锁定」同样**不**参与判定(见 {@link canReorderItems}): 它锁的是行内
+   * 字段值, 与行序无关。传进来的 canReorderItems 已由 canReorderEditorLineItems
+   * 收窄过「明细整体只读 / 单据不可保存」两种真正的禁拖情形。</p>
    */
   const itemReorderEnabled = canReorderModuleEditorItems({
     moduleKey,
-    canManageItems,
+    canManageItems: canReorderItems,
     parentImportedItemEditLocked,
+    lineItemsLocked,
   })
   const {
     clearSelectedItems,

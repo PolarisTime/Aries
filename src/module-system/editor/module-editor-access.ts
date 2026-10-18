@@ -45,6 +45,43 @@ export function canManageEditorLineItems(
   )
 }
 
+/**
+ * 明细**行序**是否可调整(整行长按拖动 / 上移下移按钮 / Alt+↑↓)。
+ *
+ * <p>与 {@link canManageEditorLineItems}(行内字段是否可编辑 / 能否增删行)
+ * <b>刻意分开</b>, 原因是两者锁的不是一回事:</p>
+ *
+ * <ul>
+ *   <li>「交付核定」这类锁定态锁的是**行内字段值** —— 销售订单锁 `unitPrice`
+ *       等白名单列(见 `SALES_ORDER_LOCKED_ITEM_COLUMN_KEYS`);</li>
+ *   <li>拖动排序**不碰任何字段值**, 只重排数组下标; 服务端保存时按
+ *       `line_no = 下标 + 1` 重编, 分配量与来源关系一个都不动;</li>
+ *   <li>因此「字段锁了」不等于「行序也锁了」。把两者绑在一起会让交付核定状态
+ *       连行序都不能调(用户报的问题: 处于交付核定状态下单据无法拖拽调整顺序)。</li>
+ * </ul>
+ *
+ * <p>仍然保留两道必要的闸:</p>
+ * <ol>
+ *   <li>`readonlyLineItems` —— 模块设计上明细整体只读;</li>
+ *   <li>`canSaveCurrentEditor` —— 单据本身不可保存时, 改了顺序也存不下去,
+ *       此时不提供拖动更能避免"拖了但白拖"的错觉。</li>
+ * </ol>
+ *
+ * <p>模块**设计性**禁拖(物流单/运费对账单, 行序由上游决定)仍由
+ * `canReorderModuleEditorItems` 的 `disablesItemReorder` 把关, 不在本函数里判。</p>
+ */
+export function canReorderEditorLineItems(
+  moduleKey: string,
+  canEditLineItems: boolean,
+  canSaveCurrentEditor: boolean,
+) {
+  if (getBehaviorValue(moduleKey, 'readonlyLineItems') === true) {
+    return false
+  }
+
+  return canEditLineItems && canSaveCurrentEditor
+}
+
 export function applyModuleDefaultEditorDraft(
   moduleKey: string,
   draft: ModuleRecordInput,

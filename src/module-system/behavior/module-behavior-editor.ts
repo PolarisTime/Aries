@@ -197,7 +197,12 @@ export function editableLockedFieldsNotice(
     ...fieldKeys.map((key) => LOCKED_FIELD_LABELS[key] ?? key),
     ...itemColumnKeys.map((key) => LOCKED_ITEM_COLUMN_LABELS[key] ?? key),
   ]
-  return `关联销售出库已审核，当前仅允许调整${labels.join('、')}。`
+  /*
+   * 行序可调也要写进提示：锁定态锁的是行内**字段值**，拖动排序只重排数组下标、
+   * 不改字段值（服务端按 line_no = 下标 + 1 重编），见 canReorderEditorLineItems。
+   * 文案若不提行序，用户会以为整张明细都动不了。
+   */
+  return `关联销售出库已审核，当前仅允许调整${labels.join('、')}，以及明细行顺序。`
 }
 
 export const contributeEditorBehaviors: ModuleBehaviorContributor = (

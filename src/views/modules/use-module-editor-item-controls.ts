@@ -17,6 +17,14 @@ interface Options {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
   editorFormValues: Record<string, unknown>
   canManageItems: boolean
+  /**
+   * 行序是否可调(拖动 / 上移下移 / Alt+↑↓)。
+   *
+   * <p><b>与 {@link canManageItems} 刻意分开</b>: 后者管的是「行内字段可编辑 + 能否增删行」,
+   * 会被「明细行锁定」态(如销售订单的交付核定)关掉; 而拖动只重排数组下标、不改字段值,
+   * 不应随之关闭。判定来源见 `canReorderEditorLineItems`。</p>
+   */
+  canReorderItems: boolean
   canAddManualItems: boolean
   canSave: boolean
   saving: boolean
@@ -32,6 +40,7 @@ export function useModuleEditorItemControls({
   setItems,
   editorFormValues,
   canManageItems,
+  canReorderItems,
   canAddManualItems,
   canSave,
   saving,
@@ -107,6 +116,12 @@ export function useModuleEditorItemControls({
     items,
     setItems,
     canManageItems: canManageCurrentItems && !saving,
+    /*
+     * 行序可调与「行内字段可编辑 / 能否增删行」分开传：交付核定这类锁定态锁的是
+     * 字段值(销售订单锁 unitPrice), 而拖动只重排数组下标。若沿用 canManageCurrentItems,
+     * 锁定态下连行序都不能调 —— 用户报的正是这个问题。
+     */
+    canReorderItems: canReorderItems && !saving,
     lineItemsLocked,
     canEditItemColumns: canEditItemColumns && !saving,
     parentImportedItemEditLocked,
