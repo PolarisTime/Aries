@@ -258,6 +258,29 @@ describe('分页/详情响应契约（分页字段名与雪花 ID 精度）', ()
     expect(wrongNames.success).toBe(false)
   })
 
+  /**
+   * 审计字段是**契约的一部分**：后端 `QuoteRegionResponse` 必须返回 `createdAt`。
+   *
+   * 历史事故：前端 schema 要求 createdAt 必填、页面也有「更新时间」列，但后端 DTO
+   * 没暴露该字段 —— 每次打开页面都报「API 响应契约校验失败：GET /quote-regions」。
+   * 当时这组单测因为 fixture 自己造了 createdAt 而全绿，掩盖了前后端不一致。
+   *
+   * 所以这里显式锁住两点：缺 createdAt 必须判失败；缺 updatedAt 允许（新记录未更新过）。
+   */
+  it('缺 createdAt 必须判契约失败（后端 DTO 必须暴露审计时间）', () => {
+    const { createdAt: _omit, ...withoutCreatedAt } = rawRecord()
+    const result = quoteRegionPageSchema.safeParse(rawPage([withoutCreatedAt]))
+    expect(result.success).toBe(false)
+  })
+
+  it('updatedAt 允许为 null（记录从未更新过）', () => {
+    const result = quoteRegionPageSchema.safeParse(
+      rawPage([rawRecord({ updatedAt: null })]),
+    )
+    expect(result.success).toBe(true)
+    expect(result.data?.content[0].updatedAt).toBeNull()
+  })
+
   it('totalElements 兼容后端十进制字符串并归一为数字', () => {
     const result = quoteRegionPageSchema.safeParse({
       ...rawPage([rawRecord()]),

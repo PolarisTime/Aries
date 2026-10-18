@@ -201,8 +201,17 @@ export const rawLengthPremiumSchema = z.looseObject({
   sortOrder: responseSignedIntegerSchema,
   status: z.string(),
   remark: z.string().nullish(),
-  createdAt: z.string(),
-  updatedAt: z.string().nullish(),
+  /*
+   * 审计字段：后端 `LengthPremiumResponse` 已从 `AbstractAuditableEntity` 暴露
+   * createdAt/updatedAt（全局 IsoLocalDateTimeSerializer 输出带偏移的 ISO-8601），
+   * 列表「更新时间」列依赖它们，因此这里按**必填**约束。
+   *
+   * 历史背景：DTO 曾经不返回这两个字段，而前端 schema 已要求 `createdAt` 必填，
+   * 于是每次打开页面都报「API 响应契约校验失败：GET /length-premiums」。
+   * 修法是让后端补齐字段（前端契约本就反映了页面真实需要），而不是把契约放松到 nullish。
+   */
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1).nullish(),
 })
 
 /** 分页响应契约（`PageResponse`）。 */
@@ -218,7 +227,9 @@ export interface LengthPremiumRecord {
   /** 白名单「正常」/「禁用」；未知状态原样保留，展示层降级。 */
   status: string
   remark: string | null
-  createdAt: string
+  /** 创建时间（后端 `LengthPremiumResponse` 暴露，ISO-8601 带时区偏移）。 */
+  createdAt: string | null
+  /** 更新时间；从未更新过的记录为 null，列表「更新时间」列回退显示创建时间。 */
   updatedAt: string | null
 }
 
@@ -255,7 +266,8 @@ function toLengthPremiumRecord(
     sortOrder: raw.sortOrder,
     status: asString(raw.status),
     remark: raw.remark ?? null,
-    createdAt: asString(raw.createdAt),
+    // 后端暂不返回审计时间：缺失即 null，不要用 asString 把 undefined 变成 ''。
+    createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
   }
 }
