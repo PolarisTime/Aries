@@ -57,6 +57,14 @@ interface Props {
   }
   auditLabel?: string
   saving: boolean
+  /**
+   * 是否在明细工具栏里渲染「取消 / 保存 / 保存并审核」。
+   *
+   * <p>**默认 false**：这三个按钮由 `ModuleEditorWorkspace` 提升到 `WorkspaceOverlay` 的
+   * footer 槽，切「附加费用」页签不会丢（见 resolveEditorShowsOverlayFooter）。保留这个
+   * 开关只为「无明细区但复用本组件」的历史场景，不要在单据编辑器里传 true ——
+   * 那会出现两条保存按钮。</p>
+   */
   showFooterActions?: boolean
   onAddItem: () => void
   onAutoSortItems: (mode?: FreightStatementSortMode) => void
@@ -120,7 +128,7 @@ export function ModuleEditorItemsSection({
   capabilities,
   auditLabel,
   saving,
-  showFooterActions = true,
+  showFooterActions = false,
   onAddItem,
   onAutoSortItems,
   freightStatementSortDirection = 'asc',

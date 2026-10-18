@@ -121,7 +121,8 @@ export function ModuleEditorFormSection({
       {formFieldRows.map((fieldRow) => (
         <Row
           key={fieldRow.map((field) => field.key).join('-')}
-          gutter={[16, 0]}
+          /* 纵向 8px：字段栅格沿用主数据弹层的 [16, 8] 节奏（AGENTS.md《间距》）。 */
+          gutter={[16, 8]}
           className="editor-form-row"
         >
           {fieldRow.map((field: ModuleFormFieldDefinition) => (

@@ -3,7 +3,7 @@
 import { act, createElement, useRef } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useFocusTrap } from '@/hooks/useFocusTrap'
+import { hasOpenAntdModal, useFocusTrap } from '@/hooks/useFocusTrap'
 
 const nextFrame = () =>
   new Promise<void>((resolve) => {
@@ -182,5 +182,69 @@ describe('useFocusTrap', () => {
     })
     pressKey(outerRef.current, 'Escape')
     expect(onEscape).toHaveBeenCalledTimes(2)
+  })
+
+  describe('上层 antd Modal 存在时让出 Escape（P1-12 回归）', () => {
+    const mountModalWrap = (options: {
+      visible: boolean
+      hidden?: boolean
+    }) => {
+      const wrap = document.createElement('div')
+      wrap.className = 'ant-modal-wrap'
+      if (!options.visible) wrap.style.display = 'none'
+      if (options.hidden) wrap.setAttribute('aria-hidden', 'true')
+      document.body.appendChild(wrap)
+      return wrap
+    }
+
+    it('hasOpenAntdModal 只把「打开中」的 .ant-modal-wrap 算进来', () => {
+      expect(hasOpenAntdModal()).toBe(false)
+
+      const closed = mountModalWrap({ visible: false })
+      expect(hasOpenAntdModal()).toBe(false)
+
+      const hiddenWrap = mountModalWrap({ visible: true, hidden: true })
+      expect(hasOpenAntdModal()).toBe(false)
+
+      closed.remove()
+      hiddenWrap.remove()
+      const open = mountModalWrap({ visible: true })
+      expect(hasOpenAntdModal()).toBe(true)
+      open.remove()
+    })
+
+    it('已有打开中的 Modal 时不调用 onEscape，避免确认框被同一次 Esc 关掉', async () => {
+      renderProbe(true)
+      await nextFrame()
+
+      const open = mountModalWrap({ visible: true })
+      pressKey(field('first'), 'Escape')
+      expect(onEscape).not.toHaveBeenCalled()
+
+      open.remove()
+      pressKey(field('first'), 'Escape')
+      expect(onEscape).toHaveBeenCalledTimes(1)
+    })
+
+    it('Modal 已关闭（display:none 残留节点）后 Esc 恢复关闭编辑器', async () => {
+      renderProbe(true)
+      await nextFrame()
+
+      mountModalWrap({ visible: false })
+      pressKey(field('first'), 'Escape')
+      expect(onEscape).toHaveBeenCalledTimes(1)
+    })
+
+    it('已有 Modal 时不接管 Tab，让焦点能进确认框的按钮', async () => {
+      renderProbe(true)
+      await nextFrame()
+      expect(document.activeElement).toBe(field('first'))
+
+      const open = mountModalWrap({ visible: true })
+      pressKey(field('first'), 'Tab')
+      // 未 preventDefault + 未迁移焦点：保持原地，浏览器默认行为接管。
+      expect(document.activeElement).toBe(field('first'))
+      open.remove()
+    })
   })
 })

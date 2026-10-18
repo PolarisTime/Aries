@@ -1084,6 +1084,16 @@ export const zhCN = {
       customerStatementTotalQuantity: '合计件数：',
       customerStatementTotalWeight: '合计重量：',
       customerStatementTotalAmount: '合计金额：',
+      /*
+       * 删除选中：二次确认 + 撤销（批次 C / P1-4）。
+       * count 由调用方插值；不写成 _one/_other 复数形式，中文无复数变化。
+       */
+      confirmRemoveTitle: '删除选中的明细？',
+      confirmRemoveContent:
+        '将删除 {{count}} 行明细，已录入的仓库、品牌、材质、规格、数量、单价等内容将被清空。删除后可在提示条上点「撤销」恢复。',
+      confirmRemoveOk: '删除',
+      removedToast: '已删除 {{count}} 行明细',
+      undoRemove: '撤销',
     },
     expense: {
       chargeName: '费用名称',
@@ -1132,8 +1142,14 @@ export const zhCN = {
       rowCount: '行数',
       quantity: '数量',
       weight: '重量',
+      /*
+       * 「金额」一词曾同时指货物额与含附加费总额，同一张单据两处数字对不上（批次 C / P2-2）。
+       * goodsAmount = 货物行合计；totalAmountWithExpense = 货物 + 附加费用（与列表「总金额」同口径）。
+       */
+      goodsAmount: '货物金额',
       amount: '金额',
       expenseAmount: '附加费用合计',
+      totalAmountWithExpense: '含附加费用合计',
     },
     editorForm: {
       documentInfo: '单据信息',

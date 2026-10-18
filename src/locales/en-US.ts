@@ -1117,6 +1117,13 @@ export const enUS = {
       customerStatementTotalQuantity: 'Total Qty: ',
       customerStatementTotalWeight: 'Total Weight: ',
       customerStatementTotalAmount: 'Total Amount: ',
+      /* 删除选中：二次确认 + 撤销（批次 C / P1-4）。 */
+      confirmRemoveTitle: 'Delete the selected line items?',
+      confirmRemoveContent:
+        'This will delete {{count}} line item(s) and clear the warehouse, brand, material, spec, quantity and unit price you entered. You can click "Undo" on the toast to restore them.',
+      confirmRemoveOk: 'Delete',
+      removedToast: '{{count}} line item(s) deleted',
+      undoRemove: 'Undo',
     },
     expense: {
       chargeName: 'Charge Name',
@@ -1161,8 +1168,11 @@ export const enUS = {
       rowCount: 'Rows',
       quantity: 'Qty',
       weight: 'Weight',
+      /* Goods Amount = line total; Total incl. Expenses 与列表 Total Amount 同口径（P2-2）。 */
+      goodsAmount: 'Goods Amount',
       amount: 'Amount',
       expenseAmount: 'Expense Total',
+      totalAmountWithExpense: 'Total incl. Expenses',
     },
     editorForm: {
       documentInfo: 'Document Info',

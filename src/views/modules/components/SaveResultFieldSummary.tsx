@@ -6,6 +6,7 @@ import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
+import { resolveSummaryDisplayValue } from './save-result-field-values'
 
 /**
  * 保存回执的字段摘要卡片。
@@ -14,6 +15,9 @@ import type {
  * 是一组独立分支，内联在弹窗里会把弹窗控制流复杂度推过 react-doctor 阈值
  * (no-high-complexity-react-function)。DOM 结构、Typography 层级与全角冒号
  * 文案保持逐字不变。</p>
+ *
+ * <p>取值口径（显示名优先、取不到才回退原值）在 `save-result-field-values.ts`，
+ * 那里是「回执字段显示值」的唯一出口；本文件只负责渲染。</p>
  */
 
 interface Props {
@@ -39,7 +43,7 @@ export function SaveResultFieldSummary({ config, record }: Props) {
     <Card size="small" className="mb-16">
       <Space orientation="vertical" size={4}>
         {(config.formFields || []).map((field) => {
-          const val = readModuleRecordField(record, field.key)
+          const val = resolveSummaryDisplayValue(record, field.key)
           if (val == null || val === '') return null
           return (
             <div key={field.key}>

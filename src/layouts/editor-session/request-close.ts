@@ -48,6 +48,15 @@ export function requestEditorSessionClose(
     okText: t('common.discardChanges'),
     cancelText: t('common.cancel'),
     mask: { closable: false },
+    /*
+     * 兜底：确认框只能由按钮关闭。
+     *
+     * 脏编辑器按 Esc 时，同一次 keydown 会被两个消费者读到 —— 编辑器的 useFocusTrap
+     * （负责开这个框）与 antd Modal 自己的 Esc 面板栈（默认 keyboard:true，负责关自己）。
+     * trap 侧已加「已有 Modal 时让出 Esc」的前置判断，这里再把 Modal 的键盘关闭关掉，
+     * 双保险：任何一侧将来被改动，都不会退化成「确认框闪现约 300ms 后消失」。
+     */
+    keyboard: false,
     onOk: () => {
       editorSessionStore.endSession(tabId)
       onClose()
@@ -84,6 +93,8 @@ export function confirmBatchTabClose(
     okText: t('common.discardChanges'),
     cancelText: t('common.cancel'),
     mask: { closable: false },
+    /* 同上：批量关闭的脏数据确认框同样只能由按钮关闭。 */
+    keyboard: false,
     onOk: () => {
       tabIds.forEach((tabId) => {
         editorSessionStore.endSession(tabId)

@@ -19,6 +19,11 @@ import {
   type EditorFormValues,
   resolvePendingAttachmentFiles,
 } from '@/views/modules/module-editor-workspace-support'
+import {
+  type RemovedItemsSnapshot,
+  restoreRemovedItems,
+  useConfirmedItemRemoval,
+} from '@/views/modules/use-confirmed-item-removal'
 import { useEditorSaveShortcuts } from '@/views/modules/use-editor-save-shortcuts'
 import { useModuleEditorCapabilityFlags } from '@/views/modules/use-module-editor-capability-flags'
 import { useModuleEditorExpenseItems } from '@/views/modules/use-module-editor-expense-items'
@@ -35,6 +40,7 @@ import {
   resolveEditorCustomerId,
   resolveEditorPresentation,
   resolveEditorSessionIds,
+  resolveEditorShowsOverlayFooter,
   shouldAutoInsertBlankItemOnCreate,
 } from './module-editor-workspace-presentation'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -305,7 +311,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     itemColumnOrder,
     itemRowMenus,
     onItemColumnOrderChange,
-    removeSelectedItems,
+    removeSelectedItems: removeSelectedItemsDirectly,
     selectedItemIds,
     toggleItemColumn,
     visibleItemColumnKeys,
@@ -321,6 +327,15 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     saving,
     lineItemsLocked,
     canEditItemColumns,
+  })
+
+  /* 删除选中：二次确认 + toast 撤销（P1-4）。唯一实现见 use-confirmed-item-removal。 */
+  const removeSelectedItems = useConfirmedItemRemoval({
+    items,
+    selectedItemIds,
+    onConfirmDelete: removeSelectedItemsDirectly,
+    onRestore: (snapshot: RemovedItemsSnapshot) =>
+      setItems((current) => restoreRemovedItems(current, snapshot)),
   })
 
   return (
@@ -342,7 +357,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         onClose={requestCloseEditor}
         className={presentation.overlayClassName}
         footer={
-          presentation.showFooterActions ? (
+          resolveEditorShowsOverlayFooter(config, moduleKey) ? (
             <EditorFooterActions
               canSave={canSave}
               canAudit={canSaveAndAuditInEditor}
@@ -411,7 +426,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           auditLabel={editorAuditLabel}
           saving={saving}
-          showFooterActions={!presentation.financeLayout}
+          /* 保存入口已提升到弹层 footer 槽（唯一入口），明细工具栏不再重复渲染。 */
+          showFooterActions={false}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}
