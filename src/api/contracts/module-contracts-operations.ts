@@ -6,6 +6,7 @@ export const operationModuleEndpointContracts = {
     path: '/purchase-orders',
     nativeFilterKeys: [
       'keyword',
+      'productKeyword',
       'supplierId',
       'supplierName',
       'currentRecordId',
@@ -27,6 +28,7 @@ export const operationModuleEndpointContracts = {
     path: '/purchase-inbounds',
     nativeFilterKeys: [
       'keyword',
+      'productKeyword',
       'supplierId',
       'supplierName',
       'currentRecordId',
@@ -92,6 +94,7 @@ export const operationModuleEndpointContracts = {
     path: '/sales-returns',
     nativeFilterKeys: [
       'keyword',
+      'productKeyword',
       'customerId',
       'customerName',
       'projectId',
@@ -112,6 +115,7 @@ export const operationModuleEndpointContracts = {
     path: '/freight-bills',
     nativeFilterKeys: [
       'keyword',
+      'productKeyword',
       'carrierId',
       'carrierCode',
       'carrierName',
