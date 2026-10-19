@@ -2396,6 +2396,14 @@ export const zhCN = {
       emptyList: '暂无角色',
       newRole: '新建角色',
       wizardStepBasic: '基本信息',
+      templateSection: '角色模板',
+      templateApplied:
+        '已套用模板：新增 {{added}} 项，保留 {{retained}} 项自定义权限',
+      templateNoticeTitle: '套用「{{name}}」模板',
+      templateNoticeDiff:
+        '将新增 {{added}} 项权限，另有 {{retained}} 项已选的自定义权限会保留（不会被移除）。',
+      templateApply: '套用',
+      templateCancel: '取消',
       wizardStepPermissions: '权限配置',
       wizardNext: '下一步',
       wizardPrevious: '上一步',
@@ -2458,6 +2466,8 @@ export const zhCN = {
         rollback: '回滚',
         rebuild: '重建',
         sync: '同步',
+        admin: '管理',
+        'force-close': '强制关闭',
       },
       resources: {
         'sales-orders': '销售订单',
@@ -2507,6 +2517,11 @@ export const zhCN = {
         roles: '角色管理',
         permissions: '权限目录',
         system: '系统',
+        'length-premiums': '长度加价',
+        'module-exports': '模块导出',
+        'quote-regions': '报价区域',
+        'supplier-price-lists': '供应商价格表',
+        'value-aliases': '值别名',
       },
       fields: {
         amount: '金额',

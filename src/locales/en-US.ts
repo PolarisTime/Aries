@@ -2451,6 +2451,14 @@ export const enUS = {
       emptyList: 'No roles',
       newRole: 'New Role',
       wizardStepBasic: 'Basic Info',
+      templateSection: 'Role templates',
+      templateApplied:
+        'Template applied: {{added}} added, {{retained}} custom permissions kept',
+      templateNoticeTitle: 'Apply "{{name}}" template',
+      templateNoticeDiff:
+        '{{added}} permissions will be added. {{retained}} custom permissions you already selected will be kept (nothing is removed).',
+      templateApply: 'Apply',
+      templateCancel: 'Cancel',
       wizardStepPermissions: 'Permissions',
       wizardNext: 'Next',
       wizardPrevious: 'Previous',
@@ -2514,6 +2522,8 @@ export const enUS = {
         rollback: 'Rollback',
         rebuild: 'Rebuild',
         sync: 'Sync',
+        admin: 'Admin',
+        'force-close': 'Force Close',
       },
       resources: {
         'sales-orders': 'Sales Orders',
@@ -2563,6 +2573,11 @@ export const enUS = {
         roles: 'Roles',
         permissions: 'Permissions',
         system: 'System',
+        'length-premiums': 'Length Premiums',
+        'module-exports': 'Module Exports',
+        'quote-regions': 'Quote Regions',
+        'supplier-price-lists': 'Supplier Price Lists',
+        'value-aliases': 'Value Aliases',
       },
       fields: {
         amount: 'Amount',

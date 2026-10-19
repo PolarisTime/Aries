@@ -526,3 +526,67 @@
 .role-permission-scroll .ant-collapse-content-box {
   padding: var(--space-sm) !important;
 }
+
+/* ── 角色权限向导：模板选择与影响面提示 ─────────────────────────────
+   放在 pages.css 而不是新建文件，是因为角色管理页的其它样式（.role-permission-scroll）
+   已在此文件，同一页面的样式不要分散到两处。 */
+.role-template-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.role-template-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 32px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--ant-color-border);
+  border-radius: var(--ant-border-radius);
+  background: var(--ant-color-bg-container);
+  color: var(--ant-color-text);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.role-template-chip:hover:not(:disabled) {
+  border-color: var(--ant-color-primary);
+  color: var(--ant-color-primary);
+}
+
+.role-template-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.role-template-chip--active {
+  border-color: var(--ant-color-primary);
+  background: var(--ant-color-primary-bg);
+  color: var(--ant-color-primary);
+}
+
+.role-template-chip__name {
+  font-weight: 500;
+}
+
+.role-template-chip__count {
+  margin-inline-end: 0;
+}
+
+.role-template-notice {
+  margin-bottom: var(--space-md);
+}
+
+.role-template-notice__note {
+  margin-top: var(--space-xxs);
+  color: var(--ant-color-text-secondary);
+}
+
+.role-template-notice__actions {
+  display: flex;
+  gap: var(--space-xs);
+}
