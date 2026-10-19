@@ -42,6 +42,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     setFilters: state.setFilters,
     setSubmittedFilters: state.setSubmittedFilters,
     updateFilter: state.updateFilter,
+    // 用于发现「URL 上的 docNo 与界面关键字已不一致」：手动清空搜索框后要清 URL，
+    // 否则刷新会把旧单号重新应用回去。
+    currentKeyword: asString(state.filters?.keyword),
     openDetail: state.openDetail,
     openEditor: state.openEditor,
   })

@@ -8,9 +8,12 @@ import {
   consumeOpenDetailIntentSearch,
   consumeParentImportIntentSearch,
   consumeRouteFilterSearch,
+  consumeRouteKeywordSearch,
   ONE_SHOT_INTENT_PARAMS,
   parseRouteParams,
   ROUTE_FILTER_PARAMS,
+  ROUTE_KEYWORD_PARAMS,
+  shouldConsumeRouteKeyword,
   supportsFilterField,
 } from '@/views/modules/use-business-grid-route-sync'
 
@@ -306,5 +309,101 @@ describe('重置筛选必须同时清 URL —— 否则刷新后筛选静默复�
     for (const key of ROUTE_FILTER_PARAMS) {
       expect(consumeRouteFilterSearch(`?${key}=x`)).toBe('')
     }
+  })
+})
+
+describe('手动改搜索框必须同步清 URL —— 否则刷新后单号静默复活', () => {
+  /*
+   * 实测缺陷（用户报）：任意页面做单据号搜索会进入 `?docNo=…`；
+   * 用户在界面上**手动**清空搜索框（不是点「重置」）后，界面与列表都正常，
+   * 但 URL 仍带着 docNo —— 按 F5 后路由同步又把旧单号写回筛选框。
+   *
+   * 上一组用例覆盖的是「重置按钮」那条路径；这里覆盖手动改动这条路径。
+   */
+
+  it('只清关键字参数，保留 status/customerId 等用户没动的筛选', () => {
+    const search =
+      '?docNo=368855989580988416&status=%E8%8D%89%E7%A8%BF&customerId=1983421000000000001'
+    const next = consumeRouteKeywordSearch(search)
+    expect(next).not.toContain('docNo')
+    expect(next).toContain('status=')
+    expect(next).toContain('customerId=')
+  })
+
+  it('docNo 与 trackId 都是关键字来源，两者都清', () => {
+    for (const key of ROUTE_KEYWORD_PARAMS) {
+      expect(consumeRouteKeywordSearch(`?${key}=x`)).toBe('')
+    }
+  })
+
+  it('保留一次性意图（清关键字不是取消创建/打开详情）', () => {
+    const next = consumeRouteKeywordSearch('?docNo=PO-1&create=1&openDetail=1')
+    expect(next).toContain('create=1')
+    expect(next).toContain('openDetail=1')
+  })
+
+  it('无关键字参数时原样返回（幂等）', () => {
+    expect(consumeRouteKeywordSearch('?status=x')).toBe('status=x')
+    expect(consumeRouteKeywordSearch('')).toBe('')
+  })
+
+  it('关键字参数清单是唯一来源', () => {
+    expect(ROUTE_KEYWORD_PARAMS).toEqual(['docNo', 'trackId'])
+  })
+})
+
+describe('shouldConsumeRouteKeyword —— 何时把 URL 关键字判为「已被用户消费」', () => {
+  it('界面关键字与 URL 一致：不消费（用户没动）', () => {
+    expect(
+      shouldConsumeRouteKeyword({
+        routeKeyword: 'PO-1',
+        currentKeyword: 'PO-1',
+        appliedRouteKeyword: 'PO-1',
+      }),
+    ).toBe(false)
+  })
+
+  it('用户清空搜索框：消费', () => {
+    expect(
+      shouldConsumeRouteKeyword({
+        routeKeyword: 'PO-1',
+        currentKeyword: '',
+        appliedRouteKeyword: 'PO-1',
+      }),
+    ).toBe(true)
+  })
+
+  it('用户改写成别的关键字：消费（否则刷新会跳回旧单号）', () => {
+    expect(
+      shouldConsumeRouteKeyword({
+        routeKeyword: 'PO-1',
+        currentKeyword: '3688',
+        appliedRouteKeyword: 'PO-1',
+      }),
+    ).toBe(true)
+  })
+
+  /**
+   * 深链刚进入的那一帧：界面关键字还是空，但路由还没把它写进去。
+   * 此时若判为"用户改动"，深链会在生效前被清掉 —— 这条用例锁住该分支。
+   */
+  it('URL 关键字尚未应用到界面时不消费（保护深链首帧）', () => {
+    expect(
+      shouldConsumeRouteKeyword({
+        routeKeyword: 'PO-1',
+        currentKeyword: '',
+        appliedRouteKeyword: '',
+      }),
+    ).toBe(false)
+  })
+
+  it('URL 没有关键字时不消费', () => {
+    expect(
+      shouldConsumeRouteKeyword({
+        routeKeyword: '',
+        currentKeyword: '',
+        appliedRouteKeyword: '',
+      }),
+    ).toBe(false)
   })
 })

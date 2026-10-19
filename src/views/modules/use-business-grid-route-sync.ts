@@ -20,6 +20,14 @@ interface Props {
   setFilters?: (filters: SearchParams) => void
   setSubmittedFilters: (filters: SearchParams) => void
   updateFilter: (key: string, value: unknown) => void
+  /**
+   * 列表当前的关键字筛选值（`filters.keyword`）。
+   *
+   * <p>用于发现「URL 上的 `docNo`/`trackId` 与界面关键字已经不一致」：用户在深链进入后
+   * 手动清空/改写搜索框时，URL 若不跟着清掉，刷新会把旧单号重新应用回去
+   * （见 {@link shouldConsumeRouteKeyword}）。</p>
+   */
+  currentKeyword?: string
   openDetail: (target: string | ModuleRecord) => Promise<void>
   openEditor: (
     record: null,
@@ -163,6 +171,55 @@ export const ROUTE_FILTER_PARAMS = [
  */
 export function consumeRouteFilterSearch(searchStr: string): string {
   return consumeIntentSearch(searchStr, ROUTE_FILTER_PARAMS)
+}
+
+/**
+ * URL 里**驱动关键字**的那两个参数（`docNo`/`trackId`，见 `routeKeyword`）。
+ *
+ * <p>只清它们、不动 `status`/`customerId`/`referencedBy`：用户手动改搜索框时
+ * 并没有动状态/客户这些筛选，把它们一起摘掉会让「界面还在筛状态、URL 却没了」，
+ * 刷新后反而丢掉用户保留的条件。</p>
+ */
+export const ROUTE_KEYWORD_PARAMS = ['docNo', 'trackId'] as const
+
+/** 只清掉 URL 关键字参数（供「用户手动改搜索框」消费，区别于「重置」的全量清理）。 */
+export function consumeRouteKeywordSearch(searchStr: string): string {
+  return consumeIntentSearch(searchStr, ROUTE_KEYWORD_PARAMS)
+}
+
+/**
+ * URL 上的路由关键字（`docNo`/`trackId` 驱动的 `keyword`）是否应被判定为「已被用户消费」。
+ *
+ * <p><b>要解决的缺陷</b>：从引用跳转/全局搜索进入 `/purchase-order?docNo=…` 后，
+ * 用户手动清空（或改写）搜索框 —— 界面筛选变了、列表也变了，但 URL 仍带着旧 `docNo`。
+ * 此时按 F5，路由同步会把这个 `docNo` 重新写回筛选框，用户看到「刚清掉的单号又回来了」。
+ * 「重置」按钮那条路径已由 {@link consumeRouteFilterSearch} 处理，而手动改搜索框这条路
+ * 此前没有任何消费动作。</p>
+ *
+ * <p><b>为什么要 `appliedRouteKeyword`</b>：深链刚进入时界面关键字还是空的，
+ * 而同步 effect 要等下一次渲染才把 `docNo` 写进筛选框。若只看「界面与 URL 不一致」
+ * 就消费，会在深链生效前把 URL 清掉，深链直接失效。因此只有在**该 URL 关键字确实
+ * 已经应用到界面之后**，出现的不一致才算用户手动改动。</p>
+ *
+ * @returns true 表示应清掉 URL 上的路由筛选参数（保留 `create`/`openDetail` 等一次性意图）
+ */
+export function shouldConsumeRouteKeyword({
+  routeKeyword,
+  currentKeyword,
+  appliedRouteKeyword,
+}: {
+  /** URL 当前携带的路由关键字（空串表示没有） */
+  routeKeyword: string
+  /** 界面当前的关键字筛选值 */
+  currentKeyword: string
+  /** 最近一次由路由同步写入界面的关键字（空串表示尚未应用过） */
+  appliedRouteKeyword: string
+}): boolean {
+  if (!routeKeyword) return false
+  // 还没被应用到界面：这是深链刚进入的那一帧，不能消费
+  if (appliedRouteKeyword !== routeKeyword) return false
+  // URL 与界面一致：用户没动过（或改了又改回来），无需处理
+  return currentKeyword !== routeKeyword
 }
 
 function resolveParentImportSource(
@@ -337,6 +394,7 @@ export function useBusinessGridRouteSync({
   setFilters,
   setSubmittedFilters,
   updateFilter,
+  currentKeyword = '',
   openDetail,
   openEditor,
 }: Props) {
@@ -345,6 +403,15 @@ export function useBusinessGridRouteSync({
   const autoOpenedParentImportKeyRef = useRef('')
   const autoOpenedCreateKeyRef = useRef('')
   const routeFilterSyncKeyRef = useRef<string | null>(null)
+  /** 最近一次由路由同步写进界面筛选框的关键字；用于区分"深链生效中"与"用户手动改了"。 */
+  const appliedRouteKeywordRef = useRef('')
+  /**
+   * 在本次提交里刚刚应用过路由关键字 —— 该帧的 `currentKeyword` 仍是旧值，
+   * 必须跳过消费判定，否则深链会在生效前被清掉。
+   */
+  const justAppliedRouteKeywordRef = useRef('')
+  /** 请求跳过下一次「路由 → 筛选」重置（用户手动消费关键字后，URL 变化不该覆盖界面筛选）。 */
+  const skipRouteFilterResetRef = useRef(false)
   // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
   const rawSearchStr = location.searchStr
   const routeParams = useMemo(
@@ -364,6 +431,17 @@ export function useBusinessGridRouteSync({
       return
     }
     routeFilterSyncKeyRef.current = routeFilterSyncKey
+
+    /*
+     * 这次 URL 变化是「用户手动改了搜索框 → 我们清掉旧 docNo」造成的。
+     * 按路由默认值重置会把用户刚输入的筛选覆盖掉（例如刚搜了 ABC，结果被清回空），
+     * 所以只记录 key、不碰筛选状态。
+     */
+    if (skipRouteFilterResetRef.current) {
+      skipRouteFilterResetRef.current = false
+      appliedRouteKeywordRef.current = ''
+      return
+    }
 
     setPage(1)
     clearSelection()
@@ -396,6 +474,9 @@ export function useBusinessGridRouteSync({
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步深链关键词到父级列表。
       updateFilter('keyword', routeParams.routeKeyword)
     }
+    // 记录「路由关键字已写进界面」：后续只有它之后出现的不一致才判定为用户手动改动。
+    appliedRouteKeywordRef.current = routeParams.routeKeyword
+    justAppliedRouteKeywordRef.current = routeParams.routeKeyword
     // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent react-doctor/no-pass-live-state-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
     setSubmittedFilters(nextRouteFilters)
   }, [
@@ -408,6 +489,48 @@ export function useBusinessGridRouteSync({
     setFilters,
     setSubmittedFilters,
     updateFilter,
+  ])
+
+  /*
+   * 用户手动改动/清空搜索框后，把 URL 上不再成立的 `docNo`/`trackId` 一起摘掉。
+   *
+   * <p>缺陷现场：单据号搜索会把 docNo 写进 URL；用户在界面上手动清空搜索框时，
+   * 只有筛选状态变了、URL 没变，于是按 F5 后路由同步又把旧单号写回筛选框
+   * （「刚清掉的单号又回来了」）。「重置」按钮这条路由已经清 URL，这里补的是
+   * 手动改动这条路径。</p>
+   *
+   * <p>判定走 {@link shouldConsumeRouteKeyword}：只有该 URL 关键字**已经应用到界面**
+   * 之后出现的不一致才算用户改动，避免深链在生效前被误清。</p>
+   */
+  // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串与界面筛选需要保持同步，任一侧变化都要对齐另一侧。
+  useEffect(() => {
+    // 本次提交刚把路由关键字写进界面，currentKeyword 仍是旧值，跳过。
+    if (justAppliedRouteKeywordRef.current === routeParams.routeKeyword) {
+      justAppliedRouteKeywordRef.current = ''
+      return
+    }
+    const consumed = shouldConsumeRouteKeyword({
+      routeKeyword: routeParams.routeKeyword,
+      currentKeyword,
+      appliedRouteKeyword: appliedRouteKeywordRef.current,
+    })
+    if (!consumed) {
+      return
+    }
+    appliedRouteKeywordRef.current = ''
+    skipRouteFilterResetRef.current = true
+    // 只清关键字参数：用户改的是搜索框，没有动状态/客户等筛选。
+    const nextSearch = consumeRouteKeywordSearch(rawSearchStr)
+    const nextHref = nextSearch
+      ? `${location.pathname}?${nextSearch}`
+      : location.pathname
+    router.history.replace(nextHref)
+  }, [
+    currentKeyword,
+    location.pathname,
+    rawSearchStr,
+    routeParams.routeKeyword,
+    router,
   ])
 
   useEffect(() => {
