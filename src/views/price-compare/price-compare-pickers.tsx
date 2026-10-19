@@ -31,12 +31,15 @@ export function PriceCompareProjectPicker({
   onAddProject,
   onSelectSheet,
   projects,
+  projectsLoading = false,
   projectGroups,
 }: {
   currentGroup: ProjectGroup | undefined
   onAddProject: (project: ProjectOption) => void
   onSelectSheet: (sheetId: string) => void
   projects: ProjectOption[]
+  /** 项目清单来自后端接口，加载中时下拉显示 loading 而不是"空列表"。 */
+  projectsLoading?: boolean
   projectGroups: ProjectGroup[]
 }) {
   const { t } = useTranslation()
@@ -79,6 +82,7 @@ export function PriceCompareProjectPicker({
       <Select
         className="price-compare-project-select"
         size="small"
+        loading={projectsLoading}
         aria-label={t('priceCompare.picker.a11y.project')}
         showSearch={{ optionFilterProp: 'label' }}
         /* 下拉按内容自适应宽度: 选项要放下「项目名 + 批次状态」, 跟着选择器宽度走会把

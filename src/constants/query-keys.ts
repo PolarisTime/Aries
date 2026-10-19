@@ -109,6 +109,8 @@ export const QUERY_KEYS = {
 
   // Price compare
   priceCompare: {
+    /** 比价页项目选择器：项目是业务主数据，来自后端而非随包清单。 */
+    projects: ['price-compare', 'projects'] as const,
     materialBrands: ['price-compare', 'material-brands'] as const,
     purchaseOrderTonnages: [
       'price-compare',

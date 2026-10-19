@@ -1,43 +1,49 @@
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
-import { fetchProjectQuoteConfig } from '@/api/master/project-options'
+import {
+  fetchProjectPickerOptions,
+  fetchProjectQuoteConfig,
+} from '@/api/master/project-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_STATIC } from '@/constants/query-policies'
 import { matchesToData, mergePriceData } from './core'
 import brands from './data/brands.json'
-import projects from './data/projects.json'
 import varieties from './data/varieties.json'
 import type { BrandOption, PriceData, ProjectOption, Variety } from './types'
 
 /**
- * 基础元数据随应用发布会变更，体积很小，按工程惯例打进 bundle：
+ * **参考类**元数据（品种、品牌）随应用发布会变更，体积很小，按工程惯例打进 bundle：
  * 构建期类型校验、内容哈希随版本缓存、无需运行时 fetch 与加载失败分支。
- * 网价等大体积/需独立更新的数据仍由后端接口提供（mergeMatches）。
+ *
+ * <p><b>项目清单不在这里</b>：项目是用户在「基础数据 → 项目资料」里随时新建的**业务主数据**，
+ * 打进 bundle 会让新建项目在比价页永远看不到（必须改 JSON 重新发版），并且同一实体
+ * 在数据库与前端各存一份、已经漂移出错。它现在由 {@link fetchProjectPickerOptions} 从后端读取。</p>
  */
 const metadata: {
   varieties: Variety[]
-  projects: ProjectOption[]
   catalog: BrandOption[]
 } = {
   varieties: varieties.map((item) => ({
     ...item,
     label: item.label.replace(/Φ\s*/g, '').replace(/\s+/g, ' ').trim(),
   })),
-  projects,
   catalog: brands,
 }
 
 export type PriceCompareData = {
   data: PriceData
   varieties: Variety[]
+  /** 当前启用项目（来自后端，随项目资料变更实时生效）。 */
   projects: ProjectOption[]
+  /** 项目清单是否仍在加载（此时 `projects` 为空，调用方不要据此判定"没有项目"）。 */
+  projectsLoading: boolean
   catalog: BrandOption[]
   /** 合并后端商品行情匹配结果(网价完全来自后端) */
   mergeMatches: (matches: MaterialPriceMatch[]) => void
 }
 
-/** 比价页数据: 网价来自后端匹配接口, 商品/项目/品牌元数据来自随包发布的本地清单。 */
+/** 比价页数据: 网价与项目清单来自后端, 品种/品牌参考数据随包发布。 */
 export function usePriceCompareData(): PriceCompareData {
   const [data, setData] = useState<PriceData>({})
 
@@ -46,10 +52,26 @@ export function usePriceCompareData(): PriceCompareData {
     setData((current) => mergePriceData(current, patch))
   }, [])
 
+  /*
+   * 项目清单走后端而不是随包 JSON：项目资料里新建的项目要能立刻在本页选中。
+   * 查询键与网价一致地按模块分区；`staleTime` 取静态档即可 —— 项目清单变动不频繁，
+   * 切回本页时不必每次重拉（react-query 默认在窗口聚焦时刷新）。
+   */
+  const projectsQuery = useQuery({
+    queryKey: QUERY_KEYS.priceCompare.projects,
+    queryFn: ({ signal }) => fetchProjectPickerOptions(signal),
+    staleTime: STALE_STATIC,
+  })
+  const projects = useMemo<ProjectOption[]>(
+    () => projectsQuery.data ?? [],
+    [projectsQuery.data],
+  )
+
   return {
     data,
     varieties: metadata.varieties,
-    projects: metadata.projects,
+    projects,
+    projectsLoading: projectsQuery.isPending,
     catalog: metadata.catalog,
     mergeMatches,
   }

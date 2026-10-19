@@ -36,7 +36,7 @@ import './price-compare.css'
 /** 报单比价页: 顶部胶囊(项目/批次) + 单据表格。 */
 export function PriceCompareView() {
   const { t } = useTranslation()
-  const { data, varieties, projects, catalog, mergeMatches } =
+  const { data, varieties, projects, projectsLoading, catalog, mergeMatches } =
     usePriceCompareData()
   const materialBrands = useMaterialBrands()
   const brandOptions = useMemo(
@@ -235,6 +235,7 @@ export function PriceCompareView() {
       >
         <PriceCompareProjectPicker
           projects={projects}
+          projectsLoading={projectsLoading}
           projectGroups={projectGroups}
           currentGroup={currentGroup}
           onSelectSheet={setActiveId}

@@ -372,9 +372,15 @@ export async function fetchProjectOptions(
 
 const PROJECT_OPTIONS_PAGE_SIZE = 200
 
-export async function fetchProjectAbbreviationOptions(
+/**
+ * 拉取**全部启用项目**的原始分页行。
+ *
+ * <p>项目下拉必须覆盖全部启用项目：按总页数拉全，避免只取首页截断后选不到。
+ * 多个出口（缩写下拉、比价页项目选择器）共用这一份取数，不要在别处再写一遍分页。</p>
+ */
+async function fetchAllEnabledProjectRows(
   signal?: AbortSignal,
-): Promise<ProjectAbbreviationOption[]> {
+): Promise<RawProjectPageRow[]> {
   const fetchPage = (page: number) =>
     apiGet(ENDPOINTS.PROJECTS, projectPageResponseSchema, {
       params: {
@@ -387,13 +393,51 @@ export async function fetchProjectAbbreviationOptions(
       signal,
     })
 
-  // 项目下拉必须覆盖全部启用项目：按总页数拉全，避免只取首页截断后选不到。
   const firstPage = await fetchPage(0)
   const restPages = await Promise.all(
     Array.from({ length: Math.max(firstPage.totalPages - 1, 0) }, (_, index) =>
       fetchPage(index + 1),
     ),
   )
-  const rows = [firstPage, ...restPages].flatMap((page) => page.content)
-  return toProjectAbbreviationOptions(rows)
+  return [firstPage, ...restPages].flatMap((page) => page.content)
+}
+
+export async function fetchProjectAbbreviationOptions(
+  signal?: AbortSignal,
+): Promise<ProjectAbbreviationOption[]> {
+  return toProjectAbbreviationOptions(await fetchAllEnabledProjectRows(signal))
+}
+
+/** 比价页项目选择器需要的形态：id + 全称 + 简称。 */
+export type ProjectPickerRow = {
+  id: EntityId
+  name: string
+  abbr: string
+}
+
+/**
+ * 比价页项目选择器的数据源。
+ *
+ * <p><b>为什么必须走后端</b>：项目是用户在「基础数据 → 项目资料」里随时新建的业务主数据，
+ * 不是构建期常量。此前该清单是打包进前端的 `data/projects.json`，导致</p>
+ * <ol>
+ *   <li>新建的项目在比价页永远看不到，必须改 JSON 重新发版；</li>
+ *   <li>同一实体在数据库与前端各存一份，已经漂移：JSON 里有两条记录的 `id`
+ *       其实是后端的 `projectCode`，按错误 id 查取价配置直接 404。</li>
+ * </ol>
+ * <p>接口按 id 返回，天然与主数据一致，不再有第二份清单需要人工同步。</p>
+ */
+export async function fetchProjectPickerOptions(
+  signal?: AbortSignal,
+): Promise<ProjectPickerRow[]> {
+  const rows = await fetchAllEnabledProjectRows(signal)
+  return rows.map((row, index) => {
+    const id = parseEntityId(row.id, `projects[${index}].id`)
+    const name = asString(row.projectName).trim()
+    return {
+      id,
+      name: name || `#${id}`,
+      abbr: asString(row.projectNameAbbr).trim() || name || `#${id}`,
+    }
+  })
 }

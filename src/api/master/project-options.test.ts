@@ -7,6 +7,7 @@ vi.mock('@/api/core/client', () => ({ apiGet: apiGetMock }))
 import {
   fetchProjectAbbreviationOptions,
   fetchProjectOptions,
+  fetchProjectPickerOptions,
   fetchProjectQuoteConfig,
   normalizePriceClosedDayPrevSettle,
   normalizePriceDateBasis,
@@ -345,5 +346,67 @@ describe('项目取价基准与时段归一化', () => {
     expect(normalizePricePeriodFixed(undefined)).toBeNull()
     expect(normalizePricePeriodFixed('')).toBeNull()
     expect(normalizePricePeriodFixed('夜间')).toBeNull()
+  })
+})
+
+describe('fetchProjectPickerOptions —— 比价页项目选择器取数', () => {
+  /*
+   * 项目是业务主数据，必须来自后端。
+   * 历史缺陷：该清单曾打包为 `data/projects.json`，导致
+   * ① 项目资料里新建的项目在比价页永远看不到（要改 JSON 重新发版）；
+   * ② 同一实体在库与前端各存一份，JSON 里有两条记录的 id 其实是 projectCode，
+   *    按错误 id 查取价配置直接 404。
+   */
+  beforeEach(() => {
+    apiGetMock.mockReset()
+  })
+
+  it('id 取后端 id, 名称取全称, 简称缺失时回退全称', async () => {
+    apiGetMock.mockResolvedValueOnce(
+      projectPage(
+        [
+          /**
+           * 这条正是漂移事故的形态：`id` 与 `projectCode` 不同。
+           * 取数必须以 `id` 为准 —— 用 projectCode 查 /projects/{id} 会 404。
+           */
+          {
+            id: '349270654979153920',
+            projectCode: '349270537135988736',
+            projectName: '周王庙镇应急消防一体化中心项目',
+            projectNameAbbr: '周王庙消防站',
+          },
+          { id: '2', projectName: '乙项目' },
+        ] as never,
+        1,
+        0,
+      ),
+    )
+
+    const rows = await fetchProjectPickerOptions()
+
+    expect(rows).toEqual([
+      {
+        id: '349270654979153920',
+        name: '周王庙镇应急消防一体化中心项目',
+        abbr: '周王庙消防站',
+      },
+      // 没有简称时 abbr 回退名称：选择器展示 `abbr || name`，不会出现空标签
+      { id: '2', name: '乙项目', abbr: '乙项目' },
+    ])
+  })
+
+  it('按总页数拉全启用项目(新建项目在第 2 页也能选到)', async () => {
+    apiGetMock
+      .mockResolvedValueOnce(
+        projectPage([{ id: '1', projectName: '甲项目' }], 2, 0),
+      )
+      .mockResolvedValueOnce(
+        projectPage([{ id: '3', projectName: '新建的项目' }], 2, 1),
+      )
+
+    const rows = await fetchProjectPickerOptions()
+
+    expect(rows.map((row) => row.id)).toEqual(['1', '3'])
+    expect(apiGetMock).toHaveBeenCalledTimes(2)
   })
 })
