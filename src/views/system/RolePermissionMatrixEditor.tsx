@@ -125,9 +125,18 @@ function partitionRow(actions: readonly Permission[]): RowPartition {
       plain.push(permission)
     }
   }
+  // 先建一次 action → permission 的索引，避免在 COMMON_ACTIONS 循环里反复 find
+  // （react-doctor 的 js-index-maps：循环内 find 是 O(动作数 × 权限数)）。
+  const plainByAction = new Map<string, Permission>()
+  for (const permission of plain) {
+    // 同一 action 理论上只出现一次；若数据异常取首个，与原先 find 的行为一致。
+    if (!plainByAction.has(permission.action)) {
+      plainByAction.set(permission.action, permission)
+    }
+  }
   const common = new Map<string, Permission>()
   for (const action of COMMON_ACTIONS) {
-    const found = plain.find((permission) => permission.action === action)
+    const found = plainByAction.get(action)
     if (found) common.set(action, found)
   }
   const extras = plain.filter(
