@@ -26,9 +26,10 @@ interface Props {
    * 明细工具栏的保存组（取消 / 保存 / 保存并审核）。
    *
    * <p>「附加费用」页签没有货物专属动作（添加明细/导入/自动排序），但**必须有保存入口**：
-   * 历史缺陷就是切到这个页签后整条工具栏被卸载、按钮一起消失。</p>
+   * 历史缺陷就是切到这个页签后整条工具栏被卸载、按钮一起消失。因此这里刻意声明为**必填**，
+   * 让「漏传保存组」在编译期就失败，而不是等到用户切页签才发现按钮没了。</p>
    */
-  footerActions?: React.ReactNode
+  footerActions: React.ReactNode
   onExpenseSelectedChange: (itemId: string, selected: boolean) => void
   onExpenseSelectAll: (selected: boolean) => void
   onExpenseChange: (
