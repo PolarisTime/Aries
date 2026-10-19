@@ -313,9 +313,22 @@ describe('useModuleEditorWorkspace 初始化幂等与 Activity 语义', () => {
     observable = createObservable()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     act(() => {
       root.unmount()
+    })
+    /*
+     * rc 的 useDelayState（Tooltip / Popover 一类）只在「下一次 setDelayValue」时取消挂起的
+     * rAF/定时器，卸载本身并不清理。一旦它晚于 jsdom 环境销毁才触发，React 会在调度入口读
+     * window 并抛 "ReferenceError: window is not defined" —— 断言全过，但整个 run 的
+     * exit≠0（CI 判红：Test Files 315 passed 却带 2 errors）。
+     * 这里趁 jsdom 还活着把它排空；与 freight-bill-settlement-form.spec.tsx、
+     * AccessibleFormItem.spec.tsx 的处理一致。
+     */
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 250)
+      })
     })
     container.remove()
     queryClient.clear()
