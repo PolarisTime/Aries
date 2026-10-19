@@ -75,7 +75,6 @@ import {
   buildTonColumns,
   EMPTY_PURCHASE_ORDER_TONNAGE,
   type PurchaseOrderTonnageDraftInput,
-  SHEET_TON_COLUMN,
   SHEET_TON_COLUMN_ORDER,
   type SheetTonColumnId,
   tonColumnHeader,

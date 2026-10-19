@@ -338,7 +338,7 @@ describe('resolveRowMenuSelection —— 行菜单对选中集的唯一口径', 
     const updater = setSelectedRowMap.mock.calls[0][0] as (
       prev: Record<string, ModuleRecord>,
     ) => Record<string, ModuleRecord>
-    expect(updater({ r1: { id: 'r1' } as ModuleRecord })).toEqual({
+    expect(updater({ r1: { id: 'r1' } })).toEqual({
       r2: record,
     })
   })
@@ -382,14 +382,8 @@ describe('行尾「更多操作」列 —— 触屏可见入口(WCAG 2.2 SC 2.1.
         config: CONFIG,
         records: RECORDS,
         selectedRowKeys: [],
-        setSelectedRowKeys: vi.fn() as unknown as Dispatch<
-          SetStateAction<string[]>
-        >,
-        setSelectedRowMap: vi.fn() as unknown as (
-          updater: (
-            prev: Record<string, ModuleRecord>,
-          ) => Record<string, ModuleRecord>,
-        ) => void,
+        setSelectedRowKeys: vi.fn(),
+        setSelectedRowMap: vi.fn(),
         buildActions: (record) => [
           { key: 'edit', label: `编辑${String(record.id)}`, onClick: vi.fn() },
         ],
@@ -446,7 +440,7 @@ describe('行尾「更多操作」列 —— 触屏可见入口(WCAG 2.2 SC 2.1.
       value: unknown,
       record: ModuleRecord,
     ) => unknown
-    expect(render(null, { id: 'unknown-row' } as ModuleRecord)).toBeNull()
+    expect(render(null, { id: 'unknown-row' })).toBeNull()
   })
 
   it('勾选列固定左侧且表头有可访问名(走 rowSelection 官方 API)', () => {

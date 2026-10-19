@@ -13,7 +13,7 @@ import {
  * 属于测不出口径分叉的假绿。</p>
  */
 function item(id: string, unitPrice: number, name = id): ModuleLineItem {
-  return { id, name, unitPrice } as ModuleLineItem
+  return { id, name, unitPrice }
 }
 
 describe('buildRemovalSnapshot / restoreRemovedItems', () => {

@@ -72,7 +72,7 @@ describe('countActiveFilters —— 筛选生效项数', () => {
       countActiveFilters(
         {
           ...DEFAULT_FILTERS,
-          orderDate: [...(DEFAULT_FILTERS.orderDate as string[])],
+          orderDate: [...DEFAULT_FILTERS.orderDate],
         },
         DEFAULT_FILTERS,
       ),

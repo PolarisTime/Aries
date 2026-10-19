@@ -57,5 +57,5 @@ export function confirmDanger(options: ConfirmDangerOptions): void {
     focusable: { autoFocusButton: 'cancel' },
     autoFocusButton: 'cancel',
     okButtonProps: danger ? { danger: true } : undefined,
-  } as ModalFuncProps)
+  })
 }

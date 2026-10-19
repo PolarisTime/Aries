@@ -2,7 +2,6 @@ import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import { Button } from 'antd'
-import type { ColumnType } from 'antd/es/table'
 import i18next from 'i18next'
 import {
   type Dispatch,
@@ -138,7 +137,7 @@ function buildAntdColumns({
         title,
         dataIndex: columnId,
         key: columnId,
-        fixed: columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed'],
+        fixed: columnDef.meta?.fixed,
         width: columnDef.meta?.width,
         align: 'center',
         ellipsis: true,
