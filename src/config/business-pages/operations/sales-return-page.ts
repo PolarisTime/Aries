@@ -80,6 +80,11 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       placeholder: i18next.t('modules.pages.salesReturn.placeholderReturnNo'),
     },
     {
+      key: 'productKeyword',
+      label: i18next.t('moduleFilters.商品信息'),
+      type: 'input',
+    },
+    {
       key: 'customerId',
       label: CUSTOMER_NAME_LABEL,
       type: 'select',

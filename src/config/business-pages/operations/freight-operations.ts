@@ -98,6 +98,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         ),
       },
       {
+        key: 'productKeyword',
+        label: i18next.t('moduleFilters.商品信息'),
+        type: 'input',
+      },
+      {
         key: 'carrierId',
         label: CARRIER_NAME_LABEL,
         type: 'select',

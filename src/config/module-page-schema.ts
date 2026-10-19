@@ -28,7 +28,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         label: i18next.t('moduleFilters.订单编号'),
         type: 'input',
       },
-      productKeywordFilter,
       {
         key: 'supplierId',
         label: i18next.t('moduleFilters.供应商名称'),
@@ -99,7 +98,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         label: i18next.t('moduleFilters.入库单号'),
         type: 'input',
       },
-      productKeywordFilter,
       {
         key: 'supplierId',
         label: i18next.t('moduleFilters.供应商名称'),
@@ -313,7 +311,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         label: i18next.t('moduleFilters.退货单号'),
         type: 'input',
       },
-      productKeywordFilter,
       {
         key: 'status',
         label: i18next.t('moduleFilters.单据状态'),
@@ -389,7 +386,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         label: i18next.t('moduleFilters.物流单号'),
         type: 'input',
       },
-      productKeywordFilter,
       {
         key: 'carrierId',
         label: i18next.t('moduleFilters.物流商'),

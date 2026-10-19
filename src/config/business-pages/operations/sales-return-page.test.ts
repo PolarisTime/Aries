@@ -14,9 +14,10 @@ describe('销售退货单页面配置', () => {
     expect(salesReturnsPageConfig.primaryNoKey).toBe('returnNo')
   })
 
-  it('筛选条件覆盖关键词、客户、状态与退货日期区间', () => {
+  it('筛选条件覆盖关键词、商品信息、客户、状态与退货日期区间', () => {
     expect(salesReturnsPageConfig.filters.map((filter) => filter.key)).toEqual([
       'keyword',
+      'productKeyword',
       'customerId',
       'status',
       'projectId',

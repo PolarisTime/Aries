@@ -145,6 +145,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       placeholder: i18next.t('modules.pages.purchaseOrder.placeholderOrderNo'),
     },
     {
+      key: 'productKeyword',
+      label: i18next.t('moduleFilters.商品信息'),
+      type: 'input',
+    },
+    {
       key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',

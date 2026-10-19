@@ -96,6 +96,11 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       ),
     },
     {
+      key: 'productKeyword',
+      label: i18next.t('moduleFilters.商品信息'),
+      type: 'input',
+    },
+    {
       key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
