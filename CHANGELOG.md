@@ -1,3 +1,10 @@
+## [13.3.1](https://github.com/PolarisTime/Aries/compare/v13.3.0...v13.3.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* **price-compare:** 项目清单改为读取后端, 新建项目不再需要发版 ([32f34eb](https://github.com/PolarisTime/Aries/commit/32f34ebe5a3a810477ce8f23f93b861b2bc9aef2))
+
 # [13.3.0](https://github.com/PolarisTime/Aries/compare/v13.2.1...v13.3.0) (2026-10-19)
 
 
