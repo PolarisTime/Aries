@@ -359,7 +359,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         onClose={requestCloseEditor}
         className={presentation.overlayClassName}
         footer={
-          resolveEditorShowsOverlayFooter(config, moduleKey) ? (
+          resolveEditorShowsOverlayFooter(moduleKey) ? (
             <EditorFooterActions
               canSave={canSave}
               canAudit={canSaveAndAuditInEditor}
@@ -428,8 +428,11 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           auditLabel={editorAuditLabel}
           saving={saving}
-          /* 保存入口已提升到弹层 footer 槽（唯一入口），明细工具栏不再重复渲染。 */
-          showFooterActions={false}
+          /*
+           * 保存入口落点与 footer 槽**互斥**（同一判据，避免出现两条按钮）：
+           * 财务单据走 footer，其余有明细区的模块走明细工具栏，且两个页签都渲染。
+           */
+          showFooterActions={!resolveEditorShowsOverlayFooter(moduleKey)}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}

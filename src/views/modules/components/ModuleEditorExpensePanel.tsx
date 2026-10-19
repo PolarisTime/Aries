@@ -22,6 +22,13 @@ interface Props {
   expenseMaterialSearch: MaterialSearchController
   expenseTotalAmount: number
   saving: boolean
+  /**
+   * 明细工具栏的保存组（取消 / 保存 / 保存并审核）。
+   *
+   * <p>「附加费用」页签没有货物专属动作（添加明细/导入/自动排序），但**必须有保存入口**：
+   * 历史缺陷就是切到这个页签后整条工具栏被卸载、按钮一起消失。</p>
+   */
+  footerActions?: React.ReactNode
   onExpenseSelectedChange: (itemId: string, selected: boolean) => void
   onExpenseSelectAll: (selected: boolean) => void
   onExpenseChange: (
@@ -53,6 +60,7 @@ export function ModuleEditorExpensePanel({
   onExpenseDelete,
   onExpenseReorder,
   expenseRowKeys,
+  footerActions,
 }: Props) {
   const { t } = useTranslation()
   // 保存中不允许改行序: 与"保存期间的明细改动会被丢弃"同一口径
@@ -100,6 +108,7 @@ export function ModuleEditorExpensePanel({
             count={expenseItems.length}
             totalExpenseAmount={expenseTotalAmount}
           />
+          {footerActions}
         </>
       }
     >

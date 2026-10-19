@@ -14,7 +14,6 @@ import type {
   FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
-import { EditorFooterActions } from './EditorFooterActions'
 
 /**
  * 明细工具栏的操作区（新增/导入/排序/列设置/删除/保存审核）。
@@ -29,7 +28,6 @@ import { EditorFooterActions } from './EditorFooterActions'
  */
 
 interface Props {
-  auditLabel?: string
   /** 列设置弹层的开合状态仍由明细区持有: 切页签卸载工具栏后不丢状态(与改造前一致)。 */
   columnSettingsOpen: boolean
   onColumnSettingsOpenChange: (open: boolean) => void
@@ -46,22 +44,25 @@ interface Props {
   itemColumnOrder: string[]
   onAddItem: () => void
   onAutoSortItems: (mode?: FreightStatementSortMode) => void
-  onCancel: () => void
   onItemColumnOrderChange: (order: string[]) => void
   onOpenParentSelector: () => void
   onRemoveSelectedItems: () => void
-  onSave: (audit: boolean) => void
   onToggleItemColumn: (key: string) => void
   parentImportVisible: boolean
   parentImporting: boolean
   saving: boolean
   selectedItemCount: number
-  showFooterActions: boolean
+  /**
+   * 明细工具栏行末的保存组（取消 / 保存 / 保存并审核）。
+   *
+   * <p>节点由 `ModuleEditorItemsSection` **单一处构建**并同时交给两个页签，
+   * 这里只负责摆放，避免两处各建一份导致行为分叉。</p>
+   */
+  footerActions?: React.ReactNode
   visibleItemColumnKeys: string[]
 }
 
 export function ModuleItemsToolbarActions({
-  auditLabel,
   columnSettingsOpen,
   onColumnSettingsOpenChange,
   capabilities,
@@ -71,17 +72,15 @@ export function ModuleItemsToolbarActions({
   itemColumnOrder,
   onAddItem,
   onAutoSortItems,
-  onCancel,
   onItemColumnOrderChange,
   onOpenParentSelector,
   onRemoveSelectedItems,
-  onSave,
   onToggleItemColumn,
   parentImportVisible,
   parentImporting,
   saving,
   selectedItemCount,
-  showFooterActions,
+  footerActions,
   visibleItemColumnKeys,
 }: Props) {
   const { t } = useTranslation()
@@ -180,16 +179,7 @@ export function ModuleItemsToolbarActions({
           {t('modules.itemsSection.deleteSelected')} ({selectedItemCount})
         </Button>
       )}
-      {showFooterActions ? (
-        <EditorFooterActions
-          canSave={capabilities.save}
-          canAudit={capabilities.audit}
-          auditLabel={auditLabel}
-          saving={saving}
-          onCancel={onCancel}
-          onSave={onSave}
-        />
-      ) : null}
+      {footerActions}
     </>
   )
 }

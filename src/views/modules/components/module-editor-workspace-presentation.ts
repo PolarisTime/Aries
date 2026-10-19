@@ -60,8 +60,9 @@ export function resolveEditorPresentation(
       ? 'workspace-overlay-panel--finance-editor'
       : undefined,
     /*
-     * 有明细区的模块（itemColumns 非空）不给表单区按钮：它们的取消/保存常驻在弹层
-     * footer 槽里（见 resolveEditorShowsOverlayFooter），与明细页签无关。
+     * 财务布局（收付款单）不给表单区按钮：它们的取消/保存常驻在弹层 footer 槽里。
+     * 其余有明细区的模块把按钮放在明细工具栏（见 resolveEditorShowsOverlayFooter），
+     * 由明细区在「货物明细 / 附加费用」两个页签都渲染工具栏来保证不丢入口。
      * 无明细区的模块（主数据式表单）才把按钮放在表单标题右侧。
      */
     formActionsVisible: !financeLayout && !config.itemColumns?.length,
@@ -75,21 +76,19 @@ export function resolveEditorPresentation(
  * <p>历史缺陷：这三个按钮曾挂在明细工具栏（`ModuleItemsToolbarActions`）里，而明细区
  * 的「货物明细 / 附加费用」两个页签是**互斥渲染**，切到「附加费用」就整条工具栏被卸载，
  * 保存入口一起消失（销售订单 / 采购订单 100% 复现，用户只能切回货物明细才能保存）。
- * 按 AGENTS.md《主数据表单与弹层排版规范》「取消 / 保存走 `WorkspaceOverlay` 的 `footer`
- * 槽固定在面板底部」，改为：</p>
+ * 当时的修法是把按钮整体提升到弹层 footer 槽常驻。</p>
  *
- * - 财务单据（收付款单）本来就是 footer 常驻，保持；
- * - 其余**有明细区**的模块也一律 footer 常驻，切任何页签都不会丢按钮；
+ * <p>现在按用户使用习惯改回**明细工具栏**，但要保住「任何页签都有保存入口」这个不变量，
+ * 于是把保证方式从「挪到 footer」换成「两个页签渲染同一条工具栏」：</p>
+ *
+ * - 财务单据（收付款单）保持 footer 常驻，与原状一致；
+ * - 其余**有明细区**的模块把按钮放回明细工具栏，且 `ModuleEditorItemsSection` 在两个页签
+ *   都渲染工具栏（见该组件 `showFooterActions` 的说明）；
  * - 无明细区的模块保持按钮在表单区（footer 为空），避免出现两条按钮。
  *
  * <p>判据只看「有没有明细区」，不看当前激活的页签 —— 页签是明细区内部状态，
  * 不该参与外壳是否渲染保存入口的决策。</p>
  */
-export function resolveEditorShowsOverlayFooter(
-  config: ModulePageConfig,
-  moduleKey: string,
-) {
-  return (
-    isFinanceDocumentModule(moduleKey) || Boolean(config.itemColumns?.length)
-  )
+export function resolveEditorShowsOverlayFooter(moduleKey: string) {
+  return isFinanceDocumentModule(moduleKey)
 }

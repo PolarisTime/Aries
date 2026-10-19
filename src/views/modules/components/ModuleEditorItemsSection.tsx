@@ -16,6 +16,7 @@ import type {
   FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
 import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
+import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorExpensePanel } from './ModuleEditorExpensePanel'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
@@ -60,10 +61,12 @@ interface Props {
   /**
    * 是否在明细工具栏里渲染「取消 / 保存 / 保存并审核」。
    *
-   * <p>**默认 false**：这三个按钮由 `ModuleEditorWorkspace` 提升到 `WorkspaceOverlay` 的
-   * footer 槽，切「附加费用」页签不会丢（见 resolveEditorShowsOverlayFooter）。保留这个
-   * 开关只为「无明细区但复用本组件」的历史场景，不要在单据编辑器里传 true ——
-   * 那会出现两条保存按钮。</p>
+   * <p>为 true 时这两个页签（货物明细 / 附加费用）**都会渲染同一条工具栏**：货物页签是
+   * 完整工具栏（添加明细 / 导入 / 自动排序 / 列设置 / 删除选中 + 保存组），费用页签只保留
+   * 保存组（其余动作是货物专属，不适用）。这样按钮回到工具栏的同时，切页签也不会丢入口 ——
+   * 历史缺陷正是「工具栏只挂在货物页签、切到费用页签就整条消失」。</p>
+   *
+   * <p>财务单据仍由 `WorkspaceOverlay` 的 footer 槽渲染，这里传 false。</p>
    */
   showFooterActions?: boolean
   onAddItem: () => void
@@ -191,6 +194,22 @@ export function ModuleEditorItemsSection({
     return parentSelector
   }
 
+  /*
+   * 「取消 / 保存 / 保存并审核」在明细工具栏里的**唯一构建处**：两个页签共用同一份节点，
+   * 所以切「货物明细 / 附加费用」都不会丢保存入口。
+   * 货物页签由 ModuleItemsToolbarActions 接收它排在行末；费用页签由本组件单独挂到工具栏槽。
+   */
+  const footerActions = showFooterActions ? (
+    <EditorFooterActions
+      canSave={capabilities.save}
+      canAudit={capabilities.audit}
+      auditLabel={auditLabel}
+      saving={saving}
+      onCancel={onCancel}
+      onSave={onSave}
+    />
+  ) : null
+
   return (
     <>
       <div className="mt-3">
@@ -219,6 +238,8 @@ export function ModuleEditorItemsSection({
             expenseMaterialSearch={expenseMaterialSearch}
             expenseTotalAmount={expenseTotalAmount}
             saving={saving}
+            /* 费用页签也渲染同一条工具栏的保存组：切页签不丢保存入口。 */
+            footerActions={footerActions}
             onExpenseSelectedChange={onExpenseSelectedChange}
             onExpenseSelectAll={onExpenseSelectAll}
             onExpenseChange={onExpenseChange}
@@ -238,27 +259,24 @@ export function ModuleEditorItemsSection({
             }
             actions={
               <ModuleItemsToolbarActions
-                auditLabel={auditLabel}
                 capabilities={capabilities}
                 columnSettingsOpen={columnSettingsOpen}
                 config={config}
                 extraActions={extraActions}
+                footerActions={footerActions}
                 freightStatementSortDirection={freightStatementSortDirection}
                 itemColumnOrder={itemColumnOrder}
                 onAddItem={onAddItem}
                 onAutoSortItems={onAutoSortItems}
-                onCancel={onCancel}
                 onColumnSettingsOpenChange={setColumnSettingsOpen}
                 onItemColumnOrderChange={onItemColumnOrderChange}
                 onOpenParentSelector={onOpenParentSelector}
                 onRemoveSelectedItems={onRemoveSelectedItems}
-                onSave={onSave}
                 onToggleItemColumn={onToggleItemColumn}
                 parentImportVisible={parentImportVisible}
                 parentImporting={parentImporting}
                 saving={saving}
                 selectedItemCount={selectedItemIds.length}
-                showFooterActions={showFooterActions}
                 visibleItemColumnKeys={visibleItemColumnKeys}
               />
             }
