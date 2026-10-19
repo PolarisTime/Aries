@@ -1,0 +1,240 @@
+# Dependabot 版本更新配置（前端 aries / pnpm）。
+#
+# 目标：把「依赖有新版本 / 有已知 CVE」从不可见变成每周一次可见的 PR。
+#
+# 分组策略（重点）：前端依赖数量远多于后端（直接依赖 60+，含传递依赖 1000+），
+# 若一个依赖一个 PR，一周能开出几十个，review 队列直接失效。因此按**风险与作用域**分组：
+#   - react-ecosystem：React 及其渲染/运行时强耦合的库。
+#     React 19 与 react-dom、@types/react 必须同版本对齐，拆开升会类型冲突。
+#   - ant-design：antd 全家桶（antd / icons / pro-components）。
+#     antd 的样式与 token 体系是整体的，且本项目有 `pnpm antd:lint` 门禁要一起过。
+#   - data-and-routing：TanStack（query/router/table）与 zustand。
+#     这些库的 API 变更常互相牵连（query v5 的 API 改动影响 router 集成）。
+#   - build-toolchain：vite / esbuild / tailwind / babel / typescript 工具链。
+#     升级可能影响构建产物与 dev server，需单独 review + 跑构建。
+#   - test-and-lint：vitest / playwright / eslint / biome / semver 工具。
+#     风险最低，可批量放行。
+#   - prod-other / dev-other：兜底，按 dependency-type 自动区分生产与开发依赖。
+#
+# 频率 weekly：daily 对前端这种依赖密集的项目等于自我制造 PR 洪水。
+#
+# ⚠️ 重要前置条件（务必先读 .arch-review/reports/dependency-scan.md 的 P0 结论）：
+#   `pnpm-workspace.yaml` 的 `overrides` 目前把若干包**钉在含 CVE 的版本**上
+#   （brace-expansion 1.1.18/5.0.9、shell-quote 1.9.0、fast-uri 3.1.6、undici 6.28.0/7.29.0）。
+#   `overrides` 的优先级高于 package.json，**Dependabot 无法越过 overrides 升级传递依赖**。
+#   因此在这些 overrides 被放宽/抬高之前，Dependabot 的大部分安全 PR 会「开了也合不进去」
+#   （表现为 CI 里 lockfile 仍是旧版本，或 Dependabot 直接不提案）。
+#   处理顺序建议：先按报告里的表把 overrides 下限抬到修复版本，再依赖 Dependabot 持续守门。
+#
+# 注意：**本配置只负责开 PR，不自动合并**。
+
+version: 2
+
+updates:
+  # ── npm（pnpm-lock.yaml）：前端全部依赖 ──────────────────────────────────
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:00"
+    # 6 个分组的 PR 上限；前端依赖多，给到 12 但不至于刷屏。
+    open-pull-requests-limit: 12
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      # 与仓库现有提交风格一致；semantic-release 能识别 chore(deps) / chore(deps-dev)。
+      prefix: "chore"
+      include: "scope"
+    groups:
+      # React 运行时：react / react-dom / @types/react 必须同版本。
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "react-i18next"
+          - "i18next"
+          - "@sentry/react"
+      # antd 全家桶：样式与 token 体系整体升级，且要过 pnpm antd:lint。
+      ant-design:
+        patterns:
+          - "antd"
+          - "@ant-design/*"
+      # TanStack + 状态管理：API 变更互相牵连。
+      data-and-routing:
+        patterns:
+          - "@tanstack/*"
+          - "zustand"
+          - "zod"
+      # 构建工具链：影响构建产物，需单独 review + 跑构建。
+      build-toolchain:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+          - "esbuild"
+          - "@tailwindcss/*"
+          - "tailwindcss"
+          - "typescript"
+          - "babel-plugin-react-compiler"
+          - "@rolldown/*"
+          - "@plugin-web-update-notification/*"
+          - "@sentry/vite-plugin"
+      # 测试与 lint：风险最低，批量放行。
+      test-and-lint:
+        patterns:
+          - "vitest"
+          - "@playwright/test"
+          - "jsdom"
+          - "eslint"
+          - "@eslint/*"
+          - "eslint-plugin-*"
+          - "globals"
+          - "@biomejs/*"
+          - "react-doctor"
+          - "npm-run-all"
+          - "istanbul-*"
+          - "v8-to-istanbul"
+          - "@types/istanbul-*"
+      # 生产依赖兜底（含 axios / dayjs / es-toolkit / html2canvas / pinyin-pro / web-vitals）。
+      prod-other:
+        patterns:
+          - "*"
+        dependency-type: production
+        exclude-patterns:
+          - "react"
+          - "react-dom"
+          - "react-i18next"
+          - "i18next"
+          - "@sentry/react"
+          - "antd"
+          - "@ant-design/*"
+          - "@tanstack/*"
+          - "zustand"
+          - "zod"
+          - "axios"
+      # 开发依赖兜底（含 semantic-release 全家桶、@types/* 等）。
+      dev-other:
+        patterns:
+          - "*"
+        dependency-type: development
+        exclude-patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "react-i18next"
+          - "i18next"
+          - "antd"
+          - "@ant-design/*"
+          - "@tanstack/*"
+          - "zustand"
+          - "zod"
+          - "vite"
+          - "@vitejs/*"
+          - "esbuild"
+          - "@tailwindcss/*"
+          - "tailwindcss"
+          - "typescript"
+          - "vitest"
+          - "@playwright/test"
+          - "jsdom"
+          - "eslint"
+          - "@eslint/*"
+          - "eslint-plugin-*"
+          - "globals"
+          - "@biomejs/*"
+          - "react-doctor"
+          - "npm-run-all"
+          - "istanbul-*"
+          - "v8-to-istanbul"
+          - "@types/istanbul-*"
+    ignore:
+      # 这三个包由 pnpm-workspace.yaml 的 `overrides` 统一钉版本，
+      # Dependabot 对它们提案会与 overrides 打架（改 package.json 无效），
+      # 因此显式忽略，改为人工在 overrides 里抬高。
+      - dependency-name: "brace-expansion"
+      - dependency-name: "fast-uri"
+      - dependency-name: "shell-quote"
+      - dependency-name: "undici"
+      - dependency-name: "ws"
+      # antd 主版本升级需要配套跑 pnpm antd:lint + 全量视觉回归，不做自动 PR。
+      - dependency-name: "antd"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-major"
+
+  # ── npm（workspace 子包 tools/typescript-toolchain）────────────────────
+  # pnpm workspace 的子包各自声明依赖，根条目的 directory: "/" 不保证覆盖它们。
+  # 而这个子包恰好是本次体检里「生产作用域」3 条漏洞的唯一来源
+  # （typescript-eslint → eslint → minimatch → brace-expansion），因此必须单独盯。
+  - package-ecosystem: npm
+    directory: "/tools/typescript-toolchain"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:00"
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - frontend
+      - toolchain
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      typescript-toolchain:
+        patterns:
+          - "*"
+    ignore:
+      # 与根条目同理：这些包由根 pnpm-workspace.yaml 的 overrides 统一钉版本，
+      # 在本子包里提案改不动实际安装版本，改为人工抬高 overrides。
+      - dependency-name: "brace-expansion"
+      - dependency-name: "fast-uri"
+      - dependency-name: "shell-quote"
+      - dependency-name: "undici"
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:00"
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # ── Docker：Dockerfile 基础镜像 ──────────────────────────────────────────
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:00"
+    open-pull-requests-limit: 2
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      docker-base-images:
+        patterns:
+          - "*"
