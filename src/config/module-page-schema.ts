@@ -1,6 +1,4 @@
-import i18next from 'i18next'
 import { SALES_ORDER_PRICING_SNAPSHOT_FIELDS } from '@/config/business-pages/operations/sales-order-price-snapshot'
-import type { ModuleFilterDefinition } from '@/types/module-page'
 
 interface ModuleSaveFieldSchema {
   scalar?: string[]
@@ -9,46 +7,21 @@ interface ModuleSaveFieldSchema {
   computed?: string[]
 }
 
+/**
+ * 页面 schema：**只描述保存载荷字段**。
+ *
+ * <p>注意：这里**不放列表筛选器**。列表筛选的真实来源是
+ * `business-pages/**` 页面配置的 `filters`（消费方 `ModuleFilterToolbar`）。
+ * 本文件曾经也有一份 `filters`，但全仓库无人读取 —— 加筛选器时改到这里
+ * 会出现「配置里有、界面不渲染」的静默失效（真实发生过一次）。
+ * 现已删除，避免同一事实在两处声明。</p>
+ */
 interface ModulePageSchema {
-  filters?: ModuleFilterDefinition[]
   saveFields?: ModuleSaveFieldSchema
-}
-
-const productKeywordFilter: ModuleFilterDefinition = {
-  key: 'productKeyword',
-  label: i18next.t('moduleFilters.商品信息'),
-  type: 'input',
 }
 
 const modulePageSchemaMap: Record<string, ModulePageSchema> = {
   'purchase-order': {
-    filters: [
-      {
-        key: 'keyword',
-        label: i18next.t('moduleFilters.订单编号'),
-        type: 'input',
-      },
-      {
-        key: 'supplierId',
-        label: i18next.t('moduleFilters.供应商名称'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'orderDate',
-        label: i18next.t('moduleFilters.订单日期'),
-        type: 'dateRange',
-      },
-    ],
     saveFields: {
       scalar: [
         'orderNo',
@@ -92,33 +65,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'purchase-inbound': {
-    filters: [
-      {
-        key: 'keyword',
-        label: i18next.t('moduleFilters.入库单号'),
-        type: 'input',
-      },
-      {
-        key: 'supplierId',
-        label: i18next.t('moduleFilters.供应商名称'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'inboundDate',
-        label: i18next.t('moduleFilters.入库日期'),
-        type: 'dateRange',
-      },
-    ],
     saveFields: {
       scalar: [
         'inboundNo',
@@ -158,39 +104,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'sales-order': {
-    filters: [
-      {
-        key: 'keyword',
-        label: i18next.t('moduleFilters.订单编号'),
-        type: 'input',
-      },
-      productKeywordFilter,
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'deliveryDate',
-        label: i18next.t('moduleFilters.送货日期'),
-        type: 'dateRange',
-      },
-      {
-        key: 'customerId',
-        label: i18next.t('moduleFilters.客户名称'),
-        type: 'select',
-      },
-      {
-        key: 'projectId',
-        label: i18next.t('moduleFilters.项目名称'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-    ],
     saveFields: {
       scalar: [
         'orderNo',
@@ -245,39 +158,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'sales-outbound': {
-    filters: [
-      {
-        key: 'keyword',
-        label: i18next.t('moduleFilters.出库单号'),
-        type: 'input',
-      },
-      productKeywordFilter,
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'outboundDate',
-        label: i18next.t('moduleFilters.出库日期'),
-        type: 'dateRange',
-      },
-      {
-        key: 'customerId',
-        label: i18next.t('moduleFilters.客户名称'),
-        type: 'select',
-      },
-      {
-        key: 'projectId',
-        label: i18next.t('moduleFilters.项目名称'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-    ],
     saveFields: {
       scalar: [
         'outboundNo',
@@ -305,38 +185,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'sales-return': {
-    filters: [
-      {
-        key: 'keyword',
-        label: i18next.t('moduleFilters.退货单号'),
-        type: 'input',
-      },
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'returnDate',
-        label: i18next.t('moduleFilters.退货日期'),
-        type: 'dateRange',
-      },
-      {
-        key: 'customerId',
-        label: i18next.t('moduleFilters.客户名称'),
-        type: 'select',
-      },
-      {
-        key: 'projectId',
-        label: i18next.t('moduleFilters.项目名称'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-    ],
     saveFields: {
       scalar: [
         'returnNo',
@@ -380,33 +228,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'freight-bill': {
-    filters: [
-      {
-        key: 'keyword',
-        label: i18next.t('moduleFilters.物流单号'),
-        type: 'input',
-      },
-      {
-        key: 'carrierId',
-        label: i18next.t('moduleFilters.物流商'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'billTime',
-        label: i18next.t('moduleFilters.单据日期'),
-        type: 'dateRange',
-      },
-    ],
     saveFields: {
       scalar: [
         'billNo',
@@ -482,38 +303,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'customer-statement': {
-    filters: [
-      {
-        key: 'customerId',
-        label: i18next.t('moduleFilters.客户名称'),
-        type: 'select',
-      },
-      {
-        key: 'projectId',
-        label: i18next.t('moduleFilters.项目名称'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.单据状态'),
-        type: 'select',
-      },
-      {
-        key: 'billDirection',
-        label: i18next.t('moduleFilters.方向'),
-        type: 'segmented',
-      },
-      {
-        key: 'endDate',
-        label: i18next.t('moduleFilters.对账期间'),
-        type: 'dateRange',
-      },
-    ],
     saveFields: {
       scalar: [
         'statementNo',
@@ -538,28 +327,6 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   'freight-statement': {
-    filters: [
-      {
-        key: 'carrierId',
-        label: i18next.t('moduleFilters.物流商'),
-        type: 'select',
-      },
-      {
-        key: 'settlementCompanyId',
-        label: i18next.t('moduleFilters.结算主体'),
-        type: 'select',
-      },
-      {
-        key: 'status',
-        label: i18next.t('moduleFilters.审核状态'),
-        type: 'select',
-      },
-      {
-        key: 'endDate',
-        label: i18next.t('moduleFilters.对账期间'),
-        type: 'dateRange',
-      },
-    ],
     saveFields: {
       scalar: [
         'statementNo',
