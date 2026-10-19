@@ -1,6 +1,6 @@
 import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useAuthStore } from '@/stores/authStore'
@@ -23,6 +23,7 @@ import {
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
 import { SheetPanel } from './SheetPanel'
+import type { PriceSheet } from './types'
 import { usePriceCompareReferenceSync } from './use-price-compare-reference-sync'
 import {
   useActiveProjectQuoteConfig,
@@ -129,6 +130,19 @@ export function PriceCompareView() {
       ...(refPeriod ? { refPeriod } : {}),
     })
   }, [active, patchSheet])
+
+  /*
+   * 现货同步到别的批次时，每个批次只有它自己配置里的品牌才该被写入：
+   * 不同项目的品牌集合可以完全不同。当前批次用**项目配置**（含西本虚拟品牌、
+   * 也含用户尚未保存的品牌改动），其它批次用服务端回带的品牌快照。
+   */
+  const resolveSyncBrands = useCallback(
+    (target: PriceSheet) =>
+      target.id === active?.id
+        ? brands.map((brand) => brand.name)
+        : (target.brands ?? []).map((brand) => brand.name),
+    [active?.id, brands],
+  )
 
   const {
     activeRefDate,
@@ -281,6 +295,8 @@ export function PriceCompareView() {
 
       <PriceCompareSheetArea
         active={active}
+        sheets={sheets}
+        resolveSyncBrands={resolveSyncBrands}
         watermark={t('priceCompare.view.watermark')}
         noBatchLabel={t('priceCompare.view.noBatch')}
         tonnageLoadFailedLabel={t('priceCompare.sheet.purchaseOrderLoadFailed')}
@@ -325,6 +341,8 @@ export function PriceCompareView() {
 /** 当前单据的比价表格区(含水印与空态)。 */
 function PriceCompareSheetArea({
   active,
+  sheets,
+  resolveSyncBrands,
   watermark,
   noBatchLabel,
   tonnageLoadFailedLabel,
@@ -349,6 +367,8 @@ function PriceCompareSheetArea({
   purchaseOrderTonnage,
 }: {
   active: ReturnType<typeof useSheetsStore>['active']
+  sheets: ReturnType<typeof useSheetsStore>['sheets']
+  resolveSyncBrands: (sheet: PriceSheet) => readonly string[]
   watermark: string
   noBatchLabel: string
   tonnageLoadFailedLabel: string
@@ -393,6 +413,8 @@ function PriceCompareSheetArea({
       <SheetPanel
         key={active.id}
         sheet={active}
+        sheets={sheets}
+        resolveSyncBrands={resolveSyncBrands}
         data={data}
         varieties={varieties}
         brands={brands}

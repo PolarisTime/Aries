@@ -2776,6 +2776,27 @@ export const enUS = {
     },
   },
   priceCompare: {
+    spotSync: {
+      scopeSheet: 'Sync in batch',
+      scopeSheetTooltip:
+        'Use this batch as the source and sync spot prices and suppliers of the same product and brand to other rows in this batch',
+      scopeProject: 'Sync in project',
+      scopeProjectTooltip:
+        'Use this batch as the source and sync to all batches of this project',
+      scopeAll: 'Sync all',
+      scopeAllTooltip:
+        'Use this batch as the source and sync to every batch, including other projects',
+      confirmTitle: 'Confirm spot price sync',
+      confirmSummary:
+        'Using "{{sheet}}" as the source, {{batches}} batch(es) and {{cells}} price cell(s) will be updated: {{fill}} filled in and {{overwrite}} overwriting existing values.',
+      impactLine:
+        '{{sheet}}: {{cells}} cell(s) updated ({{fill}} filled, {{overwrite}} overwritten)',
+      skipped:
+        '{{count}} batch(es) skipped (being edited by someone else): {{names}}',
+      confirmOk: 'Overwrite and sync',
+      nothingToSync: 'Nothing to sync',
+      done: 'Synced {{batches}} batch(es), {{cells}} cell(s) in total',
+    },
     view: {
       title: 'Order Price Comparison',
       watermark: 'INTERNAL · Order Price Comparison',

@@ -1,0 +1,34 @@
+/* 「同步现货价」三个作用域按钮与影响面确认框 */
+
+.price-compare-spot-sync {
+  display: inline-flex;
+}
+
+/*
+ * 影响面清单：批次多时不能把确认框撑到屏幕外，因此限高并允许滚动。
+ * 行高与间距沿用全站 8/4 阶梯，不另造数值。
+ */
+.spot-sync-impact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.spot-sync-impact__summary {
+  margin: 0;
+}
+
+.spot-sync-impact__list {
+  margin: 0;
+  padding-inline-start: var(--space-xl);
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.spot-sync-impact__skipped {
+  margin: 0;
+  color: var(--ant-color-warning-text);
+}

@@ -2711,6 +2711,24 @@ export const zhCN = {
     },
   },
   priceCompare: {
+    spotSync: {
+      scopeSheet: '当前批次内同步',
+      scopeSheetTooltip:
+        '以当前批次为准，把同商品同品牌的现货价与供应商同步到本批次内的其它行',
+      scopeProject: '项目级同步',
+      scopeProjectTooltip: '以当前批次为准，同步到本项目下的所有批次',
+      scopeAll: '全部同步',
+      scopeAllTooltip: '以当前批次为准，同步到全部批次（含其它项目）',
+      confirmTitle: '确认同步现货价',
+      confirmSummary:
+        '将以「{{sheet}}」为准，更新 {{batches}} 个批次、共 {{cells}} 处价格：其中 {{fill}} 处原本为空，{{overwrite}} 处会覆盖已有值。',
+      impactLine:
+        '{{sheet}}：更新 {{cells}} 处（填补 {{fill}} 处，覆盖 {{overwrite}} 处）',
+      skipped: '已跳过 {{count}} 个批次（他人正在编辑）：{{names}}',
+      confirmOk: '覆盖并同步',
+      nothingToSync: '没有需要同步的内容',
+      done: '已同步 {{batches}} 个批次、共 {{cells}} 处',
+    },
     view: {
       title: '报单比价',
       watermark: '内部资料 · 报单比价',

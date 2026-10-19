@@ -69,6 +69,7 @@ import {
   sumTonByPurchaseOrderItem,
 } from './core'
 import { LockableField } from './LockableField'
+import { SpotSyncActions } from './SpotSyncActions'
 import { resolveLinkedTonnageTotals } from './TonCell'
 import {
   buildTonColumn,
@@ -1967,6 +1968,8 @@ function LockRefButton({
   patchSheet,
 }: {
   sheet: PriceSheet
+  sheets?: readonly PriceSheet[]
+  resolveSyncBrands?: (sheet: PriceSheet) => readonly string[]
   readOnly: boolean
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
 }) {
@@ -2095,6 +2098,8 @@ function SelectedRowActions({
 
 function SheetHeader({
   sheet,
+  sheets,
+  resolveSyncBrands,
   refDate,
   refPeriod,
   patchSheet,
@@ -2118,6 +2123,8 @@ function SheetHeader({
   onFillSupplierSelected,
 }: {
   sheet: PriceSheet
+  sheets?: readonly PriceSheet[]
+  resolveSyncBrands?: (sheet: PriceSheet) => readonly string[]
   refDate: string
   refPeriod: string
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
@@ -2166,6 +2173,8 @@ function SheetHeader({
 
       <SheetActionRow
         sheet={sheet}
+        sheets={sheets}
+        resolveSyncBrands={resolveSyncBrands}
         readOnly={readOnly}
         patchSheet={patchSheet}
         bestOn={bestOn}
@@ -2366,6 +2375,8 @@ function SheetMetaRow({
 /** 表头操作行: 锁定/最优/刷新/列设置/配置 + 选中行批量操作。 */
 function SheetActionRow({
   sheet,
+  sheets,
+  resolveSyncBrands,
   readOnly,
   patchSheet,
   bestOn,
@@ -2381,6 +2392,8 @@ function SheetActionRow({
   onRemoveSelected,
 }: {
   sheet: PriceSheet
+  sheets?: readonly PriceSheet[]
+  resolveSyncBrands?: (sheet: PriceSheet) => readonly string[]
   readOnly: boolean
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
   bestOn: boolean
@@ -2399,6 +2412,8 @@ function SheetActionRow({
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
+  // 未传全量批次时退化为"只有当前批次"：项目级/全部同步与批次内同步等价，不会误写别处
+  const syncSheets = useMemo(() => sheets ?? [sheet], [sheet, sheets])
   return (
     <Space size={4} wrap className="price-compare-action-row">
       <LockRefButton
@@ -2431,6 +2446,12 @@ function SheetActionRow({
           {t('priceCompare.sheet.config')}
         </Button>
       ) : null}
+      <SpotSyncActions
+        activeSheet={readOnly ? undefined : sheet}
+        sheets={syncSheets}
+        resolveBrands={resolveSyncBrands ?? (() => [])}
+        patchSheet={patchSheet}
+      />
       {selectedCount > 0 ? (
         <SelectedRowActions
           brands={brands}
@@ -2450,6 +2471,13 @@ function SheetActionRow({
 
 type Props = {
   sheet: PriceSheet
+  /**
+   * 全部批次（现货同步的作用域选择需要它们）。
+   * 不传时退化为"只有当前批次"，此时项目级/全部同步等价于批次内同步。
+   */
+  sheets?: readonly PriceSheet[]
+  /** 解析某批次参与同步的品牌（不同项目的品牌配置可能不同）。 */
+  resolveSyncBrands?: (sheet: PriceSheet) => readonly string[]
   data: PriceData | null
   varieties: Variety[]
   brands: Brand[]
@@ -2508,6 +2536,8 @@ function useSpotTouchedKeys() {
 export function SheetPanel(props: Props) {
   const {
     sheet,
+    sheets,
+    resolveSyncBrands,
     data,
     varieties,
     brands,
@@ -2781,6 +2811,8 @@ export function SheetPanel(props: Props) {
     <>
       <SheetHeader
         sheet={sheet}
+        sheets={sheets}
+        resolveSyncBrands={resolveSyncBrands}
         refDate={refDate}
         refPeriod={refPeriod}
         patchSheet={patchSheet}
