@@ -40,7 +40,6 @@ import {
   resolveEditorCustomerId,
   resolveEditorPresentation,
   resolveEditorSessionIds,
-  resolveEditorShowsOverlayFooter,
   shouldAutoInsertBlankItemOnCreate,
 } from './module-editor-workspace-presentation'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -359,7 +358,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         onClose={requestCloseEditor}
         className={presentation.overlayClassName}
         footer={
-          resolveEditorShowsOverlayFooter(moduleKey) ? (
+          presentation.overlayFooterVisible ? (
             <EditorFooterActions
               canSave={canSave}
               canAudit={canSaveAndAuditInEditor}
@@ -428,11 +427,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           auditLabel={editorAuditLabel}
           saving={saving}
-          /*
-           * 保存入口落点与 footer 槽**互斥**（同一判据，避免出现两条按钮）：
-           * 财务单据走 footer，其余有明细区的模块走明细工具栏，且两个页签都渲染。
-           */
-          showFooterActions={!resolveEditorShowsOverlayFooter(moduleKey)}
+          showFooterActions={!presentation.overlayFooterVisible}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}

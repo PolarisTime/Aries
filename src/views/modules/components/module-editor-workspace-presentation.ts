@@ -44,6 +44,12 @@ export interface EditorPresentation {
   /** 财务版布局: 弹层类名 / 表单区操作 / 布局变体三处的同一开关。 */
   financeLayout: boolean
   formActionsVisible: boolean
+  /**
+   * 保存组是否渲染到弹层 footer 槽（与之互斥地渲染在明细工具栏）。
+   * 与 {@link resolveEditorShowsOverlayFooter} 同源，在此一并给出，
+   * 避免调用方为同一判据再加一次计算。
+   */
+  overlayFooterVisible: boolean
   layoutVariant: 'finance' | 'default'
   overlayClassName: string | undefined
 }
@@ -66,6 +72,7 @@ export function resolveEditorPresentation(
      * 无明细区的模块（主数据式表单）才把按钮放在表单标题右侧。
      */
     formActionsVisible: !financeLayout && !config.itemColumns?.length,
+    overlayFooterVisible: resolveEditorShowsOverlayFooter(moduleKey),
     layoutVariant: financeLayout ? 'finance' : 'default',
   }
 }

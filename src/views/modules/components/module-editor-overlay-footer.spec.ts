@@ -48,6 +48,7 @@ describe('resolveEditorPresentation 与 footer 的互斥关系', () => {
       'sales-order',
     )
     expect(presentation.formActionsVisible).toBe(false)
+    expect(presentation.overlayFooterVisible).toBe(false)
     expect(resolveEditorShowsOverlayFooter('sales-order')).toBe(false)
   })
 
@@ -57,6 +58,7 @@ describe('resolveEditorPresentation 与 footer 的互斥关系', () => {
       'customer',
     )
     expect(presentation.formActionsVisible).toBe(true)
+    expect(presentation.overlayFooterVisible).toBe(false)
     expect(resolveEditorShowsOverlayFooter('customer')).toBe(false)
   })
 
@@ -70,6 +72,7 @@ describe('resolveEditorPresentation 与 footer 的互斥关系', () => {
     )
     expect(presentation.financeLayout).toBe(true)
     expect(presentation.formActionsVisible).toBe(false)
+    expect(presentation.overlayFooterVisible).toBe(true)
     expect(resolveEditorShowsOverlayFooter('receipt')).toBe(true)
   })
 })
