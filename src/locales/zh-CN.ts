@@ -3012,6 +3012,8 @@ export const zhCN = {
       fallbackLabel: 'HRB400 无网价时参考 HRB400E 价（表格中以 E 标记）',
       brandsTitle: '参与品牌',
       brandsHint: '参与比价的品牌与品种（未启用的品种该品牌不显示价格）',
+      brandsFromProject:
+        '候选品牌来自项目资料的「允许的品牌」（共 {{count}} 个）。如需调整品牌范围，请到项目资料修改。',
       designatedBrands: '指定品牌',
       designatedBrandsHint: '指定品牌（仅用于报单展示，不参与自动过滤）',
       designatedBadge: '指定',

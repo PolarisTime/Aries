@@ -3086,6 +3086,8 @@ export const enUS = {
       brandsTitle: 'Participating Brands',
       brandsHint:
         'Brands and categories in comparison (disabled categories are hidden)',
+      brandsFromProject:
+        "Available brands come from the project's allowed brands ({{count}}). Edit the project master data to change the brand scope.",
       designatedBrands: 'Designated Brands',
       designatedBrandsHint:
         'Designated brands (display only, excluded from automatic filtering)',

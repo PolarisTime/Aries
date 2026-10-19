@@ -116,6 +116,7 @@ type RawProjectPageRow = {
   id: unknown
   projectName: unknown
   projectNameAbbr?: unknown
+  allowedBrands?: unknown
 }
 
 const projectOptionsResponseSchema = z.array(
@@ -147,6 +148,9 @@ const projectPageResponseSchema = exactPageSchema(
     id: z.string(),
     projectName: z.string(),
     projectNameAbbr: z.string().nullable().optional(),
+    // 比价页需要知道「这个项目允许哪些品牌」——项目资料是品牌范围的唯一配置入口，
+    // 比价页只读它，不再维护一份独立清单（见 ProjectConfigModal 的 candidateBrands）。
+    allowedBrands: z.array(z.string()).nullable().optional(),
   }),
 )
 
@@ -413,6 +417,8 @@ export type ProjectPickerRow = {
   id: EntityId
   name: string
   abbr: string
+  /** 项目允许的品牌；空数组表示不限制。 */
+  allowedBrands: string[]
 }
 
 /**
@@ -438,6 +444,7 @@ export async function fetchProjectPickerOptions(
       id,
       name: name || `#${id}`,
       abbr: asString(row.projectNameAbbr).trim() || name || `#${id}`,
+      allowedBrands: normalizeAllowedSpec(row.allowedBrands),
     }
   })
 }

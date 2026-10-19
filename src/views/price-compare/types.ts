@@ -12,7 +12,18 @@ export type Variety = {
   label: string
 }
 
-export type ProjectOption = { id: string; name: string; abbr: string }
+export type ProjectOption = {
+  id: string
+  name: string
+  abbr: string
+  /**
+   * 项目资料里配置的允许品牌；空数组或未提供表示项目不限制。
+   *
+   * <p>比价页的「参与品牌」以此为上限——品牌范围的唯一配置入口是项目资料，
+   * 比价页不再维护独立清单。</p>
+   */
+  allowedBrands?: string[]
+}
 
 export type BrandOption = { name: string; freight: number }
 

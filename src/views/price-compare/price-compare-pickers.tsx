@@ -272,6 +272,7 @@ export function PriceCompareOverlays({
   configOpen,
   onCloseConfig,
   brandOptions,
+  projectAllowedBrands,
   varieties,
   config,
   onSaveConfig,
@@ -282,6 +283,9 @@ export function PriceCompareOverlays({
   configOpen: boolean
   onCloseConfig: () => void
   brandOptions: React.ComponentProps<typeof ProjectConfigModal>['brandOptions']
+  projectAllowedBrands: React.ComponentProps<
+    typeof ProjectConfigModal
+  >['projectAllowedBrands']
   varieties: React.ComponentProps<typeof ProjectConfigModal>['varieties']
   config: React.ComponentProps<typeof ProjectConfigModal>['config']
   onSaveConfig: React.ComponentProps<typeof ProjectConfigModal>['onSave']
@@ -294,6 +298,7 @@ export function PriceCompareOverlays({
       <ProjectConfigModal
         open={configOpen}
         brandOptions={brandOptions}
+        projectAllowedBrands={projectAllowedBrands}
         varieties={varieties}
         config={config}
         onClose={onCloseConfig}

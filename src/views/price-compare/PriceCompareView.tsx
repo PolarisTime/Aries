@@ -19,6 +19,7 @@ import {
   useInitialProjectAssignment,
   usePriceCompareEditorSession,
   usePriceCompareRouteActive,
+  useProjectAllowedBrands,
   useSupplierSelectOptions,
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
@@ -86,6 +87,11 @@ export function PriceCompareView() {
   /** 已按项目完成品牌回填的项目 id: 避免用户显式清空品牌后被再次自动回填。 */
   const brandAutoFilledRef = useRef<Set<string>>(new Set())
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  const projectAllowedBrands = useProjectAllowedBrands(
+    projects,
+    active?.projectId,
+  )
 
   const activeProjectQuoteConfig = useActiveProjectQuoteConfig(
     active?.projectId,
@@ -327,6 +333,7 @@ export function PriceCompareView() {
         configOpen={configOpen}
         onCloseConfig={() => setConfigOpen(false)}
         brandOptions={brandOptions}
+        projectAllowedBrands={projectAllowedBrands}
         varieties={varieties}
         config={config}
         onSaveConfig={(next) => setConfig(next)}

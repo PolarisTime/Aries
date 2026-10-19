@@ -15,6 +15,26 @@ const EMPTY_CONFIG: ProjectConfig = {
 
 const BRAND_OPTIONS = ['中天', '沙钢', '永钢']
 
+/**
+ * 切到「品牌与品种」页签。
+ *
+ * <p>品牌区在 antd Tabs 的非默认页签里，未切换时 DOM 上根本没有候选品牌节点，
+ * 直接断言会得到空字符串而不是失败原因，容易误判成「过滤没生效」。</p>
+ */
+async function activateBrandsTab() {
+  const tab = Array.from(document.querySelectorAll('[role="tab"]')).find(
+    (node) =>
+      (node.textContent ?? '').includes(
+        i18n.t('priceCompare.config.tabs.brands'),
+      ),
+  )
+  if (!tab) throw new Error('未找到「品牌与品种」页签')
+  await act(async () => {
+    ;(tab as HTMLElement).click()
+    await Promise.resolve()
+  })
+}
+
 describe('ProjectConfigModal 草稿稳定性', () => {
   let container: HTMLDivElement
   let root: Root
@@ -78,6 +98,7 @@ describe('ProjectConfigModal 草稿稳定性', () => {
     return createElement(ProjectConfigModal, {
       open,
       brandOptions,
+      projectAllowedBrands: [],
       varieties: [],
       config,
       onClose: () => {},
@@ -127,5 +148,67 @@ describe('ProjectConfigModal 草稿稳定性', () => {
     })
 
     expect(document.querySelectorAll('.pc-brand-row')).toHaveLength(3)
+  })
+
+  /**
+   * 「参与品牌」的候选范围以项目资料的允许品牌为上限。
+   *
+   * <p>合并前比价页自己维护一份品牌清单，可以与项目资料互相矛盾
+   * （项目允许 A/B，比价却在用 C）。现在品牌范围的唯一配置入口是项目资料，
+   * 比价页只能在其中挑选，并提示来源。</p>
+   */
+  it('项目配置了允许品牌时，候选只包含这些品牌并显示来源提示', async () => {
+    act(() => {
+      root.render(
+        createElement(ProjectConfigModal, {
+          open: true,
+          brandOptions: BRAND_OPTIONS,
+          projectAllowedBrands: ['中天', '沙钢'],
+          varieties: [],
+          config: EMPTY_CONFIG,
+          onClose: () => {},
+          onSave: () => {},
+        }),
+      )
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    await activateBrandsTab()
+
+    // antd Modal 渲染到 body 下的 portal，不在 container 内
+    const text = document.body.textContent ?? ''
+    // 候选 = 商品品牌全集 ∩ 项目允许品牌；「永钢」不在允许范围，不应出现
+    expect(text).toContain('中天')
+    expect(text).toContain('沙钢')
+    expect(text).not.toContain('永钢')
+    // 来源提示说明这批品牌来自项目资料
+    expect(text).toContain('允许的品牌')
+  })
+
+  it('项目未配置允许品牌时不限制，候选为商品品牌全集且不显示来源提示', async () => {
+    act(() => {
+      root.render(
+        createElement(ProjectConfigModal, {
+          open: true,
+          brandOptions: BRAND_OPTIONS,
+          projectAllowedBrands: [],
+          varieties: [],
+          config: EMPTY_CONFIG,
+          onClose: () => {},
+          onSave: () => {},
+        }),
+      )
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    await activateBrandsTab()
+
+    const text = document.body.textContent ?? ''
+    expect(text).toContain('中天')
+    expect(text).toContain('沙钢')
+    expect(text).toContain('永钢')
+    expect(text).not.toContain('来自项目资料的「允许的品牌」')
   })
 })

@@ -1,5 +1,6 @@
 import { CloseOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import {
+  Alert,
   Button,
   Checkbox,
   Divider,
@@ -106,39 +107,57 @@ function BasicSection({
 function BrandSection({
   draft,
   brandOptions,
+  projectAllowedBrands,
   onChange,
 }: {
   draft: ProjectConfigDraft
+  /** 商品品牌全集（来自商品资料）。 */
   brandOptions: string[]
+  /** 项目资料里配置的允许品牌；空数组表示项目不限制。 */
+  projectAllowedBrands: string[]
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
   const [keyword, setKeyword] = useState('')
   const { t } = useTranslation()
+
+  /**
+   * 参与比价的可选品牌：以「项目资料 → 允许的品牌」为上限。
+   *
+   * <p>空数组表示项目不限制（`md_project.allowed_brands` 的商业语义就是「空=不限」），
+   * 此时退回商品品牌全集，保持与合并前一致的行为。项目一旦配置了允许品牌，
+   * 比价页就只能在其中挑选参与比价的子集 —— 品牌范围的唯一配置入口收敛到项目资料。</p>
+   */
+  const candidateBrands = useMemo(() => {
+    if (projectAllowedBrands.length === 0) return brandOptions
+    const allowed = new Set(projectAllowedBrands)
+    return brandOptions.filter((name) => allowed.has(name))
+  }, [brandOptions, projectAllowedBrands])
+  const restricted = projectAllowedBrands.length > 0
   const selectedBrandSet = useMemo(() => new Set(draft.brands), [draft.brands])
   const designatedSet = useMemo(
     () => new Set(draft.designatedBrands),
     [draft.designatedBrands],
   )
   const selectedBrands = useMemo(
-    () => brandOptions.filter((name) => selectedBrandSet.has(name)),
-    [brandOptions, selectedBrandSet],
+    () => candidateBrands.filter((name) => selectedBrandSet.has(name)),
+    [candidateBrands, selectedBrandSet],
   )
   const unselected = useMemo(() => {
     const query = keyword.trim().toLowerCase()
-    return brandOptions.filter(
+    return candidateBrands.filter(
       (name) =>
         !selectedBrandSet.has(name) &&
         (!query || name.toLowerCase().includes(query)),
     )
-  }, [brandOptions, selectedBrandSet, keyword])
+  }, [candidateBrands, selectedBrandSet, keyword])
   /** 每个品牌的启用类别集合: 供渲染时 O(1) 判断, 避免循环内 includes。 */
   const categorySetByName = useMemo(() => {
     const result: Record<string, Set<string>> = {}
-    for (const name of brandOptions) {
+    for (const name of candidateBrands) {
       result[name] = new Set(draft.categoryMap[name] ?? CATEGORIES)
     }
     return result
-  }, [brandOptions, draft.categoryMap])
+  }, [candidateBrands, draft.categoryMap])
 
   const add = (names: string[]) =>
     onChange({ brands: [...new Set([...draft.brands, ...names])] })
@@ -158,6 +177,16 @@ function BrandSection({
   return (
     <Flex vertical gap={20}>
       <Flex vertical gap={12}>
+        {restricted ? (
+          <Alert
+            type="info"
+            showIcon
+            banner
+            title={t('priceCompare.config.brandsFromProject', {
+              count: projectAllowedBrands.length,
+            })}
+          />
+        ) : null}
         <SectionHeader
           title={t('priceCompare.config.brandsTitle')}
           description={t('priceCompare.config.brandsHint')}
@@ -169,13 +198,13 @@ function BrandSection({
               >
                 {t('priceCompare.config.selectedCount', {
                   selected: draft.brands.length,
-                  total: brandOptions.length,
+                  total: candidateBrands.length,
                 })}
               </Text>
               <Button
                 size="small"
                 type="link"
-                onClick={() => onChange({ brands: brandOptions })}
+                onClick={() => onChange({ brands: candidateBrands })}
               >
                 {t('priceCompare.config.selectAll')}
               </Button>
@@ -513,6 +542,8 @@ function ProductSection({
 type Props = {
   open: boolean
   brandOptions: string[]
+  /** 项目资料里配置的允许品牌；空数组表示项目不限制。 */
+  projectAllowedBrands: string[]
   varieties: Variety[]
   config: ProjectConfig
   onClose: () => void
@@ -525,6 +556,7 @@ type Props = {
 export function ProjectConfigModal({
   open,
   brandOptions,
+  projectAllowedBrands,
   varieties,
   config,
   onClose,
@@ -600,6 +632,7 @@ export function ProjectConfigModal({
               <BrandSection
                 draft={draft}
                 brandOptions={brandOptions}
+                projectAllowedBrands={projectAllowedBrands}
                 onChange={patch}
               />
             ),

@@ -19,7 +19,12 @@ import {
 } from './project-options'
 
 function projectPage(
-  content: Array<{ id: string; projectName: string; projectNameAbbr?: string }>,
+  content: Array<{
+    id: string
+    projectName: string
+    projectNameAbbr?: string
+    allowedBrands?: string[] | null
+  }>,
   totalPages: number,
   currentPage: number,
 ) {
@@ -389,10 +394,38 @@ describe('fetchProjectPickerOptions —— 比价页项目选择器取数', () =
         id: '349270654979153920',
         name: '周王庙镇应急消防一体化中心项目',
         abbr: '周王庙消防站',
+        // 项目资料未配置允许品牌时为空数组，语义为「不限制」
+        allowedBrands: [],
       },
       // 没有简称时 abbr 回退名称：选择器展示 `abbr || name`，不会出现空标签
-      { id: '2', name: '乙项目', abbr: '乙项目' },
+      { id: '2', name: '乙项目', abbr: '乙项目', allowedBrands: [] },
     ])
+  })
+
+  /**
+   * 比价页的「参与品牌」以项目资料的允许品牌为上限，因此选择器必须把这批品牌带到前端。
+   * 空值/空白/null 一律归一化为空数组（语义＝项目不限制），避免下游把 `[' ']` 当成一个品牌。
+   */
+  it('把项目允许品牌归一化后透传给比价页', async () => {
+    apiGetMock.mockResolvedValueOnce(
+      projectPage(
+        [
+          {
+            id: '1',
+            projectName: '甲项目',
+            allowedBrands: [' 中天 ', '中天', '万泰', ''],
+          },
+          { id: '2', projectName: '乙项目', allowedBrands: null },
+        ],
+        1,
+        0,
+      ),
+    )
+
+    const rows = await fetchProjectPickerOptions()
+
+    expect(rows[0].allowedBrands).toEqual(['中天', '万泰'])
+    expect(rows[1].allowedBrands).toEqual([])
   })
 
   it('按总页数拉全启用项目(新建项目在第 2 页也能选到)', async () => {

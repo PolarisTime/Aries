@@ -121,3 +121,23 @@ export function useUndoRedoShortcuts(
     },
   })
 }
+
+/**
+ * 当前项目在「项目资料」里配置的允许品牌。
+ *
+ * <p>报单比价的「参与品牌」不再是一份独立的品牌清单：项目的允许品牌是它的**上限**
+ * （空数组表示项目不限制，退回全部商品品牌）。这样「这个项目能用哪些品牌」只有
+ * 项目资料一个配置入口，比价页只负责在其中挑参与比价的子集并配置运费/品种。</p>
+ *
+ * <p>抽成 hook 而不是留在视图里，是因为 `PriceCompareView` 本身已经很长，
+ * 再塞一段派生逻辑会触发「巨型组件」检查；这里也便于单测。</p>
+ */
+export function useProjectAllowedBrands(
+  projects: ProjectOption[],
+  projectId: string | undefined,
+): string[] {
+  return useMemo(() => {
+    const project = projects.find((item) => item.id === projectId)
+    return project?.allowedBrands ?? []
+  }, [projects, projectId])
+}
