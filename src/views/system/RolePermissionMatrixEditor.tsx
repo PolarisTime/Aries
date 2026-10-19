@@ -15,6 +15,7 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
+import type { TFunction } from 'i18next'
 import { Fragment, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Permission } from '@/shared/schemas'
@@ -143,6 +144,619 @@ function partitionRow(actions: readonly Permission[]): RowPartition {
     (permission) => !COMMON_ACTION_SET.has(permission.action),
   )
   return { common, extras, fields, wildcards }
+}
+
+/**
+ * 左栏：业务域导航。
+ *
+ * <p>独立成组件而不是留在编辑器里，是因为编辑器本体已经很长（三栏 + 矩阵表 + 明细行），
+ * 一个大函数里同时读左中右三块，改任何一栏都要在几百行里定位。</p>
+ */
+function DomainNavPanel({
+  language,
+  navCollapsed,
+  onToggleCollapsed,
+  activeDomain,
+  onSelectDomain,
+  domainStats,
+  t,
+}: {
+  language: string
+  navCollapsed: boolean
+  onToggleCollapsed: () => void
+  activeDomain: PermissionDomain
+  onSelectDomain: (domain: PermissionDomain) => void
+  domainStats: ReadonlyMap<
+    PermissionDomain,
+    { total: number; selected: number }
+  >
+  t: TFunction
+}) {
+  return (
+    <nav
+      aria-label={structural('domainNavAria', language)}
+      style={{ flex: '0 0 176px', minWidth: 0 }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
+        <Typography.Text strong ellipsis>
+          {structural('domainNavShort', language)}
+        </Typography.Text>
+        {/* 图标按钮 + aria-label：176px 的左栏放不下「Collapse」这样的文字按钮，
+          文字会被挤成多行、标题也被迫折行。可见文案收敛为图标，可访问名仍完整。 */}
+        <Tooltip
+          title={navCollapsed ? t('common.expand') : t('common.collapse')}
+        >
+          <Button
+            size="small"
+            type="text"
+            aria-expanded={!navCollapsed}
+            aria-controls="role-permission-domain-list"
+            aria-label={
+              navCollapsed ? t('common.expand') : t('common.collapse')
+            }
+            icon={navCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={onToggleCollapsed}
+          />
+        </Tooltip>
+      </div>
+      {navCollapsed ? null : (
+        <ul
+          id="role-permission-domain-list"
+          style={{ listStyle: 'none', margin: 0, padding: 0 }}
+        >
+          {PERMISSION_DOMAINS.map((domain) => {
+            const definition = getDomainDefinition(domain)
+            const label = isZh(language)
+              ? definition.labelZh
+              : definition.labelEn
+            const stats = domainStats.get(domain) ?? { total: 0, selected: 0 }
+            const active = domain === activeDomain
+            return (
+              <li key={domain}>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onSelectDomain(domain)}
+                  style={{
+                    width: '100%',
+                    minHeight: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    padding: '6px 8px',
+                    marginBottom: 2,
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    textAlign: 'start',
+                    fontWeight: active ? 600 : 400,
+                    background: active
+                      ? 'var(--ant-color-primary-bg)'
+                      : 'transparent',
+                    color: 'inherit',
+                  }}
+                >
+                  <span>{label}</span>
+                  <Tag
+                    color={stats.selected > 0 ? 'blue' : 'default'}
+                    style={{ marginInlineEnd: 0 }}
+                  >
+                    {stats.selected}/{stats.total}
+                  </Tag>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </nav>
+  )
+}
+
+/**
+ * 右栏：已选权限汇总（按业务域 → 资源分组，可逐项移除）。
+ */
+function SelectedSummaryPanel({
+  language,
+  locked,
+  selectedCount,
+  summaryByDomain,
+  onRemove,
+  t,
+}: {
+  language: string
+  locked: boolean
+  selectedCount: number
+  summaryByDomain: ReadonlyArray<{
+    domain: PermissionDomain
+    entries: ReadonlyArray<{ resource: string; permissions: Permission[] }>
+  }>
+  onRemove: (code: string) => void
+  t: TFunction
+}) {
+  return (
+    <aside
+      aria-label={structural('selectedSummary', language)}
+      style={{ flex: '0 0 240px', minWidth: 0 }}
+    >
+      <Typography.Text strong>
+        {structural('selectedSummary', language)}
+      </Typography.Text>
+      <Typography.Text type="secondary" style={{ marginInlineStart: 8 }}>
+        {selectedCount}
+      </Typography.Text>
+      {summaryByDomain.length === 0 ? (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('common.noData')}
+          style={{ marginTop: 8 }}
+        />
+      ) : (
+        <div style={{ maxHeight: 420, overflow: 'auto', marginTop: 8 }}>
+          {summaryByDomain.map(({ domain, entries }) => {
+            const definition = getDomainDefinition(domain)
+            const label = isZh(language)
+              ? definition.labelZh
+              : definition.labelEn
+            return (
+              <div key={domain} style={{ marginBottom: 12 }}>
+                <Typography.Text strong>{label}</Typography.Text>
+                {entries.map((entry) => (
+                  <div
+                    key={entry.resource}
+                    style={{ marginTop: 4, paddingInlineStart: 8 }}
+                  >
+                    <Typography.Text type="secondary">
+                      {getResourceLabel(entry.resource, t)}
+                    </Typography.Text>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 4,
+                        marginTop: 4,
+                      }}
+                    >
+                      {entry.permissions.map((permission) => (
+                        <span
+                          key={permission.code}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            minHeight: 24,
+                          }}
+                        >
+                          <Tag style={{ marginInlineEnd: 0 }}>
+                            {getPermissionLabel(permission, t)}
+                          </Tag>
+                          <Button
+                            size="small"
+                            type="text"
+                            disabled={locked}
+                            icon={<CloseOutlined />}
+                            aria-label={`${structural('removeAriaPrefix', language)} ${getResourceLabel(entry.resource, t)} ${getPermissionLabel(permission, t)}`}
+                            onClick={() => onRemove(permission.code)}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </aside>
+  )
+}
+
+/**
+ * 中栏：工具栏（搜索 / 只看已选 / 全选 / 清空）+ 矩阵表格外壳。
+ *
+ * <p>表格数据行另由 {@link PermissionMatrixRows} 渲染；这里只负责「谁来筛、怎么批量操作」。</p>
+ */
+function PermissionMatrixPanel({
+  language,
+  wildcard,
+  keyword,
+  onKeywordChange,
+  onlySelected,
+  onToggleOnlySelected,
+  onSelectAll,
+  onClearAll,
+  visibleGroups,
+  selectedSet,
+  expandedResources,
+  onToggleAction,
+  onSetGroupSelection,
+  onToggleExpanded,
+  locked,
+  t,
+}: {
+  language: string
+  wildcard: boolean
+  keyword: string
+  onKeywordChange: (value: string) => void
+  onlySelected: boolean
+  onToggleOnlySelected: (checked: boolean) => void
+  onSelectAll: () => void
+  onClearAll: () => void
+  visibleGroups: ReadonlyArray<{ resource: string; actions: Permission[] }>
+  selectedSet: ReadonlySet<string>
+  expandedResources: ReadonlySet<string>
+  onToggleAction: (code: string, checked: boolean) => void
+  onSetGroupSelection: (
+    actions: readonly Permission[],
+    checked: boolean,
+  ) => void
+  onToggleExpanded: (resource: string) => void
+  locked: boolean
+  t: TFunction
+}) {
+  // 表头文案由动作码派生，只在渲染用得到，因此放在组件内而不是从调用方传进来。
+  const actionColumnLabels = COMMON_ACTIONS.map((action) => ({
+    action,
+    label: getActionLabel(action, t),
+  }))
+
+  return (
+    <section
+      aria-label={t('system.role.permissions')}
+      style={{ flex: '1 1 auto', minWidth: 0 }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: 'wrap',
+          marginBottom: 8,
+        }}
+      >
+        <Input
+          allowClear
+          prefix={<SearchOutlined />}
+          aria-label={t('system.role.permissionSearchPlaceholder')}
+          placeholder={t('system.role.permissionSearchPlaceholder')}
+          value={keyword}
+          onChange={(event) => onKeywordChange(event.target.value)}
+          style={{ maxWidth: 280, minWidth: 180 }}
+        />
+        <Checkbox
+          style={CHECKBOX_TARGET_STYLE}
+          checked={onlySelected}
+          onChange={(event) => onToggleOnlySelected(event.target.checked)}
+        >
+          {structural('onlySelected', language)}
+        </Checkbox>
+        <Typography.Text type="secondary" style={{ marginInlineStart: 'auto' }}>
+          {t('system.role.permissionSelectedCount', {
+            count: selectedSet.size,
+          })}
+        </Typography.Text>
+        <Popconfirm
+          title={t('system.role.selectAllConfirmTitle')}
+          description={t('system.role.selectAllConfirmContent')}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          onConfirm={onSelectAll}
+        >
+          <Button size="small" disabled={locked}>
+            {t('system.role.selectAll')}
+          </Button>
+        </Popconfirm>
+        <Popconfirm
+          title={structural('clearConfirmTitle', language)}
+          description={structural('clearConfirmContent', language)}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          onConfirm={onClearAll}
+        >
+          <Button size="small" danger disabled={locked}>
+            {t('system.role.clearAll')}
+          </Button>
+        </Popconfirm>
+      </div>
+
+      {wildcard ? (
+        <div style={{ marginBottom: 8 }}>
+          <Typography.Text type="warning">
+            {t('system.role.wildcardNotice')}
+          </Typography.Text>
+        </div>
+      ) : null}
+
+      {visibleGroups.length === 0 ? (
+        <Empty description={t('common.noData')} />
+      ) : (
+        <div style={{ maxHeight: 420, overflow: 'auto' }}>
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              tableLayout: 'auto',
+            }}
+          >
+            <thead>
+              <tr>
+                <th
+                  scope="col"
+                  style={{
+                    textAlign: 'start',
+                    padding: '6px 8px',
+                    position: 'sticky',
+                    top: 0,
+                    background: 'var(--ant-color-bg-container)',
+                  }}
+                >
+                  {structural('resourceColumn', language)}
+                </th>
+                {actionColumnLabels.map(({ action, label }) => (
+                  <th
+                    key={action}
+                    scope="col"
+                    style={{
+                      width: 76,
+                      padding: '6px 4px',
+                      textAlign: 'center',
+                      position: 'sticky',
+                      top: 0,
+                      background: 'var(--ant-color-bg-container)',
+                    }}
+                  >
+                    {label}
+                  </th>
+                ))}
+                <th
+                  scope="col"
+                  style={{
+                    width: 96,
+                    padding: '6px 4px',
+                    textAlign: 'center',
+                    position: 'sticky',
+                    top: 0,
+                    background: 'var(--ant-color-bg-container)',
+                  }}
+                >
+                  {t('common.more')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <PermissionMatrixRows
+                visibleGroups={visibleGroups}
+                selectedSet={selectedSet}
+                expandedResources={expandedResources}
+                onToggleAction={onToggleAction}
+                onSetGroupSelection={onSetGroupSelection}
+                onToggleExpanded={onToggleExpanded}
+                locked={locked}
+                language={language}
+                t={t}
+              />
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+/**
+ * 矩阵的数据行。
+ *
+ * <p>单独成组件是因为行内要处理「4 个常用动作列 + 更多展开」这套分支，约 200 行；
+ * 留在编辑器主体里会让主函数同时承担状态编排和行渲染两件事。</p>
+ */
+function PermissionMatrixRows({
+  visibleGroups,
+  selectedSet,
+  expandedResources,
+  onToggleAction,
+  onSetGroupSelection,
+  onToggleExpanded,
+  locked,
+  language,
+  t,
+}: {
+  visibleGroups: ReadonlyArray<{ resource: string; actions: Permission[] }>
+  selectedSet: ReadonlySet<string>
+  expandedResources: ReadonlySet<string>
+  onToggleAction: (code: string, checked: boolean) => void
+  onSetGroupSelection: (
+    actions: readonly Permission[],
+    checked: boolean,
+  ) => void
+  onToggleExpanded: (resource: string) => void
+  locked: boolean
+  language: string
+  t: TFunction
+}) {
+  return (
+    <>
+      {visibleGroups.map((group) => {
+        const resourceLabel = getResourceLabel(group.resource, t)
+        const allSelected = isGroupFullySelected(group, selectedSet)
+        const partial = isGroupPartiallySelected(group, selectedSet)
+        const selectedCount = group.actions.filter((permission) =>
+          selectedSet.has(permission.code),
+        ).length
+        const { common, extras, fields, wildcards } = partitionRow(
+          group.actions,
+        )
+        const detailCount = extras.length + fields.length + wildcards.length
+        const detailId = `role-permission-detail-${group.resource}`
+        const expanded = expandedResources.has(group.resource)
+        return (
+          <Fragment key={group.resource}>
+            <tr>
+              <th
+                scope="row"
+                style={{
+                  textAlign: 'start',
+                  padding: '6px 8px',
+                  fontWeight: 400,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    minHeight: 24,
+                  }}
+                >
+                  <Checkbox
+                    style={CHECKBOX_TARGET_STYLE}
+                    checked={allSelected}
+                    indeterminate={partial}
+                    disabled={locked}
+                    onChange={(event) =>
+                      onSetGroupSelection(group.actions, event.target.checked)
+                    }
+                  >
+                    <span className="aries-sr-only">
+                      {`${resourceLabel} ${structural('allPermissionsSuffix', language)}`}
+                    </span>
+                  </Checkbox>
+                  <Typography.Text strong={allSelected}>
+                    {resourceLabel}
+                  </Typography.Text>
+                  {allSelected ? (
+                    <Tooltip title={structural('wildcardAllActions', language)}>
+                      <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+                        *
+                      </Tag>
+                    </Tooltip>
+                  ) : null}
+                  <Typography.Text type="secondary">
+                    {selectedCount}/{group.actions.length}
+                  </Typography.Text>
+                </span>
+              </th>
+              {COMMON_ACTIONS.map((action) => {
+                const permission = common.get(action)
+                return (
+                  <td
+                    key={action}
+                    style={{
+                      padding: '6px 4px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {permission ? (
+                      <Checkbox
+                        style={CHECKBOX_TARGET_STYLE}
+                        checked={selectedSet.has(permission.code)}
+                        disabled={locked}
+                        onChange={(event) =>
+                          onToggleAction(permission.code, event.target.checked)
+                        }
+                      >
+                        <span className="aries-sr-only">
+                          {`${resourceLabel} ${getActionLabel(action, t)}`}
+                        </span>
+                      </Checkbox>
+                    ) : (
+                      <Typography.Text type="secondary">—</Typography.Text>
+                    )}
+                  </td>
+                )
+              })}
+              <td style={{ padding: '6px 4px', textAlign: 'center' }}>
+                {detailCount > 0 ? (
+                  <Button
+                    size="small"
+                    type="link"
+                    aria-expanded={expanded}
+                    aria-controls={detailId}
+                    onClick={() => onToggleExpanded(group.resource)}
+                  >
+                    {t('common.more')} ({detailCount})
+                  </Button>
+                ) : null}
+              </td>
+            </tr>
+            {expanded && detailCount > 0 ? (
+              <tr>
+                <td colSpan={1 + COMMON_ACTIONS.length + 1}>
+                  <div
+                    id={detailId}
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      padding: '4px 8px 12px',
+                    }}
+                  >
+                    {wildcards.map((permission) => (
+                      <Checkbox
+                        style={CHECKBOX_TARGET_STYLE}
+                        key={permission.code}
+                        checked={selectedSet.has(permission.code)}
+                        disabled={locked}
+                        onChange={(event) =>
+                          onToggleAction(permission.code, event.target.checked)
+                        }
+                      >
+                        <span className="aries-sr-only">
+                          {`${resourceLabel} ${structural('wildcardAllActions', language)}`}
+                        </span>
+                        <Tag color="blue">
+                          {structural('wildcardAllActions', language)}
+                        </Tag>
+                      </Checkbox>
+                    ))}
+                    {extras.map((permission) => (
+                      <Checkbox
+                        style={CHECKBOX_TARGET_STYLE}
+                        key={permission.code}
+                        checked={selectedSet.has(permission.code)}
+                        disabled={locked}
+                        onChange={(event) =>
+                          onToggleAction(permission.code, event.target.checked)
+                        }
+                      >
+                        <span className="aries-sr-only">{resourceLabel}</span>
+                        {getActionLabel(permission.action, t)}
+                      </Checkbox>
+                    ))}
+                    {fields.map((permission) => (
+                      <Checkbox
+                        style={CHECKBOX_TARGET_STYLE}
+                        key={permission.code}
+                        checked={selectedSet.has(permission.code)}
+                        disabled={locked}
+                        onChange={(event) =>
+                          onToggleAction(permission.code, event.target.checked)
+                        }
+                      >
+                        <span className="aries-sr-only">{resourceLabel}</span>
+                        <Tag color="purple">
+                          {getPermissionLabel(permission, t)}
+                        </Tag>
+                      </Checkbox>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ) : null}
+          </Fragment>
+        )
+      })}
+    </>
+  )
 }
 
 export interface RolePermissionMatrixEditorProps {
@@ -360,514 +974,47 @@ export function RolePermissionMatrixEditor({
     return <Empty description={t('common.noData')} />
   }
 
-  const actionColumnLabels = COMMON_ACTIONS.map((action) => ({
-    action,
-    label: getActionLabel(action, t),
-  }))
-
   return (
     <div
       className="role-permission-matrix"
       style={{ display: 'flex', gap: 16 }}
     >
-      {/* ───────────────────────── 左栏：业务域导航 ───────────────────────── */}
-      <nav
-        aria-label={structural('domainNavAria', language)}
-        style={{ flex: '0 0 176px', minWidth: 0 }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            marginBottom: 8,
-          }}
-        >
-          <Typography.Text strong ellipsis>
-            {structural('domainNavShort', language)}
-          </Typography.Text>
-          {/* 图标按钮 + aria-label：176px 的左栏放不下「Collapse」这样的文字按钮，
-              文字会被挤成多行、标题也被迫折行。可见文案收敛为图标，可访问名仍完整。 */}
-          <Tooltip
-            title={navCollapsed ? t('common.expand') : t('common.collapse')}
-          >
-            <Button
-              size="small"
-              type="text"
-              aria-expanded={!navCollapsed}
-              aria-controls="role-permission-domain-list"
-              aria-label={
-                navCollapsed ? t('common.expand') : t('common.collapse')
-              }
-              icon={
-                navCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />
-              }
-              onClick={() => setNavCollapsed((previous) => !previous)}
-            />
-          </Tooltip>
-        </div>
-        {navCollapsed ? null : (
-          <ul
-            id="role-permission-domain-list"
-            style={{ listStyle: 'none', margin: 0, padding: 0 }}
-          >
-            {PERMISSION_DOMAINS.map((domain) => {
-              const definition = getDomainDefinition(domain)
-              const label = isZh(language)
-                ? definition.labelZh
-                : definition.labelEn
-              const stats = domainStats.get(domain) ?? { total: 0, selected: 0 }
-              const active = domain === activeDomain
-              return (
-                <li key={domain}>
-                  <button
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setActiveDomain(domain)}
-                    style={{
-                      width: '100%',
-                      minHeight: 24,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 8,
-                      padding: '6px 8px',
-                      marginBottom: 2,
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      textAlign: 'start',
-                      fontWeight: active ? 600 : 400,
-                      background: active
-                        ? 'var(--ant-color-primary-bg)'
-                        : 'transparent',
-                      color: 'inherit',
-                    }}
-                  >
-                    <span>{label}</span>
-                    <Tag
-                      color={stats.selected > 0 ? 'blue' : 'default'}
-                      style={{ marginInlineEnd: 0 }}
-                    >
-                      {stats.selected}/{stats.total}
-                    </Tag>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </nav>
+      <DomainNavPanel
+        language={language}
+        navCollapsed={navCollapsed}
+        onToggleCollapsed={() => setNavCollapsed((previous) => !previous)}
+        activeDomain={activeDomain}
+        onSelectDomain={setActiveDomain}
+        domainStats={domainStats}
+        t={t}
+      />
+      <PermissionMatrixPanel
+        language={language}
+        wildcard={wildcard}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        onlySelected={onlySelected}
+        onToggleOnlySelected={setOnlySelected}
+        onSelectAll={handleSelectAll}
+        onClearAll={handleClearAll}
+        visibleGroups={visibleGroups}
+        selectedSet={selectedSet}
+        expandedResources={expandedResources}
+        onToggleAction={toggleOne}
+        onSetGroupSelection={setGroupSelection}
+        onToggleExpanded={toggleExpanded}
+        locked={locked}
+        t={t}
+      />
 
-      {/* ─────────────────────── 中栏：资源 × 动作矩阵 ─────────────────────── */}
-      <section
-        aria-label={t('system.role.permissions')}
-        style={{ flex: '1 1 auto', minWidth: 0 }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            flexWrap: 'wrap',
-            marginBottom: 8,
-          }}
-        >
-          <Input
-            allowClear
-            prefix={<SearchOutlined />}
-            aria-label={t('system.role.permissionSearchPlaceholder')}
-            placeholder={t('system.role.permissionSearchPlaceholder')}
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            style={{ maxWidth: 280, minWidth: 180 }}
-          />
-          <Checkbox
-            style={CHECKBOX_TARGET_STYLE}
-            checked={onlySelected}
-            onChange={(event) => setOnlySelected(event.target.checked)}
-          >
-            {structural('onlySelected', language)}
-          </Checkbox>
-          <Typography.Text
-            type="secondary"
-            style={{ marginInlineStart: 'auto' }}
-          >
-            {t('system.role.permissionSelectedCount', {
-              count: selectedSet.size,
-            })}
-          </Typography.Text>
-          <Popconfirm
-            title={t('system.role.selectAllConfirmTitle')}
-            description={t('system.role.selectAllConfirmContent')}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-            onConfirm={handleSelectAll}
-          >
-            <Button size="small" disabled={locked}>
-              {t('system.role.selectAll')}
-            </Button>
-          </Popconfirm>
-          <Popconfirm
-            title={structural('clearConfirmTitle', language)}
-            description={structural('clearConfirmContent', language)}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-            onConfirm={handleClearAll}
-          >
-            <Button size="small" danger disabled={locked}>
-              {t('system.role.clearAll')}
-            </Button>
-          </Popconfirm>
-        </div>
-
-        {wildcard ? (
-          <div style={{ marginBottom: 8 }}>
-            <Typography.Text type="warning">
-              {t('system.role.wildcardNotice')}
-            </Typography.Text>
-          </div>
-        ) : null}
-
-        {visibleGroups.length === 0 ? (
-          <Empty description={t('common.noData')} />
-        ) : (
-          <div style={{ maxHeight: 420, overflow: 'auto' }}>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                tableLayout: 'auto',
-              }}
-            >
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    style={{
-                      textAlign: 'start',
-                      padding: '6px 8px',
-                      position: 'sticky',
-                      top: 0,
-                      background: 'var(--ant-color-bg-container)',
-                    }}
-                  >
-                    {structural('resourceColumn', language)}
-                  </th>
-                  {actionColumnLabels.map(({ action, label }) => (
-                    <th
-                      key={action}
-                      scope="col"
-                      style={{
-                        width: 76,
-                        padding: '6px 4px',
-                        textAlign: 'center',
-                        position: 'sticky',
-                        top: 0,
-                        background: 'var(--ant-color-bg-container)',
-                      }}
-                    >
-                      {label}
-                    </th>
-                  ))}
-                  <th
-                    scope="col"
-                    style={{
-                      width: 96,
-                      padding: '6px 4px',
-                      textAlign: 'center',
-                      position: 'sticky',
-                      top: 0,
-                      background: 'var(--ant-color-bg-container)',
-                    }}
-                  >
-                    {t('common.more')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleGroups.map((group) => {
-                  const resourceLabel = getResourceLabel(group.resource, t)
-                  const allSelected = isGroupFullySelected(group, selectedSet)
-                  const partial = isGroupPartiallySelected(group, selectedSet)
-                  const selectedCount = group.actions.filter((permission) =>
-                    selectedSet.has(permission.code),
-                  ).length
-                  const { common, extras, fields, wildcards } = partitionRow(
-                    group.actions,
-                  )
-                  const detailCount =
-                    extras.length + fields.length + wildcards.length
-                  const detailId = `role-permission-detail-${group.resource}`
-                  const expanded = expandedResources.has(group.resource)
-                  return (
-                    <Fragment key={group.resource}>
-                      <tr>
-                        <th
-                          scope="row"
-                          style={{
-                            textAlign: 'start',
-                            padding: '6px 8px',
-                            fontWeight: 400,
-                          }}
-                        >
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              minHeight: 24,
-                            }}
-                          >
-                            <Checkbox
-                              style={CHECKBOX_TARGET_STYLE}
-                              checked={allSelected}
-                              indeterminate={partial}
-                              disabled={locked}
-                              onChange={(event) =>
-                                setGroupSelection(
-                                  group.actions,
-                                  event.target.checked,
-                                )
-                              }
-                            >
-                              <span className="aries-sr-only">
-                                {`${resourceLabel} ${structural('allPermissionsSuffix', language)}`}
-                              </span>
-                            </Checkbox>
-                            <Typography.Text strong={allSelected}>
-                              {resourceLabel}
-                            </Typography.Text>
-                            {allSelected ? (
-                              <Tooltip
-                                title={structural(
-                                  'wildcardAllActions',
-                                  language,
-                                )}
-                              >
-                                <Tag
-                                  color="blue"
-                                  style={{ marginInlineEnd: 0 }}
-                                >
-                                  *
-                                </Tag>
-                              </Tooltip>
-                            ) : null}
-                            <Typography.Text type="secondary">
-                              {selectedCount}/{group.actions.length}
-                            </Typography.Text>
-                          </span>
-                        </th>
-                        {COMMON_ACTIONS.map((action) => {
-                          const permission = common.get(action)
-                          return (
-                            <td
-                              key={action}
-                              style={{
-                                padding: '6px 4px',
-                                textAlign: 'center',
-                              }}
-                            >
-                              {permission ? (
-                                <Checkbox
-                                  style={CHECKBOX_TARGET_STYLE}
-                                  checked={selectedSet.has(permission.code)}
-                                  disabled={locked}
-                                  onChange={(event) =>
-                                    toggleOne(
-                                      permission.code,
-                                      event.target.checked,
-                                    )
-                                  }
-                                >
-                                  <span className="aries-sr-only">
-                                    {`${resourceLabel} ${getActionLabel(action, t)}`}
-                                  </span>
-                                </Checkbox>
-                              ) : (
-                                <Typography.Text type="secondary">
-                                  —
-                                </Typography.Text>
-                              )}
-                            </td>
-                          )
-                        })}
-                        <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                          {detailCount > 0 ? (
-                            <Button
-                              size="small"
-                              type="link"
-                              aria-expanded={expanded}
-                              aria-controls={detailId}
-                              onClick={() => toggleExpanded(group.resource)}
-                            >
-                              {t('common.more')} ({detailCount})
-                            </Button>
-                          ) : null}
-                        </td>
-                      </tr>
-                      {expanded && detailCount > 0 ? (
-                        <tr>
-                          <td colSpan={1 + COMMON_ACTIONS.length + 1}>
-                            <div
-                              id={detailId}
-                              style={{
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                gap: 12,
-                                padding: '4px 8px 12px',
-                              }}
-                            >
-                              {wildcards.map((permission) => (
-                                <Checkbox
-                                  style={CHECKBOX_TARGET_STYLE}
-                                  key={permission.code}
-                                  checked={selectedSet.has(permission.code)}
-                                  disabled={locked}
-                                  onChange={(event) =>
-                                    toggleOne(
-                                      permission.code,
-                                      event.target.checked,
-                                    )
-                                  }
-                                >
-                                  <span className="aries-sr-only">
-                                    {`${resourceLabel} ${structural('wildcardAllActions', language)}`}
-                                  </span>
-                                  <Tag color="blue">
-                                    {structural('wildcardAllActions', language)}
-                                  </Tag>
-                                </Checkbox>
-                              ))}
-                              {extras.map((permission) => (
-                                <Checkbox
-                                  style={CHECKBOX_TARGET_STYLE}
-                                  key={permission.code}
-                                  checked={selectedSet.has(permission.code)}
-                                  disabled={locked}
-                                  onChange={(event) =>
-                                    toggleOne(
-                                      permission.code,
-                                      event.target.checked,
-                                    )
-                                  }
-                                >
-                                  <span className="aries-sr-only">
-                                    {resourceLabel}
-                                  </span>
-                                  {getActionLabel(permission.action, t)}
-                                </Checkbox>
-                              ))}
-                              {fields.map((permission) => (
-                                <Checkbox
-                                  style={CHECKBOX_TARGET_STYLE}
-                                  key={permission.code}
-                                  checked={selectedSet.has(permission.code)}
-                                  disabled={locked}
-                                  onChange={(event) =>
-                                    toggleOne(
-                                      permission.code,
-                                      event.target.checked,
-                                    )
-                                  }
-                                >
-                                  <span className="aries-sr-only">
-                                    {resourceLabel}
-                                  </span>
-                                  <Tag color="purple">
-                                    {getPermissionLabel(permission, t)}
-                                  </Tag>
-                                </Checkbox>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* ───────────────────── 右栏：已选权限汇总 ───────────────────── */}
-      <aside
-        aria-label={structural('selectedSummary', language)}
-        style={{ flex: '0 0 240px', minWidth: 0 }}
-      >
-        <Typography.Text strong>
-          {structural('selectedSummary', language)}
-        </Typography.Text>
-        <Typography.Text type="secondary" style={{ marginInlineStart: 8 }}>
-          {selectedSet.size}
-        </Typography.Text>
-        {summaryByDomain.length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t('common.noData')}
-            style={{ marginTop: 8 }}
-          />
-        ) : (
-          <div style={{ maxHeight: 420, overflow: 'auto', marginTop: 8 }}>
-            {summaryByDomain.map(({ domain, entries }) => {
-              const definition = getDomainDefinition(domain)
-              const label = isZh(language)
-                ? definition.labelZh
-                : definition.labelEn
-              return (
-                <div key={domain} style={{ marginBottom: 12 }}>
-                  <Typography.Text strong>{label}</Typography.Text>
-                  {entries.map((entry) => (
-                    <div
-                      key={entry.resource}
-                      style={{ marginTop: 4, paddingInlineStart: 8 }}
-                    >
-                      <Typography.Text type="secondary">
-                        {getResourceLabel(entry.resource, t)}
-                      </Typography.Text>
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 4,
-                          marginTop: 4,
-                        }}
-                      >
-                        {entry.permissions.map((permission) => (
-                          <span
-                            key={permission.code}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 2,
-                              minHeight: 24,
-                            }}
-                          >
-                            <Tag style={{ marginInlineEnd: 0 }}>
-                              {getPermissionLabel(permission, t)}
-                            </Tag>
-                            <Button
-                              size="small"
-                              type="text"
-                              disabled={locked}
-                              icon={<CloseOutlined />}
-                              aria-label={`${structural('removeAriaPrefix', language)} ${getResourceLabel(entry.resource, t)} ${getPermissionLabel(permission, t)}`}
-                              onClick={() => toggleOne(permission.code, false)}
-                            />
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </aside>
+      <SelectedSummaryPanel
+        language={language}
+        locked={locked}
+        selectedCount={selectedSet.size}
+        summaryByDomain={summaryByDomain}
+        onRemove={(code) => toggleOne(code, false)}
+        t={t}
+      />
     </div>
   )
 }
