@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
+import { makeRow } from './core'
 import {
   buildConfigFromRecord,
   type SheetsStore,
@@ -1452,6 +1453,100 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.prices).toEqual([
       { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
     ])
+  })
+
+  /*
+   * 用户报的缺陷：新建批次后在明细里录入内容报「保存商品行失败：itemId: 参数格式错误」，
+   * 后端 400，instance 形如 /quote-sheets/{id}/items/oj7n4e。
+   * `oj7n4e` 不是雪花 id，而是 makeRow() 生成的**本地临时行 id**。
+   *
+   * 根因：基线（baseline.items）本意是"服务端已存在的行"，却由 buildBaseline 直接把
+   * sheet.rows 里**所有**行记进去 —— 包括永远不会被提交的空行（buildItemPayload 对
+   * 不完整行返回 null）。于是空行先被误记为"已保存"，等用户把它填成可落库行时，
+   * `baseline.items.has(row.id)` 命中本地临时 id，走 update 打到 items/{本地 id} → 400。
+   */
+  it('新建批次时空行不得被记入基线, 后续录入应新增(POST)而不是更新本地临时 id', async () => {
+    // 服务端新建的单据只回带真正提交的那一行
+    api.createQuoteSheet.mockResolvedValue(
+      sheetRecord({
+        id: '9002',
+        name: '批次 2',
+        items: [
+          {
+            id: '7701',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400E',
+            spec: 12,
+            length: '9米',
+            prices: [],
+          },
+        ],
+      }),
+    )
+    const store = renderStore()
+    await hydrate(store)
+
+    act(() => {
+      store.current.addSheet(
+        '100',
+        '云潮筝鸣府',
+        '2026-09-16',
+        '2026-09-16',
+        '上午',
+      )
+    })
+    // 第一行填完整；同时追加一行空行（它不会被提交，服务端也不会有它）
+    act(() => {
+      store.current.setRows((list) => [
+        ...list.map((row) => ({
+          ...row,
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '9米',
+        })),
+        makeRow(),
+      ])
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(api.createQuoteSheet).toHaveBeenCalledTimes(1)
+
+    api.addQuoteSheetItem.mockClear()
+    api.updateQuoteSheetItem.mockClear()
+
+    // 录入那行空行 —— 这正是用户报错的时机
+    act(() => {
+      store.current.setRows((list) =>
+        list.map((row) =>
+          row.category
+            ? row
+            : {
+                ...row,
+                category: '螺纹钢',
+                material: 'HRB400E',
+                spec: 16,
+                length: '9米',
+              },
+        ),
+      )
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    // 关键断言：绝不能把本地临时行 id 当服务端行 id 去 PUT
+    // （修复前这里会是 ['0kyl0v'] 这种 makeRow() 生成的 6 位随机串）
+    expect(api.updateQuoteSheetItem.mock.calls.map((c) => c[1])).toEqual([])
+    expect(api.addQuoteSheetItem).toHaveBeenCalledTimes(1)
+
+    // 新增成功后本地行 id 必须回填为服务端 id，否则下一次编辑又会打到临时 id
+    expect(store.current.rows.map((row) => row.id)).toEqual(['7701', '7002'])
+    for (const row of store.current.rows) {
+      expect(row.id).toMatch(/^[1-9]\d*$/)
+    }
   })
 
   it('新建批次 create 成功后自动签出该单据', async () => {

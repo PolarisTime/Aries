@@ -506,10 +506,25 @@ function sheetContentFingerprint(sheet: PriceSheet): string {
   })
 }
 
-/** 由服务端已保存单据构建基线(用于行级差异比对)。 */
+/**
+ * 由服务端已保存单据构建基线(用于行级差异比对)。
+ *
+ * <p><b>只记可落库行</b>：基线的语义是「服务端已经有哪些行」，而
+ * {@link buildItemPayload} 对不完整商品行返回 null、根本不会提交，服务端自然也不会有它们。
+ * 若把 sheet.rows 里**所有**行都记进基线，本地新建批次自带的空行（id 来自
+ * `makeRow()`，形如 `oj7n4e`）会被误标成「已保存」；等用户把它填完整、它变成可落库行时，
+ * `baseline.items.has(row.id)` 命中本地临时 id，于是走 update 打到
+ * `items/{本地临时 id}`，后端判 `itemId: 参数格式错误`（400）。
+ * 这也是「新建批次后录入明细报保存商品行失败」的根因。</p>
+ *
+ * <p>为什么过滤是安全的：基线只在服务端往返之后（新建、改单、刷新、整单覆盖）重建，
+ * 那些时刻本地行 id 已按服务端明细对齐；服务端返回的商品行必然是完整的
+ * （`category`/`material`/`spec`/`length` 都有），所以过滤不会漏掉真正已存在的行。</p>
+ */
 function buildBaseline(sheet: PriceSheet): SheetBaseline {
   const items = new Map<string, string>()
   for (const row of sheet.rows) {
+    if (!isPersistableRow(row)) continue
     items.set(row.id, itemSignature(row, sheet.inputs))
   }
   return {
