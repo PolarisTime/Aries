@@ -1,3 +1,25 @@
+# [13.3.0](https://github.com/PolarisTime/Aries/compare/v13.2.1...v13.3.0) (2026-10-19)
+
+
+### Bug Fixes
+
+* **a11y:** 修复列宽把手 0 高度、测量行焦点陷阱与标签栏 aria 结构 ([9436ffd](https://github.com/PolarisTime/Aries/commit/9436ffdc5c041de9f4952c4fbc4ec6aed999194e))
+* **a11y:** 危险确认补齐 antd 6 焦点 API 并覆盖保存并审核 ([bc3fe2e](https://github.com/PolarisTime/Aries/commit/bc3fe2e1016a3b4860bd5f555aba2ea6cc95ce32))
+* **audit:** 审核确认框默认焦点改到取消并说清状态变化 ([6c50ff5](https://github.com/PolarisTime/Aries/commit/6c50ff59ba98ec1c4b42709d089149a0d81f6fe8))
+* **ci:** 清理 eslint 阻断发布的 7 处多余类型断言与 1 处未使用导入 ([b7e7411](https://github.com/PolarisTime/Aries/commit/b7e7411a31905eb9b6025dea7ac784cfad6bce18))
+* **master:** 取价地区与定尺加价契约恢复审计时间必填并补回归测试 ([c24b7d8](https://github.com/PolarisTime/Aries/commit/c24b7d8010d733e81acf1d12a4560455f6ea0452))
+* **modules:** 交付核定状态允许拖拽调整明细行顺序 ([ff774c2](https://github.com/PolarisTime/Aries/commit/ff774c286237e99086200c077e70c6fc519f679a))
+* **modules:** 修复单据编辑器保存入口/退出确认/删除可逆与回执口径 ([2b93f72](https://github.com/PolarisTime/Aries/commit/2b93f72fe226cf0fe981cd763d18bac4922b1086))
+* **modules:** 手动清空搜索框后同步清 URL, 修复刷新后单号复活 ([92b5584](https://github.com/PolarisTime/Aries/commit/92b558491f45fdd20a8c0144f1a43cfa37accc54))
+* **modules:** 汇总口径显式标注并修复筛选重置/固定列/触屏入口 ([b2c8d99](https://github.com/PolarisTime/Aries/commit/b2c8d99ce1601ea0204664cceffc7edc33dcba53))
+* **price-compare:** 收敛吨位列显隐与选单额度口径, 修交叉错位与同屏矛盾 ([65ccb2a](https://github.com/PolarisTime/Aries/commit/65ccb2af9df2087456eeb0bfda46d9bf9d5d95cf))
+* **test:** 排空 rc useDelayState 的挂起定时器, 避免 jsdom 销毁后抛未处理异常 ([6825ff0](https://github.com/PolarisTime/Aries/commit/6825ff07941e073c80e9de26d457c6082805bb39))
+
+
+### Features
+
+* **a11y:** 对比度全面达标 AA 并收敛危险操作确认出口 ([a4501ce](https://github.com/PolarisTime/Aries/commit/a4501cee48073e2e7d3b6d7d15f80cb69ef03a3a)), closes [#874d00](https://github.com/PolarisTime/Aries/issues/874d00) [#fffbe6](https://github.com/PolarisTime/Aries/issues/fffbe6) [d48806/#fffbe6](https://github.com/PolarisTime/Aries/issues/fffbe6) [#0958d9](https://github.com/PolarisTime/Aries/issues/0958d9)
+
 ## [13.2.1](https://github.com/PolarisTime/Aries/compare/v13.2.0...v13.2.1) (2026-10-17)
 
 
