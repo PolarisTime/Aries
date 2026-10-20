@@ -43,26 +43,6 @@
   width: 180px;
 }
 
-.aries-skeleton-pill {
-  height: 32px;
-  border-radius: 6px;
-}
-
-.aries-skeleton-pill--sm {
-  height: 24px;
-  width: 72px;
-  border-radius: 4px;
-}
-
-.aries-skeleton-cell {
-  height: 14px;
-  flex: 1 1 0;
-}
-
-.aries-skeleton-cell--fixed {
-  flex: 0 0 120px;
-}
-
 .aries-skeleton-field {
   display: flex;
   flex-direction: column;
@@ -70,29 +50,12 @@
   flex: 1 1 0;
 }
 
-.aries-skeleton-field-label {
-  height: 12px;
-  width: 96px;
-}
-
-.aries-skeleton-field-input {
-  height: 32px;
-  width: 100%;
-}
-
-.aries-skeleton-toolbar {
-  height: 32px;
-  width: 100%;
-}
-
-.aries-skeleton-table-header .aries-skeleton-cell {
-  height: 16px;
-}
-
-.aries-skeleton-pagination {
-  height: 24px;
-  width: 240px;
-}
+/*
+ * 下面原先还有 pill / cell / cell--fixed / field-label / field-input / toolbar /
+ * table-header / pagination 八组规则，供已删除的 FormSkeleton 与 TableSkeleton 使用。
+ * 这两个组件零引用被移除后，这些类在代码里引用数已为 0，规则一并删除 ——
+ * 保留只会让后续维护者误以为还有组件在渲染它们。
+ */
 
 .aries-skeleton-detail-section {
   border: 1px solid var(--theme-card-border, #f0f0f0);
