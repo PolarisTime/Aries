@@ -8,27 +8,19 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { lazy } from 'react'
-import { listBusinessModule } from '@/api/business/business-listing'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
-import { loadBusinessPageConfig } from '@/config/business-page-loader'
-import {
-  appPageDefinitions,
-  getPageRoutePath,
-  type RouteViewKey,
-} from '@/config/page-registry'
+import { appPageDefinitions, getPageRoutePath } from '@/config/page-registry'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { buildDefaultModuleFilters } from '@/hooks/useModuleFilters'
 import { queryClient } from '@/lib/query-client'
+import { isListPrefetchView, prefetchPage } from '@/router/page-prefetch'
 import { buildSharedRouterOptions } from '@/router/router-options'
 import { viewLoaders } from '@/router/view-loaders'
 import { useAuthStore } from '@/stores/authStore'
 import { useSetupStore } from '@/stores/setupStore'
-import type { SearchParams } from '@/types/api-raw'
 import {
   getServerErrorReturnPath,
   SERVER_ERROR_ROUTE,
 } from '@/utils/server-error-navigation'
-import { asString } from '@/utils/type-narrowing'
 
 const SETUP_ROUTE_PATH = '/setup'
 
@@ -160,34 +152,6 @@ const authenticatedLayoutRoute = createRoute({
   },
 })
 
-async function prefetchModuleList(moduleKey: string, filters: SearchParams) {
-  const runtimeConfig = await queryClient.ensureQueryData({
-    queryKey: QUERY_KEYS.runtimeConfig,
-    queryFn: getRuntimeConfig,
-    staleTime: 30_000,
-  })
-  const pageSize = runtimeConfig.ui.defaultPageSize
-  await queryClient.ensureQueryData({
-    queryKey: QUERY_KEYS.businessGridList(moduleKey, filters, 1, pageSize),
-    queryFn: ({ signal }) =>
-      listBusinessModule(
-        moduleKey,
-        filters,
-        { currentPage: 1, pageSize },
-        { signal },
-      ),
-    staleTime: 60_000,
-  })
-}
-
-/**
- * 是否列表型视图（需要预取业务列表）：配置驱动的 business-grid 与主数据专属页 master-*。
- * 两分支初始过滤不同，business-grid 用页面配置的默认过滤，master-* 用空过滤。
- */
-function isListPrefetchView(view: RouteViewKey) {
-  return view === 'business-grid' || view.startsWith('master-')
-}
-
 /**
  * 业务页面路由工厂：主 Router 与多标签页子 Router 共用。
  * 以传入的父路由为挂载点生成全部页面路由（含 loader 预取），避免两份定义漂移。
@@ -214,26 +178,15 @@ export function buildModuleRoutes(parent: AnyRoute) {
        * <p>`defaultPreload: 'intent'` 的悬停预取因此也真正变成"提前预热"——不再是在悬停时
        * 同步等一次接口。</p>
        */
+      /*
+       * 预取是**优化**，不能变成渲染的阻塞依赖（此前 `await prefetchModuleList(...)` 会让
+       * 路由解析等一次列表接口，期间整块内容区被 pending 骨架替换，切标签看起来像整页重载）。
+       * 具体预热逻辑收敛在 `@/router/page-prefetch` 的 `prefetchPage`：菜单/标签悬停与这里
+       * 共用同一个出口，避免两处各写一份漂移。
+       */
       loader:
         isListPrefetchView(def.view) && def.moduleKey
-          ? () => {
-              const moduleKey = asString(def.moduleKey)
-              void (async () => {
-                try {
-                  const config =
-                    def.view === 'business-grid'
-                      ? await loadBusinessPageConfig(moduleKey)
-                      : undefined
-                  // 预取键必须与组件真实初始查询键一致（含默认过滤），否则预取无效。
-                  await prefetchModuleList(
-                    moduleKey,
-                    buildDefaultModuleFilters(config),
-                  )
-                } catch {
-                  // 预取或配置加载失败不影响页面渲染，组件内 useQuery 会自行重试
-                }
-              })()
-            }
+          ? () => prefetchPage(def)
           : undefined,
     })
   })

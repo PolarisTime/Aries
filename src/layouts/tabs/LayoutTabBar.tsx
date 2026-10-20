@@ -5,6 +5,7 @@ import type { TFunction } from 'i18next'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ContextMenu } from '@/components/ContextMenu'
+import { getPageDefinition } from '@/config/page-registry'
 import {
   confirmBatchTabClose,
   requestEditorSessionClose,
@@ -22,6 +23,7 @@ import {
 } from '@/layouts/tabs/tab-location-sync'
 import { getTabTitle } from '@/layouts/tabs/tab-title'
 import { useTabAriaWiring } from '@/layouts/tabs/useTabAriaWiring'
+import { prefetchPage } from '@/router/page-prefetch'
 import {
   buildTabHref,
   getNextActiveTabAfterClose,
@@ -215,8 +217,20 @@ export function LayoutTabBar() {
           onOpenChange={(next) => setKeyboardMenuTabId(next ? tab.id : null)}
           resolveReturnFocus={resolveActiveTabReturnFocus}
         >
-          {/* 该 span 的 id 是真实面板 aria-labelledby 的目标（见 AppTabContainer） */}
-          <span id={tabLabelDomId(tab.id)} className="leo-tabbar-label">
+          {/*
+           * 该 span 的 id 是真实面板 aria-labelledby 的目标（见 AppTabContainer）。
+           * 悬停时预取该标签页的视图 chunk：未挂载过的标签首次点开要现下载 chunk
+           * （dev 实测 200~300ms），期间只有骨架；预热后点开即见内容。
+           * 键盘切换标签（方向键+Enter）不产生悬停，仍会看到一次骨架，是有意取舍。
+           */}
+          <span
+            id={tabLabelDomId(tab.id)}
+            className="leo-tabbar-label"
+            onMouseEnter={() => {
+              const definition = getPageDefinition(tab.pathname)
+              if (definition) prefetchPage(definition)
+            }}
+          >
             {title}
           </span>
         </ContextMenu>

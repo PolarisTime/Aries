@@ -14,6 +14,7 @@ import {
 } from '@/layouts/app-layout-utils'
 import { EditorSessionGuard } from '@/layouts/editor-session/EditorSessionGuard'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
+import { preloadMenuTarget } from '@/layouts/layout-menu-items'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { AppTabContainer } from '@/layouts/tabs/AppTabContainer'
 import { useLayoutTabsHydration } from '@/layouts/tabs/use-layout-tabs-hydration'
@@ -59,6 +60,8 @@ function SideNavigation({
 }: SideNavigationProps) {
   return (
     <Sider
+      onMouseOverCapture={preloadMenuTarget}
+      onFocusCapture={preloadMenuTarget}
       collapsible
       collapsed={collapsed}
       onCollapse={onCollapse}

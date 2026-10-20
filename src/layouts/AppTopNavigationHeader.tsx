@@ -8,6 +8,7 @@ import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
 } from '@/layouts/LazyAppHeaderSearch'
+import { preloadMenuTarget } from '@/layouts/layout-menu-items'
 
 type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
@@ -53,7 +54,11 @@ export function AppTopNavigationHeader({
           <span className="app-top-brand-mark">{topBrandMark}</span>
         </button>
 
-        <div className="app-top-menu-shell">
+        <div
+          className="app-top-menu-shell"
+          onMouseOverCapture={preloadMenuTarget}
+          onFocusCapture={preloadMenuTarget}
+        >
           <Menu
             selectedKeys={selectedKeys}
             items={topMenuItems}
