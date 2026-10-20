@@ -53,12 +53,33 @@
   background-color: var(--ant-table-row-selected-bg, var(--theme-highlight-bg));
 }
 
+/*
+ * 选中行让 <tr> 的选中底色透出，但**必须排除固定列**。
+ *
+ * 固定列（序号、勾选列）靠 antd 注入的 `position: sticky` 定位；此前这里对所有 td 覆盖
+ * `position: relative`，会把 sticky 一并顶掉，固定列随即脱离固定层、与相邻列叠在一起 ——
+ * 实测「勾选列」在选中行的 x 从 82 变成 146（正好错开一个 64px 的序号列宽），
+ * 同一行里勾选框跑到「+」按钮左边，看起来像勾选错位。
+ *
+ * 固定列还必须是**不透明**背景：sticky 列在横向滚动时靠自身背景遮住下方内容，
+ * 设成 transparent 会让内容从固定列底下透出来。
+ */
 .module-table-shell
   .ant-table-tbody
   .module-table-row-selected-border-beam
-  > td {
+  > td:not(.ant-table-cell-fix) {
   position: relative;
   background-color: transparent !important;
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td.ant-table-cell-fix {
+  background-color: var(
+    --ant-table-row-selected-bg,
+    var(--theme-highlight-bg)
+  ) !important;
 }
 
 /* 静态高亮：左右边缘 2px 主色条 + 柔和外发光（box-shadow 为静态渲染，不参与动画） */
