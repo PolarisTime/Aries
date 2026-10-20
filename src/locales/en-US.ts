@@ -1849,6 +1849,7 @@ export const enUS = {
         netPriceMatchUncheckedDetail:
           'Not checked yet — use "Re-check net prices"',
         netPriceMatchRecheck: 'Re-check net prices',
+        netPriceMenu: 'Pricing',
         netPriceMatchJump: 'Go to row',
         netPriceMatchProblemsTitle: 'Net price match details',
         netPriceMatchProblemsButton:

@@ -1,12 +1,15 @@
 import {
   CheckCircleFilled,
+  EllipsisOutlined,
   ExclamationCircleFilled,
   MinusCircleFilled,
   ThunderboltOutlined,
 } from '@ant-design/icons'
+import type { MenuProps } from 'antd'
 import {
   Button,
   Divider,
+  Dropdown,
   Modal,
   Select,
   Space,
@@ -488,6 +491,38 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
    * 取价结果按"只报非零项"拆开: 原文案把"无网价 0 行 · 跳过 0 行"也写出来, 正常取价(全部成功)
    * 时尾部挂着一串 0, 用户要读完才知道没事 —— 零值不是信息, 不显示。
    */
+  /**
+   * 「取价」下拉的菜单项。
+   *
+   * <p>「重新核查网价」始终可用（保存中除外）；「网价匹配明细」只在**有问题行**时出现 ——
+   * 没有待处理行时它与表格的「网价匹配」列完全重复，点开也只是一份没有新信息的全表清单。</p>
+   */
+  const priceMenuItems: MenuProps['items'] = [
+    {
+      key: 'recheck',
+      label: t('modules.pages.salesOrder.netPriceMatchRecheck'),
+      disabled: checking,
+    },
+    ...(problemIds.length > 0
+      ? [
+          {
+            key: 'problems',
+            label: t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
+              count: problemIds.length,
+            }),
+          },
+        ]
+      : []),
+  ]
+
+  const handlePriceMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'recheck') {
+      void runMatchCheck()
+      return
+    }
+    if (key === 'problems') setProblemsOpen(true)
+  }
+
   const applyResultParts = applySummary
     ? [
         {
@@ -579,32 +614,30 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
               {applyButton}
             </Tooltip>
           )}
-          <Button
-            disabled={saving || checking}
-            loading={checking}
-            onClick={() => void runMatchCheck()}
-          >
-            {t('modules.pages.salesOrder.netPriceMatchRecheck')}
-          </Button>
           {/*
-           * 明细入口: 条件是"有没有明细行"(没有明细就没有可看的清单), 不是"有没有问题行"。
-           * 零值不在按钮上重复计数 —— 「0 行待处理」既不是信息, 又会让强调色指向"没事",
-           * 且与左侧「N 行未核查」并排时容易被读成自相矛盾的两个数字。
+           * 次要去向收进「取价」下拉。
+           *
+           * <p>原先这里是三个平铺按钮，加上明细工具栏自己的「新增明细 / 导入 / 列设置」与行末
+           * 的「取消 / 保存 / 保存并审核」，一行挤了 12 个控件，且把「明细操作」「取价操作」
+           * 「表单保存」三类语义混在一起。现在只留主行动「整单取网价」+ 这个下拉。</p>
+           *
+           * <p>「网价匹配明细」原先无论有没有问题都显示，点开就是一份全表清单 ——
+           * 与表格里紧邻单价/金额的「网价匹配」列内容重复（同一个 NetPriceMatchChip）。
+           * 现在只在**确实有待处理行**时作为菜单项出现，并直接把行数写在文案里。</p>
            */}
-          {items.length > 0 ? (
+          <Dropdown
+            menu={{ items: priceMenuItems, onClick: handlePriceMenuClick }}
+            trigger={['click']}
+            disabled={saving}
+          >
             <Button
-              className="net-price-problems-entry"
-              onClick={() => setProblemsOpen(true)}
+              aria-label={t('modules.pages.salesOrder.netPriceMenu')}
+              icon={<EllipsisOutlined />}
+              loading={checking}
             >
-              {problemIds.length > 0
-                ? t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
-                    count: problemIds.length,
-                  })
-                : t(
-                    'modules.pages.salesOrder.netPriceMatchProblemsButtonEmpty',
-                  )}
+              {t('modules.pages.salesOrder.netPriceMenu')}
             </Button>
-          ) : null}
+          </Dropdown>
         </Space>
         {/*
           结论区只放文本: `role="status"` 已隐含 aria-live=polite, 不必重复声明;

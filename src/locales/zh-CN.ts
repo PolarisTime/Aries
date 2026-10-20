@@ -1810,6 +1810,7 @@ export const zhCN = {
         netPriceMatchNoPriceDetail: '该取价日/时段没有这一行的网价，请手工填写',
         netPriceMatchUncheckedDetail: '尚未核查，点「重新核查网价」',
         netPriceMatchRecheck: '重新核查网价',
+        netPriceMenu: '取价',
         netPriceMatchJump: '定位到该行',
         netPriceMatchProblemsTitle: '网价匹配明细',
         netPriceMatchProblemsButton: '网价匹配明细（{{count}} 行待处理）',

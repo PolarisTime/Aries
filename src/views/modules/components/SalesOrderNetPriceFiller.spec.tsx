@@ -303,16 +303,51 @@ describe('SalesOrderNetPriceFiller', () => {
     })
   }
 
-  /** 点工具栏「重新核查网价」并等异步核查落地。 */
-  const clickRecheck = async () => {
+  /**
+   * 打开「取价」下拉，返回当前渲染出的菜单项。
+   *
+   * <p>次要去向（重新核查网价 / 网价匹配明细）已从工具栏按钮收进下拉，测试必须先展开再点，
+   * 不能再按文本直接在容器里找按钮。</p>
+   */
+  const openPriceMenu = async () => {
     await act(async () => {
-      buttonByText('重新核查网价')?.dispatchEvent(
+      buttonByText('取价')?.dispatchEvent(
         new MouseEvent('click', { bubbles: true }),
       )
       await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    return Array.from(
+      document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    )
+  }
+
+  /** 收起「取价」下拉（再次点击触发器）。 */
+  const closePriceMenu = async () => {
+    await act(async () => {
+      buttonByText('取价')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
+  }
+
+  /** 点「取价」下拉里的某一项并等异步动作落地。 */
+  const clickPriceMenuItem = async (text: string) => {
+    const items = await openPriceMenu()
+    await act(async () => {
+      items
+        .find((node) => node.textContent?.includes(text))
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  /** 点工具栏「取价 → 重新核查网价」并等异步核查落地。 */
+  const clickRecheck = async () => {
+    await clickPriceMenuItem('重新核查网价')
   }
 
   /** 弹窗内的第 index 个 antd Select（顺序即渲染顺序: 价格规定 → 基准 → 时段策略 → 取价时段）。 */
@@ -1164,7 +1199,14 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(container.textContent).toContain('本单 2 行，1 行单价与网价不一致')
     expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MISMATCH')
     // 问题行清单: 数量与可访问入口
-    expect(container.textContent).toContain('网价匹配明细（1 行待处理）')
+    // 待处理入口已收进「取价」下拉：展开菜单后断言文案与计数
+    const menuItems = await openPriceMenu()
+    expect(
+      menuItems.some((node) =>
+        node.textContent?.includes('网价匹配明细（1 行待处理）'),
+      ),
+    ).toBe(true)
+    await closePriceMenu()
   })
 
   it('问题行清单在受控弹层里列出不匹配行', async () => {
@@ -1181,12 +1223,7 @@ describe('SalesOrderNetPriceFiller', () => {
     await clickRecheck()
     expect(container.textContent).toContain('本单 1 行，1 行单价与网价不一致')
 
-    await act(async () => {
-      buttonByText('网价匹配明细')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
+    await clickPriceMenuItem('网价匹配明细')
     const modal = Array.from(document.querySelectorAll('.ant-modal')).find(
       (m) => m.textContent?.includes('网价匹配明细'),
     )
@@ -1251,7 +1288,8 @@ describe('SalesOrderNetPriceFiller', () => {
     const actionButtons = Array.from(
       toolbar?.querySelectorAll<HTMLButtonElement>('.ant-space button') ?? [],
     )
-    expect(actionButtons.length).toBeGreaterThanOrEqual(3)
+    // 次要去向已收进「取价」下拉，动作组只剩「整单取网价」+「取价」
+    expect(actionButtons).toHaveLength(2)
 
     // 1) 不再混用 small 档: small 是 24px, 与 32px 主按钮并排会一高一低
     for (const button of actionButtons) {
@@ -1274,12 +1312,13 @@ describe('SalesOrderNetPriceFiller', () => {
   })
 
   /**
-   * 零值不在入口上重复计数。
+   * 待处理入口是**条件出现**的，不是常驻按钮。
    *
-   * <p>「（0 行待处理）」既不是信息, 又让强调色指向"没事"; 与「N 行未核查」并排时
-   * 两个数字容易被读成自相矛盾。零值时入口仍保留(用户要能打开清单), 但不带计数。</p>
+   * <p>「网价匹配明细」原先无论有没有问题都显示，点开的清单又与表格里紧邻单价/金额的
+   * 「网价匹配」列完全重复（同一个 NetPriceMatchChip）。现在收进「取价」下拉，且只在
+   * 确实有 N 行待处理时作为菜单项出现，行数直接写在文案里。</p>
    */
-  it('零待处理行时明细入口不带计数, 有待处理行时才带', async () => {
+  it('零待处理行时下拉里没有明细入口, 有待处理行时才出现并带计数', async () => {
     fetchProjectPriceRulesMock.mockResolvedValue([
       { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
     ])
@@ -1293,10 +1332,15 @@ describe('SalesOrderNetPriceFiller', () => {
     ])
     await clickRecheck()
 
-    // 单价与网价一致 ⇒ 0 行待处理
-    const entryButton = buttonByText('网价匹配明细')
-    expect(entryButton).toBeTruthy()
-    expect(entryButton?.textContent).not.toContain('待处理')
+    // 单价与网价一致 ⇒ 0 行待处理 ⇒ 下拉里**根本不出现**这个入口
+    // （原先它是常驻按钮，点开只是一份与表格「网价匹配」列重复的全表清单）
+    const cleanItems = await openPriceMenu()
+    expect(
+      cleanItems.some((node) => node.textContent?.includes('网价匹配明细')),
+    ).toBe(false)
+    await closePriceMenu()
+
+    // 改成不一致后重查 ⇒ 1 行待处理, 入口才出现且带计数
 
     // 改成不一致后重查 ⇒ 1 行待处理, 计数才出现
     await act(async () => {
@@ -1306,7 +1350,14 @@ describe('SalesOrderNetPriceFiller', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await clickRecheck()
-    expect(container.textContent).toContain('网价匹配明细（1 行待处理）')
+    // 待处理入口已收进「取价」下拉：展开菜单后断言文案与计数
+    const menuItems = await openPriceMenu()
+    expect(
+      menuItems.some((node) =>
+        node.textContent?.includes('网价匹配明细（1 行待处理）'),
+      ),
+    ).toBe(true)
+    await closePriceMenu()
   })
 
   /**
@@ -1329,14 +1380,16 @@ describe('SalesOrderNetPriceFiller', () => {
       row({ id: 'r1', materialId: 'm1', material: 'HRB400E', unitPrice: 3200 }),
     ])
     await clickRecheck()
-    expect(container.textContent).toContain('网价匹配明细（1 行待处理）')
+    // 待处理入口已收进「取价」下拉：展开菜单后断言文案与计数
+    const menuItems = await openPriceMenu()
+    expect(
+      menuItems.some((node) =>
+        node.textContent?.includes('网价匹配明细（1 行待处理）'),
+      ),
+    ).toBe(true)
+    await closePriceMenu()
 
-    await act(async () => {
-      buttonByText('网价匹配明细')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
+    await clickPriceMenuItem('网价匹配明细')
     const modal = Array.from(document.querySelectorAll('.ant-modal')).find(
       (m) => m.textContent?.includes('网价匹配明细'),
     )
