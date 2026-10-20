@@ -305,6 +305,25 @@ export function removeTabFrom(
   return { tabs: next, nextActiveTabId }
 }
 
+/**
+ * 关闭标签后的「落点」：邻位继承 → 工作台 → 首个剩余标签 → null。
+ *
+ * <p><b>唯一来源</b>：渲染侧（{@link getNextActiveTabAfterClose}，要在移除前拿到目标 href）
+ * 与 store 侧（`removeTab`，真正落库）都必须走这里。两处各写一遍时，一旦有人只改了一边，
+ * 就会出现「地址栏跳到 A、激活标签却是 B」——正是本仓库「同一口径只在一处实现」要禁止的形态。</p>
+ */
+export function resolveActiveIdAfterClose(
+  remainingTabs: LayoutTab[],
+  nextActiveTabId: string | null,
+): string | null {
+  return (
+    nextActiveTabId ??
+    remainingTabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
+    remainingTabs[0]?.id ??
+    null
+  )
+}
+
 /** 关闭 Tab 前解析主路由应先切换到的目标 Tab。 */
 export function getNextActiveTabAfterClose(
   tabs: LayoutTab[],
@@ -316,11 +335,10 @@ export function getNextActiveTabAfterClose(
     id,
     activeTabId,
   )
-  const fallbackActiveId =
-    nextActiveTabId ??
-    remainingTabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
-    remainingTabs[0]?.id ??
-    null
+  const fallbackActiveId = resolveActiveIdAfterClose(
+    remainingTabs,
+    nextActiveTabId,
+  )
   return remainingTabs.find((tab) => tab.id === fallbackActiveId) ?? null
 }
 
@@ -658,14 +676,10 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
       id,
       get().activeTabId,
     )
-    // 邻位继承失败时兜底回工作台
-    const fallbackActiveId =
-      nextActiveTabId ??
-      tabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
-      tabs[0]?.id ??
-      null
-    set({ tabs, activeTabId: fallbackActiveId })
-    return get().activeTabId
+    // 落点与渲染侧共用同一份口径（resolveActiveIdAfterClose），避免地址栏与激活标签分叉
+    const activeTabId = resolveActiveIdAfterClose(tabs, nextActiveTabId)
+    set({ tabs, activeTabId })
+    return activeTabId
   },
 
   removeOtherTabs: (id) => {

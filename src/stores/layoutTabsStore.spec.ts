@@ -208,6 +208,39 @@ describe('getNextActiveTabAfterClose', () => {
       getNextActiveTabAfterClose(tabs, 'sales-order', 'sales-order')?.id,
     ).toBe('dashboard')
   })
+
+  /**
+   * 「关闭后落到哪个标签」必须只有一份口径。
+   *
+   * <p>渲染侧（关标签前先 replace 主地址栏，避免协调层把已关路径重新打开）调
+   * `getNextActiveTabAfterClose`，store 侧（真正落库）调 `removeTab`。两处各写一遍时，
+   * 只要有人只改一边，就会出现「地址栏跳到 A、激活标签却是 B」——用户看到的是页面
+   * 和标签对不上。本用例直接断言两者对同一输入给出同一结果。</p>
+   */
+  it('store 的 removeTab 与渲染侧的 getNextActiveTabAfterClose 落点一致', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+        makeTab({ id: 'a', pathname: '/a' }),
+        makeTab({ id: 'b', pathname: '/b' }),
+      ],
+      activeTabId: 'a',
+    })
+
+    const expected = getNextActiveTabAfterClose(
+      useLayoutTabsStore.getState().tabs,
+      'a',
+      'a',
+    )?.id
+    const actual = useLayoutTabsStore.getState().removeTab('a')
+
+    expect(actual).toBe(expected)
+    expect(useLayoutTabsStore.getState().activeTabId).toBe(expected)
+  })
 })
 
 describe('批量移除', () => {
