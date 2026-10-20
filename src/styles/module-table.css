@@ -82,96 +82,23 @@
   ) !important;
 }
 
-/* 静态高亮：左右边缘 2px 主色条 + 柔和外发光（box-shadow 为静态渲染，不参与动画） */
+/*
+ * 选中行的视觉：**底色 + 左侧 3px 实心主色条**，静态、不外溢。
+ *
+ * 早先版本在左右边缘各画一条 2px 光条，另加 8px 外发光与 2.4s 呼吸动画，实测三个问题：
+ *   1) 外发光（`-2px 0 8px`）会溢出到表格左侧的页面背景上，形成一条发白的晕影 ——
+ *      看起来像渲染瑕疵而不是「选中」；
+ *   2) 多行选中时每行独立呼吸，整张表持续闪动，长时间扫读很分心；
+ *   3) 光条用浅蓝 rgb(145,202,255) 压在选中底色 rgb(230,244,255) 上，对比度极低，
+ *      边界反而看不出来。
+ * 现在只用「底色 + 左侧实心主色条」表达选中：静态、高对比、不外溢，也不与行尾的
+ * 状态强调条抢视觉（`.table-row-emphasis` 已用 `:not(.ant-table-row-selected)` 让位）。
+ */
 .module-table-shell
   .ant-table-tbody
   .module-table-row-selected-border-beam
   > td:first-child {
-  box-shadow:
-    inset 2px 0 0 var(--theme-highlight-border, var(--theme-primary)),
-    -2px 0 8px color-mix(in srgb, var(--theme-primary) 35%, transparent);
-}
-
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:last-child {
-  box-shadow:
-    inset -2px 0 0 var(--theme-highlight-border, var(--theme-primary)),
-    2px 0 8px color-mix(in srgb, var(--theme-primary) 35%, transparent);
-}
-
-/* 动画仅用 transform + opacity（合成器友好，避免逐帧重绘背景） */
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:first-child::after,
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:last-child::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--theme-highlight-border, var(--theme-primary));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--theme-primary) 35%, transparent);
-  pointer-events: none;
-}
-
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:first-child::after {
-  left: 0;
-}
-
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:last-child::after {
-  right: 0;
-}
-
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:first-child::after,
-.module-table-shell
-  .ant-table-tbody
-  .module-table-row-selected-border-beam
-  > td:last-child::after {
-  transform-origin: center;
-  /* 呼吸周期长于 --motion-duration-slow（该组令牌面向过渡而非循环动画），此处独立设定 */
-  animation: module-table-selected-edge-pulse 2.4s
-    var(--motion-ease-in-out, ease-in-out) infinite;
-}
-
-@keyframes module-table-selected-edge-pulse {
-  0%,
-  100% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-
-  50% {
-    transform: scaleY(0.55);
-    opacity: 0.55;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .module-table-shell
-    .ant-table-tbody
-    .module-table-row-selected-border-beam
-    > td:first-child::after,
-  .module-table-shell
-    .ant-table-tbody
-    .module-table-row-selected-border-beam
-    > td:last-child::after {
-    animation: none;
-  }
+  box-shadow: inset 3px 0 0 var(--theme-primary);
 }
 
 .module-table-shell .ant-table-tbody .ant-table-cell > * {
