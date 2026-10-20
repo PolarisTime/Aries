@@ -1,3 +1,26 @@
+# [13.4.0](https://github.com/PolarisTime/Aries/compare/v13.3.1...v13.4.0) (2026-10-20)
+
+
+### Bug Fixes
+
+* **lint:** 修复 4 处 eslint 错误并排除产物目录，恢复 CI Lint 门禁 ([a29252d](https://github.com/PolarisTime/Aries/commit/a29252d4d77d562407132ab67a60901562d1b466))
+* **module-page:** 商品信息筛选接入真实页面配置并补防漂移守卫 ([305c460](https://github.com/PolarisTime/Aries/commit/305c4608f276e06f2088c66ac70dea9090dec5f5))
+* **modules:** 单据编辑器的保存按钮移回明细工具栏 ([62815a5](https://github.com/PolarisTime/Aries/commit/62815a5bea19eeeaa5285c5a635ca4f6c738394d))
+* **price-compare:** 修复新建批次后录入明细报 itemId 参数格式错误 ([21234f2](https://github.com/PolarisTime/Aries/commit/21234f226b8c08981f7d8dba9a69dd21645cad80))
+
+
+### Features
+
+* **module-page:** 采购/入库/退货/物流单列表接入「商品信息」筛选 ([10192fa](https://github.com/PolarisTime/Aries/commit/10192fa3616ec7b8da1d131d6071816c9f1666c6))
+* **price-compare:** 参与品牌以项目资料的「允许的品牌」为上限 ([32046a9](https://github.com/PolarisTime/Aries/commit/32046a988132c73da9430546cfe717fb099ed32b))
+* **price-compare:** 新增现货价三档作用域同步按钮 ([cdc2d86](https://github.com/PolarisTime/Aries/commit/cdc2d86ad6c13b3f5208d82cccd415b79b7299f8))
+* **system:** 角色权限编辑器重做为业务域矩阵 + 角色模板 ([5a9319f](https://github.com/PolarisTime/Aries/commit/5a9319fea36d7facb7f8094bcc53d710a088ce49))
+
+
+### Performance Improvements
+
+* **system:** 权限矩阵按 action 建索引，去掉循环内 find ([a857208](https://github.com/PolarisTime/Aries/commit/a8572089a0f6b04349b074f69da016ffb241b4e4))
+
 ## [13.3.1](https://github.com/PolarisTime/Aries/compare/v13.3.0...v13.3.1) (2026-10-19)
 
 
