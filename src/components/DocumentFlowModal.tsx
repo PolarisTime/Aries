@@ -61,7 +61,10 @@ function formatMetric(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === '') return ''
   const numeric = Number(value)
   if (!Number.isFinite(numeric)) return String(value)
-  return numeric.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+  return numeric.toLocaleString('zh-CN', {
+    useGrouping: false,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function DocumentFlowModal({

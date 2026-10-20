@@ -2372,10 +2372,18 @@
 }
 
 .module-table-selected-count {
+  /* 与 `.module-filter-active-summary-text` 同一种胶囊样式：两者并排时读作一对状态标签，
+     而不是「一个胶囊 + 一段裸文字」 */
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-xs);
   color: var(--theme-primary-text);
+  font-weight: 500;
   font-size: 12px;
   line-height: 20px;
   white-space: nowrap;
+  background: var(--theme-primary-soft);
+  border-radius: 999px;
 }
 
 .module-table-refresh-button.ant-btn {
@@ -2489,6 +2497,24 @@
   color: var(--theme-text-muted);
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* 口径组：口径文字（「已选 15 项」/「本页合计」）只出现一次，组内平铺各指标。
+   组与组之间用一道细分隔线，避免两组的「总重量」被连读成同一口径。 */
+.module-table-pagination-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.module-table-pagination-group + .module-table-pagination-group {
+  padding-left: var(--space-sm);
+  border-left: 1px solid var(--theme-border-subtle);
+}
+
+.module-table-pagination-scope {
+  color: var(--theme-primary-text);
+  font-weight: 500;
 }
 
 .module-table-pagination-metric {

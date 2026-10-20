@@ -1018,16 +1018,16 @@
 }
 
 /* ===== 筛选生效提示（「已筛选 N 项 · 清空筛选」）=====
- * 放在筛选区内、筛选行之下：说明「当前有几项条件在生效」并给出一键清空。
- * 行级留白只用 8 的倍数阶梯：与筛选行之间 8px（--space-xs）；与表格之间的留白
- * 由 `.module-filter-toolbar` 既有 padding-bottom 统一给出，这里不再叠加。
+ * 已从「筛选区下的独立一行」移到工具栏右侧状态区，与「已选择 N 项」并列：
+ * 两者都是「当前生效状态」的入口，合在一处既省掉一整行竖向空间（原先只有约 150px 宽
+ * 却把筛选区顶高一行），也让「筛选/勾选」两个清除动作在同一视线内。
+ * 间距交给父级 `.module-table-utilities` 的 gap，这里不再自带 margin。
  */
 .module-filter-active-summary {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-xs);
+  gap: var(--space-xxs);
   font-size: 12px;
   line-height: 20px;
 }

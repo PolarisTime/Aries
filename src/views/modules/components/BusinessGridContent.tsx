@@ -2,7 +2,7 @@ import { ReloadOutlined } from '@ant-design/icons'
 import { Alert, Button } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { isEqual } from 'es-toolkit'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
 import type { RowContextMenuMap } from '@/components/row-context-menu'
@@ -162,6 +162,13 @@ export function BusinessGridContent({
     [config.buildOverview, records, selectedRows],
   )
 
+  /*
+   * 稳定引用：内联 `() => setColumnSettingsOpen(true)` 每次渲染都是新函数，
+   * 会让 ColumnSettingsRequestContext 的所有消费者跟着重渲染（react-doctor
+   * `unstable-context-provider-value`）。
+   */
+  const openColumnSettings = useCallback(() => setColumnSettingsOpen(true), [])
+
   return (
     <section className="module-grid-workspace">
       <div className="module-grid-filter-region">
@@ -173,12 +180,6 @@ export function BusinessGridContent({
           onUpdateFilter={onUpdateFilter}
           onApplyFilters={onApplyFilters}
           onReset={handleResetFilters}
-        />
-        {/* 筛选生效提示: 只显示与默认值不同的条件数, 0 项时不渲染 */}
-        <ModuleFilterActiveSummary
-          submittedFilters={submittedFilters}
-          defaultFilters={defaultFilters}
-          onClear={handleResetFilters}
         />
       </div>
 
@@ -195,6 +196,14 @@ export function BusinessGridContent({
           onClearSelection={onClearSelection}
           toolbarActions={toolbarActions}
           onAction={onAction}
+          filterSummary={
+            /* 筛选生效提示: 只显示与默认值不同的条件数, 0 项时不渲染 */
+            <ModuleFilterActiveSummary
+              submittedFilters={submittedFilters}
+              defaultFilters={defaultFilters}
+              onClear={handleResetFilters}
+            />
+          }
           extra={
             <>
               {printDropdown}
@@ -234,9 +243,7 @@ export function BusinessGridContent({
       ) : (
         <>
           {/* 列头右键菜单的「列设置…」复用工具栏这个弹层(开合状态在本组件) */}
-          <ColumnSettingsRequestContext.Provider
-            value={() => setColumnSettingsOpen(true)}
-          >
+          <ColumnSettingsRequestContext.Provider value={openColumnSettings}>
             <BusinessGridTable
               key={moduleKey}
               moduleKey={moduleKey}

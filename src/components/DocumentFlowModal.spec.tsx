@@ -165,7 +165,7 @@ describe('DocumentFlowModal', () => {
     const inboundNode = nodes[1]
 
     expect(orderNode.textContent).toContain('金额')
-    expect(orderNode.textContent).toContain('1,000')
+    expect(orderNode.textContent).toContain('1000')
     expect(orderNode.textContent).toContain('重量')
     expect(orderNode.textContent).toContain('10')
 

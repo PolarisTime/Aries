@@ -1,4 +1,5 @@
 import dayjs, { type Dayjs } from 'dayjs'
+import { formatAmount } from '@/utils/formatters'
 
 export interface WeighSlipItem {
   id: string
@@ -102,11 +103,8 @@ export function digitToChineseUppercase(n: number): string {
   return result
 }
 
-export const fmtMoney = (n?: number): string =>
-  (n ?? 0).toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+/* 金额口径统一走 utils/formatters.formatAmount（2 位小数、不带千分位），不再本地重写。 */
+export const fmtMoney = (n?: number): string => formatAmount(n ?? 0)
 
 export const MOCK_CUSTOMERS: CustomerData[] = [
   {

@@ -58,6 +58,13 @@ export interface ModuleStatusMeta {
 export interface ModuleOverviewItem {
   label: string
   value: string
+  /**
+   * 汇总口径（「已选 15 项」/「本页合计」）。
+   *
+   * <p>渲染层把**相邻且 scope 相同**的指标归为一组，口径文字只出现一次，
+   * 组内依次是各指标。缺省表示无口径（未勾选时的普通汇总、库存页等），按平铺渲染。</p>
+   */
+  scope?: string
 }
 
 export interface ModuleActionDefinition {

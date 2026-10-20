@@ -125,7 +125,7 @@ describe('客户对账单方向渲染', () => {
         .color,
     ).toBe('var(--theme-error)')
 
-    expect(renderStatementAmount(1234.5)).toBe('1,234.50')
+    expect(renderStatementAmount(1234.5)).toBe('1234.50')
     expect(renderStatementAmount('')).toBe('-')
   })
 

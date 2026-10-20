@@ -1192,9 +1192,9 @@ describe('SalesOrderNetPriceFiller', () => {
     )
     expect(modal).toBeTruthy()
     expect(modal?.textContent).toContain('HRB400E')
-    // 差额是文字而非只放在悬浮提示里(键盘/读屏可达): 应有 3,430.00, 当前 3,200.00
-    expect(modal?.textContent).toContain('3,430.00')
-    expect(modal?.textContent).toContain('3,200.00')
+    // 差额是文字而非只放在悬浮提示里(键盘/读屏可达): 应有 3430.00, 当前 3200.00
+    expect(modal?.textContent).toContain('3430.00')
+    expect(modal?.textContent).toContain('3200.00')
     expect(modal?.textContent).toContain('定位到该行')
   })
 

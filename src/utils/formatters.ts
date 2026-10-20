@@ -24,20 +24,29 @@ export function formatInteger(value: number): string {
 }
 
 /**
- * 格式化金额（千分位 + 2 位小数，与表格 formatCellValue 的 amount 格式一致）
+ * 金额 / 重量等数值**一律不使用千分位分隔符**（`useGrouping: false`）。
+ *
+ * <p>这是产品决定：界面上的数字要能被直接复制进 Excel / 搜索框 / 其他系统而不带分隔符，
+ * 复制 `1981382.98` 比复制 `1,981,382.98` 更不容易出错（后者粘进表单常常变成两段）。</p>
+ *
+ * <p>收敛说明：表格单元格（`useModuleDisplaySupport`）、对账模型、单据引用浮层原先各自写了
+ * 一份 `toLocaleString`，与这里重复。同一口径多处实现必然漂移，因此统一改为调用本文件的
+ * {@link formatAmount} / {@link formatWeight}，不要在新代码里再写 `toLocaleString`。</p>
  */
 export function formatAmount(value: number): string {
   return value.toLocaleString('zh-CN', {
+    useGrouping: false,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
 }
 
 /**
- * 格式化重量（千分位 + 3 位小数，与表格 formatCellValue 的 weight 格式一致）
+ * 格式化重量（3 位小数、不带千分位，与 {@link formatAmount} 同一约定）
  */
 export function formatWeight(value: number): string {
   return value.toLocaleString('zh-CN', {
+    useGrouping: false,
     minimumFractionDigits: DISPLAY_WEIGHT_PRECISION,
     maximumFractionDigits: DISPLAY_WEIGHT_PRECISION,
   })

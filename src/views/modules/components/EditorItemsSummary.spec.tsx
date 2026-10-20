@@ -53,17 +53,17 @@ describe('EditorItemsSummary 金额口径与格式', () => {
     return container.textContent || ''
   }
 
-  it('货物金额带千分位，不再是 114868.08', () => {
+  it('货物金额不带千分位（产品决定：便于复制进表格/搜索）', () => {
     const text = render()
-    expect(text).toContain('114,868.08')
-    expect(text).not.toContain('114868.08')
+    expect(text).toContain('114868.08')
+    expect(text).not.toContain('114,868.08')
   })
 
-  it('有附加费用时给出「含附加费用合计」，与列表总金额同口径（115,868.08）', () => {
+  it('有附加费用时给出「含附加费用合计」，与列表总金额同口径（115868.08）', () => {
     const text = render(1000)
-    expect(text).toContain('114,868.08')
-    expect(text).toContain('1,000.00')
-    expect(text).toContain('115,868.08')
+    expect(text).toContain('114868.08')
+    expect(text).toContain('1000.00')
+    expect(text).toContain('115868.08')
   })
 
   it('label 用「货物金额」，避免「金额」同时指两种口径', () => {
@@ -85,6 +85,6 @@ describe('EditorItemsSummary 金额口径与格式', () => {
     act(() => {
       root.render(createElement(EditorItemsSummary, { items: heavy }))
     })
-    expect(container.textContent || '').toContain('1,234.500')
+    expect(container.textContent || '').toContain('1234.500')
   })
 })

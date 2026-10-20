@@ -34,6 +34,11 @@ export type OverviewScope = 'page' | 'selection'
  * <p>`page` 口径不加前缀: 未勾选时的汇总本来就是默认语义(本页合计),
  * 加「本页」会让 12 个页面的标签一律变长而无信息增益。`selection` 口径**必须**加,
  * 因为它是用户勾选后才出现的隐式切换。</p>
+ *
+ * <p><b>口径走 {@code scope} 字段, 不拼进 label</b>: 早期实现给每个指标都拼一遍前缀,
+ * 勾选后一行里会出现「已选 15 项 · 单据数量：15 张 已选 15 项 · 总重量：… 已选 15 项 · 总金额：…」
+ * —— 六个标签里同一个前缀重复三遍。改为打标后由渲染层「口径只写一次 + 组内平铺指标」,
+ * 既短又不产生歧义(每个数值仍能看出属于哪个口径)。</p>
  */
 function applyOverviewScope(
   items: ModuleOverviewItem[],
@@ -44,10 +49,7 @@ function applyOverviewScope(
   const prefix = i18next.t('modules.overview.scopeSelection', {
     count: selectedCount,
   })
-  return items.map((item) => ({
-    ...item,
-    label: `${prefix} · ${item.label}`,
-  }))
+  return items.map((item) => ({ ...item, scope: prefix }))
 }
 
 /**
@@ -80,10 +82,7 @@ export function buildScopedOverview({
   const pagePrefix = i18next.t('modules.overview.scopePage')
   return [
     ...selectedItems,
-    ...pageItems.map((item) => ({
-      ...item,
-      label: `${pagePrefix} · ${item.label}`,
-    })),
+    ...pageItems.map((item) => ({ ...item, scope: pagePrefix })),
   ]
 }
 

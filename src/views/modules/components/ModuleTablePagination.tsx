@@ -1,5 +1,6 @@
 import { Pagination } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleOverviewItem } from '@/types/module-page'
 
@@ -27,6 +28,22 @@ export function ModuleTablePagination({
   onPageChange,
 }: Props) {
   const { t } = useTranslation()
+  /*
+   * 按 scope 把相邻指标归组: 口径只渲染一次, 组内平铺各指标。
+   * 这样「已选 15 项」不会在三个指标前各重复一遍, 同时每个数值仍属于明确的口径组。
+   */
+  const groups = useMemo(() => {
+    const result: Array<{ scope?: string; items: ModuleOverviewItem[] }> = []
+    for (const item of overviewItems) {
+      const last = result.at(-1)
+      if (last && last.scope === item.scope) {
+        last.items.push(item)
+        continue
+      }
+      result.push({ scope: item.scope, items: [item] })
+    }
+    return result
+  }, [overviewItems])
   const rangeStart = currentItemCount ? (currentPage - 1) * pageSize + 1 : 0
   const rangeEnd = currentItemCount ? rangeStart + currentItemCount - 1 : 0
 
@@ -41,10 +58,25 @@ export function ModuleTablePagination({
           data-testid="pagination-summary"
           aria-live="polite"
         >
-          {overviewItems.map((item) => (
-            <span className="module-table-pagination-metric" key={item.label}>
-              <span>{item.label}：</span>
-              <strong>{item.value}</strong>
+          {groups.map((group) => (
+            <span
+              className="module-table-pagination-group"
+              key={group.scope ?? group.items[0]?.label}
+            >
+              {group.scope ? (
+                <span className="module-table-pagination-scope">
+                  {group.scope}
+                </span>
+              ) : null}
+              {group.items.map((item) => (
+                <span
+                  className="module-table-pagination-metric"
+                  key={item.label}
+                >
+                  <span>{item.label}：</span>
+                  <strong>{item.value}</strong>
+                </span>
+              ))}
             </span>
           ))}
         </div>

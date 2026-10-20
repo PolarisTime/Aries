@@ -139,13 +139,13 @@ function elementTitle(node: unknown): string {
 describe('采购订单金额与进度派生渲染', () => {
   it('总金额渲染附带「暂定」标签', () => {
     const node = renderPurchaseOrderTotalAmount(1234.5)
-    expect(collectText(node)).toContain('1,234.50')
+    expect(collectText(node)).toContain('1234.50')
     expect(collectText(node)).toContain('暂定')
   })
 
   it('实际货值按金额格式化，空值回落短横线', () => {
-    expect(renderPurchaseOrderActualAmount(2000)).toBe('2,000.00')
-    expect(renderPurchaseOrderActualAmount('2500.5')).toBe('2,500.50')
+    expect(renderPurchaseOrderActualAmount(2000)).toBe('2000.00')
+    expect(renderPurchaseOrderActualAmount('2500.5')).toBe('2500.50')
     expect(renderPurchaseOrderActualAmount(null)).toBe('-')
     expect(renderPurchaseOrderActualAmount(undefined)).toBe('-')
   })

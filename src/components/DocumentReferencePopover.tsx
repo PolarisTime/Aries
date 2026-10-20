@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import type { ModulePageConfig } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
+import { formatAmount } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import {
   buildDocumentReferenceSummary,
@@ -126,11 +127,9 @@ async function copyText(text: string): Promise<void> {
 function getAmountText(amount: number | string | undefined): string {
   if (amount === undefined || amount === '') return ''
   const numericAmount = Number(amount)
+  /* 金额口径统一走 utils/formatters.formatAmount（不带千分位）。 */
   return Number.isFinite(numericAmount)
-    ? numericAmount.toLocaleString('zh-CN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
+    ? formatAmount(numericAmount)
     : asString(amount)
 }
 

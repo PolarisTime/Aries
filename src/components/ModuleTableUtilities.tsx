@@ -14,6 +14,13 @@ import { useTranslation } from 'react-i18next'
  * 不传 `onClearSelection`（不给清空入口）。两者都用可选 props 表达，渲染出的 DOM 与原来一致。</p>
  */
 export interface ModuleTableUtilitiesProps {
+  /**
+   * 插在「已选条数」左侧的状态提示（目前是「已筛选 N 项 · 清空筛选」）。
+   *
+   * <p>原先筛选项提示单独占一行，只有 150px 宽却把筛选区顶高一整行；
+   * 两个都是「当前生效状态」的入口，放在一起既省一行又便于一并清除。</p>
+   */
+  leading?: ReactNode
   selectedCount: number
   onClearSelection?: (() => void) | undefined
   /** 传入后清空按钮改用图标呈现（模块表工具栏的历史写法），不传则用「✕」文案。 */
@@ -23,6 +30,7 @@ export interface ModuleTableUtilitiesProps {
 }
 
 export function ModuleTableUtilities({
+  leading,
   selectedCount,
   onClearSelection,
   clearSelectionIcon,
@@ -33,6 +41,7 @@ export function ModuleTableUtilities({
 
   return (
     <div className="module-table-utilities">
+      {leading}
       {selectedCount > 0 ? (
         <>
           <span className="module-table-selected-count" aria-live="polite">

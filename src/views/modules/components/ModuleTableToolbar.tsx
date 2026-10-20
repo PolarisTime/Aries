@@ -32,6 +32,8 @@ interface Props {
   onRefresh: () => void
   onClearSelection?: () => void
   extra?: ReactNode
+  /** 筛选状态提示（「已筛选 N 项 · 清空筛选」），渲染在右侧状态区。 */
+  filterSummary?: ReactNode
   toolbarActions?: ModuleActionDefinition[]
   onAction?: (action: ModuleActionDefinition) => void
 }
@@ -47,6 +49,7 @@ export function ModuleTableToolbar({
   onRefresh,
   onClearSelection,
   extra,
+  filterSummary,
   toolbarActions = EMPTY_TOOLBAR_ACTIONS,
   onAction,
 }: Props) {
@@ -109,6 +112,7 @@ export function ModuleTableToolbar({
         {extra}
       </Space>
       <ModuleTableUtilities
+        leading={filterSummary}
         selectedCount={selectedCount}
         onClearSelection={onClearSelection}
         clearSelectionIcon={<CloseOutlined />}
