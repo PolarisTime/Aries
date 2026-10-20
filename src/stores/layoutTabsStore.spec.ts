@@ -723,6 +723,130 @@ describe('受保护标签的重载恢复', () => {
   })
 })
 
+describe('protectedFromEviction 反映当前状态', () => {
+  /**
+   * 标记不能是「一旦点亮就永不熄灭」。
+   *
+   * <p>原实现只在超限时把受保护标签置 true，没有任何路径设回 false，而它会被持久化并让
+   * `sanitizePersistedTabs` 优先保留 —— 于是「曾因未保存编辑被保护过一次」的标签永久享有
+   * 优待：即使后来已保存、早就不再受保护，重载时仍会挤掉更新的标签。本用例锁定"保护解除后
+   * 标记必须回落"。</p>
+   */
+  it('保护解除后再次开新页, 旧标签的标记被清除', () => {
+    const protectedIds = new Set(['a'])
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+        makeTab({ id: 'a', pathname: '/a' }),
+      ],
+      activeTabId: 'dashboard',
+    })
+
+    // 第一轮: a 持有未保存编辑 → 标记点亮（此时未超限，但标记要如实反映当下）
+    useLayoutTabsStore
+      .getState()
+      .openTab(
+        { pathname: '/b' },
+        { isProtected: (id) => protectedIds.has(id) },
+      )
+    expect(
+      useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'a')
+        ?.protectedFromEviction,
+    ).toBe(true)
+
+    // 第二轮: a 已保存（不再受保护）→ 标记必须回落为 false
+    protectedIds.clear()
+    useLayoutTabsStore
+      .getState()
+      .openTab(
+        { pathname: '/c' },
+        { isProtected: (id) => protectedIds.has(id) },
+      )
+    expect(
+      useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'a')
+        ?.protectedFromEviction,
+    ).toBe(false)
+  })
+
+  it('未提供 isProtected 时不改动既有标记', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+        makeTab({ id: 'a', pathname: '/a', protectedFromEviction: true }),
+      ],
+      activeTabId: 'dashboard',
+    })
+
+    // 无保护语义的调用方不应把已有标记抹掉
+    useLayoutTabsStore.getState().openTab({ pathname: '/b' })
+    expect(
+      useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'a')
+        ?.protectedFromEviction,
+    ).toBe(true)
+  })
+})
+
+describe('setTabLocation 的 pathname 唯一性守卫', () => {
+  /**
+   * 「同一 pathname 只有一个标签对象」是多标签机制的根基：`ensureTabIn` / `openTabIn`
+   * 都用 `findIndex(pathname)` 定位，一旦出现两个同 pathname 标签，按 pathname 查找永远只命中
+   * 第一个，另一个成为无法通过 `openTab` 激活的孤儿（子 Router 与会话一直挂着）。
+   */
+  it('拒绝把标签改名成另一个标签已在用的 pathname', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+        makeTab({ id: 'a', pathname: '/a' }),
+        makeTab({ id: 'b', pathname: '/b' }),
+      ],
+      activeTabId: 'a',
+    })
+
+    useLayoutTabsStore.getState().setTabLocation('b', {
+      pathname: '/a',
+      search: '',
+    })
+
+    const tabs = useLayoutTabsStore.getState().tabs
+    expect(tabs.filter((tab) => tab.pathname === '/a')).toHaveLength(1)
+    expect(tabs.find((tab) => tab.id === 'b')?.pathname).toBe('/b')
+  })
+
+  it('同一标签自身改 search 不受影响', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        makeTab({
+          id: 'dashboard',
+          pathname: DASHBOARD_TAB_PATH,
+          pinned: true,
+        }),
+        makeTab({ id: 'a', pathname: '/a' }),
+      ],
+      activeTabId: 'a',
+    })
+
+    useLayoutTabsStore
+      .getState()
+      .setTabLocation('a', { pathname: '/a', search: 'docNo=1' })
+
+    expect(
+      useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'a')?.search,
+    ).toBe('docNo=1')
+  })
+})
+
 describe('clearPersistedLayoutTabs', () => {
   it('只清除指定用户的持久化标签页数据', () => {
     const values = new Map<string, string>()

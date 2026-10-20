@@ -6,6 +6,31 @@ import { modal } from '@/utils/antd-app'
 let confirming = false
 
 /**
+ * 确认框打开期间积压的关闭请求。
+ *
+ * <p><b>为什么必须排队而不是直接 return</b>：原先两处 `if (confirming) return` 会**静默丢弃**
+ * 请求 —— 用户连点三个脏标签的 ×，只有第一个会弹确认框，后两个既不入队也不提示，表现就是
+ * "点了 × 没反应"。请求被丢弃是比多弹一个框更糟的结果：多弹一个框用户至少能继续操作，
+ * 丢弃则完全没有反馈。</p>
+ *
+ * <p>排队后行为与用户意图一致：每个脏标签各问一次，逐个确认后全部关闭。</p>
+ */
+const pendingCloses: Array<() => void> = []
+
+/**
+ * 确认框关闭后放行积压请求。
+ *
+ * <p>用 `while` 而不是"取一个"：重放的请求可能因为标签已变干净而**同步完成、不弹框**，
+ * 此时 `confirming` 仍是 false，必须继续放行下一个，否则队列会卡在这里不动。</p>
+ */
+function drainPendingCloses(): void {
+  while (!confirming && pendingCloses.length > 0) {
+    const next = pendingCloses.shift()
+    next?.()
+  }
+}
+
+/**
  * 请求关闭某个 Tab 的编辑器会话：clean 直接关，
  * submitting 提示保存中，dirty 弹「放弃更改」确认框。
  * 多标签页容器与编辑器内部（requestClose）共用此流程。
@@ -15,6 +40,15 @@ export function requestEditorSessionClose(
   tabId: string,
   onClose: () => void,
 ): void {
+  /*
+   * 已有确认框打开：把整次请求排队（重新走一遍本函数），等当前框关闭后处理。
+   * 不能只 return —— 那会把用户的关闭意图静默吞掉。
+   */
+  if (confirming) {
+    pendingCloses.push(() => requestEditorSessionClose(t, tabId, onClose))
+    return
+  }
+
   const current = editorSessionStore.getSession(tabId)
   if (!current || current.status === 'clean') {
     editorSessionStore.endSession(tabId)
@@ -23,9 +57,6 @@ export function requestEditorSessionClose(
   }
 
   if (current.status === 'submitting') {
-    if (confirming) {
-      return
-    }
     confirming = true
     modal.info({
       title: t('common.saveInProgressTitle'),
@@ -33,14 +64,12 @@ export function requestEditorSessionClose(
       okText: t('common.confirm'),
       afterClose: () => {
         confirming = false
+        drainPendingCloses()
       },
     })
     return
   }
 
-  if (confirming) {
-    return
-  }
   confirming = true
   modal.confirm({
     title: t('common.unsavedChangesTitle'),
@@ -63,6 +92,7 @@ export function requestEditorSessionClose(
     },
     afterClose: () => {
       confirming = false
+      drainPendingCloses()
     },
   })
 }
@@ -76,6 +106,12 @@ export function confirmBatchTabClose(
   tabIds: string[],
   doClose: () => void,
 ): boolean {
+  // 已有确认框打开：排队重试，不静默丢弃（理由见 pendingCloses 的说明）
+  if (confirming) {
+    pendingCloses.push(() => confirmBatchTabClose(t, tabIds, doClose))
+    return true
+  }
+
   const hasDirty = tabIds.some((tabId) =>
     editorSessionStore.requiresConfirmation(tabId),
   )
@@ -83,9 +119,7 @@ export function confirmBatchTabClose(
     doClose()
     return false
   }
-  if (confirming) {
-    return true
-  }
+
   confirming = true
   modal.confirm({
     title: t('common.unsavedChangesTitle'),
@@ -103,6 +137,7 @@ export function confirmBatchTabClose(
     },
     afterClose: () => {
       confirming = false
+      drainPendingCloses()
     },
   })
   return true

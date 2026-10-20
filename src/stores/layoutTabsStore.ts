@@ -189,12 +189,27 @@ function evictOverflow(
 ): { tabs: LayoutTab[]; evictedIds: string[] } {
   const evictedIds: string[] = []
   let next = tabs
-  if (next.length > MAX_LAYOUT_TABS && isProtected) {
-    next = next.map((tab) =>
-      !isTabPinned(tab) && !tab.protectedFromEviction && isProtected(tab.id)
-        ? { ...tab, protectedFromEviction: true }
-        : tab,
-    )
+  /*
+   * 按**当前**保护状态重算 `protectedFromEviction`，而不是只置位。
+   *
+   * <p>原实现只在超限时把受保护的标签置 true，**没有任何路径把它设回 false**，而它会被持久化
+   * 并让 `sanitizePersistedTabs` 优先保留。于是"曾经因未保存编辑被保护过一次"的标签永久享有
+   * 优待：即使后来已保存/放弃、早就不再受保护，重载时仍会挤掉更新的标签。标记必须反映当下的
+   * 事实，不能是一旦点亮就永不熄灭。</p>
+   *
+   * <p>无 `isProtected` 时无法判断，保持原值不动（调用方未提供保护语义）。</p>
+   */
+  if (isProtected) {
+    next = next.map((tab) => {
+      if (isTabPinned(tab)) {
+        return tab
+      }
+      const protectedNow = isProtected(tab.id)
+      if (Boolean(tab.protectedFromEviction) === protectedNow) {
+        return tab
+      }
+      return { ...tab, protectedFromEviction: protectedNow }
+    })
   }
   while (next.length > MAX_LAYOUT_TABS) {
     const evictIndex = next.findIndex(
@@ -640,6 +655,23 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
     if (
       !current ||
       (current.pathname === pathname && current.search === search)
+    ) {
+      return
+    }
+    /*
+     * 不变式守卫：**同一 pathname 只能有一个标签对象**。
+     *
+     * <p>`ensureTabIn` / `openTabIn` 都以 `findIndex(pathname)` 定位标签，整条多标签机制的
+     * 幂等性都建立在这条不变式上。而本方法原先允许把标签改名成另一个标签已在用的 pathname，
+     * 制造出两个同 pathname 的标签 —— 此后按 pathname 查找永远只命中第一个，另一个成为
+     * 无法通过 `openTab` 激活的孤儿（它的子 Router 与编辑器会话会一直挂着）。</p>
+     *
+     * <p>当前唯一调用方是 `tab-location-sync` 的页内导航（只改 search），所以这是防御性守卫；
+     * 一旦将来有页面用 Link / 子 Router 跳到另一个已注册页面，这里会拦下而不是留下隐形损坏。</p>
+     */
+    if (
+      pathname !== current.pathname &&
+      tabs.some((tab) => tab.id !== id && tab.pathname === pathname)
     ) {
       return
     }
