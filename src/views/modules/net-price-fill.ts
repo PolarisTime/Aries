@@ -145,14 +145,6 @@ export function resolveNetPriceHit(
   }
 }
 
-/** 解析某明细行的网价：先按 materialId 命中，否则按商品维度键命中。 */
-export function resolveNetPrice(
-  item: ModuleLineItem,
-  index: { byId: Map<string, number>; byKey: Map<string, number> },
-): number | undefined {
-  return resolveNetPriceHit(item, index)?.price
-}
-
 function matchKey(row: {
   brand?: string | null
   category?: string | null

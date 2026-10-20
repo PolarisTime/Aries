@@ -8,7 +8,6 @@ import {
   evaluateNetPriceMatch,
   hasItemIdentity,
   normalizeDateValue,
-  resolveNetPrice,
   resolveNetPriceHit,
   round2,
   substituteMaterialOf,
@@ -78,12 +77,14 @@ const item = (overrides: Partial<ModuleLineItem>): ModuleLineItem => ({
   ...overrides,
 })
 
-describe('buildNetPriceIndex / resolveNetPrice', () => {
+describe('buildNetPriceIndex / resolveNetPriceHit', () => {
   it('优先按 materialId 命中', () => {
     const index = buildNetPriceIndex([
       row({ materialId: 'm1', price: '3400.00', brand: '中天' }),
     ])
-    expect(resolveNetPrice(item({ materialId: 'm1' }), index)).toBe(3400)
+    expect(resolveNetPriceHit(item({ materialId: 'm1' }), index)?.price).toBe(
+      3400,
+    )
   })
 
   it('materialId 未命中时按商品维度键命中', () => {
@@ -98,7 +99,7 @@ describe('buildNetPriceIndex / resolveNetPrice', () => {
       }),
     ])
     expect(
-      resolveNetPrice(
+      resolveNetPriceHit(
         item({
           brand: '中天',
           category: '螺纹钢',
@@ -107,7 +108,7 @@ describe('buildNetPriceIndex / resolveNetPrice', () => {
           length: '9米',
         }),
         index,
-      ),
+      )?.price,
     ).toBe(3350)
   })
 
@@ -115,12 +116,16 @@ describe('buildNetPriceIndex / resolveNetPrice', () => {
     const index = buildNetPriceIndex([
       row({ materialId: 'm1', price: null, status: '无网价' }),
     ])
-    expect(resolveNetPrice(item({ materialId: 'm1' }), index)).toBeUndefined()
+    expect(
+      resolveNetPriceHit(item({ materialId: 'm1' }), index)?.price,
+    ).toBeUndefined()
   })
 
   it('非有限价格被忽略', () => {
     const index = buildNetPriceIndex([row({ materialId: 'm1', price: 'NaN' })])
-    expect(resolveNetPrice(item({ materialId: 'm1' }), index)).toBeUndefined()
+    expect(
+      resolveNetPriceHit(item({ materialId: 'm1' }), index)?.price,
+    ).toBeUndefined()
   })
 })
 

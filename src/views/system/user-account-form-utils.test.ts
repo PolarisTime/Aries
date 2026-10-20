@@ -4,7 +4,6 @@ import {
   buildUserCreatePayload,
   buildUserUpdatePayload,
   emptyUserFormValues,
-  isUserActive,
   nextUserStatus,
   userToFormValues,
 } from './user-account-form-utils'
@@ -91,8 +90,6 @@ describe('user-account-form-utils', () => {
   })
 
   it('状态纯函数在正常与禁用间切换', () => {
-    expect(isUserActive('NORMAL')).toBe(true)
-    expect(isUserActive('DISABLED')).toBe(false)
     expect(nextUserStatus('NORMAL')).toBe('DISABLED')
     expect(nextUserStatus('DISABLED')).toBe('NORMAL')
   })

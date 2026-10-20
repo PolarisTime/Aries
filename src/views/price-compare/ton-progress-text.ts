@@ -160,22 +160,6 @@ export function remainingTonText(
   return remainingTonDisplay(reportedTon, shippedTon).text
 }
 
-/**
- * 「剩余未开」列的可见文案(单条明细行口径)。
- *
- * <p>报单吨位由调用方给出(本单据在该明细行上的手填合计), 已开货取该明细行自身的
- * `actualWeightTon`。</p>
- */
-export function tonRemainingText(
-  record: PurchaseOrderTonnageRecord,
-  reportedTon: number,
-): string {
-  return remainingTonText(
-    reportedTon,
-    actualShippedTonOf(record.actualWeightTon),
-  )
-}
-
 /** 吨位口径明细的一行: label 为 i18n key, value 为已格式化的数值/文本。 */
 export interface TonProgressDetailRow {
   labelKey: string

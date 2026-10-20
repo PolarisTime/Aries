@@ -5,7 +5,6 @@ import {
   diffTemplate,
   getPermissionTemplate,
   matchTemplate,
-  matchTemplates,
   PERMISSION_TEMPLATES,
   type PermissionTemplate,
   validateAllTemplates,
@@ -613,37 +612,5 @@ describe('matchTemplate：完全匹配 / 部分匹配 / 不匹配', () => {
 
     expect(match.kind).toBe('partial')
     expect(match.template?.code).toBe('finance')
-  })
-})
-
-describe('matchTemplates：候选列表', () => {
-  it('空选择返回空数组', () => {
-    expect(matchTemplates([])).toEqual([])
-  })
-
-  it('按相似度降序，且与 matchTemplate 的首项一致', () => {
-    const salesperson = getPermissionTemplate(
-      'salesperson',
-    ) as PermissionTemplate
-    const current = [...salesperson.permissions, 'system:admin']
-
-    const candidates = matchTemplates(current)
-    const best = matchTemplate(current)
-
-    expect(candidates.length).toBeGreaterThan(0)
-    expect(candidates[0].template?.code).toBe(best.template?.code)
-    for (let index = 1; index < candidates.length; index += 1) {
-      expect(candidates[index - 1].similarity).toBeGreaterThanOrEqual(
-        candidates[index].similarity,
-      )
-    }
-  })
-
-  it('精确匹配时候选首项标记为 exact', () => {
-    const dispatcher = getPermissionTemplate('dispatcher') as PermissionTemplate
-    const candidates = matchTemplates([...dispatcher.permissions])
-
-    expect(candidates[0].kind).toBe('exact')
-    expect(candidates[0].template?.code).toBe('dispatcher')
   })
 })

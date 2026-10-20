@@ -170,22 +170,6 @@ export function getStatusActionTarget(
   }
 }
 
-/** 状态动作对应的按钮 i18n key。 */
-export function getStatusActionLabelKey(
-  kind: SalesContractStatusActionKind,
-): string {
-  switch (kind) {
-    case 'audit':
-      return 'modules.statusActions.audit'
-    case 'issue':
-      return 'modules.salesContract.issue'
-    case 'archive':
-      return 'modules.salesContract.archive'
-    case 'void':
-      return 'modules.salesContract.void'
-  }
-}
-
 export interface SalesContractFormValues {
   contractNo: string
   name: string

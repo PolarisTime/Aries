@@ -7,10 +7,6 @@ import type {
 } from '@/shared/schemas'
 import { userCreateFormSchema, userFormSchema } from '@/shared/schemas/user'
 
-export function isUserActive(status: UserStatus): boolean {
-  return status === 'NORMAL'
-}
-
 export function nextUserStatus(status: UserStatus): UserStatus {
   return status === 'NORMAL' ? 'DISABLED' : 'NORMAL'
 }

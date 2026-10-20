@@ -16,7 +16,6 @@ import {
   tonProgressDetailText,
   tonProgressOverShippedText,
   tonProgressTextParts,
-  tonRemainingText,
 } from './ton-progress-text'
 
 /** 明细行夹具: 报单占用(issuedWeight)与真实已开货(actualWeightTon)默认都给值, 便于区分两者。 */
@@ -117,11 +116,6 @@ describe('吨位三列文案(报单 / 已开货 / 剩余未开)', () => {
     expect(display.overTon).toBeCloseTo(15.768, 6)
     // 反例钉: 夹到 0 的实现会得到 '0', 这条断言就是"改回去必须变红"
     expect(display.text).not.toBe('0')
-
-    // 单条明细行的入口同源
-    expect(tonRemainingText(poRecord({ actualWeightTon: 32.768 }), 17)).toBe(
-      '-15.768',
-    )
   })
 
   it('剩余未开为 0(恰好开完)时不标红', () => {
@@ -129,7 +123,6 @@ describe('吨位三列文案(报单 / 已开货 / 剩余未开)', () => {
       text: '0',
       overTon: 0,
     })
-    expect(tonRemainingText(poRecord({ actualWeightTon: 12 }), 12)).toBe('0')
   })
 
   it('已开超说明用"已开货 / 本单报单 / 差额"三个数(与剩余列同源)', () => {

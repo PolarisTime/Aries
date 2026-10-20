@@ -370,7 +370,7 @@ export interface TemplateMatch {
  */
 const PARTIAL_MATCH_MIN_SIMILARITY = 0.6
 
-/** 模板与当前选择的比对明细。**唯一计算处**：matchTemplate / matchTemplates 共用。 */
+/** 模板与当前选择的比对明细。**唯一计算处**：matchTemplate 用它打分。 */
 interface TemplateScore {
   template: PermissionTemplate
   intersection: number
@@ -383,9 +383,9 @@ interface TemplateScore {
 /**
  * 计算「模板 vs 当前选择」的相似度明细。
  *
- * <p>抽成单一出口的原因：`matchTemplate`（取最佳）与 `matchTemplates`（取候选列表）
+ * <p>抽成单一出口的原因：`matchTemplate` 的「最佳模板」判定与「已套用/部分套用」结论
  * 必须用**同一套**评分口径，否则两个 UI 出口会对同一份选择给出矛盾结论
- * （一个说「已套用财务」、另一个不给财务候选）。</p>
+ * （一个说「已套用财务」、另一个不给财务）。</p>
  */
 function scoreTemplate(
   template: PermissionTemplate,
@@ -512,37 +512,6 @@ export function matchTemplate(
     missing: best.missing,
     extra: best.extra,
   }
-}
-
-/**
- * 返回相似度达标的全部模板，供 UI 做「你可能想用…」的候选列表。
- *
- * <p>与 {@link matchTemplate} 共用 {@link scoreTemplate} 的评分口径，因此两者
- * 对同一份选择给出的模板集合不会矛盾。</p>
- */
-export function matchTemplates(
-  currentSelected: readonly PermissionCode[],
-): TemplateMatch[] {
-  const current = new Set<PermissionCode>(currentSelected)
-  if (current.size === 0) {
-    return []
-  }
-
-  return PERMISSION_TEMPLATES.map((template) =>
-    scoreTemplate(template, current, currentSelected),
-  )
-    .filter((score) => score.similarity >= PARTIAL_MATCH_MIN_SIMILARITY)
-    .sort((left, right) => right.similarity - left.similarity)
-    .map((score) => ({
-      kind:
-        score.missing.length === 0 && score.extra.length === 0
-          ? ('exact' as const)
-          : ('partial' as const),
-      template: score.template,
-      similarity: score.similarity,
-      missing: score.missing,
-      extra: score.extra,
-    }))
 }
 
 /** 权限码是否按 {@link compareCodes} 的字典序升序排列（{@link matchTemplate} 依赖此不变量）。 */

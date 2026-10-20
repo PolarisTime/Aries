@@ -33,11 +33,3 @@ export const useNetPriceMatchStore = create<NetPriceMatchStoreState>((set) => ({
     set({ documentKey, entries, checkedAt: Date.now() }),
   clear: () => set({ documentKey: '', entries: {}, checkedAt: null }),
 }))
-
-/** 只读某张单据的核查快照(单据不匹配时返回空结果, 避免串单)。 */
-export function readNetPriceMatchEntries(
-  documentKey: string,
-): Record<string, NetPriceMatchEntry> {
-  const state = useNetPriceMatchStore.getState()
-  return state.documentKey === documentKey ? state.entries : {}
-}
