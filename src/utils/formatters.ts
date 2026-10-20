@@ -1,5 +1,8 @@
 import dayjs, { type Dayjs } from 'dayjs'
-import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
+import {
+  DISPLAY_AMOUNT_PRECISION,
+  DISPLAY_WEIGHT_PRECISION,
+} from '@/constants/precision'
 
 export const DISPLAY_DATE_FORMAT = 'YYYY年MM月DD日'
 export const DISPLAY_DATE_TIME_FORMAT = 'YYYY年MM月DD日 HH:mm:ss'
@@ -36,8 +39,8 @@ export function formatInteger(value: number): string {
 export function formatAmount(value: number): string {
   return value.toLocaleString('zh-CN', {
     useGrouping: false,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: DISPLAY_AMOUNT_PRECISION,
+    maximumFractionDigits: DISPLAY_AMOUNT_PRECISION,
   })
 }
 

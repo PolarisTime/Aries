@@ -8,7 +8,7 @@ import {
   theme,
 } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { formatDate } from '@/utils/formatters'
+import { formatDate, formatWeight } from '@/utils/formatters'
 import {
   fmtMoney,
   type StatementItem,
@@ -96,7 +96,9 @@ export function ReceiptDetailDrawer({
                 title: t('receiptReconcile.netWeightTon'),
                 dataIndex: 'netWeight',
                 align: 'right',
-                render: (v: number) => v.toFixed(2),
+                /* 重量全站统一 3 位小数（DISPLAY_WEIGHT_PRECISION）；原先这里写死 2 位，
+                   与同一行的 unitPrice/subtotal 已经走 fmtMoney 的口径不一致。 */
+                render: (v: number) => formatWeight(v),
               },
               {
                 title: t('receiptReconcile.unitPrice'),
