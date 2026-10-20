@@ -1811,16 +1811,12 @@ export const zhCN = {
         netPriceMatchUncheckedDetail: '尚未核查，点「重新核查网价」',
         netPriceMatchRecheck: '重新核查网价',
         netPriceMenu: '取价',
-        netPriceMatchJump: '定位到该行',
-        netPriceMatchProblemsTitle: '网价匹配明细',
-        netPriceMatchProblemsButton: '网价匹配明细（{{count}} 行待处理）',
         /**
          * 零待处理行的入口文案: 不带计数。
          *
          * <p>「0 行待处理」既不是信息(零值), 又把强调色指向"没事"; 与左侧「N 行未核查」
          * 并排时两个数字容易被读成自相矛盾。此时按钮只承担"打开清单"的导航语义。</p>
          */
-        netPriceMatchProblemsButtonEmpty: '网价匹配明细',
         netPriceMatchEmpty: '本单暂无明细行',
         netPriceMatchSummaryUnchecked: '网价匹配：{{total}} 行未核查',
         netPriceMatchAllMatched: '本单 {{total}} 行单价均与网价一致',

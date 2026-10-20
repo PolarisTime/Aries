@@ -42,6 +42,12 @@ const STATE_META: Record<
  *
  * <p>只订阅 {@link useNetPriceMatchStore} 里本行的结果, 因此核查/重查后行内标识会自行刷新,
  * 而**不需要**把状态写进明细行(避免把单据标脏、避免污染保存载荷)。</p>
+ *
+ * <p><b>差额为什么要 sr-only 文本</b>: 差额原本只在 {@code Tooltip.title} 里, 而 {@code Tag}
+ * 不可聚焦 —— 键盘用户既 hover 不到、也 focus 不到, 差额等于**鼠标专属**信息。
+ * 此前靠「网价匹配明细」弹层兜底(弹层里差额是真正文本), 但那个弹层列的是全表清单,
+ * 与这一列完全重复, 已移除。因此把差额同时放进标识内的 sr-only 文本:
+ * 视觉不变, 读屏与键盘用户能听到/读到「差在哪」。</p>
  */
 export function NetPriceMatchChip({ itemId }: { itemId: string }) {
   const { t } = useTranslation()
@@ -54,6 +60,7 @@ export function NetPriceMatchChip({ itemId }: { itemId: string }) {
     <Tooltip title={detail}>
       <Tag color={meta.color} icon={meta.icon} style={{ marginInlineEnd: 0 }}>
         {label}
+        <span className="aries-sr-only">{detail}</span>
       </Tag>
     </Tooltip>
   )

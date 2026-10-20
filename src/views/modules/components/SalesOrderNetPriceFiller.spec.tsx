@@ -322,16 +322,6 @@ describe('SalesOrderNetPriceFiller', () => {
     )
   }
 
-  /** 收起「取价」下拉（再次点击触发器）。 */
-  const closePriceMenu = async () => {
-    await act(async () => {
-      buttonByText('取价')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
-
   /** 点「取价」下拉里的某一项并等异步动作落地。 */
   const clickPriceMenuItem = async (text: string) => {
     const items = await openPriceMenu()
@@ -1198,41 +1188,6 @@ describe('SalesOrderNetPriceFiller', () => {
     await clickRecheck()
     expect(container.textContent).toContain('本单 2 行，1 行单价与网价不一致')
     expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MISMATCH')
-    // 问题行清单: 数量与可访问入口
-    // 待处理入口已收进「取价」下拉：展开菜单后断言文案与计数
-    const menuItems = await openPriceMenu()
-    expect(
-      menuItems.some((node) =>
-        node.textContent?.includes('网价匹配明细（1 行待处理）'),
-      ),
-    ).toBe(true)
-    await closePriceMenu()
-  })
-
-  it('问题行清单在受控弹层里列出不匹配行', async () => {
-    fetchProjectPriceRulesMock.mockResolvedValue([
-      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
-    ])
-    fetchMaterialPriceMatchesMock.mockResolvedValue([
-      match({ materialId: 'm1', price: 3400 }),
-    ])
-    const observed = createObserved()
-    await mountObserved(observed, [
-      row({ id: 'r1', materialId: 'm1', material: 'HRB400E', unitPrice: 3200 }),
-    ])
-    await clickRecheck()
-    expect(container.textContent).toContain('本单 1 行，1 行单价与网价不一致')
-
-    await clickPriceMenuItem('网价匹配明细')
-    const modal = Array.from(document.querySelectorAll('.ant-modal')).find(
-      (m) => m.textContent?.includes('网价匹配明细'),
-    )
-    expect(modal).toBeTruthy()
-    expect(modal?.textContent).toContain('HRB400E')
-    // 差额是文字而非只放在悬浮提示里(键盘/读屏可达): 应有 3430.00, 当前 3200.00
-    expect(modal?.textContent).toContain('3430.00')
-    expect(modal?.textContent).toContain('3200.00')
-    expect(modal?.textContent).toContain('定位到该行')
   })
 
   it('整单取价后自动重查一次: 行内标识与汇总立即反映新单价', async () => {
@@ -1309,96 +1264,5 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(status).toBeTruthy()
     expect(status?.querySelector('button')).toBeNull()
     expect(status?.textContent).toContain('网价匹配：1 行未核查')
-  })
-
-  /**
-   * 待处理入口是**条件出现**的，不是常驻按钮。
-   *
-   * <p>「网价匹配明细」原先无论有没有问题都显示，点开的清单又与表格里紧邻单价/金额的
-   * 「网价匹配」列完全重复（同一个 NetPriceMatchChip）。现在收进「取价」下拉，且只在
-   * 确实有 N 行待处理时作为菜单项出现，行数直接写在文案里。</p>
-   */
-  it('零待处理行时下拉里没有明细入口, 有待处理行时才出现并带计数', async () => {
-    fetchProjectPriceRulesMock.mockResolvedValue([
-      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
-    ])
-    fetchMaterialPriceMatchesMock.mockResolvedValue([
-      match({ materialId: 'm1', price: 3400 }),
-    ])
-    const observed = createObserved()
-    // 网价 3400 + 加价 30 = 3430: 单价填 3430 才是"一致"
-    await mountObserved(observed, [
-      row({ id: 'r1', materialId: 'm1', unitPrice: 3430 }),
-    ])
-    await clickRecheck()
-
-    // 单价与网价一致 ⇒ 0 行待处理 ⇒ 下拉里**根本不出现**这个入口
-    // （原先它是常驻按钮，点开只是一份与表格「网价匹配」列重复的全表清单）
-    const cleanItems = await openPriceMenu()
-    expect(
-      cleanItems.some((node) => node.textContent?.includes('网价匹配明细')),
-    ).toBe(false)
-    await closePriceMenu()
-
-    // 改成不一致后重查 ⇒ 1 行待处理, 入口才出现且带计数
-
-    // 改成不一致后重查 ⇒ 1 行待处理, 计数才出现
-    await act(async () => {
-      observed.replaceItems?.([
-        row({ id: 'r1', materialId: 'm1', unitPrice: 3200 }),
-      ])
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await clickRecheck()
-    // 待处理入口已收进「取价」下拉：展开菜单后断言文案与计数
-    const menuItems = await openPriceMenu()
-    expect(
-      menuItems.some((node) =>
-        node.textContent?.includes('网价匹配明细（1 行待处理）'),
-      ),
-    ).toBe(true)
-    await closePriceMenu()
-  })
-
-  /**
-   * 明细弹层的行序: 待处理行置顶。
-   *
-   * <p>按钮写「N 行待处理」而弹层按明细顺序列全部行时, 用户点进去看不到那 N 行在哪;
-   * 现在两边共用同一份 problemIds(唯一来源)。</p>
-   */
-  it('明细弹层把待处理行排在最前面', async () => {
-    fetchProjectPriceRulesMock.mockResolvedValue([
-      { id: '50', name: '含税价', mode: 'ADD', amount: 30, sortOrder: 0 },
-    ])
-    fetchMaterialPriceMatchesMock.mockResolvedValue([
-      match({ materialId: 'm1', price: 3400 }),
-    ])
-    const observed = createObserved()
-    // r2 在前且一致(3430 = 3400 + 30), r1 在后且不一致 ⇒ 弹层里 r1 必须被提到第一位
-    await mountObserved(observed, [
-      row({ id: 'r2', materialId: 'm1', material: 'HRB400', unitPrice: 3430 }),
-      row({ id: 'r1', materialId: 'm1', material: 'HRB400E', unitPrice: 3200 }),
-    ])
-    await clickRecheck()
-    // 待处理入口已收进「取价」下拉：展开菜单后断言文案与计数
-    const menuItems = await openPriceMenu()
-    expect(
-      menuItems.some((node) =>
-        node.textContent?.includes('网价匹配明细（1 行待处理）'),
-      ),
-    ).toBe(true)
-    await closePriceMenu()
-
-    await clickPriceMenuItem('网价匹配明细')
-    const modal = Array.from(document.querySelectorAll('.ant-modal')).find(
-      (m) => m.textContent?.includes('网价匹配明细'),
-    )
-    expect(modal).toBeTruthy()
-    const labels = Array.from(
-      modal?.querySelectorAll('.net-price-problems-label') ?? [],
-    ).map((node) => node.textContent ?? '')
-    expect(labels).toHaveLength(2)
-    // 待处理行(HRB400E, 单价 3200 与应有 3430 不一致)排第一
-    expect(labels[0]).toContain('HRB400E')
   })
 })

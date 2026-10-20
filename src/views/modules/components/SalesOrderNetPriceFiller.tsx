@@ -29,7 +29,6 @@ import type {
 } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { summarizeErrorMessage } from '@/utils/error-presentation'
-import { formatAmount } from '@/utils/formatters'
 import '@/styles/net-price-match.css'
 import {
   applyNetPricesToItems,
@@ -42,7 +41,6 @@ import {
   summarizeNetPriceMatch,
 } from '../net-price-fill'
 import { useNetPriceMatchStore } from '../net-price-match-store'
-import { NetPriceMatchChip } from './NetPriceMatchChip'
 import { PricingQuoteResolutionOverrides } from './PricingQuoteResolutionOverrides'
 import { PricingQuoteResolutionSummary } from './PricingQuoteResolutionSummary'
 import { usePricingQuoteResolution } from './use-pricing-quote-resolution'
@@ -106,10 +104,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const [ruleId, setRuleId] = useState<string | undefined>()
   /** 网价核查：进行中 / 失败原因。 */
   const [checking, setChecking] = useState(false)
-  /** 明细状态弹层(受控): 键盘可达、有焦点陷阱与焦点归还。 */
-  const [problemsOpen, setProblemsOpen] = useState(false)
-  /** 待定位的行: 弹层关闭后(焦点归还完成)再滚动/聚焦, 否则会被 Modal 的焦点归还抢走。 */
-  const pendingJumpRef = useRef<string | null>(null)
   const [checkError, setCheckError] = useState<string | null>(null)
   /** 最近一次整单取价的结果摘要（成功 / 无网价 / 跳过）。 */
   const [applySummary, setApplySummary] = useState<{
@@ -211,62 +205,12 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     () => summarizeNetPriceMatch(items, entries),
     [items, entries],
   )
-  const itemById = useMemo(() => {
-    const map = new Map<string, ModuleLineItem>()
-    for (const item of items) map.set(String(item.id), item)
-    return map
-  }, [items])
-
-  /** 行可访问名：物料/品牌 + 规格，供定位提示与读屏。 */
-  const itemLabelOf = useCallback(
-    (itemId: string) => {
-      const item = itemById.get(itemId)
-      if (!item) return itemId
-      const parts = [item.material, item.brand, item.spec, item.length]
-        .map((value) => String(value ?? '').trim())
-        .filter(Boolean)
-      return parts.length > 0 ? parts.join(' ') : itemId
-    },
-    [itemById],
-  )
-
   const openDialog = () => {
     // 每次打开都从项目配置重新解析, 不沿用上一次打开时的临时覆盖。
     resetControls()
     setOpen(true)
   }
 
-  /** 按行 id 定位: 滚动到该行并把焦点交给行内第一个可聚焦控件(键盘可达)。 */
-  const jumpToItem = useCallback((itemId: string) => {
-    const row = document.querySelector<HTMLElement>(
-      `[data-row-key="${CSS.escape(itemId)}"]`,
-    )
-    if (!row) return
-    const reduceMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    // jsdom 未实现 scrollIntoView: 有则滚动, 没有也不影响定位(焦点仍会落到该行)。
-    row.scrollIntoView?.({
-      block: 'center',
-      behavior: reduceMotion ? 'auto' : 'smooth',
-    })
-    /*
-     * 优先把焦点交给该行的单价输入框(用户要改的就是它); 选择器里的 data 属性沿用
-     * 明细行数值列的既有约定(见 module-editor-item-column-builders.tsx 的
-     * NUMBER_COLUMN_DATA_ATTRIBUTE), 取不到时退回行内第一个可聚焦控件。
-     */
-    const unitPriceInput = row.querySelector<HTMLElement>(
-      'input[data-module-editor-number-column="unitPrice"]:not(:disabled)',
-    )
-    const focusable =
-      unitPriceInput ??
-      row.querySelector<HTMLElement>(
-        'input:not([type="hidden"]), select, textarea, button, [tabindex]:not([tabindex="-1"])',
-      )
-    ;(focusable ?? row).focus?.()
-  }, [])
-
-  /** 载入网价索引: 整单取价与匹配核查共用同一份查询与索引口径。 */
   const loadMatchIndex = useCallback(
     async (args: {
       quoteDate: string
@@ -483,10 +427,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     </Button>
   )
 
-  /** 问题行(不匹配 + 无网价, 按明细顺序去重): 汇总提示里给出数量, 逐条定位放在 portal 弹层里。 */
-  const problemIds = [
-    ...new Set([...summary.mismatchIds, ...(applySummary?.noPriceIds ?? [])]),
-  ]
   /*
    * 取价结果按"只报非零项"拆开: 原文案把"无网价 0 行 · 跳过 0 行"也写出来, 正常取价(全部成功)
    * 时尾部挂着一串 0, 用户要读完才知道没事 —— 零值不是信息, 不显示。
@@ -494,8 +434,9 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   /**
    * 「取价」下拉的菜单项。
    *
-   * <p>「重新核查网价」始终可用（保存中除外）；「网价匹配明细」只在**有问题行**时出现 ——
-   * 没有待处理行时它与表格的「网价匹配」列完全重复，点开也只是一份没有新信息的全表清单。</p>
+   * <p>原先是「重新核查网价」「网价匹配明细」两个平铺按钮。后者列的是全表清单，
+   * 与表格里紧邻单价/金额的「网价匹配」列完全重复（同一个 NetPriceMatchChip），
+   * 已整块移除；差额改由该列的标识以读屏可达文本提供。</p>
    */
   const priceMenuItems: MenuProps['items'] = [
     {
@@ -503,24 +444,10 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       label: t('modules.pages.salesOrder.netPriceMatchRecheck'),
       disabled: checking,
     },
-    ...(problemIds.length > 0
-      ? [
-          {
-            key: 'problems',
-            label: t('modules.pages.salesOrder.netPriceMatchProblemsButton', {
-              count: problemIds.length,
-            }),
-          },
-        ]
-      : []),
   ]
 
   const handlePriceMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'recheck') {
-      void runMatchCheck()
-      return
-    }
-    if (key === 'problems') setProblemsOpen(true)
+    if (key === 'recheck') void runMatchCheck()
   }
 
   const applyResultParts = applySummary
@@ -678,49 +605,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         </div>
       </div>
       <Modal
-        afterClose={() => {
-          const target = pendingJumpRef.current
-          pendingJumpRef.current = null
-          if (target) window.setTimeout(() => jumpToItem(target), 0)
-        }}
-        footer={null}
-        onCancel={() => setProblemsOpen(false)}
-        open={problemsOpen}
-        title={t('modules.pages.salesOrder.netPriceMatchProblemsTitle')}
-        width={480}
-        destroyOnHidden
-      >
-        <ul className="net-price-problems">
-          {problemRowsFirst(items, problemIds).map((item) => {
-            const itemId = String(item.id)
-            return (
-              <li key={itemId}>
-                {/* 每行的匹配状态: 图标 + 文字 + 差额, 不靠颜色区分(WCAG 1.4.1) */}
-                <NetPriceMatchChip itemId={itemId} />
-                <span className="net-price-problems-label">
-                  {itemLabelOf(itemId)}
-                </span>
-                {/* 差额写在这里而不是只放在悬浮提示里: 键盘与读屏用户同样要看到"差在哪" */}
-                <span className="net-price-problems-detail">
-                  {describeProblem(t, entries[itemId])}
-                </span>
-                <Button
-                  onClick={() => {
-                    // 先关弹层, 等 afterClose(antd 归还焦点之后)再定位
-                    pendingJumpRef.current = itemId
-                    setProblemsOpen(false)
-                  }}
-                  size="small"
-                  type="link"
-                >
-                  {t('modules.pages.salesOrder.netPriceMatchJump')}
-                </Button>
-              </li>
-            )
-          })}
-        </ul>
-      </Modal>
-      <Modal
         open={open}
         title={t('modules.pages.salesOrder.netPriceTitle')}
         width={640}
@@ -855,47 +739,6 @@ function describeSummary(
     total: summary.total,
     mismatch: summary.mismatch,
   })
-}
-
-/** 问题行说明: 不匹配给出"应有价 vs 当前价", 无网价给出该手工填写的提示。 */
-function describeProblem(
-  t: (key: string, options?: Record<string, unknown>) => string,
-  entry: NetPriceMatchEntry | undefined,
-): string {
-  if (!entry) return ''
-  if (entry.state === 'MISMATCH' && entry.expectedPrice !== undefined) {
-    return t('modules.pages.salesOrder.netPriceMatchMismatchDetail', {
-      expected: formatAmount(entry.expectedPrice),
-      current:
-        entry.currentPrice === undefined
-          ? t('modules.pages.salesOrder.netPriceMatchCurrentEmpty')
-          : formatAmount(entry.currentPrice),
-    })
-  }
-  if (entry.state === 'NO_PRICE') {
-    return t('modules.pages.salesOrder.netPriceMatchNoPriceDetail')
-  }
-  return ''
-}
-
-/**
- * 弹层行序: 待处理行(不匹配 / 无网价)置顶, 其余按明细顺序跟在后面。
- *
- * <p>唯一来源: 按钮计数(`problemIds`)与弹层排序都用这一份 id 集合, 不再各算一遍 ——
- * 之前按钮写"N 行待处理"、弹层却按明细顺序列全部行, 用户点进去看不到"N"行在哪。</p>
- */
-function problemRowsFirst(
-  items: readonly ModuleLineItem[],
-  problemIds: readonly string[],
-): ModuleLineItem[] {
-  const problemSet = new Set(problemIds)
-  const problems: ModuleLineItem[] = []
-  const others: ModuleLineItem[] = []
-  for (const item of items) {
-    if (problemSet.has(String(item.id))) problems.push(item)
-    else others.push(item)
-  }
-  return [...problems, ...others]
 }
 
 /** 二次确认：说清会改写多少行（其中多少行原本没有网价），取消即不改写。 */

@@ -1850,12 +1850,7 @@ export const enUS = {
           'Not checked yet — use "Re-check net prices"',
         netPriceMatchRecheck: 'Re-check net prices',
         netPriceMenu: 'Pricing',
-        netPriceMatchJump: 'Go to row',
-        netPriceMatchProblemsTitle: 'Net price match details',
-        netPriceMatchProblemsButton:
-          'Net price details ({{count}} need attention)',
         /** Zero-attention entry: no count (zero is not information). */
-        netPriceMatchProblemsButtonEmpty: 'Net price match details',
         netPriceMatchEmpty: 'This order has no line items',
         netPriceMatchSummaryUnchecked:
           'Net price match: {{total}} row(s) not checked',
