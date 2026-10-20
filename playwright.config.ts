@@ -59,6 +59,16 @@ const outputDir = resolveRunOutputDir()
 // worker 各自算出不同的 pid/时间戳目录。
 process.env[RESOLVED_OUTPUT_DIR_ENV] = path.resolve(configDir, outputDir)
 
+// `--last-failed` 读的是 `<outputDir>/.last-run.json`。outputDir 已按 run 派生（见上），
+// 默认位置每轮都变，于是 `--last-failed` 永远读不到上一轮结果、静默退化成「跑全量」。
+// 把 last run 文件固定到输出根目录，`pnpm test:e2e:last-failed` 才能在连续 run 之间生效；
+// 调用方仍可用 `--last-failed-file` 或同名环境变量覆盖。
+const lastRunFile = path.join(
+  path.dirname(path.resolve(configDir, outputDir)),
+  '.last-run.json',
+)
+process.env.PLAYWRIGHT_LAST_RUN_OUTPUT_FILE ??= lastRunFile
+
 export default defineConfig({
   testDir: './tests/e2e',
   outputDir,
