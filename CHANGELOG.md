@@ -1,3 +1,14 @@
+## [13.4.1](https://github.com/PolarisTime/Aries/compare/v13.4.0...v13.4.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **editor:** 单据表单行内字段数超 24 栅格导致第 5 个字段孤立换行 ([95d132c](https://github.com/PolarisTime/Aries/commit/95d132c13b02240e7250838ddcbf72639d2a34f7))
+* **format:** 金额小数位收敛到 DISPLAY_AMOUNT_PRECISION 单点控制 ([0ef7918](https://github.com/PolarisTime/Aries/commit/0ef79182cf0754163f66629f887c54d03bd5a01e))
+* **table:** 选中行固定列错位 64px —— position:relative 压掉了 sticky ([992a911](https://github.com/PolarisTime/Aries/commit/992a91116dc97bdecfa150b09198c1c3ea78ad29))
+* **table:** 选中行高亮改为「底色 + 左侧实心主色条」，去掉外发光与呼吸动画 ([a66c53a](https://github.com/PolarisTime/Aries/commit/a66c53aa8a52beec7ab30b0ad10e297054633d68)), closes [#1677ff](https://github.com/PolarisTime/Aries/issues/1677ff)
+* **ui:** 汇总口径分组显示、筛选提示并入工具栏、金额去掉千分位 ([3c3218d](https://github.com/PolarisTime/Aries/commit/3c3218dcfe15b5233a96e2c30f3df9965c1cdece))
+
 # [13.4.0](https://github.com/PolarisTime/Aries/compare/v13.3.1...v13.4.0) (2026-10-20)
 
 
