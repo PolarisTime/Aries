@@ -1,6 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { Layout } from 'antd'
-import { Activity, useEffect, useMemo, useRef } from 'react'
+import { Activity, Suspense, useEffect, useMemo, useRef } from 'react'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
@@ -13,6 +13,7 @@ import {
 } from '@/layouts/tabs/tab-location-sync'
 import { useTabRouteReconciliation } from '@/layouts/tabs/useTabRouteReconciliation'
 import { type LayoutTab, useLayoutTabsStore } from '@/stores/layoutTabsStore'
+import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 const { Content } = Layout
 
@@ -125,7 +126,22 @@ export function AppTabContainer() {
           const content = mounted ? (
             <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
               <EditorSessionScopeProvider tabId={tab.id}>
-                <TabPanelRouter key={`${tab.id}:${tab.reloadKey}`} tab={tab} />
+                {/*
+                 * 必须给面板兜一个 Suspense fallback：路由的 `component` 是
+                 * `lazy(viewLoaders[...])`，首次点开一个还没挂载过的标签时，页面 chunk 要
+                 * 现下载（dev 下实测 200~300ms），React 在 chunk 到位前渲染 null ——
+                 * 整个内容区**一片空白**，随后才出现页面内容。配合紧邻的「标签数已达上限」
+                 * 提示，观感就是"点一下标签页把整个 SPA 重载了"。
+                 *
+                 * fallback 复用路由 pending 用的同一个页面骨架，保证「空白 → 骨架 → 内容」
+                 * 收敛为「骨架 → 内容」：加载中始终有明确的版面占位，不再有无内容的空窗。
+                 */}
+                <Suspense fallback={<BusinessGridPageSkeleton />}>
+                  <TabPanelRouter
+                    key={`${tab.id}:${tab.reloadKey}`}
+                    tab={tab}
+                  />
+                </Suspense>
               </EditorSessionScopeProvider>
             </AppErrorBoundary>
           ) : null

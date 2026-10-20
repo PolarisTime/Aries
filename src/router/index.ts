@@ -199,25 +199,40 @@ export function buildModuleRoutes(parent: AnyRoute) {
       getParentRoute: () => parent,
       path,
       component: lazy(viewLoaders[def.view]),
+      /*
+       * 列表预取是**优化**，不能变成渲染的阻塞依赖。
+       *
+       * <p>此前这里 `await prefetchModuleList(...)`：路由解析要等一次列表接口（实测约
+       * 300ms），期间路由挂起，`defaultPendingComponent`（整页表格骨架）替换掉整个内容区。
+       * 首次点开一个还没挂载过的标签时，观感就是「先空白 → 整屏骨架 → 内容」，看起来像
+       * 整个 SPA 重载了一次（用户口述的「点新标签页会重载网页」）。</p>
+       *
+       * <p>但 loader 的返回值**全仓库无人消费**（无 `useLoaderData`），它只负责把 query 缓存
+       * 预热。改为 fire-and-forget 后：路由立即解析、页面组件立即渲染（自带的内容区骨架），
+       * 其 `useQuery` 与本预取共用同一个 queryKey，在飞的请求被复用，数据到达即渲染。</p>
+       *
+       * <p>`defaultPreload: 'intent'` 的悬停预取因此也真正变成"提前预热"——不再是在悬停时
+       * 同步等一次接口。</p>
+       */
       loader:
         isListPrefetchView(def.view) && def.moduleKey
-          ? async () => {
+          ? () => {
               const moduleKey = asString(def.moduleKey)
-              try {
-                const config =
-                  def.view === 'business-grid'
-                    ? await loadBusinessPageConfig(moduleKey)
-                    : undefined
-                // 预取键必须与组件真实初始查询键一致（含默认过滤），否则预取无效。
-                await prefetchModuleList(
-                  moduleKey,
-                  buildDefaultModuleFilters(config),
-                )
-                return config
-              } catch {
-                // 预取或配置加载失败不影响页面渲染，组件内 useQuery 会自行重试
-                return undefined
-              }
+              void (async () => {
+                try {
+                  const config =
+                    def.view === 'business-grid'
+                      ? await loadBusinessPageConfig(moduleKey)
+                      : undefined
+                  // 预取键必须与组件真实初始查询键一致（含默认过滤），否则预取无效。
+                  await prefetchModuleList(
+                    moduleKey,
+                    buildDefaultModuleFilters(config),
+                  )
+                } catch {
+                  // 预取或配置加载失败不影响页面渲染，组件内 useQuery 会自行重试
+                }
+              })()
             }
           : undefined,
     })
