@@ -446,7 +446,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       type: 'date',
       required: true,
-      row: 1,
+      /*
+       * row 2 而不是 1：row 1 已有订单编号/客户/项目/报单日期 4 个 span=6 字段，
+       * 再来一个就是 30 栅格 > 24，antd 会把第 5 个挤到下一行最左，看起来像排版坏了。
+       * 改成 4 + 3 后每行都落在整列边界上（由 module-field-layout 的行宽守卫测试锁定）。
+       */
+      row: 2,
     },
     {
       key: 'purchaseOrderNo',

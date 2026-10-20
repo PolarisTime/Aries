@@ -348,7 +348,12 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: getSettlementCompanyOptions,
       disabled: true,
-      row: 1,
+      /*
+       * row 2 而不是 1：row 1 已有客户/单号/来源订单/客户编码 4 个 span=6 字段，
+       * 再加一个就是 30 栅格 > 24，antd 会把第 5 个挤到下一行最左，看起来像排版坏了。
+       * 挪到 row 2 后正好 4 + 4 两整行。
+       */
+      row: 2,
     },
     {
       key: 'projectId',

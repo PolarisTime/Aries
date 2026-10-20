@@ -34,45 +34,60 @@ const MODULES = [
 
 describe('页面筛选器 ↔ 服务端参数白名单', () => {
   /**
+   * `loadBusinessPageConfig` 走动态 import 逐个加载页面配置，6 个模块实测量级 2–4 秒，
+   * 已经贴着 vitest 默认 5 秒上限；机器繁忙时会偶发超时失败（实测出现过一次），
+   * 与断言内容无关。这里显式放宽，避免把「机器慢」误报成「一致性被破坏」。
+   */
+  const LOAD_ALL_MODULES_TIMEOUT_MS = 20_000
+
+  /**
    * 反向守卫：确保上面列出的模块确实都有配置。
    * 没有这条，一旦模块 key 改名导致 `loadBusinessPageConfig` 返回 undefined，
    * 下面的断言会因为「没有筛选器」而空过（假绿）。
    */
-  it('列出的每个模块都能加载到页面配置', async () => {
-    for (const moduleKey of MODULES) {
-      const config = await loadBusinessPageConfig(moduleKey)
-      expect(config, `模块 ${moduleKey} 未加载到页面配置`).toBeDefined()
-      expect(
-        config?.filters?.length,
-        `模块 ${moduleKey} 没有任何筛选器`,
-      ).toBeGreaterThan(0)
-    }
-  })
+  it(
+    '列出的每个模块都能加载到页面配置',
+    async () => {
+      for (const moduleKey of MODULES) {
+        const config = await loadBusinessPageConfig(moduleKey)
+        expect(config, `模块 ${moduleKey} 未加载到页面配置`).toBeDefined()
+        expect(
+          config?.filters?.length,
+          `模块 ${moduleKey} 没有任何筛选器`,
+        ).toBeGreaterThan(0)
+      }
+    },
+    LOAD_ALL_MODULES_TIMEOUT_MS,
+  )
 
-  it('每个页面筛选器的 key 都必须出现在服务端参数白名单里', async () => {
-    const violations: string[] = []
+  it(
+    '每个页面筛选器的 key 都必须出现在服务端参数白名单里',
+    async () => {
+      const violations: string[] = []
 
-    for (const moduleKey of MODULES) {
-      const config = await loadBusinessPageConfig(moduleKey)
-      const endpoint = getModuleConfig(moduleKey)
-      const allowed = new Set<string>([
-        ...(endpoint.nativeFilterKeys ?? []),
-        // 日期区间筛选在配置里用单一 key（如 orderDate），实际发的是 start/end 两个参数
-        ...Object.keys(endpoint.dateRangeMapping ?? {}),
-      ])
+      for (const moduleKey of MODULES) {
+        const config = await loadBusinessPageConfig(moduleKey)
+        const endpoint = getModuleConfig(moduleKey)
+        const allowed = new Set<string>([
+          ...(endpoint.nativeFilterKeys ?? []),
+          // 日期区间筛选在配置里用单一 key（如 orderDate），实际发的是 start/end 两个参数
+          ...Object.keys(endpoint.dateRangeMapping ?? {}),
+        ])
 
-      for (const filter of config?.filters ?? []) {
-        if (!allowed.has(filter.key)) {
-          violations.push(
-            `${moduleKey}: 筛选器 "${filter.key}" 未登记在 nativeFilterKeys/dateRangeMapping 中` +
-              ` —— 该控件会渲染，但请求不会携带此参数（筛选静默失效）`,
-          )
+        for (const filter of config?.filters ?? []) {
+          if (!allowed.has(filter.key)) {
+            violations.push(
+              `${moduleKey}: 筛选器 "${filter.key}" 未登记在 nativeFilterKeys/dateRangeMapping 中` +
+                ` —— 该控件会渲染，但请求不会携带此参数（筛选静默失效）`,
+            )
+          }
         }
       }
-    }
 
-    expect(violations).toEqual([])
-  })
+      expect(violations).toEqual([])
+    },
+    LOAD_ALL_MODULES_TIMEOUT_MS,
+  )
 
   /**
    * 商品信息筛选专项：只覆盖**本次接入**的 4 个模块，断言「控件 + 白名单」两侧都在。
@@ -89,22 +104,28 @@ describe('页面筛选器 ↔ 服务端参数白名单', () => {
     'freight-bill',
   ] as const satisfies readonly ModuleKey[]
 
-  it('本次接入的 4 个单据列表页都已具备「商品信息」筛选（控件与白名单两侧）', async () => {
-    const missing: string[] = []
+  it(
+    '本次接入的 4 个单据列表页都已具备「商品信息」筛选（控件与白名单两侧）',
+    async () => {
+      const missing: string[] = []
 
-    for (const moduleKey of MODULES_WITH_PRODUCT_FILTER) {
-      const config = await loadBusinessPageConfig(moduleKey)
-      const hasFilter = (config?.filters ?? []).some(
-        (filter) => filter.key === 'productKeyword',
-      )
-      const hasContract = (
-        getModuleConfig(moduleKey).nativeFilterKeys ?? []
-      ).includes('productKeyword')
+      for (const moduleKey of MODULES_WITH_PRODUCT_FILTER) {
+        const config = await loadBusinessPageConfig(moduleKey)
+        const hasFilter = (config?.filters ?? []).some(
+          (filter) => filter.key === 'productKeyword',
+        )
+        const hasContract = (
+          getModuleConfig(moduleKey).nativeFilterKeys ?? []
+        ).includes('productKeyword')
 
-      if (!hasFilter) missing.push(`${moduleKey}: 缺少 productKeyword 筛选控件`)
-      if (!hasContract) missing.push(`${moduleKey}: 白名单缺少 productKeyword`)
-    }
+        if (!hasFilter)
+          missing.push(`${moduleKey}: 缺少 productKeyword 筛选控件`)
+        if (!hasContract)
+          missing.push(`${moduleKey}: 白名单缺少 productKeyword`)
+      }
 
-    expect(missing).toEqual([])
-  })
+      expect(missing).toEqual([])
+    },
+    LOAD_ALL_MODULES_TIMEOUT_MS,
+  )
 })

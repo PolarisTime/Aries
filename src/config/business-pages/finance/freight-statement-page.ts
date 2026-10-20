@@ -293,7 +293,11 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: getSettlementCompanyOptions,
       disabled: true,
-      row: 1,
+      /*
+       * row 1 原本挤了 7 个 span=6 字段（42 栅格 > 24），antd 会把第 5~7 个依次挤到
+       * 下一行最左，排版看起来是坏的。拆成 4（单据身份）+ 3（结算主体与期间）+ 3（汇总）。
+       */
+      row: 2,
     },
     {
       key: 'startDate',
@@ -301,7 +305,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'date',
       required: true,
       disabled: true,
-      row: 1,
+      row: 2,
     },
     {
       key: 'endDate',
@@ -309,7 +313,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'date',
       required: true,
       disabled: true,
-      row: 1,
+      row: 2,
     },
     {
       key: 'totalWeight',
@@ -320,7 +324,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       precision: INTERNAL_WEIGHT_PRECISION,
       defaultValue: 0,
       disabled: true,
-      row: 2,
+      row: 3,
     },
     {
       key: 'totalFreight',
@@ -331,7 +335,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       precision: 2,
       defaultValue: 0,
       disabled: true,
-      row: 2,
+      row: 3,
     },
     {
       key: 'status',
@@ -349,13 +353,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
           value: DOCUMENT_STATUS.AUDITED,
         },
       ],
-      row: 2,
+      row: 3,
     },
     {
       key: 'remark',
       label: i18next.t('modules.pages.freightStatement.remark'),
       type: 'textarea',
-      row: 3,
+      row: 4,
       fullRow: true,
     },
   ],

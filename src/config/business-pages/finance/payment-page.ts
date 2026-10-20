@@ -301,7 +301,11 @@ export const paymentsPageConfig: ModulePageConfig = {
       key: 'attachments',
       label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
-      row: 4,
+      /*
+       * fullRow 字段各占一行：与 remark 同处 row 4 时声明宽度是 24 + 24 = 48，
+       * 已超出 24 栅格，「一行」语义失效（antd 只能各自换行，行间距还会叠加）。
+       */
+      row: 5,
       fullRow: true,
     },
   ],
