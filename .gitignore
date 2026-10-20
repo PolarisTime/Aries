@@ -17,6 +17,8 @@ dist-ssr/
 temppic/
 .tmp-browser/
 .local-browser/
+# react-doctor 生成的基线快照目录（工具产物，不是源码）
+.rd-base/
 
 # Playwright E2E artifacts
 test-results/

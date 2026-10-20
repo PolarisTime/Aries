@@ -218,7 +218,7 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
       sheets: [active, locked],
       resolveBrands: () => BRANDS,
       patchSheet,
-      checkLockedByOther: async () => true,
+      checkLockedByOther: () => Promise.resolve(true),
     })
 
     clickButton('项目级同步')
@@ -237,7 +237,7 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
       patchSheet: vi.fn(),
     })
     for (const button of container.querySelectorAll('button')) {
-      expect((button as HTMLButtonElement).disabled).toBe(true)
+      expect(button.disabled).toBe(true)
     }
   })
 })

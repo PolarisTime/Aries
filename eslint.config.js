@@ -10,6 +10,13 @@ export default tseslint.config(
       'dist',
       'archive',
       'node_modules',
+      // 审查/调试期间产生的临时副本目录（已在 .gitignore 第 18 行忽略）。
+      // 里面的 .ts/.tsx 是为对比而拷贝的源码，不在根 tsconfig 的 project graph 中，
+      // 会被 parserOptions.projectService 判成 “not found by the project service”。
+      // 与 dist/archive 同类：非项目源码，不应参与 lint。
+      '.tmp-browser/**',
+      // react-doctor 的基线快照目录（工具产物）
+      '.rd-base/**',
       'src/utils/clodop.ts',
       'doctor.config.ts',
       // E2E 用例与 Playwright 配置不属于根 tsconfig.json 的 project graph
