@@ -20,17 +20,16 @@ const onCancel = vi.fn()
 beforeEach(() => {
   // antd Modal 在 jsdom 下会读 matchMedia（响应式断点），本文件单独渲染弹层需要补桩
   if (!window.matchMedia) {
-    window.matchMedia = (query: string) =>
-      ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      })
+    window.matchMedia = (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })
   }
   onSubmit.mockClear()
   onCancel.mockClear()
