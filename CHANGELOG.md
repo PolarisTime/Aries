@@ -1,3 +1,17 @@
+# [13.5.0](https://github.com/PolarisTime/Aries/compare/v13.4.1...v13.5.0) (2026-10-21)
+
+
+### Bug Fixes
+
+* **tabs:** 修三处标签机制缺陷（保护标记不清除 / 关闭请求被丢弃 / pathname 可重复） ([683d28c](https://github.com/PolarisTime/Aries/commit/683d28c111ffdd3c97879b5c91084d4443c3a7dc))
+* **tabs:** 消除切换标签时的空白窗口与整页骨架闪烁（"像 SPA 重载"） ([120e6dd](https://github.com/PolarisTime/Aries/commit/120e6dd870e0f22fe79fce62376fc35c6487afc4))
+
+
+### Features
+
+* **prefetch:** 菜单/标签悬停时预热页面 chunk 与首屏数据，减少点开即等骨架 ([3d7c842](https://github.com/PolarisTime/Aries/commit/3d7c842553639abbaf4822a61f386d903a62cf2d))
+* **price-compare:** 报单比价支持批次重命名 ([620b559](https://github.com/PolarisTime/Aries/commit/620b559a2a84764810c46fb99b40b2306112f1bb))
+
 ## [13.4.1](https://github.com/PolarisTime/Aries/compare/v13.4.0...v13.4.1) (2026-10-20)
 
 
