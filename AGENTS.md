@@ -109,7 +109,12 @@ Full-stack, architecture, and quality skills:
 
 ### 无障碍与文案
 
-- label 方向全站统一 `layout="vertical"`（antd：同一系统内必须保持一致），不要单独把某一页改成横向标签。
+- label 方向按**表单类型**统一，同一类型内不得各自发明：
+  - **主数据弹层**（`.master-form`，字段少、以阅读为主）：`layout="vertical"`，标签在控件上方。
+  - **单据编辑器**（`.editor-form-shell`，一张单据几十个字段的密集录入）：`layout="horizontal"`，标签与控件同行。
+    密集录入场景下纵向标签会让每个字段多占一行，一屏可见字段数近乎减半，反而增加滚动与漏填。
+  - 两者方向不同是**有意的**，不要为了"全站统一"把其中一侧改成另一侧；但同类之间必须一致。
+  - 横向布局的对齐由 `.editor-form-shell .ant-form-item-label` 统一提供（`min-width: var(--app-editor-label-width)` + 右对齐 + 省略号），**不要**再用全角空格给标签补白（`padLabel`）——那会占掉标签的可见宽度预算，在纵向布局下还会变成可见左缩进。
 - 命中区 ≥24×24（WCAG 2.5.8），沿用 `touch-targets.css` 的补丁，不要为某个页面关掉它。
 - 新增文案（区块标题、说明、按钮）必须同时补 `zh-CN` 与 `en-US`。
 

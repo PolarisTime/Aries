@@ -140,6 +140,10 @@ function multiSelectFieldElement({
 /**
  * 少量互斥选项用分段控制器：antd Segmented 的 `onChange` 直接给值（不是事件对象），
  * Form.Item 的默认取值桥接在「没有 target 时原样返回值」，因此无需额外 itemProps。
+ *
+ * <p>**不用 `block`**：`block` 会把选项拉伸到父容器整宽，2-3 个短选项（如「按吨位结算 /
+ * 固定运费」）落在一个 12 栅格的宽单元格里时，两个选项会被撑到各占半屏，文字散在两端，
+ * 视觉上不成组。这里保持 antd 默认的内容宽度，让两个选项紧贴成一个分段控件的整体。</p>
  */
 function segmentedFieldElement({
   fieldId,
@@ -149,7 +153,6 @@ function segmentedFieldElement({
   return (
     <Segmented
       id={fieldId}
-      block
       disabled={disabledValue}
       options={selectOptions.map((option) => ({
         label: option.label,

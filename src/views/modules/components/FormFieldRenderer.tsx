@@ -11,7 +11,6 @@ import type {
 } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
-import { padLabel } from '@/utils/label-utils'
 import { renderModuleFormFieldControl } from './FormFieldControls'
 import {
   buildAutoCompleteOptions,
@@ -29,7 +28,6 @@ interface Props {
   disabled?: boolean
   projectOptions?: readonly ProjectOption[]
   settlementAccountOptions?: readonly ModuleFormFieldOption[]
-  financeLayout?: boolean
 }
 
 const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
@@ -51,13 +49,18 @@ export function FormFieldRenderer({
   disabled,
   projectOptions = EMPTY_PROJECT_OPTIONS,
   settlementAccountOptions = [],
-  financeLayout = false,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
   const disabledValue = disabled ?? field.disabled
-  const displayLabel = financeLayout ? field.label : padLabel(field.label)
+  /*
+   * 标签直接用原文，不再做全角空格补齐（padLabel）。
+   * 横向布局下标签列的对齐由 CSS 的 `min-width: var(--app-editor-label-width)` +
+   * 右对齐 + 省略号统一提供；再用全角空格补齐只会占用标签的可见宽度预算，让长标签
+   * 更早被截断，在纵向布局下还会变成可见左缩进。
+   */
+  const displayLabel = field.label
   const placeholder =
     field.placeholder ||
     t('modules.formField.inputPlaceholder', { label: field.label })

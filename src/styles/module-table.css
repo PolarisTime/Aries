@@ -394,25 +394,10 @@
   border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
 }
 
-.editor-form-shell--finance .ant-form-item-row {
-  display: block;
-}
-
-.editor-form-shell--finance .ant-form-item-label {
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 0 0 var(--space-xxs);
-  overflow: visible;
-  text-align: left;
-}
-
-.editor-form-shell--finance .ant-form-item-label > label {
-  justify-content: flex-start;
-  min-height: 22px;
-  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
-}
-
+/*
+ * 财务版（收付款单）只保留自己的间距与分隔线节奏；label 方向与其它单据编辑器一致走
+ * 横向（由 `.editor-form-shell` 的 label 规则提供），这里不再单独把 row 压回纵向。
+ */
 .editor-form-shell--finance .ant-form-item {
   margin-bottom: var(--space-sm);
 }
@@ -913,57 +898,14 @@
 }
 
 /*
- * 单据编辑器表单：label 方向全站统一 vertical（批次 C / P2-26）。
+ * 单据编辑器表单：label 方向为 **horizontal**（标签与控件同一行）。
  *
- * <p>**本块是 vertical 方向的唯一来源**，覆盖上方 `.editor-form-shell` 为 horizontal
- * 写的遗留规则（`.ant-form-item-row { display:flex; flex-wrap:nowrap }` + label 固定
- * `height: var(--app-control-height)` 且右对齐）。那组规则是为「label 与控件并排、
- * label 列按 8.5em 对齐」写的，在 vertical 下会把 antd 的上下堆叠重新压回并排 ——
- * 实测表现为 `ant-form-vertical` 类在、但 `stacked=false / sideBySide=true`，
- * 即「配置改了、渲染没变」。所以 layout 与这层覆盖必须同时改，缺一不算修完。</p>
- *
- * <p>作用域只到 `--vertical`（仅非财务版单据编辑器挂这个类），主数据弹层的
- * `master-form` 与收付款单的 `--finance` 都不受影响。</p>
+ * <p>此处曾有一整块 `--vertical` 覆盖（批次 C / P2-26 把单据编辑器改成纵向）。该块已随
+ * 方向回退删除：横向对齐完全由上方 `.editor-form-shell` 的 label 规则提供
+ * （`min-width: var(--app-editor-label-width)` + 右对齐 + 文字省略），不需要第二套覆盖。
+ * 不要再在这里加回纵向规则 —— 一旦 layout 与覆盖不同步，就会出现「antd 类名对、
+ * 渲染却没变」的假修。</p>
  */
-.editor-form-shell--vertical .ant-form-item-row {
-  display: block;
-}
-
-.editor-form-shell--vertical .ant-form-item-label {
-  flex: none;
-  width: auto;
-  min-width: 0;
-  max-width: none;
-  height: auto;
-  padding: 0 0 var(--space-xxs);
-  margin: 0;
-  overflow: visible;
-  text-align: left;
-  white-space: normal;
-}
-
-.editor-form-shell--vertical .ant-form-item-label > label {
-  display: inline-flex;
-  align-items: center;
-  height: auto;
-  min-height: 22px;
-  overflow: visible;
-  color: var(--ant-color-text);
-  line-height: normal;
-  text-align: left;
-  text-overflow: clip;
-  white-space: normal;
-}
-
-/* 纵向节奏交给 Row 的 gutter（[16, 8]），字段自身不再叠加 margin。 */
-.editor-form-shell--vertical .ant-form-item {
-  margin-bottom: 0;
-}
-
-.editor-form-shell--vertical .ant-form-item-control {
-  flex: none;
-  min-width: 0;
-}
 
 /* ===== 筛选生效提示（「已筛选 N 项 · 清空筛选」）=====
  * 已从「筛选区下的独立一行」移到工具栏右侧状态区，与「已选择 N 项」并列：

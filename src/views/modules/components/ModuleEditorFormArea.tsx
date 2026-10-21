@@ -52,26 +52,23 @@ export function ModuleEditorFormArea({
     <Form
       form={form}
       /*
-       * label 方向全站统一 vertical（AGENTS.md《无障碍与文案》）。历史实现只有财务版
-       * 是 vertical，其余单据编辑器是 horizontal —— 同一系统里两种 label 方向，用户在
-       * 「主数据弹层」与「单据编辑器」之间切换时扫读路径反复重置（审查报告 P2-26）。
+       * label 方向全站统一 **horizontal**：标签与控件同一行。
        *
-       * 注意：只把这里改成 vertical 不够。`module-table.css` 里 `.editor-form-shell` 的
-       * 水平遗留规则（`.ant-form-item-row { display:flex; nowrap }` + label 固定宽高）
-       * 会把 vertical 压回并排；因此非财务版同时加 `editor-form-shell--vertical` 类，
-       * 由 CSS 末尾的同名作用域块覆盖（该块是 vertical 方向的唯一来源）。
+       * <p>演进记录：曾统一为 vertical（审查报告 P2-26），但单据编辑器是「一张单据几十个
+       * 字段」的密集录入场景，纵向标签让每个字段多占一行，一屏能看到的字段数掉了一半，
+       * 反而增加滚动与漏填。密集录入表格化的形态用横向标签更合适（对比主数据弹层字段少、
+       * 以阅读为主，仍可用纵向）。</p>
+       *
+       * <p>横向对齐由 `.editor-form-shell` 的 `.ant-form-item-label`（`min-width:
+       * var(--app-editor-label-width)` + 右对齐 + 省略号）统一提供，标签文案本身不再用
+       * 全角空格补齐 —— 那种补法在纵向布局下会变成可见左缩进。</p>
        */
-      layout="vertical"
+      layout="horizontal"
       colon={false}
       labelWrap={false}
-      /*
-       * `--vertical` 只挂在非财务版：财务版（收付款单）本来就有自己的一整套
-       * `.editor-form-shell--finance` 纵向规则，再挂一层会改掉它的既有节奏。
-       */
+      /* 财务版（收付款单）保留自己的间距/分隔线节奏，但 label 方向与其它单据一致。 */
       className={`editor-form-shell${
-        layoutVariant === 'finance'
-          ? ' editor-form-shell--finance'
-          : ' editor-form-shell--vertical'
+        layoutVariant === 'finance' ? ' editor-form-shell--finance' : ''
       }`}
       onValuesChange={onValuesChange}
     >

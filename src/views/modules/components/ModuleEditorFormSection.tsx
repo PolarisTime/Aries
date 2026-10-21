@@ -132,7 +132,6 @@ export function ModuleEditorFormSection({
                 moduleKey={moduleKey}
                 projectOptions={projectOptions}
                 settlementAccountOptions={settlementAccountOptions}
-                financeLayout={layoutVariant === 'finance'}
                 disabled={isEditorFieldDisabledForModule(
                   moduleKey,
                   field.key,

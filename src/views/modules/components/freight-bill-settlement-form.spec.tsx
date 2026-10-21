@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
 import { freightOperationsPageConfigs } from '@/config/business-pages/operations/freight-operations'
 import { buildFormControlId } from '@/utils/form-control-id'
-import { ModuleEditorFormSection } from '@/views/modules/components/ModuleEditorFormSection'
+import { ModuleEditorFormArea } from '@/views/modules/components/ModuleEditorFormArea'
 
 /**
  * 新建物流单「结算方式」联动的渲染级回归。
@@ -23,25 +23,32 @@ import { ModuleEditorFormSection } from '@/views/modules/components/ModuleEditor
 
 const config = freightOperationsPageConfigs['freight-bill']
 
+const baseProps = {
+  config,
+  moduleKey: 'freight-bill',
+  actions: {
+    canSave: true,
+    canAudit: false,
+    saving: false,
+    visible: false,
+    onCancel: () => {},
+    onSave: () => {},
+  },
+  editorState: { isEdit: false, lineItemsLocked: false },
+  lockedLineItemsNotice: '',
+}
+
+/**
+ * 走**真实的** `ModuleEditorFormArea`，而不是自己搭一个 Form：layout 由它持有，
+ * 自建 Form 会让「实测 vertical、代码里却是 horizontal」这类偏差永远测不出来
+ * （本文件此前正是自己写死 `layout: 'vertical'`）。
+ */
 function EditorForm({ form }: { form: FormInstance }) {
-  return createElement(
-    Form,
-    { form, layout: 'vertical' },
-    createElement(ModuleEditorFormSection, {
-      config,
-      moduleKey: 'freight-bill',
-      actions: {
-        canSave: true,
-        canAudit: false,
-        saving: false,
-        visible: false,
-        onCancel: () => {},
-        onSave: () => {},
-      },
-      editorState: { isEdit: false, lineItemsLocked: false },
-      lockedLineItemsNotice: '',
-    }),
-  )
+  return createElement(ModuleEditorFormArea, {
+    ...baseProps,
+    form,
+    onValuesChange: () => {},
+  })
 }
 
 describe('新建物流单结算方式联动', () => {
@@ -233,5 +240,41 @@ describe('新建物流单结算方式联动', () => {
       expect(values.fixedFreightAmount).toBe(1500)
     })
     expect(errorTexts()).toEqual([])
+  })
+
+  it('标签与控件在同一行(横向布局), 且标签不带全角空格补白', async () => {
+    await renderForm()
+    const shell = container.querySelector('.editor-form-shell')
+    expect(shell, '表单外壳应存在').not.toBeNull()
+    // 方向由 antd 的 layout 类 + label/control 是否同高同一水平线共同判定
+    expect(shell?.className).toContain('ant-form-horizontal')
+
+    const item = container.querySelector('.editor-form-shell .ant-form-item')
+    const label = item?.querySelector('.ant-form-item-label')
+    const control = item?.querySelector('.ant-form-item-control')
+    expect(label?.textContent).toBe('物流商')
+    // 全角空格补白（padLabel）会产生前导空格，横向布局下应已移除
+    expect(label?.textContent?.startsWith('\u3000')).toBe(false)
+
+    const labelRect = label?.getBoundingClientRect()
+    const controlRect = control?.getBoundingClientRect()
+    if (labelRect && controlRect) {
+      const labelCenter = labelRect.top + labelRect.height / 2
+      const controlCenter = controlRect.top + controlRect.height / 2
+      expect(Math.abs(labelCenter - controlCenter)).toBeLessThan(10)
+    }
+  })
+
+  it('结算方式是内容宽度的分段控件, 不被 block 拉满整格', async () => {
+    await renderForm()
+    const segmented = container.querySelector('.ant-segmented')
+    expect(segmented, '分段控件应存在').not.toBeNull()
+    // `block` 会给根节点加 ant-segmented-block 类，把两个短选项各撑到半个单元格
+    expect(segmented?.className).not.toContain('ant-segmented-block')
+    expect(
+      [...container.querySelectorAll('.ant-segmented-item')].map((node) =>
+        node.textContent?.trim(),
+      ),
+    ).toEqual(['按吨位结算', '固定运费'])
   })
 })
