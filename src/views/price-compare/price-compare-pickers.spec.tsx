@@ -74,6 +74,9 @@ describe('报单比价 项目/批次选择控件契约', () => {
       }),
     )
 
+  /** 最近一次「重命名批次」回调的参数，供用例断言。 */
+  let renameCalls: Array<{ id: string; name: string }> = []
+
   const renderBatchBar = (sheets: PriceSheet[], activeId: string) =>
     render(
       createElement(PriceCompareBatchBar, {
@@ -85,6 +88,9 @@ describe('报单比价 项目/批次选择控件契约', () => {
         onSelectSheet: () => {},
         onAddBatch: () => {},
         onDeleteBatch: () => {},
+        onRenameBatch: (id, name) => {
+          renameCalls = [...renameCalls, { id, name }]
+        },
       }),
     )
 
@@ -196,8 +202,37 @@ describe('报单比价 项目/批次选择控件契约', () => {
       trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const item = document.querySelector('.ant-dropdown-menu-item')
-    expect(item, '「更多」菜单应已展开').not.toBeNull()
-    expect(item?.getAttribute('aria-disabled')).toBe('true')
+    // 按文案定位删除项：菜单里现在还有「重命名批次」，按下标取会取错项
+    const deleteItem = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ).find((node) => node.textContent?.includes('删除当前批次'))
+    expect(deleteItem, '「更多」菜单应已展开且含删除项').not.toBeUndefined()
+    expect(deleteItem?.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('「更多」里的「重命名批次」带出当前批次的名称', () => {
+    renameCalls = []
+    renderBatchBar(projectGroups[0].sheets, 's1')
+
+    const trigger = container.querySelector(
+      '[aria-label="更多批次操作"]',
+    ) as HTMLElement
+    act(() => {
+      trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const renameItem = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ).find((node) => node.textContent?.includes('重命名批次'))
+    expect(renameItem, '菜单里应有「重命名批次」').not.toBeUndefined()
+    expect(renameItem?.getAttribute('aria-disabled')).not.toBe('true')
+
+    act(() => {
+      renameItem?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const current = projectGroups[0].sheets.find((sheet) => sheet.id === 's1')
+    expect(renameCalls).toEqual([{ id: 's1', name: current?.name }])
   })
 })

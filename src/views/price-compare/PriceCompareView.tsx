@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useAuthStore } from '@/stores/authStore'
-import { modal } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import { moveItem, reconcileSpotInputs } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
 import { PriceCompareSaveStatus } from './PriceCompareSaveStatus'
@@ -23,6 +23,7 @@ import {
   useSupplierSelectOptions,
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
+import { RenameBatchModal } from './RenameBatchModal'
 import { SheetPanel } from './SheetPanel'
 import type { PriceSheet } from './types'
 import { usePriceCompareReferenceSync } from './use-price-compare-reference-sync'
@@ -209,6 +210,23 @@ export function PriceCompareView() {
       : ''
   const today = dayjs().format('YYYY-MM-DD')
 
+  /**
+   * 正在重命名的批次（null = 弹层关闭）。存 id + 原名：
+   * id 用于定位，原名作弹层初始值，避免打开瞬间先渲染一个空输入框。
+   */
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(
+    null,
+  )
+
+  /* 重命名提交：只改 store 里的 name，落库交给既有自动保存（name 已包含在 header 载荷内，
+     保存流程按 headerSignature 差异触发），这里不额外发请求，避免与自动保存重复写入。 */
+  const submitRename = (name: string) => {
+    if (!renaming) return
+    patchSheet(renaming.id, { name })
+    message.success(t('priceCompare.picker.renameSuccess', { name }))
+    setRenaming(null)
+  }
+
   const confirmRemoveSheet = (id: string) =>
     modal.confirm({
       title: t('priceCompare.view.removeSheetConfirmTitle'),
@@ -287,8 +305,17 @@ export function PriceCompareView() {
             )
           }
           onDeleteBatch={confirmRemoveSheet}
+          onRenameBatch={(id, currentName) =>
+            setRenaming({ id, name: currentName })
+          }
         />
       </Flex>
+      <RenameBatchModal
+        open={renaming !== null}
+        currentName={renaming?.name ?? ''}
+        onCancel={() => setRenaming(null)}
+        onSubmit={submitRename}
+      />
 
       {active && (editLock || lockConflict) ? (
         <PriceCompareEditLockBanner

@@ -1,4 +1,9 @@
-import { DeleteOutlined, MoreOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  DeleteOutlined,
+  EditOutlined,
+  MoreOutlined,
+  PlusOutlined,
+} from '@ant-design/icons'
 import { Badge, Button, Dropdown, Flex, Select, Tabs } from 'antd'
 import { useLayoutEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -132,6 +137,7 @@ export function PriceCompareBatchBar({
   data,
   onAddBatch,
   onDeleteBatch,
+  onRenameBatch,
   onSelectSheet,
   sheets,
 }: {
@@ -141,12 +147,16 @@ export function PriceCompareBatchBar({
   data: PriceData
   onAddBatch: () => void
   onDeleteBatch: (id: string) => void
+  /** 打开「重命名批次」弹层（弹层与提交由父组件持有，这里只负责发起） */
+  onRenameBatch: (id: string, currentName: string) => void
   onSelectSheet: (id: string) => void
   sheets: PriceSheet[]
 }) {
   const { t } = useTranslation()
   const hostRef = useRef<HTMLDivElement>(null)
   const listLabel = t('priceCompare.picker.a11y.batchList')
+  /** 当前批次。重命名要带出"原名"作弹层初始值，找不到时菜单项禁用。 */
+  const activeSheet = sheets.find((sheet) => sheet.id === activeId)
   /**
    * 批次切换条。
    *
@@ -242,6 +252,13 @@ export function PriceCompareBatchBar({
         menu={{
           items: [
             {
+              key: 'rename',
+              icon: <EditOutlined />,
+              /* 文案带省略号: 点了会打开弹层，让用户先知道（AGENTS.md 上下文菜单契约） */
+              label: t('priceCompare.picker.renameCurrentBatch'),
+              disabled: !activeSheet,
+            },
+            {
               key: 'delete',
               icon: <DeleteOutlined />,
               label: t('priceCompare.picker.deleteCurrentBatch'),
@@ -250,6 +267,9 @@ export function PriceCompareBatchBar({
             },
           ],
           onClick: ({ key }) => {
+            if (key === 'rename' && activeSheet) {
+              onRenameBatch(activeId, activeSheet.name)
+            }
             if (key === 'delete' && canDelete) {
               onDeleteBatch(activeId)
             }
