@@ -18,6 +18,14 @@ const onSubmit = vi.fn()
 const onCancel = vi.fn()
 
 beforeEach(() => {
+  /*
+   * 整文件用假计时器。antd 弹层内部的 useDelayState 会在打开/关闭后挂一个延时器；
+   * 该计时器若在 jsdom 环境销毁之后才触发，就会抛 `ReferenceError: window is not defined`
+   * —— vitest 记为 uncaught exception，即使全部用例通过也会让 CI job 失败
+   * （本地曾因时序差异未复现，CI 稳定复现）。
+   * 用假计时器把计时器收进可控范围，teardown 时统一清空，结果与机器快慢无关。
+   */
+  vi.useFakeTimers()
   // antd Modal 在 jsdom 下会读 matchMedia（响应式断点），本文件单独渲染弹层需要补桩
   if (!window.matchMedia) {
     window.matchMedia = (query: string) => ({
@@ -45,6 +53,12 @@ afterEach(() => {
   act(() => root.unmount())
   container.remove()
   document.body.innerHTML = ''
+  // 卸载后再清一次：卸载过程可能补挂计时器，必须在环境销毁前收干净
+  act(() => {
+    vi.runOnlyPendingTimers()
+  })
+  vi.clearAllTimers()
+  vi.useRealTimers()
 })
 
 const renderModal = (open: boolean, currentName: string) => {
