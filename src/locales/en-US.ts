@@ -2788,15 +2788,25 @@ export const enUS = {
   },
   priceCompare: {
     spotSync: {
-      scopeSheet: 'Sync in batch',
-      scopeSheetTooltip:
-        'Use this batch as the source and sync spot prices and suppliers of the same product and brand to other rows in this batch',
-      scopeProject: 'Sync in project',
-      scopeProjectTooltip:
-        'Use this batch as the source and sync to all batches of this project',
-      scopeAll: 'Sync all',
-      scopeAllTooltip:
-        'Use this batch as the source and sync to every batch, including other projects',
+      action: 'Sync spot prices',
+      actionA11y: 'Sync spot prices, choose scope',
+      sourceHint: 'Source of truth: current batch "{{sheet}}"',
+      scope: {
+        sheet: {
+          title: 'Other rows in this batch only',
+          desc: 'Fill same-product rows in this batch; other batches untouched',
+        },
+        project: {
+          title: 'All batches in this project',
+          desc: 'Write to every batch of this project (including this one); other projects untouched',
+        },
+        all: {
+          title: 'All batches in all projects',
+          desc: 'Cross-project: every batch of every project will be overwritten',
+        },
+      },
+      applied:
+        'Applied to {{batches}} batch(es), {{cells}} price cell(s); saving now',
       confirmTitle: 'Confirm spot price sync',
       confirmSummary:
         'Using "{{sheet}}" as the source, {{batches}} batch(es) and {{cells}} price cell(s) will be updated: {{fill}} filled in and {{overwrite}} overwriting existing values.',
@@ -2806,7 +2816,6 @@ export const enUS = {
         '{{count}} batch(es) skipped (being edited by someone else): {{names}}',
       confirmOk: 'Overwrite and sync',
       nothingToSync: 'Nothing to sync',
-      done: 'Synced {{batches}} batch(es), {{cells}} cell(s) in total',
     },
     view: {
       title: 'Order Price Comparison',

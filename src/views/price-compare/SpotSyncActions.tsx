@@ -1,5 +1,5 @@
-import { SyncOutlined } from '@ant-design/icons'
-import { Button, Space, Tooltip } from 'antd'
+import { DownOutlined, SyncOutlined } from '@ant-design/icons'
+import { Button, Dropdown, type MenuProps } from 'antd'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchQuoteSheetEditLock } from '@/api/market/quote-edit-locks'
@@ -56,26 +56,47 @@ export function SpotSyncActions({
   const { t } = useTranslation()
   const [busy, setBusy] = useState<SpotSyncScope | null>(null)
 
-  const scopes = useMemo(
-    () => [
+  /**
+   * 三个作用域合并成一个下拉后的菜单项。
+   *
+   * <p>合并前是三个并排按钮：「当前批次内同步 / 项目级同步 / 全部同步」。
+   * 三个问题：① 都没说**同步什么**（现货价）；② 「项目级同步」是形容词，不像动作对象；
+   * ③ 「全部同步」与「项目级同步」的差别只能靠 tooltip 才知道「全部」指全部项目。
+   * 现在统一为「同步现货价 → 选范围」，每项直接写清**覆盖到哪一层**。</p>
+   *
+   * <p>作用域是包含关系，且都以当前批次为准向外推（三档都把当前批次包含在内）。</p>
+   */
+  const menuItems = useMemo<MenuProps['items']>(() => {
+    const scopeKeys: SpotSyncScope[] = ['sheet', 'project', 'all']
+    return [
+      // 不可点的一行，把「以谁为准」说在前面，避免用户以为是把别处的值同步进来
       {
-        key: 'sheet' as const,
-        label: t('priceCompare.spotSync.scopeSheet'),
-        tooltip: t('priceCompare.spotSync.scopeSheetTooltip'),
+        key: 'source-hint',
+        disabled: true,
+        label: (
+          <span className="spot-sync-menu__hint">
+            {t('priceCompare.spotSync.sourceHint', {
+              sheet: activeSheet?.name ?? '—',
+            })}
+          </span>
+        ),
       },
-      {
-        key: 'project' as const,
-        label: t('priceCompare.spotSync.scopeProject'),
-        tooltip: t('priceCompare.spotSync.scopeProjectTooltip'),
-      },
-      {
-        key: 'all' as const,
-        label: t('priceCompare.spotSync.scopeAll'),
-        tooltip: t('priceCompare.spotSync.scopeAllTooltip'),
-      },
-    ],
-    [t],
-  )
+      { type: 'divider' },
+      ...scopeKeys.map((key) => ({
+        key,
+        label: (
+          <div className="spot-sync-menu__item">
+            <span className="spot-sync-menu__title">
+              {t(`priceCompare.spotSync.scope.${key}.title`)}
+            </span>
+            <span className="spot-sync-menu__desc">
+              {t(`priceCompare.spotSync.scope.${key}.desc`)}
+            </span>
+          </div>
+        ),
+      })),
+    ]
+  }, [activeSheet?.name, t])
 
   const run = useCallback(
     async (scope: SpotSyncScope) => {
@@ -135,8 +156,13 @@ export function SpotSyncActions({
                 inputs: applySpotSyncChanges(sheet.inputs, target.changes),
               })
             }
+            /*
+             * 只承诺"已应用"，不承诺"已保存"：真正落库走 store 的自动保存，
+             * 目标批次里可能因数据本身不合法（实测：历史行吨位超过采购订单订货量）
+             * 被后端 422 拒绝。说成"已同步"会让用户以为全部成功。
+             */
             message.success(
-              t('priceCompare.spotSync.done', {
+              t('priceCompare.spotSync.applied', {
                 batches: plan.targets.length,
                 cells: plan.totalChanges,
               }),
@@ -159,20 +185,30 @@ export function SpotSyncActions({
   )
 
   return (
-    <Space size={4} wrap className="price-compare-spot-sync">
-      {scopes.map((scope) => (
-        <Tooltip key={scope.key} title={scope.tooltip}>
-          <Button
-            icon={<SyncOutlined />}
-            loading={busy === scope.key}
-            disabled={Boolean(busy) || !activeSheet}
-            onClick={() => void run(scope.key)}
-          >
-            {scope.label}
-          </Button>
-        </Tooltip>
-      ))}
-    </Space>
+    <span className="price-compare-spot-sync">
+      <Dropdown
+        menu={{
+          items: menuItems,
+          onClick: ({ key }) => {
+            if (key === 'sheet' || key === 'project' || key === 'all') {
+              void run(key)
+            }
+          },
+        }}
+        trigger={['click']}
+        disabled={Boolean(busy) || !activeSheet}
+      >
+        <Button
+          aria-label={t('priceCompare.spotSync.actionA11y')}
+          icon={<SyncOutlined />}
+          loading={Boolean(busy)}
+          disabled={Boolean(busy) || !activeSheet}
+        >
+          {t('priceCompare.spotSync.action')}
+          <DownOutlined className="spot-sync-caret" />
+        </Button>
+      </Dropdown>
+    </span>
   )
 }
 

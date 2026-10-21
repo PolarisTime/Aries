@@ -59,6 +59,15 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
   beforeEach(() => {
     mounted = true
     vi.mocked(modal.confirm).mockReset()
+    // jsdom 没有 ResizeObserver，antd Dropdown 的弹出层测量会用到它
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    )
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -75,13 +84,22 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
     })
   }
 
-  function clickButton(label: string) {
-    const button = [...container.querySelectorAll('button')].find((item) =>
-      (item.textContent ?? '').includes(label),
-    )
-    expect(button, `按钮「${label}」应存在`).toBeTruthy()
+  /**
+   * 三个作用域已合并成一个下拉按钮，因此"执行某范围"= 先开菜单、再点对应项。
+   * 菜单项按文案定位（下拉里还有一行不可点的"以当前批次为准"说明）。
+   */
+  function clickScrope(title: string) {
+    const trigger = container.querySelector('button')
+    expect(trigger, '同步现货价按钮应存在').toBeTruthy()
     act(() => {
-      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const item = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ).find((node) => node.textContent?.includes(title))
+    expect(item, `菜单项「${title}」应存在`).toBeTruthy()
+    act(() => {
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
   }
 
@@ -97,19 +115,32 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
     }
   }
 
-  it('渲染三个作用域按钮', () => {
+  it('三个作用域合并为一个下拉按钮, 菜单里三档范围各自写清覆盖层级', () => {
     render({
       activeSheet: sheet({ id: 's1', name: '批次 1', rows: [row('a')] }),
       sheets: [],
       resolveBrands: () => BRANDS,
       patchSheet: vi.fn(),
     })
-    const labels = [...container.querySelectorAll('button')].map(
-      (item) => item.textContent ?? '',
-    )
-    expect(labels.join('|')).toContain('当前批次内同步')
-    expect(labels.join('|')).toContain('项目级同步')
-    expect(labels.join('|')).toContain('全部同步')
+    // 页面上只剩一个按钮（合并前是三个）
+    const buttons = [...container.querySelectorAll('button')]
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0].textContent).toContain('同步现货价')
+    expect(buttons[0].getAttribute('aria-label')).toContain('选择同步范围')
+
+    act(() => {
+      buttons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const items = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-dropdown-menu-item'),
+    ).map((node) => node.textContent ?? '')
+    const joined = items.join('|')
+    // 每档都要有"覆盖到哪一层"的明确说法，而不是旧版的"项目级/全部"
+    expect(joined).toContain('仅本批次内的其它行')
+    expect(joined).toContain('本项目下的所有批次')
+    expect(joined).toContain('全部项目的所有批次')
+    // 说明行把"以谁为准"讲在前面
+    expect(document.body.textContent).toContain('以当前批次')
   })
 
   it('没有可同步内容时只提示, 不弹确认框', async () => {
@@ -119,7 +150,7 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
       resolveBrands: () => BRANDS,
       patchSheet: vi.fn(),
     })
-    clickButton('项目级同步')
+    clickScrope('本项目下的所有批次')
     await act(async () => {})
     expect(modal.confirm).not.toHaveBeenCalled()
   })
@@ -153,7 +184,7 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
       patchSheet,
     })
 
-    clickButton('项目级同步')
+    clickScrope('本项目下的所有批次')
     await act(async () => {})
 
     const options = confirmOptions()
@@ -221,7 +252,7 @@ describe('SpotSyncActions —— 同步作用域按钮与影响面确认', () =>
       checkLockedByOther: () => Promise.resolve(true),
     })
 
-    clickButton('项目级同步')
+    clickScrope('本项目下的所有批次')
     await act(async () => {})
 
     // 唯一的目标被跳过 → 没有可同步内容

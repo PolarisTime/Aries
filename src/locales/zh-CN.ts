@@ -2724,13 +2724,30 @@ export const zhCN = {
   },
   priceCompare: {
     spotSync: {
-      scopeSheet: '当前批次内同步',
-      scopeSheetTooltip:
-        '以当前批次为准，把同商品同品牌的现货价与供应商同步到本批次内的其它行',
-      scopeProject: '项目级同步',
-      scopeProjectTooltip: '以当前批次为准，同步到本项目下的所有批次',
-      scopeAll: '全部同步',
-      scopeAllTooltip: '以当前批次为准，同步到全部批次（含其它项目）',
+      /*
+       * 三个作用域合并进一个下拉后的文案。
+       * 旧文案「当前批次内同步 / 项目级同步 / 全部同步」的问题：都没说同步什么、
+       * 「项目级」是形容词不是动作对象、「全部」到底是全部批次还是全部项目只能看 tooltip。
+       * 现在由「动作名 + 范围标题 + 一句话说明」三段共同表达，范围标题直接写覆盖层级。
+       */
+      action: '同步现货价',
+      actionA11y: '同步现货价，选择同步范围',
+      sourceHint: '以当前批次「{{sheet}}」为准',
+      scope: {
+        sheet: {
+          title: '仅本批次内的其它行',
+          desc: '同商品同品牌的行补齐为当前行的价格，不碰别的批次',
+        },
+        project: {
+          title: '本项目下的所有批次',
+          desc: '写到本项目全部批次（含当前批次），其它项目的批次不动',
+        },
+        all: {
+          title: '全部项目的所有批次',
+          desc: '跨项目写入：所有项目的全部批次都会被覆盖',
+        },
+      },
+      applied: '已应用到 {{batches}} 个批次、共 {{cells}} 处价格，正在保存',
       confirmTitle: '确认同步现货价',
       confirmSummary:
         '将以「{{sheet}}」为准，更新 {{batches}} 个批次、共 {{cells}} 处价格：其中 {{fill}} 处原本为空，{{overwrite}} 处会覆盖已有值。',
@@ -2739,7 +2756,6 @@ export const zhCN = {
       skipped: '已跳过 {{count}} 个批次（他人正在编辑）：{{names}}',
       confirmOk: '覆盖并同步',
       nothingToSync: '没有需要同步的内容',
-      done: '已同步 {{batches}} 个批次、共 {{cells}} 处',
     },
     view: {
       title: '报单比价',

@@ -1,7 +1,43 @@
-/* 「同步现货价」三个作用域按钮与影响面确认框 */
+/* 「同步现货价」范围下拉与影响面确认框 */
 
 .price-compare-spot-sync {
   display: inline-flex;
+}
+
+/* 下拉按钮尾部箭头：与文字留一点呼吸，避免贴住文案 */
+.spot-sync-caret {
+  font-size: 10px;
+  margin-inline-start: var(--space-xxs);
+  opacity: 0.65;
+}
+
+/*
+ * 下拉菜单项：主行写"覆盖到哪一层"，次行补一句后果说明。
+ * 两行结构是为了让三档范围无需 tooltip 就能区分（旧版三按钮的歧义正来自只有一句标签）。
+ */
+.spot-sync-menu__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-block: var(--space-xxs);
+  max-width: 320px;
+}
+
+.spot-sync-menu__title {
+  font-weight: 600;
+}
+
+.spot-sync-menu__desc {
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 45%));
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+/* "以当前批次为准"的说明行：不可点，弱化但不失可读 */
+.spot-sync-menu__hint {
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 45%));
+  font-size: 12px;
 }
 
 /*
