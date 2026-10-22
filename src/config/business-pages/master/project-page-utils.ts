@@ -8,8 +8,6 @@ export function projectCustomerFieldOptions() {
     value: option.id,
     customerCode: option.customerCode,
     customerName: option.customerName,
-    settlementCompanyId: option.defaultSettlementCompanyId,
-    settlementCompanyName: option.defaultSettlementCompanyName,
   }))
 }
 

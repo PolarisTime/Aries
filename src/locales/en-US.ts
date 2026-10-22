@@ -1637,7 +1637,6 @@ export const enUS = {
         colContactPhone: 'Phone',
         colCity: 'City',
         colSettlementMode: 'Settlement',
-        colDefaultSettlementCompanyId: 'Default Settlement Entity ID',
         manageProjects: 'Manage Projects',
         settlementCash: 'Cash',
         settlementMonthly: 'Monthly',

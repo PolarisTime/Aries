@@ -79,8 +79,6 @@ const customerOptions = [
     label: '客户甲',
     customerCode: 'KH001',
     customerName: '客户甲',
-    defaultSettlementCompanyId: '2001',
-    defaultSettlementCompanyName: '结算主体甲',
   },
 ]
 
@@ -207,9 +205,13 @@ describe('ProjectPage 主数据拆分试点', () => {
   afterEach(async () => {
     act(() => root.unmount())
     container.remove()
-    document.querySelectorAll('.ant-dropdown').forEach((node) => {
-      node.remove()
-    })
+    // antd 关闭下拉后仍保留隐藏 DOM：断言/点击都按全局第一个选项取，
+    // 跨用例残留会让后续用例误点到上一个用例的选项，这里一并清掉。
+    document
+      .querySelectorAll('.ant-dropdown, .ant-select-dropdown')
+      .forEach((node) => {
+        node.remove()
+      })
     vi.unstubAllGlobals()
     vi.clearAllMocks()
     await queryClient.cancelQueries()
@@ -507,6 +509,29 @@ describe('ProjectPage 主数据拆分试点', () => {
     expect(container.textContent).toContain('详情地址')
   })
 
+  it('新建项目：选择客户不再带出默认结算主体（结算主体只由项目资料决定）', async () => {
+    renderPage()
+    await flushAsync()
+
+    await clickButton('新增')
+    await flushAsync()
+
+    // 客户选项本身已不再携带结算主体字段（后端已下线该快照）
+    expect(customerOptions[0]).not.toHaveProperty('defaultSettlementCompanyId')
+    expect(customerOptions[0]).not.toHaveProperty(
+      'defaultSettlementCompanyName',
+    )
+
+    await chooseOverlaySelectOption('customerId')
+
+    const settlementSelect = overlaySelect('settlementCompanyId')
+    const selectedText =
+      settlementSelect
+        .querySelector('.ant-select-selection-item')
+        ?.textContent?.trim() ?? ''
+    expect(selectedText).toBe('')
+  })
+
   it('新建项目：填写表单保存时带上客户编码与结算主体快照', async () => {
     vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9003' })
     renderPage()
@@ -522,7 +547,8 @@ describe('ProjectPage 主数据拆分试点', () => {
     ) as HTMLInputElement
     setTextValue(nameInput, '项目三')
     await chooseOverlaySelectOption('customerId')
-    await chooseOverlaySelectOption('settlementCompanyId')
+    // 选客户不再带出默认结算主体：必须显式选项目自己的结算主体
+    await chooseOverlaySelectOptionByText('settlementCompanyId', '结算主体甲')
 
     await clickButtonInOverlay('保存')
 
@@ -686,7 +712,8 @@ describe('ProjectPage 主数据拆分试点', () => {
     ) as HTMLInputElement
     setTextValue(nameInput, '项目三')
     await chooseOverlaySelectOption('customerId')
-    await chooseOverlaySelectOption('settlementCompanyId')
+    // 选客户不再带出默认结算主体：必须显式选项目自己的结算主体
+    await chooseOverlaySelectOptionByText('settlementCompanyId', '结算主体甲')
 
     await clickButtonInOverlay('保存')
 

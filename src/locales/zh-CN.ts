@@ -1605,7 +1605,6 @@ export const zhCN = {
         colContactPhone: '联系电话',
         colCity: '城市',
         colSettlementMode: '结算方式',
-        colDefaultSettlementCompanyId: '默认结算主体ID',
         manageProjects: '管理关联项目',
         settlementCash: '现结',
         settlementMonthly: '月结',

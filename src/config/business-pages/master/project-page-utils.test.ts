@@ -8,8 +8,6 @@ vi.mock('@/module-system/core/module-option-resolvers', () => ({
       label: 'CUST-001',
       customerName: '华东客户',
       customerCode: 'CUST-001',
-      defaultSettlementCompanyId: '1932500000000000002',
-      defaultSettlementCompanyName: '主体一',
     },
     {
       id: '1932500000000000003',
@@ -59,26 +57,26 @@ describe('resolveProjectCustomerDisplay', () => {
 })
 
 describe('projectCustomerFieldOptions', () => {
-  it('映射客户名称、编码与默认结算主体', () => {
+  it('只映射客户名称与编码，不再携带结算主体', () => {
     const options = projectCustomerFieldOptions()
     expect(options[0]).toEqual({
       label: '华东客户',
       value: '1932500000000000001',
       customerCode: 'CUST-001',
       customerName: '华东客户',
-      settlementCompanyId: '1932500000000000002',
-      settlementCompanyName: '主体一',
     })
+    expect(options[0]).not.toHaveProperty('settlementCompanyId')
+    expect(options[0]).not.toHaveProperty('settlementCompanyName')
   })
 
-  it('客户名为空时回退 label，缺省结算主体为 undefined', () => {
+  it('客户名为空时回退 label，且任何客户都不带结算主体', () => {
     const options = projectCustomerFieldOptions()
     expect(options[1]).toMatchObject({
       label: 'CUST-002',
       value: '1932500000000000003',
       customerName: '',
-      settlementCompanyId: undefined,
-      settlementCompanyName: undefined,
     })
+    expect(options[1]).not.toHaveProperty('settlementCompanyId')
+    expect(options[1]).not.toHaveProperty('settlementCompanyName')
   })
 })

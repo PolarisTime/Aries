@@ -24,6 +24,10 @@ function findSettlementCompanyName(id: unknown, fallback = '') {
   )
 }
 
+/**
+ * 仅用于物流商/物流单的默认结算主体回填。
+ * 客户资料已移除默认结算主体，项目/单据一律走项目快照（见 applyProjectSettlementCompany）。
+ */
 function applyDefaultSettlementCompany(
   editorForm: Record<string, unknown>,
   option:
@@ -42,6 +46,16 @@ function applyDefaultSettlementCompany(
   )
 }
 
+/** 清空结算主体快照；客户资料已不再维护默认结算主体，客户变化不得留下旧主体。 */
+function clearSettlementCompany(editorForm: Record<string, unknown>) {
+  editorForm.settlementCompanyId = ''
+  editorForm.settlementCompanyName = ''
+}
+
+/**
+ * 单据结算主体的唯一来源是项目资料（物流单沿用物流商默认结算主体）。
+ * 项目未维护结算主体时清空，绝不回退客户默认主体。
+ */
 function applyProjectSettlementCompany(
   editorForm: Record<string, unknown>,
   project:
@@ -51,15 +65,13 @@ function applyProjectSettlementCompany(
       }
     | undefined,
 ) {
-  if (project?.settlementCompanyId != null) {
-    editorForm.settlementCompanyId = asString(project.settlementCompanyId)
-    editorForm.settlementCompanyName = asString(project.settlementCompanyName)
+  const settlementCompanyId = asString(project?.settlementCompanyId).trim()
+  if (!settlementCompanyId) {
+    clearSettlementCompany(editorForm)
     return
   }
-  applyDefaultSettlementCompany(
-    editorForm,
-    findCustomerOption(editorForm.customerId),
-  )
+  editorForm.settlementCompanyId = settlementCompanyId
+  editorForm.settlementCompanyName = asString(project?.settlementCompanyName)
 }
 
 function optionDisplayName(
@@ -219,29 +231,20 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     },
   })
 
-  registerModuleBehavior('customer', {
-    syncEditorForm(editorForm, ctx) {
-      if (ctx.changedKeys.has('defaultSettlementCompanyId')) {
-        editorForm.defaultSettlementCompanyName = findSettlementCompanyName(
-          editorForm.defaultSettlementCompanyId,
-        )
-      }
-    },
-  })
-
   registerModuleBehavior('project', {
     syncEditorForm(editorForm, ctx) {
       if (ctx.changedKeys.has('customerId')) {
         if (isBlank(editorForm.customerId)) {
           editorForm.customerId = ''
           editorForm.customerCode = ''
-          applyDefaultSettlementCompany(editorForm, undefined)
+          // 客户清空即项目上下文变更：结算主体不由客户带出，一并清掉
+          clearSettlementCompany(editorForm)
         } else {
           const customer = findCustomerOption(editorForm.customerId)
           if (customer) {
+            // 只同步客户快照；结算主体只由项目资料选择，不从客户默认值带出
             editorForm.customerId = asString(customer.id)
             editorForm.customerCode = asString(customer.customerCode).trim()
-            applyDefaultSettlementCompany(editorForm, customer)
           }
         }
       }
@@ -317,15 +320,15 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
           ctx.changedKeys.has('customerId')
         ) {
           if (isBlank(editorForm.customerId)) {
-            // 显式清空客户：同步清空快照、项目与默认结算公司
+            // 显式清空客户：同步清空快照、项目与项目带出的结算主体
             editorForm.customerId = ''
             editorForm.customerCode = ''
             editorForm.customerName = ''
             if (!ctx.changedKeys.has('projectId')) {
               editorForm.projectId = ''
               editorForm.projectName = ''
+              clearSettlementCompany(editorForm)
             }
-            applyDefaultSettlementCompany(editorForm, undefined)
           } else {
             const customer = findCustomerOption(editorForm.customerId)
             // 选项缓存未命中时保留现有快照，避免误清
@@ -336,8 +339,9 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
               if (!ctx.changedKeys.has('projectId')) {
                 editorForm.projectId = ''
                 editorForm.projectName = ''
+                // 项目上下文失效：结算主体改由用户选项目带出，客户不带出主体
+                clearSettlementCompany(editorForm)
               }
-              applyDefaultSettlementCompany(editorForm, customer)
             }
           }
         }
@@ -385,7 +389,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
             editorForm.carrierName = ''
             editorForm.carrierCode = ''
             if (key === 'freight-bill') {
-              applyDefaultSettlementCompany(editorForm, undefined)
+              clearSettlementCompany(editorForm)
               return
             }
           } else {
@@ -490,8 +494,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
         editorForm.customerName = ''
         editorForm.projectId = ''
         editorForm.projectName = ''
-        editorForm.settlementCompanyId = ''
-        editorForm.settlementCompanyName = ''
+        clearSettlementCompany(editorForm)
         return
       }
 
@@ -504,12 +507,9 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
           editorForm.customerId = editorForm.counterpartyId
           editorForm.customerCode = editorForm.counterpartyCode
           editorForm.customerName = editorForm.counterpartyName
-          const customer = findCustomerOption(editorForm.counterpartyId)
+          // 客户资料不再维护默认结算主体：手选值保留，只有清空客户时才清掉
           if (isBlank(editorForm.counterpartyId)) {
-            applyDefaultSettlementCompany(editorForm, undefined)
-          } else if (customer) {
-            // 选项缓存未命中时保留现有结算公司快照，避免误清
-            applyDefaultSettlementCompany(editorForm, customer)
+            clearSettlementCompany(editorForm)
           }
         } else {
           editorForm.customerId = ''
@@ -523,10 +523,8 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
         if (isBlank(editorForm.projectId)) {
           editorForm.projectId = ''
           editorForm.projectName = ''
-          applyDefaultSettlementCompany(
-            editorForm,
-            findCustomerOption(editorForm.customerId),
-          )
+          // 项目清空后不回退客户默认主体，直接清空等用户重选项目
+          clearSettlementCompany(editorForm)
         } else {
           const project = findProjectOption(
             editorForm.projectId,
@@ -566,8 +564,7 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
         editorForm.supplierName = ''
         editorForm.items = []
         clearCounterpartyIdentity(editorForm)
-        editorForm.settlementCompanyId = ''
-        editorForm.settlementCompanyName = ''
+        clearSettlementCompany(editorForm)
         return
       }
 

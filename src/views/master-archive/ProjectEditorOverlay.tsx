@@ -218,13 +218,11 @@ export function ProjectEditorOverlay({
           (option) => option.id === nextCustomerId,
         )
         if (customer) {
+          // 客户资料不再携带默认结算主体：选客户只同步客户快照，
+          // 结算主体由项目资料自身的选择决定（唯一入口）。
           form.setFieldsValue({
             customerId: customer.id,
             customerCode: asString(customer.customerCode).trim(),
-            settlementCompanyId: customer.defaultSettlementCompanyId ?? '',
-            settlementCompanyName: asString(
-              customer.defaultSettlementCompanyName,
-            ),
           })
         }
       }

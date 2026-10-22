@@ -1,9 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchSettlementCompanyOptions } from '@/api/system/company-settings'
 import { enabledStatusOptions } from '@/constants/module-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { STATUS } from '@/constants/status-constants'
 import { asString } from '@/utils/type-narrowing'
 import { MasterDataListPage } from './MasterDataListPage'
@@ -11,26 +8,7 @@ import type { MasterDataPageSpec } from './master-data-types'
 
 export function CustomerPage() {
   const { t } = useTranslation()
-  const { data: settlementCompanies = [] } = useQuery({
-    queryKey: QUERY_KEYS.masterOptions.settlementCompany,
-    queryFn: ({ signal }) => fetchSettlementCompanyOptions(signal),
-  })
   const spec = useMemo<MasterDataPageSpec>(() => {
-    const companyOptions = settlementCompanies.map((option) => ({
-      label: option.companyName,
-      value: option.value,
-    }))
-    const resolveCompanyName = (id: unknown): string => {
-      const normalized = asString(id).trim()
-      if (!normalized) {
-        return ''
-      }
-      return (
-        settlementCompanies.find(
-          (option) => asString(option.value).trim() === normalized,
-        )?.companyName ?? ''
-      )
-    }
     return {
       moduleKey: 'customer',
       primaryNoKey: 'customerCode',
@@ -89,11 +67,6 @@ export function CustomerPage() {
           width: 110,
         },
         {
-          key: 'defaultSettlementCompanyName',
-          title: t('modules.pages.customer.colDefaultSettlementCompany'),
-          width: 180,
-        },
-        {
           key: 'status',
           title: t('modules.columns.status'),
           width: 100,
@@ -123,10 +96,6 @@ export function CustomerPage() {
         {
           key: 'settlementMode',
           label: t('modules.pages.customer.colSettlementMode'),
-        },
-        {
-          key: 'defaultSettlementCompanyName',
-          label: t('modules.pages.customer.colDefaultSettlementCompany'),
         },
         {
           key: 'status',
@@ -198,14 +167,6 @@ export function CustomerPage() {
           ],
         },
         {
-          section: t('modules.formSections.settlement'),
-          key: 'defaultSettlementCompanyId',
-          label: t('modules.pages.customer.colDefaultSettlementCompany'),
-          type: 'select',
-          required: true,
-          options: companyOptions,
-        },
-        {
           section: t('modules.formSections.other'),
           key: 'remark',
           label: t('modules.columns.remark'),
@@ -221,9 +182,6 @@ export function CustomerPage() {
         contactPhone: asString(record?.contactPhone),
         city: asString(record?.city),
         settlementMode: asString(record?.settlementMode),
-        defaultSettlementCompanyId: asString(
-          record?.defaultSettlementCompanyId,
-        ),
         status: asString(record?.status) || STATUS.NORMAL,
         remark: asString(record?.remark),
       }),
@@ -235,14 +193,10 @@ export function CustomerPage() {
         contactPhone: values.contactPhone ?? '',
         city: values.city ?? '',
         settlementMode: values.settlementMode ?? '',
-        defaultSettlementCompanyId: values.defaultSettlementCompanyId ?? '',
-        defaultSettlementCompanyName: resolveCompanyName(
-          values.defaultSettlementCompanyId,
-        ),
         status: values.status,
         remark: values.remark ?? '',
       }),
     }
-  }, [t, settlementCompanies])
+  }, [t])
   return <MasterDataListPage spec={spec} />
 }

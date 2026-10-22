@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
-import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
+import { parseEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
 
 export type CustomerOption = {
@@ -11,8 +11,6 @@ export type CustomerOption = {
   label: string
   customerCode: string
   customerName: string
-  defaultSettlementCompanyId?: EntityId
-  defaultSettlementCompanyName?: string
 }
 
 type RawCustomerOption = {
@@ -21,8 +19,6 @@ type RawCustomerOption = {
   label?: unknown
   customerCode?: unknown
   customerName?: unknown
-  defaultSettlementCompanyId?: unknown
-  defaultSettlementCompanyName?: unknown
 }
 
 const rawCustomerOptionSchema = z.object({
@@ -31,8 +27,6 @@ const rawCustomerOptionSchema = z.object({
   label: z.string(),
   customerCode: z.string(),
   customerName: z.string(),
-  defaultSettlementCompanyId: z.string().nullable().optional(),
-  defaultSettlementCompanyName: z.string().nullable().optional(),
 })
 
 function normalizeText(value: unknown): string {
@@ -46,10 +40,6 @@ export function normalizeCustomerRows(
     const id = parseEntityId(row.id, `customers[${index}].customer.id`)
     const customerCode = normalizeText(row.customerCode)
     const customerName = normalizeText(row.customerName || row.value)
-    const defaultSettlementCompanyId = parseOptionalEntityId(
-      row.defaultSettlementCompanyId,
-      `customers[${index}].defaultSettlementCompanyId`,
-    )
 
     return {
       id,
@@ -57,14 +47,6 @@ export function normalizeCustomerRows(
       label: customerName || normalizeText(row.label) || `#${id}`,
       customerCode,
       customerName,
-      ...(defaultSettlementCompanyId ? { defaultSettlementCompanyId } : {}),
-      ...(normalizeText(row.defaultSettlementCompanyName)
-        ? {
-            defaultSettlementCompanyName: normalizeText(
-              row.defaultSettlementCompanyName,
-            ),
-          }
-        : {}),
     }
   })
 }

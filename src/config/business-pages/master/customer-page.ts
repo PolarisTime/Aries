@@ -1,7 +1,6 @@
 import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { STATUS } from '@/constants/status-constants'
-import { getSettlementCompanyOptions } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
@@ -68,11 +67,6 @@ export const customersPageConfig: ModulePageConfig = {
       width: 110,
     },
     {
-      title: i18next.t('modules.pages.customer.colDefaultSettlementCompany'),
-      dataIndex: 'defaultSettlementCompanyName',
-      width: 180,
-    },
-    {
       title: i18next.t('modules.columns.status'),
       dataIndex: 'status',
       width: 100,
@@ -106,10 +100,6 @@ export const customersPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.customer.colSettlementMode'),
       key: 'settlementMode',
-    },
-    {
-      label: i18next.t('modules.pages.customer.colDefaultSettlementCompany'),
-      key: 'defaultSettlementCompanyName',
     },
     {
       label: i18next.t('modules.columns.status'),
@@ -177,14 +167,6 @@ export const customersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'defaultSettlementCompanyId',
-      label: i18next.t('modules.pages.customer.colDefaultSettlementCompany'),
-      type: 'select',
-      required: true,
-      options: getSettlementCompanyOptions,
-      row: 3,
-    },
-    {
       key: 'status',
       label: i18next.t('modules.columns.status'),
       type: 'select',
@@ -212,8 +194,6 @@ export const customersPageConfig: ModulePageConfig = {
       'contactPhone',
       'city',
       'settlementMode',
-      'defaultSettlementCompanyId',
-      'defaultSettlementCompanyName',
       'status',
       'remark',
     ],
