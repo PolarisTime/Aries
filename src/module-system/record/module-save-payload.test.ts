@@ -232,7 +232,7 @@ describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
     ],
   }
 
-  it('sales-order 保存载荷保留 6 个取价快照字段(与后端 DTO 同名)', async () => {
+  it('sales-order 保存载荷保留 7 个取价快照字段(与后端 DTO 同名)', async () => {
     const payload = (await submitRecord('sales-order', {
       ...salesOrderBaseRecord,
       priceTargetDate: '2026-10-09',
@@ -240,7 +240,9 @@ describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
       priceQuotePeriod: '中午',
       priceDateBasis: 'ORDER',
       priceDateOffsetDays: 2,
-      priceClosedSettlePrev: true,
+      // 延后 3 个交易日: 与默认「往前 1 个」不同值, 写反/漏写都会被测出来
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 3,
     })) as Record<string, unknown>
 
     expect(payload).toMatchObject({
@@ -249,7 +251,8 @@ describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
       priceQuotePeriod: '中午',
       priceDateBasis: 'ORDER',
       priceDateOffsetDays: 2,
-      priceClosedSettlePrev: true,
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 3,
     })
   })
 
@@ -279,7 +282,8 @@ describe('serializeBusinessRecordForSave 交付核定取价快照', () => {
     expect(payload).not.toHaveProperty('priceTargetDate')
     expect(payload).not.toHaveProperty('priceQuotePeriod')
     expect(payload).not.toHaveProperty('priceDateOffsetDays')
-    expect(payload).not.toHaveProperty('priceClosedSettlePrev')
+    expect(payload).not.toHaveProperty('priceClosedSettleDirection')
+    expect(payload).not.toHaveProperty('priceClosedSettleDays')
   })
 
   it('顺延交易日数越过 0..30 契约时被拒绝', async () => {

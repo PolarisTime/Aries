@@ -250,7 +250,8 @@ describe('SalesOrderNetPriceFiller', () => {
     projectId: 'p1',
     basis: 'DELIVERY',
     offsetDays: 0,
-    settlePrevOnClosed: false,
+    priceClosedSettleDirection: 'NEXT',
+    priceClosedSettleDays: 2,
     periodPolicy: 'AUTO',
     requestedPeriod: null,
     targetDate: '2026-09-22',
@@ -340,11 +341,55 @@ describe('SalesOrderNetPriceFiller', () => {
     await clickPriceMenuItem('重新核查网价')
   }
 
-  /** 弹窗内的第 index 个 antd Select（顺序即渲染顺序: 价格规定 → 基准 → 时段策略 → 取价时段）。 */
-  const modalSelect = (index: number) =>
-    Array.from(
-      document.querySelectorAll<HTMLElement>('.ant-modal .ant-select'),
-    )[index]
+  /**
+   * 按可见标签定位弹窗内的覆盖项。
+   *
+   * <p>覆盖面板不是 Form.Item（没有注入 id），但每一项都是「标签在上、控件在下」的 OverrideField：
+   * 先按标签文本找到节点，再在同一个 Space 里取控件。</p>
+   *
+   * <p>刻意不按 `.ant-select` 下标：顺延交易日数 / 休市取价方向 / 休市调整天数 / 取价时段 /
+   * 取价日期都是条件字段，随时增删，下标会整体位移 —— 断言会在无关改动上炸掉，
+   * 失败信息也看不出是哪个字段（实测：新增休市方向后，原「第 3 个下拉」变成了方向选择器）。</p>
+   */
+  const overrideField = (label: string): HTMLElement => {
+    const labelNode = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-modal .ant-typography'),
+    ).find((node) => node.textContent?.trim() === label)
+    expect(labelNode, `覆盖项「${label}」应渲染`).toBeTruthy()
+    const root = labelNode?.closest<HTMLElement>('.ant-space')
+    expect(root, `覆盖项「${label}」应有容器`).toBeTruthy()
+    return root as HTMLElement
+  }
+
+  const overrideSelect = (label: string): HTMLElement => {
+    const select =
+      overrideField(label).querySelector<HTMLElement>('.ant-select')
+    expect(select, `覆盖项「${label}」应是下拉控件`).toBeTruthy()
+    return select as HTMLElement
+  }
+
+  const overrideInput = (label: string): HTMLInputElement => {
+    const input = overrideField(label).querySelector<HTMLInputElement>('input')
+    expect(input, `覆盖项「${label}」应有输入控件`).toBeTruthy()
+    return input as HTMLInputElement
+  }
+
+  /**
+   * 设置数字输入框（InputNumber）的值。
+   * <p>antd 6 的 InputNumber 默认 `changeOnBlur`：只派发 input 事件不提交表单值，必须再失焦一次。</p>
+   */
+  const setNumberValue = (input: HTMLInputElement, value: string) => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )
+    act(() => {
+      input.focus()
+      descriptor?.set?.call(input, value)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.blur()
+    })
+  }
 
   const pickSelectOption = async (
     select: HTMLElement | undefined,
@@ -724,14 +769,14 @@ describe('SalesOrderNetPriceFiller', () => {
     await mountObserved(observed)
     await openNetPriceDialog()
 
-    // 弹窗内没有价格规定下拉: 第 1 个是基准, 第 2 个是时段策略。
-    await pickSelectOption(modalSelect(1), '固定时段')
+    // 按标签定位: 时段策略覆盖项
+    await pickSelectOption(overrideSelect('取价时段策略'), '固定时段')
     expect(
       fetchPricingQuoteResolutionMock.mock.calls.at(-1)?.[1],
     ).toMatchObject({ periodPolicy: 'FIXED' })
 
-    // 选固定时段后第 3 个下拉即取价时段。
-    await pickSelectOption(modalSelect(2), '上午')
+    // 策略切成固定后才出现「取价时段」覆盖项
+    await pickSelectOption(overrideSelect('取价时段'), '上午')
     expect(
       fetchPricingQuoteResolutionMock.mock.calls.at(-1)?.[1],
     ).toMatchObject({ periodPolicy: 'FIXED', period: '上午' })
@@ -743,13 +788,65 @@ describe('SalesOrderNetPriceFiller', () => {
     ])
   })
 
-  /** 保存载荷：取价的 6 个快照字段必须随单据一起写入。 */
-  it('取价后写入 6 个取价快照字段', async () => {
+  /**
+   * 休市口径覆盖：送货日期基准下同样可以改方向与天数（旧实现只在报单日期基准显示一个开关），
+   * 改任一项即按覆盖值重新解析；切到「每次手工选择」后这两项不参与，控件也不再出现。
+   */
+  it('人工覆盖休市取价方向与天数后按覆盖值重新解析', async () => {
+    // 解析结果会回显「本次生效值」: 让 mock 把入参原样带回, 面板才反映覆盖后的口径
+    fetchPricingQuoteResolutionMock.mockImplementation(
+      (_projectId: string, params: Record<string, unknown>) =>
+        Promise.resolve(
+          resolution({
+            basis: (params?.basis as string) ?? 'DELIVERY',
+            priceClosedSettleDirection:
+              (params?.priceClosedSettleDirection as string) ?? 'PREV',
+            priceClosedSettleDays:
+              (params?.priceClosedSettleDays as number) ?? 1,
+          }),
+        ),
+    )
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: '3400.00' }),
+    ])
+    const observed = createObserved()
+    await mountObserved(observed)
+    await openNetPriceDialog()
+
+    // 送货日期基准下方向/天数可覆盖（旧开关在这个基准下是隐藏的）
+    await pickSelectOption(overrideSelect('休市取价方向'), '延后（较晚交易日）')
+    expect(
+      fetchPricingQuoteResolutionMock.mock.calls.at(-1)?.[1],
+    ).toMatchObject({ priceClosedSettleDirection: 'NEXT' })
+
+    // 天数用 3 而不是默认 1: 默认档下漏传参也会断言为绿
+    setNumberValue(overrideInput('休市调整天数'), '3')
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(
+      fetchPricingQuoteResolutionMock.mock.calls.at(-1)?.[1],
+    ).toMatchObject({
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 3,
+    })
+
+    // 切到手工基准: 休市口径不参与, 两项覆盖项不再渲染
+    await pickSelectOption(overrideSelect('取价基准'), '每次手工选择')
+    expect(document.body.textContent).not.toContain('休市调整天数')
+    expect(document.body.textContent).not.toContain('休市取价方向')
+  })
+
+  /** 保存载荷：取价的 7 个快照字段必须随单据一起写入。 */
+  it('取价后写入 7 个取价快照字段', async () => {
     fetchPricingQuoteResolutionMock.mockResolvedValue(
       resolution({
         basis: 'ORDER',
         offsetDays: 2,
-        settlePrevOnClosed: true,
+        // 用「往前 3 个交易日」而不是默认「往前 1 个」: 天数同默认值时漏写也算绿
+        priceClosedSettleDirection: 'PREV',
+        priceClosedSettleDays: 3,
         targetDate: '2026-10-09',
         quoteDate: '2026-10-13',
         period: '中午',
@@ -773,7 +870,8 @@ describe('SalesOrderNetPriceFiller', () => {
       priceQuotePeriod: '中午',
       priceDateBasis: 'ORDER',
       priceDateOffsetDays: 2,
-      priceClosedSettlePrev: true,
+      priceClosedSettleDirection: 'PREV',
+      priceClosedSettleDays: 3,
     })
   })
 
@@ -954,7 +1052,7 @@ describe('SalesOrderNetPriceFiller', () => {
 
     // 解析接口打挂(用户场景: 后端 500 / 断网), 再改一项覆盖值触发重新解析 ⇒ 失败态
     fetchPricingQuoteResolutionMock.mockRejectedValue(new Error('boom'))
-    await pickSelectOption(modalSelect(0), '每次手工选择')
+    await pickSelectOption(overrideSelect('取价基准'), '每次手工选择')
 
     const box = document.querySelector('.pricing-quote-summary')
     expect(box?.textContent).toContain('取价基准解析失败')

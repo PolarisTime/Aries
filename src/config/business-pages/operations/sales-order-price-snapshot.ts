@@ -1,3 +1,9 @@
+import {
+  normalizePriceClosedSettleDays,
+  normalizePriceClosedSettleDirection,
+  type ProjectPriceClosedSettleDirection,
+} from '@/api/master/project-options'
+
 /**
  * 销售订单「交付核定取价快照」字段清单。
  *
@@ -12,7 +18,8 @@ export const SALES_ORDER_PRICING_SNAPSHOT_FIELDS = [
   'priceQuotePeriod',
   'priceDateBasis',
   'priceDateOffsetDays',
-  'priceClosedSettlePrev',
+  'priceClosedSettleDirection',
+  'priceClosedSettleDays',
 ] as const
 
 export type SalesOrderPricingSnapshotField =
@@ -25,7 +32,10 @@ export interface SalesOrderPricingSnapshot {
   priceQuotePeriod: string
   priceDateBasis: string
   priceDateOffsetDays: number
-  priceClosedSettlePrev: boolean
+  /** 休市取价方向：PREV 往前 / NEXT 延后。 */
+  priceClosedSettleDirection: ProjectPriceClosedSettleDirection
+  /** 休市调整天数：0 表示不位移，1..30 为位移的交易日数。 */
+  priceClosedSettleDays: number
 }
 
 /** 快照来源：取价基准解析结果中与快照相关的字段（宽松读取，缺项即视为不完整）。 */
@@ -35,7 +45,8 @@ export interface SalesOrderPricingSnapshotSource {
   period?: string | null
   basis?: string | null
   offsetDays?: number | null
-  settlePrevOnClosed?: boolean | null
+  priceClosedSettleDirection?: string | null
+  priceClosedSettleDays?: number | null
 }
 
 function textOrNull(value: string | null | undefined): string | null {
@@ -69,6 +80,12 @@ export function buildSalesOrderPricingSnapshot(
       Number.isFinite(source.offsetDays)
         ? Math.max(0, Math.trunc(source.offsetDays))
         : 0,
-    priceClosedSettlePrev: source.settlePrevOnClosed === true,
+    // 休市口径与项目配置同一归一化: 方向缺省 PREV、天数缺省 1, 显式 0(不位移)原样保留。
+    priceClosedSettleDirection: normalizePriceClosedSettleDirection(
+      source.priceClosedSettleDirection,
+    ),
+    priceClosedSettleDays: normalizePriceClosedSettleDays(
+      source.priceClosedSettleDays,
+    ),
   }
 }

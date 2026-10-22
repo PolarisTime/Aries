@@ -6,12 +6,14 @@ import {
   type PricingQuoteResolutionParams,
 } from '@/api/market/pricing-quote-resolutions'
 import type {
+  ProjectPriceClosedSettleDirection,
   ProjectPriceDateBasis,
   ProjectPricePeriod,
   ProjectPricePeriodPolicy,
 } from '@/api/master/project-options'
 import {
-  normalizePriceClosedDayPrevSettle,
+  normalizePriceClosedSettleDays,
+  normalizePriceClosedSettleDirection,
   normalizePriceDateBasis,
   normalizePriceDateOffsetDays,
   normalizePricePeriodFixed,
@@ -26,7 +28,10 @@ import { summarizeErrorMessage } from '@/utils/error-presentation'
 export interface PricingQuoteControls {
   basis?: ProjectPriceDateBasis
   offsetDays?: number
-  settlePrevOnClosed?: boolean
+  /** 休市取价方向（PREV 往前 / NEXT 延后）。 */
+  priceClosedSettleDirection?: ProjectPriceClosedSettleDirection
+  /** 休市调整天数（0..30）；0 表示不位移。 */
+  priceClosedSettleDays?: number
   periodPolicy?: ProjectPricePeriodPolicy
   /** 固定/手工策略下的目标时段（中文枚举值）。 */
   period?: ProjectPricePeriod
@@ -65,7 +70,8 @@ function buildRequestKey(args: {
   deliveryDate: string
   basis?: ProjectPriceDateBasis
   offsetDays?: number
-  settlePrevOnClosed?: boolean
+  priceClosedSettleDirection?: ProjectPriceClosedSettleDirection
+  priceClosedSettleDays?: number
   periodPolicy?: ProjectPricePeriodPolicy
   period?: ProjectPricePeriod
   quoteDate?: string
@@ -75,9 +81,10 @@ function buildRequestKey(args: {
     args.deliveryDate,
     args.basis ?? '',
     args.offsetDays === undefined ? '' : String(args.offsetDays),
-    args.settlePrevOnClosed === undefined
+    args.priceClosedSettleDirection ?? '',
+    args.priceClosedSettleDays === undefined
       ? ''
-      : String(args.settlePrevOnClosed),
+      : String(args.priceClosedSettleDays),
     args.periodPolicy ?? '',
     args.period ?? '',
     args.quoteDate ?? '',
@@ -102,8 +109,14 @@ export function usePricingQuoteResolution(args: {
   const [controls, setControls] = useState<PricingQuoteControls>(EMPTY_CONTROLS)
   const [resolved, setResolved] = useState<ResolvedState | null>(null)
 
-  const { basis, offsetDays, settlePrevOnClosed, periodPolicy, period } =
-    controls
+  const {
+    basis,
+    offsetDays,
+    priceClosedSettleDirection,
+    priceClosedSettleDays,
+    periodPolicy,
+    period,
+  } = controls
   const quoteDate = controls.quoteDate
 
   const requestKey = buildRequestKey({
@@ -111,7 +124,8 @@ export function usePricingQuoteResolution(args: {
     deliveryDate,
     basis,
     offsetDays,
-    settlePrevOnClosed,
+    priceClosedSettleDirection,
+    priceClosedSettleDays,
     periodPolicy,
     period,
     quoteDate,
@@ -125,7 +139,8 @@ export function usePricingQuoteResolution(args: {
       ...(deliveryDate ? { deliveryDate } : {}),
       ...(basis ? { basis } : {}),
       ...(offsetDays === undefined ? {} : { offsetDays }),
-      ...(settlePrevOnClosed === undefined ? {} : { settlePrevOnClosed }),
+      ...(priceClosedSettleDirection ? { priceClosedSettleDirection } : {}),
+      ...(priceClosedSettleDays === undefined ? {} : { priceClosedSettleDays }),
       ...(periodPolicy ? { periodPolicy } : {}),
       ...(period ? { period } : {}),
       ...(quoteDate ? { quoteDate } : {}),
@@ -152,7 +167,8 @@ export function usePricingQuoteResolution(args: {
     deliveryDate,
     basis,
     offsetDays,
-    settlePrevOnClosed,
+    priceClosedSettleDirection,
+    priceClosedSettleDays,
     periodPolicy,
     period,
     quoteDate,
@@ -195,7 +211,8 @@ export function usePricingQuoteResolution(args: {
 export interface EffectivePricingQuoteControls {
   basis: ProjectPriceDateBasis
   offsetDays: number
-  settlePrevOnClosed: boolean
+  priceClosedSettleDirection: ProjectPriceClosedSettleDirection
+  priceClosedSettleDays: number
   periodPolicy: ProjectPricePeriodPolicy
   period: ProjectPricePeriod | null
   quoteDate: string
@@ -205,15 +222,20 @@ export function resolveEffectiveControls(
   resolution: PricingQuoteResolution | null,
   controls: PricingQuoteControls,
 ): EffectivePricingQuoteControls {
-  const rawSettlePrev =
-    resolution?.settlePrevOnClosed ?? controls.settlePrevOnClosed
+  const rawDirection =
+    resolution?.priceClosedSettleDirection ??
+    controls.priceClosedSettleDirection
+  const rawDays =
+    resolution?.priceClosedSettleDays ?? controls.priceClosedSettleDays
 
   return {
     basis: normalizePriceDateBasis(resolution?.basis ?? controls.basis),
     offsetDays: normalizePriceDateOffsetDays(
       resolution?.offsetDays ?? controls.offsetDays,
     ),
-    settlePrevOnClosed: normalizePriceClosedDayPrevSettle(rawSettlePrev),
+    priceClosedSettleDirection:
+      normalizePriceClosedSettleDirection(rawDirection),
+    priceClosedSettleDays: normalizePriceClosedSettleDays(rawDays),
     periodPolicy: normalizePricePeriodPolicy(
       resolution?.periodPolicy ?? controls.periodPolicy,
     ),

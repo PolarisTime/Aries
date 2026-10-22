@@ -1,12 +1,14 @@
 import type { useTranslation } from 'react-i18next'
 import {
   DEFAULT_SCOPE_ENFORCEMENT,
-  normalizePriceClosedDayPrevSettle,
+  normalizePriceClosedSettleDays,
+  normalizePriceClosedSettleDirection,
   normalizePriceDateBasis,
   normalizePriceDateOffsetDays,
   normalizePricePeriodFixed,
   normalizePricePeriodPolicy,
   normalizeScopeEnforcement,
+  type ProjectPriceClosedSettleDirection,
   type ProjectPriceDateBasis,
   type ProjectPricePeriod,
   type ProjectPricePeriodPolicy,
@@ -96,12 +98,26 @@ export function toPriceDateOffsetDays(
   return basis === 'ORDER' ? normalizePriceDateOffsetDays(value) : 0
 }
 
-/** 列表行的「休市取前一交易日」归一化: 基准不是「报单日期」时归 false。 */
-export function toPriceClosedDayPrevSettle(
+/**
+ * 列表行的「休市取价方向」归一化: 缺省或非法值回落到「往前」。
+ * <p>
+ * 不按基准强制复位: 送货日期与报单日期两个基准都用它, 只有 MANUAL 不参与 ——
+ * 那时值仍是用户配置, 只是控件置灰, 复位会在「送货日期 ↔ 手动」来回切换时丢掉配置。
+ */
+export function toPriceClosedSettleDirection(
   value: unknown,
-  basis: ProjectPriceDateBasis,
-): boolean {
-  return basis === 'ORDER' && normalizePriceClosedDayPrevSettle(value)
+): ProjectPriceClosedSettleDirection {
+  return normalizePriceClosedSettleDirection(value)
+}
+
+/**
+ * 列表行的「休市调整天数」归一化: 夹到 0..30, 且**显式 0 原样保留**。
+ * <p>
+ * 0 表示「不做休市位移」, 旧布尔开关「关闭」迁移过来的历史项目正是 0; 编辑回填必须显示 0,
+ * 不能抬成 1(否则用户一打开编辑弹层就看到配置被改了)。
+ */
+export function toPriceClosedSettleDays(value: unknown): number {
+  return normalizePriceClosedSettleDays(value)
 }
 
 /** 列表行的取价时段策略归一化: 缺省或非法值回落到「自动取当日最新时段」。 */

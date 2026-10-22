@@ -62,7 +62,8 @@ const SNAPSHOT_FIELDS = [
   ['priceQuotePeriod', 'priceQuotePeriod'],
   ['priceDateBasis', 'priceDateBasis'],
   ['priceDateOffsetDays', 'priceDateOffsetDays'],
-  ['priceClosedSettlePrev', 'priceClosedSettlePrev'],
+  ['priceClosedSettleDirection', 'priceClosedSettleDirection'],
+  ['priceClosedSettleDays', 'priceClosedSettleDays'],
 ] as const
 
 /**

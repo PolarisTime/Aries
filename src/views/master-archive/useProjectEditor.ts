@@ -9,7 +9,8 @@ import type { ProjectEditorValues } from './ProjectEditorOverlay'
 import {
   toAllowedSpecSeverity,
   toAllowedSpecValues,
-  toPriceClosedDayPrevSettle,
+  toPriceClosedSettleDays,
+  toPriceClosedSettleDirection,
   toPriceDateBasis,
   toPriceDateOffsetDays,
   toPricePeriodFixed,
@@ -54,9 +55,11 @@ function toEditorFormValues(record: ProjectListRow) {
       record.priceDateOffsetDays,
       priceDateBasis,
     ),
-    priceClosedDayPrevSettle: toPriceClosedDayPrevSettle(
-      record.priceClosedDayPrevSettle,
-      priceDateBasis,
+    priceClosedSettleDirection: toPriceClosedSettleDirection(
+      record.priceClosedSettleDirection,
+    ),
+    priceClosedSettleDays: toPriceClosedSettleDays(
+      record.priceClosedSettleDays,
     ),
     pricePeriodPolicy,
     pricePeriodFixed: toPricePeriodFixed(

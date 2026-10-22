@@ -9,7 +9,9 @@ import {
   fetchProjectOptions,
   fetchProjectPickerOptions,
   fetchProjectQuoteConfig,
-  normalizePriceClosedDayPrevSettle,
+  isPriceClosedSettleDaysValid,
+  normalizePriceClosedSettleDays,
+  normalizePriceClosedSettleDirection,
   normalizePriceDateBasis,
   normalizePriceDateOffsetDays,
   normalizePricePeriodFixed,
@@ -324,15 +326,47 @@ describe('项目取价基准与时段归一化', () => {
     expect(normalizePriceDateOffsetDays({})).toBe(0)
   })
 
-  it('normalizePriceClosedDayPrevSettle 只认布尔真值', () => {
-    expect(normalizePriceClosedDayPrevSettle(true)).toBe(true)
-    expect(normalizePriceClosedDayPrevSettle(false)).toBe(false)
-    expect(normalizePriceClosedDayPrevSettle(undefined)).toBe(false)
-    expect(normalizePriceClosedDayPrevSettle(null)).toBe(false)
-    // 字符串 'false' 是 truthy, 宽松判断会把休市口径读反
-    expect(normalizePriceClosedDayPrevSettle('false')).toBe(false)
-    expect(normalizePriceClosedDayPrevSettle('true')).toBe(false)
-    expect(normalizePriceClosedDayPrevSettle(1)).toBe(false)
+  it('normalizePriceClosedSettleDirection 只认 PREV/NEXT, 其余回落到往前', () => {
+    expect(normalizePriceClosedSettleDirection('PREV')).toBe('PREV')
+    expect(normalizePriceClosedSettleDirection('next')).toBe('NEXT')
+    expect(normalizePriceClosedSettleDirection(undefined)).toBe('PREV')
+    expect(normalizePriceClosedSettleDirection(null)).toBe('PREV')
+    expect(normalizePriceClosedSettleDirection('')).toBe('PREV')
+    expect(normalizePriceClosedSettleDirection('BACKWARD')).toBe('PREV')
+    expect(normalizePriceClosedSettleDirection(true)).toBe('PREV')
+  })
+
+  it('normalizePriceClosedSettleDays 保留显式 0, 缺省/非法回落到 1, 越界夹到 0..30', () => {
+    // 0 是合法值(不位移), 旧布尔「关闭」迁移过来的历史项目正是 0, 编辑回填不能抬成 1
+    expect(normalizePriceClosedSettleDays(0)).toBe(0)
+    expect(normalizePriceClosedSettleDays('0')).toBe(0)
+    expect(normalizePriceClosedSettleDays(3)).toBe(3)
+    expect(normalizePriceClosedSettleDays('3')).toBe(3)
+    expect(normalizePriceClosedSettleDays(2.7)).toBe(2)
+    expect(normalizePriceClosedSettleDays(-5)).toBe(0)
+    expect(normalizePriceClosedSettleDays(99)).toBe(30)
+    // 缺省与非法值才回落到默认档 1
+    expect(normalizePriceClosedSettleDays(undefined)).toBe(1)
+    expect(normalizePriceClosedSettleDays(null)).toBe(1)
+    expect(normalizePriceClosedSettleDays('')).toBe(1)
+    expect(normalizePriceClosedSettleDays('abc')).toBe(1)
+    expect(normalizePriceClosedSettleDays(Number.NaN)).toBe(1)
+    expect(normalizePriceClosedSettleDays(true)).toBe(1)
+    expect(normalizePriceClosedSettleDays({})).toBe(1)
+  })
+
+  it('isPriceClosedSettleDaysValid: 0 只在「报单日期 + 延后」下合法, MANUAL 不参与', () => {
+    // 0 天 + 往前 / 送货日期 → 非法(必须 ≥1)
+    expect(isPriceClosedSettleDaysValid(0, 'PREV', 'DELIVERY')).toBe(false)
+    expect(isPriceClosedSettleDaysValid(0, 'PREV', 'ORDER')).toBe(false)
+    expect(isPriceClosedSettleDaysValid(0, 'NEXT', 'DELIVERY')).toBe(false)
+    // 0 天 + 报单日期 + 延后 → 合法(等价旧开关「关闭」)
+    expect(isPriceClosedSettleDaysValid(0, 'NEXT', 'ORDER')).toBe(true)
+    // ≥1 在任何参与基准下都合法
+    expect(isPriceClosedSettleDaysValid(1, 'PREV', 'DELIVERY')).toBe(true)
+    expect(isPriceClosedSettleDaysValid(30, 'PREV', 'ORDER')).toBe(true)
+    // MANUAL 不参与: 任何天数都不阻断保存
+    expect(isPriceClosedSettleDaysValid(0, 'PREV', 'MANUAL')).toBe(true)
   })
 
   it('normalizePricePeriodPolicy 只认三个字面量, 未知值回落到自动', () => {

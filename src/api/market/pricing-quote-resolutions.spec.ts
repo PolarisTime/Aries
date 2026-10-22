@@ -25,7 +25,8 @@ const resolution = (
   projectId: PROJECT_ID,
   basis: 'ORDER',
   offsetDays: 2,
-  settlePrevOnClosed: false,
+  priceClosedSettleDirection: 'NEXT',
+  priceClosedSettleDays: 0,
   periodPolicy: 'AUTO',
   requestedPeriod: null,
   targetDate: '2026-10-09',
@@ -58,7 +59,8 @@ describe('fetchPricingQuoteResolution', () => {
       deliveryDate: '2026-10-15',
       basis: 'ORDER',
       offsetDays: 2,
-      settlePrevOnClosed: true,
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 3,
       periodPolicy: 'FIXED',
       period: '下午',
       quoteDate: '2026-10-13',
@@ -82,7 +84,8 @@ describe('fetchPricingQuoteResolution', () => {
         deliveryDate: '2026-10-15',
         basis: 'ORDER',
         offsetDays: 3,
-        settlePrevOnClosed: true,
+        priceClosedSettleDirection: 'PREV',
+        priceClosedSettleDays: 2,
         periodPolicy: 'FIXED',
         period: '下午',
         quoteDate: '2026-10-13',
@@ -96,7 +99,8 @@ describe('fetchPricingQuoteResolution', () => {
       deliveryDate: '2026-10-15',
       basis: 'ORDER',
       offsetDays: 3,
-      settlePrevOnClosed: true,
+      priceClosedSettleDirection: 'PREV',
+      priceClosedSettleDays: 2,
       periodPolicy: 'FIXED',
       period: '下午',
       quoteDate: '2026-10-13',
@@ -135,6 +139,8 @@ describe('pricingQuoteResolutionSchema', () => {
 
     expect(parsed.basis).toBe('ORDER')
     expect(parsed.offsetDays).toBe(2)
+    expect(parsed.priceClosedSettleDirection).toBe('NEXT')
+    expect(parsed.priceClosedSettleDays).toBe(0)
     expect(parsed.quoteDate).toBe('2026-10-13')
     expect(parsed.period).toBe('中午')
     expect(parsed.quoteAvailable).toBe(true)
@@ -148,7 +154,8 @@ describe('pricingQuoteResolutionSchema', () => {
       projectId: PROJECT_ID,
       basis: 'MANUAL',
       offsetDays: 0,
-      settlePrevOnClosed: false,
+      priceClosedSettleDirection: 'PREV',
+      priceClosedSettleDays: 1,
       periodPolicy: 'MANUAL',
       requestedPeriod: null,
       targetDate: '2026-10-11',

@@ -116,7 +116,8 @@ const projectRows = [
     allowedMaterialSeverity: 'WARN',
     priceDateBasis: 'ORDER',
     priceDateOffsetDays: 7,
-    priceClosedDayPrevSettle: true,
+    priceClosedSettleDirection: 'NEXT',
+    priceClosedSettleDays: 2,
     pricePeriodPolicy: 'AUTO',
     pricePeriodFixed: null,
     remark: '备注一',
@@ -246,6 +247,19 @@ describe('ProjectPage 主数据拆分试点', () => {
       input.focus()
       descriptor?.set?.call(input, value)
       input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  /**
+   * 设置数字输入框（InputNumber）的值。
+   * <p>
+   * antd 6 的 InputNumber 默认 `changeOnBlur`：只派发 input 事件不会提交表单值，
+   * 必须再失焦一次。漏掉 blur 会读到旧值，表现为「明明改了却没生效」。
+   */
+  const setNumberValue = (input: HTMLInputElement, value: string) => {
+    setTextValue(input, value)
+    act(() => {
+      input.blur()
     })
   }
 
@@ -633,11 +647,12 @@ describe('ProjectPage 主数据拆分试点', () => {
 
     // maxTagCount="responsive" 在 jsdom 里量不到宽度会把标签折叠成「+N ...」，
     // 因此不断言渲染标签，而是用「保存载荷保留已存值」证明回填链路成立。
-    // 弹层内共 12 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 /
-    // 允许品牌 / 处理方式 / 允许材质 / 处理方式 / 取价基准 / 时段策略 / 固定时段。
+    // 弹层内共 13 个 select: 客户 / 结算主体 / 状态 / 取价数据源 / 取价地区 /
+    // 允许品牌 / 处理方式 / 允许材质 / 处理方式 / 取价基准 / 时段策略 / 固定时段 /
+    // 休市取价方向（原「休市按前一交易日结算」的 Switch 改成方向 Select，故由 12 变 13）。
     const overlay = document.body.querySelector('.workspace-overlay')
     const selectRoots = overlay!.querySelectorAll('.ant-select')
-    expect(selectRoots).toHaveLength(12)
+    expect(selectRoots).toHaveLength(13)
 
     await clickButtonInOverlay('保存')
 
@@ -719,17 +734,225 @@ describe('ProjectPage 主数据拆分试点', () => {
 
     expect(saveBusinessModule).toHaveBeenCalledTimes(1)
     const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
-    // 5 个字段必须始终出现在载荷里, 且条件字段按主字段口径复位
+    // 6 个字段必须始终出现在载荷里, 且条件字段按主字段口径复位
     expect(draft).toMatchObject({
       priceDateBasis: 'DELIVERY',
       priceDateOffsetDays: 0,
-      priceClosedDayPrevSettle: false,
+      priceClosedSettleDirection: 'PREV',
+      priceClosedSettleDays: 1,
       pricePeriodPolicy: 'AUTO',
       pricePeriodFixed: null,
     })
   })
 
-  it('编辑项目资料：切到非报单基准时顺延天数与休市开关被复位并禁用', async () => {
+  /**
+   * 送货日期基准同样要用休市口径（方向 + 天数），只有「每次手工选择」不参与。
+   * <p>用「延后 + 5 个交易日」而不是默认「往前 + 1 个」：默认档下漏读字段也会断言为绿。</p>
+   */
+  it('新建项目：送货日期基准下休市方向与天数可配置并下发', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9004' })
+    renderPage()
+    await flushAsync()
+
+    await clickButton('新增')
+    await flushAsync()
+
+    const nameInput = document.body.querySelector(
+      '.workspace-overlay input#projectName',
+    ) as HTMLInputElement
+    setTextValue(nameInput, '项目四')
+    await chooseOverlaySelectOption('customerId')
+    await chooseOverlaySelectOptionByText('settlementCompanyId', '结算主体甲')
+
+    const directionInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceClosedSettleDirection',
+    )
+    const daysInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceClosedSettleDays',
+    )
+    // 送货日期基准下两个控件都必须可编辑（旧实现只对报单日期开放）
+    expect(directionInput?.disabled).toBeFalsy()
+    expect(daysInput?.disabled).toBeFalsy()
+
+    await chooseOverlaySelectOptionByText(
+      'priceClosedSettleDirection',
+      '延后（较晚交易日）',
+    )
+    setNumberValue(daysInput as HTMLInputElement, '5')
+    await flushAsync()
+
+    await clickButtonInOverlay('保存')
+
+    expect(saveBusinessModule).toHaveBeenCalledTimes(1)
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      priceDateBasis: 'DELIVERY',
+      priceDateOffsetDays: 0,
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 5,
+    })
+  })
+
+  /** 0 天 = 不做休市位移：只在「报单日期 + 延后」下放行，其余组合拦住保存。 */
+  it('休市调整天数 0 只在「报单日期 + 延后」下放行', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9005' })
+    renderPage()
+    await flushAsync()
+
+    await clickButton('新增')
+    await flushAsync()
+
+    const nameInput = document.body.querySelector(
+      '.workspace-overlay input#projectName',
+    ) as HTMLInputElement
+    setTextValue(nameInput, '项目五')
+    await chooseOverlaySelectOption('customerId')
+    await chooseOverlaySelectOptionByText('settlementCompanyId', '结算主体甲')
+
+    const daysInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceClosedSettleDays',
+    ) as HTMLInputElement
+    setNumberValue(daysInput, '0')
+    await flushAsync()
+
+    // 送货日期 + 0 天：拦住保存并给出提示
+    await clickButtonInOverlay('保存')
+    await flushAsync()
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain(
+      i18n.t('modules.pages.project.priceClosedSettleDaysRequired'),
+    )
+
+    // 报单日期 + 往前 + 0 天：仍然非法
+    await chooseOverlaySelectOptionByText(
+      'priceDateBasis',
+      '报单日期＋N 个交易日',
+    )
+    await clickButtonInOverlay('保存')
+    await flushAsync()
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+
+    // 报单日期 + 延后 + 0 天：等价旧开关「关闭」，放行并原样下发 0
+    await chooseOverlaySelectOptionByText(
+      'priceClosedSettleDirection',
+      '延后（较晚交易日）',
+    )
+    await clickButtonInOverlay('保存')
+
+    expect(saveBusinessModule).toHaveBeenCalledTimes(1)
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      priceDateBasis: 'ORDER',
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 0,
+    })
+  })
+
+  /**
+   * 历史项目由旧布尔「关闭」迁移而来时 days=0：回填必须显示 0，
+   * 保存也原样下发 0 —— 归一化只夹 0..30，不能把 0 抬成默认的 1（否则用户一打开编辑就看到配置被改了）。
+   */
+  it('编辑项目资料：历史 days=0 回填显示 0 并原样保存', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
+    vi.mocked(listBusinessModule).mockResolvedValue({
+      code: 0,
+      data: {
+        rows: [
+          {
+            ...projectRows[0],
+            priceDateBasis: 'ORDER',
+            priceClosedSettleDirection: 'NEXT',
+            priceClosedSettleDays: 0,
+          },
+        ],
+        total: 1,
+      },
+    })
+    renderPage()
+    await flushAsync()
+
+    await act(async () => {
+      container
+        .querySelector('.ant-table-row')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await clickButton('编辑')
+    await flushAsync()
+
+    const daysInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceClosedSettleDays',
+    )
+    expect(daysInput?.value).toBe('0')
+
+    await clickButtonInOverlay('保存')
+
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      priceDateBasis: 'ORDER',
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 0,
+    })
+  })
+
+  /**
+   * 报单日期基准下是两件事叠加：休市口径先定出休市基准日，再叠加顺延交易日数。
+   * 用 offset 4 / 休市 3 两个不同值锁定「谁也没顶掉谁」——同值时漏传一个也看不出来。
+   */
+  it('新建项目：报单日期基准下顺延交易日数与休市方向/天数分别下发', async () => {
+    vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9006' })
+    renderPage()
+    await flushAsync()
+
+    await clickButton('新增')
+    await flushAsync()
+
+    const nameInput = document.body.querySelector(
+      '.workspace-overlay input#projectName',
+    ) as HTMLInputElement
+    setTextValue(nameInput, '项目六')
+    await chooseOverlaySelectOption('customerId')
+    await chooseOverlaySelectOptionByText('settlementCompanyId', '结算主体甲')
+
+    await chooseOverlaySelectOptionByText(
+      'priceDateBasis',
+      '报单日期＋N 个交易日',
+    )
+    await chooseOverlaySelectOptionByText(
+      'priceClosedSettleDirection',
+      '延后（较晚交易日）',
+    )
+    setNumberValue(
+      document.body.querySelector<HTMLInputElement>(
+        '.workspace-overlay input#priceDateOffsetDays',
+      ) as HTMLInputElement,
+      '4',
+    )
+    setNumberValue(
+      document.body.querySelector<HTMLInputElement>(
+        '.workspace-overlay input#priceClosedSettleDays',
+      ) as HTMLInputElement,
+      '3',
+    )
+    await flushAsync()
+
+    await clickButtonInOverlay('保存')
+
+    expect(saveBusinessModule).toHaveBeenCalledTimes(1)
+    const [, draft] = vi.mocked(saveBusinessModule).mock.calls[0]
+    expect(draft).toMatchObject({
+      priceDateBasis: 'ORDER',
+      priceDateOffsetDays: 4,
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 3,
+    })
+  })
+
+  /**
+   * 切到「每次手工选择」时：顺延交易日数复位为 0 并禁用；
+   * 休市方向/天数只是置灰（值保留为配置，切回送货日期/报单日期不必重填）。
+   */
+  it('编辑项目资料：切到手工基准时顺延天数复位, 休市方向与天数置灰但保留值', async () => {
     vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
     renderPage()
     await flushAsync()
@@ -746,21 +969,27 @@ describe('ProjectPage 主数据拆分试点', () => {
     const offsetInput = document.body.querySelector<HTMLInputElement>(
       '.workspace-overlay input#priceDateOffsetDays',
     )
-    const prevSettleSwitch = document.body.querySelector<HTMLButtonElement>(
-      '.workspace-overlay button#priceClosedDayPrevSettle',
+    const directionInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceClosedSettleDirection',
     )
-    // 记录里基准是「报单日期」: 两个条件字段可编辑且回填历史值
+    const daysInput = document.body.querySelector<HTMLInputElement>(
+      '.workspace-overlay input#priceClosedSettleDays',
+    )
+    // 记录里基准是「报单日期」: 三个条件字段可编辑且回填历史值
     expect(offsetInput?.disabled).toBe(false)
     expect(offsetInput?.value).toBe('7')
-    expect(prevSettleSwitch?.disabled).toBe(false)
-    expect(prevSettleSwitch?.getAttribute('aria-checked')).toBe('true')
+    expect(directionInput?.disabled).toBeFalsy()
+    expect(daysInput?.disabled).toBeFalsy()
+    expect(daysInput?.value).toBe('2')
 
     await chooseOverlaySelectOptionByText('priceDateBasis', '每次手工选择')
 
     expect(offsetInput?.value).toBe('0')
     expect(offsetInput?.disabled).toBe(true)
-    expect(prevSettleSwitch?.getAttribute('aria-checked')).toBe('false')
-    expect(prevSettleSwitch?.disabled).toBe(true)
+    // 置灰但不清空：DELIVERY/ORDER 都还要用这两个字段
+    expect(directionInput?.disabled).toBe(true)
+    expect(daysInput?.disabled).toBe(true)
+    expect(daysInput?.value).toBe('2')
 
     await clickButtonInOverlay('保存')
 
@@ -768,7 +997,8 @@ describe('ProjectPage 主数据拆分试点', () => {
     expect(draft).toMatchObject({
       priceDateBasis: 'MANUAL',
       priceDateOffsetDays: 0,
-      priceClosedDayPrevSettle: false,
+      priceClosedSettleDirection: 'NEXT',
+      priceClosedSettleDays: 2,
       pricePeriodFixed: null,
     })
   })

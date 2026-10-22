@@ -61,6 +61,30 @@ export const DEFAULT_PRICE_DATE_BASIS: ProjectPriceDateBasis = 'DELIVERY'
 export const MAX_PRICE_DATE_OFFSET_DAYS = 30
 
 /**
+ * 休市取价方向。
+ * <p>
+ * 基准日（DELIVERY=送货日期, ORDER=报单日期）是休市日时, 按该方向取第 N 个交易日作为
+ * 休市基准日: PREV 往前(较早交易日) / NEXT 延后(较晚交易日)。基准为 MANUAL 时不参与。
+ */
+export type ProjectPriceClosedSettleDirection = 'PREV' | 'NEXT'
+
+/** 休市取价方向默认档: 与后端默认一致, 缺省往前取。 */
+export const DEFAULT_PRICE_CLOSED_SETTLE_DIRECTION: ProjectPriceClosedSettleDirection =
+  'PREV'
+
+/** 休市调整天数默认档: 与后端默认一致, 缺省位移 1 个交易日。 */
+export const DEFAULT_PRICE_CLOSED_SETTLE_DAYS = 1
+
+/**
+ * 休市调整天数上限; 与后端 0..30 的校验区间一致。
+ * <p>
+ * 下限是 0 而不是 1: 0 表示「不做休市位移」(等价旧开关的「关闭」), 但只在
+ * 「报单日期 + 延后(NEXT)」组合下合法; 方向为往前或基准为送货日期时 0 非法,
+ * 见 {@link isPriceClosedSettleDaysValid}。
+ */
+export const MAX_PRICE_CLOSED_SETTLE_DAYS = 30
+
+/**
  * 项目取价时段策略。
  * <p>
  * AUTO 自动取当日最新时段; FIXED 固定取 {@link ProjectPricePeriod} 指定时段; MANUAL 每次手工选择。
@@ -233,12 +257,61 @@ export function normalizePriceDateOffsetDays(value: unknown): number {
 }
 
 /**
- * 休市取前一交易日归一化: 只认布尔真值。
+ * 休市取价方向归一化: 只认 PREV/NEXT 两个字面量(大小写不敏感), 其余(含 null/未知值)按默认「往前」处理。
  * <p>
- * 刻意不用 truthy 判断: 后端若把 false 序列化成字符串 'false', 宽松转换会把它读成 true。
+ * 与 {@link normalizePriceDateBasis} 同一口径: 读路径宽松 —— 一个字段漂移不该让整条记录不可用。
  */
-export function normalizePriceClosedDayPrevSettle(value: unknown): boolean {
-  return value === true
+export function normalizePriceClosedSettleDirection(
+  value: unknown,
+): ProjectPriceClosedSettleDirection {
+  const text = asString(value).trim().toUpperCase()
+  return text === 'PREV' || text === 'NEXT'
+    ? text
+    : DEFAULT_PRICE_CLOSED_SETTLE_DIRECTION
+}
+
+/**
+ * 休市调整天数归一化: 取整后夹到 0..{@link MAX_PRICE_CLOSED_SETTLE_DAYS}。
+ * <p>
+ * 与 {@link normalizePriceDateOffsetDays} 的差别是**显式 0 必须原样保留**: 0 是合法值
+ * (不做休市位移), 历史项目由旧布尔「关闭」迁移而来时正是 0, 编辑回填要把 0 显示出来,
+ * 不能悄悄抬成 1 让用户以为配置变了。只有缺省与非法输入才回落到默认值。
+ */
+export function normalizePriceClosedSettleDays(value: unknown): number {
+  const text = typeof value === 'string' ? value.trim() : value
+  if (text === null || text === undefined || text === '') {
+    return DEFAULT_PRICE_CLOSED_SETTLE_DAYS
+  }
+  if (typeof text !== 'number' && typeof text !== 'string') {
+    return DEFAULT_PRICE_CLOSED_SETTLE_DAYS
+  }
+  const parsed = Number(text)
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_PRICE_CLOSED_SETTLE_DAYS
+  }
+  return Math.min(Math.max(Math.trunc(parsed), 0), MAX_PRICE_CLOSED_SETTLE_DAYS)
+}
+
+/**
+ * 休市调整天数的组合合法性: 0 只在「报单日期 + 延后」下合法。
+ * <p>
+ * 这条口径是**唯一来源**: 项目表单的天数校验调它, 不要在别处另写一遍
+ * `days > 0 || (basis === 'ORDER' && direction === 'NEXT')`。
+ * 保存载荷只做 0..30 的区间归一化(不在这里拦人), 组合非法由表单校验与后端 422 兜住。
+ * 基准为 MANUAL 时休市口径不参与, 任何合区间天数都视为合法(控件同时置灰)。
+ */
+export function isPriceClosedSettleDaysValid(
+  days: number,
+  direction: ProjectPriceClosedSettleDirection,
+  basis: ProjectPriceDateBasis,
+): boolean {
+  if (basis === 'MANUAL') {
+    return true
+  }
+  if (days > 0) {
+    return true
+  }
+  return basis === 'ORDER' && direction === 'NEXT'
 }
 
 /** 取价时段策略归一化: 只认三个字面量(大小写不敏感), 其余(含 null/未知值)按默认「自动」处理。 */

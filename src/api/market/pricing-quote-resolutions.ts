@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { apiGet } from '@/api/core/client'
 import type {
+  ProjectPriceClosedSettleDirection,
   ProjectPriceDateBasis,
   ProjectPricePeriod,
   ProjectPricePeriodPolicy,
@@ -35,8 +36,10 @@ export const pricingQuoteResolutionSchema = z.looseObject({
   basis: z.string(),
   /** 本次生效的顺延交易日数（仅 ORDER 有意义）。 */
   offsetDays: z.number(),
-  /** 本次生效的「报单日休市按前一交易日结算」开关。 */
-  settlePrevOnClosed: z.boolean(),
+  /** 本次生效的休市取价方向：PREV 往前 / NEXT 延后（MANUAL 不参与）。 */
+  priceClosedSettleDirection: z.string(),
+  /** 本次生效的休市调整天数：0 表示不位移，1..30 为位移的交易日数（MANUAL 不参与）。 */
+  priceClosedSettleDays: z.number(),
   /** 本次生效的时段策略：AUTO/FIXED/MANUAL。 */
   periodPolicy: z.string(),
   /** 目标时段（配置或调用方要求；AUTO 时可能为空）。 */
@@ -75,7 +78,13 @@ export type PricingQuoteResolutionParams = {
   deliveryDate?: string
   basis?: ProjectPriceDateBasis
   offsetDays?: number
-  settlePrevOnClosed?: boolean
+  /**
+   * 休市取价方向（PREV 往前 / NEXT 延后）。
+   * <p>与项目实体字段同名，直接作为 query 参数下发，不做缩写。</p>
+   */
+  priceClosedSettleDirection?: ProjectPriceClosedSettleDirection
+  /** 休市调整天数（0..30）；0 表示不位移，只在「报单日期 + 延后」下合法。 */
+  priceClosedSettleDays?: number
   periodPolicy?: ProjectPricePeriodPolicy
   period?: ProjectPricePeriod
   /** 手工取价日期（ISO yyyy-MM-dd）；基准为 MANUAL 时必传。 */

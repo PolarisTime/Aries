@@ -5,13 +5,15 @@ import { useTranslation } from 'react-i18next'
 import { saveBusinessModule } from '@/api/business/business-crud'
 import type { CustomerOption } from '@/api/master/customer-options'
 import type {
+  ProjectPriceClosedSettleDirection,
   ProjectPriceDateBasis,
   ProjectPricePeriod,
   ProjectPricePeriodPolicy,
   ProjectScopeEnforcement,
 } from '@/api/master/project-options'
 import {
-  normalizePriceClosedDayPrevSettle,
+  normalizePriceClosedSettleDays,
+  normalizePriceClosedSettleDirection,
   normalizePriceDateBasis,
   normalizePriceDateOffsetDays,
   normalizePricePeriodFixed,
@@ -61,8 +63,13 @@ export interface ProjectEditorValues {
   priceDateBasis: ProjectPriceDateBasis
   /** 报单日期基准顺延的交易日数(0-30); 仅基准为 ORDER 时有意义。 */
   priceDateOffsetDays: number
-  /** 报单日为休市时是否按前一个交易日结算; 仅基准为 ORDER 时有意义。 */
-  priceClosedDayPrevSettle: boolean
+  /** 休市取价方向: PREV往前(较早交易日)/NEXT延后(较晚交易日); 基准为 MANUAL 时不参与。 */
+  priceClosedSettleDirection: ProjectPriceClosedSettleDirection
+  /**
+   * 休市调整天数(0-30): 基准日休市时按方向位移的交易日数。
+   * 0 表示不做位移, 只在「报单日期 + 延后」组合下合法; 基准为 MANUAL 时不参与。
+   */
+  priceClosedSettleDays: number
   /** 取价时段策略: AUTO自动取当日最新时段/FIXED固定时段/MANUAL每次手工选择。 */
   pricePeriodPolicy: ProjectPricePeriodPolicy
   /** 固定取价时段(上午/中午/下午); 仅策略为 FIXED 时必填, 其余固定传 null。 */
@@ -171,9 +178,15 @@ function buildProjectDraft(args: {
       priceDateBasis === 'ORDER'
         ? normalizePriceDateOffsetDays(values.priceDateOffsetDays)
         : 0,
-    priceClosedDayPrevSettle:
-      priceDateBasis === 'ORDER' &&
-      normalizePriceClosedDayPrevSettle(values.priceClosedDayPrevSettle),
+    // 休市口径在 DELIVERY 与 ORDER 两个基准下都生效(只有 MANUAL 不参与), 因此不按基准复位:
+    // 用户从「送货日期」切到「每次手工选择」时仍保留方向/天数的配置, 切回来不用重填。
+    // 0 是合法天数(不做位移), 归一化只夹区间, 不得抬成 1。
+    priceClosedSettleDirection: normalizePriceClosedSettleDirection(
+      values.priceClosedSettleDirection,
+    ),
+    priceClosedSettleDays: normalizePriceClosedSettleDays(
+      values.priceClosedSettleDays,
+    ),
     pricePeriodPolicy,
     pricePeriodFixed:
       pricePeriodPolicy === 'FIXED'
@@ -236,13 +249,11 @@ export function ProjectEditorOverlay({
       })
     }
     if (Object.hasOwn(changed, 'priceDateBasis')) {
-      // 基准不是「报单日期」时, 顺延交易日数与休市口径都无意义: 立刻复位,
-      // 免得禁用控件上残留 5/true 这类值, 让人以为还在生效。
+      // 基准不是「报单日期」时, 仅有「顺延交易日数」无意义: 立刻复位,
+      // 免得禁用控件上残留 5 这类值, 让人以为还在生效。
+      // 休市方向/天数不复位: 送货日期基准同样用它们, 只有 MANUAL 置灰(值仍保留为配置)。
       if (normalizePriceDateBasis(changed.priceDateBasis) !== 'ORDER') {
-        form.setFieldsValue({
-          priceDateOffsetDays: 0,
-          priceClosedDayPrevSettle: false,
-        })
+        form.setFieldsValue({ priceDateOffsetDays: 0 })
       }
     }
     if (Object.hasOwn(changed, 'pricePeriodPolicy')) {

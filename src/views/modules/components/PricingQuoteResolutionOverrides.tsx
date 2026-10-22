@@ -7,7 +7,6 @@ import {
   Row,
   Select,
   Space,
-  Switch,
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
@@ -15,7 +14,10 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
 import {
+  MAX_PRICE_CLOSED_SETTLE_DAYS,
   MAX_PRICE_DATE_OFFSET_DAYS,
+  normalizePriceClosedSettleDays,
+  normalizePriceClosedSettleDirection,
   normalizePriceDateBasis,
   normalizePriceDateOffsetDays,
   normalizePricePeriodFixed,
@@ -25,6 +27,8 @@ import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import {
   PRICE_BASIS_LABEL_KEYS,
   PRICE_BASIS_OPTIONS,
+  PRICE_CLOSED_SETTLE_DIRECTION_LABEL_KEYS,
+  PRICE_CLOSED_SETTLE_DIRECTION_OPTIONS,
   PRICE_PERIOD_FALLBACK_OPTIONS,
   PRICE_PERIOD_POLICY_LABEL_KEYS,
   PRICE_PERIOD_POLICY_OPTIONS,
@@ -45,10 +49,13 @@ interface Props {
 }
 
 /**
- * 单据级临时覆盖：基准 / 顺延交易日数 / 休市口径 / 时段策略 / 时段 / 手工日期。
+ * 单据级临时覆盖：基准 / 顺延交易日数 / 休市取价方向与天数 / 时段策略 / 时段 / 手工日期。
  *
  * <p>覆盖只作用于本次交付核定，不改项目配置；展示值优先取解析结果回显的「本次生效值」，
  * 因此覆盖生效后用户看到的是后端真正采用的口径。</p>
+ *
+ * <p>休市口径（方向 + 天数）在送货日期与报单日期两个基准下都参与，只有「每次手工选择」不参与；
+ * 顺延交易日数则只在报单日期基准下有意义 —— 两者的显示条件因此不同，不共用一个 show 判断。</p>
  *
  * <p>排版：标题与「恢复项目配置」同排一行，字段两列栅格 + 标签在上、控件占满列宽 ——
  * 条件字段增删只影响栅格，不会像行内标签那样把控件挤到下一行。</p>
@@ -68,6 +75,8 @@ export function PricingQuoteResolutionOverrides({
       ? availablePeriods
       : PRICE_PERIOD_FALLBACK_OPTIONS
   const showOrderFields = effective.basis === 'ORDER'
+  // 休市口径只在「每次手工选择」下不参与；送货日期基准同样要用它。
+  const showClosedSettleFields = effective.basis !== 'MANUAL'
 
   return (
     <Space orientation="vertical" size={12} style={{ width: '100%' }}>
@@ -118,20 +127,48 @@ export function PricingQuoteResolutionOverrides({
         </Col>
 
         {showOrderFields ? (
+          <Col span={12}>
+            <OverrideField
+              label={t('modules.pages.project.priceDateOffsetDays')}
+            >
+              <InputNumber
+                aria-label={t('modules.pages.project.priceDateOffsetDays')}
+                style={{ width: '100%' }}
+                min={0}
+                max={MAX_PRICE_DATE_OFFSET_DAYS}
+                value={effective.offsetDays}
+                onChange={(value) =>
+                  onChange({
+                    offsetDays: normalizePriceDateOffsetDays(value),
+                  })
+                }
+              />
+            </OverrideField>
+          </Col>
+        ) : null}
+
+        {showClosedSettleFields ? (
           <>
             <Col span={12}>
               <OverrideField
-                label={t('modules.pages.project.priceDateOffsetDays')}
+                label={t('modules.pages.project.priceClosedSettleDirection')}
               >
-                <InputNumber
-                  aria-label={t('modules.pages.project.priceDateOffsetDays')}
+                <Select
+                  aria-label={t(
+                    'modules.pages.project.priceClosedSettleDirection',
+                  )}
                   style={{ width: '100%' }}
-                  min={0}
-                  max={MAX_PRICE_DATE_OFFSET_DAYS}
-                  value={effective.offsetDays}
-                  onChange={(value) =>
+                  value={effective.priceClosedSettleDirection}
+                  options={PRICE_CLOSED_SETTLE_DIRECTION_OPTIONS.map(
+                    (value) => ({
+                      value,
+                      label: t(PRICE_CLOSED_SETTLE_DIRECTION_LABEL_KEYS[value]),
+                    }),
+                  )}
+                  onChange={(value: string) =>
                     onChange({
-                      offsetDays: normalizePriceDateOffsetDays(value),
+                      priceClosedSettleDirection:
+                        normalizePriceClosedSettleDirection(value),
                     })
                   }
                 />
@@ -140,15 +177,20 @@ export function PricingQuoteResolutionOverrides({
 
             <Col span={12}>
               <OverrideField
-                label={t('modules.pages.project.priceClosedDayPrevSettle')}
+                label={t('modules.pages.project.priceClosedSettleDays')}
               >
-                <Switch
-                  aria-label={t(
-                    'modules.pages.project.priceClosedDayPrevSettle',
-                  )}
-                  checked={effective.settlePrevOnClosed}
-                  onChange={(checked) =>
-                    onChange({ settlePrevOnClosed: checked })
+                <InputNumber
+                  aria-label={t('modules.pages.project.priceClosedSettleDays')}
+                  style={{ width: '100%' }}
+                  min={0}
+                  max={MAX_PRICE_CLOSED_SETTLE_DAYS}
+                  precision={0}
+                  value={effective.priceClosedSettleDays}
+                  onChange={(value) =>
+                    onChange({
+                      priceClosedSettleDays:
+                        normalizePriceClosedSettleDays(value),
+                    })
                   }
                 />
               </OverrideField>

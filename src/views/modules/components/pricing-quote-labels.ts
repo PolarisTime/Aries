@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next'
 import {
   PRICE_PERIOD_OPTIONS,
+  type ProjectPriceClosedSettleDirection,
   type ProjectPriceDateBasis,
   type ProjectPricePeriod,
   type ProjectPricePeriodPolicy,
@@ -12,6 +13,19 @@ export const PRICE_BASIS_OPTIONS: ProjectPriceDateBasis[] = [
   'ORDER',
   'MANUAL',
 ]
+
+/** 可选的休市取价方向（与后端 PREV/NEXT 一致）。 */
+export const PRICE_CLOSED_SETTLE_DIRECTION_OPTIONS: ProjectPriceClosedSettleDirection[] =
+  ['PREV', 'NEXT']
+
+/** 休市取价方向的展示文案 key：与项目资料页同款，避免两处措辞漂移。 */
+export const PRICE_CLOSED_SETTLE_DIRECTION_LABEL_KEYS: Record<
+  ProjectPriceClosedSettleDirection,
+  string
+> = {
+  PREV: 'modules.pages.project.priceClosedSettleDirectionPrev',
+  NEXT: 'modules.pages.project.priceClosedSettleDirectionNext',
+}
 
 /** 可选的时段策略（与后端 AUTO/FIXED/MANUAL 一致）。 */
 export const PRICE_PERIOD_POLICY_OPTIONS: ProjectPricePeriodPolicy[] = [

@@ -427,7 +427,10 @@ const salesOrderRecordShape = {
   priceQuotePeriod: nullableTextSchema.optional(),
   priceDateBasis: nullableTextSchema.optional(),
   priceDateOffsetDays: optionalNonNegativeIntegerSchema,
-  priceClosedSettlePrev: z.boolean().nullable().optional(),
+  /** 休市取价方向：PREV 往前 / NEXT 延后。 */
+  priceClosedSettleDirection: nullableTextSchema.optional(),
+  /** 休市调整天数：0 表示不位移，1..30 为位移的交易日数。 */
+  priceClosedSettleDays: optionalNonNegativeIntegerSchema,
   referencedByFreightBill: z.boolean().default(false),
   referencedBySalesOutbound: z.boolean().default(false),
   referencedBySalesReturn: z.boolean().default(false),
@@ -517,7 +520,10 @@ const salesOrderSaveRequestSchema = z.strictObject({
   priceDateBasis: optionalTextSchema,
   /** 顺延交易日数：与后端 CHECK 一致，0..30。 */
   priceDateOffsetDays: nonNegativeIntegerSchema.max(30).nullish(),
-  priceClosedSettlePrev: z.boolean().nullish(),
+  /** 休市取价方向：PREV 往前 / NEXT 延后。 */
+  priceClosedSettleDirection: optionalTextSchema,
+  /** 休市调整天数：与后端 CHECK 一致，0..30（0 = 不位移，仅 ORDER + NEXT 合法）。 */
+  priceClosedSettleDays: nonNegativeIntegerSchema.max(30).nullish(),
   items: z
     .array(salesOrderSaveItemSchema)
     .min(1) /** 保存并审核标志：true 时后端在同一事务内完成保存与审核。 */,
