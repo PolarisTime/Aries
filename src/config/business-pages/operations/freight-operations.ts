@@ -276,17 +276,19 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
-        key: 'vehiclePlate',
-        label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
-        type: 'autoComplete',
-        options: getCarrierVehiclePlateOptions,
-        row: 1,
-      },
-      {
+        // 物流商编码由所选物流商派生（只读），必须紧跟在物流商后面：
+        // 中间隔一个「车号」会让读数时以为它与车号相关（实测反馈的排版问题之一）。
         key: 'carrierCode',
         label: i18next.t('modules.pages.freightStatement.carrierCode'),
         type: 'input',
         disabled: true,
+        row: 1,
+      },
+      {
+        key: 'vehiclePlate',
+        label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
+        type: 'autoComplete',
+        options: getCarrierVehiclePlateOptions,
         row: 1,
       },
       {
@@ -342,7 +344,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
                 'modules.pages.freightOperations.unitPriceNotSettlementBasis',
               )
             : undefined,
-        row: 2,
+        row: 3,
       },
       {
         key: FIXED_FREIGHT_AMOUNT_FIELD,
@@ -363,12 +365,14 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 3,
       },
       {
+        // 结算主体与结算方式同属「结算信息」，排在同一行；原来夹在固定运费与总运费之间，
+        // 把一组结算字段拆到了两行。
         key: 'settlementCompanyId',
         label: SETTLEMENT_COMPANY_LABEL,
         type: 'select',
         options: getSettlementCompanyOptions,
         disabled: true,
-        row: 3,
+        row: 2,
       },
       {
         key: 'totalFreight',
