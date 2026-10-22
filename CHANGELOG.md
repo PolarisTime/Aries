@@ -1,3 +1,18 @@
+# [13.6.0](https://github.com/PolarisTime/Aries/compare/v13.5.0...v13.6.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* **price-compare:** 一单货覆盖多个批次时按本单分摊封顶已开货，并支持手动分配吨位 ([beae8a8](https://github.com/PolarisTime/Aries/commit/beae8a8ecd1d78204275eeb5fbdcedc6fc23b6e1))
+* **price-compare:** 单据头部标签字号过小、报单/参照网价日期被截断 ([0278f4e](https://github.com/PolarisTime/Aries/commit/0278f4e373ec5b21e6286547cf77ed506b695fa7))
+* **price-compare:** 现货同步支持抗震牌号代取，HRB400 能同步到 HRB400E 的价 ([7602b80](https://github.com/PolarisTime/Aries/commit/7602b801a12a0d61c145d06f93117a3e409a2b1b))
+* **tabs:** 修复页签改名被守卫拒绝后地址栏在两页间反复跳转 ([46286bd](https://github.com/PolarisTime/Aries/commit/46286bd7441034315feda251d48407807a0f3f0b))
+
+
+### Features
+
+* **forms:** 单据编辑器标签改为横向同行，收窄结算方式分段控件 ([5062fbd](https://github.com/PolarisTime/Aries/commit/5062fbdd932f726be4dd0ceabf4335c7e68d1290))
+
 # [13.5.0](https://github.com/PolarisTime/Aries/compare/v13.4.1...v13.5.0) (2026-10-21)
 
 
