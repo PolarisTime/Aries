@@ -2807,6 +2807,8 @@ export const enUS = {
       },
       applied:
         'Applied to {{batches}} batch(es), {{cells}} price cell(s); saving now',
+      substituted:
+        '{{count}} of them substituted by seismic grade (e.g. HRB400 borrowing the HRB400E price)',
       confirmTitle: 'Confirm spot price sync',
       confirmSummary:
         'Using "{{sheet}}" as the source, {{batches}} batch(es) and {{cells}} price cell(s) will be updated: {{fill}} filled in and {{overwrite}} overwriting existing values.',

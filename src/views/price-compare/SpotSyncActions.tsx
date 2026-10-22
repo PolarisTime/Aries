@@ -243,6 +243,13 @@ function SpotSyncImpact({ plan }: { plan: SpotSyncPlan }) {
           </li>
         ))}
       </ul>
+      {plan.totalSubstituted > 0 ? (
+        <p className="spot-sync-impact__substituted">
+          {t('priceCompare.spotSync.substituted', {
+            count: plan.totalSubstituted,
+          })}
+        </p>
+      ) : null}
       {plan.skipped.length ? (
         <p className="spot-sync-impact__skipped">
           {t('priceCompare.spotSync.skipped', {

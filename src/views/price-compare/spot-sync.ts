@@ -1,3 +1,4 @@
+import { substituteMaterialOf } from '@/utils/material-grade'
 import { productKeyOf } from './core'
 import type { PriceRow, PriceSheet, SheetInput, SheetInputs } from './types'
 
@@ -25,6 +26,11 @@ export interface SpotSyncChange {
   after: SheetInput
   /** 本次是覆盖已有值（true）还是原本空缺、本次填入（false） */
   overwrite: boolean
+  /**
+   * 按抗震牌号代取时, 记下实际命中的牌号（如本行 HRB400、取的是 HRB400E 的价）。
+   * 计价口径被替换必须可见, 不能悄悄换掉（与网价取价的告知口径一致）。
+   */
+  substitutedFrom?: string
 }
 
 export interface SpotSyncTargetPlan {
@@ -33,6 +39,7 @@ export interface SpotSyncTargetPlan {
   changes: SpotSyncChange[]
   overwriteCount: number
   fillCount: number
+  substitutedCount: number
 }
 
 /** 被跳过的批次：他人正在编辑（后端 `ensureWritable` 会以 409 拒绝写入）。 */
@@ -50,6 +57,8 @@ export interface SpotSyncPlan {
   totalChanges: number
   totalOverwrite: number
   totalFill: number
+  /** 其中按抗震牌号代取的处数（HRB400 借用 HRB400E 的价）。 */
+  totalSubstituted: number
 }
 
 /** 两个值是否都为空（用于判断"这一格本来就没内容"）。 */
@@ -108,6 +117,42 @@ export function buildSpotSyncSource(
     }
   }
   return source
+}
+
+/**
+ * 为某个目标格找出该同步进来的值 —— **同步取值的唯一出口**。
+ *
+ * <p>两级匹配, 顺序不能颠倒:</p>
+ * <ol>
+ *   <li><b>本行材质自己的价</b>: 与网价取价同一条优先级 —— 自己有就用自己;</li>
+ *   <li><b>同强度抗震牌号的价</b>: 仅当本行材质自己没有价、且该格还没有任何值时才启用。</li>
+ * </ol>
+ *
+ * <p>为什么必须加第二级: 业务上项目报 HRB400, 但现货/商品资料以 HRB400E 为主, 报 400 的行
+ * 本来就取不到价。「网价取价」早已按抗震牌号代取(见 {@link substituteMaterialOf}),
+ * 但现货同步此前只按 {@link productKeyOf} 的原始材质比对, 于是"在 HRB400E 行填的价、
+ * HRB400 行同步不过来" —— 同一份数据在取价里能补到、在同步里补不到。</p>
+ *
+ * <p>为什么要求"该格还没有任何值": 代取是**兜底**, 不能覆盖用户已经手工填好的 400 价。
+ * 这一条同时保证了单向下行 —— HRB400E 自身没有替代候选(已是抗震牌号), 不会反向借 400 的价。</p>
+ */
+function resolveSyncValue(
+  source: Map<string, SpotSyncValue>,
+  brandName: string,
+  productKey: string,
+  row: PriceRow,
+  before: SheetInput | undefined,
+): { value: SpotSyncValue; substitutedFrom?: string } | undefined {
+  const own = source.get(`${brandName}\u0000${productKey}`)
+  if (own) return { value: own }
+  if (!isEmptyValue(before)) return undefined
+  const substitute = substituteMaterialOf(row.material)
+  if (!substitute) return undefined
+  const substituted = source.get(
+    `${brandName}\u0000${productKeyOf({ ...row, material: substitute })}`,
+  )
+  if (!substituted) return undefined
+  return { value: substituted, substitutedFrom: substitute }
 }
 
 /** 作用域选出的目标批次集合（含当前批次自身）。 */
@@ -177,11 +222,11 @@ export function planSpotSync({
       const productKey = syncKeyOf(row)
       if (!productKey) continue
       for (const brandName of brandNames) {
-        const value = source.get(`${brandName}\u0000${productKey}`)
-        if (!value) continue
         const key = `${brandName}:${row.id}`
         const before = sheet.inputs[key]
-        const after: SheetInput = { ...(before ?? {}), ...value }
+        const hit = resolveSyncValue(source, brandName, productKey, row, before)
+        if (!hit) continue
+        const after: SheetInput = { ...(before ?? {}), ...hit.value }
         if (sameValue(before, after)) continue
         changes.push({
           brandName,
@@ -189,6 +234,9 @@ export function planSpotSync({
           ...(before ? { before } : {}),
           after,
           overwrite: !isEmptyValue(before) && !sameValue(before, after),
+          ...(hit.substitutedFrom
+            ? { substitutedFrom: hit.substitutedFrom }
+            : {}),
         })
       }
     }
@@ -200,6 +248,8 @@ export function planSpotSync({
       changes,
       overwriteCount: changes.filter((change) => change.overwrite).length,
       fillCount: changes.filter((change) => !change.overwrite).length,
+      substitutedCount: changes.filter((change) => change.substitutedFrom)
+        .length,
     })
   }
 
@@ -217,6 +267,10 @@ export function planSpotSync({
       0,
     ),
     totalFill: targets.reduce((sum, target) => sum + target.fillCount, 0),
+    totalSubstituted: targets.reduce(
+      (sum, target) => sum + target.substitutedCount,
+      0,
+    ),
   }
 }
 

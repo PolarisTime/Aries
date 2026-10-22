@@ -2748,6 +2748,12 @@ export const zhCN = {
         },
       },
       applied: '已应用到 {{batches}} 个批次、共 {{cells}} 处价格，正在保存',
+      /**
+       * 按抗震牌号代取: 本行报 HRB400, 现货只有 HRB400E, 同步时借用 400E 的价。
+       * 计价口径被替换必须显式告知(与网价取价的告知口径一致), 不能悄悄换掉。
+       */
+      substituted:
+        '其中 {{count}} 处按抗震牌号代取（如 HRB400 借用 HRB400E 的价）',
       confirmTitle: '确认同步现货价',
       confirmSummary:
         '将以「{{sheet}}」为准，更新 {{batches}} 个批次、共 {{cells}} 处价格：其中 {{fill}} 处原本为空，{{overwrite}} 处会覆盖已有值。',

@@ -404,3 +404,86 @@ describe('applySpotSyncChanges', () => {
     expect(applySpotSyncChanges(inputs, [])).toBe(inputs)
   })
 })
+
+/**
+ * 抗震牌号代取（实测反馈）: 两个批次分别为 HRB400 12 与 HRB400E 12，商品资料里只有
+ * HRB400E 的网价。在 HRB400E 批次里填好价后点「同步现货价」，此前 HRB400 那格**同步不过来**
+ * —— 因为同步只按原始材质比对商品键，而网价取价早已按抗震牌号代取。
+ *
+ * <p>规则与取价一致：本行材质自己有价就用自己；自己没有价、且该格还是空的，才借用同强度
+ * 抗震牌号的价。代取必须显式计数告知，不能悄悄换计价口径。</p>
+ */
+describe('抗震牌号代取同步', () => {
+  const sourceRow = (id: string, material: string): PriceRow => ({
+    ...row(id),
+    material,
+  })
+
+  it('HRB400 无自己的价时, 借用 HRB400E 的价并标记代取', () => {
+    const sourceSheet = sheet({
+      id: 's1',
+      rows: [sourceRow('a', 'HRB400E')],
+      inputs: { '中天:a': { spot: 3420, supplierName: '中天' } },
+    })
+    const targetSheet = sheet({
+      id: 's2',
+      rows: [sourceRow('b', 'HRB400')],
+      inputs: {},
+    })
+    const plan = planSpotSync({
+      sheets: [sourceSheet, targetSheet],
+      activeSheetId: 's1',
+      scope: 'project',
+      resolveBrands: brandsOf,
+    })
+    const change = plan.targets
+      .flatMap((target) => target.changes)
+      .find((item) => item.rowId === 'b' && item.brandName === '中天')
+    expect(change?.after.spot).toBe(3420)
+    expect(change?.substitutedFrom).toBe('HRB400E')
+    expect(plan.totalSubstituted).toBe(1)
+  })
+
+  it('HRB400 已经有自己的价时不被 HRB400E 的价覆盖', () => {
+    const sourceSheet = sheet({
+      id: 's1',
+      rows: [sourceRow('a', 'HRB400E')],
+      inputs: { '中天:a': { spot: 3420 } },
+    })
+    const targetSheet = sheet({
+      id: 's2',
+      rows: [sourceRow('b', 'HRB400')],
+      inputs: { '中天:b': { spot: 3400 } },
+    })
+    const plan = planSpotSync({
+      sheets: [sourceSheet, targetSheet],
+      activeSheetId: 's1',
+      scope: 'project',
+      resolveBrands: brandsOf,
+    })
+    // 本行材质自己有价(3400) → 走不到代取, 不会被 3420 覆盖
+    expect(plan.totalChanges).toBe(0)
+    expect(plan.totalSubstituted).toBe(0)
+  })
+
+  it('HRB400E 不会反向借用 HRB400 的价(单向下行)', () => {
+    const sourceSheet = sheet({
+      id: 's1',
+      rows: [sourceRow('a', 'HRB400')],
+      inputs: { '中天:a': { spot: 3400 } },
+    })
+    const targetSheet = sheet({
+      id: 's2',
+      rows: [sourceRow('b', 'HRB400E')],
+      inputs: {},
+    })
+    const plan = planSpotSync({
+      sheets: [sourceSheet, targetSheet],
+      activeSheetId: 's1',
+      scope: 'project',
+      resolveBrands: brandsOf,
+    })
+    expect(plan.totalChanges).toBe(0)
+    expect(plan.totalSubstituted).toBe(0)
+  })
+})

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import type { ModuleLineItem } from '@/types/module-page'
+import { substituteMaterialOf } from '@/utils/material-grade'
 import {
   applyNetPriceFloat,
   applyNetPricesToItems,
@@ -10,7 +11,6 @@ import {
   normalizeDateValue,
   resolveNetPriceHit,
   round2,
-  substituteMaterialOf,
   summarizeNetPriceMatch,
 } from './net-price-fill'
 
