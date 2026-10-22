@@ -259,6 +259,14 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         key: 'remark',
       },
     ],
+    /*
+     * 表头分区（实测反馈「布局不合理」后重排）：可填字段在前，只读派生值整行后置。
+     *   第 1 行 单据头   —— 编号 / 物流商* / 车号 / 单据日期*
+     *   第 2 行 结算     —— 结算方式* + 它决定的两个金额紧邻，切换模式时目光不用跨行
+     *   第 3 行 只读派生 —— 物流商编码 / 结算主体 / 总运费，均由上游带出或系统计算；
+     *                       只读框与输入框同权重混排会让人以为"没填对"，故集中到末行
+     *   第 4 行 备注     —— 整行
+     */
     formFields: [
       {
         key: 'billNo',
@@ -282,7 +290,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: i18next.t('modules.pages.freightStatement.carrierCode'),
         type: 'input',
         disabled: true,
-        row: 1,
+        row: 3,
       },
       {
         key: 'vehiclePlate',
@@ -296,7 +304,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: i18next.t('modules.pages.freightOperations.documentDate'),
         type: 'date',
         required: true,
-        row: 2,
+        row: 1,
       },
       {
         key: SETTLEMENT_MODE_FIELD,
@@ -318,8 +326,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
             value: FREIGHT_SETTLEMENT_MODE_FIXED,
           },
         ],
-        // 两个选项文案较长，按 24 栅格合并两列（6 列会把「按吨位结算」截断成「按吨位…」）。
-        colSpan: 12,
+        /*
+         * 不再合并两列：本表单实际是 3 列节奏（每行 3 个字段，各占 8），colSpan 12 会占 1.5 格，
+         * 把后面的「单价」顶到最右并留出半格空洞（实测截图的空洞就来自这里）。
+         * 3 列节奏下每格约 470px，「按吨位结算 / 固定运费」两个分段放得下，无需加宽。
+         */
         row: 2,
       },
       {
@@ -344,7 +355,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
                 'modules.pages.freightOperations.unitPriceNotSettlementBasis',
               )
             : undefined,
-        row: 3,
+        row: 2,
       },
       {
         key: FIXED_FREIGHT_AMOUNT_FIELD,
@@ -362,7 +373,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         extra: i18next.t(
           'modules.pages.freightOperations.fixedFreightAmountHelp',
         ),
-        row: 3,
+        row: 2,
       },
       {
         // 结算主体与结算方式同属「结算信息」，排在同一行；原来夹在固定运费与总运费之间，
@@ -372,7 +383,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'select',
         options: getSettlementCompanyOptions,
         disabled: true,
-        row: 2,
+        row: 3,
       },
       {
         key: 'totalFreight',
