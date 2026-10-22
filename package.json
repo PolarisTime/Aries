@@ -52,7 +52,7 @@
     "dayjs": "^1.11.23",
     "es-toolkit": "^1.52.0",
     "html2canvas": "^1.4.1",
-    "i18next": "^26.4.2",
+    "i18next": "^26.4.7",
     "pinyin-pro": "^3.29.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
