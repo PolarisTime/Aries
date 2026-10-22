@@ -1846,8 +1846,14 @@ export const enUS = {
         netPriceMatchCurrentEmpty: 'empty',
         netPriceMatchNoPriceDetail:
           'No net price for this row on the resolved date/period; fill it in manually',
+        /**
+         * Wording must hold on read-only surfaces too: the "Re-check net prices" entry lives in
+         * the order editor's Pricing menu, which the detail overlay / expanded list row does not have.
+         */
         netPriceMatchUncheckedDetail:
-          'Not checked yet — use "Re-check net prices"',
+          'Not checked yet — re-check from the order editor’s Pricing menu',
+        /** Automatic check on read-only detail surfaces is in flight. */
+        netPriceMatchCheckingDetail: 'Checking net prices…',
         netPriceMatchRecheck: 'Re-check net prices',
         netPriceMenu: 'Pricing',
         /** Zero-attention entry: no count (zero is not information). */

@@ -249,6 +249,14 @@ export interface ModulePageConfig {
   actions?: ModuleActionDefinition[]
   /** 明细工具栏附加操作（如销售订单交付核定的「整单取网价」）。 */
   renderItemsActions?: (ctx: ModuleItemsActionsContext) => ReactNode
+  /**
+   * 只读详情面（详情弹窗 / 列表行「+」展开）的附加节点。
+   *
+   * <p>用途: 承载"值不在明细行上"的派生展示的数据准备。典型例子是销售订单的「网价匹配」列:
+   * 匹配结果由页面级快照提供, 只读面没有取价工具栏, 必须在这里发起核查, 否则该列永远显示
+   * 「未核查」且提示语指向一个不存在的按钮。挂载点必须是纯副作用/只读节点, 不得写入单据数据。</p>
+   */
+  renderDetailExtras?: (ctx: { record: ModuleRecord }) => ReactNode
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
   /**
    * 列表默认服务端排序（`sortBy` + `direction`，字段必须在后端

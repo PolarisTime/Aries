@@ -11,6 +11,7 @@ import type {
   ModulePageConfig,
 } from '@/types/module-page'
 import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
+import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
 import {
   BILL_STATUS_LABEL,
@@ -500,6 +501,10 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   },
   ...salesOrderItemColumnOutputs,
   renderItemsActions: (ctx) => createElement(SalesOrderNetPriceFiller, ctx),
+  // 只读详情面(详情弹窗 / 列表行「+」展开)没有取价工具栏, 由这里发起网价核查;
+  // 否则「网价匹配」列在这两处永远显示「未核查」。
+  renderDetailExtras: ({ record }) =>
+    createElement(SalesOrderNetPriceCheck, { record }),
   data: [],
   buildOverview: buildSalesOrderOverview,
   statusMap: salesOrderStatusMap,

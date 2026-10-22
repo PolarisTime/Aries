@@ -191,6 +191,8 @@ export function ModuleRecordDetailContent({
 
   return (
     <>
+      {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+      {config.renderDetailExtras?.({ record })}
       {detailFields.length ? (
         <ModuleRecordDetailFieldGrid
           config={config}

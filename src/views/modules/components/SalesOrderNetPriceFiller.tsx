@@ -19,7 +19,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchPricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
-import { fetchMaterialPriceMatches } from '@/api/market/steel-quotes'
 import type { ProjectPriceRule } from '@/api/master/project-price-rules'
 import { fetchProjectPriceRules } from '@/api/master/project-price-rules'
 import { buildSalesOrderPricingSnapshot } from '@/config/business-pages/operations/sales-order-price-snapshot'
@@ -31,11 +30,12 @@ import { message, modal } from '@/utils/antd-app'
 import { summarizeErrorMessage } from '@/utils/error-presentation'
 import '@/styles/net-price-match.css'
 import {
+  computeNetPriceEntries,
+  loadNetPriceIndex,
+  pickEffectiveRule,
+} from '../net-price-check'
+import {
   applyNetPricesToItems,
-  buildNetPriceIndex,
-  evaluateNetPriceMatch,
-  type NetPriceIndex,
-  type NetPriceMatchEntry,
   type NetPriceRule,
   normalizeDateValue,
   summarizeNetPriceMatch,
@@ -54,8 +54,6 @@ const DRAFT = '草稿'
 
 /** 空列表常量：派生回退时保持引用稳定，避免下游 memo 每次失效。 */
 const EMPTY_RULES: ProjectPriceRule[] = []
-/** 空核查结果常量：单号切换时的稳定回退引用。 */
-const EMPTY_ENTRIES: Record<string, NetPriceMatchEntry> = {}
 
 /** 取价快照字段：后端要求一起下发，不完整时宁可不带（见快照构造器）。 */
 const SNAPSHOT_FIELDS = [
@@ -154,23 +152,30 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     adoptSuggestedDate,
   } = usePricingQuoteResolution({ open, projectId, orderDate, deliveryDate })
 
-  // 切换单据时丢弃上一张单据的核查结果, 避免行内标识串单(同一单据重挂载时保留结果)。
+  // 挂载期间为 true：核查结果只有在组件还活着时才写快照。
   useEffect(() => {
-    const state = useNetPriceMatchStore.getState()
-    if (state.documentKey && state.documentKey !== documentKey) {
-      state.clear()
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
     }
+  }, [])
+
+  /*
+   * 切换单据/卸载时丢弃**这张单**的核查结果, 避免行内标识串单, 同时不动其它单据
+   * (快照支持多张单据并存, 例如列表里同时展开多行)。
+   *
+   * <p>用 effect 的 cleanup 拿"上一张单"的 key: cleanup 在依赖变化与卸载时都会执行,
+   * 闭包里的 documentKey 正是即将离开的那张单。这样不需要在渲染期写 ref。</p>
+   *
+   * <p>同时清掉只属于上一张单的结果摘要与核查错误(换单后它们不再适用)。</p>
+   */
+  useEffect(() => {
     setApplySummary(null)
     setCheckError(null)
+    return () => {
+      useNetPriceMatchStore.getState().clearDocument(documentKey)
+    }
   }, [documentKey])
-
-  useEffect(
-    () => () => {
-      mountedRef.current = false
-      useNetPriceMatchStore.getState().clear()
-    },
-    [],
-  )
 
   // 打开弹层时拉取项目价格规定, 并默认选中"上次使用"(回退到唯一一条)。
   useEffect(() => {
@@ -197,10 +202,11 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     [rules, ruleId],
   )
 
-  /** 核查结果：只认本单据的快照。 */
-  const entries = useNetPriceMatchStore((state) =>
-    state.documentKey === documentKey ? state.entries : EMPTY_ENTRIES,
-  )
+  /**
+   * 核查结果：条目按行 id 平铺(行 id 全局唯一), 因此整份 entries 都可用于本单汇总 ——
+   * 汇总只按本单明细行的 id 查表, 不会读到别的单据的行。
+   */
+  const entries = useNetPriceMatchStore((state) => state.entries)
   const summary = useMemo(
     () => summarizeNetPriceMatch(items, entries),
     [items, entries],
@@ -211,20 +217,14 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     setOpen(true)
   }
 
+  // 取价索引与只读面共用 `loadNetPriceIndex`(同一处取数与建索引, 不各写一份)。
   const loadMatchIndex = useCallback(
-    async (args: {
-      quoteDate: string
-      period: string
-      signal?: AbortSignal
-    }): Promise<NetPriceIndex> => {
-      const rows = await fetchMaterialPriceMatches(
-        args.quoteDate,
-        args.period,
-        { source: quoteSource, region: quoteRegion },
-        args.signal,
-      )
-      return buildNetPriceIndex(rows)
-    },
+    (args: { quoteDate: string; period: string; signal?: AbortSignal }) =>
+      loadNetPriceIndex({
+        ...args,
+        ...(quoteSource ? { source: quoteSource } : {}),
+        ...(quoteRegion ? { region: quoteRegion } : {}),
+      }),
     [quoteSource, quoteRegion],
   )
 
@@ -275,11 +275,9 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
           return
         }
         const index = await loadMatchIndex({ quoteDate, period })
-        const next: Record<string, NetPriceMatchEntry> = {}
+        // 逐行核查与只读面共用 `computeNetPriceEntries`: 口径只有一份。
         // 整单取价刚写入的明细优先用调用方传入的新数组: useCallback 闭包里的 items 还是写入前的。
-        for (const item of checkItems ?? items) {
-          next[String(item.id)] = evaluateNetPriceMatch(item, index, rule)
-        }
+        const next = computeNetPriceEntries(checkItems ?? items, index, rule)
         if (!mountedRef.current) return
         useNetPriceMatchStore.getState().setResult(documentKey, next)
       } catch (cause: unknown) {
@@ -678,19 +676,6 @@ function pickDefaultRuleId(
     return lastPriceRuleId
   }
   return rules.length === 1 ? rules[0].id : undefined
-}
-
-/** 核查用的生效价格规定：按"单据已记录 → 项目上次使用 → 唯一一条"取。 */
-export function pickEffectiveRule(
-  rules: readonly ProjectPriceRule[],
-  preferredIds: readonly (string | undefined)[],
-): ProjectPriceRule | undefined {
-  for (const id of preferredIds) {
-    if (!id) continue
-    const hit = rules.find((rule) => rule.id === id)
-    if (hit) return hit
-  }
-  return rules.length === 1 ? rules[0] : undefined
 }
 
 /** 拉取价格规定；失败按"没有规定"处理（核查仍可给出网价匹配结果）。 */

@@ -8,7 +8,10 @@ import { Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { formatAmount } from '@/utils/formatters'
 import type { NetPriceMatchState } from '../net-price-fill'
-import { useNetPriceMatchStore } from '../net-price-match-store'
+import {
+  type NetPriceDocumentState,
+  useNetPriceMatchStore,
+} from '../net-price-match-store'
 
 /** 各状态的图标与文案(图标 + 文字双通道, 不以颜色为唯一区分 —— WCAG 1.4.1)。 */
 const STATE_META: Record<
@@ -52,10 +55,20 @@ const STATE_META: Record<
 export function NetPriceMatchChip({ itemId }: { itemId: string }) {
   const { t } = useTranslation()
   const entry = useNetPriceMatchStore((state) => state.entries[itemId])
+  /*
+   * 没有条目时区分"核查中 / 核查失败 / 还没核查":
+   * 只读详情面会自动核查, 若失败仍显示「未核查」而不说原因, 用户只会重复同一个疑问。
+   * 单据归属靠 store 登记的行 id 反查(行 id 全局唯一)。
+   */
+  const documentState = useNetPriceMatchStore((state) =>
+    findDocumentStateForItem(state.documents, itemId),
+  )
   const state: NetPriceMatchState = entry?.state ?? 'UNCHECKED'
   const meta = STATE_META[state]
   const label = t(meta.labelKey)
-  const detail = describeEntry(t, entry, state)
+  const detail = entry
+    ? describeEntry(t, entry, state)
+    : describeUnchecked(t, documentState)
   return (
     <Tooltip title={detail}>
       <Tag color={meta.color} icon={meta.icon} style={{ marginInlineEnd: 0 }}>
@@ -64,6 +77,39 @@ export function NetPriceMatchChip({ itemId }: { itemId: string }) {
       </Tag>
     </Tooltip>
   )
+}
+
+/**
+ * 没有条目时的悬浮说明: 优先说失败原因, 其次说明"正在核查", 最后才是通用说明。
+ *
+ * <p>"还没核查"的文案必须同时成立在编辑器(有「取价」菜单)与只读详情面(没有)——
+ * 所以它说明"去哪儿能核查", 而不是"点某个按钮"。</p>
+ */
+function describeUnchecked(
+  t: (key: string) => string,
+  documentState: NetPriceDocumentState | undefined,
+): string {
+  if (documentState?.status === 'error') {
+    return (
+      documentState.error ??
+      t('modules.pages.salesOrder.netPriceMatchCheckFailed')
+    )
+  }
+  if (documentState?.status === 'checking') {
+    return t('modules.pages.salesOrder.netPriceMatchCheckingDetail')
+  }
+  return t('modules.pages.salesOrder.netPriceMatchUncheckedDetail')
+}
+
+/** 按行 id 反查所属单据的核查状态(单据数很少, 线性查找即可)。 */
+function findDocumentStateForItem(
+  documents: Record<string, NetPriceDocumentState>,
+  itemId: string,
+): NetPriceDocumentState | undefined {
+  for (const document of Object.values(documents)) {
+    if (document.itemIds.includes(itemId)) return document
+  }
+  return undefined
 }
 
 /** 悬浮说明: 说清"差在哪"(应有单价 vs 当前单价), 而不是只给一个状态词。 */

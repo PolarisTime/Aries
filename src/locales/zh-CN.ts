@@ -1808,7 +1808,17 @@ export const zhCN = {
           '网价应为 {{expected}}，当前单价 {{current}}',
         netPriceMatchCurrentEmpty: '空',
         netPriceMatchNoPriceDetail: '该取价日/时段没有这一行的网价，请手工填写',
-        netPriceMatchUncheckedDetail: '尚未核查，点「重新核查网价」',
+        /**
+         * 未核查时的说明。
+         *
+         * <p>原先写「点『重新核查网价』」，但那个按钮只存在于单据编辑器的「取价」菜单里；
+         * 只读详情面（列表行「+」展开 / 详情弹窗）没有这个按钮，文案等于把用户指向一个
+         * 不存在的控件。这里改成说明"去哪儿能核查"，两种面都成立。</p>
+         */
+        netPriceMatchUncheckedDetail:
+          '尚未核查网价：可在单据编辑器的「取价」菜单里重新核查',
+        /** 只读详情面自动核查进行中（避免与"没核查过"混为一谈）。 */
+        netPriceMatchCheckingDetail: '正在核查网价…',
         netPriceMatchRecheck: '重新核查网价',
         netPriceMenu: '取价',
         /**
