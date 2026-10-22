@@ -194,8 +194,13 @@
   pointer-events: none;
 }
 
+/*
+ * 单据头部的次要标签（报单日期 / ⓘ 参照网价 / 可锁字段的标签）。
+ * 11px 放在 14px 的日期与选择器旁边显得过小、几乎读不出来（实测反馈），提到 12px ——
+ * 与相邻的 .price-compare-meta-field 同档，不再自成一套最小字号。
+ */
 .price-compare-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 

@@ -2228,9 +2228,13 @@ function SheetDateFields({
           <Text type="secondary" className="price-compare-sub">
             {t('priceCompare.sheet.orderDate')}
           </Text>
+          {/*
+            宽度必须放得下 `YYYY年MM月DD日`：132px 在 size="small" 下会把「日」截掉
+            （实测只显示到「2026年10月19」，用户看不出是哪一天）。156px 留出图标与内边距。
+          */}
           <DatePicker
             size="small"
-            style={{ width: 132 }}
+            style={{ width: 156 }}
             value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
             format={dateFormat}
             allowClear={false}
@@ -2249,7 +2253,7 @@ function SheetDateFields({
           </Tooltip>
           <DatePicker
             size="small"
-            style={{ width: 132 }}
+            style={{ width: 156 }}
             className={
               sheet.locked && !readOnly
                 ? 'price-compare-locked-field'
