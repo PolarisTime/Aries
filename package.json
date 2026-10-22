@@ -53,11 +53,11 @@
     "es-toolkit": "^1.52.0",
     "html2canvas": "^1.4.1",
     "i18next": "^26.4.2",
-    "pinyin-pro": "^3.29.4",
+    "pinyin-pro": "^3.29.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.14",
-    "web-vitals": "^6.2.2",
+    "web-vitals": "^6.2.3",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"
   },
