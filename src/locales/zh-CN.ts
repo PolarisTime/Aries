@@ -1605,7 +1605,6 @@ export const zhCN = {
         colContactPhone: '联系电话',
         colCity: '城市',
         colSettlementMode: '结算方式',
-        colDefaultSettlementCompany: '默认结算主体',
         colDefaultSettlementCompanyId: '默认结算主体ID',
         manageProjects: '管理关联项目',
         settlementCash: '现结',
@@ -2733,6 +2732,31 @@ export const zhCN = {
     },
   },
   priceCompare: {
+    /**
+     * 品牌价格表（比价一手价）：一个品牌一张表，规格做行、供应商做列。
+     * 报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
+     */
+    supplierPrice: {
+      brand: '品牌',
+      brandPlaceholder: '选择品牌',
+      quotedOn: '报价日期',
+      addSupplier: '增加供应商',
+      saveAll: '保存（{{count}} 处）',
+      saved: '已保存',
+      category: '类别',
+      spec: '材质 / 规格 / 定尺',
+      pickBrand: '先选一个品牌，再录入该品牌下各供应商的报价',
+      empty: '还没有供应商，先在上面「增加供应商」',
+      removeTitle: '移除供应商「{{name}}」？',
+      removeContent: '该供应商在此品牌下的全部报价将一并移除，其它品牌不受影响',
+      removeColumn: '移除这一列',
+      removeColumnA11y: '移除供应商 {{name}}',
+      fillFromPriceList: '从价格表带价',
+      fillFromPriceListHint:
+        '按品牌取价格表里的最低价，只填**空着的**格子，已有的一律不动',
+      fillNothing: '没有可带价的价格表报价',
+      fillDone: '已从价格表带入 {{count}} 处（取各品牌最低价）',
+    },
     spotSync: {
       /*
        * 三个作用域合并进一个下拉后的文案。
@@ -3118,6 +3142,7 @@ export const zhCN = {
     'company-setting': '结算主体管理',
     'value-alias': '值映射维护',
     'quote-region': '取价地区维护',
+    'supplier-price-list': '品牌价格表',
     'length-premium': '定尺加价维护',
     'customer-statement': '客户对账单',
     'freight-statement': '物流对账单',

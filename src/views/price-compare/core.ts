@@ -62,8 +62,15 @@ export function filterSupplierOptionsByBrand(
   return bound.length > 0 ? bound : options
 }
 
-/** 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。 */
-export const productKeyOf = (row: PriceRow) =>
+/**
+ * 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。
+ *
+ * <p>入参只要求这四属性（不是完整 {@link PriceRow}）：价格表报价、选单快照等"非行对象"也要
+ * 用同一口径生成键，若为了类型匹配在外面另写一遍模板串，两处口径必然分叉。</p>
+ */
+export const productKeyOf = (
+  row: Pick<PriceRow, 'category' | 'material' | 'spec' | 'length'>,
+) =>
   row.category && row.material
     ? `${row.category}|${row.material}|${row.spec}|${row.length}`
     : ''

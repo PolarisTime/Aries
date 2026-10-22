@@ -12,6 +12,7 @@ import {
   ReloadOutlined,
   SettingOutlined,
   SwapOutlined,
+  TagsOutlined,
   TrophyOutlined,
   UnlockOutlined,
   VerticalAlignBottomOutlined,
@@ -40,6 +41,7 @@ import dayjs from 'dayjs'
 import type { TFunction } from 'i18next'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { fetchLowestBrandQuotes } from '@/api/market/supplier-price-lists'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
@@ -70,6 +72,7 @@ import {
 } from './core'
 import { LockableField } from './LockableField'
 import { SpotSyncActions } from './SpotSyncActions'
+import { applyLowestQuotes } from './spot-from-price-list'
 import { resolveLinkedTonnageTotals } from './TonCell'
 import {
   buildTonColumn,
@@ -2418,6 +2421,31 @@ function SheetActionRow({
   const { t } = useTranslation()
   // 未传全量批次时退化为"只有当前批次"：项目级/全部同步与批次内同步等价，不会误写别处
   const syncSheets = useMemo(() => sheets ?? [sheet], [sheet, sheets])
+
+  /**
+   * 从品牌价格表带价：按 (品牌, 商品) 取最低价，**只填空格子**（见 applyLowestQuotes）。
+   *
+   * <p>为什么不做成"进页面就自动填"：报单比价里现货价是业务员的判断结果，自动填充会让人分不清
+   * 「我填的」和「系统带的」。做成显式动作 + 事后提示条数，来源才可追溯。</p>
+   */
+  const [fillingFromPriceList, setFillingFromPriceList] = useState(false)
+  const fillFromPriceList = async () => {
+    setFillingFromPriceList(true)
+    try {
+      const quotes = await fetchLowestBrandQuotes()
+      const { inputs, filled } = applyLowestQuotes(sheet, quotes)
+      if (filled === 0) {
+        message.info(t('priceCompare.supplierPrice.fillNothing'))
+        return
+      }
+      patchSheet(sheet.id, { inputs })
+      message.success(
+        t('priceCompare.supplierPrice.fillDone', { count: filled }),
+      )
+    } finally {
+      setFillingFromPriceList(false)
+    }
+  }
   return (
     <Space size={4} wrap className="price-compare-action-row">
       <LockRefButton
@@ -2444,6 +2472,16 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshPrice')}
       </Button>
+      <Tooltip title={t('priceCompare.supplierPrice.fillFromPriceListHint')}>
+        <Button
+          disabled={readOnly}
+          icon={<TagsOutlined />}
+          loading={fillingFromPriceList}
+          onClick={() => void fillFromPriceList()}
+        >
+          {t('priceCompare.supplierPrice.fillFromPriceList')}
+        </Button>
+      </Tooltip>
       {columnSettingsSlot}
       {onOpenConfig ? (
         <Button icon={<SettingOutlined />} onClick={onOpenConfig}>

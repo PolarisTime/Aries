@@ -1637,7 +1637,6 @@ export const enUS = {
         colContactPhone: 'Phone',
         colCity: 'City',
         colSettlementMode: 'Settlement',
-        colDefaultSettlementCompany: 'Default Settlement Entity',
         colDefaultSettlementCompanyId: 'Default Settlement Entity ID',
         manageProjects: 'Manage Projects',
         settlementCash: 'Cash',
@@ -2793,6 +2792,29 @@ export const enUS = {
     },
   },
   priceCompare: {
+    supplierPrice: {
+      brand: 'Brand',
+      brandPlaceholder: 'Select a brand',
+      quotedOn: 'Quoted on',
+      addSupplier: 'Add supplier',
+      saveAll: 'Save ({{count}})',
+      saved: 'Saved',
+      category: 'Category',
+      spec: 'Material / spec / length',
+      pickBrand: 'Pick a brand first, then enter each supplier quote',
+      empty: 'No supplier yet — use "Add supplier" above',
+      removeTitle: 'Remove supplier "{{name}}"?',
+      removeContent:
+        'All quotes of this supplier under this brand will be removed; other brands are untouched',
+      removeColumn: 'Remove this column',
+      removeColumnA11y: 'Remove supplier {{name}}',
+      fillFromPriceList: 'Fill from price list',
+      fillFromPriceListHint:
+        'Fill empty cells with the lowest quote per brand; existing values are never touched',
+      fillNothing: 'No quotes available in the price list',
+      fillDone:
+        'Filled {{count}} cell(s) from the price list (lowest per brand)',
+    },
     spotSync: {
       action: 'Sync spot prices',
       actionA11y: 'Sync spot prices, choose scope',
@@ -3172,6 +3194,7 @@ export const enUS = {
     'company-setting': 'Settlement Entities',
     'value-alias': 'Value Aliases',
     'quote-region': 'Quote Regions',
+    'supplier-price-list': 'Brand Price List',
     'length-premium': 'Length Premiums',
     'customer-statement': 'Customer Statements',
     'freight-statement': 'Freight Statements',

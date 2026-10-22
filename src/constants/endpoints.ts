@@ -204,6 +204,7 @@ export const ENDPOINTS = {
 
   // Quote sheets (报单比价)
   QUOTE_SHEETS: '/quote-sheets',
+  SUPPLIER_PRICE_LISTS: '/supplier-price-lists',
   QUOTE_SHEET: (id: string | number) => `/quote-sheets/${pathSegment(id)}`,
   QUOTE_SHEET_ITEMS: (id: string | number) =>
     `/quote-sheets/${pathSegment(id)}/items`,
