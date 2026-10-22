@@ -5,6 +5,7 @@ import {
   Checkbox,
   Empty,
   Input,
+  InputNumber,
   Modal,
   Switch,
   Table,
@@ -25,12 +26,14 @@ import { STALE_REALTIME } from '@/constants/query-policies'
 import { message } from '@/utils/antd-app'
 import { formatWeight } from '@/utils/formatters'
 import {
+  defaultPickAllocations,
   matchesPickerVariety,
+  maxAllocateTon,
   type PickerVarietyTarget,
   remainingLinkableQuota,
   remainingLinkableTon,
 } from './purchase-order-picker-tonnage'
-import { actualShippedTonOf } from './ton-progress-text'
+import { actualShippedTonOf, TON_EPSILON } from './ton-progress-text'
 
 interface Props {
   open: boolean
@@ -57,11 +60,22 @@ interface Props {
   /** 选中明细行(undefined 表示清除关联); 选择后由调用方关闭弹窗。 */
   onSelect: (record: PurchaseOrderTonnageRecord | undefined) => void
   /**
-   * 确认勾选的多张明细行(按勾选顺序, 只含当前可见的行); 由调用方关闭弹窗。
+   * 本行**报单吨位**: 「分配吨位」列的默认值与上限都由它决定。
+   * 不传按 0 处理(既有单选调用方无需改动)。
+   */
+  reportedTon?: number
+  /**
+   * 确认勾选的多张明细行(按勾选顺序, 只含当前可见的行)及**用户确认的分配吨位**; 由调用方关闭弹窗。
    * <p>不传时「确认」按钮只禁用不派发(保持既有单选调用方零改动)。</p>
    */
-  onConfirmLinks?: (records: PurchaseOrderTonnageRecord[]) => void
+  onConfirmLinks?: (picks: PickerAllocationPick[]) => void
   onClose: () => void
+}
+
+/** 选单确认时回传的一项: 明细行 + 用户确认的分配吨位。 */
+export interface PickerAllocationPick {
+  record: PurchaseOrderTonnageRecord
+  allocatedTon: number
 }
 
 /** 关键字防抖时长: 避免每次输入都打后端。 */
@@ -78,6 +92,7 @@ export function PurchaseOrderPickerModal({
   excludeSheetId,
   matchVariety,
   linkedTonByItemId,
+  reportedTon = 0,
   onSelect,
   onConfirmLinks,
   onClose,
@@ -98,6 +113,14 @@ export function PurchaseOrderPickerModal({
   const [issuedDoneOverride, setIssuedDoneOverride] = useState<
     Map<string, boolean>
   >(new Map())
+  /**
+   * 「分配吨位」的手动覆盖值(itemId → 吨)。未覆盖的行用 `defaultPickAllocations` 的默认值。
+   * <p>为什么需要它: 一张采购订单明细行的货可能覆盖两个批次的报价单, 具体每条单占多少
+   * 只能由业务手动定 —— 按勾选顺序自动摊是错的(顺序是 UI 副产物, 不是业务依据)。</p>
+   */
+  const [allocOverride, setAllocOverride] = useState<Map<string, number>>(
+    new Map(),
+  )
   /** 勾选的明细行 id: 数组保序, 顺序即"确认"后的关联顺序。 */
   const [checkedItemIds, setCheckedItemIds] = useState<string[]>([])
 
@@ -263,6 +286,26 @@ export function PurchaseOrderPickerModal({
     [checkedItemIds, visibleData],
   )
 
+  /* 默认分配(按勾选顺序摊报单吨位); 用户逐行改写后以覆盖值为准。 */
+  const defaultAllocations = useMemo(
+    () => defaultPickAllocations(checkedRecords, reportedTon),
+    [checkedRecords, reportedTon],
+  )
+
+  /** 某明细行当前生效的分配吨位: 手动覆盖值优先, 否则用默认值。 */
+  const allocatedOf = (record: PurchaseOrderTonnageRecord): number =>
+    allocOverride.get(record.purchaseOrderItemId) ??
+    defaultAllocations.get(record.purchaseOrderItemId) ??
+    0
+
+  /** 已勾选行的分配合计 —— 后端强制 Σ 分配量 ≤ 本行报单吨位, 超了必须当场拦住。 */
+  const allocatedTotal = checkedRecords.reduce(
+    (sum, record) => sum + allocatedOf(record),
+    0,
+  )
+  const overAllocated =
+    reportedTon > 0 && allocatedTotal > reportedTon + TON_EPSILON
+
   const columns: ColumnsType<PurchaseOrderTonnageRecord> = [
     {
       // 多选列: 勾选多行后走工具栏「确认（n）」按勾选顺序一次关联多张明细行。
@@ -388,6 +431,50 @@ export function PurchaseOrderPickerModal({
       },
     },
     {
+      /*
+       * 分配吨位: 本单据在这一明细行上开多少吨。
+       *
+       * <p><b>为什么可编辑</b>: 一张采购订单明细行的货会覆盖两个批次的报价单, 每条单占多少
+       * 只能由业务定 —— 按勾选顺序自动摊是 UI 副产物, 不是业务依据。默认值给出一个起点,
+       * 用户可逐行改写; 合计超过本行报单吨位时当场拦住(后端同样校验 Σ ≤ 报单吨位)。</p>
+       *
+       * <p>只有勾选的行可编辑: 未勾选的行不会被写回, 给它输入框只会让人以为改动会生效。</p>
+       */
+      title: t('priceCompare.sheet.purchaseOrderPickAllocate'),
+      key: 'allocatedTon',
+      width: 132,
+      align: 'right',
+      render: (_value, record) => {
+        const checked = checkedItemIds.includes(record.purchaseOrderItemId)
+        if (!checked) return <span className="ton-muted">—</span>
+        return (
+          <span
+            className="price-compare-purchase-order-picker-alloc"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <InputNumber
+              aria-label={`${record.orderNo} 分配吨位`}
+              min={0}
+              max={maxAllocateTon(record, reportedTon)}
+              precision={3}
+              size="small"
+              value={allocatedOf(record)}
+              onChange={(next) => {
+                const ton =
+                  typeof next === 'number' && Number.isFinite(next) ? next : 0
+                setAllocOverride((current) => {
+                  const map = new Map(current)
+                  map.set(record.purchaseOrderItemId, Math.max(0, ton))
+                  return map
+                })
+              }}
+            />
+          </span>
+        )
+      },
+    },
+    {
       // 真实已开货(入库回写): 与"已开(报单占用)"是两回事, 必须分列展示
       title: t('priceCompare.sheet.purchaseOrderIssuedActual'),
       key: 'actualWeightTon',
@@ -490,12 +577,43 @@ export function PurchaseOrderPickerModal({
             count: issuedDoneCount,
           })}
         </Checkbox>
+        {/*
+          分配合计提示: 只勾选后显示。后端强制 Σ 分配量 ≤ 本行报单吨位,
+          超限时这里说清"谁超了谁", 而不是让用户点确认后收一个 422。
+        */}
+        {checkedRecords.length > 0 ? (
+          <span
+            className={
+              overAllocated
+                ? 'price-compare-purchase-order-picker-alloc-total price-compare-ton-hint--over'
+                : 'price-compare-purchase-order-picker-alloc-total'
+            }
+          >
+            {t(
+              overAllocated
+                ? 'priceCompare.sheet.purchaseOrderPickOverAllocated'
+                : 'priceCompare.sheet.purchaseOrderPickAllocatedTotal',
+              { allocated: allocatedTotal, reported: reportedTon },
+            )}
+          </span>
+        ) : null}
         {/* 多选出口: 0 张禁用, 不派发空的确认(清除关联有独立的按钮) */}
         <Button
           className="price-compare-purchase-order-picker-confirm"
-          disabled={checkedRecords.length === 0}
+          /*
+           * 超分配时禁用: 后端强制 Σ 分配量 ≤ 本行报单吨位, 放过去只会变成一次 422。
+           * 用户眼前的合计与提示已说明要调小哪一侧。
+           */
+          disabled={checkedRecords.length === 0 || overAllocated}
           type="primary"
-          onClick={() => onConfirmLinks?.(checkedRecords)}
+          onClick={() =>
+            onConfirmLinks?.(
+              checkedRecords.map((record) => ({
+                record,
+                allocatedTon: allocatedOf(record),
+              })),
+            )
+          }
         >
           {t('priceCompare.sheet.purchaseOrderPickerConfirm', {
             count: checkedRecords.length,

@@ -75,7 +75,40 @@ export function actualShippedTonOf(actualWeightTon: unknown): number {
 }
 
 /**
- * 已开货合计 = 各关联明细行的真实已开货之和。
+ * 吨位比较容差(吨)。吨位在服务端是 `numeric(18,8)`, 前端是双精度浮点, 分摊量若由
+ * `min()` 一类运算得出, 会带出 1e-17 量级的尾差; 直接 `>` 比较会把"其实相等"误判成
+ * "整行实收更多"。取 1e-6 吨(1 克)作为阈值, 远小于任何有业务意义的过磅差。
+ */
+export const TON_EPSILON = 1e-6
+
+/**
+ * 单条关联行**归属到本单据**的已开货吨位 (**唯一出口**)。
+ *
+ * <p><b>为什么不能直接用订单行的 `actualWeightTon`</b>: 那是**整条采购订单明细行**的实收。
+ * 实际业务里一张订单行的货会覆盖两个批次的报价单 —— 比如订单行 30 吨被批次 A（报 14）与
+ * 批次 B（报 16）共用、实收 27.972 吨。若两边都拿 27.972 去减自己的报单量, 两张单的
+ * 「剩余未开」会同时变成负数（A: 14 − 27.972 = −13.972）, 而实际两张单都还有余量。
+ *
+ * <p>因此按**本单据在该行上的分摊量**（`allocated_ton`）封顶: 本单据只可能"开到"自己分摊
+ * 的那部分。结果恒有 `本单已开货 ≤ 本单分摊量`, 于是「剩余未开」再也不会因为共享而变负。
+ *
+ * <p>没有分摊量（历史单值关联行, 未写关联表）时回退到整行实收, 保持旧数据展示不变。</p>
+ */
+export function linkedShippedTonOf(
+  actualWeightTon: unknown,
+  allocatedTon: unknown,
+): number {
+  const actual = actualShippedTonOf(actualWeightTon)
+  const allocated =
+    allocatedTon === null || allocatedTon === undefined || allocatedTon === ''
+      ? Number.NaN
+      : Number(allocatedTon)
+  if (!Number.isFinite(allocated) || allocated < 0) return actual
+  return Math.min(actual, allocated)
+}
+
+/**
+ * 已开货合计 = 各关联明细行**归属到本单据**的已开货之和（见 {@link linkedShippedTonOf}）。
  *
  * <p>三列、ⓘ 弹层与读屏文案共用这一处加法: 各自内联累加时, 改了一处就会出现
  * "列上 20、弹层 18"这种同一行两个数字打架。</p>
@@ -94,9 +127,9 @@ export function shippedTonTotal(actualWeightTons: Iterable<number>): number {
  * <p>基数必须是**本单据的报单吨位**(需求), 不是订单订货量、也不是订单额度 —— 那两者回答的是
  * "订单还能开多少", 与"我报的量还差多少没开货"是两件事。</p>
  *
- * <p>负值不作下限截断(业务明确要求原样显示并标红): 已开货是订单行级事实, 报单是单据级需求,
- * 一张订单行被多张单据共享或本单只报一部分时, 已开货大于本单报单量是正常业务态, 截成 0
- * 会把"已经开超了"这个需要关注的信息藏掉。</p>
+ * <p>负值**不作下限截断**, 但它现在只剩一种成因: 本单据实际分摊到订单行上的量超过了本行报单
+ * 吨位（分配量与报单量不一致, 属于要关注的真实异常）。"订单行被多张单据共享"这一类正常业务态
+ * 已由 {@link linkedShippedTonOf} 按分摊量封顶消掉, 不再产生负值。</p>
  */
 export function remainingUnshippedTon(
   reportedTon: number,

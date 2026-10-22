@@ -9,9 +9,11 @@ import {
   actualShippedTonOf,
   compactTonText,
   issuedBrandText,
+  linkedShippedTonOf,
   remainingTonDisplay,
   remainingUnshippedTon,
   shippedTonTotal,
+  TON_EPSILON,
   tonProgressDetailRows,
   tonProgressDetailText,
   tonProgressOverShippedText,
@@ -106,6 +108,21 @@ function itemSpecText(record: PurchaseOrderTonnageRecord) {
  * 两列; `issuedWeightTotal`(其他报价单的报单占用)只用于选单额度判断; `orderedTotal` 是订货额度,
  * 在吨位列里只作参考。</p>
  */
+/**
+ * 本行在每条采购订单明细行上的**分摊量**（`allocated_ton`）索引 —— **唯一出口**。
+ *
+ * <p>已开货必须按它封顶（见 {@link linkedShippedTonOf}）：否则一张订单行的到货会被每一张
+ * 共享它的单据各算一遍，所有单据的「剩余未开」同时变负。列上合计与 ⓘ 弹层都取这一份。</p>
+ */
+export function allocatedByItemIdOf(row: PriceRow): Map<string, number> {
+  return new Map(
+    (row.purchaseOrderLinks ?? []).map((link) => [
+      link.purchaseOrderItemId,
+      link.allocatedTon,
+    ]),
+  )
+}
+
 export function resolveLinkedTonnageTotals(
   row: PriceRow,
   options: PurchaseOrderTonnageRecord[],
@@ -124,6 +141,7 @@ export function resolveLinkedTonnageTotals(
     if (record) records.push(record)
     else missingItemIds.push(itemId)
   }
+  const allocatedByItemId = allocatedByItemIdOf(row)
   return {
     records,
     missingItemIds,
@@ -131,9 +149,24 @@ export function resolveLinkedTonnageTotals(
       (sum, record) => sum + record.orderedWeight,
       0,
     ),
-    /** 真实已开货合计(入库审核回写口径): 已开货列与剩余未开列的基数。 */
+    /** 本单已开货合计(按本行分摊量封顶): 已开货列与剩余未开列的基数。 */
     shippedTotal: shippedTonTotal(
+      records.map((record) =>
+        linkedShippedTonOf(
+          record.actualWeightTon,
+          allocatedByItemId.get(record.purchaseOrderItemId),
+        ),
+      ),
+    ),
+    /** 订单行**整行**实收合计(不封顶): 只给 ⓘ 弹层说明"订单行一共到了多少"用。 */
+    actualShippedTotal: shippedTonTotal(
       records.map((record) => actualShippedTonOf(record.actualWeightTon)),
+    ),
+    /** 本行在各明细行上的分摊量合计。 */
+    allocatedTotal: records.reduce(
+      (sum, record) =>
+        sum + (allocatedByItemId.get(record.purchaseOrderItemId) ?? 0),
+      0,
     ),
     /** 其他报价单的报单占用合计: 只给选单/额度口径用, 不进吨位列的减法。 */
     issuedWeightTotal: records.reduce(
@@ -431,6 +464,7 @@ export function TonUnopenedCell({
     <LinkedPurchaseOrderPopover
       records={totals.records.length > 0 ? totals.records : [selected]}
       orderedTotal={totals.orderedTotal}
+      allocatedByItemId={allocatedByItemIdOf(row)}
       localTonForItem={localTonForItem}
       unallocatedTon={unallocatedTonOf(row)}
       linkAllowed={purchaseOrderLinkAllowed}
@@ -715,6 +749,7 @@ export function TonCell({
 function LinkedPurchaseOrderPopover({
   records,
   orderedTotal,
+  allocatedByItemId,
   localTonForItem,
   unallocatedTon,
   linkAllowed,
@@ -724,6 +759,8 @@ function LinkedPurchaseOrderPopover({
   records: PurchaseOrderTonnageRecord[]
   /** 关联明细行的订货量合计(参考值, 不进剩余未开的减法)。 */
   orderedTotal: number
+  /** 本行在各订单明细行上的分摊量(已开货按它封顶, 与列上同一口径)。 */
+  allocatedByItemId: Map<string, number>
   localTonForItem: number
   /** 本行报单吨位里还没落到订单明细行上的量(`ton − Σ分配量`, 欠额合法但要说清)。 */
   unallocatedTon: number
@@ -741,6 +778,15 @@ function LinkedPurchaseOrderPopover({
    * 必须与这个合计同源 —— 否则弹层合计数与逐条相加不相等(历史实测踩过"列上 20、弹层 18")。
    */
   const shippedTotal = shippedTonTotal(
+    records.map((record) =>
+      linkedShippedTonOf(
+        record.actualWeightTon,
+        allocatedByItemId.get(record.purchaseOrderItemId),
+      ),
+    ),
+  )
+  /** 订单行整行实收(不封顶): 与"本单已开货"不同时按语句说明, 而不是让用户以为算错。 */
+  const actualShippedTotal = shippedTonTotal(
     records.map((record) => actualShippedTonOf(record.actualWeightTon)),
   )
   const remaining = remainingUnshippedTon(localTonForItem, shippedTotal)
@@ -774,9 +820,14 @@ function LinkedPurchaseOrderPopover({
                 <span>{tonValueText(record.orderedWeight)}</span>
               </div>
               <div className="price-compare-ton-popover-row">
-                <span>{t('priceCompare.sheet.purchaseOrderIssuedActual')}</span>
+                <span>{t('priceCompare.sheet.purchaseOrderLineShare')}</span>
                 <span>
-                  {tonValueText(actualShippedTonOf(record.actualWeightTon))}
+                  {tonValueText(
+                    linkedShippedTonOf(
+                      record.actualWeightTon,
+                      allocatedByItemId.get(record.purchaseOrderItemId),
+                    ),
+                  )}
                 </span>
               </div>
             </Fragment>
@@ -844,6 +895,16 @@ function LinkedPurchaseOrderPopover({
         <span>{t('priceCompare.sheet.columns.purchaseOrderOrdered')}</span>
         <span>{tonValueText(orderedTotal)}</span>
       </div>
+      {/*
+        订单行整行实收与"本单已开货"不同时说明差额去向: 差额属于同一订单行上的其它单据。
+        不解释的话用户会以为"已开货"漏算了(实测反馈: 一单货覆盖两个批次时吨位看起来对不上)。
+      */}
+      {actualShippedTotal > shippedTotal + TON_EPSILON ? (
+        <div className="price-compare-ton-popover-row">
+          <span>{t('priceCompare.sheet.purchaseOrderLineActual')}</span>
+          <span>{tonValueText(actualShippedTotal)}</span>
+        </div>
+      ) : null}
       {multi && brand ? (
         <div className="price-compare-ton-popover-row">
           <span>{t('priceCompare.sheet.columns.brand')}</span>

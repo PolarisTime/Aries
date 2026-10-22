@@ -5,7 +5,9 @@ import {
   sumTonByPurchaseOrderItem,
   unlinkPurchaseOrderPatch,
 } from './core'
+import type { PickerAllocationPick } from './PurchaseOrderPickerModal'
 import { PurchaseOrderPickerModal } from './PurchaseOrderPickerModal'
+import { defaultPickAllocations } from './purchase-order-picker-tonnage'
 import type { PriceRow, PriceRowPurchaseOrderLink } from './types'
 
 interface Options {
@@ -62,30 +64,24 @@ export function usePurchaseOrderPicker({
   const open = (rowId: string) => setPickerRowId(rowId)
 
   /**
-   * 单条分配: allocated = max(0, min(剩余, 该明细行订货量)), 逐条扣减剩余。
+   * 把用户确认的分配结果转成关联行。
    *
-   * <p>剩余初值 = 本行报单吨位(ton ?? 0), 即"这一行要开的量"按勾选顺序依次分摊到各明细行;
-   * 订货量不够的行只吃到自己的订货量, 后续行继续吃剩下的额度。</p>
+   * <p>**分配量由弹层给出，这里不再按勾选顺序自动摊**：一张采购订单明细行的货会覆盖
+   * 两个批次的报价单，每条单占多少只能由业务手动定；勾选顺序是 UI 副产物，不是业务依据。
+   * 默认初值仍由 `defaultPickAllocations` 给（同一处口径），用户可逐行改写。</p>
    */
-  const allocateLinks = (
-    records: PurchaseOrderTonnageRecord[],
-    reportedTon: number,
-  ): PriceRowPurchaseOrderLink[] => {
-    let remaining = Number.isFinite(reportedTon) ? Math.max(0, reportedTon) : 0
-    return records.map((record) => {
-      const ordered = Number.isFinite(record.orderedWeight)
-        ? Math.max(0, record.orderedWeight)
-        : 0
-      const allocatedTon = Math.max(0, Math.min(remaining, ordered))
-      remaining -= allocatedTon
-      return {
-        purchaseOrderId: record.purchaseOrderId,
-        purchaseOrderNo: record.orderNo,
-        purchaseOrderItemId: record.purchaseOrderItemId,
-        allocatedTon,
-      }
-    })
-  }
+  const buildLinks = (
+    picks: PickerAllocationPick[],
+  ): PriceRowPurchaseOrderLink[] =>
+    picks.map(({ record, allocatedTon }) => ({
+      purchaseOrderId: record.purchaseOrderId,
+      purchaseOrderNo: record.orderNo,
+      purchaseOrderItemId: record.purchaseOrderItemId,
+      allocatedTon: Math.max(
+        0,
+        Number.isFinite(allocatedTon) ? allocatedTon : 0,
+      ),
+    }))
 
   return {
     open,
@@ -93,6 +89,7 @@ export function usePurchaseOrderPicker({
       <PurchaseOrderPickerModal
         excludeSheetId={excludeSheetId}
         linkedTonByItemId={linkedTonByItemId}
+        reportedTon={pickerRow?.ton ?? 0}
         open={pickerRowId !== undefined}
         selectedItemId={pickerRow?.purchaseOrderItemId}
         selectedItemIds={selectedItemIds}
@@ -127,7 +124,13 @@ export function usePurchaseOrderPicker({
                * 只冻结规格/吨位、不会给行打 locked 标记。若只写关联不写 locked, 用户点完
                * 保存后关联会被服务端静默清掉。
                */
-              const links = allocateLinks([record], target?.ton ?? 0)
+              const [defaultTon] = defaultPickAllocations(
+                [record],
+                target?.ton ?? 0,
+              ).values()
+              const links = buildLinks([
+                { record, allocatedTon: defaultTon ?? 0 },
+              ])
               const [first] = links
               patchRow(pickerRowId, {
                 ...(first && !target?.locked ? { locked: true } : {}),
@@ -140,10 +143,10 @@ export function usePurchaseOrderPicker({
           }
           setPickerRowId(undefined)
         }}
-        onConfirmLinks={(records: PurchaseOrderTonnageRecord[]) => {
-          if (pickerRowId && records.length > 0) {
+        onConfirmLinks={(picks) => {
+          if (pickerRowId && picks.length > 0) {
             const target = rows.find((row) => row.id === pickerRowId)
-            const links = allocateLinks(records, target?.ton ?? 0)
+            const links = buildLinks(picks)
             const [first] = links
             /*
              * 多行关联整组写回, 旧三列镜像第一条(与服务端 QuoteSheetStore 的镜像口径一致),

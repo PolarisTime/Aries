@@ -133,6 +133,14 @@ describe('PurchaseOrderPickerModal', () => {
     })
   }
 
+  /** 从可选的 mock prop 上安全取调用记录(render 返回的 props 类型里该字段是可选的)。 */
+  const pickCallArg = (fn: unknown) =>
+    (fn as { mock: { calls: Array<[unknown]> } }).mock.calls[0][0]
+
+  /** 取 `onConfirmLinks` 收到的那一组 {record, allocatedTon}。 */
+  const pickRecords = (picks: unknown) =>
+    picks as Array<{ record: PurchaseOrderTonnageRecord; allocatedTon: number }>
+
   const tableRows = () =>
     Array.from(document.querySelectorAll('.ant-table-tbody tr.ant-table-row'))
 
@@ -600,7 +608,10 @@ describe('PurchaseOrderPickerModal', () => {
       confirmButton()?.click()
     })
     expect(props.onConfirmLinks).toHaveBeenCalledTimes(1)
-    expect(props.onConfirmLinks).toHaveBeenCalledWith([second, records[0]])
+    // 回调形状变为「明细行 + 用户确认的分配吨位」: 此处只断言顺序, 分配量由专门用例覆盖
+    expect(
+      pickRecords(pickCallArg(props.onConfirmLinks)).map((pick) => pick.record),
+    ).toEqual([second, records[0]])
     // 勾选在单元格内被截住: 否则会顺带触发行的单选路径并关闭弹窗
     expect(props.onSelect).not.toHaveBeenCalled()
   })
@@ -682,6 +693,115 @@ describe('PurchaseOrderPickerModal', () => {
       confirmButton()?.click()
     })
     // 勾选集合来自打开时的回填: 两条都还在, 不会静默掉一条
-    expect(props.onConfirmLinks).toHaveBeenCalledWith([records[0], second])
+    expect(
+      pickRecords(pickCallArg(props.onConfirmLinks)).map((pick) => pick.record),
+    ).toEqual([records[0], second])
+  })
+
+  it('分配吨位默认按勾选顺序摊报单吨位, 且可逐行手动改写后回传', async () => {
+    const second: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      purchaseOrderId: '99',
+      purchaseOrderItemId: '302',
+      orderNo: 'PO-302',
+      orderedWeight: 70,
+      issuedWeight: 0,
+      remainingWeight: 70,
+      actualWeightTon: null,
+      issuedDone: false,
+    }
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
+    // 本行报单 30 吨, 两条明细行各够: 默认先把 30 摊给第一条, 第二条拿 0
+    const props = render({ reportedTon: 30, onConfirmLinks: vi.fn() })
+    await flush()
+    await flush()
+
+    act(() => {
+      checkInput('PO-88')?.click()
+    })
+    act(() => {
+      checkInput('PO-302')?.click()
+    })
+    await flush()
+
+    const allocInputs = () =>
+      Array.from(
+        document.querySelectorAll<HTMLInputElement>(
+          '.price-compare-purchase-order-picker-alloc input',
+        ),
+      )
+    // 默认分配: 30 全给第一条(订货 40 吃得下), 第二条 0
+    expect(allocInputs().map((input) => Number(input.value))).toEqual([30, 0])
+
+    // 手动改写为 18 / 12: 一单货覆盖两个批次时由业务决定归属, 不按勾选顺序定
+    act(() => {
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- 原生 value setter 必须以输入元素为 receiver 调用
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set
+      setter?.call(allocInputs()[0], '18')
+      allocInputs()[0].dispatchEvent(new Event('input', { bubbles: true }))
+      setter?.call(allocInputs()[1], '12')
+      allocInputs()[1].dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await flush()
+    act(() => {
+      confirmButton()?.click()
+    })
+
+    expect(
+      pickRecords(pickCallArg(props.onConfirmLinks)).map(
+        (pick) => pick.allocatedTon,
+      ),
+    ).toEqual([18, 12])
+  })
+
+  it('分配合计超过本行报单吨位时禁用确认(后端同样校验 Σ ≤ 报单吨位)', async () => {
+    const second: PurchaseOrderTonnageRecord = {
+      ...records[0],
+      purchaseOrderId: '99',
+      purchaseOrderItemId: '302',
+      orderNo: 'PO-302',
+      orderedWeight: 70,
+      issuedWeight: 0,
+      remainingWeight: 70,
+      actualWeightTon: null,
+      issuedDone: false,
+    }
+    api.fetchPurchaseOrderTonnages.mockResolvedValue([records[0], second])
+    // 报单只有 10 吨, 但两条明细行各可摊到 10 → 合计 20 > 10 必须拦住
+    render({ reportedTon: 10, onConfirmLinks: vi.fn() })
+    await flush()
+    await flush()
+
+    act(() => {
+      checkInput('PO-88')?.click()
+    })
+    act(() => {
+      checkInput('PO-302')?.click()
+    })
+    await flush()
+
+    const allocInputs = Array.from(
+      document.querySelectorAll<HTMLInputElement>(
+        '.price-compare-purchase-order-picker-alloc input',
+      ),
+    )
+    act(() => {
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- 原生 value setter 必须以输入元素为 receiver 调用
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set
+      setter?.call(allocInputs[0], '10')
+      allocInputs[0].dispatchEvent(new Event('input', { bubbles: true }))
+      setter?.call(allocInputs[1], '10')
+      allocInputs[1].dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await flush()
+
+    expect(confirmButton()?.disabled).toBe(true)
+    expect(document.body.textContent).toContain('超过本行报单吨位')
   })
 })

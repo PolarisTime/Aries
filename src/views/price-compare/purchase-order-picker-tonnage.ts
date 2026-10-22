@@ -99,3 +99,44 @@ export function matchesPickerVariety(
   ]
   return pairs.every(([want, got]) => !want || want === got)
 }
+
+/**
+ * 选单弹层里的「分配吨位」默认值（**唯一默认口径**）。
+ *
+ * <p>按勾选顺序把**本行报单吨位**依次摊到各明细行，单条最多吃到该明细行的订货量，摊完为止。
+ * 这只是初值 —— 用户可在弹层里逐行改写（一单货覆盖多个批次时，具体归谁由业务定，不由顺序定）。</p>
+ *
+ * @returns purchaseOrderItemId → 默认分配吨位
+ */
+export function defaultPickAllocations(
+  records: readonly PurchaseOrderTonnageRecord[],
+  reportedTon: number,
+): Map<string, number> {
+  let remaining =
+    Number.isFinite(reportedTon) && reportedTon > 0 ? reportedTon : 0
+  const allocations = new Map<string, number>()
+  for (const record of records) {
+    const ordered =
+      Number.isFinite(record.orderedWeight) && record.orderedWeight > 0
+        ? record.orderedWeight
+        : 0
+    const allocated = Math.max(0, Math.min(remaining, ordered))
+    remaining -= allocated
+    allocations.set(record.purchaseOrderItemId, allocated)
+  }
+  return allocations
+}
+
+/** 单条明细行允许分配的上限: 订货量与本行报单吨位中较小者（再叠加后端 Σ ≤ 报单吨位校验）。 */
+export function maxAllocateTon(
+  record: PurchaseOrderTonnageRecord,
+  reportedTon: number,
+): number {
+  const ordered =
+    Number.isFinite(record.orderedWeight) && record.orderedWeight > 0
+      ? record.orderedWeight
+      : 0
+  const reported =
+    Number.isFinite(reportedTon) && reportedTon > 0 ? reportedTon : 0
+  return Math.max(0, Math.min(ordered, reported))
+}

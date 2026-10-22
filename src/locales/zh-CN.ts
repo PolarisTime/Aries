@@ -2970,9 +2970,27 @@ export const zhCN = {
       purchaseOrderSheetReported: '本单该明细行报单',
       /** 已开货的来源: 服务端 actualWeightTon(入库审核回写, Σ生效入库单过磅重量)。 */
       purchaseOrderIssuedActual: '真实已开货',
+      /**
+       * ⓘ 弹层里逐条明细的「本单该行已开货」: 已按本单分摊量封顶, 与上面的「真实已开货」
+       * (整条订单行实收) 不是同一个量。两个词必须分开, 否则用户会以为其中一个是错的。
+       */
+      purchaseOrderLineShare: '本单该行已开货（按分摊封顶）',
       /** 采购订单该明细行的订货吨位(参考值, 不参与剩余未开的减法)。 */
       purchaseOrderSelfAllocated: '订货吨位（参考）',
       purchaseOrderDetail: '采购订单明细',
+      /**
+       * 订单行「整行实收」: 与「已开货」(按本单分摊量封顶) 不同时说明差额去向 ——
+       * 一单货覆盖多个批次时, 差额属于同一订单行上的其它单据。
+       */
+      purchaseOrderLineActual: '订单行整行实收（含其它单据分摊）',
+      /** 选单弹层里可手动改写的「分配吨位」列。 */
+      purchaseOrderPickAllocate: '分配吨位',
+      purchaseOrderPickAllocateHint:
+        '本单据在这一行上开多少吨；可按批次手动调整，合计不得超过本行报单吨位',
+      purchaseOrderPickAllocatedTotal:
+        '已分配 {{allocated}} / 报单 {{reported}} 吨',
+      purchaseOrderPickOverAllocated:
+        '分配合计 {{allocated}} 吨超过本行报单吨位 {{reported}} 吨，请调小后再确认',
       purchaseOrderUnlinked: '未关联采购订单',
       /**
        * 已开超短文案: 已开货超过本单报单吨位(订单行被别人共享或本单只报一部分时必然出现)。

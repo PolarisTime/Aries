@@ -3034,9 +3034,20 @@ export const enUS = {
       purchaseOrderSheetReported: 'This sheet (PO line)',
       /** Source of the issued figure: actualWeightTon, written back on inbound audit. */
       purchaseOrderIssuedActual: 'Actual issued',
+      purchaseOrderLineShare:
+        'This document on this line (capped by allocation)',
       /** Ordered tonnage of the PO line (reference only; not part of the unopened maths). */
       purchaseOrderSelfAllocated: 'Ordered tonnage (reference)',
       purchaseOrderDetail: 'Purchase order details',
+      purchaseOrderLineActual:
+        'Whole order line received (incl. other documents)',
+      purchaseOrderPickAllocate: 'Allocated tons',
+      purchaseOrderPickAllocateHint:
+        'Tons this document opens on this line; adjust per batch. Total must not exceed this row tonnage',
+      purchaseOrderPickAllocatedTotal:
+        'Allocated {{allocated}} / reported {{reported}} tons',
+      purchaseOrderPickOverAllocated:
+        'Allocated {{allocated}} tons exceeds reported {{reported}} tons; reduce before confirming',
       purchaseOrderUnlinked: 'No linked purchase order',
       /**
        * Over-issued: actual issued exceeds this sheet's reported tonnage (the PO line is

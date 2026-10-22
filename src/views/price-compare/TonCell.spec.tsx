@@ -361,6 +361,64 @@ describe('TonCell 吨位 + 采购订单关联', () => {
     expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
   })
 
+  it('一单货覆盖两个批次时, 已开货按本单分摊量封顶, 剩余不再为负', () => {
+    /*
+     * 真实业务: 采购订单明细行 30 吨的货, 覆盖两个批次的报价单 ——
+     * 批次 A 报 14 吨、批次 B 报 16 吨, 该订单行实收 27.972 吨。
+     * 修复前两张单都拿整行 27.972 去减, 剩余分别变成 −13.972 / −11.972(误报"已开超");
+     * 修复后按各自分摊量封顶: min(27.972, 14)=14、min(27.972, 16)=16, 两张单剩余都为 0。
+     */
+    const sharedLine = lineWithShipped(27.972, {
+      purchaseOrderItemId: '301',
+      orderedWeight: 30,
+    })
+    const batchA: PriceRow = {
+      ...baseRow,
+      purchaseOrderItemId: '301',
+      purchaseOrderLinks: [
+        {
+          purchaseOrderId: '88',
+          purchaseOrderItemId: '301',
+          allocatedTon: 14,
+        },
+      ],
+    }
+    render({ row: batchA, options: [sharedLine], localTonForItem: 14 })
+    // 本单已开货按分摊量封顶 = 14, 剩余 = 14 − 14 = 0
+    expect(remainingFigure()).toBe('0')
+    expect(overFlagText()).toBe('')
+    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
+  })
+
+  it('订单行整行实收高于本单分摊时, ⓘ 弹层说明差额属于其它单据', async () => {
+    const sharedLine = lineWithShipped(27.972, {
+      purchaseOrderItemId: '301',
+      orderedWeight: 30,
+    })
+    render({
+      row: {
+        ...baseRow,
+        purchaseOrderItemId: '301',
+        purchaseOrderLinks: [
+          {
+            purchaseOrderId: '88',
+            purchaseOrderItemId: '301',
+            allocatedTon: 14,
+          },
+        ],
+      },
+      options: [sharedLine],
+      localTonForItem: 14,
+    })
+    const popover = await openPopover()
+    // 已开货走封顶口径
+    expect(popoverValuesOf(popover, '已开货')).toEqual(['14.000'])
+    // 整行实收另给一行, 说明差额去了同一订单行上的其它单据
+    expect(
+      popoverValuesOf(popover, '订单行整行实收（含其它单据分摊）'),
+    ).toEqual(['27.972'])
+  })
+
   it('剩余为负时原样显示负值并标红(不夹到 0)', () => {
     // 真实形态: 订单行已开货 32.768, 本单只报了 17 ⇒ 剩余 −15.768。已开货是订单行级事实、
     // 报单是单据级需求, 订单行被多张单据共享时必然出现, 业务要求原样显示并标红。
@@ -859,16 +917,20 @@ describe('TonCell 吨位 + 采购订单关联', () => {
       '螺纹钢 HRB400E 14 9米',
     ])
     /*
-     * 逐条明细行给出各自订货量与**真实已开货**(actualWeightTon), 其后是 Σ 口径的关联合计:
-     * 订货 40 + 70 = 110; 已开货 12 + 5.5 = 17.5; 剩余 = 报单 20 − 17.5 = 2.5。
-     * 逐条的"真实已开货"必须与合计同源, 否则弹层里逐条相加对不上合计(实测踩过)。
+     * 逐条明细行给出各自订货量与**本单该行已开货**(按本单分摊量封顶后的 actualWeightTon),
+     * 其后是 Σ 口径的关联合计: 订货 40 + 70 = 110; 已开货 12 + 5.5 = 17.5; 剩余 = 报单 20 − 17.5 = 2.5。
+     * 逐条值必须与合计同源, 否则弹层里逐条相加对不上合计(实测踩过)。
+     * 该行没有 purchaseOrderLinks, 因此封顶回退到整行实收(历史单值关联行的兼容路径)。
      */
     expect(popoverValuesOf(popover, '订货吨位')).toEqual([
       '40.000',
       '70.000',
       '110.000',
     ])
-    expect(popoverValuesOf(popover, '真实已开货')).toEqual(['12.000', '5.500'])
+    expect(popoverValuesOf(popover, '本单该行已开货（按分摊封顶）')).toEqual([
+      '12.000',
+      '5.500',
+    ])
     expect(popoverValuesOf(popover, '已开货')).toEqual(['17.500'])
     expect(popoverValuesOf(popover, '剩余未开')).toEqual(['2.500'])
     expect(text).toContain('关联合计')
