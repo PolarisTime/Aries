@@ -1691,9 +1691,16 @@ export const enUS = {
         priceDateOffsetDays: 'Trading days deferred',
         priceDateOffsetDaysHint:
           'Applies to the order-date basis only, range 0-30',
-        priceClosedDayPrevSettle: 'Use previous trading day when closed',
-        priceClosedDayPrevSettleHint:
-          'Applies to the order-date basis only; when off, the Nth later trading day is used',
+        priceClosedSettleDirection: 'Direction when the market is closed',
+        priceClosedSettleDirectionHint:
+          'When the basis date is a market holiday, take the Nth trading day in this direction; applies to the delivery-date and order-date bases, not to manual selection',
+        priceClosedSettleDirectionPrev: 'Earlier (previous trading days)',
+        priceClosedSettleDirectionNext: 'Later (following trading days)',
+        priceClosedSettleDays: 'Trading days adjusted when closed',
+        priceClosedSettleDaysHint:
+          'Trading days to shift in the chosen direction, range 0-30; 0 means no shift (allowed only for order date + later)',
+        priceClosedSettleDaysRequired:
+          'Trading days adjusted when closed must be 1-30; only order date + later (following trading days) allows 0',
         pricePeriodPolicy: 'Quote period policy',
         pricePeriodPolicyHint:
           'Determines which period’s quote is used during delivery verification',
@@ -3459,6 +3466,8 @@ export const enUS = {
   },
   moduleSelector: {
     spaceEnterHint: 'Space to select, Enter to choose',
+    spaceEnterOrDoubleClickHint:
+      'Space / Enter to select, double-click to import this one directly',
   },
   valueAlias: {
     description:

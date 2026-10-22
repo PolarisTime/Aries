@@ -1655,9 +1655,16 @@ export const zhCN = {
         priceDateBasisManual: '每次手工选择',
         priceDateOffsetDays: '顺延交易日数',
         priceDateOffsetDaysHint: '仅「报单日期」基准生效，取值 0-30',
-        priceClosedDayPrevSettle: '休市按前一交易日结算',
-        priceClosedDayPrevSettleHint:
-          '仅「报单日期」基准生效；关闭时向后取第 N 个交易日',
+        priceClosedSettleDirection: '休市取价方向',
+        priceClosedSettleDirectionHint:
+          '基准日休市时按该方向取第 N 个交易日；「送货日期」与「报单日期」基准都生效，每次手工选择时不生效',
+        priceClosedSettleDirectionPrev: '往前（较早交易日）',
+        priceClosedSettleDirectionNext: '延后（较晚交易日）',
+        priceClosedSettleDays: '休市调整天数',
+        priceClosedSettleDaysHint:
+          '按方向位移的交易日数，取值 0-30；0 表示不按方向位移（仅「报单日期 + 延后」允许 0）',
+        priceClosedSettleDaysRequired:
+          '休市调整天数须为 1-30；只有「报单日期 + 延后（较晚交易日）」允许填 0',
         pricePeriodPolicy: '取价时段策略',
         pricePeriodPolicyHint: '交付核定时按此确定用哪个时段的网价',
         pricePeriodPolicyAuto: '自动取当日最新时段',
@@ -3402,6 +3409,7 @@ export const zhCN = {
   },
   moduleSelector: {
     spaceEnterHint: 'Space 选择，Enter 选择',
+    spaceEnterOrDoubleClickHint: 'Space / Enter 选择，双击可直接导入这一张',
   },
   valueAlias: {
     description:

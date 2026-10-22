@@ -237,6 +237,13 @@ interface ParentSelectorTableProps {
   onSelectSingleRecord: (record: ModuleRecord) => void
   onToggleDetail: (record: ModuleRecord) => void
   onToggleRecordSelection: (record: ModuleRecord) => void
+  /**
+   * 双击某一行直接导入这一张上游单据。
+   *
+   * <p>与「勾选后点确认导入」是同一执行器（{@code handleImportRecords([record])}），
+   * 区别只是跳过勾选步骤：多选模式下双击不会改动已选集合，避免"我只是想打开看看"却把别的单据一起带进来。</p>
+   */
+  onQuickImportRecord: (record: ModuleRecord) => void
   page: number
   pageSize: number
   records: ModuleRecord[]
@@ -252,6 +259,7 @@ function ParentSelectorTable({
   detailExpandedRowKeys,
   loading,
   onPageChange,
+  onQuickImportRecord,
   onSelectedRowsChange,
   onSelectSingleRecord,
   onToggleDetail,
@@ -305,11 +313,16 @@ function ParentSelectorTable({
       onRow={(record) => ({
         tabIndex: 0,
         'aria-keyshortcuts': 'Enter Space',
-        title: i18next.t('moduleSelector.spaceEnterHint'),
+        title: i18next.t('moduleSelector.spaceEnterOrDoubleClickHint'),
         'aria-selected': selectedRowKeys.includes(String(record.id)),
         onClick: (event) => {
           if (shouldIgnoreRowInteraction(event.target)) return
           handleRowAction(record)
+        },
+        onDoubleClick: (event) => {
+          // 行内的按钮/输入框（如明细折叠、搜索框）双击时不该触发导入
+          if (shouldIgnoreRowInteraction(event.target)) return
+          onQuickImportRecord(record)
         },
         onKeyDown: (event) => {
           if (shouldIgnoreRowInteraction(event.target)) return
@@ -420,6 +433,9 @@ function ModuleParentSelectorOverlayContent(
         detailExpandedRowKeys={selector.detailExpandedRowKeys}
         loading={selector.isLoading}
         onPageChange={selector.handlePageChange}
+        onQuickImportRecord={(record) => {
+          void selector.handleImportRecords([record])
+        }}
         onSelectedRowsChange={selector.handleSelectedRowsChange}
         onSelectSingleRecord={selector.selectSingleRecord}
         onToggleDetail={selector.toggleDetail}
