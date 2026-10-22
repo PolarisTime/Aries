@@ -34,14 +34,6 @@ export function buildFreightBillParentFilters(
   }
 }
 
-export function validateFreightBillBeforeOpen(
-  currentRecord: ModuleRecordInput,
-): string | null {
-  return asString(currentRecord.carrierId).trim()
-    ? null
-    : '请先选择物流商，再选择销售订单'
-}
-
 export function transformSalesOrderItemsToFreightBillItems(
   parentRecord: ModuleRecord,
 ): ModuleLineItem[] {

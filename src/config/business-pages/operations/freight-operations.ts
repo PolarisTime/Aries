@@ -30,7 +30,6 @@ import {
   buildFreightBillOverview,
   buildFreightBillParentFilters,
   transformSalesOrderItemsToFreightBillItems,
-  validateFreightBillBeforeOpen,
 } from './freight-operations-rules'
 
 // 物流单明细列：按仓库、品牌与规格核对，隐藏商品编码、商品名称、客户/项目、每件支数与批号。
@@ -463,7 +462,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       replaceUnlinkedItemsOnFirstImport: true,
       requiredSourceItemIdField: 'sourceSalesOrderItemId',
       buildParentFilters: buildFreightBillParentFilters,
-      validateBeforeOpen: validateFreightBillBeforeOpen,
+      /*
+       * 刻意不设 `validateBeforeOpen`：选择销售订单不需要先选物流商。
+       * 导入明细的结算主体取自**上级销售订单行**（见 transformSalesOrderItemsToFreightBillItems），
+       * 与物流商无关；此前"请先选择物流商"的门槛会让先导入、后补物流商的正常录入顺序走不通。
+       */
       transformItems: transformSalesOrderItemsToFreightBillItems,
     },
     ...freightBillItemColumnOutputs,

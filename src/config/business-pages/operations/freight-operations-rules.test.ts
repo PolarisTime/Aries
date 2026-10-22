@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
+import { freightOperationsPageConfigs } from './freight-operations'
 import {
   buildFreightBillOverview,
   buildFreightBillParentFilters,
   transformSalesOrderItemsToFreightBillItems,
-  validateFreightBillBeforeOpen,
 } from './freight-operations-rules'
 
 function recordWith(overrides: Record<string, unknown>): ModuleRecord {
@@ -33,22 +33,18 @@ describe('freight-operations-rules', () => {
     })
   })
 
-  describe('validateFreightBillBeforeOpen', () => {
-    it('未选物流商返回提示', () => {
-      expect(validateFreightBillBeforeOpen({})).toBe(
-        '请先选择物流商，再选择销售订单',
-      )
-      expect(validateFreightBillBeforeOpen({ carrierId: '   ' })).toBe(
-        '请先选择物流商，再选择销售订单',
-      )
-    })
-
-    it('已选物流商返回 null', () => {
-      expect(
-        validateFreightBillBeforeOpen({
-          carrierId: '1932500000000000001',
-        }),
-      ).toBeNull()
+  describe('选择销售订单导入的前置条件', () => {
+    /*
+     * 业务确认：选择销售订单 **不需要** 先选物流商。
+     * 导入明细的结算主体取自上级销售订单行（见 transformSalesOrderItemsToFreightBillItems），
+     * 与物流商无关；此前的"请先选择物流商"门槛会让"先导入、后补物流商"的正常顺序走不通。
+     * 这里钉住"没有前置校验"，防止它被重新加回来。
+     */
+    it('不设置 validateBeforeOpen（先导入后补物流商也应可用）', () => {
+      const parentImport =
+        freightOperationsPageConfigs['freight-bill']?.parentImport
+      expect(parentImport).toBeDefined()
+      expect(parentImport?.validateBeforeOpen).toBeUndefined()
     })
   })
 
