@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import { notifyEvictedTabs } from '@/layouts/tabs/evicted-tabs'
 import {
-  getTabRouterHref,
   pushExternalIntent,
+  resolveTabHref,
 } from '@/layouts/tabs/tab-location-sync'
 import { router as mainRouter } from '@/router'
 import {
@@ -73,9 +73,7 @@ export function useTabOpen() {
       // 非 forceSearch：激活并保留 Tab 内部状态，地址栏跟随 Tab 保存的完整 href
       //（含其内部筛选），不能推无参 href——否则协调层会清掉 Tab 保存的状态。
       store.activateTab(existing.id)
-      const preservedHref =
-        getTabRouterHref(existing.id) ??
-        buildTabHref(existing.pathname, existing.search)
+      const preservedHref = resolveTabHref(existing)
       if (mainRouter.state.location.href !== preservedHref) {
         mainRouter.history.push(preservedHref)
       }

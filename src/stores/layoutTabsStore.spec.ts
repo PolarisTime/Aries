@@ -814,10 +814,14 @@ describe('setTabLocation 的 pathname 唯一性守卫', () => {
       activeTabId: 'a',
     })
 
-    useLayoutTabsStore.getState().setTabLocation('b', {
+    const applied = useLayoutTabsStore.getState().setTabLocation('b', {
       pathname: '/a',
       search: '',
     })
+
+    // 调用方（tab-location-sync）必须据此把子 Router 退回自己的 href；
+    // 只返回拒绝而不回退会留下「标签 pathname ≠ 子 Router href」的永久分叉。
+    expect(applied).toBe(false)
 
     const tabs = useLayoutTabsStore.getState().tabs
     expect(tabs.filter((tab) => tab.pathname === '/a')).toHaveLength(1)
@@ -837,9 +841,11 @@ describe('setTabLocation 的 pathname 唯一性守卫', () => {
       activeTabId: 'a',
     })
 
-    useLayoutTabsStore
-      .getState()
-      .setTabLocation('a', { pathname: '/a', search: 'docNo=1' })
+    expect(
+      useLayoutTabsStore
+        .getState()
+        .setTabLocation('a', { pathname: '/a', search: 'docNo=1' }),
+    ).toBe(true)
 
     expect(
       useLayoutTabsStore.getState().tabs.find((tab) => tab.id === 'a')?.search,

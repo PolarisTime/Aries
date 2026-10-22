@@ -4,6 +4,7 @@ import { createTabRouter } from '@/router/tab-router'
 import {
   buildTabHref,
   type LayoutTab,
+  normalizeTabPathname,
   useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
 
@@ -52,10 +53,34 @@ export function attachTabRouter(tab: LayoutTab): AnyRouter {
       return
     }
     lastSyncedHrefs.set(tab.id, subHref)
-    useLayoutTabsStore.getState().setTabLocation(tab.id, {
+    const applied = useLayoutTabsStore.getState().setTabLocation(tab.id, {
       pathname: historyLocation.pathname,
       search: historyLocation.search,
     })
+    if (!applied) {
+      /*
+       * 目标 pathname 已被别的标签占用（`setTabLocation` 的不变式守卫拒绝了改名）。
+       *
+       * <p>此时**不能**只把标签元数据留在原地：标签 pathname 仍是 A、子 Router 却停在 B，
+       * 两者永久分叉。后果是点 A 的菜单时 `useTabOpen` 会按子 Router 的 href 把地址栏推到 B，
+       * 协调层再按地址栏激活 B、跟随逻辑又把地址栏推回 A —— 地址栏来回跳 + React
+       * 「Maximum update depth exceeded」。</p>
+       *
+       * <p>处理方式：把子 Router 退回本标签自己的 href（先写 lastSynced 抑制本次回退触发的
+       * 订阅回调），外部意图仍交给主地址栏：协调层会激活已占用目标 pathname 的标签并把意图
+       * 注入过去。这样「一个 pathname 一个标签」保持不变，且标签与子 Router 始终一致。</p>
+       */
+      const current = useLayoutTabsStore
+        .getState()
+        .tabs.find((item) => item.id === tab.id)
+      if (current) {
+        const ownHref = buildTabHref(current.pathname, current.search)
+        if (ownHref !== subHref) {
+          lastSyncedHrefs.set(tab.id, ownHref)
+          subRouter.history.replace(ownHref)
+        }
+      }
+    }
     if (mainRouter.state.location.href !== subHref) {
       // Tab 内漂移同步到地址栏（replace 不污染激活点历史）
       mainRouter.history.replace(subHref)
@@ -107,4 +132,30 @@ export function detachAllTabRouters(): void {
 /** 当前 Tab 子 Router 的 href（未挂载返回 null） */
 export function getTabRouterHref(tabId: string): string | null {
   return tabRouters.get(tabId)?.history.location.href ?? null
+}
+
+function hrefPathname(href: string): string {
+  const queryIndex = href.indexOf('?')
+  return queryIndex === -1 ? href : href.slice(0, queryIndex)
+}
+
+/**
+ * 地址栏应当采用的该标签 href（**唯一来源**：菜单点击 / 激活既有标签时都取这里）。
+ *
+ * <p>优先取子 Router 的实际位置以保留页内筛选；但**只有该位置的 pathname 与标签自身一致**
+ * 时才采用。不一致说明「标签元数据与子 Router」已经分叉（历史缺陷：跨页面导航被
+ * `setTabLocation` 的 pathname 唯一性守卫拒绝后只拒绝了改名、没有回退子 Router），
+ * 此时退回标签自己的 pathname+search——否则点 A 的菜单会把用户带到 B 的 URL，
+ * 协调层再按 URL 激活 B，两处反复拉锯。</p>
+ */
+export function resolveTabHref(tab: LayoutTab): string {
+  const subHref = getTabRouterHref(tab.id)
+  if (
+    subHref &&
+    normalizeTabPathname(hrefPathname(subHref)) ===
+      normalizeTabPathname(tab.pathname)
+  ) {
+    return subHref
+  }
+  return buildTabHref(tab.pathname, tab.search)
 }

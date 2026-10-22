@@ -94,10 +94,18 @@ interface LayoutTabsState {
     options?: OpenTabOptions,
   ) => { tabId: string; created: boolean; evictedIds: string[] }
   activateTab: (id: string) => void
+  /**
+   * 让标签跟随其子 Router 的页内导航。
+   *
+   * @returns 是否已把新位置写进标签。目标 pathname 已被**别的**标签占用时返回 false
+   * （见 {@link LayoutTabsState.setTabLocation} 的不变式守卫），调用方必须据此把子 Router
+   * 退回本标签自己的位置——否则「标签元数据」与「标签子 Router 的 href」会长期分叉，
+   * 之后按 pathname 定位菜单/激活会一直取到别的页面，路由协调层随之反复拉锯。
+   */
   setTabLocation: (
     id: string,
     location: { pathname: string; search: string },
-  ) => void
+  ) => boolean
   markTabMounted: (id: string) => void
   bumpReloadKey: (id: string) => void
   /** 纯移除（脏检查由调用方负责），返回下一个应激活的 Tab id */
@@ -656,7 +664,8 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
       !current ||
       (current.pathname === pathname && current.search === search)
     ) {
-      return
+      // 标签不存在或位置未变：没有需要落库的变化，按「已应用」返回。
+      return true
     }
     /*
      * 不变式守卫：**同一 pathname 只能有一个标签对象**。
@@ -666,20 +675,23 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
      * 制造出两个同 pathname 的标签 —— 此后按 pathname 查找永远只命中第一个，另一个成为
      * 无法通过 `openTab` 激活的孤儿（它的子 Router 与编辑器会话会一直挂着）。</p>
      *
-     * <p>当前唯一调用方是 `tab-location-sync` 的页内导航（只改 search），所以这是防御性守卫；
-     * 一旦将来有页面用 Link / 子 Router 跳到另一个已注册页面，这里会拦下而不是留下隐形损坏。</p>
+     * <p>**返回 false 是契约的一部分**：调用方（`tab-location-sync`）必须据此把该标签的子
+     * Router 退回自己的 href。只拒绝改名而不回退，会留下「标签 pathname 是 A、子 Router 在 B」
+     * 的永久分叉——之后点 A 的菜单会按子 Router 的 href 把地址栏推到 B，协调层再按地址栏
+     * 激活 B，两处反复拉锯，形成地址栏来回跳 + React 最大更新深度循环。</p>
      */
     if (
       pathname !== current.pathname &&
       tabs.some((tab) => tab.id !== id && tab.pathname === pathname)
     ) {
-      return
+      return false
     }
     set({
       tabs: tabs.map((tab) =>
         tab.id === id ? { ...tab, pathname, search } : tab,
       ),
     })
+    return true
   },
 
   markTabMounted: (id) => {
