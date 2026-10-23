@@ -289,12 +289,17 @@ export type QuoteSheetItemPayload = {
     spotPrice?: number
     supplierId?: EntityId
     /**
-     * 现货价「按抗震牌号代取」的来源材质（写入口径）。
+     * 现货价「按抗震牌号代取」的来源材质（**写入口径**）。
+     *
+     * <p><b>注意请求与响应的字段名不同</b>：写请求叫 `sourceMaterial`
+     * （后端 `QuoteSheetRequest.ItemPriceRequest`），响应才是 `spotSourceMaterial`
+     * （`QuoteSheetResponse`）。按响应名去写会被 Jackson 当未知字段静默忽略 ——
+     * 实测后果：价格存进去了、来源丢了，刷新后角标消失。</p>
      *
      * <p>`null` 是有效载荷：表示"曾经代取、已被手工覆盖"，用于让服务端清空来源；
      * 省略该字段表示这一格从未涉及代取（服务端保持原值）。</p>
      */
-    spotSourceMaterial?: string | null
+    sourceMaterial?: string | null
   }[]
 }
 

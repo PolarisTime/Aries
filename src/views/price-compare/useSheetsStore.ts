@@ -398,7 +398,7 @@ export function buildItemPayload(
          * 字段不存在才表示这一格从未涉及代取，继续省略。
          */
         ...(input.spotSourceMaterial !== undefined
-          ? { spotSourceMaterial: input.spotSourceMaterial }
+          ? { sourceMaterial: input.spotSourceMaterial }
           : {}),
       },
     ]
@@ -2729,6 +2729,14 @@ function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
       if (price.spotPrice !== undefined) entry.spot = price.spotPrice
       if (price.supplierId) entry.supplierId = price.supplierId
       if (price.supplierName) entry.supplierName = price.supplierName
+      /*
+       * 服务端回来的代取来源（响应字段名 `spotSourceMaterial`）必须进本地模型，
+       * 否则重开单据后 `resolveSpotSourceMaterial` 拿不到来源 —— 价格在、角标没了。
+       * `null` 也要带（= 查过、确认没有代取），只有缺字段（undefined）才不落。
+       */
+      if (price.spotSourceMaterial !== undefined) {
+        entry.spotSourceMaterial = price.spotSourceMaterial
+      }
       if (Object.keys(entry).length > 0) {
         inputs[`${price.brandName}:${item.id}`] = entry
       }

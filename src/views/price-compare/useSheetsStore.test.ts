@@ -311,11 +311,12 @@ describe('useSheetsStore 服务端数据源', () => {
     const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
       string,
       string,
-      { prices: { spotSourceMaterial?: string | null; spotPrice?: number }[] },
+      { prices: { sourceMaterial?: string | null; spotPrice?: number }[] },
     ]
     expect(itemId).toBe('7001')
     expect(payload.prices[0].spotPrice).toBe(3420)
-    expect(payload.prices[0].spotSourceMaterial).toBe('HRB400E')
+    // 写请求的字段名是 sourceMaterial（响应才叫 spotSourceMaterial）
+    expect(payload.prices[0].sourceMaterial).toBe('HRB400E')
   })
 
   it('手工覆盖代取价后来源以显式 null 下发(服务端据此清空)', async () => {
@@ -340,8 +341,46 @@ describe('useSheetsStore 服务端数据源', () => {
       { prices: Record<string, unknown>[] },
     ]
     // null 必须真的"在"载荷里：被省略时服务端会保留旧来源，角标就清不掉
-    expect('spotSourceMaterial' in payload.prices[0]).toBe(true)
-    expect(payload.prices[0].spotSourceMaterial).toBeNull()
+    expect('sourceMaterial' in payload.prices[0]).toBe(true)
+    expect(payload.prices[0].sourceMaterial).toBeNull()
+  })
+
+  /*
+   * 读回方向也要闭环：响应字段名是 `spotSourceMaterial`，必须映射进本地 inputs。
+   * 只修写入方向的话价格能回来、来源却在 `toPriceSheet` 丢掉 ——
+   * 重开单据后角标依旧消失（实测过：接口里有值、页面上没有角标）。
+   */
+  it('读回时把 spotSourceMaterial 映射进本地 inputs', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({
+        items: [
+          {
+            id: '7001',
+            rowType: 'PRODUCT',
+            category: '螺纹钢',
+            material: 'HRB400',
+            spec: 12,
+            length: '9米',
+            prices: [
+              {
+                brandName: '中天',
+                spotPrice: 3420,
+                supplierId: '5001',
+                supplierName: '浙江铁都钢材有限公司',
+                spotSourceMaterial: 'HRB400E',
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.sheets[0].inputs['中天:7001'].spotSourceMaterial).toBe(
+      'HRB400E',
+    )
   })
 
   it('解锁行时 payload 必须显式携带 locked=false(否则后端保留原值)', async () => {
