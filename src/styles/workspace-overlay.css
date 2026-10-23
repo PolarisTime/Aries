@@ -271,6 +271,44 @@
   background: var(--ant-color-bg-container, #fff);
 }
 
+/*
+ * 导入弹层动作区：已选摘要 + 取消 / 确认导入。
+ *
+ * 该节点原本挂在 WorkspaceOverlay 的 footer 槽（面板底部固定条），现在改挂到吸顶工具行
+ * `.parent-selector-top` 内 —— 父级已经是 sticky，所以按钮随工具行一起吸顶，长列表滚动时
+ * 始终可点。这里只负责「推到最右 + 与按钮同一行」，按钮语义与 disabled 条件仍由
+ * ParentSelectorFooter 决定（唯一出口）。
+ */
+.parent-selector-top-actions {
+  display: flex;
+  align-items: center;
+  /* 与上方筛选 / 已选面板拉开一档；底部留白同时充当吸顶区的收尾，避免表格内容贴住按钮 */
+  margin-top: var(--space-xs);
+  padding-bottom: var(--space-sm);
+}
+
+.parent-selector-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  /*
+   * 动作区推右：本元素是 `.parent-selector-top-actions` 的 flex 子项，
+   * margin-left:auto 吃掉行内全部剩余空间，把「摘要 + 按钮」整体钉在工具行最右。
+   */
+  margin-left: auto;
+}
+
+.parent-selector-footer-summary {
+  font-size: 12px;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
+}
+
+.parent-selector-footer-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
 .parent-selector-selected-panel {
   margin-bottom: var(--space-md);
   padding: var(--space-sm) var(--space-md);

@@ -148,9 +148,9 @@ function ParentSelectorFooter({
   t,
 }: ParentSelectorFooterProps) {
   return (
-    <div className="flex justify-between items-center gap-12">
-      <span className="text-secondary">{summary}</span>
-      <div className="flex gap-8">
+    <div className="parent-selector-footer">
+      <span className="parent-selector-footer-summary">{summary}</span>
+      <div className="parent-selector-footer-buttons">
         <Button onClick={onCancel}>{t('modules.parentSelector.cancel')}</Button>
         <Button
           type="primary"
@@ -169,6 +169,13 @@ interface ParentSelectorTopProps {
   allowMultipleSelection: boolean
   displayFieldKey: string
   draftFilters: SearchParams
+  /**
+   * 动作区（已选摘要 + 取消 / 确认导入），渲染在吸顶工具行的最右侧。
+   *
+   * <p>它的节点本身是 {@code ParentSelectorFooter}，由内容组件传入而不是在这里另写一份，
+   * 保证 {@code onConfirm} / {@code confirmDisabled} 只有**一个**出口。</p>
+   */
+  footerActions?: ReactNode
   formatCellValue: ParentSelectorFormatCellValue
   submittedFilters: SearchParams
   onClearSelectedRecords: () => void
@@ -186,6 +193,7 @@ function ParentSelectorTop({
   allowMultipleSelection,
   displayFieldKey,
   draftFilters,
+  footerActions,
   formatCellValue,
   submittedFilters,
   onClearSelectedRecords,
@@ -222,6 +230,9 @@ function ParentSelectorTop({
           selectedRows={selectedRows}
           t={t}
         />
+      ) : null}
+      {footerActions ? (
+        <div className="parent-selector-top-actions">{footerActions}</div>
       ) : null}
     </div>
   )
@@ -389,23 +400,30 @@ function ModuleParentSelectorOverlayContent(
 ) {
   const selector = useModuleParentSelectorOverlay(props)
 
+  /**
+   * 动作区节点只构造**一次**，交给顶部工具行渲染。
+   *
+   * <p>从 `WorkspaceOverlay` 的 footer 槽搬到这里：节点与 props 完全不变，
+   * `onConfirm` 仍然只有这一处，不存在两份按钮各自的回调。</p>
+   */
+  const footerActions = (
+    <ParentSelectorFooter
+      confirmDisabled={!selector.selectedRows.length}
+      onCancel={selector.onClose}
+      onConfirm={() => {
+        void selector.handleImportRecords(selector.selectedRows)
+      }}
+      summary={selector.selectedSummary}
+      t={selector.t}
+    />
+  )
+
   return (
     <WorkspaceOverlay
       title={selector.effectiveTitle}
       open
       onClose={selector.onClose}
       className="workspace-overlay-panel--parent-selector"
-      footer={
-        <ParentSelectorFooter
-          confirmDisabled={!selector.selectedRows.length}
-          onCancel={selector.onClose}
-          onConfirm={() => {
-            void selector.handleImportRecords(selector.selectedRows)
-          }}
-          summary={selector.selectedSummary}
-          t={selector.t}
-        />
-      }
       variant="workspace"
       width="100%"
       height="100%"
@@ -415,6 +433,7 @@ function ModuleParentSelectorOverlayContent(
         allowMultipleSelection={selector.allowMultipleSelection}
         displayFieldKey={selector.displayFieldKey}
         draftFilters={selector.draftFilters}
+        footerActions={footerActions}
         formatCellValue={selector.formatCellValue}
         submittedFilters={selector.submittedFilters}
         onClearSelectedRecords={selector.handleClearSelectedRecords}
