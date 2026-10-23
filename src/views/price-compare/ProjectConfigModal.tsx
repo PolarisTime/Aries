@@ -1,4 +1,4 @@
-import { CloseOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { CloseOutlined, SearchOutlined } from '@ant-design/icons'
 import {
   Alert,
   Button,
@@ -19,7 +19,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
-import { categoriesOf } from './core'
+import { canonicalCategory, categoriesOf } from './core'
 import {
   createDraft,
   DEFAULT_FREIGHT,
@@ -35,12 +35,6 @@ const varietyLabel = (item: Variety) =>
   [item.material, item.spec, item.length === '-' ? '' : item.length]
     .filter(Boolean)
     .join(' ')
-
-const varietyShort = (item: Variety) =>
-  [item.spec, item.length === '-' ? '' : item.length].filter(Boolean).join(' ')
-
-const matchesVarietyKeyword = (item: Variety, query: string) =>
-  !query || varietyLabel(item).includes(query)
 
 /* ------------------------------------------------------------------ 通用 */
 
@@ -120,7 +114,6 @@ function BrandSection({
   categories: string[]
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
-  const [keyword, setKeyword] = useState('')
   const { t } = useTranslation()
 
   /**
@@ -145,14 +138,6 @@ function BrandSection({
     () => candidateBrands.filter((name) => selectedBrandSet.has(name)),
     [candidateBrands, selectedBrandSet],
   )
-  const unselected = useMemo(() => {
-    const query = keyword.trim().toLowerCase()
-    return candidateBrands.filter(
-      (name) =>
-        !selectedBrandSet.has(name) &&
-        (!query || name.toLowerCase().includes(query)),
-    )
-  }, [candidateBrands, selectedBrandSet, keyword])
   /** 每个品牌的启用类别集合: 供渲染时 O(1) 判断, 避免循环内 includes。 */
   const categorySetByName = useMemo(() => {
     const result: Record<string, Set<string>> = {}
@@ -162,20 +147,11 @@ function BrandSection({
     return result
   }, [candidateBrands, draft.categoryMap, categories])
 
-  const add = (names: string[]) =>
-    onChange({ brands: [...new Set([...draft.brands, ...names])] })
   const remove = (name: string) =>
     onChange({
       brands: draft.brands.filter((item) => item !== name),
       designatedBrands: draft.designatedBrands.filter((item) => item !== name),
     })
-  const toggleCategory = (name: string, category: string, checked: boolean) => {
-    const current = draft.categoryMap[name] ?? categories
-    const next = checked
-      ? [...new Set([...current, category])]
-      : current.filter((item) => item !== category)
-    onChange({ categoryMap: { ...draft.categoryMap, [name]: next } })
-  }
 
   return (
     <Flex vertical gap={20}>
@@ -273,27 +249,28 @@ function BrandSection({
                           }
                         />
                       </Space>
-                      <Space size={4} align="center">
-                        <Text
-                          type="secondary"
-                          style={{ fontSize: 'var(--font-size-xs)' }}
-                        >
-                          {t('priceCompare.config.category')}
-                        </Text>
-                        {categories.map((category) => (
-                          <Tag.CheckableTag
-                            key={category}
-                            checked={
-                              categorySetByName[name]?.has(category) ?? false
-                            }
-                            onChange={(checked) =>
-                              toggleCategory(name, category, checked)
-                            }
-                          >
-                            {category}
-                          </Tag.CheckableTag>
-                        ))}
-                      </Space>
+                      {/* 品种多选: 一行只留「品牌 + 运费 + 品种」三件信息, 不再铺一排可点标签 */}
+                      <Select
+                        mode="multiple"
+                        allowClear
+                        size="small"
+                        style={{ minWidth: 200 }}
+                        placeholder={t('priceCompare.config.category')}
+                        aria-label={`${name} ${t('priceCompare.config.category')}`}
+                        value={[...(categorySetByName[name] ?? [])]}
+                        options={categories.map((category) => ({
+                          value: category,
+                          label: category,
+                        }))}
+                        onChange={(values) =>
+                          onChange({
+                            categoryMap: {
+                              ...draft.categoryMap,
+                              [name]: values,
+                            },
+                          })
+                        }
+                      />
                       <Button
                         size="small"
                         type="text"
@@ -328,45 +305,20 @@ function BrandSection({
           {t('priceCompare.config.designatedBrandsHint')}
         </Text>
       </Flex>
-
-      <Flex vertical gap={8}>
-        <SectionHeader
-          title={t('priceCompare.config.unselectedBrands')}
-          extra={
-            <Input
-              allowClear
-              prefix={<SearchOutlined />}
-              placeholder={t('priceCompare.config.searchBrand')}
-              style={{ width: 180 }}
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-          }
-        />
-        <div className="pc-brand-pool">
-          {unselected.length === 0 ? (
-            <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
-              {t('priceCompare.config.none')}
-            </Text>
-          ) : (
-            unselected.map((name) => (
-              <Tag
-                key={name}
-                icon={<PlusOutlined />}
-                className="pc-brand-pool-tag"
-                onClick={() => add([name])}
-              >
-                {name}
-              </Tag>
-            ))
-          )}
-        </div>
-      </Flex>
     </Flex>
   )
 }
 
 /* --------------------------------------------------------------- 可选商品 */
+
+/** 矩阵行键: 规格 + 定尺(定尺为空或「-」时只用规格)。行列都从数据派生, 不引入硬编码清单。 */
+function specRowOf(item: Variety): { key: string; label: string } {
+  const length = item.length && item.length !== '-' ? item.length : ''
+  return {
+    key: `${item.spec}|${length}`,
+    label: length ? `${item.spec} ${length}` : `${item.spec}`,
+  }
+}
 
 function ProductSection({
   draft,
@@ -377,50 +329,85 @@ function ProductSection({
   varieties: Variety[]
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
-  const [material, setMaterial] = useState<string>('')
   const [keyword, setKeyword] = useState('')
+  const [onlySelected, setOnlySelected] = useState(false)
   const { t } = useTranslation()
 
   const allKeys = useMemo(() => varieties.map(varietyKey), [varieties])
   const selectedSet = useMemo(() => new Set(draft.products), [draft.products])
 
-  const materials = useMemo(
-    () => [...new Set(varieties.map((item) => item.material))],
-    [varieties],
-  )
-
-  const visible = useMemo(() => {
-    const query = keyword.trim()
-    return varieties.filter(
-      (item) =>
-        (!material || item.material === material) &&
-        matchesVarietyKeyword(item, query),
+  /** 搜索匹配规格或材质任一(顺带覆盖定尺/类别); 空关键词不过滤。 */
+  const matched = useMemo(() => {
+    const query = keyword.trim().toLowerCase()
+    if (!query) return varieties
+    return varieties.filter((item) =>
+      [item.category, item.spec, item.length, item.material]
+        .filter((part) => part !== null && part !== undefined && part !== '')
+        .some((part) => String(part).toLowerCase().includes(query)),
     )
-  }, [varieties, material, keyword])
+  }, [varieties, keyword])
 
-  const groups = useMemo(
+  /**
+   * 每个类别一张「规格 × 材质」矩阵。
+   *
+   * <p>按类别分表而不是全混一张: 同一规格(如 12 9米)在螺纹钢与圆钢下都存在，混表会让
+   * 同一个行列交叉点对应两个不同商品，勾选语义就说不清了。行=规格(含定尺)、列=材质，
+   * 两者都从数据派生。</p>
+   */
+  const matrices = useMemo(
     () =>
-      categoriesOf(varieties).flatMap((category) => {
-        const items = visible.filter((item) => item.category === category)
-        return items.length > 0 ? [{ category, items }] : []
+      categoriesOf(matched).map((category) => {
+        const rows = new Map<string, string>()
+        const columns: string[] = []
+        const cellByKey = new Map<string, Variety>()
+        for (const item of matched) {
+          if (canonicalCategory(item.category) !== category) continue
+          const row = specRowOf(item)
+          if (!rows.has(row.key)) rows.set(row.key, row.label)
+          if (!columns.includes(item.material)) columns.push(item.material)
+          cellByKey.set(`${row.key}|${item.material}`, item)
+        }
+        return { category, rows: [...rows.entries()], columns, cellByKey }
       }),
-    [visible, varieties],
+    [matched],
   )
 
-  const toggleKey = (key: string, checked: boolean) =>
-    onChange({
-      products: checked
-        ? [...new Set([...draft.products, key])]
-        : draft.products.filter((item) => item !== key),
-    })
+  /** 「只看已选」: 只保留至少有一个已选格的规格行与材质列。 */
+  const shownMatrices = useMemo(() => {
+    if (!onlySelected) return matrices
+    return matrices
+      .map((matrix) => {
+        const isSelected = (rowKey: string, material: string) => {
+          const item = matrix.cellByKey.get(`${rowKey}|${material}`)
+          return item ? selectedSet.has(varietyKey(item)) : false
+        }
+        const rows = matrix.rows.filter(([rowKey]) =>
+          matrix.columns.some((material) => isSelected(rowKey, material)),
+        )
+        const columns = matrix.columns.filter((material) =>
+          rows.some(([rowKey]) => isSelected(rowKey, material)),
+        )
+        return { ...matrix, rows, columns }
+      })
+      .filter((matrix) => matrix.rows.length > 0 && matrix.columns.length > 0)
+  }, [matrices, onlySelected, selectedSet])
 
-  const toggleGroup = (keys: string[], checked: boolean) => {
-    const keySet = new Set(keys)
+  const toggleKeys = (keys: string[], checked: boolean) =>
     onChange({
       products: checked
         ? [...new Set([...draft.products, ...keys])]
-        : draft.products.filter((item) => !keySet.has(item)),
+        : draft.products.filter((item) => !keys.includes(item)),
     })
+
+  /** 一组格子的勾选态: 全选 / 半选 / 未选, 供行头与列头复用同一口径。 */
+  const groupState = (keys: string[]) => {
+    const selected = keys.filter((key) => selectedSet.has(key)).length
+    return {
+      count: keys.length,
+      selected,
+      checked: keys.length > 0 && selected === keys.length,
+      indeterminate: selected > 0 && selected < keys.length,
+    }
   }
 
   return (
@@ -454,88 +441,152 @@ function ProductSection({
         }
       />
 
-      <Flex gap={8} align="center" wrap>
-        <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
-          {t('priceCompare.config.material')}
-        </Text>
-        <Tag.CheckableTag
-          checked={material === ''}
-          onChange={() => setMaterial('')}
-        >
-          {t('priceCompare.config.all')}
-        </Tag.CheckableTag>
-        {materials.map((item) => (
-          <Tag.CheckableTag
-            key={item}
-            checked={material === item}
-            onChange={() => setMaterial(item)}
-          >
-            {item}
-          </Tag.CheckableTag>
-        ))}
+      <Flex gap={16} align="center" wrap>
         <Input
           allowClear
           prefix={<SearchOutlined />}
-          placeholder={t('priceCompare.config.searchSpec')}
-          style={{ width: 180, marginLeft: 'auto' }}
+          placeholder={t('priceCompare.config.searchSpecOrMaterial')}
+          aria-label={t('priceCompare.config.searchSpecOrMaterial')}
+          style={{ width: 220 }}
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
         />
+        <Space size={6} align="center">
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
+            {t('priceCompare.config.onlySelected')}
+          </Text>
+          <Switch
+            size="small"
+            checked={onlySelected}
+            onChange={setOnlySelected}
+            aria-label={t('priceCompare.config.onlySelected')}
+          />
+        </Space>
       </Flex>
 
-      <div className="price-compare-product-panel">
-        {groups.length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t('priceCompare.config.noMatchedProduct')}
-          />
-        ) : (
-          groups.map((group) => {
-            const keys = group.items.map(varietyKey)
-            const selectedCount = keys.filter((key) =>
-              selectedSet.has(key),
-            ).length
-            const allChecked = selectedCount === keys.length
-            return (
-              <div key={group.category} className="price-compare-product-group">
-                <Flex justify="space-between" align="center">
-                  <Checkbox
-                    checked={allChecked}
-                    indeterminate={selectedCount > 0 && !allChecked}
-                    onChange={(event) =>
-                      toggleGroup(keys, event.target.checked)
-                    }
-                  >
-                    {group.category}
-                  </Checkbox>
-                  <Text
-                    type="secondary"
-                    style={{ fontSize: 'var(--font-size-xs)' }}
-                  >
-                    {selectedCount}/{keys.length}
-                  </Text>
-                </Flex>
-                <Flex wrap gap={8} className="price-compare-product-items">
-                  {group.items.map((item) => {
-                    const key = varietyKey(item)
+      {shownMatrices.length === 0 ? (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={t('priceCompare.config.noMatchedProduct')}
+        />
+      ) : (
+        shownMatrices.map((matrix) => {
+          const rowKeysOf = (rowKey: string) =>
+            matrix.columns
+              .map((material) => matrix.cellByKey.get(`${rowKey}|${material}`))
+              .filter((item): item is Variety => Boolean(item))
+              .map(varietyKey)
+          const columnKeysOf = (material: string) =>
+            matrix.rows
+              .map(([rowKey]) => matrix.cellByKey.get(`${rowKey}|${material}`))
+              .filter((item): item is Variety => Boolean(item))
+              .map(varietyKey)
+          const categoryKeys = [...matrix.cellByKey.values()].map(varietyKey)
+          const categoryState = groupState(categoryKeys)
+          // 类别名已由首行的 Checkbox 文案给出, 容器不再重复标注(避免 role/aria 冗余)
+          return (
+            <div key={matrix.category} className="price-compare-product-group">
+              <Flex justify="space-between" align="center">
+                <Checkbox
+                  checked={categoryState.checked}
+                  indeterminate={categoryState.indeterminate}
+                  onChange={(event) =>
+                    toggleKeys(categoryKeys, event.target.checked)
+                  }
+                >
+                  {matrix.category}
+                </Checkbox>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 'var(--font-size-xs)' }}
+                >
+                  {categoryState.selected}/{categoryState.count}
+                </Text>
+              </Flex>
+
+              <table className="price-compare-matrix">
+                <thead>
+                  <tr>
+                    <th scope="col" className="price-compare-matrix-corner">
+                      {t('priceCompare.config.matrixSpec')}
+                    </th>
+                    {matrix.columns.map((material) => {
+                      const keys = columnKeysOf(material)
+                      const state = groupState(keys)
+                      return (
+                        <th key={material} scope="col">
+                          <Checkbox
+                            checked={state.checked}
+                            indeterminate={state.indeterminate}
+                            aria-label={`${t('priceCompare.config.selectColumn')} ${material}`}
+                            onChange={(event) =>
+                              toggleKeys(keys, event.target.checked)
+                            }
+                          >
+                            {material}
+                          </Checkbox>
+                        </th>
+                      )
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrix.rows.map(([rowKey, rowLabel]) => {
+                    const keys = rowKeysOf(rowKey)
+                    const state = groupState(keys)
                     return (
-                      <Checkbox
-                        key={key}
-                        checked={selectedSet.has(key)}
-                        onChange={(event) =>
-                          toggleKey(key, event.target.checked)
-                        }
-                      >
-                        {material ? varietyShort(item) : varietyLabel(item)}
-                      </Checkbox>
+                      <tr key={rowKey}>
+                        <th scope="row">
+                          <Checkbox
+                            checked={state.checked}
+                            indeterminate={state.indeterminate}
+                            aria-label={`${t('priceCompare.config.selectRow')} ${rowLabel}`}
+                            onChange={(event) =>
+                              toggleKeys(keys, event.target.checked)
+                            }
+                          >
+                            {rowLabel}
+                          </Checkbox>
+                        </th>
+                        {matrix.columns.map((material) => {
+                          const item = matrix.cellByKey.get(
+                            `${rowKey}|${material}`,
+                          )
+                          if (!item) {
+                            return (
+                              <td key={material}>
+                                <span
+                                  className="price-compare-matrix-empty"
+                                  aria-hidden="true"
+                                  title={t('priceCompare.config.emptyCell')}
+                                >
+                                  —
+                                </span>
+                              </td>
+                            )
+                          }
+                          const key = varietyKey(item)
+                          return (
+                            <td key={material}>
+                              <Checkbox
+                                checked={selectedSet.has(key)}
+                                aria-label={`${matrix.category} ${varietyLabel(item)}`}
+                                onChange={(event) =>
+                                  toggleKeys([key], event.target.checked)
+                                }
+                              />
+                            </td>
+                          )
+                        })}
+                      </tr>
                     )
                   })}
-                </Flex>
-              </div>
-            )
-          })
-        )}
-      </div>
+                </tbody>
+              </table>
+            </div>
+          )
+        })
+      )}
     </Flex>
   )
 }

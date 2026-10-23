@@ -1303,6 +1303,63 @@
   border-top: 1px dashed var(--ant-color-border-secondary, #f0f0f0);
 }
 
+/**
+ * 「可选商品」的规格 × 材质矩阵。
+ *
+ * 用真表格（table/th scope）而不是 div 网格：读屏用户需要听到"这一格属于哪个规格、哪个材质"，
+ * 只有 thead/th[scope] 能提供这层关联。行头/列头各带一个全选 Checkbox，点行头即全选该规格。
+ * 格子只放勾选框，行的语义由 th[scope="row"] 承担，因此不再重复渲染规格文字。
+ */
+.price-compare-matrix {
+  margin-top: var(--space-6);
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.price-compare-matrix th,
+.price-compare-matrix td {
+  padding: var(--space-xxs) var(--space-xs);
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  text-align: center;
+  /* 命中区 ≥24×24 (WCAG 2.5.8) */
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.price-compare-matrix tbody tr:last-child th,
+.price-compare-matrix tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 行头(规格)左对齐并保留最小宽度, 让规格列看起来是一条稳定的竖轴 */
+.price-compare-matrix tbody th {
+  text-align: left;
+  white-space: nowrap;
+  min-width: 88px;
+  font-weight: 400;
+}
+
+.price-compare-matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ant-color-bg-container, #fff);
+  white-space: nowrap;
+}
+
+/* 左上角"规格 / 材质"交叉格: 纯标签, 不参与勾选 */
+.price-compare-matrix-corner {
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-weight: 400;
+  text-align: left;
+}
+
+/* 数据里没有的组合: 保留占位以免矩阵出现错位的空洞 */
+.price-compare-matrix-empty {
+  color: var(--ant-color-text-quaternary, rgb(0 0 0 / 25%));
+}
+
 .price-compare-product-items {
   margin-top: var(--space-6);
   padding-left: var(--space-xl);
