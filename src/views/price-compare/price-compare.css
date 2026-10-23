@@ -1310,8 +1310,16 @@
  * 只有 thead/th[scope] 能提供这层关联。行头/列头各带一个全选 Checkbox，点行头即全选该规格。
  * 格子只放勾选框，行的语义由 th[scope="row"] 承担，因此不再重复渲染规格文字。
  */
-.price-compare-matrix {
+.price-compare-matrix-scroll {
+  /* 上限按弹层可视高度算, 矩阵再长也在框内滚, 不把「已选 N/M / 只看已选」顶出视野 */
+  max-height: min(46vh, 420px);
+  overflow: auto;
   margin-top: var(--space-6);
+}
+
+.price-compare-matrix {
+  /* 留白由外层 .price-compare-matrix-scroll 给, 这里不再重复 */
+  margin-top: 0;
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-xs);

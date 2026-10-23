@@ -470,122 +470,133 @@ function ProductSection({
           description={t('priceCompare.config.noMatchedProduct')}
         />
       ) : (
-        shownMatrices.map((matrix) => {
-          const rowKeysOf = (rowKey: string) =>
-            matrix.columns
-              .map((material) => matrix.cellByKey.get(`${rowKey}|${material}`))
-              .filter((item): item is Variety => Boolean(item))
-              .map(varietyKey)
-          const columnKeysOf = (material: string) =>
-            matrix.rows
-              .map(([rowKey]) => matrix.cellByKey.get(`${rowKey}|${material}`))
-              .filter((item): item is Variety => Boolean(item))
-              .map(varietyKey)
-          const categoryKeys = [...matrix.cellByKey.values()].map(varietyKey)
-          const categoryState = groupState(categoryKeys)
-          // 类别名已由首行的 Checkbox 文案给出, 容器不再重复标注(避免 role/aria 冗余)
-          return (
-            <div key={matrix.category} className="price-compare-product-group">
-              <Flex justify="space-between" align="center">
-                <Checkbox
-                  checked={categoryState.checked}
-                  indeterminate={categoryState.indeterminate}
-                  onChange={(event) =>
-                    toggleKeys(categoryKeys, event.target.checked)
-                  }
-                >
-                  {matrix.category}
-                </Checkbox>
-                <Text
-                  type="secondary"
-                  style={{ fontSize: 'var(--font-size-xs)' }}
-                >
-                  {categoryState.selected}/{categoryState.count}
-                </Text>
-              </Flex>
+        /* 整个矩阵区一个滚动容器(而不是每张表各滚各的): 弹层主体不滚,
+           顶部「已选 N/M」「只看已选」在复核 88 个格子时始终可见可点。 */
+        <div className="price-compare-matrix-scroll">
+          {shownMatrices.map((matrix) => {
+            const rowKeysOf = (rowKey: string) =>
+              matrix.columns
+                .map((material) =>
+                  matrix.cellByKey.get(`${rowKey}|${material}`),
+                )
+                .filter((item): item is Variety => Boolean(item))
+                .map(varietyKey)
+            const columnKeysOf = (material: string) =>
+              matrix.rows
+                .map(([rowKey]) =>
+                  matrix.cellByKey.get(`${rowKey}|${material}`),
+                )
+                .filter((item): item is Variety => Boolean(item))
+                .map(varietyKey)
+            const categoryKeys = [...matrix.cellByKey.values()].map(varietyKey)
+            const categoryState = groupState(categoryKeys)
+            // 类别名已由首行的 Checkbox 文案给出, 容器不再重复标注(避免 role/aria 冗余)
+            return (
+              <div
+                key={matrix.category}
+                className="price-compare-product-group"
+              >
+                <Flex justify="space-between" align="center">
+                  <Checkbox
+                    checked={categoryState.checked}
+                    indeterminate={categoryState.indeterminate}
+                    onChange={(event) =>
+                      toggleKeys(categoryKeys, event.target.checked)
+                    }
+                  >
+                    {matrix.category}
+                  </Checkbox>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 'var(--font-size-xs)' }}
+                  >
+                    {categoryState.selected}/{categoryState.count}
+                  </Text>
+                </Flex>
 
-              <table className="price-compare-matrix">
-                <thead>
-                  <tr>
-                    <th scope="col" className="price-compare-matrix-corner">
-                      {t('priceCompare.config.matrixSpec')}
-                    </th>
-                    {matrix.columns.map((material) => {
-                      const keys = columnKeysOf(material)
+                <table className="price-compare-matrix">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="price-compare-matrix-corner">
+                        {t('priceCompare.config.matrixSpec')}
+                      </th>
+                      {matrix.columns.map((material) => {
+                        const keys = columnKeysOf(material)
+                        const state = groupState(keys)
+                        return (
+                          <th key={material} scope="col">
+                            <Checkbox
+                              checked={state.checked}
+                              indeterminate={state.indeterminate}
+                              aria-label={`${t('priceCompare.config.selectColumn')} ${material}`}
+                              onChange={(event) =>
+                                toggleKeys(keys, event.target.checked)
+                              }
+                            >
+                              {material}
+                            </Checkbox>
+                          </th>
+                        )
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matrix.rows.map(([rowKey, rowLabel]) => {
+                      const keys = rowKeysOf(rowKey)
                       const state = groupState(keys)
                       return (
-                        <th key={material} scope="col">
-                          <Checkbox
-                            checked={state.checked}
-                            indeterminate={state.indeterminate}
-                            aria-label={`${t('priceCompare.config.selectColumn')} ${material}`}
-                            onChange={(event) =>
-                              toggleKeys(keys, event.target.checked)
+                        <tr key={rowKey}>
+                          <th scope="row">
+                            <Checkbox
+                              checked={state.checked}
+                              indeterminate={state.indeterminate}
+                              aria-label={`${t('priceCompare.config.selectRow')} ${rowLabel}`}
+                              onChange={(event) =>
+                                toggleKeys(keys, event.target.checked)
+                              }
+                            >
+                              {rowLabel}
+                            </Checkbox>
+                          </th>
+                          {matrix.columns.map((material) => {
+                            const item = matrix.cellByKey.get(
+                              `${rowKey}|${material}`,
+                            )
+                            if (!item) {
+                              return (
+                                <td key={material}>
+                                  <span
+                                    className="price-compare-matrix-empty"
+                                    aria-hidden="true"
+                                    title={t('priceCompare.config.emptyCell')}
+                                  >
+                                    —
+                                  </span>
+                                </td>
+                              )
                             }
-                          >
-                            {material}
-                          </Checkbox>
-                        </th>
-                      )
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {matrix.rows.map(([rowKey, rowLabel]) => {
-                    const keys = rowKeysOf(rowKey)
-                    const state = groupState(keys)
-                    return (
-                      <tr key={rowKey}>
-                        <th scope="row">
-                          <Checkbox
-                            checked={state.checked}
-                            indeterminate={state.indeterminate}
-                            aria-label={`${t('priceCompare.config.selectRow')} ${rowLabel}`}
-                            onChange={(event) =>
-                              toggleKeys(keys, event.target.checked)
-                            }
-                          >
-                            {rowLabel}
-                          </Checkbox>
-                        </th>
-                        {matrix.columns.map((material) => {
-                          const item = matrix.cellByKey.get(
-                            `${rowKey}|${material}`,
-                          )
-                          if (!item) {
+                            const key = varietyKey(item)
                             return (
                               <td key={material}>
-                                <span
-                                  className="price-compare-matrix-empty"
-                                  aria-hidden="true"
-                                  title={t('priceCompare.config.emptyCell')}
-                                >
-                                  —
-                                </span>
+                                <Checkbox
+                                  checked={selectedSet.has(key)}
+                                  aria-label={`${matrix.category} ${varietyLabel(item)}`}
+                                  onChange={(event) =>
+                                    toggleKeys([key], event.target.checked)
+                                  }
+                                />
                               </td>
                             )
-                          }
-                          const key = varietyKey(item)
-                          return (
-                            <td key={material}>
-                              <Checkbox
-                                checked={selectedSet.has(key)}
-                                aria-label={`${matrix.category} ${varietyLabel(item)}`}
-                                onChange={(event) =>
-                                  toggleKeys([key], event.target.checked)
-                                }
-                              />
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
-        })
+                          })}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          })}
+        </div>
       )}
     </Flex>
   )
