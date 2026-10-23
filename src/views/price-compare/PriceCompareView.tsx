@@ -29,6 +29,7 @@ import type { PriceSheet } from './types'
 import { usePriceCompareReferenceSync } from './use-price-compare-reference-sync'
 import {
   useActiveProjectQuoteConfig,
+  useEffectiveProjectBrands,
   usePriceCompareData,
 } from './usePriceCompareData'
 import { usePriceComparePricing } from './usePriceComparePricing'
@@ -99,27 +100,45 @@ export function PriceCompareView() {
     isAuthenticated,
   )
 
+  /**
+   * 品牌唯一取源：项目资料优先，资料未限制品牌时后端回退到比价配置并置 fallback=true。
+   * 不再用商品品牌目录(catalog)当品牌清单 —— 那会让「资料没配」与「配了这些」看起来一样。
+   */
+  const effectiveBrands = useEffectiveProjectBrands(
+    active?.projectId,
+    isAuthenticated,
+  )
+
   const supplierSelectOptions = useSupplierSelectOptions(isAuthenticated)
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
   usePriceCompareEditorSession(hasUnsavedChanges)
   // 只读态(他人签出)禁用撤销/重做快捷键
   useUndoRedoShortcuts(undo, redo, !readOnly)
 
-  // 配置首次从服务端加载且品牌为空时, 用商品品牌目录兜底; 每个项目只回填一次,
-  // 用户显式清空品牌后不再自动回填。未加载完成前不回填, 避免覆盖服务端配置。
+  // 配置首次从服务端加载且品牌为空时, 用**有效品牌集合**(项目资料优先 / 回退比价配置)回填;
+  // 每个项目只回填一次, 用户显式清空品牌后不再自动回填。运费优先取商品品牌目录里同名品牌的默认值,
+  // 目录没有该品牌时按 0 —— 有效品牌集合只给品牌名, 不带运费(运费属于本项目配置)。
   useEffect(() => {
     const projectId = active?.projectId
-    if (!projectId || !configLoaded || !catalog.length) return
+    if (!projectId || !configLoaded || !effectiveBrands.brands.length) return
     if (brandAutoFilledRef.current.has(projectId)) return
     brandAutoFilledRef.current.add(projectId)
-    if (!config.brands.length)
-      setBrands(
-        catalog.map((item) => ({ name: item.name, freight: item.freight })),
+    if (!config.brands.length) {
+      const freightByName = new Map(
+        catalog.map((item) => [item.name, item.freight] as const),
       )
+      setBrands(
+        effectiveBrands.brands.map((name) => ({
+          name,
+          freight: freightByName.get(name) ?? 0,
+        })),
+      )
+    }
   }, [
     active?.projectId,
     configLoaded,
     catalog,
+    effectiveBrands.brands,
     config.brands.length,
     setBrands,
   ])
@@ -316,6 +335,17 @@ export function PriceCompareView() {
         onCancel={() => setRenaming(null)}
         onSubmit={submitRename}
       />
+
+      {active && effectiveBrands.fallback ? (
+        <div className="price-compare-brand-fallback-hint" role="status">
+          {t('priceCompare.view.brandFallbackHint', {
+            // 兜底文案: 该 key 的 zh-CN/en-US 由另一批 locale 改动一并提交;
+            // 即使 key 尚未落地, 这里也必须显示可读中文而不是裸 key(提示是这轮唯一必须"看得见"的东西)。
+            defaultValue:
+              '该项目未在项目资料限制品牌，暂用比价配置的品牌（建议到「项目资料」补齐允许品牌）',
+          })}
+        </div>
+      ) : null}
 
       {active && (editLock || lockConflict) ? (
         <PriceCompareEditLockBanner

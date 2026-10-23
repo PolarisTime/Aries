@@ -114,3 +114,39 @@ export async function saveQuoteProjectConfig(
   )
   return normalizeConfig(response, normalized)
 }
+
+const effectiveBrandsSchema = z.looseObject({
+  brands: z.array(z.string()).nullable().optional(),
+  fallback: z.boolean().nullable().optional(),
+})
+
+/** 有效品牌集合: `fallback=true` 表示项目资料未限制品牌、暂用比价配置的品牌。 */
+export type QuoteProjectEffectiveBrands = {
+  brands: string[]
+  fallback: boolean
+}
+
+/**
+ * 查询项目用于报单比价的有效品牌集合。
+ *
+ * <p>品牌事实的唯一来源是项目资料(`md_project.allowed_brands`); 资料为空/NULL(不限制)时
+ * 后端回退到比价配置的品牌并置 `fallback=true`。这两个语义**必须一起用**：只看 brands 会把
+ * 「回退」误当成「项目资料就是这么配的」。</p>
+ */
+export async function fetchEffectiveProjectBrands(
+  projectId: EntityId,
+  signal?: AbortSignal,
+): Promise<QuoteProjectEffectiveBrands> {
+  const normalized = parseEntityId(projectId, 'projectId')
+  const response = await apiGet(
+    ENDPOINTS.QUOTE_PROJECT_EFFECTIVE_BRANDS(normalized),
+    effectiveBrandsSchema,
+    { ...(signal ? { signal } : {}) },
+  )
+  return {
+    brands: (response.brands ?? [])
+      .map((brand) => brand.trim())
+      .filter(Boolean),
+    fallback: Boolean(response.fallback),
+  }
+}

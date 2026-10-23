@@ -1,5 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
+import {
+  fetchEffectiveProjectBrands,
+  type QuoteProjectEffectiveBrands,
+} from '@/api/market/quote-project-configs'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import {
   fetchProjectPickerOptions,
@@ -92,4 +96,25 @@ export function useActiveProjectQuoteConfig(
     staleTime: STALE_STATIC,
   })
   return data ?? {}
+}
+
+/**
+ * 该项目用于报单比价的**有效品牌集合**（唯一取源）。
+ *
+ * <p>品牌事实已收归项目资料；资料为空/NULL（不限制）时后端只读回退到比价配置，并用
+ * {@code fallback=true} 标记。调用方**必须同时消费 fallback**：只取 brands 会把「回退」
+ * 当成「项目资料就是这么配的」，等于悄悄留下第二套口径。</p>
+ */
+export function useEffectiveProjectBrands(
+  projectId: string | undefined,
+  enabled: boolean,
+): QuoteProjectEffectiveBrands {
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.priceCompare.projectEffectiveBrands(projectId ?? ''),
+    queryFn: ({ signal }) =>
+      fetchEffectiveProjectBrands(projectId ?? '', signal),
+    enabled: enabled && Boolean(projectId),
+    staleTime: STALE_STATIC,
+  })
+  return data ?? { brands: [], fallback: false }
 }

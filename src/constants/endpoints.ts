@@ -218,4 +218,7 @@ export const ENDPOINTS = {
   QUOTE_PROJECT_CONFIGS: '/quote-project-configs',
   QUOTE_PROJECT_CONFIG: (projectId: string | number) =>
     `/quote-project-configs/${pathSegment(projectId)}`,
+  /** 该项目用于报单比价的有效品牌集合: 项目资料优先, 资料未限制品牌时回退到比价配置。 */
+  QUOTE_PROJECT_EFFECTIVE_BRANDS: (projectId: string | number) =>
+    `/quote-project-configs/${pathSegment(projectId)}/effective-brands`,
 } as const

@@ -132,6 +132,9 @@ export const QUERY_KEYS = {
       ] as const,
     projectQuoteConfig: (projectId: string) =>
       ['price-compare', 'project-quote-config', projectId] as const,
+    /** 有效品牌集合(项目资料优先 / 回退比价配置); 与 projectQuoteConfig 分开缓存, 避免回退标记被配置缓存覆盖。 */
+    projectEffectiveBrands: (projectId: string) =>
+      ['price-compare', 'project-effective-brands', projectId] as const,
     materialPriceMatches: (
       quoteDate: string,
       period: string,

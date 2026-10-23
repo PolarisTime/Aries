@@ -14,6 +14,24 @@
   margin-bottom: var(--space-xs);
 }
 
+/**
+ * 品牌来源回退提示。
+ *
+ * 项目资料未限制品牌时，品牌列取自「比价配置」而不是项目资料 —— 这是两套事实，
+ * 必须让人**看得见**：只把品牌显示出来而不说明来源，等于默认大家知道它来自哪里。
+ * 用 info 色的浅底提示条，与错误/警告条区分开（这不是错误，是待补齐的配置）。
+ */
+.price-compare-brand-fallback-hint {
+  margin-bottom: var(--space-xs);
+  padding: var(--space-xxs) var(--space-sm);
+  border-inline-start: 3px solid var(--ant-color-primary, #1677ff);
+  border-radius: var(--ant-border-radius, 6px);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-size: var(--font-size-sm, 14px);
+  line-height: 1.5;
+}
+
 .price-compare-context-row {
   min-width: 0;
 }
