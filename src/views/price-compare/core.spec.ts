@@ -256,6 +256,38 @@ describe('syncSpotInputs', () => {
     const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
     expect(targets.map((row) => row.id)).toEqual([a.id])
   })
+
+  /*
+   * 代取来源与手工改价的关系（角标不能撒谎）：
+   * 系统带出的价被人改写后来源就不成立了；只失焦、数值没变则来源必须留着
+   * （否则用户点一下格子再离开，角标就没了）。
+   */
+  it('手工改写代取价后来源被显式清成 null', () => {
+    const a = { ...row12, id: 'a' }
+    const { inputs } = syncSpotInputs(
+      [a],
+      { '中天:a': { spot: 3420, spotSourceMaterial: 'HRB400E' } },
+      '中天',
+      'a',
+      3500,
+    )
+
+    expect(inputs['中天:a'].spot).toBe(3500)
+    expect(inputs['中天:a'].spotSourceMaterial).toBeNull()
+  })
+
+  it('数值未变(只失焦)时来源保留', () => {
+    const a = { ...row12, id: 'a' }
+    const { inputs } = syncSpotInputs(
+      [a],
+      { '中天:a': { spot: 3420, spotSourceMaterial: 'HRB400E' } },
+      '中天',
+      'a',
+      3420,
+    )
+
+    expect(inputs['中天:a'].spotSourceMaterial).toBe('HRB400E')
+  })
 })
 
 describe('reconcileSpotInputs', () => {

@@ -93,7 +93,22 @@ export function syncSpotInputs(
   const next: SheetInputs = { ...inputs }
   for (const target of targets) {
     const inputKey = `${brandName}:${target.id}`
-    next[inputKey] = { ...(next[inputKey] ?? {}), spot: value }
+    const current = next[inputKey]
+    // 数值真的被改写了吗（仅失焦、没改数不算）
+    const spotChanged = current?.spot !== value
+    next[inputKey] = {
+      ...(current ?? {}),
+      spot: value,
+      /*
+       * 手工改价后「按抗震牌号代取」的来源不再成立：这一格的价格已由人判定。
+       * 显式写 `null`（而不是删字段）表示"曾经代取、已被手工覆盖"——与后端
+       * `spotSourceMaterial` 的 null 语义一致（= 查过、确认没有代取），
+       * 这样保存载荷能把它带给服务端清掉，刷新后角标不会继续撒谎。
+       */
+      ...(spotChanged && current?.spotSourceMaterial
+        ? { spotSourceMaterial: null }
+        : {}),
+    }
   }
   return { inputs: next, targets }
 }

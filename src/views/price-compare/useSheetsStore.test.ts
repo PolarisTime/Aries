@@ -283,6 +283,67 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.prices[0].supplierId).toBe('5002')
   })
 
+  /*
+   * 落库闭环的**唯一**前端证据：代取来源必须进保存载荷。
+   *
+   * 此前 buildItemPayload 只带 brandName/spotPrice/supplierId，把
+   * spotSourceMaterial 丢在本地 —— 于是保存成功、刷新后服务端只回 null，
+   * 角标必然消失（"按抗震牌号代取"在纸面上不可追溯）。
+   * 这条用例锁的是**载荷**而不是 UI，避免只靠 e2e 覆盖。
+   */
+  it('抗震牌号代取的来源材质随行级保存一并下发', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: {
+          [inputKey]: { spot: 3420, spotSourceMaterial: 'HRB400E' },
+        },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
+    const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { prices: { spotSourceMaterial?: string | null; spotPrice?: number }[] },
+    ]
+    expect(itemId).toBe('7001')
+    expect(payload.prices[0].spotPrice).toBe(3420)
+    expect(payload.prices[0].spotSourceMaterial).toBe('HRB400E')
+  })
+
+  it('手工覆盖代取价后来源以显式 null 下发(服务端据此清空)', async () => {
+    const store = renderStore()
+    await hydrate(store)
+
+    const inputKey = `中天:${store.current.rows[0].id}`
+    act(() => {
+      store.current.patchSheet(store.current.activeId, {
+        inputs: {
+          [inputKey]: { spot: 3420, spotSourceMaterial: null },
+        },
+      })
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+
+    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
+      string,
+      string,
+      { prices: Record<string, unknown>[] },
+    ]
+    // null 必须真的"在"载荷里：被省略时服务端会保留旧来源，角标就清不掉
+    expect('spotSourceMaterial' in payload.prices[0]).toBe(true)
+    expect(payload.prices[0].spotSourceMaterial).toBeNull()
+  })
+
   it('解锁行时 payload 必须显式携带 locked=false(否则后端保留原值)', async () => {
     const store = renderStore()
     await hydrate(store)

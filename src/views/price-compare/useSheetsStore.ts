@@ -391,6 +391,15 @@ export function buildItemPayload(
         brandName: brand.name,
         ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
         ...(input.supplierId ? { supplierId: input.supplierId } : {}),
+        /*
+         * 「按抗震牌号代取」的来源必须随保存一起下发，否则刷新后角标无从判定
+         * （服务端只会回 null）。判据是**字段是否存在**而不是真假值：
+         * `null` 是"曾经代取、已被手工覆盖"的有效载荷，必须原样带给服务端去清空；
+         * 字段不存在才表示这一格从未涉及代取，继续省略。
+         */
+        ...(input.spotSourceMaterial !== undefined
+          ? { spotSourceMaterial: input.spotSourceMaterial }
+          : {}),
       },
     ]
   })

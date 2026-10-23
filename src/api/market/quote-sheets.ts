@@ -288,6 +288,13 @@ export type QuoteSheetItemPayload = {
     brandName: string
     spotPrice?: number
     supplierId?: EntityId
+    /**
+     * 现货价「按抗震牌号代取」的来源材质（写入口径）。
+     *
+     * <p>`null` 是有效载荷：表示"曾经代取、已被手工覆盖"，用于让服务端清空来源；
+     * 省略该字段表示这一格从未涉及代取（服务端保持原值）。</p>
+     */
+    spotSourceMaterial?: string | null
   }[]
 }
 
