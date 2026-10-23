@@ -10,20 +10,6 @@ import type {
   Variety,
 } from './types'
 
-export const CATEGORIES = ['螺纹钢', '盘螺', '高线', '圆钢']
-export const SPECS: Record<string, number[]> = {
-  螺纹钢: [10, 12, 14, 16, 18, 20, 22, 25, 28, 32],
-  盘螺: [6, 8, 10],
-  高线: [6, 8, 10],
-  圆钢: [12, 14, 16, 18, 20, 22, 25, 28, 32],
-}
-export const LENGTHS: Record<string, string[]> = {
-  螺纹钢: ['9米', '12米'],
-  盘螺: ['-'],
-  高线: ['9米', '12米'],
-  圆钢: ['9米', '12米'],
-}
-
 /** 归一化时段为 上午/中午/下午。 */
 export function normalizePeriod(value: string): string {
   const matched = /(上午|中午|下午)\s*$/.exec((value ?? '').trim())
@@ -33,6 +19,27 @@ export function normalizePeriod(value: string): string {
 /** 商品类别规范化: 默认相等, 仅 螺纹钢 与 直条 视为同一类别。 */
 export function canonicalCategory(value: string): string {
   return value === '直条' ? '螺纹钢' : value
+}
+
+/**
+ * 「数据里出现过的类别」—— 类别清单的**唯一派生出口**，替代原来写死的 CATEGORIES。
+ *
+ * <p>为什么不再维护常量：类别在业务上由商品数据决定（后端行情/品种参考数据 + 值别名
+ * {@link canonicalCategory}）。写死一份等于同一份事实存两处 —— 数据里新增「H型钢」时
+ * 下拉与分组不会自动出现，而人工补常量的时机永远是滞后的。这里按数据首次出现顺序去重，
+ * 既自动包含新类别，又保持展示顺序稳定（不受集合迭代顺序影响）。</p>
+ */
+export function categoriesOf(varieties: readonly Variety[]): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const item of varieties) {
+    if (!item.category) continue
+    const category = canonicalCategory(item.category)
+    if (seen.has(category)) continue
+    seen.add(category)
+    result.push(category)
+  }
+  return result
 }
 
 export const dataKeyOf = (row: PriceRow) =>
@@ -959,14 +966,14 @@ export function varietyDisplay(item: Variety): string {
     .join(' ')
 }
 
-/** 按类别把商品组织为分组下拉选项。 */
+/** 按类别把商品组织为分组下拉选项(类别来自数据, 新类别自动成组)。 */
 export function buildVarietyOptions(varieties: Variety[]) {
-  return CATEGORIES.reduce<
+  return categoriesOf(varieties).reduce<
     { label: string; options: { value: string; label: string }[] }[]
   >((groups, category) => {
     const options: { value: string; label: string }[] = []
     for (const item of varieties) {
-      if (item.category === category)
+      if (canonicalCategory(item.category) === category)
         options.push({ value: varietyKeyOf(item), label: varietyDisplay(item) })
     }
     if (options.length) groups.push({ label: category, options })
@@ -976,25 +983,29 @@ export function buildVarietyOptions(varieties: Variety[]) {
 
 /**
  * 过滤可选商品: 保留启用类别内的商品; 项目配置了可选商品白名单时仅保留白名单项。
+ *
+ * <p>「未配置过品种的品牌」默认值 = **数据里出现过的类别全选**（{@link categoriesOf}），
+ * 不再套写死的四类 —— 否则数据新增类别时这些品牌会默认把它排除掉。</p>
  */
 export function filterVarieties(
   varieties: Variety[],
   brands: Brand[],
   allowedProducts: readonly string[] | undefined,
 ): Variety[] {
+  const categories = categoriesOf(varieties)
   const enabledCategories = new Set<string>()
   if (!brands.length) {
-    for (const category of CATEGORIES) enabledCategories.add(category)
+    for (const category of categories) enabledCategories.add(category)
   } else {
     for (const brand of brands) {
-      const list = brand.categories?.length ? brand.categories : CATEGORIES
+      const list = brand.categories?.length ? brand.categories : categories
       for (const category of list) enabledCategories.add(category)
     }
   }
   const allowedProductSet = new Set(allowedProducts)
   return varieties.filter(
     (item) =>
-      enabledCategories.has(item.category) &&
+      enabledCategories.has(canonicalCategory(item.category)) &&
       (allowedProductSet.size === 0 ||
         allowedProductSet.has(varietyKeyOf(item))),
   )

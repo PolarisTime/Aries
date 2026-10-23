@@ -1,4 +1,4 @@
-import { CATEGORIES } from './core'
+import { categoriesOf } from './core'
 import type { Brand, ProjectConfig, Variety } from './types'
 
 /** 品牌未配置运费时的缺省运费（元/吨）。 */
@@ -33,12 +33,14 @@ export function createDraft(
   for (const brand of config.brands) {
     if (!brandByName.has(brand.name)) brandByName.set(brand.name, brand)
   }
+  // 未配置过品种的品牌默认值 = 数据里出现过的类别全选(不再套写死的四类)
+  const allCategories = categoriesOf(varieties)
   const freightMap: Record<string, number> = {}
   const categoryMap: Record<string, string[]> = {}
   for (const name of brandOptions) {
     const brand = brandByName.get(name)
     freightMap[name] = brand?.freight ?? DEFAULT_FREIGHT
-    categoryMap[name] = brand?.categories ?? CATEGORIES
+    categoryMap[name] = brand?.categories ?? allCategories
   }
   return {
     brands: names.length ? names : brandOptions,
@@ -58,10 +60,11 @@ export function draftToConfig(
   draft: ProjectConfigDraft,
   varieties: Variety[],
 ): ProjectConfig {
+  const allCategories = categoriesOf(varieties)
   const brands: Brand[] = draft.brands.map((name) => {
-    const categories = draft.categoryMap[name] ?? CATEGORIES
+    const categories = draft.categoryMap[name] ?? allCategories
     const enabled =
-      categories.length === 0 || categories.length === CATEGORIES.length
+      categories.length === 0 || categories.length === allCategories.length
         ? undefined
         : categories
     return {

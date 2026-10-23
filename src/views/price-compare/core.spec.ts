@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyRowLock,
+  buildVarietyOptions,
   canonicalCategory,
+  categoriesOf,
   computeSummary,
   countMissing,
   dataKeyOf,
@@ -647,6 +649,72 @@ describe('filterVarieties 可选商品过滤', () => {
   it('项目白名单存在时仅保留白名单商品', () => {
     const result = filterVarieties(varieties, [], ['盘螺|HRB400E|8|9米'])
     expect(result.map((item) => item.category)).toEqual(['盘螺'])
+  })
+})
+
+/**
+ * 守卫: 类别清单必须**从数据派生**, 不许退回写死一份。
+ *
+ * <p>这几条用例用数据里原本不存在的「H型钢」当探针：只要有人把类别清单重新硬编码成
+ * 螺纹钢/盘螺/高线/圆钢，新类别就会在下拉、分组、默认启用里三处同时消失，用例立刻变红。</p>
+ */
+describe('categoriesOf 类别派生守卫', () => {
+  const newCategoryVariety = (): Variety => ({
+    category: 'H型钢',
+    material: 'Q235',
+    spec: 200,
+    length: '12米',
+    label: 'h',
+  })
+  const threadVariety = (): Variety => ({
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec: 12,
+    length: '9米',
+    label: 'a',
+  })
+
+  it('按数据首次出现顺序去重, 并把「直条」按值别名归一为「螺纹钢」', () => {
+    const varieties: Variety[] = [
+      { ...threadVariety(), category: '直条' },
+      { ...newCategoryVariety() },
+      { ...threadVariety() },
+    ]
+    expect(categoriesOf(varieties)).toEqual(['螺纹钢', 'H型钢'])
+  })
+
+  it('空数据返回空清单(不再有兜底的四个类别)', () => {
+    expect(categoriesOf([])).toEqual([])
+  })
+
+  it('品种下拉分组自动包含数据里的新类别', () => {
+    const groups = buildVarietyOptions([threadVariety(), newCategoryVariety()])
+    expect(groups.map((group) => group.label)).toEqual(['螺纹钢', 'H型钢'])
+  })
+
+  it('品牌未配置品种时, 新类别默认视为全选并被保留', () => {
+    const result = filterVarieties(
+      [threadVariety(), newCategoryVariety()],
+      [{ name: '中天', freight: 0 }],
+      undefined,
+    )
+    expect(result.map((item) => item.category)).toEqual(['螺纹钢', 'H型钢'])
+  })
+
+  it('品牌显式只勾了老类别时, 新类别仍被正确排除(不是无脑全放)', () => {
+    const result = filterVarieties(
+      [threadVariety(), newCategoryVariety()],
+      [{ name: '中天', freight: 0, categories: ['螺纹钢'] }],
+      undefined,
+    )
+    expect(result.map((item) => item.category)).toEqual(['螺纹钢'])
+  })
+
+  it('已删除的硬编码常量不再被导出', async () => {
+    const core = await import('./core')
+    expect('CATEGORIES' in core).toBe(false)
+    expect('SPECS' in core).toBe(false)
+    expect('LENGTHS' in core).toBe(false)
   })
 })
 

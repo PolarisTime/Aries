@@ -19,7 +19,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { modal } from '@/utils/antd-app'
-import { CATEGORIES } from './core'
+import { categoriesOf } from './core'
 import {
   createDraft,
   DEFAULT_FREIGHT,
@@ -108,6 +108,7 @@ function BrandSection({
   draft,
   brandOptions,
   projectAllowedBrands,
+  categories,
   onChange,
 }: {
   draft: ProjectConfigDraft
@@ -115,6 +116,8 @@ function BrandSection({
   brandOptions: string[]
   /** 项目资料里配置的允许品牌；空数组表示项目不限制。 */
   projectAllowedBrands: string[]
+  /** 数据里出现过的类别（唯一派生出口见 core.categoriesOf）。 */
+  categories: string[]
   onChange: (patch: Partial<ProjectConfigDraft>) => void
 }) {
   const [keyword, setKeyword] = useState('')
@@ -154,10 +157,10 @@ function BrandSection({
   const categorySetByName = useMemo(() => {
     const result: Record<string, Set<string>> = {}
     for (const name of candidateBrands) {
-      result[name] = new Set(draft.categoryMap[name] ?? CATEGORIES)
+      result[name] = new Set(draft.categoryMap[name] ?? categories)
     }
     return result
-  }, [candidateBrands, draft.categoryMap])
+  }, [candidateBrands, draft.categoryMap, categories])
 
   const add = (names: string[]) =>
     onChange({ brands: [...new Set([...draft.brands, ...names])] })
@@ -167,7 +170,7 @@ function BrandSection({
       designatedBrands: draft.designatedBrands.filter((item) => item !== name),
     })
   const toggleCategory = (name: string, category: string, checked: boolean) => {
-    const current = draft.categoryMap[name] ?? CATEGORIES
+    const current = draft.categoryMap[name] ?? categories
     const next = checked
       ? [...new Set([...current, category])]
       : current.filter((item) => item !== category)
@@ -277,7 +280,7 @@ function BrandSection({
                         >
                           {t('priceCompare.config.category')}
                         </Text>
-                        {CATEGORIES.map((category) => (
+                        {categories.map((category) => (
                           <Tag.CheckableTag
                             key={category}
                             checked={
@@ -397,11 +400,11 @@ function ProductSection({
 
   const groups = useMemo(
     () =>
-      CATEGORIES.flatMap((category) => {
+      categoriesOf(varieties).flatMap((category) => {
         const items = visible.filter((item) => item.category === category)
         return items.length > 0 ? [{ category, items }] : []
       }),
-    [visible],
+    [visible, varieties],
   )
 
   const toggleKey = (key: string, checked: boolean) =>
@@ -633,6 +636,7 @@ export function ProjectConfigModal({
                 draft={draft}
                 brandOptions={brandOptions}
                 projectAllowedBrands={projectAllowedBrands}
+                categories={categoriesOf(varieties)}
                 onChange={patch}
               />
             ),

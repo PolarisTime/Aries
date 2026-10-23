@@ -56,3 +56,54 @@ describe('ProjectConfigModal 指定品牌映射', () => {
     expect(draftToConfig(draft, varieties).designatedBrands).toBeUndefined()
   })
 })
+
+/**
+ * 守卫: 「未配置过品种的品牌」默认值必须是**数据里出现过的类别全选**，不是写死的四类。
+ * 数据里出现新类别（探针「H型钢」）时，草稿默认值必须自动包含它。
+ */
+describe('ProjectConfigModal 品种默认值随数据派生', () => {
+  const varietiesWithNewCategory: Variety[] = [
+    ...varieties,
+    {
+      category: 'H型钢',
+      material: 'Q235',
+      spec: 200,
+      length: '12米',
+      label: 'Q235 200 12米',
+    },
+  ]
+
+  it('createDraft 给未配置品种的品牌填「数据里出现过的类别全选」', () => {
+    const draft = createDraft(
+      baseConfig(),
+      brandOptions,
+      varietiesWithNewCategory,
+    )
+    expect(draft.categoryMap['中天']).toEqual(['螺纹钢', 'H型钢'])
+  })
+
+  it('数据新增类别后, 该品牌全选保存时仍归一为「不下发」(全量即缺省)', () => {
+    const draft = createDraft(
+      baseConfig(),
+      brandOptions,
+      varietiesWithNewCategory,
+    )
+    // 默认全选 → 保存时不应把「全选」写成显式清单, 否则以后再加类别会被旧快照挡掉
+    expect(
+      draftToConfig(draft, varietiesWithNewCategory).brands[0].categories,
+    ).toBeUndefined()
+  })
+
+  it('只勾掉新类别后, 保存的是显式清单', () => {
+    const draft = createDraft(
+      baseConfig(),
+      brandOptions,
+      varietiesWithNewCategory,
+    )
+    const next = draftToConfig(
+      { ...draft, categoryMap: { ...draft.categoryMap, 中天: ['螺纹钢'] } },
+      varietiesWithNewCategory,
+    )
+    expect(next.brands[0].categories).toEqual(['螺纹钢'])
+  })
+})
