@@ -36,6 +36,13 @@ const priceSchema = z.looseObject({
   spotPrice: z.union([z.number(), z.string()]).nullable().optional(),
   supplierId: z.union([z.number(), z.string()]).nullable().optional(),
   supplierName: z.string().nullable().optional(),
+  /*
+   * 抗震牌号代取的来源材质。**必须用 nullish**：后端未代取时显式给 `null`
+   * （"查过、确认没代取"），而字段缺失是另一件事。用 `optional()` 会把 `null`
+   * 归一成 `undefined`，两者就分不开了；用 `nullable().optional()` + 手动分支也一样，
+   * 不如让 zod 原样保留。
+   */
+  spotSourceMaterial: z.string().nullish(),
 })
 
 const itemSchema = z.looseObject({
@@ -109,6 +116,15 @@ export type QuoteSheetPriceRecord = {
   spotPrice?: number
   supplierId?: EntityId
   supplierName?: string
+  /**
+   * 这个现货价是「按抗震牌号代取」时实际命中的材质（如报 HRB400、现货只有 HRB400E）。
+   *
+   * <p><b>`null` 与 `undefined` 语义不同，不能合并</b>：后端未代取时**显式返回 `null`**
+   * （= 查过、确认没有代取）；字段缺失（`undefined`）才表示"这条响应没带这个信息"
+   * （旧版本后端 / 其它写路径）。角标判据依赖这个区分（{@code null} 不显示角标，
+   * 但也不能把它当成"没查过"）。</p>
+   */
+  spotSourceMaterial?: string | null
 }
 
 /** 行级关联的采购订单明细行: allocatedTon 是本次在该明细行开出的吨位。 */
@@ -308,6 +324,14 @@ function normalizePrice(
         }
       : {}),
     ...(raw.supplierName ? { supplierName: raw.supplierName } : {}),
+    /*
+     * 三态原样透传：有值 → 字符串；后端明确未代取 → `null`；字段缺失 → 不写这个 key
+     * （= `undefined`）。这里刻意不用 `raw.spotSourceMaterial || undefined` 之类的归一，
+     * 否则 `null` 会被抹成 `undefined`，"查过确认没代取"就退化成"不知道"。
+     */
+    ...(raw.spotSourceMaterial !== undefined
+      ? { spotSourceMaterial: raw.spotSourceMaterial }
+      : {}),
   }
 }
 

@@ -87,6 +87,19 @@ const page = {
   hasMore: false,
 }
 
+/** 用同一张单据、只替换第一行明细的 prices 数组，便于逐态断言归一化结果。 */
+function sheetWithPrices(prices: Record<string, unknown>[]) {
+  return {
+    ...page,
+    content: [
+      {
+        ...page.content[0],
+        items: [{ ...page.content[0].items[0], prices }],
+      },
+    ],
+  }
+}
+
 describe('quote-sheets API', () => {
   beforeEach(() => {
     apiGetMock.mockReset()
@@ -115,6 +128,58 @@ describe('quote-sheets API', () => {
       supplierId: '700500000000000200',
       supplierName: '杭州物资',
     })
+  })
+
+  /*
+   * 现货价「按抗震牌号代取」的来源材质必须原样透传，且三态可区分：
+   *   有值 → 字符串；后端明确未代取 → `null`；字段缺失 → `undefined`（key 不存在）。
+   *
+   * 这三态不能合并：角标只在"有值"时显示，而 `null` 表示"查过、确认没代取"，
+   * 与"这条响应没带这个信息"（旧后端/其它写路径）是不同结论。
+   * 归一化层用 looseObject + 条件展开实现，若有人改回 `|| undefined` 这类写法，
+   * 下面第 2 条会立刻变红。
+   */
+  it('现货价来源材质: 有值时透传到归一化结果', async () => {
+    apiGetMock.mockResolvedValue(
+      sheetWithPrices([
+        {
+          brandName: '中天',
+          spotPrice: '3200.00',
+          spotSourceMaterial: 'HRB400E',
+        },
+      ]),
+    )
+
+    const [record] = await fetchQuoteSheets()
+
+    expect(record.items[0].prices[0].spotSourceMaterial).toBe('HRB400E')
+  })
+
+  it('现货价来源材质: 后端显式 null 时保留 null（不等于缺字段）', async () => {
+    apiGetMock.mockResolvedValue(
+      sheetWithPrices([
+        { brandName: '中天', spotPrice: '3200.00', spotSourceMaterial: null },
+      ]),
+    )
+
+    const [record] = await fetchQuoteSheets()
+    const price = record.items[0].prices[0]
+
+    expect(price.spotSourceMaterial).toBeNull()
+    // null 必须真的"在"：被抹成 undefined 时这里会失败
+    expect('spotSourceMaterial' in price).toBe(true)
+  })
+
+  it('现货价来源材质: 字段缺失时归一为 undefined', async () => {
+    apiGetMock.mockResolvedValue(
+      sheetWithPrices([{ brandName: '中天', spotPrice: '3200.00' }]),
+    )
+
+    const [record] = await fetchQuoteSheets()
+    const price = record.items[0].prices[0]
+
+    expect(price.spotSourceMaterial).toBeUndefined()
+    expect('spotSourceMaterial' in price).toBe(false)
   })
 
   it('缺省规格数量锁定归一为 false', async () => {
