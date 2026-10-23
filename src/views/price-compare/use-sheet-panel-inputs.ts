@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next'
 import { message } from '@/utils/antd-app'
 import { fillSupplierInputs, syncSpotInputs } from './core'
+import { clearSpotSourceIn } from './spot-source-cancel'
 import type { PriceRow, PriceSheet, SheetInputs } from './types'
 
 /**
@@ -81,6 +82,21 @@ export function useSheetPanelInputActions({
   const getSpot = (brandName: string, rowId: string) =>
     getInput(brandName, rowId)?.spot
 
+  /**
+   * 单格取消「按替代牌号代取」标记：把该格 `spotSourceMaterial` **显式置 null**。
+   *
+   * <p>为什么是 null 而不是删字段：契约里 `null` = 「查过、确认没代取」，缺字段 =
+   * 「这条数据没带信息」，两者语义不同；抹平会让来源列无法区分"确认过"与"不知道"。</p>
+   *
+   * <p>只动来源标记：不改 `spot` 数值、不改行级开关（行开关是整行口径，这里是单格例外覆盖）。
+   * 与 {@link setSpot} 走 `syncSpotInputs` 的联动不同，这是用户显式操作，不需要同步兄弟行。</p>
+   */
+  const clearSpotSource = (brandName: string, rowId: string) => {
+    // 写入语义的唯一实现在 core.clearSpotSourceIn（可直接单测），这里只负责落库
+    const inputs = clearSpotSourceIn(sheet.inputs, brandName, rowId)
+    if (inputs) patchSheet(sheet.id, { inputs })
+  }
+
   /** 记录/清除现货价来源供应商; 无现货也无供应商时删除该输入。 */
   const setSupplier = (
     brandName: string,
@@ -138,5 +154,13 @@ export function useSheetPanelInputActions({
     consumeSpotsTouched(eligibleIds.map((rowId) => `${brandName}:${rowId}`))
   }
 
-  return { fillSupplier, getInput, getSpot, patchRow, setSpot, setSupplier }
+  return {
+    clearSpotSource,
+    fillSupplier,
+    getInput,
+    getSpot,
+    patchRow,
+    setSpot,
+    setSupplier,
+  }
 }

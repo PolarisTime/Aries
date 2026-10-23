@@ -67,7 +67,6 @@ import {
   pickBestDiffBrands,
   resolveLock,
   resolveRef,
-  resolveSpotSourceMaterial,
   type SHEET_COLUMN_WIDTH,
   SHEET_HIDEABLE_COLUMN,
   SPOT_PRICE_MAX,
@@ -77,6 +76,7 @@ import {
 import { LockableField } from './LockableField'
 import { SpotSyncActions } from './SpotSyncActions'
 import { applyLowestQuotes } from './spot-from-price-list'
+import { resolveCellSpotSource } from './spot-source-cancel'
 import { resolveLinkedTonnageTotals } from './TonCell'
 import {
   buildTonColumn,
@@ -220,6 +220,8 @@ type ColumnContext = {
   rows: PriceRow[]
   getSpot: (brandName: string, rowId: string) => number | undefined
   setSpot: (brandName: string, rowId: string, value: number | undefined) => void
+  /** 单格取消代取标记（置 spotSourceMaterial = null），不影响价格与行级开关。 */
+  clearSpotSource: (brandName: string, rowId: string) => void
   getInput: (brandName: string, rowId: string) => SheetInput | undefined
   setSupplier: (
     brandName: string,
@@ -592,6 +594,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     getSpot,
     getInput,
     setSpot,
+    clearSpotSource,
     supplierOptions,
     patchRow,
     moveFocus,
@@ -1238,9 +1241,10 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       )
                       // spot 代取来源：系统带出（spotSourceMaterial，已落库）优先，
                       // 否则按会话内判据（单据头放行 + 行级开关 + 白名单）。
-                      // 判据唯一出口：core.resolveSpotSourceMaterial，不在此另判材质。
+                      // 单格例外层：spot-source-cancel.resolveCellSpotSource
+                      // （显式 null 优先于行级开关）；材质白名单等规则仍唯一在 core。
                       const spotInput = getInput(brand.name, current.id)
-                      const spotSource = resolveSpotSourceMaterial({
+                      const spotSource = resolveCellSpotSource({
                         input: spotInput,
                         row: current,
                         allowHrb400eFallback,
@@ -1260,6 +1264,25 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         <>
                           {input}
                           <FallbackBadge label={spotBadgeLabel} />
+                          {/* 单格取消代取：只在有角标时出现（没角标就没有"取消"可言）。
+                              置 spotSourceMaterial = null：不改价格、不动行级开关。 */}
+                          <Button
+                            aria-label={t(
+                              'priceCompare.sheet.clearSpotSource',
+                              { material: spotSource },
+                            )}
+                            className="price-compare-fallback-clear"
+                            size="small"
+                            title={t('priceCompare.sheet.clearSpotSource', {
+                              material: spotSource,
+                            })}
+                            type="text"
+                            onClick={() =>
+                              clearSpotSource(brand.name, current.id)
+                            }
+                          >
+                            ×
+                          </Button>
                         </>
                       ) : (
                         input
@@ -2777,17 +2800,24 @@ export function SheetPanel(props: Props) {
 
   // 单元格输入动作(现货价/供应商简称/批量填入)抽到 use-sheet-panel-inputs.ts:
   // 这 6 个回调约占 100 行, 是 no-giant-component 的主要行数来源, 且与渲染无关。
-  const { getSpot, patchRow, setSpot, getInput, setSupplier, fillSupplier } =
-    useSheetPanelInputActions({
-      consumeSpotsTouched,
-      markSpotsTouched,
-      patchSheet,
-      rows,
-      setRows,
-      sheet,
-      spotTouchedKeys,
-      t,
-    })
+  const {
+    clearSpotSource,
+    getSpot,
+    patchRow,
+    setSpot,
+    getInput,
+    setSupplier,
+    fillSupplier,
+  } = useSheetPanelInputActions({
+    consumeSpotsTouched,
+    markSpotsTouched,
+    patchSheet,
+    rows,
+    setRows,
+    sheet,
+    spotTouchedKeys,
+    t,
+  })
 
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
@@ -2914,6 +2944,7 @@ export function SheetPanel(props: Props) {
     getSpot,
     setSpot,
     getInput,
+    clearSpotSource,
     setSupplier,
     fillSupplier,
     supplierOptions: suppliers,

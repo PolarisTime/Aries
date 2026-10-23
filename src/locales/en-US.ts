@@ -2857,6 +2857,8 @@ export const enUS = {
       title: 'Order Price Comparison',
       watermark: 'INTERNAL · Order Price Comparison',
       noBatch: 'No batch',
+      brandFallbackHint:
+        'This project does not restrict brands in its master data; brands from the quote config are used for now (consider filling in allowed brands in Project Master Data).',
       removeSheetConfirmTitle: 'Delete this batch?',
       removeSheetConfirmContent:
         'All entries in this batch will also be deleted',
@@ -3021,6 +3023,8 @@ export const enUS = {
       hrb400eRowSwitch: 'Price as {{material}}',
       hrb400eRowSwitchHint:
         'This row is priced as {{material}} (allowed by the document header). Uncheck to opt this row out',
+      // Single-cell cancel substitution
+      clearSpotSource: 'Stop pricing this cell as {{material}}',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',

@@ -6,6 +6,7 @@ import {
   SUBSTITUTABLE_MATERIALS,
 } from './core'
 import { applyLowestQuotes } from './spot-from-price-list'
+import { clearSpotSourceIn, resolveCellSpotSource } from './spot-source-cancel'
 import type { PriceRow, PriceSheet } from './types'
 
 /**
@@ -287,5 +288,70 @@ describe('resolveSpotSourceMaterial 角标判据', () => {
         allowHrb400eFallback: true,
       }),
     ).toBeUndefined()
+  })
+
+  it('显式 null 优先于行级开关: 取消后即使行开关打开也不打标', () => {
+    // 这是"单格取消"能生效的关键：null 必须在行级判据之前短路
+    expect(
+      resolveCellSpotSource({
+        input: { spot: 3420, spotSourceMaterial: null },
+        row: rowOf('HRB400', true),
+        allowHrb400eFallback: true,
+      }),
+    ).toBeUndefined()
+  })
+
+  it('缺字段与显式 null 语义不同: 缺字段仍按行级开关判定', () => {
+    // 缺字段 = 没带信息，不能当成"确认没代取"，否则取消标记会被顺手抹掉
+    expect(
+      resolveCellSpotSource({
+        input: { spot: 3420 },
+        row: rowOf('HRB400', true),
+        allowHrb400eFallback: true,
+      }),
+    ).toBe('HRB400E')
+  })
+})
+
+/**
+ * 单格取消代取的写入语义。
+ *
+ * <p>用它把四件事一次钉住：该格写入的是**显式 null（键必须存在）**、其它格不受影响、
+ * 价格数值与供应商原样保留、格不存在时不产生空 patch。</p>
+ */
+describe('clearSpotSourceIn 单格取消代取', () => {
+  const base = () => ({
+    '中天:a': { spot: 3420, supplierId: '77', supplierName: '钧叶' },
+    '中天:b': { spot: 3450, spotSourceMaterial: 'HRB400E' },
+  })
+
+  it('该格的 spotSourceMaterial 被置为显式 null, 且键存在', () => {
+    const next = clearSpotSourceIn(base(), '中天', 'a')
+    expect(next).not.toBeNull()
+    const cell = next?.['中天:a']
+    // 断言 key 存在(而不是 undefined): 显式 null 才能表达"查过、确认没代取"
+    expect(cell && 'spotSourceMaterial' in cell).toBe(true)
+    expect(cell?.spotSourceMaterial).toBeNull()
+  })
+
+  it('其它格完全不受影响', () => {
+    const source = base()
+    const next = clearSpotSourceIn(source, '中天', 'a')
+    expect(next?.['中天:b']).toEqual(source['中天:b'])
+  })
+
+  it('价格数值与供应商原样保留(只改来源标记)', () => {
+    const next = clearSpotSourceIn(base(), '中天', 'a')
+    const cell = next?.['中天:a']
+    expect(cell?.spot).toBe(3420)
+    expect(cell?.supplierId).toBe('77')
+    expect(cell?.supplierName).toBe('钧叶')
+  })
+
+  it('不修改入参(纯函数), 格不存在时返回 null 而不产生空对象', () => {
+    const source = base()
+    clearSpotSourceIn(source, '中天', 'a')
+    expect('spotSourceMaterial' in source['中天:a']).toBe(false)
+    expect(clearSpotSourceIn(source, '中天', 'nope')).toBeNull()
   })
 })

@@ -2807,6 +2807,8 @@ export const zhCN = {
       title: '报单比价',
       watermark: '内部资料 · 报单比价',
       noBatch: '暂无批次',
+      brandFallbackHint:
+        '该项目未在项目资料限制品牌，暂用比价配置的品牌（建议到「项目资料」补齐允许品牌）',
       removeSheetConfirmTitle: '删除该批次？',
       removeSheetConfirmContent: '该批次的全部录入内容将一并删除',
       editingByMe: '你正在编辑该批次',
@@ -2968,6 +2970,8 @@ export const zhCN = {
       hrb400eRowSwitch: '按 {{material}} 价',
       hrb400eRowSwitchHint:
         '该行价格按 {{material}} 代取（单据头已允许）。取消勾选可只对这一行生效',
+      // 单格取消代取
+      clearSpotSource: '取消本格按 {{material}} 代取',
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
       config: '配置',
