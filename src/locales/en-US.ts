@@ -3017,6 +3017,10 @@ export const enUS = {
       fallbackBadgeLabelWithSupplier:
         'Priced as {{material}} (source {{supplier}})',
       spotSubstitutedLabel: 'Priced as {{material}} (source {{supplier}})',
+      // Row-level "price as E" switch
+      hrb400eRowSwitch: 'Price as {{material}}',
+      hrb400eRowSwitchHint:
+        'This row is priced as {{material}} (allowed by the document header). Uncheck to opt this row out',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',

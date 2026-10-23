@@ -2964,6 +2964,10 @@ export const zhCN = {
       fallbackBadgeLabelWithSupplier:
         '按 {{material}} 代取（来源 {{supplier}}）',
       spotSubstitutedLabel: '按 {{material}} 代取（来源 {{supplier}}）',
+      // 行级「按 E 价」开关
+      hrb400eRowSwitch: '按 {{material}} 价',
+      hrb400eRowSwitchHint:
+        '该行价格按 {{material}} 代取（单据头已允许）。取消勾选可只对这一行生效',
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
       config: '配置',

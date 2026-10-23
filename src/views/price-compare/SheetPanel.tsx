@@ -47,6 +47,7 @@ import { ContextMenu } from '@/components/ContextMenu'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { message, modal } from '@/utils/antd-app'
+import { substituteMaterialOf } from '@/utils/material-grade'
 import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
@@ -58,6 +59,7 @@ import {
   isOrderTonnageCovered,
   isPurchasedRow,
   isSeparatorRow,
+  isSubstitutableMaterial,
   LOCK_REASON_KEYS,
   linkedPurchaseOrderItemIds,
   netPriceWithFallback,
@@ -952,6 +954,27 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     }
                   />
                 </Tooltip>
+              ) : null}
+              {/* 行级「按 E 价」开关：默认跟随单据头；仅单据头放行且材质在白名单内才出现。
+                  勾选后该行价格子按替代牌号带出并打 E 角标（判据见 core.resolveSpotSourceMaterial）。 */}
+              {allowHrb400eFallback &&
+              isSubstitutableMaterial(current.material) ? (
+                <Checkbox
+                  checked={current.hrb400eFallback === true}
+                  className="price-compare-hrb400e-switch"
+                  disabled={selectDisabled}
+                  aria-label={t('priceCompare.sheet.hrb400eRowSwitch', {
+                    material: substituteMaterialOf(current.material) ?? '',
+                  })}
+                  title={t('priceCompare.sheet.hrb400eRowSwitchHint', {
+                    material: substituteMaterialOf(current.material) ?? '',
+                  })}
+                  onChange={(event) =>
+                    patchRow(row.rowId, {
+                      hrb400eFallback: event.target.checked,
+                    })
+                  }
+                />
               ) : null}
             </div>
           </LockReason>

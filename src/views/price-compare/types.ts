@@ -106,7 +106,7 @@ export type SheetInput = {
    * <p>落库后重新打开单据仍要能显示「E」角标与来源说明，因此必须存进单据数据，
    * 不能只放在会话内的 store 里。未代取的格子不写该字段（区分"精确匹配"与"代取"）。</p>
    */
-  spotSourceMaterial?: string
+  spotSourceMaterial?: string | null
 }
 
 export type SheetInputs = Record<string, SheetInput>
