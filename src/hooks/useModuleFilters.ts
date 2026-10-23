@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig } from '@/types/module-page'
 
@@ -88,35 +88,41 @@ export function useModuleFilters({
   setCurrentPage,
 }: Props) {
   const defaultFiltersKey = serializeFilters(defaultFilters)
-  // 惰性初始化放到首个 effect 中执行，避免每次渲染都 cloneFilters，
-  // 也避免在渲染期间读写 ref
-  const previousDefaultFiltersRef = useRef<SearchParams | null>(null)
-  const previousDefaultFiltersKeyRef = useRef(defaultFiltersKey)
   const [filters, setFilters] = useState<SearchParams>(() =>
     cloneFilters(defaultFilters),
   )
   const [submittedFilters, setSubmittedFilters] = useState<SearchParams>(() =>
     cloneFilters(defaultFilters),
   )
+  /*
+   * defaultFilters 变化时（模块配置加载完成 / 切换到另一模块）把「用户已改的字段」留下、
+   * 把「上一版默认值」换成新默认值。**在渲染期同步完成，不放 effect**：
+   *
+   * 依据 react.dev《You Might Not Need an Effect》→「Adjusting some state when a prop changes」：
+   * 由 prop 派生 state 属于「能在渲染期算出来的东西」，用 effect 会先提交一帧旧筛选条件、
+   * 再补一帧新值（用户可见的筛选条闪烁 + 多一次提交与一次查询）。
+   * 官方给的替代写法就是「用 state 记住上一次的 prop，在渲染期比对并 setState」，
+   * React 会在提交前立刻丢弃这一帧重算，因此不会多渲染到屏幕上。
+   *
+   * 这里用「上一版默认值 + 其序列化 key」两个 state 代替原来的两个 ref：
+   * key 相同（内容等价的新对象）时不动，避免父级每次渲染新建对象就重置用户筛选。
+   */
+  const [appliedDefaultFilters, setAppliedDefaultFilters] =
+    useState<SearchParams>(() => cloneFilters(defaultFilters))
+  const [appliedDefaultFiltersKey, setAppliedDefaultFiltersKey] =
+    useState(defaultFiltersKey)
 
-  useEffect(() => {
-    if (previousDefaultFiltersRef.current === null) {
-      previousDefaultFiltersRef.current = cloneFilters(defaultFilters)
-      return
-    }
-    if (previousDefaultFiltersKeyRef.current === defaultFiltersKey) return
-
-    const previousDefaultFilters = previousDefaultFiltersRef.current
-    previousDefaultFiltersRef.current = cloneFilters(defaultFilters)
-    previousDefaultFiltersKeyRef.current = defaultFiltersKey
-
+  if (appliedDefaultFiltersKey !== defaultFiltersKey) {
+    const previousDefaultFilters = appliedDefaultFilters
+    setAppliedDefaultFilters(cloneFilters(defaultFilters))
+    setAppliedDefaultFiltersKey(defaultFiltersKey)
     setFilters((prev) =>
       mergeDefaultFilters(prev, previousDefaultFilters, defaultFilters),
     )
     setSubmittedFilters((prev) =>
       mergeDefaultFilters(prev, previousDefaultFilters, defaultFilters),
     )
-  }, [defaultFilters, defaultFiltersKey])
+  }
 
   const handleSearch = () => {
     setCurrentPage(1)

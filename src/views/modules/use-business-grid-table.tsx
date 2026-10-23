@@ -511,6 +511,23 @@ export function useBusinessGridTable({
         describeSelectionRow(record),
     ),
   }
+  /*
+   * 当前页数据刷新后, 用新的行对象替换父级跨页选择快照里的旧对象。
+   *
+   * <p><b>为什么这一处必须留在 effect(三选一都被排除)</b>:</p>
+   * <ol>
+   *   <li><b>不能在渲染期算</b>: `setSelectedRowMap` 写的是**父组件**（`useBusinessGridData`）
+   *     持有的 state。React 只允许在渲染期更新「同一个组件」的 state；
+   *     渲染期改别人的 state 会触发 “Cannot update a component while rendering a different
+   *     component” 并破坏渲染纯度（React 官方口径明确禁止）。</li>
+   *   <li><b>不能事件驱动</b>: 触发条件是「列表查询返回了新的 records」（翻页 / 刷新 / 重新查询），
+   *     没有对应的用户事件；把刷新后的最新行对象回填给快照是**数据到达**的副作用，不是点击的结果。</li>
+   *   <li><b>不能纯派生</b>: 快照要跨页保留（`preserveSelectedRowKeys`），当前页的 records
+   *     只覆盖其中一部分键，必须与既有快照合并 —— 这是跨渲染累积的状态，不属于可推导值。</li>
+   * </ol>
+   * <p>因此这属于 react.dev 允许保留的「与外部（父级）状态同步」一类 effect。
+   * 内部用 `changed` 判等，没有实际变化时返回原引用，避免无谓的父级重渲染。</p>
+   */
   useEffect(() => {
     if (!selectedRowKeys.length || !records.length) return
 

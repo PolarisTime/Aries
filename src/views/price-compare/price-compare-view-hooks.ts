@@ -37,7 +37,16 @@ export function useSupplierSelectOptions(enabled: boolean) {
   )
 }
 
-/** 首次进入时为未归属单据分配第一个项目, 并视情况展示引导。 */
+/**
+ * 首次进入时为未归属单据分配第一个项目, 并视情况展示引导。
+ *
+ * <p><b>为什么这里保留 effect(而不是事件驱动/渲染期计算)</b>: 触发条件是「项目列表这个
+ * **异步查询**第一次返回」—— 没有任何用户事件对应「数据到了」这一刻, 而动作本身是向外派发
+ * (`assignProjectToUnassigned` 改的是比价 store 里的单据归属, `setTourOpen` 改的是调用方的
+ * 弹层状态), 既不能在渲染期做(渲染必须纯), 也不能写进某个 onClick。
+ * 这正是 react.dev 允许保留 effect 的两类场景之一: 无事件可挂的**一次性外部同步**。
+ * `initialized` ref 把它钉成「只做一次」, 避免 projects 引用变化后重复改归属。</p>
+ */
 export function useInitialProjectAssignment(
   projects: ProjectOption[],
   assignProjectToUnassigned: (projectId: string, projectName: string) => void,
@@ -77,13 +86,29 @@ export function usePriceCompareRouteActive(): boolean {
 export function usePriceCompareEditorSession(hasUnsavedChanges: boolean) {
   const { beginSession, endSession, setSessionStatus } = useEditorSession()
 
+  /*
+   * 注册/注销编辑会话: 这是向**外部系统**(`EditorSessionGuard` 提供的会话注册表)订阅与清理,
+   * 与挂载/卸载生命周期严格同构。渲染期不能做(有副作用), 也没有对应的用户事件
+   * (进入页面不是某个 onClick), 故必须留在 effect。
+   */
   useEffect(() => {
     beginSession({ moduleKey: 'price-compare', mode: 'edit' })
     return endSession
   }, [beginSession, endSession])
 
+  /*
+   * 把「是否有未落库改动」推给外部会话守卫。
+   *
+   * <p><b>为什么保留 effect 而不是渲染期计算</b>: `setSessionStatus` 写的是**别的组件**
+   * (`EditorSessionGuard`)持有的状态, 不是本 hook 自己的 state。React 只允许在渲染期
+   * 更新「同一个组件」的 state; 在渲染期去改别人的 state 会触发
+   * “Cannot update a component while rendering a different component” 警告, 并破坏渲染纯度。
+   * 因此这类「把派生值发布给外部 store」只能放在 effect 里(等价于 react.dev 的
+   * “subscribing to an external store / syncing with an external system”)。</p>
+   *
+   * <p>保存请求在途时未保存集合仍为脏, 因此关闭确认会一直生效到真正落库。</p>
+   */
   useEffect(() => {
-    // 保存请求在途时未保存集合仍为脏, 因此关闭确认会一直生效到真正落库。
     setSessionStatus(hasUnsavedChanges ? 'dirty' : 'clean')
   }, [hasUnsavedChanges, setSessionStatus])
 }

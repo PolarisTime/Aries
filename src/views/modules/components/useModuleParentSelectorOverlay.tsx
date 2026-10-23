@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
@@ -70,9 +70,27 @@ export function useModuleParentSelectorOverlay({
   const { formatCellValue } = useModuleDisplaySupport()
   const defaultPageSize = useDefaultPageSize()
   const [state, setState] = usePatchState(parentSelectorInitialState)
-  useEffect(() => {
+  /*
+   * `defaultPageSize` 来自 runtime config 查询：首次渲染时通常还没到（`parentSelectorInitialState`
+   * 里是编译期常量 DEFAULT_PAGE_SIZE），配置到达后才变成真实值。它一变就把浮层的 pageSize 跟上，
+   * 并把页码重置回第 1 页（否则会停在一个按新条数已不存在的页码上）。
+   *
+   * 为什么放在**渲染期**而不是 useEffect：这是「由外部值派生本地 state」，
+   * 用 effect 会先按旧 pageSize 提交一帧、再补一帧，列表条数/页码会肉眼可见地跳一下，并且多一次
+   * 提交与一次多余查询。依据 react.dev《You Might Not Need an Effect》→
+   * 「Adjusting some state when a prop changes」：用「记住上一次的值 + 渲染期 setState」代替 effect，
+   * React 会在提交前丢弃这一帧重算。
+   *
+   * 用 `null` 作哨兵而不是直接以 `defaultPageSize` 初始化，是为了保留原有「挂载后一定会把
+   * pageSize 对齐到 defaultPageSize」的语义（初始常量与运行时配置经常不同）。
+   */
+  const [appliedDefaultPageSize, setAppliedDefaultPageSize] = useState<
+    number | null
+  >(null)
+  if (appliedDefaultPageSize !== defaultPageSize) {
+    setAppliedDefaultPageSize(defaultPageSize)
     setState({ page: 1, pageSize: defaultPageSize })
-  }, [defaultPageSize, setState])
+  }
   const displayFieldKey =
     parentDisplayFieldKey ||
     parentDisplayFieldFallbackMap[parentModuleKey] ||

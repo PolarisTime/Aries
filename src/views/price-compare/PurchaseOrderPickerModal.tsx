@@ -14,7 +14,7 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   fetchPurchaseOrderTonnages,
@@ -128,17 +128,23 @@ export function PurchaseOrderPickerModal({
    * 打开时用当前行已关联的明细行回填勾选态。
    *
    * <p>只在 `open` 由假变真那一次回填: 打开期间行数据改动(自动保存/他人编辑)会换掉
-   * `selectedItemIds` 的引用, 若按引用联动就会把用户刚勾上的选择冲掉。ref 承接最新值,
-   * 保证回填的始终是打开那一刻的关联集合。</p>
+   * `selectedItemIds` 的引用, 若按引用联动就会把用户刚勾上的选择冲掉。</p>
+   *
+   * <p><b>为什么在渲染期做, 而不是放 useEffect</b>: 这是「由 prop(open) 变化重置本地 state」。
+   * react.dev《You Might Not Need an Effect》→「Adjusting some state when a prop changes」
+   * 给出的替代写法就是「用 state 记住上一次的 open, 在渲染期比对后 setState」——
+   * React 会在提交前丢弃这一帧重算, 用户看不到「先显示旧勾选再跳成新勾选」的中间帧,
+   * 也省掉一次提交与一次多余的列表重排。
+   *
+   * <p>原先另有一个 effect 用 ref 承接 `selectedItemIds` 最新值, 那是 effect 写法的副产物
+   * (effect 闭包里读不到「open 变化那一帧」的 prop)。渲染期判定用的正是这一帧的 prop,
+   * 天然就是打开那一刻的关联集合, 因此 ref 与其同步 effect 一并删除。</p>
    */
-  const selectedItemIdsRef = useRef(selectedItemIds ?? [])
-  useEffect(() => {
-    selectedItemIdsRef.current = selectedItemIds ?? []
-  }, [selectedItemIds])
-  useEffect(() => {
-    if (!open) return
-    setCheckedItemIds(selectedItemIdsRef.current)
-  }, [open])
+  const [wasOpen, setWasOpen] = useState(false)
+  if (wasOpen !== open) {
+    setWasOpen(open)
+    if (open) setCheckedItemIds(selectedItemIds ?? [])
+  }
 
   const toggleChecked = (itemId: string, checked: boolean) => {
     setCheckedItemIds((prev) => {
@@ -173,7 +179,14 @@ export function PurchaseOrderPickerModal({
     }
   }
 
-  // 关键字防抖: 避免每次输入都打后端。
+  /*
+   * 关键字防抖: 避免每次输入都打后端。
+   *
+   * <p><b>这一处必须留在 effect</b>: 它同步的是「浏览器的定时器」这个外部系统 ——
+   * 需要在输入变化时起一个 300ms 的 timeout, 并在下一次输入或卸载时清掉。
+   * 定时器无法在渲染期算出来（渲染必须纯、且会被丢弃重算），也不能只在某个人工事件里注册
+   * （否则清理时机与卸载/连续输入都对不上）。属于 react.dev 明确保留的那一类 effect。</p>
+   */
   useEffect(() => {
     const timer = window.setTimeout(
       () => setDebouncedKeyword(keyword.trim()),

@@ -165,18 +165,30 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
    * 切换单据/卸载时丢弃**这张单**的核查结果, 避免行内标识串单, 同时不动其它单据
    * (快照支持多张单据并存, 例如列表里同时展开多行)。
    *
-   * <p>用 effect 的 cleanup 拿"上一张单"的 key: cleanup 在依赖变化与卸载时都会执行,
-   * 闭包里的 documentKey 正是即将离开的那张单。这样不需要在渲染期写 ref。</p>
+   * <p>换单后「上一次整单取价的结果摘要」与「核查错误」不再适用, 必须清掉。
+   * **这一步放在渲染期**: 它是由 prop 派生(`documentKey` 变化)的本地 state 重置。依据
+   * react.dev《You Might Not Need an Effect》→「Adjusting some state when a prop changes」,
+   * 用「记住上一次的 key + 渲染期 setState」代替 effect —— 否则会先提交一帧
+   * 「新单 + 上一张单的取价摘要」的错误画面, 再多跑一次提交。
    *
-   * <p>同时清掉只属于上一张单的结果摘要与核查错误(换单后它们不再适用)。</p>
+   * <p>而清理快照**必须留在 effect**: `useNetPriceMatchStore.clearDocument` 写的是组件外的
+   * zustand store, 且要在「卸载/换单」这一刻执行; 渲染期写外部 store 属于副作用, 会随渲染被
+   * 丢弃或重放。这里用 effect 的 cleanup 拿"上一张单"的 key: cleanup 在依赖变化与卸载时都会
+   * 执行, 闭包里的 documentKey 正是即将离开的那张单, 因此不需要在渲染期写 ref。
    */
-  useEffect(() => {
+  const [appliedDocumentKey, setAppliedDocumentKey] = useState(documentKey)
+  if (appliedDocumentKey !== documentKey) {
+    setAppliedDocumentKey(documentKey)
     setApplySummary(null)
     setCheckError(null)
-    return () => {
+  }
+
+  useEffect(
+    () => () => {
       useNetPriceMatchStore.getState().clearDocument(documentKey)
-    }
-  }, [documentKey])
+    },
+    [documentKey],
+  )
 
   // 打开弹层时拉取项目价格规定, 并默认选中"上次使用"(回退到唯一一条)。
   useEffect(() => {
