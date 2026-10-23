@@ -112,6 +112,37 @@ import './price-compare.css'
 const { Text } = Typography
 
 /**
+ * 「E」角标：**唯一**渲染出口（网价代取、现货价代取、表头图例共用）。
+ *
+ * <p>两种形态，语义不同，不要合并：</p>
+ * <ul>
+ *   <li>带 `label`：数据角标。`role="img"` + `aria-label` + `title`，读屏能听到
+ *     「按 HRB400E 代取（来源 X）」，满足 WCAG 1.4.1（不以颜色/字母为唯一表达）。</li>
+ *   <li>不带 `label`：表头图例里的装饰 chip —— 意义由紧邻的可见文案表达，
+ *     这里 `aria-hidden` 掉，避免读屏把装饰字母单独念一遍再念文案。</li>
+ * </ul>
+ */
+function FallbackBadge({ label }: { label?: string }) {
+  if (!label) {
+    return (
+      <span aria-hidden="true" className="price-compare-fallback-badge">
+        E
+      </span>
+    )
+  }
+  return (
+    <span
+      aria-label={label}
+      className="price-compare-fallback-badge"
+      role="img"
+      title={label}
+    >
+      E
+    </span>
+  )
+}
+
+/**
  * 选择框(32) / 拖拽手柄(24) 两列的总宽。
  * 这两列只放 icon-only 控件, 尺寸由命中区下限(WCAG 2.5.8)决定, 不随字号变化,
  * 因此不参与 core.sheetColumnWidths 的等比换算。
@@ -1097,10 +1128,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                             >
                               <span className="price-compare-fallback-value">
                                 {price}
-                                {/* 既有网价角标的可访问名原先缺失(只靠颜色+悬浮)，
-                                    WCAG 1.4.1 要求状态必须有可读文本，故补 role/aria-label/title */}
-                                <span
-                                  aria-label={t(
+                                {/* 角标渲染统一走 FallbackBadge（网价/现货/图例共用一处） */}
+                                <FallbackBadge
+                                  label={t(
                                     'priceCompare.sheet.fallbackBadgeLabel',
                                     {
                                       material:
@@ -1109,20 +1139,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                                         ) ?? '',
                                     },
                                   )}
-                                  className="price-compare-fallback-badge"
-                                  role="img"
-                                  title={t(
-                                    'priceCompare.sheet.fallbackBadgeLabel',
-                                    {
-                                      material:
-                                        fallbackBadgeMaterial(
-                                          row.row.material,
-                                        ) ?? '',
-                                    },
-                                  )}
-                                >
-                                  E
-                                </span>
+                                />
                               </span>
                             </Tooltip>
                           ) : (
@@ -1242,14 +1259,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                       const spotNode = spotSource ? (
                         <>
                           {input}
-                          <span
-                            aria-label={spotBadgeLabel}
-                            className="price-compare-fallback-badge"
-                            role="img"
-                            title={spotBadgeLabel}
-                          >
-                            E
-                          </span>
+                          <FallbackBadge label={spotBadgeLabel} />
                         </>
                       ) : (
                         input
@@ -2397,7 +2407,8 @@ function SheetDateFields({
         {allowHrb400eFallback ? (
           <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
             <Space size={4} align="center">
-              <span className="price-compare-fallback-badge">E</span>
+              {/* 图例 chip 是装饰：意义由紧邻文案表达，读屏不必单独念一个 "E" */}
+              <FallbackBadge />
               <Text type="secondary" className="price-compare-sub">
                 {t('priceCompare.sheet.fallbackLegend')}
               </Text>

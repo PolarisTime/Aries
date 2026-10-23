@@ -95,18 +95,24 @@ describe('SheetPanel 无障碍契约', () => {
     container.remove()
   })
 
-  function render() {
+  function render(overrides?: {
+    row?: Partial<PriceRow>
+    sheet?: Partial<PriceSheet>
+    allowHrb400eFallback?: boolean
+  }) {
+    const effectiveRow: PriceRow = { ...row, ...overrides?.row }
+    const sheet = { ...makeSheet(), ...overrides?.sheet, rows: [effectiveRow] }
     act(() => {
       root.render(
         createElement(
           QueryClientProvider,
           { client: queryClient },
           createElement(SheetPanel, {
-            sheet: makeSheet(),
+            sheet,
             data: null,
             varieties: [variety],
             brands: [{ name: '中天', freight: 30 }],
-            rows: [row],
+            rows: [effectiveRow],
             density: 'small',
             lengthPremium: 30,
             patchSheet: () => {},
@@ -116,6 +122,7 @@ describe('SheetPanel 无障碍契约', () => {
             onRefresh: () => {},
             chrome: false,
             spotRef: { current: null },
+            allowHrb400eFallback: overrides?.allowHrb400eFallback ?? false,
           }),
         ),
       )
@@ -181,5 +188,54 @@ describe('SheetPanel 无障碍契约', () => {
     expect(headerTitle('类别')).toBe('类别')
     expect(headerTitle('材质 / 规格 / 长度')).toBe('材质 / 规格 / 长度')
     expect(headerTitle('报单吨位')).toContain('报单吨位')
+  })
+
+  /*
+   * 「按抗震牌号代取」角标：两条**来源**都必须有可访问名，且用能区分两种分支的数据
+   * 各锁一条 —— 只测其中一条的话，另一条退化成裸 "E" 也照样绿。
+   *   A) 系统带出：input 上已有落库的 spotSourceMaterial；
+   *   B) 手工勾选行：只有 spot + 行开关 + 单据头放行（无落库来源，判据现算）。
+   */
+  it('代取角标(系统带出来源)有可访问名且含材质', () => {
+    render({
+      allowHrb400eFallback: true,
+      sheet: {
+        inputs: {
+          [`中天:${row.id}`]: { spot: 3420, spotSourceMaterial: 'HRB400E' },
+        },
+      },
+    })
+    const badge = container.querySelector(
+      '.price-compare-fallback-badge[role="img"]',
+    )
+    expect(badge?.getAttribute('aria-label')).toContain('HRB400E')
+    expect(badge?.getAttribute('title')).toContain('HRB400E')
+  })
+
+  it('代取角标(手工勾选行, 无落库来源)同样有可访问名', () => {
+    render({
+      allowHrb400eFallback: true,
+      /*
+       * 手工分支的判据是「行材质可被替代」：必须是 HRB400 这类**未带 E** 的牌号。
+       * 用 HRB400E 做数据的话 substituteMaterialOf 返回 null，角标本就不该出现，
+       * 用例会变成假绿 —— 这正是"用能区分两种分支的数据"的意义。
+       */
+      row: { material: 'HRB400', hrb400eFallback: true },
+      sheet: { inputs: { [`中天:${row.id}`]: { spot: 3420 } } },
+    })
+    const badge = container.querySelector(
+      '.price-compare-fallback-badge[role="img"]',
+    )
+    expect(badge?.getAttribute('aria-label')).toContain('HRB400E')
+  })
+
+  it('表头图例 chip 是装饰: aria-hidden, 不让读屏单独念一个字母', () => {
+    render({ allowHrb400eFallback: true })
+    const legend = container.querySelector(
+      '.price-compare-fallback-badge[aria-hidden="true"]',
+    )
+    expect(legend?.textContent).toBe('E')
+    // 装饰 chip 不应同时是 role="img"（那是数据角标的语义）
+    expect(legend?.getAttribute('role')).toBeNull()
   })
 })
