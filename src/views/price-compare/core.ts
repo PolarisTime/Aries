@@ -1,9 +1,11 @@
 import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
+import { substituteMaterialOf } from '@/utils/material-grade'
 import type {
   Brand,
   PriceData,
   PriceRow,
   PriceSheet,
+  SheetInput,
   SheetInputs,
   Variety,
 } from './types'
@@ -544,11 +546,72 @@ export function netPrice(
   return base + premium
 }
 
-/** HRB400 兜底材质 */
-export const HRB400_FALLBACK_MATERIAL = 'HRB400E'
+/**
+ * 允许「按替代牌号代取」的材质白名单。
+ *
+ * <p><b>初值刻意只有一个 `HRB400`</b>：这与引入白名单之前的硬编码行为**完全一致**
+ * （旧代码是 `row.material === 'HRB400'`），所以这次只是把散落的字面量收敛成唯一判据，
+ * **不是新功能、也不扩范围**。</p>
+ *
+ * <p><b>扩容（HRB500 / HRBF400 / HRB335 …）必须经产品确认，不要顺手加。</b>
+ * 每加一个材质，「报单比价」与「从价格表带价」都会多出一批原本空白的格子被代取价填上，
+ * 而这里的价格是业务员的判断结果 —— 属于业务口径变更，不是重构。</p>
+ */
+export const SUBSTITUTABLE_MATERIALS: readonly string[] = ['HRB400']
 
 /**
- * 取网价: 若 HRB400 无价且开启兜底, 使用 HRB400E 价格并标记 fallback。
+ * 该材质是否允许代取。
+ *
+ * <p>**唯一判据出口**：上层（`netPriceWithFallback` / `applyLowestQuotes`）都要调它，
+ * 不要各自再写 `material === 'HRB400'` —— 那会重新变成两份事实。</p>
+ */
+export function isSubstitutableMaterial(material: unknown): boolean {
+  return (
+    typeof material === 'string' && SUBSTITUTABLE_MATERIALS.includes(material)
+  )
+}
+
+/**
+ * 现货价「按替代牌号代取」角标的**唯一判据出口**。
+ *
+ * <p>两条来源必须都走这里，否则会出现"系统带出的有角标、手工勾选行没有"这种半截实现：</p>
+ * <ol>
+ *   <li><b>系统带出</b>：{@code applyLowestQuotes} 写入的 {@code input.spotSourceMaterial}
+ *       （已落库，重新打开单据后仍能显示）；</li>
+ *   <li><b>手工勾选行</b>：行级开关 {@code row.hrb400eFallback}，且仍需单据头授权。</li>
+ * </ol>
+ *
+ * @returns 代取所用的材质（渲染 `E` 角标与 tooltip 都用它）；未代取返回 undefined
+ */
+/**
+ * 网价列角标要显示的替代材质（`netPriceWithFallback` 命中兜底时用）。
+ *
+ * <p>与代取同一来源：`substituteMaterialOf`。**不要在 JSX 里写死 `'HRB400E'`** ——
+ * 那会成为同一口径的第二份事实，将来白名单扩容时会漏改。</p>
+ */
+export function fallbackBadgeMaterial(material: unknown): string | undefined {
+  return substituteMaterialOf(material) ?? undefined
+}
+
+export function resolveSpotSourceMaterial(args: {
+  input?: SheetInput
+  row: Pick<PriceRow, 'material' | 'hrb400eFallback'>
+  allowHrb400eFallback: boolean
+}): string | undefined {
+  const { input, row, allowHrb400eFallback } = args
+  // 系统带出优先：来源已落库，与本次会话的开关状态无关
+  if (input?.spotSourceMaterial) return input.spotSourceMaterial
+  // 手工勾选行：格子必须有价、单据头放行、行开关打开、且材质在白名单内
+  if (input?.spot === undefined) return undefined
+  if (!allowHrb400eFallback) return undefined
+  if (row.hrb400eFallback !== true) return undefined
+  if (!isSubstitutableMaterial(row.material)) return undefined
+  return substituteMaterialOf(row.material) ?? undefined
+}
+
+/**
+ * 取网价: 精确材质无价且开启兜底时, 用 `substituteMaterialOf` 给出的替代牌号再查一次,
+ * 命中则标记 `fallback`。仅有白名单内的材质会代取。
  */
 export function netPriceWithFallback(
   data: PriceData | null,
@@ -568,16 +631,21 @@ export function netPriceWithFallback(
     lengthPremium,
   )
   if (direct !== undefined) return { value: direct, fallback: false }
-  if (allowFallback && row.material === 'HRB400') {
-    const alt = netPrice(
-      data,
-      refDate,
-      refPeriod,
-      brandName,
-      { ...row, material: HRB400_FALLBACK_MATERIAL },
-      lengthPremium,
-    )
-    if (alt !== undefined) return { value: alt, fallback: true }
+  if (allowFallback && isSubstitutableMaterial(row.material)) {
+    // 「哪些材质允许代取」由 SUBSTITUTABLE_MATERIALS 白名单决定；
+    // 「代取成什么材质」由 substituteMaterialOf 算（唯一实现，不在此另写加 E 规则）。
+    const fallbackMaterial = substituteMaterialOf(row.material)
+    if (fallbackMaterial) {
+      const alt = netPrice(
+        data,
+        refDate,
+        refPeriod,
+        brandName,
+        { ...row, material: fallbackMaterial },
+        lengthPremium,
+      )
+      if (alt !== undefined) return { value: alt, fallback: true }
+    }
   }
   return { value: undefined, fallback: false }
 }

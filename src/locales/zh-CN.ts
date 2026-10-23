@@ -2959,6 +2959,11 @@ export const zhCN = {
       refDateTooltip: '全部行统一使用该日期与时段作为网价基准',
       fallbackLegend: 'HRB400E 参考价',
       fallbackTooltip: '该品牌此规格暂无 HRB400 网价，当前按 HRB400E 参考价',
+      // 角标自身的可访问名（WCAG 1.4.1：不能只靠颜色/图形表达状态）
+      fallbackBadgeLabel: '按 {{material}} 代取',
+      fallbackBadgeLabelWithSupplier:
+        '按 {{material}} 代取（来源 {{supplier}}）',
+      spotSubstitutedLabel: '按 {{material}} 代取（来源 {{supplier}}）',
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
       config: '配置',

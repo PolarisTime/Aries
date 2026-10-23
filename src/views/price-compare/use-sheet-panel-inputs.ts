@@ -36,9 +36,6 @@ export function useSheetPanelInputActions({
   spotTouchedKeys,
   t,
 }: Options) {
-  const getSpot = (brandName: string, rowId: string) =>
-    sheet.inputs[`${brandName}:${rowId}`]?.spot
-
   const patchRow = (rowId: string, patch: Partial<PriceRow>) =>
     setRows((list) =>
       list.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
@@ -79,6 +76,10 @@ export function useSheetPanelInputActions({
 
   const getInput = (brandName: string, rowId: string) =>
     sheet.inputs[`${brandName}:${rowId}`]
+
+  /** 派生自 getInput，勿另读 sheet.inputs —— 同一格的取数只有 getInput 一个入口。 */
+  const getSpot = (brandName: string, rowId: string) =>
+    getInput(brandName, rowId)?.spot
 
   /** 记录/清除现货价来源供应商; 无现货也无供应商时删除该输入。 */
   const setSupplier = (

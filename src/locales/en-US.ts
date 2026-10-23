@@ -3012,6 +3012,11 @@ export const enUS = {
       fallbackLegend: 'HRB400E reference price',
       fallbackTooltip:
         'No HRB400 quote for this brand/spec; using the HRB400E reference price',
+      // Accessible name for the badge itself (WCAG 1.4.1: never colour/shape only)
+      fallbackBadgeLabel: 'Priced as {{material}}',
+      fallbackBadgeLabelWithSupplier:
+        'Priced as {{material}} (source {{supplier}})',
+      spotSubstitutedLabel: 'Priced as {{material}} (source {{supplier}})',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',

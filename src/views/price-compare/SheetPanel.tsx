@@ -51,6 +51,7 @@ import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
   buildVarietyOptions,
+  fallbackBadgeMaterial,
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
@@ -64,6 +65,7 @@ import {
   pickBestDiffBrands,
   resolveLock,
   resolveRef,
+  resolveSpotSourceMaterial,
   type SHEET_COLUMN_WIDTH,
   SHEET_HIDEABLE_COLUMN,
   SPOT_PRICE_MAX,
@@ -555,6 +557,7 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     brands,
     rows,
     getSpot,
+    getInput,
     setSpot,
     supplierOptions,
     patchRow,
@@ -1071,7 +1074,30 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                             >
                               <span className="price-compare-fallback-value">
                                 {price}
-                                <span className="price-compare-fallback-badge">
+                                {/* 既有网价角标的可访问名原先缺失(只靠颜色+悬浮)，
+                                    WCAG 1.4.1 要求状态必须有可读文本，故补 role/aria-label/title */}
+                                <span
+                                  aria-label={t(
+                                    'priceCompare.sheet.fallbackBadgeLabel',
+                                    {
+                                      material:
+                                        fallbackBadgeMaterial(
+                                          row.row.material,
+                                        ) ?? '',
+                                    },
+                                  )}
+                                  className="price-compare-fallback-badge"
+                                  role="img"
+                                  title={t(
+                                    'priceCompare.sheet.fallbackBadgeLabel',
+                                    {
+                                      material:
+                                        fallbackBadgeMaterial(
+                                          row.row.material,
+                                        ) ?? '',
+                                    },
+                                  )}
+                                >
                                   E
                                 </span>
                               </span>
@@ -1170,10 +1196,45 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           }}
                         />
                       )
-                      return isFirst ? (
-                        <span ref={ctx.spotRef}>{input}</span>
+                      // spot 代取来源：系统带出（spotSourceMaterial，已落库）优先，
+                      // 否则按会话内判据（单据头放行 + 行级开关 + 白名单）。
+                      // 判据唯一出口：core.resolveSpotSourceMaterial，不在此另判材质。
+                      const spotInput = getInput(brand.name, current.id)
+                      const spotSource = resolveSpotSourceMaterial({
+                        input: spotInput,
+                        row: current,
+                        allowHrb400eFallback,
+                      })
+                      const spotBadgeLabel = spotSource
+                        ? t(
+                            'priceCompare.sheet.fallbackBadgeLabelWithSupplier',
+                            {
+                              material: spotSource,
+                              supplier: spotInput?.supplierName ?? '',
+                            },
+                          )
+                        : ''
+                      // 角标自带可访问名（role=img + aria-label），不改 input 的 aria-label
+                      // —— 那个字段表达"中天 HRB400E 12 9米"这类字段身份，覆盖掉读屏就找不到格子。
+                      const spotNode = spotSource ? (
+                        <>
+                          {input}
+                          <span
+                            aria-label={spotBadgeLabel}
+                            className="price-compare-fallback-badge"
+                            role="img"
+                            title={spotBadgeLabel}
+                          >
+                            E
+                          </span>
+                        </>
                       ) : (
                         input
+                      )
+                      return isFirst ? (
+                        <span ref={ctx.spotRef}>{spotNode}</span>
+                      ) : (
+                        spotNode
                       )
                     },
                     purchasedRowOf,
@@ -2175,6 +2236,7 @@ function SheetHeader({
       />
 
       <SheetActionRow
+        allowHrb400eFallback={allowHrb400eFallback}
         sheet={sheet}
         sheets={sheets}
         resolveSyncBrands={resolveSyncBrands}
@@ -2397,7 +2459,10 @@ function SheetActionRow({
   supplierOptions,
   onFillSupplierSelected,
   onRemoveSelected,
+  allowHrb400eFallback,
 }: {
+  /** 单据头「允许按 HRB400E 代取」开关：从 PriceCompareView 一路串下来，是代取唯一授权来源。 */
+  allowHrb400eFallback: boolean
   sheet: PriceSheet
   sheets?: readonly PriceSheet[]
   resolveSyncBrands?: (sheet: PriceSheet) => readonly string[]
@@ -2433,7 +2498,9 @@ function SheetActionRow({
     setFillingFromPriceList(true)
     try {
       const quotes = await fetchLowestBrandQuotes()
-      const { inputs, filled } = applyLowestQuotes(sheet, quotes)
+      const { inputs, filled } = applyLowestQuotes(sheet, quotes, {
+        allowHrb400eFallback,
+      })
       if (filled === 0) {
         message.info(t('priceCompare.supplierPrice.fillNothing'))
         return

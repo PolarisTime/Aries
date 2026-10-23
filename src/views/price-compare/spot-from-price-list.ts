@@ -1,5 +1,6 @@
 import type { BrandLowestQuote } from '@/api/market/supplier-price-lists'
-import { productKeyOf } from './core'
+import { substituteMaterialOf } from '@/utils/material-grade'
+import { isSubstitutableMaterial, productKeyOf } from './core'
 import type { PriceSheet, SheetInput, SheetInputs } from './types'
 
 /**
@@ -17,11 +18,26 @@ import type { PriceSheet, SheetInput, SheetInputs } from './types'
  *
  * @returns 新的 inputs（未命中时返回原对象，调用方可据 `filled === 0` 跳过 patch）
  */
+export type ApplyLowestQuotesOptions = {
+  /**
+   * 抗震牌号代取开关（单据头 `allowHrb400eFallback`）。
+   *
+   * <p>`false`（默认）时只做精确材质匹配；为 `true` 时精确取不到才退化到替代牌号。
+   * 默认关闭是刻意的：代取会把"按 HRB400E 的价"写进 HRB400 行，属需要单据头授权的口径。</p>
+   */
+  allowHrb400eFallback?: boolean
+}
+
 export function applyLowestQuotes(
   sheet: PriceSheet,
   quotes: readonly BrandLowestQuote[],
-): { inputs: SheetInputs; filled: number } {
-  if (!quotes.length) return { inputs: sheet.inputs, filled: 0 }
+  options: ApplyLowestQuotesOptions = {},
+): { inputs: SheetInputs; filled: number; substituted: number } {
+  if (!quotes.length) {
+    return { inputs: sheet.inputs, filled: 0, substituted: 0 }
+  }
+
+  const allowFallback = options.allowHrb400eFallback ?? false
 
   // 品牌 + 商品键 → 最低价报价；同一键出现多条时取价格更低者，结果与入参顺序无关
   const byKey = new Map<string, BrandLowestQuote>()
@@ -35,28 +51,60 @@ export function applyLowestQuotes(
 
   let inputs = sheet.inputs
   let filled = 0
+  let substituted = 0
   for (const row of sheet.rows) {
     const productKey = productKeyOf(row)
     if (!productKey) continue
+
+    // 二级匹配候选：精确材质之上的替代牌号。规则唯一来源是 substituteMaterialOf，
+    // 不在这里另写"加 E"的判断 —— 否则与「网价核查」的口径会分叉。
+    const fallbackKeys: { key: string; material: string }[] = []
+    // 白名单唯一判据：`SUBSTITUTABLE_MATERIALS`（初值仅 HRB400，与改动前行为一致）
+    if (allowFallback && isSubstitutableMaterial(row.material)) {
+      const substitute = substituteMaterialOf(row.material)
+      if (substitute) {
+        const fallbackKey = productKeyOf({ ...row, material: substitute })
+        if (fallbackKey)
+          fallbackKeys.push({ key: fallbackKey, material: substitute })
+      }
+    }
+
     for (const brand of sheet.brands ?? []) {
-      const quote = byKey.get(`${brand.name}\u0000${productKey}`)
-      if (!quote) continue
       const cellKey = `${brand.name}:${row.id}`
       const current = inputs[cellKey]
       // 只填空格子：已有 spot 的格子一律不动
       if (current?.spot !== undefined) continue
+
+      // 一级：精确材质。二级：仅在开关打开且精确未命中时才代取。
+      let quote = byKey.get(`${brand.name}\u0000${productKey}`)
+      let sourceMaterial: string | undefined
+      if (!quote) {
+        for (const fallback of fallbackKeys) {
+          const hit = byKey.get(`${brand.name}\u0000${fallback.key}`)
+          if (hit) {
+            quote = hit
+            sourceMaterial = fallback.material
+            break
+          }
+        }
+      }
+      if (!quote) continue
+
       const next: SheetInput = {
         ...(current ?? {}),
         spot: quote.price,
         ...(quote.supplierId ? { supplierId: quote.supplierId } : {}),
         ...(quote.supplierName ? { supplierName: quote.supplierName } : {}),
+        // 代取来的格子必须留下来源，重新打开单据后角标才有依据
+        ...(sourceMaterial ? { spotSourceMaterial: sourceMaterial } : {}),
       }
       if (inputs === sheet.inputs) {
         inputs = { ...sheet.inputs }
       }
       inputs[cellKey] = next
       filled += 1
+      if (sourceMaterial) substituted += 1
     }
   }
-  return { inputs, filled }
+  return { inputs, filled, substituted }
 }

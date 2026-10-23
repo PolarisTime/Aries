@@ -56,6 +56,13 @@ export type ProjectConfig = {
 export type RowType = 'PRODUCT' | 'SEPARATOR'
 
 export type PriceRow = {
+  /**
+   * 行级「按 HRB400E 价」开关：勾上后该行所有价格子都按替代牌号带出并打 `E` 角标。
+   *
+   * <p>默认 `undefined` = 跟随单据头 `allowHrb400eFallback`；显式 `false` 可在单据头开启时
+   * 单独关掉某一行（单格例外再走 {@code SheetInput.spotSourceMaterial} 的清除操作）。</p>
+   */
+  hrb400eFallback?: boolean
   id: string
   /** 缺省视为 PRODUCT, 兼容历史数据与本地新建行。 */
   rowType?: RowType
@@ -93,6 +100,13 @@ export type SheetInput = {
   /** 现货价来源供应商(主数据) */
   supplierId?: string
   supplierName?: string
+  /**
+   * 现货价的**来源材质**：该格是按替代牌号代取来的（如行材质 HRB400、按 HRB400E 取价）。
+   *
+   * <p>落库后重新打开单据仍要能显示「E」角标与来源说明，因此必须存进单据数据，
+   * 不能只放在会话内的 store 里。未代取的格子不写该字段（区分"精确匹配"与"代取"）。</p>
+   */
+  spotSourceMaterial?: string
 }
 
 export type SheetInputs = Record<string, SheetInput>
