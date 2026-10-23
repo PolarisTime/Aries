@@ -204,6 +204,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       ),
     },
     {
+      /*
+       * 「被引用状态」只在列表页出现，**不进**导入弹层的候选筛选。
+       *
+       * <p>原因见 `DEFAULT_SELECTOR_FILTER_OMISSIONS`：它是下游视角（"这张单被谁引用过"），
+       * 放进候选列表会让用户以为已引用就不能再选，且候选条数变少却看不出原因。
+       * 弹层筛选是「默认全放行 + 显式排除」，排除项集中声明在
+       * `src/api/contracts/parent-candidate-contracts.ts`，不要在这里加开关。</p>
+       */
       key: 'referencedBy',
       label: REFERENCE_STATUS_LABEL,
       type: 'segmented',
