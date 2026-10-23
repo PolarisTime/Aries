@@ -164,6 +164,9 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 3100,
+      // 端口被占时必须报错，不要静默改用 3101：
+      // 本项目所有文档/脚本/联调约定都写死 3100，静默改号会让"服务起着但没人找得到"。
+      strictPort: true,
       warmup: {
         clientFiles: [
           'src/main.tsx',
