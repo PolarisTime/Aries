@@ -288,6 +288,70 @@ describe('applyNetPricesToItems', () => {
     expect(outcome.overwrittenIds).toEqual([])
   })
 
+  it('整单写入后按唯一口径重算行金额：金额 = 单价 × 重量（不是只改单价）', () => {
+    const items = [
+      item({
+        id: 'a',
+        materialId: 'm1',
+        quantity: 17,
+        pieceWeightTon: 1.904,
+        weightTon: 32.375,
+        unitPrice: 3200,
+        amount: 103600,
+      }),
+    ]
+    const outcome = applyNetPricesToItems(items, index, {
+      mode: 'ADD',
+      amount: 30,
+    })
+    // 3430 × 32.375 = 111046.25（若只改单价, 金额仍是 103600, 合计金额不会变）
+    expect(outcome.nextItems[0].unitPrice).toBe(3430)
+    expect(outcome.nextItems[0].amount).toBe(111046.25)
+    // 入参不被就地改写（表格状态依赖不可变更新）
+    expect(items[0].amount).toBe(103600)
+  })
+
+  it('过磅行的重量调整金额随新单价一起重算', () => {
+    const items = [
+      item({
+        id: 'a',
+        materialId: 'm1',
+        quantity: 17,
+        pieceWeightTon: 1.904,
+        settlementMode: '过磅',
+        weighWeightTon: 32.375,
+        weightTon: 32.375,
+        unitPrice: 3200,
+        amount: 103600,
+      }),
+    ]
+    const outcome = applyNetPricesToItems(items, index, {
+      mode: 'ADD',
+      amount: 30,
+    })
+    // 理论重量 32.368, 调整吨位 0.007, 调整金额 0.007 × 3430 = 24.01
+    expect(outcome.nextItems[0].weightAdjustmentTon).toBe(0.007)
+    expect(outcome.nextItems[0].weightAdjustmentAmount).toBe(24.01)
+  })
+
+  it('单价已经一致时也把行金额对齐到 单价 × 重量（历史脏金额）', () => {
+    const items = [
+      item({
+        id: 'a',
+        materialId: 'm1',
+        unitPrice: 3430,
+        weightTon: 2,
+        amount: 1,
+      }),
+    ]
+    const outcome = applyNetPricesToItems(items, index, {
+      mode: 'ADD',
+      amount: 30,
+    })
+    expect(outcome.overwrittenIds).toEqual([])
+    expect(outcome.nextItems[0].amount).toBe(6860)
+  })
+
   it('减价规则按减价写回', () => {
     const items = [item({ id: 'a', materialId: 'm1', unitPrice: 1 })]
     const outcome = applyNetPricesToItems(items, index, {

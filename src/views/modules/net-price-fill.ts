@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
+import { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
 import type { ModuleLineItem } from '@/types/module-page'
 import { substituteMaterialOf } from '@/utils/material-grade'
 
@@ -352,7 +353,14 @@ export function applyNetPricesToItems(
       substitutedIds[String(item.id)] = hit.matchedMaterial
     }
     filled += 1
-    nextItems.push({ ...item, unitPrice: nextPrice })
+    /*
+     * 只改单价是不够的：行金额与重量调整金额都由「单价」派生（金额 = 单价 × 重量），
+     * 手工改单价走的也是 recalculateEditorLineItem。整单取价必须复用同一口径，
+     * 否则单价变了、行金额与页内合计（总金额）仍停在旧值。
+     */
+    nextItems.push(
+      recalculateEditorLineItem({ ...item, unitPrice: nextPrice }, 'unitPrice'),
+    )
   }
   return {
     nextItems,

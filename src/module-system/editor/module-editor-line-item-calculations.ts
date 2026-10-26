@@ -160,6 +160,12 @@ export function recalculateEditorLineItem(
       Number(item.amount || 0) / currentWeightTon,
       2,
     )
+    // 反推单价后必须同步重量调整金额：它与「改单价」同一口径（调整吨位 × 单价），
+    // 否则同一行上两个金额会按新旧两个单价各算一次。
+    item.weightAdjustmentAmount = toRoundedNumber(
+      Number(item.weightAdjustmentTon || 0) * Number(item.unitPrice || 0),
+      2,
+    )
     return item
   }
 
