@@ -72,6 +72,22 @@ describe('第一层：字段固有只读', () => {
     expect(editable('purchase-inbound', 'weightTon')).toBe(false)
   })
 
+  it('采购入库的重量调整吨位/金额是过磅派生的，任何状态都不可编辑', () => {
+    // 这两列由「过磅重量 − 理论重量」与「× 单价」派生, 后端保存时也会重算覆盖,
+    // 因此前端不允许人工改; 同表的单价仍可编辑, 用对照组防止整体只读造成的假绿。
+    for (const columnKey of ['weightAdjustmentTon', 'weightAdjustmentAmount']) {
+      expect(editable('purchase-inbound', columnKey)).toBe(false)
+      expect(
+        editable('purchase-inbound', columnKey, {
+          canEditLineItems: true,
+          lineItemsLocked: false,
+        }),
+      ).toBe(false)
+    }
+    // 对照：入库同表仍允许改数量，避免「整体只读」造成假绿。
+    expect(editable('purchase-inbound', 'quantity')).toBe(true)
+  })
+
   it('采购订单称重类别（盘螺）的件重可编辑，非称重类别只读', () => {
     const record = { id: 'row-1', category: '盘螺' } as ModuleLineItem
     expect(editable('purchase-order', 'pieceWeightTon', { record })).toBe(true)

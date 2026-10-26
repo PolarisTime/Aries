@@ -433,6 +433,10 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
     readonlyItemColumns: [
       'warehouseName',
       'weightTon',
+      // 重量调整（吨/金额）由「过磅重量 − 理论重量」与「× 单价」派生，保存时后端还会重算，
+      // 前端不允许人工改：显示值与落库值必须以过磅口径为准。
+      'weightAdjustmentTon',
+      'weightAdjustmentAmount',
       'unitPrice',
       'settlementMode',
       'amount',
