@@ -31,10 +31,10 @@ jobs:
   react-doctor:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -66,7 +66,7 @@ jobs:
             react-doctor-report.json
 
       - name: Upload React Doctor report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: react-doctor-report
           path: react-doctor-report.json
@@ -74,7 +74,7 @@ jobs:
 
       - name: Publish commit status
         if: github.event_name == 'push'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.repos.createCommitStatus({
