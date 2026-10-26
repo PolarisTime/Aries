@@ -1,3 +1,33 @@
+# [13.7.0](https://github.com/PolarisTime/Aries/compare/v13.6.0...v13.7.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **build:** vite 开启 strictPort，避免静默改用 3101 ([9ec2e21](https://github.com/PolarisTime/Aries/commit/9ec2e21d8d9f557ba8138e7218a8d88d1f3e54ec))
+* **freight-bill:** 单据信息表头按语义重排，派生字段紧跟来源字段 ([3fc6141](https://github.com/PolarisTime/Aries/commit/3fc6141e8d277b7f6bad1dcfc32ae60e3882eba5))
+* **freight-bill:** 取消「先选物流商才能选销售订单导入」的前置门槛 ([14d18f4](https://github.com/PolarisTime/Aries/commit/14d18f46d4234f15a8f528acc271e7a3a386067e))
+* **freight-bill:** 表头按「填写区 / 只读信息区」分区，并去掉行中空洞 ([45abb00](https://github.com/PolarisTime/Aries/commit/45abb0082f2b2537399d5cbf0d959ac70b858942))
+* **lint:** 修复阻塞前端 release 的两处 biome 错误 ([c3a594b](https://github.com/PolarisTime/Aries/commit/c3a594ba7a9b4d3cad783dfe8a297dbf95b24c1a))
+* **price-compare:** 代取来源材质随保存下发，落库闭环不再断裂 ([7d45416](https://github.com/PolarisTime/Aries/commit/7d454168c3d859cf3c6a8855abc7847aa2d37f2a))
+* **price-compare:** 代取来源落库补齐写入口径与读回映射 ([ea7a8ae](https://github.com/PolarisTime/Aries/commit/ea7a8aeaf33fb2a1800e0d4d598c0dcea82f9ae4))
+* **price-compare:** 矩阵区改为自滚动, 顶部已选进度与「只看已选」不再被顶出视野 ([41aff9c](https://github.com/PolarisTime/Aries/commit/41aff9ceb7acaa38b2dcaf72ed22b62a09d8587c))
+* **quote-sheets:** 归一化层透传 spotSourceMaterial ([5643213](https://github.com/PolarisTime/Aries/commit/5643213ad0d14421f97bfc67aea2eb538173ff1c))
+* **sales-order:** 整单取网价后行金额与合计金额不刷新 ([c8107d1](https://github.com/PolarisTime/Aries/commit/c8107d17729e6bd3fc76074b79ee86fcc180c021))
+
+
+### Features
+
+* **master-data:** 客户资料移除结算主体，改由项目资料唯一选择 ([630ea03](https://github.com/PolarisTime/Aries/commit/630ea03ab973782990439a39ad0aa9b943c915f8))
+* **module-selector:** 选择上游单据支持双击直接导入这一张 ([80d75ff](https://github.com/PolarisTime/Aries/commit/80d75fffc8daacff24f05b19f040ca5b1fbbde4c))
+* **price-compare:** 品牌列取源改为「有效品牌集合」并显示回退提示 ([8046d40](https://github.com/PolarisTime/Aries/commit/8046d404a3c842cbc627e31d670f192ce79a90ba))
+* **price-compare:** 支持单格取消抗震牌号代取标记 ([961ae00](https://github.com/PolarisTime/Aries/commit/961ae00588043800727ff7a33a57d1441303fb42))
+* **price-compare:** 新增行级「按 E 价」开关，让现货代取手工路径可达 ([effafd4](https://github.com/PolarisTime/Aries/commit/effafd450339c3a421a93032136f3a87836cb64b))
+* **price-compare:** 现货价支持按抗震牌号代取并标注来源 ([491fdc7](https://github.com/PolarisTime/Aries/commit/491fdc7cc450bf8fa1dc0b094911ea0646d28006))
+* **price-compare:** 项目配置弹层改为规格×材质矩阵, 品牌行精简为三列 ([6f76f7e](https://github.com/PolarisTime/Aries/commit/6f76f7e69076c4f2f4dc7051425003d3a4736051))
+* **pricing:** 项目/单据休市取价支持「往前/延后 + X 个交易日」 ([fb3ae42](https://github.com/PolarisTime/Aries/commit/fb3ae425d231cb60a5d8f2f8c6d2501592eaf756))
+* **sales-order:** 详情页网价匹配列自动核查并展示真实结论 ([0e3f29d](https://github.com/PolarisTime/Aries/commit/0e3f29df22ca65d11d0ffb6aba4c024be869e1c8))
+* **supplier-price:** 品牌价格表前端页面 + 报单比价「从价格表带价」 ([83f4706](https://github.com/PolarisTime/Aries/commit/83f470670139b010fb9b62d4fa1b80da9ab2ed72))
+
 # [13.6.0](https://github.com/PolarisTime/Aries/compare/v13.5.0...v13.6.0) (2026-10-22)
 
 
