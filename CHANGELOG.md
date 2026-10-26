@@ -1,3 +1,15 @@
+# [14.1.0](https://github.com/PolarisTime/Aries/compare/v14.0.0...v14.1.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **modules:** 列表页合并首位身份列，修正筛选区按钮与页脚统计显示 ([3469c75](https://github.com/PolarisTime/Aries/commit/3469c757db7725ca37c682e62faa886770bf0e40))
+
+
+### Features
+
+* **project-name:** 四业务列表「项目名称」列显示「项目简称（全称）」 ([5ea6bfa](https://github.com/PolarisTime/Aries/commit/5ea6bfa4533e393d21703157c6b6247abbc613ad))
+
 # [14.0.0](https://github.com/PolarisTime/Aries/compare/v13.7.0...v14.0.0) (2026-10-26)
 
 
