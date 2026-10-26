@@ -1,3 +1,14 @@
+# [14.0.0](https://github.com/PolarisTime/Aries/compare/v13.7.0...v14.0.0) (2026-10-26)
+
+
+* feat(purchase-order)!: 移除下游引用图标与「下游引用」筛选 ([f7a9544](https://github.com/PolarisTime/Aries/commit/f7a954417ba38029f031930219e17a041ee6e84a))
+
+
+### BREAKING CHANGES
+
+* 前端不再发送 referenced/referencedBy 查询参数，也不再解析
+referencedBy* 响应字段；需与后端 16190ce8 同批上线。
+
 # [13.7.0](https://github.com/PolarisTime/Aries/compare/v13.6.0...v13.7.0) (2026-10-26)
 
 
