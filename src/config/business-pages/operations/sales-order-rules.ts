@@ -32,8 +32,8 @@ export function renderDerivedQuantity(value: unknown): React.ReactNode {
  * 销售订单「订单编号」列：只渲染单号本身（外层类名供单据流弹层触发使用）。
  *
  * <p>原先在单号后追加下游引用状态图标（已被物流单/销售出库/销售退货引用），按产品要求整体下线：
- * 图标与 tooltip 都不再渲染。行级字段 `referencedByFreightBill` 等仍保留在响应 schema 中
- * （后端仍返回，strictObject 下删声明会让整页解析失败），但前端已无消费方。</p>
+ * 图标与 tooltip 都不再渲染；行级字段 `referencedByFreightBill` 等也随后端 DTO 一并从响应
+ * schema 删除（前端已无消费方）。</p>
  */
 export function renderSalesOrderNo(value: unknown): React.ReactNode {
   return React.createElement(

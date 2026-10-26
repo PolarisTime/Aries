@@ -96,8 +96,8 @@ export function resolveParentSelectorSourceModule(
  *   <li><b>编辑器注入的固定筛选</b>（`fixedFilters`）：由 import 定义按当前单据算出来，
  *     不可见也不可改，因此既不进弹层 draft、也不占筛选格子。它与"用户可改筛选"必须分开。</li>
  *   <li><b>语义排除</b>（`selectorFilterOmissions`，缺省
- *     {@link DEFAULT_SELECTOR_FILTER_OMISSIONS}）：例如「被引用状态」——
- *     放在候选列表里会让人看不懂"候选为什么变少"。</li>
+ *     {@link DEFAULT_SELECTOR_FILTER_OMISSIONS}，当前为空清单）：某个来源若要把
+ *     "看不懂候选为什么变少"的筛选挡在弹层外，在这里显式追加。</li>
  *   <li><b>接口能力守卫</b>：候选接口根本不接受的 key。放行它等于给用户一个"改了没反应"的
  *     死筛选 —— 值会被 `buildFilterParamsFromContract` 丢掉，列表却毫无变化。
  *     权威来源是后端各候选接口的请求参数（如 `V2FreightBillController.salesOrderCandidates`
@@ -109,9 +109,9 @@ export function resolveParentSelectorSourceModule(
  * <p><b>历史写法已废弃</b>：此前弹层按「允许清单」显示 —— 页面筛选必须同时出现在
  * `nativeFilterKeys` 里才放行，于是每加一个筛选要改两处，弹层筛选区长期比列表页少一半。</p>
  *
- * <p><b>三个布局特例</b>（结论都落在共享的 `ModuleFilterToolbar` 现有能力上，这里只锁定口径）：</p>
+ * <p><b>两个布局特例</b>（结论都落在共享的 `ModuleFilterToolbar` 现有能力上，这里只锁定口径）：</p>
  * <ul>
- *   <li><b>segmented</b>（状态、被引用状态）：不是输入框，按 `ModuleFilterChip` 渲染 ——
+ *   <li><b>segmented</b>（单据状态等）：不是输入框，按 `ModuleFilterChip` 渲染 ——
  *     平时只是一个胶囊按钮，点开才是选项，因此窄工具行放得下；工具行的
  *     `.module-filter-chip-row` 是 `flex-wrap: wrap`，窄屏进一步变单列堆叠。
  *     选定 **折行**，不另做「更多筛选」折叠层：多一层抽屉会让"当前生效的筛选"更难看见，
@@ -119,8 +119,6 @@ export function resolveParentSelectorSourceModule(
  *   <li><b>dateRange</b>（送货日期）：整段区间作为**一个**胶囊（`.module-filter-pill-date`）
  *     参与折行 —— 不拆成"起/止"两个格子，否则折行时两个控件可能被切到两行，
  *     用户就看不出它们属于同一段区间。</li>
- *   <li><b>referencedBy</b>（被引用状态）：走语义排除，不进弹层（理由见
- *     `DEFAULT_SELECTOR_FILTER_OMISSIONS`）。</li>
  * </ul>
  */
 export function buildOverlayFilterConfig(

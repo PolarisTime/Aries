@@ -12,8 +12,6 @@ import type {
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
-  PURCHASE_ORDER_REFERENCE_OPTIONS,
-  REFERENCE_STATUS_LABEL,
   SUPPLIER_NAME_LABEL,
 } from '../shared/filter-labels'
 import { actionSet } from '../shared/shared'
@@ -170,12 +168,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
       type: 'segmented',
       options: getSettlementCompanyOptions,
-    },
-    {
-      key: 'referencedBy',
-      label: REFERENCE_STATUS_LABEL,
-      type: 'segmented',
-      options: PURCHASE_ORDER_REFERENCE_OPTIONS,
     },
     {
       key: 'orderDate',

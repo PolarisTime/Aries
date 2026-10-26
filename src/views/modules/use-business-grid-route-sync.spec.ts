@@ -68,16 +68,8 @@ describe('parseRouteParams', () => {
   it('解析待处理筛选意图 status', () => {
     const params = parseRouteParams('?status=待审核')
     expect(params.status).toBe('待审核')
-    expect(params.referencedBy).toBe('')
     expect(params.routeKeyword).toBe('')
     expect(params.shouldOpenDetail).toBe(false)
-  })
-
-  it('解析下游模块关联筛选意图', () => {
-    expect(parseRouteParams('?referencedBy=freight-bill').referencedBy).toBe(
-      'freight-bill',
-    )
-    expect(parseRouteParams('?referencedBy=none').referencedBy).toBe('none')
   })
 
   it('解析客户筛选深链参数', () => {
@@ -204,22 +196,6 @@ describe('route filter synchronization', () => {
     ).toEqual({ status: '完成采购' })
   })
 
-  it('removes pending-only mode for explicit reference deep links', () => {
-    const config = {
-      ...configWithStatus,
-      key: 'purchase-order',
-      filters: [{ key: 'referencedBy' }],
-    } as unknown as ModulePageConfig
-
-    expect(
-      buildRouteFilterSyncState({
-        config,
-        defaultFilters: { pendingOnly: 'true' },
-        routeParams: parseRouteParams('?referencedBy=sales-order'),
-      }),
-    ).toEqual({ referencedBy: 'sales-order' })
-  })
-
   it('keeps the synchronization key stable when callback inputs are recreated', () => {
     const routeParams = parseRouteParams('?create=1')
     const first = buildRouteFilterSyncKey({
@@ -270,9 +246,9 @@ describe('重置筛选必须同时清 URL —— 否则刷新后筛选静默复�
     expect(consumeRouteFilterSearch('?docNo=368855989580988416')).toBe('')
   })
 
-  it('docNo / trackId / customerId / status / referencedBy 全部清掉', () => {
+  it('docNo / trackId / customerId / status 全部清掉', () => {
     const search =
-      '?docNo=PO-1&trackId=361443612338167808&customerId=1983421000000000001&status=待审核&referencedBy=freight-bill'
+      '?docNo=PO-1&trackId=361443612338167808&customerId=1983421000000000001&status=待审核'
     expect(consumeRouteFilterSearch(search)).toBe('')
   })
 
@@ -303,7 +279,6 @@ describe('重置筛选必须同时清 URL —— 否则刷新后筛选静默复�
       'trackId',
       'customerId',
       'status',
-      'referencedBy',
     ])
     // 逐项验证: 清单里的每个参数都能被单独清掉
     for (const key of ROUTE_FILTER_PARAMS) {

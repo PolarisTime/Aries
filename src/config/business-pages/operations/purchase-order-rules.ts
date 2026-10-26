@@ -1,7 +1,6 @@
 import { Tag, Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
-import { DocumentReferenceStatusIcons } from '@/components/DocumentReferenceStatusIcons'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleRecord } from '@/types/module-page'
 import { formatAmount, formatDateTime, formatWeight } from '@/utils/formatters'
@@ -15,10 +14,14 @@ function toFiniteOrNull(value: unknown): number | null {
   return Number.isFinite(numericValue) ? numericValue : null
 }
 
-export function renderPurchaseOrderNo(
-  value: unknown,
-  record: ModuleRecord,
-): React.ReactNode {
+/**
+ * 采购订单「订单编号」列：只渲染单号本身（外层类名供单据流弹层触发使用）。
+ *
+ * <p>原先在单号后追加下游引用状态图标（已被销售订单/采购入库引用），按产品要求整体下线：
+ * 图标与 tooltip 都不再渲染；行级字段 `referencedBySalesOrder` / `referencedByPurchaseInbound`
+ * 也随后端 DTO 一并从响应 schema 删除（前端已无消费方）。</p>
+ */
+export function renderPurchaseOrderNo(value: unknown): React.ReactNode {
   return React.createElement(
     'span',
     { className: 'document-reference-trigger' },
@@ -27,24 +30,6 @@ export function renderPurchaseOrderNo(
       { className: 'document-reference-link' },
       String(value ?? ''),
     ),
-    React.createElement(DocumentReferenceStatusIcons, {
-      statuses: [
-        {
-          key: 'sales-order',
-          label: i18next.t(
-            'modules.pages.purchaseOrder.referencedBySalesOrder',
-          ),
-          referenced: Boolean(record.referencedBySalesOrder),
-        },
-        {
-          key: 'purchase-inbound',
-          label: i18next.t(
-            'modules.pages.purchaseOrder.referencedByPurchaseInbound',
-          ),
-          referenced: Boolean(record.referencedByPurchaseInbound),
-        },
-      ],
-    }),
   )
 }
 

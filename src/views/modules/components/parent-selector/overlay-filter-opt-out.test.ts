@@ -17,18 +17,20 @@ import { buildOverlayFilterConfig } from './use-parent-selector-data'
  * 导入弹层筛选区的口径锁定：**默认全放行 + 显式排除（opt-out）**。
  *
  * 这组用例存在的意义是「能区分两种口径」：
- * 旧的允许清单写法下，上游 6 个筛选只会显示 2 个（客户、项目）；
- * opt-out 下同一份输入必须显示 5 个（只排除被引用状态）。
+ * 旧的允许清单写法下，上游 5 个筛选只会显示 2 个（客户、项目）；
+ * opt-out 下同一份输入必须显示 5 个（默认共享排除清单为空，全部放行）。
  * 因此断言不写"等于某个集合"就完事，而是显式断言 keyword / status / deliveryDate
  * 这些**旧口径下不会出现**的字段必须出现 —— 否则退回白名单时用例会静默变绿。
+ *
+ * <p>`referencedBy`（被引用状态）筛选已整体下线，不再作为任何用例的载体；
+ * 「不会被带进弹层」这件事改由真实模块用例与默认排除清单为空来锁定。</p>
  */
 
-/** 销售订单列表页的 6 个筛选，作为「上游有 6 个筛选」的标准输入。 */
-const UPSTREAM_SIX_FILTERS: ModuleFilterDefinition[] = [
+/** 销售订单列表页真实存在的 5 个筛选，作为「上游有 5 个筛选」的标准输入。 */
+const UPSTREAM_FILTERS: ModuleFilterDefinition[] = [
   { key: 'keyword', label: '订单编号', type: 'input' },
   { key: 'customerId', label: '客户', type: 'select' },
   { key: 'status', label: '单据状态', type: 'segmented' },
-  { key: 'referencedBy', label: '被引用状态', type: 'segmented' },
   { key: 'projectId', label: '项目', type: 'select' },
   { key: 'deliveryDate', label: '送货日期', type: 'dateRange' },
 ]
@@ -50,13 +52,12 @@ function makePageConfig(
   }
 }
 
-/** 能力齐全的请求契约：6 个筛选全都能变成 query 参数。 */
+/** 能力齐全的请求契约：5 个筛选全都能变成 query 参数。 */
 const FULL_CONTRACT: ParentCandidateFilterContract = {
   nativeFilterKeys: [
     'keyword',
     'customerId',
     'status',
-    'referencedBy',
     'projectId',
     'startDate',
     'endDate',
@@ -84,10 +85,10 @@ function filterOf(config: ModulePageConfig, key: string) {
 }
 
 describe('buildOverlayFilterConfig（opt-out 口径）', () => {
-  it('上游 6 个筛选、接口全支持时显示 5 个：只排除被引用状态', () => {
+  it('上游 5 个筛选、接口全支持时全部显示：默认排除清单为空', () => {
     const config = buildOverlayFilterConfig(
       'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
+      makePageConfig(UPSTREAM_FILTERS),
       {},
       FULL_CONTRACT,
     )
@@ -107,29 +108,29 @@ describe('buildOverlayFilterConfig（opt-out 口径）', () => {
     expect(filterKeys(config)).not.toEqual(['customerId', 'projectId'])
   })
 
-  it('「被引用状态」走语义排除，不是靠接口不支持才不显示', () => {
-    // 契约里显式声明支持 referencedBy，仍然不显示 —— 排除来自语义清单
-    const contractWithReference: ParentCandidateFilterContract = {
-      ...FULL_CONTRACT,
-      nativeFilterKeys: [
-        ...(FULL_CONTRACT.nativeFilterKeys ?? []),
-        'referencedBy',
-      ],
-    }
+  it('语义排除仍可逐源追加：接口支持也挡在弹层外', () => {
+    // referencedBy 下线后，共享默认清单已清空（全放行）
+    expect(DEFAULT_SELECTOR_FILTER_OMISSIONS).toEqual([])
     const config = buildOverlayFilterConfig(
       'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
+      makePageConfig(UPSTREAM_FILTERS),
       {},
-      contractWithReference,
+      // status 在 FULL_CONTRACT 里是受支持的 query 参数，排除只能来自语义清单
+      { ...FULL_CONTRACT, selectorFilterOmissions: ['status'] },
     )
 
-    expect(filterKeys(config)).not.toContain('referencedBy')
-    expect(DEFAULT_SELECTOR_FILTER_OMISSIONS).toContain('referencedBy')
+    expect(filterKeys(config)).not.toContain('status')
+    expect(filterKeys(config)).toEqual([
+      'keyword',
+      'customerId',
+      'projectId',
+      'deliveryDate',
+    ])
   })
 
   it('新增页面筛选无需再改第二处：接口支持即自动出现在弹层', () => {
     const pageWithExtra = makePageConfig([
-      ...UPSTREAM_SIX_FILTERS,
+      ...UPSTREAM_FILTERS,
       { key: 'salesName', label: '业务员', type: 'select' },
     ])
     const config = buildOverlayFilterConfig(
@@ -150,7 +151,7 @@ describe('buildOverlayFilterConfig（opt-out 口径）', () => {
 
   it('接口不接受的 key 不放行（否则是改了没反应死筛选）', () => {
     const pageWithUnsupported = makePageConfig([
-      ...UPSTREAM_SIX_FILTERS,
+      ...UPSTREAM_FILTERS,
       { key: 'warehouseId', label: '仓库', type: 'select' },
     ])
     const config = buildOverlayFilterConfig(
@@ -168,7 +169,7 @@ describe('buildOverlayFilterConfig（opt-out 口径）', () => {
   it('编辑器注入的固定筛选不占筛选格子（也不进用户 draft）', () => {
     const config = buildOverlayFilterConfig(
       'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
+      makePageConfig(UPSTREAM_FILTERS),
       { customerId: '123' },
       FULL_CONTRACT,
     )
@@ -196,7 +197,7 @@ describe('buildOverlayFilterConfig（opt-out 口径）', () => {
   it('dateRange 保持单个筛选（不拆成起/止两格），segmented 保持胶囊类型', () => {
     const config = buildOverlayFilterConfig(
       'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
+      makePageConfig(UPSTREAM_FILTERS),
       {},
       FULL_CONTRACT,
     )
@@ -215,7 +216,7 @@ describe('buildOverlayFilterConfig（opt-out 口径）', () => {
   it('dateRange 缺少 dateRangeMapping 时被能力守卫剔除', () => {
     const config = buildOverlayFilterConfig(
       'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
+      makePageConfig(UPSTREAM_FILTERS),
       {},
       { ...FULL_CONTRACT, dateRangeMapping: {} },
     )
@@ -225,7 +226,7 @@ describe('buildOverlayFilterConfig（opt-out 口径）', () => {
 })
 
 describe('真实模块：物流单导入销售订单', () => {
-  it('销售订单 6 个筛选 → 弹层 4 个（status 无接口参数、referencedBy 语义排除）', () => {
+  it('销售订单 5 个筛选 → 弹层 4 个（status 无接口参数、referencedBy 筛选已下线）', () => {
     const contract = getParentCandidateFilterContract(
       'freight-sales-order-import',
     )
@@ -250,7 +251,7 @@ describe('真实模块：物流单导入销售订单', () => {
      * 放行它会让用户以为"按草稿过滤"生效，实际列表不变。
      */
     expect(filterKeys(config)).not.toContain('status')
-    // referencedBy 是语义排除（候选条数变少却看不出原因）
+    // referencedBy 筛选已整体下线（页面配置里已无此项），弹层不会再有它
     expect(filterKeys(config)).not.toContain('referencedBy')
     // 不是旧白名单的 2 个
     expect(filterKeys(config)).not.toEqual(['customerId', 'projectId'])
@@ -286,7 +287,7 @@ describe('六个候选来源的守卫用例', () => {
     const contract = getParentCandidateFilterContract(source)
     const config = buildOverlayFilterConfig(
       'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
+      makePageConfig(UPSTREAM_FILTERS),
       {},
       contract,
     )
@@ -301,17 +302,34 @@ describe('六个候选来源的守卫用例', () => {
     }
   })
 
-  it.each(ALL_SOURCES)('%s：被引用状态一律不进弹层', (source) => {
-    const config = buildOverlayFilterConfig(
-      'sales-order',
-      makePageConfig(UPSTREAM_SIX_FILTERS),
-      {},
-      getParentCandidateFilterContract(source),
-    )
+  it.each(ALL_SOURCES)(
+    '%s：已下线的 referencedBy 不会进入弹层筛选',
+    (source) => {
+      const contract = getParentCandidateFilterContract(source)
+      const config = buildOverlayFilterConfig(
+        'sales-order',
+        makePageConfig(UPSTREAM_FILTERS),
+        {},
+        contract,
+      )
 
-    expect(filterKeys(config)).not.toContain('referencedBy')
-    expect(getParentCandidateSelectorOmissions(source)).toContain(
-      'referencedBy',
-    )
-  })
+      expect(filterKeys(config)).not.toContain('referencedBy')
+      // 默认共享排除清单不再声明它（清单清空），逐源排除清单也不该再出现
+      expect(DEFAULT_SELECTOR_FILTER_OMISSIONS).not.toContain('referencedBy')
+      expect(getParentCandidateSelectorOmissions(source)).not.toContain(
+        'referencedBy',
+      )
+      // 真实页面配置里也已没有该筛选，真实弹层同样不会有
+      expect(
+        filterKeys(
+          buildOverlayFilterConfig(
+            'sales-order',
+            salesOrdersPageConfig,
+            {},
+            contract,
+          ),
+        ),
+      ).not.toContain('referencedBy')
+    },
+  )
 })

@@ -145,8 +145,6 @@ const purchaseOrderRecordShape = {
   status: purchaseOrderStatusSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
-  referencedBySalesOrder: z.boolean().default(false),
-  referencedByPurchaseInbound: z.boolean().default(false),
   /** 订单级未入库件数：各明细行「订单量 − 已入库量」之和（列表与详情均返回）。 */
   totalRemainingQuantity: optionalNonNegativeIntegerSchema,
   /** 订单级已入库件数：各明细行已入库量之和（列表与详情均返回，可选）。 */
@@ -431,9 +429,6 @@ const salesOrderRecordShape = {
   priceClosedSettleDirection: nullableTextSchema.optional(),
   /** 休市调整天数：0 表示不位移，1..30 为位移的交易日数。 */
   priceClosedSettleDays: optionalNonNegativeIntegerSchema,
-  referencedByFreightBill: z.boolean().default(false),
-  referencedBySalesOutbound: z.boolean().default(false),
-  referencedBySalesReturn: z.boolean().default(false),
   /** 只读派生数量：已交付 / 已退货 / 净交付（退货上线后由后端聚合返回）。 */
   deliveredQuantity: nonNegativeDecimalSchema.optional(),
   returnedQuantity: nonNegativeDecimalSchema.optional(),

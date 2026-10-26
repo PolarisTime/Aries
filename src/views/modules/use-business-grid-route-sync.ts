@@ -62,13 +62,11 @@ export function parseRouteParams(searchStr: string) {
   const docNo = readRouteSearchParam(params, 'docNo')
   const trackId = readRouteSearchParam(params, 'trackId')
   const customerId = readRouteSearchParam(params, 'customerId')
-  const referencedBy = readRouteSearchParam(params, 'referencedBy')
   return {
     docNo,
     sourceModule: readRouteSearchParam(params, 'sourceModule'),
     sourceRecordId: readRouteSearchParam(params, 'sourceRecordId'),
     status: readRouteSearchParam(params, 'status'),
-    referencedBy,
     trackId,
     customerId,
     routeKeyword: docNo || trackId,
@@ -160,7 +158,6 @@ export const ROUTE_FILTER_PARAMS = [
   'trackId',
   'customerId',
   'status',
-  'referencedBy',
 ] as const
 
 /**
@@ -176,7 +173,7 @@ export function consumeRouteFilterSearch(searchStr: string): string {
 /**
  * URL 里**驱动关键字**的那两个参数（`docNo`/`trackId`，见 `routeKeyword`）。
  *
- * <p>只清它们、不动 `status`/`customerId`/`referencedBy`：用户手动改搜索框时
+ * <p>只清它们、不动 `status`/`customerId`：用户手动改搜索框时
  * 并没有动状态/客户这些筛选，把它们一起摘掉会让「界面还在筛状态、URL 却没了」，
  * 刷新后反而丢掉用户保留的条件。</p>
  */
@@ -322,13 +319,10 @@ export function buildRouteFilterSyncState({
   const hasStatusFilter = Boolean(
     routeParams.status && supportsFilterField(config, 'status'),
   )
-  const hasReferenceFilter = Boolean(
-    routeParams.referencedBy && supportsFilterField(config, 'referencedBy'),
-  )
   const filters = { ...defaultFilters }
   // Explicit status selection represents an all-records query. Do not retain
   // the list's default pending-only mode, which excludes completed statuses.
-  if (hasStatusFilter || hasReferenceFilter) {
+  if (hasStatusFilter) {
     delete filters.pendingOnly
   }
 
@@ -349,9 +343,6 @@ export function buildRouteFilterSyncState({
       : {}),
     ...(routeParams.status && supportsFilterField(config, 'status')
       ? { status: routeParams.status }
-      : {}),
-    ...(routeParams.referencedBy && supportsFilterField(config, 'referencedBy')
-      ? { referencedBy: routeParams.referencedBy }
       : {}),
   }
 }
@@ -374,12 +365,10 @@ export function buildRouteFilterSyncKey({
     config?.key || '',
     supportsFilterField(config, 'customerId'),
     supportsFilterField(config, 'status'),
-    supportsFilterField(config, 'referencedBy'),
     serializedDefaults,
     routeParams.routeKeyword,
     routeParams.customerId,
     routeParams.status,
-    routeParams.referencedBy,
     hasSetFilters,
   ])
 }

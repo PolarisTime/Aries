@@ -7,7 +7,14 @@ import type { ModulePageConfig } from '@/types/module-page'
 let purchaseOrdersPageConfig: ModulePageConfig
 let salesOrdersPageConfig: ModulePageConfig
 
-describe('订单下游引用筛选', () => {
+/**
+ * 「下游引用」筛选已整体下线（产品要求）：采购订单与销售订单列表都不再提供
+ * `referencedBy` 筛选项，接口契约也不再声明该查询参数。
+ *
+ * <p>这里从"功能存在"翻转为"功能不再回来"的守卫：若有人把筛选或查询参数加回来，
+ * 两条断言会分别失败。</p>
+ */
+describe('订单下游引用筛选已下线', () => {
   beforeAll(async () => {
     await i18next.changeLanguage('zh-CN')
     ;({ purchaseOrdersPageConfig } = await import(
@@ -18,39 +25,21 @@ describe('订单下游引用筛选', () => {
     ))
   })
 
-  it('销售订单提供按实际下游模块的关联选项', () => {
-    const filter = salesOrdersPageConfig.filters.find(
-      (item) => item.key === 'referencedBy',
-    )
-    expect(filter?.type).toBe('segmented')
-    const options = Array.isArray(filter?.options) ? filter.options : []
-    expect(
-      options.map((option) => ('value' in option ? option.value : undefined)),
-    ).toEqual(['freight-bill', 'sales-outbound', 'none'])
-    expect(
-      options.map((option) => ('label' in option ? option.label : undefined)),
-    ).toEqual(['被物流单引用', '被销售出库引用', '未被引用'])
-  })
-
-  it('采购订单提供按实际下游模块的关联选项', () => {
-    const filter = purchaseOrdersPageConfig.filters.find(
-      (item) => item.key === 'referencedBy',
-    )
-    expect(filter?.type).toBe('segmented')
-    const options = Array.isArray(filter?.options) ? filter.options : []
-    expect(
-      options.map((option) => ('value' in option ? option.value : undefined)),
-    ).toEqual(['sales-order', 'purchase-inbound', 'none'])
-    expect(
-      options.map((option) => ('label' in option ? option.label : undefined)),
-    ).toEqual(['被销售订单引用', '被采购入库引用', '未被引用'])
-  })
-
-  it('订单筛选标签声明为下游引用', () => {
+  it('采购订单与销售订单列表都不再有 referencedBy 筛选项', () => {
     for (const config of [purchaseOrdersPageConfig, salesOrdersPageConfig]) {
-      const filter = config.filters.find((item) => item.key === 'referencedBy')
-      expect(filter?.label).toBe('下游引用')
+      expect(config.filters.some((item) => item.key === 'referencedBy')).toBe(
+        false,
+      )
     }
+  })
+
+  it('订单接口契约不再声明 referencedBy 查询参数', () => {
+    expect(
+      operationModuleEndpointContracts['purchase-order'].nativeFilterKeys,
+    ).not.toContain('referencedBy')
+    expect(
+      operationModuleEndpointContracts['sales-order'].nativeFilterKeys,
+    ).not.toContain('referencedBy')
   })
 
   it('订单状态分段不保留隐藏的待处理默认条件', () => {
@@ -67,14 +56,5 @@ describe('订单下游引用筛选', () => {
       purchaseOrdersPageConfig.filters.find((item) => item.key === 'orderDate')
         ?.showQuickDateFilter,
     ).toBe(false)
-  })
-
-  it('将下游模块关联筛选参数声明为订单接口原生筛选', () => {
-    expect(
-      operationModuleEndpointContracts['purchase-order'].nativeFilterKeys,
-    ).toContain('referencedBy')
-    expect(
-      operationModuleEndpointContracts['sales-order'].nativeFilterKeys,
-    ).toContain('referencedBy')
   })
 })

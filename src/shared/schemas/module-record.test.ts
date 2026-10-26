@@ -203,30 +203,35 @@ describe('采购订单货值与入库进度契约', () => {
   })
 })
 
-describe('订单引用状态响应契约', () => {
-  it('采购订单列表缺少引用状态时默认为未引用', () => {
+describe('订单响应不再声明下游引用状态字段（已下线）', () => {
+  /*
+   * 下游引用图标与「下游引用」筛选已整体下线，后端 DTO 也不再返回这些键，
+   * schema 因此不再声明它们（此前是 z.boolean().default(false)）。
+   * 若有人把声明加回来，下面两条会把"凭空出现的默认值"打回原形。
+   */
+  const removedReferenceKeys = [
+    'referencedBySalesOrder',
+    'referencedByPurchaseInbound',
+    'referencedByFreightBill',
+    'referencedBySalesOutbound',
+    'referencedBySalesReturn',
+  ]
+
+  it('列表响应解析后不再出现 referencedBy* 字段', () => {
     const response = getMainFlowListResponseSchema('purchase-order').parse(
       page(purchaseOrder),
     )
-
-    expect(response.content[0]).toMatchObject({
-      referencedBySalesOrder: false,
-      referencedByPurchaseInbound: false,
-    })
-  })
-
-  it('销售订单列表缺少引用状态时默认为未引用', () => {
-    const response = getMainFlowListResponseSchema('sales-order').parse(
+    const salesResponse = getMainFlowListResponseSchema('sales-order').parse(
       page(salesOrder),
     )
 
-    expect(response.content[0]).toMatchObject({
-      referencedByFreightBill: false,
-      referencedBySalesOutbound: false,
-    })
+    for (const key of removedReferenceKeys) {
+      expect(response.content[0]).not.toHaveProperty(key)
+      expect(salesResponse.content[0]).not.toHaveProperty(key)
+    }
   })
 
-  it('订单详情缺少引用状态时同样默认为未引用', () => {
+  it('详情响应解析后同样不再出现 referencedBy* 字段', () => {
     const purchaseResponse = getMainFlowDetailResponseSchema(
       'purchase-order',
     ).parse({
@@ -240,14 +245,10 @@ describe('订单引用状态响应契约', () => {
       chargeItems: [],
     })
 
-    expect(purchaseResponse).toMatchObject({
-      referencedBySalesOrder: false,
-      referencedByPurchaseInbound: false,
-    })
-    expect(salesResponse).toMatchObject({
-      referencedByFreightBill: false,
-      referencedBySalesOutbound: false,
-    })
+    for (const key of removedReferenceKeys) {
+      expect(purchaseResponse).not.toHaveProperty(key)
+      expect(salesResponse).not.toHaveProperty(key)
+    }
   })
 })
 

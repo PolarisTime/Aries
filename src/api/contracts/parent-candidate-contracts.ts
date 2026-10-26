@@ -31,15 +31,13 @@ export interface ParentCandidateFilterContract
 /**
  * 六个候选来源共用的语义排除项。
  *
- * <p>为什么排除「被引用状态」（`referencedBy`）: 它描述的是"这张单已被谁引用过"，
- * 属于**下游视角**。放在候选列表里有两处害处 ——
- * ① 用户会以为已引用的单据不能选（实际可以重复引用）；
- * ② 一旦按它过滤，候选条数变少却看不出原因（筛选区里那一格与"我要找的单据"没有关系）。
- * 这类"看不懂候选为什么变少"的筛选一律走这份显式排除，而不是靠"接口不支持所以不显示"。</p>
+ * <p><b>当前为空清单</b>：唯一的历史成员 `referencedBy`（被引用状态）已随该筛选整体下线，
+ * 页面配置与接口契约里都不再有它，共享清单因此不再需要任何默认排除。
+ * 机制本身保留 —— 某个候选来源若还要排除"候选条数莫名变少"这类筛选，仍通过
+ * {@link ParentCandidateFilterContract.selectorFilterOmissions} 逐源追加，
+ * 不要退回到"接口不支持所以不显示"的隐式行为。</p>
  */
-export const DEFAULT_SELECTOR_FILTER_OMISSIONS: readonly string[] = [
-  'referencedBy',
-]
+export const DEFAULT_SELECTOR_FILTER_OMISSIONS: readonly string[] = []
 
 const parentCandidateFilterContracts: Record<
   ParentCandidateSource,
