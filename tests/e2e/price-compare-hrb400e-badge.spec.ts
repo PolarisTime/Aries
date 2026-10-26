@@ -24,7 +24,10 @@ test('手工路径: 行级开关 + 填价 → 出现 E 角标且可访问名含�
   // 该页面若未选中项目/批次，先选第一个含行级开关的批次
   const switches = page.locator('.price-compare-hrb400e-switch')
   const switchCount = await switches.count()
-  expect(switchCount, '项目 348871385747038208 下应存在 HRB400 行（行级开关可见）').toBeGreaterThan(0)
+  expect(
+    switchCount,
+    '项目 348871385747038208 下应存在 HRB400 行（行级开关可见）',
+  ).toBeGreaterThan(0)
 
   // 该批次可能开了「规格和数量」锁 → 行级开关(沿用 selectDisabled)会 disabled。
   // 这一步必须是**可重复**的：别人/CI 跑不能依赖"上一次手工点过解锁"。
@@ -38,8 +41,8 @@ test('手工路径: 行级开关 + 填价 → 出现 E 角标且可访问名含�
   })
   let unlockedBySpec = false
   const firstSwitch = page.locator('.price-compare-hrb400e-switch').first()
-  const isDisabled = await firstSwitch.evaluate(
-    (el) => el.className.includes('disabled'),
+  const isDisabled = await firstSwitch.evaluate((el) =>
+    el.className.includes('disabled'),
   )
   if (isDisabled) {
     await unlockBtn.first().click()

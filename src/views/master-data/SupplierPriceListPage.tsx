@@ -292,7 +292,9 @@ export function SupplierPriceListPage() {
           onClick={() =>
             columns
               .filter((column) => dirtyOf(column) > 0)
-              .forEach((column) => saveColumn.mutate(column))
+              .forEach((column) => {
+                saveColumn.mutate(column)
+              })
           }
         >
           {t('priceCompare.supplierPrice.saveAll', { count: dirtyCount })}
