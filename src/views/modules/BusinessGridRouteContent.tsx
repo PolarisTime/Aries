@@ -161,11 +161,12 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                   expandedRowKeys: state.inlineExpandedRowKeys,
                   expandedRowRender: state.expandedRowRender,
                   onExpand: state.onExpandDetail,
-                  // 明细按钮位于列表列中，避免额外的原生展开列造成重复入口。
+                  // 明细按钮并入首位身份列（序号·勾选·加号·行菜单），不再有原生展开列。
                   showExpandColumn: false,
                 }
               : undefined
           }
+          renderRowDetailToggle={state.renderRowDetailToggle}
           canCreate={canCreateRecord}
           canExport={state.canExportData}
           toolbarActions={state.visibleToolbarActions}

@@ -2,11 +2,11 @@ import { SearchOutlined } from '@ant-design/icons'
 import { Button, Form, Input } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModuleResetButton } from '@/components/ModuleResetButton'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
-import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -25,6 +25,15 @@ interface Props {
   submittedFilters: SearchParams
   /** 显示明确的「查询」主按钮（选单器等独立筛选场景） */
   showSubmitButton?: boolean
+  /**
+   * 是否在筛选行末尾渲染「重置」。
+   *
+   * <p>业务列表页传 `false`：重置下移到工具行右侧，与「已选择 / 清除 / 刷新」同组 ——
+   * 原先它被 `margin-left: auto` 顶到整行最右端，左边一大片空白、右边孤零零一个按钮，
+   * 还和下一行右侧的图标簇上下叠着，这就是"筛选区按钮显示不对"的来源。
+   * 选单器这类没有工具行的场景保持默认 `true`。</p>
+   */
+  showResetButton?: boolean
   onUpdateFilter: (key: string, value: unknown) => void
   onApplyFilters: (filters: SearchParams) => void
   onReset: () => void
@@ -68,6 +77,7 @@ export function ModuleFilterToolbar({
   defaultFilters = EMPTY_FILTERS,
   submittedFilters,
   showSubmitButton = false,
+  showResetButton = true,
   onUpdateFilter,
   onApplyFilters,
   onReset,
@@ -242,15 +252,7 @@ export function ModuleFilterToolbar({
             {t('common.search')}
           </Button>
         ) : null}
-        <Button
-          className="module-filter-reset-button"
-          type="text"
-          size="small"
-          icon={resolveModuleActionIcon('重置')}
-          onClick={onReset}
-        >
-          {t('common.reset')}
-        </Button>
+        {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
       </div>
     </Form>
   )

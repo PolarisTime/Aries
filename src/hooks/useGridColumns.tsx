@@ -1,7 +1,7 @@
 import { EyeOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons'
 import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { Button, Tooltip } from 'antd'
-import type { ReactNode } from 'react'
+import { type ReactNode, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
 import { isListDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
@@ -10,6 +10,13 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
+/**
+ * 「明细按钮列」的列 id 与列宽。
+ *
+ * <p>业务网格列表已不再使用独立明细列（并入首位身份列，见 `BusinessGridTable` 的
+ * IDENTITY_COLUMN_WIDTH）；选单器表格（`parent-selector-columns`）仍按这组常量
+ * 渲染它自己的明细列，因此常量保留在这里，作为该列形态的唯一出处。</p>
+ */
 export const DETAIL_TOGGLE_COLUMN_ID = 'detail-toggle'
 export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
 
@@ -119,55 +126,56 @@ export function useGridColumns({
     })
   }
 
-  if (onOpenDetail) {
-    const useExpandVariant =
-      variant === 'expand' || (variant === undefined && expandedRowKeys != null)
-    columns.push({
-      id: DETAIL_TOGGLE_COLUMN_ID,
-      header: '',
-      meta: {
-        width: DETAIL_TOGGLE_COLUMN_WIDTH,
-        align: 'center',
-        renderCell: (record: ModuleRecord) => {
-          const expanded = Boolean(expandedRowKeys?.includes(String(record.id)))
-          const label = useExpandVariant
-            ? expanded
-              ? t('modules.parentSelector.collapseDetail')
-              : t('modules.parentSelector.expandDetail')
-            : t('hooks.gridColumns.detail')
-          return (
-            <Tooltip title={label}>
-              <Button
-                aria-label={label}
-                aria-expanded={useExpandVariant ? expanded : undefined}
-                className={`table-detail-toggle-btn${
-                  expanded ? ' is-active' : ''
-                }`}
-                icon={
-                  useExpandVariant ? (
-                    expanded ? (
-                      <MinusOutlined />
-                    ) : (
-                      <PlusOutlined />
-                    )
-                  ) : (
-                    <EyeOutlined />
-                  )
-                }
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onOpenDetail(record)
-                }}
-                size="small"
-                type="text"
-              />
-            </Tooltip>
-          )
-        },
-      },
-      cell: () => null,
-    })
-  }
+  const useExpandVariant =
+    variant === 'expand' || (variant === undefined && expandedRowKeys != null)
+
+  /*
+   * 明细按钮不再独占一列（旧形态=空表头 + 48px 只有一个图标）。列表页首位改成
+   * 「序号 · 勾选 · 明细加号 · 行菜单」合成的一列（宽度见 `BusinessGridTable` 的
+   * IDENTITY_COLUMN_WIDTH）。列定义一个单元格只能摆一样东西，因此这里只保留**渲染口径**：
+   * 图标形态（加号/减号/眼睛）、aria-label、aria-expanded 与点击副作用只在这一处决定，
+   * 摆放位置交给身份列。换出口就再写一遍，正是本仓库禁止的「同一口径两处实现」。
+   */
+  const renderRowDetailToggle = useCallback(
+    (record: ModuleRecord) => {
+      if (!onOpenDetail) {
+        return null
+      }
+      const expanded = Boolean(expandedRowKeys?.includes(String(record.id)))
+      const label = useExpandVariant
+        ? expanded
+          ? t('modules.parentSelector.collapseDetail')
+          : t('modules.parentSelector.expandDetail')
+        : t('hooks.gridColumns.detail')
+      return (
+        <Tooltip title={label}>
+          <Button
+            aria-label={label}
+            aria-expanded={useExpandVariant ? expanded : undefined}
+            className={`table-detail-toggle-btn${expanded ? ' is-active' : ''}`}
+            icon={
+              useExpandVariant ? (
+                expanded ? (
+                  <MinusOutlined />
+                ) : (
+                  <PlusOutlined />
+                )
+              ) : (
+                <EyeOutlined />
+              )
+            }
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenDetail(record)
+            }}
+            size="small"
+            type="text"
+          />
+        </Tooltip>
+      )
+    },
+    [expandedRowKeys, onOpenDetail, t, useExpandVariant],
+  )
 
   /*
    * 行级动作只保留行右键菜单(与触摸长按)一个入口, 不再渲染行尾「更多」操作列:
@@ -175,5 +183,5 @@ export function useGridColumns({
    * 多出一个无法隐藏/移动的伪列。行菜单与键盘/触摸入口见 RowContextMenuRow。
    */
 
-  return { columns }
+  return { columns, renderRowDetailToggle }
 }

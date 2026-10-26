@@ -2371,6 +2371,26 @@
   gap: var(--space-xs);
 }
 
+/*
+ * 「重置」前的分隔线：把「筛选动作」与「选择/刷新状态」分成两组，
+ * 否则一排图标后面直接跟一个带边框的按钮，读起来像一串没有层次的控件。
+ */
+.module-table-utilities-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 16px;
+  margin: 0 var(--space-xxs);
+  background: var(--theme-border-subtle);
+}
+
+/*
+ * 重置在状态区最右端时不再需要 `margin-left: auto`（那是筛选区末端用来顶到右边缘的），
+ * 保留会让分隔线与按钮之间多出一段随勾选状态变化的空白。
+ */
+.module-table-utilities .module-filter-reset-button {
+  margin-left: 0;
+}
+
 .module-table-selected-count {
   /* 与 `.module-filter-active-summary-text` 同一种胶囊样式：两者并排时读作一对状态标签，
      而不是「一个胶囊 + 一段裸文字」 */
@@ -2453,10 +2473,72 @@
   margin: 0 !important;
 }
 
+/*
+ * 勾选列宽度走变量：业务网格把它当「身份列」用（序号·勾选·明细加号·行菜单合成一格，
+ * 见 BusinessGridTable 的 IDENTITY_COLUMN_WIDTH = 128px，由 shell 行内样式下发）；
+ * 其它表格（主数据 / 财务 / 明细）不改行内样式，仍取默认 40px。
+ */
 .module-table-shell .ant-table-selection-column {
-  width: 40px !important;
-  min-width: 40px !important;
+  width: var(--module-selection-column-width, 40px) !important;
+  min-width: var(--module-selection-column-width, 40px) !important;
   padding: 0 var(--space-xs) !important;
+}
+
+/*
+ * 首位身份列：序号 · 勾选 · 明细加号 · 行菜单 四件套合成一格。
+ *
+ * 横向预算：32(序号) + 24×3(勾选/加号/菜单) + 3×2(微间隙) = 110，落在 128 - 16(内边距)
+ * = 112 的内容盒里。四个命中区都是 24×24，满足 WCAG 2.2 SC 2.5.8。
+ *
+ * 表头（.module-row-identity--head）**必须**用同一套栅格：表头只有「序号 + 全选」两个子元素，
+ * 若给它另写一套 2 列栅格，两者各自居中时基准不同，列被撑宽后全选复选框会比行复选框偏右。
+ */
+.module-row-identity {
+  display: grid;
+  grid-template-columns: 32px repeat(3, 24px);
+  gap: var(--space-2);
+  align-items: center;
+  /*
+   * 居中而不是左对齐：列少、表格不需要横向滚动时，浏览器会把多余的宽度按比例摊到
+   * 每一列（实测 128 → 145/168），左对齐就会在四件套右侧留下一大片空白。
+   * 表头与行内用同一套栅格 + 同样的居中方式，两者始终对齐。
+   */
+  justify-content: center;
+  min-width: 0;
+}
+
+.module-row-identity .ant-checkbox-wrapper {
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+}
+
+.module-row-identity-seq {
+  overflow: hidden;
+  color: var(--theme-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * 身份列里的图标按钮压回 24×24：`touch-targets.css` 给表格内 `.ant-btn-sm` 的 ::before
+ * 热区扩到 44×44，四个按钮挤在 110px 里时相邻热区会互相覆盖 20px —— 点在间隙上会命中
+ * 错误的那一个。这里回到 WCAG 2.5.8 的最小合规尺寸 24×24，既不重叠也不低于下限。
+ *
+ * 选择器带 `.module-table-shell` 前缀是为了压过 touch-targets.css 里
+ * `.module-table-shell .ant-btn-sm::before` 的特异性（否则覆盖规则写了也不生效）。
+ */
+.module-table-shell .module-row-identity .ant-btn {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+.module-table-shell .module-row-identity .ant-btn::before {
+  width: max(100%, 24px);
+  height: max(100%, 24px);
 }
 
 .module-table-shell .ant-table-thead > tr > th,
@@ -2476,9 +2558,10 @@
 .module-table-pagination {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
+  gap: var(--space-xs) var(--space-md);
   min-height: 40px;
   padding: var(--space-2) var(--space-md);
   background: var(--theme-surface);
@@ -2492,17 +2575,27 @@
   gap: var(--space-sm);
 }
 
+/*
+ * 汇总区允许换行，**不**整体 nowrap。
+ *
+ * <p>原先这里是 `white-space: nowrap` + `min-width: 0`：容器被压缩到 823px、内容却有 860px，
+ * 溢出的「总金额：3896186.25 元」直接画到右侧「第 1-30 条 / 共 154 条」下面叠字。让容器
+ * 可以按「口径组」换行后，页脚变高而不是让两个数字叠在一起；口径组内部仍按指标整块换行，
+ * 单个指标（标签+数值）不拆开。</p>
+ */
 .module-table-pagination-summary {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   min-width: 0;
   color: var(--theme-text-muted);
   font-size: 12px;
-  white-space: nowrap;
 }
 
 /* 口径组：口径文字（「已选 15 项」/「本页合计」）只出现一次，组内平铺各指标。
    组与组之间用一道细分隔线，避免两组的「总重量」被连读成同一口径。 */
 .module-table-pagination-group {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-sm);
 }
@@ -2521,6 +2614,8 @@
   display: inline-flex;
   align-items: baseline;
   gap: var(--space-2);
+  /* 单个指标（标签 + 数值）不拆行，换行只发生在指标/口径组之间 */
+  white-space: nowrap;
 }
 
 .module-table-pagination-metric strong {
@@ -2532,6 +2627,8 @@
 .module-table-pagination-controls {
   flex: 0 0 auto;
   justify-content: flex-end;
+  /* 统计换行到第二行时，分页控件仍贴右侧（否则会掉到左端、和统计左对齐挤在一起） */
+  margin-left: auto;
 }
 
 .module-table-pagination-range {

@@ -31,6 +31,8 @@ interface Props {
   onExport: () => void
   onRefresh: () => void
   onClearSelection?: () => void
+  /** 重置筛选（按钮渲染在右侧状态区最右端，见 ModuleTableUtilities 的 onReset） */
+  onReset?: () => void
   extra?: ReactNode
   /** 筛选状态提示（「已筛选 N 项 · 清空筛选」），渲染在右侧状态区。 */
   filterSummary?: ReactNode
@@ -48,6 +50,7 @@ export function ModuleTableToolbar({
   onExport,
   onRefresh,
   onClearSelection,
+  onReset,
   extra,
   filterSummary,
   toolbarActions = EMPTY_TOOLBAR_ACTIONS,
@@ -118,6 +121,7 @@ export function ModuleTableToolbar({
         clearSelectionIcon={<CloseOutlined />}
         isFetching={loading}
         onRefresh={onRefresh}
+        onReset={onReset}
       />
     </div>
   )

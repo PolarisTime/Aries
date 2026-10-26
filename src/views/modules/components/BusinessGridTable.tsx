@@ -1,15 +1,13 @@
-import { MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons'
 import { Empty, Table } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import {
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/EmptyState'
@@ -22,14 +20,26 @@ import { useMeasureRowA11y } from '@/hooks/useMeasureRowA11y'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildTableScrollConfig,
-  computeTableAvailableHeight,
-  computeTableBodyScrollY,
   computeTableScrollX,
 } from '@/views/modules/components/business-grid-table-utils'
+import {
+  RowIdentityCell,
+  RowIdentityHeader,
+} from '@/views/modules/components/RowIdentityCell'
+import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 
-const MIN_TABLE_BODY_SCROLL_Y = 120
 const ROW_SINGLE_CLICK_DELAY_MS = 220
-const SEQUENCE_COLUMN_WIDTH = 64
+/**
+ * 首位「身份列」宽度 —— 一列同时承载 序号 · 勾选 · 明细加号 · 行菜单。
+ *
+ * <p>为什么要合并: 原先这里是**四列**（序号 64 + 勾选 32 + 明细加号 48 + 行尾操作 40 = 184px），
+ * 每列只装一个 16~24px 的小图标，横向一片竖线读起来"散"，行尾那列还孤零零挂在最右边。
+ * 合并后横向预算 184 → 128，省下的 56px 全部让给业务列。</p>
+ *
+ * <p>128 = 左右内边距 16 + 序号 32 + 勾选 24 + 加号 24 + 行菜单 24 + 三段 2px 微间隙
+ * （= 110，留 2px 余量）。四个命中区都保持 ≥24×24（WCAG 2.2 SC 2.5.8）。</p>
+ */
+export const IDENTITY_COLUMN_WIDTH = 128
 const ROW_INTERACTION_EXCLUSION_SELECTOR =
   'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
 
@@ -43,11 +53,23 @@ interface Props {
   loading: boolean
   currentPage: number
   pageSize: number
+  /**
+   * 行选择配置。**首位身份列由它承载**（序号 · 勾选 · 明细加号 · 行菜单合成一格），
+   * 因此不传时既没有勾选入口、也没有行序号 —— 业务网格的调用方始终会传
+   * （见 `useBusinessGridTable` 的 `rowSelection`）。
+   */
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
   expandable?: TableProps<ModuleRecord>['expandable']
+  /**
+   * 明细按钮渲染器（口径在 `useGridColumns`）。
+   *
+   * <p>传入时渲染在首位身份列里，此时不再渲染 antd 原生展开列（否则同一屏两个展开入口）；
+   * 不传时保留原生展开列，作为该组件单独使用时的兜底。</p>
+   */
+  renderRowDetailToggle?: (record: ModuleRecord) => ReactNode
   hasNextPage?: boolean
   fetchNextPage?: () => void
   isFetchingNextPage?: boolean
@@ -91,6 +113,7 @@ export function BusinessGridTable({
   onRowClick,
   onRowDoubleClick,
   expandable,
+  renderRowDetailToggle,
   hasNextPage: _hasNextPage,
   fetchNextPage: _fetchNextPage,
   isFetchingNextPage: _isFetchingNextPage,
@@ -99,73 +122,57 @@ export function BusinessGridTable({
   tableLabel,
 }: Props) {
   const { t } = useTranslation()
-  const shellRef = useRef<HTMLDivElement | null>(null)
+  /*
+   * 外壳高度/宽度测量收敛在 `useTableBodyScrollY` 一处（主数据、财务、明细表也用它）：
+   * `scrollY` 给表体定高，`shellWidth` 用来判断是否需要横向滚动。
+   */
+  const { shellRef, scrollY, shellWidth, shellStyle } = useTableBodyScrollY()
   // 测量行(aria-hidden + 0 高)内的可聚焦元素全部退出 Tab 序列; 唯一实现在该 hook 内
   useMeasureRowA11y(shellRef)
-  const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
-  const [shellWidth, setShellWidth] = useState(0)
   const sequenceStart = (currentPage - 1) * pageSize
-  const tableColumns = useMemo<ColumnsType<ModuleRecord>>(() => {
-    /*
-     * 序号与勾选列固定左侧: rc-table 的 fix 偏移从**最左列**开始连续计算, 只固定
-     * 业务首列而放过这两列, 固定块会从中间开始, 视觉上比不固定更糟。
-     * 固定后横向滚动到右侧时, 行标识(序号)与批量选择入口始终可见。
-     */
-    const sequenceColumn: ColumnsType<ModuleRecord>[number] = {
-      key: 'sequence',
-      title: t('modules.table.sequence'),
-      width: SEQUENCE_COLUMN_WIDTH,
-      fixed: 'left',
-      align: 'center',
-      render: (_value, _record, index) => sequenceStart + index + 1,
-    }
-    /*
-     * 勾选列**不能**在这里展开成对象:
-     * `Table.SELECTION_COLUMN` 是 antd 的哨兵值(`{}`), useSelection 用
-     * `cloneColumns.includes(SELECTION_COLUMN)` 靠**对象身份**识别它。
-     * 展开(`{...Table.SELECTION_COLUMN, ...}`)会造出一个新对象 -> 身份判断失效 ->
-     * antd 再插入一列真实勾选列, 于是多出一个 0 宽的幽灵表头
-     * (实测: width=0, class 带 fix-start, 文本是"全选当前页所有行", 且把左侧固定块
-     * 撑出 96px 的偏移)。勾选列的固定与表头文案都走 `rowSelection` 的官方 API,
-     * 见 use-business-grid-table.tsx 的 `fixed` 与 `columnTitle`。
-     */
-    return rowSelection
-      ? [sequenceColumn, Table.SELECTION_COLUMN, ...columns]
-      : [sequenceColumn, ...columns]
-  }, [rowSelection, sequenceStart, t, columns])
 
-  useLayoutEffect(() => {
-    const shell = shellRef.current
-    if (!shell || typeof ResizeObserver === 'undefined') return
+  /*
+   * 勾选列 = 首位身份列：序号 / 行复选框 / 明细按钮 / 行菜单合成一格。
+   *
+   * <p>为什么仍由 antd 的 selection 列承载：全选与半选、Shift 连选、每行复选框的可访问名
+   * （「选择此行：<单号>」来自 `getCheckboxProps`）都是 antd 的实现；自己画复选框就得把这
+   * 套语义整抄一遍。`renderCell` 的第四个参数就是 antd 生成的 `originNode`（真正的
+   * Checkbox），这里只负责摆放；`columnTitle` 的函数式写法拿到的是表头全选复选框，
+   * 把它和「序号」放进同一格。</p>
+   *
+   * <p>**不能**在 columns 里展开 `Table.SELECTION_COLUMN`（哨兵对象 `{}`，antd 按对象身份
+   * 识别）：展开会再插一列 0 宽幽灵表头。固定方向/宽度/表头都走 `rowSelection` 官方 API。</p>
+   */
+  const identityRowSelection = useMemo<
+    TableProps<ModuleRecord>['rowSelection'] | undefined
+  >(() => {
+    if (!rowSelection) return rowSelection
+    return {
+      ...rowSelection,
+      fixed: 'start',
+      columnWidth: IDENTITY_COLUMN_WIDTH,
+      columnTitle: (selectAllNode: ReactNode) => (
+        <RowIdentityHeader
+          label={t('modules.table.sequence')}
+          selectAll={selectAllNode}
+        />
+      ),
+      renderCell: (_checked, record, index, originNode) => (
+        <RowIdentityCell
+          sequenceNumber={sequenceStart + index + 1}
+          checkbox={originNode}
+          detailToggle={renderRowDetailToggle?.(record) ?? null}
+          menu={rowContextMenus?.get(String(record.id))}
+        />
+      ),
+    }
+  }, [rowSelection, renderRowDetailToggle, rowContextMenus, sequenceStart, t])
 
-    let frameId = 0
-    const measure = () => {
-      const availableHeight = computeTableAvailableHeight(shell.clientHeight)
-      if (availableHeight <= 0) return
-      const headerHeight =
-        shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
-          .height || 0
-      const nextScrollY = computeTableBodyScrollY(
-        availableHeight,
-        headerHeight,
-        0,
-      )
-      setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
-      const nextShellWidth = shell.clientWidth
-      setShellWidth((prev) => (prev === nextShellWidth ? prev : nextShellWidth))
-    }
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(frameId)
-      frameId = requestAnimationFrame(measure)
-    }
-    const observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(shell)
-    measure()
-    return () => {
-      cancelAnimationFrame(frameId)
-      observer.disconnect()
-    }
-  }, [])
+  const tableColumns = useMemo<ColumnsType<ModuleRecord>>(
+    () =>
+      identityRowSelection ? [Table.SELECTION_COLUMN, ...columns] : columns,
+    [identityRowSelection, columns],
+  )
 
   // 展开行包含额外 DOM，高度由明细内容决定；关闭虚拟滚动避免 rc-table
   // 虚拟布局截断展开内容。
@@ -196,9 +203,9 @@ export function BusinessGridTable({
   }, [components, isVirtual])
 
   const scrollX = computeTableScrollX({
-    columnWidths: [SEQUENCE_COLUMN_WIDTH, ...columns.map((col) => col.width)],
+    columnWidths: columns.map((col) => col.width),
     containerWidth: shellWidth,
-    selectionColumnWidth: rowSelection ? 32 : 0,
+    selectionColumnWidth: identityRowSelection ? IDENTITY_COLUMN_WIDTH : 0,
   })
 
   const scroll = buildTableScrollConfig({
@@ -208,8 +215,11 @@ export function BusinessGridTable({
     scrollY,
     shellWidth,
   })
-  const shellStyle = {
-    '--module-table-body-height': `${scrollY}px`,
+  const tableShellStyle = {
+    ...shellStyle,
+    /* 身份列宽度同时也由 rowSelection.columnWidth 落到 colgroup；这里给 CSS 一份同步值，
+       让 `.ant-table-selection-column` 的宽度覆盖规则不必再写死 40px。 */
+    '--module-selection-column-width': `${IDENTITY_COLUMN_WIDTH}px`,
   } as CSSProperties
 
   const doubleClickCooldownRef = useRef(0)
@@ -315,7 +325,7 @@ export function BusinessGridTable({
   const locale = { emptyText }
 
   return (
-    <div ref={shellRef} className="module-table-shell" style={shellStyle}>
+    <div ref={shellRef} className="module-table-shell" style={tableShellStyle}>
       {virtualModeHint ? (
         <p
           className="module-grid-virtual-mode-hint"
@@ -336,30 +346,19 @@ export function BusinessGridTable({
           columns={tableColumns}
           components={tableComponents}
           dataSource={dataSource}
-          rowSelection={rowSelection}
+          rowSelection={identityRowSelection}
           expandable={
             expandable
               ? {
                   ...expandable,
-                  expandIcon: ({ expanded, onExpand, record }) => (
-                    <button
-                      type="button"
-                      className="module-table-expand-button"
-                      aria-label={
-                        expanded ? t('common.collapse') : t('common.expand')
-                      }
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onExpand(record, event)
-                      }}
-                    >
-                      {expanded ? (
-                        <MinusSquareOutlined />
-                      ) : (
-                        <PlusSquareOutlined />
-                      )}
-                    </button>
-                  ),
+                  /*
+                   * 明细展开入口统一在首位身份列（`renderRowDetailToggle`）：不关掉原生展开列
+                   * 的话，同一行会出现两个「+」（一个在身份列、一个在原生展开列）。
+                   * 没传渲染器时保留调用方的设置，作为该组件单独使用时的兜底。
+                   */
+                  showExpandColumn: renderRowDetailToggle
+                    ? false
+                    : expandable.showExpandColumn,
                 }
               : undefined
           }

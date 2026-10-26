@@ -53,6 +53,7 @@ export function useBusinessGridPage({
     rowContextMenus,
     toggleColumn,
     rowSelection,
+    renderRowDetailToggle,
     onColumnOrderChange,
     handleColumnResizeReset,
   } = useBusinessGridTable({
@@ -80,6 +81,7 @@ export function useBusinessGridPage({
     inlineExpandedRowKeys: editor.inlineExpandedRowKeys,
     retryInlineDetail: editor.retryInlineDetail,
     onExpandDetail: editor.handleInlineExpand,
+    renderRowDetailToggle,
     expandedRowRender: editor.shouldUseInlineDetail
       ? editor.renderInlineDetail
       : undefined,

@@ -28,7 +28,12 @@ describe('业务列表汇总单位', () => {
     ]
 
     expect(buildAmountWeightOverview(rows, 'totalAmount')).toEqual([
-      { label: 'modules.overview.documentCount', value: '1 张' },
+      // countsRows: 条数指标, 勾选口径下由「已选 N 项」表达, 见 buildScopedOverview
+      {
+        label: 'modules.overview.documentCount',
+        value: '1 张',
+        countsRows: true,
+      },
       { label: 'modules.overview.totalWeight', value: '55.833 吨' },
       { label: 'modules.overview.totalAmount', value: '174732.78 元' },
     ])
@@ -60,20 +65,24 @@ describe('汇总口径标签(勾选后不得静默换数)', () => {
     expect(items[0].value).toBe('3 张')
   })
 
-  it('勾选后先给「已选 N 项」口径, 再并列「本页合计」—— 两个数字各有名字', () => {
+  it('勾选后先给「已选 N 项」口径, 再并列「本页合计」—— 同一数字不重复出现', () => {
     const items = buildScopedOverview({ buildItems, pageRows, selectedRows })
-    expect(items).toHaveLength(6)
+    /*
+     * 5 项 = 选中口径 2 项(总重量/总金额) + 本页合计 3 项(单据数量/总重量/总金额)。
+     * 选中口径里**没有**「单据数量」：「已选 2 项」说的就是这个数，再写一遍
+     * 「单据数量：2 张」就是同一行同一个数出现两次（用户原话："重复了"）。
+     */
+    expect(items).toHaveLength(5)
 
-    const [selCount, selWeight, selAmount, pageCount, pageWeight, pageAmount] =
-      items
-    // 选中口径: 数值只算选中行(2 张 / 40 吨 / 400 元)
+    const [selWeight, selAmount, pageCount, pageWeight, pageAmount] = items
+    // 选中口径: 数值只算选中行(40 吨 / 400 元)
     // mock 的 t 不插值, 因此 scope 就是 key 本身; 真实界面渲染为「已选 2 项」
-    expect(selCount.scope).toBe('modules.overview.scopeSelection')
-    expect(selCount.label).toBe('modules.overview.documentCount')
-    expect(selCount.value).toBe('2 张')
+    expect(selWeight.scope).toBe('modules.overview.scopeSelection')
+    expect(selWeight.label).toBe('modules.overview.totalWeight')
     // 选中第 1、3 行: 重量 10+30=40, 金额 100+300=400
     expect(selWeight.value).toBe('40.000 吨')
     expect(selAmount.value).toBe('400.00 元')
+    expect(selAmount.scope).toBe('modules.overview.scopeSelection')
     // 整页口径: 数值仍是本页 3 行, 口径挂在 scope 上, label 保持短名
     expect(pageCount.scope).toBe('modules.overview.scopePage')
     expect(pageCount.label).toBe('modules.overview.documentCount')
@@ -96,18 +105,21 @@ describe('汇总口径标签(勾选后不得静默换数)', () => {
     expect(items.every((item) => Boolean(item.scope))).toBe(true)
     const scopedLabels = items.map((item) => `${item.scope}||${item.label}`)
     expect(new Set(scopedLabels).size).toBe(scopedLabels.length)
-    // 两个口径各自完整：选中组与整页组都覆盖三个指标
+    // 口径仍只有两个（选中 / 本页）；选中口径少了重复的条数指标，指标集合不完全相同
     const scopes = items.map((item) => item.scope)
     expect(new Set(scopes).size).toBe(2)
   })
 
-  it('只选 1 行时口径也正确(边界)', () => {
+  it('只选 1 行时口径也正确(边界), 且不重复渲染条数', () => {
     const items = buildScopedOverview({
       buildItems,
       pageRows,
       selectedRows: [pageRows[1]],
     })
-    expect(items[0].value).toBe('1 张')
-    expect(items[1].value).toBe('20.000 吨')
+    // 选中口径第 1 项是总重量(条数已被「已选 1 项」表达), 本页合计仍从条数开始
+    expect(items[0].label).toBe('modules.overview.totalWeight')
+    expect(items[0].value).toBe('20.000 吨')
+    expect(items[0].scope).toBe('modules.overview.scopeSelection')
+    expect(items).toHaveLength(5)
   })
 })

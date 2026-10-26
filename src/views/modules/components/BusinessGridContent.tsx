@@ -65,6 +65,8 @@ interface Props {
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
   expandable?: TableProps<ModuleRecord>['expandable']
+  /** 明细按钮渲染器（口径在 useGridColumns）：渲染在首位身份列里，不再单独占一列 */
+  renderRowDetailToggle?: (record: ModuleRecord) => React.ReactNode
   canCreate: boolean
   canExport: boolean
   toolbarActions: ModuleActionDefinition[]
@@ -124,6 +126,7 @@ export function BusinessGridContent({
   onRowClick,
   onRowDoubleClick,
   expandable,
+  renderRowDetailToggle,
   canCreate,
   canExport,
   toolbarActions,
@@ -180,6 +183,8 @@ export function BusinessGridContent({
           onUpdateFilter={onUpdateFilter}
           onApplyFilters={onApplyFilters}
           onReset={handleResetFilters}
+          /* 重置下移到工具行右侧（与「已选择/清除/刷新」同组），筛选区只留筛选条件 */
+          showResetButton={false}
         />
       </div>
 
@@ -194,6 +199,7 @@ export function BusinessGridContent({
           onExport={onExport}
           onRefresh={onRefresh}
           onClearSelection={onClearSelection}
+          onReset={handleResetFilters}
           toolbarActions={toolbarActions}
           onAction={onAction}
           filterSummary={
@@ -262,6 +268,7 @@ export function BusinessGridContent({
               onRowClick={onRowClick}
               onRowDoubleClick={onRowDoubleClick}
               expandable={expandable}
+              renderRowDetailToggle={renderRowDetailToggle}
               emptyStateInput={{
                 hasError: hasLoadError,
                 hasFilters: hasActiveFilters,

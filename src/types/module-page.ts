@@ -65,6 +65,14 @@ export interface ModuleOverviewItem {
    * 组内依次是各指标。缺省表示无口径（未勾选时的普通汇总、库存页等），按平铺渲染。</p>
    */
   scope?: string
+  /**
+   * 该指标就是「这几行一共几条」（单据数量 / 记录数量 / 对账单数量 / 主数据数量 …）。
+   *
+   * <p>勾选口径下「已选 N 项」说的就是同一个数字，再渲染一次「单据数量：N 张」等于同一个
+   * 数在同一行出现两次。因此 `buildScopedOverview` 会在勾选口径里丢掉带此标记的指标；
+   * 未勾选（本页合计）时照常显示 —— 那时没有别的地方能读到这条数。</p>
+   */
+  countsRows?: boolean
 }
 
 export interface ModuleActionDefinition {

@@ -209,4 +209,38 @@ describe('ModuleFilterToolbar', () => {
     expect(chip?.getAttribute('aria-label')).toBe('下游引用: 被物流单引用')
     expect(chip?.getAttribute('aria-haspopup')).toBe('listbox')
   })
+
+  /*
+   * 业务列表页把「重置」移到工具行右侧（与已选择/清除/刷新同组）：筛选区若还留一份，
+   * 同一动作就有两个入口，且它会被 margin-left:auto 顶到整行最右端、左边一大片空白。
+   * 选单器这类没有工具行的场景保持默认渲染。
+   */
+  it('showResetButton=false 时筛选区不再渲染重置, 缺省仍渲染', () => {
+    const config = {
+      filters: [],
+      quickFilters: [],
+    } as unknown as ModulePageConfig
+
+    const hasResetButton = (showResetButton?: boolean) => {
+      act(() => {
+        root.render(
+          createElement(ModuleFilterToolbar, {
+            config,
+            filters: {},
+            submittedFilters: {},
+            onUpdateFilter: vi.fn(),
+            onApplyFilters: vi.fn(),
+            onReset: vi.fn(),
+            ...(showResetButton === undefined ? {} : { showResetButton }),
+          }),
+        )
+      })
+      return Array.from(container.querySelectorAll('button')).some(
+        (button) => button.textContent === 'common.reset',
+      )
+    }
+
+    expect(hasResetButton()).toBe(true)
+    expect(hasResetButton(false)).toBe(false)
+  })
 })

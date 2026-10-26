@@ -49,7 +49,18 @@ function applyOverviewScope(
   const prefix = i18next.t('modules.overview.scopeSelection', {
     count: selectedCount,
   })
-  return items.map((item) => ({ ...item, scope: prefix }))
+  /*
+   * 勾选口径下丢掉「行数」类指标（单据数量 / 记录数量 / 对账单数量 …）：
+   * 「已选 1 项」说的就是这个数，紧跟一句「单据数量：1 张」等于同一个数在同一行出现两次
+   * （用户原话："重复了 已选 1 项 / 单据数量： / 1 张"）。标记由各 `build*Overview` 在
+   * 生成指标时打（`countsRows`），口径判断只在这里做一次。
+   *
+   * 兜底：若某页面只汇总条数，丢掉后会只剩一个口径标签，此时保留原样 —— 宁可重复也不能
+   * 让「已选 N 项」后面空着。
+   */
+  const deduped = items.filter((item) => !item.countsRows)
+  const kept = deduped.length ? deduped : items
+  return kept.map((item) => ({ ...item, scope: prefix }))
 }
 
 /**
@@ -98,6 +109,8 @@ export function buildAmountWeightOverview(
         formatInteger(rows.length),
         'modules.units.documentSheet',
       ),
+      /* 条数口径：勾选态下与「已选 N 项」是同一个数，由 buildScopedOverview 去重 */
+      countsRows: true,
     },
     {
       label: i18next.t('modules.overview.totalWeight'),
@@ -124,6 +137,7 @@ export function buildWeightOverview(
     {
       label: i18next.t('modules.overview.recordCount'),
       value: formatInteger(rows.length),
+      countsRows: true,
     },
     {
       label: i18next.t('modules.overview.totalWeight'),
@@ -142,6 +156,7 @@ export function buildStatementOverview(
     {
       label: i18next.t('modules.overview.statementCount'),
       value: formatInteger(rows.length),
+      countsRows: true,
     },
     {
       label: i18next.t('modules.overview.currentAmount'),
@@ -166,6 +181,7 @@ export function buildFinanceOverview(
     {
       label: i18next.t('modules.overview.documentCount'),
       value: formatInteger(rows.length),
+      countsRows: true,
     },
     {
       label: i18next.t('modules.overview.totalAmount'),
@@ -183,6 +199,7 @@ export function buildMasterOverview(
     {
       label: i18next.t('modules.overview.masterDataCount'),
       value: formatInteger(rows.length),
+      countsRows: true,
     },
     {
       label: i18next.t('modules.overview.normalCount'),

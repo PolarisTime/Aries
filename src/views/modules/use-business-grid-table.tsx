@@ -1,7 +1,5 @@
-import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
-import { Button } from 'antd'
 import i18next from 'i18next'
 import {
   type Dispatch,
@@ -14,7 +12,6 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
-import { ContextMenu } from '@/components/ContextMenu'
 import { RowContextMenuRow } from '@/components/RowContextMenuRow'
 import {
   buildRowContextMenus,
@@ -24,7 +21,6 @@ import type { ActionItem } from '@/components/TableActions'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import {
-  DETAIL_TOGGLE_COLUMN_ID,
   type DetailToggleVariant,
   useGridColumns,
 } from '@/hooks/useGridColumns'
@@ -61,16 +57,10 @@ interface Props {
   detailVariant?: DetailToggleVariant
 }
 
-/** 行尾「更多操作」列的列 key(不参与「列设置」, 也不进列顺序持久化)。 */
-export const MORE_ACTIONS_COLUMN_ID = '__row-more-actions'
-/**
- * 行尾「更多操作」列宽: 24px 图标 + 单元格左右各 8px 内边距 = 40px。
- *
- * <p>取 40 而不是与明细列同宽的 48: 40 本身是 8 的倍数(满足间距规范),
- * 又是"24px 命中区 + 两侧 8px"的**实际最小需求**, 不为了对称多占 8px 横向预算 ——
- * 业务网格本来就有 11 个页面横向溢出, 这 8px 是白拿的。</p>
+/*
+ * 行尾「更多操作」列已删除：行菜单按钮并入首位身份列（见 BusinessGridTable 的
+ * IDENTITY_COLUMN_WIDTH），列宽预算从「序号 64 + 勾选 32 + 明细 48 + 操作 40」收敛为 128。
  */
-export const MORE_ACTIONS_COLUMN_WIDTH = 40
 
 function buildAntdColumns({
   columnDefs,
@@ -252,7 +242,7 @@ export function useBusinessGridTable({
     data: [],
     buildOverview: () => [],
   }
-  const { columns: columnDefs } = useGridColumns({
+  const { columns: columnDefs, renderRowDetailToggle } = useGridColumns({
     config: config ?? fallbackConfig,
     onOpenDetail: config ? onOpenDetail : undefined,
     expandedRowKeys,
@@ -268,30 +258,23 @@ export function useBusinessGridTable({
     [columnDefs],
   )
   /*
-   * filterInvalid: 历史版本里业务列表有行尾「操作列」(id=actions), 列顺序可能把它
-   * 持久化在本地; 不过滤掉会让它一直参与"移到最前/最后"的边界判断。
+   * filterInvalid: 历史版本里业务列表有行尾「操作列」(id=actions) 与首位「明细按钮列」
+   * (id=detail-toggle), 列顺序可能把它们持久化在本地; 不过滤掉会让它们一直参与
+   * "移到最前/最后"的边界判断（那两个列现在都已并入首位身份列，不再是可排序的业务列）。
    */
   const columnOrder = useMemo(
-    () =>
-      mergeColumnOrder(allColumnIds, savedOrder, {
-        headId: DETAIL_TOGGLE_COLUMN_ID,
-        filterInvalid: true,
-      }),
+    () => mergeColumnOrder(allColumnIds, savedOrder, { filterInvalid: true }),
     [allColumnIds, savedOrder],
-  )
-  /** 业务数据列(剔除固定在首位的明细按钮列)。 */
-  const dataColumnIds = useMemo(
-    () => columnOrder.filter((id) => id !== DETAIL_TOGGLE_COLUMN_ID),
-    [columnOrder],
   )
   /**
    * 可见数据列: 边界判断与移序插入点都必须基于它。
    * 完整顺序里夹着隐藏列(如默认隐藏的备注列), 否则"移到最后"会挪到隐藏列后面 ——
    * 可见顺序没变但新顺序已持久化, 用户以为点了没反应。
+   * （列集合里已没有"固定首位"的明细按钮列，columnOrder 本身就是业务数据列。）
    */
   const visibleDataColumnIds = useMemo(
-    () => dataColumnIds.filter((id) => columnVisibility[id] !== false),
-    [dataColumnIds, columnVisibility],
+    () => columnOrder.filter((id) => columnVisibility[id] !== false),
+    [columnOrder, columnVisibility],
   )
   /*
    * useColumnSettingsSupport 暴露的 handler 每次渲染都是新函数, 直接进 useMemo 依赖
@@ -320,9 +303,9 @@ export function useBusinessGridTable({
   )
   const handleMoveColumn = useCallback(
     (columnId: string, position: 'first' | 'last') => {
-      applyColumnOrderChange(moveColumnKey(dataColumnIds, columnId, position))
+      applyColumnOrderChange(moveColumnKey(columnOrder, columnId, position))
     },
-    [applyColumnOrderChange, dataColumnIds],
+    [applyColumnOrderChange, columnOrder],
   )
   const computedColumns = useMemo(
     () =>
@@ -410,56 +393,13 @@ export function useBusinessGridTable({
   ])
 
   /*
-   * 行尾「更多操作」列: 把行菜单**同一份**配置(`rowContextMenus`)挂成可见按钮。
-   *
-   * <p>为什么必须有: 触屏没有右键, 长按既不可发现又只能服务一个动作; 只看得到
-   * 「展开明细」的行, 编辑/审核/附件在触屏上等于不存在(WCAG 2.2 SC 2.1.1)。
-   * 菜单不另建一份 —— 按钮与右键/长按/Shift+F10 共用 `buildRowContextMenus`
-   * 的同一份 items/onClick/ariaLabel, 因此不会出现"按钮能点、右键点不动"的漂移。</p>
-   *
-   * <p>固定右侧且不参与列宽拖拽: 横向滚动时行操作入口始终可用; 它也不进「列设置」,
-   * 避免变成一个可隐藏的伪业务列。</p>
+   * 行尾「更多操作」列已并入**首位身份列**（序号 · 勾选 · 明细加号 · 行菜单，同一列）：
+   * 一列只放一个 ⋮ 会把它自己变成"孤零零的第四列"，与 40px 的迷你宽度一起制造
+   * 「左侧三列 + 右侧一列全是图标」的散乱感。菜单仍只有 `buildRowContextMenus` 一份配置，
+   * 右键 / 长按 / Shift+F10 / 可见按钮共用同一份 items 与 aria-label，因此不会出现
+   * "按钮能点、右键点不动"的漂移；按钮本体改由 BusinessGridTable 渲染在身份列里。
    */
-  const moreActionsColumn = useMemo<
-    TableColumnsType<ModuleRecord>[number]
-  >(() => {
-    return {
-      key: MORE_ACTIONS_COLUMN_ID,
-      title: t('modules.table.moreActionsColumn'),
-      width: MORE_ACTIONS_COLUMN_WIDTH,
-      fixed: 'right',
-      align: 'center',
-      render: (_value: unknown, record: ModuleRecord) => {
-        const menu = rowContextMenus.get(String(record.id))
-        if (!menu) return null
-        return (
-          <ContextMenu
-            ariaLabel={menu.ariaLabel}
-            items={menu.items}
-            onClick={menu.onClick}
-            onOpenChange={(next) => {
-              if (next) menu.onOpen?.()
-            }}
-            // 可见按钮与右键共用同一份菜单与其无障碍契约(焦点进首项 / Escape 归还焦点)
-            triggers={['click', 'contextMenu']}
-          >
-            <Button
-              aria-haspopup="menu"
-              aria-label={menu.ariaLabel}
-              className="module-row-more-actions"
-              icon={<MoreOutlined />}
-              size="small"
-              type="text"
-            />
-          </ContextMenu>
-        )
-      },
-    }
-  }, [rowContextMenus, t])
-  const antdColumns = useMemo(
-    () => [...resizableColumns, moreActionsColumn],
-    [moreActionsColumn, resizableColumns],
-  )
+  const antdColumns = resizableColumns
 
   /** 行容器换成支持右键菜单的包装(保留列宽拖拽注入的其它 components)。 */
   const tableComponents = useMemo(() => {
@@ -490,16 +430,15 @@ export function useBusinessGridTable({
     },
     preserveSelectedRowKeys: true,
     /*
-     * 勾选列固定左侧 + 表头文案, 都走 antd 的 rowSelection 官方 API。
+     * 勾选列（= 首位身份列）的固定方向、宽度与表头由 BusinessGridTable 统一注入：
+     * 那个位置现在一列同时承载「序号 · 勾选 · 明细加号 · 行菜单」，只有它知道
+     * 序号起点与行菜单配置，所以呈现层放在渲染表格的地方，这里只保留选择状态。
      *
-     * <p>**不能**在 columns 里展开 `Table.SELECTION_COLUMN` 来加这两个属性 —— 它是
+     * <p>**不能**在 columns 里展开 `Table.SELECTION_COLUMN` 来加这些属性 —— 它是
      * antd 的哨兵对象(`{}`), useSelection 用 `cloneColumns.includes(SELECTION_COLUMN)`
      * 靠**对象身份**识别。展开成新对象后身份判断失效, antd 会再插入一列真实勾选列,
-     * 于是多出一个 0 宽幽灵表头(实测: class 带 fix-start、width=0、文本是"全选当前页
-     * 所有行", 还把左侧固定块的偏移撑乱)。</p>
+     * 于是多出一个 0 宽幽灵表头, 还把左侧固定块的偏移撑乱。</p>
      */
-    fixed: 'start',
-    columnTitle: t('common.table.selectAllRows'),
     /*
      * antd 默认的 Select all / Select row N 是硬编码英文, 覆盖成本项目 i18n 文案;
      * 行名优先用模块主单号(config.primaryNoKey), 读屏用户才能分辨勾的是哪一单。
@@ -559,6 +498,8 @@ export function useBusinessGridTable({
     columnVisibleKeys,
     toggleColumn,
     rowSelection,
+    /** 明细按钮渲染器：首位身份列与（旧的）明细列共用同一套口径，见 useGridColumns。 */
+    renderRowDetailToggle,
     onColumnOrderChange: handleColumnOrderChange,
     handleColumnResizeReset,
   }

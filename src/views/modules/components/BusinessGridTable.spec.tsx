@@ -6,7 +6,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { ModuleRecord } from '@/types/module-page'
-import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
+import {
+  BusinessGridTable,
+  IDENTITY_COLUMN_WIDTH,
+} from '@/views/modules/components/BusinessGridTable'
 
 const columns: ColumnsType<ModuleRecord> = [
   { key: 'name', dataIndex: 'name', title: '名称', width: 160 },
@@ -24,7 +27,7 @@ const baseProps = {
   onRowDoubleClick: vi.fn(),
 }
 
-describe('BusinessGridTable 空状态集成', () => {
+describe('BusinessGridTable', () => {
   let container: HTMLDivElement
   let root: Root
 
@@ -247,6 +250,142 @@ describe('BusinessGridTable 空状态集成', () => {
 
       expect(document.querySelector('.ant-table-virtual')).toBeNull()
       expect(probeRows().length).toBeGreaterThan(0)
+    })
+  })
+
+  /**
+   * 首位身份列：原先「序号 64 + 勾选 32 + 明细加号 48 + 行尾操作 40」四列各装一个
+   * 小图标，被指出"太散乱"；现在合成一列。这里锁定结构与宽度，避免以后又被拆回去。
+   */
+  describe('首位身份列（序号·勾选·明细加号·行菜单合成一列）', () => {
+    const rowSelection = { selectedRowKeys: [] as string[], onChange: vi.fn() }
+    const rowContextMenus = new Map([
+      [
+        '1',
+        {
+          ariaLabel: '「记录 1」行操作菜单',
+          items: [],
+          onClick: () => {},
+        },
+      ],
+    ])
+    const dataSource = [
+      { id: '1', name: '记录 1' },
+      { id: '2', name: '记录 2' },
+    ]
+    const renderRowDetailToggle = (record: ModuleRecord) => (
+      <button
+        type="button"
+        aria-label={`展开明细 ${String(record.id)}`}
+        data-testid="detail-toggle"
+      />
+    )
+    const identityCells = () =>
+      Array.from(
+        document.querySelectorAll<HTMLTableCellElement>(
+          '.ant-table-tbody td.ant-table-selection-column',
+        ),
+      )
+    const identityHeader = () =>
+      document.querySelector<HTMLTableCellElement>(
+        'thead th.ant-table-selection-column',
+      )
+
+    it('只有一列身份列: 表头 = 序号 + 全选复选框, 长文案只留在 aria-label', () => {
+      renderTable({
+        dataSource,
+        rowSelection,
+        rowContextMenus,
+        renderRowDetailToggle,
+      })
+
+      expect(
+        document.querySelectorAll('thead th.ant-table-selection-column'),
+      ).toHaveLength(1)
+      const header = identityHeader()
+      expect(header?.textContent).toContain('序号')
+      // 全选入口回来了: 旧实现用 columnTitle 覆盖掉它, 表头只剩一行 8 个汉字
+      expect(header?.querySelector('input[type="checkbox"]')).not.toBeNull()
+      expect(header?.textContent).not.toContain('全选当前页所有行')
+      // 原生明细列已不存在: 表头只剩「身份列 + 业务列」
+      expect(document.querySelectorAll('thead th')).toHaveLength(2)
+    })
+
+    it('行内把 序号 / 勾选 / 明细加号 / 行菜单 摆在同一格', () => {
+      renderTable({
+        dataSource,
+        rowSelection,
+        rowContextMenus,
+        renderRowDetailToggle,
+      })
+
+      const cells = identityCells()
+      expect(cells).toHaveLength(2)
+      const first = cells[0]
+      expect(
+        first?.querySelector('.module-row-identity-seq')?.textContent,
+      ).toBe('1')
+      expect(first?.querySelector('input[type="checkbox"]')).not.toBeNull()
+      expect(
+        first?.querySelector('[data-testid="detail-toggle"]'),
+      ).not.toBeNull()
+      const menuButton = first?.querySelector('button[aria-haspopup="menu"]')
+      expect(menuButton?.getAttribute('aria-label')).toBe(
+        '「记录 1」行操作菜单',
+      )
+      // 没有菜单配置的行不渲染空按钮
+      expect(cells[1]?.querySelector('button[aria-haspopup="menu"]')).toBeNull()
+    })
+
+    it('序号沿用分页起点: 第 2 页第 1 行是 21', () => {
+      renderTable({
+        dataSource,
+        currentPage: 2,
+        pageSize: 20,
+        rowSelection,
+      })
+
+      expect(identityCells()[0]?.textContent?.trim()).toBe('21')
+    })
+
+    it('身份列宽度 128 且是 8 的倍数(四个 24px 命中区放得下)', () => {
+      renderTable({ dataSource, rowSelection })
+
+      const firstCol = document.querySelector(
+        '.module-table-shell colgroup col',
+      )
+      expect(firstCol?.getAttribute('style')).toContain(
+        `${IDENTITY_COLUMN_WIDTH}px`,
+      )
+      expect(IDENTITY_COLUMN_WIDTH % 8).toBe(0)
+      expect(IDENTITY_COLUMN_WIDTH).toBe(128)
+    })
+
+    it('没有 rowSelection 时不渲染身份列, 也不再有独立序号列', () => {
+      renderTable({ dataSource })
+
+      expect(document.querySelector('.ant-table-selection-column')).toBeNull()
+      expect(document.querySelectorAll('thead th')).toHaveLength(1)
+    })
+
+    it('传了明细渲染器时关闭原生展开列: 每行只留一个展开入口', () => {
+      renderTable({
+        dataSource,
+        rowSelection,
+        renderRowDetailToggle,
+        expandable: {
+          expandedRowRender: () => null,
+          showExpandColumn: true,
+          onExpand: vi.fn(),
+        },
+      })
+
+      expect(
+        document.querySelector('.ant-table-row-expand-icon-cell'),
+      ).toBeNull()
+      expect(
+        document.querySelectorAll('[data-testid="detail-toggle"]'),
+      ).toHaveLength(2)
     })
   })
 })

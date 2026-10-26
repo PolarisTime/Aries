@@ -14,8 +14,6 @@ import '@/i18n'
 import type { ActionItem } from '@/components/TableActions'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import {
-  MORE_ACTIONS_COLUMN_ID,
-  MORE_ACTIONS_COLUMN_WIDTH,
   resolveRowMenuSelection,
   useBusinessGridTable,
 } from './use-business-grid-table'
@@ -68,6 +66,8 @@ vi.mock('@/hooks/useGridColumns', () => ({
       { id: 'no', header: '单号', meta: {} },
       { id: 'qty', header: '数量', meta: {} },
     ],
+    // 明细按钮渲染器由 hook 透出, 实际渲染在 BusinessGridTable 的首位身份列里
+    renderRowDetailToggle: () => null,
   }),
 }))
 
@@ -355,7 +355,7 @@ describe('resolveRowMenuSelection —— 行菜单对选中集的唯一口径', 
   })
 })
 
-describe('行尾「更多操作」列 —— 触屏可见入口(WCAG 2.2 SC 2.1.1)', () => {
+describe('行级动作入口 —— 触屏可用且不再占一列(WCAG 2.2 SC 2.1.1)', () => {
   let container: HTMLDivElement
   let root: Root
 
@@ -394,58 +394,33 @@ describe('行尾「更多操作」列 —— 触屏可见入口(WCAG 2.2 SC 2.1.
     return captured as unknown as TableResult
   }
 
-  it('列固定右侧, 且宽度取 40(24px 命中区 + 左右各 8px)', () => {
+  it('列集合里既没有行尾操作列, 也没有独立明细列', () => {
     const table = renderWithSelection()
-    const column = table.antdColumns.find(
-      (item) => item.key === MORE_ACTIONS_COLUMN_ID,
-    )
-    expect(column).toBeTruthy()
-    expect(column?.fixed).toBe('right')
-    expect(column?.width).toBe(MORE_ACTIONS_COLUMN_WIDTH)
-    // 40 是 8 的倍数(间距规范), 且刚好容纳 24px 命中区 + 两侧内边距
-    expect(MORE_ACTIONS_COLUMN_WIDTH).toBe(40)
-    expect(MORE_ACTIONS_COLUMN_WIDTH % 8).toBe(0)
+    const keys = table.antdColumns.map((column) => String(column.key))
+    // 两者都已并入 BusinessGridTable 的首位身份列(序号·勾选·加号·行菜单)
+    expect(keys).not.toContain('__row-more-actions')
+    expect(keys).not.toContain('detail-toggle')
+    expect(keys).toEqual(['no', 'qty'])
   })
 
-  it('每行渲染一个带可访问名的可见按钮(与行菜单同一份配置)', () => {
+  it('明细按钮渲染器由 hook 透出, 交给身份列摆放(口径仍在 useGridColumns)', () => {
     const table = renderWithSelection()
-    const column = table.antdColumns.find(
-      (item) => item.key === MORE_ACTIONS_COLUMN_ID,
-    )
-    const render = column?.render as (
-      value: unknown,
-      record: ModuleRecord,
-    ) => ReactElement<{ children?: unknown }>
-    const node = render(null, RECORDS[0])
-    // ContextMenu 触发器的可访问名来自同一份 rowContextMenus
-    const menuAriaLabel = table.rowContextMenus.get('r1')?.ariaLabel
-    expect(menuAriaLabel).toBeTruthy()
-    expect(node).toBeTruthy()
-    const trigger = (node as unknown as { props: { children: ReactElement } })
-      .props.children
-    const triggerProps = trigger.props as {
-      'aria-label'?: string
-      'aria-haspopup'?: string
-    }
-    expect(triggerProps['aria-haspopup']).toBe('menu')
-    expect(triggerProps['aria-label']).toBe(menuAriaLabel)
+    expect(typeof table.renderRowDetailToggle).toBe('function')
   })
 
-  it('没有菜单配置的行不渲染按钮(避免空按钮)', () => {
+  it('行菜单配置仍按行提供, 可见按钮与右键共用同一份 aria-label', () => {
     const table = renderWithSelection()
-    const column = table.antdColumns.find(
-      (item) => item.key === MORE_ACTIONS_COLUMN_ID,
-    )
-    const render = column?.render as (
-      value: unknown,
-      record: ModuleRecord,
-    ) => unknown
-    expect(render(null, { id: 'unknown-row' })).toBeNull()
+    expect(table.rowContextMenus.size).toBe(2)
+    expect(table.rowContextMenus.get('r1')?.ariaLabel).toBeTruthy()
   })
 
-  it('勾选列固定左侧且表头有可访问名(走 rowSelection 官方 API)', () => {
+  it('勾选状态仍然完整透出(选中键/变更回调/可访问名), 呈现交给身份列', () => {
     const table = renderWithSelection()
-    expect(table.rowSelection?.fixed).toBe('start')
-    expect(table.rowSelection?.columnTitle).toBe('全选当前页所有行')
+    expect(table.rowSelection?.selectedRowKeys).toEqual([])
+    expect(typeof table.rowSelection?.onChange).toBe('function')
+    expect(table.rowSelection?.preserveSelectedRowKeys).toBe(true)
+    // 固定方向/列宽/表头文案改由 BusinessGridTable 注入, 这里不应再重复一份
+    expect(table.rowSelection?.columnTitle).toBeUndefined()
+    expect(table.rowSelection?.columnWidth).toBeUndefined()
   })
 })

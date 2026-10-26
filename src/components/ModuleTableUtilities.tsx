@@ -2,6 +2,7 @@ import { ReloadOutlined } from '@ant-design/icons'
 import { Button, Tooltip } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModuleResetButton } from '@/components/ModuleResetButton'
 
 /**
  * 列表工具栏右侧的「已选条数 / 清空选择 / 刷新」通用区块。
@@ -27,6 +28,14 @@ export interface ModuleTableUtilitiesProps {
   clearSelectionIcon?: ReactNode
   isFetching: boolean
   onRefresh: () => void
+  /**
+   * 传入时在区块最右端追加「重置」（用分隔线隔开）。
+   *
+   * <p>业务列表页把筛选区的重置按钮下移到这里：筛选区只放筛选条件，右侧不再有孤立按钮，
+   * 而「重置 / 已选择 / 清除 / 刷新」都是"当前列表状态"的入口，同组更符合心智模型。
+   * 放在最右端还有一个副作用好处 —— 勾选后「已选 N 项」出现时，重置不会跟着左右跳。</p>
+   */
+  onReset?: (() => void) | undefined
 }
 
 export function ModuleTableUtilities({
@@ -36,6 +45,7 @@ export function ModuleTableUtilities({
   clearSelectionIcon,
   isFetching,
   onRefresh,
+  onReset,
 }: ModuleTableUtilitiesProps) {
   const { t } = useTranslation()
 
@@ -73,6 +83,12 @@ export function ModuleTableUtilities({
           onClick={onRefresh}
         />
       </Tooltip>
+      {onReset ? (
+        <>
+          <span className="module-table-utilities-divider" aria-hidden="true" />
+          <ModuleResetButton onClick={onReset} />
+        </>
+      ) : null}
     </div>
   )
 }

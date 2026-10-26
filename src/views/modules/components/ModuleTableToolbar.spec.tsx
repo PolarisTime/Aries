@@ -28,7 +28,10 @@ describe('ModuleTableToolbar 工具栏动作按钮', () => {
     container.remove()
   })
 
-  function render(actions: ModuleActionDefinition[]) {
+  function render(
+    actions: ModuleActionDefinition[],
+    overrides: Partial<Parameters<typeof ModuleTableToolbar>[0]> = {},
+  ) {
     act(() => {
       root.render(
         createElement(ModuleTableToolbar, {
@@ -42,6 +45,7 @@ describe('ModuleTableToolbar 工具栏动作按钮', () => {
           onRefresh: () => {},
           toolbarActions: actions,
           onAction: () => {},
+          ...overrides,
         }),
       )
     })
@@ -79,5 +83,80 @@ describe('ModuleTableToolbar 工具栏动作按钮', () => {
     expect(button?.parentElement?.className).toContain(
       'module-table-action-tooltip-target',
     )
+  })
+})
+
+describe('ModuleTableToolbar 重置按钮（筛选区下移后的唯一入口）', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  function render(props: Partial<Parameters<typeof ModuleTableToolbar>[0]>) {
+    act(() => {
+      root.render(
+        createElement(ModuleTableToolbar, {
+          canCreate: false,
+          canExport: false,
+          selectedCount: 0,
+          loading: false,
+          exporting: false,
+          onCreate: () => {},
+          onExport: () => {},
+          onRefresh: () => {},
+          toolbarActions: [],
+          onAction: () => {},
+          ...props,
+        }),
+      )
+    })
+  }
+
+  it('传入 onReset 时在工具行右侧渲染重置按钮并回调', () => {
+    const onReset = vi.fn()
+    render({ onReset })
+    const button = Array.from(container.querySelectorAll('button')).find(
+      (item) => item.classList.contains('module-filter-reset-button'),
+    )
+    expect(button).toBeDefined()
+    expect(
+      container.querySelector('.module-table-utilities-divider'),
+    ).not.toBeNull()
+    act(() => {
+      button?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true }),
+      )
+    })
+    expect(onReset).toHaveBeenCalledTimes(1)
+  })
+
+  it('不传 onReset 时不渲染重置按钮(主数据页等复用方保持原样)', () => {
+    render({})
+    expect(container.querySelector('.module-filter-reset-button')).toBeNull()
+    expect(
+      container.querySelector('.module-table-utilities-divider'),
+    ).toBeNull()
+  })
+
+  it('勾选后重置按钮仍固定在状态区末尾, 不因「已选 N 项」出现而移位', () => {
+    render({ onReset: () => {}, selectedCount: 3 })
+    const utilities = container.querySelector('.module-table-utilities')
+    expect(
+      utilities?.lastElementChild?.classList.contains(
+        'module-filter-reset-button',
+      ),
+    ).toBe(true)
   })
 })

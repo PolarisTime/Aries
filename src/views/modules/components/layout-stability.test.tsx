@@ -77,9 +77,10 @@ describe('表格首帧布局稳定性', () => {
     const tableProps = tablePropsSpy.mock.lastCall?.[0] as {
       columns: typeof columns
     }
-    // 首帧即完整列集合(序号列 + 全部业务列), 不经过延迟裁剪
-    expect(tableProps.columns).toHaveLength(columns.length + 1)
-    expect(tableProps.columns.slice(1)).toEqual(columns)
+    // 首帧即完整列集合, 不经过延迟裁剪。
+    // 序号/勾选/明细加号/行菜单已合并进 antd 的勾选列(首位身份列), 不再额外占一列;
+    // 未传 rowSelection 时不插入任何前置列, 业务列原样透传。
+    expect(tableProps.columns).toEqual(columns)
   })
 
   it('明细表始终使用按列宽计算的稳定横向滚动配置', () => {
