@@ -22,7 +22,13 @@ export interface ModuleTableUtilitiesProps {
    * 两个都是「当前生效状态」的入口，放在一起既省一行又便于一并清除。</p>
    */
   leading?: ReactNode
-  selectedCount: number
+  /**
+   * 已选条数；`0` 或缺省时不渲染胶囊。
+   *
+   * <p>业务列表页不再往这里传：勾选状态改由表格上方的「已选择 N 项」横幅
+   * （`ModuleSelectionAlert`）表达，工具栏右侧只留筛选提示 / 刷新 / 重置。</p>
+   */
+  selectedCount?: number
   onClearSelection?: (() => void) | undefined
   /** 传入后清空按钮改用图标呈现（模块表工具栏的历史写法），不传则用「✕」文案。 */
   clearSelectionIcon?: ReactNode
@@ -40,7 +46,7 @@ export interface ModuleTableUtilitiesProps {
 
 export function ModuleTableUtilities({
   leading,
-  selectedCount,
+  selectedCount = 0,
   onClearSelection,
   clearSelectionIcon,
   isFetching,

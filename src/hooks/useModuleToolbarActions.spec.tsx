@@ -3,7 +3,10 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
+import {
+  isSelectionScopedToolbarAction,
+  useModuleToolbarActions,
+} from '@/hooks/useModuleToolbarActions'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -197,5 +200,34 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
       })
     })
     expect(reverseAuditHandler).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * 批量动作的归属判据 —— 列表页把它们从工具栏挪进「已选择 N 项」横幅，
+ * 判错就会出现"动作消失"或"重复两个入口"。
+ */
+describe('isSelectionScopedToolbarAction', () => {
+  it('批量删除 / 导出选中 / 批量审核 / 批量反审核属于勾选后动作', () => {
+    for (const key of [
+      'bulk_delete',
+      'export_selected',
+      'bulk_audit',
+      'bulk_reverse_audit',
+    ]) {
+      expect(isSelectionScopedToolbarAction({ key })).toBe(true)
+    }
+  })
+
+  it('页面级动作与无 key 的动作留在工具栏', () => {
+    for (const key of [
+      'create',
+      'print',
+      'manage_customer_projects',
+      'export',
+      undefined,
+    ]) {
+      expect(isSelectionScopedToolbarAction({ key })).toBe(false)
+    }
   })
 })

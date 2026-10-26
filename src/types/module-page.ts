@@ -73,6 +73,13 @@ export interface ModuleOverviewItem {
    * 未勾选（本页合计）时照常显示 —— 那时没有别的地方能读到这条数。</p>
    */
   countsRows?: boolean
+  /**
+   * 口径的机器可读标识（`scope` 是给人看的文案，这个是给渲染层分组用的）。
+   *
+   * <p>列表页把两种口径渲染到两个位置：勾选口径的合计进表格上方的「已选择 N 项」横幅，
+   * 本页口径留在页脚。按文案字符串匹配会被 i18n / 文案微调打断，因此另存一个稳定标识。</p>
+   */
+  scopeKey?: 'page' | 'selection'
 }
 
 export interface ModuleActionDefinition {

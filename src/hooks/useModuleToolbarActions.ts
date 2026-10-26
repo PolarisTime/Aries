@@ -43,6 +43,26 @@ const BULK_AUDIT_ACTION_KEY = 'bulk_audit'
 const BULK_REVERSE_AUDIT_ACTION_KEY = 'bulk_reverse_audit'
 const EXPORT_SELECTED_ACTION_KEY = 'export_selected'
 
+/**
+ * 勾选后才可用的批量动作（列表页把它们放进「已选择 N 项」横幅）。
+ *
+ * <p>判据是动作 key：这四个动作的构造处就在本文件（`bulkDeleteAction` /
+ * `exportSelectedAction` / `bulkToolbarActions`），并且**只在有勾选时才生成** ——
+ * 所以"是否批量动作"与"是否出现"是同一个条件，不会出现"动作被挪走后再也点不到"。</p>
+ */
+const SELECTION_SCOPED_ACTION_KEYS: ReadonlySet<string> = new Set([
+  BULK_DELETE_ACTION_KEY,
+  EXPORT_SELECTED_ACTION_KEY,
+  BULK_AUDIT_ACTION_KEY,
+  BULK_REVERSE_AUDIT_ACTION_KEY,
+])
+
+export function isSelectionScopedToolbarAction(action: {
+  key?: string
+}): boolean {
+  return Boolean(action.key && SELECTION_SCOPED_ACTION_KEYS.has(action.key))
+}
+
 function isCreateToolbarAction(action: ModuleActionDefinition) {
   return action.key === 'create' || action.key?.startsWith('create_')
 }

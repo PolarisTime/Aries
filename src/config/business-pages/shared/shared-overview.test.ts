@@ -110,6 +110,28 @@ describe('汇总口径标签(勾选后不得静默换数)', () => {
     expect(new Set(scopes).size).toBe(2)
   })
 
+  it('两组带机器可读标识 scopeKey, 渲染层据此分两处显示', () => {
+    const items = buildScopedOverview({ buildItems, pageRows, selectedRows })
+    // 勾选组 → 表格上方「已选择 N 项」横幅；本页组 → 页脚合计
+    expect(
+      items
+        .filter((item) => item.scopeKey === 'selection')
+        .map((item) => item.label),
+    ).toEqual(['modules.overview.totalWeight', 'modules.overview.totalAmount'])
+    expect(
+      items
+        .filter((item) => item.scopeKey === 'page')
+        .map((item) => item.label),
+    ).toEqual([
+      'modules.overview.documentCount',
+      'modules.overview.totalWeight',
+      'modules.overview.totalAmount',
+    ])
+    // 未勾选时只有本页一组, 且不打口径标识(页脚平铺, 不加「本页合计」前缀)
+    const idle = buildScopedOverview({ buildItems, pageRows, selectedRows: [] })
+    expect(idle.every((item) => item.scopeKey === undefined)).toBe(true)
+  })
+
   it('只选 1 行时口径也正确(边界), 且不重复渲染条数', () => {
     const items = buildScopedOverview({
       buildItems,

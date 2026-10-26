@@ -60,7 +60,7 @@ function applyOverviewScope(
    */
   const deduped = items.filter((item) => !item.countsRows)
   const kept = deduped.length ? deduped : items
-  return kept.map((item) => ({ ...item, scope: prefix }))
+  return kept.map((item) => ({ ...item, scope: prefix, scopeKey: scope }))
 }
 
 /**
@@ -68,6 +68,10 @@ function applyOverviewScope(
  *
  * <p>勾选态返回两组: 先「已选 N 项 · …」, 再「本页合计 · …」, 两个数字各自有名字,
  * 不再出现"同一标签两个数"。未勾选态只返回本页合计, 标签保持原样。</p>
+ *
+ * <p><b>两组在列表页分两处渲染</b>: 勾选组进表格上方的「已选择 N 项」横幅
+ * (`ModuleSelectionAlert`), 本页组合计留在页脚 (`ModuleTablePagination`)。按 `scopeKey`
+ * 拆分而不是按 `scope` 文案匹配 —— 文案会随 i18n 变，标识不会。</p>
  *
  * @param buildItems 页面配置里的纯计算函数(如 `buildAmountWeightOverview` 的偏应用)
  * @param pageRows   本页行
@@ -93,7 +97,11 @@ export function buildScopedOverview({
   const pagePrefix = i18next.t('modules.overview.scopePage')
   return [
     ...selectedItems,
-    ...pageItems.map((item) => ({ ...item, scope: pagePrefix })),
+    ...pageItems.map((item) => ({
+      ...item,
+      scope: pagePrefix,
+      scopeKey: 'page' as const,
+    })),
   ]
 }
 

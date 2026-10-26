@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { ColumnSettingsRequestContext } from '@/components/column-settings-request-context'
 import type { RowContextMenuMap } from '@/components/row-context-menu'
 import { buildScopedOverview } from '@/config/business-pages/shared/shared-overview'
+import { isSelectionScopedToolbarAction } from '@/hooks/useModuleToolbarActions'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
@@ -17,6 +18,7 @@ import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleFilterActiveSummary } from '@/views/modules/components/ModuleFilterActiveSummary'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
+import { ModuleSelectionAlert } from '@/views/modules/components/ModuleSelectionAlert'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
 
@@ -164,6 +166,34 @@ export function BusinessGridContent({
       }),
     [config.buildOverview, records, selectedRows],
   )
+  /*
+   * 两批口径分两处渲染：勾选组合计进上方横幅，本页合计留在页脚。
+   * 按 `scopeKey`（机器可读）拆分，不按 `scope` 文案匹配 —— 文案随 i18n 变。
+   */
+  const selectionOverviewItems = useMemo(
+    () => overviewItems.filter((item) => item.scopeKey === 'selection'),
+    [overviewItems],
+  )
+  const pageOverviewItems = useMemo(
+    () => overviewItems.filter((item) => item.scopeKey !== 'selection'),
+    [overviewItems],
+  )
+  /*
+   * 动作按「是否只在勾选后才有意义」拆开：批量动作（导出选中/批量审核/反审核/删除）
+   * 进横幅，页面动作（打印/附件/单据流…）留在工具栏。判据在
+   * `isSelectionScopedToolbarAction` 一处，且这些动作本来就只有勾选后才生成。
+   */
+  const selectionActions = useMemo(
+    () => toolbarActions.filter(isSelectionScopedToolbarAction),
+    [toolbarActions],
+  )
+  const pageActions = useMemo(
+    () =>
+      toolbarActions.filter(
+        (action) => !isSelectionScopedToolbarAction(action),
+      ),
+    [toolbarActions],
+  )
 
   /*
    * 稳定引用：内联 `() => setColumnSettingsOpen(true)` 每次渲染都是新函数，
@@ -192,15 +222,13 @@ export function BusinessGridContent({
         <ModuleTableToolbar
           canCreate={canCreate}
           canExport={canExport}
-          selectedCount={selectedCount}
           loading={loading}
           exporting={exporting}
           onCreate={onCreate}
           onExport={onExport}
           onRefresh={onRefresh}
-          onClearSelection={onClearSelection}
           onReset={handleResetFilters}
-          toolbarActions={toolbarActions}
+          toolbarActions={pageActions}
           onAction={onAction}
           filterSummary={
             /* 筛选生效提示: 只显示与默认值不同的条件数, 0 项时不渲染 */
@@ -227,6 +255,15 @@ export function BusinessGridContent({
           }
         />
       </div>
+
+      {/* 勾选横幅：勾选一出现就横贯一行，批量动作 + 已选合计 + 清除选择都在这里 */}
+      <ModuleSelectionAlert
+        selectedCount={selectedCount}
+        overviewItems={selectionOverviewItems}
+        actions={selectionActions}
+        onAction={onAction}
+        onClear={onClearSelection}
+      />
 
       {hasLoadError ? (
         <Alert
@@ -285,7 +322,8 @@ export function BusinessGridContent({
             currentPage={currentPage}
             pageSize={pageSize}
             currentItemCount={records.length}
-            overviewItems={overviewItems}
+            /* 页脚只放本页合计；勾选口径已经在横幅里，不再重复一份 */
+            overviewItems={pageOverviewItems}
             onPageChange={onPageChange}
           />
         </>

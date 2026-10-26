@@ -1,41 +1,40 @@
-import {
-  CloseOutlined,
-  DownloadOutlined,
-  PlusOutlined,
-} from '@ant-design/icons'
-import { Button, Space, Tooltip } from 'antd'
-import { Fragment, type ReactNode } from 'react'
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Space } from 'antd'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModuleTableUtilities } from '@/components/ModuleTableUtilities'
 import type { ModuleActionDefinition } from '@/types/module-page'
+import {
+  isExportAction,
+  ModuleActionButton,
+} from '@/views/modules/components/ModuleActionButton'
 
 const EMPTY_TOOLBAR_ACTIONS: never[] = []
-
-import { ModuleTableUtilities } from '@/components/ModuleTableUtilities'
-import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
 
 function isCreateAction(action: ModuleActionDefinition) {
   return action.key === 'create' || action.key?.startsWith('create_')
 }
 
-function isExportAction(action: ModuleActionDefinition) {
-  return action.key === 'export' || action.key?.startsWith('export_')
-}
-
 interface Props {
   canCreate: boolean
   canExport: boolean
-  selectedCount: number
   loading: boolean
   exporting: boolean
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
-  onClearSelection?: () => void
   /** 重置筛选（按钮渲染在右侧状态区最右端，见 ModuleTableUtilities 的 onReset） */
   onReset?: () => void
   extra?: ReactNode
   /** 筛选状态提示（「已筛选 N 项 · 清空筛选」），渲染在右侧状态区。 */
   filterSummary?: ReactNode
+  /**
+   * 页面级动作（打印 / 附件 / 单据流 …）。
+   *
+   * <p>**批量动作不在这里**：「导出选中 N 条 / 批量审核 / 批量反审核 / 批量删除」只在有勾选时
+   * 才有意义，由表格上方的「已选择 N 项」横幅（`ModuleSelectionAlert`）承载 —— 横幅出现时
+   * 它们才出现，工具栏因此只剩"不依赖勾选"的动作，右侧状态区只留刷新与重置。</p>
+   */
   toolbarActions?: ModuleActionDefinition[]
   onAction?: (action: ModuleActionDefinition) => void
 }
@@ -43,13 +42,11 @@ interface Props {
 export function ModuleTableToolbar({
   canCreate,
   canExport,
-  selectedCount,
   loading,
   exporting,
   onCreate,
   onExport,
   onRefresh,
-  onClearSelection,
   onReset,
   extra,
   filterSummary,
@@ -65,44 +62,15 @@ export function ModuleTableToolbar({
             {t('common.create')}
           </Button>
         )}
-        {toolbarActions.map((action) => {
-          if (isCreateAction(action)) {
-            return null
-          }
-          const button = (
-            <Button
-              type={action.type === 'primary' ? 'primary' : 'default'}
-              danger={action.danger}
-              disabled={action.disabled}
-              loading={action.loading}
-              icon={
-                isExportAction(action) ? (
-                  <DownloadOutlined />
-                ) : (
-                  resolveModuleActionIcon(action.label)
-                )
-              }
-              onClick={() => onAction?.(action)}
-            >
-              {action.label}
-            </Button>
-          )
-          const key = action.key || action.label
-          if (!action.tooltip) {
-            return <Fragment key={key}>{button}</Fragment>
-          }
-          /*
-           * 置灰按钮不能再获得鼠标事件(disabled 元素不派发 mouseenter),
-           * 必须套一层 span 才能让 Tooltip 在悬停/聚焦时说明限制原因。
-           */
-          return (
-            <Tooltip key={key} title={action.tooltip}>
-              <span className="module-table-action-tooltip-target">
-                {button}
-              </span>
-            </Tooltip>
-          )
-        })}
+        {toolbarActions.map((action) =>
+          isCreateAction(action) ? null : (
+            <ModuleActionButton
+              key={action.key || action.label}
+              action={action}
+              onAction={onAction}
+            />
+          ),
+        )}
         {canExport && !toolbarActions.some(isExportAction) && (
           <Button
             icon={<DownloadOutlined />}
@@ -116,9 +84,6 @@ export function ModuleTableToolbar({
       </Space>
       <ModuleTableUtilities
         leading={filterSummary}
-        selectedCount={selectedCount}
-        onClearSelection={onClearSelection}
-        clearSelectionIcon={<CloseOutlined />}
         isFetching={loading}
         onRefresh={onRefresh}
         onReset={onReset}

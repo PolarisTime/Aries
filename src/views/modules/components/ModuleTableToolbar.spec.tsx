@@ -37,7 +37,6 @@ describe('ModuleTableToolbar 工具栏动作按钮', () => {
         createElement(ModuleTableToolbar, {
           canCreate: false,
           canExport: false,
-          selectedCount: 2,
           loading: false,
           exporting: false,
           onCreate: () => {},
@@ -110,7 +109,6 @@ describe('ModuleTableToolbar 重置按钮（筛选区下移后的唯一入口）
         createElement(ModuleTableToolbar, {
           canCreate: false,
           canExport: false,
-          selectedCount: 0,
           loading: false,
           exporting: false,
           onCreate: () => {},
@@ -151,7 +149,7 @@ describe('ModuleTableToolbar 重置按钮（筛选区下移后的唯一入口）
   })
 
   it('勾选后重置按钮仍固定在状态区末尾, 不因「已选 N 项」出现而移位', () => {
-    render({ onReset: () => {}, selectedCount: 3 })
+    render({ onReset: () => {} })
     const utilities = container.querySelector('.module-table-utilities')
     expect(
       utilities?.lastElementChild?.classList.contains(

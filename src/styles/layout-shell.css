@@ -1429,6 +1429,69 @@
   margin: var(--space-xs) var(--space-md);
 }
 
+/*
+ * 勾选横幅（ProTable `tableAlertRender` 的形态）：勾选一出现就横贯一行，
+ * 左侧「已选择 N 项 + 已选合计」，右侧批量动作 + 清除选择。
+ *
+ * 颜色取 `--theme-primary-soft`（浅色 #e6f4ff / 深色 #1e3a5f），与 antd `Alert type="info"`
+ * 同一套 tint；上下各一道细分隔线与工具栏、表格分层，不再靠"工具栏右侧一个小胶囊"表达勾选状态。
+ */
+.module-selection-alert {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-md);
+  background: var(--theme-primary-soft);
+  border-top: 1px solid var(--theme-border-subtle);
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.module-selection-alert-summary {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xxs) var(--space-md);
+  min-width: 0;
+  color: var(--theme-text-muted);
+  font-size: 12px;
+}
+
+.module-selection-alert-count {
+  color: var(--theme-primary-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.module-selection-alert-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  /* 单个指标（标签 + 数值）不拆行 */
+  white-space: nowrap;
+}
+
+.module-selection-alert-metric strong {
+  color: var(--theme-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.module-selection-alert-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.module-selection-alert-clear.ant-btn {
+  color: var(--theme-primary-text);
+}
+
 .module-page-skeleton {
   display: flex;
   flex-direction: column;
@@ -2487,38 +2550,70 @@
 /*
  * 首位身份列：序号 · 勾选 · 明细加号 · 行菜单 四件套合成一格。
  *
- * 横向预算：32(序号) + 24×3(勾选/加号/菜单) + 3×2(微间隙) = 110，落在 128 - 16(内边距)
- * = 112 的内容盒里。四个命中区都是 24×24，满足 WCAG 2.2 SC 2.5.8。
+ * 横向预算（内容盒 128 - 16 内边距 = 112）：
+ *   序号 32 + 间隙 4 + 勾选 18 + 间隙 4 + 加号 24 + 间隙 4 + 菜单 24 = 110（余 2px）
  *
- * 表头（.module-row-identity--head）**必须**用同一套栅格：表头只有「序号 + 全选」两个子元素，
- * 若给它另写一套 2 列栅格，两者各自居中时基准不同，列被撑宽后全选复选框会比行复选框偏右。
+ * 节奏「序号 —4px— 勾选 —4px— 加号 —4px— 菜单」：上一版四项各 2px 等距，序号紧贴
+ * 复选框、两个图标挤在一起，读起来像一堆散落的符号；间距统一到 4px、序号字号降到
+ * 12px 后，读起来是「行号 + 一组行内操作」。四个命中区仍是 24×24
+ * （WCAG 2.2 SC 2.5.8）：勾选是 16px 方框居中在 18px 槽里，按钮是 24px 见方的 text 按钮。
+ *
+ * 用**四列固定网格**（而不是 flex）：表头只有「序号 + 全选」两个子元素，网格的轨道宽度
+ * 由模板决定，因此表头与行内天然共用同一宽度基准，全选复选框永远正对行复选框；
+ * 列宽被浏览器摊宽时（列少、不需要横向滚动的页面）两者也一起居中，不会错位。
  */
 .module-row-identity {
   display: grid;
-  grid-template-columns: 32px repeat(3, 24px);
-  gap: var(--space-2);
+  grid-template-columns: 32px 18px 24px 24px;
+  column-gap: var(--space-xxs);
   align-items: center;
-  /*
-   * 居中而不是左对齐：列少、表格不需要横向滚动时，浏览器会把多余的宽度按比例摊到
-   * 每一列（实测 128 → 145/168），左对齐就会在四件套右侧留下一大片空白。
-   * 表头与行内用同一套栅格 + 同样的居中方式，两者始终对齐。
-   */
   justify-content: center;
   min-width: 0;
 }
 
-.module-row-identity .ant-checkbox-wrapper {
-  margin-inline-start: 0;
-  padding-inline-start: 0;
-}
-
+/*
+ * 行序号做成轻徽标（借 ProTable `indexBorder` 的思路，但不做"前三名"配色）：
+ * 一个 18px 高的浅色圆角块把数字圈住，天然与右侧复选框分开，视觉上读成
+ * 「行号 + 一组行内操作」，而不是三个并排的裸控件。
+ */
 .module-row-identity-seq {
+  display: inline-flex;
+  justify-self: center;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 var(--space-xxs);
   overflow: hidden;
   color: var(--theme-text-muted);
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+  background: var(--theme-surface-hover);
+  border-radius: 6px;
+}
+
+/* 表头回落到普通列头文字：只有行内的序号是徽标，列名不该跟着变成色块 */
+.module-row-identity--head .module-row-identity-seq {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: var(--app-font-size);
+  font-weight: 600;
+  background: none;
+  border-radius: 0;
+}
+
+.module-row-identity .ant-checkbox-wrapper {
+  /* 18px 槽由网格轨道给出；标签铺满槽、把 16px 方框居中，视觉中心与图标一致 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
 }
 
 /*
@@ -2534,6 +2629,31 @@
   min-width: 24px;
   height: 24px;
   padding: 0;
+  /*
+   * 图标默认用弱化色：一行里两个深色图标（加号 0.88、菜单 0.65）会把视线从业务列
+   * 拽回左侧，混着看就像"一列乱图标"。弱化到 0.65（白底对比度 ≈7:1，满足非文本
+   * 3:1）后，只有悬停/展开时才变主色。
+   */
+  color: var(--theme-text-muted);
+}
+
+.module-table-shell .module-row-identity .ant-btn:not(:disabled):hover {
+  color: var(--theme-primary-text);
+}
+
+/* 展开态保留主色强调（与其余列表的明细按钮一致） */
+.module-table-shell
+  .module-row-identity
+  .ant-btn.table-detail-toggle-btn.is-active {
+  color: var(--ant-color-primary, #1677ff);
+}
+
+/*
+ * 竖排三点（行菜单）的墨量天然比「＋」轻：同为 14px 时读起来一重一轻。
+ * 放大到 16px 后两者的视觉重量接近，横向仍居中在 24px 按钮里。
+ */
+.module-table-shell .module-row-identity .module-row-more-actions .anticon {
+  font-size: 16px;
 }
 
 .module-table-shell .module-row-identity .ant-btn::before {
@@ -2605,8 +2725,15 @@
   border-left: 1px solid var(--theme-border-subtle);
 }
 
+/*
+ * 口径标签（勾选态下的「本页合计」）。
+ *
+ * 勾选组的合计已经移到表格上方的横幅里，页脚只剩本页一组，所以这里不再用主色
+ * （主色会让它读起来像链接/激活态，与横幅里的「已选择 N 项」抢注意力），
+ * 退成弱化的说明性标签。
+ */
 .module-table-pagination-scope {
-  color: var(--theme-primary-text);
+  color: var(--theme-text-muted);
   font-weight: 500;
 }
 
