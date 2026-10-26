@@ -6,6 +6,7 @@ import type {
   PrintItemFieldKey,
   PrintItemFieldSpec,
 } from '@/utils/print-module-config'
+import { formatProjectDisplayName } from '@/utils/project-display'
 
 const SUMMARY_FIELDS = [
   'billNo',
@@ -70,10 +71,11 @@ export function projectSummary(record?: ModuleRecord) {
   if (!record) return ''
   const projectNameAbbr =
     firstText(record, PROJECT_ABBR_FIELDS) || lookupProjectNameAbbr(record)
-  const projectName = firstText(record, PROJECT_NAME_FIELDS)
-  if (projectNameAbbr && projectName)
-    return `${projectNameAbbr}（${projectName}）`
-  return projectNameAbbr || projectName
+  // 「简称（全称）」的唯一格式出口: 四条业务列表的项目列与本组件共用同一实现。
+  return formatProjectDisplayName(
+    projectNameAbbr,
+    firstText(record, PROJECT_NAME_FIELDS),
+  )
 }
 
 export function isPdfTemplate(template?: PrintTemplateRecord) {

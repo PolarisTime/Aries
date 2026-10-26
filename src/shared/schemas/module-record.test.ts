@@ -480,3 +480,102 @@ describe('销售订单报单日期契约', () => {
     ).toThrow()
   })
 })
+
+/**
+ * 项目简称是**列表显示用的附加字段**, 三条主流程列表(销售订单/销售出库/销售退货)都用
+ * `strictObject` 解析: 字段没声明时后端一旦开始返回就会被判"未知字段"整页失败,
+ * 因此这里同时锁住"带字段可解析"与"不带字段也可解析"两个方向。
+ */
+const salesOutboundListRecord = {
+  id: '3',
+  outboundNo: 'SOB-1',
+  salesOrderNo: null,
+  customerId: null,
+  customerName: '客户',
+  projectId: null,
+  projectName: '广东东钢供应链有限公司',
+  warehouseId: null,
+  warehouseName: null,
+  settlementCompanyId: null,
+  settlementCompanyName: null,
+  outboundDate: '2026-09-01',
+  totalWeight: 0,
+  totalAmount: 0,
+  status: '草稿',
+  deletedFlag: false,
+  remark: null,
+}
+
+/** 销售出库/销售退货列表响应不携带 chargeItems（该字段只有销售订单声明）。 */
+const pageWithoutChargeItems = (record: object) => ({
+  content: [{ ...record, items: null }],
+  totalElements: 1,
+  totalPages: 1,
+  currentPage: 0,
+  pageSize: 30,
+  hasMore: false,
+})
+
+const salesReturnListRecord = {
+  id: '4',
+  returnNo: 'SR-1',
+  salesOrderNo: null,
+  customerId: null,
+  customerName: '客户',
+  projectId: null,
+  projectName: '广东东钢供应链有限公司',
+  warehouseId: null,
+  warehouseName: null,
+  settlementCompanyId: null,
+  settlementCompanyName: null,
+  returnDate: '2026-09-01',
+  totalWeight: 0,
+  totalAmount: 0,
+  status: '草稿',
+  deletedFlag: false,
+  remark: null,
+}
+
+describe('项目简称字段契约', () => {
+  it('三条主流程列表都解析出 projectNameAbbr', () => {
+    const rows = {
+      'sales-order': getMainFlowListResponseSchema('sales-order').parse(
+        page({ ...salesOrder, projectNameAbbr: '东钢' }),
+      ).content[0],
+      'sales-outbound': getMainFlowListResponseSchema('sales-outbound').parse(
+        pageWithoutChargeItems({
+          ...salesOutboundListRecord,
+          projectNameAbbr: '东钢',
+        }),
+      ).content[0],
+      'sales-return': getMainFlowListResponseSchema('sales-return').parse(
+        pageWithoutChargeItems({
+          ...salesReturnListRecord,
+          projectNameAbbr: '东钢',
+        }),
+      ).content[0],
+    }
+
+    expect(rows['sales-order'].projectNameAbbr).toBe('东钢')
+    expect(rows['sales-outbound'].projectNameAbbr).toBe('东钢')
+    expect(rows['sales-return'].projectNameAbbr).toBe('东钢')
+  })
+
+  it('后端未返回 projectNameAbbr 时三条列表仍可解析', () => {
+    const rows = {
+      'sales-order': getMainFlowListResponseSchema('sales-order').parse(
+        page(salesOrder),
+      ).content[0],
+      'sales-outbound': getMainFlowListResponseSchema('sales-outbound').parse(
+        pageWithoutChargeItems(salesOutboundListRecord),
+      ).content[0],
+      'sales-return': getMainFlowListResponseSchema('sales-return').parse(
+        pageWithoutChargeItems(salesReturnListRecord),
+      ).content[0],
+    }
+
+    expect(rows['sales-order'].projectNameAbbr).toBeUndefined()
+    expect(rows['sales-outbound'].projectNameAbbr).toBeUndefined()
+    expect(rows['sales-return'].projectNameAbbr).toBeUndefined()
+  })
+})

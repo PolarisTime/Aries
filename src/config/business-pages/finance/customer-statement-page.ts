@@ -13,6 +13,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { renderProjectNameCell } from '@/utils/project-display'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { statusMap } from '../shared/shared'
@@ -179,7 +180,8 @@ export const customerStatementPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.customerStatement.project'),
       dataIndex: 'projectName',
-      width: 180,
+      width: 240,
+      render: renderProjectNameCell,
     },
     {
       title: SETTLEMENT_COMPANY_LABEL,

@@ -2,6 +2,7 @@ import i18next from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { ModulePageConfig } from '@/types/module-page'
+import { renderProjectNameCell } from '@/utils/project-display'
 
 let salesOrdersPageConfig: ModulePageConfig
 
@@ -72,5 +73,27 @@ describe('销售订单报单日期配置', () => {
     expect(projectField, '项目字段必须存在').toBeTruthy()
     expect(projectField?.emptyHint).toBeTruthy()
     expect(projectField?.emptyHint).toContain('客户')
+  })
+
+  it('「项目名称」列显示「简称（全称）」，无简称时只显示全称', () => {
+    const column = salesOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'projectName',
+    )
+
+    expect(column?.render).toBe(renderProjectNameCell)
+    expect(column?.width).toBe(240)
+    expect(
+      column?.render?.(undefined, {
+        id: '1',
+        projectNameAbbr: '东钢',
+        projectName: '广东东钢供应链有限公司',
+      }),
+    ).toBe('东钢（广东东钢供应链有限公司）')
+    expect(
+      column?.render?.(undefined, {
+        id: '1',
+        projectName: '广东东钢供应链有限公司',
+      }),
+    ).toBe('广东东钢供应链有限公司')
   })
 })

@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import '@/i18n'
 import { buildQueryParams } from '@/api/business/business-listing-filtering'
 import { financeModuleEndpointContracts } from '@/api/contracts/module-contracts-finance'
+import { renderProjectNameCell } from '@/utils/project-display'
 import { customerStatementPageConfig } from './customer-statement-page'
 import {
   renderStatementAmount,
@@ -93,6 +94,28 @@ describe('客户对账单红字展示配置', () => {
       },
     )
     expect(params).toMatchObject({ billDirection: '蓝字', direction: 'desc' })
+  })
+
+  it('「项目名称」列显示「简称（全称）」，无简称时只显示全称', () => {
+    const column = customerStatementPageConfig.columns.find(
+      (item) => item.dataIndex === 'projectName',
+    )
+
+    expect(column?.render).toBe(renderProjectNameCell)
+    expect(column?.width).toBe(240)
+    expect(
+      column?.render?.(undefined, {
+        id: '1',
+        projectNameAbbr: '东钢',
+        projectName: '广东东钢供应链有限公司',
+      }),
+    ).toBe('东钢（广东东钢供应链有限公司）')
+    expect(
+      column?.render?.(undefined, {
+        id: '1',
+        projectName: '广东东钢供应链有限公司',
+      }),
+    ).toBe('广东东钢供应链有限公司')
   })
 })
 

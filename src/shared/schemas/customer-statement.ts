@@ -70,6 +70,8 @@ export const customerStatementRecordSchema = z.looseObject({
   customerName: optionalTextSchema,
   projectId: responseEntityIdSchema.nullish(),
   projectName: optionalTextSchema,
+  /** 项目简称: 列表「项目名称」列显示为「简称（全称）」; 后端未返回时缺省。 */
+  projectNameAbbr: optionalTextSchema,
   settlementCompanyId: responseEntityIdSchema.nullish(),
   settlementCompanyName: optionalTextSchema,
   startDate: optionalTextSchema,

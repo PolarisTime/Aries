@@ -85,6 +85,24 @@ describe('customerStatementRecordSchema', () => {
       }),
     ).toThrow()
   })
+
+  it('项目简称可缺省、可空、也可有值', () => {
+    expect(
+      customerStatementRecordSchema.parse(baseRecord).projectNameAbbr,
+    ).toBeUndefined()
+    expect(
+      customerStatementRecordSchema.parse({
+        ...baseRecord,
+        projectNameAbbr: null,
+      }).projectNameAbbr,
+    ).toBeNull()
+    expect(
+      customerStatementRecordSchema.parse({
+        ...baseRecord,
+        projectNameAbbr: '东钢',
+      }).projectNameAbbr,
+    ).toBe('东钢')
+  })
 })
 
 describe('customerStatementItemSchema', () => {

@@ -404,6 +404,8 @@ const salesOrderRecordShape = {
   customerName: requiredTextSchema,
   projectId: nullableEntityIdSchema,
   projectName: requiredTextSchema,
+  /** 项目简称: 列表「项目名称」列显示为「简称（全称）」; 后端未返回时缺省。 */
+  projectNameAbbr: optionalTextSchema,
   settlementCompanyId: nullableEntityIdSchema,
   settlementCompanyName: nullableTextSchema,
   orderDate: responseDateTimeSchema,
@@ -616,6 +618,8 @@ const salesOutboundRecordShape = {
   customerName: requiredTextSchema,
   projectId: nullableEntityIdSchema,
   projectName: requiredTextSchema,
+  /** 项目简称: 列表「项目名称」列显示为「简称（全称）」; 后端未返回时缺省。 */
+  projectNameAbbr: optionalTextSchema,
   warehouseId: nullableEntityIdSchema,
   warehouseName: nullableTextSchema,
   settlementCompanyId: nullableEntityIdSchema,
@@ -727,6 +731,8 @@ const salesReturnRecordShape = {
   customerName: requiredTextSchema,
   projectId: nullableEntityIdSchema,
   projectName: requiredTextSchema,
+  /** 项目简称: 列表「项目名称」列显示为「简称（全称）」; 后端未返回时缺省。 */
+  projectNameAbbr: optionalTextSchema,
   warehouseId: nullableEntityIdSchema,
   warehouseName: nullableTextSchema,
   settlementCompanyId: nullableEntityIdSchema,

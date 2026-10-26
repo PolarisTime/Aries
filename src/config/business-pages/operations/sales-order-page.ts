@@ -10,6 +10,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { renderProjectNameCell } from '@/utils/project-display'
 import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
 import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
@@ -234,7 +235,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.salesOrder.colProjectName'),
       dataIndex: 'projectName',
-      width: 180,
+      width: 240,
+      render: renderProjectNameCell,
     },
     {
       title: i18next.t('modules.pages.salesOrder.colCustomerName'),
