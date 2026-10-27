@@ -40,10 +40,13 @@ const ROW_SINGLE_CLICK_DELAY_MS = 220
  * 现在把「序号」与「勾选」合成同一个槽位（悬停/勾选时互换），两个图标拼成一组，
  * 横向预算再降到 96px —— 相对最初省下 88px，全部让给业务列。</p>
  *
- * <p>96 = 左右内边距 16 + 选择器槽位 26 + 间隙 4 + 动作组 48（两个 24px 按钮）+ 余量 2。
- * 四个可点目标都保持 ≥24×24（WCAG 2.2 SC 2.5.8）。</p>
+ * <p>72 = 左右内边距 16 + 选择器槽位 26 + 间隙 4 + 明细按钮 24 + 余量 2。
+ * 可点目标都保持 ≥24×24（WCAG 2.2 SC 2.5.8）。</p>
+ *
+ * <p>行菜单的可见「⋮」按钮已移除（使用者要求）：行级命令在工具栏 / 勾选横幅里都有同一份
+ * 入口，行菜单仍可由右键、触摸长按、键盘 Shift+F10 打开，因此少这 24px 不丢能力。</p>
  */
-export const IDENTITY_COLUMN_WIDTH = 96
+export const IDENTITY_COLUMN_WIDTH = 72
 
 interface Props {
   moduleKey: string
@@ -166,12 +169,11 @@ export function BusinessGridTable({
           sequenceNumber={sequenceStart + index + 1}
           checkbox={originNode}
           detailToggle={renderRowDetailToggle?.(record) ?? null}
-          menu={rowContextMenus?.get(String(record.id))}
           selected={checked}
         />
       ),
     }
-  }, [rowSelection, renderRowDetailToggle, rowContextMenus, sequenceStart, t])
+  }, [rowSelection, renderRowDetailToggle, sequenceStart, t])
 
   const tableColumns = useMemo<ColumnsType<ModuleRecord>>(
     () =>
@@ -257,6 +259,10 @@ export function BusinessGridTable({
 
   const onRow = (record: ModuleRecord, index = 0) => ({
     tabIndex: 0,
+    /*
+     * 只声明 Enter / Space：行菜单的键盘入口 `Shift+F10` 由 `RowContextMenuRow` 统一追加
+     * （它把收到的值和自己的拼起来），这里再写一遍会得到「Shift+F10 Shift+F10」。
+     */
     'aria-keyshortcuts': rowSelection ? 'Enter Space' : 'Enter',
     ...(selectedRowKeys
       ? { 'aria-selected': selectedRowKeys.includes(String(record.id)) }

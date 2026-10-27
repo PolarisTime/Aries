@@ -397,7 +397,7 @@ describe('行级动作入口 —— 触屏可用且不再占一列(WCAG 2.2 SC 2
   it('列集合里既没有行尾操作列, 也没有独立明细列', () => {
     const table = renderWithSelection()
     const keys = table.antdColumns.map((column) => String(column.key))
-    // 两者都已并入 BusinessGridTable 的首位身份列(序号·勾选·加号·行菜单)
+    // 两者都已并入 BusinessGridTable 的首位身份列(序号·勾选·明细加号)
     expect(keys).not.toContain('__row-more-actions')
     expect(keys).not.toContain('detail-toggle')
     expect(keys).toEqual(['no', 'qty'])
@@ -408,7 +408,7 @@ describe('行级动作入口 —— 触屏可用且不再占一列(WCAG 2.2 SC 2
     expect(typeof table.renderRowDetailToggle).toBe('function')
   })
 
-  it('行菜单配置仍按行提供, 可见按钮与右键共用同一份 aria-label', () => {
+  it('行菜单配置仍按行提供(可见「⋮」已移除, 菜单由右键/长按/Shift+F10 打开)', () => {
     const table = renderWithSelection()
     expect(table.rowContextMenus.size).toBe(2)
     expect(table.rowContextMenus.get('r1')?.ariaLabel).toBeTruthy()

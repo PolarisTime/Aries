@@ -311,7 +311,7 @@ describe('BusinessGridTable', () => {
       expect(document.querySelectorAll('thead th')).toHaveLength(2)
     })
 
-    it('行内把 序号 / 勾选 / 明细加号 / 行菜单 摆在同一格', () => {
+    it('行内把 序号 / 勾选 / 明细加号 摆在同一格，行菜单不再有可见按钮', () => {
       renderTable({
         dataSource,
         rowSelection,
@@ -329,12 +329,15 @@ describe('BusinessGridTable', () => {
       expect(
         first?.querySelector('[data-testid="detail-toggle"]'),
       ).not.toBeNull()
-      const menuButton = first?.querySelector('button[aria-haspopup="menu"]')
-      expect(menuButton?.getAttribute('aria-label')).toBe(
-        '「记录 1」行操作菜单',
-      )
-      // 没有菜单配置的行不渲染空按钮
-      expect(cells[1]?.querySelector('button[aria-haspopup="menu"]')).toBeNull()
+      // 可见「⋮」已移除：行菜单仍留在 rowContextMenus 里，靠右键 / 长按 / Shift+F10 打开
+      expect(first?.querySelector('button[aria-haspopup="menu"]')).toBeNull()
+      // 行本身只声明 Enter / Space；Shift+F10 由行容器（RowContextMenuRow）追加，
+      // 这里不能重复写，否则读屏听到 "Shift+F10 Shift+F10"
+      expect(
+        document
+          .querySelector('tbody tr[data-row-key]')
+          ?.getAttribute('aria-keyshortcuts'),
+      ).toBe('Enter Space')
     })
 
     it('序号沿用分页起点: 第 2 页第 1 行是 21', () => {
@@ -348,7 +351,7 @@ describe('BusinessGridTable', () => {
       expect(identityCells()[0]?.textContent?.trim()).toBe('21')
     })
 
-    it('身份列宽度 96 且是 8 的倍数(26 选择器 + 两个 24px 命中区放得下)', () => {
+    it('身份列宽度 72 且是 8 的倍数(26 选择器 + 24px 明细按钮放得下)', () => {
       renderTable({ dataSource, rowSelection })
 
       const firstCol = document.querySelector(
@@ -358,9 +361,9 @@ describe('BusinessGridTable', () => {
         `${IDENTITY_COLUMN_WIDTH}px`,
       )
       expect(IDENTITY_COLUMN_WIDTH % 8).toBe(0)
-      expect(IDENTITY_COLUMN_WIDTH).toBe(96)
-      // 96 = 左右内边距 16 + 选择器 26 + 间隙 4 + 动作组 48（两个 24px 按钮）+ 余量 2
-      expect(16 + 26 + 4 + 24 * 2).toBeLessThanOrEqual(IDENTITY_COLUMN_WIDTH)
+      expect(IDENTITY_COLUMN_WIDTH).toBe(72)
+      // 72 = 左右内边距 16 + 选择器 26 + 间隙 4 + 明细按钮 24 + 余量 2
+      expect(16 + 26 + 4 + 24).toBeLessThanOrEqual(IDENTITY_COLUMN_WIDTH)
     })
 
     it('没有 rowSelection 时不渲染身份列, 也不再有独立序号列', () => {

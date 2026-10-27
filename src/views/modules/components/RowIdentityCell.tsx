@@ -1,6 +1,4 @@
 import type { ReactNode } from 'react'
-import type { RowContextMenuConfig } from '@/components/row-context-menu'
-import { RowMenuButton } from './RowMenuButton'
 
 interface RowIdentityCellProps {
   /** 行序号（跨分页连续：`(当前页 - 1) × 每页条数 + 行下标 + 1`） */
@@ -15,8 +13,6 @@ interface RowIdentityCellProps {
   checkbox: ReactNode
   /** 明细按钮（口径在 `useGridColumns`）；不传时该位置留空 */
   detailToggle: ReactNode
-  /** 该行的行菜单配置；缺省表示没有行级动作 */
-  menu: RowContextMenuConfig | undefined
   /** 该行是否已勾选：勾选后序号让位给勾选框；未勾选时只在行悬停/键盘聚焦时让位 */
   selected: boolean
 }
@@ -28,17 +24,18 @@ interface RowIdentityCellProps {
  * 或该行已勾选时，原位换成勾选框（Airtable / Notion 的行选择器形态）。既省掉一个独立
  * 复选框列位，又保留了"一眼看到行号"，交互上与"点行即勾选"一致。</p>
  *
- * <p>② **行内动作组**：明细加号与行菜单 ⋮ 拼成一组（中间一道细线），两个动作仍各一次
- * 点击 —— 把「展开明细」塞进菜单会变成两次点击，那是另一种取舍，没有采纳。</p>
+ * <p>② **行内动作**：只剩明细加号。行菜单的可见「⋮」按钮已按使用者要求移除 ——
+ * 行级命令（复制单号 / 重新核定 / 附件）在工具栏与勾选横幅里都有同一份入口，行菜单本身
+ * 仍可通过**右键**、**触摸长按 600ms**、**键盘 Shift+F10 / 上下文菜单键**打开
+ * （三条路径都由 `RowContextMenuRow` 提供，见《上下文菜单与键盘操作契约》的例外条款）。</p>
  *
  * <p>布局与命中区尺寸见 `layout-shell.css` 的 `.module-row-identity`（槽位 26px、
- * 两个按钮各 24×24，WCAG 2.2 SC 2.5.8）。</p>
+ * 按钮 24×24，WCAG 2.2 SC 2.5.8）。</p>
  */
 export function RowIdentityCell({
   sequenceNumber,
   checkbox,
   detailToggle,
-  menu,
   selected,
 }: RowIdentityCellProps) {
   return (
@@ -53,10 +50,7 @@ export function RowIdentityCell({
         <span className="module-row-identity-seq">{sequenceNumber}</span>
         {checkbox}
       </span>
-      <span className="module-row-identity-actions">
-        {detailToggle}
-        <RowMenuButton menu={menu} />
-      </span>
+      <span className="module-row-identity-actions">{detailToggle}</span>
     </div>
   )
 }

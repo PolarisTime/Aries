@@ -865,17 +865,9 @@
   font-size: 12px;
 }
 
-/* ===== 行尾「更多操作」列 =====
- * 触屏没有右键, 行级命令(编辑/审核/附件/复制单号)需要可见入口(WCAG 2.2 SC 2.1.1)。
- * 列宽 40 = 24px 命中区 + 左右各 8px 单元格内边距, 按钮自身不再叠加内边距。
+/* ===== 行尾「更多操作」列（已退役）=====
+ * 历史上这里放过可见的「⋮」，后来并进首位身份列；现在按使用者要求连身份列里的按钮也去掉了。
+ * 行级命令在工具栏 / 勾选横幅里都有同一份入口，行菜单仍可由**右键**、**触摸长按 600ms**、
+ * **键盘 Shift+F10 / 上下文菜单键**打开（`RowContextMenuRow` 提供，满足 WCAG 2.2 SC 2.1.1
+ * 的键盘等价路径）。若要恢复可见按钮，请同时恢复这里的命中区样式与身份列的列宽预算。
  */
-.module-table-shell .module-row-more-actions.ant-btn {
-  min-width: 24px;
-  height: 24px;
-  padding: 0;
-  color: var(--theme-text-muted);
-}
-
-.module-table-shell .module-row-more-actions.ant-btn:hover {
-  color: var(--theme-primary-text);
-}

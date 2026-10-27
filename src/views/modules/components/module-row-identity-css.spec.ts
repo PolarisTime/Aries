@@ -36,12 +36,12 @@ const blockOf = (selector: string) => {
 }
 
 describe('首位身份列样式契约', () => {
-  it('两列都定宽: 26px 选择器 + 48px 动作组(表头与行内同一起点)', () => {
+  it('两列都定宽: 26px 选择器 + 24px 明细按钮(表头与行内同一起点)', () => {
     const block = blockOf('.module-row-identity')
     expect(block).toMatch(/display:\s*grid/)
-    // 第二列不能用 auto: 表头列名(28px)与行内动作组(48px)宽度不同, 各自居中会让
+    // 第二列不能用 auto: 表头列名与行内动作区宽度不同, 各自居中会让
     // 表头勾选框比行勾选框右移 10px
-    expect(block).toMatch(/grid-template-columns:\s*26px 48px/)
+    expect(block).toMatch(/grid-template-columns:\s*26px 24px/)
     expect(block).toMatch(/column-gap:\s*var\(--space-xxs\)/)
     // 列宽被浏览器摊宽时（列少、不需要横向滚动的页面）两者一起居中，不会错位
     expect(block).toMatch(/justify-content:\s*center/)
@@ -77,16 +77,12 @@ describe('首位身份列样式契约', () => {
     expect(blockOf('.module-row-identity-seq')).toMatch(/transition:\s*opacity/)
   })
 
-  it('动作组: 明细加号与行菜单相邻, 中间一道 12px 细线', () => {
+  it('动作区只剩明细按钮, 不再有「⋮」与分隔线', () => {
     const actions = blockOf('.module-row-identity-actions')
     expect(actions).toMatch(/display:\s*inline-flex/)
-    // 分隔线画在容器伪元素上: 按钮圆角会把 border / inset shadow 渲染成弯线
-    expect(actions).toMatch(/position:\s*relative/)
-    const divider = blockOf('.module-row-identity-actions::before')
-    expect(divider).toMatch(/left:\s*24px/)
-    expect(divider).toMatch(/width:\s*1px/)
-    expect(divider).toMatch(/height:\s*12px/)
-    expect(divider).toMatch(/background:\s*var\(--theme-border-subtle\)/)
+    // 行菜单的可见按钮已移除, 分隔线随之退役: 再出现就是有人把按钮加回来了
+    expect(css).not.toContain('.module-row-identity-actions::before')
+    expect(css).not.toContain('.module-row-more-actions')
   })
 
   it('序号徽标: 18px 高、22px 起宽、浅色圆角底 + 弱化 12px 数字', () => {

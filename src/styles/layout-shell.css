@@ -2649,7 +2649,7 @@
    * 放到同一个起点。用 `auto` 时表头第二列是列名（28px）、行内是动作组（48px），
    * 两块宽度不同、各自居中，结果**表头的勾选框比行里的勾选框右移 10px**（实测值）。
    */
-  grid-template-columns: 26px 48px;
+  grid-template-columns: 26px 24px;
   column-gap: var(--space-xxs);
   align-items: center;
   justify-content: center;
@@ -2730,24 +2730,6 @@
   align-items: center;
 }
 
-/*
- * 两个动作之间画一道 12px 高的细线，让「+ | ⋮」读成一个控件组。
- *
- * 画在容器伪元素上而不是按钮上：按钮是圆角 text 按钮，`inset box-shadow` / `border-left`
- * 都会跟着圆角走，渲染出来是一道弯线（像括号），很难看；伪元素是一条独立直线。
- */
-
-.module-row-identity-actions::before {
-  position: absolute;
-  top: 50%;
-  left: 24px;
-  width: 1px;
-  height: 12px;
-  background: var(--theme-border-subtle);
-  content: "";
-  transform: translateY(-50%);
-}
-
 /* ---------- 表头 ---------- */
 .module-row-identity-head-label {
   color: var(--text-secondary);
@@ -2787,14 +2769,6 @@
   .module-row-identity
   .ant-btn.table-detail-toggle-btn.is-active {
   color: var(--ant-color-primary, #1677ff);
-}
-
-/*
- * 竖排三点（行菜单）的墨量天然比「＋」轻：同为 14px 时读起来一重一轻。
- * 放大到 16px 后两者的视觉重量接近，横向仍居中在 24px 按钮里。
- */
-.module-table-shell .module-row-identity .module-row-more-actions .anticon {
-  font-size: 16px;
 }
 
 .module-table-shell .module-row-identity .ant-btn::before {
