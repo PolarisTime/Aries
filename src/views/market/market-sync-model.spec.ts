@@ -1,6 +1,13 @@
 import dayjs from 'dayjs'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { isTradingDay, isWeekend, today } from './market-sync-model'
+import { latestQuotedSlot } from './market-sync-metrics'
+import {
+  type CalendarMap,
+  isTradingDay,
+  isWeekend,
+  matrixCellState,
+  today,
+} from './market-sync-model'
 
 /** 仅测试使用: 访问 Node 的 TZ 环境变量(应用 tsconfig 未包含 node 类型)。 */
 const nodeEnv = (
@@ -67,5 +74,61 @@ describe('market-sync-model 交易日判定', () => {
     // 后端还没记录"站点未发布"之前, 工作日按待同步展示(与补数口径一致)
     expect(isTradingDay('2026-10-09', { periods: [] })).toBe(true)
     expect(isTradingDay('2026-10-01', undefined)).toBe(true)
+  })
+})
+
+/**
+ * 单元格状态是**全页唯一口径**：覆盖矩阵的格子、行尾缺口汇总、右侧「待补缺口」清单
+ * 都调用 `matrixCellState`。这里锁定三条容易写反的顺序。
+ */
+describe('market-sync-model 单元格状态矩阵口径', () => {
+  const calendars = {
+    // 周五已同步两个时段
+    '2026-10-09': { periods: ['上午', '中午'], rows: {}, closed: false },
+    // 调休上班的周六: 有行情 → 已同步, 不能因周末判成休市
+    '2026-10-10': { periods: ['上午'], rows: {}, closed: false },
+    // 后端标记的节假日: 工作日也不该显示成"缺失(可同步)"
+    '2026-10-01': { periods: [], rows: {}, closed: true },
+  } satisfies CalendarMap
+
+  it('有行情的时段是已同步(哪怕当天是周末)', () => {
+    expect(matrixCellState('2026-10-10', '上午', calendars)).toBe('synced')
+  })
+
+  it('同一交易日里没同步的时段是缺失(可点同步)', () => {
+    expect(matrixCellState('2026-10-09', '下午', calendars)).toBe('missing')
+    // 周六有行情, 其余时段仍算缺失而不是休市
+    expect(matrixCellState('2026-10-10', '下午', calendars)).toBe('missing')
+  })
+
+  it('后端标记的休市日显示休市, 不显示成可同步的缺失', () => {
+    expect(matrixCellState('2026-10-01', '上午', calendars)).toBe('off')
+  })
+
+  it('周末无行情是休市(兜底判据保留)', () => {
+    expect(matrixCellState('2026-10-11', '上午', calendars)).toBe('off')
+  })
+})
+
+/** 概览条「最新行情」: 取最近一个真正有行情的日期 + 时段，不猜、不取未来日期。 */
+describe('latestQuotedSlot 最新行情', () => {
+  it('取日期最新且有行情的时段; 同一天取最后一个时段', () => {
+    expect(
+      latestQuotedSlot({
+        '2026-10-09': { periods: ['上午'], rows: {}, closed: false },
+        '2026-10-10': { periods: ['上午', '下午'], rows: {}, closed: false },
+        // 更晚的日期没有行情, 不能占位
+        '2026-10-11': { periods: [], rows: {}, closed: false },
+      }),
+    ).toEqual({ date: '2026-10-10', period: '下午' })
+  })
+
+  it('没有任何行情时返回 null', () => {
+    expect(latestQuotedSlot({})).toBeNull()
+    expect(
+      latestQuotedSlot({
+        '2026-10-09': { periods: [], rows: {}, closed: true },
+      }),
+    ).toBeNull()
   })
 })

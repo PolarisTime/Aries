@@ -429,11 +429,69 @@ describe('MarketSyncView（迁移到 TanStack Query）', () => {
       table?.querySelectorAll('tbody th[scope="row"]') ?? [],
     ).map((el) => el.textContent?.trim())
     expect(rowHeaders).toEqual(['上午', '中午', '下午'])
-    // 列头 = 时段列 + 30 天
+    // 列头 = 时段列 + 30 天 + 行尾缺口汇总列
     const colHeaders = table?.querySelectorAll('thead th[scope="col"]') ?? []
-    expect(colHeaders.length).toBe(31)
+    expect(colHeaders.length).toBe(32)
     // 首行仍是「时段」列名
     expect(colHeaders[0].textContent?.trim()).toBe('时段')
+  })
+
+  it('矩阵窗口可往前后翻: 翻页按整段(30 天)请求, 文案跟随窗口', async () => {
+    api.fetchSteelQuoteCalendars.mockResolvedValue([])
+    api.fetchSteelQuotes.mockResolvedValue({ rows: [], total: 0 })
+    api.fetchBackfillStatus.mockResolvedValue(idleBackfillStatus)
+
+    renderView()
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const latestCall = api.fetchSteelQuoteCalendars.mock.calls.at(-1)
+    const [latestFrom, latestTo] = latestCall ?? []
+    const pagerButtons = container.querySelectorAll<HTMLElement>(
+      '.market-sync-pager-button',
+    )
+    expect(pagerButtons).toHaveLength(2)
+    // 最新一段: 只能往更早翻, 「更近」按钮禁用
+    expect(pagerButtons[1].hasAttribute('disabled')).toBe(true)
+    expect(
+      container.querySelector('.market-sync-matrix-range')?.textContent,
+    ).toContain('~')
+
+    // 翻到更早一段
+    await act(async () => {
+      pagerButtons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const prevCall = api.fetchSteelQuoteCalendars.mock.calls.at(-1)
+    const [prevFrom, prevTo] = prevCall ?? []
+    // 整段平移 30 天, 不是按天抖动
+    expect(
+      dayjs(latestFrom as string).diff(dayjs(prevFrom as string), 'day'),
+    ).toBe(30)
+    expect(dayjs(latestTo as string).diff(dayjs(prevTo as string), 'day')).toBe(
+      30,
+    )
+
+    // 历史段时「更近」可用；点回最新一段
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const prevButtons = container.querySelectorAll<HTMLElement>(
+      '.market-sync-pager-button',
+    )
+    expect(prevButtons[1].hasAttribute('disabled')).toBe(false)
+    await act(async () => {
+      container
+        .querySelectorAll<HTMLElement>('.market-sync-pager-button')[1]
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const backCall = api.fetchSteelQuoteCalendars.mock.calls.at(-1)
+    expect(backCall?.[0]).toBe(latestFrom)
   })
 
   it('每个可交互单元格都有唯一可访问名(含日期与时段)', async () => {

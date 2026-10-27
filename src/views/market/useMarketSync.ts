@@ -29,6 +29,7 @@ import {
   type Filters,
   isTradingDay,
   MATRIX_DAYS,
+  MAX_WINDOW_PAGES,
   PAGE_SIZE,
   PERIODS,
   type QuoteSort,
@@ -59,21 +60,42 @@ export function useMarketSync() {
   const [sort, setSort] = useState<QuoteSort>({})
   const [quotePage, setQuotePage] = useState(0)
 
+  /**
+   * 矩阵窗口页码：0 = 最近一段（结束于今天），1 = 再往前一段…
+   *
+   * <p>窗口按整段（{@link MATRIX_DAYS} 天）翻动而不是按天平移：用户看的是"这一段覆盖得怎么样"，
+   * 翻页后首尾日期保持整段对齐，日历接口的 (from, to) 也不会因为按天平移而每次都变。</p>
+   */
+  const [windowPage, setWindowPage] = useState(0)
+
   const matrixDays = useMemo(() => {
+    const offset = windowPage * MATRIX_DAYS
     const days: string[] = []
     for (let i = 0; i < MATRIX_DAYS; i += 1)
-      days.push(dayjs().subtract(i, 'day').format('YYYY-MM-DD'))
+      days.push(
+        dayjs()
+          .subtract(offset + i, 'day')
+          .format('YYYY-MM-DD'),
+      )
     return days
-  }, [])
+  }, [windowPage])
+
+  /** 当前窗口的首尾日期（首 = 最早，尾 = 最新）。整页文案与翻页标签都取这一处。 */
+  const windowRange = useMemo(() => {
+    const days = matrixDays
+    return {
+      from: days[days.length - 1],
+      to: days[0],
+    }
+  }, [matrixDays])
 
   const calendarRange = useMemo(
     () => ({
-      from: dayjs()
-        .subtract(MATRIX_DAYS - 1, 'day')
-        .format('YYYY-MM-DD'),
-      to: dayjs().add(1, 'day').format('YYYY-MM-DD'),
+      from: windowRange.from,
+      // 结束日 +1 天：后端区间是左闭右开的日历查询, 保证窗口最后一天被覆盖
+      to: dayjs(windowRange.to).add(1, 'day').format('YYYY-MM-DD'),
     }),
-    [],
+    [windowRange],
   )
 
   const calendarQuery = useQuery({
@@ -408,6 +430,15 @@ export function useMarketSync() {
   }
 
   return {
+    /** 窗口翻页: 0 = 最近一段; 只允许往过去翻, 不能翻到未来 */
+    windowPage,
+    windowRange,
+    canPrevWindow: windowPage < MAX_WINDOW_PAGES - 1,
+    canNextWindow: windowPage > 0,
+    isLatestWindow: windowPage === 0,
+    onPrevWindow: () => setWindowPage((page) => page + 1),
+    onNextWindow: () => setWindowPage((page) => Math.max(0, page - 1)),
+    onLatestWindow: () => setWindowPage(0),
     activePeriods,
     selected,
     source,

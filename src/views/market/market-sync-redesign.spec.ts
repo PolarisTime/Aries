@@ -9,6 +9,9 @@ const pageCss = read('./market-sync.css')
 const matrixSource = read('./market-sync-matrix.tsx')
 const viewSource = read('./MarketSyncView.tsx')
 const detailSource = read('./market-sync-detail-drawer.tsx')
+const toolbarSource = read('./market-sync-toolbar.tsx')
+const gapListSource = read('./market-sync-gap-list.tsx')
+const modelSource = read('./market-sync-model.ts')
 
 /** 取某条规则的声明块(按选择器字面量定位)。 */
 const blockOf = (css: string, selector: string) => {
@@ -44,8 +47,11 @@ describe('行情同步页重做契约', () => {
 
   it('矩阵单元格命中区不小于 24×24(WCAG 2.2 SC 2.5.8)', () => {
     const block = blockOf(pageCss, '.market-sync-cell {')
-    expect(block).toMatch(/min-width:\s*24px/)
-    expect(block).toMatch(/min-height:\s*24px/)
+    // 重做后格子放大到 32px 高（价格数字看得清），但下限必须是 24
+    const width = Number(/min-width:\s*(\d+)px/.exec(block)?.[1])
+    const height = Number(/min-height:\s*(\d+)px/.exec(block)?.[1])
+    expect(width).toBeGreaterThanOrEqual(24)
+    expect(height).toBeGreaterThanOrEqual(24)
   })
 
   it('矩阵每个可交互单元格都有可访问名(否则读屏听到一串同名的「缺」)', () => {
@@ -62,7 +68,7 @@ describe('行情同步页重做契约', () => {
   })
 
   it('矩阵按「时段 × 日期」转置(时段是行头, 不再是 30 行大表)', () => {
-    expect(matrixSource).toMatch(/periods\.map\(\(period\) => \(\s*<tr/s)
+    expect(matrixSource).toMatch(/periods\.map\(\(period\) =>/)
     expect(matrixSource).toMatch(/scope="row"/)
     expect(matrixSource).toMatch(/scope="col"/)
   })
@@ -73,6 +79,105 @@ describe('行情同步页重做契约', () => {
     expect(detailSource).toMatch(/placement="right"/)
     // antd 在 title 可渲染时才会把抽屉接到 aria-labelledby
     expect(detailSource).toMatch(/title=\{/)
+  })
+
+  it('矩阵日期按时间正序(左旧右新), 符合"时间向右递增"的直觉', () => {
+    // 上一版是 matrixDays 原序(新→旧), 反向数"上周三"很容易读错
+    expect(matrixSource).toMatch(/\[\.\.\.matrixDays\]\.sort\(\)/)
+    expect(matrixSource).not.toMatch(/matrixDays\.map\(\(date\)/)
+  })
+
+  it('矩阵按周分组: 周一列有周起点标记, 且不与单元格语义色抢空间', () => {
+    expect(matrixSource).toMatch(/is-week-start/)
+    const block = blockOf(pageCss, '.market-sync-grid th.is-week-start {')
+    expect(block).toMatch(/border-inline-start/)
+  })
+
+  it('矩阵有行尾缺口汇总列 + 「只看缺失」筛选(缺口多时能一屏看完待补日期)', () => {
+    expect(matrixSource).toMatch(/market-sync-grid-summaryhead/)
+    expect(matrixSource).toMatch(/matrixSummaryGap/)
+    expect(matrixSource).toMatch(/matrixOnlyMissing/)
+    expect(matrixSource).toMatch(/onlyMissing/)
+  })
+
+  it('矩阵给了最小列宽: 否则 1280 下 "540" 会被折成 "54/0"', () => {
+    const block = blockOf(pageCss, '.market-sync-grid {')
+    const minWidth = Number(/min-width:\s*(\d+)px/.exec(block)?.[1])
+    // 30 列 + 时段列 + 汇总列, 每列至少 34px
+    expect(minWidth).toBeGreaterThanOrEqual(30 * 34)
+  })
+
+  it('格子内价格不折行(nowrap + 数字等宽)', () => {
+    const block = blockOf(pageCss, '.market-sync-cell {')
+    expect(block).toMatch(/white-space:\s*nowrap/)
+    expect(block).toMatch(/font-variant-numeric:\s*tabular-nums/)
+  })
+
+  it('矩阵窗口可往前后翻, 且只允许翻到过去(不能翻到未来)', () => {
+    expect(matrixSource).toMatch(/market-sync-pager-button/)
+    expect(matrixSource).toMatch(/windowCanPrev/)
+    expect(matrixSource).toMatch(/windowCanNext/)
+    // 翻页状态在 hook 里, 「更近」以 page>0 为界, 不会出现负数页码
+    const hookSource = read('./useMarketSync.ts')
+    expect(hookSource).toMatch(/windowPage > 0/)
+    expect(hookSource).toMatch(/Math\.max\(0, page - 1\)/)
+  })
+
+  it('矩阵只缓存当前一段: 窗口翻页按整段平移, 日历请求区间跟着走', () => {
+    const hookSource = read('./useMarketSync.ts')
+    // 窗口首日 = 今天 - (页码 * 天数)，按整段平移而不是按天抖动
+    expect(hookSource).toMatch(/windowPage \* MATRIX_DAYS/)
+    expect(hookSource).toMatch(/calendarRange/)
+  })
+
+  it('文案不再写死"近 30 天": 翻页后仍然是准确的', () => {
+    const zh = readFileSync(
+      new URL('../../locales/zh-CN.ts', import.meta.url),
+      'utf8',
+    )
+    const block = zh.slice(
+      zh.indexOf('  marketSync: {'),
+      zh.indexOf('  financeDetail: {'),
+    )
+    // 指标/矩阵/空态都改为"本段"口径; 只有补数窗口仍按天数描述
+    expect(block).toContain("metricCoverageTitle: '本段覆盖'")
+    expect(block).toContain("metricMissingTitle: '本段缺失'")
+    expect(block).toContain("metricLatestTitle: '本段最新'")
+    expect(block).toContain("matrixTitle: '覆盖矩阵'")
+    expect(block).not.toContain('近30天覆盖')
+    expect(block).not.toContain('覆盖矩阵（近30天）')
+  })
+
+  it('缺口清单与矩阵共用同一状态口径(不再各算一遍)', () => {
+    // 单一来源: matrixCellState 在 model 里定义, 矩阵与清单都 import 它
+    expect(modelSource).toMatch(/export const matrixCellState/)
+    expect(matrixSource).toMatch(/matrixCellState\(date, period, calendars\)/)
+    expect(gapListSource).toMatch(/matrixCellState\(date, period, calendars\)/)
+  })
+
+  it('缺口清单的标签是按钮而不是纯文本(点一下即同步该时段)', () => {
+    expect(gapListSource).toMatch(/<button/)
+    expect(gapListSource).toMatch(/aria-label=\{label\}/)
+    expect(gapListSource).toMatch(/onSyncDate\(date, group\.period\)/)
+  })
+
+  it('数据源/地区属于页首上下文, 而不是和写操作混在一条工具栏里', () => {
+    expect(toolbarSource).toMatch(/MarketSyncHeader/)
+    // 页首负责数据源与刷新, 操作条只留单日同步/区间补数
+    const headerBlock = toolbarSource.slice(
+      toolbarSource.indexOf('export function MarketSyncHeader'),
+      toolbarSource.indexOf('export function MarketSyncToolbar'),
+    )
+    expect(headerBlock).toMatch(/market-sync-source-select/)
+    expect(headerBlock).toMatch(/onRefreshCalendar/)
+  })
+
+  it('同一个补数动作只出现一次(后端本来就会跳过已入库日期)', () => {
+    // 重做前「补数」「补缺失」两个按钮调同一个 onBackfill
+    const toolbarBlock = toolbarSource.slice(
+      toolbarSource.indexOf('export function MarketSyncToolbar'),
+    )
+    expect(toolbarBlock.match(/onClick=\{onBackfill\}/g) ?? []).toHaveLength(1)
   })
 
   it('不再复用比价页的页面级 class(重做后有自己的样式边界)', () => {

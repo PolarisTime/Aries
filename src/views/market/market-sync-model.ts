@@ -4,6 +4,13 @@ export const PERIODS = ['上午', '中午', '下午']
 export const BREEDS = ['螺纹钢', '盘螺', '高线', '圆钢']
 export const PAGE_SIZE = 20
 export const MATRIX_DAYS = 30
+/**
+ * 矩阵最多能往前翻几段（每段 {@link MATRIX_DAYS} 天）。
+ *
+ * 后端日历查询本身没有上限，但再久远的数据也基本不会补，翻太深只会让"缺口"变成噪声；
+ * 12 段 = 一年，足够覆盖跨年对账与年度复盘。
+ */
+export const MAX_WINDOW_PAGES = 12
 export const BACKFILL_POLL_INTERVAL_MS = 3000
 /** 本地时区的今天(YYYY-MM-DD); 不用 UTC, 避免跨时区日期偏移。 */
 export const today = () => dayjs().format('YYYY-MM-DD')
@@ -33,6 +40,25 @@ export const isTradingDay = (
   if (entry?.periods?.length) return true
   if (entry?.closed) return false
   return !isWeekend(date)
+}
+
+/** 矩阵单元格状态: 已同步 / 缺失(可同步) / 休市(非交易日, 非控件)。 */
+export type MatrixCellState = 'synced' | 'missing' | 'off'
+
+/**
+ * 单个「日期 × 时段」的状态 —— **全页唯一口径**。
+ *
+ * <p>覆盖矩阵的格子、行尾缺口汇总、右侧「待补缺口」清单都必须调用这里。
+ * 顺序不能反: 先按周末判"休市"会把调休上班的周六日(有行情)显示成休市,
+ * 该格既不可点也看不到已同步状态。</p>
+ */
+export const matrixCellState = (
+  date: string,
+  period: string,
+  calendars: CalendarMap,
+): MatrixCellState => {
+  if (calendars[date]?.periods.includes(period)) return 'synced'
+  return isTradingDay(date, calendars[date]) ? 'missing' : 'off'
 }
 
 export const csvCell = (value: unknown) => {

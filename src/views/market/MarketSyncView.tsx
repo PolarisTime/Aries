@@ -4,8 +4,13 @@ import { getRuntimeConfig } from '@/api/system/runtime-config'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_LONG } from '@/constants/query-policies'
 import { MarketSyncDetailDrawer } from './market-sync-detail-drawer'
+import { MarketSyncGapList } from './market-sync-gap-list'
 import { MarketSyncMatrix } from './market-sync-matrix'
-import { MarketSyncMetrics, MarketSyncNotices } from './market-sync-metrics'
+import {
+  latestQuotedSlot,
+  MarketSyncMetrics,
+  MarketSyncNotices,
+} from './market-sync-metrics'
 import { MarketSyncHeader, MarketSyncToolbar } from './market-sync-toolbar'
 import { useMarketSync } from './useMarketSync'
 import './market-sync.css'
@@ -57,6 +62,12 @@ export function MarketSyncView() {
     setSyncPeriods,
     syncingCell,
     activePeriods,
+    windowRange,
+    canPrevWindow,
+    canNextWindow,
+    isLatestWindow,
+    onPrevWindow,
+    onNextWindow,
     source,
     setSource,
     region,
@@ -71,6 +82,11 @@ export function MarketSyncView() {
       <MarketSyncHeader
         calendarFetching={calendarQuery.isFetching}
         onRefreshCalendar={() => void calendarQuery.refetch()}
+        source={source}
+        onSourceChange={setSource}
+        region={region}
+        onRegionChange={setRegion}
+        quoteRegions={runtimeConfig?.business?.quoteRegions}
       />
 
       <MarketSyncToolbar
@@ -85,31 +101,47 @@ export function MarketSyncView() {
         backfilling={backfilling}
         onBackfill={() => void onBackfill()}
         source={source}
-        onSourceChange={setSource}
-        region={region}
-        onRegionChange={setRegion}
-        quoteRegions={runtimeConfig?.business?.quoteRegions}
       />
 
-      <MarketSyncMetrics periods={activePeriods} stats={stats} />
+      <MarketSyncMetrics
+        periods={activePeriods}
+        stats={stats}
+        latest={latestQuotedSlot(calendars)}
+      />
 
       <MarketSyncNotices
         backfillStatus={backfillStatus}
         backfillTotalDays={backfillTotalDays}
       />
 
-      <MarketSyncMatrix
-        matrixDays={matrixDays}
-        periods={activePeriods}
-        calendars={calendars}
-        selected={selected}
-        syncingCell={syncingCell}
-        onSyncDate={(date, period) => void onSyncDate(date, period)}
-        onSelectQuote={(date, period) => {
-          selectQuote(date, period)
-          setDetailOpen(true)
-        }}
-      />
+      <div className="market-sync-body">
+        <MarketSyncMatrix
+          windowRange={windowRange}
+          windowCanPrev={canPrevWindow}
+          windowCanNext={canNextWindow}
+          windowIsLatest={isLatestWindow}
+          onPrevWindow={onPrevWindow}
+          onNextWindow={onNextWindow}
+          matrixDays={matrixDays}
+          periods={activePeriods}
+          calendars={calendars}
+          selected={selected}
+          syncingCell={syncingCell}
+          onSyncDate={(date, period) => void onSyncDate(date, period)}
+          onSelectQuote={(date, period) => {
+            selectQuote(date, period)
+            setDetailOpen(true)
+          }}
+        />
+
+        <MarketSyncGapList
+          calendars={calendars}
+          matrixDays={matrixDays}
+          periods={activePeriods}
+          syncingCell={syncingCell}
+          onSyncDate={(date, period) => void onSyncDate(date, period)}
+        />
+      </div>
 
       <MarketSyncDetailDrawer
         open={detailOpen}

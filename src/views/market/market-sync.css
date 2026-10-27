@@ -4,10 +4,12 @@
  * 页面根同时是唯一的纵向滚动容器。
  * 背景: 覆盖矩阵原先自带 scroll={{y:420}} 内部滚动, 而外层 .leo-content-inner 是
  * overflow: hidden 且自身不滚动 —— 两者叠加会导致底部「行情明细」被裁掉不可达
- * (低分辨率下实测内容 853px / 可视 571px)。重做后矩阵变为 3 行紧凑带,
- * 不再需要内部滚动, 页面只保留这一处滚动。
+ * (低分辨率下实测内容 853px / 可视 571px)。重做后页面只保留这一处滚动。
  */
 .market-sync-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
   height: 100%;
   min-height: 0;
   padding: var(--space-sm);
@@ -18,13 +20,26 @@
   scrollbar-gutter: stable;
 }
 
-/* ── 页首: 标题 + 全局主操作 ── */
+/* ── 页首: 标题 + 口径说明 + 数据源上下文 ── */
 .market-sync-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-md);
-  margin-bottom: var(--space-sm);
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+}
+
+.market-sync-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.market-sync-head-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
 .market-sync-head h1 {
@@ -34,91 +49,130 @@
   line-height: 1.4;
 }
 
+/* 「近 30 天」这类窗口标签: 说明统计范围, 不是可点控件 */
+.market-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--theme-primary);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 .market-sync-desc {
-  display: block;
-  margin-top: var(--space-2);
   font-size: var(--font-size-xs);
   line-height: 1.5;
   /* 对比度: placeholder 色不满足 AA, 说明性文字统一用 --text-secondary */
   color: var(--text-secondary);
 }
 
-/* ── 分组操作条 ── */
-.market-sync-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-sm) var(--space-md);
-  margin-bottom: var(--space-sm);
-}
-
-.market-sync-bar-group {
+.market-sync-head-actions {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  min-height: 24px;
+  flex-wrap: wrap;
 }
 
-.market-sync-bar-group + .market-sync-bar-group {
-  padding-inline-start: var(--space-md);
-  border-inline-start: 1px solid var(--theme-border-subtle);
-}
-
-.market-sync-bar-label {
+.market-sync-head-label {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
-/* ── 指标概览 ── */
+.market-sync-source-select {
+  width: 130px;
+}
+
+.market-sync-region-select {
+  width: 110px;
+}
+
+/* ── 概览条: 一条带分隔线的指标带, 不是并排卡片 ── */
 .market-sync-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0;
+  padding: var(--space-xs) 0;
+  background: var(--theme-card-bg, #fff);
+  border: 1px solid var(--theme-card-border);
+  border-radius: var(--app-border-radius);
 }
 
-.market-sync-metric .ant-statistic-title {
+.market-sync-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) var(--space-md);
+}
+
+/* 指标之间用竖线切分: 比"四张卡各带一圈边框"更轻, 也不吃高度 */
+.market-sync-metric + .market-sync-metric {
+  border-inline-start: 1px solid var(--theme-border-subtle);
+}
+
+.market-sync-metric-label {
   font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
-/* 数字是这一屏的主信息, 用强调色而不是默认黑 */
-.market-sync-metric .ant-statistic-content {
-  font-size: 22px;
-  line-height: 1.2;
+.market-sync-metric-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-primary);
 }
 
-.market-sync-metric.is-danger .ant-statistic-content {
+.market-sync-metric.is-danger .market-sync-metric-value {
   color: var(--color-danger-active);
 }
 
-.market-sync-metric.is-success .ant-statistic-content {
+.market-sync-metric.is-success .market-sync-metric-value {
   color: var(--color-success-active);
 }
 
-/* 覆盖进度条: 与数字同宽, 不放大会喧宾夺主 */
-.market-sync-metric-progress {
-  margin-top: var(--space-xs);
+.market-sync-metric-unit {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 
-.market-sync-metric-unit {
-  margin-inline-start: var(--space-2);
+.market-sync-metric-hint {
   font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  color: var(--text-placeholder);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 覆盖进度条: 与数字同宽, 只占 4px 高, 不喧宾夺主 */
+.market-sync-metric-progress {
+  margin: 0;
+}
+
+.market-sync-metric-progress .ant-progress-inner {
+  height: 4px;
 }
 
 /* 今日三个时段: 用可辨的状态点, 不是三行同尺寸 Tag */
 .market-sync-today {
   display: flex;
   gap: var(--space-sm);
-  margin-top: var(--space-xs);
 }
 
 .market-sync-today-item {
   display: inline-flex;
   align-items: center;
   gap: var(--space-xxs);
-  min-height: 24px;
+  min-height: 20px;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
@@ -134,11 +188,72 @@
   background: var(--color-success);
 }
 
-/* ── 补数进度 / 跳过 / 失败区 ── */
-.market-sync-notices {
-  margin-bottom: var(--space-sm);
+/* ── 动作区: 左右两组, 各自的输入与动作在一起 ── */
+.market-sync-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-sm);
 }
 
+.market-sync-action {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--theme-card-bg, #fff);
+  border: 1px solid var(--theme-card-border);
+  border-radius: var(--app-border-radius);
+}
+
+/* 主操作(单日同步)用左侧色条区分层级, 不靠更大的按钮尺寸 */
+.market-sync-action.is-primary {
+  border-inline-start: 3px solid var(--theme-primary);
+}
+
+.market-sync-action-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.market-sync-action-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  white-space: nowrap;
+}
+
+.market-sync-action-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-placeholder);
+}
+
+.market-sync-action-body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.market-sync-date {
+  width: 130px;
+}
+
+.market-sync-periods {
+  min-width: 160px;
+}
+
+.market-sync-days {
+  width: 110px;
+}
+
+.market-sync-action-footnote {
+  font-size: var(--font-size-xs);
+  color: var(--text-placeholder);
+}
+
+/* ── 补数进度 / 跳过 / 失败区 ── */
 .market-sync-tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -146,13 +261,65 @@
   margin-top: var(--space-xs);
 }
 
-/* ── 覆盖矩阵 ── */
+/* ── 覆盖矩阵(本页主体) ── */
+.market-sync-matrix-card {
+  /* 不 flex-grow: 只有 3 行时段, 撑满剩余高度会变成一张大空白卡片 */
+  flex: 0 0 auto;
+}
+
 .market-sync-matrix-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.market-sync-matrix-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.market-sync-matrix-range {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--text-placeholder);
+  font-variant-numeric: tabular-nums;
+}
+
+.market-sync-matrix-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.market-sync-matrix-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.market-sync-matrix-jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 24px;
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--theme-border-light);
+  border-radius: var(--app-border-radius);
+  cursor: pointer;
+}
+
+.market-sync-matrix-jump:hover {
+  color: var(--theme-primary);
+  border-color: var(--theme-primary);
 }
 
 .market-sync-legend {
@@ -194,16 +361,17 @@
 
 /* 30 列在窄屏仍要可读: 优先整体可见, 真放不下时只横向滚动这一块 */
 .market-sync-grid-wrap {
-  margin-top: var(--space-xs);
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
 
 .market-sync-grid {
   width: 100%;
-  min-width: 640px;
+  /* 30 天 × 每天一格: 每列低于 ~34px 时 "540" 这类价格会被折成两行, 给一个下限,
+     放不下时只让矩阵自身横向滚动(页面纵向滚动仍是唯一一处) */
+  min-width: 1180px;
   border-collapse: separate;
-  border-spacing: 2px;
+  border-spacing: 3px;
   table-layout: fixed;
 }
 
@@ -213,9 +381,16 @@
 }
 
 .market-sync-grid-rowhead {
-  width: 52px;
+  width: 56px;
   font-size: var(--font-size-xs);
   text-align: start;
+  white-space: nowrap;
+}
+
+.market-sync-grid-summaryhead {
+  width: 88px;
+  font-size: var(--font-size-xs);
+  text-align: end;
   white-space: nowrap;
 }
 
@@ -230,14 +405,37 @@
   color: var(--text-placeholder);
 }
 
-.market-sync-grid td {
-  padding: 0;
-  text-align: center;
-}
-
+/* 今天: 表头文字加重 + 小圆点, 不用整列背景色(会与单元格语义色打架) */
 .market-sync-grid th.is-today .market-sync-grid-date {
   font-weight: 700;
   color: var(--theme-primary);
+}
+
+.market-sync-grid-today {
+  display: block;
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--theme-primary);
+}
+
+/*
+ * 周分组: 周一列左侧一条竖线 + 相邻周交替底色。
+ * 只作用于表头 —— 单元格本身已有"已同步/缺失/休市"的语义底色, 再叠一层会互相干扰。
+ */
+.market-sync-grid th.is-week-start {
+  border-inline-start: 1px solid var(--theme-border-subtle);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+}
+
+.market-sync-grid th.is-alt-week .market-sync-grid-date {
+  color: var(--text-secondary);
+  opacity: 0.72;
+}
+
+.market-sync-grid td {
+  padding: 0;
+  text-align: center;
 }
 
 /*
@@ -251,15 +449,17 @@
   justify-content: center;
   width: 100%;
   min-width: 24px;
-  min-height: 24px;
-  padding: 0 var(--space-2);
+  min-height: 32px;
+  padding: 0 1px;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--text-secondary);
   background: var(--ant-color-fill-quaternary, #f5f5f5);
   border: 1px solid var(--theme-border-light);
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition:
     filter 0.15s,
@@ -303,6 +503,172 @@
   outline-offset: 1px;
 }
 
+/* 窗口翻页: 卡片标题里的「早 N 天 / 范围 / 晚 N 天」 */
+.market-sync-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.market-sync-pager-button {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--theme-border-light);
+  border-radius: var(--app-border-radius);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.market-sync-pager-button:hover:not(:disabled) {
+  color: var(--theme-primary);
+  border-color: var(--theme-primary);
+}
+
+.market-sync-pager-button:disabled {
+  color: var(--theme-disabled);
+  cursor: not-allowed;
+}
+
+.market-sync-pager-button:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 1px;
+}
+
+.market-sync-pager-tag {
+  padding: 0 var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-placeholder);
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* 行尾缺口汇总: 数字右对齐, 与格子的颜色语义一致 */
+.market-sync-grid-summary {
+  padding-inline-start: var(--space-xs);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+
+.market-sync-grid-summary .is-gap {
+  color: var(--color-danger-active);
+}
+
+.market-sync-grid-summary .is-full {
+  color: var(--color-success-active);
+}
+
+/* ── 主体: 矩阵(左) + 待补缺口清单(右) ── */
+.market-sync-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 268px;
+  align-items: start;
+  gap: var(--space-sm);
+}
+
+/* 待补缺口: 把矩阵里散落的红格聚成可点清单 */
+.market-sync-gaps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  background: var(--theme-card-bg, #fff);
+  border: 1px solid var(--theme-card-border);
+  border-radius: var(--app-border-radius);
+}
+
+.market-sync-gaps-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.market-sync-gaps-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+}
+
+.market-sync-gaps-count {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-danger-active);
+}
+
+.market-sync-gaps-count.is-full {
+  color: var(--color-success-active);
+}
+
+.market-sync-gaps-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.market-sync-gaps-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.market-sync-gaps-period {
+  flex: 0 0 32px;
+  padding-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.market-sync-gaps-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+/* 缺口标签: 视觉是 Tag, 语义是按钮(点一下同步该时段) */
+.market-sync-gap-chip {
+  min-width: 48px;
+  min-height: 24px;
+  padding: 0 var(--space-xs);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-danger-active);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.market-sync-gap-chip:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.market-sync-gap-chip:disabled {
+  cursor: progress;
+}
+
+.market-sync-gap-chip:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 1px;
+}
+
+.market-sync-gaps-empty {
+  padding: var(--space-md) 0;
+}
+
 /* ── 明细抽屉 ── */
 .market-sync-detail-filters {
   display: flex;
@@ -326,4 +692,30 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* 1440 以下: 矩阵需要整幅宽度(30 列), 缺口清单落到它下面 */
+@media (max-width: 1440px) {
+  .market-sync-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 窄屏(≤1100px): 动作区改成上下排列, 指标条变两列 */
+@media (max-width: 1100px) {
+  .market-sync-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .market-sync-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .market-sync-metric:nth-child(odd) {
+    border-inline-start: 0;
+  }
+
+  .market-sync-metric:nth-child(n + 3) {
+    border-top: 1px solid var(--theme-border-subtle);
+  }
 }

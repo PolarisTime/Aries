@@ -1,13 +1,4 @@
-import {
-  Alert,
-  Card,
-  Flex,
-  Progress,
-  Statistic,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Alert, Flex, Progress, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { SteelQuoteBackfillStatus } from '@/api/market/steel-quotes'
 import { formatDate } from '@/utils/formatters'
@@ -15,13 +6,33 @@ import { type CalendarMap, PERIODS } from './market-sync-model'
 
 const { Text } = Typography
 
+/** 最近一次有行情的「日期 + 时段」；没有任何行情时为 null。 */
+export function latestQuotedSlot(
+  calendars: CalendarMap,
+): { date: string; period: string } | null {
+  const dates = Object.keys(calendars)
+    .filter((date) => (calendars[date]?.periods.length ?? 0) > 0)
+    .sort()
+  const date = dates.at(-1)
+  if (!date) return null
+  const period = calendars[date]?.periods.at(-1)
+  return period ? { date, period } : null
+}
+
 /**
- * 指标概览: 把原先一行同尺寸 Tag 里的关键数字提出来做大字号。
- * 覆盖进度与缺失数是这一屏最需要一眼看到的信息。
+ * 概览条：四个紧凑指标，**不是四张卡片**。
+ *
+ * <p>重做前三张 Card + Statistic 各占 110px 高、内部只有一个数字，"今日同步 0/3" 的位置
+ * 配三个圆点显得很空；而这一屏真正要看的是下面的覆盖矩阵，被挤到了第二屏。改成一条
+ * 带分隔线的指标条后高度减半，省下的空间留给矩阵（矩阵才是主体）。</p>
+ *
+ * <p>指标顺序按"先看结论、再看细节"：覆盖率 → 缺口 → 最新一次行情 → 今日进度。
+ * 今日指标必须放在最后，且分母跟随数据源的展示时段（西本只有「上午」）。</p>
  */
 export function MarketSyncMetrics({
   stats,
   periods = PERIODS,
+  latest,
 }: {
   stats: {
     /**
@@ -35,28 +46,31 @@ export function MarketSyncMetrics({
   }
   /** 当前数据源的展示时段(西本仅「上午」): 今日同步的分母与圆点必须与矩阵口径一致。 */
   periods?: readonly string[]
+  /** 最近一次有行情的时段；没有行情时为 null。 */
+  latest: { date: string; period: string } | null
 }) {
   const { t } = useTranslation()
   const coveragePercent =
     stats.tradingDays > 0
       ? Math.round((stats.covered / stats.tradingDays) * 100)
       : 0
-  // 已同步时段先转 Set: 下面两处都要在循环里判存在, 数组 includes 是 O(n) 查找
+  // 已同步时段先转 Set: 下面两处在循环里判存在, 数组 includes 是 O(n) 查找
   const todayPeriodSet = new Set(stats.todayEntry?.periods ?? [])
   const todayDone = periods.filter((p) => todayPeriodSet.has(p)).length
+  const allDone = stats.missingSlots === 0
 
   return (
     <div className="market-sync-metrics">
-      <Card size="small" className="market-sync-metric">
-        <Statistic
-          title={t('marketSync.metricCoverageTitle')}
-          value={`${stats.covered} / ${stats.tradingDays}`}
-          suffix={
-            <span className="market-sync-metric-unit">
-              {t('marketSync.metricCoverageUnit')}
-            </span>
-          }
-        />
+      <div className="market-sync-metric">
+        <span className="market-sync-metric-label">
+          {t('marketSync.metricCoverageTitle')}
+        </span>
+        <span className="market-sync-metric-value">
+          {stats.covered} / {stats.tradingDays}
+          <span className="market-sync-metric-unit">
+            {t('marketSync.metricCoverageUnit')}
+          </span>
+        </span>
         <Progress
           className="market-sync-metric-progress"
           percent={coveragePercent}
@@ -65,38 +79,60 @@ export function MarketSyncMetrics({
           status={stats.covered >= stats.tradingDays ? 'success' : 'active'}
           aria-label={t('marketSync.metricCoverageTitle')}
         />
-      </Card>
+        <span className="market-sync-metric-hint">
+          {t('marketSync.metricCoverageHint', { percent: coveragePercent })}
+        </span>
+      </div>
 
-      <Card
-        size="small"
-        className={`market-sync-metric${stats.missingSlots > 0 ? ' is-danger' : ' is-success'}`}
+      <div
+        className={`market-sync-metric${allDone ? ' is-success' : ' is-danger'}`}
       >
-        <Statistic
-          title={t('marketSync.metricMissingTitle')}
-          value={stats.missingSlots}
-          suffix={
-            stats.missingSlots > 0 ? (
+        <span className="market-sync-metric-label">
+          {t('marketSync.metricMissingTitle')}
+        </span>
+        <span className="market-sync-metric-value">
+          {allDone ? (
+            t('marketSync.metricMissingNone')
+          ) : (
+            <>
+              {stats.missingSlots}
               <span className="market-sync-metric-unit">
                 {t('marketSync.metricMissingUnit')}
               </span>
-            ) : null
-          }
-          formatter={
-            stats.missingSlots > 0
-              ? undefined
-              : () => t('marketSync.metricMissingNone')
-          }
-        />
-      </Card>
+            </>
+          )}
+        </span>
+        <span className="market-sync-metric-hint">
+          {allDone
+            ? t('marketSync.metricMissingAllDone')
+            : t('marketSync.metricMissingHint')}
+        </span>
+      </div>
 
-      <Card size="small" className="market-sync-metric">
-        <Statistic
-          title={t('marketSync.metricTodayTitle')}
-          value={todayDone}
-          suffix={
-            <span className="market-sync-metric-unit">/ {periods.length}</span>
-          }
-        />
+      <div className="market-sync-metric">
+        <span className="market-sync-metric-label">
+          {t('marketSync.metricLatestTitle')}
+        </span>
+        <span className="market-sync-metric-value">
+          {latest ? latest.date.slice(5) : t('marketSync.metricLatestNone')}
+          {latest ? (
+            <span className="market-sync-metric-unit">{latest.period}</span>
+          ) : null}
+        </span>
+        <span className="market-sync-metric-hint">
+          {latest
+            ? formatDate(latest.date)
+            : t('marketSync.metricLatestNoneHint')}
+        </span>
+      </div>
+
+      <div className="market-sync-metric">
+        <span className="market-sync-metric-label">
+          {t('marketSync.metricTodayTitle')}
+        </span>
+        <span className="market-sync-metric-value">
+          {todayDone} / {periods.length}
+        </span>
         <div className="market-sync-today">
           {periods.map((period) => {
             const done = todayPeriodSet.has(period)
@@ -121,7 +157,7 @@ export function MarketSyncMetrics({
             )
           })}
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
