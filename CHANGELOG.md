@@ -1,3 +1,15 @@
+# [14.2.0](https://github.com/PolarisTime/Aries/compare/v14.1.2...v14.2.0) (2026-10-27)
+
+
+### Bug Fixes
+
+* **modules:** 身份列表头勾选框与行内序号/勾选框对不齐 ([5988914](https://github.com/PolarisTime/Aries/commit/5988914bfd84a420fb135cfe0b6224e58cd8166f))
+
+
+### Features
+
+* **modules:** 列表页支持按住行拖拽批量勾选，表体不再划词 ([834439f](https://github.com/PolarisTime/Aries/commit/834439f6b32a5fd44d587ad2df15b0fd841f8898))
+
 ## [14.1.2](https://github.com/PolarisTime/Aries/compare/v14.1.1...v14.1.2) (2026-10-27)
 
 
