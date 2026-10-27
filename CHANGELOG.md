@@ -1,3 +1,10 @@
+## [14.3.2](https://github.com/PolarisTime/Aries/compare/v14.3.1...v14.3.2) (2026-10-27)
+
+
+### Performance Improvements
+
+* **modules:** 网价核查的上游数据走 react-query 缓存，重复展开不再重拉行情 ([51f015a](https://github.com/PolarisTime/Aries/commit/51f015aab7d55cb3d564284decad138e6e1355e9))
+
 ## [14.3.1](https://github.com/PolarisTime/Aries/compare/v14.3.0...v14.3.1) (2026-10-27)
 
 
