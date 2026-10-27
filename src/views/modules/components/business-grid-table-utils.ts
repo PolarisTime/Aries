@@ -57,3 +57,20 @@ export function buildTableScrollConfig(options: {
     y: scrollY,
   }
 }
+
+/**
+ * 行内「可交互元素」清单：命中的元素上不触发行的点选 / 双击 / 拖拽框选。
+ *
+ * <p>收敛到一处：行的 `onClick`、`onDoubleClick`、`onKeyDown` 与拖拽框选的 `onMouseDown`
+ * 必须用同一份清单 —— 否则会出现"从按钮上按下鼠标开始框选"这类错位（按钮点了没反应，
+ * 反而整段行被选中）。</p>
+ */
+export const ROW_INTERACTION_EXCLUSION_SELECTOR =
+  'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
+
+export function shouldIgnoreRowInteraction(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest(ROW_INTERACTION_EXCLUSION_SELECTOR))
+  )
+}

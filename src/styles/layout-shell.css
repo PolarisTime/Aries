@@ -2589,6 +2589,22 @@
   height: var(--module-table-body-height, 120px);
 }
 
+/*
+ * 表体禁用「划词选择」：在表格主体按下拖拽 = 批量勾选（Windows 资源管理器 / Excel 式），
+ * 而不是把单元格文字拖蓝 —— 后者会让"想选行"变成"选了一屏文字"，且看不出勾了哪些行。
+ * 行内没有输入控件，因此不影响录入；需要复制单元格内容请到编辑/详情页。
+ */
+.module-table-shell .ant-table-tbody {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 拖拽勾选进行中：整表保持默认光标，避免出现文本插入光标 */
+.module-table-shell.is-row-drag-selecting,
+.module-table-shell.is-row-drag-selecting .ant-table-tbody {
+  cursor: default;
+}
+
 .module-table-shell .ant-table-placeholder > .ant-table-cell {
   height: var(--module-table-body-height, 120px);
 }

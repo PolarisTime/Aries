@@ -4,6 +4,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
+  type PointerEvent,
   type ReactNode,
   useEffect,
   useMemo,
@@ -21,12 +22,14 @@ import type { ModuleRecord } from '@/types/module-page'
 import {
   buildTableScrollConfig,
   computeTableScrollX,
+  shouldIgnoreRowInteraction,
 } from '@/views/modules/components/business-grid-table-utils'
 import {
   RowIdentityCell,
   RowIdentityHeader,
 } from '@/views/modules/components/RowIdentityCell'
 import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
+import { useTableRowRangeSelect } from '@/views/modules/components/use-table-row-range-select'
 
 const ROW_SINGLE_CLICK_DELAY_MS = 220
 /**
@@ -41,8 +44,6 @@ const ROW_SINGLE_CLICK_DELAY_MS = 220
  * 四个可点目标都保持 ≥24×24（WCAG 2.2 SC 2.5.8）。</p>
  */
 export const IDENTITY_COLUMN_WIDTH = 96
-const ROW_INTERACTION_EXCLUSION_SELECTOR =
-  'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
 
 interface Props {
   moduleKey: string
@@ -93,13 +94,6 @@ interface Props {
   tableLabel?: string
 }
 
-function shouldIgnoreRowInteraction(target: EventTarget | null) {
-  return (
-    target instanceof Element &&
-    Boolean(target.closest(ROW_INTERACTION_EXCLUSION_SELECTOR))
-  )
-}
-
 export function BusinessGridTable({
   moduleKey,
   columns,
@@ -131,6 +125,15 @@ export function BusinessGridTable({
   // 测量行(aria-hidden + 0 高)内的可聚焦元素全部退出 Tab 序列; 唯一实现在该 hook 内
   useMeasureRowA11y(shellRef)
   const sequenceStart = (currentPage - 1) * pageSize
+  /*
+   * 按住拖拽批量勾选（Windows 资源管理器式）：结果走 `rowSelection.onChange`，
+   * 与勾选框、Space 键点选是同一个出口。触屏不参与（拖动留给滚动）。
+   */
+  const rangeSelect = useTableRowRangeSelect({
+    containerRef: shellRef,
+    dataSource,
+    rowSelection,
+  })
 
   /*
    * 勾选列 = 首位身份列：序号 / 行复选框 / 明细按钮 / 行菜单合成一格。
@@ -252,14 +255,19 @@ export function BusinessGridTable({
     rowClickTimerRef.current = null
   }
 
-  const onRow = (record: ModuleRecord) => ({
+  const onRow = (record: ModuleRecord, index = 0) => ({
     tabIndex: 0,
     'aria-keyshortcuts': rowSelection ? 'Enter Space' : 'Enter',
     ...(selectedRowKeys
       ? { 'aria-selected': selectedRowKeys.includes(String(record.id)) }
       : {}),
+    onPointerDown: (event: PointerEvent<HTMLElement>) => {
+      rangeSelect.onRowPointerDown(event, index)
+    },
     onClick: (event: MouseEvent<HTMLElement>) => {
       if (shouldIgnoreRowInteraction(event.target)) return
+      // 拖拽框选收尾的那一次 click 不再当作"点选这一行"
+      if (rangeSelect.consumeClickSuppression()) return
       clearPendingRowClick()
       rowClickTimerRef.current = setTimeout(() => {
         rowClickTimerRef.current = null
@@ -327,7 +335,15 @@ export function BusinessGridTable({
   const locale = { emptyText }
 
   return (
-    <div ref={shellRef} className="module-table-shell" style={tableShellStyle}>
+    <div
+      ref={shellRef}
+      className={
+        rangeSelect.isRangeSelecting
+          ? 'module-table-shell is-row-drag-selecting'
+          : 'module-table-shell'
+      }
+      style={tableShellStyle}
+    >
       {virtualModeHint ? (
         <p
           className="module-grid-virtual-mode-hint"
