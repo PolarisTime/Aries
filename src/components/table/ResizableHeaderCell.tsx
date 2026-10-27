@@ -40,6 +40,21 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+/**
+ * 该列当前的**声明宽度**（`width` 属性值），拖拽与键盘调整的起点。
+ *
+ * <p>为什么不用 `getBoundingClientRect().width`：业务列表会把容器富余按比例摊进每一列
+ * （见 `business-grid-table-utils` 的 `distributeSurplusWidth`），渲染宽度比声明宽度大。
+ * 拿渲染宽度当起点，第一下拖拽会把「声明宽度 + 富余」写成新的声明宽度、再叠加一次富余，
+ * 视觉上就是"先被拉大，继续拖才变小"。声明宽度只在列头找不到时（其它表格未注入）回退。</p>
+ */
+function readDeclaredWidth(cell: HTMLTableCellElement): number | null {
+  const raw = cell.getAttribute('data-column-width')
+  if (raw === null) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
 export interface ResizableHeaderCellProps
   extends React.ThHTMLAttributes<HTMLTableCellElement> {
   /** 列 key（dataIndex）。**仅供拖拽/持久化定位，不得用作可访问名** —— 它是内部字段名 */
@@ -50,6 +65,8 @@ export interface ResizableHeaderCellProps
   'data-default-width'?: string
   'data-min-width'?: string
   'data-max-width'?: string
+  /** 声明宽度（列 width 属性），拖拽起点必须用它而不是渲染宽度，见 useColumnResizing */
+  'data-column-width'?: string
   /** 拖拽中实时回调（仅更新 UI，不持久化） */
   onResizePreview?: (width: number) => void
   /** 拖拽结束回调（触发持久化） */
@@ -189,8 +206,7 @@ export function ResizableHeaderCell(props: ResizableHeaderCellProps) {
     event.preventDefault()
     event.stopPropagation()
     startXRef.current = event.clientX
-    startWidthRef.current =
-      headerCell.getBoundingClientRect().width || defaultWidth
+    startWidthRef.current = readDeclaredWidth(headerCell) ?? defaultWidth
     boundHandlersRef.current = { move: handlePointerMove, up: handlePointerUp }
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
@@ -203,7 +219,7 @@ export function ResizableHeaderCell(props: ResizableHeaderCellProps) {
     delta: number,
   ) => {
     const currentWidth =
-      headerCell?.getBoundingClientRect().width || defaultWidth
+      (headerCell ? readDeclaredWidth(headerCell) : null) ?? defaultWidth
     const next = clampWidth(currentWidth + delta, minWidth, maxWidth)
     onResizePreview?.(next)
     onResizeCommit?.()

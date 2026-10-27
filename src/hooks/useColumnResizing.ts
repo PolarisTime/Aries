@@ -77,6 +77,15 @@ export function useColumnResizing<T>({
           'data-column-key': key,
           'data-resizable': 'true',
           'data-default-width': String(defaultWidth),
+          /*
+           * **声明宽度**（= 本列 width 属性，等于渲染宽度减去「列宽富余摊派」那部分）。
+           *
+           * 拖拽时起点必须用它，不能用 th 的实际渲染宽度：列表页会把容器富余按比例摊进
+           * 每一列（见 business-grid-table-utils 的 distributeSurplusWidth），渲染宽度比
+           * 声明宽度大几十像素。若拿渲染宽度当起点，拖拽第一下会把"声明宽度 + 富余"写成
+           * 新声明宽度，再叠加一次富余 —— 表现就是"先被拉大，继续拖才变小"。
+           */
+          'data-column-width': String(parseTableColumnWidth(merged.width)),
           'data-min-width': String(minWidth),
           'data-max-width': String(maxWidth),
           onResizePreview: (width: number) => onResizePreview(key, width),
