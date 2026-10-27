@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { isBreadcrumbVisible } from '@/layouts/breadcrumb'
 import {
   type PersonalSettings,
   type ThemeMode,
@@ -38,6 +39,8 @@ function normalizePersonalSettings(
       settings?.themeMode === 'system'
         ? settings.themeMode
         : ('system' as ThemeMode),
+    // 缺省显示: 与布局读取面包屑开关时共用同一个判定函数
+    showBreadcrumb: isBreadcrumbVisible(settings),
   }
 }
 
@@ -90,6 +93,12 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedThemeMode, setAppliedThemeMode] = useState<ThemeMode>(
     initialSettings.themeMode,
   )
+  const [showBreadcrumb, setShowBreadcrumb] = useState(
+    initialSettings.showBreadcrumb,
+  )
+  const [appliedShowBreadcrumb, setAppliedShowBreadcrumb] = useState(
+    initialSettings.showBreadcrumb,
+  )
 
   const applySettings = (settings: PersonalSettings | null | undefined) => {
     const normalized = normalizePersonalSettings(
@@ -103,6 +112,8 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedLayoutMode(normalized.layoutMode)
     setThemeMode(normalized.themeMode)
     setAppliedThemeMode(normalized.themeMode)
+    setShowBreadcrumb(normalized.showBreadcrumb)
+    setAppliedShowBreadcrumb(normalized.showBreadcrumb)
   }
 
   const load = () => {
@@ -121,6 +132,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(appliedFontSize)
     setLayoutMode(appliedLayoutMode)
     setThemeMode(appliedThemeMode)
+    setShowBreadcrumb(appliedShowBreadcrumb)
     setVisible(false)
   }
 
@@ -128,13 +140,15 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(defaultFontSize)
     setLayoutMode(defaultLayoutMode)
     setThemeMode('system')
+    setShowBreadcrumb(true)
   }
 
   const save = () => {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
-    persistSettings({ fontSize, layoutMode, themeMode })
+    setAppliedShowBreadcrumb(showBreadcrumb)
+    persistSettings({ fontSize, layoutMode, themeMode, showBreadcrumb })
     window.dispatchEvent(new CustomEvent('personal-settings-changed'))
     setVisible(false)
   }
@@ -150,6 +164,9 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     themeMode,
     appliedThemeMode,
     setThemeMode,
+    showBreadcrumb,
+    appliedShowBreadcrumb,
+    setShowBreadcrumb,
     open,
     close,
     reset,

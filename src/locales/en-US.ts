@@ -2272,6 +2272,9 @@ export const enUS = {
       themeMode: 'Theme Mode',
       resetDefault: 'Reset Default',
       saveDisplay: 'Save Display Settings',
+      breadcrumb: 'Navigation breadcrumb',
+      breadcrumbDesc:
+        'Show the section path (Business / Group / Page) under the tab bar; turn off anytime',
       theme: {
         light: 'Light',
         dark: 'Dark',

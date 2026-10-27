@@ -11,6 +11,20 @@ export interface BreadcrumbItem {
   current: boolean
 }
 
+/**
+ * 面包屑是否显示 —— **全站唯一口径**。
+ *
+ * <p>缺省显示：`settings` 为 null（未登录/首次使用）或字段缺省都算显示，
+ * 只有用户明确在「个人设置 → 显示」里关掉才返回 `false`。
+ * 布局（{@code AppTabContainer}）、个人设置弹窗的开关状态都从这里取，
+ * 避免两处各写一遍 `!== false` 而在默认值上分叉。</p>
+ */
+export function isBreadcrumbVisible(
+  settings: { showBreadcrumb?: boolean } | null | undefined,
+): boolean {
+  return settings?.showBreadcrumb !== false
+}
+
 /** 工作台为业务根页面, 面包屑根节点指向它而非无路由的 '/'。 */
 const ROOT_PAGE_PATH = '/dashboard'
 

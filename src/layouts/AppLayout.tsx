@@ -102,7 +102,9 @@ type PersonalSettingsHostProps = {
   onResetDisplay: () => void
   onSaveDisplay: () => void
   onThemeModeChange: (value: ThemeMode) => void
+  onShowBreadcrumbChange: (value: boolean) => void
   open: boolean
+  showBreadcrumb: boolean
   themeMode: ThemeMode
 }
 
@@ -115,7 +117,9 @@ function PersonalSettingsHost({
   onResetDisplay,
   onSaveDisplay,
   onThemeModeChange,
+  onShowBreadcrumbChange,
   open,
+  showBreadcrumb,
   themeMode,
 }: PersonalSettingsHostProps) {
   return (
@@ -130,6 +134,8 @@ function PersonalSettingsHost({
       onLayoutModeChange={onLayoutModeChange}
       themeMode={themeMode}
       onThemeModeChange={onThemeModeChange}
+      showBreadcrumb={showBreadcrumb}
+      onShowBreadcrumbChange={onShowBreadcrumbChange}
     />
   )
 }
@@ -164,6 +170,8 @@ export function AppLayout() {
     setLayoutMode,
     themeMode,
     setThemeMode,
+    showBreadcrumb,
+    setShowBreadcrumb,
     open: openPersonalSettings,
     close: closePersonalSettings,
     reset: resetPersonalSettings,
@@ -402,6 +410,8 @@ export function AppLayout() {
         onLayoutModeChange={setLayoutMode}
         themeMode={themeMode}
         onThemeModeChange={setThemeMode}
+        showBreadcrumb={showBreadcrumb}
+        onShowBreadcrumbChange={setShowBreadcrumb}
       />
 
       <DocumentFlowModal

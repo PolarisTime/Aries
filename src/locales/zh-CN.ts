@@ -2231,6 +2231,9 @@ export const zhCN = {
       themeMode: '主题模式',
       resetDefault: '恢复默认',
       saveDisplay: '保存显示设置',
+      breadcrumb: '导航面包屑',
+      breadcrumbDesc:
+        '在标签页下方显示「业务中心 / 分组 / 页面」的层级路径，可随时关闭',
       theme: {
         light: '亮色',
         dark: '暗色',

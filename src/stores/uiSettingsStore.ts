@@ -9,6 +9,13 @@ export interface PersonalSettings {
   fontSize?: number
   layoutMode?: LayoutMode
   themeMode?: ThemeMode
+  /**
+   * 是否显示标签页下方的导航面包屑。
+   *
+   * 缺省（`undefined`）= 显示；只有用户明确关掉才写 `false`。
+   * 用布尔而不是「面包屑样式枚举」：这里只有一个可切换项，多一层枚举没有信息量。
+   */
+  showBreadcrumb?: boolean
 }
 
 interface UiSettingsState {
@@ -29,6 +36,10 @@ function normalizeLayoutMode(value: unknown): LayoutMode | undefined {
   return value === 'sider' || value === 'top' ? value : undefined
 }
 
+function normalizeShowBreadcrumb(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined
+}
+
 function normalizeThemeMode(value: unknown): ThemeMode | undefined {
   return value === 'light' || value === 'dark' || value === 'system'
     ? value
@@ -47,6 +58,7 @@ export function normalizePersonalSettings(
   const fontSize = normalizeFontSize(candidate.fontSize)
   const layoutMode = normalizeLayoutMode(candidate.layoutMode)
   const themeMode = normalizeThemeMode(candidate.themeMode)
+  const showBreadcrumb = normalizeShowBreadcrumb(candidate.showBreadcrumb)
 
   if (fontSize !== undefined) {
     settings.fontSize = fontSize
@@ -56,6 +68,9 @@ export function normalizePersonalSettings(
   }
   if (themeMode) {
     settings.themeMode = themeMode
+  }
+  if (showBreadcrumb !== undefined) {
+    settings.showBreadcrumb = showBreadcrumb
   }
 
   return Object.keys(settings).length > 0 ? settings : null
