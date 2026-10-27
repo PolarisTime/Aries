@@ -1,3 +1,10 @@
+## [14.3.1](https://github.com/PolarisTime/Aries/compare/v14.3.0...v14.3.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **modules:** 修列宽拖拽「先被拉大、继续拖才变小」 ([3c76b57](https://github.com/PolarisTime/Aries/commit/3c76b57ff1dae86de83539c37469d6e13bb01733))
+
 # [14.3.0](https://github.com/PolarisTime/Aries/compare/v14.2.0...v14.3.0) (2026-10-27)
 
 
