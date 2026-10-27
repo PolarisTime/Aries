@@ -101,17 +101,6 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     requiredPermission: 'quote-regions:read',
   },
   {
-    // 品牌价格表（比价一手价）：一个品牌一张表，规格做行、供应商做列；报单比价取价的最低价来源。
-    // 无 moduleKey（不是业务单据模块），权限码与后端 SUPPLIER_PRICE_LISTS_READ 对齐，权限归采购。
-    key: 'supplier-price-list',
-    titleKey: 'pages.supplier-price-list',
-    menuKey: '/supplier-price-list',
-    view: 'master-supplier-price-list',
-    icon: 'TagsOutlined',
-    menuParent: 'master',
-    requiredPermission: 'supplier-price-lists:read',
-  },
-  {
     // 定尺加价维护：定尺（如 12 米）每吨加价规则，原同时写在 yml 与 Java 默认值里。
     // 无 moduleKey（不是业务单据模块），权限码与后端 LENGTH_PREMIUMS_READ 对齐。
     key: 'length-premium',

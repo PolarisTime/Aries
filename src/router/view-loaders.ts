@@ -58,9 +58,9 @@ export const viewLoaders: Record<
     import('@/views/master-data/LengthPremiumPage').then((m) => ({
       default: m.LengthPremiumPage,
     })),
-  'master-supplier-price-list': () =>
-    import('@/views/master-data/SupplierPriceListPage').then((m) => ({
-      default: m.SupplierPriceListPage,
+  'supplier-quote': () =>
+    import('@/views/price-compare/SupplierQuotePage').then((m) => ({
+      default: m.SupplierQuotePage,
     })),
   'sales-contract': () =>
     import('@/views/sales-contracts/SalesContractPage').then((m) => ({

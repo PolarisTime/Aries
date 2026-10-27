@@ -2733,24 +2733,41 @@ export const zhCN = {
   },
   priceCompare: {
     /**
-     * 品牌价格表（比价一手价）：一个品牌一张表，规格做行、供应商做列。
-     * 报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
+     * 供应商报价表（比价一手价）：以供应商为入口录入，列 = 该供应商的经营品牌，
+     * 行 = 商品资料全量规格。报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
      */
     supplierPrice: {
       brand: '品牌',
       brandPlaceholder: '选择品牌',
+      supplier: '供应商',
+      supplierPlaceholder: '选择供应商',
       quotedOn: '报价日期',
-      addSupplier: '增加供应商',
+      quotedOnHint:
+        '新建品牌列时使用该报价日期；已有列显示各自的报价日期，保存不会改动它',
+      addBrand: '追加品牌',
+      addBrandPlaceholder: '选择要追加的品牌',
+      refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
-      saved: '已保存',
+      savedBrands: '已保存 {{count}} 个品牌列',
+      saveFailed: '{{names}} 保存失败，改动已保留',
+      saveNothing: '没有需要保存的改动',
       category: '类别',
       spec: '材质 / 规格 / 定尺',
-      pickBrand: '先选一个品牌，再录入该品牌下各供应商的报价',
-      empty: '还没有供应商，先在上面「增加供应商」',
-      removeTitle: '移除供应商「{{name}}」？',
+      newColumn: '新列（保存时创建）',
+      columnQuotedOn: '报价日期 {{date}}',
+      entryHint:
+        '列为该供应商的经营品牌（来自供应商资料），空 = 不报价，0 是真实价格；保存按品牌列整组替换',
+      pickSupplier: '先选一个供应商，再录入它在各品牌下的报价',
+      noBrands:
+        '该供应商还没有可录的品牌列：可在「供应商资料」维护经营品牌，或用上方「追加品牌」手动添加',
+      empty: '该供应商在各品牌下都还没有报价',
+      discardTitle: '放弃未保存的报价？',
+      discardContent: '切换供应商会丢弃当前页尚未保存的报价改动。',
+      discardOk: '放弃并切换',
+      removeTitle: '移除品牌「{{name}}」下的报价？',
       removeContent: '该供应商在此品牌下的全部报价将一并移除，其它品牌不受影响',
       removeColumn: '移除这一列',
-      removeColumnA11y: '移除供应商 {{name}}',
+      removeColumnA11y: '移除品牌 {{name}} 的报价列',
       fillFromPriceList: '从价格表带价',
       fillFromPriceListHint:
         '按品牌取价格表里的最低价，只填**空着的**格子，已有的一律不动',
@@ -3161,7 +3178,7 @@ export const zhCN = {
     'company-setting': '结算主体管理',
     'value-alias': '值映射维护',
     'quote-region': '取价地区维护',
-    'supplier-price-list': '品牌价格表',
+    'supplier-quote': '供应商报价表',
     'length-premium': '定尺加价维护',
     'customer-statement': '客户对账单',
     'freight-statement': '物流对账单',

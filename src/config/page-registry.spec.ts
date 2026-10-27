@@ -28,6 +28,28 @@ describe('比价模块注册', () => {
     expect(getPageRoutePath(page!.key)).toBe('price-compare')
   })
 
+  it('供应商报价表挂在比价分组，紧随报单比价之后，且不再出现在基础数据', () => {
+    const marketMenuKeys = (
+      buildMenuEntriesByGroup(appPageDefinitions).get('market') ?? []
+    ).map((entry) => entry.menuKey)
+    expect(marketMenuKeys).toEqual([
+      '/price-compare',
+      '/supplier-quote',
+      '/market-sync',
+    ])
+
+    const masterMenuKeys = (
+      buildMenuEntriesByGroup(appPageDefinitions).get('master') ?? []
+    ).map((entry) => entry.menuKey)
+    expect(masterMenuKeys).not.toContain('/supplier-quote')
+
+    const page = appPageDefinitions.find(
+      (entry) => entry.key === 'supplier-quote',
+    )
+    expect(page?.view).toBe('supplier-quote')
+    expect(page?.requiredPermission).toBe('supplier-price-lists:read')
+  })
+
   it('布局菜单中比价分组紧跟基础数据分组', () => {
     const entries = buildVisibleLayoutMenuEntries({
       appPageDefinitions,
