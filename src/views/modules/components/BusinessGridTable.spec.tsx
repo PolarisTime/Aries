@@ -79,6 +79,16 @@ describe('BusinessGridTable', () => {
     })
   }
 
+  /*
+   * 网格线：使用者反馈"看不出列边界"。antd 的开关是 `bordered`（给每个单元格画边框），
+   * 此处锁死这个 prop 别被顺手删掉 —— 删掉后表格回到"只有行分隔线"，肉眼很难发现。
+   */
+  it('表格开启 antd bordered: 网格线能看出列边界', () => {
+    renderTable({})
+    const table = document.querySelector('.module-table-shell .ant-table')
+    expect(table?.classList.contains('ant-table-bordered')).toBe(true)
+  })
+
   it('数据为空且存在筛选时展示 no-result 与清空筛选入口', () => {
     const onResetFilters = vi.fn()
     renderTable({ emptyStateInput: { hasFilters: true, onResetFilters } })

@@ -45,6 +45,20 @@
   border-bottom: 1px solid var(--module-table-border-color) !important;
 }
 
+/*
+ * 业务列表网格（`bordered`）：把列分隔线加回来，并把线色提到 `--ant-color-border`。
+ *
+ * 基础规则对所有 module 表统一取消了 `border-inline-end`（把 antd 默认的列边线压掉，
+ * 只留行分隔线），所以单开 `bordered` 只会得到"更密的浅灰"。这里按 `.ant-table-bordered`
+ * 作用域恢复：只有显式开了 bordered 的表才出现完整网格，其它表（主数据 / 财务 / 明细）
+ * 外观不变。
+ */
+.module-table-shell .ant-table-bordered .ant-table-thead > tr > th,
+.module-table-shell .ant-table-bordered .ant-table-tbody > tr > td {
+  border-inline-end: 1px solid var(--ant-color-border, #d9d9d9) !important;
+  border-bottom: 1px solid var(--ant-color-border, #d9d9d9) !important;
+}
+
 .module-table-shell .ant-table-tbody .ant-table-row {
   cursor: pointer;
 }

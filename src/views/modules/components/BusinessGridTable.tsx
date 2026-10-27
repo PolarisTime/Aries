@@ -390,6 +390,12 @@ export function BusinessGridTable({
           key={moduleKey}
           rowKey="id"
           size="small"
+          /*
+           * 网格线：使用者反馈"看不出列边界"。antd 官方的开关就是 `bordered`（给每个单元格
+           * 画边框 + 外框），配合 module-table.css 里把线色从极浅的 `--theme-border-subtle`
+           * 提到 `--ant-color-border`，否则 bordered 也只是更密的浅灰、仍然看不出来。
+           */
+          bordered
           /* 读屏用表格用途区分同页的主表/明细表（WCAG 1.3.1）；未传时不输出空 aria-label */
           {...(tableLabel ? { 'aria-label': tableLabel } : {})}
           loading={loading}
