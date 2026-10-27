@@ -38,7 +38,7 @@ import {
   getCashLedger,
 } from '@/api/finance/cash-ledger'
 import { AppProPage } from '@/components/AppProPage'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { formatDocumentReferenceText } from '@/components/document-reference/document-reference-utils'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -153,15 +153,8 @@ function buildColumns(
       dataIndex: 'documentNo',
       width: 180,
       ellipsis: true,
-      render: (value: string, record: CashLedgerLine) => (
-        <DocumentReferencePopover
-          value={{ documentNo: value, id: record.documentId }}
-          moduleKey={
-            record.flowType.startsWith('RECEIPT') ? 'receipt' : 'payment'
-          }
-          documentLabel={t('financeDetail.document')}
-        />
-      ),
+      // 单号只展示纯文本（列 ellipsis 负责省略并把全文写进 title）
+      render: (value: string) => formatDocumentReferenceText(value) || '-',
     },
     {
       title: t('financeDetail.colCounterpartyType'),

@@ -1207,7 +1207,6 @@ export const enUS = {
       viewDetail: 'View details',
       collapseDetail: 'Collapse details',
       expandDetail: 'Expand details',
-      copied: 'Copied',
       detailLines: '{{count}} items',
       detailImportable: 'Importable qty {{count}}',
       selectedMultiSummary:
@@ -3432,17 +3431,6 @@ export const enUS = {
     document: 'Document',
     income: 'Income',
     expense: 'Expense',
-  },
-  documentReference: {
-    copyAllDocs: 'Copy all doc numbers',
-    copyDoc: 'Copy doc number',
-    copy: 'Copy {{no}}',
-    copyAll: 'Copy all',
-    copiedAll: 'Copied all doc numbers',
-    copiedOne: 'Doc number copied',
-    copyFailed: 'Copy failed; please select the numbers manually',
-    related: 'Related {{label}}',
-    amount: 'Amount: {{amount}}',
   },
   priceCompareStore: {
     reorderItemsFailed: 'Failed to save row order',

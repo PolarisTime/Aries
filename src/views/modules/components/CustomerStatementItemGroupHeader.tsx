@@ -1,6 +1,6 @@
 import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { formatDocumentReferenceText } from '@/components/document-reference/document-reference-utils'
 import {
   formatAmount,
   formatDate,
@@ -31,13 +31,9 @@ export function CustomerStatementItemGroupHeader<
           <Typography.Text type="secondary">
             {t('modules.itemsSection.customerStatementSalesOrderNo')}
           </Typography.Text>
-          <DocumentReferencePopover
-            value={group.sourceNo}
-            moduleKey="sales-order"
-            documentLabel={t(
-              'modules.itemsSection.customerStatementSalesOrderNo',
-            )}
-          />
+          <Typography.Text strong>
+            {formatDocumentReferenceText(group.sourceNo) || '-'}
+          </Typography.Text>
         </span>
         <span>
           <Typography.Text type="secondary">

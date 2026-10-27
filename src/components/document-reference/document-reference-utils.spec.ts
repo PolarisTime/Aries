@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildDocumentReferenceSummary,
+  formatDocumentReferenceText,
   isListDocumentReferenceField,
   normalizeDocumentReferences,
-  resolveDocumentReferenceModule,
 } from '@/components/document-reference/document-reference-utils'
 
 describe('normalizeDocumentReferences', () => {
@@ -35,35 +34,49 @@ describe('normalizeDocumentReferences', () => {
   })
 })
 
-describe('buildDocumentReferenceSummary', () => {
-  it('单笔显示完整单号，多笔显示关联数量摘要', () => {
-    expect(buildDocumentReferenceSummary([])).toEqual('-')
-    expect(buildDocumentReferenceSummary([{ no: 'SO-001' }])).toBe('SO-001')
+describe('formatDocumentReferenceText（单据引用显示的唯一文本出口）', () => {
+  it('兼容逗号文本、单号数组与后端对象数组，多单号按顺序用 ", " 连接', () => {
+    expect(formatDocumentReferenceText(' SO-001,SO-002， SO-001 ')).toBe(
+      'SO-001, SO-002',
+    )
+    expect(formatDocumentReferenceText(['PO-1', 'PO-2'])).toBe('PO-1, PO-2')
     expect(
-      buildDocumentReferenceSummary([{ no: 'SO-001' }, { no: 'SO-002' }]),
-    ).toBe('已关联 2 笔单据')
+      formatDocumentReferenceText([
+        { orderNo: 'PO-1', id: '1' },
+        { documentNo: 'PO-2', totalAmount: 1200, status: '已审核' },
+      ]),
+    ).toBe('PO-1, PO-2')
   })
-})
 
-describe('resolveDocumentReferenceModule', () => {
-  it('按关联字段解析目标业务模块', () => {
-    expect(resolveDocumentReferenceModule('purchaseOrderNo')).toBe(
-      'purchase-order',
+  it('单号本身原样输出，不做摘要改写（不再出现「已关联 N 笔」）', () => {
+    expect(formatDocumentReferenceText('SO-001')).toBe('SO-001')
+    expect(formatDocumentReferenceText({ documentNo: 'SK-001', id: '9' })).toBe(
+      'SK-001',
     )
-    expect(resolveDocumentReferenceModule('salesOrderNo')).toBe('sales-order')
-    expect(resolveDocumentReferenceModule('sourceBillNos')).toBe('freight-bill')
-    expect(
-      resolveDocumentReferenceModule('sourceNo', 'freight-statement'),
-    ).toBe('freight-bill')
-    expect(resolveDocumentReferenceModule('sourceNo', 'sales-outbound')).toBe(
-      'sales-order',
-    )
-    expect(resolveDocumentReferenceModule('unknown')).toBeUndefined()
+    expect(formatDocumentReferenceText('SO-001')).not.toContain('已关联')
+  })
+
+  it('空值统一返回空串：回退成 - 还是留空由调用方决定', () => {
+    expect(formatDocumentReferenceText(null)).toBe('')
+    expect(formatDocumentReferenceText(undefined)).toBe('')
+    expect(formatDocumentReferenceText('')).toBe('')
+    expect(formatDocumentReferenceText([])).toBe('')
+    expect(formatDocumentReferenceText(' ,， ')).toBe('')
+  })
+
+  it('不会把对象渲染成 [object Object]，也不会出现 undefined 字面量', () => {
+    const text = formatDocumentReferenceText({
+      documentNo: 'SK-002',
+      id: '1234567890123456789',
+    })
+    expect(text).toBe('SK-002')
+    expect(text).not.toContain('[object Object]')
+    expect(text).not.toContain('undefined')
   })
 })
 
 describe('isListDocumentReferenceField', () => {
-  it('列表主单号不使用关联 Popover，跨单据字段仍使用', () => {
+  it('列表主单号与跨单据字段用同一套纯文本口径，仍按字段区分', () => {
     expect(isListDocumentReferenceField('orderNo', 'orderNo')).toBe(false)
     expect(isListDocumentReferenceField('purchaseOrderNo', 'orderNo')).toBe(
       true,

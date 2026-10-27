@@ -105,7 +105,6 @@ describe('表单字段与 antd 控件的受控绑定', () => {
               createElement(FormFieldRenderer, {
                 key: field.key,
                 field,
-                moduleKey: 'sales-order',
               }),
             ),
           ),

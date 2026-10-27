@@ -2,8 +2,10 @@ import type { TableColumnsType } from 'antd'
 import { Alert, Button, Col, Empty, Row, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
+import {
+  formatDocumentReferenceText,
+  isDocumentReferenceField,
+} from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
@@ -75,31 +77,8 @@ export function ModuleRecordDetailInline({
           return '-'
         }
         if (isDocumentReferenceField(column.dataIndex)) {
-          return (
-            <DocumentReferencePopover
-              value={value}
-              fieldKey={column.dataIndex}
-              contextModuleKey={config.key}
-              documentLabel={column.title}
-              summary={{
-                counterpartyName:
-                  typeof item.customerName === 'string'
-                    ? item.customerName
-                    : typeof item.supplierName === 'string'
-                      ? item.supplierName
-                      : typeof item.carrierName === 'string'
-                        ? item.carrierName
-                        : undefined,
-                amount:
-                  typeof item.amount === 'number' ||
-                  typeof item.amount === 'string'
-                    ? item.amount
-                    : undefined,
-                status:
-                  typeof item.status === 'string' ? item.status : undefined,
-              }}
-            />
-          )
+          // 单据引用列只展示单号纯文本（文本口径见 formatDocumentReferenceText）
+          return formatDocumentReferenceText(value) || '-'
         }
         if (column.render) {
           return column.render(value, item)

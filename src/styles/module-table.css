@@ -801,6 +801,14 @@
   word-break: break-all;
 }
 
+/*
+ * 单据单号列的样式只剩「纯文本单号」一种形态：`.document-reference-trigger` 是不换行的
+ * 行内容器，`.document-reference-link` 负责省略号截断（销售订单 / 采购订单的单号列仍用它们）。
+ *
+ * 单据引用 Popover（行内「复制单号 + 单据引用跳转」两个图标）已整体下线，配套的
+ * `.document-reference-popover*`、`.document-reference-item*`、`.document-reference-*-icon`
+ * 以及「trigger 内按钮 / Typography」规则已全部删除，不要再加回来。
+ */
 .document-reference-trigger {
   display: inline-flex;
   align-items: center;
@@ -810,91 +818,10 @@
   white-space: nowrap;
 }
 
-.document-reference-trigger > .ant-typography {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.document-reference-trigger .ant-btn {
-  flex: 0 0 auto;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
-  padding: 0;
-}
-
 .document-reference-link {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.document-reference-link-icon,
-.document-reference-expand-icon {
-  flex: 0 0 auto;
-  color: var(--theme-text-muted-light);
-  font-size: 11px;
-}
-
-.document-reference-popover .ant-popover-inner {
-  padding: var(--space-sm);
-}
-
-.document-reference-popover-content {
-  width: min(360px, calc(100vw - 40px));
-}
-
-.document-reference-popover-toolbar,
-.document-reference-item-main,
-.document-reference-item-meta {
-  display: flex;
-  align-items: center;
-}
-
-.document-reference-popover-toolbar {
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-
-.document-reference-divider {
-  margin: var(--space-xs) 0;
-}
-
-.document-reference-list {
-  display: grid;
-  gap: var(--space-xs);
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.document-reference-item {
-  padding: var(--space-6) 0;
-  border-bottom: 1px solid var(--theme-card-border);
-}
-
-.document-reference-item:last-child {
-  border-bottom: 0;
-}
-
-.document-reference-item-main {
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-.document-reference-item-main .ant-btn {
-  flex: 0 0 auto;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
-  padding: 0;
-}
-
-.document-reference-item-meta {
-  flex-wrap: wrap;
-  gap: var(--space-6) var(--space-sm);
-  margin-top: 3px;
-  color: var(--theme-text-muted-light);
-  font-size: 12px;
 }
 
 /*

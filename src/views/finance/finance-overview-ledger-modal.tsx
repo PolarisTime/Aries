@@ -3,7 +3,7 @@ import { Alert, Button, Empty, Modal, Space, Table, Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { getCashLedger } from '@/api/finance/cash-ledger'
 import type { FinanceBalance } from '@/api/finance/finance-overview'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { formatDocumentReferenceText } from '@/components/document-reference/document-reference-utils'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { formatDate } from '@/utils/formatters'
 import {
@@ -101,15 +101,9 @@ export function FinanceCounterpartyLedgerModal({
               title: t('receiptReconcile.documentNo'),
               dataIndex: 'documentNo',
               width: 160,
-              render: (value: string, record: { documentId?: string }) => (
-                <DocumentReferencePopover
-                  value={{ documentNo: value, id: record.documentId }}
-                  moduleKey={
-                    balance?.counterpartyType === '客户' ? 'receipt' : 'payment'
-                  }
-                  documentLabel={t('receiptReconcile.document')}
-                />
-              ),
+              // 单号只展示纯文本（文本口径见 formatDocumentReferenceText）
+              render: (value: string) =>
+                formatDocumentReferenceText(value) || '-',
             },
             {
               title: t('receiptReconcile.income'),

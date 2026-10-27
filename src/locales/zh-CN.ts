@@ -1188,7 +1188,6 @@ export const zhCN = {
       viewDetail: '查看明细',
       collapseDetail: '收起明细',
       expandDetail: '展开明细',
-      copied: '已复制',
       detailLines: '明细 {{count}} 条',
       detailImportable: '可导数量 {{count}}',
       selectedMultiSummary:
@@ -3377,17 +3376,6 @@ export const zhCN = {
     document: '单据',
     income: '收入',
     expense: '支出',
-  },
-  documentReference: {
-    copyAllDocs: '复制全部单号',
-    copyDoc: '复制单号',
-    copy: '复制{{no}}',
-    copyAll: '复制全部',
-    copiedAll: '已复制全部单号',
-    copiedOne: '已复制单号',
-    copyFailed: '复制失败，请手动选择单号',
-    related: '关联{{label}}',
-    amount: '金额：{{amount}}',
   },
   priceCompareStore: {
     reorderItemsFailed: '保存行顺序失败',

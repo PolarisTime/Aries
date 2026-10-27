@@ -1,9 +1,6 @@
 import { Spin } from 'antd'
-import { useCallback } from 'react'
 import type { PatchStateUpdater } from '@/hooks/usePatchState'
-import { writeTextToClipboard } from '@/module-system/record/module-record-clipboard'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleRecordDetailInline } from '../ModuleRecordDetailInline'
 import type { ParentSelectorTranslator } from './parent-selector-mode'
@@ -71,12 +68,6 @@ export function useParentSelectorDetail({
     }
   }
 
-  // 与行操作/详情头部共用同一份剪贴板实现（navigator.clipboard + textarea 回落）
-  const copyDocNo = useCallback(
-    (text: string) => writeTextToClipboard(text),
-    [],
-  )
-
   const renderDetail = (record: ModuleRecord) => {
     const recordId = String(record.id || '')
     const detailRecord = inlineDetailItems[recordId]?.record ?? record
@@ -121,23 +112,6 @@ export function useParentSelectorDetail({
             <span className="parent-selector-detail-summary-docno">
               {docNo}
             </span>
-            <button
-              type="button"
-              className="parent-selector-copy-btn"
-              aria-label={t('common.copy')}
-              onClick={(event) => {
-                event.stopPropagation()
-                void copyDocNo(docNo)
-                  .then(() =>
-                    message.success(t('modules.parentSelector.copied')),
-                  )
-                  .catch(() => {
-                    /* 忽略剪贴板不可用场景 */
-                  })
-              }}
-            >
-              ⧉
-            </button>
           </span>
         </div>
         {content}

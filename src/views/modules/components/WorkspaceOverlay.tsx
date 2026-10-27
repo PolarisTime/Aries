@@ -7,7 +7,7 @@ import '@/styles/workspace-overlay.css'
 interface Props {
   open: boolean
   title: React.ReactNode
-  /** 标题右侧、关闭按钮之前的附加控件（如详情头部的「复制单号」）。 */
+  /** 标题右侧、关闭按钮之前的附加控件（可选槽位；详情头部已不再使用「复制单号」按钮）。 */
   headerExtra?: React.ReactNode
   onClose: () => void
   children: React.ReactNode

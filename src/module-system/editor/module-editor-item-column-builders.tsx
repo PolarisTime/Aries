@@ -2,8 +2,10 @@ import type { TableColumnsType } from 'antd'
 import { Checkbox, Input, InputNumber, Select } from 'antd'
 import i18next from 'i18next'
 import type { WarehouseOption } from '@/api/master/warehouse-options'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
+import {
+  formatDocumentReferenceText,
+  isDocumentReferenceField,
+} from '@/components/document-reference/document-reference-utils'
 import { StatusTag } from '@/components/StatusTag'
 import {
   getEditorItemMin,
@@ -110,7 +112,6 @@ function renderReadOnlyValue(
   formatCellValue: (value: unknown, columnType?: string) => string,
   record?: ModuleLineItem,
   key?: string,
-  contextModuleKey?: string,
 ) {
   if (key === 'pieceWeightTon' && shouldDisplayPieceWeightAsDash(record)) {
     return '-'
@@ -133,26 +134,8 @@ function renderReadOnlyValue(
     )
   }
   if (key && isDocumentReferenceField(key)) {
-    return (
-      <DocumentReferencePopover
-        value={value}
-        fieldKey={key}
-        contextModuleKey={contextModuleKey}
-        documentLabel={key}
-        summary={{
-          counterpartyName:
-            asString(record?.customerName) ||
-            asString(record?.supplierName) ||
-            asString(record?.carrierName),
-          amount:
-            typeof record?.amount === 'number' ||
-            typeof record?.amount === 'string'
-              ? record.amount
-              : undefined,
-          status: asString(record?.status),
-        }}
-      />
-    )
+    // 编辑器只读列只展示单号纯文本（文本口径见 formatDocumentReferenceText）
+    return formatDocumentReferenceText(value) || '-'
   }
   return formatCellValue(value, type)
 }
@@ -217,7 +200,6 @@ function buildEditableColumnRender({
           formatCellValue,
           record,
           key,
-          config.key,
         )
       }
 
@@ -233,7 +215,6 @@ function buildEditableColumnRender({
           formatCellValue,
           record,
           key,
-          config.key,
         )
       }
 
@@ -284,7 +265,6 @@ function buildEditableColumnRender({
             formatCellValue,
             record,
             key,
-            config.key,
           )
         }
         return (

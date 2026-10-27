@@ -2,8 +2,10 @@ import { ReloadOutlined } from '@ant-design/icons'
 import { Button, Col, Empty, Flex, Row, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
+import {
+  formatDocumentReferenceText,
+  isDocumentReferenceField,
+} from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
@@ -17,16 +19,13 @@ import { padLabel } from '@/utils/label-utils'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { buildModuleItemGroups } from './module-item-groups'
-import {
-  buildDetailFieldSummary,
-  buildDetailItemColumns,
-} from './module-record-detail-columns'
+import { buildDetailItemColumns } from './module-record-detail-columns'
 
 /**
  * 详情弹窗的内容区：加载中 / 加载失败 / 无数据 / 详情字段 + 只读明细。
  *
- * <p>从 ModuleRecordDetailOverlay 抽出的原因有两条：一是弹窗外壳（标题、关闭、
- * 复制单号）与内容加载态是两件独立的事；二是原来「三态嵌套三元 + 字段网格的
+ * <p>从 ModuleRecordDetailOverlay 抽出的原因有两条：一是弹窗外壳（标题、关闭）
+ * 与内容加载态是两件独立的事；二是原来「三态嵌套三元 + 字段网格的
  * 五层嵌套三元」让这个函数的嵌套深度达到 5，超出 react-doctor 阈值
  * (no-high-complexity-react-function)。这里改成早返回 + 每个字段一个取值组件，
  * 嵌套深度回到 1~2，DOM 结构与类名逐字保持原样。</p>
@@ -75,17 +74,8 @@ function ModuleRecordDetailFieldValue({
   const colDef = config.columns.find((c) => c.dataIndex === field.key)
   const fieldType = colDef?.type || field.type
   if (isDocumentReferenceField(field.key)) {
-    return (
-      <DocumentReferencePopover
-        value={record[field.key]}
-        fieldKey={field.key}
-        moduleKey={config.key}
-        contextModuleKey={config.key}
-        documentLabel={field.label}
-        summary={buildDetailFieldSummary(record)}
-        statusMap={config.statusMap}
-      />
-    )
+    // 单据引用字段只展示单号纯文本（文本口径见 formatDocumentReferenceText）
+    return formatDocumentReferenceText(record[field.key]) || '-'
   }
   if (fieldType === 'status') {
     return renderModuleRecordStatus({
@@ -185,7 +175,6 @@ export function ModuleRecordDetailContent({
   const detailItemGroups = buildModuleItemGroups(config.key, record.items || [])
   const detailTableColumns = buildDetailItemColumns({
     columns: detailItemColumns,
-    moduleKey: config.key,
     formatCellValue,
   })
 

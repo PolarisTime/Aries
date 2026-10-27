@@ -3,12 +3,13 @@ import type { ColumnDef, StockFeatures } from '@tanstack/react-table'
 import { Button, Tooltip } from 'antd'
 import { type ReactNode, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isListDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
+import {
+  formatDocumentReferenceText,
+  isListDocumentReferenceField,
+} from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 
 /**
  * 「明细按钮列」的列 id 与列宽。
@@ -22,17 +23,6 @@ export const DETAIL_TOGGLE_COLUMN_WIDTH = 48
 
 /** 明细按钮的形态：加号/减号（可展开）或眼睛（打开独立详情）。 */
 export type DetailToggleVariant = 'expand' | 'preview'
-
-function resolveSummaryAmount(record: ModuleRecord) {
-  const amount =
-    record.amount ??
-    record.totalAmount ??
-    record.closingAmount ??
-    record.totalFreight
-  return typeof amount === 'number' || typeof amount === 'string'
-    ? amount
-    : undefined
-}
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -97,25 +87,12 @@ export function useGridColumns({
           if (
             isListDocumentReferenceField(colDef.dataIndex, config.primaryNoKey)
           ) {
-            return (
-              <DocumentReferencePopover
-                value={value}
-                fieldKey={colDef.dataIndex}
-                moduleKey={config.key}
-                contextModuleKey={config.key}
-                documentLabel={colDef.title}
-                summary={{
-                  counterpartyName:
-                    asString(record.counterpartyName) ||
-                    asString(record.customerName) ||
-                    asString(record.supplierName) ||
-                    asString(record.carrierName),
-                  amount: resolveSummaryAmount(record),
-                  status: asString(record.status),
-                }}
-                statusMap={config.statusMap}
-              />
-            )
+            /*
+             * 单据引用列只显示单号纯文本：行内「复制单号 / 单据引用跳转」两个图标已整体
+             * 下线。列本身是 antd `ellipsis: true`，长单号由单元格省略并把全文写进
+             * title；文本口径统一取 `formatDocumentReferenceText`（唯一出口）。
+             */
+            return formatDocumentReferenceText(value) || '-'
           }
           if (colDef.render) {
             return colDef.render(value, record)

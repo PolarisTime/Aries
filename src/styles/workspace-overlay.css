@@ -239,20 +239,6 @@
   min-height: 64px;
 }
 
-.parent-selector-copy-btn {
-  margin-left: var(--space-6);
-  padding: 0 var(--space-2);
-  border: none;
-  background: none;
-  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.parent-selector-copy-btn:hover {
-  color: var(--ant-color-primary, #1677ff);
-}
-
 .parent-selector-detail-summary-docno {
   color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
 }

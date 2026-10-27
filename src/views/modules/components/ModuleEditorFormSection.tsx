@@ -129,7 +129,6 @@ export function ModuleEditorFormSection({
             <Col key={field.key} span={getFieldSpan(field, layoutVariant)}>
               <FormFieldRenderer
                 field={field}
-                moduleKey={moduleKey}
                 projectOptions={projectOptions}
                 settlementAccountOptions={settlementAccountOptions}
                 disabled={isEditorFieldDisabledForModule(

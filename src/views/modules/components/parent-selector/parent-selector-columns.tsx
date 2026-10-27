@@ -3,8 +3,8 @@ import { Button, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
 import {
+  formatDocumentReferenceText,
   isDocumentReferenceField,
-  normalizeDocumentReferences,
 } from '@/components/document-reference/document-reference-utils'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
@@ -327,13 +327,12 @@ export function buildParentSelectorDataColumns({
         )
       }
       if (isDocumentReferenceField(column.dataIndex)) {
-        // 选单弹层只需要单号本身：行内复制与「单据流转」两个图标会让勾选行变拥挤，
-        // 也容易在点行勾选时误触跳转。多单号（数组/对象形态）按 `, ` 拼成纯文本，
-        // 列的 ellipsis 会把全文写进 title，需要时仍可悬停查看。
-        const references = normalizeDocumentReferences(value)
-        return references.length
-          ? references.map((reference) => reference.no).join(', ')
-          : '-'
+        /*
+         * 选单弹层只需要单号本身：行内复制与「单据流转」两个图标会让勾选行变拥挤，
+         * 也容易在点行勾选时误触跳转。文本口径统一取 `formatDocumentReferenceText`
+         * （唯一出口），列的 ellipsis 会把全文写进 title，需要时仍可悬停查看。
+         */
+        return formatDocumentReferenceText(value) || '-'
       }
       if (column.type === 'date') {
         return formatCnDate(value)

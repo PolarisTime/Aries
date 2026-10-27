@@ -7,7 +7,7 @@ import {
   type DashboardTodoCategory,
   type DashboardTodoItem,
 } from '@/api/system/dashboard-workspace'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { formatDocumentReferenceText } from '@/components/document-reference/document-reference-utils'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
 import { formatDate } from '@/utils/formatters'
 import { useDashboardWorkspaceQuery } from './useDashboardWorkspaceQuery'
@@ -29,15 +29,6 @@ const TODO_TAB_KEYS: Record<DashboardTodoCategory, string> = {
   'finance-reconcile': 'dashboard.todo.tabs.financeReconcile',
 }
 
-const TODO_MODULE_KEYS: Record<
-  Exclude<DashboardTodoCategory, 'all'>,
-  string
-> = {
-  'purchase-audit': 'purchase-order',
-  'sales-delivery': 'sales-order',
-  'finance-reconcile': 'customer-statement',
-}
-
 /** 待办工作台：按类目展示紧急待办单据，一键直达处理 */
 export function DashboardTodoPanel() {
   const { t } = useTranslation()
@@ -56,13 +47,8 @@ export function DashboardTodoPanel() {
         dataIndex: 'docNo',
         key: 'docNo',
         ellipsis: true,
-        render: (value: string, record) => (
-          <DocumentReferencePopover
-            value={value}
-            moduleKey={TODO_MODULE_KEYS[record.category]}
-            documentLabel={t('dashboard.todo.columns.docNo')}
-          />
-        ),
+        // 单号只展示纯文本（列 ellipsis 负责省略并把全文写进 title）
+        render: (value: string) => formatDocumentReferenceText(value) || '-',
       },
       {
         title: t('dashboard.todo.columns.bizType'),
@@ -78,19 +64,8 @@ export function DashboardTodoPanel() {
         key: 'relatedDocumentNo',
         width: 140,
         ellipsis: true,
-        render: (value: string | null, record) => (
-          <DocumentReferencePopover
-            value={value}
-            moduleKey={
-              record.category === 'sales-delivery'
-                ? 'purchase-order'
-                : record.category === 'finance-reconcile'
-                  ? 'customer-statement'
-                  : undefined
-            }
-            documentLabel={t('dashboard.todo.columns.relatedDocument')}
-          />
-        ),
+        render: (value: string | null) =>
+          formatDocumentReferenceText(value) || '-',
       },
       {
         title: t('dashboard.todo.columns.counterparty'),

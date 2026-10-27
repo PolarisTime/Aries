@@ -1,6 +1,6 @@
 import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
+import { formatDocumentReferenceText } from '@/components/document-reference/document-reference-utils'
 import { formatAmount, formatDate, formatWeight } from '@/utils/formatters'
 import type {
   FreightStatementItemGroup,
@@ -27,11 +27,9 @@ export function FreightStatementItemGroupHeader<
           sourceNo: '',
         })}
       </Typography.Text>
-      <DocumentReferencePopover
-        value={group.sourceNo}
-        moduleKey="freight-bill"
-        documentLabel="物流单"
-      />
+      <Typography.Text strong>
+        {formatDocumentReferenceText(group.sourceNo) || '-'}
+      </Typography.Text>
       <Typography.Text strong>
         {t('modules.itemsSection.freightBillGroupTotal', {
           quantity: group.totalQuantity,

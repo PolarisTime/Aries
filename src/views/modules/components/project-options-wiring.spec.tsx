@@ -92,7 +92,6 @@ function Harness({ onState }: { onState: (state: HarnessState) => void }) {
       ? createElement(FormFieldRenderer, {
           key,
           field,
-          moduleKey: 'sales-order',
           projectOptions: projects,
         })
       : null

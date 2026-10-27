@@ -9,10 +9,6 @@ export interface DocumentReference {
   status?: string
 }
 
-export interface DocumentReferenceSummaryOptions {
-  documentLabel?: string
-}
-
 const DOCUMENT_NO_KEYS = [
   'no',
   'documentNo',
@@ -43,17 +39,6 @@ const AMOUNT_KEYS = [
   'totalFreight',
 ] as const
 
-const MODULE_BY_FIELD: Readonly<Record<string, string>> = {
-  purchaseOrderNo: 'purchase-order',
-  purchaseInboundNo: 'purchase-inbound',
-  inboundNo: 'purchase-inbound',
-  salesOrderNo: 'sales-order',
-  outboundNo: 'sales-outbound',
-  sourceOrderNos: 'sales-order',
-  sourceBillNos: 'freight-bill',
-  sourceNo: 'freight-bill',
-}
-
 export const DOCUMENT_REFERENCE_FIELD_KEYS = new Set([
   'docNo',
   'documentNo',
@@ -72,14 +57,6 @@ export const DOCUMENT_REFERENCE_FIELD_KEYS = new Set([
   'sourceOrderNos',
   'sourceBillNos',
 ])
-
-const SOURCE_MODULE_BY_CONTEXT: Readonly<Record<string, string>> = {
-  'purchase-inbound': 'purchase-order',
-  'sales-outbound': 'sales-order',
-  'freight-bill': 'sales-order',
-  'customer-statement': 'sales-order',
-  'freight-statement': 'freight-bill',
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -192,37 +169,29 @@ export function normalizeDocumentReferences(
   return references
 }
 
-export function buildDocumentReferenceSummary(
-  references: readonly DocumentReference[],
-  options: DocumentReferenceSummaryOptions = {},
-): string {
-  if (references.length === 0) {
-    return '-'
-  }
-  if (references.length === 1) {
-    return references[0].no
-  }
-  const label = options.documentLabel || '单据'
-  return `已关联 ${references.length} 笔${label}`
-}
-
-export function resolveDocumentReferenceModule(
-  fieldKey: string,
-  contextModuleKey?: string,
-): string | undefined {
-  if (fieldKey === 'sourceNo' && contextModuleKey) {
-    return (
-      SOURCE_MODULE_BY_CONTEXT[contextModuleKey] || MODULE_BY_FIELD[fieldKey]
-    )
-  }
-  return MODULE_BY_FIELD[fieldKey]
+/**
+ * 单据引用显示的**唯一文本出口**（全系统只此一处）。
+ *
+ * <p>列表主表格、详情弹层、内联详情、明细行、对账单分组头、看板待办、财务台账、
+ * 打印中心、编辑器只读列与选单器列一律调用本函数取展示文本；任何位置都不得再就近
+ * 拼接一遍单号，否则同一行单号会在不同出口出现不同的间隔/去重口径。归一化统一走
+ * `normalizeDocumentReferences`（兼容逗号文本、单号数组、后端对象数组、
+ * `{documentNo, id}` 形态），多个单号按出现顺序用 `, ` 连接。</p>
+ *
+ * <p>空值（null/undefined/空串/空数组）返回空串：回退成 `-` 还是留空由调用方按场景
+ * 决定（表格单元格回退 `-`，行内摘要留空）。</p>
+ */
+export function formatDocumentReferenceText(value: unknown): string {
+  return normalizeDocumentReferences(value)
+    .map((reference) => reference.no)
+    .join(', ')
 }
 
 export function isDocumentReferenceField(fieldKey: string): boolean {
   return DOCUMENT_REFERENCE_FIELD_KEYS.has(fieldKey)
 }
 
-/** 列表主单号保持紧凑文本展示，跨单据关联号继续使用下钻 Popover。 */
+/** 列表主单号与跨单据关联号使用同一套纯文本口径，仅判断该字段是否属于单据引用列。 */
 export function isListDocumentReferenceField(
   fieldKey: string,
   primaryNoKey?: string,

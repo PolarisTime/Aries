@@ -3,8 +3,10 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import { AccessibleFormItem } from '@/components/AccessibleFormItem'
-import { DocumentReferencePopover } from '@/components/DocumentReferencePopover'
-import { isDocumentReferenceField } from '@/components/document-reference/document-reference-utils'
+import {
+  formatDocumentReferenceText,
+  isDocumentReferenceField,
+} from '@/components/document-reference/document-reference-utils'
 import type {
   ModuleFormFieldDefinition,
   ModuleFormFieldOption,
@@ -24,7 +26,6 @@ import {
 
 interface Props {
   field: ModuleFormFieldDefinition
-  moduleKey?: string
   disabled?: boolean
   projectOptions?: readonly ProjectOption[]
   settlementAccountOptions?: readonly ModuleFormFieldOption[]
@@ -45,7 +46,6 @@ const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
  */
 export function FormFieldRenderer({
   field,
-  moduleKey,
   disabled,
   projectOptions = EMPTY_PROJECT_OPTIONS,
   settlementAccountOptions = [],
@@ -96,28 +96,23 @@ export function FormFieldRenderer({
     </AccessibleFormItem>
   )
 
-  // 只读的单据引用字段用弹层展示关联单号，其余字段一律交给控件分发。
+  /*
+   * 只读的单据引用字段渲染单号纯文本（文本口径见 formatDocumentReferenceText），
+   * 其余字段一律交给控件分发。表单值仍由 Form.Item 的 name 承载，纯文本不会改变提交载荷。
+   */
   const control =
-    disabledValue && isDocumentReferenceField(field.key) ? (
-      <DocumentReferencePopover
-        value={formValues[field.key]}
-        fieldKey={field.key}
-        moduleKey={moduleKey}
-        contextModuleKey={moduleKey}
-        documentLabel={field.label}
-      />
-    ) : (
-      renderModuleFormFieldControl({
-        field,
-        fieldId,
-        disabledValue,
-        placeholder,
-        allowClear,
-        formValues,
-        selectOptions: buildSelectOptions(resolvedOptions),
-        autoCompleteOptions: buildAutoCompleteOptions(resolvedOptions),
-      })
-    )
+    disabledValue && isDocumentReferenceField(field.key)
+      ? formatDocumentReferenceText(formValues[field.key]) || '-'
+      : renderModuleFormFieldControl({
+          field,
+          fieldId,
+          disabledValue,
+          placeholder,
+          allowClear,
+          formValues,
+          selectOptions: buildSelectOptions(resolvedOptions),
+          autoCompleteOptions: buildAutoCompleteOptions(resolvedOptions),
+        })
 
   return renderFormItem(control)
 }

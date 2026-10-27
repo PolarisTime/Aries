@@ -132,7 +132,6 @@ export function PrintJobModalBody({
     <Flex vertical gap="middle">
       <PrintJobHeader
         counterpartyName={recordCounterparty(primaryRecord)}
-        moduleKey={moduleKey}
         moduleTitle={moduleTitle}
         orderNo={recordOrderNo(primaryRecord)}
         projectSummaryText={projectSummary(primaryRecord)}
