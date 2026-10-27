@@ -2644,7 +2644,12 @@
  */
 .module-row-identity {
   display: grid;
-  grid-template-columns: 26px auto;
+  /*
+   * 两列都写死：表头与行内的网格总宽必须一致，`justify-content: center` 才会把它们
+   * 放到同一个起点。用 `auto` 时表头第二列是列名（28px）、行内是动作组（48px），
+   * 两块宽度不同、各自居中，结果**表头的勾选框比行里的勾选框右移 10px**（实测值）。
+   */
+  grid-template-columns: 26px 48px;
   column-gap: var(--space-xxs);
   align-items: center;
   justify-content: center;

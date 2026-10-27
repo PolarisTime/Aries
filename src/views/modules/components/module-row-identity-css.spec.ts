@@ -36,10 +36,12 @@ const blockOf = (selector: string) => {
 }
 
 describe('首位身份列样式契约', () => {
-  it('两列固定网格: 26px 选择器槽位 + 自动宽动作组', () => {
+  it('两列都定宽: 26px 选择器 + 48px 动作组(表头与行内同一起点)', () => {
     const block = blockOf('.module-row-identity')
     expect(block).toMatch(/display:\s*grid/)
-    expect(block).toMatch(/grid-template-columns:\s*26px auto/)
+    // 第二列不能用 auto: 表头列名(28px)与行内动作组(48px)宽度不同, 各自居中会让
+    // 表头勾选框比行勾选框右移 10px
+    expect(block).toMatch(/grid-template-columns:\s*26px 48px/)
     expect(block).toMatch(/column-gap:\s*var\(--space-xxs\)/)
     // 列宽被浏览器摊宽时（列少、不需要横向滚动的页面）两者一起居中，不会错位
     expect(block).toMatch(/justify-content:\s*center/)
