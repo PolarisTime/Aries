@@ -264,7 +264,8 @@
 .app-header-bar-top {
   gap: var(--space-sm);
   justify-content: space-between;
-  padding: 0 var(--space-sm);
+  /* 与标签栏 / 面包屑 / 内容卡同一条左缘 */
+  padding: 0 var(--space-md);
 }
 
 .app-top-nav-left,
@@ -788,6 +789,14 @@
   display: flex;
   align-items: center;
   min-width: 0;
+  /*
+   * 页头三层（标签栏 / 面包屑 / 内容卡）统一左缘 16px、统一底色层次：
+   * 标签栏铺浅灰底表示"这一层是工作区标签"，面包屑退成无底色的一条说明，
+   * 内容卡再浮起白色。改造前标签栏透明 + 面包屑白底各带一条分隔线，
+   * 两条几乎等高、颜色又不同，看起来是"碎的两条带子"。
+   */
+  background: var(--theme-surface-hover);
+  border-bottom: 1px solid var(--theme-border-subtle);
 }
 
 .leo-tabbar {
@@ -799,7 +808,76 @@
 
 /* nav 默认 margin 与内容占位已在 LayoutTabBar 经 v6 语义 styles 内联关闭 */
 .leo-tabbar .ant-tabs-nav {
+  /* 与面包屑文字、内容卡左缘对齐：16px；标签自身的内边距再往里 */
+  padding: 0 var(--space-md);
+}
+
+/* 标签之间留 4px 缝，读起来是"一叠页签"而不是"一串文字" */
+.leo-tabbar.ant-tabs-card > .ant-tabs-nav .ant-tabs-nav-list {
+  gap: var(--space-xxs);
+}
+
+/*
+ * 页签卡片化：未选中透明、hover 浮白、选中白底 + 细边框 + 轻阴影。
+ *
+ * editable-card 默认给相邻标签画分隔线并让选中态只靠背景差，
+ * 在浅灰底上几乎看不出"当前在哪个页"；这里统一改成"浮起的白色卡片"，
+ * 选中态再用主色文字 + 600 字重强化。
+ */
+.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab {
+  height: 30px;
+  margin: 0;
   padding: 0 var(--space-xs);
+  color: var(--theme-text-muted);
+  font-size: 13px;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ant-border-radius, 6px);
+  transition:
+    color 0.12s,
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+.leo-tabbar.ant-tabs-card.ant-tabs-top
+  > .ant-tabs-nav
+  .ant-tabs-tab
+  + .ant-tabs-tab {
+  /* editable-card 给相邻标签加的分隔线/负边距全部清掉，间距由 nav-list 的 gap 管 */
+  margin-inline-start: 0;
+  border-inline-start: 1px solid transparent;
+}
+
+.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab:hover {
+  color: var(--theme-text);
+  background: var(--theme-surface);
+}
+
+.leo-tabbar.ant-tabs-card.ant-tabs-top
+  > .ant-tabs-nav
+  .ant-tabs-tab.ant-tabs-tab-active {
+  color: var(--theme-primary-text);
+  background: var(--theme-surface);
+  border-color: var(--theme-border-subtle);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.leo-tabbar.ant-tabs-card
+  > .ant-tabs-nav
+  .ant-tabs-tab-active
+  .leo-tabbar-label {
+  color: var(--theme-primary-text);
+  font-weight: 600;
+}
+
+/* 选择器写法有讲究：这几条不能以「容器选择器 + 关闭按钮类名」直接开头 ——
+   比价页的无障碍契约 spec 用字面量定位那条 24×24 规则，前缀相同会先命中本块。 */
+.leo-tabbar .ant-tabs-tab:hover .ant-tabs-tab-remove,
+.leo-tabbar .ant-tabs-tab:focus-visible .ant-tabs-tab-remove,
+.leo-tabbar .ant-tabs-tab-active .ant-tabs-tab-remove {
+  opacity: 1;
 }
 
 /* antd 运行时注入的 ::before 底边框与项目样式表特异性平级、注入更晚，
@@ -832,6 +910,10 @@
   min-width: 24px;
   min-height: 24px;
   margin-inline-start: 0;
+  /* 默认只留极淡的形，hover / 选中 / 键盘聚焦时才实显：十几个标签同时挂十几个 × 太吵。
+     命中区与 Tab 序列不受影响（opacity 不改变可聚焦性）。 */
+  opacity: 0.45;
+  transition: opacity 0.12s;
 }
 
 /* 超限指示器：候选标签全被保护时淘汰停止、标签数刻意超出上限，必须让用户看见。
@@ -847,17 +929,34 @@
 }
 
 /* 全局面包屑：标签栏与内容区之间，展示页面层级归属(与标签互补) */
+/*
+ * 面包屑：退成"层级说明"的一条细文字，不再是一块白底带子。
+ *
+ * 改造前它是白底 + 35px 高 + 一条下边框，和标签栏几乎等高，两条带子各带一条线；
+ * 现在去掉底色与边框、压到 28px，靠"末项加粗深色"表达当前位置。
+ */
 .leo-breadcrumb {
   flex: 0 0 auto;
-  padding: var(--space-6) var(--space-md);
+  padding: var(--space-xxs) var(--space-md);
   font-size: 12px;
-  line-height: 1.4;
-  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  background: var(--ant-color-bg-container, #fff);
+  line-height: 20px;
+  background: transparent;
+  border-bottom: none;
 }
 
 .leo-breadcrumb .ant-breadcrumb-link {
+  color: var(--theme-text-muted);
   font-size: 12px;
+}
+
+.leo-breadcrumb li:last-child .ant-breadcrumb-link {
+  color: var(--theme-text);
+  font-weight: 600;
+}
+
+.leo-breadcrumb .ant-breadcrumb-separator {
+  color: var(--theme-text-muted);
+  opacity: 0.6;
 }
 
 /* 多标签页面板：常驻挂载，hidden 属性切换显隐以保留页面状态 */
