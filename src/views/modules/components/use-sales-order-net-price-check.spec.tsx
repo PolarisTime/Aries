@@ -7,6 +7,7 @@ import '@/i18n'
 import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import { salesOrdersPageConfig } from '@/config/business-pages/operations/sales-order-page'
 import type { ModuleRecord } from '@/types/module-page'
+import { clearNetPriceCheckCache } from '../net-price-check-cache'
 import { useNetPriceMatchStore } from '../net-price-match-store'
 import { NetPriceMatchChip } from './NetPriceMatchChip'
 import { SalesOrderNetPriceCheck } from './SalesOrderNetPriceCheck'
@@ -122,6 +123,12 @@ describe('只读详情面的网价核查', () => {
     ).IS_REACT_ACT_ENVIRONMENT = true
     useNetPriceMatchStore.getState().clear()
     resetNetPriceCheckState()
+    /*
+     * 上游数据现在走 react-query 缓存（行情行 / 取价日解析 / 项目配置 / 价格规定），
+     * 缓存跨用例存活会让后面的用例"命中上一个用例的数据" —— 每个用例都从空缓存开始，
+     * 才能如实观察"第一次展开打哪些接口"。
+     */
+    clearNetPriceCheckCache()
     fetchMaterialPriceMatchesMock.mockReset()
     fetchPricingQuoteResolutionMock.mockReset()
     fetchProjectPriceRulesMock.mockReset()
@@ -141,6 +148,12 @@ describe('只读详情面的网价核查', () => {
     container.remove()
     useNetPriceMatchStore.getState().clear()
     resetNetPriceCheckState()
+    /*
+     * 上游数据现在走 react-query 缓存（行情行 / 取价日解析 / 项目配置 / 价格规定），
+     * 缓存跨用例存活会让后面的用例"命中上一个用例的数据" —— 每个用例都从空缓存开始，
+     * 才能如实观察"第一次展开打哪些接口"。
+     */
+    clearNetPriceCheckCache()
   })
 
   const mount = (nextRecord: ModuleRecord | null) => {
@@ -360,6 +373,120 @@ describe('只读详情面的网价核查', () => {
     )
     expect(entries().r1?.state).toBe('MATCHED')
     expect(container.textContent).not.toContain('未核查')
+  })
+
+  /*
+   * 缓存口径：只缓存**上游数据**（行情行/取价解析/项目配置/价格规定），结论仍现算。
+   * 用户的实际痛点是"每次展开都把整段行情重拉一遍"——同一取价日/时段的行情在同一时段内
+   * 是稳定的，重复拉取纯属浪费。
+   */
+  it('同一张单重新展开: 命中上游缓存, 不再打接口且直接给出结论', async () => {
+    const target = record({
+      priceQuoteDate: '2026-10-16',
+      priceQuotePeriod: '上午',
+      priceFloatMode: 'ADD',
+      priceFloatValue: 50,
+    })
+    mount(target)
+    await waitFor(() => entries().r1 !== undefined, '首次核查写入结论')
+    const firstQuoteCalls = fetchMaterialPriceMatchesMock.mock.calls.length
+    expect(firstQuoteCalls).toBeGreaterThan(0)
+
+    // 关掉详情（store 里的结论按既有口径清空），再重新展开同一张单
+    act(() => root.unmount())
+    root = createRoot(container)
+    mount(target)
+    await waitFor(() => entries().r1 !== undefined, '重新展开后写入结论')
+
+    // 行情行缓存命中：一次新请求都没有
+    expect(fetchMaterialPriceMatchesMock.mock.calls.length).toBe(
+      firstQuoteCalls,
+    )
+    expect(entries().r1?.state).toBe('MATCHED')
+  })
+
+  it('不同单据共享同一取价日/时段的行情(整段行情只拉一次)', async () => {
+    const first = record({
+      id: 'order-a',
+      orderNo: 'SO-A',
+      priceQuoteDate: '2026-10-16',
+      priceQuotePeriod: '上午',
+      priceFloatMode: 'ADD',
+      priceFloatValue: 50,
+      items: [
+        {
+          id: 'a1',
+          materialId: 'm1',
+          brand: '萍钢',
+          category: '直条',
+          material: 'HRB400E',
+          spec: '22',
+          length: '9米',
+          unitPrice: 3270,
+        },
+      ],
+    })
+    const second = record({
+      id: 'order-b',
+      orderNo: 'SO-B',
+      priceQuoteDate: '2026-10-16',
+      priceQuotePeriod: '上午',
+      priceFloatMode: 'ADD',
+      priceFloatValue: 50,
+      items: [
+        {
+          id: 'b1',
+          materialId: 'm1',
+          brand: '萍钢',
+          category: '直条',
+          material: 'HRB400E',
+          spec: '22',
+          length: '9米',
+          unitPrice: 3200,
+        },
+      ],
+    })
+
+    mount(first)
+    await waitFor(() => entries().a1 !== undefined, '第一张单核查完成')
+    const afterFirst = fetchMaterialPriceMatchesMock.mock.calls.length
+
+    act(() => root.unmount())
+    root = createRoot(container)
+    mount(second)
+    await waitFor(() => entries().b1 !== undefined, '第二张单核查完成')
+
+    // 取价日/时段/数据源/地区一致 → 复用同一份行情缓存
+    expect(fetchMaterialPriceMatchesMock.mock.calls.length).toBe(afterFirst)
+    expect(entries().b1?.state).toBe('MISMATCH')
+  })
+
+  it('行情缓存过期后重新取数(不会被无限期复用)', async () => {
+    const target = record({
+      priceQuoteDate: '2026-10-16',
+      priceQuotePeriod: '上午',
+      priceFloatMode: 'ADD',
+      priceFloatValue: 50,
+    })
+    mount(target)
+    await waitFor(() => entries().r1 !== undefined, '首次核查写入结论')
+    const firstCalls = fetchMaterialPriceMatchesMock.mock.calls.length
+
+    // 越过 2 分钟 staleTime（行情按时段发布，但当天可能再出价）
+    const realNow = Date.now
+    const base = realNow()
+    Date.now = () => base + 3 * 60_000
+    try {
+      act(() => root.unmount())
+      root = createRoot(container)
+      mount(target)
+      await waitFor(
+        () => fetchMaterialPriceMatchesMock.mock.calls.length > firstCalls,
+        '过期后重新拉取行情',
+      )
+    } finally {
+      Date.now = realNow
+    }
   })
 
   it('同一张单被两处同时展示时只核查一次, 关掉一处不清另一处的结果', async () => {

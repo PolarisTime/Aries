@@ -1,21 +1,31 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchPricingQuoteResolution } from '@/api/market/pricing-quote-resolutions'
-import {
-  fetchProjectOptions,
-  fetchProjectQuoteConfig,
-} from '@/api/master/project-options'
-import { fetchProjectPriceRules } from '@/api/master/project-price-rules'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { summarizeErrorMessage } from '@/utils/error-presentation'
 import {
   buildNetPriceCheckContextKey,
   computeNetPriceEntries,
-  loadNetPriceIndex,
   netPriceRuleFromOrderSnapshot,
   pickEffectiveRule,
 } from '../net-price-check'
-import { type NetPriceRule, normalizeDateValue } from '../net-price-fill'
+import {
+  fetchNetPriceCustomerProjects,
+  fetchNetPricePriceRules,
+  fetchNetPriceQuoteConfig,
+  fetchNetPriceQuoteResolution,
+  fetchNetPriceQuoteRows,
+  readCachedNetPriceCustomerProjects,
+  readCachedNetPricePriceRules,
+  readCachedNetPriceQuoteConfig,
+  readCachedNetPriceQuoteResolution,
+  readCachedNetPriceQuoteRows,
+} from '../net-price-check-cache'
+import {
+  buildNetPriceIndex,
+  type NetPriceMatchEntry,
+  type NetPriceRule,
+  normalizeDateValue,
+} from '../net-price-fill'
 import { useNetPriceMatchStore } from '../net-price-match-store'
 
 /**
@@ -96,6 +106,31 @@ export function useSalesOrderNetPriceCheck(
 
     retainDocument(documentKey)
     if (!useNetPriceMatchStore.getState().hasResult(documentKey, contextKey)) {
+      /*
+       * 先试"纯缓存命中"：同一取价日/时段下重新展开另一张单、或同一张单选完又展开，
+       * 上游数据都已在缓存里 —— 这时直接现算结论，一次网络都不打，也不闪「核查中」。
+       * 口径仍是同一个 `computeNetPriceEntries`，缓存只省掉取数。
+       */
+      const cachedEntries = computeEntriesFromCache({
+        documentKey,
+        projectId,
+        customerId,
+        items,
+        orderDate,
+        deliveryDate,
+        quoteDateSnapshot,
+        quotePeriodSnapshot,
+        priceRuleIdSnapshot,
+        ruleSnapshot: effectiveRuleSnapshot,
+        contextKey,
+        t,
+      })
+      if (cachedEntries) {
+        useNetPriceMatchStore
+          .getState()
+          .setResult(documentKey, cachedEntries, contextKey)
+        return () => releaseDocument(documentKey)
+      }
       startNetPriceCheck({
         documentKey,
         projectId,
@@ -205,15 +240,17 @@ async function runNetPriceCheck(
       fail(t('modules.pages.salesOrder.netPricePickRule'))
       return
     }
-    const quoteConfig = await fetchProjectQuoteConfig(inputs.projectId, signal)
-    const index = await loadNetPriceIndex({
+    const quoteConfig = await fetchNetPriceQuoteConfig(inputs.projectId, signal)
+    // 行情行按「取价日 + 时段 + 数据源 + 地区」缓存(2 分钟), 多张单共享同一份
+    const quoteIndexArgs = {
       quoteDate: quote.quoteDate,
       ...(quote.period ? { period: quote.period } : {}),
       ...(quoteConfig.quoteSource ? { source: quoteConfig.quoteSource } : {}),
       ...(quoteConfig.quoteRegion ? { region: quoteConfig.quoteRegion } : {}),
-      signal,
-    })
+    }
+    const rows = await fetchNetPriceQuoteRows(quoteIndexArgs, signal)
     if (!isActive()) return
+    const index = buildNetPriceIndex(rows)
     useNetPriceMatchStore
       .getState()
       .setResult(
@@ -240,9 +277,9 @@ async function resolveQuote(
       period: inputs.quotePeriodSnapshot,
     }
   }
-  const resolved = await fetchPricingQuoteResolution(
-    inputs.projectId,
+  const resolved = await fetchNetPriceQuoteResolution(
     {
+      projectId: inputs.projectId,
       ...(inputs.orderDate ? { orderDate: inputs.orderDate } : {}),
       ...(inputs.deliveryDate ? { deliveryDate: inputs.deliveryDate } : {}),
     },
@@ -267,13 +304,97 @@ async function resolveRule(
 ): Promise<NetPriceRule | null | typeof UNRESOLVED_RULE> {
   if (inputs.ruleSnapshot) return inputs.ruleSnapshot
   const [rules, project] = await Promise.all([
-    fetchProjectPriceRules(inputs.projectId, signal).catch(() => []),
+    fetchNetPricePriceRules(inputs.projectId, signal).catch(() => []),
     inputs.customerId
-      ? fetchProjectOptions(inputs.customerId)
+      ? fetchNetPriceCustomerProjects(inputs.customerId)
           .then((list) => list.find((option) => option.id === inputs.projectId))
           .catch(() => undefined)
       : Promise.resolve(undefined),
   ])
+  if (rules.length === 0) return null
+  const picked = pickEffectiveRule(rules, [
+    inputs.priceRuleIdSnapshot || undefined,
+    project?.lastPriceRuleId,
+  ])
+  if (!picked) return UNRESOLVED_RULE
+  return { mode: picked.mode, amount: picked.amount }
+}
+
+/**
+ * 只用缓存里的上游数据现算结论；任一项没缓存就返回 `null`（交给网络路径去取）。
+ *
+ * <p>注意区分"没缓存"与"缓存里就是空"：`readCached*` 用 `undefined` 表示前者，
+ * `[]` 表示后者 —— 例如"该项目一条价格规定都没有"是有效结论（按无浮动算），
+ * 必须当成缓存命中，否则重新展开时又会白跑一遍接口。</p>
+ */
+function computeEntriesFromCache(
+  inputs: NetPriceCheckInputs,
+): Record<string, NetPriceMatchEntry> | null {
+  const quote = resolveQuoteFromCache(inputs)
+  if (!quote) return null
+  const rule = resolveRuleFromCache(inputs)
+  // `undefined`（缓存不全）与 `UNRESOLVED_RULE`（多条规定挑不出唯一一条）都交给网络路径处理
+  if (rule === undefined || rule === UNRESOLVED_RULE) return null
+  const quoteConfig = readCachedNetPriceQuoteConfig(inputs.projectId)
+  if (!quoteConfig) return null
+  const rows = readCachedNetPriceQuoteRows({
+    quoteDate: quote.quoteDate,
+    ...(quote.period ? { period: quote.period } : {}),
+    ...(quoteConfig.quoteSource ? { source: quoteConfig.quoteSource } : {}),
+    ...(quoteConfig.quoteRegion ? { region: quoteConfig.quoteRegion } : {}),
+  })
+  if (!rows) return null
+  return computeNetPriceEntries(
+    inputs.items,
+    buildNetPriceIndex(rows),
+    rule ?? undefined,
+  )
+}
+
+/** 取价日/时段：单据快照优先，否则读解析缓存。返回 `null` = 无法确定。 */
+function resolveQuoteFromCache(
+  inputs: NetPriceCheckInputs,
+): { quoteDate: string; period?: string } | null {
+  if (inputs.quoteDateSnapshot && inputs.quotePeriodSnapshot) {
+    return {
+      quoteDate: inputs.quoteDateSnapshot,
+      period: inputs.quotePeriodSnapshot,
+    }
+  }
+  const resolved = readCachedNetPriceQuoteResolution({
+    projectId: inputs.projectId,
+    ...(inputs.orderDate ? { orderDate: inputs.orderDate } : {}),
+    ...(inputs.deliveryDate ? { deliveryDate: inputs.deliveryDate } : {}),
+  })
+  if (!resolved || !resolved.quoteAvailable || !resolved.quoteDate) return null
+  return {
+    quoteDate: resolved.quoteDate,
+    ...(resolved.period ? { period: resolved.period } : {}),
+  }
+}
+
+/**
+ * 生效价格规定：单据快照优先，否则用缓存里的价格规定 + 项目上次使用挑。
+ *
+ * <p>返回三态：`undefined` = 所需缓存不全（交网络路径）；`UNRESOLVED_RULE` 同样交网络路径，
+ * 由那里记录"多条规定挑不出唯一一条"的原因；`null` = 确认无规定；对象 = 已确定。</p>
+ */
+function resolveRuleFromCache(
+  inputs: NetPriceCheckInputs,
+): NetPriceRule | null | typeof UNRESOLVED_RULE | undefined {
+  if (inputs.ruleSnapshot) return inputs.ruleSnapshot
+  const rules = readCachedNetPricePriceRules(inputs.projectId)
+  if (!rules) return undefined
+  const project = inputs.customerId
+    ? readCachedNetPriceCustomerProjects(inputs.customerId)?.find(
+        (option) => option.id === inputs.projectId,
+      )
+    : undefined
+  if (inputs.customerId && !project) {
+    // 客户项目列表还没缓存时，"上次使用的规定"可能就在里面，不能贸然当成无规定
+    const cachedProjects = readCachedNetPriceCustomerProjects(inputs.customerId)
+    if (!cachedProjects) return undefined
+  }
   if (rules.length === 0) return null
   const picked = pickEffectiveRule(rules, [
     inputs.priceRuleIdSnapshot || undefined,
