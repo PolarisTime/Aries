@@ -100,6 +100,33 @@ describe('buildParentSelectorDataColumns', () => {
     expect(rendered).toBe('2026年09月01日')
   })
 
+  it('单号列只渲染纯文本：不再带行内复制与单据流转图标', () => {
+    const columns = toPlainColumns(
+      buildParentSelectorDataColumns({
+        parentModuleKey: 'purchase-order',
+        displayFieldKey: 'orderNo',
+        formatCellValue,
+      }),
+    )
+    const column = columns.find((item) => item.dataIndex === 'orderNo')
+
+    // 单个单号: 直接返回字符串(旧实现返回 <DocumentReferencePopover>, 含 copy/link 两个图标)
+    const single = column?.render?.('PO-2026-001', {} as ModuleRecord, 0)
+    expect(single).toBe('PO-2026-001')
+    expect(typeof single).toBe('string')
+
+    // 多个单号: 归一化后按 `, ` 拼接, 保持可读且仍是纯文本
+    const multiple = column?.render?.(
+      [{ no: 'PO-1' }, { no: 'PO-2' }],
+      {} as ModuleRecord,
+      0,
+    )
+    expect(multiple).toBe('PO-1, PO-2')
+
+    // 空值: 与其它列一致回退 '-'
+    expect(column?.render?.(null, {} as ModuleRecord, 0)).toBe('-')
+  })
+
   it('普通列委托 formatCellValue 渲染', () => {
     const columns = toPlainColumns(
       buildParentSelectorDataColumns({
