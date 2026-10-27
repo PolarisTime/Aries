@@ -284,21 +284,27 @@
   align-items: center;
   /* 与上方筛选 / 已选面板拉开一档；底部留白同时充当吸顶区的收尾，避免表格内容贴住按钮 */
   margin-top: var(--space-xs);
-  padding-bottom: var(--space-sm);
+  /*
+   * 左右内边距对齐「已选单据」面板的内容左边界（面板 padding 为 12px 16px）：
+   * 动作区与面板同为 28px 起，按钮再内缩 16px，与面板里的「已选单据」标题同一条竖线。
+   */
+  padding: 0 var(--space-md) var(--space-sm);
 }
 
 .parent-selector-footer {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  /*
-   * 动作区推右：本元素是 `.parent-selector-top-actions` 的 flex 子项，
-   * margin-left:auto 吃掉行内全部剩余空间，把「摘要 + 按钮」整体钉在工具行最右。
-   */
-  margin-left: auto;
+  /* 占满动作区整行：按钮贴左、摘要被推到行尾，左右两块与上下同宽。 */
+  width: 100%;
 }
 
+/*
+ * 摘要推右：DOM 顺序保持「按钮 → 摘要」（与视觉顺序一致，Tab 顺序不会与看到相反），
+ * 由 margin-left:auto 吃掉剩余空间把它钉在行尾。
+ */
 .parent-selector-footer-summary {
+  margin-left: auto;
   font-size: 12px;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
 }

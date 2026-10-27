@@ -1,4 +1,4 @@
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
+import { CloseOutlined } from '@ant-design/icons'
 import { Button, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import i18next from 'i18next'
@@ -8,6 +8,7 @@ import { statusMap } from '@/config/business-pages/shared/shared-status'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
+import { ParentSelectorFooter } from './parent-selector/ParentSelectorFooter'
 import {
   buildSelectedRecordSummary,
   EMPTY_FIXED_FILTERS,
@@ -128,39 +129,6 @@ function ParentSelectorSelectedPanel({
           {t('modules.parentSelector.noSelectionHint')}
         </div>
       )}
-    </div>
-  )
-}
-
-interface ParentSelectorFooterProps {
-  confirmDisabled: boolean
-  onCancel: () => void
-  onConfirm: () => void
-  summary: string
-  t: ParentSelectorTranslator
-}
-
-function ParentSelectorFooter({
-  confirmDisabled,
-  onCancel,
-  onConfirm,
-  summary,
-  t,
-}: ParentSelectorFooterProps) {
-  return (
-    <div className="parent-selector-footer">
-      <span className="parent-selector-footer-summary">{summary}</span>
-      <div className="parent-selector-footer-buttons">
-        <Button onClick={onCancel}>{t('modules.parentSelector.cancel')}</Button>
-        <Button
-          type="primary"
-          icon={<CheckOutlined />}
-          disabled={confirmDisabled}
-          onClick={onConfirm}
-        >
-          {t('modules.parentSelector.confirmImport')}
-        </Button>
-      </div>
     </div>
   )
 }
