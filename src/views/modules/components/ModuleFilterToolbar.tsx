@@ -1,6 +1,6 @@
 import { SearchOutlined } from '@ant-design/icons'
 import { Button, Form, Input } from 'antd'
-import { useMemo, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ModuleResetButton } from '@/components/ModuleResetButton'
 import {
@@ -68,6 +68,32 @@ function isSameFilterPreset(left: SearchParams, right: SearchParams) {
       const [rightKey, rightValue] = rightEntries[index]
       return key === rightKey && String(value) === String(rightValue)
     })
+  )
+}
+
+interface FilterFieldProps {
+  /** 字段名（渲染在控件左侧） */
+  label: string
+  className?: string
+  children: ReactNode
+}
+
+/**
+ * 筛选项外壳：字段名在控件左侧，一整行按「标签 + 控件」等距排开。
+ *
+ * <p>标签用 `<span>` 而不是 `<label>`：控件自己带 `aria-label`（文案与本处可见标签同一份），
+ * 再套一层 `<label>` 会让同一个字段出现两个名字，部分读屏组合会念两遍。</p>
+ */
+function FilterField({ label, className, children }: FilterFieldProps) {
+  return (
+    <div
+      className={
+        className ? `module-filter-field ${className}` : 'module-filter-field'
+      }
+    >
+      <span className="module-filter-field-label">{label}</span>
+      {children}
+    </div>
   )
 }
 
@@ -151,41 +177,47 @@ export function ModuleFilterToolbar({
     (field) => field.type !== 'input' && field.type !== 'dateRange',
   )
 
-  const renderTextPill = (
+  /*
+   * 文本筛选：字段名在控件左侧（表单式），控件是 32px 直角控件而不是药丸。
+   * 控件自带 aria-label，可见标签与它同一份文案，读屏不会重复念。
+   */
+  const renderTextField = (
     key: string,
     label: string,
     placeholder: string,
     committedValue: string,
   ) => (
-    <Input
-      key={key}
-      name={key}
-      allowClear
-      aria-label={label}
-      aria-keyshortcuts="Enter"
-      className="module-filter-pill module-filter-pill-input"
-      style={{ width: 176, borderRadius: 999 }}
-      suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
-      placeholder={placeholder}
-      value={asString(filters[key])}
-      onChange={(event) => onUpdateFilter(key, event.target.value)}
-      onBlur={(event) => {
-        if (event.target.value.trim() === committedValue.trim()) return
-        commitTextFilter(key, event.target.value)
-      }}
-      onPressEnter={(event) => commitTextFilter(key, event.currentTarget.value)}
-    />
+    <FilterField key={key} label={label}>
+      <Input
+        name={key}
+        allowClear
+        aria-label={label}
+        aria-keyshortcuts="Enter"
+        className="module-filter-control module-filter-control-input"
+        suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
+        placeholder={placeholder}
+        value={asString(filters[key])}
+        onChange={(event) => onUpdateFilter(key, event.target.value)}
+        onBlur={(event) => {
+          if (event.target.value.trim() === committedValue.trim()) return
+          commitTextFilter(key, event.target.value)
+        }}
+        onPressEnter={(event) =>
+          commitTextFilter(key, event.currentTarget.value)
+        }
+      />
+    </FilterField>
   )
 
   return (
     <Form
       colon={false}
-      className="module-filter-toolbar module-filter-chip-toolbar"
+      className="module-filter-toolbar"
       aria-label={t('modules.filter.conditions')}
     >
-      <div className="module-filter-chip-row">
+      <div className="module-filter-form-row">
         {!config.hideKeywordFilter && !hasConfigKeywordFilter
-          ? renderTextPill(
+          ? renderTextField(
               'keyword',
               t('common.keyword'),
               t('common.pleaseInput'),
@@ -193,7 +225,7 @@ export function ModuleFilterToolbar({
             )
           : null}
         {pillFilters.map((field) =>
-          renderTextPill(
+          renderTextField(
             field.key,
             field.label,
             field.placeholder ||
@@ -202,9 +234,10 @@ export function ModuleFilterToolbar({
           ),
         )}
         {dateRangeFilters.map((field) => (
-          <div
+          <FilterField
             key={field.key}
-            className="module-filter-pill module-filter-pill-date"
+            label={field.label}
+            className="module-filter-field-range"
           >
             <ModuleFilterField
               field={field}
@@ -218,41 +251,43 @@ export function ModuleFilterToolbar({
               onCommitTextFilter={commitTextFilter}
               projectOptions={projectOptions}
             />
-          </div>
+          </FilterField>
         ))}
         {chipFilters.map((field) => (
-          <ModuleFilterChip
-            key={field.key}
-            field={field}
-            filters={filters}
-            submittedFilters={submittedFilters}
-            projectOptions={projectOptions}
-            open={openChipKey === field.key}
-            onToggle={(open) => toggleChip(field.key, open)}
-            onUpdateFilter={onUpdateFilter}
+          <FilterField key={field.key} label={field.label}>
+            <ModuleFilterChip
+              field={field}
+              filters={filters}
+              submittedFilters={submittedFilters}
+              projectOptions={projectOptions}
+              open={openChipKey === field.key}
+              onToggle={(open) => toggleChip(field.key, open)}
+              onUpdateFilter={onUpdateFilter}
+              onApplyFilters={onApplyFilters}
+            />
+          </FilterField>
+        ))}
+        <div className="module-filter-form-tail">
+          <ModuleQuickFilterChip
+            quickFilters={quickFilters}
+            defaultFilters={defaultFilters}
+            activeKey={activeQuickFilterKey}
+            open={openChipKey === 'quick-filters'}
+            onToggle={(open) => toggleChip('quick-filters', open)}
             onApplyFilters={onApplyFilters}
           />
-        ))}
-        <ModuleQuickFilterChip
-          quickFilters={quickFilters}
-          defaultFilters={defaultFilters}
-          activeKey={activeQuickFilterKey}
-          open={openChipKey === 'quick-filters'}
-          onToggle={(open) => toggleChip('quick-filters', open)}
-          onApplyFilters={onApplyFilters}
-        />
-        {showSubmitButton ? (
-          <Button
-            className="module-filter-submit-button"
-            type="primary"
-            size="small"
-            icon={<SearchOutlined />}
-            onClick={() => onApplyFilters(filters)}
-          >
-            {t('common.search')}
-          </Button>
-        ) : null}
-        {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
+          {showSubmitButton ? (
+            <Button
+              className="module-filter-submit-button"
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={() => onApplyFilters(filters)}
+            >
+              {t('common.search')}
+            </Button>
+          ) : null}
+          {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
+        </div>
       </div>
     </Form>
   )

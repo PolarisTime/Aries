@@ -112,13 +112,12 @@ export function resolveParentSelectorSourceModule(
  * <p><b>两个布局特例</b>（结论都落在共享的 `ModuleFilterToolbar` 现有能力上，这里只锁定口径）：</p>
  * <ul>
  *   <li><b>segmented</b>（单据状态等）：不是输入框，按 `ModuleFilterChip` 渲染 ——
- *     平时只是一个胶囊按钮，点开才是选项，因此窄工具行放得下；工具行的
- *     `.module-filter-chip-row` 是 `flex-wrap: wrap`，窄屏进一步变单列堆叠。
- *     选定 **折行**，不另做「更多筛选」折叠层：多一层抽屉会让"当前生效的筛选"更难看见，
- *     而筛选区本身只多了 1~2 个胶囊。</li>
- *   <li><b>dateRange</b>（送货日期）：整段区间作为**一个**胶囊（`.module-filter-pill-date`）
- *     参与折行 —— 不拆成"起/止"两个格子，否则折行时两个控件可能被切到两行，
- *     用户就看不出它们属于同一段区间。</li>
+ *     平时只是一个「值 + 箭头」的控件（字段名由外壳标签给出），点开才是选项；
+ *     工具行的 `.module-filter-form-row` 是 `flex-wrap: wrap`，窄屏进一步变单列堆叠。
+ *     选定 **折行**，不另做「更多筛选」折叠层：多一层抽屉会让"当前生效的筛选"更难看见。</li>
+ *   <li><b>dateRange</b>（送货日期）：整段区间作为**一个**控件
+ *     （`.module-filter-field-range`，宽度定在字段上）参与折行 —— 不拆成"起/止"两个格子，
+ *     否则折行时两个控件可能被切到两行，用户就看不出它们属于同一段区间。</li>
  * </ul>
  */
 export function buildOverlayFilterConfig(

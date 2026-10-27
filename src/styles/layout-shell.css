@@ -1410,10 +1410,16 @@
   letter-spacing: 0;
 }
 
+/*
+ * 筛选区容器：白底 + 一条下边框，纵向留白交给行容器（.module-filter-form-row）。
+ *
+ * 原先这里铺 `--theme-surface-hover` 灰底、自己再加一份 padding，灰底会把"标签 + 控件"
+ * 的层次压平，也让筛选区看起来像一块独立的旧式工具条；白底与工具栏同色后，
+ * 靠一条 1px 分隔线与下面的命令区分层就够了。
+ */
 .module-grid-filter-region {
   flex: 0 0 auto;
-  padding: var(--space-xxs) var(--space-md) 0;
-  background: var(--theme-surface-hover);
+  background: var(--theme-surface);
   border-bottom: 1px solid var(--theme-border-subtle);
 }
 
@@ -2262,8 +2268,8 @@
 }
 
 .module-filter-toolbar {
-  /* 工具栏与表格之间按中号间距(16px)留白; 原先 2px 属于「细粒度非阶梯值」, 贴在一起显得拥挤 */
-  padding-bottom: var(--space-md);
+  /* 纵向留白由筛选区行容器（.module-filter-form-row 的内边距）统一给出，这里不再叠加 */
+  padding: 0;
 }
 
 .keyboard-shortcut-hint {
@@ -2285,66 +2291,109 @@
   box-shadow: 0 1px 0 var(--theme-border-subtle);
 }
 
-.module-filter-quick-row,
-.module-filter-chip-row {
-  max-width: 100%;
-}
-
 /*
- * 末行筛选控件不再自带下边距：筛选区与命令区之间的留白由容器
- * `.module-filter-toolbar` 的 padding-bottom 统一给出。
+ * 筛选区改「表单式」：白底一行，每个条件是「字段名 + 控件」。
  *
- * 原先 :2175（容器 padding-bottom）与 :2200（本行 margin-bottom）各写了 16px 且注释是同一个
- * 意图，于是「筛选栏 → 表格」被算了两遍，实测 37px；边界留白挂在最后一行控件上还会带来
- * 「再加一行筛选就又多一份」的隐患。
- * `.module-filter-quick-row` 已无渲染点（快捷筛选改在 chip row 内联渲染），保留选择器不动。
+ * 为什么换掉药丸：药丸只装得下"字段名"或"当前值"其中之一，五六个排在一起，
+ * 用户看不出哪个是输入框、哪个是下拉、哪个是日期区间；字段名移到控件左侧后，
+ * 控件形状统一成 antd 默认的 32px / 6px 圆角，与工具栏、分页里的控件是同一套语言。
+ *
+ * 纵向留白（筛选区 ↔ 命令区）只由本行的内边距给出，行内元素不再自带 margin ——
+ * 两处各写一份会把间距算两遍（历史遗留：曾实测 37px）。
  */
-.module-filter-quick-row {
-  /* 仅用于「快捷筛选行 → 下一行」的行间留白；末行边界留白见容器。 */
-  margin-bottom: var(--space-md);
-}
-
-.module-filter-chip-row {
+.module-filter-form-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* 筛选条件之间用中号间距(16px): 10px 属于细粒度非阶梯值, 相邻控件几乎贴在一起 */
-  gap: var(--space-md);
+  /* 行间 8（换行后不挤）、字段间 16（五个条件能在 1336 宽里排成一行） */
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
 }
 
-.module-filter-chip {
+.module-filter-field {
   display: inline-flex;
   align-items: center;
-  /* 图标与文字之间小号间距(8px) */
+  /* 字段名 ↔ 控件 8px */
   gap: var(--space-xs);
+  min-width: 0;
+}
+
+.module-filter-field-label {
+  flex: 0 0 auto;
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 筛选控件统一高度与圆角：输入框 / 下拉 / 日期区间 / 字段选择按钮共用 */
+.module-filter-control {
   height: var(--app-control-height);
-  padding: 0 14px;
-  color: var(--ant-color-text-secondary);
+  border-radius: var(--ant-border-radius, 6px);
+}
+
+.module-filter-control-input.ant-input-affix-wrapper {
+  width: 180px;
+  padding-inline: var(--space-sm);
+}
+
+/*
+ * 日期区间要放得下「2026年07月26日 → 2026年11月26日」两端完整日期：
+ * 宽度定在字段上、区间控件填充 100%，否则它按 antd 默认宽度收缩，每个输入框只有 ~85px，
+ * 日期会从中间被截断（实测 "2026年07月27[" 这种断字）。
+ * 364 = 标签「交货日期」48 + 间隙 8 + 区间控件 308（两侧日期各 ~117 + 图标与内边距）——
+ * 106px 时日期还差几像素被截，取 117 才完整显示。
+ */
+.module-filter-field-range {
+  width: 364px;
+}
+
+.module-filter-field .ant-picker {
+  width: 100%;
+}
+
+.module-filter-field .ant-select .ant-select-selector {
+  border-radius: var(--ant-border-radius, 6px);
+}
+
+/*
+ * 字段选择按钮（原「胶囊」）：只放当前值 + 展开箭头，字段名在外壳标签里。
+ * 未选时显示「全部」，所以按钮宽度不会随取值跳来跳去（min-width 定死）。
+ */
+.module-filter-chip.module-filter-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-width: 104px;
+  padding: 0 var(--space-sm);
+  color: var(--theme-text);
   font-size: 13px;
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   background: var(--ant-color-bg-container);
   border: 1px solid var(--ant-color-border);
-  border-radius: 999px;
   transition:
     color 0.2s,
-    border-color 0.2s,
-    background 0.2s;
+    border-color 0.2s;
 }
 
-.module-filter-chip:hover,
-.module-filter-chip-active {
+.module-filter-chip.module-filter-control:hover {
   color: var(--theme-primary-text);
   border-color: var(--theme-primary);
 }
 
-.module-filter-chip-active {
-  background: var(--theme-primary-bg, #e6f4ff);
-}
-
-.module-filter-chip-label {
-  color: inherit;
+/*
+ * 该条件已有取值：边框与文字转主色，一眼看出"这一项在生效"。
+ *
+ * 选择器要带上 `.module-filter-chip.module-filter-control`：按钮自身那条规则（0,2,0）
+ * 会把 border-color / color 顶回灰黑，只写单类（0,1,0）不起作用 —— 实测就是"加了类但没变色"。
+ */
+.module-filter-chip.module-filter-control-active,
+.module-filter-control-active {
+  color: var(--theme-primary-text);
+  border-color: var(--theme-primary);
 }
 
 .module-filter-chip-value {
@@ -2358,6 +2407,33 @@
 .module-filter-chip-caret {
   font-size: 10px;
   opacity: 0.65;
+}
+
+/*
+ * 快捷筛选是"整套预置"的切换器，不是某个字段的取值框，因此做成行末的弱化文字按钮
+ * （无边框、主色文字），不与字段控件抢视觉重量。
+ */
+.module-filter-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  height: var(--app-control-height);
+  padding: 0 var(--space-xs);
+  color: var(--theme-primary-text);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--ant-border-radius, 6px);
+}
+
+.module-filter-link:hover {
+  background: var(--theme-primary-soft);
+}
+
+.module-filter-link-value {
+  font-weight: 600;
 }
 
 .module-filter-chip-panel {
@@ -2375,43 +2451,37 @@
   white-space: nowrap;
 }
 
-.module-filter-pill {
+/* 行末：快捷筛选 / 查询 / 重置靠右收口，不和字段混排 */
+.module-filter-form-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-inline-start: auto;
+}
+
+.module-filter-submit-button {
   flex: 0 0 auto;
-}
-
-.module-filter-pill-date {
-  width: 280px;
-  min-width: 240px;
-}
-
-.module-filter-pill-date .ant-picker {
-  width: 100%;
-  border-radius: 999px;
-}
-
-.module-filter-pill-input.ant-input-affix-wrapper {
-  border-radius: 999px;
 }
 
 .module-filter-reset-button {
   flex: 0 0 auto;
-  margin-left: auto;
   border-color: var(--ant-color-border);
   color: var(--ant-color-text-secondary);
 }
 
+/* 窄屏：字段各占一行，标签固定宽度让控件左边对齐 */
 @media (max-width: 768px) {
-  .module-filter-chip-row {
+  .module-filter-form-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .module-filter-chip-row > * {
+  .module-filter-field {
     width: 100%;
   }
 
-  .module-filter-reset-button {
-    margin-left: 0;
+  .module-filter-form-tail {
+    margin-inline-start: 0;
   }
 }
 

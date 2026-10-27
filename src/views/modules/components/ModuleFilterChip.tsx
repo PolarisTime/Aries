@@ -125,17 +125,21 @@ export function ModuleFilterChip({
       content={popoverContent}
       classNames={{ root: 'module-filter-chip-popover' }}
     >
+      {/*
+        字段名由外壳 `.module-filter-field-label` 渲染（表单式：标签在控件左侧），
+        按钮里只留当前值 + 展开箭头；未选时显示「全部」而不是把字段名再写一遍。
+        aria-label 仍是「字段: 值」，读屏用户不需要靠视觉关联。
+      */}
       <button
         type="button"
-        className={`module-filter-chip${active ? ' module-filter-chip-active' : ''}`}
+        className={`module-filter-chip module-filter-control${active ? ' module-filter-control-active' : ''}`}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
       >
-        <span className="module-filter-chip-label">{field.label}</span>
-        {active && selectedLabel ? (
-          <span className="module-filter-chip-value">{selectedLabel}</span>
-        ) : null}
+        <span className="module-filter-chip-value">
+          {active && selectedLabel ? selectedLabel : t('modules.filter.all')}
+        </span>
         <DownOutlined className="module-filter-chip-caret" />
       </button>
     </Popover>
@@ -198,18 +202,20 @@ export function ModuleQuickFilterChip({
       }
       classNames={{ root: 'module-filter-chip-popover' }}
     >
+      {/*
+        快捷筛选是"整套预置"的切换器，不是某个字段的取值框，所以做成行末的弱化文字按钮
+        （无边框、主色文字），不与字段控件抢视觉重量。
+      */}
       <button
         type="button"
-        className={`module-filter-chip${activeKey ? ' module-filter-chip-active' : ''}`}
+        className={`module-filter-link${activeKey ? ' module-filter-link-active' : ''}`}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={t('modules.filter.quickFilters')}
       >
-        <span className="module-filter-chip-label">
-          {t('modules.filter.quickFilters')}
-        </span>
+        <span>{t('modules.filter.quickFilters')}</span>
         {activeKey ? (
-          <span className="module-filter-chip-value">
+          <span className="module-filter-link-value">
             {quickFilters.find((filter) => filter.key === activeKey)?.label}
           </span>
         ) : null}

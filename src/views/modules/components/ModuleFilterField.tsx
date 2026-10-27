@@ -41,6 +41,7 @@ export function ModuleFilterField({
         id={fieldId}
         aria-label={field.label}
         allowClear
+        className="module-filter-control"
         style={{ width: '100%' }}
         placeholder={
           field.placeholder ||
@@ -72,10 +73,10 @@ export function ModuleFilterField({
           end: `${fieldId}-end`,
         }}
         aria-label={field.label}
+        className="module-filter-control module-filter-control-range"
         value={rangeValue}
         format={DATE_PICKER_FORMATS}
         presets={datePresets.map(({ label, value }) => ({ label, value }))}
-        style={{ width: '100%' }}
         onChange={(dates) => {
           const nextValue =
             dates?.[0] && dates[1]
