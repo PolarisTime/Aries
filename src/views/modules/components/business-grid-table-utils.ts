@@ -74,3 +74,34 @@ export function shouldIgnoreRowInteraction(target: EventTarget | null) {
     Boolean(target.closest(ROW_INTERACTION_EXCLUSION_SELECTOR))
   )
 }
+
+/**
+ * 列宽合计不足容器宽时，把富余量**按列宽比例**分给业务列（不含身份列）。
+ *
+ * <p>为什么必须显式分配：`table-layout: fixed` 下，列宽合计小于表格宽度时浏览器会把富余
+ * 按比例摊到**所有列**上 —— 身份列（勾选/序号那一格）也会被撑宽（实测 72 → 92.3），
+ * 看起来"这列还是有宽度"。身份列不在这个数组里，所以它保持声明宽度；业务列按比例分到
+ * 富余后，列宽合计 == 容器宽，浏览器不再摊宽。</p>
+ *
+ * <p>舍入余量给最后一列兜底，保证分配后合计**精确等于** 原合计 + 富余（否则会差 1~2px
+ * 又挤出横向滚动条）。</p>
+ */
+export function distributeSurplusWidth<T extends { width?: unknown }>(
+  columns: readonly T[],
+  surplus: number,
+): readonly T[] {
+  if (surplus <= 0 || columns.length === 0) return columns
+  const widths = columns.map((column) => parseTableColumnWidth(column.width))
+  const totalWidth = widths.reduce((total, width) => total + width, 0)
+  if (totalWidth <= 0) return columns
+
+  let assigned = 0
+  return columns.map((column, index) => {
+    const isLast = index === columns.length - 1
+    const share = isLast
+      ? surplus - assigned
+      : Math.round((widths[index] / totalWidth) * surplus)
+    assigned += share
+    return { ...column, width: widths[index] + share }
+  })
+}

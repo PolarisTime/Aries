@@ -22,7 +22,9 @@ import type { ModuleRecord } from '@/types/module-page'
 import {
   buildTableScrollConfig,
   computeTableScrollX,
+  distributeSurplusWidth,
   shouldIgnoreRowInteraction,
+  sumColumnWidths,
 } from '@/views/modules/components/business-grid-table-utils'
 import {
   RowIdentityCell,
@@ -124,7 +126,8 @@ export function BusinessGridTable({
    * 外壳高度/宽度测量收敛在 `useTableBodyScrollY` 一处（主数据、财务、明细表也用它）：
    * `scrollY` 给表体定高，`shellWidth` 用来判断是否需要横向滚动。
    */
-  const { shellRef, scrollY, shellWidth, shellStyle } = useTableBodyScrollY()
+  const { shellRef, scrollY, shellWidth, bodyWidth, shellStyle } =
+    useTableBodyScrollY()
   // 测量行(aria-hidden + 0 高)内的可聚焦元素全部退出 Tab 序列; 唯一实现在该 hook 内
   useMeasureRowA11y(shellRef)
   const sequenceStart = (currentPage - 1) * pageSize
@@ -175,11 +178,34 @@ export function BusinessGridTable({
     }
   }, [rowSelection, renderRowDetailToggle, sequenceStart, t])
 
-  const tableColumns = useMemo<ColumnsType<ModuleRecord>>(
-    () =>
-      identityRowSelection ? [Table.SELECTION_COLUMN, ...columns] : columns,
-    [identityRowSelection, columns],
-  )
+  /*
+   * 列宽合计不足表体宽度时，把富余量**只**给最后一列。
+   *
+   * 不做这一步的话，`table-layout: fixed` 会把富余按比例摊到每一列：身份列（勾选/序号那格）
+   * 也会被撑宽（实测 72 → 92.3），看着就是"这列还是有宽度"。
+   * 用表体宽（不含纵向滚动条占位）作为可用宽度，否则分出去的富余会被滚动条再挤出横向滚动条。
+   */
+  const availableWidth = bodyWidth > 0 ? bodyWidth : shellWidth
+  const contentWidth =
+    sumColumnWidths(columns.map((column) => column.width)) +
+    (identityRowSelection ? IDENTITY_COLUMN_WIDTH : 0)
+  const surplusWidth =
+    availableWidth > 0 && contentWidth < availableWidth
+      ? availableWidth - contentWidth
+      : 0
+
+  const tableColumns = useMemo<ColumnsType<ModuleRecord>>(() => {
+    /*
+     * 先摊到业务列，再拼身份列：`Table.SELECTION_COLUMN` 是哨兵对象 `{}`，
+     * 展开/替换它会让 antd 的 `cloneColumns.includes()` 身份判断失效（多一列幽灵表头）。
+     */
+    const widenedColumns = distributeSurplusWidth(columns, surplusWidth)
+    return (
+      identityRowSelection
+        ? [Table.SELECTION_COLUMN, ...widenedColumns]
+        : widenedColumns
+    ) as ColumnsType<ModuleRecord>
+  }, [identityRowSelection, columns, surplusWidth])
 
   // 展开行包含额外 DOM，高度由明细内容决定；关闭虚拟滚动避免 rc-table
   // 虚拟布局截断展开内容。
@@ -211,7 +237,7 @@ export function BusinessGridTable({
 
   const scrollX = computeTableScrollX({
     columnWidths: columns.map((col) => col.width),
-    containerWidth: shellWidth,
+    containerWidth: availableWidth,
     selectionColumnWidth: identityRowSelection ? IDENTITY_COLUMN_WIDTH : 0,
   })
 
