@@ -30,16 +30,17 @@ import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-s
 
 const ROW_SINGLE_CLICK_DELAY_MS = 220
 /**
- * 首位「身份列」宽度 —— 一列同时承载 序号 · 勾选 · 明细加号 · 行菜单。
+ * 首位「身份列」宽度 —— 两组控件：序号⇄勾选 + 行内动作组（明细加号 | 行菜单）。
  *
- * <p>为什么要合并: 原先这里是**四列**（序号 64 + 勾选 32 + 明细加号 48 + 行尾操作 40 = 184px），
- * 每列只装一个 16~24px 的小图标，横向一片竖线读起来"散"，行尾那列还孤零零挂在最右边。
- * 合并后横向预算 184 → 128，省下的 56px 全部让给业务列。</p>
+ * <p>演进：最初是**四列**（序号 64 + 勾选 32 + 明细加号 48 + 行尾操作 40 = 184px），
+ * 每列只装一个 16~24px 的小图标，横向一片竖线读起来"散"；第二步并成一列（128px）；
+ * 现在把「序号」与「勾选」合成同一个槽位（悬停/勾选时互换），两个图标拼成一组，
+ * 横向预算再降到 96px —— 相对最初省下 88px，全部让给业务列。</p>
  *
- * <p>128 = 左右内边距 16 + 序号 32 + 勾选 24 + 加号 24 + 行菜单 24 + 三段 2px 微间隙
- * （= 110，留 2px 余量）。四个命中区都保持 ≥24×24（WCAG 2.2 SC 2.5.8）。</p>
+ * <p>96 = 左右内边距 16 + 选择器槽位 26 + 间隙 4 + 动作组 48（两个 24px 按钮）+ 余量 2。
+ * 四个可点目标都保持 ≥24×24（WCAG 2.2 SC 2.5.8）。</p>
  */
-export const IDENTITY_COLUMN_WIDTH = 128
+export const IDENTITY_COLUMN_WIDTH = 96
 const ROW_INTERACTION_EXCLUSION_SELECTOR =
   'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
 
@@ -157,12 +158,13 @@ export function BusinessGridTable({
           selectAll={selectAllNode}
         />
       ),
-      renderCell: (_checked, record, index, originNode) => (
+      renderCell: (checked, record, index, originNode) => (
         <RowIdentityCell
           sequenceNumber={sequenceStart + index + 1}
           checkbox={originNode}
           detailToggle={renderRowDetailToggle?.(record) ?? null}
           menu={rowContextMenus?.get(String(record.id))}
+          selected={checked}
         />
       ),
     }

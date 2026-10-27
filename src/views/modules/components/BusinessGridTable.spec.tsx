@@ -348,7 +348,7 @@ describe('BusinessGridTable', () => {
       expect(identityCells()[0]?.textContent?.trim()).toBe('21')
     })
 
-    it('身份列宽度 128 且是 8 的倍数(四个 24px 命中区放得下)', () => {
+    it('身份列宽度 96 且是 8 的倍数(26 选择器 + 两个 24px 命中区放得下)', () => {
       renderTable({ dataSource, rowSelection })
 
       const firstCol = document.querySelector(
@@ -358,7 +358,9 @@ describe('BusinessGridTable', () => {
         `${IDENTITY_COLUMN_WIDTH}px`,
       )
       expect(IDENTITY_COLUMN_WIDTH % 8).toBe(0)
-      expect(IDENTITY_COLUMN_WIDTH).toBe(128)
+      expect(IDENTITY_COLUMN_WIDTH).toBe(96)
+      // 96 = 左右内边距 16 + 选择器 26 + 间隙 4 + 动作组 48（两个 24px 按钮）+ 余量 2
+      expect(16 + 26 + 4 + 24 * 2).toBeLessThanOrEqual(IDENTITY_COLUMN_WIDTH)
     })
 
     it('没有 rowSelection 时不渲染身份列, 也不再有独立序号列', () => {
