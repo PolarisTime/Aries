@@ -781,6 +781,42 @@
 
 /* ── Bill detail page ── */
 
+/* ===== 详情弹层的字段网格（antd Descriptions bordered）=====
+ * 三条缺一不可：
+ * 1) 标签列固定 116px 且禁止折行 —— 4 列布局下「采购订单号」「已交付数量」这类 5 字标签
+ *    在 94px 里会被折成两行；
+ * 2) 表格 `table-layout: fixed` —— 默认 auto 会按内容分列，长项目名那一格吃掉 606px，
+ *    把「订单编号」的内容格挤到 107px，18 位单号被迫从中间折行；
+ * 3) 内容格允许换行，但用 `overflow-wrap: break-word`（只在整词放不下时断），
+ *    数字/日期能一行放下就绝不折。
+ */
+/*
+ * antd 给 `bordered` 显式写了 `table-layout: auto`
+ * （`:where(.css-hash).ant-descriptions.ant-descriptions-bordered > .ant-descriptions-view > table`，
+ * 3 个类 + 1 个元素的特异性），单类选择器压不住，必须同特异性或 `!important`。
+ */
+.module-record-detail-descriptions.ant-descriptions-bordered
+  > .ant-descriptions-view
+  > table {
+  table-layout: fixed !important;
+  /* `width: auto` 的 table 在 fixed 布局下仍会按内容撑宽（长项目名那一格吃 525px），
+     必须显式 100% 才能让「标签定宽 + 内容等分剩余」真正生效 */
+  width: 100% !important;
+}
+
+.module-record-detail-descriptions .ant-descriptions-item-label {
+  width: 116px;
+  color: var(--theme-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.module-record-detail-descriptions .ant-descriptions-item-content {
+  font-size: var(--app-font-size);
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
 .bill-detail-item {
   display: flex;
   align-items: center;

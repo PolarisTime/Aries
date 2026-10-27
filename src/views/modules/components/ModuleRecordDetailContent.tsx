@@ -1,5 +1,6 @@
 import { ReloadOutlined } from '@ant-design/icons'
-import { Button, Col, Empty, Flex, Row, Spin } from 'antd'
+import type { DescriptionsProps } from 'antd'
+import { Button, Descriptions, Empty, Flex, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 import {
@@ -15,7 +16,6 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import { padLabel } from '@/utils/label-utils'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { buildModuleItemGroups } from './module-item-groups'
@@ -98,35 +98,84 @@ interface FieldGridProps {
   record: ModuleRecord
 }
 
-/** 详情字段网格: 列宽按字段数在 6~12 之间分摊, 单字段可以整行。 */
+/** 详情字段网格最多几列（与改造前的 24 栅格上限一致）。 */
+const DETAIL_FIELD_MAX_COLUMNS = 4
+/** 值超过这个字符数就让出两列（纯展示口径，按值字面长度，不参与业务计算）。 */
+const DETAIL_FIELD_WIDE_TEXT_LENGTH = 24
+
+/**
+ * 单个字段占几列：`fullRow` 占满整行，长文本占两列，其余一列。
+ *
+ * <p>跨列是安全的：网格现在是 `table-layout: fixed` + `width: 100%`，列宽由第一行决定，
+ * 后面行即使有 `colspan` 也不会反过来按内容重分布（之前 auto 布局下就会，把 18 位单号
+ * 挤进 100px 的内容格里折行）。</p>
+ */
+export function resolveDetailFieldSpan({
+  fullRow,
+  textLength,
+  columnCount,
+}: {
+  fullRow?: boolean
+  textLength: number
+  columnCount: number
+}) {
+  if (fullRow) return columnCount
+  if (textLength > DETAIL_FIELD_WIDE_TEXT_LENGTH)
+    return Math.min(2, columnCount)
+  return 1
+}
+
+/**
+ * 详情字段网格：用 antd `Descriptions`（`bordered` + `size="small"`）呈现。
+ *
+ * <p>此前是「每个字段一个带边框的小卡片」：一屏八九个等重的方块，标签还用全角空格右补白，
+ * 左缘参差、长文本（项目名称）在窄卡片里折成三行，整块读起来像表单而不是"单据详情"。
+ * 换成 Descriptions 后是 antd 标准的「标签列 + 内容列」表格：标签统一右对齐、等宽、
+ * 底色区分，值按列宽自动换行，整屏只剩一套边框。</p>
+ *
+ * <p>列数按字段数收敛（1~4），并对长文本让出双列：长文本按字面长度判断，纯展示口径，
+ * 不涉及任何业务计算。</p>
+ */
 function ModuleRecordDetailFieldGrid({
   config,
   fields,
   formatCellValue,
   record,
 }: FieldGridProps) {
-  const colSpan = Math.max(
-    6,
-    Math.min(12, 24 / Math.max(1, Math.min(fields.length || 1, 4))),
+  const columnCount = Math.max(
+    1,
+    Math.min(DETAIL_FIELD_MAX_COLUMNS, fields.length),
   )
+  const items: DescriptionsProps['items'] = fields.map((field) => {
+    const value = (
+      <ModuleRecordDetailFieldValue
+        key={field.key}
+        config={config}
+        field={field}
+        formatCellValue={formatCellValue}
+        record={record}
+      />
+    )
+    return {
+      key: field.key,
+      label: field.label,
+      children: value,
+      span: resolveDetailFieldSpan({
+        fullRow: field.fullRow,
+        textLength: String(record[field.key] ?? '').length,
+        columnCount,
+      }),
+    }
+  })
   return (
-    <Row gutter={[12, 12]}>
-      {fields.map((field) => (
-        <Col key={field.key} span={field.fullRow ? 24 : colSpan}>
-          <div className="bill-detail-item">
-            <span className="bill-detail-label">{padLabel(field.label)}</span>
-            <span className="bill-detail-value">
-              <ModuleRecordDetailFieldValue
-                config={config}
-                field={field}
-                formatCellValue={formatCellValue}
-                record={record}
-              />
-            </span>
-          </div>
-        </Col>
-      ))}
-    </Row>
+    <Descriptions
+      className="module-record-detail-descriptions"
+      bordered
+      size="small"
+      /* 窄屏逐级降列：详情弹层在小屏上不再横向挤成一条 */
+      column={{ xs: 1, sm: 2, md: 2, lg: 3, xl: columnCount, xxl: columnCount }}
+      items={items}
+    />
   )
 }
 
