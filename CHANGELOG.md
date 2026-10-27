@@ -1,3 +1,10 @@
+## [14.1.1](https://github.com/PolarisTime/Aries/compare/v14.1.0...v14.1.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **parent-selector:** 选单弹层动作按钮移到左侧，并与已选面板对齐 ([3461cb3](https://github.com/PolarisTime/Aries/commit/3461cb3ac4b437d61fe38024f9979d3e385a9499))
+
 # [14.1.0](https://github.com/PolarisTime/Aries/compare/v14.0.0...v14.1.0) (2026-10-26)
 
 
