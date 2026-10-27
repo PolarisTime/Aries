@@ -14,6 +14,15 @@ test.describe('个人设置 · 导航面包屑开关', () => {
   const breadcrumbCount = (page: import('@playwright/test').Page) =>
     page.locator('.leo-breadcrumb').count()
 
+  /** 内容区顶部内边距: 关闭面包屑后应为 0, 让卡片直接贴住标签条。 */
+  const contentTopPadding = (page: import('@playwright/test').Page) =>
+    page.evaluate(() => {
+      const inner = document.querySelector(
+        '.leo-content-inner',
+      ) as HTMLElement | null
+      return inner ? getComputedStyle(inner).paddingTop : 'missing'
+    })
+
   const openPersonalSettings = async (
     page: import('@playwright/test').Page,
   ) => {
@@ -53,6 +62,12 @@ test.describe('个人设置 · 导航面包屑开关', () => {
     await toggle.click()
     await saveDisplay(page)
     await expect.poll(() => breadcrumbCount(page), { timeout: 15_000 }).toBe(0)
+
+    // 关掉后内容区贴住标签条：顶部内边距归零（否则会留一条无内容的灰带）
+    await expect(page.locator('.leo-content-inner')).toHaveClass(
+      /leo-content-inner--no-breadcrumb/,
+    )
+    expect(await contentTopPadding(page)).toBe('0px')
 
     // 刷新后依然是关闭状态（持久化生效）
     await page.reload({ waitUntil: 'domcontentloaded' })

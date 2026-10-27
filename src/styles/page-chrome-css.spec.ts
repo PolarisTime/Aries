@@ -26,6 +26,36 @@ const blockOf = (selector: string) => {
  *   <li>选中的标签是"浮起的白卡片"（白底 + 细边框 + 轻阴影 + 主色文字），不是仅靠背景差。</li>
  * </ol>
  */
+/**
+ * 关闭面包屑后的顶部对齐。
+ *
+ * <p>面包屑是标签条与页面卡片之间的一行"层级说明"，留着它时需要留白把两者分开；
+ * 关掉之后标签条就是唯一页眉，若仍保留 4px(内容区) + 8px(页面容器) 的顶部内边距，
+ * 标签条与卡片之间会出现一条无内容的灰带，像页面没加载完。这里锁两件事：
+ * ① 内容区带 `leo-content-inner--no-breadcrumb` 时顶部内边距归零；
+ * ② 页面容器（antd Pro 的 children-container）顶部内边距也归零 —— 两层都要，
+ *    只归零一层还剩另一层的 8px/4px。</p>
+ */
+describe('关闭面包屑后的顶部对齐', () => {
+  it('内容区顶部内边距归零', () => {
+    const block = blockOf('.leo-content-inner--no-breadcrumb')
+    expect(block).toMatch(/padding-top:\s*0/)
+  })
+
+  it('页面容器顶部内边距同样归零(两层都要归零才真的贴住标签条)', () => {
+    const block = blockOf(
+      '.leo-content-inner--no-breadcrumb .ant-pro-page-container-children-container',
+    )
+    expect(block).toMatch(/padding-top:\s*0/)
+  })
+
+  it('只动顶部: 左右内边距继续保留(卡片不贴屏幕边)', () => {
+    const block = blockOf('.leo-content-inner--no-breadcrumb')
+    expect(block).not.toMatch(/padding:\s*0/)
+    expect(block).not.toMatch(/padding-inline/)
+  })
+})
+
 describe('页头排布契约', () => {
   it('顶栏 / 标签栏 / 面包屑共用 16px 左缘', () => {
     expect(blockOf('.app-header-bar-top')).toMatch(

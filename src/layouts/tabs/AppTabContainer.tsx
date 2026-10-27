@@ -122,7 +122,11 @@ export function AppTabContainer() {
       <LayoutTabBar />
       {/* 面包屑可由「个人设置 → 显示」关闭: 判定口径与设置弹窗共用 isBreadcrumbVisible */}
       {showBreadcrumb ? <AppBreadcrumb /> : null}
-      <div className="leo-content-inner leo-tab-viewport">
+      <div
+        className={`leo-content-inner leo-tab-viewport${
+          showBreadcrumb ? '' : ' leo-content-inner--no-breadcrumb'
+        }`}
+      >
         {tabs.map((tab) => {
           const mounted = tab.mountedOnce || tab.id === activeTabId
           const isActive = tab.id === activeTabId

@@ -997,6 +997,23 @@
   min-height: 0;
 }
 
+/*
+ * 面包屑关闭时，内容区直接贴住标签条（上下间距归零）。
+ *
+ * 面包屑在的时候，它是标签条与页面卡片之间的一行"层级说明"，需要留白把它和卡片分开；
+ * 关掉之后标签条就是唯一的页眉，再留下 4px(内容区) + 8px(页面容器) 会在标签条和卡片之间
+ * 拉出一条无内容的灰带，看着像没加载完。归零后卡片顶边即标签条底边，读作"标签就是这一页"。
+ *
+ * 只覆盖顶部：左右 16px 与底部留白继续保留，卡片仍然不贴屏幕边。
+ */
+.leo-content-inner--no-breadcrumb {
+  padding-top: 0;
+}
+
+.leo-content-inner--no-breadcrumb .ant-pro-page-container-children-container {
+  padding-top: 0;
+}
+
 /* 面板内的页面根沿用原内容区子项的高度约束行为 */
 .leo-tab-panel > * {
   flex: 1 1 auto;
