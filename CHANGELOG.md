@@ -1,3 +1,10 @@
+## [14.1.2](https://github.com/PolarisTime/Aries/compare/v14.1.1...v14.1.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **parent-selector:** 移除选单行内「复制单号」与「单据流转」图标 ([99fe292](https://github.com/PolarisTime/Aries/commit/99fe2922077abc445a31f5758b6cb1ecc55bd7bf))
+
 ## [14.1.1](https://github.com/PolarisTime/Aries/compare/v14.1.0...v14.1.1) (2026-10-27)
 
 
