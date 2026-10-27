@@ -1,3 +1,15 @@
+# [14.3.0](https://github.com/PolarisTime/Aries/compare/v14.2.0...v14.3.0) (2026-10-27)
+
+
+### Bug Fixes
+
+* **modules:** 列宽有富余的页面不再把身份列撑宽（采购入库 92 → 72） ([1d8ebac](https://github.com/PolarisTime/Aries/commit/1d8ebac3498e5be0d28016b5925b17c5224decca))
+
+
+### Features
+
+* **modules:** 业务列表开启网格线，能看出列边界 ([162e7ee](https://github.com/PolarisTime/Aries/commit/162e7eefb1fd48af8670887fdcedb20a46c52034)), closes [#f0f0f0](https://github.com/PolarisTime/Aries/issues/f0f0f0) [#d9d9d9](https://github.com/PolarisTime/Aries/issues/d9d9d9)
+
 # [14.2.0](https://github.com/PolarisTime/Aries/compare/v14.1.2...v14.2.0) (2026-10-27)
 
 
