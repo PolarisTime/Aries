@@ -15,67 +15,49 @@ const blockOf = (selector: string) => {
 }
 
 /**
- * 页头三层的排布契约（顶栏 / 标签栏 / 面包屑 / 内容卡）。
+ * 页头两层的排布契约（顶栏 / 标签栏 → 内容卡）。面包屑已整体移除。
  *
- * <p>使用者反馈「几个区域的边距不好看、标签页和面包屑不好看」。根因是左缘各走各的
- * （顶栏 logo 12、标签块 8、面包屑 16、卡片内文字 33），而标签栏透明 + 面包屑白底，
- * 形成两条几乎等高、颜色不同的带子。这里锁定统一后的口径：</p>
+ * <p>使用者反馈「几个区域的边距不好看」。根因是左缘各走各的（顶栏 logo 12、标签块 8、
+ * 卡片内文字 33），这里锁定统一后的口径：</p>
  * <ol>
- *   <li>左缘统一走 `--space-md`(16px)：顶栏内边距、标签栏 nav 内边距、面包屑内边距；</li>
- *   <li>标签栏铺浅灰底 + 一条下边框，面包屑不再自带白底与边框（退成一条说明文字）；</li>
- *   <li>选中的标签是"浮起的白卡片"（白底 + 细边框 + 轻阴影 + 主色文字），不是仅靠背景差。</li>
+ *   <li>左缘统一走 `--space-md`(16px)：顶栏内边距、标签栏 nav 内边距；</li>
+ *   <li>标签栏铺浅灰底 + 一条下边框，作为唯一的页眉条；</li>
+ *   <li>选中的标签是"抬起的文件夹页签"（白底 + 可见边框 + 主色顶条）。</li>
  * </ol>
  */
 /**
- * 关闭面包屑后的顶部对齐。
+ * 面包屑移除后的顶部对齐。
  *
- * <p>面包屑是标签条与页面卡片之间的一行"层级说明"，留着它时需要留白把两者分开；
- * 关掉之后标签条就是唯一页眉，若仍保留 4px(内容区) + 8px(页面容器) 的顶部内边距，
- * 标签条与卡片之间会出现一条无内容的灰带，像页面没加载完。这里锁两件事：
- * ① 内容区带 `leo-content-inner--no-breadcrumb` 时顶部内边距归零；
- * ② 页面容器（antd Pro 的 children-container）顶部内边距也归零 —— 两层都要，
- *    只归零一层还剩另一层的 8px/4px。</p>
+ * <p>面包屑曾是标签条与页面卡片之间的一行"层级说明"，为此内容区顶部留了
+ * 4px(内容区) + 8px(页面容器)。移除后标签条就是唯一页眉，这两层留白必须在 CSS 里
+ * **同时**归零，否则标签条与卡片之间会留一条无内容的灰带，像页面没加载完。</p>
  */
-describe('关闭面包屑后的顶部对齐', () => {
-  it('内容区顶部内边距归零', () => {
-    const block = blockOf('.leo-content-inner--no-breadcrumb')
-    expect(block).toMatch(/padding-top:\s*0/)
+describe('面包屑移除后的顶部对齐', () => {
+  it('面包屑样式已从样式表移除', () => {
+    expect(css.includes('.leo-breadcrumb')).toBe(false)
   })
 
-  it('页面容器顶部内边距同样归零(两层都要归零才真的贴住标签条)', () => {
+  it('内容区四边内边距归零（顶部贴住标签条，左右不额外留白）', () => {
+    const block = blockOf('.leo-content-inner')
+    expect(block).toMatch(/padding:\s*0;/)
+  })
+
+  it('页面容器顶部内边距也归零（两层都要，只归零一层还剩 8px）', () => {
     const block = blockOf(
-      '.leo-content-inner--no-breadcrumb .ant-pro-page-container-children-container',
+      '.leo-content-inner .ant-pro-page-container-children-container',
     )
     expect(block).toMatch(/padding-top:\s*0/)
-  })
-
-  it('只动顶部: 左右内边距继续保留(卡片不贴屏幕边)', () => {
-    const block = blockOf('.leo-content-inner--no-breadcrumb')
-    expect(block).not.toMatch(/padding:\s*0/)
-    expect(block).not.toMatch(/padding-inline/)
   })
 })
 
 describe('页头排布契约', () => {
-  it('顶栏 / 标签栏 / 面包屑共用 16px 左缘', () => {
+  it('顶栏 / 标签栏共用 16px 左缘（面包屑已移除）', () => {
     expect(blockOf('.app-header-bar-top')).toMatch(
       /padding:\s*0 var\(--space-md\)/,
     )
     expect(blockOf('.leo-tabbar .ant-tabs-nav')).toMatch(
       /padding:\s*0 var\(--space-md\)/,
     )
-    expect(blockOf('.leo-breadcrumb')).toMatch(
-      /padding:\s*var\(--space-xxs\) var\(--space-md\)/,
-    )
-  })
-
-  it('面包屑退成说明文字: 无底色、无边框、末项加粗', () => {
-    const block = blockOf('.leo-breadcrumb')
-    expect(block).toMatch(/background:\s*transparent/)
-    expect(block).toMatch(/border-bottom:\s*none/)
-    expect(
-      blockOf('.leo-breadcrumb li:last-child .ant-breadcrumb-link'),
-    ).toMatch(/font-weight:\s*600/)
   })
 
   it('标签栏读成"页签条": 底色 + 可见底部分隔线(不再与页面同色)', () => {

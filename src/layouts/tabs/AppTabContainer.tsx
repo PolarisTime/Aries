@@ -2,8 +2,6 @@ import { RouterProvider } from '@tanstack/react-router'
 import { Layout } from 'antd'
 import { Activity, Suspense, useEffect, useMemo, useRef } from 'react'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
-import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
-import { isBreadcrumbVisible } from '@/layouts/breadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
 import { LayoutTabBar } from '@/layouts/tabs/LayoutTabBar'
@@ -14,7 +12,6 @@ import {
 } from '@/layouts/tabs/tab-location-sync'
 import { useTabRouteReconciliation } from '@/layouts/tabs/useTabRouteReconciliation'
 import { type LayoutTab, useLayoutTabsStore } from '@/stores/layoutTabsStore'
-import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 const { Content } = Layout
@@ -64,9 +61,6 @@ function TabPanelRouter({ tab }: { tab: LayoutTab }) {
  * （useFocusTrap）随 effect 销毁而摘掉监听，不会在别的标签里抢 Tab 键，恢复时才重新武装。</p>
  */
 export function AppTabContainer() {
-  const showBreadcrumb = useUiSettingsStore((state) =>
-    isBreadcrumbVisible(state.settings),
-  )
   const tabs = useLayoutTabsStore((state) => state.tabs)
   const activeTabId = useLayoutTabsStore((state) => state.activeTabId)
 
@@ -120,13 +114,8 @@ export function AppTabContainer() {
      */
     <Content id="main-content" tabIndex={-1} className="leo-content">
       <LayoutTabBar />
-      {/* 面包屑可由「个人设置 → 显示」关闭: 判定口径与设置弹窗共用 isBreadcrumbVisible */}
-      {showBreadcrumb ? <AppBreadcrumb /> : null}
-      <div
-        className={`leo-content-inner leo-tab-viewport${
-          showBreadcrumb ? '' : ' leo-content-inner--no-breadcrumb'
-        }`}
-      >
+      {/* 面包屑已移除: 标签条下方直接是业务内容, 不再有第三层"层级说明"带子 */}
+      <div className="leo-content-inner leo-tab-viewport">
         {tabs.map((tab) => {
           const mounted = tab.mountedOnce || tab.id === activeTabId
           const isActive = tab.id === activeTabId

@@ -2281,9 +2281,6 @@ export const zhCN = {
       themeMode: '主题模式',
       resetDefault: '恢复默认',
       saveDisplay: '保存显示设置',
-      breadcrumb: '导航面包屑',
-      breadcrumbDesc:
-        '在标签页下方显示「业务中心 / 分组 / 页面」的层级路径，可随时关闭',
       contextMenuTab: '右键菜单',
       contextMenuRowActions: '行操作',
       contextMenuRowActionsDesc:
@@ -2323,9 +2320,6 @@ export const zhCN = {
       root: '业务中心',
       apiOnline: 'API 正常',
       apiOffline: 'API 离线',
-    },
-    breadcrumb: {
-      ariaLabel: '当前位置',
     },
     headerSearch: {
       placeholder: '搜索单号、合同号、对账单号',

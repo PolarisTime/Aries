@@ -23,8 +23,6 @@ interface Props {
   onLayoutModeChange: (value: LayoutMode) => void
   themeMode: ThemeMode
   onThemeModeChange: (value: ThemeMode) => void
-  showBreadcrumb: boolean
-  onShowBreadcrumbChange: (value: boolean) => void
   contextMenu: AppliedContextMenuSettings
   onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
   onContextMenuGroupVisibleChange: (

@@ -962,37 +962,6 @@
   cursor: help;
 }
 
-/* 全局面包屑：标签栏与内容区之间，展示页面层级归属(与标签互补) */
-/*
- * 面包屑：退成"层级说明"的一条细文字，不再是一块白底带子。
- *
- * 改造前它是白底 + 35px 高 + 一条下边框，和标签栏几乎等高，两条带子各带一条线；
- * 现在去掉底色与边框、压到 28px，靠"末项加粗深色"表达当前位置。
- */
-.leo-breadcrumb {
-  flex: 0 0 auto;
-  padding: var(--space-xxs) var(--space-md);
-  font-size: 12px;
-  line-height: 20px;
-  background: transparent;
-  border-bottom: none;
-}
-
-.leo-breadcrumb .ant-breadcrumb-link {
-  color: var(--theme-text-muted);
-  font-size: 12px;
-}
-
-.leo-breadcrumb li:last-child .ant-breadcrumb-link {
-  color: var(--theme-text);
-  font-weight: 600;
-}
-
-.leo-breadcrumb .ant-breadcrumb-separator {
-  color: var(--theme-text-muted);
-  opacity: 0.6;
-}
-
 /* 多标签页面板：常驻挂载，hidden 属性切换显隐以保留页面状态 */
 .leo-tab-panel {
   position: relative;
@@ -1022,7 +991,12 @@
   flex: 1 1 auto;
   height: auto;
   min-height: 0;
-  padding: var(--app-content-padding);
+  /*
+   * 四边内边距归零: 面包屑移除后标签条就是唯一的页眉, 内容直接贴住它。
+   * 原是 `--app-content-padding`(顶部 4px) + 页面容器 8px, 面包屑占位时用来分隔三层;
+   * 现在只有两层, 再留白会在标签条与内容之间拉一条空灰带。
+   */
+  padding: 0;
   overflow: hidden;
 }
 
@@ -1040,11 +1014,7 @@
  *
  * 只覆盖顶部：左右 16px 与底部留白继续保留，卡片仍然不贴屏幕边。
  */
-.leo-content-inner--no-breadcrumb {
-  padding-top: 0;
-}
-
-.leo-content-inner--no-breadcrumb .ant-pro-page-container-children-container {
+.leo-content-inner .ant-pro-page-container-children-container {
   padding-top: 0;
 }
 

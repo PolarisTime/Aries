@@ -1,4 +1,4 @@
-import { Button, Radio, Select, Switch } from 'antd'
+import { Button, Radio, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   fontSizeOptions,
@@ -12,12 +12,9 @@ interface Props {
   fontSize: number
   layoutMode: LayoutMode
   themeMode: ThemeMode
-  /** 是否显示标签页下方的导航面包屑。 */
-  showBreadcrumb: boolean
   onFontSizeChange: (value: number) => void
   onLayoutModeChange: (value: LayoutMode) => void
   onThemeModeChange: (value: ThemeMode) => void
-  onShowBreadcrumbChange: (value: boolean) => void
   onResetDisplay: () => void
   onSaveDisplay: () => void
 }
@@ -26,11 +23,9 @@ export function PersonalSettingsDisplayTab({
   fontSize,
   layoutMode,
   themeMode,
-  showBreadcrumb,
   onFontSizeChange,
   onLayoutModeChange,
   onThemeModeChange,
-  onShowBreadcrumbChange,
   onResetDisplay,
   onSaveDisplay,
 }: Props) {
@@ -108,24 +103,6 @@ export function PersonalSettingsDisplayTab({
           ))}
         </Radio.Group>
       </div>
-      {/*
-        面包屑是"导航辅助", 属于显示偏好: 小屏或已有多标签页导航时可关掉,
-        把纵向空间让给内容。开关按 antd Switch + 可见标签, aria-label 与标签同源。
-      */}
-      <div className="personal-setting-row">
-        <span className="personal-setting-label">
-          {t('layouts.settings.breadcrumb')}
-        </span>
-        <Switch
-          checked={showBreadcrumb}
-          aria-label={t('layouts.settings.breadcrumb')}
-          onChange={onShowBreadcrumbChange}
-        />
-      </div>
-      <div className="personal-layout-mode-desc">
-        {t('layouts.settings.breadcrumbDesc')}
-      </div>
-
       <div className="personal-setting-actions">
         <Button onClick={onResetDisplay}>
           {t('layouts.settings.resetDefault')}

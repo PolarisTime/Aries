@@ -2322,9 +2322,6 @@ export const enUS = {
       themeMode: 'Theme Mode',
       resetDefault: 'Reset Default',
       saveDisplay: 'Save Display Settings',
-      breadcrumb: 'Navigation breadcrumb',
-      breadcrumbDesc:
-        'Show the section path (Business / Group / Page) under the tab bar; turn off anytime',
       contextMenuTab: 'Context menu',
       contextMenuRowActions: 'Row actions',
       contextMenuRowActionsDesc:
@@ -2366,9 +2363,6 @@ export const enUS = {
       root: 'Business Center',
       apiOnline: 'API Online',
       apiOffline: 'API Offline',
-    },
-    breadcrumb: {
-      ariaLabel: 'Breadcrumb',
     },
     headerSearch: {
       placeholder: 'Search order, contract, or statement number',

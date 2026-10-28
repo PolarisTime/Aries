@@ -103,7 +103,6 @@ type PersonalSettingsHostProps = {
   onResetDisplay: () => void
   onSaveDisplay: () => void
   onThemeModeChange: (value: ThemeMode) => void
-  onShowBreadcrumbChange: (value: boolean) => void
   contextMenu: AppliedContextMenuSettings
   onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
   onContextMenuGroupVisibleChange: (
@@ -113,7 +112,6 @@ type PersonalSettingsHostProps = {
   onResetContextMenu: () => void
   onSaveContextMenu: () => void
   open: boolean
-  showBreadcrumb: boolean
   themeMode: ThemeMode
 }
 
@@ -126,14 +124,12 @@ function PersonalSettingsHost({
   onResetDisplay,
   onSaveDisplay,
   onThemeModeChange,
-  onShowBreadcrumbChange,
   contextMenu,
   onToggleContextMenuAction,
   onContextMenuGroupVisibleChange,
   onResetContextMenu,
   onSaveContextMenu,
   open,
-  showBreadcrumb,
   themeMode,
 }: PersonalSettingsHostProps) {
   return (
@@ -148,8 +144,6 @@ function PersonalSettingsHost({
       onLayoutModeChange={onLayoutModeChange}
       themeMode={themeMode}
       onThemeModeChange={onThemeModeChange}
-      showBreadcrumb={showBreadcrumb}
-      onShowBreadcrumbChange={onShowBreadcrumbChange}
       contextMenu={contextMenu}
       onToggleContextMenuAction={onToggleContextMenuAction}
       onContextMenuGroupVisibleChange={onContextMenuGroupVisibleChange}
@@ -189,8 +183,6 @@ export function AppLayout() {
     setLayoutMode,
     themeMode,
     setThemeMode,
-    showBreadcrumb,
-    setShowBreadcrumb,
     contextMenu,
     toggleContextMenuAction,
     setContextMenuGroupVisible,
@@ -434,8 +426,6 @@ export function AppLayout() {
         onLayoutModeChange={setLayoutMode}
         themeMode={themeMode}
         onThemeModeChange={setThemeMode}
-        showBreadcrumb={showBreadcrumb}
-        onShowBreadcrumbChange={setShowBreadcrumb}
         contextMenu={contextMenu}
         onToggleContextMenuAction={toggleContextMenuAction}
         onContextMenuGroupVisibleChange={setContextMenuGroupVisible}

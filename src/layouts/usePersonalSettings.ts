@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { isBreadcrumbVisible } from '@/layouts/breadcrumb'
 import { contextMenuActionKeysByGroup } from '@/layouts/context-menu-actions'
 import {
   type ContextMenuSettings,
@@ -58,8 +57,6 @@ function normalizePersonalSettings(
       settings?.themeMode === 'system'
         ? settings.themeMode
         : ('system' as ThemeMode),
-    // 缺省显示: 与布局读取面包屑开关时共用同一个判定函数
-    showBreadcrumb: isBreadcrumbVisible(settings),
     contextMenu: normalizeContextMenu(settings?.contextMenu),
   }
 }
@@ -113,12 +110,6 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedThemeMode, setAppliedThemeMode] = useState<ThemeMode>(
     initialSettings.themeMode,
   )
-  const [showBreadcrumb, setShowBreadcrumb] = useState(
-    initialSettings.showBreadcrumb,
-  )
-  const [appliedShowBreadcrumb, setAppliedShowBreadcrumb] = useState(
-    initialSettings.showBreadcrumb,
-  )
   const [contextMenu, setContextMenu] = useState<AppliedContextMenuSettings>(
     initialSettings.contextMenu,
   )
@@ -168,8 +159,6 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedLayoutMode(normalized.layoutMode)
     setThemeMode(normalized.themeMode)
     setAppliedThemeMode(normalized.themeMode)
-    setShowBreadcrumb(normalized.showBreadcrumb)
-    setAppliedShowBreadcrumb(normalized.showBreadcrumb)
     setContextMenu(normalized.contextMenu)
     setAppliedContextMenu(normalized.contextMenu)
   }
@@ -190,7 +179,6 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(appliedFontSize)
     setLayoutMode(appliedLayoutMode)
     setThemeMode(appliedThemeMode)
-    setShowBreadcrumb(appliedShowBreadcrumb)
     setContextMenu(appliedContextMenu)
     setVisible(false)
   }
@@ -199,7 +187,6 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(defaultFontSize)
     setLayoutMode(defaultLayoutMode)
     setThemeMode('system')
-    setShowBreadcrumb(true)
     setContextMenu(DEFAULT_CONTEXT_MENU_SETTINGS)
   }
 
@@ -207,13 +194,11 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
-    setAppliedShowBreadcrumb(showBreadcrumb)
     setAppliedContextMenu(contextMenu)
     persistSettings({
       fontSize,
       layoutMode,
       themeMode,
-      showBreadcrumb,
       contextMenu,
     })
     window.dispatchEvent(new CustomEvent('personal-settings-changed'))
@@ -231,9 +216,6 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     themeMode,
     appliedThemeMode,
     setThemeMode,
-    showBreadcrumb,
-    appliedShowBreadcrumb,
-    setShowBreadcrumb,
     contextMenu,
     appliedContextMenu,
     toggleContextMenuAction,

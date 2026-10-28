@@ -25,13 +25,6 @@ export interface PersonalSettings {
   fontSize?: number
   layoutMode?: LayoutMode
   themeMode?: ThemeMode
-  /**
-   * 是否显示标签页下方的导航面包屑。
-   *
-   * 缺省（`undefined`）= 显示；只有用户明确关掉才写 `false`。
-   * 用布尔而不是「面包屑样式枚举」：这里只有一个可切换项，多一层枚举没有信息量。
-   */
-  showBreadcrumb?: boolean
   /** 行右键菜单的显示偏好；缺省 = 三组全显示。 */
   contextMenu?: ContextMenuSettings
 }
@@ -52,10 +45,6 @@ function normalizeFontSize(value: unknown): number | undefined {
 
 function normalizeLayoutMode(value: unknown): LayoutMode | undefined {
   return value === 'sider' || value === 'top' ? value : undefined
-}
-
-function normalizeShowBreadcrumb(value: unknown): boolean | undefined {
-  return typeof value === 'boolean' ? value : undefined
 }
 
 /**
@@ -116,7 +105,6 @@ export function normalizePersonalSettings(
   const fontSize = normalizeFontSize(candidate.fontSize)
   const layoutMode = normalizeLayoutMode(candidate.layoutMode)
   const themeMode = normalizeThemeMode(candidate.themeMode)
-  const showBreadcrumb = normalizeShowBreadcrumb(candidate.showBreadcrumb)
 
   if (fontSize !== undefined) {
     settings.fontSize = fontSize
@@ -126,9 +114,6 @@ export function normalizePersonalSettings(
   }
   if (themeMode) {
     settings.themeMode = themeMode
-  }
-  if (showBreadcrumb !== undefined) {
-    settings.showBreadcrumb = showBreadcrumb
   }
   const contextMenu = normalizeContextMenuSettings(candidate.contextMenu)
   if (contextMenu) {

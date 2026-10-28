@@ -23,8 +23,6 @@ interface Props {
   onLayoutModeChange: (value: LayoutMode) => void
   themeMode: ThemeMode
   onThemeModeChange: (value: ThemeMode) => void
-  showBreadcrumb: boolean
-  onShowBreadcrumbChange: (value: boolean) => void
   contextMenu: AppliedContextMenuSettings
   onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
   onContextMenuGroupVisibleChange: (
@@ -45,9 +43,7 @@ export function PersonalSettingsModal({
   layoutMode,
   onLayoutModeChange,
   themeMode,
-  showBreadcrumb,
   onThemeModeChange,
-  onShowBreadcrumbChange,
   contextMenu,
   onToggleContextMenuAction,
   onContextMenuGroupVisibleChange,
@@ -76,8 +72,6 @@ export function PersonalSettingsModal({
                 fontSize={fontSize}
                 layoutMode={layoutMode}
                 themeMode={themeMode}
-                showBreadcrumb={showBreadcrumb}
-                onShowBreadcrumbChange={onShowBreadcrumbChange}
                 onFontSizeChange={onFontSizeChange}
                 onLayoutModeChange={onLayoutModeChange}
                 onThemeModeChange={onThemeModeChange}
