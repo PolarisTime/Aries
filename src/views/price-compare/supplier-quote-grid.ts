@@ -287,3 +287,64 @@ export function toggleHidden(
     ? hidden.filter((name) => name !== brand)
     : [...hidden, brand]
 }
+
+/** 基价规则项（与后端/API 同构，避免 grid 模块依赖 api 层）。 */
+export type BaseRuleItem = {
+  material: string
+  spec: number
+  length: string
+  delta: number
+}
+
+/** 基价规格引用。 */
+export type BaseRuleRef = {
+  material: string
+  spec: number
+  length: string
+}
+
+/** 规则键：材质|规格|定尺（不含类别，与后端规则项键一致）。 */
+export const ruleKeyOfRef = (ref: BaseRuleRef): string =>
+  `${ref.material}|${ref.spec}|${ref.length}`
+
+/**
+ * 按「基价 + 加价」计算应自动填入的空格。
+ *
+ * <p>只填空格子（`isFilled` 为 false 且规则里配了该规格），不覆盖业务员手工价；
+ * 结果价格必须为正数，否则跳过（负价没有业务含义）。</p>
+ */
+export function buildBasePriceFillPlan(args: {
+  base: BaseRuleRef
+  basePrice: number
+  items: readonly BaseRuleItem[]
+  specRows: readonly SpecRow[]
+  isFilled: (rowKey: string) => boolean
+}): { rowKey: string; value: number }[] {
+  if (!(args.basePrice > 0)) return []
+  const baseKey = ruleKeyOfRef(args.base)
+  const deltas = new Map<string, number>()
+  for (const item of args.items) {
+    deltas.set(ruleKeyOfRef(item), item.delta)
+  }
+  const result: { rowKey: string; value: number }[] = []
+  for (const specRow of args.specRows) {
+    for (const length of specRow.lengths) {
+      const ref: BaseRuleRef = {
+        material: specRow.material,
+        spec: specRow.spec,
+        length,
+      }
+      const ruleKey = ruleKeyOfRef(ref)
+      if (ruleKey === baseKey) continue
+      const delta = deltas.get(ruleKey)
+      if (delta === undefined) continue
+      // 草稿键必须带类别（与后端条目键一致），规则键只按 材质|规格|定尺 匹配
+      const rowKey = rowKeyOfCell(specRow, length)
+      if (args.isFilled(rowKey)) continue
+      const value = args.basePrice + delta
+      if (!(value > 0)) continue
+      result.push({ rowKey, value })
+    }
+  }
+  return result
+}

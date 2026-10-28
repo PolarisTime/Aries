@@ -70,3 +70,12 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* 基价规格标记：窄标签，不挤占价格输入宽度 */
+.supplier-price-base-tag {
+  flex: none;
+  margin-inline-end: 0;
+  padding-inline: 4px;
+  font-size: 11px;
+  line-height: 16px;
+}

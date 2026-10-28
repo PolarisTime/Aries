@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { QuoteRow } from './supplier-price-list-model'
 import {
   applyBrandOrder,
+  buildBasePriceFillPlan,
   buildSlots,
   buildSpecPastePlan,
   filterSpecRows,
@@ -256,5 +257,62 @@ describe('列宽：固定表宽，不随容器拉伸', () => {
 
   it('没有品牌列时按 1 列计算，表不会塌成 0 宽', () => {
     expect(sheetWidthOf(0)).toBe(sheetWidthOf(1))
+  })
+})
+
+describe('基价加价：只填空格子', () => {
+  const rows = groupSpecRows([row(10, '9米'), row(12, '9米'), row(14, '9米')])
+  const base = { material: 'HRB400E', spec: 10, length: '9米' }
+  const items = [
+    { material: 'HRB400E', spec: 10, length: '9米', delta: 0 },
+    { material: 'HRB400E', spec: 12, length: '9米', delta: 50 },
+    { material: 'HRB400E', spec: 14, length: '9米', delta: -20 },
+  ]
+
+  it('按 基价 + 加价 算出其它规格，跳过基价本身', () => {
+    expect(
+      buildBasePriceFillPlan({
+        base,
+        basePrice: 3200,
+        items,
+        specRows: rows,
+        isFilled: () => false,
+      }),
+    ).toEqual([
+      { rowKey: '螺纹钢|HRB400E|12|9米', value: 3250 },
+      { rowKey: '螺纹钢|HRB400E|14|9米', value: 3180 },
+    ])
+  })
+
+  it('已有价格不覆盖，没有配加价的规格不填', () => {
+    const plan = buildBasePriceFillPlan({
+      base,
+      basePrice: 3200,
+      items,
+      specRows: rows,
+      isFilled: (key) => key === '螺纹钢|HRB400E|12|9米',
+    })
+    expect(plan.map((cell) => cell.rowKey)).toEqual(['螺纹钢|HRB400E|14|9米'])
+  })
+
+  it('基价为空/非正时不填，算出来非正也不填', () => {
+    expect(
+      buildBasePriceFillPlan({
+        base,
+        basePrice: 0,
+        items,
+        specRows: rows,
+        isFilled: () => false,
+      }),
+    ).toEqual([])
+    expect(
+      buildBasePriceFillPlan({
+        base,
+        basePrice: 10,
+        items: [{ ...items[2], delta: -20 }],
+        specRows: rows,
+        isFilled: () => false,
+      }),
+    ).toEqual([])
   })
 })

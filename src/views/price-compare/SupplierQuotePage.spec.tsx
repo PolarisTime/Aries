@@ -22,6 +22,11 @@ const supplierApi = vi.hoisted(() => ({
   fetchSupplierOptions: vi.fn(),
 }))
 
+const baseRulesApi = vi.hoisted(() => ({
+  fetchSupplierBasePriceRules: vi.fn(),
+  saveSupplierBasePriceRules: vi.fn(),
+}))
+
 const materialBrands = vi.hoisted(() => ({
   useMaterialBrands: vi.fn(() => ['中天', '永钢']),
 }))
@@ -40,6 +45,18 @@ const feedback = vi.hoisted(() => ({
 
 vi.mock('@/api/market/supplier-price-lists', () => priceApi)
 vi.mock('@/api/master/supplier-options', () => supplierApi)
+vi.mock('@/api/market/supplier-base-price-rules', async (importOriginal) => {
+  // 页面还要用真实导出的 basePriceRulesQueryKey，只替换两个请求函数
+  const actual =
+    await importOriginal<
+      typeof import('@/api/market/supplier-base-price-rules')
+    >()
+  return {
+    ...actual,
+    fetchSupplierBasePriceRules: baseRulesApi.fetchSupplierBasePriceRules,
+    saveSupplierBasePriceRules: baseRulesApi.saveSupplierBasePriceRules,
+  }
+})
 vi.mock('@/hooks/useMaterialBrands', () => materialBrands)
 vi.mock('@/utils/antd-app', () => feedback)
 vi.mock('@/hooks/usePermission', () => ({
@@ -167,6 +184,13 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     })
     priceApi.removeSupplierPriceColumn.mockReset()
     supplierApi.fetchSupplierOptions.mockReset().mockResolvedValue([SUPPLIER])
+    baseRulesApi.fetchSupplierBasePriceRules.mockReset().mockResolvedValue({
+      supplierId: 's1',
+      brandName: '中天',
+      base: null,
+      items: [],
+      version: '0',
+    })
     feedback.message.success.mockReset()
     feedback.message.error.mockReset()
     feedback.message.info.mockReset()
@@ -748,6 +772,97 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
     expect(container.textContent).not.toContain(
       i18n.t('priceCompare.supplierPrice.draftsRestored'),
+    )
+  })
+
+  it('录入基价格后按「基价 + 加价」自动填空格，已有价格不覆盖', async () => {
+    baseRulesApi.fetchSupplierBasePriceRules.mockResolvedValue({
+      supplierId: 's1',
+      brandName: '中天',
+      base: { material: 'HRB400', spec: 12, length: '9米' },
+      items: [
+        { material: 'HRB400', spec: 12, length: '9米', delta: 0 },
+        { material: 'HRB400', spec: 14, length: '9米', delta: 50 },
+      ],
+      version: '2',
+    })
+    // ROW_B 没有服务端价格（空格子），应被自动填；ROW_A 是基价
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(
+        brandName === '中天'
+          ? {
+              ...gridWithColumn(),
+              rows: [
+                {
+                  ...ROW_A,
+                  prices: {},
+                  priceStatuses: {},
+                  remarks: {},
+                },
+                { ...ROW_B, prices: {}, priceStatuses: {}, remarks: {} },
+              ],
+            }
+          : emptyGrid(brandName),
+      ),
+    )
+    await render()
+    await selectSupplier()
+
+    await typePrice('中天 HRB400 12 9米', '3200')
+    const baseInput = cellInput('中天 HRB400 12 9米')
+    await act(async () => {
+      baseInput?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3250.00')
+  })
+
+  it('基价规格在格子里带「基价」标记', async () => {
+    baseRulesApi.fetchSupplierBasePriceRules.mockResolvedValue({
+      supplierId: 's1',
+      brandName: '中天',
+      base: { material: 'HRB400', spec: 12, length: '9米' },
+      items: [{ material: 'HRB400', spec: 12, length: '9米', delta: 0 }],
+      version: '1',
+    })
+    await render()
+    await selectSupplier()
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.baseBadge'),
+    )
+  })
+
+  it('列菜单可打开基价加价配置弹层', async () => {
+    await render()
+    await selectSupplier()
+
+    const menuButton = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.columnActionsA11y', { name: '中天' })}"]`,
+    )
+    await act(async () => {
+      menuButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+    const item = Array.from(
+      document.body.querySelectorAll('.ant-dropdown-menu-item'),
+    ).find((node) =>
+      (node.textContent ?? '').includes(
+        i18n.t('priceCompare.supplierPrice.basePriceRuleMenu'),
+      ),
+    )
+    expect(item).toBeTruthy()
+    await act(async () => {
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+
+    expect(document.body.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.basePriceRuleTitle'),
     )
   })
 

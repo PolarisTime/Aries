@@ -1,6 +1,7 @@
 import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  CalculatorOutlined,
   ClearOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
@@ -43,6 +44,11 @@ import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  basePriceRulesQueryKey,
+  fetchSupplierBasePriceRules,
+  type SupplierBasePriceRules,
+} from '@/api/market/supplier-base-price-rules'
+import {
   fetchSpecRows,
   fetchSupplierPriceGrid,
   removeSupplierPriceColumn,
@@ -53,6 +59,7 @@ import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
+import { SupplierBasePriceRuleModal } from './SupplierBasePriceRuleModal'
 import {
   type BrandDraft,
   brandColumnOrder,
@@ -80,6 +87,7 @@ import {
 } from './supplier-quote-edits'
 import {
   applyBrandOrder,
+  buildBasePriceFillPlan,
   buildSlots,
   buildSpecPastePlan,
   filterSpecRows,
@@ -161,6 +169,8 @@ export function SupplierQuotePage() {
   const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
   /** 本页是否从本地恢复过未保存草稿（提示用户确认或放弃）。 */
   const [restoredDrafts, setRestoredDrafts] = useState(false)
+  /** 正在配置基价加价的品牌（null = 弹层关闭）。 */
+  const [ruleBrand, setRuleBrand] = useState<string>()
 
   /** 资源级权限：读/写/删分开，只读用户不该看到可点的保存与移除。 */
   const canUpdate = useHasPermission('supplier-price-lists:update')
@@ -300,6 +310,28 @@ export function SupplierQuotePage() {
     [lengths, visibleBrands],
   )
 
+  /** 基价加价规则：按品牌读取（数量 = 品牌列数，很小，一次取回供录入时联动）。 */
+  const rulesQueries = useQueries({
+    queries: orderedViews.map((view) => ({
+      queryKey: basePriceRulesQueryKey(supplierId, view.brandName),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        fetchSupplierBasePriceRules(supplierId ?? '', view.brandName, signal),
+      enabled: Boolean(supplierId),
+      // 后端未部署该接口时不要连续重试刷屏；一次即可，失败按「未配置规则」降级
+      retry: 1,
+      staleTime: 0,
+    })),
+  })
+
+  const rulesByBrand = useMemo(() => {
+    const map = new Map<string, SupplierBasePriceRules>()
+    orderedViews.forEach((view, index) => {
+      const data = rulesQueries[index]?.data
+      if (data) map.set(view.brandName, data)
+    })
+    return map
+  }, [orderedViews, rulesQueries])
+
   /** 表格里显示的规格行：规格搜索 + 「只看未填」（该规格所有定尺都没价才算未填）。 */
   const displayRows = useMemo(() => {
     const filtered = filterSpecRows(specRows, specKeyword)
@@ -352,6 +384,48 @@ export function SupplierQuotePage() {
     const next = { ...drafts }
     delete next[brandName]
     applyDrafts(next)
+  }
+
+  /**
+   * 录入基价规格的价格后，把同品牌其它规格的空格子按「基价 + 加价」填上。
+   *
+   * <p>只填空格：已有价格（服务端或本次草稿）一律不动；基价格本身跳过；负价跳过。
+   * 这是「基价加价」在录入侧的唯一出口。</p>
+   */
+  const autoFillFromBasePrice = (
+    brandName: string,
+    ref: { material: string; spec: number; length: string },
+    price: number | null,
+    cellKey: string,
+  ) => {
+    if (!canUpdate || price === null || !(price > 0)) return
+    // 只在「用户本次改过基价格」时联动：单纯点进点出不该悄悄填一堆格子
+    if (drafts[brandName]?.[cellKey] === undefined) return
+    const rules = rulesByBrand.get(brandName)
+    if (!rules?.base) return
+    const refKey = `${ref.material}|${ref.spec}|${ref.length}`
+    const baseKey = `${rules.base.material}|${rules.base.spec}|${rules.base.length}`
+    if (refKey !== baseKey) return
+    const view = viewByBrand.get(brandName)
+    if (!view) return
+    const cells = buildBasePriceFillPlan({
+      base: rules.base,
+      basePrice: price,
+      items: rules.items,
+      specRows,
+      isFilled: (rowKey) =>
+        drafts[brandName]?.[rowKey] !== undefined || view.cells.has(rowKey),
+    })
+    if (!cells.length) return
+    const filled: DraftMap = {
+      ...drafts,
+      [brandName]: { ...(drafts[brandName] ?? {}) },
+    }
+    for (const cell of cells) filled[brandName][cell.rowKey] = cell.value
+    applyDrafts(filled)
+    message.success(
+      t('priceCompare.supplierPrice.autoFilled', { count: cells.length }),
+    )
   }
 
   const undo = () => {
@@ -719,6 +793,12 @@ export function SupplierQuotePage() {
       },
       { type: 'divider' },
       {
+        key: 'rules',
+        icon: <CalculatorOutlined />,
+        label: t('priceCompare.supplierPrice.basePriceRuleMenu'),
+        disabled: !canUpdate,
+      },
+      {
         key: 'hide',
         icon: <EyeInvisibleOutlined />,
         label: t('priceCompare.supplierPrice.hideColumn'),
@@ -744,6 +824,10 @@ export function SupplierQuotePage() {
   }
 
   const onBrandMenuClick = (brandName: string, key: string) => {
+    if (key === 'rules') {
+      setRuleBrand(brandName)
+      return
+    }
     if (key === 'left') return shiftColumn(brandName, -1)
     if (key === 'right') return shiftColumn(brandName, 1)
     if (key === 'hide') return hideColumn(brandName)
@@ -866,11 +950,25 @@ export function SupplierQuotePage() {
           <Flex className="supplier-price-lengths" gap={2} vertical>
             {row.lengths.map((length) => {
               const cellKey = rowKeyOfCell(row, length)
+              const brandBase = rulesByBrand.get(brandName)?.base
+              const isBase =
+                Boolean(brandBase) &&
+                `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
+                  `${row.material}|${row.spec}|${length}`
               return (
                 <Flex align="center" gap={4} key={length}>
                   <span className="supplier-price-length">
                     {length === '' ? '—' : length}
                   </span>
+                  {isBase ? (
+                    <Tag
+                      className="supplier-price-base-tag"
+                      color="blue"
+                      title={t('priceCompare.supplierPrice.baseBadge')}
+                    >
+                      {t('priceCompare.supplierPrice.baseBadge')}
+                    </Tag>
+                  ) : null}
                   <InputNumber
                     aria-label={`${brandName} ${row.material} ${row.spec} ${length}`}
                     className="supplier-price-sheet-input"
@@ -890,6 +988,22 @@ export function SupplierQuotePage() {
                         brandName,
                         cellKey,
                         typeof value === 'number' ? value : null,
+                      )
+                    }
+                    onBlur={() =>
+                      autoFillFromBasePrice(
+                        brandName,
+                        {
+                          material: row.material,
+                          spec: row.spec,
+                          length,
+                        },
+                        draftPrice(
+                          drafts[brandName],
+                          cellKey,
+                          serverCells.get(cellKey)?.price,
+                        ),
+                        cellKey,
                       )
                     }
                     onFocus={() => {
@@ -1182,6 +1296,21 @@ export function SupplierQuotePage() {
           </div>
         </Spin>
       )}
+
+      {supplierId && ruleBrand ? (
+        <SupplierBasePriceRuleModal
+          brandName={ruleBrand}
+          onClose={() => setRuleBrand(undefined)}
+          onSaved={() => {
+            void queryClient.invalidateQueries({
+              queryKey: ['supplier-base-price-rules'],
+            })
+          }}
+          open
+          rows={specRows}
+          supplierId={supplierId}
+        />
+      ) : null}
     </Flex>
   )
 }
