@@ -1,3 +1,11 @@
+# [14.4.0](https://github.com/PolarisTime/Aries/compare/v14.3.2...v14.4.0) (2026-10-28)
+
+
+### Features
+
+* **layout:** 个人设置里新增「导航面包屑」显示开关 ([a6dc170](https://github.com/PolarisTime/Aries/commit/a6dc170a4291623177532b4d960672522113c08e))
+* **market:** 重做行情同步页面 UI 与交互，覆盖矩阵支持前后翻段 ([0d25042](https://github.com/PolarisTime/Aries/commit/0d25042a9d4804ee7293947392f2f99404d625aa))
+
 ## [14.3.2](https://github.com/PolarisTime/Aries/compare/v14.3.1...v14.3.2) (2026-10-27)
 
 
