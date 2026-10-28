@@ -341,6 +341,23 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     })
   }
 
+  /** 切换到「规格横置」视图。 */
+  async function switchToSpecs() {
+    const tab = Array.from(
+      container.querySelectorAll('.ant-segmented-item-label'),
+    ).find((node) =>
+      (node.textContent ?? '').includes(
+        i18n.t('priceCompare.supplierPrice.viewModeSpecs'),
+      ),
+    )
+    expect(tab, '未找到「规格横置」切换').toBeTruthy()
+    await act(async () => {
+      tab?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+  }
+
   it('未选供应商时给出入口提示，不渲染报价网格', async () => {
     await render()
 
@@ -364,6 +381,45 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(sheetRows().length).toBe(2)
     expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
     expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
+  })
+
+  it('可切换到「规格横置」：规格成为列头、品牌分块、行是材质 + 定尺', async () => {
+    await render()
+    await selectSupplier()
+
+    await switchToSpecs()
+
+    // 品牌分块 + 行标签（材质 / 定尺）
+    const brand = container.querySelector('.supplier-price-transposed-brand')
+    expect(brand?.textContent).toContain('中天')
+    expect(brand?.textContent).toContain('HRB400')
+    expect(brand?.textContent).toContain('9米')
+
+    // 规格成为列头（Φ12 / Φ14），而不是行
+    const headers = sheetHeaders()
+    expect(headers.some((text) => text.includes('Φ12'))).toBe(true)
+    expect(headers.some((text) => text.includes('Φ14'))).toBe(true)
+    // 同一行里两个规格各一格，值直接回显服务端价格
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
+  })
+
+  it('规格横置下录价并保存：仍按 类别|材质|规格|定尺 提交整组', async () => {
+    await render()
+    await selectSupplier()
+    await switchToSpecs()
+
+    await typePrice('中天 HRB400 12 9米', '3456')
+    await clickSave()
+
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
+      'l1',
+      3,
+      [
+        { ...ROW_A, price: 3456, priceStatus: 'NORMAL' },
+        { ...ROW_B, price: 3300 },
+      ],
+    )
   })
 
   it('同一规格的 9米/12米 合并为一行、格子里两个价格', async () => {

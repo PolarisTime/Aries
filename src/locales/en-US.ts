@@ -444,6 +444,9 @@ export const enUS = {
       material: 'Material',
       spec: 'Spec',
       length: 'Length',
+      viewModeBrands: 'Brands as columns',
+      viewModeSpecs: 'Specs across columns',
+      materialLength: 'Material / length',
       unit: 'Unit',
       warehouse: 'Warehouse',
       batchNo: 'Batch No.',
@@ -2930,6 +2933,8 @@ export const enUS = {
       columnQuotedOn: 'Quoted {{date}}',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',
+      entryHintSpecs:
+        'Entry: rows = material + length, columns = specs (Φ), grouped by brand; empty = not quoted, 0 is a real price; each brand column is replaced as a whole on save.',
       pasteApplied: 'Filled {{count}} cell(s) from the clipboard',
       pasteDropped:
         'Filled, and skipped {{count}} cell(s) due to format or out-of-range',

@@ -32,6 +32,7 @@ import {
   Input,
   InputNumber,
   Popover,
+  Segmented,
   Select,
   Spin,
   Table,
@@ -68,6 +69,7 @@ import {
   draftCount,
   draftPrice,
   mergeQuoteRows,
+  quoteRowKey,
   type ServerCell,
   serverCellsOf,
   setDraftPrice,
@@ -106,6 +108,11 @@ import {
   toggleHidden,
 } from './supplier-quote-grid'
 import { persistColumnPlans } from './supplier-quote-save'
+import {
+  buildTransposedSections,
+  specHeader,
+  type TransposedRow,
+} from './supplier-quote-transposed'
 import './supplier-price.css'
 
 /** 一个品牌列视图：是否已有价格表 + 该列服务端价格索引 + 原始网格。 */
@@ -123,6 +130,17 @@ const gridQueryKey = (brandName: string) =>
 /** 列显示偏好的本地存储键：按供应商隔离，换供应商各自记各自的顺序与隐藏列。 */
 const brandPrefsKey = (supplierId: string) =>
   `aries:supplier-quote-prefs:${supplierId}`
+
+/** 视图偏好：品牌成列（现状）/ 规格横置（品牌分块，规格作列头，贴近纸质报价单）。 */
+type QuoteViewMode = 'brands' | 'specs'
+
+const viewModeKey = (supplierId: string) =>
+  `aries:supplier-quote-view:${supplierId}`
+
+const readViewMode = (supplierId: string): QuoteViewMode =>
+  window.localStorage.getItem(viewModeKey(supplierId)) === 'specs'
+    ? 'specs'
+    : 'brands'
 
 /** 未保存草稿的本地存储键：刷新/误关页后能恢复，避免一次报价白录。 */
 const draftsKey = (supplierId: string) =>
@@ -171,6 +189,8 @@ export function SupplierQuotePage() {
   const [restoredDrafts, setRestoredDrafts] = useState(false)
   /** 正在配置基价加价的品牌（null = 弹层关闭）。 */
   const [ruleBrand, setRuleBrand] = useState<string>()
+  /** 视图方向：品牌成列（默认）/ 规格横置（按供应商记忆）。 */
+  const [viewMode, setViewMode] = useState<QuoteViewMode>('brands')
 
   /** 资源级权限：读/写/删分开，只读用户不该看到可点的保存与移除。 */
   const canUpdate = useHasPermission('supplier-price-lists:update')
@@ -355,6 +375,12 @@ export function SupplierQuotePage() {
     )
   }, [brandOrder, hiddenBrands, supplierId])
 
+  // 视图方向也是个人偏好：按供应商存本地，下次打开保持
+  useEffect(() => {
+    if (!supplierId) return
+    window.localStorage.setItem(viewModeKey(supplierId), viewMode)
+  }, [supplierId, viewMode])
+
   const totalDirty = views.reduce(
     (sum, view) => sum + draftCount(drafts[view.brandName]),
     0,
@@ -511,6 +537,58 @@ export function SupplierQuotePage() {
     return false
   }
 
+  /**
+   * 粘贴落草稿：多格先确认（误贴会覆盖整列），单格直接写。
+   *
+   * <p>两个视图（品牌成列 / 规格横置）共用这一个出口，避免确认文案与覆盖统计各写一份。</p>
+   */
+  const commitPaste = (
+    cells: { brandName: string; rowKey: string; value: number | null }[],
+    dropped: number,
+  ) => {
+    const applyPaste = () => {
+      const next: DraftMap = { ...drafts }
+      for (const cell of cells) {
+        next[cell.brandName] = setDraftPrice(
+          next[cell.brandName] ?? {},
+          cell.rowKey,
+          cell.value,
+        )
+      }
+      applyDrafts(next)
+      if (dropped > 0) {
+        message.warning(
+          t('priceCompare.supplierPrice.pasteDropped', { count: dropped }),
+        )
+      } else {
+        message.success(
+          t('priceCompare.supplierPrice.pasteApplied', { count: cells.length }),
+        )
+      }
+    }
+
+    if (cells.length > 1) {
+      const overwrite = countOverwrites({
+        cells,
+        drafts,
+        serverCellsOfBrand: (brand) =>
+          viewByBrand.get(brand)?.cells ?? new Map(),
+      })
+      modal.confirm({
+        title: t('priceCompare.supplierPrice.pasteConfirmTitle'),
+        content: t('priceCompare.supplierPrice.pasteConfirmContent', {
+          count: cells.length,
+          overwrite,
+        }),
+        okText: t('priceCompare.supplierPrice.pasteConfirmOk'),
+        cancelText: t('common.cancel'),
+        onOk: applyPaste,
+      })
+      return
+    }
+    applyPaste()
+  }
+
   /** 从 Excel 粘贴：以当前格为锚点按行优先铺开（空串 = 清空，非法值丢弃并提示）。 */
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     const anchor = anchorRef.current
@@ -540,50 +618,86 @@ export function SupplierQuotePage() {
     if (!plan.cells.length) return
     event.preventDefault()
 
-    const applyPaste = () => {
-      const next: DraftMap = { ...drafts }
-      for (const cell of plan.cells) {
-        next[cell.brandName] = setDraftPrice(
-          next[cell.brandName] ?? {},
-          cell.rowKey,
-          cell.value,
-        )
-      }
-      applyDrafts(next)
-      if (plan.dropped > 0) {
-        message.warning(
-          t('priceCompare.supplierPrice.pasteDropped', { count: plan.dropped }),
-        )
-      } else {
-        message.success(
-          t('priceCompare.supplierPrice.pasteApplied', {
-            count: plan.cells.length,
-          }),
-        )
-      }
-    }
+    commitPaste(plan.cells, plan.dropped)
+  }
 
-    // 多格粘贴先确认：误贴一列会覆盖整列报价，这一步比事后撤销更便宜
-    if (plan.cells.length > 1) {
-      const overwrite = countOverwrites({
-        cells: plan.cells,
-        drafts,
-        serverCellsOfBrand: (brand) =>
-          viewByBrand.get(brand)?.cells ?? new Map(),
-      })
-      modal.confirm({
-        title: t('priceCompare.supplierPrice.pasteConfirmTitle'),
-        content: t('priceCompare.supplierPrice.pasteConfirmContent', {
-          count: plan.cells.length,
-          overwrite,
-        }),
-        okText: t('priceCompare.supplierPrice.pasteConfirmOk'),
-        cancelText: t('common.cancel'),
-        onOk: applyPaste,
-      })
-      return
+  /**
+   * 规格横置的数据：品牌分块 → 品类块（规格作列）→ 行 = 材质 + 定尺。
+   *
+   * <p>与品牌成列视图共用同一批 `rows` 与草稿键，只是转置了渲染方向；规格搜索/只看未填
+   * 在这里直接过滤 QuoteRow，保证两个视图的语义一致。</p>
+   */
+  const transposedSections = useMemo(() => {
+    const keyword = specKeyword.trim().toLowerCase()
+    let list = rows
+    if (keyword) {
+      list = list.filter((row) =>
+        `${row.category} ${row.material} Φ${row.spec} ${row.length}`
+          .toLowerCase()
+          .includes(keyword),
+      )
     }
-    applyPaste()
+    if (onlyUnpriced) {
+      list = list.filter((row) =>
+        displayViews.every(
+          (view) => view.cells.get(quoteRowKey(row)) === undefined,
+        ),
+      )
+    }
+    return buildTransposedSections(list, visibleBrands)
+  }, [displayViews, onlyUnpriced, rows, specKeyword, visibleBrands])
+
+  /** 规格横置下粘贴：以锚点格为左上角，向下按「材质 + 定尺」、向右按规格铺开。 */
+  const handleTransposedPaste = (
+    event: React.ClipboardEvent<HTMLDivElement>,
+  ) => {
+    const anchor = anchorRef.current
+    if (!anchor) return
+    const text = event.clipboardData.getData('text/plain')
+    if (!text) return
+    const matrix = parseClipboardGrid(text)
+    if (!matrix.length) return
+    const [category, material, specText, length] = anchor.rowKey.split('|')
+    const spec = Number(specText)
+    const block = transposedSections
+      .find((section) => section.brandName === anchor.brandName)
+      ?.blocks.find((item) => item.category === category)
+    if (!block) return
+    const startRow = block.rows.findIndex(
+      (item) => item.material === material && item.length === length,
+    )
+    const startSpec = block.specs.indexOf(spec)
+    if (startRow < 0 || startSpec < 0) return
+    event.preventDefault()
+
+    const cells: { brandName: string; rowKey: string; value: number | null }[] =
+      []
+    let dropped = 0
+    matrix.forEach((values, rowOffset) => {
+      values.forEach((raw, specOffset) => {
+        const targetRow = block.rows[startRow + rowOffset]
+        const targetSpec = block.specs[startSpec + specOffset]
+        if (!targetRow || targetSpec === undefined) return
+        const rowKey = targetRow.cells[targetSpec]
+        if (!rowKey) {
+          dropped += 1
+          return
+        }
+        const trimmed = raw.trim()
+        if (trimmed === '') {
+          cells.push({ brandName: anchor.brandName, rowKey, value: null })
+          return
+        }
+        const value = Number(trimmed.replace(/[,¥\s]/g, ''))
+        if (!Number.isFinite(value)) {
+          dropped += 1
+          return
+        }
+        cells.push({ brandName: anchor.brandName, rowKey, value })
+      })
+    })
+    if (!cells.length) return
+    commitPaste(cells, dropped)
   }
 
   /** 构建全部待保存的列（纯函数组装，页面只负责发请求）。 */
@@ -706,6 +820,7 @@ export function SupplierQuotePage() {
       setHiddenBrands(prefs.hidden)
       setSpecKeyword('')
       setOnlyUnpriced(false)
+      setViewMode(readViewMode(nextSupplierId))
       anchorRef.current = null
     }
     if (totalDirty === 0) {
@@ -846,6 +961,19 @@ export function SupplierQuotePage() {
 
   /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
   const sheetWidth = sheetWidthOf(displayViews.length)
+
+  /** Ctrl+Z / Ctrl+Y 撤销重做：两个视图共用。 */
+  const guardUndoRedo = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!(event.ctrlKey || event.metaKey)) return
+    const key = event.key.toLowerCase()
+    if (key === 'z') {
+      event.preventDefault()
+      undo()
+    } else if (key === 'y') {
+      event.preventDefault()
+      redo()
+    }
+  }
 
   const sheetColumns: ColumnsType<SpecRow> = [
     {
@@ -1156,6 +1284,20 @@ export function SupplierQuotePage() {
         >
           {t('priceCompare.supplierPrice.onlyUnpriced')}
         </Checkbox>
+        <Segmented<QuoteViewMode>
+          options={[
+            {
+              label: t('priceCompare.supplierPrice.viewModeBrands'),
+              value: 'brands',
+            },
+            {
+              label: t('priceCompare.supplierPrice.viewModeSpecs'),
+              value: 'specs',
+            },
+          ]}
+          value={viewMode}
+          onChange={(next) => setViewMode(next)}
+        />
         <Popover
           content={
             <Flex className="supplier-price-column-panel" vertical gap={2}>
@@ -1191,7 +1333,9 @@ export function SupplierQuotePage() {
       </Flex>
 
       <Typography.Text type="secondary">
-        {t('priceCompare.supplierPrice.entryHint')}
+        {viewMode === 'specs'
+          ? t('priceCompare.supplierPrice.entryHintSpecs')
+          : t('priceCompare.supplierPrice.entryHint')}
       </Typography.Text>
 
       {!canUpdate ? (
@@ -1258,22 +1402,231 @@ export function SupplierQuotePage() {
           title={t('priceCompare.supplierPrice.allColumnsHidden')}
           type="warning"
         />
+      ) : viewMode === 'specs' ? (
+        <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
+          {/*
+            规格横置：行 = 材质 + 定尺、列 = 规格（Φ），品牌分块；每个品类单独一块，
+            因为不同品类的规格集合不同（螺纹钢 Φ12–Φ32、盘螺 Φ6–Φ12）。
+          */}
+          <div
+            className="supplier-price-transposed"
+            onKeyDownCapture={guardUndoRedo}
+            onPaste={handleTransposedPaste}
+            ref={gridRef}
+          >
+            {transposedSections.length === 0 ? (
+              <Empty description={t('priceCompare.supplierPrice.empty')} />
+            ) : (
+              transposedSections.map((section) => {
+                const view = viewByBrand.get(section.brandName)
+                const dirty = draftCount(drafts[section.brandName])
+                return (
+                  <section
+                    className="supplier-price-transposed-brand"
+                    key={section.brandName}
+                  >
+                    <Flex
+                      align="center"
+                      className="supplier-price-transposed-head"
+                      gap={8}
+                      wrap
+                    >
+                      <Typography.Text strong>
+                        {section.brandName}
+                      </Typography.Text>
+                      <Typography.Text
+                        className="supplier-price-brand-meta"
+                        type="secondary"
+                      >
+                        {view?.column?.quotedOn
+                          ? t('priceCompare.supplierPrice.columnQuotedOn', {
+                              date: view.column.quotedOn,
+                            })
+                          : t('priceCompare.supplierPrice.newColumn')}
+                      </Typography.Text>
+                      {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
+                      <Dropdown
+                        menu={{
+                          items: brandMenuItems(section.brandName),
+                          onClick: ({ key }) =>
+                            onBrandMenuClick(section.brandName, key),
+                        }}
+                        trigger={['click']}
+                      >
+                        <Button
+                          aria-label={t(
+                            'priceCompare.supplierPrice.columnActionsA11y',
+                            { name: section.brandName },
+                          )}
+                          icon={<MoreOutlined />}
+                          size="small"
+                          type="text"
+                        />
+                      </Dropdown>
+                    </Flex>
+
+                    {section.blocks.map((block) => (
+                      <div
+                        className="supplier-price-transposed-block"
+                        key={block.category}
+                        style={{
+                          // 规格少的品类（如盘螺 3 列）不要被拉满整行
+                          maxWidth: 132 + block.specs.length * 96,
+                        }}
+                      >
+                        <Typography.Text className="supplier-price-transposed-category">
+                          {block.category}
+                        </Typography.Text>
+                        <Table<TransposedRow>
+                          bordered
+                          columns={[
+                            {
+                              title: t(
+                                'priceCompare.supplierPrice.materialLength',
+                              ),
+                              key: 'label',
+                              width: 132,
+                              fixed: 'left',
+                              render: (_value, row) => (
+                                <Flex vertical gap={0}>
+                                  <Typography.Text>
+                                    {row.material}
+                                  </Typography.Text>
+                                  <Typography.Text type="secondary">
+                                    {row.length === '' ? '—' : row.length}
+                                  </Typography.Text>
+                                </Flex>
+                              ),
+                            },
+                            ...block.specs.map((spec) => ({
+                              title: specHeader(spec),
+                              key: `spec-${spec}`,
+                              width: 96,
+                              align: 'right' as const,
+                              render: (_value: unknown, row: TransposedRow) => {
+                                const rowKey = row.cells[spec]
+                                if (!rowKey) {
+                                  return (
+                                    <span className="supplier-price-transposed-empty">
+                                      —
+                                    </span>
+                                  )
+                                }
+                                const brandBase = rulesByBrand.get(
+                                  section.brandName,
+                                )?.base
+                                const isBase =
+                                  Boolean(brandBase) &&
+                                  `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
+                                    `${row.material}|${spec}|${row.length}`
+                                const serverPrice =
+                                  view?.cells.get(rowKey)?.price
+                                const value = draftPrice(
+                                  drafts[section.brandName],
+                                  rowKey,
+                                  serverPrice,
+                                )
+                                return (
+                                  <InputNumber
+                                    aria-label={`${section.brandName} ${row.material} ${spec} ${row.length}`}
+                                    className={`supplier-price-sheet-input${
+                                      isBase
+                                        ? ' supplier-price-transposed-base'
+                                        : ''
+                                    }`}
+                                    data-grid-cell={cellIdOf(
+                                      section.brandName,
+                                      rowKey,
+                                    )}
+                                    disabled={!canUpdate}
+                                    min={0}
+                                    precision={2}
+                                    size="small"
+                                    style={{ width: '100%' }}
+                                    title={
+                                      isBase
+                                        ? t(
+                                            'priceCompare.supplierPrice.baseBadge',
+                                          )
+                                        : undefined
+                                    }
+                                    value={value}
+                                    onChange={(next) =>
+                                      updateCell(
+                                        section.brandName,
+                                        rowKey,
+                                        typeof next === 'number' ? next : null,
+                                      )
+                                    }
+                                    onBlur={() =>
+                                      autoFillFromBasePrice(
+                                        section.brandName,
+                                        {
+                                          material: row.material,
+                                          spec,
+                                          length: row.length,
+                                        },
+                                        value,
+                                        rowKey,
+                                      )
+                                    }
+                                    onFocus={() => {
+                                      anchorRef.current = {
+                                        brandName: section.brandName,
+                                        rowKey,
+                                      }
+                                    }}
+                                    onKeyDown={(event) => {
+                                      const move = (delta: number) => {
+                                        const index = block.rows.indexOf(row)
+                                        const target = block.rows[index + delta]
+                                        const targetKey = target?.cells[spec]
+                                        if (!targetKey) return
+                                        event.preventDefault()
+                                        event.stopPropagation()
+                                        focusCell(section.brandName, targetKey)
+                                      }
+                                      if (
+                                        event.key === 'ArrowDown' ||
+                                        event.key === 'Enter'
+                                      ) {
+                                        move(1)
+                                        return
+                                      }
+                                      if (event.key === 'ArrowUp') {
+                                        move(-1)
+                                        return
+                                      }
+                                      if (event.key === 'Escape') {
+                                        event.currentTarget.blur()
+                                      }
+                                    }}
+                                  />
+                                )
+                              },
+                            })),
+                          ]}
+                          dataSource={block.rows}
+                          pagination={false}
+                          rowKey={(row) => `${row.material}|${row.length}`}
+                          scroll={{ x: 132 + block.specs.length * 96 }}
+                          size="small"
+                          tableLayout="fixed"
+                        />
+                      </div>
+                    ))}
+                  </section>
+                )
+              })
+            )}
+          </div>
+        </Spin>
       ) : (
         <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
           {/* Excel 式网格：行=规格、列=品牌；粘贴与键盘移动都以当前聚焦格为锚点 */}
           <div
             className="supplier-price-sheet"
-            onKeyDownCapture={(event) => {
-              if (!(event.ctrlKey || event.metaKey)) return
-              const key = event.key.toLowerCase()
-              if (key === 'z') {
-                event.preventDefault()
-                undo()
-              } else if (key === 'y') {
-                event.preventDefault()
-                redo()
-              }
-            }}
+            onKeyDownCapture={guardUndoRedo}
             onPaste={handlePaste}
             ref={gridRef}
           >

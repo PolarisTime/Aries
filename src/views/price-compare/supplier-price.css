@@ -79,3 +79,42 @@
   font-size: 11px;
   line-height: 16px;
 }
+
+/* 规格横置视图：品牌分块 → 品类块（规格作列）→ 行 = 材质 + 定尺 */
+.supplier-price-transposed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.supplier-price-transposed-brand {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+}
+
+.supplier-price-transposed-head {
+  margin-bottom: var(--space-xs);
+}
+
+.supplier-price-transposed-block + .supplier-price-transposed-block {
+  margin-top: var(--space-sm);
+}
+
+.supplier-price-transposed-category {
+  display: block;
+  margin-bottom: var(--space-xxs);
+  font-weight: 600;
+  color: var(--ant-color-text-secondary);
+}
+
+.supplier-price-transposed-empty {
+  padding-inline-end: var(--space-xs);
+  color: var(--ant-color-text-quaternary);
+}
+
+/* 基价规格：左侧蓝条，窄列里不额外占位 */
+.supplier-price-transposed-base {
+  box-shadow: inset 3px 0 0 var(--ant-color-primary);
+}
