@@ -6,7 +6,6 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
   MoreOutlined,
-  PlusOutlined,
   RedoOutlined,
   ReloadOutlined,
   SaveOutlined,
@@ -22,7 +21,6 @@ import {
 import type { MenuProps } from 'antd'
 import {
   Alert,
-  AutoComplete,
   Button,
   Checkbox,
   DatePicker,
@@ -104,6 +102,7 @@ import {
   serializeBrandPrefs,
   sheetWidthOf,
   shiftBrand,
+  specRowGroupSpans,
   specRowKey,
   toggleHidden,
 } from './supplier-quote-grid'
@@ -173,9 +172,8 @@ export function SupplierQuotePage() {
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未保存的改动：品牌 → 该列的草稿（`null` = 明确清空）。 */
   const [drafts, setDrafts] = useState<Record<string, BrandDraft>>({})
-  /** 本次手动添加、且不在「经营品牌」里的品牌。 */
+  /** 本次手动添加、且不在「经营品牌」里的品牌（含用户输入的、商品资料里没有的品牌）。 */
   const [extraBrands, setExtraBrands] = useState<string[]>([])
-  const [pendingBrand, setPendingBrand] = useState<string>()
   const [saving, setSaving] = useState(false)
   /** 列显示偏好：顺序 + 隐藏集合（按供应商存 localStorage，刷新后保持）。 */
   const [brandOrder, setBrandOrder] = useState<string[]>([])
@@ -315,7 +313,6 @@ export function SupplierQuotePage() {
     () => displayViews.map((view) => view.brandName),
     [displayViews],
   )
-  const visibleBrandSet = useMemo(() => new Set(visibleBrands), [visibleBrands])
 
   /**
    * 显示用的规格行：把「一个定尺一行」合并成「一个规格一行」，定尺收进格子。
@@ -837,10 +834,25 @@ export function SupplierQuotePage() {
     })
   }
 
-  const addBrand = () => {
-    if (!pendingBrand) return
-    setExtraBrands((current) => [...current, pendingBrand])
-    setPendingBrand(undefined)
+  /**
+   * 品牌多选的唯一改动入口：勾选即建列、取消即隐藏列（数据不动，可再勾回来）。
+   *
+   * <p>选择列表默认来自**供应商资料里的经营品牌**；同时保留两类来源以免历史数据「看不见」：
+   * 已有价格表但没维护进经营品牌的、以及用户手动输入的新品牌。</p>
+   */
+  const changeBrandSelection = (next: readonly string[]) => {
+    /*
+     * 「本次添加」= 勾中的、且不在供应商资料经营品牌里的品牌。
+     * 候选品牌全集里出现（例如商品资料里有这个品牌）并不等于要显示 —— 显示与否由勾选决定;
+     * 否则勾选一个资料外的品牌会因为它只是"候选"而什么都不发生（实测踩过）。
+     */
+    const declared = new Set(declaredBrands)
+    const added = next.filter(
+      (brand) => !declared.has(brand) && !extraBrands.includes(brand),
+    )
+    if (added.length) setExtraBrands((current) => [...current, ...added])
+    const all = [...new Set([...candidateBrands, ...next])]
+    setHiddenBrands(all.filter((brand) => !next.includes(brand)))
   }
 
   /** 当前列顺序（含隐藏列），拖拽/左移右移都基于它重排。 */
@@ -950,9 +962,39 @@ export function SupplierQuotePage() {
     if (key === 'remove') return removeBrand(brandName)
   }
 
-  const brandOptions = materialBrands
-    .filter((brand) => !visibleBrandSet.has(brand))
-    .map((brand) => ({ value: brand, label: brand }))
+  /**
+   * 品牌选择器的候选项，分三组:
+   * ① 供应商资料里的经营品牌（默认来源）；
+   * ② 已有价格表、但没维护进供应商资料的品牌（否则历史报价在页面上不可见）；
+   * ③ 其余商品品牌（补充）。
+   */
+  const brandPickerOptions = useMemo(() => {
+    const declared = new Set(declaredBrands)
+    const withColumn = orderedViews
+      .filter((view) => view.column !== null && !declared.has(view.brandName))
+      .map((view) => view.brandName)
+    const withColumnSet = new Set(withColumn)
+    const rest = candidateBrands.filter(
+      (brand) => !declared.has(brand) && !withColumnSet.has(brand),
+    )
+    const group = (label: string, brands: readonly string[]) =>
+      brands.length === 0
+        ? []
+        : [
+            {
+              label,
+              options: brands.map((brand) => ({ value: brand, label: brand })),
+            },
+          ]
+    return [
+      ...group(
+        t('priceCompare.supplierPrice.brandGroupDeclared'),
+        declaredBrands,
+      ),
+      ...group(t('priceCompare.supplierPrice.brandGroupQuoted'), withColumn),
+      ...group(t('priceCompare.supplierPrice.brandGroupOther'), rest),
+    ]
+  }, [candidateBrands, declaredBrands, orderedViews, t])
 
   const supplierOptions = (suppliersQuery.data ?? []).map((option) => ({
     value: option.value,
@@ -960,7 +1002,7 @@ export function SupplierQuotePage() {
   }))
 
   /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
-  const sheetWidth = sheetWidthOf(displayViews.length)
+  const sheetWidth = sheetWidthOf(displayViews.length, lengths.length)
 
   /** Ctrl+Z / Ctrl+Y 撤销重做：两个视图共用。 */
   const guardUndoRedo = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -975,6 +1017,125 @@ export function SupplierQuotePage() {
     }
   }
 
+  /** 分组合并跨度：按当前可见行算，过滤（搜索/只看未填）后仍按新的连续段合并。 */
+  const groupSpans = useMemo(
+    () => specRowGroupSpans(displayRows),
+    [displayRows],
+  )
+
+  /**
+   * 定尺列的表头：商品资料里无定尺的规格用 `''` 或 `'-'` 表示，两者都读成「不分定尺」，
+   * 否则表头会出现一个孤零零的「-」，没人看得懂那是什么。
+   */
+  const lengthLabel = (length: string) =>
+    length === '' || length === '-'
+      ? t('priceCompare.supplierPrice.noLength')
+      : length
+
+  /**
+   * 品牌列里「某个定尺」的一格。
+   *
+   * <p>报价单原先是一格里塞 9米/12米 两行输入；现在每个定尺各占一列，
+   * 所以行里没有该定尺时这一格显示「—」而不是硬塞一个可编辑框（否则会写出不存在的规格组合）。</p>
+   */
+  const renderLengthCell = (
+    view: BrandColumnView,
+    row: SpecRow,
+    length: string,
+  ) => {
+    if (!row.lengths.includes(length)) {
+      return (
+        <span
+          className="supplier-price-cell-na"
+          aria-hidden="true"
+          title={t('priceCompare.supplierPrice.notApplicable')}
+        >
+          —
+        </span>
+      )
+    }
+    const brandName = view.brandName
+    const cellKey = rowKeyOfCell(row, length)
+    const serverPrice = view.cells.get(cellKey)?.price
+    const value = draftPrice(drafts[brandName], cellKey, serverPrice)
+    const brandBase = rulesByBrand.get(brandName)?.base
+    const isBase =
+      Boolean(brandBase) &&
+      `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
+        `${row.material}|${row.spec}|${length}`
+    const label = `${brandName} ${row.material} ${row.spec} ${length}`
+    return (
+      <Flex
+        align="center"
+        className={`supplier-price-cell-wrap${
+          isBase ? ' supplier-price-base-cell' : ''
+        }`}
+        gap={2}
+        title={isBase ? t('priceCompare.supplierPrice.baseBadge') : undefined}
+      >
+        {/* 基价只靠左色条会读屏不可知，这里补一句隐藏文案 */}
+        {isBase ? (
+          <span className="aries-sr-only">
+            {t('priceCompare.supplierPrice.baseBadge')}
+          </span>
+        ) : null}
+        <InputNumber
+          aria-label={label}
+          className="supplier-price-sheet-input"
+          data-grid-cell={cellIdOf(brandName, cellKey)}
+          disabled={!canUpdate}
+          min={0}
+          precision={2}
+          size="small"
+          style={{ width: '100%' }}
+          value={value}
+          onChange={(next) =>
+            updateCell(
+              brandName,
+              cellKey,
+              typeof next === 'number' ? next : null,
+            )
+          }
+          onBlur={() =>
+            autoFillFromBasePrice(
+              brandName,
+              { material: row.material, spec: row.spec, length },
+              value,
+              cellKey,
+            )
+          }
+          onFocus={() => {
+            anchorRef.current = { brandName, rowKey: cellKey }
+          }}
+          onKeyDown={(event) => {
+            /*
+             * 移动成功时必须 stopPropagation：keydown 还会冒泡到 InputNumber 外层容器，
+             * 内部处理会把 ↑/↓ 当成「步进」把价格 +1/-1（实测 3300 → 3301）。
+             */
+            const move = (deltaRow: number) => {
+              if (!moveFocus(brandName, length, specRowKey(row), deltaRow)) {
+                return
+              }
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            if (event.key === 'ArrowDown' || event.key === 'Enter') {
+              move(1)
+              return
+            }
+            if (event.key === 'ArrowUp') {
+              move(-1)
+              return
+            }
+            if (event.key === 'Escape') {
+              event.currentTarget.blur()
+            }
+          }}
+        />
+      </Flex>
+    )
+  }
+
   const sheetColumns: ColumnsType<SpecRow> = [
     {
       title: t('priceCompare.supplierPrice.rowIndex'),
@@ -987,11 +1148,24 @@ export function SupplierQuotePage() {
       ),
     },
     {
+      /*
+       * 类别/材质按「连续同类」合并成一个格：盘螺整块一组，螺纹再按材质分 HRB400 / HRB400E 两组，
+       * 组与组之间画一条更粗的分隔线（行序由 groupSpecRows 负责）。
+       */
       title: t('priceCompare.supplierPrice.category'),
       dataIndex: 'category',
       width: SHEET_COLUMN_WIDTH.category,
       align: 'center',
       fixed: 'left',
+      onCell: (row) => {
+        const span = groupSpans.get(specRowKey(row))
+        return {
+          rowSpan: span?.categorySpan ?? 1,
+          className: span?.groupStart
+            ? 'supplier-price-group-start'
+            : undefined,
+        }
+      },
     },
     {
       title: t('priceCompare.supplierPrice.material'),
@@ -999,6 +1173,15 @@ export function SupplierQuotePage() {
       width: SHEET_COLUMN_WIDTH.material,
       align: 'center',
       fixed: 'left',
+      onCell: (row) => {
+        const span = groupSpans.get(specRowKey(row))
+        return {
+          rowSpan: span?.materialSpan ?? 1,
+          className: span?.groupStart
+            ? 'supplier-price-group-start'
+            : undefined,
+        }
+      },
     },
     {
       title: t('priceCompare.supplierPrice.specNo'),
@@ -1011,168 +1194,84 @@ export function SupplierQuotePage() {
     ...displayViews.map<ColumnsType<SpecRow>[number]>((view) => {
       const brandName = view.brandName
       const column = view.column
-      const serverCells = view.cells
       const dirty = draftCount(drafts[brandName])
-      return {
-        title: (
-          <Flex vertical align="center" gap={0}>
-            <Flex align="center" gap={2} justify="center">
-              <Tooltip title={t('priceCompare.supplierPrice.dragColumn')}>
-                <span
-                  className="supplier-price-brand-handle"
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = 'move'
-                    event.dataTransfer.setData('text/plain', brandName)
-                  }}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault()
-                    handleDropBrand(
-                      event.dataTransfer.getData('text/plain'),
-                      brandName,
-                    )
-                  }}
-                >
-                  {brandName}
-                </span>
-              </Tooltip>
-              {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
-              <Dropdown
-                menu={{
-                  items: brandMenuItems(brandName),
-                  onClick: ({ key }) => onBrandMenuClick(brandName, key),
+      const title = (
+        <Flex align="center" gap={0} key={brandName} vertical>
+          <Flex align="center" gap={2} justify="center">
+            <Tooltip title={t('priceCompare.supplierPrice.dragColumn')}>
+              <span
+                className="supplier-price-brand-handle"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move'
+                  event.dataTransfer.setData('text/plain', brandName)
                 }}
-                trigger={['click']}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  handleDropBrand(
+                    event.dataTransfer.getData('text/plain'),
+                    brandName,
+                  )
+                }}
               >
-                <Button
-                  aria-label={t(
-                    'priceCompare.supplierPrice.columnActionsA11y',
-                    {
-                      name: brandName,
-                    },
-                  )}
-                  icon={<MoreOutlined />}
-                  size="small"
-                  type="text"
-                />
-              </Dropdown>
-            </Flex>
-            <Typography.Text
-              className="supplier-price-brand-meta"
-              type="secondary"
-              style={{ fontSize: 12 }}
+                {brandName}
+              </span>
+            </Tooltip>
+            {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
+            <Dropdown
+              menu={{
+                items: brandMenuItems(brandName),
+                onClick: ({ key }) => onBrandMenuClick(brandName, key),
+              }}
+              trigger={['click']}
             >
-              {column?.quotedOn
-                ? t('priceCompare.supplierPrice.columnQuotedOn', {
-                    date: column.quotedOn,
-                  })
-                : t('priceCompare.supplierPrice.newColumn')}
-            </Typography.Text>
+              <Button
+                aria-label={t('priceCompare.supplierPrice.columnActionsA11y', {
+                  name: brandName,
+                })}
+                icon={<MoreOutlined />}
+                size="small"
+                type="text"
+              />
+            </Dropdown>
           </Flex>
-        ),
+          <Typography.Text
+            className="supplier-price-brand-meta"
+            type="secondary"
+            style={{ fontSize: 12 }}
+          >
+            {column?.quotedOn
+              ? t('priceCompare.supplierPrice.columnQuotedOn', {
+                  date: column.quotedOn,
+                })
+              : t('priceCompare.supplierPrice.newColumn')}
+          </Typography.Text>
+        </Flex>
+      )
+      /* 只有一个定尺（例如整页都是盘螺）时不必套一层「品牌 > 定尺」表头 */
+      if (lengths.length <= 1) {
+        const onlyLength = lengths[0] ?? ''
+        return {
+          title,
+          key: brandName,
+          width: SHEET_COLUMN_WIDTH.lengthCell,
+          align: 'right' as const,
+          render: (_value: unknown, row: SpecRow) =>
+            renderLengthCell(view, row, onlyLength),
+        }
+      }
+      return {
+        title,
         key: brandName,
-        width: SHEET_COLUMN_WIDTH.brand,
-        align: 'right',
-        render: (_value, row) => (
-          <Flex className="supplier-price-lengths" gap={2} vertical>
-            {row.lengths.map((length) => {
-              const cellKey = rowKeyOfCell(row, length)
-              const brandBase = rulesByBrand.get(brandName)?.base
-              const isBase =
-                Boolean(brandBase) &&
-                `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
-                  `${row.material}|${row.spec}|${length}`
-              return (
-                <Flex align="center" gap={4} key={length}>
-                  <span className="supplier-price-length">
-                    {length === '' ? '—' : length}
-                  </span>
-                  {isBase ? (
-                    <Tag
-                      className="supplier-price-base-tag"
-                      color="blue"
-                      title={t('priceCompare.supplierPrice.baseBadge')}
-                    >
-                      {t('priceCompare.supplierPrice.baseBadge')}
-                    </Tag>
-                  ) : null}
-                  <InputNumber
-                    aria-label={`${brandName} ${row.material} ${row.spec} ${length}`}
-                    className="supplier-price-sheet-input"
-                    data-grid-cell={cellIdOf(brandName, cellKey)}
-                    disabled={!canUpdate}
-                    min={0}
-                    precision={2}
-                    size="small"
-                    style={{ width: '100%' }}
-                    value={draftPrice(
-                      drafts[brandName],
-                      cellKey,
-                      serverCells.get(cellKey)?.price,
-                    )}
-                    onChange={(value) =>
-                      updateCell(
-                        brandName,
-                        cellKey,
-                        typeof value === 'number' ? value : null,
-                      )
-                    }
-                    onBlur={() =>
-                      autoFillFromBasePrice(
-                        brandName,
-                        {
-                          material: row.material,
-                          spec: row.spec,
-                          length,
-                        },
-                        draftPrice(
-                          drafts[brandName],
-                          cellKey,
-                          serverCells.get(cellKey)?.price,
-                        ),
-                        cellKey,
-                      )
-                    }
-                    onFocus={() => {
-                      anchorRef.current = { brandName, rowKey: cellKey }
-                    }}
-                    onKeyDown={(event) => {
-                      /*
-                       * 移动成功时必须 stopPropagation：keydown 还会冒泡到 InputNumber 外层容器，
-                       * 内部处理会把 ↑/↓ 当成「步进」把价格 +1/-1（实测 3300 → 3301）。
-                       */
-                      const move = (deltaRow: number) => {
-                        if (
-                          !moveFocus(
-                            brandName,
-                            length,
-                            specRowKey(row),
-                            deltaRow,
-                          )
-                        )
-                          return
-                        event.preventDefault()
-                        event.stopPropagation()
-                      }
-                      if (event.key === 'ArrowDown' || event.key === 'Enter') {
-                        move(1)
-                        return
-                      }
-                      if (event.key === 'ArrowUp') {
-                        move(-1)
-                        return
-                      }
-                      if (event.key === 'Escape') {
-                        event.currentTarget.blur()
-                      }
-                    }}
-                  />
-                </Flex>
-              )
-            })}
-          </Flex>
-        ),
+        children: lengths.map((length) => ({
+          title: lengthLabel(length),
+          key: `${brandName}|${length}`,
+          width: SHEET_COLUMN_WIDTH.lengthCell,
+          align: 'right' as const,
+          render: (_value: unknown, row: SpecRow) =>
+            renderLengthCell(view, row, length),
+        })),
       }
     }),
   ]
@@ -1244,26 +1343,32 @@ export function SupplierQuotePage() {
         >
           {t('priceCompare.supplierPrice.refresh')}
         </Button>
-        {/* 新增品牌放在工具栏右侧：表格有几百行，放在表格下方要滚到底才能加 */}
+        {/*
+          选择品牌：勾选即建列、取消即隐藏列（不会删数据）。
+          候选项默认来自「供应商资料 → 经营品牌」；同时列出已有价格表但未维护进资料的品牌,
+          避免历史报价在页面上消失; 也允许直接输入资料里没有的品牌。
+        */}
         <Flex align="center" gap={8} style={{ marginInlineStart: 'auto' }} wrap>
-          <Tooltip title={t('priceCompare.supplierPrice.addBrandHint')}>
-            <AutoComplete
-              aria-label={t('priceCompare.supplierPrice.addBrand')}
-              disabled={!canCreate}
-              options={brandOptions}
-              placeholder={t('priceCompare.supplierPrice.addBrandPlaceholder')}
-              style={{ width: 180 }}
-              value={pendingBrand}
-              onChange={(value) => setPendingBrand(value)}
+          <Typography.Text type="secondary">
+            {t('priceCompare.supplierPrice.pickBrands')}
+          </Typography.Text>
+          <Tooltip title={t('priceCompare.supplierPrice.pickBrandsHint')}>
+            <Select
+              aria-label={t('priceCompare.supplierPrice.pickBrands')}
+              className="supplier-price-brand-picker"
+              disabled={!canCreate && extraBrands.length === 0}
+              maxTagCount="responsive"
+              mode="tags"
+              options={brandPickerOptions}
+              placeholder={t(
+                'priceCompare.supplierPrice.pickBrandsPlaceholder',
+              )}
+              style={{ minWidth: 300, maxWidth: 460 }}
+              tokenSeparators={[',', '，', ' ']}
+              value={visibleBrands}
+              onChange={(next) => changeBrandSelection(next)}
             />
           </Tooltip>
-          <Button
-            disabled={!canCreate || !pendingBrand}
-            icon={<PlusOutlined />}
-            onClick={addBrand}
-          >
-            {t('priceCompare.supplierPrice.addBrand')}
-          </Button>
         </Flex>
       </Flex>
 

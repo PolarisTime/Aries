@@ -71,6 +71,79 @@ export function orderedLengths(rows: readonly QuoteRow[]): string[] {
   )
 }
 
+/**
+ * 类别分组顺序：盘螺单独一组放最前，螺纹(直条)在后，其余类别再靠后。
+ *
+ * <p>报价单的阅读习惯是「先盘螺、再螺纹」，而且螺纹要按材质分成 HRB400 / HRB400E 两组
+ * （见 {@link materialRankOf}）——所以类别是**粗分组**、材质是**细分组**，规格在组内按数值升序。</p>
+ */
+const CATEGORY_ORDER = ['盘螺', '直条', '螺纹', '高线']
+
+export function categoryRankOf(category: string): number {
+  const index = CATEGORY_ORDER.indexOf((category ?? '').trim())
+  return index >= 0 ? index : 50
+}
+
+/** 材质分组顺序：HRB400 → HRB400E → HPB300 → 其它（组内仍按规格数值排序）。 */
+const MATERIAL_ORDER = ['HRB400', 'HRB400E', 'HPB300']
+
+export function materialRankOf(material: string): number {
+  const index = MATERIAL_ORDER.indexOf((material ?? '').trim().toUpperCase())
+  return index >= 0 ? index : 50
+}
+
+/**
+ * 分组展示用的合并跨度：类别按连续同类合并、材质按「类别+材质」连续合并，
+ * 并在每个组的第一行标 `groupStart`（表格用它画一条更粗的分隔线）。
+ */
+export type SpecRowGroupSpan = {
+  categorySpan: number
+  materialSpan: number
+  groupStart: boolean
+}
+
+/** 计算 {@link groupSpecRows} 结果的合并跨度（入参必须是已排好序的行）。 */
+export function specRowGroupSpans(
+  rows: readonly SpecRow[],
+): Map<string, SpecRowGroupSpan> {
+  const spans = new Map<string, SpecRowGroupSpan>()
+  let index = 0
+  while (index < rows.length) {
+    const category = rows[index].category
+    let categoryEnd = index
+    while (
+      categoryEnd + 1 < rows.length &&
+      rows[categoryEnd + 1].category === category
+    ) {
+      categoryEnd += 1
+    }
+    const categorySpan = categoryEnd - index + 1
+    let cursor = index
+    let firstOfCategory = true
+    while (cursor <= categoryEnd) {
+      const material = rows[cursor].material
+      let materialEnd = cursor
+      while (
+        materialEnd + 1 <= categoryEnd &&
+        rows[materialEnd + 1].material === material
+      ) {
+        materialEnd += 1
+      }
+      for (let rowIndex = cursor; rowIndex <= materialEnd; rowIndex += 1) {
+        spans.set(specRowKey(rows[rowIndex]), {
+          categorySpan: rowIndex === index ? categorySpan : 0,
+          materialSpan: rowIndex === cursor ? materialEnd - cursor + 1 : 0,
+          groupStart: firstOfCategory && rowIndex === cursor,
+        })
+      }
+      firstOfCategory = false
+      cursor = materialEnd + 1
+    }
+    index = categoryEnd + 1
+  }
+  return spans
+}
+
 /** 把「一个定尺一行」的原始行合并成「一个规格一行、定尺在格子里」。 */
 export function groupSpecRows(rows: readonly QuoteRow[]): SpecRow[] {
   const grouped = new Map<string, SpecRow>()
@@ -96,8 +169,8 @@ export function groupSpecRows(rows: readonly QuoteRow[]): SpecRow[] {
   }
   return result.sort(
     (left, right) =>
-      left.category.localeCompare(right.category) ||
-      left.material.localeCompare(right.material) ||
+      categoryRankOf(left.category) - categoryRankOf(right.category) ||
+      materialRankOf(left.material) - materialRankOf(right.material) ||
       left.spec - right.spec,
   )
 }
@@ -186,13 +259,25 @@ export const SHEET_COLUMN_WIDTH = {
   category: 96,
   material: 110,
   specNo: 80,
+  /** 单个定尺列（9米 / 12米）的宽度：品牌列按定尺拆开后每列只需要放一个价格。 */
+  lengthCell: 96,
   brand: 170,
 } as const
 
-/** 网格总宽：固定列（序号/类别/材质/规格） + 品牌列 × 品牌数（至少 1 列，空表不塌）。 */
-export function sheetWidthOf(brandCount: number): number {
-  const { index, category, material, specNo, brand } = SHEET_COLUMN_WIDTH
-  return index + category + material + specNo + Math.max(brandCount, 1) * brand
+/**
+ * 网格总宽：固定列（序号/类别/材质/规格） + 品牌数 × 定尺数 × 单定尺列宽。
+ *
+ * <p>品牌列不再是"一格塞 9米/12米 两行"，而是按定尺拆成两列，所以宽度要乘定尺数。</p>
+ */
+export function sheetWidthOf(brandCount: number, lengthCount = 1): number {
+  const { index, category, material, specNo, lengthCell } = SHEET_COLUMN_WIDTH
+  return (
+    index +
+    category +
+    material +
+    specNo +
+    Math.max(brandCount, 1) * Math.max(lengthCount, 1) * lengthCell
+  )
 }
 
 /** 品牌列的显示偏好：顺序 + 隐藏集合（按供应商存到 localStorage）。 */

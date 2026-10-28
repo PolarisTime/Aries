@@ -18,6 +18,7 @@ import {
   serializeBrandPrefs,
   sheetWidthOf,
   shiftBrand,
+  specRowGroupSpans,
   specRowKey,
   toggleHidden,
 } from './supplier-quote-grid'
@@ -245,18 +246,92 @@ describe('列显示偏好与顺序', () => {
 })
 
 describe('列宽：固定表宽，不随容器拉伸', () => {
-  it('总宽 = 固定列（序号/类别/材质/规格） + 品牌列 × 品牌数', () => {
+  it('总宽 = 固定列（序号/类别/材质/规格） + 品牌数 × 定尺数 × 单定尺列宽', () => {
     const fixed =
       SHEET_COLUMN_WIDTH.index +
       SHEET_COLUMN_WIDTH.category +
       SHEET_COLUMN_WIDTH.material +
       SHEET_COLUMN_WIDTH.specNo
-    expect(sheetWidthOf(1)).toBe(fixed + SHEET_COLUMN_WIDTH.brand)
-    expect(sheetWidthOf(3)).toBe(fixed + 3 * SHEET_COLUMN_WIDTH.brand)
+    // 9米/12米 拆成两列后，一个品牌的宽度是 2 个定尺列
+    expect(sheetWidthOf(1, 2)).toBe(fixed + 2 * SHEET_COLUMN_WIDTH.lengthCell)
+    expect(sheetWidthOf(3, 2)).toBe(fixed + 6 * SHEET_COLUMN_WIDTH.lengthCell)
+    // 只有一个定尺（整页都是盘螺）时退回单列宽
+    expect(sheetWidthOf(2, 1)).toBe(fixed + 2 * SHEET_COLUMN_WIDTH.lengthCell)
   })
 
   it('没有品牌列时按 1 列计算，表不会塌成 0 宽', () => {
-    expect(sheetWidthOf(0)).toBe(sheetWidthOf(1))
+    expect(sheetWidthOf(0, 1)).toBe(sheetWidthOf(1, 1))
+    expect(sheetWidthOf(0, 2)).toBe(sheetWidthOf(1, 2))
+  })
+})
+
+describe('行分组：盘螺一组、螺纹按材质分组、组内规格升序', () => {
+  const rows = [
+    { category: '直条', material: 'HPB300', spec: 32, length: '9米' },
+    { category: '直条', material: 'HRB400E', spec: 12, length: '9米' },
+    { category: '直条', material: 'HRB400', spec: 12, length: '9米' },
+    { category: '盘螺', material: 'HRB400E', spec: 8, length: '' },
+    { category: '盘螺', material: 'HRB400', spec: 12, length: '' },
+    { category: '盘螺', material: 'HRB400', spec: 6, length: '' },
+    { category: '直条', material: 'HRB400', spec: 14, length: '9米' },
+  ]
+
+  it('顺序 = 盘螺 → 直条 HRB400 → 直条 HRB400E → 其它材质；组内按规格数值升序', () => {
+    const grouped = groupSpecRows(rows)
+    expect(
+      grouped.map((item) => `${item.category}/${item.material}/${item.spec}`),
+    ).toEqual([
+      // 盘螺一组，组内先 HRB400 再 HRB400E，规格按数值
+      '盘螺/HRB400/6',
+      '盘螺/HRB400/12',
+      '盘螺/HRB400E/8',
+      // 螺纹（直条）按材质分成两组
+      '直条/HRB400/12',
+      '直条/HRB400/14',
+      '直条/HRB400E/12',
+      // 其它材质（HPB300）靠后
+      '直条/HPB300/32',
+    ])
+  })
+
+  it('合并跨度：类别整组合并、材质按连续段合并，并在组首标 groupStart', () => {
+    const grouped = groupSpecRows(rows)
+    const spans = specRowGroupSpans(grouped)
+    // 盘螺 3 行：类别只出现一次（rowSpan 3），材质各 1~2 行
+    expect(spans.get(specRowKey(grouped[0]))).toEqual({
+      categorySpan: 3,
+      materialSpan: 2,
+      groupStart: true,
+    })
+    expect(spans.get(specRowKey(grouped[1]))).toEqual({
+      categorySpan: 0,
+      materialSpan: 0,
+      groupStart: false,
+    })
+    expect(spans.get(specRowKey(grouped[2]))).toEqual({
+      categorySpan: 0,
+      materialSpan: 1,
+      groupStart: false,
+    })
+    // 直条第一行：新类别第一组，标 groupStart
+    expect(spans.get(specRowKey(grouped[3]))?.groupStart).toBe(true)
+    expect(spans.get(specRowKey(grouped[3]))?.categorySpan).toBe(4)
+  })
+
+  it('过滤后重新计算跨度（避免把不同组强行合并）', () => {
+    const grouped = groupSpecRows(rows)
+    const filtered = filterSpecRows(grouped, 'HRB400E')
+    const spans = specRowGroupSpans(filtered)
+    // 过滤后剩「盘螺/HRB400E」与「直条/HRB400E」两行，类别不同 → 各自独立成组
+    expect(filtered).toHaveLength(2)
+    expect(spans.get(specRowKey(filtered[0]))).toMatchObject({
+      categorySpan: 1,
+      groupStart: true,
+    })
+    expect(spans.get(specRowKey(filtered[1]))).toMatchObject({
+      categorySpan: 1,
+      groupStart: true,
+    })
   })
 })
 

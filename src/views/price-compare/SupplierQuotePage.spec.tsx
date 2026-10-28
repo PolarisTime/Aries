@@ -254,6 +254,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
   }
 
   const selects = () => container.querySelectorAll('.ant-select')
+  /** 品牌多选（「选择品牌」）：工具栏里第二个 antd Select（第一个是供应商）。 */
+  const brandPicker = () => selects()[1] ?? null
 
   async function selectSupplier(title = SUPPLIER.supplierName) {
     await pickOption(selects()[0] ?? null, title)
@@ -422,7 +424,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     )
   })
 
-  it('同一规格的 9米/12米 合并为一行、格子里两个价格', async () => {
+  it('同一规格的 9米/12米 拆成两列：一行两个价格，各占一列', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([ROW_A])
     priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
       Promise.resolve(
@@ -455,9 +457,17 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(sheetRows().length).toBe(1)
     expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3210.00')
     expect(cellInput('中天 HRB400 12 12米')?.value).toBe('3230.00')
-    // 行内能看到定尺标签，用户知道哪一格是 9米/12米
-    expect(sheetRows()[0]?.textContent).toContain('9米')
-    expect(sheetRows()[0]?.textContent).toContain('12米')
+    // 定尺是**表头**（每个品牌下 9米/12米 各一列），不再是格子里的标签
+    const headers = [...container.querySelectorAll('.ant-table-thead th')].map(
+      (node) => node.textContent ?? '',
+    )
+    expect(headers.some((text) => text.includes('9米'))).toBe(true)
+    expect(headers.some((text) => text.includes('12米'))).toBe(true)
+    // 同一行里两个定尺各占一格，互不覆盖
+    expect(
+      container.querySelectorAll('[data-grid-cell*="螺纹钢|HRB400|12|"]')
+        .length,
+    ).toBe(2)
   })
 
   it('修改一格后保存：未改动的服务端价格一并带上（整组替换）', async () => {
@@ -530,7 +540,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     ).toBe('中天 HRB400 12 9米')
   })
 
-  it('在工具栏添加品牌后录入：保存时先建列、再提交条目', async () => {
+  it('在「选择品牌」里勾选品牌即建列；录入后保存先建列再提交条目', async () => {
     priceApi.addSupplierPriceColumn.mockResolvedValue({
       listId: 'l2',
       supplierId: 's1',
@@ -543,14 +553,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await render()
     await selectSupplier()
 
-    await pickOption(selects()[1] ?? null, '永钢')
-    const addButton = Array.from(container.querySelectorAll('button')).find(
-      (button) => (button.textContent ?? '').includes('添加品牌'),
-    )
-    await act(async () => {
-      addButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
+    // 品牌选择器是多选（tags），勾选一个资料里没有的品牌 → 立刻多出一列
+    await pickOption(brandPicker(), '永钢')
     await flush()
 
     expect(sheetHeaders().some((text) => text.includes('永钢'))).toBe(true)
@@ -667,8 +671,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       warehouse: null,
       version: 0,
     })
-    await pickOption(selects()[1] ?? null, brand)
-    await clickButton('添加品牌')
+    await pickOption(brandPicker(), brand)
+    await flush()
   }
 
   async function toggleCheckbox(label: string) {
@@ -886,7 +890,13 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await render()
     await selectSupplier()
 
-    expect(container.textContent).toContain(
+    // 基价格：外层包一层带左色条的容器，同格里放一句隐藏文案给读屏
+    const baseInput = container.querySelector(
+      '[data-grid-cell*="螺纹钢|HRB400|12|9米"]',
+    )
+    const baseWrap = baseInput?.closest('.supplier-price-base-cell')
+    expect(baseWrap).not.toBeNull()
+    expect(baseWrap?.textContent).toContain(
       i18n.t('priceCompare.supplierPrice.baseBadge'),
     )
   })

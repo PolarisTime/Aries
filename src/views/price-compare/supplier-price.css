@@ -57,18 +57,32 @@
   padding: 4px 2px;
 }
 
-/* 一个格子里放多个定尺（9米/12米）：定尺标签窄、右对齐，价格输入占剩余宽度 */
-.supplier-price-lengths {
-  min-width: 0;
+/*
+ * 行分组：盘螺整块一组、螺纹按材质（HRB400 / HRB400E）分组。
+ * 组的第一行画一条更粗的分隔线，扫读时能看出块边界，不靠额外的小标题行占高度。
+ */
+.supplier-price-sheet .ant-table-tbody > tr > td.supplier-price-group-start {
+  border-top: 2px solid var(--theme-border-light, var(--ant-color-border));
 }
 
-.supplier-price-length {
-  flex: none;
-  width: 34px;
-  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
-  font-size: 12px;
-  text-align: right;
-  white-space: nowrap;
+/*
+ * 该规格没有这个定尺（例如盘螺没有 9米/12米）：显示占位符而不是一个可编辑的空框,
+ * 否则用户会填出「盘螺 + 9米」这种不存在的组合。
+ */
+.supplier-price-cell-na {
+  display: block;
+  color: var(--ant-color-text-quaternary, rgb(0 0 0 / 25%));
+  text-align: center;
+}
+
+/* 基价规格：用左色条标出「这格是基价」，不再在窄列里塞 Tag 挤占输入宽度 */
+.supplier-price-sheet .ant-input-number.supplier-price-base-cell {
+  border-inline-start: 3px solid var(--theme-primary);
+}
+
+/* 品牌多选：只显示一行标签，超出用「+N」收起，避免工具栏被撑高 */
+.supplier-price-brand-picker .ant-select-selection-overflow {
+  flex-wrap: nowrap;
 }
 
 /* 基价规格标记：窄标签，不挤占价格输入宽度 */

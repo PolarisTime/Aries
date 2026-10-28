@@ -2810,10 +2810,15 @@ export const zhCN = {
       quotedOn: '报价日期',
       quotedOnHint:
         '新建品牌列时使用该报价日期；已有列显示各自的报价日期，保存不会改动它',
-      addBrand: '添加品牌',
-      addBrandPlaceholder: '选择或输入品牌',
-      addBrandHint:
-        '可直接输入商品资料里还没有的品牌名，保存时会为该品牌建一列表',
+      pickBrands: '选择品牌',
+      pickBrandsPlaceholder: '选择或输入品牌',
+      pickBrandsHint:
+        '默认列出供应商资料里维护的经营品牌；勾选即建列，取消勾选只隐藏列不删数据；也可直接输入资料里没有的品牌',
+      brandGroupDeclared: '供应商资料里的经营品牌',
+      brandGroupQuoted: '已有报价（资料未维护）',
+      brandGroupOther: '其它品牌',
+      noLength: '不分定尺',
+      notApplicable: '该规格没有这个定尺',
       refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
       savedBrands: '已保存 {{count}} 个品牌列',
@@ -2880,7 +2885,7 @@ export const zhCN = {
       pasteDropped: '已填入，另有 {{count}} 格因格式或越界被忽略',
       pickSupplier: '先选一个供应商，再在下方表格里录入各品牌报价',
       noBrands:
-        '该供应商还没有品牌列，暂时无处输价：可在「供应商资料」维护经营品牌，或用右上角「添加品牌」直接输入品牌名添加',
+        '该供应商还没有品牌列，暂时无处输价：在右上角「选择品牌」里勾选即可建列；也可在「供应商资料」维护经营品牌后再回来',
       empty: '还没有可录入的规格行',
       specsLoadFailed:
         '规格列表加载失败，暂时无法录入报价（商品资料规格是表格的行来源）；可点右侧「重试」',

@@ -2869,10 +2869,15 @@ export const enUS = {
       quotedOn: 'Quoted on',
       quotedOnHint:
         'Used only when creating a brand column; existing columns keep their own quoted date',
-      addBrand: 'Add brand',
-      addBrandPlaceholder: 'Select or type a brand',
-      addBrandHint:
-        'You can type a brand that is not in material master; a new column is created for it on save',
+      pickBrands: 'Brands',
+      pickBrandsPlaceholder: 'Select or type a brand',
+      pickBrandsHint:
+        'Lists the brands maintained in the supplier profile; checking one adds its column, unchecking hides the column without deleting data. You can also type a brand that is not in the profile',
+      brandGroupDeclared: 'In supplier profile',
+      brandGroupQuoted: 'Has quotes (not in profile)',
+      brandGroupOther: 'Other brands',
+      noLength: 'Any length',
+      notApplicable: 'Not available for this spec',
       refresh: 'Refresh',
       saveAll: 'Save ({{count}})',
       savedBrands: 'Saved {{count}} brand column(s)',
@@ -2941,7 +2946,7 @@ export const enUS = {
       pickSupplier:
         'Pick a supplier first, then enter each brand’s quotes in the grid below',
       noBrands:
-        'No brand column yet, so there is nowhere to enter prices: maintain "brands" in supplier master, or type a brand in "Add brand" at the top right',
+        'No brand column yet: tick brands in the "Brands" picker at the top right to create columns, or maintain brands in supplier master first',
       empty: 'No spec rows to enter yet',
       specsLoadFailed:
         'Failed to load the spec list, so quotes cannot be entered (table rows come from material master specs). Use "Retry" to reload.',
