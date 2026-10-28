@@ -795,8 +795,14 @@
    * 内容卡再浮起白色。改造前标签栏透明 + 面包屑白底各带一条分隔线，
    * 两条几乎等高、颜色又不同，看起来是"碎的两条带子"。
    */
+  /*
+   * 标签栏是一条"页签条"：底色比页面浅一档、底部一条实线分隔。
+   * 改造前底色 #f5f5f5、分隔线 #f0f0f0 与页面背景几乎同色，整条读成了"一行文字"，
+   * 用户反馈"标签页不太明显"；现在分隔线用 --ant-color-border(#d9d9d9)，
+   * 页签本身再带边框与主色顶条，层级一眼可辨。
+   */
   background: var(--theme-surface-hover);
-  border-bottom: 1px solid var(--theme-border-subtle);
+  border-bottom: 1px solid var(--ant-color-border, #d9d9d9);
 }
 
 .leo-tabbar {
@@ -824,21 +830,31 @@
  * 在浅灰底上几乎看不出"当前在哪个页"；这里统一改成"浮起的白色卡片"，
  * 选中态再用主色文字 + 600 字重强化。
  */
+/*
+ * 页签做成"文件夹页签"（Excel 工作表标签的观感）：上圆角、下直边、贴住页签条底边。
+ * 每个页签都有可见边框（不只是选中项），选中项再用主色顶条 + 白底 + 600 字重拔高，
+ * 未选中项淡灰底、弱字色 —— 这样"哪一叠页签、当前在哪一页"同时可读。
+ */
+.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-list {
+  align-items: flex-end;
+}
+
 .leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab {
-  height: 30px;
+  position: relative;
+  height: 32px;
   margin: 0;
-  padding: 0 var(--space-xs);
+  padding: 0 var(--space-sm);
   color: var(--theme-text-muted);
   font-size: 13px;
   line-height: 1;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--ant-border-radius, 6px);
+  background: var(--ant-color-fill-quaternary, #f5f5f5);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-bottom: 0;
+  border-radius: var(--ant-border-radius, 6px) var(--ant-border-radius, 6px) 0 0;
   transition:
     color 0.12s,
     background 0.12s,
-    border-color 0.12s,
-    box-shadow 0.12s;
+    border-color 0.12s;
 }
 
 .leo-tabbar.ant-tabs-card.ant-tabs-top
@@ -853,6 +869,7 @@
 .leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab:hover {
   color: var(--theme-text);
   background: var(--theme-surface);
+  border-color: var(--ant-color-border, #d9d9d9);
 }
 
 .leo-tabbar.ant-tabs-card.ant-tabs-top
@@ -860,8 +877,25 @@
   .ant-tabs-tab.ant-tabs-tab-active {
   color: var(--theme-primary-text);
   background: var(--theme-surface);
-  border-color: var(--theme-border-subtle);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  border-color: var(--ant-color-border, #d9d9d9);
+  border-bottom: 0;
+  /* 比未选中页签高 2px：视觉上"抬起来"，与 Excel 当前工作表标签一致 */
+  height: 34px;
+}
+
+/*
+ * 选中页签的主色顶条: 2px，宽度覆盖到边框外沿（因此用 -1px 负偏移）。
+ * 这是"当前在哪一页"的主要视觉信号 —— 只靠底色深浅在浅色主题下不够。
+ */
+.leo-tabbar.ant-tabs-card.ant-tabs-top
+  > .ant-tabs-nav
+  .ant-tabs-tab.ant-tabs-tab-active::after {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto -1px;
+  height: 2px;
+  background: var(--theme-primary);
+  border-radius: var(--ant-border-radius, 6px) var(--ant-border-radius, 6px) 0 0;
 }
 
 .leo-tabbar.ant-tabs-card

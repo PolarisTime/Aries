@@ -78,19 +78,40 @@ describe('页头排布契约', () => {
     ).toMatch(/font-weight:\s*600/)
   })
 
-  it('选中的标签是浮起的白卡片, 未选中透明', () => {
-    expect(blockOf('.leo-tabbar-keyboard-host')).toMatch(
-      /background:\s*var\(--theme-surface-hover\)/,
-    )
+  it('标签栏读成"页签条": 底色 + 可见底部分隔线(不再与页面同色)', () => {
+    const strip = blockOf('.leo-tabbar-keyboard-host')
+    expect(strip).toMatch(/background:\s*var\(--theme-surface-hover\)/)
+    // 分隔线用 ant-color-border(#d9d9d9)：原来用 border-secondary(#f0f0f0) 与页面同色，
+    // 整条读成"一行文字"，这正是"标签页不明显"的根因
+    expect(strip).toMatch(/border-bottom:\s*1px solid var\(--ant-color-border/)
+  })
+
+  it('选中页签: 白底 + 主色顶条 + 抬高 2px(Excel 工作表标签的观感)', () => {
     const active = blockOf(
       '.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active',
     )
     expect(active).toMatch(/background:\s*var\(--theme-surface\)/)
-    expect(active).toMatch(/box-shadow:/)
-    expect(active).toMatch(/border-color:/)
+    // 抬高：比未选中页签高 2px，视觉上"浮起来"
+    expect(active).toMatch(/height:\s*34px/)
+    // 不再用卡片阴影：阴影会让页签读成"卡片"，与 Excel 页签的"贴条"语义相反
+    expect(active).not.toMatch(/box-shadow/)
+
+    const accent = blockOf(
+      '.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active::after',
+    )
+    expect(accent).toMatch(/height:\s*2px/)
+    expect(accent).toMatch(/background:\s*var\(--theme-primary\)/)
   })
 
-  it('标签之间留缝、圆角 6px(不再是被压平的卡角)', () => {
+  it('未选中页签也有可见边框(不再是一串裸文字)', () => {
+    const tab = blockOf(
+      '.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab',
+    )
+    expect(tab).toMatch(/border:\s*1px solid var\(--ant-color-border-secondary/)
+    expect(tab).toMatch(/background:\s*var\(--ant-color-fill-quaternary/)
+  })
+
+  it('标签之间留缝、上圆角下直边(文件夹页签)', () => {
     expect(
       blockOf('.leo-tabbar.ant-tabs-card > .ant-tabs-nav .ant-tabs-nav-list'),
     ).toMatch(/gap:\s*var\(--space-xxs\)/)
@@ -98,6 +119,8 @@ describe('页头排布契约', () => {
       blockOf(
         '.leo-tabbar.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab',
       ),
-    ).toMatch(/border-radius:\s*var\(--ant-border-radius,\s*6px\)/)
+    ).toMatch(
+      /border-radius:\s*var\(--ant-border-radius,\s*6px\)\s+var\(--ant-border-radius,\s*6px\)\s+0\s+0/,
+    )
   })
 })
