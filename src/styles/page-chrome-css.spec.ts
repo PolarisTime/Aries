@@ -42,11 +42,11 @@ describe('面包屑移除后的顶部对齐', () => {
     expect(block).toMatch(/padding:\s*0;/)
   })
 
-  it('页面容器顶部内边距也归零（两层都要，只归零一层还剩 8px）', () => {
+  it('页面容器四边内边距归零（业务窗口铺到内容区四边，不再有 8px/16px 的缝）', () => {
     const block = blockOf(
       '.leo-content-inner .ant-pro-page-container-children-container',
     )
-    expect(block).toMatch(/padding-top:\s*0/)
+    expect(block).toMatch(/padding:\s*0;/)
   })
 })
 
