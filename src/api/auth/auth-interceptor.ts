@@ -168,7 +168,7 @@ const PUBLIC_ENDPOINTS = [
   ENDPOINTS.RUNTIME_CONFIG,
   ENDPOINTS.SETUP_ACCOUNT,
   ENDPOINTS.HEALTH,
-  ENDPOINTS.VERSION,
+  // /version 已改为登录可见（返回体含提交哈希）：必须带 token，否则 401
 ]
 const API_BASE_PATH = getRequestPath(apiBaseUrl).replace(/\/$/, '')
 

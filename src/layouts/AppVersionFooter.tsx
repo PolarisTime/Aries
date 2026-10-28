@@ -41,8 +41,9 @@ export function AppVersionFooter() {
     queryFn: fetchBackendInfo,
     staleTime: STALE_LONG,
     gcTime: 2 * 60 * 60 * 1000,
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
+    // 后端重启期间取数会失败；失败后要能自动补上，不能让页脚整场会话停在 `--`
+    retry: 2,
+    refetchOnWindowFocus: true,
   })
   const unknownText = t('common.versionUnknown')
   const currentYear = String(new Date().getFullYear())
