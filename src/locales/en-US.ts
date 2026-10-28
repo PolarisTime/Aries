@@ -2812,6 +2812,22 @@ export const enUS = {
       spec: 'Material / spec / length',
       rowIndex: 'No.',
       newColumn: 'Not created',
+      columns: 'Columns',
+      columnPanelHint:
+        'Check the columns to show; hiding only affects display, entered prices are kept',
+      allColumnsHidden: 'All brand columns are hidden — pick some in "Columns"',
+      dragColumn: 'Drag to reorder columns',
+      moveLeft: 'Move left',
+      moveRight: 'Move right',
+      hideColumn: 'Hide this column',
+      clearColumn: 'Clear this column (save to apply)',
+      clearColumnTitle: 'Clear column "{{name}}"?',
+      clearColumnContent:
+        'All entered prices in this column will be marked as not quoted; it takes effect after you click Save.',
+      clearColumnOk: 'Clear',
+      columnActionsA11y: 'Actions for column "{{name}}"',
+      searchSpecs: 'Search specs (material / size / length)',
+      onlyUnpriced: 'Unpriced only',
       columnQuotedOn: 'Quoted {{date}}',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',

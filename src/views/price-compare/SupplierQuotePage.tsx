@@ -1,8 +1,14 @@
 import {
-  DeleteOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+  ClearOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import {
   type UseQueryResult,
@@ -10,14 +16,19 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import type { MenuProps } from 'antd'
 import {
   Alert,
   AutoComplete,
   Button,
+  Checkbox,
   DatePicker,
+  Dropdown,
   Empty,
   Flex,
+  Input,
   InputNumber,
+  Popover,
   Select,
   Spin,
   Table,
@@ -27,7 +38,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   fetchSpecRows,
@@ -54,11 +65,18 @@ import {
   setDraftPrice,
 } from './supplier-price-list-model'
 import {
+  applyBrandOrder,
   buildPastePlan,
+  filterQuoteRows,
   nextGridCell,
+  parseBrandPrefs,
   parseClipboardGrid,
+  reorderBrands,
   SHEET_COLUMN_WIDTH,
+  serializeBrandPrefs,
   sheetWidthOf,
+  shiftBrand,
+  toggleHidden,
 } from './supplier-quote-grid'
 import { persistColumnPlans } from './supplier-quote-save'
 import './supplier-price.css'
@@ -74,6 +92,10 @@ type BrandColumnView = {
 /** 品牌网格的查询键：与「从价格表带价」同源, 保存后统一失效。 */
 const gridQueryKey = (brandName: string) =>
   ['supplier-price-grid', brandName] as const
+
+/** 列显示偏好的本地存储键：按供应商隔离，换供应商各自记各自的顺序与隐藏列。 */
+const brandPrefsKey = (supplierId: string) =>
+  `aries:supplier-quote-prefs:${supplierId}`
 
 /** 单元格标识：品牌 + 行键，用于键盘移动与粘贴定位（用不可见分隔符避免品牌名里的 `:`）。 */
 const cellIdOf = (brandName: string, rowKey: string) =>
@@ -106,6 +128,12 @@ export function SupplierQuotePage() {
   const [extraBrands, setExtraBrands] = useState<string[]>([])
   const [pendingBrand, setPendingBrand] = useState<string>()
   const [saving, setSaving] = useState(false)
+  /** 列显示偏好：顺序 + 隐藏集合（按供应商存 localStorage，刷新后保持）。 */
+  const [brandOrder, setBrandOrder] = useState<string[]>([])
+  const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
+  /** 行过滤：规格关键字 + 只看未填（按服务端价格判断，边录边消失会打断录入）。 */
+  const [specKeyword, setSpecKeyword] = useState('')
+  const [onlyUnpriced, setOnlyUnpriced] = useState(false)
 
   /** 网格容器与当前聚焦单元格：粘贴从「锚点格」开始铺。 */
   const gridRef = useRef<HTMLDivElement>(null)
@@ -202,12 +230,50 @@ export function SupplierQuotePage() {
     supplierId,
   ])
 
+  /** 按用户列顺序排好的全部品牌（含被隐藏的：隐藏只是不渲染，保存仍要提交）。 */
+  const orderedViews = useMemo(() => {
+    const names = applyBrandOrder(
+      views.map((view) => view.brandName),
+      brandOrder,
+    )
+    return names
+      .map((name) => viewByBrand.get(name))
+      .filter((view): view is BrandColumnView => Boolean(view))
+  }, [brandOrder, viewByBrand, views])
+
+  const hiddenBrandSet = useMemo(() => new Set(hiddenBrands), [hiddenBrands])
+
+  /** 实际渲染的品牌列 = 全部列 - 隐藏列。 */
+  const displayViews = useMemo(
+    () => orderedViews.filter((view) => !hiddenBrandSet.has(view.brandName)),
+    [hiddenBrandSet, orderedViews],
+  )
+
   const visibleBrands = useMemo(
-    () => views.map((view) => view.brandName),
-    [views],
+    () => displayViews.map((view) => view.brandName),
+    [displayViews],
   )
   const visibleBrandSet = useMemo(() => new Set(visibleBrands), [visibleBrands])
-  const extraBrandSet = useMemo(() => new Set(extraBrands), [extraBrands])
+
+  /** 表格里显示的行：规格搜索 + 「只看未填」（按服务端价格判断）。 */
+  const displayRows = useMemo(() => {
+    const filtered = filterQuoteRows(rows, specKeyword)
+    if (!onlyUnpriced) return filtered
+    return filtered.filter((row) =>
+      displayViews.every(
+        (view) => view.cells.get(quoteRowKey(row))?.price === undefined,
+      ),
+    )
+  }, [displayViews, onlyUnpriced, rows, specKeyword])
+
+  // 列顺序/隐藏集合落本地：这是个人视图偏好，不写服务端（换人不该被别人改了列顺序）
+  useEffect(() => {
+    if (!supplierId) return
+    window.localStorage.setItem(
+      brandPrefsKey(supplierId),
+      serializeBrandPrefs({ order: brandOrder, hidden: hiddenBrands }),
+    )
+  }, [brandOrder, hiddenBrands, supplierId])
 
   const totalDirty = views.reduce(
     (sum, view) => sum + draftCount(drafts[view.brandName]),
@@ -264,7 +330,7 @@ export function SupplierQuotePage() {
     deltaRow: number,
   ) => {
     const brandIndex = visibleBrands.indexOf(brandName)
-    const rowIndex = rows.findIndex((row) => quoteRowKey(row) === rowKey)
+    const rowIndex = displayRows.findIndex((row) => quoteRowKey(row) === rowKey)
     if (brandIndex < 0 || rowIndex < 0) return false
     const target = nextGridCell({
       brandIndex,
@@ -272,10 +338,10 @@ export function SupplierQuotePage() {
       deltaCol,
       deltaRow,
       brandCount: visibleBrands.length,
-      rowCount: rows.length,
+      rowCount: displayRows.length,
     })
     if (!target) return false
-    const targetRow = rows[target.rowIndex]
+    const targetRow = displayRows[target.rowIndex]
     const targetBrand = visibleBrands[target.brandIndex]
     if (!targetRow || !targetBrand) return false
     return focusCell(targetBrand, quoteRowKey(targetRow))
@@ -289,7 +355,7 @@ export function SupplierQuotePage() {
     if (!text) return
     const matrix = parseClipboardGrid(text)
     const startBrandIndex = visibleBrands.indexOf(anchor.brandName)
-    const startRowIndex = rows.findIndex(
+    const startRowIndex = displayRows.findIndex(
       (row) => quoteRowKey(row) === anchor.rowKey,
     )
     if (!matrix.length || startBrandIndex < 0 || startRowIndex < 0) return
@@ -297,7 +363,7 @@ export function SupplierQuotePage() {
     const plan = buildPastePlan({
       matrix,
       brandNames: visibleBrands,
-      rows,
+      rows: displayRows,
       startBrandIndex,
       startRowIndex,
     })
@@ -408,9 +474,16 @@ export function SupplierQuotePage() {
   /** 切换供应商会丢弃当前草稿：有未保存改动时先确认。 */
   const changeSupplier = (nextSupplierId: string) => {
     const applyChange = () => {
+      const prefs = parseBrandPrefs(
+        window.localStorage.getItem(brandPrefsKey(nextSupplierId)),
+      )
       setSupplierId(nextSupplierId)
       setExtraBrands([])
       setDrafts({})
+      setBrandOrder(prefs.order)
+      setHiddenBrands(prefs.hidden)
+      setSpecKeyword('')
+      setOnlyUnpriced(false)
       anchorRef.current = null
     }
     if (totalDirty === 0) {
@@ -433,6 +506,102 @@ export function SupplierQuotePage() {
     setPendingBrand(undefined)
   }
 
+  /** 当前列顺序（含隐藏列），拖拽/左移右移都基于它重排。 */
+  const currentOrderNames = () => orderedViews.map((view) => view.brandName)
+
+  const handleDropBrand = (fromBrand: string, toBrand: string) => {
+    if (fromBrand === toBrand) return
+    const base = currentOrderNames()
+    setBrandOrder(
+      reorderBrands(base, base.indexOf(fromBrand), base.indexOf(toBrand)),
+    )
+  }
+
+  /** 左移/右移：拖动排序的非拖动替代（WCAG 2.2 SC 2.5.7）。 */
+  const shiftColumn = (brandName: string, delta: number) => {
+    setBrandOrder(shiftBrand(currentOrderNames(), brandName, delta))
+  }
+
+  const hideColumn = (brandName: string) => {
+    setHiddenBrands((current) => toggleHidden(current, brandName))
+  }
+
+  /** 清空本列：把该列已填价格全部标记为「清空」，保存后整组替换才真正落库。 */
+  const clearColumn = (brandName: string) => {
+    const view = viewByBrand.get(brandName)
+    if (!view) return
+    modal.confirm({
+      title: t('priceCompare.supplierPrice.clearColumnTitle', {
+        name: brandName,
+      }),
+      content: t('priceCompare.supplierPrice.clearColumnContent'),
+      okText: t('priceCompare.supplierPrice.clearColumnOk'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: () => {
+        setDrafts((current) => {
+          const next = { ...current }
+          const cleared: BrandDraft = { ...(next[brandName] ?? {}) }
+          for (const rowKey of view.cells.keys()) cleared[rowKey] = null
+          next[brandName] = cleared
+          return next
+        })
+      },
+    })
+  }
+
+  const brandMenuItems = (
+    brandName: string,
+  ): NonNullable<MenuProps['items']> => {
+    const base = currentOrderNames()
+    const index = base.indexOf(brandName)
+    const column = viewByBrand.get(brandName)?.column ?? null
+    const items: NonNullable<MenuProps['items']> = [
+      {
+        key: 'left',
+        icon: <ArrowLeftOutlined />,
+        label: t('priceCompare.supplierPrice.moveLeft'),
+        disabled: index <= 0,
+      },
+      {
+        key: 'right',
+        icon: <ArrowRightOutlined />,
+        label: t('priceCompare.supplierPrice.moveRight'),
+        disabled: index < 0 || index >= base.length - 1,
+      },
+      { type: 'divider' },
+      {
+        key: 'hide',
+        icon: <EyeInvisibleOutlined />,
+        label: t('priceCompare.supplierPrice.hideColumn'),
+      },
+      {
+        key: 'clear',
+        icon: <ClearOutlined />,
+        label: t('priceCompare.supplierPrice.clearColumn'),
+      },
+    ]
+    if (column) {
+      items.push(
+        { type: 'divider' },
+        {
+          key: 'remove',
+          danger: true,
+          label: t('priceCompare.supplierPrice.removeColumn'),
+        },
+      )
+    }
+    return items
+  }
+
+  const onBrandMenuClick = (brandName: string, key: string) => {
+    if (key === 'left') return shiftColumn(brandName, -1)
+    if (key === 'right') return shiftColumn(brandName, 1)
+    if (key === 'hide') return hideColumn(brandName)
+    if (key === 'clear') return clearColumn(brandName)
+    if (key === 'remove') return removeBrand(brandName)
+  }
+
   const brandOptions = materialBrands
     .filter((brand) => !visibleBrandSet.has(brand))
     .map((brand) => ({ value: brand, label: brand }))
@@ -443,7 +612,7 @@ export function SupplierQuotePage() {
   }))
 
   /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
-  const sheetWidth = sheetWidthOf(views.length)
+  const sheetWidth = sheetWidthOf(displayViews.length)
 
   const sheetColumns: ColumnsType<QuoteRow> = [
     {
@@ -470,39 +639,67 @@ export function SupplierQuotePage() {
       fixed: 'left',
       render: (_value, row) => `${row.material} ${row.spec} ${row.length}`,
     },
-    ...views.map<ColumnsType<QuoteRow>[number]>((view) => {
+    ...displayViews.map<ColumnsType<QuoteRow>[number]>((view) => {
       const brandName = view.brandName
       const column = view.column
       const serverCells = view.cells
       const dirty = draftCount(drafts[brandName])
       return {
         title: (
-          <Flex align="center" gap={4} justify="center">
-            <Flex vertical align="center" gap={0}>
-              <span>{brandName}</span>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {column?.quotedOn
-                  ? t('priceCompare.supplierPrice.columnQuotedOn', {
-                      date: column.quotedOn,
-                    })
-                  : t('priceCompare.supplierPrice.newColumn')}
-              </Typography.Text>
-            </Flex>
-            {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
-            {column || extraBrandSet.has(brandName) ? (
-              <Tooltip title={t('priceCompare.supplierPrice.removeColumn')}>
+          <Flex vertical align="center" gap={0}>
+            <Flex align="center" gap={2} justify="center">
+              <Tooltip title={t('priceCompare.supplierPrice.dragColumn')}>
+                <span
+                  className="supplier-price-brand-handle"
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', brandName)
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    handleDropBrand(
+                      event.dataTransfer.getData('text/plain'),
+                      brandName,
+                    )
+                  }}
+                >
+                  {brandName}
+                </span>
+              </Tooltip>
+              {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
+              <Dropdown
+                menu={{
+                  items: brandMenuItems(brandName),
+                  onClick: ({ key }) => onBrandMenuClick(brandName, key),
+                }}
+                trigger={['click']}
+              >
                 <Button
-                  aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-                    name: brandName,
-                  })}
-                  danger
-                  icon={<DeleteOutlined />}
+                  aria-label={t(
+                    'priceCompare.supplierPrice.columnActionsA11y',
+                    {
+                      name: brandName,
+                    },
+                  )}
+                  icon={<MoreOutlined />}
                   size="small"
                   type="text"
-                  onClick={() => removeBrand(brandName)}
                 />
-              </Tooltip>
-            ) : null}
+              </Dropdown>
+            </Flex>
+            <Typography.Text
+              className="supplier-price-brand-meta"
+              type="secondary"
+              style={{ fontSize: 12 }}
+            >
+              {column?.quotedOn
+                ? t('priceCompare.supplierPrice.columnQuotedOn', {
+                    date: column.quotedOn,
+                  })
+                : t('priceCompare.supplierPrice.newColumn')}
+            </Typography.Text>
           </Flex>
         ),
         key: brandName,
@@ -633,6 +830,57 @@ export function SupplierQuotePage() {
         </Flex>
       </Flex>
 
+      {/* 行/列操作：规格搜索、只看未填、列显示（隐藏列不影响已填价格） */}
+      <Flex align="center" gap={8} wrap>
+        <Input
+          allowClear
+          aria-label={t('priceCompare.supplierPrice.searchSpecs')}
+          placeholder={t('priceCompare.supplierPrice.searchSpecs')}
+          prefix={<SearchOutlined />}
+          style={{ width: 260 }}
+          value={specKeyword}
+          onChange={(event) => setSpecKeyword(event.target.value)}
+        />
+        <Checkbox
+          checked={onlyUnpriced}
+          onChange={(event) => setOnlyUnpriced(event.target.checked)}
+        >
+          {t('priceCompare.supplierPrice.onlyUnpriced')}
+        </Checkbox>
+        <Popover
+          content={
+            <Flex className="supplier-price-column-panel" vertical gap={2}>
+              {orderedViews.length === 0 ? (
+                <Typography.Text type="secondary">
+                  {t('priceCompare.supplierPrice.noBrands')}
+                </Typography.Text>
+              ) : (
+                orderedViews.map((view) => (
+                  <Checkbox
+                    checked={!hiddenBrandSet.has(view.brandName)}
+                    key={view.brandName}
+                    onChange={() => hideColumn(view.brandName)}
+                  >
+                    {view.brandName}
+                  </Checkbox>
+                ))
+              )}
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('priceCompare.supplierPrice.columnPanelHint')}
+              </Typography.Text>
+            </Flex>
+          }
+          placement="bottomLeft"
+          title={t('priceCompare.supplierPrice.columns')}
+          trigger="click"
+        >
+          <Button icon={<EyeOutlined />}>
+            {t('priceCompare.supplierPrice.columns')}
+            {hiddenBrands.length > 0 ? ` (${hiddenBrands.length})` : ''}
+          </Button>
+        </Popover>
+      </Flex>
+
       <Typography.Text type="secondary">
         {t('priceCompare.supplierPrice.entryHint')}
       </Typography.Text>
@@ -656,7 +904,7 @@ export function SupplierQuotePage() {
 
       {!supplierId ? (
         <Empty description={t('priceCompare.supplierPrice.pickSupplier')} />
-      ) : views.length === 0 ? (
+      ) : orderedViews.length === 0 ? (
         /*
          * 该供应商没有经营品牌、也没有有效价格表时，表格的列只有「序号/类别/规格」，
          * 根本无处输价。此时不渲染空表格，直接把「先去加一个品牌」放在页面上，
@@ -666,6 +914,12 @@ export function SupplierQuotePage() {
           showIcon
           title={t('priceCompare.supplierPrice.noBrands')}
           type="info"
+        />
+      ) : displayViews.length === 0 ? (
+        <Alert
+          showIcon
+          title={t('priceCompare.supplierPrice.allColumnsHidden')}
+          type="warning"
         />
       ) : (
         <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
@@ -678,7 +932,7 @@ export function SupplierQuotePage() {
             <Table<QuoteRow>
               bordered
               columns={sheetColumns}
-              dataSource={rows}
+              dataSource={displayRows}
               pagination={false}
               rowKey={quoteRowKey}
               scroll={{ x: sheetWidth, y: 560 }}

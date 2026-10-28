@@ -37,3 +37,22 @@
 .supplier-price-sheet table {
   min-width: 0 !important;
 }
+
+/* 列头：品牌名可拖动排序；右侧 ⋯ 是列菜单（左移/右移/隐藏/清空/移除） */
+.supplier-price-brand-handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.supplier-price-brand-handle:active {
+  cursor: grabbing;
+}
+
+.supplier-price-brand-meta {
+  white-space: nowrap;
+}
+
+.supplier-price-column-panel {
+  min-width: 180px;
+  padding: 4px 2px;
+}

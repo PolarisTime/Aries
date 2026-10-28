@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import type { QuoteRow } from './supplier-price-list-model'
 import {
+  applyBrandOrder,
   buildPastePlan,
+  filterQuoteRows,
   nextGridCell,
+  parseBrandPrefs,
   parseClipboardGrid,
   parseGridPrice,
+  reorderBrands,
   SHEET_COLUMN_WIDTH,
+  serializeBrandPrefs,
   sheetWidthOf,
+  shiftBrand,
+  toggleHidden,
 } from './supplier-quote-grid'
 
 const row = (spec: number): QuoteRow => ({
@@ -204,5 +211,58 @@ describe('列宽：固定表宽，不随容器拉伸', () => {
     expect(SHEET_COLUMN_WIDTH.index).toBeLessThanOrEqual(60)
     expect(SHEET_COLUMN_WIDTH.category).toBeLessThanOrEqual(100)
     expect(SHEET_COLUMN_WIDTH.spec).toBeLessThanOrEqual(220)
+  })
+})
+
+describe('列显示偏好与行过滤', () => {
+  it('按保存的顺序排列，新增品牌追加在末尾（不会被藏掉）', () => {
+    expect(applyBrandOrder(['中天', '永钢', '沙钢'], ['沙钢', '中天'])).toEqual(
+      ['沙钢', '中天', '永钢'],
+    )
+  })
+
+  it('拖拽重排：把第 3 列拖到最前', () => {
+    expect(reorderBrands(['a', 'b', 'c'], 2, 0)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('越界或原地重排返回原顺序副本', () => {
+    expect(reorderBrands(['a', 'b'], 0, 0)).toEqual(['a', 'b'])
+    expect(reorderBrands(['a', 'b'], 0, 5)).toEqual(['a', 'b'])
+  })
+
+  it('左移/右移一格（拖拽的非拖动替代）', () => {
+    expect(shiftBrand(['a', 'b', 'c'], 'a', 1)).toEqual(['b', 'a', 'c'])
+    expect(shiftBrand(['a', 'b', 'c'], 'c', -1)).toEqual(['a', 'c', 'b'])
+    expect(shiftBrand(['a', 'b'], 'a', -1)).toEqual(['a', 'b'])
+  })
+
+  it('隐藏/取消隐藏', () => {
+    expect(toggleHidden([], '中天')).toEqual(['中天'])
+    expect(toggleHidden(['中天', '永钢'], '中天')).toEqual(['永钢'])
+  })
+
+  it('规格搜索：类别/材质/规格/定尺都能命中，忽略大小写', () => {
+    const rows = [
+      { category: '螺纹钢', material: 'HRB400', spec: 12, length: '9米' },
+      { category: '盘螺', material: 'HRB400E', spec: 8, length: '12米' },
+    ]
+    expect(filterQuoteRows(rows, '盘螺').length).toBe(1)
+    expect(filterQuoteRows(rows, 'hrb400e').length).toBe(1)
+    expect(filterQuoteRows(rows, '12米').length).toBe(1)
+    expect(filterQuoteRows(rows, '  ').length).toBe(2)
+  })
+
+  it('偏好解析：脏数据退化为默认值，不炸页面', () => {
+    expect(parseBrandPrefs(null)).toEqual({ order: [], hidden: [] })
+    expect(parseBrandPrefs('not-json')).toEqual({ order: [], hidden: [] })
+    expect(parseBrandPrefs('{"order":["a",1,null],"hidden":["b"]}')).toEqual({
+      order: ['a'],
+      hidden: ['b'],
+    })
+  })
+
+  it('偏好序列化后可再解析（落 localStorage 的形状稳定）', () => {
+    const prefs = { order: ['中天'], hidden: ['永钢'] }
+    expect(parseBrandPrefs(serializeBrandPrefs(prefs))).toEqual(prefs)
   })
 })

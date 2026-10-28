@@ -139,6 +139,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
 
+    // 列显示偏好存在 localStorage：用例之间必须隔离，否则上一条隐藏的列会影响下一条
+    window.localStorage.clear()
     priceApi.fetchSpecRows.mockReset().mockResolvedValue([ROW_A, ROW_B])
     priceApi.fetchSupplierPriceGrid
       .mockReset()
@@ -487,5 +489,175 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await flush()
+  })
+
+  const brandHeaders = () =>
+    Array.from(
+      container.querySelectorAll(
+        '.ant-table-thead .supplier-price-brand-handle',
+      ),
+    ).map((el) => el.textContent)
+
+  async function clickButton(text: string) {
+    const button = Array.from(container.querySelectorAll('button')).find(
+      (item) => (item.textContent ?? '').includes(text),
+    )
+    expect(button, `未找到按钮 ${text}`).not.toBeNull()
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+  }
+
+  async function addBrandNamed(brand: string) {
+    priceApi.addSupplierPriceColumn.mockResolvedValue({
+      listId: `l-${brand}`,
+      supplierId: 's1',
+      supplierName: SUPPLIER.supplierName,
+      quotedOn: null,
+      updatedAt: null,
+      warehouse: null,
+      version: 0,
+    })
+    await pickOption(selects()[1] ?? null, brand)
+    await clickButton('添加品牌')
+  }
+
+  async function toggleCheckbox(label: string) {
+    const wrapper = Array.from(
+      document.body.querySelectorAll('.ant-checkbox-wrapper'),
+    ).find((el) => (el.textContent ?? '').includes(label))
+    expect(wrapper, `未找到勾选项 ${label}`).not.toBeNull()
+    await act(async () => {
+      wrapper
+        ?.querySelector('input')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+  }
+
+  it('列显示：取消勾选即隐藏该列，全部隐藏时给出提示', async () => {
+    await render()
+    await selectSupplier()
+    expect(brandHeaders()).toEqual(['中天'])
+
+    await clickButton(i18n.t('priceCompare.supplierPrice.columns'))
+    await toggleCheckbox('中天')
+
+    expect(brandHeaders()).toEqual([])
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.allColumnsHidden'),
+    )
+  })
+
+  it('隐藏列不会丢掉该列未保存的改动（保存仍提交隐藏列）', async () => {
+    await render()
+    await selectSupplier()
+    await typePrice('中天 HRB400 12 9米', '3290')
+
+    await clickButton(i18n.t('priceCompare.supplierPrice.columns'))
+    await toggleCheckbox('中天')
+    expect(brandHeaders()).toEqual([])
+
+    await clickSave()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
+      'l1',
+      3,
+      [
+        { ...ROW_A, price: 3290, priceStatus: 'NORMAL' },
+        { ...ROW_B, price: 3300 },
+      ],
+    )
+  })
+
+  it('拖拽列头调整顺序，并把偏好写入本地存储', async () => {
+    await render()
+    await selectSupplier()
+    await addBrandNamed('永钢')
+    expect(brandHeaders()).toEqual(['中天', '永钢'])
+
+    const handles = Array.from(
+      container.querySelectorAll('.supplier-price-brand-handle'),
+    )
+    const from = handles.find((el) => el.textContent === '中天')
+    const to = handles.find((el) => el.textContent === '永钢')
+    expect(from && to).toBeTruthy()
+
+    const store = new Map<string, string>()
+    const dataTransfer = {
+      effectAllowed: '',
+      setData: (key: string, value: string) => store.set(key, value),
+      getData: (key: string) => store.get(key) ?? '',
+    }
+    await act(async () => {
+      const start = new Event('dragstart', { bubbles: true })
+      Object.defineProperty(start, 'dataTransfer', { value: dataTransfer })
+      from?.dispatchEvent(start)
+      const drop = new Event('drop', { bubbles: true })
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer })
+      to?.dispatchEvent(drop)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+
+    expect(brandHeaders()).toEqual(['永钢', '中天'])
+    expect(
+      window.localStorage.getItem('aries:supplier-quote-prefs:s1'),
+    ).toContain('永钢')
+  })
+
+  it('规格搜索与「只看未填」都能过滤行', async () => {
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(
+        brandName === '中天'
+          ? {
+              ...gridWithColumn(),
+              rows: [
+                {
+                  ...ROW_A,
+                  prices: { l1: 3280 },
+                  priceStatuses: { l1: 'NORMAL' },
+                  remarks: {},
+                },
+                // ROW_B 未报价
+                { ...ROW_B, prices: {}, priceStatuses: {}, remarks: {} },
+              ],
+            }
+          : emptyGrid(brandName),
+      ),
+    )
+    await render()
+    await selectSupplier()
+    expect(sheetRows().length).toBe(2)
+
+    const search = container.querySelector<HTMLInputElement>(
+      `input[aria-label="${i18n.t('priceCompare.supplierPrice.searchSpecs')}"]`,
+    )
+    expect(search).not.toBeNull()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(search, '14')
+      search?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+    expect(sheetRows().length).toBe(1)
+
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(search, '')
+      search?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+
+    await toggleCheckbox(i18n.t('priceCompare.supplierPrice.onlyUnpriced'))
+    expect(sheetRows().length).toBe(1)
   })
 })
