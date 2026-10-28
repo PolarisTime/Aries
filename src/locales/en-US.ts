@@ -2794,7 +2794,6 @@ export const enUS = {
   priceCompare: {
     supplierPrice: {
       brand: 'Brand',
-      brandPlaceholder: 'Select a brand',
       supplier: 'Supplier',
       supplierPlaceholder: 'Select a supplier',
       quotedOn: 'Quoted on',
@@ -2804,19 +2803,28 @@ export const enUS = {
       addBrandPlaceholder: 'Select a brand to add',
       refresh: 'Refresh',
       saveAll: 'Save ({{count}})',
-      savedBrands: 'Saved {{count}} brand column(s)',
+      savedOne: 'Saved "{{name}}"',
       saveFailed: 'Failed to save: {{names}}; your changes are kept',
       saveNothing: 'Nothing to save',
       category: 'Category',
       spec: 'Material / spec / length',
-      newColumn: 'New (created on save)',
-      columnQuotedOn: 'Quoted {{date}}',
+      price: 'Unit price (CNY/t)',
+      newColumn: 'Not created yet (created on save)',
+      actions: 'Actions',
+      filledSpecsTitle: 'Quoted specs',
+      filledSpecs: '{{count}}',
+      unsavedTag: 'Unsaved',
+      editBrand: 'Edit quotes',
+      editBrandA11y: 'Edit quotes of "{{name}}"',
+      currentBrand: 'Current brand: {{name}}',
       entryHint:
-        'Columns are the supplier’s brands (from supplier master). Empty = not quoted, 0 is a real price; each brand column is replaced as a whole on save',
-      pickSupplier: 'Pick a supplier first, then enter its quotes per brand',
+        'Supplier on top, brands below: pick a brand in the list, then enter its spec prices. Empty = not quoted, 0 is a real price; saving replaces the current brand as a whole',
+      pickSupplier:
+        'Pick a supplier first, then choose a brand below to enter quotes',
+      pickBrandHint: 'Pick a brand in the list above to enter its quotes',
       noBrands:
-        'No brand column yet: maintain "brands" in supplier master, or use "Add brand" above',
-      empty: 'This supplier has no quotes under any brand yet',
+        'No brand yet: maintain "brands" in supplier master, or use "Add brand" below',
+      empty: 'No quote under this brand yet',
       discardTitle: 'Discard unsaved quotes?',
       discardContent:
         'Switching supplier discards unsaved quote edits on this page.',
@@ -2824,7 +2832,6 @@ export const enUS = {
       removeTitle: 'Remove quotes under brand "{{name}}"?',
       removeContent:
         'All quotes of this supplier under this brand will be removed; other brands are untouched',
-      removeColumn: 'Remove this column',
       removeColumnA11y: 'Remove the quote column of brand {{name}}',
       fillFromPriceList: 'Fill from price list',
       fillFromPriceListHint:

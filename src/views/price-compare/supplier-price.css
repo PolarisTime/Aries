@@ -1,0 +1,21 @@
+/*
+ * 供应商报价表：品牌列表的选中行。
+ *
+ * <p>选中态**不能只靠颜色**（WCAG 1.4.1）：品牌名在组件里同时加粗，这里再加一条左侧色条，
+ * 色觉障碍用户也能分辨哪一行是「当前正在录入的品牌」。</p>
+ */
+.supplier-price-page {
+  min-width: 0;
+}
+
+.supplier-price-brand-row > td {
+  transition: background-color 120ms ease;
+}
+
+.supplier-price-brand-row--active > td {
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+.supplier-price-brand-row--active > td:first-child {
+  box-shadow: inset 3px 0 0 var(--ant-color-primary, #1677ff);
+}

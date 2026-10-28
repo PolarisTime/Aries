@@ -2733,40 +2733,46 @@ export const zhCN = {
   },
   priceCompare: {
     /**
-     * 供应商报价表（比价一手价）：以供应商为入口录入，列 = 该供应商的经营品牌，
-     * 行 = 商品资料全量规格。报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
+     * 供应商报价表（比价一手价）：供应商为主、品牌在其下方。
+     * 选供应商 → 品牌列表 → 选中品牌的规格价格表；报单比价取价时按 (品牌, 商品) 取最低价。
      */
     supplierPrice: {
       brand: '品牌',
-      brandPlaceholder: '选择品牌',
       supplier: '供应商',
       supplierPlaceholder: '选择供应商',
       quotedOn: '报价日期',
       quotedOnHint:
         '新建品牌列时使用该报价日期；已有列显示各自的报价日期，保存不会改动它',
-      addBrand: '追加品牌',
-      addBrandPlaceholder: '选择要追加的品牌',
+      addBrand: '添加品牌',
+      addBrandPlaceholder: '选择要添加的品牌',
       refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
-      savedBrands: '已保存 {{count}} 个品牌列',
+      savedOne: '已保存「{{name}}」',
       saveFailed: '{{names}} 保存失败，改动已保留',
       saveNothing: '没有需要保存的改动',
       category: '类别',
       spec: '材质 / 规格 / 定尺',
-      newColumn: '新列（保存时创建）',
-      columnQuotedOn: '报价日期 {{date}}',
+      price: '单价（元/吨）',
+      newColumn: '未建列（保存时创建）',
+      actions: '操作',
+      filledSpecsTitle: '已填规格',
+      filledSpecs: '{{count}} 条',
+      unsavedTag: '未保存',
+      editBrand: '录入报价',
+      editBrandA11y: '录入「{{name}}」的报价',
+      currentBrand: '当前品牌：{{name}}',
       entryHint:
-        '列为该供应商的经营品牌（来自供应商资料），空 = 不报价，0 是真实价格；保存按品牌列整组替换',
-      pickSupplier: '先选一个供应商，再录入它在各品牌下的报价',
+        '供应商在上、品牌在下方：先在品牌列表选择品牌，再录入该品牌的规格报价；空 = 不报价，0 是真实价格，保存按当前品牌整组替换',
+      pickSupplier: '先选一个供应商，再在下方选择品牌录入报价',
+      pickBrandHint: '先在上方品牌列表选择要录入的品牌',
       noBrands:
-        '该供应商还没有可录的品牌列：可在「供应商资料」维护经营品牌，或用上方「追加品牌」手动添加',
-      empty: '该供应商在各品牌下都还没有报价',
+        '该供应商还没有品牌列：可在「供应商资料」维护经营品牌，或用下方「添加品牌」手动添加',
+      empty: '该品牌下还没有报价',
       discardTitle: '放弃未保存的报价？',
       discardContent: '切换供应商会丢弃当前页尚未保存的报价改动。',
       discardOk: '放弃并切换',
       removeTitle: '移除品牌「{{name}}」下的报价？',
       removeContent: '该供应商在此品牌下的全部报价将一并移除，其它品牌不受影响',
-      removeColumn: '移除这一列',
       removeColumnA11y: '移除品牌 {{name}} 的报价列',
       fillFromPriceList: '从价格表带价',
       fillFromPriceListHint:
