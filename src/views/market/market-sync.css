@@ -90,15 +90,28 @@
   width: 110px;
 }
 
-/* ── 概览条: 一条带分隔线的指标带, 不是并排卡片 ── */
-.market-sync-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0;
-  padding: var(--space-xs) 0;
+/* ── 工作台面板: 全页唯一的外边框, 内部用分隔线分段 ── */
+.market-sync-panel {
+  display: flex;
+  /* 高度跟内容走: 只有 3 行时段, 强行撑满视口会在面板里留一大片空白 */
+  flex: 0 0 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   background: var(--theme-card-bg, #fff);
   border: 1px solid var(--theme-card-border);
   border-radius: var(--app-border-radius);
+}
+
+/* ── 概览条: 面板里的一条指标带, 靠分隔线与上下文分段 ── */
+.market-sync-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0;
+  flex: 0 0 auto;
+  padding: var(--space-xs) 0;
+  background: transparent;
+  border-top: 1px solid var(--theme-border-subtle);
 }
 
 .market-sync-metric {
@@ -192,22 +205,26 @@
 .market-sync-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-sm);
+  gap: 0;
+  flex: 0 0 auto;
 }
 
 .market-sync-action {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--theme-card-bg, #fff);
-  border: 1px solid var(--theme-card-border);
-  border-radius: var(--app-border-radius);
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: 0;
 }
 
-/* 主操作(单日同步)用左侧色条区分层级, 不靠更大的按钮尺寸 */
-.market-sync-action.is-primary {
-  border-inline-start: 3px solid var(--theme-primary);
+/* 两段操作之间一条竖线; 主次靠标题颜色与按钮类型区分, 不再用卡片色条 */
+.market-sync-action + .market-sync-action {
+  border-inline-start: 1px solid var(--theme-border-subtle);
+}
+
+.market-sync-action.is-primary .market-sync-action-title {
+  color: var(--theme-primary);
 }
 
 .market-sync-action-head {
@@ -263,8 +280,28 @@
 
 /* ── 覆盖矩阵(本页主体) ── */
 .market-sync-matrix-card {
-  /* 不 flex-grow: 只有 3 行时段, 撑满剩余高度会变成一张大空白卡片 */
-  flex: 0 0 auto;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.market-sync-matrix-card > .ant-card-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-sm) 0 0;
+}
+
+.market-sync-matrix-card > .ant-card-head {
+  min-height: 0;
+  padding: 0 var(--space-md);
+  border-bottom: 1px solid var(--theme-border-subtle);
 }
 
 .market-sync-matrix-head {
@@ -361,6 +398,8 @@
 
 /* 30 列在窄屏仍要可读: 优先整体可见, 真放不下时只横向滚动这一块 */
 .market-sync-grid-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
@@ -381,17 +420,26 @@
 }
 
 .market-sync-grid-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 2;
   width: 56px;
+  padding-inline-end: var(--space-xs);
   font-size: var(--font-size-xs);
   text-align: start;
   white-space: nowrap;
+  background: var(--theme-card-bg, #fff);
 }
 
 .market-sync-grid-summaryhead {
+  position: sticky;
+  right: 0;
+  z-index: 2;
   width: 88px;
   font-size: var(--font-size-xs);
   text-align: end;
   white-space: nowrap;
+  background: var(--theme-card-bg, #fff);
 }
 
 .market-sync-grid-date {
@@ -444,6 +492,7 @@
  * (每个日期×时段都不同, 否则读屏会听到一串无法区分的「缺」)。
  */
 .market-sync-cell {
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -567,21 +616,27 @@
 
 /* ── 主体: 矩阵(左) + 待补缺口清单(右) ── */
 .market-sync-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 268px;
-  align-items: start;
-  gap: var(--space-sm);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--theme-border-subtle);
 }
 
 /* 待补缺口: 把矩阵里散落的红格聚成可点清单 */
 .market-sync-gaps {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: var(--space-xs);
-  padding: var(--space-sm);
-  background: var(--theme-card-bg, #fff);
-  border: 1px solid var(--theme-card-border);
-  border-radius: var(--app-border-radius);
+  max-height: 220px;
+  padding: var(--space-sm) var(--space-md);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--theme-border-subtle);
+  border-radius: 0;
 }
 
 .market-sync-gaps-head {
@@ -611,7 +666,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  max-height: 260px;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }

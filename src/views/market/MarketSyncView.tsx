@@ -18,8 +18,12 @@ import './market-sync.css'
 /**
  * 行情同步: 指标概览 + 覆盖矩阵(近30天, 时段×日期) + 右侧明细抽屉 + 单日/区间补数。
  *
- * 布局自上而下: 页首(标题/全局动作) → 分组操作条 → 指标概览 → 补数过程与异常
- * → 覆盖矩阵 → 明细抽屉。页面根是唯一的纵向滚动容器。
+ * <p>布局: 页首(标题/数据源, 无卡片) → **一块工作台面板**, 内部用分隔线切成四段 ——
+ * 操作条(单日/区间) / 指标带 / 提示 / 主体(矩阵 + 待补缺口)。</p>
+ *
+ * <p>为什么合成一块面板：改造前是"4~5 张各自带边框的白卡"（两张操作卡 + 指标卡 +
+ * 矩阵卡 + 缺口卡）, 边框互相争抢注意力, 下半屏还留一大片空白。现在只有一条外边框,
+ * 内部用 1px 分隔线分段, 主体吃满剩余高度、矩阵自己纵向滚动。</p>
  */
 export function MarketSyncView() {
   const { data: runtimeConfig } = useQuery({
@@ -89,50 +93,52 @@ export function MarketSyncView() {
         quoteRegions={runtimeConfig?.business?.quoteRegions}
       />
 
-      <MarketSyncToolbar
-        singleDate={singleDate}
-        onSingleDateChange={setSingleDate}
-        syncing={syncing}
-        onSync={() => void onSync()}
-        syncPeriods={syncPeriods}
-        onSyncPeriodsChange={setSyncPeriods}
-        backfillDays={backfillDays}
-        onBackfillDaysChange={setBackfillDays}
-        backfilling={backfilling}
-        onBackfill={() => void onBackfill()}
-        source={source}
-      />
-
-      <MarketSyncMetrics
-        periods={activePeriods}
-        stats={stats}
-        latest={latestQuotedSlot(calendars)}
-      />
-
-      <MarketSyncNotices
-        backfillStatus={backfillStatus}
-        backfillTotalDays={backfillTotalDays}
-      />
-
-      <div className="market-sync-body">
-        <MarketSyncMatrix
-          windowRange={windowRange}
-          windowCanPrev={canPrevWindow}
-          windowCanNext={canNextWindow}
-          windowIsLatest={isLatestWindow}
-          onPrevWindow={onPrevWindow}
-          onNextWindow={onNextWindow}
-          matrixDays={matrixDays}
-          periods={activePeriods}
-          calendars={calendars}
-          selected={selected}
-          syncingCell={syncingCell}
-          onSyncDate={(date, period) => void onSyncDate(date, period)}
-          onSelectQuote={(date, period) => {
-            selectQuote(date, period)
-            setDetailOpen(true)
-          }}
+      <div className="market-sync-panel">
+        <MarketSyncToolbar
+          singleDate={singleDate}
+          onSingleDateChange={setSingleDate}
+          syncing={syncing}
+          onSync={() => void onSync()}
+          syncPeriods={syncPeriods}
+          onSyncPeriodsChange={setSyncPeriods}
+          backfillDays={backfillDays}
+          onBackfillDaysChange={setBackfillDays}
+          backfilling={backfilling}
+          onBackfill={() => void onBackfill()}
+          source={source}
         />
+
+        <MarketSyncMetrics
+          periods={activePeriods}
+          stats={stats}
+          latest={latestQuotedSlot(calendars)}
+        />
+
+        <MarketSyncNotices
+          backfillStatus={backfillStatus}
+          backfillTotalDays={backfillTotalDays}
+        />
+
+        <div className="market-sync-body">
+          <MarketSyncMatrix
+            windowRange={windowRange}
+            windowCanPrev={canPrevWindow}
+            windowCanNext={canNextWindow}
+            windowIsLatest={isLatestWindow}
+            onPrevWindow={onPrevWindow}
+            onNextWindow={onNextWindow}
+            matrixDays={matrixDays}
+            periods={activePeriods}
+            calendars={calendars}
+            selected={selected}
+            syncingCell={syncingCell}
+            onSyncDate={(date, period) => void onSyncDate(date, period)}
+            onSelectQuote={(date, period) => {
+              selectQuote(date, period)
+              setDetailOpen(true)
+            }}
+          />
+        </div>
 
         <MarketSyncGapList
           calendars={calendars}
