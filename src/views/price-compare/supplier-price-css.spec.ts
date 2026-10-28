@@ -42,6 +42,15 @@ describe('供应商报价表：Excel 式数字排版', () => {
     expect(blockOf('.supplier-price-column-panel')).toContain('min-width')
   })
 
+  it('格内多定尺：定尺标签窄且右对齐，价格输入占剩余宽度', () => {
+    // 注意 `.supplier-price-lengths` 是它的前缀，必须精确匹配带空格的规则名
+    const start = css.indexOf('.supplier-price-length {')
+    expect(start).toBeGreaterThan(-1)
+    const block = css.slice(start, css.indexOf('}', start))
+    expect(block).toContain('width:')
+    expect(block).toContain('text-align: right')
+  })
+
   it('取消 rc-table 的 min-width:100%（否则固定列宽会被容器拉伸）', () => {
     const block = blockOf('.supplier-price-sheet table')
     expect(block).toContain('min-width: 0 !important')

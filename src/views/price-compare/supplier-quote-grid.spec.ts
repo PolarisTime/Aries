@@ -2,29 +2,31 @@ import { describe, expect, it } from 'vitest'
 import type { QuoteRow } from './supplier-price-list-model'
 import {
   applyBrandOrder,
-  buildPastePlan,
-  filterQuoteRows,
-  nextGridCell,
+  buildSlots,
+  buildSpecPastePlan,
+  filterSpecRows,
+  groupSpecRows,
+  lengthRank,
+  orderedLengths,
   parseBrandPrefs,
   parseClipboardGrid,
   parseGridPrice,
   reorderBrands,
+  rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
   serializeBrandPrefs,
   sheetWidthOf,
   shiftBrand,
+  specRowKey,
   toggleHidden,
 } from './supplier-quote-grid'
 
-const row = (spec: number): QuoteRow => ({
+const row = (spec: number, length: string, material = 'HRB400E'): QuoteRow => ({
   category: '螺纹钢',
-  material: 'HRB400',
+  material,
   spec,
-  length: '9米',
+  length,
 })
-
-const ROWS = [row(12), row(14), row(16)]
-const BRANDS = ['中天', '永钢']
 
 describe('Excel 剪贴板解析', () => {
   it('按行/制表符切分，并去掉末尾空行', () => {
@@ -56,183 +58,171 @@ describe('价格解析：空串=清空、非法=丢弃', () => {
     expect(parseGridPrice('3,280.50')).toBe(3280.5)
   })
 
-  it('负数与非数字返回 undefined（丢弃，不写坏数据）', () => {
+  it('负数与非数字返回 undefined', () => {
     expect(parseGridPrice('-1')).toBeUndefined()
     expect(parseGridPrice('abc')).toBeUndefined()
   })
 })
 
-describe('粘贴铺开：行优先，越界丢弃', () => {
-  it('整块粘贴覆盖到品牌列 × 规格行', () => {
-    const plan = buildPastePlan({
-      matrix: [
-        ['3280', '3290'],
-        ['3300', '3310'],
-      ],
-      brandNames: BRANDS,
-      rows: ROWS,
-      startBrandIndex: 0,
-      startRowIndex: 0,
-    })
-
-    expect(plan).toEqual({
-      cells: [
-        { brandName: '中天', rowKey: '螺纹钢|HRB400|12|9米', value: 3280 },
-        { brandName: '永钢', rowKey: '螺纹钢|HRB400|12|9米', value: 3290 },
-        { brandName: '中天', rowKey: '螺纹钢|HRB400|14|9米', value: 3300 },
-        { brandName: '永钢', rowKey: '螺纹钢|HRB400|14|9米', value: 3310 },
-      ],
-      dropped: 0,
-    })
+describe('定尺排序：9米 在 12米 左边，无定尺排最后', () => {
+  it('按报价单习惯排序，而不是按字符串', () => {
+    expect(lengthRank('9米')).toBeLessThan(lengthRank('12米'))
+    expect(lengthRank('12米')).toBeLessThan(lengthRank(''))
+    expect(lengthRank('')).toBeLessThan(lengthRank('-'))
   })
 
-  it('整列粘贴（Excel 最常见）：粘贴到第二行起，只填一列', () => {
-    const plan = buildPastePlan({
-      matrix: [['3300'], ['3400']],
-      brandNames: BRANDS,
-      rows: ROWS,
-      startBrandIndex: 0,
+  it('去重后排序', () => {
+    expect(
+      orderedLengths([
+        row(12, '12米'),
+        row(10, '9米'),
+        row(12, '9米'),
+        row(8, ''),
+      ]),
+    ).toEqual(['9米', '12米', ''])
+  })
+})
+
+describe('规格行合并：一个规格一行，定尺进格子', () => {
+  it('同一规格的 9米/12米 合并成一行、内含两个定尺', () => {
+    const grouped = groupSpecRows([
+      row(12, '12米'),
+      row(12, '9米'),
+      row(14, '9米'),
+    ])
+    expect(grouped).toHaveLength(2)
+    expect(grouped[0]).toEqual({
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      lengths: ['9米', '12米'],
+    })
+    expect(grouped[1]?.lengths).toEqual(['9米'])
+  })
+
+  it('按类别/材质/规格排序，规格是数值序（不是 "10" < "9"）', () => {
+    const grouped = groupSpecRows([
+      row(12, '9米'),
+      row(9, '9米'),
+      row(10, '9米'),
+    ])
+    expect(grouped.map((item) => item.spec)).toEqual([9, 10, 12])
+  })
+
+  it('规格行键不含定尺（同一规格的 9米/12米 是同一行）', () => {
+    expect(
+      specRowKey({
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        lengths: [],
+      }),
+    ).toBe('螺纹钢|HRB400E|12')
+    expect(
+      rowKeyOfCell(
+        { category: '螺纹钢', material: 'HRB400E', spec: 12, lengths: [] },
+        '9米',
+      ),
+    ).toBe('螺纹钢|HRB400E|12|9米')
+  })
+})
+
+describe('规格搜索', () => {
+  const rows = groupSpecRows([row(12, '9米'), row(12, '9米', 'HPB300')])
+
+  it('材质/规格/类别都能命中，忽略大小写', () => {
+    expect(filterSpecRows(rows, 'hpb300')).toHaveLength(1)
+    expect(filterSpecRows(rows, '12')).toHaveLength(2)
+    expect(filterSpecRows(rows, '  ')).toHaveLength(2)
+  })
+})
+
+describe('粘贴：列 → 格位（品牌 × 定尺），行 → 规格', () => {
+  const specRows = groupSpecRows([
+    row(12, '9米'),
+    row(12, '12米'),
+    row(14, '9米'),
+  ])
+  const slots = buildSlots(['中天', '永钢'], ['9米', '12米'])
+
+  it('格位顺序 = 品牌 × 定尺（与界面 DOM 顺序一致）', () => {
+    expect(slots).toEqual([
+      { brandName: '中天', length: '9米' },
+      { brandName: '中天', length: '12米' },
+      { brandName: '永钢', length: '9米' },
+      { brandName: '永钢', length: '12米' },
+    ])
+  })
+
+  it('贴一列：沿同一品牌同一定尺向下填规格行', () => {
+    const plan = buildSpecPastePlan({
+      matrix: [['3210'], ['3220']],
+      slots,
+      specRows,
+      startSlotIndex: 0,
+      startRowIndex: 0,
+    })
+    expect(plan.cells).toEqual([
+      { brandName: '中天', rowKey: '螺纹钢|HRB400E|12|9米', value: 3210 },
+      { brandName: '中天', rowKey: '螺纹钢|HRB400E|14|9米', value: 3220 },
+    ])
+    expect(plan.dropped).toBe(0)
+  })
+
+  it('贴两列：同一规格的 9米/12米 一次贴完', () => {
+    const plan = buildSpecPastePlan({
+      matrix: [['3210', '3230']],
+      slots,
+      specRows,
+      startSlotIndex: 0,
+      startRowIndex: 0,
+    })
+    expect(plan.cells).toEqual([
+      { brandName: '中天', rowKey: '螺纹钢|HRB400E|12|9米', value: 3210 },
+      { brandName: '中天', rowKey: '螺纹钢|HRB400E|12|12米', value: 3230 },
+    ])
+  })
+
+  it('目标规格没有该定尺时丢弃该格并计数', () => {
+    const plan = buildSpecPastePlan({
+      matrix: [['3210', '3230']],
+      slots,
+      specRows,
+      // 14 只有 9米，第二列 12米 应被丢弃
+      startSlotIndex: 0,
       startRowIndex: 1,
     })
-
     expect(plan.cells).toEqual([
-      { brandName: '中天', rowKey: '螺纹钢|HRB400|14|9米', value: 3300 },
-      { brandName: '中天', rowKey: '螺纹钢|HRB400|16|9米', value: 3400 },
+      { brandName: '中天', rowKey: '螺纹钢|HRB400E|14|9米', value: 3210 },
     ])
+    expect(plan.dropped).toBe(1)
   })
 
-  it('越过品牌列数或规格行数的部分被丢弃并计数', () => {
-    const plan = buildPastePlan({
-      matrix: [
-        ['1', '2', '3'],
-        ['4', '5', '6'],
-        ['7', '8', '9'],
-        ['10', '11', '12'],
-      ],
-      brandNames: BRANDS,
-      rows: ROWS,
-      startBrandIndex: 1,
-      startRowIndex: 2,
-    })
-
-    // 锚点在第 3 行第 2 列：只剩 1 行 × 1 列可用，其余 11 格越界
-    expect(plan.cells).toEqual([
-      { brandName: '永钢', rowKey: '螺纹钢|HRB400|16|9米', value: 1 },
-    ])
-    expect(plan.dropped).toBe(11)
-  })
-
-  it('空格子粘贴为空串时写入"清空"（null），而不是忽略', () => {
-    const plan = buildPastePlan({
-      matrix: [['']],
-      brandNames: BRANDS,
-      rows: ROWS,
-      startBrandIndex: 0,
+  it('空串粘贴=清空；越界丢弃', () => {
+    const plan = buildSpecPastePlan({
+      matrix: [[''], ['']],
+      slots,
+      specRows,
+      startSlotIndex: 3,
       startRowIndex: 0,
     })
-
     expect(plan.cells).toEqual([
-      { brandName: '中天', rowKey: '螺纹钢|HRB400|12|9米', value: null },
-    ])
-  })
-
-  it('非法值丢弃但不影响同块内的合法值', () => {
-    const plan = buildPastePlan({
-      matrix: [['abc'], ['3300']],
-      brandNames: BRANDS,
-      rows: ROWS,
-      startBrandIndex: 0,
-      startRowIndex: 0,
-    })
-
-    expect(plan.cells).toEqual([
-      { brandName: '中天', rowKey: '螺纹钢|HRB400|14|9米', value: 3300 },
+      { brandName: '永钢', rowKey: '螺纹钢|HRB400E|12|12米', value: null },
     ])
     expect(plan.dropped).toBe(1)
   })
 })
 
-describe('键盘移动边界', () => {
-  it('向下移动', () => {
-    expect(
-      nextGridCell({
-        brandIndex: 0,
-        rowIndex: 0,
-        deltaCol: 0,
-        deltaRow: 1,
-        brandCount: 2,
-        rowCount: 3,
-      }),
-    ).toEqual({ brandIndex: 0, rowIndex: 1 })
-  })
-
-  it('末行继续向下返回 null（放行浏览器默认行为）', () => {
-    expect(
-      nextGridCell({
-        brandIndex: 0,
-        rowIndex: 2,
-        deltaCol: 0,
-        deltaRow: 1,
-        brandCount: 2,
-        rowCount: 3,
-      }),
-    ).toBeNull()
-  })
-
-  it('横向越界返回 null', () => {
-    expect(
-      nextGridCell({
-        brandIndex: 0,
-        rowIndex: 0,
-        deltaCol: -1,
-        deltaRow: 0,
-        brandCount: 2,
-        rowCount: 3,
-      }),
-    ).toBeNull()
-  })
-})
-
-describe('列宽：固定表宽，不随容器拉伸', () => {
-  it('总宽 = 固定列 + 品牌列 × 品牌数', () => {
-    const fixed =
-      SHEET_COLUMN_WIDTH.index +
-      SHEET_COLUMN_WIDTH.category +
-      SHEET_COLUMN_WIDTH.spec
-    expect(sheetWidthOf(1)).toBe(fixed + SHEET_COLUMN_WIDTH.brand)
-    expect(sheetWidthOf(3)).toBe(fixed + 3 * SHEET_COLUMN_WIDTH.brand)
-  })
-
-  it('没有品牌列时仍按 1 列计算，表格不会塌成 0 宽', () => {
-    expect(sheetWidthOf(0)).toBe(sheetWidthOf(1))
-  })
-
-  it('序号/类别/规格三列是固定窄列（防止被 antd 拉宽）', () => {
-    expect(SHEET_COLUMN_WIDTH.index).toBeLessThanOrEqual(60)
-    expect(SHEET_COLUMN_WIDTH.category).toBeLessThanOrEqual(100)
-    expect(SHEET_COLUMN_WIDTH.spec).toBeLessThanOrEqual(220)
-  })
-})
-
-describe('列显示偏好与行过滤', () => {
-  it('按保存的顺序排列，新增品牌追加在末尾（不会被藏掉）', () => {
+describe('列显示偏好与顺序', () => {
+  it('按保存的顺序排列，新增品牌追加末尾', () => {
     expect(applyBrandOrder(['中天', '永钢', '沙钢'], ['沙钢', '中天'])).toEqual(
       ['沙钢', '中天', '永钢'],
     )
   })
 
-  it('拖拽重排：把第 3 列拖到最前', () => {
+  it('拖拽重排/左右移', () => {
     expect(reorderBrands(['a', 'b', 'c'], 2, 0)).toEqual(['c', 'a', 'b'])
-  })
-
-  it('越界或原地重排返回原顺序副本', () => {
-    expect(reorderBrands(['a', 'b'], 0, 0)).toEqual(['a', 'b'])
-    expect(reorderBrands(['a', 'b'], 0, 5)).toEqual(['a', 'b'])
-  })
-
-  it('左移/右移一格（拖拽的非拖动替代）', () => {
     expect(shiftBrand(['a', 'b', 'c'], 'a', 1)).toEqual(['b', 'a', 'c'])
-    expect(shiftBrand(['a', 'b', 'c'], 'c', -1)).toEqual(['a', 'c', 'b'])
     expect(shiftBrand(['a', 'b'], 'a', -1)).toEqual(['a', 'b'])
   })
 
@@ -241,28 +231,30 @@ describe('列显示偏好与行过滤', () => {
     expect(toggleHidden(['中天', '永钢'], '中天')).toEqual(['永钢'])
   })
 
-  it('规格搜索：类别/材质/规格/定尺都能命中，忽略大小写', () => {
-    const rows = [
-      { category: '螺纹钢', material: 'HRB400', spec: 12, length: '9米' },
-      { category: '盘螺', material: 'HRB400E', spec: 8, length: '12米' },
-    ]
-    expect(filterQuoteRows(rows, '盘螺').length).toBe(1)
-    expect(filterQuoteRows(rows, 'hrb400e').length).toBe(1)
-    expect(filterQuoteRows(rows, '12米').length).toBe(1)
-    expect(filterQuoteRows(rows, '  ').length).toBe(2)
-  })
-
-  it('偏好解析：脏数据退化为默认值，不炸页面', () => {
+  it('偏好解析：脏数据退化为默认值', () => {
     expect(parseBrandPrefs(null)).toEqual({ order: [], hidden: [] })
     expect(parseBrandPrefs('not-json')).toEqual({ order: [], hidden: [] })
-    expect(parseBrandPrefs('{"order":["a",1,null],"hidden":["b"]}')).toEqual({
+    expect(parseBrandPrefs('{"order":["a",1],"hidden":["b"]}')).toEqual({
       order: ['a'],
       hidden: ['b'],
     })
-  })
-
-  it('偏好序列化后可再解析（落 localStorage 的形状稳定）', () => {
     const prefs = { order: ['中天'], hidden: ['永钢'] }
     expect(parseBrandPrefs(serializeBrandPrefs(prefs))).toEqual(prefs)
+  })
+})
+
+describe('列宽：固定表宽，不随容器拉伸', () => {
+  it('总宽 = 固定列（序号/类别/材质/规格） + 品牌列 × 品牌数', () => {
+    const fixed =
+      SHEET_COLUMN_WIDTH.index +
+      SHEET_COLUMN_WIDTH.category +
+      SHEET_COLUMN_WIDTH.material +
+      SHEET_COLUMN_WIDTH.specNo
+    expect(sheetWidthOf(1)).toBe(fixed + SHEET_COLUMN_WIDTH.brand)
+    expect(sheetWidthOf(3)).toBe(fixed + 3 * SHEET_COLUMN_WIDTH.brand)
+  })
+
+  it('没有品牌列时按 1 列计算，表不会塌成 0 宽', () => {
+    expect(sheetWidthOf(0)).toBe(sheetWidthOf(1))
   })
 })

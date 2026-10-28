@@ -61,8 +61,6 @@ import {
   draftCount,
   draftPrice,
   mergeQuoteRows,
-  type QuoteRow,
-  quoteRowKey,
   type ServerCell,
   serverCellsOf,
   setDraftPrice,
@@ -82,16 +80,21 @@ import {
 } from './supplier-quote-edits'
 import {
   applyBrandOrder,
-  buildPastePlan,
-  filterQuoteRows,
-  nextGridCell,
+  buildSlots,
+  buildSpecPastePlan,
+  filterSpecRows,
+  groupSpecRows,
+  orderedLengths,
   parseBrandPrefs,
   parseClipboardGrid,
   reorderBrands,
+  rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
+  type SpecRow,
   serializeBrandPrefs,
   sheetWidthOf,
   shiftBrand,
+  specRowKey,
   toggleHidden,
 } from './supplier-quote-grid'
 import { persistColumnPlans } from './supplier-quote-save'
@@ -284,16 +287,32 @@ export function SupplierQuotePage() {
   )
   const visibleBrandSet = useMemo(() => new Set(visibleBrands), [visibleBrands])
 
-  /** 表格里显示的行：规格搜索 + 「只看未填」（按服务端价格判断）。 */
+  /**
+   * 显示用的规格行：把「一个定尺一行」合并成「一个规格一行」，定尺收进格子。
+   *
+   * <p>报价单的形态是「行 = 材质 + 规格、同一格里 9米/12米 两个价」，而不是一个定尺占一行。</p>
+   */
+  const specRows = useMemo<SpecRow[]>(() => groupSpecRows(rows), [rows])
+  const lengths = useMemo(() => orderedLengths(rows), [rows])
+  /** 粘贴格位 = 品牌 × 定尺，与界面 DOM 顺序一致。 */
+  const slots = useMemo(
+    () => buildSlots(visibleBrands, lengths),
+    [lengths, visibleBrands],
+  )
+
+  /** 表格里显示的规格行：规格搜索 + 「只看未填」（该规格所有定尺都没价才算未填）。 */
   const displayRows = useMemo(() => {
-    const filtered = filterQuoteRows(rows, specKeyword)
+    const filtered = filterSpecRows(specRows, specKeyword)
     if (!onlyUnpriced) return filtered
-    return filtered.filter((row) =>
-      displayViews.every(
-        (view) => view.cells.get(quoteRowKey(row))?.price === undefined,
+    return filtered.filter((specRow) =>
+      displayViews.every((view) =>
+        specRow.lengths.every(
+          (length) =>
+            view.cells.get(rowKeyOfCell(specRow, length)) === undefined,
+        ),
       ),
     )
-  }, [displayViews, onlyUnpriced, rows, specKeyword])
+  }, [displayViews, onlyUnpriced, specKeyword, specRows])
 
   // 列顺序/隐藏集合落本地：这是个人视图偏好，不写服务端（换人不该被别人改了列顺序）
   useEffect(() => {
@@ -394,29 +413,28 @@ export function SupplierQuotePage() {
     return false
   }
 
-  /** 方向键/回车移动；越界返回 false，让浏览器处理（末格 Tab 可离开表格）。 */
+  /**
+   * ↑/↓ 在**同一品牌同一定尺**的规格行之间移动（跳过没有该定尺的规格行）。
+   * 越界返回 false，让浏览器处理（末行 Tab 可离开表格）。
+   */
   const moveFocus = (
     brandName: string,
+    length: string,
     rowKey: string,
-    deltaCol: number,
     deltaRow: number,
   ) => {
-    const brandIndex = visibleBrands.indexOf(brandName)
-    const rowIndex = displayRows.findIndex((row) => quoteRowKey(row) === rowKey)
-    if (brandIndex < 0 || rowIndex < 0) return false
-    const target = nextGridCell({
-      brandIndex,
-      rowIndex,
-      deltaCol,
-      deltaRow,
-      brandCount: visibleBrands.length,
-      rowCount: displayRows.length,
-    })
-    if (!target) return false
-    const targetRow = displayRows[target.rowIndex]
-    const targetBrand = visibleBrands[target.brandIndex]
-    if (!targetRow || !targetBrand) return false
-    return focusCell(targetBrand, quoteRowKey(targetRow))
+    const rowIndex = displayRows.findIndex((row) => specRowKey(row) === rowKey)
+    if (rowIndex < 0) return false
+    for (
+      let index = rowIndex + deltaRow;
+      index >= 0 && index < displayRows.length;
+      index += deltaRow
+    ) {
+      const target = displayRows[index]
+      if (!target || !target.lengths.includes(length)) continue
+      return focusCell(brandName, rowKeyOfCell(target, length))
+    }
+    return false
   }
 
   /** 从 Excel 粘贴：以当前格为锚点按行优先铺开（空串 = 清空，非法值丢弃并提示）。 */
@@ -426,17 +444,23 @@ export function SupplierQuotePage() {
     const text = event.clipboardData.getData('text/plain')
     if (!text) return
     const matrix = parseClipboardGrid(text)
-    const startBrandIndex = visibleBrands.indexOf(anchor.brandName)
-    const startRowIndex = displayRows.findIndex(
-      (row) => quoteRowKey(row) === anchor.rowKey,
+    // 锚点行键 = 类别|材质|规格|定尺；拆出规格行与当前定尺，再定位到「品牌×定尺」格位
+    const [category, material, spec, length] = anchor.rowKey.split('|')
+    if (length === undefined) return
+    const targetSpecKey = `${category}|${material}|${spec}`
+    const startSlotIndex = slots.findIndex(
+      (slot) => slot.brandName === anchor.brandName && slot.length === length,
     )
-    if (!matrix.length || startBrandIndex < 0 || startRowIndex < 0) return
+    const startRowIndex = displayRows.findIndex(
+      (row) => specRowKey(row) === targetSpecKey,
+    )
+    if (!matrix.length || startSlotIndex < 0 || startRowIndex < 0) return
 
-    const plan = buildPastePlan({
+    const plan = buildSpecPastePlan({
       matrix,
-      brandNames: visibleBrands,
-      rows: displayRows,
-      startBrandIndex,
+      slots,
+      specRows: displayRows,
+      startSlotIndex,
       startRowIndex,
     })
     if (!plan.cells.length) return
@@ -739,7 +763,7 @@ export function SupplierQuotePage() {
   /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
   const sheetWidth = sheetWidthOf(displayViews.length)
 
-  const sheetColumns: ColumnsType<QuoteRow> = [
+  const sheetColumns: ColumnsType<SpecRow> = [
     {
       title: t('priceCompare.supplierPrice.rowIndex'),
       key: 'rowIndex',
@@ -758,13 +782,21 @@ export function SupplierQuotePage() {
       fixed: 'left',
     },
     {
-      title: t('priceCompare.supplierPrice.spec'),
-      key: 'spec',
-      width: SHEET_COLUMN_WIDTH.spec,
+      title: t('priceCompare.supplierPrice.material'),
+      dataIndex: 'material',
+      width: SHEET_COLUMN_WIDTH.material,
+      align: 'center',
       fixed: 'left',
-      render: (_value, row) => `${row.material} ${row.spec} ${row.length}`,
     },
-    ...displayViews.map<ColumnsType<QuoteRow>[number]>((view) => {
+    {
+      title: t('priceCompare.supplierPrice.specNo'),
+      key: 'spec',
+      width: SHEET_COLUMN_WIDTH.specNo,
+      align: 'center',
+      fixed: 'left',
+      render: (_value, row) => `Φ${row.spec}`,
+    },
+    ...displayViews.map<ColumnsType<SpecRow>[number]>((view) => {
       const brandName = view.brandName
       const column = view.column
       const serverCells = view.cells
@@ -830,59 +862,75 @@ export function SupplierQuotePage() {
         key: brandName,
         width: SHEET_COLUMN_WIDTH.brand,
         align: 'right',
-        render: (_value, row) => {
-          const rowKey = quoteRowKey(row)
-          return (
-            <InputNumber
-              aria-label={`${brandName} ${row.material} ${row.spec} ${row.length}`}
-              className="supplier-price-sheet-input"
-              data-grid-cell={cellIdOf(brandName, rowKey)}
-              disabled={!canUpdate}
-              min={0}
-              precision={2}
-              size="small"
-              style={{ width: '100%' }}
-              value={draftPrice(
-                drafts[brandName],
-                rowKey,
-                serverCells.get(rowKey)?.price,
-              )}
-              onChange={(value) =>
-                updateCell(
-                  brandName,
-                  rowKey,
-                  typeof value === 'number' ? value : null,
-                )
-              }
-              onFocus={() => {
-                anchorRef.current = { brandName, rowKey }
-              }}
-              onKeyDown={(event) => {
-                /*
-                 * 移动成功时必须 stopPropagation：keydown 还会冒泡到 InputNumber 的外层容器，
-                 * 它的内部处理会把 ↑/↓ 当成「步进」把价格 +1/-1（实测 3300 → 3301）。
-                 * Excel 里方向键只移光标、不改数值，所以这里把事件截断。
-                 */
-                const move = (deltaCol: number, deltaRow: number) => {
-                  if (!moveFocus(brandName, rowKey, deltaCol, deltaRow)) return
-                  event.preventDefault()
-                  event.stopPropagation()
-                }
-                if (event.key === 'ArrowDown' || event.key === 'Enter') {
-                  move(0, 1)
-                  return
-                }
-                if (event.key === 'ArrowUp') {
-                  move(0, -1)
-                  return
-                }
-                if (event.key === 'Escape') {
-                  event.currentTarget.blur()
-                }
-              }}
-            />
-          )
-        },
+        render: (_value, row) => (
+          <Flex className="supplier-price-lengths" gap={2} vertical>
+            {row.lengths.map((length) => {
+              const cellKey = rowKeyOfCell(row, length)
+              return (
+                <Flex align="center" gap={4} key={length}>
+                  <span className="supplier-price-length">
+                    {length === '' ? '—' : length}
+                  </span>
+                  <InputNumber
+                    aria-label={`${brandName} ${row.material} ${row.spec} ${length}`}
+                    className="supplier-price-sheet-input"
+                    data-grid-cell={cellIdOf(brandName, cellKey)}
+                    disabled={!canUpdate}
+                    min={0}
+                    precision={2}
+                    size="small"
+                    style={{ width: '100%' }}
+                    value={draftPrice(
+                      drafts[brandName],
+                      cellKey,
+                      serverCells.get(cellKey)?.price,
+                    )}
+                    onChange={(value) =>
+                      updateCell(
+                        brandName,
+                        cellKey,
+                        typeof value === 'number' ? value : null,
+                      )
+                    }
+                    onFocus={() => {
+                      anchorRef.current = { brandName, rowKey: cellKey }
+                    }}
+                    onKeyDown={(event) => {
+                      /*
+                       * 移动成功时必须 stopPropagation：keydown 还会冒泡到 InputNumber 外层容器，
+                       * 内部处理会把 ↑/↓ 当成「步进」把价格 +1/-1（实测 3300 → 3301）。
+                       */
+                      const move = (deltaRow: number) => {
+                        if (
+                          !moveFocus(
+                            brandName,
+                            length,
+                            specRowKey(row),
+                            deltaRow,
+                          )
+                        )
+                          return
+                        event.preventDefault()
+                        event.stopPropagation()
+                      }
+                      if (event.key === 'ArrowDown' || event.key === 'Enter') {
+                        move(1)
+                        return
+                      }
+                      if (event.key === 'ArrowUp') {
+                        move(-1)
+                        return
+                      }
+                      if (event.key === 'Escape') {
+                        event.currentTarget.blur()
+                      }
+                    }}
+                  />
+                </Flex>
+              )
+            })}
+          </Flex>
+        ),
       }
     }),
   ]
@@ -1115,12 +1163,12 @@ export function SupplierQuotePage() {
             onPaste={handlePaste}
             ref={gridRef}
           >
-            <Table<QuoteRow>
+            <Table<SpecRow>
               bordered
               columns={sheetColumns}
               dataSource={displayRows}
               pagination={false}
-              rowKey={quoteRowKey}
+              rowKey={specRowKey}
               scroll={{ x: sheetWidth, y: 560 }}
               tableLayout="fixed"
               size="small"

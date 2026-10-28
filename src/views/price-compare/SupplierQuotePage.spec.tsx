@@ -332,12 +332,52 @@ describe('供应商报价表（Excel 式报价网格）', () => {
 
     const headers = sheetHeaders()
     expect(headers.some((text) => text.includes('序号'))).toBe(true)
+    expect(headers.some((text) => text.includes('材质'))).toBe(true)
+    expect(headers.some((text) => text.includes('规格'))).toBe(true)
     expect(headers.some((text) => text.includes('中天'))).toBe(true)
     // 经营品牌之外、且没有历史价格表的品牌不出现在列里
     expect(headers.some((text) => text.includes('永钢'))).toBe(false)
     expect(sheetRows().length).toBe(2)
     expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
     expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
+  })
+
+  it('同一规格的 9米/12米 合并为一行、格子里两个价格', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([ROW_A])
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(
+        brandName === '中天'
+          ? {
+              ...gridWithColumn(),
+              rows: [
+                {
+                  ...ROW_A,
+                  prices: { l1: 3210 },
+                  priceStatuses: { l1: 'NORMAL' },
+                  remarks: {},
+                },
+                {
+                  ...ROW_A,
+                  length: '12米',
+                  prices: { l1: 3230 },
+                  priceStatuses: {},
+                  remarks: {},
+                },
+              ],
+            }
+          : emptyGrid(brandName),
+      ),
+    )
+    await render()
+    await selectSupplier()
+
+    // 两个定尺合成一行，而不是两行
+    expect(sheetRows().length).toBe(1)
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3210.00')
+    expect(cellInput('中天 HRB400 12 12米')?.value).toBe('3230.00')
+    // 行内能看到定尺标签，用户知道哪一格是 9米/12米
+    expect(sheetRows()[0]?.textContent).toContain('9米')
+    expect(sheetRows()[0]?.textContent).toContain('12米')
   })
 
   it('修改一格后保存：未改动的服务端价格一并带上（整组替换）', async () => {

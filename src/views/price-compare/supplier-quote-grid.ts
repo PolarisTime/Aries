@@ -1,4 +1,4 @@
-import { type QuoteRow, quoteRowKey } from './supplier-price-list-model'
+import type { QuoteRow } from './supplier-price-list-model'
 
 /** 粘贴到网格的一格：`null` 表示清空。 */
 export type GridPasteCell = {
@@ -36,32 +36,127 @@ export function parseGridPrice(raw: string): number | null | undefined {
   return value
 }
 
+/** 一行规格：定尺收进格子里（同一规格的 9米/12米 是同一行的两个价格）。 */
+export type SpecRow = {
+  category: string
+  material: string
+  spec: number
+  /** 该规格在商品资料里存在的定尺，已按报价单习惯排序（9米 → 12米 → 无定尺）。 */
+  lengths: string[]
+}
+
+/** 规格行键：类别|材质|规格（**不含定尺**）。 */
+export const specRowKey = (row: SpecRow): string =>
+  `${row.category}|${row.material}|${row.spec}`
+
 /**
- * 把粘贴矩阵从锚点铺到网格上（行优先，右侧/下侧越界部分丢弃）。
+ * 定尺排序：报价单里 9米 在左、12米 在右，无定尺（"" 或 "-"）排最后。
  *
- * <p>锚点 = 当前聚焦的单元格；矩阵第一格覆盖锚点本身，向右扩展品牌列、向下扩展规格行。
- * 这是 Excel 的基本行为，也是「整列报价一次贴进来」的关键。</p>
+ * <p>定尺是「同一规格的两个价格维度」，不是两个规格——因此不能按字符串排序
+ * （"12米" < "9米" 会颠倒），也不能让 "-" 混在中间。</p>
  */
-export function buildPastePlan(args: {
+export function lengthRank(length: string): number {
+  if (length === '9米') return 0
+  if (length === '12米') return 1
+  if (length === '') return 90
+  if (length === '-') return 91
+  const numeric = Number(length.replace(/[^\d.]/g, ''))
+  return Number.isFinite(numeric) ? 10 + numeric : 50
+}
+
+/** 网格里出现的全部定尺（去重 + 排序）。 */
+export function orderedLengths(rows: readonly QuoteRow[]): string[] {
+  return [...new Set(rows.map((row) => row.length))].sort(
+    (left, right) => lengthRank(left) - lengthRank(right),
+  )
+}
+
+/** 把「一个定尺一行」的原始行合并成「一个规格一行、定尺在格子里」。 */
+export function groupSpecRows(rows: readonly QuoteRow[]): SpecRow[] {
+  const grouped = new Map<string, SpecRow>()
+  for (const row of rows) {
+    const key = `${row.category}|${row.material}|${row.spec}`
+    const existing = grouped.get(key)
+    if (existing) {
+      if (!existing.lengths.includes(row.length)) {
+        existing.lengths.push(row.length)
+      }
+    } else {
+      grouped.set(key, {
+        category: row.category,
+        material: row.material,
+        spec: row.spec,
+        lengths: [row.length],
+      })
+    }
+  }
+  const result = [...grouped.values()]
+  for (const row of result) {
+    row.lengths.sort((left, right) => lengthRank(left) - lengthRank(right))
+  }
+  return result.sort(
+    (left, right) =>
+      left.category.localeCompare(right.category) ||
+      left.material.localeCompare(right.material) ||
+      left.spec - right.spec,
+  )
+}
+
+/** 规格行关键字过滤：类别/材质/规格任一命中（忽略大小写与首尾空格）。 */
+export function filterSpecRows(
+  rows: readonly SpecRow[],
+  keyword: string,
+): SpecRow[] {
+  const needle = keyword.trim().toLowerCase()
+  if (!needle) return [...rows]
+  return rows.filter((row) =>
+    `${row.category} ${row.material} ${row.spec}`
+      .toLowerCase()
+      .includes(needle),
+  )
+}
+
+/** 粘贴的「格位」= 品牌 × 定尺。 */
+export type QuoteSlot = {
+  brandName: string
+  length: string
+}
+
+/** 按「品牌 → 定尺」顺序展开成格位列表（与界面 DOM 顺序一致）。 */
+export function buildSlots(
+  brandNames: readonly string[],
+  lengths: readonly string[],
+): QuoteSlot[] {
+  return brandNames.flatMap((brandName) =>
+    lengths.map((length) => ({ brandName, length })),
+  )
+}
+
+/**
+ * 把粘贴矩阵从锚点铺开：行 → 规格行，列 → 格位（品牌 × 定尺）。
+ *
+ * <p>锚点是当前聚焦的输入框（某品牌某定尺），矩阵第一格覆盖它；列向右依次落到
+ * 同品牌的其它定尺 / 下一个品牌，行向下落到后面的规格行。目标行没有该定尺时丢弃该格。</p>
+ */
+export function buildSpecPastePlan(args: {
   matrix: readonly (readonly string[])[]
-  brandNames: readonly string[]
-  rows: readonly QuoteRow[]
-  startBrandIndex: number
+  slots: readonly QuoteSlot[]
+  specRows: readonly SpecRow[]
+  startSlotIndex: number
   startRowIndex: number
 }): GridPastePlan {
   const cells: GridPasteCell[] = []
   let dropped = 0
 
   args.matrix.forEach((line, rowOffset) => {
-    const row = args.rows[args.startRowIndex + rowOffset]
-    if (!row) {
+    const specRow = args.specRows[args.startRowIndex + rowOffset]
+    if (!specRow) {
       dropped += line.length
       return
     }
-    const rowKey = quoteRowKey(row)
     line.forEach((raw, columnOffset) => {
-      const brandName = args.brandNames[args.startBrandIndex + columnOffset]
-      if (!brandName) {
+      const slot = args.slots[args.startSlotIndex + columnOffset]
+      if (!slot || !specRow.lengths.includes(slot.length)) {
         dropped += 1
         return
       }
@@ -70,51 +165,34 @@ export function buildPastePlan(args: {
         dropped += 1
         return
       }
-      cells.push({ brandName, rowKey, value })
+      cells.push({
+        brandName: slot.brandName,
+        rowKey: `${specRow.category}|${specRow.material}|${specRow.spec}|${slot.length}`,
+        value,
+      })
     })
   })
 
   return { cells, dropped }
 }
 
-export type GridTarget = { brandIndex: number; rowIndex: number }
-
-/**
- * 方向键/回车后的目标单元格；越界返回 `null`（调用方放行浏览器默认行为，
- * 例如在最后一格按 Tab 时离开表格，而不是把焦点困在网格里）。
- */
-export function nextGridCell(args: {
-  brandIndex: number
-  rowIndex: number
-  deltaCol: number
-  deltaRow: number
-  brandCount: number
-  rowCount: number
-}): GridTarget | null {
-  const brandIndex = args.brandIndex + args.deltaCol
-  const rowIndex = args.rowIndex + args.deltaRow
-  if (brandIndex < 0 || brandIndex >= args.brandCount) return null
-  if (rowIndex < 0 || rowIndex >= args.rowCount) return null
-  return { brandIndex, rowIndex }
+/** 规格行 + 定尺 → 后端条目键（与 supplier-price-list-model 的行键同构）。 */
+export function rowKeyOfCell(specRow: SpecRow, length: string): string {
+  return `${specRow.category}|${specRow.material}|${specRow.spec}|${length}`
 }
 
-/**
- * 报价网格的固定列宽（px）。
- *
- * <p>表格用 `tableLayout="fixed"` + 固定总宽，避免 antd 按容器宽度把列拉伸（实测 4 列被拉到
- * 满屏：序号 200px、品牌列 780px）。总宽随品牌列数线性增长，窄屏时横向滚动。</p>
- */
 export const SHEET_COLUMN_WIDTH = {
   index: 52,
   category: 96,
-  spec: 200,
-  brand: 160,
+  material: 110,
+  specNo: 80,
+  brand: 170,
 } as const
 
-/** 网格总宽：固定列 + 品牌列 × 品牌数（至少按 1 列算，空表也不塌）。 */
+/** 网格总宽：固定列（序号/类别/材质/规格） + 品牌列 × 品牌数（至少 1 列，空表不塌）。 */
 export function sheetWidthOf(brandCount: number): number {
-  const { index, category, spec, brand } = SHEET_COLUMN_WIDTH
-  return index + category + spec + Math.max(brandCount, 1) * brand
+  const { index, category, material, specNo, brand } = SHEET_COLUMN_WIDTH
+  return index + category + material + specNo + Math.max(brandCount, 1) * brand
 }
 
 /** 品牌列的显示偏好：顺序 + 隐藏集合（按供应商存到 localStorage）。 */
@@ -208,18 +286,4 @@ export function toggleHidden(
   return hidden.includes(brand)
     ? hidden.filter((name) => name !== brand)
     : [...hidden, brand]
-}
-
-/** 规格行关键字过滤：类别/材质/规格/定尺任一命中（忽略大小写与首尾空格）。 */
-export function filterQuoteRows(
-  rows: readonly QuoteRow[],
-  keyword: string,
-): QuoteRow[] {
-  const needle = keyword.trim().toLowerCase()
-  if (!needle) return [...rows]
-  return rows.filter((row) =>
-    `${row.category} ${row.material} ${row.spec} ${row.length}`
-      .toLowerCase()
-      .includes(needle),
-  )
 }

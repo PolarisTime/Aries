@@ -56,3 +56,17 @@
   min-width: 180px;
   padding: 4px 2px;
 }
+
+/* 一个格子里放多个定尺（9米/12米）：定尺标签窄、右对齐，价格输入占剩余宽度 */
+.supplier-price-lengths {
+  min-width: 0;
+}
+
+.supplier-price-length {
+  flex: none;
+  width: 34px;
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+}
