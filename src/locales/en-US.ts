@@ -2800,7 +2800,9 @@ export const enUS = {
       quotedOnHint:
         'Used only when creating a brand column; existing columns keep their own quoted date',
       addBrand: 'Add brand',
-      addBrandPlaceholder: 'Select a brand to add',
+      addBrandPlaceholder: 'Select or type a brand',
+      addBrandHint:
+        'You can type a brand that is not in material master; a new column is created for it on save',
       refresh: 'Refresh',
       saveAll: 'Save ({{count}})',
       savedBrands: 'Saved {{count}} brand column(s)',
@@ -2809,7 +2811,7 @@ export const enUS = {
       category: 'Category',
       spec: 'Material / spec / length',
       rowIndex: 'No.',
-      newColumn: 'Not created yet (created on save)',
+      newColumn: 'Not created',
       columnQuotedOn: 'Quoted {{date}}',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',
@@ -2819,7 +2821,7 @@ export const enUS = {
       pickSupplier:
         'Pick a supplier first, then enter each brand’s quotes in the grid below',
       noBrands:
-        'No brand yet: maintain "brands" in supplier master, or use "Add brand" below',
+        'No brand column yet, so there is nowhere to enter prices: maintain "brands" in supplier master, or type a brand in "Add brand" at the top right',
       empty: 'No spec rows to enter yet',
       specsLoadFailed:
         'Failed to load the spec list, so quotes cannot be entered (table rows come from material master specs). Use "Retry" to reload.',

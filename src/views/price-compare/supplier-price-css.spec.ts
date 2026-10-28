@@ -31,6 +31,11 @@ describe('供应商报价表：Excel 式数字排版', () => {
     expect(block).toContain('font-variant-numeric: tabular-nums')
   })
 
+  it('取消 rc-table 的 min-width:100%（否则固定列宽会被容器拉伸）', () => {
+    const block = blockOf('.supplier-price-sheet table')
+    expect(block).toContain('min-width: 0 !important')
+  })
+
   it('行号用主题 token 并提供回退值，不写死单一色值', () => {
     const block = blockOf('.supplier-price-row-index')
     expect(block).toMatch(/var\(--ant-color-text-tertiary,\s*/)

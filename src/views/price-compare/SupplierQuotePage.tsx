@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-query'
 import {
   Alert,
+  AutoComplete,
   Button,
   DatePicker,
   Empty,
@@ -56,6 +57,8 @@ import {
   buildPastePlan,
   nextGridCell,
   parseClipboardGrid,
+  SHEET_COLUMN_WIDTH,
+  sheetWidthOf,
 } from './supplier-quote-grid'
 import { persistColumnPlans } from './supplier-quote-save'
 import './supplier-price.css'
@@ -439,11 +442,14 @@ export function SupplierQuotePage() {
     label: option.label,
   }))
 
+  /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
+  const sheetWidth = sheetWidthOf(views.length)
+
   const sheetColumns: ColumnsType<QuoteRow> = [
     {
       title: t('priceCompare.supplierPrice.rowIndex'),
       key: 'rowIndex',
-      width: 56,
+      width: SHEET_COLUMN_WIDTH.index,
       align: 'center',
       fixed: 'left',
       render: (_value, _row, index) => (
@@ -453,14 +459,14 @@ export function SupplierQuotePage() {
     {
       title: t('priceCompare.supplierPrice.category'),
       dataIndex: 'category',
-      width: 90,
+      width: SHEET_COLUMN_WIDTH.category,
       align: 'center',
       fixed: 'left',
     },
     {
       title: t('priceCompare.supplierPrice.spec'),
       key: 'spec',
-      width: 190,
+      width: SHEET_COLUMN_WIDTH.spec,
       fixed: 'left',
       render: (_value, row) => `${row.material} ${row.spec} ${row.length}`,
     },
@@ -500,7 +506,7 @@ export function SupplierQuotePage() {
           </Flex>
         ),
         key: brandName,
-        width: 150,
+        width: SHEET_COLUMN_WIDTH.brand,
         align: 'right',
         render: (_value, row) => {
           const rowKey = quoteRowKey(row)
@@ -605,6 +611,26 @@ export function SupplierQuotePage() {
         >
           {t('priceCompare.supplierPrice.refresh')}
         </Button>
+        {/* 新增品牌放在工具栏右侧：表格有几百行，放在表格下方要滚到底才能加 */}
+        <Flex align="center" gap={8} style={{ marginInlineStart: 'auto' }} wrap>
+          <Tooltip title={t('priceCompare.supplierPrice.addBrandHint')}>
+            <AutoComplete
+              aria-label={t('priceCompare.supplierPrice.addBrand')}
+              options={brandOptions}
+              placeholder={t('priceCompare.supplierPrice.addBrandPlaceholder')}
+              style={{ width: 180 }}
+              value={pendingBrand}
+              onChange={(value) => setPendingBrand(value)}
+            />
+          </Tooltip>
+          <Button
+            disabled={!pendingBrand}
+            icon={<PlusOutlined />}
+            onClick={addBrand}
+          >
+            {t('priceCompare.supplierPrice.addBrand')}
+          </Button>
+        </Flex>
       </Flex>
 
       <Typography.Text type="secondary">
@@ -630,6 +656,17 @@ export function SupplierQuotePage() {
 
       {!supplierId ? (
         <Empty description={t('priceCompare.supplierPrice.pickSupplier')} />
+      ) : views.length === 0 ? (
+        /*
+         * 该供应商没有经营品牌、也没有有效价格表时，表格的列只有「序号/类别/规格」，
+         * 根本无处输价。此时不渲染空表格，直接把「先去加一个品牌」放在页面上，
+         * 避免用户对着 82 行规格找不到入口。
+         */
+        <Alert
+          showIcon
+          title={t('priceCompare.supplierPrice.noBrands')}
+          type="info"
+        />
       ) : (
         <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
           {/* Excel 式网格：行=规格、列=品牌；粘贴与键盘移动都以当前聚焦格为锚点 */}
@@ -644,7 +681,8 @@ export function SupplierQuotePage() {
               dataSource={rows}
               pagination={false}
               rowKey={quoteRowKey}
-              scroll={{ x: 'max-content', y: 560 }}
+              scroll={{ x: sheetWidth, y: 560 }}
+              tableLayout="fixed"
               size="small"
               sticky
               locale={{
@@ -654,34 +692,6 @@ export function SupplierQuotePage() {
               }}
             />
           </div>
-
-          {/* 「添加品牌」在表格下方：供应商在上、报价网格在下（品牌做列） */}
-          <Flex align="center" gap={8} style={{ marginTop: 8 }} wrap>
-            <Typography.Text type="secondary">
-              {t('priceCompare.supplierPrice.addBrand')}
-            </Typography.Text>
-            <Select
-              aria-label={t('priceCompare.supplierPrice.addBrand')}
-              options={brandOptions}
-              placeholder={t('priceCompare.supplierPrice.addBrandPlaceholder')}
-              showSearch={{ optionFilterProp: 'label' }}
-              style={{ width: 200 }}
-              value={pendingBrand}
-              onChange={setPendingBrand}
-            />
-            <Button
-              disabled={!pendingBrand}
-              icon={<PlusOutlined />}
-              onClick={addBrand}
-            >
-              {t('priceCompare.supplierPrice.addBrand')}
-            </Button>
-            {views.length === 0 ? (
-              <Typography.Text type="secondary">
-                {t('priceCompare.supplierPrice.noBrands')}
-              </Typography.Text>
-            ) : null}
-          </Flex>
         </Spin>
       )}
     </Flex>

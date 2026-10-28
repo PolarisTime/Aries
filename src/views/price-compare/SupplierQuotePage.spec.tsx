@@ -384,7 +384,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     ).toBe('中天 HRB400 12 9米')
   })
 
-  it('在表格下方添加品牌后录入：保存时先建列、再提交条目', async () => {
+  it('在工具栏添加品牌后录入：保存时先建列、再提交条目', async () => {
     priceApi.addSupplierPriceColumn.mockResolvedValue({
       listId: 'l2',
       supplierId: 's1',
@@ -431,6 +431,23 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await selectSupplier()
 
     expect(sheetHeaders().some((text) => text.includes('中天'))).toBe(true)
+  })
+
+  it('供应商没有品牌列时给出明确引导，而不是渲染一张无处输价的空表', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: [] },
+    ])
+    // 也没有任何历史价格表 → 一个品牌列都不可见
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(emptyGrid(brandName)),
+    )
+    await render()
+    await selectSupplier()
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.noBrands'),
+    )
+    expect(sheet()).toBeNull()
   })
 
   it('规格列表加载失败时提示错误并可重试，而不是显示成「没有报价」', async () => {

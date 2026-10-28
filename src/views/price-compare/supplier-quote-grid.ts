@@ -97,3 +97,22 @@ export function nextGridCell(args: {
   if (rowIndex < 0 || rowIndex >= args.rowCount) return null
   return { brandIndex, rowIndex }
 }
+
+/**
+ * 报价网格的固定列宽（px）。
+ *
+ * <p>表格用 `tableLayout="fixed"` + 固定总宽，避免 antd 按容器宽度把列拉伸（实测 4 列被拉到
+ * 满屏：序号 200px、品牌列 780px）。总宽随品牌列数线性增长，窄屏时横向滚动。</p>
+ */
+export const SHEET_COLUMN_WIDTH = {
+  index: 52,
+  category: 96,
+  spec: 200,
+  brand: 160,
+} as const
+
+/** 网格总宽：固定列 + 品牌列 × 品牌数（至少按 1 列算，空表也不塌）。 */
+export function sheetWidthOf(brandCount: number): number {
+  const { index, category, spec, brand } = SHEET_COLUMN_WIDTH
+  return index + category + spec + Math.max(brandCount, 1) * brand
+}

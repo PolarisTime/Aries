@@ -5,6 +5,8 @@ import {
   nextGridCell,
   parseClipboardGrid,
   parseGridPrice,
+  SHEET_COLUMN_WIDTH,
+  sheetWidthOf,
 } from './supplier-quote-grid'
 
 const row = (spec: number): QuoteRow => ({
@@ -181,5 +183,26 @@ describe('键盘移动边界', () => {
         rowCount: 3,
       }),
     ).toBeNull()
+  })
+})
+
+describe('列宽：固定表宽，不随容器拉伸', () => {
+  it('总宽 = 固定列 + 品牌列 × 品牌数', () => {
+    const fixed =
+      SHEET_COLUMN_WIDTH.index +
+      SHEET_COLUMN_WIDTH.category +
+      SHEET_COLUMN_WIDTH.spec
+    expect(sheetWidthOf(1)).toBe(fixed + SHEET_COLUMN_WIDTH.brand)
+    expect(sheetWidthOf(3)).toBe(fixed + 3 * SHEET_COLUMN_WIDTH.brand)
+  })
+
+  it('没有品牌列时仍按 1 列计算，表格不会塌成 0 宽', () => {
+    expect(sheetWidthOf(0)).toBe(sheetWidthOf(1))
+  })
+
+  it('序号/类别/规格三列是固定窄列（防止被 antd 拉宽）', () => {
+    expect(SHEET_COLUMN_WIDTH.index).toBeLessThanOrEqual(60)
+    expect(SHEET_COLUMN_WIDTH.category).toBeLessThanOrEqual(100)
+    expect(SHEET_COLUMN_WIDTH.spec).toBeLessThanOrEqual(220)
   })
 })

@@ -2744,7 +2744,9 @@ export const zhCN = {
       quotedOnHint:
         '新建品牌列时使用该报价日期；已有列显示各自的报价日期，保存不会改动它',
       addBrand: '添加品牌',
-      addBrandPlaceholder: '选择要添加的品牌',
+      addBrandPlaceholder: '选择或输入品牌',
+      addBrandHint:
+        '可直接输入商品资料里还没有的品牌名，保存时会为该品牌建一列表',
       refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
       savedBrands: '已保存 {{count}} 个品牌列',
@@ -2753,7 +2755,7 @@ export const zhCN = {
       category: '类别',
       spec: '材质 / 规格 / 定尺',
       rowIndex: '序号',
-      newColumn: '未建列（保存时创建）',
+      newColumn: '未建列',
       columnQuotedOn: '报价日期 {{date}}',
       entryHint:
         'Excel 式录入：行=规格、列=品牌，直接敲价；↑/↓ 与回车上下移动，Tab 向右；从 Excel 复制的整列/整块可直接粘贴到起始格。空 = 不报价，0 是真实价格；保存按品牌列整组替换',
@@ -2761,7 +2763,7 @@ export const zhCN = {
       pasteDropped: '已填入，另有 {{count}} 格因格式或越界被忽略',
       pickSupplier: '先选一个供应商，再在下方表格里录入各品牌报价',
       noBrands:
-        '该供应商还没有品牌列：可在「供应商资料」维护经营品牌，或用下方「添加品牌」手动添加',
+        '该供应商还没有品牌列，暂时无处输价：可在「供应商资料」维护经营品牌，或用右上角「添加品牌」直接输入品牌名添加',
       empty: '还没有可录入的规格行',
       specsLoadFailed:
         '规格列表加载失败，暂时无法录入报价（商品资料规格是表格的行来源）；可点右侧「重试」',

@@ -28,3 +28,12 @@
   color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * rc-table 给滚动表格强制 `min-width: 100%`，即使传了固定 scroll.x 也会把列按容器拉伸
+ * （实测 4 列被拉到满屏）。这里取消这个下限，让表宽 = 列宽之和：窄屏横向滚动、宽屏右侧留白，
+ * 这才是表格软件的观感。
+ */
+.supplier-price-sheet table {
+  min-width: 0 !important;
+}
