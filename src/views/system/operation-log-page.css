@@ -1,0 +1,189 @@
+/* 操作日志页：筛选 → 概览（指标/趋势/失败模块）→ 表格 → 详情抽屉。 */
+.oplog-page {
+  min-width: 0;
+}
+
+.oplog-title {
+  margin: 0 !important;
+}
+
+.oplog-filters .oplog-filter-keyword {
+  width: 220px;
+}
+
+.oplog-filters .oplog-filter-input {
+  width: 140px;
+}
+
+.oplog-filters .oplog-filter-select {
+  width: 140px;
+}
+
+.oplog-filters .oplog-filter-select--narrow {
+  width: 110px;
+}
+
+.oplog-filter-row .ant-picker {
+  width: 240px;
+}
+
+.oplog-summary {
+  align-items: flex-start;
+}
+
+/* 筛选控件固定宽度：antd Input 默认 width:100%，在 flex 里会各占一行 */
+.oplog-filter-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.oplog-filter-row > .ant-input,
+.oplog-filter-row > .ant-input-affix-wrapper,
+.oplog-filter-row > .ant-select,
+.oplog-filter-row > .ant-picker {
+  flex: 0 0 auto;
+}
+
+.oplog-metrics {
+  flex: 2 1 440px;
+}
+
+.oplog-metric {
+  flex: 1 1 120px;
+  min-width: 120px;
+  align-self: flex-start;
+}
+
+.oplog-metric-label {
+  display: block;
+  font-size: 12px;
+}
+
+.oplog-metric-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.oplog-metric-value--success {
+  color: var(--ant-color-success, #52c41a);
+}
+
+.oplog-metric-value--danger {
+  color: var(--ant-color-error, #ff4d4f);
+}
+
+.oplog-trend {
+  flex: 1 1 320px;
+  min-width: 280px;
+  align-self: flex-start;
+}
+
+.oplog-trend-bars {
+  align-items: flex-end;
+  height: 84px;
+  padding-top: 4px;
+}
+
+.oplog-trend-bar {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.oplog-trend-bar-total {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: 22px;
+  border-radius: 3px;
+  background: var(--ant-color-primary-bg, #e6f4ff);
+  overflow: hidden;
+}
+
+.oplog-trend-bar-failed {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: var(--ant-color-error, #ff4d4f);
+}
+
+.oplog-trend-bar-label {
+  font-size: 11px;
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  white-space: nowrap;
+}
+
+.oplog-top-failed {
+  flex: 1 1 240px;
+  min-width: 220px;
+  align-self: flex-start;
+}
+
+.oplog-top-failed-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.oplog-top-failed-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.oplog-table .oplog-row {
+  cursor: pointer;
+}
+
+.oplog-table .oplog-row--failed > td {
+  background: var(--ant-color-error-bg, #fff2f0);
+}
+
+.oplog-time-abs {
+  font-size: 11px;
+}
+
+.oplog-category-tag {
+  flex: none;
+  margin-inline-end: 0;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.oplog-json {
+  max-height: 260px;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 4%));
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow: auto;
+}
+
+/* 详情卡片：label 定宽 + 值可换行，避免「Request MethodPOST」这种粘连/溢出 */
+.oplog-detail-descriptions .ant-descriptions-item-label {
+  width: 110px;
+  white-space: nowrap;
+}
+
+.oplog-detail-descriptions .ant-descriptions-item-content {
+  min-width: 0;
+  word-break: break-all;
+}
+
+.oplog-related {
+  max-height: 200px;
+  overflow: auto;
+}

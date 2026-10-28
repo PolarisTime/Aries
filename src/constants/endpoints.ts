@@ -206,6 +206,8 @@ export const ENDPOINTS = {
   QUOTE_SHEETS: '/quote-sheets',
   SUPPLIER_PRICE_LISTS: '/supplier-price-lists',
   SUPPLIER_BASE_PRICE_RULES: '/supplier-base-price-rules',
+  OPERATION_LOGS: '/operation-logs',
+  OPERATION_LOGS_SUMMARY: '/operation-logs/summary',
   QUOTE_SHEET: (id: string | number) => `/quote-sheets/${pathSegment(id)}`,
   QUOTE_SHEET_ITEMS: (id: string | number) =>
     `/quote-sheets/${pathSegment(id)}/items`,

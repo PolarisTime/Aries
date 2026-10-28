@@ -23,6 +23,7 @@ export type RouteViewKey =
   | 'market-sync'
   | 'company-setting'
   | 'print-template'
+  | 'operation-log'
   | 'role-management'
   | 'user-accounts'
   | 'account'

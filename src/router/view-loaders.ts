@@ -78,6 +78,10 @@ export const viewLoaders: Record<
     import('@/views/system/CompanySettingsView').then((m) => ({
       default: m.CompanySettingsView,
     })),
+  'operation-log': () =>
+    import('@/views/system/OperationLogPage').then((m) => ({
+      default: m.OperationLogPage,
+    })),
   'print-template': () =>
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,

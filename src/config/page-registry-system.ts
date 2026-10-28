@@ -14,7 +14,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     key: 'operation-log',
     titleKey: 'pages.operation-log',
     menuKey: '/operation-log',
-    view: 'business-grid',
+    view: 'operation-log',
     icon: 'FileSearchOutlined',
     menuParent: 'system',
     moduleKey: 'operation-log',
