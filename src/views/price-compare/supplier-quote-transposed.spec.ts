@@ -25,8 +25,8 @@ const ROWS: QuoteRow[] = [
 ]
 
 describe('规格横置布局', () => {
-  it('列头是 Φ规格', () => {
-    expect(specHeader(12)).toBe('Φ12')
+  it('列头是裸规格数字（不带直径符号 Φ）', () => {
+    expect(specHeader(12)).toBe('12')
   })
 
   it('按品类分块，规格按数字升序成为列', () => {

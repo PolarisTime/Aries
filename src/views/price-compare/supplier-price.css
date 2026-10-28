@@ -12,6 +12,26 @@
   padding: 2px 4px;
 }
 
+/*
+ * 框线加深一档。
+ *
+ * antd 6 的表格边框读的是组件级 CSS 变量 `--ant-table-border-color`（默认取
+ * `colorBorderSecondary` = #f0f0f0），在这种"几百行 × 多品牌列"的报价网格里几乎看不见行列分界。
+ * 直接在单元格上写 `border-color` 抢不过 antd 的规则，所以把**变量本身**在这个表格实例上
+ * 改写成 `--ant-color-border`(#d9d9d9)：格子边界清晰，又不会像深色边框那样抢过价格数字。
+ * 变量声明在 `.ant-table-css-var` 上（antd 就是在这里注入 token 的），因此需要同元素选择器。
+ */
+.supplier-price-sheet .ant-table-css-var,
+.supplier-price-transposed .ant-table-css-var {
+  --ant-table-border-color: var(--ant-color-border, #d9d9d9);
+}
+
+/* 列显示面板里的小标题（品牌 / 定尺列） */
+.supplier-price-column-panel-label {
+  margin-top: var(--space-xs, 8px);
+  font-size: 12px;
+}
+
 .supplier-price-sheet .ant-input-number {
   width: 100%;
 }

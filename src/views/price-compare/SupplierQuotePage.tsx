@@ -90,11 +90,13 @@ import {
   buildBasePriceFillPlan,
   buildSlots,
   buildSpecPastePlan,
+  columnLengths as columnLengthsOf,
   filterSpecRows,
   groupSpecRows,
-  orderedLengths,
+  hasNoLength,
   parseBrandPrefs,
   parseClipboardGrid,
+  placementLengthOf,
   reorderBrands,
   rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
@@ -178,6 +180,8 @@ export function SupplierQuotePage() {
   /** 列显示偏好：顺序 + 隐藏集合（按供应商存 localStorage，刷新后保持）。 */
   const [brandOrder, setBrandOrder] = useState<string[]>([])
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
+  /** 隐藏的定尺列（9米/12米…）：有的供应商只报其中一种定尺。 */
+  const [hiddenLengths, setHiddenLengths] = useState<string[]>([])
   /** 行过滤：规格关键字 + 只看未填（按服务端价格判断，边录边消失会打断录入）。 */
   const [specKeyword, setSpecKeyword] = useState('')
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
@@ -320,11 +324,18 @@ export function SupplierQuotePage() {
    * <p>报价单的形态是「行 = 材质 + 规格、同一格里 9米/12米 两个价」，而不是一个定尺占一行。</p>
    */
   const specRows = useMemo<SpecRow[]>(() => groupSpecRows(rows), [rows])
-  const lengths = useMemo(() => orderedLengths(rows), [rows])
+  /** 真正要展示的定尺列（9米/12米…）：''/'-' 不是定尺，不占列。 */
+  const columnLengths = useMemo(() => columnLengthsOf(rows), [rows])
+  const hiddenLengthSet = useMemo(() => new Set(hiddenLengths), [hiddenLengths])
+  /** 实际渲染的定尺列 = 全部定尺列 - 被隐藏的。 */
+  const visibleLengths = useMemo(
+    () => columnLengths.filter((length) => !hiddenLengthSet.has(length)),
+    [columnLengths, hiddenLengthSet],
+  )
   /** 粘贴格位 = 品牌 × 定尺，与界面 DOM 顺序一致。 */
   const slots = useMemo(
-    () => buildSlots(visibleBrands, lengths),
-    [lengths, visibleBrands],
+    () => buildSlots(visibleBrands, visibleLengths),
+    [visibleBrands, visibleLengths],
   )
 
   /** 基价加价规则：按品牌读取（数量 = 品牌列数，很小，一次取回供录入时联动）。 */
@@ -368,9 +379,13 @@ export function SupplierQuotePage() {
     if (!supplierId) return
     window.localStorage.setItem(
       brandPrefsKey(supplierId),
-      serializeBrandPrefs({ order: brandOrder, hidden: hiddenBrands }),
+      serializeBrandPrefs({
+        order: brandOrder,
+        hidden: hiddenBrands,
+        hiddenLengths,
+      }),
     )
-  }, [brandOrder, hiddenBrands, supplierId])
+  }, [brandOrder, hiddenBrands, hiddenLengths, supplierId])
 
   // 视图方向也是个人偏好：按供应商存本地，下次打开保持
   useEffect(() => {
@@ -815,6 +830,7 @@ export function SupplierQuotePage() {
       setRestoredDrafts(draftMapDirty(restored))
       setBrandOrder(prefs.order)
       setHiddenBrands(prefs.hidden)
+      setHiddenLengths(prefs.hiddenLengths)
       setSpecKeyword('')
       setOnlyUnpriced(false)
       setViewMode(readViewMode(nextSupplierId))
@@ -873,6 +889,16 @@ export function SupplierQuotePage() {
 
   const hideColumn = (brandName: string) => {
     setHiddenBrands((current) => toggleHidden(current, brandName))
+  }
+
+  /**
+   * 隐藏/显示某个定尺列（有些供应商只报 9米 或只报 12米）。
+   *
+   * <p>不允许把定尺列全部藏掉：那样整张表就没有可填价格的格子了。最后一个可见定尺保持显示。</p>
+   */
+  const toggleLengthColumn = (length: string) => {
+    if (visibleLengths.length <= 1 && visibleLengths.includes(length)) return
+    setHiddenLengths((current) => toggleHidden(current, length))
   }
 
   /** 清空本列：把该列已填价格全部标记为「清空」，保存后整组替换才真正落库。 */
@@ -1002,7 +1028,10 @@ export function SupplierQuotePage() {
   }))
 
   /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
-  const sheetWidth = sheetWidthOf(displayViews.length, lengths.length)
+  const sheetWidth = sheetWidthOf(
+    displayViews.length,
+    Math.max(visibleLengths.length, 1),
+  )
 
   /** Ctrl+Z / Ctrl+Y 撤销重做：两个视图共用。 */
   const guardUndoRedo = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1024,15 +1053,6 @@ export function SupplierQuotePage() {
   )
 
   /**
-   * 定尺列的表头：商品资料里无定尺的规格用 `''` 或 `'-'` 表示，两者都读成「不分定尺」，
-   * 否则表头会出现一个孤零零的「-」，没人看得懂那是什么。
-   */
-  const lengthLabel = (length: string) =>
-    length === '' || length === '-'
-      ? t('priceCompare.supplierPrice.noLength')
-      : length
-
-  /**
    * 品牌列里「某个定尺」的一格。
    *
    * <p>报价单原先是一格里塞 9米/12米 两行输入；现在每个定尺各占一列，
@@ -1042,8 +1062,15 @@ export function SupplierQuotePage() {
     view: BrandColumnView,
     row: SpecRow,
     length: string,
+    merged = false,
   ) => {
-    if (!row.lengths.includes(length)) {
+    /*
+     * 无定尺行（盘螺一类）的价格只有一个格：它横跨所有定尺列，落格定尺用自己的占位值（''/'-'）。
+     * 这样既不会多出一个「不分定尺」列，也不会把盘螺价格写到 9米 的键上。
+     */
+    const noLength = hasNoLength(row)
+    if (noLength && merged) return null
+    if (!noLength && !row.lengths.includes(length)) {
       return (
         <span
           className="supplier-price-cell-na"
@@ -1055,7 +1082,8 @@ export function SupplierQuotePage() {
       )
     }
     const brandName = view.brandName
-    const cellKey = rowKeyOfCell(row, length)
+    const effectiveLength = noLength ? placementLengthOf(row) : length
+    const cellKey = rowKeyOfCell(row, effectiveLength)
     const serverPrice = view.cells.get(cellKey)?.price
     const value = draftPrice(drafts[brandName], cellKey, serverPrice)
     const brandBase = rulesByBrand.get(brandName)?.base
@@ -1063,7 +1091,7 @@ export function SupplierQuotePage() {
       Boolean(brandBase) &&
       `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
         `${row.material}|${row.spec}|${length}`
-    const label = `${brandName} ${row.material} ${row.spec} ${length}`
+    const label = `${brandName} ${row.material} ${row.spec} ${effectiveLength}`
     return (
       <Flex
         align="center"
@@ -1082,6 +1110,7 @@ export function SupplierQuotePage() {
         <InputNumber
           aria-label={label}
           className="supplier-price-sheet-input"
+          controls={false}
           data-grid-cell={cellIdOf(brandName, cellKey)}
           disabled={!canUpdate}
           min={0}
@@ -1099,7 +1128,11 @@ export function SupplierQuotePage() {
           onBlur={() =>
             autoFillFromBasePrice(
               brandName,
-              { material: row.material, spec: row.spec, length },
+              {
+                material: row.material,
+                spec: row.spec,
+                length: effectiveLength,
+              },
               value,
               cellKey,
             )
@@ -1113,7 +1146,14 @@ export function SupplierQuotePage() {
              * 内部处理会把 ↑/↓ 当成「步进」把价格 +1/-1（实测 3300 → 3301）。
              */
             const move = (deltaRow: number) => {
-              if (!moveFocus(brandName, length, specRowKey(row), deltaRow)) {
+              if (
+                !moveFocus(
+                  brandName,
+                  effectiveLength,
+                  specRowKey(row),
+                  deltaRow,
+                )
+              ) {
                 return
               }
               event.preventDefault()
@@ -1189,7 +1229,7 @@ export function SupplierQuotePage() {
       width: SHEET_COLUMN_WIDTH.specNo,
       align: 'center',
       fixed: 'left',
-      render: (_value, row) => `Φ${row.spec}`,
+      render: (_value, row) => row.spec,
     },
     ...displayViews.map<ColumnsType<SpecRow>[number]>((view) => {
       const brandName = view.brandName
@@ -1249,9 +1289,22 @@ export function SupplierQuotePage() {
           </Typography.Text>
         </Flex>
       )
-      /* 只有一个定尺（例如整页都是盘螺）时不必套一层「品牌 > 定尺」表头 */
-      if (lengths.length <= 1) {
-        const onlyLength = lengths[0] ?? ''
+      /*
+       * 定尺列：每个真实定尺（9米/12米…）各一列；没有定尺的行（盘螺）价格横跨这些列，
+       * 因此不会出现「不分定尺」这种不存在的列。
+       */
+      if (visibleLengths.length === 0) {
+        return {
+          title,
+          key: brandName,
+          width: SHEET_COLUMN_WIDTH.lengthCell,
+          align: 'right' as const,
+          render: (_value: unknown, row: SpecRow) =>
+            renderLengthCell(view, row, placementLengthOf(row)),
+        }
+      }
+      if (columnLengths.length === 1) {
+        const onlyLength = columnLengths[0]
         return {
           title,
           key: brandName,
@@ -1261,16 +1314,22 @@ export function SupplierQuotePage() {
             renderLengthCell(view, row, onlyLength),
         }
       }
+      const spanCount = visibleLengths.length
       return {
         title,
         key: brandName,
-        children: lengths.map((length) => ({
-          title: lengthLabel(length),
+        children: visibleLengths.map((length, index) => ({
+          title: length,
           key: `${brandName}|${length}`,
           width: SHEET_COLUMN_WIDTH.lengthCell,
           align: 'right' as const,
+          onCell: (row: SpecRow) => {
+            // 无定尺行把整段定尺列合并成一格
+            if (!hasNoLength(row)) return {}
+            return index === 0 ? { colSpan: spanCount } : { colSpan: 0 }
+          },
           render: (_value: unknown, row: SpecRow) =>
-            renderLengthCell(view, row, length),
+            renderLengthCell(view, row, length, index > 0),
         })),
       }
     }),
@@ -1421,6 +1480,25 @@ export function SupplierQuotePage() {
                   </Checkbox>
                 ))
               )}
+              {columnLengths.length > 1 ? (
+                <>
+                  <Typography.Text
+                    className="supplier-price-column-panel-label"
+                    type="secondary"
+                  >
+                    {t('priceCompare.supplierPrice.lengthColumns')}
+                  </Typography.Text>
+                  {columnLengths.map((length) => (
+                    <Checkbox
+                      checked={!hiddenLengthSet.has(length)}
+                      key={length}
+                      onChange={() => toggleLengthColumn(length)}
+                    >
+                      {length}
+                    </Checkbox>
+                  ))}
+                </>
+              ) : null}
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {t('priceCompare.supplierPrice.columnPanelHint')}
               </Typography.Text>

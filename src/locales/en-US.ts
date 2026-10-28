@@ -2877,7 +2877,7 @@ export const enUS = {
       brandGroupDeclared: 'In supplier profile',
       brandGroupQuoted: 'Has quotes (not in profile)',
       brandGroupOther: 'Other brands',
-      noLength: 'Any length',
+      lengthColumns: 'Length columns',
       notApplicable: 'Not available for this spec',
       refresh: 'Refresh',
       saveAll: 'Save ({{count}})',

@@ -397,10 +397,10 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(brand?.textContent).toContain('HRB400')
     expect(brand?.textContent).toContain('9米')
 
-    // 规格成为列头（Φ12 / Φ14），而不是行
+    // 规格成为列头（12 / 14，不带直径符号 Φ），而不是行
     const headers = sheetHeaders()
-    expect(headers.some((text) => text.includes('Φ12'))).toBe(true)
-    expect(headers.some((text) => text.includes('Φ14'))).toBe(true)
+    expect(headers).toContain('12')
+    expect(headers).toContain('14')
     // 同一行里两个规格各一格，值直接回显服务端价格
     expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
     expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
@@ -1019,5 +1019,83 @@ describe('供应商报价表（Excel 式报价网格）', () => {
 
     await toggleCheckbox(i18n.t('priceCompare.supplierPrice.onlyUnpriced'))
     expect(sheetRows().length).toBe(1)
+  })
+
+  /** 盘螺（卷材）在商品资料里没有定尺，长度用 '-' 表示。 */
+  const ROW_PANLUO: SupplierPriceSpecRow = {
+    category: '盘螺',
+    material: 'HRB400',
+    spec: 8,
+    length: '-',
+  }
+
+  it('没有「不分定尺」列：无定尺行（盘螺）的价格横跨定尺列', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_PANLUO,
+      ROW_A,
+      { ...ROW_A, length: '12米' },
+    ])
+    await render()
+    await selectSupplier()
+
+    // 表头只有真实定尺，不再出现「不分定尺」
+    const headers = sheetHeaders()
+    expect(headers.some((text) => text.includes('9米'))).toBe(true)
+    expect(headers.some((text) => text.includes('12米'))).toBe(true)
+    expect(headers.some((text) => text.includes('不分定尺'))).toBe(false)
+
+    // 盘螺行的价格格仍然存在（落在它自己的 '-' 定尺键上）
+    expect(cellInput('中天 HRB400 8 -')).not.toBeNull()
+    // 并且横跨两列，避免占出一个多余的列
+    const cell = container.querySelector('[data-grid-cell*="盘螺|HRB400|8|-"]')
+    expect(cell?.closest('td')?.getAttribute('colspan')).toBe('2')
+  })
+
+  it('规格列不带直径符号 Φ', async () => {
+    await render()
+    await selectSupplier()
+
+    const specCells = [
+      ...container.querySelectorAll('.ant-table-tbody td'),
+    ].map((node) => node.textContent ?? '')
+    expect(specCells.some((text) => text.includes('Φ'))).toBe(false)
+    expect(specCells.some((text) => text.trim() === '12')).toBe(true)
+  })
+
+  it('价格输入框没有上下调整箭头', async () => {
+    await render()
+    await selectSupplier()
+
+    expect(
+      container.querySelectorAll('.ant-input-number-handler-wrap'),
+    ).toHaveLength(0)
+  })
+
+  it('可在「列显示」里隐藏某个定尺列（只报 9米 的供应商）', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_A,
+      { ...ROW_A, length: '12米' },
+    ])
+    await render()
+    await selectSupplier()
+
+    const columnsButton = Array.from(container.querySelectorAll('button')).find(
+      (button) =>
+        (button.textContent ?? '').includes(
+          i18n.t('priceCompare.supplierPrice.columns'),
+        ),
+    )
+    await act(async () => {
+      columnsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+
+    await toggleCheckbox('12米')
+    expect(sheetHeaders().some((text) => text.includes('12米'))).toBe(false)
+    expect(sheetHeaders().some((text) => text.includes('9米'))).toBe(true)
+
+    await toggleCheckbox('12米')
+    expect(sheetHeaders().some((text) => text.includes('12米'))).toBe(true)
   })
 })

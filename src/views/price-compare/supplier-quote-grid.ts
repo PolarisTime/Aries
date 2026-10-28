@@ -64,6 +64,17 @@ export function lengthRank(length: string): number {
   return Number.isFinite(numeric) ? 10 + numeric : 50
 }
 
+/**
+ * 是否是**可展示的定尺列**。
+ *
+ * <p>`''` 与 `'-'` 在商品资料里表示"该规格没有定尺"（如盘螺是卷材，不分 9米/12米），
+ * 它们不是一种定尺，不该占一列表头（旧实现会多出一个「不分定尺」列，用户反馈"没有这种东西"）。
+ * 这类行的价格只有一格，渲染时横跨所有定尺列。</p>
+ */
+export function isLengthColumn(length: string): boolean {
+  return length !== '' && length !== '-'
+}
+
 /** 网格里出现的全部定尺（去重 + 排序）。 */
 export function orderedLengths(rows: readonly QuoteRow[]): string[] {
   return [...new Set(rows.map((row) => row.length))].sort(
@@ -142,6 +153,24 @@ export function specRowGroupSpans(
     index = categoryEnd + 1
   }
   return spans
+}
+
+/** 真正的定尺列（9米/12米…），已按报价单习惯排序。 */
+export function columnLengths(rows: readonly QuoteRow[]): string[] {
+  return orderedLengths(rows).filter(isLengthColumn)
+}
+
+/** 该规格行没有定尺维度（盘螺一类）：价格只需要一格。 */
+export function hasNoLength(row: SpecRow): boolean {
+  return !row.lengths.some(isLengthColumn)
+}
+
+/**
+ * 某规格行落格用的定尺值：有定尺取第一个真实定尺；没有定尺就取它自己的占位值（`''`/`'-'`），
+ * 保证这类行仍然能算出与后端条目一致的 rowKey。
+ */
+export function placementLengthOf(row: SpecRow): string {
+  return row.lengths.find(isLengthColumn) ?? row.lengths[0] ?? ''
 }
 
 /** 把「一个定尺一行」的原始行合并成「一个规格一行、定尺在格子里」。 */
@@ -227,9 +256,21 @@ export function buildSpecPastePlan(args: {
       dropped += line.length
       return
     }
+    // 无定尺行（盘螺一类）只有一格：矩阵第一列落到它的占位定尺上，其余列无处可落
+    const noLength = hasNoLength(specRow)
+    const placementLength = placementLengthOf(specRow)
     line.forEach((raw, columnOffset) => {
       const slot = args.slots[args.startSlotIndex + columnOffset]
-      if (!slot || !specRow.lengths.includes(slot.length)) {
+      if (!slot) {
+        dropped += 1
+        return
+      }
+      if (noLength) {
+        if (columnOffset > 0) {
+          dropped += 1
+          return
+        }
+      } else if (!specRow.lengths.includes(slot.length)) {
         dropped += 1
         return
       }
@@ -240,7 +281,9 @@ export function buildSpecPastePlan(args: {
       }
       cells.push({
         brandName: slot.brandName,
-        rowKey: `${specRow.category}|${specRow.material}|${specRow.spec}|${slot.length}`,
+        rowKey: `${specRow.category}|${specRow.material}|${specRow.spec}|${
+          noLength ? placementLength : slot.length
+        }`,
         value,
       })
     })
@@ -284,20 +327,31 @@ export function sheetWidthOf(brandCount: number, lengthCount = 1): number {
 export type BrandPrefs = {
   order: string[]
   hidden: string[]
+  /** 隐藏的定尺列（9米/12米…）：有些供应商只报其中一种定尺。 */
+  hiddenLengths: string[]
 }
 
-const EMPTY_PREFS: BrandPrefs = { order: [], hidden: [] }
+const EMPTY_PREFS: BrandPrefs = { order: [], hidden: [], hiddenLengths: [] }
 
 /** 解析本地保存的偏好；任何脏数据都退化为「默认顺序、不隐藏」，不影响打开页面。 */
 export function parseBrandPrefs(raw: string | null): BrandPrefs {
   if (!raw) return { ...EMPTY_PREFS }
   try {
-    const value = JSON.parse(raw) as { order?: unknown; hidden?: unknown }
+    const value = JSON.parse(raw) as {
+      order?: unknown
+      hidden?: unknown
+      hiddenLengths?: unknown
+    }
     const strings = (input: unknown): string[] =>
       Array.isArray(input)
         ? input.filter((item): item is string => typeof item === 'string')
         : []
-    return { order: strings(value.order), hidden: strings(value.hidden) }
+    return {
+      order: strings(value.order),
+      hidden: strings(value.hidden),
+      // 老数据没有这个字段 → 空集合（全部定尺列显示）
+      hiddenLengths: strings(value.hiddenLengths),
+    }
   } catch {
     return { ...EMPTY_PREFS }
   }

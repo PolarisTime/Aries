@@ -234,13 +234,30 @@ describe('列显示偏好与顺序', () => {
   })
 
   it('偏好解析：脏数据退化为默认值', () => {
-    expect(parseBrandPrefs(null)).toEqual({ order: [], hidden: [] })
-    expect(parseBrandPrefs('not-json')).toEqual({ order: [], hidden: [] })
+    expect(parseBrandPrefs(null)).toEqual({
+      order: [],
+      hidden: [],
+      hiddenLengths: [],
+    })
+    expect(parseBrandPrefs('not-json')).toEqual({
+      order: [],
+      hidden: [],
+      hiddenLengths: [],
+    })
     expect(parseBrandPrefs('{"order":["a",1],"hidden":["b"]}')).toEqual({
       order: ['a'],
       hidden: ['b'],
+      hiddenLengths: [],
     })
-    const prefs = { order: ['中天'], hidden: ['永钢'] }
+    // 定尺列隐藏集合同样是个人偏好，随品牌偏好一起存
+    expect(
+      parseBrandPrefs('{"order":[],"hidden":[],"hiddenLengths":["12米"]}'),
+    ).toEqual({ order: [], hidden: [], hiddenLengths: ['12米'] })
+    const prefs = {
+      order: ['中天'],
+      hidden: ['永钢'],
+      hiddenLengths: ['12米'],
+    }
     expect(parseBrandPrefs(serializeBrandPrefs(prefs))).toEqual(prefs)
   })
 })

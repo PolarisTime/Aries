@@ -2818,7 +2818,7 @@ export const zhCN = {
       brandGroupDeclared: '供应商资料里的经营品牌',
       brandGroupQuoted: '已有报价（资料未维护）',
       brandGroupOther: '其它品牌',
-      noLength: '不分定尺',
+      lengthColumns: '定尺列',
       notApplicable: '该规格没有这个定尺',
       refresh: '刷新',
       saveAll: '保存（{{count}} 处）',

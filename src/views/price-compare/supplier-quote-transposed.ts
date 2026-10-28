@@ -21,9 +21,14 @@ export type TransposedSection = {
   blocks: TransposedBlock[]
 }
 
-/** 列头：Φ12。 */
+/**
+ * 列头：`12`。
+ *
+ * <p>不写直径符号 Φ：报表与录入习惯里规格就是数字，Φ 只是图纸/材质标注的写法，
+ * 在密集表头里还会多占一个字符宽度（用户明确要求去掉）。</p>
+ */
 export function specHeader(spec: number): string {
-  return `Φ${spec}`
+  return String(spec)
 }
 
 const pairKeyOf = (row: Pick<QuoteRow, 'material' | 'length'>) =>
