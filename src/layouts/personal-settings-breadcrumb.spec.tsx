@@ -102,48 +102,51 @@ describe('面包屑显示开关', () => {
     expect(current().appliedShowBreadcrumb).toBe(true)
   })
 
-  it('右键菜单偏好: 缺省全开, 关掉后保存才落库, 取消回滚', () => {
+  it('右键菜单偏好: 逐项隐藏、保存后落库、取消回滚', () => {
     render()
-    expect(current().contextMenu).toEqual({
-      showRowActions: true,
-      showBatchActions: true,
-      showDangerActions: true,
-    })
+    // 缺省全显示（隐藏集合为空）
+    expect(current().contextMenu.hiddenActionKeys).toEqual([])
 
-    act(() => current().patchContextMenu({ showDangerActions: false }))
+    act(() => current().toggleContextMenuAction('attach', false))
+    expect(current().contextMenu.hiddenActionKeys).toEqual(['attach'])
     // 保存前不落库（与其他显示设置同一语义）
     expect(useUiSettingsStore.getState().settings?.contextMenu).toBeUndefined()
 
     act(() => current().save())
-    // 保存写入的是"三项的完整快照"，不是增量：读取侧不必再补默认值
     expect(useUiSettingsStore.getState().settings?.contextMenu).toEqual({
-      showRowActions: true,
-      showBatchActions: true,
-      showDangerActions: false,
+      hiddenActionKeys: ['attach'],
     })
-    expect(current().appliedContextMenu.showDangerActions).toBe(false)
+    expect(current().appliedContextMenu.hiddenActionKeys).toEqual(['attach'])
 
-    // 重新加载（模拟重开应用）仍读到关闭
+    // 重新加载（模拟重开应用）仍读到隐藏
     render()
-    expect(current().contextMenu.showDangerActions).toBe(false)
-    expect(current().contextMenu.showRowActions).toBe(true)
+    expect(current().contextMenu.hiddenActionKeys).toEqual(['attach'])
+
+    // 再打开（显示）后保存，隐藏集合清空
+    act(() => current().toggleContextMenuAction('attach', true))
+    act(() => current().save())
+    expect(current().contextMenu.hiddenActionKeys).toEqual([])
 
     // 草稿改动被取消后回滚到已保存值
-    act(() => current().patchContextMenu({ showRowActions: false }))
+    act(() => current().toggleContextMenuAction('edit', false))
     act(() => current().close())
-    expect(current().contextMenu.showRowActions).toBe(true)
+    expect(current().contextMenu.hiddenActionKeys).toEqual([])
   })
 
-  it('恢复默认把右键菜单三组都打开', () => {
+  it('整组开关一次隐藏/恢复该组全部动作', () => {
     render()
-    act(() => current().patchContextMenu({ showBatchActions: false }))
-    act(() => current().save())
-    act(() => current().reset())
-    expect(current().contextMenu).toEqual({
-      showRowActions: true,
-      showBatchActions: true,
-      showDangerActions: true,
-    })
+    act(() => current().setContextMenuGroupVisible('bulk', false))
+    // 批量组：导出选中 / 批量审核 / 批量反审核 / 批量删除
+    expect(current().contextMenu.hiddenActionKeys).toEqual(
+      expect.arrayContaining([
+        'export_selected',
+        'bulk_audit',
+        'bulk_reverse_audit',
+        'bulk_delete',
+      ]),
+    )
+    act(() => current().setContextMenuGroupVisible('bulk', true))
+    expect(current().contextMenu.hiddenActionKeys).toEqual([])
   })
 
   it('恢复默认把面包屑改回显示', () => {

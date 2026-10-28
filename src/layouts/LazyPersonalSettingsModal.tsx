@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
-import type { LayoutMode } from '@/layouts/usePersonalSettings'
-import type { ContextMenuSettings } from '@/stores/uiSettingsStore'
+import type {
+  AppliedContextMenuSettings,
+  LayoutMode,
+} from '@/layouts/usePersonalSettings'
 import type { ThemeMode } from '@/utils/storage'
 
 const PersonalSettingsModal = lazy(() =>
@@ -23,8 +25,12 @@ interface Props {
   onThemeModeChange: (value: ThemeMode) => void
   showBreadcrumb: boolean
   onShowBreadcrumbChange: (value: boolean) => void
-  contextMenu: Required<ContextMenuSettings>
-  onContextMenuChange: (patch: ContextMenuSettings) => void
+  contextMenu: AppliedContextMenuSettings
+  onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
+  onContextMenuGroupVisibleChange: (
+    group: 'row' | 'bulk',
+    visible: boolean,
+  ) => void
   onResetContextMenu: () => void
   onSaveContextMenu: () => void
 }

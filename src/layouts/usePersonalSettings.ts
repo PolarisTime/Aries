@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { isBreadcrumbVisible } from '@/layouts/breadcrumb'
+import { contextMenuActionKeysByGroup } from '@/layouts/context-menu-actions'
 import {
   type ContextMenuSettings,
   type PersonalSettings,
@@ -23,25 +24,20 @@ export function getPersonalControlHeights(fontSize: number) {
   }
 }
 
-/** 右键菜单偏好缺省全开：用户不配置也能用到完整菜单。 */
-export const DEFAULT_CONTEXT_MENU_SETTINGS: Required<ContextMenuSettings> = {
-  showRowActions: true,
-  showBatchActions: true,
-  showDangerActions: true,
+/** 右键菜单偏好的"已生效"形态：只记被隐藏的动作 key，缺省空数组 = 全显示。 */
+export interface AppliedContextMenuSettings {
+  hiddenActionKeys: string[]
+}
+
+export const DEFAULT_CONTEXT_MENU_SETTINGS: AppliedContextMenuSettings = {
+  hiddenActionKeys: [],
 }
 
 function normalizeContextMenu(
   settings: ContextMenuSettings | undefined,
-): Required<ContextMenuSettings> {
+): AppliedContextMenuSettings {
   return {
-    showRowActions:
-      settings?.showRowActions ?? DEFAULT_CONTEXT_MENU_SETTINGS.showRowActions,
-    showBatchActions:
-      settings?.showBatchActions ??
-      DEFAULT_CONTEXT_MENU_SETTINGS.showBatchActions,
-    showDangerActions:
-      settings?.showDangerActions ??
-      DEFAULT_CONTEXT_MENU_SETTINGS.showDangerActions,
+    hiddenActionKeys: [...(settings?.hiddenActionKeys ?? [])],
   }
 }
 
@@ -123,16 +119,41 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedShowBreadcrumb, setAppliedShowBreadcrumb] = useState(
     initialSettings.showBreadcrumb,
   )
-  const [contextMenu, setContextMenu] = useState<Required<ContextMenuSettings>>(
+  const [contextMenu, setContextMenu] = useState<AppliedContextMenuSettings>(
     initialSettings.contextMenu,
   )
-  const [appliedContextMenu, setAppliedContextMenu] = useState<
-    Required<ContextMenuSettings>
-  >(initialSettings.contextMenu)
+  const [appliedContextMenu, setAppliedContextMenu] =
+    useState<AppliedContextMenuSettings>(initialSettings.contextMenu)
 
-  /** 三个分组开关都是"整组替换一个字段"，用一个补丁函数避免三份 setState。 */
-  const patchContextMenu = (patch: ContextMenuSettings) => {
-    setContextMenu((previous) => ({ ...previous, ...patch }))
+  /** 单项开关：把 key 加入/移出隐藏集合。 */
+  const toggleContextMenuAction = (actionKey: string, visible: boolean) => {
+    setContextMenu((previous) => {
+      const hidden = new Set(previous.hiddenActionKeys)
+      if (visible) {
+        hidden.delete(actionKey)
+      } else {
+        hidden.add(actionKey)
+      }
+      return { hiddenActionKeys: [...hidden] }
+    })
+  }
+
+  /** 整组开关（设置页每组的「全选」）：一次性加入/移出该组全部 key。 */
+  const setContextMenuGroupVisible = (
+    group: 'row' | 'bulk',
+    visible: boolean,
+  ) => {
+    setContextMenu((previous) => {
+      const hidden = new Set(previous.hiddenActionKeys)
+      for (const key of contextMenuActionKeysByGroup(group)) {
+        if (visible) {
+          hidden.delete(key)
+        } else {
+          hidden.add(key)
+        }
+      }
+      return { hiddenActionKeys: [...hidden] }
+    })
   }
 
   const applySettings = (settings: PersonalSettings | null | undefined) => {
@@ -215,7 +236,8 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setShowBreadcrumb,
     contextMenu,
     appliedContextMenu,
-    patchContextMenu,
+    toggleContextMenuAction,
+    setContextMenuGroupVisible,
     open,
     close,
     reset,

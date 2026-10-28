@@ -42,6 +42,10 @@ test.describe('行右键菜单 · 批量动作', () => {
     ).toHaveCount(0, { timeout: 5_000 })
   }
 
+  /** 「批量操作」这一组的全选复选框（逐项开关之上的整组开关）。 */
+  const bulkGroupCheckbox = (page: import('@playwright/test').Page) =>
+    page.getByRole('checkbox', { name: '全部显示「批量操作」' })
+
   const openPersonalSettings = async (
     page: import('@playwright/test').Page,
   ) => {
@@ -51,10 +55,8 @@ test.describe('行右键菜单 · 批量动作', () => {
       .click()
     await page.getByRole('menuitem', { name: /个人设置/ }).click()
     await page.getByRole('tab', { name: '右键菜单' }).click()
-    await page.locator('.ant-switch[aria-label="批量操作"]').waitFor({
-      state: 'visible',
-      timeout: 10_000,
-    })
+    // 逐项配置：等「批量操作」这一组的全选复选框出现
+    await bulkGroupCheckbox(page).waitFor({ state: 'visible', timeout: 10_000 })
   }
 
   test('未勾选→只有行操作；勾选多行→追加批量分组；关掉开关→不再追加', async ({
@@ -87,7 +89,7 @@ test.describe('行右键菜单 · 批量动作', () => {
 
     // ③ 个人设置里关掉「批量操作」→ 分组消失，行操作保留
     await openPersonalSettings(page)
-    await page.locator('.ant-switch[aria-label="批量操作"]').click()
+    await bulkGroupCheckbox(page).uncheck()
     await page.getByRole('button', { name: '保存显示设置' }).click()
     await expect(page.getByRole('button', { name: '保存显示设置' })).toBeHidden(
       { timeout: 10_000 },
@@ -100,7 +102,7 @@ test.describe('行右键菜单 · 批量动作', () => {
 
     // 恢复默认，避免污染后续用例
     await openPersonalSettings(page)
-    await page.locator('.ant-switch[aria-label="批量操作"]').click()
+    await bulkGroupCheckbox(page).uncheck()
     await page.getByRole('button', { name: '保存显示设置' }).click()
     await expect(page.getByRole('button', { name: '保存显示设置' })).toBeHidden(
       { timeout: 10_000 },

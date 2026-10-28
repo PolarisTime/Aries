@@ -2284,9 +2284,22 @@ export const enUS = {
       contextMenuBatchActions: 'Batch actions',
       contextMenuBatchActionsDesc:
         'Append batch delete, batch audit and export-selected to the context menu when several rows are selected',
-      contextMenuDangerActions: 'Destructive actions',
-      contextMenuDangerActionsDesc:
-        'Show destructive red items such as delete; when off they stay reachable from the toolbar',
+      contextMenuAll: 'All',
+      contextMenuToggleGroup: 'Show all "{{group}}" items',
+      contextMenuDangerTag: 'destructive',
+      contextMenuItem: {
+        detail: 'View details',
+        copyDocNo: 'Copy document no.',
+        edit: 'Edit',
+        audit: 'Audit',
+        reverseAudit: 'Reverse audit / re-verify',
+        confirmDeliveryVerification: 'Confirm delivery verification',
+        attach: 'Attachments',
+        exportSelected: 'Export selected',
+        bulkAudit: 'Batch audit',
+        bulkReverseAudit: 'Batch reverse audit',
+        bulkDelete: 'Batch delete',
+      },
       theme: {
         light: 'Light',
         dark: 'Dark',

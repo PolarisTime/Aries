@@ -24,13 +24,13 @@ import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
 import { useAppLayoutSessionGuards } from '@/layouts/useAppLayoutSessionGuards'
 import { useBackendStatus } from '@/layouts/useBackendStatus'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
+import type { AppliedContextMenuSettings } from '@/layouts/usePersonalSettings'
 import {
   type LayoutMode,
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { useAuthStore } from '@/stores/authStore'
-import type { ContextMenuSettings } from '@/stores/uiSettingsStore'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
@@ -104,8 +104,12 @@ type PersonalSettingsHostProps = {
   onSaveDisplay: () => void
   onThemeModeChange: (value: ThemeMode) => void
   onShowBreadcrumbChange: (value: boolean) => void
-  contextMenu: Required<ContextMenuSettings>
-  onContextMenuChange: (patch: ContextMenuSettings) => void
+  contextMenu: AppliedContextMenuSettings
+  onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
+  onContextMenuGroupVisibleChange: (
+    group: 'row' | 'bulk',
+    visible: boolean,
+  ) => void
   onResetContextMenu: () => void
   onSaveContextMenu: () => void
   open: boolean
@@ -124,7 +128,8 @@ function PersonalSettingsHost({
   onThemeModeChange,
   onShowBreadcrumbChange,
   contextMenu,
-  onContextMenuChange,
+  onToggleContextMenuAction,
+  onContextMenuGroupVisibleChange,
   onResetContextMenu,
   onSaveContextMenu,
   open,
@@ -146,7 +151,8 @@ function PersonalSettingsHost({
       showBreadcrumb={showBreadcrumb}
       onShowBreadcrumbChange={onShowBreadcrumbChange}
       contextMenu={contextMenu}
-      onContextMenuChange={onContextMenuChange}
+      onToggleContextMenuAction={onToggleContextMenuAction}
+      onContextMenuGroupVisibleChange={onContextMenuGroupVisibleChange}
       onResetContextMenu={onResetContextMenu}
       onSaveContextMenu={onSaveContextMenu}
     />
@@ -186,7 +192,8 @@ export function AppLayout() {
     showBreadcrumb,
     setShowBreadcrumb,
     contextMenu,
-    patchContextMenu,
+    toggleContextMenuAction,
+    setContextMenuGroupVisible,
     reset,
     save,
     open: openPersonalSettings,
@@ -430,7 +437,8 @@ export function AppLayout() {
         showBreadcrumb={showBreadcrumb}
         onShowBreadcrumbChange={setShowBreadcrumb}
         contextMenu={contextMenu}
-        onContextMenuChange={patchContextMenu}
+        onToggleContextMenuAction={toggleContextMenuAction}
+        onContextMenuGroupVisibleChange={setContextMenuGroupVisible}
         onResetContextMenu={reset}
         onSaveContextMenu={save}
       />

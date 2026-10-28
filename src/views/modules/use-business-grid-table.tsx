@@ -24,6 +24,7 @@ import {
   type DetailToggleVariant,
   useGridColumns,
 } from '@/hooks/useGridColumns'
+import { isContextMenuActionHidden } from '@/layouts/context-menu-actions'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import type {
@@ -360,12 +361,9 @@ export function useBusinessGridTable({
    * 右键菜单分组开关（个人设置 → 右键菜单）。缺省全开，所以这里读到 undefined
    * 与"三项都 true"等价；用布尔默认值收敛一次，避免下面每处都写 `?? true`。
    */
-  const contextMenuPreferences = useUiSettingsStore(
-    (state) => state.settings?.contextMenu,
+  const hiddenActionKeys = useUiSettingsStore(
+    (state) => state.settings?.contextMenu?.hiddenActionKeys,
   )
-  const showRowActions = contextMenuPreferences?.showRowActions ?? true
-  const showBatchActions = contextMenuPreferences?.showBatchActions ?? true
-  const showDangerActions = contextMenuPreferences?.showDangerActions ?? true
 
   /**
    * 批量动作 → 菜单项。key 与行动作共用 handleClick 的同一套分发：
@@ -406,21 +404,24 @@ export function useBusinessGridTable({
         t('modules.table.rowContextMenuLabel', { title: label }),
       okText: t('common.ok'),
       cancelText: t('common.cancel'),
-      /* 个人设置可以整组关掉行操作 / 危险动作 */
+      /*
+       * 逐项开关（个人设置 → 右键菜单）：只隐藏被显式关掉的动作 key。
+       * 过滤后若某行没有任何行动作、但有追加项（批量动作），菜单仍会保留。
+       */
       includeAction: (action) =>
-        showRowActions && (showDangerActions || !action.danger),
+        !isContextMenuActionHidden(hiddenActionKeys, action.key),
       /*
        * 勾选多行后，在菜单末尾追加一段批量动作（与横幅里的是同一批动作定义）。
        * 只在"右键的这一行本身就在多选里"时追加：右键未选中的行会把选中态切成该行，
        * 此时批量动作等价于单行动作，追加反而是噪音。
        */
       buildExtraItems: (record) => {
-        if (!showBatchActions || !batchActionsByKey.size) return undefined
+        if (!batchActionsByKey.size) return undefined
         if (selectedRowKeys.length < 2) return undefined
         if (!selectedRowKeys.includes(String(record.id))) return undefined
-        /* 危险动作开关对批量动作同样生效（例如「批量删除」也是红色项） */
+        /* 逐项开关对批量动作同样生效（例如单独关掉「批量删除」） */
         const children = [...batchActionsByKey.entries()]
-          .filter(([, action]) => showDangerActions || !action.danger)
+          .filter(([key]) => !isContextMenuActionHidden(hiddenActionKeys, key))
           .map(([key, action]) => ({
             key,
             label: action.label,
@@ -478,9 +479,7 @@ export function useBusinessGridTable({
     selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
-    showBatchActions,
-    showDangerActions,
-    showRowActions,
+    hiddenActionKeys,
     t,
   ])
 

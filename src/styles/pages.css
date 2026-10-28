@@ -132,6 +132,23 @@
   line-height: 1.6;
 }
 
+/* 逐项开关（右键菜单）：两列网格，窄屏回落单列 */
+.personal-context-menu-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-xs) var(--space-md);
+}
+
+.personal-context-menu-danger {
+  margin-inline-start: var(--space-xxs);
+  padding: 0 var(--space-xxs);
+  color: var(--ant-color-error);
+  font-size: 11px;
+  line-height: 1.6;
+  background: var(--ant-color-error-bg);
+  border-radius: var(--ant-border-radius-sm);
+}
+
 .personal-setting-actions {
   display: flex;
   justify-content: flex-end;

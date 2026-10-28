@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import { type PersistStorage, persist } from 'zustand/middleware'
 import { STORAGE_KEYS } from '@/constants/storage'
+import {
+  CONTEXT_MENU_ACTIONS,
+  contextMenuActionKeysByGroup,
+} from '@/layouts/context-menu-actions'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type LayoutMode = 'sider' | 'top'
@@ -8,16 +12,13 @@ export type LayoutMode = 'sider' | 'top'
 /**
  * 列表页行右键菜单的显示偏好。
  *
- * <p>右键菜单项由各模块的动作定义决定（查看/编辑/审核/附件/删除…），全站无法逐项枚举，
- * 因此按**语义分组**配置：行动作、批量动作、危险动作。缺省全开，用户不必配置就能用。</p>
+ * <p>菜单项来自固定词表（行级动作 + 批量动作，见 `layouts/context-menu-actions.ts`），
+ * 因此可以**逐项**配置。存"隐藏了哪些 key"而不是"每一项的布尔值"：
+ * 新增动作时缺省就是显示的，老用户的设置不需要迁移。</p>
  */
 export interface ContextMenuSettings {
-  /** 行操作（查看 / 编辑 / 审核 / 附件…） */
-  showRowActions?: boolean
-  /** 勾选多行后追加到菜单里的批量操作（批量删除 / 批量审核 / 导出选中…） */
-  showBatchActions?: boolean
-  /** 危险操作（删除等红色项）；关掉后菜单里不再出现破坏性命令 */
-  showDangerActions?: boolean
+  /** 被隐藏的动作 key（缺省空数组 = 全部显示）。 */
+  hiddenActionKeys?: string[]
 }
 
 export interface PersonalSettings {
@@ -57,25 +58,44 @@ function normalizeShowBreadcrumb(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined
 }
 
-/** 右键菜单偏好: 只接受布尔值, 缺省字段不写入(表示"用默认值=显示")。 */
+/**
+ * 右键菜单偏好归一化。
+ *
+ * <p>只接受字符串数组；同时兼容上一版按"分组开关"存的三个布尔字段（它们曾短暂上线），
+ * 把 `false` 翻译成"隐藏该组全部 key"，避免老数据读出来后又出现"开关关着但菜单还在"。</p>
+ */
 export function normalizeContextMenuSettings(
   value: unknown,
 ): ContextMenuSettings | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined
   }
-  const candidate = value as ContextMenuSettings
-  const normalized: ContextMenuSettings = {}
-  for (const key of [
-    'showRowActions',
-    'showBatchActions',
-    'showDangerActions',
-  ] as const) {
-    if (typeof candidate[key] === 'boolean') {
-      normalized[key] = candidate[key]
+  const candidate = value as ContextMenuSettings & {
+    showRowActions?: boolean
+    showBatchActions?: boolean
+    showDangerActions?: boolean
+  }
+  const hidden = new Set<string>()
+  if (Array.isArray(candidate.hiddenActionKeys)) {
+    for (const key of candidate.hiddenActionKeys) {
+      if (typeof key === 'string' && key.trim()) {
+        hidden.add(key.trim())
+      }
     }
   }
-  return Object.keys(normalized).length > 0 ? normalized : undefined
+  // 旧字段迁移：分组关掉 = 该组 key 全部隐藏
+  if (candidate.showRowActions === false) {
+    for (const key of contextMenuActionKeysByGroup('row')) hidden.add(key)
+  }
+  if (candidate.showBatchActions === false) {
+    for (const key of contextMenuActionKeysByGroup('bulk')) hidden.add(key)
+  }
+  if (candidate.showDangerActions === false) {
+    for (const action of CONTEXT_MENU_ACTIONS) {
+      if (action.danger) hidden.add(action.key)
+    }
+  }
+  return hidden.size > 0 ? { hiddenActionKeys: [...hidden] } : undefined
 }
 
 function normalizeThemeMode(value: unknown): ThemeMode | undefined {

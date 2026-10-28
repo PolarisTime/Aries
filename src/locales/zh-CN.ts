@@ -2243,9 +2243,22 @@ export const zhCN = {
       contextMenuBatchActions: '批量操作',
       contextMenuBatchActionsDesc:
         '勾选多行后，在右键菜单里追加批量删除、批量审核、导出选中等操作',
-      contextMenuDangerActions: '危险操作',
-      contextMenuDangerActionsDesc:
-        '显示删除等不可撤销的红色菜单项；关掉后仍可从工具栏进入',
+      contextMenuAll: '全选',
+      contextMenuToggleGroup: '全部显示「{{group}}」',
+      contextMenuDangerTag: '危险',
+      contextMenuItem: {
+        detail: '查看明细',
+        copyDocNo: '复制单号',
+        edit: '编辑',
+        audit: '审核',
+        reverseAudit: '反审核 / 重新核定',
+        confirmDeliveryVerification: '确认核定',
+        attach: '附件',
+        exportSelected: '导出选中',
+        bulkAudit: '批量审核',
+        bulkReverseAudit: '批量反审核',
+        bulkDelete: '批量删除',
+      },
       theme: {
         light: '亮色',
         dark: '暗色',
