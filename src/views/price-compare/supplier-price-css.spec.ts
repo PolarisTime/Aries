@@ -15,21 +15,24 @@ const blockOf = (selector: string) => {
   return css.slice(start, end)
 }
 
-describe('供应商报价表：品牌选中行的可辨识性', () => {
-  it('选中行有背景色区分', () => {
-    const block = blockOf('.supplier-price-brand-row--active > td')
-    expect(block).toContain('background:')
+describe('供应商报价表：Excel 式数字排版', () => {
+  it('单元格更紧凑（表格软件的密度）', () => {
+    const block = blockOf('.supplier-price-sheet .ant-table-tbody > tr > td')
+    expect(block).toContain('padding:')
   })
 
-  it('选中态不只靠颜色：另有左侧色条（WCAG 1.4.1）', () => {
-    const block = blockOf('.supplier-price-brand-row--active > td:first-child')
-    expect(block).toContain('box-shadow:')
-    expect(block).toContain('inset')
+  it('单价右对齐，便于按列比较', () => {
+    const block = blockOf('.supplier-price-sheet .ant-input-number-input')
+    expect(block).toContain('text-align: right')
   })
 
-  it('使用主题 token 并提供回退值，不写死单一色值', () => {
-    const block = blockOf('.supplier-price-brand-row--active > td')
-    expect(block).toContain('var(--ant-color-primary-bg')
-    expect(block).toMatch(/var\(--ant-color-primary-bg,\s*#/)
+  it('单价使用等宽数字（tabular-nums），列内位数对齐', () => {
+    const block = blockOf('.supplier-price-sheet .ant-input-number-input')
+    expect(block).toContain('font-variant-numeric: tabular-nums')
+  })
+
+  it('行号用主题 token 并提供回退值，不写死单一色值', () => {
+    const block = blockOf('.supplier-price-row-index')
+    expect(block).toMatch(/var\(--ant-color-text-tertiary,\s*/)
   })
 })

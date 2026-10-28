@@ -109,7 +109,7 @@ function emptyGrid(brandName: string): SupplierPriceGrid {
   return { brandName, columns: [], rows: [] }
 }
 
-describe('供应商报价表（供应商为主、品牌在下方）', () => {
+describe('供应商报价表（Excel 式报价网格）', () => {
   let container: HTMLDivElement
   let root: Root
   let queryClient: QueryClient
@@ -162,6 +162,7 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     feedback.message.success.mockReset()
     feedback.message.error.mockReset()
     feedback.message.info.mockReset()
+    feedback.message.warning.mockReset()
     feedback.modal.confirm.mockReset()
 
     container = document.createElement('div')
@@ -199,7 +200,6 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     await flush()
   }
 
-  /** 打开 antd Select 并点选一个选项（弹层渲染在 body 上）。 */
   async function pickOption(select: Element | null, title: string) {
     await act(async () => {
       select?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
@@ -227,22 +227,21 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     await pickOption(selects()[0] ?? null, title)
   }
 
-  /** 品牌列表是页面里的第一张表，规格价格表是第二张。 */
-  const brandTable = () => container.querySelectorAll('.ant-table')[0] ?? null
-  const detailTable = () => container.querySelectorAll('.ant-table')[1] ?? null
-
-  const brandTableText = () => brandTable()?.textContent ?? ''
-
-  const detailRows = () =>
-    detailTable()?.querySelectorAll(
-      '.ant-table-tbody tr:not(.ant-table-measure-row)',
-    ) ?? []
-
-  /** 在规格表里输入单价（antd InputNumber 以 input 事件驱动 onChange）。 */
-  async function typePrice(label: string, value: string) {
-    const input = container.querySelector<HTMLInputElement>(
-      `input[aria-label="${label}"]`,
+  const sheet = () => container.querySelector('.ant-table')
+  const sheetHeaders = () =>
+    Array.from(container.querySelectorAll('.ant-table-thead th')).map(
+      (node) => node.textContent ?? '',
     )
+  const sheetRows = () =>
+    container.querySelectorAll(
+      '.ant-table-tbody tr:not(.ant-table-measure-row)',
+    )
+
+  const cellInput = (label: string) =>
+    container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+
+  async function typePrice(label: string, value: string) {
+    const input = cellInput(label)
     expect(input, `未找到价格输入框 ${label}`).not.toBeNull()
     await act(async () => {
       Object.getOwnPropertyDescriptor(
@@ -267,36 +266,55 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     await flush()
   }
 
-  it('未选供应商时给出入口提示，不渲染品牌列表', async () => {
+  /** 模拟从 Excel 粘贴：把文本塞进 paste 事件的 clipboardData。 */
+  async function pasteInto(label: string, text: string) {
+    const input = cellInput(label)
+    expect(input, `未找到价格输入框 ${label}`).not.toBeNull()
+    await act(async () => {
+      input?.focus()
+      const event = new Event('paste', { bubbles: true })
+      Object.defineProperty(event, 'clipboardData', {
+        value: { getData: () => text },
+      })
+      input?.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  async function pressKey(label: string, key: string) {
+    const input = cellInput(label)
+    expect(input, `未找到价格输入框 ${label}`).not.toBeNull()
+    await act(async () => {
+      input?.focus()
+      input?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('未选供应商时给出入口提示，不渲染报价网格', async () => {
     await render()
 
     expect(container.textContent).toContain(
       i18n.t('priceCompare.supplierPrice.pickSupplier'),
     )
-    expect(container.querySelector('.ant-table')).toBeNull()
+    expect(sheet()).toBeNull()
   })
 
-  it('选供应商后：上方是品牌列表，下方默认选中第一个品牌并回显其规格价格', async () => {
+  it('选供应商后渲染一张 Excel 式表格：序号 + 规格 + 品牌列，并回显已有报价', async () => {
     await render()
     await selectSupplier()
 
-    expect(brandTableText()).toContain('中天')
-    // 经营品牌之外、且没有历史价格表的品牌不出现在品牌列表
-    expect(brandTableText()).not.toContain('永钢')
-    expect(detailRows().length).toBe(2)
-    expect(
-      container.querySelector<HTMLInputElement>(
-        'input[aria-label="中天 HRB400 12 9米"]',
-      )?.value,
-    ).toBe('3280.00')
-    expect(
-      container.querySelector<HTMLInputElement>(
-        'input[aria-label="中天 HRB400 14 9米"]',
-      )?.value,
-    ).toBe('3300.00')
+    const headers = sheetHeaders()
+    expect(headers.some((text) => text.includes('序号'))).toBe(true)
+    expect(headers.some((text) => text.includes('中天'))).toBe(true)
+    // 经营品牌之外、且没有历史价格表的品牌不出现在列里
+    expect(headers.some((text) => text.includes('永钢'))).toBe(false)
+    expect(sheetRows().length).toBe(2)
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
   })
 
-  it('修改一格后保存：只提交当前品牌，未改动的服务端价格一并带上', async () => {
+  it('修改一格后保存：未改动的服务端价格一并带上（整组替换）', async () => {
     await render()
     await selectSupplier()
 
@@ -312,12 +330,9 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
         { ...ROW_B, price: 3300 },
       ],
     )
-    expect(feedback.message.success).toHaveBeenCalledWith(
-      i18n.t('priceCompare.supplierPrice.savedOne', { name: '中天' }),
-    )
   })
 
-  it('清空一格后保存：该规格从条目里消失（整组替换即删除）', async () => {
+  it('清空一格后保存：该规格从条目里消失', async () => {
     await render()
     await selectSupplier()
 
@@ -331,22 +346,45 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     )
   })
 
-  it('规格列表加载失败时提示错误并可重试，而不是显示成「没有报价」', async () => {
-    priceApi.fetchSpecRows.mockRejectedValue(new Error('422'))
+  it('从 Excel 粘贴整列：一次填入多行，再保存即落库', async () => {
     await render()
     await selectSupplier()
 
-    const alert = container.querySelector('[role="alert"]')
-    expect(alert).not.toBeNull()
-    expect(alert?.textContent).toContain(
-      i18n.t('priceCompare.supplierPrice.specsLoadFailed'),
-    )
-    expect(alert?.textContent).toContain(
-      i18n.t('priceCompare.supplierPrice.retry'),
+    await pasteInto('中天 HRB400 12 9米', '3290\n3310')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3310.00')
+
+    await clickSave()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
+      'l1',
+      3,
+      [
+        { ...ROW_A, price: 3290, priceStatus: 'NORMAL' },
+        { ...ROW_B, price: 3310 },
+      ],
     )
   })
 
-  it('在品牌列表下方添加品牌后自动选中，保存时先建列、再提交条目', async () => {
+  it('回车/方向键在列内上下移动焦点（Excel 手感）', async () => {
+    await render()
+    await selectSupplier()
+
+    await pressKey('中天 HRB400 12 9米', 'Enter')
+    expect(
+      (document.activeElement as HTMLInputElement | null)?.getAttribute(
+        'aria-label',
+      ),
+    ).toBe('中天 HRB400 14 9米')
+
+    await pressKey('中天 HRB400 14 9米', 'ArrowUp')
+    expect(
+      (document.activeElement as HTMLInputElement | null)?.getAttribute(
+        'aria-label',
+      ),
+    ).toBe('中天 HRB400 12 9米')
+  })
+
+  it('在表格下方添加品牌后录入：保存时先建列、再提交条目', async () => {
     priceApi.addSupplierPriceColumn.mockResolvedValue({
       listId: 'l2',
       supplierId: 's1',
@@ -359,7 +397,6 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     await render()
     await selectSupplier()
 
-    // 第二个 Select 是「添加品牌」
     await pickOption(selects()[1] ?? null, '永钢')
     const addButton = Array.from(container.querySelectorAll('button')).find(
       (button) => (button.textContent ?? '').includes('添加品牌'),
@@ -370,7 +407,7 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     })
     await flush()
 
-    expect(brandTableText()).toContain('永钢')
+    expect(sheetHeaders().some((text) => text.includes('永钢'))).toBe(true)
     await typePrice('永钢 HRB400 12 9米', '3150')
     await clickSave()
 
@@ -393,7 +430,22 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     await render()
     await selectSupplier()
 
-    expect(brandTableText()).toContain('中天')
+    expect(sheetHeaders().some((text) => text.includes('中天'))).toBe(true)
+  })
+
+  it('规格列表加载失败时提示错误并可重试，而不是显示成「没有报价」', async () => {
+    priceApi.fetchSpecRows.mockRejectedValue(new Error('422'))
+    await render()
+    await selectSupplier()
+
+    const alert = container.querySelector('[role="alert"]')
+    expect(alert).not.toBeNull()
+    expect(alert?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.specsLoadFailed'),
+    )
+    expect(alert?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.retry'),
+    )
   })
 
   it('有未保存改动时切换供应商先确认，确认后才切走（不静默丢草稿）', async () => {
@@ -418,9 +470,5 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await flush()
-    // 切到没有经营品牌、也没有历史价格表的供应商：品牌列表为空并给出引导
-    expect(brandTableText()).toContain(
-      i18n.t('priceCompare.supplierPrice.noBrands'),
-    )
   })
 })

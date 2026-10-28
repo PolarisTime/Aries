@@ -2803,28 +2803,24 @@ export const enUS = {
       addBrandPlaceholder: 'Select a brand to add',
       refresh: 'Refresh',
       saveAll: 'Save ({{count}})',
-      savedOne: 'Saved "{{name}}"',
+      savedBrands: 'Saved {{count}} brand column(s)',
       saveFailed: 'Failed to save: {{names}}; your changes are kept',
       saveNothing: 'Nothing to save',
       category: 'Category',
       spec: 'Material / spec / length',
-      price: 'Unit price (CNY/t)',
+      rowIndex: 'No.',
       newColumn: 'Not created yet (created on save)',
-      actions: 'Actions',
-      filledSpecsTitle: 'Quoted specs',
-      filledSpecs: '{{count}}',
-      unsavedTag: 'Unsaved',
-      editBrand: 'Edit quotes',
-      editBrandA11y: 'Edit quotes of "{{name}}"',
-      currentBrand: 'Current brand: {{name}}',
+      columnQuotedOn: 'Quoted {{date}}',
       entryHint:
-        'Supplier on top, brands below: pick a brand in the list, then enter its spec prices. Empty = not quoted, 0 is a real price; saving replaces the current brand as a whole',
+        'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',
+      pasteApplied: 'Filled {{count}} cell(s) from the clipboard',
+      pasteDropped:
+        'Filled, and skipped {{count}} cell(s) due to format or out-of-range',
       pickSupplier:
-        'Pick a supplier first, then choose a brand below to enter quotes',
-      pickBrandHint: 'Pick a brand in the list above to enter its quotes',
+        'Pick a supplier first, then enter each brand’s quotes in the grid below',
       noBrands:
         'No brand yet: maintain "brands" in supplier master, or use "Add brand" below',
-      empty: 'No quote under this brand yet',
+      empty: 'No spec rows to enter yet',
       specsLoadFailed:
         'Failed to load the spec list, so quotes cannot be entered (table rows come from material master specs). Use "Retry" to reload.',
       retry: 'Retry',
@@ -2835,6 +2831,7 @@ export const enUS = {
       removeTitle: 'Remove quotes under brand "{{name}}"?',
       removeContent:
         'All quotes of this supplier under this brand will be removed; other brands are untouched',
+      removeColumn: 'Remove this column',
       removeColumnA11y: 'Remove the quote column of brand {{name}}',
       fillFromPriceList: 'Fill from price list',
       fillFromPriceListHint:

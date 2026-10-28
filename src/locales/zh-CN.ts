@@ -2733,8 +2733,8 @@ export const zhCN = {
   },
   priceCompare: {
     /**
-     * 供应商报价表（比价一手价）：供应商为主、品牌在其下方。
-     * 选供应商 → 品牌列表 → 选中品牌的规格价格表；报单比价取价时按 (品牌, 商品) 取最低价。
+     * 供应商报价表（比价一手价）：Excel 式网格，行 = 商品规格，列 = 该供应商的品牌。
+     * 报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
      */
     supplierPrice: {
       brand: '品牌',
@@ -2747,27 +2747,22 @@ export const zhCN = {
       addBrandPlaceholder: '选择要添加的品牌',
       refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
-      savedOne: '已保存「{{name}}」',
+      savedBrands: '已保存 {{count}} 个品牌列',
       saveFailed: '{{names}} 保存失败，改动已保留',
       saveNothing: '没有需要保存的改动',
       category: '类别',
       spec: '材质 / 规格 / 定尺',
-      price: '单价（元/吨）',
+      rowIndex: '序号',
       newColumn: '未建列（保存时创建）',
-      actions: '操作',
-      filledSpecsTitle: '已填规格',
-      filledSpecs: '{{count}} 条',
-      unsavedTag: '未保存',
-      editBrand: '录入报价',
-      editBrandA11y: '录入「{{name}}」的报价',
-      currentBrand: '当前品牌：{{name}}',
+      columnQuotedOn: '报价日期 {{date}}',
       entryHint:
-        '供应商在上、品牌在下方：先在品牌列表选择品牌，再录入该品牌的规格报价；空 = 不报价，0 是真实价格，保存按当前品牌整组替换',
-      pickSupplier: '先选一个供应商，再在下方选择品牌录入报价',
-      pickBrandHint: '先在上方品牌列表选择要录入的品牌',
+        'Excel 式录入：行=规格、列=品牌，直接敲价；↑/↓ 与回车上下移动，Tab 向右；从 Excel 复制的整列/整块可直接粘贴到起始格。空 = 不报价，0 是真实价格；保存按品牌列整组替换',
+      pasteApplied: '已从剪贴板填入 {{count}} 格',
+      pasteDropped: '已填入，另有 {{count}} 格因格式或越界被忽略',
+      pickSupplier: '先选一个供应商，再在下方表格里录入各品牌报价',
       noBrands:
         '该供应商还没有品牌列：可在「供应商资料」维护经营品牌，或用下方「添加品牌」手动添加',
-      empty: '该品牌下还没有报价',
+      empty: '还没有可录入的规格行',
       specsLoadFailed:
         '规格列表加载失败，暂时无法录入报价（商品资料规格是表格的行来源）；可点右侧「重试」',
       retry: '重试',
@@ -2776,6 +2771,7 @@ export const zhCN = {
       discardOk: '放弃并切换',
       removeTitle: '移除品牌「{{name}}」下的报价？',
       removeContent: '该供应商在此品牌下的全部报价将一并移除，其它品牌不受影响',
+      removeColumn: '移除这一列',
       removeColumnA11y: '移除品牌 {{name}} 的报价列',
       fillFromPriceList: '从价格表带价',
       fillFromPriceListHint:

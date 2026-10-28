@@ -1,21 +1,30 @@
 /*
- * 供应商报价表：品牌列表的选中行。
+ * 供应商报价表：Excel 式报价网格。
  *
- * <p>选中态**不能只靠颜色**（WCAG 1.4.1）：品牌名在组件里同时加粗，这里再加一条左侧色条，
- * 色觉障碍用户也能分辨哪一行是「当前正在录入的品牌」。</p>
+ * <p>目标是「看起来像表格软件」：行号列、紧凑单元格、数字右对齐且等宽数字（便于按列纵向扫读）。
+ * 表格边框由 antd 的 `bordered` 提供，这里只补密度与数字排版。</p>
  */
 .supplier-price-page {
   min-width: 0;
 }
 
-.supplier-price-brand-row > td {
-  transition: background-color 120ms ease;
+.supplier-price-sheet .ant-table-tbody > tr > td {
+  padding: 2px 4px;
 }
 
-.supplier-price-brand-row--active > td {
-  background: var(--ant-color-primary-bg, #e6f4ff);
+.supplier-price-sheet .ant-input-number {
+  width: 100%;
 }
 
-.supplier-price-brand-row--active > td:first-child {
-  box-shadow: inset 3px 0 0 var(--ant-color-primary, #1677ff);
+.supplier-price-sheet .ant-input-number-input {
+  height: 30px;
+  padding-inline: 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 行号列：浅色、等宽数字，像表格软件左侧的行号 */
+.supplier-price-row-index {
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-variant-numeric: tabular-nums;
 }
