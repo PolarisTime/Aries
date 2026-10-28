@@ -73,6 +73,72 @@ describe('applyLowestQuotes', () => {
     })
   })
 
+  /**
+   * 与「供应商报价表」的联动口径。
+   *
+   * <p>供应商报价表把「规格行 × 品牌」的价格存成 `类别|材质|规格|定尺`，报单比价这边用
+   * {@link productKeyOf} 生成同一个键；盘螺这类没有定尺的规格，两侧入库值都是 `'-'`
+   * （实测 `mk_supplier_price_item` 与 `mk_quote_item` 的盘螺行 length 均为 `'-'`）。
+   * 这里把该约定钉住：`'-'` 必须命中、`''` 不能命中 —— 否则改一行归一化就会让整类商品静默取不到价。</p>
+   */
+  /**
+   * 类别别名：商品资料用「直条」、报单比价行用「螺纹钢」，两者是同一类别。
+   *
+   * <p>供应商价格表按商品资料存成 `直条`，报单比价的行是 `螺纹钢`；若键里直接拼原始类别，
+   * 螺纹钢这一类永远取不到价（实测：盘螺能带、螺纹钢一条都带不上）。
+   * 键生成统一走 {@link productKeyOf}，它按 {@link canonicalCategory} 归一，两端口径自然一致。</p>
+   */
+  it('直条/螺纹钢是同一类别：价格表按直条存也能填到螺纹钢行', () => {
+    const threadRow: PriceRow = {
+      ...row('t', 'HRB400E', 12),
+      category: '螺纹钢',
+    }
+    const threadSheet = sheet({
+      rows: [threadRow],
+      brands: [{ name: '中天', freight: 0 }],
+    })
+    const result = applyLowestQuotes(threadSheet, [
+      quote('中天', 12, 3420, {
+        category: '直条',
+        material: 'HRB400E',
+        length: '9米',
+      }),
+    ])
+    expect(result.filled).toBe(1)
+    expect(result.inputs['中天:t']?.spot).toBe(3420)
+  })
+
+  it('无定尺商品（盘螺）按入库值 - 匹配：- 命中、空串不命中', () => {
+    const panluoRow: PriceRow = {
+      ...row('p', 'HRB400', 8),
+      category: '盘螺',
+      length: '-',
+    }
+    const panluoSheet = sheet({
+      rows: [panluoRow],
+      brands: [{ name: '中天', freight: 0 }],
+    })
+
+    const hit = applyLowestQuotes(panluoSheet, [
+      quote('中天', 8, 3980, {
+        category: '盘螺',
+        material: 'HRB400',
+        length: '-',
+      }),
+    ])
+    expect(hit.filled).toBe(1)
+    expect(hit.inputs['中天:p']?.spot).toBe(3980)
+
+    const miss = applyLowestQuotes(panluoSheet, [
+      quote('中天', 8, 3980, {
+        category: '盘螺',
+        material: 'HRB400',
+        length: '',
+      }),
+    ])
+    expect(miss.filled).toBe(0)
+  })
+
   it('已有现货价的格子一律不动(不覆盖手工判定的价)', () => {
     const result = applyLowestQuotes(
       sheet({ inputs: { '中天:a': { spot: 3400 } } }),

@@ -81,7 +81,7 @@ export const productKeyOf = (
   row: Pick<PriceRow, 'category' | 'material' | 'spec' | 'length'>,
 ) =>
   row.category && row.material
-    ? `${row.category}|${row.material}|${row.spec}|${row.length}`
+    ? `${canonicalCategory(row.category)}|${row.material}|${row.spec}|${row.length}`
     : ''
 
 export function syncSpotInputs(
