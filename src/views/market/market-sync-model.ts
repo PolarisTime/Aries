@@ -34,10 +34,20 @@ export const isWeekend = (date: string) => {
  */
 export const isTradingDay = (
   date: string,
-  entry?: { periods?: readonly string[]; closed?: boolean },
+  entry?: {
+    periods?: readonly string[]
+    closed?: boolean
+    tradingDay?: boolean | null
+  },
 ) => {
   // 真实数据优先于标记: 后端抓到行情时会撤销休市标记, 万一标记残留也不该压住已有数据
   if (entry?.periods?.length) return true
+  /*
+   * 后端年度交易日日历(法定节假日/调休上班)优先于「周末即休市」的兜底:
+   * 调休上班的周六日(如 2026-10-10)若按周末算成休市, 那天的行情永远补不进来;
+   * 反之节假日落在工作日(如 10-01)也必须算休市, 否则一直显示成"缺失(可同步)"。
+   */
+  if (typeof entry?.tradingDay === 'boolean') return entry.tradingDay
   if (entry?.closed) return false
   return !isWeekend(date)
 }
@@ -76,7 +86,13 @@ export type Filters = {
 
 export type CalendarMap = Record<
   string,
-  { periods: string[]; rows: Record<string, number>; closed: boolean }
+  {
+    periods: string[]
+    rows: Record<string, number>
+    closed: boolean
+    /** 该日是否交易日(来自后端年度节假日/调休日历); 缺省表示无例外记录。 */
+    tradingDay?: boolean | null
+  }
 >
 
 export type QuoteSort = { field?: string; order?: 'asc' | 'desc' }

@@ -1,5 +1,5 @@
 import { ReloadOutlined, SyncOutlined } from '@ant-design/icons'
-import { Button, DatePicker, Select, Tooltip, Typography } from 'antd'
+import { Button, Checkbox, DatePicker, Select, Tooltip, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -141,6 +141,11 @@ export function MarketSyncToolbar({
 
   return (
     <div className="market-sync-actions">
+      {/*
+        两行「标签 + 控件 + 动作」而不是左右两栏：
+        左栏右栏各占半屏时，两侧控件的基线差半行、中间留一条空档，读起来像两个无关的表单。
+        改成同构的两行后，日期/范围控件、按钮竖着对齐，一眼能看出这是"同一页的两种同步方式"。
+      */}
       <section className="market-sync-action is-primary">
         <div className="market-sync-action-head">
           <span className="market-sync-action-title">
@@ -151,42 +156,47 @@ export function MarketSyncToolbar({
           </span>
         </div>
         <div className="market-sync-action-body">
-          <DatePicker
-            size="small"
-            className="market-sync-date"
-            value={singleDate ? dayjs(singleDate) : null}
-            format={DATE_PICKER_FORMATS}
-            allowClear={false}
-            onChange={(value) =>
-              value && onSingleDateChange(value.format('YYYY-MM-DD'))
-            }
-          />
-          {source === 'STEELX' ? null : (
-            <Select
-              size="small"
-              mode="multiple"
-              maxTagCount="responsive"
-              className="market-sync-periods"
-              value={syncPeriods}
-              placeholder={t('marketSync.allPeriods')}
-              allowClear
-              options={PERIODS.map((period) => ({
-                value: period,
-                label: period,
-              }))}
-              onChange={onSyncPeriodsChange}
+          <div className="market-sync-field">
+            <span className="market-sync-field-label">
+              {t('marketSync.dateLabel')}
+            </span>
+            <DatePicker
+              className="market-sync-date"
+              value={singleDate ? dayjs(singleDate) : null}
+              format={DATE_PICKER_FORMATS}
+              allowClear={false}
+              onChange={(value) =>
+                value && onSingleDateChange(value.format('YYYY-MM-DD'))
+              }
             />
+          </div>
+          {source === 'STEELX' ? null : (
+            <div className="market-sync-field">
+              <span className="market-sync-field-label">
+                {t('marketSync.period')}
+              </span>
+              {/*
+                时段只有三个, 用复选框平铺比多选下拉更好:
+                下拉会挤成「上午 × + 2 …」, 看不清到底选了哪几个, 还要点开才知道有哪几个选项。
+              */}
+              <Checkbox.Group
+                className="market-sync-periods"
+                value={syncPeriods}
+                options={[...PERIODS]}
+                onChange={(values) => onSyncPeriodsChange(values)}
+              />
+            </div>
           )}
-          <Button
-            size="small"
-            type="primary"
-            icon={<SyncOutlined />}
-            loading={syncing}
-            onClick={onSync}
-          >
-            {t('marketSync.sync')}
-          </Button>
         </div>
+        <Button
+          className="market-sync-action-submit"
+          type="primary"
+          icon={<SyncOutlined />}
+          loading={syncing}
+          onClick={onSync}
+        >
+          {t('marketSync.sync')}
+        </Button>
       </section>
 
       <section className="market-sync-action">
@@ -199,30 +209,34 @@ export function MarketSyncToolbar({
           </span>
         </div>
         <div className="market-sync-action-body">
-          <Select
-            size="small"
-            className="market-sync-days"
-            value={backfillDays}
-            options={BACKFILL_DAY_OPTIONS.map((days) => ({
-              value: days,
-              label: t('marketSync.daysOption', { days }),
-            }))}
-            onChange={(value) => onBackfillDaysChange(value)}
-          />
-          <Tooltip title={t('marketSync.backfillMissingHint')}>
-            <Button
-              size="small"
-              icon={<SyncOutlined />}
-              loading={backfilling}
-              onClick={onBackfill}
-            >
-              {t('marketSync.backfillMissing')}
-            </Button>
-          </Tooltip>
+          <div className="market-sync-field">
+            <span className="market-sync-field-label">
+              {t('marketSync.rangeLabel')}
+            </span>
+            <Select
+              className="market-sync-days"
+              value={backfillDays}
+              options={BACKFILL_DAY_OPTIONS.map((days) => ({
+                value: days,
+                label: t('marketSync.daysOption', { days }),
+              }))}
+              onChange={(value) => onBackfillDaysChange(value)}
+            />
+          </div>
           <Text type="secondary" className="market-sync-action-footnote">
             {t('marketSync.backfillFootnote')}
           </Text>
         </div>
+        <Tooltip title={t('marketSync.backfillMissingHint')}>
+          <Button
+            className="market-sync-action-submit"
+            icon={<SyncOutlined />}
+            loading={backfilling}
+            onClick={onBackfill}
+          >
+            {t('marketSync.backfillMissing')}
+          </Button>
+        </Tooltip>
       </section>
     </div>
   )

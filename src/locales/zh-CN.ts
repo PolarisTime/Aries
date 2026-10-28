@@ -3425,6 +3425,8 @@ export const zhCN = {
     exported: '已导出 {{rows}} 行',
     windowChip: '每段 {{days}} 天',
     dayHint: '选日期与时段，立即抓取',
+    dateLabel: '日期',
+    rangeLabel: '范围',
     backfillHint: '从今天往前批量补齐',
     daysOption: '{{days}} 天',
     backfillFootnote: '已入库的日期自动跳过',

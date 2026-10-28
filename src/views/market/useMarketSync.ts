@@ -124,6 +124,7 @@ export function useMarketSync() {
         periods: row.periods,
         rows: row.periodRows ?? {},
         closed: Boolean(row.closed),
+        tradingDay: row.tradingDay ?? null,
       }
     return map
   }, [calendarQuery.data])

@@ -3485,6 +3485,8 @@ export const enUS = {
     exported: 'Exported {{rows}} rows',
     windowChip: '{{days}} days per window',
     dayHint: 'Pick a date and periods to fetch now',
+    dateLabel: 'Date',
+    rangeLabel: 'Range',
     backfillHint: 'Fill gaps counting back from today',
     daysOption: '{{days}} days',
     backfillFootnote: 'Dates already stored are skipped',

@@ -203,24 +203,28 @@
 
 /* ── 动作区: 左右两组, 各自的输入与动作在一起 ── */
 .market-sync-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0;
+  display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0;
 }
 
+/*
+ * 一行一组动作: 左侧标题+说明(定宽, 两行对齐) | 中间控件 | 右侧动作按钮。
+ * 用 grid 而不是 flex, 是为了让两行的控件起点严格对齐 —— 这是"像一张表单"的关键。
+ */
 .market-sync-action {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-md);
   background: transparent;
   border: 0;
 }
 
-/* 两段操作之间一条竖线; 主次靠标题颜色与按钮类型区分, 不再用卡片色条 */
 .market-sync-action + .market-sync-action {
-  border-inline-start: 1px solid var(--theme-border-subtle);
+  border-top: 1px solid var(--theme-border-subtle);
 }
 
 .market-sync-action.is-primary .market-sync-action-title {
@@ -229,9 +233,9 @@
 
 .market-sync-action-head {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .market-sync-action-title {
@@ -249,20 +253,44 @@
 .market-sync-action-body {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-md);
   flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* 「日期 / 时段 / 范围」这类字段: 标签在控件左侧, 与控件同基线 */
+.market-sync-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.market-sync-field-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.market-sync-action-submit {
+  justify-self: end;
 }
 
 .market-sync-date {
-  width: 130px;
+  width: 150px;
 }
 
+/* 时段: 三个复选框平铺成一行, 不截断、不点开也能看全 */
 .market-sync-periods {
-  min-width: 160px;
+  display: inline-flex;
+  gap: var(--space-sm);
+}
+
+.market-sync-periods .ant-checkbox-wrapper {
+  margin-inline-start: 0;
 }
 
 .market-sync-days {
-  width: 110px;
+  width: 130px;
 }
 
 .market-sync-action-footnote {

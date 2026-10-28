@@ -132,3 +132,50 @@ describe('latestQuotedSlot 最新行情', () => {
     ).toBeNull()
   })
 })
+
+describe('交易日判定: 年度节假日/调休日历优先于周末兜底', () => {
+  it('法定节假日落在工作日(国庆 10-01) → 休市, 不再显示成缺失', () => {
+    // 2026-10-01 是周四
+    expect(
+      isTradingDay('2026-10-01', { closed: true, tradingDay: false }),
+    ).toBe(false)
+    expect(matrixCellState('2026-10-01', '上午', {})).toBe('missing')
+    expect(
+      matrixCellState('2026-10-01', '上午', {
+        '2026-10-01': {
+          periods: [],
+          rows: {},
+          closed: true,
+          tradingDay: false,
+        },
+      }),
+    ).toBe('off')
+  })
+
+  it('调休上班的周六(2026-10-10) → 交易日, 否则该日行情永远补不进来', () => {
+    expect(isWeekend('2026-10-10')).toBe(true)
+    expect(isTradingDay('2026-10-10', { tradingDay: true })).toBe(true)
+    expect(
+      matrixCellState('2026-10-10', '上午', {
+        '2026-10-10': {
+          periods: [],
+          rows: {},
+          closed: false,
+          tradingDay: true,
+        },
+      }),
+    ).toBe('missing')
+    // 没有例外记录时仍是原来的周末兜底
+    expect(isTradingDay('2026-10-10', undefined)).toBe(false)
+  })
+
+  it('真实行情优先于任何标记', () => {
+    expect(
+      isTradingDay('2026-10-01', {
+        periods: ['上午'],
+        tradingDay: false,
+        closed: true,
+      }),
+    ).toBe(true)
+  })
+})

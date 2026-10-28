@@ -78,6 +78,11 @@ const steelQuoteCalendarSchema = z.array(
      * 法定节假日与调休并不服从「周六周日无行情」的直觉。
      */
     closed: z.boolean().optional(),
+    /**
+     * 该日是否交易日; 来自后端年度交易日例外日历(法定节假日/调休上班)。为空表示无例外记录,
+     * 前端退回「周末即休市」的兜底规则。调休上班的周六日靠这个字段才不会被误判成休市。
+     */
+    tradingDay: z.boolean().nullish(),
   }),
 )
 
