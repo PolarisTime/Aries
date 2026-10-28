@@ -6,9 +6,11 @@ import {
   EyeOutlined,
   MoreOutlined,
   PlusOutlined,
+  RedoOutlined,
   ReloadOutlined,
   SaveOutlined,
   SearchOutlined,
+  UndoOutlined,
 } from '@ant-design/icons'
 import {
   type UseQueryResult,
@@ -49,6 +51,7 @@ import {
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
+import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
 import {
   type BrandDraft,
@@ -64,6 +67,19 @@ import {
   serverCellsOf,
   setDraftPrice,
 } from './supplier-price-list-model'
+import {
+  countOverwrites,
+  type DraftHistory,
+  type DraftMap,
+  diffSavePlans,
+  draftMapDirty,
+  EMPTY_HISTORY,
+  parseDrafts,
+  pushHistory,
+  redoDrafts,
+  serializeDrafts,
+  undoDrafts,
+} from './supplier-quote-edits'
 import {
   applyBrandOrder,
   buildPastePlan,
@@ -96,6 +112,10 @@ const gridQueryKey = (brandName: string) =>
 /** 列显示偏好的本地存储键：按供应商隔离，换供应商各自记各自的顺序与隐藏列。 */
 const brandPrefsKey = (supplierId: string) =>
   `aries:supplier-quote-prefs:${supplierId}`
+
+/** 未保存草稿的本地存储键：刷新/误关页后能恢复，避免一次报价白录。 */
+const draftsKey = (supplierId: string) =>
+  `aries:supplier-quote-drafts:${supplierId}`
 
 /** 单元格标识：品牌 + 行键，用于键盘移动与粘贴定位（用不可见分隔符避免品牌名里的 `:`）。 */
 const cellIdOf = (brandName: string, rowKey: string) =>
@@ -134,6 +154,15 @@ export function SupplierQuotePage() {
   /** 行过滤：规格关键字 + 只看未填（按服务端价格判断，边录边消失会打断录入）。 */
   const [specKeyword, setSpecKeyword] = useState('')
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
+  /** 草稿历史：撤销/重做（Ctrl+Z / Ctrl+Y）。 */
+  const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
+  /** 本页是否从本地恢复过未保存草稿（提示用户确认或放弃）。 */
+  const [restoredDrafts, setRestoredDrafts] = useState(false)
+
+  /** 资源级权限：读/写/删分开，只读用户不该看到可点的保存与移除。 */
+  const canUpdate = useHasPermission('supplier-price-lists:update')
+  const canCreate = useHasPermission('supplier-price-lists:create')
+  const canDelete = useHasPermission('supplier-price-lists:delete')
 
   /** 网格容器与当前聚焦单元格：粘贴从「锚点格」开始铺。 */
   const gridRef = useRef<HTMLDivElement>(null)
@@ -280,24 +309,67 @@ export function SupplierQuotePage() {
     0,
   )
 
+  /**
+   * 所有草稿改动都走这里：先快照当前草稿入历史栈，再写新草稿。
+   * 这样撤销/重做对「逐格输入、粘贴、清空列、保存后清草稿」是一致的。
+   */
+  const applyDrafts = (next: DraftMap) => {
+    setHistory((current) => pushHistory(current, drafts))
+    setDrafts(next)
+  }
+
   const updateCell = (
     brandName: string,
     rowKey: string,
     value: number | null,
   ) => {
-    setDrafts((current) => ({
-      ...current,
-      [brandName]: setDraftPrice(current[brandName], rowKey, value),
-    }))
+    applyDrafts({
+      ...drafts,
+      [brandName]: setDraftPrice(drafts[brandName], rowKey, value),
+    })
   }
 
   const dropDraft = (brandName: string) => {
-    setDrafts((current) => {
-      const next = { ...current }
-      delete next[brandName]
-      return next
-    })
+    const next = { ...drafts }
+    delete next[brandName]
+    applyDrafts(next)
   }
+
+  const undo = () => {
+    const next = undoDrafts(history, drafts)
+    setHistory(next.history)
+    setDrafts(next.drafts)
+  }
+
+  const redo = () => {
+    const next = redoDrafts(history, drafts)
+    setHistory(next.history)
+    setDrafts(next.drafts)
+  }
+
+  // 草稿落本地：刷新/误关页后可恢复；没有改动时清掉键，避免下次误提示
+  useEffect(() => {
+    if (!supplierId) return
+    if (draftMapDirty(drafts)) {
+      window.localStorage.setItem(
+        draftsKey(supplierId),
+        serializeDrafts(drafts),
+      )
+    } else {
+      window.localStorage.removeItem(draftsKey(supplierId))
+    }
+  }, [drafts, supplierId])
+
+  // 未保存时关标签页/刷新先拦一下（浏览器只允许提示，不能自定义文案）
+  useEffect(() => {
+    if (totalDirty === 0) return
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [totalDirty])
 
   const invalidateBrand = async (brandName: string) => {
     await queryClient.invalidateQueries({
@@ -369,28 +441,51 @@ export function SupplierQuotePage() {
     })
     if (!plan.cells.length) return
     event.preventDefault()
-    setDrafts((current) => {
-      const next = { ...current }
+
+    const applyPaste = () => {
+      const next: DraftMap = { ...drafts }
       for (const cell of plan.cells) {
         next[cell.brandName] = setDraftPrice(
-          next[cell.brandName],
+          next[cell.brandName] ?? {},
           cell.rowKey,
           cell.value,
         )
       }
-      return next
-    })
-    if (plan.dropped > 0) {
-      message.warning(
-        t('priceCompare.supplierPrice.pasteDropped', { count: plan.dropped }),
-      )
-    } else {
-      message.success(
-        t('priceCompare.supplierPrice.pasteApplied', {
-          count: plan.cells.length,
-        }),
-      )
+      applyDrafts(next)
+      if (plan.dropped > 0) {
+        message.warning(
+          t('priceCompare.supplierPrice.pasteDropped', { count: plan.dropped }),
+        )
+      } else {
+        message.success(
+          t('priceCompare.supplierPrice.pasteApplied', {
+            count: plan.cells.length,
+          }),
+        )
+      }
     }
+
+    // 多格粘贴先确认：误贴一列会覆盖整列报价，这一步比事后撤销更便宜
+    if (plan.cells.length > 1) {
+      const overwrite = countOverwrites({
+        cells: plan.cells,
+        drafts,
+        serverCellsOfBrand: (brand) =>
+          viewByBrand.get(brand)?.cells ?? new Map(),
+      })
+      modal.confirm({
+        title: t('priceCompare.supplierPrice.pasteConfirmTitle'),
+        content: t('priceCompare.supplierPrice.pasteConfirmContent', {
+          count: plan.cells.length,
+          overwrite,
+        }),
+        okText: t('priceCompare.supplierPrice.pasteConfirmOk'),
+        cancelText: t('common.cancel'),
+        onOk: applyPaste,
+      })
+      return
+    }
+    applyPaste()
   }
 
   /** 构建全部待保存的列（纯函数组装，页面只负责发请求）。 */
@@ -410,38 +505,62 @@ export function SupplierQuotePage() {
     return plans
   }
 
-  const saveAll = async () => {
+  const saveAll = () => {
     if (!supplierId) return
     const plans = buildPlans()
     if (!plans.length) {
       message.info(t('priceCompare.supplierPrice.saveNothing'))
       return
     }
-    setSaving(true)
-    const result = await persistColumnPlans({
-      supplierId,
-      quotedOn: quotedOn.format('YYYY-MM-DD'),
-      plans,
-      onPlanSaved: async (brandName) => {
-        dropDraft(brandName)
-        await invalidateBrand(brandName)
-      },
-      onPlanFailed: async (brandName, createdColumn) => {
-        if (createdColumn) await invalidateBrand(brandName)
-      },
-    }).finally(() => setSaving(false))
 
-    if (result.failed.length) {
-      message.error(
-        t('priceCompare.supplierPrice.saveFailed', {
-          names: result.failed.join('、'),
-        }),
+    const runSave = async () => {
+      setSaving(true)
+      const result = await persistColumnPlans({
+        supplierId,
+        quotedOn: quotedOn.format('YYYY-MM-DD'),
+        plans,
+        onPlanSaved: async (brandName) => {
+          dropDraft(brandName)
+          await invalidateBrand(brandName)
+        },
+        onPlanFailed: async (brandName, createdColumn) => {
+          if (createdColumn) await invalidateBrand(brandName)
+        },
+      }).finally(() => setSaving(false))
+
+      if (result.failed.length) {
+        message.error(
+          t('priceCompare.supplierPrice.saveFailed', {
+            names: result.failed.join('、'),
+          }),
+        )
+        return
+      }
+      setRestoredDrafts(false)
+      message.success(
+        t('priceCompare.supplierPrice.savedBrands', { count: result.saved }),
       )
+    }
+
+    /*
+     * 保存前先给差异，再落库：报价是给采购/报单用的，一次「全部保存」若默默改了几十条，
+     * 事后只能靠审计才发现。这里用「新增/改价/取消」三个数让用户确认。
+     */
+    const diff = diffSavePlans(
+      plans,
+      (brandName) => viewByBrand.get(brandName)?.cells ?? new Map(),
+    )
+    if (diff.added + diff.changed + diff.removed === 0) {
+      message.info(t('priceCompare.supplierPrice.saveNothing'))
       return
     }
-    message.success(
-      t('priceCompare.supplierPrice.savedBrands', { count: result.saved }),
-    )
+    modal.confirm({
+      title: t('priceCompare.supplierPrice.saveDiffTitle'),
+      content: t('priceCompare.supplierPrice.saveDiffContent', diff),
+      okText: t('common.save'),
+      cancelText: t('common.cancel'),
+      onOk: runSave,
+    })
   }
 
   /** 移除品牌列：已有价格表走确认+软删除；只是本次添加的新列则直接撤掉。 */
@@ -477,9 +596,14 @@ export function SupplierQuotePage() {
       const prefs = parseBrandPrefs(
         window.localStorage.getItem(brandPrefsKey(nextSupplierId)),
       )
+      const restored = parseDrafts(
+        window.localStorage.getItem(draftsKey(nextSupplierId)),
+      )
       setSupplierId(nextSupplierId)
       setExtraBrands([])
-      setDrafts({})
+      setDrafts(restored)
+      setHistory(EMPTY_HISTORY)
+      setRestoredDrafts(draftMapDirty(restored))
       setBrandOrder(prefs.order)
       setHiddenBrands(prefs.hidden)
       setSpecKeyword('')
@@ -579,9 +703,10 @@ export function SupplierQuotePage() {
         key: 'clear',
         icon: <ClearOutlined />,
         label: t('priceCompare.supplierPrice.clearColumn'),
+        disabled: !canUpdate,
       },
     ]
-    if (column) {
+    if (column && canDelete) {
       items.push(
         { type: 'divider' },
         {
@@ -712,6 +837,7 @@ export function SupplierQuotePage() {
               aria-label={`${brandName} ${row.material} ${row.spec} ${row.length}`}
               className="supplier-price-sheet-input"
               data-grid-cell={cellIdOf(brandName, rowKey)}
+              disabled={!canUpdate}
               min={0}
               precision={2}
               size="small"
@@ -789,14 +915,34 @@ export function SupplierQuotePage() {
           />
         </Tooltip>
         <Button
-          disabled={totalDirty === 0}
-          icon={<SaveOutlined />}
-          loading={saving}
-          type="primary"
-          onClick={() => void saveAll()}
+          aria-label={t('priceCompare.supplierPrice.undo')}
+          disabled={history.past.length === 0}
+          icon={<UndoOutlined />}
+          title={t('priceCompare.supplierPrice.undo')}
+          onClick={undo}
+        />
+        <Button
+          aria-label={t('priceCompare.supplierPrice.redo')}
+          disabled={history.future.length === 0}
+          icon={<RedoOutlined />}
+          title={t('priceCompare.supplierPrice.redo')}
+          onClick={redo}
+        />
+        <Tooltip
+          title={
+            canUpdate ? undefined : t('priceCompare.supplierPrice.readOnlyHint')
+          }
         >
-          {t('priceCompare.supplierPrice.saveAll', { count: totalDirty })}
-        </Button>
+          <Button
+            disabled={!canUpdate || totalDirty === 0}
+            icon={<SaveOutlined />}
+            loading={saving}
+            type="primary"
+            onClick={() => void saveAll()}
+          >
+            {t('priceCompare.supplierPrice.saveAll', { count: totalDirty })}
+          </Button>
+        </Tooltip>
         <Button
           icon={<ReloadOutlined />}
           loading={gridsLoading}
@@ -813,6 +959,7 @@ export function SupplierQuotePage() {
           <Tooltip title={t('priceCompare.supplierPrice.addBrandHint')}>
             <AutoComplete
               aria-label={t('priceCompare.supplierPrice.addBrand')}
+              disabled={!canCreate}
               options={brandOptions}
               placeholder={t('priceCompare.supplierPrice.addBrandPlaceholder')}
               style={{ width: 180 }}
@@ -821,7 +968,7 @@ export function SupplierQuotePage() {
             />
           </Tooltip>
           <Button
-            disabled={!pendingBrand}
+            disabled={!canCreate || !pendingBrand}
             icon={<PlusOutlined />}
             onClick={addBrand}
           >
@@ -885,6 +1032,34 @@ export function SupplierQuotePage() {
         {t('priceCompare.supplierPrice.entryHint')}
       </Typography.Text>
 
+      {!canUpdate ? (
+        <Alert
+          showIcon
+          title={t('priceCompare.supplierPrice.readOnlyHint')}
+          type="info"
+        />
+      ) : null}
+
+      {restoredDrafts ? (
+        <Alert
+          action={
+            <Button
+              size="small"
+              onClick={() => {
+                setDrafts({})
+                setHistory(EMPTY_HISTORY)
+                setRestoredDrafts(false)
+              }}
+            >
+              {t('priceCompare.supplierPrice.discardDrafts')}
+            </Button>
+          }
+          showIcon
+          title={t('priceCompare.supplierPrice.draftsRestored')}
+          type="warning"
+        />
+      ) : null}
+
       {/*
         规格行来自商品资料：拉取失败时表格会是空的，若不提示就会被误读成「这个品牌还没报价」，
         所以把失败原因显式放到页面上，并提供重试。
@@ -926,6 +1101,17 @@ export function SupplierQuotePage() {
           {/* Excel 式网格：行=规格、列=品牌；粘贴与键盘移动都以当前聚焦格为锚点 */}
           <div
             className="supplier-price-sheet"
+            onKeyDownCapture={(event) => {
+              if (!(event.ctrlKey || event.metaKey)) return
+              const key = event.key.toLowerCase()
+              if (key === 'z') {
+                event.preventDefault()
+                undo()
+              } else if (key === 'y') {
+                event.preventDefault()
+                redo()
+              }
+            }}
             onPaste={handlePaste}
             ref={gridRef}
           >

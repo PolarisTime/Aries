@@ -2826,6 +2826,20 @@ export const enUS = {
         'All entered prices in this column will be marked as not quoted; it takes effect after you click Save.',
       clearColumnOk: 'Clear',
       columnActionsA11y: 'Actions for column "{{name}}"',
+      undo: 'Undo (Ctrl+Z)',
+      redo: 'Redo (Ctrl+Y)',
+      readOnlyHint:
+        'This account has no permission to maintain quotes; the page is read-only',
+      pasteConfirmTitle: 'Paste into the grid?',
+      pasteConfirmContent:
+        'This will fill {{count}} cell(s), overwriting {{overwrite}} existing price(s). Nothing is saved until you click Save.',
+      pasteConfirmOk: 'Paste',
+      saveDiffTitle: 'Confirm save?',
+      saveDiffContent:
+        'Saving {{brands}} brand column(s): {{added}} added, {{changed}} changed, {{removed}} cleared.',
+      draftsRestored:
+        'Unsaved drafts from last time were restored; they go away after save or "Discard drafts"',
+      discardDrafts: 'Discard drafts',
       searchSpecs: 'Search specs (material / size / length)',
       onlyUnpriced: 'Unpriced only',
       columnQuotedOn: 'Quoted {{date}}',

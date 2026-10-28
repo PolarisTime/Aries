@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 
@@ -161,10 +162,12 @@ export async function addSupplierPriceColumn(input: {
   quotedOn?: string
   warehouse?: string
 }): Promise<SupplierPriceColumn> {
+  // 写操作必须带幂等键：后端 V2SupplierPriceListController 类级 @IdempotencyRequired
   const payload = await apiPost(
     ENDPOINTS.SUPPLIER_PRICE_LISTS,
     columnSchema,
     input,
+    withIdempotencyKey(),
   )
   return {
     listId: toId(payload.listId),
@@ -181,7 +184,10 @@ export async function addSupplierPriceColumn(input: {
 export async function removeSupplierPriceColumn(
   listId: EntityId,
 ): Promise<void> {
-  await apiDeleteNoContent(`${ENDPOINTS.SUPPLIER_PRICE_LISTS}/${listId}`)
+  await apiDeleteNoContent(
+    `${ENDPOINTS.SUPPLIER_PRICE_LISTS}/${listId}`,
+    withIdempotencyKey(),
+  )
 }
 
 /** 保存某一列的全部格子（整组替换；`expectedVersion` 冲突时后端返回 409）。 */
@@ -194,6 +200,7 @@ export async function saveSupplierPriceColumnItems(
     `${ENDPOINTS.SUPPLIER_PRICE_LISTS}/${listId}/items`,
     columnSchema,
     { expectedVersion, items },
+    withIdempotencyKey(),
   )
   return {
     listId: toId(payload.listId),

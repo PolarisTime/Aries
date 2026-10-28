@@ -26,6 +26,8 @@ const materialBrands = vi.hoisted(() => ({
   useMaterialBrands: vi.fn(() => ['中天', '永钢']),
 }))
 
+const permissions = vi.hoisted(() => ({ canWrite: true }))
+
 const feedback = vi.hoisted(() => ({
   message: {
     success: vi.fn(),
@@ -40,6 +42,9 @@ vi.mock('@/api/market/supplier-price-lists', () => priceApi)
 vi.mock('@/api/master/supplier-options', () => supplierApi)
 vi.mock('@/hooks/useMaterialBrands', () => materialBrands)
 vi.mock('@/utils/antd-app', () => feedback)
+vi.mock('@/hooks/usePermission', () => ({
+  useHasPermission: () => permissions.canWrite,
+}))
 
 import { SupplierQuotePage } from './SupplierQuotePage'
 
@@ -141,6 +146,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
 
     // 列显示偏好存在 localStorage：用例之间必须隔离，否则上一条隐藏的列会影响下一条
     window.localStorage.clear()
+    permissions.canWrite = true
     priceApi.fetchSpecRows.mockReset().mockResolvedValue([ROW_A, ROW_B])
     priceApi.fetchSupplierPriceGrid
       .mockReset()
@@ -255,6 +261,22 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     })
   }
 
+  /** 自动确认最近一次 modal.confirm（保存/粘贴确认都用它），返回是否发生过确认。 */
+  const confirmLastModal = async () => {
+    const calls = feedback.modal.confirm.mock.calls
+    if (!calls.length) return false
+    const args = calls.at(-1)?.[0] as
+      | { onOk?: () => void | Promise<void> }
+      | undefined
+    feedback.modal.confirm.mockClear()
+    await act(async () => {
+      await args?.onOk?.()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+    return true
+  }
+
   const saveButton = () =>
     container.querySelector<HTMLButtonElement>('button.ant-btn-primary')
 
@@ -265,6 +287,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
+    await confirmLastModal()
     await flush()
   }
 
@@ -281,6 +304,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       input?.dispatchEvent(event)
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
+    await confirmLastModal()
   }
 
   async function pressKey(label: string, key: string) {
@@ -500,13 +524,16 @@ describe('供应商报价表（Excel 式报价网格）', () => {
 
   async function clickButton(text: string) {
     const button = Array.from(container.querySelectorAll('button')).find(
-      (item) => (item.textContent ?? '').includes(text),
+      (item) =>
+        (item.textContent ?? '').includes(text) ||
+        (item.getAttribute('aria-label') ?? '').includes(text),
     )
     expect(button, `未找到按钮 ${text}`).not.toBeNull()
     await act(async () => {
       button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
+    await confirmLastModal()
     await flush()
   }
 
@@ -569,6 +596,118 @@ describe('供应商报价表（Excel 式报价网格）', () => {
         { ...ROW_A, price: 3290, priceStatus: 'NORMAL' },
         { ...ROW_B, price: 3300 },
       ],
+    )
+  })
+
+  it('保存前先弹「新增/改价/取消」差异确认，确认后才发请求', async () => {
+    await render()
+    await selectSupplier()
+    await typePrice('中天 HRB400 12 9米', '3290')
+
+    const button = saveButton()
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(feedback.modal.confirm).toHaveBeenCalledTimes(1)
+    const args = feedback.modal.confirm.mock.calls[0][0] as {
+      title?: unknown
+      content?: unknown
+    }
+    expect(String(args.title)).toContain(
+      i18n.t('priceCompare.supplierPrice.saveDiffTitle'),
+    )
+    expect(String(args.content)).toContain(
+      i18n.t('priceCompare.supplierPrice.saveDiffContent', {
+        brands: 1,
+        added: 0,
+        changed: 1,
+        removed: 0,
+      }),
+    )
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
+
+    await confirmLastModal()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+  })
+
+  it('多格粘贴先确认覆盖格数，确认后才写入草稿', async () => {
+    await render()
+    await selectSupplier()
+    const input = cellInput('中天 HRB400 12 9米')
+    expect(input).not.toBeNull()
+
+    await act(async () => {
+      input?.focus()
+      const event = new Event('paste', { bubbles: true })
+      Object.defineProperty(event, 'clipboardData', {
+        value: { getData: () => '3290\n3310' },
+      })
+      input?.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(feedback.modal.confirm).toHaveBeenCalledTimes(1)
+    const args = feedback.modal.confirm.mock.calls[0][0] as {
+      content?: unknown
+    }
+    expect(String(args.content)).toContain(
+      i18n.t('priceCompare.supplierPrice.pasteConfirmContent', {
+        count: 2,
+        overwrite: 2,
+      }),
+    )
+    // 未确认前不写入
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+
+    await confirmLastModal()
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3310.00')
+  })
+
+  it('撤销/重做（工具栏按钮与 Ctrl+Z / Ctrl+Y）', async () => {
+    await render()
+    await selectSupplier()
+    await typePrice('中天 HRB400 12 9米', '3290')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+
+    await clickButton(i18n.t('priceCompare.supplierPrice.undo'))
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+
+    await clickButton(i18n.t('priceCompare.supplierPrice.redo'))
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+  })
+
+  it('没有维护权限时只读：输入禁用、保存禁用并给出提示', async () => {
+    permissions.canWrite = false
+    await render()
+    await selectSupplier()
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.readOnlyHint'),
+    )
+    expect(cellInput('中天 HRB400 12 9米')?.disabled).toBe(true)
+    expect(saveButton()?.disabled).toBe(true)
+  })
+
+  it('刷新后恢复本地未保存草稿，并可一键放弃', async () => {
+    window.localStorage.setItem(
+      'aries:supplier-quote-drafts:s1',
+      JSON.stringify({ 中天: { '螺纹钢|HRB400|12|9米': 3290 } }),
+    )
+    await render()
+    await selectSupplier()
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.draftsRestored'),
+    )
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+
+    await clickButton(i18n.t('priceCompare.supplierPrice.discardDrafts'))
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+    expect(container.textContent).not.toContain(
+      i18n.t('priceCompare.supplierPrice.draftsRestored'),
     )
   })
 

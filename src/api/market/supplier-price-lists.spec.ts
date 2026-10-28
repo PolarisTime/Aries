@@ -9,7 +9,12 @@ const client = vi.hoisted(() => ({
 
 vi.mock('@/api/core/client', () => client)
 
-import { fetchSpecRows } from './supplier-price-lists'
+import {
+  addSupplierPriceColumn,
+  fetchSpecRows,
+  removeSupplierPriceColumn,
+  saveSupplierPriceColumnItems,
+} from './supplier-price-lists'
 
 /** 后端分页上限：`size 必须在1到200之间`，超过直接 422。 */
 const BACKEND_MAX_PAGE_SIZE = 200
@@ -79,5 +84,42 @@ describe('fetchSpecRows：规格行分页', () => {
     client.apiGet.mockRejectedValueOnce(new Error('size 必须在1到200之间'))
 
     await expect(fetchSpecRows()).rejects.toThrow('size 必须在1到200之间')
+  })
+})
+
+describe('写操作必须带幂等键（后端类级 @IdempotencyRequired）', () => {
+  const headerOf = (config: unknown) =>
+    (config as { headers?: Record<string, string> } | undefined)?.headers?.[
+      'X-Idempotency-Key'
+    ]
+
+  it('建列（POST）带幂等键', async () => {
+    client.apiPost.mockReset().mockResolvedValue({
+      listId: '1',
+      supplierId: '2',
+      version: 0,
+    })
+    await addSupplierPriceColumn({
+      brandName: '中天',
+      supplierId: '2',
+      quotedOn: '2026-10-28',
+    })
+    expect(headerOf(client.apiPost.mock.calls[0]?.[3])).toBeTruthy()
+  })
+
+  it('保存某列（PUT）带幂等键', async () => {
+    client.apiPut.mockReset().mockResolvedValue({
+      listId: '1',
+      supplierId: '2',
+      version: 1,
+    })
+    await saveSupplierPriceColumnItems('1', 0, [])
+    expect(headerOf(client.apiPut.mock.calls[0]?.[3])).toBeTruthy()
+  })
+
+  it('移除某列（DELETE）带幂等键', async () => {
+    client.apiDeleteNoContent.mockReset().mockResolvedValue(undefined)
+    await removeSupplierPriceColumn('1')
+    expect(headerOf(client.apiDeleteNoContent.mock.calls[0]?.[1])).toBeTruthy()
   })
 })

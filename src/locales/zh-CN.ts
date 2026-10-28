@@ -2769,6 +2769,18 @@ export const zhCN = {
         '会把该列已填价格全部标记为未报价，点「保存」后才会真正落库。',
       clearColumnOk: '清空',
       columnActionsA11y: '「{{name}}」列操作',
+      undo: '撤销（Ctrl+Z）',
+      redo: '重做（Ctrl+Y）',
+      readOnlyHint: '当前账号没有报价维护权限，本页为只读',
+      pasteConfirmTitle: '确认粘贴？',
+      pasteConfirmContent:
+        '将填入 {{count}} 格，其中 {{overwrite}} 格会覆盖已有价格；保存后才会落库。',
+      pasteConfirmOk: '粘贴',
+      saveDiffTitle: '确认保存？',
+      saveDiffContent:
+        '将保存 {{brands}} 个品牌列：新增 {{added}} 条、改价 {{changed}} 条、取消 {{removed}} 条。',
+      draftsRestored: '已恢复上次未保存的草稿；保存或点「放弃草稿」后提示消失',
+      discardDrafts: '放弃草稿',
       searchSpecs: '搜索规格（材质/直径/定尺）',
       onlyUnpriced: '只看未填',
       columnQuotedOn: '报价日期 {{date}}',
