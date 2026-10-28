@@ -2768,6 +2768,9 @@ export const zhCN = {
       noBrands:
         '该供应商还没有品牌列：可在「供应商资料」维护经营品牌，或用下方「添加品牌」手动添加',
       empty: '该品牌下还没有报价',
+      specsLoadFailed:
+        '规格列表加载失败，暂时无法录入报价（商品资料规格是表格的行来源）；可点右侧「重试」',
+      retry: '重试',
       discardTitle: '放弃未保存的报价？',
       discardContent: '切换供应商会丢弃当前页尚未保存的报价改动。',
       discardOk: '放弃并切换',

@@ -331,6 +331,21 @@ describe('供应商报价表（供应商为主、品牌在下方）', () => {
     )
   })
 
+  it('规格列表加载失败时提示错误并可重试，而不是显示成「没有报价」', async () => {
+    priceApi.fetchSpecRows.mockRejectedValue(new Error('422'))
+    await render()
+    await selectSupplier()
+
+    const alert = container.querySelector('[role="alert"]')
+    expect(alert).not.toBeNull()
+    expect(alert?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.specsLoadFailed'),
+    )
+    expect(alert?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.retry'),
+    )
+  })
+
   it('在品牌列表下方添加品牌后自动选中，保存时先建列、再提交条目', async () => {
     priceApi.addSupplierPriceColumn.mockResolvedValue({
       listId: 'l2',

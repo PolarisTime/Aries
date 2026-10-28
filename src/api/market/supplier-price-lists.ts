@@ -263,14 +263,18 @@ const specPageSchema = z.looseObject({
  * 拉取商品资料里的全部规格，作为品牌价格表的行。
  *
  * <p>「规格列满」的含义就是：表里把所有规格都列出来，供应商报了哪个就填哪个 —— 因此行不能只
- * 取"已有报价"的那些。用 500/页、最多 20 页（1 万行）兜底，避免数据异常时无限翻页。</p>
+ * 取"已有报价"的那些。</p>
+ *
+ * <p><b>页大小必须 ≤ 200</b>：后端分页校验是「size 必须在 1 到 200 之间」，超过直接 422；
+ * 用 500 时整个查询失败，页面会显示"没有可录入的规格"（实测踩过）。这里按 200/页翻页，
+ * 最多 50 页（1 万行）兜底，避免数据异常时无限翻页。</p>
  */
 export async function fetchSpecRows(
   signal?: AbortSignal,
 ): Promise<SupplierPriceSpecRow[]> {
   const rows: SupplierPriceSpecRow[] = []
-  const size = 500
-  for (let page = 0; page < 20; page += 1) {
+  const size = 200
+  for (let page = 0; page < 50; page += 1) {
     const payload = await apiGet(ENDPOINTS.MATERIALS, specPageSchema, {
       params: { keyword: '', page, size },
       ...(signal ? { signal } : {}),

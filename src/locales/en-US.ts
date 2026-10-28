@@ -2825,6 +2825,9 @@ export const enUS = {
       noBrands:
         'No brand yet: maintain "brands" in supplier master, or use "Add brand" below',
       empty: 'No quote under this brand yet',
+      specsLoadFailed:
+        'Failed to load the spec list, so quotes cannot be entered (table rows come from material master specs). Use "Retry" to reload.',
+      retry: 'Retry',
       discardTitle: 'Discard unsaved quotes?',
       discardContent:
         'Switching supplier discards unsaved quote edits on this page.',

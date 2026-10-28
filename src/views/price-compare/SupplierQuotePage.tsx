@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import {
+  Alert,
   Button,
   DatePicker,
   Empty,
@@ -513,6 +514,23 @@ export function SupplierQuotePage() {
       <Typography.Text type="secondary">
         {t('priceCompare.supplierPrice.entryHint')}
       </Typography.Text>
+
+      {/*
+        规格行来自商品资料：拉取失败时表格会是空的，若不提示就会被误读成「这个品牌还没报价」，
+        所以把失败原因显式放到页面上，并提供重试。
+      */}
+      {specsQuery.isError ? (
+        <Alert
+          action={
+            <Button size="small" onClick={() => void specsQuery.refetch()}>
+              {t('priceCompare.supplierPrice.retry')}
+            </Button>
+          }
+          showIcon
+          title={t('priceCompare.supplierPrice.specsLoadFailed')}
+          type="error"
+        />
+      ) : null}
 
       {!supplierId ? (
         <Empty description={t('priceCompare.supplierPrice.pickSupplier')} />
