@@ -1,3 +1,26 @@
+# [14.5.0](https://github.com/PolarisTime/Aries/compare/v14.4.0...v14.5.0) (2026-10-28)
+
+
+### Bug Fixes
+
+* **ci:** 修复阻断 frontend-ci / frontend-release 的 3 类 lint 报错 ([330ff28](https://github.com/PolarisTime/Aries/commit/330ff2859601596817a10fc76acca5cb4141e85d))
+* **price-compare:** 修复供应商报价表规格行拉取 422 导致无可录入行 ([aa639e2](https://github.com/PolarisTime/Aries/commit/aa639e211c572968b44c5d7668a8843fc1e6555c))
+* **price-compare:** 修复报价网格列宽被拉伸与新增品牌入口不可用 ([cbab7e8](https://github.com/PolarisTime/Aries/commit/cbab7e894129b78f0e72b7b6d40807ef6cb650ad))
+* **version:** 页脚版本查询改为带鉴权，并支持失败后自动恢复 ([a677326](https://github.com/PolarisTime/Aries/commit/a677326b11817c6f0ac6ad747dca12554d987fac))
+
+
+### Features
+
+* **modules:** 「单据流」按钮改为默认隐藏、勾选后出现 ([d7471d1](https://github.com/PolarisTime/Aries/commit/d7471d132134c15ada41b1043ac76db091fb6b3e))
+* **modules:** 行右键菜单补齐批量动作，并在个人设置里新增「右键菜单」配置 ([89f2056](https://github.com/PolarisTime/Aries/commit/89f20568ed1e6a971f4154a29395645720dc55c5))
+* **operation-log:** 操作日志页重做（筛选/概览/趋势/详情抽屉/导出） ([0565603](https://github.com/PolarisTime/Aries/commit/0565603db1ed917ffe3fb67a9d3725d8eeba3e04))
+* **operation-log:** 补充操作日志页与相对时间文案（中/英） ([6065d09](https://github.com/PolarisTime/Aries/commit/6065d09d97e972fa587606c40ac76eb5275b493e))
+* **price-compare:** 供应商报价表支持「规格横置」视图 ([492a0db](https://github.com/PolarisTime/Aries/commit/492a0db56c97d5c8cc81cf82808ab5791b35bcc9))
+* **price-compare:** 供应商报价表支持品牌级「基价加价」 ([8e4af99](https://github.com/PolarisTime/Aries/commit/8e4af996b9c0e5339af2a8077a7b765792be394c))
+* **price-compare:** 报价网格增加列显示、拖拽排序等表格操作 ([bad9aea](https://github.com/PolarisTime/Aries/commit/bad9aeac4efa5bcd4371264a905d23265cd7cfe7))
+* **price-compare:** 报价网格改为「一行规格、格内多定尺」 ([6ea59eb](https://github.com/PolarisTime/Aries/commit/6ea59eb32ed071a73c4ca0b11d812508036d9f30))
+* **price-compare:** 报价表补权限门禁、撤销重做、草稿恢复与保存/粘贴确认 ([5575b75](https://github.com/PolarisTime/Aries/commit/5575b75d4d197ec6488a485af866dcaa7b33a85a))
+
 # [14.4.0](https://github.com/PolarisTime/Aries/compare/v14.3.2...v14.4.0) (2026-10-28)
 
 
