@@ -5,6 +5,21 @@ import { STORAGE_KEYS } from '@/constants/storage'
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type LayoutMode = 'sider' | 'top'
 
+/**
+ * 列表页行右键菜单的显示偏好。
+ *
+ * <p>右键菜单项由各模块的动作定义决定（查看/编辑/审核/附件/删除…），全站无法逐项枚举，
+ * 因此按**语义分组**配置：行动作、批量动作、危险动作。缺省全开，用户不必配置就能用。</p>
+ */
+export interface ContextMenuSettings {
+  /** 行操作（查看 / 编辑 / 审核 / 附件…） */
+  showRowActions?: boolean
+  /** 勾选多行后追加到菜单里的批量操作（批量删除 / 批量审核 / 导出选中…） */
+  showBatchActions?: boolean
+  /** 危险操作（删除等红色项）；关掉后菜单里不再出现破坏性命令 */
+  showDangerActions?: boolean
+}
+
 export interface PersonalSettings {
   fontSize?: number
   layoutMode?: LayoutMode
@@ -16,6 +31,8 @@ export interface PersonalSettings {
    * 用布尔而不是「面包屑样式枚举」：这里只有一个可切换项，多一层枚举没有信息量。
    */
   showBreadcrumb?: boolean
+  /** 行右键菜单的显示偏好；缺省 = 三组全显示。 */
+  contextMenu?: ContextMenuSettings
 }
 
 interface UiSettingsState {
@@ -38,6 +55,27 @@ function normalizeLayoutMode(value: unknown): LayoutMode | undefined {
 
 function normalizeShowBreadcrumb(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined
+}
+
+/** 右键菜单偏好: 只接受布尔值, 缺省字段不写入(表示"用默认值=显示")。 */
+export function normalizeContextMenuSettings(
+  value: unknown,
+): ContextMenuSettings | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  const candidate = value as ContextMenuSettings
+  const normalized: ContextMenuSettings = {}
+  for (const key of [
+    'showRowActions',
+    'showBatchActions',
+    'showDangerActions',
+  ] as const) {
+    if (typeof candidate[key] === 'boolean') {
+      normalized[key] = candidate[key]
+    }
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
 function normalizeThemeMode(value: unknown): ThemeMode | undefined {
@@ -71,6 +109,10 @@ export function normalizePersonalSettings(
   }
   if (showBreadcrumb !== undefined) {
     settings.showBreadcrumb = showBreadcrumb
+  }
+  const contextMenu = normalizeContextMenuSettings(candidate.contextMenu)
+  if (contextMenu) {
+    settings.contextMenu = contextMenu
   }
 
   return Object.keys(settings).length > 0 ? settings : null

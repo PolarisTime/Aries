@@ -1,7 +1,9 @@
 import { Modal, Tabs } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { PersonalSettingsContextMenuTab } from '@/layouts/PersonalSettingsContextMenuTab'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { ContextMenuSettings } from '@/stores/uiSettingsStore'
 import type { ThemeMode } from '@/utils/storage'
 import {
   AccountPasswordPanel,
@@ -21,6 +23,10 @@ interface Props {
   onThemeModeChange: (value: ThemeMode) => void
   showBreadcrumb: boolean
   onShowBreadcrumbChange: (value: boolean) => void
+  contextMenu: Required<ContextMenuSettings>
+  onContextMenuChange: (patch: ContextMenuSettings) => void
+  onResetContextMenu: () => void
+  onSaveContextMenu: () => void
 }
 
 export function PersonalSettingsModal({
@@ -36,6 +42,10 @@ export function PersonalSettingsModal({
   showBreadcrumb,
   onThemeModeChange,
   onShowBreadcrumbChange,
+  contextMenu,
+  onContextMenuChange,
+  onResetContextMenu,
+  onSaveContextMenu,
 }: Props) {
   const { t } = useTranslation()
 
@@ -66,6 +76,18 @@ export function PersonalSettingsModal({
                 onThemeModeChange={onThemeModeChange}
                 onResetDisplay={onResetDisplay}
                 onSaveDisplay={onSaveDisplay}
+              />
+            ),
+          },
+          {
+            key: 'contextMenu',
+            label: t('layouts.settings.contextMenuTab'),
+            children: (
+              <PersonalSettingsContextMenuTab
+                contextMenu={contextMenu}
+                onContextMenuChange={onContextMenuChange}
+                onReset={onResetContextMenu}
+                onSave={onSaveContextMenu}
               />
             ),
           },

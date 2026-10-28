@@ -30,6 +30,7 @@ import {
 } from '@/layouts/usePersonalSettings'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { useAuthStore } from '@/stores/authStore'
+import type { ContextMenuSettings } from '@/stores/uiSettingsStore'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
@@ -103,6 +104,10 @@ type PersonalSettingsHostProps = {
   onSaveDisplay: () => void
   onThemeModeChange: (value: ThemeMode) => void
   onShowBreadcrumbChange: (value: boolean) => void
+  contextMenu: Required<ContextMenuSettings>
+  onContextMenuChange: (patch: ContextMenuSettings) => void
+  onResetContextMenu: () => void
+  onSaveContextMenu: () => void
   open: boolean
   showBreadcrumb: boolean
   themeMode: ThemeMode
@@ -118,6 +123,10 @@ function PersonalSettingsHost({
   onSaveDisplay,
   onThemeModeChange,
   onShowBreadcrumbChange,
+  contextMenu,
+  onContextMenuChange,
+  onResetContextMenu,
+  onSaveContextMenu,
   open,
   showBreadcrumb,
   themeMode,
@@ -136,6 +145,10 @@ function PersonalSettingsHost({
       onThemeModeChange={onThemeModeChange}
       showBreadcrumb={showBreadcrumb}
       onShowBreadcrumbChange={onShowBreadcrumbChange}
+      contextMenu={contextMenu}
+      onContextMenuChange={onContextMenuChange}
+      onResetContextMenu={onResetContextMenu}
+      onSaveContextMenu={onSaveContextMenu}
     />
   )
 }
@@ -172,6 +185,10 @@ export function AppLayout() {
     setThemeMode,
     showBreadcrumb,
     setShowBreadcrumb,
+    contextMenu,
+    patchContextMenu,
+    reset,
+    save,
     open: openPersonalSettings,
     close: closePersonalSettings,
     reset: resetPersonalSettings,
@@ -412,6 +429,10 @@ export function AppLayout() {
         onThemeModeChange={setThemeMode}
         showBreadcrumb={showBreadcrumb}
         onShowBreadcrumbChange={setShowBreadcrumb}
+        contextMenu={contextMenu}
+        onContextMenuChange={patchContextMenu}
+        onResetContextMenu={reset}
+        onSaveContextMenu={save}
       />
 
       <DocumentFlowModal

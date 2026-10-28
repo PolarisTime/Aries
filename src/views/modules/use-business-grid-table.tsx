@@ -25,7 +25,12 @@ import {
   useGridColumns,
 } from '@/hooks/useGridColumns'
 import type { ModuleKey } from '@/module-system/core/module-key'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
+import type {
+  ModuleActionDefinition,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { confirmDanger } from '@/utils/confirm-danger'
 import {
@@ -51,6 +56,14 @@ interface Props {
     ) => Record<string, ModuleRecord>,
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
+  /**
+   * 勾选后才可用的批量动作（批量删除 / 批量审核 / 反审核 / 导出选中…）。
+   *
+   * <p>这些动作原本只出现在「已选择 N 项」横幅里；行右键菜单同样需要它们 ——
+   * 用户选完单后习惯直接右键操作目标行，而不是再回到顶部横幅去找按钮。</p>
+   */
+  batchActions?: ModuleActionDefinition[]
+  onBatchAction?: (action: ModuleActionDefinition) => void
   onOpenDetail?: (record: ModuleRecord) => void
   /** 内联展开的行 key；提供时明细按钮渲染加号/减号并体现展开态。 */
   expandedRowKeys?: string[]
@@ -211,6 +224,8 @@ export function useBusinessGridTable({
   setSelectedRowKeys,
   setSelectedRowMap,
   buildActions,
+  batchActions,
+  onBatchAction,
   onOpenDetail,
   expandedRowKeys,
   detailVariant,
@@ -341,10 +356,43 @@ export function useBusinessGridTable({
    * 用稳定访问器在打开菜单时读取最新值, 依赖保持不变。
    */
   const getSelectedRowKeys = useLatestValueGetter(selectedRowKeys)
+  /*
+   * 右键菜单分组开关（个人设置 → 右键菜单）。缺省全开，所以这里读到 undefined
+   * 与"三项都 true"等价；用布尔默认值收敛一次，避免下面每处都写 `?? true`。
+   */
+  const contextMenuPreferences = useUiSettingsStore(
+    (state) => state.settings?.contextMenu,
+  )
+  const showRowActions = contextMenuPreferences?.showRowActions ?? true
+  const showBatchActions = contextMenuPreferences?.showBatchActions ?? true
+  const showDangerActions = contextMenuPreferences?.showDangerActions ?? true
+
+  /**
+   * 批量动作 → 菜单项。key 与行动作共用 handleClick 的同一套分发：
+   * `onExtraAction` 先查批量动作表，命中即执行（key 前缀不与行动作冲突）。
+   */
+  const batchActionsByKey = useMemo(() => {
+    // 没 key 的动作进不了菜单（菜单项必须有稳定 key 才能分发点击），先过滤掉
+    const entries: Array<[string, ModuleActionDefinition]> = []
+    for (const action of batchActions ?? []) {
+      if (action.key) {
+        entries.push([action.key, action])
+      }
+    }
+    return new Map(entries)
+  }, [batchActions])
   /**
    * 行右键菜单(鼠标右键 / 键盘 Shift+F10 / 触摸长按共用同一份菜单):
    * 行级动作只由 `useModuleRecordActions` 产出的 `ActionItem[]` 提供,
    * 因此菜单项的文案、禁用口径、二次确认只有一处定义。
+   */
+  /*
+   * `rowContextMenus` 的依赖里**有意包含 selectedRowKeys**（早先是刻意排除的）。
+   *
+   * <p>菜单里要不要追加批量动作取决于"哪些行被勾上"，必须随勾选重建；早先为省开销把它
+   * 排除、改在菜单打开时现算，实测出现"勾了 2 行、第二次打开菜单仍是旧 items"的问题。
+   * 一页 30 行、每行十余个动作，一次 O(行×动作) 重建的代价可以忽略，换来可预测性。
+   * 勾选不变时 React 状态里的数组引用不变，因此不会无谓重建。</p>
    */
   const rowContextMenus = useMemo<RowContextMenuMap>(() => {
     const primaryNoKey = config?.primaryNoKey
@@ -358,6 +406,44 @@ export function useBusinessGridTable({
         t('modules.table.rowContextMenuLabel', { title: label }),
       okText: t('common.ok'),
       cancelText: t('common.cancel'),
+      /* 个人设置可以整组关掉行操作 / 危险动作 */
+      includeAction: (action) =>
+        showRowActions && (showDangerActions || !action.danger),
+      /*
+       * 勾选多行后，在菜单末尾追加一段批量动作（与横幅里的是同一批动作定义）。
+       * 只在"右键的这一行本身就在多选里"时追加：右键未选中的行会把选中态切成该行，
+       * 此时批量动作等价于单行动作，追加反而是噪音。
+       */
+      buildExtraItems: (record) => {
+        if (!showBatchActions || !batchActionsByKey.size) return undefined
+        if (selectedRowKeys.length < 2) return undefined
+        if (!selectedRowKeys.includes(String(record.id))) return undefined
+        /* 危险动作开关对批量动作同样生效（例如「批量删除」也是红色项） */
+        const children = [...batchActionsByKey.entries()]
+          .filter(([, action]) => showDangerActions || !action.danger)
+          .map(([key, action]) => ({
+            key,
+            label: action.label,
+            danger: action.danger,
+            disabled: action.disabled,
+          }))
+        if (!children.length) return undefined
+        return [
+          {
+            type: 'group' as const,
+            label: t('modules.table.rowContextMenuBatchGroup', {
+              count: selectedRowKeys.length,
+            }),
+            children,
+          },
+        ]
+      },
+      onExtraAction: (key) => {
+        const action = batchActionsByKey.get(key)
+        if (!action) return false
+        onBatchAction?.(action)
+        return true
+      },
       /*
        * 打开某行菜单(右键 / 长按 / Shift+F10 / 行尾「更多操作」按钮)即同步操作目标,
        * 规则收敛在 resolveRowMenuSelection 一处, 四条入口不再各写一份。
@@ -383,12 +469,18 @@ export function useBusinessGridTable({
         }),
     })
   }, [
+    batchActionsByKey,
     buildActions,
     config?.primaryNoKey,
     getSelectedRowKeys,
+    onBatchAction,
     records,
+    selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
+    showBatchActions,
+    showDangerActions,
+    showRowActions,
     t,
   ])
 

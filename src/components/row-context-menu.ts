@@ -123,6 +123,20 @@ export interface BuildRowContextMenusParams<Row> {
   ariaLabelOf: (label: string) => string
   okText: string
   cancelText: string
+  /**
+   * 行动作过滤（例如用户在个人设置里关掉「删除」这类危险动作）。
+   * 返回 false 的动作不进菜单；过滤后为空则整行不挂菜单。
+   */
+  includeAction?: (action: ActionItem) => boolean
+  /**
+   * 追加菜单项（批量动作等）。返回 `undefined`/空数组表示这一行不追加。
+   * 结果会跟行动作之间插一条分隔线。
+   */
+  buildExtraItems?: (row: Row) => MenuProps['items'] | undefined
+  /**
+   * 追加项的点击分发：返回 true 表示 key 已被处理（不再按行动作查找）。
+   */
+  onExtraAction?: (key: string) => boolean
   /** 菜单打开时回调(用于把选中态同步到该行); 未传时 config 上不带 onOpen */
   onMenuOpen?: (row: Row) => void
   /** 需要二次确认的动作(如删除)统一走这里, 由调用方注入 modal.confirm */
@@ -150,27 +164,53 @@ export function buildRowContextMenus<Row extends { id: unknown }>({
   ariaLabelOf,
   okText,
   cancelText,
+  includeAction,
+  buildExtraItems,
+  onExtraAction,
   onMenuOpen,
   requestConfirm,
 }: BuildRowContextMenusParams<Row>): RowContextMenuMap {
   const menus: RowContextMenuMap = new Map()
   for (const record of records) {
     const actions = buildActions(record).filter(
-      (action) => action.visible !== false,
+      (action) => action.visible !== false && (includeAction?.(action) ?? true),
     )
-    if (!actions.length) continue
+    /*
+     * 行动作可能被个人设置整组关掉；此时若还有"追加项"(批量动作)就仍要挂菜单，
+     * 否则两处都空才跳过 —— 判据只看"这一行最终有没有可点的项"。
+     */
+    if (!actions.length && !buildExtraItems) continue
+    const rowItems: MenuProps['items'] = actions.map((action) => ({
+      key: action.key,
+      label: action.label,
+      icon: action.icon,
+      danger: action.danger,
+      disabled: action.disabled,
+    }))
+    /*
+     * 追加项（批量动作）在这里就拼好，而不是等菜单打开时现算。
+     *
+     * <p>实测过的坑：若把拼接推迟到 `getItems()` 里"打开时现算"，同一行**第二次**打开菜单
+     * 会读到上一份 items —— 菜单弹层与行组件的开合状态可能不同步（关闭走 antd 内部路径），
+     * 行没有按预期重渲染，于是勾选 2 行后菜单里仍然没有批量动作。
+     * 改为构建时拼好 + 调用方把"勾选集签名"作为 useMemo 依赖（见 use-business-grid-table），
+     * 勾选一变整张菜单表重建，行为可预测。</p>
+     */
+    const extra = buildExtraItems?.(record)
+    const items: MenuProps['items'] =
+      extra && extra.length
+        ? rowItems.length
+          ? [...rowItems, { type: 'divider' }, ...extra]
+          : extra
+        : rowItems
     menus.set(String(record.id), {
       ariaLabel: ariaLabelOf(labelOf(record)),
-      items: actions.map((action) => ({
-        key: action.key,
-        label: action.label,
-        icon: action.icon,
-        danger: action.danger,
-        disabled: action.disabled,
-      })),
+      items,
       // 没传 onMenuOpen 就不带 onOpen, 保持既有配置形状不变
       ...(onMenuOpen ? { onOpen: () => onMenuOpen(record) } : {}),
       onClick: ({ key }) => {
+        // 追加项优先分发（key 由调用方保证不冲突）
+        if (onExtraAction?.(String(key))) return
         const action = actions.find((item) => item.key === String(key))
         if (!action || action.disabled) return
         if (action.confirm) {

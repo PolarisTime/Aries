@@ -1131,6 +1131,8 @@ export const zhCN = {
     table: {
       /** 通用业务列表的行右键菜单可访问名 */
       rowContextMenuLabel: '「{{title}}」行操作菜单',
+      /** 右键菜单里追加的批量动作分组标题（勾选多行后才出现） */
+      rowContextMenuBatchGroup: '批量操作（已选 {{count}} 项）',
       /** 表格的可访问名：读屏用它区分同页的主表/明细表（WCAG 1.3.1） */
       gridLabel: '{{title}}列表',
       /** 明细展开列的读屏列名（表头视觉为空，按钮靠 aria-label 表达） */
@@ -2234,6 +2236,16 @@ export const zhCN = {
       breadcrumb: '导航面包屑',
       breadcrumbDesc:
         '在标签页下方显示「业务中心 / 分组 / 页面」的层级路径，可随时关闭',
+      contextMenuTab: '右键菜单',
+      contextMenuRowActions: '行操作',
+      contextMenuRowActionsDesc:
+        '在行右键菜单里显示查看、编辑、审核、附件等单条操作',
+      contextMenuBatchActions: '批量操作',
+      contextMenuBatchActionsDesc:
+        '勾选多行后，在右键菜单里追加批量删除、批量审核、导出选中等操作',
+      contextMenuDangerActions: '危险操作',
+      contextMenuDangerActionsDesc:
+        '显示删除等不可撤销的红色菜单项；关掉后仍可从工具栏进入',
       theme: {
         light: '亮色',
         dark: '暗色',

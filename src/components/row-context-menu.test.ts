@@ -180,6 +180,91 @@ describe('buildRowContextMenus', () => {
  * 行菜单"是否放行原生右键"的判定: 只有**正在编辑**的文本/数字输入控件或下拉
  * 才需要浏览器原生菜单(粘贴/全选); 其余(含已禁用/只读控件、选择框)一律走行菜单。
  */
+/**
+ * 勾选多行后的右键菜单：批量动作与"行动作"共用同一份菜单。
+ *
+ * <p>批量动作只在菜单渲染那一刻才知道勾选集（菜单配置按行缓存、不随勾选重建），
+ * 因此这里锁 `getItems()` 的拼接结果与 `onClick` 的分发。</p>
+ */
+describe('buildRowContextMenus: 批量动作追加', () => {
+  const rowActions = (): ActionItem[] => [
+    { key: 'view', label: '查看明细', onClick: vi.fn() },
+    { key: 'remove', label: '删除', danger: true, onClick: vi.fn() },
+  ]
+
+  it('追加项拼在行动作之后, 中间有分隔线', () => {
+    const menus = buildRowContextMenus({
+      ...params(rowActions),
+      buildExtraItems: () => [{ key: 'bulk_delete', label: '批量删除' }],
+    })
+    expect(menus.get('1')?.items).toEqual([
+      {
+        key: 'view',
+        label: '查看明细',
+        icon: undefined,
+        danger: undefined,
+        disabled: undefined,
+      },
+      {
+        key: 'remove',
+        label: '删除',
+        icon: undefined,
+        danger: true,
+        disabled: undefined,
+      },
+      { type: 'divider' },
+      { key: 'bulk_delete', label: '批量删除' },
+    ])
+  })
+
+  it('没有追加项时只返回行动作(不留孤立分隔线)', () => {
+    const menus = buildRowContextMenus({
+      ...params(rowActions),
+      buildExtraItems: () => undefined,
+    })
+    expect(menus.get('1')?.items).toHaveLength(2)
+  })
+
+  it('includeAction 过滤后为空且无追加项时, 该行不挂菜单', () => {
+    const menus = buildRowContextMenus({
+      ...params(() => [
+        { key: 'remove', label: '删除', danger: true, onClick: vi.fn() },
+      ]),
+      includeAction: (action) => !action.danger,
+    })
+    expect(menus.size).toBe(0)
+  })
+
+  it('行动作被整组关掉时, 只剩追加项(菜单仍可用)', () => {
+    const menus = buildRowContextMenus({
+      ...params(rowActions),
+      includeAction: () => false,
+      buildExtraItems: () => [{ key: 'bulk_delete', label: '批量删除' }],
+    })
+    expect(menus.get('1')?.items).toEqual([
+      { key: 'bulk_delete', label: '批量删除' },
+    ])
+  })
+
+  it('追加项的 key 由 onExtraAction 分发, 行动作仍走原回调', () => {
+    const onExtraAction = vi.fn(() => true)
+    const remove = vi.fn()
+    const menus = buildRowContextMenus({
+      ...params(() => [{ key: 'remove', label: '删除', onClick: remove }]),
+      buildExtraItems: () => [{ key: 'bulk_delete', label: '批量删除' }],
+      onExtraAction,
+    })
+    const onClick = menus.get('1')?.onClick as (info: { key: string }) => void
+    onClick({ key: 'bulk_delete' })
+    expect(onExtraAction).toHaveBeenCalledWith('bulk_delete')
+    expect(remove).not.toHaveBeenCalled()
+
+    onExtraAction.mockReturnValue(false)
+    onClick({ key: 'remove' })
+    expect(remove).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('isEditableFieldTarget 右键目标判定', () => {
   function mount(html: string): HTMLElement {
     const host = document.createElement('div')

@@ -100,6 +100,13 @@
   gap: var(--space-md);
 }
 
+/* 一个"开关 + 说明"的区块：标签行与说明行贴在一起，区块之间由 panel 的 gap 分隔 */
+.personal-setting-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
 .personal-setting-layout-row {
   align-items: flex-start;
 }

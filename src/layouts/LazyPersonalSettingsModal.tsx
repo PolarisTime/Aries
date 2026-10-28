@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { RouteLoadingFallback } from '@/components/RouteLoadingFallback'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { ContextMenuSettings } from '@/stores/uiSettingsStore'
 import type { ThemeMode } from '@/utils/storage'
 
 const PersonalSettingsModal = lazy(() =>
@@ -22,6 +23,10 @@ interface Props {
   onThemeModeChange: (value: ThemeMode) => void
   showBreadcrumb: boolean
   onShowBreadcrumbChange: (value: boolean) => void
+  contextMenu: Required<ContextMenuSettings>
+  onContextMenuChange: (patch: ContextMenuSettings) => void
+  onResetContextMenu: () => void
+  onSaveContextMenu: () => void
 }
 
 export function LazyPersonalSettingsModal(props: Props) {

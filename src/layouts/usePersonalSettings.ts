@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { isBreadcrumbVisible } from '@/layouts/breadcrumb'
 import {
+  type ContextMenuSettings,
   type PersonalSettings,
   type ThemeMode,
   useUiSettingsStore,
@@ -19,6 +20,28 @@ export function getPersonalControlHeights(fontSize: number) {
     controlHeight: Math.max(28, fontSize + 18),
     controlHeightSM: Math.max(24, fontSize + 10),
     controlHeightLG: Math.max(40, fontSize + 26),
+  }
+}
+
+/** 右键菜单偏好缺省全开：用户不配置也能用到完整菜单。 */
+export const DEFAULT_CONTEXT_MENU_SETTINGS: Required<ContextMenuSettings> = {
+  showRowActions: true,
+  showBatchActions: true,
+  showDangerActions: true,
+}
+
+function normalizeContextMenu(
+  settings: ContextMenuSettings | undefined,
+): Required<ContextMenuSettings> {
+  return {
+    showRowActions:
+      settings?.showRowActions ?? DEFAULT_CONTEXT_MENU_SETTINGS.showRowActions,
+    showBatchActions:
+      settings?.showBatchActions ??
+      DEFAULT_CONTEXT_MENU_SETTINGS.showBatchActions,
+    showDangerActions:
+      settings?.showDangerActions ??
+      DEFAULT_CONTEXT_MENU_SETTINGS.showDangerActions,
   }
 }
 
@@ -41,6 +64,7 @@ function normalizePersonalSettings(
         : ('system' as ThemeMode),
     // 缺省显示: 与布局读取面包屑开关时共用同一个判定函数
     showBreadcrumb: isBreadcrumbVisible(settings),
+    contextMenu: normalizeContextMenu(settings?.contextMenu),
   }
 }
 
@@ -99,6 +123,17 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedShowBreadcrumb, setAppliedShowBreadcrumb] = useState(
     initialSettings.showBreadcrumb,
   )
+  const [contextMenu, setContextMenu] = useState<Required<ContextMenuSettings>>(
+    initialSettings.contextMenu,
+  )
+  const [appliedContextMenu, setAppliedContextMenu] = useState<
+    Required<ContextMenuSettings>
+  >(initialSettings.contextMenu)
+
+  /** 三个分组开关都是"整组替换一个字段"，用一个补丁函数避免三份 setState。 */
+  const patchContextMenu = (patch: ContextMenuSettings) => {
+    setContextMenu((previous) => ({ ...previous, ...patch }))
+  }
 
   const applySettings = (settings: PersonalSettings | null | undefined) => {
     const normalized = normalizePersonalSettings(
@@ -114,6 +149,8 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedThemeMode(normalized.themeMode)
     setShowBreadcrumb(normalized.showBreadcrumb)
     setAppliedShowBreadcrumb(normalized.showBreadcrumb)
+    setContextMenu(normalized.contextMenu)
+    setAppliedContextMenu(normalized.contextMenu)
   }
 
   const load = () => {
@@ -133,6 +170,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setLayoutMode(appliedLayoutMode)
     setThemeMode(appliedThemeMode)
     setShowBreadcrumb(appliedShowBreadcrumb)
+    setContextMenu(appliedContextMenu)
     setVisible(false)
   }
 
@@ -141,6 +179,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setLayoutMode(defaultLayoutMode)
     setThemeMode('system')
     setShowBreadcrumb(true)
+    setContextMenu(DEFAULT_CONTEXT_MENU_SETTINGS)
   }
 
   const save = () => {
@@ -148,7 +187,14 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
     setAppliedShowBreadcrumb(showBreadcrumb)
-    persistSettings({ fontSize, layoutMode, themeMode, showBreadcrumb })
+    setAppliedContextMenu(contextMenu)
+    persistSettings({
+      fontSize,
+      layoutMode,
+      themeMode,
+      showBreadcrumb,
+      contextMenu,
+    })
     window.dispatchEvent(new CustomEvent('personal-settings-changed'))
     setVisible(false)
   }
@@ -167,6 +213,9 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     showBreadcrumb,
     appliedShowBreadcrumb,
     setShowBreadcrumb,
+    contextMenu,
+    appliedContextMenu,
+    patchContextMenu,
     open,
     close,
     reset,

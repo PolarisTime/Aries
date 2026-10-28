@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useBusinessGridData } from '@/hooks/useBusinessGridData'
+import { isSelectionScopedToolbarAction } from '@/hooks/useModuleToolbarActions'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig } from '@/types/module-page'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
@@ -45,6 +47,13 @@ export function useBusinessGridPage({
     openAttachment: editor.overlays.openAttachment,
     recordDetailAction: editor.recordDetailAction,
   })
+  /*
+   * 勾选后才可用的批量动作：横幅与行右键菜单共用这一份（判据同样只有一处）。
+   */
+  const selectionScopedActions = useMemo(
+    () => actions.visibleToolbarActions.filter(isSelectionScopedToolbarAction),
+    [actions.visibleToolbarActions],
+  )
   const {
     columnOrder,
     columnVisibleKeys,
@@ -64,6 +73,15 @@ export function useBusinessGridPage({
     setSelectedRowKeys: data.setSelectedRowKeys,
     setSelectedRowMap: data.setSelectedRowMap,
     buildActions: actions.buildActions,
+    /*
+     * 行右键菜单里的批量动作与「已选择 N 项」横幅共用同一份动作定义与同一个处理函数：
+     * 筛选口径（isSelectionScopedToolbarAction）也只有一处，避免"横幅里有、右键里没有"。
+     */
+    batchActions: selectionScopedActions,
+    // handleAction 是 async；菜单点击不需要等待结果，显式丢弃 Promise 满足 void 契约
+    onBatchAction: (action) => {
+      void actions.handleAction(action)
+    },
     onOpenDetail: editor.openGridDetail,
     expandedRowKeys: editor.shouldUseInlineDetail
       ? editor.inlineExpandedRowKeys

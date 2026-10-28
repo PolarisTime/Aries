@@ -1155,6 +1155,8 @@ export const enUS = {
     table: {
       /** Accessible name of the row context menu in list grids */
       rowContextMenuLabel: 'Actions for the "{{title}}" row',
+      /** Group title for batch actions appended to the row context menu (multi-select only) */
+      rowContextMenuBatchGroup: 'Batch actions ({{count}} selected)',
       noData: 'No data',
       sequence: 'No.',
       /* Header of the trailing row-actions column: the visible entry to the row menu.
@@ -2275,6 +2277,16 @@ export const enUS = {
       breadcrumb: 'Navigation breadcrumb',
       breadcrumbDesc:
         'Show the section path (Business / Group / Page) under the tab bar; turn off anytime',
+      contextMenuTab: 'Context menu',
+      contextMenuRowActions: 'Row actions',
+      contextMenuRowActionsDesc:
+        'Show single-row actions (view, edit, audit, attachments) in the row context menu',
+      contextMenuBatchActions: 'Batch actions',
+      contextMenuBatchActionsDesc:
+        'Append batch delete, batch audit and export-selected to the context menu when several rows are selected',
+      contextMenuDangerActions: 'Destructive actions',
+      contextMenuDangerActionsDesc:
+        'Show destructive red items such as delete; when off they stay reachable from the toolbar',
       theme: {
         light: 'Light',
         dark: 'Dark',

@@ -102,6 +102,50 @@ describe('面包屑显示开关', () => {
     expect(current().appliedShowBreadcrumb).toBe(true)
   })
 
+  it('右键菜单偏好: 缺省全开, 关掉后保存才落库, 取消回滚', () => {
+    render()
+    expect(current().contextMenu).toEqual({
+      showRowActions: true,
+      showBatchActions: true,
+      showDangerActions: true,
+    })
+
+    act(() => current().patchContextMenu({ showDangerActions: false }))
+    // 保存前不落库（与其他显示设置同一语义）
+    expect(useUiSettingsStore.getState().settings?.contextMenu).toBeUndefined()
+
+    act(() => current().save())
+    // 保存写入的是"三项的完整快照"，不是增量：读取侧不必再补默认值
+    expect(useUiSettingsStore.getState().settings?.contextMenu).toEqual({
+      showRowActions: true,
+      showBatchActions: true,
+      showDangerActions: false,
+    })
+    expect(current().appliedContextMenu.showDangerActions).toBe(false)
+
+    // 重新加载（模拟重开应用）仍读到关闭
+    render()
+    expect(current().contextMenu.showDangerActions).toBe(false)
+    expect(current().contextMenu.showRowActions).toBe(true)
+
+    // 草稿改动被取消后回滚到已保存值
+    act(() => current().patchContextMenu({ showRowActions: false }))
+    act(() => current().close())
+    expect(current().contextMenu.showRowActions).toBe(true)
+  })
+
+  it('恢复默认把右键菜单三组都打开', () => {
+    render()
+    act(() => current().patchContextMenu({ showBatchActions: false }))
+    act(() => current().save())
+    act(() => current().reset())
+    expect(current().contextMenu).toEqual({
+      showRowActions: true,
+      showBatchActions: true,
+      showDangerActions: true,
+    })
+  })
+
   it('恢复默认把面包屑改回显示', () => {
     render()
     act(() => api?.setShowBreadcrumb(false))

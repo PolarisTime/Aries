@@ -12,7 +12,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { ActionItem } from '@/components/TableActions'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleActionDefinition,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import {
   resolveRowMenuSelection,
   useBusinessGridTable,
@@ -146,6 +150,8 @@ describe('useBusinessGridTable 列头/行菜单联动', () => {
   let harnessProps: {
     selectedRowKeys: string[]
     buildActions: (record: ModuleRecord) => ActionItem[]
+    batchActions?: ModuleActionDefinition[]
+    onBatchAction?: (action: ModuleActionDefinition) => void
   } = {
     selectedRowKeys: [],
     buildActions: (record) => [
@@ -172,6 +178,8 @@ describe('useBusinessGridTable 列头/行菜单联动', () => {
         ) => Record<string, ModuleRecord>,
       ) => void,
       buildActions: harnessProps.buildActions,
+      batchActions: harnessProps.batchActions,
+      onBatchAction: harnessProps.onBatchAction,
     })
     return null
   }
@@ -185,20 +193,45 @@ describe('useBusinessGridTable 列头/行菜单联动', () => {
         onClick: vi.fn(),
       },
     ],
+    batchActions?: ModuleActionDefinition[],
+    onBatchAction?: (action: ModuleActionDefinition) => void,
   ): TableResult {
-    harnessProps = { selectedRowKeys, buildActions }
+    harnessProps = {
+      selectedRowKeys,
+      buildActions,
+      batchActions,
+      onBatchAction,
+    }
     act(() => {
       root.render(createElement(Harness))
     })
     return captured as unknown as TableResult
   }
 
-  it('仅选择集变化时不重建行菜单查找表(避免 O(行×动作) 重建)', () => {
+  it('勾选变化时重建行菜单表(菜单里的批量动作跟随勾选)', () => {
     const stableBuildActions = (record: ModuleRecord): ActionItem[] => [
       { key: 'edit', label: `编辑${String(record.id)}`, onClick: () => {} },
     ]
     const first = renderTable([], stableBuildActions)
-    const second = renderTable(['r1'], stableBuildActions)
+    const second = renderTable(['r1', 'r2'], stableBuildActions)
+
+    /*
+     * 有意重建：菜单里要不要追加批量动作取决于"哪些行被勾上"。
+     * 早先为了省开销把勾选集排除在依赖外、靠打开菜单时现算，实测出现"勾了 2 行、
+     * 第二次打开菜单仍是旧 items"的问题（菜单弹层与行组件开合状态可能不同步）。
+     * 现在以勾选签名作依赖，一页 30 行 × 十余个动作的重建代价可以忽略。
+     */
+    expect(second.rowContextMenus).not.toBe(first.rowContextMenus)
+  })
+
+  it('勾选内容不变时重渲染不重建行菜单表', () => {
+    const stableBuildActions = (record: ModuleRecord): ActionItem[] => [
+      { key: 'edit', label: `编辑${String(record.id)}`, onClick: () => {} },
+    ]
+    // 同一份数组引用 = 真实场景里"勾选没变、组件因别的原因重渲染"
+    const sameSelection = ['r1', 'r2']
+    const first = renderTable(sameSelection, stableBuildActions)
+    const second = renderTable(sameSelection, stableBuildActions)
 
     expect(second.rowContextMenus).toBe(first.rowContextMenus)
   })
@@ -300,6 +333,104 @@ describe('useBusinessGridTable 列头/行菜单联动', () => {
     expect(table.rowSelection?.getCheckboxProps?.({ id: 'r9' })).toEqual({
       'aria-label': '选择此行：r9',
     })
+  })
+})
+
+describe('行右键菜单里的批量动作', () => {
+  let container: HTMLDivElement
+  let root: Root
+  let captured: TableResult | null = null
+
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh-CN')
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  const BATCH_ACTIONS: ModuleActionDefinition[] = [
+    { key: 'bulk_delete', label: '批量删除', danger: true },
+    { key: 'export_selected', label: '导出选中 2 条' },
+  ]
+
+  const renderWithBatch = (
+    selectedRowKeys: string[],
+    options: { batchActions?: ModuleActionDefinition[] } = {},
+  ) => {
+    const buildActions = (record: ModuleRecord): ActionItem[] => [
+      { key: 'edit', label: `编辑${String(record.id)}`, onClick: vi.fn() },
+    ]
+    const onBatchAction = vi.fn()
+    function Harness() {
+      captured = useBusinessGridTable({
+        moduleKey: CONFIG.key,
+        config: CONFIG,
+        records: RECORDS,
+        selectedRowKeys,
+        setSelectedRowKeys: vi.fn(),
+        setSelectedRowMap: vi.fn(),
+        buildActions,
+        batchActions: options.batchActions ?? BATCH_ACTIONS,
+        onBatchAction,
+      })
+      return null
+    }
+    act(() => root.render(createElement(Harness)))
+    return { table: captured as unknown as TableResult, onBatchAction }
+  }
+
+  it('勾选多行时, 右键选中行会追加批量动作分组', () => {
+    const { table } = renderWithBatch([
+      String(RECORDS[0].id),
+      String(RECORDS[1].id),
+    ])
+    const items = table.rowContextMenus.get(String(RECORDS[0].id))?.items
+    expect(JSON.stringify(items)).toContain('批量删除')
+    expect(JSON.stringify(items)).toContain('导出选中 2 条')
+    // 分组标题带勾选数量，说明作用于哪一批
+    expect(JSON.stringify(items)).toContain('已选 2 项')
+  })
+
+  it('只勾选一行时不追加批量动作(与单行动作等价, 只会是噪音)', () => {
+    const { table } = renderWithBatch([String(RECORDS[0].id)])
+    const items = table.rowContextMenus.get(String(RECORDS[0].id))?.items
+    expect(JSON.stringify(items)).not.toContain('批量删除')
+  })
+
+  it('右键的行不在勾选集里时不追加(菜单会把选中集切到该行)', () => {
+    const { table } = renderWithBatch([String(RECORDS[1].id), 'other-row'])
+    const items = table.rowContextMenus.get(String(RECORDS[0].id))?.items
+    expect(JSON.stringify(items)).not.toContain('批量删除')
+  })
+
+  it('没有批量动作时不追加, 也不留孤立分隔线', () => {
+    const { table } = renderWithBatch(
+      [String(RECORDS[0].id), String(RECORDS[1].id)],
+      { batchActions: [] },
+    )
+    const items = table.rowContextMenus.get(String(RECORDS[0].id))?.items
+    expect(items).toHaveLength(1)
+  })
+
+  it('点击批量项走 onBatchAction, 不会落到行动作上', () => {
+    const { table, onBatchAction } = renderWithBatch([
+      String(RECORDS[0].id),
+      String(RECORDS[1].id),
+    ])
+    const onClick = table.rowContextMenus.get(String(RECORDS[0].id))
+      ?.onClick as (info: { key: string }) => void
+    onClick({ key: 'bulk_delete' })
+    expect(onBatchAction).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'bulk_delete' }),
+    )
   })
 })
 
