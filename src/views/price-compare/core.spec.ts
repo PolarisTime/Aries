@@ -335,9 +335,7 @@ describe('canonicalCategory / dataKeyOf', () => {
         basePrice: 3300,
       },
     ])
-    expect(patch['2026-09-11']['上午']['中天']['螺纹钢|HRB400E']['14']).toBe(
-      3300,
-    )
+    expect(patch['2026-09-11'].上午.中天['螺纹钢|HRB400E']['14']).toBe(3300)
   })
 })
 
@@ -365,9 +363,7 @@ describe('matchesToData / mergePriceData', () => {
         basePrice: null,
       },
     ])
-    expect(patch['2026-09-11']['上午']['万泰']['螺纹钢|HRB400E']['12']).toBe(
-      3290,
-    )
+    expect(patch['2026-09-11'].上午.万泰['螺纹钢|HRB400E']['12']).toBe(3290)
   })
 
   it('深合并保留既有日期数据', () => {
@@ -387,10 +383,8 @@ describe('matchesToData / mergePriceData', () => {
       },
     ])
     const merged = mergePriceData(base, patch)
-    expect(merged['2026-09-10']['上午']['中天']['螺纹钢|HRB400']['12']).toBe(
-      3200,
-    )
-    expect(merged['2026-09-11']['上午']['万泰']['盘螺|HRB400']['8']).toBe(3500)
+    expect(merged['2026-09-10'].上午.中天['螺纹钢|HRB400']['12']).toBe(3200)
+    expect(merged['2026-09-11'].上午.万泰['盘螺|HRB400']['8']).toBe(3500)
   })
 })
 

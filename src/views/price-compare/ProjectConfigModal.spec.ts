@@ -79,7 +79,7 @@ describe('ProjectConfigModal 品种默认值随数据派生', () => {
       brandOptions,
       varietiesWithNewCategory,
     )
-    expect(draft.categoryMap['中天']).toEqual(['螺纹钢', 'H型钢'])
+    expect(draft.categoryMap.中天).toEqual(['螺纹钢', 'H型钢'])
   })
 
   it('数据新增类别后, 该品牌全选保存时仍归一为「不下发」(全量即缺省)', () => {

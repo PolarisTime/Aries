@@ -123,7 +123,15 @@ export function OperationLogPage() {
     }
   }
 
-  const now = useMemo(() => new Date(), [logsQuery.dataUpdatedAt])
+  /*
+   * 「相对时间」需要一个"现在"的时间点。以 dataUpdatedAt 作为依赖是为了在每次重新取数后重算,
+   * 但 Date.now() 本身变化不会被 useState/useMemo 感知 —— 因此把依赖真正读进来(取 max 无副作用:
+   * dataUpdatedAt 永远 <= 当前时间), 既保持原意, 也满足 useExhaustiveDependencies。
+   */
+  const now = useMemo(
+    () => new Date(Math.max(Date.now(), logsQuery.dataUpdatedAt || 0)),
+    [logsQuery.dataUpdatedAt],
+  )
 
   const columns: ColumnsType<OperationLogRecord> = [
     {

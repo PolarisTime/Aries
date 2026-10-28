@@ -520,7 +520,6 @@
  * (每个日期×时段都不同, 否则读屏会听到一串无法区分的「缺」)。
  */
 .market-sync-cell {
-  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -2,7 +2,7 @@ import { SearchOutlined } from '@ant-design/icons'
 import { Button, Card, DatePicker, Flex, Input, Segmented, Select } from 'antd'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import type { OperationLogFilters } from '@/api/system/operation-logs'
+import type { OperationLogFilters as OperationLogFilterValues } from '@/api/system/operation-logs'
 import {
   operationLogModuleOptions,
   resolveOperationLogActionOptions,
@@ -11,10 +11,10 @@ import {
 export type QuickFilterKey = 'all' | 'failed' | 'today' | 'mine'
 
 type Props = {
-  value: OperationLogFilters
+  value: OperationLogFilterValues
   quick: QuickFilterKey
   loading?: boolean
-  onChange: (patch: Partial<OperationLogFilters>) => void
+  onChange: (patch: Partial<OperationLogFilterValues>) => void
   onQuickChange: (quick: QuickFilterKey) => void
   onSearch: () => void
   onReset: () => void
