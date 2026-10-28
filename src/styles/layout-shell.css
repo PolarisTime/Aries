@@ -3148,8 +3148,13 @@
  * 不在 `.app-shell` 子树里（实测 price-compare 的 Tour「下一步」按钮就漏在外面）。
  * 用全局选择器可避免"树内修好、portal 漏掉"。
  */
-.ant-btn-color-primary.ant-btn-variant-solid,
-.ant-btn-primary {
+/*
+ * 必须排除 `:disabled`：禁用态要留给 antd 的 `bg-container-disabled`(4% 灰) + 25% 文字。
+ * 不加 `:not(:disabled)` 会把它盖成"实心蓝底 + 灰字"，看起来像可点的主按钮（实测踩到：
+ * 供应商报价页「保存（0 处）」明明禁用却一片深蓝，文字还发灰）。
+ */
+.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled),
+.ant-btn-primary:not(:disabled) {
   background: var(--btn-primary-bg, #0958d9);
   border-color: var(--btn-primary-bg, #0958d9);
 }
@@ -3167,8 +3172,8 @@
 }
 
 /* 危险主按钮保持 antd 的 error 语义色，不要被上面的 primary 覆盖 */
-.app-shell .ant-btn-color-dangerous.ant-btn-variant-solid,
-.ant-btn-dangerous.ant-btn-primary {
+.app-shell .ant-btn-color-dangerous.ant-btn-variant-solid:not(:disabled),
+.ant-btn-dangerous.ant-btn-primary:not(:disabled) {
   background: var(--ant-color-error, #ff4d4f);
   border-color: var(--ant-color-error, #ff4d4f);
 }
