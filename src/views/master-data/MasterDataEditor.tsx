@@ -128,7 +128,10 @@ export function MasterDataEditor({
             ) : null}
             <Row gutter={[16, 8]}>
               {group.fields.map((field) => (
-                <Col key={field.key} span={field.fullRow ? 24 : 6}>
+                <Col
+                  key={field.key}
+                  span={field.span ?? (field.fullRow ? 24 : 6)}
+                >
                   <Form.Item
                     name={field.key}
                     label={field.label}

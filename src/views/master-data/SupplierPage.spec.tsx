@@ -285,6 +285,29 @@ describe('buildSupplierSpec 经营品牌', () => {
     expect(field?.options).toEqual(brandOptions)
   })
 
+  it('基本信息按四列栅格排布：城市在状态前，经营品牌三列宽（不再整行撑满）', () => {
+    const basic = spec.formFields.filter(
+      (field) => field.section === i18n.t('modules.formSections.basic'),
+    )
+    expect(basic.map((field) => field.key)).toEqual([
+      'supplierCode',
+      'supplierName',
+      'shortName',
+      'city',
+      'status',
+      'brands',
+    ])
+    const brands = basic.find((field) => field.key === 'brands')
+    expect(brands?.span).toBe(18)
+    expect(brands?.fullRow).toBeUndefined()
+    // 其余普通字段保持四等分（span 缺省 = 6），保证各区块竖边对齐
+    expect(
+      basic
+        .filter((field) => field.key !== 'brands')
+        .every((field) => field.span === undefined),
+    ).toBe(true)
+  })
+
   it('保存 payload 携带 brands, 缺省为空数组', () => {
     expect(
       spec.buildRecord({ supplierName: '沙钢', brands: ['中天'] }, null).brands,

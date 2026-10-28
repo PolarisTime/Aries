@@ -45,6 +45,13 @@ export interface MasterFormFieldSpec {
   placeholder?: string
   maxLength?: number
   fullRow?: boolean
+  /**
+   * 栅格宽度（24 栅格，默认 6 = 四等分）。
+   *
+   * <p>只有「内容需要更宽」的字段才放大：经营品牌这类多选标签用 18（三列），
+   * 长文本用 24。普通输入保持 6，保证各区块字段竖边对齐。</p>
+   */
+  span?: 6 | 12 | 18 | 24
   defaultValue?: unknown
   min?: number
   precision?: number

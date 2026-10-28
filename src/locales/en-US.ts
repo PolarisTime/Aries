@@ -1992,6 +1992,7 @@ export const enUS = {
         colSupplierName: 'Supplier Name',
         colShortName: 'Supplier Short Name',
         colBrands: 'Operating Brands',
+        brandsPlaceholder: 'Select operating brands (multiple)',
         colContactName: 'Contact',
         colContactPhone: 'Phone',
         colCity: 'City',

@@ -149,15 +149,8 @@ export function buildSupplierSpec(
         type: 'input',
       },
       {
-        section: t('modules.formSections.basic'),
-        key: 'brands',
-        label: t('modules.pages.supplier.colBrands'),
-        type: 'select',
-        multiple: true,
-        fullRow: true,
-        options: brandOptions,
-      },
-      {
+        // 基本信息按四列栅格排：编码/名称/简称/城市 一行四个，
+        // 状态 + 经营品牌（三列宽，多选标签需要位置）占第二行，右侧不留空列。
         section: t('modules.formSections.basic'),
         key: 'city',
         label: t('modules.pages.supplier.colCity'),
@@ -170,6 +163,16 @@ export function buildSupplierSpec(
         type: 'select',
         defaultValue: STATUS.NORMAL,
         options: enabledStatusOptions,
+      },
+      {
+        section: t('modules.formSections.basic'),
+        key: 'brands',
+        label: t('modules.pages.supplier.colBrands'),
+        type: 'select',
+        multiple: true,
+        span: 18,
+        placeholder: t('modules.pages.supplier.brandsPlaceholder'),
+        options: brandOptions,
       },
       {
         section: t('modules.formSections.contact'),

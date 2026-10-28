@@ -1956,6 +1956,7 @@ export const zhCN = {
         colSupplierName: '供应商名称',
         colShortName: '供应商简称',
         colBrands: '经营品牌',
+        brandsPlaceholder: '选择经营品牌（可多选）',
         colContactName: '联系人',
         colContactPhone: '联系电话',
         colCity: '城市',
