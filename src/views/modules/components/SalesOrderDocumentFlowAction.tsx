@@ -231,6 +231,13 @@ export function SalesOrderDocumentFlowAction({ selectedRows }: Props) {
 
   const documentNo = String(target?.orderNo ?? '')
   const canOpen = selectedRows.length === 1
+
+  /*
+   * 无勾选时不渲染（放在所有 hook 之后, 保持 hook 调用顺序稳定）。
+   * 单据流只对"某一张单"有意义: 常驻一个灰按钮既占工具栏, 又要用户点了才知道要先选行。
+   * 勾选多行时仍保留按钮但置灰说明"只能选一条", 避免选择过程中按钮忽隐忽现。
+   */
+  if (selectedRows.length === 0) return null
   const disabledReason = canOpen
     ? undefined
     : t('modules.pages.salesOrder.documentFlow.selectSingle')

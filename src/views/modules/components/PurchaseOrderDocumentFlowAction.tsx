@@ -16,6 +16,10 @@ interface Props {
 /**
  * 采购单据通用工具栏入口：选中恰好 1 行时打开通用单据流弹窗。
  * 点击流向图节点复用 AppLayout 的「点节点跳详情」语义。
+ *
+ * <p><b>没勾选时不渲染</b>：单据流是"针对某一张单"的动作，工具栏常驻一个灰着的按钮只会占位置、
+ * 让用户点了才知道要先选行（实测反馈"按钮太多、看不出哪些现在能用"）。现在默认不出现，
+ * 勾选后才出现；勾了多行时保留按钮但置灰并说明"只能选一条"，避免选择过程中按钮忽隐忽现。</p>
  */
 export function PurchaseOrderDocumentFlowAction({ selectedRows }: Props) {
   const { t } = useTranslation()
@@ -50,6 +54,9 @@ export function PurchaseOrderDocumentFlowAction({ selectedRows }: Props) {
     })
     setOpen(false)
   }
+
+  // 无勾选时不渲染（放在所有 hook 之后, 保持 hook 调用顺序稳定）
+  if (selectedRows.length === 0) return null
 
   const disabledReason = canOpen
     ? undefined
