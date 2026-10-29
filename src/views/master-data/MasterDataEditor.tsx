@@ -13,6 +13,7 @@ import {
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
+import { MasterTableTransferField } from './MasterTableTransferField'
 import type { MasterFormFieldSpec, MasterFormValues } from './master-data-types'
 
 interface Props {
@@ -28,6 +29,16 @@ interface Props {
 }
 
 function renderFieldControl(field: MasterFormFieldSpec): ReactNode {
+  if (field.type === 'transfer') {
+    return (
+      <MasterTableTransferField
+        columnTitle={field.label}
+        disabled={field.disabled}
+        options={field.options ?? []}
+        placeholder={field.placeholder}
+      />
+    )
+  }
   if (field.type === 'select') {
     return (
       <Select
@@ -115,7 +126,9 @@ export function MasterDataEditor({
         {groups.map((group) => (
           <section
             /* 未分区时不能用数组下标做 key：字段增删会让 React 错配 DOM 状态 */
-            key={group.section ?? group.fields.map((field) => field.key).join('|')}
+            key={
+              group.section ?? group.fields.map((field) => field.key).join('|')
+            }
             className="master-form-section"
           >
             {group.section ? (

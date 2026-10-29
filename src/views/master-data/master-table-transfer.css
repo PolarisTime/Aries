@@ -1,0 +1,41 @@
+/* 经营品牌：表单里是标签盒 + 选择按钮，点开二级弹窗做表格穿梭选择 */
+.master-transfer-field-box {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--app-control-height, 32px);
+  padding: 2px 8px;
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: var(--ant-border-radius, 6px);
+  background: var(--ant-color-bg-container, #fff);
+  cursor: pointer;
+  text-align: start;
+}
+
+.master-transfer-field-box:hover:not(:disabled) {
+  border-color: var(--ant-color-primary-hover, #4096ff);
+}
+
+.master-transfer-field-box:disabled {
+  cursor: not-allowed;
+  background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 4%));
+}
+
+.master-transfer-field-tag {
+  margin-inline-end: 0;
+}
+
+/* 穿梭框左右两栏等宽，表格贴满列表 */
+.master-transfer .ant-transfer-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.master-transfer .ant-transfer-list-body {
+  overflow: auto;
+}
+
+.master-transfer .ant-table {
+  font-size: 12px;
+}

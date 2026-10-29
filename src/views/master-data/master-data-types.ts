@@ -37,7 +37,8 @@ export interface MasterDetailFieldSpec {
 export interface MasterFormFieldSpec {
   key: string
   label: string
-  type: 'input' | 'select' | 'number' | 'textarea'
+  /** `transfer` = 多选但需要浏览/搜索的场景（经营品牌）：表单显示标签，弹窗用表格穿梭框。 */
+  type: 'input' | 'select' | 'number' | 'textarea' | 'transfer'
   /** 多选: 仅 select 生效, 用于经营品牌等标签式多值字段。 */
   multiple?: boolean
   required?: boolean

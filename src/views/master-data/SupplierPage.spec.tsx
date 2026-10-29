@@ -234,7 +234,9 @@ describe('SupplierPage 专属页面', () => {
     await flushAsync()
 
     expect(document.body.textContent).toContain('经营品牌')
-    expect(document.body.querySelector('.ant-select-multiple')).not.toBeNull()
+    // 经营品牌改为「标签 + 选择品牌按钮」的表格穿梭框入口
+    expect(document.body.querySelector('.master-transfer-field')).not.toBeNull()
+    expect(document.body.textContent).toContain('选择品牌')
   })
 
   it('编辑抽屉回填经营品牌并在保存时携带 brands', async () => {
@@ -278,10 +280,9 @@ describe('buildSupplierSpec 经营品牌', () => {
   ]
   const spec = buildSupplierSpec(i18n.getFixedT('zh-CN'), brandOptions)
 
-  it('表单提供经营品牌多选字段', () => {
+  it('表单提供经营品牌穿梭框字段（不再用多选下拉）', () => {
     const field = spec.formFields.find((item) => item.key === 'brands')
-    expect(field?.type).toBe('select')
-    expect(field?.multiple).toBe(true)
+    expect(field?.type).toBe('transfer')
     expect(field?.options).toEqual(brandOptions)
   })
 
