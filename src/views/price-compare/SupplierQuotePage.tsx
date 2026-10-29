@@ -58,7 +58,6 @@ import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
-import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 import { SupplierBasePriceRuleModal } from './SupplierBasePriceRuleModal'
 import {
   type BrandDraft,
@@ -89,27 +88,27 @@ import {
 import {
   applyBrandOrder,
   buildBasePriceColumnPrices,
-  buildSlots,
-  buildSpecPastePlan,
+  buildCategoryMatrices,
+  buildMatrixPastePlan,
+  buildMatrixSlots,
+  type CategoryMatrix,
   columnLengths as columnLengthsOf,
   filterSpecRows,
   groupSpecRows,
-  hasNoLength,
+  matrixCellKeyOf,
   parseBrandPrefs,
   parseClipboardGrid,
-  placementLengthOf,
   reorderBrands,
   roundPrice,
   rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
   SHEET_FIXED_COLUMNS,
   type SheetFixedColumnKey,
+  type SheetMatrixRow,
   type SpecRow,
   serializeBrandPrefs,
   sheetWidthOf,
   shiftBrand,
-  specRowGroupSpans,
-  specRowKey,
   toggleHidden,
 } from './supplier-quote-grid'
 import { persistColumnPlans } from './supplier-quote-save'
@@ -336,26 +335,6 @@ export function SupplierQuotePage() {
     [hiddenBrandSet, orderedViews],
   )
 
-  /*
-   * 表体高度按容器**实测**给，不再写死 560：写死时窗口再高也只露 19 行，下方留一大片空白，
-   * 被误当成"表格没显示完整"。量取逻辑与业务网格共用同一个 hook（`--module-table-body-height`）。
-   *
-   * <p>`ready` 必须精确等于「品牌成列视图的外壳此刻挂载了」——外壳前面还有 4 个分支
-   * （未选供应商 / 没有经营品牌 / 列全隐藏 / 规格横置），只看 `supplierId` 会在外壳还没出现时
-   * 算一次，之后不再重算，表体永远停在最小高度（实测 120px）。</p>
-   */
-  const {
-    shellRef,
-    scrollY: sheetBodyScrollY,
-    shellStyle: sheetShellStyle,
-  } = useTableBodyScrollY({
-    ready:
-      Boolean(supplierId) &&
-      orderedViews.length > 0 &&
-      displayViews.length > 0 &&
-      viewMode === 'brands',
-  })
-
   const visibleBrands = useMemo(
     () => displayViews.map((view) => view.brandName),
     [displayViews],
@@ -375,12 +354,6 @@ export function SupplierQuotePage() {
     () => columnLengths.filter((length) => !hiddenLengthSet.has(length)),
     [columnLengths, hiddenLengthSet],
   )
-  /** 粘贴格位 = 品牌 × 定尺，与界面 DOM 顺序一致。 */
-  const slots = useMemo(
-    () => buildSlots(visibleBrands, visibleLengths),
-    [visibleBrands, visibleLengths],
-  )
-
   /** 基价加价规则：按品牌读取（数量 = 品牌列数，很小，一次取回供录入时联动）。 */
   const rulesQueries = useQueries({
     queries: orderedViews.map((view) => ({
@@ -403,19 +376,57 @@ export function SupplierQuotePage() {
     return map
   }, [orderedViews, rulesQueries])
 
-  /** 表格里显示的规格行：规格搜索 + 「只看未填」（该规格所有定尺都没价才算未填）。 */
-  const displayRows = useMemo(() => {
-    const filtered = filterSpecRows(specRows, specKeyword)
-    if (!onlyUnpriced) return filtered
-    return filtered.filter((specRow) =>
-      displayViews.every((view) =>
-        specRow.lengths.every(
-          (length) =>
-            view.cells.get(rowKeyOfCell(specRow, length)) === undefined,
+  /** 规格搜索过滤后的规格行（材质抽到表头后，品牌成列视图再重组成矩阵行）。 */
+  const displayRows = useMemo(
+    () => filterSpecRows(specRows, specKeyword),
+    [specKeyword, specRows],
+  )
+
+  /*
+   * 品牌成列视图：**按品类拆成多张表**，每张表 行 = 规格，列 = 品牌 → 材质 → 定尺。
+   *
+   * <p>材质抽到表头后，同一规格在多个材质下各有一格，横向即可对比各材质报价；
+   * 按品类拆是因为盘螺（卷材，无定尺）和直条（9米/12米）的定尺完全不同，
+   * 混在一张表里会让一半的格子恒为「—」。</p>
+   *
+   * <p>「只看未填」按**整行**判断：该规格在所有材质、所有品牌下都没价才算未填。</p>
+   */
+  const categoryMatrices = useMemo(() => {
+    const matrices = buildCategoryMatrices(displayRows, hiddenLengths)
+    if (!onlyUnpriced) return matrices
+    return matrices
+      .map((matrix) => ({
+        ...matrix,
+        rows: matrix.rows.filter((row) =>
+          [...row.cells.values()].every((rowKey) =>
+            displayViews.every((view) => view.cells.get(rowKey) === undefined),
+          ),
         ),
-      ),
+      }))
+      .filter((matrix) => matrix.rows.length > 0)
+  }, [displayRows, displayViews, hiddenLengths, onlyUnpriced])
+
+  /** 每张表的表宽：可见固定列 + 品牌数 × 该品类（材质 × 定尺）列数 × 单列宽。 */
+  const matrixWidthOf = (matrix: CategoryMatrix) => {
+    const slotCount = matrix.materials.reduce(
+      (total, material) =>
+        total + (matrix.lengthsOf.get(material)?.length ?? 0),
+      0,
     )
-  }, [displayViews, onlyUnpriced, specKeyword, specRows])
+    return sheetWidthOf(
+      displayViews.length,
+      Math.max(slotCount, 1),
+      hiddenFixedColumns,
+    )
+  }
+
+  /** 粘贴格位（某品牌某品类内）：品牌 × 材质 × 定尺，与界面 DOM 顺序一致。 */
+  const slotsOf = (matrix: CategoryMatrix) =>
+    buildMatrixSlots(
+      displayViews.map((view) => view.brandName),
+      matrix.materials,
+      (material) => matrix.lengthsOf.get(material) ?? [],
+    )
 
   // 列顺序/隐藏集合落本地：这是个人视图偏好，不写服务端（换人不该被别人改了列顺序）
   useEffect(() => {
@@ -544,25 +555,6 @@ export function SupplierQuotePage() {
    * ↑/↓ 在**同一品牌同一定尺**的规格行之间移动（跳过没有该定尺的规格行）。
    * 越界返回 false，让浏览器处理（末行 Tab 可离开表格）。
    */
-  const moveFocus = (
-    brandName: string,
-    length: string,
-    rowKey: string,
-    deltaRow: number,
-  ) => {
-    const rowIndex = displayRows.findIndex((row) => specRowKey(row) === rowKey)
-    if (rowIndex < 0) return false
-    for (
-      let index = rowIndex + deltaRow;
-      index >= 0 && index < displayRows.length;
-      index += deltaRow
-    ) {
-      const target = displayRows[index]
-      if (!target || !target.lengths.includes(length)) continue
-      return focusCell(brandName, rowKeyOfCell(target, length))
-    }
-    return false
-  }
 
   /**
    * 粘贴落草稿：多格先确认（误贴会覆盖整列），单格直接写。
@@ -622,23 +614,28 @@ export function SupplierQuotePage() {
     if (!anchor) return
     const text = event.clipboardData.getData('text/plain')
     if (!text) return
-    const matrix = parseClipboardGrid(text)
-    // 锚点行键 = 类别|材质|规格|定尺；拆出规格行与当前定尺，再定位到「品牌×定尺」格位
+    const grid = parseClipboardGrid(text)
+    // 锚点行键 = 类别|材质|规格|定尺；先按品类找到那张表，再定位行（类别+规格）与列（品牌+材质+定尺）
     const [category, material, spec, length] = anchor.rowKey.split('|')
     if (length === undefined) return
-    const targetSpecKey = `${category}|${material}|${spec}`
+    const target = categoryMatrices.find((item) => item.category === category)
+    if (!target) return
+    const slots = slotsOf(target)
     const startSlotIndex = slots.findIndex(
-      (slot) => slot.brandName === anchor.brandName && slot.length === length,
+      (slot) =>
+        slot.brandName === anchor.brandName &&
+        slot.material === material &&
+        slot.length === length,
     )
-    const startRowIndex = displayRows.findIndex(
-      (row) => specRowKey(row) === targetSpecKey,
+    const startRowIndex = target.rows.findIndex(
+      (row) => row.key === `${category}|${spec}`,
     )
-    if (!matrix.length || startSlotIndex < 0 || startRowIndex < 0) return
+    if (!grid.length || startSlotIndex < 0 || startRowIndex < 0) return
 
-    const plan = buildSpecPastePlan({
-      matrix,
+    const plan = buildMatrixPastePlan({
+      matrix: grid,
       slots,
-      specRows: displayRows,
+      rows: target.rows,
       startSlotIndex,
       startRowIndex,
     })
@@ -1132,11 +1129,6 @@ export function SupplierQuotePage() {
   }))
 
   /** 固定总宽：列宽之和。表格不随容器拉伸，窄屏时横向滚动（Excel 的观感）。 */
-  const sheetWidth = sheetWidthOf(
-    displayViews.length,
-    Math.max(visibleLengths.length, 1),
-    hiddenFixedColumns,
-  )
 
   /** Ctrl+Z / Ctrl+Y 撤销重做：两个视图共用。 */
   const guardUndoRedo = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1150,12 +1142,6 @@ export function SupplierQuotePage() {
       redo()
     }
   }
-
-  /** 分组合并跨度：按当前可见行算，过滤（搜索/只看未填）后仍按新的连续段合并。 */
-  const groupSpans = useMemo(
-    () => specRowGroupSpans(displayRows),
-    [displayRows],
-  )
 
   /**
    * 基价模式：每个品牌「基价那一格 + 其余规格由基价算出」。
@@ -1231,24 +1217,26 @@ export function SupplierQuotePage() {
   }
 
   /**
-   * 品牌列里「某个定尺」的一格。
+   * 品牌列的「材质 × 定尺」一格。
    *
-   * <p>报价单原先是一格里塞 9米/12米 两行输入；现在每个定尺各占一列，
-   * 所以行里没有该定尺时这一格显示「—」而不是硬塞一个可编辑框（否则会写出不存在的规格组合）。</p>
+   * <p>行 = 类别 + 规格，列 = 品牌 → 材质 → 定尺。某个材质没有这个规格/定尺时显示「—」，
+   * 不给可编辑空框（否则会写出不存在的商品组合）。</p>
    */
-  const renderLengthCell = (
-    view: BrandColumnView,
-    row: SpecRow,
+  /**
+   * 品牌列的「材质 × 定尺」一格（某品类表内）。
+   *
+   * <p>行 = 规格，列 = 品牌 → 材质 → 定尺。某个材质没有这个规格/定尺时显示「—」，
+   * 不给可编辑空框（否则会写出不存在的商品组合）。</p>
+   */
+  const renderMatrixCell = (
+    matrix: CategoryMatrix,
+    brandName: string,
+    material: string,
     length: string,
-    merged = false,
+    row: SheetMatrixRow,
   ) => {
-    /*
-     * 无定尺行（盘螺一类）的价格只有一个格：它横跨所有定尺列，落格定尺用自己的占位值（''/'-'）。
-     * 这样既不会多出一个「不分定尺」列，也不会把盘螺价格写到 9米 的键上。
-     */
-    const noLength = hasNoLength(row)
-    if (noLength && merged) return null
-    if (!noLength && !row.lengths.includes(length)) {
+    const rowKey = row.cells.get(matrixCellKeyOf(material, length))
+    if (!rowKey) {
       return (
         <span
           className="supplier-price-cell-na"
@@ -1259,31 +1247,32 @@ export function SupplierQuotePage() {
         </span>
       )
     }
-    const brandName = view.brandName
-    const effectiveLength = noLength ? placementLengthOf(row) : length
-    const cellKey = rowKeyOfCell(row, effectiveLength)
-    const serverPrice = view.cells.get(cellKey)?.price
+    const view = viewByBrand.get(brandName)
+    const serverPrice = view?.cells.get(rowKey)?.price
     const baseColumn = baseColumns.get(brandName)
-    const isBaseCell = baseColumn?.baseCellKey === cellKey
-    const computed = baseColumn?.prices.get(cellKey)
-    // 基价模式：除基价格子外的已配置规格一律显示算出来的价，且只读
-    const baseComputed = priceMode === 'base' && isBaseCell !== true
-    const value =
-      baseComputed && computed !== undefined
-        ? computed
-        : draftPrice(drafts[brandName], cellKey, serverPrice)
     const brandBase = rulesByBrand.get(brandName)?.base
     const isBase =
       Boolean(brandBase) &&
       `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
-        `${row.material}|${row.spec}|${length}`
-    const label = `${brandName} ${row.material} ${row.spec} ${effectiveLength}`
+        `${material}|${row.spec}|${length}`
+    const computed = baseColumn?.prices.get(rowKey)
+    const baseComputed =
+      priceMode === 'base' && !isBase && computed !== undefined
+    const value = baseComputed
+      ? computed
+      : draftPrice(drafts[brandName], rowKey, serverPrice)
+    const label = `${brandName} ${material} ${row.spec} ${length}`
+    const rowPosition = matrix.rows.findIndex((item) => item.key === row.key)
     return (
       <Flex
         align="center"
         className={`supplier-price-cell-wrap${
           isBase ? ' supplier-price-base-cell' : ''
-        }${baseComputed && computed !== undefined ? ' supplier-price-computed-cell' : ''}`}
+        }${
+          baseComputed && computed !== undefined
+            ? ' supplier-price-computed-cell'
+            : ''
+        }`}
         gap={2}
         title={
           isBase
@@ -1295,7 +1284,6 @@ export function SupplierQuotePage() {
               : undefined
         }
       >
-        {/* 基价只靠左色条会读屏不可知，这里补一句隐藏文案 */}
         {isBase ? (
           <span className="aries-sr-only">
             {t('priceCompare.supplierPrice.baseBadge')}
@@ -1305,7 +1293,7 @@ export function SupplierQuotePage() {
           aria-label={label}
           className="supplier-price-sheet-input"
           controls={false}
-          data-grid-cell={cellIdOf(brandName, cellKey)}
+          data-grid-cell={cellIdOf(brandName, rowKey)}
           disabled={!canUpdate || (baseComputed && computed !== undefined)}
           min={0}
           size="small"
@@ -1314,33 +1302,36 @@ export function SupplierQuotePage() {
           onChange={(next) => {
             const parsed = typeof next === 'number' ? roundPrice(next) : null
             // 基价模式下改基价格子 = 按「基价 + 加价」重算整列；手填模式只改这一格
-            if (priceMode === 'base' && isBaseCell) {
-              applyBasePrice(brandName, cellKey, parsed)
+            if (priceMode === 'base' && isBase) {
+              applyBasePrice(brandName, rowKey, parsed)
               return
             }
-            updateCell(brandName, cellKey, parsed)
+            updateCell(brandName, rowKey, parsed)
           }}
           onFocus={() => {
-            anchorRef.current = { brandName, rowKey: cellKey }
+            anchorRef.current = { brandName, rowKey }
           }}
           onKeyDown={(event) => {
             /*
-             * 移动成功时必须 stopPropagation：keydown 还会冒泡到 InputNumber 外层容器，
-             * 内部处理会把 ↑/↓ 当成「步进」把价格 +1/-1（实测 3300 → 3301）。
+             * 上下移动 = 换规格（同一材质、同一定尺）；移动成功必须 stopPropagation，
+             * 否则 InputNumber 会把 ↑/↓ 当成步进把价格 +1/-1（实测 3300 → 3301）。
              */
-            const move = (deltaRow: number) => {
-              if (
-                !moveFocus(
-                  brandName,
-                  effectiveLength,
-                  specRowKey(row),
-                  deltaRow,
-                )
+            const move = (delta: number) => {
+              for (
+                let index = rowPosition + delta;
+                index >= 0 && index < matrix.rows.length;
+                index += delta
               ) {
+                const target = matrix.rows[index]
+                const targetKey = target.cells.get(
+                  matrixCellKeyOf(material, length),
+                )
+                if (!targetKey) continue
+                if (!focusCell(brandName, targetKey)) return
+                event.preventDefault()
+                event.stopPropagation()
                 return
               }
-              event.preventDefault()
-              event.stopPropagation()
             }
             if (event.key === 'ArrowDown' || event.key === 'Enter') {
               move(1)
@@ -1359,13 +1350,9 @@ export function SupplierQuotePage() {
     )
   }
 
-  /*
-   * 固定列可以逐个隐藏（列设置里配）。定义顺序与 `SHEET_FIXED_COLUMNS` 一一对应，
-   * 隐藏只过滤不重排 —— 否则「规格」跑到「序号」前面，扫读会乱。
-   */
   const fixedColumnDefs: Record<
     SheetFixedColumnKey,
-    ColumnsType<SpecRow>[number]
+    ColumnsType<SheetMatrixRow>[number]
   > = {
     index: {
       title: t('priceCompare.supplierPrice.rowIndex'),
@@ -1377,42 +1364,6 @@ export function SupplierQuotePage() {
         <span className="supplier-price-row-index">{index + 1}</span>
       ),
     },
-    category: {
-      /*
-       * 类别/材质按「连续同类」合并成一个格：盘螺整块一组，螺纹再按材质分 HRB400 / HRB400E 两组，
-       * 组与组之间画一条更粗的分隔线（行序由 groupSpecRows 负责）。
-       */
-      title: t('priceCompare.supplierPrice.category'),
-      dataIndex: 'category',
-      width: SHEET_COLUMN_WIDTH.category,
-      align: 'center',
-      fixed: 'left',
-      onCell: (row) => {
-        const span = groupSpans.get(specRowKey(row))
-        return {
-          rowSpan: span?.categorySpan ?? 1,
-          className: span?.groupStart
-            ? 'supplier-price-group-start'
-            : undefined,
-        }
-      },
-    },
-    material: {
-      title: t('priceCompare.supplierPrice.material'),
-      dataIndex: 'material',
-      width: SHEET_COLUMN_WIDTH.material,
-      align: 'center',
-      fixed: 'left',
-      onCell: (row) => {
-        const span = groupSpans.get(specRowKey(row))
-        return {
-          rowSpan: span?.materialSpan ?? 1,
-          className: span?.groupStart
-            ? 'supplier-price-group-start'
-            : undefined,
-        }
-      },
-    },
     spec: {
       title: t('priceCompare.supplierPrice.specNo'),
       key: 'spec',
@@ -1423,104 +1374,84 @@ export function SupplierQuotePage() {
     },
   }
 
-  const sheetColumns: ColumnsType<SpecRow> = [
+  /** 品牌列头（可拖动排序 + 未保存数 + 未配置基价提示；报价日期归单据头，不在这里重复）。 */
+  const brandTitleOf = (brandName: string) => {
+    const column = viewByBrand.get(brandName)?.column
+    const dirty = draftCount(drafts[brandName])
+    return (
+      <Flex align="center" gap={0} key={brandName} vertical>
+        <Flex align="center" gap={2} justify="center">
+          <Tooltip title={t('priceCompare.supplierPrice.dragColumn')}>
+            <span
+              className="supplier-price-brand-handle"
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/plain', brandName)
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault()
+                handleDropBrand(
+                  event.dataTransfer.getData('text/plain'),
+                  brandName,
+                )
+              }}
+            >
+              {brandName}
+            </span>
+          </Tooltip>
+          {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
+          {priceMode === 'base' && !rulesByBrand.get(brandName)?.base ? (
+            <Tooltip
+              title={t('priceCompare.supplierPrice.baseNotConfiguredHint')}
+            >
+              <Tag color="warning">
+                {t('priceCompare.supplierPrice.baseNotConfigured')}
+              </Tag>
+            </Tooltip>
+          ) : null}
+        </Flex>
+        {column?.quotedOn ? null : (
+          <Typography.Text
+            className="supplier-price-brand-meta"
+            type="secondary"
+            style={{ fontSize: 12 }}
+          >
+            {t('priceCompare.supplierPrice.newColumn')}
+          </Typography.Text>
+        )}
+      </Flex>
+    )
+  }
+
+  /**
+   * 一张品类表的列：可见固定列 + 品牌 → 材质 → 定尺。
+   *
+   * <p>材质进表头后，同一规格横向即可对比 HRB400 / HRB400E 的报价。</p>
+   */
+  const sheetColumnsOf = (
+    matrix: CategoryMatrix,
+  ): ColumnsType<SheetMatrixRow> => [
     ...SHEET_FIXED_COLUMNS.filter(
       (column) => !hiddenFixedColumns.includes(column.key),
     ).map((column) => fixedColumnDefs[column.key]),
-    ...displayViews.map<ColumnsType<SpecRow>[number]>((view) => {
-      const brandName = view.brandName
-      const column = view.column
-      const dirty = draftCount(drafts[brandName])
-      const title = (
-        <Flex align="center" gap={0} key={brandName} vertical>
-          <Flex align="center" gap={2} justify="center">
-            <Tooltip title={t('priceCompare.supplierPrice.dragColumn')}>
-              <span
-                className="supplier-price-brand-handle"
-                draggable
-                onDragStart={(event) => {
-                  event.dataTransfer.effectAllowed = 'move'
-                  event.dataTransfer.setData('text/plain', brandName)
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  handleDropBrand(
-                    event.dataTransfer.getData('text/plain'),
-                    brandName,
-                  )
-                }}
-              >
-                {brandName}
-              </span>
-            </Tooltip>
-            {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
-            {priceMode === 'base' && !rulesByBrand.get(brandName)?.base ? (
-              <Tooltip
-                title={t('priceCompare.supplierPrice.baseNotConfiguredHint')}
-              >
-                <Tag color="warning">
-                  {t('priceCompare.supplierPrice.baseNotConfigured')}
-                </Tag>
-              </Tooltip>
-            ) : null}
-          </Flex>
-          {/* 报价日期是单据头的口径，表头不再重复；只保留「这列还没落库」的提示 */}
-          {column?.quotedOn ? null : (
-            <Typography.Text
-              className="supplier-price-brand-meta"
-              type="secondary"
-              style={{ fontSize: 12 }}
-            >
-              {t('priceCompare.supplierPrice.newColumn')}
-            </Typography.Text>
-          )}
-        </Flex>
-      )
-      /*
-       * 定尺列：每个真实定尺（9米/12米…）各一列；没有定尺的行（盘螺）价格横跨这些列，
-       * 因此不会出现「不分定尺」这种不存在的列。
-       */
-      if (visibleLengths.length === 0) {
-        return {
-          title,
-          key: brandName,
+    ...displayViews.map<ColumnsType<SheetMatrixRow>[number]>((view) => ({
+      title: brandTitleOf(view.brandName),
+      key: view.brandName,
+      children: matrix.materials.map((material) => ({
+        title: material,
+        key: `${view.brandName}|${material}`,
+        children: (matrix.lengthsOf.get(material) ?? []).map((length) => ({
+          title: lengthHeader(length),
+          key: `${view.brandName}|${material}|${length}`,
           width: SHEET_COLUMN_WIDTH.lengthCell,
           align: 'right' as const,
-          render: (_value: unknown, row: SpecRow) =>
-            renderLengthCell(view, row, placementLengthOf(row)),
-        }
-      }
-      if (columnLengths.length === 1) {
-        const onlyLength = columnLengths[0]
-        return {
-          title,
-          key: brandName,
-          width: SHEET_COLUMN_WIDTH.lengthCell,
-          align: 'right' as const,
-          render: (_value: unknown, row: SpecRow) =>
-            renderLengthCell(view, row, onlyLength),
-        }
-      }
-      const spanCount = visibleLengths.length
-      return {
-        title,
-        key: brandName,
-        children: visibleLengths.map((length, index) => ({
-          title: length,
-          key: `${brandName}|${length}`,
-          width: SHEET_COLUMN_WIDTH.lengthCell,
-          align: 'right' as const,
-          onCell: (row: SpecRow) => {
-            // 无定尺行把整段定尺列合并成一格
-            if (!hasNoLength(row)) return {}
-            return index === 0 ? { colSpan: spanCount } : { colSpan: 0 }
-          },
-          render: (_value: unknown, row: SpecRow) =>
-            renderLengthCell(view, row, length, index > 0),
+          render: (_value: unknown, row: SheetMatrixRow) =>
+            renderMatrixCell(matrix, view.brandName, material, length, row),
         })),
-      }
-    }),
+      })),
+    })),
   ]
 
   return (
@@ -1935,33 +1866,41 @@ export function SupplierQuotePage() {
         </Spin>
       ) : (
         <div
-          className="supplier-price-sheet module-table-shell"
+          className="supplier-price-sheet supplier-price-sheet-shell"
           onKeyDownCapture={guardUndoRedo}
           onPaste={handlePaste}
-          ref={shellRef}
-          style={sheetShellStyle}
         >
           <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
-            {/* Excel 式网格：行=规格、列=品牌；粘贴与键盘移动都以当前聚焦格为锚点 */}
+            {/* Excel 式网格：每个品类一张表，行=规格、列=品牌 → 材质 → 定尺 */}
             <div className="supplier-price-sheet-body" ref={gridRef}>
-              <Table<SpecRow>
-                bordered
-                columns={sheetColumns}
-                dataSource={displayRows}
-                pagination={false}
-                rowKey={specRowKey}
-                scroll={{ x: sheetWidth, y: sheetBodyScrollY }}
-                tableLayout="fixed"
-                size="small"
-                sticky
-                locale={{
-                  emptyText: (
-                    <Empty
-                      description={t('priceCompare.supplierPrice.empty')}
+              {categoryMatrices.length === 0 ? (
+                <Empty
+                  description={t('priceCompare.supplierPrice.empty')}
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              ) : (
+                categoryMatrices.map((matrix) => (
+                  <div
+                    className="supplier-price-sheet-category"
+                    key={matrix.category}
+                  >
+                    <Typography.Text className="supplier-price-transposed-category">
+                      {matrix.category}
+                    </Typography.Text>
+                    <Table<SheetMatrixRow>
+                      bordered
+                      columns={sheetColumnsOf(matrix)}
+                      dataSource={matrix.rows}
+                      pagination={false}
+                      rowKey={(row) => row.key}
+                      scroll={{ x: matrixWidthOf(matrix) }}
+                      tableLayout="fixed"
+                      size="small"
+                      sticky
                     />
-                  ),
-                }}
-              />
+                  </div>
+                ))
+              )}
             </div>
           </Spin>
         </div>

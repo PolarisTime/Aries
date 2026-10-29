@@ -373,7 +373,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
 
     const headers = sheetHeaders()
     expect(headers.some((text) => text.includes('序号'))).toBe(true)
-    expect(headers.some((text) => text.includes('材质'))).toBe(true)
+    // 材质已抽到表头：列组头就是材质名（HRB400），不再有「材质」这一列
+    expect(headers.some((text) => text.includes('HRB400'))).toBe(true)
     expect(headers.some((text) => text.includes('规格'))).toBe(true)
     expect(headers.some((text) => text.includes('中天'))).toBe(true)
     // 经营品牌之外、且没有历史价格表的品牌不出现在列里
@@ -1099,17 +1100,21 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await render()
     await selectSupplier()
 
-    // 表头只有真实定尺，不再出现「不分定尺」
+    // 表头只有真实定尺 + 无定尺那一列（列头显示「—」），不出现「不分定尺」这种叫法
     const headers = sheetHeaders()
     expect(headers.some((text) => text.includes('9米'))).toBe(true)
     expect(headers.some((text) => text.includes('12米'))).toBe(true)
+    expect(headers.some((text) => text.includes('—'))).toBe(true)
     expect(headers.some((text) => text.includes('不分定尺'))).toBe(false)
 
-    // 盘螺行的价格格仍然存在（落在它自己的 '-' 定尺键上）
-    expect(cellInput('中天 HRB400 8 -')).not.toBeNull()
-    // 并且横跨两列，避免占出一个多余的列
+    // 盘螺行的价格格落在它自己的 '-' 定尺列上，且只占一个格（不再横跨定尺列）
     const cell = container.querySelector('[data-grid-cell*="盘螺|HRB400|8|-"]')
-    expect(cell?.closest('td')?.getAttribute('colspan')).toBe('2')
+    expect(cell).not.toBeNull()
+    expect(cell?.closest('td')?.getAttribute('colspan')).toBeNull()
+    // 同一规格在「9米 / 12米」两列里显示「—」而不是可编辑空框
+    expect(
+      container.querySelectorAll('.supplier-price-cell-na').length,
+    ).toBeGreaterThan(0)
   })
 
   it('规格列不带直径符号 Φ', async () => {
@@ -1176,12 +1181,12 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       })
       await flush()
     }
-    const fixedLabels = ['rowIndex', 'category', 'material', 'specNo'].map(
-      (key) => i18n.t(`priceCompare.supplierPrice.${key}`),
+    // 类别是表标题、材质进表头，固定列只剩 序号/规格
+    const fixedLabels = ['rowIndex', 'specNo'].map((key) =>
+      i18n.t(`priceCompare.supplierPrice.${key}`),
     )
 
     await openPanel()
-    // 默认四列都在（面板里也有对应开关）
     for (const label of fixedLabels) {
       expect(container.textContent).toContain(label)
     }
@@ -1190,18 +1195,14 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(sheetHeaders().some((text) => text.includes(fixedLabels[1]))).toBe(
       false,
     )
-    // 其它固定列不受影响
-    expect(sheetHeaders().some((text) => text.includes(fixedLabels[3]))).toBe(
+    expect(sheetHeaders().some((text) => text.includes(fixedLabels[0]))).toBe(
       true,
     )
 
-    // 全部关掉时最后一个关不掉：否则每一行没有任何可读标识
-    for (const label of [fixedLabels[0], fixedLabels[2], fixedLabels[3]]) {
-      await toggleCheckbox(label)
-    }
-    const remaining = sheetHeaders().filter((text) =>
-      fixedLabels.some((label) => text.includes(label)),
+    // 只剩一列时关不掉：否则每一行没有任何可读标识
+    await toggleCheckbox(fixedLabels[0])
+    expect(sheetHeaders().some((text) => text.includes(fixedLabels[0]))).toBe(
+      true,
     )
-    expect(remaining).toHaveLength(1)
   })
 })

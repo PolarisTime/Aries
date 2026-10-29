@@ -11,11 +11,13 @@
 }
 
 /*
- * 报价表撑满内容区：外壳复用业务网格的 `.module-table-shell`（flex 链 + 表体高度变量），
- * 这里只补中间那层（Spin 容器与表格之间的 div）把 flex 链传下去。
+ * 报价表撑满内容区：外壳占满剩余高度，**表体在容器内滚动**（每个品类一张表，
+ * 不能再给单张表定高 —— 那样第二张表会直接看不见）。
  */
-.supplier-price-page > .supplier-price-sheet {
+.supplier-price-page > .supplier-price-sheet-shell {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
 }
 
@@ -24,6 +26,11 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  overflow: auto;
+}
+
+.supplier-price-sheet-category + .supplier-price-sheet-category {
+  margin-top: var(--space-md, 16px);
 }
 
 /*

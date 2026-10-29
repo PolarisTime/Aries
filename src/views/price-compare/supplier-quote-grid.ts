@@ -230,58 +230,198 @@ export function filterSpecRows(
 }
 
 /** 粘贴的「格位」= 品牌 × 定尺。 */
-export type QuoteSlot = {
-  brandName: string
-  length: string
+/** 矩阵行：行 = 类别 + 规格（材质抽到表头后，同一规格在多个材质下各有一格）。 */
+export type SheetMatrixRow = {
+  /** `类别|规格`：行身份，与具体材质无关。 */
+  key: string
+  category: string
+  spec: number
+  /** `材质\u0000定尺` → 该格的行键（`类别|材质|规格|定尺`）；该材质没有这个规格/定尺时没有键。 */
+  cells: Map<string, string>
 }
 
-/** 按「品牌 → 定尺」顺序展开成格位列表（与界面 DOM 顺序一致）。 */
-export function buildSlots(
-  brandNames: readonly string[],
-  lengths: readonly string[],
-): QuoteSlot[] {
-  return brandNames.flatMap((brandName) =>
-    lengths.map((length) => ({ brandName, length })),
+/** 矩阵单元格键（材质 + 定尺）：与 SpecRow 的行键区分开，只用于矩阵内部查格。 */
+export const matrixCellKeyOf = (material: string, length: string) =>
+  `${material}\u0000${length}`
+
+/**
+ * 把「一行一个材质+规格+定尺」的规格行重组成**材质进表头**的矩阵：
+ * 行 = 类别 + 规格（规格升序），列 = 材质 × 定尺。
+ *
+ * <p>为什么要重排：材质放在列里时，同一规格会在表里出现多次（HRB400 的 12、HRB400E 的 12），
+ * 横向只能看到「这一行的材质是哪个」，无法一眼比较同一规格不同材质的报价。
+ * 材质进表头后，一行就是"一个规格"，横向扫过去即可对比各材质。</p>
+ */
+export function buildSheetMatrix(rows: readonly SpecRow[]): SheetMatrixRow[] {
+  const grouped = new Map<string, SheetMatrixRow>()
+  for (const row of rows) {
+    const key = `${row.category}|${row.spec}`
+    let target = grouped.get(key)
+    if (!target) {
+      target = { key, category: row.category, spec: row.spec, cells: new Map() }
+      grouped.set(key, target)
+    }
+    for (const length of row.lengths) {
+      target.cells.set(
+        matrixCellKeyOf(row.material, length),
+        rowKeyOfCell(row, length),
+      )
+    }
+  }
+  return [...grouped.values()].sort(
+    (left, right) =>
+      categoryRankOf(left.category) - categoryRankOf(right.category) ||
+      left.spec - right.spec,
+  )
+}
+
+/** 表头里出现过的材质（按报价习惯排序：HRB400 → HRB400E → HPB300 …）。 */
+export function matrixMaterialsOf(specRows: readonly SpecRow[]): string[] {
+  const seen = new Set<string>()
+  for (const row of specRows) seen.add(row.material)
+  return [...seen].sort(
+    (left, right) =>
+      materialRankOf(left) - materialRankOf(right) ||
+      left.localeCompare(right, 'zh-Hans-CN'),
   )
 }
 
 /**
- * 把粘贴矩阵从锚点铺开：行 → 规格行，列 → 格位（品牌 × 定尺）。
+ * 某个材质在表头里的定尺列（9米 / 12米 …）。
  *
- * <p>锚点是当前聚焦的输入框（某品牌某定尺），矩阵第一格覆盖它；列向右依次落到
- * 同品牌的其它定尺 / 下一个品牌，行向下落到后面的规格行。目标行没有该定尺时丢弃该格。</p>
+ * <p>没有定尺的商品（盘螺一类）返回它自己的占位定尺（`-`），列头由 `lengthHeader` 渲染成「—」。</p>
  */
-export function buildSpecPastePlan(args: {
+export function matrixLengthsOf(
+  specRows: readonly SpecRow[],
+  material: string,
+): string[] {
+  const lengths = new Set<string>()
+  for (const row of specRows) {
+    if (row.material !== material) continue
+    for (const length of row.lengths) lengths.add(length)
+  }
+  return [...lengths].sort(
+    (left, right) => lengthRank(left) - lengthRank(right),
+  )
+}
+
+/** 一个品类（盘螺 / 直条 / 圆钢…）的矩阵：不同品类的定尺完全不同，必须各自一张表。 */
+export type CategoryMatrix = {
+  category: string
+  rows: SheetMatrixRow[]
+  /** 该品类出现过的材质（列组），按报价习惯排序。 */
+  materials: string[]
+  /** 材质 → 定尺列（已排除「列显示」里关掉的定尺）。 */
+  lengthsOf: Map<string, string[]>
+}
+
+/**
+ * 按品类拆成多张矩阵表：行 = 规格，列 = 品牌 → 材质 → 定尺。
+ *
+ * <p>为什么必须按品类拆：盘螺是卷材（没有定尺）、直条是 9米/12米，硬塞进同一张表
+ * 会让一半列在另一半行里全是「—」（实测 2 个品牌时 162 格里 144 格是空的）。
+ * 拆开后每张表只保留自己品类真正存在的定尺。</p>
+ */
+export function buildCategoryMatrices(
+  specRows: readonly SpecRow[],
+  hiddenLengths: readonly string[] = [],
+): CategoryMatrix[] {
+  const byCategory = new Map<string, SpecRow[]>()
+  for (const row of specRows) {
+    const list = byCategory.get(row.category)
+    if (list) list.push(row)
+    else byCategory.set(row.category, [row])
+  }
+  const hidden = new Set(hiddenLengths)
+  return [...byCategory.entries()]
+    .map(([category, list]) => {
+      const materials = uniqueSortedMaterials(list)
+      const lengthsOf = new Map<string, string[]>()
+      for (const material of materials) {
+        lengthsOf.set(
+          material,
+          matrixLengthsOf(list, material).filter(
+            (length) => !hidden.has(length),
+          ),
+        )
+      }
+      return {
+        category,
+        rows: buildSheetMatrix(list),
+        materials,
+        lengthsOf,
+      }
+    })
+    .sort(
+      (left, right) =>
+        categoryRankOf(left.category) - categoryRankOf(right.category),
+    )
+}
+
+/** 材质排序的唯一实现（品类内、表头里都用它，别各写一遍 rank 表）。 */
+function uniqueSortedMaterials(rows: readonly SpecRow[]): string[] {
+  const seen = new Set<string>()
+  for (const row of rows) seen.add(row.material)
+  return [...seen].sort(
+    (left, right) =>
+      materialRankOf(left) - materialRankOf(right) ||
+      left.localeCompare(right, 'zh-Hans-CN'),
+  )
+}
+
+/** 矩阵格位：品牌 × 材质 × 定尺（与界面 DOM 顺序一致，粘贴按它铺开）。 */
+export type MatrixSlot = {
+  brandName: string
+  material: string
+  length: string
+}
+
+export function buildMatrixSlots(
+  brandNames: readonly string[],
+  materials: readonly string[],
+  lengthsOf: (material: string) => readonly string[],
+): MatrixSlot[] {
+  const slots: MatrixSlot[] = []
+  for (const brandName of brandNames) {
+    for (const material of materials) {
+      for (const length of lengthsOf(material)) {
+        slots.push({ brandName, material, length })
+      }
+    }
+  }
+  return slots
+}
+
+/**
+ * 品牌成列视图的粘贴方案：行 = 矩阵行（类别+规格），列 = 格位（品牌×材质×定尺）。
+ *
+ * <p>锚点是当前聚焦的输入框（某品牌某材质某定尺），矩阵第一格覆盖它：向右依次落到
+ * 同一品牌的其它材质/定尺，向下落到后面的规格行。目标格不存在（该材质没有这个规格/定尺）
+ * 时丢弃该格并计数，不写脏键。</p>
+ */
+export function buildMatrixPastePlan(args: {
   matrix: readonly (readonly string[])[]
-  slots: readonly QuoteSlot[]
-  specRows: readonly SpecRow[]
+  slots: readonly MatrixSlot[]
+  rows: readonly SheetMatrixRow[]
   startSlotIndex: number
   startRowIndex: number
 }): GridPastePlan {
   const cells: GridPasteCell[] = []
   let dropped = 0
-
   args.matrix.forEach((line, rowOffset) => {
-    const specRow = args.specRows[args.startRowIndex + rowOffset]
-    if (!specRow) {
+    const row = args.rows[args.startRowIndex + rowOffset]
+    if (!row) {
       dropped += line.length
       return
     }
-    // 无定尺行（盘螺一类）只有一格：矩阵第一列落到它的占位定尺上，其余列无处可落
-    const noLength = hasNoLength(specRow)
-    const placementLength = placementLengthOf(specRow)
     line.forEach((raw, columnOffset) => {
       const slot = args.slots[args.startSlotIndex + columnOffset]
       if (!slot) {
         dropped += 1
         return
       }
-      if (noLength) {
-        if (columnOffset > 0) {
-          dropped += 1
-          return
-        }
-      } else if (!specRow.lengths.includes(slot.length)) {
+      const rowKey = row.cells.get(matrixCellKeyOf(slot.material, slot.length))
+      if (!rowKey) {
         dropped += 1
         return
       }
@@ -290,16 +430,9 @@ export function buildSpecPastePlan(args: {
         dropped += 1
         return
       }
-      cells.push({
-        brandName: slot.brandName,
-        rowKey: `${specRow.category}|${specRow.material}|${specRow.spec}|${
-          noLength ? placementLength : slot.length
-        }`,
-        value,
-      })
+      cells.push({ brandName: slot.brandName, rowKey, value })
     })
   })
-
   return { cells, dropped }
 }
 
@@ -334,9 +467,11 @@ export const SHEET_COLUMN_WIDTH = {
  */
 export const SHEET_FIXED_COLUMNS = [
   { key: 'index', labelKey: 'rowIndex', width: SHEET_COLUMN_WIDTH.index },
-  { key: 'category', labelKey: 'category', width: SHEET_COLUMN_WIDTH.category },
-  { key: 'material', labelKey: 'material', width: SHEET_COLUMN_WIDTH.material },
-  { key: 'spec', labelKey: 'specNo', width: SHEET_COLUMN_WIDTH.specNo },
+  {
+    key: 'spec',
+    labelKey: 'specNo',
+    width: SHEET_COLUMN_WIDTH.specNo,
+  },
 ] as const
 
 export type SheetFixedColumnKey = (typeof SHEET_FIXED_COLUMNS)[number]['key']

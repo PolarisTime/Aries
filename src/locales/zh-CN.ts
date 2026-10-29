@@ -2830,7 +2830,6 @@ export const zhCN = {
       savedBrands: '已保存 {{count}} 个品牌列',
       saveFailed: '{{names}} 保存失败，改动已保留',
       saveNothing: '没有需要保存的改动',
-      category: '类别',
       material: '材质',
       specNo: '规格',
       length: '定尺',

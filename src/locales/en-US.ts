@@ -2890,7 +2890,6 @@ export const enUS = {
       savedBrands: 'Saved {{count}} brand column(s)',
       saveFailed: 'Failed to save: {{names}}; your changes are kept',
       saveNothing: 'Nothing to save',
-      category: 'Category',
       material: 'Material',
       specNo: 'Size',
       length: 'Length',
