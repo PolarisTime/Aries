@@ -1,6 +1,12 @@
 packages:
   - tools/typescript-toolchain
 
+# ⚠️ 刻意保留两个 typescript 版本，**不要**把 typescript 加进下面的 overrides：
+#   - 根项目 typescript 7.0.2 是 Go 原生重写版，包只导出 `lib/version.cjs` 与 `unstable/*`
+#     （实测 `require('typescript')` 只有 version 等 2 个键，没有 createProgram / ts.sys）；
+#   - typescript-eslint 的类型感知 lint 依赖经典 JS API（createProgram / ts.sys / AST），
+#     无法运行在 7.x 上，因此 tools/typescript-toolchain 精确锁 5.9.3 专供 eslint 使用。
+# 统一版本会让 `pnpm lint` 与 `pnpm typecheck` 中的一方直接不可用。
 overrides:
   "@babel/core@<7.29.6": 7.29.6
   "baseline-browser-mapping@<2.11.0": 2.11.0
