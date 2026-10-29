@@ -112,9 +112,10 @@ export function MasterDataEditor({
         disabled={saving}
         onValuesChange={(_, allValues) => onValuesChange(allValues)}
       >
-        {groups.map((group, index) => (
+        {groups.map((group) => (
           <section
-            key={group.section ?? `ungrouped-${index}`}
+            /* 未分区时不能用数组下标做 key：字段增删会让 React 错配 DOM 状态 */
+            key={group.section ?? group.fields.map((field) => field.key).join('|')}
             className="master-form-section"
           >
             {group.section ? (
