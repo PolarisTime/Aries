@@ -46,6 +46,20 @@ body,
   margin: 0;
 }
 
+/*
+ * 弹窗内容高度兜底。
+ *
+ * antd Modal 的 body 默认随内容无限长：长内容（打印模板正文、长表格、日志详情）
+ * 会把 .ant-modal 撑到视口之外 —— 实测打印模板预览 height 1143+、top=-393，
+ * 右上角的关闭 x 和底部按钮一起跑出屏幕，用户只能按 Esc 关。
+ * 这里给 body 一个视口上限并在内部滚动，标题/关闭按钮/页脚始终可见；
+ * 已经自己定高的弹层（品牌穿梭框等）取两者较小值，不受影响。
+ */
+.ant-modal-root .ant-modal .ant-modal-body {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
 /* 减弱动效偏好：全局压缩动画与过渡时长（模块表格已有局部适配，此处兜底其余场景） */
 @media (prefers-reduced-motion: reduce) {
   *,

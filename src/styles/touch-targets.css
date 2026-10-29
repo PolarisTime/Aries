@@ -1,6 +1,7 @@
 /*
  * 触摸目标热区（WCAG 2.5.8 AA）
  * 通过 ::before 伪元素扩大命中区域，不改变按钮的视觉尺寸。
+ *
  * 例外：
  *  - antd compact 组内 solid 按钮的 ::before 被 antd 用于 1px 连接边框，必须排除。
  *  - antd select/picker 的清除按钮由 antd 绝对定位控制，必须排除本规则的
@@ -8,19 +9,27 @@
  *  - 弹层遮罩(.workspace-overlay-mask)整块就是命中区，不需要热区补丁；更要紧的是它靠
  *    position: absolute + inset: 0 铺满内容区，本规则的 position: relative 会把它覆盖成
  *    0×0，背景就既不被压暗也不虚化（实测遮罩 rect 0×0）。
+ *  - 弹层关闭按钮（.ant-modal-close / .ant-drawer-close / .ant-alert-close-icon …）由 antd
+ *    绝对定位在右上角：本规则若压过它，关闭 x 会掉进标题行左侧与标题重叠（实测 Modal 关闭
+ *    按钮落到 x=309、标题起点 x=321，视觉上贴着标题）。因此 position 规则整体用 :where()
+ *    把特异性降到 0 —— antd 自己的绝对定位规则（以及图片预览切换、carousel 箭头等）都能
+ *    正常生效，只有没有任何定位规则的裸 button 才拿到 relative。
  */
 
-button:not(
-  .ant-btn-variant-solid.ant-btn-compact-item,
-  .ant-select-clear,
-  .ant-picker-clear,
-  .workspace-overlay-mask
-),
-[role="button"]:not(.ant-select-clear, .ant-picker-clear),
-.ant-btn:not(
-  .ant-btn-variant-solid.ant-btn-compact-item,
-  .ant-select-clear,
-  .ant-picker-clear
+/* :where() = 特异性 0：让 antd 组件自己的定位规则赢，只在按钮本身没有定位时才补 relative */
+:where(
+  button:not(
+    .ant-btn-variant-solid.ant-btn-compact-item,
+    .ant-select-clear,
+    .ant-picker-clear,
+    .workspace-overlay-mask
+  ),
+  [role="button"]:not(.ant-select-clear, .ant-picker-clear),
+  .ant-btn:not(
+    .ant-btn-variant-solid.ant-btn-compact-item,
+    .ant-select-clear,
+    .ant-picker-clear
+  )
 ) {
   position: relative;
 }
@@ -29,13 +38,19 @@ button:not(
   .ant-btn-variant-solid.ant-btn-compact-item,
   .ant-select-clear,
   .ant-picker-clear,
-  .workspace-overlay-mask
+  .workspace-overlay-mask,
+  [class*="-close"]
 )::before,
-[role="button"]:not(.ant-select-clear, .ant-picker-clear)::before,
+[role="button"]:not(
+  .ant-select-clear,
+  .ant-picker-clear,
+  [class*="-close"]
+)::before,
 .ant-btn:not(
   .ant-btn-variant-solid.ant-btn-compact-item,
   .ant-select-clear,
-  .ant-picker-clear
+  .ant-picker-clear,
+  [class*="-close"]
 )::before {
   content: "";
   position: absolute;
