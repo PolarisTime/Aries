@@ -119,9 +119,7 @@ describe('经营品牌表格穿梭框', () => {
     await flush()
 
     // 选中后点中间的「›」把品牌移到右侧已选列表
-    const moveButton = document.querySelector(
-      '.ant-transfer-actions button',
-    )
+    const moveButton = document.querySelector('.ant-transfer-actions button')
     expect(moveButton).toBeTruthy()
     await act(async () => {
       moveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))

@@ -222,6 +222,30 @@ export function CarrierEditorOverlay({
                 <Select options={enabledStatusOptions} />
               </Form.Item>
             </Col>
+            <Col span={6}>
+              <Form.Item
+                name="defaultSettlementCompanyId"
+                label={t('modules.pages.carrier.colDefaultSettlementCompany')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('modules.formField.selectRequired', {
+                      label: t(
+                        'modules.pages.carrier.colDefaultSettlementCompany',
+                      ),
+                    }),
+                  },
+                ]}
+              >
+                <Select
+                  showSearch={{ optionFilterProp: 'label' }}
+                  options={settlementCompanyOptions.map((option) => ({
+                    label: option.companyName || option.label,
+                    value: option.id,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
           </Row>
         </section>
         <section className="master-form-section">
@@ -233,7 +257,7 @@ export function CarrierEditorOverlay({
             {t('modules.formSections.contact')}
           </Divider>
           <Row gutter={[16, 8]}>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item
                 name="contactName"
                 label={t('modules.pages.carrier.colContactName')}
@@ -241,7 +265,7 @@ export function CarrierEditorOverlay({
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item
                 name="contactPhone"
                 label={t('modules.pages.carrier.colContactPhone')}
@@ -287,41 +311,6 @@ export function CarrierEditorOverlay({
                 </Col>
               ))
             })}
-          </Row>
-        </section>
-        <section className="master-form-section">
-          <Divider
-            className="master-section-divider"
-            plain
-            titlePlacement="start"
-          >
-            {t('modules.formSections.settlement')}
-          </Divider>
-          <Row gutter={[16, 8]}>
-            <Col span={6}>
-              <Form.Item
-                name="defaultSettlementCompanyId"
-                label={t('modules.pages.carrier.colDefaultSettlementCompany')}
-                rules={[
-                  {
-                    required: true,
-                    message: t('modules.formField.selectRequired', {
-                      label: t(
-                        'modules.pages.carrier.colDefaultSettlementCompany',
-                      ),
-                    }),
-                  },
-                ]}
-              >
-                <Select
-                  showSearch={{ optionFilterProp: 'label' }}
-                  options={settlementCompanyOptions.map((option) => ({
-                    label: option.companyName || option.label,
-                    value: option.id,
-                  }))}
-                />
-              </Form.Item>
-            </Col>
           </Row>
         </section>
         <section className="master-form-section">

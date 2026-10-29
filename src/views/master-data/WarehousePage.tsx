@@ -162,18 +162,18 @@ export function WarehousePage() {
         },
         {
           section: t('modules.formSections.basic'),
-          key: 'address',
-          label: t('modules.pages.masterWarehouse.address'),
-          type: 'input',
-          fullRow: true,
-        },
-        {
-          section: t('modules.formSections.basic'),
           key: 'status',
           label: t('modules.pages.masterWarehouse.status'),
           type: 'select',
           defaultValue: STATUS.NORMAL,
           options: enabledStatusOptions,
+        },
+        {
+          section: t('modules.formSections.basic'),
+          key: 'address',
+          label: t('modules.pages.masterWarehouse.address'),
+          type: 'input',
+          fullRow: true,
         },
         {
           section: t('modules.formSections.contact'),

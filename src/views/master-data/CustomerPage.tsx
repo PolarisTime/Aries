@@ -135,20 +135,21 @@ export function CustomerPage() {
           options: enabledStatusOptions,
         },
         {
-          section: t('modules.formSections.contact'),
+          section: t('modules.formSections.contactSettlement'),
           key: 'contactName',
           label: t('modules.pages.customer.colContactName'),
           type: 'input',
         },
         {
-          section: t('modules.formSections.contact'),
+          section: t('modules.formSections.contactSettlement'),
           key: 'contactPhone',
           label: t('modules.pages.customer.colContactPhone'),
           type: 'input',
         },
         {
-          section: t('modules.formSections.settlement'),
+          section: t('modules.formSections.contactSettlement'),
           key: 'settlementMode',
+          span: 12,
           label: t('modules.pages.customer.colSettlementMode'),
           type: 'select',
           options: [
