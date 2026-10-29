@@ -2824,7 +2824,8 @@ export const zhCN = {
       length: '定尺',
       viewModeBrands: '品牌成列',
       viewModeSpecs: '规格横置',
-      materialLength: '材质 / 定尺',
+      materialColumn: '材质',
+      specColumn: '规格',
       basePriceRuleTitle: '基价加价',
       basePriceRuleMenu: '基价加价…',
       basePriceRuleHint:
@@ -2885,7 +2886,7 @@ export const zhCN = {
       entryHint:
         'Excel 式录入：行=规格、列=品牌，直接敲价；↑/↓ 与回车上下移动，Tab 向右；从 Excel 复制的整列/整块可直接粘贴到起始格。空 = 不报价，0 是真实价格；保存按品牌列整组替换',
       entryHintSpecs:
-        '录入方式：行 = 材质 + 定尺、列 = 规格（Φ），品牌分块；空 = 未报价，0 是真实价格；保存按品牌整组替换。',
+        '录入方式：行 = 规格、列 = 定尺（9米 / 12米），品牌与材质分块；空 = 未报价，0 是真实价格；保存按品牌整组替换。',
       pasteApplied: '已从剪贴板填入 {{count}} 格',
       pasteDropped: '已填入，另有 {{count}} 格因格式或越界被忽略',
       pickSupplier: '先选一个供应商，再在下方表格里录入各品牌报价',

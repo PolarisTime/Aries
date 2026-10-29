@@ -111,7 +111,9 @@ import {
 import { persistColumnPlans } from './supplier-quote-save'
 import {
   buildTransposedSections,
+  lengthHeader,
   specHeader,
+  type TransposedBlock,
   type TransposedRow,
 } from './supplier-quote-transposed'
 import './supplier-price.css'
@@ -657,24 +659,24 @@ export function SupplierQuotePage() {
     const spec = Number(specText)
     const block = transposedSections
       .find((section) => section.brandName === anchor.brandName)
-      ?.blocks.find((item) => item.category === category)
+      ?.blocks.find(
+        (item) => item.category === category && item.material === material,
+      )
     if (!block) return
-    const startRow = block.rows.findIndex(
-      (item) => item.material === material && item.length === length,
-    )
-    const startSpec = block.specs.indexOf(spec)
-    if (startRow < 0 || startSpec < 0) return
+    const startRow = block.rows.findIndex((item) => item.spec === spec)
+    const startColumn = block.lengths.indexOf(length)
+    if (startRow < 0 || startColumn < 0) return
     event.preventDefault()
 
     const cells: { brandName: string; rowKey: string; value: number | null }[] =
       []
     let dropped = 0
     matrix.forEach((values, rowOffset) => {
-      values.forEach((raw, specOffset) => {
+      values.forEach((raw, columnOffset) => {
         const targetRow = block.rows[startRow + rowOffset]
-        const targetSpec = block.specs[startSpec + specOffset]
-        if (!targetRow || targetSpec === undefined) return
-        const rowKey = targetRow.cells[targetSpec]
+        const targetLength = block.lengths[startColumn + columnOffset]
+        if (!targetRow || targetLength === undefined) return
+        const rowKey = targetRow.cells[targetLength]
         if (!rowKey) {
           dropped += 1
           return
@@ -694,6 +696,109 @@ export function SupplierQuotePage() {
     })
     if (!cells.length) return
     commitPaste(cells, dropped)
+  }
+
+  /**
+   * 规格横置的单元格：行 = 规格、列 = 定尺。
+   *
+   * <p>键盘：↑/↓ 换规格（同定尺），←/→ 换定尺（同规格），Enter 下一行 —— 与表格软件一致。
+   * 基价模式的只读/计算取值与品牌成列视图同源（`baseColumns`），不另写一套判据。</p>
+   */
+  const renderTransposedCell = (
+    brandName: string,
+    block: TransposedBlock,
+    row: TransposedRow,
+    length: string,
+    baseColumn:
+      | { baseCellKey: string; basePrice?: number; prices: Map<string, number> }
+      | undefined,
+  ) => {
+    const rowKey = row.cells[length]
+    if (!rowKey) {
+      return <span className="supplier-price-transposed-empty">—</span>
+    }
+    const view = viewByBrand.get(brandName)
+    const base = rulesByBrand.get(brandName)?.base
+    const isBase =
+      Boolean(base) &&
+      `${base?.material}|${base?.spec}|${base?.length}` ===
+        `${block.material}|${row.spec}|${length}`
+    const computed = baseColumn?.prices.get(rowKey)
+    const baseComputed =
+      priceMode === 'base' && !isBase && computed !== undefined
+    const value = baseComputed
+      ? computed
+      : draftPrice(drafts[brandName], rowKey, view?.cells.get(rowKey)?.price)
+    return (
+      <InputNumber
+        aria-label={`${brandName} ${block.material} ${row.spec} ${length}`}
+        className={`supplier-price-sheet-input${
+          isBase ? ' supplier-price-transposed-base' : ''
+        }`}
+        data-grid-cell={cellIdOf(brandName, rowKey)}
+        disabled={!canUpdate || baseComputed}
+        min={0}
+        precision={2}
+        size="small"
+        style={{ width: '100%' }}
+        title={
+          isBase
+            ? t('priceCompare.supplierPrice.baseBadge')
+            : baseComputed
+              ? t('priceCompare.supplierPrice.computedFromBase', {
+                  price: baseColumn?.basePrice ?? '',
+                })
+              : undefined
+        }
+        value={value}
+        onChange={(next) => {
+          const parsed = typeof next === 'number' ? next : null
+          if (priceMode === 'base' && isBase) {
+            applyBasePrice(brandName, rowKey, parsed)
+            return
+          }
+          updateCell(brandName, rowKey, parsed)
+        }}
+        onFocus={() => {
+          anchorRef.current = { brandName, rowKey }
+        }}
+        onKeyDown={(event) => {
+          const rowIndex = block.rows.indexOf(row)
+          const lengthIndex = block.lengths.indexOf(length)
+          const moveTo = (
+            nextRow: TransposedRow | undefined,
+            nextLength: string | undefined,
+          ) => {
+            const targetKey =
+              nextRow && nextLength ? nextRow.cells[nextLength] : undefined
+            if (!targetKey) return false
+            event.preventDefault()
+            event.stopPropagation()
+            focusCell(brandName, targetKey)
+            return true
+          }
+          if (event.key === 'ArrowDown' || event.key === 'Enter') {
+            moveTo(block.rows[rowIndex + 1], length)
+            return
+          }
+          if (event.key === 'ArrowUp') {
+            moveTo(block.rows[rowIndex - 1], length)
+            return
+          }
+          if (event.key === 'ArrowRight') {
+            moveTo(row, block.lengths[lengthIndex + 1])
+            return
+          }
+          if (event.key === 'ArrowLeft') {
+            moveTo(row, block.lengths[lengthIndex - 1])
+            return
+          }
+          if (event.key === 'Escape') {
+            event.currentTarget.blur()
+          }
+        }}
+      />
+    )
   }
 
   /** 构建全部待保存的列（纯函数组装，页面只负责发请求）。 */
@@ -1654,172 +1759,84 @@ export function SupplierQuotePage() {
                       </Dropdown>
                     </Flex>
 
-                    {section.blocks.map((block) => (
-                      <div
-                        className="supplier-price-transposed-block"
-                        key={block.category}
-                        style={{
-                          // 规格少的品类（如盘螺 3 列）不要被拉满整行
-                          maxWidth: 132 + block.specs.length * 96,
-                        }}
-                      >
-                        <Typography.Text className="supplier-price-transposed-category">
-                          {block.category}
-                        </Typography.Text>
-                        <Table<TransposedRow>
-                          bordered
-                          columns={[
-                            {
-                              title: t(
-                                'priceCompare.supplierPrice.materialLength',
-                              ),
-                              key: 'label',
-                              width: 132,
-                              fixed: 'left',
-                              render: (_value, row) => (
-                                <Flex vertical gap={0}>
-                                  <Typography.Text>
-                                    {row.material}
-                                  </Typography.Text>
-                                  <Typography.Text type="secondary">
-                                    {row.length === '' ? '—' : row.length}
-                                  </Typography.Text>
-                                </Flex>
-                              ),
-                            },
-                            ...block.specs.map((spec) => ({
-                              title: specHeader(spec),
-                              key: `spec-${spec}`,
-                              width: 96,
-                              align: 'right' as const,
-                              render: (_value: unknown, row: TransposedRow) => {
-                                const rowKey = row.cells[spec]
-                                if (!rowKey) {
-                                  return (
-                                    <span className="supplier-price-transposed-empty">
-                                      —
-                                    </span>
-                                  )
-                                }
-                                const brandBase = rulesByBrand.get(
-                                  section.brandName,
-                                )?.base
-                                const isBase =
-                                  Boolean(brandBase) &&
-                                  `${brandBase?.material}|${brandBase?.spec}|${brandBase?.length}` ===
-                                    `${row.material}|${spec}|${row.length}`
-                                const serverPrice =
-                                  view?.cells.get(rowKey)?.price
-                                const baseColumn = baseColumns.get(
-                                  section.brandName,
-                                )
-                                const computed = baseColumn?.prices.get(rowKey)
-                                const baseComputed =
-                                  priceMode === 'base' &&
-                                  !isBase &&
-                                  computed !== undefined
-                                const value = baseComputed
-                                  ? computed
-                                  : draftPrice(
-                                      drafts[section.brandName],
-                                      rowKey,
-                                      serverPrice,
-                                    )
-                                return (
-                                  <InputNumber
-                                    aria-label={`${section.brandName} ${row.material} ${spec} ${row.length}`}
-                                    className={`supplier-price-sheet-input${
-                                      isBase
-                                        ? ' supplier-price-transposed-base'
-                                        : ''
-                                    }`}
-                                    data-grid-cell={cellIdOf(
-                                      section.brandName,
-                                      rowKey,
-                                    )}
-                                    disabled={!canUpdate || baseComputed}
-                                    min={0}
-                                    precision={2}
-                                    size="small"
-                                    style={{ width: '100%' }}
-                                    title={
-                                      isBase
-                                        ? t(
-                                            'priceCompare.supplierPrice.baseBadge',
-                                          )
-                                        : baseComputed
-                                          ? t(
-                                              'priceCompare.supplierPrice.computedFromBase',
-                                              {
-                                                price:
-                                                  baseColumn?.basePrice ?? '',
-                                              },
-                                            )
-                                          : undefined
-                                    }
-                                    value={value}
-                                    onChange={(next) => {
-                                      const parsed =
-                                        typeof next === 'number' ? next : null
-                                      if (priceMode === 'base' && isBase) {
-                                        applyBasePrice(
-                                          section.brandName,
-                                          rowKey,
-                                          parsed,
-                                        )
-                                        return
-                                      }
-                                      updateCell(
-                                        section.brandName,
-                                        rowKey,
-                                        parsed,
-                                      )
-                                    }}
-                                    onFocus={() => {
-                                      anchorRef.current = {
-                                        brandName: section.brandName,
-                                        rowKey,
-                                      }
-                                    }}
-                                    onKeyDown={(event) => {
-                                      const move = (delta: number) => {
-                                        const index = block.rows.indexOf(row)
-                                        const target = block.rows[index + delta]
-                                        const targetKey = target?.cells[spec]
-                                        if (!targetKey) return
-                                        event.preventDefault()
-                                        event.stopPropagation()
-                                        focusCell(section.brandName, targetKey)
-                                      }
-                                      if (
-                                        event.key === 'ArrowDown' ||
-                                        event.key === 'Enter'
-                                      ) {
-                                        move(1)
-                                        return
-                                      }
-                                      if (event.key === 'ArrowUp') {
-                                        move(-1)
-                                        return
-                                      }
-                                      if (event.key === 'Escape') {
-                                        event.currentTarget.blur()
-                                      }
-                                    }}
-                                  />
-                                )
+                    {section.blocks.map((block, blockIndex) => {
+                      // 品类名只在同一个品类的第一张表上面出现一次，不跟着每个材质重复
+                      const showCategory =
+                        blockIndex === 0 ||
+                        section.blocks[blockIndex - 1].category !==
+                          block.category
+                      return (
+                        <div
+                          className="supplier-price-transposed-block"
+                          key={`${block.category}|${block.material}`}
+                          style={{
+                            // 定尺少的商品（如盘螺只有一列）不要被拉满整行
+                            maxWidth: 192 + block.lengths.length * 96,
+                          }}
+                        >
+                          {showCategory ? (
+                            <Typography.Text className="supplier-price-transposed-category">
+                              {block.category}
+                            </Typography.Text>
+                          ) : null}
+                          {/*
+                          材质作为列组表头横跨各定尺（对齐纸质报价单的两层表头）：
+                          「规格 | 9米 | 12米」。
+                        */}
+                          <Table<TransposedRow>
+                            bordered
+                            columns={[
+                              {
+                                title: t(
+                                  'priceCompare.supplierPrice.materialColumn',
+                                ),
+                                key: 'material',
+                                width: 96,
+                                fixed: 'left',
+                                children: [
+                                  {
+                                    title: t(
+                                      'priceCompare.supplierPrice.specColumn',
+                                    ),
+                                    dataIndex: 'spec',
+                                    key: 'specValue',
+                                    width: 96,
+                                    render: (spec: number) => specHeader(spec),
+                                  },
+                                ],
                               },
-                            })),
-                          ]}
-                          dataSource={block.rows}
-                          pagination={false}
-                          rowKey={(row) => `${row.material}|${row.length}`}
-                          scroll={{ x: 132 + block.specs.length * 96 }}
-                          size="small"
-                          tableLayout="fixed"
-                        />
-                      </div>
-                    ))}
+                              {
+                                title: block.material,
+                                key: 'lengths',
+                                children: block.lengths.map((length) => ({
+                                  title: lengthHeader(length),
+                                  key: `length-${length}`,
+                                  width: 96,
+                                  align: 'right' as const,
+                                  render: (
+                                    _value: unknown,
+                                    row: TransposedRow,
+                                  ) =>
+                                    renderTransposedCell(
+                                      section.brandName,
+                                      block,
+                                      row,
+                                      length,
+                                      baseColumns.get(section.brandName),
+                                    ),
+                                })),
+                              },
+                            ]}
+                            dataSource={block.rows}
+                            pagination={false}
+                            rowKey={(row) => `${block.material}|${row.spec}`}
+                            scroll={{ x: 192 + block.lengths.length * 96 }}
+                            size="small"
+                            tableLayout="fixed"
+                          />
+                        </div>
+                      )
+                    })}
                   </section>
                 )
               })

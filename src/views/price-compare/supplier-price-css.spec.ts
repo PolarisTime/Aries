@@ -7,6 +7,19 @@ const css = readFileSync(
   'utf8',
 )
 
+/** 同一选择器可能出现在多个规则块（分组选择器/补充规则），逐个返回块内容。 */
+const blocksOf = (selector: string): string[] => {
+  const blocks: string[] = []
+  let index = css.indexOf(selector)
+  while (index > -1) {
+    const start = css.indexOf('{', index)
+    const end = css.indexOf('}', start)
+    blocks.push(css.slice(start, end))
+    index = css.indexOf(selector, end)
+  }
+  return blocks
+}
+
 const blockOf = (selector: string) => {
   const index = css.indexOf(selector)
   expect(index, `未找到选择器 ${selector}`).toBeGreaterThan(-1)
@@ -17,18 +30,51 @@ const blockOf = (selector: string) => {
 
 describe('供应商报价表：Excel 式数字排版', () => {
   it('单元格更紧凑（表格软件的密度）', () => {
-    const block = blockOf('.supplier-price-sheet .ant-table-tbody > tr > td')
+    const block = blockOf(
+      '.supplier-price-sheet .ant-table-wrapper .ant-table-tbody > tr > td',
+    )
     expect(block).toContain('padding:')
   })
 
+  it('行高按 --app-font-size 换算：字号变化时行高自动跟着变', () => {
+    // 行高不能写死 px：个人设置把字号从 14px 调到 20px 时，行高必须同比长高
+    const vars = css.slice(
+      css.indexOf('--supplier-price-em:'),
+      css.indexOf('}', css.indexOf('--supplier-price-em:')),
+    )
+    expect(vars).toContain('var(--app-font-size')
+    expect(vars).toContain('--supplier-price-row-height: calc(')
+  })
+
+  it('输入框高度与行高共用同一个变量，不再写死 30px', () => {
+    expect(css).not.toMatch(
+      /\.ant-input-number-input[^{}]*\{[^}]*height:\s*30px/,
+    )
+    const blocks = blocksOf('.supplier-price-sheet .ant-input-number-input')
+    expect(
+      blocks.some((block) =>
+        block.includes('height: var(--supplier-price-row-height'),
+      ),
+    ).toBe(true)
+  })
+
+  it('内边距覆盖 antd css-in-js 时用 !important（同级特异性会被它后注入覆盖）', () => {
+    const block = blockOf(
+      '.supplier-price-sheet .ant-table-wrapper .ant-table-tbody > tr > td',
+    )
+    expect(block).toContain('!important')
+  })
+
   it('单价右对齐，便于按列比较', () => {
-    const block = blockOf('.supplier-price-sheet .ant-input-number-input')
-    expect(block).toContain('text-align: right')
+    const blocks = blocksOf('.supplier-price-sheet .ant-input-number-input')
+    expect(blocks.some((block) => block.includes('text-align: right'))).toBe(
+      true,
+    )
   })
 
   it('单价使用等宽数字（tabular-nums），列内位数对齐', () => {
-    const block = blockOf('.supplier-price-sheet .ant-input-number-input')
-    expect(block).toContain('font-variant-numeric: tabular-nums')
+    const blocks = blocksOf('.supplier-price-sheet .ant-input-number-input')
+    expect(blocks.some((block) => block.includes('tabular-nums'))).toBe(true)
   })
 
   it('列头品牌名可拖动（cursor: grab），并给出抓取反馈', () => {

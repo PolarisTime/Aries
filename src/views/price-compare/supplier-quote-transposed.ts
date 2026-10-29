@@ -1,21 +1,27 @@
 import { type QuoteRow, quoteRowKey } from './supplier-price-list-model'
 import { lengthRank } from './supplier-quote-grid'
 
-/** 规格横置：一行的单元格（规格 → 该格的行键，方便直接写草稿）。 */
+/**
+ * 规格横置（定尺进表头）：一个规格行 + 各定尺的格键。
+ *
+ * <p>布局对齐纸质/Excel 报价单：**行 = 规格，列 = 定尺**，材质作为列组表头横跨各定尺
+ * （见下方 `材质 | HRB400E` + `规格 | 9米 | 12米` 两层表头）。</p>
+ */
 export type TransposedRow = {
-  material: string
-  length: string
-  cells: Record<number, string>
+  spec: number
+  /** 定尺 → 该格的行键（`类别|材质|规格|定尺`）；该规格没有这个定尺时没有键，渲染为「—」。 */
+  cells: Record<string, string>
 }
 
-/** 一个品类块：自己的规格列表 + 该品类下的行（材质 + 定尺）。 */
+/** 一个材质块：列 = 该材质出现过的定尺，行 = 规格升序。 */
 export type TransposedBlock = {
   category: string
-  specs: number[]
+  material: string
+  lengths: string[]
   rows: TransposedRow[]
 }
 
-/** 一个品牌分块：品牌下按品类拆分（不同品类的规格集合不同，不能共用同一组列）。 */
+/** 一个品牌分块：品牌下按品类拆开（不同品类的规格集合不同，不能共用同一组行）。 */
 export type TransposedSection = {
   brandName: string
   blocks: TransposedBlock[]
@@ -31,8 +37,15 @@ export function specHeader(spec: number): string {
   return String(spec)
 }
 
-const pairKeyOf = (row: Pick<QuoteRow, 'material' | 'length'>) =>
-  `${row.material}\u0000${row.length}`
+/**
+ * 定尺列头：`9米` / `12米`；无定尺（卷材，`''` 或 `'-'`）显示为「—」。
+ *
+ * <p>没有定尺的商品（盘螺一类）只占一列，用「—」表示"这一列不是某个定尺"，
+ * 而不是把 `'-'` 这种占位值直接摆到表头。</p>
+ */
+export function lengthHeader(length: string): string {
+  return length === '' || length === '-' ? '—' : length
+}
 
 /** 品类展示顺序（与纸质报价单一致）；未列出的品类排在后面，按首次出现顺序。 */
 const CATEGORY_RANK: Record<string, number> = {
@@ -47,13 +60,14 @@ const categoryRankOf = (category: string) => CATEGORY_RANK[category] ?? 50
 
 /**
  * 把「一行一个规格 + 定尺」的扁平数据重组为**规格横置**布局：
- * 品牌分块 → 品类块（规格成为列）→ 行 = 材质 + 定尺。
+ * 品牌分块 → 品类块 → 材质块（材质名横跨定尺列）→ 行 = 规格，列 = 定尺。
  *
- * <p>为什么按品类分块：螺纹钢是 Φ12–Φ32、盘螺是 Φ6–Φ12、圆钢是 Φ40–Φ60，
- * 各品类规格集合不同；硬合并成一张表会出现大量空列（真实报价单也是每个品类一块）。</p>
+ * <p>为什么按品类再按材质分块：螺纹钢是 Φ12–Φ32、盘螺是 Φ6–Φ12、圆钢是 Φ40–Φ60，
+ * 各品类规格集合不同；同一品类里 HRB400 / HRB400E / HPB300 的规格集合也可能不同。
+ * 硬合并成一张表会出现大量空列 —— 真实报价单也是"每个材质一张小表"。</p>
  *
- * <p>行顺序：材质升序 + 定尺按报价习惯（9米 → 12米 → 无定尺），与现有网格一致；
- * 品类顺序按数据里首次出现的顺序（螺纹钢 → 盘螺 → 线材 → 圆钢）。</p>
+ * <p>顺序：品类按业务习惯（螺纹钢 → 直条 → 盘螺 → 线材 → 圆钢，未列出的按首次出现），
+ * 材质按名称升序，定尺按报价习惯（9米 → 12米 → 无定尺），规格数值升序。</p>
  */
 export function buildTransposedSections(
   rows: readonly QuoteRow[],
@@ -73,32 +87,40 @@ export function buildTransposedSections(
         categoryRankOf(left.category) - categoryRankOf(right.category) ||
         left.order - right.order,
     )
-    .map(({ category, list }) => {
-      const specs = [...new Set(list.map((row) => row.spec))].sort(
-        (left, right) => left - right,
-      )
-      const pairs = new Map<string, { material: string; length: string }>()
+    .flatMap(({ category, list }) => {
+      const byMaterial = new Map<string, QuoteRow[]>()
       for (const row of list) {
-        const key = pairKeyOf(row)
-        if (!pairs.has(key)) {
-          pairs.set(key, { material: row.material, length: row.length })
-        }
+        const materialRows = byMaterial.get(row.material)
+        if (materialRows) materialRows.push(row)
+        else byMaterial.set(row.material, [row])
       }
-      const ordered = [...pairs.values()].sort(
-        (left, right) =>
-          left.material.localeCompare(right.material, 'zh-Hans-CN') ||
-          lengthRank(left.length) - lengthRank(right.length),
-      )
-      const transposedRows = ordered.map<TransposedRow>((pair) => {
-        const cells: Record<number, string> = {}
-        for (const row of list) {
-          if (row.material === pair.material && row.length === pair.length) {
-            cells[row.spec] = quoteRowKey(row)
-          }
-        }
-        return { ...pair, cells }
-      })
-      return { category, specs, rows: transposedRows }
+      return [...byMaterial.entries()]
+        .map(([material, materialRows], order) => ({
+          material,
+          materialRows,
+          order,
+        }))
+        .sort(
+          (left, right) =>
+            left.material.localeCompare(right.material, 'zh-Hans-CN') ||
+            left.order - right.order,
+        )
+        .map(({ material, materialRows }) => {
+          const lengths = [
+            ...new Set(materialRows.map((row) => row.length)),
+          ].sort((left, right) => lengthRank(left) - lengthRank(right))
+          const specs = [...new Set(materialRows.map((row) => row.spec))].sort(
+            (left, right) => left - right,
+          )
+          const transposedRows = specs.map<TransposedRow>((spec) => {
+            const cells: Record<string, string> = {}
+            for (const row of materialRows) {
+              if (row.spec === spec) cells[row.length] = quoteRowKey(row)
+            }
+            return { spec, cells }
+          })
+          return { category, material, lengths, rows: transposedRows }
+        })
     })
 
   return brandNames.map((brandName) => ({ brandName, blocks }))

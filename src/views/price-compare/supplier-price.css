@@ -8,8 +8,29 @@
   min-width: 0;
 }
 
-.supplier-price-sheet .ant-table-tbody > tr > td {
-  padding: 2px 4px;
+/*
+ * 行高与内边距都由 `--app-font-size`（个人设置里的字号）换算 —— **跟随字号自动调整**。
+ *
+ * 之前写死 `height: 30px` + antd 默认 `padding: 8px`，一行 49px，一屏放不下几行；
+ * 而写死 px 还有个隐患：字号调大后单元格还是那么高，数字会被挤（或反过来留一片空白）。
+ * 现在行高 = 字号 × 1.8（14px 字号约 25px，整行约 28px），字号调到 20px 时整行自动变 40px。
+ *
+ * 内边距必须带 `!important`：antd 6 的表格内边距是 css-in-js 注入的，与本节选择器同特异性时
+ * 它后注入会赢（实测 padding 一直是 8px，旧规则从未生效）。这里只覆盖 padding，不用它改颜色字体。
+ */
+.supplier-price-sheet,
+.supplier-price-transposed {
+  --supplier-price-em: var(--app-font-size, 14px);
+  --supplier-price-row-height: calc(var(--supplier-price-em) * 1.8);
+  --supplier-price-cell-pad-block: calc(var(--supplier-price-em) * 0.1);
+  --supplier-price-cell-pad-inline: calc(var(--supplier-price-em) * 0.3);
+}
+
+.supplier-price-sheet .ant-table-wrapper .ant-table-tbody > tr > td,
+.supplier-price-transposed .ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: var(--supplier-price-cell-pad-block)
+    var(--supplier-price-cell-pad-inline) !important;
+  line-height: 1.45;
 }
 
 /*
@@ -32,13 +53,25 @@
   font-size: 12px;
 }
 
-.supplier-price-sheet .ant-input-number {
+.supplier-price-sheet .ant-input-number,
+.supplier-price-transposed .ant-input-number {
   width: 100%;
 }
 
-.supplier-price-sheet .ant-input-number-input {
-  height: 30px;
-  padding-inline: 6px;
+/* 输入框高度跟行高同一个变量：字号变大时两者一起长，不会出现"行变高、框没变" */
+.supplier-price-sheet .ant-input-number,
+.supplier-price-sheet .ant-input-number-input,
+.supplier-price-transposed .ant-input-number,
+.supplier-price-transposed .ant-input-number-input {
+  height: var(--supplier-price-row-height, 25px);
+  line-height: var(--supplier-price-row-height, 25px);
+  font-size: inherit;
+}
+
+.supplier-price-sheet .ant-input-number-input,
+.supplier-price-transposed .ant-input-number-input {
+  padding-block: 0;
+  padding-inline: 0.35em;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

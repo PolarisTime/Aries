@@ -383,23 +383,28 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
   })
 
-  it('可切换到「规格横置」：规格成为列头、品牌分块、行是材质 + 定尺', async () => {
+  it('可切换到「规格横置」：定尺进表头、行是规格、品牌与材质分块', async () => {
     await render()
     await selectSupplier()
 
     await switchToSpecs()
 
-    // 品牌分块 + 行标签（材质 / 定尺）
+    // 品牌分块 + 材质作为列组表头横跨各定尺
     const brand = container.querySelector('.supplier-price-transposed-brand')
     expect(brand?.textContent).toContain('中天')
     expect(brand?.textContent).toContain('HRB400')
-    expect(brand?.textContent).toContain('9米')
 
-    // 规格成为列头（12 / 14，不带直径符号 Φ），而不是行
+    // 两层表头：「材质 | 规格」+「HRB400 | 9米 12米」
     const headers = sheetHeaders()
-    expect(headers).toContain('12')
-    expect(headers).toContain('14')
-    // 同一行里两个规格各一格，值直接回显服务端价格
+    expect(headers).toContain(
+      i18n.t('priceCompare.supplierPrice.materialColumn'),
+    )
+    expect(headers).toContain(i18n.t('priceCompare.supplierPrice.specColumn'))
+    expect(headers).toContain('9米')
+
+    // 规格是行（12 / 14，不带 Φ），价格回显在对应定尺列里
+    expect(container.textContent).toContain('12')
+    expect(container.textContent).toContain('14')
     expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
     expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
   })
