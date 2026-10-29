@@ -1,3 +1,31 @@
+# [14.6.0](https://github.com/PolarisTime/Aries/compare/v14.5.0...v14.6.0) (2026-10-29)
+
+
+### Bug Fixes
+
+* **master-data:** 表单分区 key 改用字段名派生，避免数组下标 ([c8ef7ab](https://github.com/PolarisTime/Aries/commit/c8ef7ab3d092b81f4ec9a4298ab4b281855912b4))
+* **modules:** 修复单据表头缺失字段并统一表头顺序 ([21bbe36](https://github.com/PolarisTime/Aries/commit/21bbe36c1fc4ec252bb3066172e57a82afc36221))
+* **price-compare:** 供应商报价表没铺满内容区（表体高度写死 560px） ([83e5dde](https://github.com/PolarisTime/Aries/commit/83e5dded956744ef221a6abb7d113599f8117b7a))
+* **price-compare:** 修复「从价格表带价」对螺纹钢一类永远取不到价（类别别名未归一） ([244d6cf](https://github.com/PolarisTime/Aries/commit/244d6cf05592ea66148b9c68138541b0982fffe2))
+* **price-compare:** 去掉「不分定尺」列、定尺列可隐藏、规格去掉 Φ、去掉步进箭头、框线加深 ([60e9bd3](https://github.com/PolarisTime/Aries/commit/60e9bd3ca0481b0b9c81e3397cf1ec286f18dd69)), closes [#d9d9d9](https://github.com/PolarisTime/Aries/issues/d9d9d9)
+* **price-compare:** 无定尺的品类（盘螺）不再多出全是「—」的第三行表头 ([829ab9d](https://github.com/PolarisTime/Aries/commit/829ab9da9f78961d346896e87eb1ccb8349408ce))
+* **schemas:** 销售退货保存请求改用 strictObject 拒绝未知字段 ([e2227b6](https://github.com/PolarisTime/Aries/commit/e2227b66d76635059d2860d1a99db7f068d1c3bb))
+* **ui:** 主按钮禁用态被主色覆盖（保存按钮"深蓝底+灰字"） ([fcc1346](https://github.com/PolarisTime/Aries/commit/fcc134643a9d3314a4eec3d3ca6c58de47632b19)), closes [#0958d9](https://github.com/PolarisTime/Aries/issues/0958d9) [#1677ff](https://github.com/PolarisTime/Aries/issues/1677ff) [#0958d9](https://github.com/PolarisTime/Aries/issues/0958d9) [#fff](https://github.com/PolarisTime/Aries/issues/fff)
+
+
+### Features
+
+* **master-data:** 供应商编辑弹层按四列栅格重排 ([9c50cc4](https://github.com/PolarisTime/Aries/commit/9c50cc459869e706c67c93a2089e3f78ed7807ca))
+* **master-data:** 其余主数据弹层对齐四列栅格与分区 ([6804faa](https://github.com/PolarisTime/Aries/commit/6804faa3d239cab623b2137dc3679df898897c91))
+* **master-data:** 经营品牌改用 antd 表格穿梭框选择 ([c020c2c](https://github.com/PolarisTime/Aries/commit/c020c2cbc6f233f420f613b24f79d973f9acb7fc))
+* **price-compare:** 「列显示」可按「材质 × 定尺」隐藏整列（如 HRB400 12米） ([65962ce](https://github.com/PolarisTime/Aries/commit/65962ce068d9a29f9d6865f33a4c4dee7306c699))
+* **price-compare:** 供应商报价表支持「基价模式 / 手填模式」两种录价方式 ([228d1e0](https://github.com/PolarisTime/Aries/commit/228d1e0cb6d60c746c4f6a4709a88a52d1ef77f9))
+* **price-compare:** 供应商报价表的「列显示」现在能配任意列，含序号/类别/材质/规格 ([4fe651e](https://github.com/PolarisTime/Aries/commit/4fe651ec3bd2cc3b011fc545828192301a46177f))
+* **price-compare:** 供应商报价表重做「选择品牌」，行分组、9米/12米按定尺分列 ([bc9a22e](https://github.com/PolarisTime/Aries/commit/bc9a22e4ee8a04e5fd7f93a77cf0047b12b5bf95))
+* **price-compare:** 报价网格垂直居中、金额列按 5 位数收窄、去掉金额的 .00 ([03da932](https://github.com/PolarisTime/Aries/commit/03da9322688d649c5a4396d571b80ebd78755b67))
+* **price-compare:** 报价行高压缩并跟随字号缩放；规格横置改为「定尺进表头」 ([162f1bd](https://github.com/PolarisTime/Aries/commit/162f1bdf36153703dc03e8689a0607ee50f39b99))
+* **price-compare:** 材质抽到表头，品牌成列变成「品牌 → 材质 → 定尺」三层表头 ([c0e2841](https://github.com/PolarisTime/Aries/commit/c0e2841616e287bc482f054af01b351562ab7828))
+
 # [14.5.0](https://github.com/PolarisTime/Aries/compare/v14.4.0...v14.5.0) (2026-10-28)
 
 
