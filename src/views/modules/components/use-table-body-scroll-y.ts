@@ -11,6 +11,17 @@ import {
   MIN_TABLE_BODY_SCROLL_Y,
 } from '@/views/modules/components/business-grid-table-utils'
 
+export interface TableBodyScrollYOptions {
+  /**
+   * 外壳是否已经挂在页面上。
+   *
+   * <p>默认 `true`（多数列表页的外壳常驻）。若外壳是**条件渲染**的（例如选中供应商后才出现表格），
+   * 必须把它传进来：否则 hook 在挂载时量到的 `shellRef.current` 还是 null，
+   * 之后外壳出现也不会再量，表体高度会一直停在最小值（实测 120px）。</p>
+   */
+  ready?: boolean
+}
+
 export interface TableBodyScrollYResult {
   shellRef: RefObject<HTMLDivElement | null>
   scrollY: number
@@ -32,7 +43,10 @@ export interface TableBodyScrollYResult {
  *     表格列宽合计要按它来分配富余，否则按 shellWidth 分配会被滚动条再挤出横向滚动条。</li>
  * </ul>
  */
-export function useTableBodyScrollY(): TableBodyScrollYResult {
+export function useTableBodyScrollY(
+  options: TableBodyScrollYOptions = {},
+): TableBodyScrollYResult {
+  const ready = options.ready ?? true
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const [shellWidth, setShellWidth] = useState(0)
@@ -41,6 +55,7 @@ export function useTableBodyScrollY(): TableBodyScrollYResult {
   const observedBodyRef = useRef<Element | null>(null)
 
   useLayoutEffect(() => {
+    if (!ready) return
     const shell = shellRef.current
     if (!shell || typeof ResizeObserver === 'undefined') return
 
@@ -80,7 +95,7 @@ export function useTableBodyScrollY(): TableBodyScrollYResult {
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [])
+  }, [ready])
 
   const shellStyle = {
     '--module-table-body-height': `${scrollY}px`,

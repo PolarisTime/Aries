@@ -6,6 +6,24 @@
  */
 .supplier-price-page {
   min-width: 0;
+  /* 页面本身是纵向 flex：表格区吃掉剩余高度，表体自己滚动，表头固定 */
+  min-height: 0;
+}
+
+/*
+ * 报价表撑满内容区：外壳复用业务网格的 `.module-table-shell`（flex 链 + 表体高度变量），
+ * 这里只补中间那层（Spin 容器与表格之间的 div）把 flex 链传下去。
+ */
+.supplier-price-page > .supplier-price-sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.supplier-price-sheet-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /*

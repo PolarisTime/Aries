@@ -58,6 +58,7 @@ import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
+import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 import { SupplierBasePriceRuleModal } from './SupplierBasePriceRuleModal'
 import {
   type BrandDraft,
@@ -328,6 +329,26 @@ export function SupplierQuotePage() {
     () => orderedViews.filter((view) => !hiddenBrandSet.has(view.brandName)),
     [hiddenBrandSet, orderedViews],
   )
+
+  /*
+   * 表体高度按容器**实测**给，不再写死 560：写死时窗口再高也只露 19 行，下方留一大片空白，
+   * 被误当成"表格没显示完整"。量取逻辑与业务网格共用同一个 hook（`--module-table-body-height`）。
+   *
+   * <p>`ready` 必须精确等于「品牌成列视图的外壳此刻挂载了」——外壳前面还有 4 个分支
+   * （未选供应商 / 没有经营品牌 / 列全隐藏 / 规格横置），只看 `supplierId` 会在外壳还没出现时
+   * 算一次，之后不再重算，表体永远停在最小高度（实测 120px）。</p>
+   */
+  const {
+    shellRef,
+    scrollY: sheetBodyScrollY,
+    shellStyle: sheetShellStyle,
+  } = useTableBodyScrollY({
+    ready:
+      Boolean(supplierId) &&
+      orderedViews.length > 0 &&
+      displayViews.length > 0 &&
+      viewMode === 'brands',
+  })
 
   const visibleBrands = useMemo(
     () => displayViews.map((view) => view.brandName),
@@ -1851,32 +1872,37 @@ export function SupplierQuotePage() {
           </div>
         </Spin>
       ) : (
-        <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
-          {/* Excel 式网格：行=规格、列=品牌；粘贴与键盘移动都以当前聚焦格为锚点 */}
-          <div
-            className="supplier-price-sheet"
-            onKeyDownCapture={guardUndoRedo}
-            onPaste={handlePaste}
-            ref={gridRef}
-          >
-            <Table<SpecRow>
-              bordered
-              columns={sheetColumns}
-              dataSource={displayRows}
-              pagination={false}
-              rowKey={specRowKey}
-              scroll={{ x: sheetWidth, y: 560 }}
-              tableLayout="fixed"
-              size="small"
-              sticky
-              locale={{
-                emptyText: (
-                  <Empty description={t('priceCompare.supplierPrice.empty')} />
-                ),
-              }}
-            />
-          </div>
-        </Spin>
+        <div
+          className="supplier-price-sheet module-table-shell"
+          onKeyDownCapture={guardUndoRedo}
+          onPaste={handlePaste}
+          ref={shellRef}
+          style={sheetShellStyle}
+        >
+          <Spin spinning={saving || specsQuery.isPending || gridsLoading}>
+            {/* Excel 式网格：行=规格、列=品牌；粘贴与键盘移动都以当前聚焦格为锚点 */}
+            <div className="supplier-price-sheet-body" ref={gridRef}>
+              <Table<SpecRow>
+                bordered
+                columns={sheetColumns}
+                dataSource={displayRows}
+                pagination={false}
+                rowKey={specRowKey}
+                scroll={{ x: sheetWidth, y: sheetBodyScrollY }}
+                tableLayout="fixed"
+                size="small"
+                sticky
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description={t('priceCompare.supplierPrice.empty')}
+                    />
+                  ),
+                }}
+              />
+            </div>
+          </Spin>
+        </div>
       )}
 
       {supplierId && ruleBrand ? (

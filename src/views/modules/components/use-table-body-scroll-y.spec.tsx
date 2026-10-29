@@ -19,6 +19,21 @@ function Harness() {
   )
 }
 
+/** 外壳条件渲染的场景：`ready` 从 false 变 true 时必须补量一次。 */
+function ReadyHarness({ ready }: { ready: boolean }) {
+  const { shellRef, scrollY, shellStyle } = useTableBodyScrollY({ ready })
+  return (
+    <div
+      ref={shellRef}
+      className="module-table-shell"
+      data-scroll-y={scrollY}
+      style={shellStyle}
+    >
+      <div className="ant-table-thead" />
+    </div>
+  )
+}
+
 describe('useTableBodyScrollY', () => {
   let container: HTMLDivElement
   let root: Root
@@ -64,6 +79,30 @@ describe('useTableBodyScrollY', () => {
       shell
         ?.getAttribute('style')
         ?.includes('--module-table-body-height: 500px'),
+    ).toBe(true)
+  })
+
+  it('ready 由 false 变 true 时补量：条件渲染的外壳不会停在最小高度', () => {
+    vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(640)
+    act(() => {
+      root.render(<ReadyHarness ready={false} />)
+    })
+    // 外壳还没出现时不量，保持最小值
+    expect(
+      container
+        .querySelector('.module-table-shell')
+        ?.getAttribute('data-scroll-y'),
+    ).toBe('120')
+
+    act(() => {
+      root.render(<ReadyHarness ready />)
+    })
+    const shell = container.querySelector('.module-table-shell')
+    expect(shell?.getAttribute('data-scroll-y')).toBe('640')
+    expect(
+      shell
+        ?.getAttribute('style')
+        ?.includes('--module-table-body-height: 640px'),
     ).toBe(true)
   })
 
