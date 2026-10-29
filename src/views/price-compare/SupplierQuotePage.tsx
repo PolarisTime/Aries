@@ -194,8 +194,6 @@ export function SupplierQuotePage() {
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未保存的改动：品牌 → 该列的草稿（`null` = 明确清空）。 */
   const [drafts, setDrafts] = useState<Record<string, BrandDraft>>({})
-  /** 本次手动添加、且不在「经营品牌」里的品牌（含用户输入的、商品资料里没有的品牌）。 */
-  const [extraBrands, setExtraBrands] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   /** 列显示偏好：顺序 + 隐藏集合（按供应商存 localStorage，刷新后保持）。 */
   const [brandOrder, setBrandOrder] = useState<string[]>([])
@@ -218,7 +216,6 @@ export function SupplierQuotePage() {
 
   /** 资源级权限：读/写/删分开，只读用户不该看到可点的保存与移除。 */
   const canUpdate = useHasPermission('supplier-price-lists:update')
-  const canCreate = useHasPermission('supplier-price-lists:create')
   const canDelete = useHasPermission('supplier-price-lists:delete')
 
   /** 网格容器与当前聚焦单元格：粘贴从「锚点格」开始铺。 */
@@ -246,19 +243,20 @@ export function SupplierQuotePage() {
   )
 
   /**
-   * 候选品牌 = 经营品牌 ∪ 商品品牌全集 ∪ 本次添加。
+   * 候选品牌 = **供应商资料里的经营品牌** ∪ 商品品牌全集（仅用于发现历史价格表）。
    *
-   * <p>商品品牌全集用于**发现历史数据**：经营品牌没维护、但价格表已经存在的品牌必须也能被维护，
-   * 否则那些报价在页面上永远看不见（历史数据里确实存在这种组合）。</p>
+   * <p>不再提供"手动选择品牌"：品牌的唯一来源是供应商资料（主数据），
+   * 报价页只负责把该供应商该报的品牌列出来。商品品牌全集只用来**发现历史数据** ——
+   * 经营品牌没维护、但价格表已经存在的品牌必须还能被看到，否则那些报价会凭空消失。</p>
    */
   const candidateBrands = useMemo(
     () =>
       brandColumnOrder({
         declared: declaredBrands,
         discover: materialBrands,
-        extra: extraBrands,
+        extra: [],
       }),
-    [declaredBrands, extraBrands, materialBrands],
+    [declaredBrands, materialBrands],
   )
 
   /**
@@ -294,7 +292,7 @@ export function SupplierQuotePage() {
         return { brandName, grid, column, cells: serverCellsOf(grid, column) }
       },
     )
-    const shown = new Set([...declaredBrands, ...extraBrands])
+    const shown = new Set(declaredBrands)
     const visibleViews = allViews.filter(
       (view) => shown.has(view.brandName) || view.column !== null,
     )
@@ -307,14 +305,7 @@ export function SupplierQuotePage() {
       viewByBrand: new Map(visibleViews.map((view) => [view.brandName, view])),
       rows: rowList,
     }
-  }, [
-    candidateBrands,
-    declaredBrands,
-    extraBrands,
-    grids,
-    specsQuery.data,
-    supplierId,
-  ])
+  }, [candidateBrands, declaredBrands, grids, specsQuery.data, supplierId])
 
   /** 按用户列顺序排好的全部品牌（含被隐藏的：隐藏只是不渲染，保存仍要提交）。 */
   const orderedViews = useMemo(() => {
@@ -780,14 +771,12 @@ export function SupplierQuotePage() {
     })
   }
 
-  /** 移除品牌列：已有价格表走确认+软删除；只是本次添加的新列则直接撤掉。 */
+  /** 移除品牌列：已有价格表走确认+软删除。 */
   const removeBrand = (brandName: string) => {
     const column = viewByBrand.get(brandName)?.column
     if (!column) {
+      // 没有落库过的列：只丢弃未保存草稿即可（品牌本身来自供应商资料，不在这里删）
       dropDraft(brandName)
-      setExtraBrands((current) =>
-        current.filter((brand) => brand !== brandName),
-      )
       return
     }
     modal.confirm({
@@ -799,9 +788,6 @@ export function SupplierQuotePage() {
       onOk: async () => {
         await removeSupplierPriceColumn(column.listId)
         dropDraft(brandName)
-        setExtraBrands((current) =>
-          current.filter((brand) => brand !== brandName),
-        )
         await invalidateBrand(brandName)
       },
     })
@@ -817,7 +803,6 @@ export function SupplierQuotePage() {
         window.localStorage.getItem(draftsKey(nextSupplierId)),
       )
       setSupplierId(nextSupplierId)
-      setExtraBrands([])
       setDrafts(restored)
       setHistory(EMPTY_HISTORY)
       setRestoredDrafts(draftMapDirty(restored))
@@ -842,27 +827,6 @@ export function SupplierQuotePage() {
       cancelText: t('common.cancel'),
       onOk: applyChange,
     })
-  }
-
-  /**
-   * 品牌多选的唯一改动入口：勾选即建列、取消即隐藏列（数据不动，可再勾回来）。
-   *
-   * <p>选择列表默认来自**供应商资料里的经营品牌**；同时保留两类来源以免历史数据「看不见」：
-   * 已有价格表但没维护进经营品牌的、以及用户手动输入的新品牌。</p>
-   */
-  const changeBrandSelection = (next: readonly string[]) => {
-    /*
-     * 「本次添加」= 勾中的、且不在供应商资料经营品牌里的品牌。
-     * 候选品牌全集里出现（例如商品资料里有这个品牌）并不等于要显示 —— 显示与否由勾选决定;
-     * 否则勾选一个资料外的品牌会因为它只是"候选"而什么都不发生（实测踩过）。
-     */
-    const declared = new Set(declaredBrands)
-    const added = next.filter(
-      (brand) => !declared.has(brand) && !extraBrands.includes(brand),
-    )
-    if (added.length) setExtraBrands((current) => [...current, ...added])
-    const all = [...new Set([...candidateBrands, ...next])]
-    setHiddenBrands(all.filter((brand) => !next.includes(brand)))
   }
 
   /** 当前列顺序（含隐藏列），拖拽/左移右移都基于它重排。 */
@@ -981,40 +945,6 @@ export function SupplierQuotePage() {
     if (key === 'clear') return clearColumn(brandName)
     if (key === 'remove') return removeBrand(brandName)
   }
-
-  /**
-   * 品牌选择器的候选项，分三组:
-   * ① 供应商资料里的经营品牌（默认来源）；
-   * ② 已有价格表、但没维护进供应商资料的品牌（否则历史报价在页面上不可见）；
-   * ③ 其余商品品牌（补充）。
-   */
-  const brandPickerOptions = useMemo(() => {
-    const declared = new Set(declaredBrands)
-    const withColumn = orderedViews
-      .filter((view) => view.column !== null && !declared.has(view.brandName))
-      .map((view) => view.brandName)
-    const withColumnSet = new Set(withColumn)
-    const rest = candidateBrands.filter(
-      (brand) => !declared.has(brand) && !withColumnSet.has(brand),
-    )
-    const group = (label: string, brands: readonly string[]) =>
-      brands.length === 0
-        ? []
-        : [
-            {
-              label,
-              options: brands.map((brand) => ({ value: brand, label: brand })),
-            },
-          ]
-    return [
-      ...group(
-        t('priceCompare.supplierPrice.brandGroupDeclared'),
-        declaredBrands,
-      ),
-      ...group(t('priceCompare.supplierPrice.brandGroupQuoted'), withColumn),
-      ...group(t('priceCompare.supplierPrice.brandGroupOther'), rest),
-    ]
-  }, [candidateBrands, declaredBrands, orderedViews, t])
 
   const supplierOptions = (suppliersQuery.data ?? []).map((option) => ({
     value: option.value,
@@ -1484,33 +1414,6 @@ export function SupplierQuotePage() {
         >
           {t('priceCompare.supplierPrice.refresh')}
         </Button>
-        {/*
-          选择品牌：勾选即建列、取消即隐藏列（不会删数据）。
-          候选项默认来自「供应商资料 → 经营品牌」；同时列出已有价格表但未维护进资料的品牌,
-          避免历史报价在页面上消失; 也允许直接输入资料里没有的品牌。
-        */}
-        <Flex align="center" gap={8} style={{ marginInlineStart: 'auto' }} wrap>
-          <Typography.Text type="secondary">
-            {t('priceCompare.supplierPrice.pickBrands')}
-          </Typography.Text>
-          <Tooltip title={t('priceCompare.supplierPrice.pickBrandsHint')}>
-            <Select
-              aria-label={t('priceCompare.supplierPrice.pickBrands')}
-              className="supplier-price-brand-picker"
-              disabled={!canCreate && extraBrands.length === 0}
-              maxTagCount="responsive"
-              mode="tags"
-              options={brandPickerOptions}
-              placeholder={t(
-                'priceCompare.supplierPrice.pickBrandsPlaceholder',
-              )}
-              style={{ minWidth: 300, maxWidth: 460 }}
-              tokenSeparators={[',', '，', ' ']}
-              value={visibleBrands}
-              onChange={(next) => changeBrandSelection(next)}
-            />
-          </Tooltip>
-        </Flex>
       </Flex>
 
       {/* 行/列操作：规格搜索、只看未填、列显示（隐藏列不影响已填价格） */}

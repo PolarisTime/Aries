@@ -254,8 +254,6 @@ describe('供应商报价表（Excel 式报价网格）', () => {
   }
 
   const selects = () => container.querySelectorAll('.ant-select')
-  /** 品牌多选（「选择品牌」）：工具栏里第二个 antd Select（第一个是供应商）。 */
-  const brandPicker = () => selects()[1] ?? null
 
   async function selectSupplier(title = SUPPLIER.supplierName) {
     await pickOption(selects()[0] ?? null, title)
@@ -540,7 +538,11 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     ).toBe('中天 HRB400 12 9米')
   })
 
-  it('在「选择品牌」里勾选品牌即建列；录入后保存先建列再提交条目', async () => {
+  it('经营品牌直接建列；录入后保存先建列再提交条目', async () => {
+    // 品牌来源是供应商资料：资料里有两个经营品牌 → 表格直接两列，无需手动选择
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天', '永钢'] },
+    ])
     priceApi.addSupplierPriceColumn.mockResolvedValue({
       listId: 'l2',
       supplierId: 's1',
@@ -552,10 +554,6 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     })
     await render()
     await selectSupplier()
-
-    // 品牌选择器是多选（tags），勾选一个资料里没有的品牌 → 立刻多出一列
-    await pickOption(brandPicker(), '永钢')
-    await flush()
 
     expect(sheetHeaders().some((text) => text.includes('永钢'))).toBe(true)
     await typePrice('永钢 HRB400 12 9米', '3150')
@@ -658,20 +656,6 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await confirmLastModal()
-    await flush()
-  }
-
-  async function addBrandNamed(brand: string) {
-    priceApi.addSupplierPriceColumn.mockResolvedValue({
-      listId: `l-${brand}`,
-      supplierId: 's1',
-      supplierName: SUPPLIER.supplierName,
-      quotedOn: null,
-      updatedAt: null,
-      warehouse: null,
-      version: 0,
-    })
-    await pickOption(brandPicker(), brand)
     await flush()
   }
 
@@ -977,9 +961,11 @@ describe('供应商报价表（Excel 式报价网格）', () => {
   })
 
   it('拖拽列头调整顺序，并把偏好写入本地存储', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天', '永钢'] },
+    ])
     await render()
     await selectSupplier()
-    await addBrandNamed('永钢')
     expect(brandHeaders()).toEqual(['中天', '永钢'])
 
     const handles = Array.from(
