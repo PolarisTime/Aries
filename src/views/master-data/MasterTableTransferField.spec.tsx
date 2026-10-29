@@ -143,6 +143,32 @@ describe('经营品牌表格穿梭框', () => {
     expect(value).toContain('中天')
   })
 
+  it('品牌多时两栏定高、表体内部滚动，弹窗不被撑出视口', async () => {
+    await render()
+    await clickButton('选择品牌')
+
+    // 两栏定高（styles.section）：品牌 30+ 条也不会让弹窗长高
+    const sections = [...document.querySelectorAll('.ant-transfer-section')]
+    expect(sections.length).toBe(2)
+    for (const section of sections) {
+      expect((section as HTMLElement).style.height).toBe('380px')
+    }
+
+    // 表体滚动：只有设置了 scroll.y 才会渲染 .ant-table-body
+    const tableBodies = [
+      ...document.querySelectorAll('.master-transfer .ant-table-body'),
+    ] as HTMLElement[]
+    expect(tableBodies.length).toBe(2)
+    expect(tableBodies[0].style.maxHeight || tableBodies[0].style.height).toBe(
+      '280px',
+    )
+
+    // 弹窗内容区限高，内容过多时整体可滚动而不是溢出视口
+    const modalBody = document.querySelector('.ant-modal-body') as HTMLElement
+    expect(modalBody.style.maxHeight).toContain('64vh')
+    expect(modalBody.style.overflowY).toBe('auto')
+  })
+
   it('取消不写回表单', async () => {
     await render()
     await clickButton('选择品牌')

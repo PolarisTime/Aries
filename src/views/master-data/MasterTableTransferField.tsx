@@ -95,11 +95,13 @@ export function MasterTableTransferField({
 
       <Modal
         cancelText={t('common.cancel')}
+        centered
         destroyOnHidden
         okText={t('common.save')}
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         open={open}
+        styles={{ body: { maxHeight: 'min(64vh, 520px)', overflowY: 'auto' } }}
         title={t('modules.pages.supplier.brandsTransferTitle')}
         width={880}
       >
@@ -144,6 +146,10 @@ function TableTransfer({
     <Transfer
       className="master-transfer"
       dataSource={dataSource}
+      styles={{
+        // 两栏固定高度：表格在内部滚动，品牌 30+ 条也不会把弹窗撑高
+        section: { height: 380 },
+      }}
       filterOption={(input, item) => item.title.includes(input)}
       onChange={(nextKeys) => onChange?.(nextKeys.map(toKey))}
       actions={[
@@ -185,6 +191,7 @@ function TableTransfer({
             pagination={false}
             rowSelection={rowSelection}
             rowKey="key"
+            scroll={{ y: 280 }}
             size="small"
             style={{ pointerEvents: listDisabled ? 'none' : undefined }}
             onRow={({ key }) => ({

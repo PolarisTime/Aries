@@ -26,14 +26,27 @@
   margin-inline-end: 0;
 }
 
-/* 穿梭框左右两栏等宽，表格贴满列表 */
+/*
+ * 穿梭框：左右两栏等宽、定高，表格自己在内部滚动。
+ *
+ * <p>原来两栏高度由表格内容决定：34 个品牌时列表高 995px，弹窗被撑到 1143px 并溢出
+ * 视口（实测 y=-121）。现在两栏固定 380px（由 `styles.section` 给），表体滚动 280px。</p>
+ */
+.master-transfer {
+  align-items: stretch;
+}
+
 .master-transfer .ant-transfer-section {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
 }
 
 .master-transfer .ant-transfer-list-body {
-  overflow: auto;
+  padding: 0;
+}
+
+.master-transfer .ant-transfer-list-body-customize-wrapper {
+  height: 100%;
 }
 
 .master-transfer .ant-table {
