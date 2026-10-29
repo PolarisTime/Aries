@@ -327,18 +327,49 @@ export const SHEET_COLUMN_WIDTH = {
 } as const
 
 /**
- * 网格总宽：固定列（序号/类别/材质/规格） + 品牌数 × 定尺数 × 单定尺列宽。
+ * 表格最左侧的固定列（序号/类别/材质/规格）。
  *
- * <p>品牌列不再是"一格塞 9米/12米 两行"，而是按定尺拆成两列，所以宽度要乘定尺数。</p>
+ * <p>**唯一来源**：列定义、右上角「列设置」里的固定列开关、表宽计算都读这份清单，
+ * 不要让三处各写一遍 key/宽度 —— 那正是"同一个事实存在两份"的典型缺陷。</p>
  */
-export function sheetWidthOf(brandCount: number, lengthCount = 1): number {
-  const { index, category, material, specNo, lengthCell } = SHEET_COLUMN_WIDTH
+export const SHEET_FIXED_COLUMNS = [
+  { key: 'index', labelKey: 'rowIndex', width: SHEET_COLUMN_WIDTH.index },
+  { key: 'category', labelKey: 'category', width: SHEET_COLUMN_WIDTH.category },
+  { key: 'material', labelKey: 'material', width: SHEET_COLUMN_WIDTH.material },
+  { key: 'spec', labelKey: 'specNo', width: SHEET_COLUMN_WIDTH.specNo },
+] as const
+
+export type SheetFixedColumnKey = (typeof SHEET_FIXED_COLUMNS)[number]['key']
+
+/** 只保留已知的固定列 key：本地存储被改坏时不会让表格凭空少一列。 */
+export function parseFixedColumnKeys(raw: unknown): SheetFixedColumnKey[] {
+  if (!Array.isArray(raw)) return []
+  const known = new Set<string>(SHEET_FIXED_COLUMNS.map((column) => column.key))
+  return raw.filter(
+    (item): item is SheetFixedColumnKey =>
+      typeof item === 'string' && known.has(item),
+  )
+}
+
+/**
+ * 网格总宽：**可见的**固定列 + 品牌数 × 定尺数 × 单定尺列宽。
+ *
+ * <p>品牌列按定尺拆开，所以宽度要乘定尺数；固定列可以被隐藏，隐藏的要从总宽里扣掉，
+ * 否则关掉「类别/材质」后表格右侧会空出一段。</p>
+ */
+export function sheetWidthOf(
+  brandCount: number,
+  lengthCount = 1,
+  hiddenFixed: readonly SheetFixedColumnKey[] = [],
+): number {
+  const fixedWidth = SHEET_FIXED_COLUMNS.filter(
+    (column) => !hiddenFixed.includes(column.key),
+  ).reduce((total, column) => total + column.width, 0)
   return (
-    index +
-    category +
-    material +
-    specNo +
-    Math.max(brandCount, 1) * Math.max(lengthCount, 1) * lengthCell
+    fixedWidth +
+    Math.max(brandCount, 1) *
+      Math.max(lengthCount, 1) *
+      SHEET_COLUMN_WIDTH.lengthCell
   )
 }
 
@@ -348,9 +379,16 @@ export type BrandPrefs = {
   hidden: string[]
   /** 隐藏的定尺列（9米/12米…）：有些供应商只报其中一种定尺。 */
   hiddenLengths: string[]
+  /** 隐藏的固定列（序号/类别/材质/规格）：窗口窄时可以只留价格列。 */
+  hiddenFixed: SheetFixedColumnKey[]
 }
 
-const EMPTY_PREFS: BrandPrefs = { order: [], hidden: [], hiddenLengths: [] }
+const EMPTY_PREFS: BrandPrefs = {
+  order: [],
+  hidden: [],
+  hiddenLengths: [],
+  hiddenFixed: [],
+}
 
 /** 解析本地保存的偏好；任何脏数据都退化为「默认顺序、不隐藏」，不影响打开页面。 */
 export function parseBrandPrefs(raw: string | null): BrandPrefs {
@@ -360,6 +398,7 @@ export function parseBrandPrefs(raw: string | null): BrandPrefs {
       order?: unknown
       hidden?: unknown
       hiddenLengths?: unknown
+      hiddenFixed?: unknown
     }
     const strings = (input: unknown): string[] =>
       Array.isArray(input)
@@ -368,8 +407,9 @@ export function parseBrandPrefs(raw: string | null): BrandPrefs {
     return {
       order: strings(value.order),
       hidden: strings(value.hidden),
-      // 老数据没有这个字段 → 空集合（全部定尺列显示）
+      // 老数据没有这两个字段 → 空集合（全部定尺/固定列显示）
       hiddenLengths: strings(value.hiddenLengths),
+      hiddenFixed: parseFixedColumnKeys(value.hiddenFixed),
     }
   } catch {
     return { ...EMPTY_PREFS }

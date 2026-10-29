@@ -1159,4 +1159,49 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await toggleCheckbox('12米')
     expect(sheetHeaders().some((text) => text.includes('12米'))).toBe(true)
   })
+
+  it('固定列也能在「列显示」里关掉，但至少保留一列', async () => {
+    await render()
+    await selectSupplier()
+    const openPanel = async () => {
+      const button = Array.from(container.querySelectorAll('button')).find(
+        (item) =>
+          (item.textContent ?? '').includes(
+            i18n.t('priceCompare.supplierPrice.columns'),
+          ),
+      )
+      await act(async () => {
+        button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      await flush()
+    }
+    const fixedLabels = ['rowIndex', 'category', 'material', 'specNo'].map(
+      (key) => i18n.t(`priceCompare.supplierPrice.${key}`),
+    )
+
+    await openPanel()
+    // 默认四列都在（面板里也有对应开关）
+    for (const label of fixedLabels) {
+      expect(container.textContent).toContain(label)
+    }
+
+    await toggleCheckbox(fixedLabels[1])
+    expect(sheetHeaders().some((text) => text.includes(fixedLabels[1]))).toBe(
+      false,
+    )
+    // 其它固定列不受影响
+    expect(sheetHeaders().some((text) => text.includes(fixedLabels[3]))).toBe(
+      true,
+    )
+
+    // 全部关掉时最后一个关不掉：否则每一行没有任何可读标识
+    for (const label of [fixedLabels[0], fixedLabels[2], fixedLabels[3]]) {
+      await toggleCheckbox(label)
+    }
+    const remaining = sheetHeaders().filter((text) =>
+      fixedLabels.some((label) => text.includes(label)),
+    )
+    expect(remaining).toHaveLength(1)
+  })
 })

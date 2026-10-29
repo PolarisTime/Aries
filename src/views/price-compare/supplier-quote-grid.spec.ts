@@ -12,11 +12,13 @@ import {
   orderedLengths,
   parseBrandPrefs,
   parseClipboardGrid,
+  parseFixedColumnKeys,
   parseGridPrice,
   reorderBrands,
   roundPrice,
   rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
+  SHEET_FIXED_COLUMNS,
   serializeBrandPrefs,
   sheetWidthOf,
   shiftBrand,
@@ -240,25 +242,34 @@ describe('列显示偏好与顺序', () => {
       order: [],
       hidden: [],
       hiddenLengths: [],
+      hiddenFixed: [],
     })
     expect(parseBrandPrefs('not-json')).toEqual({
       order: [],
       hidden: [],
       hiddenLengths: [],
+      hiddenFixed: [],
     })
     expect(parseBrandPrefs('{"order":["a",1],"hidden":["b"]}')).toEqual({
       order: ['a'],
       hidden: ['b'],
       hiddenLengths: [],
+      hiddenFixed: [],
     })
     // 定尺列隐藏集合同样是个人偏好，随品牌偏好一起存
     expect(
       parseBrandPrefs('{"order":[],"hidden":[],"hiddenLengths":["12米"]}'),
-    ).toEqual({ order: [], hidden: [], hiddenLengths: ['12米'] })
+    ).toEqual({
+      order: [],
+      hidden: [],
+      hiddenLengths: ['12米'],
+      hiddenFixed: [],
+    })
     const prefs = {
       order: ['中天'],
       hidden: ['永钢'],
       hiddenLengths: ['12米'],
+      hiddenFixed: ['category' as const],
     }
     expect(parseBrandPrefs(serializeBrandPrefs(prefs))).toEqual(prefs)
   })
@@ -276,6 +287,30 @@ describe('列宽：固定表宽，不随容器拉伸', () => {
     expect(sheetWidthOf(3, 2)).toBe(fixed + 6 * SHEET_COLUMN_WIDTH.lengthCell)
     // 只有一个定尺（整页都是盘螺）时退回单列宽
     expect(sheetWidthOf(2, 1)).toBe(fixed + 2 * SHEET_COLUMN_WIDTH.lengthCell)
+  })
+
+  it('隐藏固定列后总宽要扣掉它（否则右侧空一段）', () => {
+    const all = sheetWidthOf(1, 1)
+    expect(sheetWidthOf(1, 1, ['category'])).toBe(
+      all - SHEET_COLUMN_WIDTH.category,
+    )
+    expect(sheetWidthOf(1, 1, ['index', 'category', 'material', 'spec'])).toBe(
+      1 * SHEET_COLUMN_WIDTH.lengthCell,
+    )
+  })
+
+  it('固定列清单是唯一来源：key/文案/宽度都从它派生', () => {
+    expect(SHEET_FIXED_COLUMNS.map((column) => column.key)).toEqual([
+      'index',
+      'category',
+      'material',
+      'spec',
+    ])
+    // 脏数据（未知 key / 非字符串）不会让表格凭空少列
+    expect(parseFixedColumnKeys(['category', 'unknown', 42])).toEqual([
+      'category',
+    ])
+    expect(parseFixedColumnKeys('nope')).toEqual([])
   })
 
   it('没有品牌列时按 1 列计算，表不会塌成 0 宽', () => {

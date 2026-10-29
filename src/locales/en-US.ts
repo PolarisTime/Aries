@@ -2872,6 +2872,7 @@ export const enUS = {
   },
   priceCompare: {
     supplierPrice: {
+      fixedColumns: 'Fixed columns',
       columnMenu: 'Column settings',
       brand: 'Brand',
       supplier: 'Supplier',

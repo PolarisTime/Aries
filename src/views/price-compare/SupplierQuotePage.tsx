@@ -102,6 +102,8 @@ import {
   roundPrice,
   rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
+  SHEET_FIXED_COLUMNS,
+  type SheetFixedColumnKey,
   type SpecRow,
   serializeBrandPrefs,
   sheetWidthOf,
@@ -204,6 +206,10 @@ export function SupplierQuotePage() {
   const [hiddenBrands, setHiddenBrands] = useState<string[]>([])
   /** 隐藏的定尺列（9米/12米…）：有的供应商只报其中一种定尺。 */
   const [hiddenLengths, setHiddenLengths] = useState<string[]>([])
+  /** 隐藏的固定列（序号/类别/材质/规格）：窗口窄或只想看价格时可以关掉。 */
+  const [hiddenFixedColumns, setHiddenFixedColumns] = useState<
+    SheetFixedColumnKey[]
+  >([])
   /** 行过滤：规格关键字 + 只看未填（按服务端价格判断，边录边消失会打断录入）。 */
   const [specKeyword, setSpecKeyword] = useState('')
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
@@ -420,9 +426,10 @@ export function SupplierQuotePage() {
         order: brandOrder,
         hidden: hiddenBrands,
         hiddenLengths,
+        hiddenFixed: hiddenFixedColumns,
       }),
     )
-  }, [brandOrder, hiddenBrands, hiddenLengths, supplierId])
+  }, [brandOrder, hiddenBrands, hiddenFixedColumns, hiddenLengths, supplierId])
 
   // 视图方向也是个人偏好：按供应商存本地，下次打开保持
   useEffect(() => {
@@ -963,6 +970,7 @@ export function SupplierQuotePage() {
       setBrandOrder(prefs.order)
       setHiddenBrands(prefs.hidden)
       setHiddenLengths(prefs.hiddenLengths)
+      setHiddenFixedColumns(prefs.hiddenFixed)
       setSpecKeyword('')
       setOnlyUnpriced(false)
       setViewMode(readViewMode(nextSupplierId))
@@ -1001,6 +1009,24 @@ export function SupplierQuotePage() {
 
   const hideColumn = (brandName: string) => {
     setHiddenBrands((current) => toggleHidden(current, brandName))
+  }
+
+  /**
+   * 隐藏/显示某个固定列（序号/类别/材质/规格）。
+   *
+   * <p>固定列也可以关掉：窗口窄时「类别/材质」很占宽度，只看价格的人是愿意关的。
+   * 但**不允许全部关掉** —— 那样每一行就没有任何可读的标识了，只留一格「最后一项」。</p>
+   */
+  const toggleFixedColumn = (key: SheetFixedColumnKey) => {
+    setHiddenFixedColumns((current) => {
+      const next: SheetFixedColumnKey[] = current.includes(key)
+        ? current.filter((item) => item !== key)
+        : [...current, key]
+      const visible = SHEET_FIXED_COLUMNS.filter(
+        (column) => !next.includes(column.key),
+      )
+      return visible.length === 0 ? current : next
+    })
   }
 
   /**
@@ -1109,6 +1135,7 @@ export function SupplierQuotePage() {
   const sheetWidth = sheetWidthOf(
     displayViews.length,
     Math.max(visibleLengths.length, 1),
+    hiddenFixedColumns,
   )
 
   /** Ctrl+Z / Ctrl+Y 撤销重做：两个视图共用。 */
@@ -1332,8 +1359,15 @@ export function SupplierQuotePage() {
     )
   }
 
-  const sheetColumns: ColumnsType<SpecRow> = [
-    {
+  /*
+   * 固定列可以逐个隐藏（列设置里配）。定义顺序与 `SHEET_FIXED_COLUMNS` 一一对应，
+   * 隐藏只过滤不重排 —— 否则「规格」跑到「序号」前面，扫读会乱。
+   */
+  const fixedColumnDefs: Record<
+    SheetFixedColumnKey,
+    ColumnsType<SpecRow>[number]
+  > = {
+    index: {
       title: t('priceCompare.supplierPrice.rowIndex'),
       key: 'rowIndex',
       width: SHEET_COLUMN_WIDTH.index,
@@ -1343,7 +1377,7 @@ export function SupplierQuotePage() {
         <span className="supplier-price-row-index">{index + 1}</span>
       ),
     },
-    {
+    category: {
       /*
        * 类别/材质按「连续同类」合并成一个格：盘螺整块一组，螺纹再按材质分 HRB400 / HRB400E 两组，
        * 组与组之间画一条更粗的分隔线（行序由 groupSpecRows 负责）。
@@ -1363,7 +1397,7 @@ export function SupplierQuotePage() {
         }
       },
     },
-    {
+    material: {
       title: t('priceCompare.supplierPrice.material'),
       dataIndex: 'material',
       width: SHEET_COLUMN_WIDTH.material,
@@ -1379,7 +1413,7 @@ export function SupplierQuotePage() {
         }
       },
     },
-    {
+    spec: {
       title: t('priceCompare.supplierPrice.specNo'),
       key: 'spec',
       width: SHEET_COLUMN_WIDTH.specNo,
@@ -1387,6 +1421,12 @@ export function SupplierQuotePage() {
       fixed: 'left',
       render: (_value, row) => row.spec,
     },
+  }
+
+  const sheetColumns: ColumnsType<SpecRow> = [
+    ...SHEET_FIXED_COLUMNS.filter(
+      (column) => !hiddenFixedColumns.includes(column.key),
+    ).map((column) => fixedColumnDefs[column.key]),
     ...displayViews.map<ColumnsType<SpecRow>[number]>((view) => {
       const brandName = view.brandName
       const column = view.column
@@ -1636,6 +1676,21 @@ export function SupplierQuotePage() {
                   </Checkbox>
                 ))
               )}
+              <Typography.Text
+                className="supplier-price-column-panel-label"
+                type="secondary"
+              >
+                {t('priceCompare.supplierPrice.fixedColumns')}
+              </Typography.Text>
+              {SHEET_FIXED_COLUMNS.map((column) => (
+                <Checkbox
+                  checked={!hiddenFixedColumns.includes(column.key)}
+                  key={column.key}
+                  onChange={() => toggleFixedColumn(column.key)}
+                >
+                  {t(`priceCompare.supplierPrice.${column.labelKey}`)}
+                </Checkbox>
+              ))}
               {columnLengths.length > 1 ? (
                 <>
                   <Typography.Text
