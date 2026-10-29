@@ -4,11 +4,13 @@ import {
   applyBrandOrder,
   buildBasePriceColumnPrices,
   buildBasePriceFillPlan,
+  buildCategoryMatrices,
   buildMatrixPastePlan,
   buildMatrixSlots,
   buildSheetMatrix,
   filterSpecRows,
   groupSpecRows,
+  isRealLength,
   lengthRank,
   matrixCellKeyOf,
   matrixLengthsOf,
@@ -160,6 +162,33 @@ describe('材质进表头的矩阵：行 = 类别+规格，列 = 品牌×材质�
     },
     { category: '盘螺', material: 'HRB400', spec: 8, lengths: ['-'] },
   ]
+
+  it('真实定尺判据：9米/12米 是定尺，空串与 - 不是', () => {
+    expect(isRealLength('9米')).toBe(true)
+    expect(isRealLength('12米')).toBe(true)
+    expect(isRealLength('-')).toBe(false)
+    expect(isRealLength('')).toBe(false)
+  })
+
+  it('分组只认商品类别字段，不按定尺反推', () => {
+    // 故意造两条"反直觉"的数据：盘螺却有定尺、直条却没有定尺。
+    // 归类必须只看 category（商品资料字段），不能靠"有没有定尺"去猜。
+    const odd: SpecRow[] = [
+      { category: '盘螺', material: 'HRB400', spec: 8, lengths: ['9米'] },
+      { category: '直条', material: 'HRB400', spec: 12, lengths: ['-'] },
+    ]
+    const matrices = buildCategoryMatrices(odd)
+    // 顺序按报价习惯（盘螺在前），但每张表只装自己类别下的行
+    expect(matrices.map((matrix) => matrix.category)).toEqual(['盘螺', '直条'])
+    expect(matrices[0].rows[0].key).toBe('盘螺|8')
+    expect(
+      matrices[0].rows[0].cells.has(matrixCellKeyOf('HRB400', '9米')),
+    ).toBe(true)
+    expect(matrices[1].rows[0].key).toBe('直条|12')
+    expect(matrices[1].rows[0].cells.has(matrixCellKeyOf('HRB400', '-'))).toBe(
+      true,
+    )
+  })
 
   it('行按类别 + 规格升序；同一规格跨材质只有一行', () => {
     const rows = buildSheetMatrix(specRows)

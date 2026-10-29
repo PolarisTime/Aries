@@ -95,6 +95,7 @@ import {
   columnLengths as columnLengthsOf,
   filterSpecRows,
   groupSpecRows,
+  isRealLength,
   matrixCellKeyOf,
   parseBrandPrefs,
   parseClipboardGrid,
@@ -1439,18 +1440,37 @@ export function SupplierQuotePage() {
     ...displayViews.map<ColumnsType<SheetMatrixRow>[number]>((view) => ({
       title: brandTitleOf(view.brandName),
       key: view.brandName,
-      children: matrix.materials.map((material) => ({
-        title: material,
-        key: `${view.brandName}|${material}`,
-        children: (matrix.lengthsOf.get(material) ?? []).map((length) => ({
-          title: lengthHeader(length),
-          key: `${view.brandName}|${material}|${length}`,
-          width: SHEET_COLUMN_WIDTH.lengthCell,
-          align: 'right' as const,
-          render: (_value: unknown, row: SheetMatrixRow) =>
-            renderMatrixCell(matrix, view.brandName, material, length, row),
-        })),
-      })),
+      children: matrix.materials.map((material) => {
+        const lengths = matrix.lengthsOf.get(material) ?? []
+        const realLengths = lengths.filter(isRealLength)
+        /*
+         * 该材质没有真实定尺（盘螺一类卷材）：材质直接作叶子列，
+         * 不再多出一层全是「—」的表头行（用户反馈：盘螺没有长度就把这行去掉）。
+         */
+        if (realLengths.length === 0) {
+          const length = lengths[0] ?? ''
+          return {
+            title: material,
+            key: `${view.brandName}|${material}`,
+            width: SHEET_COLUMN_WIDTH.lengthCell,
+            align: 'right' as const,
+            render: (_value: unknown, row: SheetMatrixRow) =>
+              renderMatrixCell(matrix, view.brandName, material, length, row),
+          }
+        }
+        return {
+          title: material,
+          key: `${view.brandName}|${material}`,
+          children: lengths.map((length) => ({
+            title: lengthHeader(length),
+            key: `${view.brandName}|${material}|${length}`,
+            width: SHEET_COLUMN_WIDTH.lengthCell,
+            align: 'right' as const,
+            render: (_value: unknown, row: SheetMatrixRow) =>
+              renderMatrixCell(matrix, view.brandName, material, length, row),
+          })),
+        }
+      }),
     })),
   ]
 

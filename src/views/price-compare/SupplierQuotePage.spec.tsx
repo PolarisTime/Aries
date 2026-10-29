@@ -1100,11 +1100,11 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await render()
     await selectSupplier()
 
-    // 表头只有真实定尺 + 无定尺那一列（列头显示「—」），不出现「不分定尺」这种叫法
+    // 表头只有真实定尺；无定尺的品类（盘螺）连第三层表头都不出现，也不叫「不分定尺」
     const headers = sheetHeaders()
     expect(headers.some((text) => text.includes('9米'))).toBe(true)
     expect(headers.some((text) => text.includes('12米'))).toBe(true)
-    expect(headers.some((text) => text.includes('—'))).toBe(true)
+    expect(headers.some((text) => text.trim() === '—')).toBe(false)
     expect(headers.some((text) => text.includes('不分定尺'))).toBe(false)
 
     // 盘螺行的价格格落在它自己的 '-' 定尺列上，且只占一个格（不再横跨定尺列）

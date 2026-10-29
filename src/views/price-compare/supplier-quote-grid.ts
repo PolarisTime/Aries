@@ -171,6 +171,16 @@ export function columnLengths(rows: readonly QuoteRow[]): string[] {
   return orderedLengths(rows).filter(isLengthColumn)
 }
 
+/**
+ * 这个定尺值是不是**真实定尺**（9米 / 12米 …）。
+ *
+ * <p>`''` 与 `'-'` 在商品资料里表示"该规格没有定尺"（盘螺是卷材），不是一种定尺。
+ * 判据只在这里写一次：列头、单元格、表头层级都读它。</p>
+ */
+export function isRealLength(length: string): boolean {
+  return length !== '' && length !== '-'
+}
+
 /** 该规格行没有定尺维度（盘螺一类）：价格只需要一格。 */
 export function hasNoLength(row: SpecRow): boolean {
   return !row.lengths.some(isLengthColumn)
