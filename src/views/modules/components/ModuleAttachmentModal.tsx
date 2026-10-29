@@ -1,4 +1,8 @@
 import { Modal, Spin } from 'antd'
+import {
+  DIALOG_LEVEL_2_WIDTH,
+  dialogLevelProps,
+} from '@/components/dialog-levels'
 import { AttachmentList } from './AttachmentList'
 import { AttachmentPreviewLayers } from './AttachmentPreviewLayers'
 import { AttachmentUploadZone } from './AttachmentUploadZone'
@@ -32,8 +36,9 @@ export function ModuleAttachmentModal({
       open={open}
       onCancel={onClose}
       footer={null}
-      width={560}
+      width={DIALOG_LEVEL_2_WIDTH}
       afterOpenChange={modal.handleModalOpenChange}
+      {...dialogLevelProps(2)}
     >
       <AttachmentUploadZone
         uploading={modal.uploading}

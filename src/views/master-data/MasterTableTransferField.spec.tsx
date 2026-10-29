@@ -163,10 +163,23 @@ describe('经营品牌表格穿梭框', () => {
       '280px',
     )
 
-    // 弹窗内容区限高，内容过多时整体可滚动而不是溢出视口
-    const modalBody = document.querySelector('.ant-modal-body') as HTMLElement
-    expect(modalBody.style.maxHeight).toContain('64vh')
-    expect(modalBody.style.overflowY).toBe('auto')
+    // 二级弹窗走层级规范：类名 + 宽度递减（内容区限高/遮罩加深由 dialog-levels.css 统一）
+    const modalEl = document.querySelector('.ant-modal') as HTMLElement
+    expect(modalEl.className).toContain('app-dialog--level-2')
+    expect(modalEl.style.width).toBe('820px')
+    expect(
+      (document.querySelector('.ant-modal-root') as HTMLElement).className,
+    ).toContain('app-dialog-root--level-2')
+
+    // 首次焦点落在搜索框，而不是右上角关闭按钮（打开就想搜索/勾选）
+    expect((document.activeElement as HTMLElement)?.tagName).toBe('INPUT')
+
+    // 内层只是选值，按钮文案是「确认」而不是「保存表格」
+    const footerText = (
+      document.querySelector('.ant-modal-footer')?.textContent ?? ''
+    ).replace(/\s+/g, '')
+    expect(footerText).toContain('确认')
+    expect(footerText).not.toContain('保存')
   })
 
   it('取消不写回表单', async () => {

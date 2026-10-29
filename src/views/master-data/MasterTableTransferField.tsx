@@ -9,8 +9,12 @@ import {
   Transfer,
   Typography,
 } from 'antd'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  DIALOG_LEVEL_2_WIDE_WIDTH,
+  dialogLevelProps,
+} from '@/components/dialog-levels'
 import type { MasterOption } from './master-data-types'
 import './master-table-transfer.css'
 
@@ -47,6 +51,20 @@ export function MasterTableTransferField({
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [form] = Form.useForm<{ brands: string[] }>()
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+
+  /*
+   * 2 级弹窗的首次焦点落在「可操作区」（搜索框），而不是右上角的关闭按钮：
+   * 品牌多时用户打开就想搜索/勾选，默认焦点在 X 上要多按一次 Tab。
+   * 用 setTimeout(0) 而不是 afterOpenChange：不依赖动画结束事件（jsdom 里不会触发）。
+   */
+  useEffect(() => {
+    if (!open) return
+    const timer = window.setTimeout(() => {
+      bodyRef.current?.querySelector<HTMLInputElement>('input')?.focus()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   const selectedKeys = (value ?? []).map(toKey)
   const items: TransferItem[] = options.map((option) => ({
@@ -97,27 +115,29 @@ export function MasterTableTransferField({
         cancelText={t('common.cancel')}
         centered
         destroyOnHidden
-        okText={t('common.save')}
+        okText={t('common.confirm')}
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         open={open}
-        styles={{ body: { maxHeight: 'min(64vh, 520px)', overflowY: 'auto' } }}
         title={t('modules.pages.supplier.brandsTransferTitle')}
-        width={880}
+        width={DIALOG_LEVEL_2_WIDE_WIDTH}
+        {...dialogLevelProps(2)}
       >
         {/* 二级弹窗同样用 antd Form 承载值：确定 = 表单提交，取消自然丢弃 */}
-        <Form<{ brands: string[] }>
-          form={form}
-          initialValues={{ brands: selectedKeys }}
-          onFinish={(values) => {
-            onChange?.(values.brands ?? [])
-            setOpen(false)
-          }}
-        >
-          <Form.Item name="brands" style={{ marginBottom: 0 }}>
-            <TableTransfer columns={columns} dataSource={items} />
-          </Form.Item>
-        </Form>
+        <div ref={bodyRef}>
+          <Form<{ brands: string[] }>
+            form={form}
+            initialValues={{ brands: selectedKeys }}
+            onFinish={(values) => {
+              onChange?.(values.brands ?? [])
+              setOpen(false)
+            }}
+          >
+            <Form.Item name="brands" style={{ marginBottom: 0 }}>
+              <TableTransfer columns={columns} dataSource={items} />
+            </Form.Item>
+          </Form>
+        </div>
       </Modal>
     </Flex>
   )

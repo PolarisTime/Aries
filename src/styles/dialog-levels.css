@@ -1,0 +1,46 @@
+/*
+ * 嵌套弹窗（2 级 / 3 级）层级样式。
+ *
+ * 目的：一级弹层（主数据表单 1040 宽）之上再开二级弹窗时，用户要一眼看出"谁在上面"。
+ * 之前二级弹窗 880 宽、和一级只差 160，遮罩也和一级同一档，两层的「取消/保存」看起来
+ * 一样重。现在按层级递减尺寸 + 逐级加深遮罩 + 统一卡片圆角/阴影；
+ * 宽度常量在 `components/dialog-levels.ts`，这里只管"层级感"。
+ */
+
+/* 2 级：遮罩比 1 级深一档（1 级用 antd 默认 45%），背景面板明显退后 */
+.app-dialog-root--level-2 .ant-modal-mask {
+  background: rgb(15 23 42 / 52%);
+}
+
+/* 3 级（预览类）：再深一档，形成 1 < 2 < 3 的清晰堆叠 */
+.app-dialog-root--level-3 .ant-modal-mask {
+  background: rgb(15 23 42 / 62%);
+}
+
+/* 2 级卡片：圆角与阴影比 1 级更"浮"一点，替代靠尺寸区分的做法 */
+.app-dialog--level-2 .ant-modal-content {
+  border-radius: var(--ant-border-radius-lg, 8px);
+  box-shadow: 0 20px 48px rgb(15 23 42 / 22%);
+}
+
+/* 2 级标题：小四号字重与 1 级一致，但上下留白按 8 的倍数收紧，避免大弹窗感 */
+.app-dialog--level-2 .ant-modal-header {
+  margin-bottom: var(--space-sm, 12px);
+}
+
+/* 2 级内容区自己滚动：内部表格/列表再长也不把弹窗撑出视口（与 1 级的 64vh 同口径） */
+.app-dialog--level-2 .ant-modal-body {
+  max-height: min(64vh, 560px);
+  overflow-y: auto;
+}
+
+/* 3 级预览：内容区占满，但顶部留给标题与关闭按钮，避免预览画布顶到遮罩边缘 */
+.app-dialog--level-3 .ant-modal-body {
+  max-height: calc(100vh - 180px);
+  overflow: hidden;
+}
+
+.app-dialog--level-3 .ant-modal-content {
+  border-radius: var(--ant-border-radius-lg, 8px);
+  box-shadow: 0 24px 64px rgb(15 23 42 / 28%);
+}

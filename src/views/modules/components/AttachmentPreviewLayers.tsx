@@ -1,5 +1,9 @@
 import { Image, Modal } from 'antd'
 import type { AttachmentRecord } from '@/api/business/business-types'
+import {
+  DIALOG_LEVEL_3_WIDTH,
+  dialogLevelProps,
+} from '@/components/dialog-levels'
 import { getAttachmentDisplayName } from './module-attachment-utils'
 
 interface AttachmentPreviewLayersProps {
@@ -60,9 +64,9 @@ export function AttachmentPreviewLayers({
         open={pdfPreviewOpen}
         onCancel={onPdfPreviewClose}
         footer={null}
-        width={1104}
-        className="modal-top-20"
+        width={DIALOG_LEVEL_3_WIDTH}
         destroyOnHidden
+        {...dialogLevelProps(3, 'modal-top-20')}
       >
         {pdfPreviewUrl ? (
           <iframe
