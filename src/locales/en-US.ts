@@ -2875,6 +2875,7 @@ export const enUS = {
   },
   priceCompare: {
     supplierPrice: {
+      materialColumns: 'Material columns',
       fixedColumns: 'Fixed columns',
       columnMenu: 'Column settings',
       brand: 'Brand',

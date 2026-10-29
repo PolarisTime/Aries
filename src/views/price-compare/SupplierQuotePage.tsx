@@ -97,6 +97,8 @@ import {
   groupSpecRows,
   isRealLength,
   matrixCellKeyOf,
+  matrixLengthsOf,
+  matrixMaterialsOf,
   parseBrandPrefs,
   parseClipboardGrid,
   reorderBrands,
@@ -210,6 +212,10 @@ export function SupplierQuotePage() {
   const [hiddenFixedColumns, setHiddenFixedColumns] = useState<
     SheetFixedColumnKey[]
   >([])
+  /** 隐藏的「材质 × 定尺」整列（`材质\u0000定尺`）：有的组合这个供应商根本不报。 */
+  const [hiddenMaterialColumns, setHiddenMaterialColumns] = useState<string[]>(
+    [],
+  )
   /** 行过滤：规格关键字 + 只看未填（按服务端价格判断，边录边消失会打断录入）。 */
   const [specKeyword, setSpecKeyword] = useState('')
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
@@ -407,11 +413,60 @@ export function SupplierQuotePage() {
       .filter((matrix) => matrix.rows.length > 0)
   }, [displayRows, displayViews, hiddenLengths, onlyUnpriced])
 
+  const hiddenMaterialColumnSet = useMemo(
+    () => new Set(hiddenMaterialColumns),
+    [hiddenMaterialColumns],
+  )
+
+  /**
+   * 「材质 × 定尺」列选项（列显示面板用）。
+   *
+   * <p>数据里真实存在的组合才列出：某个材质的 12米 在商品资料里不存在，就不该出现在面板里，
+   * 否则用户会去关一个本来就没有的列。</p>
+   */
+  const materialColumnOptions = useMemo(() => {
+    const options: { key: string; label: string }[] = []
+    const materials = matrixMaterialsOf(specRows)
+    for (const material of materials) {
+      for (const length of matrixLengthsOf(specRows, material)) {
+        options.push({
+          key: matrixCellKeyOf(material, length),
+          label: `${material} ${lengthHeader(length)}`,
+        })
+      }
+    }
+    return options
+  }, [specRows])
+
+  /** 该材质真正要渲染的定尺列 = 去掉全局隐藏的定尺 + 去掉整列隐藏的组合。 */
+  const visibleLengthsOf = (matrix: CategoryMatrix, material: string) =>
+    (matrix.lengthsOf.get(material) ?? []).filter(
+      (length) =>
+        !hiddenMaterialColumnSet.has(matrixCellKeyOf(material, length)),
+    )
+
+  /**
+   * 隐藏/显示某个「材质 × 定尺」整列。
+   *
+   * <p>不允许把所有材质列都关掉：那样整张表只剩序号/规格，没有任何可填价格的格子。</p>
+   */
+  const toggleMaterialColumn = (key: string) => {
+    setHiddenMaterialColumns((current) => {
+      const next = current.includes(key)
+        ? current.filter((item) => item !== key)
+        : [...current, key]
+      const nextHidden = new Set(next)
+      const remaining = materialColumnOptions.filter(
+        (option) => !nextHidden.has(option.key),
+      )
+      return remaining.length === 0 ? current : next
+    })
+  }
+
   /** 每张表的表宽：可见固定列 + 品牌数 × 该品类（材质 × 定尺）列数 × 单列宽。 */
   const matrixWidthOf = (matrix: CategoryMatrix) => {
     const slotCount = matrix.materials.reduce(
-      (total, material) =>
-        total + (matrix.lengthsOf.get(material)?.length ?? 0),
+      (total, material) => total + visibleLengthsOf(matrix, material).length,
       0,
     )
     return sheetWidthOf(
@@ -439,6 +494,7 @@ export function SupplierQuotePage() {
         hidden: hiddenBrands,
         hiddenLengths,
         hiddenFixed: hiddenFixedColumns,
+        hiddenMaterialColumns,
       }),
     )
   }, [brandOrder, hiddenBrands, hiddenFixedColumns, hiddenLengths, supplierId])
@@ -969,6 +1025,7 @@ export function SupplierQuotePage() {
       setHiddenBrands(prefs.hidden)
       setHiddenLengths(prefs.hiddenLengths)
       setHiddenFixedColumns(prefs.hiddenFixed)
+      setHiddenMaterialColumns(prefs.hiddenMaterialColumns)
       setSpecKeyword('')
       setOnlyUnpriced(false)
       setViewMode(readViewMode(nextSupplierId))
@@ -1440,37 +1497,39 @@ export function SupplierQuotePage() {
     ...displayViews.map<ColumnsType<SheetMatrixRow>[number]>((view) => ({
       title: brandTitleOf(view.brandName),
       key: view.brandName,
-      children: matrix.materials.map((material) => {
-        const lengths = matrix.lengthsOf.get(material) ?? []
-        const realLengths = lengths.filter(isRealLength)
-        /*
-         * 该材质没有真实定尺（盘螺一类卷材）：材质直接作叶子列，
-         * 不再多出一层全是「—」的表头行（用户反馈：盘螺没有长度就把这行去掉）。
-         */
-        if (realLengths.length === 0) {
-          const length = lengths[0] ?? ''
+      children: matrix.materials
+        .filter((material) => visibleLengthsOf(matrix, material).length > 0)
+        .map((material) => {
+          const lengths = visibleLengthsOf(matrix, material)
+          const realLengths = lengths.filter(isRealLength)
+          /*
+           * 该材质没有真实定尺（盘螺一类卷材）：材质直接作叶子列，
+           * 不再多出一层全是「—」的表头行（用户反馈：盘螺没有长度就把这行去掉）。
+           */
+          if (realLengths.length === 0) {
+            const length = lengths[0] ?? ''
+            return {
+              title: material,
+              key: `${view.brandName}|${material}`,
+              width: SHEET_COLUMN_WIDTH.lengthCell,
+              align: 'right' as const,
+              render: (_value: unknown, row: SheetMatrixRow) =>
+                renderMatrixCell(matrix, view.brandName, material, length, row),
+            }
+          }
           return {
             title: material,
             key: `${view.brandName}|${material}`,
-            width: SHEET_COLUMN_WIDTH.lengthCell,
-            align: 'right' as const,
-            render: (_value: unknown, row: SheetMatrixRow) =>
-              renderMatrixCell(matrix, view.brandName, material, length, row),
+            children: lengths.map((length) => ({
+              title: lengthHeader(length),
+              key: `${view.brandName}|${material}|${length}`,
+              width: SHEET_COLUMN_WIDTH.lengthCell,
+              align: 'right' as const,
+              render: (_value: unknown, row: SheetMatrixRow) =>
+                renderMatrixCell(matrix, view.brandName, material, length, row),
+            })),
           }
-        }
-        return {
-          title: material,
-          key: `${view.brandName}|${material}`,
-          children: lengths.map((length) => ({
-            title: lengthHeader(length),
-            key: `${view.brandName}|${material}|${length}`,
-            width: SHEET_COLUMN_WIDTH.lengthCell,
-            align: 'right' as const,
-            render: (_value: unknown, row: SheetMatrixRow) =>
-              renderMatrixCell(matrix, view.brandName, material, length, row),
-          })),
-        }
-      }),
+        }),
     })),
   ]
 
@@ -1657,6 +1716,25 @@ export function SupplierQuotePage() {
                       onChange={() => toggleLengthColumn(length)}
                     >
                       {length}
+                    </Checkbox>
+                  ))}
+                </>
+              ) : null}
+              {materialColumnOptions.length > 0 ? (
+                <>
+                  <Typography.Text
+                    className="supplier-price-column-panel-label"
+                    type="secondary"
+                  >
+                    {t('priceCompare.supplierPrice.materialColumns')}
+                  </Typography.Text>
+                  {materialColumnOptions.map((option) => (
+                    <Checkbox
+                      checked={!hiddenMaterialColumnSet.has(option.key)}
+                      key={option.key}
+                      onChange={() => toggleMaterialColumn(option.key)}
+                    >
+                      {option.label}
                     </Checkbox>
                   ))}
                 </>

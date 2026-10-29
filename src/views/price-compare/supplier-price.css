@@ -136,6 +136,9 @@
 }
 
 .supplier-price-column-panel {
+  /* 列一多（品牌 × 固定列 × 定尺 × 材质）会超过一屏：限高后内部滚动，面板不跑出视口 */
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
   min-width: 180px;
   padding: 4px 2px;
 }

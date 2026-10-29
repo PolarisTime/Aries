@@ -2815,6 +2815,7 @@ export const zhCN = {
      * 报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
      */
     supplierPrice: {
+      materialColumns: '材质列',
       fixedColumns: '固定列',
       columnMenu: '列设置',
       brand: '品牌',

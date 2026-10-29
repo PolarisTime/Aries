@@ -526,6 +526,11 @@ export type BrandPrefs = {
   hiddenLengths: string[]
   /** 隐藏的固定列（序号/类别/材质/规格）：窗口窄时可以只留价格列。 */
   hiddenFixed: SheetFixedColumnKey[]
+  /**
+   * 隐藏的「材质 × 定尺」列（`材质\u0000定尺`）：
+   * 有的供应商不报某个材质的某个定尺，整列都不需要显示。
+   */
+  hiddenMaterialColumns: string[]
 }
 
 const EMPTY_PREFS: BrandPrefs = {
@@ -533,6 +538,7 @@ const EMPTY_PREFS: BrandPrefs = {
   hidden: [],
   hiddenLengths: [],
   hiddenFixed: [],
+  hiddenMaterialColumns: [],
 }
 
 /** 解析本地保存的偏好；任何脏数据都退化为「默认顺序、不隐藏」，不影响打开页面。 */
@@ -544,6 +550,7 @@ export function parseBrandPrefs(raw: string | null): BrandPrefs {
       hidden?: unknown
       hiddenLengths?: unknown
       hiddenFixed?: unknown
+      hiddenMaterialColumns?: unknown
     }
     const strings = (input: unknown): string[] =>
       Array.isArray(input)
@@ -555,6 +562,7 @@ export function parseBrandPrefs(raw: string | null): BrandPrefs {
       // 老数据没有这两个字段 → 空集合（全部定尺/固定列显示）
       hiddenLengths: strings(value.hiddenLengths),
       hiddenFixed: parseFixedColumnKeys(value.hiddenFixed),
+      hiddenMaterialColumns: strings(value.hiddenMaterialColumns),
     }
   } catch {
     return { ...EMPTY_PREFS }

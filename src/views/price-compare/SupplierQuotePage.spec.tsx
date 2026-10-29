@@ -1165,6 +1165,47 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(sheetHeaders().some((text) => text.includes('12米'))).toBe(true)
   })
 
+  it('可按「材质 × 定尺」隐藏整列（例如 HRB400 12米），不影响同材质的其它定尺', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_A,
+      { ...ROW_A, length: '12米' },
+      ROW_B,
+      { ...ROW_B, length: '12米' },
+    ])
+    await render()
+    await selectSupplier()
+
+    const openPanel = async () => {
+      const button = Array.from(container.querySelectorAll('button')).find(
+        (item) =>
+          (item.textContent ?? '').includes(
+            i18n.t('priceCompare.supplierPrice.columns'),
+          ),
+      )
+      await act(async () => {
+        button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      await flush()
+    }
+
+    await openPanel()
+    // 面板里按「材质 定尺」列组合，数据里没有的组合不出现
+    // 面板是 Popover（portal 到 body），断言要读 body
+    expect(document.body.textContent).toContain('HRB400 9米')
+    expect(document.body.textContent).toContain('HRB400 12米')
+
+    await toggleCheckbox('HRB400 12米')
+    // 12米 整列消失，9米 仍在（同一材质的其它定尺不受影响）
+    expect(sheetHeaders().some((text) => text.includes('12米'))).toBe(false)
+    expect(sheetHeaders().some((text) => text.includes('9米'))).toBe(true)
+    // 价格格也只剩 9米 那两列
+    expect(cellInput('中天 HRB400 12 9米')).not.toBeNull()
+    expect(
+      container.querySelector('[data-grid-cell*="螺纹钢|HRB400|12|12米"]'),
+    ).toBeNull()
+  })
+
   it('固定列也能在「列显示」里关掉，但至少保留一列', async () => {
     await render()
     await selectSupplier()

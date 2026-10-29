@@ -340,18 +340,21 @@ describe('列显示偏好与顺序', () => {
       hidden: [],
       hiddenLengths: [],
       hiddenFixed: [],
+      hiddenMaterialColumns: [],
     })
     expect(parseBrandPrefs('not-json')).toEqual({
       order: [],
       hidden: [],
       hiddenLengths: [],
       hiddenFixed: [],
+      hiddenMaterialColumns: [],
     })
     expect(parseBrandPrefs('{"order":["a",1],"hidden":["b"]}')).toEqual({
       order: ['a'],
       hidden: ['b'],
       hiddenLengths: [],
       hiddenFixed: [],
+      hiddenMaterialColumns: [],
     })
     // 定尺列隐藏集合同样是个人偏好，随品牌偏好一起存
     expect(
@@ -361,12 +364,14 @@ describe('列显示偏好与顺序', () => {
       hidden: [],
       hiddenLengths: ['12米'],
       hiddenFixed: [],
+      hiddenMaterialColumns: [],
     })
     const prefs = {
       order: ['中天'],
       hidden: ['永钢'],
       hiddenLengths: ['12米'],
       hiddenFixed: ['spec' as const],
+      hiddenMaterialColumns: ['HRB400\u00009米'],
     }
     expect(parseBrandPrefs(serializeBrandPrefs(prefs))).toEqual(prefs)
   })
