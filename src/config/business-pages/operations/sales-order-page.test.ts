@@ -50,11 +50,7 @@ describe('销售订单报单日期配置', () => {
       'customerId',
       'projectId',
     ])
-    expect(keysOfRow(2)).toEqual([
-      'orderDate',
-      'deliveryDate',
-      'salesName',
-    ])
+    expect(keysOfRow(2)).toEqual(['orderDate', 'deliveryDate', 'salesName'])
     expect(keysOfRow(3)).toEqual(['remark'])
   })
 
