@@ -579,3 +579,41 @@ describe('项目简称字段契约', () => {
     expect(rows['sales-return'].projectNameAbbr).toBeUndefined()
   })
 })
+
+/*
+ * 请求侧必须 strictObject：未知字段要被当场拒绝，而不是静默透传给后端。
+ *
+ * <p>销售退货的保存请求曾是全项目唯一使用 looseObject 的请求 schema（其余 5 个单据
+ * 模块都是 strictObject），半迁移遗留。这条测试同时锁住「合法载荷照常通过」与
+ * 「未知字段被拒绝」两侧——只测拒绝、不测放行，收紧过度时不会有人发现。</p>
+ */
+describe('销售退货保存请求拒绝未知字段', () => {
+  const salesReturnSavePayload = {
+    returnDate: '2026-09-01',
+    items: [{ sourceSalesOutboundItemId: '1', quantity: 10 }],
+  }
+
+  it('合法载荷照常通过校验', () => {
+    expect(() =>
+      parseMainFlowSaveRequest('sales-return', salesReturnSavePayload),
+    ).not.toThrow()
+  })
+
+  it('顶层未知字段被拒绝（契约漂移在保存时暴露）', () => {
+    expect(() =>
+      parseMainFlowSaveRequest('sales-return', {
+        ...salesReturnSavePayload,
+        unexpectedField: 1,
+      }),
+    ).toThrow()
+  })
+
+  it('明细行未知字段被拒绝', () => {
+    expect(() =>
+      parseMainFlowSaveRequest('sales-return', {
+        ...salesReturnSavePayload,
+        items: [{ ...salesReturnSavePayload.items[0], unexpectedField: 1 }],
+      }),
+    ).toThrow()
+  })
+})

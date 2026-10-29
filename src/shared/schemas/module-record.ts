@@ -758,7 +758,18 @@ const salesReturnDetailRecordSchema = z.looseObject({
   items: z.array(salesReturnItemSchema).min(1),
 })
 
-const salesReturnSaveItemSchema = z.looseObject({
+/*
+ * 保存请求用 strictObject（**请求侧**必须拒绝未知字段）。
+ *
+ * <p>同文件里 5 个兄弟模块的保存请求（采购订单/入库、销售订单/出库、物流单）都是
+ * strictObject，只有销售退货曾是 looseObject —— 半迁移遗留。请求侧用 loose 会让
+ * 「模块白名单先加了字段、schema 忘了补」这类契约漂移静默透传给后端；strict 会在
+ * 保存当场报错，把问题留在前端。</p>
+ *
+ * <p>payload 由 `module-page-schema.ts` 的 `saveFields.scalar/lineItem` 白名单经
+ * `pickDefinedFields` 生成，逐键与这里的声明一致，因此本次收紧零行为变化。</p>
+ */
+const salesReturnSaveItemSchema = z.strictObject({
   id: entityIdSchema.optional(),
   sourceSalesOutboundItemId: entityIdSchema,
   sourceSalesOrderItemId: optionalEntityIdSchema,
@@ -783,7 +794,7 @@ const salesReturnSaveItemSchema = z.looseObject({
   amount: optionalRequestDecimalSchema,
 })
 
-const salesReturnSaveRequestSchema = z.looseObject({
+const salesReturnSaveRequestSchema = z.strictObject({
   returnNo: optionalTextSchema,
   salesOrderNo: optionalTextSchema,
   customerId: optionalEntityIdSchema,
