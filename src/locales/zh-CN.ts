@@ -615,6 +615,8 @@ export const zhCN = {
   modules: {
     /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
     formSections: {
+      weightPrice: '重量与价格',
+      contactSettlement: '联系方式与结算',
       basic: '基本信息',
       contact: '联系方式',
       vehicle: '车辆与司机',
@@ -2810,6 +2812,7 @@ export const zhCN = {
      * 报单比价取价时按 (品牌, 商品) 取最低价，可用下拉改选其它供应商。
      */
     supplierPrice: {
+      columnMenu: '列设置',
       brand: '品牌',
       supplier: '供应商',
       supplierPlaceholder: '选择供应商',
@@ -2872,7 +2875,6 @@ export const zhCN = {
       clearColumnContent:
         '会把该列已填价格全部标记为未报价，点「保存」后才会真正落库。',
       clearColumnOk: '清空',
-      columnActionsA11y: '「{{name}}」列操作',
       undo: '撤销（Ctrl+Z）',
       redo: '重做（Ctrl+Y）',
       readOnlyHint: '当前账号没有报价维护权限，本页为只读',
@@ -2887,7 +2889,6 @@ export const zhCN = {
       discardDrafts: '放弃草稿',
       searchSpecs: '搜索规格（材质/直径/定尺）',
       onlyUnpriced: '只看未填',
-      columnQuotedOn: '报价日期 {{date}}',
       entryHint:
         'Excel 式录入：行=规格、列=品牌，直接敲价；↑/↓ 与回车上下移动，Tab 向右；从 Excel 复制的整列/整块可直接粘贴到起始格。空 = 不报价，0 是真实价格；保存按品牌列整组替换',
       entryHintSpecs:

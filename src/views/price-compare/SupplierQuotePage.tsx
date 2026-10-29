@@ -5,11 +5,11 @@ import {
   ClearOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
-  MoreOutlined,
   RedoOutlined,
   ReloadOutlined,
   SaveOutlined,
   SearchOutlined,
+  SettingOutlined,
   UndoOutlined,
 } from '@ant-design/icons'
 import {
@@ -897,6 +897,34 @@ export function SupplierQuotePage() {
     })
   }
 
+  /** 右上角设置的点击：key 可能是「动作」（单品牌平铺）或「品牌\u0000动作」（分组）。 */
+  const onColumnSettingsClick = ({ key }: { key: string }) => {
+    const [first, second] = key.split('\u0000')
+    if (second === undefined) {
+      const only = displayViews[0]?.brandName
+      if (only) onBrandMenuClick(only, first)
+      return
+    }
+    onBrandMenuClick(first, second)
+  }
+
+  /**
+   * 右上角「列设置」菜单。
+   *
+   * <p>品牌的列操作（左移/右移/基价加价/隐藏/清空/移除）原来挂在每个品牌表头的 ⋮ 上，
+   * 现在统一收到页面右上角一个设置图标里：表头只留品牌名与未保存数，把宽度全让给价格。
+   * 只有一个品牌时直接平铺（多一层子菜单反而多一次点击）；多个品牌按品牌分组。</p>
+   */
+  const buildColumnSettingsItems = (): NonNullable<MenuProps['items']> => {
+    const brands = displayViews.map((item) => item.brandName)
+    if (brands.length === 1) return brandMenuItems(brands[0])
+    return brands.map((brandName) => ({
+      key: brandName,
+      label: brandName,
+      children: brandMenuItems(brandName),
+    }))
+  }
+
   /** 移除品牌列：已有价格表走确认+软删除。 */
   const removeBrand = (brandName: string) => {
     const column = viewByBrand.get(brandName)?.column
@@ -1396,34 +1424,17 @@ export function SupplierQuotePage() {
                 </Tag>
               </Tooltip>
             ) : null}
-            <Dropdown
-              menu={{
-                items: brandMenuItems(brandName),
-                onClick: ({ key }) => onBrandMenuClick(brandName, key),
-              }}
-              trigger={['click']}
-            >
-              <Button
-                aria-label={t('priceCompare.supplierPrice.columnActionsA11y', {
-                  name: brandName,
-                })}
-                icon={<MoreOutlined />}
-                size="small"
-                type="text"
-              />
-            </Dropdown>
           </Flex>
-          <Typography.Text
-            className="supplier-price-brand-meta"
-            type="secondary"
-            style={{ fontSize: 12 }}
-          >
-            {column?.quotedOn
-              ? t('priceCompare.supplierPrice.columnQuotedOn', {
-                  date: column.quotedOn,
-                })
-              : t('priceCompare.supplierPrice.newColumn')}
-          </Typography.Text>
+          {/* 报价日期是单据头的口径，表头不再重复；只保留「这列还没落库」的提示 */}
+          {column?.quotedOn ? null : (
+            <Typography.Text
+              className="supplier-price-brand-meta"
+              type="secondary"
+              style={{ fontSize: 12 }}
+            >
+              {t('priceCompare.supplierPrice.newColumn')}
+            </Typography.Text>
+          )}
         </Flex>
       )
       /*
@@ -1539,6 +1550,22 @@ export function SupplierQuotePage() {
         >
           {t('priceCompare.supplierPrice.refresh')}
         </Button>
+        <Dropdown
+          menu={{
+            items: buildColumnSettingsItems(),
+            onClick: onColumnSettingsClick,
+          }}
+          placement="bottomRight"
+          trigger={['click']}
+        >
+          <Button
+            aria-label={t('priceCompare.supplierPrice.columnMenu')}
+            icon={<SettingOutlined />}
+            style={{ marginInlineStart: 'auto' }}
+          >
+            {t('priceCompare.supplierPrice.columnMenu')}
+          </Button>
+        </Dropdown>
       </Flex>
 
       {/* 行/列操作：规格搜索、只看未填、列显示（隐藏列不影响已填价格） */}
@@ -1748,35 +1775,15 @@ export function SupplierQuotePage() {
                       <Typography.Text strong>
                         {section.brandName}
                       </Typography.Text>
-                      <Typography.Text
-                        className="supplier-price-brand-meta"
-                        type="secondary"
-                      >
-                        {view?.column?.quotedOn
-                          ? t('priceCompare.supplierPrice.columnQuotedOn', {
-                              date: view.column.quotedOn,
-                            })
-                          : t('priceCompare.supplierPrice.newColumn')}
-                      </Typography.Text>
+                      {view?.column?.quotedOn ? null : (
+                        <Typography.Text
+                          className="supplier-price-brand-meta"
+                          type="secondary"
+                        >
+                          {t('priceCompare.supplierPrice.newColumn')}
+                        </Typography.Text>
+                      )}
                       {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
-                      <Dropdown
-                        menu={{
-                          items: brandMenuItems(section.brandName),
-                          onClick: ({ key }) =>
-                            onBrandMenuClick(section.brandName, key),
-                        }}
-                        trigger={['click']}
-                      >
-                        <Button
-                          aria-label={t(
-                            'priceCompare.supplierPrice.columnActionsA11y',
-                            { name: section.brandName },
-                          )}
-                          icon={<MoreOutlined />}
-                          size="small"
-                          type="text"
-                        />
-                      </Dropdown>
                     </Flex>
 
                     {section.blocks.map((block, blockIndex) => {

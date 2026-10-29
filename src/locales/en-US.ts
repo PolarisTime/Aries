@@ -639,6 +639,8 @@ export const enUS = {
   modules: {
     /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
     formSections: {
+      weightPrice: 'Weight & price',
+      contactSettlement: 'Contact & settlement',
       basic: 'Basic information',
       contact: 'Contact',
       vehicle: 'Vehicles & drivers',
@@ -2870,6 +2872,7 @@ export const enUS = {
   },
   priceCompare: {
     supplierPrice: {
+      columnMenu: 'Column settings',
       brand: 'Brand',
       supplier: 'Supplier',
       supplierPlaceholder: 'Select a supplier',
@@ -2929,7 +2932,6 @@ export const enUS = {
       clearColumnContent:
         'All entered prices in this column will be marked as not quoted; it takes effect after you click Save.',
       clearColumnOk: 'Clear',
-      columnActionsA11y: 'Actions for column "{{name}}"',
       undo: 'Undo (Ctrl+Z)',
       redo: 'Redo (Ctrl+Y)',
       readOnlyHint:
@@ -2946,7 +2948,6 @@ export const enUS = {
       discardDrafts: 'Discard drafts',
       searchSpecs: 'Search specs (material / size / length)',
       onlyUnpriced: 'Unpriced only',
-      columnQuotedOn: 'Quoted {{date}}',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',
       entryHintSpecs:

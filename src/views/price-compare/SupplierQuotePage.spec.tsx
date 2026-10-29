@@ -934,12 +934,38 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     )
   })
 
-  it('列菜单可打开基价加价配置弹层', async () => {
+  it('表头不再重复显示报价日期；列设置收在右上角一个图标里', async () => {
+    await render()
+    await selectSupplier()
+
+    // 报价日期只在单据头（顶部 DatePicker）出现，表头不再重复
+    const thead = container.querySelector('.ant-table-thead')
+    expect(thead).not.toBeNull()
+    expect(thead?.textContent ?? '').not.toContain('报价日期')
+    expect(thead?.textContent ?? '').not.toContain('2026-10-23')
+
+    // 列操作不再挂在表头，而是右上角一个设置按钮
+    // 同时守住「文案 key 真的存在」：缺 key 时 t() 会原样返回 key 字符串，界面会显示成
+    // `priceCompare.supplierPrice.xxx`，而 tsc / 单测都发现不了（实测踩过一次）
+    const columnMenuLabel = i18n.t('priceCompare.supplierPrice.columnMenu')
+    expect(columnMenuLabel).not.toBe('priceCompare.supplierPrice.columnMenu')
+    const settingsButton = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${columnMenuLabel}"]`,
+    )
+    expect(settingsButton).not.toBeNull()
+    expect(settingsButton?.textContent).toContain(columnMenuLabel)
+    expect(container.querySelector('[aria-label*="列操作"]')).toBeNull()
+  })
+
+  it('右上角「列设置」可打开基价加价配置弹层', async () => {
     await render()
     await selectSupplier()
 
     const menuButton = container.querySelector<HTMLButtonElement>(
-      `button[aria-label="${i18n.t('priceCompare.supplierPrice.columnActionsA11y', { name: '中天' })}"]`,
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.columnMenu')}"]`,
+    )
+    expect(i18n.t('priceCompare.supplierPrice.columnMenu')).not.toBe(
+      'priceCompare.supplierPrice.columnMenu',
     )
     await act(async () => {
       menuButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
