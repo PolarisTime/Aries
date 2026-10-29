@@ -58,7 +58,7 @@
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.14",
     "web-vitals": "^6.2.2",
-    "zod": "^4.6.5",
+    "zod": "^4.6.7",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -90,6 +90,7 @@
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
+    "eslint-plugin-zod": "^5.2.1",
     "globals": "^17.12.0",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-report": "^3.0.1",

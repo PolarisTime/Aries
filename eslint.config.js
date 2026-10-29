@@ -2,6 +2,7 @@ import tseslint from '@aries/typescript-toolchain'
 import js from '@eslint/js'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import eslintPluginZod from 'eslint-plugin-zod'
 import globals from 'globals'
 
 export default tseslint.config(
@@ -49,7 +50,11 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+      zod: eslintPluginZod,
+    },
     rules: {
       ...reactHooks.configs.recommended.rules,
 
@@ -85,6 +90,26 @@ export default tseslint.config(
           varsIgnorePattern: '^_',
           caughtErrorsIgnorePattern: '^_',
         },
+      ],
+
+      /*
+       * zod 对象 schema 的构造方式统一（Zod v4）。
+       *
+       * v4 把 v3 的 `.passthrough()` / `.strip()` / `.strict()` 换成了显式构造器
+       * `z.looseObject` / `z.object` / `z.strictObject`。半迁移状态下两种写法并存时，
+       * 「这个 schema 是保留未知字段还是丢弃」在调用点读不出来，必须点进定义才知道——
+       * 审计边界时最容易看漏的正是这种。
+       *
+       * 三种构造器都允许（按边界方向选择，见 docs 里的结论）：
+       *   响应解析 → looseObject（容忍后端新增字段）；
+       *   请求/提交载荷 → strictObject（拒绝未知字段，暴露契约漂移）；
+       *   配置/本地存储 → object（剥离）。
+       * 规则只负责把遗留的旧写法逼回这三种之一，不强制全项目只用同一种。
+       */
+      'zod/prefer-loose-object': 'warn',
+      'zod/consistent-object-schema-type': [
+        'warn',
+        { allow: ['object', 'looseObject', 'strictObject'] },
       ],
     },
   },

@@ -16,6 +16,10 @@ overrides:
   "undici@<6.28.0": 6.28.0
   "undici@>=7.0.0 <7.29.0": 7.29.0
   "ws@>=8.0.0 <8.21.0": 8.21.0
+  # zod: <4.5.0 存在 __proto__ 原型污染（catchall merge / object·record 解析器未剥离
+  # __proto__，AIKIDO-2026-10707 / -500926），<4.6.6 另有数组校验内存耗尽 DoS
+  # （AIKIDO-2026-143019）。统一钉到已修复的 4.6.7，防止传递依赖带回旧版。
+  "zod@<4.6.6": 4.6.7
 
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
