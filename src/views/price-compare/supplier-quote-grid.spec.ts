@@ -14,6 +14,7 @@ import {
   parseClipboardGrid,
   parseGridPrice,
   reorderBrands,
+  roundPrice,
   rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
   serializeBrandPrefs,
@@ -337,6 +338,28 @@ describe('基价模式：整列按「基价 + 加价」重算', () => {
       specRows: rows,
     })
     expect(prices.has('螺纹钢|HRB400|16|9米')).toBe(false)
+  })
+})
+
+describe('金额列宽与金额精度', () => {
+  it('定尺列宽只按 5 位数留量，标签列仍按 96', () => {
+    // 金额去掉 .00 后 5 位数实测 52px 文本 + 内边距 → 76px 正好不裁字；再宽就是浪费可见列数
+    expect(SHEET_COLUMN_WIDTH.lengthCell).toBe(76)
+    expect(SHEET_COLUMN_WIDTH.labelCell).toBe(96)
+    expect(sheetWidthOf(2, 2)).toBe(
+      SHEET_COLUMN_WIDTH.index +
+        SHEET_COLUMN_WIDTH.category +
+        SHEET_COLUMN_WIDTH.material +
+        SHEET_COLUMN_WIDTH.specNo +
+        2 * 2 * SHEET_COLUMN_WIDTH.lengthCell,
+    )
+  })
+
+  it('金额四舍五入到分：整数原样，多余小数只留两位', () => {
+    expect(roundPrice(3280)).toBe(3280)
+    expect(roundPrice(3350.5)).toBe(3350.5)
+    expect(roundPrice(3350.555)).toBe(3350.56)
+    expect(roundPrice(3350.004)).toBe(3350)
   })
 })
 

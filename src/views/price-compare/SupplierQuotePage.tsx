@@ -98,6 +98,7 @@ import {
   parseClipboardGrid,
   placementLengthOf,
   reorderBrands,
+  roundPrice,
   rowKeyOfCell,
   SHEET_COLUMN_WIDTH,
   type SpecRow,
@@ -738,7 +739,6 @@ export function SupplierQuotePage() {
         data-grid-cell={cellIdOf(brandName, rowKey)}
         disabled={!canUpdate || baseComputed}
         min={0}
-        precision={2}
         size="small"
         style={{ width: '100%' }}
         title={
@@ -752,7 +752,7 @@ export function SupplierQuotePage() {
         }
         value={value}
         onChange={(next) => {
-          const parsed = typeof next === 'number' ? next : null
+          const parsed = typeof next === 'number' ? roundPrice(next) : null
           if (priceMode === 'base' && isBase) {
             applyBasePrice(brandName, rowKey, parsed)
             return
@@ -1232,12 +1232,11 @@ export function SupplierQuotePage() {
           data-grid-cell={cellIdOf(brandName, cellKey)}
           disabled={!canUpdate || (baseComputed && computed !== undefined)}
           min={0}
-          precision={2}
           size="small"
           style={{ width: '100%' }}
           value={value}
           onChange={(next) => {
-            const parsed = typeof next === 'number' ? next : null
+            const parsed = typeof next === 'number' ? roundPrice(next) : null
             // 基价模式下改基价格子 = 按「基价 + 加价」重算整列；手填模式只改这一格
             if (priceMode === 'base' && isBaseCell) {
               applyBasePrice(brandName, cellKey, parsed)
@@ -1771,7 +1770,10 @@ export function SupplierQuotePage() {
                           key={`${block.category}|${block.material}`}
                           style={{
                             // 定尺少的商品（如盘螺只有一列）不要被拉满整行
-                            maxWidth: 192 + block.lengths.length * 96,
+                            maxWidth:
+                              SHEET_COLUMN_WIDTH.labelCell * 2 +
+                              block.lengths.length *
+                                SHEET_COLUMN_WIDTH.lengthCell,
                           }}
                         >
                           {showCategory ? (
@@ -1811,7 +1813,7 @@ export function SupplierQuotePage() {
                                 children: block.lengths.map((length) => ({
                                   title: lengthHeader(length),
                                   key: `length-${length}`,
-                                  width: 96,
+                                  width: SHEET_COLUMN_WIDTH.lengthCell,
                                   align: 'right' as const,
                                   render: (
                                     _value: unknown,
@@ -1830,7 +1832,12 @@ export function SupplierQuotePage() {
                             dataSource={block.rows}
                             pagination={false}
                             rowKey={(row) => `${block.material}|${row.spec}`}
-                            scroll={{ x: 192 + block.lengths.length * 96 }}
+                            scroll={{
+                              x:
+                                SHEET_COLUMN_WIDTH.labelCell * 2 +
+                                block.lengths.length *
+                                  SHEET_COLUMN_WIDTH.lengthCell,
+                            }}
                             size="small"
                             tableLayout="fixed"
                           />

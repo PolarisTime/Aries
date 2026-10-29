@@ -379,8 +379,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     // 经营品牌之外、且没有历史价格表的品牌不出现在列里
     expect(headers.some((text) => text.includes('永钢'))).toBe(false)
     expect(sheetRows().length).toBe(2)
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
-    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300')
   })
 
   it('可切换到「规格横置」：定尺进表头、行是规格、品牌与材质分块', async () => {
@@ -405,8 +405,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     // 规格是行（12 / 14，不带 Φ），价格回显在对应定尺列里
     expect(container.textContent).toContain('12')
     expect(container.textContent).toContain('14')
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
-    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3300')
   })
 
   it('规格横置下录价并保存：仍按 类别|材质|规格|定尺 提交整组', async () => {
@@ -458,8 +458,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
 
     // 两个定尺合成一行，而不是两行
     expect(sheetRows().length).toBe(1)
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3210.00')
-    expect(cellInput('中天 HRB400 12 12米')?.value).toBe('3230.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3210')
+    expect(cellInput('中天 HRB400 12 12米')?.value).toBe('3230')
     // 定尺是**表头**（每个品牌下 9米/12米 各一列），不再是格子里的标签
     const headers = [...container.querySelectorAll('.ant-table-thead th')].map(
       (node) => node.textContent ?? '',
@@ -510,8 +510,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await selectSupplier()
 
     await pasteInto('中天 HRB400 12 9米', '3290\n3310')
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
-    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3310.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3310')
 
     await clickSave()
     expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
@@ -772,24 +772,24 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       }),
     )
     // 未确认前不写入
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280')
 
     await confirmLastModal()
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
-    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3310.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3310')
   })
 
   it('撤销/重做（工具栏按钮与 Ctrl+Z / Ctrl+Y）', async () => {
     await render()
     await selectSupplier()
     await typePrice('中天 HRB400 12 9米', '3290')
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290')
 
     await clickButton(i18n.t('priceCompare.supplierPrice.undo'))
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280')
 
     await clickButton(i18n.t('priceCompare.supplierPrice.redo'))
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290')
   })
 
   it('没有维护权限时只读：输入禁用、保存禁用并给出提示', async () => {
@@ -815,10 +815,10 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     expect(container.textContent).toContain(
       i18n.t('priceCompare.supplierPrice.draftsRestored'),
     )
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3290')
 
     await clickButton(i18n.t('priceCompare.supplierPrice.discardDrafts'))
-    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280.00')
+    expect(cellInput('中天 HRB400 12 9米')?.value).toBe('3280')
     expect(container.textContent).not.toContain(
       i18n.t('priceCompare.supplierPrice.draftsRestored'),
     )
@@ -874,7 +874,7 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     await flush()
 
     // 14 的价 = 基价 3200 + 加价 50
-    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3250.00')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3250')
     // 算出来的格子只读，避免用户误以为能改
     expect(cellInput('中天 HRB400 14 9米')?.disabled).toBe(true)
     expect(cellInput('中天 HRB400 12 9米')?.disabled).toBe(false)

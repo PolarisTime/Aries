@@ -26,10 +26,14 @@
   --supplier-price-cell-pad-inline: calc(var(--supplier-price-em) * 0.3);
 }
 
+.supplier-price-sheet .ant-table-wrapper .ant-table-thead > tr > th,
+.supplier-price-transposed .ant-table-wrapper .ant-table-thead > tr > th,
 .supplier-price-sheet .ant-table-wrapper .ant-table-tbody > tr > td,
 .supplier-price-transposed .ant-table-wrapper .ant-table-tbody > tr > td {
   padding: var(--supplier-price-cell-pad-block)
     var(--supplier-price-cell-pad-inline) !important;
+  /* 垂直居中：价格输入框与「类别 / 材质」合并格在同一水平线上 */
+  vertical-align: middle;
   line-height: 1.45;
 }
 
@@ -71,7 +75,8 @@
 .supplier-price-sheet .ant-input-number-input,
 .supplier-price-transposed .ant-input-number-input {
   padding-block: 0;
-  padding-inline: 0.35em;
+  /* 输入框内边距压到 0.25em：5 位数在 76px 列宽里不裁字 */
+  padding-inline: 0.25em;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

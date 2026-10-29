@@ -36,6 +36,17 @@ export function parseGridPrice(raw: string): number | null | undefined {
   return value
 }
 
+/**
+ * 金额四舍五入到「分」—— **唯一出口**。
+ *
+ * <p>为什么要有它：输入框不再用 `precision={2}`（那会把 3350 显示成 `3350.00`，
+ * 一列铺满 `.00` 既噪声又撑宽），所以小数位改由这里收敛：手录 `3350.555` 落库成 3350.56，
+ * 整数仍原样显示（不带 `.00`），一列 5 位数放得下。</p>
+ */
+export function roundPrice(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
 /** 一行规格：定尺收进格子里（同一规格的 9米/12米 是同一行的两个价格）。 */
 export type SpecRow = {
   category: string
@@ -302,8 +313,16 @@ export const SHEET_COLUMN_WIDTH = {
   category: 96,
   material: 110,
   specNo: 80,
-  /** 单个定尺列（9米 / 12米）的宽度：品牌列按定尺拆开后每列只需要放一个价格。 */
-  lengthCell: 96,
+  /**
+   * 单个定尺列（9米 / 12米）的宽度：刚好放得下 **5 位数** 的金额。
+   *
+   * <p>原来是 96px（按 6 位数 + 两位小数留的余量）。去掉 `.00` 后实测：5 位数文本约 52px，
+   * 加上单元格内边距 8.4 + 输入框内边距 7 + 边框，列宽 76px 正好不裁字
+   * （64px 实测会裁掉第 5 位）。</p>
+   */
+  lengthCell: 76,
+  /** 规格横置视图里「材质 / 规格」标签列的宽度。 */
+  labelCell: 96,
   brand: 170,
 } as const
 
