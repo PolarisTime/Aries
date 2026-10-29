@@ -18,6 +18,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -31,6 +32,30 @@ import {
   buildFreightBillParentFilters,
   transformSalesOrderItemsToFreightBillItems,
 } from './freight-operations-rules'
+
+/**
+ * 结算方式枚举 → 中文文案。
+ *
+ * <p>唯一展示出口：详情表头（`detailFields`）只认「同 dataIndex 列的 render」，
+ * 因此这里同时供默认隐藏的列表列与详情字段使用；编辑表单的分段选项用的是同一组
+ * i18n key，文案不会分叉。取值与后端 `FreightSettlementMode` 的 2 个枚举值一一对应，
+ * 未知值原样回退（历史脏值不显示空白）。</p>
+ */
+const FREIGHT_SETTLEMENT_MODE_LABEL_KEYS: Record<string, string> = {
+  [FREIGHT_SETTLEMENT_MODE_BY_TONNAGE]:
+    'modules.pages.freightOperations.settlementModeByTonnage',
+  [FREIGHT_SETTLEMENT_MODE_FIXED]:
+    'modules.pages.freightOperations.settlementModeFixed',
+}
+
+function renderFreightSettlementMode(value: unknown) {
+  const mode = asString(value)
+  if (!mode) {
+    return '-'
+  }
+  const labelKey = FREIGHT_SETTLEMENT_MODE_LABEL_KEYS[mode]
+  return labelKey ? i18next.t(labelKey) : mode
+}
 
 // 物流单明细列：按仓库、品牌与规格核对，隐藏商品编码、商品名称、客户/项目、每件支数与批号。
 const freightBillItemColumnConfig: ModuleItemColumnConfig = {
@@ -168,6 +193,17 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'date',
       },
       {
+        /*
+         * 默认隐藏的「结算方式」列：本身是详情表头的展示口径来源
+         * （`detailFields` 复用同 dataIndex 列的 render，见 renderFreightSettlementMode）。
+         * 已在 defaultHiddenColumnKeys 声明，列表默认外观不变。
+         */
+        title: i18next.t('modules.pages.freightOperations.settlementMode'),
+        dataIndex: SETTLEMENT_MODE_FIELD,
+        width: 120,
+        render: renderFreightSettlementMode,
+      },
+      {
         title: i18next.t('modules.pages.freightOperations.totalWeight'),
         dataIndex: 'totalWeight',
         width: 116,
@@ -205,6 +241,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       'carrierCode',
       'settlementCompanyName',
       'unitPrice',
+      SETTLEMENT_MODE_FIELD,
       'remark',
     ],
     detailFields: [
@@ -234,8 +271,20 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'date',
       },
       {
+        // 后端响应已返回结算方式（字符串枚举，V184）；详情表头此前漏配。
+        // 中文映射由同名列的 render 提供（renderFreightSettlementMode），不在这里另写。
+        label: i18next.t('modules.pages.freightOperations.settlementMode'),
+        key: SETTLEMENT_MODE_FIELD,
+      },
+      {
         label: i18next.t('modules.pages.freightOperations.unitPrice'),
         key: 'unitPrice',
+        type: 'amount',
+      },
+      {
+        // 固定运费模式下才有值；按吨位模式后端返回 null，格式化后显示「-」。
+        label: i18next.t('modules.pages.freightOperations.fixedFreightAmount'),
+        key: 'fixedFreightAmount',
         type: 'amount',
       },
       {
@@ -246,6 +295,12 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         label: i18next.t('modules.pages.freightOperations.totalFreight'),
         key: 'totalFreight',
+        type: 'amount',
+      },
+      {
+        // 附加费用合计：货物口径的 totalFreight 不含费用，后端详情单独返回该值。
+        label: i18next.t('modules.expense.totalAmount'),
+        key: 'totalExpenseAmount',
         type: 'amount',
       },
       {
@@ -285,18 +340,20 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         // 物流商编码由所选物流商派生（只读），必须紧跟在物流商后面：
         // 中间隔一个「车号」会让读数时以为它与车号相关（实测反馈的排版问题之一）。
+        // row 必须与 carrierId 同为 1 —— 此前写的是 row: 3，配置上"紧跟"而渲染上被排到
+        // 最后一行，注释与结果自相矛盾。
         key: 'carrierCode',
         label: i18next.t('modules.pages.freightStatement.carrierCode'),
         type: 'input',
         disabled: true,
-        row: 3,
+        row: 1,
       },
       {
         key: 'vehiclePlate',
         label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
         type: 'autoComplete',
         options: getCarrierVehiclePlateOptions,
-        row: 1,
+        row: 2,
       },
       {
         key: 'billTime',

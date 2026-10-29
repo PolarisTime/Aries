@@ -242,6 +242,12 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'amount',
     },
     {
+      // 后端已返回未付金额（= 总运费 − 已付），列表列默认展示，详情页此前漏配。
+      label: i18next.t('modules.pages.freightStatement.unpaidAmount'),
+      key: 'unpaidAmount',
+      type: 'amount',
+    },
+    {
       label: i18next.t('modules.pages.freightStatement.auditStatus'),
       key: 'status',
       type: 'status',

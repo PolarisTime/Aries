@@ -1,7 +1,10 @@
 import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ModuleColumnDefinition, ModuleRecord } from '@/types/module-page'
-import { EditorItemsSummary } from './EditorItemsSummary'
+import {
+  EditorItemsSummary,
+  type EditorItemsSummaryVariant,
+} from './EditorItemsSummary'
 
 interface Props {
   title?: React.ReactNode
@@ -11,6 +14,8 @@ interface Props {
   /** 单据附加费用合计，透传给汇总区独立展示。 */
   expenseTotalAmount?: number | null
   className?: string
+  /** 合计展示形态；缺省 `inline`（标题行右侧内联文本）。 */
+  summaryVariant?: EditorItemsSummaryVariant
   children: React.ReactNode
 }
 
@@ -21,6 +26,7 @@ export function ModuleItemsPanel({
   itemColumns,
   expenseTotalAmount,
   className,
+  summaryVariant,
   children,
 }: Props) {
   const { t } = useTranslation()
@@ -28,6 +34,19 @@ export function ModuleItemsPanel({
   const hasSummary = Array.isArray(items)
   const showAmountSummary =
     !itemColumns || itemColumns.some((column) => column.dataIndex === 'amount')
+  const variant = summaryVariant ?? 'inline'
+
+  const summary = hasSummary ? (
+    <EditorItemsSummary
+      items={items}
+      showAmount={showAmountSummary}
+      expenseTotalAmount={expenseTotalAmount}
+      variant={variant}
+      className={
+        variant === 'inline' ? 'editor-items-summary-inline' : undefined
+      }
+    />
+  ) : null
 
   return (
     <div
@@ -43,17 +62,12 @@ export function ModuleItemsPanel({
           {actions ? (
             <div className="editor-items-actions">{actions}</div>
           ) : null}
-          {hasSummary ? (
-            <EditorItemsSummary
-              items={items}
-              showAmount={showAmountSummary}
-              expenseTotalAmount={expenseTotalAmount}
-              className="editor-items-summary-inline"
-            />
-          ) : null}
+          {variant === 'inline' ? summary : null}
         </div>
       </div>
+      {variant === 'cards' ? summary : null}
       {children}
+      {variant === 'strip' ? summary : null}
     </div>
   )
 }

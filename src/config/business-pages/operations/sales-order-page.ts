@@ -318,12 +318,16 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     },
   ],
   defaultHiddenColumnKeys: ['salesName', 'remark'],
+  /*
+   * 详情页表头顺序（全单据统一口径）：
+   * 单号 → 来源单号 → 往来对象 → 项目 → 结算主体 → 业务日期 → 交货/截止日期 →
+   * 经手人 → 汇总（重量/金额/派生数量）→ 状态 → 备注。
+   *
+   * 每行最多 4 个 span=6 字段：此前 row 2 塞了 6 个（项目/结算主体/报单日期/交货日期/
+   * 总重量/总金额），靠 antd 自动换行"碰巧"没炸，但 row 值已不表达真实行号，
+   * 后续插字段必然错位。
+   */
   detailFields: [
-    {
-      label: i18next.t('modules.pages.salesOrder.colCustomerName'),
-      key: 'customerName',
-      row: 1,
-    },
     {
       label: i18next.t('modules.pages.salesOrder.colOrderNo'),
       key: 'orderNo',
@@ -335,14 +339,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      label: i18next.t('modules.pages.salesOrder.colSalesName'),
-      key: 'salesName',
+      label: i18next.t('modules.pages.salesOrder.colCustomerName'),
+      key: 'customerName',
       row: 1,
     },
     {
       label: i18next.t('modules.pages.salesOrder.colProjectName'),
       key: 'projectName',
-      row: 2,
+      row: 1,
     },
     {
       label: SETTLEMENT_COMPANY_LABEL,
@@ -362,16 +366,21 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      label: i18next.t('modules.pages.salesOrder.colSalesName'),
+      key: 'salesName',
+      row: 2,
+    },
+    {
       label: i18next.t('modules.columns.totalWeight'),
       key: 'totalWeight',
       type: 'weight',
-      row: 2,
+      row: 3,
     },
     {
       label: i18next.t('modules.columns.totalAmount'),
       key: 'totalAmount',
       type: 'amount',
-      row: 2,
+      row: 3,
     },
     {
       label: i18next.t('modules.pages.salesOrder.colDeliveredQuantity'),
@@ -386,18 +395,18 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.salesOrder.colDeliveredNetQuantity'),
       key: 'deliveredNetQuantity',
-      row: 3,
+      row: 4,
     },
     {
       label: i18next.t('modules.columns.status'),
       key: 'status',
       type: 'status',
-      row: 3,
+      row: 4,
     },
     {
       label: i18next.t('modules.columns.remark'),
       key: 'remark',
-      row: 3,
+      row: 5,
       fullRow: true,
     },
   ],
@@ -408,6 +417,19 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       row: 1,
+      section: i18next.t('modules.formSections.basic'),
+    },
+    {
+      /* 来源单号与主单号相邻：两者同属「这是哪张单/从哪来」，放一起便于追溯。 */
+      key: 'purchaseOrderNo',
+      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
+      type: 'input',
+      disabled: true,
+      placeholder: i18next.t(
+        'modules.pages.salesOrder.placeholderPurchaseOrderNo',
+      ),
+      row: 1,
+      section: i18next.t('modules.formSections.basic'),
     },
     {
       key: 'customerId',
@@ -417,6 +439,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       options: getCustomerOptions,
       masterOptionRequirements: { customers: true },
       row: 1,
+      section: i18next.t('modules.formSections.basic'),
     },
     {
       key: 'projectId',
@@ -428,13 +451,20 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       // 项目按客户过滤: 未选客户时下拉必然为空, 空态要说明这个前置条件, 不能只说"暂无数据"
       emptyHint: i18next.t('modules.pages.salesOrder.projectEmptyHint'),
       row: 1,
+      section: i18next.t('modules.formSections.basic'),
     },
     {
       key: 'orderDate',
       label: i18next.t('modules.pages.salesOrder.colOrderDate'),
       type: 'date',
       required: true,
-      row: 1,
+      /*
+       * row 2：row 1 已被「订单编号 / 采购订单号 / 客户 / 项目」4 个 span=6 字段占满，
+       * 第 5 个会被 antd 静默挤到下一行最左（30 栅格 > 24）。
+       * 现在行内顺序是「单号 → 来源单号 → 客户 → 项目」，日期与经手统一放第 2 行。
+       */
+      row: 2,
+      section: i18next.t('modules.formSections.schedule'),
     },
     {
       key: 'deliveryDate',
@@ -442,21 +472,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'date',
       required: true,
       /*
-       * row 2 而不是 1：row 1 已有订单编号/客户/项目/报单日期 4 个 span=6 字段，
-       * 再来一个就是 30 栅格 > 24，antd 会把第 5 个挤到下一行最左，看起来像排版坏了。
-       * 改成 4 + 3 后每行都落在整列边界上（由 module-field-layout 的行宽守卫测试锁定）。
+       * 与报单日期同在第 2 行：两个日期相邻便于对比「报单 → 交货」的间隔。
+       * 行宽由 module-field-layout 的行宽守卫测试锁定（每行 span 之和 ≤ 24）。
        */
       row: 2,
-    },
-    {
-      key: 'purchaseOrderNo',
-      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
-      type: 'input',
-      disabled: true,
-      placeholder: i18next.t(
-        'modules.pages.salesOrder.placeholderPurchaseOrderNo',
-      ),
-      row: 2,
+      section: i18next.t('modules.formSections.schedule'),
     },
     {
       key: 'salesName',
@@ -465,6 +485,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       required: true,
       disabled: true,
       row: 2,
+      section: i18next.t('modules.formSections.schedule'),
     },
     {
       key: 'remark',

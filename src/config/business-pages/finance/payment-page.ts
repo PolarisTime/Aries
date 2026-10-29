@@ -6,6 +6,7 @@ import {
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDITED_STATUS_LABEL,
   BILL_STATUS_LABEL,
@@ -15,6 +16,28 @@ import {
   buildPaymentOverview,
   getPaymentCounterpartyOptions,
 } from './finance-page-rules'
+
+/**
+ * 付款用途枚举 → 中文文案。
+ *
+ * <p>唯一展示出口：详情表头（`detailFields`）只认「同 dataIndex 列的 render」，
+ * 因此这里同时供默认隐藏的列表列与详情字段使用，不另写一份映射。取值与后端
+ * `PaymentPurposes` 的 3 个常量一一对应，未知值原样回退（历史脏值不显示空白）。</p>
+ */
+const PAYMENT_PURPOSE_LABEL_KEYS: Record<string, string> = {
+  STATEMENT_SETTLEMENT: 'financeDetail.purposeStatementSettlement',
+  PURCHASE_PREPAYMENT: 'financeDetail.purposePurchasePrepayment',
+  SUPPLIER_PAYMENT: 'financeDetail.purposeSupplierPayment',
+}
+
+function renderPaymentPurpose(value: unknown) {
+  const purpose = asString(value)
+  if (!purpose) {
+    return '-'
+  }
+  const labelKey = PAYMENT_PURPOSE_LABEL_KEYS[purpose]
+  return labelKey ? i18next.t(labelKey) : purpose
+}
 
 export const paymentsPageConfig: ModulePageConfig = {
   key: 'payment',
@@ -79,6 +102,17 @@ export const paymentsPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      /*
+       * 默认隐藏的「付款用途」列：本身是详情表头的展示口径来源
+       * （`detailFields` 复用同 dataIndex 列的 render，见 renderPaymentPurpose）。
+       * 已在 defaultHiddenColumnKeys 声明，列表默认外观不变。
+       */
+      title: i18next.t('modules.pages.payment.paymentPurpose'),
+      dataIndex: 'paymentPurpose',
+      width: 160,
+      render: renderPaymentPurpose,
+    },
+    {
       title: i18next.t('modules.pages.payment.settlementCompany'),
       dataIndex: 'settlementCompanyName',
       width: 160,
@@ -122,6 +156,7 @@ export const paymentsPageConfig: ModulePageConfig = {
   defaultHiddenColumnKeys: [
     'counterpartyCode',
     'payType',
+    'paymentPurpose',
     'operatorName',
     'remark',
   ],
@@ -169,10 +204,23 @@ export const paymentsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      // 后端新增的账户名称快照（accountName）：详情此前只能显示 accountId（雪花 ID）。
+      // 放在金额之后，回答「这笔钱从哪个账户出」。
+      label: i18next.t('modules.columns.account'),
+      key: 'accountName',
+      row: 3,
+    },
+    {
       label: i18next.t('modules.pages.payment.status'),
       key: 'status',
       type: 'status',
-      row: 2,
+      row: 3,
+    },
+    {
+      // 付款用途由后端枚举返回，用于区分对账结算 / 采购预付款等业务。
+      label: i18next.t('modules.pages.payment.paymentPurpose'),
+      key: 'paymentPurpose',
+      row: 3,
     },
     {
       label: i18next.t('modules.pages.payment.operator'),
@@ -223,7 +271,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       required: true,
       options: getSettlementCompanyOptions,
       masterOptionRequirements: { settlementCompanies: true },
-      row: 1,
+      row: 2,
     },
     {
       key: 'paymentDate',
@@ -248,7 +296,7 @@ export const paymentsPageConfig: ModulePageConfig = {
         },
         { label: i18next.t('modules.pages.payment.cash'), value: '现金' },
       ],
-      row: 2,
+      row: 3,
     },
     {
       key: 'amount',
@@ -257,7 +305,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       required: true,
       min: 0.01,
       precision: 2,
-      row: 2,
+      row: 3,
     },
     {
       key: 'accountId',
@@ -265,7 +313,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getSettlementAccountOptions,
-      row: 2,
+      row: 4,
     },
     {
       key: 'status',
@@ -281,20 +329,20 @@ export const paymentsPageConfig: ModulePageConfig = {
         },
         { label: AUDITED_STATUS_LABEL, value: DOCUMENT_STATUS.AUDITED },
       ],
-      row: 2,
+      row: 5,
     },
     {
       key: 'operatorName',
       label: i18next.t('modules.pages.payment.operator'),
       type: 'input',
       required: true,
-      row: 3,
+      row: 4,
     },
     {
       key: 'remark',
       label: i18next.t('modules.pages.payment.remark'),
       type: 'textarea',
-      row: 4,
+      row: 6,
       fullRow: true,
     },
     {
@@ -305,7 +353,7 @@ export const paymentsPageConfig: ModulePageConfig = {
        * fullRow 字段各占一行：与 remark 同处 row 4 时声明宽度是 24 + 24 = 48，
        * 已超出 24 栅格，「一行」语义失效（antd 只能各自换行，行间距还会叠加）。
        */
-      row: 5,
+      row: 7,
       fullRow: true,
     },
   ],

@@ -1,4 +1,4 @@
-import { Alert, Col, Form, Row, Typography } from 'antd'
+import { Alert, Col, Divider, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import { isEditorFieldDisabledForModule } from '@/module-system/adapter/module-adapter-editor'
@@ -58,6 +58,25 @@ function getFieldSpan(
   return layoutVariant === 'finance' ? 12 : 6
 }
 
+/** 按声明顺序分区；section 相同且相邻的字段归为一组，未声明则平铺（不渲染区块标题）。 */
+function groupFieldsBySection(
+  fields: ModuleFormFieldDefinition[],
+): Array<{ section?: string; fields: ModuleFormFieldDefinition[] }> {
+  const groups: Array<{
+    section?: string
+    fields: ModuleFormFieldDefinition[]
+  }> = []
+  for (const field of fields) {
+    const last = groups.at(-1)
+    if (last && last.section === field.section) {
+      last.fields.push(field)
+    } else {
+      groups.push({ section: field.section, fields: [field] })
+    }
+  }
+  return groups
+}
+
 export function ModuleEditorFormSection({
   config,
   moduleKey,
@@ -73,21 +92,20 @@ export function ModuleEditorFormSection({
   const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
-  const formFieldRows = groupFieldsByRow(
-    (config.formFields || []).filter(
-      (field) =>
-        isModuleFormFieldVisible(field, formValues) &&
-        !(
-          !editorState.isEdit &&
-          !config.showGeneratedPrimaryNoOnCreate &&
-          field.key === config.primaryNoKey &&
-          usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
-        ),
-    ),
+  const visibleFields = (config.formFields || []).filter(
+    (field) =>
+      isModuleFormFieldVisible(field, formValues) &&
+      !(
+        !editorState.isEdit &&
+        !config.showGeneratedPrimaryNoOnCreate &&
+        field.key === config.primaryNoKey &&
+        usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
+      ),
   )
-  if (!formFieldRows.length) {
+  if (!visibleFields.length) {
     return null
   }
+  const formFieldGroups = groupFieldsBySection(visibleFields)
 
   return (
     <>
@@ -118,34 +136,55 @@ export function ModuleEditorFormSection({
           </div>
         ) : null}
       </div>
-      {formFieldRows.map((fieldRow) => (
-        <Row
-          key={fieldRow.map((field) => field.key).join('-')}
-          /* 纵向 8px：字段栅格沿用主数据弹层的 [16, 8] 节奏（AGENTS.md《间距》）。 */
-          gutter={[16, 8]}
-          className="editor-form-row"
+      {formFieldGroups.map((group) => (
+        <section
+          /* 未分区时不能用数组下标做 key：字段增删会让 React 错配 DOM 状态 */
+          key={
+            group.section ?? group.fields.map((field) => field.key).join('|')
+          }
+          className="editor-form-section"
         >
-          {fieldRow.map((field: ModuleFormFieldDefinition) => (
-            <Col key={field.key} span={getFieldSpan(field, layoutVariant)}>
-              <FormFieldRenderer
-                field={field}
-                projectOptions={projectOptions}
-                settlementAccountOptions={settlementAccountOptions}
-                disabled={isEditorFieldDisabledForModule(
-                  moduleKey,
-                  field.key,
-                  Boolean(field.disabled || field.disabledWhen?.(formValues)),
-                  actions.canSave && !actions.saving,
-                  editorState.lineItemsLocked,
-                  config.primaryNoKey,
-                  config.parentImport?.parentFieldKey,
-                  formValues,
-                  authoritativePrimaryNo,
-                )}
-              />
-            </Col>
+          {group.section ? (
+            <Divider
+              className="master-section-divider"
+              plain
+              titlePlacement="start"
+            >
+              {group.section}
+            </Divider>
+          ) : null}
+          {groupFieldsByRow(group.fields).map((fieldRow) => (
+            <Row
+              key={fieldRow.map((field) => field.key).join('-')}
+              /* 纵向 8px：字段栅格沿用主数据弹层的 [16, 8] 节奏（AGENTS.md《间距》）。 */
+              gutter={[16, 8]}
+              className="editor-form-row"
+            >
+              {fieldRow.map((field: ModuleFormFieldDefinition) => (
+                <Col key={field.key} span={getFieldSpan(field, layoutVariant)}>
+                  <FormFieldRenderer
+                    field={field}
+                    projectOptions={projectOptions}
+                    settlementAccountOptions={settlementAccountOptions}
+                    disabled={isEditorFieldDisabledForModule(
+                      moduleKey,
+                      field.key,
+                      Boolean(
+                        field.disabled || field.disabledWhen?.(formValues),
+                      ),
+                      actions.canSave && !actions.saving,
+                      editorState.lineItemsLocked,
+                      config.primaryNoKey,
+                      config.parentImport?.parentFieldKey,
+                      formValues,
+                      authoritativePrimaryNo,
+                    )}
+                  />
+                </Col>
+              ))}
+            </Row>
           ))}
-        </Row>
+        </section>
       ))}
     </>
   )

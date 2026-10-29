@@ -14,7 +14,7 @@ describe('销售订单报单日期配置', () => {
     ))
   })
 
-  it('表单提供必填的报单日期，且排在交货日期之前', () => {
+  it('表单提供必填的报单日期，且与交货日期、销售员同处「日期与经手」区', () => {
     const formFields = salesOrdersPageConfig.formFields ?? []
     const keys = formFields.map((field) => field.key)
 
@@ -23,10 +23,39 @@ describe('销售订单报单日期配置', () => {
         label: '报单日期',
         type: 'date',
         required: true,
-        row: 1,
+        row: 2,
+        section: '日期与经手',
       },
     )
     expect(keys.indexOf('orderDate')).toBeLessThan(keys.indexOf('deliveryDate'))
+  })
+
+  /**
+   * 表头顺序契约（2026-10 统一）：第 1 行「单号 → 来源单号 → 客户 → 项目」，
+   * 第 2 行「报单日期 → 交货日期 → 销售员」，备注整行收尾。
+   *
+   * <p>锁定这组顺序的原因：行内字段位置是扫读单据的主要线索，改动它会直接影响录入效率；
+   * 此前采购订单/入库/出库/退货各行顺序各不相同（来源单号与日期谁在前、客户与项目是否
+   * 相邻都不一致），用户在不同单据之间切换时要重新找字段。顺序调整若不同步改这组断言，
+   * 会静默退化。</p>
+   */
+  it('表头行内顺序符合统一口径', () => {
+    const formFields = salesOrdersPageConfig.formFields ?? []
+    const keysOfRow = (row: number) =>
+      formFields.filter((field) => field.row === row).map((field) => field.key)
+
+    expect(keysOfRow(1)).toEqual([
+      'orderNo',
+      'purchaseOrderNo',
+      'customerId',
+      'projectId',
+    ])
+    expect(keysOfRow(2)).toEqual([
+      'orderDate',
+      'deliveryDate',
+      'salesName',
+    ])
+    expect(keysOfRow(3)).toEqual(['remark'])
   })
 
   it('列表在交货日期之前展示报单日期列', () => {

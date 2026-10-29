@@ -263,7 +263,12 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
   ],
   formFields: [
     {
-      key: 'orderNo',
+      /*
+       * 必须是 `inboundNo`：后端 PurchaseInboundResponse / 前端响应 schema 都只有
+       * `inboundNo`，此前误写成 `orderNo`（采购订单的字段名），导致编辑页「入库单号」
+       * 永远为空。单号由后端自动生成，这里只做回显。
+       */
+      key: 'inboundNo',
       label: i18next.t('modules.pages.purchaseInbound.formOrderNo'),
       type: 'input',
       disabled: true,
@@ -280,18 +285,19 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'inboundDate',
-      label: i18next.t('modules.pages.purchaseInbound.formInboundDate'),
-      type: 'date',
-      required: true,
-      row: 1,
-    },
-    {
+      /* 供应商在日期之前：先回答「跟谁进的货」，再回答「哪天入库」。 */
       key: 'supplierId',
       label: i18next.t('modules.pages.purchaseInbound.colSupplier'),
       type: 'select',
       required: true,
       options: getSupplierOptions,
+      row: 1,
+    },
+    {
+      key: 'inboundDate',
+      label: i18next.t('modules.pages.purchaseInbound.formInboundDate'),
+      type: 'date',
+      required: true,
       row: 1,
     },
     {

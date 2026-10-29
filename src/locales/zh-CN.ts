@@ -613,11 +613,13 @@ export const zhCN = {
     },
   },
   modules: {
-    /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
+    /** 编辑表单（主数据弹层与单据编辑器共用）的区块标题 */
     formSections: {
       weightPrice: '重量与价格',
       contactSettlement: '联系方式与结算',
       basic: '基本信息',
+      delivery: '交货信息',
+      schedule: '日期与经手',
       contact: '联系方式',
       vehicle: '车辆与司机',
       settlement: '结算信息',
@@ -1462,6 +1464,7 @@ export const zhCN = {
         customer: '客户',
         customerCode: '客户编码',
         project: '项目',
+        receiptPurpose: '收款用途',
         receiptMethod: '收款方式',
         amount: '金额',
         status: '状态',

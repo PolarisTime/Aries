@@ -224,6 +224,12 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       type: 'status',
       row: 2,
     },
+    {
+      // 后端响应已带 warehouseName（退货入库仓库），列表有列、详情此前漏配。
+      label: i18next.t('modules.columns.warehouse'),
+      key: 'warehouseName',
+      row: 3,
+    },
     { label: i18next.t('modules.columns.remark'), key: 'remark', row: 3 },
   ],
   formFields: [
@@ -245,13 +251,7 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'returnDate',
-      label: i18next.t('modules.pages.salesReturn.colReturnDate'),
-      type: 'date',
-      required: true,
-      row: 1,
-    },
-    {
+      /* 客户与项目相邻：第 1 行统一是「单号 / 来源单号 / 客户 / 项目」。 */
       key: 'customerId',
       label: i18next.t('modules.pages.salesReturn.colCustomerName'),
       type: 'select',
@@ -265,6 +265,13 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerProjectOptions,
+      row: 1,
+    },
+    {
+      key: 'returnDate',
+      label: i18next.t('modules.pages.salesReturn.colReturnDate'),
+      type: 'date',
+      required: true,
       row: 2,
     },
     {

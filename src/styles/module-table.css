@@ -425,6 +425,33 @@
   row-gap: var(--space-2);
 }
 
+/*
+ * 表头分区：section 相同且相邻的字段归为一组，组间 24px（区块间距），
+ * 首个分区不再叠加 antd Divider 默认的 24px 上边距（AGENTS.md《间距》）。
+ */
+.editor-form-section + .editor-form-section {
+  margin-top: var(--space-md);
+}
+
+.editor-form-section:first-child .master-section-divider.ant-divider {
+  margin-top: 0;
+}
+
+/*
+ * 只读字段纯文本（配置 disabled 的 input/textarea、单据引用号）：
+ * 行高与控件一致，避免同一行里有控件字段时竖向错位。
+ */
+.editor-form-readonly-text {
+  display: block;
+  min-height: var(--app-control-height);
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--app-font-size);
+  line-height: var(--app-control-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .editor-form-shell .ant-form-item {
   margin-bottom: var(--space-xs);
 }
@@ -549,6 +576,72 @@
 
 .editor-items-summary-inline {
   margin-left: var(--space-xs);
+}
+
+/*
+ * 明细合计的 Statistic 形态（编辑器 / 详情共用）。
+ *
+ * 数字大小靠 Statistic 的字号与字重，不靠千分位：金额格式由 `formatAmount` 统一为
+ * `useGrouping: false`（产品决定：便于复制进表格），这里不能再叠加分组。
+ */
+.editor-items-summary--strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-2xl);
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+.editor-items-summary--cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.editor-items-metric {
+  min-width: 0;
+}
+
+.editor-items-metric .ant-statistic-title {
+  margin-bottom: var(--space-xxs);
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.editor-items-metric .ant-statistic-content {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-items-metric--emphasis .ant-statistic-content {
+  color: var(--theme-primary-text);
+  font-weight: 700;
+}
+
+.editor-items-metric-unit {
+  margin-left: var(--space-xxs);
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.editor-items-metric-card {
+  flex: 0 0 200px;
+  min-width: 0;
+}
+
+.editor-items-metric-card .ant-card-body {
+  padding: var(--space-sm) var(--space-md);
 }
 
 .module-items-panel {
@@ -921,3 +1014,19 @@
  * **键盘 Shift+F10 / 上下文菜单键**打开（`RowContextMenuRow` 提供，满足 WCAG 2.2 SC 2.1.1
  * 的键盘等价路径）。若要恢复可见按钮，请同时恢复这里的命中区样式与身份列的列宽预算。
  */
+
+/*
+ * 单据表头的分区标题**不画全宽横线**：单据表头字段少（销售订单 8 个）、横向密集，
+ * 两条贯穿面板的线会把抬头切成三段、抢走对字段本身的注意力。这里保留「小字标题 +
+ * 间距」表达分区，横线只在主数据弹层（字段多、以阅读为主）使用。
+ * 需要恢复横线时删掉下面两条 ::before/::after 规则即可，标题样式与间距也随之回到
+ * `master-section-divider` 的默认值。
+ */
+.editor-form-section .master-section-divider.ant-divider {
+  margin: var(--space-sm) 0 var(--space-xs);
+}
+
+.editor-form-section .master-section-divider.ant-divider::before,
+.editor-form-section .master-section-divider.ant-divider::after {
+  border-block-start-color: transparent;
+}

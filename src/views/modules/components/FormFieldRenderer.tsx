@@ -97,22 +97,55 @@ export function FormFieldRenderer({
   )
 
   /*
-   * 只读的单据引用字段渲染单号纯文本（文本口径见 formatDocumentReferenceText），
-   * 其余字段一律交给控件分发。表单值仍由 Form.Item 的 name 承载，纯文本不会改变提交载荷。
+   * 只读字段的唯一渲染出口：
+   * - 单据引用字段（单号）无论因何禁用，都显示纯文本（口径见 formatDocumentReferenceText）；
+   * - 配置层 `disabled: true` 的**文本类**字段（input / textarea）同样显示纯文本 —— 灰色
+   *   禁用输入框看起来仍像能输入，与被禁用的语义不符；
+   * - select / date / number 等仍走禁用控件：它们的显示值需要选项或格式解析，改成纯文本
+   *   会露出原始 id 或未格式化的值。
+   * 表单值仍由 Form.Item 的 name 承载，纯文本不会改变提交载荷。
    */
+  const readOnlyText = (() => {
+    if (!disabledValue) return null
+    if (isDocumentReferenceField(field.key)) {
+      return formatDocumentReferenceText(formValues[field.key]) || '-'
+    }
+    if (field.disabled === true && isTextualFieldType(field.type)) {
+      return formatReadOnlyFieldValue(formValues[field.key])
+    }
+    return null
+  })()
+
   const control =
-    disabledValue && isDocumentReferenceField(field.key)
-      ? formatDocumentReferenceText(formValues[field.key]) || '-'
-      : renderModuleFormFieldControl({
-          field,
-          fieldId,
-          disabledValue,
-          placeholder,
-          allowClear,
-          formValues,
-          selectOptions: buildSelectOptions(resolvedOptions),
-          autoCompleteOptions: buildAutoCompleteOptions(resolvedOptions),
-        })
+    readOnlyText !== null ? (
+      <span id={fieldId} className="editor-form-readonly-text">
+        {readOnlyText}
+      </span>
+    ) : (
+      renderModuleFormFieldControl({
+        field,
+        fieldId,
+        disabledValue,
+        placeholder,
+        allowClear,
+        formValues,
+        selectOptions: buildSelectOptions(resolvedOptions),
+        autoCompleteOptions: buildAutoCompleteOptions(resolvedOptions),
+      })
+    )
 
   return renderFormItem(control)
+}
+
+/** 文本类字段：可以安全地用纯文本回显（值本身就是最终展示值）。 */
+function isTextualFieldType(type: ModuleFormFieldDefinition['type']) {
+  return type === 'input' || type === 'textarea'
+}
+
+/** 纯文本回显：空值统一显示为 '-'，与单据引用字段口径一致。 */
+function formatReadOnlyFieldValue(value: unknown) {
+  if (value === null || value === undefined || value === '') {
+    return '-'
+  }
+  return String(value)
 }

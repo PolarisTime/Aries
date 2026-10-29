@@ -7,6 +7,7 @@ import {
   getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { statusMap } from '../shared/shared'
@@ -14,6 +15,29 @@ import {
   buildReceiptOverview,
   getReceiptCounterpartyOptions,
 } from './finance-page-rules'
+
+/**
+ * 收款用途枚举 → 中文文案。
+ *
+ * <p>唯一展示出口：详情表头（`detailFields`）只认「同 dataIndex 列的 render」，
+ * 因此这里同时供默认隐藏的列表列与详情字段使用，不另写一份映射。取值与后端
+ * `ReceiptPurposes` 的 3 个常量一一对应，未知值原样回退（历史脏值不显示空白）。</p>
+ */
+const RECEIPT_PURPOSE_LABEL_KEYS: Record<string, string> = {
+  CUSTOMER_STATEMENT_SETTLEMENT:
+    'financeDetail.purposeCustomerStatementSettlement',
+  SUPPLIER_PREPAYMENT_REFUND: 'financeDetail.purposeSupplierPrepaymentRefund',
+  SUPPLIER_OTHER_RECEIPT: 'financeDetail.purposeSupplierOtherReceipt',
+}
+
+function renderReceiptPurpose(value: unknown) {
+  const purpose = asString(value)
+  if (!purpose) {
+    return '-'
+  }
+  const labelKey = RECEIPT_PURPOSE_LABEL_KEYS[purpose]
+  return labelKey ? i18next.t(labelKey) : purpose
+}
 
 export const receiptsPageConfig: ModulePageConfig = {
   key: 'receipt',
@@ -83,6 +107,17 @@ export const receiptsPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      /*
+       * 默认隐藏的「收款用途」列：本身是详情表头的展示口径来源
+       * （`detailFields` 复用同 dataIndex 列的 render，见 renderReceiptPurpose）。
+       * 已在 defaultHiddenColumnKeys 声明，列表默认外观不变。
+       */
+      title: i18next.t('modules.pages.receipt.receiptPurpose'),
+      dataIndex: 'receiptPurpose',
+      width: 160,
+      render: renderReceiptPurpose,
+    },
+    {
       title: SETTLEMENT_COMPANY_LABEL,
       dataIndex: 'settlementCompanyName',
       width: 160,
@@ -126,6 +161,7 @@ export const receiptsPageConfig: ModulePageConfig = {
   defaultHiddenColumnKeys: [
     'counterpartyCode',
     'payType',
+    'receiptPurpose',
     'operatorName',
     'remark',
   ],
@@ -169,15 +205,34 @@ export const receiptsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      // 后端新增的账户名称快照（accountName）：详情此前只能显示 accountId（雪花 ID）。
+      // 放在金额之后，回答「这笔钱进了哪个账户」。
+      label: i18next.t('modules.columns.account'),
+      key: 'accountName',
+      row: 3,
+    },
+    {
       label: i18next.t('modules.pages.receipt.status'),
       key: 'status',
       type: 'status',
-      row: 2,
+      row: 3,
+    },
+    {
+      // 收款用途由后端枚举返回，用于区分客户结算收款 / 供应商预付款退款等业务。
+      label: i18next.t('modules.pages.receipt.receiptPurpose'),
+      key: 'receiptPurpose',
+      row: 3,
+    },
+    {
+      // 编辑页用关联项目下拉（projectId），详情展示后端快照的项目名称。
+      label: i18next.t('modules.filter.relatedContractProject'),
+      key: 'projectName',
+      row: 3,
     },
     {
       label: i18next.t('modules.pages.receipt.operator'),
       key: 'operatorName',
-      row: 3,
+      row: 4,
     },
     {
       label: i18next.t('modules.pages.receipt.remark'),
@@ -229,7 +284,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       required: true,
       options: getSettlementCompanyOptions,
       masterOptionRequirements: { settlementCompanies: true },
-      row: 1,
+      row: 2,
     },
     {
       key: 'receiptDate',
@@ -258,7 +313,7 @@ export const receiptsPageConfig: ModulePageConfig = {
         },
         { label: i18next.t('modules.pages.receipt.cash'), value: '现金' },
       ],
-      row: 2,
+      row: 3,
     },
     {
       key: 'amount',
@@ -267,7 +322,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       required: true,
       min: 0.01,
       precision: 2,
-      row: 2,
+      row: 3,
     },
     {
       key: 'accountId',
@@ -275,7 +330,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getSettlementAccountOptions,
-      row: 2,
+      row: 4,
     },
     {
       key: 'status',
@@ -294,7 +349,7 @@ export const receiptsPageConfig: ModulePageConfig = {
           value: DOCUMENT_STATUS.AUDITED,
         },
       ],
-      row: 2,
+      row: 5,
     },
     {
       key: 'projectId',
@@ -302,27 +357,27 @@ export const receiptsPageConfig: ModulePageConfig = {
       type: 'select',
       options: getCustomerProjectOptions,
       masterOptionRequirements: { customers: true, projects: true },
-      row: 3,
+      row: 4,
     },
     {
       key: 'operatorName',
       label: i18next.t('modules.pages.receipt.operator'),
       type: 'input',
       required: true,
-      row: 3,
+      row: 5,
     },
     {
       key: 'remark',
       label: i18next.t('modules.pages.receipt.remark'),
       type: 'textarea',
-      row: 4,
+      row: 6,
       fullRow: true,
     },
     {
       key: 'attachments',
       label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
-      row: 5,
+      row: 7,
       fullRow: true,
     },
   ],

@@ -126,51 +126,60 @@ export function ModuleRecordDetailInline({
     )
   }
 
-  if (!tableColumns.length) {
-    return (
-      <div className="module-record-detail-inline module-record-detail-inline-fields">
-        {config.detailFields.length ? (
-          <Row gutter={[12, 12]}>
-            {config.detailFields.map((field) => {
-              const column = config.columns.find(
-                (item) => item.dataIndex === field.key,
-              )
-              const fieldType = column?.type || field.type
-              const value = record[field.key]
-              return (
-                <Col key={field.key} span={field.fullRow ? 24 : 6}>
-                  <div className="bill-detail-item">
-                    <span className="bill-detail-label">
-                      {padLabel(field.label)}
-                    </span>
-                    <span className="bill-detail-value">
-                      {fieldType === 'status'
-                        ? renderModuleRecordStatus({
-                            record,
-                            statusKey: field.key,
-                            statusMap: config.statusMap,
-                            renderFallback: (status) =>
-                              formatCellValue(status, fieldType),
-                          })
-                        : column?.render
-                          ? column.render(value, record)
-                          : formatCellValue(value, fieldType)}
-                    </span>
-                  </div>
-                </Col>
-              )
-            })}
-          </Row>
-        ) : (
-          <AppResult
-            status="info"
-            title={t('modules.detail.noDetailItems')}
-            className="module-record-detail-inline-empty"
-          />
-        )}
-      </div>
-    )
-  }
+  /*
+   * 表头（detailFields）与明细（itemColumns）**两块都要渲染**，不再二选一。
+   *
+   * 历史行为是 `if (!tableColumns.length)` 才渲染表头，导致所有「既有明细列、又配了
+   * detailFields」的模块（客户/物流对账单等）在行内展开详情里一个表头字段都看不到：
+   * 对账期间、结算主体、金额合计、审核状态全部缺失（审查记录据此判定 P1）。
+   * 现在固定顺序为「表头在上、明细在下」，与浮层详情（ModuleRecordDetailContent）一致。
+   */
+  const renderHeaderFields = () => (
+    <div className="module-record-detail-inline-fields">
+      {config.detailFields.length ? (
+        <Row gutter={[12, 12]}>
+          {config.detailFields.map((field) => {
+            const column = config.columns.find(
+              (item) => item.dataIndex === field.key,
+            )
+            const fieldType = column?.type || field.type
+            const value = record[field.key]
+            return (
+              <Col key={field.key} span={field.fullRow ? 24 : 6}>
+                <div className="bill-detail-item">
+                  <span className="bill-detail-label">
+                    {padLabel(field.label)}
+                  </span>
+                  <span className="bill-detail-value">
+                    {fieldType === 'status'
+                      ? renderModuleRecordStatus({
+                          record,
+                          statusKey: field.key,
+                          statusMap: config.statusMap,
+                          renderFallback: (status) =>
+                            formatCellValue(status, fieldType),
+                        })
+                      : column?.render
+                        ? column.render(value, record)
+                        : formatCellValue(value, fieldType)}
+                  </span>
+                </div>
+              </Col>
+            )
+          })}
+        </Row>
+      ) : (
+        <AppResult
+          status="info"
+          title={t('modules.detail.noDetailItems')}
+          className="module-record-detail-inline-empty"
+        />
+      )}
+    </div>
+  )
+
+  const hasHeaderFields = config.detailFields.length > 0
+  const hasItemColumns = tableColumns.length > 0
 
   const items = record.items || []
   const renderItems = () => {
@@ -281,7 +290,15 @@ export function ModuleRecordDetailInline({
     <div className="module-record-detail-inline">
       {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
       {config.renderDetailExtras?.({ record })}
-      {renderItems()}
+      {hasHeaderFields ? renderHeaderFields() : null}
+      {hasItemColumns ? renderItems() : null}
+      {!hasHeaderFields && !hasItemColumns ? (
+        <AppResult
+          status="info"
+          title={t('modules.detail.noDetailItems')}
+          className="module-record-detail-inline-empty"
+        />
+      ) : null}
     </div>
   )
 }

@@ -312,7 +312,34 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       type: 'status',
       row: 2,
     },
-    { label: i18next.t('modules.columns.remark'), key: 'remark', row: 3 },
+    /*
+     * 行 3：后端聚合返回的只读派生量（实际货值 / 差额 / 入库进度 / 未入库件数）。
+     * 与列表同口径：key 与列一致，详情取值自动复用列 render（空值补「-」、差额标注补退款、
+     * 入库进度三态、强制结单留痕），不在配置里另写一份展示口径。
+     */
+    {
+      label: i18next.t('modules.pages.purchaseOrder.colActualAmount'),
+      key: 'totalActualAmount',
+      type: 'amount',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseOrder.colAmountDifference'),
+      key: 'totalAmountDifference',
+      type: 'amount',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseOrder.colReceiptProgress'),
+      key: 'totalReceivedQuantity',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.columns.remainingQuantity'),
+      key: 'totalRemainingQuantity',
+      row: 3,
+    },
+    { label: i18next.t('modules.columns.remark'), key: 'remark', row: 4 },
   ],
   formFields: [
     {
@@ -331,6 +358,15 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      /* 结算主体紧跟供应商：两者回答同一个问题「这笔钱跟谁结算」。 */
+      key: 'settlementCompanyId',
+      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      type: 'select',
+      required: true,
+      options: getSettlementCompanyOptions,
+      row: 1,
+    },
+    {
       key: 'orderDate',
       label: i18next.t('modules.pages.purchaseOrder.colOrderDate'),
       type: 'date',
@@ -343,14 +379,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       type: 'input',
       required: true,
       disabled: true,
-      row: 1,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
-      type: 'select',
-      required: true,
-      options: getSettlementCompanyOptions,
       row: 2,
     },
     {

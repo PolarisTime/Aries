@@ -637,11 +637,13 @@ export const enUS = {
     },
   },
   modules: {
-    /** 主数据编辑表单的区块标题(共用: 供应商/客户/仓库/物流商/项目等) */
+    /** Section titles shared by master-data dialogs and document editors */
     formSections: {
       weightPrice: 'Weight & price',
       contactSettlement: 'Contact & settlement',
       basic: 'Basic information',
+      delivery: 'Delivery',
+      schedule: 'Dates & operator',
       contact: 'Contact',
       vehicle: 'Vehicles & drivers',
       settlement: 'Settlement',
@@ -1493,6 +1495,7 @@ export const enUS = {
         customer: 'Customer',
         customerCode: 'Customer code',
         project: 'Project',
+        receiptPurpose: 'Receipt purpose',
         receiptMethod: 'Receipt method',
         amount: 'Amount',
         status: 'Status',
