@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { QuoteRow } from './supplier-price-list-model'
 import {
   applyBrandOrder,
+  buildBasePriceColumnPrices,
   buildBasePriceFillPlan,
   buildSlots,
   buildSpecPastePlan,
@@ -279,6 +280,63 @@ describe('列宽：固定表宽，不随容器拉伸', () => {
   it('没有品牌列时按 1 列计算，表不会塌成 0 宽', () => {
     expect(sheetWidthOf(0, 1)).toBe(sheetWidthOf(1, 1))
     expect(sheetWidthOf(0, 2)).toBe(sheetWidthOf(1, 2))
+  })
+})
+
+describe('基价模式：整列按「基价 + 加价」重算', () => {
+  const rows = groupSpecRows([
+    row(12, '9米', 'HRB400'),
+    row(14, '9米', 'HRB400'),
+    row(16, '9米', 'HRB400'),
+  ])
+  const base = { material: 'HRB400', spec: 12, length: '9米' }
+  const items = [
+    { material: 'HRB400', spec: 12, length: '9米', delta: 0 },
+    { material: 'HRB400', spec: 14, length: '9米', delta: 50 },
+    { material: 'HRB400', spec: 16, length: '9米', delta: 120 },
+  ]
+
+  it('返回除基价行外的全部已配置规格价', () => {
+    const prices = buildBasePriceColumnPrices({
+      base,
+      basePrice: 3200,
+      items,
+      specRows: rows,
+    })
+    expect(prices.size).toBe(2)
+    expect(prices.get('螺纹钢|HRB400|14|9米')).toBe(3250)
+    expect(prices.get('螺纹钢|HRB400|16|9米')).toBe(3320)
+    // 基价行不返回：它是输入源，不该被算出来的值覆盖
+    expect(prices.has('螺纹钢|HRB400|12|9米')).toBe(false)
+  })
+
+  it('与「只补空格」的 fillPlan 不同：已有价格的规格也会重算', () => {
+    const fillOnly = buildBasePriceFillPlan({
+      base,
+      basePrice: 3200,
+      items,
+      specRows: rows,
+      isFilled: () => true,
+    })
+    expect(fillOnly).toHaveLength(0)
+
+    const recomputed = buildBasePriceColumnPrices({
+      base,
+      basePrice: 3200,
+      items,
+      specRows: rows,
+    })
+    expect(recomputed.size).toBe(2)
+  })
+
+  it('没有配置加价的规格不产生价格（避免凭空造价）', () => {
+    const prices = buildBasePriceColumnPrices({
+      base,
+      basePrice: 3200,
+      items: [{ material: 'HRB400', spec: 14, length: '9米', delta: 50 }],
+      specRows: rows,
+    })
+    expect(prices.has('螺纹钢|HRB400|16|9米')).toBe(false)
   })
 })
 

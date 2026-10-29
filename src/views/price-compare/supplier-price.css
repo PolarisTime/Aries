@@ -95,6 +95,15 @@
   text-align: center;
 }
 
+/*
+ * 基价模式下自动算出来的格子：视觉上要与可编辑格区分开（浅底 + 虚线边），
+ * 否则用户会一直去点它、以为能改。
+ */
+.supplier-price-sheet .supplier-price-computed-cell .ant-input-number {
+  background: var(--theme-surface-hover, #fafafa);
+  border-style: dashed;
+}
+
 /* 基价规格：用左色条标出「这格是基价」，不再在窄列里塞 Tag 挤占输入宽度 */
 .supplier-price-sheet .ant-input-number.supplier-price-base-cell {
   border-inline-start: 3px solid var(--theme-primary);

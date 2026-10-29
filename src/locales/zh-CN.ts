@@ -2845,6 +2845,17 @@ export const zhCN = {
       rulesConflict: '规则已被他人修改，请刷新后重试',
       rulesLoadFailed: '基价加价规则加载失败',
       baseBadge: '基价',
+      priceMode: '价格录入方式',
+      priceModeManual: '手填模式',
+      priceModeBase: '基价模式',
+      priceModeManualHint: '逐格填写价格，系统不自动计算',
+      priceModeBaseHint:
+        '只填每个品牌的基价，其余规格按「基价 + 加价」自动算好',
+      baseNotConfigured: '未配置基价',
+      baseNotConfiguredHint:
+        '该品牌还没配置基价加价：点列头菜单「基价加价」设置基价规格与各规格加价',
+      computedFromBase: '由基价 {{price}} 按加价自动算出',
+      basePriceLabel: '基价',
       autoFilled: '已按基价加价填入 {{count}} 格',
       basePriceA11y: '把 {{material}} Φ{{spec}} {{length}} 设为基价',
       deltaA11y: '{{material}} Φ{{spec}} {{length}} 的加价',

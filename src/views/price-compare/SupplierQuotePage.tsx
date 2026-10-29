@@ -87,7 +87,7 @@ import {
 } from './supplier-quote-edits'
 import {
   applyBrandOrder,
-  buildBasePriceFillPlan,
+  buildBasePriceColumnPrices,
   buildSlots,
   buildSpecPastePlan,
   columnLengths as columnLengthsOf,
@@ -135,6 +135,18 @@ const brandPrefsKey = (supplierId: string) =>
 /** 视图偏好：品牌成列（现状）/ 规格横置（品牌分块，规格作列头，贴近纸质报价单）。 */
 type QuoteViewMode = 'brands' | 'specs'
 
+/**
+ * 价格录入方式。
+ *
+ * <ul>
+ *   <li>{@code base} 基价模式：每个品牌只填「基价」一格，其余规格按「基价 + 加价」自动算好且只读；</li>
+ *   <li>{@code manual} 手填模式：逐格录入，系统不会替你算任何价格。</li>
+ * </ul>
+ *
+ * <p>两种方式互斥：手填模式下即使填了基价格子也不联动，否则业务员分不清哪个价是自己填的。</p>
+ */
+type PriceEntryMode = 'base' | 'manual'
+
 const viewModeKey = (supplierId: string) =>
   `aries:supplier-quote-view:${supplierId}`
 
@@ -142,6 +154,14 @@ const readViewMode = (supplierId: string): QuoteViewMode =>
   window.localStorage.getItem(viewModeKey(supplierId)) === 'specs'
     ? 'specs'
     : 'brands'
+
+const priceModeKey = (supplierId: string) =>
+  `price-compare:supplier-price-mode:${supplierId}`
+
+const readPriceMode = (supplierId: string): PriceEntryMode =>
+  window.localStorage.getItem(priceModeKey(supplierId)) === 'base'
+    ? 'base'
+    : 'manual'
 
 /** 未保存草稿的本地存储键：刷新/误关页后能恢复，避免一次报价白录。 */
 const draftsKey = (supplierId: string) =>
@@ -193,6 +213,8 @@ export function SupplierQuotePage() {
   const [ruleBrand, setRuleBrand] = useState<string>()
   /** 视图方向：品牌成列（默认）/ 规格横置（按供应商记忆）。 */
   const [viewMode, setViewMode] = useState<QuoteViewMode>('brands')
+  /** 价格录入方式（基价/手填），按供应商记在本地。 */
+  const [priceMode, setPriceMode] = useState<PriceEntryMode>('manual')
 
   /** 资源级权限：读/写/删分开，只读用户不该看到可点的保存与移除。 */
   const canUpdate = useHasPermission('supplier-price-lists:update')
@@ -393,6 +415,12 @@ export function SupplierQuotePage() {
     window.localStorage.setItem(viewModeKey(supplierId), viewMode)
   }, [supplierId, viewMode])
 
+  // 录入方式同样是个人偏好：按供应商存本地
+  useEffect(() => {
+    if (!supplierId) return
+    window.localStorage.setItem(priceModeKey(supplierId), priceMode)
+  }, [priceMode, supplierId])
+
   const totalDirty = views.reduce(
     (sum, view) => sum + draftCount(drafts[view.brandName]),
     0,
@@ -430,41 +458,6 @@ export function SupplierQuotePage() {
    * <p>只填空格：已有价格（服务端或本次草稿）一律不动；基价格本身跳过；负价跳过。
    * 这是「基价加价」在录入侧的唯一出口。</p>
    */
-  const autoFillFromBasePrice = (
-    brandName: string,
-    ref: { material: string; spec: number; length: string },
-    price: number | null,
-    cellKey: string,
-  ) => {
-    if (!canUpdate || price === null || !(price > 0)) return
-    // 只在「用户本次改过基价格」时联动：单纯点进点出不该悄悄填一堆格子
-    if (drafts[brandName]?.[cellKey] === undefined) return
-    const rules = rulesByBrand.get(brandName)
-    if (!rules?.base) return
-    const refKey = `${ref.material}|${ref.spec}|${ref.length}`
-    const baseKey = `${rules.base.material}|${rules.base.spec}|${rules.base.length}`
-    if (refKey !== baseKey) return
-    const view = viewByBrand.get(brandName)
-    if (!view) return
-    const cells = buildBasePriceFillPlan({
-      base: rules.base,
-      basePrice: price,
-      items: rules.items,
-      specRows,
-      isFilled: (rowKey) =>
-        drafts[brandName]?.[rowKey] !== undefined || view.cells.has(rowKey),
-    })
-    if (!cells.length) return
-    const filled: DraftMap = {
-      ...drafts,
-      [brandName]: { ...(drafts[brandName] ?? {}) },
-    }
-    for (const cell of cells) filled[brandName][cell.rowKey] = cell.value
-    applyDrafts(filled)
-    message.success(
-      t('priceCompare.supplierPrice.autoFilled', { count: cells.length }),
-    )
-  }
 
   const undo = () => {
     const next = undoDrafts(history, drafts)
@@ -834,6 +827,7 @@ export function SupplierQuotePage() {
       setSpecKeyword('')
       setOnlyUnpriced(false)
       setViewMode(readViewMode(nextSupplierId))
+      setPriceMode(readPriceMode(nextSupplierId))
       anchorRef.current = null
     }
     if (totalDirty === 0) {
@@ -1053,6 +1047,79 @@ export function SupplierQuotePage() {
   )
 
   /**
+   * 基价模式：每个品牌「基价那一格 + 其余规格由基价算出」。
+   *
+   * <p>没有配置基价加价的品牌不进入这里 —— 它们在手填语义下仍可编辑，不会被锁死。</p>
+   */
+  const baseColumns = useMemo(() => {
+    const map = new Map<
+      string,
+      { baseCellKey: string; basePrice?: number; prices: Map<string, number> }
+    >()
+    if (priceMode !== 'base') return map
+    for (const view of orderedViews) {
+      const rules = rulesByBrand.get(view.brandName)
+      const base = rules?.base
+      if (!base) continue
+      const baseRow = specRows.find(
+        (row) =>
+          row.material === base.material &&
+          row.spec === base.spec &&
+          row.lengths.includes(base.length),
+      )
+      if (!baseRow) continue
+      const baseCellKey = rowKeyOfCell(baseRow, base.length)
+      const basePrice = draftPrice(
+        drafts[view.brandName],
+        baseCellKey,
+        view.cells.get(baseCellKey)?.price,
+      )
+      const prices =
+        basePrice !== null && basePrice > 0
+          ? buildBasePriceColumnPrices({
+              base,
+              basePrice,
+              items: rules.items,
+              specRows,
+            })
+          : new Map<string, number>()
+      map.set(view.brandName, {
+        baseCellKey,
+        basePrice: basePrice ?? undefined,
+        prices,
+      })
+    }
+    return map
+  }, [drafts, orderedViews, priceMode, rulesByBrand, specRows])
+
+  /**
+   * 基价模式里改「基价」一格：把它自己和整列的「基价 + 加价」一起写进草稿。
+   * 这样保存时提交的是完整一列，而不是只改了一格。
+   */
+  const applyBasePrice = (
+    brandName: string,
+    baseCellKey: string,
+    price: number | null,
+  ) => {
+    const rules = rulesByBrand.get(brandName)
+    const next: DraftMap = {
+      ...drafts,
+      [brandName]: { ...(drafts[brandName] ?? {}) },
+    }
+    next[brandName][baseCellKey] = price
+    if (rules?.base && price !== null && price > 0) {
+      const prices = buildBasePriceColumnPrices({
+        base: rules.base,
+        basePrice: price,
+        items: rules.items,
+        specRows,
+      })
+      for (const [rowKey, value] of prices) next[brandName][rowKey] = value
+    }
+    applyDrafts(next)
+  }
+
+  /**
    * 品牌列里「某个定尺」的一格。
    *
    * <p>报价单原先是一格里塞 9米/12米 两行输入；现在每个定尺各占一列，
@@ -1085,7 +1152,15 @@ export function SupplierQuotePage() {
     const effectiveLength = noLength ? placementLengthOf(row) : length
     const cellKey = rowKeyOfCell(row, effectiveLength)
     const serverPrice = view.cells.get(cellKey)?.price
-    const value = draftPrice(drafts[brandName], cellKey, serverPrice)
+    const baseColumn = baseColumns.get(brandName)
+    const isBaseCell = baseColumn?.baseCellKey === cellKey
+    const computed = baseColumn?.prices.get(cellKey)
+    // 基价模式：除基价格子外的已配置规格一律显示算出来的价，且只读
+    const baseComputed = priceMode === 'base' && isBaseCell !== true
+    const value =
+      baseComputed && computed !== undefined
+        ? computed
+        : draftPrice(drafts[brandName], cellKey, serverPrice)
     const brandBase = rulesByBrand.get(brandName)?.base
     const isBase =
       Boolean(brandBase) &&
@@ -1097,9 +1172,17 @@ export function SupplierQuotePage() {
         align="center"
         className={`supplier-price-cell-wrap${
           isBase ? ' supplier-price-base-cell' : ''
-        }`}
+        }${baseComputed && computed !== undefined ? ' supplier-price-computed-cell' : ''}`}
         gap={2}
-        title={isBase ? t('priceCompare.supplierPrice.baseBadge') : undefined}
+        title={
+          isBase
+            ? t('priceCompare.supplierPrice.baseBadge')
+            : baseComputed && computed !== undefined
+              ? t('priceCompare.supplierPrice.computedFromBase', {
+                  price: baseColumn?.basePrice ?? '',
+                })
+              : undefined
+        }
       >
         {/* 基价只靠左色条会读屏不可知，这里补一句隐藏文案 */}
         {isBase ? (
@@ -1112,31 +1195,21 @@ export function SupplierQuotePage() {
           className="supplier-price-sheet-input"
           controls={false}
           data-grid-cell={cellIdOf(brandName, cellKey)}
-          disabled={!canUpdate}
+          disabled={!canUpdate || (baseComputed && computed !== undefined)}
           min={0}
           precision={2}
           size="small"
           style={{ width: '100%' }}
           value={value}
-          onChange={(next) =>
-            updateCell(
-              brandName,
-              cellKey,
-              typeof next === 'number' ? next : null,
-            )
-          }
-          onBlur={() =>
-            autoFillFromBasePrice(
-              brandName,
-              {
-                material: row.material,
-                spec: row.spec,
-                length: effectiveLength,
-              },
-              value,
-              cellKey,
-            )
-          }
+          onChange={(next) => {
+            const parsed = typeof next === 'number' ? next : null
+            // 基价模式下改基价格子 = 按「基价 + 加价」重算整列；手填模式只改这一格
+            if (priceMode === 'base' && isBaseCell) {
+              applyBasePrice(brandName, cellKey, parsed)
+              return
+            }
+            updateCell(brandName, cellKey, parsed)
+          }}
           onFocus={() => {
             anchorRef.current = { brandName, rowKey: cellKey }
           }}
@@ -1259,6 +1332,15 @@ export function SupplierQuotePage() {
               </span>
             </Tooltip>
             {dirty > 0 ? <Tag color="orange">{dirty}</Tag> : null}
+            {priceMode === 'base' && !rulesByBrand.get(brandName)?.base ? (
+              <Tooltip
+                title={t('priceCompare.supplierPrice.baseNotConfiguredHint')}
+              >
+                <Tag color="warning">
+                  {t('priceCompare.supplierPrice.baseNotConfigured')}
+                </Tag>
+              </Tooltip>
+            ) : null}
             <Dropdown
               menu={{
                 items: brandMenuItems(brandName),
@@ -1462,6 +1544,25 @@ export function SupplierQuotePage() {
           value={viewMode}
           onChange={(next) => setViewMode(next)}
         />
+        {/*
+          价格录入方式：基价模式只填基价、其余自动算；手填模式逐格录。
+          做成显式切换而不是"自动判断"，因为这是两种业务习惯，同一批人也会按供应商切换。
+        */}
+        <Segmented<PriceEntryMode>
+          aria-label={t('priceCompare.supplierPrice.priceMode')}
+          options={[
+            {
+              label: t('priceCompare.supplierPrice.priceModeManual'),
+              value: 'manual',
+            },
+            {
+              label: t('priceCompare.supplierPrice.priceModeBase'),
+              value: 'base',
+            },
+          ]}
+          value={priceMode}
+          onChange={(next) => setPriceMode(next)}
+        />
         <Popover
           content={
             <Flex className="supplier-price-column-panel" vertical gap={2}>
@@ -1516,9 +1617,11 @@ export function SupplierQuotePage() {
       </Flex>
 
       <Typography.Text type="secondary">
-        {viewMode === 'specs'
-          ? t('priceCompare.supplierPrice.entryHintSpecs')
-          : t('priceCompare.supplierPrice.entryHint')}
+        {priceMode === 'base'
+          ? t('priceCompare.supplierPrice.priceModeBaseHint')
+          : viewMode === 'specs'
+            ? t('priceCompare.supplierPrice.entryHintSpecs')
+            : t('priceCompare.supplierPrice.priceModeManualHint')}
       </Typography.Text>
 
       {!canUpdate ? (
@@ -1704,11 +1807,21 @@ export function SupplierQuotePage() {
                                     `${row.material}|${spec}|${row.length}`
                                 const serverPrice =
                                   view?.cells.get(rowKey)?.price
-                                const value = draftPrice(
-                                  drafts[section.brandName],
-                                  rowKey,
-                                  serverPrice,
+                                const baseColumn = baseColumns.get(
+                                  section.brandName,
                                 )
+                                const computed = baseColumn?.prices.get(rowKey)
+                                const baseComputed =
+                                  priceMode === 'base' &&
+                                  !isBase &&
+                                  computed !== undefined
+                                const value = baseComputed
+                                  ? computed
+                                  : draftPrice(
+                                      drafts[section.brandName],
+                                      rowKey,
+                                      serverPrice,
+                                    )
                                 return (
                                   <InputNumber
                                     aria-label={`${section.brandName} ${row.material} ${spec} ${row.length}`}
@@ -1721,7 +1834,7 @@ export function SupplierQuotePage() {
                                       section.brandName,
                                       rowKey,
                                     )}
-                                    disabled={!canUpdate}
+                                    disabled={!canUpdate || baseComputed}
                                     min={0}
                                     precision={2}
                                     size="small"
@@ -1731,28 +1844,34 @@ export function SupplierQuotePage() {
                                         ? t(
                                             'priceCompare.supplierPrice.baseBadge',
                                           )
-                                        : undefined
+                                        : baseComputed
+                                          ? t(
+                                              'priceCompare.supplierPrice.computedFromBase',
+                                              {
+                                                price:
+                                                  baseColumn?.basePrice ?? '',
+                                              },
+                                            )
+                                          : undefined
                                     }
                                     value={value}
-                                    onChange={(next) =>
+                                    onChange={(next) => {
+                                      const parsed =
+                                        typeof next === 'number' ? next : null
+                                      if (priceMode === 'base' && isBase) {
+                                        applyBasePrice(
+                                          section.brandName,
+                                          rowKey,
+                                          parsed,
+                                        )
+                                        return
+                                      }
                                       updateCell(
                                         section.brandName,
                                         rowKey,
-                                        typeof next === 'number' ? next : null,
+                                        parsed,
                                       )
-                                    }
-                                    onBlur={() =>
-                                      autoFillFromBasePrice(
-                                        section.brandName,
-                                        {
-                                          material: row.material,
-                                          spec,
-                                          length: row.length,
-                                        },
-                                        value,
-                                        rowKey,
-                                      )
-                                    }
+                                    }}
                                     onFocus={() => {
                                       anchorRef.current = {
                                         brandName: section.brandName,

@@ -2901,6 +2901,17 @@ export const enUS = {
       rulesConflict: 'Rules were changed by someone else; please retry',
       rulesLoadFailed: 'Failed to load base price rules',
       baseBadge: 'Base',
+      priceMode: 'Price entry mode',
+      priceModeManual: 'Manual',
+      priceModeBase: 'Base price',
+      priceModeManualHint: 'Enter each price yourself; nothing is computed',
+      priceModeBaseHint:
+        'Enter only the base price per brand; other specs are computed as base + markup',
+      baseNotConfigured: 'No base price',
+      baseNotConfiguredHint:
+        'This brand has no base price rule yet. Use the column menu "Base price & markup" to set the base spec and markup',
+      computedFromBase: 'Computed from base price {{price}} plus markup',
+      basePriceLabel: 'Base',
       autoFilled: 'Filled {{count}} cell(s) from base price + premiums',
       basePriceA11y: 'Set {{material}} Φ{{spec}} {{length}} as the base price',
       deltaA11y: 'Premium for {{material}} Φ{{spec}} {{length}}',

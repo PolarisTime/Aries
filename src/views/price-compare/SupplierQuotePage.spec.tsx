@@ -835,36 +835,65 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     )
   })
 
-  it('录入基价格后按「基价 + 加价」自动填空格，已有价格不覆盖', async () => {
-    baseRulesApi.fetchSupplierBasePriceRules.mockResolvedValue({
-      supplierId: 's1',
-      brandName: '中天',
-      base: { material: 'HRB400', spec: 12, length: '9米' },
-      items: [
-        { material: 'HRB400', spec: 12, length: '9米', delta: 0 },
-        { material: 'HRB400', spec: 14, length: '9米', delta: 50 },
-      ],
-      version: '2',
+  /** 切换价格录入方式（Segmented）。 */
+  async function switchPriceMode(label: string) {
+    const item = Array.from(
+      container.querySelectorAll('.ant-segmented-item'),
+    ).find((node) => (node.textContent ?? '').includes(label))
+    expect(item, `未找到录入方式 ${label}`).not.toBeNull()
+    await act(async () => {
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    // ROW_B 没有服务端价格（空格子），应被自动填；ROW_A 是基价
+    await flush()
+  }
+
+  const baseRules = () => ({
+    supplierId: 's1',
+    brandName: '中天',
+    base: { material: 'HRB400', spec: 12, length: '9米' },
+    items: [
+      { material: 'HRB400', spec: 12, length: '9米', delta: 0 },
+      { material: 'HRB400', spec: 14, length: '9米', delta: 50 },
+    ],
+    version: '2',
+  })
+
+  const gridWithoutPrices = () =>
     priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
       Promise.resolve(
         brandName === '中天'
           ? {
               ...gridWithColumn(),
               rows: [
-                {
-                  ...ROW_A,
-                  prices: {},
-                  priceStatuses: {},
-                  remarks: {},
-                },
+                { ...ROW_A, prices: {}, priceStatuses: {}, remarks: {} },
                 { ...ROW_B, prices: {}, priceStatuses: {}, remarks: {} },
               ],
             }
           : emptyGrid(brandName),
       ),
     )
+
+  it('基价模式：填基价后其余规格按「基价 + 加价」自动算好，且只有基价格可编辑', async () => {
+    baseRulesApi.fetchSupplierBasePriceRules.mockResolvedValue(baseRules())
+    gridWithoutPrices()
+    await render()
+    await selectSupplier()
+    await switchPriceMode('基价模式')
+
+    await typePrice('中天 HRB400 12 9米', '3200')
+    await flush()
+
+    // 14 的价 = 基价 3200 + 加价 50
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3250.00')
+    // 算出来的格子只读，避免用户误以为能改
+    expect(cellInput('中天 HRB400 14 9米')?.disabled).toBe(true)
+    expect(cellInput('中天 HRB400 12 9米')?.disabled).toBe(false)
+  })
+
+  it('手填模式：填基价格子不会联动其它规格', async () => {
+    baseRulesApi.fetchSupplierBasePriceRules.mockResolvedValue(baseRules())
+    gridWithoutPrices()
     await render()
     await selectSupplier()
 
@@ -876,7 +905,22 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     })
     await flush()
 
-    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('3250.00')
+    expect(cellInput('中天 HRB400 14 9米')?.value).toBe('')
+    expect(cellInput('中天 HRB400 14 9米')?.disabled).toBe(false)
+  })
+
+  it('基价模式下没配基价的品牌给出可见提示，且仍可手填', async () => {
+    baseRulesApi.fetchSupplierBasePriceRules.mockRejectedValue(new Error('404'))
+    gridWithoutPrices()
+    await render()
+    await selectSupplier()
+    await switchPriceMode('基价模式')
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.baseNotConfigured'),
+    )
+    // 没有规则 → 不锁死，仍然可以手填
+    expect(cellInput('中天 HRB400 14 9米')?.disabled).toBe(false)
   })
 
   it('基价规格在格子里带「基价」标记', async () => {

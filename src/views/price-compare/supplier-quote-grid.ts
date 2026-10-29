@@ -487,3 +487,24 @@ export function buildBasePriceFillPlan(args: {
   }
   return result
 }
+
+/**
+ * 「基价模式」下整列的应有价格: 基价 + 各规格加价。
+ *
+ * <p>与 {@link buildBasePriceFillPlan}（只补空格）不同，这里返回**全部已配置规格**的价 ——
+ * 基价模式就是"以基价为准重新算一遍"，不再看格子里原来有什么值。
+ * 基价行本身不返回（它就是输入源）。</p>
+ */
+export function buildBasePriceColumnPrices(args: {
+  base: BaseRuleRef
+  basePrice: number
+  items: readonly BaseRuleItem[]
+  specRows: readonly SpecRow[]
+}): Map<string, number> {
+  const plan = buildBasePriceFillPlan({
+    ...args,
+    // 基价模式要覆盖整列，因此"已填"一律视为未填
+    isFilled: () => false,
+  })
+  return new Map(plan.map((cell) => [cell.rowKey, cell.value]))
+}
