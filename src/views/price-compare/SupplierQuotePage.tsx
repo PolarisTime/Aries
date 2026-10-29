@@ -438,6 +438,53 @@ export function SupplierQuotePage() {
     return options
   }, [specRows])
 
+  /** 面板里按材质分组的列选项（材质名 + 该材质的定尺列）。 */
+  const materialColumnGroups = useMemo(
+    () =>
+      matrixMaterialsOf(specRows).map((material) => ({
+        material,
+        options: matrixLengthsOf(specRows, material).map((length) => ({
+          key: matrixCellKeyOf(material, length),
+          length,
+        })),
+      })),
+    [specRows],
+  )
+
+  /** 当前被隐藏的列总数（面板标题上的角标）。 */
+  const hiddenColumnCount =
+    hiddenBrands.length +
+    hiddenLengths.length +
+    hiddenFixedColumns.length +
+    hiddenMaterialColumns.length
+
+  /** 一键恢复：所有列都显示。 */
+  const showAllColumns = () => {
+    setHiddenBrands([])
+    setHiddenLengths([])
+    setHiddenFixedColumns([])
+    setHiddenMaterialColumns([])
+  }
+
+  /**
+   * 整组显隐：该材质的列全显示时点它 = 全部隐藏；否则全部显示。
+   *
+   * <p>想快速只看某个材质时有用（例如这一批只报 HRB400E）。</p>
+   */
+  const toggleMaterialGroup = (material: string) => {
+    const group = materialColumnGroups.find(
+      (item) => item.material === material,
+    )
+    if (!group) return
+    const keys = group.options.map((option) => option.key)
+    const allVisible = keys.every((key) => !hiddenMaterialColumnSet.has(key))
+    setHiddenMaterialColumns((current) =>
+      allVisible
+        ? [...new Set([...current, ...keys])]
+        : current.filter((key) => !keys.includes(key)),
+    )
+  }
+
   /** 该材质真正要渲染的定尺列 = 去掉全局隐藏的定尺 + 去掉整列隐藏的组合。 */
   const visibleLengthsOf = (matrix: CategoryMatrix, material: string) =>
     (matrix.lengthsOf.get(material) ?? []).filter(
@@ -497,7 +544,14 @@ export function SupplierQuotePage() {
         hiddenMaterialColumns,
       }),
     )
-  }, [brandOrder, hiddenBrands, hiddenFixedColumns, hiddenLengths, supplierId])
+  }, [
+    brandOrder,
+    hiddenBrands,
+    hiddenFixedColumns,
+    hiddenLengths,
+    hiddenMaterialColumns,
+    supplierId,
+  ])
 
   // 视图方向也是个人偏好：按供应商存本地，下次打开保持
   useEffect(() => {
@@ -1670,87 +1724,135 @@ export function SupplierQuotePage() {
         />
         <Popover
           content={
-            <Flex className="supplier-price-column-panel" vertical gap={2}>
+            <div className="supplier-price-column-panel">
+              <div className="supplier-price-column-panel-head">
+                <span className="supplier-price-column-panel-title">
+                  {t('priceCompare.supplierPrice.columns')}
+                </span>
+                <Button
+                  disabled={hiddenColumnCount === 0}
+                  size="small"
+                  type="link"
+                  onClick={showAllColumns}
+                >
+                  {t('priceCompare.supplierPrice.showAllColumns')}
+                </Button>
+              </div>
+
               {orderedViews.length === 0 ? (
                 <Typography.Text type="secondary">
                   {t('priceCompare.supplierPrice.noBrands')}
                 </Typography.Text>
               ) : (
-                orderedViews.map((view) => (
-                  <Checkbox
-                    checked={!hiddenBrandSet.has(view.brandName)}
-                    key={view.brandName}
-                    onChange={() => hideColumn(view.brandName)}
-                  >
-                    {view.brandName}
-                  </Checkbox>
-                ))
+                <div className="supplier-price-column-panel-section">
+                  <span className="supplier-price-column-panel-label">
+                    {t('priceCompare.supplierPrice.brandColumns')}
+                  </span>
+                  <div className="supplier-price-column-panel-chips">
+                    {orderedViews.map((view) => (
+                      <Checkbox
+                        checked={!hiddenBrandSet.has(view.brandName)}
+                        key={view.brandName}
+                        onChange={() => hideColumn(view.brandName)}
+                      >
+                        {view.brandName}
+                      </Checkbox>
+                    ))}
+                  </div>
+                </div>
               )}
-              <Typography.Text
-                className="supplier-price-column-panel-label"
-                type="secondary"
-              >
-                {t('priceCompare.supplierPrice.fixedColumns')}
-              </Typography.Text>
-              {SHEET_FIXED_COLUMNS.map((column) => (
-                <Checkbox
-                  checked={!hiddenFixedColumns.includes(column.key)}
-                  key={column.key}
-                  onChange={() => toggleFixedColumn(column.key)}
-                >
-                  {t(`priceCompare.supplierPrice.${column.labelKey}`)}
-                </Checkbox>
-              ))}
+
+              <div className="supplier-price-column-panel-section">
+                <span className="supplier-price-column-panel-label">
+                  {t('priceCompare.supplierPrice.fixedColumns')}
+                </span>
+                <div className="supplier-price-column-panel-chips">
+                  {SHEET_FIXED_COLUMNS.map((column) => (
+                    <Checkbox
+                      checked={!hiddenFixedColumns.includes(column.key)}
+                      key={column.key}
+                      onChange={() => toggleFixedColumn(column.key)}
+                    >
+                      {t(`priceCompare.supplierPrice.${column.labelKey}`)}
+                    </Checkbox>
+                  ))}
+                </div>
+              </div>
+
               {columnLengths.length > 1 ? (
-                <>
-                  <Typography.Text
-                    className="supplier-price-column-panel-label"
-                    type="secondary"
-                  >
-                    {t('priceCompare.supplierPrice.lengthColumns')}
-                  </Typography.Text>
-                  {columnLengths.map((length) => (
-                    <Checkbox
-                      checked={!hiddenLengthSet.has(length)}
-                      key={length}
-                      onChange={() => toggleLengthColumn(length)}
-                    >
-                      {length}
-                    </Checkbox>
-                  ))}
-                </>
+                <div className="supplier-price-column-panel-section">
+                  <span className="supplier-price-column-panel-label">
+                    {t('priceCompare.supplierPrice.lengthAllMaterials')}
+                  </span>
+                  <div className="supplier-price-column-panel-chips">
+                    {columnLengths.map((length) => (
+                      <Checkbox
+                        checked={!hiddenLengthSet.has(length)}
+                        key={length}
+                        onChange={() => toggleLengthColumn(length)}
+                      >
+                        {length}
+                      </Checkbox>
+                    ))}
+                  </div>
+                </div>
               ) : null}
-              {materialColumnOptions.length > 0 ? (
-                <>
-                  <Typography.Text
-                    className="supplier-price-column-panel-label"
-                    type="secondary"
-                  >
+
+              {materialColumnGroups.length > 0 ? (
+                <div className="supplier-price-column-panel-section">
+                  <span className="supplier-price-column-panel-label">
                     {t('priceCompare.supplierPrice.materialColumns')}
-                  </Typography.Text>
-                  {materialColumnOptions.map((option) => (
-                    <Checkbox
-                      checked={!hiddenMaterialColumnSet.has(option.key)}
-                      key={option.key}
-                      onChange={() => toggleMaterialColumn(option.key)}
-                    >
-                      {option.label}
-                    </Checkbox>
-                  ))}
-                </>
+                  </span>
+                  <div className="supplier-price-column-panel-materials">
+                    {materialColumnGroups.map((group) => (
+                      <div
+                        className="supplier-price-column-panel-material"
+                        key={group.material}
+                      >
+                        <Button
+                          className="supplier-price-column-panel-material-name"
+                          size="small"
+                          title={t(
+                            'priceCompare.supplierPrice.toggleMaterialGroup',
+                            { name: group.material },
+                          )}
+                          type="text"
+                          onClick={() => toggleMaterialGroup(group.material)}
+                        >
+                          {group.material}
+                        </Button>
+                        <div className="supplier-price-column-panel-chips">
+                          {group.options.map((option) => (
+                            <Checkbox
+                              checked={!hiddenMaterialColumnSet.has(option.key)}
+                              key={option.key}
+                              onChange={() => toggleMaterialColumn(option.key)}
+                            >
+                              {lengthHeader(option.length)}
+                            </Checkbox>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : null}
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+
+              <span className="supplier-price-column-panel-hint">
                 {t('priceCompare.supplierPrice.columnPanelHint')}
-              </Typography.Text>
-            </Flex>
+              </span>
+            </div>
           }
           placement="bottomLeft"
-          title={t('priceCompare.supplierPrice.columns')}
           trigger="click"
         >
           <Button icon={<EyeOutlined />}>
             {t('priceCompare.supplierPrice.columns')}
-            {hiddenBrands.length > 0 ? ` (${hiddenBrands.length})` : ''}
+            {hiddenColumnCount > 0 ? (
+              <Tag className="supplier-price-column-count">
+                {hiddenColumnCount}
+              </Tag>
+            ) : null}
           </Button>
         </Popover>
       </Flex>

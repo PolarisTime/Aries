@@ -76,12 +76,6 @@
   --ant-table-border-color: var(--ant-color-border, #d9d9d9);
 }
 
-/* 列显示面板里的小标题（品牌 / 定尺列） */
-.supplier-price-column-panel-label {
-  margin-top: var(--space-xs, 8px);
-  font-size: 12px;
-}
-
 .supplier-price-sheet .ant-input-number,
 .supplier-price-transposed .ant-input-number {
   width: 100%;
@@ -135,12 +129,109 @@
   white-space: nowrap;
 }
 
+/*
+ * 列显示面板：卡片式分组 + 胶囊勾选。
+ *
+ * <p>原来是一长串裸 checkbox（品牌 2 + 固定列 2 + 定尺 2 + 材质列 9 = 15 行），
+ * 既看不出分组、也分不清"定尺（全局）"和"材质×定尺"。现在每组一行标题 + 胶囊换行排布，
+ * 材质列按材质成行，点材质名可整组开关。列多时限高内部滚动，不跑出视口。</p>
+ */
 .supplier-price-column-panel {
-  /* 列一多（品牌 × 固定列 × 定尺 × 材质）会超过一屏：限高后内部滚动，面板不跑出视口 */
-  max-height: min(60vh, 520px);
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  max-height: min(62vh, 560px);
   overflow-y: auto;
-  min-width: 180px;
-  padding: 4px 2px;
+  padding-right: 2px;
+}
+
+.supplier-price-column-panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  background: var(--ant-color-bg-elevated, #fff);
+}
+
+.supplier-price-column-panel-title {
+  font-weight: 600;
+}
+
+.supplier-price-column-panel-section {
+  padding: 8px 0;
+  border-top: 1px solid var(--ant-color-split, rgb(0 0 0 / 6%));
+}
+
+.supplier-price-column-panel-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-size: 12px;
+}
+
+.supplier-price-column-panel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 勾选项做成胶囊：选中态用主题色描边 + 浅底，扫一眼就知道哪些列在显示 */
+.supplier-price-column-panel-chips .ant-checkbox-wrapper {
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: 999px;
+  line-height: 22px;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.supplier-price-column-panel-chips
+  .ant-checkbox-wrapper:has(.ant-checkbox-checked) {
+  border-color: var(--ant-color-primary, #1677ff);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+.supplier-price-column-panel-chips .ant-checkbox + span {
+  padding-inline-start: 4px;
+}
+
+/* 材质列：一行一个材质（材质名可点，整组开关），定尺做胶囊 */
+.supplier-price-column-panel-materials {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.supplier-price-column-panel-material {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.supplier-price-column-panel-material-name {
+  flex: none;
+  padding-inline: 4px;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-variant-numeric: tabular-nums;
+}
+
+.supplier-price-column-panel-hint {
+  display: block;
+  padding-top: 8px;
+  border-top: 1px solid var(--ant-color-split, rgb(0 0 0 / 6%));
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.supplier-price-column-count {
+  margin-inline-start: 4px;
 }
 
 /*

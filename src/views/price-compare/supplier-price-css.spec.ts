@@ -84,12 +84,26 @@ describe('供应商报价表：Excel 式数字排版', () => {
     )
   })
 
-  it('列显示面板有最小宽度，勾选项不会被挤成两行', () => {
-    // 精确匹配规则名：`.supplier-price-column-panel-label` 是它的前缀
+  it('列显示面板：固定宽度 + 胶囊勾选（不再是裸 checkbox 长列表）', () => {
     const start = css.indexOf('.supplier-price-column-panel {')
     expect(start).toBeGreaterThan(-1)
     const block = css.slice(start, css.indexOf('}', start))
-    expect(block).toContain('min-width')
+    expect(block).toContain('width: 300px')
+    // 列多时面板内部滚动，不跑出视口
+    expect(block).toContain('max-height')
+    expect(block).toContain('overflow-y: auto')
+
+    // 勾选项做成胶囊（圆角 + 选中描边），并按分组换行
+    const chipStart = css.indexOf(
+      '.supplier-price-column-panel-chips .ant-checkbox-wrapper {',
+    )
+    expect(chipStart).toBeGreaterThan(-1)
+    const chip = css.slice(chipStart, css.indexOf('}', chipStart))
+    expect(chip).toContain('border-radius: 999px')
+    // 换行/缩进会被格式化工具拆行，比较前先压平空白
+    expect(css.replace(/\s+/g, ' ')).toContain(
+      '.supplier-price-column-panel-chips .ant-checkbox-wrapper:has(.ant-checkbox-checked)',
+    )
   })
 
   it('行分组：组的第一行画更粗的分隔线（类别/材质合并格据此可辨）', () => {

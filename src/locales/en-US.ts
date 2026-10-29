@@ -2875,6 +2875,10 @@ export const enUS = {
   },
   priceCompare: {
     supplierPrice: {
+      showAllColumns: 'Show all',
+      brandColumns: 'Brands',
+      lengthAllMaterials: 'Lengths (all materials)',
+      toggleMaterialGroup: 'Toggle all columns of {{name}}',
       materialColumns: 'Material columns',
       fixedColumns: 'Fixed columns',
       columnMenu: 'Column settings',

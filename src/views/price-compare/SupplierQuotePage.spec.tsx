@@ -1190,12 +1190,28 @@ describe('供应商报价表（Excel 式报价网格）', () => {
     }
 
     await openPanel()
-    // 面板里按「材质 定尺」列组合，数据里没有的组合不出现
-    // 面板是 Popover（portal 到 body），断言要读 body
-    expect(document.body.textContent).toContain('HRB400 9米')
-    expect(document.body.textContent).toContain('HRB400 12米')
+    // 面板按材质分组：一行一个材质，定尺做胶囊；数据里没有的组合不出现
+    const materialRows = Array.from(
+      document.body.querySelectorAll('.supplier-price-column-panel-material'),
+    ).map((node) => (node.textContent ?? '').replace(/\s+/g, ''))
+    expect(materialRows.some((text) => text.startsWith('HRB400'))).toBe(true)
+    const hrb400Row = Array.from(
+      document.body.querySelectorAll<HTMLElement>(
+        '.supplier-price-column-panel-material',
+      ),
+    ).find((node) => node.textContent?.includes('HRB400'))
+    expect(hrb400Row?.textContent).toContain('9米')
+    expect(hrb400Row?.textContent).toContain('12米')
 
-    await toggleCheckbox('HRB400 12米')
+    // 只关 HRB400 的 12米 那一格
+    const chip = Array.from(
+      hrb400Row?.querySelectorAll('.ant-checkbox-wrapper') ?? [],
+    ).find((node) => (node.textContent ?? '').includes('12米'))
+    await act(async () => {
+      chip?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
     // 12米 整列消失，9米 仍在（同一材质的其它定尺不受影响）
     expect(sheetHeaders().some((text) => text.includes('12米'))).toBe(false)
     expect(sheetHeaders().some((text) => text.includes('9米'))).toBe(true)
