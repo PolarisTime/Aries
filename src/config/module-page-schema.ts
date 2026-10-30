@@ -438,12 +438,31 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     },
   },
   /*
-   * carrier 不在此列：后端 CarrierRequest 的车辆信息是 `vehicles: List<VehicleItem>` 嵌套数组，
-   * 另有 `vehicleType`、`priceMode`；而前端表单是 16 个扁平车辆字段。专用编辑器内部做扁平→嵌套
-   * 组装，通用列表页没有这一步。不要把扁平字段写进 saveFields —— 后端会收不到 vehicles，
-   * 车辆信息整体丢失。它的保存契约沿用 business-pages/master/carrier-page.ts 里的旧口径
-   * （vehicles / priceMode / defaultSettlementCompanyName）。
+   * carrier 的车辆信息是**聚合字段**：表单上是可以直接编辑的 16 个扁平字段
+   * （vehiclePlate / vehicleContact / …），后端 CarrierRequest 要的是
+   * `vehicles: List<VehicleItem>` 嵌套数组 + `vehicleType` + `priceMode`。
+   *
+   * 扁平→嵌套的组装由 `module-behavior-normalizers.ts` 注册的 behavior
+   * `normalizeDraftRecord: normalizeCarrierDraftRecord` 完成，而通用编辑器的提交链路
+   * （`use-editor-submission-controller` → `normalizeDraftRecordForModule`）会调用它，
+   * 因此这里只声明**后端口径**的字段——不要改成扁平字段，否则后端收不到 vehicles。
    */
+  carrier: {
+    saveFields: {
+      scalar: [
+        'carrierCode',
+        'carrierName',
+        'contactName',
+        'contactPhone',
+        'vehicleType',
+        'vehicles',
+        'priceMode',
+        'defaultSettlementCompanyId',
+        'status',
+        'remark',
+      ],
+    },
+  },
 }
 
 export function getModulePageSchema(moduleKey: string) {

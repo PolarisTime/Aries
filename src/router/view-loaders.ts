@@ -22,10 +22,6 @@ export const viewLoaders: Record<
     import('@/views/master-archive/ProjectPage').then((m) => ({
       default: m.ProjectPage,
     })),
-  'master-carrier': () =>
-    import('@/views/master-archive/CarrierPage').then((m) => ({
-      default: m.CarrierPage,
-    })),
   'master-supplier': () =>
     import('@/views/master-data/SupplierPage').then((m) => ({
       default: m.SupplierPage,

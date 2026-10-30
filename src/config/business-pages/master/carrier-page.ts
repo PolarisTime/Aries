@@ -247,11 +247,25 @@ export const carriersPageConfig: ModulePageConfig = {
       row: 4,
     },
     {
+      // 后端 CarrierRequest 有 vehicleType，列表列也展示了它，但此前表单没有该字段
+      // （只能看到、不能改）。接入通用列表页时一并补上，与结算方式同排。
+      key: 'vehicleType',
+      label: i18next.t('modules.pages.carrier.colVehicleType'),
+      type: 'input',
+      row: 5,
+    },
+    {
       key: 'defaultSettlementCompanyId',
       label: i18next.t('modules.pages.carrier.colDefaultSettlementCompany'),
       type: 'select',
       required: true,
       options: getSettlementCompanyOptions,
+      row: 5,
+    },
+    {
+      key: 'priceMode',
+      label: i18next.t('modules.pages.carrier.colPriceMode'),
+      type: 'input',
       row: 5,
     },
     {
@@ -274,18 +288,8 @@ export const carriersPageConfig: ModulePageConfig = {
   buildOverview: buildMasterOverview,
   statusMap,
   rowHighlightStatuses: [STATUS.DISABLED],
-  saveFields: {
-    scalar: [
-      'carrierCode',
-      'carrierName',
-      'contactName',
-      'contactPhone',
-      'vehicles',
-      'priceMode',
-      'defaultSettlementCompanyId',
-      'defaultSettlementCompanyName',
-      'status',
-      'remark',
-    ],
-  },
+  /*
+   * saveFields 已收敛到 `config/module-page-schema.ts`（schema 优先于配置，两处并存时
+   * 改这里不会生效）。那里按**后端契约**声明：vehicles 是聚合数组，不是 16 个扁平字段。
+   */
 }

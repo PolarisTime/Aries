@@ -65,14 +65,12 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     titleKey: 'pages.carrier',
     menuKey: '/carrier',
     /*
-     * 暂不接入通用列表页：后端 CarrierRequest 的车辆信息是 `vehicles: List<VehicleItem>`
-     * 嵌套数组，另有 `vehicleType`、`priceMode` 两个字段；而配置侧 formFields 是
-     * vehiclePlate/vehicleContact/... 共 16 个**扁平字段**。专用编辑器
-     * （CarrierEditorOverlay）内部把扁平字段组装成 vehicles 再提交，通用编辑器没有这一步，
-     * 切过去会丢掉全部车辆信息与计价方式。需先补扁平→嵌套的序列化与 vehicleType/priceMode
-     * 字段定义。
+     * 接入通用列表页。车辆信息的前端口径是 16 个扁平字段、后端是 `vehicles` 嵌套数组，
+     * 这个转换由 behavior `normalizeDraftRecord: normalizeCarrierDraftRecord` 负责，
+     * 通用编辑器的提交链路（normalizeDraftRecordForModule）会调用它，因此切换后
+     * vehicles 仍会被正确组装。同时补上了此前只能看不能改的 vehicleType / priceMode 表单字段。
      */
-    view: 'master-carrier',
+    view: 'business-grid',
     icon: 'CarOutlined',
     menuParent: 'master',
     moduleKey: 'carrier',
