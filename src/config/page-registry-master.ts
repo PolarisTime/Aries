@@ -5,7 +5,9 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'material',
     titleKey: 'pages.material',
     menuKey: '/material',
-    view: 'master-material',
+    // 接入通用列表页（business-grid）：列表/筛选/工具栏/分页与业务单据一致，
+    // 保存载荷走 module-page-schema.ts 的 saveFields（已按 buildRecord 逐字段补录）。
+    view: 'business-grid',
     icon: 'DatabaseOutlined',
     menuParent: 'master',
     moduleKey: 'material',
@@ -14,7 +16,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'material-categories',
     titleKey: 'pages.material-categories',
     menuKey: '/material-categories',
-    view: 'master-material-categories',
+    view: 'business-grid',
     icon: 'TagsOutlined',
     menuParent: 'master',
     moduleKey: 'material-categories',
@@ -23,6 +25,16 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'supplier',
     titleKey: 'pages.supplier',
     menuKey: '/supplier',
+    /*
+     * 暂不接入通用列表页：供应商的保存载荷含 `brands`（经营品牌多选），品牌选项来自
+     * `useMaterialBrands()`（独立 useQuery，key = priceCompare.materialBrands），
+     * 不属于 master-options 需求体系，通用编辑器没有选项注入点，且 `ModuleFormFieldType`
+     * 也没有 transfer 类型 —— 切过去后品牌**不可编辑、列表与详情也不展示**。
+     *
+     * 注意：品牌不会被清空。保存时 `draftRecord` 会把原记录（含 brands）带回表单值，
+     * 后端 `SupplierService.update` 对 `brands == null` 采用「保留现有品牌」语义，
+     * 只有显式传 `brands: []` 才会清空。真正缺的是编辑能力，不是数据安全。
+     */
     view: 'master-supplier',
     icon: 'TeamOutlined',
     menuParent: 'master',
@@ -32,7 +44,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'customer',
     titleKey: 'pages.customer',
     menuKey: '/customer',
-    view: 'master-customer',
+    view: 'business-grid',
     icon: 'UserOutlined',
     menuParent: 'master',
     moduleKey: 'customer',
@@ -52,8 +64,14 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'carrier',
     titleKey: 'pages.carrier',
     menuKey: '/carrier',
-    // 试点：按模块拆分的专用页面（阶段 1-2），回滚时将 view 改回 'business-grid' 即可。
-    // 旧 BusinessGrid 配置保留在 business-pages/master/carrier-page.ts，仅供保存载荷(saveFields)复用，不再驱动这两个模块的列表 UI。
+    /*
+     * 暂不接入通用列表页：后端 CarrierRequest 的车辆信息是 `vehicles: List<VehicleItem>`
+     * 嵌套数组，另有 `vehicleType`、`priceMode` 两个字段；而配置侧 formFields 是
+     * vehiclePlate/vehicleContact/... 共 16 个**扁平字段**。专用编辑器
+     * （CarrierEditorOverlay）内部把扁平字段组装成 vehicles 再提交，通用编辑器没有这一步，
+     * 切过去会丢掉全部车辆信息与计价方式。需先补扁平→嵌套的序列化与 vehicleType/priceMode
+     * 字段定义。
+     */
     view: 'master-carrier',
     icon: 'CarOutlined',
     menuParent: 'master',
@@ -63,7 +81,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'warehouse',
     titleKey: 'pages.warehouse',
     menuKey: '/warehouse',
-    view: 'master-warehouse',
+    view: 'business-grid',
     icon: 'BankOutlined',
     menuParent: 'master',
     moduleKey: 'warehouse',

@@ -186,16 +186,9 @@ export const customersPageConfig: ModulePageConfig = {
   buildOverview: buildMasterOverview,
   statusMap,
   rowHighlightStatuses: [STATUS.DISABLED],
-  saveFields: {
-    scalar: [
-      'customerCode',
-      'customerName',
-      'contactName',
-      'contactPhone',
-      'city',
-      'settlementMode',
-      'status',
-      'remark',
-    ],
-  },
+  /*
+   * saveFields 已统一收敛到 `config/module-page-schema.ts`（那里是唯一来源，且
+   * `resolveScalarFields` 的优先顺序是 schema → 配置）。同一份字段白名单不要在这里再写一遍：
+   * 两处并存时改一处不会生效，排查成本高于收益。
+   */
 }

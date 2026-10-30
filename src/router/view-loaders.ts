@@ -26,25 +26,9 @@ export const viewLoaders: Record<
     import('@/views/master-archive/CarrierPage').then((m) => ({
       default: m.CarrierPage,
     })),
-  'master-material': () =>
-    import('@/views/master-data/MaterialPage').then((m) => ({
-      default: m.MaterialPage,
-    })),
-  'master-material-categories': () =>
-    import('@/views/master-data/MaterialCategoriesPage').then((m) => ({
-      default: m.MaterialCategoriesPage,
-    })),
   'master-supplier': () =>
     import('@/views/master-data/SupplierPage').then((m) => ({
       default: m.SupplierPage,
-    })),
-  'master-customer': () =>
-    import('@/views/master-data/CustomerPage').then((m) => ({
-      default: m.CustomerPage,
-    })),
-  'master-warehouse': () =>
-    import('@/views/master-data/WarehousePage').then((m) => ({
-      default: m.WarehousePage,
     })),
   'master-value-alias': () =>
     import('@/views/master-data/ValueAliasPage').then((m) => ({

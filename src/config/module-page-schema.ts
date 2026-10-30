@@ -348,6 +348,102 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       lineItem: ['id', 'sourceFreightBillId', 'sourceFreightBillItemId'],
     },
   },
+
+  /*
+   * ── 基础资料（主数据）───────────────────────────────────────────────
+   *
+   * 这些模块的列表页正从专用视图（MasterDataListPage + 各自 spec）迁移到通用列表页
+   * （business-grid），保存链路改走本文件的 saveFields 白名单。字段逐个对照各页
+   * spec 的 `buildRecord` 抄录——**没有用 formFields 推导**，因为两者并不总是一致：
+   * `supplier` 的 buildRecord 会写 `brands`，而配置侧 formFields 曾缺这个字段，
+   * 按 formFields 抄就会在保存时把供应商品牌清空。
+   *
+   * 主数据没有明细行，因此只声明 `scalar`。`project`（项目资料）暂不在此列：
+   * 它的保存载荷有 24 个字段（取价基准/休市策略/允许品牌材质/校验强度等），
+   * 远超配置侧 formFields 的 9 个，未补齐前不能切通用编辑器。
+   */
+  material: {
+    saveFields: {
+      scalar: [
+        'materialType',
+        'materialCode',
+        'brand',
+        'material',
+        'category',
+        'spec',
+        'length',
+        'unit',
+        'quantityUnit',
+        'pieceWeightTon',
+        'piecesPerBundle',
+        'unitPrice',
+        'status',
+        'remark',
+      ],
+    },
+  },
+  'material-categories': {
+    saveFields: {
+      scalar: [
+        'categoryCode',
+        'categoryName',
+        'sortOrder',
+        'purchaseWeighRequired',
+        'status',
+        'remark',
+      ],
+    },
+  },
+  warehouse: {
+    saveFields: {
+      scalar: [
+        'warehouseCode',
+        'warehouseName',
+        'warehouseType',
+        'contactName',
+        'contactPhone',
+        'address',
+        'status',
+        'remark',
+      ],
+    },
+  },
+  customer: {
+    saveFields: {
+      scalar: [
+        'customerCode',
+        'customerName',
+        'contactName',
+        'contactPhone',
+        'city',
+        'settlementMode',
+        'status',
+        'remark',
+      ],
+    },
+  },
+  supplier: {
+    saveFields: {
+      scalar: [
+        'supplierCode',
+        'supplierName',
+        'shortName',
+        'brands',
+        'contactName',
+        'contactPhone',
+        'city',
+        'status',
+        'remark',
+      ],
+    },
+  },
+  /*
+   * carrier 不在此列：后端 CarrierRequest 的车辆信息是 `vehicles: List<VehicleItem>` 嵌套数组，
+   * 另有 `vehicleType`、`priceMode`；而前端表单是 16 个扁平车辆字段。专用编辑器内部做扁平→嵌套
+   * 组装，通用列表页没有这一步。不要把扁平字段写进 saveFields —— 后端会收不到 vehicles，
+   * 车辆信息整体丢失。它的保存契约沿用 business-pages/master/carrier-page.ts 里的旧口径
+   * （vehicles / priceMode / defaultSettlementCompanyName）。
+   */
 }
 
 export function getModulePageSchema(moduleKey: string) {
