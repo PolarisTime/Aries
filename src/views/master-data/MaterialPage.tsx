@@ -1,10 +1,7 @@
 import { Space } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  getMaterialCategoryOptions,
-  materialGradeOptions,
-} from '@/module-system/core/module-option-resolvers'
+import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { asString } from '@/utils/type-narrowing'
 import { MaterialHistoryAction } from '@/views/modules/components/MaterialHistoryAction'
 import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
@@ -14,6 +11,17 @@ import { buildMaterialFormFields } from './material-page-fields'
 
 export function MaterialPage() {
   const { t } = useTranslation()
+  /*
+   * 材质 / 类别筛选的选项来自主数据接口（后端 SELECT DISTINCT material），**必须在这里
+   * 真正发起加载**：MasterFilterSpec.options 只接受数组，而 resolver 是「读 React Query
+   * 缓存」的函数，此前写成 `materialGradeOptions()` 立即调用——缓存必然为空，于是永远返回
+   * 硬编码兜底 ['HRB400','HRB500']，筛选下拉只有两项；同时因为传的是数组而非函数引用，
+   * 主数据需求标记丢失，接口一次都不会被请求，修好加载也不会刷新。
+   */
+  const { materialCategories, materialGrades } = useMasterOptions({
+    materialCategories: true,
+    materialGrades: true,
+  })
   const spec = useMemo<MasterDataPageSpec>(() => {
     const materialTypeOptions = [
       {
@@ -42,13 +50,13 @@ export function MaterialPage() {
           key: 'category',
           type: 'select',
           placeholder: t('modules.pages.material.category'),
-          options: getMaterialCategoryOptions(),
+          options: materialCategories,
         },
         {
           key: 'material',
           type: 'select',
           placeholder: t('modules.pages.material.material'),
-          options: materialGradeOptions(),
+          options: materialGrades,
         },
       ],
       columns: [
@@ -204,6 +212,6 @@ export function MaterialPage() {
         remark: values.remark ?? '',
       }),
     }
-  }, [t])
+  }, [t, materialCategories, materialGrades])
   return <MasterDataListPage spec={spec} />
 }
