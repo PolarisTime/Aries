@@ -581,6 +581,31 @@ describe('ProjectPage 主数据拆分试点', () => {
     expect(String((draft as { id?: string }).id ?? '')).toBe('')
   })
 
+  it('新建项目：基础文案字段带长度上限（与 DB md_project 列宽一致）', async () => {
+    renderPage()
+    await flushAsync()
+
+    await clickButton('新增')
+    await flushAsync()
+
+    /*
+     * master-project 是专用弹层，绕过了 business-grid 配置侧的 maxLength（那套只对
+     * ModuleEditorFormSection 生效），必须在 ProjectEditorOverlay 里单独声明。上限取自
+     * md_project 列宽：project_code 64 / project_name 200 / project_name_abbr 100 /
+     * project_manager 32 / project_address 255 / remark 255。
+     * 少一个就会让超长内容一路打到 varchar 上限，所以逐个锁死。
+     */
+    const maxLengthOf = (selector: string) =>
+      document.body.querySelector(selector)?.getAttribute('maxlength') ?? null
+
+    expect(maxLengthOf('.workspace-overlay input#projectCode')).toBe('64')
+    expect(maxLengthOf('.workspace-overlay input#projectName')).toBe('200')
+    expect(maxLengthOf('.workspace-overlay input#projectNameAbbr')).toBe('100')
+    expect(maxLengthOf('.workspace-overlay input#projectManager')).toBe('32')
+    expect(maxLengthOf('.workspace-overlay input#projectAddress')).toBe('255')
+    expect(maxLengthOf('.workspace-overlay textarea#remark')).toBe('255')
+  })
+
   it('编辑已有项目：保存时保留原记录 id', async () => {
     vi.mocked(saveBusinessModule).mockResolvedValue({ id: '9001' })
     renderPage()

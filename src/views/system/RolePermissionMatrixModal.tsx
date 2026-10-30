@@ -57,7 +57,7 @@ export function RolePermissionMatrixModal({
     <Modal
       open={Boolean(role)}
       title={t('system.role.permissionMatrixTitle', { name: role?.name ?? '' })}
-      width={1280}
+      width="min(1280px, calc(100vw - 32px))"
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       confirmLoading={saving}

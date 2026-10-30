@@ -93,8 +93,20 @@ export function LengthPremiumPage() {
   const errorMessage =
     listQuery.error instanceof Error ? listQuery.error.message.trim() : ''
 
+  /**
+   * 维护后刷新两处缓存：本页列表 + **选项缓存**。
+   *
+   * <p>选项缓存（`masterOptions.lengthPremiums`）被材料录入的长度下拉与比价页的加价/排序共用。
+   * 只失效列表会让用户新建定尺后，下拉最长 5 分钟（staleTime）看不到新值，进而出现
+   * 「主数据里明明有 10米，材料页却选不到」——所以写成功后两处一起失效。</p>
+   */
   const refreshList = () =>
-    queryClient.invalidateQueries({ queryKey: ['length-premiums'] })
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['length-premiums'] }),
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.masterOptions.lengthPremiums,
+      }),
+    ])
 
   const openEditor = (record: LengthPremiumRecord | null) => {
     setEditingRecord(record)

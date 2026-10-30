@@ -106,7 +106,7 @@ export function RoleWizardModal({
       key={String(open)}
       open={open}
       title={t(resolveRoleWizardTitleKey(cloning, Boolean(role)))}
-      width={1280}
+      width="min(1280px, calc(100vw - 32px))"
       footer={null}
       onCancel={onClose}
       destroyOnHidden
@@ -144,10 +144,10 @@ export function RoleWizardModal({
             <Form.Item
               name="name"
               label={t('system.role.name')}
-              rules={[{ required: true, whitespace: true }, { max: 64 }]}
+              rules={[{ required: true, whitespace: true }, { max: 128 }]}
             >
               <Input
-                maxLength={64}
+                maxLength={128}
                 placeholder={t('system.role.namePlaceholder')}
               />
             </Form.Item>

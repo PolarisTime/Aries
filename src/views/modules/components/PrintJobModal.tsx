@@ -232,7 +232,7 @@ export function PrintJobModal({
           {t('modules.print.jobTitle')}
         </div>
       }
-      width={1440}
+      width="min(1440px, calc(100vw - 32px))"
     >
       <PrintJobModalBody
         brandOverrideEnabled={brandOverrideEnabled}

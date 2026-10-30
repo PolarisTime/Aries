@@ -103,6 +103,13 @@ export const QUERY_KEYS = {
     materialCategories: ['master-options', 'material-categories'] as const,
     materialGrades: ['master-options', 'material-grades'] as const,
     settlementCompany: ['master-options', 'settlement-company'] as const,
+    /**
+     * 定尺主数据（`/length-premiums`，只取「正常」状态的选项）。
+     *
+     * <p>材料录入的长度下拉、比价页的定尺加价/排序/互切都读这一份缓存；
+     * 用户维护定尺后应 invalidate 该 key（见 `reloadLengthPremiumOptions`）。</p>
+     */
+    lengthPremiums: ['master-options', 'length-premiums'] as const,
     supplier: ['master-options', 'supplier'] as const,
     warehouse: ['master-options', 'warehouse'] as const,
   },

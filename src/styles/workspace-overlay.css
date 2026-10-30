@@ -48,10 +48,18 @@
   background: var(--ant-color-bg-layout, #f5f5f5);
 }
 
+/*
+ * 财务单据编辑弹层: 尺寸按**覆盖层容器**(内容区)算, 不用 100vw / 100vh。
+ *
+ * 覆盖层容器是 `.workspace-overlay`(position: absolute + inset: 0), 它本身位于顶栏与页签之下;
+ * 用视口单位会把面板按整个视口算, 底边落到内容区之外被裁掉。改成百分比后宽度/高度都相对容器,
+ * 小屏由容器自然封顶, 不再需要单独的窄屏视口断点(100% - 32px 已含两侧 16px 留白)。
+ * 居中仍由 `.workspace-overlay--workspace` 的 flex 居中提供, 圆角与阴影不变。
+ */
 .workspace-overlay-panel--finance-editor {
-  width: min(720px, calc(100vw - 32px));
-  height: min(760px, calc(100vh - 32px));
-  max-width: 720px;
+  width: min(720px, calc(100% - 32px));
+  height: min(760px, calc(100% - 32px));
+  max-width: 100%;
   border-radius: var(--ant-border-radius-lg, 8px);
   box-shadow: var(--ant-box-shadow-secondary, 0 18px 48px rgba(0, 0, 0, 0.2));
 }
@@ -62,13 +70,6 @@
 
 .workspace-overlay-panel--finance-editor .workspace-overlay-footer {
   padding: var(--space-10) var(--space-md);
-}
-
-@media (max-width: 720px) {
-  .workspace-overlay-panel--finance-editor {
-    width: calc(100vw - 16px);
-    height: calc(100vh - 16px);
-  }
 }
 
 /*

@@ -11,7 +11,8 @@ export const roleStatusSchema = z.enum(['正常', '禁用'])
 export type RoleStatus = z.output<typeof roleStatusSchema>
 
 const roleCodeSchema = z.string().trim().min(1).max(64)
-const roleNameSchema = z.string().trim().min(1).max(64)
+/** 角色名称上限跟随后端 `RoleRequest.name` 的 @Size(max = 128) 与 `sys_role.role_name` varchar(128)。 */
+const roleNameSchema = z.string().trim().min(1).max(128)
 const roleDescriptionSchema = z.string().trim().max(255)
 
 export const roleResponseSchema = z.object({

@@ -1,3 +1,4 @@
+import { lengthRank } from './core'
 import type { QuoteRow } from './supplier-price-list-model'
 
 /** 粘贴到网格的一格：`null` 表示清空。 */
@@ -61,19 +62,10 @@ export const specRowKey = (row: SpecRow): string =>
   `${row.category}|${row.material}|${row.spec}`
 
 /**
- * 定尺排序：报价单里 9米 在左、12米 在右，无定尺（"" 或 "-"）排最后。
- *
- * <p>定尺是「同一规格的两个价格维度」，不是两个规格——因此不能按字符串排序
- * （"12米" < "9米" 会颠倒），也不能让 "-" 混在中间。</p>
+ * 定尺排序的唯一实现在 `core.ts` 的 {@link lengthRank}（定尺主数据 sortOrder 优先，
+ * 其次按名称里的米数，`''`/`'-'` 最后）。这里重新导出，保持既有调用方的导入路径不变。
  */
-export function lengthRank(length: string): number {
-  if (length === '9米') return 0
-  if (length === '12米') return 1
-  if (length === '') return 90
-  if (length === '-') return 91
-  const numeric = Number(length.replace(/[^\d.]/g, ''))
-  return Number.isFinite(numeric) ? 10 + numeric : 50
-}
+export { lengthRank }
 
 /**
  * 是否是**可展示的定尺列**。
@@ -86,10 +78,14 @@ export function isLengthColumn(length: string): boolean {
   return length !== '' && length !== '-'
 }
 
-/** 网格里出现的全部定尺（去重 + 排序）。 */
-export function orderedLengths(rows: readonly QuoteRow[]): string[] {
+/** 网格里出现的全部定尺（去重 + 排序）。`sortOrderOf` 为定尺主数据的排序号表。 */
+export function orderedLengths(
+  rows: readonly QuoteRow[],
+  sortOrderOf?: Readonly<Record<string, number>>,
+): string[] {
   return [...new Set(rows.map((row) => row.length))].sort(
-    (left, right) => lengthRank(left) - lengthRank(right),
+    (left, right) =>
+      lengthRank(left, sortOrderOf) - lengthRank(right, sortOrderOf),
   )
 }
 
@@ -166,9 +162,12 @@ export function specRowGroupSpans(
   return spans
 }
 
-/** 真正的定尺列（9米/12米…），已按报价单习惯排序。 */
-export function columnLengths(rows: readonly QuoteRow[]): string[] {
-  return orderedLengths(rows).filter(isLengthColumn)
+/** 真正的定尺列（9米/12米…），已按定尺主数据顺序排序。 */
+export function columnLengths(
+  rows: readonly QuoteRow[],
+  sortOrderOf?: Readonly<Record<string, number>>,
+): string[] {
+  return orderedLengths(rows, sortOrderOf).filter(isLengthColumn)
 }
 
 /**
@@ -194,8 +193,15 @@ export function placementLengthOf(row: SpecRow): string {
   return row.lengths.find(isLengthColumn) ?? row.lengths[0] ?? ''
 }
 
-/** 把「一个定尺一行」的原始行合并成「一个规格一行、定尺在格子里」。 */
-export function groupSpecRows(rows: readonly QuoteRow[]): SpecRow[] {
+/**
+ * 把「一个定尺一行」的原始行合并成「一个规格一行、定尺在格子里」。
+ *
+ * @param sortOrderOf 定尺主数据的排序号表，决定同一规格内定尺列的先后。
+ */
+export function groupSpecRows(
+  rows: readonly QuoteRow[],
+  sortOrderOf?: Readonly<Record<string, number>>,
+): SpecRow[] {
   const grouped = new Map<string, SpecRow>()
   for (const row of rows) {
     const key = `${row.category}|${row.material}|${row.spec}`
@@ -215,7 +221,10 @@ export function groupSpecRows(rows: readonly QuoteRow[]): SpecRow[] {
   }
   const result = [...grouped.values()]
   for (const row of result) {
-    row.lengths.sort((left, right) => lengthRank(left) - lengthRank(right))
+    row.lengths.sort(
+      (left, right) =>
+        lengthRank(left, sortOrderOf) - lengthRank(right, sortOrderOf),
+    )
   }
   return result.sort(
     (left, right) =>
@@ -304,6 +313,7 @@ export function matrixMaterialsOf(specRows: readonly SpecRow[]): string[] {
 export function matrixLengthsOf(
   specRows: readonly SpecRow[],
   material: string,
+  sortOrderOf?: Readonly<Record<string, number>>,
 ): string[] {
   const lengths = new Set<string>()
   for (const row of specRows) {
@@ -311,7 +321,8 @@ export function matrixLengthsOf(
     for (const length of row.lengths) lengths.add(length)
   }
   return [...lengths].sort(
-    (left, right) => lengthRank(left) - lengthRank(right),
+    (left, right) =>
+      lengthRank(left, sortOrderOf) - lengthRank(right, sortOrderOf),
   )
 }
 
@@ -335,6 +346,7 @@ export type CategoryMatrix = {
 export function buildCategoryMatrices(
   specRows: readonly SpecRow[],
   hiddenLengths: readonly string[] = [],
+  sortOrderOf?: Readonly<Record<string, number>>,
 ): CategoryMatrix[] {
   const byCategory = new Map<string, SpecRow[]>()
   for (const row of specRows) {
@@ -350,7 +362,7 @@ export function buildCategoryMatrices(
       for (const material of materials) {
         lengthsOf.set(
           material,
-          matrixLengthsOf(list, material).filter(
+          matrixLengthsOf(list, material, sortOrderOf).filter(
             (length) => !hidden.has(length),
           ),
         )

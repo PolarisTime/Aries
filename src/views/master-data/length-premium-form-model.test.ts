@@ -3,6 +3,7 @@ import i18n from 'i18next'
 import { describe, expect, it } from 'vitest'
 import '@/i18n'
 import type { LengthPremiumRecord } from '@/api/master/length-premiums'
+import { lengthPremiumInputSchema } from '@/api/master/length-premiums'
 import {
   buildLengthPremiumFormRules,
   buildLengthPremiumStatusMap,
@@ -26,6 +27,7 @@ const record = (
   sortOrder: 1,
   status: '正常',
   remark: null,
+  specSuffix: '*12',
   createdAt: '2026-01-02T03:04:05',
   updatedAt: null,
   ...overrides,
@@ -190,6 +192,17 @@ describe('表单校验提示（与后端 422 业务不变量同源）', () => {
     )
   })
 
+  it('规格后缀可空、≤16（空串是合法的「不追加」）', async () => {
+    const rules = buildRules()
+    expect(await runRule(rules.specSuffix, '')).toBeNull()
+    expect(await runRule(rules.specSuffix, undefined)).toBeNull()
+    expect(await runRule(rules.specSuffix, '*12')).toBeNull()
+    expect(await runRule(rules.specSuffix, '*'.repeat(16))).toBeNull()
+    expect(await runRule(rules.specSuffix, '*'.repeat(17))).toBe(
+      '打印规格后缀不能超过16个字符',
+    )
+  })
+
   it('编辑自身时不报重复', async () => {
     const rules = buildRules({
       records: [record()],
@@ -200,7 +213,7 @@ describe('表单校验提示（与后端 422 业务不变量同源）', () => {
 })
 
 describe('表单值与写入载荷互转', () => {
-  it('记录回填表单值，备注 null 变空串，负加价原样回填', () => {
+  it('记录回填表单值，备注 null 变空串，负加价原样回填，后缀原样回填', () => {
     expect(
       toLengthPremiumFormValues(record({ premium: -20, remark: '优惠' })),
     ).toEqual({
@@ -209,8 +222,15 @@ describe('表单值与写入载荷互转', () => {
       sortOrder: 1,
       status: '正常',
       remark: '优惠',
+      specSuffix: '*12',
     })
     expect(toLengthPremiumFormValues(record()).remark).toBe('')
+  })
+
+  it('旧记录没有规格后缀时回填空串（显式「无后缀」，不是 undefined）', () => {
+    expect(
+      toLengthPremiumFormValues(record({ specSuffix: null })).specSuffix,
+    ).toBe('')
   })
 
   it('未知状态原样回填（由白名单规则拦住，而不是悄悄改成「正常」）', () => {
@@ -219,17 +239,18 @@ describe('表单值与写入载荷互转', () => {
     )
   })
 
-  it('新增默认值：状态正常、加价与排序号留空', () => {
+  it('新增默认值：状态正常、加价与排序号留空、后缀为空', () => {
     expect(EMPTY_LENGTH_PREMIUM_FORM_VALUES).toEqual({
       lengthName: '',
       premium: null,
       sortOrder: null,
       status: '正常',
       remark: '',
+      specSuffix: '',
     })
   })
 
-  it('表单值 trim 后转写入载荷，空备注不下发，负加价保留符号', () => {
+  it('表单值 trim 后转写入载荷，空备注不下发，负加价保留符号，后缀 trim 后下发', () => {
     expect(
       toLengthPremiumInputDraft({
         lengthName: ' 12米 ',
@@ -237,13 +258,47 @@ describe('表单值与写入载荷互转', () => {
         sortOrder: 2,
         status: ' 正常 ',
         remark: '   ',
+        specSuffix: '  *12  ',
       }),
     ).toEqual({
       lengthName: '12米',
       premium: -30,
       sortOrder: 2,
       status: '正常',
+      specSuffix: '*12',
     })
+  })
+
+  /**
+   * 与备注相反：后缀**空串也必须回传** —— 后端更新语义是 null=保持、''=清空，
+   * 省略字段会让用户在页面上清空后缀却清不掉。
+   */
+  it('规格后缀为空串时仍然下发（显式清空），不会被省略', () => {
+    const draft = toLengthPremiumInputDraft({
+      ...EMPTY_LENGTH_PREMIUM_FORM_VALUES,
+      lengthName: '12米',
+      premium: 30,
+      sortOrder: 1,
+    })
+    expect('specSuffix' in draft).toBe(true)
+    expect(draft.specSuffix).toBe('')
+    // Zod 收口后依然保留该字段（写路径唯一口径）。
+    const parsed = lengthPremiumInputSchema.parse(draft)
+    expect(parsed.specSuffix).toBe('')
+  })
+
+  it('规格后缀超过 16 字符时 schema 拒绝', () => {
+    const result = lengthPremiumInputSchema.safeParse({
+      lengthName: '12米',
+      premium: 30,
+      sortOrder: 1,
+      status: '正常',
+      specSuffix: '*'.repeat(17),
+    })
+    expect(result.success).toBe(false)
+    expect(
+      result.success ? [] : result.error.issues.map((issue) => issue.message),
+    ).toContain('打印规格后缀不能超过16个字符')
   })
 
   it('加价为空时原样下发 null，交给 Zod 报「不能为空」', () => {

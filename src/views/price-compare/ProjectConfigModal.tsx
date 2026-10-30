@@ -75,7 +75,16 @@ function BasicSection({
   return (
     <Flex vertical className="pc-config-card">
       <Flex align="center" justify="space-between" gap={16}>
-        <Text>{t('priceCompare.config.premiumLabel')}</Text>
+        <Flex vertical gap={2}>
+          <Text>{t('priceCompare.config.premiumLabel')}</Text>
+          {/*
+           * 长说明**常显**而不是 hover-only tooltip：键盘与读屏用户同样需要知道
+           * 「这里的数值只在定尺主数据为空时兜底」，悬停提示对他们不可达。
+           */}
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)' }}>
+            {t('priceCompare.config.premiumHint')}
+          </Text>
+        </Flex>
         <InputNumber
           min={0}
           max={999}

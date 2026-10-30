@@ -55,6 +55,7 @@ import {
   type SupplierPriceGrid,
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
+import { useLengthPremiumOptions } from '@/hooks/useLengthPremiumOptions'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
@@ -197,6 +198,11 @@ export function SupplierQuotePage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const materialBrands = useMaterialBrands()
+  /*
+   * 定尺列顺序以**定尺主数据**为准（9米=1、12米=2…）：页面只取一次排序号表，往下传给纯函数。
+   * 排序函数本身不再维护 9米/12米 的硬编码分支（唯一实现见 `core.lengthRank`）。
+   */
+  const { sortOrderByLength } = useLengthPremiumOptions()
 
   const [supplierId, setSupplierId] = useState<string>()
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
@@ -352,9 +358,15 @@ export function SupplierQuotePage() {
    *
    * <p>报价单的形态是「行 = 材质 + 规格、同一格里 9米/12米 两个价」，而不是一个定尺占一行。</p>
    */
-  const specRows = useMemo<SpecRow[]>(() => groupSpecRows(rows), [rows])
+  const specRows = useMemo<SpecRow[]>(
+    () => groupSpecRows(rows, sortOrderByLength),
+    [rows, sortOrderByLength],
+  )
   /** 真正要展示的定尺列（9米/12米…）：''/'-' 不是定尺，不占列。 */
-  const columnLengths = useMemo(() => columnLengthsOf(rows), [rows])
+  const columnLengths = useMemo(
+    () => columnLengthsOf(rows, sortOrderByLength),
+    [rows, sortOrderByLength],
+  )
   const hiddenLengthSet = useMemo(() => new Set(hiddenLengths), [hiddenLengths])
   /** 实际渲染的定尺列 = 全部定尺列 - 被隐藏的。 */
   const visibleLengths = useMemo(
@@ -399,7 +411,11 @@ export function SupplierQuotePage() {
    * <p>「只看未填」按**整行**判断：该规格在所有材质、所有品牌下都没价才算未填。</p>
    */
   const categoryMatrices = useMemo(() => {
-    const matrices = buildCategoryMatrices(displayRows, hiddenLengths)
+    const matrices = buildCategoryMatrices(
+      displayRows,
+      hiddenLengths,
+      sortOrderByLength,
+    )
     if (!onlyUnpriced) return matrices
     return matrices
       .map((matrix) => ({
@@ -411,7 +427,13 @@ export function SupplierQuotePage() {
         ),
       }))
       .filter((matrix) => matrix.rows.length > 0)
-  }, [displayRows, displayViews, hiddenLengths, onlyUnpriced])
+  }, [
+    displayRows,
+    displayViews,
+    hiddenLengths,
+    onlyUnpriced,
+    sortOrderByLength,
+  ])
 
   const hiddenMaterialColumnSet = useMemo(
     () => new Set(hiddenMaterialColumns),
@@ -428,7 +450,11 @@ export function SupplierQuotePage() {
     const options: { key: string; label: string }[] = []
     const materials = matrixMaterialsOf(specRows)
     for (const material of materials) {
-      for (const length of matrixLengthsOf(specRows, material)) {
+      for (const length of matrixLengthsOf(
+        specRows,
+        material,
+        sortOrderByLength,
+      )) {
         options.push({
           key: matrixCellKeyOf(material, length),
           label: `${material} ${lengthHeader(length)}`,
@@ -436,19 +462,21 @@ export function SupplierQuotePage() {
       }
     }
     return options
-  }, [specRows])
+  }, [specRows, sortOrderByLength])
 
   /** 面板里按材质分组的列选项（材质名 + 该材质的定尺列）。 */
   const materialColumnGroups = useMemo(
     () =>
       matrixMaterialsOf(specRows).map((material) => ({
         material,
-        options: matrixLengthsOf(specRows, material).map((length) => ({
-          key: matrixCellKeyOf(material, length),
-          length,
-        })),
+        options: matrixLengthsOf(specRows, material, sortOrderByLength).map(
+          (length) => ({
+            key: matrixCellKeyOf(material, length),
+            length,
+          }),
+        ),
       })),
-    [specRows],
+    [specRows, sortOrderByLength],
   )
 
   /** 当前被隐藏的列总数（面板标题上的角标）。 */
@@ -779,8 +807,15 @@ export function SupplierQuotePage() {
         ),
       )
     }
-    return buildTransposedSections(list, visibleBrands)
-  }, [displayViews, onlyUnpriced, rows, specKeyword, visibleBrands])
+    return buildTransposedSections(list, visibleBrands, sortOrderByLength)
+  }, [
+    displayViews,
+    onlyUnpriced,
+    rows,
+    sortOrderByLength,
+    specKeyword,
+    visibleBrands,
+  ])
 
   /** 规格横置下粘贴：以锚点格为左上角，向下按「材质 + 定尺」、向右按规格铺开。 */
   const handleTransposedPaste = (

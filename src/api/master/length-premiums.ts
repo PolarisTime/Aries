@@ -52,6 +52,9 @@ export const LENGTH_PREMIUM_MAX = 100000
 /** 备注长度上限，与后端 `@Size(max = 255)` 及 varchar(255) 对齐。 */
 export const LENGTH_PREMIUM_MAX_REMARK_LENGTH = 255
 
+/** 打印规格后缀长度上限，与后端 `@Size(max = 16)` 及 varchar(16) 对齐。 */
+export const LENGTH_PREMIUM_MAX_SPEC_SUFFIX_LENGTH = 16
+
 /** 后端 `PageSortFieldCatalog` 里 `length-premium` 允许的排序字段白名单。 */
 export const LENGTH_PREMIUM_SORT_FIELDS = [
   'id',
@@ -135,6 +138,19 @@ export const lengthPremiumInputSchema = z
         message: `备注不能超过${LENGTH_PREMIUM_MAX_REMARK_LENGTH}个字符`,
       }),
     ),
+    /*
+     * 打印规格后缀（如 `*12`）：打印时追加到商品规格之后，空串表示该定尺不追加。
+     *
+     * <p>**允许空串**（不设 `.min(1)`）：空串是「显式清空」的合法表达。后端更新语义是
+     * `null = 保持原值、空串 = 清空`，本前端始终回传该字段（见 transform），因此
+     * 用户只改加价时不会把已回填的 `*12` 抹掉。</p>
+     */
+    specSuffix: z.preprocess(
+      (value) => (typeof value === 'string' ? value.trim() : ''),
+      z.string().max(LENGTH_PREMIUM_MAX_SPEC_SUFFIX_LENGTH, {
+        message: `打印规格后缀不能超过${LENGTH_PREMIUM_MAX_SPEC_SUFFIX_LENGTH}个字符`,
+      }),
+    ),
   })
   .transform((payload) => ({
     lengthName: payload.lengthName,
@@ -143,6 +159,12 @@ export const lengthPremiumInputSchema = z
     status: payload.status,
     // 备注 trim 后为空一律省略，与后端「空串存 null」一致。
     ...(payload.remark ? { remark: payload.remark } : {}),
+    /*
+     * 打印规格后缀**始终回传**（空串也回传）：后端更新语义是 null=保持、''=清空，
+     * 省略该字段会让「页面显示为空」与「后端保持旧值」打架；显式回传才与页面所见一致，
+     * 也保证编辑态只改加价时不会清掉既有后缀。
+     */
+    specSuffix: payload.specSuffix,
   }))
 
 /**
@@ -162,6 +184,8 @@ export interface LengthPremiumInputDraft {
   status: string
   /** 备注，可空。 */
   remark?: string | null | undefined
+  /** 打印规格后缀（如 `*12`）；空串表示该定尺打印时不追加，可带首尾空白。 */
+  specSuffix?: string | null | undefined
 }
 
 /** 校验归一化后的写入载荷。 */
@@ -202,6 +226,13 @@ export const rawLengthPremiumSchema = z.looseObject({
   status: z.string(),
   remark: z.string().nullish(),
   /*
+   * 打印规格后缀（如 `*12`）。**nullable + optional**：该字段是后加的能力，
+   * 旧版后端（或回滚期间）不返回它，旧数据也没有值 —— 读路径必须容忍缺失，
+   * 否则整页列表会因契约校验失败而空白（本文件上方审计字段那条历史故障同源）。
+   * 写路径仍由 `lengthPremiumInputSchema` 约束 ≤16。
+   */
+  specSuffix: z.string().nullable().optional(),
+  /*
    * 审计字段：后端 `LengthPremiumResponse` 已从 `AbstractAuditableEntity` 暴露
    * createdAt/updatedAt（全局 IsoLocalDateTimeSerializer 输出带偏移的 ISO-8601），
    * 列表「更新时间」列依赖它们，因此这里按**必填**约束。
@@ -227,6 +258,13 @@ export interface LengthPremiumRecord {
   /** 白名单「正常」/「禁用」；未知状态原样保留，展示层降级。 */
   status: string
   remark: string | null
+  /**
+   * 打印规格后缀（如 `*12`），打印时追加到商品规格之后；空/缺失表示不追加。
+   *
+   * <p>响应里的 `null`/缺失统一归一为 `null`（展示层显示占位符）；编辑时回填为 `''`
+   * 再**始终回传**，避免后端「null=保持」把用户看不见的旧值偷偷留下。</p>
+   */
+  specSuffix: string | null
   /** 创建时间（后端 `LengthPremiumResponse` 暴露，ISO-8601 带时区偏移）。 */
   createdAt: string | null
   /** 更新时间；从未更新过的记录为 null，列表「更新时间」列回退显示创建时间。 */
@@ -266,6 +304,8 @@ function toLengthPremiumRecord(
     sortOrder: raw.sortOrder,
     status: asString(raw.status),
     remark: raw.remark ?? null,
+    // 旧后端/旧数据可能不返回该字段：缺失与 null 都归一为 null（展示层给占位符）。
+    specSuffix: raw.specSuffix ?? null,
     // 后端暂不返回审计时间：缺失即 null，不要用 asString 把 undefined 变成 ''。
     createdAt: raw.createdAt ?? null,
     updatedAt: raw.updatedAt ?? null,
@@ -306,6 +346,52 @@ export async function listLengthPremiums(
     pageSize: page.pageSize,
     hasMore: page.hasMore,
   }
+}
+
+/**
+ * 下拉/比价用的定尺选项：定尺主数据的**业务读取口径**（只含「正常」状态）。
+ *
+ * <p>`value` 与 `label` 都是定尺名称本身 —— 材料资料的 `length` 字段、比价行的 `length`
+ * 字段存的就是这个名称，选项值必须与之一致，否则选中后查不到加价、也匹配不到商品。
+ * `premium` / `sortOrder` 一并带出，供比价页算加价与排序使用：这样全站只有「定尺主数据」
+ * 一处事实，不再存在 9米/12米 之类的硬编码清单。</p>
+ */
+export interface LengthPremiumOption {
+  label: string
+  value: string
+  /** 每吨加价（元），负值表示优惠。 */
+  premium: number
+  /** 排序号，升序展示（9米=1、12米=2…）。 */
+  sortOrder: number
+}
+
+/** 选项一次取一页足够：后端 `size` 上限 200，定尺种类远少于该值。 */
+const LENGTH_PREMIUM_OPTION_PAGE_SIZE = 200
+
+/**
+ * 读取「正常」状态的定尺主数据作为选项。
+ *
+ * <p>复用 {@link listLengthPremiums}：分页契约（`content/totalElements/...`）与响应校验
+ * 只有一处实现，本函数只做「分页 → 选项」的投影。禁用中的定尺不出现在下拉里
+ * （历史数据仍可展示，只是不能再被选中）。</p>
+ */
+export async function fetchLengthPremiumOptions(
+  signal?: AbortSignal,
+): Promise<LengthPremiumOption[]> {
+  const page = await listLengthPremiums(
+    {
+      page: 0,
+      size: LENGTH_PREMIUM_OPTION_PAGE_SIZE,
+      status: STATUS.NORMAL,
+    },
+    signal,
+  )
+  return page.content.map((record) => ({
+    label: record.lengthName,
+    value: record.lengthName,
+    premium: record.premium,
+    sortOrder: record.sortOrder,
+  }))
 }
 
 /** 查询单条定尺加价；不存在返回 404。 */

@@ -10,7 +10,11 @@ const initialSetupAccountPayloadSchema = z.object({
   loginName: z.string().min(1),
   password: z.string().min(8),
   userName: z.string().min(1),
-  mobile: z.string().optional(),
+  /*
+   * 手机号上限 20，与后端 `InitialSetupAccountRequest.mobile` 的 @Size(max = 20) 及
+   * `sys_user.mobile` varchar(20) 对齐（当前表单没有渲染手机号输入框，这里锁的是提交载荷契约）。
+   */
+  mobile: z.string().max(20).optional(),
 })
 export type InitialSetupAccountPayload = z.input<
   typeof initialSetupAccountPayloadSchema

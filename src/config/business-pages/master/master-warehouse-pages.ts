@@ -131,11 +131,18 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     detailColumnCount: 4,
+    /*
+     * 字段长度上限逐字段来自后端 `WarehouseRequest` 的 @Size
+     * （leo: src/main/java/com/leo/erp/master/warehouse/web/dto/WarehouseRequest.java）：
+     * warehouse_code 64 / warehouse_name 128 / contact_name 32 / contact_phone 20 /
+     * address 255 / remark 255，与 md_warehouse 列宽一致。仓库类型是固定枚举(select)，不声明 maxLength。
+     */
     formFields: [
       {
         key: 'warehouseCode',
         label: i18next.t('modules.pages.masterWarehouse.warehouseCode'),
         type: 'input',
+        maxLength: 64,
         required: true,
         disabled: true,
         placeholder: i18next.t(
@@ -147,6 +154,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
         key: 'warehouseName',
         label: i18next.t('modules.pages.masterWarehouse.warehouseName'),
         type: 'input',
+        maxLength: 128,
         required: true,
         row: 1,
       },
@@ -181,18 +189,21 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
         key: 'contactName',
         label: i18next.t('modules.pages.masterWarehouse.contact'),
         type: 'input',
+        maxLength: 32,
         row: 1,
       },
       {
         key: 'contactPhone',
         label: i18next.t('modules.pages.masterWarehouse.phone'),
         type: 'input',
+        maxLength: 20,
         row: 2,
       },
       {
         key: 'address',
         label: i18next.t('modules.pages.masterWarehouse.address'),
         type: 'input',
+        maxLength: 255,
         row: 2,
         fullRow: true,
       },
@@ -208,6 +219,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
         key: 'remark',
         label: i18next.t('modules.pages.masterWarehouse.remark'),
         type: 'textarea',
+        maxLength: 255,
         row: 4,
         fullRow: true,
       },

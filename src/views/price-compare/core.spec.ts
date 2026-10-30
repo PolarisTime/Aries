@@ -62,22 +62,111 @@ const row12: PriceRow = {
 const row12m: PriceRow = { ...row12, id: 'r2', length: '12米' }
 const brands: Brand[] = [{ name: '中天', freight: 30 }]
 
+/**
+ * 定尺主数据（`md_length_premium`）在测试里的替身：定尺名称 → 每吨加价。
+ *
+ * <p>用它锁定「主数据驱动」新口径：`row.length` 命中即加、未命中 0，
+ * 不再有「仅螺纹钢」这类写死的类别门禁。</p>
+ */
+const lengthPremiums12: Readonly<Record<string, number>> = { '12米': 30 }
+/** 空主数据：用于验证**迁移兜底**（旧口径：仅螺纹钢 12米 按 `legacyPremium` 加价）。 */
+const noLengthPremiums: Readonly<Record<string, number>> = {}
+
 describe('netPrice', () => {
-  it('命中网价并叠加 12 米加价', () => {
-    expect(netPrice(data, '2026-09-10', '9:30 上午', '中天', row12, 30)).toBe(
-      3320,
-    )
-    expect(netPrice(data, '2026-09-10', '9:30 上午', '中天', row12m, 30)).toBe(
-      3350,
-    )
+  it('命中网价并按定尺主数据叠加加价', () => {
+    expect(
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        row12,
+        lengthPremiums12,
+      ),
+    ).toBe(3320)
+    expect(
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        row12m,
+        lengthPremiums12,
+      ),
+    ).toBe(3350)
+  })
+
+  it('主数据 10米→20 时，10米行加价生效（新增定尺不需要改代码）', () => {
+    const row10m: PriceRow = { ...row12, id: 'r10', length: '10米' }
+    const lengthPremiums10: Readonly<Record<string, number>> = { '10米': 20 }
+    expect(
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        row10m,
+        lengthPremiums10,
+      ),
+    ).toBe(3340)
+    // 同一份主数据里没有 12米：12米行不加价（未命中为 0，不沿用旧口径）。
+    expect(
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        row12m,
+        lengthPremiums10,
+      ),
+    ).toBe(3320)
+  })
+
+  it('主数据为空时回退旧行为（迁移兜底：仅螺纹钢 12米）', () => {
+    expect(
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        row12,
+        noLengthPremiums,
+        30,
+      ),
+    ).toBe(3320)
+    expect(
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        row12m,
+        noLengthPremiums,
+        30,
+      ),
+    ).toBe(3350)
   })
 
   it('无数据/无品牌/无材质时返回 undefined', () => {
     expect(
-      netPrice(data, '2026-09-10', '9:30 上午', '亚新', row12, 30),
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '亚新',
+        row12,
+        lengthPremiums12,
+      ),
     ).toBeUndefined()
     expect(
-      netPrice(data, '2026-09-11', '9:30 上午', '中天', row12, 30),
+      netPrice(
+        data,
+        '2026-09-11',
+        '9:30 上午',
+        '中天',
+        row12,
+        lengthPremiums12,
+      ),
     ).toBeUndefined()
     expect(
       netPrice(
@@ -86,7 +175,7 @@ describe('netPrice', () => {
         '9:30 上午',
         '中天',
         { ...row12, material: 'HRB500E' },
-        30,
+        lengthPremiums12,
       ),
     ).toBeUndefined()
   })
@@ -113,7 +202,7 @@ describe('computeSummary', () => {
       sheet({ '_:r1': { ton: 10 }, '中天:r1': { spot: 3280 } }),
       [row12],
       brands,
-      30,
+      lengthPremiums12,
     )
     expect(summary.filled).toBe(1)
   })
@@ -125,16 +214,21 @@ describe('computeSummary', () => {
         sheet({ '中天:r1': { spot: 3280 } }),
         [row12],
         brands,
-        30,
+        lengthPremiums12,
       ).filled,
     ).toBe(1)
     expect(
-      computeSummary(data, sheet({ '_:r1': { ton: 10 } }), [row12], brands, 30)
-        .filled,
+      computeSummary(
+        data,
+        sheet({ '_:r1': { ton: 10 } }),
+        [row12],
+        brands,
+        lengthPremiums12,
+      ).filled,
     ).toBe(0)
   })
 
-  it('12 米加价仅螺纹钢生效', () => {
+  it('主数据有值时按定尺加价，不再有类别门禁', () => {
     const rowRebar12: PriceRow = {
       id: 'x',
       category: '螺纹钢',
@@ -155,10 +249,51 @@ describe('computeSummary', () => {
       },
     }
     expect(
-      netPrice(data, '2026-09-10', '9:30 上午', '中天', rowRebar12, 30),
+      netPrice(
+        data,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        rowRebar12,
+        lengthPremiums12,
+      ),
     ).toBe(3350)
+    // 旧口径只给螺纹钢加价；主数据驱动后，圆钢 12米 命中主数据同样加价。
     expect(
-      netPrice(dataRound, '2026-09-10', '9:30 上午', '中天', rowRound12, 30),
+      netPrice(
+        dataRound,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        rowRound12,
+        lengthPremiums12,
+      ),
+    ).toBe(4030)
+  })
+
+  it('主数据为空时回退旧行为：圆钢 12米 不加价', () => {
+    const rowRound12: PriceRow = {
+      id: 'y',
+      category: '圆钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '12米',
+    }
+    const dataRound: PriceData = {
+      '2026-09-10': {
+        '9:30 上午': { 中天: { '圆钢|HRB400E': { '12': 4000 } } },
+      },
+    }
+    expect(
+      netPrice(
+        dataRound,
+        '2026-09-10',
+        '9:30 上午',
+        '中天',
+        rowRound12,
+        noLengthPremiums,
+        30,
+      ),
     ).toBe(4000)
   })
 })
@@ -178,7 +313,7 @@ describe('netPriceWithFallback', () => {
       '上午',
       '中天',
       hrb400,
-      30,
+      noLengthPremiums,
       true,
     )
     expect(result.value).toBe(3320)
@@ -192,7 +327,7 @@ describe('netPriceWithFallback', () => {
       '上午',
       '中天',
       hrb400,
-      30,
+      noLengthPremiums,
       false,
     )
     expect(result.value).toBeUndefined()
@@ -205,7 +340,7 @@ describe('netPriceWithFallback', () => {
       '9:30 上午',
       '中天',
       row12,
-      30,
+      lengthPremiums12,
       true,
     )
     expect(result.value).toBe(3320)
@@ -709,6 +844,8 @@ describe('categoriesOf 类别派生守卫', () => {
     expect('CATEGORIES' in core).toBe(false)
     expect('SPECS' in core).toBe(false)
     expect('LENGTHS' in core).toBe(false)
+    // 长度互切不再依赖写死的「双长度」常量（改为按实际存在的定尺集合计算）。
+    expect('ALT_LENGTHS' in core).toBe(false)
   })
 })
 
@@ -789,6 +926,75 @@ describe('findAlternateLengthVariety 长度互切', () => {
         spec: null,
         length: '9米',
       }),
+    ).toBeUndefined()
+  })
+
+  it('按实际存在的定尺互切（新增 10米 也能切，不再写死 9米/12米）', () => {
+    const threeLengths: Variety[] = [
+      ...pool,
+      {
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '10米',
+        label: 'e',
+      },
+    ]
+    expect(
+      findAlternateLengthVariety(threeLengths, {
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '10米',
+      })?.length,
+    ).toBe('9米')
+  })
+
+  it('多个候选时按定尺主数据 sortOrder 确定性择一', () => {
+    const threeLengths: Variety[] = [
+      ...pool,
+      {
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '10米',
+        label: 'e',
+      },
+    ]
+    // 主数据顺序 12米(1) → 10米(2) → 9米(3)：12米 行应切到 10米（而不是名称顺序里的 9米）。
+    expect(
+      findAlternateLengthVariety(
+        threeLengths,
+        {
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '12米',
+        },
+        { '12米': 1, '10米': 2, '9米': 3 },
+      )?.length,
+    ).toBe('10米')
+  })
+
+  it('同一规格只有一个长度时没有可切换项', () => {
+    expect(
+      findAlternateLengthVariety(
+        [
+          {
+            category: '螺纹钢',
+            material: 'HRB400E',
+            spec: 12,
+            length: '10米',
+            label: 'only',
+          },
+        ],
+        {
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 12,
+          length: '10米',
+        },
+      ),
     ).toBeUndefined()
   })
 })

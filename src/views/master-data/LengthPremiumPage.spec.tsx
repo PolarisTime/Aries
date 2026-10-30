@@ -44,6 +44,9 @@ const EXISTING: LengthPremiumRecord = {
   sortOrder: 1,
   status: '正常',
   remark: '原 yml 配置',
+  // 打印规格后缀：编辑时若被前端丢掉，后端「null=保持」会把库里旧值留下而页面显示为空，
+  // 因此这里刻意带值，用「只改加价」的用例锁定「后缀不丢失」。
+  specSuffix: '*12',
   createdAt: '2026-01-02T03:04:05',
   updatedAt: '2026-01-03T04:05:06',
 }
@@ -316,6 +319,8 @@ describe('定尺加价维护页', () => {
       premium: 30,
       sortOrder: 2,
       status: '正常',
+      // 规格后缀始终回传：页面显示为空（新增默认 ''），落库就必须是「无后缀」。
+      specSuffix: '',
     })
     // 弹窗关闭 + 列表重新拉取
     expect(document.body.querySelector('.workspace-overlay')).toBeNull()
@@ -340,6 +345,7 @@ describe('定尺加价维护页', () => {
       premium: -30,
       sortOrder: 2,
       status: '正常',
+      specSuffix: '',
     })
   })
 
@@ -350,6 +356,10 @@ describe('定尺加价维护页', () => {
     expect(overlayInput('lengthName').value).toBe('12米')
     expect(overlayInput('premium').value).toBe('30')
     expect(overlayInput('sortOrder').value).toBe('1')
+    // 打印规格后缀回填：只改加价时它必须原样回到载荷里，否则后端「null=保持」
+    // 会让库里旧值肉眼不可见地留着，而页面显示为空。
+    expect(overlayInput('specSuffix').value).toBe('*12')
+    expect(overlayInput('specSuffix').maxLength).toBe(16)
 
     await chooseOverlaySelectOption('status', '禁用')
     await setTextValue(overlayInput('premium'), '-15')
@@ -364,9 +374,52 @@ describe('定尺加价维护页', () => {
         status: '禁用',
         // 编辑时未改动的备注原样保留。
         remark: '原 yml 配置',
+        // 未修改的后缀同样原样回传（避免被后端「保持」语义掩盖）。
+        specSuffix: '*12',
       },
     )
     expect(createLengthPremiumMock).not.toHaveBeenCalled()
+  })
+
+  /**
+   * 清空后缀：页面显示为空 → 必须显式回传空串（后端 `'' = 清空`）。
+   * 若省略字段（null），后端会保留原值，用户会看到「清空没生效」。
+   */
+  it('清空打印规格后缀时显式回传空串', async () => {
+    await renderPage()
+    await openEditDialog()
+
+    await setTextValue(overlayInput('specSuffix'), '')
+    await clickButton('保存', document.body)
+
+    expect(updateLengthPremiumMock).toHaveBeenCalledWith(
+      '1234567890123456789',
+      expect.objectContaining({ specSuffix: '' }),
+    )
+  })
+
+  it('列表展示打印规格后缀，空值显示占位符', async () => {
+    listLengthPremiumsMock.mockResolvedValue(
+      pageOf([
+        EXISTING,
+        {
+          ...EXISTING,
+          id: '9876543210987654321',
+          lengthName: '9米',
+          premium: 0,
+          specSuffix: null,
+        },
+      ]),
+    )
+    await renderPage()
+
+    expect(container.textContent).toContain('打印规格后缀')
+    expect(container.textContent).toContain('*12')
+    // 后缀为空的记录显示占位符（不是空白）。
+    const cells = [...container.querySelectorAll('td')].map(
+      (cell) => cell.textContent?.trim() ?? '',
+    )
+    expect(cells).toContain('-')
   })
 
   it('编辑自身不会误报定尺名称重复', async () => {

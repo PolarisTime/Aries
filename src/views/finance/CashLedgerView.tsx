@@ -54,6 +54,7 @@ import {
   createInitialLedgerState,
 } from '@/views/finance/cash-ledger-state'
 import { sumColumnWidths } from '@/views/modules/components/business-grid-table-utils'
+import { useTableBodyScrollY } from '@/views/modules/components/use-table-body-scroll-y'
 
 const COUNTERPARTY_TYPE_LABELS: Record<string, string> = {
   客户: 'financeDetail.counterpartyCustomer',
@@ -242,6 +243,8 @@ interface CashLedgerWorkspaceModel {
 function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
   const { t } = useTranslation()
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false)
+  // 表体高度由容器实测(与仓库其它表格同一套 hooks), 不再用视口减魔法数。
+  const { shellRef, scrollY, shellStyle } = useTableBodyScrollY()
   const counterpartyTypeOptions = Object.keys(COUNTERPARTY_TYPE_LABELS).map(
     (value) => ({
       value,
@@ -480,46 +483,65 @@ function CashLedgerWorkspace({ model }: { model: CashLedgerWorkspaceModel }) {
             </section>
           ) : null}
 
-          <section className="cash-ledger-table">
-            <Table
-              rowKey="key"
-              size="small"
-              columns={model.columns}
-              components={model.components}
-              dataSource={model.rows}
-              loading={model.queryEnabled && model.isFetching}
-              scroll={{
-                x: model.scrollX,
-                y: 'calc(100vh - 410px - var(--app-tabbar-height))',
-              }}
-              locale={{
-                emptyText: model.queryEnabled ? (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={t('financeDetail.empty')}
-                  />
-                ) : (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={t('financeDetail.selectSettlementCompany')}
-                  />
-                ),
-              }}
-              pagination={{
-                current: model.state.page,
-                pageSize: model.pageSize,
-                total: model.total,
-                showSizeChanger: true,
-                showTotal: (count) => t('financeDetail.total', { count }),
-                onChange: (nextPage, nextPageSize) => {
-                  model.dispatch({
-                    type: 'pagination-changed',
-                    page: nextPageSize === model.pageSize ? nextPage : 1,
-                    pageSize: nextPageSize,
-                  })
-                },
-              }}
-            />
+          {/*
+           * 表体滚动高度 = 容器实测出来的可用高度, 不再写
+           * `calc(100vh - 410px - var(--app-tabbar-height))` —— 410 没有任何出处(它不是任何
+           * 表头/工具栏/筛选行的高度之和), 筛选行展开/收起、摘要条是否出现都会让真实剩余高度
+           * 变成另一个值, 视口公式必然差一截。
+           *
+           * 这里把该 section 显式变成 flex 列(与同一页族的 `.finance-overview-table` 一致),
+           * 让 `.module-table-shell` 的 `flex: 1 1 auto` 真正拿到高度; 依赖视口公式时不需要这套
+           * 布局, 现在换算高度就必须让容器有确定高度, ResizeObserver 才量得准。
+           */}
+          <section
+            className="cash-ledger-table"
+            style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+          >
+            <div
+              ref={shellRef}
+              className="module-table-shell"
+              style={shellStyle}
+            >
+              <Table
+                rowKey="key"
+                size="small"
+                columns={model.columns}
+                components={model.components}
+                dataSource={model.rows}
+                loading={model.queryEnabled && model.isFetching}
+                scroll={{
+                  x: model.scrollX,
+                  y: scrollY,
+                }}
+                locale={{
+                  emptyText: model.queryEnabled ? (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={t('financeDetail.empty')}
+                    />
+                  ) : (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={t('financeDetail.selectSettlementCompany')}
+                    />
+                  ),
+                }}
+                pagination={{
+                  current: model.state.page,
+                  pageSize: model.pageSize,
+                  total: model.total,
+                  showSizeChanger: true,
+                  showTotal: (count) => t('financeDetail.total', { count }),
+                  onChange: (nextPage, nextPageSize) => {
+                    model.dispatch({
+                      type: 'pagination-changed',
+                      page: nextPageSize === model.pageSize ? nextPage : 1,
+                      pageSize: nextPageSize,
+                    })
+                  },
+                }}
+              />
+            </div>
           </section>
         </div>
       </div>

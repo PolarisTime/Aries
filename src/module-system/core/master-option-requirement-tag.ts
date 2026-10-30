@@ -25,6 +25,8 @@ export type MasterOptionRequirementKey =
   | 'materialGrades'
   | 'materials'
   | 'brands'
+  /** 定尺主数据（`/length-premiums` 的「正常」选项）：材料录入长度下拉、比价定尺加价/排序。 */
+  | 'lengthPremiums'
 
 export type MasterOptionRequirementsTag = readonly MasterOptionRequirementKey[]
 

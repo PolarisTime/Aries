@@ -1365,6 +1365,8 @@ export const enUS = {
         brand: 'Brand',
         spec: 'Spec',
         length: 'Length',
+        /** Fixed option of the length dropdown: coils (e.g. wire rod) have no fixed length, stored as '-'. */
+        noFixedLength: 'No fixed length (coil)',
         unit: 'Unit',
         qtyUnit: 'Qty Unit',
         pieceWeightTon: 'Piece Weight (t)',
@@ -3319,7 +3321,9 @@ export const enUS = {
         brands: 'Brands & Categories',
         products: 'Available Products',
       },
-      premiumLabel: '12m premium (CNY/ton, rebar only)',
+      premiumLabel: 'Fixed-length premium (CNY/ton, from length master data)',
+      premiumHint:
+        'Per-length premiums are configured by length name in "Length Premiums" master data (e.g. 9m/12m). The value here is only a migration fallback used when that master data is empty (legacy rule: rebar 12m only).',
       fallbackLabel:
         'Use the HRB400E reference price when HRB400 has no quote (marked with E)',
       brandsTitle: 'Participating Brands',
@@ -3806,6 +3810,11 @@ export const enUS = {
     remark: 'Remark',
     remarkPlaceholder: 'Optional note',
     remarkTooLong: 'Remark cannot exceed 255 characters',
+    specSuffix: 'Print spec suffix',
+    specSuffixPlaceholder: 'e.g. *12 (leave empty for none)',
+    specSuffixHint:
+      'Appended after the product spec when printing; leave empty to append nothing for this length.',
+    specSuffixTooLong: 'Print spec suffix cannot exceed 16 characters',
     createTitle: 'New length premium',
     editTitle: 'Edit length premium',
     deleteConfirm: 'Delete the length premium "{{name}}"?',

@@ -67,11 +67,12 @@ const categoryRankOf = (category: string) => CATEGORY_RANK[category] ?? 50
  * 硬合并成一张表会出现大量空列 —— 真实报价单也是"每个材质一张小表"。</p>
  *
  * <p>顺序：品类按业务习惯（螺纹钢 → 直条 → 盘螺 → 线材 → 圆钢，未列出的按首次出现），
- * 材质按名称升序，定尺按报价习惯（9米 → 12米 → 无定尺），规格数值升序。</p>
+ * 材质按名称升序，定尺按**定尺主数据的排序号**（缺失时按名称里的米数，无定尺排最后），规格数值升序。</p>
  */
 export function buildTransposedSections(
   rows: readonly QuoteRow[],
   brandNames: readonly string[],
+  sortOrderOf?: Readonly<Record<string, number>>,
 ): TransposedSection[] {
   const byCategory = new Map<string, QuoteRow[]>()
   for (const row of rows) {
@@ -108,7 +109,10 @@ export function buildTransposedSections(
         .map(({ material, materialRows }) => {
           const lengths = [
             ...new Set(materialRows.map((row) => row.length)),
-          ].sort((left, right) => lengthRank(left) - lengthRank(right))
+          ].sort(
+            (left, right) =>
+              lengthRank(left, sortOrderOf) - lengthRank(right, sortOrderOf),
+          )
           const specs = [...new Set(materialRows.map((row) => row.spec))].sort(
             (left, right) => left - right,
           )

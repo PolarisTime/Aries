@@ -77,11 +77,40 @@ describe('价格解析：空串=清空、非法=丢弃', () => {
   })
 })
 
-describe('定尺排序：9米 在 12米 左边，无定尺排最后', () => {
-  it('按报价单习惯排序，而不是按字符串', () => {
+describe('定尺排序：主数据 sortOrder 优先，无定尺排最后', () => {
+  it('主数据缺失时按名称里的米数排序，而不是按字符串', () => {
     expect(lengthRank('9米')).toBeLessThan(lengthRank('12米'))
     expect(lengthRank('12米')).toBeLessThan(lengthRank(''))
     expect(lengthRank('')).toBeLessThan(lengthRank('-'))
+  })
+
+  it('主数据 sortOrder 优先于名称里的米数', () => {
+    // 业务把 12米 排在 9米 前面（sortOrder 1 < 2）时，列顺序必须跟着主数据走。
+    const sortOrderOf = { '12米': 1, '9米': 2 }
+    expect(lengthRank('12米', sortOrderOf)).toBeLessThan(
+      lengthRank('9米', sortOrderOf),
+    )
+    expect(lengthRank('12米', sortOrderOf)).toBe(1)
+  })
+
+  it('主数据里没有的定尺回退按名称抽数字，且排在主数据定尺之后、无定尺之前', () => {
+    const sortOrderOf = { '9米': 1, '12米': 2 }
+    // 10米 不在主数据里：先排在**主数据定尺之后**（sortOrder 是业务给定的展示顺序），
+    // 数字顺序只在同一档（都没有 sortOrder）内部生效。
+    expect(lengthRank('10米', sortOrderOf)).toBeGreaterThan(
+      lengthRank('12米', sortOrderOf),
+    )
+    // 但仍按名称里的数字排在另一个未登记定尺之前。
+    expect(lengthRank('10米', sortOrderOf)).toBeLessThan(
+      lengthRank('11米', sortOrderOf),
+    )
+    // 无论主数据怎么给，''/'-' 都排在最后。
+    expect(lengthRank('', sortOrderOf)).toBeGreaterThan(
+      lengthRank('10米', sortOrderOf),
+    )
+    expect(lengthRank('-', sortOrderOf)).toBeGreaterThan(
+      lengthRank('', sortOrderOf),
+    )
   })
 
   it('去重后排序', () => {
@@ -93,6 +122,15 @@ describe('定尺排序：9米 在 12米 左边，无定尺排最后', () => {
         row(8, ''),
       ]),
     ).toEqual(['9米', '12米', ''])
+  })
+
+  it('去重排序同样吃主数据 sortOrder', () => {
+    expect(
+      orderedLengths([row(12, '12米'), row(10, '9米'), row(8, '-')], {
+        '12米': 1,
+        '9米': 2,
+      }),
+    ).toEqual(['12米', '9米', '-'])
   })
 })
 

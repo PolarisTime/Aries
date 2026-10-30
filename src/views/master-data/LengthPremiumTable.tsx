@@ -92,6 +92,15 @@ export function LengthPremiumTable({
         render: (_value, record) => asString(record.remark).trim() || '—',
       },
       {
+        // 打印规格后缀（如 `*12`）：打印时追加到商品规格之后；空/缺失显示 '-'。
+        title: t('lengthPremium.specSuffix'),
+        dataIndex: 'specSuffix',
+        key: 'specSuffix',
+        width: 140,
+        ellipsis: true,
+        render: (_value, record) => asString(record.specSuffix).trim() || '-',
+      },
+      {
         title: t('common.updatedAt'),
         dataIndex: 'updatedAt',
         key: 'updatedAt',

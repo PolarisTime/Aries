@@ -188,6 +188,24 @@ export function LengthPremiumEditorDialog({
               <Input placeholder={t('lengthPremium.remarkPlaceholder')} />
             </AccessibleFormItem>
           </Col>
+          <Col span={6}>
+            {/*
+             * 打印规格后缀：打印时追加到商品规格之后（如 12米 → `*12`）。
+             * 短提示直接走 extra（不是一句话以上的长说明，不需要 ⓘ）。
+             * maxLength 与后端 @Size(max=16) 对齐；留空表示不追加（空串是合法的主动清空）。
+             */}
+            <AccessibleFormItem
+              name="specSuffix"
+              label={t('lengthPremium.specSuffix')}
+              rules={rules.specSuffix}
+              extra={t('lengthPremium.specSuffixHint')}
+            >
+              <Input
+                maxLength={16}
+                placeholder={t('lengthPremium.specSuffixPlaceholder')}
+              />
+            </AccessibleFormItem>
+          </Col>
         </Row>
       </Form>
     </WorkspaceOverlay>

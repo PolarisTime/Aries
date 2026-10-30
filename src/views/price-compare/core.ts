@@ -210,11 +210,22 @@ export function fillSupplierInputs(
   return changed ? next : inputs
 }
 
-/** 12米加价生效的品种(业务规则) */
+/**
+ * 旧口径「12 米加价只对螺纹钢生效」的品种门禁。
+ *
+ * <p><b>仅供迁移兜底使用</b>：定尺主数据（`md_length_premium`）为空时，
+ * {@link lengthPremiumOf} 会回退到这套旧规则。主数据落地后应删除本常量与该分支 ——
+ * 加价属于业务数据，不该由代码里的类别/名称清单决定。</p>
+ */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
 /** 现货价合理上限(元/吨), 超出提示 */
 export const SPOT_PRICE_MAX = 20000
-/** 默认 12 米加价(元/吨) */
+/**
+ * 默认定尺加价(元/吨)。
+ *
+ * <p>历史口径是「默认 12 米加价」；现在只作为**迁移兜底**的缺省值（定尺主数据为空时使用），
+ * 不是任何定尺的实际加价来源。</p>
+ */
 export const DEFAULT_LENGTH_PREMIUM = 30
 
 /**
@@ -545,14 +556,55 @@ export function sheetColumnWidths(
   ) as Record<keyof typeof SHEET_COLUMN_WIDTH, number>
 }
 
-/** 网价: 参照日期+时段, 命中则返回并叠加 12 米加价。 */
+/**
+ * 「定尺名称 → 每吨加价」的空表。
+ *
+ * <p>用它表示**定尺主数据为空**（未加载/尚未维护），此时 {@link lengthPremiumOf} 走迁移兜底；
+ * 用稳定的冻结空对象而不是每次 `{}`，避免调用方每次渲染产生新引用。
+ */
+export const EMPTY_LENGTH_PREMIUMS: Readonly<Record<string, number>> =
+  Object.freeze({})
+
+/**
+ * 一格网价的定尺加价：**唯一计算出口**。
+ *
+ * <p><b>主数据驱动</b>：`lengthPremiums` 是「定尺名称 → 每吨加价」，`row.length` 命中即加、
+ * 未命中为 0。不再有「仅螺纹钢 12 米」这类写死的类别/名称门禁 —— 加价是业务数据
+ * （`md_length_premium`），不是代码常量；新增 10 米定尺不需要改前端。</p>
+ *
+ * <p><b>迁移兜底</b>：主数据为空时回退旧行为 —— 只有螺纹钢的「12米」按单据/项目级
+ * `legacyPremium` 加价。这是**迁移兜底、不是业务来源**：定尺主数据一旦有值，这个分支就
+ * 不会生效；待主数据在全部环境落地后应当删除本分支与 {@link LENGTH_PREMIUM_CATEGORIES}。</p>
+ */
+function lengthPremiumOf(
+  row: Pick<PriceRow, 'category' | 'length'>,
+  lengthPremiums: Readonly<Record<string, number>>,
+  legacyPremium: number,
+): number {
+  if (Object.keys(lengthPremiums).length > 0) {
+    return lengthPremiums[row.length] ?? 0
+  }
+  // 迁移兜底（见上）：定尺主数据为空时保持旧口径。
+  return LENGTH_PREMIUM_CATEGORIES.has(canonicalCategory(row.category)) &&
+    row.length === '12米'
+    ? legacyPremium
+    : 0
+}
+
+/**
+ * 网价: 参照日期+时段, 命中则返回并叠加定尺加价。
+ *
+ * @param lengthPremiums 定尺名称 → 每吨加价（来自定尺主数据）；空表时走迁移兜底。
+ * @param legacyPremium 迁移兜底用的旧「项目级 12 米加价」，仅在主数据为空时可能生效。
+ */
 export function netPrice(
   data: PriceData | null,
   refDate: string,
   refPeriod: string,
   brandName: string,
   row: PriceRow,
-  lengthPremium: number,
+  lengthPremiums: Readonly<Record<string, number>>,
+  legacyPremium: number = DEFAULT_LENGTH_PREMIUM,
 ): number | undefined {
   if (!data || row.spec === null || !row.material) return undefined
   const key = dataKeyOf(row)
@@ -560,12 +612,7 @@ export function netPrice(
   const base =
     data[refDate]?.[refPeriod]?.[brandName]?.[key]?.[String(row.spec)]
   if (base === undefined) return undefined
-  const premium =
-    LENGTH_PREMIUM_CATEGORIES.has(canonicalCategory(row.category)) &&
-    row.length === '12米'
-      ? lengthPremium
-      : 0
-  return base + premium
+  return base + lengthPremiumOf(row, lengthPremiums, legacyPremium)
 }
 
 /**
@@ -634,6 +681,10 @@ export function resolveSpotSourceMaterial(args: {
 /**
  * 取网价: 精确材质无价且开启兜底时, 用 `substituteMaterialOf` 给出的替代牌号再查一次,
  * 命中则标记 `fallback`。仅有白名单内的材质会代取。
+ *
+ * @param lengthPremiums 定尺名称 → 每吨加价（来自定尺主数据）；空表时走迁移兜底。
+ * @param allowFallback 是否允许按替代牌号代取。
+ * @param legacyPremium 迁移兜底用的旧「项目级 12 米加价」，仅在主数据为空时可能生效。
  */
 export function netPriceWithFallback(
   data: PriceData | null,
@@ -641,8 +692,9 @@ export function netPriceWithFallback(
   refPeriod: string,
   brandName: string,
   row: PriceRow,
-  lengthPremium: number,
+  lengthPremiums: Readonly<Record<string, number>>,
   allowFallback: boolean,
+  legacyPremium: number = DEFAULT_LENGTH_PREMIUM,
 ): { value: number | undefined; fallback: boolean } {
   const direct = netPrice(
     data,
@@ -650,7 +702,8 @@ export function netPriceWithFallback(
     refPeriod,
     brandName,
     row,
-    lengthPremium,
+    lengthPremiums,
+    legacyPremium,
   )
   if (direct !== undefined) return { value: direct, fallback: false }
   if (allowFallback && isSubstitutableMaterial(row.material)) {
@@ -664,7 +717,8 @@ export function netPriceWithFallback(
         refPeriod,
         brandName,
         { ...row, material: fallbackMaterial },
-        lengthPremium,
+        lengthPremiums,
+        legacyPremium,
       )
       if (alt !== undefined) return { value: alt, fallback: true }
     }
@@ -695,12 +749,18 @@ export type SheetSummary = {
   filled: number
 }
 
+/**
+ * 统计已填格数（网价与现货都有的格子）。
+ *
+ * @param lengthPremiums 定尺名称 → 每吨加价（来自定尺主数据）；空表时走迁移兜底，
+ * 兜底的旧「项目级 12 米加价」取自 `sheet.lengthPremium`（唯一来源，不另加参数）。
+ */
 export function computeSummary(
   data: PriceData | null,
   sheet: PriceSheet,
   rows: PriceRow[],
   brands: Brand[],
-  lengthPremium: number,
+  lengthPremiums: Readonly<Record<string, number>>,
 ): SheetSummary {
   let filled = 0
   for (const row of rows) {
@@ -711,7 +771,8 @@ export function computeSummary(
         sheet.refPeriod,
         brand.name,
         row,
-        lengthPremium,
+        lengthPremiums,
+        sheet.lengthPremium,
       )
       const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
       if (auto === undefined || spot === undefined) continue
@@ -721,7 +782,12 @@ export function computeSummary(
   return { filled }
 }
 
-/** 统计"有网价但未填现货"的数量, 用于标签页角标。 */
+/**
+ * 统计"有网价但未填现货"的数量, 用于标签页角标。
+ *
+ * <p>只关心「有没有网价」，加价不影响 `undefined` 判定，因此这里固定传空表 + 0：
+ * 不引入定尺主数据参数，避免调用方以为角标受加价配置影响。</p>
+ */
 export function countMissing(
   data: PriceData | null,
   sheet: PriceSheet,
@@ -737,6 +803,7 @@ export function countMissing(
         sheet.refPeriod,
         brand.name,
         row,
+        EMPTY_LENGTH_PREMIUMS,
         0,
       )
       if (auto === undefined) continue
@@ -1011,28 +1078,69 @@ export function filterVarieties(
   )
 }
 
-/** 可互切的双长度(9米/12米)。 */
-export const ALT_LENGTHS: readonly [string, string] = ['9米', '12米']
+/**
+ * 定尺排序：**定尺主数据 sortOrder 优先**，其次按名称里的米数升序，`''` / `'-'` 永远最后。
+ *
+ * <p>为什么不能用字符串排序：`"12米" < "9米"` 会颠倒；`'-'` 混在中间也会让「无定尺」
+ * 排到定尺列之间。为什么优先用主数据：定尺是业务主数据（可增删、可调排序号），
+ * 排序号就是业务给的展示/匹配顺序（9米=1、12米=2…），代码里不应再维护第二份顺序。</p>
+ *
+ * <p>参数 `sortOrderOf` 缺失（主数据未加载/为空）时退化为按名称里的数字排序 —— 这是
+ * **兜底**而非业务来源，保证主数据异常时表格仍然稳定可读。</p>
+ */
+const LENGTH_RANK_FALLBACK_BASE = 10
+const LENGTH_RANK_NON_NUMERIC = 50
+const LENGTH_RANK_EMPTY = 1000
+const LENGTH_RANK_DASH = 1001
+
+export function lengthRank(
+  length: string,
+  sortOrderOf?: Readonly<Record<string, number>>,
+): number {
+  // '' / '-' 表示「没有定尺」（卷材），不是某一种定尺：无论主数据怎么写都排最后。
+  if (length === '') return LENGTH_RANK_EMPTY
+  if (length === '-') return LENGTH_RANK_DASH
+  const masterSortOrder = sortOrderOf?.[length]
+  if (masterSortOrder !== undefined) return masterSortOrder
+  const numeric = Number(length.replace(/[^\d.]/g, ''))
+  return Number.isFinite(numeric) && numeric > 0
+    ? LENGTH_RANK_FALLBACK_BASE + numeric
+    : LENGTH_RANK_NON_NUMERIC
+}
 
 /**
- * 在给定商品清单中查找指定行的另一长度对应商品。
- * <p>仅当同类别/材质/规格下同时存在 9米 与 12米 时返回对方长度对应的商品,
- * 否则返回 undefined(如盘螺长度为 '-', 不参与切换)。</p>
+ * 在给定商品清单中查找指定行的「另一个定尺」对应商品（长度互切）。
+ *
+ * <p>**不再写死 9米/12米**：候选来自商品清单里**实际存在**的其它长度 ——
+ * 同类别/材质/规格下、长度不同于当前行的项；多个候选时按 {@link lengthRank} 确定性排序
+ * 取第一个（定尺主数据 sortOrder 优先 → 名称里的米数 → `''`/`'-'` 最后），
+ * 与报价单定尺列顺序一致，不依赖数组里的偶然顺序。</p>
+ *
+ * <p>找不到其它长度（如盘螺只有 `'-'`、Φ25 只有 9米）或规格为空时返回 undefined。</p>
  */
 export function findAlternateLengthVariety(
   varieties: Variety[],
   row: Pick<PriceRow, 'category' | 'material' | 'spec' | 'length'>,
+  sortOrderOf?: Readonly<Record<string, number>>,
 ): Variety | undefined {
-  if (row.spec === null || !ALT_LENGTHS.includes(row.length)) return undefined
-  const targetLength =
-    row.length === ALT_LENGTHS[0] ? ALT_LENGTHS[1] : ALT_LENGTHS[0]
-  return varieties.find(
+  if (row.spec === null) return undefined
+  const candidates = varieties.filter(
     (item) =>
       item.category === row.category &&
       item.material === row.material &&
       item.spec === row.spec &&
-      item.length === targetLength,
+      item.length !== row.length,
   )
+  if (candidates.length === 0) return undefined
+  return candidates.reduce((best, item) => {
+    const bestRank = lengthRank(best.length, sortOrderOf)
+    const itemRank = lengthRank(item.length, sortOrderOf)
+    if (itemRank !== bestRank) return itemRank < bestRank ? item : best
+    // 同档位时按名称定序，避免结果随数组顺序漂移。
+    return item.length.localeCompare(best.length, 'zh-Hans-CN') < 0
+      ? item
+      : best
+  })
 }
 
 /**

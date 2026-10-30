@@ -140,9 +140,9 @@ export function AccountProfilePanel() {
           <Form.Item
             name="mobile"
             label={t('system.account.mobile')}
-            rules={[{ max: 32 }, { pattern: /^$|^1\d{10}$/ }]}
+            rules={[{ max: 20 }, { pattern: /^$|^1\d{10}$/ }]}
           >
-            <Input maxLength={32} />
+            <Input maxLength={20} />
           </Form.Item>
         </Col>
         <Col span={12}>

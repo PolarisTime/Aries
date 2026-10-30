@@ -4,6 +4,7 @@ import {
   LENGTH_PREMIUM_MAX,
   LENGTH_PREMIUM_MAX_NAME_LENGTH,
   LENGTH_PREMIUM_MAX_REMARK_LENGTH,
+  LENGTH_PREMIUM_MAX_SPEC_SUFFIX_LENGTH,
   LENGTH_PREMIUM_MIN,
   LENGTH_PREMIUM_STATUSES,
   type LengthPremiumInputDraft,
@@ -42,6 +43,14 @@ export interface LengthPremiumFormValues {
   sortOrder: number | null
   status: string
   remark?: string | null | undefined
+  /**
+   * 打印规格后缀（如 `*12`）；空串表示该定尺打印时不追加。
+   *
+   * <p>表单里**始终有值**（旧记录没有该字段时回填 `''`），提交时也始终回传：
+   * 后端更新语义是 `null=保持、''=清空`，只有显式回传才能保证「页面所见 = 落库结果」，
+   * 否则用户只改加价时，旧后缀会被「保持」逻辑留在库里而页面显示为空。</p>
+   */
+  specSuffix: string
 }
 
 /** 新增时的默认值：状态默认「正常」，加价与排序号留空由用户显式给出。 */
@@ -51,6 +60,7 @@ export const EMPTY_LENGTH_PREMIUM_FORM_VALUES: LengthPremiumFormValues = {
   sortOrder: null,
   status: STATUS.NORMAL,
   remark: '',
+  specSuffix: '',
 }
 
 export interface LengthPremiumStatusOption {
@@ -261,12 +271,32 @@ export function buildRemarkRules(context: LengthPremiumRuleContext): Rule[] {
   ]
 }
 
+/**
+ * 打印规格后缀：可空、≤16（后端 `@Size(max = 16)`）。
+ *
+ * <p>空串合法且有意义（= 该定尺打印时不追加后缀），因此**不设必填**。</p>
+ */
+export function buildSpecSuffixRules(
+  context: LengthPremiumRuleContext,
+): Rule[] {
+  const { t } = context
+  return [
+    {
+      validator: (_rule, value: unknown) =>
+        asString(value).trim().length > LENGTH_PREMIUM_MAX_SPEC_SUFFIX_LENGTH
+          ? reject(t('lengthPremium.specSuffixTooLong'))
+          : Promise.resolve(),
+    },
+  ]
+}
+
 export interface LengthPremiumFormRules {
   lengthName: Rule[]
   premium: Rule[]
   sortOrder: Rule[]
   status: Rule[]
   remark: Rule[]
+  specSuffix: Rule[]
 }
 
 export function buildLengthPremiumFormRules(
@@ -278,6 +308,7 @@ export function buildLengthPremiumFormRules(
     sortOrder: buildSortOrderRules(context),
     status: buildStatusRules(context),
     remark: buildRemarkRules(context),
+    specSuffix: buildSpecSuffixRules(context),
   }
 }
 
@@ -292,6 +323,8 @@ export function toLengthPremiumFormValues(
     // 未知状态原样回填：下拉会显示原值，保存时由白名单规则拦住，而不是悄悄改成「正常」。
     status: asString(record.status).trim(),
     remark: record.remark ?? '',
+    // 旧记录没有后缀：回填空串（= 显式无后缀），保存时会原样回传，不会留下看不见的旧值。
+    specSuffix: asString(record.specSuffix).trim(),
   }
 }
 
@@ -300,6 +333,9 @@ export function toLengthPremiumFormValues(
  *
  * <p>数值归一（补零、区间）交给 Zod schema（`lengthPremiumInputSchema`），
  * 这里只把 antd 的空值（null）原样传出，由 schema 报「不能为空」。</p>
+ *
+ * <p>`specSuffix` 与备注不同：**空串也要下发**（'')，因为后端更新语义是
+ * `null=保持原值、''=清空`，省略字段会让「页面显示为空」与「后端保持旧值」不一致。</p>
  */
 export function toLengthPremiumInputDraft(
   values: LengthPremiumFormValues,
@@ -311,6 +347,7 @@ export function toLengthPremiumInputDraft(
     sortOrder: toOptionalNumber(values.sortOrder),
     status: asString(values.status).trim(),
     ...(remark ? { remark } : {}),
+    specSuffix: asString(values.specSuffix).trim(),
   }
 }
 
@@ -331,6 +368,7 @@ const FORM_FIELD_NAMES: ReadonlySet<string> = new Set([
   'sortOrder',
   'status',
   'remark',
+  'specSuffix',
 ])
 
 function isFormFieldName(

@@ -57,12 +57,14 @@ const CLOSED_SETTLE_DIRECTION_LABEL_KEYS = {
  * <p>这里只负责取值联动(禁用)与天数组合校验, 真正的清空/复位放在表单的 onValuesChange 与
  * 保存载荷装配处: 编辑回填的历史脏值不会触发 onValuesChange, 只在渲染层复位会漏掉这类记录。</p>
  *
- * <p>列宽只用 24 栅格的整数倍(1/2/3/4/6/8/12 都是 24 的因数), 第二行
- * 基准日期 8 + 顺延 4 + 方向 6 + 天数 6 精确拼满 24, 不出现半行空洞;
- * 「基准日期占 1/3、顺延只占 1/6」是按内容给的宽度 —— 基准日期标签短于休市口径, 顺延数字最窄。</p>
+ * <p>列宽只用规范允许的两档: 普通字段一律 span={6}(四等分), 只有「一件占一行」才用 12/24,
+ * 禁止 8/4 这类按内容微调的宽度(docs: 列宽只用 24 栅格的整数倍)。本区块 6 个字段与前面的
+ * 取价数据源、取价地区同为 span={6}, 正好两行、每行 4×6 = 24: 竖边逐行对齐, 没有半行空洞。
+ * 早先「基准日期 8 + 顺延 4」是想把第二行精确拼满 24, 但 8 与 4 不是允许的档位, 会让第二行
+ * 的竖边与第一行错位; 统一成 6/6 后仍是 24, 只是四列等宽。</p>
  *
  * <p>排列顺序按「同一件事挨在一起」: 取价数据源/取价地区/取价时段策略/固定取价时段 占满第一行,
- * 基准日期 8 + 顺延 4 + 休市方向 6 + 休市天数 6 占满第二行。</p>
+ * 基准日期 + 顺延交易日数 + 休市方向 + 休市天数 占满第二行。</p>
  */
 export function ProjectPricingBasisFields({
   form,
@@ -175,7 +177,7 @@ export function ProjectPricingBasisFields({
           />
         </Form.Item>
       </Col>
-      <Col span={8}>
+      <Col span={6}>
         <Form.Item
           name="priceDateBasis"
           label={t('modules.pages.project.priceDateBasis')}
@@ -186,7 +188,7 @@ export function ProjectPricingBasisFields({
           <Select options={dateBasisOptions} />
         </Form.Item>
       </Col>
-      <Col span={4}>
+      <Col span={6}>
         <Form.Item
           name="priceDateOffsetDays"
           label={t('modules.pages.project.priceDateOffsetDays')}

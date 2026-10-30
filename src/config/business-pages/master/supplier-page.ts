@@ -128,11 +128,19 @@ export const suppliersPageConfig: ModulePageConfig = {
     { label: i18next.t('modules.columns.remark'), key: 'remark' },
   ],
   detailColumnCount: 4,
+  /*
+   * 字段长度上限逐字段来自后端 `SupplierRequest` 的 @Size
+   * （leo: src/main/java/com/leo/erp/master/supplier/web/dto/SupplierRequest.java）：
+   * supplier_code 64 / supplier_name 128 / short_name 64（V143 迁移新增列）/ contact_name 32 /
+   * contact_phone 20 / city 64 / remark 255。经营品牌是多选标签，逐项上限(@Size 64)用 antd Select
+   * 的 maxLength 表达不了，故不在此声明（后端仍会拒绝超长品牌名）。
+   */
   formFields: [
     {
       key: 'supplierCode',
       label: i18next.t('modules.pages.supplier.colSupplierCode'),
       type: 'input',
+      maxLength: 64,
       required: true,
       disabled: true,
       placeholder: i18next.t(
@@ -144,6 +152,7 @@ export const suppliersPageConfig: ModulePageConfig = {
       key: 'supplierName',
       label: i18next.t('modules.pages.supplier.colSupplierName'),
       type: 'input',
+      maxLength: 128,
       required: true,
       row: 1,
     },
@@ -151,24 +160,28 @@ export const suppliersPageConfig: ModulePageConfig = {
       key: 'shortName',
       label: i18next.t('modules.pages.supplier.colShortName'),
       type: 'input',
+      maxLength: 64,
       row: 1,
     },
     {
       key: 'contactName',
       label: i18next.t('modules.pages.supplier.colContactName'),
       type: 'input',
+      maxLength: 32,
       row: 1,
     },
     {
       key: 'contactPhone',
       label: i18next.t('modules.pages.supplier.colContactPhone'),
       type: 'input',
+      maxLength: 20,
       row: 1,
     },
     {
       key: 'city',
       label: i18next.t('modules.pages.supplier.colCity'),
       type: 'input',
+      maxLength: 64,
       row: 2,
     },
     {
@@ -203,6 +216,7 @@ export const suppliersPageConfig: ModulePageConfig = {
       key: 'remark',
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
+      maxLength: 255,
       row: 3,
       fullRow: true,
     },

@@ -109,11 +109,17 @@ export const customersPageConfig: ModulePageConfig = {
     { label: i18next.t('modules.columns.remark'), key: 'remark' },
   ],
   detailColumnCount: 4,
+  /*
+   * 字段长度上限逐字段来自后端 `CustomerRequest` 的 @Size
+   * （leo: src/main/java/com/leo/erp/master/customer/web/dto/CustomerRequest.java），
+   * 与 md_customer 的列宽一致。结算方式/状态是固定枚举(select)，没有自由文本，不声明 maxLength。
+   */
   formFields: [
     {
       key: 'customerCode',
       label: i18next.t('modules.pages.customer.colCustomerCode'),
       type: 'input',
+      maxLength: 64,
       required: true,
       disabled: true,
       placeholder: i18next.t(
@@ -125,6 +131,7 @@ export const customersPageConfig: ModulePageConfig = {
       key: 'customerName',
       label: i18next.t('modules.pages.customer.colCustomerName'),
       type: 'input',
+      maxLength: 128,
       required: true,
       row: 1,
     },
@@ -132,18 +139,21 @@ export const customersPageConfig: ModulePageConfig = {
       key: 'contactName',
       label: i18next.t('modules.pages.customer.colContactName'),
       type: 'input',
+      maxLength: 32,
       row: 2,
     },
     {
       key: 'contactPhone',
       label: i18next.t('modules.pages.customer.colContactPhone'),
       type: 'input',
+      maxLength: 20,
       row: 2,
     },
     {
       key: 'city',
       label: i18next.t('modules.pages.customer.colCity'),
       type: 'input',
+      maxLength: 64,
       row: 2,
     },
     {
@@ -178,6 +188,7 @@ export const customersPageConfig: ModulePageConfig = {
       key: 'remark',
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
+      maxLength: 255,
       row: 4,
       fullRow: true,
     },

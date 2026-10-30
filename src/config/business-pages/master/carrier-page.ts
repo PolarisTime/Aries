@@ -143,11 +143,19 @@ export const carriersPageConfig: ModulePageConfig = {
     { label: i18next.t('modules.columns.remark'), key: 'remark' },
   ],
   detailColumnCount: 4,
+  /*
+   * 字段长度上限：标量字段来自后端 `CarrierRequest` 的 @Size；三辆车的扁平字段
+   * (vehiclePlate/Contact/Phone/Remark 各 1~3) 由 carrier-vehicle-adapter 组装成
+   * `VehicleItem`，上限取其 @Size —— plate 16 / contact 32 / phone 20 / remark 64
+   * （leo: master/carrier/web/dto/CarrierRequest.java、VehicleItem.java），与 md_carrier / md_vehicle 列宽一致。
+   * 默认结算主体是 select、状态是固定枚举，不声明 maxLength。
+   */
   formFields: [
     {
       key: 'carrierCode',
       label: i18next.t('modules.pages.carrier.colCarrierCode'),
       type: 'input',
+      maxLength: 64,
       required: true,
       disabled: true,
       placeholder: i18next.t(
@@ -159,6 +167,7 @@ export const carriersPageConfig: ModulePageConfig = {
       key: 'carrierName',
       label: i18next.t('modules.pages.carrier.colCarrierName'),
       type: 'input',
+      maxLength: 128,
       required: true,
       row: 1,
     },
@@ -166,84 +175,98 @@ export const carriersPageConfig: ModulePageConfig = {
       key: 'contactName',
       label: i18next.t('modules.pages.carrier.colContactName'),
       type: 'input',
+      maxLength: 32,
       row: 1,
     },
     {
       key: 'contactPhone',
       label: i18next.t('modules.pages.carrier.colContactPhone'),
       type: 'input',
+      maxLength: 20,
       row: 1,
     },
     {
       key: 'vehiclePlate',
       label: i18next.t('modules.pages.carrier.formVehiclePlate'),
       type: 'input',
+      maxLength: 16,
       row: 2,
     },
     {
       key: 'vehicleContact',
       label: i18next.t('modules.pages.carrier.formVehicleContact'),
       type: 'input',
+      maxLength: 32,
       row: 2,
     },
     {
       key: 'vehiclePhone',
       label: i18next.t('modules.pages.carrier.formVehiclePhone'),
       type: 'input',
+      maxLength: 20,
       row: 2,
     },
     {
       key: 'vehicleRemark',
       label: i18next.t('modules.pages.carrier.formVehicleRemark'),
       type: 'input',
+      maxLength: 64,
       row: 2,
     },
     {
       key: 'vehiclePlate2',
       label: i18next.t('modules.pages.carrier.formVehiclePlate2'),
       type: 'input',
+      maxLength: 16,
       row: 3,
     },
     {
       key: 'vehicleContact2',
       label: i18next.t('modules.pages.carrier.formVehicleContact2'),
       type: 'input',
+      maxLength: 32,
       row: 3,
     },
     {
       key: 'vehiclePhone2',
       label: i18next.t('modules.pages.carrier.formVehiclePhone2'),
       type: 'input',
+      maxLength: 20,
       row: 3,
     },
     {
       key: 'vehicleRemark2',
       label: i18next.t('modules.pages.carrier.formVehicleRemark2'),
       type: 'input',
+      maxLength: 64,
       row: 3,
     },
     {
       key: 'vehiclePlate3',
       label: i18next.t('modules.pages.carrier.formVehiclePlate3'),
       type: 'input',
+      maxLength: 16,
       row: 4,
     },
     {
       key: 'vehicleContact3',
       label: i18next.t('modules.pages.carrier.formVehicleContact3'),
       type: 'input',
+      maxLength: 32,
       row: 4,
     },
     {
       key: 'vehiclePhone3',
       label: i18next.t('modules.pages.carrier.formVehiclePhone3'),
       type: 'input',
+      maxLength: 20,
       row: 4,
     },
     {
       key: 'vehicleRemark3',
       label: i18next.t('modules.pages.carrier.formVehicleRemark3'),
       type: 'input',
+      maxLength: 64,
       row: 4,
     },
     {
@@ -252,6 +275,7 @@ export const carriersPageConfig: ModulePageConfig = {
       key: 'vehicleType',
       label: i18next.t('modules.pages.carrier.colVehicleType'),
       type: 'input',
+      maxLength: 64,
       row: 5,
     },
     {
@@ -266,6 +290,7 @@ export const carriersPageConfig: ModulePageConfig = {
       key: 'priceMode',
       label: i18next.t('modules.pages.carrier.colPriceMode'),
       type: 'input',
+      maxLength: 32,
       row: 5,
     },
     {
@@ -280,6 +305,7 @@ export const carriersPageConfig: ModulePageConfig = {
       key: 'remark',
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
+      maxLength: 255,
       row: 6,
       fullRow: true,
     },

@@ -29,6 +29,7 @@ export function normalizeMasterOptionRequirements(
     materialGrades: Boolean(requirements.materialGrades),
     materials: Boolean(requirements.materials),
     brands: Boolean(requirements.brands),
+    lengthPremiums: Boolean(requirements.lengthPremiums),
   }
 }
 

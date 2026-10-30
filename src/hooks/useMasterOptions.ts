@@ -8,6 +8,10 @@ import {
   type CustomerOption,
   fetchCustomerOptions,
 } from '@/api/master/customer-options'
+import {
+  fetchLengthPremiumOptions,
+  type LengthPremiumOption,
+} from '@/api/master/length-premiums'
 import { fetchMaterialCategories } from '@/api/master/material-categories'
 import {
   fetchMaterialGrades,
@@ -69,6 +73,8 @@ interface MasterOptions {
   materials: MaterialSearchResponse[]
   /** 商品品牌清单（纯字符串）。与 `useMaterialBrands` 共用同一缓存键，见该 hook 的注释。 */
   brands: string[]
+  /** 定尺主数据（只含「正常」状态）。与 `useLengthPremiumOptions` 共用同一缓存键与 fetch。 */
+  lengthPremiums: LengthPremiumOption[]
 }
 
 export type MasterOptionRequirements = ModuleMasterOptionRequirements
@@ -90,6 +96,7 @@ function emptyRequirements(): MasterOptionRequirements {
     materialGrades: false,
     materials: false,
     brands: false,
+    lengthPremiums: false,
   }
 }
 
@@ -262,7 +269,20 @@ export function useMasterOptions(
     staleTime: STALE_MASTER_OPTIONS,
   })
 
-  // 10 个 loading 用 some(Boolean) 合并: 串成 || 会再摊开 10 个分支。
+  /*
+   * 定尺主数据：材料录入的「长度」下拉与比价页的定尺加价/排序/互切读同一份。
+   * 这里与 `useLengthPremiumOptions` 共用同一个 queryKey + 同一个 queryFn（同 key 同 fn
+   * ⇒ 只请求一次），解析器 `getLengthOptions` 再从该缓存同步读取。
+   */
+  const { data: lengthPremiums = [], isLoading: lengthPremiumsLoading } =
+    useQuery({
+      queryKey: QUERY_KEYS.masterOptions.lengthPremiums,
+      queryFn: ({ signal }) => fetchLengthPremiumOptions(signal),
+      enabled: supports(normalizedRequirements.lengthPremiums),
+      staleTime: STALE_MASTER_OPTIONS,
+    })
+
+  // 11 个 loading 用 some(Boolean) 合并: 串成 || 会再摊开 11 个分支。
   const isLoading = [
     suppliersLoading,
     customersLoading,
@@ -274,6 +294,7 @@ export function useMasterOptions(
     materialGradesLoading,
     materialsLoading,
     brandsLoading,
+    lengthPremiumsLoading,
   ].some(Boolean)
 
   return {
@@ -287,6 +308,7 @@ export function useMasterOptions(
     materialGrades,
     materials,
     brands,
+    lengthPremiums,
     isLoading,
   } satisfies MasterOptions & { isLoading: boolean }
 }

@@ -174,4 +174,28 @@ describe('roleFormSchema', () => {
       }).success,
     ).toBe(false)
   })
+
+  /*
+   * 名称上限 128：与后端 `RoleRequest.name`（@Size(max = 128)）和 `sys_role.role_name`
+   * varchar(128) 对齐。此前前端停在 64，后端本可接受的 65~128 个字符在界面上填不进去。
+   */
+  it('名称 128 位可提交、129 位被拒绝', () => {
+    expect(
+      roleFormSchema.safeParse({ code: 'sales', name: 'x'.repeat(128) })
+        .success,
+    ).toBe(true)
+    expect(
+      roleFormSchema.safeParse({ code: 'sales', name: 'x'.repeat(129) })
+        .success,
+    ).toBe(false)
+  })
+
+  it('编码上限仍为 64（后端 @Size(max = 64) 未变）', () => {
+    expect(
+      roleFormSchema.safeParse({ code: 'x'.repeat(64), name: '销售' }).success,
+    ).toBe(true)
+    expect(
+      roleFormSchema.safeParse({ code: 'x'.repeat(65), name: '销售' }).success,
+    ).toBe(false)
+  })
 })

@@ -52,6 +52,7 @@ import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   applyRowLock,
   buildVarietyOptions,
+  EMPTY_LENGTH_PREMIUMS,
   fallbackBadgeMaterial,
   filterSupplierOptionsByBrand,
   filterVarieties,
@@ -212,7 +213,15 @@ type ColumnContext = {
   readOnly: boolean
   refDate: string
   refPeriod: string
+  /**
+   * 迁移兜底用的旧「项目级 12 米加价」：**只在定尺主数据为空时**生效
+   * （见 `core.lengthPremiumOf`），不是加价来源。
+   */
   lengthPremium: number
+  /** 定尺名称 → 每吨加价（来自定尺主数据）；空表时走迁移兜底。 */
+  lengthPremiums: Readonly<Record<string, number>>
+  /** 定尺名称 → 排序号（来自定尺主数据），决定长度互切候选的确定性顺序。 */
+  lengthSortOrders: Readonly<Record<string, number>>
   varietyByLabel: Map<string, Variety>
   data: PriceData | null
   varieties: Variety[]
@@ -587,6 +596,8 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     refDate,
     refPeriod,
     lengthPremium,
+    lengthPremiums,
+    lengthSortOrders,
     varietyByLabel,
     data,
     brands,
@@ -695,8 +706,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             refPeriod,
             brand.name,
             row.row,
-            lengthPremium,
+            lengthPremiums,
             allowHrb400eFallback,
+            lengthPremium,
           ).value
         : undefined
       const spot = getSpot(brand.name, row.row.id)
@@ -906,7 +918,11 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
         // 仅未采购(未关联, 或订货量还没覆盖本行报单吨位)且同规格存在另一长度时可切换。
         const alternate = coveredByOrder(current)
           ? undefined
-          : findAlternateLengthVariety(varietyOptionsFlat, current)
+          : findAlternateLengthVariety(
+              varietyOptionsFlat,
+              current,
+              lengthSortOrders,
+            )
         // 锁定层级 单据 > 行 > 单元格: 行级锁同样冻结本行规格(行锁 = 规格与吨位定稿)。
         const specLock = resolveLock({
           sheet: quantityLocked,
@@ -1112,8 +1128,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                             refPeriod,
                             brand.name,
                             row.row,
-                            lengthPremium,
+                            lengthPremiums,
                             allowHrb400eFallback,
+                            lengthPremium,
                           )
                         : { value: undefined, fallback: false }
                       const price = resolved.value
@@ -1306,8 +1323,9 @@ function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                             refPeriod,
                             brand.name,
                             row.row,
-                            lengthPremium,
+                            lengthPremiums,
                             allowHrb400eFallback,
+                            lengthPremium,
                           ).value
                         : undefined
                       const spot = getSpot(brand.name, row.row.id)
@@ -2649,7 +2667,17 @@ type Props = {
   brands: Brand[]
   rows: PriceRow[]
   density: 'small' | 'middle' | 'large'
+  /** 迁移兜底用的旧「项目级 12 米加价」，只在定尺主数据为空时生效（见 core.netPrice）。 */
   lengthPremium: number
+  /**
+   * 定尺名称 → 每吨加价（来自定尺主数据）。
+   *
+   * <p>缺省/空表时 `netPrice` 回退旧口径（迁移兜底），因此既有调用点（含测试）不传也能工作。
+   * 页面层用 `useLengthPremiumOptions()` 读一次传下来，避免逐行请求。</p>
+   */
+  lengthPremiums?: Readonly<Record<string, number>>
+  /** 定尺名称 → 排序号（来自定尺主数据），决定长度互切候选的确定性顺序。 */
+  lengthSortOrders?: Readonly<Record<string, number>>
   patchSheet: (
     id: string,
     patch: Partial<PriceSheet>,
@@ -2710,6 +2738,8 @@ export function SheetPanel(props: Props) {
     rows,
     density,
     lengthPremium,
+    lengthPremiums = EMPTY_LENGTH_PREMIUMS,
+    lengthSortOrders = EMPTY_LENGTH_PREMIUMS,
     patchSheet,
     setRows,
     onReorderBrands,
@@ -2936,6 +2966,8 @@ export function SheetPanel(props: Props) {
     refDate,
     refPeriod,
     lengthPremium,
+    lengthPremiums,
+    lengthSortOrders,
     varietyByLabel,
     data,
     varieties,

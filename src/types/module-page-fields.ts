@@ -83,6 +83,15 @@ export interface ModuleMasterOptionRequirements {
    * 因此声明本需求不会多发请求，只是把同一份缓存提前加载好供 `getBrandOptions` 读取。</p>
    */
   brands?: boolean
+  /**
+   * 定尺主数据（`/api/v2.0/length-premiums`，只取「正常」状态）。
+   *
+   * <p>材料资料的「长度」是业务数据而不是自由文本：它的取值必须来自定尺主数据
+   * （后端 `MaterialService` 会校验），比价页的定尺加价、排序、互切也都读同一份。
+   * 声明本需求后 `useMasterOptions` 会把这批复用范围内的选项加载进缓存，
+   * `getLengthOptions` 再从缓存同步读取 —— 否则下拉为空且没有任何报错。</p>
+   */
+  lengthPremiums?: boolean
 }
 
 export interface ModuleFilterDefinition {

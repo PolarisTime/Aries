@@ -110,6 +110,9 @@ describe('定尺加价写入契约（Zod 边界）', () => {
       premium: 30,
       sortOrder: 2,
       status: '正常',
+      // 打印规格后缀始终回传：后端 update 是「null=保持、''=清空」，
+      // 省略该字段会被当成"保持"，页面显示为空却清不掉旧值。
+      specSuffix: '',
     })
     expect(result.data && 'remark' in result.data).toBe(false)
   })
@@ -369,6 +372,7 @@ describe('定尺加价请求函数', () => {
       premium: -30,
       sortOrder: 1,
       status: '正常',
+      specSuffix: '',
     })
     expect(
       apiPostMock.mock.calls[0][3].headers['X-Idempotency-Key'],

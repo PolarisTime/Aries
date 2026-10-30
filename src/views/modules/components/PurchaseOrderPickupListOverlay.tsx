@@ -175,7 +175,7 @@ export function PurchaseOrderPickupListOverlay({
       title={t('modules.purchasePickupList.title', { count: orderIds.length })}
       open={open}
       onClose={onClose}
-      width={1440}
+      width="min(1440px, calc(100vw - 32px))"
     >
       <Spin spinning={isPending || isFetching}>
         <div className="purchase-pickup-list-content">
