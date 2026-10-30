@@ -219,4 +219,29 @@ describe('基础数据子页面合并', () => {
     expect(menuKeysOfGroup('master')).not.toContain('/company-setting')
     expect(menuKeysOfGroup('system')).toContain('/company-setting')
   })
+
+  /*
+   * 系统设置里的每个可见页面对应的后端控制器都带 `@RequirePermission`：
+   * 菜单若不带权限码，用户会看到一个点进去 403 的死入口。
+   * 该断言把「菜单可见性 = 后端权限」锁住，避免以后新增系统页时漏声明。
+   */
+  it('系统设置分组内每个可见页面都声明 requiredPermission', () => {
+    const systemPages = appPageDefinitions.filter(
+      (entry) => entry.menuParent === 'system' && !entry.hiddenInMenu,
+    )
+    expect(systemPages.length).toBeGreaterThan(0)
+    systemPages.forEach((page) => {
+      expect(
+        page.requiredPermission,
+        `系统设置页面 ${page.key} 未声明 requiredPermission`,
+      ).toMatch(/^[a-z-]+:(read|create|update|delete)$/)
+    })
+  })
+
+  it('公司设置按后端 COMPANY_SETTINGS_READ 声明权限码', () => {
+    const companySetting = appPageDefinitions.find(
+      (entry) => entry.key === 'company-setting',
+    )
+    expect(companySetting?.requiredPermission).toBe('company-settings:read')
+  })
 })

@@ -139,6 +139,12 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     // 合并方案：不再归「基础数据」，挪到「系统设置」分组（页面自身不变，不并页）。
     menuParent: 'system',
     moduleKey: 'company-setting',
+    /*
+     * 权限码与后端 `PermissionCodes.COMPANY_SETTINGS` + `Actions.READ` 对齐：
+     * `V2CompanySettingController` 的 7 个端点全部 `@RequirePermission`（含 GET /current），
+     * 未声明时菜单对所有登录用户可见、点进去却 403。
+     */
+    requiredPermission: 'company-settings:read',
   },
   {
     // 值映射/别名维护：把「同一含义多种写法」归一，规则由业务维护而非改代码。
