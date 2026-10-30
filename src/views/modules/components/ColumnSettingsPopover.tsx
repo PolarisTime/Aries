@@ -15,15 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import {
-  Button,
-  Checkbox,
-  Divider,
-  Popover,
-  Space,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Button, Checkbox, Divider, Popover, Space, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleColumnDefinition } from '@/types/module-page'
@@ -206,12 +198,12 @@ export function ColumnSettingsPopover({
       onOpenChange={onOpenChange}
       styles={{ container: { maxWidth: 300 } }}
     >
-      <Tooltip title={t('common.columnSettings')}>
-        <Button
-          aria-label={t('common.columnSettings')}
-          icon={<SettingOutlined />}
-        />
-      </Tooltip>
+      <Button
+        aria-label={t('common.columnSettings')}
+        icon={<SettingOutlined />}
+      >
+        {t('common.columnSettings')}
+      </Button>
     </Popover>
   )
 }

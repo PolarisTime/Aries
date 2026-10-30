@@ -38,10 +38,19 @@ const MODULE_GRID_TOOLBAR_EXTRAS = {
     refreshModuleQueries,
   }: ModuleGridToolbarExtraProps) => (
     <>
-      <PurchaseOrderForceCloseAction
-        selectedRows={selectedRows}
-        refreshModuleQueries={refreshModuleQueries}
-      />
+      {/*
+       * 强制结单只在选中一条单据时才有意义，未选中直接不渲染。
+       *
+       * <p>此前无条件渲染、未选中时禁用并给出「请选择一条采购订单」提示：工具栏上长期
+       * 挂着一个点不动的按钮，用户要先读提示才知道它需要先选行。现在与下面的「查看提货
+       * 清单」同一口径——勾选后才出现。</p>
+       */}
+      {selectedRowKeys.length ? (
+        <PurchaseOrderForceCloseAction
+          selectedRows={selectedRows}
+          refreshModuleQueries={refreshModuleQueries}
+        />
+      ) : null}
       {selectedRowKeys.length ? (
         <PurchaseOrderPickupListAction selectedOrderIds={selectedRowKeys} />
       ) : null}

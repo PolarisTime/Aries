@@ -81,16 +81,16 @@ export function ModuleTableUtilities({
           ) : null}
         </>
       ) : null}
-      <Tooltip title={t('common.refresh')}>
-        <Button
-          type="text"
-          className="module-table-refresh-button"
-          aria-label={t('common.refresh')}
-          icon={<ReloadOutlined />}
-          loading={isFetching}
-          onClick={onRefresh}
-        />
-      </Tooltip>
+      <Button
+        type="text"
+        className="module-table-refresh-button"
+        aria-label={t('common.refresh')}
+        icon={<ReloadOutlined />}
+        loading={isFetching}
+        onClick={onRefresh}
+      >
+        {t('common.refresh')}
+      </Button>
       {onReset ? (
         <>
           <span className="module-table-utilities-divider" aria-hidden="true" />
