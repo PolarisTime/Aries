@@ -222,6 +222,8 @@ function buildEditableColumnRender({
         return (
           <ModuleEditorMaterialSelect
             record={record}
+            // 历史快照回显由 ModuleEditorMaterialSelect 内部统一补（withCurrentMaterialOption），
+            // 这里不要重复包一层。
             options={materialOptions}
             search={materialSearch}
             onChange={(materialId) =>

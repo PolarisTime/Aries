@@ -60,6 +60,24 @@ describe('商品搜索附加费用过滤', () => {
     })
   })
 
+  it('选商品的搜索只取启用商品（禁用商品不能被新单据选中）', async () => {
+    apiGetMock.mockResolvedValue(emptyPage)
+
+    await fetchMaterialSearch('', 200)
+
+    const [, , options] = apiGetMock.mock.calls[0]
+    expect(options.params).toMatchObject({ status: '正常' })
+  })
+
+  it('商品下拉预加载同样只取启用商品', async () => {
+    apiGetMock.mockResolvedValue(emptyPage)
+
+    await fetchAllMaterialOptions()
+
+    const [, , options] = apiGetMock.mock.calls[0]
+    expect(options.params).toMatchObject({ status: '正常' })
+  })
+
   it('不传类型时不携带 materialType 参数', async () => {
     apiGetMock.mockResolvedValue(emptyPage)
 

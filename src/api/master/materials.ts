@@ -3,6 +3,7 @@ import { apiGet, apiPost, downloadGet } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { STATUS } from '@/constants/status-constants'
 import {
   exactPageSchema,
   responseNonNegativeIntegerSchema,
@@ -111,6 +112,12 @@ export interface MaterialImportResult {
   successRows?: unknown[]
 }
 
+/**
+ * 单据/编辑器里的「选商品」搜索。
+ *
+ * <p>只返回**启用中**的商品：禁用商品不能再被新单据选中（历史单据里的名称快照不受影响）。
+ * 商品资料主列表走通用分页接口，带自己的状态筛选，不经过这里。</p>
+ */
 export async function fetchMaterialSearch(
   keyword = '',
   limit = 200,
@@ -126,6 +133,7 @@ export async function fetchMaterialSearch(
         page: 0,
         // 后端 PageQuery 上限为 200，超出会返回 422
         size: Math.min(Math.max(limit, 1), 200),
+        status: STATUS.NORMAL,
         ...(materialType ? { materialType } : {}),
       },
       ...(signal ? { signal } : {}),
@@ -163,6 +171,8 @@ export async function fetchAllMaterialOptions(
         keyword: '',
         page,
         size: MATERIAL_OPTIONS_PAGE_SIZE,
+        // 商品下拉与单据选商品同口径：只列启用商品
+        status: STATUS.NORMAL,
         ...(materialType ? { materialType } : {}),
       },
       ...(signal ? { signal } : {}),

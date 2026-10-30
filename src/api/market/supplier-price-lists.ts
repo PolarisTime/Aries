@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { STATUS } from '@/constants/status-constants'
 import type { EntityId } from '@/types/entity-id'
 
 /**
@@ -283,7 +284,8 @@ export async function fetchSpecRows(
   const size = 200
   for (let page = 0; page < 50; page += 1) {
     const payload = await apiGet(ENDPOINTS.MATERIALS, specPageSchema, {
-      params: { keyword: '', page, size },
+      // 报价表的行来自商品资料：禁用商品不再出现在报价表里，历史报价数据保持只读
+      params: { keyword: '', page, size, status: STATUS.NORMAL },
       ...(signal ? { signal } : {}),
     })
     const content = payload.content ?? []

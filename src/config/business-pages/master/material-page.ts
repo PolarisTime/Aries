@@ -1,12 +1,15 @@
 import i18next from 'i18next'
+import { enabledStatusOptions } from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
+import { STATUS } from '@/constants/status-constants'
 import {
   getMaterialCategoryOptions,
   materialCategoryOptions,
   materialGradeOptions,
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
-import { actionSet } from '../shared/shared'
+import { actionSet, statusMap } from '../shared/shared'
+import { masterStatusFilter } from '../shared/shared-filters'
 import {
   buildMaterialOverview,
   isPhysicalMaterialFieldVisible,
@@ -54,6 +57,7 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'select',
       options: materialGradeOptions,
     },
+    { ...masterStatusFilter },
   ],
   columns: [
     {
@@ -123,6 +127,13 @@ export const materialsPageConfig: ModulePageConfig = {
       type: 'amount',
     },
     {
+      title: i18next.t('modules.columns.status'),
+      dataIndex: 'status',
+      width: 100,
+      type: 'status',
+      align: 'center',
+    },
+    {
       title: i18next.t('modules.pages.material.remark'),
       dataIndex: 'remark',
       width: 180,
@@ -164,6 +175,11 @@ export const materialsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.material.unitPrice'),
       key: 'unitPrice',
       type: 'amount',
+    },
+    {
+      label: i18next.t('modules.columns.status'),
+      key: 'status',
+      type: 'status',
     },
     { label: i18next.t('modules.pages.material.remark'), key: 'remark' },
   ],
@@ -285,6 +301,14 @@ export const materialsPageConfig: ModulePageConfig = {
       row: 3,
     },
     {
+      key: 'status',
+      label: i18next.t('modules.columns.status'),
+      type: 'select',
+      defaultValue: STATUS.NORMAL,
+      options: enabledStatusOptions,
+      row: 4,
+    },
+    {
       key: 'remark',
       label: i18next.t('modules.pages.material.remark'),
       type: 'textarea',
@@ -294,4 +318,7 @@ export const materialsPageConfig: ModulePageConfig = {
   ],
   data: [],
   buildOverview: buildMaterialOverview,
+  statusMap,
+  // 禁用商品在列表里降级显示：仍可查看/编辑，但一眼看出不能再被单据选中
+  rowHighlightStatuses: [STATUS.DISABLED],
 }
