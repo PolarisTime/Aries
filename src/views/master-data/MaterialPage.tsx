@@ -179,7 +179,11 @@ export function MaterialPage() {
         { key: 'unitPrice', label: t('modules.pages.material.unitPrice') },
         { key: 'remark', label: t('modules.pages.material.remark') },
       ],
-      formFields: buildMaterialFormFields(t, materialTypeOptions),
+      formFields: buildMaterialFormFields(
+        t,
+        materialTypeOptions,
+        materialCategories,
+      ),
       buildValues: (record) => ({
         materialType: asString(record?.materialType) || '实体商品',
         materialCode: asString(record?.materialCode),

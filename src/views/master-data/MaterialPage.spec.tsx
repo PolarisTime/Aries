@@ -130,10 +130,23 @@ describe('MaterialPage 专属页面导入入口', () => {
 })
 
 describe('商品表单附加费用字段可见性', () => {
-  const fields = buildMaterialFormFields((key) => key, [])
+  const materialCategories = [
+    { label: '盘螺', value: '盘螺' },
+    { label: '直条', value: '直条' },
+  ]
+  const fields = buildMaterialFormFields((key) => key, [], materialCategories)
   const byKey = new Map(fields.map((field) => [field.key, field]))
   const expense = { materialType: '附加费用' }
   const physical = { materialType: '实体商品' }
+
+  /*
+   * 回归锁：类别下拉必须直接使用调用方从主数据接口加载的数组。
+   * 此前写成 `options: getMaterialCategoryOptions()`（立即调用读缓存的 resolver），
+   * 缓存为空时下拉是空列表；且数组形态读不到主数据需求标记，不会触发加载。
+   */
+  it('类别选项来自传入的主数据数组，而不是运行时读缓存', () => {
+    expect(byKey.get('category')?.options).toEqual(materialCategories)
+  })
 
   it('附加费用保留名称、单位与单价必填，隐藏类别与物理属性', () => {
     expect(byKey.get('material')?.visibleWhen).toBeUndefined()

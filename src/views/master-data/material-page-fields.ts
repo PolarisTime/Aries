@@ -1,5 +1,4 @@
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
-import { getMaterialCategoryOptions } from '@/module-system/core/module-option-resolvers'
 import type { MasterFormFieldSpec, MasterOption } from './master-data-types'
 
 /** 物理属性字段是否可见：附加费用类只需要名称/单位/单价。 */
@@ -16,6 +15,12 @@ const physicalVisibleWhen = (values: Record<string, unknown>) =>
 export function buildMaterialFormFields(
   t: (key: string) => string,
   materialTypeOptions: MasterOption[],
+  /*
+   * 类别选项由调用方从主数据接口传入（`useMasterOptions({ materialCategories: true })`）。
+   * 不能在这里调 resolver：`MasterFormFieldSpec.options` 只接受数组，而 resolver 读的是
+   * React Query 缓存，构建 spec 时缓存通常为空 → 下拉空白（实测为空列表）。
+   */
+  materialCategories: MasterOption[],
 ): MasterFormFieldSpec[] {
   return [
     {
@@ -58,7 +63,11 @@ export function buildMaterialFormFields(
       label: t('modules.pages.material.category'),
       type: 'select',
       required: true,
-      options: getMaterialCategoryOptions(),
+      /*
+       * 传调用方加载好的主数据数组；不要写 `getMaterialCategoryOptions()`（立即调用会把
+       * 空的 React Query 缓存快照化，下拉恒为空）——与筛选栏那个 bug 同源。
+       */
+      options: materialCategories,
       visibleWhen: physicalVisibleWhen,
     },
     {
