@@ -18,10 +18,6 @@ export const viewLoaders: Record<
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
     })),
-  'master-project': () =>
-    import('@/views/master-archive/ProjectPage').then((m) => ({
-      default: m.ProjectPage,
-    })),
   'master-value-alias': () =>
     import('@/views/master-data/ValueAliasPage').then((m) => ({
       default: m.ValueAliasPage,

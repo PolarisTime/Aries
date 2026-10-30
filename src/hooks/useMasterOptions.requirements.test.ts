@@ -9,6 +9,7 @@ import {
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
+  getQuoteRegionOptions,
   getSettlementAccountOptions,
 } from '@/module-system/core/module-option-resolvers'
 import { getCarrierEntityOptions } from '@/queries/master/carrier-options'
@@ -55,6 +56,10 @@ const RESOLVERS_WITHOUT_MASTER_DATA = new Map<unknown, string>([
   [
     getSettlementAccountOptions,
     '资金账户选项由编辑器按结算主体注入，不读主数据缓存',
+  ],
+  [
+    getQuoteRegionOptions,
+    '取价地区读 runtime-config（business.quoteRegions），由 main.tsx 在首次渲染前 ensureQueryData 预取，不属于主数据接口、故无 master-option 标记；resolver 内部对空清单回退 DEFAULT_QUOTE_REGIONS',
   ],
 ])
 

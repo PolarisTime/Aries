@@ -51,9 +51,20 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'project',
     titleKey: 'pages.project',
     menuKey: '/project',
-    // 试点：按模块拆分的专用页面（阶段 1-2），回滚时将 view 改回 'business-grid' 即可。
-    // 旧 BusinessGrid 配置保留在 business-pages/master/project-page.ts，仅供保存载荷(saveFields)复用，不再驱动这两个模块的列表 UI。
-    view: 'master-project',
+    /*
+     * 接入通用列表页。项目资料是本轮迁移里字段差异最大的模块：保存载荷 25 个字段，
+     * 而配置侧原先只有 9 个——差的 12 个是取价规则与允许范围（取价数据源/地区、
+     * 基准日期与顺延天数、休市方向与天数、时段策略与固定时段、允许品牌/材质及两者的
+     * 校验力度）。这 12 个字段已全部补进 business-pages/master/project-page.ts，
+     * 默认值/枚举/上限一律 import 自 api/master/project-options，避免与后端口径漂移。
+     *
+     * 两项联动复位（基准≠报单→顺延天数归零、策略≠固定→清空固定时段）已在
+     * module-behavior-editor 的 project.syncEditorForm 里实现，与专用弹层同口径。
+     *
+     * 已知差异（可接受）：品牌/材质用 multiSelect 代替专用页的左右穿梭；项目价格规定
+     * （独立 API 的多行编辑器）在通用编辑器里没有注入点，仍需后续补入口。
+     */
+    view: 'business-grid',
     icon: 'ProfileOutlined',
     menuParent: 'master',
     moduleKey: 'project',

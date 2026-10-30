@@ -163,6 +163,14 @@ export interface ModuleFormFieldDefinition {
   allowClear?: boolean
   defaultValue?: string | number | boolean
   min?: number
+  /**
+   * 数值上限（仅 number 类型）。
+   *
+   * <p>后端常有 0..30 这类区间校验（例如项目资料的「报单日期顺延交易日数」
+   * 「休市调整天数」），此前只能靠 `validate` 手写或等提交后 422。
+   * 补上后由 `InputNumber` 直接约束输入。</p>
+   */
+  max?: number
   precision?: number
   step?: number
   controls?: boolean

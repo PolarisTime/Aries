@@ -62,6 +62,7 @@ function numberFieldElement({
       placeholder={placeholder}
       disabled={disabledValue}
       min={field.min}
+      max={field.max}
       precision={field.precision ?? 2}
       step={field.step}
       controls={field.controls}

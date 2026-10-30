@@ -254,6 +254,25 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
           asString(editorForm.settlementCompanyName),
         )
       }
+      /*
+       * 取价基准/时段的联动复位：与专用弹层（ProjectEditorOverlay）保持同一口径，
+       * 否则切到通用编辑器后会留下「基准是送货日期却仍带顺延天数」「策略是自动却仍带
+       * 固定时段」这种自相矛盾的组合——后端虽有归一兜底，界面却会显示脏值。
+       *
+       * 只在用户**改动该字段**时复位（changedKeys 判定），避免打开编辑时误清历史值。
+       */
+      if (
+        ctx.changedKeys.has('priceDateBasis') &&
+        asString(editorForm.priceDateBasis) !== 'ORDER'
+      ) {
+        editorForm.priceDateOffsetDays = 0
+      }
+      if (
+        ctx.changedKeys.has('pricePeriodPolicy') &&
+        asString(editorForm.pricePeriodPolicy) !== 'FIXED'
+      ) {
+        editorForm.pricePeriodFixed = null
+      }
     },
   })
 
