@@ -75,6 +75,14 @@ export interface ModuleMasterOptionRequirements {
   materialCategories?: boolean
   materialGrades?: boolean
   materials?: boolean
+  /**
+   * 商品品牌（供应商「经营品牌」多选）。
+   *
+   * <p>品牌不是独立主数据接口，而是「商品资料去重后的品牌清单」：与 `useMaterialBrands`
+   * 共用同一个查询缓存（`QUERY_KEYS.priceCompare.materialBrands` + `ENDPOINTS.MATERIAL_BRANDS`），
+   * 因此声明本需求不会多发请求，只是把同一份缓存提前加载好供 `getBrandOptions` 读取。</p>
+   */
+  brands?: boolean
 }
 
 export interface ModuleFilterDefinition {

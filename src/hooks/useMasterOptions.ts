@@ -36,6 +36,10 @@ import {
   fetchProjectOptionsFor,
   normalizeMasterOptionRequirements,
 } from '@/hooks/master-options-utils'
+import {
+  fetchMaterialBrands,
+  MATERIAL_BRANDS_QUERY_KEY,
+} from '@/hooks/useMaterialBrands'
 import { readMasterOptionRequirements } from '@/module-system/core/master-option-requirement-tag'
 import {
   getCarrierOptions,
@@ -63,6 +67,8 @@ interface MasterOptions {
   materialCategories: { value: string; label: string }[]
   materialGrades: MaterialGradeOption[]
   materials: MaterialSearchResponse[]
+  /** 商品品牌清单（纯字符串）。与 `useMaterialBrands` 共用同一缓存键，见该 hook 的注释。 */
+  brands: string[]
 }
 
 export type MasterOptionRequirements = ModuleMasterOptionRequirements
@@ -83,6 +89,7 @@ function emptyRequirements(): MasterOptionRequirements {
     materialCategories: false,
     materialGrades: false,
     materials: false,
+    brands: false,
   }
 }
 
@@ -169,8 +176,8 @@ export function useMasterOptions(
   const normalizedRequirements = normalizeMasterOptionRequirements(requirements)
 
   const queryEnabled = enabled && Boolean(token)
-  // 「总开关 && 该主数据被需要」收敛成一次调用: 否则 9 个 useQuery 会摊开
-  // 9 份重复的 && 分支, 把本 hook 的控制流复杂度顶过阈值。
+  // 「总开关 && 该主数据被需要」收敛成一次调用: 否则 10 个 useQuery 会摊开
+  // 10 份重复的 && 分支, 把本 hook 的控制流复杂度顶过阈值。
   const supports = (required: boolean) => queryEnabled && required
 
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
@@ -243,7 +250,19 @@ export function useMasterOptions(
     staleTime: STALE_MASTER_OPTIONS,
   })
 
-  // 9 个 loading 用 some(Boolean) 合并: 串成 || 会再摊开 9 个分支。
+  /*
+   * 品牌不是独立主数据接口，而是商品资料去重后的清单：这里刻意复用
+   * `useMaterialBrands` 的同一个 queryKey + 同一个 queryFn（比价页也在用），
+   * 于是同一份缓存只请求一次；`getBrandOptions` 再从该缓存同步读取。
+   */
+  const { data: brands = [], isLoading: brandsLoading } = useQuery({
+    queryKey: MATERIAL_BRANDS_QUERY_KEY,
+    queryFn: fetchMaterialBrands,
+    enabled: supports(normalizedRequirements.brands),
+    staleTime: STALE_MASTER_OPTIONS,
+  })
+
+  // 10 个 loading 用 some(Boolean) 合并: 串成 || 会再摊开 10 个分支。
   const isLoading = [
     suppliersLoading,
     customersLoading,
@@ -254,6 +273,7 @@ export function useMasterOptions(
     materialCategoriesLoading,
     materialGradesLoading,
     materialsLoading,
+    brandsLoading,
   ].some(Boolean)
 
   return {
@@ -266,6 +286,7 @@ export function useMasterOptions(
     materialCategories,
     materialGrades,
     materials,
+    brands,
     isLoading,
   } satisfies MasterOptions & { isLoading: boolean }
 }

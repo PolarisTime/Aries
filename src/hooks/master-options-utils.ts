@@ -14,7 +14,7 @@ import type { ModuleMasterOptionRequirements } from '@/types/module-page'
  * 变成无分支的纯函数，hook 只剩查询声明。</p>
  */
 
-/** 单据类型可能只声明部分主数据需求: 统一补齐成 9 个显式布尔值。 */
+/** 单据类型可能只声明部分主数据需求: 统一补齐成全部显式布尔值。 */
 export function normalizeMasterOptionRequirements(
   requirements: ModuleMasterOptionRequirements,
 ): Required<ModuleMasterOptionRequirements> {
@@ -28,6 +28,7 @@ export function normalizeMasterOptionRequirements(
     materialCategories: Boolean(requirements.materialCategories),
     materialGrades: Boolean(requirements.materialGrades),
     materials: Boolean(requirements.materials),
+    brands: Boolean(requirements.brands),
   }
 }
 

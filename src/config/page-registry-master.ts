@@ -26,16 +26,14 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     titleKey: 'pages.supplier',
     menuKey: '/supplier',
     /*
-     * 暂不接入通用列表页：供应商的保存载荷含 `brands`（经营品牌多选），品牌选项来自
-     * `useMaterialBrands()`（独立 useQuery，key = priceCompare.materialBrands），
-     * 不属于 master-options 需求体系，通用编辑器没有选项注入点，且 `ModuleFormFieldType`
-     * 也没有 transfer 类型 —— 切过去后品牌**不可编辑、列表与详情也不展示**。
-     *
-     * 注意：品牌不会被清空。保存时 `draftRecord` 会把原记录（含 brands）带回表单值，
-     * 后端 `SupplierService.update` 对 `brands == null` 采用「保留现有品牌」语义，
-     * 只有显式传 `brands: []` 才会清空。真正缺的是编辑能力，不是数据安全。
+     * 接入通用列表页。经营品牌（brands）此前是阻塞点：品牌选项来自独立 useQuery
+     * （useMaterialBrands，key = priceCompare.materialBrands），不在主数据选项体系里。
+     * 现已把 brands 并入 useMasterOptions 的需求体系（新增 brands 需求，复用同一
+     * queryKey 与 fetch 函数，与比价页共缓存、不重复请求），并在 formFields 用
+     * multiSelect 呈现（通用编辑器没有 transfer 类型）。值口径仍是 string[]，
+     * 与后端 SupplierRequest.brands: List<String> 一致。
      */
-    view: 'master-supplier',
+    view: 'business-grid',
     icon: 'TeamOutlined',
     menuParent: 'master',
     moduleKey: 'supplier',

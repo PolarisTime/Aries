@@ -1,9 +1,29 @@
 import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { STATUS } from '@/constants/status-constants'
+import { getBrandOptions } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
+
+/**
+ * 「经营品牌」的展示口径 —— 列表列与详情页**共用这一个出口**。
+ *
+ * <p>后端 `SupplierResponse.brands` 是 `List<String>`。若不声明 render，antd Table 会把
+ * 数组交给默认展示逻辑（按逗号拼接），与专用页「顿号分隔」的口径不一致；详情页也只复用
+ * 「同 dataIndex 列的 render」（见 `ModuleRecordDetailFieldValue`），所以这一个是唯一来源，
+ * 不要再在 detailFields 里另写一份格式化。空值统一显示 `-`。</p>
+ */
+function formatSupplierBrands(value: unknown): string {
+  const brands = Array.isArray(value)
+    ? value.flatMap((item) => {
+        const brand = asString(item).trim()
+        return brand ? [brand] : []
+      })
+    : []
+  return brands.length ? brands.join('、') : '-'
+}
 
 export const suppliersPageConfig: ModulePageConfig = {
   key: 'supplier',
@@ -37,6 +57,12 @@ export const suppliersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.supplier.colShortName'),
       dataIndex: 'shortName',
       width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.supplier.colBrands'),
+      dataIndex: 'brands',
+      width: 200,
+      render: formatSupplierBrands,
     },
     {
       title: i18next.t('modules.pages.supplier.colContactName'),
@@ -79,6 +105,11 @@ export const suppliersPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.supplier.colShortName'),
       key: 'shortName',
+    },
+    {
+      // 展示口径由 columns 里同 dataIndex 的 render 提供（列表/详情共用），此处不再写格式化。
+      label: i18next.t('modules.pages.supplier.colBrands'),
+      key: 'brands',
     },
     {
       label: i18next.t('modules.pages.supplier.colContactName'),
@@ -146,6 +177,26 @@ export const suppliersPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: STATUS.NORMAL,
       options: enabledStatusOptions,
+      row: 2,
+    },
+    {
+      /*
+       * 经营品牌：专用页用的是 `transfer`（左右穿梭框），通用编辑器没有该类型
+       * （ModuleFormFieldType 仅 input/select/autoComplete/multiSelect/date/textarea/
+       * number/upload/segmented），这里用 multiSelect 表达同一语义 ——
+       * 值同样是 string[]，保存载荷与后端 `List<String> brands` 完全一致；
+       * 差异只在交互形态：多选下拉（带搜索/清除）而非「待选 ↔ 已选」分栏。
+       *
+       * 选项来自 getBrandOptions（读 useMaterialBrands 的同一份缓存，见其注释），
+       * 因此 formFields 声明后会自动触发 brands 主数据需求预取，不需要页面再取数。
+       */
+      key: 'brands',
+      label: i18next.t('modules.pages.supplier.colBrands'),
+      type: 'multiSelect',
+      placeholder: i18next.t('modules.pages.supplier.brandsPlaceholder'),
+      options: getBrandOptions,
+      // 多选标签需要横向空间：占半行，与同行的城市(6)/状态(6) 恰好凑满 24 栅格。
+      colSpan: 12,
       row: 2,
     },
     {

@@ -8,7 +8,6 @@ export type RouteViewKey =
   | 'dashboard'
   | 'business-grid'
   | 'master-project'
-  | 'master-supplier'
   | 'master-value-alias'
   | 'master-quote-region'
   | 'master-length-premium'

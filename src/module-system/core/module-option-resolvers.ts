@@ -2,6 +2,7 @@ import type { MaterialCategoryOption } from '@/api/master/material-categories'
 import type { MaterialGradeOption } from '@/api/master/material-grades'
 import type { ProjectOption } from '@/api/master/project-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { MATERIAL_BRANDS_QUERY_KEY } from '@/hooks/useMaterialBrands'
 import { tagMasterOptionRequirements } from '@/module-system/core/master-option-requirement-tag'
 import {
   getCarrierOptions as rawCarrierOptions,
@@ -14,7 +15,10 @@ import { getCachedQueryData } from '@/queries/query-cached-options'
 import { getSettlementCompanyOptions as rawSettlementCompanyOptions } from '@/queries/system/company-settings'
 import type { EntityId } from '@/types/entity-id'
 import { parseOptionalEntityId } from '@/types/entity-id'
-import type { ModuleRecordInput } from '@/types/module-page'
+import type {
+  ModuleFormFieldOption,
+  ModuleRecordInput,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 // 每个解析器都带上「需要哪些主数据」的打包安全标记，避免只靠函数引用相等判定（见标记模块注释）。
@@ -120,6 +124,25 @@ export const materialGradeOptions = tagMasterOptionRequirements(
   rawMaterialGradeOptions,
   ['materialGrades'],
 )
+
+/**
+ * 供应商「经营品牌」多选：数据是**商品资料去重后的品牌清单**，不是独立主数据表。
+ *
+ * <p>预取由 `useMasterOptions` 的 `brands` 需求负责，且与比价页 `useMaterialBrands`
+ * 共用同一个缓存键 `MATERIAL_BRANDS_QUERY_KEY`（同 key 同 queryFn ⇒ 只请求一次）；
+ * 本解析器只做同步读缓存，形态与 `getSupplierOptions` 等一致。缓存未命中时返回空数组，
+ * 不写死词表 —— 品牌随商品资料变化，硬编码会漂移成错值。</p>
+ */
+function rawBrandOptions(): ModuleFormFieldOption[] {
+  return cachedOptions<string>(MATERIAL_BRANDS_QUERY_KEY).map((brand) => ({
+    label: brand,
+    value: brand,
+  }))
+}
+
+export const getBrandOptions = tagMasterOptionRequirements(rawBrandOptions, [
+  'brands',
+])
 
 function rawCustomerProjectOptions(
   form?: ModuleRecordInput,

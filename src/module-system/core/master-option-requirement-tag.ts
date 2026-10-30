@@ -24,6 +24,7 @@ export type MasterOptionRequirementKey =
   | 'materialCategories'
   | 'materialGrades'
   | 'materials'
+  | 'brands'
 
 export type MasterOptionRequirementsTag = readonly MasterOptionRequirementKey[]
 

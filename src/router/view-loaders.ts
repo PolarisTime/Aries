@@ -22,10 +22,6 @@ export const viewLoaders: Record<
     import('@/views/master-archive/ProjectPage').then((m) => ({
       default: m.ProjectPage,
     })),
-  'master-supplier': () =>
-    import('@/views/master-data/SupplierPage').then((m) => ({
-      default: m.SupplierPage,
-    })),
   'master-value-alias': () =>
     import('@/views/master-data/ValueAliasPage').then((m) => ({
       default: m.ValueAliasPage,
